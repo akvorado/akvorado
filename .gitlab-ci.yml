@@ -1,0 +1,53 @@
+---
+stages:
+  - tests
+  - build
+
+run tests:
+  stage: tests
+  image: golang:1.17-alpine
+  cache:
+    - key:
+        files:
+          - go.sum
+      paths:
+        - .go-cache/
+        - bin/
+  script:
+    - export GOMODCACHE=$PWD/.go-cache
+    - time apk add --no-cache git make gcc musl-dev
+    - time go mod download
+    - time make test-xml
+    - time make test-coverage
+  coverage: '/Code coverage: [0-9.]+/'
+  artifacts:
+    reports:
+      junit: test/tests.xml
+      cobertura: test/coverage.xml
+
+build docker image:
+  stage: build
+  image: docker:stable
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_MERGE_REQUEST_ID
+  script:
+    - |
+      mkdir -p ~/.docker
+      cat <<EOF > ~/.docker/config.json
+      {
+        "proxies":
+        {
+          "default":
+          {
+            "httpProxy": "$http_proxy",
+            "httpsProxy": "$https_proxy",
+            "noProxy": "127.0.0.1/8${NO_PROXY:+,}NO_PROXY${no_proxy:+,}$no_proxy"
+          }
+        }
+      }
+      EOF
+    - docker info
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker build -t $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH$CI_MERGE_REQUEST_ID .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_BRANCH$CI_MERGE_REQUEST_ID
