@@ -9,6 +9,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"flowexporter/daemon"
+	"flowexporter/flow"
 	"flowexporter/http"
 	"flowexporter/reporter"
 )
@@ -16,11 +17,13 @@ import (
 type daemonConfiguration struct {
 	Reporting reporter.Configuration
 	HTTP      http.Configuration
+	Flow      flow.Configuration
 }
 
 var defaultDaemonConfiguration = daemonConfiguration{
 	Reporting: reporter.DefaultConfiguration,
 	HTTP:      http.DefaultConfiguration,
+	Flow:      flow.DefaultConfiguration,
 }
 var daemonOptions struct {
 	configurationFile string
@@ -89,6 +92,12 @@ func daemonStart(r *reporter.Reporter, config daemonConfiguration, checkOnly boo
 	if err != nil {
 		return fmt.Errorf("unable to initialize http component: %w", err)
 	}
+	flowComponent, err := flow.New(r, config.Flow, flow.Dependencies{
+		Daemon: daemonComponent,
+	}, nil)
+	if err != nil {
+		return fmt.Errorf("unable to initialize flow component: %w", err)
+	}
 
 	// If we only asked for a check, stop here.
 	if checkOnly {
@@ -101,6 +110,7 @@ func daemonStart(r *reporter.Reporter, config daemonConfiguration, checkOnly boo
 		r,
 		daemonComponent,
 		httpComponent,
+		flowComponent,
 	}
 	startedComponents := []interface{}{}
 	defer func() {
