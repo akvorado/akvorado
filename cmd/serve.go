@@ -12,18 +12,21 @@ import (
 	"flowexporter/flow"
 	"flowexporter/http"
 	"flowexporter/reporter"
+	"flowexporter/snmp"
 )
 
 type daemonConfiguration struct {
 	Reporting reporter.Configuration
 	HTTP      http.Configuration
 	Flow      flow.Configuration
+	SNMP      snmp.Configuration
 }
 
 var defaultDaemonConfiguration = daemonConfiguration{
 	Reporting: reporter.DefaultConfiguration,
 	HTTP:      http.DefaultConfiguration,
 	Flow:      flow.DefaultConfiguration,
+	SNMP:      snmp.DefaultConfiguration,
 }
 var daemonOptions struct {
 	configurationFile string
@@ -98,6 +101,12 @@ func daemonStart(r *reporter.Reporter, config daemonConfiguration, checkOnly boo
 	if err != nil {
 		return fmt.Errorf("unable to initialize flow component: %w", err)
 	}
+	snmpComponent, err := snmp.New(r, config.SNMP, snmp.Dependencies{
+		Daemon: daemonComponent,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to initialize SNMP component: %w", err)
+	}
 
 	// If we only asked for a check, stop here.
 	if checkOnly {
@@ -111,6 +120,7 @@ func daemonStart(r *reporter.Reporter, config daemonConfiguration, checkOnly boo
 		daemonComponent,
 		httpComponent,
 		flowComponent,
+		snmpComponent,
 	}
 	startedComponents := []interface{}{}
 	defer func() {
