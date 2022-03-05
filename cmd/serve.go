@@ -10,6 +10,7 @@ import (
 
 	"flowexporter/daemon"
 	"flowexporter/flow"
+	"flowexporter/geoip"
 	"flowexporter/http"
 	"flowexporter/reporter"
 	"flowexporter/snmp"
@@ -20,6 +21,7 @@ type daemonConfiguration struct {
 	HTTP      http.Configuration
 	Flow      flow.Configuration
 	SNMP      snmp.Configuration
+	GeoIP     geoip.Configuration
 }
 
 var defaultDaemonConfiguration = daemonConfiguration{
@@ -27,6 +29,7 @@ var defaultDaemonConfiguration = daemonConfiguration{
 	HTTP:      http.DefaultConfiguration,
 	Flow:      flow.DefaultConfiguration,
 	SNMP:      snmp.DefaultConfiguration,
+	GeoIP:     geoip.DefaultConfiguration,
 }
 var daemonOptions struct {
 	configurationFile string
@@ -107,6 +110,12 @@ func daemonStart(r *reporter.Reporter, config daemonConfiguration, checkOnly boo
 	if err != nil {
 		return fmt.Errorf("unable to initialize SNMP component: %w", err)
 	}
+	geoipComponent, err := geoip.New(r, config.GeoIP, geoip.Dependencies{
+		Daemon: daemonComponent,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to initialize GeoIP component: %w", err)
+	}
 
 	// If we only asked for a check, stop here.
 	if checkOnly {
@@ -121,6 +130,7 @@ func daemonStart(r *reporter.Reporter, config daemonConfiguration, checkOnly boo
 		httpComponent,
 		flowComponent,
 		snmpComponent,
+		geoipComponent,
 	}
 	startedComponents := []interface{}{}
 	defer func() {
