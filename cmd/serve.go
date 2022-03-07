@@ -12,6 +12,7 @@ import (
 	"flowexporter/flow"
 	"flowexporter/geoip"
 	"flowexporter/http"
+	"flowexporter/kafka"
 	"flowexporter/reporter"
 	"flowexporter/snmp"
 )
@@ -22,6 +23,7 @@ type daemonConfiguration struct {
 	Flow      flow.Configuration
 	SNMP      snmp.Configuration
 	GeoIP     geoip.Configuration
+	Kafka     kafka.Configuration
 }
 
 var defaultDaemonConfiguration = daemonConfiguration{
@@ -30,6 +32,7 @@ var defaultDaemonConfiguration = daemonConfiguration{
 	Flow:      flow.DefaultConfiguration,
 	SNMP:      snmp.DefaultConfiguration,
 	GeoIP:     geoip.DefaultConfiguration,
+	Kafka:     kafka.DefaultConfiguration,
 }
 var daemonOptions struct {
 	configurationFile string
@@ -116,6 +119,12 @@ func daemonStart(r *reporter.Reporter, config daemonConfiguration, checkOnly boo
 	if err != nil {
 		return fmt.Errorf("unable to initialize GeoIP component: %w", err)
 	}
+	kafkaComponent, err := kafka.New(r, config.Kafka, kafka.Dependencies{
+		Daemon: daemonComponent,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to initialize Kafka component: %w", err)
+	}
 
 	// If we only asked for a check, stop here.
 	if checkOnly {
@@ -131,6 +140,7 @@ func daemonStart(r *reporter.Reporter, config daemonConfiguration, checkOnly boo
 		flowComponent,
 		snmpComponent,
 		geoipComponent,
+		kafkaComponent,
 	}
 	startedComponents := []interface{}{}
 	defer func() {

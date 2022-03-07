@@ -21,6 +21,12 @@ Use `make`. The following commands are available:
  - `make lint` to run golint
  - `make fmt` to run gofmt
 
+## Run
+
+Check `bin/flowexporter server --help` for help to run the exporter.
+Dump the default configuration with `bin/flowexporter serve --check
+--dump`.
+
 ## Design
 
 ### Components
@@ -32,8 +38,8 @@ tests). Each component is initialized with:
 - their configuration (extracted from the general configuration),
 - the components they depend on.
 
-Each component maintain its state. They have a `Start()` and
-optionally a `Stop()` method.
+Each component maintain its state. They may have a `Start()` and a
+`Stop()` method.
 
 See https://github.com/stuartsierra/component to understand where the
 inspiration comes from.
