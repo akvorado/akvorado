@@ -13,37 +13,33 @@ func TestLookup(t *testing.T) {
 	c := NewMock(t, r)
 
 	cases := []struct {
-		IP       string
-		Expected LookupResult
+		IP              string
+		ExpectedASN     uint32
+		ExpectedCountry string
 	}{
 		{
-			IP: "1.0.0.0",
-			Expected: LookupResult{
-				ASN:          15169,
-				Organization: "Google Inc.",
-			},
+			IP:          "1.0.0.0",
+			ExpectedASN: 15169,
 		}, {
-			IP: "2.125.160.216",
-			Expected: LookupResult{
-				Country: "GB",
-			},
+			IP:              "2.125.160.216",
+			ExpectedCountry: "GB",
 		}, {
-			IP: "2a02:ff00::1:1",
-			Expected: LookupResult{
-				Country: "IT",
-			},
+			IP:              "2a02:ff00::1:1",
+			ExpectedCountry: "IT",
 		}, {
-			IP: "67.43.156.77",
-			Expected: LookupResult{
-				ASN:     35908,
-				Country: "BT",
-			},
+			IP:              "67.43.156.77",
+			ExpectedASN:     35908,
+			ExpectedCountry: "BT",
 		},
 	}
 	for _, ca := range cases {
-		got := c.Lookup(net.ParseIP(ca.IP))
-		if diff := helpers.Diff(got, ca.Expected); diff != "" {
-			t.Errorf("Lookup(%q) (-got, +want):\n%s", ca.IP, diff)
+		gotCountry := c.LookupCountry(net.ParseIP(ca.IP))
+		if diff := helpers.Diff(gotCountry, ca.ExpectedCountry); diff != "" {
+			t.Errorf("LookupCountry(%q) (-got, +want):\n%s", ca.IP, diff)
+		}
+		gotASN := c.LookupASN(net.ParseIP(ca.IP))
+		if diff := helpers.Diff(gotASN, ca.ExpectedASN); diff != "" {
+			t.Errorf("LookupASN(%q) (-got, +want):\n%s", ca.IP, diff)
 		}
 	}
 }
