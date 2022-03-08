@@ -1,5 +1,5 @@
 FROM golang:1.17-alpine AS build
-RUN apk add --no-cache git make
+RUN apk add --no-cache git make gcc musl-dev protoc
 WORKDIR /app
 COPY go.mod ./
 COPY go.sum ./
