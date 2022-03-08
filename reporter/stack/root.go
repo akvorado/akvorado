@@ -61,12 +61,13 @@ func (pc Call) SourceFile(withLine bool) string {
 	pcFix := uintptr(pc) - 1
 	fn := runtime.FuncForPC(pcFix)
 	if fn == nil {
-		return "(nofunc)"
+		return "(nosource)"
 	}
 
 	const sep = "/"
 	file, line := fn.FileLine(pcFix)
-	impCnt := strings.Count(fn.Name(), sep) + 1
+	functionName := fn.Name()
+	impCnt := strings.Count(functionName, sep)
 	pathCnt := strings.Count(file, sep)
 	for pathCnt > impCnt {
 		i := strings.Index(file, sep)
@@ -76,10 +77,19 @@ func (pc Call) SourceFile(withLine bool) string {
 		file = file[i+len(sep):]
 		pathCnt--
 	}
-	if withLine {
-		return fmt.Sprintf("%s:%d", file, line)
+	i := strings.Index(functionName, ".")
+	if i == -1 {
+		return "(nosource)"
 	}
-	return file
+	moduleName := functionName[:i]
+	i = strings.Index(moduleName, "/")
+	if i != -1 {
+		moduleName = moduleName[:i]
+	}
+	if withLine {
+		return fmt.Sprintf("%s/%s:%d", moduleName, file, line)
+	}
+	return fmt.Sprintf("%s/%s", moduleName, file)
 }
 
 var (
