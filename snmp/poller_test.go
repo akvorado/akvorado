@@ -97,15 +97,15 @@ func TestPoller(t *testing.T) {
 
 	gotMetrics := r.GetMetrics("akvorado_snmp_poller_")
 	expectedMetrics := map[string]string{
-		`failure{error="ifalias_missing",host="127.0.0.1"}`: "2",
-		`failure{error="ifdescr_missing",host="127.0.0.1"}`: "1",
-		`pending`:                                   "0",
-		`seconds_count{host="127.0.0.1"}`:           "2",
-		`seconds_sum{host="127.0.0.1"}`:             "0",
-		`seconds{host="127.0.0.1",quantile="0.5"}`:  "0",
-		`seconds{host="127.0.0.1",quantile="0.9"}`:  "0",
-		`seconds{host="127.0.0.1",quantile="0.99"}`: "0",
-		`success{host="127.0.0.1"}`:                 "2",
+		`failure{error="ifalias_missing",router="127.0.0.1"}`: "2",
+		`failure{error="ifdescr_missing",router="127.0.0.1"}`: "1",
+		`pending`:                                     "0",
+		`seconds_count{router="127.0.0.1"}`:           "2",
+		`seconds_sum{router="127.0.0.1"}`:             "0",
+		`seconds{router="127.0.0.1",quantile="0.5"}`:  "0",
+		`seconds{router="127.0.0.1",quantile="0.9"}`:  "0",
+		`seconds{router="127.0.0.1",quantile="0.99"}`: "0",
+		`success{router="127.0.0.1"}`:                 "2",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)

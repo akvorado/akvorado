@@ -59,23 +59,23 @@ func newPoller(r *reporter.Reporter, clock clock.Clock, put func(string, uint, I
 		reporter.CounterOpts{
 			Name: "poller_success",
 			Help: "Number of successful requests.",
-		}, []string{"host"})
+		}, []string{"router"})
 	p.metrics.failures = r.CounterVec(
 		reporter.CounterOpts{
 			Name: "poller_failure",
 			Help: "Number of failed requests.",
-		}, []string{"host", "error"})
+		}, []string{"router", "error"})
 	p.metrics.retries = r.CounterVec(
 		reporter.CounterOpts{
 			Name: "poller_retry",
 			Help: "Number of retried requests.",
-		}, []string{"host"})
+		}, []string{"router"})
 	p.metrics.times = r.SummaryVec(
 		reporter.SummaryOpts{
 			Name:       "poller_seconds",
 			Help:       "Time to successfully poll for values.",
 			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
-		}, []string{"host"})
+		}, []string{"router"})
 	return p
 }
 
@@ -116,7 +116,7 @@ func (p *realPoller) Poll(ctx context.Context, host string, port uint16, communi
 	if err := g.Connect(); err != nil {
 		p.metrics.failures.WithLabelValues(host, "connect").Inc()
 		if p.errLimiter.Allow() {
-			p.r.Err(err).Str("host", host).Msg("unable to connect")
+			p.r.Err(err).Str("router", host).Msg("unable to connect")
 		}
 	}
 	start := p.clock.Now()
@@ -129,7 +129,7 @@ func (p *realPoller) Poll(ctx context.Context, host string, port uint16, communi
 	if err != nil {
 		p.metrics.failures.WithLabelValues(host, "get").Inc()
 		if p.errLimiter.Allow() {
-			p.r.Err(err).Str("host", host).Msg("unable to get")
+			p.r.Err(err).Str("router", host).Msg("unable to get")
 		}
 		return
 	}

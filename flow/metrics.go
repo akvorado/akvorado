@@ -28,14 +28,14 @@ func (c *Component) initMetrics() {
 			Name: "traffic_bytes",
 			Help: "Bytes received by the application.",
 		},
-		[]string{"remote_ip", "type"},
+		[]string{"router", "type"},
 	)
 	c.metrics.trafficPackets = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "traffic_packets",
 			Help: "Packets received by the application.",
 		},
-		[]string{"remote_ip", "type"},
+		[]string{"router", "type"},
 	)
 	c.metrics.trafficPacketSizeSum = c.r.SummaryVec(
 		reporter.SummaryOpts{
@@ -43,7 +43,7 @@ func (c *Component) initMetrics() {
 			Help:       "Summary of packet size.",
 			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		},
-		[]string{"remote_ip", "type"},
+		[]string{"router", "type"},
 	)
 	c.metrics.trafficErrors = c.r.CounterVec(
 		reporter.CounterOpts{

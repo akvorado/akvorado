@@ -38,14 +38,14 @@ func (c *Component) initMetrics() {
 			Name: "messages_sent",
 			Help: "Number of messages sent from a given host.",
 		},
-		[]string{"host"},
+		[]string{"router"},
 	)
 	c.metrics.bytesSent = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "bytes_sent",
 			Help: "Number of bytes sent from a given host.",
 		},
-		[]string{"host"},
+		[]string{"router"},
 	)
 	c.metrics.errors = c.r.CounterVec(
 		reporter.CounterOpts{
