@@ -63,7 +63,7 @@ $(TEST_TARGETS): test
 check test tests: fmt lint $(GENERATED) ; $(info $(M) running $(NAME:%=% )tests…) @ ## Run tests
 	$Q $(GO) test -timeout $(TIMEOUT)s $(ARGS) $(PKGS)
 
-test-xml: fmt lint | $(GOJUNITREPORT) ; $(info $(M) running xUnit tests…) @ ## Run tests with xUnit output
+test-xml: fmt lint $(GENERATED) | $(GOJUNITREPORT) ; $(info $(M) running xUnit tests…) @ ## Run tests with xUnit output
 	$Q mkdir -p test
 	$Q 2>&1 $(GO) test -timeout $(TIMEOUT)s -v $(PKGS) | tee test/tests.output
 	$Q $(GOJUNITREPORT) -package-name -set-exit-code < test/tests.output > test/tests.xml
@@ -75,7 +75,7 @@ COVERAGE_HTML    = $(COVERAGE_DIR)/index.html
 .PHONY: test-coverage test-coverage-tools
 test-coverage-tools: | $(GOCOV) $(GOCOVXML)
 test-coverage: COVERAGE_DIR := test/coverage.$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
-test-coverage: fmt lint test-coverage-tools ; $(info $(M) running coverage tests…) @ ## Run coverage tests
+test-coverage: fmt lint $(GENERATED) test-coverage-tools ; $(info $(M) running coverage tests…) @ ## Run coverage tests
 	$Q mkdir -p $(COVERAGE_DIR)
 	$Q $(GO) test \
 		-coverpkg=$(shell echo $(PKGS) | tr ' ' ',') \
