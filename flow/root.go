@@ -34,8 +34,8 @@ type Component struct {
 	// Metrics
 	metrics metrics
 
-	// Callback for each received flow
-	flowCallback func(*flowmessage.FlowMessage)
+	// Channel for receiving flows.
+	incomingFlows chan *flowmessage.FlowMessage
 }
 
 // Dependencies are the dependencies of the flow component.
@@ -44,16 +44,21 @@ type Dependencies struct {
 }
 
 // New creates a new flow component.
-func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies, flowCallback func(*flowmessage.FlowMessage)) (*Component, error) {
+func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
 	c := Component{
-		r:            r,
-		d:            &dependencies,
-		config:       configuration,
-		flowCallback: flowCallback,
+		r:             r,
+		d:             &dependencies,
+		config:        configuration,
+		incomingFlows: make(chan *flowmessage.FlowMessage, configuration.BufferLength),
 	}
 	c.d.Daemon.Track(&c.t, "flow")
 	c.initMetrics()
 	return &c, nil
+}
+
+// Flows returns a channel to receive flows.
+func (c *Component) Flows() <-chan *flowmessage.FlowMessage {
+	return c.incomingFlows
 }
 
 // Start starts the flow component.
@@ -123,6 +128,7 @@ func (c *Component) spawnWorker(workerID int) error {
 
 // Stop stops the flow component
 func (c *Component) Stop() error {
+	defer close(c.incomingFlows)
 	c.t.Kill(nil)
 	return c.t.Wait()
 }

@@ -104,7 +104,7 @@ func daemonStart(r *reporter.Reporter, config daemonConfiguration, checkOnly boo
 	}
 	flowComponent, err := flow.New(r, config.Flow, flow.Dependencies{
 		Daemon: daemonComponent,
-	}, nil)
+	})
 	if err != nil {
 		return fmt.Errorf("unable to initialize flow component: %w", err)
 	}

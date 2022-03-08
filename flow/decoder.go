@@ -109,8 +109,6 @@ func (c *Component) decodeFlow(payload []byte, source *net.UDPAddr) {
 		Inc()
 
 	for _, fmsg := range flowMessageSet {
-		if c.flowCallback != nil {
-			c.flowCallback(fmsg)
-		}
+		c.incomingFlows <- fmsg
 	}
 }

@@ -6,7 +6,6 @@ import (
 	"math/rand"
 	"net"
 	"path/filepath"
-	"sync"
 	"testing"
 	"time"
 
@@ -25,19 +24,9 @@ func TestDecoding(t *testing.T) {
 	configuration := DefaultConfiguration
 	configuration.Netflow = fmt.Sprintf("127.0.0.1:%d", udpPort)
 
-	// Callback when receiving messages
-	var receiveLock sync.Mutex
-	received := make([]*flowmessage.FlowMessage, 0)
-	flowCallback := func(msg *flowmessage.FlowMessage) {
-		receiveLock.Lock()
-		msg.TimeReceived = 0
-		received = append(received, msg)
-		receiveLock.Unlock()
-	}
-
 	// Start
 	r := reporter.NewMock(t)
-	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t)}, flowCallback)
+	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New(%v) error:\n%+v", configuration, err)
 	}
@@ -62,13 +51,15 @@ func TestDecoding(t *testing.T) {
 	if _, err := conn.Write(template); err != nil {
 		t.Fatalf("Write() failure:\n%+v", err)
 	}
-	time.Sleep(10 * time.Millisecond)
-	receiveLock.Lock()
-	if diff := helpers.Diff(received, received[:0]); diff != "" {
-		receiveLock.Unlock()
-		t.Fatalf("After sending templates, received flows (-got, +want):\n%s", diff)
+out1:
+	for {
+		select {
+		case flow := <-c.Flows():
+			t.Fatalf("After sending templates, received a flow while we should not:\n%v", flow)
+		case <-time.After(10 * time.Millisecond):
+			break out1
+		}
 	}
-	receiveLock.Unlock()
 
 	// Check templates (with metrics)
 	gotMetrics := r.GetMetrics("akvorado_flow_nf_")
@@ -90,7 +81,6 @@ func TestDecoding(t *testing.T) {
 	if _, err := conn.Write(data); err != nil {
 		t.Fatalf("Write() failure:\n%+v", err)
 	}
-	time.Sleep(10 * time.Millisecond)
 	expectedFlows := []*flowmessage.FlowMessage{
 		{
 			Type:             flowmessage.FlowMessage_NETFLOW_V9,
@@ -187,12 +177,21 @@ func TestDecoding(t *testing.T) {
 			NextHop:          net.ParseIP("2a01:e00:600d::2"),
 		},
 	}
-	receiveLock.Lock()
+	received := []*flowmessage.FlowMessage{}
+out2:
+	for {
+		select {
+		case flow := <-c.Flows():
+			flow.TimeReceived = 0
+			received = append(received, flow)
+		case <-time.After(10 * time.Millisecond):
+			break out2
+		}
+	}
+
 	if diff := helpers.Diff(received, expectedFlows); diff != "" {
-		receiveLock.Unlock()
 		t.Fatalf("After sending flows, received flows (-got, +want):\n%s", diff)
 	}
-	receiveLock.Unlock()
 	gotMetrics = r.GetMetrics(
 		"akvorado_flow_nf_",
 		"count",
