@@ -1,4 +1,4 @@
-// Package logger handles logging for flowexporter.
+// Package logger handles logging for akvorado.
 //
 // This is a thin wrapper around zerolog. It is currently not
 // configurable as we don't need anything fancy yet for configuration.
@@ -15,7 +15,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
-	"flowexporter/reporter/stack"
+	"akvorado/reporter/stack"
 )
 
 // Logger is a logger instance. It is compatible with the interface

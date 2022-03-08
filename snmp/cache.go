@@ -13,7 +13,7 @@ import (
 
 	"github.com/benbjohnson/clock"
 
-	"flowexporter/reporter"
+	"akvorado/reporter"
 )
 
 var (

@@ -10,7 +10,7 @@ import (
 
 	"gopkg.in/tomb.v2"
 
-	"flowexporter/reporter"
+	"akvorado/reporter"
 )
 
 // Component is the interface the daemon component provides.

@@ -1,4 +1,4 @@
-// Package http handles the internal web server for flowexporter.
+// Package http handles the internal web server for akvorado.
 package http
 
 import (
@@ -10,8 +10,8 @@ import (
 
 	"gopkg.in/tomb.v2"
 
-	"flowexporter/daemon"
-	"flowexporter/reporter"
+	"akvorado/daemon"
+	"akvorado/reporter"
 )
 
 // Component represents the HTTP compomenent.

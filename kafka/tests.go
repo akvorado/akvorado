@@ -8,8 +8,8 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/Shopify/sarama/mocks"
 
-	"flowexporter/daemon"
-	"flowexporter/reporter"
+	"akvorado/daemon"
+	"akvorado/reporter"
 )
 
 // NewMock creates a new Kafka component with a mocked Kafka. It will

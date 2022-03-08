@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"testing"
 
-	"flowexporter/reporter"
+	"akvorado/reporter"
 )
 
 // mockPoller will use static data.

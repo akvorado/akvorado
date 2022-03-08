@@ -8,9 +8,9 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"flowexporter/helpers"
-	"flowexporter/reporter/logger"
-	"flowexporter/reporter/metrics"
+	"akvorado/helpers"
+	"akvorado/reporter/logger"
+	"akvorado/reporter/metrics"
 )
 
 func TestNew(t *testing.T) {
@@ -64,12 +64,12 @@ func TestNew(t *testing.T) {
 		gotFiltered = append(gotFiltered, line)
 	}
 	expected := []string{
-		"# HELP flowexporter_reporter_metrics_test_counter1 Some counter",
-		"# TYPE flowexporter_reporter_metrics_test_counter1 counter",
-		"flowexporter_reporter_metrics_test_counter1 18",
-		"# HELP flowexporter_reporter_metrics_test_gauge1 Some gauge",
-		"# TYPE flowexporter_reporter_metrics_test_gauge1 gauge",
-		"flowexporter_reporter_metrics_test_gauge1 4",
+		"# HELP akvorado_reporter_metrics_test_counter1 Some counter",
+		"# TYPE akvorado_reporter_metrics_test_counter1 counter",
+		"akvorado_reporter_metrics_test_counter1 18",
+		"# HELP akvorado_reporter_metrics_test_gauge1 Some gauge",
+		"# TYPE akvorado_reporter_metrics_test_gauge1 gauge",
+		"akvorado_reporter_metrics_test_gauge1 4",
 		"",
 	}
 	if diff := helpers.Diff(gotFiltered, expected); diff != "" {

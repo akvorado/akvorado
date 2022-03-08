@@ -6,8 +6,8 @@ import (
 	"runtime"
 	"testing"
 
-	"flowexporter/http"
-	"flowexporter/reporter"
+	"akvorado/http"
+	"akvorado/reporter"
 )
 
 func TestHandler(t *testing.T) {

@@ -1,4 +1,4 @@
-// Package cmd handles the command-line interface for flowexporter
+// Package cmd handles the command-line interface for akvorado
 package cmd
 
 import (
@@ -14,7 +14,7 @@ var debug bool
 
 // RootCmd is the root for all commands
 var RootCmd = &cobra.Command{
-	Use:   "flowexporter",
+	Use:   "akvorado",
 	Short: "Export flows to Kafka",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		if isatty.IsTerminal(os.Stdout.Fd()) {

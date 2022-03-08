@@ -7,7 +7,7 @@ import (
 
 	"gopkg.in/tomb.v2"
 
-	"flowexporter/reporter"
+	"akvorado/reporter"
 )
 
 func TestTerminate(t *testing.T) {

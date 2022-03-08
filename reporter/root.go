@@ -1,11 +1,11 @@
-// Package reporter is a façade for reporting duties in flowexporter.
+// Package reporter is a façade for reporting duties in akvorado.
 //
 // Such a façade currently includes logging and metrics.
 package reporter
 
 import (
-	"flowexporter/reporter/logger"
-	"flowexporter/reporter/metrics"
+	"akvorado/reporter/logger"
+	"akvorado/reporter/metrics"
 )
 
 // Reporter contains the state for a reporter. It also supports the

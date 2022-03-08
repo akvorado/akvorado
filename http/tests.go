@@ -1,10 +1,12 @@
+//go:build !release
+
 package http
 
 import (
 	"testing"
 
-	"flowexporter/daemon"
-	"flowexporter/reporter"
+	"akvorado/daemon"
+	"akvorado/reporter"
 )
 
 // NewMock create a new HTTP component listening on a random free port.

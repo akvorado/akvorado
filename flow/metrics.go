@@ -1,7 +1,7 @@
 package flow
 
 import (
-	"flowexporter/reporter"
+	"akvorado/reporter"
 )
 
 type metrics struct {

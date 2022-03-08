@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"flowexporter/daemon"
-	"flowexporter/reporter"
+	"akvorado/daemon"
+	"akvorado/reporter"
 )
 
 // NewMock creates a GeoIP component usable for testing. It is already

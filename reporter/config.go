@@ -1,8 +1,8 @@
 package reporter
 
 import (
-	"flowexporter/reporter/logger"
-	"flowexporter/reporter/metrics"
+	"akvorado/reporter/logger"
+	"akvorado/reporter/metrics"
 )
 
 // Configuration contains the reporter configuration.

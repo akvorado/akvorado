@@ -3,7 +3,7 @@ package metrics
 import (
 	"fmt"
 
-	"flowexporter/reporter/logger"
+	"akvorado/reporter/logger"
 )
 
 // promHTTPLogger is an adapter for logger.Logger to be used as promhttp.Logger

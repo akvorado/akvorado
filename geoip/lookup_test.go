@@ -4,8 +4,8 @@ import (
 	"net"
 	"testing"
 
-	"flowexporter/helpers"
-	"flowexporter/reporter"
+	"akvorado/helpers"
+	"akvorado/reporter"
 )
 
 func TestLookup(t *testing.T) {

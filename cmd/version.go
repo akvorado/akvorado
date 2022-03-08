@@ -21,9 +21,9 @@ func init() {
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version",
-	Long:  `Display version and build information about flowexporter.`,
+	Long:  `Display version and build information about akvorado.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("flowexporter %s\n", Version)
+		fmt.Printf("akvorado %s\n", Version)
 		fmt.Printf("  Build date: %s\n", BuildDate)
 		fmt.Printf("  Built with: %s\n", runtime.Version())
 	},

@@ -1,4 +1,4 @@
-module flowexporter
+module akvorado
 
 go 1.17
 

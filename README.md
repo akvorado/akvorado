@@ -1,8 +1,12 @@
-# Flow exporter
+# Akvorado: flow collector, enricher and exporter.
 
 This program receives flows (currently Netflow), enriches them with
-interface names (using gNMI), geo information (using MaxMind) and
-export them to Kafka.
+interface names (using SNMP), geo information (using MaxMind), and
+exports them to Kafka.
+
+[Akvorado][] means "water wheel" in Esperanto.
+
+[Akvorado]: https://eo.wikipedia.org/wiki/Akvorado
 
 ## Build
 
@@ -23,8 +27,8 @@ Use `make`. The following commands are available:
 
 ## Run
 
-Check `bin/flowexporter server --help` for help to run the exporter.
-Dump the default configuration with `bin/flowexporter serve --check
+Check `bin/akvorado server --help` for help to run the exporter.
+Dump the default configuration with `bin/akvorado serve --check
 --dump`.
 
 ## Design

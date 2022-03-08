@@ -12,9 +12,9 @@ import (
 
 	flowmessage "github.com/netsampler/goflow2/pb"
 
-	"flowexporter/daemon"
-	"flowexporter/helpers"
-	"flowexporter/reporter"
+	"akvorado/daemon"
+	"akvorado/helpers"
+	"akvorado/reporter"
 )
 
 var startUDPPort = rand.Intn(1000) + 22000
@@ -71,7 +71,7 @@ func TestDecoding(t *testing.T) {
 	receiveLock.Unlock()
 
 	// Check templates (with metrics)
-	gotMetrics := r.GetMetrics("flowexporter_flow_nf_")
+	gotMetrics := r.GetMetrics("akvorado_flow_nf_")
 	expectedMetrics := map[string]string{
 		`count{router="127.0.0.1",version="9"}`:                                                               "1",
 		`flowset_records_sum{router="127.0.0.1",type="TemplateFlowSet",version="9"}`:                          "1",
@@ -194,7 +194,7 @@ func TestDecoding(t *testing.T) {
 	}
 	receiveLock.Unlock()
 	gotMetrics = r.GetMetrics(
-		"flowexporter_flow_nf_",
+		"akvorado_flow_nf_",
 		"count",
 		"flowset_records_sum",
 		"flowset_sum",

@@ -10,8 +10,8 @@ import (
 	"github.com/benbjohnson/clock"
 	"gopkg.in/tomb.v2"
 
-	"flowexporter/daemon"
-	"flowexporter/reporter"
+	"akvorado/daemon"
+	"akvorado/reporter"
 )
 
 // Component represents the SNMP compomenent.

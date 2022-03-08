@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"flowexporter/helpers"
-	"flowexporter/reporter/stack"
+	"akvorado/helpers"
+	"akvorado/reporter/stack"
 )
 
 func TestSourceFile(t *testing.T) {
@@ -15,7 +15,7 @@ func TestSourceFile(t *testing.T) {
 		got = append(got, caller.SourceFile(false))
 	}
 	expected := []string{
-		"flowexporter/reporter/stack/root_test.go",
+		"akvorado/reporter/stack/root_test.go",
 		"testing/testing.go",
 	}
 	if diff := helpers.Diff(got, expected); diff != "" {
@@ -30,7 +30,7 @@ func TestFunctionName(t *testing.T) {
 		got = append(got, caller.FunctionName())
 	}
 	expected := []string{
-		"flowexporter/reporter/stack_test.TestFunctionName",
+		"akvorado/reporter/stack_test.TestFunctionName",
 		"testing.tRunner",
 	}
 	if diff := helpers.Diff(got, expected); diff != "" {
@@ -40,7 +40,7 @@ func TestFunctionName(t *testing.T) {
 
 func TestModuleName(t *testing.T) {
 	got := strings.Split(stack.ModuleName, "/")
-	expected := []string{"flowexporter"}
+	expected := []string{"akvorado"}
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Errorf("moduleName:\n%s", diff)
 	}

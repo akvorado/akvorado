@@ -1,4 +1,4 @@
-// Package metrics handles metrics for flowexporter
+// Package metrics handles metrics for akvorado
 //
 // This is a wrapper around Prometheus Go client.
 package metrics
@@ -14,8 +14,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"flowexporter/reporter/logger"
-	"flowexporter/reporter/stack"
+	"akvorado/reporter/logger"
+	"akvorado/reporter/stack"
 )
 
 // Metrics represents the internal state of the metric subsystem.

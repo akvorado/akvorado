@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"flowexporter/cmd"
+	"akvorado/cmd"
 )
 
 func main() {

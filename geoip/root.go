@@ -12,8 +12,8 @@ import (
 	"golang.org/x/time/rate"
 	"gopkg.in/tomb.v2"
 
-	"flowexporter/daemon"
-	"flowexporter/reporter"
+	"akvorado/daemon"
+	"akvorado/reporter"
 )
 
 // Component represents the GeoIP component.

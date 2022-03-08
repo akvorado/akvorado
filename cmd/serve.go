@@ -8,13 +8,13 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 
-	"flowexporter/daemon"
-	"flowexporter/flow"
-	"flowexporter/geoip"
-	"flowexporter/http"
-	"flowexporter/kafka"
-	"flowexporter/reporter"
-	"flowexporter/snmp"
+	"akvorado/daemon"
+	"akvorado/flow"
+	"akvorado/geoip"
+	"akvorado/http"
+	"akvorado/kafka"
+	"akvorado/reporter"
+	"akvorado/snmp"
 )
 
 type daemonConfiguration struct {
@@ -42,9 +42,10 @@ var daemonOptions struct {
 
 var serveCmd = &cobra.Command{
 	Use:   "serve",
-	Short: "Start flow exporter",
-	Long:  `Flow exporter daemon listens to incoming flows, enriches them and exports them to Kafka.`,
-	Args:  cobra.ExactArgs(0),
+	Short: "Start akvorado",
+	Long: `Akvorado is a Netflow collector. It enriches flows with information from SNMP and GeoIP
+and exports them to Kafka.`,
+	Args: cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if cfgFile := daemonOptions.configurationFile; cfgFile != "" {
 			viper.SetConfigFile(cfgFile)
@@ -163,7 +164,7 @@ func daemonStart(r *reporter.Reporter, config daemonConfiguration, checkOnly boo
 
 	r.Info().
 		Str("version", Version).Str("build-date", BuildDate).
-		Msg("flowexporter has started")
+		Msg("akvorado has started")
 
 	select {
 	case <-daemonComponent.Terminated():

@@ -84,9 +84,9 @@ func (pc Call) SourceFile(withLine bool) string {
 
 var (
 	ownPackageCall    = Callers()[0]
-	ownPackageName    = strings.SplitN(ownPackageCall.FunctionName(), ".", 2)[0] // flowexporter/reporter/stack
-	parentPackageName = ownPackageName[0:strings.LastIndex(ownPackageName, "/")] // flowexporter/reporter
+	ownPackageName    = strings.SplitN(ownPackageCall.FunctionName(), ".", 2)[0] // akvorado/reporter/stack
+	parentPackageName = ownPackageName[0:strings.LastIndex(ownPackageName, "/")] // akvorado/reporter
 
 	// ModuleName is the name of the current module. This can be used to prefix stuff.
-	ModuleName = parentPackageName[0:strings.LastIndex(parentPackageName, "/")] // flowexporter
+	ModuleName = parentPackageName[0:strings.LastIndex(parentPackageName, "/")] // akvorado
 )

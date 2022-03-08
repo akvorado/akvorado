@@ -12,8 +12,8 @@ import (
 	"github.com/slayercat/GoSNMPServer"
 	"github.com/slayercat/gosnmp"
 
-	"flowexporter/helpers"
-	"flowexporter/reporter"
+	"akvorado/helpers"
+	"akvorado/reporter"
 )
 
 func TestPoller(t *testing.T) {
@@ -95,7 +95,7 @@ func TestPoller(t *testing.T) {
 		t.Fatalf("Poll() (-got, +want):\n%s", diff)
 	}
 
-	gotMetrics := r.GetMetrics("flowexporter_snmp_poller_")
+	gotMetrics := r.GetMetrics("akvorado_snmp_poller_")
 	expectedMetrics := map[string]string{
 		`failure{error="ifalias_missing",host="127.0.0.1"}`: "2",
 		`failure{error="ifdescr_missing",host="127.0.0.1"}`: "1",

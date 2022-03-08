@@ -6,8 +6,8 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
-	"flowexporter/helpers"
-	"flowexporter/reporter"
+	"akvorado/helpers"
+	"akvorado/reporter"
 )
 
 func TestMetrics(t *testing.T) {
@@ -90,7 +90,7 @@ func TestMetrics(t *testing.T) {
 		summary2.WithLabelValues("value2").Observe(15)
 	}
 
-	got := r.GetMetrics("flowexporter_reporter_test_")
+	got := r.GetMetrics("akvorado_reporter_test_")
 	expected := map[string]string{
 		`counter1`: "18",
 		`counter2`: "1.17",
@@ -144,7 +144,7 @@ func TestMetrics(t *testing.T) {
 		t.Fatalf("metrics (-got, +want):\n%s", diff)
 	}
 
-	got = r.GetMetrics("flowexporter_reporter_test_",
+	got = r.GetMetrics("akvorado_reporter_test_",
 		"counter1", "counter2", "counter3")
 	expected = map[string]string{
 		`counter1`: "18",
@@ -183,7 +183,7 @@ func TestMetricCollector(t *testing.T) {
 	m.metric2 = r.MetricDesc("metric2", "Custom metric 2", nil)
 	r.MetricCollector(m)
 
-	got := r.GetMetrics("flowexporter_reporter_test_")
+	got := r.GetMetrics("akvorado_reporter_test_")
 	expected := map[string]string{
 		`metric1`: "18",
 		`metric2`: "30",

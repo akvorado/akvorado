@@ -6,7 +6,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	gometrics "github.com/rcrowley/go-metrics"
 
-	"flowexporter/reporter"
+	"akvorado/reporter"
 )
 
 type metrics struct {

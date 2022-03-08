@@ -10,8 +10,8 @@ import (
 
 	"github.com/benbjohnson/clock"
 
-	"flowexporter/helpers"
-	"flowexporter/reporter"
+	"akvorado/helpers"
+	"akvorado/reporter"
 )
 
 func setupTestCache(t *testing.T) (*reporter.Reporter, *clock.Mock, *snmpCache) {
@@ -37,7 +37,7 @@ func TestGetEmpty(t *testing.T) {
 	r, _, sc := setupTestCache(t)
 	expectCacheLookup(t, sc, "127.0.0.1", 676, Interface{}, ErrCacheMiss)
 
-	gotMetrics := r.GetMetrics("flowexporter_snmp_cache_")
+	gotMetrics := r.GetMetrics("akvorado_snmp_cache_")
 	expectedMetrics := map[string]string{
 		`expired`: "0",
 		`hit`:     "0",
@@ -57,7 +57,7 @@ func TestSimpleLookup(t *testing.T) {
 	expectCacheLookup(t, sc, "127.0.0.1", 787, Interface{}, ErrCacheMiss)
 	expectCacheLookup(t, sc, "127.0.0.2", 676, Interface{}, ErrCacheMiss)
 
-	gotMetrics := r.GetMetrics("flowexporter_snmp_cache_")
+	gotMetrics := r.GetMetrics("akvorado_snmp_cache_")
 	expectedMetrics := map[string]string{
 		`expired`: "0",
 		`hit`:     "1",
@@ -99,7 +99,7 @@ func TestExpire(t *testing.T) {
 	sc.Expire(19 * time.Minute)
 	expectCacheLookup(t, sc, "127.0.0.1", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"}, nil)
 
-	gotMetrics := r.GetMetrics("flowexporter_snmp_cache_")
+	gotMetrics := r.GetMetrics("akvorado_snmp_cache_")
 	expectedMetrics := map[string]string{
 		`expired`: "3",
 		`hit`:     "7",

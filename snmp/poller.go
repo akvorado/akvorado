@@ -11,7 +11,7 @@ import (
 	"github.com/gosnmp/gosnmp"
 	"golang.org/x/time/rate"
 
-	"flowexporter/reporter"
+	"akvorado/reporter"
 )
 
 type poller interface {

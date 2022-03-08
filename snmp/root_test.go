@@ -8,9 +8,9 @@ import (
 
 	"github.com/benbjohnson/clock"
 
-	"flowexporter/daemon"
-	"flowexporter/helpers"
-	"flowexporter/reporter"
+	"akvorado/daemon"
+	"akvorado/helpers"
+	"akvorado/reporter"
 )
 
 func expectSNMPLookup(t *testing.T, c *Component, host string, ifIndex uint, expected Interface, expectedError error) {
@@ -115,7 +115,7 @@ func TestAutoRefresh(t *testing.T) {
 		t.Fatalf("Stop() error:\n%+v", err)
 	}
 
-	gotMetrics := r.GetMetrics("flowexporter_snmp_cache_")
+	gotMetrics := r.GetMetrics("akvorado_snmp_cache_")
 	expectedMetrics := map[string]string{
 		`expired`:      "0",
 		`hit`:          "2",

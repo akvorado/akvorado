@@ -9,5 +9,5 @@ RUN make clean && make
 
 # Do not use scratch, we use alpine to get an healthcheck
 FROM alpine
-COPY --from=build /app/bin/flowexporter /usr/local/bin/flowexporter
-ENTRYPOINT [ "/usr/local/bin/flowexporter" ]
+COPY --from=build /app/bin/akvorado /usr/local/bin/akvorado
+ENTRYPOINT [ "/usr/local/bin/akvorado" ]

@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"flowexporter/daemon"
-	"flowexporter/helpers"
-	"flowexporter/reporter"
+	"akvorado/daemon"
+	"akvorado/helpers"
+	"akvorado/reporter"
 )
 
 func copyFile(src string, dst string) {
@@ -57,7 +57,7 @@ func TestDatabaseRefresh(t *testing.T) {
 	}()
 
 	// Check we did load both databases
-	gotMetrics := r.GetMetrics("flowexporter_geoip_db_")
+	gotMetrics := r.GetMetrics("akvorado_geoip_db_")
 	expectedMetrics := map[string]string{
 		`refresh{database="asn"}`:     "1",
 		`refresh{database="country"}`: "1",
@@ -71,7 +71,7 @@ func TestDatabaseRefresh(t *testing.T) {
 		filepath.Join(dir, "tmp.mmdb"))
 	os.Rename(filepath.Join(dir, "tmp.mmdb"), config.CountryDatabase)
 	time.Sleep(10 * time.Millisecond)
-	gotMetrics = r.GetMetrics("flowexporter_geoip_db_")
+	gotMetrics = r.GetMetrics("akvorado_geoip_db_")
 	expectedMetrics = map[string]string{
 		`refresh{database="asn"}`:     "1",
 		`refresh{database="country"}`: "2",

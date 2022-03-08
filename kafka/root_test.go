@@ -8,9 +8,9 @@ import (
 	"github.com/Shopify/sarama"
 	gometrics "github.com/rcrowley/go-metrics"
 
-	"flowexporter/daemon"
-	"flowexporter/helpers"
-	"flowexporter/reporter"
+	"akvorado/daemon"
+	"akvorado/helpers"
+	"akvorado/reporter"
 )
 
 func TestKafka(t *testing.T) {
@@ -37,7 +37,7 @@ func TestKafka(t *testing.T) {
 	c.Send("127.0.0.1", []byte("goodbye world!"))
 
 	time.Sleep(10 * time.Millisecond)
-	gotMetrics := r.GetMetrics("flowexporter_kafka_")
+	gotMetrics := r.GetMetrics("akvorado_kafka_")
 	expectedMetrics := map[string]string{
 		`bytes_sent{host="127.0.0.1"}`:                                           "26",
 		`errors{error="kafka: Failed to produce message to topic flows: noooo"}`: "1",
@@ -76,7 +76,7 @@ func TestKafkaMetrics(t *testing.T) {
 	gometrics.GetOrRegisterCounter("requests-in-flight-for-broker-1112", c.kafkaConfig.MetricRegistry).
 		Inc(20)
 
-	gotMetrics := r.GetMetrics("flowexporter_kafka_")
+	gotMetrics := r.GetMetrics("akvorado_kafka_")
 	expectedMetrics := map[string]string{
 		`brokers_incoming_byte_rate{broker="1111"}`:            "0",
 		`brokers_incoming_byte_rate{broker="1112"}`:            "0",
