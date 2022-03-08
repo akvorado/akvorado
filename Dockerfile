@@ -5,7 +5,7 @@ COPY go.mod ./
 COPY go.sum ./
 RUN go mod download
 COPY . .
-RUN make clean && make
+RUN make clean && make test && make
 
 # Do not use scratch, we use alpine to get an healthcheck
 FROM alpine

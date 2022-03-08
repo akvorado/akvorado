@@ -38,8 +38,8 @@ $(BIN)/gocov: PACKAGE=github.com/axw/gocov/...
 GOCOVXML = $(BIN)/gocov-xml
 $(BIN)/gocov-xml: PACKAGE=github.com/AlekSi/gocov-xml
 
-GOJUNITREPORT = $(BIN)/go-junit-report
-$(BIN)/go-junit-report: PACKAGE=github.com/jstemmer/go-junit-report
+GOTESTSUM = $(BIN)/gotestsum
+$(BIN)/gotestsum: PACKAGE=gotest.tools/gotestsum
 
 PROTOC = protoc
 PROTOC_GEN_GO = $(BIN)/protoc-gen-go
@@ -52,40 +52,31 @@ $(BIN)/protoc-gen-go: PACKAGE=google.golang.org/protobuf/cmd/protoc-gen-go
 
 # Tests
 
-TEST_TARGETS := test-default test-bench test-short test-verbose test-race
-.PHONY: $(TEST_TARGETS) test-xml check test tests
+TEST_TARGETS := test-bench test-short test-verbose test-race
+.PHONY: $(TEST_TARGETS) check test tests
 test-bench:   ARGS=-run=__absolutelynothing__ -bench=. ## Run benchmarks
 test-short:   ARGS=-short        ## Run only short tests
 test-verbose: ARGS=-v            ## Run tests in verbose mode with coverage reporting
 test-race:    ARGS=-race         ## Run tests with race detector
 $(TEST_TARGETS): NAME=$(MAKECMDGOALS:test-%=%)
 $(TEST_TARGETS): test
-check test tests: fmt lint $(GENERATED) ; $(info $(M) running $(NAME:%=% )tests…) @ ## Run tests
-	$Q $(GO) test -timeout $(TIMEOUT)s $(ARGS) $(PKGS)
-
-test-xml: fmt lint $(GENERATED) | $(GOJUNITREPORT) ; $(info $(M) running xUnit tests…) @ ## Run tests with xUnit output
+check test tests: fmt lint $(GENERATED) | $(GOTESTSUM) ; $(info $(M) running $(NAME:%=% )tests…) @ ## Run tests
 	$Q mkdir -p test
-	$Q 2>&1 $(GO) test -timeout $(TIMEOUT)s -v $(PKGS) | tee test/tests.output
-	$Q $(GOJUNITREPORT) -set-exit-code < test/tests.output > test/tests.xml
+	$Q $(GOTESTSUM) --junitfile test/tests.xml -- -timeout $(TIMEOUT)s $(ARGS) $(PKGS)
 
-COVERAGE_MODE    = atomic
-COVERAGE_PROFILE = $(COVERAGE_DIR)/profile.out
-COVERAGE_XML     = $(COVERAGE_DIR)/coverage.xml
-COVERAGE_HTML    = $(COVERAGE_DIR)/index.html
-.PHONY: test-coverage test-coverage-tools
-test-coverage-tools: | $(GOCOV) $(GOCOVXML)
-test-coverage: COVERAGE_DIR := test/coverage.$(shell date -u +"%Y-%m-%dT%H:%M:%SZ")
-test-coverage: fmt lint $(GENERATED) test-coverage-tools ; $(info $(M) running coverage tests…) @ ## Run coverage tests
-	$Q mkdir -p $(COVERAGE_DIR)
-	$Q $(GO) test \
+COVERAGE_MODE = atomic
+.PHONY: test-coverage
+test-coverage: fmt lint $(GENERATED)
+test-coverage: | $(GOCOV) $(GOCOVXML) $(GOTESTSUM) ; $(info $(M) running coverage tests…) @ ## Run coverage tests
+	$Q mkdir -p test
+	$Q $(GOTESTSUM) -- \
 		-coverpkg=$(shell echo $(PKGS) | tr ' ' ',') \
 		-covermode=$(COVERAGE_MODE) \
-		-coverprofile="$(COVERAGE_PROFILE)" $(PKGS)
-	$Q $(GO) tool cover -html=$(COVERAGE_PROFILE) -o $(COVERAGE_HTML)
-	$Q $(GOCOV) convert $(COVERAGE_PROFILE) | $(GOCOVXML) > $(COVERAGE_XML)
-	$Q cp $(COVERAGE_XML) test/coverage.xml
+		-coverprofile=test/profile.out $(PKGS)
+	$Q $(GO) tool cover -html=test/profile.out -o test/coverage.html
+	$Q $(GOCOV) convert test/profile.out | $(GOCOVXML) > test/coverage.xml
 	@echo -n "Code coverage: "; \
-		echo "$$(sed -En 's/^<coverage line-rate="([0-9.]+)".*/\1/p' test/coverage.xml) * 100" | bc -q
+		echo "$$(sed -En 's/^<coverage line-rate="([0-9.]+)".*/\1/p' test/coverage.xml) * 100 / 1" | bc -q
 
 .PHONY: lint
 lint: | $(GOLINT) ; $(info $(M) running golint…) @ ## Run golint
@@ -99,8 +90,7 @@ fmt: ; $(info $(M) running gofmt…) @ ## Run gofmt on all source files
 
 .PHONY: clean
 clean: ; $(info $(M) cleaning…)	@ ## Cleanup everything
-	@rm -rf $(BIN) $(GENERATED)
-	@rm -rf test/tests.* test/coverage.*
+	@rm -rf $(BIN) test $(GENERATED)
 
 .PHONY: help
 help:
