@@ -1,7 +1,6 @@
 package flow
 
 import (
-	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net"
@@ -11,7 +10,6 @@ import (
 
 	flowmessage "github.com/netsampler/goflow2/pb"
 
-	"akvorado/daemon"
 	"akvorado/helpers"
 	"akvorado/reporter"
 )
@@ -19,26 +17,14 @@ import (
 var startUDPPort = rand.Intn(1000) + 22000
 
 func TestDecoding(t *testing.T) {
-	// Configuration
-	udpPort := startUDPPort + 1
-	configuration := DefaultConfiguration
-	configuration.Netflow = fmt.Sprintf("127.0.0.1:%d", udpPort)
-
-	// Start
 	r := reporter.NewMock(t)
-	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
-	if err != nil {
-		t.Fatalf("New(%v) error:\n%+v", configuration, err)
-	}
-	if err = c.Start(); err != nil {
-		t.Fatalf("Start() error:\n%+v", err)
-	}
+	c := NewMock(t, r, DefaultConfiguration)
 	defer func() {
-		if err = c.Stop(); err != nil {
+		if err := c.Stop(); err != nil {
 			t.Fatalf("Stop() error:\n%+v", err)
 		}
 	}()
-	conn, err := net.Dial("udp", configuration.Netflow)
+	conn, err := net.Dial("udp", c.Address.String())
 	if err != nil {
 		t.Fatalf("Dial() failure:\n%+v", err)
 	}

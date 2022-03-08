@@ -2,8 +2,8 @@ package flow
 
 // Configuration describes the configuration for the flow component
 type Configuration struct {
-	// Netflow defines the default listening string for netflow.
-	Netflow string
+	// Listen defines the default listening string for netflow.
+	Listen string
 	// Workers define the number of workers to use for decoding.
 	Workers int
 	// BufferLength defines the length of the channel used to
@@ -14,7 +14,7 @@ type Configuration struct {
 
 // DefaultConfiguration represents the default configuration for the flow component
 var DefaultConfiguration = Configuration{
-	Netflow:      "localhost:2055",
+	Listen:       "localhost:2055",
 	Workers:      1,
 	BufferLength: 1000,
 }

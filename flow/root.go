@@ -36,6 +36,9 @@ type Component struct {
 
 	// Channel for receiving flows.
 	incomingFlows chan *flowmessage.FlowMessage
+
+	// Local address used by the Netflow server. Only valid after Start().
+	Address net.Addr
 }
 
 // Dependencies are the dependencies of the flow component.
@@ -68,7 +71,7 @@ func (c *Component) Start() error {
 	c.sampling = make(map[string]producer.SamplingRateSystem)
 	c.samplingLock = &sync.RWMutex{}
 
-	c.r.Info().Str("listen", c.config.Netflow).Msg("starting flow server")
+	c.r.Info().Str("listen", c.config.Listen).Msg("starting flow server")
 	for i := 0; i < c.config.Workers; i++ {
 		if err := c.spawnWorker(i); err != nil {
 			return fmt.Errorf("unable to spawn worker %d: %w", i, err)
@@ -80,14 +83,27 @@ func (c *Component) Start() error {
 
 func (c *Component) spawnWorker(workerID int) error {
 	// Listen to UDP port
-	pconn, err := reuseport.ListenPacket("udp", c.config.Netflow)
+	var listenAddr net.Addr
+	if c.Address != nil {
+		// We already are listening on one address, let's
+		// listen to the same (useful when using :0).
+		listenAddr = c.Address
+	} else {
+		var err error
+		listenAddr, err = reuseport.ResolveAddr("udp", c.config.Listen)
+		if err != nil {
+			return fmt.Errorf("unable to resolve %v: %w", c.config.Listen, err)
+		}
+	}
+	pconn, err := reuseport.ListenPacket("udp", listenAddr.String())
 	if err != nil {
-		return fmt.Errorf("unable to listen to %v: %w", c.config.Netflow, err)
+		return fmt.Errorf("unable to listen to %v: %w", listenAddr, err)
 	}
 	udpConn := pconn.(*net.UDPConn)
-	payload := make([]byte, 9000)
+	c.Address = udpConn.LocalAddr()
 
 	// Go routine for worker
+	payload := make([]byte, 9000)
 	c.t.Go(func() error {
 		errLimiter := rate.NewLimiter(rate.Every(time.Minute), 1)
 		for {
