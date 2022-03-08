@@ -18,8 +18,8 @@ import (
 func NewMock(t *testing.T, r *reporter.Reporter) *Component {
 	t.Helper()
 	config := DefaultConfiguration
-	config.CountryDatabase = filepath.Join("testdata", "GeoLite2-Country-Test.mmdb")
-	config.ASNDatabase = filepath.Join("testdata", "GeoLite2-ASN-Test.mmdb")
+	config.CountryDatabase = filepath.Join("..", "geoip", "testdata", "GeoLite2-Country-Test.mmdb")
+	config.ASNDatabase = filepath.Join("..", "geoip", "testdata", "GeoLite2-ASN-Test.mmdb")
 	c, err := New(r, config, Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+s", err)

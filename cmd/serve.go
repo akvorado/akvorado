@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 
+	"akvorado/core"
 	"akvorado/daemon"
 	"akvorado/flow"
 	"akvorado/geoip"
@@ -24,6 +25,7 @@ type daemonConfiguration struct {
 	SNMP      snmp.Configuration
 	GeoIP     geoip.Configuration
 	Kafka     kafka.Configuration
+	Core      core.Configuration
 }
 
 var defaultDaemonConfiguration = daemonConfiguration{
@@ -33,6 +35,7 @@ var defaultDaemonConfiguration = daemonConfiguration{
 	SNMP:      snmp.DefaultConfiguration,
 	GeoIP:     geoip.DefaultConfiguration,
 	Kafka:     kafka.DefaultConfiguration,
+	Core:      core.DefaultConfiguration,
 }
 var daemonOptions struct {
 	configurationFile string
@@ -126,6 +129,16 @@ func daemonStart(r *reporter.Reporter, config daemonConfiguration, checkOnly boo
 	if err != nil {
 		return fmt.Errorf("unable to initialize Kafka component: %w", err)
 	}
+	coreComponent, err := core.New(r, config.Core, core.Dependencies{
+		Daemon: daemonComponent,
+		Flow:   flowComponent,
+		Snmp:   snmpComponent,
+		GeoIP:  geoipComponent,
+		Kafka:  kafkaComponent,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to initialize core component: %w", err)
+	}
 
 	// If we only asked for a check, stop here.
 	if checkOnly {
@@ -142,6 +155,7 @@ func daemonStart(r *reporter.Reporter, config daemonConfiguration, checkOnly boo
 		snmpComponent,
 		geoipComponent,
 		kafkaComponent,
+		coreComponent,
 	}
 	startedComponents := []interface{}{}
 	defer func() {

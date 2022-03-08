@@ -22,7 +22,7 @@ type Configuration struct {
 	Workers int
 }
 
-// DefaultConfiguration represents the default configuration for the HTTP server.
+// DefaultConfiguration represents the default configuration for the SNMP client.
 var DefaultConfiguration = Configuration{
 	CacheDuration:        time.Hour,
 	CacheRefresh:         5 * time.Minute,
