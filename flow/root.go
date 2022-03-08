@@ -9,7 +9,6 @@ import (
 	"time"
 
 	reuseport "github.com/libp2p/go-reuseport"
-	flowmessage "github.com/netsampler/goflow2/pb"
 	"github.com/netsampler/goflow2/producer"
 	"golang.org/x/time/rate"
 	"gopkg.in/tomb.v2"
@@ -35,7 +34,7 @@ type Component struct {
 	metrics metrics
 
 	// Channel for receiving flows.
-	incomingFlows chan *flowmessage.FlowMessage
+	incomingFlows chan *FlowMessage
 
 	// Local address used by the Netflow server. Only valid after Start().
 	Address net.Addr
@@ -52,7 +51,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		r:             r,
 		d:             &dependencies,
 		config:        configuration,
-		incomingFlows: make(chan *flowmessage.FlowMessage, configuration.BufferLength),
+		incomingFlows: make(chan *FlowMessage, configuration.BufferLength),
 	}
 	c.d.Daemon.Track(&c.t, "flow")
 	c.initMetrics()
@@ -60,7 +59,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 }
 
 // Flows returns a channel to receive flows.
-func (c *Component) Flows() <-chan *flowmessage.FlowMessage {
+func (c *Component) Flows() <-chan *FlowMessage {
 	return c.incomingFlows
 }
 

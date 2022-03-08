@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/netsampler/goflow2/decoders/netflow"
-	flowmessage "github.com/netsampler/goflow2/pb"
+	goflowmessage "github.com/netsampler/goflow2/pb"
 	"github.com/netsampler/goflow2/producer"
 )
 
@@ -56,7 +56,7 @@ func (c *Component) decodeFlow(payload []byte, source *net.UDPAddr) {
 		return
 	}
 
-	var flowMessageSet []*flowmessage.FlowMessage
+	var flowMessageSet []*goflowmessage.FlowMessage
 
 	switch msgDecConv := msgDec.(type) {
 	case netflow.NFv9Packet:
@@ -109,6 +109,44 @@ func (c *Component) decodeFlow(payload []byte, source *net.UDPAddr) {
 		Inc()
 
 	for _, fmsg := range flowMessageSet {
-		c.incomingFlows <- fmsg
+		c.incomingFlows <- convert(fmsg)
+	}
+}
+
+// convert a flow message from goflow2 to our own format. This is not
+// the most efficient way.
+func convert(input *goflowmessage.FlowMessage) *FlowMessage {
+	return &FlowMessage{
+		TimeReceived:     input.TimeReceived,
+		SequenceNum:      input.SequenceNum,
+		SamplingRate:     input.SamplingRate,
+		FlowDirection:    input.FlowDirection,
+		SamplerAddress:   input.SamplerAddress,
+		TimeFlowStart:    input.TimeFlowStart,
+		TimeFlowEnd:      input.TimeFlowEnd,
+		Bytes:            input.Bytes,
+		Packets:          input.Packets,
+		SrcAddr:          input.SrcAddr,
+		DstAddr:          input.DstAddr,
+		Etype:            input.Etype,
+		Proto:            input.Proto,
+		SrcPort:          input.SrcPort,
+		DstPort:          input.DstPort,
+		InIf:             input.InIf,
+		OutIf:            input.OutIf,
+		IPTos:            input.IPTos,
+		ForwardingStatus: input.ForwardingStatus,
+		IPTTL:            input.IPTTL,
+		TCPFlags:         input.TCPFlags,
+		IcmpType:         input.IcmpType,
+		IcmpCode:         input.IcmpCode,
+		IPv6FlowLabel:    input.IPv6FlowLabel,
+		FragmentId:       input.FragmentId,
+		FragmentOffset:   input.FragmentOffset,
+		BiFlowDirection:  input.BiFlowDirection,
+		SrcAS:            input.SrcAS,
+		DstAS:            input.DstAS,
+		SrcNet:           input.SrcNet,
+		DstNet:           input.DstNet,
 	}
 }

@@ -13,8 +13,10 @@ M = $(shell printf "\033[34;1m▶\033[0m")
 
 export GO111MODULE=on
 
+GENERATED = flow/flow.pb.go
+
 .PHONY: all
-all: fmt lint | $(BIN) ; $(info $(M) building executable…) @ ## Build program binary
+all: fmt lint $(GENERATED) | $(BIN) ; $(info $(M) building executable…) @ ## Build program binary
 	$Q $(GO) build \
 		-tags release \
 		-ldflags '-X $(MODULE)/cmd.Version=$(VERSION) -X $(MODULE)/cmd.BuildDate=$(DATE)' \
@@ -39,6 +41,15 @@ $(BIN)/gocov-xml: PACKAGE=github.com/AlekSi/gocov-xml
 GOJUNITREPORT = $(BIN)/go-junit-report
 $(BIN)/go-junit-report: PACKAGE=github.com/jstemmer/go-junit-report
 
+PROTOC = protoc
+PROTOC_GEN_GO = $(BIN)/protoc-gen-go
+$(BIN)/protoc-gen-go: PACKAGE=google.golang.org/protobuf/cmd/protoc-gen-go
+
+# Generated files
+
+%.pb.go: %.proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffer definition…)
+	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --go_out=. --go_opt=paths=source_relative $<
+
 # Tests
 
 TEST_TARGETS := test-default test-bench test-short test-verbose test-race
@@ -49,7 +60,7 @@ test-verbose: ARGS=-v            ## Run tests in verbose mode with coverage repo
 test-race:    ARGS=-race         ## Run tests with race detector
 $(TEST_TARGETS): NAME=$(MAKECMDGOALS:test-%=%)
 $(TEST_TARGETS): test
-check test tests: fmt lint ; $(info $(M) running $(NAME:%=% )tests…) @ ## Run tests
+check test tests: fmt lint $(GENERATED) ; $(info $(M) running $(NAME:%=% )tests…) @ ## Run tests
 	$Q $(GO) test -timeout $(TIMEOUT)s $(ARGS) $(PKGS)
 
 test-xml: fmt lint | $(GOJUNITREPORT) ; $(info $(M) running xUnit tests…) @ ## Run tests with xUnit output
@@ -88,7 +99,7 @@ fmt: ; $(info $(M) running gofmt…) @ ## Run gofmt on all source files
 
 .PHONY: clean
 clean: ; $(info $(M) cleaning…)	@ ## Cleanup everything
-	@rm -rf $(BIN)
+	@rm -rf $(BIN) $(GENERATED)
 	@rm -rf test/tests.* test/coverage.*
 
 .PHONY: help

@@ -1,3 +1,5 @@
 /bin/
 /test/tests.*
 /test/coverage.*
+
+/flow/flow.pb.go

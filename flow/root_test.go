@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	flowmessage "github.com/netsampler/goflow2/pb"
-
 	"akvorado/helpers"
 	"akvorado/reporter"
 )
@@ -67,9 +65,8 @@ out1:
 	if _, err := conn.Write(data); err != nil {
 		t.Fatalf("Write() failure:\n%+v", err)
 	}
-	expectedFlows := []*flowmessage.FlowMessage{
+	expectedFlows := []*FlowMessage{
 		{
-			Type:             flowmessage.FlowMessage_NETFLOW_V9,
 			SequenceNum:      21029551,
 			SamplerAddress:   net.ParseIP("127.0.0.1").To4(),
 			TimeFlowStart:    1646339556,
@@ -86,14 +83,10 @@ out1:
 			DstPort:          38120,
 			InIf:             461,
 			OutIf:            334,
-			IngressVrfID:     1610612738,
-			EgressVrfID:      1610612738,
 			ForwardingStatus: 64,
 			TCPFlags:         16,
 			IPv6FlowLabel:    795690,
-			NextHop:          net.ParseIP("2a01:e00:600d::6"),
 		}, {
-			Type:             flowmessage.FlowMessage_NETFLOW_V9,
 			SequenceNum:      21029551,
 			SamplerAddress:   net.ParseIP("127.0.0.1").To4(),
 			TimeFlowStart:    1646339556,
@@ -110,14 +103,10 @@ out1:
 			DstPort:          54496,
 			InIf:             461,
 			OutIf:            334,
-			IngressVrfID:     1610612738,
-			EgressVrfID:      1610612738,
 			ForwardingStatus: 64,
 			TCPFlags:         24,
 			IPv6FlowLabel:    190180,
-			NextHop:          net.ParseIP("2a01:e00:600d::6"),
 		}, {
-			Type:             flowmessage.FlowMessage_NETFLOW_V9,
 			SequenceNum:      21029551,
 			SamplerAddress:   net.ParseIP("127.0.0.1").To4(),
 			TimeFlowStart:    1646339556,
@@ -134,12 +123,8 @@ out1:
 			DstPort:          37867,
 			InIf:             461,
 			OutIf:            334,
-			IngressVrfID:     1610612738,
-			EgressVrfID:      1610612738,
 			ForwardingStatus: 64,
-			NextHop:          net.ParseIP("2a01:e00:600d::6"),
 		}, {
-			Type:             flowmessage.FlowMessage_NETFLOW_V9,
 			SequenceNum:      21029551,
 			SamplerAddress:   net.ParseIP("127.0.0.1").To4(),
 			TimeFlowStart:    1646339556,
@@ -156,14 +141,11 @@ out1:
 			DstPort:          53396,
 			InIf:             335,
 			OutIf:            308,
-			IngressVrfID:     1610612738,
-			EgressVrfID:      1610612738,
 			ForwardingStatus: 64,
 			TCPFlags:         16,
-			NextHop:          net.ParseIP("2a01:e00:600d::2"),
 		},
 	}
-	received := []*flowmessage.FlowMessage{}
+	received := []*FlowMessage{}
 out2:
 	for {
 		select {
