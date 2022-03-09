@@ -108,10 +108,10 @@ func TestStartWithMissingDatabase(t *testing.T) {
 		{"Inexisting country database", countryConfiguration},
 		{"Inexisting ASN database", asnConfiguration},
 	}
-	for _, cas := range cases {
-		t.Run(cas.Name, func(t *testing.T) {
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
 			r := reporter.NewMock(t)
-			c, err := New(r, cas.Config, Dependencies{Daemon: daemon.NewMock(t)})
+			c, err := New(r, tc.Config, Dependencies{Daemon: daemon.NewMock(t)})
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
 			}

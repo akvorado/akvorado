@@ -171,11 +171,11 @@ func TestWouldExpire(t *testing.T) {
 		}},
 		{39, map[string]map[uint]Interface{}},
 	}
-	for _, c := range cases {
-		t.Run(fmt.Sprintf("%d minutes", c.Minutes), func(t *testing.T) {
-			got := sc.WouldExpire(c.Minutes * time.Minute)
-			if diff := helpers.Diff(got, c.Expected); diff != "" {
-				t.Fatalf("WouldExpire(%d minutes) (-got, +want):\n%s", c.Minutes, diff)
+	for _, tc := range cases {
+		t.Run(fmt.Sprintf("%d minutes", tc.Minutes), func(t *testing.T) {
+			got := sc.WouldExpire(tc.Minutes * time.Minute)
+			if diff := helpers.Diff(got, tc.Expected); diff != "" {
+				t.Fatalf("WouldExpire(%d minutes) (-got, +want):\n%s", tc.Minutes, diff)
 			}
 		})
 	}

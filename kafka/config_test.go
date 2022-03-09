@@ -17,19 +17,19 @@ func TestCompressionCodecUnmarshal(t *testing.T) {
 		{"gzip", sarama.CompressionGZIP, false},
 		{"unknown", sarama.CompressionNone, true},
 	}
-	for _, c := range cases {
+	for _, tc := range cases {
 		var cmp CompressionCodec
-		err := cmp.UnmarshalText([]byte(c.Input))
-		if err != nil && !c.ExpectedError {
-			t.Errorf("UnmarshalText(%q) error:\n%+v", c.Input, err)
+		err := cmp.UnmarshalText([]byte(tc.Input))
+		if err != nil && !tc.ExpectedError {
+			t.Errorf("UnmarshalText(%q) error:\n%+v", tc.Input, err)
 			continue
 		}
-		if err == nil && c.ExpectedError {
-			t.Errorf("UnmarshalText(%q) got %v but expected error", c.Input, cmp)
+		if err == nil && tc.ExpectedError {
+			t.Errorf("UnmarshalText(%q) got %v but expected error", tc.Input, cmp)
 			continue
 		}
-		if cmp != CompressionCodec(c.Expected) {
-			t.Errorf("UnmarshalText(%q) got %v but expected %v", c.Input, cmp, c.Expected)
+		if cmp != CompressionCodec(tc.Expected) {
+			t.Errorf("UnmarshalText(%q) got %v but expected %v", tc.Input, cmp, tc.Expected)
 			continue
 		}
 	}

@@ -32,14 +32,14 @@ func TestLookup(t *testing.T) {
 			ExpectedCountry: "BT",
 		},
 	}
-	for _, ca := range cases {
-		gotCountry := c.LookupCountry(net.ParseIP(ca.IP))
-		if diff := helpers.Diff(gotCountry, ca.ExpectedCountry); diff != "" {
-			t.Errorf("LookupCountry(%q) (-got, +want):\n%s", ca.IP, diff)
+	for _, tc := range cases {
+		gotCountry := c.LookupCountry(net.ParseIP(tc.IP))
+		if diff := helpers.Diff(gotCountry, tc.ExpectedCountry); diff != "" {
+			t.Errorf("LookupCountry(%q) (-got, +want):\n%s", tc.IP, diff)
 		}
-		gotASN := c.LookupASN(net.ParseIP(ca.IP))
-		if diff := helpers.Diff(gotASN, ca.ExpectedASN); diff != "" {
-			t.Errorf("LookupASN(%q) (-got, +want):\n%s", ca.IP, diff)
+		gotASN := c.LookupASN(net.ParseIP(tc.IP))
+		if diff := helpers.Diff(gotASN, tc.ExpectedASN); diff != "" {
+			t.Errorf("LookupASN(%q) (-got, +want):\n%s", tc.IP, diff)
 		}
 	}
 }
