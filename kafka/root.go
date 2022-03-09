@@ -38,6 +38,7 @@ type Dependencies struct {
 func New(reporter *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
 	// Build Kafka configuration
 	kafkaConfig := sarama.NewConfig()
+	kafkaConfig.Metadata.AllowAutoTopicCreation = configuration.AutoCreateTopic
 	kafkaConfig.Producer.MaxMessageBytes = configuration.MaxMessageBytes
 	kafkaConfig.Producer.Compression = sarama.CompressionCodec(configuration.CompressionCodec)
 	kafkaConfig.Producer.Return.Successes = false

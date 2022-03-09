@@ -11,6 +11,8 @@ import (
 type Configuration struct {
 	// Topic defines the topic to write flows to.
 	Topic string
+	// AutoCreateTopic tells if we can create the topic if it does not exist.
+	AutoCreateTopic bool
 	// Brokers is the list of brokers to connect to.
 	Brokers []string
 	// Version is the version of Kafka we assume to work
@@ -32,6 +34,7 @@ type Configuration struct {
 // DefaultConfiguration represents the default configuration for the Kafka exporter.
 var DefaultConfiguration = Configuration{
 	Topic:            "flows",
+	AutoCreateTopic:  false,
 	Brokers:          []string{"127.0.0.1:9092"},
 	Version:          Version(sarama.DefaultVersion),
 	UseTLS:           false,
