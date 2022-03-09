@@ -13,6 +13,8 @@ type Configuration struct {
 	Topic string
 	// Brokers is the list of brokers to connect to.
 	Brokers []string
+	// Version is the version of Kafka we assume to work
+	Version Version
 	// UseTls tells if we should use TLS.
 	UseTLS bool
 	// FlushInterval tells how often to flush pending data to Kafka.
@@ -29,12 +31,37 @@ type Configuration struct {
 
 // DefaultConfiguration represents the default configuration for the Kafka exporter.
 var DefaultConfiguration = Configuration{
-	Topic:           "flows",
-	Brokers:         []string{"127.0.0.1:9092"},
-	UseTLS:          false,
-	FlushInterval:   10 * time.Second,
-	FlushBytes:      int(sarama.MaxRequestSize),
-	MaxMessageBytes: 1000000,
+	Topic:            "flows",
+	Brokers:          []string{"127.0.0.1:9092"},
+	Version:          Version(sarama.DefaultVersion),
+	UseTLS:           false,
+	FlushInterval:    10 * time.Second,
+	FlushBytes:       int(sarama.MaxRequestSize),
+	MaxMessageBytes:  1000000,
+	CompressionCodec: CompressionCodec(sarama.CompressionNone),
+}
+
+// Version represents a supported version of Kafka
+type Version sarama.KafkaVersion
+
+// UnmarshalText parses a version of Kafka
+func (v *Version) UnmarshalText(text []byte) error {
+	version, err := sarama.ParseKafkaVersion(string(text))
+	if err != nil {
+		return err
+	}
+	*v = Version(version)
+	return nil
+}
+
+// String turns a Kafka version into a string
+func (v Version) String() string {
+	return sarama.KafkaVersion(v).String()
+}
+
+// MarshalText turns a Kafka version intro a string
+func (v Version) MarshalText() ([]byte, error) {
+	return []byte(v.String()), nil
 }
 
 // CompressionCodec represents a compression codec.
