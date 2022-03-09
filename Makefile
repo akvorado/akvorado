@@ -29,8 +29,8 @@ $(BIN):
 $(BIN)/%: | $(BIN) ; $(info $(M) building $(PACKAGE)…)
 	$Q env GOBIN=$(abspath $(BIN)) $(GO) install $(PACKAGE)@latest
 
-GOLINT = $(BIN)/golint
-$(BIN)/golint: PACKAGE=golang.org/x/lint/golint
+REVIVE = $(BIN)/revive
+$(BIN)/revive: PACKAGE=github.com/mgechev/revive
 
 GOCOV = $(BIN)/gocov
 $(BIN)/gocov: PACKAGE=github.com/axw/gocov/...
@@ -79,8 +79,8 @@ test-coverage: | $(GOCOV) $(GOCOVXML) $(GOTESTSUM) ; $(info $(M) running coverag
 		echo "$$(sed -En 's/^<coverage line-rate="([0-9.]+)".*/\1/p' test/coverage.xml) * 100 / 1" | bc -q
 
 .PHONY: lint
-lint: | $(GOLINT) ; $(info $(M) running golint…) @ ## Run golint
-	$Q $(GOLINT) -set_exit_status $(PKGS)
+lint: | $(REVIVE) ; $(info $(M) running golint…) @ ## Run golint
+	$Q $(REVIVE) -formatter friendly -set_exit_status $(PKGS)
 
 .PHONY: fmt
 fmt: ; $(info $(M) running gofmt…) @ ## Run gofmt on all source files
