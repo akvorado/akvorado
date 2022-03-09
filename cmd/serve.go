@@ -5,6 +5,7 @@ import (
 	"fmt"
 	netHTTP "net/http"
 	"runtime"
+	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
@@ -42,11 +43,17 @@ var DefaultServeConfiguration = ServeConfiguration{
 	Kafka:     kafka.DefaultConfiguration,
 	Core:      core.DefaultConfiguration,
 }
-var daemonOptions struct {
+
+type serveOptions struct {
 	configurationFile string
 	checkMode         bool
 	dumpConfiguration bool
+	stopAfter         time.Duration
 }
+
+// ServeOptions stores the command-line option values for the serve
+// command.
+var ServeOptions serveOptions
 
 var serveCmd = &cobra.Command{
 	Use:   "serve",
@@ -55,7 +62,7 @@ var serveCmd = &cobra.Command{
 and exports them to Kafka.`,
 	Args: cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if cfgFile := daemonOptions.configurationFile; cfgFile != "" {
+		if cfgFile := ServeOptions.configurationFile; cfgFile != "" {
 			viper.SetConfigFile(cfgFile)
 			if err := viper.ReadInConfig(); err != nil {
 				return fmt.Errorf("unable to read configuration file: %w", err)
@@ -75,7 +82,7 @@ and exports them to Kafka.`,
 		}
 
 		// Dump configuration if requested
-		if daemonOptions.dumpConfiguration {
+		if ServeOptions.dumpConfiguration {
 			output, err := yaml.Marshal(config)
 			if err != nil {
 				return fmt.Errorf("unable to dump configuration: %w", err)
@@ -87,22 +94,24 @@ and exports them to Kafka.`,
 		if err != nil {
 			return fmt.Errorf("unable to initialize reporter: %w", err)
 		}
-		return daemonStart(r, config, daemonOptions.checkMode)
+		return daemonStart(r, config, ServeOptions.checkMode, ServeOptions.stopAfter)
 	},
 }
 
 func init() {
 	RootCmd.AddCommand(serveCmd)
-	serveCmd.Flags().StringVarP(&daemonOptions.configurationFile, "config", "c", "",
+	serveCmd.Flags().StringVarP(&ServeOptions.configurationFile, "config", "c", "",
 		"Configuration file")
-	serveCmd.Flags().BoolVarP(&daemonOptions.checkMode, "check", "C", false,
+	serveCmd.Flags().BoolVarP(&ServeOptions.checkMode, "check", "C", false,
 		"Check configuration, but does not start")
-	serveCmd.Flags().BoolVarP(&daemonOptions.dumpConfiguration, "dump", "D", false,
+	serveCmd.Flags().BoolVarP(&ServeOptions.dumpConfiguration, "dump", "D", false,
 		"Dump configuration before starting")
+	serveCmd.Flags().DurationVar(&ServeOptions.stopAfter, "stop-after", 0,
+		"Stop automatically after the provided duration")
 }
 
 // daemonStart will start all components and manage daemon lifetime.
-func daemonStart(r *reporter.Reporter, config ServeConfiguration, checkOnly bool) error {
+func daemonStart(r *reporter.Reporter, config ServeConfiguration, checkOnly bool, stopAfter time.Duration) error {
 	// Initialize the various components
 	daemonComponent, err := daemon.New(r)
 	if err != nil {
@@ -210,7 +219,13 @@ func daemonStart(r *reporter.Reporter, config ServeConfiguration, checkOnly bool
 		Str("version", Version).Str("build-date", BuildDate).
 		Msg("akvorado has started")
 
+	stopTimer := make(<-chan time.Time)
+	if stopAfter != 0 {
+		stopTimer = time.After(stopAfter)
+	}
 	select {
+	case <-stopTimer:
+		r.Info().Msg("stop timer reached")
 	case <-daemonComponent.Terminated():
 		r.Info().Msg("stopping all components")
 	}

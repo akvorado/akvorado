@@ -28,6 +28,7 @@ var RootCmd = &cobra.Command{
 		}
 	},
 	SilenceErrors: true,
+	SilenceUsage:  true,
 }
 
 func init() {
