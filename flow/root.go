@@ -2,9 +2,11 @@
 package flow
 
 import (
+	_ "embed" // for flow.proto
 	"errors"
 	"fmt"
 	"net"
+	netHTTP "net/http"
 	"sync"
 	"time"
 
@@ -14,6 +16,7 @@ import (
 	"gopkg.in/tomb.v2"
 
 	"akvorado/daemon"
+	"akvorado/http"
 	"akvorado/reporter"
 )
 
@@ -43,7 +46,11 @@ type Component struct {
 // Dependencies are the dependencies of the flow component.
 type Dependencies struct {
 	Daemon daemon.Component
+	HTTP   *http.Component
 }
+
+//go:embed flow.proto
+var flowProtoContent []byte
 
 // New creates a new flow component.
 func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
@@ -55,6 +62,13 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	}
 	c.d.Daemon.Track(&c.t, "flow")
 	c.initMetrics()
+	if c.d.HTTP != nil {
+		c.d.HTTP.AddHandler("/flow/flow.proto",
+			netHTTP.HandlerFunc(func(w netHTTP.ResponseWriter, r *netHTTP.Request) {
+				w.Header().Set("Content-Type", "text/plain")
+				w.Write(flowProtoContent)
+			}))
+	}
 	return &c, nil
 }
 

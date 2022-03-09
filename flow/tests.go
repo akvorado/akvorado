@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"akvorado/daemon"
+	"akvorado/http"
 	"akvorado/reporter"
 )
 
@@ -14,7 +15,10 @@ import (
 func NewMock(t *testing.T, r *reporter.Reporter, config Configuration) *Component {
 	t.Helper()
 	config.Listen = "127.0.0.1:0"
-	c, err := New(r, config, Dependencies{Daemon: daemon.NewMock(t)})
+	c, err := New(r, config, Dependencies{
+		Daemon: daemon.NewMock(t),
+		HTTP:   http.NewMock(t, r),
+	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}

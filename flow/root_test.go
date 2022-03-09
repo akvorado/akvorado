@@ -1,9 +1,11 @@
 package flow
 
 import (
+	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net"
+	netHTTP "net/http"
 	"path/filepath"
 	"testing"
 	"time"
@@ -175,5 +177,20 @@ out2:
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics after data (-got, +want):\n%s", diff)
+	}
+}
+
+func TestServeProtoFile(t *testing.T) {
+	r := reporter.NewMock(t)
+	c := NewMock(t, r, DefaultConfiguration)
+
+	// Check the HTTP server is running and answering metrics
+	resp, err := netHTTP.Get(fmt.Sprintf("http://%s/flow/flow.proto", c.d.HTTP.Address))
+	if err != nil {
+		t.Fatalf("GET /flow/flow.proto:\n%+v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		t.Fatalf("GET /flow/flow.proto: got status code %d, not 200", resp.StatusCode)
 	}
 }
