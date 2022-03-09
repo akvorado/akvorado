@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	netHTTP "net/http"
+	"runtime"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
@@ -145,8 +148,28 @@ func daemonStart(r *reporter.Reporter, config daemonConfiguration, checkOnly boo
 		return nil
 	}
 
-	// Start all the components.
+	// Expose some informations and metrics
 	httpComponent.AddHandler("/metrics", r.MetricsHTTPHandler())
+	httpComponent.AddHandler("/version", netHTTP.HandlerFunc(func(w netHTTP.ResponseWriter, r *netHTTP.Request) {
+		versionInfo := struct {
+			Version   string `json:"version"`
+			BuildDate string `json:"build_date"`
+			Compiler  string `json:"compiler"`
+		}{
+			Version:   Version,
+			BuildDate: BuildDate,
+			Compiler:  runtime.Version(),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(versionInfo)
+	}))
+	r.GaugeVec(reporter.GaugeOpts{
+		Name: "info",
+		Help: "Akvorado build information",
+	}, []string{"version", "build_date", "compiler"}).
+		WithLabelValues(Version, BuildDate, runtime.Version()).Set(1)
+
+	// Start all the components.
 	components := []interface{}{
 		r,
 		daemonComponent,
