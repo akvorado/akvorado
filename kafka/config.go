@@ -41,7 +41,7 @@ var DefaultConfiguration = Configuration{
 type CompressionCodec sarama.CompressionCodec
 
 // UnmarshalText produces a compression codec
-func (c *CompressionCodec) UnmarshalText(text []byte) error {
+func (cc *CompressionCodec) UnmarshalText(text []byte) error {
 	codecs := map[string]sarama.CompressionCodec{
 		"none":   sarama.CompressionNone,
 		"gzip":   sarama.CompressionGZIP,
@@ -53,6 +53,16 @@ func (c *CompressionCodec) UnmarshalText(text []byte) error {
 	if !ok {
 		return fmt.Errorf("cannot parse %q as a compression codec", string(text))
 	}
-	*c = CompressionCodec(codec)
+	*cc = CompressionCodec(codec)
 	return nil
+}
+
+// String turns a compression codec into a string
+func (cc CompressionCodec) String() string {
+	return sarama.CompressionCodec(cc).String()
+}
+
+// MarshalText turns a compression codec into a string
+func (cc CompressionCodec) MarshalText() ([]byte, error) {
+	return []byte(cc.String()), nil
 }

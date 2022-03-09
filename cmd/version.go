@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"runtime"
 
 	"github.com/spf13/cobra"
@@ -23,8 +22,8 @@ var versionCmd = &cobra.Command{
 	Short: "Print version",
 	Long:  `Display version and build information about akvorado.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("akvorado %s\n", Version)
-		fmt.Printf("  Build date: %s\n", BuildDate)
-		fmt.Printf("  Built with: %s\n", runtime.Version())
+		cmd.Printf("akvorado %s\n", Version)
+		cmd.Printf("  Build date: %s\n", BuildDate)
+		cmd.Printf("  Built with: %s\n", runtime.Version())
 	},
 }

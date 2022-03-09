@@ -21,7 +21,8 @@ import (
 	"akvorado/snmp"
 )
 
-type daemonConfiguration struct {
+// ServeConfiguration represents the configuration file for the serve command.
+type ServeConfiguration struct {
 	Reporting reporter.Configuration
 	HTTP      http.Configuration
 	Flow      flow.Configuration
@@ -31,7 +32,8 @@ type daemonConfiguration struct {
 	Core      core.Configuration
 }
 
-var defaultDaemonConfiguration = daemonConfiguration{
+// DefaultServeConfiguration is the default configuration for the serve command.
+var DefaultServeConfiguration = ServeConfiguration{
 	Reporting: reporter.DefaultConfiguration,
 	HTTP:      http.DefaultConfiguration,
 	Flow:      flow.DefaultConfiguration,
@@ -59,11 +61,15 @@ and exports them to Kafka.`,
 				return fmt.Errorf("unable to read configuration file: %w", err)
 			}
 		}
-		config := defaultDaemonConfiguration
+		config := DefaultServeConfiguration
 
 		// Parse provided configuration
 		if err := viper.Unmarshal(&config, func(c *mapstructure.DecoderConfig) {
 			c.ErrorUnused = true
+			c.DecodeHook = mapstructure.ComposeDecodeHookFunc(
+				mapstructure.TextUnmarshallerHookFunc(),
+				mapstructure.StringToTimeDurationHookFunc(),
+			)
 		}); err != nil {
 			return fmt.Errorf("unable to parse configuration: %w", err)
 		}
@@ -74,7 +80,7 @@ and exports them to Kafka.`,
 			if err != nil {
 				return fmt.Errorf("unable to dump configuration: %w", err)
 			}
-			fmt.Printf("---\n%s\n", string(output))
+			cmd.Printf("---\n%s\n", string(output))
 		}
 
 		r, err := reporter.New(config.Reporting)
@@ -96,7 +102,7 @@ func init() {
 }
 
 // daemonStart will start all components and manage daemon lifetime.
-func daemonStart(r *reporter.Reporter, config daemonConfiguration, checkOnly bool) error {
+func daemonStart(r *reporter.Reporter, config ServeConfiguration, checkOnly bool) error {
 	// Initialize the various components
 	daemonComponent, err := daemon.New(r)
 	if err != nil {
