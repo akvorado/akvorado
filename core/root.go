@@ -13,6 +13,7 @@ import (
 	"akvorado/daemon"
 	"akvorado/flow"
 	"akvorado/geoip"
+	"akvorado/http"
 	"akvorado/kafka"
 	"akvorado/reporter"
 	"akvorado/snmp"
@@ -26,6 +27,7 @@ type Component struct {
 	config Configuration
 
 	metrics metrics
+	healthy chan chan<- bool
 }
 
 // Dependencies define the dependencies of the HTTP component.
@@ -35,6 +37,7 @@ type Dependencies struct {
 	Snmp   *snmp.Component
 	GeoIP  *geoip.Component
 	Kafka  *kafka.Component
+	HTTP   *http.Component
 }
 
 // New creates a new core component.
@@ -43,6 +46,8 @@ func New(reporter *reporter.Reporter, configuration Configuration, dependencies 
 		r:      reporter,
 		d:      &dependencies,
 		config: configuration,
+
+		healthy: make(chan chan<- bool),
 	}
 	c.d.Daemon.Track(&c.t, "core")
 	c.initMetrics()
@@ -57,6 +62,8 @@ func (c *Component) Start() error {
 			return c.runWorker(workerID)
 		})
 	}
+
+	c.d.HTTP.AddHandler("/healthcheck", c.HealthcheckHTTPHandler())
 	return nil
 }
 
@@ -65,13 +72,13 @@ func (c *Component) runWorker(workerID int) error {
 	c.r.Debug().Int("worker", workerID).Msg("starting core worker")
 
 	errLimiter := rate.NewLimiter(rate.Every(time.Minute), 10)
-	count := 0
 	for {
-		count++
 		select {
 		case <-c.t.Dying():
 			c.r.Debug().Int("worker", workerID).Msg("stopping core worker")
 			return nil
+		case answerChan := <-c.healthy:
+			answerChan <- true
 		case flow := <-c.d.Flow.Flows():
 			if flow == nil {
 				c.r.Warn().Int("worker", workerID).Msg("no more flow available, stopping")

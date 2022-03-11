@@ -31,6 +31,13 @@ Check `bin/akvorado server --help` for help to run the exporter.
 Dump the default configuration with `bin/akvorado serve --check
 --dump`.
 
+The embedded HTTP server contains the following endpoints:
+
+ - `/metrics` for Prometheus metrics,
+ - `/version` for the running version,
+ - `/healthcheck` telling if we are alive,
+ - `/flow.proto` for the Protobuf schema for flows exported to Kafka,
+
 ## Design
 
 ### Components
