@@ -147,6 +147,7 @@ func (c *Component) Start() error {
 
 // Stop stops the SNMP component
 func (c *Component) Stop() error {
+	defer close(c.pollerChannel)
 	c.t.Kill(nil)
 	return c.t.Wait()
 }

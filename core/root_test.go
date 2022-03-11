@@ -1,6 +1,8 @@
 package core
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -53,31 +55,31 @@ func TestCore(t *testing.T) {
 		}
 	}()
 
+	flowMessage := func(router string, in, out uint32) *flow.FlowMessage {
+		return &flow.FlowMessage{
+			TimeReceived:   200,
+			SequenceNum:    1000,
+			SamplingRate:   1000,
+			FlowDirection:  1,
+			SamplerAddress: net.ParseIP(router),
+			TimeFlowStart:  100,
+			TimeFlowEnd:    200,
+			Bytes:          6765,
+			Packets:        4,
+			InIf:           in,
+			OutIf:          out,
+			SrcAddr:        net.ParseIP("67.43.156.77"),
+			DstAddr:        net.ParseIP("2.125.160.216"),
+			Etype:          0x800,
+			Proto:          6,
+			SrcPort:        8534,
+			DstPort:        80,
+		}
+	}
+
 	t.Run("kafka", func(t *testing.T) {
 		// Inject several messages with a cache miss from the SNMP
 		// component for each of them. No message sent to Kafka.
-		flowMessage := func(router string, in, out uint32) *flow.FlowMessage {
-			return &flow.FlowMessage{
-				TimeReceived:   200,
-				SequenceNum:    1000,
-				SamplingRate:   1000,
-				FlowDirection:  1,
-				SamplerAddress: net.ParseIP(router),
-				TimeFlowStart:  100,
-				TimeFlowEnd:    200,
-				Bytes:          6765,
-				Packets:        4,
-				InIf:           in,
-				OutIf:          out,
-				SrcAddr:        net.ParseIP("67.43.156.77"),
-				DstAddr:        net.ParseIP("2.125.160.216"),
-				Etype:          0x800,
-				Proto:          6,
-				SrcPort:        8534,
-				DstPort:        80,
-			}
-		}
-
 		flowComponent.Inject(t, flowMessage("192.0.2.142", 434, 677))
 		flowComponent.Inject(t, flowMessage("192.0.2.143", 434, 677))
 		flowComponent.Inject(t, flowMessage("192.0.2.143", 437, 677))
@@ -90,6 +92,7 @@ func TestCore(t *testing.T) {
 			`flows_errors{error="SNMP cache miss",router="192.0.2.143"}`: "3",
 			`flows_received{router="192.0.2.142"}`:                       "1",
 			`flows_received{router="192.0.2.143"}`:                       "3",
+			`flows_http_clients`:                                         "0",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -110,6 +113,7 @@ func TestCore(t *testing.T) {
 			`flows_received{router="192.0.2.143"}`:                       "4",
 			`flows_forwarded{router="192.0.2.142"}`:                      "1",
 			`flows_forwarded{router="192.0.2.143"}`:                      "1",
+			`flows_http_clients`:                                         "0",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -167,6 +171,75 @@ func TestCore(t *testing.T) {
 		}
 		if resp.StatusCode != 200 || string(body) != "ok" {
 			t.Errorf("GET /healthcheck: got %d %q", resp.StatusCode, body)
+		}
+	})
+
+	// Test HTTP flow clients
+	t.Run("http flows", func(t *testing.T) {
+		c.httpFlowFlushDelay = 20 * time.Millisecond
+
+		resp, err := netHTTP.Get(fmt.Sprintf("http://%s/flows", c.d.HTTP.Address))
+		if err != nil {
+			t.Fatalf("GET /flows:\n%+v", err)
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != 200 {
+			t.Fatalf("GET /flows status code %d", resp.StatusCode)
+		}
+
+		// Metrics should tell we have a client
+		gotMetrics := r.GetMetrics("akvorado_core_", "flows_http_clients")
+		expectedMetrics := map[string]string{
+			`flows_http_clients`: "1",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+			t.Fatalf("Metrics (-got, +want):\n%s", diff)
+		}
+
+		// Send message
+		for i := 0; i < 12; i++ {
+			kafkaProducer.ExpectInputAndSucceed()
+			flowComponent.Inject(t, flowMessage("192.0.2.142", 434, 677))
+		}
+
+		// Decode some of them (it takes some time, due to flush only once per second)
+		reader := bufio.NewReader(resp.Body)
+		decoder := json.NewDecoder(reader)
+		for i := 0; i < 10; i++ {
+			var got map[string]interface{}
+			if err := decoder.Decode(&got); err != nil {
+				t.Fatalf("GET /flows error while reading body:\n%+v", err)
+			}
+			expected := map[string]interface{}{
+				"TimeReceived":   200,
+				"SequenceNum":    1000,
+				"SamplingRate":   1000,
+				"FlowDirection":  1,
+				"SamplerAddress": "AAAAAAAAAAAAAP//wAACjg==",
+				"TimeFlowStart":  100,
+				"TimeFlowEnd":    200,
+				"Bytes":          6765,
+				"Packets":        4,
+				"InIf":           434,
+				"OutIf":          677,
+				"SrcAddr":        "AAAAAAAAAAAAAP//QyucTQ==",
+				"DstAddr":        "AAAAAAAAAAAAAP//An2g2A==",
+				"Etype":          0x800,
+				"Proto":          6,
+				"SrcPort":        8534,
+				"DstPort":        80,
+				// Added info
+				"InIfDescription":  "Interface 434",
+				"InIfName":         "Gi0/0/434",
+				"OutIfDescription": "Interface 677",
+				"OutIfName":        "Gi0/0/677",
+				"DstCountry":       "GB",
+				"SrcCountry":       "BT",
+				"SrcAS":            35908,
+			}
+			if diff := helpers.Diff(got, expected); diff != "" {
+				t.Fatalf("GET /flows (-got, +want):\n%s", diff)
+			}
 		}
 	})
 }

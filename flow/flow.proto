@@ -62,7 +62,7 @@ message FlowMessage {
 
   // Country
   string SrcCountry = 100;
-  string dstCountry = 101;
+  string DstCountry = 101;
 
   // Interface names and descriptions
   string InIfName = 102;

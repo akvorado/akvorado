@@ -1,11 +1,15 @@
 package core
 
-import "akvorado/reporter"
+import (
+	"akvorado/reporter"
+	"sync/atomic"
+)
 
 type metrics struct {
-	flowsReceived  *reporter.CounterVec
-	flowsForwarded *reporter.CounterVec
-	flowsErrors    *reporter.CounterVec
+	flowsReceived    *reporter.CounterVec
+	flowsForwarded   *reporter.CounterVec
+	flowsErrors      *reporter.CounterVec
+	flowsHTTPClients reporter.GaugeFunc
 }
 
 func (c *Component) initMetrics() {
@@ -29,5 +33,14 @@ func (c *Component) initMetrics() {
 			Help: "Number of flows with errors.",
 		},
 		[]string{"router", "error"},
+	)
+	c.metrics.flowsHTTPClients = c.r.GaugeFunc(
+		reporter.GaugeOpts{
+			Name: "flows_http_clients",
+			Help: "Number of HTTP clients requesting flows.",
+		},
+		func() float64 {
+			return float64(atomic.LoadUint32(&c.httpFlowClients))
+		},
 	)
 }

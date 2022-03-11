@@ -4,6 +4,7 @@ package core
 import (
 	"errors"
 	"net"
+	"sync/atomic"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -27,7 +28,11 @@ type Component struct {
 	config Configuration
 
 	metrics metrics
-	healthy chan chan<- bool
+
+	healthy            chan chan<- bool // for healthcheck
+	httpFlowClients    uint32           // for dumping flows
+	httpFlowChannel    chan *flow.FlowMessage
+	httpFlowFlushDelay time.Duration
 }
 
 // Dependencies define the dependencies of the HTTP component.
@@ -47,7 +52,10 @@ func New(reporter *reporter.Reporter, configuration Configuration, dependencies 
 		d:      &dependencies,
 		config: configuration,
 
-		healthy: make(chan chan<- bool),
+		healthy:            make(chan chan<- bool),
+		httpFlowClients:    0,
+		httpFlowChannel:    make(chan *flow.FlowMessage, 10),
+		httpFlowFlushDelay: time.Second,
 	}
 	c.d.Daemon.Track(&c.t, "core")
 	c.initMetrics()
@@ -64,6 +72,7 @@ func (c *Component) Start() error {
 	}
 
 	c.d.HTTP.AddHandler("/healthcheck", c.HealthcheckHTTPHandler())
+	c.d.HTTP.AddHandler("/flows", c.FlowsHTTPHandler())
 	return nil
 }
 
@@ -153,12 +162,22 @@ func (c *Component) runWorker(workerID int) error {
 				continue
 			}
 			c.metrics.flowsForwarded.WithLabelValues(host).Inc()
+
+			// If we have HTTP clients, send to them too
+			if atomic.LoadUint32(&c.httpFlowClients) > 0 {
+				select {
+				case c.httpFlowChannel <- flow: // OK
+				default: // Overflow, best effort and ignore
+				}
+			}
 		}
 	}
 }
 
 // Stop stops the core component.
 func (c *Component) Stop() error {
+	defer close(c.healthy)
+	defer close(c.httpFlowChannel)
 	c.t.Kill(nil)
 	return c.t.Wait()
 }

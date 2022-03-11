@@ -36,7 +36,10 @@ The embedded HTTP server contains the following endpoints:
  - `/metrics` for Prometheus metrics,
  - `/version` for the running version,
  - `/healthcheck` telling if we are alive,
- - `/flow.proto` for the Protobuf schema for flows exported to Kafka,
+ - `/flows` continously printed flows sent to Kafka (using [ndjson]()), and
+ - `/flow.proto` for the Protobuf schema for flows exported to Kafka.
+
+[ndjson]: http://ndjson.org/
 
 ## Design
 
