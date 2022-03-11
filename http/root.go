@@ -81,7 +81,6 @@ func (c *Component) Start() error {
 	c.t.Go(func() error {
 		select {
 		case <-c.t.Dying():
-			c.r.Info().Msg("shutting down HTTP server")
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
 			if err := server.Shutdown(ctx); err != nil {
@@ -99,6 +98,8 @@ func (c *Component) Stop() error {
 	if c.config.Listen == "" {
 		return nil
 	}
+	c.r.Info().Msg("stopping HTTP component")
+	defer c.r.Info().Msg("HTTP component stopped")
 	c.t.Kill(nil)
 	return c.t.Wait()
 }

@@ -70,6 +70,8 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 
 // Start starts the SNMP component.
 func (c *Component) Start() error {
+	c.r.Info().Msg("starting SNMP component")
+
 	// Load cache
 	if c.config.CachePersistFile != "" {
 		if err := c.sc.Load(c.config.CachePersistFile); err != nil {
@@ -148,6 +150,8 @@ func (c *Component) Start() error {
 // Stop stops the SNMP component
 func (c *Component) Stop() error {
 	defer close(c.pollerChannel)
+	c.r.Info().Msg("stopping SNMP component")
+	defer c.r.Info().Msg("SNMP component stopped")
 	c.t.Kill(nil)
 	return c.t.Wait()
 }

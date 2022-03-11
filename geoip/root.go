@@ -99,6 +99,8 @@ func (c *Component) Start() error {
 		return nil
 	}
 
+	c.r.Info().Msg("starting GeoIP component")
+
 	// Watch for modifications
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -121,7 +123,6 @@ func (c *Component) Start() error {
 	c.t.Go(func() error {
 		errLimiter := rate.NewLimiter(rate.Every(10*time.Second), 1)
 		defer func() {
-			c.r.Info().Msg("stopping GeoIP component")
 			watcher.Close()
 		}()
 
@@ -157,6 +158,8 @@ func (c *Component) Stop() error {
 	if c.db.country.Load() == nil && c.db.asn.Load() == nil {
 		return nil
 	}
+	c.r.Info().Msg("stopping GeoIP component")
+	defer c.r.Info().Msg("GeoIP component stopped")
 	c.t.Kill(nil)
 	return c.t.Wait()
 }

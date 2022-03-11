@@ -158,6 +158,8 @@ func (c *Component) spawnWorker(workerID int) error {
 // Stop stops the flow component
 func (c *Component) Stop() error {
 	defer close(c.incomingFlows)
+	c.r.Info().Msg("stopping flow component")
+	defer c.r.Info().Msg("flow component stopped")
 	c.t.Kill(nil)
 	return c.t.Wait()
 }

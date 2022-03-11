@@ -76,6 +76,8 @@ func New(reporter *reporter.Reporter, configuration Configuration, dependencies 
 
 // Start starts the Kafka component.
 func (c *Component) Start() error {
+	c.r.Info().Msg("starting Kafka component")
+
 	// Create producer
 	kafkaProducer, err := c.createKafkaProducer()
 	if err != nil {
@@ -113,6 +115,8 @@ func (c *Component) Start() error {
 
 // Stop stops the Kafka component
 func (c *Component) Stop() error {
+	c.r.Info().Msg("stopping Kafka component")
+	defer c.r.Info().Msg("Kafka component stopped")
 	c.t.Kill(nil)
 	return c.t.Wait()
 }

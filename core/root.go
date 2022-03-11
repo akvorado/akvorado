@@ -64,6 +64,7 @@ func New(reporter *reporter.Reporter, configuration Configuration, dependencies 
 
 // Start starts the core component.
 func (c *Component) Start() error {
+	c.r.Info().Msg("starting core component")
 	for i := 0; i < c.config.Workers; i++ {
 		workerID := i
 		c.t.Go(func() error {
@@ -178,6 +179,8 @@ func (c *Component) runWorker(workerID int) error {
 func (c *Component) Stop() error {
 	defer close(c.healthy)
 	defer close(c.httpFlowChannel)
+	c.r.Info().Msg("stopping core component")
+	defer c.r.Info().Msg("core component stopped")
 	c.t.Kill(nil)
 	return c.t.Wait()
 }
