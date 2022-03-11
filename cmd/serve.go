@@ -154,6 +154,7 @@ func daemonStart(r *reporter.Reporter, config ServeConfiguration, checkOnly bool
 		Snmp:   snmpComponent,
 		GeoIP:  geoipComponent,
 		Kafka:  kafkaComponent,
+		HTTP:   httpComponent,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to initialize core component: %w", err)
