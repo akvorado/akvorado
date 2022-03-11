@@ -72,7 +72,6 @@ func (c *Component) FlowsHTTPHandler() http.Handler {
 				return
 			case msg := <-c.httpFlowChannel:
 				encoder.Encode(msg)
-				w.Write([]byte("\n"))
 			case <-tickerChan:
 				wf.Flush()
 			}
