@@ -26,6 +26,7 @@ func TestServeDump(t *testing.T) {
 	want.SNMP.CacheDuration = 2 * time.Hour
 	want.SNMP.DefaultCommunity = "private"
 	want.Kafka.Topic = "netflow"
+	want.Kafka.Version = kafka.Version(sarama.V2_8_1_0)
 	want.Kafka.CompressionCodec = kafka.CompressionCodec(sarama.CompressionGZIP)
 	want.Core.Workers = 3
 	config := `---
@@ -41,6 +42,7 @@ snmp:
 kafka:
  topic: netflow
  compressioncodec: gzip
+ version: 2.8.1
 core:
  workers: 3
 `
