@@ -18,11 +18,13 @@ func (c *Component) HealthcheckHTTPHandler() http.Handler {
 			w.WriteHeader(code)
 			w.Write([]byte(text))
 		}
-		// Request a worker to answer
-		select {
-		case <-c.t.Dead():
+		if !c.t.Alive() {
 			answer(http.StatusServiceUnavailable, "dead")
 			return
+		}
+
+		// Request a worker to answer
+		select {
 		case <-c.t.Dying():
 			answer(http.StatusServiceUnavailable, "dying")
 			return
@@ -34,9 +36,6 @@ func (c *Component) HealthcheckHTTPHandler() http.Handler {
 
 		// Wait for answer from worker
 		select {
-		case <-c.t.Dead():
-			answer(http.StatusServiceUnavailable, "dead")
-			return
 		case <-c.t.Dying():
 			answer(http.StatusServiceUnavailable, "dying")
 			return
