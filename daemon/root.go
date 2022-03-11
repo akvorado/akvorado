@@ -73,8 +73,7 @@ func (c *realComponent) Start() error {
 	go func() {
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals,
-			syscall.SIGINT, syscall.SIGTERM,
-			syscall.SIGHUP)
+			syscall.SIGINT, syscall.SIGTERM)
 		select {
 		case s := <-signals:
 			c.r.Debug().Stringer("signal", s).Msg("signal received")
