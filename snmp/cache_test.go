@@ -22,20 +22,24 @@ func setupTestCache(t *testing.T) (*reporter.Reporter, *clock.Mock, *snmpCache) 
 	return r, clock, sc
 }
 
-func expectCacheLookup(t *testing.T, sc *snmpCache, sampler string, ifIndex uint, expected Interface, expectedError error) {
+type answer struct {
+	SamplerName string
+	Interface   Interface
+	Err         error
+}
+
+func expectCacheLookup(t *testing.T, sc *snmpCache, samplerIP string, ifIndex uint, expected answer) {
 	t.Helper()
-	got, err := sc.Lookup(sampler, ifIndex)
+	gotSamplerName, gotInterface, err := sc.Lookup(samplerIP, ifIndex)
+	got := answer{gotSamplerName, gotInterface, err}
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Errorf("Lookup() (-got, +want):\n%s", diff)
-	}
-	if !errors.Is(err, expectedError) {
-		t.Errorf("Lookup() error (-got, +want):\n-%v\n+%v", err, expectedError)
 	}
 }
 
 func TestGetEmpty(t *testing.T) {
 	r, _, sc := setupTestCache(t)
-	expectCacheLookup(t, sc, "127.0.0.1", 676, Interface{}, ErrCacheMiss)
+	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{Err: ErrCacheMiss})
 
 	gotMetrics := r.GetMetrics("akvorado_snmp_cache_")
 	expectedMetrics := map[string]string{
@@ -52,10 +56,12 @@ func TestGetEmpty(t *testing.T) {
 
 func TestSimpleLookup(t *testing.T) {
 	r, _, sc := setupTestCache(t)
-	sc.Put("127.0.0.1", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
-	expectCacheLookup(t, sc, "127.0.0.1", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"}, nil)
-	expectCacheLookup(t, sc, "127.0.0.1", 787, Interface{}, ErrCacheMiss)
-	expectCacheLookup(t, sc, "127.0.0.2", 676, Interface{}, ErrCacheMiss)
+	sc.Put("127.0.0.1", "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
+	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{
+		SamplerName: "localhost",
+		Interface:   Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
+	expectCacheLookup(t, sc, "127.0.0.1", 787, answer{Err: ErrCacheMiss})
+	expectCacheLookup(t, sc, "127.0.0.2", 676, answer{Err: ErrCacheMiss})
 
 	gotMetrics := r.GetMetrics("akvorado_snmp_cache_")
 	expectedMetrics := map[string]string{
@@ -72,32 +78,46 @@ func TestSimpleLookup(t *testing.T) {
 
 func TestExpire(t *testing.T) {
 	r, clock, sc := setupTestCache(t)
-	sc.Put("127.0.0.1", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
+	sc.Put("127.0.0.1", "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
 	clock.Add(10 * time.Minute)
-	sc.Put("127.0.0.1", 678, Interface{Name: "Gi0/0/0/2", Description: "Peering"})
+	sc.Put("127.0.0.1", "localhost2", 678, Interface{Name: "Gi0/0/0/2", Description: "Peering"})
 	clock.Add(10 * time.Minute)
-	sc.Put("127.0.0.2", 678, Interface{Name: "Gi0/0/0/1", Description: "IX"})
+	sc.Put("127.0.0.2", "localhost3", 678, Interface{Name: "Gi0/0/0/1", Description: "IX"})
 	clock.Add(10 * time.Minute)
 	sc.Expire(time.Hour)
-	expectCacheLookup(t, sc, "127.0.0.1", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"}, nil)
-	expectCacheLookup(t, sc, "127.0.0.1", 678, Interface{Name: "Gi0/0/0/2", Description: "Peering"}, nil)
-	expectCacheLookup(t, sc, "127.0.0.2", 678, Interface{Name: "Gi0/0/0/1", Description: "IX"}, nil)
+	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{
+		SamplerName: "localhost2",
+		Interface:   Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
+	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{
+		SamplerName: "localhost2",
+		Interface:   Interface{Name: "Gi0/0/0/2", Description: "Peering"}})
+	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
+		SamplerName: "localhost3",
+		Interface:   Interface{Name: "Gi0/0/0/1", Description: "IX"}})
 	sc.Expire(29 * time.Minute)
-	expectCacheLookup(t, sc, "127.0.0.1", 676, Interface{}, ErrCacheMiss)
-	expectCacheLookup(t, sc, "127.0.0.1", 678, Interface{Name: "Gi0/0/0/2", Description: "Peering"}, nil)
-	expectCacheLookup(t, sc, "127.0.0.2", 678, Interface{Name: "Gi0/0/0/1", Description: "IX"}, nil)
+	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{Err: ErrCacheMiss})
+	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{
+		SamplerName: "localhost2",
+		Interface:   Interface{Name: "Gi0/0/0/2", Description: "Peering"}})
+	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
+		SamplerName: "localhost3",
+		Interface:   Interface{Name: "Gi0/0/0/1", Description: "IX"}})
 	sc.Expire(19 * time.Minute)
-	expectCacheLookup(t, sc, "127.0.0.1", 676, Interface{}, ErrCacheMiss)
-	expectCacheLookup(t, sc, "127.0.0.1", 678, Interface{}, ErrCacheMiss)
-	expectCacheLookup(t, sc, "127.0.0.2", 678, Interface{Name: "Gi0/0/0/1", Description: "IX"}, nil)
+	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{Err: ErrCacheMiss})
+	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{Err: ErrCacheMiss})
+	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
+		SamplerName: "localhost3",
+		Interface:   Interface{Name: "Gi0/0/0/1", Description: "IX"}})
 	sc.Expire(9 * time.Minute)
-	expectCacheLookup(t, sc, "127.0.0.1", 676, Interface{}, ErrCacheMiss)
-	expectCacheLookup(t, sc, "127.0.0.1", 678, Interface{}, ErrCacheMiss)
-	expectCacheLookup(t, sc, "127.0.0.2", 678, Interface{}, ErrCacheMiss)
-	sc.Put("127.0.0.1", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
+	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{Err: ErrCacheMiss})
+	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{Err: ErrCacheMiss})
+	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{Err: ErrCacheMiss})
+	sc.Put("127.0.0.1", "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
 	clock.Add(10 * time.Minute)
 	sc.Expire(19 * time.Minute)
-	expectCacheLookup(t, sc, "127.0.0.1", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"}, nil)
+	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{
+		SamplerName: "localhost",
+		Interface:   Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
 
 	gotMetrics := r.GetMetrics("akvorado_snmp_cache_")
 	expectedMetrics := map[string]string{
@@ -114,33 +134,37 @@ func TestExpire(t *testing.T) {
 
 func TestExpireRefresh(t *testing.T) {
 	_, clock, sc := setupTestCache(t)
-	sc.Put("127.0.0.1", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
+	sc.Put("127.0.0.1", "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
 	clock.Add(10 * time.Minute)
-	sc.Put("127.0.0.1", 678, Interface{Name: "Gi0/0/0/2", Description: "Peering"})
+	sc.Put("127.0.0.1", "localhost", 678, Interface{Name: "Gi0/0/0/2", Description: "Peering"})
 	clock.Add(10 * time.Minute)
-	sc.Put("127.0.0.2", 678, Interface{Name: "Gi0/0/0/1", Description: "IX"})
+	sc.Put("127.0.0.2", "localhost2", 678, Interface{Name: "Gi0/0/0/1", Description: "IX"})
 	clock.Add(10 * time.Minute)
 
 	// Refresh first entry
-	sc.Put("127.0.0.1", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
+	sc.Put("127.0.0.1", "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
 	clock.Add(10 * time.Minute)
 
 	sc.Expire(29 * time.Minute)
-	expectCacheLookup(t, sc, "127.0.0.1", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"}, nil)
-	expectCacheLookup(t, sc, "127.0.0.1", 678, Interface{}, ErrCacheMiss)
-	expectCacheLookup(t, sc, "127.0.0.2", 678, Interface{Name: "Gi0/0/0/1", Description: "IX"}, nil)
+	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{
+		SamplerName: "localhost",
+		Interface:   Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
+	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{Err: ErrCacheMiss})
+	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
+		SamplerName: "localhost2",
+		Interface:   Interface{Name: "Gi0/0/0/1", Description: "IX"}})
 }
 
 func TestWouldExpire(t *testing.T) {
 	_, clock, sc := setupTestCache(t)
-	sc.Put("127.0.0.1", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
+	sc.Put("127.0.0.1", "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
 	clock.Add(10 * time.Minute)
-	sc.Put("127.0.0.1", 678, Interface{Name: "Gi0/0/0/2", Description: "Peering"})
+	sc.Put("127.0.0.1", "localhost", 678, Interface{Name: "Gi0/0/0/2", Description: "Peering"})
 	clock.Add(10 * time.Minute)
-	sc.Put("127.0.0.2", 678, Interface{Name: "Gi0/0/0/1", Description: "IX"})
+	sc.Put("127.0.0.2", "localhost2", 678, Interface{Name: "Gi0/0/0/1", Description: "IX"})
 	clock.Add(10 * time.Minute)
 	// Refresh
-	sc.Put("127.0.0.1", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
+	sc.Put("127.0.0.1", "localhost1", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
 	clock.Add(10 * time.Minute)
 
 	cases := []struct {
@@ -191,11 +215,11 @@ func TestLoadNotExist(t *testing.T) {
 
 func TestSaveLoad(t *testing.T) {
 	_, clock, sc := setupTestCache(t)
-	sc.Put("127.0.0.1", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
+	sc.Put("127.0.0.1", "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
 	clock.Add(10 * time.Minute)
-	sc.Put("127.0.0.1", 678, Interface{Name: "Gi0/0/0/2", Description: "Peering"})
+	sc.Put("127.0.0.1", "localhost", 678, Interface{Name: "Gi0/0/0/2", Description: "Peering"})
 	clock.Add(10 * time.Minute)
-	sc.Put("127.0.0.2", 678, Interface{Name: "Gi0/0/0/1", Description: "IX"})
+	sc.Put("127.0.0.2", "localhost2", 678, Interface{Name: "Gi0/0/0/1", Description: "IX"})
 
 	target := filepath.Join(t.TempDir(), "cache")
 	if err := sc.Save(target); err != nil {
@@ -209,14 +233,18 @@ func TestSaveLoad(t *testing.T) {
 	}
 
 	sc.Expire(29 * time.Minute)
-	expectCacheLookup(t, sc, "127.0.0.1", 676, Interface{}, ErrCacheMiss)
-	expectCacheLookup(t, sc, "127.0.0.1", 678, Interface{Name: "Gi0/0/0/2", Description: "Peering"}, nil)
-	expectCacheLookup(t, sc, "127.0.0.2", 678, Interface{Name: "Gi0/0/0/1", Description: "IX"}, nil)
+	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{Err: ErrCacheMiss})
+	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{
+		SamplerName: "localhost",
+		Interface:   Interface{Name: "Gi0/0/0/2", Description: "Peering"}})
+	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
+		SamplerName: "localhost2",
+		Interface:   Interface{Name: "Gi0/0/0/1", Description: "IX"}})
 }
 
 func TestLoadMismatchVersion(t *testing.T) {
 	_, _, sc := setupTestCache(t)
-	sc.Put("127.0.0.1", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
+	sc.Put("127.0.0.1", "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
 	target := filepath.Join(t.TempDir(), "cache")
 
 	cacheCurrentVersionNumber++

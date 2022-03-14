@@ -148,6 +148,7 @@ func TestCore(t *testing.T) {
 			expected.OutIfName = "Gi0/0/677"
 			expected.InIfDescription = "Interface 434"
 			expected.OutIfDescription = "Interface 677"
+			expected.SamplerName = "192_0_2_142"
 			if diff := helpers.Diff(&got, expected); diff != "" {
 				t.Errorf("Kafka message (-got, +want):\n%s", diff)
 			}
@@ -236,6 +237,7 @@ func TestCore(t *testing.T) {
 				"DstCountry":       "GB",
 				"SrcCountry":       "BT",
 				"SrcAS":            35908,
+				"SamplerName":      "192_0_2_142",
 			}
 			if diff := helpers.Diff(got, expected); diff != "" {
 				t.Fatalf("GET /flows (-got, +want):\n%s", diff)

@@ -1,7 +1,6 @@
 package snmp
 
 import (
-	"errors"
 	"path/filepath"
 	"testing"
 	"time"
@@ -13,17 +12,12 @@ import (
 	"akvorado/reporter"
 )
 
-func expectSNMPLookup(t *testing.T, c *Component, sampler string, ifIndex uint, expected Interface, expectedError error) {
+func expectSNMPLookup(t *testing.T, c *Component, sampler string, ifIndex uint, expected answer) {
 	t.Helper()
-	got, err := c.Lookup(sampler, ifIndex)
+	gotSamplerName, gotInterface, err := c.Lookup(sampler, ifIndex)
+	got := answer{gotSamplerName, gotInterface, err}
 	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Errorf("Lookup() (-got, +want):\n%s", diff)
-	}
-	if !errors.Is(err, expectedError) {
-		t.Errorf("Lookup() error (-got, +want):\n-%v\n+%v", err, expectedError)
-	}
-	if t.Failed() {
-		t.FailNow()
+		t.Fatalf("Lookup() (-got, +want):\n%s", diff)
 	}
 }
 
@@ -43,22 +37,22 @@ func TestSNMPCommunities(t *testing.T) {
 	}()
 
 	// Use "public" as a community. Should work.
-	expectSNMPLookup(t, c, "127.0.0.1", 765, Interface{}, ErrCacheMiss)
+	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{Err: ErrCacheMiss})
 	time.Sleep(10 * time.Millisecond)
-	expectSNMPLookup(t, c, "127.0.0.1", 765, Interface{
-		Name:        "Gi0/0/765",
-		Description: "Interface 765",
-	}, nil)
+	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
+		SamplerName: "127_0_0_1",
+		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765"},
+	})
 
 	// Use "private", should not work
-	expectSNMPLookup(t, c, "127.0.0.2", 765, Interface{}, ErrCacheMiss)
+	expectSNMPLookup(t, c, "127.0.0.2", 765, answer{Err: ErrCacheMiss})
 	time.Sleep(10 * time.Millisecond)
-	expectSNMPLookup(t, c, "127.0.0.2", 765, Interface{}, ErrCacheMiss)
+	expectSNMPLookup(t, c, "127.0.0.2", 765, answer{Err: ErrCacheMiss})
 
 	// Use default community, should not work
-	expectSNMPLookup(t, c, "127.0.0.3", 765, Interface{}, ErrCacheMiss)
+	expectSNMPLookup(t, c, "127.0.0.3", 765, answer{Err: ErrCacheMiss})
 	time.Sleep(10 * time.Millisecond)
-	expectSNMPLookup(t, c, "127.0.0.3", 765, Interface{}, ErrCacheMiss)
+	expectSNMPLookup(t, c, "127.0.0.3", 765, answer{Err: ErrCacheMiss})
 }
 
 func TestComponentSaveLoad(t *testing.T) {
@@ -67,22 +61,22 @@ func TestComponentSaveLoad(t *testing.T) {
 	configuration.CachePersistFile = filepath.Join(t.TempDir(), "cache")
 	c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 
-	expectSNMPLookup(t, c, "127.0.0.1", 765, Interface{}, ErrCacheMiss)
+	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{Err: ErrCacheMiss})
 	time.Sleep(10 * time.Millisecond)
-	expectSNMPLookup(t, c, "127.0.0.1", 765, Interface{
-		Name:        "Gi0/0/765",
-		Description: "Interface 765",
-	}, nil)
+	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
+		SamplerName: "127_0_0_1",
+		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765"},
+	})
 	if err := c.Stop(); err != nil {
 		t.Fatalf("Stop() error:\n%+c", err)
 	}
 
 	r = reporter.NewMock(t)
 	c = NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
-	expectSNMPLookup(t, c, "127.0.0.1", 765, Interface{
-		Name:        "Gi0/0/765",
-		Description: "Interface 765",
-	}, nil)
+	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
+		SamplerName: "127_0_0_1",
+		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765"},
+	})
 	if err := c.Stop(); err != nil {
 		t.Fatalf("Stop() error:\n%+c", err)
 	}
@@ -95,20 +89,20 @@ func TestAutoRefresh(t *testing.T) {
 	c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t), Clock: mockClock})
 
 	// Fetch a value
-	expectSNMPLookup(t, c, "127.0.0.1", 765, Interface{}, ErrCacheMiss)
+	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{Err: ErrCacheMiss})
 	time.Sleep(10 * time.Millisecond)
-	expectSNMPLookup(t, c, "127.0.0.1", 765, Interface{
-		Name:        "Gi0/0/765",
-		Description: "Interface 765",
-	}, nil)
+	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
+		SamplerName: "127_0_0_1",
+		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765"},
+	})
 
 	// Go forward, we expect the entry to have been refreshed and be still present
 	mockClock.Add(56 * time.Minute)
 	time.Sleep(10 * time.Millisecond)
-	expectSNMPLookup(t, c, "127.0.0.1", 765, Interface{
-		Name:        "Gi0/0/765",
-		Description: "Interface 765",
-	}, nil)
+	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
+		SamplerName: "127_0_0_1",
+		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765"},
+	})
 
 	// Stop and look at the cache
 	if err := c.Stop(); err != nil {

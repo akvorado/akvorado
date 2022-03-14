@@ -22,13 +22,13 @@ var (
 	// ErrCacheVersion is triggered when loading a cache from an incompatible version
 	ErrCacheVersion = errors.New("SNMP cache version mismatch")
 	// cacheCurrentVersionNumber is the current version of the on-disk cache format
-	cacheCurrentVersionNumber = 5
+	cacheCurrentVersionNumber = 6
 )
 
 // snmpCache represents the SNMP cache.
 type snmpCache struct {
 	r         *reporter.Reporter
-	cache     map[string]cachedInterfaces
+	cache     map[string]*cachedSampler
 	cacheLock sync.RWMutex
 	clock     clock.Clock
 
@@ -41,8 +41,12 @@ type snmpCache struct {
 	}
 }
 
-// cachedInterfaces represents a mapping from ifIndex to a cached interface.
-type cachedInterfaces map[uint]Interface
+// cachedSampler represents information about a sampler. It includes
+// the mapping from ifIndex to interfaces.
+type cachedSampler struct {
+	Name       string
+	Interfaces map[uint]Interface
+}
 
 // Interface contains the information about an interface.
 type Interface struct {
@@ -54,7 +58,7 @@ type Interface struct {
 func newSNMPCache(r *reporter.Reporter, clock clock.Clock) *snmpCache {
 	sc := &snmpCache{
 		r:     r,
-		cache: make(map[string]cachedInterfaces),
+		cache: make(map[string]*cachedSampler),
 		clock: clock,
 	}
 	sc.metrics.cacheHit = r.Counter(
@@ -79,8 +83,8 @@ func newSNMPCache(r *reporter.Reporter, clock clock.Clock) *snmpCache {
 		}, func() (result float64) {
 			sc.cacheLock.RLock()
 			defer sc.cacheLock.RUnlock()
-			for _, ifaces := range sc.cache {
-				result += float64(len(ifaces))
+			for _, sampler := range sc.cache {
+				result += float64(len(sampler.Interfaces))
 			}
 			return
 		})
@@ -96,35 +100,38 @@ func newSNMPCache(r *reporter.Reporter, clock clock.Clock) *snmpCache {
 	return sc
 }
 
-// Lookup will perform a lookup of the cache
-func (sc *snmpCache) Lookup(sampler string, ifIndex uint) (Interface, error) {
+// Lookup will perform a lookup of the cache. It returns the sampler
+// name as well as the requested interface.
+func (sc *snmpCache) Lookup(ip string, ifIndex uint) (string, Interface, error) {
 	sc.cacheLock.RLock()
 	defer sc.cacheLock.RUnlock()
-	ifaces, ok := sc.cache[sampler]
+	sampler, ok := sc.cache[ip]
 	if !ok {
 		sc.metrics.cacheMiss.Inc()
-		return Interface{}, ErrCacheMiss
+		return "", Interface{}, ErrCacheMiss
 	}
-	iface, ok := ifaces[ifIndex]
+	iface, ok := sampler.Interfaces[ifIndex]
 	if !ok {
 		sc.metrics.cacheMiss.Inc()
-		return Interface{}, ErrCacheMiss
+		return "", Interface{}, ErrCacheMiss
 	}
 	sc.metrics.cacheHit.Inc()
-	return iface, nil
+	return sampler.Name, iface, nil
 }
 
 // Put a new entry in the cache.
-func (sc *snmpCache) Put(sampler string, ifIndex uint, iface Interface) {
+func (sc *snmpCache) Put(ip string, samplerName string, ifIndex uint, iface Interface) {
 	sc.cacheLock.Lock()
 	defer sc.cacheLock.Unlock()
-	ifaces, ok := sc.cache[sampler]
-	if !ok {
-		ifaces = cachedInterfaces{}
-		sc.cache[sampler] = ifaces
-	}
+
 	iface.lastUpdated = sc.clock.Now()
-	ifaces[ifIndex] = iface
+	sampler, ok := sc.cache[ip]
+	if !ok {
+		sampler = &cachedSampler{Interfaces: make(map[uint]Interface)}
+		sc.cache[ip] = sampler
+	}
+	sampler.Name = samplerName
+	sampler.Interfaces[ifIndex] = iface
 }
 
 // Expire expire entries older than the provided duration.
@@ -134,16 +141,16 @@ func (sc *snmpCache) Expire(older time.Duration) (count uint) {
 	sc.cacheLock.Lock()
 	defer sc.cacheLock.Unlock()
 
-	for sampler, ifaces := range sc.cache {
-		for ifindex, iface := range ifaces {
+	for ip, sampler := range sc.cache {
+		for ifindex, iface := range sampler.Interfaces {
 			if iface.lastUpdated.Before(threshold) {
-				delete(ifaces, ifindex)
+				delete(sampler.Interfaces, ifindex)
 				sc.metrics.cacheExpired.Inc()
 				count++
 			}
 		}
-		if len(ifaces) == 0 {
-			delete(sc.cache, sampler)
+		if len(sampler.Interfaces) == 0 {
+			delete(sc.cache, ip)
 		}
 	}
 	return
@@ -157,15 +164,15 @@ func (sc *snmpCache) WouldExpire(older time.Duration) map[string]map[uint]Interf
 	sc.cacheLock.RLock()
 	defer sc.cacheLock.RUnlock()
 
-	for sampler, ifaces := range sc.cache {
-		for ifindex, iface := range ifaces {
+	for ip, sampler := range sc.cache {
+		for ifindex, iface := range sampler.Interfaces {
 			if iface.lastUpdated.Before(threshold) {
-				rifaces, ok := result[sampler]
+				rifaces, ok := result[ip]
 				if !ok {
 					rifaces = make(map[uint]Interface)
-					result[sampler] = rifaces
+					result[ip] = rifaces
 				}
-				result[sampler][ifindex] = iface
+				result[ip][ifindex] = iface
 			}
 		}
 	}
@@ -237,7 +244,7 @@ func (sc *snmpCache) GobDecode(data []byte) error {
 	if version != cacheCurrentVersionNumber {
 		return ErrCacheVersion
 	}
-	cache := map[string]cachedInterfaces{}
+	cache := map[string]*cachedSampler{}
 	if err := decoder.Decode(&cache); err != nil {
 		return err
 	}

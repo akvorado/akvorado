@@ -105,8 +105,8 @@ func (c *Component) Start() error {
 					for sampler, ifaces := range toRefresh {
 						for ifIndex := range ifaces {
 							c.pollerChannel <- lookupRequest{
-								Sampler: sampler,
-								IfIndex: ifIndex,
+								SamplerIP: sampler,
+								IfIndex:   ifIndex,
 							}
 							count++
 						}
@@ -129,15 +129,15 @@ func (c *Component) Start() error {
 					c.r.Debug().Int("worker", workerID).Msg("stopping SNMP poller")
 					return nil
 				case request := <-c.pollerChannel:
-					sampler := request.Sampler
+					samplerIP := request.SamplerIP
 					ifIndex := request.IfIndex
-					community, ok := c.config.Communities[sampler]
+					community, ok := c.config.Communities[samplerIP]
 					if !ok {
 						community = c.config.DefaultCommunity
 					}
 					c.poller.Poll(
 						c.t.Context(context.Background()),
-						sampler, 161,
+						samplerIP, 161,
 						community,
 						ifIndex)
 				}
@@ -158,20 +158,20 @@ func (c *Component) Stop() error {
 
 // lookupRequest is used internally to queue a polling request.
 type lookupRequest struct {
-	Sampler string
-	IfIndex uint
+	SamplerIP string
+	IfIndex   uint
 }
 
 // Lookup for interface information for the provided sampler and ifIndex.
 // If the information is not in the cache, it will be polled, but
 // won't be returned immediately.
-func (c *Component) Lookup(sampler string, ifIndex uint) (Interface, error) {
-	iface, err := c.sc.Lookup(sampler, ifIndex)
+func (c *Component) Lookup(samplerIP string, ifIndex uint) (string, Interface, error) {
+	samplerName, iface, err := c.sc.Lookup(samplerIP, ifIndex)
 	if errors.Is(err, ErrCacheMiss) {
 		c.pollerChannel <- lookupRequest{
-			Sampler: sampler,
-			IfIndex: ifIndex,
+			SamplerIP: samplerIP,
+			IfIndex:   ifIndex,
 		}
 	}
-	return iface, err
+	return samplerName, iface, err
 }

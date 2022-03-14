@@ -15,7 +15,7 @@ import (
 )
 
 type poller interface {
-	Poll(ctx context.Context, sampler string, port uint16, community string, ifIndex uint)
+	Poll(ctx context.Context, samplerIP string, port uint16, community string, ifIndex uint)
 }
 
 // realPoller will poll samplers using real SNMP requests.
@@ -26,7 +26,7 @@ type realPoller struct {
 	pendingRequests     map[string]bool
 	pendingRequestsLock sync.Mutex
 	errLimiter          *rate.Limiter
-	put                 func(string, uint, Interface)
+	put                 func(samplerIP, samplerName string, ifIndex uint, iface Interface)
 
 	metrics struct {
 		pendingRequests reporter.GaugeFunc
@@ -38,7 +38,7 @@ type realPoller struct {
 }
 
 // newPoller creates a new SNMP poller.
-func newPoller(r *reporter.Reporter, clock clock.Clock, put func(string, uint, Interface)) *realPoller {
+func newPoller(r *reporter.Reporter, clock clock.Clock, put func(string, string, uint, Interface)) *realPoller {
 	p := &realPoller{
 		r:               r,
 		clock:           clock,
@@ -120,9 +120,10 @@ func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, comm
 		}
 	}
 	start := p.clock.Now()
+	sysName := "1.3.6.1.2.1.1.5.0"
 	ifDescr := fmt.Sprintf("1.3.6.1.2.1.2.2.1.2.%d", ifIndex)
 	ifAlias := fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.18.%d", ifIndex)
-	result, err := g.Get([]string{ifDescr, ifAlias})
+	result, err := g.Get([]string{sysName, ifDescr, ifAlias})
 	if errors.Is(err, context.Canceled) {
 		return
 	}
@@ -135,30 +136,25 @@ func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, comm
 	}
 
 	ok = true
-	switch result.Variables[0].Type {
-	case gosnmp.OctetString:
-		ifDescr = string(result.Variables[0].Value.([]byte))
-	case gosnmp.NoSuchInstance, gosnmp.NoSuchObject:
-		p.metrics.failures.WithLabelValues(sampler, "ifdescr_missing").Inc()
-		ok = false
-	default:
-		p.metrics.failures.WithLabelValues(sampler, "ifdescr_unknown_type").Inc()
-		ok = false
+	process := func(idx int, what string, target *string) {
+		switch result.Variables[idx].Type {
+		case gosnmp.OctetString:
+			*target = string(result.Variables[idx].Value.([]byte))
+		case gosnmp.NoSuchInstance, gosnmp.NoSuchObject:
+			p.metrics.failures.WithLabelValues(sampler, fmt.Sprintf("%s_missing", what)).Inc()
+			ok = false
+		default:
+			p.metrics.failures.WithLabelValues(sampler, fmt.Sprintf("%s_unknown_type", what)).Inc()
+			ok = false
+		}
 	}
-	switch result.Variables[1].Type {
-	case gosnmp.OctetString:
-		ifAlias = string(result.Variables[1].Value.([]byte))
-	case gosnmp.NoSuchInstance, gosnmp.NoSuchObject:
-		p.metrics.failures.WithLabelValues(sampler, "ifalias_missing").Inc()
-		ok = false
-	default:
-		p.metrics.failures.WithLabelValues(sampler, "ifalias_unknown_type").Inc()
-		ok = false
-	}
+	process(0, "sysname", &sysName)
+	process(1, "ifdescr", &ifDescr)
+	process(2, "ifalias", &ifAlias)
 	if !ok {
 		return
 	}
-	p.put(sampler, ifIndex, Interface{
+	p.put(sampler, sysName, ifIndex, Interface{
 		Name:        ifDescr,
 		Description: ifAlias,
 	})

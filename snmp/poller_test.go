@@ -20,8 +20,9 @@ func TestPoller(t *testing.T) {
 	got := []string{}
 	r := reporter.NewMock(t)
 	clock := clock.NewMock()
-	p := newPoller(r, clock, func(sampler string, ifIndex uint, iface Interface) {
-		got = append(got, fmt.Sprintf("%s %d %s %s", sampler, ifIndex, iface.Name, iface.Description))
+	p := newPoller(r, clock, func(samplerIP, samplerName string, ifIndex uint, iface Interface) {
+		got = append(got, fmt.Sprintf("%s %s %d %s %s", samplerIP, samplerName,
+			ifIndex, iface.Name, iface.Description))
 	})
 
 	// Start a new SNMP server
@@ -31,6 +32,12 @@ func TestPoller(t *testing.T) {
 				CommunityIDs: []string{"public"},
 				OIDs: []*GoSNMPServer.PDUValueControlItem{
 					{
+						OID:  "1.3.6.1.2.1.1.5.0",
+						Type: gosnmp.OctetString,
+						OnGet: func() (interface{}, error) {
+							return "sampler62", nil
+						},
+					}, {
 						OID:  "1.3.6.1.2.1.2.2.1.2.641",
 						Type: gosnmp.OctetString,
 						OnGet: func() (interface{}, error) {
@@ -89,8 +96,8 @@ func TestPoller(t *testing.T) {
 	p.Poll(context.Background(), "127.0.0.1", uint16(port), "public", 644)
 	time.Sleep(50 * time.Millisecond)
 	if diff := helpers.Diff(got, []string{
-		`127.0.0.1 641 Gi0/0/0/0 Transit`,
-		`127.0.0.1 642 Gi0/0/0/1 Peering`,
+		`127.0.0.1 sampler62 641 Gi0/0/0/0 Transit`,
+		`127.0.0.1 sampler62 642 Gi0/0/0/1 Peering`,
 	}); diff != "" {
 		t.Fatalf("Poll() (-got, +want):\n%s", diff)
 	}

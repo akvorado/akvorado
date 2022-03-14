@@ -13,6 +13,7 @@ message FlowMessage {
 
   // Sampler information
   bytes SamplerAddress = 6;
+  string SamplerName = 99;
 
   // Found inside packet
   uint64 TimeFlowStart = 7;
