@@ -33,11 +33,11 @@ type snmpCache struct {
 	clock     clock.Clock
 
 	metrics struct {
-		cacheHit     reporter.Counter
-		cacheMiss    reporter.Counter
-		cacheExpired reporter.Counter
-		cacheSize    reporter.GaugeFunc
-		cacheHosts   reporter.GaugeFunc
+		cacheHit      reporter.Counter
+		cacheMiss     reporter.Counter
+		cacheExpired  reporter.Counter
+		cacheSize     reporter.GaugeFunc
+		cacheSamplers reporter.GaugeFunc
 	}
 }
 
@@ -84,10 +84,10 @@ func newSNMPCache(r *reporter.Reporter, clock clock.Clock) *snmpCache {
 			}
 			return
 		})
-	sc.metrics.cacheHosts = r.GaugeFunc(
+	sc.metrics.cacheSamplers = r.GaugeFunc(
 		reporter.GaugeOpts{
-			Name: "cache_hosts",
-			Help: "Number of hosts in cache.",
+			Name: "cache_samplers",
+			Help: "Number of samplers in cache.",
 		}, func() float64 {
 			sc.cacheLock.RLock()
 			defer sc.cacheLock.RUnlock()
@@ -97,10 +97,10 @@ func newSNMPCache(r *reporter.Reporter, clock clock.Clock) *snmpCache {
 }
 
 // Lookup will perform a lookup of the cache
-func (sc *snmpCache) Lookup(host string, ifIndex uint) (Interface, error) {
+func (sc *snmpCache) Lookup(sampler string, ifIndex uint) (Interface, error) {
 	sc.cacheLock.RLock()
 	defer sc.cacheLock.RUnlock()
-	ifaces, ok := sc.cache[host]
+	ifaces, ok := sc.cache[sampler]
 	if !ok {
 		sc.metrics.cacheMiss.Inc()
 		return Interface{}, ErrCacheMiss
@@ -115,13 +115,13 @@ func (sc *snmpCache) Lookup(host string, ifIndex uint) (Interface, error) {
 }
 
 // Put a new entry in the cache.
-func (sc *snmpCache) Put(host string, ifIndex uint, iface Interface) {
+func (sc *snmpCache) Put(sampler string, ifIndex uint, iface Interface) {
 	sc.cacheLock.Lock()
 	defer sc.cacheLock.Unlock()
-	ifaces, ok := sc.cache[host]
+	ifaces, ok := sc.cache[sampler]
 	if !ok {
 		ifaces = cachedInterfaces{}
-		sc.cache[host] = ifaces
+		sc.cache[sampler] = ifaces
 	}
 	iface.lastUpdated = sc.clock.Now()
 	ifaces[ifIndex] = iface
@@ -134,7 +134,7 @@ func (sc *snmpCache) Expire(older time.Duration) (count uint) {
 	sc.cacheLock.Lock()
 	defer sc.cacheLock.Unlock()
 
-	for host, ifaces := range sc.cache {
+	for sampler, ifaces := range sc.cache {
 		for ifindex, iface := range ifaces {
 			if iface.lastUpdated.Before(threshold) {
 				delete(ifaces, ifindex)
@@ -143,7 +143,7 @@ func (sc *snmpCache) Expire(older time.Duration) (count uint) {
 			}
 		}
 		if len(ifaces) == 0 {
-			delete(sc.cache, host)
+			delete(sc.cache, sampler)
 		}
 	}
 	return
@@ -157,15 +157,15 @@ func (sc *snmpCache) WouldExpire(older time.Duration) map[string]map[uint]Interf
 	sc.cacheLock.RLock()
 	defer sc.cacheLock.RUnlock()
 
-	for host, ifaces := range sc.cache {
+	for sampler, ifaces := range sc.cache {
 		for ifindex, iface := range ifaces {
 			if iface.lastUpdated.Before(threshold) {
-				rifaces, ok := result[host]
+				rifaces, ok := result[sampler]
 				if !ok {
 					rifaces = make(map[uint]Interface)
-					result[host] = rifaces
+					result[sampler] = rifaces
 				}
-				result[host][ifindex] = iface
+				result[sampler][ifindex] = iface
 			}
 		}
 	}

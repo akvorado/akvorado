@@ -94,18 +94,18 @@ func (c *Component) runWorker(workerID int) error {
 				c.r.Warn().Int("worker", workerID).Msg("no more flow available, stopping")
 				return errors.New("no more flow available")
 			}
-			host := net.IP(flow.SamplerAddress).String()
-			c.metrics.flowsReceived.WithLabelValues(host).Inc()
+			sampler := net.IP(flow.SamplerAddress).String()
+			c.metrics.flowsReceived.WithLabelValues(sampler).Inc()
 
 			// Add interface names
 			cacheMiss := false
 			if flow.InIf != 0 {
-				iface, err := c.d.Snmp.Lookup(host, uint(flow.InIf))
+				iface, err := c.d.Snmp.Lookup(sampler, uint(flow.InIf))
 				if err != nil {
 					if err != snmp.ErrCacheMiss && errLimiter.Allow() {
-						c.r.Err(err).Str("host", host).Msg("unable to query SNMP cache")
+						c.r.Err(err).Str("sampler", sampler).Msg("unable to query SNMP cache")
 					}
-					c.metrics.flowsErrors.WithLabelValues(host, err.Error()).Inc()
+					c.metrics.flowsErrors.WithLabelValues(sampler, err.Error()).Inc()
 					cacheMiss = true
 				} else {
 					flow.InIfName = iface.Name
@@ -113,15 +113,15 @@ func (c *Component) runWorker(workerID int) error {
 				}
 			}
 			if flow.OutIf != 0 {
-				iface, err := c.d.Snmp.Lookup(host, uint(flow.OutIf))
+				iface, err := c.d.Snmp.Lookup(sampler, uint(flow.OutIf))
 				if err != nil {
 					// Only register a cache miss if we don't have one.
 					// TODO: maybe we could do one SNMP query for both interfaces.
 					if !cacheMiss {
 						if err != snmp.ErrCacheMiss && errLimiter.Allow() {
-							c.r.Err(err).Str("host", host).Msg("unable to query SNMP cache")
+							c.r.Err(err).Str("sampler", sampler).Msg("unable to query SNMP cache")
 						}
-						c.metrics.flowsErrors.WithLabelValues(host, err.Error()).Inc()
+						c.metrics.flowsErrors.WithLabelValues(sampler, err.Error()).Inc()
 						cacheMiss = true
 					}
 				} else {
@@ -148,21 +148,21 @@ func (c *Component) runWorker(workerID int) error {
 			err := buf.EncodeMessage(flow)
 			if err != nil {
 				if errLimiter.Allow() {
-					c.r.Err(err).Str("host", host).Msg("unable to serialize flow")
+					c.r.Err(err).Str("sampler", sampler).Msg("unable to serialize flow")
 				}
-				c.metrics.flowsErrors.WithLabelValues(host, err.Error()).Inc()
+				c.metrics.flowsErrors.WithLabelValues(sampler, err.Error()).Inc()
 				continue
 			}
 
 			// Forward to Kafka
-			if err := c.d.Kafka.Send(host, buf.Bytes()); err != nil {
+			if err := c.d.Kafka.Send(sampler, buf.Bytes()); err != nil {
 				if errLimiter.Allow() {
-					c.r.Err(err).Str("host", host).Msg("unable to send flow to Kafka")
+					c.r.Err(err).Str("sampler", sampler).Msg("unable to send flow to Kafka")
 				}
-				c.metrics.flowsErrors.WithLabelValues(host, err.Error()).Inc()
+				c.metrics.flowsErrors.WithLabelValues(sampler, err.Error()).Inc()
 				continue
 			}
-			c.metrics.flowsForwarded.WithLabelValues(host).Inc()
+			c.metrics.flowsForwarded.WithLabelValues(sampler).Inc()
 
 			// If we have HTTP clients, send to them too
 			if atomic.LoadUint32(&c.httpFlowClients) > 0 {

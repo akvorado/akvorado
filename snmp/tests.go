@@ -25,9 +25,9 @@ func newMockPoller(community string, put func(string, uint, Interface)) *mockPol
 }
 
 // Poll just builds synthetic data.
-func (p *mockPoller) Poll(ctx context.Context, host string, port uint16, community string, ifIndex uint) {
+func (p *mockPoller) Poll(ctx context.Context, sampler string, port uint16, community string, ifIndex uint) {
 	if community == p.community {
-		p.put(host, ifIndex, Interface{
+		p.put(sampler, ifIndex, Interface{
 			Name:        fmt.Sprintf("Gi0/0/%d", ifIndex),
 			Description: fmt.Sprintf("Interface %d", ifIndex),
 		})

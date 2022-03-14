@@ -13,9 +13,9 @@ import (
 	"akvorado/reporter"
 )
 
-func expectSNMPLookup(t *testing.T, c *Component, host string, ifIndex uint, expected Interface, expectedError error) {
+func expectSNMPLookup(t *testing.T, c *Component, sampler string, ifIndex uint, expected Interface, expectedError error) {
 	t.Helper()
-	got, err := c.Lookup(host, ifIndex)
+	got, err := c.Lookup(sampler, ifIndex)
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Errorf("Lookup() (-got, +want):\n%s", diff)
 	}
@@ -121,7 +121,7 @@ func TestAutoRefresh(t *testing.T) {
 		`hit`:          "2",
 		`miss`:         "1",
 		`size`:         "1",
-		`hosts`:        "1",
+		`samplers`:     "1",
 		`refresh_runs`: "28", // 56/2
 		`refresh`:      "1",
 	}

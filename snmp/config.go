@@ -16,7 +16,7 @@ type Configuration struct {
 	CachePersistFile string
 	// DefaultCommunity is the default SNMP community to use
 	DefaultCommunity string
-	// Communities is a mapping from host (IP) to communities
+	// Communities is a mapping from sampler IPs to communities
 	Communities map[string]string
 	// Workers define the number of workers used to poll SNMP
 	Workers int

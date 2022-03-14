@@ -15,10 +15,10 @@ import (
 )
 
 type poller interface {
-	Poll(ctx context.Context, host string, port uint16, community string, ifIndex uint)
+	Poll(ctx context.Context, sampler string, port uint16, community string, ifIndex uint)
 }
 
-// realPoller will poll hosts using real SNMP requests.
+// realPoller will poll samplers using real SNMP requests.
 type realPoller struct {
 	r     *reporter.Reporter
 	clock clock.Clock
@@ -59,29 +59,29 @@ func newPoller(r *reporter.Reporter, clock clock.Clock, put func(string, uint, I
 		reporter.CounterOpts{
 			Name: "poller_success",
 			Help: "Number of successful requests.",
-		}, []string{"router"})
+		}, []string{"sampler"})
 	p.metrics.failures = r.CounterVec(
 		reporter.CounterOpts{
 			Name: "poller_failure",
 			Help: "Number of failed requests.",
-		}, []string{"router", "error"})
+		}, []string{"sampler", "error"})
 	p.metrics.retries = r.CounterVec(
 		reporter.CounterOpts{
 			Name: "poller_retry",
 			Help: "Number of retried requests.",
-		}, []string{"router"})
+		}, []string{"sampler"})
 	p.metrics.times = r.SummaryVec(
 		reporter.SummaryOpts{
 			Name:       "poller_seconds",
 			Help:       "Time to successfully poll for values.",
 			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
-		}, []string{"router"})
+		}, []string{"sampler"})
 	return p
 }
 
-func (p *realPoller) Poll(ctx context.Context, host string, port uint16, community string, ifIndex uint) {
+func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, community string, ifIndex uint) {
 	// Check if already have a request running
-	key := fmt.Sprintf("%s@%d", host, ifIndex)
+	key := fmt.Sprintf("%s@%d", sampler, ifIndex)
 	p.pendingRequestsLock.Lock()
 	_, ok := p.pendingRequests[key]
 	if !ok {
@@ -100,7 +100,7 @@ func (p *realPoller) Poll(ctx context.Context, host string, port uint16, communi
 
 	// Instantiate an SNMP state
 	g := &gosnmp.GoSNMP{
-		Target:                  host,
+		Target:                  sampler,
 		Port:                    port,
 		Community:               community,
 		Version:                 gosnmp.Version2c,
@@ -110,13 +110,13 @@ func (p *realPoller) Poll(ctx context.Context, host string, port uint16, communi
 		UseUnconnectedUDPSocket: true,
 		Logger:                  gosnmp.NewLogger(&goSNMPLogger{p.r}),
 		OnRetry: func(*gosnmp.GoSNMP) {
-			p.metrics.retries.WithLabelValues(host).Inc()
+			p.metrics.retries.WithLabelValues(sampler).Inc()
 		},
 	}
 	if err := g.Connect(); err != nil {
-		p.metrics.failures.WithLabelValues(host, "connect").Inc()
+		p.metrics.failures.WithLabelValues(sampler, "connect").Inc()
 		if p.errLimiter.Allow() {
-			p.r.Err(err).Str("router", host).Msg("unable to connect")
+			p.r.Err(err).Str("sampler", sampler).Msg("unable to connect")
 		}
 	}
 	start := p.clock.Now()
@@ -127,9 +127,9 @@ func (p *realPoller) Poll(ctx context.Context, host string, port uint16, communi
 		return
 	}
 	if err != nil {
-		p.metrics.failures.WithLabelValues(host, "get").Inc()
+		p.metrics.failures.WithLabelValues(sampler, "get").Inc()
 		if p.errLimiter.Allow() {
-			p.r.Err(err).Str("router", host).Msg("unable to get")
+			p.r.Err(err).Str("sampler", sampler).Msg("unable to get")
 		}
 		return
 	}
@@ -139,32 +139,32 @@ func (p *realPoller) Poll(ctx context.Context, host string, port uint16, communi
 	case gosnmp.OctetString:
 		ifDescr = string(result.Variables[0].Value.([]byte))
 	case gosnmp.NoSuchInstance, gosnmp.NoSuchObject:
-		p.metrics.failures.WithLabelValues(host, "ifdescr_missing").Inc()
+		p.metrics.failures.WithLabelValues(sampler, "ifdescr_missing").Inc()
 		ok = false
 	default:
-		p.metrics.failures.WithLabelValues(host, "ifdescr_unknown_type").Inc()
+		p.metrics.failures.WithLabelValues(sampler, "ifdescr_unknown_type").Inc()
 		ok = false
 	}
 	switch result.Variables[1].Type {
 	case gosnmp.OctetString:
 		ifAlias = string(result.Variables[1].Value.([]byte))
 	case gosnmp.NoSuchInstance, gosnmp.NoSuchObject:
-		p.metrics.failures.WithLabelValues(host, "ifalias_missing").Inc()
+		p.metrics.failures.WithLabelValues(sampler, "ifalias_missing").Inc()
 		ok = false
 	default:
-		p.metrics.failures.WithLabelValues(host, "ifalias_unknown_type").Inc()
+		p.metrics.failures.WithLabelValues(sampler, "ifalias_unknown_type").Inc()
 		ok = false
 	}
 	if !ok {
 		return
 	}
-	p.put(host, ifIndex, Interface{
+	p.put(sampler, ifIndex, Interface{
 		Name:        ifDescr,
 		Description: ifAlias,
 	})
 
-	p.metrics.successes.WithLabelValues(host).Inc()
-	p.metrics.times.WithLabelValues(host).Observe(p.clock.Now().Sub(start).Seconds())
+	p.metrics.successes.WithLabelValues(sampler).Inc()
+	p.metrics.times.WithLabelValues(sampler).Observe(p.clock.Now().Sub(start).Seconds())
 }
 
 type goSNMPLogger struct {

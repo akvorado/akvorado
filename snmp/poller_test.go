@@ -20,8 +20,8 @@ func TestPoller(t *testing.T) {
 	got := []string{}
 	r := reporter.NewMock(t)
 	clock := clock.NewMock()
-	p := newPoller(r, clock, func(host string, ifIndex uint, iface Interface) {
-		got = append(got, fmt.Sprintf("%s %d %s %s", host, ifIndex, iface.Name, iface.Description))
+	p := newPoller(r, clock, func(sampler string, ifIndex uint, iface Interface) {
+		got = append(got, fmt.Sprintf("%s %d %s %s", sampler, ifIndex, iface.Name, iface.Description))
 	})
 
 	// Start a new SNMP server
@@ -97,15 +97,15 @@ func TestPoller(t *testing.T) {
 
 	gotMetrics := r.GetMetrics("akvorado_snmp_poller_")
 	expectedMetrics := map[string]string{
-		`failure{error="ifalias_missing",router="127.0.0.1"}`: "2",
-		`failure{error="ifdescr_missing",router="127.0.0.1"}`: "1",
-		`pending`:                                     "0",
-		`seconds_count{router="127.0.0.1"}`:           "2",
-		`seconds_sum{router="127.0.0.1"}`:             "0",
-		`seconds{router="127.0.0.1",quantile="0.5"}`:  "0",
-		`seconds{router="127.0.0.1",quantile="0.9"}`:  "0",
-		`seconds{router="127.0.0.1",quantile="0.99"}`: "0",
-		`success{router="127.0.0.1"}`:                 "2",
+		`failure{error="ifalias_missing",sampler="127.0.0.1"}`: "2",
+		`failure{error="ifdescr_missing",sampler="127.0.0.1"}`: "1",
+		`pending`:                                      "0",
+		`seconds_count{sampler="127.0.0.1"}`:           "2",
+		`seconds_sum{sampler="127.0.0.1"}`:             "0",
+		`seconds{sampler="127.0.0.1",quantile="0.5"}`:  "0",
+		`seconds{sampler="127.0.0.1",quantile="0.9"}`:  "0",
+		`seconds{sampler="127.0.0.1",quantile="0.99"}`: "0",
+		`success{sampler="127.0.0.1"}`:                 "2",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)

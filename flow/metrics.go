@@ -28,14 +28,14 @@ func (c *Component) initMetrics() {
 			Name: "traffic_bytes",
 			Help: "Bytes received by the application.",
 		},
-		[]string{"router", "type"},
+		[]string{"sampler", "type"},
 	)
 	c.metrics.trafficPackets = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "traffic_packets",
 			Help: "Packets received by the application.",
 		},
-		[]string{"router", "type"},
+		[]string{"sampler", "type"},
 	)
 	c.metrics.trafficPacketSizeSum = c.r.SummaryVec(
 		reporter.SummaryOpts{
@@ -43,7 +43,7 @@ func (c *Component) initMetrics() {
 			Help:       "Summary of packet size.",
 			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		},
-		[]string{"router", "type"},
+		[]string{"sampler", "type"},
 	)
 	c.metrics.trafficErrors = c.r.CounterVec(
 		reporter.CounterOpts{
@@ -81,28 +81,28 @@ func (c *Component) initMetrics() {
 			Name: "nf_errors_count",
 			Help: "Netflows processed errors.",
 		},
-		[]string{"router", "error"},
+		[]string{"sampler", "error"},
 	)
 	c.metrics.netflowStats = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "nf_count",
 			Help: "Netflows processed.",
 		},
-		[]string{"router", "version"},
+		[]string{"sampler", "version"},
 	)
 	c.metrics.netflowSetRecordsStatsSum = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "nf_flowset_records_sum",
 			Help: "Netflows FlowSets sum of records.",
 		},
-		[]string{"router", "version", "type"},
+		[]string{"sampler", "version", "type"},
 	)
 	c.metrics.netflowSetStatsSum = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "nf_flowset_sum",
 			Help: "Netflows FlowSets sum.",
 		},
-		[]string{"router", "version", "type"},
+		[]string{"sampler", "version", "type"},
 	)
 	c.metrics.netflowTimeStatsSum = c.r.SummaryVec(
 		reporter.SummaryOpts{
@@ -110,13 +110,13 @@ func (c *Component) initMetrics() {
 			Help:       "Netflows time difference between time of flow and processing.",
 			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		},
-		[]string{"router", "version"},
+		[]string{"sampler", "version"},
 	)
 	c.metrics.netflowTemplatesStats = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "nf_templates_count",
 			Help: "Netflows Template count.",
 		},
-		[]string{"router", "version", "obs_domain_id", "template_id", "type"},
+		[]string{"sampler", "version", "obs_domain_id", "template_id", "type"},
 	)
 }

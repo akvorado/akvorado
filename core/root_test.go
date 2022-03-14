@@ -55,13 +55,13 @@ func TestCore(t *testing.T) {
 		}
 	}()
 
-	flowMessage := func(router string, in, out uint32) *flow.FlowMessage {
+	flowMessage := func(sampler string, in, out uint32) *flow.FlowMessage {
 		return &flow.FlowMessage{
 			TimeReceived:   200,
 			SequenceNum:    1000,
 			SamplingRate:   1000,
 			FlowDirection:  1,
-			SamplerAddress: net.ParseIP(router),
+			SamplerAddress: net.ParseIP(sampler),
 			TimeFlowStart:  100,
 			TimeFlowEnd:    200,
 			Bytes:          6765,
@@ -88,11 +88,11 @@ func TestCore(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_core_")
 		expectedMetrics := map[string]string{
-			`flows_errors{error="SNMP cache miss",router="192.0.2.142"}`: "1",
-			`flows_errors{error="SNMP cache miss",router="192.0.2.143"}`: "3",
-			`flows_received{router="192.0.2.142"}`:                       "1",
-			`flows_received{router="192.0.2.143"}`:                       "3",
-			`flows_http_clients`:                                         "0",
+			`flows_errors{error="SNMP cache miss",sampler="192.0.2.142"}`: "1",
+			`flows_errors{error="SNMP cache miss",sampler="192.0.2.143"}`: "3",
+			`flows_received{sampler="192.0.2.142"}`:                       "1",
+			`flows_received{sampler="192.0.2.143"}`:                       "3",
+			`flows_http_clients`:                                          "0",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -107,13 +107,13 @@ func TestCore(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics = r.GetMetrics("akvorado_core_")
 		expectedMetrics = map[string]string{
-			`flows_errors{error="SNMP cache miss",router="192.0.2.142"}`: "1",
-			`flows_errors{error="SNMP cache miss",router="192.0.2.143"}`: "3",
-			`flows_received{router="192.0.2.142"}`:                       "2",
-			`flows_received{router="192.0.2.143"}`:                       "4",
-			`flows_forwarded{router="192.0.2.142"}`:                      "1",
-			`flows_forwarded{router="192.0.2.143"}`:                      "1",
-			`flows_http_clients`:                                         "0",
+			`flows_errors{error="SNMP cache miss",sampler="192.0.2.142"}`: "1",
+			`flows_errors{error="SNMP cache miss",sampler="192.0.2.143"}`: "3",
+			`flows_received{sampler="192.0.2.142"}`:                       "2",
+			`flows_received{sampler="192.0.2.143"}`:                       "4",
+			`flows_forwarded{sampler="192.0.2.142"}`:                      "1",
+			`flows_forwarded{sampler="192.0.2.143"}`:                      "1",
+			`flows_http_clients`:                                          "0",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Fatalf("Metrics (-got, +want):\n%s", diff)

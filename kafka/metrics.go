@@ -36,16 +36,16 @@ func (c *Component) initMetrics() {
 	c.metrics.messagesSent = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "messages_sent",
-			Help: "Number of messages sent from a given host.",
+			Help: "Number of messages sent from a given sampler.",
 		},
-		[]string{"router"},
+		[]string{"sampler"},
 	)
 	c.metrics.bytesSent = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "bytes_sent",
-			Help: "Number of bytes sent from a given host.",
+			Help: "Number of bytes sent from a given sampler.",
 		},
-		[]string{"router"},
+		[]string{"sampler"},
 	)
 	c.metrics.errors = c.r.CounterVec(
 		reporter.CounterOpts{

@@ -22,9 +22,9 @@ func setupTestCache(t *testing.T) (*reporter.Reporter, *clock.Mock, *snmpCache) 
 	return r, clock, sc
 }
 
-func expectCacheLookup(t *testing.T, sc *snmpCache, host string, ifIndex uint, expected Interface, expectedError error) {
+func expectCacheLookup(t *testing.T, sc *snmpCache, sampler string, ifIndex uint, expected Interface, expectedError error) {
 	t.Helper()
-	got, err := sc.Lookup(host, ifIndex)
+	got, err := sc.Lookup(sampler, ifIndex)
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Errorf("Lookup() (-got, +want):\n%s", diff)
 	}
@@ -39,11 +39,11 @@ func TestGetEmpty(t *testing.T) {
 
 	gotMetrics := r.GetMetrics("akvorado_snmp_cache_")
 	expectedMetrics := map[string]string{
-		`expired`: "0",
-		`hit`:     "0",
-		`miss`:    "1",
-		`size`:    "0",
-		`hosts`:   "0",
+		`expired`:  "0",
+		`hit`:      "0",
+		`miss`:     "1",
+		`size`:     "0",
+		`samplers`: "0",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -59,11 +59,11 @@ func TestSimpleLookup(t *testing.T) {
 
 	gotMetrics := r.GetMetrics("akvorado_snmp_cache_")
 	expectedMetrics := map[string]string{
-		`expired`: "0",
-		`hit`:     "1",
-		`miss`:    "2",
-		`size`:    "1",
-		`hosts`:   "1",
+		`expired`:  "0",
+		`hit`:      "1",
+		`miss`:     "2",
+		`size`:     "1",
+		`samplers`: "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -101,11 +101,11 @@ func TestExpire(t *testing.T) {
 
 	gotMetrics := r.GetMetrics("akvorado_snmp_cache_")
 	expectedMetrics := map[string]string{
-		`expired`: "3",
-		`hit`:     "7",
-		`miss`:    "6",
-		`size`:    "1",
-		`hosts`:   "1",
+		`expired`:  "3",
+		`hit`:      "7",
+		`miss`:     "6",
+		`size`:     "1",
+		`samplers`: "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)

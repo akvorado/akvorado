@@ -122,12 +122,12 @@ func (c *Component) Stop() error {
 }
 
 // Send a message to Kafka.
-func (c *Component) Send(host string, payload []byte) error {
-	c.metrics.bytesSent.WithLabelValues(host).Add(float64(len(payload)))
-	c.metrics.messagesSent.WithLabelValues(host).Inc()
+func (c *Component) Send(sampler string, payload []byte) error {
+	c.metrics.bytesSent.WithLabelValues(sampler).Add(float64(len(payload)))
+	c.metrics.messagesSent.WithLabelValues(sampler).Inc()
 	c.kafkaProducer.Input() <- &sarama.ProducerMessage{
 		Topic: c.config.Topic,
-		Key:   sarama.StringEncoder(host),
+		Key:   sarama.StringEncoder(sampler),
 		Value: sarama.ByteEncoder(payload),
 	}
 	return nil

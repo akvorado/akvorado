@@ -50,10 +50,10 @@ out1:
 	// Check templates (with metrics)
 	gotMetrics := r.GetMetrics("akvorado_flow_nf_")
 	expectedMetrics := map[string]string{
-		`count{router="127.0.0.1",version="9"}`:                                                               "1",
-		`flowset_records_sum{router="127.0.0.1",type="TemplateFlowSet",version="9"}`:                          "1",
-		`flowset_sum{router="127.0.0.1",type="TemplateFlowSet",version="9"}`:                                  "1",
-		`templates_count{obs_domain_id="0",router="127.0.0.1",template_id="266",type="template",version="9"}`: "1",
+		`count{sampler="127.0.0.1",version="9"}`:                                                               "1",
+		`flowset_records_sum{sampler="127.0.0.1",type="TemplateFlowSet",version="9"}`:                          "1",
+		`flowset_sum{sampler="127.0.0.1",type="TemplateFlowSet",version="9"}`:                                  "1",
+		`templates_count{obs_domain_id="0",sampler="127.0.0.1",template_id="266",type="template",version="9"}`: "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics after template (-got, +want):\n%s", diff)
@@ -169,11 +169,11 @@ out2:
 		"flowset_sum",
 	)
 	expectedMetrics = map[string]string{
-		`count{router="127.0.0.1",version="9"}`:                                      "2",
-		`flowset_records_sum{router="127.0.0.1",type="DataFlowSet",version="9"}`:     "4",
-		`flowset_records_sum{router="127.0.0.1",type="TemplateFlowSet",version="9"}`: "1",
-		`flowset_sum{router="127.0.0.1",type="DataFlowSet",version="9"}`:             "1",
-		`flowset_sum{router="127.0.0.1",type="TemplateFlowSet",version="9"}`:         "1",
+		`count{sampler="127.0.0.1",version="9"}`:                                      "2",
+		`flowset_records_sum{sampler="127.0.0.1",type="DataFlowSet",version="9"}`:     "4",
+		`flowset_records_sum{sampler="127.0.0.1",type="TemplateFlowSet",version="9"}`: "1",
+		`flowset_sum{sampler="127.0.0.1",type="DataFlowSet",version="9"}`:             "1",
+		`flowset_sum{sampler="127.0.0.1",type="TemplateFlowSet",version="9"}`:         "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics after data (-got, +want):\n%s", diff)

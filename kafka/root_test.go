@@ -39,9 +39,9 @@ func TestKafka(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 	gotMetrics := r.GetMetrics("akvorado_kafka_")
 	expectedMetrics := map[string]string{
-		`bytes_sent{router="127.0.0.1"}`:                                         "26",
+		`bytes_sent{sampler="127.0.0.1"}`:                                        "26",
 		`errors{error="kafka: Failed to produce message to topic flows: noooo"}`: "1",
-		`messages_sent{router="127.0.0.1"}`:                                      "2",
+		`messages_sent{sampler="127.0.0.1"}`:                                     "2",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)

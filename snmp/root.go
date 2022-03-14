@@ -102,10 +102,10 @@ func (c *Component) Start() error {
 					count := 0
 					threshold := c.config.CacheDuration - c.config.CacheRefresh
 					toRefresh := c.sc.WouldExpire(threshold)
-					for host, ifaces := range toRefresh {
+					for sampler, ifaces := range toRefresh {
 						for ifIndex := range ifaces {
 							c.pollerChannel <- lookupRequest{
-								Host:    host,
+								Sampler: sampler,
 								IfIndex: ifIndex,
 							}
 							count++
@@ -118,7 +118,7 @@ func (c *Component) Start() error {
 		}
 	})
 
-	// Goroutines to poll hosts
+	// Goroutines to poll samplers
 	for i := 0; i < c.config.Workers; i++ {
 		workerID := i
 		c.t.Go(func() error {
@@ -129,15 +129,15 @@ func (c *Component) Start() error {
 					c.r.Debug().Int("worker", workerID).Msg("stopping SNMP poller")
 					return nil
 				case request := <-c.pollerChannel:
-					host := request.Host
+					sampler := request.Sampler
 					ifIndex := request.IfIndex
-					community, ok := c.config.Communities[host]
+					community, ok := c.config.Communities[sampler]
 					if !ok {
 						community = c.config.DefaultCommunity
 					}
 					c.poller.Poll(
 						c.t.Context(context.Background()),
-						host, 161,
+						sampler, 161,
 						community,
 						ifIndex)
 				}
@@ -158,18 +158,18 @@ func (c *Component) Stop() error {
 
 // lookupRequest is used internally to queue a polling request.
 type lookupRequest struct {
-	Host    string
+	Sampler string
 	IfIndex uint
 }
 
-// Lookup for interface information for the provided host and ifIndex.
+// Lookup for interface information for the provided sampler and ifIndex.
 // If the information is not in the cache, it will be polled, but
 // won't be returned immediately.
-func (c *Component) Lookup(host string, ifIndex uint) (Interface, error) {
-	iface, err := c.sc.Lookup(host, ifIndex)
+func (c *Component) Lookup(sampler string, ifIndex uint) (Interface, error) {
+	iface, err := c.sc.Lookup(sampler, ifIndex)
 	if errors.Is(err, ErrCacheMiss) {
 		c.pollerChannel <- lookupRequest{
-			Host:    host,
+			Sampler: sampler,
 			IfIndex: ifIndex,
 		}
 	}
