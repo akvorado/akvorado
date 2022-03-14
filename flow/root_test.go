@@ -70,7 +70,7 @@ out1:
 	expectedFlows := []*FlowMessage{
 		{
 			SequenceNum:      21029551,
-			SamplerAddress:   net.ParseIP("127.0.0.1").To4(),
+			SamplerAddress:   net.ParseIP("127.0.0.1").To16(),
 			TimeFlowStart:    1646339556,
 			TimeFlowEnd:      1646339556,
 			Bytes:            1500,
@@ -90,7 +90,7 @@ out1:
 			IPv6FlowLabel:    795690,
 		}, {
 			SequenceNum:      21029551,
-			SamplerAddress:   net.ParseIP("127.0.0.1").To4(),
+			SamplerAddress:   net.ParseIP("127.0.0.1").To16(),
 			TimeFlowStart:    1646339556,
 			TimeFlowEnd:      1646339556,
 			Bytes:            1280,
@@ -110,7 +110,7 @@ out1:
 			IPv6FlowLabel:    190180,
 		}, {
 			SequenceNum:      21029551,
-			SamplerAddress:   net.ParseIP("127.0.0.1").To4(),
+			SamplerAddress:   net.ParseIP("127.0.0.1").To16(),
 			TimeFlowStart:    1646339556,
 			TimeFlowEnd:      1646339556,
 			Bytes:            1378,
@@ -128,7 +128,7 @@ out1:
 			ForwardingStatus: 64,
 		}, {
 			SequenceNum:      21029551,
-			SamplerAddress:   net.ParseIP("127.0.0.1").To4(),
+			SamplerAddress:   net.ParseIP("127.0.0.1").To16(),
 			TimeFlowStart:    1646339556,
 			TimeFlowEnd:      1646339556,
 			Bytes:            1500,
