@@ -29,8 +29,8 @@ func TestDecoding(t *testing.T) {
 		t.Fatalf("Dial() failure:\n%+v", err)
 	}
 
-	// Send template
-	template, err := ioutil.ReadFile(filepath.Join("testdata", "template.data"))
+	// Send an option template
+	template, err := ioutil.ReadFile(filepath.Join("testdata", "options-template-257.data"))
 	if err != nil {
 		panic(err)
 	}
@@ -41,26 +41,95 @@ out1:
 	for {
 		select {
 		case flow := <-c.Flows():
-			t.Fatalf("After sending templates, received a flow while we should not:\n%v", flow)
+			t.Fatalf("After sending option template, received a flow while we should not:\n%v", flow)
 		case <-time.After(10 * time.Millisecond):
 			break out1
 		}
 	}
 
-	// Check templates (with metrics)
+	// Check metrics
 	gotMetrics := r.GetMetrics("akvorado_flow_nf_")
 	expectedMetrics := map[string]string{
-		`count{sampler="127.0.0.1",version="9"}`:                                                               "1",
-		`flowset_records_sum{sampler="127.0.0.1",type="TemplateFlowSet",version="9"}`:                          "1",
-		`flowset_sum{sampler="127.0.0.1",type="TemplateFlowSet",version="9"}`:                                  "1",
-		`templates_count{obs_domain_id="0",sampler="127.0.0.1",template_id="266",type="template",version="9"}`: "1",
+		`count{sampler="127.0.0.1",version="9"}`:                                                                       "1",
+		`flowset_records_sum{sampler="127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                           "1",
+		`flowset_sum{sampler="127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                   "1",
+		`templates_count{obs_domain_id="0",sampler="127.0.0.1",template_id="257",type="options_template",version="9"}`: "1",
+	}
+	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+		t.Fatalf("Metrics after template (-got, +want):\n%s", diff)
+	}
+
+	// Send option data
+	data, err := ioutil.ReadFile(filepath.Join("testdata", "options-data-257.data"))
+	if err != nil {
+		panic(err)
+	}
+
+	if _, err := conn.Write(data); err != nil {
+		t.Fatalf("Write() failure:\n%+v", err)
+	}
+out2:
+	for {
+		select {
+		case flow := <-c.Flows():
+			t.Fatalf("After sending option flowset, received a flow while we should not:\n%v", flow)
+		case <-time.After(10 * time.Millisecond):
+			break out2
+		}
+	}
+
+	// Check metrics
+	fmt.Printf("%+v\n", c.templates["127.0.0.1"].templates)
+	gotMetrics = r.GetMetrics("akvorado_flow_nf_")
+	expectedMetrics = map[string]string{
+		`count{sampler="127.0.0.1",version="9"}`:                                                                       "2",
+		`flowset_records_sum{sampler="127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                           "1",
+		`flowset_records_sum{sampler="127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                               "4",
+		`flowset_sum{sampler="127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                   "1",
+		`flowset_sum{sampler="127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                                       "1",
+		`templates_count{obs_domain_id="0",sampler="127.0.0.1",template_id="257",type="options_template",version="9"}`: "1",
+	}
+	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+		t.Fatalf("Metrics after template (-got, +want):\n%s", diff)
+	}
+
+	// Send a regular template
+	template, err = ioutil.ReadFile(filepath.Join("testdata", "template-260.data"))
+	if err != nil {
+		panic(err)
+	}
+	if _, err := conn.Write(template); err != nil {
+		t.Fatalf("Write() failure:\n%+v", err)
+	}
+out3:
+	for {
+		select {
+		case flow := <-c.Flows():
+			t.Fatalf("After sending template, received a flow while we should not:\n%v", flow)
+		case <-time.After(10 * time.Millisecond):
+			break out3
+		}
+	}
+
+	// Check metrics
+	gotMetrics = r.GetMetrics("akvorado_flow_nf_")
+	expectedMetrics = map[string]string{
+		`count{sampler="127.0.0.1",version="9"}`:                                                                       "3",
+		`flowset_records_sum{sampler="127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                           "1",
+		`flowset_records_sum{sampler="127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                               "4",
+		`flowset_records_sum{sampler="127.0.0.1",type="TemplateFlowSet",version="9"}`:                                  "1",
+		`flowset_sum{sampler="127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                   "1",
+		`flowset_sum{sampler="127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                                       "1",
+		`flowset_sum{sampler="127.0.0.1",type="TemplateFlowSet",version="9"}`:                                          "1",
+		`templates_count{obs_domain_id="0",sampler="127.0.0.1",template_id="257",type="options_template",version="9"}`: "1",
+		`templates_count{obs_domain_id="0",sampler="127.0.0.1",template_id="260",type="template",version="9"}`:         "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics after template (-got, +want):\n%s", diff)
 	}
 
 	// Send data
-	data, err := ioutil.ReadFile(filepath.Join("testdata", "flow.data"))
+	data, err = ioutil.ReadFile(filepath.Join("testdata", "data-260.data"))
 	if err != nil {
 		panic(err)
 	}
@@ -69,93 +138,96 @@ out1:
 	}
 	expectedFlows := []*FlowMessage{
 		{
-			SequenceNum:      21029551,
+			SequenceNum:      44797001,
 			SamplerAddress:   net.ParseIP("127.0.0.1").To16(),
-			TimeFlowStart:    1646339556,
-			TimeFlowEnd:      1646339556,
+			SamplingRate:     30000,
+			TimeFlowStart:    1647285926,
+			TimeFlowEnd:      1647285926,
 			Bytes:            1500,
 			Packets:          1,
-			SrcAddr:          net.ParseIP("2a02:26f0:b1::5c7a:5d0b"),
-			DstAddr:          net.ParseIP("2a01:e0a:444:c640:d48e:9641:b07:1bed"),
-			SrcNet:           48,
-			DstNet:           52,
-			Etype:            34525,
+			SrcAddr:          net.ParseIP("198.38.121.178").To16(),
+			DstAddr:          net.ParseIP("91.170.143.87").To16(),
+			SrcNet:           24,
+			DstNet:           14,
+			Etype:            0x800,
 			Proto:            6,
 			SrcPort:          443,
-			DstPort:          38120,
-			InIf:             461,
-			OutIf:            334,
+			DstPort:          19624,
+			InIf:             335,
+			OutIf:            450,
 			ForwardingStatus: 64,
 			TCPFlags:         16,
-			IPv6FlowLabel:    795690,
 		}, {
-			SequenceNum:      21029551,
+			SequenceNum:      44797001,
 			SamplerAddress:   net.ParseIP("127.0.0.1").To16(),
-			TimeFlowStart:    1646339556,
-			TimeFlowEnd:      1646339556,
-			Bytes:            1280,
-			Packets:          1,
-			SrcAddr:          net.ParseIP("2a00:1450:4007:4::b"),
-			DstAddr:          net.ParseIP("2a01:e0a:85f:13f0:e01a:dfa1:6556:4786"),
-			SrcNet:           48,
-			DstNet:           52,
-			Etype:            34525,
-			Proto:            6,
-			SrcPort:          443,
-			DstPort:          54496,
-			InIf:             461,
-			OutIf:            334,
-			ForwardingStatus: 64,
-			TCPFlags:         24,
-			IPv6FlowLabel:    190180,
-		}, {
-			SequenceNum:      21029551,
-			SamplerAddress:   net.ParseIP("127.0.0.1").To16(),
-			TimeFlowStart:    1646339556,
-			TimeFlowEnd:      1646339556,
-			Bytes:            1378,
-			Packets:          1,
-			SrcAddr:          net.ParseIP("2a00:1450:4007:2b::a"),
-			DstAddr:          net.ParseIP("2a01:e0a:1dd:a1d0:8c19:1fc5:f427:2c13"),
-			SrcNet:           48,
-			DstNet:           52,
-			Etype:            34525,
-			Proto:            17,
-			SrcPort:          443,
-			DstPort:          37867,
-			InIf:             461,
-			OutIf:            334,
-			ForwardingStatus: 64,
-		}, {
-			SequenceNum:      21029551,
-			SamplerAddress:   net.ParseIP("127.0.0.1").To16(),
-			TimeFlowStart:    1646339556,
-			TimeFlowEnd:      1646339556,
+			SamplingRate:     30000,
+			TimeFlowStart:    1647285926,
+			TimeFlowEnd:      1647285926,
 			Bytes:            1500,
 			Packets:          1,
-			SrcAddr:          net.ParseIP("2a00:86c0:121:121::207"),
-			DstAddr:          net.ParseIP("2a01:e0a:929:dd80:3899:4413:7a11:da00"),
-			SrcNet:           48,
-			DstNet:           52,
-			Etype:            34525,
+			SrcAddr:          net.ParseIP("198.38.121.219").To16(),
+			DstAddr:          net.ParseIP("88.122.57.97").To16(),
+			SrcNet:           24,
+			DstNet:           14,
+			Etype:            0x800,
 			Proto:            6,
 			SrcPort:          443,
-			DstPort:          53396,
+			DstPort:          2444,
 			InIf:             335,
-			OutIf:            308,
+			OutIf:            452,
+			ForwardingStatus: 64,
+			TCPFlags:         16,
+		}, {
+			SequenceNum:      44797001,
+			SamplerAddress:   net.ParseIP("127.0.0.1").To16(),
+			SamplingRate:     30000,
+			TimeFlowStart:    1647285926,
+			TimeFlowEnd:      1647285926,
+			Bytes:            1400,
+			Packets:          1,
+			SrcAddr:          net.ParseIP("173.194.190.106").To16(),
+			DstAddr:          net.ParseIP("37.165.129.20").To16(),
+			SrcNet:           20,
+			DstNet:           18,
+			Etype:            0x800,
+			Proto:            6,
+			SrcPort:          443,
+			DstPort:          53697,
+			InIf:             461,
+			OutIf:            306,
+			ForwardingStatus: 64,
+			TCPFlags:         16,
+		}, {
+			SequenceNum:      44797001,
+			SamplerAddress:   net.ParseIP("127.0.0.1").To16(),
+			SamplingRate:     30000,
+			TimeFlowStart:    1647285926,
+			TimeFlowEnd:      1647285926,
+			Bytes:            1448,
+			Packets:          1,
+			SrcAddr:          net.ParseIP("74.125.100.234").To16(),
+			DstAddr:          net.ParseIP("88.120.219.117").To16(),
+			SrcNet:           16,
+			DstNet:           14,
+			Etype:            0x800,
+			Proto:            6,
+			SrcPort:          443,
+			DstPort:          52300,
+			InIf:             461,
+			OutIf:            451,
 			ForwardingStatus: 64,
 			TCPFlags:         16,
 		},
 	}
 	received := []*FlowMessage{}
-out2:
+out4:
 	for {
 		select {
 		case flow := <-c.Flows():
 			flow.TimeReceived = 0
 			received = append(received, flow)
 		case <-time.After(10 * time.Millisecond):
-			break out2
+			break out4
 		}
 	}
 
@@ -169,11 +241,15 @@ out2:
 		"flowset_sum",
 	)
 	expectedMetrics = map[string]string{
-		`count{sampler="127.0.0.1",version="9"}`:                                      "2",
-		`flowset_records_sum{sampler="127.0.0.1",type="DataFlowSet",version="9"}`:     "4",
-		`flowset_records_sum{sampler="127.0.0.1",type="TemplateFlowSet",version="9"}`: "1",
-		`flowset_sum{sampler="127.0.0.1",type="DataFlowSet",version="9"}`:             "1",
-		`flowset_sum{sampler="127.0.0.1",type="TemplateFlowSet",version="9"}`:         "1",
+		`count{sampler="127.0.0.1",version="9"}`:                                             "4",
+		`flowset_records_sum{sampler="127.0.0.1",type="DataFlowSet",version="9"}`:            "4",
+		`flowset_records_sum{sampler="127.0.0.1",type="OptionsDataFlowSet",version="9"}`:     "4",
+		`flowset_records_sum{sampler="127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`: "1",
+		`flowset_records_sum{sampler="127.0.0.1",type="TemplateFlowSet",version="9"}`:        "1",
+		`flowset_sum{sampler="127.0.0.1",type="DataFlowSet",version="9"}`:                    "1",
+		`flowset_sum{sampler="127.0.0.1",type="OptionsDataFlowSet",version="9"}`:             "1",
+		`flowset_sum{sampler="127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:         "1",
+		`flowset_sum{sampler="127.0.0.1",type="TemplateFlowSet",version="9"}`:                "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics after data (-got, +want):\n%s", diff)

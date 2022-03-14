@@ -157,6 +157,26 @@ func TestCore(t *testing.T) {
 		})
 		flowComponent.Inject(t, input)
 		time.Sleep(20 * time.Millisecond)
+
+		// Try to inject a message with missing sampling rate
+		input = flowMessage("192.0.2.142", 434, 677)
+		input.SamplingRate = 0
+		flowComponent.Inject(t, input)
+		time.Sleep(20 * time.Millisecond)
+		gotMetrics = r.GetMetrics("akvorado_core_")
+		expectedMetrics = map[string]string{
+			`flows_errors{error="SNMP cache miss",sampler="192.0.2.142"}`:       "1",
+			`flows_errors{error="SNMP cache miss",sampler="192.0.2.143"}`:       "3",
+			`flows_errors{error="sampling rate missing",sampler="192.0.2.142"}`: "1",
+			`flows_received{sampler="192.0.2.142"}`:                             "4",
+			`flows_received{sampler="192.0.2.143"}`:                             "4",
+			`flows_forwarded{sampler="192.0.2.142"}`:                            "2",
+			`flows_forwarded{sampler="192.0.2.143"}`:                            "1",
+			`flows_http_clients`:                                                "0",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+			t.Fatalf("Metrics (-got, +want):\n%s", diff)
+		}
 	})
 
 	// Test the healthcheck endpoint

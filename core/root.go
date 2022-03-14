@@ -94,11 +94,12 @@ func (c *Component) runWorker(workerID int) error {
 				c.r.Warn().Int("worker", workerID).Msg("no more flow available, stopping")
 				return errors.New("no more flow available")
 			}
+
 			sampler := net.IP(flow.SamplerAddress).String()
 			c.metrics.flowsReceived.WithLabelValues(sampler).Inc()
 
 			// Add interface and sampler names
-			cacheMiss := false
+			skip := false
 			if flow.InIf != 0 {
 				samplerName, iface, err := c.d.Snmp.Lookup(sampler, uint(flow.InIf))
 				if err != nil {
@@ -106,7 +107,7 @@ func (c *Component) runWorker(workerID int) error {
 						c.r.Err(err).Str("sampler", sampler).Msg("unable to query SNMP cache")
 					}
 					c.metrics.flowsErrors.WithLabelValues(sampler, err.Error()).Inc()
-					cacheMiss = true
+					skip = true
 				} else {
 					flow.SamplerName = samplerName
 					flow.InIfName = iface.Name
@@ -118,12 +119,12 @@ func (c *Component) runWorker(workerID int) error {
 				if err != nil {
 					// Only register a cache miss if we don't have one.
 					// TODO: maybe we could do one SNMP query for both interfaces.
-					if !cacheMiss {
+					if !skip {
 						if err != snmp.ErrCacheMiss && errLimiter.Allow() {
 							c.r.Err(err).Str("sampler", sampler).Msg("unable to query SNMP cache")
 						}
 						c.metrics.flowsErrors.WithLabelValues(sampler, err.Error()).Inc()
-						cacheMiss = true
+						skip = true
 					}
 				} else {
 					flow.SamplerName = samplerName
@@ -131,7 +132,11 @@ func (c *Component) runWorker(workerID int) error {
 					flow.OutIfDescription = iface.Description
 				}
 			}
-			if cacheMiss {
+			if flow.SamplingRate == 0 {
+				c.metrics.flowsErrors.WithLabelValues(sampler, "sampling rate missing").Inc()
+				skip = true
+			}
+			if skip {
 				continue
 			}
 
