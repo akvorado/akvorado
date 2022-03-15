@@ -85,6 +85,8 @@ func (c *Component) FlowsHTTPHandler() http.Handler {
 			select {
 			case <-c.t.Dying():
 				return
+			case <-r.Context().Done():
+				return
 			case msg := <-c.httpFlowChannel:
 				encoder.Encode(msg)
 				count++

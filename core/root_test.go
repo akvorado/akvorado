@@ -266,7 +266,8 @@ func TestCore(t *testing.T) {
 		}
 	})
 
-	// Test HTTP flow clients
+	// Test HTTP flow clients with a limit
+	time.Sleep(10 * time.Millisecond)
 	t.Run("http flows with limit", func(t *testing.T) {
 		resp, err := netHTTP.Get(fmt.Sprintf("http://%s/flows?limit=4", c.d.HTTP.Address))
 		if err != nil {
@@ -275,6 +276,15 @@ func TestCore(t *testing.T) {
 		defer resp.Body.Close()
 		if resp.StatusCode != 200 {
 			t.Fatalf("GET /flows status code %d", resp.StatusCode)
+		}
+
+		// Metrics should tell we have a client
+		gotMetrics := r.GetMetrics("akvorado_core_", "flows_http_clients")
+		expectedMetrics := map[string]string{
+			`flows_http_clients`: "1",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+			t.Fatalf("Metrics (-got, +want):\n%s", diff)
 		}
 
 		// Produce some flows
