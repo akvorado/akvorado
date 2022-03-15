@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	netHTTP "net/http"
@@ -217,13 +218,13 @@ func TestCore(t *testing.T) {
 			t.Fatalf("Metrics (-got, +want):\n%s", diff)
 		}
 
-		// Send message
+		// Produce some flows
 		for i := 0; i < 12; i++ {
 			kafkaProducer.ExpectInputAndSucceed()
 			flowComponent.Inject(t, flowMessage("192.0.2.142", 434, 677))
 		}
 
-		// Decode some of them (it takes some time, due to flush only once per second)
+		// Decode some of them
 		reader := bufio.NewReader(resp.Body)
 		decoder := json.NewDecoder(reader)
 		for i := 0; i < 10; i++ {
@@ -262,6 +263,47 @@ func TestCore(t *testing.T) {
 			if diff := helpers.Diff(got, expected); diff != "" {
 				t.Fatalf("GET /flows (-got, +want):\n%s", diff)
 			}
+		}
+	})
+
+	// Test HTTP flow clients
+	t.Run("http flows with limit", func(t *testing.T) {
+		resp, err := netHTTP.Get(fmt.Sprintf("http://%s/flows?limit=4", c.d.HTTP.Address))
+		if err != nil {
+			t.Fatalf("GET /flows:\n%+v", err)
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != 200 {
+			t.Fatalf("GET /flows status code %d", resp.StatusCode)
+		}
+
+		// Produce some flows
+		for i := 0; i < 12; i++ {
+			kafkaProducer.ExpectInputAndSucceed()
+			flowComponent.Inject(t, flowMessage("192.0.2.142", 434, 677))
+		}
+
+		// Check we got only 4
+		reader := bufio.NewReader(resp.Body)
+		count := 0
+		for {
+			_, err := reader.ReadString('\n')
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				t.Fatalf("GET /flows error while reading:\n%+v", err)
+			}
+			count++
+			if count > 4 {
+				break
+			}
+		}
+		if count > 4 {
+			t.Fatal("GET /flows got more than 4 flows")
+		}
+		if count != 4 {
+			t.Fatalf("GET /flows got less than 4 flows (%d)", count)
 		}
 	})
 }
