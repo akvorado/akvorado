@@ -5,7 +5,6 @@ import (
 	"fmt"
 	netHTTP "net/http"
 	"runtime"
-	"time"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
@@ -20,6 +19,7 @@ import (
 	"akvorado/kafka"
 	"akvorado/reporter"
 	"akvorado/snmp"
+	"akvorado/web"
 )
 
 // ServeConfiguration represents the configuration file for the serve command.
@@ -48,7 +48,6 @@ type serveOptions struct {
 	configurationFile string
 	checkMode         bool
 	dumpConfiguration bool
-	stopAfter         time.Duration
 }
 
 // ServeOptions stores the command-line option values for the serve
@@ -94,7 +93,7 @@ and exports them to Kafka.`,
 		if err != nil {
 			return fmt.Errorf("unable to initialize reporter: %w", err)
 		}
-		return daemonStart(r, config, ServeOptions.checkMode, ServeOptions.stopAfter)
+		return daemonStart(r, config, ServeOptions.checkMode)
 	},
 }
 
@@ -106,12 +105,10 @@ func init() {
 		"Check configuration, but does not start")
 	serveCmd.Flags().BoolVarP(&ServeOptions.dumpConfiguration, "dump", "D", false,
 		"Dump configuration before starting")
-	serveCmd.Flags().DurationVar(&ServeOptions.stopAfter, "stop-after", 0,
-		"Stop automatically after the provided duration")
 }
 
 // daemonStart will start all components and manage daemon lifetime.
-func daemonStart(r *reporter.Reporter, config ServeConfiguration, checkOnly bool, stopAfter time.Duration) error {
+func daemonStart(r *reporter.Reporter, config ServeConfiguration, checkOnly bool) error {
 	// Initialize the various components
 	daemonComponent, err := daemon.New(r)
 	if err != nil {
@@ -159,6 +156,12 @@ func daemonStart(r *reporter.Reporter, config ServeConfiguration, checkOnly bool
 	if err != nil {
 		return fmt.Errorf("unable to initialize core component: %w", err)
 	}
+	webComponent, err := web.New(r, web.Dependencies{
+		HTTP: httpComponent,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to initialize web component: %w", err)
+	}
 
 	// If we only asked for a check, stop here.
 	if checkOnly {
@@ -196,6 +199,7 @@ func daemonStart(r *reporter.Reporter, config ServeConfiguration, checkOnly bool
 		geoipComponent,
 		kafkaComponent,
 		coreComponent,
+		webComponent,
 	}
 	startedComponents := []interface{}{}
 	defer func() {
@@ -220,13 +224,7 @@ func daemonStart(r *reporter.Reporter, config ServeConfiguration, checkOnly bool
 		Str("version", Version).Str("build-date", BuildDate).
 		Msg("akvorado has started")
 
-	stopTimer := make(<-chan time.Time)
-	if stopAfter != 0 {
-		stopTimer = time.After(stopAfter)
-	}
 	select {
-	case <-stopTimer:
-		r.Info().Msg("stop timer reached")
 	case <-daemonComponent.Terminated():
 		r.Info().Msg("stopping all components")
 	}
