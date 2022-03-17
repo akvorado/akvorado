@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io/fs"
 	netHTTP "net/http"
+	"net/http/httputil"
+	"net/url"
 
 	"akvorado/http"
 	"akvorado/reporter"
@@ -16,8 +18,9 @@ var rootSite embed.FS
 
 // Component represents the web component.
 type Component struct {
-	r *reporter.Reporter
-	d *Dependencies
+	r      *reporter.Reporter
+	d      *Dependencies
+	config Configuration
 }
 
 // Dependencies define the dependencies of the web component.
@@ -26,15 +29,33 @@ type Dependencies struct {
 }
 
 // New creates a new web component.
-func New(reporter *reporter.Reporter, dependencies Dependencies) (*Component, error) {
+func New(reporter *reporter.Reporter, config Configuration, dependencies Dependencies) (*Component, error) {
 	c := Component{
-		r: reporter,
-		d: &dependencies,
+		r:      reporter,
+		d:      &dependencies,
+		config: config,
 	}
 	data, err := fs.Sub(rootSite, "data")
 	if err != nil {
 		return nil, fmt.Errorf("unable to get embedded website: %w", err)
 	}
 	c.d.HTTP.AddHandler("/", netHTTP.FileServer(netHTTP.FS(data)))
+	if c.config.GrafanaURL != "" {
+		// Provide a proxy for Grafana
+		url, err := url.Parse(config.GrafanaURL)
+		if err != nil {
+			return nil, fmt.Errorf("unable to parse Grafana URL %q: %w", config.GrafanaURL, err)
+		}
+		proxy := httputil.NewSingleHostReverseProxy(url)
+		proxy.Transport = &netHTTP.Transport{
+			Proxy: nil, // Disable proxy
+		}
+		proxyHandler := netHTTP.HandlerFunc(
+			func(w netHTTP.ResponseWriter, r *netHTTP.Request) {
+				fmt.Println("hello")
+				proxy.ServeHTTP(w, r)
+			})
+		c.d.HTTP.AddHandler("/grafana/", proxyHandler)
+	}
 	return &c, nil
 }

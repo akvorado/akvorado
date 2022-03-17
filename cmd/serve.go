@@ -31,6 +31,7 @@ type ServeConfiguration struct {
 	GeoIP     geoip.Configuration
 	Kafka     kafka.Configuration
 	Core      core.Configuration
+	Web       web.Configuration
 }
 
 // DefaultServeConfiguration is the default configuration for the serve command.
@@ -42,6 +43,7 @@ var DefaultServeConfiguration = ServeConfiguration{
 	GeoIP:     geoip.DefaultConfiguration,
 	Kafka:     kafka.DefaultConfiguration,
 	Core:      core.DefaultConfiguration,
+	Web:       web.DefaultConfiguration,
 }
 
 type serveOptions struct {
@@ -156,7 +158,7 @@ func daemonStart(r *reporter.Reporter, config ServeConfiguration, checkOnly bool
 	if err != nil {
 		return fmt.Errorf("unable to initialize core component: %w", err)
 	}
-	webComponent, err := web.New(r, web.Dependencies{
+	webComponent, err := web.New(r, config.Web, web.Dependencies{
 		HTTP: httpComponent,
 	})
 	if err != nil {

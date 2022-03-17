@@ -5,6 +5,7 @@ configured through a different section:
 
 - `reporting`: [Log and metric reporting](#reporting)
 - `http`: [Builtin HTTP server](#http)
+- `web`: [Web interface](#web)
 - `flow`: [Flow ingestion](#flow)
 - `snmp`: [SNMP poller](#snmp)
 - `geoip`: [GeoIP database](#geoip)
@@ -33,6 +34,14 @@ listen. For example:
 http:
   listen: 0.0.0.0:8000
 ```
+
+## Web
+
+The web interface presents the landing page of *Akvorado*. It also
+embeds the documentation. It accepts only the following key:
+
+- `grafanaurl` to specify the URL to Grafana and exposes it as
+  `/grafana`.
 
 ## Flow
 

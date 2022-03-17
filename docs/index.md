@@ -23,5 +23,6 @@ The embedded HTTP server serves the following endpoints:
 - [`/healthcheck`](/healthcheck){ target=http }: are we alive?
 - [`/flows`](/flows?limit=1){ target=http }: next available flow
 - [`/flow.proto`](/flow.proto){ target=http }: protocol buffers definition
+- [`/grafana`](/grafana): Grafana web interface (if configured)
 
 <iframe name="http" style="width: 100%; height: 200px; border: 0; background-color: #1111"></iframe>
