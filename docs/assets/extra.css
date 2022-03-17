@@ -1,0 +1,26 @@
+/* Add more room for the logo and hide the title */
+.md-header__button.md-logo {
+    margin: 0;
+    margin-left: inherit;
+    padding: 0;
+    padding-left: inherit;
+}
+.md-header__button.md-logo img, .md-header__button.md-logo svg {
+    height: 2.4rem;
+    width: initial;
+}
+.md-header__title {
+    visibility: hidden;
+}
+
+/* No footer */
+.md-footer {
+    display: none;
+}
+
+/* Logo on the first page */
+.akvorado-logo {
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}

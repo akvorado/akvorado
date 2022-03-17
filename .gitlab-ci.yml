@@ -3,6 +3,7 @@ stages:
   - tests
   - build
 
+
 run tests:
   stage: tests
   image: golang:1.17-alpine
@@ -17,6 +18,7 @@ run tests:
     - export GOMODCACHE=$PWD/.go-cache
     - time apk add --no-cache git make gcc musl-dev protoc
     - time go mod download
+    - touch web/data            # don't build web data
     - time make test-race
     - time make test-coverage
   coverage: '/Code coverage: [0-9.]+/'

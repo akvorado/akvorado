@@ -13,7 +13,7 @@ M = $(shell printf "\033[34;1m▶\033[0m")
 
 export GO111MODULE=on
 
-GENERATED = flow/flow.pb.go
+GENERATED = flow/flow.pb.go web/data
 
 .PHONY: all
 all: fmt lint $(GENERATED) | $(BIN) ; $(info $(M) building executable…) @ ## Build program binary
@@ -47,8 +47,16 @@ $(BIN)/protoc-gen-go: PACKAGE=google.golang.org/protobuf/cmd/protoc-gen-go
 
 # Generated files
 
-%.pb.go: %.proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffer definition…)
+%.pb.go: %.proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffers definition…)
 	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --go_out=. --go_opt=paths=source_relative $<
+
+web/data: mkdocs.yml $(wildcard docs/*.md docs/assets/*) ; $(info $(M) build documentation) @ ## Build documentation
+	$Q rm -rf web/data
+	$Q mkdir -p web/data
+	$Q docker run --rm -it --user=$(shell id -u):$(shell id -g) \
+		-v $(CURDIR):/docs:ro \
+		-v $(CURDIR)/web/data:/output:rw \
+		squidfunk/mkdocs-material:8.2.5 build --strict --site-dir /output
 
 # Tests
 
