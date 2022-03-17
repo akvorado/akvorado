@@ -112,6 +112,7 @@ func (c *Component) runWorker(workerID int) error {
 					flow.SamplerName = samplerName
 					flow.InIfName = iface.Name
 					flow.InIfDescription = iface.Description
+					flow.InIfSpeed = uint32(iface.Speed)
 				}
 			}
 			if flow.OutIf != 0 {
@@ -130,6 +131,7 @@ func (c *Component) runWorker(workerID int) error {
 					flow.SamplerName = samplerName
 					flow.OutIfName = iface.Name
 					flow.OutIfDescription = iface.Description
+					flow.OutIfSpeed = uint32(iface.Speed)
 				}
 			}
 			if flow.SamplingRate == 0 {

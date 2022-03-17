@@ -22,7 +22,7 @@ var (
 	// ErrCacheVersion is triggered when loading a cache from an incompatible version
 	ErrCacheVersion = errors.New("SNMP cache version mismatch")
 	// cacheCurrentVersionNumber is the current version of the on-disk cache format
-	cacheCurrentVersionNumber = 6
+	cacheCurrentVersionNumber = 7
 )
 
 // snmpCache represents the SNMP cache.
@@ -53,6 +53,7 @@ type Interface struct {
 	lastUpdated time.Time
 	Name        string
 	Description string
+	Speed       uint
 }
 
 func newSNMPCache(r *reporter.Reporter, clock clock.Clock) *snmpCache {
@@ -264,6 +265,9 @@ func (i Interface) GobEncode() ([]byte, error) {
 	if err := encoder.Encode(i.Description); err != nil {
 		return nil, err
 	}
+	if err := encoder.Encode(i.Speed); err != nil {
+		return nil, err
+	}
 	if err := encoder.Encode(i.lastUpdated); err != nil {
 		return nil, err
 	}
@@ -278,6 +282,9 @@ func (i *Interface) GobDecode(data []byte) error {
 		return err
 	}
 	if err := decoder.Decode(&i.Description); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&i.Speed); err != nil {
 		return err
 	}
 	if err := decoder.Decode(&i.lastUpdated); err != nil {

@@ -56,10 +56,10 @@ func TestGetEmpty(t *testing.T) {
 
 func TestSimpleLookup(t *testing.T) {
 	r, _, sc := setupTestCache(t)
-	sc.Put("127.0.0.1", "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
+	sc.Put("127.0.0.1", "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit", Speed: 1000})
 	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{
 		SamplerName: "localhost",
-		Interface:   Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
+		Interface:   Interface{Name: "Gi0/0/0/1", Description: "Transit", Speed: 1000}})
 	expectCacheLookup(t, sc, "127.0.0.1", 787, answer{Err: ErrCacheMiss})
 	expectCacheLookup(t, sc, "127.0.0.2", 676, answer{Err: ErrCacheMiss})
 
@@ -219,7 +219,7 @@ func TestSaveLoad(t *testing.T) {
 	clock.Add(10 * time.Minute)
 	sc.Put("127.0.0.1", "localhost", 678, Interface{Name: "Gi0/0/0/2", Description: "Peering"})
 	clock.Add(10 * time.Minute)
-	sc.Put("127.0.0.2", "localhost2", 678, Interface{Name: "Gi0/0/0/1", Description: "IX"})
+	sc.Put("127.0.0.2", "localhost2", 678, Interface{Name: "Gi0/0/0/1", Description: "IX", Speed: 1000})
 
 	target := filepath.Join(t.TempDir(), "cache")
 	if err := sc.Save(target); err != nil {
@@ -239,7 +239,7 @@ func TestSaveLoad(t *testing.T) {
 		Interface:   Interface{Name: "Gi0/0/0/2", Description: "Peering"}})
 	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
 		SamplerName: "localhost2",
-		Interface:   Interface{Name: "Gi0/0/0/1", Description: "IX"}})
+		Interface:   Interface{Name: "Gi0/0/0/1", Description: "IX", Speed: 1000}})
 }
 
 func TestLoadMismatchVersion(t *testing.T) {

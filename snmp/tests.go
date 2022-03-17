@@ -31,6 +31,7 @@ func (p *mockPoller) Poll(ctx context.Context, samplerIP string, port uint16, co
 		p.put(samplerIP, strings.ReplaceAll(samplerIP, ".", "_"), ifIndex, Interface{
 			Name:        fmt.Sprintf("Gi0/0/%d", ifIndex),
 			Description: fmt.Sprintf("Interface %d", ifIndex),
+			Speed:       1000,
 		})
 	}
 }

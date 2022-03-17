@@ -70,4 +70,6 @@ message FlowMessage {
   string OutIfName = 103;
   string InIfDescription = 104;
   string OutIfDescription = 105;
+  uint32 InIfSpeed = 106;
+  uint32 OutIfSpeed = 107;
 }

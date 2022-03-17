@@ -123,7 +123,8 @@ func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, comm
 	sysName := "1.3.6.1.2.1.1.5.0"
 	ifDescr := fmt.Sprintf("1.3.6.1.2.1.2.2.1.2.%d", ifIndex)
 	ifAlias := fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.18.%d", ifIndex)
-	result, err := g.Get([]string{sysName, ifDescr, ifAlias})
+	ifSpeed := fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.15.%d", ifIndex)
+	result, err := g.Get([]string{sysName, ifDescr, ifAlias, ifSpeed})
 	if errors.Is(err, context.Canceled) {
 		return
 	}
@@ -136,7 +137,7 @@ func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, comm
 	}
 
 	ok = true
-	process := func(idx int, what string, target *string) {
+	processStr := func(idx int, what string, target *string) {
 		switch result.Variables[idx].Type {
 		case gosnmp.OctetString:
 			*target = string(result.Variables[idx].Value.([]byte))
@@ -148,15 +149,31 @@ func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, comm
 			ok = false
 		}
 	}
-	process(0, "sysname", &sysName)
-	process(1, "ifdescr", &ifDescr)
-	process(2, "ifalias", &ifAlias)
+	processUint := func(idx int, what string, target *uint) {
+		switch result.Variables[idx].Type {
+		case gosnmp.Gauge32:
+			*target = result.Variables[idx].Value.(uint)
+		case gosnmp.NoSuchInstance, gosnmp.NoSuchObject:
+			p.metrics.failures.WithLabelValues(sampler, fmt.Sprintf("%s_missing", what)).Inc()
+			ok = false
+		default:
+			p.metrics.failures.WithLabelValues(sampler, fmt.Sprintf("%s_unknown_type", what)).Inc()
+			ok = false
+		}
+	}
+	var sysNameVal, ifDescrVal, ifAliasVal string
+	var ifSpeedVal uint
+	processStr(0, "sysname", &sysNameVal)
+	processStr(1, "ifdescr", &ifDescrVal)
+	processStr(2, "ifalias", &ifAliasVal)
+	processUint(3, "ifspeed", &ifSpeedVal)
 	if !ok {
 		return
 	}
-	p.put(sampler, sysName, ifIndex, Interface{
-		Name:        ifDescr,
-		Description: ifAlias,
+	p.put(sampler, sysNameVal, ifIndex, Interface{
+		Name:        ifDescrVal,
+		Description: ifAliasVal,
+		Speed:       ifSpeedVal,
 	})
 
 	p.metrics.successes.WithLabelValues(sampler).Inc()

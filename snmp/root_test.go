@@ -41,7 +41,7 @@ func TestSNMPCommunities(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
 		SamplerName: "127_0_0_1",
-		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765"},
+		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
 	})
 
 	// Use "private", should not work
@@ -65,7 +65,7 @@ func TestComponentSaveLoad(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
 		SamplerName: "127_0_0_1",
-		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765"},
+		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
 	})
 	if err := c.Stop(); err != nil {
 		t.Fatalf("Stop() error:\n%+c", err)
@@ -75,7 +75,7 @@ func TestComponentSaveLoad(t *testing.T) {
 	c = NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
 		SamplerName: "127_0_0_1",
-		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765"},
+		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
 	})
 	if err := c.Stop(); err != nil {
 		t.Fatalf("Stop() error:\n%+c", err)
@@ -93,7 +93,7 @@ func TestAutoRefresh(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
 		SamplerName: "127_0_0_1",
-		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765"},
+		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
 	})
 
 	// Go forward, we expect the entry to have been refreshed and be still present
@@ -101,7 +101,7 @@ func TestAutoRefresh(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
 		SamplerName: "127_0_0_1",
-		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765"},
+		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
 	})
 
 	// Stop and look at the cache
@@ -136,6 +136,7 @@ func TestAutoRefresh(t *testing.T) {
 			765: {
 				Name:        "Gi0/0/765",
 				Description: "Interface 765",
+				Speed:       1000,
 			},
 		},
 	}); diff != "" {
