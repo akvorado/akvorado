@@ -52,7 +52,6 @@ func New(reporter *reporter.Reporter, config Configuration, dependencies Depende
 		}
 		proxyHandler := netHTTP.HandlerFunc(
 			func(w netHTTP.ResponseWriter, r *netHTTP.Request) {
-				fmt.Println("hello")
 				proxy.ServeHTTP(w, r)
 			})
 		c.d.HTTP.AddHandler("/grafana/", proxyHandler)
