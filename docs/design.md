@@ -180,11 +180,6 @@ spawned by the other components and wait for signals to terminate. If
 
 In the future, we may:
 
-- Allow to classify interfaces on several dimensions using a simple
-  [expression language][]:
-   - connectivity type: transit, PNI, PPNI, IX, customer, core, ...
-   - network boundary: internal, external
-   - provider: Telia, Cogent, Akamai
 - Add more information to the landing page, including some basic statistics.
 - Automatically build dashboards for Grafana.[^grafana]
 - Builds dashboards with [D3.js][].[^d3js]
