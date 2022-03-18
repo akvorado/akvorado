@@ -281,8 +281,10 @@ samplerclassifiers:
 			defer c.Stop()
 
 			// Inject twice since otherwise, we get a cache miss
+			received := make(chan bool)
 			kafkaProducer.ExpectInputWithMessageCheckerFunctionAndSucceed(
 				func(msg *sarama.ProducerMessage) error {
+					defer close(received)
 					got := flow.FlowMessage{}
 					b, err := msg.Value.Encode()
 					if err != nil {
@@ -303,7 +305,11 @@ samplerclassifiers:
 			flowComponent.Inject(t, tc.InputFlow())
 			time.Sleep(10 * time.Millisecond)
 			flowComponent.Inject(t, tc.InputFlow())
-			time.Sleep(20 * time.Millisecond)
+			select {
+			case <-received:
+			case <-time.After(time.Second):
+				t.Fatal("Kafka message not received")
+			}
 			gotMetrics := r.GetMetrics("akvorado_core_flows_")
 			expectedMetrics := map[string]string{
 				`errors{error="SNMP cache miss",sampler="192.0.2.142"}`: "1",
@@ -314,7 +320,6 @@ samplerclassifiers:
 			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 				t.Fatalf("Metrics (-got, +want):\n%s", diff)
 			}
-
 		})
 	}
 }

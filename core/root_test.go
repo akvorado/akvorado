@@ -126,7 +126,9 @@ func TestCore(t *testing.T) {
 
 		// Now, check we get the message we expect
 		input := flowMessage("192.0.2.142", 434, 677)
+		received := make(chan bool)
 		kafkaProducer.ExpectInputWithMessageCheckerFunctionAndSucceed(func(msg *sarama.ProducerMessage) error {
+			defer close(received)
 			if msg.Topic != "flows" {
 				t.Errorf("Kafka message topic (-got, +want):\n-%s\n+%s", msg.Topic, "flows")
 			}
@@ -163,7 +165,11 @@ func TestCore(t *testing.T) {
 			return nil
 		})
 		flowComponent.Inject(t, input)
-		time.Sleep(20 * time.Millisecond)
+		select {
+		case <-received:
+		case <-time.After(time.Second):
+			t.Fatal("Kafka message not received")
+		}
 
 		// Try to inject a message with missing sampling rate
 		input = flowMessage("192.0.2.142", 434, 677)
