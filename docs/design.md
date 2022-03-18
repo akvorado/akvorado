@@ -90,6 +90,10 @@ For metrics, it is a façade to the [Prometheus instrumentation
 library][]. It provides a registry which automatically append metric
 names with the module name.
 
+The general idea is to give a good visibility to an operator.
+Everything that moves should get a counter, errors should either be
+fatal, or rate-limited and accounted into a metric.
+
 [Prometheus instrumentation library]: https://github.com/prometheus/client_golang/
 
 ### CLI
@@ -166,6 +170,11 @@ spawned by the other components and wait for signals to terminate. If
    used in place of the `time` module when we want to be able to mock
    the clock. This is used for example to test the cache of the SNMP
    poller.
+ - [golang.org/x/time/rate](https://pkg.go.dev/golang.org/x/time/rate)
+   is used  when some rate limiting is needed, notably for non-fatal
+   errors.
+ - [github.com/cenkalti/backoff/v4](https://github.com/cenkalti/backoff)
+   provides an exponential backoff algorithm for retries.
 
 ## Future plans
 
