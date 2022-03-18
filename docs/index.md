@@ -8,7 +8,7 @@ hide:
 
 ![](assets/akvorado.svg){ .akvorado-logo }
 
-*Akvorado* is a flow collector, enricher and exporter. It receives
+*Akvorado* is a flow collector, augmenter and exporter. It receives
 flows, adds some data like interface names and geo information, and
 exports them to Kafka. [Akvorado][] means "water wheel" in Esperanto.
 
