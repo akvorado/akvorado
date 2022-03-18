@@ -209,7 +209,7 @@ func withRegex(fn func(string) bool) func(string, string, string) (bool, error) 
 	}
 }
 
-var normalizeRegex = regexp.MustCompile("[^a-z0-9.-]+")
+var normalizeRegex = regexp.MustCompile("[^a-z0-9.+-]+")
 
 // Normalize a string (provider or connectivity)
 func normalize(str string) string {
