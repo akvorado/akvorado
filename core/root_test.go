@@ -271,6 +271,8 @@ func TestCore(t *testing.T) {
 				"OutIfName":        "Gi0/0/677",
 				"InIfSpeed":        1000,
 				"OutIfSpeed":       1000,
+				"InIfBoundary":     "UNDEFINED",
+				"OutIfBoundary":    "UNDEFINED",
 				"DstCountry":       "GB",
 				"SrcCountry":       "BT",
 				"SrcAS":            35908,
