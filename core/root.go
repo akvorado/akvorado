@@ -98,7 +98,8 @@ func (c *Component) runWorker(workerID int) error {
 			sampler := net.IP(flow.SamplerAddress).String()
 			c.metrics.flowsReceived.WithLabelValues(sampler).Inc()
 
-			if skip := c.AugmentFlow(sampler, flow); skip {
+			// Hydratation
+			if skip := c.HydrateFlow(sampler, flow); skip {
 				continue
 			}
 

@@ -10,8 +10,8 @@ import (
 	"akvorado/snmp"
 )
 
-// AugmentFlow adds more data to a flow.
-func (c *Component) AugmentFlow(sampler string, flow *flow.FlowMessage) (skip bool) {
+// HydrateFlow adds more data to a flow.
+func (c *Component) HydrateFlow(sampler string, flow *flow.FlowMessage) (skip bool) {
 	errLimiter := rate.NewLimiter(rate.Every(time.Minute), 10)
 	if flow.InIf != 0 {
 		samplerName, iface, err := c.d.Snmp.Lookup(sampler, uint(flow.InIf))
