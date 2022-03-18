@@ -73,6 +73,9 @@ func (c *Component) FlowsHTTPHandler() http.Handler {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		encoder := json.NewEncoder(w)
+		if limit == 1 {
+			encoder.SetIndent("", " ")
+		}
 
 		// Flush from time to time
 		var tickerChan <-chan time.Time
