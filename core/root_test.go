@@ -89,6 +89,8 @@ func TestCore(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_core_")
 		expectedMetrics := map[string]string{
+			`classifier_cache_hits`:   "0",
+			`classifier_cache_misses`: "0",
 			`flows_errors{error="SNMP cache miss",sampler="192.0.2.142"}`: "1",
 			`flows_errors{error="SNMP cache miss",sampler="192.0.2.143"}`: "3",
 			`flows_received{sampler="192.0.2.142"}`:                       "1",
@@ -108,6 +110,8 @@ func TestCore(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics = r.GetMetrics("akvorado_core_")
 		expectedMetrics = map[string]string{
+			`classifier_cache_hits`:   "0",
+			`classifier_cache_misses`: "0",
 			`flows_errors{error="SNMP cache miss",sampler="192.0.2.142"}`: "1",
 			`flows_errors{error="SNMP cache miss",sampler="192.0.2.143"}`: "3",
 			`flows_received{sampler="192.0.2.142"}`:                       "2",
@@ -138,7 +142,7 @@ func TestCore(t *testing.T) {
 			buf := proto.NewBuffer(b)
 			err = buf.DecodeMessage(&got)
 			if err != nil {
-				t.Errorf("Kakfa message decode error:\n%+v", err)
+				t.Fatalf("Kakfa message decode error:\n%+v", err)
 			}
 			expected := flowMessage("192.0.2.142", 434, 677)
 			expected.SrcAS = 35908
@@ -168,6 +172,8 @@ func TestCore(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics = r.GetMetrics("akvorado_core_")
 		expectedMetrics = map[string]string{
+			`classifier_cache_hits`:   "0",
+			`classifier_cache_misses`: "0",
 			`flows_errors{error="SNMP cache miss",sampler="192.0.2.142"}`:       "1",
 			`flows_errors{error="SNMP cache miss",sampler="192.0.2.143"}`:       "3",
 			`flows_errors{error="sampling rate missing",sampler="192.0.2.142"}`: "1",

@@ -3,10 +3,12 @@ package core
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"sync/atomic"
 	"time"
 
+	"github.com/dgraph-io/ristretto"
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/time/rate"
 	"gopkg.in/tomb.v2"
@@ -33,6 +35,9 @@ type Component struct {
 	httpFlowClients    uint32           // for dumping flows
 	httpFlowChannel    chan *flow.FlowMessage
 	httpFlowFlushDelay time.Duration
+
+	classifierCache      *ristretto.Cache
+	classifierErrLimiter *rate.Limiter
 }
 
 // Dependencies define the dependencies of the HTTP component.
@@ -47,6 +52,15 @@ type Dependencies struct {
 
 // New creates a new core component.
 func New(reporter *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
+	cache, err := ristretto.NewCache(&ristretto.Config{
+		NumCounters: int64(configuration.ClassifierCacheSize) * 10,
+		MaxCost:     int64(configuration.ClassifierCacheSize),
+		BufferItems: 64,
+		Metrics:     true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("cannot initialize classifier cache: %w", err)
+	}
 	c := Component{
 		r:      reporter,
 		d:      &dependencies,
@@ -56,6 +70,9 @@ func New(reporter *reporter.Reporter, configuration Configuration, dependencies 
 		httpFlowClients:    0,
 		httpFlowChannel:    make(chan *flow.FlowMessage, 10),
 		httpFlowFlushDelay: time.Second,
+
+		classifierCache:      cache,
+		classifierErrLimiter: rate.NewLimiter(rate.Every(10*time.Second), 3),
 	}
 	c.d.Daemon.Track(&c.t, "core")
 	c.initMetrics()
@@ -99,7 +116,7 @@ func (c *Component) runWorker(workerID int) error {
 			c.metrics.flowsReceived.WithLabelValues(sampler).Inc()
 
 			// Hydratation
-			if skip := c.HydrateFlow(sampler, flow); skip {
+			if skip := c.hydrateFlow(sampler, flow); skip {
 				continue
 			}
 

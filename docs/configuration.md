@@ -136,5 +136,64 @@ The core orchestrates the remaining components. It receives the flows
 from the flow component, add some information using the GeoIP
 databases and the SNMP poller, and push the resulting flow to Kafka.
 
-It only accepts the `workers` key to define how many workers should be
-spawn.
+The following keys are accepted:
+
+- `workers` key define how many workers should be spawned to process
+  incoming flows
+- `samplerclassifiers` is a list of classifier rules to define a group
+  for samplers
+- `interfaceclassifiers` is a list of classifier rules to define
+  connectivity type, network boundary and provider for an interface
+- `classifiercachesize` defines the size of the classifier cache. As
+  classifiers are pure, their result is cached in a cache. The metrics
+  should tell if the cache is big enough. It should be set at least to
+  twice the number of the most busy interfaces.
+
+Classifier rules are written using [expr][].
+
+Sampler classifiers gets the classifier IP address and its hostname.
+If they can make a decision, they should invoke one of the
+`Classify()` functions with the target group as an argument. Calling
+this function makes the sampler part of the provided group. Evaluation
+of rules stop on first match. The accessible variables and functions
+are:
+
+- `Sampler.IP` for the sampler IP address
+- `Sampler.Name` for the sampler name
+- `Classify()` to classify sampler to a group
+
+Interface classifiers gets the following information and, like sampler
+classifiers, should invoke one of the `Classify()` functions to make a
+decision:
+
+- `Sampler.IP` for the sampler IP address
+- `Sampler.Name` for the sampler name
+- `Interface.Name` for the interface name
+- `Interface.Description` for the interface description
+- `Interface.Speed` for the interface speed
+- `ClassifyConnectivity()` to classify for a connectivity type (transit, PNI, PPNI, IX, customer, core, ...)
+- `ClassifyProvider()` to classify for a provider (Cogent, Telia, ...)
+- `ClassifyExternal()` to classify the interface as external
+- `ClassifyInternal()` to classify the interface as internal
+
+Once an interface is classified for a given criteria, it cannot be
+changed by later rule. Once an interface is classified for all
+criteria, remaining rules are skipped. Connectivity and provider are somewhat normalized (down case)
+
+Each `Classify()` function, with the exception of `ClassifyExternal()`
+and `ClassifyInternal()` have a variant ending with `Regex` which
+takes a string and a regex before the original string and do a regex
+match. The original string is expanded using the matching parts of the
+regex. The syntax is the one [from Go][].
+
+Here is an example:
+
+```
+Interface.Description startsWith "Transit:" &&
+ClassifyConnectivity("transit") &&
+ClassifyExternal() &&
+ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")
+```
+
+[expr]: https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md
+[from Go]: https://pkg.go.dev/regexp#Regexp.Expand
