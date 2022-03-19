@@ -146,8 +146,8 @@ func (c *Component) spawnWorker(workerID int) error {
 
 			c.decodeFlow(payload[:size], source)
 
-			idleTime := float64(startBusy.Sub(startIdle).Milliseconds()) / 1000
-			busyTime := float64(time.Since(startBusy).Milliseconds()) / 1000
+			idleTime := float64(startBusy.Sub(startIdle).Nanoseconds()) / 1000 / 1000 / 1000
+			busyTime := float64(time.Since(startBusy).Nanoseconds()) / 1000 / 1000 / 1000
 			c.metrics.trafficLoopTime.WithLabelValues(workerIDStr, "idle").Observe(idleTime)
 			c.metrics.trafficLoopTime.WithLabelValues(workerIDStr, "busy").Observe(busyTime)
 		}

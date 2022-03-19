@@ -153,8 +153,8 @@ func (c *Component) runWorker(workerID int) error {
 				}
 			}
 
-			idleTime := float64(startBusy.Sub(startIdle).Milliseconds()) / 1000
-			busyTime := float64(time.Since(startBusy).Milliseconds()) / 1000
+			idleTime := float64(startBusy.Sub(startIdle).Nanoseconds()) / 1000 / 1000 / 1000
+			busyTime := float64(time.Since(startBusy).Nanoseconds()) / 1000 / 1000 / 1000
 			c.metrics.loopTime.WithLabelValues(workerIDStr, "idle").Observe(idleTime)
 			c.metrics.loopTime.WithLabelValues(workerIDStr, "busy").Observe(busyTime)
 

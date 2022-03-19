@@ -153,8 +153,8 @@ func (c *Component) Start() error {
 						samplerIP, 161,
 						community,
 						ifIndex)
-					idleTime := float64(startBusy.Sub(startIdle).Milliseconds()) / 1000
-					busyTime := float64(time.Since(startBusy).Milliseconds()) / 1000
+					idleTime := float64(startBusy.Sub(startIdle).Nanoseconds()) / 1000 / 1000 / 1000
+					busyTime := float64(time.Since(startBusy).Nanoseconds()) / 1000 / 1000 / 1000
 					c.metrics.pollerLoopTime.WithLabelValues(workerIDStr, "idle").Observe(idleTime)
 					c.metrics.pollerLoopTime.WithLabelValues(workerIDStr, "busy").Observe(busyTime)
 				}
