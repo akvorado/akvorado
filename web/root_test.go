@@ -47,31 +47,3 @@ func TestProxy(t *testing.T) {
 		t.Errorf("GET /grafana/test (-got, +want):\n%s", diff)
 	}
 }
-
-func TestStaticFiles(t *testing.T) {
-	for _, live := range []bool{false, true} {
-		name := "livefs"
-		if !live {
-			name = "embeddedfs"
-		}
-		t.Run(name, func(t *testing.T) {
-			r := reporter.NewMock(t)
-			h := http.NewMock(t, r)
-			_, err := New(r, Configuration{
-				ServeLiveFS: live,
-			}, Dependencies{HTTP: h})
-			if err != nil {
-				t.Fatalf("New() error:\n%+v", err)
-			}
-
-			resp, err := netHTTP.Get(fmt.Sprintf("http://%s/install.html", h.Address))
-			if err != nil {
-				t.Fatalf("GET /install.html:\n%+v", err)
-			}
-			defer resp.Body.Close()
-			if resp.StatusCode != 200 {
-				t.Errorf("GET /install.html: got status code %d, not 200", resp.StatusCode)
-			}
-		})
-	}
-}

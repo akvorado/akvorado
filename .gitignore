@@ -1,4 +1,6 @@
 /bin/
 /test/
 /flow/decoder/flow*.pb.go
-/web/data
+
+/web/data/node_modules/
+/web/data/assets/generated/

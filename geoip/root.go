@@ -121,9 +121,7 @@ func (c *Component) Start() error {
 	}
 	c.t.Go(func() error {
 		errLogger := c.r.Sample(reporter.BurstSampler(10*time.Second, 1))
-		defer func() {
-			watcher.Close()
-		}()
+		defer watcher.Close()
 
 		for {
 			// Watch both for errors and events in the

@@ -1,0 +1,10 @@
+:root {
+    --bs-primary: #008aff;
+    --bs-primary-rgb: 0,138,255;
+    --bs-secondary: #48092f;
+    --bs-secondary-rgb: 72,9,47;
+}
+
+.ak-navbar {
+    background-color: #e3f2fd;
+}

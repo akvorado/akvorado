@@ -2,8 +2,8 @@
 package web
 
 import (
-	"embed"
 	"fmt"
+	"html/template"
 	"io/fs"
 	"log"
 	netHTTP "net/http"
@@ -13,21 +13,24 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"sync"
+
+	"github.com/rs/zerolog"
+	"gopkg.in/tomb.v2"
 
 	"akvorado/http"
 	"akvorado/reporter"
-
-	"github.com/rs/zerolog"
 )
-
-//go:embed data
-var rootSite embed.FS
 
 // Component represents the web component.
 type Component struct {
 	r      *reporter.Reporter
 	d      *Dependencies
+	t      tomb.Tomb
 	config Configuration
+
+	templates     map[string]*template.Template
+	templatesLock sync.RWMutex
 }
 
 // Dependencies define the dependencies of the web component.
@@ -42,20 +45,11 @@ func New(reporter *reporter.Reporter, config Configuration, dependencies Depende
 		d:      &dependencies,
 		config: config,
 	}
-
-	var data fs.FS
-	if config.ServeLiveFS {
-		_, src, _, _ := runtime.Caller(0)
-		data = os.DirFS(filepath.Join(path.Dir(src), "data"))
-	} else {
-		var err error
-		data, err = fs.Sub(rootSite, "data")
-		if err != nil {
-			return nil, fmt.Errorf("unable to get embedded website: %w", err)
-		}
+	if err := c.loadTemplates(); err != nil {
+		return nil, err
 	}
-	c.d.HTTP.AddHandler("/", netHTTP.FileServer(netHTTP.FS(data)))
 
+	// Grafana proxy
 	if c.config.GrafanaURL != "" {
 		// Provide a proxy for Grafana
 		url, err := url.Parse(config.GrafanaURL)
@@ -77,5 +71,49 @@ func New(reporter *reporter.Reporter, config Configuration, dependencies Depende
 		c.d.HTTP.AddHandler("/grafana/", proxyHandler)
 	}
 
+	c.d.HTTP.AddHandler("/docs/", netHTTP.HandlerFunc(c.docsHandlerFunc))
+	c.d.HTTP.AddHandler("/assets/", netHTTP.HandlerFunc(c.assetsHandlerFunc))
+
 	return &c, nil
+}
+
+// Start starts the web component.
+func (c *Component) Start() error {
+	c.r.Info().Msg("starting web component")
+	if err := c.watchTemplates(); err != nil {
+		return err
+	}
+	c.t.Go(func() error {
+		select {
+		case <-c.t.Dying():
+			return nil
+		}
+	})
+	return nil
+}
+
+// Stop stops the web component.
+func (c *Component) Stop() error {
+	c.r.Info().Msg("stopping web component")
+	defer c.r.Info().Msg("web component stopped")
+	c.t.Kill(nil)
+	return c.t.Wait()
+}
+
+// embedOrLiveFS returns a subset of the provided embedded filesystem,
+// except if the component is configured to use the live filesystem.
+// Then, it returns the provided tree.
+func (c *Component) embedOrLiveFS(embed fs.FS, p string) fs.FS {
+	var fileSystem fs.FS
+	if c.config.ServeLiveFS {
+		_, src, _, _ := runtime.Caller(0)
+		fileSystem = os.DirFS(filepath.Join(path.Dir(src), p))
+	} else {
+		var err error
+		fileSystem, err = fs.Sub(embed, p)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return fileSystem
 }

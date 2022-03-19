@@ -1,0 +1,24 @@
+{{ define "base" }}
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <link href="{{ .RootPath }}/assets/stylesheets/bootstrap.min.css" rel="stylesheet">
+        <link href="{{ .RootPath }}/assets/stylesheets/materialdesignicons.min.css" rel="stylesheet">
+        <link href="{{ .RootPath }}/assets/stylesheets/akvorado.css" rel="stylesheet">
+        {{ block "stylesheets" . }}{{ end }}
+        <link href="{{ .RootPath }}/assets/images/akvorado.svg" rel="icon">
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+        <title>{{ template "title" . }}</title>
+    </head>
+    <body>
+        {{ template "navigation.html" . }}
+        <main class="container-fluid pt-4">
+            {{ template "content" . }}
+        </main>
+    </body>
+    <script src="{{ .RootPath }}/assets/javascript/bootstrap.bundle.min.js"></script>
+    {{ block "scripts" . }}{{ end }}
+  </script>
+</html>
+{{ end }}

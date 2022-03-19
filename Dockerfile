@@ -1,19 +1,11 @@
-FROM squidfunk/mkdocs-material:8.2.5 AS documentation
-COPY mkdocs.yml /docs/
-COPY docs /docs/docs/
-RUN mkdocs build --strict --site-dir /output
-
 FROM golang:1.18-alpine AS build
-RUN apk add --no-cache git make gcc musl-dev protoc shared-mime-info
+RUN apk add --no-cache git make gcc musl-dev protoc shared-mime-info yarn
 WORKDIR /app
 COPY go.mod ./
 COPY go.sum ./
 RUN go mod download
 COPY . .
-RUN make clean
-COPY --from=documentation /output web/data/
-RUN find web/data
-RUN make test && make
+RUN make clean && make test && make
 
 # Do not use scratch, we use alpine to get an healthcheck
 FROM alpine

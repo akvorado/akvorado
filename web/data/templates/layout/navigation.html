@@ -1,0 +1,29 @@
+<header class="navbar navbar-expand-sm navbar-light py-1 shadow-sm ak-navbar">
+    <nav class="container-xxl flex-wrap flex-sm-nowrap" aria-="Main navigation">
+        <a class="navbar-brand p-0 me-2"
+           href="{{ .RootPath }}"
+           aria-label="Akvorado">
+            <img alt="Akvorado logo"
+                 height="40"
+                 src="{{ .RootPath }}/assets/images/akvorado.svg">
+            Akvorado
+        </a>
+        <button class="navbar-toggler collapsed" type="button"
+                data-bs-toggle="collapse" data-bs-target="#akNavbar"
+                aria-controls="akNavbar" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="mdi mdi-menu"></i>
+        </button>
+        <div class="navbar-collapse collapse" id="akNavbar">
+            <ul class="navbar-nav flex-row flex-wrap pt-2 py-sm-0 ms-sm-auto">
+                <li class="navitem col-6 col-sm-auto">
+                    <a class="nav-link pt-2{{ if eq .CurrentPath "/" }} active{{ end }}"
+                       href="{{ .RootPath }}"><i class="mdi mdi-home"> </i>Home</a>
+                </li>
+                <li class="navitem col-6 col-sm-auto">
+                    <a class="nav-link pt-2{{ if .CurrentPath | hasPrefix "/docs" }} active{{ end }}"
+                       href="{{ .RootPath }}/docs/intro"><i class="mdi mdi-book-open-variant"> </i>Docs</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+</header>

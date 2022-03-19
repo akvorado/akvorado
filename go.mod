@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.0.12
+	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/Shopify/sarama v1.32.1-0.20220321223103-27b8f1b5973b
 	github.com/antonmedv/expr v1.9.0
 	github.com/benbjohnson/clock v1.3.0
@@ -25,6 +26,8 @@ require (
 	github.com/slayercat/GoSNMPServer v0.1.2
 	github.com/slayercat/gosnmp v1.24.0
 	github.com/spf13/cobra v1.3.0
+	github.com/yuin/goldmark v1.4.5
+	github.com/yuin/goldmark-highlighting v0.0.0-20220208100518-594be1970594
 	go.uber.org/atomic v1.7.0
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
 	google.golang.org/protobuf v1.27.1
@@ -33,10 +36,14 @@ require (
 )
 
 require (
+	github.com/Masterminds/goutils v1.1.1 // indirect
+	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
+	github.com/alecthomas/chroma v0.10.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
@@ -46,6 +53,8 @@ require (
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-uuid v1.0.2 // indirect
+	github.com/huandu/xstrings v1.3.2 // indirect
+	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
@@ -54,6 +63,8 @@ require (
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/klauspost/compress v1.15.1 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
+	github.com/mitchellh/copystructure v1.2.0 // indirect
+	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/oschwald/maxminddb-golang v1.8.0 // indirect
 	github.com/paulmach/orb v0.4.0 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect

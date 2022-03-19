@@ -1,21 +1,8 @@
 # Configuration
 
-*Akvorado* can be configured through a YAML file. Each aspect is
-configured through a different section:
-
-- `reporting`: [Log and metric reporting](#reporting)
-- `http`: [Builtin HTTP server](#http)
-- `web`: [Web interface](#web)
-- `flow`: [Flow ingestion](#flow)
-- `snmp`: [SNMP poller](#snmp)
-- `geoip`: [GeoIP database](#geoip)
-- `kafka`: [Kafka broker](#kafka)
-- `clickhouse`: [ClickHouse helper](#clickhouse)
-- `core`: [Core](#core)
-
-You can get the default configuration with `./akvorado --dump
---check`. Durations can be written in seconds or using strings like
-`10h20m`.
+*Akvorado* can be configured through a YAML file. You can get the
+default configuration with `./akvorado --dump --check`. Durations can
+be written in seconds or using strings like `10h20m`.
 
 It is also possible to override configuration settings using
 environment variables. You need to remove any `-` from key names and
@@ -40,43 +27,14 @@ AKVORADO_KAFKA_TOPICCONFIGURATION_NUMPARTITIONS=1
 AKVORADO_KAFKA_BROKERS=192.0.2.1:9092,192.0.2.2:9092
 ```
 
-## Reporting
-
-Reporting encompasses logging and metrics. Currently, as *Akvorado* is
-expected to be run inside Docker, logging is done on the standard
-output and is not configurable. As for metrics, they are reported by
-the HTTP component on the `/api/v0/metrics` endpoint and there is
-nothing to configure either.
-
-## HTTP
-
-The builtin HTTP server serves various pages. Its configuration
-supports only the `listen` key to specify the address and port to
-listen. For example:
-
-```yaml
-http:
-  listen: 0.0.0.0:8000
-```
-
-## Web
-
-The web interface presents the landing page of *Akvorado*. It also
-embeds the documentation. It accepts only the following key:
-
-- `grafanaurl` to specify the URL to Grafana and exposes it as
-  [`/grafana`](/grafana).
-
 ## Flow
 
-The flow component handles flow ingestion. It supports the following
-configuration keys:
+The flow component handles incoming flows. It only accepts the
+`inputs` key to define the list of inputs to receive incoming flows.
 
-- `inputs` to specify the list of inputs
-
-Each input should define a `type` and `decoder`. For `decoder`, only
-`netflow` is currently supported. As for the `type`, both `udp` and
-`file` are supported.
+Each input has a `type` and a `decoder`. For `decoder`, only `netflow`
+is currently supported. As for the `type`, both `udp` and `file` are
+supported.
 
 For the UDP input, the supported keys are `listen` to set the
 listening endpoint, `workers` to set the number of workers to listen
@@ -109,46 +67,8 @@ flow:
   workers: 2
 ```
 
-## SNMP
-
-Flows only include interface indexes. To associate them with an
-interface name and description, SNMP is used to poll the exporter
-sending each flows. A cache is maintained to avoid polling
-continuously the exporters. The following keys are accepted:
-
-- `cache-duration` tells how much time to keep data in the cache
-- `cache-refresh` tells how much time to wait before updating an entry
-  by polling it
-- `cache-check-interval` tells how often to check if cached data is
-  about to expire or need an update
-- `cache-persist-file` tells where to store cached data on shutdown and
-  read them back on startup
-- `default-community` tells which community to use when polling exporters
-- `communities` is a map from a exporter IP address to the community to
-  use for a exporter, overriding the default value set above,
-- `poller-retries` is the number of retries on unsuccessful SNMP requests.
-- `poller-timeout` tells how much time should the poller wait for an answer.
-- `workers` tell how many workers to spawn to handle SNMP polling.
-
-As flows missing interface information are discarded, persisting the
-cache is useful to quickly be able to handle incoming flows. By
-default, no persistent cache is configured.
-
-## GeoIP
-
-The GeoIP component adds source and destination country, as well as
-the AS number of the source and destination IP if they are not present
-in the received flows. It needs two databases using the [MaxMind DB
-file format][], one for AS numbers, one for countries. If no database
-is provided, the component is inactive. It accepts the following keys:
-
-- `asn-database` tells the path to the ASN database
-- `country-database` tells the path to the country database
-
-[MaxMind DB file format]: https://maxmind.github.io/MaxMind-DB/
-
-If the files are updated while *Akvorado* is running, they are
-automatically refreshed.
+Without configuration, *Akvorado* will listen for incoming
+Netflow/IPFIX flows on port 2055.
 
 ## Kafka
 
@@ -207,26 +127,13 @@ kafka:
       cleanup.policy: delete
 ```
 
-## ClickHouse
-
-The ClickHouse component exposes some useful HTTP endpoints to
-configure a ClickHouse database. Optionally, it will also provision
-and keep up-to-date a ClickHouse database. In this case, the following
-keys should be provided:
-
- - `servers` defines the list of ClickHouse servers to connect to
- - `username` is the username to use for authentication
- - `password` is the password to use for authentication
- - `database` defines the database to use to create tables
- - `akvorado-url` defines the URL of Akvorado to be used by Clickhouse (autodetection when not specified)
-
 ## Core
 
-The core orchestrates the remaining components. It receives the flows
-from the flow component, add some information using the GeoIP
-databases and the SNMP poller, and push the resulting flow to Kafka.
+The core component adds some information using the GeoIP databases and
+the SNMP poller, and push the resulting flow to Kafka. It is also able
+to classify exporters and interfaces into groups.
 
-The following keys are accepted:
+The following configuration keys are accepted:
 
 - `workers` key define how many workers should be spawned to process
   incoming flows
@@ -287,3 +194,85 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")
 
 [expr]: https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md
 [from Go]: https://pkg.go.dev/regexp#Regexp.Expand
+
+## GeoIP
+
+The GeoIP component adds source and destination country, as well as
+the AS number of the source and destination IP if they are not present
+in the received flows. It needs two databases using the [MaxMind DB
+file format][], one for AS numbers, one for countries. If no database
+is provided, the component is inactive. It accepts the following keys:
+
+- `asn-database` tells the path to the ASN database
+- `country-database` tells the path to the country database
+
+[MaxMind DB file format]: https://maxmind.github.io/MaxMind-DB/
+
+If the files are updated while *Akvorado* is running, they are
+automatically refreshed.
+
+## SNMP
+
+Flows only include interface indexes. To associate them with an
+interface name and description, SNMP is used to poll the exporter
+sending each flows. A cache is maintained to avoid polling
+continuously the exporters. The following keys are accepted:
+
+- `cache-duration` tells how much time to keep data in the cache
+- `cache-refresh` tells how much time to wait before updating an entry
+  by polling it
+- `cache-check-interval` tells how often to check if cached data is
+  about to expire or need an update
+- `cache-persist-file` tells where to store cached data on shutdown and
+  read them back on startup
+- `default-community` tells which community to use when polling exporters
+- `communities` is a map from a exporter IP address to the community to
+  use for a exporter, overriding the default value set above,
+- `poller-retries` is the number of retries on unsuccessful SNMP requests.
+- `poller-timeout` tells how much time should the poller wait for an answer.
+- `workers` tell how many workers to spawn to handle SNMP polling.
+
+As flows missing interface information are discarded, persisting the
+cache is useful to quickly be able to handle incoming flows. By
+default, no persistent cache is configured.
+
+## HTTP
+
+The builtin HTTP server serves various pages. Its configuration
+supports only the `listen` key to specify the address and port to
+listen. For example:
+
+```yaml
+http:
+  listen: 0.0.0.0:8000
+```
+
+## Web
+
+The web interface presents the landing page of *Akvorado*. It also
+embeds the documentation. It accepts only the following key:
+
+- `grafanaurl` to specify the URL to Grafana and exposes it as
+  [`/grafana`](/grafana).
+
+
+## ClickHouse
+
+The ClickHouse component exposes some useful HTTP endpoints to
+configure a ClickHouse database. Optionally, it will also provision
+and keep up-to-date a ClickHouse database. In this case, the following
+keys should be provided:
+
+ - `servers` defines the list of ClickHouse servers to connect to
+ - `username` is the username to use for authentication
+ - `password` is the password to use for authentication
+ - `database` defines the database to use to create tables
+ - `akvorado-url` defines the URL of Akvorado to be used by Clickhouse (autodetection when not specified)
+
+## Reporting
+
+Reporting encompasses logging and metrics. Currently, as *Akvorado* is
+expected to be run inside Docker, logging is done on the standard
+output and is not configurable. As for metrics, they are reported by
+the HTTP component on the `/api/v0/metrics` endpoint and there is
+nothing to configure either.

@@ -7,7 +7,7 @@ with ClickHouse and Grafana.
 ## Kafka
 
 The Kafka component sends flows to Kafka. Its
-[configuration](configuration.md#kafka) mostly needs a topic name and a list
+[configuration](02-configuration.md#kafka) mostly needs a topic name and a list
 of brokers. It is possible to let *Akvorado* manage the topic with the
 appropriate settings (number of partitions, replication factor and
 additional configuration entries). If the topic exists, *Akvorado*
@@ -30,7 +30,7 @@ ClickHouse can collect the data from Kafka. To help its configuration,
 - `/api/v0/clickhouse/asns.csv` contains a CSV with the mapping
   between AS numbers and organization names
 
-When [configured](configuration.md#clickhouse), it can also populate
+When [configured](02-configuration.md#clickhouse), it can also populate
 the database with the appropriate tables and manages them. As a
 prerequisite, the script contained in `/api/v0/clickhouse/init.sh`
 should be executed. It is not possible for ClickHouse to fetch the
@@ -49,4 +49,4 @@ instances are still running an older version).
 ## Grafana
 
 No integration is currently done for Grafana, except a reverse proxy
-configured in the [web section](configuration.md#web).
+configured in the [web section](02-configuration.md#web).

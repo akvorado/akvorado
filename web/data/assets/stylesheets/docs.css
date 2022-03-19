@@ -1,0 +1,10 @@
+.ak-docs-markdown p > img {
+    margin: 0 auto;
+    display: block;
+    max-width: 100%;
+}
+
+.ak-docs-toc ul {
+    padding-left: 0;
+    list-style: none;
+}
