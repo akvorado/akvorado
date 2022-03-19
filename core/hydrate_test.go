@@ -275,11 +275,11 @@ interfaceclassifiers:
 				})
 
 			flowComponent.Inject(t, tc.InputFlow())
-			time.Sleep(10 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond) // Needed to let poller does its job
 			flowComponent.Inject(t, tc.InputFlow())
 			select {
 			case <-received:
-			case <-time.After(time.Second):
+			case <-time.After(1 * time.Second):
 				t.Fatal("Kafka message not received")
 			}
 			gotMetrics := r.GetMetrics("akvorado_core_flows_")
