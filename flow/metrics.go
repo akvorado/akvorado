@@ -9,6 +9,7 @@ type metrics struct {
 	trafficPackets       *reporter.CounterVec
 	trafficPacketSizeSum *reporter.SummaryVec
 	trafficErrors        *reporter.CounterVec
+	trafficLoopTime      *reporter.SummaryVec
 
 	decoderStats  *reporter.CounterVec
 	decoderErrors *reporter.CounterVec
@@ -51,6 +52,14 @@ func (c *Component) initMetrics() {
 			Help: "Errors while receiving packets by the application.",
 		},
 		[]string{"type"},
+	)
+	c.metrics.trafficLoopTime = c.r.SummaryVec(
+		reporter.SummaryOpts{
+			Name:       "traffic_loop_time_ms",
+			Help:       "How much time is spend in busy/idle state in milliseconds.",
+			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
+		},
+		[]string{"worker", "state"},
 	)
 
 	c.metrics.decoderStats = c.r.CounterVec(

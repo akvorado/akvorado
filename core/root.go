@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strconv"
 	"sync/atomic"
 	"time"
 
@@ -99,7 +100,9 @@ func (c *Component) runWorker(workerID int) error {
 	c.r.Debug().Int("worker", workerID).Msg("starting core worker")
 
 	errLimiter := rate.NewLimiter(rate.Every(time.Minute), 10)
+	workerIDStr := strconv.Itoa(workerID)
 	for {
+		startIdle := time.Now()
 		select {
 		case <-c.t.Dying():
 			c.r.Debug().Int("worker", workerID).Msg("stopping core worker")
@@ -107,6 +110,7 @@ func (c *Component) runWorker(workerID int) error {
 		case answerChan := <-c.healthy:
 			answerChan <- true
 		case flow := <-c.d.Flow.Flows():
+			startBusy := time.Now()
 			if flow == nil {
 				c.r.Warn().Int("worker", workerID).Msg("no more flow available, stopping")
 				return errors.New("no more flow available")
@@ -148,6 +152,12 @@ func (c *Component) runWorker(workerID int) error {
 				default: // Overflow, best effort and ignore
 				}
 			}
+
+			idleTime := float64(startBusy.Sub(startIdle).Milliseconds())
+			busyTime := float64(time.Since(startBusy).Milliseconds())
+			c.metrics.loopTime.WithLabelValues(workerIDStr, "idle").Observe(idleTime)
+			c.metrics.loopTime.WithLabelValues(workerIDStr, "busy").Observe(busyTime)
+
 		}
 	}
 }

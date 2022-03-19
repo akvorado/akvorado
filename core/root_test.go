@@ -108,7 +108,7 @@ func TestCore(t *testing.T) {
 		flowComponent.Inject(t, flowMessage("192.0.2.143", 437, 679))
 
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics = r.GetMetrics("akvorado_core_")
+		gotMetrics = r.GetMetrics("akvorado_core_", "classifier_", "flows_")
 		expectedMetrics = map[string]string{
 			`classifier_cache_hits`:   "0",
 			`classifier_cache_misses`: "0",
@@ -176,7 +176,7 @@ func TestCore(t *testing.T) {
 		input.SamplingRate = 0
 		flowComponent.Inject(t, input)
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics = r.GetMetrics("akvorado_core_")
+		gotMetrics = r.GetMetrics("akvorado_core_", "classifier_", "flows_")
 		expectedMetrics = map[string]string{
 			`classifier_cache_hits`:   "0",
 			`classifier_cache_misses`: "0",

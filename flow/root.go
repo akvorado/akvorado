@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	netHTTP "net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -119,8 +120,10 @@ func (c *Component) spawnWorker(workerID int) error {
 	payload := make([]byte, 9000)
 	c.t.Go(func() error {
 		errLimiter := rate.NewLimiter(rate.Every(time.Minute), 1)
+		workerIDStr := strconv.Itoa(workerID)
 		for {
 			// Read one packet
+			startIdle := time.Now()
 			size, source, err := udpConn.ReadFromUDP(payload)
 			if err != nil {
 				if errors.Is(err, net.ErrClosed) {
@@ -132,6 +135,7 @@ func (c *Component) spawnWorker(workerID int) error {
 				c.metrics.trafficErrors.WithLabelValues("netflow").Inc()
 				continue
 			}
+			startBusy := time.Now()
 
 			c.metrics.trafficBytes.WithLabelValues(source.IP.String(), "netflow").
 				Add(float64(size))
@@ -139,9 +143,13 @@ func (c *Component) spawnWorker(workerID int) error {
 				Inc()
 			c.metrics.trafficPacketSizeSum.WithLabelValues(source.IP.String(), "netflow").
 				Observe(float64(size))
-			c.r.Debug().Msg("hello")
 
 			c.decodeFlow(payload[:size], source)
+
+			idleTime := float64(startBusy.Sub(startIdle).Milliseconds())
+			busyTime := float64(time.Since(startBusy).Milliseconds())
+			c.metrics.trafficLoopTime.WithLabelValues(workerIDStr, "idle").Observe(idleTime)
+			c.metrics.trafficLoopTime.WithLabelValues(workerIDStr, "busy").Observe(busyTime)
 		}
 	})
 

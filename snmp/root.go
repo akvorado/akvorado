@@ -6,6 +6,8 @@ package snmp
 import (
 	"context"
 	"errors"
+	"strconv"
+	"time"
 
 	"github.com/benbjohnson/clock"
 	"gopkg.in/tomb.v2"
@@ -29,6 +31,7 @@ type Component struct {
 	metrics struct {
 		cacheRefreshRuns reporter.Counter
 		cacheRefresh     reporter.Counter
+		pollerLoopTime   *reporter.SummaryVec
 	}
 }
 
@@ -65,6 +68,14 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 			Name: "cache_refresh",
 			Help: "Number of entries refreshed in cache.",
 		})
+	c.metrics.pollerLoopTime = r.SummaryVec(
+		reporter.SummaryOpts{
+			Name:       "poller_loop_time_ms",
+			Help:       "Time spent in each state of the poller loop.",
+			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
+		},
+		[]string{"worker", "state"},
+	)
 	return &c, nil
 }
 
@@ -120,15 +131,17 @@ func (c *Component) Start() error {
 
 	// Goroutines to poll samplers
 	for i := 0; i < c.config.Workers; i++ {
-		workerID := i
+		workerIDStr := strconv.Itoa(i)
 		c.t.Go(func() error {
-			c.r.Debug().Int("worker", workerID).Msg("starting SNMP poller")
+			c.r.Debug().Str("worker", workerIDStr).Msg("starting SNMP poller")
 			for {
+				startIdle := time.Now()
 				select {
 				case <-c.t.Dying():
-					c.r.Debug().Int("worker", workerID).Msg("stopping SNMP poller")
+					c.r.Debug().Str("worker", workerIDStr).Msg("stopping SNMP poller")
 					return nil
 				case request := <-c.pollerChannel:
+					startBusy := time.Now()
 					samplerIP := request.SamplerIP
 					ifIndex := request.IfIndex
 					community, ok := c.config.Communities[samplerIP]
@@ -140,6 +153,10 @@ func (c *Component) Start() error {
 						samplerIP, 161,
 						community,
 						ifIndex)
+					idleTime := float64(startBusy.Sub(startIdle).Milliseconds())
+					busyTime := float64(time.Since(startBusy).Milliseconds())
+					c.metrics.pollerLoopTime.WithLabelValues(workerIDStr, "idle").Observe(idleTime)
+					c.metrics.pollerLoopTime.WithLabelValues(workerIDStr, "busy").Observe(busyTime)
 				}
 			}
 		})
