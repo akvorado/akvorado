@@ -36,6 +36,7 @@ type Dependencies struct {
 
 // New creates a new HTTP component.
 func New(reporter *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
+	sarama.Logger = &kafkaLogger{reporter}
 	// Build Kafka configuration
 	kafkaConfig := sarama.NewConfig()
 	kafkaConfig.Version = sarama.KafkaVersion(configuration.Version)
@@ -122,7 +123,7 @@ func (c *Component) Stop() error {
 }
 
 // Send a message to Kafka.
-func (c *Component) Send(sampler string, payload []byte) error {
+func (c *Component) Send(sampler string, payload []byte) {
 	c.metrics.bytesSent.WithLabelValues(sampler).Add(float64(len(payload)))
 	c.metrics.messagesSent.WithLabelValues(sampler).Inc()
 	c.kafkaProducer.Input() <- &sarama.ProducerMessage{
@@ -130,5 +131,24 @@ func (c *Component) Send(sampler string, payload []byte) error {
 		Key:   sarama.StringEncoder(sampler),
 		Value: sarama.ByteEncoder(payload),
 	}
-	return nil
+}
+
+type kafkaLogger struct {
+	r *reporter.Reporter
+}
+
+func (l *kafkaLogger) Print(v ...interface{}) {
+	if e := l.r.Debug(); e.Enabled() {
+		e.Msg(fmt.Sprint(v...))
+	}
+}
+func (l *kafkaLogger) Println(v ...interface{}) {
+	if e := l.r.Debug(); e.Enabled() {
+		e.Msg(fmt.Sprintln(v...))
+	}
+}
+func (l *kafkaLogger) Printf(format string, v ...interface{}) {
+	if e := l.r.Debug(); e.Enabled() {
+		e.Msg(fmt.Sprintf(format, v...))
+	}
 }

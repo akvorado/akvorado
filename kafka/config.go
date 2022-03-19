@@ -39,7 +39,7 @@ var DefaultConfiguration = Configuration{
 	Version:          Version(sarama.DefaultVersion),
 	UseTLS:           false,
 	FlushInterval:    10 * time.Second,
-	FlushBytes:       int(sarama.MaxRequestSize),
+	FlushBytes:       int(sarama.MaxRequestSize) - 1,
 	MaxMessageBytes:  1000000,
 	CompressionCodec: CompressionCodec(sarama.CompressionNone),
 }

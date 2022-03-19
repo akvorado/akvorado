@@ -136,13 +136,7 @@ func (c *Component) runWorker(workerID int) error {
 			}
 
 			// Forward to Kafka
-			if err := c.d.Kafka.Send(sampler, buf.Bytes()); err != nil {
-				if errLimiter.Allow() {
-					c.r.Err(err).Str("sampler", sampler).Msg("unable to send flow to Kafka")
-				}
-				c.metrics.flowsErrors.WithLabelValues(sampler, err.Error()).Inc()
-				continue
-			}
+			c.d.Kafka.Send(sampler, buf.Bytes())
 			c.metrics.flowsForwarded.WithLabelValues(sampler).Inc()
 
 			// If we have HTTP clients, send to them too

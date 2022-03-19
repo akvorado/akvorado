@@ -14,6 +14,20 @@ run tests:
       paths:
         - .go-cache/
         - bin/
+  variables:
+    FF_NETWORK_PER_BUILD: "true"
+    AKVORADO_FUNCTIONAL_TESTS: "true"
+    ALLOW_ANONYMOUS_LOGIN: "yes"
+    ALLOW_PLAINTEXT_LISTENER: "yes"
+    KAFKA_BROKER_ID: "1"
+    KAFKA_CFG_LISTENERS: "PLAINTEXT://:9092"
+    KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
+    KAFKA_CFG_ZOOKEEPER_CONNECT: "zookeeper:2181"
+  services:
+    - name: bitnami/zookeeper:3.6
+      alias: zookeeper
+    - name: bitnami/kafka:3.1.0
+      alias: kafka
   script:
     - export GOMODCACHE=$PWD/.go-cache
     - time apk add --no-cache git make gcc musl-dev protoc
