@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/antonmedv/expr"
+	"github.com/antonmedv/expr/ast"
 	"github.com/antonmedv/expr/vm"
 )
 
@@ -54,11 +55,16 @@ func (scr *SamplerClassifierRule) exec(si samplerInfo) (string, error) {
 
 // UnmarshalText compiles a classification rule for a sampler.
 func (scr *SamplerClassifierRule) UnmarshalText(text []byte) error {
+	regexValidator := regexValidator{}
 	program, err := expr.Compile(string(text),
 		expr.Env(samplerClassifierEnvironment{}),
-		expr.AsBool())
+		expr.AsBool(),
+		expr.Patch(&regexValidator))
 	if err != nil {
 		return fmt.Errorf("cannot compile sampler classifier rule %q: %w", string(text), err)
+	}
+	if len(regexValidator.invalidRegexes) > 0 {
+		return fmt.Errorf("invalid regular expression %q", regexValidator.invalidRegexes[0])
 	}
 	scr.program = program
 	return nil
@@ -158,11 +164,16 @@ func (scr *InterfaceClassifierRule) exec(si samplerInfo, ii interfaceInfo, ic *i
 
 // UnmarshalText compiles a classification rule for an interface.
 func (scr *InterfaceClassifierRule) UnmarshalText(text []byte) error {
+	regexValidator := regexValidator{}
 	program, err := expr.Compile(string(text),
 		expr.Env(interfaceClassifierEnvironment{}),
-		expr.AsBool())
+		expr.AsBool(),
+		expr.Patch(&regexValidator))
 	if err != nil {
 		return fmt.Errorf("cannot compile interface classifier rule %q: %w", string(text), err)
+	}
+	if len(regexValidator.invalidRegexes) > 0 {
+		return fmt.Errorf("invalid regular expression %q", regexValidator.invalidRegexes[0])
 	}
 	scr.program = program
 	return nil
@@ -214,4 +225,26 @@ var normalizeRegex = regexp.MustCompile("[^a-z0-9.+-]+")
 // Normalize a string (provider or connectivity)
 func normalize(str string) string {
 	return normalizeRegex.ReplaceAllString(strings.ToLower(str), "")
+}
+
+type regexValidator struct {
+	invalidRegexes []string
+}
+
+func (r *regexValidator) Enter(_ *ast.Node) {}
+func (r *regexValidator) Exit(node *ast.Node) {
+	n, ok := (*node).(*ast.FunctionNode)
+	if !ok {
+		return
+	}
+	if !strings.HasSuffix(n.Name, "Regex") || len(n.Arguments) != 3 {
+		return
+	}
+	str, ok := n.Arguments[1].(*ast.StringNode)
+	if !ok {
+		return
+	}
+	if _, err := regexp.Compile(str.Value); err != nil {
+		r.invalidRegexes = append(r.invalidRegexes, str.Value)
+	}
 }

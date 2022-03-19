@@ -185,6 +185,8 @@ In the future, we may:
 - Builds dashboards with [D3.js][].[^d3js]
 - Manage the other components (Kafka topic creation, Clickhouse
   configuration) to make deployments easier.
+- Collect routes by integrating GoBGP. This is low priority if we
+  consider information from Maxmind good enough for our use.
 
 [^grafana]: The templating system in Grafana is quite limited.
     Notably, it is difficult to build different query depending on the

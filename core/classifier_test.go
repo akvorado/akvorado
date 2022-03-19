@@ -162,3 +162,25 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")
 		})
 	}
 }
+
+func TestRegexValidation(t *testing.T) {
+	cases := []struct {
+		Classifier string
+		Error      bool
+	}{
+		{`ClassifyRegex("something", "^(sbm+).l", "europe-$1")`, false},
+		{`ClassifyRegex("something", "^(sbm+.l", "europe-$1")`, true},
+		// When non-constant string is used, we cannot detect the error
+		{`ClassifyRegex("something", Sampler.Name + "^(sbm+.l", "europe-$1")`, false},
+	}
+	for _, tc := range cases {
+		var scr SamplerClassifierRule
+		err := scr.UnmarshalText([]byte(tc.Classifier))
+		if err == nil && tc.Error {
+			t.Errorf("UnmarshalText(%q) should have returned an error", tc.Classifier)
+		}
+		if err != nil && !tc.Error {
+			t.Errorf("UnmarshalText(%q) error:\n%+v", tc.Classifier, err)
+		}
+	}
+}

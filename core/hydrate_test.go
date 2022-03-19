@@ -215,34 +215,6 @@ interfaceclassifiers:
 				OutIfBoundary:     2, // internal
 			},
 		},
-		{
-			Name: "sampler rule with error",
-			Configuration: `
-samplerclassifiers:
-  - ClassifyRegex(Sampler.Name, "(kfgjf", "europe")
-`,
-			InputFlow: func() *flow.FlowMessage {
-				return &flow.FlowMessage{
-					SamplingRate:   1000,
-					SamplerAddress: net.ParseIP("192.0.2.142"),
-					InIf:           100,
-					OutIf:          200,
-				}
-			},
-			OutputFlow: &flow.FlowMessage{
-				SamplingRate:     1000,
-				SamplerAddress:   net.ParseIP("192.0.2.142"),
-				SamplerName:      "192_0_2_142",
-				InIf:             100,
-				OutIf:            200,
-				InIfName:         "Gi0/0/100",
-				OutIfName:        "Gi0/0/200",
-				InIfDescription:  "Interface 100",
-				OutIfDescription: "Interface 200",
-				InIfSpeed:        1000,
-				OutIfSpeed:       1000,
-			},
-		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
