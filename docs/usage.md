@@ -27,12 +27,12 @@ with `--check` if you don't want *Akvorado* to start.
 ### Exposed HTTP endpoints
 
 The embedded HTTP server contains the endpoints listed on the [home
-page](/). The [`/flows`](/flows?limit=1) continously printed flows
-sent to Kafka (using [ndjson]()). It also accepts a `limit` argument
-to stops after emitting the specified number of flows. This endpoint
-should not be used for anything else other than debug: it can skips
-some flows and if there are several users, flows will be dispatched
-between them.
+page](/). The [`/api/v0/flows`](/api/v0/flows?limit=1) continously
+printed flows sent to Kafka (using [ndjson]()). It also accepts a
+`limit` argument to stops after emitting the specified number of
+flows. This endpoint should not be used for anything else other than
+debug: it can skips some flows and if there are several users, flows
+will be dispatched between them.
 
 [ndjson]: http://ndjson.org/
 

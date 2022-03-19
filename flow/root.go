@@ -64,7 +64,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	c.d.Daemon.Track(&c.t, "flow")
 	c.initMetrics()
 	if c.d.HTTP != nil {
-		c.d.HTTP.AddHandler("/flow.proto",
+		c.d.HTTP.AddHandler("/api/v0/flow.proto",
 			netHTTP.HandlerFunc(func(w netHTTP.ResponseWriter, r *netHTTP.Request) {
 				w.Header().Set("Content-Type", "text/plain")
 				w.Write(flowProtoContent)

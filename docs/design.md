@@ -5,7 +5,7 @@
 The general design of *Akvorado* is the following:
 
 <figure markdown>
-  ![General design](assets/design.svg){ width="500" }
+  ![General design](assets/images/design.svg){ width="500" }
   <figcaption>General design for Akvorado</figcaption>
 </figure>
 
@@ -33,11 +33,11 @@ The remaining steps are outside of *Akvorado* control:
 
 ## Flow representation
 
-The flow representation is encoded in the [`flow.proto`](/flow.proto)
-file. Any information that could change with time is embedded in the
-flow. This includes for example interface names and speeds, as well.
-This ensures that older data are not processed using incorrect
-mappings.
+The flow representation is encoded in the
+[`flow.proto`](/api/v0/flow.proto) file. Any information that could
+change with time is embedded in the flow. This includes for example
+interface names and speeds, as well. This ensures that older data are
+not processed using incorrect mappings.
 
 ## Programming design
 

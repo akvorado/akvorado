@@ -21,8 +21,8 @@ Durations can be written in seconds or using strings like `10h20m`.
 Reporting encompasses logging and metrics. Currently, as *Akvorado* is
 expected to be run inside Docker, logging is done on the standard
 output and is not configurable. As for metrics, they are reported by
-the HTTP component on the `/metrics` endpoint and there is nothing to
-configure either.
+the HTTP component on the `/api/v0/metrics` endpoint and there is
+nothing to configure either.
 
 ## HTTP
 
@@ -41,7 +41,7 @@ The web interface presents the landing page of *Akvorado*. It also
 embeds the documentation. It accepts only the following key:
 
 - `grafanaurl` to specify the URL to Grafana and exposes it as
-  `/grafana`.
+  [`/grafana`](/grafana).
 
 ## Flow
 
@@ -106,8 +106,9 @@ automatically refreshed.
 
 Received flows are exported to a Kafka topic using the [protocol
 buffers format][]. The definition file is `flow/flow.proto`. It is
-also available through the [`/flow.proto`](/flow.proto) HTTP endpoint.
-Each flow is written in the [length-delimited format][].
+also available through the [`/api/v0/flow.proto`](/api/v0/flow.proto)
+HTTP endpoint. Each flow is written in the [length-delimited
+format][].
 
 [protocol buffers format]: https://developers.google.com/protocol-buffers
 [length-delimited format]: https://cwiki.apache.org/confluence/display/GEODE/Delimiting+Protobuf+Messages

@@ -36,7 +36,7 @@ func TestNew(t *testing.T) {
 	gauge.Set(4)
 
 	// Use the HTTP handler for testing
-	req := httptest.NewRequest("GET", "/metrics", nil)
+	req := httptest.NewRequest("GET", "/api/v0/metrics", nil)
 	w := httptest.NewRecorder()
 	m.HTTPHandler().ServeHTTP(w, req)
 	got := strings.Split(w.Body.String(), "\n")
@@ -51,7 +51,7 @@ func TestNew(t *testing.T) {
 			}
 		}
 		if !found {
-			t.Errorf("GET /metrics missing: %s", expected)
+			t.Errorf("GET /api/v0/metrics missing: %s", expected)
 		}
 	}
 
@@ -73,7 +73,7 @@ func TestNew(t *testing.T) {
 		"",
 	}
 	if diff := helpers.Diff(gotFiltered, expected); diff != "" {
-		t.Fatalf("GET /metrics (-got, +want):\n%s", diff)
+		t.Fatalf("GET /api/v0/metrics (-got, +want):\n%s", diff)
 	}
 }
 

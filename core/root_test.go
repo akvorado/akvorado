@@ -196,17 +196,17 @@ func TestCore(t *testing.T) {
 
 	// Test the healthcheck endpoint
 	t.Run("healthcheck", func(t *testing.T) {
-		resp, err := netHTTP.Get(fmt.Sprintf("http://%s/healthcheck", c.d.HTTP.Address))
+		resp, err := netHTTP.Get(fmt.Sprintf("http://%s/api/v0/healthcheck", c.d.HTTP.Address))
 		if err != nil {
 			t.Fatalf("GET /healthecheck:\n%+v", err)
 		}
 		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			t.Fatalf("GET /healthcheck: cannot read body:\n%+v", err)
+			t.Fatalf("GET /api/v0/healthcheck: cannot read body:\n%+v", err)
 		}
 		if resp.StatusCode != 200 || string(body) != "ok" {
-			t.Errorf("GET /healthcheck: got %d %q", resp.StatusCode, body)
+			t.Errorf("GET /api/v0/healthcheck: got %d %q", resp.StatusCode, body)
 		}
 	})
 
@@ -214,13 +214,13 @@ func TestCore(t *testing.T) {
 	t.Run("http flows", func(t *testing.T) {
 		c.httpFlowFlushDelay = 20 * time.Millisecond
 
-		resp, err := netHTTP.Get(fmt.Sprintf("http://%s/flows", c.d.HTTP.Address))
+		resp, err := netHTTP.Get(fmt.Sprintf("http://%s/api/v0/flows", c.d.HTTP.Address))
 		if err != nil {
-			t.Fatalf("GET /flows:\n%+v", err)
+			t.Fatalf("GET /api/v0/flows:\n%+v", err)
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != 200 {
-			t.Fatalf("GET /flows status code %d", resp.StatusCode)
+			t.Fatalf("GET /api/v0/flows status code %d", resp.StatusCode)
 		}
 
 		// Metrics should tell we have a client
@@ -244,7 +244,7 @@ func TestCore(t *testing.T) {
 		for i := 0; i < 10; i++ {
 			var got map[string]interface{}
 			if err := decoder.Decode(&got); err != nil {
-				t.Fatalf("GET /flows error while reading body:\n%+v", err)
+				t.Fatalf("GET /api/v0/flows error while reading body:\n%+v", err)
 			}
 			expected := map[string]interface{}{
 				"TimeReceived":   200,
@@ -279,7 +279,7 @@ func TestCore(t *testing.T) {
 				"SamplerName":      "192_0_2_142",
 			}
 			if diff := helpers.Diff(got, expected); diff != "" {
-				t.Fatalf("GET /flows (-got, +want):\n%s", diff)
+				t.Fatalf("GET /api/v0/flows (-got, +want):\n%s", diff)
 			}
 		}
 	})
@@ -287,13 +287,13 @@ func TestCore(t *testing.T) {
 	// Test HTTP flow clients with a limit
 	time.Sleep(10 * time.Millisecond)
 	t.Run("http flows with limit", func(t *testing.T) {
-		resp, err := netHTTP.Get(fmt.Sprintf("http://%s/flows?limit=4", c.d.HTTP.Address))
+		resp, err := netHTTP.Get(fmt.Sprintf("http://%s/api/v0/flows?limit=4", c.d.HTTP.Address))
 		if err != nil {
-			t.Fatalf("GET /flows:\n%+v", err)
+			t.Fatalf("GET /api/v0/flows:\n%+v", err)
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != 200 {
-			t.Fatalf("GET /flows status code %d", resp.StatusCode)
+			t.Fatalf("GET /api/v0/flows status code %d", resp.StatusCode)
 		}
 
 		// Metrics should tell we have a client
@@ -320,7 +320,7 @@ func TestCore(t *testing.T) {
 				break
 			}
 			if err != nil {
-				t.Fatalf("GET /flows error while reading:\n%+v", err)
+				t.Fatalf("GET /api/v0/flows error while reading:\n%+v", err)
 			}
 			count++
 			if count > 4 {
@@ -328,10 +328,10 @@ func TestCore(t *testing.T) {
 			}
 		}
 		if count > 4 {
-			t.Fatal("GET /flows got more than 4 flows")
+			t.Fatal("GET /api/v0/flows got more than 4 flows")
 		}
 		if count != 4 {
-			t.Fatalf("GET /flows got less than 4 flows (%d)", count)
+			t.Fatalf("GET /api/v0/flows got less than 4 flows (%d)", count)
 		}
 	})
 }

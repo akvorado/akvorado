@@ -261,12 +261,12 @@ func TestServeProtoFile(t *testing.T) {
 	c := NewMock(t, r, DefaultConfiguration)
 
 	// Check the HTTP server is running and answering metrics
-	resp, err := netHTTP.Get(fmt.Sprintf("http://%s/flow.proto", c.d.HTTP.Address))
+	resp, err := netHTTP.Get(fmt.Sprintf("http://%s/api/v0/flow.proto", c.d.HTTP.Address))
 	if err != nil {
-		t.Fatalf("GET /flow.proto:\n%+v", err)
+		t.Fatalf("GET /api/v0/flow.proto:\n%+v", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		t.Fatalf("GET /flow.proto: got status code %d, not 200", resp.StatusCode)
+		t.Fatalf("GET /api/v0/flow.proto: got status code %d, not 200", resp.StatusCode)
 	}
 }

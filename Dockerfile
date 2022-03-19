@@ -18,5 +18,5 @@ RUN make test && make
 # Do not use scratch, we use alpine to get an healthcheck
 FROM alpine
 COPY --from=build /app/bin/akvorado /usr/local/bin/akvorado
-HEALTHCHECK CMD wget -Y off -q -O - http://localhost:8080/healthcheck || exit 1
+HEALTHCHECK CMD wget -Y off -q -O - http://localhost:8080/api/v0/healthcheck || exit 1
 ENTRYPOINT [ "/usr/local/bin/akvorado" ]

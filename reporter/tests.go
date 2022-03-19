@@ -22,7 +22,7 @@ func NewMock(t *testing.T) *Reporter {
 // string). It keeps only metrics matching the provided prefix.
 func (r *Reporter) GetMetrics(prefix string, subset ...string) map[string]string {
 	results := make(map[string]string)
-	req := httptest.NewRequest("GET", "/metrics", nil)
+	req := httptest.NewRequest("GET", "/api/v0/metrics", nil)
 	w := httptest.NewRecorder()
 	r.MetricsHTTPHandler().ServeHTTP(w, req)
 

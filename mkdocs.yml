@@ -33,9 +33,9 @@ theme:
   font:
     text: Montserrat
     code: Roboto Mono
-  logo: assets/akvorado.svg
+  logo: assets/images/akvorado.svg
 extra_css:
-  - assets/extra.css
+  - assets/stylesheets/extra.css
 
 plugins:
   - search

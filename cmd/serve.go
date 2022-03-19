@@ -171,8 +171,8 @@ func daemonStart(r *reporter.Reporter, config ServeConfiguration, checkOnly bool
 	}
 
 	// Expose some informations and metrics
-	httpComponent.AddHandler("/metrics", r.MetricsHTTPHandler())
-	httpComponent.AddHandler("/version", netHTTP.HandlerFunc(func(w netHTTP.ResponseWriter, r *netHTTP.Request) {
+	httpComponent.AddHandler("/api/v0/metrics", r.MetricsHTTPHandler())
+	httpComponent.AddHandler("/api/v0/version", netHTTP.HandlerFunc(func(w netHTTP.ResponseWriter, r *netHTTP.Request) {
 		versionInfo := struct {
 			Version   string `json:"version"`
 			BuildDate string `json:"build_date"`

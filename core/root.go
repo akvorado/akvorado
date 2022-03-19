@@ -90,8 +90,8 @@ func (c *Component) Start() error {
 		})
 	}
 
-	c.d.HTTP.AddHandler("/healthcheck", c.HealthcheckHTTPHandler())
-	c.d.HTTP.AddHandler("/flows", c.FlowsHTTPHandler())
+	c.d.HTTP.AddHandler("/api/v0/healthcheck", c.HealthcheckHTTPHandler())
+	c.d.HTTP.AddHandler("/api/v0/flows", c.FlowsHTTPHandler())
 	return nil
 }
 
