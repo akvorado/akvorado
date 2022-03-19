@@ -77,8 +77,8 @@ func (c *Component) initMetrics() {
 
 	c.metrics.loopTime = c.r.SummaryVec(
 		reporter.SummaryOpts{
-			Name:       "loop_time_ms",
-			Help:       "How much time is spend in busy/idle state in milliseconds.",
+			Name:       "loop_time_seconds",
+			Help:       "How much time is spend in busy/idle state.",
 			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		},
 		[]string{"worker", "state"},

@@ -104,7 +104,7 @@ func (c *Component) decodeFlow(payload []byte, source *net.UDPAddr) {
 
 	timeTrackStop := time.Now()
 	c.metrics.decoderTime.WithLabelValues("netflow").
-		Observe(float64((timeTrackStop.Sub(timeTrackStart)).Nanoseconds()) / 1000)
+		Observe(float64((timeTrackStop.Sub(timeTrackStart)).Nanoseconds()) / 1000 / 1000 / 1000)
 	c.metrics.decoderStats.WithLabelValues("netflow").
 		Inc()
 

@@ -70,7 +70,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		})
 	c.metrics.pollerLoopTime = r.SummaryVec(
 		reporter.SummaryOpts{
-			Name:       "poller_loop_time_ms",
+			Name:       "poller_loop_time_seconds",
 			Help:       "Time spent in each state of the poller loop.",
 			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		},
@@ -153,8 +153,8 @@ func (c *Component) Start() error {
 						samplerIP, 161,
 						community,
 						ifIndex)
-					idleTime := float64(startBusy.Sub(startIdle).Milliseconds())
-					busyTime := float64(time.Since(startBusy).Milliseconds())
+					idleTime := float64(startBusy.Sub(startIdle).Milliseconds()) / 1000
+					busyTime := float64(time.Since(startBusy).Milliseconds()) / 1000
 					c.metrics.pollerLoopTime.WithLabelValues(workerIDStr, "idle").Observe(idleTime)
 					c.metrics.pollerLoopTime.WithLabelValues(workerIDStr, "busy").Observe(busyTime)
 				}

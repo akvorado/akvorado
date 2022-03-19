@@ -55,8 +55,8 @@ func (c *Component) initMetrics() {
 	)
 	c.metrics.trafficLoopTime = c.r.SummaryVec(
 		reporter.SummaryOpts{
-			Name:       "traffic_loop_time_ms",
-			Help:       "How much time is spend in busy/idle state in milliseconds.",
+			Name:       "traffic_loop_time_seconds",
+			Help:       "How much time is spend in busy/idle state.",
 			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		},
 		[]string{"worker", "state"},
@@ -78,7 +78,7 @@ func (c *Component) initMetrics() {
 	)
 	c.metrics.decoderTime = c.r.SummaryVec(
 		reporter.SummaryOpts{
-			Name:       "summary_decoding_time_us",
+			Name:       "summary_decoding_time_seconds",
 			Help:       "Decoding time summary.",
 			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		},

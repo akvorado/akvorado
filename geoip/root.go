@@ -53,7 +53,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	c.d.Daemon.Track(&c.t, "geoip")
 	c.metrics.databaseRefresh = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "db_refresh",
+			Name: "db_refresh_total",
 			Help: "Refresh event for a GeoIP database.",
 		},
 		[]string{"database"},

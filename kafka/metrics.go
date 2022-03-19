@@ -35,21 +35,21 @@ func (c *Component) initMetrics() {
 
 	c.metrics.messagesSent = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "messages_sent",
+			Name: "sent_messages_total",
 			Help: "Number of messages sent from a given sampler.",
 		},
 		[]string{"sampler"},
 	)
 	c.metrics.bytesSent = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "bytes_sent",
+			Name: "sent_bytes_total",
 			Help: "Number of bytes sent from a given sampler.",
 		},
 		[]string{"sampler"},
 	)
 	c.metrics.errors = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "errors",
+			Name: "errors_total",
 			Help: "Number of errors when sending.",
 		},
 		[]string{"error"},
@@ -72,7 +72,7 @@ func (c *Component) initMetrics() {
 		"Distribution of the request size in bytes for a given broker.",
 		[]string{"broker"})
 	c.metrics.kafkaRequestLatency = c.r.MetricDesc(
-		"brokers_request_latency",
+		"brokers_request_latency_seconds",
 		"Distribution of the request latency in ms for a given broker.",
 		[]string{"broker"})
 	c.metrics.kafkaResponseRate = c.r.MetricDesc(
@@ -80,15 +80,15 @@ func (c *Component) initMetrics() {
 		"Responses/second received from a given broker.",
 		[]string{"broker"})
 	c.metrics.kafkaResponseSize = c.r.MetricDesc(
-		"brokers_response_size",
+		"brokers_response_bytes",
 		"Distribution of the response size in bytes for a given broker.",
 		[]string{"broker"})
 	c.metrics.kafkaRequestsInFlight = c.r.MetricDesc(
-		"brokers_requests_in_flight",
+		"brokers_inflight_requests",
 		"The current number of in-flight requests awaiting a response for a given broker.",
 		[]string{"broker"})
 	c.metrics.kafkaBatchSize = c.r.MetricDesc(
-		"producer_batch_size",
+		"producer_batch_bytes",
 		"Distribution of the number of bytes sent per partition per request.",
 		nil)
 	c.metrics.kafkaRecordSendRate = c.r.MetricDesc(

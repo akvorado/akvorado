@@ -48,7 +48,7 @@ func newPoller(r *reporter.Reporter, clock clock.Clock, put func(string, string,
 	}
 	p.metrics.pendingRequests = r.GaugeFunc(
 		reporter.GaugeOpts{
-			Name: "poller_pending",
+			Name: "poller_pending_requests",
 			Help: "Number of pending requests in pollers.",
 		}, func() float64 {
 			p.pendingRequestsLock.Lock()
@@ -57,17 +57,17 @@ func newPoller(r *reporter.Reporter, clock clock.Clock, put func(string, string,
 		})
 	p.metrics.successes = r.CounterVec(
 		reporter.CounterOpts{
-			Name: "poller_success",
+			Name: "poller_success_requests",
 			Help: "Number of successful requests.",
 		}, []string{"sampler"})
 	p.metrics.failures = r.CounterVec(
 		reporter.CounterOpts{
-			Name: "poller_failure",
+			Name: "poller_failure_requests",
 			Help: "Number of failed requests.",
 		}, []string{"sampler", "error"})
 	p.metrics.retries = r.CounterVec(
 		reporter.CounterOpts{
-			Name: "poller_retry",
+			Name: "poller_retry_requests",
 			Help: "Number of retried requests.",
 		}, []string{"sampler"})
 	p.metrics.times = r.SummaryVec(

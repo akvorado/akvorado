@@ -39,9 +39,9 @@ func TestKafka(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 	gotMetrics := r.GetMetrics("akvorado_kafka_")
 	expectedMetrics := map[string]string{
-		`bytes_sent{sampler="127.0.0.1"}`:                                        "26",
-		`errors{error="kafka: Failed to produce message to topic flows: noooo"}`: "1",
-		`messages_sent{sampler="127.0.0.1"}`:                                     "2",
+		`sent_bytes_total{sampler="127.0.0.1"}`:                                        "26",
+		`errors_total{error="kafka: Failed to produce message to topic flows: noooo"}`: "1",
+		`sent_messages_total{sampler="127.0.0.1"}`:                                     "2",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -88,8 +88,8 @@ func TestKafkaMetrics(t *testing.T) {
 		`brokers_request_size_bucket{broker="1111",le="0.99"}`: "100",
 		`brokers_request_size_count{broker="1111"}`:            "1",
 		`brokers_request_size_sum{broker="1111"}`:              "100",
-		`brokers_requests_in_flight{broker="1111"}`:            "20",
-		`brokers_requests_in_flight{broker="1112"}`:            "20",
+		`brokers_inflight_requests{broker="1111"}`:             "20",
+		`brokers_inflight_requests{broker="1112"}`:             "20",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)

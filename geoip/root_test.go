@@ -59,8 +59,8 @@ func TestDatabaseRefresh(t *testing.T) {
 	// Check we did load both databases
 	gotMetrics := r.GetMetrics("akvorado_geoip_db_")
 	expectedMetrics := map[string]string{
-		`refresh{database="asn"}`:     "1",
-		`refresh{database="country"}`: "1",
+		`refresh_total{database="asn"}`:     "1",
+		`refresh_total{database="country"}`: "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -73,8 +73,8 @@ func TestDatabaseRefresh(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 	gotMetrics = r.GetMetrics("akvorado_geoip_db_")
 	expectedMetrics = map[string]string{
-		`refresh{database="asn"}`:     "1",
-		`refresh{database="country"}`: "2",
+		`refresh_total{database="asn"}`:     "1",
+		`refresh_total{database="country"}`: "2",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
