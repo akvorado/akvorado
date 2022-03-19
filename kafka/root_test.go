@@ -213,10 +213,17 @@ func TestRealKafka(t *testing.T) {
 		t.Fatalf("NewConsumerGroup() error:\n%+v", err)
 	}
 	defer consumer.Close()
-
-	partitions, err := consumer.Partitions(topicName)
-	if err != nil {
-		t.Fatalf("Partitions() error:\n%+v", err)
+	var partitions []int32
+	for {
+		partitions, err = consumer.Partitions(topicName)
+		if err != nil {
+			if errors.Is(err, sarama.ErrUnknownTopicOrPartition) {
+				// Wait for topic to be available
+				continue
+			}
+			t.Fatalf("Partitions() error:\n%+v", err)
+		}
+		break
 	}
 	partitionConsumer, err := consumer.ConsumePartition(topicName, partitions[0], sarama.OffsetOldest)
 	if err != nil {
