@@ -26,7 +26,7 @@ run tests:
   services:
     - name: bitnami/zookeeper:3.6
       alias: zookeeper
-    - name: bitnami/kafka:3.1.0
+    - name: bitnami/kafka:2.8.1
       alias: kafka
   script:
     - export GOMODCACHE=$PWD/.go-cache
