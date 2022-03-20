@@ -50,8 +50,15 @@ type Dependencies struct {
 	HTTP   *http.Component
 }
 
-//go:embed flow.proto
-var flowProtoContent []byte
+var (
+	//go:embed flow.proto
+	flowProto []byte
+	// FlowProtoHandler is an HTTP handler serving flow.proto
+	FlowProtoHandler = netHTTP.HandlerFunc(func(w netHTTP.ResponseWriter, r *netHTTP.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write(flowProto)
+	})
+)
 
 // New creates a new flow component.
 func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
@@ -62,14 +69,8 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		incomingFlows: make(chan *FlowMessage, configuration.BufferLength),
 	}
 	c.d.Daemon.Track(&c.t, "flow")
+	c.d.HTTP.AddHandler("/api/v0/flow.proto", FlowProtoHandler)
 	c.initMetrics()
-	if c.d.HTTP != nil {
-		c.d.HTTP.AddHandler("/api/v0/flow.proto",
-			netHTTP.HandlerFunc(func(w netHTTP.ResponseWriter, r *netHTTP.Request) {
-				w.Header().Set("Content-Type", "text/plain")
-				w.Write(flowProtoContent)
-			}))
-	}
 	return &c, nil
 }
 

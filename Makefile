@@ -58,6 +58,18 @@ web/data: mkdocs.yml $(wildcard docs/*.md docs/assets/*) ; $(info $(M) build doc
 		-v $(CURDIR)/web/data:/output:rw \
 		squidfunk/mkdocs-material:8.2.5 build --strict --site-dir /output
 
+# These files are versioned in Git, but we may want to update them.
+clickhouse/data/protocols.csv:
+	$ curl -sL http://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv \
+		| sed -nE -e "1 s/.*/proto,name,description/p" -e "2,$ s/^([0-9]+,[^ ,]+,[^\",]+),.*/\1/p" \
+		> $@
+clickhouse/data/asns.csv:	# Need to pipe MaxMind ASN database in CSV format
+	$Q sed -ne 's/^[^,]*,//p' \
+		| LC_ALL=C sort -n \
+		| uniq \
+		| grep -v '^[0-9,]*$' \
+		| sed -e '1casn,name' > $@
+
 # Tests
 
 TEST_TARGETS := test-bench test-short test-verbose test-race
@@ -84,7 +96,7 @@ test-coverage: | $(GOCOV) $(GOCOVXML) $(GOTESTSUM) ; $(info $(M) running coverag
 	$Q $(GO) tool cover -html=test/profile.out -o test/coverage.html
 	$Q $(GOCOV) convert test/profile.out | $(GOCOVXML) > test/coverage.xml
 	@echo -n "Code coverage: "; \
-		echo "$$(sed -En 's/^<coverage line-rate="([0-9.]+)".*/\1/p' test/coverage.xml) * 100 / 1" | bc -q
+		echo "scale=1;$$(sed -En 's/^<coverage line-rate="([0-9.]+)".*/\1/p' test/coverage.xml) * 100 / 1" | bc -q
 
 .PHONY: lint
 lint: | $(REVIVE) ; $(info $(M) running golint…) @ ## Run golint

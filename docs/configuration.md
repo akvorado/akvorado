@@ -10,6 +10,7 @@ configured through a different section:
 - `snmp`: [SNMP poller](#snmp)
 - `geoip`: [GeoIP database](#geoip)
 - `kafka`: [Kafka broker](#kafka)
+- `clickhouse`: [Clickhouse helper](#clickhouse)
 - `core`: [Core](#core)
 
 You can get the default configuration with `./akvorado --dump --check`.
@@ -153,6 +154,11 @@ kafka:
       retention.ms: 86400000
       cleanup.policy: delete
 ```
+
+## Clickhouse
+
+The Clickhouse component exposes some useful HTTP endpoints to
+configure a Clickhouse database. It takes no configuration.
 
 ## Core
 
