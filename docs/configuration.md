@@ -116,8 +116,7 @@ format][].
 The following keys are accepted:
 
 - `topic` tells which topic to use to write messages
-- `auto-create-topic` tells if we can automatically create the topic if
-  it does not exist
+- `topic-configuration` contains the topic configuration
 - `brokers` specifies the list of brokers to use to bootstrap the
   connection to the Kafka cluster
 - `version` tells which minimal version of Kafka to expect
@@ -130,6 +129,30 @@ The following keys are accepted:
   be equal or smaller to the same setting in the broker configuration)
 - `compression-codec` defines the compression codec to use to compress
   messages (`none`, `gzip`, `snappy`, `lz4` and `zstd`)
+
+If no topic configuration is provided, the topic should already exist
+in Kafka. If a configuration is provided, the topic is created if it
+does not exist or updated if it does. Currently, updating the number
+of partitions or the replication factor is not possible. The following
+keys are accepted for the topic configuration:
+
+- `num-partitions` for the number of partitions
+- `replication-factor` for the replication factor
+- `config-entries` is a mapping from configuration names to their values
+
+For example:
+
+```yaml
+kafka:
+  topic: test-topic
+  topic-configuration:
+    num-partitions: 1
+    replication-factor: 1
+    config-entries:
+      segment.bytes: 1073741824
+      retention.ms: 86400000
+      cleanup.policy: delete
+```
 
 ## Core
 

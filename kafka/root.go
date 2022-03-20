@@ -40,7 +40,7 @@ func New(reporter *reporter.Reporter, configuration Configuration, dependencies 
 	// Build Kafka configuration
 	kafkaConfig := sarama.NewConfig()
 	kafkaConfig.Version = sarama.KafkaVersion(configuration.Version)
-	kafkaConfig.Metadata.AllowAutoTopicCreation = configuration.AutoCreateTopic
+	kafkaConfig.Metadata.AllowAutoTopicCreation = false
 	kafkaConfig.Producer.MaxMessageBytes = configuration.MaxMessageBytes
 	kafkaConfig.Producer.Compression = sarama.CompressionCodec(configuration.CompressionCodec)
 	kafkaConfig.Producer.Return.Successes = false
@@ -88,6 +88,55 @@ func (c *Component) Start() error {
 		return fmt.Errorf("unable to create Kafka async producer: %w", err)
 	}
 	c.kafkaProducer = kafkaProducer
+
+	// Create topic
+	if c.config.TopicConfiguration != nil {
+		client, err := sarama.NewClusterAdmin(c.config.Brokers, c.kafkaConfig)
+		if err != nil {
+			kafkaProducer.Close()
+			c.r.Err(err).
+				Str("brokers", strings.Join(c.config.Brokers, ",")).
+				Msg("unable to get admin client for topic creation")
+			return fmt.Errorf("unable to get admin client for topic creation: %w", err)
+		}
+		defer client.Close()
+		l := c.r.With().
+			Str("brokers", strings.Join(c.config.Brokers, ",")).
+			Str("topic", c.config.Topic).
+			Logger()
+		topics, err := client.ListTopics()
+		if err != nil {
+			l.Err(err).Msg("unable to get metadata for topics")
+			return fmt.Errorf("unable to get metadata for topics: %w", err)
+		}
+		if topic, ok := topics[c.config.Topic]; !ok {
+			if err := client.CreateTopic(c.config.Topic,
+				&sarama.TopicDetail{
+					NumPartitions:     c.config.TopicConfiguration.NumPartitions,
+					ReplicationFactor: c.config.TopicConfiguration.ReplicationFactor,
+					ConfigEntries:     c.config.TopicConfiguration.ConfigEntries,
+				}, false); err != nil {
+				l.Err(err).Msg("unable to create topic")
+				return fmt.Errorf("unable to create topic %q: %w", c.config.Topic, err)
+			}
+			l.Info().Msg("topic created")
+		} else {
+			if topic.NumPartitions != c.config.TopicConfiguration.NumPartitions {
+				l.Warn().Msgf("mismatch for number of partitions: got %d, want %d",
+					topic.NumPartitions, c.config.TopicConfiguration.NumPartitions)
+			}
+			if topic.ReplicationFactor != c.config.TopicConfiguration.ReplicationFactor {
+				l.Warn().Msgf("mismatch for replication factor: got %d, want %d",
+					topic.ReplicationFactor, c.config.TopicConfiguration.ReplicationFactor)
+			}
+			if err := client.AlterConfig(sarama.TopicResource, c.config.Topic, c.config.TopicConfiguration.ConfigEntries, false); err != nil {
+				l.Err(err).Msg("unable to set topic configuration")
+				return fmt.Errorf("unable to set topic configuration for %q: %w",
+					c.config.Topic, err)
+			}
+			l.Info().Msg("topic updated")
+		}
+	}
 
 	// Main loop
 	c.t.Go(func() error {

@@ -11,8 +11,8 @@ import (
 type Configuration struct {
 	// Topic defines the topic to write flows to.
 	Topic string
-	// AutoCreateTopic tells if we can create the topic if it does not exist.
-	AutoCreateTopic bool
+	// TopicConfiguration describes the topic configuration. If none is provided, it will not be created.
+	TopicConfiguration *TopicConfiguration
 	// Brokers is the list of brokers to connect to.
 	Brokers []string
 	// Version is the version of Kafka we assume to work
@@ -31,10 +31,19 @@ type Configuration struct {
 	CompressionCodec CompressionCodec
 }
 
+// TopicConfiguration describes the configuration for a topic
+type TopicConfiguration struct {
+	// NumPartitions tells how many partitions should be used for the topic.
+	NumPartitions int32
+	// ReplicationFactor tells the replication factor for the topic.
+	ReplicationFactor int16
+	// ConfigEntries is a map to specify the topic overrides. Non-listed overrides will be removed
+	ConfigEntries map[string]*string
+}
+
 // DefaultConfiguration represents the default configuration for the Kafka exporter.
 var DefaultConfiguration = Configuration{
 	Topic:            "flows",
-	AutoCreateTopic:  false,
 	Brokers:          []string{"127.0.0.1:9092"},
 	Version:          Version(sarama.DefaultVersion),
 	UseTLS:           false,
