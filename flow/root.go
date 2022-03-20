@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	netHTTP "net/http"
 	"strconv"
 	"sync"
 	"time"
@@ -50,16 +49,6 @@ type Dependencies struct {
 	HTTP   *http.Component
 }
 
-var (
-	//go:embed flow.proto
-	flowProto []byte
-	// FlowProtoHandler is an HTTP handler serving flow.proto
-	FlowProtoHandler = netHTTP.HandlerFunc(func(w netHTTP.ResponseWriter, r *netHTTP.Request) {
-		w.Header().Set("Content-Type", "text/plain")
-		w.Write(flowProto)
-	})
-)
-
 // New creates a new flow component.
 func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
 	c := Component{
@@ -69,7 +58,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		incomingFlows: make(chan *FlowMessage, configuration.BufferLength),
 	}
 	c.d.Daemon.Track(&c.t, "flow")
-	c.d.HTTP.AddHandler("/api/v0/flow.proto", FlowProtoHandler)
+	c.initHTTP()
 	c.initMetrics()
 	return &c, nil
 }

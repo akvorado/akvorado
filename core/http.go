@@ -71,7 +71,6 @@ func (c *Component) FlowsHTTPHandler() http.Handler {
 		defer atomic.AddUint32(&c.httpFlowClients, ^uint32(0))
 
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
 		encoder := json.NewEncoder(w)
 		if limit == 1 {
 			encoder.SetIndent("", " ")

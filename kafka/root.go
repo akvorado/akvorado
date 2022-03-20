@@ -13,6 +13,7 @@ import (
 	"gopkg.in/tomb.v2"
 
 	"akvorado/daemon"
+	"akvorado/flow"
 	"akvorado/reporter"
 )
 
@@ -23,6 +24,7 @@ type Component struct {
 	t      tomb.Tomb
 	config Configuration
 
+	kafkaTopic          string
 	kafkaConfig         *sarama.Config
 	kafkaProducer       sarama.AsyncProducer
 	createKafkaProducer func() (sarama.AsyncProducer, error)
@@ -36,8 +38,8 @@ type Dependencies struct {
 
 // New creates a new HTTP component.
 func New(reporter *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
-	sarama.Logger = &kafkaLogger{reporter}
 	// Build Kafka configuration
+	sarama.Logger = &kafkaLogger{reporter}
 	kafkaConfig := sarama.NewConfig()
 	kafkaConfig.Version = sarama.KafkaVersion(configuration.Version)
 	kafkaConfig.Metadata.AllowAutoTopicCreation = false
@@ -66,6 +68,7 @@ func New(reporter *reporter.Reporter, configuration Configuration, dependencies 
 		config: configuration,
 
 		kafkaConfig: kafkaConfig,
+		kafkaTopic:  fmt.Sprintf("%s-v%d", configuration.Topic, flow.CurrentSchemaVersion),
 	}
 	c.initMetrics()
 	c.createKafkaProducer = func() (sarama.AsyncProducer, error) {
@@ -102,22 +105,22 @@ func (c *Component) Start() error {
 		defer client.Close()
 		l := c.r.With().
 			Str("brokers", strings.Join(c.config.Brokers, ",")).
-			Str("topic", c.config.Topic).
+			Str("topic", c.kafkaTopic).
 			Logger()
 		topics, err := client.ListTopics()
 		if err != nil {
 			l.Err(err).Msg("unable to get metadata for topics")
 			return fmt.Errorf("unable to get metadata for topics: %w", err)
 		}
-		if topic, ok := topics[c.config.Topic]; !ok {
-			if err := client.CreateTopic(c.config.Topic,
+		if topic, ok := topics[c.kafkaTopic]; !ok {
+			if err := client.CreateTopic(c.kafkaTopic,
 				&sarama.TopicDetail{
 					NumPartitions:     c.config.TopicConfiguration.NumPartitions,
 					ReplicationFactor: c.config.TopicConfiguration.ReplicationFactor,
 					ConfigEntries:     c.config.TopicConfiguration.ConfigEntries,
 				}, false); err != nil {
 				l.Err(err).Msg("unable to create topic")
-				return fmt.Errorf("unable to create topic %q: %w", c.config.Topic, err)
+				return fmt.Errorf("unable to create topic %q: %w", c.kafkaTopic, err)
 			}
 			l.Info().Msg("topic created")
 		} else {
@@ -129,10 +132,10 @@ func (c *Component) Start() error {
 				l.Warn().Msgf("mismatch for replication factor: got %d, want %d",
 					topic.ReplicationFactor, c.config.TopicConfiguration.ReplicationFactor)
 			}
-			if err := client.AlterConfig(sarama.TopicResource, c.config.Topic, c.config.TopicConfiguration.ConfigEntries, false); err != nil {
+			if err := client.AlterConfig(sarama.TopicResource, c.kafkaTopic, c.config.TopicConfiguration.ConfigEntries, false); err != nil {
 				l.Err(err).Msg("unable to set topic configuration")
 				return fmt.Errorf("unable to set topic configuration for %q: %w",
-					c.config.Topic, err)
+					c.kafkaTopic, err)
 			}
 			l.Info().Msg("topic updated")
 		}
@@ -176,7 +179,7 @@ func (c *Component) Send(sampler string, payload []byte) {
 	c.metrics.bytesSent.WithLabelValues(sampler).Add(float64(len(payload)))
 	c.metrics.messagesSent.WithLabelValues(sampler).Inc()
 	c.kafkaProducer.Input() <- &sarama.ProducerMessage{
-		Topic: c.config.Topic,
+		Topic: c.kafkaTopic,
 		Key:   sarama.StringEncoder(sampler),
 		Value: sarama.ByteEncoder(payload),
 	}

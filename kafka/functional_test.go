@@ -13,6 +13,7 @@ import (
 	"github.com/Shopify/sarama"
 
 	"akvorado/daemon"
+	"akvorado/flow"
 	"akvorado/helpers"
 	"akvorado/reporter"
 )
@@ -106,6 +107,7 @@ func TestRealKafka(t *testing.T) {
 	configuration.Brokers = brokers
 	configuration.Version = Version(sarama.V2_8_1_0)
 	configuration.FlushInterval = 100 * time.Millisecond
+	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, flow.CurrentSchemaVersion)
 	r := reporter.NewMock(t)
 	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
@@ -141,7 +143,7 @@ func TestRealKafka(t *testing.T) {
 	defer consumer.Close()
 	var partitions []int32
 	for {
-		partitions, err = consumer.Partitions(topicName)
+		partitions, err = consumer.Partitions(expectedTopicName)
 		if err != nil {
 			if errors.Is(err, sarama.ErrUnknownTopicOrPartition) {
 				// Wait for topic to be available
@@ -151,7 +153,7 @@ func TestRealKafka(t *testing.T) {
 		}
 		break
 	}
-	partitionConsumer, err := consumer.ConsumePartition(topicName, partitions[0], sarama.OffsetOldest)
+	partitionConsumer, err := consumer.ConsumePartition(expectedTopicName, partitions[0], sarama.OffsetOldest)
 	if err != nil {
 		t.Fatalf("ConsumePartitions() error:\n%+v", err)
 	}
@@ -182,6 +184,7 @@ func TestTopicCreation(t *testing.T) {
 
 	rand.Seed(time.Now().UnixMicro())
 	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
+	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, flow.CurrentSchemaVersion)
 	retentionMs := "76548"
 	segmentBytes := "107374184"
 	segmentBytes2 := "10737184"
@@ -243,7 +246,7 @@ func TestTopicCreation(t *testing.T) {
 			if err != nil {
 				t.Fatalf("ListTopics() error:\n%+v", err)
 			}
-			topic, ok := topics[topicName]
+			topic, ok := topics[expectedTopicName]
 			if !ok {
 				t.Fatal("ListTopics() did not find the topic")
 			}

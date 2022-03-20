@@ -13,7 +13,7 @@ M = $(shell printf "\033[34;1m▶\033[0m")
 
 export GO111MODULE=on
 
-GENERATED = flow/flow.pb.go web/data
+GENERATED = flow/flow-0.pb.go web/data
 
 .PHONY: all
 all: fmt lint $(GENERATED) | $(BIN) ; $(info $(M) building executable…) @ ## Build program binary

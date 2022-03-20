@@ -4,14 +4,24 @@ import (
 	"embed"
 	"fmt"
 	"net/http"
+	"text/template"
 	"time"
 
 	"akvorado/flow"
 )
 
-//go:embed data/protocols.csv
-//go:embed data/asns.csv
-var data embed.FS
+var (
+	//go:embed data/protocols.csv
+	//go:embed data/asns.csv
+	data           embed.FS
+	initShTemplate = template.Must(template.New("initsh").Parse(`#!/bin/sh
+{{ range $version, $schema := . }}
+cat > /var/lib/clickhouse/format_schemas/flow-{{ $version }}.proto <<'EOPROTO'
+{{ $schema }}
+EOPROTO
+{{ end }}
+`))
+)
 
 func (c *Component) addHandlerEmbedded(url string, path string) {
 	c.d.HTTP.AddHandler(url,
@@ -29,15 +39,10 @@ func (c *Component) addHandlerEmbedded(url string, path string) {
 // registerHTTPHandler register some handlers that will be useful for
 // Clickhouse
 func (c *Component) registerHTTPHandlers() error {
-	c.d.HTTP.AddHandler("/api/v0/clickhouse/flow.proto", flow.FlowProtoHandler)
 	c.d.HTTP.AddHandler("/api/v0/clickhouse/init.sh",
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "text/x-shellscript")
-			w.Write([]byte(`#!/bin/sh
-cat > /var/lib/clickhouse/format_schemas/flow.proto <<'EOF'
-`))
-			flow.FlowProtoHandler.ServeHTTP(w, r)
-			w.Write([]byte(`EOF`))
+			initShTemplate.Execute(w, flow.VersionedSchemas)
 		}))
 
 	entries, err := data.ReadDir("data")

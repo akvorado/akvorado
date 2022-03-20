@@ -33,11 +33,14 @@ The remaining steps are outside of *Akvorado* control:
 
 ## Flow representation
 
-The flow representation is encoded in the
-[`flow.proto`](/api/v0/flow.proto) file. Any information that could
-change with time is embedded in the flow. This includes for example
-interface names and speeds, as well. This ensures that older data are
-not processed using incorrect mappings.
+The flow representation is encoded in a versioned `flow-*.proto` file.
+Any information that could change with time is embedded in the flow.
+This includes for example interface names and speeds, as well. This
+ensures that older data are not processed using incorrect mappings.
+
+Each time the schema changes, we issue a new `flow-*.proto` file,
+update the schema version and a new Kafka topic will be used. This
+ensures we do not mix different schemas in a single topic.
 
 ## Programming design
 

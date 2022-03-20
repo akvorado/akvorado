@@ -14,13 +14,16 @@ additional configuration entries). If the topic exists, *Akvorado*
 won't update the number of partitions and the replication factor but
 other settings will be updated.
 
+Each time a new flow schema is needed, a different topic is used.
+*Akvorado* suffixes the topic name with the version to ensure this
+property.
+
 ## Clickhouse
 
 Clickhouse can collect the data from Kafka. To help its configuration,
 *Akvorado* exposes a few HTTP endpoint:
 
-- `/api/v0/clickhouse/flow.proto` contains the schema
-- `/api/v0/clickhouse/init.sh` contains the schema in the form of a
+- `/api/v0/clickhouse/init.sh` contains the schemas in the form of a
   script to execute during initialization
 - `/api/v0/clickhouse/protocols.csv` contains a CSV with the mapping
   between protocol numbers and names

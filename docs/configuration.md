@@ -106,10 +106,8 @@ automatically refreshed.
 ## Kafka
 
 Received flows are exported to a Kafka topic using the [protocol
-buffers format][]. The definition file is `flow/flow.proto`. It is
-also available through the [`/api/v0/flow.proto`](/api/v0/flow.proto)
-HTTP endpoint. Each flow is written in the [length-delimited
-format][].
+buffers format][]. The definition file is `flow/flow-*.proto`. Each
+flow is written in the [length-delimited format][].
 
 [protocol buffers format]: https://developers.google.com/protocol-buffers
 [length-delimited format]: https://cwiki.apache.org/confluence/display/GEODE/Delimiting+Protobuf+Messages
@@ -130,6 +128,10 @@ The following keys are accepted:
   be equal or smaller to the same setting in the broker configuration)
 - `compression-codec` defines the compression codec to use to compress
   messages (`none`, `gzip`, `snappy`, `lz4` and `zstd`)
+
+The topic name is suffixed by the version of the schema. For example,
+if the configured topic is `flows` and the current schema version is
+0, the topic used to send received flows will be `flows-v0`.
 
 If no topic configuration is provided, the topic should already exist
 in Kafka. If a configuration is provided, the topic is created if it

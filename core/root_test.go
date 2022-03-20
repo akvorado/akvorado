@@ -129,8 +129,9 @@ func TestCore(t *testing.T) {
 		received := make(chan bool)
 		kafkaProducer.ExpectInputWithMessageCheckerFunctionAndSucceed(func(msg *sarama.ProducerMessage) error {
 			defer close(received)
-			if msg.Topic != "flows" {
-				t.Errorf("Kafka message topic (-got, +want):\n-%s\n+%s", msg.Topic, "flows")
+			expectedTopic := fmt.Sprintf("flows-v%d", flow.CurrentSchemaVersion)
+			if msg.Topic != expectedTopic {
+				t.Errorf("Kafka message topic (-got, +want):\n-%s\n+%s", msg.Topic, expectedTopic)
 			}
 			if msg.Key != sarama.StringEncoder("192.0.2.142") {
 				t.Errorf("Kafka message key (-got, +want):\n-%s\n+%s", msg.Key, "192.0.2.142")
