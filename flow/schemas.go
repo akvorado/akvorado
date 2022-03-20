@@ -16,13 +16,13 @@ const CurrentSchemaVersion = 0
 var (
 	// VersionedSchemas is a mapping from schema version to protobuf definitions
 	VersionedSchemas map[int]string
-	//go:embed flow*.proto
+	//go:embed data/schemas/flow*.proto
 	schemas embed.FS
 )
 
 func init() {
 	VersionedSchemas = make(map[int]string)
-	entries, err := schemas.ReadDir(".")
+	entries, err := schemas.ReadDir("data/schemas")
 	if err != nil {
 		panic(err)
 	}
@@ -34,7 +34,7 @@ func init() {
 		if err != nil {
 			panic(err)
 		}
-		f, err := schemas.Open(entry.Name())
+		f, err := schemas.Open(fmt.Sprintf("data/schemas/%s", entry.Name()))
 		if err != nil {
 			panic(err)
 		}

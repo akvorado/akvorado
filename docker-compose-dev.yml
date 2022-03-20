@@ -30,4 +30,4 @@ services:
       - 8123:8123/tcp
       - 9000:9000/tcp
     volumes:
-      - ./flow/flow-v0.proto:/var/lib/clickhouse/format_schemas/flow-v0.proto:ro
+      - ./flow/data/schemas:/var/lib/clickhouse/format_schemas:ro

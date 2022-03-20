@@ -47,8 +47,8 @@ $(BIN)/protoc-gen-go: PACKAGE=google.golang.org/protobuf/cmd/protoc-gen-go
 
 # Generated files
 
-%.pb.go: %.proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffers definition…)
-	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --go_out=. --go_opt=paths=source_relative $<
+flow/%.pb.go: flow/data/schemas/%.proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffers definition…)
+	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --go_out=. --go_opt=module=$(MODULE) $<
 
 web/data: mkdocs.yml $(wildcard docs/*.md docs/assets/*) ; $(info $(M) build documentation) @ ## Build documentation
 	$Q rm -rf web/data
