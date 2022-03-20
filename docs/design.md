@@ -26,7 +26,7 @@ The general design of *Akvorado* is the following:
 
 The remaining steps are outside of *Akvorado* control:
 
-- A Clickhouse database subscribe to the Kafka topic to receive and
+- A ClickHouse database subscribe to the Kafka topic to receive and
   process the flows.
 - A graphing tool like Grafana queries this database to build various
   dashboards.
@@ -185,7 +185,7 @@ In the future, we may:
 - Add more information to the landing page, including some basic statistics.
 - Automatically build dashboards for Grafana.[^grafana]
 - Builds dashboards with [D3.js][].[^d3js]
-- Manage the other components (Kafka topic creation, Clickhouse
+- Manage the other components (Kafka topic creation, ClickHouse
   configuration) to make deployments easier.
 - Collect routes by integrating GoBGP. This is low priority if we
   consider information from Maxmind good enough for our use.

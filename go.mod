@@ -3,13 +3,16 @@ module akvorado
 go 1.17
 
 require (
+	github.com/ClickHouse/clickhouse-go/v2 v2.0.12
 	github.com/Shopify/sarama v1.32.0
 	github.com/antonmedv/expr v1.9.0
 	github.com/benbjohnson/clock v1.3.0
 	github.com/dgraph-io/ristretto v0.1.0
 	github.com/fsnotify/fsnotify v1.5.1
+	github.com/golang-migrate/migrate/v4 v4.15.1
 	github.com/golang/protobuf v1.5.2
 	github.com/gosnmp/gosnmp v1.34.0
+	github.com/hashicorp/go-multierror v1.1.0
 	github.com/kylelemons/godebug v1.1.0
 	github.com/libp2p/go-reuseport v0.1.0
 	github.com/mattn/go-isatty v0.0.14
@@ -22,6 +25,7 @@ require (
 	github.com/slayercat/GoSNMPServer v0.1.2
 	github.com/slayercat/gosnmp v1.24.0
 	github.com/spf13/cobra v1.3.0
+	go.uber.org/atomic v1.7.0
 	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
@@ -40,6 +44,8 @@ require (
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/google/uuid v1.3.0 // indirect
+	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-uuid v1.0.2 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
@@ -48,16 +54,21 @@ require (
 	github.com/jcmturner/gokrb5/v8 v8.4.2 // indirect
 	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/klauspost/compress v1.14.4 // indirect
-	github.com/matttproud/golang_protobuf_extensions v1.0.1 // indirect
+	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/oschwald/maxminddb-golang v1.8.0 // indirect
+	github.com/paulmach/orb v0.4.0 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
+	github.com/pierrec/lz4/v4 v4.1.14 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/shirou/gopsutil v2.19.12+incompatible // indirect
+	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	go.opentelemetry.io/otel v1.4.1 // indirect
+	go.opentelemetry.io/otel/trace v1.4.1 // indirect
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292 // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect

@@ -28,6 +28,8 @@ run tests:
       alias: zookeeper
     - name: bitnami/kafka:2.8.1
       alias: kafka
+    - name: clickhouse/clickhouse-server:22.2
+      alias: clickhouse
   script:
     - export GOMODCACHE=$PWD/.go-cache
     - time apk add --no-cache git make gcc musl-dev protoc shared-mime-info

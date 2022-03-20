@@ -105,3 +105,13 @@ func (cc CompressionCodec) String() string {
 func (cc CompressionCodec) MarshalText() ([]byte, error) {
 	return []byte(cc.String()), nil
 }
+
+// GetBrokers return the list of brokers.
+func (c *Component) GetBrokers() []string {
+	return c.config.Brokers
+}
+
+// GetTopic returns the configured topic (without the -v0 suffix)
+func (c *Component) GetTopic() string {
+	return c.config.Topic
+}

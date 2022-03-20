@@ -1,12 +1,9 @@
 package kafka
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"math/rand"
-	"net"
-	"os"
 	"testing"
 	"time"
 
@@ -19,44 +16,7 @@ import (
 )
 
 func setupKafkaBroker(t *testing.T) (sarama.Client, []string) {
-	if testing.Short() {
-		t.Skip("Skip test with real Kafka in short mode")
-	}
-
-	// Kafka can either be listening right now on localhost or be
-	// exposed over the hostname "kafka".
-	kafkaHost := "kafka"
-	mandatory := os.Getenv("CI_AKVORADO_FUNCTIONAL_TESTS") != ""
-
-	resolv := net.Resolver{PreferGo: true}
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-	_, err := resolv.LookupHost(ctx, kafkaHost)
-	if err != nil {
-		kafkaHost = "localhost"
-	}
-	cancel()
-
-	broker := fmt.Sprintf("%s:9092", kafkaHost)
-	var d net.Dialer
-	ctx, cancel = context.WithTimeout(context.Background(), time.Second)
-	for {
-		_, err := d.DialContext(ctx, "tcp", broker)
-		if err == nil {
-			break
-		}
-		if mandatory {
-			t.Logf("DialContext() error:\n%+v", err)
-		}
-		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			if mandatory {
-				t.Fatalf("Kafka is not running (CI_AKVORADO_FUNCTIONAL_TESTS is set)")
-			} else {
-				t.Skipf("Kafka is not running (CI_AKVORADO_FUNCTIONAL_TESTS is not set)")
-			}
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
-	cancel()
+	broker := helpers.CheckExternalService(t, "Kafka", []string{"kafka", "localhost"}, "9092")
 
 	// Wait for broker to be ready
 	saramaConfig := sarama.NewConfig()
@@ -65,7 +25,10 @@ func setupKafkaBroker(t *testing.T) (sarama.Client, []string) {
 	saramaConfig.Net.ReadTimeout = 1 * time.Second
 	saramaConfig.Net.WriteTimeout = 1 * time.Second
 	ready := false
-	var client sarama.Client
+	var (
+		client sarama.Client
+		err    error
+	)
 	for i := 0; i < 90; i++ {
 		client, err = sarama.NewClient([]string{broker}, saramaConfig)
 		if err != nil {

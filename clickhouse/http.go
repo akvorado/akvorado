@@ -37,7 +37,7 @@ func (c *Component) addHandlerEmbedded(url string, path string) {
 }
 
 // registerHTTPHandler register some handlers that will be useful for
-// Clickhouse
+// ClickHouse
 func (c *Component) registerHTTPHandlers() error {
 	c.d.HTTP.AddHandler("/api/v0/clickhouse/init.sh",
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

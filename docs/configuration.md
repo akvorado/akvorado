@@ -10,7 +10,7 @@ configured through a different section:
 - `snmp`: [SNMP poller](#snmp)
 - `geoip`: [GeoIP database](#geoip)
 - `kafka`: [Kafka broker](#kafka)
-- `clickhouse`: [Clickhouse helper](#clickhouse)
+- `clickhouse`: [ClickHouse helper](#clickhouse)
 - `core`: [Core](#core)
 
 You can get the default configuration with `./akvorado --dump
@@ -180,10 +180,17 @@ kafka:
       cleanup.policy: delete
 ```
 
-## Clickhouse
+## ClickHouse
 
-The Clickhouse component exposes some useful HTTP endpoints to
-configure a Clickhouse database. It takes no configuration.
+The ClickHouse component exposes some useful HTTP endpoints to
+configure a ClickHouse database. Optionally, it will also provision
+and keep up-to-date a ClickHouse database. In this case, the following
+keys should be provided:
+
+ - `servers` defines the list of ClickHouse servers to connect to
+ - `username` is the username to use for authentication
+ - `password` is the password to use for authentication
+ - `database` defines the database to use to create tables
 
 ## Core
 

@@ -3,15 +3,20 @@ package clickhouse
 import (
 	"testing"
 
+	"akvorado/daemon"
 	"akvorado/helpers"
 	"akvorado/http"
+	"akvorado/kafka"
 	"akvorado/reporter"
 )
 
 func TestHTTPEndpoints(t *testing.T) {
 	r := reporter.NewMock(t)
+	kafka, _ := kafka.NewMock(t, r, kafka.DefaultConfiguration)
 	c, err := New(r, DefaultConfiguration, Dependencies{
-		HTTP: http.NewMock(t, r),
+		Daemon: daemon.NewMock(t),
+		Kafka:  kafka,
+		HTTP:   http.NewMock(t, r),
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)

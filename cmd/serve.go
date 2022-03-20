@@ -35,7 +35,7 @@ type ServeConfiguration struct {
 	Kafka      kafka.Configuration
 	Core       core.Configuration
 	Web        web.Configuration
-	Clickhouse clickhouse.Configuration
+	ClickHouse clickhouse.Configuration
 }
 
 // DefaultServeConfiguration is the default configuration for the serve command.
@@ -48,7 +48,7 @@ var DefaultServeConfiguration = ServeConfiguration{
 	Kafka:      kafka.DefaultConfiguration,
 	Core:       core.DefaultConfiguration,
 	Web:        web.DefaultConfiguration,
-	Clickhouse: clickhouse.DefaultConfiguration,
+	ClickHouse: clickhouse.DefaultConfiguration,
 }
 
 type serveOptions struct {
@@ -194,11 +194,13 @@ func daemonStart(r *reporter.Reporter, config ServeConfiguration, checkOnly bool
 	if err != nil {
 		return fmt.Errorf("unable to initialize Kafka component: %w", err)
 	}
-	clickhouseComponent, err := clickhouse.New(r, config.Clickhouse, clickhouse.Dependencies{
-		HTTP: httpComponent,
+	clickhouseComponent, err := clickhouse.New(r, config.ClickHouse, clickhouse.Dependencies{
+		Daemon: daemonComponent,
+		HTTP:   httpComponent,
+		Kafka:  kafkaComponent,
 	})
 	if err != nil {
-		return fmt.Errorf("unable to initialize Clickhouse component: %w", err)
+		return fmt.Errorf("unable to initialize ClickHouse component: %w", err)
 	}
 	coreComponent, err := core.New(r, config.Core, core.Dependencies{
 		Daemon: daemonComponent,
