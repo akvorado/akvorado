@@ -41,6 +41,9 @@ run tests:
       junit: test/tests.xml
       cobertura: test/coverage.xml
 
+# To execute manually:
+#  gitlab-runner exec docker "run tests"
+
 build docker image:
   stage: build
   image: docker:stable

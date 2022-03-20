@@ -37,11 +37,11 @@ flow:
  workers: 2
 snmp:
  workers: 2
- cacheduration: 2h
- defaultcommunity: private
+ cache-duration: 2h
+ default-community: private
 kafka:
  topic: netflow
- compressioncodec: zstd
+ compression-codec: zstd
  version: 2.8.1
 core:
  workers: 3

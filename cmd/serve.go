@@ -5,6 +5,7 @@ import (
 	"fmt"
 	netHTTP "net/http"
 	"runtime"
+	"strings"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
@@ -74,6 +75,11 @@ and exports them to Kafka.`,
 		// Parse provided configuration
 		if err := viper.Unmarshal(&config, func(c *mapstructure.DecoderConfig) {
 			c.ErrorUnused = true
+			c.MatchName = func(mapKey, fieldName string) bool {
+				key := strings.ToLower(strings.ReplaceAll(mapKey, "-", ""))
+				field := strings.ToLower(fieldName)
+				return key == field
+			}
 			c.DecodeHook = mapstructure.ComposeDecodeHookFunc(
 				mapstructure.TextUnmarshallerHookFunc(),
 				mapstructure.StringToTimeDurationHookFunc(),

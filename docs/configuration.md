@@ -69,15 +69,15 @@ interface name and description, SNMP is used to poll the sampler
 sending each flows. A cache is maintained to avoid polling
 continuously the samplers. The following keys are accepted:
 
-- `cacheduration` tells how much time to keep data in the cache before
+- `cache-duration` tells how much time to keep data in the cache before
   polling again
-- `cacherefresh` tells how much time to poll existing data before they
+- `cache-refresh` tells how much time to poll existing data before they
   expire
-- `cacherefreshinterval` tells how often to check if cached data is
+- `cache-refresh-interval` tells how often to check if cached data is
   about to expire
-- `cachepersistfile` tells where to store cached data on shutdown and
+- `cache-persist-file` tells where to store cached data on shutdown and
   read them back on startup
-- `defaultcommunity` tells which community to use when polling samplers
+- `default-community` tells which community to use when polling samplers
 - `communities` is a map from a sampler IP address to the community to
   use for a sampler, overriding the default value set above,
 - `workers` tell how many workers to spawn to handle SNMP polling.
@@ -94,8 +94,8 @@ in the received flows. It needs two databases using the [MaxMind DB
 file format][], one for AS numbers, one for countries. If no database
 is provided, the component is inactive. It accepts the following keys:
 
-- `asndatabase` tells the path to the ASN database
-- `countrydatabase` tells the path to the country database
+- `asn-database` tells the path to the ASN database
+- `country-database` tells the path to the country database
 
 [MaxMind DB file format]: https://maxmind.github.io/MaxMind-DB/
 
@@ -116,19 +116,19 @@ format][].
 The following keys are accepted:
 
 - `topic` tells which topic to use to write messages
-- `autocreatetopic` tells if we can automatically create the topic if
+- `auto-create-topic` tells if we can automatically create the topic if
   it does not exist
 - `brokers` specifies the list of brokers to use to bootstrap the
   connection to the Kafka cluster
 - `version` tells which minimal version of Kafka to expect
 - `usetls` tells if we should use TLS to connection (authentication is not supported)
-- `flushinterval` defines the maximum flush interval to send received
+- `flush-interval` defines the maximum flush interval to send received
   flows to Kafka
-- `flushbytes` defines the maximum number of bytes to store before
+- `flush-bytes` defines the maximum number of bytes to store before
   flushing flows to Kafka
-- `maxmessagebytes` defines the maximum size of a message (it should
+- `max-message-bytes` defines the maximum size of a message (it should
   be equal or smaller to the same setting in the broker configuration)
-- `compressioncodec` defines the compression codec to use to compress
+- `compression-codec` defines the compression codec to use to compress
   messages (`none`, `gzip`, `snappy`, `lz4` and `zstd`)
 
 ## Core
@@ -141,11 +141,11 @@ The following keys are accepted:
 
 - `workers` key define how many workers should be spawned to process
   incoming flows
-- `samplerclassifiers` is a list of classifier rules to define a group
+- `sampler-classifiers` is a list of classifier rules to define a group
   for samplers
-- `interfaceclassifiers` is a list of classifier rules to define
+- `interface-classifiers` is a list of classifier rules to define
   connectivity type, network boundary and provider for an interface
-- `classifiercachesize` defines the size of the classifier cache. As
+- `classifier-cache-size` defines the size of the classifier cache. As
   classifiers are pure, their result is cached in a cache. The metrics
   should tell if the cache is big enough. It should be set at least to
   twice the number of the most busy interfaces.
