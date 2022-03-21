@@ -196,7 +196,7 @@ func (l *kafkaLogger) Print(v ...interface{}) {
 }
 func (l *kafkaLogger) Println(v ...interface{}) {
 	if e := l.r.Debug(); e.Enabled() {
-		e.Msg(fmt.Sprintln(v...))
+		e.Msg(fmt.Sprint(v...))
 	}
 }
 func (l *kafkaLogger) Printf(format string, v ...interface{}) {
