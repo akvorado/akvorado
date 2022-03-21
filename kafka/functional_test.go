@@ -26,7 +26,7 @@ func setupKafkaBroker(t *testing.T) (sarama.Client, []string) {
 	// Kafka can either be listening right now on localhost or be
 	// exposed over the hostname "kafka".
 	kafkaHost := "kafka"
-	mandatory := os.Getenv("AKVORADO_FUNCTIONAL_TESTS") != ""
+	mandatory := os.Getenv("CI_AKVORADO_FUNCTIONAL_TESTS") != ""
 
 	resolv := net.Resolver{PreferGo: true}
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
@@ -49,9 +49,9 @@ func setupKafkaBroker(t *testing.T) (sarama.Client, []string) {
 		}
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			if mandatory {
-				t.Fatalf("Kafka is not running (AKVORADO_FUNCTIONAL_TESTS is set)")
+				t.Fatalf("Kafka is not running (CI_AKVORADO_FUNCTIONAL_TESTS is set)")
 			} else {
-				t.Skipf("Kafka is not running (AKVORADO_FUNCTIONAL_TESTS is not set)")
+				t.Skipf("Kafka is not running (CI_AKVORADO_FUNCTIONAL_TESTS is not set)")
 			}
 		}
 		time.Sleep(100 * time.Millisecond)

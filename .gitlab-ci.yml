@@ -16,7 +16,7 @@ run tests:
         - bin/
   variables:
     FF_NETWORK_PER_BUILD: "true"
-    AKVORADO_FUNCTIONAL_TESTS: "true"
+    CI_AKVORADO_FUNCTIONAL_TESTS: "true"
     ALLOW_ANONYMOUS_LOGIN: "yes"
     ALLOW_PLAINTEXT_LISTENER: "yes"
     KAFKA_BROKER_ID: "1"
