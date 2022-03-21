@@ -3,13 +3,13 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	netHTTP "net/http"
 	"runtime"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 
 	"akvorado/clickhouse"
@@ -67,27 +67,39 @@ var serveCmd = &cobra.Command{
 and exports them to Kafka.`,
 	Args: cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Parse YAML
+		var rawConfig map[string]interface{}
 		if cfgFile := ServeOptions.configurationFile; cfgFile != "" {
-			viper.SetConfigFile(cfgFile)
-			if err := viper.ReadInConfig(); err != nil {
+			input, err := ioutil.ReadFile(cfgFile)
+			if err != nil {
 				return fmt.Errorf("unable to read configuration file: %w", err)
 			}
+			if err := yaml.Unmarshal(input, &rawConfig); err != nil {
+				return fmt.Errorf("unable to parse configuration file: %w", err)
+			}
 		}
-		config := DefaultServeConfiguration
 
 		// Parse provided configuration
-		if err := viper.Unmarshal(&config, func(c *mapstructure.DecoderConfig) {
-			c.ErrorUnused = true
-			c.MatchName = func(mapKey, fieldName string) bool {
+		config := DefaultServeConfiguration
+		decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+			Result:           &config,
+			ErrorUnused:      true,
+			Metadata:         nil,
+			WeaklyTypedInput: true,
+			MatchName: func(mapKey, fieldName string) bool {
 				key := strings.ToLower(strings.ReplaceAll(mapKey, "-", ""))
 				field := strings.ToLower(fieldName)
 				return key == field
-			}
-			c.DecodeHook = mapstructure.ComposeDecodeHookFunc(
+			},
+			DecodeHook: mapstructure.ComposeDecodeHookFunc(
 				mapstructure.TextUnmarshallerHookFunc(),
 				mapstructure.StringToTimeDurationHookFunc(),
-			)
-		}); err != nil {
+			),
+		})
+		if err != nil {
+			return fmt.Errorf("unable to create configuration decoder: %w", err)
+		}
+		if decoder.Decode(rawConfig); err != nil {
 			return fmt.Errorf("unable to parse configuration: %w", err)
 		}
 

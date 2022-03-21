@@ -15,9 +15,8 @@ process flows. When started from a TTY, it will display logs in a
 fancy way. Without a TTY, logs are output using JSON.
 
 The `--config` options allows to provide a configuration file in YAML
-format. It also accepts JSON, TOML, HCL, and INI. The extension is
-used to know the appropriate format. See the [configuration
-section](configuration.md) for more information on this file.
+format. See the [configuration section](configuration.md) for more
+information on this file.
 
 The `--check` option will check if the provided configuration is
 correct and stops here. The `--dump` option will dump the parsed

@@ -102,9 +102,8 @@ fatal, or rate-limited and accounted into a metric.
 ### CLI
 
 The CLI is handled by [Cobra](https://github.com/spf13/cobra). The
-configuration file is handled by [Viper](https://github.com/spf13/viper). The
-integration with Cobra is not used as relying on a YAML configuration
-file seems more user-friendly.
+configuration file is handled by
+[mapstructure](https://github.com/mitchellh/mapstructure).
 
 ### Flow decoding
 
