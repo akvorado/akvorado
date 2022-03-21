@@ -13,9 +13,32 @@ configured through a different section:
 - `clickhouse`: [Clickhouse helper](#clickhouse)
 - `core`: [Core](#core)
 
-You can get the default configuration with `./akvorado --dump --check`.
+You can get the default configuration with `./akvorado --dump
+--check`. Durations can be written in seconds or using strings like
+`10h20m`.
 
-Durations can be written in seconds or using strings like `10h20m`.
+It is also possible to override configuration settings using
+environment variables. You need to remove any `-` from key names and
+use `_` to handle nesting. Then, put `AKVORADO_` as a prefix. For
+example, let's consider the following configuration file:
+
+```yaml
+kafka:
+  topic: test-topic
+  topic-configuration:
+    num-partitions: 1
+  brokers:
+    - 192.0.2.1:9092
+    - 192.0.2.2:9092
+```
+
+It can be translated to:
+
+```sh
+AKVORADO_KAFKA_TOPIC=test-topic
+AKVORADO_KAFKA_TOPICCONFIGURATION_NUMPARTITIONS=1
+AKVORADO_KAFKA_BROKERS=192.0.2.1:9092,192.0.2.2:9092
+```
 
 ## Reporting
 

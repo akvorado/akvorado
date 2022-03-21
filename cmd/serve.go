@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	netHTTP "net/http"
+	"os"
 	"runtime"
 	"strings"
 
@@ -94,13 +95,38 @@ and exports them to Kafka.`,
 			DecodeHook: mapstructure.ComposeDecodeHookFunc(
 				mapstructure.TextUnmarshallerHookFunc(),
 				mapstructure.StringToTimeDurationHookFunc(),
+				mapstructure.StringToSliceHookFunc(","),
 			),
 		})
 		if err != nil {
 			return fmt.Errorf("unable to create configuration decoder: %w", err)
 		}
-		if decoder.Decode(rawConfig); err != nil {
+		if err := decoder.Decode(rawConfig); err != nil {
 			return fmt.Errorf("unable to parse configuration: %w", err)
+		}
+
+		// Override with environment variables
+		for _, keyval := range os.Environ() {
+			kv := strings.SplitN(keyval, "=", 2)
+			if len(kv) != 2 {
+				continue
+			}
+			kk := strings.Split(kv[0], "_")
+			if kk[0] != "AKVORADO" || len(kk) < 2 {
+				continue
+			}
+			// From AKVORADO_SQUID_PURPLE_QUIRK=47, we
+			// build a map "squid -> purple -> quirk -> 47"
+			var rawConfig interface{}
+			rawConfig = kv[1]
+			for i := len(kk) - 1; i > 0; i-- {
+				rawConfig = map[string]interface{}{
+					kk[i]: rawConfig,
+				}
+			}
+			if err := decoder.Decode(rawConfig); err != nil {
+				return fmt.Errorf("unable to parse override %q: %w", kv[0], err)
+			}
 		}
 
 		// Dump configuration if requested
