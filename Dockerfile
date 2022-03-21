@@ -4,7 +4,7 @@ COPY docs /docs/docs/
 RUN mkdocs build --strict --site-dir /output
 
 FROM golang:1.17-alpine AS build
-RUN apk add --no-cache git make gcc musl-dev protoc
+RUN apk add --no-cache git make gcc musl-dev protoc shared-mime-info
 WORKDIR /app
 COPY go.mod ./
 COPY go.sum ./
