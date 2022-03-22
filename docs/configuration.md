@@ -75,7 +75,7 @@ configuration keys:
 - `listen` to specify the IP and UDP port to listen for new flows
 - `workers` to specify the number of workers to spawn to handle
   incoming flows
-- `bufferlength` to specify the number of flows to buffer when pushing
+- `buffer-size` to specify the number of flows to buffer when pushing
   them to the core component
 
 For example:

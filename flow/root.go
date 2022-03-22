@@ -55,7 +55,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		r:             r,
 		d:             &dependencies,
 		config:        configuration,
-		incomingFlows: make(chan *FlowMessage, configuration.BufferLength),
+		incomingFlows: make(chan *FlowMessage, configuration.BufferSize),
 	}
 	c.d.Daemon.Track(&c.t, "flow")
 	c.initHTTP()

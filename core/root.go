@@ -137,7 +137,7 @@ func (c *Component) runWorker(workerID int) error {
 				continue
 			}
 
-			// Forward to Kafka
+			// Forward to Kafka (this could block
 			c.d.Kafka.Send(sampler, buf.Bytes())
 			c.metrics.flowsForwarded.WithLabelValues(sampler).Inc()
 
