@@ -30,6 +30,9 @@ func setupKafkaBroker(t *testing.T) (sarama.Client, []string) {
 		err    error
 	)
 	for i := 0; i < 90; i++ {
+		if client != nil {
+			client.Close()
+		}
 		client, err = sarama.NewClient([]string{broker}, saramaConfig)
 		if err != nil {
 			continue
@@ -45,8 +48,10 @@ func setupKafkaBroker(t *testing.T) (sarama.Client, []string) {
 			continue
 		}
 		if connected, err := brokers[0].Connected(); err != nil || !connected {
+			brokers[0].Close()
 			continue
 		}
+		brokers[0].Close()
 		ready = true
 	}
 	if !ready {
