@@ -2,6 +2,7 @@
 package core
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -90,7 +91,7 @@ func (c *Component) Start() error {
 		})
 	}
 
-	c.d.HTTP.AddHandler("/api/v0/healthcheck", c.HealthcheckHTTPHandler())
+	c.r.RegisterHealthcheck("core", c.runHealthcheck)
 	c.d.HTTP.AddHandler("/api/v0/flows", c.FlowsHTTPHandler())
 	return nil
 }
@@ -164,4 +165,45 @@ func (c *Component) Stop() error {
 	defer c.r.Info().Msg("core component stopped")
 	c.t.Kill(nil)
 	return c.t.Wait()
+}
+
+func (c *Component) runHealthcheck(ctx context.Context) reporter.HealthcheckResult {
+	say := func(reason string) reporter.HealthcheckResult {
+		if reason == "" {
+			return reporter.HealthcheckResult{
+				Status: reporter.HealthcheckOK,
+				Reason: "ok",
+			}
+		}
+		return reporter.HealthcheckResult{Status: reporter.HealthcheckError, Reason: reason}
+	}
+
+	if !c.t.Alive() {
+		return say("dead")
+	}
+
+	// Request a worker to answer
+	answerChan := make(chan bool)
+	defer close(answerChan)
+	select {
+	case <-c.t.Dying():
+		return say("dying")
+	case <-ctx.Done():
+		return say("timeout (no worker)")
+	case c.healthy <- answerChan:
+	}
+
+	// Wait for answer from worker
+	select {
+	case <-c.t.Dying():
+		return say("dying")
+	case <-ctx.Done():
+		return say("timeout (worker dead)")
+	case ok := <-answerChan:
+		if !ok {
+			// Cannot happen
+			return say("worker unwell")
+		}
+		return say("")
+	}
 }

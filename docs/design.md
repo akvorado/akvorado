@@ -93,6 +93,10 @@ For metrics, it is a façade to the [Prometheus instrumentation
 library][]. It provides a registry which automatically append metric
 names with the module name.
 
+It also exposes a simple way to report healthchecks from various
+components. While it could be used to kill the application
+proactively, currently, it is only exposed through HTTP.
+
 The general idea is to give a good visibility to an operator.
 Everything that moves should get a counter, errors should either be
 fatal, or rate-limited and accounted into a metric.

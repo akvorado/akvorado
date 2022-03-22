@@ -2,10 +2,10 @@ package core
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	netHTTP "net/http"
 	"testing"
@@ -195,19 +195,14 @@ func TestCore(t *testing.T) {
 		}
 	})
 
-	// Test the healthcheck endpoint
+	// Test the healthcheck function
 	t.Run("healthcheck", func(t *testing.T) {
-		resp, err := netHTTP.Get(fmt.Sprintf("http://%s/api/v0/healthcheck", c.d.HTTP.Address))
-		if err != nil {
-			t.Fatalf("GET /healthecheck:\n%+v", err)
-		}
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			t.Fatalf("GET /api/v0/healthcheck: cannot read body:\n%+v", err)
-		}
-		if resp.StatusCode != 200 || string(body) != "ok" {
-			t.Errorf("GET /api/v0/healthcheck: got %d %q", resp.StatusCode, body)
+		got := c.runHealthcheck(context.Background())
+		if diff := helpers.Diff(got, reporter.HealthcheckResult{
+			reporter.HealthcheckOK,
+			"ok",
+		}); diff != "" {
+			t.Fatalf("runHealthcheck() (-got, +want):\n%s", diff)
 		}
 	})
 

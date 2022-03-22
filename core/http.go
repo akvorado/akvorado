@@ -8,51 +8,6 @@ import (
 	"time"
 )
 
-// HealthcheckHTTPHandler returns an handler for healthchecks. It
-// checks if at least one worker is alive.
-func (c *Component) HealthcheckHTTPHandler() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/plain")
-		answerChan := make(chan bool)
-
-		answer := func(code int, text string) {
-			w.WriteHeader(code)
-			w.Write([]byte(text))
-		}
-		if !c.t.Alive() {
-			answer(http.StatusServiceUnavailable, "dead")
-			return
-		}
-
-		// Request a worker to answer
-		select {
-		case <-c.t.Dying():
-			answer(http.StatusServiceUnavailable, "dying")
-			return
-		case <-time.After(5 * time.Second):
-			answer(http.StatusServiceUnavailable, "timeout (no worker)")
-			return
-		case c.healthy <- answerChan:
-		}
-
-		// Wait for answer from worker
-		select {
-		case <-c.t.Dying():
-			answer(http.StatusServiceUnavailable, "dying")
-			return
-		case <-time.After(5 * time.Second):
-			answer(http.StatusServiceUnavailable, "timeout (worker dead)")
-			return
-		case ok := <-answerChan:
-			if !ok {
-				answer(http.StatusInternalServerError, "nok")
-				return
-			}
-			answer(http.StatusOK, "ok")
-		}
-	})
-}
-
 // FlowsHTTPHandler streams a JSON copy of all flows just after
 // sending them to Kafka. Under load, some flows may not be sent. This
 // is intended for debug only.

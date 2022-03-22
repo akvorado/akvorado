@@ -4,6 +4,8 @@
 package reporter
 
 import (
+	"sync"
+
 	"akvorado/reporter/logger"
 	"akvorado/reporter/metrics"
 )
@@ -13,6 +15,9 @@ import (
 type Reporter struct {
 	logger.Logger
 	metrics *metrics.Metrics
+
+	healthchecks     map[string]HealthcheckFunc
+	healthchecksLock sync.Mutex
 }
 
 // New creates a new reporter from a configuration.
@@ -28,16 +33,9 @@ func New(config Configuration) (*Reporter, error) {
 		return nil, err
 	}
 
-	return &Reporter{l, m}, nil
-}
-
-// Start starts the reporter component.
-func (r *Reporter) Start() error {
-	return nil
-}
-
-// Stop stops reporting and clean the associated resources.
-func (r *Reporter) Stop() error {
-	r.Info().Msg("stop reporting")
-	return nil
+	return &Reporter{
+		Logger:       l,
+		metrics:      m,
+		healthchecks: make(map[string]HealthcheckFunc),
+	}, nil
 }

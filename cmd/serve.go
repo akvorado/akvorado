@@ -227,19 +227,21 @@ func daemonStart(r *reporter.Reporter, config ServeConfiguration, checkOnly bool
 
 	// Expose some informations and metrics
 	httpComponent.AddHandler("/api/v0/metrics", r.MetricsHTTPHandler())
-	httpComponent.AddHandler("/api/v0/version", netHTTP.HandlerFunc(func(w netHTTP.ResponseWriter, r *netHTTP.Request) {
-		versionInfo := struct {
-			Version   string `json:"version"`
-			BuildDate string `json:"build_date"`
-			Compiler  string `json:"compiler"`
-		}{
-			Version:   Version,
-			BuildDate: BuildDate,
-			Compiler:  runtime.Version(),
-		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(versionInfo)
-	}))
+	httpComponent.AddHandler("/api/v0/healthcheck", r.HealthcheckHTTPHandler())
+	httpComponent.AddHandler("/api/v0/version", netHTTP.HandlerFunc(
+		func(w netHTTP.ResponseWriter, r *netHTTP.Request) {
+			versionInfo := struct {
+				Version   string `json:"version"`
+				BuildDate string `json:"build_date"`
+				Compiler  string `json:"compiler"`
+			}{
+				Version:   Version,
+				BuildDate: BuildDate,
+				Compiler:  runtime.Version(),
+			}
+			w.Header().Set("Content-Type", "application/json")
+			json.NewEncoder(w).Encode(versionInfo)
+		}))
 	r.GaugeVec(reporter.GaugeOpts{
 		Name: "info",
 		Help: "Akvorado build information",
