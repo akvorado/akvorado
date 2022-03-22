@@ -172,9 +172,11 @@ func (c *Component) sendFlow(fmsg *FlowMessage) {
 
 // Stop stops the flow component
 func (c *Component) Stop() error {
-	defer close(c.outgoingFlows)
+	defer func() {
+		close(c.outgoingFlows)
+		c.r.Info().Msg("flow component stopped")
+	}()
 	c.r.Info().Msg("stopping flow component")
-	defer c.r.Info().Msg("flow component stopped")
 	c.t.Kill(nil)
 	return c.t.Wait()
 }

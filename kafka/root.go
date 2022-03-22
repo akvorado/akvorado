@@ -169,9 +169,11 @@ func (c *Component) Start() error {
 // Stop stops the Kafka component
 func (c *Component) Stop() error {
 	var noreporter *reporter.Reporter
-	defer globalKafkaLogger.r.Store(noreporter)
+	defer func() {
+		globalKafkaLogger.r.Store(noreporter)
+		c.r.Info().Msg("Kafka component stopped")
+	}()
 	c.r.Info().Msg("stopping Kafka component")
-	defer c.r.Info().Msg("Kafka component stopped")
 	c.t.Kill(nil)
 	return c.t.Wait()
 }

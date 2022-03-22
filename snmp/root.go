@@ -109,11 +109,6 @@ func (c *Component) Start() error {
 			select {
 			case <-c.t.Dying():
 				c.r.Debug().Msg("shutting down SNMP ticker")
-				if c.config.CachePersistFile != "" {
-					if err := c.sc.Save(c.config.CachePersistFile); err != nil {
-						c.r.Err(err).Msg("cannot save cache")
-					}
-				}
 				return nil
 			case cb := <-healthyTicker:
 				if cb != nil {
@@ -187,9 +182,16 @@ func (c *Component) Start() error {
 
 // Stop stops the SNMP component
 func (c *Component) Stop() error {
-	defer close(c.pollerChannel)
+	defer func() {
+		close(c.pollerChannel)
+		if c.config.CachePersistFile != "" {
+			if err := c.sc.Save(c.config.CachePersistFile); err != nil {
+				c.r.Err(err).Msg("cannot save cache")
+			}
+		}
+		c.r.Info().Msg("SNMP component stopped")
+	}()
 	c.r.Info().Msg("stopping SNMP component")
-	defer c.r.Info().Msg("SNMP component stopped")
 	c.t.Kill(nil)
 	return c.t.Wait()
 }

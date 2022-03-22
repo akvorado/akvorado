@@ -160,10 +160,12 @@ func (c *Component) runWorker(workerID int) error {
 
 // Stop stops the core component.
 func (c *Component) Stop() error {
-	defer close(c.healthy)
-	defer close(c.httpFlowChannel)
+	defer func() {
+		close(c.httpFlowChannel)
+		close(c.healthy)
+		c.r.Info().Msg("core component stopped")
+	}()
 	c.r.Info().Msg("stopping core component")
-	defer c.r.Info().Msg("core component stopped")
 	c.t.Kill(nil)
 	return c.t.Wait()
 }
