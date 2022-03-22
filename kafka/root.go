@@ -38,8 +38,6 @@ type Dependencies struct {
 
 // New creates a new HTTP component.
 func New(reporter *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
-	globalKafkaLogger.r.Store(reporter)
-
 	// Build Kafka configuration
 	kafkaConfig := sarama.NewConfig()
 	kafkaConfig.Version = sarama.KafkaVersion(configuration.Version)
@@ -82,6 +80,7 @@ func New(reporter *reporter.Reporter, configuration Configuration, dependencies 
 // Start starts the Kafka component.
 func (c *Component) Start() error {
 	c.r.Info().Msg("starting Kafka component")
+	globalKafkaLogger.r.Store(c.r)
 
 	// Create producer
 	kafkaProducer, err := c.createKafkaProducer()
@@ -169,6 +168,8 @@ func (c *Component) Start() error {
 
 // Stop stops the Kafka component
 func (c *Component) Stop() error {
+	var noreporter *reporter.Reporter
+	defer globalKafkaLogger.r.Store(noreporter)
 	c.r.Info().Msg("stopping Kafka component")
 	defer c.r.Info().Msg("Kafka component stopped")
 	c.t.Kill(nil)
