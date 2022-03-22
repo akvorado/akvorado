@@ -21,6 +21,8 @@ type metrics struct {
 	netflowSetStatsSum        *reporter.CounterVec
 	netflowTimeStatsSum       *reporter.SummaryVec
 	netflowTemplatesStats     *reporter.CounterVec
+
+	outgoingQueueFullTotal reporter.Counter
 }
 
 func (c *Component) initMetrics() {
@@ -127,5 +129,11 @@ func (c *Component) initMetrics() {
 			Help: "Netflows Template count.",
 		},
 		[]string{"sampler", "version", "obs_domain_id", "template_id", "type"},
+	)
+	c.metrics.outgoingQueueFullTotal = c.r.Counter(
+		reporter.CounterOpts{
+			Name: "outgoing_queue_full_total",
+			Help: "Number of time the outgoing queue was full when sending a flow.",
+		},
 	)
 }

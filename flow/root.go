@@ -36,8 +36,8 @@ type Component struct {
 	// Metrics
 	metrics metrics
 
-	// Channel for receiving flows.
-	incomingFlows chan *FlowMessage
+	// Channel for sending flows.
+	outgoingFlows chan *FlowMessage
 
 	// Local address used by the Netflow server. Only valid after Start().
 	Address net.Addr
@@ -55,7 +55,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		r:             r,
 		d:             &dependencies,
 		config:        configuration,
-		incomingFlows: make(chan *FlowMessage, configuration.BufferSize),
+		outgoingFlows: make(chan *FlowMessage, configuration.QueueSize),
 	}
 	c.d.Daemon.Track(&c.t, "flow")
 	c.initHTTP()
@@ -65,7 +65,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 
 // Flows returns a channel to receive flows.
 func (c *Component) Flows() <-chan *FlowMessage {
-	return c.incomingFlows
+	return c.outgoingFlows
 }
 
 // Start starts the flow component.
@@ -153,9 +153,26 @@ func (c *Component) spawnWorker(workerID int) error {
 	return nil
 }
 
+// sendFlow transmits received flows to the next component
+func (c *Component) sendFlow(fmsg *FlowMessage) {
+	select {
+	case <-c.t.Dying():
+		return
+	case c.outgoingFlows <- fmsg:
+	default:
+		// Queue full
+		c.metrics.outgoingQueueFullTotal.Inc()
+		select {
+		case <-c.t.Dying():
+			return
+		case c.outgoingFlows <- fmsg:
+		}
+	}
+}
+
 // Stop stops the flow component
 func (c *Component) Stop() error {
-	defer close(c.incomingFlows)
+	defer close(c.outgoingFlows)
 	c.r.Info().Msg("stopping flow component")
 	defer c.r.Info().Msg("flow component stopped")
 	c.t.Kill(nil)

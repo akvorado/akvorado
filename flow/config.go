@@ -6,15 +6,15 @@ type Configuration struct {
 	Listen string
 	// Workers define the number of workers to use for decoding.
 	Workers int
-	// BufferSize defines the size of the channel used to
+	// QueueSize defines the size of the channel used to
 	// communicate incoming flows. 0 can be used to disable
 	// buffering.
-	BufferSize uint
+	QueueSize uint
 }
 
 // DefaultConfiguration represents the default configuration for the flow component
 var DefaultConfiguration = Configuration{
-	Listen:     "localhost:2055",
-	Workers:    1,
-	BufferSize: 1000,
+	Listen:    "localhost:2055",
+	Workers:   1,
+	QueueSize: 1000,
 }

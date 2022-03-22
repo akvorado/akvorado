@@ -109,11 +109,7 @@ func (c *Component) decodeFlow(payload []byte, source *net.UDPAddr) {
 		Inc()
 
 	for _, fmsg := range flowMessageSet {
-		select {
-		case <-c.t.Dying():
-			return
-		case c.incomingFlows <- convert(fmsg):
-		}
+		c.sendFlow(convert(fmsg))
 	}
 }
 
