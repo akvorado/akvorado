@@ -6,6 +6,7 @@ package snmp
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -91,10 +92,13 @@ func (c *Component) Start() error {
 	}
 
 	// Goroutine to refresh the cache
+	healthyTicker := make(chan reporter.ChannelHealthcheckFunc)
+	c.r.RegisterHealthcheck("snmp/ticker", reporter.ChannelHealthcheck(c.t.Context(nil), healthyTicker))
 	c.t.Go(func() error {
 		c.r.Debug().Msg("starting SNMP ticker")
 		ticker := c.d.Clock.Ticker(c.config.CacheRefreshInterval)
 		defer ticker.Stop()
+		defer close(healthyTicker)
 		for {
 			select {
 			case <-c.t.Dying():
@@ -105,6 +109,10 @@ func (c *Component) Start() error {
 					}
 				}
 				return nil
+			case cb := <-healthyTicker:
+				if cb != nil {
+					cb(reporter.HealthcheckOK, "ok")
+				}
 			case <-ticker.C:
 				c.sc.Expire(c.config.CacheDuration)
 				if c.config.CacheRefresh > 0 {
@@ -130,16 +138,23 @@ func (c *Component) Start() error {
 	})
 
 	// Goroutines to poll samplers
+	healthyWorkers := make(chan reporter.ChannelHealthcheckFunc)
+	c.r.RegisterHealthcheck("snmp/worker", reporter.ChannelHealthcheck(c.t.Context(nil), healthyWorkers))
 	for i := 0; i < c.config.Workers; i++ {
 		workerIDStr := strconv.Itoa(i)
 		c.t.Go(func() error {
 			c.r.Debug().Str("worker", workerIDStr).Msg("starting SNMP poller")
+			defer close(healthyWorkers)
 			for {
 				startIdle := time.Now()
 				select {
 				case <-c.t.Dying():
 					c.r.Debug().Str("worker", workerIDStr).Msg("stopping SNMP poller")
 					return nil
+				case cb := <-healthyWorkers:
+					if cb != nil {
+						cb(reporter.HealthcheckOK, fmt.Sprintf("worker %s ok", workerIDStr))
+					}
 				case request := <-c.pollerChannel:
 					startBusy := time.Now()
 					samplerIP := request.SamplerIP

@@ -2,7 +2,6 @@
 package core
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -33,8 +32,8 @@ type Component struct {
 
 	metrics metrics
 
-	healthy            chan chan<- bool // for healthcheck
-	httpFlowClients    uint32           // for dumping flows
+	healthy            chan reporter.ChannelHealthcheckFunc
+	httpFlowClients    uint32 // for dumping flows
 	httpFlowChannel    chan *flow.FlowMessage
 	httpFlowFlushDelay time.Duration
 
@@ -53,7 +52,7 @@ type Dependencies struct {
 }
 
 // New creates a new core component.
-func New(reporter *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
+func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
 	cache, err := ristretto.NewCache(&ristretto.Config{
 		NumCounters: int64(configuration.ClassifierCacheSize) * 10,
 		MaxCost:     int64(configuration.ClassifierCacheSize),
@@ -64,11 +63,11 @@ func New(reporter *reporter.Reporter, configuration Configuration, dependencies 
 		return nil, fmt.Errorf("cannot initialize classifier cache: %w", err)
 	}
 	c := Component{
-		r:      reporter,
+		r:      r,
 		d:      &dependencies,
 		config: configuration,
 
-		healthy:            make(chan chan<- bool),
+		healthy:            make(chan reporter.ChannelHealthcheckFunc),
 		httpFlowClients:    0,
 		httpFlowChannel:    make(chan *flow.FlowMessage, 10),
 		httpFlowFlushDelay: time.Second,
@@ -91,7 +90,7 @@ func (c *Component) Start() error {
 		})
 	}
 
-	c.r.RegisterHealthcheck("core", c.runHealthcheck)
+	c.r.RegisterHealthcheck("core", c.channelHealthcheck())
 	c.d.HTTP.AddHandler("/api/v0/flows", c.FlowsHTTPHandler())
 	return nil
 }
@@ -108,8 +107,10 @@ func (c *Component) runWorker(workerID int) error {
 		case <-c.t.Dying():
 			c.r.Debug().Int("worker", workerID).Msg("stopping core worker")
 			return nil
-		case answerChan := <-c.healthy:
-			answerChan <- true
+		case cb := <-c.healthy:
+			if cb != nil {
+				cb(reporter.HealthcheckOK, fmt.Sprintf("worker %d ok", workerID))
+			}
 		case flow := <-c.d.Flow.Flows():
 			startBusy := time.Now()
 			if flow == nil {
@@ -167,43 +168,6 @@ func (c *Component) Stop() error {
 	return c.t.Wait()
 }
 
-func (c *Component) runHealthcheck(ctx context.Context) reporter.HealthcheckResult {
-	say := func(reason string) reporter.HealthcheckResult {
-		if reason == "" {
-			return reporter.HealthcheckResult{
-				Status: reporter.HealthcheckOK,
-				Reason: "ok",
-			}
-		}
-		return reporter.HealthcheckResult{Status: reporter.HealthcheckError, Reason: reason}
-	}
-
-	if !c.t.Alive() {
-		return say("dead")
-	}
-
-	// Request a worker to answer
-	answerChan := make(chan bool)
-	defer close(answerChan)
-	select {
-	case <-c.t.Dying():
-		return say("dying")
-	case <-ctx.Done():
-		return say("timeout (no worker)")
-	case c.healthy <- answerChan:
-	}
-
-	// Wait for answer from worker
-	select {
-	case <-c.t.Dying():
-		return say("dying")
-	case <-ctx.Done():
-		return say("timeout (worker dead)")
-	case ok := <-answerChan:
-		if !ok {
-			// Cannot happen
-			return say("worker unwell")
-		}
-		return say("")
-	}
+func (c *Component) channelHealthcheck() reporter.HealthcheckFunc {
+	return reporter.ChannelHealthcheck(c.t.Context(nil), c.healthy)
 }

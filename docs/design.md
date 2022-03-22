@@ -95,7 +95,15 @@ names with the module name.
 
 It also exposes a simple way to report healthchecks from various
 components. While it could be used to kill the application
-proactively, currently, it is only exposed through HTTP.
+proactively, currently, it is only exposed through HTTP. Not all
+components have healthchecks. For example, for the `flow` component,
+it is difficult to read from UDP while watching for a check. For the
+`http` component, the healthcheck would be too trivial (not in the
+routine handling the heavy work). For `kafka`, the hard work is hidden
+by the underlying library and we wouldn't want to be declared
+unhealthy because of a transient problem by checking broker states
+manually. The `daemon` component tracks the important goroutines, so it
+is not vital.
 
 The general idea is to give a good visibility to an operator.
 Everything that moves should get a counter, errors should either be

@@ -145,3 +145,43 @@ func (r *Reporter) HealthcheckHTTPHandler() http.Handler {
 			json.NewEncoder(w).Encode(results)
 		})
 }
+
+// ChannelHealthcheckFunc is the function sent over a channel to signal liveness
+type ChannelHealthcheckFunc func(HealthcheckStatus, string)
+
+// ChannelHealthcheck implements an HealthcheckFunc using a channel to
+// verify a component liveness. The component should call the sent
+// function received over the provided channel to tell its status.
+func ChannelHealthcheck(ctx context.Context, contact chan<- ChannelHealthcheckFunc) HealthcheckFunc {
+	return func(healthcheckCtx context.Context) HealthcheckResult {
+		answerChan := make(chan HealthcheckResult)
+		defer close(answerChan)
+
+		signalFunc := func(status HealthcheckStatus, reason string) {
+			// The answer chan may be closed, because this
+			// function was called too late.
+			defer recover()
+			answerChan <- HealthcheckResult{status, reason}
+		}
+
+		// Send the signal function to contact.
+		select {
+		case <-ctx.Done():
+			return HealthcheckResult{HealthcheckError, "dead"}
+		case <-healthcheckCtx.Done():
+			return HealthcheckResult{HealthcheckError, "timeout"}
+		case contact <- signalFunc:
+		}
+
+		// Wait for answer from worker
+		select {
+		case <-ctx.Done():
+			return HealthcheckResult{HealthcheckError, "dead"}
+		case <-healthcheckCtx.Done():
+			return HealthcheckResult{HealthcheckError, "timeout"}
+		case result := <-answerChan:
+			return result
+		}
+
+	}
+}

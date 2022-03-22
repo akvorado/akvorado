@@ -197,10 +197,10 @@ func TestCore(t *testing.T) {
 
 	// Test the healthcheck function
 	t.Run("healthcheck", func(t *testing.T) {
-		got := c.runHealthcheck(context.Background())
-		if diff := helpers.Diff(got, reporter.HealthcheckResult{
+		_, got := r.RunHealthchecks(context.Background())
+		if diff := helpers.Diff(got["core"], reporter.HealthcheckResult{
 			reporter.HealthcheckOK,
-			"ok",
+			"worker 0 ok",
 		}); diff != "" {
 			t.Fatalf("runHealthcheck() (-got, +want):\n%s", diff)
 		}
