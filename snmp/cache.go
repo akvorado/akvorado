@@ -22,7 +22,7 @@ var (
 	// ErrCacheVersion is triggered when loading a cache from an incompatible version
 	ErrCacheVersion = errors.New("SNMP cache version mismatch")
 	// cacheCurrentVersionNumber is the current version of the on-disk cache format
-	cacheCurrentVersionNumber = 7
+	cacheCurrentVersionNumber = 8
 )
 
 // snmpCache represents the SNMP cache.
@@ -45,15 +45,20 @@ type snmpCache struct {
 // the mapping from ifIndex to interfaces.
 type cachedSampler struct {
 	Name       string
-	Interfaces map[uint]Interface
+	Interfaces map[uint]cachedInterface
 }
 
 // Interface contains the information about an interface.
 type Interface struct {
-	lastUpdated time.Time
 	Name        string
 	Description string
 	Speed       uint
+}
+
+// cachedInterface contains the information about a cached interface.
+type cachedInterface struct {
+	LastUpdated int64
+	Interface
 }
 
 func newSNMPCache(r *reporter.Reporter, clock clock.Clock) *snmpCache {
@@ -117,7 +122,7 @@ func (sc *snmpCache) Lookup(ip string, ifIndex uint) (string, Interface, error) 
 		return "", Interface{}, ErrCacheMiss
 	}
 	sc.metrics.cacheHit.Inc()
-	return sampler.Name, iface, nil
+	return sampler.Name, iface.Interface, nil
 }
 
 // Put a new entry in the cache.
@@ -125,26 +130,29 @@ func (sc *snmpCache) Put(ip string, samplerName string, ifIndex uint, iface Inte
 	sc.cacheLock.Lock()
 	defer sc.cacheLock.Unlock()
 
-	iface.lastUpdated = sc.clock.Now()
+	ciface := cachedInterface{
+		LastUpdated: sc.clock.Now().Unix(),
+		Interface:   iface,
+	}
 	sampler, ok := sc.cache[ip]
 	if !ok {
-		sampler = &cachedSampler{Interfaces: make(map[uint]Interface)}
+		sampler = &cachedSampler{Interfaces: make(map[uint]cachedInterface)}
 		sc.cache[ip] = sampler
 	}
 	sampler.Name = samplerName
-	sampler.Interfaces[ifIndex] = iface
+	sampler.Interfaces[ifIndex] = ciface
 }
 
 // Expire expire entries older than the provided duration.
 func (sc *snmpCache) Expire(older time.Duration) (count uint) {
-	threshold := sc.clock.Now().Add(-older)
+	threshold := sc.clock.Now().Add(-older).Unix()
 
 	sc.cacheLock.Lock()
 	defer sc.cacheLock.Unlock()
 
 	for ip, sampler := range sc.cache {
 		for ifindex, iface := range sampler.Interfaces {
-			if iface.lastUpdated.Before(threshold) {
+			if iface.LastUpdated < threshold {
 				delete(sampler.Interfaces, ifindex)
 				sc.metrics.cacheExpired.Inc()
 				count++
@@ -159,7 +167,7 @@ func (sc *snmpCache) Expire(older time.Duration) (count uint) {
 
 // WouldExpire returns a map of interface entries that would expire.
 func (sc *snmpCache) WouldExpire(older time.Duration) map[string]map[uint]Interface {
-	threshold := sc.clock.Now().Add(-older)
+	threshold := sc.clock.Now().Add(-older).Unix()
 	result := make(map[string]map[uint]Interface)
 
 	sc.cacheLock.RLock()
@@ -167,13 +175,13 @@ func (sc *snmpCache) WouldExpire(older time.Duration) map[string]map[uint]Interf
 
 	for ip, sampler := range sc.cache {
 		for ifindex, iface := range sampler.Interfaces {
-			if iface.lastUpdated.Before(threshold) {
+			if iface.LastUpdated < threshold {
 				rifaces, ok := result[ip]
 				if !ok {
 					rifaces = make(map[uint]Interface)
 					result[ip] = rifaces
 				}
-				result[ip][ifindex] = iface
+				result[ip][ifindex] = iface.Interface
 			}
 		}
 	}
@@ -252,43 +260,5 @@ func (sc *snmpCache) GobDecode(data []byte) error {
 	sc.cacheLock.Lock()
 	sc.cache = cache
 	sc.cacheLock.Unlock()
-	return nil
-}
-
-// GobEncode encodes an interface, including last updated.
-func (i Interface) GobEncode() ([]byte, error) {
-	var buf bytes.Buffer
-	encoder := gob.NewEncoder(&buf)
-	if err := encoder.Encode(i.Name); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.Description); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.Speed); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(i.lastUpdated); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-// GobDecode decodes an interface, including last updated.
-func (i *Interface) GobDecode(data []byte) error {
-	buf := bytes.NewBuffer(data)
-	decoder := gob.NewDecoder(buf)
-	if err := decoder.Decode(&i.Name); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&i.Description); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&i.Speed); err != nil {
-		return err
-	}
-	if err := decoder.Decode(&i.lastUpdated); err != nil {
-		return err
-	}
 	return nil
 }
