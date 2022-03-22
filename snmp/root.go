@@ -33,6 +33,7 @@ type Component struct {
 		cacheRefreshRuns reporter.Counter
 		cacheRefresh     reporter.Counter
 		pollerLoopTime   *reporter.SummaryVec
+		pollerBusyCount  *reporter.CounterVec
 	}
 }
 
@@ -54,7 +55,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		config: configuration,
 		sc:     sc,
 
-		pollerChannel: make(chan lookupRequest, 10*configuration.Workers),
+		pollerChannel: make(chan lookupRequest, 100*configuration.Workers),
 		poller:        newPoller(r, dependencies.Clock, sc.Put),
 	}
 	c.d.Daemon.Track(&c.t, "snmp")
@@ -75,8 +76,13 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 			Help:       "Time spent in each state of the poller loop.",
 			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		},
-		[]string{"worker", "state"},
-	)
+		[]string{"worker", "state"})
+	c.metrics.pollerBusyCount = r.CounterVec(
+		reporter.CounterOpts{
+			Name: "poller_busy_count",
+			Help: "Pollers where too busy and dropped requests.",
+		},
+		[]string{"sampler"})
 	return &c, nil
 }
 
@@ -200,9 +206,14 @@ type lookupRequest struct {
 func (c *Component) Lookup(samplerIP string, ifIndex uint) (string, Interface, error) {
 	samplerName, iface, err := c.sc.Lookup(samplerIP, ifIndex)
 	if errors.Is(err, ErrCacheMiss) {
-		c.pollerChannel <- lookupRequest{
+		req := lookupRequest{
 			SamplerIP: samplerIP,
 			IfIndex:   ifIndex,
+		}
+		select {
+		case c.pollerChannel <- req:
+		default:
+			c.metrics.pollerBusyCount.WithLabelValues(samplerIP).Inc()
 		}
 	}
 	return samplerName, iface, err
