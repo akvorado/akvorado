@@ -191,6 +191,7 @@ keys should be provided:
  - `username` is the username to use for authentication
  - `password` is the password to use for authentication
  - `database` defines the database to use to create tables
+ - `akvorado-url` defines the URL of Akvorado to be used by Clickhouse (autodetection when not specified)
 
 ## Core
 

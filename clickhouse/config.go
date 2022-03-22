@@ -10,6 +10,8 @@ type Configuration struct {
 	Username string
 	// Password defines the password to use for authentication
 	Password string
+	// AkvoradoURL allows one to override URL to reach Akvorado from Clickhouse
+	AkvoradoURL string
 }
 
 // DefaultConfiguration represents the default configuration for the ClickHouse component.
@@ -17,5 +19,4 @@ var DefaultConfiguration = Configuration{
 	Servers:  []string{}, // No clickhouse by default
 	Database: "default",
 	Username: "default",
-	Password: "",
 }

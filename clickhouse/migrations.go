@@ -35,9 +35,12 @@ func (c *Component) migrateDatabase() error {
 
 // migrateDatabaseOnServer tries to attempt database migration on the provided server
 func (c *Component) migrateDatabaseOnServer(server string) error {
-	baseURL, err := c.getHTTPBaseURL(server)
-	if err != nil {
-		return err
+	baseURL := c.config.AkvoradoURL
+	if baseURL == "" {
+		var err error
+		if baseURL, err = c.getHTTPBaseURL(server); err != nil {
+			return err
+		}
 	}
 	data := map[string]string{
 		"KafkaBrokers": strings.Join(c.d.Kafka.GetBrokers(), ","),
