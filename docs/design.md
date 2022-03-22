@@ -128,9 +128,28 @@ them.
 
 The Kafka component relies on
 [Sarama](https://github.com/Shopify/sarama). It is tested using the
-mock interface provided by this package. No tests are running against
-a real Kafka broker. *Sarama* uses `go-metrics` to store metrics. We
-convert them to Prometheus to keep them.
+mock interface provided by this package. *Sarama* uses `go-metrics` to
+store metrics. We convert them to Prometheus to keep them.
+
+If a real broker is available under the DNS name `kafka` or at
+`localhost` on port 9092, it will be used for a quick functional test.
+
+### ClickHouse
+
+The ClickHouse manages migrations for the ClickHouse database. It
+relies on [migrate](https://github.com/golang-migrate/migrate) with a
+simplified ClickHouse driver (the original one does not work with
+ClickHouse v2) and a custom source driver allowing to use templates.
+
+I have later discovered the [ClickHouse
+client](https://github.com/uptrace/go-clickhouse) from Uptrace which
+also features
+[migrations](https://clickhouse.uptrace.dev/guide/migrations.html) but
+allows us to use Go code in additional to SQL text files. It may help
+being smarter with migrations in the future.
+
+Functional tests are run when a ClickHouse server is available under
+the name `clickhouse` or on `localhost`.
 
 ### SNMP
 
@@ -185,8 +204,6 @@ In the future, we may:
 - Add more information to the landing page, including some basic statistics.
 - Automatically build dashboards for Grafana.[^grafana]
 - Builds dashboards with [D3.js][].[^d3js]
-- Manage the other components (Kafka topic creation, ClickHouse
-  configuration) to make deployments easier.
 - Collect routes by integrating GoBGP. This is low priority if we
   consider information from Maxmind good enough for our use.
 

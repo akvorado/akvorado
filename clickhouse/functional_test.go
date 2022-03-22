@@ -13,7 +13,7 @@ import (
 	"akvorado/reporter"
 )
 
-func TestRealClickhouse(t *testing.T) {
+func TestRealClickHouse(t *testing.T) {
 	chServer := helpers.CheckExternalService(t, "ClickHouse", []string{"clickhouse", "localhost"}, "9000")
 
 	configuration := DefaultConfiguration
@@ -42,7 +42,7 @@ func TestRealClickhouse(t *testing.T) {
 		t.Fatalf("Migrations not done")
 	}
 
-	// Check with the Clickhouse client we have our tables
+	// Check with the ClickHouse client we have our tables
 	conn := clickhouse.OpenDB(&clickhouse.Options{
 		Addr: []string{chServer},
 		Auth: clickhouse.Auth{
