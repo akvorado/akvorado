@@ -30,9 +30,9 @@ func setupKafkaBroker(t *testing.T) (sarama.Client, []string) {
 		err    error
 	)
 	for i := 0; i < 90; i++ {
-		// Do not issue `client.Close()`, this will lead to a
-		// race with the logger because close is ultimately
-		// done asynchronously.
+		if client != nil {
+			client.Close()
+		}
 		client, err = sarama.NewClient([]string{broker}, saramaConfig)
 		if err != nil {
 			continue

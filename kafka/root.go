@@ -38,8 +38,9 @@ type Dependencies struct {
 
 // New creates a new HTTP component.
 func New(reporter *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
+	globalKafkaLogger.r.Store(reporter)
+
 	// Build Kafka configuration
-	sarama.Logger = &kafkaLogger{reporter}
 	kafkaConfig := sarama.NewConfig()
 	kafkaConfig.Version = sarama.KafkaVersion(configuration.Version)
 	kafkaConfig.Metadata.AllowAutoTopicCreation = false
@@ -182,25 +183,5 @@ func (c *Component) Send(sampler string, payload []byte) {
 		Topic: c.kafkaTopic,
 		Key:   sarama.StringEncoder(sampler),
 		Value: sarama.ByteEncoder(payload),
-	}
-}
-
-type kafkaLogger struct {
-	r *reporter.Reporter
-}
-
-func (l *kafkaLogger) Print(v ...interface{}) {
-	if e := l.r.Debug(); e.Enabled() {
-		e.Msg(fmt.Sprint(v...))
-	}
-}
-func (l *kafkaLogger) Println(v ...interface{}) {
-	if e := l.r.Debug(); e.Enabled() {
-		e.Msg(fmt.Sprint(v...))
-	}
-}
-func (l *kafkaLogger) Printf(format string, v ...interface{}) {
-	if e := l.r.Debug(); e.Enabled() {
-		e.Msg(fmt.Sprintf(format, v...))
 	}
 }
