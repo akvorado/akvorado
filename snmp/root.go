@@ -33,6 +33,7 @@ type Component struct {
 	dispatcherChannel  chan lookupRequest
 	pollerBreakersLock sync.Mutex
 	pollerBreakers     map[string]*breaker.Breaker
+	pollerErrLimiter   *rate.Limiter
 	poller             poller
 
 	metrics struct {
@@ -72,6 +73,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		pollerChannel:     make(chan lookupRequest),
 		dispatcherChannel: make(chan lookupRequest, 100*configuration.Workers),
 		pollerBreakers:    make(map[string]*breaker.Breaker),
+		pollerErrLimiter:  rate.NewLimiter(rate.Every(30*time.Second), 3),
 		poller: newPoller(r, pollerConfig{
 			Retries: configuration.PollerRetries,
 			Timeout: configuration.PollerTimeout,
@@ -191,7 +193,6 @@ func (c *Component) Start() error {
 	})
 
 	// Goroutines to poll samplers
-	pollerErrLimiter := rate.NewLimiter(rate.Every(30*time.Second), 3)
 	c.healthyWorkers = make(chan reporter.ChannelHealthcheckFunc)
 	c.r.RegisterHealthcheck("snmp/worker", reporter.ChannelHealthcheck(c.t.Context(nil), c.healthyWorkers))
 	for i := 0; i < c.config.Workers; i++ {
@@ -210,33 +211,7 @@ func (c *Component) Start() error {
 					}
 				case request := <-c.pollerChannel:
 					startBusy := time.Now()
-					community, ok := c.config.Communities[request.SamplerIP]
-					if !ok {
-						community = c.config.DefaultCommunity
-					}
-
-					// Avoid querying too much samplers with errors
-					c.pollerBreakersLock.Lock()
-					pollerBreaker, ok := c.pollerBreakers[request.SamplerIP]
-					if !ok {
-						pollerBreaker = breaker.New(20, 1, time.Minute)
-						c.pollerBreakers[request.SamplerIP] = pollerBreaker
-					}
-					c.pollerBreakersLock.Unlock()
-					if err := pollerBreaker.Run(func() error {
-						return c.poller.Poll(
-							c.t.Context(nil),
-							request.SamplerIP, 161,
-							community,
-							request.IfIndexes)
-					}); err == breaker.ErrBreakerOpen {
-						c.metrics.pollerBreakerOpenCount.WithLabelValues(request.SamplerIP).Inc()
-						if pollerErrLimiter.Allow() {
-							c.r.Warn().
-								Str("sampler", request.SamplerIP).
-								Msg("poller breaker open")
-						}
-					}
+					c.pollerIncomingRequest(request)
 					idleTime := float64(startBusy.Sub(startIdle).Nanoseconds()) / 1000 / 1000 / 1000
 					busyTime := float64(time.Since(startBusy).Nanoseconds()) / 1000 / 1000 / 1000
 					c.metrics.pollerLoopTime.WithLabelValues(workerIDStr, "idle").Observe(idleTime)
@@ -328,6 +303,39 @@ func (c *Component) dispatchIncomingRequest(request lookupRequest) {
 		case <-c.t.Dying():
 			return
 		case c.pollerChannel <- lookupRequest{samplerIP, ifIndexes}:
+		}
+	}
+}
+
+// pollerIncomingRequest handles an incoming request to the poller. It
+// uses a breaker to avoid pushing working on non-responsive samplers.
+func (c *Component) pollerIncomingRequest(request lookupRequest) {
+	community, ok := c.config.Communities[request.SamplerIP]
+	if !ok {
+		community = c.config.DefaultCommunity
+	}
+
+	// Avoid querying too much samplers with errors
+	c.pollerBreakersLock.Lock()
+	pollerBreaker, ok := c.pollerBreakers[request.SamplerIP]
+	if !ok {
+		pollerBreaker = breaker.New(20, 1, time.Minute)
+		c.pollerBreakers[request.SamplerIP] = pollerBreaker
+	}
+	c.pollerBreakersLock.Unlock()
+
+	if err := pollerBreaker.Run(func() error {
+		return c.poller.Poll(
+			c.t.Context(nil),
+			request.SamplerIP, 161,
+			community,
+			request.IfIndexes)
+	}); err == breaker.ErrBreakerOpen {
+		c.metrics.pollerBreakerOpenCount.WithLabelValues(request.SamplerIP).Inc()
+		if c.pollerErrLimiter.Allow() {
+			c.r.Warn().
+				Str("sampler", request.SamplerIP).
+				Msg("poller breaker open")
 		}
 	}
 }
