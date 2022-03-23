@@ -147,28 +147,7 @@ func (c *Component) Start() error {
 					cb(reporter.HealthcheckOK, "ok")
 				}
 			case <-ticker.C:
-				c.sc.Expire(c.config.CacheDuration)
-				if c.config.CacheRefresh > 0 {
-					c.r.Debug().Msg("refresh SNMP cache")
-					c.metrics.cacheRefreshRuns.Inc()
-					count := 0
-					toRefresh := c.sc.NeedUpdates(c.config.CacheRefresh)
-					for sampler, ifaces := range toRefresh {
-						for ifIndex := range ifaces {
-							select {
-							case c.dispatcherChannel <- lookupRequest{
-								SamplerIP: sampler,
-								IfIndexes: []uint{ifIndex},
-							}:
-								count++
-							default:
-								c.metrics.pollerBusyCount.WithLabelValues(sampler).Inc()
-							}
-						}
-					}
-					c.r.Debug().Int("count", count).Msg("refreshed SNMP cache")
-					c.metrics.cacheRefresh.Add(float64(count))
-				}
+				c.expireCache()
 			}
 		}
 	})
@@ -337,5 +316,31 @@ func (c *Component) pollerIncomingRequest(request lookupRequest) {
 				Str("sampler", request.SamplerIP).
 				Msg("poller breaker open")
 		}
+	}
+}
+
+// expireCache handles cache expiration and refresh.
+func (c *Component) expireCache() {
+	c.sc.Expire(c.config.CacheDuration)
+	if c.config.CacheRefresh > 0 {
+		c.r.Debug().Msg("refresh SNMP cache")
+		c.metrics.cacheRefreshRuns.Inc()
+		count := 0
+		toRefresh := c.sc.NeedUpdates(c.config.CacheRefresh)
+		for sampler, ifaces := range toRefresh {
+			for ifIndex := range ifaces {
+				select {
+				case c.dispatcherChannel <- lookupRequest{
+					SamplerIP: sampler,
+					IfIndexes: []uint{ifIndex},
+				}:
+					count++
+				default:
+					c.metrics.pollerBusyCount.WithLabelValues(sampler).Inc()
+				}
+			}
+		}
+		c.r.Debug().Int("count", count).Msg("refreshed SNMP cache")
+		c.metrics.cacheRefresh.Add(float64(count))
 	}
 }
