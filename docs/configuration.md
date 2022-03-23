@@ -93,12 +93,11 @@ interface name and description, SNMP is used to poll the sampler
 sending each flows. A cache is maintained to avoid polling
 continuously the samplers. The following keys are accepted:
 
-- `cache-duration` tells how much time to keep data in the cache before
-  polling again
-- `cache-refresh` tells how much time to poll existing data before they
-  expire
-- `cache-refresh-interval` tells how often to check if cached data is
-  about to expire
+- `cache-duration` tells how much time to keep data in the cache
+- `cache-refresh` tells how much time to wait before updating an entry
+  by polling it
+- `cache-check-interval` tells how often to check if cached data is
+  about to expire or need an update
 - `cache-persist-file` tells where to store cached data on shutdown and
   read them back on startup
 - `default-community` tells which community to use when polling samplers

@@ -45,6 +45,12 @@ type Dependencies struct {
 
 // New creates a new SNMP component.
 func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
+	if configuration.CacheRefresh > 0 && configuration.CacheRefresh < configuration.CacheDuration {
+		return nil, errors.New("cache refresh must be greater than cache duration")
+	}
+	if configuration.CacheDuration < configuration.CacheCheckInterval {
+		return nil, errors.New("cache duration must be greater than cache check interval")
+	}
 	if dependencies.Clock == nil {
 		dependencies.Clock = clock.New()
 	}
@@ -102,7 +108,7 @@ func (c *Component) Start() error {
 	c.r.RegisterHealthcheck("snmp/ticker", reporter.ChannelHealthcheck(c.t.Context(nil), healthyTicker))
 	c.t.Go(func() error {
 		c.r.Debug().Msg("starting SNMP ticker")
-		ticker := c.d.Clock.Ticker(c.config.CacheRefreshInterval)
+		ticker := c.d.Clock.Ticker(c.config.CacheCheckInterval)
 		defer ticker.Stop()
 		defer close(healthyTicker)
 		for {

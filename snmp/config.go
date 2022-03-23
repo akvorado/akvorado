@@ -10,8 +10,8 @@ type Configuration struct {
 	CacheDuration time.Duration
 	// CacheRefresh defines how soon to refresh an existing cached entry
 	CacheRefresh time.Duration
-	// CacheRefreshInterval defines the interval to use for refresh thread
-	CacheRefreshInterval time.Duration
+	// CacheRefreshInterval defines the interval to check for expiration/refresh
+	CacheCheckInterval time.Duration
 	// CachePersist defines a file to store cache and survive restarts
 	CachePersistFile string
 	// DefaultCommunity is the default SNMP community to use
@@ -24,11 +24,11 @@ type Configuration struct {
 
 // DefaultConfiguration represents the default configuration for the SNMP client.
 var DefaultConfiguration = Configuration{
-	CacheDuration:        time.Hour,
-	CacheRefresh:         30 * time.Minute,
-	CacheRefreshInterval: 2 * time.Minute,
-	CachePersistFile:     "",
-	DefaultCommunity:     "public",
-	Communities:          map[string]string{},
-	Workers:              1,
+	CacheDuration:      30 * time.Minute,
+	CacheRefresh:       time.Hour,
+	CacheCheckInterval: 2 * time.Minute,
+	CachePersistFile:   "",
+	DefaultCommunity:   "public",
+	Communities:        map[string]string{},
+	Workers:            1,
 }

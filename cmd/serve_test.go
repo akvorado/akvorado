@@ -23,7 +23,7 @@ func TestServeDump(t *testing.T) {
 	want.Flow.Listen = "0.0.0.0:2055"
 	want.Flow.Workers = 2
 	want.SNMP.Workers = 2
-	want.SNMP.CacheDuration = 2 * time.Hour
+	want.SNMP.CacheDuration = 20 * time.Minute
 	want.SNMP.DefaultCommunity = "private"
 	want.Kafka.Topic = "netflow"
 	want.Kafka.Version = kafka.Version(sarama.V2_8_1_0)
@@ -37,7 +37,7 @@ flow:
  workers: 2
 snmp:
  workers: 2
- cache-duration: 2h
+ cache-duration: 20m
  default-community: private
 kafka:
  topic: netflow
@@ -76,7 +76,7 @@ func TestServeEnvOverride(t *testing.T) {
 	want.Flow.Listen = "0.0.0.0:2055"
 	want.Flow.Workers = 3
 	want.SNMP.Workers = 2
-	want.SNMP.CacheDuration = 1*time.Hour + 30*time.Minute
+	want.SNMP.CacheDuration = 22 * time.Minute
 	want.SNMP.DefaultCommunity = "privateer"
 	want.Kafka.Topic = "netflow"
 	want.Kafka.Version = kafka.Version(sarama.V2_8_1_0)
@@ -91,7 +91,7 @@ flow:
  workers: 2
 snmp:
  workers: 2
- cache-duration: 2h
+ cache-duration: 10m
 kafka:
  topic: netflow
  compression-codec: zstd
@@ -104,7 +104,7 @@ core:
 
 	// Environment
 	os.Setenv("AKVORADO_FLOW_WORKERS", "3")
-	os.Setenv("AKVORADO_SNMP_CACHEDURATION", "1h30m")
+	os.Setenv("AKVORADO_SNMP_CACHEDURATION", "22m")
 	os.Setenv("AKVORADO_SNMP_DEFAULTCOMMUNITY", "privateer")
 	os.Setenv("AKVORADO_KAFKA_BROKERS", "127.0.0.1:9092,127.0.0.2:9092")
 
