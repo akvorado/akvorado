@@ -35,8 +35,9 @@ run tests:
     - time apk add --no-cache git make gcc musl-dev protoc shared-mime-info
     - time go mod download
     - touch web/data            # don't build web data
-    - time make test-race
-    - time make test-coverage
+    - time make test
+    - time make test-race || make test-race
+    - time make test-coverage || make test-coverage
   coverage: '/Code coverage: [0-9.]+/'
   artifacts:
     reports:
