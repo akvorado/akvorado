@@ -26,7 +26,7 @@ func newMockPoller(community string, put func(string, string, uint, Interface)) 
 }
 
 // Poll just builds synthetic data.
-func (p *mockPoller) Poll(ctx context.Context, samplerIP string, port uint16, community string, ifIndexes []uint) {
+func (p *mockPoller) Poll(ctx context.Context, samplerIP string, port uint16, community string, ifIndexes []uint) error {
 	for _, ifIndex := range ifIndexes {
 		if community == p.community {
 			p.put(samplerIP, strings.ReplaceAll(samplerIP, ".", "_"), ifIndex, Interface{
@@ -36,6 +36,7 @@ func (p *mockPoller) Poll(ctx context.Context, samplerIP string, port uint16, co
 			})
 		}
 	}
+	return nil
 }
 
 // NewMock creates a new SNMP component building synthetic values. It is already started.

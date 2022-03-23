@@ -208,6 +208,9 @@ spawned by the other components and wait for signals to terminate. If
    errors.
  - [github.com/cenkalti/backoff/v4](https://github.com/cenkalti/backoff)
    provides an exponential backoff algorithm for retries.
+ - [github.com/eapache/go-resiliency](https://github.com/eapache/go-resiliency)
+   implements several resiliency pattersn, including the breaker
+   pattern.
 
 ## Future plans
 

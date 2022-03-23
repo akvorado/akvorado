@@ -96,7 +96,7 @@ func TestPoller(t *testing.T) {
 		},
 	}
 	server := GoSNMPServer.NewSNMPServer(master)
-	err := server.ListenUDP("udp", ":0")
+	err := server.ListenUDP("udp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("ListenUDP() err:\n%+v", err)
 	}

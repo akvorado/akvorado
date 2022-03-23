@@ -2,6 +2,7 @@ package snmp
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"testing"
 	"time"
@@ -188,24 +189,24 @@ func TestStartStopWithMultipleWorkers(t *testing.T) {
 	}
 }
 
-type forceCoaelescePoller struct {
+type forceCoalescePoller struct {
 	accept   chan bool
 	accepted []lookupRequest
 }
 
-func (fcp *forceCoaelescePoller) Poll(ctx context.Context, samplerIP string, _ uint16, _ string, ifIndexes []uint) {
+func (fcp *forceCoalescePoller) Poll(ctx context.Context, samplerIP string, _ uint16, _ string, ifIndexes []uint) error {
 	select {
 	case <-ctx.Done():
-		return
 	case <-fcp.accept:
 		fcp.accepted = append(fcp.accepted, lookupRequest{samplerIP, ifIndexes})
 	}
+	return nil
 }
 
-func TestCoaelescing(t *testing.T) {
+func TestCoalescing(t *testing.T) {
 	r := reporter.NewMock(t)
 	c := NewMock(t, r, DefaultConfiguration, Dependencies{Daemon: daemon.NewMock(t)})
-	fcp := &forceCoaelescePoller{
+	fcp := &forceCoalescePoller{
 		accept:   make(chan bool),
 		accepted: []lookupRequest{},
 	}
@@ -237,7 +238,7 @@ func TestCoaelescing(t *testing.T) {
 	}
 
 	fcp.accept <- true
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(50 * time.Millisecond)
 	if err := c.Stop(); err != nil {
 		t.Fatalf("Stop() error:\n%+v", err)
 	}
@@ -248,5 +249,56 @@ func TestCoaelescing(t *testing.T) {
 	}
 	if diff := helpers.Diff(fcp.accepted, expectedAccepted); diff != "" {
 		t.Errorf("Accepted requests (-got, +want):\n%s", diff)
+	}
+}
+
+type errorPoller struct{}
+
+func (fcp *errorPoller) Poll(ctx context.Context, samplerIP string, _ uint16, _ string, ifIndexes []uint) error {
+	return errors.New("noooo")
+}
+
+func TestPollerBreaker(t *testing.T) {
+	cases := []struct {
+		Name          string
+		Poller        poller
+		ExpectedCount string
+	}{
+		{"always successful poller", nil, "0"},
+		{"never successful poller", &errorPoller{}, "10"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			r := reporter.NewMock(t)
+			configuration := DefaultConfiguration
+			configuration.PollerCoalesce = 0
+			c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
+			defer func() {
+				if err := c.Stop(); err != nil {
+					t.Fatalf("Stop() error:\n%+v", err)
+				}
+			}()
+			if tc.Poller != nil {
+				c.poller = tc.Poller
+			}
+			c.metrics.pollerBreakerOpenCount.WithLabelValues("127.0.0.1").Add(0)
+
+			for i := 0; i < 30; i++ {
+				c.Lookup("127.0.0.1", 765)
+			}
+			for i := 0; i < 5; i++ {
+				c.Lookup("127.0.0.2", 765)
+			}
+			time.Sleep(40 * time.Millisecond)
+
+			gotMetrics := r.GetMetrics("akvorado_snmp_poller_", "breaker_open_count", "coalesced_count")
+			expectedMetrics := map[string]string{
+				`coalesced_count`:                         "0",
+				`breaker_open_count{sampler="127.0.0.1"}`: tc.ExpectedCount,
+			}
+			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+				t.Errorf("Metrics (-got, +want):\n%s", diff)
+			}
+		})
 	}
 }

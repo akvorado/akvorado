@@ -7,9 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/eapache/go-resiliency/breaker"
+	"golang.org/x/time/rate"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/daemon"
@@ -25,17 +28,20 @@ type Component struct {
 
 	sc *snmpCache
 
-	healthyWorkers    chan reporter.ChannelHealthcheckFunc
-	pollerChannel     chan lookupRequest
-	dispatcherChannel chan lookupRequest
-	poller            poller
+	healthyWorkers     chan reporter.ChannelHealthcheckFunc
+	pollerChannel      chan lookupRequest
+	dispatcherChannel  chan lookupRequest
+	pollerBreakersLock sync.Mutex
+	pollerBreakers     map[string]*breaker.Breaker
+	poller             poller
 
 	metrics struct {
-		cacheRefreshRuns     reporter.Counter
-		cacheRefresh         reporter.Counter
-		pollerLoopTime       *reporter.SummaryVec
-		pollerBusyCount      *reporter.CounterVec
-		pollerCoalescedCount reporter.Counter
+		cacheRefreshRuns       reporter.Counter
+		cacheRefresh           reporter.Counter
+		pollerLoopTime         *reporter.SummaryVec
+		pollerBusyCount        *reporter.CounterVec
+		pollerCoalescedCount   reporter.Counter
+		pollerBreakerOpenCount *reporter.CounterVec
 	}
 }
 
@@ -65,6 +71,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 
 		pollerChannel:     make(chan lookupRequest),
 		dispatcherChannel: make(chan lookupRequest, 100*configuration.Workers),
+		pollerBreakers:    make(map[string]*breaker.Breaker),
 		poller: newPoller(r, pollerConfig{
 			Retries: configuration.PollerRetries,
 			Timeout: configuration.PollerTimeout,
@@ -98,8 +105,14 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	c.metrics.pollerCoalescedCount = r.Counter(
 		reporter.CounterOpts{
 			Name: "poller_coalesced_count",
-			Help: "Poller was able to coaelesce several requests in one.",
+			Help: "Poller was able to coalesce several requests in one.",
 		})
+	c.metrics.pollerBreakerOpenCount = r.CounterVec(
+		reporter.CounterOpts{
+			Name: "poller_breaker_open_count",
+			Help: "Poller breaker was opened due to too many errors.",
+		},
+		[]string{"sampler"})
 	return &c, nil
 }
 
@@ -178,6 +191,7 @@ func (c *Component) Start() error {
 	})
 
 	// Goroutines to poll samplers
+	pollerErrLimiter := rate.NewLimiter(rate.Every(30*time.Second), 3)
 	c.healthyWorkers = make(chan reporter.ChannelHealthcheckFunc)
 	c.r.RegisterHealthcheck("snmp/worker", reporter.ChannelHealthcheck(c.t.Context(nil), c.healthyWorkers))
 	for i := 0; i < c.config.Workers; i++ {
@@ -200,11 +214,29 @@ func (c *Component) Start() error {
 					if !ok {
 						community = c.config.DefaultCommunity
 					}
-					c.poller.Poll(
-						c.t.Context(nil),
-						request.SamplerIP, 161,
-						community,
-						request.IfIndexes)
+
+					// Avoid querying too much samplers with errors
+					c.pollerBreakersLock.Lock()
+					pollerBreaker, ok := c.pollerBreakers[request.SamplerIP]
+					if !ok {
+						pollerBreaker = breaker.New(20, 1, time.Minute)
+						c.pollerBreakers[request.SamplerIP] = pollerBreaker
+					}
+					c.pollerBreakersLock.Unlock()
+					if err := pollerBreaker.Run(func() error {
+						return c.poller.Poll(
+							c.t.Context(nil),
+							request.SamplerIP, 161,
+							community,
+							request.IfIndexes)
+					}); err == breaker.ErrBreakerOpen {
+						c.metrics.pollerBreakerOpenCount.WithLabelValues(request.SamplerIP).Inc()
+						if pollerErrLimiter.Allow() {
+							c.r.Warn().
+								Str("sampler", request.SamplerIP).
+								Msg("poller breaker open")
+						}
+					}
 					idleTime := float64(startBusy.Sub(startIdle).Nanoseconds()) / 1000 / 1000 / 1000
 					busyTime := float64(time.Since(startBusy).Nanoseconds()) / 1000 / 1000 / 1000
 					c.metrics.pollerLoopTime.WithLabelValues(workerIDStr, "idle").Observe(idleTime)
@@ -265,7 +297,7 @@ func (c *Component) dispatchIncomingRequest(request lookupRequest) {
 	requestsMap := map[string][]uint{
 		request.SamplerIP: request.IfIndexes,
 	}
-	for {
+	for c.config.PollerCoalesce > 0 {
 		select {
 		case request := <-c.dispatcherChannel:
 			indexes, ok := requestsMap[request.SamplerIP]
@@ -277,8 +309,8 @@ func (c *Component) dispatchIncomingRequest(request lookupRequest) {
 			requestsMap[request.SamplerIP] = indexes
 			// We don't want to exceed the configured
 			// limit but also there is no point of
-			// coaelescing requests of too many samplers.
-			if len(indexes) < c.config.PollerCoaelesce && len(requestsMap) < 4 {
+			// coalescing requests of too many samplers.
+			if len(indexes) < c.config.PollerCoalesce && len(requestsMap) < 4 {
 				continue
 			}
 		case <-c.t.Dying():

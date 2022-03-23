@@ -15,7 +15,7 @@ import (
 )
 
 type poller interface {
-	Poll(ctx context.Context, samplerIP string, port uint16, community string, ifIndexes []uint)
+	Poll(ctx context.Context, samplerIP string, port uint16, community string, ifIndexes []uint) error
 }
 
 // realPoller will poll samplers using real SNMP requests.
@@ -86,7 +86,7 @@ func newPoller(r *reporter.Reporter, config pollerConfig, clock clock.Clock, put
 	return p
 }
 
-func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, community string, ifIndexes []uint) {
+func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, community string, ifIndexes []uint) error {
 	// Check if already have a request running
 	filteredIfIndexes := make([]uint, 0, len(ifIndexes))
 	keys := make([]string, 0, len(ifIndexes))
@@ -102,7 +102,7 @@ func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, comm
 	}
 	p.pendingRequestsLock.Unlock()
 	if len(filteredIfIndexes) == 0 {
-		return
+		return nil
 	}
 	ifIndexes = filteredIfIndexes
 	defer func() {
@@ -146,14 +146,14 @@ func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, comm
 	}
 	result, err := g.Get(requests)
 	if errors.Is(err, context.Canceled) {
-		return
+		return nil
 	}
 	if err != nil {
 		p.metrics.failures.WithLabelValues(sampler, "get").Inc()
 		if p.errLimiter.Allow() {
 			p.r.Err(err).Str("sampler", sampler).Msg("unable to GET")
 		}
-		return
+		return err
 	}
 	if result.Error != gosnmp.NoError && result.ErrorIndex == 0 {
 		// There is some error affecting the whole request
@@ -161,6 +161,7 @@ func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, comm
 		if p.errLimiter.Allow() {
 			p.r.Error().Str("sampler", sampler).Stringer("code", result.Error).Msg("unable to GET")
 		}
+		return fmt.Errorf("SNMP error %s(%d)", result.Error, result.Error)
 	}
 
 	processStr := func(idx int, what string, target *string) bool {
@@ -192,7 +193,7 @@ func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, comm
 	var sysNameVal, ifDescrVal, ifAliasVal string
 	var ifSpeedVal uint
 	if !processStr(0, "sysname", &sysNameVal) {
-		return
+		return errors.New("unable to get sysName")
 	}
 	for idx := 1; idx < len(requests)-2; idx += 3 {
 		ok := true
@@ -218,6 +219,7 @@ func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, comm
 	}
 
 	p.metrics.times.WithLabelValues(sampler).Observe(p.clock.Now().Sub(start).Seconds())
+	return nil
 }
 
 type goSNMPLogger struct {
