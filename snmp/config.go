@@ -6,7 +6,7 @@ import (
 
 // Configuration describes the configuration for the SNMP client
 type Configuration struct {
-	// CacheDuration defines how long to keep cached entries
+	// CacheDuration defines how long to keep cached entries without access
 	CacheDuration time.Duration
 	// CacheRefresh defines how soon to refresh an existing cached entry
 	CacheRefresh time.Duration
@@ -25,7 +25,7 @@ type Configuration struct {
 // DefaultConfiguration represents the default configuration for the SNMP client.
 var DefaultConfiguration = Configuration{
 	CacheDuration:        time.Hour,
-	CacheRefresh:         5 * time.Minute,
+	CacheRefresh:         30 * time.Minute,
 	CacheRefreshInterval: 2 * time.Minute,
 	CachePersistFile:     "",
 	DefaultCommunity:     "public",

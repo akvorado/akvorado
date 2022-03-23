@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/benbjohnson/clock"
@@ -45,7 +46,7 @@ type snmpCache struct {
 // the mapping from ifIndex to interfaces.
 type cachedSampler struct {
 	Name       string
-	Interfaces map[uint]cachedInterface
+	Interfaces map[uint]*cachedInterface
 }
 
 // Interface contains the information about an interface.
@@ -57,7 +58,8 @@ type Interface struct {
 
 // cachedInterface contains the information about a cached interface.
 type cachedInterface struct {
-	LastUpdated int64
+	LastUpdated  int64
+	LastAccessed int64
 	Interface
 }
 
@@ -109,6 +111,10 @@ func newSNMPCache(r *reporter.Reporter, clock clock.Clock) *snmpCache {
 // Lookup will perform a lookup of the cache. It returns the sampler
 // name as well as the requested interface.
 func (sc *snmpCache) Lookup(ip string, ifIndex uint) (string, Interface, error) {
+	return sc.lookup(ip, ifIndex, true)
+}
+
+func (sc *snmpCache) lookup(ip string, ifIndex uint, touchAccess bool) (string, Interface, error) {
 	sc.cacheLock.RLock()
 	defer sc.cacheLock.RUnlock()
 	sampler, ok := sc.cache[ip]
@@ -122,6 +128,9 @@ func (sc *snmpCache) Lookup(ip string, ifIndex uint) (string, Interface, error) 
 		return "", Interface{}, ErrCacheMiss
 	}
 	sc.metrics.cacheHit.Inc()
+	if touchAccess {
+		atomic.StoreInt64(&iface.LastAccessed, sc.clock.Now().Unix())
+	}
 	return sampler.Name, iface.Interface, nil
 }
 
@@ -130,20 +139,22 @@ func (sc *snmpCache) Put(ip string, samplerName string, ifIndex uint, iface Inte
 	sc.cacheLock.Lock()
 	defer sc.cacheLock.Unlock()
 
+	now := sc.clock.Now().Unix()
 	ciface := cachedInterface{
-		LastUpdated: sc.clock.Now().Unix(),
-		Interface:   iface,
+		LastUpdated:  now,
+		LastAccessed: now,
+		Interface:    iface,
 	}
 	sampler, ok := sc.cache[ip]
 	if !ok {
-		sampler = &cachedSampler{Interfaces: make(map[uint]cachedInterface)}
+		sampler = &cachedSampler{Interfaces: make(map[uint]*cachedInterface)}
 		sc.cache[ip] = sampler
 	}
 	sampler.Name = samplerName
-	sampler.Interfaces[ifIndex] = ciface
+	sampler.Interfaces[ifIndex] = &ciface
 }
 
-// Expire expire entries older than the provided duration.
+// Expire expire entries older than the provided duration (rely on last access).
 func (sc *snmpCache) Expire(older time.Duration) (count uint) {
 	threshold := sc.clock.Now().Add(-older).Unix()
 
@@ -152,7 +163,7 @@ func (sc *snmpCache) Expire(older time.Duration) (count uint) {
 
 	for ip, sampler := range sc.cache {
 		for ifindex, iface := range sampler.Interfaces {
-			if iface.LastUpdated < threshold {
+			if iface.LastAccessed < threshold {
 				delete(sampler.Interfaces, ifindex)
 				sc.metrics.cacheExpired.Inc()
 				count++
@@ -165,8 +176,9 @@ func (sc *snmpCache) Expire(older time.Duration) (count uint) {
 	return
 }
 
-// WouldExpire returns a map of interface entries that would expire.
-func (sc *snmpCache) WouldExpire(older time.Duration) map[string]map[uint]Interface {
+// Return entries older than the provided duration. If LastAccessed is
+// true, rely on last access, otherwise on last update.
+func (sc *snmpCache) entriesOlderThan(older time.Duration, lastAccessed bool) map[string]map[uint]Interface {
 	threshold := sc.clock.Now().Add(-older).Unix()
 	result := make(map[string]map[uint]Interface)
 
@@ -175,7 +187,11 @@ func (sc *snmpCache) WouldExpire(older time.Duration) map[string]map[uint]Interf
 
 	for ip, sampler := range sc.cache {
 		for ifindex, iface := range sampler.Interfaces {
-			if iface.LastUpdated < threshold {
+			what := &iface.LastAccessed
+			if !lastAccessed {
+				what = &iface.LastUpdated
+			}
+			if atomic.LoadInt64(what) < threshold {
 				rifaces, ok := result[ip]
 				if !ok {
 					rifaces = make(map[uint]Interface)
@@ -186,6 +202,18 @@ func (sc *snmpCache) WouldExpire(older time.Duration) map[string]map[uint]Interf
 		}
 	}
 	return result
+}
+
+// Need updates returns a map of interface entries that would need to
+// be updated. It relies on last update.
+func (sc *snmpCache) NeedUpdates(older time.Duration) map[string]map[uint]Interface {
+	return sc.entriesOlderThan(older, false)
+}
+
+// Need updates returns a map of interface entries that would have
+// expired. It relies on last access.
+func (sc *snmpCache) WouldExpire(older time.Duration) map[string]map[uint]Interface {
+	return sc.entriesOlderThan(older, true)
 }
 
 // Save stores the cache to the provided location.
@@ -234,8 +262,8 @@ func (sc *snmpCache) GobEncode() ([]byte, error) {
 	if err := encoder.Encode(&cacheCurrentVersionNumber); err != nil {
 		return nil, err
 	}
-	sc.cacheLock.RLock()
-	defer sc.cacheLock.RUnlock()
+	sc.cacheLock.Lock() // needed because we won't do atomic access
+	defer sc.cacheLock.Unlock()
 	if err := encoder.Encode(sc.cache); err != nil {
 		return nil, err
 	}

@@ -120,8 +120,7 @@ func (c *Component) Start() error {
 					c.r.Debug().Msg("refresh SNMP cache")
 					c.metrics.cacheRefreshRuns.Inc()
 					count := 0
-					threshold := c.config.CacheDuration - c.config.CacheRefresh
-					toRefresh := c.sc.WouldExpire(threshold)
+					toRefresh := c.sc.NeedUpdates(c.config.CacheRefresh)
 					for sampler, ifaces := range toRefresh {
 						for ifIndex := range ifaces {
 							c.pollerChannel <- lookupRequest{

@@ -4,7 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"math/rand"
 	"path/filepath"
+	"strconv"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -30,7 +34,7 @@ type answer struct {
 
 func expectCacheLookup(t *testing.T, sc *snmpCache, samplerIP string, ifIndex uint, expected answer) {
 	t.Helper()
-	gotSamplerName, gotInterface, err := sc.Lookup(samplerIP, ifIndex)
+	gotSamplerName, gotInterface, err := sc.lookup(samplerIP, ifIndex, false)
 	got := answer{gotSamplerName, gotInterface, err}
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Errorf("Lookup() (-got, +want):\n%s", diff)
@@ -142,7 +146,7 @@ func TestExpireRefresh(t *testing.T) {
 	clock.Add(10 * time.Minute)
 
 	// Refresh first entry
-	sc.Put("127.0.0.1", "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
+	sc.Lookup("127.0.0.1", 676)
 	clock.Add(10 * time.Minute)
 
 	sc.Expire(29 * time.Minute)
@@ -156,6 +160,56 @@ func TestExpireRefresh(t *testing.T) {
 }
 
 func TestWouldExpire(t *testing.T) {
+	_, clock, sc := setupTestCache(t)
+	sc.Put("127.0.0.1", "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
+	clock.Add(10 * time.Minute)
+	sc.Put("127.0.0.1", "localhost", 678, Interface{Name: "Gi0/0/0/2", Description: "Peering"})
+	clock.Add(10 * time.Minute)
+	sc.Put("127.0.0.2", "localhost2", 678, Interface{Name: "Gi0/0/0/1", Description: "IX"})
+	clock.Add(10 * time.Minute)
+	// Refresh
+	sc.Lookup("127.0.0.1", 676)
+	clock.Add(10 * time.Minute)
+
+	cases := []struct {
+		Minutes  time.Duration
+		Expected map[string]map[uint]Interface
+	}{
+		{9, map[string]map[uint]Interface{
+			"127.0.0.1": {
+				676: Interface{Name: "Gi0/0/0/1", Description: "Transit"},
+				678: Interface{Name: "Gi0/0/0/2", Description: "Peering"},
+			},
+			"127.0.0.2": {
+				678: Interface{Name: "Gi0/0/0/1", Description: "IX"},
+			},
+		}},
+		{19, map[string]map[uint]Interface{
+			"127.0.0.1": {
+				678: Interface{Name: "Gi0/0/0/2", Description: "Peering"},
+			},
+			"127.0.0.2": {
+				678: Interface{Name: "Gi0/0/0/1", Description: "IX"},
+			},
+		}},
+		{29, map[string]map[uint]Interface{
+			"127.0.0.1": {
+				678: Interface{Name: "Gi0/0/0/2", Description: "Peering"},
+			},
+		}},
+		{39, map[string]map[uint]Interface{}},
+	}
+	for _, tc := range cases {
+		t.Run(fmt.Sprintf("%d minutes", tc.Minutes), func(t *testing.T) {
+			got := sc.WouldExpire(tc.Minutes * time.Minute)
+			if diff := helpers.Diff(got, tc.Expected); diff != "" {
+				t.Fatalf("WouldExpire(%d minutes) (-got, +want):\n%s", tc.Minutes, diff)
+			}
+		})
+	}
+}
+
+func TestNeedUpdates(t *testing.T) {
 	_, clock, sc := setupTestCache(t)
 	sc.Put("127.0.0.1", "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
 	clock.Add(10 * time.Minute)
@@ -197,7 +251,7 @@ func TestWouldExpire(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("%d minutes", tc.Minutes), func(t *testing.T) {
-			got := sc.WouldExpire(tc.Minutes * time.Minute)
+			got := sc.NeedUpdates(tc.Minutes * time.Minute)
 			if diff := helpers.Diff(got, tc.Expected); diff != "" {
 				t.Fatalf("WouldExpire(%d minutes) (-got, +want):\n%s", tc.Minutes, diff)
 			}
@@ -258,5 +312,82 @@ func TestLoadMismatchVersion(t *testing.T) {
 	_, _, sc = setupTestCache(t)
 	if err := sc.Load(target); !errors.Is(err, ErrCacheVersion) {
 		t.Fatalf("sc.Load() error:\n%s", err)
+	}
+}
+
+func TestConcurrentOperations(t *testing.T) {
+	r, clock, sc := setupTestCache(t)
+	done := make(chan bool)
+	var wg sync.WaitGroup
+
+	// Make the clock go forward
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for {
+			clock.Add(1 * time.Minute)
+			select {
+			case <-done:
+				return
+			case <-time.After(1 * time.Millisecond):
+			}
+		}
+	}()
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				ip := rand.Intn(10)
+				iface := rand.Intn(100)
+				sc.Put(fmt.Sprintf("127.0.0.%d", ip),
+					fmt.Sprintf("localhost%d", ip),
+					uint(iface), Interface{Name: "Gi0/0/0/1", Description: "Transit"})
+				select {
+				case <-done:
+					return
+				default:
+				}
+			}
+		}()
+	}
+	var lookups int64
+	for i := 0; i < 20; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for {
+				ip := rand.Intn(10)
+				iface := rand.Intn(100)
+				sc.Lookup(fmt.Sprintf("127.0.0.%d", ip),
+					uint(iface))
+				atomic.AddInt64(&lookups, 1)
+				select {
+				case <-done:
+					return
+				default:
+				}
+			}
+		}()
+	}
+	time.Sleep(30 * time.Millisecond)
+	sc.Expire(5 * time.Minute)
+	time.Sleep(30 * time.Millisecond)
+	close(done)
+	wg.Wait()
+
+	gotMetrics := r.GetMetrics("akvorado_snmp_cache_")
+	hits, _ := strconv.Atoi(gotMetrics["hit"])
+	misses, _ := strconv.Atoi(gotMetrics["miss"])
+	size, _ := strconv.Atoi(gotMetrics["size"])
+	samplers, _ := strconv.Atoi(gotMetrics["samplers"])
+	if int64(hits+misses) != atomic.LoadInt64(&lookups) {
+		t.Errorf("hit + miss = %d, expected %d", hits+misses, atomic.LoadInt64(&lookups))
+	}
+	if size < 50 {
+		t.Errorf("size is %d < 50", size)
+	}
+	if samplers < 8 {
+		t.Errorf("samplers is %d < 8", samplers)
 	}
 }

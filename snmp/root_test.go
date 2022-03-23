@@ -97,7 +97,7 @@ func TestAutoRefresh(t *testing.T) {
 	})
 
 	// Go forward, we expect the entry to have been refreshed and be still present
-	mockClock.Add(56 * time.Minute)
+	mockClock.Add(36 * time.Minute)
 	time.Sleep(10 * time.Millisecond)
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
 		SamplerName: "127_0_0_1",
@@ -116,30 +116,10 @@ func TestAutoRefresh(t *testing.T) {
 		`miss`:         "1",
 		`size`:         "1",
 		`samplers`:     "1",
-		`refresh_runs`: "28", // 56/2
+		`refresh_runs`: "18", // 36/2
 		`refresh`:      "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
-	}
-
-	// In 50 minutes, nothing should expire
-	mockClock.Add(50 * time.Minute)
-	if diff := helpers.Diff(c.sc.WouldExpire(time.Hour), map[string]map[uint]Interface{}); diff != "" {
-		t.Fatalf("WouldExpire() (-got, +want):\n%s", diff)
-	}
-
-	// In 65 minutes, the entry should expire
-	mockClock.Add(15 * time.Minute)
-	if diff := helpers.Diff(c.sc.WouldExpire(time.Hour), map[string]map[uint]Interface{
-		"127.0.0.1": {
-			765: {
-				Name:        "Gi0/0/765",
-				Description: "Interface 765",
-				Speed:       1000,
-			},
-		},
-	}); diff != "" {
-		t.Fatalf("WouldExpire() (-got, +want):\n%s", diff)
 	}
 }
