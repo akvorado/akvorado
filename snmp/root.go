@@ -143,7 +143,7 @@ func (c *Component) Start() error {
 							select {
 							case c.dispatcherChannel <- lookupRequest{
 								SamplerIP: sampler,
-								IfIndex:   []uint{ifIndex},
+								IfIndexes: []uint{ifIndex},
 							}:
 								count++
 							default:
@@ -204,7 +204,7 @@ func (c *Component) Start() error {
 						c.t.Context(nil),
 						request.SamplerIP, 161,
 						community,
-						request.IfIndex[0])
+						request.IfIndexes)
 					idleTime := float64(startBusy.Sub(startIdle).Nanoseconds()) / 1000 / 1000 / 1000
 					busyTime := float64(time.Since(startBusy).Nanoseconds()) / 1000 / 1000 / 1000
 					c.metrics.pollerLoopTime.WithLabelValues(workerIDStr, "idle").Observe(idleTime)
@@ -237,7 +237,7 @@ func (c *Component) Stop() error {
 // lookupRequest is used internally to queue a polling request.
 type lookupRequest struct {
 	SamplerIP string
-	IfIndex   []uint
+	IfIndexes []uint
 }
 
 // Lookup for interface information for the provided sampler and ifIndex.
@@ -248,7 +248,7 @@ func (c *Component) Lookup(samplerIP string, ifIndex uint) (string, Interface, e
 	if errors.Is(err, ErrCacheMiss) {
 		req := lookupRequest{
 			SamplerIP: samplerIP,
-			IfIndex:   []uint{ifIndex},
+			IfIndexes: []uint{ifIndex},
 		}
 		select {
 		case c.dispatcherChannel <- req:
@@ -263,16 +263,16 @@ func (c *Component) Lookup(samplerIP string, ifIndex uint) (string, Interface, e
 // provided request if it can.
 func (c *Component) dispatchIncomingRequest(request lookupRequest) {
 	requestsMap := map[string][]uint{
-		request.SamplerIP: request.IfIndex,
+		request.SamplerIP: request.IfIndexes,
 	}
 	for {
 		select {
 		case request := <-c.dispatcherChannel:
 			indexes, ok := requestsMap[request.SamplerIP]
 			if !ok {
-				indexes = request.IfIndex
+				indexes = request.IfIndexes
 			} else {
-				indexes = append(indexes, request.IfIndex...)
+				indexes = append(indexes, request.IfIndexes...)
 			}
 			requestsMap[request.SamplerIP] = indexes
 			// We don't want to exceed the configured
@@ -292,12 +292,10 @@ func (c *Component) dispatchIncomingRequest(request lookupRequest) {
 		if len(ifIndexes) > 1 {
 			c.metrics.pollerCoalescedCount.Add(float64(len(ifIndexes)))
 		}
-		for _, ifIndex := range ifIndexes {
-			select {
-			case <-c.t.Dying():
-				return
-			case c.pollerChannel <- lookupRequest{samplerIP, []uint{ifIndex}}:
-			}
+		select {
+		case <-c.t.Dying():
+			return
+		case c.pollerChannel <- lookupRequest{samplerIP, ifIndexes}:
 		}
 	}
 }

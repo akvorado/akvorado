@@ -112,10 +112,10 @@ func TestPoller(t *testing.T) {
 	go server.ServeForever()
 	defer server.Shutdown()
 
-	p.Poll(context.Background(), "127.0.0.1", uint16(port), "public", 641)
-	p.Poll(context.Background(), "127.0.0.1", uint16(port), "public", 642)
-	p.Poll(context.Background(), "127.0.0.1", uint16(port), "public", 643)
-	p.Poll(context.Background(), "127.0.0.1", uint16(port), "public", 644)
+	p.Poll(context.Background(), "127.0.0.1", uint16(port), "public", []uint{641})
+	p.Poll(context.Background(), "127.0.0.1", uint16(port), "public", []uint{642})
+	p.Poll(context.Background(), "127.0.0.1", uint16(port), "public", []uint{643})
+	p.Poll(context.Background(), "127.0.0.1", uint16(port), "public", []uint{644})
 	time.Sleep(50 * time.Millisecond)
 	if diff := helpers.Diff(got, []string{
 		`127.0.0.1 sampler62 641 Gi0/0/0/0 Transit 10000`,
@@ -124,18 +124,13 @@ func TestPoller(t *testing.T) {
 		t.Fatalf("Poll() (-got, +want):\n%s", diff)
 	}
 
-	gotMetrics := r.GetMetrics("akvorado_snmp_poller_")
+	gotMetrics := r.GetMetrics("akvorado_snmp_poller_", "failure_", "pending_", "success_")
 	expectedMetrics := map[string]string{
-		`failure_requests{error="ifalias_missing",sampler="127.0.0.1"}`: "2",
-		`failure_requests{error="ifspeed_missing",sampler="127.0.0.1"}`: "1",
-		`failure_requests{error="ifdescr_missing",sampler="127.0.0.1"}`: "1",
-		`pending_requests`:                             "0",
-		`seconds_count{sampler="127.0.0.1"}`:           "2",
-		`seconds_sum{sampler="127.0.0.1"}`:             "0",
-		`seconds{sampler="127.0.0.1",quantile="0.5"}`:  "0",
-		`seconds{sampler="127.0.0.1",quantile="0.9"}`:  "0",
-		`seconds{sampler="127.0.0.1",quantile="0.99"}`: "0",
-		`success_requests{sampler="127.0.0.1"}`:        "2",
+		`failure_requests{error="ifalias_missing",sampler="127.0.0.1"}`: "2", // 643+644
+		`failure_requests{error="ifdescr_missing",sampler="127.0.0.1"}`: "1", // 644
+		`failure_requests{error="ifspeed_missing",sampler="127.0.0.1"}`: "1", // 644
+		`pending_requests`:                      "0",
+		`success_requests{sampler="127.0.0.1"}`: "2", // 641+642
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)

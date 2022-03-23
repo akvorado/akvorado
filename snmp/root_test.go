@@ -193,23 +193,18 @@ type forceCoaelescePoller struct {
 	accepted []lookupRequest
 }
 
-func (fcp *forceCoaelescePoller) Poll(ctx context.Context, samplerIP string, _ uint16, _ string, ifIndex uint) {
+func (fcp *forceCoaelescePoller) Poll(ctx context.Context, samplerIP string, _ uint16, _ string, ifIndexes []uint) {
 	select {
 	case <-ctx.Done():
 		return
 	case <-fcp.accept:
-		fcp.accepted = append(fcp.accepted, lookupRequest{samplerIP, []uint{ifIndex}})
+		fcp.accepted = append(fcp.accepted, lookupRequest{samplerIP, ifIndexes})
 	}
 }
 
 func TestCoaelescing(t *testing.T) {
 	r := reporter.NewMock(t)
 	c := NewMock(t, r, DefaultConfiguration, Dependencies{Daemon: daemon.NewMock(t)})
-	defer func() {
-		if err := c.Stop(); err != nil {
-			t.Fatalf("Stop() error:\n%+v", err)
-		}
-	}()
 	fcp := &forceCoaelescePoller{
 		accept:   make(chan bool),
 		accepted: []lookupRequest{},
@@ -217,22 +212,41 @@ func TestCoaelescing(t *testing.T) {
 	c.poller = fcp
 
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{Err: ErrCacheMiss})
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(50 * time.Millisecond)
 	// dispatcher is now blocked, queue requests
 	expectSNMPLookup(t, c, "127.0.0.1", 766, answer{Err: ErrCacheMiss})
 	expectSNMPLookup(t, c, "127.0.0.1", 767, answer{Err: ErrCacheMiss})
 	expectSNMPLookup(t, c, "127.0.0.1", 768, answer{Err: ErrCacheMiss})
 	expectSNMPLookup(t, c, "127.0.0.1", 769, answer{Err: ErrCacheMiss})
+	time.Sleep(50 * time.Millisecond) // ensure everything is queued
 	fcp.accept <- true
-	time.Sleep(10 * time.Millisecond)
+
+	// The race detector may require read from the channel before
+	// additional write. So, we can't run the remaining code under
+	// the race detector.
+	if helpers.RaceEnabled {
+		return
+	}
 
 	gotMetrics := r.GetMetrics("akvorado_snmp_poller_", "coalesced_count")
 	expectedMetrics := map[string]string{
 		`coalesced_count`: "4",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
-		t.Fatalf("Metrics (-got, +want):\n%s", diff)
+		t.Errorf("Metrics (-got, +want):\n%s", diff)
 	}
 
-	// TODO: check we have accepted the 4 requests at the same time
+	fcp.accept <- true
+	time.Sleep(20 * time.Millisecond)
+	if err := c.Stop(); err != nil {
+		t.Fatalf("Stop() error:\n%+v", err)
+	}
+
+	expectedAccepted := []lookupRequest{
+		{"127.0.0.1", []uint{765}},
+		{"127.0.0.1", []uint{766, 767, 768, 769}},
+	}
+	if diff := helpers.Diff(fcp.accepted, expectedAccepted); diff != "" {
+		t.Errorf("Accepted requests (-got, +want):\n%s", diff)
+	}
 }

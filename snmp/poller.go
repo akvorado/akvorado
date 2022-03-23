@@ -15,7 +15,7 @@ import (
 )
 
 type poller interface {
-	Poll(ctx context.Context, samplerIP string, port uint16, community string, ifIndex uint)
+	Poll(ctx context.Context, samplerIP string, port uint16, community string, ifIndexes []uint)
 }
 
 // realPoller will poll samplers using real SNMP requests.
@@ -86,22 +86,30 @@ func newPoller(r *reporter.Reporter, config pollerConfig, clock clock.Clock, put
 	return p
 }
 
-func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, community string, ifIndex uint) {
+func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, community string, ifIndexes []uint) {
 	// Check if already have a request running
-	key := fmt.Sprintf("%s@%d", sampler, ifIndex)
+	filteredIfIndexes := make([]uint, 0, len(ifIndexes))
+	keys := make([]string, 0, len(ifIndexes))
 	p.pendingRequestsLock.Lock()
-	_, ok := p.pendingRequests[key]
-	if !ok {
-		p.pendingRequests[key] = true
+	for _, ifIndex := range ifIndexes {
+		key := fmt.Sprintf("%s@%d", sampler, ifIndex)
+		_, ok := p.pendingRequests[key]
+		if !ok {
+			p.pendingRequests[key] = true
+			filteredIfIndexes = append(filteredIfIndexes, ifIndex)
+			keys = append(keys, key)
+		}
 	}
 	p.pendingRequestsLock.Unlock()
-	if ok {
-		// Request already in progress, skip it
+	if len(filteredIfIndexes) == 0 {
 		return
 	}
+	ifIndexes = filteredIfIndexes
 	defer func() {
 		p.pendingRequestsLock.Lock()
-		delete(p.pendingRequests, key)
+		for _, key := range keys {
+			delete(p.pendingRequests, key)
+		}
 		p.pendingRequestsLock.Unlock()
 	}()
 
@@ -127,63 +135,88 @@ func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, comm
 		}
 	}
 	start := p.clock.Now()
-	sysName := "1.3.6.1.2.1.1.5.0"
-	ifDescr := fmt.Sprintf("1.3.6.1.2.1.2.2.1.2.%d", ifIndex)
-	ifAlias := fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.18.%d", ifIndex)
-	ifSpeed := fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.15.%d", ifIndex)
-	result, err := g.Get([]string{sysName, ifDescr, ifAlias, ifSpeed})
+	requests := []string{"1.3.6.1.2.1.1.5.0"}
+	for _, ifIndex := range ifIndexes {
+		moreRequests := []string{
+			fmt.Sprintf("1.3.6.1.2.1.2.2.1.2.%d", ifIndex),     // ifDescr
+			fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.18.%d", ifIndex), // ifAlias
+			fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.15.%d", ifIndex), // ifSpeed
+		}
+		requests = append(requests, moreRequests...)
+	}
+	result, err := g.Get(requests)
 	if errors.Is(err, context.Canceled) {
 		return
 	}
 	if err != nil {
 		p.metrics.failures.WithLabelValues(sampler, "get").Inc()
 		if p.errLimiter.Allow() {
-			p.r.Err(err).Str("sampler", sampler).Msg("unable to get")
+			p.r.Err(err).Str("sampler", sampler).Msg("unable to GET")
 		}
 		return
 	}
+	if result.Error != gosnmp.NoError && result.ErrorIndex == 0 {
+		// There is some error affecting the whole request
+		p.metrics.failures.WithLabelValues(sampler, "get").Inc()
+		if p.errLimiter.Allow() {
+			p.r.Error().Str("sampler", sampler).Stringer("code", result.Error).Msg("unable to GET")
+		}
+	}
 
-	ok = true
-	processStr := func(idx int, what string, target *string) {
+	processStr := func(idx int, what string, target *string) bool {
 		switch result.Variables[idx].Type {
 		case gosnmp.OctetString:
 			*target = string(result.Variables[idx].Value.([]byte))
+			return true
 		case gosnmp.NoSuchInstance, gosnmp.NoSuchObject:
 			p.metrics.failures.WithLabelValues(sampler, fmt.Sprintf("%s_missing", what)).Inc()
-			ok = false
+			return false
 		default:
 			p.metrics.failures.WithLabelValues(sampler, fmt.Sprintf("%s_unknown_type", what)).Inc()
-			ok = false
+			return false
 		}
 	}
-	processUint := func(idx int, what string, target *uint) {
+	processUint := func(idx int, what string, target *uint) bool {
 		switch result.Variables[idx].Type {
 		case gosnmp.Gauge32:
 			*target = result.Variables[idx].Value.(uint)
+			return true
 		case gosnmp.NoSuchInstance, gosnmp.NoSuchObject:
 			p.metrics.failures.WithLabelValues(sampler, fmt.Sprintf("%s_missing", what)).Inc()
-			ok = false
+			return false
 		default:
 			p.metrics.failures.WithLabelValues(sampler, fmt.Sprintf("%s_unknown_type", what)).Inc()
-			ok = false
+			return false
 		}
 	}
 	var sysNameVal, ifDescrVal, ifAliasVal string
 	var ifSpeedVal uint
-	processStr(0, "sysname", &sysNameVal)
-	processStr(1, "ifdescr", &ifDescrVal)
-	processStr(2, "ifalias", &ifAliasVal)
-	processUint(3, "ifspeed", &ifSpeedVal)
-	if !ok {
+	if !processStr(0, "sysname", &sysNameVal) {
 		return
 	}
-	p.put(sampler, sysNameVal, ifIndex, Interface{
-		Name:        ifDescrVal,
-		Description: ifAliasVal,
-		Speed:       ifSpeedVal,
-	})
+	for idx := 1; idx < len(requests)-2; idx += 3 {
+		ok := true
+		if !processStr(idx, "ifdescr", &ifDescrVal) {
+			ok = false
+		}
+		if !processStr(idx+1, "ifalias", &ifAliasVal) {
+			ok = false
+		}
+		if !processUint(idx+2, "ifspeed", &ifSpeedVal) {
+			ok = false
+		}
+		if !ok {
+			continue
+		}
+		ifIndex := ifIndexes[(idx-1)/3]
+		p.put(sampler, sysNameVal, ifIndex, Interface{
+			Name:        ifDescrVal,
+			Description: ifAliasVal,
+			Speed:       ifSpeedVal,
+		})
+		p.metrics.successes.WithLabelValues(sampler).Inc()
+	}
 
-	p.metrics.successes.WithLabelValues(sampler).Inc()
 	p.metrics.times.WithLabelValues(sampler).Observe(p.clock.Now().Sub(start).Seconds())
 }
 
