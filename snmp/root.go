@@ -26,8 +26,9 @@ type Component struct {
 
 	sc *snmpCache
 
-	pollerChannel chan lookupRequest
-	poller        poller
+	healthyWorkers chan reporter.ChannelHealthcheckFunc
+	pollerChannel  chan lookupRequest
+	poller         poller
 
 	metrics struct {
 		cacheRefreshRuns reporter.Counter
@@ -144,20 +145,19 @@ func (c *Component) Start() error {
 	})
 
 	// Goroutines to poll samplers
-	healthyWorkers := make(chan reporter.ChannelHealthcheckFunc)
-	c.r.RegisterHealthcheck("snmp/worker", reporter.ChannelHealthcheck(c.t.Context(nil), healthyWorkers))
+	c.healthyWorkers = make(chan reporter.ChannelHealthcheckFunc)
+	c.r.RegisterHealthcheck("snmp/worker", reporter.ChannelHealthcheck(c.t.Context(nil), c.healthyWorkers))
 	for i := 0; i < c.config.Workers; i++ {
 		workerIDStr := strconv.Itoa(i)
 		c.t.Go(func() error {
 			c.r.Debug().Str("worker", workerIDStr).Msg("starting SNMP poller")
-			defer close(healthyWorkers)
 			for {
 				startIdle := time.Now()
 				select {
 				case <-c.t.Dying():
 					c.r.Debug().Str("worker", workerIDStr).Msg("stopping SNMP poller")
 					return nil
-				case cb := <-healthyWorkers:
+				case cb := <-c.healthyWorkers:
 					if cb != nil {
 						cb(reporter.HealthcheckOK, fmt.Sprintf("worker %s ok", workerIDStr))
 					}
@@ -189,6 +189,7 @@ func (c *Component) Start() error {
 func (c *Component) Stop() error {
 	defer func() {
 		close(c.pollerChannel)
+		close(c.healthyWorkers)
 		if c.config.CachePersistFile != "" {
 			if err := c.sc.Save(c.config.CachePersistFile); err != nil {
 				c.r.Err(err).Msg("cannot save cache")

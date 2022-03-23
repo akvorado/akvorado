@@ -159,3 +159,13 @@ func TestConfigCheck(t *testing.T) {
 		}
 	})
 }
+
+func TestStartStopWithMultipleWorkers(t *testing.T) {
+	r := reporter.NewMock(t)
+	configuration := DefaultConfiguration
+	configuration.Workers = 5
+	c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
+	if err := c.Stop(); err != nil {
+		t.Fatalf("Stop() error:\n%+v", err)
+	}
+}
