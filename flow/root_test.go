@@ -41,7 +41,7 @@ out1:
 		select {
 		case flow := <-c.Flows():
 			t.Fatalf("After sending option template, received a flow while we should not:\n%v", flow)
-		case <-time.After(10 * time.Millisecond):
+		case <-time.After(30 * time.Millisecond):
 			break out1
 		}
 	}
@@ -72,7 +72,7 @@ out2:
 		select {
 		case flow := <-c.Flows():
 			t.Fatalf("After sending option flowset, received a flow while we should not:\n%v", flow)
-		case <-time.After(10 * time.Millisecond):
+		case <-time.After(30 * time.Millisecond):
 			break out2
 		}
 	}
@@ -105,7 +105,7 @@ out3:
 		select {
 		case flow := <-c.Flows():
 			t.Fatalf("After sending template, received a flow while we should not:\n%v", flow)
-		case <-time.After(10 * time.Millisecond):
+		case <-time.After(30 * time.Millisecond):
 			break out3
 		}
 	}
@@ -225,7 +225,7 @@ out4:
 		case flow := <-c.Flows():
 			flow.TimeReceived = 0
 			received = append(received, flow)
-		case <-time.After(10 * time.Millisecond):
+		case <-time.After(30 * time.Millisecond):
 			break out4
 		}
 	}
@@ -302,33 +302,33 @@ func TestOutgoingChanFull(t *testing.T) {
 	}
 
 	// We should receive 4 flows. The queue size is 1. So, the second flow is blocked.
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(30 * time.Millisecond)
 	checkQueueFullMetric("1")
 
 	// Accept the first flow and the third flow gets blocked too.
 	select {
 	case <-c.Flows():
-	case <-time.After(10 * time.Millisecond):
+	case <-time.After(30 * time.Millisecond):
 		t.Fatal("First flow missing")
 	}
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(30 * time.Millisecond)
 	checkQueueFullMetric("2")
 
 	// Accept the second flow and the fourth one gets blocked
 	select {
 	case <-c.Flows():
-	case <-time.After(10 * time.Millisecond):
+	case <-time.After(30 * time.Millisecond):
 		t.Fatal("Second flow missing")
 	}
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(30 * time.Millisecond)
 	checkQueueFullMetric("3")
 
 	// Accept the third flow and no more blocked flow
 	select {
 	case <-c.Flows():
-	case <-time.After(10 * time.Millisecond):
+	case <-time.After(30 * time.Millisecond):
 		t.Fatal("Third flow missing")
 	}
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(30 * time.Millisecond)
 	checkQueueFullMetric("3")
 }
