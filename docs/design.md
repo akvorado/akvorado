@@ -167,10 +167,12 @@ the name `clickhouse` or on `localhost`.
 
 SNMP polling is done with [GoSNMP](https://github.com/gosnmp/gosnmp).
 The cache layer is tailored specifically for our needs. Information
-contained in it will be refreshed before expiring. However, currently,
-no check is done if we still need the information. So, the information
-can only expire when it does not exist on the network, not when we
-don't need it.
+contained in it expires if not accessed and is refreshed periodically
+otherwise. Some coaelescing of the requests are done when they are
+piling up. This adds some code complexity, maybe it was not worth it.
+If a sampler fails to answer too frequently, it will be blacklisted
+for a minute just to ensure it does not eat up all the workers'
+capacity.
 
 Testing is done by another implementation of an [SNMP
 agent](https://github.com/salyercat/GoSNMPServer).
