@@ -18,6 +18,10 @@ type Configuration struct {
 	DefaultCommunity string
 	// Communities is a mapping from sampler IPs to communities
 	Communities map[string]string
+	// PollerRetries tell how many time a poller should retry before giving up
+	PollerRetries int
+	// PollerTimeout tell how much time a poller should wait for an answer
+	PollerTimeout time.Duration
 	// Workers define the number of workers used to poll SNMP
 	Workers int
 }
@@ -30,5 +34,7 @@ var DefaultConfiguration = Configuration{
 	CachePersistFile:   "",
 	DefaultCommunity:   "public",
 	Communities:        map[string]string{},
+	PollerRetries:      1,
+	PollerTimeout:      time.Second,
 	Workers:            1,
 }

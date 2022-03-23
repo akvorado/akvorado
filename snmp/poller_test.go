@@ -20,7 +20,11 @@ func TestPoller(t *testing.T) {
 	got := []string{}
 	r := reporter.NewMock(t)
 	clock := clock.NewMock()
-	p := newPoller(r, clock, func(samplerIP, samplerName string, ifIndex uint, iface Interface) {
+	config := pollerConfig{
+		Retries: 2,
+		Timeout: 100 * time.Millisecond,
+	}
+	p := newPoller(r, config, clock, func(samplerIP, samplerName string, ifIndex uint, iface Interface) {
 		got = append(got, fmt.Sprintf("%s %s %d %s %s %d", samplerIP, samplerName,
 			ifIndex, iface.Name, iface.Description, iface.Speed))
 	})

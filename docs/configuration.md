@@ -103,6 +103,8 @@ continuously the samplers. The following keys are accepted:
 - `default-community` tells which community to use when polling samplers
 - `communities` is a map from a sampler IP address to the community to
   use for a sampler, overriding the default value set above,
+- `poller-retries` is the number of retries on unsuccessful SNMP requests.
+- `poller-timeout` tells how much time should the poller wait for an answer.
 - `workers` tell how many workers to spawn to handle SNMP polling.
 
 As flows missing interface information are discarded, persisting the

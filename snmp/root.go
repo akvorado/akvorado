@@ -63,7 +63,10 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		sc:     sc,
 
 		pollerChannel: make(chan lookupRequest, 100*configuration.Workers),
-		poller:        newPoller(r, dependencies.Clock, sc.Put),
+		poller: newPoller(r, pollerConfig{
+			Retries: configuration.PollerRetries,
+			Timeout: configuration.PollerTimeout,
+		}, dependencies.Clock, sc.Put),
 	}
 	c.d.Daemon.Track(&c.t, "snmp")
 

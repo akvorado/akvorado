@@ -20,8 +20,9 @@ type poller interface {
 
 // realPoller will poll samplers using real SNMP requests.
 type realPoller struct {
-	r     *reporter.Reporter
-	clock clock.Clock
+	r      *reporter.Reporter
+	config pollerConfig
+	clock  clock.Clock
 
 	pendingRequests     map[string]bool
 	pendingRequestsLock sync.Mutex
@@ -37,10 +38,16 @@ type realPoller struct {
 	}
 }
 
+type pollerConfig struct {
+	Retries int
+	Timeout time.Duration
+}
+
 // newPoller creates a new SNMP poller.
-func newPoller(r *reporter.Reporter, clock clock.Clock, put func(string, string, uint, Interface)) *realPoller {
+func newPoller(r *reporter.Reporter, config pollerConfig, clock clock.Clock, put func(string, string, uint, Interface)) *realPoller {
 	p := &realPoller{
 		r:               r,
+		config:          config,
 		clock:           clock,
 		pendingRequests: make(map[string]bool),
 		errLimiter:      rate.NewLimiter(rate.Every(10*time.Second), 3),
@@ -105,8 +112,8 @@ func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, comm
 		Community:               community,
 		Version:                 gosnmp.Version2c,
 		Context:                 ctx,
-		Retries:                 3,
-		Timeout:                 time.Second,
+		Retries:                 p.config.Retries,
+		Timeout:                 p.config.Timeout,
 		UseUnconnectedUDPSocket: true,
 		Logger:                  gosnmp.NewLogger(&goSNMPLogger{p.r}),
 		OnRetry: func(*gosnmp.GoSNMP) {
