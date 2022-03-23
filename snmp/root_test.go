@@ -33,7 +33,7 @@ func TestLookup(t *testing.T) {
 	}()
 
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{Err: ErrCacheMiss})
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(30 * time.Millisecond)
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
 		SamplerName: "127_0_0_1",
 		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
@@ -57,7 +57,7 @@ func TestSNMPCommunities(t *testing.T) {
 
 	// Use "public" as a community. Should work.
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{Err: ErrCacheMiss})
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(30 * time.Millisecond)
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
 		SamplerName: "127_0_0_1",
 		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
@@ -65,12 +65,12 @@ func TestSNMPCommunities(t *testing.T) {
 
 	// Use "private", should not work
 	expectSNMPLookup(t, c, "127.0.0.2", 765, answer{Err: ErrCacheMiss})
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(30 * time.Millisecond)
 	expectSNMPLookup(t, c, "127.0.0.2", 765, answer{Err: ErrCacheMiss})
 
 	// Use default community, should not work
 	expectSNMPLookup(t, c, "127.0.0.3", 765, answer{Err: ErrCacheMiss})
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(30 * time.Millisecond)
 	expectSNMPLookup(t, c, "127.0.0.3", 765, answer{Err: ErrCacheMiss})
 }
 
@@ -81,7 +81,7 @@ func TestComponentSaveLoad(t *testing.T) {
 	c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{Err: ErrCacheMiss})
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(30 * time.Millisecond)
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
 		SamplerName: "127_0_0_1",
 		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
@@ -109,7 +109,7 @@ func TestAutoRefresh(t *testing.T) {
 
 	// Fetch a value
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{Err: ErrCacheMiss})
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(30 * time.Millisecond)
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
 		SamplerName: "127_0_0_1",
 		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
@@ -123,7 +123,7 @@ func TestAutoRefresh(t *testing.T) {
 
 	// Go forward, we expect the entry to have been refreshed and be still present
 	mockClock.Add(25 * time.Minute)
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(30 * time.Millisecond)
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
 		SamplerName: "127_0_0_1",
 		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
