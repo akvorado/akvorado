@@ -22,6 +22,8 @@ type Configuration struct {
 	PollerRetries int
 	// PollerTimeout tell how much time a poller should wait for an answer
 	PollerTimeout time.Duration
+	// PollerCoaelesce tells how many requests can be contained inside a single SNMP PDU
+	PollerCoaelesce int
 	// Workers define the number of workers used to poll SNMP
 	Workers int
 }
@@ -36,5 +38,6 @@ var DefaultConfiguration = Configuration{
 	Communities:        map[string]string{},
 	PollerRetries:      1,
 	PollerTimeout:      time.Second,
+	PollerCoaelesce:    20,
 	Workers:            1,
 }

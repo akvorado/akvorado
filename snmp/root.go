@@ -4,7 +4,6 @@
 package snmp
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -26,15 +25,17 @@ type Component struct {
 
 	sc *snmpCache
 
-	healthyWorkers chan reporter.ChannelHealthcheckFunc
-	pollerChannel  chan lookupRequest
-	poller         poller
+	healthyWorkers    chan reporter.ChannelHealthcheckFunc
+	pollerChannel     chan lookupRequest
+	dispatcherChannel chan lookupRequest
+	poller            poller
 
 	metrics struct {
-		cacheRefreshRuns reporter.Counter
-		cacheRefresh     reporter.Counter
-		pollerLoopTime   *reporter.SummaryVec
-		pollerBusyCount  *reporter.CounterVec
+		cacheRefreshRuns     reporter.Counter
+		cacheRefresh         reporter.Counter
+		pollerLoopTime       *reporter.SummaryVec
+		pollerBusyCount      *reporter.CounterVec
+		pollerCoalescedCount reporter.Counter
 	}
 }
 
@@ -62,7 +63,8 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		config: configuration,
 		sc:     sc,
 
-		pollerChannel: make(chan lookupRequest, 100*configuration.Workers),
+		pollerChannel:     make(chan lookupRequest),
+		dispatcherChannel: make(chan lookupRequest, 100*configuration.Workers),
 		poller: newPoller(r, pollerConfig{
 			Retries: configuration.PollerRetries,
 			Timeout: configuration.PollerTimeout,
@@ -93,6 +95,11 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 			Help: "Pollers where too busy and dropped requests.",
 		},
 		[]string{"sampler"})
+	c.metrics.pollerCoalescedCount = r.Counter(
+		reporter.CounterOpts{
+			Name: "poller_coalesced_count",
+			Help: "Poller was able to coaelesce several requests in one.",
+		})
 	return &c, nil
 }
 
@@ -133,16 +140,39 @@ func (c *Component) Start() error {
 					toRefresh := c.sc.NeedUpdates(c.config.CacheRefresh)
 					for sampler, ifaces := range toRefresh {
 						for ifIndex := range ifaces {
-							c.pollerChannel <- lookupRequest{
+							select {
+							case c.dispatcherChannel <- lookupRequest{
 								SamplerIP: sampler,
-								IfIndex:   ifIndex,
+								IfIndex:   []uint{ifIndex},
+							}:
+								count++
+							default:
+								c.metrics.pollerBusyCount.WithLabelValues(sampler).Inc()
 							}
-							count++
 						}
 					}
 					c.r.Debug().Int("count", count).Msg("refreshed SNMP cache")
 					c.metrics.cacheRefresh.Add(float64(count))
 				}
+			}
+		}
+	})
+
+	// Goroutine to fetch incoming requests and dispatch them to workers
+	healthyDispatcher := make(chan reporter.ChannelHealthcheckFunc)
+	c.r.RegisterHealthcheck("snmp/dispatcher", reporter.ChannelHealthcheck(c.t.Context(nil), healthyDispatcher))
+	c.t.Go(func() error {
+		for {
+			select {
+			case <-c.t.Dying():
+				c.r.Debug().Msg("stopping SNMP dispatcher")
+				return nil
+			case cb := <-healthyDispatcher:
+				if cb != nil {
+					cb(reporter.HealthcheckOK, "ok")
+				}
+			case request := <-c.dispatcherChannel:
+				c.dispatchIncomingRequest(request)
 			}
 		}
 	})
@@ -166,17 +196,15 @@ func (c *Component) Start() error {
 					}
 				case request := <-c.pollerChannel:
 					startBusy := time.Now()
-					samplerIP := request.SamplerIP
-					ifIndex := request.IfIndex
-					community, ok := c.config.Communities[samplerIP]
+					community, ok := c.config.Communities[request.SamplerIP]
 					if !ok {
 						community = c.config.DefaultCommunity
 					}
 					c.poller.Poll(
-						c.t.Context(context.Background()),
-						samplerIP, 161,
+						c.t.Context(nil),
+						request.SamplerIP, 161,
 						community,
-						ifIndex)
+						request.IfIndex[0])
 					idleTime := float64(startBusy.Sub(startIdle).Nanoseconds()) / 1000 / 1000 / 1000
 					busyTime := float64(time.Since(startBusy).Nanoseconds()) / 1000 / 1000 / 1000
 					c.metrics.pollerLoopTime.WithLabelValues(workerIDStr, "idle").Observe(idleTime)
@@ -191,6 +219,7 @@ func (c *Component) Start() error {
 // Stop stops the SNMP component
 func (c *Component) Stop() error {
 	defer func() {
+		close(c.dispatcherChannel)
 		close(c.pollerChannel)
 		close(c.healthyWorkers)
 		if c.config.CachePersistFile != "" {
@@ -208,7 +237,7 @@ func (c *Component) Stop() error {
 // lookupRequest is used internally to queue a polling request.
 type lookupRequest struct {
 	SamplerIP string
-	IfIndex   uint
+	IfIndex   []uint
 }
 
 // Lookup for interface information for the provided sampler and ifIndex.
@@ -219,13 +248,56 @@ func (c *Component) Lookup(samplerIP string, ifIndex uint) (string, Interface, e
 	if errors.Is(err, ErrCacheMiss) {
 		req := lookupRequest{
 			SamplerIP: samplerIP,
-			IfIndex:   ifIndex,
+			IfIndex:   []uint{ifIndex},
 		}
 		select {
-		case c.pollerChannel <- req:
+		case c.dispatcherChannel <- req:
 		default:
 			c.metrics.pollerBusyCount.WithLabelValues(samplerIP).Inc()
 		}
 	}
 	return samplerName, iface, err
+}
+
+// Dispatch an incoming request to workers. May handle more than the
+// provided request if it can.
+func (c *Component) dispatchIncomingRequest(request lookupRequest) {
+	requestsMap := map[string][]uint{
+		request.SamplerIP: request.IfIndex,
+	}
+	for {
+		select {
+		case request := <-c.dispatcherChannel:
+			indexes, ok := requestsMap[request.SamplerIP]
+			if !ok {
+				indexes = request.IfIndex
+			} else {
+				indexes = append(indexes, request.IfIndex...)
+			}
+			requestsMap[request.SamplerIP] = indexes
+			// We don't want to exceed the configured
+			// limit but also there is no point of
+			// coaelescing requests of too many samplers.
+			if len(indexes) < c.config.PollerCoaelesce && len(requestsMap) < 4 {
+				continue
+			}
+		case <-c.t.Dying():
+			return
+		default:
+			// No more requests in queue
+		}
+		break
+	}
+	for samplerIP, ifIndexes := range requestsMap {
+		if len(ifIndexes) > 1 {
+			c.metrics.pollerCoalescedCount.Add(float64(len(ifIndexes)))
+		}
+		for _, ifIndex := range ifIndexes {
+			select {
+			case <-c.t.Dying():
+				return
+			case c.pollerChannel <- lookupRequest{samplerIP, []uint{ifIndex}}:
+			}
+		}
+	}
 }
