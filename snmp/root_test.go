@@ -213,13 +213,13 @@ func TestCoalescing(t *testing.T) {
 	c.poller = fcp
 
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{Err: ErrCacheMiss})
-	time.Sleep(50 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 	// dispatcher is now blocked, queue requests
 	expectSNMPLookup(t, c, "127.0.0.1", 766, answer{Err: ErrCacheMiss})
 	expectSNMPLookup(t, c, "127.0.0.1", 767, answer{Err: ErrCacheMiss})
 	expectSNMPLookup(t, c, "127.0.0.1", 768, answer{Err: ErrCacheMiss})
 	expectSNMPLookup(t, c, "127.0.0.1", 769, answer{Err: ErrCacheMiss})
-	time.Sleep(50 * time.Millisecond) // ensure everything is queued
+	time.Sleep(100 * time.Millisecond) // ensure everything is queued
 	fcp.accept <- true
 
 	// The race detector may require read from the channel before
@@ -289,7 +289,7 @@ func TestPollerBreaker(t *testing.T) {
 			for i := 0; i < 5; i++ {
 				c.Lookup("127.0.0.2", 765)
 			}
-			time.Sleep(40 * time.Millisecond)
+			time.Sleep(50 * time.Millisecond)
 
 			gotMetrics := r.GetMetrics("akvorado_snmp_poller_", "breaker_open_count", "coalesced_count")
 			expectedMetrics := map[string]string{
