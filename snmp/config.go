@@ -2,7 +2,11 @@ package snmp
 
 import (
 	"time"
+
+	"github.com/gosnmp/gosnmp"
 )
+
+const defaultPollerCoalesce = (gosnmp.MaxOids - 1) / 3 // sysname + (ifDescr, ifAlias, ifSpeed)*3
 
 // Configuration describes the configuration for the SNMP client
 type Configuration struct {
@@ -38,6 +42,6 @@ var DefaultConfiguration = Configuration{
 	Communities:        map[string]string{},
 	PollerRetries:      1,
 	PollerTimeout:      time.Second,
-	PollerCoalesce:     20,
+	PollerCoalesce:     defaultPollerCoalesce,
 	Workers:            1,
 }
