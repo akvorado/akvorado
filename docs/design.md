@@ -220,10 +220,7 @@ In the future, we may:
 - Automatically build dashboards for Grafana.[^grafana]
 - Builds dashboards with [D3.js][].[^d3js]
 - Buffer message to disks instead of blocking (when sending to Kafka)
-  or dropping (when querying the SNMP poller). At least, we should
-  have a solution to clearly signal when something is not scaling as
-  intended, otherwise, we just drop buffers at the beginning of the
-  pipeline.
+  or dropping (when querying the SNMP poller).
 - Collect routes by integrating GoBGP. This is low priority if we
   consider information from Maxmind good enough for our use.
 
