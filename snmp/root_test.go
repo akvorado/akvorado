@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 
@@ -213,13 +214,15 @@ func TestCoalescing(t *testing.T) {
 	c.poller = fcp
 
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{Err: ErrCacheMiss})
-	time.Sleep(100 * time.Millisecond)
+	runtime.Gosched()
+	time.Sleep(50 * time.Millisecond)
 	// dispatcher is now blocked, queue requests
 	expectSNMPLookup(t, c, "127.0.0.1", 766, answer{Err: ErrCacheMiss})
 	expectSNMPLookup(t, c, "127.0.0.1", 767, answer{Err: ErrCacheMiss})
 	expectSNMPLookup(t, c, "127.0.0.1", 768, answer{Err: ErrCacheMiss})
 	expectSNMPLookup(t, c, "127.0.0.1", 769, answer{Err: ErrCacheMiss})
-	time.Sleep(100 * time.Millisecond) // ensure everything is queued
+	runtime.Gosched()
+	time.Sleep(400 * time.Millisecond) // ensure everything is queued
 	fcp.accept <- true
 
 	// The race detector may require read from the channel before
