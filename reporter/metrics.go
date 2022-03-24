@@ -1,7 +1,8 @@
 // Metrics façade for reporter.
 //
-// It supports all methods from a factory. See
+// It supports all methods from a factory (except UntypedFunc). See
 // https://pkg.go.dev/github.com/prometheus/client_golang/prometheus/promauto#Factory.
+// Unlike promauto, it will accepts duplicate registration.
 
 package reporter
 
@@ -100,11 +101,6 @@ func (r *Reporter) Summary(opts SummaryOpts) Summary {
 // SummaryVec mimics NewSummaryVec from promauto package.
 func (r *Reporter) SummaryVec(opts SummaryOpts, labelNames []string) *SummaryVec {
 	return r.metrics.Factory(1).NewSummaryVec(opts, labelNames)
-}
-
-// UntypedFunc mimics NewUntypedFunc from promauto package.
-func (r *Reporter) UntypedFunc(opts UntypedOpts, function func() float64) UntypedFunc {
-	return r.metrics.Factory(1).NewUntypedFunc(opts, function)
 }
 
 // MetricsHTTPHandler returns the HTTP handler to get metrics.

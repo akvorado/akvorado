@@ -11,7 +11,6 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"akvorado/reporter/logger"
@@ -23,7 +22,7 @@ type Metrics struct {
 	logger           logger.Logger
 	config           Configuration
 	registry         *prometheus.Registry
-	factoryCache     map[string]*promauto.Factory
+	factoryCache     map[string]*Factory
 	factoryCacheLock sync.RWMutex
 }
 
@@ -37,7 +36,7 @@ func New(logger logger.Logger, configuration Configuration) (*Metrics, error) {
 		logger:       logger,
 		config:       configuration,
 		registry:     reg,
-		factoryCache: make(map[string]*promauto.Factory, 0),
+		factoryCache: make(map[string]*Factory, 0),
 	}
 
 	return &m, nil
@@ -66,13 +65,13 @@ func getPrefix(module string) (moduleName string) {
 // includes the module as an automatic prefix. This method is expected
 // to be called only from our own module to avoid walking the stack
 // too often. It uses a cache to speedup things a little bit.
-func (m *Metrics) Factory(skipCallstack int) *promauto.Factory {
+func (m *Metrics) Factory(skipCallstack int) *Factory {
 	callStack := stack.Callers()
 	call := callStack[1+skipCallstack] // Trial and error, there is a test to check it works
 	module := call.FunctionName()
 
 	// Hotpath
-	if factory := func() *promauto.Factory {
+	if factory := func() *Factory {
 		m.factoryCacheLock.RLock()
 		defer m.factoryCacheLock.RUnlock()
 		if factory, ok := m.factoryCache[module]; ok {
@@ -87,7 +86,10 @@ func (m *Metrics) Factory(skipCallstack int) *promauto.Factory {
 	m.factoryCacheLock.Lock()
 	defer m.factoryCacheLock.Unlock()
 	moduleName := getPrefix(module)
-	factory := promauto.With(prometheus.WrapRegistererWithPrefix(moduleName, m.registry))
+	factory := Factory{
+		prefix:   moduleName,
+		registry: m.registry,
+	}
 	m.factoryCache[module] = &factory
 	return &factory
 }

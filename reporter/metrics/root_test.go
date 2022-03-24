@@ -93,3 +93,27 @@ func TestFactoryCache(t *testing.T) {
 		t.Fatalf("Factory caching not working as expected")
 	}
 }
+
+func TestRegisterTwice(t *testing.T) {
+	l, err := logger.New(logger.DefaultConfiguration)
+	if err != nil {
+		t.Fatalf("logger.New() err:\n%+v", err)
+	}
+	m, err := metrics.New(l, metrics.DefaultConfiguration)
+	if err != nil {
+		t.Fatalf("metrics.New() err:\n%+v", err)
+	}
+
+	counter1 := m.Factory(0).NewCounter(prometheus.CounterOpts{
+		Name: "counter1",
+		Help: "Some counter",
+	})
+	counter2 := m.Factory(0).NewCounter(prometheus.CounterOpts{
+		Name: "counter1",
+		Help: "Some counter",
+	})
+
+	if counter1 != counter2 {
+		t.Fatalf("counter1 != counter2")
+	}
+}
