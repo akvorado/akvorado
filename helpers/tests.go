@@ -45,6 +45,7 @@ func TestHTTPEndpoints(t *testing.T, serverAddr net.Addr, cases HTTPEndpointCase
 	t.Helper()
 	for _, tc := range cases {
 		t.Run(tc.URL, func(t *testing.T) {
+			t.Helper()
 			resp, err := http.Get(fmt.Sprintf("http://%s%s", serverAddr, tc.URL))
 			if err != nil {
 				t.Fatalf("GET %s:\n%+v", tc.URL, err)

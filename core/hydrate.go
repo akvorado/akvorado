@@ -9,11 +9,12 @@ import (
 	"golang.org/x/time/rate"
 
 	"akvorado/flow"
+	"akvorado/flow/decoder"
 	"akvorado/snmp"
 )
 
 // hydrateFlow adds more data to a flow.
-func (c *Component) hydrateFlow(sampler string, flow *flow.FlowMessage) (skip bool) {
+func (c *Component) hydrateFlow(sampler string, flow *flow.Message) (skip bool) {
 	errLimiter := rate.NewLimiter(rate.Every(time.Minute), 10)
 	if flow.InIf != 0 {
 		samplerName, iface, err := c.d.Snmp.Lookup(sampler, uint(flow.InIf))
@@ -85,7 +86,7 @@ func (c *Component) hydrateFlow(sampler string, flow *flow.FlowMessage) (skip bo
 	return
 }
 
-func (c *Component) classifySampler(ip string, flow *flow.FlowMessage) {
+func (c *Component) classifySampler(ip string, flow *flow.Message) {
 	if len(c.config.SamplerClassifiers) == 0 {
 		return
 	}
@@ -120,9 +121,9 @@ func (c *Component) classifySampler(ip string, flow *flow.FlowMessage) {
 	}
 }
 
-func (c *Component) classifyInterface(ip string, fl *flow.FlowMessage,
+func (c *Component) classifyInterface(ip string, fl *flow.Message,
 	ifName, ifDescription string, ifSpeed uint32,
-	connectivity, provider *string, boundary *flow.FlowMessage_Boundary) {
+	connectivity, provider *string, boundary *decoder.FlowMessage_Boundary) {
 	if len(c.config.InterfaceClassifiers) == 0 {
 		return
 	}
@@ -166,12 +167,12 @@ func (c *Component) classifyInterface(ip string, fl *flow.FlowMessage,
 	*boundary = convertBoundaryToProto(classification.Boundary)
 }
 
-func convertBoundaryToProto(from interfaceBoundary) flow.FlowMessage_Boundary {
+func convertBoundaryToProto(from interfaceBoundary) decoder.FlowMessage_Boundary {
 	switch from {
 	case externalBoundary:
-		return flow.FlowMessage_EXTERNAL
+		return decoder.FlowMessage_EXTERNAL
 	case internalBoundary:
-		return flow.FlowMessage_INTERNAL
+		return decoder.FlowMessage_INTERNAL
 	}
-	return flow.FlowMessage_UNDEFINED
+	return decoder.FlowMessage_UNDEFINED
 }

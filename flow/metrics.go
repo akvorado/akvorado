@@ -15,13 +15,6 @@ type metrics struct {
 	decoderErrors *reporter.CounterVec
 	decoderTime   *reporter.SummaryVec
 
-	netflowErrors             *reporter.CounterVec
-	netflowStats              *reporter.CounterVec
-	netflowSetRecordsStatsSum *reporter.CounterVec
-	netflowSetStatsSum        *reporter.CounterVec
-	netflowTimeStatsSum       *reporter.SummaryVec
-	netflowTemplatesStats     *reporter.CounterVec
-
 	outgoingQueueFullTotal reporter.Counter
 }
 
@@ -87,49 +80,6 @@ func (c *Component) initMetrics() {
 		[]string{"name"},
 	)
 
-	c.metrics.netflowErrors = c.r.CounterVec(
-		reporter.CounterOpts{
-			Name: "nf_errors_count",
-			Help: "Netflows processed errors.",
-		},
-		[]string{"sampler", "error"},
-	)
-	c.metrics.netflowStats = c.r.CounterVec(
-		reporter.CounterOpts{
-			Name: "nf_count",
-			Help: "Netflows processed.",
-		},
-		[]string{"sampler", "version"},
-	)
-	c.metrics.netflowSetRecordsStatsSum = c.r.CounterVec(
-		reporter.CounterOpts{
-			Name: "nf_flowset_records_sum",
-			Help: "Netflows FlowSets sum of records.",
-		},
-		[]string{"sampler", "version", "type"},
-	)
-	c.metrics.netflowSetStatsSum = c.r.CounterVec(
-		reporter.CounterOpts{
-			Name: "nf_flowset_sum",
-			Help: "Netflows FlowSets sum.",
-		},
-		[]string{"sampler", "version", "type"},
-	)
-	c.metrics.netflowTimeStatsSum = c.r.SummaryVec(
-		reporter.SummaryOpts{
-			Name:       "nf_delay_summary_seconds",
-			Help:       "Netflows time difference between time of flow and processing.",
-			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
-		},
-		[]string{"sampler", "version"},
-	)
-	c.metrics.netflowTemplatesStats = c.r.CounterVec(
-		reporter.CounterOpts{
-			Name: "nf_templates_count",
-			Help: "Netflows Template count.",
-		},
-		[]string{"sampler", "version", "obs_domain_id", "template_id", "type"},
-	)
 	c.metrics.outgoingQueueFullTotal = c.r.Counter(
 		reporter.CounterOpts{
 			Name: "outgoing_queue_full_total",

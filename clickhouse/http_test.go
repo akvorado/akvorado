@@ -46,7 +46,7 @@ func TestHTTPEndpoints(t *testing.T) {
 				``,
 				`cat > /var/lib/clickhouse/format_schemas/flow-0.proto <<'EOPROTO'`,
 				`syntax = "proto3";`,
-				`package flow;`,
+				`package decoder;`,
 			},
 		},
 	}

@@ -17,7 +17,7 @@ func TestHTTPEndpoints(t *testing.T) {
 			ContentType: "text/plain",
 			FirstLines: []string{
 				`syntax = "proto3";`,
-				`package flow;`,
+				`package decoder;`,
 			},
 		}, {
 			URL:         "/api/v0/flow/schemas.json",

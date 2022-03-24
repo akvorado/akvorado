@@ -13,7 +13,7 @@ M = $(shell printf "\033[34;1m▶\033[0m")
 
 export GO111MODULE=on
 
-GENERATED = flow/flow-0.pb.go web/data
+GENERATED = flow/decoder/flow-0.pb.go web/data
 
 .PHONY: all
 all: fmt lint $(GENERATED) | $(BIN) ; $(info $(M) building executable…) @ ## Build program binary
@@ -47,7 +47,7 @@ $(BIN)/protoc-gen-go: PACKAGE=google.golang.org/protobuf/cmd/protoc-gen-go
 
 # Generated files
 
-flow/%.pb.go: flow/data/schemas/%.proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffers definition…)
+flow/decoder/%.pb.go: flow/data/schemas/%.proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffers definition…)
 	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --go_out=. --go_opt=module=$(MODULE) $<
 
 web/data: mkdocs.yml $(wildcard docs/*.md docs/assets/*) ; $(info $(M) build documentation) @ ## Build documentation

@@ -1,6 +1,6 @@
 syntax = "proto3";
-package flow;
-option go_package = "akvorado/flow";
+package decoder;
+option go_package = "akvorado/flow/decoder";
 
 // This is a stripped version from the one in Goflow2, but with GeoIP added.
 

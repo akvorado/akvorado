@@ -1,4 +1,4 @@
-package flow
+package decoder
 
 import (
 	"akvorado/helpers"

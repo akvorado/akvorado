@@ -56,8 +56,8 @@ func TestCore(t *testing.T) {
 		}
 	}()
 
-	flowMessage := func(sampler string, in, out uint32) *flow.FlowMessage {
-		return &flow.FlowMessage{
+	flowMessage := func(sampler string, in, out uint32) *flow.Message {
+		return &flow.Message{
 			TimeReceived:   200,
 			SequenceNum:    1000,
 			SamplingRate:   1000,
@@ -137,7 +137,7 @@ func TestCore(t *testing.T) {
 				t.Errorf("Kafka message key (-got, +want):\n-%s\n+%s", msg.Key, "192.0.2.142")
 			}
 
-			got := flow.FlowMessage{}
+			got := flow.Message{}
 			b, err := msg.Value.Encode()
 			if err != nil {
 				t.Fatalf("Kafka message encoding error:\n%+v", err)

@@ -34,7 +34,7 @@ type Component struct {
 
 	healthy            chan reporter.ChannelHealthcheckFunc
 	httpFlowClients    uint32 // for dumping flows
-	httpFlowChannel    chan *flow.FlowMessage
+	httpFlowChannel    chan *flow.Message
 	httpFlowFlushDelay time.Duration
 
 	classifierCache      *ristretto.Cache
@@ -69,7 +69,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 
 		healthy:            make(chan reporter.ChannelHealthcheckFunc),
 		httpFlowClients:    0,
-		httpFlowChannel:    make(chan *flow.FlowMessage, 10),
+		httpFlowChannel:    make(chan *flow.Message, 10),
 		httpFlowFlushDelay: time.Second,
 
 		classifierCache:      cache,

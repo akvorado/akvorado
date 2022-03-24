@@ -23,21 +23,21 @@ func TestClassifiers(t *testing.T) {
 	cases := []struct {
 		Name          string
 		Configuration string
-		InputFlow     func() *flow.FlowMessage
-		OutputFlow    *flow.FlowMessage
+		InputFlow     func() *flow.Message
+		OutputFlow    *flow.Message
 	}{
 		{
 			Name:          "no rule",
 			Configuration: `{}`,
-			InputFlow: func() *flow.FlowMessage {
-				return &flow.FlowMessage{
+			InputFlow: func() *flow.Message {
+				return &flow.Message{
 					SamplingRate:   1000,
 					SamplerAddress: net.ParseIP("192.0.2.142"),
 					InIf:           100,
 					OutIf:          200,
 				}
 			},
-			OutputFlow: &flow.FlowMessage{
+			OutputFlow: &flow.Message{
 				SamplingRate:     1000,
 				SamplerAddress:   net.ParseIP("192.0.2.142"),
 				SamplerName:      "192_0_2_142",
@@ -59,15 +59,15 @@ samplerclassifiers:
   - Sampler.Name startsWith "192_" && Classify("asia")
   - Classify("other")
 `,
-			InputFlow: func() *flow.FlowMessage {
-				return &flow.FlowMessage{
+			InputFlow: func() *flow.Message {
+				return &flow.Message{
 					SamplingRate:   1000,
 					SamplerAddress: net.ParseIP("192.0.2.142"),
 					InIf:           100,
 					OutIf:          200,
 				}
 			},
-			OutputFlow: &flow.FlowMessage{
+			OutputFlow: &flow.Message{
 				SamplingRate:     1000,
 				SamplerAddress:   net.ParseIP("192.0.2.142"),
 				SamplerName:      "192_0_2_142",
@@ -93,15 +93,15 @@ interfaceclassifiers:
      ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")
   - ClassifyInternal()
 `,
-			InputFlow: func() *flow.FlowMessage {
-				return &flow.FlowMessage{
+			InputFlow: func() *flow.Message {
+				return &flow.Message{
 					SamplingRate:   1000,
 					SamplerAddress: net.ParseIP("192.0.2.142"),
 					InIf:           100,
 					OutIf:          200,
 				}
 			},
-			OutputFlow: &flow.FlowMessage{
+			OutputFlow: &flow.Message{
 				SamplingRate:     1000,
 				SamplerAddress:   net.ParseIP("192.0.2.142"),
 				SamplerName:      "192_0_2_142",
@@ -124,15 +124,15 @@ interfaceclassifiers:
   - ClassifyInternal()
   - ClassifyExternal()
 `,
-			InputFlow: func() *flow.FlowMessage {
-				return &flow.FlowMessage{
+			InputFlow: func() *flow.Message {
+				return &flow.Message{
 					SamplingRate:   1000,
 					SamplerAddress: net.ParseIP("192.0.2.142"),
 					InIf:           100,
 					OutIf:          200,
 				}
 			},
-			OutputFlow: &flow.FlowMessage{
+			OutputFlow: &flow.Message{
 				SamplingRate:     1000,
 				SamplerAddress:   net.ParseIP("192.0.2.142"),
 				SamplerName:      "192_0_2_142",
@@ -155,15 +155,15 @@ interfaceclassifiers:
   - ClassifyProvider("telia")
   - ClassifyProvider("cogent")
 `,
-			InputFlow: func() *flow.FlowMessage {
-				return &flow.FlowMessage{
+			InputFlow: func() *flow.Message {
+				return &flow.Message{
 					SamplingRate:   1000,
 					SamplerAddress: net.ParseIP("192.0.2.142"),
 					InIf:           100,
 					OutIf:          200,
 				}
 			},
-			OutputFlow: &flow.FlowMessage{
+			OutputFlow: &flow.Message{
 				SamplingRate:     1000,
 				SamplerAddress:   net.ParseIP("192.0.2.142"),
 				SamplerName:      "192_0_2_142",
@@ -187,15 +187,15 @@ interfaceclassifiers:
   - ClassifyConnectivityRegex(Interface.Description, " (1\\d+)$", "P$1") && ClassifyExternal()
   - ClassifyInternal() && ClassifyConnectivity("core")
 `,
-			InputFlow: func() *flow.FlowMessage {
-				return &flow.FlowMessage{
+			InputFlow: func() *flow.Message {
+				return &flow.Message{
 					SamplingRate:   1000,
 					SamplerAddress: net.ParseIP("192.0.2.142"),
 					InIf:           100,
 					OutIf:          200,
 				}
 			},
-			OutputFlow: &flow.FlowMessage{
+			OutputFlow: &flow.Message{
 				SamplingRate:      1000,
 				SamplerAddress:    net.ParseIP("192.0.2.142"),
 				SamplerName:       "192_0_2_142",
@@ -257,7 +257,7 @@ interfaceclassifiers:
 			kafkaProducer.ExpectInputWithMessageCheckerFunctionAndSucceed(
 				func(msg *sarama.ProducerMessage) error {
 					defer close(received)
-					got := flow.FlowMessage{}
+					got := flow.Message{}
 					b, err := msg.Value.Encode()
 					if err != nil {
 						t.Fatalf("Kafka message encoding error:\n%+v", err)

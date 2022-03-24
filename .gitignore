@@ -1,4 +1,4 @@
 /bin/
 /test/
-/flow/flow*.pb.go
+/flow/decoder/flow*.pb.go
 /web/data

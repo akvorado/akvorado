@@ -7,15 +7,14 @@ import (
 	"fmt"
 	"net"
 	"strconv"
-	"sync"
 	"time"
 
 	reuseport "github.com/libp2p/go-reuseport"
-	"github.com/netsampler/goflow2/producer"
 	"golang.org/x/time/rate"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/daemon"
+	"akvorado/flow/decoder"
 	"akvorado/http"
 	"akvorado/reporter"
 )
@@ -27,17 +26,11 @@ type Component struct {
 	t      tomb.Tomb
 	config Configuration
 
-	// Templates and sampling
-	templatesLock *sync.RWMutex
-	templates     map[string]*templateSystem
-	samplingLock  *sync.RWMutex
-	sampling      map[string]producer.SamplingRateSystem
-
 	// Metrics
 	metrics metrics
 
 	// Channel for sending flows.
-	outgoingFlows chan *FlowMessage
+	outgoingFlows chan *Message
 
 	// Local address used by the Netflow server. Only valid after Start().
 	Address net.Addr
@@ -55,7 +48,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		r:             r,
 		d:             &dependencies,
 		config:        configuration,
-		outgoingFlows: make(chan *FlowMessage, configuration.QueueSize),
+		outgoingFlows: make(chan *Message, configuration.QueueSize),
 	}
 	c.d.Daemon.Track(&c.t, "flow")
 	c.initHTTP()
@@ -64,20 +57,17 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 }
 
 // Flows returns a channel to receive flows.
-func (c *Component) Flows() <-chan *FlowMessage {
+func (c *Component) Flows() <-chan *Message {
 	return c.outgoingFlows
 }
 
 // Start starts the flow component.
 func (c *Component) Start() error {
-	c.templates = make(map[string]*templateSystem)
-	c.templatesLock = &sync.RWMutex{}
-	c.sampling = make(map[string]producer.SamplingRateSystem)
-	c.samplingLock = &sync.RWMutex{}
+	decoder := decoder.New("netflow", c.r)
 
 	c.r.Info().Str("listen", c.config.Listen).Msg("starting flow server")
 	for i := 0; i < c.config.Workers; i++ {
-		if err := c.spawnWorker(i); err != nil {
+		if err := c.spawnWorker(i, decoder); err != nil {
 			return fmt.Errorf("unable to spawn worker %d: %w", i, err)
 		}
 	}
@@ -85,7 +75,7 @@ func (c *Component) Start() error {
 	return nil
 }
 
-func (c *Component) spawnWorker(workerID int) error {
+func (c *Component) spawnWorker(workerID int, decoder decoder.Decoder) error {
 	// Listen to UDP port
 	var listenAddr net.Addr
 	if c.Address != nil {
@@ -134,7 +124,7 @@ func (c *Component) spawnWorker(workerID int) error {
 			c.metrics.trafficPacketSizeSum.WithLabelValues(source.IP.String(), "netflow").
 				Observe(float64(size))
 
-			c.decodeFlow(payload[:size], source)
+			c.decodeWith(decoder, payload[:size], source.IP)
 
 			idleTime := float64(startBusy.Sub(startIdle).Nanoseconds()) / 1000 / 1000 / 1000
 			busyTime := float64(time.Since(startBusy).Nanoseconds()) / 1000 / 1000 / 1000
@@ -154,7 +144,7 @@ func (c *Component) spawnWorker(workerID int) error {
 }
 
 // sendFlow transmits received flows to the next component
-func (c *Component) sendFlow(fmsg *FlowMessage) {
+func (c *Component) sendFlow(fmsg *Message) {
 	select {
 	case <-c.t.Dying():
 		return
