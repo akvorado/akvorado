@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"akvorado/flow/decoder"
-	_ "akvorado/flow/decoder/netflow" // Enable Netflow decoder
+	"akvorado/flow/decoder/netflow"
 )
 
 // Message describes a decoded flow message.
@@ -30,4 +30,10 @@ func (c *Component) decodeWith(d decoder.Decoder, payload []byte, source net.IP)
 	for _, f := range decoded {
 		c.sendFlow(f)
 	}
+}
+
+var decoders = struct {
+	NewNetflow decoder.NewDecoderFunc
+}{
+	NewNetflow: netflow.New,
 }

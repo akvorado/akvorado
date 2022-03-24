@@ -222,13 +222,7 @@ func (nd *Decoder) Decode(payload []byte, source net.IP) []*decoder.FlowMessage 
 	return results
 }
 
-var name = "netflow"
-
 // Name returns the name of the decoder.
 func (nd *Decoder) Name() string {
-	return name
-}
-
-func init() {
-	decoder.Register(name, New)
+	return "netflow"
 }

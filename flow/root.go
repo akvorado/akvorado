@@ -63,7 +63,7 @@ func (c *Component) Flows() <-chan *Message {
 
 // Start starts the flow component.
 func (c *Component) Start() error {
-	decoder := decoder.New("netflow", c.r)
+	decoder := decoders.NewNetflow(c.r)
 
 	c.r.Info().Str("listen", c.config.Listen).Msg("starting flow server")
 	for i := 0; i < c.config.Workers; i++ {
