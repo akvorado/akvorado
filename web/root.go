@@ -5,12 +5,15 @@ import (
 	"embed"
 	"fmt"
 	"io/fs"
+	"log"
 	netHTTP "net/http"
 	"net/http/httputil"
 	"net/url"
 
 	"akvorado/http"
 	"akvorado/reporter"
+
+	"github.com/rs/zerolog"
 )
 
 //go:embed data
@@ -50,6 +53,10 @@ func New(reporter *reporter.Reporter, config Configuration, dependencies Depende
 		proxy.Transport = &netHTTP.Transport{
 			Proxy: nil, // Disable proxy
 		}
+		proxy.ErrorLog = log.New(c.r.With().
+			Str("proxy", "grafana").
+			Str("level", zerolog.LevelWarnValue).
+			Logger(), "", 0)
 		proxyHandler := netHTTP.HandlerFunc(
 			func(w netHTTP.ResponseWriter, r *netHTTP.Request) {
 				proxy.ServeHTTP(w, r)
