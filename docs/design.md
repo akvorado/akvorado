@@ -222,7 +222,10 @@ In the future, we may:
 - Automatically build dashboards for Grafana.[^grafana]
 - Builds dashboards with [D3.js][].[^d3js]
 - Buffer message to disks instead of blocking (when sending to Kafka)
-  or dropping (when querying the SNMP poller).
+  or dropping (when querying the SNMP poller). We could probable just
+  have a system service running tcpdump dumping packets to a directory
+  and use that as input. This would be allow *Akvorado* to block from
+  end-to-end instead of trying to be realtime.
 - Collect routes by integrating GoBGP. This is low priority if we
   consider information from Maxmind good enough for our use.
 

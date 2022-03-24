@@ -107,10 +107,10 @@ func (c *Component) spawnWorker(workerID int) error {
 	c.Address = udpConn.LocalAddr()
 
 	// Go routine for worker
-	payload := make([]byte, 9000)
 	c.t.Go(func() error {
 		errLimiter := rate.NewLimiter(rate.Every(time.Minute), 1)
 		workerIDStr := strconv.Itoa(workerID)
+		payload := make([]byte, 9000)
 		for {
 			// Read one packet
 			startIdle := time.Now()
