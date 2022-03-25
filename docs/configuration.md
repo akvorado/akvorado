@@ -178,6 +178,9 @@ The following keys are accepted:
   be equal or smaller to the same setting in the broker configuration)
 - `compression-codec` defines the compression codec to use to compress
   messages (`none`, `gzip`, `snappy`, `lz4` and `zstd`)
+- `queue-size` defines the size of the internal queues to send
+  messages to Kafka. Increasing this value will improve performance,
+  at the cost of losing messages in case of problems.
 
 The topic name is suffixed by the version of the schema. For example,
 if the configured topic is `flows` and the current schema version is

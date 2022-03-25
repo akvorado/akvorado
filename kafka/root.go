@@ -48,6 +48,7 @@ func New(reporter *reporter.Reporter, configuration Configuration, dependencies 
 	kafkaConfig.Producer.Flush.Bytes = configuration.FlushBytes
 	kafkaConfig.Producer.Flush.Frequency = configuration.FlushInterval
 	kafkaConfig.Producer.Partitioner = sarama.NewHashPartitioner
+	kafkaConfig.ChannelBufferSize = configuration.QueueSize / 2
 	if configuration.UseTLS {
 		rootCAs, err := x509.SystemCertPool()
 		if err != nil {

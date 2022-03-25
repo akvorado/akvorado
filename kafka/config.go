@@ -29,6 +29,8 @@ type Configuration struct {
 	MaxMessageBytes int
 	// CompressionCodec defines the compression to use.
 	CompressionCodec CompressionCodec
+	// QueueSize defines the size of the channel used to send to Kafka.
+	QueueSize int
 }
 
 // TopicConfiguration describes the configuration for a topic
@@ -51,6 +53,7 @@ var DefaultConfiguration = Configuration{
 	FlushBytes:       int(sarama.MaxRequestSize) - 1,
 	MaxMessageBytes:  1000000,
 	CompressionCodec: CompressionCodec(sarama.CompressionNone),
+	QueueSize:        32,
 }
 
 // Version represents a supported version of Kafka
