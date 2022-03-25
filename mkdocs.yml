@@ -61,4 +61,5 @@ nav:
       Configuration: configuration.md
       Usage: usage.md
       Integration: integration.md
+      Internals: internals.md
 
