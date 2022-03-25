@@ -12,7 +12,6 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/eapache/go-resiliency/breaker"
-	"golang.org/x/time/rate"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/daemon"
@@ -33,7 +32,7 @@ type Component struct {
 	dispatcherChannel  chan lookupRequest
 	pollerBreakersLock sync.Mutex
 	pollerBreakers     map[string]*breaker.Breaker
-	pollerErrLimiter   *rate.Limiter
+	pollerErrLogger    reporter.Logger
 	poller             poller
 
 	metrics struct {
@@ -73,7 +72,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		pollerChannel:     make(chan lookupRequest),
 		dispatcherChannel: make(chan lookupRequest, 100*configuration.Workers),
 		pollerBreakers:    make(map[string]*breaker.Breaker),
-		pollerErrLimiter:  rate.NewLimiter(rate.Every(30*time.Second), 3),
+		pollerErrLogger:   r.Sample(reporter.BurstSampler(30*time.Second, 3)),
 		poller: newPoller(r, pollerConfig{
 			Retries: configuration.PollerRetries,
 			Timeout: configuration.PollerTimeout,
@@ -311,11 +310,9 @@ func (c *Component) pollerIncomingRequest(request lookupRequest) {
 			request.IfIndexes)
 	}); err == breaker.ErrBreakerOpen {
 		c.metrics.pollerBreakerOpenCount.WithLabelValues(request.SamplerIP).Inc()
-		if c.pollerErrLimiter.Allow() {
-			c.r.Warn().
-				Str("sampler", request.SamplerIP).
-				Msg("poller breaker open")
-		}
+		c.pollerErrLogger.Warn().
+			Str("sampler", request.SamplerIP).
+			Msg("poller breaker open")
 	}
 }
 

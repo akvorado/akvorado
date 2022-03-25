@@ -11,7 +11,6 @@ import (
 
 	"github.com/dgraph-io/ristretto"
 	"github.com/golang/protobuf/proto"
-	"golang.org/x/time/rate"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/daemon"
@@ -37,8 +36,8 @@ type Component struct {
 	httpFlowChannel    chan *flow.Message
 	httpFlowFlushDelay time.Duration
 
-	classifierCache      *ristretto.Cache
-	classifierErrLimiter *rate.Limiter
+	classifierCache     *ristretto.Cache
+	classifierErrLogger reporter.Logger
 }
 
 // Dependencies define the dependencies of the HTTP component.
@@ -72,8 +71,8 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		httpFlowChannel:    make(chan *flow.Message, 10),
 		httpFlowFlushDelay: time.Second,
 
-		classifierCache:      cache,
-		classifierErrLimiter: rate.NewLimiter(rate.Every(10*time.Second), 3),
+		classifierCache:     cache,
+		classifierErrLogger: r.Sample(reporter.BurstSampler(10*time.Second, 3)),
 	}
 	c.d.Daemon.Track(&c.t, "core")
 	c.initMetrics()
@@ -99,7 +98,7 @@ func (c *Component) Start() error {
 func (c *Component) runWorker(workerID int) error {
 	c.r.Debug().Int("worker", workerID).Msg("starting core worker")
 
-	errLimiter := rate.NewLimiter(rate.Every(time.Minute), 10)
+	errLogger := c.r.Sample(reporter.BurstSampler(time.Minute, 10))
 	workerIDStr := strconv.Itoa(workerID)
 	for {
 		startIdle := time.Now()
@@ -130,9 +129,7 @@ func (c *Component) runWorker(workerID int) error {
 			buf := proto.NewBuffer([]byte{})
 			err := buf.EncodeMessage(flow)
 			if err != nil {
-				if errLimiter.Allow() {
-					c.r.Err(err).Str("sampler", sampler).Msg("unable to serialize flow")
-				}
+				errLogger.Err(err).Str("sampler", sampler).Msg("unable to serialize flow")
 				c.metrics.flowsErrors.WithLabelValues(sampler, err.Error()).Inc()
 				continue
 			}

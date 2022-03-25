@@ -27,7 +27,6 @@ require (
 	github.com/slayercat/gosnmp v1.24.0
 	github.com/spf13/cobra v1.3.0
 	go.uber.org/atomic v1.7.0
-	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 	gopkg.in/yaml.v2 v2.4.0

@@ -205,9 +205,6 @@ spawned by the other components and wait for signals to terminate. If
    used in place of the `time` module when we want to be able to mock
    the clock. This is used for example to test the cache of the SNMP
    poller.
- - [golang.org/x/time/rate](https://pkg.go.dev/golang.org/x/time/rate)
-   is used  when some rate limiting is needed, notably for non-fatal
-   errors.
  - [github.com/cenkalti/backoff/v4](https://github.com/cenkalti/backoff)
    provides an exponential backoff algorithm for retries.
  - [github.com/eapache/go-resiliency](https://github.com/eapache/go-resiliency)

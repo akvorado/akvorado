@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/libp2p/go-reuseport"
-	"golang.org/x/time/rate"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/daemon"
@@ -117,22 +116,20 @@ func (in *Input) Start() (<-chan input.Flow, error) {
 		workerID := i
 		worker := strconv.Itoa(i)
 		in.t.Go(func() error {
-			errLimiter := rate.NewLimiter(rate.Every(time.Minute), 1)
 			payload := make([]byte, 9000)
 			listen := in.config.Listen
 			l := in.r.With().
 				Str("worker", worker).
 				Str("listen", listen).
 				Logger()
+			errLogger := l.Sample(reporter.BurstSampler(time.Minute, 1))
 			for {
 				size, source, err := conns[workerID].ReadFromUDP(payload)
 				if err != nil {
 					if errors.Is(err, net.ErrClosed) {
 						return nil
 					}
-					if errLimiter.Allow() {
-						l.Err(err).Msg("unable to receive UDP packet")
-					}
+					errLogger.Err(err).Msg("unable to receive UDP packet")
 					in.metrics.errors.WithLabelValues(listen, worker).Inc()
 					continue
 				}
@@ -154,10 +151,8 @@ func (in *Input) Start() (<-chan input.Flow, error) {
 					in.metrics.packetSizeSum.WithLabelValues(listen, worker, srcIP).
 						Observe(float64(size))
 				default:
-					if errLimiter.Allow() {
-						l.Warn().Msgf("dropping flow due to queue full (size %d)",
-							in.config.QueueSize)
-					}
+					errLogger.Warn().Msgf("dropping flow due to queue full (size %d)",
+						in.config.QueueSize)
 					in.metrics.drops.WithLabelValues(listen, worker, srcIP).
 						Inc()
 				}

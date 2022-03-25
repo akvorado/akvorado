@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	"golang.org/x/time/rate"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/daemon"
@@ -145,7 +144,7 @@ func (c *Component) Start() error {
 	c.t.Go(func() error {
 		defer kafkaProducer.Close()
 		defer c.kafkaConfig.MetricRegistry.UnregisterAll()
-		errLimiter := rate.NewLimiter(rate.Every(10*time.Second), 3)
+		errLogger := c.r.Sample(reporter.BurstSampler(10*time.Second, 3))
 		for {
 			select {
 			case <-c.t.Dying():
@@ -153,13 +152,11 @@ func (c *Component) Start() error {
 				return nil
 			case msg := <-kafkaProducer.Errors():
 				c.metrics.errors.WithLabelValues(msg.Error()).Inc()
-				if errLimiter.Allow() {
-					c.r.Err(msg.Err).
-						Str("topic", msg.Msg.Topic).
-						Int64("offset", msg.Msg.Offset).
-						Int32("partition", msg.Msg.Partition).
-						Msg("Kafka producer error")
-				}
+				errLogger.Err(msg.Err).
+					Str("topic", msg.Msg.Topic).
+					Int64("offset", msg.Msg.Offset).
+					Int32("partition", msg.Msg.Partition).
+					Msg("Kafka producer error")
 			}
 		}
 	})

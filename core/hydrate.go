@@ -6,21 +6,20 @@ import (
 	"strconv"
 	"time"
 
-	"golang.org/x/time/rate"
-
 	"akvorado/flow"
 	"akvorado/flow/decoder"
+	"akvorado/reporter"
 	"akvorado/snmp"
 )
 
 // hydrateFlow adds more data to a flow.
 func (c *Component) hydrateFlow(sampler string, flow *flow.Message) (skip bool) {
-	errLimiter := rate.NewLimiter(rate.Every(time.Minute), 10)
+	errLogger := c.r.Sample(reporter.BurstSampler(time.Minute, 10))
 	if flow.InIf != 0 {
 		samplerName, iface, err := c.d.Snmp.Lookup(sampler, uint(flow.InIf))
 		if err != nil {
-			if err != snmp.ErrCacheMiss && errLimiter.Allow() {
-				c.r.Err(err).Str("sampler", sampler).Msg("unable to query SNMP cache")
+			if err != snmp.ErrCacheMiss {
+				errLogger.Err(err).Str("sampler", sampler).Msg("unable to query SNMP cache")
 			}
 			c.metrics.flowsErrors.WithLabelValues(sampler, err.Error()).Inc()
 			skip = true
@@ -40,8 +39,8 @@ func (c *Component) hydrateFlow(sampler string, flow *flow.Message) (skip bool) 
 			// Only register a cache miss if we don't have one.
 			// TODO: maybe we could do one SNMP query for both interfaces.
 			if !skip {
-				if err != snmp.ErrCacheMiss && errLimiter.Allow() {
-					c.r.Err(err).Str("sampler", sampler).Msg("unable to query SNMP cache")
+				if err != snmp.ErrCacheMiss {
+					errLogger.Err(err).Str("sampler", sampler).Msg("unable to query SNMP cache")
 				}
 				c.metrics.flowsErrors.WithLabelValues(sampler, err.Error()).Inc()
 				skip = true
@@ -102,13 +101,11 @@ func (c *Component) classifySampler(ip string, flow *flow.Message) {
 	for idx, rule := range c.config.SamplerClassifiers {
 		group, err := rule.exec(si)
 		if err != nil {
-			if c.classifierErrLimiter.Allow() {
-				c.r.Err(err).
-					Str("type", "sampler").
-					Int("index", idx).
-					Str("sampler", name).
-					Msg("error executing classifier")
-			}
+			c.classifierErrLogger.Err(err).
+				Str("type", "sampler").
+				Int("index", idx).
+				Str("sampler", name).
+				Msg("error executing classifier")
 			c.metrics.classifierErrors.WithLabelValues("sampler", strconv.Itoa(idx)).Inc()
 			c.classifierCache.Set(key, "", 1)
 			return
@@ -141,14 +138,12 @@ func (c *Component) classifyInterface(ip string, fl *flow.Message,
 	for idx, rule := range c.config.InterfaceClassifiers {
 		err := rule.exec(si, ii, &classification)
 		if err != nil {
-			if c.classifierErrLimiter.Allow() {
-				c.r.Err(err).
-					Str("type", "interface").
-					Int("index", idx).
-					Str("sampler", fl.SamplerName).
-					Str("interface", ifName).
-					Msg("error executing classifier")
-			}
+			c.classifierErrLogger.Err(err).
+				Str("type", "interface").
+				Int("index", idx).
+				Str("sampler", fl.SamplerName).
+				Str("interface", ifName).
+				Msg("error executing classifier")
 			c.metrics.classifierErrors.WithLabelValues("interface", strconv.Itoa(idx)).Inc()
 			c.classifierCache.Set(key, classification, 1)
 			return

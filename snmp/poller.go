@@ -9,7 +9,6 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/gosnmp/gosnmp"
-	"golang.org/x/time/rate"
 
 	"akvorado/reporter"
 )
@@ -26,7 +25,7 @@ type realPoller struct {
 
 	pendingRequests     map[string]bool
 	pendingRequestsLock sync.Mutex
-	errLimiter          *rate.Limiter
+	errLogger           reporter.Logger
 	put                 func(samplerIP, samplerName string, ifIndex uint, iface Interface)
 
 	metrics struct {
@@ -50,7 +49,7 @@ func newPoller(r *reporter.Reporter, config pollerConfig, clock clock.Clock, put
 		config:          config,
 		clock:           clock,
 		pendingRequests: make(map[string]bool),
-		errLimiter:      rate.NewLimiter(rate.Every(10*time.Second), 3),
+		errLogger:       r.Sample(reporter.BurstSampler(10*time.Second, 3)),
 		put:             put,
 	}
 	p.metrics.pendingRequests = r.GaugeFunc(
@@ -130,9 +129,7 @@ func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, comm
 	}
 	if err := g.Connect(); err != nil {
 		p.metrics.failures.WithLabelValues(sampler, "connect").Inc()
-		if p.errLimiter.Allow() {
-			p.r.Err(err).Str("sampler", sampler).Msg("unable to connect")
-		}
+		p.errLogger.Err(err).Str("sampler", sampler).Msg("unable to connect")
 	}
 	start := p.clock.Now()
 	requests := []string{"1.3.6.1.2.1.1.5.0"}
@@ -150,17 +147,13 @@ func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, comm
 	}
 	if err != nil {
 		p.metrics.failures.WithLabelValues(sampler, "get").Inc()
-		if p.errLimiter.Allow() {
-			p.r.Err(err).Str("sampler", sampler).Msg("unable to GET")
-		}
+		p.errLogger.Err(err).Str("sampler", sampler).Msg("unable to GET")
 		return err
 	}
 	if result.Error != gosnmp.NoError && result.ErrorIndex == 0 {
 		// There is some error affecting the whole request
 		p.metrics.failures.WithLabelValues(sampler, "get").Inc()
-		if p.errLimiter.Allow() {
-			p.r.Error().Str("sampler", sampler).Stringer("code", result.Error).Msg("unable to GET")
-		}
+		p.errLogger.Error().Str("sampler", sampler).Stringer("code", result.Error).Msg("unable to GET")
 		return fmt.Errorf("SNMP error %s(%d)", result.Error, result.Error)
 	}
 

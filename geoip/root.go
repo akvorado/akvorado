@@ -9,7 +9,6 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/oschwald/geoip2-golang"
-	"golang.org/x/time/rate"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/daemon"
@@ -121,7 +120,7 @@ func (c *Component) Start() error {
 		}
 	}
 	c.t.Go(func() error {
-		errLimiter := rate.NewLimiter(rate.Every(10*time.Second), 1)
+		errLogger := c.r.Sample(reporter.BurstSampler(10*time.Second, 1))
 		defer func() {
 			watcher.Close()
 		}()
@@ -134,9 +133,7 @@ func (c *Component) Start() error {
 			case <-c.t.Dying():
 				return nil
 			case err := <-watcher.Errors:
-				if errLimiter.Allow() {
-					c.r.Err(err).Msg("error from watcher")
-				}
+				errLogger.Err(err).Msg("error from watcher")
 			case event := <-watcher.Events:
 				if event.Op&(fsnotify.Write|fsnotify.Create) == 0 {
 					continue
