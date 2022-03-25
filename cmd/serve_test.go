@@ -6,34 +6,31 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
-	"github.com/Shopify/sarama"
 	"gopkg.in/yaml.v2"
 
 	"akvorado/cmd"
 	"akvorado/helpers"
-	"akvorado/kafka"
 )
+
+func want(t *testing.T, got, expected interface{}) {
+	t.Helper()
+	if diff := helpers.Diff(got, expected); diff != "" {
+		t.Errorf("Configuration (-got, +want):\n%s", diff)
+	}
+}
 
 func TestServeDump(t *testing.T) {
 	// Configuration file
-	want := cmd.DefaultServeConfiguration
-	want.HTTP.Listen = "127.0.0.1:8000"
-	want.Flow.Listen = "0.0.0.0:2055"
-	want.Flow.Workers = 2
-	want.SNMP.Workers = 2
-	want.SNMP.CacheDuration = 20 * time.Minute
-	want.SNMP.DefaultCommunity = "private"
-	want.Kafka.Topic = "netflow"
-	want.Kafka.Version = kafka.Version(sarama.V2_8_1_0)
-	want.Kafka.CompressionCodec = kafka.CompressionCodec(sarama.CompressionZSTD)
-	want.Core.Workers = 3
 	config := `---
 http:
  listen: 127.0.0.1:8000
 flow:
- listen: 0.0.0.0:2055
+ inputs:
+  - type: udp
+    decoder: netflow
+    listen: 0.0.0.0:2055
+    workers: 5
  workers: 2
 snmp:
  workers: 2
@@ -60,34 +57,40 @@ core:
 	if err != nil {
 		t.Fatalf("`serve -D -C` error:\n%+v", err)
 	}
-	var got cmd.ServeConfiguration
+
+	var got map[string]map[string]interface{}
 	if err := yaml.Unmarshal(buf.Bytes(), &got); err != nil {
 		t.Fatalf("Unmarshal() error:\n%+v", err)
 	}
-	if diff := helpers.Diff(got, want); diff != "" {
-		t.Errorf("`serve -D -C` (-got, +want):\n%s", diff)
-	}
+	want(t, got["flow"], map[string]interface{}{
+		"inputs": []map[string]interface{}{{
+			"type":      "udp",
+			"decoder":   "netflow",
+			"listen":    "0.0.0.0:2055",
+			"queuesize": 100000,
+			"workers":   5,
+		}},
+		"workers": 2,
+	})
+	want(t, got["snmp"]["workers"], 2)
+	want(t, got["snmp"]["cacheduration"], "20m0s")
+	want(t, got["snmp"]["defaultcommunity"], "private")
+	want(t, got["kafka"]["topic"], "netflow")
+	want(t, got["kafka"]["version"], "2.8.1")
+	want(t, got["kafka"]["brokers"], []string{"127.0.0.1:9092"})
 }
 
 func TestServeEnvOverride(t *testing.T) {
 	// Configuration file
-	want := cmd.DefaultServeConfiguration
-	want.HTTP.Listen = "127.0.0.1:8000"
-	want.Flow.Listen = "0.0.0.0:2055"
-	want.Flow.Workers = 3
-	want.SNMP.Workers = 2
-	want.SNMP.CacheDuration = 22 * time.Minute
-	want.SNMP.DefaultCommunity = "privateer"
-	want.Kafka.Topic = "netflow"
-	want.Kafka.Version = kafka.Version(sarama.V2_8_1_0)
-	want.Kafka.CompressionCodec = kafka.CompressionCodec(sarama.CompressionZSTD)
-	want.Kafka.Brokers = []string{"127.0.0.1:9092", "127.0.0.2:9092"}
-	want.Core.Workers = 3
 	config := `---
 http:
  listen: 127.0.0.1:8000
 flow:
- listen: 0.0.0.0:2055
+ inputs:
+  - type: udp
+    decoder: netflow
+    listen: 0.0.0.0:2055
+    workers: 5
  workers: 2
 snmp:
  workers: 2
@@ -119,11 +122,13 @@ core:
 	if err != nil {
 		t.Fatalf("`serve -D -C` error:\n%+v", err)
 	}
-	var got cmd.ServeConfiguration
+
+	var got map[string]map[string]interface{}
 	if err := yaml.Unmarshal(buf.Bytes(), &got); err != nil {
 		t.Fatalf("Unmarshal() error:\n%+v", err)
 	}
-	if diff := helpers.Diff(got, want); diff != "" {
-		t.Errorf("`serve -D -C` (-got, +want):\n%s", diff)
-	}
+	want(t, got["flow"]["workers"], 3)
+	want(t, got["snmp"]["cacheduration"], "22m0s")
+	want(t, got["snmp"]["defaultcommunity"], "privateer")
+	want(t, got["kafka"]["brokers"], []string{"127.0.0.1:9092", "127.0.0.2:9092"})
 }

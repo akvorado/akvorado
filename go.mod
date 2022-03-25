@@ -8,6 +8,7 @@ require (
 	github.com/antonmedv/expr v1.9.0
 	github.com/benbjohnson/clock v1.3.0
 	github.com/dgraph-io/ristretto v0.1.0
+	github.com/eapache/go-resiliency v1.2.0
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/golang-migrate/migrate/v4 v4.15.1
 	github.com/golang/protobuf v1.5.2
@@ -38,7 +39,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
-	github.com/eapache/go-resiliency v1.2.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/go-ole/go-ole v1.2.5 // indirect

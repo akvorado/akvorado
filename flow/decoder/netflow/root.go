@@ -3,16 +3,15 @@ package netflow
 
 import (
 	"bytes"
-	"net"
 	"strconv"
 	"sync"
-	"time"
 
 	"github.com/netsampler/goflow2/decoders/netflow"
 	goflowmessage "github.com/netsampler/goflow2/pb"
 	"github.com/netsampler/goflow2/producer"
 
 	"akvorado/flow/decoder"
+	"akvorado/flow/input"
 	"akvorado/reporter"
 )
 
@@ -127,8 +126,8 @@ func (s *templateSystem) GetTemplate(version uint16, obsDomainID uint32, templat
 }
 
 // Decode decodes a Netflow payload.
-func (nd *Decoder) Decode(payload []byte, source net.IP) []*decoder.FlowMessage {
-	key := source.String()
+func (nd *Decoder) Decode(in input.Flow) []*decoder.FlowMessage {
+	key := in.Source.String()
 	nd.templatesLock.RLock()
 	templates, ok := nd.templates[key]
 	nd.templatesLock.RUnlock()
@@ -152,8 +151,8 @@ func (nd *Decoder) Decode(payload []byte, source net.IP) []*decoder.FlowMessage 
 		nd.samplingLock.Unlock()
 	}
 
-	ts := uint64(time.Now().UTC().Unix())
-	buf := bytes.NewBuffer(payload)
+	ts := uint64(in.TimeReceived.UTC().Unix())
+	buf := bytes.NewBuffer(in.Payload)
 	msgDec, err := netflow.DecodeMessage(buf, templates)
 
 	if err != nil {
@@ -203,7 +202,7 @@ func (nd *Decoder) Decode(payload []byte, source net.IP) []*decoder.FlowMessage 
 
 		for _, fmsg := range flowMessageSet {
 			fmsg.TimeReceived = ts
-			fmsg.SamplerAddress = source
+			fmsg.SamplerAddress = in.Source
 			timeDiff := fmsg.TimeReceived - fmsg.TimeFlowEnd
 			nd.metrics.timeStatsSum.WithLabelValues(key, "9").
 				Observe(float64(timeDiff))

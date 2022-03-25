@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"akvorado/flow/decoder"
+	"akvorado/flow/input"
 	"akvorado/helpers"
 	"akvorado/reporter"
 )
@@ -20,7 +21,7 @@ func TestDecode(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	got := nfdecoder.Decode(template, net.ParseIP("127.0.0.1"))
+	got := nfdecoder.Decode(input.Flow{Payload: template, Source: net.ParseIP("127.0.0.1")})
 	if got == nil {
 		t.Fatalf("Decode() error on options template")
 	}
@@ -45,7 +46,7 @@ func TestDecode(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	got = nfdecoder.Decode(data, net.ParseIP("127.0.0.1"))
+	got = nfdecoder.Decode(input.Flow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 	if got == nil {
 		t.Fatalf("Decode() error on options data")
 	}
@@ -72,7 +73,7 @@ func TestDecode(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	got = nfdecoder.Decode(template, net.ParseIP("127.0.0.1"))
+	got = nfdecoder.Decode(input.Flow{Payload: template, Source: net.ParseIP("127.0.0.1")})
 	if got == nil {
 		t.Fatalf("Decode() error on template")
 	}
@@ -102,7 +103,7 @@ func TestDecode(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	got = nfdecoder.Decode(data, net.ParseIP("127.0.0.1"))
+	got = nfdecoder.Decode(input.Flow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 	if got == nil {
 		t.Fatalf("Decode() error on data")
 	}

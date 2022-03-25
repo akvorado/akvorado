@@ -1,17 +1,16 @@
 package decoder
 
 import (
-	"net"
-
+	"akvorado/flow/input"
 	"akvorado/reporter"
 )
 
 // Decoder is the interface each decoder should implement.
 type Decoder interface {
-	// Decoder takes a payload, an origin IP address and returns a
+	// Decoder takes a raw flow and returns a
 	// slice of flow messages. Returning nil means there was an
 	// error during decoding.
-	Decode(payload []byte, source net.IP) []*FlowMessage
+	Decode(in input.Flow) []*FlowMessage
 
 	// Name returns the decoder name
 	Name() string

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"akvorado/daemon"
+	"akvorado/flow/input/udp"
 	"akvorado/http"
 	"akvorado/reporter"
 )
@@ -14,7 +15,17 @@ import (
 // is autostarted.
 func NewMock(t *testing.T, r *reporter.Reporter, config Configuration) *Component {
 	t.Helper()
-	config.Listen = "127.0.0.1:0"
+	if config.Inputs == nil {
+		config.Inputs = []InputConfiguration{
+			{
+				Decoder: "netflow",
+				Config: &udp.Configuration{
+					Listen:    "127.0.0.1:0",
+					QueueSize: 10,
+				},
+			},
+		}
+	}
 	c, err := New(r, config, Dependencies{
 		Daemon: daemon.NewMock(t),
 		HTTP:   http.NewMock(t, r),

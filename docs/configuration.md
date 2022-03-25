@@ -72,17 +72,43 @@ embeds the documentation. It accepts only the following key:
 The flow component handles flow ingestion. It supports the following
 configuration keys:
 
-- `listen` to specify the IP and UDP port to listen for new flows
+- `inputs` to specify the list of inputs
 - `workers` to specify the number of workers to spawn to handle
-  incoming flows
+  decoding
 - `queue-size` to specify the number of flows to queue when pushing
   them to the core component
 
-For example:
+Each input should define a `type` and `decoder`. For `decoder`, only
+`netflow` is currently supported. As for the `type`, both `udp` and
+`file` are supported.
+
+For the UDP input, the supported keys are `listen` to set the
+listening endpoint, `workers` to set the number of workers to listen
+to the socket and `queue-size` to define the number of messages to
+buffer inside each worker. For example:
 
 ```yaml
 flow:
-  listen: 0.0.0.0:2055
+  inputs:
+    - type: udp
+      decoder: netflow
+      listen: 0.0.0.0:2055
+      workers: 3
+  workers: 2
+```
+
+The `file` input should only be used for testing. It supports a
+`paths` key to define the files to read from. These files are injected
+continuously in the pipeline. For example:
+
+```yaml
+flow:
+  inputs:
+    - type: file
+      decoder: netflow
+      paths:
+       - /tmp/flow1.raw
+       - /tmp/flow2.raw
   workers: 2
 ```
 

@@ -93,6 +93,7 @@ and exports them to Kafka.`,
 				return key == field
 			},
 			DecodeHook: mapstructure.ComposeDecodeHookFunc(
+				flow.ConfigurationUnmarshalerHook(),
 				mapstructure.TextUnmarshallerHookFunc(),
 				mapstructure.StringToTimeDurationHookFunc(),
 				mapstructure.StringToSliceHookFunc(","),

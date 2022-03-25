@@ -1,20 +1,20 @@
 package flow
 
 import (
-	"net"
 	"time"
 
 	"akvorado/flow/decoder"
 	"akvorado/flow/decoder/netflow"
+	"akvorado/flow/input"
 )
 
 // Message describes a decoded flow message.
 type Message = decoder.FlowMessage
 
 // decodeWith decode a flow with the provided decoder
-func (c *Component) decodeWith(d decoder.Decoder, payload []byte, source net.IP) {
+func (c *Component) decodeWith(d decoder.Decoder, in input.Flow) {
 	timeTrackStart := time.Now()
-	decoded := d.Decode(payload, source)
+	decoded := d.Decode(in)
 	timeTrackStop := time.Now()
 
 	if decoded == nil {
@@ -32,8 +32,6 @@ func (c *Component) decodeWith(d decoder.Decoder, payload []byte, source net.IP)
 	}
 }
 
-var decoders = struct {
-	NewNetflow decoder.NewDecoderFunc
-}{
-	NewNetflow: netflow.New,
+var decoders = map[string]decoder.NewDecoderFunc{
+	"netflow": netflow.New,
 }
