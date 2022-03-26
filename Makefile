@@ -100,7 +100,7 @@ test-coverage: | $(GOCOV) $(GOCOVXML) $(GOTESTSUM) ; $(info $(M) running coverag
 
 .PHONY: lint
 lint: | $(REVIVE) ; $(info $(M) running golint…) @ ## Run golint
-	$Q $(REVIVE) -formatter friendly -set_exit_status $(PKGS)
+	$Q $(REVIVE) -formatter friendly -set_exit_status ./...
 
 .PHONY: fmt
 fmt: ; $(info $(M) running gofmt…) @ ## Run gofmt on all source files
