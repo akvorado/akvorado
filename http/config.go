@@ -4,6 +4,8 @@ package http
 type Configuration struct {
 	// Listen defines the listening string to listen to.
 	Listen string
+	// Profiler enables Go profiler as /debug
+	Profiler bool
 }
 
 // DefaultConfiguration represents the default configuration for the HTTP server.

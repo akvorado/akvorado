@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/http/pprof" // profiler
 	"time"
 
 	"gopkg.in/tomb.v2"
@@ -42,6 +43,14 @@ func New(reporter *reporter.Reporter, configuration Configuration, dependencies 
 		mux: http.NewServeMux(),
 	}
 	c.d.Daemon.Track(&c.t, "http")
+
+	if configuration.Profiler {
+		c.mux.HandleFunc("/debug/pprof/", pprof.Index)
+		c.mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+		c.mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		c.mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+		c.mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	}
 	return &c, nil
 }
 
