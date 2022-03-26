@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
-	"runtime"
 	"testing"
 	"time"
 
@@ -190,47 +189,37 @@ func TestStartStopWithMultipleWorkers(t *testing.T) {
 	}
 }
 
-type forceCoalescePoller struct {
-	accept   chan bool
-	accepted []lookupRequest
+type logCoalescePoller struct {
+	received []lookupRequest
 }
 
-func (fcp *forceCoalescePoller) Poll(ctx context.Context, samplerIP string, _ uint16, _ string, ifIndexes []uint) error {
-	select {
-	case <-ctx.Done():
-	case <-fcp.accept:
-		fcp.accepted = append(fcp.accepted, lookupRequest{samplerIP, ifIndexes})
-	}
+func (fcp *logCoalescePoller) Poll(ctx context.Context, samplerIP string, _ uint16, _ string, ifIndexes []uint) error {
+	fcp.received = append(fcp.received, lookupRequest{samplerIP, ifIndexes})
 	return nil
 }
 
 func TestCoalescing(t *testing.T) {
 	r := reporter.NewMock(t)
 	c := NewMock(t, r, DefaultConfiguration, Dependencies{Daemon: daemon.NewMock(t)})
-	fcp := &forceCoalescePoller{
-		accept:   make(chan bool),
-		accepted: []lookupRequest{},
+	lcp := &logCoalescePoller{
+		received: []lookupRequest{},
 	}
-	c.poller = fcp
+	c.poller = lcp
 
-	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{Err: ErrCacheMiss})
-	runtime.Gosched()
-	time.Sleep(50 * time.Millisecond)
-	// dispatcher is now blocked, queue requests
+	// Block dispatcher
+	blocker := make(chan bool)
+	c.dispatcherBChannel <- blocker
+
+	// Queue requests
 	expectSNMPLookup(t, c, "127.0.0.1", 766, answer{Err: ErrCacheMiss})
 	expectSNMPLookup(t, c, "127.0.0.1", 767, answer{Err: ErrCacheMiss})
 	expectSNMPLookup(t, c, "127.0.0.1", 768, answer{Err: ErrCacheMiss})
 	expectSNMPLookup(t, c, "127.0.0.1", 769, answer{Err: ErrCacheMiss})
-	runtime.Gosched()
-	time.Sleep(400 * time.Millisecond) // ensure everything is queued
-	fcp.accept <- true
 
-	// The race detector may require read from the channel before
-	// additional write. So, we can't run the remaining code under
-	// the race detector.
-	if helpers.RaceEnabled {
-		return
-	}
+	// Unblock
+	time.Sleep(20 * time.Millisecond)
+	close(blocker)
+	time.Sleep(20 * time.Millisecond)
 
 	gotMetrics := r.GetMetrics("akvorado_snmp_poller_", "coalesced_count")
 	expectedMetrics := map[string]string{
@@ -240,17 +229,14 @@ func TestCoalescing(t *testing.T) {
 		t.Errorf("Metrics (-got, +want):\n%s", diff)
 	}
 
-	fcp.accept <- true
-	time.Sleep(50 * time.Millisecond)
 	if err := c.Stop(); err != nil {
 		t.Fatalf("Stop() error:\n%+v", err)
 	}
 
 	expectedAccepted := []lookupRequest{
-		{"127.0.0.1", []uint{765}},
 		{"127.0.0.1", []uint{766, 767, 768, 769}},
 	}
-	if diff := helpers.Diff(fcp.accepted, expectedAccepted); diff != "" {
+	if diff := helpers.Diff(lcp.received, expectedAccepted); diff != "" {
 		t.Errorf("Accepted requests (-got, +want):\n%s", diff)
 	}
 }

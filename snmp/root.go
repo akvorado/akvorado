@@ -30,6 +30,7 @@ type Component struct {
 	healthyWorkers     chan reporter.ChannelHealthcheckFunc
 	pollerChannel      chan lookupRequest
 	dispatcherChannel  chan lookupRequest
+	dispatcherBChannel chan (<-chan bool) // block channel for testing
 	pollerBreakersLock sync.Mutex
 	pollerBreakers     map[string]*breaker.Breaker
 	pollerErrLogger    reporter.Logger
@@ -69,10 +70,11 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		config: configuration,
 		sc:     sc,
 
-		pollerChannel:     make(chan lookupRequest),
-		dispatcherChannel: make(chan lookupRequest, 100*configuration.Workers),
-		pollerBreakers:    make(map[string]*breaker.Breaker),
-		pollerErrLogger:   r.Sample(reporter.BurstSampler(30*time.Second, 3)),
+		pollerChannel:      make(chan lookupRequest),
+		dispatcherChannel:  make(chan lookupRequest, 100*configuration.Workers),
+		dispatcherBChannel: make(chan (<-chan bool)),
+		pollerBreakers:     make(map[string]*breaker.Breaker),
+		pollerErrLogger:    r.Sample(reporter.BurstSampler(30*time.Second, 3)),
 		poller: newPoller(r, pollerConfig{
 			Retries: configuration.PollerRetries,
 			Timeout: configuration.PollerTimeout,
@@ -164,6 +166,9 @@ func (c *Component) Start() error {
 				if cb != nil {
 					cb(reporter.HealthcheckOK, "ok")
 				}
+			case ch := <-c.dispatcherBChannel:
+				// This is for test coaelescing
+				<-ch
 			case request := <-c.dispatcherChannel:
 				c.dispatchIncomingRequest(request)
 			}
@@ -277,11 +282,13 @@ func (c *Component) dispatchIncomingRequest(request lookupRequest) {
 		if len(ifIndexes) > 1 {
 			c.metrics.pollerCoalescedCount.Add(float64(len(ifIndexes)))
 		}
+		fmt.Println("in1")
 		select {
 		case <-c.t.Dying():
 			return
 		case c.pollerChannel <- lookupRequest{samplerIP, ifIndexes}:
 		}
+		fmt.Println("in2")
 	}
 }
 
