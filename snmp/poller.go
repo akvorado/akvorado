@@ -147,13 +147,18 @@ func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, comm
 	}
 	if err != nil {
 		p.metrics.failures.WithLabelValues(sampler, "get").Inc()
-		p.errLogger.Err(err).Str("sampler", sampler).Msg("unable to GET")
+		p.errLogger.Err(err).
+			Str("sampler", sampler).
+			Msgf("unable to GET (%d OIDs)", len(requests))
 		return err
 	}
 	if result.Error != gosnmp.NoError && result.ErrorIndex == 0 {
 		// There is some error affecting the whole request
 		p.metrics.failures.WithLabelValues(sampler, "get").Inc()
-		p.errLogger.Error().Str("sampler", sampler).Stringer("code", result.Error).Msg("unable to GET")
+		p.errLogger.Error().
+			Str("sampler", sampler).
+			Stringer("code", result.Error).
+			Msgf("unable to GET (%d OIDs)", len(requests))
 		return fmt.Errorf("SNMP error %s(%d)", result.Error, result.Error)
 	}
 
