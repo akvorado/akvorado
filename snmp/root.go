@@ -27,14 +27,14 @@ type Component struct {
 
 	sc *snmpCache
 
-	healthyWorkers     chan reporter.ChannelHealthcheckFunc
-	pollerChannel      chan lookupRequest
-	dispatcherChannel  chan lookupRequest
-	dispatcherBChannel chan (<-chan bool) // block channel for testing
-	pollerBreakersLock sync.Mutex
-	pollerBreakers     map[string]*breaker.Breaker
-	pollerErrLogger    reporter.Logger
-	poller             poller
+	healthyWorkers       chan reporter.ChannelHealthcheckFunc
+	pollerChannel        chan lookupRequest
+	dispatcherChannel    chan lookupRequest
+	dispatcherBChannel   chan (<-chan bool) // block channel for testing
+	pollerBreakersLock   sync.Mutex
+	pollerBreakerLoggers map[string]reporter.Logger
+	pollerBreakers       map[string]*breaker.Breaker
+	poller               poller
 
 	metrics struct {
 		cacheRefreshRuns       reporter.Counter
@@ -69,11 +69,11 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		config: configuration,
 		sc:     sc,
 
-		pollerChannel:      make(chan lookupRequest),
-		dispatcherChannel:  make(chan lookupRequest, 100*configuration.Workers),
-		dispatcherBChannel: make(chan (<-chan bool)),
-		pollerBreakers:     make(map[string]*breaker.Breaker),
-		pollerErrLogger:    r.Sample(reporter.BurstSampler(30*time.Second, 3)),
+		pollerChannel:        make(chan lookupRequest),
+		dispatcherChannel:    make(chan lookupRequest, 100*configuration.Workers),
+		dispatcherBChannel:   make(chan (<-chan bool)),
+		pollerBreakers:       make(map[string]*breaker.Breaker),
+		pollerBreakerLoggers: make(map[string]reporter.Logger),
 		poller: newPoller(r, pollerConfig{
 			Retries: configuration.PollerRetries,
 			Timeout: configuration.PollerTimeout,
@@ -301,9 +301,17 @@ func (c *Component) pollerIncomingRequest(request lookupRequest) {
 			request.IfIndexes)
 	}); err == breaker.ErrBreakerOpen {
 		c.metrics.pollerBreakerOpenCount.WithLabelValues(request.SamplerIP).Inc()
-		c.pollerErrLogger.Warn().
-			Str("sampler", request.SamplerIP).
-			Msg("poller breaker open")
+		c.pollerBreakersLock.Lock()
+		l, ok := c.pollerBreakerLoggers[request.SamplerIP]
+		if !ok {
+			l = c.r.Sample(reporter.BurstSampler(time.Minute, 1)).
+				With().
+				Str("sampler", request.SamplerIP).
+				Logger()
+			c.pollerBreakerLoggers[request.SamplerIP] = l
+		}
+		l.Warn().Msg("poller breaker open")
+		c.pollerBreakersLock.Unlock()
 	}
 }
 
