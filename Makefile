@@ -9,7 +9,7 @@ GO      = go
 TIMEOUT = 15
 V = 0
 Q = $(if $(filter 1,$V),,@)
-M = $(shell printf "\033[34;1m▶\033[0m")
+M = $(shell if [ "$$(tput colors)" -ge 8 ]; then printf "\033[34;1m▶\033[0m"; else printf "▶"; fi)
 
 export GO111MODULE=on
 
