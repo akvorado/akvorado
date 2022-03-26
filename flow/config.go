@@ -23,6 +23,10 @@ type Configuration struct {
 
 // DefaultConfiguration represents the default configuration for the flow component
 var DefaultConfiguration = Configuration{
+	Inputs: []InputConfiguration{{
+		Decoder: "netflow",
+		Config:  &udp.DefaultConfiguration,
+	}},
 	Workers: 1,
 }
 
@@ -44,9 +48,7 @@ func ConfigurationUnmarshalerHook() mapstructure.DecodeHookFunc {
 			return from.Interface(), nil
 		}
 		configField := to.FieldByName("Config")
-		if !configField.IsNil() {
-			return from.Interface(), nil
-		}
+		fromConfig := reflect.MakeMap(reflect.TypeOf(map[string]interface{}{}))
 
 		// Find "type" key in map to get input type. Keep
 		// "decoder" as is. Move everything else in "config".
@@ -55,7 +57,6 @@ func ConfigurationUnmarshalerHook() mapstructure.DecodeHookFunc {
 			return nil, errors.New("input configuration should be a map")
 		}
 		mapKeys := from.MapKeys()
-		fromConfig := reflect.MakeMap(reflect.TypeOf(map[string]interface{}{}))
 		for _, key := range mapKeys {
 			var keyStr string
 			// YAML may unmarshal keys to interfaces
@@ -87,6 +88,17 @@ func ConfigurationUnmarshalerHook() mapstructure.DecodeHookFunc {
 			}
 		}
 		from.SetMapIndex(reflect.ValueOf("config"), fromConfig)
+
+		if !configField.IsNil() && inputType == "" {
+			// Get current type.
+			currentType := configField.Elem().Type().Elem()
+			for k, v := range inputs {
+				if reflect.TypeOf(v).Elem() == currentType {
+					inputType = k
+					break
+				}
+			}
+		}
 		if inputType == "" {
 			fmt.Println(from)
 			return nil, errors.New("input configuration has no type")
@@ -115,6 +127,7 @@ func (ic InputConfiguration) MarshalYAML() (interface{}, error) {
 	for k, v := range inputs {
 		if reflect.TypeOf(v).Elem() == reflect.TypeOf(ic.Config).Elem() {
 			typeStr = k
+			break
 		}
 	}
 	if typeStr == "" {

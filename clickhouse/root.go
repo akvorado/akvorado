@@ -46,7 +46,7 @@ func New(reporter *reporter.Reporter, configuration Configuration, dependencies 
 
 // Start the ClickHouse component
 func (c *Component) Start() error {
-	if c.config.Servers == nil || len(c.config.Servers) == 0 {
+	if len(c.config.Servers) == 0 {
 		c.r.Warn().Msg("no clickhouse configuration, skipping database management")
 	}
 	c.r.Info().Msg("starting ClickHouse component")
@@ -78,7 +78,7 @@ func (c *Component) Start() error {
 
 // Stop stops the ClickHouse component
 func (c *Component) Stop() error {
-	if c.config.Servers == nil || len(c.config.Servers) == 0 {
+	if len(c.config.Servers) == 0 {
 		return nil
 	}
 	c.r.Info().Msg("stopping ClickHouse component")

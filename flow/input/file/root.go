@@ -24,7 +24,7 @@ type Input struct {
 
 // New instantiate a new UDP listener from the provided configuration.
 func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Component) (input.Input, error) {
-	if configuration.Paths == nil || len(configuration.Paths) == 0 {
+	if len(configuration.Paths) == 0 {
 		return nil, errors.New("no paths provided for file input")
 	}
 	input := &Input{

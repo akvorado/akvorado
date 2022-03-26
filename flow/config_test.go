@@ -1,6 +1,7 @@
 package flow
 
 import (
+	"akvorado/flow/input/file"
 	"akvorado/flow/input/udp"
 	"akvorado/helpers"
 	"strings"
@@ -11,54 +12,155 @@ import (
 )
 
 func TestDecodeConfiguration(t *testing.T) {
-	var got Configuration
-	from := map[string]interface{}{
-		"workers": 10,
-		"inputs": []map[string]interface{}{
-			map[string]interface{}{
-				"type":    "udp",
-				"decoder": "netflow",
-				"listen":  "192.0.2.1:2055",
-				"workers": 3,
+	cases := []struct {
+		Name     string
+		From     interface{}
+		Source   interface{}
+		Expected interface{}
+	}{
+		{
+			Name: "from empty configuration",
+			From: Configuration{},
+			Source: map[string]interface{}{
+				"workers": 10,
+				"inputs": []map[string]interface{}{
+					map[string]interface{}{
+						"type":    "udp",
+						"decoder": "netflow",
+						"listen":  "192.0.2.1:2055",
+						"workers": 3,
+					},
+				},
+			},
+			Expected: Configuration{
+				Workers: 10,
+				Inputs: []InputConfiguration{{
+					Decoder: "netflow",
+					Config: &udp.Configuration{
+						Workers:   3,
+						QueueSize: 100000,
+						Listen:    "192.0.2.1:2055",
+					},
+				}},
+			},
+		}, {
+			Name: "from existing configuration",
+			From: Configuration{
+				Workers: 10,
+				Inputs: []InputConfiguration{{
+					Decoder: "netflow",
+					Config:  &udp.DefaultConfiguration,
+				}},
+			},
+			Source: map[string]interface{}{
+				"workers": 10,
+				"inputs": []map[string]interface{}{
+					map[string]interface{}{
+						"type":    "udp",
+						"decoder": "netflow",
+						"listen":  "192.0.2.1:2055",
+						"workers": 3,
+					},
+				},
+			},
+			Expected: Configuration{
+				Workers: 10,
+				Inputs: []InputConfiguration{{
+					Decoder: "netflow",
+					Config: &udp.Configuration{
+						Workers:   3,
+						QueueSize: 100000,
+						Listen:    "192.0.2.1:2055",
+					},
+				}},
+			},
+		}, {
+			Name: "change type",
+			From: Configuration{
+				Workers: 10,
+				Inputs: []InputConfiguration{{
+					Decoder: "netflow",
+					Config:  &udp.DefaultConfiguration,
+				}},
+			},
+			Source: map[string]interface{}{
+				"workers": 10,
+				"inputs": []map[string]interface{}{
+					map[string]interface{}{
+						"type":  "file",
+						"paths": []string{"file1", "file2"},
+					},
+				},
+			},
+			Expected: Configuration{
+				Workers: 10,
+				Inputs: []InputConfiguration{{
+					Decoder: "netflow",
+					Config: &file.Configuration{
+						Paths: []string{"file1", "file2"},
+					},
+				}},
+			},
+		}, {
+			Name: "only set one item",
+			From: Configuration{
+				Workers: 10,
+				Inputs: []InputConfiguration{{
+					Decoder: "netflow",
+					Config:  &udp.DefaultConfiguration,
+				}},
+			},
+			Source: map[string]interface{}{
+				"inputs": []map[string]interface{}{
+					map[string]interface{}{
+						"listen": "192.0.2.1:2055",
+					},
+				},
+			},
+			Expected: Configuration{
+				Workers: 10,
+				Inputs: []InputConfiguration{{
+					Decoder: "netflow",
+					Config: &udp.Configuration{
+						Workers:   1,
+						QueueSize: 100000,
+						Listen:    "192.0.2.1:2055",
+					},
+				}},
 			},
 		},
 	}
+	for _, tc := range cases {
+		t.Run(tc.Name, func(t *testing.T) {
+			got := tc.From
 
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		Result:           &got,
-		ErrorUnused:      true,
-		Metadata:         nil,
-		WeaklyTypedInput: true,
-		MatchName: func(mapKey, fieldName string) bool {
-			key := strings.ToLower(strings.ReplaceAll(mapKey, "-", ""))
-			field := strings.ToLower(fieldName)
-			return key == field
-		},
-		DecodeHook: ConfigurationUnmarshalerHook(),
-	})
-	if err != nil {
-		t.Fatalf("NewDecoder() error:\n%+v", err)
-	}
-	if err := decoder.Decode(from); err != nil {
-		t.Fatalf("Decode() error:\n%+v", err)
-	}
+			decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+				Result:           &got,
+				ErrorUnused:      true,
+				Metadata:         nil,
+				WeaklyTypedInput: true,
+				MatchName: func(mapKey, fieldName string) bool {
+					key := strings.ToLower(strings.ReplaceAll(mapKey, "-", ""))
+					field := strings.ToLower(fieldName)
+					return key == field
+				},
+				DecodeHook: ConfigurationUnmarshalerHook(),
+			})
+			if err != nil {
+				t.Fatalf("NewDecoder() error:\n%+v", err)
+			}
+			if err := decoder.Decode(tc.Source); err != nil {
+				t.Fatalf("Decode() error:\n%+v", err)
+			}
 
-	expected := Configuration{
-		Workers: 10,
-		Inputs: []InputConfiguration{{
-			Decoder: "netflow",
-			Config: &udp.Configuration{
-				Workers:   3,
-				QueueSize: 100000,
-				Listen:    "192.0.2.1:2055",
-			},
-		}},
-	}
-	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Fatalf("Decode() (-got, +want):\n%s", diff)
+			expected := tc.Expected
+			if diff := helpers.Diff(got, expected); diff != "" {
+				t.Fatalf("Decode() (-got, +want):\n%s", diff)
+			}
+		})
 	}
 
-	// Check we cannot alter the default value
+	// Check we didn't alter the default value
 	if diff := helpers.Diff(udp.DefaultConfiguration, udp.Configuration{
 		Workers:   1,
 		QueueSize: 100000,
