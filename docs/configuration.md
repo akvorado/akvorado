@@ -73,10 +73,6 @@ The flow component handles flow ingestion. It supports the following
 configuration keys:
 
 - `inputs` to specify the list of inputs
-- `workers` to specify the number of workers to spawn to handle
-  decoding
-- `queue-size` to specify the number of flows to queue when pushing
-  them to the core component
 
 Each input should define a `type` and `decoder`. For `decoder`, only
 `netflow` is currently supported. As for the `type`, both `udp` and

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"akvorado/daemon"
-	"akvorado/flow/input"
+	"akvorado/flow/decoder"
 	"akvorado/helpers"
 	"akvorado/reporter"
 )
@@ -15,7 +15,7 @@ func TestUDPInput(t *testing.T) {
 	r := reporter.NewMock(t)
 	configuration := DefaultConfiguration
 	configuration.Listen = "127.0.0.1:0"
-	in, err := configuration.New(r, daemon.NewMock(t))
+	in, err := configuration.New(r, daemon.NewMock(t), &decoder.DummyDecoder{})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
@@ -41,21 +41,28 @@ func TestUDPInput(t *testing.T) {
 	}
 
 	// Get it back
-	var got input.Flow
+	var got []*decoder.FlowMessage
 	select {
 	case got = <-ch:
+		if len(got) == 0 {
+			t.Fatalf("empty decoded flows received")
+		}
 	case <-time.After(20 * time.Millisecond):
-		t.Fatal("Input data missing")
+		t.Fatal("no decoded flows received")
 	}
 
-	delta := got.TimeReceived.Sub(time.Now())
-	if delta > time.Second || delta < -time.Second {
-		t.Errorf("TimeReceived out of range: %s (now: %s)", got.TimeReceived, time.Now())
+	delta := uint64(time.Now().UTC().Unix()) - got[0].TimeReceived
+	if delta > 1 {
+		t.Errorf("TimeReceived out of range: %d (now: %d)", got[0].TimeReceived, time.Now().UTC().Unix())
 	}
-	expected := input.Flow{
-		TimeReceived: got.TimeReceived,
-		Payload:      []byte("hello world!"),
-		Source:       net.ParseIP("127.0.0.1"),
+	expected := []*decoder.FlowMessage{
+		{
+			TimeReceived:    got[0].TimeReceived,
+			SamplerAddress:  net.ParseIP("127.0.0.1"),
+			Bytes:           12,
+			Packets:         1,
+			InIfDescription: "hello world!",
+		},
 	}
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Fatalf("Input data (-got, +want):\n%s", diff)
@@ -82,7 +89,7 @@ func TestOverflow(t *testing.T) {
 	configuration := DefaultConfiguration
 	configuration.Listen = "127.0.0.1:0"
 	configuration.QueueSize = 1
-	in, err := configuration.New(r, daemon.NewMock(t))
+	in, err := configuration.New(r, daemon.NewMock(t), &decoder.DummyDecoder{})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}

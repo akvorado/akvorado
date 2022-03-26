@@ -5,30 +5,44 @@ import (
 
 	"akvorado/flow/decoder"
 	"akvorado/flow/decoder/netflow"
-	"akvorado/flow/input"
 )
 
 // Message describes a decoded flow message.
 type Message = decoder.FlowMessage
 
-// decodeWith decode a flow with the provided decoder
-func (c *Component) decodeWith(d decoder.Decoder, in input.Flow) {
+type wrappedDecoder struct {
+	c    *Component
+	orig decoder.Decoder
+}
+
+// Decode decodes a flow while keeping some stats.
+func (wd *wrappedDecoder) Decode(in decoder.RawFlow) []*Message {
 	timeTrackStart := time.Now()
-	decoded := d.Decode(in)
+	decoded := wd.orig.Decode(in)
 	timeTrackStop := time.Now()
 
 	if decoded == nil {
-		c.metrics.decoderErrors.WithLabelValues(d.Name()).
+		wd.c.metrics.decoderErrors.WithLabelValues(wd.orig.Name()).
 			Inc()
-		return
+		return nil
 	}
-	c.metrics.decoderTime.WithLabelValues(d.Name()).
+	wd.c.metrics.decoderTime.WithLabelValues(wd.orig.Name()).
 		Observe(float64((timeTrackStop.Sub(timeTrackStart)).Nanoseconds()) / 1000 / 1000 / 1000)
-	c.metrics.decoderStats.WithLabelValues(d.Name()).
+	wd.c.metrics.decoderStats.WithLabelValues(wd.orig.Name()).
 		Inc()
+	return decoded
+}
 
-	for _, f := range decoded {
-		c.sendFlow(f)
+// Name returns the name of the original decoder.
+func (wd *wrappedDecoder) Name() string {
+	return wd.orig.Name()
+}
+
+// wrapDecoder wraps the provided decoders to get statistics from it.
+func (c *Component) wrapDecoder(d decoder.Decoder) decoder.Decoder {
+	return &wrappedDecoder{
+		c:    c,
+		orig: d,
 	}
 }
 

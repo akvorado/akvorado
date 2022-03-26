@@ -31,9 +31,8 @@ type Component struct {
 	// Channel for sending flows out of the package.
 	outgoingFlows chan *Message
 
-	// Inputs and decoders
-	inputs   []input.Input
-	decoders []decoder.Decoder
+	// Inputs
+	inputs []input.Input
 }
 
 // Dependencies are the dependencies of the flow component.
@@ -54,24 +53,15 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		config:        configuration,
 		outgoingFlows: make(chan *Message),
 		inputs:        make([]input.Input, len(configuration.Inputs)),
-		decoders:      make([]decoder.Decoder, len(configuration.Inputs)),
-	}
-
-	// Initialize inputs
-	for idx, input := range c.config.Inputs {
-		var err error
-		c.inputs[idx], err = input.Config.New(r, c.d.Daemon)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	// Initialize decoders (at most once each)
 	var alreadyInitialized = map[string]decoder.Decoder{}
+	decs := make([]decoder.Decoder, len(configuration.Inputs))
 	for idx, input := range c.config.Inputs {
 		dec, ok := alreadyInitialized[input.Decoder]
 		if ok {
-			c.decoders[idx] = dec
+			decs[idx] = dec
 			continue
 		}
 		decoderfunc, ok := decoders[input.Decoder]
@@ -80,7 +70,16 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		}
 		dec = decoderfunc(r)
 		alreadyInitialized[input.Decoder] = dec
-		c.decoders[idx] = dec
+		decs[idx] = c.wrapDecoder(dec)
+	}
+
+	// Initialize inputs
+	for idx, input := range c.config.Inputs {
+		var err error
+		c.inputs[idx], err = input.Config.New(r, c.d.Daemon, decs[idx])
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Metrics
@@ -119,8 +118,7 @@ func (c *Component) Flows() <-chan *Message {
 
 // Start starts the flow component.
 func (c *Component) Start() error {
-	for idx, input := range c.inputs {
-		decoder := c.decoders[idx]
+	for _, input := range c.inputs {
 		ch, err := input.Start()
 		stopper := input.Stop
 		if err != nil {
@@ -132,22 +130,19 @@ func (c *Component) Start() error {
 				select {
 				case <-c.t.Dying():
 					return nil
-				case infl := <-ch:
-					c.decodeWith(decoder, infl)
+				case fmsgs := <-ch:
+					for _, fmsg := range fmsgs {
+						select {
+						case <-c.t.Dying():
+							return nil
+						case c.outgoingFlows <- fmsg:
+						}
+					}
 				}
 			}
 		})
 	}
 	return nil
-}
-
-// sendFlow transmits received flows to the next component
-func (c *Component) sendFlow(fmsg *Message) {
-	select {
-	case <-c.t.Dying():
-		return
-	case c.outgoingFlows <- fmsg:
-	}
 }
 
 // Stop stops the flow component

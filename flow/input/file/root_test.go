@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"akvorado/daemon"
+	"akvorado/flow/decoder"
 	"akvorado/helpers"
 	"akvorado/reporter"
 )
@@ -14,7 +15,7 @@ func TestFileInput(t *testing.T) {
 	r := reporter.NewMock(t)
 	configuration := DefaultConfiguration
 	configuration.Paths = []string{path.Join("testdata", "file1.txt"), path.Join("testdata", "file2.txt")}
-	in, err := configuration.New(r, daemon.NewMock(t))
+	in, err := configuration.New(r, daemon.NewMock(t), &decoder.DummyDecoder{})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
@@ -35,7 +36,9 @@ out:
 	for i := 0; i < len(expected); i++ {
 		select {
 		case got1 := <-ch:
-			got = append(got, string(got1.Payload))
+			for _, fl := range got1 {
+				got = append(got, string(fl.InIfDescription))
+			}
 		case <-time.After(50 * time.Millisecond):
 			break out
 		}

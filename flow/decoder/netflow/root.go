@@ -11,7 +11,6 @@ import (
 	"github.com/netsampler/goflow2/producer"
 
 	"akvorado/flow/decoder"
-	"akvorado/flow/input"
 	"akvorado/reporter"
 )
 
@@ -126,7 +125,7 @@ func (s *templateSystem) GetTemplate(version uint16, obsDomainID uint32, templat
 }
 
 // Decode decodes a Netflow payload.
-func (nd *Decoder) Decode(in input.Flow) []*decoder.FlowMessage {
+func (nd *Decoder) Decode(in decoder.RawFlow) []*decoder.FlowMessage {
 	key := in.Source.String()
 	nd.templatesLock.RLock()
 	templates, ok := nd.templates[key]

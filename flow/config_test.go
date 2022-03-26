@@ -22,7 +22,6 @@ func TestDecodeConfiguration(t *testing.T) {
 			Name: "from empty configuration",
 			From: Configuration{},
 			Source: map[string]interface{}{
-				"workers": 10,
 				"inputs": []map[string]interface{}{
 					map[string]interface{}{
 						"type":    "udp",
@@ -33,7 +32,6 @@ func TestDecodeConfiguration(t *testing.T) {
 				},
 			},
 			Expected: Configuration{
-				Workers: 10,
 				Inputs: []InputConfiguration{{
 					Decoder: "netflow",
 					Config: &udp.Configuration{
@@ -46,14 +44,12 @@ func TestDecodeConfiguration(t *testing.T) {
 		}, {
 			Name: "from existing configuration",
 			From: Configuration{
-				Workers: 10,
 				Inputs: []InputConfiguration{{
 					Decoder: "netflow",
 					Config:  &udp.DefaultConfiguration,
 				}},
 			},
 			Source: map[string]interface{}{
-				"workers": 10,
 				"inputs": []map[string]interface{}{
 					map[string]interface{}{
 						"type":    "udp",
@@ -64,7 +60,6 @@ func TestDecodeConfiguration(t *testing.T) {
 				},
 			},
 			Expected: Configuration{
-				Workers: 10,
 				Inputs: []InputConfiguration{{
 					Decoder: "netflow",
 					Config: &udp.Configuration{
@@ -77,14 +72,12 @@ func TestDecodeConfiguration(t *testing.T) {
 		}, {
 			Name: "change type",
 			From: Configuration{
-				Workers: 10,
 				Inputs: []InputConfiguration{{
 					Decoder: "netflow",
 					Config:  &udp.DefaultConfiguration,
 				}},
 			},
 			Source: map[string]interface{}{
-				"workers": 10,
 				"inputs": []map[string]interface{}{
 					map[string]interface{}{
 						"type":  "file",
@@ -93,7 +86,6 @@ func TestDecodeConfiguration(t *testing.T) {
 				},
 			},
 			Expected: Configuration{
-				Workers: 10,
 				Inputs: []InputConfiguration{{
 					Decoder: "netflow",
 					Config: &file.Configuration{
@@ -104,7 +96,6 @@ func TestDecodeConfiguration(t *testing.T) {
 		}, {
 			Name: "only set one item",
 			From: Configuration{
-				Workers: 10,
 				Inputs: []InputConfiguration{{
 					Decoder: "netflow",
 					Config: &udp.Configuration{
@@ -122,7 +113,6 @@ func TestDecodeConfiguration(t *testing.T) {
 				},
 			},
 			Expected: Configuration{
-				Workers: 10,
 				Inputs: []InputConfiguration{{
 					Decoder: "netflow",
 					Config: &udp.Configuration{
@@ -175,7 +165,6 @@ func TestDecodeConfiguration(t *testing.T) {
 
 func TestMarshalYAML(t *testing.T) {
 	cfg := Configuration{
-		Workers: 10,
 		Inputs: []InputConfiguration{
 			{
 				Decoder: "netflow",
@@ -197,7 +186,6 @@ func TestMarshalYAML(t *testing.T) {
   queuesize: 1000
   type: udp
   workers: 3
-workers: 10
 `
 	if diff := helpers.Diff(strings.Split(string(got), "\n"), strings.Split(expected, "\n")); diff != "" {
 		t.Fatalf("Marshal() (-got, +want):\n%s", diff)

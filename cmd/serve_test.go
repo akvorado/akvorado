@@ -31,7 +31,6 @@ flow:
     decoder: netflow
     listen: 0.0.0.0:2055
     workers: 5
- workers: 2
 snmp:
  workers: 2
  cache-duration: 20m
@@ -70,7 +69,6 @@ core:
 			"queuesize": 100000,
 			"workers":   5,
 		}},
-		"workers": 2,
 	})
 	want(t, got["snmp"]["workers"], 2)
 	want(t, got["snmp"]["cacheduration"], "20m0s")
@@ -91,7 +89,6 @@ flow:
     decoder: netflow
     listen: 0.0.0.0:2055
     workers: 5
- workers: 2
 snmp:
  workers: 2
  cache-duration: 10m
@@ -108,8 +105,8 @@ core:
 	// Environment
 	os.Setenv("AKVORADO_SNMP_CACHEDURATION", "22m")
 	os.Setenv("AKVORADO_SNMP_DEFAULTCOMMUNITY", "privateer")
+	os.Setenv("AKVORADO_SNMP_WORKERS", "3")
 	os.Setenv("AKVORADO_KAFKA_BROKERS", "127.0.0.1:9092,127.0.0.2:9092")
-	os.Setenv("AKVORADO_FLOW_WORKERS", "3")
 	os.Setenv("AKVORADO_FLOW_INPUTS_0_LISTEN", "0.0.0.0:2056")
 	// We may be lucky or the environment is keeping order
 	os.Setenv("AKVORADO_FLOW_INPUTS_1_TYPE", "file")
@@ -134,6 +131,7 @@ core:
 	}
 	want(t, got["snmp"]["cacheduration"], "22m0s")
 	want(t, got["snmp"]["defaultcommunity"], "privateer")
+	want(t, got["snmp"]["workers"], 3)
 	want(t, got["kafka"]["brokers"], []string{"127.0.0.1:9092", "127.0.0.2:9092"})
 	want(t, got["flow"], map[string]interface{}{
 		"inputs": []map[string]interface{}{
@@ -149,6 +147,5 @@ core:
 				"paths":   []string{"f1", "f2"},
 			},
 		},
-		"workers": 3,
 	})
 }

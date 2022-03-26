@@ -12,6 +12,7 @@ import (
 	"gopkg.in/tomb.v2"
 
 	"akvorado/daemon"
+	"akvorado/flow/decoder"
 	"akvorado/flow/input"
 	"akvorado/reporter"
 )
@@ -30,16 +31,18 @@ type Input struct {
 		drops         *reporter.CounterVec
 	}
 
-	address net.Addr        // listening address, for testing purpoese
-	ch      chan input.Flow // channel to send flows to
+	address net.Addr                    // listening address, for testing purpoese
+	ch      chan []*decoder.FlowMessage // channel to send flows to
+	decoder decoder.Decoder             // decoder to use
 }
 
 // New instantiate a new UDP listener from the provided configuration.
-func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Component) (input.Input, error) {
+func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Component, dec decoder.Decoder) (input.Input, error) {
 	input := &Input{
-		r:      r,
-		config: configuration,
-		ch:     make(chan input.Flow, configuration.QueueSize),
+		r:       r,
+		config:  configuration,
+		ch:      make(chan []*decoder.FlowMessage, configuration.QueueSize),
+		decoder: dec,
 	}
 
 	input.metrics.bytes = r.CounterVec(
@@ -84,7 +87,7 @@ func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Comp
 }
 
 // Start starts listening to the provided UDP socket and producing flows.
-func (in *Input) Start() (<-chan input.Flow, error) {
+func (in *Input) Start() (<-chan []*decoder.FlowMessage, error) {
 	in.r.Info().Str("listen", in.config.Listen).Msg("starting UDP input")
 
 	// Listen to UDP port
@@ -135,15 +138,18 @@ func (in *Input) Start() (<-chan input.Flow, error) {
 				}
 
 				srcIP := source.IP.String()
-				flow := input.Flow{
+				flows := in.decoder.Decode(decoder.RawFlow{
 					TimeReceived: time.Now(),
 					Payload:      payload[:size],
 					Source:       source.IP,
+				})
+				if len(flows) == 0 {
+					continue
 				}
 				select {
 				case <-in.t.Dying():
 					return nil
-				case in.ch <- flow:
+				case in.ch <- flows:
 					in.metrics.bytes.WithLabelValues(listen, worker, srcIP).
 						Add(float64(size))
 					in.metrics.packets.WithLabelValues(listen, worker, srcIP).

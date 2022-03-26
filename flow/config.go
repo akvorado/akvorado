@@ -17,8 +17,6 @@ import (
 type Configuration struct {
 	// Inputs define a list of input modules to enable
 	Inputs []InputConfiguration
-	// Workers define the number of workers to use for decoding.
-	Workers int
 }
 
 // DefaultConfiguration represents the default configuration for the flow component
@@ -27,7 +25,6 @@ var DefaultConfiguration = Configuration{
 		Decoder: "netflow",
 		Config:  &udp.DefaultConfiguration,
 	}},
-	Workers: 1,
 }
 
 // InputConfiguration represents the configuration for an input.
