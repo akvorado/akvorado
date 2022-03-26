@@ -39,7 +39,6 @@ type Component struct {
 	metrics struct {
 		cacheRefreshRuns       reporter.Counter
 		cacheRefresh           reporter.Counter
-		pollerLoopTime         *reporter.SummaryVec
 		pollerBusyCount        *reporter.CounterVec
 		pollerCoalescedCount   reporter.Counter
 		pollerBreakerOpenCount *reporter.CounterVec
@@ -92,13 +91,6 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 			Name: "cache_refresh",
 			Help: "Number of entries refreshed in cache.",
 		})
-	c.metrics.pollerLoopTime = r.SummaryVec(
-		reporter.SummaryOpts{
-			Name:       "poller_loop_time_seconds",
-			Help:       "Time spent in each state of the poller loop.",
-			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
-		},
-		[]string{"worker", "state"})
 	c.metrics.pollerBusyCount = r.CounterVec(
 		reporter.CounterOpts{
 			Name: "poller_busy_count",
@@ -183,7 +175,6 @@ func (c *Component) Start() error {
 		c.t.Go(func() error {
 			c.r.Debug().Str("worker", workerIDStr).Msg("starting SNMP poller")
 			for {
-				startIdle := time.Now()
 				select {
 				case <-c.t.Dying():
 					c.r.Debug().Str("worker", workerIDStr).Msg("stopping SNMP poller")
@@ -193,12 +184,7 @@ func (c *Component) Start() error {
 						cb(reporter.HealthcheckOK, fmt.Sprintf("worker %s ok", workerIDStr))
 					}
 				case request := <-c.pollerChannel:
-					startBusy := time.Now()
 					c.pollerIncomingRequest(request)
-					idleTime := float64(startBusy.Sub(startIdle).Nanoseconds()) / 1000 / 1000 / 1000
-					busyTime := float64(time.Since(startBusy).Nanoseconds()) / 1000 / 1000 / 1000
-					c.metrics.pollerLoopTime.WithLabelValues(workerIDStr, "idle").Observe(idleTime)
-					c.metrics.pollerLoopTime.WithLabelValues(workerIDStr, "busy").Observe(busyTime)
 				}
 			}
 		})
