@@ -7,6 +7,7 @@ import (
 	netHTTP "net/http"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -117,12 +118,20 @@ and exports them to Kafka.`,
 				continue
 			}
 			// From AKVORADO_SQUID_PURPLE_QUIRK=47, we
-			// build a map "squid -> purple -> quirk -> 47"
+			// build a map "squid -> purple -> quirk ->
+			// 47". From AKVORADO_SQUID_3_PURPLE=47, we
+			// build "squid[3] -> purple -> 47"
 			var rawConfig interface{}
 			rawConfig = kv[1]
 			for i := len(kk) - 1; i > 0; i-- {
-				rawConfig = map[string]interface{}{
-					kk[i]: rawConfig,
+				if index, err := strconv.Atoi(kk[i]); err == nil {
+					newRawConfig := make([]interface{}, index+1)
+					newRawConfig[index] = rawConfig
+					rawConfig = newRawConfig
+				} else {
+					rawConfig = map[string]interface{}{
+						kk[i]: rawConfig,
+					}
 				}
 			}
 			if err := decoder.Decode(rawConfig); err != nil {

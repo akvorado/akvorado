@@ -112,6 +112,10 @@ func ConfigurationUnmarshalerHook() mapstructure.DecodeHookFunc {
 
 		// Alter config with a copy of the concrete type
 		original := reflect.Indirect(reflect.ValueOf(input))
+		if !configField.IsNil() && configField.Elem().Type().Elem() == reflect.TypeOf(input).Elem() {
+			// Use the value we already have instead of default.
+			original = reflect.Indirect(configField.Elem())
+		}
 		copy := reflect.New(original.Type())
 		copy.Elem().Set(reflect.ValueOf(original.Interface()))
 		configField.Set(copy)

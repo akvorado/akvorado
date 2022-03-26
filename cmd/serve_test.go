@@ -106,10 +106,15 @@ core:
 	ioutil.WriteFile(configFile, []byte(config), 0644)
 
 	// Environment
-	os.Setenv("AKVORADO_FLOW_WORKERS", "3")
 	os.Setenv("AKVORADO_SNMP_CACHEDURATION", "22m")
 	os.Setenv("AKVORADO_SNMP_DEFAULTCOMMUNITY", "privateer")
 	os.Setenv("AKVORADO_KAFKA_BROKERS", "127.0.0.1:9092,127.0.0.2:9092")
+	os.Setenv("AKVORADO_FLOW_WORKERS", "3")
+	os.Setenv("AKVORADO_FLOW_INPUTS_0_LISTEN", "0.0.0.0:2056")
+	// We may be lucky or the environment is keeping order
+	os.Setenv("AKVORADO_FLOW_INPUTS_1_TYPE", "file")
+	os.Setenv("AKVORADO_FLOW_INPUTS_1_DECODER", "netflow")
+	os.Setenv("AKVORADO_FLOW_INPUTS_1_PATHS", "f1,f2")
 
 	// Start serves with it
 	root := cmd.RootCmd
@@ -127,8 +132,23 @@ core:
 	if err := yaml.Unmarshal(buf.Bytes(), &got); err != nil {
 		t.Fatalf("Unmarshal() error:\n%+v", err)
 	}
-	want(t, got["flow"]["workers"], 3)
 	want(t, got["snmp"]["cacheduration"], "22m0s")
 	want(t, got["snmp"]["defaultcommunity"], "privateer")
 	want(t, got["kafka"]["brokers"], []string{"127.0.0.1:9092", "127.0.0.2:9092"})
+	want(t, got["flow"], map[string]interface{}{
+		"inputs": []map[string]interface{}{
+			{
+				"type":      "udp",
+				"decoder":   "netflow",
+				"listen":    "0.0.0.0:2056",
+				"queuesize": 100000,
+				"workers":   5,
+			}, {
+				"type":    "file",
+				"decoder": "netflow",
+				"paths":   []string{"f1", "f2"},
+			},
+		},
+		"workers": 3,
+	})
 }

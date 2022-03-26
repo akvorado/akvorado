@@ -107,7 +107,11 @@ func TestDecodeConfiguration(t *testing.T) {
 				Workers: 10,
 				Inputs: []InputConfiguration{{
 					Decoder: "netflow",
-					Config:  &udp.DefaultConfiguration,
+					Config: &udp.Configuration{
+						Workers:   2,
+						QueueSize: 100,
+						Listen:    "127.0.0.1:2055",
+					},
 				}},
 			},
 			Source: map[string]interface{}{
@@ -122,8 +126,8 @@ func TestDecodeConfiguration(t *testing.T) {
 				Inputs: []InputConfiguration{{
 					Decoder: "netflow",
 					Config: &udp.Configuration{
-						Workers:   1,
-						QueueSize: 100000,
+						Workers:   2,
+						QueueSize: 100,
 						Listen:    "192.0.2.1:2055",
 					},
 				}},
@@ -160,7 +164,7 @@ func TestDecodeConfiguration(t *testing.T) {
 		})
 	}
 
-	// Check we didn't alter the default value
+	// Check we didn't alter the default value for UDP
 	if diff := helpers.Diff(udp.DefaultConfiguration, udp.Configuration{
 		Workers:   1,
 		QueueSize: 100000,
