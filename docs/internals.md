@@ -83,8 +83,8 @@ design to scale is a bit different as *Akvorado* will create a socket
 for each worker instead of distributing incoming flows using message
 passing.
 
-Only Netflow v9 is currently handled. However, as *GoFlow2* also
-supports sFlow and IPFIX, support for them can be added later.
+Only Netflow v9 and IPFIX are currently handled. However, as *GoFlow2*
+also supports sFlow, support can be added later.
 
 The design of this component is modular as it is possible to "plug"
 new decoders and new inputs easily. It is expected that most buffering

@@ -1,4 +1,4 @@
-// Package netflow handles NetFlow v9 decoding.
+// Package netflow handles NetFlow v9 and IPFIX decoding.
 package netflow
 
 import (
@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/netsampler/goflow2/decoders/netflow"
-	goflowmessage "github.com/netsampler/goflow2/pb"
 	"github.com/netsampler/goflow2/producer"
 
 	"akvorado/flow/decoder"
@@ -98,13 +97,17 @@ type templateSystem struct {
 func (s *templateSystem) AddTemplate(version uint16, obsDomainID uint32, template interface{}) {
 	s.templates.AddTemplate(version, obsDomainID, template)
 
-	typeStr := "options_template"
-	var templateID uint16
+	var (
+		templateID uint16
+		typeStr    string
+	)
 	switch templateIDConv := template.(type) {
 	case netflow.IPFIXOptionsTemplateRecord:
 		templateID = templateIDConv.TemplateId
+		typeStr = "options_template"
 	case netflow.NFv9OptionsTemplateRecord:
 		templateID = templateIDConv.TemplateId
+		typeStr = "options_template"
 	case netflow.TemplateRecord:
 		templateID = templateIDConv.TemplateId
 		typeStr = "template"
@@ -116,8 +119,7 @@ func (s *templateSystem) AddTemplate(version uint16, obsDomainID uint32, templat
 		strconv.Itoa(int(obsDomainID)),
 		strconv.Itoa(int(templateID)),
 		typeStr,
-	).
-		Inc()
+	).Inc()
 }
 
 func (s *templateSystem) GetTemplate(version uint16, obsDomainID uint32, templateID uint16) (interface{}, error) {
@@ -157,59 +159,69 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*decoder.FlowMessage {
 	if err != nil {
 		switch err.(type) {
 		case *netflow.ErrorTemplateNotFound:
-			nd.metrics.errors.WithLabelValues(key, "template_not_found").
-				Inc()
+			nd.metrics.errors.WithLabelValues(key, "template_not_found").Inc()
 		default:
-			nd.metrics.errors.WithLabelValues(key, "error_decoding").
-				Inc()
+			nd.metrics.errors.WithLabelValues(key, "error_decoding").Inc()
 		}
 		return nil
 	}
 
-	var flowMessageSet []*goflowmessage.FlowMessage
+	var (
+		version  string
+		flowSets []interface{}
+	)
 
+	// Update some stats
 	switch msgDecConv := msgDec.(type) {
+	case netflow.IPFIXPacket:
+		version = "10"
+		flowSets = msgDecConv.FlowSets
 	case netflow.NFv9Packet:
-		nd.metrics.stats.WithLabelValues(key, "9").
-			Inc()
-
-		for _, fs := range msgDecConv.FlowSets {
-			switch fsConv := fs.(type) {
-			case netflow.TemplateFlowSet:
-				nd.metrics.setStatsSum.WithLabelValues(key, "9", "TemplateFlowSet").
-					Inc()
-				nd.metrics.setRecordsStatsSum.WithLabelValues(key, "9", "TemplateFlowSet").
-					Add(float64(len(fsConv.Records)))
-			case netflow.NFv9OptionsTemplateFlowSet:
-				nd.metrics.setStatsSum.WithLabelValues(key, "9", "OptionsTemplateFlowSet").
-					Inc()
-				nd.metrics.setRecordsStatsSum.WithLabelValues(key, "9", "OptionsTemplateFlowSet").
-					Add(float64(len(fsConv.Records)))
-			case netflow.OptionsDataFlowSet:
-				nd.metrics.setStatsSum.WithLabelValues(key, "9", "OptionsDataFlowSet").
-					Inc()
-				nd.metrics.setRecordsStatsSum.WithLabelValues(key, "9", "OptionsDataFlowSet").
-					Add(float64(len(fsConv.Records)))
-			case netflow.DataFlowSet:
-				nd.metrics.setStatsSum.WithLabelValues(key, "9", "DataFlowSet").
-					Inc()
-				nd.metrics.setRecordsStatsSum.WithLabelValues(key, "9", "DataFlowSet").
-					Add(float64(len(fsConv.Records)))
-			}
-		}
-		flowMessageSet, err = producer.ProcessMessageNetFlow(msgDecConv, sampling)
-
-		for _, fmsg := range flowMessageSet {
-			fmsg.TimeReceived = ts
-			fmsg.SamplerAddress = in.Source
-			timeDiff := fmsg.TimeReceived - fmsg.TimeFlowEnd
-			nd.metrics.timeStatsSum.WithLabelValues(key, "9").
-				Observe(float64(timeDiff))
-		}
+		version = "9"
+		flowSets = msgDecConv.FlowSets
 	default:
 		nd.metrics.stats.WithLabelValues(key, "unknown").
 			Inc()
 		return nil
+	}
+	nd.metrics.stats.WithLabelValues(key, version).Inc()
+	for _, fs := range flowSets {
+		switch fsConv := fs.(type) {
+		case netflow.TemplateFlowSet:
+			nd.metrics.setStatsSum.WithLabelValues(key, version, "TemplateFlowSet").
+				Inc()
+			nd.metrics.setRecordsStatsSum.WithLabelValues(key, version, "TemplateFlowSet").
+				Add(float64(len(fsConv.Records)))
+		case netflow.IPFIXOptionsTemplateFlowSet:
+			nd.metrics.setStatsSum.WithLabelValues(key, version, "OptionsTemplateFlowSet").
+				Inc()
+			nd.metrics.setRecordsStatsSum.WithLabelValues(key, version, "OptionsTemplateFlowSet").
+				Add(float64(len(fsConv.Records)))
+		case netflow.NFv9OptionsTemplateFlowSet:
+			nd.metrics.setStatsSum.WithLabelValues(key, version, "OptionsTemplateFlowSet").
+				Inc()
+			nd.metrics.setRecordsStatsSum.WithLabelValues(key, version, "OptionsTemplateFlowSet").
+				Add(float64(len(fsConv.Records)))
+		case netflow.OptionsDataFlowSet:
+			nd.metrics.setStatsSum.WithLabelValues(key, version, "OptionsDataFlowSet").
+				Inc()
+			nd.metrics.setRecordsStatsSum.WithLabelValues(key, version, "OptionsDataFlowSet").
+				Add(float64(len(fsConv.Records)))
+		case netflow.DataFlowSet:
+			nd.metrics.setStatsSum.WithLabelValues(key, version, "DataFlowSet").
+				Inc()
+			nd.metrics.setRecordsStatsSum.WithLabelValues(key, version, "DataFlowSet").
+				Add(float64(len(fsConv.Records)))
+		}
+	}
+
+	flowMessageSet, err := producer.ProcessMessageNetFlow(msgDec, sampling)
+	for _, fmsg := range flowMessageSet {
+		fmsg.TimeReceived = ts
+		fmsg.SamplerAddress = in.Source
+		timeDiff := fmsg.TimeReceived - fmsg.TimeFlowEnd
+		nd.metrics.timeStatsSum.WithLabelValues(key, version).
+			Observe(float64(timeDiff))
 	}
 
 	results := make([]*decoder.FlowMessage, len(flowMessageSet))

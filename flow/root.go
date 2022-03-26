@@ -1,4 +1,4 @@
-// Package flow handle incoming flows (currently Netflow v9).
+// Package flow handle incoming flows (currently Netflow v9 and IPFIX).
 package flow
 
 import (

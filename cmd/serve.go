@@ -65,7 +65,7 @@ var ServeOptions serveOptions
 var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Start akvorado",
-	Long: `Akvorado is a Netflow collector. It hydrates flows with information from SNMP and GeoIP
+	Long: `Akvorado is a Netflow/IPFIX collector. It hydrates flows with information from SNMP and GeoIP
 and exports them to Kafka.`,
 	Args: cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
