@@ -100,7 +100,6 @@ func ConfigurationUnmarshalerHook() mapstructure.DecodeHookFunc {
 			}
 		}
 		if inputType == "" {
-			fmt.Println(from)
 			return nil, errors.New("input configuration has no type")
 		}
 

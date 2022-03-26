@@ -282,13 +282,11 @@ func (c *Component) dispatchIncomingRequest(request lookupRequest) {
 		if len(ifIndexes) > 1 {
 			c.metrics.pollerCoalescedCount.Add(float64(len(ifIndexes)))
 		}
-		fmt.Println("in1")
 		select {
 		case <-c.t.Dying():
 			return
 		case c.pollerChannel <- lookupRequest{samplerIP, ifIndexes}:
 		}
-		fmt.Println("in2")
 	}
 }
 
