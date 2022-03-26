@@ -3,7 +3,9 @@
 package geoip
 
 import (
+	"path"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"akvorado/daemon"
@@ -18,8 +20,9 @@ import (
 func NewMock(t *testing.T, r *reporter.Reporter) *Component {
 	t.Helper()
 	config := DefaultConfiguration
-	config.CountryDatabase = filepath.Join("..", "geoip", "testdata", "GeoLite2-Country-Test.mmdb")
-	config.ASNDatabase = filepath.Join("..", "geoip", "testdata", "GeoLite2-ASN-Test.mmdb")
+	_, src, _, _ := runtime.Caller(0)
+	config.CountryDatabase = filepath.Join(path.Dir(src), "testdata", "GeoLite2-Country-Test.mmdb")
+	config.ASNDatabase = filepath.Join(path.Dir(src), "testdata", "GeoLite2-ASN-Test.mmdb")
 	c, err := New(r, config, Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+s", err)

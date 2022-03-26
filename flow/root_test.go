@@ -2,6 +2,7 @@ package flow
 
 import (
 	"path"
+	"runtime"
 	"testing"
 	"time"
 
@@ -11,7 +12,8 @@ import (
 
 func TestFlow(t *testing.T) {
 	r := reporter.NewMock(t)
-	base := path.Join("..", "flow", "decoder", "netflow", "testdata")
+	_, src, _, _ := runtime.Caller(0)
+	base := path.Join(path.Dir(src), "decoder", "netflow", "testdata")
 	config := DefaultConfiguration
 	config.Inputs = []InputConfiguration{
 		{
