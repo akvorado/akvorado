@@ -254,13 +254,13 @@ func daemonStart(r *reporter.Reporter, config ServeConfiguration, checkOnly bool
 		r,
 		daemonComponent,
 		httpComponent,
-		flowComponent,
 		snmpComponent,
 		geoipComponent,
 		kafkaComponent,
 		clickhouseComponent,
 		coreComponent,
 		webComponent,
+		flowComponent,
 	}
 	startedComponents := []interface{}{}
 	defer func() {
