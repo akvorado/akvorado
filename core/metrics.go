@@ -14,8 +14,6 @@ type metrics struct {
 	classifierCacheHits   reporter.CounterFunc
 	classifierCacheMisses reporter.CounterFunc
 	classifierErrors      *reporter.CounterVec
-
-	loopTime *reporter.SummaryVec
 }
 
 func (c *Component) initMetrics() {
@@ -74,13 +72,4 @@ func (c *Component) initMetrics() {
 			Help: "Number of errors when evaluating a classifer",
 		},
 		[]string{"type", "index"})
-
-	c.metrics.loopTime = c.r.SummaryVec(
-		reporter.SummaryOpts{
-			Name:       "loop_time_seconds",
-			Help:       "How much time is spend in busy/idle state.",
-			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
-		},
-		[]string{"worker", "state"},
-	)
 }
