@@ -107,6 +107,7 @@ func (in *Input) Start() (<-chan []*decoder.FlowMessage, error) {
 				return nil, fmt.Errorf("unable to resolve %v: %w", in.config.Listen, err)
 			}
 		}
+		// Enable SO_REUSEPORT to bind several routines to the same port.
 		var listenConfig = net.ListenConfig{
 			Control: func(network, address string, c syscall.RawConn) error {
 				var err error
@@ -127,6 +128,14 @@ func (in *Input) Start() (<-chan []*decoder.FlowMessage, error) {
 		}
 		udpConn := pconn.(*net.UDPConn)
 		in.address = udpConn.LocalAddr()
+		if in.config.ReceiveBuffer > 0 {
+			if err := udpConn.SetReadBuffer(int(in.config.ReceiveBuffer)); err != nil {
+				in.r.Warn().
+					Str("error", err.Error()).
+					Str("listen", in.config.Listen).
+					Msgf("unable to set requested buffer size (%d bytes)", in.config.ReceiveBuffer)
+			}
+		}
 
 		conns = append(conns, udpConn)
 	}

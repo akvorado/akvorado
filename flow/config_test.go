@@ -184,6 +184,7 @@ func TestMarshalYAML(t *testing.T) {
 - decoder: netflow
   listen: 192.0.2.11:2055
   queuesize: 1000
+  receivebuffer: 0
   type: udp
   workers: 3
 `

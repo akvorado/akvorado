@@ -10,6 +10,12 @@ type Configuration struct {
 	// communicate incoming flows. 0 can be used to disable
 	// buffering.
 	QueueSize uint
+	// ReceiveBuffer is the value of the requested buffer size for
+	// each listening socket. When 0, the value is left to the
+	// default value set by the kernel (net.core.wmem_default).
+	// The value cannot exceed the kernel max value
+	// (net.core.wmem_max).
+	ReceiveBuffer uint
 }
 
 // DefaultConfiguration is the default configuration for this input

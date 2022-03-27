@@ -63,11 +63,12 @@ core:
 	}
 	want(t, got["flow"], map[string]interface{}{
 		"inputs": []map[string]interface{}{{
-			"type":      "udp",
-			"decoder":   "netflow",
-			"listen":    "0.0.0.0:2055",
-			"queuesize": 100000,
-			"workers":   5,
+			"type":          "udp",
+			"decoder":       "netflow",
+			"listen":        "0.0.0.0:2055",
+			"queuesize":     100000,
+			"receivebuffer": 0,
+			"workers":       5,
 		}},
 	})
 	want(t, got["snmp"]["workers"], 2)
@@ -136,11 +137,12 @@ core:
 	want(t, got["flow"], map[string]interface{}{
 		"inputs": []map[string]interface{}{
 			{
-				"type":      "udp",
-				"decoder":   "netflow",
-				"listen":    "0.0.0.0:2056",
-				"queuesize": 100000,
-				"workers":   5,
+				"type":          "udp",
+				"decoder":       "netflow",
+				"listen":        "0.0.0.0:2056",
+				"queuesize":     100000,
+				"receivebuffer": 0,
+				"workers":       5,
 			}, {
 				"type":    "file",
 				"decoder": "netflow",
