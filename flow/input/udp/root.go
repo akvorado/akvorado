@@ -2,13 +2,15 @@
 package udp
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
 	"strconv"
+	"syscall"
 	"time"
 
-	"github.com/libp2p/go-reuseport"
+	"golang.org/x/sys/unix"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/daemon"
@@ -100,12 +102,26 @@ func (in *Input) Start() (<-chan []*decoder.FlowMessage, error) {
 			listenAddr = in.address
 		} else {
 			var err error
-			listenAddr, err = reuseport.ResolveAddr("udp", in.config.Listen)
+			listenAddr, err = net.ResolveUDPAddr("udp", in.config.Listen)
 			if err != nil {
 				return nil, fmt.Errorf("unable to resolve %v: %w", in.config.Listen, err)
 			}
 		}
-		pconn, err := reuseport.ListenPacket("udp", listenAddr.String())
+		var listenConfig = net.ListenConfig{
+			Control: func(network, address string, c syscall.RawConn) error {
+				var err error
+				c.Control(func(fd uintptr) {
+					for _, opt := range []int{unix.SO_REUSEADDR, unix.SO_REUSEPORT} {
+						err = unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, opt, 1)
+						if err != nil {
+							return
+						}
+					}
+				})
+				return err
+			},
+		}
+		pconn, err := listenConfig.ListenPacket(in.t.Context(context.Background()), "udp", listenAddr.String())
 		if err != nil {
 			return nil, fmt.Errorf("unable to listen to %v: %w", listenAddr, err)
 		}

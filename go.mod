@@ -15,7 +15,6 @@ require (
 	github.com/gosnmp/gosnmp v1.34.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/kylelemons/godebug v1.1.0
-	github.com/libp2p/go-reuseport v0.1.0
 	github.com/mattn/go-isatty v0.0.14
 	github.com/mitchellh/mapstructure v1.4.3
 	github.com/netsampler/goflow2 v1.0.5-0.20220314051046-58f0f97a629c
@@ -27,6 +26,7 @@ require (
 	github.com/slayercat/gosnmp v1.24.0
 	github.com/spf13/cobra v1.3.0
 	go.uber.org/atomic v1.7.0
+	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 	gopkg.in/yaml.v2 v2.4.0
@@ -70,7 +70,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.4.1 // indirect
 	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064 // indirect
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
-	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 // indirect
 )
 
 replace github.com/slayercat/gosnmp => github.com/slayercat/gosnmp v1.24.1-0.20220124233957-4b805977d286
