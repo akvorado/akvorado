@@ -73,6 +73,7 @@ func TestUDPInput(t *testing.T) {
 	expectedMetrics := map[string]string{
 		`bytes{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0"}`:                              "12",
 		`packets{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0"}`:                            "1",
+		`in_drops{listener="127.0.0.1:0",worker="0"}`:                                               "0",
 		`summary_size_bytes_count{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0"}`:           "1",
 		`summary_size_bytes_sum{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0"}`:             "12",
 		`summary_size_bytes{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0",quantile="0.5"}`:  "12",
@@ -121,7 +122,8 @@ func TestOverflow(t *testing.T) {
 	gotMetrics := r.GetMetrics("akvorado_flow_input_udp_")
 	expectedMetrics := map[string]string{
 		`bytes{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0"}`:                              "12",
-		`drops{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0"}`:                              "9",
+		`in_drops{listener="127.0.0.1:0",worker="0"}`:                                               "0",
+		`out_drops{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0"}`:                          "9",
 		`packets{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0"}`:                            "1",
 		`summary_size_bytes_count{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0"}`:           "1",
 		`summary_size_bytes_sum{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0"}`:             "12",

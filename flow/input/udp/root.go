@@ -7,10 +7,8 @@ import (
 	"fmt"
 	"net"
 	"strconv"
-	"syscall"
 	"time"
 
-	"golang.org/x/sys/unix"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/daemon"
@@ -30,7 +28,8 @@ type Input struct {
 		packets       *reporter.CounterVec
 		packetSizeSum *reporter.SummaryVec
 		errors        *reporter.CounterVec
-		drops         *reporter.CounterVec
+		outDrops      *reporter.CounterVec
+		inDrops       *reporter.GaugeVec
 	}
 
 	address net.Addr                    // listening address, for testing purpoese
@@ -76,12 +75,19 @@ func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Comp
 		},
 		[]string{"listener", "worker"},
 	)
-	input.metrics.drops = r.CounterVec(
+	input.metrics.outDrops = r.CounterVec(
 		reporter.CounterOpts{
-			Name: "drops",
+			Name: "out_drops",
 			Help: "Dropped packets due to internal queue full.",
 		},
 		[]string{"listener", "worker", "sampler"},
+	)
+	input.metrics.inDrops = r.GaugeVec(
+		reporter.GaugeOpts{
+			Name: "in_drops",
+			Help: "Dropped packets due to listen queue full.",
+		},
+		[]string{"listener", "worker"},
 	)
 
 	daemon.Track(&input.t, "flow/input/udp")
@@ -107,21 +113,6 @@ func (in *Input) Start() (<-chan []*decoder.FlowMessage, error) {
 				return nil, fmt.Errorf("unable to resolve %v: %w", in.config.Listen, err)
 			}
 		}
-		// Enable SO_REUSEPORT to bind several routines to the same port.
-		var listenConfig = net.ListenConfig{
-			Control: func(network, address string, c syscall.RawConn) error {
-				var err error
-				c.Control(func(fd uintptr) {
-					for _, opt := range []int{unix.SO_REUSEADDR, unix.SO_REUSEPORT} {
-						err = unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, opt, 1)
-						if err != nil {
-							return
-						}
-					}
-				})
-				return err
-			},
-		}
 		pconn, err := listenConfig.ListenPacket(in.t.Context(context.Background()), "udp", listenAddr.String())
 		if err != nil {
 			return nil, fmt.Errorf("unable to listen to %v: %w", listenAddr, err)
@@ -145,14 +136,15 @@ func (in *Input) Start() (<-chan []*decoder.FlowMessage, error) {
 		worker := strconv.Itoa(i)
 		in.t.Go(func() error {
 			payload := make([]byte, 9000)
+			oob := make([]byte, oobLength)
 			listen := in.config.Listen
 			l := in.r.With().
 				Str("worker", worker).
 				Str("listen", listen).
 				Logger()
 			errLogger := l.Sample(reporter.BurstSampler(time.Minute, 1))
-			for {
-				size, source, err := conns[workerID].ReadFromUDP(payload)
+			for count := 0; ; count++ {
+				n, oobn, _, source, err := conns[workerID].ReadMsgUDP(payload, oob)
 				if err != nil {
 					if errors.Is(err, net.ErrClosed) {
 						return nil
@@ -162,10 +154,19 @@ func (in *Input) Start() (<-chan []*decoder.FlowMessage, error) {
 					continue
 				}
 
+				if count < 100 || count%100 == 0 {
+					if drops, err := parseSocketControlMessage(oob[:oobn]); err != nil {
+						errLogger.Err(err).Msg("unable to decode UDP control message")
+					} else {
+						in.metrics.inDrops.WithLabelValues(listen, worker).Set(
+							float64(drops))
+					}
+				}
+
 				srcIP := source.IP.String()
 				flows := in.decoder.Decode(decoder.RawFlow{
 					TimeReceived: time.Now(),
-					Payload:      payload[:size],
+					Payload:      payload[:n],
 					Source:       source.IP,
 				})
 				if len(flows) == 0 {
@@ -176,15 +177,15 @@ func (in *Input) Start() (<-chan []*decoder.FlowMessage, error) {
 					return nil
 				case in.ch <- flows:
 					in.metrics.bytes.WithLabelValues(listen, worker, srcIP).
-						Add(float64(size))
+						Add(float64(n))
 					in.metrics.packets.WithLabelValues(listen, worker, srcIP).
 						Inc()
 					in.metrics.packetSizeSum.WithLabelValues(listen, worker, srcIP).
-						Observe(float64(size))
+						Observe(float64(n))
 				default:
 					errLogger.Warn().Msgf("dropping flow due to queue full (size %d)",
 						in.config.QueueSize)
-					in.metrics.drops.WithLabelValues(listen, worker, srcIP).
+					in.metrics.outDrops.WithLabelValues(listen, worker, srcIP).
 						Inc()
 				}
 			}
