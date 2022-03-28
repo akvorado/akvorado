@@ -9,6 +9,10 @@ import (
 	netHTTP "net/http"
 	"net/http/httputil"
 	"net/url"
+	"os"
+	"path"
+	"path/filepath"
+	"runtime"
 
 	"akvorado/http"
 	"akvorado/reporter"
@@ -38,11 +42,20 @@ func New(reporter *reporter.Reporter, config Configuration, dependencies Depende
 		d:      &dependencies,
 		config: config,
 	}
-	data, err := fs.Sub(rootSite, "data")
-	if err != nil {
-		return nil, fmt.Errorf("unable to get embedded website: %w", err)
+
+	var data fs.FS
+	if config.ServeLiveFS {
+		_, src, _, _ := runtime.Caller(0)
+		data = os.DirFS(filepath.Join(path.Dir(src), "data"))
+	} else {
+		var err error
+		data, err = fs.Sub(rootSite, "data")
+		if err != nil {
+			return nil, fmt.Errorf("unable to get embedded website: %w", err)
+		}
 	}
 	c.d.HTTP.AddHandler("/", netHTTP.FileServer(netHTTP.FS(data)))
+
 	if c.config.GrafanaURL != "" {
 		// Provide a proxy for Grafana
 		url, err := url.Parse(config.GrafanaURL)
@@ -63,5 +76,6 @@ func New(reporter *reporter.Reporter, config Configuration, dependencies Depende
 			})
 		c.d.HTTP.AddHandler("/grafana/", proxyHandler)
 	}
+
 	return &c, nil
 }
