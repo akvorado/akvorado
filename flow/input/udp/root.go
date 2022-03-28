@@ -155,6 +155,7 @@ func (in *Input) Start() (<-chan []*decoder.FlowMessage, error) {
 				}
 
 				if count < 100 || count%100 == 0 {
+					// No need to update the inDrops counter too often.
 					if drops, err := parseSocketControlMessage(oob[:oobn]); err != nil {
 						errLogger.Err(err).Msg("unable to decode UDP control message")
 					} else {
