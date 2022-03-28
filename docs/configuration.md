@@ -80,8 +80,9 @@ Each input should define a `type` and `decoder`. For `decoder`, only
 
 For the UDP input, the supported keys are `listen` to set the
 listening endpoint, `workers` to set the number of workers to listen
-to the socket and `queue-size` to define the number of messages to
-buffer inside each worker. For example:
+to the socket, `receive-buffer` to set the size of the kernel's
+incoming buffer for each listening socket, and `queue-size` to define
+the number of messages to buffer inside each worker. For example:
 
 ```yaml
 flow:

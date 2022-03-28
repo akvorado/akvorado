@@ -61,5 +61,6 @@ nav:
       Configuration: configuration.md
       Usage: usage.md
       Integration: integration.md
+      Troubleshooting: troubleshooting.md
       Internals: internals.md
 
