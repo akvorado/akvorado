@@ -51,7 +51,7 @@ func (c *Component) migrateDatabaseOnServer(server string) error {
 	data := map[string]string{
 		"KafkaBrokers":    strings.Join(kafkaConf.Brokers, ","),
 		"KafkaTopic":      kafkaConf.Topic,
-		"KakfaPartitions": strconv.Itoa(partitions),
+		"KafkaPartitions": strconv.Itoa(partitions),
 		"BaseURL":         baseURL,
 	}
 
