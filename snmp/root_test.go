@@ -122,7 +122,9 @@ func TestAutoRefresh(t *testing.T) {
 	c.Lookup("127.0.0.1", 765)
 
 	// Go forward, we expect the entry to have been refreshed and be still present
-	mockClock.Add(25 * time.Minute)
+	mockClock.Add(11 * time.Minute)
+	time.Sleep(30 * time.Millisecond)
+	mockClock.Add(2 * time.Minute)
 	time.Sleep(30 * time.Millisecond)
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
 		ExporterName: "127_0_0_1",
@@ -141,7 +143,7 @@ func TestAutoRefresh(t *testing.T) {
 		`miss`:         "1",
 		`size`:         "1",
 		`exporters`:    "1",
-		`refresh_runs`: "37", // 75/2
+		`refresh_runs`: "31", // 63/2
 		`refresh`:      "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
