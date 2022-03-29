@@ -1,6 +1,7 @@
 package clickhouse
 
 import (
+	"akvorado/reporter"
 	"embed"
 	"errors"
 	"fmt"
@@ -94,6 +95,7 @@ func (c *Component) migrateDatabaseOnServer(server string) error {
 		l.Err(err).Msg("unable to setup migration")
 		return fmt.Errorf("unable to setup migration: %w", err)
 	}
+	m.Log = &migrateLogger{c.r}
 
 	logCurrentVersion := func(why string) {
 		currentVersion, dirty, err := m.Version()
@@ -147,4 +149,18 @@ func (c *Component) getHTTPBaseURL(address string) (string, error) {
 		net.JoinHostPort(localAddr.IP.String(), port))
 	c.r.Debug().Msgf("detected base URL is %s", base)
 	return base, nil
+}
+
+type migrateLogger struct {
+	r *reporter.Reporter
+}
+
+func (l *migrateLogger) Printf(format string, v ...interface{}) {
+	if e := l.r.Info(); e.Enabled() {
+		e.Msg(fmt.Sprintf(format, v...))
+	}
+}
+
+func (l *migrateLogger) Verbose() bool {
+	return false
 }
