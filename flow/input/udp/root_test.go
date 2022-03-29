@@ -58,7 +58,7 @@ func TestUDPInput(t *testing.T) {
 	expected := []*decoder.FlowMessage{
 		{
 			TimeReceived:    got[0].TimeReceived,
-			SamplerAddress:  net.ParseIP("127.0.0.1"),
+			ExporterAddress: net.ParseIP("127.0.0.1"),
 			Bytes:           12,
 			Packets:         1,
 			InIfDescription: "hello world!",
@@ -71,14 +71,14 @@ func TestUDPInput(t *testing.T) {
 	// Check metrics
 	gotMetrics := r.GetMetrics("akvorado_flow_input_udp_")
 	expectedMetrics := map[string]string{
-		`bytes{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0"}`:                              "12",
-		`packets{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0"}`:                            "1",
-		`in_drops{listener="127.0.0.1:0",worker="0"}`:                                               "0",
-		`summary_size_bytes_count{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0"}`:           "1",
-		`summary_size_bytes_sum{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0"}`:             "12",
-		`summary_size_bytes{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0",quantile="0.5"}`:  "12",
-		`summary_size_bytes{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0",quantile="0.9"}`:  "12",
-		`summary_size_bytes{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0",quantile="0.99"}`: "12",
+		`bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                              "12",
+		`packets{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                            "1",
+		`in_drops{listener="127.0.0.1:0",worker="0"}`:                                                "0",
+		`summary_size_bytes_count{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:           "1",
+		`summary_size_bytes_sum{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:             "12",
+		`summary_size_bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0",quantile="0.5"}`:  "12",
+		`summary_size_bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0",quantile="0.9"}`:  "12",
+		`summary_size_bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0",quantile="0.99"}`: "12",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Input metrics (-got, +want):\n%s", diff)
@@ -121,15 +121,15 @@ func TestOverflow(t *testing.T) {
 	// Check metrics (same as before because we got only one packet, others were dropped)
 	gotMetrics := r.GetMetrics("akvorado_flow_input_udp_")
 	expectedMetrics := map[string]string{
-		`bytes{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0"}`:                              "12",
-		`in_drops{listener="127.0.0.1:0",worker="0"}`:                                               "0",
-		`out_drops{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0"}`:                          "9",
-		`packets{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0"}`:                            "1",
-		`summary_size_bytes_count{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0"}`:           "1",
-		`summary_size_bytes_sum{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0"}`:             "12",
-		`summary_size_bytes{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0",quantile="0.5"}`:  "12",
-		`summary_size_bytes{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0",quantile="0.9"}`:  "12",
-		`summary_size_bytes{listener="127.0.0.1:0",sampler="127.0.0.1",worker="0",quantile="0.99"}`: "12",
+		`bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                              "12",
+		`in_drops{listener="127.0.0.1:0",worker="0"}`:                                                "0",
+		`out_drops{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                          "9",
+		`packets{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                            "1",
+		`summary_size_bytes_count{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:           "1",
+		`summary_size_bytes_sum{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:             "12",
+		`summary_size_bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0",quantile="0.5"}`:  "12",
+		`summary_size_bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0",quantile="0.9"}`:  "12",
+		`summary_size_bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0",quantile="0.99"}`: "12",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Input metrics (-got, +want):\n%s", diff)

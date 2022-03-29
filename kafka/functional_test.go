@@ -96,8 +96,8 @@ func TestRealKafka(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 	gotMetrics := r.GetMetrics("akvorado_kafka_", "sent_")
 	expectedMetrics := map[string]string{
-		`sent_bytes_total{sampler="127.0.0.1"}`:    "26",
-		`sent_messages_total{sampler="127.0.0.1"}`: "2",
+		`sent_bytes_total{exporter="127.0.0.1"}`:    "26",
+		`sent_messages_total{exporter="127.0.0.1"}`: "2",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)

@@ -24,9 +24,10 @@ func TestHTTPEndpoints(t *testing.T) {
 			ContentType: "application/json",
 			FirstLines: []string{
 				`{`,
-				` "current_version": 0,`,
+				` "current_version": 1,`,
 				` "versions": {`,
-				`  "0": "/api/v0/flow/schema-0.proto"`,
+				`  "0": "/api/v0/flow/schema-0.proto",`,
+				`  "1": "/api/v0/flow/schema-1.proto"`,
 				` }`,
 				`}`,
 			},

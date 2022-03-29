@@ -51,14 +51,14 @@ func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Comp
 			Name: "bytes",
 			Help: "Bytes received by the application.",
 		},
-		[]string{"listener", "worker", "sampler"},
+		[]string{"listener", "worker", "exporter"},
 	)
 	input.metrics.packets = r.CounterVec(
 		reporter.CounterOpts{
 			Name: "packets",
 			Help: "Packets received by the application.",
 		},
-		[]string{"listener", "worker", "sampler"},
+		[]string{"listener", "worker", "exporter"},
 	)
 	input.metrics.packetSizeSum = r.SummaryVec(
 		reporter.SummaryOpts{
@@ -66,7 +66,7 @@ func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Comp
 			Help:       "Summary of packet size.",
 			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		},
-		[]string{"listener", "worker", "sampler"},
+		[]string{"listener", "worker", "exporter"},
 	)
 	input.metrics.errors = r.CounterVec(
 		reporter.CounterOpts{
@@ -80,7 +80,7 @@ func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Comp
 			Name: "out_drops",
 			Help: "Dropped packets due to internal queue full.",
 		},
-		[]string{"listener", "worker", "sampler"},
+		[]string{"listener", "worker", "exporter"},
 	)
 	input.metrics.inDrops = r.GaugeVec(
 		reporter.GaugeOpts{

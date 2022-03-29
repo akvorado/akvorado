@@ -46,28 +46,28 @@ func New(r *reporter.Reporter) decoder.Decoder {
 			Name: "errors_count",
 			Help: "Netflows processed errors.",
 		},
-		[]string{"sampler", "error"},
+		[]string{"exporter", "error"},
 	)
 	nd.metrics.stats = nd.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "count",
 			Help: "Netflows processed.",
 		},
-		[]string{"sampler", "version"},
+		[]string{"exporter", "version"},
 	)
 	nd.metrics.setRecordsStatsSum = nd.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "flowset_records_sum",
 			Help: "Netflows FlowSets sum of records.",
 		},
-		[]string{"sampler", "version", "type"},
+		[]string{"exporter", "version", "type"},
 	)
 	nd.metrics.setStatsSum = nd.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "flowset_sum",
 			Help: "Netflows FlowSets sum.",
 		},
-		[]string{"sampler", "version", "type"},
+		[]string{"exporter", "version", "type"},
 	)
 	nd.metrics.timeStatsSum = nd.r.SummaryVec(
 		reporter.SummaryOpts{
@@ -75,14 +75,14 @@ func New(r *reporter.Reporter) decoder.Decoder {
 			Help:       "Netflows time difference between time of flow and processing.",
 			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		},
-		[]string{"sampler", "version"},
+		[]string{"exporter", "version"},
 	)
 	nd.metrics.templatesStats = nd.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "templates_count",
 			Help: "Netflows Template count.",
 		},
-		[]string{"sampler", "version", "obs_domain_id", "template_id", "type"},
+		[]string{"exporter", "version", "obs_domain_id", "template_id", "type"},
 	)
 
 	return nd

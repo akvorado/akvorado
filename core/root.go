@@ -113,11 +113,11 @@ func (c *Component) runWorker(workerID int) error {
 				return errors.New("no more flow available")
 			}
 
-			sampler := net.IP(flow.SamplerAddress).String()
-			c.metrics.flowsReceived.WithLabelValues(sampler).Inc()
+			exporter := net.IP(flow.ExporterAddress).String()
+			c.metrics.flowsReceived.WithLabelValues(exporter).Inc()
 
 			// Hydratation
-			if skip := c.hydrateFlow(sampler, flow); skip {
+			if skip := c.hydrateFlow(exporter, flow); skip {
 				continue
 			}
 
@@ -125,14 +125,14 @@ func (c *Component) runWorker(workerID int) error {
 			buf := proto.NewBuffer([]byte{})
 			err := buf.EncodeMessage(flow)
 			if err != nil {
-				errLogger.Err(err).Str("sampler", sampler).Msg("unable to serialize flow")
-				c.metrics.flowsErrors.WithLabelValues(sampler, err.Error()).Inc()
+				errLogger.Err(err).Str("exporter", exporter).Msg("unable to serialize flow")
+				c.metrics.flowsErrors.WithLabelValues(exporter, err.Error()).Inc()
 				continue
 			}
 
 			// Forward to Kafka (this could block
-			c.d.Kafka.Send(sampler, buf.Bytes())
-			c.metrics.flowsForwarded.WithLabelValues(sampler).Inc()
+			c.d.Kafka.Send(exporter, buf.Bytes())
+			c.metrics.flowsForwarded.WithLabelValues(exporter).Inc()
 
 			// If we have HTTP clients, send to them too
 			if atomic.LoadUint32(&c.httpFlowClients) > 0 {

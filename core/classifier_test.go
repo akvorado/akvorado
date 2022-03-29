@@ -6,11 +6,11 @@ import (
 	"akvorado/helpers"
 )
 
-func TestSamplerClassifier(t *testing.T) {
+func TestExporterClassifier(t *testing.T) {
 	cases := []struct {
 		Description   string
 		Program       string
-		SamplerInfo   samplerInfo
+		ExporterInfo  exporterInfo
 		ExpectedGroup string
 		ExpectedErr   bool
 	}{
@@ -22,36 +22,36 @@ func TestSamplerClassifier(t *testing.T) {
 			Program:       `Classify("europe")`,
 			ExpectedGroup: "europe",
 		}, {
-			Description:   "access to sampler name",
-			Program:       `Sampler.Name startsWith "samp" && Classify("europe")`,
-			SamplerInfo:   samplerInfo{"127.0.0.1", "sampler"},
+			Description:   "access to exporter name",
+			Program:       `Exporter.Name startsWith "expo" && Classify("europe")`,
+			ExporterInfo:  exporterInfo{"127.0.0.1", "exporter"},
 			ExpectedGroup: "europe",
 		}, {
 			Description:   "matches",
-			Program:       `Sampler.Name matches "^s.m.l" && Classify("europe")`,
-			SamplerInfo:   samplerInfo{"127.0.0.1", "sampler"},
+			Program:       `Exporter.Name matches "^e.p.r" && Classify("europe")`,
+			ExporterInfo:  exporterInfo{"127.0.0.1", "exporter"},
 			ExpectedGroup: "europe",
 		}, {
 			Description: "multiline",
-			Program: `Sampler.Name matches "^s.m.l" &&
+			Program: `Exporter.Name matches "^e.p.r" &&
 Classify("europe")`,
-			SamplerInfo:   samplerInfo{"127.0.0.1", "sampler"},
+			ExporterInfo:  exporterInfo{"127.0.0.1", "exporter"},
 			ExpectedGroup: "europe",
 		}, {
 			Description:   "regex",
-			Program:       `ClassifyRegex(Sampler.Name, "^(s.m+).l", "europe-$1")`,
-			SamplerInfo:   samplerInfo{"127.0.0.1", "sampler"},
-			ExpectedGroup: "europe-sam",
+			Program:       `ClassifyRegex(Exporter.Name, "^(e.p+).r", "europe-$1")`,
+			ExporterInfo:  exporterInfo{"127.0.0.1", "exporter"},
+			ExpectedGroup: "europe-exp",
 		}, {
 			Description:   "non-matching regex",
-			Program:       `ClassifyRegex(Sampler.Name, "^(sbm+).l", "europe-$1")`,
-			SamplerInfo:   samplerInfo{"127.0.0.1", "sampler"},
+			Program:       `ClassifyRegex(Exporter.Name, "^(ebp+).r", "europe-$1")`,
+			ExporterInfo:  exporterInfo{"127.0.0.1", "exporter"},
 			ExpectedGroup: "",
 		}, {
-			Description: "faulty regex",
-			Program:     `ClassifyRegex(Sampler.Name, "^(sbm+.l", "europe-$1")`,
-			SamplerInfo: samplerInfo{"127.0.0.1", "sampler"},
-			ExpectedErr: true,
+			Description:  "faulty regex",
+			Program:      `ClassifyRegex(Exporter.Name, "^(ebp+.r", "europe-$1")`,
+			ExporterInfo: exporterInfo{"127.0.0.1", "exporter"},
+			ExpectedErr:  true,
 		}, {
 			Description: "syntax error",
 			Program:     `Classify("europe"`,
@@ -68,7 +68,7 @@ Classify("europe")`,
 	}
 	for _, tc := range cases {
 		t.Run(tc.Description, func(t *testing.T) {
-			var scr SamplerClassifierRule
+			var scr ExporterClassifierRule
 			err := scr.UnmarshalText([]byte(tc.Program))
 			if !tc.ExpectedErr && err != nil {
 				t.Fatalf("UnmarshalText(%q) error:\n%+v", tc.Program, err)
@@ -76,7 +76,7 @@ Classify("europe")`,
 			if tc.ExpectedErr && err != nil {
 				return
 			}
-			group, err := scr.exec(tc.SamplerInfo)
+			group, err := scr.exec(tc.ExporterInfo)
 			if !tc.ExpectedErr && err != nil {
 				t.Fatalf("exec(%q) error:\n%+v", tc.Program, err)
 			}
@@ -94,7 +94,7 @@ func TestInterfaceClassifier(t *testing.T) {
 	cases := []struct {
 		Description            string
 		Program                string
-		SamplerInfo            samplerInfo
+		ExporterInfo           exporterInfo
 		InterfaceInfo          interfaceInfo
 		ExpectedClassification interfaceClassification
 		ExpectedErr            bool
@@ -149,7 +149,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")
 				return
 			}
 			var gotClassification interfaceClassification
-			err = scr.exec(tc.SamplerInfo, tc.InterfaceInfo, &gotClassification)
+			err = scr.exec(tc.ExporterInfo, tc.InterfaceInfo, &gotClassification)
 			if !tc.ExpectedErr && err != nil {
 				t.Fatalf("exec(%q) error:\n%+v", tc.Program, err)
 			}
@@ -168,13 +168,13 @@ func TestRegexValidation(t *testing.T) {
 		Classifier string
 		Error      bool
 	}{
-		{`ClassifyRegex("something", "^(sbm+).l", "europe-$1")`, false},
-		{`ClassifyRegex("something", "^(sbm+.l", "europe-$1")`, true},
+		{`ClassifyRegex("something", "^(ebp+).r", "europe-$1")`, false},
+		{`ClassifyRegex("something", "^(ebp+.r", "europe-$1")`, true},
 		// When non-constant string is used, we cannot detect the error
-		{`ClassifyRegex("something", Sampler.Name + "^(sbm+.l", "europe-$1")`, false},
+		{`ClassifyRegex("something", Exporter.Name + "^(ebp+.r", "europe-$1")`, false},
 	}
 	for _, tc := range cases {
-		var scr SamplerClassifierRule
+		var scr ExporterClassifierRule
 		err := scr.UnmarshalText([]byte(tc.Classifier))
 		if err == nil && tc.Error {
 			t.Errorf("UnmarshalText(%q) should have returned an error", tc.Classifier)

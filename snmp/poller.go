@@ -14,10 +14,10 @@ import (
 )
 
 type poller interface {
-	Poll(ctx context.Context, samplerIP string, port uint16, community string, ifIndexes []uint) error
+	Poll(ctx context.Context, exporterIP string, port uint16, community string, ifIndexes []uint) error
 }
 
-// realPoller will poll samplers using real SNMP requests.
+// realPoller will poll exporters using real SNMP requests.
 type realPoller struct {
 	r      *reporter.Reporter
 	config pollerConfig
@@ -26,7 +26,7 @@ type realPoller struct {
 	pendingRequests     map[string]bool
 	pendingRequestsLock sync.Mutex
 	errLogger           reporter.Logger
-	put                 func(samplerIP, samplerName string, ifIndex uint, iface Interface)
+	put                 func(exporterIP, exporterName string, ifIndex uint, iface Interface)
 
 	metrics struct {
 		pendingRequests reporter.GaugeFunc
@@ -65,33 +65,33 @@ func newPoller(r *reporter.Reporter, config pollerConfig, clock clock.Clock, put
 		reporter.CounterOpts{
 			Name: "poller_success_requests",
 			Help: "Number of successful requests.",
-		}, []string{"sampler"})
+		}, []string{"exporter"})
 	p.metrics.failures = r.CounterVec(
 		reporter.CounterOpts{
 			Name: "poller_failure_requests",
 			Help: "Number of failed requests.",
-		}, []string{"sampler", "error"})
+		}, []string{"exporter", "error"})
 	p.metrics.retries = r.CounterVec(
 		reporter.CounterOpts{
 			Name: "poller_retry_requests",
 			Help: "Number of retried requests.",
-		}, []string{"sampler"})
+		}, []string{"exporter"})
 	p.metrics.times = r.SummaryVec(
 		reporter.SummaryOpts{
 			Name:       "poller_seconds",
 			Help:       "Time to successfully poll for values.",
 			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
-		}, []string{"sampler"})
+		}, []string{"exporter"})
 	return p
 }
 
-func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, community string, ifIndexes []uint) error {
+func (p *realPoller) Poll(ctx context.Context, exporter string, port uint16, community string, ifIndexes []uint) error {
 	// Check if already have a request running
 	filteredIfIndexes := make([]uint, 0, len(ifIndexes))
 	keys := make([]string, 0, len(ifIndexes))
 	p.pendingRequestsLock.Lock()
 	for _, ifIndex := range ifIndexes {
-		key := fmt.Sprintf("%s@%d", sampler, ifIndex)
+		key := fmt.Sprintf("%s@%d", exporter, ifIndex)
 		_, ok := p.pendingRequests[key]
 		if !ok {
 			p.pendingRequests[key] = true
@@ -114,7 +114,7 @@ func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, comm
 
 	// Instantiate an SNMP state
 	g := &gosnmp.GoSNMP{
-		Target:                  sampler,
+		Target:                  exporter,
 		Port:                    port,
 		Community:               community,
 		Version:                 gosnmp.Version2c,
@@ -124,12 +124,12 @@ func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, comm
 		UseUnconnectedUDPSocket: true,
 		Logger:                  gosnmp.NewLogger(&goSNMPLogger{p.r}),
 		OnRetry: func(*gosnmp.GoSNMP) {
-			p.metrics.retries.WithLabelValues(sampler).Inc()
+			p.metrics.retries.WithLabelValues(exporter).Inc()
 		},
 	}
 	if err := g.Connect(); err != nil {
-		p.metrics.failures.WithLabelValues(sampler, "connect").Inc()
-		p.errLogger.Err(err).Str("sampler", sampler).Msg("unable to connect")
+		p.metrics.failures.WithLabelValues(exporter, "connect").Inc()
+		p.errLogger.Err(err).Str("exporter", exporter).Msg("unable to connect")
 	}
 	start := p.clock.Now()
 	requests := []string{"1.3.6.1.2.1.1.5.0"}
@@ -146,17 +146,17 @@ func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, comm
 		return nil
 	}
 	if err != nil {
-		p.metrics.failures.WithLabelValues(sampler, "get").Inc()
+		p.metrics.failures.WithLabelValues(exporter, "get").Inc()
 		p.errLogger.Err(err).
-			Str("sampler", sampler).
+			Str("exporter", exporter).
 			Msgf("unable to GET (%d OIDs)", len(requests))
 		return err
 	}
 	if result.Error != gosnmp.NoError && result.ErrorIndex == 0 {
 		// There is some error affecting the whole request
-		p.metrics.failures.WithLabelValues(sampler, "get").Inc()
+		p.metrics.failures.WithLabelValues(exporter, "get").Inc()
 		p.errLogger.Error().
-			Str("sampler", sampler).
+			Str("exporter", exporter).
 			Stringer("code", result.Error).
 			Msgf("unable to GET (%d OIDs)", len(requests))
 		return fmt.Errorf("SNMP error %s(%d)", result.Error, result.Error)
@@ -168,10 +168,10 @@ func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, comm
 			*target = string(result.Variables[idx].Value.([]byte))
 			return true
 		case gosnmp.NoSuchInstance, gosnmp.NoSuchObject:
-			p.metrics.failures.WithLabelValues(sampler, fmt.Sprintf("%s_missing", what)).Inc()
+			p.metrics.failures.WithLabelValues(exporter, fmt.Sprintf("%s_missing", what)).Inc()
 			return false
 		default:
-			p.metrics.failures.WithLabelValues(sampler, fmt.Sprintf("%s_unknown_type", what)).Inc()
+			p.metrics.failures.WithLabelValues(exporter, fmt.Sprintf("%s_unknown_type", what)).Inc()
 			return false
 		}
 	}
@@ -181,10 +181,10 @@ func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, comm
 			*target = result.Variables[idx].Value.(uint)
 			return true
 		case gosnmp.NoSuchInstance, gosnmp.NoSuchObject:
-			p.metrics.failures.WithLabelValues(sampler, fmt.Sprintf("%s_missing", what)).Inc()
+			p.metrics.failures.WithLabelValues(exporter, fmt.Sprintf("%s_missing", what)).Inc()
 			return false
 		default:
-			p.metrics.failures.WithLabelValues(sampler, fmt.Sprintf("%s_unknown_type", what)).Inc()
+			p.metrics.failures.WithLabelValues(exporter, fmt.Sprintf("%s_unknown_type", what)).Inc()
 			return false
 		}
 	}
@@ -208,15 +208,15 @@ func (p *realPoller) Poll(ctx context.Context, sampler string, port uint16, comm
 			continue
 		}
 		ifIndex := ifIndexes[(idx-1)/3]
-		p.put(sampler, sysNameVal, ifIndex, Interface{
+		p.put(exporter, sysNameVal, ifIndex, Interface{
 			Name:        ifDescrVal,
 			Description: ifAliasVal,
 			Speed:       ifSpeedVal,
 		})
-		p.metrics.successes.WithLabelValues(sampler).Inc()
+		p.metrics.successes.WithLabelValues(exporter).Inc()
 	}
 
-	p.metrics.times.WithLabelValues(sampler).Observe(p.clock.Now().Sub(start).Seconds())
+	p.metrics.times.WithLabelValues(exporter).Observe(p.clock.Now().Sub(start).Seconds())
 	return nil
 }
 

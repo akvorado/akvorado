@@ -26,10 +26,10 @@ func newMockPoller(community string, put func(string, string, uint, Interface)) 
 }
 
 // Poll just builds synthetic data.
-func (p *mockPoller) Poll(ctx context.Context, samplerIP string, port uint16, community string, ifIndexes []uint) error {
+func (p *mockPoller) Poll(ctx context.Context, exporterIP string, port uint16, community string, ifIndexes []uint) error {
 	for _, ifIndex := range ifIndexes {
 		if community == p.community {
-			p.put(samplerIP, strings.ReplaceAll(samplerIP, ".", "_"), ifIndex, Interface{
+			p.put(exporterIP, strings.ReplaceAll(exporterIP, ".", "_"), ifIndex, Interface{
 				Name:        fmt.Sprintf("Gi0/0/%d", ifIndex),
 				Description: fmt.Sprintf("Interface %d", ifIndex),
 				Speed:       1000,

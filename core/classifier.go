@@ -17,33 +17,33 @@ var (
 	regexCache     = make(map[string]*regexp.Regexp)
 )
 
-// SamplerClassifierRule defines a classification rule for a sampler.
-type SamplerClassifierRule struct {
+// ExporterClassifierRule defines a classification rule for a exporter.
+type ExporterClassifierRule struct {
 	program *vm.Program
 }
 
-// samplerInfo contains the information we want to expose about a sampler.
-type samplerInfo struct {
+// exporterInfo contains the information we want to expose about a exporter.
+type exporterInfo struct {
 	IP   string
 	Name string
 }
 
-// samplerClassifierEnvironment defines the environment used by the sampler classifier
-type samplerClassifierEnvironment struct {
-	Sampler       samplerInfo
+// exporterClassifierEnvironment defines the environment used by the exporter classifier
+type exporterClassifierEnvironment struct {
+	Exporter      exporterInfo
 	Classify      func(group string) bool
 	ClassifyRegex func(str string, regex string, template string) (bool, error)
 }
 
-// exec executes the sampler classifier with the provided sampler.
-func (scr *SamplerClassifierRule) exec(si samplerInfo) (string, error) {
+// exec executes the exporter classifier with the provided exporter.
+func (scr *ExporterClassifierRule) exec(si exporterInfo) (string, error) {
 	var group string
 	classify := func(g string) bool {
 		group = g
 		return true
 	}
-	env := samplerClassifierEnvironment{
-		Sampler:       si,
+	env := exporterClassifierEnvironment{
+		Exporter:      si,
 		Classify:      classify,
 		ClassifyRegex: withRegex(classify),
 	}
@@ -53,15 +53,15 @@ func (scr *SamplerClassifierRule) exec(si samplerInfo) (string, error) {
 	return group, nil
 }
 
-// UnmarshalText compiles a classification rule for a sampler.
-func (scr *SamplerClassifierRule) UnmarshalText(text []byte) error {
+// UnmarshalText compiles a classification rule for a exporter.
+func (scr *ExporterClassifierRule) UnmarshalText(text []byte) error {
 	regexValidator := regexValidator{}
 	program, err := expr.Compile(string(text),
-		expr.Env(samplerClassifierEnvironment{}),
+		expr.Env(exporterClassifierEnvironment{}),
 		expr.AsBool(),
 		expr.Patch(&regexValidator))
 	if err != nil {
-		return fmt.Errorf("cannot compile sampler classifier rule %q: %w", string(text), err)
+		return fmt.Errorf("cannot compile exporter classifier rule %q: %w", string(text), err)
 	}
 	if len(regexValidator.invalidRegexes) > 0 {
 		return fmt.Errorf("invalid regular expression %q", regexValidator.invalidRegexes[0])
@@ -70,13 +70,13 @@ func (scr *SamplerClassifierRule) UnmarshalText(text []byte) error {
 	return nil
 }
 
-// String turns a sampler classifier rule into a string
-func (scr SamplerClassifierRule) String() string {
+// String turns a exporter classifier rule into a string
+func (scr ExporterClassifierRule) String() string {
 	return scr.program.Source.Content()
 }
 
-// MarshalText turns a sampler classifier rule into a string
-func (scr SamplerClassifierRule) MarshalText() ([]byte, error) {
+// MarshalText turns a exporter classifier rule into a string
+func (scr ExporterClassifierRule) MarshalText() ([]byte, error) {
 	return []byte(scr.String()), nil
 }
 
@@ -85,7 +85,7 @@ type InterfaceClassifierRule struct {
 	program *vm.Program
 }
 
-// interfaceInfo contains the information we want to expose about a sampler.
+// interfaceInfo contains the information we want to expose about a exporter.
 type interfaceInfo struct {
 	Name        string
 	Description string
@@ -110,7 +110,7 @@ type interfaceClassification struct {
 
 // interfaceClassifierEnvironment defines the environment used by the interface classifier
 type interfaceClassifierEnvironment struct {
-	Sampler                   samplerInfo
+	Exporter                  exporterInfo
 	Interface                 interfaceInfo
 	ClassifyConnectivity      func(connectivity string) bool
 	ClassifyConnectivityRegex func(str string, regex string, template string) (bool, error)
@@ -120,8 +120,8 @@ type interfaceClassifierEnvironment struct {
 	ClassifyInternal          func() bool
 }
 
-// exec executes the sampler classifier with the provided interface.
-func (scr *InterfaceClassifierRule) exec(si samplerInfo, ii interfaceInfo, ic *interfaceClassification) error {
+// exec executes the exporter classifier with the provided interface.
+func (scr *InterfaceClassifierRule) exec(si exporterInfo, ii interfaceInfo, ic *interfaceClassification) error {
 	classifyConnectivity := func(connectivity string) bool {
 		if ic.Connectivity == "" {
 			ic.Connectivity = normalize(connectivity)
@@ -147,7 +147,7 @@ func (scr *InterfaceClassifierRule) exec(si samplerInfo, ii interfaceInfo, ic *i
 		return true
 	}
 	env := interfaceClassifierEnvironment{
-		Sampler:                   si,
+		Exporter:                  si,
 		Interface:                 ii,
 		ClassifyConnectivity:      classifyConnectivity,
 		ClassifyProvider:          classifyProvider,

@@ -9,14 +9,14 @@
 
 The general design of *Akvorado* is the following:
 
-- The samplers send flow to Akvorado. They don't need to be declared.
+- The exporters send flow to Akvorado. They don't need to be declared.
 - The received flows are decoded then sent to the core component.
 - For each flow, the core component query the GeoIP component and the
   SNMP poller to get additional information, including country, AS
   number, interface name, description and speed.
 - The GeoIP component provides country and AS information for IP
   addresses using Maxmind databases.
-- The SNMP poller queries the samplers for host names, interface
+- The SNMP poller queries the exporters for host names, interface
   names, interface descriptions and interface speeds. This information
   is cached and updated from time to time.
 - Once the core component has a complete flow, it pushes it to the

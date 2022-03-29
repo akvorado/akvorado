@@ -22,21 +22,21 @@ func (c *Component) initMetrics() {
 			Name: "flows_received",
 			Help: "Number of incoming flows.",
 		},
-		[]string{"sampler"},
+		[]string{"exporter"},
 	)
 	c.metrics.flowsForwarded = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "flows_forwarded",
 			Help: "Number of flows forwarded to Kafka.",
 		},
-		[]string{"sampler"},
+		[]string{"exporter"},
 	)
 	c.metrics.flowsErrors = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "flows_errors",
 			Help: "Number of flows with errors.",
 		},
-		[]string{"sampler", "error"},
+		[]string{"exporter", "error"},
 	)
 	c.metrics.flowsHTTPClients = c.r.GaugeFunc(
 		reporter.GaugeOpts{

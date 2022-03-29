@@ -14,10 +14,10 @@ import (
 	"akvorado/reporter"
 )
 
-func expectSNMPLookup(t *testing.T, c *Component, sampler string, ifIndex uint, expected answer) {
+func expectSNMPLookup(t *testing.T, c *Component, exporter string, ifIndex uint, expected answer) {
 	t.Helper()
-	gotSamplerName, gotInterface, err := c.Lookup(sampler, ifIndex)
-	got := answer{gotSamplerName, gotInterface, err}
+	gotExporterName, gotInterface, err := c.Lookup(exporter, ifIndex)
+	got := answer{gotExporterName, gotInterface, err}
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Fatalf("Lookup() (-got, +want):\n%s", diff)
 	}
@@ -35,8 +35,8 @@ func TestLookup(t *testing.T) {
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{Err: ErrCacheMiss})
 	time.Sleep(30 * time.Millisecond)
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
-		SamplerName: "127_0_0_1",
-		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
+		ExporterName: "127_0_0_1",
+		Interface:    Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
 	})
 }
 
@@ -59,8 +59,8 @@ func TestSNMPCommunities(t *testing.T) {
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{Err: ErrCacheMiss})
 	time.Sleep(30 * time.Millisecond)
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
-		SamplerName: "127_0_0_1",
-		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
+		ExporterName: "127_0_0_1",
+		Interface:    Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
 	})
 
 	// Use "private", should not work
@@ -83,8 +83,8 @@ func TestComponentSaveLoad(t *testing.T) {
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{Err: ErrCacheMiss})
 	time.Sleep(30 * time.Millisecond)
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
-		SamplerName: "127_0_0_1",
-		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
+		ExporterName: "127_0_0_1",
+		Interface:    Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
 	})
 	if err := c.Stop(); err != nil {
 		t.Fatalf("Stop() error:\n%+c", err)
@@ -93,8 +93,8 @@ func TestComponentSaveLoad(t *testing.T) {
 	r = reporter.NewMock(t)
 	c = NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
-		SamplerName: "127_0_0_1",
-		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
+		ExporterName: "127_0_0_1",
+		Interface:    Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
 	})
 	if err := c.Stop(); err != nil {
 		t.Fatalf("Stop() error:\n%+c", err)
@@ -111,8 +111,8 @@ func TestAutoRefresh(t *testing.T) {
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{Err: ErrCacheMiss})
 	time.Sleep(30 * time.Millisecond)
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
-		SamplerName: "127_0_0_1",
-		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
+		ExporterName: "127_0_0_1",
+		Interface:    Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
 	})
 
 	// Keep it in the cache!
@@ -125,8 +125,8 @@ func TestAutoRefresh(t *testing.T) {
 	mockClock.Add(25 * time.Minute)
 	time.Sleep(30 * time.Millisecond)
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
-		SamplerName: "127_0_0_1",
-		Interface:   Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
+		ExporterName: "127_0_0_1",
+		Interface:    Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
 	})
 
 	// Stop and look at the cache
@@ -140,7 +140,7 @@ func TestAutoRefresh(t *testing.T) {
 		`hit`:          "4",
 		`miss`:         "1",
 		`size`:         "1",
-		`samplers`:     "1",
+		`exporters`:    "1",
 		`refresh_runs`: "37", // 75/2
 		`refresh`:      "1",
 	}
@@ -193,8 +193,8 @@ type logCoalescePoller struct {
 	received []lookupRequest
 }
 
-func (fcp *logCoalescePoller) Poll(ctx context.Context, samplerIP string, _ uint16, _ string, ifIndexes []uint) error {
-	fcp.received = append(fcp.received, lookupRequest{samplerIP, ifIndexes})
+func (fcp *logCoalescePoller) Poll(ctx context.Context, exporterIP string, _ uint16, _ string, ifIndexes []uint) error {
+	fcp.received = append(fcp.received, lookupRequest{exporterIP, ifIndexes})
 	return nil
 }
 
@@ -243,7 +243,7 @@ func TestCoalescing(t *testing.T) {
 
 type errorPoller struct{}
 
-func (fcp *errorPoller) Poll(ctx context.Context, samplerIP string, _ uint16, _ string, ifIndexes []uint) error {
+func (fcp *errorPoller) Poll(ctx context.Context, exporterIP string, _ uint16, _ string, ifIndexes []uint) error {
 	return errors.New("noooo")
 }
 
@@ -282,8 +282,8 @@ func TestPollerBreaker(t *testing.T) {
 
 			gotMetrics := r.GetMetrics("akvorado_snmp_poller_", "breaker_open_count", "coalesced_count")
 			expectedMetrics := map[string]string{
-				`coalesced_count`:                         "0",
-				`breaker_open_count{sampler="127.0.0.1"}`: tc.ExpectedCount,
+				`coalesced_count`:                          "0",
+				`breaker_open_count{exporter="127.0.0.1"}`: tc.ExpectedCount,
 			}
 			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 				t.Errorf("Metrics (-got, +want):\n%s", diff)

@@ -13,50 +13,50 @@ import (
 )
 
 // hydrateFlow adds more data to a flow.
-func (c *Component) hydrateFlow(sampler string, flow *flow.Message) (skip bool) {
+func (c *Component) hydrateFlow(exporter string, flow *flow.Message) (skip bool) {
 	errLogger := c.r.Sample(reporter.BurstSampler(time.Minute, 10))
 	if flow.InIf != 0 {
-		samplerName, iface, err := c.d.Snmp.Lookup(sampler, uint(flow.InIf))
+		exporterName, iface, err := c.d.Snmp.Lookup(exporter, uint(flow.InIf))
 		if err != nil {
 			if err != snmp.ErrCacheMiss {
-				errLogger.Err(err).Str("sampler", sampler).Msg("unable to query SNMP cache")
+				errLogger.Err(err).Str("exporter", exporter).Msg("unable to query SNMP cache")
 			}
-			c.metrics.flowsErrors.WithLabelValues(sampler, err.Error()).Inc()
+			c.metrics.flowsErrors.WithLabelValues(exporter, err.Error()).Inc()
 			skip = true
 		} else {
-			flow.SamplerName = samplerName
+			flow.ExporterName = exporterName
 			flow.InIfName = iface.Name
 			flow.InIfDescription = iface.Description
 			flow.InIfSpeed = uint32(iface.Speed)
 		}
 	} else {
-		c.metrics.flowsErrors.WithLabelValues(sampler, "input interface missing").Inc()
+		c.metrics.flowsErrors.WithLabelValues(exporter, "input interface missing").Inc()
 		skip = true
 	}
 	if flow.OutIf != 0 {
-		samplerName, iface, err := c.d.Snmp.Lookup(sampler, uint(flow.OutIf))
+		exporterName, iface, err := c.d.Snmp.Lookup(exporter, uint(flow.OutIf))
 		if err != nil {
 			// Only register a cache miss if we don't have one.
 			// TODO: maybe we could do one SNMP query for both interfaces.
 			if !skip {
 				if err != snmp.ErrCacheMiss {
-					errLogger.Err(err).Str("sampler", sampler).Msg("unable to query SNMP cache")
+					errLogger.Err(err).Str("exporter", exporter).Msg("unable to query SNMP cache")
 				}
-				c.metrics.flowsErrors.WithLabelValues(sampler, err.Error()).Inc()
+				c.metrics.flowsErrors.WithLabelValues(exporter, err.Error()).Inc()
 				skip = true
 			}
 		} else {
-			flow.SamplerName = samplerName
+			flow.ExporterName = exporterName
 			flow.OutIfName = iface.Name
 			flow.OutIfDescription = iface.Description
 			flow.OutIfSpeed = uint32(iface.Speed)
 		}
 	} else {
-		c.metrics.flowsErrors.WithLabelValues(sampler, "output interface missing").Inc()
+		c.metrics.flowsErrors.WithLabelValues(exporter, "output interface missing").Inc()
 		skip = true
 	}
 	if flow.SamplingRate == 0 {
-		c.metrics.flowsErrors.WithLabelValues(sampler, "sampling rate missing").Inc()
+		c.metrics.flowsErrors.WithLabelValues(exporter, "sampling rate missing").Inc()
 		skip = true
 	}
 	if skip {
@@ -64,11 +64,11 @@ func (c *Component) hydrateFlow(sampler string, flow *flow.Message) (skip bool) 
 	}
 
 	// Classification
-	c.classifySampler(sampler, flow)
-	c.classifyInterface(sampler, flow,
+	c.classifyExporter(exporter, flow)
+	c.classifyInterface(exporter, flow,
 		flow.OutIfName, flow.OutIfDescription, flow.OutIfSpeed,
 		&flow.OutIfConnectivity, &flow.OutIfProvider, &flow.OutIfBoundary)
-	c.classifyInterface(sampler, flow,
+	c.classifyInterface(exporter, flow,
 		flow.InIfName, flow.InIfDescription, flow.InIfSpeed,
 		&flow.InIfConnectivity, &flow.InIfProvider, &flow.InIfBoundary)
 
@@ -85,34 +85,34 @@ func (c *Component) hydrateFlow(sampler string, flow *flow.Message) (skip bool) 
 	return
 }
 
-func (c *Component) classifySampler(ip string, flow *flow.Message) {
-	if len(c.config.SamplerClassifiers) == 0 {
+func (c *Component) classifyExporter(ip string, flow *flow.Message) {
+	if len(c.config.ExporterClassifiers) == 0 {
 		return
 	}
-	name := flow.SamplerName
+	name := flow.ExporterName
 	key := fmt.Sprintf("S-%s-%s", ip, name)
 	group, ok := c.classifierCache.Get(key)
 	if ok {
-		flow.SamplerGroup = group.(string)
+		flow.ExporterGroup = group.(string)
 		return
 	}
 
-	si := samplerInfo{IP: ip, Name: name}
-	for idx, rule := range c.config.SamplerClassifiers {
+	si := exporterInfo{IP: ip, Name: name}
+	for idx, rule := range c.config.ExporterClassifiers {
 		group, err := rule.exec(si)
 		if err != nil {
 			c.classifierErrLogger.Err(err).
-				Str("type", "sampler").
+				Str("type", "exporter").
 				Int("index", idx).
-				Str("sampler", name).
+				Str("exporter", name).
 				Msg("error executing classifier")
-			c.metrics.classifierErrors.WithLabelValues("sampler", strconv.Itoa(idx)).Inc()
+			c.metrics.classifierErrors.WithLabelValues("exporter", strconv.Itoa(idx)).Inc()
 			c.classifierCache.Set(key, "", 1)
 			return
 		}
 		if group != "" {
 			c.classifierCache.Set(key, group, 1)
-			flow.SamplerGroup = group
+			flow.ExporterGroup = group
 			return
 		}
 	}
@@ -124,7 +124,7 @@ func (c *Component) classifyInterface(ip string, fl *flow.Message,
 	if len(c.config.InterfaceClassifiers) == 0 {
 		return
 	}
-	key := fmt.Sprintf("I-%s-%s-%s-%s-%d", ip, fl.SamplerName, ifName, ifDescription, ifSpeed)
+	key := fmt.Sprintf("I-%s-%s-%s-%s-%d", ip, fl.ExporterName, ifName, ifDescription, ifSpeed)
 	if classification, ok := c.classifierCache.Get(key); ok {
 		*connectivity = classification.(interfaceClassification).Connectivity
 		*provider = classification.(interfaceClassification).Provider
@@ -132,7 +132,7 @@ func (c *Component) classifyInterface(ip string, fl *flow.Message,
 		return
 	}
 
-	si := samplerInfo{IP: ip, Name: fl.SamplerName}
+	si := exporterInfo{IP: ip, Name: fl.ExporterName}
 	ii := interfaceInfo{Name: ifName, Description: ifDescription, Speed: ifSpeed}
 	var classification interfaceClassification
 	for idx, rule := range c.config.InterfaceClassifiers {
@@ -141,7 +141,7 @@ func (c *Component) classifyInterface(ip string, fl *flow.Message,
 			c.classifierErrLogger.Err(err).
 				Str("type", "interface").
 				Int("index", idx).
-				Str("sampler", fl.SamplerName).
+				Str("exporter", fl.ExporterName).
 				Str("interface", ifName).
 				Msg("error executing classifier")
 			c.metrics.classifierErrors.WithLabelValues("interface", strconv.Itoa(idx)).Inc()

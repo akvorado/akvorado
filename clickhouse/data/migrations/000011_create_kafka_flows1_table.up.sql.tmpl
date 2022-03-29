@@ -1,0 +1,48 @@
+{{ $version := 1 }}
+CREATE TABLE flows_{{ $version }}_raw
+(
+    TimeReceived UInt64,
+    TimeFlowStart UInt64,
+
+    SequenceNum UInt32,
+    SamplingRate UInt64,
+    ExporterAddress LowCardinality(FixedString(16)),
+    ExporterName LowCardinality(String),
+    ExporterGroup LowCardinality(String),
+
+    SrcAddr FixedString(16),
+    DstAddr FixedString(16),
+
+    SrcAS UInt32,
+    DstAS UInt32,
+    SrcCountry FixedString(2),
+    DstCountry FixedString(2),
+
+    InIfName LowCardinality(String),
+    OutIfName LowCardinality(String),
+    InIfDescription String,
+    OutIfDescription String,
+    InIfSpeed UInt32,
+    OutIfSpeed UInt32,
+    InIfConnectivity LowCardinality(String),
+    OutIfConnectivity LowCardinality(String),
+    InIfProvider LowCardinality(String),
+    OutIfProvider LowCardinality(String),
+    InIfBoundary Enum('undefined' = 0, 'external' = 1, 'internal' = 2),
+    OutIfBoundary Enum('undefined' = 0, 'external' = 1, 'internal' = 2),
+
+    EType UInt32,
+    Proto UInt32,
+
+    SrcPort UInt32,
+    DstPort UInt32,
+
+    Bytes UInt64,
+    Packets UInt64
+) ENGINE = Kafka()
+SETTINGS
+    kafka_broker_list = '{{ .KafkaBrokers }}',
+    kafka_topic_list = '{{ .KafkaTopic }}-v{{ $version }}',
+    kafka_group_name = 'clickhouse',
+    kafka_format = 'Protobuf',
+    kafka_schema = 'flow-{{ $version }}.proto:FlowMessage'

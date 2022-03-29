@@ -11,7 +11,7 @@ func (dc *DummyDecoder) Decode(in RawFlow) []*FlowMessage {
 	return []*FlowMessage{
 		{
 			TimeReceived:    uint64(in.TimeReceived.UTC().Unix()),
-			SamplerAddress:  in.Source.To16(),
+			ExporterAddress: in.Source.To16(),
 			Bytes:           uint64(len(in.Payload)),
 			Packets:         1,
 			InIfDescription: string(in.Payload),

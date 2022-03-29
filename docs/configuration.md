@@ -112,9 +112,9 @@ flow:
 ## SNMP
 
 Flows only include interface indexes. To associate them with an
-interface name and description, SNMP is used to poll the sampler
+interface name and description, SNMP is used to poll the exporter
 sending each flows. A cache is maintained to avoid polling
-continuously the samplers. The following keys are accepted:
+continuously the exporters. The following keys are accepted:
 
 - `cache-duration` tells how much time to keep data in the cache
 - `cache-refresh` tells how much time to wait before updating an entry
@@ -123,9 +123,9 @@ continuously the samplers. The following keys are accepted:
   about to expire or need an update
 - `cache-persist-file` tells where to store cached data on shutdown and
   read them back on startup
-- `default-community` tells which community to use when polling samplers
-- `communities` is a map from a sampler IP address to the community to
-  use for a sampler, overriding the default value set above,
+- `default-community` tells which community to use when polling exporters
+- `communities` is a map from a exporter IP address to the community to
+  use for a exporter, overriding the default value set above,
 - `poller-retries` is the number of retries on unsuccessful SNMP requests.
 - `poller-timeout` tells how much time should the poller wait for an answer.
 - `workers` tell how many workers to spawn to handle SNMP polling.
@@ -230,8 +230,8 @@ The following keys are accepted:
 
 - `workers` key define how many workers should be spawned to process
   incoming flows
-- `sampler-classifiers` is a list of classifier rules to define a group
-  for samplers
+- `exporter-classifiers` is a list of classifier rules to define a group
+  for exporters
 - `interface-classifiers` is a list of classifier rules to define
   connectivity type, network boundary and provider for an interface
 - `classifier-cache-size` defines the size of the classifier cache. As
@@ -241,23 +241,23 @@ The following keys are accepted:
 
 Classifier rules are written using [expr][].
 
-Sampler classifiers gets the classifier IP address and its hostname.
+Exporter classifiers gets the classifier IP address and its hostname.
 If they can make a decision, they should invoke one of the
 `Classify()` functions with the target group as an argument. Calling
-this function makes the sampler part of the provided group. Evaluation
+this function makes the exporter part of the provided group. Evaluation
 of rules stop on first match. The accessible variables and functions
 are:
 
-- `Sampler.IP` for the sampler IP address
-- `Sampler.Name` for the sampler name
-- `Classify()` to classify sampler to a group
+- `Exporter.IP` for the exporter IP address
+- `Exporter.Name` for the exporter name
+- `Classify()` to classify exporter to a group
 
-Interface classifiers gets the following information and, like sampler
+Interface classifiers gets the following information and, like exporter
 classifiers, should invoke one of the `Classify()` functions to make a
 decision:
 
-- `Sampler.IP` for the sampler IP address
-- `Sampler.Name` for the sampler name
+- `Exporter.IP` for the exporter IP address
+- `Exporter.Name` for the exporter name
 - `Interface.Name` for the interface name
 - `Interface.Description` for the interface description
 - `Interface.Speed` for the interface speed

@@ -56,25 +56,25 @@ func TestCore(t *testing.T) {
 		}
 	}()
 
-	flowMessage := func(sampler string, in, out uint32) *flow.Message {
+	flowMessage := func(exporter string, in, out uint32) *flow.Message {
 		return &flow.Message{
-			TimeReceived:   200,
-			SequenceNum:    1000,
-			SamplingRate:   1000,
-			FlowDirection:  1,
-			SamplerAddress: net.ParseIP(sampler),
-			TimeFlowStart:  100,
-			TimeFlowEnd:    200,
-			Bytes:          6765,
-			Packets:        4,
-			InIf:           in,
-			OutIf:          out,
-			SrcAddr:        net.ParseIP("67.43.156.77"),
-			DstAddr:        net.ParseIP("2.125.160.216"),
-			Etype:          0x800,
-			Proto:          6,
-			SrcPort:        8534,
-			DstPort:        80,
+			TimeReceived:    200,
+			SequenceNum:     1000,
+			SamplingRate:    1000,
+			FlowDirection:   1,
+			ExporterAddress: net.ParseIP(exporter),
+			TimeFlowStart:   100,
+			TimeFlowEnd:     200,
+			Bytes:           6765,
+			Packets:         4,
+			InIf:            in,
+			OutIf:           out,
+			SrcAddr:         net.ParseIP("67.43.156.77"),
+			DstAddr:         net.ParseIP("2.125.160.216"),
+			Etype:           0x800,
+			Proto:           6,
+			SrcPort:         8534,
+			DstPort:         80,
 		}
 	}
 
@@ -91,11 +91,11 @@ func TestCore(t *testing.T) {
 		expectedMetrics := map[string]string{
 			`classifier_cache_hits`:   "0",
 			`classifier_cache_misses`: "0",
-			`flows_errors{error="SNMP cache miss",sampler="192.0.2.142"}`: "1",
-			`flows_errors{error="SNMP cache miss",sampler="192.0.2.143"}`: "3",
-			`flows_received{sampler="192.0.2.142"}`:                       "1",
-			`flows_received{sampler="192.0.2.143"}`:                       "3",
-			`flows_http_clients`:                                          "0",
+			`flows_errors{error="SNMP cache miss",exporter="192.0.2.142"}`: "1",
+			`flows_errors{error="SNMP cache miss",exporter="192.0.2.143"}`: "3",
+			`flows_received{exporter="192.0.2.142"}`:                       "1",
+			`flows_received{exporter="192.0.2.143"}`:                       "3",
+			`flows_http_clients`:                                           "0",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -112,13 +112,13 @@ func TestCore(t *testing.T) {
 		expectedMetrics = map[string]string{
 			`classifier_cache_hits`:   "0",
 			`classifier_cache_misses`: "0",
-			`flows_errors{error="SNMP cache miss",sampler="192.0.2.142"}`: "1",
-			`flows_errors{error="SNMP cache miss",sampler="192.0.2.143"}`: "3",
-			`flows_received{sampler="192.0.2.142"}`:                       "2",
-			`flows_received{sampler="192.0.2.143"}`:                       "4",
-			`flows_forwarded{sampler="192.0.2.142"}`:                      "1",
-			`flows_forwarded{sampler="192.0.2.143"}`:                      "1",
-			`flows_http_clients`:                                          "0",
+			`flows_errors{error="SNMP cache miss",exporter="192.0.2.142"}`: "1",
+			`flows_errors{error="SNMP cache miss",exporter="192.0.2.143"}`: "3",
+			`flows_received{exporter="192.0.2.142"}`:                       "2",
+			`flows_received{exporter="192.0.2.143"}`:                       "4",
+			`flows_forwarded{exporter="192.0.2.142"}`:                      "1",
+			`flows_forwarded{exporter="192.0.2.143"}`:                      "1",
+			`flows_http_clients`:                                           "0",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -158,7 +158,7 @@ func TestCore(t *testing.T) {
 			expected.OutIfDescription = "Interface 677"
 			expected.InIfSpeed = 1000
 			expected.OutIfSpeed = 1000
-			expected.SamplerName = "192_0_2_142"
+			expected.ExporterName = "192_0_2_142"
 			if diff := helpers.Diff(&got, expected); diff != "" {
 				t.Errorf("Kafka message (-got, +want):\n%s", diff)
 			}
@@ -181,14 +181,14 @@ func TestCore(t *testing.T) {
 		expectedMetrics = map[string]string{
 			`classifier_cache_hits`:   "0",
 			`classifier_cache_misses`: "0",
-			`flows_errors{error="SNMP cache miss",sampler="192.0.2.142"}`:       "1",
-			`flows_errors{error="SNMP cache miss",sampler="192.0.2.143"}`:       "3",
-			`flows_errors{error="sampling rate missing",sampler="192.0.2.142"}`: "1",
-			`flows_received{sampler="192.0.2.142"}`:                             "4",
-			`flows_received{sampler="192.0.2.143"}`:                             "4",
-			`flows_forwarded{sampler="192.0.2.142"}`:                            "2",
-			`flows_forwarded{sampler="192.0.2.143"}`:                            "1",
-			`flows_http_clients`:                                                "0",
+			`flows_errors{error="SNMP cache miss",exporter="192.0.2.142"}`:       "1",
+			`flows_errors{error="SNMP cache miss",exporter="192.0.2.143"}`:       "3",
+			`flows_errors{error="sampling rate missing",exporter="192.0.2.142"}`: "1",
+			`flows_received{exporter="192.0.2.142"}`:                             "4",
+			`flows_received{exporter="192.0.2.143"}`:                             "4",
+			`flows_forwarded{exporter="192.0.2.142"}`:                            "2",
+			`flows_forwarded{exporter="192.0.2.143"}`:                            "1",
+			`flows_http_clients`:                                                 "0",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -243,23 +243,23 @@ func TestCore(t *testing.T) {
 				t.Fatalf("GET /api/v0/flows error while reading body:\n%+v", err)
 			}
 			expected := map[string]interface{}{
-				"TimeReceived":   200,
-				"SequenceNum":    1000,
-				"SamplingRate":   1000,
-				"FlowDirection":  1,
-				"SamplerAddress": "192.0.2.142",
-				"TimeFlowStart":  100,
-				"TimeFlowEnd":    200,
-				"Bytes":          6765,
-				"Packets":        4,
-				"InIf":           434,
-				"OutIf":          677,
-				"SrcAddr":        "67.43.156.77",
-				"DstAddr":        "2.125.160.216",
-				"Etype":          0x800,
-				"Proto":          6,
-				"SrcPort":        8534,
-				"DstPort":        80,
+				"TimeReceived":    200,
+				"SequenceNum":     1000,
+				"SamplingRate":    1000,
+				"FlowDirection":   1,
+				"ExporterAddress": "192.0.2.142",
+				"TimeFlowStart":   100,
+				"TimeFlowEnd":     200,
+				"Bytes":           6765,
+				"Packets":         4,
+				"InIf":            434,
+				"OutIf":           677,
+				"SrcAddr":         "67.43.156.77",
+				"DstAddr":         "2.125.160.216",
+				"Etype":           0x800,
+				"Proto":           6,
+				"SrcPort":         8534,
+				"DstPort":         80,
 				// Added info
 				"InIfDescription":  "Interface 434",
 				"InIfName":         "Gi0/0/434",
@@ -272,7 +272,7 @@ func TestCore(t *testing.T) {
 				"DstCountry":       "GB",
 				"SrcCountry":       "BT",
 				"SrcAS":            35908,
-				"SamplerName":      "192_0_2_142",
+				"ExporterName":     "192_0_2_142",
 			}
 			if diff := helpers.Diff(got, expected); diff != "" {
 				t.Fatalf("GET /api/v0/flows (-got, +want):\n%s", diff)

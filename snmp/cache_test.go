@@ -27,15 +27,15 @@ func setupTestCache(t *testing.T) (*reporter.Reporter, *clock.Mock, *snmpCache) 
 }
 
 type answer struct {
-	SamplerName string
-	Interface   Interface
-	Err         error
+	ExporterName string
+	Interface    Interface
+	Err          error
 }
 
-func expectCacheLookup(t *testing.T, sc *snmpCache, samplerIP string, ifIndex uint, expected answer) {
+func expectCacheLookup(t *testing.T, sc *snmpCache, exporterIP string, ifIndex uint, expected answer) {
 	t.Helper()
-	gotSamplerName, gotInterface, err := sc.lookup(samplerIP, ifIndex, false)
-	got := answer{gotSamplerName, gotInterface, err}
+	gotExporterName, gotInterface, err := sc.lookup(exporterIP, ifIndex, false)
+	got := answer{gotExporterName, gotInterface, err}
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Errorf("Lookup() (-got, +want):\n%s", diff)
 	}
@@ -47,11 +47,11 @@ func TestGetEmpty(t *testing.T) {
 
 	gotMetrics := r.GetMetrics("akvorado_snmp_cache_")
 	expectedMetrics := map[string]string{
-		`expired`:  "0",
-		`hit`:      "0",
-		`miss`:     "1",
-		`size`:     "0",
-		`samplers`: "0",
+		`expired`:   "0",
+		`hit`:       "0",
+		`miss`:      "1",
+		`size`:      "0",
+		`exporters`: "0",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -62,18 +62,18 @@ func TestSimpleLookup(t *testing.T) {
 	r, _, sc := setupTestCache(t)
 	sc.Put("127.0.0.1", "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit", Speed: 1000})
 	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{
-		SamplerName: "localhost",
-		Interface:   Interface{Name: "Gi0/0/0/1", Description: "Transit", Speed: 1000}})
+		ExporterName: "localhost",
+		Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit", Speed: 1000}})
 	expectCacheLookup(t, sc, "127.0.0.1", 787, answer{Err: ErrCacheMiss})
 	expectCacheLookup(t, sc, "127.0.0.2", 676, answer{Err: ErrCacheMiss})
 
 	gotMetrics := r.GetMetrics("akvorado_snmp_cache_")
 	expectedMetrics := map[string]string{
-		`expired`:  "0",
-		`hit`:      "1",
-		`miss`:     "2",
-		`size`:     "1",
-		`samplers`: "1",
+		`expired`:   "0",
+		`hit`:       "1",
+		`miss`:      "2",
+		`size`:      "1",
+		`exporters`: "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -90,28 +90,28 @@ func TestExpire(t *testing.T) {
 	clock.Add(10 * time.Minute)
 	sc.Expire(time.Hour)
 	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{
-		SamplerName: "localhost2",
-		Interface:   Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
+		ExporterName: "localhost2",
+		Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
 	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{
-		SamplerName: "localhost2",
-		Interface:   Interface{Name: "Gi0/0/0/2", Description: "Peering"}})
+		ExporterName: "localhost2",
+		Interface:    Interface{Name: "Gi0/0/0/2", Description: "Peering"}})
 	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
-		SamplerName: "localhost3",
-		Interface:   Interface{Name: "Gi0/0/0/1", Description: "IX"}})
+		ExporterName: "localhost3",
+		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"}})
 	sc.Expire(29 * time.Minute)
 	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{Err: ErrCacheMiss})
 	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{
-		SamplerName: "localhost2",
-		Interface:   Interface{Name: "Gi0/0/0/2", Description: "Peering"}})
+		ExporterName: "localhost2",
+		Interface:    Interface{Name: "Gi0/0/0/2", Description: "Peering"}})
 	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
-		SamplerName: "localhost3",
-		Interface:   Interface{Name: "Gi0/0/0/1", Description: "IX"}})
+		ExporterName: "localhost3",
+		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"}})
 	sc.Expire(19 * time.Minute)
 	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{Err: ErrCacheMiss})
 	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{Err: ErrCacheMiss})
 	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
-		SamplerName: "localhost3",
-		Interface:   Interface{Name: "Gi0/0/0/1", Description: "IX"}})
+		ExporterName: "localhost3",
+		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"}})
 	sc.Expire(9 * time.Minute)
 	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{Err: ErrCacheMiss})
 	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{Err: ErrCacheMiss})
@@ -120,16 +120,16 @@ func TestExpire(t *testing.T) {
 	clock.Add(10 * time.Minute)
 	sc.Expire(19 * time.Minute)
 	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{
-		SamplerName: "localhost",
-		Interface:   Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
+		ExporterName: "localhost",
+		Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
 
 	gotMetrics := r.GetMetrics("akvorado_snmp_cache_")
 	expectedMetrics := map[string]string{
-		`expired`:  "3",
-		`hit`:      "7",
-		`miss`:     "6",
-		`size`:     "1",
-		`samplers`: "1",
+		`expired`:   "3",
+		`hit`:       "7",
+		`miss`:      "6",
+		`size`:      "1",
+		`exporters`: "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -151,12 +151,12 @@ func TestExpireRefresh(t *testing.T) {
 
 	sc.Expire(29 * time.Minute)
 	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{
-		SamplerName: "localhost",
-		Interface:   Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
+		ExporterName: "localhost",
+		Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
 	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{Err: ErrCacheMiss})
 	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
-		SamplerName: "localhost2",
-		Interface:   Interface{Name: "Gi0/0/0/1", Description: "IX"}})
+		ExporterName: "localhost2",
+		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"}})
 }
 
 func TestWouldExpire(t *testing.T) {
@@ -289,11 +289,11 @@ func TestSaveLoad(t *testing.T) {
 	sc.Expire(29 * time.Minute)
 	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{Err: ErrCacheMiss})
 	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{
-		SamplerName: "localhost",
-		Interface:   Interface{Name: "Gi0/0/0/2", Description: "Peering"}})
+		ExporterName: "localhost",
+		Interface:    Interface{Name: "Gi0/0/0/2", Description: "Peering"}})
 	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
-		SamplerName: "localhost2",
-		Interface:   Interface{Name: "Gi0/0/0/1", Description: "IX", Speed: 1000}})
+		ExporterName: "localhost2",
+		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX", Speed: 1000}})
 }
 
 func TestLoadMismatchVersion(t *testing.T) {
@@ -380,14 +380,14 @@ func TestConcurrentOperations(t *testing.T) {
 	hits, _ := strconv.Atoi(gotMetrics["hit"])
 	misses, _ := strconv.Atoi(gotMetrics["miss"])
 	size, _ := strconv.Atoi(gotMetrics["size"])
-	samplers, _ := strconv.Atoi(gotMetrics["samplers"])
+	exporters, _ := strconv.Atoi(gotMetrics["exporters"])
 	if int64(hits+misses) != atomic.LoadInt64(&lookups) {
 		t.Errorf("hit + miss = %d, expected %d", hits+misses, atomic.LoadInt64(&lookups))
 	}
 	if size < 50 {
 		t.Errorf("size is %d < 50", size)
 	}
-	if samplers < 8 {
-		t.Errorf("samplers is %d < 8", samplers)
+	if exporters < 8 {
+		t.Errorf("exporters is %d < 8", exporters)
 	}
 }

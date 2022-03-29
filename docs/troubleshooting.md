@@ -35,14 +35,14 @@ $ conntrack -D -p udp --orig-port-dst 2055
 
 *Akvorado* only exports packets with complete interface information.
 They are polled through SNMP. If *Akvorado* is unable to poll a
-sampler, no flows about it will be exported. In this case, the logs
+exporter, no flows about it will be exported. In this case, the logs
 contain information such as:
 
-- `sampler:172.19.162.244 poller breaker open`
-- `sampler:172.19.162.244 unable to GET`
+- `exporter:172.19.162.244 poller breaker open`
+- `exporter:172.19.162.244 unable to GET`
 
 The `akvorado_snmp_poller_failure_requests` metric would also increase
-for the affected sampler.
+for the affected exporter.
 
 ## Dropped packets
 
@@ -50,11 +50,11 @@ There are various bottlenecks leading to dropped packets. This is bad
 as the reported sampling rate is incorrect and we cannot reliably
 infer the number of bytes and packets.
 
-### Bottlenecks on the sampler
+### Bottlenecks on the exporter
 
-The first problem may come from the sampler dropping some of the
+The first problem may come from the exporter dropping some of the
 flows. Most of the time, there are counters to detect this situation
-and it can be solved by lowering the sampler rate.
+and it can be solved by lowering the exporter rate.
 
 #### On Cisco NCS5500 routers
 
@@ -135,7 +135,7 @@ description. This information is provided by the `snmp` submodule.
 When all workers of the SNMP pollers are busy, new requests are
 dropped. In this case, the `akvorado_snmp_poller_busy_count` counter
 is increased. To mitigate this issue, *Akvorado* tries to skip
-samplers with too many errors to avoid blocking SNMP requests for
-other samplers. However, ensuring the samplers accept to answer
+exporters with too many errors to avoid blocking SNMP requests for
+other exporters. However, ensuring the exporters accept to answer
 requests is the first fix. If not enough, you can increase the number
 of workers. Workers handle SNMP requests synchronously.

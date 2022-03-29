@@ -1,6 +1,7 @@
 package clickhouse
 
 import (
+	"strings"
 	"testing"
 	"time"
 
@@ -65,17 +66,19 @@ func TestRealClickHouse(t *testing.T) {
 		if err := rows.Scan(&table); err != nil {
 			t.Fatalf("Scan() error:\n%+v", err)
 		}
-		got = append(got, table)
+		if !strings.HasPrefix(table, ".") {
+			got = append(got, table)
+		}
 	}
 	expected := []string{
 		"asns",
+		"exporters",
 		"flows",
 		"flows_0_raw",
 		"flows_0_raw_consumer",
+		"flows_1_raw",
+		"flows_1_raw_consumer",
 		"protocols",
-		"samplers",
-		"samplers_inif",
-		"samplers_outif",
 		"schema_migrations",
 	}
 	if diff := helpers.Diff(got, expected); diff != "" {

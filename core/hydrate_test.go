@@ -31,16 +31,16 @@ func TestClassifiers(t *testing.T) {
 			Configuration: `{}`,
 			InputFlow: func() *flow.Message {
 				return &flow.Message{
-					SamplingRate:   1000,
-					SamplerAddress: net.ParseIP("192.0.2.142"),
-					InIf:           100,
-					OutIf:          200,
+					SamplingRate:    1000,
+					ExporterAddress: net.ParseIP("192.0.2.142"),
+					InIf:            100,
+					OutIf:           200,
 				}
 			},
 			OutputFlow: &flow.Message{
 				SamplingRate:     1000,
-				SamplerAddress:   net.ParseIP("192.0.2.142"),
-				SamplerName:      "192_0_2_142",
+				ExporterAddress:  net.ParseIP("192.0.2.142"),
+				ExporterName:     "192_0_2_142",
 				InIf:             100,
 				OutIf:            200,
 				InIfName:         "Gi0/0/100",
@@ -52,26 +52,26 @@ func TestClassifiers(t *testing.T) {
 			},
 		},
 		{
-			Name: "sampler rule",
+			Name: "exporter rule",
 			Configuration: `
-samplerclassifiers:
-  - Sampler.Name startsWith "hello" && Classify("europe")
-  - Sampler.Name startsWith "192_" && Classify("asia")
+exporterclassifiers:
+  - Exporter.Name startsWith "hello" && Classify("europe")
+  - Exporter.Name startsWith "192_" && Classify("asia")
   - Classify("other")
 `,
 			InputFlow: func() *flow.Message {
 				return &flow.Message{
-					SamplingRate:   1000,
-					SamplerAddress: net.ParseIP("192.0.2.142"),
-					InIf:           100,
-					OutIf:          200,
+					SamplingRate:    1000,
+					ExporterAddress: net.ParseIP("192.0.2.142"),
+					InIf:            100,
+					OutIf:           200,
 				}
 			},
 			OutputFlow: &flow.Message{
 				SamplingRate:     1000,
-				SamplerAddress:   net.ParseIP("192.0.2.142"),
-				SamplerName:      "192_0_2_142",
-				SamplerGroup:     "asia",
+				ExporterAddress:  net.ParseIP("192.0.2.142"),
+				ExporterName:     "192_0_2_142",
+				ExporterGroup:    "asia",
 				InIf:             100,
 				OutIf:            200,
 				InIfName:         "Gi0/0/100",
@@ -95,16 +95,16 @@ interfaceclassifiers:
 `,
 			InputFlow: func() *flow.Message {
 				return &flow.Message{
-					SamplingRate:   1000,
-					SamplerAddress: net.ParseIP("192.0.2.142"),
-					InIf:           100,
-					OutIf:          200,
+					SamplingRate:    1000,
+					ExporterAddress: net.ParseIP("192.0.2.142"),
+					InIf:            100,
+					OutIf:           200,
 				}
 			},
 			OutputFlow: &flow.Message{
 				SamplingRate:     1000,
-				SamplerAddress:   net.ParseIP("192.0.2.142"),
-				SamplerName:      "192_0_2_142",
+				ExporterAddress:  net.ParseIP("192.0.2.142"),
+				ExporterName:     "192_0_2_142",
 				InIf:             100,
 				OutIf:            200,
 				InIfName:         "Gi0/0/100",
@@ -126,16 +126,16 @@ interfaceclassifiers:
 `,
 			InputFlow: func() *flow.Message {
 				return &flow.Message{
-					SamplingRate:   1000,
-					SamplerAddress: net.ParseIP("192.0.2.142"),
-					InIf:           100,
-					OutIf:          200,
+					SamplingRate:    1000,
+					ExporterAddress: net.ParseIP("192.0.2.142"),
+					InIf:            100,
+					OutIf:           200,
 				}
 			},
 			OutputFlow: &flow.Message{
 				SamplingRate:     1000,
-				SamplerAddress:   net.ParseIP("192.0.2.142"),
-				SamplerName:      "192_0_2_142",
+				ExporterAddress:  net.ParseIP("192.0.2.142"),
+				ExporterName:     "192_0_2_142",
 				InIf:             100,
 				OutIf:            200,
 				InIfName:         "Gi0/0/100",
@@ -157,16 +157,16 @@ interfaceclassifiers:
 `,
 			InputFlow: func() *flow.Message {
 				return &flow.Message{
-					SamplingRate:   1000,
-					SamplerAddress: net.ParseIP("192.0.2.142"),
-					InIf:           100,
-					OutIf:          200,
+					SamplingRate:    1000,
+					ExporterAddress: net.ParseIP("192.0.2.142"),
+					InIf:            100,
+					OutIf:           200,
 				}
 			},
 			OutputFlow: &flow.Message{
 				SamplingRate:     1000,
-				SamplerAddress:   net.ParseIP("192.0.2.142"),
-				SamplerName:      "192_0_2_142",
+				ExporterAddress:  net.ParseIP("192.0.2.142"),
+				ExporterName:     "192_0_2_142",
 				InIf:             100,
 				OutIf:            200,
 				InIfName:         "Gi0/0/100",
@@ -189,16 +189,16 @@ interfaceclassifiers:
 `,
 			InputFlow: func() *flow.Message {
 				return &flow.Message{
-					SamplingRate:   1000,
-					SamplerAddress: net.ParseIP("192.0.2.142"),
-					InIf:           100,
-					OutIf:          200,
+					SamplingRate:    1000,
+					ExporterAddress: net.ParseIP("192.0.2.142"),
+					InIf:            100,
+					OutIf:           200,
 				}
 			},
 			OutputFlow: &flow.Message{
 				SamplingRate:      1000,
-				SamplerAddress:    net.ParseIP("192.0.2.142"),
-				SamplerName:       "192_0_2_142",
+				ExporterAddress:   net.ParseIP("192.0.2.142"),
+				ExporterName:      "192_0_2_142",
 				InIf:              100,
 				OutIf:             200,
 				InIfName:          "Gi0/0/100",
@@ -284,10 +284,10 @@ interfaceclassifiers:
 			}
 			gotMetrics := r.GetMetrics("akvorado_core_flows_")
 			expectedMetrics := map[string]string{
-				`errors{error="SNMP cache miss",sampler="192.0.2.142"}`: "1",
-				`http_clients`:                     "0",
-				`received{sampler="192.0.2.142"}`:  "2",
-				`forwarded{sampler="192.0.2.142"}`: "1",
+				`errors{error="SNMP cache miss",exporter="192.0.2.142"}`: "1",
+				`http_clients`:                      "0",
+				`received{exporter="192.0.2.142"}`:  "2",
+				`forwarded{exporter="192.0.2.142"}`: "1",
 			}
 			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 				t.Fatalf("Metrics (-got, +want):\n%s", diff)

@@ -13,7 +13,7 @@ M = $(shell if [ "$$(tput colors 2> /dev/null || echo 0)" -ge 8 ]; then printf "
 
 export GO111MODULE=on
 
-GENERATED = flow/decoder/flow-0.pb.go web/data
+GENERATED = flow/decoder/flow-1.pb.go web/data
 
 .PHONY: all
 all: fmt lint $(GENERATED) | $(BIN) ; $(info $(M) building executable…) @ ## Build program binary

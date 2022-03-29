@@ -29,22 +29,22 @@ var (
 // snmpCache represents the SNMP cache.
 type snmpCache struct {
 	r         *reporter.Reporter
-	cache     map[string]*cachedSampler
+	cache     map[string]*cachedExporter
 	cacheLock sync.RWMutex
 	clock     clock.Clock
 
 	metrics struct {
-		cacheHit      reporter.Counter
-		cacheMiss     reporter.Counter
-		cacheExpired  reporter.Counter
-		cacheSize     reporter.GaugeFunc
-		cacheSamplers reporter.GaugeFunc
+		cacheHit       reporter.Counter
+		cacheMiss      reporter.Counter
+		cacheExpired   reporter.Counter
+		cacheSize      reporter.GaugeFunc
+		cacheExporters reporter.GaugeFunc
 	}
 }
 
-// cachedSampler represents information about a sampler. It includes
+// cachedExporter represents information about a exporter. It includes
 // the mapping from ifIndex to interfaces.
-type cachedSampler struct {
+type cachedExporter struct {
 	Name       string
 	Interfaces map[uint]*cachedInterface
 }
@@ -66,7 +66,7 @@ type cachedInterface struct {
 func newSNMPCache(r *reporter.Reporter, clock clock.Clock) *snmpCache {
 	sc := &snmpCache{
 		r:     r,
-		cache: make(map[string]*cachedSampler),
+		cache: make(map[string]*cachedExporter),
 		clock: clock,
 	}
 	sc.metrics.cacheHit = r.Counter(
@@ -91,15 +91,15 @@ func newSNMPCache(r *reporter.Reporter, clock clock.Clock) *snmpCache {
 		}, func() (result float64) {
 			sc.cacheLock.RLock()
 			defer sc.cacheLock.RUnlock()
-			for _, sampler := range sc.cache {
-				result += float64(len(sampler.Interfaces))
+			for _, exporter := range sc.cache {
+				result += float64(len(exporter.Interfaces))
 			}
 			return
 		})
-	sc.metrics.cacheSamplers = r.GaugeFunc(
+	sc.metrics.cacheExporters = r.GaugeFunc(
 		reporter.GaugeOpts{
-			Name: "cache_samplers",
-			Help: "Number of samplers in cache.",
+			Name: "cache_exporters",
+			Help: "Number of exporters in cache.",
 		}, func() float64 {
 			sc.cacheLock.RLock()
 			defer sc.cacheLock.RUnlock()
@@ -108,7 +108,7 @@ func newSNMPCache(r *reporter.Reporter, clock clock.Clock) *snmpCache {
 	return sc
 }
 
-// Lookup will perform a lookup of the cache. It returns the sampler
+// Lookup will perform a lookup of the cache. It returns the exporter
 // name as well as the requested interface.
 func (sc *snmpCache) Lookup(ip string, ifIndex uint) (string, Interface, error) {
 	return sc.lookup(ip, ifIndex, true)
@@ -117,12 +117,12 @@ func (sc *snmpCache) Lookup(ip string, ifIndex uint) (string, Interface, error) 
 func (sc *snmpCache) lookup(ip string, ifIndex uint, touchAccess bool) (string, Interface, error) {
 	sc.cacheLock.RLock()
 	defer sc.cacheLock.RUnlock()
-	sampler, ok := sc.cache[ip]
+	exporter, ok := sc.cache[ip]
 	if !ok {
 		sc.metrics.cacheMiss.Inc()
 		return "", Interface{}, ErrCacheMiss
 	}
-	iface, ok := sampler.Interfaces[ifIndex]
+	iface, ok := exporter.Interfaces[ifIndex]
 	if !ok {
 		sc.metrics.cacheMiss.Inc()
 		return "", Interface{}, ErrCacheMiss
@@ -131,11 +131,11 @@ func (sc *snmpCache) lookup(ip string, ifIndex uint, touchAccess bool) (string, 
 	if touchAccess {
 		atomic.StoreInt64(&iface.LastAccessed, sc.clock.Now().Unix())
 	}
-	return sampler.Name, iface.Interface, nil
+	return exporter.Name, iface.Interface, nil
 }
 
 // Put a new entry in the cache.
-func (sc *snmpCache) Put(ip string, samplerName string, ifIndex uint, iface Interface) {
+func (sc *snmpCache) Put(ip string, exporterName string, ifIndex uint, iface Interface) {
 	sc.cacheLock.Lock()
 	defer sc.cacheLock.Unlock()
 
@@ -145,13 +145,13 @@ func (sc *snmpCache) Put(ip string, samplerName string, ifIndex uint, iface Inte
 		LastAccessed: now,
 		Interface:    iface,
 	}
-	sampler, ok := sc.cache[ip]
+	exporter, ok := sc.cache[ip]
 	if !ok {
-		sampler = &cachedSampler{Interfaces: make(map[uint]*cachedInterface)}
-		sc.cache[ip] = sampler
+		exporter = &cachedExporter{Interfaces: make(map[uint]*cachedInterface)}
+		sc.cache[ip] = exporter
 	}
-	sampler.Name = samplerName
-	sampler.Interfaces[ifIndex] = &ciface
+	exporter.Name = exporterName
+	exporter.Interfaces[ifIndex] = &ciface
 }
 
 // Expire expire entries older than the provided duration (rely on last access).
@@ -161,15 +161,15 @@ func (sc *snmpCache) Expire(older time.Duration) (count uint) {
 	sc.cacheLock.Lock()
 	defer sc.cacheLock.Unlock()
 
-	for ip, sampler := range sc.cache {
-		for ifindex, iface := range sampler.Interfaces {
+	for ip, exporter := range sc.cache {
+		for ifindex, iface := range exporter.Interfaces {
 			if iface.LastAccessed < threshold {
-				delete(sampler.Interfaces, ifindex)
+				delete(exporter.Interfaces, ifindex)
 				sc.metrics.cacheExpired.Inc()
 				count++
 			}
 		}
-		if len(sampler.Interfaces) == 0 {
+		if len(exporter.Interfaces) == 0 {
 			delete(sc.cache, ip)
 		}
 	}
@@ -185,8 +185,8 @@ func (sc *snmpCache) entriesOlderThan(older time.Duration, lastAccessed bool) ma
 	sc.cacheLock.RLock()
 	defer sc.cacheLock.RUnlock()
 
-	for ip, sampler := range sc.cache {
-		for ifindex, iface := range sampler.Interfaces {
+	for ip, exporter := range sc.cache {
+		for ifindex, iface := range exporter.Interfaces {
 			what := &iface.LastAccessed
 			if !lastAccessed {
 				what = &iface.LastUpdated
@@ -281,7 +281,7 @@ func (sc *snmpCache) GobDecode(data []byte) error {
 	if version != cacheCurrentVersionNumber {
 		return ErrCacheVersion
 	}
-	cache := map[string]*cachedSampler{}
+	cache := map[string]*cachedExporter{}
 	if err := decoder.Decode(&cache); err != nil {
 		return err
 	}

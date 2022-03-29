@@ -16,7 +16,7 @@ type Configuration struct {
 	CachePersistFile string
 	// DefaultCommunity is the default SNMP community to use
 	DefaultCommunity string
-	// Communities is a mapping from sampler IPs to communities
+	// Communities is a mapping from exporter IPs to communities
 	Communities map[string]string
 	// PollerRetries tell how many time a poller should retry before giving up
 	PollerRetries int

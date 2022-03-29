@@ -96,7 +96,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 			Name: "poller_busy_count",
 			Help: "Pollers where too busy and dropped requests.",
 		},
-		[]string{"sampler"})
+		[]string{"exporter"})
 	c.metrics.pollerCoalescedCount = r.Counter(
 		reporter.CounterOpts{
 			Name: "poller_coalesced_count",
@@ -107,7 +107,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 			Name: "poller_breaker_open_count",
 			Help: "Poller breaker was opened due to too many errors.",
 		},
-		[]string{"sampler"})
+		[]string{"exporter"})
 	return &c, nil
 }
 
@@ -167,7 +167,7 @@ func (c *Component) Start() error {
 		}
 	})
 
-	// Goroutines to poll samplers
+	// Goroutines to poll exporters
 	c.healthyWorkers = make(chan reporter.ChannelHealthcheckFunc)
 	c.r.RegisterHealthcheck("snmp/worker", reporter.ChannelHealthcheck(c.t.Context(nil), c.healthyWorkers))
 	for i := 0; i < c.config.Workers; i++ {
@@ -212,48 +212,48 @@ func (c *Component) Stop() error {
 
 // lookupRequest is used internally to queue a polling request.
 type lookupRequest struct {
-	SamplerIP string
-	IfIndexes []uint
+	ExporterIP string
+	IfIndexes  []uint
 }
 
-// Lookup for interface information for the provided sampler and ifIndex.
+// Lookup for interface information for the provided exporter and ifIndex.
 // If the information is not in the cache, it will be polled, but
 // won't be returned immediately.
-func (c *Component) Lookup(samplerIP string, ifIndex uint) (string, Interface, error) {
-	samplerName, iface, err := c.sc.Lookup(samplerIP, ifIndex)
+func (c *Component) Lookup(exporterIP string, ifIndex uint) (string, Interface, error) {
+	exporterName, iface, err := c.sc.Lookup(exporterIP, ifIndex)
 	if errors.Is(err, ErrCacheMiss) {
 		req := lookupRequest{
-			SamplerIP: samplerIP,
-			IfIndexes: []uint{ifIndex},
+			ExporterIP: exporterIP,
+			IfIndexes:  []uint{ifIndex},
 		}
 		select {
 		case c.dispatcherChannel <- req:
 		default:
-			c.metrics.pollerBusyCount.WithLabelValues(samplerIP).Inc()
+			c.metrics.pollerBusyCount.WithLabelValues(exporterIP).Inc()
 		}
 	}
-	return samplerName, iface, err
+	return exporterName, iface, err
 }
 
 // Dispatch an incoming request to workers. May handle more than the
 // provided request if it can.
 func (c *Component) dispatchIncomingRequest(request lookupRequest) {
 	requestsMap := map[string][]uint{
-		request.SamplerIP: request.IfIndexes,
+		request.ExporterIP: request.IfIndexes,
 	}
 	for c.config.PollerCoalesce > 0 {
 		select {
 		case request := <-c.dispatcherChannel:
-			indexes, ok := requestsMap[request.SamplerIP]
+			indexes, ok := requestsMap[request.ExporterIP]
 			if !ok {
 				indexes = request.IfIndexes
 			} else {
 				indexes = append(indexes, request.IfIndexes...)
 			}
-			requestsMap[request.SamplerIP] = indexes
+			requestsMap[request.ExporterIP] = indexes
 			// We don't want to exceed the configured
 			// limit but also there is no point of
-			// coalescing requests of too many samplers.
+			// coalescing requests of too many exporters.
 			if len(indexes) < c.config.PollerCoalesce && len(requestsMap) < 4 {
 				continue
 			}
@@ -264,51 +264,51 @@ func (c *Component) dispatchIncomingRequest(request lookupRequest) {
 		}
 		break
 	}
-	for samplerIP, ifIndexes := range requestsMap {
+	for exporterIP, ifIndexes := range requestsMap {
 		if len(ifIndexes) > 1 {
 			c.metrics.pollerCoalescedCount.Add(float64(len(ifIndexes)))
 		}
 		select {
 		case <-c.t.Dying():
 			return
-		case c.pollerChannel <- lookupRequest{samplerIP, ifIndexes}:
+		case c.pollerChannel <- lookupRequest{exporterIP, ifIndexes}:
 		}
 	}
 }
 
 // pollerIncomingRequest handles an incoming request to the poller. It
-// uses a breaker to avoid pushing working on non-responsive samplers.
+// uses a breaker to avoid pushing working on non-responsive exporters.
 func (c *Component) pollerIncomingRequest(request lookupRequest) {
-	community, ok := c.config.Communities[request.SamplerIP]
+	community, ok := c.config.Communities[request.ExporterIP]
 	if !ok {
 		community = c.config.DefaultCommunity
 	}
 
-	// Avoid querying too much samplers with errors
+	// Avoid querying too much exporters with errors
 	c.pollerBreakersLock.Lock()
-	pollerBreaker, ok := c.pollerBreakers[request.SamplerIP]
+	pollerBreaker, ok := c.pollerBreakers[request.ExporterIP]
 	if !ok {
 		pollerBreaker = breaker.New(20, 1, time.Minute)
-		c.pollerBreakers[request.SamplerIP] = pollerBreaker
+		c.pollerBreakers[request.ExporterIP] = pollerBreaker
 	}
 	c.pollerBreakersLock.Unlock()
 
 	if err := pollerBreaker.Run(func() error {
 		return c.poller.Poll(
 			c.t.Context(nil),
-			request.SamplerIP, 161,
+			request.ExporterIP, 161,
 			community,
 			request.IfIndexes)
 	}); err == breaker.ErrBreakerOpen {
-		c.metrics.pollerBreakerOpenCount.WithLabelValues(request.SamplerIP).Inc()
+		c.metrics.pollerBreakerOpenCount.WithLabelValues(request.ExporterIP).Inc()
 		c.pollerBreakersLock.Lock()
-		l, ok := c.pollerBreakerLoggers[request.SamplerIP]
+		l, ok := c.pollerBreakerLoggers[request.ExporterIP]
 		if !ok {
 			l = c.r.Sample(reporter.BurstSampler(time.Minute, 1)).
 				With().
-				Str("sampler", request.SamplerIP).
+				Str("exporter", request.ExporterIP).
 				Logger()
-			c.pollerBreakerLoggers[request.SamplerIP] = l
+			c.pollerBreakerLoggers[request.ExporterIP] = l
 		}
 		l.Warn().Msg("poller breaker open")
 		c.pollerBreakersLock.Unlock()
@@ -323,16 +323,16 @@ func (c *Component) expireCache() {
 		c.metrics.cacheRefreshRuns.Inc()
 		count := 0
 		toRefresh := c.sc.NeedUpdates(c.config.CacheRefresh)
-		for sampler, ifaces := range toRefresh {
+		for exporter, ifaces := range toRefresh {
 			for ifIndex := range ifaces {
 				select {
 				case c.dispatcherChannel <- lookupRequest{
-					SamplerIP: sampler,
-					IfIndexes: []uint{ifIndex},
+					ExporterIP: exporter,
+					IfIndexes:  []uint{ifIndex},
 				}:
 					count++
 				default:
-					c.metrics.pollerBusyCount.WithLabelValues(sampler).Inc()
+					c.metrics.pollerBusyCount.WithLabelValues(exporter).Inc()
 				}
 			}
 		}

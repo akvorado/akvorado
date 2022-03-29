@@ -14,7 +14,7 @@ func ConvertGoflowToFlowMessage(input *goflowmessage.FlowMessage) *FlowMessage {
 		SequenceNum:      input.SequenceNum,
 		SamplingRate:     input.SamplingRate,
 		FlowDirection:    input.FlowDirection,
-		SamplerAddress:   ipCopy(input.SamplerAddress),
+		ExporterAddress:  ipCopy(input.SamplerAddress),
 		TimeFlowStart:    input.TimeFlowStart,
 		TimeFlowEnd:      input.TimeFlowEnd,
 		Bytes:            input.Bytes,

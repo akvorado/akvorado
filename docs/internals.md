@@ -134,7 +134,7 @@ The cache layer is tailored specifically for our needs. Information
 contained in it expires if not accessed and is refreshed periodically
 otherwise. Some coaelescing of the requests are done when they are
 piling up. This adds some code complexity, maybe it was not worth it.
-If a sampler fails to answer too frequently, it will be blacklisted
+If a exporter fails to answer too frequently, it will be blacklisted
 for a minute just to ensure it does not eat up all the workers'
 capacity.
 
