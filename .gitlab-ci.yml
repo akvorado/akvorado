@@ -34,7 +34,7 @@ run tests:
     - export GOMODCACHE=$PWD/.go-cache
     - time apk add --no-cache git make gcc musl-dev protoc shared-mime-info
     - time go mod download
-    - touch web/data            # don't build web data
+    - mkdir -p web/data && touch web/data/install.html # don't build web data
     - time make test
     - time make test-race || make test-race
     - time make test-coverage || make test-coverage
