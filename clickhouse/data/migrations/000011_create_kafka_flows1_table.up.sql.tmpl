@@ -44,5 +44,7 @@ SETTINGS
     kafka_broker_list = '{{ .KafkaBrokers }}',
     kafka_topic_list = '{{ .KafkaTopic }}-v{{ $version }}',
     kafka_group_name = 'clickhouse',
+    kafka_num_consumers = {{ .KafkaPartitions }},
+    kafka_thread_per_consumer = 1,
     kafka_format = 'Protobuf',
     kafka_schema = 'flow-{{ $version }}.proto:FlowMessage'

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -42,10 +43,16 @@ func (c *Component) migrateDatabaseOnServer(server string) error {
 			return err
 		}
 	}
+	kafkaConf := c.d.Kafka.GetConfiguration()
+	partitions := 1
+	if kafkaConf.TopicConfiguration != nil && kafkaConf.TopicConfiguration.NumPartitions > 0 {
+		partitions = int(kafkaConf.TopicConfiguration.NumPartitions)
+	}
 	data := map[string]string{
-		"KafkaBrokers": strings.Join(c.d.Kafka.GetBrokers(), ","),
-		"KafkaTopic":   c.d.Kafka.GetTopic(),
-		"BaseURL":      baseURL,
+		"KafkaBrokers":    strings.Join(kafkaConf.Brokers, ","),
+		"KafkaTopic":      kafkaConf.Topic,
+		"KakfaPartitions": strconv.Itoa(partitions),
+		"BaseURL":         baseURL,
 	}
 
 	l := c.r.With().
