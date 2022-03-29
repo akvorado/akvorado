@@ -9,6 +9,9 @@ import (
 	"net/http/pprof" // profiler
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rs/zerolog/hlog"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/daemon"
@@ -22,7 +25,13 @@ type Component struct {
 	t      tomb.Tomb
 	config Configuration
 
-	mux *http.ServeMux
+	mux     *http.ServeMux
+	metrics struct {
+		inflights reporter.Gauge
+		requests  *reporter.CounterVec
+		durations *reporter.HistogramVec
+		sizes     *reporter.HistogramVec
+	}
 
 	// Local address used by the HTTP server. Only valid after Start().
 	Address net.Addr
@@ -34,15 +43,42 @@ type Dependencies struct {
 }
 
 // New creates a new HTTP component.
-func New(reporter *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
+func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
 	c := Component{
-		r:      reporter,
+		r:      r,
 		d:      &dependencies,
 		config: configuration,
 
 		mux: http.NewServeMux(),
 	}
 	c.d.Daemon.Track(&c.t, "http")
+
+	c.metrics.inflights = c.r.Gauge(
+		reporter.GaugeOpts{
+			Name: "inflight_requests",
+			Help: "Number of requests currently being served by the HTTP server.",
+		},
+	)
+	c.metrics.requests = c.r.CounterVec(
+		reporter.CounterOpts{
+			Name: "requests_total",
+			Help: "Number of requests handled by an handler.",
+		}, []string{"handler", "code", "method"},
+	)
+	c.metrics.durations = c.r.HistogramVec(
+		reporter.HistogramOpts{
+			Name:    "request_duration_seconds",
+			Help:    "Latencies for served requests.",
+			Buckets: []float64{.25, .5, 1, 2.5, 5, 10},
+		}, []string{"handler", "method"},
+	)
+	c.metrics.sizes = c.r.HistogramVec(
+		reporter.HistogramOpts{
+			Name:    "response_size_bytes",
+			Help:    "Response sizes for requests.",
+			Buckets: []float64{200, 500, 1000, 1500, 5000},
+		}, []string{"handler", "method"},
+	)
 
 	if configuration.Profiler {
 		c.mux.HandleFunc("/debug/pprof/", pprof.Index)
@@ -54,8 +90,49 @@ func New(reporter *reporter.Reporter, configuration Configuration, dependencies 
 	return &c, nil
 }
 
+type responseWriter struct {
+	http.ResponseWriter
+	status      int
+	wroteHeader bool
+}
+
+func (rw *responseWriter) Status() int {
+	return rw.status
+}
+
+func (rw *responseWriter) WriteHeader(code int) {
+	if rw.wroteHeader {
+		return
+	}
+	rw.status = code
+	rw.ResponseWriter.WriteHeader(code)
+	rw.wroteHeader = true
+	return
+}
+
 // AddHandler registers a new handler for the web server
 func (c *Component) AddHandler(location string, handler http.Handler) {
+	l := c.r.With().Str("handler", location).Logger()
+	handler = hlog.AccessHandler(func(r *http.Request, status, size int, duration time.Duration) {
+		hlog.FromRequest(r).Info().
+			Str("method", r.Method).
+			Stringer("url", r.URL).
+			Str("ip", r.RemoteAddr).
+			Str("user-agent", r.Header.Get("User-Agent")).
+			Int("status", status).
+			Int("size", size).
+			Dur("duration", duration).
+			Msg("HTTP request")
+	})(handler)
+	handler = hlog.NewHandler(l)(handler)
+	handler = promhttp.InstrumentHandlerResponseSize(
+		c.metrics.sizes.MustCurryWith(prometheus.Labels{"handler": location}), handler)
+	handler = promhttp.InstrumentHandlerCounter(
+		c.metrics.requests.MustCurryWith(prometheus.Labels{"handler": location}), handler)
+	handler = promhttp.InstrumentHandlerDuration(
+		c.metrics.durations.MustCurryWith(prometheus.Labels{"handler": location}), handler)
+	handler = promhttp.InstrumentHandlerInFlight(c.metrics.inflights, handler)
+
 	c.mux.Handle(location, handler)
 }
 

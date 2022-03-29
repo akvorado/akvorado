@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"testing"
 
+	"akvorado/helpers"
 	"akvorado/http"
 	"akvorado/reporter"
 )
@@ -36,5 +37,22 @@ func TestHandler(t *testing.T) {
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		t.Fatalf("GET /test: got status code %d, not 200", resp.StatusCode)
+	}
+
+	gotMetrics := r.GetMetrics("akvorado_http_", "inflight_", "requests_total", "response_size")
+	expectedMetrics := map[string]string{
+		`inflight_requests`: "0",
+		`requests_total{code="200",handler="/test",method="get"}`:            "1",
+		`response_size_bytes_bucket{handler="/test",method="get",le="+Inf"}`: "1",
+		`response_size_bytes_bucket{handler="/test",method="get",le="1000"}`: "1",
+		`response_size_bytes_bucket{handler="/test",method="get",le="1500"}`: "1",
+		`response_size_bytes_bucket{handler="/test",method="get",le="200"}`:  "1",
+		`response_size_bytes_bucket{handler="/test",method="get",le="500"}`:  "1",
+		`response_size_bytes_bucket{handler="/test",method="get",le="5000"}`: "1",
+		`response_size_bytes_count{handler="/test",method="get"}`:            "1",
+		`response_size_bytes_sum{handler="/test",method="get"}`:              "7",
+	}
+	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 }

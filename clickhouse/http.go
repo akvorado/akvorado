@@ -29,7 +29,7 @@ func (c *Component) addHandlerEmbedded(url string, path string) {
 			f, err := http.FS(data).Open(path)
 			if err != nil {
 				c.r.Err(err).Msgf("unable to open %s", path)
-				w.WriteHeader(http.StatusInternalServerError)
+				http.Error(w, fmt.Sprintf("Unable to open %q.", path), http.StatusInternalServerError)
 				return
 			}
 			http.ServeContent(w, r, path, time.Time{}, f)
