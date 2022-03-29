@@ -20,7 +20,6 @@ type templatedFS struct {
 
 // templatedFile is a wrapper around fs.File to automatically expand templates
 type templatedFile struct {
-	data     interface{}
 	base     fs.File
 	offset   int
 	rendered []byte
@@ -44,21 +43,6 @@ func (tf *templatedFile) Stat() (fs.FileInfo, error) {
 	return &templatedFileInfo{info}, nil
 }
 func (tf *templatedFile) Read(buf []byte) (int, error) {
-	if tf.rendered == nil {
-		tmpl, err := ioutil.ReadAll(tf.base)
-		if err != nil {
-			return 0, err
-		}
-		t, err := template.New("anything").Option("missingkey=error").Parse(string(tmpl))
-		if err != nil {
-			return 0, fmt.Errorf("cannot parse template: %w", err)
-		}
-		b := bytes.NewBuffer([]byte{})
-		if err := t.Execute(b, tf.data); err != nil {
-			return 0, fmt.Errorf("cannot execute template: %w", err)
-		}
-		tf.rendered = b.Bytes()
-	}
 	if tf.offset >= len(tf.rendered) {
 		return 0, io.EOF
 	}
@@ -147,5 +131,19 @@ func (tfs *templatedFS) Open(name string) (fs.File, error) {
 	if !strings.HasSuffix(candidate, ".tmpl") {
 		return f, nil
 	}
-	return &templatedFile{data: tfs.data, base: f}, nil
+
+	// Render template
+	tmpl, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+	t, err := template.New("anything").Option("missingkey=error").Parse(string(tmpl))
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse template: %w", err)
+	}
+	b := bytes.NewBuffer([]byte{})
+	if err := t.Execute(b, tfs.data); err != nil {
+		return nil, fmt.Errorf("cannot execute template: %w", err)
+	}
+	return &templatedFile{base: f, rendered: b.Bytes()}, nil
 }
