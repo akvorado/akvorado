@@ -2,7 +2,6 @@
 package core
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"sync/atomic"
@@ -109,8 +108,8 @@ func (c *Component) runWorker(workerID int) error {
 			}
 		case flow := <-c.d.Flow.Flows():
 			if flow == nil {
-				c.r.Warn().Int("worker", workerID).Msg("no more flow available, stopping")
-				return errors.New("no more flow available")
+				c.r.Info().Int("worker", workerID).Msg("no more flow available, stopping")
+				return nil
 			}
 
 			exporter := net.IP(flow.ExporterAddress).String()
