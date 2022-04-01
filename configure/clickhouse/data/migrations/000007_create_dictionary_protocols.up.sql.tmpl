@@ -1,0 +1,12 @@
+CREATE DICTIONARY protocols (
+  proto UInt8 INJECTIVE,
+  name String,
+  description String
+)
+PRIMARY KEY proto
+LAYOUT(HASHED())
+SOURCE (HTTP(
+  url '{{ .BaseURL }}/api/v0/configure/clickhouse/protocols.csv'
+  format 'CSVWithNames'
+))
+LIFETIME(3600)

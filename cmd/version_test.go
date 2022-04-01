@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"akvorado/cmd"
-	"akvorado/helpers"
+	"akvorado/common/helpers"
 )
 
 func TestVersion(t *testing.T) {
