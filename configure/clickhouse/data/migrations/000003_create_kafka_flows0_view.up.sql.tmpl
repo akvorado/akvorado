@@ -1,6 +1,0 @@
-{{ $version := 0 }}
-CREATE MATERIALIZED VIEW flows_{{ $version }}_raw_consumer TO flows
-AS SELECT
-  toDate(TimeReceived) AS Date,
-  *
-FROM flows_{{ $version }}_raw

@@ -71,12 +71,9 @@ func TestRealClickHouse(t *testing.T) {
 		"asns",
 		"exporters",
 		"flows",
-		"flows_0_raw",
-		"flows_0_raw_consumer",
 		"flows_1_raw",
 		"flows_1_raw_consumer",
 		"protocols",
-		"schema_migrations",
 	}
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Fatalf("SHOW TABLES (-got, +want):\n%s", diff)

@@ -11,10 +11,8 @@ require (
 	github.com/dgraph-io/ristretto v0.1.0
 	github.com/eapache/go-resiliency v1.2.0
 	github.com/fsnotify/fsnotify v1.5.1
-	github.com/golang-migrate/migrate/v4 v4.15.1
 	github.com/golang/protobuf v1.5.2
 	github.com/gosnmp/gosnmp v1.34.0
-	github.com/hashicorp/go-multierror v1.1.1
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-isatty v0.0.14
 	github.com/mitchellh/mapstructure v1.4.3
@@ -28,7 +26,6 @@ require (
 	github.com/spf13/cobra v1.3.0
 	github.com/yuin/goldmark v1.4.5
 	github.com/yuin/goldmark-highlighting v0.0.0-20220208100518-594be1970594
-	go.uber.org/atomic v1.7.0
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
@@ -52,6 +49,7 @@ require (
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.2 // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect

@@ -116,17 +116,14 @@ If a real broker is available under the DNS name `kafka` or at
 
 ## ClickHouse
 
-The ClickHouse manages migrations for the ClickHouse database. It
-relies on [migrate](https://github.com/golang-migrate/migrate) with a
-simplified ClickHouse driver (the original one does not work with
-ClickHouse v2) and a custom source driver allowing to use templates.
-
-I have later discovered the [ClickHouse
-client](https://github.com/uptrace/go-clickhouse) from Uptrace which
-also features
-[migrations](https://clickhouse.uptrace.dev/guide/migrations.html) but
-allows us to use Go code in additional to SQL text files. It may help
-being smarter with migrations in the future.
+Migrations are done with a simple loop checking if a step is needed
+using a custom query and executing it with Go code. Database migration
+systems exist in Go, notably
+[migrate](https://github.com/golang-migrate/migrate), but as the
+tables we need to create depend on user configuration, it is more
+flexible to use code to check if the existing tables are up-to-date
+and to update them. For example, we may want to check if the Kafka
+settings of a table or the source URL of a dictionary are current.
 
 Functional tests are run when a ClickHouse server is available under
 the name `clickhouse` or on `localhost`.
