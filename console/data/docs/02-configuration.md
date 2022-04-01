@@ -304,9 +304,9 @@ kafka:
       cleanup.policy: delete
 ```
 
-Currently, the configure service won't update the number of partitions
-or the replicaiton factor. However, the configuration entries are kept
-in sync with the content of the configuration file.
+Currently, the configure service won't update the replication factor.
+The configuration entries are kept in sync with the content of the
+configuration file.
 
 ## Console service
 

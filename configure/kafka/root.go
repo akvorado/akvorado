@@ -47,25 +47,25 @@ func (c *Component) Start() error {
 	}()
 
 	// Create topic
-	client, err := sarama.NewClusterAdmin(c.config.Connect.Brokers, c.kafkaConfig)
+	admin, err := sarama.NewClusterAdmin(c.config.Connect.Brokers, c.kafkaConfig)
 	if err != nil {
 		c.r.Err(err).
 			Str("brokers", strings.Join(c.config.Connect.Brokers, ",")).
 			Msg("unable to get admin client for topic creation")
 		return fmt.Errorf("unable to get admin client for topic creation: %w", err)
 	}
-	defer client.Close()
+	defer admin.Close()
 	l := c.r.With().
 		Str("brokers", strings.Join(c.config.Connect.Brokers, ",")).
 		Str("topic", c.kafkaTopic).
 		Logger()
-	topics, err := client.ListTopics()
+	topics, err := admin.ListTopics()
 	if err != nil {
 		l.Err(err).Msg("unable to get metadata for topics")
 		return fmt.Errorf("unable to get metadata for topics: %w", err)
 	}
 	if topic, ok := topics[c.kafkaTopic]; !ok {
-		if err := client.CreateTopic(c.kafkaTopic,
+		if err := admin.CreateTopic(c.kafkaTopic,
 			&sarama.TopicDetail{
 				NumPartitions:     c.config.TopicConfiguration.NumPartitions,
 				ReplicationFactor: c.config.TopicConfiguration.ReplicationFactor,
@@ -76,15 +76,23 @@ func (c *Component) Start() error {
 		}
 		l.Info().Msg("topic created")
 	} else {
-		if topic.NumPartitions != c.config.TopicConfiguration.NumPartitions {
-			l.Warn().Msgf("mismatch for number of partitions: got %d, want %d",
+		if topic.NumPartitions > c.config.TopicConfiguration.NumPartitions {
+			l.Warn().Msgf("cannot decrease the number of partitions (from %d to %d)",
 				topic.NumPartitions, c.config.TopicConfiguration.NumPartitions)
+		} else if topic.NumPartitions < c.config.TopicConfiguration.NumPartitions {
+			nb := c.config.TopicConfiguration.NumPartitions
+			if err := admin.CreatePartitions(c.kafkaTopic, nb, nil, false); err != nil {
+				l.Err(err).Msg("unable to add more partitions")
+				return fmt.Errorf("unable to add more partitions to topic %q: %w",
+					c.kafkaTopic, err)
+			}
 		}
-		if topic.ReplicationFactor != c.config.TopicConfiguration.ReplicationFactor {
+		if c.config.TopicConfiguration.ReplicationFactor != topic.ReplicationFactor {
+			// TODO: https://github.com/deviceinsight/kafkactl/blob/main/internal/topic/topic-operation.go
 			l.Warn().Msgf("mismatch for replication factor: got %d, want %d",
 				topic.ReplicationFactor, c.config.TopicConfiguration.ReplicationFactor)
 		}
-		if err := client.AlterConfig(sarama.TopicResource, c.kafkaTopic, c.config.TopicConfiguration.ConfigEntries, false); err != nil {
+		if err := admin.AlterConfig(sarama.TopicResource, c.kafkaTopic, c.config.TopicConfiguration.ConfigEntries, false); err != nil {
 			l.Err(err).Msg("unable to set topic configuration")
 			return fmt.Errorf("unable to set topic configuration for %q: %w",
 				c.kafkaTopic, err)

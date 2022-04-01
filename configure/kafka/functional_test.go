@@ -89,3 +89,67 @@ func TestTopicCreation(t *testing.T) {
 	}
 
 }
+
+func TestTopicMorePartitions(t *testing.T) {
+	client, brokers := kafka.SetupKafkaBroker(t)
+
+	rand.Seed(time.Now().UnixMicro())
+	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
+	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, flow.CurrentSchemaVersion)
+
+	configuration := DefaultConfiguration
+	configuration.Connect.Topic = topicName
+	configuration.TopicConfiguration = TopicConfiguration{
+		NumPartitions:     1,
+		ReplicationFactor: 1,
+		ConfigEntries:     map[string]*string{},
+	}
+
+	configuration.Connect.Brokers = brokers
+	configuration.Connect.Version = kafka.Version(sarama.V2_8_1_0)
+	c, err := New(reporter.NewMock(t), configuration)
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	if err := c.Start(); err != nil {
+		t.Fatalf("Start() error:\n%+v", err)
+	}
+
+	adminClient, err := sarama.NewClusterAdminFromClient(client)
+	if err != nil {
+		t.Fatalf("NewClusterAdmin() error:\n%+v", err)
+	}
+	topics, err := adminClient.ListTopics()
+	if err != nil {
+		t.Fatalf("ListTopics() error:\n%+v", err)
+	}
+	topic, ok := topics[expectedTopicName]
+	if !ok {
+		t.Fatal("ListTopics() did not find the topic")
+	}
+	if topic.NumPartitions != 1 || topic.ReplicationFactor != 1 {
+		t.Fatalf("Topic does not have 1/1 for partitions/replication but %d/%d",
+			topic.NumPartitions, topic.ReplicationFactor)
+	}
+
+	// Increase number of partitions
+	configuration.TopicConfiguration.NumPartitions = 4
+	c, err = New(reporter.NewMock(t), configuration)
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	if err := c.Start(); err != nil {
+		t.Fatalf("Start() error:\n%+v", err)
+	}
+
+	topics, err = adminClient.ListTopics()
+	if err != nil {
+		t.Fatalf("ListTopics() error:\n%+v", err)
+	}
+	topic = topics[expectedTopicName]
+	t.Logf("Topic configuration:\n%+v", topic)
+	if topic.NumPartitions != 4 || topic.ReplicationFactor != 1 {
+		t.Fatalf("Topic does not have 4/1 for partitions/replication but %d/%d",
+			topic.NumPartitions, topic.ReplicationFactor)
+	}
+}
