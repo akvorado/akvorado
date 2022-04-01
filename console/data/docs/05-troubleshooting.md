@@ -1,5 +1,7 @@
 # Troubleshooting
 
+## Inlet service
+
 The inlet service outputs some logs and exposes some counters to help
 troubleshoot most issues. The first step to check if everything works
 as expected is to request a flow:
@@ -21,7 +23,7 @@ later can be queried with `curl`:
 $ curl -s http://akvorado/api/v0/inlet/metrics
 ```
 
-## No packets received
+### No packets received
 
 When running inside Docker, *Akvorado* may be unable to receive
 packets because the kernel redirects these packets to Docker internal
@@ -31,7 +33,7 @@ proxy. This can be fixed by flushing the conntrack table:
 $ conntrack -D -p udp --orig-port-dst 2055
 ```
 
-## No packets exported
+### No packets exported
 
 *Akvorado* only exports packets with complete interface information.
 They are polled through SNMP. If *Akvorado* is unable to poll a
@@ -44,19 +46,19 @@ contain information such as:
 The `akvorado_inlet_snmp_poller_failure_requests` metric would also increase
 for the affected exporter.
 
-## Dropped packets
+### Dropped packets
 
 There are various bottlenecks leading to dropped packets. This is bad
 as the reported sampling rate is incorrect and we cannot reliably
 infer the number of bytes and packets.
 
-### Bottlenecks on the exporter
+#### Bottlenecks on the exporter
 
 The first problem may come from the exporter dropping some of the
 flows. Most of the time, there are counters to detect this situation
 and it can be solved by lowering the exporter rate.
 
-#### NCS5500 routers
+##### NCS5500 routers
 
 [Netflow, Sampling-Interval and the Mythical Internet Packet Size][1]
 contains many information about the limit of this platform. The first
@@ -90,7 +92,7 @@ When this happens, either the `cache timeout rate-limit` should be
 increased or the `cache entries` directive should be increased. The
 later value can be increased to 1 million par monitor-map.
 
-### Kernel receive buffers
+#### Kernel receive buffers
 
 The second source of drops are the kernel receive buffers. Each
 listening queue has a fixed amount of receive buffers (212992 bytes by
@@ -114,7 +116,7 @@ either by increasing the number of workers for the UDP input or by
 increasing the value of `net.core.rmem_max` sysctl and increasing the
 `receive-buffer` setting attached to the input.
 
-### Internal queues
+#### Internal queues
 
 Inside the inlet service, parsed packets are transmitted to one module
 to another using channels. When there is a bottleneck at this level,
@@ -128,7 +130,7 @@ There are several ways to fix that:
 - increasing the `queue-size` setting for the Kafka module (this can
   only be used to handle spikes).
 
-### SNMP poller
+#### SNMP poller
 
 To process a flow, the inlet service needs the interface name and
 description. This information is provided by the `snmp` submodule.
@@ -139,3 +141,37 @@ to skip exporters with too many errors to avoid blocking SNMP requests
 for other exporters. However, ensuring the exporters accept to answer
 requests is the first fix. If not enough, you can increase the number
 of workers. Workers handle SNMP requests synchronously.
+
+## Kafka
+
+There is no easy way to look at the content of the flows in a Kafka
+topic. However, the metadata can be read using
+[kcat](https://github.com/edenhill/kcat/). You can check a topic is
+alive with:
+
+```console
+$ kcat -b kafka:9092 -C -t flows-v1 -L
+Metadata for flows-v1 (from broker -1: kafka:9092/bootstrap):
+ 1 brokers:
+  broker 1001 at eb6c7781b875:9092 (controller)
+ 1 topics:
+  topic "flows-v1" with 4 partitions:
+    partition 0, leader 1001, replicas: 1001, isrs: 1001
+    partition 1, leader 1001, replicas: 1001, isrs: 1001
+    partition 2, leader 1001, replicas: 1001, isrs: 1001
+    partition 3, leader 1001, replicas: 1001, isrs: 1001
+$ kcat -b kafka:9092 -C -t flows-v1 -f 'Topic %t [%p] at offset %o: key %k: %T\n' -o -1
+```
+
+## ClickHouse
+
+To check if ClickHouse is late, use the following SQL query throught
+`clickhouse client` to get the lag in seconds.
+
+```sql
+SELECT (now()-max(TimeReceived))/60
+FROM flows
+```
+
+If the lag is too big, you need to increase the number of threads. See
+[ClickHouse configuration](02-configuration.md#clickhouse) for details.
