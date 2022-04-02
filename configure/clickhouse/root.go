@@ -18,6 +18,11 @@ type Component struct {
 	t      tomb.Tomb
 	config Configuration
 
+	metrics struct {
+		migrationsRunning reporter.Gauge
+		migrationsVersion reporter.Gauge
+	}
+
 	migrationsDone chan bool
 }
 
@@ -28,9 +33,9 @@ type Dependencies struct {
 }
 
 // New creates a new ClickHouse component.
-func New(reporter *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
+func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
 	c := Component{
-		r:              reporter,
+		r:              r,
 		d:              &dependencies,
 		config:         configuration,
 		migrationsDone: make(chan bool),
@@ -39,12 +44,27 @@ func New(reporter *reporter.Reporter, configuration Configuration, dependencies 
 		return nil, err
 	}
 	c.d.Daemon.Track(&c.t, "configure/clickhouse")
+
+	c.metrics.migrationsRunning = c.r.Gauge(
+		reporter.GaugeOpts{
+			Name: "migrations_running",
+			Help: "Database migrations in progress.",
+		},
+	)
+	c.metrics.migrationsVersion = c.r.Gauge(
+		reporter.GaugeOpts{
+			Name: "migrations_version",
+			Help: "Current version for migrations.",
+		},
+	)
+
 	return &c, nil
 }
 
 // Start the ClickHouse component
 func (c *Component) Start() error {
 	c.r.Info().Msg("starting ClickHouse component")
+	c.metrics.migrationsRunning.Set(1)
 	if err := c.migrateDatabase(); err != nil {
 		c.r.Warn().Msg("database migration failed, continue in the background")
 		c.t.Go(func() error {

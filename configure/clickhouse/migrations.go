@@ -270,7 +270,9 @@ FROM %s`, viewName, tableName))
 	}
 
 	count := 0
+	total := 0
 	for _, step := range steps {
+		total++
 		l := l.With().Str("step", step.Description).Logger()
 		l.Debug().Msg("checking migration step")
 		rows, err := conn.Query(ctx, step.CheckQuery, step.Args...)
@@ -306,6 +308,8 @@ FROM %s`, viewName, tableName))
 		l.Info().Msg("migrations done")
 	}
 	close(c.migrationsDone)
+	c.metrics.migrationsRunning.Set(0)
+	c.metrics.migrationsVersion.Set(float64(total))
 
 	return nil
 }
