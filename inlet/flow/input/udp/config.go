@@ -20,6 +20,7 @@ type Configuration struct {
 
 // DefaultConfiguration is the default configuration for this input
 var DefaultConfiguration = Configuration{
+	Listen:    "0.0.0.0:0",
 	Workers:   1,
 	QueueSize: 100000,
 }

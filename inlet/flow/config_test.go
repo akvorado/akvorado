@@ -23,7 +23,7 @@ func TestDecodeConfiguration(t *testing.T) {
 			From: Configuration{},
 			Source: map[string]interface{}{
 				"inputs": []map[string]interface{}{
-					map[string]interface{}{
+					{
 						"type":    "udp",
 						"decoder": "netflow",
 						"listen":  "192.0.2.1:2055",
@@ -158,6 +158,7 @@ func TestDecodeConfiguration(t *testing.T) {
 	if diff := helpers.Diff(udp.DefaultConfiguration, udp.Configuration{
 		Workers:   1,
 		QueueSize: 100000,
+		Listen:    "0.0.0.0:0",
 	}); diff != "" {
 		t.Fatalf("Default configuration altered (-got, +want):\n%s", diff)
 	}

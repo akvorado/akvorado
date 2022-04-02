@@ -119,6 +119,9 @@ func (in *Input) Start() (<-chan []*decoder.FlowMessage, error) {
 		}
 		udpConn := pconn.(*net.UDPConn)
 		in.address = udpConn.LocalAddr()
+		if i == 0 {
+			in.r.Info().Str("listen", in.address.String()).Msg("UDP input listening")
+		}
 		if in.config.ReceiveBuffer > 0 {
 			if err := udpConn.SetReadBuffer(int(in.config.ReceiveBuffer)); err != nil {
 				in.r.Warn().

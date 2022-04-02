@@ -79,7 +79,8 @@ flow:
 ```
 
 Without configuration, *Akvorado* will listen for incoming
-Netflow/IPFIX flows on port 2055.
+Netflow/IPFIX flows on a random port (check the logs to know which
+one).
 
 ### Kafka
 
