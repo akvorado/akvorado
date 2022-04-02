@@ -36,7 +36,7 @@ func TestRealClickHouse(t *testing.T) {
 	}()
 	select {
 	case <-ch.migrationsDone:
-	case <-time.After(2 * time.Second):
+	case <-time.After(3 * time.Second):
 		t.Fatalf("Migrations not done")
 	}
 
