@@ -29,11 +29,6 @@ func TestRealClickHouse(t *testing.T) {
 	if err := ch.Start(); err != nil {
 		t.Fatalf("Start() error:\n%+v", err)
 	}
-	defer func() {
-		if err := ch.Stop(); err != nil {
-			t.Fatalf("Stop() error:\n%+v", err)
-		}
-	}()
 	select {
 	case <-ch.migrationsDone:
 	case <-time.After(3 * time.Second):
@@ -78,4 +73,25 @@ func TestRealClickHouse(t *testing.T) {
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Fatalf("SHOW TABLES (-got, +want):\n%s", diff)
 	}
+	if err := ch.Stop(); err != nil {
+		t.Fatalf("Stop() error:\n%+v", err)
+	}
+
+	// Check we can run a second time
+	ch, err = New(r, configuration, Dependencies{
+		Daemon: daemon.NewMock(t),
+		HTTP:   http.NewMock(t, r),
+	})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	if err := ch.Start(); err != nil {
+		t.Fatalf("Start() error:\n%+v", err)
+	}
+	select {
+	case <-ch.migrationsDone:
+	case <-time.After(3 * time.Second):
+		t.Fatalf("Migrations not done")
+	}
+	ch.Stop()
 }
