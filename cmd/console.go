@@ -76,8 +76,7 @@ func consoleStart(r *reporter.Reporter, config ConsoleConfiguration, checkOnly b
 		return fmt.Errorf("unable to initialize HTTP component: %w", err)
 	}
 	consoleComponent, err := console.New(r, config.Console, console.Dependencies{
-		Daemon: daemonComponent,
-		HTTP:   httpComponent,
+		HTTP: httpComponent,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to initialize console component: %w", err)

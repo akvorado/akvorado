@@ -3,8 +3,10 @@ package console
 import (
 	"bytes"
 	"embed"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
-	"html/template"
+	"io"
 	"io/fs"
 	"io/ioutil"
 	"net/http"
@@ -16,6 +18,7 @@ import (
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
 )
@@ -28,26 +31,20 @@ var (
 
 // Header describes a document header.
 type Header struct {
-	Level int
-	ID    string
-	Title string
+	Level int    `json:"level"`
+	ID    string `json:"id"`
+	Title string `json:"title"`
 }
 
 // DocumentTOC describes the TOC of a document
 type DocumentTOC struct {
-	Name    string
-	Headers []Header
-}
-
-type templateDocData struct {
-	templateBaseData
-	Markdown template.HTML
-	TOC      []DocumentTOC
+	Name    string   `json:"name"`
+	Headers []Header `json:"headers"`
 }
 
 func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
 	docs := c.embedOrLiveFS(embeddedDocs, "data/docs")
-	rpath := strings.TrimPrefix(req.URL.Path, "/docs/")
+	rpath := strings.TrimPrefix(req.URL.Path, "/api/v0/docs/")
 	rpath = strings.Trim(rpath, "/")
 
 	var markdown []byte
@@ -107,15 +104,21 @@ func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	md := goldmark.New(
+		goldmark.WithRendererOptions(
+			html.WithUnsafe(),
+		),
 		goldmark.WithExtensions(
 			extension.Footnote,
 			extension.Typographer,
-			highlighting.Highlighting,
+			highlighting.NewHighlighting(
+				highlighting.WithStyle("dracula"),
+			),
 		),
 		goldmark.WithParserOptions(
 			parser.WithAutoHeadingID(),
 			parser.WithASTTransformers(
 				util.Prioritized(&internalLinkTransformer{}, 500),
+				util.Prioritized(&imageEmbedder{docs}, 500),
 			),
 		),
 	)
@@ -126,13 +129,13 @@ func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	w.Header().Set("Cache-Control", "max-age=300")
-	c.renderTemplate(w, "docs.html", templateDocData{
-		templateBaseData: templateBaseData{
-			RootPath:    "..",
-			CurrentPath: req.URL.Path,
-		},
-		Markdown: template.HTML(buf.String()),
-		TOC:      toc,
+	w.Header().Set("Content-Type", "application/json")
+	encoder := json.NewEncoder(w)
+	encoder.SetIndent("", " ")
+	encoder.SetEscapeHTML(false)
+	encoder.Encode(map[string]interface{}{
+		"markdown": buf.String(),
+		"toc":      toc,
 	})
 }
 
@@ -149,6 +152,37 @@ func (r *internalLinkTransformer) Transform(node *ast.Document, reader text.Read
 			if matches != nil {
 				node.Destination = []byte(fmt.Sprintf("%s%s", matches[3], matches[4]))
 			}
+		}
+		return ast.WalkContinue, nil
+	}
+	ast.Walk(node, replaceLinks)
+}
+
+type imageEmbedder struct {
+	root fs.FS
+}
+
+func (r *imageEmbedder) Transform(node *ast.Document, reader text.Reader, pc parser.Context) {
+	replaceLinks := func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+		switch node := n.(type) {
+		case *ast.Image:
+			path := string(node.Destination)
+			if strings.Index(path, "/") != -1 || !strings.HasSuffix(path, ".svg") {
+				break
+			}
+			f, err := r.root.Open(path)
+			if err != nil {
+				break
+			}
+			content, err := io.ReadAll(f)
+			if err != nil {
+				break
+			}
+			encoded := fmt.Sprintf("data:image/svg+xml;base64,%s", base64.StdEncoding.EncodeToString(content))
+			node.Destination = []byte(encoded)
 		}
 		return ast.WalkContinue, nil
 	}

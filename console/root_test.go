@@ -7,7 +7,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
@@ -27,8 +26,7 @@ func TestProxy(t *testing.T) {
 	_, err := New(r, Configuration{
 		GrafanaURL: server.URL,
 	}, Dependencies{
-		HTTP:   h,
-		Daemon: daemon.NewMock(t),
+		HTTP: h,
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)

@@ -1,5 +1,3 @@
-![Akvorado logo](../assets/images/akvorado.svg)
-
 # Introduction
 
 *Akvorado*[^name] is a flow collector, hydrater and exporter. It
@@ -12,7 +10,7 @@ exports them to Kafka.
 
 ## Big picture
 
-![General design](../assets/images/design.svg)
+![General design](design.svg)
 
 *Akvorado* is split into three components:
 

@@ -16,9 +16,7 @@ import (
 	"sync"
 
 	"github.com/rs/zerolog"
-	"gopkg.in/tomb.v2"
 
-	"akvorado/common/daemon"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
 )
@@ -27,7 +25,6 @@ import (
 type Component struct {
 	r      *reporter.Reporter
 	d      *Dependencies
-	t      tomb.Tomb
 	config Configuration
 
 	templates     map[string]*template.Template
@@ -36,8 +33,7 @@ type Component struct {
 
 // Dependencies define the dependencies of the console component.
 type Dependencies struct {
-	Daemon daemon.Component
-	HTTP   *http.Component
+	HTTP *http.Component
 }
 
 // New creates a new console component.
@@ -46,10 +42,6 @@ func New(reporter *reporter.Reporter, config Configuration, dependencies Depende
 		r:      reporter,
 		d:      &dependencies,
 		config: config,
-	}
-	c.d.Daemon.Track(&c.t, "console")
-	if err := c.loadTemplates(); err != nil {
-		return nil, err
 	}
 
 	// Grafana proxy
@@ -74,33 +66,10 @@ func New(reporter *reporter.Reporter, config Configuration, dependencies Depende
 		c.d.HTTP.AddHandler("/grafana/", proxyHandler)
 	}
 
-	c.d.HTTP.AddHandler("/docs/", netHTTP.HandlerFunc(c.docsHandlerFunc))
-	c.d.HTTP.AddHandler("/assets/", netHTTP.HandlerFunc(c.assetsHandlerFunc))
+	c.d.HTTP.AddHandler("/", netHTTP.HandlerFunc(c.assetsHandlerFunc))
+	c.d.HTTP.AddHandler("/api/v0/docs/", netHTTP.HandlerFunc(c.docsHandlerFunc))
 
 	return &c, nil
-}
-
-// Start starts the web component.
-func (c *Component) Start() error {
-	c.r.Info().Msg("starting console component")
-	if err := c.watchTemplates(); err != nil {
-		return err
-	}
-	c.t.Go(func() error {
-		select {
-		case <-c.t.Dying():
-			return nil
-		}
-	})
-	return nil
-}
-
-// Stop stops the console component.
-func (c *Component) Stop() error {
-	c.r.Info().Msg("stopping console component")
-	defer c.r.Info().Msg("console component stopped")
-	c.t.Kill(nil)
-	return c.t.Wait()
 }
 
 // embedOrLiveFS returns a subset of the provided embedded filesystem,

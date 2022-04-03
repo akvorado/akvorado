@@ -2,5 +2,5 @@
 /test/
 /inlet/flow/decoder/flow*.pb.go
 
-/console/data/node_modules/
-/console/data/assets/generated/
+/console/frontend/node_modules/
+/console/data/frontend/

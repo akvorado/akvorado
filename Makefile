@@ -13,7 +13,7 @@ M = $(shell if [ "$$(tput colors 2> /dev/null || echo 0)" -ge 8 ]; then printf "
 
 export GO111MODULE=on
 
-GENERATED = inlet/flow/decoder/flow-1.pb.go console/data/node_modules console/data/assets/generated
+GENERATED = inlet/flow/decoder/flow-1.pb.go console/data/frontend console/frontend/node_modules
 
 .PHONY: all
 all: fmt lint $(GENERATED) | $(BIN) ; $(info $(M) building executable…) @ ## Build program binary
@@ -50,14 +50,14 @@ $(BIN)/protoc-gen-go: PACKAGE=google.golang.org/protobuf/cmd/protoc-gen-go
 inlet/flow/decoder/%.pb.go: inlet/flow/data/schemas/%.proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffers definition…)
 	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --go_out=. --go_opt=module=$(MODULE) $<
 
-console/data/node_modules: console/data/package.json console/data/yarn.lock ; $(info $(M) fetching node modules…)
-	$Q yarn install --frozen-lockfile --cwd console/data && touch $@
-console/data/assets/generated: console/data/node_modules Makefile ; $(info $(M) copying static assets…)
-	$Q rm -rf $@ && mkdir -p $@/stylesheets $@/javascript $@/fonts
-	$Q cp console/data/node_modules/@mdi/font/fonts/materialdesignicons-webfont.woff* $@/fonts/.
-	$Q cp console/data/node_modules/@mdi/font/css/materialdesignicons.min.css $@/stylesheets/.
-	$Q cp console/data/node_modules/bootstrap/dist/css/bootstrap.min.css $@/stylesheets/.
-	$Q cp console/data/node_modules/bootstrap/dist/js/bootstrap.bundle.min.js $@/javascript/.
+console/frontend/node_modules: console/frontend/package.json console/frontend/yarn.lock
+console/frontend/node_modules: ; $(info $(M) fetching node modules…)
+	$Q yarn install --frozen-lockfile --cwd console/frontend && touch $@
+console/data/frontend: Makefile console/frontend/node_modules
+console/data/frontend: console/frontend/index.html console/frontend/vite.config.js
+console/data/frontend: $(shell find console/frontend/src -type f)
+console/data/frontend: ; $(info $(M) building console frontend…)
+	$Q cd console/frontend && yarn build
 
 # These files are versioned in Git, but we may want to update them.
 clickhouse/data/protocols.csv:
