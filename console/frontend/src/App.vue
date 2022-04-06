@@ -1,9 +1,11 @@
 <template>
   <Notifications />
-  <Navigation />
-  <main>
-    <router-view />
-  </main>
+  <div class="max-h-screen flex flex-col">
+    <Navigation class="flex-none" />
+    <main class="relative flex grow overflow-y-auto">
+      <router-view />
+    </main>
+  </div>
 </template>
 
 <script setup>

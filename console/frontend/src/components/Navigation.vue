@@ -1,7 +1,7 @@
 <template>
   <Disclosure as="nav"
               v-slot="{ open }"
-              class="w-full relative z-40 bg-gradient-to-r from-blue-100 to-indigo-200 border-gray-200 px-2 sm:px-4 py-2.5 dark:from-gray-800 dark:to-gray-600 shadow">
+              class="w-full z-40 bg-gradient-to-r from-blue-100 to-indigo-200 border-gray-200 px-2 sm:px-4 py-2.5 dark:from-gray-800 dark:to-gray-600 shadow">
     <div class="container flex flex-wrap justify-between items-center mx-auto">
       <router-link to="/" class="flex items-center">
         <img src="../assets/images/akvorado.svg" class="mr-3 h-6 sm:h-9" alt="Akvorado Logo" />
