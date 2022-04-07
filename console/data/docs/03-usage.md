@@ -51,12 +51,12 @@ service to be running.
 
 The following endpoints are exposed for use by ClickHouse:
 
-- `/api/v0/clickhouse/init.sh` contains the schemas in the form of a
+- `/api/v0/configure/clickhouse/init.sh` contains the schemas in the form of a
   script to execute during initialization to get them installed at the
   proper location
-- `/api/v0/clickhouse/protocols.csv` contains a CSV with the mapping
+- `/api/v0/configure/clickhouse/protocols.csv` contains a CSV with the mapping
   between protocol numbers and names
-- `/api/v0/clickhouse/asns.csv` contains a CSV with the mapping
+- `/api/v0/configure/clickhouse/asns.csv` contains a CSV with the mapping
   between AS numbers and organization names
 
 ClickHouse clusters are currently not supported, despite being able to
