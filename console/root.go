@@ -2,20 +2,14 @@
 package console
 
 import (
-	"fmt"
 	"html/template"
 	"io/fs"
-	"log"
 	netHTTP "net/http"
-	"net/http/httputil"
-	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"runtime"
 	"sync"
-
-	"github.com/rs/zerolog"
 
 	"akvorado/common/http"
 	"akvorado/common/reporter"
@@ -42,28 +36,6 @@ func New(reporter *reporter.Reporter, config Configuration, dependencies Depende
 		r:      reporter,
 		d:      &dependencies,
 		config: config,
-	}
-
-	// Grafana proxy
-	if c.config.GrafanaURL != "" {
-		// Provide a proxy for Grafana
-		url, err := url.Parse(config.GrafanaURL)
-		if err != nil {
-			return nil, fmt.Errorf("unable to parse Grafana URL %q: %w", config.GrafanaURL, err)
-		}
-		proxy := httputil.NewSingleHostReverseProxy(url)
-		proxy.Transport = &netHTTP.Transport{
-			Proxy: nil, // Disable proxy
-		}
-		proxy.ErrorLog = log.New(c.r.With().
-			Str("proxy", "grafana").
-			Str("level", zerolog.LevelWarnValue).
-			Logger(), "", 0)
-		proxyHandler := netHTTP.HandlerFunc(
-			func(w netHTTP.ResponseWriter, r *netHTTP.Request) {
-				proxy.ServeHTTP(w, r)
-			})
-		c.d.HTTP.AddHandler("/grafana/", proxyHandler)
 	}
 
 	c.d.HTTP.AddHandler("/", netHTTP.HandlerFunc(c.assetsHandlerFunc))
