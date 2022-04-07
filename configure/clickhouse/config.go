@@ -14,17 +14,17 @@ type Configuration struct {
 	Password string
 	// Kafka describes how to connect to Kafka
 	Kafka kafka.Configuration `yaml:"-"`
-	// KafkaThreads tell how many threads to use to poll data from Kafka
-	KafkaThreads int
+	// KafkaConsumers tell how many consumers to use to poll data from Kafka
+	KafkaConsumers int
 	// AkvoradoURL allows one to override URL to reach Akvorado from Clickhouse
 	AkvoradoURL string
 }
 
 // DefaultConfiguration represents the default configuration for the ClickHouse configurator.
 var DefaultConfiguration = Configuration{
-	Servers:      []string{}, // No clickhouse by default
-	Database:     "default",
-	Username:     "default",
-	Kafka:        kafka.DefaultConfiguration,
-	KafkaThreads: 1,
+	Servers:        []string{}, // No clickhouse by default
+	Database:       "default",
+	Username:       "default",
+	Kafka:          kafka.DefaultConfiguration,
+	KafkaConsumers: 1,
 }

@@ -138,7 +138,7 @@ func (c *Component) migrateStepCreateRawFlowsTable(ctx context.Context, l report
 		`kafka_format = 'Protobuf',`,
 		fmt.Sprintf(`kafka_schema = 'flow-%d.proto:FlowMessage',`,
 			flow.CurrentSchemaVersion),
-		fmt.Sprintf(`kafka_num_consumers = %d,`, c.config.KafkaThreads),
+		fmt.Sprintf(`kafka_num_consumers = %d,`, c.config.KafkaConsumers),
 		`kafka_thread_per_consumer = 1`,
 	}, " ")
 	return migrationStep{

@@ -67,9 +67,6 @@
              activeDocument.value = id;
            } catch (error) {
              console.error(`while retrieving ${id}:`, error);
-             markdown.value = "hello";
-             markdown.toc = [];
-             activeDocument.value = "nothing";
            }
          }
          if (to.id !== from?.id || to.hash !== from?.hash) {

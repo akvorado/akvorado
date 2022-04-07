@@ -272,7 +272,7 @@ provided:
  - `password` is the password to use for authentication
  - `database` defines the database to use to create tables
  - `akvorado-url` defines the URL of Akvorado to be used by Clickhouse (autodetection when not specified)
- - `kafka-threads` defines the number of threads to use to poll Kafka (it should not exceed the number of partitions)
+ - `kafka-consumers` defines the number of consumers to use to poll Kafka (it should not exceed the number of partitions)
 
 ### Kafka
 

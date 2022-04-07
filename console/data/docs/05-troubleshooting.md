@@ -173,7 +173,7 @@ SELECT (now()-max(TimeReceived))/60
 FROM flows
 ```
 
-If the lag is too big, you need to increase the number of threads. See
+If the lag is too big, you need to increase the number of consumers. See
 [ClickHouse configuration](02-configuration.md#clickhouse) for details.
 
 Another way to achieve the same thing is to look at the consumer group
