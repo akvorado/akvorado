@@ -85,7 +85,7 @@ ARRAY JOIN arrayEnumerate([1,2]) AS num
 }
 
 func (c *Component) migrateStepCreateProtocolsDictionary(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
-	protocolsURL := fmt.Sprintf("%s/api/v0/clickhouse/protocols.csv", c.config.AkvoradoURL)
+	protocolsURL := fmt.Sprintf("%s/api/v0/configure/clickhouse/protocols.csv", c.config.AkvoradoURL)
 	return migrationStep{
 		CheckQuery: `SELECT 1 FROM system.dictionaries WHERE name = $1 AND database = $2 AND source = $3`,
 		Args:       []interface{}{"protocols", c.config.Database, protocolsURL},
@@ -106,7 +106,7 @@ LAYOUT(HASHED())
 }
 
 func (c *Component) migrateStepCreateASNsDictionary(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
-	asnsURL := fmt.Sprintf("%s/api/v0/clickhouse/asns.csv", c.config.AkvoradoURL)
+	asnsURL := fmt.Sprintf("%s/api/v0/configure/clickhouse/asns.csv", c.config.AkvoradoURL)
 	return migrationStep{
 		CheckQuery: `SELECT 1 FROM system.dictionaries WHERE name = $1 AND database = $2 AND source = $3`,
 		Args:       []interface{}{"asns", c.config.Database, asnsURL},
