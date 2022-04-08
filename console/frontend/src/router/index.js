@@ -1,15 +1,15 @@
-import {createRouter, createWebHistory} from 'vue-router';
-import Home from  '../views/Home.vue';
-import Doc from '../views/Doc.vue';
-import NotFound from '../views/NotFound.vue';
+import { createRouter, createWebHistory } from "vue-router";
+import HomePage from "../views/HomePage.vue";
+import DocumentationPage from "../views/DocumentationPage.vue";
+import NotFoundPage from "../views/NotFoundPage.vue";
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: "/", name: "Home", component: Home },
+    { path: "/", name: "Home", component: HomePage },
     { path: "/docs", redirect: "/docs/intro" },
-    { path: "/docs/:id", name: "Documentation", component: Doc },
-    { path: "/:pathMatch(.*)", component: NotFound }
+    { path: "/docs/:id", name: "Documentation", component: DocumentationPage },
+    { path: "/:pathMatch(.*)", component: NotFoundPage },
   ],
 });
 
