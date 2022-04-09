@@ -52,12 +52,12 @@ inlet/flow/decoder/%.pb.go: inlet/flow/data/schemas/%.proto | $(PROTOC_GEN_GO) ;
 
 console/frontend/node_modules: console/frontend/package.json console/frontend/yarn.lock
 console/frontend/node_modules: ; $(info $(M) fetching node modules…)
-	$Q yarn install --frozen-lockfile --cwd console/frontend && touch $@
+	$Q yarn install --silent --frozen-lockfile --cwd console/frontend && touch $@
 console/data/frontend: Makefile console/frontend/node_modules
 console/data/frontend: console/frontend/index.html console/frontend/vite.config.js
 console/data/frontend: $(shell find console/frontend/src -type f)
 console/data/frontend: ; $(info $(M) building console frontend…)
-	$Q cd console/frontend && yarn build
+	$Q cd console/frontend && yarn --silent build
 
 # These files are versioned in Git, but we may want to update them.
 clickhouse/data/protocols.csv:
@@ -102,12 +102,12 @@ test-coverage: | $(GOCOV) $(GOCOVXML) $(GOTESTSUM) ; $(info $(M) running coverag
 .PHONY: lint
 lint: console/frontend/node_modules | $(REVIVE) ; $(info $(M) running golint…) @ ## Run golint
 	$Q $(REVIVE) -formatter friendly -set_exit_status ./...
-	$Q cd console/frontend && yarn lint
+	$Q cd console/frontend && yarn --silent lint
 
 .PHONY: fmt
 fmt: console/frontend/node_modules ; $(info $(M) running gofmt…) @ ## Run gofmt on all source files
 	$Q $(GO) fmt $(PKGS)
-	$Q cd console/frontend && yarn format
+	$Q cd console/frontend && yarn --silent format
 
 # Misc
 
