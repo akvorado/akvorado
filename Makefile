@@ -100,12 +100,12 @@ test-coverage: | $(GOCOV) $(GOCOVXML) $(GOTESTSUM) ; $(info $(M) running coverag
 		echo "scale=1;$$(sed -En 's/^<coverage line-rate="([0-9.]+)".*/\1/p' test/coverage.xml) * 100 / 1" | bc -q
 
 .PHONY: lint
-lint: console/frontend/node_modules | $(REVIVE) ; $(info $(M) running golint…) @ ## Run golint
+lint: console/frontend/node_modules | $(REVIVE) ; $(info $(M) running lint…) @ ## Run linting
 	$Q $(REVIVE) -formatter friendly -set_exit_status ./...
 	$Q cd console/frontend && yarn --silent lint
 
 .PHONY: fmt
-fmt: console/frontend/node_modules ; $(info $(M) running gofmt…) @ ## Run gofmt on all source files
+fmt: console/frontend/node_modules ; $(info $(M) formatting code…) @ ## Format all source files
 	$Q $(GO) fmt $(PKGS)
 	$Q cd console/frontend && yarn --silent format
 
