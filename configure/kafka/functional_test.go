@@ -54,14 +54,14 @@ func TestTopicCreation(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
 			configuration := DefaultConfiguration
-			configuration.Connect.Topic = topicName
+			configuration.Topic = topicName
 			configuration.TopicConfiguration = TopicConfiguration{
 				NumPartitions:     1,
 				ReplicationFactor: 1,
 				ConfigEntries:     tc.ConfigEntries,
 			}
-			configuration.Connect.Brokers = brokers
-			configuration.Connect.Version = kafka.Version(sarama.V2_8_1_0)
+			configuration.Brokers = brokers
+			configuration.Version = kafka.Version(sarama.V2_8_1_0)
 			c, err := New(reporter.NewMock(t), configuration)
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
@@ -98,15 +98,15 @@ func TestTopicMorePartitions(t *testing.T) {
 	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, flow.CurrentSchemaVersion)
 
 	configuration := DefaultConfiguration
-	configuration.Connect.Topic = topicName
+	configuration.Topic = topicName
 	configuration.TopicConfiguration = TopicConfiguration{
 		NumPartitions:     1,
 		ReplicationFactor: 1,
 		ConfigEntries:     map[string]*string{},
 	}
 
-	configuration.Connect.Brokers = brokers
-	configuration.Connect.Version = kafka.Version(sarama.V2_8_1_0)
+	configuration.Brokers = brokers
+	configuration.Version = kafka.Version(sarama.V2_8_1_0)
 	c, err := New(reporter.NewMock(t), configuration)
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)

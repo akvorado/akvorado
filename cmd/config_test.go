@@ -24,8 +24,12 @@ type dummyModule1Configuration struct {
 	Workers int
 }
 type dummyModule2Configuration struct {
-	Details  dummyModule2DetailsConfiguration
-	Elements []dummyModule2ElementsConfiguration
+	Details     dummyModule2DetailsConfiguration
+	Elements    []dummyModule2ElementsConfiguration
+	MoreDetails `mapstructure:",squash" yaml:",inline"`
+}
+type MoreDetails struct {
+	Stuff string
 }
 type dummyModule2ElementsConfiguration struct {
 	Name  string
@@ -43,6 +47,9 @@ var dummyDefaultConfiguration = dummyConfiguration{
 		Workers: 100,
 	},
 	Module2: dummyModule2Configuration{
+		MoreDetails: MoreDetails{
+			Stuff: "hello",
+		},
 		Details: dummyModule2DetailsConfiguration{
 			Workers:       1,
 			IntervalValue: time.Minute,
@@ -59,6 +66,7 @@ module2:
  details:
   workers: 5
   interval-value: 20m
+ stuff: bye
  elements:
   - name: first
     gauge: 67
@@ -85,6 +93,9 @@ module2:
 			Workers: 100,
 		},
 		Module2: dummyModule2Configuration{
+			MoreDetails: MoreDetails{
+				Stuff: "bye",
+			},
 			Details: dummyModule2DetailsConfiguration{
 				Workers:       5,
 				IntervalValue: 20 * time.Minute,
@@ -110,6 +121,7 @@ module2:
 			"workers": 100,
 		},
 		"module2": map[string]interface{}{
+			"stuff": "bye",
 			"details": map[string]interface{}{
 				"workers":       5,
 				"intervalvalue": "20m0s",
@@ -148,6 +160,7 @@ module2:
 	os.Setenv("AKVORADO_DUMMY_MODULE1_LISTEN", "127.0.0.1:9000")
 	os.Setenv("AKVORADO_DUMMY_MODULE1_TOPIC", "something")
 	os.Setenv("AKVORADO_DUMMY_MODULE2_DETAILS_INTERVALVALUE", "10m")
+	os.Setenv("AKVORADO_DUMMY_MODULE2_STUFF", "bye")
 	os.Setenv("AKVORADO_DUMMY_MODULE2_ELEMENTS_0_NAME", "something")
 	os.Setenv("AKVORADO_DUMMY_MODULE2_ELEMENTS_0_GAUGE", "18")
 	os.Setenv("AKVORADO_DUMMY_MODULE2_ELEMENTS_1_NAME", "something else")
@@ -171,6 +184,9 @@ module2:
 			Workers: 100,
 		},
 		Module2: dummyModule2Configuration{
+			MoreDetails: MoreDetails{
+				Stuff: "bye",
+			},
 			Details: dummyModule2DetailsConfiguration{
 				Workers:       5,
 				IntervalValue: 10 * time.Minute,

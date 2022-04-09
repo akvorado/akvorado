@@ -4,8 +4,7 @@ import "akvorado/common/kafka"
 
 // Configuration describes the configuration for the Kafka configurator.
 type Configuration struct {
-	// Connect describes how to connect to Kafka.
-	Connect kafka.Configuration
+	kafka.Configuration `mapstructure:",squash" yaml:",inline"`
 	// TopicConfiguration describes the topic configuration.
 	TopicConfiguration TopicConfiguration
 }
@@ -22,7 +21,7 @@ type TopicConfiguration struct {
 
 // DefaultConfiguration represents the default configuration for the Kafka configurator.
 var DefaultConfiguration = Configuration{
-	Connect: kafka.DefaultConfiguration,
+	Configuration: kafka.DefaultConfiguration,
 	TopicConfiguration: TopicConfiguration{
 		NumPartitions:     1,
 		ReplicationFactor: 1,

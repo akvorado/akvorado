@@ -38,7 +38,7 @@ type Dependencies struct {
 func New(reporter *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
 	// Build Kafka configuration
 	kafkaConfig := sarama.NewConfig()
-	kafkaConfig.Version = sarama.KafkaVersion(configuration.Connect.Version)
+	kafkaConfig.Version = sarama.KafkaVersion(configuration.Version)
 	kafkaConfig.Metadata.AllowAutoTopicCreation = true
 	kafkaConfig.Producer.MaxMessageBytes = configuration.MaxMessageBytes
 	kafkaConfig.Producer.Compression = sarama.CompressionCodec(configuration.CompressionCodec)
@@ -58,11 +58,11 @@ func New(reporter *reporter.Reporter, configuration Configuration, dependencies 
 		config: configuration,
 
 		kafkaConfig: kafkaConfig,
-		kafkaTopic:  fmt.Sprintf("%s-v%d", configuration.Connect.Topic, flow.CurrentSchemaVersion),
+		kafkaTopic:  fmt.Sprintf("%s-v%d", configuration.Topic, flow.CurrentSchemaVersion),
 	}
 	c.initMetrics()
 	c.createKafkaProducer = func() (sarama.AsyncProducer, error) {
-		return sarama.NewAsyncProducer(c.config.Connect.Brokers, c.kafkaConfig)
+		return sarama.NewAsyncProducer(c.config.Brokers, c.kafkaConfig)
 	}
 	c.d.Daemon.Track(&c.t, "inlet/kafka")
 	return &c, nil
@@ -77,7 +77,7 @@ func (c *Component) Start() error {
 	kafkaProducer, err := c.createKafkaProducer()
 	if err != nil {
 		c.r.Err(err).
-			Str("brokers", strings.Join(c.config.Connect.Brokers, ",")).
+			Str("brokers", strings.Join(c.config.Brokers, ",")).
 			Msg("unable to create async producer")
 		return fmt.Errorf("unable to create Kafka async producer: %w", err)
 	}

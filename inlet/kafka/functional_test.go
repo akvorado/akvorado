@@ -22,9 +22,9 @@ func TestRealKafka(t *testing.T) {
 	rand.Seed(time.Now().UnixMicro())
 	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
 	configuration := DefaultConfiguration
-	configuration.Connect.Topic = topicName
-	configuration.Connect.Brokers = brokers
-	configuration.Connect.Version = kafka.Version(sarama.V2_8_1_0)
+	configuration.Topic = topicName
+	configuration.Brokers = brokers
+	configuration.Version = kafka.Version(sarama.V2_8_1_0)
 	configuration.FlushInterval = 100 * time.Millisecond
 	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, flow.CurrentSchemaVersion)
 	r := reporter.NewMock(t)

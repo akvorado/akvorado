@@ -15,19 +15,18 @@ configuration file for the *inlet* service:
 http:
   listen: 127.0.0.1:8081
 kafka:
-  connect:
-    topic: test-topic
-    brokers:
-      - 192.0.2.1:9092
-      - 192.0.2.2:9092
+  topic: test-topic
+  brokers:
+    - 192.0.2.1:9092
+    - 192.0.2.2:9092
 ```
 
 It can be translated to:
 
 ```sh
 AKVORADO_INLET_HTTP_LISTEN=127.0.0.1:8081
-AKVORADO_INLET_KAFKA_CONNECT_TOPIC=test-topic
-AKVORADO_INLET_KAFKA_CONNECT_BROKERS=192.0.2.1:9092,192.0.2.2:9092
+AKVORADO_INLET_KAFKA_TOPIC=test-topic
+AKVORADO_INLET_KAFKA_BROKERS=192.0.2.1:9092,192.0.2.2:9092
 ```
 
 Each service is split into several functional components. Each of them
@@ -93,11 +92,10 @@ flow is written in the [length-delimited format][].
 
 The following keys are accepted:
 
-- `connect` describes how to connect to the *Kafka* topic. It contains
-  three keys: `topic` defines the base topic name, `brokers` specifies
-  the list of brokers to use to bootstrap the connection to the Kafka
-  cluster and `version` tells which minimal version of Kafka to
-  expect.
+- `brokers` specifies the list of brokers to use to bootstrap the
+  connection to the Kafka cluster
+- `version` tells which minimal version of Kafka to expect
+- `topic` defines the base topic name
 - `flush-interval` defines the maximum flush interval to send received
   flows to Kafka
 - `flush-bytes` defines the maximum number of bytes to store before
@@ -118,9 +116,8 @@ For example:
 
 ```yaml
 kafka:
-  connect:
-    topic: test-topic
-    brokers: 10.167.19.3:9092,10.167.19.4:9092,10.167.19.5:9092
+  topic: test-topic
+  brokers: 10.167.19.3:9092,10.167.19.4:9092,10.167.19.5:9092
   compression-codec: zstd
 ```
 
@@ -271,7 +268,7 @@ provided:
  - `username` is the username to use for authentication
  - `password` is the password to use for authentication
  - `database` defines the database to use to create tables
- - `akvorado-url` defines the URL of Akvorado to be used by Clickhouse (autodetection when not specified)
+ - `orchestrator-url` defines the URL of the orchestrator to be used by Clickhouse (autodetection when not specified)
  - `kafka-consumers` defines the number of consumers to use to poll Kafka (it should not exceed the number of partitions)
 
 ### Kafka
@@ -279,10 +276,9 @@ provided:
 The Kafka component creates or updates the Kafka topic to receive
 flows. It accepts the following keys:
 
- - `connect` describes how to connect to the topic. This is the same
-   configuration as for the [inlet service](#kafka): the `topic`,
-   `brokers`, and `version` keys are accepted.
- - `topic-configuration` describes how the topic should be configured.
+ - `topic`, `brokers` and `version` keys are described in the
+   configuration for the [inlet service](#kafka)
+ - `topic-configuration` describes how the topic should be configured
 
 The following keys are accepted for the topic configuration:
 
@@ -294,8 +290,7 @@ For example:
 
 ```yaml
 kafka:
-  connect:
-    topic: test-topic
+  topic: test-topic
   topic-configuration:
     num-partitions: 1
     replication-factor: 1

@@ -11,8 +11,7 @@ import (
 
 // Configuration describes the configuration for the Kafka exporter.
 type Configuration struct {
-	// Connect is the configuration to connect to Kafka.
-	Connect kafka.Configuration
+	kafka.Configuration `mapstructure:",squash" yaml:",inline"`
 	// FlushInterval tells how often to flush pending data to Kafka.
 	FlushInterval time.Duration
 	// FlushBytes tells to flush when there are many bytes to write
@@ -29,7 +28,7 @@ type Configuration struct {
 
 // DefaultConfiguration represents the default configuration for the Kafka exporter.
 var DefaultConfiguration = Configuration{
-	Connect:          kafka.DefaultConfiguration,
+	Configuration:    kafka.DefaultConfiguration,
 	FlushInterval:    10 * time.Second,
 	FlushBytes:       int(sarama.MaxRequestSize) - 1,
 	MaxMessageBytes:  1000000,

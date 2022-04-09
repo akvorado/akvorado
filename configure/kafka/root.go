@@ -23,7 +23,7 @@ type Component struct {
 // New creates a new Kafka configurator.
 func New(r *reporter.Reporter, config Configuration) (*Component, error) {
 	kafkaConfig := sarama.NewConfig()
-	kafkaConfig.Version = sarama.KafkaVersion(config.Connect.Version)
+	kafkaConfig.Version = sarama.KafkaVersion(config.Version)
 	if err := kafkaConfig.Validate(); err != nil {
 		return nil, fmt.Errorf("cannot validate Kafka configuration: %w", err)
 	}
@@ -33,7 +33,7 @@ func New(r *reporter.Reporter, config Configuration) (*Component, error) {
 		config: config,
 
 		kafkaConfig: kafkaConfig,
-		kafkaTopic:  fmt.Sprintf("%s-v%d", config.Connect.Topic, flow.CurrentSchemaVersion),
+		kafkaTopic:  fmt.Sprintf("%s-v%d", config.Topic, flow.CurrentSchemaVersion),
 	}, nil
 }
 
@@ -47,16 +47,16 @@ func (c *Component) Start() error {
 	}()
 
 	// Create topic
-	admin, err := sarama.NewClusterAdmin(c.config.Connect.Brokers, c.kafkaConfig)
+	admin, err := sarama.NewClusterAdmin(c.config.Brokers, c.kafkaConfig)
 	if err != nil {
 		c.r.Err(err).
-			Str("brokers", strings.Join(c.config.Connect.Brokers, ",")).
+			Str("brokers", strings.Join(c.config.Brokers, ",")).
 			Msg("unable to get admin client for topic creation")
 		return fmt.Errorf("unable to get admin client for topic creation: %w", err)
 	}
 	defer admin.Close()
 	l := c.r.With().
-		Str("brokers", strings.Join(c.config.Connect.Brokers, ",")).
+		Str("brokers", strings.Join(c.config.Brokers, ",")).
 		Str("topic", c.kafkaTopic).
 		Logger()
 	topics, err := admin.ListTopics()
