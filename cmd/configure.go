@@ -40,11 +40,17 @@ var ConfigureOptions configureOptions
 var configureCmd = &cobra.Command{
 	Use:   "configure",
 	Short: "Start Akvorado's configure service",
-	Long: `Akvorado is a Netflow/IPFIX collector. The configure service configure external 
+	Long: `Akvorado is a Netflow/IPFIX collector. The configure service configure external
 components: Kafka and Clickhouse.`,
 	Args: cobra.ExactArgs(0),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		config := DefaultConfigureConfiguration
+		ConfigureOptions.BeforeDump = func() {
+			if config.Clickhouse.Kafka.Topic == "" {
+				fmt.Println(config.Kafka.Configuration)
+				config.Clickhouse.Kafka.Configuration = config.Kafka.Configuration
+			}
+		}
 		if err := ConfigureOptions.Parse(cmd.OutOrStdout(), "configure", &config); err != nil {
 			return err
 		}

@@ -17,8 +17,9 @@ import (
 // ConfigRelatedOptions are command-line options related to handling a
 // configuration file.
 type ConfigRelatedOptions struct {
-	Path string
-	Dump bool
+	Path       string
+	Dump       bool
+	BeforeDump func()
 }
 
 // Parse parses the configuration file (if present) and the
@@ -93,6 +94,9 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 	}
 
 	// Dump configuration if requested
+	if c.BeforeDump != nil {
+		c.BeforeDump()
+	}
 	if c.Dump {
 		output, err := yaml.Marshal(config)
 		if err != nil {

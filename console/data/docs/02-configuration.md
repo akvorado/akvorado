@@ -268,8 +268,14 @@ provided:
  - `username` is the username to use for authentication
  - `password` is the password to use for authentication
  - `database` defines the database to use to create tables
- - `orchestrator-url` defines the URL of the orchestrator to be used by Clickhouse (autodetection when not specified)
- - `kafka-consumers` defines the number of consumers to use to poll Kafka (it should not exceed the number of partitions)
+ - `orchestrator-url` defines the URL of the orchestrator to be used
+   by Clickhouse (autodetection when not specified)
+ - `kafka` defines the configuration for Kafka. It takes `topic`,
+   `brokers` and `version`, as described in the configuration for the
+   [inlet service](#kafka) but if absent, they are copied over from
+   the Kafka component. It also takes `consumers` to define the number
+   of consumers to use to poll Kafka (it should not exceed the number
+   of partitions)
 
 ### Kafka
 
