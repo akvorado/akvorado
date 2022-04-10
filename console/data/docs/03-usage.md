@@ -10,14 +10,24 @@ TTY, logs are output formatted as JSON.
 
 Each service accepts a set of common options as flags.
 
-The `--config` options allows to provide a configuration file in YAML
-format. See the [configuration section](02-configuration.md) for more
-information on this file.
-
 The `--check` option will check if the provided configuration is
 correct and stops here. The `--dump` option will dump the parsed
 configuration, along with the default values. It should be combined
 with `--check` if you don't want the service to start.
+
+Each service requires as an argument either a configuration file (in
+YAML format) or an URL to fetch their configuration (in JSON format).
+See the [configuration section](02-configuration.md) for more
+information.
+
+It is expected that only the orchestrator service gets a configuration
+file and the other services should point to it.
+
+```console
+$ akvorado orchestrator /etc/akvorado/config.yaml
+$ akvorado inlet http://orchestrator:8080
+$ akvorado console http://orchestrator:8080
+```
 
 Each service embeds an HTTP server exposing a few endpoints. All
 services expose the following endpoints in addition to the
@@ -42,12 +52,18 @@ component embedded into the service:
 - `/api/v0/inlet/schemas.json`: versioned list of protobuf schemas used to export flows
 - `/api/v0/inlet/schemas-X.proto`: protobuf schema for the provided version
 
-## Configure service
+## Orchestrator service
 
-`akvorado configure` starts the configure service. It runs as a
-service as it exposes an HTTP service for ClickHouse to configure
-itself. The Kafka topic is configured at start and does not need the
-service to be running.
+`akvorado orchestrator` starts the orchestrator service. It runs as a
+service as it exposes an HTTP service for other components (internal
+and external) to configure themselves. The Kafka topic is configured
+at start and does not need the service to be running.
+
+The following endpoints are exposed to configure other internal
+services:
+
+- `/api/v0/orchestrator/broker/configuration/inlet`
+- `/api/v0/orchestrator/broker/configuration/console`
 
 The following endpoints are exposed for use by ClickHouse:
 

@@ -8,6 +8,7 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
+	"akvorado/orchestrator/broker"
 	"akvorado/orchestrator/clickhouse"
 	"akvorado/orchestrator/kafka"
 )
@@ -18,6 +19,10 @@ type OrchestratorConfiguration struct {
 	HTTP       http.Configuration
 	Clickhouse clickhouse.Configuration
 	Kafka      kafka.Configuration
+	Broker     broker.Configuration
+	// Other service configurations
+	Inlet   InletConfiguration
+	Console ConsoleConfiguration
 }
 
 // DefaultOrchestratorConfiguration is the default configuration for the orchestrator command.
@@ -27,6 +32,9 @@ func DefaultOrchestratorConfiguration() OrchestratorConfiguration {
 		HTTP:       http.DefaultConfiguration(),
 		Clickhouse: clickhouse.DefaultConfiguration(),
 		Kafka:      kafka.DefaultConfiguration(),
+		Broker:     broker.DefaultConfiguration(),
+		Inlet:      DefaultInletConfiguration(),
+		Console:    DefaultConsoleConfiguration(),
 	}
 }
 
@@ -49,10 +57,9 @@ components and centralizes configuration of the various other components.`,
 		config := DefaultOrchestratorConfiguration()
 		OrchestratorOptions.Path = args[0]
 		OrchestratorOptions.BeforeDump = func() {
-			if config.Clickhouse.Kafka.Topic == "" {
-				fmt.Println(config.Kafka.Configuration)
-				config.Clickhouse.Kafka.Configuration = config.Kafka.Configuration
-			}
+			// Override some parts of the configuration
+			config.Clickhouse.Kafka.Configuration = config.Kafka.Configuration
+			config.Inlet.Kafka.Configuration = config.Kafka.Configuration
 		}
 		if err := OrchestratorOptions.Parse(cmd.OutOrStdout(), "orchestrator", &config); err != nil {
 			return err
@@ -96,6 +103,14 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, c
 	if err != nil {
 		return fmt.Errorf("unable to initialize clickhouse component: %w", err)
 	}
+	brokerComponent, err := broker.New(r, config.Broker, broker.Dependencies{
+		HTTP: httpComponent,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to initialize broker component: %w", err)
+	}
+	brokerComponent.RegisterConfiguration(broker.InletService, config.Inlet)
+	brokerComponent.RegisterConfiguration(broker.ConsoleService, config.Console)
 
 	// Expose some informations and metrics
 	addCommonHTTPHandlers(r, "orchestrator", httpComponent)

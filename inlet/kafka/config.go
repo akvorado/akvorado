@@ -11,7 +11,7 @@ import (
 
 // Configuration describes the configuration for the Kafka exporter.
 type Configuration struct {
-	kafka.Configuration `mapstructure:",squash" yaml:",inline"`
+	kafka.Configuration `mapstructure:",squash" yaml:"-,inline"`
 	// FlushInterval tells how often to flush pending data to Kafka.
 	FlushInterval time.Duration
 	// FlushBytes tells to flush when there are many bytes to write

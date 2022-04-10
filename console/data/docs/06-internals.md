@@ -190,6 +190,9 @@ In the future, we may:
   end-to-end instead of trying to be realtime.
 - Collect routes by integrating GoBGP. This is low priority if we
   consider information from Maxmind good enough for our use.
+- DDoS service to detect and mitigate DDoS (with Flowspec).
+- Dynamic configuration with something like [go-archaius][] or
+  [Harvester][].
 
 [^grafana]: The templating system in Grafana is quite limited.
     Notably, it is difficult to build different query depending on the
@@ -204,3 +207,5 @@ In the future, we may:
 [stacked area charts]: https://www.d3-graph-gallery.com/stackedarea.html
 [small multiple charts]: https://www.d3-graph-gallery.com/graph/area_smallmultiple.html
 [Sankey diagrams]: https://www.d3-graph-gallery.com/graph/sankey_basic.html
+[go-archaius]: https://github.com/go-chassis/go-archaius
+[Harvester]: https://github.com/beatlabs/harvester

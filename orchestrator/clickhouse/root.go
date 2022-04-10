@@ -11,7 +11,7 @@ import (
 	"akvorado/common/reporter"
 )
 
-// Component represents the Kafka exporter.
+// Component represents the ClickHouse configurator.
 type Component struct {
 	r      *reporter.Reporter
 	d      *Dependencies
@@ -26,7 +26,7 @@ type Component struct {
 	migrationsDone chan bool
 }
 
-// Dependencies define the dependencies of the Kafka exporter.
+// Dependencies define the dependencies of the ClickHouse configurator.
 type Dependencies struct {
 	Daemon daemon.Component
 	HTTP   *http.Component

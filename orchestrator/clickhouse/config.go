@@ -20,7 +20,7 @@ type Configuration struct {
 
 // KafkaConfiguration describes Kafka-specific configuration
 type KafkaConfiguration struct {
-	kafka.Configuration
+	kafka.Configuration `mapstructure:",squash" yaml:"-,inline"`
 	// Consumers tell how many consumers to use to poll data from Kafka
 	Consumers int
 }

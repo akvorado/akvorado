@@ -1,15 +1,20 @@
 # Configuration
 
-Each *Akvorado* service is configured through a YAML file. You can get
-the default configuration with `./akvorado SERVICE --dump --check`.
-Durations can be written in seconds or using strings like `10h20m`.
+The orchestrator service is configured through a YAML file and
+includes the configuration of the other services. Other servcies are
+expected to query the orchestrator through HTTP on start to retrieve
+their configuration.
+
+The default configuration can be obtained with `./akvorado
+orchestrator --dump --check /dev/null`. Note that some sections are
+generated from the configuration of another section. Notably, all
+Kafka configuration comes from upper-level `kafka` key. Durations can
+be written in seconds or using strings like `10h20m`.
 
 It is also possible to override configuration settings using
 environment variables. You need to remove any `-` from key names and
-use `_` to handle nesting. Then, put `AKVORADO_SERVICE_` as a prefix
-where `SERVICE` should be replaced by the service name (`inlet`,
-`configure` or `console`). For example, let's consider the following
-configuration file for the *inlet* service:
+use `_` to handle nesting. Then, put `AKVORADO_ORCHESTRATOR_` as a
+prefix. For example, let's consider the following configuration file:
 
 ```yaml
 http:
@@ -24,18 +29,22 @@ kafka:
 It can be translated to:
 
 ```sh
-AKVORADO_INLET_HTTP_LISTEN=127.0.0.1:8081
-AKVORADO_INLET_KAFKA_TOPIC=test-topic
-AKVORADO_INLET_KAFKA_BROKERS=192.0.2.1:9092,192.0.2.2:9092
+AKVORADO_ORCHESTRATOR_HTTP_LISTEN=127.0.0.1:8081
+AKVORADO_ORCHESTRATOR_KAFKA_TOPIC=test-topic
+AKVORADO_ORCHESTRATOR_KAFKA_BROKERS=192.0.2.1:9092,192.0.2.2:9092
 ```
+
+The orchestrator service has its own configuration, as well as the
+configuration for the other services under the key matching the
+service name (`inlet` and `console`).
 
 Each service is split into several functional components. Each of them
 gets a section of the configuration file matching its name.
 
 ## Inlet service
 
-The main components of the inlet services are `flow`, `kafka`, and
-`core`.
+This service is configured under the `inlet` key. The main components
+of the inlet services are `flow`, `kafka`, and `core`.
 
 ### Flow
 
@@ -92,10 +101,9 @@ flow is written in the [length-delimited format][].
 
 The following keys are accepted:
 
-- `brokers` specifies the list of brokers to use to bootstrap the
-  connection to the Kafka cluster
-- `version` tells which minimal version of Kafka to expect
-- `topic` defines the base topic name
+- `topic`, `brokers` and `version` keys are described in the
+  configuration for the [inlet service](#kafka) (the values of these
+  keys come from the orchestrator configuration)
 - `flush-interval` defines the maximum flush interval to send received
   flows to Kafka
 - `flush-bytes` defines the maximum number of bytes to store before
@@ -111,15 +119,6 @@ The following keys are accepted:
 The topic name is suffixed by the version of the schema. For example,
 if the configured topic is `flows` and the current schema version is
 1, the topic used to send received flows will be `flows-v1`.
-
-For example:
-
-```yaml
-kafka:
-  topic: test-topic
-  brokers: 10.167.19.3:9092,10.167.19.4:9092,10.167.19.5:9092
-  compression-codec: zstd
-```
 
 ### Core
 
@@ -250,41 +249,23 @@ output and is not configurable. As for metrics, they are reported by
 the HTTP component on the `/api/v0/inlet/metrics` endpoint and there is
 nothing to configure either.
 
-## Configuration service
+## Orchestrator service
 
-The two main components of the configuration service are `clickhouse`
+The two main components of the orchestrator service are `clickhouse`
 and `kafka`. It also uses the [HTTP](#http) and
 [reporting](#reporting) component from the inlet service and accepts
 the same configuration settings.
-
-### ClickHouse
-
-The ClickHouse component exposes some useful HTTP endpoints to
-configure a ClickHouse database. It also provisions and keep
-up-to-date a ClickHouse database. The following keys should be
-provided:
-
- - `servers` defines the list of ClickHouse servers to connect to
- - `username` is the username to use for authentication
- - `password` is the password to use for authentication
- - `database` defines the database to use to create tables
- - `orchestrator-url` defines the URL of the orchestrator to be used
-   by Clickhouse (autodetection when not specified)
- - `kafka` defines the configuration for Kafka. It takes `topic`,
-   `brokers` and `version`, as described in the configuration for the
-   [inlet service](#kafka) but if absent, they are copied over from
-   the Kafka component. It also takes `consumers` to define the number
-   of consumers to use to poll Kafka (it should not exceed the number
-   of partitions)
 
 ### Kafka
 
 The Kafka component creates or updates the Kafka topic to receive
 flows. It accepts the following keys:
 
- - `topic`, `brokers` and `version` keys are described in the
-   configuration for the [inlet service](#kafka)
- - `topic-configuration` describes how the topic should be configured
+- `brokers` specifies the list of brokers to use to bootstrap the
+  connection to the Kafka cluster
+- `version` tells which minimal version of Kafka to expect
+- `topic` defines the base topic name
+- `topic-configuration` describes how the topic should be configured
 
 The following keys are accepted for the topic configuration:
 
@@ -306,9 +287,23 @@ kafka:
       cleanup.policy: delete
 ```
 
-Currently, the configure service won't update the replication factor.
-The configuration entries are kept in sync with the content of the
-configuration file.
+Currently, the orchestrator service won't update the replication
+factor. The configuration entries are kept in sync with the content of
+the configuration file.
+
+### ClickHouse
+
+The ClickHouse component exposes some useful HTTP endpoints to
+configure a ClickHouse database. It also provisions and keep
+up-to-date a ClickHouse database. The following keys should be
+provided:
+
+- `servers` defines the list of ClickHouse servers to connect to
+- `username` is the username to use for authentication
+- `password` is the password to use for authentication
+- `database` defines the database to use to create tables
+- `orchestrator-url` defines the URL of the orchestrator to be used
+  by Clickhouse (autodetection when not specified)
 
 ## Console service
 
