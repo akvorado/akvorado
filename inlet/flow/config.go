@@ -1,6 +1,7 @@
 package flow
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -20,11 +21,13 @@ type Configuration struct {
 }
 
 // DefaultConfiguration represents the default configuration for the flow component
-var DefaultConfiguration = Configuration{
-	Inputs: []InputConfiguration{{
-		Decoder: "netflow",
-		Config:  &udp.DefaultConfiguration,
-	}},
+func DefaultConfiguration() Configuration {
+	return Configuration{
+		Inputs: []InputConfiguration{{
+			Decoder: "netflow",
+			Config:  udp.DefaultConfiguration(),
+		}},
+	}
 }
 
 // InputConfiguration represents the configuration for an input.
@@ -90,7 +93,7 @@ func ConfigurationUnmarshalerHook() mapstructure.DecodeHookFunc {
 			// Get current type.
 			currentType := configField.Elem().Type().Elem()
 			for k, v := range inputs {
-				if reflect.TypeOf(v).Elem() == currentType {
+				if reflect.TypeOf(v()).Elem() == currentType {
 					inputType = k
 					break
 				}
@@ -107,8 +110,9 @@ func ConfigurationUnmarshalerHook() mapstructure.DecodeHookFunc {
 		}
 
 		// Alter config with a copy of the concrete type
-		original := reflect.Indirect(reflect.ValueOf(input))
-		if !configField.IsNil() && configField.Elem().Type().Elem() == reflect.TypeOf(input).Elem() {
+		defaultV := input()
+		original := reflect.Indirect(reflect.ValueOf(defaultV))
+		if !configField.IsNil() && configField.Elem().Type().Elem() == reflect.TypeOf(defaultV).Elem() {
 			// Use the value we already have instead of default.
 			original = reflect.Indirect(configField.Elem())
 		}
@@ -125,7 +129,7 @@ func ConfigurationUnmarshalerHook() mapstructure.DecodeHookFunc {
 func (ic InputConfiguration) MarshalYAML() (interface{}, error) {
 	var typeStr string
 	for k, v := range inputs {
-		if reflect.TypeOf(v).Elem() == reflect.TypeOf(ic.Config).Elem() {
+		if reflect.TypeOf(v()).Elem() == reflect.TypeOf(ic.Config).Elem() {
 			typeStr = k
 			break
 		}
@@ -144,7 +148,16 @@ func (ic InputConfiguration) MarshalYAML() (interface{}, error) {
 	return result, nil
 }
 
-var inputs = map[string]input.Configuration{
-	"udp":  &udp.DefaultConfiguration,
-	"file": &file.DefaultConfiguration,
+// MarshalJSON undoes ConfigurationUnmarshalerHook().
+func (ic InputConfiguration) MarshalJSON() ([]byte, error) {
+	result, err := ic.MarshalYAML()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(result)
+}
+
+var inputs = map[string](func() input.Configuration){
+	"udp":  udp.DefaultConfiguration,
+	"file": file.DefaultConfiguration,
 }

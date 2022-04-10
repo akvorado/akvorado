@@ -14,7 +14,7 @@ func TestFlow(t *testing.T) {
 	r := reporter.NewMock(t)
 	_, src, _, _ := runtime.Caller(0)
 	base := path.Join(path.Dir(src), "decoder", "netflow", "testdata")
-	config := DefaultConfiguration
+	config := DefaultConfiguration()
 	config.Inputs = []InputConfiguration{
 		{
 			Decoder: "netflow",

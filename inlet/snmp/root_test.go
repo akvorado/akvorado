@@ -25,7 +25,7 @@ func expectSNMPLookup(t *testing.T, c *Component, exporter string, ifIndex uint,
 
 func TestLookup(t *testing.T) {
 	r := reporter.NewMock(t)
-	c := NewMock(t, r, DefaultConfiguration, Dependencies{Daemon: daemon.NewMock(t)})
+	c := NewMock(t, r, DefaultConfiguration(), Dependencies{Daemon: daemon.NewMock(t)})
 	defer func() {
 		if err := c.Stop(); err != nil {
 			t.Fatalf("Stop() error:\n%+v", err)
@@ -42,7 +42,7 @@ func TestLookup(t *testing.T) {
 
 func TestSNMPCommunities(t *testing.T) {
 	r := reporter.NewMock(t)
-	configuration := DefaultConfiguration
+	configuration := DefaultConfiguration()
 	configuration.DefaultCommunity = "notpublic"
 	configuration.Communities = map[string]string{
 		"127.0.0.1": "public",
@@ -76,7 +76,7 @@ func TestSNMPCommunities(t *testing.T) {
 
 func TestComponentSaveLoad(t *testing.T) {
 	r := reporter.NewMock(t)
-	configuration := DefaultConfiguration
+	configuration := DefaultConfiguration()
 	configuration.CachePersistFile = filepath.Join(t.TempDir(), "cache")
 	c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 
@@ -103,7 +103,7 @@ func TestComponentSaveLoad(t *testing.T) {
 
 func TestAutoRefresh(t *testing.T) {
 	r := reporter.NewMock(t)
-	configuration := DefaultConfiguration
+	configuration := DefaultConfiguration()
 	mockClock := clock.NewMock()
 	c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t), Clock: mockClock})
 
@@ -153,7 +153,7 @@ func TestAutoRefresh(t *testing.T) {
 
 func TestConfigCheck(t *testing.T) {
 	t.Run("refresh", func(t *testing.T) {
-		configuration := DefaultConfiguration
+		configuration := DefaultConfiguration()
 		configuration.CacheDuration = 10 * time.Minute
 		configuration.CacheRefresh = 5 * time.Minute
 		configuration.CacheCheckInterval = time.Minute
@@ -162,7 +162,7 @@ func TestConfigCheck(t *testing.T) {
 		}
 	})
 	t.Run("interval", func(t *testing.T) {
-		configuration := DefaultConfiguration
+		configuration := DefaultConfiguration()
 		configuration.CacheDuration = 10 * time.Minute
 		configuration.CacheRefresh = 15 * time.Minute
 		configuration.CacheCheckInterval = 12 * time.Minute
@@ -171,7 +171,7 @@ func TestConfigCheck(t *testing.T) {
 		}
 	})
 	t.Run("refresh disabled", func(t *testing.T) {
-		configuration := DefaultConfiguration
+		configuration := DefaultConfiguration()
 		configuration.CacheDuration = 10 * time.Minute
 		configuration.CacheRefresh = 0
 		configuration.CacheCheckInterval = 2 * time.Minute
@@ -183,7 +183,7 @@ func TestConfigCheck(t *testing.T) {
 
 func TestStartStopWithMultipleWorkers(t *testing.T) {
 	r := reporter.NewMock(t)
-	configuration := DefaultConfiguration
+	configuration := DefaultConfiguration()
 	configuration.Workers = 5
 	c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 	if err := c.Stop(); err != nil {
@@ -202,7 +202,7 @@ func (fcp *logCoalescePoller) Poll(ctx context.Context, exporterIP string, _ uin
 
 func TestCoalescing(t *testing.T) {
 	r := reporter.NewMock(t)
-	c := NewMock(t, r, DefaultConfiguration, Dependencies{Daemon: daemon.NewMock(t)})
+	c := NewMock(t, r, DefaultConfiguration(), Dependencies{Daemon: daemon.NewMock(t)})
 	lcp := &logCoalescePoller{
 		received: []lookupRequest{},
 	}
@@ -261,7 +261,7 @@ func TestPollerBreaker(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
 			r := reporter.NewMock(t)
-			configuration := DefaultConfiguration
+			configuration := DefaultConfiguration()
 			configuration.PollerCoalesce = 0
 			c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 			defer func() {

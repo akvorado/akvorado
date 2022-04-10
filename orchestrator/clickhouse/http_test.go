@@ -11,7 +11,7 @@ import (
 
 func TestHTTPEndpoints(t *testing.T) {
 	r := reporter.NewMock(t)
-	c, err := New(r, DefaultConfiguration, Dependencies{
+	c, err := New(r, DefaultConfiguration(), Dependencies{
 		Daemon: daemon.NewMock(t),
 		HTTP:   http.NewMock(t, r),
 	})
@@ -21,7 +21,7 @@ func TestHTTPEndpoints(t *testing.T) {
 
 	cases := helpers.HTTPEndpointCases{
 		{
-			URL:         "/api/v0/configure/clickhouse/protocols.csv",
+			URL:         "/api/v0/orchestrator/clickhouse/protocols.csv",
 			ContentType: "text/csv; charset=utf-8",
 			FirstLines: []string{
 				`proto,name,description`,
@@ -29,14 +29,14 @@ func TestHTTPEndpoints(t *testing.T) {
 				`1,ICMP,Internet Control Message`,
 			},
 		}, {
-			URL:         "/api/v0/configure/clickhouse/asns.csv",
+			URL:         "/api/v0/orchestrator/clickhouse/asns.csv",
 			ContentType: "text/csv; charset=utf-8",
 			FirstLines: []string{
 				"asn,name",
 				"1,LVLT-1",
 			},
 		}, {
-			URL:         "/api/v0/configure/clickhouse/init.sh",
+			URL:         "/api/v0/orchestrator/clickhouse/init.sh",
 			ContentType: "text/x-shellscript",
 			FirstLines: []string{
 				`#!/bin/sh`,

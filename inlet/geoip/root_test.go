@@ -32,7 +32,7 @@ func copyFile(src string, dst string) {
 
 func TestDatabaseRefresh(t *testing.T) {
 	dir := t.TempDir()
-	config := DefaultConfiguration
+	config := DefaultConfiguration()
 	config.CountryDatabase = filepath.Join(dir, "country.mmdb")
 	config.ASNDatabase = filepath.Join(dir, "asn.mmdb")
 
@@ -83,7 +83,7 @@ func TestDatabaseRefresh(t *testing.T) {
 
 func TestStartWithoutDatabase(t *testing.T) {
 	r := reporter.NewMock(t)
-	c, err := New(r, DefaultConfiguration, Dependencies{Daemon: daemon.NewMock(t)})
+	c, err := New(r, DefaultConfiguration(), Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
@@ -97,9 +97,9 @@ func TestStartWithoutDatabase(t *testing.T) {
 }
 
 func TestStartWithMissingDatabase(t *testing.T) {
-	countryConfiguration := DefaultConfiguration
+	countryConfiguration := DefaultConfiguration()
 	countryConfiguration.CountryDatabase = "/i/do/not/exist"
-	asnConfiguration := DefaultConfiguration
+	asnConfiguration := DefaultConfiguration()
 	asnConfiguration.ASNDatabase = "/i/do/not/exist"
 	cases := []struct {
 		Name   string

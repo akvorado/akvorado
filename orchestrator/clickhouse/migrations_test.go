@@ -14,7 +14,7 @@ import (
 func TestGetHTTPBaseURL(t *testing.T) {
 	r := reporter.NewMock(t)
 	http := http.NewMock(t, r)
-	c, err := New(r, DefaultConfiguration, Dependencies{
+	c, err := New(r, DefaultConfiguration(), Dependencies{
 		Daemon: daemon.NewMock(t),
 		HTTP:   http,
 	})

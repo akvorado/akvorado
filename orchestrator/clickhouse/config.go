@@ -14,8 +14,8 @@ type Configuration struct {
 	Password string
 	// Kafka describes Kafka-specific configuration
 	Kafka KafkaConfiguration
-	// AkvoradoURL allows one to override URL to reach Akvorado from Clickhouse
-	AkvoradoURL string
+	// OrchestratorURL allows one to override URL to reach orchestrator from Clickhouse
+	OrchestratorURL string
 }
 
 // KafkaConfiguration describes Kafka-specific configuration
@@ -26,11 +26,13 @@ type KafkaConfiguration struct {
 }
 
 // DefaultConfiguration represents the default configuration for the ClickHouse configurator.
-var DefaultConfiguration = Configuration{
-	Servers:  []string{}, // No clickhouse by default
-	Database: "default",
-	Username: "default",
-	Kafka: KafkaConfiguration{
-		Consumers: 1,
-	},
+func DefaultConfiguration() Configuration {
+	return Configuration{
+		Servers:  []string{}, // No clickhouse by default
+		Database: "default",
+		Username: "default",
+		Kafka: KafkaConfiguration{
+			Consumers: 1,
+		},
+	}
 }

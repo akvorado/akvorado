@@ -27,13 +27,15 @@ type Configuration struct {
 }
 
 // DefaultConfiguration represents the default configuration for the Kafka exporter.
-var DefaultConfiguration = Configuration{
-	Configuration:    kafka.DefaultConfiguration,
-	FlushInterval:    10 * time.Second,
-	FlushBytes:       int(sarama.MaxRequestSize) - 1,
-	MaxMessageBytes:  1000000,
-	CompressionCodec: CompressionCodec(sarama.CompressionNone),
-	QueueSize:        32,
+func DefaultConfiguration() Configuration {
+	return Configuration{
+		Configuration:    kafka.DefaultConfiguration(),
+		FlushInterval:    10 * time.Second,
+		FlushBytes:       int(sarama.MaxRequestSize) - 1,
+		MaxMessageBytes:  1000000,
+		CompressionCodec: CompressionCodec(sarama.CompressionNone),
+		QueueSize:        32,
+	}
 }
 
 // CompressionCodec represents a compression codec.

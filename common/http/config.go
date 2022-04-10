@@ -9,6 +9,8 @@ type Configuration struct {
 }
 
 // DefaultConfiguration is the default configuration of the HTTP server.
-var DefaultConfiguration = Configuration{
-	Listen: "0.0.0.0:8080",
+func DefaultConfiguration() Configuration {
+	return Configuration{
+		Listen: "0.0.0.0:8080",
+	}
 }

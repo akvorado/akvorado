@@ -22,12 +22,12 @@ type migrationStep struct {
 
 // migrateDatabase execute database migration
 func (c *Component) migrateDatabase() error {
-	if c.config.AkvoradoURL == "" {
+	if c.config.OrchestratorURL == "" {
 		baseURL, err := c.getHTTPBaseURL(c.config.Servers[0])
 		if err != nil {
 			return err
 		}
-		c.config.AkvoradoURL = baseURL
+		c.config.OrchestratorURL = baseURL
 	}
 
 	l := c.r.With().

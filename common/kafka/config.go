@@ -13,10 +13,12 @@ type Configuration struct {
 }
 
 // DefaultConfiguration represents the default configuration for connecting to Kafka.
-var DefaultConfiguration = Configuration{
-	Topic:   "flows",
-	Brokers: []string{"127.0.0.1:9092"},
-	Version: Version(sarama.V2_8_1_0),
+func DefaultConfiguration() Configuration {
+	return Configuration{
+		Topic:   "flows",
+		Brokers: []string{"127.0.0.1:9092"},
+		Version: Version(sarama.V2_8_1_0),
+	}
 }
 
 // Version represents a supported version of Kafka

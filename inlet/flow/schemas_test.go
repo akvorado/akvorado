@@ -9,7 +9,7 @@ import (
 
 func TestHTTPEndpoints(t *testing.T) {
 	r := reporter.NewMock(t)
-	c := NewMock(t, r, DefaultConfiguration)
+	c := NewMock(t, r, DefaultConfiguration())
 
 	cases := helpers.HTTPEndpointCases{
 		{

@@ -4,4 +4,6 @@ package logger
 type Configuration struct{}
 
 // DefaultConfiguration is the default logging configuration.
-var DefaultConfiguration = Configuration{}
+func DefaultConfiguration() Configuration {
+	return Configuration{}
+}

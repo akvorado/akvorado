@@ -53,7 +53,7 @@ func TestTopicCreation(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			configuration := DefaultConfiguration
+			configuration := DefaultConfiguration()
 			configuration.Topic = topicName
 			configuration.TopicConfiguration = TopicConfiguration{
 				NumPartitions:     1,
@@ -97,7 +97,7 @@ func TestTopicMorePartitions(t *testing.T) {
 	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
 	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, flow.CurrentSchemaVersion)
 
-	configuration := DefaultConfiguration
+	configuration := DefaultConfiguration()
 	configuration.Topic = topicName
 	configuration.TopicConfiguration = TopicConfiguration{
 		NumPartitions:     1,

@@ -5,4 +5,6 @@ package metrics
 type Configuration struct{}
 
 // DefaultConfiguration is the default metrics configuration.
-var DefaultConfiguration = Configuration{}
+func DefaultConfiguration() Configuration {
+	return Configuration{}
+}

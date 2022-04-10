@@ -19,10 +19,12 @@ type ConsoleConfiguration struct {
 }
 
 // DefaultConsoleConfiguration is the default configuration for the console command.
-var DefaultConsoleConfiguration = ConsoleConfiguration{
-	HTTP:      http.DefaultConfiguration,
-	Reporting: reporter.DefaultConfiguration,
-	Console:   console.DefaultConfiguration,
+func DefaultConsoleConfiguration() ConsoleConfiguration {
+	return ConsoleConfiguration{
+		HTTP:      http.DefaultConfiguration(),
+		Reporting: reporter.DefaultConfiguration(),
+		Console:   console.DefaultConfiguration(),
+	}
 }
 
 type consoleOptions struct {
@@ -39,9 +41,10 @@ var consoleCmd = &cobra.Command{
 	Short: "Start Akvorado's console service",
 	Long: `Akvorado is a Netflow/IPFIX collector. The console service exposes a web interface to
 manage collected flows.`,
-	Args: cobra.ExactArgs(0),
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		config := DefaultConsoleConfiguration
+		config := DefaultConsoleConfiguration()
+		ConsoleOptions.Path = args[0]
 		if err := ConsoleOptions.Parse(cmd.OutOrStdout(), "console", &config); err != nil {
 			return err
 		}
@@ -56,8 +59,6 @@ manage collected flows.`,
 
 func init() {
 	RootCmd.AddCommand(consoleCmd)
-	consoleCmd.Flags().StringVarP(&ConsoleOptions.ConfigRelatedOptions.Path, "config", "c", "",
-		"Configuration file")
 	consoleCmd.Flags().BoolVarP(&ConsoleOptions.ConfigRelatedOptions.Dump, "dump", "D", false,
 		"Dump configuration before starting")
 	consoleCmd.Flags().BoolVarP(&ConsoleOptions.CheckMode, "check", "C", false,

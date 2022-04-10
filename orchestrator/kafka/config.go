@@ -20,10 +20,12 @@ type TopicConfiguration struct {
 }
 
 // DefaultConfiguration represents the default configuration for the Kafka configurator.
-var DefaultConfiguration = Configuration{
-	Configuration: kafka.DefaultConfiguration,
-	TopicConfiguration: TopicConfiguration{
-		NumPartitions:     1,
-		ReplicationFactor: 1,
-	},
+func DefaultConfiguration() Configuration {
+	return Configuration{
+		Configuration: kafka.DefaultConfiguration(),
+		TopicConfiguration: TopicConfiguration{
+			NumPartitions:     1,
+			ReplicationFactor: 1,
+		},
+	}
 }

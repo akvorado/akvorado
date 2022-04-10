@@ -7,4 +7,6 @@ type Configuration struct {
 }
 
 // DefaultConfiguration represents the default configuration for the console component.
-var DefaultConfiguration = Configuration{}
+func DefaultConfiguration() Configuration {
+	return Configuration{}
+}

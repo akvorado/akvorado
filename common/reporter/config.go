@@ -12,7 +12,9 @@ type Configuration struct {
 }
 
 // DefaultConfiguration is the default reporter configuration.
-var DefaultConfiguration = Configuration{
-	Logging: logger.DefaultConfiguration,
-	Metrics: metrics.DefaultConfiguration,
+func DefaultConfiguration() Configuration {
+	return Configuration{
+		Logging: logger.DefaultConfiguration(),
+		Metrics: metrics.DefaultConfiguration(),
+	}
 }

@@ -27,14 +27,16 @@ type InletConfiguration struct {
 }
 
 // DefaultInletConfiguration is the default configuration for the inlet command.
-var DefaultInletConfiguration = InletConfiguration{
-	HTTP:      http.DefaultConfiguration,
-	Reporting: reporter.DefaultConfiguration,
-	Flow:      flow.DefaultConfiguration,
-	SNMP:      snmp.DefaultConfiguration,
-	GeoIP:     geoip.DefaultConfiguration,
-	Kafka:     kafka.DefaultConfiguration,
-	Core:      core.DefaultConfiguration,
+func DefaultInletConfiguration() InletConfiguration {
+	return InletConfiguration{
+		HTTP:      http.DefaultConfiguration(),
+		Reporting: reporter.DefaultConfiguration(),
+		Flow:      flow.DefaultConfiguration(),
+		SNMP:      snmp.DefaultConfiguration(),
+		GeoIP:     geoip.DefaultConfiguration(),
+		Kafka:     kafka.DefaultConfiguration(),
+		Core:      core.DefaultConfiguration(),
+	}
 }
 
 type inletOptions struct {
@@ -51,9 +53,10 @@ var inletCmd = &cobra.Command{
 	Short: "Start Akvorado's inlet service",
 	Long: `Akvorado is a Netflow/IPFIX collector. The inlet service handles flow ingestion,
 hydration and export to Kafka.`,
-	Args: cobra.ExactArgs(0),
+	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		config := DefaultInletConfiguration
+		config := DefaultInletConfiguration()
+		InletOptions.Path = args[0]
 		if err := InletOptions.Parse(cmd.OutOrStdout(), "inlet", &config); err != nil {
 			return err
 		}
@@ -68,8 +71,6 @@ hydration and export to Kafka.`,
 
 func init() {
 	RootCmd.AddCommand(inletCmd)
-	inletCmd.Flags().StringVarP(&InletOptions.ConfigRelatedOptions.Path, "config", "c", "",
-		"Configuration file")
 	inletCmd.Flags().BoolVarP(&InletOptions.ConfigRelatedOptions.Dump, "dump", "D", false,
 		"Dump configuration before starting")
 	inletCmd.Flags().BoolVarP(&InletOptions.CheckMode, "check", "C", false,

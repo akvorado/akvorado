@@ -18,7 +18,7 @@ func ExampleNew() {
 	}
 
 	// Initialize logger
-	logger, err := logger.New(logger.DefaultConfiguration)
+	logger, err := logger.New(logger.DefaultConfiguration())
 	if err != nil {
 		panic(err)
 	}

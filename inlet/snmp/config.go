@@ -29,15 +29,17 @@ type Configuration struct {
 }
 
 // DefaultConfiguration represents the default configuration for the SNMP client.
-var DefaultConfiguration = Configuration{
-	CacheDuration:      30 * time.Minute,
-	CacheRefresh:       time.Hour,
-	CacheCheckInterval: 2 * time.Minute,
-	CachePersistFile:   "",
-	DefaultCommunity:   "public",
-	Communities:        map[string]string{},
-	PollerRetries:      1,
-	PollerTimeout:      time.Second,
-	PollerCoalesce:     10,
-	Workers:            1,
+func DefaultConfiguration() Configuration {
+	return Configuration{
+		CacheDuration:      30 * time.Minute,
+		CacheRefresh:       time.Hour,
+		CacheCheckInterval: 2 * time.Minute,
+		CachePersistFile:   "",
+		DefaultCommunity:   "public",
+		Communities:        map[string]string{},
+		PollerRetries:      1,
+		PollerTimeout:      time.Second,
+		PollerCoalesce:     10,
+		Workers:            1,
+	}
 }

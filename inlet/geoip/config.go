@@ -11,4 +11,6 @@ type Configuration struct {
 // DefaultConfiguration represents the default configuration for the
 // GeoIP component. Without databases, the component won't report
 // anything.
-var DefaultConfiguration = Configuration{}
+func DefaultConfiguration() Configuration {
+	return Configuration{}
+}

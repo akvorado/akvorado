@@ -14,11 +14,11 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	l, err := logger.New(logger.DefaultConfiguration)
+	l, err := logger.New(logger.DefaultConfiguration())
 	if err != nil {
 		t.Fatalf("logger.New() err:\n%+v", err)
 	}
-	m, err := metrics.New(l, metrics.DefaultConfiguration)
+	m, err := metrics.New(l, metrics.DefaultConfiguration())
 	if err != nil {
 		t.Fatalf("metrics.New() err:\n%+v", err)
 	}
@@ -78,11 +78,11 @@ func TestNew(t *testing.T) {
 }
 
 func TestFactoryCache(t *testing.T) {
-	l, err := logger.New(logger.DefaultConfiguration)
+	l, err := logger.New(logger.DefaultConfiguration())
 	if err != nil {
 		t.Fatalf("logger.New() err:\n%+v", err)
 	}
-	m, err := metrics.New(l, metrics.DefaultConfiguration)
+	m, err := metrics.New(l, metrics.DefaultConfiguration())
 	if err != nil {
 		t.Fatalf("metrics.New() err:\n%+v", err)
 	}
@@ -95,11 +95,11 @@ func TestFactoryCache(t *testing.T) {
 }
 
 func TestRegisterTwice(t *testing.T) {
-	l, err := logger.New(logger.DefaultConfiguration)
+	l, err := logger.New(logger.DefaultConfiguration())
 	if err != nil {
 		t.Fatalf("logger.New() err:\n%+v", err)
 	}
-	m, err := metrics.New(l, metrics.DefaultConfiguration)
+	m, err := metrics.New(l, metrics.DefaultConfiguration())
 	if err != nil {
 		t.Fatalf("metrics.New() err:\n%+v", err)
 	}

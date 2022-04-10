@@ -13,9 +13,11 @@ type Configuration struct {
 }
 
 // DefaultConfiguration represents the default configuration for the core component.
-var DefaultConfiguration = Configuration{
-	Workers:              1,
-	ExporterClassifiers:  []ExporterClassifierRule{},
-	InterfaceClassifiers: []InterfaceClassifierRule{},
-	ClassifierCacheSize:  1000,
+func DefaultConfiguration() Configuration {
+	return Configuration{
+		Workers:              1,
+		ExporterClassifiers:  []ExporterClassifierRule{},
+		InterfaceClassifiers: []InterfaceClassifierRule{},
+		ClassifierCacheSize:  1000,
+	}
 }

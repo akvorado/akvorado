@@ -21,7 +21,7 @@ func TestRealKafka(t *testing.T) {
 
 	rand.Seed(time.Now().UnixMicro())
 	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
-	configuration := DefaultConfiguration
+	configuration := DefaultConfiguration()
 	configuration.Topic = topicName
 	configuration.Brokers = brokers
 	configuration.Version = kafka.Version(sarama.V2_8_1_0)

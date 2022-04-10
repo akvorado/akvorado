@@ -1,5 +1,7 @@
 package file
 
+import "akvorado/inlet/flow/input"
+
 // Configuration describes file input configuration.
 type Configuration struct {
 	// Paths to use as input
@@ -7,4 +9,6 @@ type Configuration struct {
 }
 
 // DefaultConfiguration descrives the default configuration for file input.
-var DefaultConfiguration Configuration
+func DefaultConfiguration() input.Configuration {
+	return &Configuration{}
+}

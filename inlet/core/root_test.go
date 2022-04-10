@@ -29,14 +29,14 @@ func TestCore(t *testing.T) {
 
 	// Prepare all components.
 	daemonComponent := daemon.NewMock(t)
-	snmpComponent := snmp.NewMock(t, r, snmp.DefaultConfiguration, snmp.Dependencies{Daemon: daemonComponent})
-	flowComponent := flow.NewMock(t, r, flow.DefaultConfiguration)
+	snmpComponent := snmp.NewMock(t, r, snmp.DefaultConfiguration(), snmp.Dependencies{Daemon: daemonComponent})
+	flowComponent := flow.NewMock(t, r, flow.DefaultConfiguration())
 	geoipComponent := geoip.NewMock(t, r)
-	kafkaComponent, kafkaProducer := kafka.NewMock(t, r, kafka.DefaultConfiguration)
+	kafkaComponent, kafkaProducer := kafka.NewMock(t, r, kafka.DefaultConfiguration())
 	httpComponent := http.NewMock(t, r)
 
 	// Instantiate and start core
-	c, err := New(r, DefaultConfiguration, Dependencies{
+	c, err := New(r, DefaultConfiguration(), Dependencies{
 		Daemon: daemonComponent,
 		Flow:   flowComponent,
 		Snmp:   snmpComponent,

@@ -13,7 +13,7 @@ import (
 
 func TestFileInput(t *testing.T) {
 	r := reporter.NewMock(t)
-	configuration := DefaultConfiguration
+	configuration := DefaultConfiguration().(*Configuration)
 	configuration.Paths = []string{path.Join("testdata", "file1.txt"), path.Join("testdata", "file2.txt")}
 	in, err := configuration.New(r, daemon.NewMock(t), &decoder.DummyDecoder{})
 	if err != nil {

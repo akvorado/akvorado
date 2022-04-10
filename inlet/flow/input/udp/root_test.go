@@ -13,7 +13,7 @@ import (
 
 func TestUDPInput(t *testing.T) {
 	r := reporter.NewMock(t)
-	configuration := DefaultConfiguration
+	configuration := DefaultConfiguration().(*Configuration)
 	configuration.Listen = "127.0.0.1:0"
 	in, err := configuration.New(r, daemon.NewMock(t), &decoder.DummyDecoder{})
 	if err != nil {
@@ -87,7 +87,7 @@ func TestUDPInput(t *testing.T) {
 
 func TestOverflow(t *testing.T) {
 	r := reporter.NewMock(t)
-	configuration := DefaultConfiguration
+	configuration := DefaultConfiguration().(*Configuration)
 	configuration.Listen = "127.0.0.1:0"
 	configuration.QueueSize = 1
 	in, err := configuration.New(r, daemon.NewMock(t), &decoder.DummyDecoder{})

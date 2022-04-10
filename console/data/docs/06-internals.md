@@ -18,7 +18,7 @@ Each component features the following piece of code:
 - A `Configuration` structure containing the configuration of the
   component. It maps to a section of [Akvorado configuration
   file](02-configuration.md).
-- A `DefaultConfiguration` variable with the default values for the
+- A `DefaultConfiguration` function with the default values for the
   configuration.
 - A `New()` function instantiating the component. This method takes
   the configuration and the dependencies. It is inert.

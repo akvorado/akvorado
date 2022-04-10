@@ -19,7 +19,7 @@ import (
 //  - https://github.com/maxmind/MaxMind-DB/blob/main/source-data/GeoLite2-Country-Test.json
 func NewMock(t *testing.T, r *reporter.Reporter) *Component {
 	t.Helper()
-	config := DefaultConfiguration
+	config := DefaultConfiguration()
 	_, src, _, _ := runtime.Caller(0)
 	config.CountryDatabase = filepath.Join(path.Dir(src), "testdata", "GeoLite2-Country-Test.mmdb")
 	config.ASNDatabase = filepath.Join(path.Dir(src), "testdata", "GeoLite2-ASN-Test.mmdb")

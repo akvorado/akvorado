@@ -15,7 +15,7 @@ import (
 
 func TestKafka(t *testing.T) {
 	r := reporter.NewMock(t)
-	c, mockProducer := NewMock(t, r, DefaultConfiguration)
+	c, mockProducer := NewMock(t, r, DefaultConfiguration())
 
 	// Send one message
 	received := make(chan bool)
@@ -61,7 +61,7 @@ func TestKafka(t *testing.T) {
 
 func TestKafkaMetrics(t *testing.T) {
 	r := reporter.NewMock(t)
-	c, err := New(r, DefaultConfiguration, Dependencies{Daemon: daemon.NewMock(t)})
+	c, err := New(r, DefaultConfiguration(), Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}

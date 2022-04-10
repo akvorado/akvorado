@@ -39,7 +39,7 @@ func (c *Component) addHandlerEmbedded(url string, path string) {
 // registerHTTPHandler register some handlers that will be useful for
 // ClickHouse
 func (c *Component) registerHTTPHandlers() error {
-	c.d.HTTP.AddHandler("/api/v0/configure/clickhouse/init.sh",
+	c.d.HTTP.AddHandler("/api/v0/orchestrator/clickhouse/init.sh",
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "text/x-shellscript")
 			initShTemplate.Execute(w, flow.VersionedSchemas)
@@ -53,7 +53,7 @@ func (c *Component) registerHTTPHandlers() error {
 		if entry.IsDir() {
 			continue
 		}
-		url := fmt.Sprintf("/api/v0/configure/clickhouse/%s", entry.Name())
+		url := fmt.Sprintf("/api/v0/orchestrator/clickhouse/%s", entry.Name())
 		path := fmt.Sprintf("data/%s", entry.Name())
 		c.addHandlerEmbedded(url, path)
 	}

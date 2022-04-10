@@ -16,7 +16,7 @@ import (
 func TestRealClickHouse(t *testing.T) {
 	chServer := helpers.CheckExternalService(t, "ClickHouse", []string{"clickhouse", "localhost"}, "9000")
 
-	configuration := DefaultConfiguration
+	configuration := DefaultConfiguration()
 	configuration.Servers = []string{chServer}
 	r := reporter.NewMock(t)
 	ch, err := New(r, configuration, Dependencies{

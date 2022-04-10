@@ -1,5 +1,7 @@
 package udp
 
+import "akvorado/inlet/flow/input"
+
 // Configuration describes UDP input configuration.
 type Configuration struct {
 	// Listen tells which port to listen to.
@@ -19,8 +21,10 @@ type Configuration struct {
 }
 
 // DefaultConfiguration is the default configuration for this input
-var DefaultConfiguration = Configuration{
-	Listen:    "0.0.0.0:0",
-	Workers:   1,
-	QueueSize: 100000,
+func DefaultConfiguration() input.Configuration {
+	return &Configuration{
+		Listen:    "0.0.0.0:0",
+		Workers:   1,
+		QueueSize: 100000,
+	}
 }

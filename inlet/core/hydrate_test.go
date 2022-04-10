@@ -222,15 +222,15 @@ interfaceclassifiers:
 
 			// Prepare all components.
 			daemonComponent := daemon.NewMock(t)
-			snmpComponent := snmp.NewMock(t, r, snmp.DefaultConfiguration,
+			snmpComponent := snmp.NewMock(t, r, snmp.DefaultConfiguration(),
 				snmp.Dependencies{Daemon: daemonComponent})
-			flowComponent := flow.NewMock(t, r, flow.DefaultConfiguration)
+			flowComponent := flow.NewMock(t, r, flow.DefaultConfiguration())
 			geoipComponent := geoip.NewMock(t, r)
-			kafkaComponent, kafkaProducer := kafka.NewMock(t, r, kafka.DefaultConfiguration)
+			kafkaComponent, kafkaProducer := kafka.NewMock(t, r, kafka.DefaultConfiguration())
 			httpComponent := http.NewMock(t, r)
 
 			// Prepare a configuration
-			configuration := DefaultConfiguration
+			configuration := DefaultConfiguration()
 			if err := yaml.Unmarshal([]byte(tc.Configuration), &configuration); err != nil {
 				t.Fatalf("Unmarshal() error:\n%+v", err)
 			}

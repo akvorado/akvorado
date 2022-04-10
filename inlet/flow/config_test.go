@@ -46,7 +46,7 @@ func TestDecodeConfiguration(t *testing.T) {
 			From: Configuration{
 				Inputs: []InputConfiguration{{
 					Decoder: "netflow",
-					Config:  &udp.DefaultConfiguration,
+					Config:  udp.DefaultConfiguration(),
 				}},
 			},
 			Source: map[string]interface{}{
@@ -74,7 +74,7 @@ func TestDecodeConfiguration(t *testing.T) {
 			From: Configuration{
 				Inputs: []InputConfiguration{{
 					Decoder: "netflow",
-					Config:  &udp.DefaultConfiguration,
+					Config:  udp.DefaultConfiguration(),
 				}},
 			},
 			Source: map[string]interface{}{
@@ -152,15 +152,6 @@ func TestDecodeConfiguration(t *testing.T) {
 				t.Fatalf("Decode() (-got, +want):\n%s", diff)
 			}
 		})
-	}
-
-	// Check we didn't alter the default value for UDP
-	if diff := helpers.Diff(udp.DefaultConfiguration, udp.Configuration{
-		Workers:   1,
-		QueueSize: 100000,
-		Listen:    "0.0.0.0:0",
-	}); diff != "" {
-		t.Fatalf("Default configuration altered (-got, +want):\n%s", diff)
 	}
 }
 
