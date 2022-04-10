@@ -21,7 +21,7 @@ func TestServeDocs(t *testing.T) {
 			Path   string
 			Expect string
 		}{
-			{"usage", `<a href=\"configuration\">configuration section</a>`},
+			{"usage", `\u003ca href=\"configuration\"\u003econfiguration section\u003c/a\u003e`},
 			{"intro", `data:image/svg`},
 		}
 		for _, tc := range cases {
@@ -49,6 +49,7 @@ func TestServeDocs(t *testing.T) {
 				}
 				body, _ := ioutil.ReadAll(resp.Body)
 				if !strings.Contains(string(body), tc.Expect) {
+					t.Logf("Body:\n%s", string(body))
 					t.Errorf("GET /api/v0/docs/%s: does not contain %q",
 						tc.Path, tc.Expect)
 				}

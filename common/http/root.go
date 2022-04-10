@@ -9,6 +9,7 @@ import (
 	"net/http/pprof" // profiler
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog/hlog"
@@ -35,6 +36,9 @@ type Component struct {
 
 	// Local address used by the HTTP server. Only valid after Start().
 	Address net.Addr
+
+	// GinRouter is the router exposed for /api
+	GinRouter *gin.Engine
 }
 
 // Dependencies define the dependencies of the HTTP component.
@@ -49,7 +53,8 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		d:      &dependencies,
 		config: configuration,
 
-		mux: http.NewServeMux(),
+		mux:       http.NewServeMux(),
+		GinRouter: gin.New(),
 	}
 	c.d.Daemon.Track(&c.t, "http")
 
@@ -80,6 +85,8 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		}, []string{"handler", "method"},
 	)
 
+	c.GinRouter.Use(gin.Recovery())
+	c.AddHandler("/api/", c.GinRouter)
 	if configuration.Profiler {
 		c.mux.HandleFunc("/debug/pprof/", pprof.Index)
 		c.mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)

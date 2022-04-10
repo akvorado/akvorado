@@ -2,12 +2,13 @@ package flow
 
 import (
 	"embed"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 // CurrentSchemaVersion is the version of the protobuf definition
@@ -54,11 +55,10 @@ func (c *Component) initHTTP() {
 				w.Write([]byte(schema))
 			}))
 	}
-	c.d.HTTP.AddHandler("/api/v0/inlet/flow/schemas.json", http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "application/json")
+	c.d.HTTP.GinRouter.GET("/api/v0/inlet/flow/schemas.json",
+		func(gc *gin.Context) {
 			answer := struct {
-				CurrentVersion int            `json:"current_version"`
+				CurrentVersion int            `json:"current-version"`
 				Versions       map[int]string `json:"versions"`
 			}{
 				CurrentVersion: CurrentSchemaVersion,
@@ -67,8 +67,6 @@ func (c *Component) initHTTP() {
 			for version := range VersionedSchemas {
 				answer.Versions[version] = fmt.Sprintf("/api/v0/inlet/flow/schema-%d.proto", version)
 			}
-			encoder := json.NewEncoder(w)
-			encoder.SetIndent("", " ")
-			encoder.Encode(answer)
-		}))
+			gc.IndentedJSON(http.StatusOK, answer)
+		})
 }

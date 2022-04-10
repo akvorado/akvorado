@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"embed"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/fs"
@@ -13,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/yuin/goldmark"
 	highlighting "github.com/yuin/goldmark-highlighting"
 	"github.com/yuin/goldmark/ast"
@@ -42,10 +42,9 @@ type DocumentTOC struct {
 	Headers []Header `json:"headers"`
 }
 
-func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
+func (c *Component) docsHandlerFunc(gc *gin.Context) {
 	docs := c.embedOrLiveFS(embeddedDocs, "data/docs")
-	rpath := strings.TrimPrefix(req.URL.Path, "/api/v0/docs/")
-	rpath = strings.Trim(rpath, "/")
+	requestedDocument := gc.Param("name")
 
 	var markdown []byte
 	toc := []DocumentTOC{}
@@ -54,7 +53,7 @@ func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
 	entries, err := fs.ReadDir(docs, ".")
 	if err != nil {
 		c.r.Err(err).Msg("unable to list documentation files")
-		http.Error(w, "Unable to get documentation files.", http.StatusInternalServerError)
+		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to get documentation files."})
 		return
 	}
 	for _, entry := range entries {
@@ -75,7 +74,7 @@ func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
 		// Markdown rendering to build ToC
 		content, _ := ioutil.ReadAll(f)
 		f.Close()
-		if matches[3] == rpath {
+		if matches[3] == requestedDocument {
 			// That's the one we need to do final rendering on.
 			markdown = content
 		}
@@ -90,7 +89,7 @@ func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
 		)
 		buf := &bytes.Buffer{}
 		if err = md.Convert(content, buf); err != nil {
-			c.r.Err(err).Str("path", rpath).Msg("unable to render markdown document")
+			c.r.Err(err).Str("path", entry.Name()).Msg("unable to render markdown document")
 			continue
 		}
 		toc = append(toc, DocumentTOC{
@@ -100,7 +99,7 @@ func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
 	}
 
 	if markdown == nil {
-		http.Error(w, "Document not found.", http.StatusNotFound)
+		gc.JSON(http.StatusNotFound, gin.H{"message": "Document not found."})
 		return
 	}
 	md := goldmark.New(
@@ -124,16 +123,12 @@ func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
 	)
 	buf := &bytes.Buffer{}
 	if err = md.Convert(markdown, buf); err != nil {
-		c.r.Err(err).Str("path", rpath).Msg("unable to render markdown document")
-		http.Error(w, "Unable to render document.", http.StatusInternalServerError)
+		c.r.Err(err).Str("path", requestedDocument).Msg("unable to render markdown document")
+		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to render document."})
 		return
 	}
-	w.Header().Set("Cache-Control", "max-age=300")
-	w.Header().Set("Content-Type", "application/json")
-	encoder := json.NewEncoder(w)
-	encoder.SetIndent("", " ")
-	encoder.SetEscapeHTML(false)
-	encoder.Encode(map[string]interface{}{
+	gc.Header("Cache-Control", "max-age=300")
+	gc.IndentedJSON(http.StatusOK, gin.H{
 		"markdown": buf.String(),
 		"toc":      toc,
 	})

@@ -39,7 +39,7 @@ func New(reporter *reporter.Reporter, config Configuration, dependencies Depende
 	}
 
 	c.d.HTTP.AddHandler("/", netHTTP.HandlerFunc(c.assetsHandlerFunc))
-	c.d.HTTP.AddHandler("/api/v0/docs/", netHTTP.HandlerFunc(c.docsHandlerFunc))
+	c.d.HTTP.GinRouter.GET("/api/v0/docs/:name", c.docsHandlerFunc)
 
 	return &c, nil
 }

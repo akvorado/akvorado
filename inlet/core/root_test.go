@@ -313,6 +313,7 @@ func TestCore(t *testing.T) {
 		for {
 			_, err := reader.ReadString('\n')
 			if err == io.EOF {
+				fmt.Println("EOF")
 				break
 			}
 			if err != nil {
@@ -322,9 +323,6 @@ func TestCore(t *testing.T) {
 			if count > 4 {
 				break
 			}
-		}
-		if count > 4 {
-			t.Fatal("GET /api/v0/inlet/flows got more than 4 flows")
 		}
 		if count != 4 {
 			t.Fatalf("GET /api/v0/inlet/flows got less than 4 flows (%d)", count)

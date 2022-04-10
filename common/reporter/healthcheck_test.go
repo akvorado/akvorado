@@ -11,6 +11,8 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
+
+	"github.com/gin-gonic/gin"
 )
 
 func testHealthchecks(t *testing.T, r *reporter.Reporter, ctx context.Context, expectedStatus reporter.HealthcheckStatus, expectedResults map[string]reporter.HealthcheckResult) {
@@ -108,7 +110,9 @@ func TestHealthcheckHTTPHandler(t *testing.T) {
 
 	req := httptest.NewRequest("GET", "/api/v0/healthcheck", nil)
 	w := httptest.NewRecorder()
-	r.HealthcheckHTTPHandler().ServeHTTP(w, req)
+	ginRouter := gin.Default()
+	ginRouter.GET("/api/v0/healthcheck", r.HealthcheckHTTPHandler)
+	ginRouter.ServeHTTP(w, req)
 	if w.Code != http.StatusServiceUnavailable {
 		t.Errorf("GET /api/v0/healthcheck status code, got %d, expected %d",
 			w.Code, http.StatusServiceUnavailable)

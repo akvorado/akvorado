@@ -2,9 +2,6 @@
 package broker
 
 import (
-	"encoding/json"
-	netHTTP "net/http"
-	"strings"
 	"sync"
 
 	"akvorado/common/http"
@@ -17,8 +14,9 @@ type Component struct {
 	d      *Dependencies
 	config Configuration
 
-	serviceConfigurationsLock sync.Mutex
-	serviceConfigurations     map[ServiceType]interface{}
+	serviceLock           sync.Mutex
+	serviceConfigurations map[ServiceType]interface{}
+	registeredServices    map[ServiceType]map[string]bool
 }
 
 // Dependencies define the dependencies of the broker.
@@ -38,7 +36,7 @@ var (
 	ConsoleService ServiceType = "console"
 )
 
-// New creates a new ClickHouse component.
+// New creates a new broker component.
 func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
 	c := Component{
 		r:      r,
@@ -46,35 +44,17 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		config: configuration,
 
 		serviceConfigurations: map[ServiceType]interface{}{},
+		registeredServices:    map[ServiceType]map[string]bool{},
 	}
 
-	c.d.HTTP.AddHandler("/api/v0/orchestrator/broker/configuration/",
-		netHTTP.HandlerFunc(c.configurationHandlerFunc))
+	c.d.HTTP.GinRouter.GET("/api/v0/orchestrator/broker/configuration/:service", c.configurationHandlerFunc)
 
 	return &c, nil
 }
 
 // RegisterConfiguration registers the configuration for a service.
 func (c *Component) RegisterConfiguration(service ServiceType, configuration interface{}) {
-	c.serviceConfigurationsLock.Lock()
+	c.serviceLock.Lock()
 	c.serviceConfigurations[service] = configuration
-	c.serviceConfigurationsLock.Unlock()
-}
-
-func (c *Component) configurationHandlerFunc(w netHTTP.ResponseWriter, req *netHTTP.Request) {
-	service := strings.TrimPrefix(req.URL.Path, "/api/v0/orchestrator/broker/configuration")
-	service = strings.Trim(service, "/")
-
-	c.serviceConfigurationsLock.Lock()
-	configuration, ok := c.serviceConfigurations[ServiceType(service)]
-	c.serviceConfigurationsLock.Unlock()
-
-	if !ok {
-		netHTTP.Error(w, "Configuration not found.", netHTTP.StatusNotFound)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	encoder := json.NewEncoder(w)
-	encoder.SetIndent("", " ")
-	encoder.Encode(configuration)
+	c.serviceLock.Unlock()
 }

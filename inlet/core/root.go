@@ -88,7 +88,7 @@ func (c *Component) Start() error {
 	}
 
 	c.r.RegisterHealthcheck("core", c.channelHealthcheck())
-	c.d.HTTP.AddHandler("/api/v0/inlet/flows", c.FlowsHTTPHandler())
+	c.d.HTTP.GinRouter.GET("/api/v0/inlet/flows", c.FlowsHTTPHandler)
 	return nil
 }
 

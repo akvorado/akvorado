@@ -1,10 +1,10 @@
 package cmd
 
 import (
-	"encoding/json"
 	"net/http"
 	"runtime"
 
+	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
 
 	"akvorado/common/reporter"
@@ -32,21 +32,12 @@ var versionCmd = &cobra.Command{
 	},
 }
 
-func versionHandler() http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			versionInfo := struct {
-				Version   string `json:"version"`
-				BuildDate string `json:"build_date"`
-				Compiler  string `json:"compiler"`
-			}{
-				Version:   Version,
-				BuildDate: BuildDate,
-				Compiler:  runtime.Version(),
-			}
-			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(versionInfo)
-		})
+func versionHandler(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"version":    Version,
+		"build-date": BuildDate,
+		"compiler":   runtime.Version(),
+	})
 }
 
 func versionMetrics(r *reporter.Reporter) {

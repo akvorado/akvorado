@@ -11,7 +11,7 @@ import (
 	"akvorado/common/reporter"
 )
 
-func TestHTTPConfiguration(t *testing.T) {
+func TestConfigurationEndpoint(t *testing.T) {
 	r := reporter.NewMock(t)
 	h := http.NewMock(t, r)
 	c, err := New(r, DefaultConfiguration(), Dependencies{
@@ -36,10 +36,9 @@ func TestHTTPConfiguration(t *testing.T) {
 	}
 	body, _ := ioutil.ReadAll(resp.Body)
 	expected := `{
- "bye": "Goodbye world!",
- "hello": "Hello world!"
-}
-`
+    "bye": "Goodbye world!",
+    "hello": "Hello world!"
+}`
 	if diff := helpers.Diff(string(body), expected); diff != "" {
 		t.Errorf("GET /api/v0/orchestrator/broker/configuration/inlet (-got, +want):\n%s", diff)
 	}

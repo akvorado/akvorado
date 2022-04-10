@@ -2,10 +2,11 @@ package reporter
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 // HealthcheckStatus represents an healthcheck status.
@@ -128,22 +129,18 @@ func (r *Reporter) RunHealthchecks(ctx context.Context) (HealthcheckStatus, map[
 }
 
 // HealthcheckHTTPHandler is an HTTP handler return healthcheck results as JSON.
-func (r *Reporter) HealthcheckHTTPHandler() http.Handler {
-	return http.HandlerFunc(
-		func(w http.ResponseWriter, req *http.Request) {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			globalStatus, details := r.RunHealthchecks(ctx)
-			results := map[string]interface{}{
-				"status":  globalStatus,
-				"details": details,
-			}
-			w.Header().Set("Content-Type", "application/json")
-			if globalStatus == HealthcheckError {
-				w.WriteHeader(http.StatusServiceUnavailable)
-			}
-			json.NewEncoder(w).Encode(results)
-		})
+func (r *Reporter) HealthcheckHTTPHandler(c *gin.Context) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+	defer cancel()
+	globalStatus, details := r.RunHealthchecks(ctx)
+	status := http.StatusOK
+	if globalStatus == HealthcheckError {
+		status = http.StatusServiceUnavailable
+	}
+	c.JSON(status, gin.H{
+		"status":  globalStatus,
+		"details": details,
+	})
 }
 
 // ChannelHealthcheckFunc is the function sent over a channel to signal liveness

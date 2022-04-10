@@ -70,7 +70,7 @@ func TestDatabaseRefresh(t *testing.T) {
 	copyFile(filepath.Join("testdata", "GeoLite2-Country-Test.mmdb"),
 		filepath.Join(dir, "tmp.mmdb"))
 	os.Rename(filepath.Join(dir, "tmp.mmdb"), config.CountryDatabase)
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(20 * time.Millisecond)
 	gotMetrics = r.GetMetrics("akvorado_inlet_geoip_db_")
 	expectedMetrics = map[string]string{
 		`refresh_total{database="asn"}`:     "1",

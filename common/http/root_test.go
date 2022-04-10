@@ -2,6 +2,7 @@ package http_test
 
 import (
 	"fmt"
+	"io/ioutil"
 	netHTTP "net/http"
 	"runtime"
 	"testing"
@@ -9,6 +10,8 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
+
+	"github.com/gin-gonic/gin"
 )
 
 func TestHandler(t *testing.T) {
@@ -54,5 +57,55 @@ func TestHandler(t *testing.T) {
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
+	}
+}
+
+func TestGinRouter(t *testing.T) {
+	r := reporter.NewMock(t)
+	h := http.NewMock(t, r)
+	defer h.Stop()
+
+	h.GinRouter.GET("/api/v0/test", func(c *gin.Context) {
+		c.JSON(netHTTP.StatusOK, gin.H{
+			"message": "ping",
+		})
+	})
+
+	resp, err := netHTTP.Get(fmt.Sprintf("http://%s/api/v0/test", h.Address))
+	if err != nil {
+		t.Fatalf("GET /api/v0/test:\n%+v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		t.Errorf("GET /api/v0/test: got status code %d, not 200", resp.StatusCode)
+	}
+	body, _ := ioutil.ReadAll(resp.Body)
+	expected := `{"message":"ping"}`
+	if diff := helpers.Diff(string(body), expected); diff != "" {
+		t.Errorf("GET /api/v0/test (-got, +want):\n%s", diff)
+	}
+}
+
+func TestGinRouterPanic(t *testing.T) {
+	r := reporter.NewMock(t)
+	h := http.NewMock(t, r)
+	defer h.Stop()
+
+	h.GinRouter.GET("/api/v0/test", func(c *gin.Context) {
+		panic("heeeelp")
+	})
+
+	resp, err := netHTTP.Get(fmt.Sprintf("http://%s/api/v0/test", h.Address))
+	if err != nil {
+		t.Fatalf("GET /api/v0/test:\n%+v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 500 {
+		t.Errorf("GET /api/v0/test: got status code %d, not 500", resp.StatusCode)
+	}
+	body, _ := ioutil.ReadAll(resp.Body)
+	expected := ""
+	if diff := helpers.Diff(string(body), expected); diff != "" {
+		t.Errorf("GET /api/v0/test (-got, +want):\n%s", diff)
 	}
 }
