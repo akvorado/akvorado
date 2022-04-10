@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -27,12 +30,37 @@ type ConfigRelatedOptions struct {
 func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config interface{}) error {
 	var rawConfig map[string]interface{}
 	if cfgFile := c.Path; cfgFile != "" {
-		input, err := ioutil.ReadFile(cfgFile)
-		if err != nil {
-			return fmt.Errorf("unable to read configuration file: %w", err)
-		}
-		if err := yaml.Unmarshal(input, &rawConfig); err != nil {
-			return fmt.Errorf("unable to parse configuration file: %w", err)
+		if strings.HasPrefix(cfgFile, "http://") || strings.HasPrefix(cfgFile, "https://") {
+			u, err := url.Parse(cfgFile)
+			if err != nil {
+				return fmt.Errorf("cannot parse configuration URL: %w", err)
+			}
+			if u.Path == "" {
+				u.Path = fmt.Sprintf("/api/v0/orchestrator/configuration/%s", component)
+			}
+			resp, err := http.Get(u.String())
+			if err != nil {
+				return fmt.Errorf("unable to fetch configuration file: %w", err)
+			}
+			defer resp.Body.Close()
+			if contentType := resp.Header.Get("Content-Type"); contentType != "application/json" {
+				return fmt.Errorf("received configuration file is not JSON (%s)", contentType)
+			}
+			input, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return fmt.Errorf("unable to read configuration file: %w", err)
+			}
+			if err := json.Unmarshal(input, &rawConfig); err != nil {
+				return fmt.Errorf("unable to parse JSON configuration file: %w", err)
+			}
+		} else {
+			input, err := ioutil.ReadFile(cfgFile)
+			if err != nil {
+				return fmt.Errorf("unable to read configuration file: %w", err)
+			}
+			if err := yaml.Unmarshal(input, &rawConfig); err != nil {
+				return fmt.Errorf("unable to parse configuration file: %w", err)
+			}
 		}
 	}
 
