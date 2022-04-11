@@ -80,6 +80,8 @@ const activeSlug = computed(() => route.hash.replace(/^#/, ""));
 watch(
   () => ({ id: route.params.id, hash: route.hash }),
   async (to, from) => {
+    if (to.id === undefined)
+      return;
     if (to.id !== from?.id) {
       const id = to.id;
       try {
