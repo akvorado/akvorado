@@ -1,6 +1,7 @@
 MODULE   = $(shell env GO111MODULE=on $(GO) list -m)
 DATE    ?= $(shell date +%FT%T%z)
-VERSION ?= $(shell git describe --tags --always --dirty --match=v* 2> /dev/null || echo v0)
+VERSION ?= $(shell git describe --tags --always --dirty --match=v* 2> /dev/null || \
+			cat .version 2> /dev/null || echo v0)
 PKGS     = $(or $(PKG),$(shell env GO111MODULE=on $(GO) list ./...))
 BIN      = bin
 
@@ -54,7 +55,7 @@ console/frontend/node_modules: ; $(info $(M) fetching node modules…)
 	$Q yarn install --silent --frozen-lockfile --cwd console/frontend && touch $@
 console/data/frontend: Makefile console/frontend/node_modules
 console/data/frontend: console/frontend/index.html console/frontend/vite.config.js
-console/data/frontend: $(shell git ls-files -cmo --exclude-standard console/frontend/src)
+console/data/frontend: $(shell git ls-files -cmo --exclude-standard console/frontend/src 2> /dev/null)
 console/data/frontend: ; $(info $(M) building console frontend…)
 	$Q cd console/frontend && yarn --silent build
 
@@ -100,7 +101,7 @@ test-coverage: | $(GOCOV) $(GOCOVXML) $(GOTESTSUM) ; $(info $(M) running coverag
 
 .PHONY: lint
 lint: .lint-go~ .lint-js~ ; $(info $(M) running lint…) @ ## Run linting
-.lint-go~: $(shell git ls-files -cmo --exclude-standard -- '*.go') | $(REVIVE)
+.lint-go~: $(shell git ls-files -cmo --exclude-standard -- '*.go' 2> /dev/null) | $(REVIVE)
 	$Q $(REVIVE) -formatter friendly -set_exit_status $?
 	$Q touch $@
 .lint-js~: console/frontend/node_modules
@@ -109,7 +110,7 @@ lint: .lint-go~ .lint-js~ ; $(info $(M) running lint…) @ ## Run linting
 
 .PHONY: fmt
 fmt: .fmt-go~ .fmt-js~ ; $(info $(M) formatting code…) @ ## Format all source files
-.fmt-go~: $(shell git ls-files -cmo --exclude-standard -- '*.go')
+.fmt-go~: $(shell git ls-files -cmo --exclude-standard -- '*.go' 2> /dev/null)
 	$Q $(GO) fmt $(PKGS)
 	$Q touch $@
 .fmt-js~: console/frontend/node_modules
