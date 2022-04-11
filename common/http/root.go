@@ -196,3 +196,8 @@ func (c *Component) Stop() error {
 	c.t.Kill(nil)
 	return c.t.Wait()
 }
+
+func init() {
+	// Disable proxy for client
+	http.DefaultTransport.(*http.Transport).Proxy = nil
+}
