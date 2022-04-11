@@ -100,20 +100,28 @@ test-coverage: | $(GOCOV) $(GOCOVXML) $(GOTESTSUM) ; $(info $(M) running coverag
 		echo "scale=1;$$(sed -En 's/^<coverage line-rate="([0-9.]+)".*/\1/p' test/coverage.xml) * 100 / 1" | bc -q
 
 .PHONY: lint
-lint: console/frontend/node_modules | $(REVIVE) ; $(info $(M) running lint…) @ ## Run linting
-	$Q $(REVIVE) -formatter friendly -set_exit_status ./...
+lint: .lint-go~ .lint-js~ ; $(info $(M) running lint…) @ ## Run linting
+.lint-go~: $(shell find . -type f -name '*.go') | $(REVIVE)
+	$Q $(REVIVE) -formatter friendly -set_exit_status $?
+	$Q touch $@
+.lint-js~: console/frontend/node_modules
 	$Q cd console/frontend && yarn --silent lint
+	$Q touch $@
 
 .PHONY: fmt
-fmt: console/frontend/node_modules ; $(info $(M) formatting code…) @ ## Format all source files
+fmt: .fmt-go~ .fmt-js~ ; $(info $(M) formatting code…) @ ## Format all source files
+.fmt-go~: $(shell find . -type f -name '*.go')
 	$Q $(GO) fmt $(PKGS)
+	$Q touch $@
+.fmt-js~: console/frontend/node_modules
 	$Q cd console/frontend && yarn --silent format
+	$Q touch $@
 
 # Misc
 
 .PHONY: clean
 clean: ; $(info $(M) cleaning…)	@ ## Cleanup everything
-	@rm -rf $(BIN) test $(GENERATED)
+	@rm -rf $(BIN) test $(GENERATED) *~
 
 .PHONY: help
 help:

@@ -15,7 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func testHealthchecks(t *testing.T, r *reporter.Reporter, ctx context.Context, expectedStatus reporter.HealthcheckStatus, expectedResults map[string]reporter.HealthcheckResult) {
+func testHealthchecks(ctx context.Context, t *testing.T, r *reporter.Reporter, expectedStatus reporter.HealthcheckStatus, expectedResults map[string]reporter.HealthcheckResult) {
 	t.Helper()
 	gotStatus, gotResults := r.RunHealthchecks(ctx)
 	if gotStatus != expectedStatus {
@@ -28,7 +28,7 @@ func testHealthchecks(t *testing.T, r *reporter.Reporter, ctx context.Context, e
 
 func TestEmptyHealthcheck(t *testing.T) {
 	r := reporter.NewMock(t)
-	testHealthchecks(t, r, context.Background(),
+	testHealthchecks(context.Background(), t, r,
 		reporter.HealthcheckOK, map[string]reporter.HealthcheckResult{})
 }
 
@@ -37,7 +37,7 @@ func TestOneHealthcheck(t *testing.T) {
 	r.RegisterHealthcheck("hc1", func(ctx context.Context) reporter.HealthcheckResult {
 		return reporter.HealthcheckResult{reporter.HealthcheckOK, "all well"}
 	})
-	testHealthchecks(t, r, context.Background(),
+	testHealthchecks(context.Background(), t, r,
 		reporter.HealthcheckOK, map[string]reporter.HealthcheckResult{
 			"hc1": {reporter.HealthcheckOK, "all well"},
 		})
@@ -51,7 +51,7 @@ func TestFailingHealthcheck(t *testing.T) {
 	r.RegisterHealthcheck("hc2", func(ctx context.Context) reporter.HealthcheckResult {
 		return reporter.HealthcheckResult{reporter.HealthcheckError, "not so good"}
 	})
-	testHealthchecks(t, r, context.Background(),
+	testHealthchecks(context.Background(), t, r,
 		reporter.HealthcheckError, map[string]reporter.HealthcheckResult{
 			"hc1": {reporter.HealthcheckOK, "all well"},
 			"hc2": {reporter.HealthcheckError, "not so good"},
@@ -74,7 +74,7 @@ func TestHealthcheckCancelContext(t *testing.T) {
 		time.Sleep(10 * time.Millisecond)
 		cancel()
 	}()
-	testHealthchecks(t, r, ctx,
+	testHealthchecks(ctx, t, r,
 		reporter.HealthcheckError, map[string]reporter.HealthcheckResult{
 			"hc1": {reporter.HealthcheckOK, "all well"},
 			"hc2": {reporter.HealthcheckError, "timeout during check"},
@@ -93,7 +93,7 @@ func TestChannelHealthcheck(t *testing.T) {
 
 	r := reporter.NewMock(t)
 	r.RegisterHealthcheck("hc1", reporter.ChannelHealthcheck(context.Background(), contact))
-	testHealthchecks(t, r, context.Background(),
+	testHealthchecks(context.Background(), t, r,
 		reporter.HealthcheckOK, map[string]reporter.HealthcheckResult{
 			"hc1": {reporter.HealthcheckOK, "all well, thank you!"},
 		})
