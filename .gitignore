@@ -4,3 +4,7 @@
 
 /console/frontend/node_modules/
 /console/data/frontend/
+
+*~
+/.go-cache
+/.yarn-cache
