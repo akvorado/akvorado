@@ -1,8 +1,9 @@
 package core
 
 import (
-	"akvorado/common/reporter"
 	"sync/atomic"
+
+	"akvorado/common/reporter"
 )
 
 type metrics struct {

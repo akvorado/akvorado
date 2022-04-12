@@ -7,6 +7,7 @@ BIN      = bin
 
 GO      = go
 TIMEOUT = 15
+LSFILES = git ls-files -cmo --exclude-standard --
 V = 0
 Q = $(if $(filter 1,$V),,@)
 M = $(shell if [ "$$(tput colors 2> /dev/null || echo 0)" -ge 8 ]; then printf "\033[34;1m▶\033[0m"; else printf "▶"; fi)
@@ -28,6 +29,9 @@ $(BIN):
 	@mkdir -p $@
 $(BIN)/%: | $(BIN) ; $(info $(M) building $(PACKAGE)…)
 	$Q env GOBIN=$(abspath $(BIN)) $(GO) install $(PACKAGE)@latest
+
+GOIMPORTS = $(BIN)/goimports
+$(BIN)/goimports: PACKAGE=golang.org/x/tools/cmd/goimports
 
 REVIVE = $(BIN)/revive
 $(BIN)/revive: PACKAGE=github.com/mgechev/revive
@@ -55,7 +59,7 @@ console/frontend/node_modules: ; $(info $(M) fetching node modules…)
 	$Q yarn install --silent --frozen-lockfile --cwd console/frontend && touch $@
 console/data/frontend: Makefile console/frontend/node_modules
 console/data/frontend: console/frontend/index.html console/frontend/vite.config.js
-console/data/frontend: $(shell git ls-files -cmo --exclude-standard console/frontend/src 2> /dev/null)
+console/data/frontend: $(shell $(LSFILES) console/frontend/src 2> /dev/null)
 console/data/frontend: ; $(info $(M) building console frontend…)
 	$Q cd console/frontend && yarn --silent build
 
@@ -101,7 +105,7 @@ test-coverage: | $(GOCOV) $(GOCOVXML) $(GOTESTSUM) ; $(info $(M) running coverag
 
 .PHONY: lint
 lint: .lint-go~ .lint-js~ ; $(info $(M) running lint…) @ ## Run linting
-.lint-go~: $(shell git ls-files -cmo --exclude-standard -- '*.go' 2> /dev/null) | $(REVIVE)
+.lint-go~: $(shell $(LSFILES) '*.go' 2> /dev/null) | $(REVIVE)
 	$Q $(REVIVE) -formatter friendly -set_exit_status $?
 	$Q touch $@
 .lint-js~: console/frontend/node_modules
@@ -110,8 +114,8 @@ lint: .lint-go~ .lint-js~ ; $(info $(M) running lint…) @ ## Run linting
 
 .PHONY: fmt
 fmt: .fmt-go~ .fmt-js~ ; $(info $(M) formatting code…) @ ## Format all source files
-.fmt-go~: $(shell git ls-files -cmo --exclude-standard -- '*.go' 2> /dev/null)
-	$Q $(GO) fmt $(PKGS)
+.fmt-go~: $(shell $(LSFILES) '*.go' 2> /dev/null) | $(GOIMPORTS)
+	$Q $(GOIMPORTS) -local $(MODULE) -w $? < /dev/null
 	$Q touch $@
 .fmt-js~: console/frontend/node_modules
 	$Q cd console/frontend && yarn --silent format

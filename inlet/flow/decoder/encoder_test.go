@@ -1,12 +1,13 @@
 package decoder
 
 import (
-	"akvorado/common/helpers"
 	"bytes"
 	"encoding/json"
 	"net"
 	"strings"
 	"testing"
+
+	"akvorado/common/helpers"
 )
 
 func TestJSONEncoding(t *testing.T) {

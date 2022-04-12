@@ -1,9 +1,10 @@
 package decoder
 
 import (
-	"akvorado/common/reporter"
 	"net"
 	"time"
+
+	"akvorado/common/reporter"
 )
 
 // Decoder is the interface each decoder should implement.

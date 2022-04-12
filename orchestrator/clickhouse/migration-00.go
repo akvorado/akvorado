@@ -1,13 +1,14 @@
 package clickhouse
 
 import (
-	"akvorado/common/reporter"
-	"akvorado/inlet/flow"
 	"context"
 	"fmt"
 	"strings"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
+
+	"akvorado/common/reporter"
+	"akvorado/inlet/flow"
 )
 
 func (c *Component) migrateStepCreateFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {

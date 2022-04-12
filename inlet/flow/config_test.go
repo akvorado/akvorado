@@ -1,14 +1,15 @@
 package flow
 
 import (
-	"akvorado/common/helpers"
-	"akvorado/inlet/flow/input/file"
-	"akvorado/inlet/flow/input/udp"
 	"strings"
 	"testing"
 
 	"github.com/mitchellh/mapstructure"
 	"gopkg.in/yaml.v2"
+
+	"akvorado/common/helpers"
+	"akvorado/inlet/flow/input/file"
+	"akvorado/inlet/flow/input/udp"
 )
 
 func TestDecodeConfiguration(t *testing.T) {
