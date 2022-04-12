@@ -200,4 +200,5 @@ func (c *Component) Stop() error {
 func init() {
 	// Disable proxy for client
 	http.DefaultTransport.(*http.Transport).Proxy = nil
+	http.DefaultClient.Timeout = 30 * time.Second
 }
