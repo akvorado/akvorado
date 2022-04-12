@@ -4,13 +4,14 @@ go 1.17
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.0.12
-	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/Shopify/sarama v1.32.1-0.20220321223103-27b8f1b5973b
 	github.com/antonmedv/expr v1.9.0
 	github.com/benbjohnson/clock v1.3.0
 	github.com/dgraph-io/ristretto v0.1.0
 	github.com/eapache/go-resiliency v1.2.0
 	github.com/fsnotify/fsnotify v1.5.1
+	github.com/gin-gonic/gin v1.7.7
+	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
 	github.com/gosnmp/gosnmp v1.34.0
 	github.com/kylelemons/godebug v1.1.0
@@ -33,8 +34,6 @@ require (
 )
 
 require (
-	github.com/Masterminds/goutils v1.1.1 // indirect
-	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/alecthomas/chroma v0.10.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -45,7 +44,6 @@ require (
 	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
-	github.com/gin-gonic/gin v1.7.7 // indirect
 	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/go-playground/locales v0.13.0 // indirect
 	github.com/go-playground/universal-translator v0.17.0 // indirect
@@ -56,8 +54,6 @@ require (
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.2 // indirect
-	github.com/huandu/xstrings v1.3.2 // indirect
-	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
@@ -68,8 +64,6 @@ require (
 	github.com/klauspost/compress v1.15.1 // indirect
 	github.com/leodido/go-urn v1.2.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
-	github.com/mitchellh/copystructure v1.2.0 // indirect
-	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/oschwald/maxminddb-golang v1.8.0 // indirect

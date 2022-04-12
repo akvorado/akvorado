@@ -14,7 +14,10 @@ M = $(shell if [ "$$(tput colors 2> /dev/null || echo 0)" -ge 8 ]; then printf "
 
 export GO111MODULE=on
 
-GENERATED = inlet/flow/decoder/flow-1.pb.go console/data/frontend console/frontend/node_modules
+GENERATED = \
+	inlet/flow/decoder/flow-1.pb.go \
+	common/clickhousedb/mocks/mock_driver.go \
+	console/data/frontend console/frontend/node_modules
 
 .PHONY: all
 all: fmt lint $(GENERATED) | $(BIN) ; $(info $(M) building executable…) @ ## Build program binary
@@ -28,31 +31,38 @@ all: fmt lint $(GENERATED) | $(BIN) ; $(info $(M) building executable…) @ ## B
 $(BIN):
 	@mkdir -p $@
 $(BIN)/%: | $(BIN) ; $(info $(M) building $(PACKAGE)…)
-	$Q env GOBIN=$(abspath $(BIN)) $(GO) install $(PACKAGE)@latest
+	$Q env GOBIN=$(abspath $(BIN)) $(GO) install $(PACKAGE)
 
 GOIMPORTS = $(BIN)/goimports
-$(BIN)/goimports: PACKAGE=golang.org/x/tools/cmd/goimports
+$(BIN)/goimports: PACKAGE=golang.org/x/tools/cmd/goimports@latest
 
 REVIVE = $(BIN)/revive
-$(BIN)/revive: PACKAGE=github.com/mgechev/revive
+$(BIN)/revive: PACKAGE=github.com/mgechev/revive@latest
 
 GOCOV = $(BIN)/gocov
-$(BIN)/gocov: PACKAGE=github.com/axw/gocov/...
+$(BIN)/gocov: PACKAGE=github.com/axw/gocov/gocov@latest
 
 GOCOVXML = $(BIN)/gocov-xml
-$(BIN)/gocov-xml: PACKAGE=github.com/AlekSi/gocov-xml
+$(BIN)/gocov-xml: PACKAGE=github.com/AlekSi/gocov-xml@latest
 
 GOTESTSUM = $(BIN)/gotestsum
-$(BIN)/gotestsum: PACKAGE=gotest.tools/gotestsum
+$(BIN)/gotestsum: PACKAGE=gotest.tools/gotestsum@latest
+
+MOCKGEN = $(BIN)/mockgen
+$(BIN)/mockgen: PACKAGE=github.com/golang/mock/mockgen@v1.6.0
 
 PROTOC = protoc
 PROTOC_GEN_GO = $(BIN)/protoc-gen-go
-$(BIN)/protoc-gen-go: PACKAGE=google.golang.org/protobuf/cmd/protoc-gen-go
+$(BIN)/protoc-gen-go: PACKAGE=google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.0
 
 # Generated files
 
 inlet/flow/decoder/%.pb.go: inlet/flow/data/schemas/%.proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffers definition…)
 	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --go_out=. --go_opt=module=$(MODULE) $<
+
+common/clickhousedb/mocks/mock_driver.go: | $(MOCKGEN) ; $(info $(M) generate mocks for ClickHouse driver…)
+	$Q $(MOCKGEN) -destination $@ -package mocks github.com/ClickHouse/clickhouse-go/v2/lib/driver Conn,Row,Rows
+	$Q sed -i'' -e '1i //go:build !release' $@
 
 console/frontend/node_modules: console/frontend/package.json console/frontend/yarn.lock
 console/frontend/node_modules: ; $(info $(M) fetching node modules…)

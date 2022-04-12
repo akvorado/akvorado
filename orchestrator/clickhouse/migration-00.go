@@ -14,7 +14,7 @@ import (
 func (c *Component) migrateStepCreateFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	return migrationStep{
 		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2`,
-		Args:       []interface{}{"flows", c.config.Database},
+		Args:       []interface{}{"flows", c.config.Configuration.Database},
 		Do: func() error {
 			return conn.Exec(ctx, `
 CREATE TABLE flows (
@@ -60,7 +60,7 @@ ORDER BY TimeReceived`)
 func (c *Component) migrateStepCreateExportersView(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	return migrationStep{
 		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2`,
-		Args:       []interface{}{"exporters", c.config.Database},
+		Args:       []interface{}{"exporters", c.config.Configuration.Database},
 		Do: func() error {
 			return conn.Exec(ctx, `
 CREATE MATERIALIZED VIEW exporters
@@ -89,7 +89,7 @@ func (c *Component) migrateStepCreateProtocolsDictionary(ctx context.Context, l 
 	protocolsURL := fmt.Sprintf("%s/api/v0/orchestrator/clickhouse/protocols.csv", c.config.OrchestratorURL)
 	return migrationStep{
 		CheckQuery: `SELECT 1 FROM system.dictionaries WHERE name = $1 AND database = $2 AND source = $3`,
-		Args:       []interface{}{"protocols", c.config.Database, protocolsURL},
+		Args:       []interface{}{"protocols", c.config.Configuration.Database, protocolsURL},
 		Do: func() error {
 			return conn.Exec(ctx, `
 CREATE OR REPLACE DICTIONARY protocols (
@@ -110,7 +110,7 @@ func (c *Component) migrateStepCreateASNsDictionary(ctx context.Context, l repor
 	asnsURL := fmt.Sprintf("%s/api/v0/orchestrator/clickhouse/asns.csv", c.config.OrchestratorURL)
 	return migrationStep{
 		CheckQuery: `SELECT 1 FROM system.dictionaries WHERE name = $1 AND database = $2 AND source = $3`,
-		Args:       []interface{}{"asns", c.config.Database, asnsURL},
+		Args:       []interface{}{"asns", c.config.Configuration.Database, asnsURL},
 		Do: func() error {
 			return conn.Exec(ctx, `
 CREATE OR REPLACE DICTIONARY asns (
@@ -144,7 +144,7 @@ func (c *Component) migrateStepCreateRawFlowsTable(ctx context.Context, l report
 	}, " ")
 	return migrationStep{
 		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2 AND engine_full = $3`,
-		Args:       []interface{}{tableName, c.config.Database, kafkaEngine},
+		Args:       []interface{}{tableName, c.config.Configuration.Database, kafkaEngine},
 		Do: func() error {
 			l.Debug().Msg("drop raw consumer table")
 			err := conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s_consumer`, tableName))
@@ -204,7 +204,7 @@ func (c *Component) migrateStepCreateRawFlowsConsumerView(ctx context.Context, l
 	viewName := fmt.Sprintf("%s_consumer", tableName)
 	return migrationStep{
 		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2`,
-		Args:       []interface{}{viewName, c.config.Database},
+		Args:       []interface{}{viewName, c.config.Configuration.Database},
 		Do: func() error {
 			return conn.Exec(ctx, fmt.Sprintf(`
 CREATE MATERIALIZED VIEW %s TO flows
@@ -219,7 +219,7 @@ FROM %s`, viewName, tableName))
 func (c *Component) migrateStepDropSchemaMigrationsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	return migrationStep{
 		CheckQuery: `SELECT COUNT(*) == 0 FROM system.tables WHERE name = $1 AND database = $2`,
-		Args:       []interface{}{"schema_migrations", c.config.Database},
+		Args:       []interface{}{"schema_migrations", c.config.Configuration.Database},
 		Do: func() error {
 			return conn.Exec(ctx, "DROP TABLE schema_migrations")
 		},

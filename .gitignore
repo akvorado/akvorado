@@ -1,6 +1,7 @@
 /bin/
 /test/
 /inlet/flow/decoder/flow*.pb.go
+/common/clickhousedb/mocks/
 
 /console/frontend/node_modules/
 /console/data/frontend/

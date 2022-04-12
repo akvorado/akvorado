@@ -1,13 +1,13 @@
 package clickhouse
 
 import (
-	"akvorado/common/clickhouse"
+	"akvorado/common/clickhousedb"
 	"akvorado/common/kafka"
 )
 
 // Configuration describes the configuration for the ClickHouse configurator.
 type Configuration struct {
-	clickhouse.Configuration `mapstructure:",squash" yaml:"-,inline"`
+	clickhousedb.Configuration `mapstructure:",squash" yaml:"-,inline"`
 	// Kafka describes Kafka-specific configuration
 	Kafka KafkaConfiguration
 	// OrchestratorURL allows one to override URL to reach orchestrator from Clickhouse
@@ -24,7 +24,7 @@ type KafkaConfiguration struct {
 // DefaultConfiguration represents the default configuration for the ClickHouse configurator.
 func DefaultConfiguration() Configuration {
 	return Configuration{
-		Configuration: clickhouse.DefaultConfiguration(),
+		Configuration: clickhousedb.DefaultConfiguration(),
 		Kafka: KafkaConfiguration{
 			Consumers: 1,
 		},

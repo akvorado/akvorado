@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"akvorado/common/clickhousedb"
 	"akvorado/common/daemon"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
@@ -15,11 +16,12 @@ import (
 
 // OrchestratorConfiguration represents the configuration file for the orchestrator command.
 type OrchestratorConfiguration struct {
-	Reporting  reporter.Configuration
-	HTTP       http.Configuration
-	ClickHouse clickhouse.Configuration
-	Kafka      kafka.Configuration
-	Broker     broker.Configuration
+	Reporting    reporter.Configuration
+	HTTP         http.Configuration
+	ClickHouseDB clickhousedb.Configuration `yaml:"-"`
+	ClickHouse   clickhouse.Configuration
+	Kafka        kafka.Configuration
+	Broker       broker.Configuration
 	// Other service configurations
 	Inlet   InletConfiguration
 	Console ConsoleConfiguration
@@ -28,13 +30,15 @@ type OrchestratorConfiguration struct {
 // DefaultOrchestratorConfiguration is the default configuration for the orchestrator command.
 func DefaultOrchestratorConfiguration() OrchestratorConfiguration {
 	return OrchestratorConfiguration{
-		Reporting:  reporter.DefaultConfiguration(),
-		HTTP:       http.DefaultConfiguration(),
-		ClickHouse: clickhouse.DefaultConfiguration(),
-		Kafka:      kafka.DefaultConfiguration(),
-		Broker:     broker.DefaultConfiguration(),
-		Inlet:      DefaultInletConfiguration(),
-		Console:    DefaultConsoleConfiguration(),
+		Reporting:    reporter.DefaultConfiguration(),
+		HTTP:         http.DefaultConfiguration(),
+		ClickHouseDB: clickhousedb.DefaultConfiguration(),
+		ClickHouse:   clickhouse.DefaultConfiguration(),
+		Kafka:        kafka.DefaultConfiguration(),
+		Broker:       broker.DefaultConfiguration(),
+		// Other service configurations
+		Inlet:   DefaultInletConfiguration(),
+		Console: DefaultConsoleConfiguration(),
 	}
 }
 
@@ -58,6 +62,7 @@ components and centralizes configuration of the various other components.`,
 		OrchestratorOptions.Path = args[0]
 		OrchestratorOptions.BeforeDump = func() {
 			// Override some parts of the configuration
+			config.ClickHouseDB = config.ClickHouse.Configuration
 			config.ClickHouse.Kafka.Configuration = config.Kafka.Configuration
 			config.Inlet.Kafka.Configuration = config.Kafka.Configuration
 		}
@@ -96,9 +101,16 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, c
 	if err != nil {
 		return fmt.Errorf("unable to initialize kafka component: %w", err)
 	}
-	clickhouseComponent, err := clickhouse.New(r, config.ClickHouse, clickhouse.Dependencies{
+	clickhouseDBComponent, err := clickhousedb.New(r, config.ClickHouseDB, clickhousedb.Dependencies{
 		Daemon: daemonComponent,
-		HTTP:   httpComponent,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to initialize ClickHouse component: %w", err)
+	}
+	clickhouseComponent, err := clickhouse.New(r, config.ClickHouse, clickhouse.Dependencies{
+		Daemon:     daemonComponent,
+		HTTP:       httpComponent,
+		ClickHouse: clickhouseDBComponent,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to initialize clickhouse component: %w", err)
@@ -124,6 +136,7 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, c
 	// Start all the components.
 	components := []interface{}{
 		httpComponent,
+		clickhouseDBComponent,
 		clickhouseComponent,
 		kafkaComponent,
 	}

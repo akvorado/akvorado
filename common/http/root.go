@@ -56,7 +56,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		mux:       http.NewServeMux(),
 		GinRouter: gin.New(),
 	}
-	c.d.Daemon.Track(&c.t, "http")
+	c.d.Daemon.Track(&c.t, "common/http")
 
 	c.metrics.inflights = c.r.Gauge(
 		reporter.GaugeOpts{

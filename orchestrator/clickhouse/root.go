@@ -6,6 +6,7 @@ import (
 
 	"gopkg.in/tomb.v2"
 
+	"akvorado/common/clickhousedb"
 	"akvorado/common/daemon"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
@@ -28,8 +29,9 @@ type Component struct {
 
 // Dependencies define the dependencies of the ClickHouse configurator.
 type Dependencies struct {
-	Daemon daemon.Component
-	HTTP   *http.Component
+	Daemon     daemon.Component
+	HTTP       *http.Component
+	ClickHouse *clickhousedb.Component
 }
 
 // New creates a new ClickHouse component.
@@ -43,7 +45,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	if err := c.registerHTTPHandlers(); err != nil {
 		return nil, err
 	}
-	c.d.Daemon.Track(&c.t, "configure/clickhouse")
+	c.d.Daemon.Track(&c.t, "orchestrator/clickhouse")
 
 	c.metrics.migrationsRunning = c.r.Gauge(
 		reporter.GaugeOpts{
@@ -66,7 +68,7 @@ func (c *Component) Start() error {
 	c.r.Info().Msg("starting ClickHouse component")
 	c.metrics.migrationsRunning.Set(1)
 	if err := c.migrateDatabase(); err != nil {
-		c.r.Warn().Msg("database migration failed, continue in the background")
+		c.r.Warn().Msgf("database migration failed %s, continue in the background", err.Error())
 		c.t.Go(func() error {
 			for {
 				select {

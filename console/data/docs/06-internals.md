@@ -1,7 +1,7 @@
 # Internal design
 
 *Akvorado* is written in Go. Each service has its code in a distinct
-directory (`inlet/`, `configure/` and `console/`). The `common/`
+directory (`inlet/`, `orchestrator/` and `console/`). The `common/`
 directory contains components common to several services. The `cmd/`
 directory contains the main entry points.
 

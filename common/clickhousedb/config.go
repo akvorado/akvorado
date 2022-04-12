@@ -1,10 +1,7 @@
-package clickhouse
+package clickhousedb
 
 import (
-	"context"
 	"time"
-
-	"github.com/ClickHouse/clickhouse-go/v2"
 )
 
 // Configuration defines how we connect to a Clickhouse database
@@ -32,28 +29,4 @@ func DefaultConfiguration() Configuration {
 		MaxOpenConns: 10,
 		DialTimeout:  5 * time.Second,
 	}
-}
-
-// Open create a new
-func (config Configuration) Open(ctx context.Context) (clickhouse.Conn, error) {
-	conn, err := clickhouse.Open(&clickhouse.Options{
-		Addr: config.Servers,
-		Auth: clickhouse.Auth{
-			Database: config.Database,
-			Username: config.Username,
-			Password: config.Password,
-		},
-		Compression:     &clickhouse.Compression{clickhouse.CompressionLZ4},
-		DialTimeout:     config.DialTimeout,
-		MaxOpenConns:    config.MaxOpenConns,
-		MaxIdleConns:    config.MaxOpenConns/2 + 1,
-		ConnMaxLifetime: time.Hour,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if err := conn.Ping(ctx); err != nil {
-		return nil, err
-	}
-	return conn, nil
 }

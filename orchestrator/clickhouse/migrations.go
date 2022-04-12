@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"strings"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 
@@ -23,25 +22,14 @@ type migrationStep struct {
 // migrateDatabase execute database migration
 func (c *Component) migrateDatabase() error {
 	if c.config.OrchestratorURL == "" {
-		baseURL, err := c.getHTTPBaseURL(c.config.Servers[0])
+		baseURL, err := c.getHTTPBaseURL("1.1.1.1:80")
 		if err != nil {
 			return err
 		}
 		c.config.OrchestratorURL = baseURL
 	}
 
-	l := c.r.With().
-		Str("server", strings.Join(c.config.Servers, ",")).
-		Str("database", c.config.Database).
-		Str("username", c.config.Username).
-		Logger()
-	ctx := c.t.Context(context.Background())
-	conn, err := c.config.Configuration.Open(ctx)
-	if err != nil {
-		l.Err(err).Msg("unable to connect to ClickHouse")
-		return fmt.Errorf("unable to connect to ClickHouse: %w", err)
-	}
-
+	ctx := c.t.Context(nil)
 	steps := []struct {
 		Description string
 		Step        func(context.Context, reporter.Logger, clickhouse.Conn) migrationStep
@@ -59,10 +47,10 @@ func (c *Component) migrateDatabase() error {
 	total := 0
 	for _, step := range steps {
 		total++
-		l := l.With().Str("step", step.Description).Logger()
+		l := c.r.Logger.With().Str("step", step.Description).Logger()
 		l.Debug().Msg("checking migration step")
-		step := step.Step(ctx, l, conn)
-		rows, err := conn.Query(ctx, step.CheckQuery, step.Args...)
+		step := step.Step(ctx, l, c.d.ClickHouse)
+		rows, err := c.d.ClickHouse.Query(ctx, step.CheckQuery, step.Args...)
 		if err != nil {
 			l.Err(err).Msg("cannot execute check")
 			return fmt.Errorf("cannot execute check: %w", err)
@@ -90,9 +78,9 @@ func (c *Component) migrateDatabase() error {
 	}
 
 	if count == 0 {
-		l.Debug().Msg("no migration needed")
+		c.r.Debug().Msg("no migration needed")
 	} else {
-		l.Info().Msg("migrations done")
+		c.r.Info().Msg("migrations done")
 	}
 	close(c.migrationsDone)
 	c.metrics.migrationsRunning.Set(0)

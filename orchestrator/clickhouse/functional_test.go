@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"akvorado/common/clickhouse"
+	"akvorado/common/clickhousedb"
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/http"
@@ -14,14 +14,14 @@ import (
 )
 
 func TestRealClickHouse(t *testing.T) {
-	conn, chServers := clickhouse.SetupClickHouse(t)
+	r := reporter.NewMock(t)
+	chComponent := clickhousedb.SetupClickHouse(t, r)
 
 	configuration := DefaultConfiguration()
-	configuration.Servers = chServers
-	r := reporter.NewMock(t)
 	ch, err := New(r, configuration, Dependencies{
-		Daemon: daemon.NewMock(t),
-		HTTP:   http.NewMock(t, r),
+		Daemon:     daemon.NewMock(t),
+		HTTP:       http.NewMock(t, r),
+		ClickHouse: chComponent,
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
@@ -36,7 +36,7 @@ func TestRealClickHouse(t *testing.T) {
 	}
 
 	// Check with the ClickHouse client we have our tables
-	rows, err := conn.Query(context.Background(), "SHOW TABLES")
+	rows, err := chComponent.Query(context.Background(), "SHOW TABLES")
 	if err != nil {
 		t.Fatalf("Query() error:\n%+v", err)
 	}
@@ -67,8 +67,9 @@ func TestRealClickHouse(t *testing.T) {
 
 	// Check we can run a second time
 	ch, err = New(r, configuration, Dependencies{
-		Daemon: daemon.NewMock(t),
-		HTTP:   http.NewMock(t, r),
+		Daemon:     daemon.NewMock(t),
+		HTTP:       http.NewMock(t, r),
+		ClickHouse: chComponent,
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
