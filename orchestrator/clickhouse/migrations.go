@@ -35,20 +35,13 @@ func (c *Component) migrateDatabase() error {
 		Str("database", c.config.Database).
 		Str("username", c.config.Username).
 		Logger()
-	conn, err := clickhouse.Open(&clickhouse.Options{
-		Addr: c.config.Servers,
-		Auth: clickhouse.Auth{
-			Database: c.config.Database,
-			Username: c.config.Username,
-			Password: c.config.Password,
-		},
-	})
+	ctx := c.t.Context(context.Background())
+	conn, err := c.config.Configuration.Open(ctx)
 	if err != nil {
 		l.Err(err).Msg("unable to connect to ClickHouse")
 		return fmt.Errorf("unable to connect to ClickHouse: %w", err)
 	}
 
-	ctx := c.t.Context(context.Background())
 	steps := []struct {
 		Description string
 		Step        func(context.Context, reporter.Logger, clickhouse.Conn) migrationStep

@@ -1,12 +1,12 @@
 package clickhouse
 
 import (
+	"context"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/ClickHouse/clickhouse-go/v2"
-
+	"akvorado/common/clickhouse"
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/http"
@@ -14,10 +14,10 @@ import (
 )
 
 func TestRealClickHouse(t *testing.T) {
-	chServer := helpers.CheckExternalService(t, "ClickHouse", []string{"clickhouse", "localhost"}, "9000")
+	conn, chServers := clickhouse.SetupClickHouse(t)
 
 	configuration := DefaultConfiguration()
-	configuration.Servers = []string{chServer}
+	configuration.Servers = chServers
 	r := reporter.NewMock(t)
 	ch, err := New(r, configuration, Dependencies{
 		Daemon: daemon.NewMock(t),
@@ -36,19 +36,7 @@ func TestRealClickHouse(t *testing.T) {
 	}
 
 	// Check with the ClickHouse client we have our tables
-	conn := clickhouse.OpenDB(&clickhouse.Options{
-		Addr: []string{chServer},
-		Auth: clickhouse.Auth{
-			Database: ch.config.Database,
-			Username: ch.config.Username,
-			Password: ch.config.Password,
-		},
-		DialTimeout: 100 * time.Millisecond,
-	})
-	if err := conn.Ping(); err != nil {
-		t.Fatalf("Ping() error:\n%+v", err)
-	}
-	rows, err := conn.Query("SHOW TABLES")
+	rows, err := conn.Query(context.Background(), "SHOW TABLES")
 	if err != nil {
 		t.Fatalf("Query() error:\n%+v", err)
 	}

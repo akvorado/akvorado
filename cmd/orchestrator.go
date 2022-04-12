@@ -17,7 +17,7 @@ import (
 type OrchestratorConfiguration struct {
 	Reporting  reporter.Configuration
 	HTTP       http.Configuration
-	Clickhouse clickhouse.Configuration
+	ClickHouse clickhouse.Configuration
 	Kafka      kafka.Configuration
 	Broker     broker.Configuration
 	// Other service configurations
@@ -30,7 +30,7 @@ func DefaultOrchestratorConfiguration() OrchestratorConfiguration {
 	return OrchestratorConfiguration{
 		Reporting:  reporter.DefaultConfiguration(),
 		HTTP:       http.DefaultConfiguration(),
-		Clickhouse: clickhouse.DefaultConfiguration(),
+		ClickHouse: clickhouse.DefaultConfiguration(),
 		Kafka:      kafka.DefaultConfiguration(),
 		Broker:     broker.DefaultConfiguration(),
 		Inlet:      DefaultInletConfiguration(),
@@ -58,7 +58,7 @@ components and centralizes configuration of the various other components.`,
 		OrchestratorOptions.Path = args[0]
 		OrchestratorOptions.BeforeDump = func() {
 			// Override some parts of the configuration
-			config.Clickhouse.Kafka.Configuration = config.Kafka.Configuration
+			config.ClickHouse.Kafka.Configuration = config.Kafka.Configuration
 			config.Inlet.Kafka.Configuration = config.Kafka.Configuration
 		}
 		if err := OrchestratorOptions.Parse(cmd.OutOrStdout(), "orchestrator", &config); err != nil {
@@ -96,7 +96,7 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, c
 	if err != nil {
 		return fmt.Errorf("unable to initialize kafka component: %w", err)
 	}
-	clickhouseComponent, err := clickhouse.New(r, config.Clickhouse, clickhouse.Dependencies{
+	clickhouseComponent, err := clickhouse.New(r, config.ClickHouse, clickhouse.Dependencies{
 		Daemon: daemonComponent,
 		HTTP:   httpComponent,
 	})
