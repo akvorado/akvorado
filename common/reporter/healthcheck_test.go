@@ -15,13 +15,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func testHealthchecks(ctx context.Context, t *testing.T, r *reporter.Reporter, expectedStatus reporter.HealthcheckStatus, expectedResults map[string]reporter.HealthcheckResult) {
+func testHealthchecks(ctx context.Context, t *testing.T, r *reporter.Reporter, expected reporter.MultipleHealthcheckResults) {
 	t.Helper()
-	gotStatus, gotResults := r.RunHealthchecks(ctx)
-	if gotStatus != expectedStatus {
-		t.Errorf("RunHealthchecks() status got %s expected %s", gotStatus, expectedStatus)
-	}
-	if diff := helpers.Diff(gotResults, expectedResults); diff != "" {
+	got := r.RunHealthchecks(ctx)
+	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Errorf("RunHealthchecks() (-got, +want):\n%s", diff)
 	}
 }
@@ -29,7 +26,10 @@ func testHealthchecks(ctx context.Context, t *testing.T, r *reporter.Reporter, e
 func TestEmptyHealthcheck(t *testing.T) {
 	r := reporter.NewMock(t)
 	testHealthchecks(context.Background(), t, r,
-		reporter.HealthcheckOK, map[string]reporter.HealthcheckResult{})
+		reporter.MultipleHealthcheckResults{
+			Status:  reporter.HealthcheckOK,
+			Details: map[string]reporter.HealthcheckResult{},
+		})
 }
 
 func TestOneHealthcheck(t *testing.T) {
@@ -38,8 +38,11 @@ func TestOneHealthcheck(t *testing.T) {
 		return reporter.HealthcheckResult{reporter.HealthcheckOK, "all well"}
 	})
 	testHealthchecks(context.Background(), t, r,
-		reporter.HealthcheckOK, map[string]reporter.HealthcheckResult{
-			"hc1": {reporter.HealthcheckOK, "all well"},
+		reporter.MultipleHealthcheckResults{
+			Status: reporter.HealthcheckOK,
+			Details: map[string]reporter.HealthcheckResult{
+				"hc1": {reporter.HealthcheckOK, "all well"},
+			},
 		})
 }
 
@@ -52,9 +55,12 @@ func TestFailingHealthcheck(t *testing.T) {
 		return reporter.HealthcheckResult{reporter.HealthcheckError, "not so good"}
 	})
 	testHealthchecks(context.Background(), t, r,
-		reporter.HealthcheckError, map[string]reporter.HealthcheckResult{
-			"hc1": {reporter.HealthcheckOK, "all well"},
-			"hc2": {reporter.HealthcheckError, "not so good"},
+		reporter.MultipleHealthcheckResults{
+			Status: reporter.HealthcheckError,
+			Details: map[string]reporter.HealthcheckResult{
+				"hc1": {reporter.HealthcheckOK, "all well"},
+				"hc2": {reporter.HealthcheckError, "not so good"},
+			},
 		})
 }
 
@@ -75,9 +81,12 @@ func TestHealthcheckCancelContext(t *testing.T) {
 		cancel()
 	}()
 	testHealthchecks(ctx, t, r,
-		reporter.HealthcheckError, map[string]reporter.HealthcheckResult{
-			"hc1": {reporter.HealthcheckOK, "all well"},
-			"hc2": {reporter.HealthcheckError, "timeout during check"},
+		reporter.MultipleHealthcheckResults{
+			Status: reporter.HealthcheckError,
+			Details: map[string]reporter.HealthcheckResult{
+				"hc1": {reporter.HealthcheckOK, "all well"},
+				"hc2": {reporter.HealthcheckError, "timeout during check"},
+			},
 		})
 }
 
@@ -94,8 +103,11 @@ func TestChannelHealthcheck(t *testing.T) {
 	r := reporter.NewMock(t)
 	r.RegisterHealthcheck("hc1", reporter.ChannelHealthcheck(context.Background(), contact))
 	testHealthchecks(context.Background(), t, r,
-		reporter.HealthcheckOK, map[string]reporter.HealthcheckResult{
-			"hc1": {reporter.HealthcheckOK, "all well, thank you!"},
+		reporter.MultipleHealthcheckResults{
+			Status: reporter.HealthcheckOK,
+			Details: map[string]reporter.HealthcheckResult{
+				"hc1": {reporter.HealthcheckOK, "all well, thank you!"},
+			},
 		})
 }
 

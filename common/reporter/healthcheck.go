@@ -18,6 +18,12 @@ type HealthcheckResult struct {
 	Reason string            `json:"reason"`
 }
 
+// MultipleHealthcheckResults aggregates the result of several healthchecks
+type MultipleHealthcheckResults struct {
+	Status  HealthcheckStatus            `json:"status"`
+	Details map[string]HealthcheckResult `json:"details,omitempty"`
+}
+
 const (
 	// HealthcheckOK says "OK"
 	HealthcheckOK HealthcheckStatus = iota
@@ -59,15 +65,18 @@ func (r *Reporter) RegisterHealthcheck(name string, hf HealthcheckFunc) {
 // RunHealthchecks execute all healthchecks in parallel and returns a
 // global status as well as a map from service names to returned
 // results.
-func (r *Reporter) RunHealthchecks(ctx context.Context) (HealthcheckStatus, map[string]HealthcheckResult) {
+func (r *Reporter) RunHealthchecks(ctx context.Context) MultipleHealthcheckResults {
 	var wg sync.WaitGroup
-	results := make(map[string]HealthcheckResult)
+	results := MultipleHealthcheckResults{
+		Status:  HealthcheckOK,
+		Details: map[string]HealthcheckResult{},
+	}
 
 	r.healthchecksLock.Lock()
 	defer r.healthchecksLock.Unlock()
 	runningHealthchecks := len(r.healthchecks)
 	if runningHealthchecks == 0 {
-		return HealthcheckOK, results
+		return results
 	}
 
 	// Go routine to centralize results
@@ -84,7 +93,7 @@ func (r *Reporter) RunHealthchecks(ctx context.Context) (HealthcheckStatus, map[
 			case <-ctx.Done():
 				return
 			case result := <-resultChan:
-				results[result.name] = result.result
+				results.Details[result.name] = result.result
 				runningHealthchecks--
 				if runningHealthchecks == 0 {
 					return
@@ -113,34 +122,30 @@ func (r *Reporter) RunHealthchecks(ctx context.Context) (HealthcheckStatus, map[
 	wg.Wait() // keep lock, we don't want something to change
 
 	// Check what we have
-	currentStatus := HealthcheckOK
 	for name := range r.healthchecks {
-		if result, ok := results[name]; ok {
-			if result.Status > currentStatus {
-				currentStatus = result.Status
+		if result, ok := results.Details[name]; ok {
+			if result.Status > results.Status {
+				results.Status = result.Status
 			}
 		} else {
-			results[name] = HealthcheckResult{HealthcheckError, "timeout during check"}
-			currentStatus = HealthcheckError
+			results.Details[name] = HealthcheckResult{HealthcheckError, "timeout during check"}
+			results.Status = HealthcheckError
 		}
 	}
 
-	return currentStatus, results
+	return results
 }
 
 // HealthcheckHTTPHandler is an HTTP handler return healthcheck results as JSON.
 func (r *Reporter) HealthcheckHTTPHandler(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
-	globalStatus, details := r.RunHealthchecks(ctx)
-	status := http.StatusOK
-	if globalStatus == HealthcheckError {
-		status = http.StatusServiceUnavailable
+	results := r.RunHealthchecks(ctx)
+	httpStatus := http.StatusOK
+	if results.Status == HealthcheckError {
+		httpStatus = http.StatusServiceUnavailable
 	}
-	c.JSON(status, gin.H{
-		"status":  globalStatus,
-		"details": details,
-	})
+	c.JSON(httpStatus, results)
 }
 
 // ChannelHealthcheckFunc is the function sent over a channel to signal liveness
