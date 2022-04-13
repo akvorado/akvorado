@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 )
 
@@ -48,8 +49,6 @@ func NewMock(t *testing.T, reporter *reporter.Reporter, configuration Configurat
 	}
 	// Change the poller to a fake one.
 	c.poller = newMockPoller("public", c.sc.Put)
-	if err := c.Start(); err != nil {
-		t.Fatalf("Start() error:\n%+v", err)
-	}
+	helpers.StartStop(t, c)
 	return c
 }

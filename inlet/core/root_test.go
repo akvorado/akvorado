@@ -47,14 +47,7 @@ func TestCore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
-	if err := c.Start(); err != nil {
-		t.Fatalf("Start() error:\n%+v", err)
-	}
-	defer func() {
-		if err := c.Stop(); err != nil {
-			t.Fatalf("Stop() error:\n%+v", err)
-		}
-	}()
+	helpers.StartStop(t, c)
 
 	flowMessage := func(exporter string, in, out uint32) *flow.Message {
 		return &flow.Message{

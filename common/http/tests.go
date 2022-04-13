@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"akvorado/common/daemon"
+	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 )
 
@@ -19,8 +20,6 @@ func NewMock(t *testing.T, r *reporter.Reporter) *Component {
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
-	if err := c.Start(); err != nil {
-		t.Fatalf("Start() error:\n%+v", err)
-	}
+	helpers.StartStop(t, c)
 	return c
 }

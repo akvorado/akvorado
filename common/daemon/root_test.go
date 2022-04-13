@@ -7,6 +7,7 @@ import (
 
 	"gopkg.in/tomb.v2"
 
+	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 )
 
@@ -16,7 +17,7 @@ func TestTerminate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
-	c.Start()
+	helpers.StartStop(t, c)
 
 	select {
 	case <-c.Terminated():
@@ -75,7 +76,7 @@ func TestTombTracking(t *testing.T) {
 	}
 
 	c.Track(&tomb, "tomb")
-	c.Start()
+	helpers.StartStop(t, c)
 
 	ch := make(chan bool)
 	tomb.Go(func() error {

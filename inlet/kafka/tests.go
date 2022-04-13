@@ -9,6 +9,7 @@ import (
 	"github.com/Shopify/sarama/mocks"
 
 	"akvorado/common/daemon"
+	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 )
 
@@ -27,9 +28,6 @@ func NewMock(t *testing.T, reporter *reporter.Reporter, configuration Configurat
 		return mockProducer, nil
 	}
 
-	if err := c.Start(); err != nil {
-		t.Fatalf("Start() error:\n%+v", err)
-	}
-
+	helpers.StartStop(t, c)
 	return c, mockProducer
 }

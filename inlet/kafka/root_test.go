@@ -53,10 +53,6 @@ func TestKafka(t *testing.T) {
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
-
-	if err := c.Stop(); err != nil {
-		t.Fatalf("Stop() error:\n%+v", err)
-	}
 }
 
 func TestKafkaMetrics(t *testing.T) {

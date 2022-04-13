@@ -29,11 +29,6 @@ func TestFlow(t *testing.T) {
 		},
 	}
 	c := NewMock(t, r, config)
-	defer func() {
-		if err := c.Stop(); err != nil {
-			t.Fatalf("Stop() error:\n%+v", err)
-		}
-	}()
 
 	// Receive flows
 	received := []*Message{}

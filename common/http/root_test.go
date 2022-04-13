@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	netHTTP "net/http"
-	"runtime"
 	"testing"
 
 	"akvorado/common/helpers"
@@ -17,15 +16,6 @@ import (
 func TestHandler(t *testing.T) {
 	r := reporter.NewMock(t)
 	h := http.NewMock(t, r)
-	defer func() {
-		h.Stop()
-		runtime.Gosched()
-		resp, err := netHTTP.Get(fmt.Sprintf("http://%s/", h.Address))
-		if err == nil {
-			t.Errorf("Still able to connect to expvar server after stop")
-			resp.Body.Close()
-		}
-	}()
 
 	h.AddHandler("/test",
 		netHTTP.HandlerFunc(func(w netHTTP.ResponseWriter, r *netHTTP.Request) {
@@ -63,7 +53,6 @@ func TestHandler(t *testing.T) {
 func TestGinRouter(t *testing.T) {
 	r := reporter.NewMock(t)
 	h := http.NewMock(t, r)
-	defer h.Stop()
 
 	h.GinRouter.GET("/api/v0/test", func(c *gin.Context) {
 		c.JSON(netHTTP.StatusOK, gin.H{
@@ -89,7 +78,6 @@ func TestGinRouter(t *testing.T) {
 func TestGinRouterPanic(t *testing.T) {
 	r := reporter.NewMock(t)
 	h := http.NewMock(t, r)
-	defer h.Stop()
 
 	h.GinRouter.GET("/api/v0/test", func(c *gin.Context) {
 		panic("heeeelp")

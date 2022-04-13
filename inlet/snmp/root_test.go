@@ -26,11 +26,6 @@ func expectSNMPLookup(t *testing.T, c *Component, exporter string, ifIndex uint,
 func TestLookup(t *testing.T) {
 	r := reporter.NewMock(t)
 	c := NewMock(t, r, DefaultConfiguration(), Dependencies{Daemon: daemon.NewMock(t)})
-	defer func() {
-		if err := c.Stop(); err != nil {
-			t.Fatalf("Stop() error:\n%+v", err)
-		}
-	}()
 
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{Err: ErrCacheMiss})
 	time.Sleep(30 * time.Millisecond)
@@ -49,11 +44,6 @@ func TestSNMPCommunities(t *testing.T) {
 		"127.0.0.2": "private",
 	}
 	c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
-	defer func() {
-		if err := c.Stop(); err != nil {
-			t.Fatalf("Stop() error:\n%+v", err)
-		}
-	}()
 
 	// Use "public" as a community. Should work.
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{Err: ErrCacheMiss})
@@ -75,30 +65,29 @@ func TestSNMPCommunities(t *testing.T) {
 }
 
 func TestComponentSaveLoad(t *testing.T) {
-	r := reporter.NewMock(t)
 	configuration := DefaultConfiguration()
 	configuration.CachePersistFile = filepath.Join(t.TempDir(), "cache")
-	c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 
-	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{Err: ErrCacheMiss})
-	time.Sleep(30 * time.Millisecond)
-	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
-		ExporterName: "127_0_0_1",
-		Interface:    Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
-	})
-	if err := c.Stop(); err != nil {
-		t.Fatalf("Stop() error:\n%+c", err)
-	}
+	t.Run("save", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 
-	r = reporter.NewMock(t)
-	c = NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
-	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
-		ExporterName: "127_0_0_1",
-		Interface:    Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
+		expectSNMPLookup(t, c, "127.0.0.1", 765, answer{Err: ErrCacheMiss})
+		time.Sleep(30 * time.Millisecond)
+		expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
+			ExporterName: "127_0_0_1",
+			Interface:    Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
+		})
 	})
-	if err := c.Stop(); err != nil {
-		t.Fatalf("Stop() error:\n%+c", err)
-	}
+
+	t.Run("load", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
+		expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
+			ExporterName: "127_0_0_1",
+			Interface:    Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
+		})
+	})
 }
 
 func TestAutoRefresh(t *testing.T) {
@@ -130,11 +119,6 @@ func TestAutoRefresh(t *testing.T) {
 		ExporterName: "127_0_0_1",
 		Interface:    Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
 	})
-
-	// Stop and look at the cache
-	if err := c.Stop(); err != nil {
-		t.Fatalf("Stop() error:\n%+v", err)
-	}
 
 	gotMetrics := r.GetMetrics("akvorado_inlet_snmp_cache_")
 	expectedMetrics := map[string]string{
@@ -185,10 +169,7 @@ func TestStartStopWithMultipleWorkers(t *testing.T) {
 	r := reporter.NewMock(t)
 	configuration := DefaultConfiguration()
 	configuration.Workers = 5
-	c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
-	if err := c.Stop(); err != nil {
-		t.Fatalf("Stop() error:\n%+v", err)
-	}
+	NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 }
 
 type logCoalescePoller struct {
@@ -201,27 +182,29 @@ func (fcp *logCoalescePoller) Poll(ctx context.Context, exporterIP string, _ uin
 }
 
 func TestCoalescing(t *testing.T) {
-	r := reporter.NewMock(t)
-	c := NewMock(t, r, DefaultConfiguration(), Dependencies{Daemon: daemon.NewMock(t)})
 	lcp := &logCoalescePoller{
 		received: []lookupRequest{},
 	}
-	c.poller = lcp
+	r := reporter.NewMock(t)
+	t.Run("run", func(t *testing.T) {
+		c := NewMock(t, r, DefaultConfiguration(), Dependencies{Daemon: daemon.NewMock(t)})
+		c.poller = lcp
 
-	// Block dispatcher
-	blocker := make(chan bool)
-	c.dispatcherBChannel <- blocker
+		// Block dispatcher
+		blocker := make(chan bool)
+		c.dispatcherBChannel <- blocker
 
-	// Queue requests
-	expectSNMPLookup(t, c, "127.0.0.1", 766, answer{Err: ErrCacheMiss})
-	expectSNMPLookup(t, c, "127.0.0.1", 767, answer{Err: ErrCacheMiss})
-	expectSNMPLookup(t, c, "127.0.0.1", 768, answer{Err: ErrCacheMiss})
-	expectSNMPLookup(t, c, "127.0.0.1", 769, answer{Err: ErrCacheMiss})
+		// Queue requests
+		expectSNMPLookup(t, c, "127.0.0.1", 766, answer{Err: ErrCacheMiss})
+		expectSNMPLookup(t, c, "127.0.0.1", 767, answer{Err: ErrCacheMiss})
+		expectSNMPLookup(t, c, "127.0.0.1", 768, answer{Err: ErrCacheMiss})
+		expectSNMPLookup(t, c, "127.0.0.1", 769, answer{Err: ErrCacheMiss})
 
-	// Unblock
-	time.Sleep(20 * time.Millisecond)
-	close(blocker)
-	time.Sleep(20 * time.Millisecond)
+		// Unblock
+		time.Sleep(20 * time.Millisecond)
+		close(blocker)
+		time.Sleep(20 * time.Millisecond)
+	})
 
 	gotMetrics := r.GetMetrics("akvorado_inlet_snmp_poller_", "coalesced_count")
 	expectedMetrics := map[string]string{
@@ -229,10 +212,6 @@ func TestCoalescing(t *testing.T) {
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Errorf("Metrics (-got, +want):\n%s", diff)
-	}
-
-	if err := c.Stop(); err != nil {
-		t.Fatalf("Stop() error:\n%+v", err)
 	}
 
 	expectedAccepted := []lookupRequest{
@@ -264,11 +243,6 @@ func TestPollerBreaker(t *testing.T) {
 			configuration := DefaultConfiguration()
 			configuration.PollerCoalesce = 0
 			c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
-			defer func() {
-				if err := c.Stop(); err != nil {
-					t.Fatalf("Stop() error:\n%+v", err)
-				}
-			}()
 			if tc.Poller != nil {
 				c.poller = tc.Poller
 			}

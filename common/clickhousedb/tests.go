@@ -25,14 +25,7 @@ func SetupClickHouse(t *testing.T, r *reporter.Reporter) *Component {
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
-	if err := c.Start(); err != nil {
-		t.Fatalf("Start() error:\n%+v", err)
-	}
-	t.Cleanup(func() {
-		if err := c.Stop(); err != nil {
-			t.Errorf("Stop() error:\n%+v", err)
-		}
-	})
+	helpers.StartStop(t, c)
 	return c
 }
 
@@ -59,14 +52,6 @@ func NewMock(t *testing.T, r *reporter.Reporter) (*Component, *mocks.MockConn) {
 		Close().
 		Return(nil)
 
-	if err := c.Start(); err != nil {
-		t.Fatalf("Start() error:\n%+v", err)
-	}
-	t.Cleanup(func() {
-		if err := c.Stop(); err != nil {
-			t.Errorf("Stop() error:\n%+v", err)
-		}
-	})
-
+	helpers.StartStop(t, c)
 	return c, mock
 }
