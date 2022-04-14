@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"akvorado/common/clickhousedb"
 	"akvorado/common/daemon"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
@@ -13,17 +14,19 @@ import (
 
 // ConsoleConfiguration represents the configuration file for the console command.
 type ConsoleConfiguration struct {
-	Reporting reporter.Configuration
-	HTTP      http.Configuration
-	Console   console.Configuration
+	Reporting  reporter.Configuration
+	HTTP       http.Configuration
+	Console    console.Configuration
+	ClickHouse clickhousedb.Configuration
 }
 
 // DefaultConsoleConfiguration is the default configuration for the console command.
 func DefaultConsoleConfiguration() ConsoleConfiguration {
 	return ConsoleConfiguration{
-		HTTP:      http.DefaultConfiguration(),
-		Reporting: reporter.DefaultConfiguration(),
-		Console:   console.DefaultConfiguration(),
+		HTTP:       http.DefaultConfiguration(),
+		Reporting:  reporter.DefaultConfiguration(),
+		Console:    console.DefaultConfiguration(),
+		ClickHouse: clickhousedb.DefaultConfiguration(),
 	}
 }
 
@@ -76,8 +79,16 @@ func consoleStart(r *reporter.Reporter, config ConsoleConfiguration, checkOnly b
 	if err != nil {
 		return fmt.Errorf("unable to initialize HTTP component: %w", err)
 	}
+	clickhouseComponent, err := clickhousedb.New(r, config.ClickHouse, clickhousedb.Dependencies{
+		Daemon: daemonComponent,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to initialize ClickHouse component: %w", err)
+	}
 	consoleComponent, err := console.New(r, config.Console, console.Dependencies{
-		HTTP: httpComponent,
+		Daemon:       daemonComponent,
+		HTTP:         httpComponent,
+		ClickHouseDB: clickhouseComponent,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to initialize console component: %w", err)
@@ -95,6 +106,7 @@ func consoleStart(r *reporter.Reporter, config ConsoleConfiguration, checkOnly b
 	// Start all the components.
 	components := []interface{}{
 		httpComponent,
+		clickhouseComponent,
 		consoleComponent,
 	}
 	return StartStopComponents(r, daemonComponent, components)

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"net/http/pprof" // profiler
+	"net/http/pprof"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -201,4 +201,5 @@ func init() {
 	// Disable proxy for client
 	http.DefaultTransport.(*http.Transport).Proxy = nil
 	http.DefaultClient.Timeout = 30 * time.Second
+	gin.SetMode(gin.ReleaseMode)
 }

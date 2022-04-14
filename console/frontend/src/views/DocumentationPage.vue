@@ -85,7 +85,7 @@ watch(
     if (to.id !== from?.id) {
       const id = to.id;
       try {
-        const response = await fetch(`/api/v0/docs/${id}`);
+        const response = await fetch(`/api/v0/console/docs/${id}`);
         if (!response.ok) {
           throw `got a ${response.status} error`;
         }

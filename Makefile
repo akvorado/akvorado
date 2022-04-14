@@ -60,8 +60,9 @@ $(BIN)/protoc-gen-go: PACKAGE=google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
 inlet/flow/decoder/%.pb.go: inlet/flow/data/schemas/%.proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffers definition…)
 	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --go_out=. --go_opt=module=$(MODULE) $<
 
-common/clickhousedb/mocks/mock_driver.go: | $(MOCKGEN) ; $(info $(M) generate mocks for ClickHouse driver…)
-	$Q $(MOCKGEN) -destination $@ -package mocks github.com/ClickHouse/clickhouse-go/v2/lib/driver Conn,Row,Rows
+common/clickhousedb/mocks/mock_driver.go: Makefile | $(MOCKGEN) ; $(info $(M) generate mocks for ClickHouse driver…)
+	$Q $(MOCKGEN) -destination $@ -package mocks \
+		github.com/ClickHouse/clickhouse-go/v2/lib/driver Conn,Row,Rows,ColumnType
 	$Q sed -i'' -e '1i //go:build !release' $@
 
 console/frontend/node_modules: console/frontend/package.json console/frontend/yarn.lock

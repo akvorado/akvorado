@@ -65,6 +65,7 @@ components and centralizes configuration of the various other components.`,
 			config.ClickHouseDB = config.ClickHouse.Configuration
 			config.ClickHouse.Kafka.Configuration = config.Kafka.Configuration
 			config.Inlet.Kafka.Configuration = config.Kafka.Configuration
+			config.Console.ClickHouse = config.ClickHouse.Configuration
 		}
 		if err := OrchestratorOptions.Parse(cmd.OutOrStdout(), "orchestrator", &config); err != nil {
 			return err

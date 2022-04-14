@@ -3,6 +3,7 @@ package console
 import (
 	"testing"
 
+	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
@@ -20,14 +21,16 @@ func TestServeAssets(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			r := reporter.NewMock(t)
 			h := http.NewMock(t, r)
-			_, err := New(r, Configuration{
+			c, err := New(r, Configuration{
 				ServeLiveFS: live,
 			}, Dependencies{
-				HTTP: h,
+				Daemon: daemon.NewMock(t),
+				HTTP:   h,
 			})
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
 			}
+			helpers.StartStop(t, c)
 
 			helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
 				{

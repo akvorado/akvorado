@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 
+	"akvorado/common/clickhousedb/mocks"
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 )
@@ -43,6 +44,40 @@ func TestMock(t *testing.T) {
 
 		if diff := helpers.Diff(got, expected); diff != "" {
 			t.Fatalf("SELECT (-got, +want):\n%s", diff)
+		}
+	})
+
+	t.Run("scan", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		mockRows := mocks.NewMockRows(ctrl)
+		mock.EXPECT().Query(gomock.Any(),
+			`SELECT 10, 12`).
+			Return(mockRows, nil)
+		mockRows.EXPECT().Next().Return(true)
+		mockRows.EXPECT().Close()
+		mockRows.EXPECT().Scan(gomock.Any()).DoAndReturn(func(args ...interface{}) interface{} {
+			arg0 := args[0].(*uint64)
+			*arg0 = uint64(10)
+			arg1 := args[1].(*uint64)
+			*arg1 = uint64(12)
+			return nil
+		})
+
+		rows, err := chComponent.Query(context.Background(),
+			`SELECT 10, 12`)
+		if err != nil {
+			t.Fatalf("SELECT error:\n%+v", err)
+		}
+		if !rows.Next() {
+			t.Fatal("Next() should return true")
+		}
+		defer rows.Close()
+		var n, m uint64
+		if err := rows.Scan(&n, &m); err != nil {
+			t.Fatalf("Scan() error:\n%+v", err)
+		}
+		if n != 10 || m != 12 {
+			t.Errorf("Scan() should return 10, 12, not %d, %d", n, m)
 		}
 	})
 
