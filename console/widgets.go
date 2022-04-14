@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -106,13 +105,17 @@ func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 	case "src-as":
 		selector = `concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???'))`
 		groupby = `SrcAS`
+		filter = "AND InIfBoundary = 'external'"
 	case "dst-as":
 		selector = `concat(toString(DstAS), ': ', dictGetOrDefault('asns', 'name', DstAS, '???'))`
 		groupby = `DstAS`
+		filter = "AND OutIfBoundary = 'external'"
 	case "src-country":
 		selector = `SrcCountry`
+		filter = "AND InIfBoundary = 'external'"
 	case "dst-country":
 		selector = `DstCountry`
+		filter = "AND OutIfBoundary = 'external'"
 	case "exporter":
 		selector = "ExporterName"
 	case "protocol":
@@ -125,11 +128,6 @@ func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 		selector = `concat(dictGetOrDefault('protocols', 'name', Proto, '???'), '/', toString(DstPort))`
 		groupby = `Proto, DstPort`
 	}
-	if strings.HasPrefix(gc.Param("name"), "src-") {
-		filter = "AND InIfBoundary = 'external'"
-	} else if strings.HasPrefix(gc.Param("name"), "dst-") {
-		filter = "AND OutIfBoundary = 'internal'"
-	}
 	if groupby == "" {
 		groupby = selector
 	}
@@ -137,7 +135,7 @@ func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 	request := fmt.Sprintf(`
 WITH
  date_sub(minute, 5, now()) AS StartTime,
- (SELECT SUM(Bytes*SamplingRate) FROM flows WHERE TimeReceived > StartTime) AS Total
+ (SELECT SUM(Bytes*SamplingRate) FROM flows WHERE TimeReceived > StartTime %s) AS Total
 SELECT
  %s AS Name,
  toUInt8(SUM(Bytes*SamplingRate) / Total * 100) AS Percent
@@ -147,7 +145,7 @@ WHERE TimeReceived > StartTime
 GROUP BY %s
 ORDER BY Percent DESC
 LIMIT 5
-`, selector, filter, groupby)
+`, filter, selector, filter, groupby)
 
 	results := []topResult{}
 	err := c.d.ClickHouseDB.Conn.Select(ctx, &results, request)
