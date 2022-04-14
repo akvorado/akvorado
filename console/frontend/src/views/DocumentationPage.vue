@@ -80,14 +80,13 @@ const activeSlug = computed(() => route.hash.replace(/^#/, ""));
 watch(
   () => ({ id: route.params.id, hash: route.hash }),
   async (to, from) => {
-    if (to.id === undefined)
-      return;
+    if (to.id === undefined) return;
     if (to.id !== from?.id) {
       const id = to.id;
       try {
         const response = await fetch(`/api/v0/console/docs/${id}`);
         if (!response.ok) {
-          throw `got a ${response.status} error`;
+          throw new Error(`got a ${response.status} error`);
         }
         const data = await response.json();
         markdown.value = data.markdown;
