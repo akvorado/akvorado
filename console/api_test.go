@@ -17,7 +17,7 @@ import (
 	"akvorado/common/reporter"
 )
 
-func TestLastFlow(t *testing.T) {
+func TestAPILastFlow(t *testing.T) {
 	r := reporter.NewMock(t)
 	ch, mockConn := clickhousedb.NewMock(t, r)
 	h := http.NewMock(t, r)
@@ -104,4 +104,49 @@ func TestLastFlow(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAPIExporters(t *testing.T) {
+	r := reporter.NewMock(t)
+	ch, mockConn := clickhousedb.NewMock(t, r)
+	h := http.NewMock(t, r)
+	c, err := New(r, Configuration{}, Dependencies{
+		Daemon:       daemon.NewMock(t),
+		HTTP:         h,
+		ClickHouseDB: ch,
+	})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	helpers.StartStop(t, c)
+
+	expected := []struct {
+		ExporterName string
+	}{
+		{"exporter1"},
+		{"exporter2"},
+		{"exporter3"},
+	}
+	mockConn.EXPECT().
+		Select(gomock.Any(), gomock.Any(),
+			`SELECT ExporterName FROM exporters GROUP BY ExporterName ORDER BY ExporterName`).
+		SetArg(1, expected).
+		Return(nil)
+
+	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+		{
+			URL:         "/api/v0/console/exporters",
+			ContentType: "application/json; charset=utf-8",
+			FirstLines: []string{
+				`{`,
+				`    "exporters": [`,
+				`        "exporter1",`,
+				`        "exporter2",`,
+				`        "exporter3"`,
+				`    ]`,
+				`}`,
+			},
+		},
+	})
+
 }

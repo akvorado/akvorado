@@ -55,7 +55,8 @@ func (c *Component) Start() error {
 
 	c.d.HTTP.AddHandler("/", netHTTP.HandlerFunc(c.assetsHandlerFunc))
 	c.d.HTTP.GinRouter.GET("/api/v0/console/docs/:name", c.docsHandlerFunc)
-	c.d.HTTP.GinRouter.GET("/api/v0/console/last-flow", c.lastFlowHandlerFunc)
+	c.d.HTTP.GinRouter.GET("/api/v0/console/last-flow", c.apiLastFlowHandlerFunc)
+	c.d.HTTP.GinRouter.GET("/api/v0/console/exporters", c.apiExportersHandlerFunc)
 
 	c.t.Go(func() error {
 		select {
