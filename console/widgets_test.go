@@ -17,7 +17,7 @@ import (
 	"akvorado/common/reporter"
 )
 
-func TestAPILastFlow(t *testing.T) {
+func TestWidgetLastFlow(t *testing.T) {
 	r := reporter.NewMock(t)
 	ch, mockConn := clickhousedb.NewMock(t, r)
 	h := http.NewMock(t, r)
@@ -89,7 +89,7 @@ func TestAPILastFlow(t *testing.T) {
 
 	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
 		{
-			URL:         "/api/v0/console/last-flow",
+			URL:         "/api/v0/console/widget/flow-last",
 			ContentType: "application/json; charset=utf-8",
 			FirstLines: []string{
 				`{`,
@@ -106,7 +106,44 @@ func TestAPILastFlow(t *testing.T) {
 	})
 }
 
-func TestAPIExporters(t *testing.T) {
+func TestFlowRate(t *testing.T) {
+	r := reporter.NewMock(t)
+	ch, mockConn := clickhousedb.NewMock(t, r)
+	h := http.NewMock(t, r)
+	c, err := New(r, Configuration{}, Dependencies{
+		Daemon:       daemon.NewMock(t),
+		HTTP:         h,
+		ClickHouseDB: ch,
+	})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	helpers.StartStop(t, c)
+
+	ctrl := gomock.NewController(t)
+	mockRow := mocks.NewMockRow(ctrl)
+	mockRow.EXPECT().Err().Return(nil)
+	mockRow.EXPECT().Scan(gomock.Any()).SetArg(0, float64(100.1)).Return(nil)
+	mockConn.EXPECT().
+		QueryRow(gomock.Any(),
+			`SELECT COUNT(*)/300 AS rate FROM flows WHERE TimeReceived > date_sub(minute, 5, now())`).
+		Return(mockRow)
+
+	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+		{
+			URL:         "/api/v0/console/widget/flow-rate",
+			ContentType: "application/json; charset=utf-8",
+			FirstLines: []string{
+				`{`,
+				`    "period": "second",`,
+				`    "rate": 100.1`,
+				`}`,
+			},
+		},
+	})
+}
+
+func TestWidgetExporters(t *testing.T) {
 	r := reporter.NewMock(t)
 	ch, mockConn := clickhousedb.NewMock(t, r)
 	h := http.NewMock(t, r)
@@ -135,7 +172,7 @@ func TestAPIExporters(t *testing.T) {
 
 	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
 		{
-			URL:         "/api/v0/console/exporters",
+			URL:         "/api/v0/console/widget/exporters",
 			ContentType: "application/json; charset=utf-8",
 			FirstLines: []string{
 				`{`,

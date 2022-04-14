@@ -7,7 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (c *Component) apiLastFlowHandlerFunc(gc *gin.Context) {
+func (c *Component) widgetFlowLastHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
 	rows, err := c.d.ClickHouseDB.Conn.Query(ctx,
 		`SELECT * FROM flows WHERE TimeReceived = (SELECT MAX(TimeReceived) FROM flows) LIMIT 1`)
@@ -42,7 +42,28 @@ func (c *Component) apiLastFlowHandlerFunc(gc *gin.Context) {
 	gc.IndentedJSON(http.StatusOK, response)
 }
 
-func (c *Component) apiExportersHandlerFunc(gc *gin.Context) {
+func (c *Component) widgetFlowRateHandlerFunc(gc *gin.Context) {
+	ctx := c.t.Context(gc.Request.Context())
+	row := c.d.ClickHouseDB.Conn.QueryRow(ctx,
+		`SELECT COUNT(*)/300 AS rate FROM flows WHERE TimeReceived > date_sub(minute, 5, now())`)
+	if err := row.Err(); err != nil {
+		c.r.Err(err).Msg("unable to query database")
+		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to query database."})
+		return
+	}
+	var result float64
+	if err := row.Scan(&result); err != nil {
+		c.r.Err(err).Msg("unable to parse result")
+		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to parse result."})
+		return
+	}
+	gc.IndentedJSON(http.StatusOK, gin.H{
+		"rate":   result,
+		"period": "second",
+	})
+}
+
+func (c *Component) widgetExportersHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
 
 	exporters := []struct {
