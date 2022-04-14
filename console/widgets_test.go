@@ -187,3 +187,77 @@ func TestWidgetExporters(t *testing.T) {
 	})
 
 }
+
+func TestWidgetTop(t *testing.T) {
+	r := reporter.NewMock(t)
+	ch, mockConn := clickhousedb.NewMock(t, r)
+	h := http.NewMock(t, r)
+	c, err := New(r, Configuration{}, Dependencies{
+		Daemon:       daemon.NewMock(t),
+		HTTP:         h,
+		ClickHouseDB: ch,
+	})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	helpers.StartStop(t, c)
+
+	gomock.InOrder(
+		mockConn.EXPECT().
+			Select(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).
+			SetArg(1, []topResult{
+				{"TCP/443", uint8(51)},
+				{"UDP/443", uint8(20)},
+				{"TCP/80", uint8(18)},
+			}),
+		mockConn.EXPECT().
+			Select(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).
+			SetArg(1, []topResult{
+				{"TCP", uint8(75)},
+				{"UDP", uint8(24)},
+				{"ESP", uint8(1)},
+			}),
+		mockConn.EXPECT().
+			Select(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).
+			SetArg(1, []topResult{
+				{"exporter1", uint8(20)},
+				{"exporter3", uint8(10)},
+				{"exporter5", uint8(3)},
+			}),
+		mockConn.EXPECT().
+			Select(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).
+			SetArg(1, []topResult{
+				{"2906: Netflix", uint8(12)},
+				{"36040: Youtube", uint8(10)},
+				{"20940: Akamai", uint8(9)},
+			}),
+	)
+
+	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+		{
+			URL:         "/api/v0/console/widget/top/src-port",
+			ContentType: "application/json; charset=utf-8",
+			FirstLines: []string{
+				`{"top":[{"name":"TCP/443","percent":51},{"name":"UDP/443","percent":20},{"name":"TCP/80","percent":18}]}`,
+			},
+		}, {
+			URL:         "/api/v0/console/widget/top/protocol",
+			ContentType: "application/json; charset=utf-8",
+			FirstLines: []string{
+				`{"top":[{"name":"TCP","percent":75},{"name":"UDP","percent":24},{"name":"ESP","percent":1}]}`,
+			},
+		}, {
+			URL:         "/api/v0/console/widget/top/exporter",
+			ContentType: "application/json; charset=utf-8",
+			FirstLines: []string{
+				`{"top":[{"name":"exporter1","percent":20},{"name":"exporter3","percent":10},{"name":"exporter5","percent":3}]}`,
+			},
+		}, {
+			URL:         "/api/v0/console/widget/top/src-as",
+			ContentType: "application/json; charset=utf-8",
+			FirstLines: []string{
+				`{"top":[{"name":"2906: Netflix","percent":12},{"name":"36040: Youtube","percent":10},{"name":"20940: Akamai","percent":9}]}`,
+			},
+		},
+	})
+}

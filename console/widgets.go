@@ -1,8 +1,10 @@
 package console
 
 import (
+	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -82,4 +84,77 @@ func (c *Component) widgetExportersHandlerFunc(gc *gin.Context) {
 	}
 
 	gc.IndentedJSON(http.StatusOK, gin.H{"exporters": exporterList})
+}
+
+type topResult struct {
+	Name    string `json:"name"`
+	Percent uint8  `json:"percent"`
+}
+
+func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
+	ctx := c.t.Context(gc.Request.Context())
+	var (
+		selector string
+		groupby  string
+		filter   string
+	)
+
+	switch gc.Param("name") {
+	default:
+		gc.JSON(http.StatusNotFound, gin.H{"message": "Unknown top request."})
+		return
+	case "src-as":
+		selector = `concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???'))`
+		groupby = `SrcAS`
+	case "dst-as":
+		selector = `concat(toString(DstAS), ': ', dictGetOrDefault('asns', 'name', DstAS, '???'))`
+		groupby = `DstAS`
+	case "src-country":
+		selector = `SrcCountry`
+	case "dst-country":
+		selector = `DstCountry`
+	case "exporter":
+		selector = "ExporterName"
+	case "protocol":
+		selector = `dictGetOrDefault('protocols', 'name', Proto, '???')`
+		groupby = `Proto`
+	case "src-port":
+		selector = `concat(dictGetOrDefault('protocols', 'name', Proto, '???'), '/', toString(SrcPort))`
+		groupby = `Proto, SrcPort`
+	case "dst-port":
+		selector = `concat(dictGetOrDefault('protocols', 'name', Proto, '???'), '/', toString(DstPort))`
+		groupby = `Proto, DstPort`
+	}
+	if strings.HasPrefix(gc.Param("name"), "src-") {
+		filter = "AND InIfBoundary = 'external'"
+	} else if strings.HasPrefix(gc.Param("name"), "dst-") {
+		filter = "AND OutIfBoundary = 'internal'"
+	}
+	if groupby == "" {
+		groupby = selector
+	}
+
+	request := fmt.Sprintf(`
+WITH
+ date_sub(minute, 5, now()) AS StartTime,
+ (SELECT SUM(Bytes*SamplingRate) FROM flows WHERE TimeReceived > StartTime) AS Total
+SELECT
+ %s AS Name,
+ toUInt8(SUM(Bytes*SamplingRate) / Total * 100) AS Percent
+FROM flows
+WHERE TimeReceived > StartTime
+%s
+GROUP BY %s
+ORDER BY Percent DESC
+LIMIT 5
+`, selector, filter, groupby)
+
+	results := []topResult{}
+	err := c.d.ClickHouseDB.Conn.Select(ctx, &results, request)
+	if err != nil {
+		c.r.Err(err).Msg("unable to query database")
+		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to query database."})
+		return
+	}
+	gc.JSON(http.StatusOK, gin.H{"top": results})
 }

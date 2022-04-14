@@ -58,6 +58,7 @@ func (c *Component) Start() error {
 	c.d.HTTP.GinRouter.GET("/api/v0/console/widget/flow-last", c.widgetFlowLastHandlerFunc)
 	c.d.HTTP.GinRouter.GET("/api/v0/console/widget/flow-rate", c.widgetFlowRateHandlerFunc)
 	c.d.HTTP.GinRouter.GET("/api/v0/console/widget/exporters", c.widgetExportersHandlerFunc)
+	c.d.HTTP.GinRouter.GET("/api/v0/console/widget/top/:name", c.widgetTopHandlerFunc)
 
 	c.t.Go(func() error {
 		select {
