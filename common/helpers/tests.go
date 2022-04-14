@@ -37,6 +37,7 @@ func Diff(a, b interface{}) string {
 type HTTPEndpointCases []struct {
 	URL         string
 	ContentType string
+	StatusCode  int
 	FirstLines  []string
 }
 
@@ -51,8 +52,12 @@ func TestHTTPEndpoints(t *testing.T, serverAddr net.Addr, cases HTTPEndpointCase
 				t.Fatalf("GET %s:\n%+v", tc.URL, err)
 			}
 			defer resp.Body.Close()
-			if resp.StatusCode != 200 {
-				t.Fatalf("GET %s: got status code %d, not 200", tc.URL, resp.StatusCode)
+			if tc.StatusCode == 0 {
+				tc.StatusCode = 200
+			}
+			if resp.StatusCode != tc.StatusCode {
+				t.Fatalf("GET %s: got status code %d, not %d", tc.URL,
+					resp.StatusCode, tc.StatusCode)
 			}
 			gotContentType := resp.Header.Get("Content-Type")
 			if gotContentType != tc.ContentType {

@@ -2,7 +2,6 @@ package http_test
 
 import (
 	"fmt"
-	"io/ioutil"
 	netHTTP "net/http"
 	"testing"
 
@@ -23,14 +22,13 @@ func TestHandler(t *testing.T) {
 		}))
 
 	// Check the HTTP server is running and answering metrics
-	resp, err := netHTTP.Get(fmt.Sprintf("http://%s/test", h.Address))
-	if err != nil {
-		t.Fatalf("GET /test:\n%+v", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		t.Fatalf("GET /test: got status code %d, not 200", resp.StatusCode)
-	}
+	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+		{
+			URL:         "/test",
+			ContentType: "text/plain; charset=utf-8",
+			FirstLines:  []string{"Hello !"},
+		},
+	})
 
 	gotMetrics := r.GetMetrics("akvorado_common_http_", "inflight_", "requests_total", "response_size")
 	expectedMetrics := map[string]string{
@@ -60,19 +58,13 @@ func TestGinRouter(t *testing.T) {
 		})
 	})
 
-	resp, err := netHTTP.Get(fmt.Sprintf("http://%s/api/v0/test", h.Address))
-	if err != nil {
-		t.Fatalf("GET /api/v0/test:\n%+v", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		t.Errorf("GET /api/v0/test: got status code %d, not 200", resp.StatusCode)
-	}
-	body, _ := ioutil.ReadAll(resp.Body)
-	expected := `{"message":"ping"}`
-	if diff := helpers.Diff(string(body), expected); diff != "" {
-		t.Errorf("GET /api/v0/test (-got, +want):\n%s", diff)
-	}
+	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+		{
+			URL:         "/api/v0/test",
+			ContentType: "application/json; charset=utf-8",
+			FirstLines:  []string{`{"message":"ping"}`},
+		},
+	})
 }
 
 func TestGinRouterPanic(t *testing.T) {
@@ -83,17 +75,12 @@ func TestGinRouterPanic(t *testing.T) {
 		panic("heeeelp")
 	})
 
-	resp, err := netHTTP.Get(fmt.Sprintf("http://%s/api/v0/test", h.Address))
-	if err != nil {
-		t.Fatalf("GET /api/v0/test:\n%+v", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 500 {
-		t.Errorf("GET /api/v0/test: got status code %d, not 500", resp.StatusCode)
-	}
-	body, _ := ioutil.ReadAll(resp.Body)
-	expected := ""
-	if diff := helpers.Diff(string(body), expected); diff != "" {
-		t.Errorf("GET /api/v0/test (-got, +want):\n%s", diff)
-	}
+	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+		{
+			URL:         "/api/v0/test",
+			StatusCode:  500,
+			ContentType: "",
+			FirstLines:  []string{},
+		},
+	})
 }
