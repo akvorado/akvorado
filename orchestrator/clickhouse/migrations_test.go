@@ -52,6 +52,7 @@ func TestMigration(t *testing.T) {
 	t.Run("first time", func(t *testing.T) {
 		configuration := DefaultConfiguration()
 		configuration.TTL = 5
+		configuration.OrchestratorURL = "http://something"
 		ch, err := New(r, configuration, Dependencies{
 			Daemon:     daemon.NewMock(t),
 			HTTP:       http.NewMock(t, r),
@@ -98,6 +99,7 @@ func TestMigration(t *testing.T) {
 	t.Run("second time", func(t *testing.T) {
 		r := reporter.NewMock(t)
 		configuration := DefaultConfiguration()
+		configuration.OrchestratorURL = "http://something"
 		ch, err := New(r, configuration, Dependencies{
 			Daemon:     daemon.NewMock(t),
 			HTTP:       http.NewMock(t, r),

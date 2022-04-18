@@ -87,41 +87,46 @@ ARRAY JOIN arrayEnumerate([1,2]) AS num
 
 func (c *Component) migrateStepCreateProtocolsDictionary(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	protocolsURL := fmt.Sprintf("%s/api/v0/orchestrator/clickhouse/protocols.csv", c.config.OrchestratorURL)
+	source := fmt.Sprintf(`SOURCE(HTTP(URL '%s' FORMAT 'CSVWithNames'))`, protocolsURL)
+	sourceLike := fmt.Sprintf("%% %s %%", source)
 	return migrationStep{
-		CheckQuery: `SELECT 1 FROM system.dictionaries WHERE name = $1 AND database = $2 AND source = $3`,
-		Args:       []interface{}{"protocols", c.config.Configuration.Database, protocolsURL},
+		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2 AND create_table_query LIKE $3`,
+		Args:       []interface{}{"protocols", c.config.Configuration.Database, sourceLike},
 		Do: func() error {
-			return conn.Exec(ctx, `
+			return conn.Exec(ctx, fmt.Sprintf(`
 CREATE OR REPLACE DICTIONARY protocols (
  proto UInt8 INJECTIVE,
  name String,
  description String
 )
 PRIMARY KEY proto
-SOURCE(HTTP(URL $1 FORMAT 'CSVWithNames'))
+%s
 LIFETIME(MIN 0 MAX 3600)
 LAYOUT(HASHED())
-`, protocolsURL)
+`, source))
 		},
 	}
 }
 
 func (c *Component) migrateStepCreateASNsDictionary(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	asnsURL := fmt.Sprintf("%s/api/v0/orchestrator/clickhouse/asns.csv", c.config.OrchestratorURL)
+	source := fmt.Sprintf(`SOURCE(HTTP(URL '%s' FORMAT 'CSVWithNames'))`, asnsURL)
+	sourceLike := fmt.Sprintf("%% %s %%", source)
 	return migrationStep{
-		CheckQuery: `SELECT 1 FROM system.dictionaries WHERE name = $1 AND database = $2 AND source = $3`,
-		Args:       []interface{}{"asns", c.config.Configuration.Database, asnsURL},
+		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2 AND create_table_query LIKE $3`,
+		Args:       []interface{}{"asns", c.config.Configuration.Database, sourceLike},
 		Do: func() error {
-			return conn.Exec(ctx, `
+			return conn.Exec(ctx, fmt.Sprintf(`
 CREATE OR REPLACE DICTIONARY asns (
  asn UInt32 INJECTIVE,
  name String
 )
+
 PRIMARY KEY asn
-SOURCE(HTTP(URL $1 FORMAT 'CSVWithNames'))
+%s
 LIFETIME(MIN 0 MAX 3600)
 LAYOUT(HASHED())
-`, asnsURL)
+`, source))
 		},
 	}
 

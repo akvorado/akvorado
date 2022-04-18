@@ -68,11 +68,11 @@ func (c *Component) migrateDatabase() error {
 				l.Debug().Msg("result not equal to 0, skipping step")
 				c.metrics.migrationsNotApplied.Inc()
 				continue
+			} else {
+				l.Debug().Msg("got 0, executing step")
 			}
 		} else {
-			l.Debug().Msg("no result, skipping step")
-			c.metrics.migrationsNotApplied.Inc()
-			continue
+			l.Debug().Msg("no result, executing step")
 		}
 		rows.Close()
 		if err := step.Do(); err != nil {
