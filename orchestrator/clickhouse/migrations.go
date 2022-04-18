@@ -66,8 +66,13 @@ func (c *Component) migrateDatabase() error {
 			if val != 0 {
 				rows.Close()
 				l.Debug().Msg("result not equal to 0, skipping step")
+				c.metrics.migrationsNotApplied.Inc()
 				continue
 			}
+		} else {
+			l.Debug().Msg("no result, skipping step")
+			c.metrics.migrationsNotApplied.Inc()
+			continue
 		}
 		rows.Close()
 		if err := step.Do(); err != nil {
@@ -75,6 +80,7 @@ func (c *Component) migrateDatabase() error {
 			return fmt.Errorf("during migration step: %w", err)
 		}
 		l.Info().Msg("migration step executed successfully")
+		c.metrics.migrationsApplied.Inc()
 		count++
 	}
 

@@ -20,8 +20,10 @@ type Component struct {
 	config Configuration
 
 	metrics struct {
-		migrationsRunning reporter.Gauge
-		migrationsVersion reporter.Gauge
+		migrationsRunning    reporter.Gauge
+		migrationsApplied    reporter.Counter
+		migrationsNotApplied reporter.Counter
+		migrationsVersion    reporter.Gauge
 	}
 
 	migrationsDone chan bool
@@ -51,6 +53,18 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		reporter.GaugeOpts{
 			Name: "migrations_running",
 			Help: "Database migrations in progress.",
+		},
+	)
+	c.metrics.migrationsApplied = c.r.Counter(
+		reporter.CounterOpts{
+			Name: "migrations_applied_steps",
+			Help: "Number of migration steps applied",
+		},
+	)
+	c.metrics.migrationsNotApplied = c.r.Counter(
+		reporter.CounterOpts{
+			Name: "migrations_notapplied_steps",
+			Help: "Number of migration steps not applied",
 		},
 	)
 	c.metrics.migrationsVersion = c.r.Gauge(
