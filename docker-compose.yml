@@ -20,12 +20,12 @@ services:
     depends_on:
       - zookeeper
     ports:
-      - 9092:9093/tcp
+      - 127.0.0.1:9092:9093/tcp
 
   clickhouse:
     image: clickhouse/clickhouse-server:22.2
     depends_on:
       - kafka
     ports:
-      - 8123:8123/tcp
-      - 9000:9000/tcp
+      - 127.0.0.1:8123:8123/tcp
+      - 127.0.0.1:9000:9000/tcp
