@@ -216,6 +216,27 @@ FROM %s`, viewName, tableName))
 	}
 }
 
+func (c *Component) migrateStepAddExpirationFlowTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+	if c.config.TTL == 0 {
+		l.Info().Msg("not changing TTL for flows table")
+		return migrationStep{
+			CheckQuery: `SELECT 1`,
+			Args:       []interface{}{},
+			Do:         func() error { return nil },
+		}
+	}
+	enginePattern := fmt.Sprintf("TTL Date + toIntervalDay(%d)", c.config.TTL)
+	return migrationStep{
+		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2 AND engine_full LIKE $3`,
+		Args:       []interface{}{"flows", c.config.Configuration.Database, fmt.Sprintf("%% %s %%", enginePattern)},
+		Do: func() error {
+			l.Warn().Msg("updating TTL of flows table, this can take a long time")
+			return conn.Exec(ctx,
+				fmt.Sprintf("ALTER TABLE flows MODIFY TTL Date + toIntervalDay(%d)", c.config.TTL))
+		},
+	}
+}
+
 func (c *Component) migrateStepDropSchemaMigrationsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	return migrationStep{
 		CheckQuery: `SELECT COUNT(*) == 0 FROM system.tables WHERE name = $1 AND database = $2`,

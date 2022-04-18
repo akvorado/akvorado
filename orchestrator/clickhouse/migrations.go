@@ -40,6 +40,7 @@ func (c *Component) migrateDatabase() error {
 		{"create asns dictionary", c.migrateStepCreateASNsDictionary},
 		{"create raw flows table", c.migrateStepCreateRawFlowsTable},
 		{"create raw flows consumer view", c.migrateStepCreateRawFlowsConsumerView},
+		{"add expiration to flow table", c.migrateStepAddExpirationFlowTable},
 		{"drop schema_migrations table", c.migrateStepDropSchemaMigrationsTable},
 	}
 

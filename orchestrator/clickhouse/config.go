@@ -10,6 +10,8 @@ type Configuration struct {
 	clickhousedb.Configuration `mapstructure:",squash" yaml:"-,inline"`
 	// Kafka describes Kafka-specific configuration
 	Kafka KafkaConfiguration
+	// TTL tells how long to keep data in ClickHouse flow table (in days)
+	TTL uint
 	// OrchestratorURL allows one to override URL to reach orchestrator from Clickhouse
 	OrchestratorURL string
 }

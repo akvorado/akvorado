@@ -19,6 +19,7 @@ func TestRealClickHouse(t *testing.T) {
 
 	t.Run("first time", func(t *testing.T) {
 		configuration := DefaultConfiguration()
+		configuration.TTL = 5
 		ch, err := New(r, configuration, Dependencies{
 			Daemon:     daemon.NewMock(t),
 			HTTP:       http.NewMock(t, r),
