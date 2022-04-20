@@ -48,11 +48,22 @@ CREATE TABLE flows (
  SrcPort UInt32,
  DstPort UInt32,
  Bytes UInt64,
- Packets UInt64
+ Packets UInt64,
+ ForwardingStatus UInt32
 )
 ENGINE = MergeTree
 PARTITION BY Date
 ORDER BY TimeReceived`)
+		},
+	}
+}
+
+func (c *Component) migrateStepAddForwardingStatusFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+	return migrationStep{
+		CheckQuery: `SELECT 1 FROM system.columns WHERE table = $1 AND database = $2 AND name = $3`,
+		Args:       []interface{}{"flows", c.config.Configuration.Database, "ForwardingStatus"},
+		Do: func() error {
+			return conn.Exec(ctx, "ALTER TABLE flows ADD COLUMN ForwardingStatus UInt32 AFTER Packets")
 		},
 	}
 }
@@ -147,9 +158,23 @@ func (c *Component) migrateStepCreateRawFlowsTable(ctx context.Context, l report
 		fmt.Sprintf(`kafka_num_consumers = %d,`, c.config.Kafka.Consumers),
 		`kafka_thread_per_consumer = 1`,
 	}, " ")
+	// To update the bitXor: select bitXor(cityHash64('ForwardingStatus', 'UInt32', 32), 8687912443154805239)
 	return migrationStep{
-		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2 AND engine_full = $3`,
-		Args:       []interface{}{tableName, c.config.Configuration.Database, kafkaEngine},
+		CheckQuery: `
+SELECT bitAnd(v1, v2) FROM (
+ SELECT 1 AS v1
+ FROM system.tables
+ WHERE name = $1
+ AND database = $2
+ AND engine_full = $3
+) t1, (
+ SELECT groupBitXor(cityHash64(name,type,position)) == 8996370657943110240 AS v2
+ FROM system.columns
+ WHERE database = $2
+ AND table = $1
+) t2
+`,
+		Args: []interface{}{tableName, c.config.Configuration.Database, kafkaEngine},
 		Do: func() error {
 			l.Debug().Msg("drop raw consumer table")
 			err := conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s_consumer`, tableName))
@@ -197,7 +222,8 @@ CREATE TABLE %s
     SrcPort UInt32,
     DstPort UInt32,
     Bytes UInt64,
-    Packets UInt64
+    Packets UInt64,
+    ForwardingStatus UInt32
 )
 ENGINE = %s`, tableName, kafkaEngine))
 		},
@@ -221,7 +247,7 @@ FROM %s`, viewName, tableName))
 	}
 }
 
-func (c *Component) migrateStepAddExpirationFlowTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+func (c *Component) migrateStepAddExpirationFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	if c.config.TTL == 0 {
 		l.Info().Msg("not changing TTL for flows table")
 		return migrationStep{

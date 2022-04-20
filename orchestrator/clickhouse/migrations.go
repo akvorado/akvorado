@@ -35,12 +35,13 @@ func (c *Component) migrateDatabase() error {
 		Step        func(context.Context, reporter.Logger, clickhouse.Conn) migrationStep
 	}{
 		{"create flows table", c.migrateStepCreateFlowsTable},
+		{"add ForwardingStatus to flows table", c.migrateStepAddForwardingStatusFlowsTable},
 		{"create exporters view", c.migrateStepCreateExportersView},
 		{"create protocols dictionary", c.migrateStepCreateProtocolsDictionary},
 		{"create asns dictionary", c.migrateStepCreateASNsDictionary},
 		{"create raw flows table", c.migrateStepCreateRawFlowsTable},
 		{"create raw flows consumer view", c.migrateStepCreateRawFlowsConsumerView},
-		{"add expiration to flow table", c.migrateStepAddExpirationFlowTable},
+		{"add expiration to flow table", c.migrateStepAddExpirationFlowsTable},
 		{"drop schema_migrations table", c.migrateStepDropSchemaMigrationsTable},
 	}
 
