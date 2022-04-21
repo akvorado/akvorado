@@ -43,7 +43,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 				return fmt.Errorf("unable to fetch configuration file: %w", err)
 			}
 			defer resp.Body.Close()
-			if contentType := resp.Header.Get("Content-Type"); contentType != "application/json" {
+			if contentType := resp.Header.Get("Content-Type"); contentType != "application/json" && !strings.HasPrefix(contentType, "application/json;") {
 				return fmt.Errorf("received configuration file is not JSON (%s)", contentType)
 			}
 			input, err := io.ReadAll(resp.Body)
