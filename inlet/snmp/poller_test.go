@@ -116,10 +116,12 @@ func TestPoller(t *testing.T) {
 	p.Poll(context.Background(), "127.0.0.1", uint16(port), "public", []uint{642})
 	p.Poll(context.Background(), "127.0.0.1", uint16(port), "public", []uint{643})
 	p.Poll(context.Background(), "127.0.0.1", uint16(port), "public", []uint{644})
+	p.Poll(context.Background(), "127.0.0.1", uint16(port), "public", []uint{0})
 	time.Sleep(50 * time.Millisecond)
 	if diff := helpers.Diff(got, []string{
 		`127.0.0.1 exporter62 641 Gi0/0/0/0 Transit 10000`,
 		`127.0.0.1 exporter62 642 Gi0/0/0/1 Peering 20000`,
+		`127.0.0.1 exporter62 0 unknown  0`,
 	}); diff != "" {
 		t.Fatalf("Poll() (-got, +want):\n%s", diff)
 	}
@@ -130,7 +132,7 @@ func TestPoller(t *testing.T) {
 		`failure_requests{error="ifdescr_missing",exporter="127.0.0.1"}`: "1", // 644
 		`failure_requests{error="ifspeed_missing",exporter="127.0.0.1"}`: "1", // 644
 		`pending_requests`:                       "0",
-		`success_requests{exporter="127.0.0.1"}`: "2", // 641+642
+		`success_requests{exporter="127.0.0.1"}`: "3", // 641+642+0
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)

@@ -15,6 +15,8 @@ import (
 // hydrateFlow adds more data to a flow.
 func (c *Component) hydrateFlow(exporter string, flow *flow.Message) (skip bool) {
 	errLogger := c.r.Sample(reporter.BurstSampler(time.Minute, 10))
+
+	// Input interface is mandatory
 	if flow.InIf != 0 {
 		exporterName, iface, err := c.d.Snmp.Lookup(exporter, uint(flow.InIf))
 		if err != nil {
@@ -33,27 +35,24 @@ func (c *Component) hydrateFlow(exporter string, flow *flow.Message) (skip bool)
 		c.metrics.flowsErrors.WithLabelValues(exporter, "input interface missing").Inc()
 		skip = true
 	}
-	if flow.OutIf != 0 {
-		exporterName, iface, err := c.d.Snmp.Lookup(exporter, uint(flow.OutIf))
-		if err != nil {
-			// Only register a cache miss if we don't have one.
-			// TODO: maybe we could do one SNMP query for both interfaces.
-			if !skip {
-				if err != snmp.ErrCacheMiss {
-					errLogger.Err(err).Str("exporter", exporter).Msg("unable to query SNMP cache")
-				}
-				c.metrics.flowsErrors.WithLabelValues(exporter, err.Error()).Inc()
-				skip = true
+
+	// Output interface is not
+	exporterName, iface, err := c.d.Snmp.Lookup(exporter, uint(flow.OutIf))
+	if err != nil {
+		// Only register a cache miss if we don't have one.
+		// TODO: maybe we could do one SNMP query for both interfaces.
+		if !skip {
+			if err != snmp.ErrCacheMiss {
+				errLogger.Err(err).Str("exporter", exporter).Msg("unable to query SNMP cache")
 			}
-		} else {
-			flow.ExporterName = exporterName
-			flow.OutIfName = iface.Name
-			flow.OutIfDescription = iface.Description
-			flow.OutIfSpeed = uint32(iface.Speed)
+			c.metrics.flowsErrors.WithLabelValues(exporter, err.Error()).Inc()
+			skip = true
 		}
 	} else {
-		c.metrics.flowsErrors.WithLabelValues(exporter, "output interface missing").Inc()
-		skip = true
+		flow.ExporterName = exporterName
+		flow.OutIfName = iface.Name
+		flow.OutIfDescription = iface.Description
+		flow.OutIfSpeed = uint32(iface.Speed)
 	}
 	if flow.SamplingRate == 0 {
 		c.metrics.flowsErrors.WithLabelValues(exporter, "sampling rate missing").Inc()

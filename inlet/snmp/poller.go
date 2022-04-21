@@ -162,52 +162,60 @@ func (p *realPoller) Poll(ctx context.Context, exporter string, port uint16, com
 		return fmt.Errorf("SNMP error %s(%d)", result.Error, result.Error)
 	}
 
-	processStr := func(idx int, what string, target *string) bool {
+	processStr := func(idx int, what string, target *string, mandatory bool) bool {
 		switch result.Variables[idx].Type {
 		case gosnmp.OctetString:
 			*target = string(result.Variables[idx].Value.([]byte))
-			return true
 		case gosnmp.NoSuchInstance, gosnmp.NoSuchObject:
-			p.metrics.failures.WithLabelValues(exporter, fmt.Sprintf("%s_missing", what)).Inc()
-			return false
+			if mandatory {
+				p.metrics.failures.WithLabelValues(exporter, fmt.Sprintf("%s_missing", what)).Inc()
+				return false
+			}
 		default:
 			p.metrics.failures.WithLabelValues(exporter, fmt.Sprintf("%s_unknown_type", what)).Inc()
 			return false
 		}
+		return true
 	}
-	processUint := func(idx int, what string, target *uint) bool {
+	processUint := func(idx int, what string, target *uint, mandatory bool) bool {
 		switch result.Variables[idx].Type {
 		case gosnmp.Gauge32:
 			*target = result.Variables[idx].Value.(uint)
-			return true
 		case gosnmp.NoSuchInstance, gosnmp.NoSuchObject:
-			p.metrics.failures.WithLabelValues(exporter, fmt.Sprintf("%s_missing", what)).Inc()
-			return false
+			if mandatory {
+				p.metrics.failures.WithLabelValues(exporter, fmt.Sprintf("%s_missing", what)).Inc()
+				return false
+			}
 		default:
 			p.metrics.failures.WithLabelValues(exporter, fmt.Sprintf("%s_unknown_type", what)).Inc()
 			return false
 		}
+		return true
 	}
-	var sysNameVal, ifDescrVal, ifAliasVal string
-	var ifSpeedVal uint
-	if !processStr(0, "sysname", &sysNameVal) {
+	var (
+		sysNameVal string
+		ifDescrVal = "unknown"
+		ifAliasVal string
+		ifSpeedVal uint
+	)
+	if !processStr(0, "sysname", &sysNameVal, true) {
 		return errors.New("unable to get sysName")
 	}
 	for idx := 1; idx < len(requests)-2; idx += 3 {
+		ifIndex := ifIndexes[(idx-1)/3]
 		ok := true
-		if !processStr(idx, "ifdescr", &ifDescrVal) {
+		if !processStr(idx, "ifdescr", &ifDescrVal, ifIndex > 0) {
 			ok = false
 		}
-		if !processStr(idx+1, "ifalias", &ifAliasVal) {
+		if !processStr(idx+1, "ifalias", &ifAliasVal, ifIndex > 0) {
 			ok = false
 		}
-		if !processUint(idx+2, "ifspeed", &ifSpeedVal) {
+		if !processUint(idx+2, "ifspeed", &ifSpeedVal, ifIndex > 0) {
 			ok = false
 		}
 		if !ok {
 			continue
 		}
-		ifIndex := ifIndexes[(idx-1)/3]
 		p.put(exporter, sysNameVal, ifIndex, Interface{
 			Name:        ifDescrVal,
 			Description: ifAliasVal,
