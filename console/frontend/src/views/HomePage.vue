@@ -39,6 +39,10 @@
         title="Top countries"
         :refresh="refreshOccasionally"
       />
+      <WidgetGraph
+        :refresh="refreshInfrequently"
+        class="col-span-2 md:col-span-4"
+      />
     </div>
   </div>
 </template>
@@ -49,13 +53,17 @@ import WidgetLastFlow from "../components/WidgetLastFlow.vue";
 import WidgetFlowRate from "../components/WidgetFlowRate.vue";
 import WidgetExporters from "../components/WidgetExporters.vue";
 import WidgetTop from "../components/WidgetTop.vue";
+import WidgetGraph from "../components/WidgetGraph.vue";
 
 const refreshOften = ref(0);
 const refreshOccasionally = ref(0);
+const refreshInfrequently = ref(0);
 let timerOften = setInterval(() => refreshOften.value++, 10_000);
 let timerOccasionally = setInterval(() => refreshOccasionally.value++, 60_000);
+let timerInfrequently = setInterval(() => refreshInfrequently.value++, 600_000);
 onBeforeUnmount(() => {
   clearInterval(timerOften);
   clearInterval(timerOccasionally);
+  clearInterval(timerInfrequently);
 });
 </script>

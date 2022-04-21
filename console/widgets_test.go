@@ -185,7 +185,6 @@ func TestWidgetExporters(t *testing.T) {
 			},
 		},
 	})
-
 }
 
 func TestWidgetTop(t *testing.T) {
@@ -260,4 +259,55 @@ func TestWidgetTop(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestWidgetGraph(t *testing.T) {
+	r := reporter.NewMock(t)
+	ch, mockConn := clickhousedb.NewMock(t, r)
+	h := http.NewMock(t, r)
+	c, err := New(r, Configuration{}, Dependencies{
+		Daemon:       daemon.NewMock(t),
+		HTTP:         h,
+		ClickHouseDB: ch,
+	})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	helpers.StartStop(t, c)
+
+	base := time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
+	expected := []struct {
+		Time time.Time `json:"t"`
+		Gbps float64   `json:"gbps"`
+	}{
+		{base, 25.3},
+		{base.Add(time.Minute), 27.8},
+		{base.Add(2 * time.Minute), 26.4},
+		{base.Add(3 * time.Minute), 29.2},
+		{base.Add(4 * time.Minute), 21.3},
+		{base.Add(5 * time.Minute), 24.7},
+	}
+	mockConn.EXPECT().
+		Select(gomock.Any(), gomock.Any(), `
+SELECT
+ toStartOfInterval(TimeReceived, INTERVAL 864 second) AS Time,
+ SUM(Bytes*SamplingRate*8/864)/1000/1000/1000 AS Gbps
+FROM flows
+WHERE TimeReceived > date_sub(hour, 24, now())
+AND InIfBoundary = 'external'
+GROUP BY Time
+ORDER BY Time`).
+		SetArg(1, expected).
+		Return(nil)
+
+	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+		{
+			URL:         "/api/v0/console/widget/graph?width=100",
+			ContentType: "application/json; charset=utf-8",
+			FirstLines: []string{
+				`{"data":[{"t":"2009-11-10T23:00:00Z","gbps":25.3},{"t":"2009-11-10T23:01:00Z","gbps":27.8},{"t":"2009-11-10T23:02:00Z","gbps":26.4},{"t":"2009-11-10T23:03:00Z","gbps":29.2},{"t":"2009-11-10T23:04:00Z","gbps":21.3},{"t":"2009-11-10T23:05:00Z","gbps":24.7}]}`,
+			},
+		},
+	})
+
 }

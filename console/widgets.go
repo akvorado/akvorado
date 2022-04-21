@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -155,4 +157,42 @@ LIMIT 5
 		return
 	}
 	gc.JSON(http.StatusOK, gin.H{"top": results})
+}
+
+func (c *Component) widgetGraphHandlerFunc(gc *gin.Context) {
+	ctx := c.t.Context(gc.Request.Context())
+
+	width, err := strconv.ParseUint(gc.DefaultQuery("width", "500"), 10, 16)
+	if err != nil {
+		c.r.Err(err).Msg("invalid width parameter")
+		gc.JSON(http.StatusBadRequest, gin.H{"message": "Invalid width value."})
+		return
+	}
+	if width < 5 || width > 1000 {
+		gc.JSON(http.StatusBadRequest, gin.H{"message": "Width should be > 5 and < 1000"})
+		return
+	}
+	interval := uint64((24 * time.Hour).Seconds()) / width
+	query := fmt.Sprintf(`
+SELECT
+ toStartOfInterval(TimeReceived, INTERVAL %d second) AS Time,
+ SUM(Bytes*SamplingRate*8/%d)/1000/1000/1000 AS Gbps
+FROM flows
+WHERE TimeReceived > date_sub(hour, 24, now())
+AND InIfBoundary = 'external'
+GROUP BY Time
+ORDER BY Time`, interval, interval)
+
+	results := []struct {
+		Time time.Time `json:"t"`
+		Gbps float64   `json:"gbps"`
+	}{}
+	err = c.d.ClickHouseDB.Conn.Select(ctx, &results, query)
+	if err != nil {
+		c.r.Err(err).Msg("unable to query database")
+		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to query database."})
+		return
+	}
+
+	gc.JSON(http.StatusOK, gin.H{"data": results})
 }
