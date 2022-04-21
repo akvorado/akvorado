@@ -23,7 +23,22 @@
         :refresh="refreshOften"
         class="order-last col-span-2 row-span-3 xl:order-none"
       />
-      <WidgetTopSrcAS :refresh="refreshOccasionally" />
+      <WidgetTop what="src-as" title="Top AS" :refresh="refreshOccasionally" />
+      <WidgetTop
+        what="src-port"
+        title="Top ports"
+        :refresh="refreshOccasionally"
+      />
+      <WidgetTop
+        what="protocol"
+        title="Top protocols"
+        :refresh="refreshOccasionally"
+      />
+      <WidgetTop
+        what="src-country"
+        title="Top countries"
+        :refresh="refreshOccasionally"
+      />
     </div>
   </div>
 </template>
@@ -33,7 +48,7 @@ import { ref, onBeforeUnmount } from "vue";
 import WidgetLastFlow from "../components/WidgetLastFlow.vue";
 import WidgetFlowRate from "../components/WidgetFlowRate.vue";
 import WidgetExporters from "../components/WidgetExporters.vue";
-import WidgetTopSrcAS from "../components/WidgetTopSrcAS.vue";
+import WidgetTop from "../components/WidgetTop.vue";
 
 const refreshOften = ref(0);
 const refreshOccasionally = ref(0);

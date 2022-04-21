@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1 class="font-semibold leading-relaxed">Top AS</h1>
+    <h1 class="font-semibold leading-relaxed">{{ title }}</h1>
     <div class="h-[200px]">
       <v-chart :option="option" autoresize />
     </div>
@@ -20,7 +20,15 @@ use([CanvasRenderer, PieChart, TooltipComponent, LegendComponent]);
 const props = defineProps({
   refresh: {
     type: Number,
-    default: 0,
+    required: true,
+  },
+  what: {
+    type: String,
+    required: true,
+  },
+  title: {
+    type: String,
+    required: true,
   },
 });
 const option = ref({
@@ -37,9 +45,6 @@ const option = ref({
     backgroundColor: "rgba(255, 255, 255, 0.4)",
     textStyle: { fontSize: 10 },
     formatter(name) {
-      if (name === "Others") {
-        return "…";
-      }
       return name.split(": ")[0];
     },
   },
@@ -69,7 +74,7 @@ const option = ref({
 watch(
   () => props.refresh,
   async () => {
-    const response = await fetch("/api/v0/console/widget/top/src-as");
+    const response = await fetch("/api/v0/console/widget/top/" + props.what);
     if (!response.ok) {
       // Keep current data
       return;
@@ -77,10 +82,12 @@ watch(
     const data = await response.json();
     const totalPercent = data.top.reduce((c, n) => c + n.percent, 0);
     const newData = [
-      ...data.top.map(({ name, percent }) => ({
-        name,
-        value: percent,
-      })),
+      ...data.top
+        .filter(({ percent }) => percent > 0)
+        .map(({ name, percent }) => ({
+          name,
+          value: percent,
+        })),
       {
         name: "Others",
         value: Math.max(100 - totalPercent, 0),
