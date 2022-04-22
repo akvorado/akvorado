@@ -293,7 +293,8 @@ SELECT
  toStartOfInterval(TimeReceived, INTERVAL 864 second) AS Time,
  SUM(Bytes*SamplingRate*8/864)/1000/1000/1000 AS Gbps
 FROM flows
-WHERE TimeReceived > date_sub(hour, 24, now())
+WHERE TimeReceived > toStartOfInterval(date_sub(hour, 24, now()), INTERVAL 864 second)
+AND TimeReceived < toStartOfInterval(now(), INTERVAL 864 second)
 AND InIfBoundary = 'external'
 GROUP BY Time
 ORDER BY Time`).

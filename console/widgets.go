@@ -178,10 +178,11 @@ SELECT
  toStartOfInterval(TimeReceived, INTERVAL %d second) AS Time,
  SUM(Bytes*SamplingRate*8/%d)/1000/1000/1000 AS Gbps
 FROM flows
-WHERE TimeReceived > date_sub(hour, 24, now())
+WHERE TimeReceived > toStartOfInterval(date_sub(hour, 24, now()), INTERVAL %d second)
+AND TimeReceived < toStartOfInterval(now(), INTERVAL %d second)
 AND InIfBoundary = 'external'
 GROUP BY Time
-ORDER BY Time`, interval, interval)
+ORDER BY Time`, interval, interval, interval, interval)
 
 	results := []struct {
 		Time time.Time `json:"t"`
