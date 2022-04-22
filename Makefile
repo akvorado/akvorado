@@ -75,16 +75,17 @@ console/data/frontend: ; $(info $(M) building console frontend…)
 	$Q cd console/frontend && yarn --silent build
 
 # These files are versioned in Git, but we may want to update them.
-clickhouse/data/protocols.csv:
-	$ curl -sL http://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv \
+orchestrator/clickhouse/data/protocols.csv:
+	$Q curl -sL http://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv \
 		| sed -nE -e "1 s/.*/proto,name,description/p" -e "2,$ s/^([0-9]+,[^ ,]+,[^\",]+),.*/\1/p" \
 		> $@
-clickhouse/data/asns.csv:	# Need to pipe MaxMind ASN database in CSV format
-	$Q sed -ne 's/^[^,]*,//p' \
-		| LC_ALL=C sort -n \
-		| uniq \
-		| grep -v '^[0-9,]*$' \
-		| sed -e '1casn,name' > $@
+orchestrator/clickhouse/data/asns.csv:
+	$Q (curl -sL https://www.peeringdb.com/api/net \
+		| jq -r  '.data[] | [.asn,.name] | @csv' \
+	  ; curl -sL https://bgp.potaroo.net/cidr/autnums.html \
+		| sed -n 's|.*>AS\([0-9]*\) *</a> \([^-][^,]*\).*|\1,"\2"|p') \
+		| LC_ALL=C sort -sn -t, -k1 -u \
+		| sed -e '1iasn,name' > $@
 
 # Tests
 
