@@ -87,3 +87,5 @@ require (
 )
 
 replace github.com/slayercat/gosnmp => github.com/slayercat/gosnmp v1.24.1-0.20220124233957-4b805977d286
+
+replace github.com/ClickHouse/clickhouse-go/v2 => github.com/vincentbernat/clickhouse-go/v2 v2.0.13-0.20220422164106-2b7b2c2786d2
