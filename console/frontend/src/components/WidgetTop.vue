@@ -50,7 +50,7 @@ const option = ref({
   },
   series: [
     {
-      name: "Top AS",
+      name: props.title,
       type: "pie",
       label: { show: false },
       center: ["50%", "40%"],
