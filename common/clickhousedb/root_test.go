@@ -83,9 +83,12 @@ func TestMock(t *testing.T) {
 
 	// Check healthcheck
 	t.Run("healthcheck", func(t *testing.T) {
+		ctrl := gomock.NewController(t)
+		mockRows := mocks.NewMockRows(ctrl)
+		mockRows.EXPECT().Close()
 		firstCall := mock.EXPECT().
 			Query(gomock.Any(), "SELECT 1").
-			Return(nil, nil)
+			Return(mockRows, nil)
 		got := r.RunHealthchecks(context.Background())
 		if diff := helpers.Diff(got.Details["clickhousedb"], reporter.HealthcheckResult{
 			Status: reporter.HealthcheckOK,

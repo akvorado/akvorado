@@ -76,8 +76,9 @@ func (c *Component) Start() error {
 			case cb := <-c.healthy:
 				if cb != nil {
 					ctx, cancel := context.WithTimeout(c.t.Context(nil), time.Second)
-					if _, err := c.Query(ctx, "SELECT 1"); err == nil {
+					if rows, err := c.Query(ctx, "SELECT 1"); err == nil {
 						cb(reporter.HealthcheckOK, "database available")
+						rows.Close()
 					} else {
 						cb(reporter.HealthcheckWarning, "database unavailable")
 					}
