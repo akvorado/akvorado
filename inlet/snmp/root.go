@@ -135,8 +135,8 @@ func (c *Component) Start() error {
 			case <-c.t.Dying():
 				c.r.Debug().Msg("shutting down SNMP ticker")
 				return nil
-			case cb := <-healthyTicker:
-				if cb != nil {
+			case cb, ok := <-healthyTicker:
+				if ok {
 					cb(reporter.HealthcheckOK, "ok")
 				}
 			case <-ticker.C:
@@ -154,8 +154,8 @@ func (c *Component) Start() error {
 			case <-c.t.Dying():
 				c.r.Debug().Msg("stopping SNMP dispatcher")
 				return nil
-			case cb := <-healthyDispatcher:
-				if cb != nil {
+			case cb, ok := <-healthyDispatcher:
+				if ok {
 					cb(reporter.HealthcheckOK, "ok")
 				}
 			case ch := <-c.dispatcherBChannel:
@@ -179,8 +179,8 @@ func (c *Component) Start() error {
 				case <-c.t.Dying():
 					c.r.Debug().Str("worker", workerIDStr).Msg("stopping SNMP poller")
 					return nil
-				case cb := <-c.healthyWorkers:
-					if cb != nil {
+				case cb, ok := <-c.healthyWorkers:
+					if ok {
 						cb(reporter.HealthcheckOK, fmt.Sprintf("worker %s ok", workerIDStr))
 					}
 				case request := <-c.pollerChannel:

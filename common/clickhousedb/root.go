@@ -73,8 +73,8 @@ func (c *Component) Start() error {
 			select {
 			case <-c.t.Dying():
 				return nil
-			case cb := <-c.healthy:
-				if cb != nil {
+			case cb, ok := <-c.healthy:
+				if ok {
 					ctx, cancel := context.WithTimeout(c.t.Context(nil), time.Second)
 					if rows, err := c.Query(ctx, "SELECT 1"); err == nil {
 						cb(reporter.HealthcheckOK, "database available")

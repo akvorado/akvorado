@@ -102,8 +102,8 @@ func (c *Component) runWorker(workerID int) error {
 		case <-c.t.Dying():
 			c.r.Debug().Int("worker", workerID).Msg("stopping core worker")
 			return nil
-		case cb := <-c.healthy:
-			if cb != nil {
+		case cb, ok := <-c.healthy:
+			if ok {
 				cb(reporter.HealthcheckOK, fmt.Sprintf("worker %d ok", workerID))
 			}
 		case flow := <-c.d.Flow.Flows():
