@@ -205,30 +205,30 @@ func TestWidgetTop(t *testing.T) {
 		mockConn.EXPECT().
 			Select(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).
 			SetArg(1, []topResult{
-				{"TCP/443", uint8(51)},
-				{"UDP/443", uint8(20)},
-				{"TCP/80", uint8(18)},
+				{"TCP/443", float64(51)},
+				{"UDP/443", float64(20)},
+				{"TCP/80", float64(18)},
 			}),
 		mockConn.EXPECT().
 			Select(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).
 			SetArg(1, []topResult{
-				{"TCP", uint8(75)},
-				{"UDP", uint8(24)},
-				{"ESP", uint8(1)},
+				{"TCP", float64(75)},
+				{"UDP", float64(24)},
+				{"ESP", float64(1)},
 			}),
 		mockConn.EXPECT().
 			Select(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).
 			SetArg(1, []topResult{
-				{"exporter1", uint8(20)},
-				{"exporter3", uint8(10)},
-				{"exporter5", uint8(3)},
+				{"exporter1", float64(20)},
+				{"exporter3", float64(10)},
+				{"exporter5", float64(3)},
 			}),
 		mockConn.EXPECT().
 			Select(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).
 			SetArg(1, []topResult{
-				{"2906: Netflix", uint8(12)},
-				{"36040: Youtube", uint8(10)},
-				{"20940: Akamai", uint8(9)},
+				{"2906: Netflix", float64(12)},
+				{"36040: Youtube", float64(10)},
+				{"20940: Akamai", float64(9)},
 			}),
 	)
 

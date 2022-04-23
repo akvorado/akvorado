@@ -34,7 +34,9 @@ const props = defineProps({
 const option = ref({
   tooltip: {
     trigger: "item",
-    formatter: "{b}: {c}%",
+    valueFormatter(value) {
+      return value.toFixed(2) + "%";
+    },
   },
   legend: {
     orient: "horizontal",
@@ -50,7 +52,6 @@ const option = ref({
   },
   series: [
     {
-      name: props.title,
       type: "pie",
       label: { show: false },
       center: ["50%", "40%"],
@@ -91,7 +92,7 @@ watch(
         name: "Others",
         value: Math.max(100 - totalPercent, 0),
       },
-    ];
+    ].filter(({ value }) => value > 0.05);
     option.value.series[0].data = newData;
   },
   { immediate: true }

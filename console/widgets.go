@@ -88,8 +88,8 @@ func (c *Component) widgetExportersHandlerFunc(gc *gin.Context) {
 }
 
 type topResult struct {
-	Name    string `json:"name"`
-	Percent uint8  `json:"percent"`
+	Name    string  `json:"name"`
+	Percent float64 `json:"percent"`
 }
 
 func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
@@ -143,7 +143,7 @@ WITH
  (SELECT SUM(Bytes*SamplingRate) FROM flows WHERE TimeReceived > StartTime %s) AS Total
 SELECT
  %s AS Name,
- toUInt8(SUM(Bytes*SamplingRate) / Total * 100) AS Percent
+ SUM(Bytes*SamplingRate) / Total * 100 AS Percent
 FROM flows
 WHERE TimeReceived > StartTime
 %s
