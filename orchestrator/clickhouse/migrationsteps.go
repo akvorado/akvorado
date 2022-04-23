@@ -11,14 +11,7 @@ import (
 	"akvorado/inlet/flow"
 )
 
-func (c *Component) migrationStepCreateFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
-	return migrationStep{
-		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2`,
-		Args:       []interface{}{"flows", c.config.Configuration.Database},
-		Do: func() error {
-			return conn.Exec(ctx, `
-CREATE TABLE flows (
- Date Date,
+const flowSchema = `
  TimeReceived DateTime CODEC(DoubleDelta, LZ4),
  SamplingRate UInt64,
  ExporterAddress LowCardinality(IPv6),
@@ -49,10 +42,21 @@ CREATE TABLE flows (
  Bytes UInt64,
  Packets UInt64,
  ForwardingStatus UInt32
+`
+
+func (c *Component) migrationStepCreateFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+	return migrationStep{
+		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2`,
+		Args:       []interface{}{"flows", c.config.Configuration.Database},
+		Do: func() error {
+			return conn.Exec(ctx, fmt.Sprintf(`
+CREATE TABLE flows (
+ Date Date,
+%s
 )
 ENGINE = MergeTree
 PARTITION BY Date
-ORDER BY TimeReceived`)
+ORDER BY TimeReceived`, flowSchema))
 		},
 	}
 }
@@ -176,7 +180,7 @@ SELECT bitAnd(v1, v2) FROM (
  AND database = $2
  AND engine_full = $3
 ) t1, (
- SELECT groupBitXor(cityHash64(name,type,position)) == 1737453177966178931 AS v2
+ SELECT groupBitXor(cityHash64(name,type,position)) == 14541584690055279959 AS v2
  FROM system.columns
  WHERE database = $2
  AND table = $1
@@ -200,39 +204,9 @@ SELECT bitAnd(v1, v2) FROM (
 			return conn.Exec(ctx, fmt.Sprintf(`
 CREATE TABLE %s
 (
-    TimeReceived UInt64,
-    TimeFlowStart UInt64,
-    SamplingRate UInt64,
-    ExporterAddress LowCardinality(FixedString(16)),
-    ExporterName LowCardinality(String),
-    ExporterGroup LowCardinality(String),
-    SrcAddr FixedString(16),
-    DstAddr FixedString(16),
-    SrcAS UInt32,
-    DstAS UInt32,
-    SrcCountry FixedString(2),
-    DstCountry FixedString(2),
-    InIfName LowCardinality(String),
-    OutIfName LowCardinality(String),
-    InIfDescription String,
-    OutIfDescription String,
-    InIfSpeed UInt32,
-    OutIfSpeed UInt32,
-    InIfConnectivity LowCardinality(String),
-    OutIfConnectivity LowCardinality(String),
-    InIfProvider LowCardinality(String),
-    OutIfProvider LowCardinality(String),
-    InIfBoundary Enum8('undefined' = 0, 'external' = 1, 'internal' = 2),
-    OutIfBoundary Enum8('undefined' = 0, 'external' = 1, 'internal' = 2),
-    EType UInt32,
-    Proto UInt32,
-    SrcPort UInt32,
-    DstPort UInt32,
-    Bytes UInt64,
-    Packets UInt64,
-    ForwardingStatus UInt32
+%s
 )
-ENGINE = %s`, tableName, kafkaEngine))
+ENGINE = %s`, tableName, flowSchema, kafkaEngine))
 		},
 	}
 }
