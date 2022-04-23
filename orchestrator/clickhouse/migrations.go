@@ -36,6 +36,7 @@ func (c *Component) migrateDatabase() error {
 	}{
 		{"create flows table", c.migrationStepCreateFlowsTable},
 		{"add ForwardingStatus to flows table", c.migrationStepAddForwardingStatusFlowsTable},
+		{"drop SequenceNum from flows table", c.migrationStepDropSequenceNumFlowsTable},
 		{"create exporters view", c.migrationStepCreateExportersView},
 		{"create protocols dictionary", c.migrationStepCreateProtocolsDictionary},
 		{"create asns dictionary", c.migrationStepCreateASNsDictionary},

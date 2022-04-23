@@ -20,7 +20,6 @@ func (c *Component) migrationStepCreateFlowsTable(ctx context.Context, l reporte
 CREATE TABLE flows (
  Date Date,
  TimeReceived DateTime CODEC(DoubleDelta, LZ4),
- SequenceNum UInt32,
  SamplingRate UInt64,
  ExporterAddress LowCardinality(IPv6),
  ExporterName LowCardinality(String),
@@ -64,6 +63,16 @@ func (c *Component) migrationStepAddForwardingStatusFlowsTable(ctx context.Conte
 		Args:       []interface{}{"flows", c.config.Configuration.Database, "ForwardingStatus"},
 		Do: func() error {
 			return conn.Exec(ctx, "ALTER TABLE flows ADD COLUMN ForwardingStatus UInt32 AFTER Packets")
+		},
+	}
+}
+
+func (c *Component) migrationStepDropSequenceNumFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+	return migrationStep{
+		CheckQuery: `SELECT not(count(*)) FROM system.columns WHERE table = $1 AND database = $2 AND name = $3`,
+		Args:       []interface{}{"flows", c.config.Configuration.Database, "SequenceNum"},
+		Do: func() error {
+			return conn.Exec(ctx, "ALTER TABLE flows DROP COLUMN SequenceNum")
 		},
 	}
 }
@@ -158,7 +167,6 @@ func (c *Component) migrationStepCreateRawFlowsTable(ctx context.Context, l repo
 		fmt.Sprintf(`kafka_num_consumers = %d,`, c.config.Kafka.Consumers),
 		`kafka_thread_per_consumer = 1`,
 	}, " ")
-	// To update the bitXor: select bitXor(cityHash64('ForwardingStatus', 'UInt32', 32), 8687912443154805239)
 	return migrationStep{
 		CheckQuery: `
 SELECT bitAnd(v1, v2) FROM (
@@ -168,7 +176,7 @@ SELECT bitAnd(v1, v2) FROM (
  AND database = $2
  AND engine_full = $3
 ) t1, (
- SELECT groupBitXor(cityHash64(name,type,position)) == 8996370657943110240 AS v2
+ SELECT groupBitXor(cityHash64(name,type,position)) == 1737453177966178931 AS v2
  FROM system.columns
  WHERE database = $2
  AND table = $1
@@ -194,7 +202,6 @@ CREATE TABLE %s
 (
     TimeReceived UInt64,
     TimeFlowStart UInt64,
-    SequenceNum UInt32,
     SamplingRate UInt64,
     ExporterAddress LowCardinality(FixedString(16)),
     ExporterName LowCardinality(String),
