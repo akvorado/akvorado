@@ -11,7 +11,7 @@ import (
 	"akvorado/inlet/flow"
 )
 
-func (c *Component) migrateStepCreateFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+func (c *Component) migrationStepCreateFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	return migrationStep{
 		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2`,
 		Args:       []interface{}{"flows", c.config.Configuration.Database},
@@ -58,7 +58,7 @@ ORDER BY TimeReceived`)
 	}
 }
 
-func (c *Component) migrateStepAddForwardingStatusFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+func (c *Component) migrationStepAddForwardingStatusFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	return migrationStep{
 		CheckQuery: `SELECT 1 FROM system.columns WHERE table = $1 AND database = $2 AND name = $3`,
 		Args:       []interface{}{"flows", c.config.Configuration.Database, "ForwardingStatus"},
@@ -68,7 +68,7 @@ func (c *Component) migrateStepAddForwardingStatusFlowsTable(ctx context.Context
 	}
 }
 
-func (c *Component) migrateStepCreateExportersView(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+func (c *Component) migrationStepCreateExportersView(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	return migrationStep{
 		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2`,
 		Args:       []interface{}{"exporters", c.config.Configuration.Database},
@@ -96,7 +96,7 @@ ARRAY JOIN arrayEnumerate([1,2]) AS num
 	}
 }
 
-func (c *Component) migrateStepCreateProtocolsDictionary(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+func (c *Component) migrationStepCreateProtocolsDictionary(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	protocolsURL := fmt.Sprintf("%s/api/v0/orchestrator/clickhouse/protocols.csv", c.config.OrchestratorURL)
 	source := fmt.Sprintf(`SOURCE(HTTP(URL '%s' FORMAT 'CSVWithNames'))`, protocolsURL)
 	sourceLike := fmt.Sprintf("%% %s %%", source)
@@ -119,7 +119,7 @@ LAYOUT(HASHED())
 	}
 }
 
-func (c *Component) migrateStepCreateASNsDictionary(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+func (c *Component) migrationStepCreateASNsDictionary(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	asnsURL := fmt.Sprintf("%s/api/v0/orchestrator/clickhouse/asns.csv", c.config.OrchestratorURL)
 	source := fmt.Sprintf(`SOURCE(HTTP(URL '%s' FORMAT 'CSVWithNames'))`, asnsURL)
 	sourceLike := fmt.Sprintf("%% %s %%", source)
@@ -143,7 +143,7 @@ LAYOUT(HASHED())
 
 }
 
-func (c *Component) migrateStepCreateRawFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+func (c *Component) migrationStepCreateRawFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	tableName := fmt.Sprintf("flows_%d_raw", flow.CurrentSchemaVersion)
 	kafkaEngine := strings.Join([]string{
 		`Kafka SETTINGS`,
@@ -230,7 +230,7 @@ ENGINE = %s`, tableName, kafkaEngine))
 	}
 }
 
-func (c *Component) migrateStepCreateRawFlowsConsumerView(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+func (c *Component) migrationStepCreateRawFlowsConsumerView(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	tableName := fmt.Sprintf("flows_%d_raw", flow.CurrentSchemaVersion)
 	viewName := fmt.Sprintf("%s_consumer", tableName)
 	return migrationStep{
@@ -247,7 +247,7 @@ FROM %s`, viewName, tableName))
 	}
 }
 
-func (c *Component) migrateStepAddExpirationFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+func (c *Component) migrationStepAddExpirationFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	if c.config.TTL == 0 {
 		l.Info().Msg("not changing TTL for flows table")
 		return migrationStep{
@@ -268,7 +268,7 @@ func (c *Component) migrateStepAddExpirationFlowsTable(ctx context.Context, l re
 	}
 }
 
-func (c *Component) migrateStepDropSchemaMigrationsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+func (c *Component) migrationStepDropSchemaMigrationsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	return migrationStep{
 		CheckQuery: `SELECT COUNT(*) == 0 FROM system.tables WHERE name = $1 AND database = $2`,
 		Args:       []interface{}{"schema_migrations", c.config.Configuration.Database},

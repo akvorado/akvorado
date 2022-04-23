@@ -34,15 +34,15 @@ func (c *Component) migrateDatabase() error {
 		Description string
 		Step        func(context.Context, reporter.Logger, clickhouse.Conn) migrationStep
 	}{
-		{"create flows table", c.migrateStepCreateFlowsTable},
-		{"add ForwardingStatus to flows table", c.migrateStepAddForwardingStatusFlowsTable},
-		{"create exporters view", c.migrateStepCreateExportersView},
-		{"create protocols dictionary", c.migrateStepCreateProtocolsDictionary},
-		{"create asns dictionary", c.migrateStepCreateASNsDictionary},
-		{"create raw flows table", c.migrateStepCreateRawFlowsTable},
-		{"create raw flows consumer view", c.migrateStepCreateRawFlowsConsumerView},
-		{"add expiration to flow table", c.migrateStepAddExpirationFlowsTable},
-		{"drop schema_migrations table", c.migrateStepDropSchemaMigrationsTable},
+		{"create flows table", c.migrationStepCreateFlowsTable},
+		{"add ForwardingStatus to flows table", c.migrationStepAddForwardingStatusFlowsTable},
+		{"create exporters view", c.migrationStepCreateExportersView},
+		{"create protocols dictionary", c.migrationStepCreateProtocolsDictionary},
+		{"create asns dictionary", c.migrationStepCreateASNsDictionary},
+		{"create raw flows table", c.migrationStepCreateRawFlowsTable},
+		{"create raw flows consumer view", c.migrationStepCreateRawFlowsConsumerView},
+		{"add expiration to flow table", c.migrationStepAddExpirationFlowsTable},
+		{"drop schema_migrations table", c.migrationStepDropSchemaMigrationsTable},
 	}
 
 	count := 0
