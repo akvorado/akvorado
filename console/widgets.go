@@ -123,6 +123,9 @@ func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 	case "protocol":
 		selector = `dictGetOrDefault('protocols', 'name', Proto, '???')`
 		groupby = `Proto`
+	case "etype":
+		selector = `if(equals(EType, 34525), 'IPv6', if(equals(EType, 2048), 'IPv4', '???'))`
+		groupby = `EType`
 	case "src-port":
 		selector = `concat(dictGetOrDefault('protocols', 'name', Proto, '???'), '/', toString(SrcPort))`
 		groupby = `Proto, SrcPort`

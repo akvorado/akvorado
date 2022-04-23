@@ -39,9 +39,14 @@
         title="Top countries"
         :refresh="refreshOccasionally"
       />
+      <WidgetTop
+        what="etype"
+        title="IPv4/IPv6"
+        :refresh="refreshOccasionally"
+      />
       <WidgetGraph
         :refresh="refreshInfrequently"
-        class="col-span-2 md:col-span-4"
+        class="col-span-2 md:col-span-3"
       />
     </div>
   </div>
