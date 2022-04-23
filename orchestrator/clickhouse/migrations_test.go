@@ -51,7 +51,6 @@ func TestMigration(t *testing.T) {
 
 	t.Run("first time", func(t *testing.T) {
 		configuration := DefaultConfiguration()
-		configuration.TTL = 5
 		configuration.OrchestratorURL = "http://something"
 		ch, err := New(r, configuration, Dependencies{
 			Daemon:     daemon.NewMock(t),
@@ -87,8 +86,16 @@ func TestMigration(t *testing.T) {
 			"asns",
 			"exporters",
 			"flows",
+			"flows_10s",
+			"flows_10s_consumer",
 			"flows_1_raw",
 			"flows_1_raw_consumer",
+			"flows_1h0m0s",
+			"flows_1h0m0s_consumer",
+			"flows_1m0s",
+			"flows_1m0s_consumer",
+			"flows_5m0s",
+			"flows_5m0s_consumer",
 			"protocols",
 		}
 		if diff := helpers.Diff(got, expected); diff != "" {

@@ -19,6 +19,13 @@ type migrationStep struct {
 	Do func() error
 }
 
+type migrationStepFunc func(context.Context, reporter.Logger, clickhouse.Conn) migrationStep
+
+type migrationStepWithDescription struct {
+	Description string
+	Step        migrationStepFunc
+}
+
 // migrateDatabase execute database migration
 func (c *Component) migrateDatabase() error {
 	if c.config.OrchestratorURL == "" {
@@ -30,21 +37,28 @@ func (c *Component) migrateDatabase() error {
 	}
 
 	ctx := c.t.Context(nil)
-	steps := []struct {
-		Description string
-		Step        func(context.Context, reporter.Logger, clickhouse.Conn) migrationStep
-	}{
-		{"create flows table", c.migrationStepCreateFlowsTable},
-		{"add ForwardingStatus to flows table", c.migrationStepAddForwardingStatusFlowsTable},
-		{"drop SequenceNum from flows table", c.migrationStepDropSequenceNumFlowsTable},
+	steps := []migrationStepWithDescription{}
+	for _, resolution := range c.config.Resolutions {
+		steps = append(steps, []migrationStepWithDescription{
+			{
+				fmt.Sprintf("create flows table with resolution %s", resolution.Interval),
+				c.migrationsStepCreateFlowsTable(resolution),
+			}, {
+				fmt.Sprintf("create flows table consumer with resolution %s", resolution.Interval),
+				c.migrationsStepCreateFlowsConsumerTable(resolution),
+			}, {
+				fmt.Sprintf("configure TTL for flows table with resolution %s", resolution.Interval),
+				c.migrationsStepSetTTLFlowsTable(resolution),
+			},
+		}...)
+	}
+	steps = append(steps, []migrationStepWithDescription{
 		{"create exporters view", c.migrationStepCreateExportersView},
 		{"create protocols dictionary", c.migrationStepCreateProtocolsDictionary},
 		{"create asns dictionary", c.migrationStepCreateASNsDictionary},
 		{"create raw flows table", c.migrationStepCreateRawFlowsTable},
 		{"create raw flows consumer view", c.migrationStepCreateRawFlowsConsumerView},
-		{"add expiration to flow table", c.migrationStepAddExpirationFlowsTable},
-		{"drop schema_migrations table", c.migrationStepDropSchemaMigrationsTable},
-	}
+	}...)
 
 	count := 0
 	total := 0

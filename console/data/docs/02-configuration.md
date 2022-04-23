@@ -302,8 +302,33 @@ provided:
 - `username` is the username to use for authentication
 - `password` is the password to use for authentication
 - `database` defines the database to use to create tables
+- `resolutions` defines the various resolutions to keep data
 - `orchestrator-url` defines the URL of the orchestrator to be used
   by Clickhouse (autodetection when not specified)
+
+The `resolutions` setting contains a list of resolutions. Each
+resolution has two keys: `interval` and `ttl`. The first one is the
+consolidation interval. The second is how long to keep the data in the
+database. If `ttl` is 0, then the data is kept forever. If `interval`
+is 0, it applies to the raw data (the one in the `flows` table). For
+each resolution, a materialized view `flows_XXXX` is created with the
+specified interval.
+
+Here is the default configuration:
+
+```yaml
+resolutions:
+  - interval: 0
+    ttl: 6h
+  - interval: 10s
+    ttl: 24h
+  - interval: 1m
+    ttl: 168h  # 1 week
+  - interval: 5m
+    ttl: 2160h # 3 months
+  - interval: 1h
+    ttl: 8760h # 1 year
+```
 
 ## Console service
 
