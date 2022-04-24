@@ -44,17 +44,6 @@ const flowsSchema = `
  ForwardingStatus UInt32
 `
 
-// Everything not in here is either aggregated (TimeReceived, Bytes,
-// Packets) or quietly tied to what is below.
-const flowsGroupBy = `
- ExporterAddress,
- InIfName, OutIfName,
- SrcAddr, DstAddr,
- EType, Proto,
- SrcPort, DstPort,
- ForwardingStatus, SamplingRate
-`
-
 func (c *Component) migrationsStepCreateFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	return migrationStep{
 		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2`,
@@ -66,14 +55,21 @@ CREATE TABLE flows (
 )
 ENGINE = MergeTree
 PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, INTERVAL 6 hour))
-ORDER BY (TimeReceived, %s)`, flowsSchema, flowsGroupBy))
+ORDER BY (TimeReceived, ExporterAddress, InIfName, OutIfName)`, flowsSchema))
 		},
 	}
 }
 
 func (c *Component) migrationsStepSetTTLFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
-	ttl := strings.Join(resolutionsToTTL(c.config.Resolutions, flowsGroupBy), ", ")
-	enginePattern := fmt.Sprintf("TTL %s", ttl)
+	if c.config.TTL == 0 {
+		l.Info().Msg("not changing TTL for flows table")
+		return migrationStep{
+			CheckQuery: `SELECT 1`,
+			Args:       []interface{}{},
+			Do:         func() error { return nil },
+		}
+	}
+	ttl := fmt.Sprintf("TTL TimeReceived + toIntervalSecond(%d)", uint64(c.config.TTL.Seconds()))
 	return migrationStep{
 		CheckQuery: `
 SELECT 1 FROM system.tables
@@ -81,11 +77,11 @@ WHERE name = $1 AND database = $2 AND engine_full LIKE $3`,
 		Args: []interface{}{
 			"flows",
 			c.config.Configuration.Database,
-			fmt.Sprintf("%% %s %%", enginePattern),
+			fmt.Sprintf("%% %s %%", ttl),
 		},
 		Do: func() error {
 			l.Warn().Msg("updating TTL of flows table, this can take a long time")
-			return conn.Exec(ctx, fmt.Sprintf("ALTER TABLE flows MODIFY TTL %s", ttl))
+			return conn.Exec(ctx, fmt.Sprintf("ALTER TABLE flows MODIFY %s", ttl))
 		},
 	}
 }

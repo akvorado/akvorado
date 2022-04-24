@@ -2,7 +2,6 @@
 package clickhouse
 
 import (
-	"sort"
 	"time"
 
 	"gopkg.in/tomb.v2"
@@ -74,14 +73,6 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 			Help: "Current version for migrations.",
 		},
 	)
-
-	// Ensure resolutions are sorted and we have a 0-interval resolution first.
-	sort.Slice(c.config.Resolutions, func(i, j int) bool {
-		return c.config.Resolutions[i].Interval < c.config.Resolutions[j].Interval
-	})
-	if len(c.config.Resolutions) == 0 || c.config.Resolutions[0].Interval != 0 {
-		c.config.Resolutions = append([]ResolutionConfiguration{}, c.config.Resolutions...)
-	}
 
 	return &c, nil
 }
