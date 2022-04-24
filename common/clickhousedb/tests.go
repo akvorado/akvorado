@@ -45,10 +45,6 @@ func NewMock(t *testing.T, r *reporter.Reporter) (*Component, *mocks.MockConn) {
 	c.Conn = mock
 
 	mock.EXPECT().
-		Ping(gomock.Any()).
-		Return(nil).
-		MinTimes(1)
-	mock.EXPECT().
 		Close().
 		Return(nil)
 

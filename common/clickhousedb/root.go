@@ -3,7 +3,6 @@ package clickhousedb
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -63,9 +62,6 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 // Start initializes the connection to ClickHouse
 func (c *Component) Start() error {
 	c.r.Info().Msg("starting ClickHouse component")
-	if err := c.Ping(c.t.Context(nil)); err != nil {
-		return fmt.Errorf("unable to connect to ClickHouse: %w", err)
-	}
 
 	c.r.RegisterHealthcheck("clickhousedb", c.channelHealthcheck())
 	c.t.Go(func() error {
