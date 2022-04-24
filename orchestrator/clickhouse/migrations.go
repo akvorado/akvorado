@@ -37,28 +37,15 @@ func (c *Component) migrateDatabase() error {
 	}
 
 	ctx := c.t.Context(nil)
-	steps := []migrationStepWithDescription{}
-	for _, resolution := range c.config.Resolutions {
-		steps = append(steps, []migrationStepWithDescription{
-			{
-				fmt.Sprintf("create flows table with resolution %s", resolution.Interval),
-				c.migrationsStepCreateFlowsTable(resolution),
-			}, {
-				fmt.Sprintf("create flows table consumer with resolution %s", resolution.Interval),
-				c.migrationsStepCreateFlowsConsumerTable(resolution),
-			}, {
-				fmt.Sprintf("configure TTL for flows table with resolution %s", resolution.Interval),
-				c.migrationsStepSetTTLFlowsTable(resolution),
-			},
-		}...)
-	}
-	steps = append(steps, []migrationStepWithDescription{
+	steps := []migrationStepWithDescription{
+		{"create flows table", c.migrationsStepCreateFlowsTable},
+		{"set TTL for flows table", c.migrationsStepSetTTLFlowsTable},
 		{"create exporters view", c.migrationStepCreateExportersView},
 		{"create protocols dictionary", c.migrationStepCreateProtocolsDictionary},
 		{"create asns dictionary", c.migrationStepCreateASNsDictionary},
 		{"create raw flows table", c.migrationStepCreateRawFlowsTable},
 		{"create raw flows consumer view", c.migrationStepCreateRawFlowsConsumerView},
-	}...)
+	}
 
 	count := 0
 	total := 0

@@ -11,7 +11,7 @@ import (
 	"akvorado/inlet/flow"
 )
 
-const flowSchema = `
+const flowsSchema = `
  TimeReceived DateTime CODEC(DoubleDelta, LZ4),
  SamplingRate UInt64,
  ExporterAddress LowCardinality(IPv6),
@@ -44,124 +44,49 @@ const flowSchema = `
  ForwardingStatus UInt32
 `
 
-func (c *Component) migrationsStepCreateFlowsTable(resolution ResolutionConfiguration) migrationStepFunc {
-	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
-		// Unconsolidated flows table
-		tableName := "flows"
-		do := func() error {
+// Everything not in here is either aggregated (TimeReceived, Bytes,
+// Packets) or quietly tied to what is below.
+const flowsGroupBy = `
+ ExporterAddress,
+ InIfName, OutIfName,
+ SrcAddr, DstAddr,
+ EType, Proto,
+ SrcPort, DstPort,
+ ForwardingStatus, SamplingRate
+`
+
+func (c *Component) migrationsStepCreateFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+	return migrationStep{
+		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2`,
+		Args:       []interface{}{"flows", c.config.Configuration.Database},
+		Do: func() error {
 			return conn.Exec(ctx, fmt.Sprintf(`
 CREATE TABLE flows (
- Date Date,
 %s
 )
 ENGINE = MergeTree
-PARTITION BY Date
-ORDER BY TimeReceived`, flowSchema))
-		}
-		if resolution.Interval != 0 {
-			// Consolidated flows table
-			tableName = fmt.Sprintf("flows_%s", resolution.Interval)
-			viewName := fmt.Sprintf("%s_consumer", tableName)
-			// The ORDER BY clause excludes field that are usually
-			// deduced from included fields, assuming they won't
-			// change for the interval of time considered. It
-			// excludes Bytes and Packets that are summed. The
-			// order is the one we are most likely to use when
-			// filtering.
-			do = func() error {
-				l.Debug().Msgf("drop flows consumer table for interval %s", resolution.Interval)
-				err := conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s`, viewName))
-				if err != nil {
-					l.Err(err).Msgf("cannot drop flows consumer table for interval %s",
-						resolution.Interval)
-					return fmt.Errorf("cannot drop flows consumer table for interval %s: %w",
-						resolution.Interval, err)
-				}
-				return conn.Exec(ctx, fmt.Sprintf(`
-CREATE TABLE %s (
- Date Date,
-%s
-)
-ENGINE = SummingMergeTree((Bytes, Packets))
-PARTITION BY Date
-ORDER BY (Date, TimeReceived,
-          ExporterAddress,
-          EType, Proto,
-          InIfName, SrcAS, SrcAddr, SrcPort, ForwardingStatus,
-          OutIfName, DstAS, DstAddr, DstPort,
-          SamplingRate)`, tableName, flowSchema))
-			}
-		}
-		return migrationStep{
-			CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2`,
-			Args:       []interface{}{tableName, c.config.Configuration.Database},
-			Do:         do,
-		}
+PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, INTERVAL 6 hour))
+ORDER BY (TimeReceived, %s)`, flowsSchema, flowsGroupBy))
+		},
 	}
 }
 
-func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution ResolutionConfiguration) migrationStepFunc {
-	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
-		if resolution.Interval == 0 {
-			// Consumer for the flows table are done later.
-			return migrationStep{
-				CheckQuery: `SELECT 1`,
-				Args:       []interface{}{},
-				Do:         func() error { return nil },
-			}
-		}
-		tableName := fmt.Sprintf("flows_%s", resolution.Interval)
-		viewName := fmt.Sprintf("%s_consumer", tableName)
-		// No GROUP BY, we assume the SummingMergeTree will take care of that
-		return migrationStep{
-			CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2`,
-			Args:       []interface{}{viewName, c.config.Configuration.Database},
-			Do: func() error {
-				return conn.Exec(ctx, fmt.Sprintf(`
-CREATE MATERIALIZED VIEW %s TO %s
-AS SELECT
- *
-REPLACE(toStartOfInterval(TimeReceived, INTERVAL %d second) AS TimeReceived)
-FROM %s`, viewName, tableName, uint64(resolution.Interval.Seconds()), "flows"))
-			},
-		}
-	}
-}
-
-func (c *Component) migrationsStepSetTTLFlowsTable(resolution ResolutionConfiguration) migrationStepFunc {
-	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
-		if resolution.TTL == 0 {
-			l.Info().Msgf("not changing TTL for flows table with interval %s", resolution.Interval)
-			return migrationStep{
-				CheckQuery: `SELECT 1`,
-				Args:       []interface{}{},
-				Do:         func() error { return nil },
-			}
-		}
-		tableName := "flows"
-		if resolution.Interval != 0 {
-			tableName = fmt.Sprintf("flows_%s", resolution.Interval)
-		}
-		seconds := uint64(resolution.TTL.Seconds())
-		enginePattern := fmt.Sprintf("TTL TimeReceived + toIntervalSecond(%d)", seconds)
-		return migrationStep{
-			CheckQuery: `
+func (c *Component) migrationsStepSetTTLFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+	ttl := strings.Join(resolutionsToTTL(c.config.Resolutions, flowsGroupBy), ", ")
+	enginePattern := fmt.Sprintf("TTL %s", ttl)
+	return migrationStep{
+		CheckQuery: `
 SELECT 1 FROM system.tables
 WHERE name = $1 AND database = $2 AND engine_full LIKE $3`,
-			Args: []interface{}{
-				tableName,
-				c.config.Configuration.Database,
-				fmt.Sprintf("%% %s %%", enginePattern),
-			},
-			Do: func() error {
-				l.Warn().Msgf("updating TTL of flows table with interval %s, this can take a long time",
-					resolution.Interval)
-				return conn.Exec(ctx,
-					fmt.Sprintf("ALTER TABLE %s MODIFY TTL TimeReceived + toIntervalSecond(%d)",
-						tableName,
-						seconds))
-			},
-		}
+		Args: []interface{}{
+			"flows",
+			c.config.Configuration.Database,
+			fmt.Sprintf("%% %s %%", enginePattern),
+		},
+		Do: func() error {
+			l.Warn().Msg("updating TTL of flows table, this can take a long time")
+			return conn.Exec(ctx, fmt.Sprintf("ALTER TABLE flows MODIFY TTL %s", ttl))
+		},
 	}
 }
 
@@ -275,13 +200,11 @@ SELECT bitAnd(v1, v2) FROM (
 			l.Debug().Msg("drop raw consumer table")
 			err := conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s_consumer`, tableName))
 			if err != nil {
-				l.Err(err).Msg("cannot drop raw consumer table")
 				return fmt.Errorf("cannot drop raw consumer table: %w", err)
 			}
 			l.Debug().Msg("drop raw table")
 			err = conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s`, tableName))
 			if err != nil {
-				l.Err(err).Msg("cannot drop raw table")
 				return fmt.Errorf("cannot drop raw table: %w", err)
 			}
 			l.Debug().Msg("create raw table")
@@ -290,7 +213,7 @@ CREATE TABLE %s
 (
 %s
 )
-ENGINE = %s`, tableName, flowSchema, kafkaEngine))
+ENGINE = %s`, tableName, flowsSchema, kafkaEngine))
 		},
 	}
 }
@@ -305,7 +228,6 @@ func (c *Component) migrationStepCreateRawFlowsConsumerView(ctx context.Context,
 			return conn.Exec(ctx, fmt.Sprintf(`
 CREATE MATERIALIZED VIEW %s TO flows
 AS SELECT
- toDate(TimeReceived) AS Date,
  *
 FROM %s`, viewName, tableName))
 		},

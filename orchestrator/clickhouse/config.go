@@ -1,6 +1,7 @@
 package clickhouse
 
 import (
+	"fmt"
 	"time"
 
 	"akvorado/common/clickhousedb"
@@ -45,11 +46,28 @@ func DefaultConfiguration() Configuration {
 			Consumers: 1,
 		},
 		Resolutions: []ResolutionConfiguration{
-			ResolutionConfiguration{0, 6 * time.Hour},
-			ResolutionConfiguration{10 * time.Second, 24 * time.Hour},
-			ResolutionConfiguration{time.Minute, 7 * 24 * time.Hour},
-			ResolutionConfiguration{5 * time.Minute, 3 * 30 * 24 * time.Hour},
-			ResolutionConfiguration{time.Hour, 6 * 30 * 24 * time.Hour},
+			{0, 6 * time.Hour},
+			{10 * time.Second, 24 * time.Hour},
+			{time.Minute, 7 * 24 * time.Hour},
+			{5 * time.Minute, 3 * 30 * 24 * time.Hour},
+			{time.Hour, 6 * 30 * 24 * time.Hour},
 		},
 	}
+}
+
+// resolutionsToTTL converts a set of resolutions to a TTL
+// clause. It is assumed the first resolution is of an interval of 0.
+func resolutionsToTTL(resolutions []ResolutionConfiguration, groupBy string) []string {
+	// Build TTL clause
+	ttl := []string{}
+	for idx := 1; idx < len(resolutions); idx++ {
+		toStart := fmt.Sprintf("toStartOfInterval(TimeReceived, INTERVAL %d second)",
+			uint64(resolutions[idx].Interval.Seconds()))
+		set := fmt.Sprintf("Bytes = SUM(Bytes), Packets = SUM(Packets), TimeReceived = %s", toStart)
+		ttl = append(ttl, fmt.Sprintf("TimeReceived + INTERVAL %d second GROUP BY %s SET %s",
+			uint64(resolutions[idx-1].TTL.Seconds()), groupBy, set))
+	}
+	ttl = append(ttl, fmt.Sprintf("TimeReceived + INTERVAL %d second DELETE",
+		uint64(resolutions[len(resolutions)-1].TTL.Seconds())))
+	return ttl
 }
