@@ -90,27 +90,20 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 func (c *Component) Start() error {
 	c.r.Info().Msg("starting ClickHouse component")
 	c.metrics.migrationsRunning.Set(1)
-	if err := c.migrateDatabase(); err != nil {
-		c.r.Warn().Msgf("database migration failed %s, continue in the background", err.Error())
-		c.t.Go(func() error {
-			for {
-				select {
-				case <-c.t.Dying():
+	c.t.Go(func() error {
+		if err := c.migrateDatabase(); err == nil {
+			return nil
+		}
+		for {
+			select {
+			case <-c.t.Dying():
+				return nil
+			case <-time.After(time.Minute):
+				c.r.Info().Msg("attempting database migration")
+				if err := c.migrateDatabase(); err == nil {
 					return nil
-				case <-time.After(time.Minute):
-					c.r.Info().Msg("attempting database migration")
-					if err := c.migrateDatabase(); err == nil {
-						return nil
-					}
 				}
 			}
-		})
-	}
-	c.t.Go(func() error {
-		// We need at least one goroutine.
-		select {
-		case <-c.t.Dying():
-			return nil
 		}
 	})
 	return nil
