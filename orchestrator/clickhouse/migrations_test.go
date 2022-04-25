@@ -89,6 +89,12 @@ func TestMigration(t *testing.T) {
 			"flows",
 			"flows_1_raw",
 			"flows_1_raw_consumer",
+			"flows_1h0m0s",
+			"flows_1h0m0s_consumer",
+			"flows_1m0s",
+			"flows_1m0s_consumer",
+			"flows_5m0s",
+			"flows_5m0s_consumer",
 			"protocols",
 		}
 		if diff := helpers.Diff(got, expected); diff != "" {

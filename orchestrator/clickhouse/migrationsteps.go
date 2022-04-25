@@ -44,45 +44,128 @@ const flowsSchema = `
  ForwardingStatus UInt32
 `
 
-func (c *Component) migrationsStepCreateFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
-	return migrationStep{
-		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2`,
-		Args:       []interface{}{"flows", c.config.Configuration.Database},
-		Do: func() error {
-			return conn.Exec(ctx, fmt.Sprintf(`
+func (c *Component) migrationsStepCreateFlowsTable(resolution ResolutionConfiguration) migrationStepFunc {
+	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+		if resolution.Interval == 0 {
+			// Unconsolidated flows table
+			return migrationStep{
+				CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2`,
+				Args:       []interface{}{"flows", c.config.Configuration.Database},
+				Do: func() error {
+					return conn.Exec(ctx, fmt.Sprintf(`
 CREATE TABLE flows (
 %s
 )
 ENGINE = MergeTree
 PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, INTERVAL 6 hour))
 ORDER BY (TimeReceived, ExporterAddress, InIfName, OutIfName)`, flowsSchema))
-		},
+				},
+			}
+		}
+		// Consolidated table. The ORDER BY clause excludes
+		// field that are usually deduced from included
+		// fields, assuming they won't change for the interval
+		// of time considered. It excludes Bytes and Packets
+		// that are summed. The order is the one we are most
+		// likely to use when filtering. SrcAddress and
+		// DstAddress are removed.
+		tableName := fmt.Sprintf("flows_%s", resolution.Interval)
+		viewName := fmt.Sprintf("%s_consumer", tableName)
+		return migrationStep{
+			CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2`,
+			Args:       []interface{}{tableName, c.config.Configuration.Database},
+			Do: func() error {
+				l.Debug().Msgf("drop flows consumer table for interval %s", resolution.Interval)
+				err := conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s`, viewName))
+				if err != nil {
+					return fmt.Errorf("cannot drop flows consumer table for interval %s: %w",
+						resolution.Interval, err)
+				}
+				schema := []string{}
+				for _, l := range strings.Split(flowsSchema, "\n") {
+					tl := strings.TrimSpace(l)
+					if strings.HasPrefix(tl, "SrcAddr ") || strings.HasPrefix(tl, "DstAddr ") {
+						continue
+					}
+					schema = append(schema, l)
+				}
+				return conn.Exec(ctx, fmt.Sprintf(`
+CREATE TABLE %s (
+%s
+)
+ENGINE = SummingMergeTree((Bytes, Packets))
+PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, INTERVAL 6 hour))
+ORDER BY (TimeReceived,
+          ExporterAddress,
+          EType, Proto,
+          InIfName, SrcAS, SrcPort, ForwardingStatus,
+          OutIfName, DstAS, DstPort,
+          SamplingRate)`, tableName, strings.Join(schema, "\n")))
+			},
+		}
 	}
 }
 
-func (c *Component) migrationsStepSetTTLFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
-	if c.config.TTL == 0 {
-		l.Info().Msg("not changing TTL for flows table")
+func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution ResolutionConfiguration) migrationStepFunc {
+	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+		if resolution.Interval == 0 {
+			// Consumer for the flows table are done later.
+			return migrationStep{
+				CheckQuery: `SELECT 1`,
+				Args:       []interface{}{},
+				Do:         func() error { return nil },
+			}
+		}
+		tableName := fmt.Sprintf("flows_%s", resolution.Interval)
+		viewName := fmt.Sprintf("%s_consumer", tableName)
+		// No GROUP BY, we assume the SummingMergeTree will take care of that
 		return migrationStep{
-			CheckQuery: `SELECT 1`,
-			Args:       []interface{}{},
-			Do:         func() error { return nil },
+			CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2`,
+			Args:       []interface{}{viewName, c.config.Configuration.Database},
+			Do: func() error {
+				return conn.Exec(ctx, fmt.Sprintf(`
+CREATE MATERIALIZED VIEW %s TO %s
+AS SELECT
+ *
+EXCEPT(SrcAddr, DstAddr)
+REPLACE(toStartOfInterval(TimeReceived, INTERVAL %d second) AS TimeReceived)
+FROM %s`, viewName, tableName, uint64(resolution.Interval.Seconds()), "flows"))
+			},
 		}
 	}
-	ttl := fmt.Sprintf("TTL TimeReceived + toIntervalSecond(%d)", uint64(c.config.TTL.Seconds()))
-	return migrationStep{
-		CheckQuery: `
+}
+
+func (c *Component) migrationsStepSetTTLFlowsTable(resolution ResolutionConfiguration) migrationStepFunc {
+	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+		if resolution.TTL == 0 {
+			l.Info().Msgf("not changing TTL for flows table with interval %s", resolution.Interval)
+			return migrationStep{
+				CheckQuery: `SELECT 1`,
+				Args:       []interface{}{},
+				Do:         func() error { return nil },
+			}
+		}
+		tableName := "flows"
+		if resolution.Interval != 0 {
+			tableName = fmt.Sprintf("flows_%s", resolution.Interval)
+		}
+		seconds := uint64(resolution.TTL.Seconds())
+		ttl := fmt.Sprintf("TTL TimeReceived + toIntervalSecond(%d)", seconds)
+		return migrationStep{
+			CheckQuery: `
 SELECT 1 FROM system.tables
 WHERE name = $1 AND database = $2 AND engine_full LIKE $3`,
-		Args: []interface{}{
-			"flows",
-			c.config.Configuration.Database,
-			fmt.Sprintf("%% %s %%", ttl),
-		},
-		Do: func() error {
-			l.Warn().Msg("updating TTL of flows table, this can take a long time")
-			return conn.Exec(ctx, fmt.Sprintf("ALTER TABLE flows MODIFY %s", ttl))
-		},
+			Args: []interface{}{
+				tableName,
+				c.config.Configuration.Database,
+				fmt.Sprintf("%% %s %%", ttl),
+			},
+			Do: func() error {
+				l.Warn().Msgf("updating TTL of flows table with interval %s, this can take a long time",
+					resolution.Interval)
+				return conn.Exec(ctx, fmt.Sprintf("ALTER TABLE %s MODIFY %s", tableName, ttl))
+			},
+		}
 	}
 }
 
