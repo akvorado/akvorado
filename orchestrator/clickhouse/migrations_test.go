@@ -49,7 +49,8 @@ func TestMigration(t *testing.T) {
 	r := reporter.NewMock(t)
 	chComponent := clickhousedb.SetupClickHouse(t, r)
 
-	t.Run("first time", func(t *testing.T) {
+	func() {
+		// First time
 		configuration := DefaultConfiguration()
 		configuration.OrchestratorURL = "http://something"
 		ch, err := New(r, configuration, Dependencies{
@@ -93,9 +94,10 @@ func TestMigration(t *testing.T) {
 		if diff := helpers.Diff(got, expected); diff != "" {
 			t.Fatalf("SHOW TABLES (-got, +want):\n%s", diff)
 		}
-	})
+	}()
 
-	t.Run("second time", func(t *testing.T) {
+	func() {
+		// Second time
 		r := reporter.NewMock(t)
 		configuration := DefaultConfiguration()
 		configuration.OrchestratorURL = "http://something"
@@ -124,5 +126,5 @@ func TestMigration(t *testing.T) {
 			t.Fatalf("Metrics (-got, +want):\n%s", diff)
 		}
 
-	})
+	}()
 }
