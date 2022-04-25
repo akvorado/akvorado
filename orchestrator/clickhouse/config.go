@@ -45,10 +45,10 @@ func DefaultConfiguration() Configuration {
 			Consumers: 1,
 		},
 		Resolutions: []ResolutionConfiguration{
-			{0, 6 * time.Hour},
+			{0, 15 * 24 * time.Hour},
 			{time.Minute, 7 * 24 * time.Hour},
 			{5 * time.Minute, 3 * 30 * 24 * time.Hour},
-			{time.Hour, 6 * 30 * 24 * time.Hour},
+			{time.Hour, 12 * 30 * 24 * time.Hour},
 		},
 	}
 }

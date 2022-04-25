@@ -82,10 +82,14 @@ ORDER BY (TimeReceived, ExporterAddress, InIfName, OutIfName)`, flowsSchema))
 						resolution.Interval, err)
 				}
 				schema := []string{}
+
+				// Exclude some fields
+			outer:
 				for _, l := range strings.Split(flowsSchema, "\n") {
-					tl := strings.TrimSpace(l)
-					if strings.HasPrefix(tl, "SrcAddr ") || strings.HasPrefix(tl, "DstAddr ") {
-						continue
+					for _, p := range []string{"SrcAddr ", "DstAddr ", "SrcPort ", "DstPort "} {
+						if strings.HasPrefix(strings.TrimSpace(l), p) {
+							continue outer
+						}
 					}
 					schema = append(schema, l)
 				}
@@ -98,8 +102,8 @@ PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, INTERVAL 6 hour))
 ORDER BY (TimeReceived,
           ExporterAddress,
           EType, Proto,
-          InIfName, SrcAS, SrcPort, ForwardingStatus,
-          OutIfName, DstAS, DstPort,
+          InIfName, SrcAS, ForwardingStatus,
+          OutIfName, DstAS,
           SamplingRate)`, tableName, strings.Join(schema, "\n")))
 			},
 		}
@@ -127,7 +131,7 @@ func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution Resolution
 CREATE MATERIALIZED VIEW %s TO %s
 AS SELECT
  *
-EXCEPT(SrcAddr, DstAddr)
+EXCEPT(SrcAddr, DstAddr, SrcPort, DstPort)
 REPLACE(toStartOfInterval(TimeReceived, INTERVAL %d second) AS TimeReceived)
 FROM %s`, viewName, tableName, uint64(resolution.Interval.Seconds()), "flows"))
 			},

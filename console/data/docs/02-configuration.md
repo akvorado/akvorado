@@ -313,7 +313,7 @@ database. If `ttl` is 0, then the data is kept forever. If `interval`
 is 0, it applies to the raw data (the one in the `flows` table). For
 each resolution, a materialized view `flows_XXXX` is created with the
 specified interval. It should be noted that consolidated tables do not
-contain information about source and destination IP addresses.
+contain information about source/destination IP addresses and ports.
 
 Here is the default configuration:
 
