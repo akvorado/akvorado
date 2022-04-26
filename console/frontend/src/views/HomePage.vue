@@ -18,7 +18,10 @@
         </div>
       </div>
       <WidgetFlowRate :refresh="refreshOften" class="rounded-md p-4 shadow" />
-      <WidgetExporters :refresh="refreshOften" class="rounded-md p-4 shadow" />
+      <WidgetExporters
+        :refresh="refreshOccasionally"
+        class="rounded-md p-4 shadow"
+      />
       <WidgetLastFlow
         :refresh="refreshOften"
         class="order-last col-span-2 row-span-3 xl:order-none"
