@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
+	"github.com/benbjohnson/clock"
 	"github.com/golang/mock/gomock"
 
 	"akvorado/common/clickhousedb"
@@ -265,10 +266,12 @@ func TestWidgetGraph(t *testing.T) {
 	r := reporter.NewMock(t)
 	ch, mockConn := clickhousedb.NewMock(t, r)
 	h := http.NewMock(t, r)
+	mockClock := clock.NewMock()
 	c, err := New(r, Configuration{}, Dependencies{
 		Daemon:       daemon.NewMock(t),
 		HTTP:         h,
 		ClickHouseDB: ch,
+		Clock:        mockClock,
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
@@ -276,6 +279,7 @@ func TestWidgetGraph(t *testing.T) {
 	helpers.StartStop(t, c)
 
 	base := time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
+	mockClock.Set(base.Add(24 * time.Hour))
 	expected := []struct {
 		Time time.Time `json:"t"`
 		Gbps float64   `json:"gbps"`
@@ -289,12 +293,13 @@ func TestWidgetGraph(t *testing.T) {
 	}
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), `
+WITH
+ intDiv(864, 1)*1 AS slot
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL 864 second) AS Time,
- SUM(Bytes*SamplingRate*8/864)/1000/1000/1000 AS Gbps
+ toStartOfInterval(TimeReceived, INTERVAL slot second) AS Time,
+ SUM(Bytes*SamplingRate*8/slot)/1000/1000/1000 AS Gbps
 FROM flows
-WHERE TimeReceived > toStartOfInterval(date_sub(hour, 24, now()), INTERVAL 864 second)
-AND TimeReceived < toStartOfInterval(now(), INTERVAL 864 second)
+WHERE TimeReceived BETWEEN toDateTime('2009-11-10 23:00:00', 'UTC') AND toDateTime('2009-11-11 23:00:00', 'UTC')
 AND InIfBoundary = 'external'
 GROUP BY Time
 ORDER BY Time`).

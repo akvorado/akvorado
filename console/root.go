@@ -10,12 +10,14 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
+	"time"
 
 	"akvorado/common/clickhousedb"
 	"akvorado/common/daemon"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
 
+	"github.com/benbjohnson/clock"
 	"gopkg.in/tomb.v2"
 )
 
@@ -28,6 +30,13 @@ type Component struct {
 
 	templates     map[string]*template.Template
 	templatesLock sync.RWMutex
+
+	flowsTables     []flowsTable
+	flowsTablesLock sync.RWMutex
+
+	metrics struct {
+		clickhouseQueries *reporter.CounterVec
+	}
 }
 
 // Dependencies define the dependencies of the console component.
@@ -35,17 +44,29 @@ type Dependencies struct {
 	Daemon       daemon.Component
 	HTTP         *http.Component
 	ClickHouseDB *clickhousedb.Component
+	Clock        clock.Clock
 }
 
 // New creates a new console component.
-func New(reporter *reporter.Reporter, config Configuration, dependencies Dependencies) (*Component, error) {
+func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) (*Component, error) {
+	if dependencies.Clock == nil {
+		dependencies.Clock = clock.New()
+	}
 	c := Component{
-		r:      reporter,
-		d:      &dependencies,
-		config: config,
+		r:           r,
+		d:           &dependencies,
+		config:      config,
+		flowsTables: []flowsTable{{"flows", 0, time.Time{}}},
 	}
 
 	c.d.Daemon.Track(&c.t, "console")
+
+	c.metrics.clickhouseQueries = c.r.CounterVec(
+		reporter.CounterOpts{
+			Name: "clickhouse_queries_total",
+			Help: "Number of requests to ClickHouse.",
+		}, []string{"table"},
+	)
 	return &c, nil
 }
 
@@ -62,10 +83,21 @@ func (c *Component) Start() error {
 	c.d.HTTP.GinRouter.GET("/api/v0/console/widget/graph", c.widgetGraphHandlerFunc)
 
 	c.t.Go(func() error {
-		select {
-		case <-c.t.Dying():
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ticker.C:
+				if err := c.refreshFlowsTables(); err != nil {
+					c.r.Err(err).Msg("cannot refresh flows tables")
+					continue
+				}
+				// Once successful, do that less often
+				ticker.Reset(10 * time.Minute)
+			case <-c.t.Dying():
+				return nil
+			}
 		}
-		return nil
 	})
 	return nil
 }

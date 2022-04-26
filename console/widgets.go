@@ -12,8 +12,10 @@ import (
 
 func (c *Component) widgetFlowLastHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
-	rows, err := c.d.ClickHouseDB.Conn.Query(ctx,
-		`SELECT * FROM flows WHERE TimeReceived = (SELECT MAX(TimeReceived) FROM flows) LIMIT 1`)
+	query := `SELECT * FROM flows WHERE TimeReceived = (SELECT MAX(TimeReceived) FROM flows) LIMIT 1`
+	gc.Header("X-SQL-Query", query)
+	// Do not increase counter for this one.
+	rows, err := c.d.ClickHouseDB.Conn.Query(ctx, query)
 	if err != nil {
 		c.r.Err(err).Msg("unable to query database")
 		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to query database."})
@@ -47,8 +49,10 @@ func (c *Component) widgetFlowLastHandlerFunc(gc *gin.Context) {
 
 func (c *Component) widgetFlowRateHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
-	row := c.d.ClickHouseDB.Conn.QueryRow(ctx,
-		`SELECT COUNT(*)/300 AS rate FROM flows WHERE TimeReceived > date_sub(minute, 5, now())`)
+	query := `SELECT COUNT(*)/300 AS rate FROM flows WHERE TimeReceived > date_sub(minute, 5, now())`
+	gc.Header("X-SQL-Query", query)
+	// Do not increase counter for this one.
+	row := c.d.ClickHouseDB.Conn.QueryRow(ctx, query)
 	if err := row.Err(); err != nil {
 		c.r.Err(err).Msg("unable to query database")
 		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to query database."})
@@ -68,12 +72,14 @@ func (c *Component) widgetFlowRateHandlerFunc(gc *gin.Context) {
 
 func (c *Component) widgetExportersHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
+	query := `SELECT ExporterName FROM exporters GROUP BY ExporterName ORDER BY ExporterName`
+	gc.Header("X-SQL-Query", query)
+	// Do not increase counter for this one.
 
 	exporters := []struct {
 		ExporterName string
 	}{}
-	err := c.d.ClickHouseDB.Conn.Select(ctx, &exporters,
-		`SELECT ExporterName FROM exporters GROUP BY ExporterName ORDER BY ExporterName`)
+	err := c.d.ClickHouseDB.Conn.Select(ctx, &exporters, query)
 	if err != nil {
 		c.r.Err(err).Msg("unable to query database")
 		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to query database."})
@@ -137,23 +143,24 @@ func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 		groupby = selector
 	}
 
-	request := fmt.Sprintf(`
+	now := c.d.Clock.Now()
+	query := c.queryFlowsTable(fmt.Sprintf(`
 WITH
- date_sub(minute, 5, now()) AS StartTime,
- (SELECT SUM(Bytes*SamplingRate) FROM flows WHERE TimeReceived > StartTime %s) AS Total
+ (SELECT SUM(Bytes*SamplingRate) FROM {table} WHERE {timefilter} %s) AS Total
 SELECT
  %s AS Name,
  SUM(Bytes*SamplingRate) / Total * 100 AS Percent
-FROM flows
-WHERE TimeReceived > StartTime
+FROM {table}
+WHERE {timefilter}
 %s
 GROUP BY %s
 ORDER BY Percent DESC
 LIMIT 5
-`, filter, selector, filter, groupby)
+`, filter, selector, filter, groupby), now.Add(-5*time.Minute), now, time.Minute)
+	gc.Header("X-SQL-Query", query)
 
 	results := []topResult{}
-	err := c.d.ClickHouseDB.Conn.Select(ctx, &results, request)
+	err := c.d.ClickHouseDB.Conn.Select(ctx, &results, query)
 	if err != nil {
 		c.r.Err(err).Msg("unable to query database")
 		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to query database."})
@@ -175,17 +182,20 @@ func (c *Component) widgetGraphHandlerFunc(gc *gin.Context) {
 		gc.JSON(http.StatusBadRequest, gin.H{"message": "Width should be > 5 and < 1000"})
 		return
 	}
-	interval := uint64((24 * time.Hour).Seconds()) / width
-	query := fmt.Sprintf(`
+	interval := int64((24 * time.Hour).Seconds()) / int64(width)
+	now := c.d.Clock.Now()
+	query := c.queryFlowsTable(fmt.Sprintf(`
+WITH
+ intDiv(%d, {resolution})*{resolution} AS slot
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL %d second) AS Time,
- SUM(Bytes*SamplingRate*8/%d)/1000/1000/1000 AS Gbps
-FROM flows
-WHERE TimeReceived > toStartOfInterval(date_sub(hour, 24, now()), INTERVAL %d second)
-AND TimeReceived < toStartOfInterval(now(), INTERVAL %d second)
+ toStartOfInterval(TimeReceived, INTERVAL slot second) AS Time,
+ SUM(Bytes*SamplingRate*8/slot)/1000/1000/1000 AS Gbps
+FROM {table}
+WHERE {timefilter}
 AND InIfBoundary = 'external'
 GROUP BY Time
-ORDER BY Time`, interval, interval, interval, interval)
+ORDER BY Time`, interval), now.Add(-24*time.Hour), now, time.Duration(interval)*time.Second)
+	gc.Header("X-SQL-Query", query)
 
 	results := []struct {
 		Time time.Time `json:"t"`

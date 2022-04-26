@@ -72,13 +72,15 @@ const option = ref({
 watch(
   () => props.refresh,
   async () => {
-    const response = await fetch("/api/v0/console/widget/graph?width=150");
+    const response = await fetch("/api/v0/console/widget/graph?width=200");
     if (!response.ok) {
       // Keep current data
       return;
     }
     const data = await response.json();
-    option.value.series[0].data = data.data.map(({ t, gbps }) => [t, gbps]);
+    option.value.series[0].data = data.data
+      .map(({ t, gbps }) => [t, gbps])
+      .slice(1, -1);
   },
   { immediate: true }
 );
