@@ -17,6 +17,7 @@ export GO111MODULE=on
 GENERATED = \
 	inlet/flow/decoder/flow-1.pb.go \
 	common/clickhousedb/mocks/mock_driver.go \
+	orchestrator/clickhouse/data/asns.csv \
 	console/data/frontend console/frontend/node_modules
 
 .PHONY: all
@@ -74,18 +75,12 @@ console/data/frontend: $(shell $(LSFILES) console/frontend/src 2> /dev/null)
 console/data/frontend: ; $(info $(M) building console frontend…)
 	$Q cd console/frontend && yarn --silent build
 
-# These files are versioned in Git, but we may want to update them.
-orchestrator/clickhouse/data/protocols.csv:
+orchestrator/clickhouse/data/asns.csv:
+	$Q curl -sL https://vincentbernat.github.io/asn2org/asns.csv | sed 's|,[^,]*$$||' > $@
+orchestrator/clickhouse/data/protocols.csv: # We keep this one in Git
 	$Q curl -sL http://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv \
 		| sed -nE -e "1 s/.*/proto,name,description/p" -e "2,$ s/^([0-9]+,[^ ,]+,[^\",]+),.*/\1/p" \
 		> $@
-orchestrator/clickhouse/data/asns.csv:
-	$Q (curl -sL https://www.peeringdb.com/api/net \
-		| jq -r  '.data[] | [.asn,.name] | @csv' \
-	  ; curl -sL https://bgp.potaroo.net/cidr/autnums.html \
-		| sed -n 's|.*>AS\([0-9]*\) *</a> \([^-][^,]*\).*|\1,"\2"|p') \
-		| LC_ALL=C sort -sn -t, -k1 -u \
-		| sed -e '1iasn,name' > $@
 
 # Tests
 

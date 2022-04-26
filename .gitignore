@@ -2,6 +2,7 @@
 /test/
 /inlet/flow/decoder/flow*.pb.go
 /common/clickhousedb/mocks/
+/orchestrator/clickhouse/data/asns.csv
 
 /console/frontend/node_modules/
 /console/data/frontend/
