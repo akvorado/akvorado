@@ -42,6 +42,7 @@ const option = ref({
     axisLabel: { formatter: formatGbps },
   },
   tooltip: {
+    confine: true,
     trigger: "axis",
     axisPointer: {
       type: "cross",

@@ -34,6 +34,7 @@ const props = defineProps({
 const option = ref({
   tooltip: {
     trigger: "item",
+    confine: true,
     valueFormatter(value) {
       return value.toFixed(2) + "%";
     },
