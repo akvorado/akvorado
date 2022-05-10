@@ -65,7 +65,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+import { ref, watch, inject } from "vue";
 import { notify } from "notiwind";
 import { Date as SugarDate } from "sugar-date";
 import { use, graphic } from "echarts/core";
@@ -75,6 +75,7 @@ import { TooltipComponent, GridComponent } from "echarts/components";
 import VChart from "vue-echarts";
 import { ResizeRow } from "vue-resizer";
 import { dataColor, dataColorGrey } from "../utils/palette.js";
+const { isDark } = inject("darkMode");
 
 use([CanvasRenderer, LineChart, TooltipComponent, GridComponent]);
 
@@ -139,6 +140,7 @@ const request = ref({
     ],
   },
 });
+const fetchedData = ref({});
 
 watch(
   request,
@@ -161,56 +163,62 @@ watch(
       return;
     }
     const data = await response.json();
+    fetchedData.value = data;
+  },
+  { immediate: true }
+);
 
-    // Graphic
-    graph.value.xAxis.data = data.t.slice(1, -1);
-    graph.value.series = data.rows.map((rows, idx) => {
+watch([fetchedData, isDark], ([data, isDark]) => {
+  const theme = isDark ? "dark" : "light";
+
+  // Graphic
+  graph.value.darkMode = isDark;
+  graph.value.xAxis.data = data.t.slice(1, -1);
+  graph.value.series = data.rows.map((rows, idx) => {
+    const color = rows.some((name) => name === "Other")
+      ? dataColorGrey
+      : dataColor;
+    return {
+      type: "line",
+      name: rows.join(" — "),
+      symbol: "none",
+      itemStyle: {
+        color: color(idx, false, theme),
+      },
+      lineStyle: {
+        color: color(idx, false, theme),
+        width: 1,
+      },
+      areaStyle: {
+        opacity: 0.95,
+        color: new graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: color(idx, false, theme) },
+          { offset: 1, color: color(idx, true, theme) },
+        ]),
+      },
+      emphasis: {
+        focus: "series",
+      },
+      stack: "all",
+      data: data.t.map((t, idx2) => [t, data.points[idx][idx2]]).slice(1, -1),
+    };
+  });
+
+  // Table
+  table.value = {
+    columns: request.value.dimensions,
+    rows: data.rows.map((rows, idx) => {
       const color = rows.some((name) => name === "Other")
         ? dataColorGrey
         : dataColor;
       return {
-        type: "line",
-        name: rows.join(" — "),
-        symbol: "none",
-        itemStyle: {
-          color: color(idx),
-        },
-        lineStyle: {
-          color: color(idx),
-          width: 1,
-        },
-        areaStyle: {
-          opacity: 0.95,
-          color: new graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: color(idx) },
-            { offset: 1, color: color(idx, true) },
-          ]),
-        },
-        emphasis: {
-          focus: "series",
-        },
-        stack: "all",
-        data: data.t.map((t, idx2) => [t, data.points[idx][idx2]]).slice(1, -1),
+        dimensions: rows,
+        style: `background-color: ${color(idx, false, theme)}`,
+        min: data.min[idx],
+        max: data.max[idx],
+        average: data.average[idx],
       };
-    });
-
-    // Table
-    table.value = {
-      columns: request.value.dimensions,
-      rows: data.rows.map((rows, idx) => {
-        const color = rows.some((name) => name === "Other")
-          ? dataColorGrey
-          : dataColor;
-        return {
-          dimensions: rows,
-          style: `background-color: ${color(idx)}`,
-          min: data.min[idx],
-          max: data.max[idx],
-          average: data.average[idx],
-        };
-      }),
-    };
-  },
-  { immediate: true }
-);
+    }),
+  };
+});
 </script>

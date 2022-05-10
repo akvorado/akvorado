@@ -8,12 +8,14 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+import { ref, watch, inject } from "vue";
 import { use } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { PieChart } from "echarts/charts";
 import { TooltipComponent, LegendComponent } from "echarts/components";
 import VChart from "vue-echarts";
+import { dataColor, dataColorGrey } from "../utils/palette.js";
+const { isDark } = inject("darkMode");
 
 use([CanvasRenderer, PieChart, TooltipComponent, LegendComponent]);
 
@@ -45,7 +47,6 @@ const option = ref({
     itemGap: 5,
     itemWidth: 14,
     itemHeight: 14,
-    backgroundColor: "rgba(255, 255, 255, 0.4)",
     textStyle: { fontSize: 10 },
     formatter(name) {
       return name.split(": ")[0];
@@ -57,20 +58,28 @@ const option = ref({
       label: { show: false },
       center: ["50%", "40%"],
       radius: "60%",
-      itemStyle: {
-        color({ name, dataIndex }) {
-          if (name === "Others") {
-            return "#aaa";
-          }
-          return ["#5470c6", "#91cc75", "#fac858", "#ee6666", "#73c0de"][
-            dataIndex % 5
-          ];
-        },
-      },
       data: [],
     },
   ],
 });
+
+watch(
+  isDark,
+  (isDark) => {
+    const theme = isDark ? "dark" : "light";
+    option.value.darkMode = isDark;
+    option.value.series.itemStyle = {
+      color({ name, dataIndex }) {
+        if (name === "Others") {
+          return dataColorGrey(0, false, theme);
+        }
+        return dataColor(dataIndex, false, theme);
+      },
+    };
+    option.value.legend.textStyle.color = isDark ? "#eee" : "#111";
+  },
+  { immediate: true }
+);
 
 watch(
   () => props.refresh,

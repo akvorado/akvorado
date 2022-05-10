@@ -7,12 +7,14 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+import { ref, watch, inject } from "vue";
 import { use, graphic } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { LineChart } from "echarts/charts";
 import { TooltipComponent, GridComponent } from "echarts/components";
 import VChart from "vue-echarts";
+import { dataColor } from "../utils/palette.js";
+const { isDark } = inject("darkMode");
 
 use([CanvasRenderer, LineChart, TooltipComponent, GridComponent]);
 
@@ -55,20 +57,29 @@ const option = ref({
       type: "line",
       symbol: "none",
       lineStyle: {
-        color: "#5470c6",
         width: 1,
-      },
-      areaStyle: {
-        opacity: 1,
-        color: new graphic.LinearGradient(0, 0, 0, 1, [
-          { offset: 0, color: "#5470c6" },
-          { offset: 1, color: "#5572c8" },
-        ]),
       },
       data: [],
     },
   ],
 });
+
+watch(
+  isDark,
+  (isDark) => {
+    const theme = isDark ? "dark" : "light";
+    option.value.darkMode = isDark;
+    option.value.series[0].areaStyle = {
+      opacity: 0.9,
+      color: new graphic.LinearGradient(0, 0, 0, 1, [
+        { offset: 0, color: dataColor(0, false, theme) },
+        { offset: 1, color: dataColor(0, true, theme) },
+      ]),
+    };
+    option.value.series[0].lineStyle.color = dataColor(0, false, theme);
+  },
+  { immediate: true }
+);
 
 watch(
   () => props.refresh,
