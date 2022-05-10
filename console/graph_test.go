@@ -418,11 +418,11 @@ func TestGraphHandler(t *testing.T) {
 		// Sorted by sum of bps
 		"rows": [][]string{
 			{"router1", "provider2"}, // 10000
-			{"Other", "Other"},       // 2100
 			{"router1", "provider1"}, // 1600
 			{"router2", "provider2"}, // 1200
 			{"router2", "provider3"}, // 1100
 			{"router2", "provider4"}, // 1000
+			{"Other", "Other"},       // 2100
 		},
 		"t": []string{
 			"2009-11-10T23:00:00Z",
@@ -431,35 +431,35 @@ func TestGraphHandler(t *testing.T) {
 		},
 		"points": [][]int{
 			{2000, 5000, 3000},
-			{1900, 100, 100},
 			{1000, 500, 100},
 			{1200, 0, 0},
 			{1100, 0, 0},
 			{0, 900, 100},
+			{1900, 100, 100},
 		},
 		"min": []int{
 			2000,
 			100,
+			0,
+			0,
+			0,
 			100,
-			0,
-			0,
-			0,
 		},
 		"max": []int{
 			5000,
-			1900,
 			1000,
 			1200,
 			1100,
 			900,
+			1900,
 		},
 		"average": []int{
 			3333,
-			700,
 			533,
 			400,
 			366,
 			333,
+			700,
 		},
 	}
 	mockConn.EXPECT().

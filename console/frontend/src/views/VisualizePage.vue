@@ -185,10 +185,16 @@ watch([fetchedData, isDark], ([data, isDark]) => {
       itemStyle: {
         color: color(idx, false, theme),
       },
-      lineStyle: {
-        color: color(idx, false, theme),
-        width: 1,
-      },
+      lineStyle:
+        idx == data.rows.length - 1
+          ? {
+              color: isDark ? "#ddd" : "#111",
+              width: 2,
+            }
+          : {
+              color: color(idx, false, theme),
+              width: 1,
+            },
       areaStyle: {
         opacity: 0.95,
         color: new graphic.LinearGradient(0, 0, 0, 1, [

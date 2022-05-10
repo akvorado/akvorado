@@ -481,7 +481,14 @@ func (c *Component) graphHandlerFunc(gc *gin.Context) {
 		rows[i] = k
 		i++
 	}
+	// Sort by sum, except we want "Other" to be last
 	sort.Slice(rows, func(i, j int) bool {
+		if rowKeys[rows[i]][0] == "Other" {
+			return false
+		}
+		if rowKeys[rows[j]][0] == "Other" {
+			return true
+		}
 		return rowSums[rows[i]] > rowSums[rows[j]]
 	})
 	output.Rows = make([][]string, len(rows))
