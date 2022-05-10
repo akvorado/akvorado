@@ -256,22 +256,22 @@ func TestGraphColumnSQLSelect(t *testing.T) {
 	}{
 		{
 			Input:    graphColumnSrcAddr,
-			Expected: `if(SrcAddr IN (SELECT SrcAddr FROM rows), IPv6NumToString(SrcAddr), 'Other')`,
+			Expected: `IPv6NumToString(SrcAddr)`,
 		}, {
 			Input:    graphColumnDstAS,
-			Expected: `if(DstAS IN (SELECT DstAS FROM rows), concat(toString(DstAS), ': ', dictGetOrDefault('asns', 'name', DstAS, '???')), 'Other')`,
+			Expected: `concat(toString(DstAS), ': ', dictGetOrDefault('asns', 'name', DstAS, '???'))`,
 		}, {
 			Input:    graphColumnProto,
-			Expected: `if(Proto IN (SELECT Proto FROM rows), dictGetOrDefault('protocols', 'name', Proto, '???'), 'Other')`,
+			Expected: `dictGetOrDefault('protocols', 'name', Proto, '???')`,
 		}, {
 			Input:    graphColumnEType,
-			Expected: `if(EType IN (SELECT EType FROM rows), if(EType = 0x800, 'IPv4', if(EType = 0x86dd, 'IPv6', '???')), 'Other')`,
+			Expected: `if(EType = 0x800, 'IPv4', if(EType = 0x86dd, 'IPv6', '???'))`,
 		}, {
 			Input:    graphColumnOutIfSpeed,
-			Expected: `if(OutIfSpeed IN (SELECT OutIfSpeed FROM rows), toString(OutIfSpeed), 'Other')`,
+			Expected: `toString(OutIfSpeed)`,
 		}, {
 			Input:    graphColumnExporterName,
-			Expected: `if(ExporterName IN (SELECT ExporterName FROM rows), ExporterName, 'Other')`,
+			Expected: `ExporterName`,
 		},
 	}
 	for _, tc := range cases {
@@ -363,8 +363,7 @@ WITH
 SELECT
  toStartOfInterval(TimeReceived, INTERVAL slot second) AS time,
  SUM(Bytes*SamplingRate*8/slot) AS bps,
- [if(ExporterName IN (SELECT ExporterName FROM rows), ExporterName, 'Other'),
-  if(InIfProvider IN (SELECT InIfProvider FROM rows), InIfProvider, 'Other')] AS dimensions
+ if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
 FROM {table}
 WHERE {timefilter}
 GROUP BY time, dimensions
@@ -403,26 +402,23 @@ func TestGraphHandler(t *testing.T) {
 	}{
 		{base, 1000, []string{"router1", "provider1"}},
 		{base, 2000, []string{"router1", "provider2"}},
-		{base, 1500, []string{"router1", "Others"}},
 		{base, 1200, []string{"router2", "provider2"}},
 		{base, 1100, []string{"router2", "provider3"}},
-		{base, 1900, []string{"Others", "Others"}},
+		{base, 1900, []string{"Other", "Other"}},
 		{base.Add(time.Minute), 500, []string{"router1", "provider1"}},
 		{base.Add(time.Minute), 5000, []string{"router1", "provider2"}},
 		{base.Add(time.Minute), 900, []string{"router2", "provider4"}},
-		{base.Add(time.Minute), 100, []string{"Others", "Others"}},
+		{base.Add(time.Minute), 100, []string{"Other", "Other"}},
 		{base.Add(2 * time.Minute), 100, []string{"router1", "provider1"}},
 		{base.Add(2 * time.Minute), 3000, []string{"router1", "provider2"}},
-		{base.Add(2 * time.Minute), 1500, []string{"router1", "Others"}},
 		{base.Add(2 * time.Minute), 100, []string{"router2", "provider4"}},
-		{base.Add(2 * time.Minute), 100, []string{"Others", "Others"}},
+		{base.Add(2 * time.Minute), 100, []string{"Other", "Other"}},
 	}
 	expected := gin.H{
 		// Sorted by sum of bps
 		"rows": [][]string{
 			{"router1", "provider2"}, // 10000
-			{"router1", "Others"},    // 3000
-			{"Others", "Others"},     // 2000
+			{"Other", "Other"},       // 2100
 			{"router1", "provider1"}, // 1600
 			{"router2", "provider2"}, // 1200
 			{"router2", "provider3"}, // 1100
@@ -435,7 +431,6 @@ func TestGraphHandler(t *testing.T) {
 		},
 		"points": [][]int{
 			{2000, 5000, 3000},
-			{1500, 0, 1500},
 			{1900, 100, 100},
 			{1000, 500, 100},
 			{1200, 0, 0},
@@ -444,7 +439,6 @@ func TestGraphHandler(t *testing.T) {
 		},
 		"min": []int{
 			2000,
-			0,
 			100,
 			100,
 			0,
@@ -453,7 +447,6 @@ func TestGraphHandler(t *testing.T) {
 		},
 		"max": []int{
 			5000,
-			1500,
 			1900,
 			1000,
 			1200,
@@ -462,7 +455,6 @@ func TestGraphHandler(t *testing.T) {
 		},
 		"average": []int{
 			3333,
-			1000,
 			700,
 			533,
 			400,

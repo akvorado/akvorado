@@ -128,7 +128,7 @@ const request = ref({
   end: SugarDate.create("now"),
   points: 100,
   "max-series": 10,
-  dimensions: ["SrcAS"],
+  dimensions: ["SrcAS", "ExporterName"],
   filter: {
     operator: "all",
     rules: [

@@ -307,7 +307,6 @@ func (gfr graphFilterRule) toSQLWhere() (string, error) {
 
 // toSQLSelect transforms a column into an expression to use in SELECT
 func (gc graphColumn) toSQLSelect() string {
-	subQuery := fmt.Sprintf(`SELECT %s FROM rows`, gc)
 	var strValue string
 	switch gc {
 	case graphColumnExporterAddress, graphColumnSrcAddr, graphColumnDstAddr:
@@ -324,8 +323,7 @@ func (gc graphColumn) toSQLSelect() string {
 	default:
 		strValue = gc.String()
 	}
-	return fmt.Sprintf(`if(%s IN (%s), %s, 'Other')`,
-		gc, subQuery, strValue)
+	return strValue
 }
 
 // graphQueryToSQL converts a graph query to an SQL request
@@ -350,13 +348,18 @@ func (query graphQuery) toSQL() (string, error) {
 	}
 	selectFields := []string{}
 	dimensions := []string{}
+	others := []string{}
 	for _, column := range query.Dimensions {
 		field := column.toSQLSelect()
 		selectFields = append(selectFields, field)
 		dimensions = append(dimensions, column.String())
+		others = append(others, "'Other'")
 	}
 	if len(dimensions) > 0 {
-		fields = append(fields, fmt.Sprintf(`[%s] AS dimensions`, strings.Join(selectFields, ",\n  ")))
+		fields = append(fields, fmt.Sprintf(`if((%s) IN rows, [%s], [%s]) AS dimensions`,
+			strings.Join(dimensions, ", "),
+			strings.Join(selectFields, ", "),
+			strings.Join(others, ", ")))
 	} else {
 		fields = append(fields, "emptyArrayString() AS dimensions")
 	}
