@@ -14,8 +14,10 @@
     "@heroicons/vue": "^1.0.6",
     "echarts": "^5.3.2",
     "notiwind": "^1.2.5",
+    "sugar-date": "^2.0.6",
     "vue": "^3.2.25",
     "vue-echarts": "^6.0.2",
+    "vue-resizer": "^1.1.9",
     "vue-router": "^4.0.14"
   },
   "devDependencies": {

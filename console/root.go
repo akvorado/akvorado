@@ -81,6 +81,7 @@ func (c *Component) Start() error {
 	c.d.HTTP.GinRouter.GET("/api/v0/console/widget/exporters", c.widgetExportersHandlerFunc)
 	c.d.HTTP.GinRouter.GET("/api/v0/console/widget/top/:name", c.widgetTopHandlerFunc)
 	c.d.HTTP.GinRouter.GET("/api/v0/console/widget/graph", c.widgetGraphHandlerFunc)
+	c.d.HTTP.GinRouter.POST("/api/v0/console/graph", c.graphHandlerFunc)
 
 	c.t.Go(func() error {
 		ticker := time.NewTicker(10 * time.Second)

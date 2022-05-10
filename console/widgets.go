@@ -172,17 +172,16 @@ LIMIT 5
 func (c *Component) widgetGraphHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
 
-	width, err := strconv.ParseUint(gc.DefaultQuery("width", "500"), 10, 16)
+	points, err := strconv.ParseUint(gc.DefaultQuery("points", "200"), 10, 16)
 	if err != nil {
-		c.r.Err(err).Msg("invalid width parameter")
-		gc.JSON(http.StatusBadRequest, gin.H{"message": "Invalid width value."})
+		gc.JSON(http.StatusBadRequest, gin.H{"message": "Invalid value for points."})
 		return
 	}
-	if width < 5 || width > 1000 {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": "Width should be > 5 and < 1000"})
+	if points < 5 || points > 1000 {
+		gc.JSON(http.StatusBadRequest, gin.H{"message": "Points should be > 5 and < 1000"})
 		return
 	}
-	interval := int64((24 * time.Hour).Seconds()) / int64(width)
+	interval := int64((24 * time.Hour).Seconds()) / int64(points)
 	now := c.d.Clock.Now()
 	query := c.queryFlowsTable(fmt.Sprintf(`
 WITH

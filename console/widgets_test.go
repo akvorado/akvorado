@@ -308,7 +308,7 @@ ORDER BY Time`).
 
 	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
 		{
-			URL:         "/api/v0/console/widget/graph?width=100",
+			URL:         "/api/v0/console/widget/graph?points=100",
 			ContentType: "application/json; charset=utf-8",
 			FirstLines: []string{
 				`{"data":[{"t":"2009-11-10T23:00:00Z","gbps":25.3},{"t":"2009-11-10T23:01:00Z","gbps":27.8},{"t":"2009-11-10T23:02:00Z","gbps":26.4},{"t":"2009-11-10T23:03:00Z","gbps":29.2},{"t":"2009-11-10T23:04:00Z","gbps":21.3},{"t":"2009-11-10T23:05:00Z","gbps":24.7}]}`,

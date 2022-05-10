@@ -63,12 +63,24 @@
 import { computed } from "vue";
 import { useRoute } from "vue-router";
 import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/vue";
-import { HomeIcon, BookOpenIcon, MenuIcon, XIcon } from "@heroicons/vue/solid";
+import {
+  HomeIcon,
+  BookOpenIcon,
+  MenuIcon,
+  XIcon,
+  PresentationChartLineIcon,
+} from "@heroicons/vue/solid";
 import DarkMode from "./DarkMode.vue";
 
 const route = useRoute();
 const navigation = computed(() => [
   { name: "Home", icon: HomeIcon, link: "/", current: route.path == "/" },
+  {
+    name: "Visualize",
+    icon: PresentationChartLineIcon,
+    link: "/visualize",
+    current: route.path.startsWith("/visualize"),
+  },
   {
     name: "Documentation",
     icon: BookOpenIcon,

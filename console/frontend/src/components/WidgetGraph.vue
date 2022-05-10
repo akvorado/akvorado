@@ -73,7 +73,7 @@ const option = ref({
 watch(
   () => props.refresh,
   async () => {
-    const response = await fetch("/api/v0/console/widget/graph?width=200");
+    const response = await fetch("/api/v0/console/widget/graph");
     if (!response.ok) {
       // Keep current data
       return;
