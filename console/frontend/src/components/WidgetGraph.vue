@@ -13,22 +13,12 @@ import { CanvasRenderer } from "echarts/renderers";
 import { LineChart } from "echarts/charts";
 import { TooltipComponent, GridComponent } from "echarts/components";
 import VChart from "vue-echarts";
-import { dataColor } from "../utils/palette.js";
+import { dataColor, formatBps } from "../utils";
 const { isDark } = inject("darkMode");
 
 use([CanvasRenderer, LineChart, TooltipComponent, GridComponent]);
 
-const formatGbps = (value) => {
-  const suffixes = ["", "K", "M", "G", "T"];
-  let idx = 0;
-  value *= 1000 * 1000 * 1000;
-  while (value >= 1000 && idx < suffixes.length) {
-    value /= 1000;
-    idx++;
-  }
-  value = value.toFixed(2);
-  return `${value}${suffixes[idx]}`;
-};
+const formatGbps = (value) => formatBps(value * 1_000_000_000);
 
 const props = defineProps({
   refresh: {
