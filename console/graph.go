@@ -21,7 +21,7 @@ type graphQuery struct {
 	End        time.Time        `json:"end" binding:"required"`
 	Points     int              `json:"points" binding:"required"` // minimum number of points
 	Dimensions []graphColumn    `json:"dimensions"`                // group by ...
-	MaxSeries  int              `json:"max-series"`                // limit product of dimensions
+	Limit      int              `json:"limit"`                     // limit product of dimensions
 	Filter     graphFilterGroup `json:"filter"`                    // where ...
 }
 
@@ -372,7 +372,7 @@ func (query graphQuery) toSQL() (string, error) {
 			strings.Join(dimensions, ", "),
 			where,
 			strings.Join(dimensions, ", "),
-			query.MaxSeries))
+			query.Limit))
 	}
 
 	sqlQuery := fmt.Sprintf(`
@@ -411,11 +411,11 @@ func (c *Component) graphHandlerFunc(gc *gin.Context) {
 		gc.JSON(http.StatusBadRequest, gin.H{"message": "points should be >= 5 and <= 2000"})
 		return
 	}
-	if query.MaxSeries == 0 {
-		query.MaxSeries = 10
+	if query.Limit == 0 {
+		query.Limit = 10
 	}
-	if query.MaxSeries < 5 || query.MaxSeries > 50 {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": "max-series should be >= 5 and <= 50"})
+	if query.Limit < 5 || query.Limit > 50 {
+		gc.JSON(http.StatusBadRequest, gin.H{"message": "limit should be >= 5 and <= 50"})
 		return
 	}
 

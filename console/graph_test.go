@@ -346,10 +346,10 @@ ORDER BY time`,
 		}, {
 			Description: "no filters",
 			Input: graphQuery{
-				Start:     time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				End:       time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
-				Points:    100,
-				MaxSeries: 20,
+				Start:  time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
+				End:    time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Points: 100,
+				Limit:  20,
 				Dimensions: []graphColumn{
 					graphColumnExporterName,
 					graphColumnInIfProvider,
@@ -468,10 +468,10 @@ func TestGraphHandler(t *testing.T) {
 		Return(nil)
 
 	input := graphQuery{
-		Start:     time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-		End:       time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
-		Points:    100,
-		MaxSeries: 20,
+		Start:  time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
+		End:    time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+		Points: 100,
+		Limit:  20,
 		Dimensions: []graphColumn{
 			graphColumnExporterName,
 			graphColumnInIfProvider,
