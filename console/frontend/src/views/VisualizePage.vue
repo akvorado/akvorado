@@ -1,15 +1,21 @@
 <template>
-  <div class="container mx-auto">
-    <ResizeRow
-      :slider-width="10"
-      :height="graphHeight"
-      width="auto"
-      slider-bg-color="#eee3"
-      slider-bg-hover-color="#ccc3"
-    >
-      <VisualizeGraph :data="fetchedData" />
-    </ResizeRow>
-    <VisualizeTable :data="fetchedData" />
+  <div class="flex w-full flex-col lg:flex-row">
+    <VisualizeOptions
+      :state="state"
+      @update="(updatedState) => (state = updatedState)"
+    />
+    <div class="mx-4 grow">
+      <ResizeRow
+        :slider-width="10"
+        :height="graphHeight"
+        width="auto"
+        slider-bg-color="#eee1"
+        slider-bg-hover-color="#ccc3"
+      >
+        <VisualizeGraph :data="fetchedData" />
+      </ResizeRow>
+      <VisualizeTable :data="fetchedData" />
+    </div>
   </div>
 </template>
 
@@ -22,6 +28,7 @@ import { ResizeRow } from "vue-resizer";
 import LZString from "lz-string";
 import VisualizeTable from "../components/VisualizeTable.vue";
 import VisualizeGraph from "../components/VisualizeGraph.vue";
+import VisualizeOptions from "../components/VisualizeOptions.vue";
 
 const route = useRoute();
 const router = useRouter();

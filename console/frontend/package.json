@@ -19,7 +19,8 @@
     "vue": "^3.2.25",
     "vue-echarts": "^6.0.2",
     "vue-resizer": "^1.1.9",
-    "vue-router": "^4.0.14"
+    "vue-router": "^4.0.14",
+    "yaml": "^2.0.1"
   },
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.2",
