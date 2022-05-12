@@ -5,6 +5,12 @@
       @update="(updatedState) => (state = updatedState)"
     />
     <div class="mx-4 grow">
+      <InfoBox
+        v-if="errorTitle"
+        kind="danger"
+        :title="errorTitle"
+        :content="errorContent"
+      />
       <ResizeRow
         :slider-width="10"
         :height="graphHeight"
@@ -22,13 +28,13 @@
 <script setup>
 import { ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { notify } from "notiwind";
 import { Date as SugarDate } from "sugar-date";
 import { ResizeRow } from "vue-resizer";
 import LZString from "lz-string";
 import VisualizeTable from "../components/VisualizeTable.vue";
 import VisualizeGraph from "../components/VisualizeGraph.vue";
 import VisualizeOptions from "../components/VisualizeOptions.vue";
+import InfoBox from "../components/InfoBox.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -71,6 +77,10 @@ const defaultState = () => ({
 });
 const state = ref({});
 
+// Error handling
+const errorTitle = ref("");
+const errorContent = ref("");
+
 watch(
   route,
   () => {
@@ -81,6 +91,7 @@ watch(
 watch(
   state,
   async () => {
+    errorTitle.value = "";
     let body = { ...state.value };
     body.start = SugarDate.create(body.start);
     body.end = SugarDate.create(body.end);
@@ -90,15 +101,16 @@ watch(
       body: JSON.stringify(body),
     });
     if (!response.ok) {
-      notify(
-        {
-          group: "top",
-          kind: "error",
-          title: "Unable to fetch data",
-          text: `While retrieving data, got a fatal error.`,
-        },
-        60000
-      );
+      errorTitle.value = "Unable to fetch data!";
+      errorContent.value = "While retrieving data, got a fatal error.";
+      try {
+        const data = await response.json();
+        if (data.message) {
+          errorContent.value = `The server told us: ${data.message}.`;
+        }
+      } catch (_) {
+        // Do nothing
+      }
       return;
     }
     const data = await response.json();

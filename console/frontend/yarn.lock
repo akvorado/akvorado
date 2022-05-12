@@ -1099,11 +1099,6 @@ normalize-range@^0.1.2:
   resolved "https://registry.yarnpkg.com/normalize-range/-/normalize-range-0.1.2.tgz#2d10c06bdfd312ea9777695a4d28439456b75942"
   integrity sha1-LRDAa9/TEuqXd2laTShDlFa3WUI=
 
-notiwind@^1.2.5:
-  version "1.2.5"
-  resolved "https://registry.yarnpkg.com/notiwind/-/notiwind-1.2.5.tgz#4a1ab3d3afa0c88f6539c6730d619feb9d528230"
-  integrity sha512-i0WHk96skvQ0xt3uMeAI+tVZ2sgAOSpuNIeTycQZjwXh4DheLbpJffLjYOXT93C3CqZYVTal0hnGCpZIlG0jgQ==
-
 object-hash@^2.2.0:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/object-hash/-/object-hash-2.2.0.tgz#5ad518581eefc443bd763472b8ff2e9c2c0d54a5"

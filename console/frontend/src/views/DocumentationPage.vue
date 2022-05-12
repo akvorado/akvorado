@@ -56,6 +56,12 @@
       class="flex grow md:relative md:overflow-y-auto md:shadow-md"
     >
       <div class="max-w-full py-4 px-4 md:px-16">
+        <InfoBox
+          v-if="errorTitle"
+          kind="danger"
+          :title="errorTitle"
+          :content="errorContent"
+        />
         <div
           class="prose-img:center prose prose-sm mx-auto prose-h1:border-b-2 prose-pre:rounded dark:prose-invert dark:prose-h1:border-gray-700 md:prose-base"
           v-html="markdown"
@@ -68,7 +74,7 @@
 <script setup>
 import { ref, computed, watch, nextTick } from "vue";
 import { useRoute } from "vue-router";
-import { notify } from "notiwind";
+import InfoBox from "../components/InfoBox.vue";
 
 const route = useRoute();
 const markdown = ref("");
@@ -76,10 +82,13 @@ const toc = ref([]);
 const contentEl = ref(null);
 const activeDocument = ref(null);
 const activeSlug = computed(() => route.hash.replace(/^#/, ""));
+const errorTitle = ref("");
+const errorContent = ref("");
 
 watch(
   () => ({ id: route.params.id, hash: route.hash }),
   async (to, from) => {
+    errorTitle.value = "";
     if (to.id === undefined) return;
     if (to.id !== from?.id) {
       const id = to.id;
@@ -94,15 +103,8 @@ watch(
         activeDocument.value = id;
       } catch (error) {
         console.error(`while retrieving ${id}:`, error);
-        notify(
-          {
-            group: "top",
-            kind: "error",
-            title: "Unable to fetch document",
-            text: `While retrieving ${id}, got a fatal error.`,
-          },
-          60000
-        );
+        errorTitle.value = "Unable to fetch document!";
+        errorContent.value = `While retrieving ${id}, got a fatal error.`;
       }
     }
     if (to.id !== from?.id || to.hash !== from?.hash) {
