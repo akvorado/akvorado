@@ -75,7 +75,7 @@ console/data/frontend: $(shell $(LSFILES) console/frontend/src 2> /dev/null)
 console/data/frontend: ; $(info $(M) building console frontend…)
 	$Q cd console/frontend && yarn --silent build
 
-orchestrator/clickhouse/data/asns.csv:
+orchestrator/clickhouse/data/asns.csv: ; $(info $(M) generate ASN map…)
 	$Q curl -sL https://vincentbernat.github.io/asn2org/asns.csv | sed 's|,[^,]*$$||' > $@
 orchestrator/clickhouse/data/protocols.csv: # We keep this one in Git
 	$Q curl -sL http://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv \
