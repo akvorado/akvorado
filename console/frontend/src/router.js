@@ -9,6 +9,11 @@ const router = createRouter({
   routes: [
     { path: "/", name: "Home", component: HomePage },
     { path: "/visualize", name: "Visualize", component: VisualizePage },
+    {
+      path: "/visualize/:state",
+      name: "VisualizeWithState",
+      component: VisualizePage,
+    },
     { path: "/docs", redirect: "/docs/intro" },
     { path: "/docs/:id", name: "Documentation", component: DocumentationPage },
     { path: "/:pathMatch(.*)", component: NotFoundPage },
