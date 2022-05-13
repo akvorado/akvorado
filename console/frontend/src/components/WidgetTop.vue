@@ -68,7 +68,7 @@ watch(
   (isDark) => {
     const theme = isDark ? "dark" : "light";
     option.value.darkMode = isDark;
-    option.value.series.itemStyle = {
+    option.value.series[0].itemStyle = {
       color({ name, dataIndex }) {
         if (name === "Others") {
           return dataColorGrey(0, false, theme);
