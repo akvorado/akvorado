@@ -140,7 +140,7 @@ func (gfgo *graphFilterGroupOperator) UnmarshalText(input []byte) error {
 }
 
 type graphFilterRule struct {
-	Column   graphColumn             `json:"column" binding:"required"`
+	Column   graphColumn             `json:"field" binding:"required"`
 	Operator graphFilterRuleOperator `json:"operator" binding:"required"`
 	Value    string                  `json:"value" binding:"required"`
 }

@@ -68,7 +68,7 @@ const defaultState = () => ({
     operator: "all",
     rules: [
       {
-        column: "InIfBoundary",
+        field: "InIfBoundary",
         operator: "=",
         value: "external",
       },
