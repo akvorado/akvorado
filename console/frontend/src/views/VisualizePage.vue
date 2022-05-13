@@ -84,7 +84,10 @@ const errorContent = ref("");
 watch(
   route,
   () => {
-    state.value = decodeState(route.params.state);
+    const newState = decodeState(route.params.state);
+    if (JSON.stringify(newState) !== JSON.stringify(state.value)) {
+      state.value = newState;
+    }
   },
   { immediate: true }
 );
