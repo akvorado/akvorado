@@ -48,8 +48,6 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	if err := c.registerHTTPHandlers(); err != nil {
 		return nil, err
 	}
-	c.d.Daemon.Track(&c.t, "orchestrator/clickhouse")
-
 	c.metrics.migrationsRunning = c.r.Gauge(
 		reporter.GaugeOpts{
 			Name: "migrations_running",
