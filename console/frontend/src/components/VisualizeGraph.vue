@@ -98,3 +98,9 @@ watch(
   { immediate: true }
 );
 </script>
+
+<style scoped>
+x-vue-echarts > :deep(div:first-child) {
+  width: auto !important;
+}
+</style>
