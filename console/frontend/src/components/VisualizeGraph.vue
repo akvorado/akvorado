@@ -117,6 +117,8 @@ watch(
     const theme = isDark ? "dark" : "light";
 
     graph.value.xAxis.data = data.t.slice(1, -1);
+    graph.value.xAxis.min = data.start;
+    graph.value.xAxis.max = data.end;
     graph.value.series = data.rows.map((rows, idx) => {
       const color = rows.some((name) => name === "Other")
         ? dataColorGrey

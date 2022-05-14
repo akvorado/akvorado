@@ -122,6 +122,8 @@ watch(
       }
       const data = await response.json();
       data.dimensions = body.dimensions;
+      data.start = body.start;
+      data.end = body.end;
       fetchedData.value = data;
     } finally {
       loading.value = false;
