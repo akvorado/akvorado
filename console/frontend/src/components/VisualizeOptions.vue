@@ -1,10 +1,10 @@
 <template>
   <aside
     class="transition-height transition-width relative mb-2 w-full shrink-0 shadow duration-100 lg:mr-4 lg:mb-0 lg:h-auto"
-    :class="open ? 'h-64 lg:w-64' : 'h-6 lg:w-6'"
+    :class="open ? 'h-96 lg:w-64' : 'h-6 lg:w-6'"
   >
     <button
-      class="absolute right-4 bottom-0 translate-y-1/2 rounded-full bg-white shadow hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-black lg:top-2 lg:bottom-auto lg:right-0 lg:translate-x-1/2 lg:translate-y-0"
+      class="absolute right-4 bottom-0 z-10 translate-y-1/2 rounded-full bg-white shadow hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-black lg:top-2 lg:bottom-auto lg:right-0 lg:translate-x-1/2 lg:translate-y-0"
       @click="open = !open"
     >
       <ChevronRightIcon v-if="!open" class="hidden h-8 lg:inline" />
@@ -13,7 +13,7 @@
       <ChevronUpIcon v-if="open" class="h-8 lg:hidden" />
     </button>
     <form
-      class="h-full overflow-y-auto bg-gray-200 dark:bg-gray-700"
+      class="h-full overflow-y-auto bg-gray-200 dark:bg-slate-600"
       @submit.prevent="apply()"
     >
       <div v-if="open" class="flex h-full flex-col py-4 px-3 lg:max-h-screen">
@@ -22,22 +22,7 @@
         >
           Time range
         </p>
-        <div class="flex flex-row lg:flex-col">
-          <InputFloatingLabel
-            id="start"
-            v-model="startTime"
-            class="mr-1 basis-1/2 lg:mr-0"
-            label="Start"
-            :error="startTimeError"
-          />
-          <InputFloatingLabel
-            id="end"
-            v-model="endTime"
-            class="ml-1 basis-1/2 lg:ml-0"
-            label="End"
-            :error="endTimeError"
-          />
-        </div>
+        <InputTimeRange v-model="timeRange" />
         <label
           for="options"
           class="my-2 block text-sm font-semibold text-gray-900 dark:text-gray-400"
@@ -75,14 +60,13 @@
 
 <script setup>
 import { ref, watch, computed } from "vue";
-import { Date as SugarDate } from "sugar-date";
 import {
   ChevronLeftIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   ChevronUpIcon,
 } from "@heroicons/vue/solid";
-import InputFloatingLabel from "./InputFloatingLabel.vue";
+import InputTimeRange from "./InputTimeRange.vue";
 
 import YAML from "yaml";
 
@@ -96,24 +80,7 @@ const emit = defineEmits(["update"]);
 
 const open = ref(false);
 
-// Time
-const startTime = ref("");
-const endTime = ref("");
-const parsedStartTime = computed(() => SugarDate.create(startTime.value));
-const parsedEndTime = computed(() => SugarDate.create(endTime.value));
-const startTimeError = computed(() =>
-  isNaN(parsedStartTime.value) ? "Invalid date" : ""
-);
-const endTimeError = computed(
-  () =>
-    (isNaN(parsedEndTime.value) ? "Invalid date" : "") ||
-    (!isNaN(parsedStartTime.value) &&
-      parsedStartTime.value > parsedEndTime.value &&
-      "End date should be before start date") ||
-    ""
-);
-
-// Other options as YAML
+const timeRange = ref({});
 const yamlOptions = ref("");
 const yamlError = ref("");
 watch(yamlOptions, () => {
@@ -128,8 +95,8 @@ watch(yamlOptions, () => {
 const options = computed(() => {
   try {
     let options = YAML.parse(yamlOptions.value);
-    options.start = startTime.value;
-    options.end = endTime.value;
+    options.start = timeRange.value.start;
+    options.end = timeRange.value.end;
     return options;
   } catch (_) {
     return {};
@@ -140,9 +107,7 @@ const applyLabel = computed(() =>
     ? "Refresh"
     : "Apply"
 );
-const hasErrors = computed(
-  () => !!(yamlError.value || startTimeError.value || endTimeError.value)
-);
+const hasErrors = computed(() => !!(yamlError.value || timeRange.value.errors));
 
 const apply = () => {
   emit("update", options.value);
@@ -153,8 +118,7 @@ watch(
   (state) => {
     const { start, end, ...otherOptions } = JSON.parse(JSON.stringify(state));
     yamlOptions.value = YAML.stringify(otherOptions);
-    startTime.value = start;
-    endTime.value = end;
+    timeRange.value = { start: start, end: end };
   },
   { immediate: true, deep: true }
 );

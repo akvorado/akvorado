@@ -19,14 +19,14 @@
         :for="props.id"
         :class="{
           'text-red-600 dark:text-red-500': error,
-          'text-gray-500 peer-focus:text-blue-600 dark:text-gray-400 peer-focus:dark:text-blue-500':
+          'text-gray-500 peer-focus:text-blue-600 dark:text-gray-400 dark:peer-focus:text-blue-500':
             !error,
         }"
-        class="absolute top-3 left-2.5 z-10 origin-[0] -translate-y-3 scale-75 transform text-sm duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:-translate-y-3 peer-focus:scale-75"
+        class="z-5 absolute top-3 left-2.5 origin-[0] -translate-y-3 scale-75 transform text-sm duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus:-translate-y-3 peer-focus:scale-75"
         >{{ props.label }}</label
       >
     </div>
-    <p class="mt-2 text-xs text-red-600 dark:text-red-400">
+    <p class="text-xs text-red-600 dark:text-red-400">
       {{ props.error }}
     </p>
   </div>
