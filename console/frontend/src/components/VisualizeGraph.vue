@@ -1,32 +1,60 @@
 <template>
-  <v-chart :option="graph" autoresize />
+  <v-chart
+    ref="chartComponent"
+    :option="graph"
+    :loading="props.loading"
+    autoresize
+    @brush-end="updateTimeRange"
+  />
 </template>
 
 <script setup>
-import { ref, watch, inject } from "vue";
+import { ref, watch, inject, onMounted, nextTick } from "vue";
 import { formatBps, dataColor, dataColorGrey } from "../utils";
 const { isDark } = inject("darkMode");
 
 import { use, graphic } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { LineChart } from "echarts/charts";
-import { TooltipComponent, GridComponent } from "echarts/components";
+import {
+  TooltipComponent,
+  GridComponent,
+  BrushComponent,
+  ToolboxComponent,
+} from "echarts/components";
 import VChart from "vue-echarts";
-use([CanvasRenderer, LineChart, TooltipComponent, GridComponent]);
+use([
+  CanvasRenderer,
+  LineChart,
+  TooltipComponent,
+  GridComponent,
+  ToolboxComponent,
+  BrushComponent,
+]);
 
 const props = defineProps({
   data: {
     type: Object,
     default: () => {},
   },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
 });
+const emit = defineEmits(["updateTimeRange"]);
 
+const chartComponent = ref(null);
 const graph = ref({
   grid: {
     left: 60,
     top: 20,
     right: "1%",
     bottom: 20,
+  },
+  brush: {},
+  toolbox: {
+    show: false,
   },
   xAxis: {
     type: "time",
@@ -48,6 +76,35 @@ const graph = ref({
   },
   series: [],
 });
+
+const enableBrush = () => {
+  nextTick().then(() => {
+    if (!chartComponent.value) {
+      return;
+    }
+    chartComponent.value.dispatchAction({
+      type: "takeGlobalCursor",
+      key: "brush",
+      brushOption: {
+        brushType: "lineX",
+      },
+    });
+  });
+};
+onMounted(enableBrush);
+const updateTimeRange = (evt) => {
+  if (evt.areas.length === 0) {
+    return;
+  }
+  const [start, end] = evt.areas[0].range.map(
+    (px) => new Date(chartComponent.value.convertFromPixel("xAxis", px))
+  );
+  chartComponent.value.dispatchAction({
+    type: "brush",
+    areas: [],
+  });
+  emit("updateTimeRange", [start, end]);
+};
 
 watch(
   () => [props.data, isDark()],
@@ -94,6 +151,7 @@ watch(
         data: data.t.map((t, idx2) => [t, data.points[idx][idx2]]).slice(1, -1),
       };
     });
+    enableBrush();
   },
   { immediate: true }
 );

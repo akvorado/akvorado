@@ -16,7 +16,11 @@
           slider-bg-color="#eee1"
           slider-bg-hover-color="#ccc3"
         >
-          <VisualizeGraph :data="fetchedData" />
+          <VisualizeGraph
+            :loading="loading"
+            :data="fetchedData"
+            @update-time-range="updateTimeRange"
+          />
         </ResizeRow>
         <VisualizeTable :data="fetchedData" />
       </div>
@@ -39,6 +43,7 @@ const route = useRoute();
 const router = useRouter();
 const graphHeight = ref(500);
 const fetchedData = ref({});
+const loading = ref(false);
 
 const decodeState = (serialized) => {
   try {
@@ -77,6 +82,11 @@ const defaultState = () => ({
 const state = ref({});
 const errorMessage = ref("");
 
+const updateTimeRange = ([start, end]) => {
+  state.value.start = start.toISOString();
+  state.value.end = end.toISOString();
+};
+
 watch(
   route,
   () => {
@@ -94,23 +104,28 @@ watch(
     let body = { ...state.value };
     body.start = SugarDate.create(body.start);
     body.end = SugarDate.create(body.end);
-    const response = await fetch("/api/v0/console/graph", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!response.ok) {
-      try {
-        const data = await response.json();
-        errorMessage.value = data.message;
-      } catch (_) {
-        errorMessage.value = `Server returned a ${response.status} error`;
+    loading.value = true;
+    try {
+      const response = await fetch("/api/v0/console/graph", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) {
+        try {
+          const data = await response.json();
+          errorMessage.value = data.message;
+        } catch (_) {
+          errorMessage.value = `Server returned a ${response.status} error`;
+        }
+        return;
       }
-      return;
+      const data = await response.json();
+      data.dimensions = body.dimensions;
+      fetchedData.value = data;
+    } finally {
+      loading.value = false;
     }
-    const data = await response.json();
-    data.dimensions = body.dimensions;
-    fetchedData.value = data;
     const routeTarget = {
       name: "VisualizeWithState",
       params: { state: encodeState(state.value) },
@@ -121,6 +136,6 @@ watch(
       router.push(routeTarget);
     }
   },
-  { immediate: true }
+  { immediate: true, deep: true }
 );
 </script>

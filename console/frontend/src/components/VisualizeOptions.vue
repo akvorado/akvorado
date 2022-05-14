@@ -12,25 +12,28 @@
       <ChevronDownIcon v-if="!open" class="h-8 lg:hidden" />
       <ChevronUpIcon v-if="open" class="h-8 lg:hidden" />
     </button>
-    <div class="h-full overflow-y-auto bg-gray-200 dark:bg-gray-700">
+    <form
+      class="h-full overflow-y-auto bg-gray-200 dark:bg-gray-700"
+      @submit.prevent="apply()"
+    >
       <div v-if="open" class="flex h-full flex-col py-4 px-3 lg:max-h-screen">
         <p
           class="my-2 block text-sm font-semibold text-gray-900 dark:text-gray-400"
         >
           Time range
         </p>
-        <div class="flex flex-row">
+        <div class="flex flex-row lg:flex-col">
           <InputFloatingLabel
             id="start"
             v-model="startTime"
-            class="mr-1 basis-1/2"
+            class="mr-1 basis-1/2 lg:mr-0"
             label="Start"
             :error="startTimeError"
           />
           <InputFloatingLabel
             id="end"
             v-model="endTime"
-            class="ml-1 basis-1/2"
+            class="ml-1 basis-1/2 lg:ml-0"
             label="End"
             :error="endTimeError"
           />
@@ -61,13 +64,12 @@
               !!hasErrors && 'cursor-not-allowed bg-blue-400 dark:bg-blue-500'
             "
             class="inline items-center rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900"
-            @click="apply()"
           >
             {{ applyLabel }}
           </button>
         </div>
       </div>
-    </div>
+    </form>
   </aside>
 </template>
 
@@ -154,6 +156,6 @@ watch(
     startTime.value = start;
     endTime.value = end;
   },
-  { immediate: true }
+  { immediate: true, deep: true }
 );
 </script>
