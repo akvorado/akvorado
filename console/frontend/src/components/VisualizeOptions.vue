@@ -14,25 +14,52 @@
     </button>
     <div class="h-full overflow-y-auto bg-gray-200 dark:bg-gray-700">
       <div v-if="open" class="flex h-full flex-col py-4 px-3 lg:max-h-screen">
+        <p
+          class="my-2 block text-sm font-semibold text-gray-900 dark:text-gray-400"
+        >
+          Time range
+        </p>
+        <div class="flex flex-row">
+          <InputFloatingLabel
+            id="start"
+            v-model="startTime"
+            class="mr-1 basis-1/2"
+            label="Start"
+            :error="startTimeError"
+          />
+          <InputFloatingLabel
+            id="end"
+            v-model="endTime"
+            class="ml-1 basis-1/2"
+            label="End"
+            :error="endTimeError"
+          />
+        </div>
         <label
           for="options"
-          class="mb-2 block text-sm font-semibold text-gray-900 dark:text-gray-400"
-          >Options</label
+          class="my-2 block text-sm font-semibold text-gray-900 dark:text-gray-400"
         >
+          Other options
+        </label>
         <textarea
           id="options"
-          v-model="options"
+          v-model="yamlOptions"
+          rows="5"
           class="mb-2 block w-full grow rounded-lg border border-gray-300 bg-gray-50 p-2.5 font-mono text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
         ></textarea>
         <p
-          v-if="error"
+          v-if="yamlError"
           class="mb-2 text-xs font-medium text-red-600 dark:text-red-400"
         >
-          {{ error }}
+          {{ yamlError }}
         </p>
         <div>
           <button
             type="submit"
+            :disabled="!!hasErrors"
+            :class="
+              !!hasErrors && 'cursor-not-allowed bg-blue-400 dark:bg-blue-500'
+            "
             class="inline items-center rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900"
             @click="apply()"
           >
@@ -46,12 +73,14 @@
 
 <script setup>
 import { ref, watch, computed } from "vue";
+import { Date as SugarDate } from "sugar-date";
 import {
   ChevronLeftIcon,
   ChevronDownIcon,
   ChevronRightIcon,
   ChevronUpIcon,
 } from "@heroicons/vue/solid";
+import InputFloatingLabel from "./InputFloatingLabel.vue";
 
 import YAML from "yaml";
 
@@ -63,28 +92,67 @@ const props = defineProps({
 });
 const emit = defineEmits(["update"]);
 
-const options = ref("");
-const initialOptions = ref("");
-const error = ref("");
 const open = ref(false);
+
+// Time
+const startTime = ref("");
+const endTime = ref("");
+const parsedStartTime = computed(() => SugarDate.create(startTime.value));
+const parsedEndTime = computed(() => SugarDate.create(endTime.value));
+const startTimeError = computed(() =>
+  isNaN(parsedStartTime.value) ? "Invalid date" : ""
+);
+const endTimeError = computed(
+  () =>
+    (isNaN(parsedEndTime.value) ? "Invalid date" : "") ||
+    (!isNaN(parsedStartTime.value) &&
+      parsedStartTime.value > parsedEndTime.value &&
+      "End date should be before start date") ||
+    ""
+);
+
+// Other options as YAML
+const yamlOptions = ref("");
+const yamlError = ref("");
+watch(yamlOptions, () => {
+  yamlError.value = "";
+  try {
+    YAML.parse(yamlOptions.value);
+  } catch (err) {
+    yamlError.value = `${err}`;
+  }
+});
+
+const options = computed(() => {
+  try {
+    let options = YAML.parse(yamlOptions.value);
+    options.start = startTime.value;
+    options.end = endTime.value;
+    return options;
+  } catch (_) {
+    return {};
+  }
+});
 const applyLabel = computed(() =>
-  options.value === initialOptions.value ? "Refresh" : "Apply"
+  JSON.stringify(options.value) === JSON.stringify(props.state)
+    ? "Refresh"
+    : "Apply"
+);
+const hasErrors = computed(
+  () => !!(yamlError.value || startTimeError.value || endTimeError.value)
 );
 
 const apply = () => {
-  error.value = "";
-  try {
-    emit("update", YAML.parse(options.value));
-  } catch (err) {
-    console.log(err);
-    error.value = `${err}`;
-  }
+  emit("update", options.value);
 };
 
 watch(
   () => props.state,
   (state) => {
-    initialOptions.value = options.value = YAML.stringify(state, null, 1);
+    const { start, end, ...otherOptions } = JSON.parse(JSON.stringify(state));
+    yamlOptions.value = YAML.stringify(otherOptions);
+    startTime.value = start;
+    endTime.value = end;
   },
   { immediate: true }
 );
