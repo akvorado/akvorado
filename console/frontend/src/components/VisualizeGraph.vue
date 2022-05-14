@@ -76,6 +76,7 @@ const graph = ref({
     },
     valueFormatter: formatBps,
   },
+  animationDuration: 500,
   series: [],
 });
 
