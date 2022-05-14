@@ -1,6 +1,6 @@
 <template>
   <aside
-    class="relative mr-4 mb-2 w-full shrink-0 shadow lg:h-auto"
+    class="transition-height transition-width relative mb-2 w-full shrink-0 shadow duration-100 lg:mr-4 lg:mb-0 lg:h-auto"
     :class="open ? 'h-64 lg:w-64' : 'h-6 lg:w-6'"
   >
     <button
@@ -12,7 +12,7 @@
       <ChevronDownIcon v-if="!open" class="h-8 lg:hidden" />
       <ChevronUpIcon v-if="open" class="h-8 lg:hidden" />
     </button>
-    <div class="h-full bg-gray-200 dark:bg-gray-700">
+    <div class="h-full overflow-y-auto bg-gray-200 dark:bg-gray-700">
       <div v-if="open" class="flex h-full flex-col py-4 px-3 lg:max-h-screen">
         <label
           for="options"

@@ -4,23 +4,25 @@
       :state="state"
       @update="(updatedState) => (state = updatedState)"
     />
-    <div class="mx-4 grow">
-      <InfoBox
-        v-if="errorTitle"
-        kind="danger"
-        :title="errorTitle"
-        :content="errorContent"
-      />
-      <ResizeRow
-        :slider-width="10"
-        :height="graphHeight"
-        width="auto"
-        slider-bg-color="#eee1"
-        slider-bg-hover-color="#ccc3"
-      >
-        <VisualizeGraph :data="fetchedData" />
-      </ResizeRow>
-      <VisualizeTable :data="fetchedData" />
+    <div class="grow overflow-y-auto">
+      <div class="mx-4">
+        <InfoBox
+          v-if="errorTitle"
+          kind="danger"
+          :title="errorTitle"
+          :content="errorContent"
+        />
+        <ResizeRow
+          :slider-width="10"
+          :height="graphHeight"
+          width="auto"
+          slider-bg-color="#eee1"
+          slider-bg-hover-color="#ccc3"
+        >
+          <VisualizeGraph :data="fetchedData" />
+        </ResizeRow>
+        <VisualizeTable :data="fetchedData" />
+      </div>
     </div>
   </div>
 </template>
