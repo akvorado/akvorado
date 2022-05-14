@@ -111,10 +111,15 @@ watch(
     const data = await response.json();
     data.dimensions = body.dimensions;
     fetchedData.value = data;
-    router.push({
+    const routeTarget = {
       name: "VisualizeWithState",
       params: { state: encodeState(state.value) },
-    });
+    };
+    if (route.name !== "VisualizeWithState") {
+      router.replace(routeTarget);
+    } else {
+      router.push(routeTarget);
+    }
   },
   { immediate: true }
 );
