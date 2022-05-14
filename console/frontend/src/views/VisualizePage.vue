@@ -6,12 +6,9 @@
     />
     <div class="grow overflow-y-auto">
       <div class="mx-4">
-        <InfoBox
-          v-if="errorTitle"
-          kind="danger"
-          :title="errorTitle"
-          :content="errorContent"
-        />
+        <InfoBox v-if="errorMessage" kind="danger">
+          <strong>Unable to fetch data!&nbsp;</strong>{{ errorMessage }}
+        </InfoBox>
         <ResizeRow
           :slider-width="10"
           :height="graphHeight"
@@ -78,10 +75,7 @@ const defaultState = () => ({
   },
 });
 const state = ref({});
-
-// Error handling
-const errorTitle = ref("");
-const errorContent = ref("");
+const errorMessage = ref("");
 
 watch(
   route,
@@ -96,7 +90,7 @@ watch(
 watch(
   state,
   async () => {
-    errorTitle.value = "";
+    errorMessage.value = "";
     let body = { ...state.value };
     body.start = SugarDate.create(body.start);
     body.end = SugarDate.create(body.end);
@@ -106,15 +100,11 @@ watch(
       body: JSON.stringify(body),
     });
     if (!response.ok) {
-      errorTitle.value = "Unable to fetch data!";
-      errorContent.value = "While retrieving data, got a fatal error.";
       try {
         const data = await response.json();
-        if (data.message) {
-          errorContent.value = `The server told us: ${data.message}.`;
-        }
+        errorMessage.value = data.message;
       } catch (_) {
-        // Do nothing
+        errorMessage.value = `Server returned a ${response.status} error`;
       }
       return;
     }

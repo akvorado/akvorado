@@ -56,12 +56,9 @@
       class="flex grow md:relative md:overflow-y-auto md:shadow-md"
     >
       <div class="max-w-full py-4 px-4 md:px-16">
-        <InfoBox
-          v-if="errorTitle"
-          kind="danger"
-          :title="errorTitle"
-          :content="errorContent"
-        />
+        <InfoBox v-if="serverError" kind="danger">
+          <strong>Unable to fetch documentation page!</strong> {{ serverError }}
+        </InfoBox>
         <div
           class="prose-img:center prose prose-sm mx-auto prose-h1:border-b-2 prose-pre:rounded dark:prose-invert dark:prose-h1:border-gray-700 md:prose-base"
           v-html="markdown"
@@ -82,29 +79,28 @@ const toc = ref([]);
 const contentEl = ref(null);
 const activeDocument = ref(null);
 const activeSlug = computed(() => route.hash.replace(/^#/, ""));
-const errorTitle = ref("");
-const errorContent = ref("");
+const errorMessage = ref("");
 
 watch(
   () => ({ id: route.params.id, hash: route.hash }),
   async (to, from) => {
-    errorTitle.value = "";
+    errorMessage.value = "";
     if (to.id === undefined) return;
     if (to.id !== from?.id) {
       const id = to.id;
-      try {
-        const response = await fetch(`/api/v0/console/docs/${id}`);
-        if (!response.ok) {
-          throw new Error(`got a ${response.status} error`);
+      const response = await fetch(`/api/v0/console/docs/${id}`);
+      if (!response.ok) {
+        try {
+          const data = await response.json();
+          errorMessage.value = data.message;
+        } catch (_) {
+          errorMessage.value = `Server returned a ${response.status} error`;
         }
+      } else {
         const data = await response.json();
         markdown.value = data.markdown;
         toc.value = data.toc;
         activeDocument.value = id;
-      } catch (error) {
-        console.error(`while retrieving ${id}:`, error);
-        errorTitle.value = "Unable to fetch document!";
-        errorContent.value = `While retrieving ${id}, got a fatal error.`;
       }
     }
     if (to.id !== from?.id || to.hash !== from?.hash) {

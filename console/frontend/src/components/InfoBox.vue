@@ -1,10 +1,7 @@
 <template>
   <div class="my-4 flex rounded-lg p-4 text-sm" :class="classes" role="alert">
     <InformationCircleIcon class="mr-2 h-5 w-5" />
-    <span class="mr-2 font-semibold">
-      {{ props.title }}
-    </span>
-    {{ props.content }}
+    <slot></slot>
   </div>
 </template>
 
@@ -13,14 +10,6 @@ import { computed } from "vue";
 import { InformationCircleIcon } from "@heroicons/vue/solid";
 
 const props = defineProps({
-  title: {
-    type: String,
-    default: "",
-  },
-  content: {
-    type: String,
-    default: "",
-  },
   kind: {
     type: String,
     default: "error",
