@@ -3,6 +3,7 @@
     ref="chartComponent"
     :option="graph"
     :loading="props.loading"
+    :theme="isDark() ? 'dark' : null"
     autoresize
     @brush-end="updateTimeRange"
   />
@@ -46,6 +47,7 @@ const emit = defineEmits(["updateTimeRange"]);
 
 const chartComponent = ref(null);
 const graph = ref({
+  backgroundColor: "transparent",
   grid: {
     left: 60,
     top: 20,
@@ -114,7 +116,6 @@ watch(
     }
     const theme = isDark ? "dark" : "light";
 
-    graph.value.darkMode = isDark;
     graph.value.xAxis.data = data.t.slice(1, -1);
     graph.value.series = data.rows.map((rows, idx) => {
       const color = rows.some((name) => name === "Other")

@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="h-[300px]">
-      <v-chart :option="option" autoresize />
+      <v-chart :option="option" :theme="isDark() ? 'dark' : null" autoresize />
     </div>
   </div>
 </template>
@@ -27,6 +27,7 @@ const props = defineProps({
   },
 });
 const option = ref({
+  backgroundColor: "transparent",
   xAxis: { type: "time" },
   yAxis: {
     type: "value",
