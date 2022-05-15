@@ -32,7 +32,7 @@
             <ListboxOption
               v-for="preset in presets"
               v-slot="{ active, selected }"
-              :key="preset.name"
+              :key="preset.id"
               :value="preset"
               as="template"
             >
@@ -85,6 +85,9 @@ import InputFloatingLabel from "./InputFloatingLabel.vue";
 
 const props = defineProps({
   modelValue: {
+    // start: start time
+    // end: end time
+    // errors: is there an input error?
     type: Object,
     required: true,
   },

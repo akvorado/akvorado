@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	netHTTP "net/http"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -518,5 +519,73 @@ func TestGraphHandler(t *testing.T) {
 
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Fatalf("POST /api/v0/console/graph (-got, +want):\n%s", diff)
+	}
+}
+
+func TestGraphFieldsHandler(t *testing.T) {
+	r := reporter.NewMock(t)
+	ch, _ := clickhousedb.NewMock(t, r)
+	h := http.NewMock(t, r)
+	c, err := New(r, Configuration{}, Dependencies{
+		Daemon:       daemon.NewMock(t),
+		HTTP:         h,
+		ClickHouseDB: ch,
+	})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	helpers.StartStop(t, c)
+
+	resp, err := netHTTP.Get(fmt.Sprintf("http://%s/api/v0/console/graph/fields", h.Address))
+	if err != nil {
+		t.Fatalf("POST /api/v0/console/graph/fields:\n%+v", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		t.Errorf("POST /api/v0/console/graph/fields: got status code %d, not 200", resp.StatusCode)
+	}
+	gotContentType := resp.Header.Get("Content-Type")
+	if gotContentType != "application/json; charset=utf-8" {
+		t.Errorf("POST /api/v0/console/graph/fields Content-Type (-got, +want):\n-%s\n+%s",
+			gotContentType, "application/json; charset=utf-8")
+	}
+	decoder := json.NewDecoder(resp.Body)
+	var got []string
+	if err := decoder.Decode(&got); err != nil {
+		t.Fatalf("POST /api/v0/console/graph error:\n%+v", err)
+	}
+	expected := []string{
+		"ExporterAddress",
+		"ExporterName",
+		"ExporterGroup",
+		"SrcAddr",
+		"DstAddr",
+		"SrcAS",
+		"DstAS",
+		"SrcCountry",
+		"DstCountry",
+		"InIfName",
+		"OutIfName",
+		"InIfDescription",
+		"OutIfDescription",
+		"InIfSpeed",
+		"OutIfSpeed",
+		"InIfConnectivity",
+		"OutIfConnectivity",
+		"InIfProvider",
+		"OutIfProvider",
+		"InIfBoundary",
+		"OutIfBoundary",
+		"EType",
+		"Proto",
+		"SrcPort",
+		"DstPort",
+		"ForwardingStatus",
+	}
+	sort.Strings(expected)
+	sort.Strings(got)
+
+	if diff := helpers.Diff(got, expected); diff != "" {
+		t.Fatalf("POST /api/v0/console/graph/fields (-got, +want):\n%s", diff)
 	}
 }

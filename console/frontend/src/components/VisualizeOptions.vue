@@ -24,6 +24,13 @@
         </p>
         <InputTimeRange v-model="timeRange" />
         <label
+          for="dimensions"
+          class="my-2 block text-sm font-semibold text-gray-900 dark:text-gray-400"
+        >
+          Dimensions
+        </label>
+        <InputDimensions v-model="dimensions" />
+        <label
           for="options"
           class="my-2 block text-sm font-semibold text-gray-900 dark:text-gray-400"
         >
@@ -67,6 +74,7 @@ import {
   ChevronUpIcon,
 } from "@heroicons/vue/solid";
 import InputTimeRange from "./InputTimeRange.vue";
+import InputDimensions from "./InputDimensions.vue";
 
 import YAML from "yaml";
 
@@ -80,6 +88,7 @@ const emit = defineEmits(["update"]);
 
 const open = ref(false);
 
+const dimensions = ref([]);
 const timeRange = ref({});
 const yamlOptions = ref("");
 const yamlError = ref("");
@@ -97,6 +106,8 @@ const options = computed(() => {
     let options = YAML.parse(yamlOptions.value);
     options.start = timeRange.value.start;
     options.end = timeRange.value.end;
+    options.dimensions = dimensions.value.selected;
+    options.limit = dimensions.value.limit;
     return options;
   } catch (_) {
     return {};
@@ -107,7 +118,9 @@ const applyLabel = computed(() =>
     ? "Refresh"
     : "Apply"
 );
-const hasErrors = computed(() => !!(yamlError.value || timeRange.value.errors));
+const hasErrors = computed(
+  () => !!(yamlError.value || timeRange.value.errors || dimensions.value.errors)
+);
 
 const apply = () => {
   emit("update", options.value);
@@ -116,9 +129,17 @@ const apply = () => {
 watch(
   () => props.state,
   (state) => {
-    const { start, end, ...otherOptions } = JSON.parse(JSON.stringify(state));
+    const {
+      start,
+      end,
+      dimensions: selected,
+      limit,
+      points /* eslint-disable-line no-unused-vars */,
+      ...otherOptions
+    } = JSON.parse(JSON.stringify(state));
     yamlOptions.value = YAML.stringify(otherOptions);
-    timeRange.value = { start: start, end: end };
+    timeRange.value = { start, end };
+    dimensions.value = { selected, limit };
   },
   { immediate: true, deep: true }
 );

@@ -513,3 +513,7 @@ func (c *Component) graphHandlerFunc(gc *gin.Context) {
 
 	gc.JSON(http.StatusOK, output)
 }
+
+func (c *Component) graphFieldsHandlerFunc(gc *gin.Context) {
+	gc.JSON(http.StatusOK, graphColumnMap.Values())
+}
