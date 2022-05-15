@@ -56,13 +56,13 @@
         </transition>
       </div>
     </Listbox>
-    <InputFloatingLabel
+    <InputString
       id="start"
       v-model="startTime"
       label="Start"
       :error="startTimeError"
     />
-    <InputFloatingLabel
+    <InputString
       id="end"
       v-model="endTime"
       label="End"
@@ -81,7 +81,7 @@ import {
   ListboxOption,
 } from "@headlessui/vue";
 import { CheckIcon, SelectorIcon } from "@heroicons/vue/solid";
-import InputFloatingLabel from "./InputFloatingLabel.vue";
+import InputString from "./InputString.vue";
 
 const props = defineProps({
   modelValue: {

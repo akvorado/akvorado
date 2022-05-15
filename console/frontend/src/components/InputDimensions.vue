@@ -81,7 +81,7 @@
         </transition>
       </div>
     </Listbox>
-    <InputFloatingLabel
+    <InputString
       id="limit"
       v-model="limit"
       label="Limit"
@@ -100,7 +100,7 @@ import {
 } from "@headlessui/vue";
 import { XIcon, CheckIcon, SelectorIcon } from "@heroicons/vue/solid";
 import { dataColor } from "../utils";
-import InputFloatingLabel from "./InputFloatingLabel.vue";
+import InputString from "./InputString.vue";
 
 const props = defineProps({
   modelValue: {
