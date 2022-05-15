@@ -33,24 +33,6 @@ func (bi *Bimap[K, V]) LoadKey(v V) (K, bool) {
 	return k, ok
 }
 
-// Keys returns a slice of the keys in the bimap.
-func (bi *Bimap[K, V]) Keys() []K {
-	var keys []K
-	for k := range bi.forward {
-		keys = append(keys, k)
-	}
-	return keys
-}
-
-// Values returns a slice of the values in the bimap.
-func (bi *Bimap[K, V]) Values() []V {
-	var values []V
-	for v := range bi.inverse {
-		values = append(values, v)
-	}
-	return values
-}
-
 // String returns a string representation of the bimap.
 func (bi *Bimap[K, V]) String() string {
 	return fmt.Sprintf("Bi%v", bi.forward)

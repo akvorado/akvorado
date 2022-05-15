@@ -59,29 +59,3 @@ func TestBimapLoadKey(t *testing.T) {
 		}
 	}
 }
-
-func TestBimapKeys(t *testing.T) {
-	input := helpers.NewBimap(map[int]string{
-		1: "hello",
-		2: "world",
-		3: "happy",
-	})
-	got := input.Keys()
-	expected := []int{1, 2, 3}
-	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Errorf("Keys() (-want, +got):\n%s", diff)
-	}
-}
-
-func TestBimapValues(t *testing.T) {
-	input := helpers.NewBimap(map[int]string{
-		1: "hello",
-		2: "world",
-		3: "happy",
-	})
-	got := input.Values()
-	expected := []string{"hello", "world", "happy"}
-	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Errorf("Values() (-want, +got):\n%s", diff)
-	}
-}
