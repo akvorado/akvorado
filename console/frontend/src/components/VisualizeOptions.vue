@@ -14,6 +14,7 @@
     </button>
     <form
       class="h-full overflow-y-auto bg-gray-200 dark:bg-slate-600"
+      autocomlete="off"
       @submit.prevent="apply()"
     >
       <div v-if="open" class="flex h-full flex-col py-4 px-3 lg:max-h-screen">

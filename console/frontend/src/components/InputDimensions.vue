@@ -1,5 +1,5 @@
 <template>
-  <div class="grid grid-cols-2 items-end gap-2 sm:grid-cols-3 lg:grid-cols-1">
+  <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-1">
     <Listbox
       v-model="selectedDimensions"
       multiple
@@ -81,12 +81,7 @@
         </transition>
       </div>
     </Listbox>
-    <InputString
-      id="limit"
-      v-model="limit"
-      label="Limit"
-      :error="limitError"
-    />
+    <InputString id="limit" v-model="limit" label="Limit" :error="limitError" />
   </div>
 </template>
 
