@@ -14,7 +14,8 @@
     </button>
     <form
       class="h-full overflow-y-auto bg-gray-200 dark:bg-slate-600"
-      autocomlete="off"
+      autocomplete="off"
+      spellcheck="false"
       @submit.prevent="apply()"
     >
       <div v-if="open" class="flex h-full flex-col py-4 px-3 lg:max-h-screen">
@@ -35,20 +36,14 @@
           for="options"
           class="my-2 block text-sm font-semibold text-gray-900 dark:text-gray-400"
         >
-          Other options
+          Filter
         </label>
         <textarea
           id="options"
-          v-model="yamlOptions"
+          v-model="filter"
           rows="5"
           class="mb-2 block w-full grow resize-none rounded-lg border border-gray-300 bg-gray-50 p-2.5 font-mono text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
         ></textarea>
-        <p
-          v-if="yamlError"
-          class="mb-2 text-xs font-medium text-red-600 dark:text-red-400"
-        >
-          {{ yamlError }}
-        </p>
         <div>
           <button
             type="submit"
@@ -77,8 +72,6 @@ import {
 import InputTimeRange from "./InputTimeRange.vue";
 import InputDimensions from "./InputDimensions.vue";
 
-import YAML from "yaml";
-
 const props = defineProps({
   state: {
     type: Object,
@@ -89,39 +82,25 @@ const emit = defineEmits(["update"]);
 
 const open = ref(false);
 
-const dimensions = ref([]);
 const timeRange = ref({});
-const yamlOptions = ref("");
-const yamlError = ref("");
-watch(yamlOptions, () => {
-  yamlError.value = "";
-  try {
-    YAML.parse(yamlOptions.value);
-  } catch (err) {
-    yamlError.value = `${err}`;
-  }
-});
+const dimensions = ref([]);
+const filter = ref("");
 
-const options = computed(() => {
-  try {
-    let options = YAML.parse(yamlOptions.value);
-    options.start = timeRange.value.start;
-    options.end = timeRange.value.end;
-    options.dimensions = dimensions.value.selected;
-    options.limit = dimensions.value.limit;
-    options.points = props.state.points;
-    return options;
-  } catch (_) {
-    return {};
-  }
-});
+const options = computed(() => ({
+  points: props.state.points,
+  start: timeRange.value.start,
+  end: timeRange.value.end,
+  dimensions: dimensions.value.selected,
+  limit: dimensions.value.limit,
+  filter: filter.value,
+}));
 const applyLabel = computed(() =>
   JSON.stringify(options.value) === JSON.stringify(props.state)
     ? "Refresh"
     : "Apply"
 );
 const hasErrors = computed(
-  () => !!(yamlError.value || timeRange.value.errors || dimensions.value.errors)
+  () => !!(timeRange.value.errors || dimensions.value.errors)
 );
 
 const apply = () => {
@@ -134,14 +113,14 @@ watch(
     const {
       start,
       end,
-      dimensions: selected,
+      dimensions: _dimensions,
       limit,
       points /* eslint-disable-line no-unused-vars */,
-      ...otherOptions
+      filter: _filter,
     } = JSON.parse(JSON.stringify(state));
-    yamlOptions.value = YAML.stringify(otherOptions);
     timeRange.value = { start, end };
-    dimensions.value = { selected, limit };
+    dimensions.value = { selected: _dimensions, limit };
+    filter.value = _filter;
   },
   { immediate: true, deep: true }
 );

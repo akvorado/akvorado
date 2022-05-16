@@ -18,6 +18,7 @@ GENERATED = \
 	inlet/flow/decoder/flow-1.pb.go \
 	common/clickhousedb/mocks/mock_driver.go \
 	orchestrator/clickhouse/data/asns.csv \
+	console/filter/parser.go \
 	console/data/frontend console/frontend/node_modules
 
 .PHONY: all
@@ -56,6 +57,9 @@ PROTOC = protoc
 PROTOC_GEN_GO = $(BIN)/protoc-gen-go
 $(BIN)/protoc-gen-go: PACKAGE=google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.0
 
+PIGEON = $(BIN)/pigeon
+$(BIN)/pigeon: PACKAGE=github.com/mna/pigeon@v1.1.0
+
 # Generated files
 
 inlet/flow/decoder/%.pb.go: inlet/flow/data/schemas/%.proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffers definition…)
@@ -65,6 +69,9 @@ common/clickhousedb/mocks/mock_driver.go: Makefile | $(MOCKGEN) ; $(info $(M) ge
 	$Q $(MOCKGEN) -destination $@ -package mocks \
 		github.com/ClickHouse/clickhouse-go/v2/lib/driver Conn,Row,Rows,ColumnType
 	$Q sed -i'' -e '1i //go:build !release' $@
+
+console/filter/parser.go: console/filter/parser.peg | $(PIGEON) ; $(info $(M) generate PEG parser for filters…)
+	$Q $(PIGEON) -optimize-basic-latin $< > $@
 
 console/frontend/node_modules: console/frontend/package.json console/frontend/yarn.lock
 console/frontend/node_modules: ; $(info $(M) fetching node modules…)

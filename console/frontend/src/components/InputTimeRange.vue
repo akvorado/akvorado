@@ -62,12 +62,7 @@
       label="Start"
       :error="startTimeError"
     />
-    <InputString
-      id="end"
-      v-model="endTime"
-      label="End"
-      :error="endTimeError"
-    />
+    <InputString id="end" v-model="endTime" label="End" :error="endTimeError" />
   </div>
 </template>
 

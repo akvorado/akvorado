@@ -1,0 +1,192 @@
+{
+  package filter
+  
+  // Convert SQL-like language for filters to SQL.
+  
+  import (
+    "fmt"
+    "net"
+  )
+  
+  func quote(v interface{}) string {
+    return "'" + strings.NewReplacer(`\`, `\\`, `'`, `\'`).Replace(toString(v)) + "'"
+  }
+
+  func toSlice(v interface{}) []interface{} {
+    if v == nil {
+      return nil
+    }
+    return v.([]interface{})
+  }
+
+  func toString(v interface{}) string {
+    switch s := v.(type) {
+    case string:
+      return s
+    case []byte:
+      return string(s)
+    default:
+      panic("not a string")
+    }
+  }
+}
+
+Input ← _ expr:Expr _ EOF {
+  return expr, nil
+}
+
+Expr "expression" ← head:(SubExpr / NotExpr / ConditionExpr) rest:( _ ( KW_AND / KW_OR ) _ Expr )* {
+  expr := []string{head.(string)}
+  for _, e := range toSlice(rest) {
+    rest := toSlice(e)
+    expr = append(expr, fmt.Sprintf("%s %s", strings.ToUpper(toString(rest[1])), toString(rest[3])));
+  }
+  return strings.Join(expr, " "), nil
+}
+SubExpr "sub-expression" ← '(' _ expr:Expr _ ')' {
+  return fmt.Sprintf("(%s)", toString(expr)), nil
+}
+NotExpr "NOT expression" ← KW_NOT _ expr:Expr {
+  return fmt.Sprintf("NOT %s", toString(expr)), nil
+}
+
+ConditionExpr "conditional" ←
+    ConditionIPExpr
+  / ConditionStringExpr
+  / ConditionBoundaryExpr
+  / ConditionSpeedExpr
+  / ConditionForwardingStatusExpr
+  / ConditionPortExpr
+  / ConditionASExpr
+  / ConditionETypeExpr
+  / ConditionProtoExpr
+
+ConditionIPExpr "condition on IP" ←
+ column:("ExporterAddress" / "SrcAddr" / "DstAddr") _ operator:("=" / "!=") _ ip:IP {
+  return fmt.Sprintf("%s %s IPv6StringToNum(%s)", toString(column), toString(operator), quote(ip)), nil
+}
+ConditionStringExpr "condition on string" ←
+ column:("ExporterName"
+      / "ExporterGroup"
+      / "SrcCountry"
+      / "DstCountry"
+      / "InIfName"
+      / "OutIfName"
+      / "InIfDescription"
+      / "OutIfDescription"
+      / "InIfConnectivity"
+      / "OutIfConnectivity"
+      / "InIfProvider"
+      / "OutIfProvider") _ operator:("=" / "!=") _ str:StringLiteral {
+  return fmt.Sprintf("%s %s %s", toString(column), toString(operator), quote(str)), nil
+}
+ConditionBoundaryExpr "condition on boundary" ←
+ column:("InIfBoundary" / "OutIfBoundary") _ operator:("=" / "!=") _ boundary:("external" / "internal") {
+  return fmt.Sprintf("%s %s %s", toString(column), toString(operator), quote(boundary)), nil
+}
+ConditionSpeedExpr "condition on speed" ←
+ column:("InIfSpeed" / "OutIfSpeed") _ operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned64 {
+  return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
+}
+ConditionForwardingStatusExpr "condition on forwarding status" ←
+ column:"ForwardingStatus" _ operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned8 {
+  return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
+}
+ConditionPortExpr "condition on port" ←
+ column:("SrcPort" / "DstPort") _ operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned16 {
+  return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
+}
+ConditionASExpr "condition on AS number" ←
+ column:("SrcAS" / "DstAS") _ operator:("=" / "!=") _ value:ASN {
+  return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
+}
+ConditionETypeExpr "condition on Ethernet type" ←
+ column:"EType" _ operator:("=" / "!=") _ value:("IPv4"i / "IPv6"i) {
+  etypes := map[string]uint16{
+    "ipv4": 0x0800,
+    "ipv6": 0x86dd,
+   }
+   etype := etypes[strings.ToLower(toString(value))]
+   return fmt.Sprintf("%s %s %d", toString(column), toString(operator), etype), nil
+}
+ConditionProtoExpr "condition on protocol" ← ConditionProtoIntExpr / ConditionProtoStrExpr
+ConditionProtoIntExpr "condition on protocol as integer" ←
+ column:"Proto" _ operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned8 {
+  return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
+}
+ConditionProtoStrExpr "condition on protocol as string" ←
+ column:"Proto" _ operator:("=" / "!=") _ value:StringLiteral {
+  return fmt.Sprintf("dictGetOrDefault('protocols', 'name', %s, '???') %s %s", toString(column), toString(operator), quote(value)), nil
+}
+
+IP "IP address" ← [0-9A-Fa-f:.]+ !IdentStart {
+  ip := net.ParseIP(string(c.text))
+  if ip == nil {
+    return false, fmt.Errorf("expecting an IP address")
+  }
+  return ip.String(), nil
+}
+
+ASN "AS number" ← "AS"? value:Unsigned32 {
+  return value, nil
+}
+
+StringLiteral ← ( '"' DoubleStringChar* '"' / "'" SingleStringChar* "'" ) {
+    return string(c.text[1:len(c.text)-1]), nil
+} / ( ( '"' DoubleStringChar* ( EOL / EOF ) ) / ( "'" SingleStringChar* ( EOL / EOF ) ) ) {
+    return "", errors.New("string literal not terminated")
+}
+SourceChar ← .
+DoubleStringChar ← !( '"' / "\\" / EOL ) SourceChar / "\\" DoubleStringEscape
+SingleStringChar ← !( "'" / "\\" / EOL ) SourceChar / "\\" SingleStringEscape
+DoubleStringEscape ← ( '"' / CommonEscapeSequence )
+    / ( SourceChar / EOL / EOF ) {
+    return nil, errors.New("invalid escape character")
+}
+SingleStringEscape ← ( "'" / CommonEscapeSequence )
+    / ( SourceChar / EOL / EOF ) {
+    return nil, errors.New("invalid escape character")
+}
+CommonEscapeSequence ← SingleCharEscape
+SingleCharEscape ← 'a' / 'b' / 'n' / 'f' / 'r' / 't' / 'v' / '\\'
+
+Unsigned8 "unsigned 8-bit integer" ← [0-9]+ !IdentStart {
+  v, err := strconv.ParseUint(string(c.text), 10, 8)
+  if err != nil {
+    return false, errors.New("expecting an unsigned 8-bit integer")
+  }
+  return fmt.Sprintf("%d", v), nil
+}
+
+Unsigned16 "unsigned 16-bit integer" ← [0-9]+ !IdentStart {
+  v, err := strconv.ParseUint(string(c.text), 10, 16)
+  if err != nil {
+    return false, errors.New("expecting an unsigned 16-bit integer")
+  }
+  return fmt.Sprintf("%d", v), nil
+}
+
+Unsigned32 "unsigned 32-bit integer" ← [0-9]+ !IdentStart {
+  v, err := strconv.ParseUint(string(c.text), 10, 32)
+  if err != nil {
+    return false, errors.New("expecting an unsigned 32-bit integer")
+  }
+  return fmt.Sprintf("%d", v), nil
+}
+
+Unsigned64 "unsigned 64-bit integer" ← [0-9]+ !IdentStart {
+  v, err := strconv.ParseUint(string(c.text), 10, 64)
+  if err != nil {
+    return false, errors.New("expecting an unsigned 64-bit integer")
+  }
+  return fmt.Sprintf("%d", v), nil
+}
+
+KW_AND "AND operator" ← "AND"i !IdentStart { return "AND", nil }
+KW_OR  "OR operator"  ← "OR"i  !IdentStart { return "OR", nil  }
+KW_NOT "NOT operator" ← "NOT"i !IdentStart { return "NOT", nil }
+
+IdentStart ← [A-Za-z_]
+_ "whitespace" ← [ \n\r\t]*
+EOF ← !.
+EOL ← '\n'

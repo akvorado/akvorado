@@ -68,16 +68,7 @@ const defaultState = () => ({
   points: 200,
   limit: 10,
   dimensions: ["SrcAS", "ExporterName"],
-  filter: {
-    operator: "all",
-    rules: [
-      {
-        field: "InIfBoundary",
-        operator: "=",
-        value: "external",
-      },
-    ],
-  },
+  filter: "InIfBoundary = external",
 });
 const state = ref({});
 const errorMessage = ref("");

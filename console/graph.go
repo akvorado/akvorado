@@ -3,26 +3,25 @@ package console
 import (
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 
 	"akvorado/common/helpers"
+	"akvorado/console/filter"
 )
 
 // graphQuery describes the input for the /graph endpoint.
 type graphQuery struct {
-	Start      time.Time        `json:"start" binding:"required"`
-	End        time.Time        `json:"end" binding:"required"`
-	Points     int              `json:"points" binding:"required"` // minimum number of points
-	Dimensions []graphColumn    `json:"dimensions"`                // group by ...
-	Limit      int              `json:"limit"`                     // limit product of dimensions
-	Filter     graphFilterGroup `json:"filter"`                    // where ...
+	Start      time.Time     `json:"start" binding:"required"`
+	End        time.Time     `json:"end" binding:"required"`
+	Points     int           `json:"points" binding:"required"` // minimum number of points
+	Dimensions []graphColumn `json:"dimensions"`                // group by ...
+	Limit      int           `json:"limit"`                     // limit product of dimensions
+	Filter     graphFilter   `json:"filter"`                    // where ...
 }
 
 type graphColumn int
@@ -105,204 +104,20 @@ func (gc *graphColumn) UnmarshalText(input []byte) error {
 	return errors.New("unknown group operator")
 }
 
-type graphFilterGroup struct {
-	Operator graphFilterGroupOperator `json:"operator" binding:"required"`
-	Children []graphFilterGroup       `json:"children"`
-	Rules    []graphFilterRule        `json:"rules"`
+type graphFilter struct {
+	filter string
 }
 
-type graphFilterGroupOperator int
-
-const (
-	graphFilterGroupOperatorAny graphFilterGroupOperator = iota + 1
-	graphFilterGroupOperatorAll
-)
-
-var graphFilterGroupOperatorMap = helpers.NewBimap(map[graphFilterGroupOperator]string{
-	graphFilterGroupOperatorAny: "any",
-	graphFilterGroupOperatorAll: "all",
-})
-
-func (gfgo graphFilterGroupOperator) MarshalText() ([]byte, error) {
-	got, ok := graphFilterGroupOperatorMap.LoadValue(gfgo)
-	if ok {
-		return []byte(got), nil
-	}
-	return nil, errors.New("unknown group operator")
+func (gf graphFilter) MarshalText() ([]byte, error) {
+	return []byte(gf.filter), nil
 }
-func (gfgo *graphFilterGroupOperator) UnmarshalText(input []byte) error {
-	got, ok := graphFilterGroupOperatorMap.LoadKey(string(input))
-	if ok {
-		*gfgo = got
-		return nil
+func (gf *graphFilter) UnmarshalText(input []byte) error {
+	got, err := filter.Parse("", input)
+	if err != nil {
+		return fmt.Errorf("cannot parse filter: %w", err)
 	}
-	return errors.New("unknown group operator")
-}
-
-type graphFilterRule struct {
-	Column   graphColumn             `json:"field" binding:"required"`
-	Operator graphFilterRuleOperator `json:"operator" binding:"required"`
-	Value    string                  `json:"value" binding:"required"`
-}
-
-type graphFilterRuleOperator int
-
-const (
-	graphFilterRuleOperatorEqual graphFilterRuleOperator = iota + 1
-	graphFilterRuleOperatorNotEqual
-	graphFilterRuleOperatorLessThan
-	graphFilterRuleOperatorGreaterThan
-)
-
-var graphFilterRuleOperatorMap = helpers.NewBimap(map[graphFilterRuleOperator]string{
-	graphFilterRuleOperatorEqual:       "=",
-	graphFilterRuleOperatorNotEqual:    "!=",
-	graphFilterRuleOperatorLessThan:    "<",
-	graphFilterRuleOperatorGreaterThan: ">",
-})
-
-func (gfro graphFilterRuleOperator) MarshalText() ([]byte, error) {
-	got, ok := graphFilterRuleOperatorMap.LoadValue(gfro)
-	if ok {
-		return []byte(got), nil
-	}
-	return nil, errors.New("unknown rule operator")
-}
-func (gfro graphFilterRuleOperator) String() string {
-	got, _ := graphFilterRuleOperatorMap.LoadValue(gfro)
-	return got
-}
-func (gfro *graphFilterRuleOperator) UnmarshalText(input []byte) error {
-	got, ok := graphFilterRuleOperatorMap.LoadKey(string(input))
-	if ok {
-		*gfro = got
-		return nil
-	}
-	return errors.New("unknown rule operator")
-}
-
-// toSQLWhere translates a graphFilterGroup to SQL expression (to be used in WHERE)
-func (gfg graphFilterGroup) toSQLWhere() (string, error) {
-	operator := map[graphFilterGroupOperator]string{
-		graphFilterGroupOperatorAll: " AND ",
-		graphFilterGroupOperatorAny: " OR ",
-	}[gfg.Operator]
-	expressions := []string{}
-	for _, expr := range gfg.Children {
-		subexpr, err := expr.toSQLWhere()
-		if err != nil {
-			return "", err
-		}
-		expressions = append(expressions, fmt.Sprintf("(%s)", subexpr))
-	}
-	for _, expr := range gfg.Rules {
-		subexpr, err := expr.toSQLWhere()
-		if err != nil {
-			return "", err
-		}
-		expressions = append(expressions, fmt.Sprintf("(%s)", subexpr))
-	}
-	return strings.Join(expressions, operator), nil
-}
-
-// toSQLWhere translates a graphFilterRule to an SQL expression (to be used in WHERE)
-func (gfr graphFilterRule) toSQLWhere() (string, error) {
-	quote := func(v string) string {
-		return "'" + strings.NewReplacer(`\`, `\\`, `'`, `\'`).Replace(v) + "'"
-	}
-	switch gfr.Column {
-	case graphColumnExporterAddress, graphColumnSrcAddr, graphColumnDstAddr:
-		// IP
-		ip := net.ParseIP(gfr.Value)
-		if ip == nil {
-			return "", fmt.Errorf("cannot parse IP %q for %s", gfr.Value, gfr.Column)
-		}
-		switch gfr.Operator {
-		case graphFilterRuleOperatorEqual, graphFilterRuleOperatorNotEqual:
-			return fmt.Sprintf("%s %s IPv6StringToNum(%s)", gfr.Column, gfr.Operator, quote(ip.String())), nil
-		}
-	case graphColumnExporterName, graphColumnExporterGroup, graphColumnSrcCountry, graphColumnDstCountry, graphColumnInIfName, graphColumnOutIfName, graphColumnInIfDescription, graphColumnInIfConnectivity, graphColumnOutIfConnectivity, graphColumnInIfProvider, graphColumnOutIfProvider:
-		// String
-		switch gfr.Operator {
-		case graphFilterRuleOperatorEqual, graphFilterRuleOperatorNotEqual:
-			return fmt.Sprintf("%s %s %s", gfr.Column, gfr.Operator, quote(gfr.Value)), nil
-		}
-	case graphColumnInIfBoundary, graphColumnOutIfBoundary:
-		// Boundary
-		switch gfr.Value {
-		case "external", "internal":
-		default:
-			return "", fmt.Errorf("cannot parse boundary %q for %s", gfr.Value, gfr.Column)
-		}
-		switch gfr.Operator {
-		case graphFilterRuleOperatorEqual, graphFilterRuleOperatorNotEqual:
-			return fmt.Sprintf("%s %s %s", gfr.Column, gfr.Operator, quote(gfr.Value)), nil
-		}
-	case graphColumnInIfSpeed, graphColumnOutIfSpeed, graphColumnForwardingStatus:
-		// Integer (64 bit)
-		value, err := strconv.ParseUint(gfr.Value, 10, 64)
-		if err != nil {
-			return "", fmt.Errorf("cannot parse int %q for %s", gfr.Value, gfr.Column)
-		}
-		switch gfr.Operator {
-		case graphFilterRuleOperatorEqual, graphFilterRuleOperatorNotEqual, graphFilterRuleOperatorLessThan, graphFilterRuleOperatorGreaterThan:
-			return fmt.Sprintf("%s %s %d", gfr.Column, gfr.Operator, value), nil
-		}
-	case graphColumnSrcPort, graphColumnDstPort:
-		// Port
-		port, err := strconv.ParseUint(gfr.Value, 10, 16)
-		if err != nil {
-			return "", fmt.Errorf("cannot parse port %q for %s", gfr.Value, gfr.Column)
-		}
-		switch gfr.Operator {
-		case graphFilterRuleOperatorEqual, graphFilterRuleOperatorNotEqual, graphFilterRuleOperatorLessThan, graphFilterRuleOperatorGreaterThan:
-			return fmt.Sprintf("%s %s %d", gfr.Column, gfr.Operator, port), nil
-		}
-	case graphColumnSrcAS, graphColumnDstAS:
-		// AS number
-		value := strings.TrimPrefix(gfr.Value, "AS")
-		asn, err := strconv.ParseUint(value, 10, 32)
-		if err != nil {
-			return "", fmt.Errorf("cannot parse AS %q for %s", gfr.Value, gfr.Column)
-		}
-		switch gfr.Operator {
-		case graphFilterRuleOperatorEqual, graphFilterRuleOperatorNotEqual, graphFilterRuleOperatorLessThan, graphFilterRuleOperatorGreaterThan:
-			return fmt.Sprintf("%s %s %d", gfr.Column, gfr.Operator, asn), nil
-		}
-	case graphColumnEType:
-		// Ethernet Type
-		etypes := map[string]uint16{
-			"ipv4": 0x0800,
-			"ipv6": 0x86dd,
-		}
-		etype, ok := etypes[strings.ToLower(gfr.Value)]
-		if !ok {
-			return "", fmt.Errorf("cannot parse etype %q for %s", gfr.Value, gfr.Column)
-		}
-		switch gfr.Operator {
-		case graphFilterRuleOperatorEqual, graphFilterRuleOperatorNotEqual:
-			return fmt.Sprintf("%s %s %d", gfr.Column, gfr.Operator, etype), nil
-		}
-	case graphColumnProto:
-		// Protocol
-		// Case 1: int
-		proto, err := strconv.ParseUint(gfr.Value, 10, 8)
-		if err == nil {
-			switch gfr.Operator {
-			case graphFilterRuleOperatorEqual, graphFilterRuleOperatorNotEqual, graphFilterRuleOperatorLessThan, graphFilterRuleOperatorGreaterThan:
-				return fmt.Sprintf("%s %s %d", gfr.Column, gfr.Operator, proto), nil
-			}
-			break
-		}
-		// Case 2: string
-		switch gfr.Operator {
-		case graphFilterRuleOperatorEqual, graphFilterRuleOperatorNotEqual:
-			return fmt.Sprintf("dictGetOrDefault('protocols', 'name', Proto, '???') %s %s",
-				gfr.Operator, quote(gfr.Value)), nil
-		}
-	}
-
-	return "", fmt.Errorf("operator %s not supported for %s", gfr.Operator, gfr.Column)
+	*gf = graphFilter{got.(string)}
+	return nil
 }
 
 // toSQLSelect transforms a column into an expression to use in SELECT
@@ -331,10 +146,7 @@ func (query graphQuery) toSQL() (string, error) {
 	interval := int64((query.End.Sub(query.Start).Seconds())) / int64(query.Points)
 
 	// Filter
-	where, err := query.Filter.toSQLWhere()
-	if err != nil {
-		return "", err
-	}
+	where := query.Filter.filter
 	if where == "" {
 		where = "{timefilter}"
 	} else {

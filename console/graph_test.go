@@ -20,236 +20,6 @@ import (
 	"akvorado/common/reporter"
 )
 
-func TestGraphFilterGroupSQLWhere(t *testing.T) {
-	cases := []struct {
-		Description string
-		Input       graphFilterGroup
-		Expected    string
-	}{
-		{
-			Description: "empty group",
-			Expected:    "",
-		}, {
-			Description: "all group",
-			Input: graphFilterGroup{
-				Operator: graphFilterGroupOperatorAll,
-				Rules: []graphFilterRule{
-					{
-						Column:   graphColumnDstCountry,
-						Operator: graphFilterRuleOperatorEqual,
-						Value:    "FR",
-					}, {
-						Column:   graphColumnSrcCountry,
-						Operator: graphFilterRuleOperatorEqual,
-						Value:    "US",
-					},
-				},
-			},
-			Expected: `(DstCountry = 'FR') AND (SrcCountry = 'US')`,
-		}, {
-			Description: "any group",
-			Input: graphFilterGroup{
-				Operator: graphFilterGroupOperatorAny,
-				Rules: []graphFilterRule{
-					{
-						Column:   graphColumnDstCountry,
-						Operator: graphFilterRuleOperatorEqual,
-						Value:    "FR",
-					}, {
-						Column:   graphColumnSrcCountry,
-						Operator: graphFilterRuleOperatorEqual,
-						Value:    "US",
-					},
-				},
-			},
-			Expected: `(DstCountry = 'FR') OR (SrcCountry = 'US')`,
-		}, {
-			Description: "nested group",
-			Input: graphFilterGroup{
-				Operator: graphFilterGroupOperatorAll,
-				Rules: []graphFilterRule{
-					{
-						Column:   graphColumnDstCountry,
-						Operator: graphFilterRuleOperatorEqual,
-						Value:    "FR",
-					},
-				},
-				Children: []graphFilterGroup{
-					{
-						Operator: graphFilterGroupOperatorAny,
-						Rules: []graphFilterRule{
-							{
-								Column:   graphColumnSrcCountry,
-								Operator: graphFilterRuleOperatorEqual,
-								Value:    "US",
-							}, {
-								Column:   graphColumnSrcCountry,
-								Operator: graphFilterRuleOperatorEqual,
-								Value:    "IE",
-							},
-						},
-					},
-				},
-			},
-			Expected: `((SrcCountry = 'US') OR (SrcCountry = 'IE')) AND (DstCountry = 'FR')`,
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.Description, func(t *testing.T) {
-			got, _ := tc.Input.toSQLWhere()
-			if diff := helpers.Diff(got, tc.Expected); diff != "" {
-				t.Errorf("toSQLWhere (-got, +want):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestGraphFilterRuleSQLWhere(t *testing.T) {
-	cases := []struct {
-		Description string
-		Input       graphFilterRule
-		Expected    string
-	}{
-		{
-			Description: "source IP (v4)",
-			Input: graphFilterRule{
-				Column:   graphColumnSrcAddr,
-				Operator: graphFilterRuleOperatorEqual,
-				Value:    "192.0.2.11",
-			},
-			Expected: `SrcAddr = IPv6StringToNum('192.0.2.11')`,
-		}, {
-			Description: "source IP (v6)",
-			Input: graphFilterRule{
-				Column:   graphColumnSrcAddr,
-				Operator: graphFilterRuleOperatorEqual,
-				Value:    "2001:db8::1",
-			},
-			Expected: `SrcAddr = IPv6StringToNum('2001:db8::1')`,
-		}, {
-			Description: "source IP (bad)",
-			Input: graphFilterRule{
-				Column:   graphColumnSrcAddr,
-				Operator: graphFilterRuleOperatorEqual,
-				Value:    "alfred",
-			},
-			Expected: "",
-		}, {
-			Description: "boundary",
-			Input: graphFilterRule{
-				Column:   graphColumnInIfBoundary,
-				Operator: graphFilterRuleOperatorNotEqual,
-				Value:    "external",
-			},
-			Expected: `InIfBoundary != 'external'`,
-		}, {
-			Description: "boundary (bad)",
-			Input: graphFilterRule{
-				Column:   graphColumnInIfBoundary,
-				Operator: graphFilterRuleOperatorNotEqual,
-				Value:    "eternal",
-			},
-			Expected: "",
-		}, {
-			Description: "speed",
-			Input: graphFilterRule{
-				Column:   graphColumnInIfSpeed,
-				Operator: graphFilterRuleOperatorLessThan,
-				Value:    "1000",
-			},
-			Expected: `InIfSpeed < 1000`,
-		}, {
-			Description: "speed (bad)",
-			Input: graphFilterRule{
-				Column:   graphColumnInIfSpeed,
-				Operator: graphFilterRuleOperatorLessThan,
-				Value:    "-1000",
-			},
-			Expected: "",
-		}, {
-			Description: "source port",
-			Input: graphFilterRule{
-				Column:   graphColumnSrcPort,
-				Operator: graphFilterRuleOperatorLessThan,
-				Value:    "1000",
-			},
-			Expected: `SrcPort < 1000`,
-		}, {
-			Description: "source port (bad)",
-			Input: graphFilterRule{
-				Column:   graphColumnSrcPort,
-				Operator: graphFilterRuleOperatorLessThan,
-				Value:    "10000000",
-			},
-			Expected: "",
-		}, {
-			Description: "source AS",
-			Input: graphFilterRule{
-				Column:   graphColumnSrcAS,
-				Operator: graphFilterRuleOperatorEqual,
-				Value:    "2906",
-			},
-			Expected: "SrcAS = 2906",
-		}, {
-			Description: "source AS (prefixed)",
-			Input: graphFilterRule{
-				Column:   graphColumnSrcAS,
-				Operator: graphFilterRuleOperatorEqual,
-				Value:    "AS2906",
-			},
-			Expected: "SrcAS = 2906",
-		}, {
-			Description: "source AS (bad)",
-			Input: graphFilterRule{
-				Column:   graphColumnSrcAS,
-				Operator: graphFilterRuleOperatorEqual,
-				Value:    "ASMN2906",
-			},
-			Expected: "",
-		}, {
-			Description: "EType",
-			Input: graphFilterRule{
-				Column:   graphColumnEType,
-				Operator: graphFilterRuleOperatorEqual,
-				Value:    "IPv6",
-			},
-			Expected: "EType = 34525",
-		}, {
-			Description: "EType (bad)",
-			Input: graphFilterRule{
-				Column:   graphColumnEType,
-				Operator: graphFilterRuleOperatorEqual,
-				Value:    "IPv4+",
-			},
-			Expected: "",
-		}, {
-			Description: "Proto (string)",
-			Input: graphFilterRule{
-				Column:   graphColumnProto,
-				Operator: graphFilterRuleOperatorEqual,
-				Value:    "TCP",
-			},
-			Expected: `dictGetOrDefault('protocols', 'name', Proto, '???') = 'TCP'`,
-		}, {
-			Description: "Proto (int)",
-			Input: graphFilterRule{
-				Column:   graphColumnProto,
-				Operator: graphFilterRuleOperatorEqual,
-				Value:    "47",
-			},
-			Expected: `Proto = 47`,
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.Description, func(t *testing.T) {
-			got, _ := tc.Input.toSQLWhere()
-			if diff := helpers.Diff(got, tc.Expected); diff != "" {
-				t.Errorf("toSQLWhere (-got, +want):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestGraphColumnSQLSelect(t *testing.T) {
 	cases := []struct {
 		Input    graphColumn
@@ -298,7 +68,7 @@ func TestGraphQuerySQL(t *testing.T) {
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
 				Dimensions: []graphColumn{},
-				Filter:     graphFilterGroup{},
+				Filter:     graphFilter{},
 			},
 			Expected: `
 WITH
@@ -318,20 +88,7 @@ ORDER BY time`,
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
 				Dimensions: []graphColumn{},
-				Filter: graphFilterGroup{
-					Operator: graphFilterGroupOperatorAll,
-					Rules: []graphFilterRule{
-						{
-							Column:   graphColumnDstCountry,
-							Operator: graphFilterRuleOperatorEqual,
-							Value:    "FR",
-						}, {
-							Column:   graphColumnSrcCountry,
-							Operator: graphFilterRuleOperatorEqual,
-							Value:    "US",
-						},
-					},
-				},
+				Filter:     graphFilter{"DstCountry = 'FR' AND SrcCountry = 'US'"},
 			},
 			Expected: `
 WITH
@@ -341,7 +98,7 @@ SELECT
  SUM(Bytes*SamplingRate*8/slot) AS bps,
  emptyArrayString() AS dimensions
 FROM {table}
-WHERE {timefilter} AND ((DstCountry = 'FR') AND (SrcCountry = 'US'))
+WHERE {timefilter} AND (DstCountry = 'FR' AND SrcCountry = 'US')
 GROUP BY time, dimensions
 ORDER BY time`,
 		}, {
@@ -355,7 +112,7 @@ ORDER BY time`,
 					graphColumnExporterName,
 					graphColumnInIfProvider,
 				},
-				Filter: graphFilterGroup{},
+				Filter: graphFilter{},
 			},
 			Expected: `
 WITH
@@ -477,20 +234,7 @@ func TestGraphHandler(t *testing.T) {
 			graphColumnExporterName,
 			graphColumnInIfProvider,
 		},
-		Filter: graphFilterGroup{
-			Operator: graphFilterGroupOperatorAll,
-			Rules: []graphFilterRule{
-				{
-					Column:   graphColumnDstCountry,
-					Operator: graphFilterRuleOperatorEqual,
-					Value:    "FR",
-				}, {
-					Column:   graphColumnSrcCountry,
-					Operator: graphFilterRuleOperatorEqual,
-					Value:    "US",
-				},
-			},
-		},
+		Filter: graphFilter{"DstCountry = 'FR' AND SrcCountry = 'US'"},
 	}
 	payload := new(bytes.Buffer)
 	err = json.NewEncoder(payload).Encode(input)

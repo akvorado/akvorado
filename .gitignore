@@ -3,6 +3,7 @@
 /inlet/flow/decoder/flow*.pb.go
 /common/clickhousedb/mocks/
 /orchestrator/clickhouse/data/asns.csv
+/console/filter/parser.go
 
 /console/frontend/node_modules/
 /console/data/frontend/
