@@ -1,6 +1,6 @@
 <template>
-  <div class="h-full">
-    <div class="relative h-full">
+  <div>
+    <div class="relative">
       <input
         :id="props.id"
         :value="modelValue"
@@ -11,7 +11,7 @@
           'border-gray-300 focus:border-blue-600 dark:border-gray-600 dark:focus:border-blue-500':
             !error,
         }"
-        class="peer block h-full w-full appearance-none rounded-t-lg border-0 border-b-2 bg-gray-50 px-2.5 pb-1.5 pt-4 text-sm text-gray-900 focus:outline-none focus:ring-0 dark:bg-gray-700 dark:text-white"
+        class="peer block w-full appearance-none rounded-t-lg border-0 border-b-2 bg-gray-50 px-2.5 pb-1.5 pt-4 text-sm text-gray-900 focus:outline-none focus:ring-0 dark:bg-gray-700 dark:text-white"
         placeholder=" "
         @input="$emit('update:modelValue', $event.target.value)"
       />
