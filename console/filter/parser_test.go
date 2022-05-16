@@ -98,10 +98,10 @@ func TestInvalidFilter(t *testing.T) {
 		{`Proto = 1000`},
 		{`SrcPort = 1000000`},
 		{`ForwardingStatus >= 900`},
-		{`Proto = 1000 AND`},
-		{`AND Proto = 1000`},
-		{`Proto = 1000AND Proto = 1000`},
-		{`Proto = 1000 ANDProto = 1000`},
+		{`Proto = 100 AND`},
+		{`AND Proto = 100`},
+		{`Proto = 100AND Proto = 100`},
+		{`Proto = 100 ANDProto = 100`},
 	}
 	for _, tc := range cases {
 		_, err := Parse("", []byte(tc.Input))

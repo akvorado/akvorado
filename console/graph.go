@@ -89,7 +89,7 @@ func (gc graphColumn) MarshalText() ([]byte, error) {
 	if ok {
 		return []byte(got), nil
 	}
-	return nil, errors.New("unknown group operator")
+	return nil, errors.New("unknown field")
 }
 func (gc graphColumn) String() string {
 	got, _ := graphColumnMap.LoadValue(gc)
@@ -101,7 +101,7 @@ func (gc *graphColumn) UnmarshalText(input []byte) error {
 		*gc = got
 		return nil
 	}
-	return errors.New("unknown group operator")
+	return errors.New("unknown field")
 }
 
 type graphFilter struct {
@@ -114,7 +114,7 @@ func (gf graphFilter) MarshalText() ([]byte, error) {
 func (gf *graphFilter) UnmarshalText(input []byte) error {
 	got, err := filter.Parse("", input)
 	if err != nil {
-		return fmt.Errorf("cannot parse filter: %w", err)
+		return fmt.Errorf("cannot parse filter: %s", filter.HumanError(err))
 	}
 	*gf = graphFilter{got.(string)}
 	return nil
@@ -212,28 +212,28 @@ func (c *Component) graphHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
 	var query graphQuery
 	if err := gc.ShouldBindJSON(&query); err != nil {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 	if query.Start.After(query.End) {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": "start should not be after end"})
+		gc.JSON(http.StatusBadRequest, gin.H{"message": "Start should not be after end"})
 		return
 	}
 	if query.Points < 5 || query.Points > 2000 {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": "points should be >= 5 and <= 2000"})
+		gc.JSON(http.StatusBadRequest, gin.H{"message": "Points should be >= 5 and <= 2000"})
 		return
 	}
 	if query.Limit == 0 {
 		query.Limit = 10
 	}
 	if query.Limit < 5 || query.Limit > 50 {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": "limit should be >= 5 and <= 50"})
+		gc.JSON(http.StatusBadRequest, gin.H{"message": "Limit should be >= 5 and <= 50"})
 		return
 	}
 
 	sqlQuery, err := query.toSQL()
 	if err != nil {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 	resolution := time.Duration(int64(query.End.Sub(query.Start).Nanoseconds()) / int64(query.Points))

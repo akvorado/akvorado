@@ -23,7 +23,7 @@ func (c *Component) widgetFlowLastHandlerFunc(gc *gin.Context) {
 	}
 
 	if !rows.Next() {
-		gc.JSON(http.StatusNotFound, gin.H{"message": "no flow currently in database."})
+		gc.JSON(http.StatusNotFound, gin.H{"message": "No flow currently in database."})
 		return
 	}
 	defer rows.Close()

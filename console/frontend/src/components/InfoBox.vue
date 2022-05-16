@@ -1,7 +1,7 @@
 <template>
   <div class="my-4 flex rounded-lg p-4 text-sm" :class="classes" role="alert">
-    <InformationCircleIcon class="mr-2 h-5 w-5" />
-    <slot></slot>
+    <InformationCircleIcon class="mr-2 h-5 w-5 shrink-0" />
+    <span><slot></slot></span>
   </div>
 </template>
 
