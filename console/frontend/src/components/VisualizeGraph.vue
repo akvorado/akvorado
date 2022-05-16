@@ -2,6 +2,7 @@
   <v-chart
     ref="chartComponent"
     :option="graph"
+    :update-options="{ notMerge: true }"
     :loading="props.loading"
     :theme="isDark() ? 'dark' : null"
     autoresize
