@@ -1,6 +1,7 @@
 package helpers_test
 
 import (
+	"sort"
 	"testing"
 
 	"akvorado/common/helpers"
@@ -57,5 +58,35 @@ func TestBimapLoadKey(t *testing.T) {
 		if got != tc.key {
 			t.Errorf("LoadKey(%q) got: %q but expected %q", tc.value, got, tc.value)
 		}
+	}
+}
+
+func TestBimapKeys(t *testing.T) {
+	input := helpers.NewBimap(map[int]string{
+		1: "hello",
+		2: "world",
+		3: "happy",
+	})
+	got := input.Keys()
+	expected := []int{1, 2, 3}
+	sort.Ints(got)
+	sort.Ints(expected)
+	if diff := helpers.Diff(got, expected); diff != "" {
+		t.Errorf("Keys() (-want, +got):\n%s", diff)
+	}
+}
+
+func TestBimapValues(t *testing.T) {
+	input := helpers.NewBimap(map[int]string{
+		1: "hello",
+		2: "world",
+		3: "happy",
+	})
+	got := input.Values()
+	expected := []string{"hello", "world", "happy"}
+	sort.Strings(got)
+	sort.Strings(expected)
+	if diff := helpers.Diff(got, expected); diff != "" {
+		t.Errorf("Values() (-want, +got):\n%s", diff)
 	}
 }

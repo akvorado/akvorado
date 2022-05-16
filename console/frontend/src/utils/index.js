@@ -9,4 +9,43 @@ export function formatBps(value) {
   return `${value}${suffixes[idx]}`;
 }
 
+// Order function for field names
+export function compareFields(f1, f2) {
+  const metric = {
+    Dat: 1,
+    Tim: 2,
+    Byt: 3,
+    Pac: 4,
+    Exp: 7,
+    Sam: 8,
+    Seq: 9,
+    Src: 10,
+    Dst: 12,
+    InI: 11,
+    Out: 13,
+  };
+  const m1 = metric[f1.substring(0, 3)] || 100;
+  const m2 = metric[f2.substring(0, 3)] || 100;
+  const cmp = m1 - m2;
+  if (cmp) {
+    return cmp;
+  }
+  if (m1 === 10) {
+    f1 = f1.substring(3);
+    f2 = f2.substring(3);
+  } else if (m1 === 11) {
+    if (f1.startsWith("InIf")) {
+      f1 = f1.substring(4);
+    } else {
+      f1 = f1.substring(5);
+    }
+    if (f2.startsWith("InIf")) {
+      f2 = f2.substring(4);
+    } else {
+      f2 = f2.substring(5);
+    }
+  }
+  return f1.localeCompare(f2);
+}
+
 export { dataColor, dataColorGrey } from "./palette.js";

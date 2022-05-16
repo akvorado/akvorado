@@ -11,7 +11,14 @@
           class="peer block w-full appearance-none rounded-t-lg border-0 border-b-2 border-gray-300 bg-gray-50 px-2.5 pb-1.5 pt-4 text-left text-sm text-gray-900 focus:border-blue-600 focus:outline-none focus:ring-0 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-500"
         >
           <span class="block flex flex-wrap gap-2 pt-1">
-            <span v-if="selectedDimensions.length === 0">No dimensions</span>
+            <span
+              v-if="dimensionsError"
+              class="text-red-600 dark:text-red-400"
+              >{{ dimensionsError }}</span
+            >
+            <span v-if="selectedDimensions.length === 0 && !dimensionsError"
+              >No dimensions</span
+            >
             <span
               v-for="dimension in selectedDimensions"
               :key="dimension.id"
@@ -33,7 +40,12 @@
         </ListboxButton>
         <label
           for="dimensions"
-          class="z-5 absolute top-3 left-2.5 origin-[0] -translate-y-3 scale-75 transform text-sm text-gray-500 peer-focus:text-blue-600 dark:text-gray-400 dark:peer-focus:text-blue-500"
+          class="z-5 absolute top-3 left-2.5 origin-[0] -translate-y-3 scale-75 transform text-sm"
+          :class="{
+            'text-red-600 dark:text-red-500': dimensionsError,
+            'text-gray-500 peer-focus:text-blue-600 dark:text-gray-400 dark:peer-focus:text-blue-500':
+              !dimensionsError,
+          }"
         >
           Dimensions
         </label>
@@ -94,7 +106,7 @@ import {
   ListboxOption,
 } from "@headlessui/vue";
 import { XIcon, CheckIcon, SelectorIcon } from "@heroicons/vue/solid";
-import { dataColor } from "../utils";
+import { dataColor, compareFields } from "../utils";
 import InputString from "./InputString.vue";
 
 const props = defineProps({
@@ -109,45 +121,10 @@ const props = defineProps({
 const emit = defineEmits(["update:modelValue"]);
 
 // We don't fetch from server since error handling would be a tad compex.
-const dimensions = [
-  { name: "ExporterAddress" },
-  { name: "ExporterName" },
-  { name: "ExporterGroup" },
-  { name: "InIfBoundary" },
-  { name: "InIfConnectivity" },
-  { name: "InIfDescription" },
-  { name: "InIfName" },
-  { name: "InIfProvider" },
-  { name: "InIfSpeed" },
-  { name: "OutIfBoundary" },
-  { name: "OutIfConnectivity" },
-  { name: "OutIfDescription" },
-  { name: "OutIfName" },
-  { name: "OutIfProvider" },
-  { name: "OutIfSpeed" },
-  { name: "SrcAS" },
-  { name: "SrcCountry" },
-  { name: "SrcPort" },
-  { name: "SrcAddr" },
-  { name: "DstAS" },
-  { name: "DstCountry" },
-  { name: "DstAddr" },
-  { name: "DstPort" },
-  { name: "EType" },
-  { name: "Proto" },
-  { name: "ForwardingStatus" },
-].map((v, idx) => ({
-  id: idx + 1,
-  color: dataColor(
-    ["Exporter", "Src", "Dst", "In", "Out", ""]
-      .map((p) => v.name.startsWith(p))
-      .indexOf(true)
-  ),
-  ...v,
-}));
-
+const dimensions = ref([]);
+const dimensionsError = ref("");
 const selectedDimensions = ref([]);
-const limit = ref(10);
+const limit = ref("10");
 const limitError = computed(() => {
   const val = parseInt(limit.value);
   if (isNaN(val)) {
@@ -162,6 +139,28 @@ const limitError = computed(() => {
   return "";
 });
 
+// Fetch dimensions
+(async () => {
+  try {
+    const response = await fetch("/api/v0/console/graph/fields");
+    if (!response.ok) {
+      throw `Server returned ${response.status} status`;
+    }
+    const data = await response.json();
+    dimensions.value = data.sort(compareFields).map((v, idx) => ({
+      id: idx + 1,
+      name: v,
+      color: dataColor(
+        ["Exporter", "Src", "Dst", "In", "Out", ""]
+          .map((p) => v.startsWith(p))
+          .indexOf(true)
+      ),
+    }));
+  } catch (err) {
+    dimensionsError.value = "Cannot fetch dimensions";
+  }
+})();
+
 const removeDimension = (dimension) => {
   selectedDimensions.value = selectedDimensions.value.filter(
     (d) => d !== dimension
@@ -169,23 +168,26 @@ const removeDimension = (dimension) => {
 };
 
 watch(
-  () => props.modelValue,
-  (model) => {
+  () => [props.modelValue, dimensions],
+  ([model, dimensions]) => {
     limit.value = model.limit.toString();
     selectedDimensions.value = model.selected
-      .map((name) => dimensions.filter((d) => d.name === name)[0])
+      .map((name) => dimensions.value.filter((d) => d.name === name)[0])
       .filter((d) => d !== undefined);
   },
-  { immediate: true, deep: true }
+  { deep: true }
 );
-watch([selectedDimensions, limit], ([selected, limit]) => {
-  const updated = {
-    selected: selected.map((d) => d.name),
-    limit: parseInt(limit) || limit,
-    errors: !!limitError.value,
-  };
-  if (JSON.stringify(updated) !== JSON.stringify(props.modelValue)) {
-    emit("update:modelValue", updated);
+watch(
+  [selectedDimensions, limit, limitError, dimensionsError],
+  ([selected, limit, limitError, dimensionsError]) => {
+    const updated = {
+      selected: selected.map((d) => d.name),
+      limit: parseInt(limit) || limit,
+      errors: !!(limitError || dimensionsError),
+    };
+    if (JSON.stringify(updated) !== JSON.stringify(props.modelValue)) {
+      emit("update:modelValue", updated);
+    }
   }
-});
+);
 </script>

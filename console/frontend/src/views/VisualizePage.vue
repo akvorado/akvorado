@@ -65,7 +65,7 @@ const encodeState = (state) => {
 const defaultState = () => ({
   start: "6 hours ago",
   end: "now",
-  points: 400,
+  points: 200,
   limit: 10,
   dimensions: ["SrcAS", "ExporterName"],
   filter: {

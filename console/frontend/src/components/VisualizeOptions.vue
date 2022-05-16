@@ -109,6 +109,7 @@ const options = computed(() => {
     options.end = timeRange.value.end;
     options.dimensions = dimensions.value.selected;
     options.limit = dimensions.value.limit;
+    options.points = props.state.points;
     return options;
   } catch (_) {
     return {};
