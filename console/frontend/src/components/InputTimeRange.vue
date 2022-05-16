@@ -166,16 +166,12 @@ const presets = [
   },
 ].map((v, idx) => ({ id: idx + 1, ...v }));
 const selectedPreset = ref(presets[0]);
-watch(
-  selectedPreset,
-  (preset) => {
-    if (preset.start) {
-      startTime.value = preset.start;
-      endTime.value = preset.end;
-    }
-  },
-  { deep: true }
-);
+watch(selectedPreset, (preset) => {
+  if (preset.start) {
+    startTime.value = preset.start;
+    endTime.value = preset.end;
+  }
+});
 
 watch(
   () => props.modelValue,
@@ -185,14 +181,27 @@ watch(
   },
   { immediate: true, deep: true }
 );
-watch([startTime, endTime, hasErrors], ([start, end, errors]) => {
-  if (selectedPreset.value.start != start || selectedPreset.value.end != end) {
-    selectedPreset.value = presets[0];
-  }
-  emit("update:modelValue", {
-    start,
-    end,
-    errors,
-  });
-});
+watch(
+  [startTime, endTime, hasErrors],
+  ([start, end, errors]) => {
+    // Find the right preset
+    const newPreset =
+      presets.filter((p) => p.start === start && p.end === end)[0] ||
+      presets[0];
+    if (newPreset.id !== selectedPreset.value.id) {
+      selectedPreset.value = newPreset;
+    }
+
+    // Update the model
+    const newModel = {
+      start,
+      end,
+      errors,
+    };
+    if (JSON.stringify(newModel) !== JSON.stringify(props.modelValue)) {
+      emit("update:modelValue", newModel);
+    }
+  },
+  { immediate: true }
+);
 </script>
