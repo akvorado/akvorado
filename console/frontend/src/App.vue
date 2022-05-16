@@ -1,6 +1,6 @@
 <template>
   <ThemeProvider>
-    <div class="flex max-h-screen flex-col">
+    <div class="flex h-full max-h-screen flex-col">
       <NavigationBar class="flex-none" />
       <main class="relative flex grow overflow-y-auto">
         <router-view />

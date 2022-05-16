@@ -1,5 +1,5 @@
 <template>
-  <div class="flex w-full flex-col lg:flex-row">
+  <div class="flex h-full w-full flex-col lg:flex-row">
     <VisualizeOptions
       :state="state"
       @update="(updatedState) => (state = updatedState)"
