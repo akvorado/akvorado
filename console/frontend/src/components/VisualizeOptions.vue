@@ -4,13 +4,12 @@
     :class="open ? 'h-96 lg:w-64' : 'h-6 lg:w-6'"
   >
     <button
-      class="absolute right-4 bottom-0 z-10 translate-y-1/2 rounded-full bg-white shadow hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-black lg:top-2 lg:bottom-auto lg:right-0 lg:translate-x-1/2 lg:translate-y-0"
+      class="absolute right-4 bottom-0 z-10 translate-y-1/2 rounded-full bg-white shadow transition-transform delay-100 duration-500 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-black lg:top-2 lg:bottom-auto lg:right-0 lg:translate-x-1/2 lg:translate-y-0"
+      :class="open && 'rotate-180'"
       @click="open = !open"
     >
-      <ChevronRightIcon v-if="!open" class="hidden h-8 lg:inline" />
-      <ChevronLeftIcon v-if="open" class="hidden h-8 lg:inline" />
-      <ChevronDownIcon v-if="!open" class="h-8 lg:hidden" />
-      <ChevronUpIcon v-if="open" class="h-8 lg:hidden" />
+      <ChevronRightIcon class="hidden h-8 lg:inline" />
+      <ChevronDownIcon class="h-8 lg:hidden" />
     </button>
     <form
       class="h-full overflow-y-auto bg-gray-200 dark:bg-slate-600"
@@ -63,12 +62,7 @@
 
 <script setup>
 import { ref, watch, computed } from "vue";
-import {
-  ChevronLeftIcon,
-  ChevronDownIcon,
-  ChevronRightIcon,
-  ChevronUpIcon,
-} from "@heroicons/vue/solid";
+import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/vue/solid";
 import InputTimeRange from "./InputTimeRange.vue";
 import InputDimensions from "./InputDimensions.vue";
 
