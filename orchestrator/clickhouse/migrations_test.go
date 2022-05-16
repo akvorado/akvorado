@@ -41,7 +41,7 @@ func TestGetHTTPBaseURL(t *testing.T) {
 	expectedURL.Host = expectedURL.Host[strings.LastIndex(expectedURL.Host, ":"):]
 	// We can't really know our IP
 	if diff := helpers.Diff(parsedURL, expectedURL); diff != "" {
-		t.Fatalf("getHTTPBaseURL() (-want, +got):\n%s", diff)
+		t.Fatalf("getHTTPBaseURL() (-got, +want):\n%s", diff)
 	}
 }
 

@@ -72,7 +72,7 @@ func TestBimapKeys(t *testing.T) {
 	sort.Ints(got)
 	sort.Ints(expected)
 	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Errorf("Keys() (-want, +got):\n%s", diff)
+		t.Errorf("Keys() (-got, +want):\n%s", diff)
 	}
 }
 
@@ -87,6 +87,6 @@ func TestBimapValues(t *testing.T) {
 	sort.Strings(got)
 	sort.Strings(expected)
 	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Errorf("Values() (-want, +got):\n%s", diff)
+		t.Errorf("Values() (-got, +want):\n%s", diff)
 	}
 }

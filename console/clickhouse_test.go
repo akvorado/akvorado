@@ -199,7 +199,7 @@ func TestQueryFlowsTables(t *testing.T) {
 			c.flowsTables = tc.Tables
 			got := c.queryFlowsTable(tc.Query, tc.Start, tc.End, tc.Resolution)
 			if diff := helpers.Diff(got, tc.Expected); diff != "" {
-				t.Fatalf("queryFlowsTable(): (-want, +got):\n%s", diff)
+				t.Fatalf("queryFlowsTable(): (-got, +want):\n%s", diff)
 			}
 		})
 	}
