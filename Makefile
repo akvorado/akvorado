@@ -62,6 +62,8 @@ $(BIN)/pigeon: PACKAGE=github.com/mna/pigeon@v1.1.0
 
 # Generated files
 
+.DELETE_ON_ERROR:
+
 inlet/flow/decoder/%.pb.go: inlet/flow/data/schemas/%.proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffers definition…)
 	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --go_out=. --go_opt=module=$(MODULE) $<
 
@@ -84,10 +86,12 @@ console/data/frontend: ; $(info $(M) building console frontend…)
 
 orchestrator/clickhouse/data/asns.csv: ; $(info $(M) generate ASN map…)
 	$Q curl -sL https://vincentbernat.github.io/asn2org/asns.csv | sed 's|,[^,]*$$||' > $@
+	$Q test -s $@ || { rm -f $@ ; exit 1 }
 orchestrator/clickhouse/data/protocols.csv: # We keep this one in Git
 	$Q curl -sL http://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv \
 		| sed -nE -e "1 s/.*/proto,name,description/p" -e "2,$ s/^([0-9]+,[^ ,]+,[^\",]+),.*/\1/p" \
 		> $@
+	$Q test -s $@ || { rm -f $@ ; exit 1 }
 
 # Tests
 
