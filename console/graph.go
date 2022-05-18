@@ -30,27 +30,27 @@ const (
 	graphColumnExporterAddress graphColumn = iota + 1
 	graphColumnExporterName
 	graphColumnExporterGroup
-	graphColumnSrcAddr
-	graphColumnDstAddr
 	graphColumnSrcAS
-	graphColumnDstAS
 	graphColumnSrcCountry
-	graphColumnDstCountry
 	graphColumnInIfName
-	graphColumnOutIfName
 	graphColumnInIfDescription
-	graphColumnOutIfDescription
 	graphColumnInIfSpeed
-	graphColumnOutIfSpeed
 	graphColumnInIfConnectivity
-	graphColumnOutIfConnectivity
 	graphColumnInIfProvider
-	graphColumnOutIfProvider
 	graphColumnInIfBoundary
-	graphColumnOutIfBoundary
 	graphColumnEType
 	graphColumnProto
 	graphColumnSrcPort
+	graphColumnSrcAddr
+	graphColumnDstAS
+	graphColumnDstCountry
+	graphColumnOutIfName
+	graphColumnOutIfDescription
+	graphColumnOutIfSpeed
+	graphColumnOutIfConnectivity
+	graphColumnOutIfProvider
+	graphColumnOutIfBoundary
+	graphColumnDstAddr
 	graphColumnDstPort
 	graphColumnForwardingStatus
 )
@@ -324,8 +324,4 @@ func (c *Component) graphHandlerFunc(gc *gin.Context) {
 	}
 
 	gc.JSON(http.StatusOK, output)
-}
-
-func (c *Component) graphFieldsHandlerFunc(gc *gin.Context) {
-	gc.JSON(http.StatusOK, graphColumnMap.Values())
 }

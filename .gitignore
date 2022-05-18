@@ -6,6 +6,7 @@
 /console/filter/parser.go
 
 /console/frontend/node_modules/
+/console/frontend/data/fields.json
 /console/data/frontend/
 
 *~

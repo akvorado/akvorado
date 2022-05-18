@@ -19,7 +19,9 @@ GENERATED = \
 	common/clickhousedb/mocks/mock_driver.go \
 	orchestrator/clickhouse/data/asns.csv \
 	console/filter/parser.go \
-	console/data/frontend console/frontend/node_modules
+	console/data/frontend \
+	console/frontend/node_modules \
+	console/frontend/data/fields.json
 
 .PHONY: all
 all: fmt lint $(GENERATED) | $(BIN) ; $(info $(M) building executable…) @ ## Build program binary
@@ -78,6 +80,10 @@ console/filter/parser.go: console/filter/parser.peg | $(PIGEON) ; $(info $(M) ge
 console/frontend/node_modules: console/frontend/package.json console/frontend/yarn.lock
 console/frontend/node_modules: ; $(info $(M) fetching node modules…)
 	$Q yarn install --silent --frozen-lockfile --cwd console/frontend && touch $@
+console/frontend/data/fields.json: console/graph.go ; $(info $(M) generate list of selectable fields…)
+	$Q sed -En -e 's/^\tgraphColumn([a-zA-Z]+)( .*|$$)/  "\1"/p' $< \
+		| sed -E -e '1i [' -e '$$ ! s/$$/,/' -e '$$a ]'> $@
+	$Q test -s $@
 console/data/frontend: Makefile console/frontend/node_modules
 console/data/frontend: console/frontend/index.html console/frontend/vite.config.js
 console/data/frontend: $(shell $(LSFILES) console/frontend/src 2> /dev/null)
@@ -86,12 +92,12 @@ console/data/frontend: ; $(info $(M) building console frontend…)
 
 orchestrator/clickhouse/data/asns.csv: ; $(info $(M) generate ASN map…)
 	$Q curl -sL https://vincentbernat.github.io/asn2org/asns.csv | sed 's|,[^,]*$$||' > $@
-	$Q test -s $@ || { rm -f $@ ; exit 1 }
+	$Q test -s $@
 orchestrator/clickhouse/data/protocols.csv: # We keep this one in Git
 	$Q curl -sL http://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv \
 		| sed -nE -e "1 s/.*/proto,name,description/p" -e "2,$ s/^([0-9]+,[^ ,]+,[^\",]+),.*/\1/p" \
 		> $@
-	$Q test -s $@ || { rm -f $@ ; exit 1 }
+	$Q test -s $@
 
 # Tests
 
