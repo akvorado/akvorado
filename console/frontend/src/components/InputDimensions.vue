@@ -8,20 +8,20 @@
       <div class="relative">
         <ListboxButton
           id="dimensions"
-          class="peer relative block w-full appearance-none rounded-t-lg border-0 border-b-2 border-gray-300 bg-gray-50 px-2.5 pb-1.5 pt-4 text-left text-sm text-gray-900 focus:border-blue-600 focus:outline-none focus:ring-0 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-500"
+          class="peer relative block w-full appearance-none rounded-t-lg border-0 border-b-2 border-gray-300 bg-gray-50 pl-2.5 pr-8 pb-1.5 pt-4 text-left text-sm text-gray-900 focus:border-blue-600 focus:outline-none focus:ring-0 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-500"
         >
           <span class="block flex flex-wrap gap-2">
             <span v-if="selectedDimensions.length === 0">No dimensions</span>
             <span
               v-for="dimension in selectedDimensions"
               :key="dimension.id"
-              class="-mb-1 flex items-center gap-1 rounded border-2 bg-violet-100 px-2 dark:bg-slate-800"
+              class="-mb-[4px] flex items-center gap-1 rounded border-2 bg-violet-100 px-2 dark:bg-slate-800"
               :style="{ borderColor: dimension.color }"
             >
               <span>{{ dimension.name }}</span>
               <XIcon
                 class="h-4 w-4 cursor-pointer"
-                @click.prevent="removeDimension(dimension)"
+                @click.stop.prevent="removeDimension(dimension)"
               />
             </span>
           </span>
