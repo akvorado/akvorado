@@ -7,7 +7,7 @@
     <div class="container mx-auto flex flex-wrap items-center justify-between">
       <router-link to="/" class="flex items-center">
         <img
-          src="../assets/images/akvorado.svg"
+          src="@/assets/images/akvorado.svg"
           class="mr-3 h-6 sm:h-9"
           alt="Akvorado Logo"
         />
@@ -70,7 +70,7 @@ import {
   XIcon,
   PresentationChartLineIcon,
 } from "@heroicons/vue/solid";
-import DarkModeSwitcher from "./DarkModeSwitcher.vue";
+import DarkModeSwitcher from "@/components/DarkModeSwitcher.vue";
 
 const route = useRoute();
 const navigation = computed(() => [

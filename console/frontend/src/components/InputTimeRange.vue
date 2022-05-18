@@ -76,7 +76,7 @@ import {
   ListboxOption,
 } from "@headlessui/vue";
 import { CheckIcon, SelectorIcon } from "@heroicons/vue/solid";
-import InputString from "./InputString.vue";
+import InputString from "@/components/InputString.vue";
 
 const props = defineProps({
   modelValue: {

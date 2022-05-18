@@ -63,8 +63,8 @@
 <script setup>
 import { ref, watch, computed } from "vue";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/vue/solid";
-import InputTimeRange from "./InputTimeRange.vue";
-import InputDimensions from "./InputDimensions.vue";
+import InputTimeRange from "@/components/InputTimeRange.vue";
+import InputDimensions from "@/components/InputDimensions.vue";
 
 const props = defineProps({
   state: {

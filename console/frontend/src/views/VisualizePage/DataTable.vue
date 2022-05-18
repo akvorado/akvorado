@@ -59,7 +59,7 @@
 
 <script setup>
 import { ref, watch, inject } from "vue";
-import { formatBps, dataColor, dataColorGrey } from "../utils";
+import { formatBps, dataColor, dataColorGrey } from "@/utils";
 const { isDark } = inject("darkMode");
 
 const props = defineProps({

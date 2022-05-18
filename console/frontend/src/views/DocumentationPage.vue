@@ -56,8 +56,9 @@
       class="flex grow md:relative md:overflow-y-auto md:shadow-md"
     >
       <div class="max-w-full py-4 px-4 md:px-16">
-        <InfoBox v-if="serverError" kind="danger">
-          <strong>Unable to fetch documentation page!</strong> {{ serverError }}
+        <InfoBox v-if="errorMessage" kind="danger">
+          <strong>Unable to fetch documentation page!</strong>
+          {{ errorMessage }}
         </InfoBox>
         <div
           class="prose-img:center prose prose-sm mx-auto prose-h1:border-b-2 prose-pre:rounded dark:prose-invert dark:prose-h1:border-gray-700 md:prose-base"
@@ -71,7 +72,7 @@
 <script setup>
 import { ref, computed, watch, nextTick } from "vue";
 import { useRoute } from "vue-router";
-import InfoBox from "../components/InfoBox.vue";
+import InfoBox from "@/components/InfoBox.vue";
 
 const route = useRoute();
 const markdown = ref("");

@@ -6,7 +6,7 @@
       <div class="col-span-2 flex flex-row">
         <div class="my-auto mr-4 basis-1/3">
           <div class="h-24 w-24">
-            <img src="../assets/images/akvorado.svg" />
+            <img src="@/assets/images/akvorado.svg" />
           </div>
         </div>
         <div class="grow">
@@ -57,11 +57,11 @@
 
 <script setup>
 import { ref, onBeforeUnmount } from "vue";
-import WidgetLastFlow from "../components/WidgetLastFlow.vue";
-import WidgetFlowRate from "../components/WidgetFlowRate.vue";
-import WidgetExporters from "../components/WidgetExporters.vue";
-import WidgetTop from "../components/WidgetTop.vue";
-import WidgetGraph from "../components/WidgetGraph.vue";
+import WidgetLastFlow from "./HomePage/WidgetLastFlow.vue";
+import WidgetFlowRate from "./HomePage/WidgetFlowRate.vue";
+import WidgetExporters from "./HomePage/WidgetExporters.vue";
+import WidgetTop from "./HomePage/WidgetTop.vue";
+import WidgetGraph from "./HomePage/WidgetGraph.vue";
 
 const refreshOften = ref(0);
 const refreshOccasionally = ref(0);

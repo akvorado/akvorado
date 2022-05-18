@@ -18,7 +18,7 @@
 
 <script setup>
 import { ref, watch } from "vue";
-import { compareFields } from "../utils";
+import { compareFields } from "../../utils";
 
 const props = defineProps({
   refresh: {

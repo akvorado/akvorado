@@ -13,7 +13,7 @@ import { CanvasRenderer } from "echarts/renderers";
 import { LineChart } from "echarts/charts";
 import { TooltipComponent, GridComponent } from "echarts/components";
 import VChart from "vue-echarts";
-import { dataColor, formatBps } from "../utils";
+import { dataColor, formatBps } from "../../utils";
 const { isDark } = inject("darkMode");
 
 use([CanvasRenderer, LineChart, TooltipComponent, GridComponent]);

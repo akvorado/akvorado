@@ -14,7 +14,7 @@ import { CanvasRenderer } from "echarts/renderers";
 import { PieChart } from "echarts/charts";
 import { TooltipComponent, LegendComponent } from "echarts/components";
 import VChart from "vue-echarts";
-import { dataColor, dataColorGrey } from "../utils";
+import { dataColor, dataColorGrey } from "../../utils";
 const { isDark } = inject("darkMode");
 
 use([CanvasRenderer, PieChart, TooltipComponent, LegendComponent]);

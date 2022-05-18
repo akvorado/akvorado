@@ -94,9 +94,9 @@ import {
   ListboxOption,
 } from "@headlessui/vue";
 import { XIcon, CheckIcon, SelectorIcon } from "@heroicons/vue/solid";
-import { dataColor } from "../utils";
-import InputString from "./InputString.vue";
-import fields from "../../data/fields.json";
+import { dataColor } from "@/utils";
+import InputString from "@/components/InputString.vue";
+import fields from "@data/fields.json";
 
 const props = defineProps({
   modelValue: {

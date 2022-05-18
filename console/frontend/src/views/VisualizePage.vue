@@ -1,6 +1,6 @@
 <template>
   <div class="flex h-full w-full flex-col lg:flex-row">
-    <VisualizeOptions
+    <OptionsPanel
       :state="state"
       @update="(updatedState) => (state = updatedState)"
     />
@@ -16,14 +16,14 @@
           slider-bg-color="#eee1"
           slider-bg-hover-color="#ccc3"
         >
-          <VisualizeGraph
+          <DataGraph
             :loading="loading"
             :data="fetchedData"
             :highlight="highlightedSerie"
             @update-time-range="updateTimeRange"
           />
         </ResizeRow>
-        <VisualizeTable
+        <DataTable
           :data="fetchedData"
           @highlighted="(n) => (highlightedSerie = n)"
         />
@@ -38,10 +38,10 @@ import { useRoute, useRouter } from "vue-router";
 import { Date as SugarDate } from "sugar-date";
 import { ResizeRow } from "vue-resizer";
 import LZString from "lz-string";
-import VisualizeTable from "../components/VisualizeTable.vue";
-import VisualizeGraph from "../components/VisualizeGraph.vue";
-import VisualizeOptions from "../components/VisualizeOptions.vue";
-import InfoBox from "../components/InfoBox.vue";
+import DataTable from "./VisualizePage/DataTable.vue";
+import DataGraph from "./VisualizePage/DataGraph.vue";
+import OptionsPanel from "./VisualizePage/OptionsPanel.vue";
+import InfoBox from "@/components/InfoBox.vue";
 
 const route = useRoute();
 const router = useRouter();

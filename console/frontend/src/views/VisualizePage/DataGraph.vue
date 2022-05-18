@@ -12,7 +12,7 @@
 
 <script setup>
 import { ref, watch, inject, onMounted, nextTick } from "vue";
-import { formatBps, dataColor, dataColorGrey } from "../utils";
+import { formatBps, dataColor, dataColorGrey } from "@/utils";
 const { isDark } = inject("darkMode");
 
 import { use, graphic } from "echarts/core";
