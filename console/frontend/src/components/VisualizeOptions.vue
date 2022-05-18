@@ -40,7 +40,7 @@
         <textarea
           id="options"
           v-model="filter"
-          rows="5"
+          rows="4"
           class="mb-2 block w-full resize-none appearance-none rounded-t-lg border-0 border-b-2 border-gray-300 bg-gray-50 px-2.5 pb-1.5 pt-4 font-mono text-sm text-gray-900 focus:border-blue-600 focus:outline-none focus:ring-0 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-500"
         ></textarea>
         <div>
@@ -50,7 +50,7 @@
             :class="
               !!hasErrors && 'cursor-not-allowed bg-blue-400 dark:bg-blue-500'
             "
-            class="inline items-center rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900"
+            class="mb-2 inline items-center rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900"
           >
             {{ applyLabel }}
           </button>

@@ -23,15 +23,17 @@
       </thead>
       <tbody>
         <tr
-          v-for="row in table.rows"
-          :key="row.dimensions"
+          v-for="(row, index) in table.rows"
+          :key="index"
           class="border-b odd:bg-white even:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 odd:dark:bg-gray-800 even:dark:bg-gray-700"
+          @pointerenter="$emit('highlighted', index)"
+          @pointerleave="$emit('highlighted', null)"
         >
           <th
             scope="row"
             class="px-6 py-2 text-right font-medium text-gray-900 dark:text-white"
           >
-            <div class="w-5" :style="row.style">&nbsp;</div>
+            <div class="w-5 cursor-pointer" :style="row.style">&nbsp;</div>
           </th>
           <td
             v-for="dimension in row.dimensions"
@@ -66,6 +68,7 @@ const props = defineProps({
     default: () => {},
   },
 });
+defineEmits(["highlighted"]);
 
 const table = ref({
   columns: [],

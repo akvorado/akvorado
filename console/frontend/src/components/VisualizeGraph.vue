@@ -43,6 +43,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  highlight: {
+    type: Number,
+    default: null,
+  },
 });
 const emit = defineEmits(["updateTimeRange"]);
 
@@ -159,6 +163,18 @@ watch(
     enableBrush();
   },
   { immediate: true }
+);
+watch(
+  () => [props.highlight, props.data],
+  ([index]) => {
+    if (!chartComponent.value) {
+      return;
+    }
+    chartComponent.value.dispatchAction({
+      type: "highlight",
+      seriesIndex: index,
+    });
+  }
 );
 </script>
 

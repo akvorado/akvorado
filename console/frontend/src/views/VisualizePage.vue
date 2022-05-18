@@ -19,10 +19,14 @@
           <VisualizeGraph
             :loading="loading"
             :data="fetchedData"
+            :highlight="highlightedSerie"
             @update-time-range="updateTimeRange"
           />
         </ResizeRow>
-        <VisualizeTable :data="fetchedData" />
+        <VisualizeTable
+          :data="fetchedData"
+          @highlighted="(n) => (highlightedSerie = n)"
+        />
       </div>
     </div>
   </div>
@@ -44,6 +48,7 @@ const router = useRouter();
 const graphHeight = ref(500);
 const fetchedData = ref({});
 const loading = ref(false);
+const highlightedSerie = ref(null);
 
 const decodeState = (serialized) => {
   try {
