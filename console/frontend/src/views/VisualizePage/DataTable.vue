@@ -83,7 +83,9 @@ watch(
     }
     const theme = isDark ? "dark" : "light";
     table.value = {
-      columns: data.dimensions,
+      columns: data.dimensions.map((col) =>
+        col.replace(/([a-z])([A-Z])/, "$1 $2")
+      ),
       rows: data.rows.map((rows, idx) => {
         const color = rows.some((name) => name === "Other")
           ? dataColorGrey
