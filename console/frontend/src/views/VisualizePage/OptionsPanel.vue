@@ -35,7 +35,13 @@
         >
           Filter
         </p>
-        <InputTextarea v-model="filter" label="Filter" class="mb-2 font-mono" />
+        <InputTextarea
+          v-model="filter"
+          rows="1"
+          label="Filter expression"
+          class="mb-2 font-mono"
+          autosize
+        />
         <div>
           <button
             type="submit"
