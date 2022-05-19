@@ -32,7 +32,7 @@ const props = defineProps({
 });
 defineEmits(["update:modelValue"]);
 
-import { ref, watch, nextTick, onMounted } from "vue";
+import { ref, watch, nextTick, onMounted, onBeforeUnmount } from "vue";
 import InputComponent from "@/components/InputComponent.vue";
 
 const el = ref(null);
@@ -57,6 +57,22 @@ const resize = async () => {
   height.value = contentHeight + "px";
   return true;
 };
-watch(() => [props.maxHeight, props.modelValue], resize);
-onMounted(resize);
+
+const width = ref(null);
+const observer = new ResizeObserver((entries) => {
+  for (let entry of entries) {
+    if (entry.contentRect.width !== width.value) {
+      width.value = entry.contentRect.width;
+    }
+  }
+});
+
+watch(() => [props.maxHeight, props.modelValue, width.value], resize);
+onMounted(() => {
+  observer.observe(el.value);
+  resize();
+});
+onBeforeUnmount(() => {
+  observer.disconnect();
+});
 </script>
