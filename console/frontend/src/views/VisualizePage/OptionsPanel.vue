@@ -18,23 +18,11 @@
       @submit.prevent="apply()"
     >
       <div v-if="open" class="flex h-full flex-col py-4 px-3 lg:max-h-screen">
-        <p
-          class="my-2 block text-sm font-semibold text-gray-900 dark:text-gray-400"
-        >
-          Time range
-        </p>
+        <SectionLabel>Time range</SectionLabel>
         <InputTimeRange v-model="timeRange" />
-        <p
-          class="my-2 block text-sm font-semibold text-gray-900 dark:text-gray-400"
-        >
-          Dimensions
-        </p>
+        <SectionLabel>Dimensions</SectionLabel>
         <InputDimensions v-model="dimensions" />
-        <p
-          class="my-2 block text-sm font-semibold text-gray-900 dark:text-gray-400"
-        >
-          Filter
-        </p>
+        <SectionLabel>Filter</SectionLabel>
         <InputTextarea
           v-model="filter"
           rows="1"
@@ -43,6 +31,7 @@
           autosize
         />
         <div>
+          <!-- Nested because parent is flex -->
           <button
             type="submit"
             :disabled="!!hasErrors"
@@ -73,6 +62,7 @@ import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/vue/solid";
 import InputTimeRange from "@/components/InputTimeRange.vue";
 import InputDimensions from "@/components/InputDimensions.vue";
 import InputTextarea from "@/components/InputTextarea.vue";
+import SectionLabel from "./SectionLabel.vue";
 
 const open = ref(false);
 
