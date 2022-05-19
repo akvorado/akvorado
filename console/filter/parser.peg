@@ -77,7 +77,9 @@ ConditionStringExpr "condition on string" ←
       / "InIfConnectivity"
       / "OutIfConnectivity"
       / "InIfProvider"
-      / "OutIfProvider") _ operator:("=" / "!=") _ str:StringLiteral {
+      / "OutIfProvider") _
+ operator:("=" / "!=" / LikeOperator ) _
+ str:StringLiteral {
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator), quote(str)), nil
 }
 ConditionBoundaryExpr "condition on boundary" ←
@@ -97,8 +99,13 @@ ConditionPortExpr "condition on port" ←
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
 }
 ConditionASExpr "condition on AS number" ←
- column:("SrcAS" / "DstAS") _ operator:("=" / "!=") _ value:ASN {
-  return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
+ column:("SrcAS" / "DstAS") _ rcond:RConditionASExpr {
+  return fmt.Sprintf("%s %s", toString(column), toString(rcond)), nil
+}
+RConditionASExpr "condition on AS number" ←
+   operator:("=" / "!=") _ value:ASN { return fmt.Sprintf("%s %s", toString(operator), toString(value)), nil }
+ / operator:InOperator _ '(' value:ListASN ')' {
+  return fmt.Sprintf("%s (%s)", toString(operator), toString(value)), nil
 }
 ConditionETypeExpr "condition on Ethernet type" ←
  column:"EType" _ operator:("=" / "!=") _ value:("IPv4"i / "IPv6"i) {
@@ -130,8 +137,11 @@ IP "IP address" ← [0-9A-Fa-f:.]+ !IdentStart {
 ASN "AS number" ← "AS"? value:Unsigned32 {
   return value, nil
 }
+ListASN "list of AS numbers" ←
+   head:ASN ',' _ tail:ListASN { return fmt.Sprintf("%s, %s", head, tail), nil }
+ / value:ASN { return value, nil }
 
-StringLiteral ← ( '"' DoubleStringChar* '"' / "'" SingleStringChar* "'" ) {
+StringLiteral "quoted string" ← ( '"' DoubleStringChar* '"' / "'" SingleStringChar* "'" ) {
     return string(c.text[1:len(c.text)-1]), nil
 } / ( ( '"' DoubleStringChar* ( EOL / EOF ) ) / ( "'" SingleStringChar* ( EOL / EOF ) ) ) {
     return "", errors.New("string literal not terminated")
@@ -182,9 +192,20 @@ Unsigned64 "unsigned 64-bit integer" ← [0-9]+ !IdentStart {
   return fmt.Sprintf("%d", v), nil
 }
 
+LikeOperator "LIKE operators" ←
+   KW_LIKE
+ / KW_ILIKE
+ / (KW_NOT _ KW_LIKE) { return "NOT LIKE", nil }
+ / (KW_NOT _ KW_ILIKE) { return "NOT ILIKE", nil }
+InOperator "IN operators" ←
+   KW_IN
+ / (KW_NOT _ KW_IN) { return "NOT IN", nil }
 KW_AND "AND operator" ← "AND"i !IdentStart { return "AND", nil }
-KW_OR  "OR operator"  ← "OR"i  !IdentStart { return "OR", nil  }
+KW_OR "OR operator" ← "OR"i  !IdentStart { return "OR", nil }
 KW_NOT "NOT operator" ← "NOT"i !IdentStart { return "NOT", nil }
+KW_LIKE "LIKE operator" ← "LIKE"i !IdentStart { return "LIKE", nil }
+KW_ILIKE "ILIKE operator" ← "ILIKE"i !IdentStart { return "ILIKE", nil }
+KW_IN "IN operator" ← "IN"i !IdentStart { return "IN", nil }
 
 IdentStart ← [A-Za-z_]
 _ "whitespace" ← [ \n\r\t]*

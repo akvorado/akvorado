@@ -15,6 +15,10 @@ func TestValidFilter(t *testing.T) {
 		{`ExporterName='something'`, `ExporterName = 'something'`},
 		{`ExporterName="something"`, `ExporterName = 'something'`},
 		{`ExporterName!="something"`, `ExporterName != 'something'`},
+		{`ExporterName LIKE "something%"`, `ExporterName LIKE 'something%'`},
+		{`ExporterName NOT LIKE "something%"`, `ExporterName NOT LIKE 'something%'`},
+		{`ExporterName ILIKE "something%"`, `ExporterName ILIKE 'something%'`},
+		{`ExporterName not  ILIKE "something%"`, `ExporterName NOT ILIKE 'something%'`},
 		{`ExporterName="something with spaces"`, `ExporterName = 'something with spaces'`},
 		{`ExporterName="something with 'quotes'"`, `ExporterName = 'something with \'quotes\''`},
 		{`ExporterAddress=203.0.113.1`, `ExporterAddress = IPv6StringToNum('203.0.113.1')`},
@@ -25,6 +29,9 @@ func TestValidFilter(t *testing.T) {
 		{`DstAddr=203.0.113.2`, `DstAddr = IPv6StringToNum('203.0.113.2')`},
 		{`SrcAS=12322`, `SrcAS = 12322`},
 		{`SrcAS=AS12322`, `SrcAS = 12322`},
+		{`SrcAS IN(12322, 29447)`, `SrcAS IN (12322, 29447)`},
+		{`SrcAS NOT IN(12322, 29447)`, `SrcAS NOT IN (12322, 29447)`},
+		{`SrcAS NOT IN (AS12322, 29447)`, `SrcAS NOT IN (12322, 29447)`},
 		{`DstAS=12322`, `DstAS = 12322`},
 		{`SrcCountry='FR'`, `SrcCountry = 'FR'`},
 		{`DstCountry='FR'`, `DstCountry = 'FR'`},
@@ -102,6 +109,9 @@ func TestInvalidFilter(t *testing.T) {
 		{`AND Proto = 100`},
 		{`Proto = 100AND Proto = 100`},
 		{`Proto = 100 ANDProto = 100`},
+		{`SrcAS IN (AS12322, 29447`},
+		{`SrcAS IN (AS12322 29447)`},
+		{`SrcAS IN (AS12322,`},
 	}
 	for _, tc := range cases {
 		_, err := Parse("", []byte(tc.Input))
