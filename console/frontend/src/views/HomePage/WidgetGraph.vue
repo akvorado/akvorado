@@ -7,6 +7,13 @@
 </template>
 
 <script setup>
+const props = defineProps({
+  refresh: {
+    type: Number,
+    required: true,
+  },
+});
+
 import { ref, watch, inject } from "vue";
 import { use, graphic } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
@@ -20,12 +27,6 @@ use([CanvasRenderer, LineChart, TooltipComponent, GridComponent]);
 
 const formatGbps = (value) => formatBps(value * 1_000_000_000);
 
-const props = defineProps({
-  refresh: {
-    type: Number,
-    required: true,
-  },
-});
 const option = ref({
   backgroundColor: "transparent",
   xAxis: { type: "time" },

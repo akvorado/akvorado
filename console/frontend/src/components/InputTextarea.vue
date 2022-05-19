@@ -1,9 +1,10 @@
 <template>
   <InputComponent v-slot="{ id, childClass }">
-    <input
+    <textarea
       :id="id"
       :class="childClass"
-      type="text"
+      class="resize-none appearance-none"
+      :rows="rows"
       placeholder=" "
       :value="modelValue"
       @input="$emit('update:modelValue', $event.target.value)"
@@ -13,6 +14,10 @@
 
 <script setup>
 defineProps({
+  rows: {
+    type: Number,
+    default: 4,
+  },
   modelValue: {
     type: String,
     required: true,

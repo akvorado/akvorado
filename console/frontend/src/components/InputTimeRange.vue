@@ -1,83 +1,20 @@
 <template>
   <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-1">
-    <Listbox v-model="selectedPreset" class="col-span-2 sm:col-span-1">
-      <div class="relative">
-        <ListboxButton
-          id="preset"
-          class="peer relative block w-full appearance-none rounded-t-lg border-0 border-b-2 border-gray-300 bg-gray-50 pl-2.5 pr-10 pb-1.5 pt-4 text-left text-sm text-gray-900 focus:border-blue-600 focus:outline-none focus:ring-0 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-500"
-        >
-          <span class="block truncate">{{ selectedPreset.name }}</span>
-          <span
-            class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"
-          >
-            <SelectorIcon class="h-5 w-5 text-gray-400" aria-hidden="true" />
-          </span>
-        </ListboxButton>
-        <label
-          for="preset"
-          class="z-5 absolute top-3 left-2.5 origin-[0] -translate-y-3 scale-75 transform text-sm text-gray-500 peer-focus:text-blue-600 dark:text-gray-400 dark:peer-focus:text-blue-500"
-        >
-          Preset
-        </label>
-
-        <transition
-          leave-active-class="transition duration-100 ease-in"
-          leave-from-class="opacity-100"
-          leave-to-class="opacity-0"
-          class="z-10 rounded bg-white shadow dark:bg-gray-700"
-        >
-          <ListboxOptions
-            class="absolute max-h-60 w-full overflow-auto py-1 text-sm text-gray-700 dark:text-gray-200"
-          >
-            <ListboxOption
-              v-for="preset in presets"
-              v-slot="{ active, selected }"
-              :key="preset.id"
-              :value="preset"
-              as="template"
-            >
-              <li
-                class="relative inline-flex w-full cursor-default select-none py-2 pl-10 pr-4 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-                :class="
-                  active &&
-                  'bg-gray-100 dark:bg-gray-600 dark:bg-gray-600 dark:text-white'
-                "
-              >
-                <span class="block truncate">{{ preset.name }}</span>
-                <span
-                  v-if="selected"
-                  class="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600 dark:text-blue-500"
-                >
-                  <CheckIcon class="h-5 w-5" aria-hidden="true" />
-                </span>
-              </li>
-            </ListboxOption>
-          </ListboxOptions>
-        </transition>
-      </div>
-    </Listbox>
-    <InputString
-      id="start"
-      v-model="startTime"
-      label="Start"
-      :error="startTimeError"
-    />
-    <InputString id="end" v-model="endTime" label="End" :error="endTimeError" />
+    <InputListBox
+      v-model="selectedPreset"
+      :items="presets"
+      label="Presets"
+      class="col-span-2 sm:col-span-1"
+    >
+      <template #selected>{{ selectedPreset.name }}</template>
+      <template #item="{ name }">{{ name }}</template>
+    </InputListBox>
+    <InputString v-model="startTime" label="Start" :error="startTimeError" />
+    <InputString v-model="endTime" label="End" :error="endTimeError" />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue";
-import { Date as SugarDate } from "sugar-date";
-import {
-  Listbox,
-  ListboxButton,
-  ListboxOptions,
-  ListboxOption,
-} from "@headlessui/vue";
-import { CheckIcon, SelectorIcon } from "@heroicons/vue/solid";
-import InputString from "@/components/InputString.vue";
-
 const props = defineProps({
   modelValue: {
     // start: start time
@@ -88,6 +25,11 @@ const props = defineProps({
   },
 });
 const emit = defineEmits(["update:modelValue"]);
+
+import { ref, computed, watch } from "vue";
+import { Date as SugarDate } from "sugar-date";
+import InputString from "@/components/InputString.vue";
+import InputListBox from "@/components/InputListBox.vue";
 
 const startTime = ref("");
 const endTime = ref("");

@@ -6,9 +6,6 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
-import { InformationCircleIcon } from "@heroicons/vue/solid";
-
 const props = defineProps({
   kind: {
     type: String,
@@ -18,6 +15,9 @@ const props = defineProps({
     },
   },
 });
+
+import { computed } from "vue";
+import { InformationCircleIcon } from "@heroicons/vue/solid";
 
 const classes = computed(() => {
   switch (props.kind) {

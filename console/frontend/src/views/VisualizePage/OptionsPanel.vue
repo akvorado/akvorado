@@ -24,25 +24,18 @@
           Time range
         </p>
         <InputTimeRange v-model="timeRange" />
-        <label
-          for="dimensions"
+        <p
           class="my-2 block text-sm font-semibold text-gray-900 dark:text-gray-400"
         >
           Dimensions
-        </label>
+        </p>
         <InputDimensions v-model="dimensions" />
-        <label
-          for="options"
+        <p
           class="my-2 block text-sm font-semibold text-gray-900 dark:text-gray-400"
         >
           Filter
-        </label>
-        <textarea
-          id="options"
-          v-model="filter"
-          rows="4"
-          class="mb-2 block w-full resize-none appearance-none rounded-t-lg border-0 border-b-2 border-gray-300 bg-gray-50 px-2.5 pb-1.5 pt-4 font-mono text-sm text-gray-900 focus:border-blue-600 focus:outline-none focus:ring-0 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:focus:border-blue-500"
-        ></textarea>
+        </p>
+        <InputTextarea v-model="filter" label="Filter" class="mb-2 font-mono" />
         <div>
           <button
             type="submit"
@@ -61,11 +54,6 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from "vue";
-import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/vue/solid";
-import InputTimeRange from "@/components/InputTimeRange.vue";
-import InputDimensions from "@/components/InputDimensions.vue";
-
 const props = defineProps({
   state: {
     type: Object,
@@ -73,6 +61,12 @@ const props = defineProps({
   },
 });
 const emit = defineEmits(["update"]);
+
+import { ref, watch, computed } from "vue";
+import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/vue/solid";
+import InputTimeRange from "@/components/InputTimeRange.vue";
+import InputDimensions from "@/components/InputDimensions.vue";
+import InputTextarea from "@/components/InputTextarea.vue";
 
 const open = ref(false);
 

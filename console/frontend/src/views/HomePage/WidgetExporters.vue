@@ -10,14 +10,15 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
-
 const props = defineProps({
   refresh: {
     type: Number,
     default: 0,
   },
 });
+
+import { ref, watch } from "vue";
+
 const exporters = ref("???");
 
 watch(

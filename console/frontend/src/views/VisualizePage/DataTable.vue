@@ -58,10 +58,6 @@
 </template>
 
 <script setup>
-import { ref, watch, inject } from "vue";
-import { formatBps, dataColor, dataColorGrey } from "@/utils";
-const { isDark } = inject("darkMode");
-
 const props = defineProps({
   data: {
     type: Object,
@@ -69,6 +65,10 @@ const props = defineProps({
   },
 });
 defineEmits(["highlighted"]);
+
+import { ref, watch, inject } from "vue";
+import { formatBps, dataColor, dataColorGrey } from "@/utils";
+const { isDark } = inject("darkMode");
 
 const table = ref({
   columns: [],

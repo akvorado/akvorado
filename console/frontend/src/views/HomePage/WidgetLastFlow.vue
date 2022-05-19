@@ -17,15 +17,16 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
-import { compareFields } from "../../utils";
-
 const props = defineProps({
   refresh: {
     type: Number,
     default: 0,
   },
 });
+
+import { ref, watch } from "vue";
+import { compareFields } from "../../utils";
+
 const lastFlow = ref({});
 
 watch(

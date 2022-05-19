@@ -11,6 +11,22 @@
 </template>
 
 <script setup>
+const props = defineProps({
+  data: {
+    type: Object,
+    default: () => {},
+  },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
+  highlight: {
+    type: Number,
+    default: null,
+  },
+});
+const emit = defineEmits(["updateTimeRange"]);
+
 import { ref, watch, inject, onMounted, nextTick } from "vue";
 import { formatBps, dataColor, dataColorGrey } from "@/utils";
 const { isDark } = inject("darkMode");
@@ -33,22 +49,6 @@ use([
   ToolboxComponent,
   BrushComponent,
 ]);
-
-const props = defineProps({
-  data: {
-    type: Object,
-    default: () => {},
-  },
-  loading: {
-    type: Boolean,
-    default: false,
-  },
-  highlight: {
-    type: Number,
-    default: null,
-  },
-});
-const emit = defineEmits(["updateTimeRange"]);
 
 const chartComponent = ref(null);
 const graph = ref({

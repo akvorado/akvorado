@@ -8,17 +8,6 @@
 </template>
 
 <script setup>
-import { ref, watch, inject } from "vue";
-import { use } from "echarts/core";
-import { CanvasRenderer } from "echarts/renderers";
-import { PieChart } from "echarts/charts";
-import { TooltipComponent, LegendComponent } from "echarts/components";
-import VChart from "vue-echarts";
-import { dataColor, dataColorGrey } from "../../utils";
-const { isDark } = inject("darkMode");
-
-use([CanvasRenderer, PieChart, TooltipComponent, LegendComponent]);
-
 const props = defineProps({
   refresh: {
     type: Number,
@@ -33,6 +22,18 @@ const props = defineProps({
     required: true,
   },
 });
+
+import { ref, watch, inject } from "vue";
+import { use } from "echarts/core";
+import { CanvasRenderer } from "echarts/renderers";
+import { PieChart } from "echarts/charts";
+import { TooltipComponent, LegendComponent } from "echarts/components";
+import VChart from "vue-echarts";
+import { dataColor, dataColorGrey } from "../../utils";
+const { isDark } = inject("darkMode");
+
+use([CanvasRenderer, PieChart, TooltipComponent, LegendComponent]);
+
 const option = ref({
   backgroundColor: "transparent",
   tooltip: {
