@@ -86,6 +86,7 @@ console/frontend/data/fields.json: console/graph.go ; $(info $(M) generate list 
 	$Q test -s $@
 console/data/frontend: Makefile console/frontend/node_modules
 console/data/frontend: console/frontend/index.html console/frontend/vite.config.js
+console/data/frontend: console/frontend/data/fields.json
 console/data/frontend: $(shell $(LSFILES) console/frontend/src 2> /dev/null)
 console/data/frontend: ; $(info $(M) building console frontend…)
 	$Q cd console/frontend && yarn --silent build
