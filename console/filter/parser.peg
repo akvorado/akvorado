@@ -147,18 +147,8 @@ StringLiteral "quoted string" ← ( '"' DoubleStringChar* '"' / "'" SingleString
     return "", errors.New("string literal not terminated")
 }
 SourceChar ← .
-DoubleStringChar ← !( '"' / "\\" / EOL ) SourceChar / "\\" DoubleStringEscape
-SingleStringChar ← !( "'" / "\\" / EOL ) SourceChar / "\\" SingleStringEscape
-DoubleStringEscape ← ( '"' / CommonEscapeSequence )
-    / ( SourceChar / EOL / EOF ) {
-    return nil, errors.New("invalid escape character")
-}
-SingleStringEscape ← ( "'" / CommonEscapeSequence )
-    / ( SourceChar / EOL / EOF ) {
-    return nil, errors.New("invalid escape character")
-}
-CommonEscapeSequence ← SingleCharEscape
-SingleCharEscape ← 'a' / 'b' / 'n' / 'f' / 'r' / 't' / 'v' / '\\'
+DoubleStringChar ← !( '"' / EOL ) SourceChar
+SingleStringChar ← !( "'" / EOL ) SourceChar
 
 Unsigned8 "unsigned 8-bit integer" ← [0-9]+ !IdentStart {
   v, err := strconv.ParseUint(string(c.text), 10, 8)
