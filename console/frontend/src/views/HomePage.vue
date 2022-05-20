@@ -56,22 +56,14 @@
 </template>
 
 <script setup>
-import { ref, onBeforeUnmount } from "vue";
+import { useInterval } from "@vueuse/core";
 import WidgetLastFlow from "./HomePage/WidgetLastFlow.vue";
 import WidgetFlowRate from "./HomePage/WidgetFlowRate.vue";
 import WidgetExporters from "./HomePage/WidgetExporters.vue";
 import WidgetTop from "./HomePage/WidgetTop.vue";
 import WidgetGraph from "./HomePage/WidgetGraph.vue";
 
-const refreshOften = ref(0);
-const refreshOccasionally = ref(0);
-const refreshInfrequently = ref(0);
-let timerOften = setInterval(() => refreshOften.value++, 10_000);
-let timerOccasionally = setInterval(() => refreshOccasionally.value++, 60_000);
-let timerInfrequently = setInterval(() => refreshInfrequently.value++, 600_000);
-onBeforeUnmount(() => {
-  clearInterval(timerOften);
-  clearInterval(timerOccasionally);
-  clearInterval(timerInfrequently);
-});
+const refreshOften = useInterval(10_000);
+const refreshOccasionally = useInterval(60_000);
+const refreshInfrequently = useInterval(600_000);
 </script>
