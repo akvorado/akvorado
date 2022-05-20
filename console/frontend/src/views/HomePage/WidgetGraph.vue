@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="h-[300px]">
-      <v-chart :option="option" :theme="isDark() ? 'dark' : null" autoresize />
+      <v-chart :option="option" :theme="isDark ? 'dark' : null" autoresize />
     </div>
   </div>
 </template>
@@ -21,7 +21,7 @@ import { LineChart } from "echarts/charts";
 import { TooltipComponent, GridComponent } from "echarts/components";
 import VChart from "vue-echarts";
 import { dataColor, formatBps } from "../../utils";
-const { isDark } = inject("darkMode");
+const { isDark } = inject("theme");
 
 use([CanvasRenderer, LineChart, TooltipComponent, GridComponent]);
 

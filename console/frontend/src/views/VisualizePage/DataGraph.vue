@@ -4,8 +4,8 @@
     :option="echartsOptions"
     :update-options="{ notMerge: true }"
     :loading="props.loading"
-    :loading-options="{ maskColor: isDark() ? '#000d' : '#fffd', text: '' }"
-    :theme="isDark() ? 'dark' : null"
+    :loading-options="{ maskColor: isDark ? '#000d' : '#fffd', text: '' }"
+    :theme="isDark ? 'dark' : null"
     autoresize
     @brush-end="updateTimeRange"
   />
@@ -34,7 +34,7 @@ const emit = defineEmits(["updateTimeRange"]);
 
 import { ref, watch, inject, computed, onMounted, nextTick } from "vue";
 import { formatBps, dataColor, dataColorGrey } from "@/utils";
-const { isDark } = inject("darkMode");
+const { isDark } = inject("theme");
 import { graphTypes } from "./constants";
 
 import { use, graphic } from "echarts/core";
@@ -102,7 +102,7 @@ const updateTimeRange = (evt) => {
 };
 
 watch(
-  () => [props.data, props.graphType, isDark()],
+  () => [props.data, props.graphType, isDark.value],
   ([data, graphType, isDark]) => {
     if (data.t === undefined) {
       return;

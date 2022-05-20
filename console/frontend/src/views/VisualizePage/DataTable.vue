@@ -68,7 +68,7 @@ defineEmits(["highlighted"]);
 
 import { ref, watch, inject } from "vue";
 import { formatBps, dataColor, dataColorGrey } from "@/utils";
-const { isDark } = inject("darkMode");
+const { isDark } = inject("theme");
 
 const table = ref({
   columns: [],
@@ -76,7 +76,7 @@ const table = ref({
 });
 
 watch(
-  () => [props.data, isDark()],
+  () => [props.data, isDark.value],
   ([data, isDark]) => {
     if (data.t === undefined) {
       return;

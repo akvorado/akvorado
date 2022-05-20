@@ -2,7 +2,7 @@
   <div>
     <h1 class="font-semibold leading-relaxed">{{ title }}</h1>
     <div class="h-[200px]">
-      <v-chart :option="option" :theme="isDark() ? 'dark' : null" autoresize />
+      <v-chart :option="option" :theme="isDark ? 'dark' : null" autoresize />
     </div>
   </div>
 </template>
@@ -30,7 +30,7 @@ import { PieChart } from "echarts/charts";
 import { TooltipComponent, LegendComponent } from "echarts/components";
 import VChart from "vue-echarts";
 import { dataColor, dataColorGrey } from "../../utils";
-const { isDark } = inject("darkMode");
+const { isDark } = inject("theme");
 
 use([CanvasRenderer, PieChart, TooltipComponent, LegendComponent]);
 

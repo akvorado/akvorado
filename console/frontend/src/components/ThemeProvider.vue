@@ -3,10 +3,10 @@
 </template>
 
 <script setup>
-import { ref, provide, watch } from "vue";
+import { ref, provide, watch, readonly } from "vue";
 
 const isDark = ref(false);
-const toggleDarkMode = () => {
+const toggleDark = () => {
   isDark.value = !isDark.value;
   localStorage.setItem("color-theme", isDark.value ? "dark" : "light");
 };
@@ -31,10 +31,8 @@ watch(
   { immediate: true }
 );
 
-provide("darkMode", {
-  isDark() {
-    return isDark.value;
-  },
-  toggle: toggleDarkMode,
+provide("theme", {
+  isDark: readonly(isDark),
+  toggleDark,
 });
 </script>
