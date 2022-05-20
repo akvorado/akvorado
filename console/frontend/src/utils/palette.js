@@ -69,10 +69,10 @@ const colors = {
 
 const orderedColors = ["blue", "orange", "aqua", "green", "magenta"];
 
-const lightPalette = [5, 6, 7, 8, 9, 10]
+const darkPalette = [5, 6, 7, 8, 9, 10]
   .map((idx) => orderedColors.map((colorName) => colors[colorName][idx]))
   .flat();
-const darkPalette = [5, 4, 3, 2, 1, 0]
+const lightPalette = [5, 4, 3, 2, 1, 0]
   .map((idx) => orderedColors.map((colorName) => colors[colorName][idx]))
   .flat();
 const lightenColor = (color, amount) =>
