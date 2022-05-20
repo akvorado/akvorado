@@ -13,7 +13,7 @@
           <span
             v-for="dimension in selectedDimensions"
             :key="dimension.id"
-            class="flex items-center gap-1 rounded border-2 bg-violet-100 px-1.5 dark:bg-slate-800"
+            class="flex items-center gap-1 rounded border-2 bg-violet-100 px-1.5 dark:bg-slate-800 dark:text-gray-200"
             :style="{ borderColor: dimension.color }"
           >
             <span class="leading-4">{{ dimension.name }}</span>
