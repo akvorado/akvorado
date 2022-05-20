@@ -15,9 +15,18 @@
       class="h-full overflow-y-auto bg-gray-200 dark:bg-slate-600"
       autocomplete="off"
       spellcheck="false"
-      @submit.prevent="apply()"
+      @submit.prevent="$emit('update:modelValue', options)"
     >
       <div v-if="open" class="flex h-full flex-col py-4 px-3 lg:max-h-screen">
+        <InputListBox
+          v-model="graphType"
+          :items="graphTypeList"
+          label="Graph type"
+        >
+          <template #selected>{{ graphType.name }}</template>
+          <template #item="{ name }">{{ name }}</template>
+        </InputListBox>
+
         <SectionLabel>Time range</SectionLabel>
         <InputTimeRange v-model="timeRange" />
         <SectionLabel>Dimensions</SectionLabel>
@@ -50,36 +59,44 @@
 
 <script setup>
 const props = defineProps({
-  state: {
+  modelValue: {
     type: Object,
-    default: () => {},
+    required: true,
   },
 });
-const emit = defineEmits(["update"]);
+defineEmits(["update:modelValue"]);
 
 import { ref, watch, computed } from "vue";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/vue/solid";
 import InputTimeRange from "@/components/InputTimeRange.vue";
 import InputDimensions from "@/components/InputDimensions.vue";
 import InputTextarea from "@/components/InputTextarea.vue";
+import InputListBox from "@/components/InputListBox.vue";
 import SectionLabel from "./SectionLabel.vue";
+import { graphTypes } from "./constants";
+
+const graphTypeList = Object.entries(graphTypes).map(([, v], idx) => ({
+  id: idx + 1,
+  name: v,
+}));
 
 const open = ref(false);
-
+const graphType = ref(graphTypeList[0]);
 const timeRange = ref({});
 const dimensions = ref([]);
 const filter = ref("");
 
 const options = computed(() => ({
-  points: props.state.points,
+  points: props.modelValue.points,
   start: timeRange.value.start,
   end: timeRange.value.end,
   dimensions: dimensions.value.selected,
   limit: dimensions.value.limit,
   filter: filter.value,
+  graphType: graphType.value.name,
 }));
 const applyLabel = computed(() =>
-  JSON.stringify(options.value) === JSON.stringify(props.state)
+  JSON.stringify(options.value) === JSON.stringify(props.modelValue)
     ? "Refresh"
     : "Apply"
 );
@@ -87,21 +104,20 @@ const hasErrors = computed(
   () => !!(timeRange.value.errors || dimensions.value.errors)
 );
 
-const apply = () => {
-  emit("update", options.value);
-};
-
 watch(
-  () => props.state,
-  (state) => {
+  () => props.modelValue,
+  (modelValue) => {
     const {
+      graphType: _graphType,
       start,
       end,
       dimensions: _dimensions,
       limit,
       points /* eslint-disable-line no-unused-vars */,
       filter: _filter,
-    } = JSON.parse(JSON.stringify(state));
+    } = JSON.parse(JSON.stringify(modelValue));
+    graphType.value =
+      graphTypeList.find(({ name }) => name === _graphType) || graphTypeList[0];
     timeRange.value = { start, end };
     dimensions.value = { selected: _dimensions, limit };
     filter.value = _filter;

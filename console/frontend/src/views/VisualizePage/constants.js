@@ -1,0 +1,4 @@
+export const graphTypes = {
+  stacked: "Stacked areas",
+  lines: "Lines",
+};

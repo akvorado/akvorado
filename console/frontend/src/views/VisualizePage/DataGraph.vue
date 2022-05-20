@@ -16,6 +16,10 @@ const props = defineProps({
     type: Object,
     default: () => {},
   },
+  graphType: {
+    type: String,
+    required: true,
+  },
   loading: {
     type: Boolean,
     default: false,
@@ -30,6 +34,7 @@ const emit = defineEmits(["updateTimeRange"]);
 import { ref, watch, inject, onMounted, nextTick } from "vue";
 import { formatBps, dataColor, dataColorGrey } from "@/utils";
 const { isDark } = inject("darkMode");
+import { graphTypes } from "./constants";
 
 import { use, graphic } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
@@ -118,8 +123,8 @@ const updateTimeRange = (evt) => {
 };
 
 watch(
-  () => [props.data, isDark()],
-  ([data, isDark]) => {
+  () => [props.data, props.graphType, isDark()],
+  ([data, graphType, isDark]) => {
     if (data.t === undefined) {
       return;
     }
@@ -148,39 +153,49 @@ watch(
       const color = rows.some((name) => name === "Other")
         ? dataColorGrey
         : dataColor;
-      return {
+      let serie = {
         type: "line",
+        name: graph.value.dimensions[idx + 1],
         symbol: "none",
         itemStyle: {
           color: color(idx, false, theme),
         },
-        lineStyle:
-          idx == data.rows.length - 1
-            ? {
-                color: isDark ? "#ddd" : "#111",
-                width: 2,
-              }
-            : {
-                color: color(idx, false, theme),
-                width: 1,
-              },
-        areaStyle: {
-          opacity: 0.95,
-          color: new graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: color(idx, false, theme) },
-            { offset: 1, color: color(idx, true, theme) },
-          ]),
+        lineStyle: {
+          color: color(idx, false, theme),
+          width: 2,
         },
         emphasis: {
           focus: "series",
         },
-        stack: "all",
         encode: {
           x: 0,
           y: idx + 1,
-          seriesName: idx + 1,
         },
       };
+      if (graphType === graphTypes.stacked) {
+        serie = {
+          ...serie,
+          stack: "all",
+          lineStyle:
+            idx == data.rows.length - 1
+              ? {
+                  color: isDark ? "#ddd" : "#111",
+                  width: 2,
+                }
+              : {
+                  color: color(idx, false, theme),
+                  width: 1,
+                },
+          areaStyle: {
+            opacity: 0.95,
+            color: new graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: color(idx, false, theme) },
+              { offset: 1, color: color(idx, true, theme) },
+            ]),
+          },
+        };
+      }
+      return serie;
     });
 
     // Enable ability to select time range

@@ -1,9 +1,6 @@
 <template>
   <div class="flex h-full w-full flex-col lg:flex-row">
-    <OptionsPanel
-      :state="state"
-      @update="(updatedState) => (state = updatedState)"
-    />
+    <OptionsPanel v-model="state" />
     <div class="grow overflow-y-auto">
       <div class="mx-4">
         <InfoBox v-if="errorMessage" kind="danger">
@@ -19,6 +16,7 @@
           <DataGraph
             :loading="loading"
             :data="fetchedData"
+            :graph-type="state.graphType"
             :highlight="highlightedSerie"
             @update-time-range="updateTimeRange"
           />
@@ -42,6 +40,7 @@ import DataTable from "./VisualizePage/DataTable.vue";
 import DataGraph from "./VisualizePage/DataGraph.vue";
 import OptionsPanel from "./VisualizePage/OptionsPanel.vue";
 import InfoBox from "@/components/InfoBox.vue";
+import { graphTypes } from "./VisualizePage/constants";
 
 const route = useRoute();
 const router = useRouter();
@@ -56,7 +55,10 @@ const decodeState = (serialized) => {
       console.debug("no state, return default state");
       return defaultState();
     }
-    return JSON.parse(LZString.decompressFromBase64(serialized));
+    return {
+      ...defaultState(),
+      ...JSON.parse(LZString.decompressFromBase64(serialized)),
+    };
   } catch (error) {
     console.error("cannot decode state:", error);
     return defaultState();
@@ -68,6 +70,7 @@ const encodeState = (state) => {
 
 // Main state
 const defaultState = () => ({
+  graphType: graphTypes.stacked,
   start: "6 hours ago",
   end: "now",
   points: 200,
@@ -95,9 +98,9 @@ watch(
 );
 watch(
   state,
-  async () => {
+  async (state) => {
     errorMessage.value = "";
-    let body = { ...state.value };
+    let body = { ...state };
     body.start = SugarDate.create(body.start);
     body.end = SugarDate.create(body.end);
     loading.value = true;
@@ -126,7 +129,7 @@ watch(
     }
     const routeTarget = {
       name: "VisualizeWithState",
-      params: { state: encodeState(state.value) },
+      params: { state: encodeState(state) },
     };
     if (route.name !== "VisualizeWithState") {
       router.replace(routeTarget);
