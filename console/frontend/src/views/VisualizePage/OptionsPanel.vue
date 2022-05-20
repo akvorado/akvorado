@@ -74,6 +74,7 @@ import InputTextarea from "@/components/InputTextarea.vue";
 import InputListBox from "@/components/InputListBox.vue";
 import SectionLabel from "./SectionLabel.vue";
 import { graphTypes } from "./constants";
+import isEqual from "lodash.isequal";
 
 const graphTypeList = Object.entries(graphTypes).map(([, v], idx) => ({
   id: idx + 1,
@@ -96,9 +97,7 @@ const options = computed(() => ({
   graphType: graphType.value.name,
 }));
 const applyLabel = computed(() =>
-  JSON.stringify(options.value) === JSON.stringify(props.modelValue)
-    ? "Refresh"
-    : "Apply"
+  isEqual(options.value, props.modelValue) ? "Refresh" : "Apply"
 );
 const hasErrors = computed(
   () => !!(timeRange.value.errors || dimensions.value.errors)

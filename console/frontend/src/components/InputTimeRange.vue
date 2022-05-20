@@ -30,6 +30,7 @@ import { ref, computed, watch } from "vue";
 import { Date as SugarDate } from "sugar-date";
 import InputString from "@/components/InputString.vue";
 import InputListBox from "@/components/InputListBox.vue";
+import isEqual from "lodash.isequal";
 
 const startTime = ref("");
 const endTime = ref("");
@@ -139,7 +140,7 @@ watch(
       end,
       errors,
     };
-    if (JSON.stringify(newModel) !== JSON.stringify(props.modelValue)) {
+    if (!isEqual(newModel, props.modelValue)) {
       emit("update:modelValue", newModel);
     }
   },

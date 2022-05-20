@@ -41,6 +41,7 @@ import DataGraph from "./VisualizePage/DataGraph.vue";
 import OptionsPanel from "./VisualizePage/OptionsPanel.vue";
 import InfoBox from "@/components/InfoBox.vue";
 import { graphTypes } from "./VisualizePage/constants";
+import isEqual from "lodash.isequal";
 
 const route = useRoute();
 const router = useRouter();
@@ -65,12 +66,14 @@ const decodeState = (serialized) => {
   }
 };
 const encodeState = (state) => {
-  return LZString.compressToBase64(JSON.stringify(state));
+  return LZString.compressToBase64(
+    JSON.stringify(state, Object.keys(state).sort())
+  );
 };
 
 // Main state
 const defaultState = () => ({
-  graphType: graphTypes.stacked,
+  graphType: "blah",
   start: "6 hours ago",
   end: "now",
   points: 200,
@@ -90,7 +93,7 @@ watch(
   route,
   () => {
     const newState = decodeState(route.params.state);
-    if (JSON.stringify(newState) !== JSON.stringify(state.value)) {
+    if (!isEqual(newState, state.value)) {
       state.value = newState;
     }
   },

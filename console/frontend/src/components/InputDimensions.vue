@@ -58,6 +58,7 @@ import { dataColor } from "@/utils";
 import InputString from "@/components/InputString.vue";
 import InputListBox from "@/components/InputListBox.vue";
 import fields from "@data/fields.json";
+import isEqual from "lodash.isequal";
 
 const selectedDimensions = ref([]);
 const limit = ref("10");
@@ -109,7 +110,7 @@ watch(
       limit: parseInt(limit) || limit,
       errors: !!limitError,
     };
-    if (JSON.stringify(updated) !== JSON.stringify(props.modelValue)) {
+    if (!isEqual(updated, props.modelValue)) {
       emit("update:modelValue", updated);
     }
   }
