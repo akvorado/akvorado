@@ -73,7 +73,7 @@ const encodeState = (state) => {
 
 // Main state
 const defaultState = () => ({
-  graphType: "blah",
+  graphType: graphTypes.stacked,
   start: "6 hours ago",
   end: "now",
   points: 200,
