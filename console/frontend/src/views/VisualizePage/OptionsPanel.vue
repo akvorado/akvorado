@@ -87,7 +87,7 @@ const dimensions = ref([]);
 const filter = ref("");
 
 const options = computed(() => ({
-  points: graphType.value.name === graphTypes.multigraph ? 100 : 400,
+  points: graphType.value.name === graphTypes.multigraph ? 50 : 200,
   start: timeRange.value.start,
   end: timeRange.value.end,
   dimensions: dimensions.value.selected,
