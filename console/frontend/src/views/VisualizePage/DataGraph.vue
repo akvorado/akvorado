@@ -39,6 +39,7 @@ import {
   GridComponent,
   BrushComponent,
   ToolboxComponent,
+  DatasetComponent,
 } from "echarts/components";
 import VChart from "vue-echarts";
 use([
@@ -48,6 +49,7 @@ use([
   GridComponent,
   ToolboxComponent,
   BrushComponent,
+  DatasetComponent,
 ]);
 
 const chartComponent = ref(null);
@@ -83,6 +85,7 @@ const graph = ref({
   },
   animationDuration: 500,
   series: [],
+  dataset: [],
 });
 
 const enableBrush = () => {
@@ -122,16 +125,31 @@ watch(
     }
     const theme = isDark ? "dark" : "light";
 
-    graph.value.xAxis.data = data.t.slice(1, -1);
+    // Rebuild dataset. First column is time. Then one column for each dimension.
+    graph.value.sourceHeader = false;
+    graph.value.dimensions = [
+      "time",
+      ...data.rows.map((rows) => rows.join(" — ")),
+    ];
+    graph.value.dataset = {
+      source: [
+        ...data.t
+          .map((t, timeIdx) => [t, ...data.points.map((rows) => rows[timeIdx])])
+          .slice(1, -1),
+      ],
+    };
+
+    // Define X axis
     graph.value.xAxis.min = data.start;
     graph.value.xAxis.max = data.end;
+
+    // Define series
     graph.value.series = data.rows.map((rows, idx) => {
       const color = rows.some((name) => name === "Other")
         ? dataColorGrey
         : dataColor;
       return {
         type: "line",
-        name: rows.join(" — "),
         symbol: "none",
         itemStyle: {
           color: color(idx, false, theme),
@@ -157,9 +175,15 @@ watch(
           focus: "series",
         },
         stack: "all",
-        data: data.t.map((t, idx2) => [t, data.points[idx][idx2]]).slice(1, -1),
+        encode: {
+          x: 0,
+          y: idx + 1,
+          seriesName: idx + 1,
+        },
       };
     });
+
+    // Enable ability to select time range
     enableBrush();
   },
   { immediate: true }

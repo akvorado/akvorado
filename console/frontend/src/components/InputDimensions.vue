@@ -8,7 +8,7 @@
       class="col-span-2 lg:col-span-1"
     >
       <template #selected>
-        <span class="block flex flex-wrap gap-2">
+        <span class="block flex flex-wrap gap-1">
           <span v-if="selectedDimensions.length === 0">No dimensions</span>
           <span
             v-for="dimension in selectedDimensions"
