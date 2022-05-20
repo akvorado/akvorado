@@ -4,6 +4,7 @@
     :option="echartsOptions"
     :update-options="{ notMerge: true }"
     :loading="props.loading"
+    :loading-options="{ maskColor: isDark() ? '#000d' : '#fffd', text: '' }"
     :theme="isDark() ? 'dark' : null"
     autoresize
     @brush-end="updateTimeRange"
@@ -183,6 +184,7 @@ watch(
                 x: 0,
                 y: idx + 1,
                 seriesName: idx + 1,
+                seriesId: idx + 1,
               },
             };
             if (graphType === graphTypes.stacked) {
@@ -291,6 +293,7 @@ watch(
               x: 0,
               y: idx + 1,
               seriesName: idx + 1,
+              seriesId: idx + 1,
             },
           };
           return serie;
