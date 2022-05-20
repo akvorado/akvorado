@@ -93,10 +93,10 @@ const removeDimension = (dimension) => {
 
 watch(
   () => props.modelValue,
-  (model) => {
-    limit.value = model.limit.toString();
-    selectedDimensions.value = model.selected
-      .map((name) => dimensions.filter((d) => d.name === name)[0])
+  (value) => {
+    limit.value = value.limit.toString();
+    selectedDimensions.value = value.selected
+      .map((name) => dimensions.find((d) => d.name === name))
       .filter((d) => d !== undefined);
   },
   { immediate: true, deep: true }

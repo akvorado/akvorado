@@ -128,8 +128,7 @@ watch(
   ([start, end, errors]) => {
     // Find the right preset
     const newPreset =
-      presets.filter((p) => p.start === start && p.end === end)[0] ||
-      presets[0];
+      presets.find((p) => p.start === start && p.end === end) || presets[0];
     if (newPreset.id !== selectedPreset.value.id) {
       selectedPreset.value = newPreset;
     }
