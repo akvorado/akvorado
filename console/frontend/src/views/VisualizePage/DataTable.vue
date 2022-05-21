@@ -66,40 +66,30 @@ const props = defineProps({
 });
 defineEmits(["highlighted"]);
 
-import { ref, watch, inject } from "vue";
+import { computed, inject } from "vue";
 import { formatBps, dataColor, dataColorGrey } from "@/utils";
 const { isDark } = inject("theme");
 
-const table = ref({
-  columns: [],
-  rows: [],
-});
-
-watch(
-  () => [props.data, isDark.value],
-  ([data, isDark]) => {
-    if (data.t === undefined) {
-      return;
-    }
-    const theme = isDark ? "dark" : "light";
-    table.value = {
-      columns: data.dimensions.map((col) =>
+const table = computed(() => {
+  const theme = isDark.value ? "dark" : "light";
+  return {
+    columns:
+      props.data?.dimensions?.map((col) =>
         col.replace(/([a-z])([A-Z])/, "$1 $2")
-      ),
-      rows: data.rows.map((rows, idx) => {
+      ) || [],
+    rows:
+      props.data?.rows?.map((rows, idx) => {
         const color = rows.some((name) => name === "Other")
           ? dataColorGrey
           : dataColor;
         return {
           dimensions: rows,
           style: `background-color: ${color(idx, false, theme)}`,
-          min: data.min[idx],
-          max: data.max[idx],
-          average: data.average[idx],
+          min: props.data.min[idx],
+          max: props.data.max[idx],
+          average: props.data.average[idx],
         };
-      }),
-    };
-  },
-  { immediate: true }
-);
+      }) || [],
+  };
+});
 </script>
