@@ -15,7 +15,9 @@
       class="h-full overflow-y-auto bg-gray-200 dark:bg-slate-600"
       autocomplete="off"
       spellcheck="false"
-      @submit.prevent="$emit('update:modelValue', options)"
+      @submit.prevent="
+        loading ? $emit('cancel') : $emit('update:modelValue', options)
+      "
     >
       <div v-if="open" class="flex h-full flex-col py-4 px-3 lg:max-h-screen">
         <InputListBox
@@ -43,13 +45,15 @@
           <!-- Nested because parent is flex -->
           <button
             type="submit"
-            :disabled="!!hasErrors"
-            :class="
-              !!hasErrors && 'cursor-not-allowed bg-blue-400 dark:bg-blue-500'
-            "
+            :disabled="hasErrors"
+            :class="{
+              'cursor-not-allowed bg-blue-400 dark:bg-blue-500': hasErrors,
+              'bg-orange-700 hover:bg-orange-800 focus:ring-orange-200 dark:focus:ring-orange-900':
+                !hasErrors && loading,
+            }"
             class="mb-2 inline items-center rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900"
           >
-            {{ applyLabel }}
+            {{ loading ? "Cancel" : applyLabel }}
           </button>
         </div>
       </div>
@@ -63,8 +67,12 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  loading: {
+    type: Boolean,
+    default: false,
+  },
 });
-defineEmits(["update:modelValue"]);
+defineEmits(["update:modelValue", "cancel"]);
 
 import { ref, watch, computed } from "vue";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/vue/solid";

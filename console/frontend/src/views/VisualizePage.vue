@@ -1,6 +1,10 @@
 <template>
   <div class="flex h-full w-full flex-col lg:flex-row">
-    <OptionsPanel v-model="state" />
+    <OptionsPanel
+      v-model="state"
+      :loading="isFetching"
+      @cancel="canAbort && abort()"
+    />
     <div class="grow overflow-y-auto">
       <div class="mx-4">
         <InfoBox v-if="errorMessage" kind="danger">
@@ -14,7 +18,7 @@
           slider-bg-hover-color="#ccc3"
         >
           <DataGraph
-            :loading="loading"
+            :loading="isFetching"
             :data="fetchedData"
             :graph-type="state.graphType"
             :highlight="highlightedSerie"
@@ -31,7 +35,8 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+import { ref, watch, computed } from "vue";
+import { useFetch } from "@vueuse/core";
 import { useRoute, useRouter } from "vue-router";
 import { Date as SugarDate } from "sugar-date";
 import { ResizeRow } from "vue-resizer";
@@ -43,13 +48,29 @@ import InfoBox from "@/components/InfoBox.vue";
 import { graphTypes } from "./VisualizePage/constants";
 import isEqual from "lodash.isequal";
 
-const route = useRoute();
-const router = useRouter();
 const graphHeight = ref(500);
-const fetchedData = ref({});
-const loading = ref(false);
 const highlightedSerie = ref(null);
 
+const updateTimeRange = ([start, end]) => {
+  state.value.start = start.toISOString();
+  state.value.end = end.toISOString();
+};
+
+// Main state
+const defaultState = () => ({
+  graphType: graphTypes.stacked,
+  start: "6 hours ago",
+  end: "now",
+  points: 200,
+  limit: 10,
+  dimensions: ["SrcAS", "ExporterName"],
+  filter: "InIfBoundary = external",
+});
+const state = ref({});
+
+// Load data from URL
+const route = useRoute();
+const router = useRouter();
 const decodeState = (serialized) => {
   try {
     if (!serialized) {
@@ -70,25 +91,6 @@ const encodeState = (state) => {
     JSON.stringify(state, Object.keys(state).sort())
   );
 };
-
-// Main state
-const defaultState = () => ({
-  graphType: graphTypes.stacked,
-  start: "6 hours ago",
-  end: "now",
-  points: 200,
-  limit: 10,
-  dimensions: ["SrcAS", "ExporterName"],
-  filter: "InIfBoundary = external",
-});
-const state = ref({});
-const errorMessage = ref("");
-
-const updateTimeRange = ([start, end]) => {
-  state.value.start = start.toISOString();
-  state.value.end = end.toISOString();
-};
-
 watch(
   route,
   () => {
@@ -99,40 +101,13 @@ watch(
   },
   { immediate: true }
 );
+const encodedState = computed(() => encodeState(state.value));
 watch(
-  state,
-  async (state) => {
-    errorMessage.value = "";
-    let body = { ...state };
-    body.start = SugarDate.create(body.start);
-    body.end = SugarDate.create(body.end);
-    loading.value = true;
-    try {
-      const response = await fetch("/api/v0/console/graph", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!response.ok) {
-        try {
-          const data = await response.json();
-          errorMessage.value = data.message;
-        } catch (_) {
-          errorMessage.value = `Server returned a ${response.status} error`;
-        }
-        return;
-      }
-      const data = await response.json();
-      data.dimensions = body.dimensions;
-      data.start = body.start;
-      data.end = body.end;
-      fetchedData.value = data;
-    } finally {
-      loading.value = false;
-    }
+  encodedState,
+  () => {
     const routeTarget = {
       name: "VisualizeWithState",
-      params: { state: encodeState(state) },
+      params: { state: encodedState.value },
     };
     if (route.name !== "VisualizeWithState") {
       router.replace(routeTarget);
@@ -141,5 +116,36 @@ watch(
     }
   },
   { immediate: true, deep: true }
+);
+
+// Fetch data
+const payload = computed(() => ({
+  ...state.value,
+  start: SugarDate.create(state.value.start),
+  end: SugarDate.create(state.value.end),
+}));
+const { data, isFetching, aborted, abort, canAbort, error } = useFetch(
+  "/api/v0/console/graph",
+  {
+    refetch: true,
+  }
+)
+  .post(payload)
+  .json();
+const errorMessage = computed(
+  () =>
+    (error.value &&
+      !aborted.value &&
+      (data.value?.message || `Server returned an error: ${error.value}`)) ||
+    ""
+);
+const fetchedData = computed(() =>
+  error.value || aborted.value || data.value === null
+    ? fetchedData.value
+    : {
+        ...data.value,
+        dimensions: state.value.dimensions,
+        start: state.value.start,
+      }
 );
 </script>
