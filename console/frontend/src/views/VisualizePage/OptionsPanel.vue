@@ -41,20 +41,16 @@
           class="mb-2 font-mono"
           autosize
         />
-        <div>
-          <!-- Nested because parent is flex -->
-          <button
-            type="submit"
-            :disabled="hasErrors"
-            :class="{
-              'cursor-not-allowed bg-blue-400 dark:bg-blue-500': hasErrors,
-              'bg-orange-700 hover:bg-orange-800 focus:ring-orange-200 dark:focus:ring-orange-900':
-                !hasErrors && loading,
-            }"
-            class="mb-2 inline items-center rounded-lg bg-blue-700 px-5 py-2.5 text-center text-sm font-medium text-white hover:bg-blue-800 focus:ring-4 focus:ring-blue-200 dark:focus:ring-blue-900"
+        <div class="flex flex-col items-end">
+          <InputButton
+            attr-type="submit"
+            :disabled="hasErrors && !loading"
+            :loading="loading"
+            :type="loading ? 'default' : 'primary'"
+            class="mb-2"
           >
             {{ loading ? "Cancel" : applyLabel }}
-          </button>
+          </InputButton>
         </div>
       </div>
     </form>
@@ -80,6 +76,7 @@ import InputTimeRange from "@/components/InputTimeRange.vue";
 import InputDimensions from "@/components/InputDimensions.vue";
 import InputTextarea from "@/components/InputTextarea.vue";
 import InputListBox from "@/components/InputListBox.vue";
+import InputButton from "@/components/InputButton.vue";
 import SectionLabel from "./SectionLabel.vue";
 import { graphTypes } from "./constants";
 import isEqual from "lodash.isequal";
