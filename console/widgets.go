@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
-	"strconv"
 	"time"
+
+	"akvorado/common/helpers"
 
 	"github.com/gin-gonic/gin"
 )
@@ -169,19 +170,22 @@ LIMIT 5
 	gc.JSON(http.StatusOK, gin.H{"top": results})
 }
 
+type widgetParameters struct {
+	Points uint64 `form:"points" binding:"isdefault|min=5,max=1000"`
+}
+
 func (c *Component) widgetGraphHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
 
-	points, err := strconv.ParseUint(gc.DefaultQuery("points", "200"), 10, 16)
-	if err != nil {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": "Invalid value for points."})
+	var params widgetParameters
+	if err := gc.ShouldBindQuery(&params); err != nil {
+		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
 		return
 	}
-	if points < 5 || points > 1000 {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": "Points should be > 5 and < 1000"})
-		return
+	if params.Points == 0 {
+		params.Points = 200
 	}
-	interval := int64((24 * time.Hour).Seconds()) / int64(points)
+	interval := int64((24 * time.Hour).Seconds()) / int64(params.Points)
 	now := c.d.Clock.Now()
 	query := c.queryFlowsTable(fmt.Sprintf(`
 WITH
@@ -200,7 +204,7 @@ ORDER BY Time`, interval), now.Add(-24*time.Hour), now, time.Duration(interval)*
 		Time time.Time `json:"t"`
 		Gbps float64   `json:"gbps"`
 	}{}
-	err = c.d.ClickHouseDB.Conn.Select(ctx, &results, query)
+	err := c.d.ClickHouseDB.Conn.Select(ctx, &results, query)
 	if err != nil {
 		c.r.Err(err).Msg("unable to query database")
 		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to query database."})

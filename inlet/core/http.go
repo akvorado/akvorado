@@ -5,6 +5,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"akvorado/common/helpers"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -17,9 +19,10 @@ type flowsParameters struct {
 // is intended for debug only.
 func (c *Component) FlowsHTTPHandler(gc *gin.Context) {
 	var params flowsParameters
-	var limit, count uint64
-	if gc.ShouldBindQuery(&params) == nil {
-		limit = params.Limit
+	var count uint64
+	if err := gc.ShouldBindQuery(&params); err != nil {
+		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
+		return
 	}
 
 	atomic.AddUint32(&c.httpFlowClients, 1)
@@ -36,14 +39,14 @@ func (c *Component) FlowsHTTPHandler(gc *gin.Context) {
 		case <-gc.Request.Context().Done():
 			return
 		case msg := <-c.httpFlowChannel:
-			if limit == 1 {
+			if params.Limit == 1 {
 				gc.IndentedJSON(http.StatusOK, msg)
 			} else {
 				gc.JSON(http.StatusOK, msg)
 				gc.Writer.Write([]byte("\n"))
 			}
 			count++
-			if limit > 0 && count == limit {
+			if params.Limit > 0 && count == params.Limit {
 				return
 			}
 		case <-tickerChan:

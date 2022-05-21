@@ -15,11 +15,11 @@ import (
 // graphQuery describes the input for the /graph endpoint.
 type graphQuery struct {
 	Start      time.Time     `json:"start" binding:"required"`
-	End        time.Time     `json:"end" binding:"required"`
-	Points     int           `json:"points" binding:"required"` // minimum number of points
-	Dimensions []queryColumn `json:"dimensions"`                // group by ...
-	Limit      int           `json:"limit"`                     // limit product of dimensions
-	Filter     queryFilter   `json:"filter"`                    // where ...
+	End        time.Time     `json:"end" binding:"required,gtfield=Start"`
+	Points     int           `json:"points" binding:"required,min=5,max=2000"` // minimum number of points
+	Dimensions []queryColumn `json:"dimensions"`                               // group by ...
+	Limit      int           `json:"limit" binding:"isdefault|min=1,max=50"`   // limit product of dimensions
+	Filter     queryFilter   `json:"filter"`                                   // where ...
 }
 
 // graphQueryToSQL converts a graph query to an SQL request
@@ -94,21 +94,6 @@ func (c *Component) graphHandlerFunc(gc *gin.Context) {
 	var query graphQuery
 	if err := gc.ShouldBindJSON(&query); err != nil {
 		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
-		return
-	}
-	if query.Start.After(query.End) {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": "Start should not be after end"})
-		return
-	}
-	if query.Points < 5 || query.Points > 2000 {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": "Points should be >= 5 and <= 2000"})
-		return
-	}
-	if query.Limit == 0 {
-		query.Limit = 10
-	}
-	if query.Limit < 5 || query.Limit > 50 {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": "Limit should be >= 5 and <= 50"})
 		return
 	}
 
