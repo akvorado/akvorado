@@ -19,41 +19,6 @@ import (
 	"akvorado/common/reporter"
 )
 
-func TestGraphColumnSQLSelect(t *testing.T) {
-	cases := []struct {
-		Input    graphColumn
-		Expected string
-	}{
-		{
-			Input:    graphColumnSrcAddr,
-			Expected: `IPv6NumToString(SrcAddr)`,
-		}, {
-			Input:    graphColumnDstAS,
-			Expected: `concat(toString(DstAS), ': ', dictGetOrDefault('asns', 'name', DstAS, '???'))`,
-		}, {
-			Input:    graphColumnProto,
-			Expected: `dictGetOrDefault('protocols', 'name', Proto, '???')`,
-		}, {
-			Input:    graphColumnEType,
-			Expected: `if(EType = 0x800, 'IPv4', if(EType = 0x86dd, 'IPv6', '???'))`,
-		}, {
-			Input:    graphColumnOutIfSpeed,
-			Expected: `toString(OutIfSpeed)`,
-		}, {
-			Input:    graphColumnExporterName,
-			Expected: `ExporterName`,
-		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.Input.String(), func(t *testing.T) {
-			got := tc.Input.toSQLSelect()
-			if diff := helpers.Diff(got, tc.Expected); diff != "" {
-				t.Errorf("toSQLWhere (-got, +want):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestGraphQuerySQL(t *testing.T) {
 	cases := []struct {
 		Description string
@@ -66,8 +31,8 @@ func TestGraphQuerySQL(t *testing.T) {
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
-				Dimensions: []graphColumn{},
-				Filter:     graphFilter{},
+				Dimensions: []queryColumn{},
+				Filter:     queryFilter{},
 			},
 			Expected: `
 WITH
@@ -86,8 +51,8 @@ ORDER BY time`,
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
-				Dimensions: []graphColumn{},
-				Filter:     graphFilter{"DstCountry = 'FR' AND SrcCountry = 'US'"},
+				Dimensions: []queryColumn{},
+				Filter:     queryFilter{"DstCountry = 'FR' AND SrcCountry = 'US'"},
 			},
 			Expected: `
 WITH
@@ -107,11 +72,11 @@ ORDER BY time`,
 				End:    time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Points: 100,
 				Limit:  20,
-				Dimensions: []graphColumn{
-					graphColumnExporterName,
-					graphColumnInIfProvider,
+				Dimensions: []queryColumn{
+					queryColumnExporterName,
+					queryColumnInIfProvider,
 				},
-				Filter: graphFilter{},
+				Filter: queryFilter{},
 			},
 			Expected: `
 WITH
@@ -229,11 +194,11 @@ func TestGraphHandler(t *testing.T) {
 		End:    time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 		Points: 100,
 		Limit:  20,
-		Dimensions: []graphColumn{
-			graphColumnExporterName,
-			graphColumnInIfProvider,
+		Dimensions: []queryColumn{
+			queryColumnExporterName,
+			queryColumnInIfProvider,
 		},
-		Filter: graphFilter{"DstCountry = 'FR' AND SrcCountry = 'US'"},
+		Filter: queryFilter{"DstCountry = 'FR' AND SrcCountry = 'US'"},
 	}
 	payload := new(bytes.Buffer)
 	err = json.NewEncoder(payload).Encode(input)

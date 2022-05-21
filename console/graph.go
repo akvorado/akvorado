@@ -1,7 +1,6 @@
 package console
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"sort"
@@ -11,7 +10,6 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"akvorado/common/helpers"
-	"akvorado/console/filter"
 )
 
 // graphQuery describes the input for the /graph endpoint.
@@ -19,126 +17,9 @@ type graphQuery struct {
 	Start      time.Time     `json:"start" binding:"required"`
 	End        time.Time     `json:"end" binding:"required"`
 	Points     int           `json:"points" binding:"required"` // minimum number of points
-	Dimensions []graphColumn `json:"dimensions"`                // group by ...
+	Dimensions []queryColumn `json:"dimensions"`                // group by ...
 	Limit      int           `json:"limit"`                     // limit product of dimensions
-	Filter     graphFilter   `json:"filter"`                    // where ...
-}
-
-type graphColumn int
-
-const (
-	graphColumnExporterAddress graphColumn = iota + 1
-	graphColumnExporterName
-	graphColumnExporterGroup
-	graphColumnSrcAS
-	graphColumnSrcCountry
-	graphColumnInIfName
-	graphColumnInIfDescription
-	graphColumnInIfSpeed
-	graphColumnInIfConnectivity
-	graphColumnInIfProvider
-	graphColumnInIfBoundary
-	graphColumnEType
-	graphColumnProto
-	graphColumnSrcPort
-	graphColumnSrcAddr
-	graphColumnDstAS
-	graphColumnDstCountry
-	graphColumnOutIfName
-	graphColumnOutIfDescription
-	graphColumnOutIfSpeed
-	graphColumnOutIfConnectivity
-	graphColumnOutIfProvider
-	graphColumnOutIfBoundary
-	graphColumnDstAddr
-	graphColumnDstPort
-	graphColumnForwardingStatus
-)
-
-var graphColumnMap = helpers.NewBimap(map[graphColumn]string{
-	graphColumnExporterAddress:   "ExporterAddress",
-	graphColumnExporterName:      "ExporterName",
-	graphColumnExporterGroup:     "ExporterGroup",
-	graphColumnSrcAddr:           "SrcAddr",
-	graphColumnDstAddr:           "DstAddr",
-	graphColumnSrcAS:             "SrcAS",
-	graphColumnDstAS:             "DstAS",
-	graphColumnSrcCountry:        "SrcCountry",
-	graphColumnDstCountry:        "DstCountry",
-	graphColumnInIfName:          "InIfName",
-	graphColumnOutIfName:         "OutIfName",
-	graphColumnInIfDescription:   "InIfDescription",
-	graphColumnOutIfDescription:  "OutIfDescription",
-	graphColumnInIfSpeed:         "InIfSpeed",
-	graphColumnOutIfSpeed:        "OutIfSpeed",
-	graphColumnInIfConnectivity:  "InIfConnectivity",
-	graphColumnOutIfConnectivity: "OutIfConnectivity",
-	graphColumnInIfProvider:      "InIfProvider",
-	graphColumnOutIfProvider:     "OutIfProvider",
-	graphColumnInIfBoundary:      "InIfBoundary",
-	graphColumnOutIfBoundary:     "OutIfBoundary",
-	graphColumnEType:             "EType",
-	graphColumnProto:             "Proto",
-	graphColumnSrcPort:           "SrcPort",
-	graphColumnDstPort:           "DstPort",
-	graphColumnForwardingStatus:  "ForwardingStatus",
-})
-
-func (gc graphColumn) MarshalText() ([]byte, error) {
-	got, ok := graphColumnMap.LoadValue(gc)
-	if ok {
-		return []byte(got), nil
-	}
-	return nil, errors.New("unknown field")
-}
-func (gc graphColumn) String() string {
-	got, _ := graphColumnMap.LoadValue(gc)
-	return got
-}
-func (gc *graphColumn) UnmarshalText(input []byte) error {
-	got, ok := graphColumnMap.LoadKey(string(input))
-	if ok {
-		*gc = got
-		return nil
-	}
-	return errors.New("unknown field")
-}
-
-type graphFilter struct {
-	filter string
-}
-
-func (gf graphFilter) MarshalText() ([]byte, error) {
-	return []byte(gf.filter), nil
-}
-func (gf *graphFilter) UnmarshalText(input []byte) error {
-	got, err := filter.Parse("", input)
-	if err != nil {
-		return fmt.Errorf("cannot parse filter: %s", filter.HumanError(err))
-	}
-	*gf = graphFilter{got.(string)}
-	return nil
-}
-
-// toSQLSelect transforms a column into an expression to use in SELECT
-func (gc graphColumn) toSQLSelect() string {
-	var strValue string
-	switch gc {
-	case graphColumnExporterAddress, graphColumnSrcAddr, graphColumnDstAddr:
-		strValue = fmt.Sprintf("IPv6NumToString(%s)", gc)
-	case graphColumnSrcAS, graphColumnDstAS:
-		strValue = fmt.Sprintf(`concat(toString(%s), ': ', dictGetOrDefault('asns', 'name', %s, '???'))`,
-			gc, gc)
-	case graphColumnEType:
-		strValue = `if(EType = 0x800, 'IPv4', if(EType = 0x86dd, 'IPv6', '???'))`
-	case graphColumnProto:
-		strValue = `dictGetOrDefault('protocols', 'name', Proto, '???')`
-	case graphColumnInIfSpeed, graphColumnOutIfSpeed, graphColumnSrcPort, graphColumnDstPort, graphColumnForwardingStatus:
-		strValue = fmt.Sprintf("toString(%s)", gc)
-	default:
-		strValue = gc.String()
-	}
-	return strValue
+	Filter     queryFilter   `json:"filter"`                    // where ...
 }
 
 // graphQueryToSQL converts a graph query to an SQL request

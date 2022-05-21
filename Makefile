@@ -80,8 +80,8 @@ console/filter/parser.go: console/filter/parser.peg | $(PIGEON) ; $(info $(M) ge
 console/frontend/node_modules: console/frontend/package.json console/frontend/yarn.lock
 console/frontend/node_modules: ; $(info $(M) fetching node modules…)
 	$Q yarn install --silent --frozen-lockfile --cwd console/frontend && touch $@
-console/frontend/data/fields.json: console/graph.go ; $(info $(M) generate list of selectable fields…)
-	$Q sed -En -e 's/^\tgraphColumn([a-zA-Z]+)( .*|$$)/  "\1"/p' $< \
+console/frontend/data/fields.json: console/query.go ; $(info $(M) generate list of selectable fields…)
+	$Q sed -En -e 's/^\tqueryColumn([a-zA-Z]+)( .*|$$)/  "\1"/p' $< \
 		| sed -E -e '1i [' -e '$$ ! s/$$/,/' -e '$$a ]'> $@
 	$Q test -s $@
 console/data/frontend: Makefile console/frontend/node_modules
