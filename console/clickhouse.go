@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-var addressOrPortRegexp = regexp.MustCompile(`\b(?:Src|Dst)(?:Port|Address)\b`)
+var addressOrPortRegexp = regexp.MustCompile(`\b(?:Src|Dst)(?:Port|Addr)\b`)
 
 // flowsTable describe a consolidated or unconsolidated flows table.
 type flowsTable struct {
