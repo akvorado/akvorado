@@ -17,27 +17,21 @@ const props = defineProps({
   },
 });
 
-import { ref, watch } from "vue";
+import { computed } from "vue";
+import { useFetch } from "@vueuse/core";
 
-const rate = ref("???");
-
-watch(
-  () => props.refresh,
-  async () => {
-    const response = await fetch("/api/v0/console/widget/flow-rate");
-    if (!response.ok) {
-      rate.value = "???";
-      return;
-    }
-    const data = await response.json();
-    if (data.rate > 1_500_000) {
-      rate.value = (data.rate / 1_000_000).toFixed(1) + "M";
-    } else if (data.rate > 1_500) {
-      rate.value = (data.rate / 1_000).toFixed(1) + "K";
-    } else {
-      rate.value = data.rate.toFixed(0);
-    }
-  },
-  { immediate: true }
-);
+const url = computed(() => "/api/v0/console/widget/flow-rate?" + props.refresh);
+const { data } = useFetch(url, { refetch: true }).get().json();
+const rate = computed(() => {
+  if (data.value?.rate > 1_500_000) {
+    return (data.value.rate / 1_000_000).toFixed(1) + "M";
+  }
+  if (data.value?.rate > 1_500) {
+    return (data.value.rate / 1_000).toFixed(1) + "K";
+  }
+  if (data.value?.rate >= 0) {
+    return data.value.rate.toFixed(0);
+  }
+  return "???";
+});
 </script>

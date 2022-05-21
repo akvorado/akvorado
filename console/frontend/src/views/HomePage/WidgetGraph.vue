@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="h-[300px]">
-      <v-chart :option="option" :theme="isDark ? 'dark' : null" autoresize />
+      <v-chart :option="options" :theme="isDark ? 'dark' : null" autoresize />
     </div>
   </div>
 </template>
@@ -14,7 +14,8 @@ const props = defineProps({
   },
 });
 
-import { ref, watch, inject } from "vue";
+import { computed, inject } from "vue";
+import { useFetch } from "@vueuse/core";
 import { use, graphic } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { LineChart } from "echarts/charts";
@@ -27,7 +28,10 @@ use([CanvasRenderer, LineChart, TooltipComponent, GridComponent]);
 
 const formatGbps = (value) => formatBps(value * 1_000_000_000);
 
-const option = ref({
+const url = computed(() => `/api/v0/console/widget/graph?${props.refresh}`);
+const { data } = useFetch(url, { refetch: true }).get().json();
+const options = computed(() => ({
+  darkMode: isDark.value,
   backgroundColor: "transparent",
   xAxis: { type: "time" },
   yAxis: {
@@ -49,43 +53,25 @@ const option = ref({
       type: "line",
       symbol: "none",
       lineStyle: {
-        width: 1,
+        width: 0,
       },
-      data: [],
+      areaStyle: {
+        opacity: 0.9,
+        color: new graphic.LinearGradient(0, 0, 0, 1, [
+          {
+            offset: 0,
+            color: dataColor(0, false, isDark.value ? "dark" : "light"),
+          },
+          {
+            offset: 1,
+            color: dataColor(0, true, isDark.value ? "dark" : "light"),
+          },
+        ]),
+      },
+      data: (data.value?.data || [])
+        .map(({ t, gbps }) => [t, gbps])
+        .slice(1, -1),
     },
   ],
-});
-
-watch(
-  isDark,
-  (isDark) => {
-    const theme = isDark ? "dark" : "light";
-    option.value.darkMode = isDark;
-    option.value.series[0].areaStyle = {
-      opacity: 0.9,
-      color: new graphic.LinearGradient(0, 0, 0, 1, [
-        { offset: 0, color: dataColor(0, false, theme) },
-        { offset: 1, color: dataColor(0, true, theme) },
-      ]),
-    };
-    option.value.series[0].lineStyle.color = dataColor(0, false, theme);
-  },
-  { immediate: true }
-);
-
-watch(
-  () => props.refresh,
-  async () => {
-    const response = await fetch("/api/v0/console/widget/graph");
-    if (!response.ok) {
-      // Keep current data
-      return;
-    }
-    const data = await response.json();
-    option.value.series[0].data = data.data
-      .map(({ t, gbps }) => [t, gbps])
-      .slice(1, -1);
-  },
-  { immediate: true }
-);
+}));
 </script>

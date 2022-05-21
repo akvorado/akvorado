@@ -17,21 +17,10 @@ const props = defineProps({
   },
 });
 
-import { ref, watch } from "vue";
+import { computed } from "vue";
+import { useFetch } from "@vueuse/core";
 
-const exporters = ref("???");
-
-watch(
-  () => props.refresh,
-  async () => {
-    const response = await fetch("/api/v0/console/widget/exporters");
-    if (!response.ok) {
-      // Keep current data
-      return;
-    }
-    const data = await response.json();
-    exporters.value = data.exporters.length;
-  },
-  { immediate: true }
-);
+const url = computed(() => "/api/v0/console/widget/exporters?" + props.refresh);
+const { data } = useFetch(url, { refetch: true }).get().json();
+const exporters = computed(() => data.value?.exporters.length || "???");
 </script>

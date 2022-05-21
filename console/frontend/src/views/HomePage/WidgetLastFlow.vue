@@ -24,24 +24,16 @@ const props = defineProps({
   },
 });
 
-import { ref, watch } from "vue";
+import { computed } from "vue";
+import { useFetch } from "@vueuse/core";
 import { compareFields } from "../../utils";
 
-const lastFlow = ref({});
-
-watch(
-  () => props.refresh,
-  async () => {
-    const response = await fetch("/api/v0/console/widget/flow-last");
-    if (!response.ok) {
-      // Just don't update component.
-      return;
-    }
-    const data = await response.json();
-    lastFlow.value = Object.entries(data).sort(([f1], [f2]) =>
-      compareFields(f1, f2)
-    );
-  },
-  { immediate: true }
-);
+const url = computed(() => "/api/v0/console/widget/flow-last?" + props.refresh);
+const { data } = useFetch(url, { refetch: true }).get().json();
+const lastFlow = computed(() => ({
+  ...(lastFlow.value || {}),
+  ...Object.entries(data.value || {}).sort(([f1], [f2]) =>
+    compareFields(f1, f2)
+  ),
+}));
 </script>

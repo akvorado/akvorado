@@ -2,7 +2,7 @@
   <div>
     <h1 class="font-semibold leading-relaxed">{{ title }}</h1>
     <div class="h-[200px]">
-      <v-chart :option="option" :theme="isDark ? 'dark' : null" autoresize />
+      <v-chart :option="options" :theme="isDark ? 'dark' : null" autoresize />
     </div>
   </div>
 </template>
@@ -23,7 +23,8 @@ const props = defineProps({
   },
 });
 
-import { ref, watch, inject } from "vue";
+import { computed, inject } from "vue";
+import { useFetch } from "@vueuse/core";
 import { use } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { PieChart } from "echarts/charts";
@@ -34,7 +35,12 @@ const { isDark } = inject("theme");
 
 use([CanvasRenderer, PieChart, TooltipComponent, LegendComponent]);
 
-const option = ref({
+const url = computed(
+  () => `/api/v0/console/widget/top/${props.what}?${props.refresh}`
+);
+const { data } = useFetch(url, { refetch: true }).get().json();
+const options = computed(() => ({
+  darkMode: isDark.value,
   backgroundColor: "transparent",
   tooltip: {
     trigger: "item",
@@ -49,7 +55,10 @@ const option = ref({
     itemGap: 5,
     itemWidth: 14,
     itemHeight: 14,
-    textStyle: { fontSize: 10 },
+    textStyle: {
+      fontSize: 10,
+      color: isDark.value ? "#eee" : "#111",
+    },
     formatter(name) {
       return name.split(": ")[0];
     },
@@ -60,53 +69,31 @@ const option = ref({
       label: { show: false },
       center: ["50%", "40%"],
       radius: "60%",
-      data: [],
+      data: [
+        ...(data.value?.top || [])
+          .filter(({ percent }) => percent > 0)
+          .map(({ name, percent }) => ({
+            name,
+            value: percent,
+          })),
+        {
+          name: "Others",
+          value: Math.max(
+            100 - (data.value?.top || []).reduce((c, n) => c + n.percent, 0),
+            0
+          ),
+        },
+      ].filter(({ value }) => value > 0.05),
+      itemStyle: {
+        color({ name, dataIndex }) {
+          const theme = isDark.value ? "dark" : "light";
+          if (name === "Others") {
+            return dataColorGrey(0, false, theme);
+          }
+          return dataColor(dataIndex, false, theme);
+        },
+      },
     },
   ],
-});
-
-watch(
-  isDark,
-  (isDark) => {
-    const theme = isDark ? "dark" : "light";
-    option.value.darkMode = isDark;
-    option.value.series[0].itemStyle = {
-      color({ name, dataIndex }) {
-        if (name === "Others") {
-          return dataColorGrey(0, false, theme);
-        }
-        return dataColor(dataIndex, false, theme);
-      },
-    };
-    option.value.legend.textStyle.color = isDark ? "#eee" : "#111";
-  },
-  { immediate: true }
-);
-
-watch(
-  () => props.refresh,
-  async () => {
-    const response = await fetch("/api/v0/console/widget/top/" + props.what);
-    if (!response.ok) {
-      // Keep current data
-      return;
-    }
-    const data = await response.json();
-    const totalPercent = data.top.reduce((c, n) => c + n.percent, 0);
-    const newData = [
-      ...data.top
-        .filter(({ percent }) => percent > 0)
-        .map(({ name, percent }) => ({
-          name,
-          value: percent,
-        })),
-      {
-        name: "Others",
-        value: Math.max(100 - totalPercent, 0),
-      },
-    ].filter(({ value }) => value > 0.05);
-    option.value.series[0].data = newData;
-  },
-  { immediate: true }
-);
+}));
 </script>
