@@ -71,55 +71,36 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from "vue";
+import { useFetch } from "@vueuse/core";
 import { useRoute } from "vue-router";
 import InfoBox from "@/components/InfoBox.vue";
 
 const route = useRoute();
-const markdown = ref("");
-const toc = ref([]);
-const contentEl = ref(null);
-const activeDocument = ref(null);
-const activeSlug = computed(() => route.hash.replace(/^#/, ""));
-const errorMessage = ref("");
 
-watch(
-  () => ({ id: route.params.id, hash: route.hash }),
-  async (to, from) => {
-    errorMessage.value = "";
-    if (to.id === undefined) return;
-    if (to.id !== from?.id) {
-      const id = to.id;
-      const response = await fetch(`/api/v0/console/docs/${id}`);
-      if (!response.ok) {
-        try {
-          const data = await response.json();
-          errorMessage.value = data.message;
-        } catch (_) {
-          errorMessage.value = `Server returned a ${response.status} error`;
-        }
-      } else {
-        const data = await response.json();
-        markdown.value = data.markdown;
-        toc.value = data.toc;
-        activeDocument.value = id;
-      }
-    }
-    if (to.id !== from?.id || to.hash !== from?.hash) {
-      await nextTick();
-      let container = contentEl.value;
-      while (window.getComputedStyle(container).position === "static") {
-        container = container.parentNode;
-      }
-      if (to.hash === "") {
-        container.scrollTo(0, 0);
-      } else {
-        const el = document.querySelector(to.hash);
-        if (el !== null) {
-          container.scrollTo(0, el.offsetTop);
-        }
-      }
-    }
-  },
-  { immediate: true }
+// Grab document
+const url = computed(() => `/api/v0/console/docs/${route.params.id}`);
+const { data, error } = useFetch(url, { refetch: true }).get().json();
+const errorMessage = computed(
+  () =>
+    (error.value &&
+      (data.value?.message || `Server returned an error: ${error.value}`)) ||
+    ""
 );
+const markdown = computed(() => (!error.value && data.value?.markdown) || "");
+const toc = computed(() => (!error.value && data.value?.toc) || []);
+const activeDocument = computed(() => route.params.id || null);
+const activeSlug = computed(() => route.hash.replace(/^#/, ""));
+
+// Scroll to the right anchor after loading markdown
+const contentEl = ref(null);
+watch(markdown, async () => {
+  await nextTick();
+  let scrollEl = contentEl.value;
+  while (window.getComputedStyle(scrollEl).position === "static") {
+    scrollEl = scrollEl.parentNode;
+  }
+  const top =
+    (route.hash && document.querySelector(route.hash)?.offsetTop) || 0;
+  scrollEl.scrollTo(0, top);
+});
 </script>
