@@ -75,7 +75,10 @@ const graph = computed(() => {
   if (!data.t) return {};
   const dataset = {
       sourceHeader: false,
-      dimensions: ["time", ...data.rows.map((rows) => rows.join(" — "))],
+      dimensions: [
+        "time",
+        ...data.rows.map((rows) => rows.join(" — ") || "Total"),
+      ],
       source: [
         ...data.t
           .map((t, timeIdx) => [t, ...data.points.map((rows) => rows[timeIdx])])
