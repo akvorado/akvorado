@@ -18,7 +18,7 @@ type graphQuery struct {
 	End        time.Time     `json:"end" binding:"required,gtfield=Start"`
 	Points     int           `json:"points" binding:"required,min=5,max=2000"` // minimum number of points
 	Dimensions []queryColumn `json:"dimensions"`                               // group by ...
-	Limit      int           `json:"limit" binding:"isdefault|min=1,max=50"`   // limit product of dimensions
+	Limit      int           `json:"limit" binding:"min=1,max=50"`             // limit product of dimensions
 	Filter     queryFilter   `json:"filter"`                                   // where ...
 }
 
