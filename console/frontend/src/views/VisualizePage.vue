@@ -118,13 +118,17 @@ watch(
 );
 
 // Fetch data
+const fetchedData = ref({});
 const payload = computed(() => ({
   ...state.value,
   start: SugarDate.create(state.value.start),
   end: SugarDate.create(state.value.end),
 }));
 const { data, isFetching, aborted, abort, canAbort, error } = useFetch("", {
-  beforeFetch({ options, cancel }) {
+  beforeFetch(ctx) {
+    // Add the URL. Not a computed value as if we change both payload
+    // and URL, the query will be triggered twice.
+    const { cancel } = ctx;
     const endpoint = {
       [graphTypes.stacked]: "graph",
       [graphTypes.lines]: "graph",
@@ -136,9 +140,22 @@ const { data, isFetching, aborted, abort, canAbort, error } = useFetch("", {
       cancel();
     }
     return {
+      ...ctx,
       url: `/api/v0/console/${url}`,
-      options,
     };
+  },
+  afterFetch(ctx) {
+    // Update data. Not done in a computed value as we want to keep the
+    // previous data in case of errors.
+    const { data } = ctx;
+    fetchedData.value = {
+      ...data,
+      dimensions: payload.value.dimensions,
+      start: payload.value.start,
+      end: payload.value.end,
+      graphType: payload.value.graphType,
+    };
+    return ctx;
   },
   refetch: true,
 })
@@ -151,18 +168,4 @@ const errorMessage = computed(
       (data.value?.message || `Server returned an error: ${error.value}`)) ||
     ""
 );
-const fetchedData = ref({});
-watch(data, (data) => {
-  if (error.value || aborted.value || data === null) {
-    return;
-  }
-  // Not a computed value because we mix data and state.
-  fetchedData.value = {
-    ...data,
-    dimensions: payload.value.dimensions,
-    start: payload.value.start,
-    end: payload.value.end,
-    graphType: payload.value.graphType,
-  };
-});
 </script>
