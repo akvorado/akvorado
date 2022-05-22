@@ -20,7 +20,6 @@
           <DataGraph
             :loading="isFetching"
             :data="fetchedData"
-            :graph-type="state.graphType"
             :highlight="highlightedSerie"
             @update-time-range="updateTimeRange"
           />
@@ -124,12 +123,25 @@ const payload = computed(() => ({
   start: SugarDate.create(state.value.start),
   end: SugarDate.create(state.value.end),
 }));
-const { data, isFetching, aborted, abort, canAbort, error } = useFetch(
-  "/api/v0/console/graph",
-  {
-    refetch: true,
-  }
-)
+const { data, isFetching, aborted, abort, canAbort, error } = useFetch("", {
+  beforeFetch({ options, cancel }) {
+    const endpoint = {
+      [graphTypes.stacked]: "graph",
+      [graphTypes.lines]: "graph",
+      [graphTypes.multigraph]: "graph",
+      [graphTypes.sankey]: "sankey",
+    };
+    const url = endpoint[state.value.graphType];
+    if (url === undefined) {
+      cancel();
+    }
+    return {
+      url: `/api/v0/console/${url}`,
+      options,
+    };
+  },
+  refetch: true,
+})
   .post(payload)
   .json();
 const errorMessage = computed(
@@ -139,13 +151,18 @@ const errorMessage = computed(
       (data.value?.message || `Server returned an error: ${error.value}`)) ||
     ""
 );
-const fetchedData = computed(() =>
-  error.value || aborted.value || data.value === null
-    ? fetchedData.value
-    : {
-        ...data.value,
-        dimensions: state.value.dimensions,
-        start: state.value.start,
-      }
-);
+const fetchedData = ref({});
+watch(data, (data) => {
+  if (error.value || aborted.value || data === null) {
+    return;
+  }
+  // Not a computed value because we mix data and state.
+  fetchedData.value = {
+    ...data,
+    dimensions: state.value.dimensions,
+    start: state.value.start,
+    end: state.value.end,
+    graphType: state.value.graphType,
+  };
+});
 </script>

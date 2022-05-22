@@ -17,10 +17,6 @@ const props = defineProps({
     type: Object,
     default: () => {},
   },
-  graphType: {
-    type: String,
-    required: true,
-  },
   loading: {
     type: Boolean,
     default: false,
@@ -34,12 +30,12 @@ const emit = defineEmits(["updateTimeRange"]);
 
 import { ref, watch, inject, computed, onMounted, nextTick } from "vue";
 import { formatBps, dataColor, dataColorGrey } from "@/utils";
-const { isDark } = inject("theme");
 import { graphTypes } from "./constants";
+const { isDark } = inject("theme");
 
 import { use, graphic } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
-import { LineChart } from "echarts/charts";
+import { LineChart, SankeyChart } from "echarts/charts";
 import {
   TooltipComponent,
   GridComponent,
@@ -52,6 +48,7 @@ import VChart from "vue-echarts";
 use([
   CanvasRenderer,
   LineChart,
+  SankeyChart,
   TooltipComponent,
   GridComponent,
   ToolboxComponent,
@@ -60,20 +57,8 @@ use([
   TitleComponent,
 ]);
 
-const chartComponent = ref(null);
-const defaultGraph = {
-  backgroundColor: "transparent",
-  toolbox: {
-    show: false,
-  },
-  animationDuration: 500,
-};
-const graph = computed(() => {
-  const data = props.data;
-  if (data.t === undefined) {
-    return {};
-  }
-  const theme = isDark.value ? "dark" : "light";
+const graphTimeSeries = (data, theme) => {
+  if (!data.t) return {};
   const dataset = {
       sourceHeader: false,
       dimensions: ["time", ...data.rows.map((rows) => rows.join(" — "))],
@@ -110,7 +95,7 @@ const graph = computed(() => {
     };
 
   // Lines and stacked areas
-  if ([graphTypes.stacked, graphTypes.lines].includes(props.graphType)) {
+  if ([graphTypes.stacked, graphTypes.lines].includes(data.graphType)) {
     return {
       grid: {
         left: 60,
@@ -127,7 +112,7 @@ const graph = computed(() => {
         .map((rows, idx) => {
           const isOther = rows.some((name) => name === "Other"),
             color = isOther ? dataColorGrey : dataColor;
-          if (props.graphType === graphTypes.lines && isOther) {
+          if (data.graphType === graphTypes.lines && isOther) {
             return undefined;
           }
           let serie = {
@@ -150,7 +135,7 @@ const graph = computed(() => {
               seriesId: idx + 1,
             },
           };
-          if (props.graphType === graphTypes.stacked) {
+          if (data.graphType === graphTypes.stacked) {
             serie = {
               ...serie,
               stack: "all",
@@ -178,7 +163,7 @@ const graph = computed(() => {
         .filter((s) => s !== undefined),
     };
   }
-  if (props.graphType === graphTypes.multigraph) {
+  if (data.graphType === graphTypes.multigraph) {
     const dataRows = data.rows.filter((rows) =>
         rows.some((name) => name !== "Other")
       ),
@@ -263,6 +248,75 @@ const graph = computed(() => {
         return serie;
       }),
     };
+  }
+  return {};
+};
+
+const graphSankey = (data, theme) => {
+  if (!data.bps) return {};
+  let greyNodes = 0;
+  let colorNodes = 0;
+  return {
+    tooltip: {
+      confine: true,
+      trigger: "item",
+      triggerOn: "mousemove",
+      valueFormatter: formatBps,
+    },
+    series: [
+      {
+        type: "sankey",
+        animationDuration: defaultGraph.animationDuration,
+        emphasis: {
+          focus: "adjacency",
+        },
+        data: data.nodes.map((v) => ({
+          id: v,
+          name: v.startsWith("Other ") ? "Other" : v,
+          itemStyle: {
+            color: v.startsWith("Other ")
+              ? dataColorGrey(greyNodes++, false, theme)
+              : dataColor(colorNodes++, false, theme),
+          },
+        })),
+        links: data.links.map(({ source, target, bps }) => ({
+          source,
+          target,
+          value: bps,
+        })),
+        label: {
+          formatter: "{b}",
+        },
+        lineStyle: {
+          color: "gradient",
+          curveness: 0.5,
+        },
+      },
+    ],
+  };
+};
+
+// Graph component
+const chartComponent = ref(null);
+const defaultGraph = {
+  backgroundColor: "transparent",
+  toolbox: {
+    show: false,
+  },
+  animationDuration: 500,
+};
+const graph = computed(() => {
+  const theme = isDark.value ? "dark" : "light";
+  const data = props.data || {};
+  if (
+    [graphTypes.stacked, graphTypes.lines, graphTypes.multigraph].includes(
+      data.graphType
+    )
+  ) {
+    return graphTimeSeries(data, theme);
+  }
+  if ([graphTypes.sankey].includes(data.graphType)) {
+    return graphSankey(data, theme);
   }
   return {};
 });

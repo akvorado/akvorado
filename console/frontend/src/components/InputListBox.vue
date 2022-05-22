@@ -5,7 +5,11 @@
     @update:model-value="(item) => $emit('update:modelValue', item)"
   >
     <div class="relative">
-      <InputComponent v-slot="{ id, childClass }" v-bind="$attrs">
+      <InputComponent
+        v-slot="{ id, childClass }"
+        v-bind="$attrs"
+        :error="error"
+      >
         <ListboxButton :id="id" :class="childClass">
           <span class="block truncate pr-10 text-left">
             <slot name="selected"></slot>
@@ -65,6 +69,10 @@ defineProps({
   modelValue: {
     type: Object,
     required: true,
+  },
+  error: {
+    type: String,
+    default: "",
   },
   items: {
     // Each item in the array is expected to have "id" and "name".

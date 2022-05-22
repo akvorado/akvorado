@@ -3,6 +3,7 @@
     <InputListBox
       v-model="selectedDimensions"
       :items="dimensions"
+      :error="dimensionsError"
       multiple
       label="Dimensions"
       class="col-span-2 lg:col-span-1"
@@ -49,6 +50,10 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  minDimensions: {
+    type: Number,
+    default: 0,
+  },
 });
 const emit = defineEmits(["update:modelValue"]);
 
@@ -61,20 +66,27 @@ import fields from "@data/fields.json";
 import isEqual from "lodash.isequal";
 
 const selectedDimensions = ref([]);
+const dimensionsError = computed(() => {
+  if (selectedDimensions.value.length < props.minDimensions) {
+    return "At least two dimensions are required";
+  }
+  return "";
+});
 const limit = ref("10");
 const limitError = computed(() => {
   const val = parseInt(limit.value);
   if (isNaN(val)) {
     return "Not a number";
   }
-  if (val < 5) {
-    return "Should be more than 5";
+  if (val < 1) {
+    return "Should be ≥ 1";
   }
   if (val > 50) {
-    return "Should be less than 50";
+    return "Should be ≤ 50";
   }
   return "";
 });
+const hasErrors = computed(() => !!limitError.value || !!dimensionsError.value);
 
 const dimensions = fields.map((v, idx) => ({
   id: idx + 1,
@@ -103,12 +115,12 @@ watch(
   { immediate: true, deep: true }
 );
 watch(
-  [selectedDimensions, limit, limitError],
-  ([selected, limit, limitError]) => {
+  [selectedDimensions, limit, hasErrors],
+  ([selected, limit, hasErrors]) => {
     const updated = {
       selected: selected.map((d) => d.name),
       limit: parseInt(limit) || limit,
-      errors: !!limitError,
+      errors: hasErrors,
     };
     if (!isEqual(updated, props.modelValue)) {
       emit("update:modelValue", updated);

@@ -1,6 +1,6 @@
 <template>
   <aside
-    class="transition-height transition-width relative mb-2 w-full shrink-0 shadow duration-100 lg:mr-4 lg:mb-0 lg:h-auto"
+    class="transition-height transition-width relative mb-2 w-full shrink-0 duration-100 lg:mr-4 lg:mb-0 lg:h-auto"
     :class="open ? 'h-96 lg:w-64' : 'h-6 lg:w-6'"
   >
     <button
@@ -12,7 +12,7 @@
       <ChevronDownIcon class="h-8 lg:hidden" />
     </button>
     <form
-      class="h-full overflow-y-auto bg-gray-200 dark:bg-slate-600"
+      class="h-full overflow-y-auto border-r border-gray-300 bg-gray-100 dark:border-slate-700 dark:bg-slate-800"
       autocomplete="off"
       spellcheck="false"
       @submit.prevent="
@@ -32,7 +32,10 @@
         <SectionLabel>Time range</SectionLabel>
         <InputTimeRange v-model="timeRange" />
         <SectionLabel>Dimensions</SectionLabel>
-        <InputDimensions v-model="dimensions" />
+        <InputDimensions
+          v-model="dimensions"
+          :min-dimensions="graphType.name === graphTypes.sankey ? 2 : 0"
+        />
         <SectionLabel>Filter</SectionLabel>
         <InputTextarea
           v-model="filter"
