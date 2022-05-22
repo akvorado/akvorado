@@ -29,6 +29,9 @@ func TestQueryColumnSQLSelect(t *testing.T) {
 		}, {
 			Input:    queryColumnExporterName,
 			Expected: `ExporterName`,
+		}, {
+			Input:    queryColumnPacketSizeBucket,
+			Expected: `PacketSizeBucket`,
 		},
 	}
 	for _, tc := range cases {

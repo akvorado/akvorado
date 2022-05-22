@@ -37,6 +37,7 @@ const (
 	queryColumnDstAddr
 	queryColumnDstPort
 	queryColumnForwardingStatus
+	queryColumnPacketSizeBucket
 )
 
 var queryColumnMap = helpers.NewBimap(map[queryColumn]string{
@@ -66,6 +67,7 @@ var queryColumnMap = helpers.NewBimap(map[queryColumn]string{
 	queryColumnSrcPort:           "SrcPort",
 	queryColumnDstPort:           "DstPort",
 	queryColumnForwardingStatus:  "ForwardingStatus",
+	queryColumnPacketSizeBucket:  "PacketSizeBucket",
 })
 
 func (gc queryColumn) MarshalText() ([]byte, error) {

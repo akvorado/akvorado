@@ -44,6 +44,12 @@ const flowsSchema = `
  ForwardingStatus UInt32
 `
 
+var nullMigrationStep = migrationStep{
+	CheckQuery: `SELECT 1`,
+	Args:       []interface{}{},
+	Do:         func() error { return nil },
+}
+
 func (c *Component) migrationsStepCreateFlowsTable(resolution ResolutionConfiguration) migrationStepFunc {
 	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 		if resolution.Interval == 0 {
@@ -81,9 +87,9 @@ ORDER BY (TimeReceived, ExporterAddress, InIfName, OutIfName)`, flowsSchema))
 					return fmt.Errorf("cannot drop flows consumer table for interval %s: %w",
 						resolution.Interval, err)
 				}
-				schema := []string{}
 
 				// Exclude some fields
+				schema := []string{}
 			outer:
 				for _, l := range strings.Split(flowsSchema, "\n") {
 					for _, p := range []string{"SrcAddr ", "DstAddr ", "SrcPort ", "DstPort "} {
@@ -110,15 +116,32 @@ ORDER BY (TimeReceived,
 	}
 }
 
+func (c *Component) migrationStepAddPacketSizeBucketColumn(resolution ResolutionConfiguration) migrationStepFunc {
+	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+		var tableName string
+		if resolution.Interval == 0 {
+			tableName = "flows"
+		} else {
+			tableName = fmt.Sprintf("flows_%s", resolution.Interval)
+		}
+		return migrationStep{
+			CheckQuery: `SELECT 1 FROM system.columns WHERE table = $1 AND database = $2 AND name = $3`,
+			Args:       []interface{}{tableName, c.config.Configuration.Database, "PacketSizeBucket"},
+			Do: func() error {
+				return conn.Exec(ctx, fmt.Sprintf(`
+ALTER TABLE %s ADD COLUMN PacketSize UInt64 ALIAS intDiv(Packets, Bytes) AFTER Packets,
+               ADD COLUMN PacketSizeBucket LowCardinality(String) ALIAS multiIf(PacketSize < 64, '0-63', PacketSize < 128, '64-127', PacketSize < 256, '128-255', PacketSize < 512, '256-511', PacketSize < 768, '512-767', PacketSize < 1024, '768-1023', PacketSize < 1280, '1024-1279', PacketSize < 1501, '1280-1500', PacketSize < 2048, '1501-2047', PacketSize < 3072, '2048-3071', PacketSize < 4096, '3072-4095', PacketSize < 8192, '4096-8191', PacketSize < 10240, '8192-10239', PacketSize < 16384, '10240-16383', PacketSize < 32768, '16384-32767', PacketSize < 65536, '32768-65535', '65536-Inf') AFTER PacketSize`,
+					tableName))
+			},
+		}
+	}
+}
+
 func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution ResolutionConfiguration) migrationStepFunc {
 	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 		if resolution.Interval == 0 {
 			// Consumer for the flows table are done later.
-			return migrationStep{
-				CheckQuery: `SELECT 1`,
-				Args:       []interface{}{},
-				Do:         func() error { return nil },
-			}
+			return nullMigrationStep
 		}
 		tableName := fmt.Sprintf("flows_%s", resolution.Interval)
 		viewName := fmt.Sprintf("%s_consumer", tableName)

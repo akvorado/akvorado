@@ -44,6 +44,9 @@ func (c *Component) migrateDatabase() error {
 				fmt.Sprintf("create flows table with resolution %s", resolution.Interval),
 				c.migrationsStepCreateFlowsTable(resolution),
 			}, {
+				fmt.Sprintf("add PacketSizeBucket to flows table with resolution %s", resolution.Interval),
+				c.migrationStepAddPacketSizeBucketColumn(resolution),
+			}, {
 				fmt.Sprintf("create flows table consumer with resolution %s", resolution.Interval),
 				c.migrationsStepCreateFlowsConsumerTable(resolution),
 			}, {
