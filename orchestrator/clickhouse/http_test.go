@@ -32,7 +32,7 @@ func TestHTTPEndpoints(t *testing.T) {
 			URL:         "/api/v0/orchestrator/clickhouse/asns.csv",
 			ContentType: "text/csv; charset=utf-8",
 			FirstLines: []string{
-				"asn,name",
+				`"asn","name"`,
 			},
 		}, {
 			URL:         "/api/v0/orchestrator/clickhouse/init.sh",
