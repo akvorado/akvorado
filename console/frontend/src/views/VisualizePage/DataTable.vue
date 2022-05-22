@@ -5,7 +5,10 @@
     >
       <thead class="bg-gray-50 text-xs uppercase dark:bg-gray-700">
         <tr>
-          <th scope="col" class="px-6 py-2"></th>
+          <th
+            scope="col"
+            :class="{ 'px-6 py-2': table.rows.some((r) => r.color) }"
+          ></th>
           <th
             v-for="column in table.columns"
             :key="column.name"
@@ -26,8 +29,13 @@
           @pointerleave="$emit('highlighted', null)"
         >
           <th scope="row">
-            <div v-if="row.style" class="px-6 py-2 text-right font-medium">
-              <div class="w-5 cursor-pointer" :style="row.style">&nbsp;</div>
+            <div v-if="row.color" class="px-6 py-2 text-right font-medium">
+              <div
+                class="w-5 cursor-pointer"
+                :style="{ backgroundColor: row.color }"
+              >
+                &nbsp;
+              </div>
             </div>
           </th>
           <td
@@ -57,25 +65,22 @@ import { computed, inject } from "vue";
 import { formatBps, dataColor, dataColorGrey } from "@/utils";
 import { graphTypes } from "./constants";
 const { isDark } = inject("theme");
+const { stacked, lines, multigraph, sankey } = graphTypes;
 
 const highlightEnabled = computed(() =>
-  [graphTypes.stacked, graphTypes.lines, graphTypes.multigraph].includes(
-    props.data?.graphType
-  )
+  [stacked, lines, multigraph].includes(props.data?.graphType)
 );
 const table = computed(() => {
   const theme = isDark.value ? "dark" : "light";
   const data = props.data || {};
-  if (
-    [graphTypes.stacked, graphTypes.lines, graphTypes.multigraph].includes(
-      data.graphType
-    )
-  ) {
+  if ([stacked, lines, multigraph].includes(data.graphType)) {
     return {
       columns: [
+        // Dimensions
         ...(data.dimensions?.map((col) => ({
           name: col.replace(/([a-z])([A-Z])/, "$1 $2"),
         })) || []),
+        // Stats
         { name: "Min", classNames: "text-right" },
         { name: "Max", classNames: "text-right" },
         { name: "Average", classNames: "text-right" },
@@ -87,28 +92,34 @@ const table = computed(() => {
             : dataColor;
           return {
             values: [
+              // Dimensions
               ...rows.map((r) => ({ value: r })),
+              // Stats
               ...[data.min[idx], data.max[idx], data.average[idx]].map((d) => ({
                 value: formatBps(d) + "bps",
                 classNames: "text-right tabular-nums",
               })),
             ],
-            style: `background-color: ${color(idx, false, theme)}`,
+            color: color(idx, false, theme),
           };
         }) || [],
     };
   }
-  if ([graphTypes.sankey].includes(data.graphType)) {
+  if ([sankey].includes(data.graphType)) {
     return {
       columns: [
+        // Dimensions
         ...(data.dimensions?.map((col) => ({
           name: col.replace(/([a-z])([A-Z])/, "$1 $2"),
         })) || []),
+        // Average
         { name: "Average", classNames: "text-right" },
       ],
       rows: data.rows?.map((rows, idx) => ({
         values: [
+          // Dimensions
           ...rows.map((r) => ({ value: r })),
+          // Average
           {
             value: formatBps(data.bps[idx]) + "bps",
             classNames: "text-right tabular-nums",
