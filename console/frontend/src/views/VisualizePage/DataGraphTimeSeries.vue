@@ -2,6 +2,7 @@
   <v-chart
     ref="chartComponent"
     :option="echartsOptions"
+    :update-options="{ notMerge: true }"
     @brush-end="updateTimeRange"
   />
 </template>

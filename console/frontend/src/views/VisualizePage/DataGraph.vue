@@ -1,7 +1,6 @@
 <template>
   <component
     :is="component"
-    :update-options="{ notMerge: true }"
     :loading="props.loading"
     :loading-options="{ maskColor: isDark ? '#000d' : '#fffd', text: '' }"
     :theme="isDark ? 'dark' : null"

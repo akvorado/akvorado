@@ -159,10 +159,10 @@ watch(data, (data) => {
   // Not a computed value because we mix data and state.
   fetchedData.value = {
     ...data,
-    dimensions: state.value.dimensions,
-    start: state.value.start,
-    end: state.value.end,
-    graphType: state.value.graphType,
+    dimensions: payload.value.dimensions,
+    start: payload.value.start,
+    end: payload.value.end,
+    graphType: payload.value.graphType,
   };
 });
 </script>
