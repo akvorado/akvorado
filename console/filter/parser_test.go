@@ -58,6 +58,7 @@ func TestValidFilter(t *testing.T) {
 		{`SrcPort = 80`, `SrcPort = 80`},
 		{`DstPort > 1024`, `DstPort > 1024`},
 		{`ForwardingStatus >= 128`, `ForwardingStatus >= 128`},
+		{`PacketSize > 1500`, `Bytes/Packets > 1500`},
 		{`DstPort > 1024 AND SrcPort < 1024`, `DstPort > 1024 AND SrcPort < 1024`},
 		{`DstPort > 1024 OR SrcPort < 1024`, `DstPort > 1024 OR SrcPort < 1024`},
 		{`NOT DstPort > 1024 AND SrcPort < 1024`, `NOT DstPort > 1024 AND SrcPort < 1024`},

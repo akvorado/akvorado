@@ -60,6 +60,7 @@ ConditionExpr "conditional" ←
   / ConditionASExpr
   / ConditionETypeExpr
   / ConditionProtoExpr
+  / ConditionPacketSizeExpr
 
 ConditionIPExpr "condition on IP" ←
  column:("ExporterAddress" / "SrcAddr" / "DstAddr") _ operator:("=" / "!=") _ ip:IP {
@@ -124,6 +125,10 @@ ConditionProtoIntExpr "condition on protocol as integer" ←
 ConditionProtoStrExpr "condition on protocol as string" ←
  column:"Proto" _ operator:("=" / "!=") _ value:StringLiteral {
   return fmt.Sprintf("dictGetOrDefault('protocols', 'name', %s, '???') %s %s", toString(column), toString(operator), quote(value)), nil
+}
+ConditionPacketSizeExpr "condition on packet size" ←
+ "PacketSize" _ operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned16 {
+  return fmt.Sprintf("Bytes/Packets %s %s", toString(operator), toString(value)), nil
 }
 
 IP "IP address" ← [0-9A-Fa-f:.]+ !IdentStart {
