@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative my-3 overflow-x-auto shadow-md dark:shadow-white/10 sm:rounded-lg"
+    class="relative overflow-x-auto shadow-md dark:shadow-white/10 sm:rounded-lg"
   >
     <table
       class="w-full max-w-full text-left text-sm text-gray-700 dark:text-gray-200"

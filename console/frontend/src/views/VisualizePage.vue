@@ -7,7 +7,7 @@
     />
     <div class="grow overflow-y-auto">
       <RequestSummary :request="request" />
-      <div class="mx-4">
+      <div class="mx-4 my-2">
         <InfoBox v-if="errorMessage" kind="danger">
           <strong>Unable to fetch data!&nbsp;</strong>{{ errorMessage }}
         </InfoBox>
@@ -27,6 +27,7 @@
         </ResizeRow>
         <DataTable
           :data="fetchedData"
+          class="my-2"
           @highlighted="(n) => (highlightedSerie = n)"
         />
       </div>
