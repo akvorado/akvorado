@@ -53,7 +53,7 @@
     </div>
     <div
       ref="contentEl"
-      class="flex grow md:relative md:overflow-y-auto md:shadow-md"
+      class="flex grow md:relative md:overflow-y-auto md:shadow-md md:dark:shadow-white/10"
     >
       <div class="max-w-full py-4 px-4 md:px-16">
         <InfoBox v-if="errorMessage" kind="danger">

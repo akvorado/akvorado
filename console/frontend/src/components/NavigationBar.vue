@@ -2,7 +2,7 @@
   <Disclosure
     v-slot="{ open }"
     as="nav"
-    class="z-40 w-full border-gray-200 bg-gradient-to-r from-blue-100 to-indigo-200 px-2 py-2.5 shadow dark:from-gray-800 dark:to-gray-600 sm:px-4"
+    class="z-40 w-full border-gray-200 bg-gradient-to-r from-blue-100 to-indigo-200 px-2 py-2.5 shadow dark:from-gray-800 dark:to-gray-600 dark:shadow-white/10 sm:px-4"
   >
     <div class="container mx-auto flex flex-wrap items-center justify-between">
       <router-link to="/" class="flex items-center">

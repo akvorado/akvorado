@@ -17,10 +17,13 @@
           </p>
         </div>
       </div>
-      <WidgetFlowRate :refresh="refreshOften" class="rounded-md p-4 shadow" />
+      <WidgetFlowRate
+        :refresh="refreshOften"
+        class="rounded-md p-4 shadow dark:shadow-white/10"
+      />
       <WidgetExporters
         :refresh="refreshOccasionally"
-        class="rounded-md p-4 shadow"
+        class="rounded-md p-4 shadow dark:shadow-white/10"
       />
       <WidgetLastFlow
         :refresh="refreshOften"
