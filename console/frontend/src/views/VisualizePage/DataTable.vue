@@ -78,7 +78,7 @@ const table = computed(() => {
       columns: [
         // Dimensions
         ...(data.dimensions?.map((col) => ({
-          name: col.replace(/([a-z])([A-Z])/, "$1 $2"),
+          name: col.replace(/([a-z])([A-Z])/g, "$1 $2"),
         })) || []),
         // Stats
         { name: "Min", classNames: "text-right" },
