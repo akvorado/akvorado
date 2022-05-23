@@ -6,6 +6,7 @@
       @cancel="canAbort && abort()"
     />
     <div class="grow overflow-y-auto">
+      <RequestSummary :request="request" />
       <div class="mx-4">
         <InfoBox v-if="errorMessage" kind="danger">
           <strong>Unable to fetch data!&nbsp;</strong>{{ errorMessage }}
@@ -40,10 +41,11 @@ import { useRoute, useRouter } from "vue-router";
 import { Date as SugarDate } from "sugar-date";
 import { ResizeRow } from "vue-resizer";
 import LZString from "lz-string";
+import InfoBox from "@/components/InfoBox.vue";
 import DataTable from "./VisualizePage/DataTable.vue";
 import DataGraph from "./VisualizePage/DataGraph.vue";
 import OptionsPanel from "./VisualizePage/OptionsPanel.vue";
-import InfoBox from "@/components/InfoBox.vue";
+import RequestSummary from "./VisualizePage/RequestSummary.vue";
 import { graphTypes } from "./VisualizePage/constants";
 import isEqual from "lodash.isequal";
 
@@ -101,21 +103,6 @@ watch(
   { immediate: true }
 );
 const encodedState = computed(() => encodeState(state.value));
-watch(
-  encodedState,
-  () => {
-    const routeTarget = {
-      name: "VisualizeWithState",
-      params: { state: encodedState.value },
-    };
-    if (route.name !== "VisualizeWithState") {
-      router.replace(routeTarget);
-    } else {
-      router.push(routeTarget);
-    }
-  },
-  { immediate: true, deep: true }
-);
 
 // Fetch data
 const fetchedData = ref({});
@@ -124,6 +111,7 @@ const payload = computed(() => ({
   start: SugarDate.create(state.value.start),
   end: SugarDate.create(state.value.end),
 }));
+const request = ref({}); // Same as payload, but once request is successful
 const { data, isFetching, aborted, abort, canAbort, error } = useFetch("", {
   beforeFetch(ctx) {
     // Add the URL. Not a computed value as if we change both payload
@@ -155,6 +143,21 @@ const { data, isFetching, aborted, abort, canAbort, error } = useFetch("", {
       end: payload.value.end,
       graphType: payload.value.graphType,
     };
+
+    // Also update URL.
+    const routeTarget = {
+      name: "VisualizeWithState",
+      params: { state: encodedState.value },
+    };
+    if (route.name !== "VisualizeWithState") {
+      router.replace(routeTarget);
+    } else {
+      router.push(routeTarget);
+    }
+
+    // Keep current payload for state
+    request.value = payload.value;
+
     return ctx;
   },
   refetch: true,

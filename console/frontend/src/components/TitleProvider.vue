@@ -21,8 +21,10 @@ const title = computed(() =>
     .join(" | ")
 );
 useTitle(title);
-useRouter().afterEach(() => {
-  documentTitle.value = null;
+useRouter().beforeEach((to, from) => {
+  if (to.meta?.title !== from.meta?.title) {
+    documentTitle.value = null;
+  }
 });
 
 provide("title", { set: (t) => (documentTitle.value = t) });

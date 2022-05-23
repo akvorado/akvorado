@@ -57,6 +57,7 @@ const presets = [
   { name: "Last 6 hours", start: "6 hours ago", end: "now" },
   { name: "Last 12 hours", start: "12 hours ago", end: "now" },
   { name: "Last 24 hours", start: "24 hours ago", end: "now" },
+  { name: "Last evening", start: "yesterday at 7pm", end: "today at 1am" },
   { name: "Last 2 days", start: "2 days ago", end: "now" },
   { name: "Last 7 days", start: "7 days ago", end: "now" },
   { name: "Last 30 days", start: "30 days ago", end: "now" },
