@@ -129,7 +129,7 @@ func (c *Component) migrationStepAddPacketSizeBucketColumn(resolution Resolution
 			Args:       []interface{}{tableName, c.config.Configuration.Database, "PacketSizeBucket"},
 			Do: func() error {
 				return conn.Exec(ctx, fmt.Sprintf(`
-ALTER TABLE %s ADD COLUMN PacketSize UInt64 ALIAS intDiv(Packets, Bytes) AFTER Packets,
+ALTER TABLE %s ADD COLUMN PacketSize UInt64 ALIAS intDiv(Bytes, Packets) AFTER Packets,
                ADD COLUMN PacketSizeBucket LowCardinality(String) ALIAS multiIf(PacketSize < 64, '0-63', PacketSize < 128, '64-127', PacketSize < 256, '128-255', PacketSize < 512, '256-511', PacketSize < 768, '512-767', PacketSize < 1024, '768-1023', PacketSize < 1280, '1024-1279', PacketSize < 1501, '1280-1500', PacketSize < 2048, '1501-2047', PacketSize < 3072, '2048-3071', PacketSize < 4096, '3072-4095', PacketSize < 8192, '4096-8191', PacketSize < 10240, '8192-10239', PacketSize < 16384, '10240-16383', PacketSize < 32768, '16384-32767', PacketSize < 65536, '32768-65535', '65536-Inf') AFTER PacketSize`,
 					tableName))
 			},
