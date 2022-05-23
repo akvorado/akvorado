@@ -9,21 +9,26 @@
       class="col-span-2 lg:col-span-1"
     >
       <template #selected>
-        <span class="block flex flex-wrap gap-1">
-          <span v-if="selectedDimensions.length === 0">No dimensions</span>
-          <span
-            v-for="dimension in selectedDimensions"
-            :key="dimension.id"
-            class="flex items-center gap-1 rounded border-2 bg-violet-100 px-1.5 dark:bg-slate-800 dark:text-gray-200"
-            :style="{ borderColor: dimension.color }"
-          >
-            <span class="leading-4">{{ dimension.name }}</span>
-            <XIcon
-              class="h-4 w-4 cursor-pointer"
-              @click.stop.prevent="removeDimension(dimension)"
-            />
-          </span>
-        </span>
+        <span v-if="selectedDimensions.length === 0">No dimensions</span>
+        <draggable
+          v-model="selectedDimensions"
+          class="block flex flex-wrap gap-1"
+          tag="span"
+          item-key="id"
+        >
+          <template #item="{ element: dimension }">
+            <span
+              class="flex items-center gap-1 rounded border-2 bg-violet-100 px-1.5 dark:bg-slate-800 dark:text-gray-200"
+              :style="{ borderColor: dimension.color }"
+            >
+              <span class="leading-4">{{ dimension.name }}</span>
+              <XIcon
+                class="h-4 w-4 cursor-pointer"
+                @click.stop.prevent="removeDimension(dimension)"
+              />
+            </span>
+          </template>
+        </draggable>
         <span
           class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"
         >
@@ -58,6 +63,7 @@ const props = defineProps({
 const emit = defineEmits(["update:modelValue"]);
 
 import { ref, watch, computed } from "vue";
+import draggable from "vuedraggable";
 import { XIcon, SelectorIcon } from "@heroicons/vue/solid";
 import { dataColor } from "@/utils";
 import InputString from "@/components/InputString.vue";
