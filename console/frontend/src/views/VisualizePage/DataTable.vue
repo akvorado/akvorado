@@ -65,15 +65,15 @@ import { computed, inject } from "vue";
 import { formatBps, dataColor, dataColorGrey } from "@/utils";
 import { graphTypes } from "./constants";
 const { isDark } = inject("theme");
-const { stacked, lines, multigraph, sankey } = graphTypes;
+const { stacked, lines, grid, sankey } = graphTypes;
 
 const highlightEnabled = computed(() =>
-  [stacked, lines, multigraph].includes(props.data?.graphType)
+  [stacked, lines, grid].includes(props.data?.graphType)
 );
 const table = computed(() => {
   const theme = isDark.value ? "dark" : "light";
   const data = props.data || {};
-  if ([stacked, lines, multigraph].includes(data.graphType)) {
+  if ([stacked, lines, grid].includes(data.graphType)) {
     return {
       columns: [
         // Dimensions

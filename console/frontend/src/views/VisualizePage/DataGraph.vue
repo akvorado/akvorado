@@ -24,8 +24,8 @@ import DataGraphSankey from "./DataGraphSankey.vue";
 const { isDark } = inject("theme");
 
 const component = computed(() => {
-  const { stacked, lines, multigraph, sankey } = graphTypes;
-  if ([stacked, lines, multigraph].includes(props.data.graphType)) {
+  const { stacked, lines, grid, sankey } = graphTypes;
+  if ([stacked, lines, grid].includes(props.data.graphType)) {
     return DataGraphTimeSeries;
   }
   if ([sankey].includes(props.data.graphType)) {

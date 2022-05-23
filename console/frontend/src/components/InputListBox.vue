@@ -47,7 +47,7 @@
                   active,
               }"
             >
-              <span class="block truncate">
+              <span class="block w-full truncate">
                 <slot name="item" v-bind="item"></slot>
               </span>
               <span

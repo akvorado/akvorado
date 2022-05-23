@@ -166,7 +166,7 @@ const graph = computed(() => {
         .filter((s) => s !== undefined),
     };
   }
-  if (data.graphType === graphTypes.multigraph) {
+  if (data.graphType === graphTypes.grid) {
     const dataRows = data.rows.filter((rows) =>
         rows.some((name) => name !== "Other")
       ),

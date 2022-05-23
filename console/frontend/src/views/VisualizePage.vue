@@ -127,7 +127,7 @@ const { data, isFetching, aborted, abort, canAbort, error } = useFetch("", {
     const endpoint = {
       [graphTypes.stacked]: "graph",
       [graphTypes.lines]: "graph",
-      [graphTypes.multigraph]: "graph",
+      [graphTypes.grid]: "graph",
       [graphTypes.sankey]: "sankey",
     };
     const url = endpoint[state.value.graphType];

@@ -26,7 +26,15 @@
           label="Graph type"
         >
           <template #selected>{{ graphType.name }}</template>
-          <template #item="{ name }">{{ name }}</template>
+          <template #item="{ name }">
+            <div class="flex w-full items-center justify-between">
+              <span>{{ name }}</span>
+              <GraphIcon
+                :name="name"
+                class="mr-1 inline h-4 text-gray-500 dark:text-gray-400"
+              />
+            </div>
+          </template>
         </InputListBox>
 
         <SectionLabel>Time range</SectionLabel>
@@ -81,6 +89,7 @@ import InputTextarea from "@/components/InputTextarea.vue";
 import InputListBox from "@/components/InputListBox.vue";
 import InputButton from "@/components/InputButton.vue";
 import SectionLabel from "./SectionLabel.vue";
+import GraphIcon from "./GraphIcon.vue";
 import { graphTypes } from "./constants";
 import isEqual from "lodash.isequal";
 
@@ -88,7 +97,7 @@ const graphTypeList = Object.entries(graphTypes).map(([, v], idx) => ({
   id: idx + 1,
   name: v,
 }));
-const { stacked, lines, multigraph } = graphTypes;
+const { stacked, lines, grid } = graphTypes;
 
 const open = ref(false);
 const graphType = ref(graphTypeList[0]);
@@ -106,7 +115,7 @@ const options = computed(() => ({
   filter: filter.value,
   // Only for time series
   ...([stacked, lines].includes(graphType.value.name) && { points: 200 }),
-  ...(graphType.value.name === multigraph && { points: 50 }),
+  ...(graphType.value.name === grid && { points: 50 }),
 }));
 const applyLabel = computed(() =>
   isEqual(options.value, props.modelValue) ? "Refresh" : "Apply"
