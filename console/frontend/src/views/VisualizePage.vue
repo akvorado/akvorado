@@ -70,8 +70,8 @@ const defaultState = () => ({
   start: "6 hours ago",
   end: "now",
   points: 200,
-  limit: 10,
   dimensions: ["SrcAS", "ExporterName"],
+  limit: 10,
   filter: "InIfBoundary = external",
 });
 const state = ref({});

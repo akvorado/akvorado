@@ -88,6 +88,7 @@ const graphTypeList = Object.entries(graphTypes).map(([, v], idx) => ({
   id: idx + 1,
   name: v,
 }));
+const { stacked, lines, multigraph } = graphTypes;
 
 const open = ref(false);
 const graphType = ref(graphTypeList[0]);
@@ -96,13 +97,16 @@ const dimensions = ref([]);
 const filter = ref("");
 
 const options = computed(() => ({
-  points: graphType.value.name === graphTypes.multigraph ? 50 : 200,
+  // Common to all graph types
+  graphType: graphType.value.name,
   start: timeRange.value.start,
   end: timeRange.value.end,
   dimensions: dimensions.value.selected,
   limit: dimensions.value.limit,
   filter: filter.value,
-  graphType: graphType.value.name,
+  // Only for time series
+  ...([stacked, lines].includes(graphType.value.name) && { points: 200 }),
+  ...(graphType.value.name === multigraph && { points: 50 }),
 }));
 const applyLabel = computed(() =>
   isEqual(options.value, props.modelValue) ? "Refresh" : "Apply"
