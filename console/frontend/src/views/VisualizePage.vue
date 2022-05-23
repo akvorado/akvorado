@@ -94,10 +94,12 @@ const encodeState = (state) => {
 };
 watch(
   route,
-  () => {
-    const newState = decodeState(route.params.state);
-    if (!isEqual(newState, state.value)) {
-      state.value = newState;
+  (to) => {
+    if (["Visualize", "VisualizeWithState"].includes(to?.name)) {
+      const newState = decodeState(route.params.state);
+      if (!isEqual(newState, state.value)) {
+        state.value = newState;
+      }
     }
   },
   { immediate: true }
