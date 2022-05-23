@@ -4,7 +4,7 @@
       <slot
         :id="id"
         :child-class="{
-          'peer block w-full appearance-none rounded-t-lg border-0 border-b-2 bg-gray-50 px-2.5 pb-1.5 pt-4 text-sm text-gray-900 focus:outline-none focus:ring-0 dark:bg-gray-700 dark:text-white': true,
+          'peer block w-full appearance-none rounded-t-lg border-0 border-b-2 bg-white px-2.5 pb-1.5 pt-4 text-sm text-gray-900 focus:outline-none focus:ring-0 dark:bg-gray-900 dark:text-white': true,
           'dark:focus-border-red-500 border-red-600 focus:border-red-600':
             error,
           'border-gray-300 focus:border-blue-600 dark:border-gray-600 dark:focus:border-blue-500':

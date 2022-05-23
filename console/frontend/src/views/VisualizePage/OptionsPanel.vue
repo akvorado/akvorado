@@ -4,7 +4,7 @@
     :class="open ? 'h-96 lg:w-64' : 'h-6 lg:w-6'"
   >
     <button
-      class="absolute right-4 bottom-0 z-20 translate-y-1/2 rounded-full bg-white shadow transition-transform delay-100 duration-500 hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-black lg:top-2 lg:bottom-auto lg:right-0 lg:translate-x-1/2 lg:translate-y-0"
+      class="absolute right-4 bottom-0 z-20 translate-y-1/2 rounded-full bg-white shadow transition-transform delay-100 duration-500 hover:bg-gray-300 dark:bg-gray-900 dark:hover:bg-black lg:top-2 lg:bottom-auto lg:right-0 lg:translate-x-1/2 lg:translate-y-0"
       :class="open && 'rotate-180'"
       @click="open = !open"
     >
