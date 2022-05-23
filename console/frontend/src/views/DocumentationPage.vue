@@ -70,18 +70,22 @@
 </template>
 
 <script setup>
+const props = defineProps({
+  id: {
+    type: String,
+    required: true,
+  },
+});
+
 import { ref, computed, watch, inject, nextTick } from "vue";
 import { useFetch } from "@vueuse/core";
-import { useRoute } from "vue-router";
+import { useRouteHash } from "@vueuse/router";
 import InfoBox from "@/components/InfoBox.vue";
 
-const route = useRoute();
 const title = inject("title");
 
 // Grab document
-const url = computed(() =>
-  route.params.id ? `/api/v0/console/docs/${route.params.id}` : url.value
-);
+const url = computed(() => `/api/v0/console/docs/${props.id}`);
 const { data, error } = useFetch(url, { refetch: true }).get().json();
 const errorMessage = computed(
   () =>
@@ -91,8 +95,8 @@ const errorMessage = computed(
 );
 const markdown = computed(() => (!error.value && data.value?.markdown) || "");
 const toc = computed(() => (!error.value && data.value?.toc) || []);
-const activeDocument = computed(() => route.params.id || null);
-const activeSlug = computed(() => route.hash.replace(/^#/, ""));
+const activeDocument = computed(() => props.id || null);
+const activeSlug = useRouteHash();
 
 // Scroll to the right anchor after loading markdown
 const contentEl = ref(null);
@@ -103,7 +107,8 @@ watch(markdown, async () => {
     scrollEl = scrollEl.parentNode;
   }
   const top =
-    (route.hash && document.querySelector(route.hash)?.offsetTop) || 0;
+    (activeSlug.value && document.querySelector(activeSlug.value)?.offsetTop) ||
+    0;
   scrollEl.scrollTo(0, top);
 });
 

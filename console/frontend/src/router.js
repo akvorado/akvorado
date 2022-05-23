@@ -19,6 +19,7 @@ const router = createRouter({
       name: "VisualizeWithState",
       component: VisualizePage,
       meta: { title: "Visualize" },
+      props: (route) => ({ routeState: route.params.state }),
     },
     { path: "/docs", redirect: "/docs/intro" },
     {
@@ -26,6 +27,7 @@ const router = createRouter({
       name: "Documentation",
       component: DocumentationPage,
       meta: { title: "Documentation" },
+      props: true,
     },
     {
       path: "/:pathMatch(.*)",

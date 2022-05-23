@@ -35,9 +35,16 @@
 </template>
 
 <script setup>
+const props = defineProps({
+  routeState: {
+    type: String,
+    default: "",
+  },
+});
+
 import { ref, watch, computed } from "vue";
 import { useFetch } from "@vueuse/core";
-import { useRoute, useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { Date as SugarDate } from "sugar-date";
 import { ResizeRow } from "vue-resizer";
 import LZString from "lz-string";
@@ -93,13 +100,11 @@ const encodeState = (state) => {
   );
 };
 watch(
-  route,
-  (to) => {
-    if (["Visualize", "VisualizeWithState"].includes(to?.name)) {
-      const newState = decodeState(route.params.state);
-      if (!isEqual(newState, state.value)) {
-        state.value = newState;
-      }
+  () => props.routeState,
+  () => {
+    const newState = decodeState(props.routeState);
+    if (!isEqual(newState, state.value)) {
+      state.value = newState;
     }
   },
   { immediate: true }
