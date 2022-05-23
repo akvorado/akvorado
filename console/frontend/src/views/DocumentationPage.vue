@@ -70,15 +70,18 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from "vue";
+import { ref, computed, watch, inject, nextTick } from "vue";
 import { useFetch } from "@vueuse/core";
 import { useRoute } from "vue-router";
 import InfoBox from "@/components/InfoBox.vue";
 
 const route = useRoute();
+const title = inject("title");
 
 // Grab document
-const url = computed(() => `/api/v0/console/docs/${route.params.id}`);
+const url = computed(() =>
+  route.params.id ? `/api/v0/console/docs/${route.params.id}` : url.value
+);
 const { data, error } = useFetch(url, { refetch: true }).get().json();
 const errorMessage = computed(
   () =>
@@ -102,5 +105,11 @@ watch(markdown, async () => {
   const top =
     (route.hash && document.querySelector(route.hash)?.offsetTop) || 0;
   scrollEl.scrollTo(0, top);
+});
+
+// Update title
+watch(markdown, async () => {
+  await nextTick();
+  title.set(contentEl.value?.querySelector("h1")?.textContent);
 });
 </script>
