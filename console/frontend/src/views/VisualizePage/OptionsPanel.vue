@@ -83,9 +83,9 @@ const props = defineProps({
     default: false,
   },
 });
-defineEmits(["update:modelValue", "cancel"]);
+const emit = defineEmits(["update:modelValue", "cancel"]);
 
-import { ref, watch, computed } from "vue";
+import { ref, watch, computed, nextTick } from "vue";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/vue/solid";
 import InputTimeRange from "@/components/InputTimeRange.vue";
 import InputDimensions from "@/components/InputDimensions.vue";
@@ -97,6 +97,7 @@ import SectionLabel from "./SectionLabel.vue";
 import GraphIcon from "./GraphIcon.vue";
 import { graphTypes } from "./constants";
 import isEqual from "lodash.isequal";
+import isEmpty from "lodash.isempty";
 
 const graphTypeList = Object.entries(graphTypes).map(([, v], idx) => ({
   id: idx + 1,
@@ -135,21 +136,28 @@ watch(
   () => props.modelValue,
   (modelValue) => {
     const {
-      graphType: _graphType,
-      start,
-      end,
-      dimensions: _dimensions,
-      limit,
+      graphType: _graphType = graphTypes.stacked,
+      start = "6 hours ago",
+      end = "now",
+      dimensions: _dimensions = ["SrcAS", "ExporterName"],
+      limit = 10,
       points /* eslint-disable-line no-unused-vars */,
-      filter: _filter,
-      units,
+      filter: _filter = "InIfBoundary = external",
+      units = "bps",
     } = modelValue;
+
+    // Dispatch values in refs
     graphType.value =
       graphTypeList.find(({ name }) => name === _graphType) || graphTypeList[0];
     timeRange.value = { start, end };
-    dimensions.value = { selected: [...(_dimensions || [])], limit };
+    dimensions.value = { selected: [..._dimensions], limit };
     filter.value = _filter;
     pps.value = units == "pps";
+
+    if (isEmpty(modelValue)) {
+      open.value = true;
+      nextTick().then(() => emit("update:modelValue", options.value));
+    }
   },
   { immediate: true, deep: true }
 );

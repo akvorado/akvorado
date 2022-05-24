@@ -68,16 +68,6 @@ const updateTimeRange = ([start, end]) => {
 };
 
 // Main state
-const defaultState = () => ({
-  graphType: graphTypes.stacked,
-  start: "6 hours ago",
-  end: "now",
-  points: 200,
-  dimensions: ["SrcAS", "ExporterName"],
-  limit: 10,
-  filter: "InIfBoundary = external",
-  units: "bps",
-});
 const state = ref({});
 
 // Load data from URL
@@ -86,13 +76,13 @@ const router = useRouter();
 const decodeState = (serialized) => {
   try {
     if (!serialized) {
-      console.debug("no state, return default state");
-      return defaultState();
+      console.debug("no state");
+      return {};
     }
     return JSON.parse(LZString.decompressFromBase64(serialized));
   } catch (error) {
     console.error("cannot decode state:", error);
-    return defaultState();
+    return {};
   }
 };
 const encodeState = (state) => {
