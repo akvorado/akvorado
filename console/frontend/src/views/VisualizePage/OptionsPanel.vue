@@ -96,7 +96,7 @@ import InputToggle from "@/components/InputToggle.vue";
 import SectionLabel from "./SectionLabel.vue";
 import GraphIcon from "./GraphIcon.vue";
 import { graphTypes } from "./constants";
-import isEqual from "lodash.isequal";
+import { isEqual } from "lodash-es";
 
 const graphTypeList = Object.entries(graphTypes).map(([, v], idx) => ({
   id: idx + 1,

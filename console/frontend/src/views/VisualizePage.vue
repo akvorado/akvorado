@@ -57,7 +57,7 @@ import DataGraph from "./VisualizePage/DataGraph.vue";
 import OptionsPanel from "./VisualizePage/OptionsPanel.vue";
 import RequestSummary from "./VisualizePage/RequestSummary.vue";
 import { graphTypes } from "./VisualizePage/constants";
-import isEqual from "lodash.isequal";
+import { isEqual } from "lodash-es";
 
 const graphHeight = ref(500);
 const highlightedSerie = ref(null);

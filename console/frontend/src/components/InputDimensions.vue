@@ -69,7 +69,7 @@ import { dataColor } from "@/utils";
 import InputString from "@/components/InputString.vue";
 import InputListBox from "@/components/InputListBox.vue";
 import fields from "@data/fields.json";
-import isEqual from "lodash.isequal";
+import { isEqual } from "lodash-es";
 
 const selectedDimensions = ref([]);
 const dimensionsError = computed(() => {

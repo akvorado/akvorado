@@ -30,7 +30,7 @@ import { ref, computed, watch } from "vue";
 import { Date as SugarDate } from "sugar-date";
 import InputString from "@/components/InputString.vue";
 import InputListBox from "@/components/InputListBox.vue";
-import isEqual from "lodash.isequal";
+import { isEqual } from "lodash-es";
 
 const startTime = ref("");
 const endTime = ref("");
