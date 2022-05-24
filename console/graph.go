@@ -20,6 +20,7 @@ type graphQuery struct {
 	Dimensions []queryColumn `json:"dimensions"`                               // group by ...
 	Limit      int           `json:"limit" binding:"min=1,max=50"`             // limit product of dimensions
 	Filter     queryFilter   `json:"filter"`                                   // where ...
+	Units      string        `json:"units" binding:"required,oneof=pps bps"`
 }
 
 // graphQueryToSQL converts a graph query to an SQL request
@@ -37,7 +38,11 @@ func (query graphQuery) toSQL() (string, error) {
 	// Select
 	fields := []string{
 		`toStartOfInterval(TimeReceived, INTERVAL slot second) AS time`,
-		`SUM(Bytes*SamplingRate*8/slot) AS bps`,
+	}
+	if query.Units == "pps" {
+		fields = append(fields, `SUM(Packets*SamplingRate/slot) AS xps`)
+	} else {
+		fields = append(fields, `SUM(Bytes*SamplingRate*8/slot) AS xps`)
 	}
 	selectFields := []string{}
 	dimensions := []string{}
@@ -83,8 +88,8 @@ ORDER BY time`, strings.Join(with, ",\n "), strings.Join(fields, ",\n "), where)
 type graphHandlerOutput struct {
 	Rows                 [][]string  `json:"rows"`
 	Time                 []time.Time `json:"t"`
-	Points               [][]int     `json:"points"`  // t → row → bps
-	Average              []int       `json:"average"` // row → bps
+	Points               [][]int     `json:"points"`  // t → row → xps
+	Average              []int       `json:"average"` // row → xps
 	Min                  []int       `json:"min"`
 	Max                  []int       `json:"max"`
 	NinetyFivePercentile []int       `json:"95th"`
@@ -113,7 +118,7 @@ func (c *Component) graphHandlerFunc(gc *gin.Context) {
 
 	results := []struct {
 		Time       time.Time `ch:"time"`
-		Bps        float64   `ch:"bps"`
+		Xps        float64   `ch:"xps"`
 		Dimensions []string  `ch:"dimensions"`
 	}{}
 	if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
@@ -150,9 +155,9 @@ func (c *Component) graphHandlerFunc(gc *gin.Context) {
 			row = make([]int, len(output.Time))
 			rowValues[rowKey] = row
 		}
-		rowValues[rowKey][idx] = int(result.Bps)
+		rowValues[rowKey][idx] = int(result.Xps)
 		sum, _ := rowSums[rowKey]
-		rowSums[rowKey] = sum + uint64(result.Bps)
+		rowSums[rowKey] = sum + uint64(result.Xps)
 	}
 	rows := make([]string, len(rowKeys))
 	i := 0
@@ -205,7 +210,7 @@ func (c *Component) graphHandlerFunc(gc *gin.Context) {
 			output.NinetyFivePercentile[idx] = s[j-1]
 		} else if index > 1 {
 			// We use the average of the two values. This
-			// is good enough for bps
+			// is good enough for bps/pps
 			output.NinetyFivePercentile[idx] = (s[j-1] + s[j]) / 2
 		}
 	}

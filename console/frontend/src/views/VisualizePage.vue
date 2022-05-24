@@ -76,6 +76,7 @@ const defaultState = () => ({
   dimensions: ["SrcAS", "ExporterName"],
   limit: 10,
   filter: "InIfBoundary = external",
+  units: "bps",
 });
 const state = ref({});
 
@@ -149,6 +150,7 @@ const { data, isFetching, aborted, abort, canAbort, error } = useFetch("", {
       start: payload.value.start,
       end: payload.value.end,
       graphType: payload.value.graphType,
+      units: payload.value.units,
     };
 
     // Also update URL.

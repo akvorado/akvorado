@@ -22,6 +22,12 @@
       <FilterIcon class="inline h-4 px-1 align-middle" />
       <span class="align-middle">{{ request.filter }}</span>
     </span>
+    <span v-if="request.units">
+      <HashtagIcon class="inline h-4 px-1 align-middle" />
+      <span class="align-middle">{{
+        { bps: "ᵇ⁄ₛ", pps: "ᵖ⁄ₛ" }[request.units] || requests.units
+      }}</span>
+    </span>
   </div>
   <div class="hidden h-8 lg:block"></div>
 </template>
@@ -41,6 +47,7 @@ import {
   AdjustmentsIcon,
   ArrowUpIcon,
   FilterIcon,
+  HashtagIcon,
 } from "@heroicons/vue/solid";
 import { Date as SugarDate } from "sugar-date";
 

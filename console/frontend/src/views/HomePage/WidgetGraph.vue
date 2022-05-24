@@ -21,12 +21,12 @@ import { CanvasRenderer } from "echarts/renderers";
 import { LineChart } from "echarts/charts";
 import { TooltipComponent, GridComponent } from "echarts/components";
 import VChart from "vue-echarts";
-import { dataColor, formatBps } from "../../utils";
+import { dataColor, formatXps } from "../../utils";
 const { isDark } = inject("theme");
 
 use([CanvasRenderer, LineChart, TooltipComponent, GridComponent]);
 
-const formatGbps = (value) => formatBps(value * 1_000_000_000);
+const formatGbps = (value) => formatXps(value * 1_000_000_000);
 
 const url = computed(() => `/api/v0/console/widget/graph?${props.refresh}`);
 const { data } = useFetch(url, { refetch: true }).get().json();

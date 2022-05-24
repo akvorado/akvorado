@@ -52,7 +52,11 @@
           class="mb-2 font-mono"
           autosize
         />
-        <div class="flex flex-col items-end">
+        <div class="flex flex-row items-start justify-between">
+          <InputToggle
+            v-model="pps"
+            :label="'Unit: ' + (pps ? 'ᵖ⁄ₛ' : 'ᵇ⁄ₛ')"
+          />
           <InputButton
             attr-type="submit"
             :disabled="hasErrors && !loading"
@@ -88,6 +92,7 @@ import InputDimensions from "@/components/InputDimensions.vue";
 import InputTextarea from "@/components/InputTextarea.vue";
 import InputListBox from "@/components/InputListBox.vue";
 import InputButton from "@/components/InputButton.vue";
+import InputToggle from "@/components/InputToggle.vue";
 import SectionLabel from "./SectionLabel.vue";
 import GraphIcon from "./GraphIcon.vue";
 import { graphTypes } from "./constants";
@@ -104,6 +109,7 @@ const graphType = ref(graphTypeList[0]);
 const timeRange = ref({});
 const dimensions = ref([]);
 const filter = ref("");
+const pps = ref(false);
 
 const options = computed(() => ({
   // Common to all graph types
@@ -113,6 +119,7 @@ const options = computed(() => ({
   dimensions: dimensions.value.selected,
   limit: dimensions.value.limit,
   filter: filter.value,
+  units: pps.value ? "pps" : "bps",
   // Only for time series
   ...([stacked, lines].includes(graphType.value.name) && { points: 200 }),
   ...(graphType.value.name === grid && { points: 50 }),
@@ -135,12 +142,14 @@ watch(
       limit,
       points /* eslint-disable-line no-unused-vars */,
       filter: _filter,
+      units,
     } = modelValue;
     graphType.value =
       graphTypeList.find(({ name }) => name === _graphType) || graphTypeList[0];
     timeRange.value = { start, end };
     dimensions.value = { selected: [...(_dimensions || [])], limit };
     filter.value = _filter;
+    pps.value = units == "pps";
   },
   { immediate: true, deep: true }
 );

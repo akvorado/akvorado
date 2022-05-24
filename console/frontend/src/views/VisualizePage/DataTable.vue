@@ -64,7 +64,7 @@ const props = defineProps({
 defineEmits(["highlighted"]);
 
 import { computed, inject } from "vue";
-import { formatBps, dataColor, dataColorGrey } from "@/utils";
+import { formatXps, dataColor, dataColorGrey } from "@/utils";
 import { graphTypes } from "./constants";
 const { isDark } = inject("theme");
 const { stacked, lines, grid, sankey } = graphTypes;
@@ -104,7 +104,7 @@ const table = computed(() => {
                 data.average[idx],
                 data["95th"][idx],
               ].map((d) => ({
-                value: formatBps(d) + "bps",
+                value: formatXps(d) + data.units,
                 classNames: "text-right tabular-nums",
               })),
             ],
@@ -129,7 +129,7 @@ const table = computed(() => {
           ...rows.map((r) => ({ value: r })),
           // Average
           {
-            value: formatBps(data.bps[idx]) + "bps",
+            value: formatXps(data.xps[idx]) + data.units,
             classNames: "text-right tabular-nums",
           },
         ],

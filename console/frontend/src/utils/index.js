@@ -1,4 +1,4 @@
-export function formatBps(value) {
+export function formatXps(value) {
   const suffixes = ["", "K", "M", "G", "T"];
   let idx = 0;
   while (value >= 1000 && idx < suffixes.length) {

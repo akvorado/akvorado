@@ -19,6 +19,7 @@ type sankeyQuery struct {
 	Dimensions []queryColumn `json:"dimensions" binding:"required,min=2"` // group by ...
 	Limit      int           `json:"limit" binding:"min=1,max=50"`        // limit product of dimensions
 	Filter     queryFilter   `json:"filter"`                              // where ...
+	Units      string        `json:"units" binding:"required,oneof=pps bps"`
 }
 
 // sankeyQueryToSQL converts a sankey query to an SQL request
@@ -41,10 +42,13 @@ func (query sankeyQuery) toSQL() (string, error) {
 			column.toSQLSelect()))
 		dimensions = append(dimensions, column.String())
 	}
-	fields := []string{
-		`SUM(Bytes*SamplingRate*8/range) AS bps`,
-		fmt.Sprintf("[%s] AS dimensions", strings.Join(arrayFields, ",\n  ")),
+	fields := []string{}
+	if query.Units == "pps" {
+		fields = append(fields, `SUM(Packets*SamplingRate/range) AS xps`)
+	} else {
+		fields = append(fields, `SUM(Bytes*SamplingRate*8/range) AS xps`)
 	}
+	fields = append(fields, fmt.Sprintf("[%s] AS dimensions", strings.Join(arrayFields, ",\n  ")))
 
 	// With
 	with := []string{
@@ -65,14 +69,14 @@ SELECT
 FROM {table}
 WHERE %s
 GROUP BY dimensions
-ORDER BY bps DESC`, strings.Join(with, ",\n "), strings.Join(fields, ",\n "), where)
+ORDER BY xps DESC`, strings.Join(with, ",\n "), strings.Join(fields, ",\n "), where)
 	return sqlQuery, nil
 }
 
 type sankeyHandlerOutput struct {
 	// Unprocessed data for table view
 	Rows [][]string `json:"rows"`
-	Bps  []int      `json:"bps"` // row → bps
+	Xps  []int      `json:"xps"` // row → xps
 	// Processed data for sankey graph
 	Nodes []string     `json:"nodes"`
 	Links []sankeyLink `json:"links"`
@@ -80,7 +84,7 @@ type sankeyHandlerOutput struct {
 type sankeyLink struct {
 	Source string `json:"source"`
 	Target string `json:"target"`
-	Bps    int    `json:"bps"`
+	Xps    int    `json:"xps"`
 }
 
 func (c *Component) sankeyHandlerFunc(gc *gin.Context) {
@@ -108,7 +112,7 @@ func (c *Component) sankeyHandlerFunc(gc *gin.Context) {
 		query.Start, query.End, resolution)
 	gc.Header("X-SQL-Query", sqlQuery)
 	results := []struct {
-		Bps        float64  `ch:"bps"`
+		Xps        float64  `ch:"xps"`
 		Dimensions []string `ch:"dimensions"`
 	}{}
 	if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
@@ -120,7 +124,7 @@ func (c *Component) sankeyHandlerFunc(gc *gin.Context) {
 	// Prepare output
 	output := sankeyHandlerOutput{
 		Rows:  make([][]string, 0, len(results)),
-		Bps:   make([]int, 0, len(results)),
+		Xps:   make([]int, 0, len(results)),
 		Nodes: make([]string, 0),
 		Links: make([]sankeyLink, 0),
 	}
@@ -137,32 +141,32 @@ func (c *Component) sankeyHandlerFunc(gc *gin.Context) {
 			output.Nodes = append(output.Nodes, name)
 		}
 	}
-	addLink := func(source, target string, bps int) {
+	addLink := func(source, target string, xps int) {
 		for idx, link := range output.Links {
 			if link.Source == source && link.Target == target {
-				output.Links[idx].Bps += bps
+				output.Links[idx].Xps += xps
 				return
 			}
 		}
-		output.Links = append(output.Links, sankeyLink{source, target, bps})
+		output.Links = append(output.Links, sankeyLink{source, target, xps})
 	}
 	for _, result := range results {
 		output.Rows = append(output.Rows, result.Dimensions)
-		output.Bps = append(output.Bps, int(result.Bps))
+		output.Xps = append(output.Xps, int(result.Xps))
 		// Consider each pair of successive dimensions
 		for i := 0; i < len(query.Dimensions)-1; i++ {
 			dimension1 := completeName(result.Dimensions[i], i)
 			dimension2 := completeName(result.Dimensions[i+1], i+1)
 			addNode(dimension1)
 			addNode(dimension2)
-			addLink(dimension1, dimension2, int(result.Bps))
+			addLink(dimension1, dimension2, int(result.Xps))
 		}
 	}
 	sort.Slice(output.Links, func(i, j int) bool {
-		if output.Links[i].Bps == output.Links[j].Bps {
+		if output.Links[i].Xps == output.Links[j].Xps {
 			return output.Links[i].Source < output.Links[j].Source
 		}
-		return output.Links[i].Bps > output.Links[j].Bps
+		return output.Links[i].Xps > output.Links[j].Xps
 	})
 
 	gc.JSON(http.StatusOK, output)

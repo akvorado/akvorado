@@ -21,7 +21,7 @@ const props = defineProps({
 const emit = defineEmits(["updateTimeRange"]);
 
 import { ref, watch, inject, computed, onMounted, nextTick } from "vue";
-import { formatBps, dataColor, dataColorGrey } from "@/utils";
+import { formatXps, dataColor, dataColorGrey } from "@/utils";
 import { graphTypes } from "./constants";
 const { isDark } = inject("theme");
 
@@ -66,7 +66,7 @@ const commonGraph = {
       type: "cross",
       label: { backgroundColor: "#6a7985" },
     },
-    valueFormatter: formatBps,
+    valueFormatter: formatXps,
   },
 };
 const graph = computed(() => {
@@ -93,9 +93,9 @@ const graph = computed(() => {
     yAxis = {
       type: "value",
       min: 0,
-      axisLabel: { formatter: formatBps },
+      axisLabel: { formatter: formatXps },
       axisPointer: {
-        label: { formatter: ({ value }) => formatBps(value) },
+        label: { formatter: ({ value }) => formatXps(value) },
       },
     };
 

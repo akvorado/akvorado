@@ -26,20 +26,42 @@ func TestGraphQuerySQL(t *testing.T) {
 		Expected    string
 	}{
 		{
-			Description: "no dimensions, no filters",
+			Description: "no dimensions, no filters, bps",
 			Input: graphQuery{
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
 				Dimensions: []queryColumn{},
 				Filter:     queryFilter{},
+				Units:      "bps",
 			},
 			Expected: `
 WITH
  intDiv(864, {resolution})*{resolution} AS slot
 SELECT
  toStartOfInterval(TimeReceived, INTERVAL slot second) AS time,
- SUM(Bytes*SamplingRate*8/slot) AS bps,
+ SUM(Bytes*SamplingRate*8/slot) AS xps,
+ emptyArrayString() AS dimensions
+FROM {table}
+WHERE {timefilter}
+GROUP BY time, dimensions
+ORDER BY time`,
+		}, {
+			Description: "no dimensions, no filters, pps",
+			Input: graphQuery{
+				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
+				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Points:     100,
+				Dimensions: []queryColumn{},
+				Filter:     queryFilter{},
+				Units:      "pps",
+			},
+			Expected: `
+WITH
+ intDiv(864, {resolution})*{resolution} AS slot
+SELECT
+ toStartOfInterval(TimeReceived, INTERVAL slot second) AS time,
+ SUM(Packets*SamplingRate/slot) AS xps,
  emptyArrayString() AS dimensions
 FROM {table}
 WHERE {timefilter}
@@ -53,13 +75,14 @@ ORDER BY time`,
 				Points:     100,
 				Dimensions: []queryColumn{},
 				Filter:     queryFilter{"DstCountry = 'FR' AND SrcCountry = 'US'"},
+				Units:      "bps",
 			},
 			Expected: `
 WITH
  intDiv(864, {resolution})*{resolution} AS slot
 SELECT
  toStartOfInterval(TimeReceived, INTERVAL slot second) AS time,
- SUM(Bytes*SamplingRate*8/slot) AS bps,
+ SUM(Bytes*SamplingRate*8/slot) AS xps,
  emptyArrayString() AS dimensions
 FROM {table}
 WHERE {timefilter} AND (DstCountry = 'FR' AND SrcCountry = 'US')
@@ -77,6 +100,7 @@ ORDER BY time`,
 					queryColumnInIfProvider,
 				},
 				Filter: queryFilter{},
+				Units:  "bps",
 			},
 			Expected: `
 WITH
@@ -84,7 +108,7 @@ WITH
  rows AS (SELECT ExporterName, InIfProvider FROM {table} WHERE {timefilter} GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes) DESC LIMIT 20)
 SELECT
  toStartOfInterval(TimeReceived, INTERVAL slot second) AS time,
- SUM(Bytes*SamplingRate*8/slot) AS bps,
+ SUM(Bytes*SamplingRate*8/slot) AS xps,
  if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
 FROM {table}
 WHERE {timefilter}
@@ -119,7 +143,7 @@ func TestGraphHandler(t *testing.T) {
 	base := time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
 	expectedSQL := []struct {
 		Time       time.Time `ch:"time"`
-		Bps        float64   `ch:"bps"`
+		Xps        float64   `ch:"xps"`
 		Dimensions []string  `ch:"dimensions"`
 	}{
 		{base, 1000, []string{"router1", "provider1"}},
@@ -207,6 +231,7 @@ func TestGraphHandler(t *testing.T) {
 			queryColumnInIfProvider,
 		},
 		Filter: queryFilter{"DstCountry = 'FR' AND SrcCountry = 'US'"},
+		Units:  "bps",
 	}
 	payload := new(bytes.Buffer)
 	err = json.NewEncoder(payload).Encode(input)

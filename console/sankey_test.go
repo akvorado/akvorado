@@ -26,26 +26,49 @@ func TestSankeyQuerySQL(t *testing.T) {
 		Expected    string
 	}{
 		{
-			Description: "two dimensions, no filters",
+			Description: "two dimensions, no filters, bps",
 			Input: sankeyQuery{
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Dimensions: []queryColumn{queryColumnSrcAS, queryColumnExporterName},
 				Limit:      5,
 				Filter:     queryFilter{},
+				Units:      "bps",
 			},
 			Expected: `
 WITH
  (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM {table} WHERE {timefilter}) AS range,
  rows AS (SELECT SrcAS, ExporterName FROM {table} WHERE {timefilter} GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 5)
 SELECT
- SUM(Bytes*SamplingRate*8/range) AS bps,
+ SUM(Bytes*SamplingRate*8/range) AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
   if(ExporterName IN (SELECT ExporterName FROM rows), ExporterName, 'Other')] AS dimensions
 FROM {table}
 WHERE {timefilter}
 GROUP BY dimensions
-ORDER BY bps DESC`,
+ORDER BY xps DESC`,
+		}, {
+			Description: "two dimensions, no filters, pps",
+			Input: sankeyQuery{
+				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
+				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Dimensions: []queryColumn{queryColumnSrcAS, queryColumnExporterName},
+				Limit:      5,
+				Filter:     queryFilter{},
+				Units:      "pps",
+			},
+			Expected: `
+WITH
+ (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM {table} WHERE {timefilter}) AS range,
+ rows AS (SELECT SrcAS, ExporterName FROM {table} WHERE {timefilter} GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 5)
+SELECT
+ SUM(Packets*SamplingRate/range) AS xps,
+ [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
+  if(ExporterName IN (SELECT ExporterName FROM rows), ExporterName, 'Other')] AS dimensions
+FROM {table}
+WHERE {timefilter}
+GROUP BY dimensions
+ORDER BY xps DESC`,
 		}, {
 			Description: "two dimensions, with filter",
 			Input: sankeyQuery{
@@ -54,19 +77,20 @@ ORDER BY bps DESC`,
 				Dimensions: []queryColumn{queryColumnSrcAS, queryColumnExporterName},
 				Limit:      10,
 				Filter:     queryFilter{"DstCountry = 'FR'"},
+				Units:      "bps",
 			},
 			Expected: `
 WITH
  (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM {table} WHERE {timefilter} AND (DstCountry = 'FR')) AS range,
  rows AS (SELECT SrcAS, ExporterName FROM {table} WHERE {timefilter} AND (DstCountry = 'FR') GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 10)
 SELECT
- SUM(Bytes*SamplingRate*8/range) AS bps,
+ SUM(Bytes*SamplingRate*8/range) AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
   if(ExporterName IN (SELECT ExporterName FROM rows), ExporterName, 'Other')] AS dimensions
 FROM {table}
 WHERE {timefilter} AND (DstCountry = 'FR')
 GROUP BY dimensions
-ORDER BY bps DESC`,
+ORDER BY xps DESC`,
 		},
 	}
 	for _, tc := range cases {
@@ -94,7 +118,7 @@ func TestSankeyHandler(t *testing.T) {
 	helpers.StartStop(t, c)
 
 	expectedSQL := []struct {
-		Bps        float64  `ch:"bps"`
+		Xps        float64  `ch:"xps"`
 		Dimensions []string `ch:"dimensions"`
 	}{
 		// [(random.randrange(100, 10000), x)
@@ -148,7 +172,7 @@ func TestSankeyHandler(t *testing.T) {
 			{"Other", "Other", "Other"},
 			{"Other", "provider1", "router1"},
 		},
-		"bps": []int{
+		"xps": []int{
 			9677,
 			9472,
 			7593,
@@ -186,30 +210,30 @@ func TestSankeyHandler(t *testing.T) {
 			"router2",
 		},
 		"links": []gin.H{
-			{"source": "provider1", "target": "Other ExporterName", "bps": 9472 + 7234 + 6006 + 5988},
-			{"source": "Other InIfProvider", "target": "router1", "bps": 9677 + 3623 + 2915 + 1360},
-			{"source": "AS100", "target": "Other InIfProvider", "bps": 9677},
-			{"source": "AS300", "target": "provider1", "bps": 9472},
-			{"source": "provider3", "target": "Other ExporterName", "bps": 4675 + 3999},
-			{"source": "AS100", "target": "provider1", "bps": 6006 + 2623},
-			{"source": "AS100", "target": "provider3", "bps": 3999 + 3978},
-			{"source": "provider3", "target": "router2", "bps": 3978 + 3080 + 717},
-			{"source": "AS300", "target": "provider2", "bps": 7593},
-			{"source": "provider2", "target": "router1", "bps": 7593},
-			{"source": "AS200", "target": "provider1", "bps": 7234},
-			{"source": "Other SrcAS", "target": "provider1", "bps": 5988 + 159},
-			{"source": "AS200", "target": "Other InIfProvider", "bps": 4348 + 1360},
-			{"source": "AS200", "target": "provider3", "bps": 4675 + 717},
-			{"source": "Other InIfProvider", "target": "router2", "bps": 4348},
-			{"source": "Other SrcAS", "target": "Other InIfProvider", "bps": 3623 + 621},
-			{"source": "AS300", "target": "Other InIfProvider", "bps": 2915 + 975},
-			{"source": "AS300", "target": "provider3", "bps": 3080},
-			{"source": "provider1", "target": "router1", "bps": 2623 + 159},
-			{"source": "AS200", "target": "provider2", "bps": 2482},
-			{"source": "provider2", "target": "router2", "bps": 2482},
-			{"source": "AS100", "target": "provider2", "bps": 2234},
-			{"source": "provider2", "target": "Other ExporterName", "bps": 2234},
-			{"source": "Other InIfProvider", "target": "Other ExporterName", "bps": 975 + 621},
+			{"source": "provider1", "target": "Other ExporterName", "xps": 9472 + 7234 + 6006 + 5988},
+			{"source": "Other InIfProvider", "target": "router1", "xps": 9677 + 3623 + 2915 + 1360},
+			{"source": "AS100", "target": "Other InIfProvider", "xps": 9677},
+			{"source": "AS300", "target": "provider1", "xps": 9472},
+			{"source": "provider3", "target": "Other ExporterName", "xps": 4675 + 3999},
+			{"source": "AS100", "target": "provider1", "xps": 6006 + 2623},
+			{"source": "AS100", "target": "provider3", "xps": 3999 + 3978},
+			{"source": "provider3", "target": "router2", "xps": 3978 + 3080 + 717},
+			{"source": "AS300", "target": "provider2", "xps": 7593},
+			{"source": "provider2", "target": "router1", "xps": 7593},
+			{"source": "AS200", "target": "provider1", "xps": 7234},
+			{"source": "Other SrcAS", "target": "provider1", "xps": 5988 + 159},
+			{"source": "AS200", "target": "Other InIfProvider", "xps": 4348 + 1360},
+			{"source": "AS200", "target": "provider3", "xps": 4675 + 717},
+			{"source": "Other InIfProvider", "target": "router2", "xps": 4348},
+			{"source": "Other SrcAS", "target": "Other InIfProvider", "xps": 3623 + 621},
+			{"source": "AS300", "target": "Other InIfProvider", "xps": 2915 + 975},
+			{"source": "AS300", "target": "provider3", "xps": 3080},
+			{"source": "provider1", "target": "router1", "xps": 2623 + 159},
+			{"source": "AS200", "target": "provider2", "xps": 2482},
+			{"source": "provider2", "target": "router2", "xps": 2482},
+			{"source": "AS100", "target": "provider2", "xps": 2234},
+			{"source": "provider2", "target": "Other ExporterName", "xps": 2234},
+			{"source": "Other InIfProvider", "target": "Other ExporterName", "xps": 975 + 621},
 		},
 	}
 	mockConn.EXPECT().
@@ -223,6 +247,7 @@ func TestSankeyHandler(t *testing.T) {
 		Dimensions: []queryColumn{queryColumnSrcAS, queryColumnInIfProvider, queryColumnExporterName},
 		Limit:      10,
 		Filter:     queryFilter{"DstCountry = 'FR'"},
+		Units:      "bps",
 	}
 	payload := new(bytes.Buffer)
 	err = json.NewEncoder(payload).Encode(input)

@@ -11,7 +11,7 @@ const props = defineProps({
 });
 
 import { inject, computed } from "vue";
-import { formatBps, dataColor, dataColorGrey } from "@/utils";
+import { formatXps, dataColor, dataColorGrey } from "@/utils";
 const { isDark } = inject("theme");
 
 import { use } from "echarts/core";
@@ -25,7 +25,7 @@ use([CanvasRenderer, SankeyChart, TooltipComponent]);
 const graph = computed(() => {
   const theme = isDark.value ? "dark" : "light";
   const data = props.data || {};
-  if (!data.bps) return {};
+  if (!data.xps) return {};
   let greyNodes = 0;
   let colorNodes = 0;
   return {
@@ -34,7 +34,7 @@ const graph = computed(() => {
       confine: true,
       trigger: "item",
       triggerOn: "mousemove",
-      valueFormatter: formatBps,
+      valueFormatter: formatXps,
     },
     series: [
       {
@@ -52,10 +52,10 @@ const graph = computed(() => {
               : dataColor(colorNodes++, false, theme),
           },
         })),
-        links: data.links.map(({ source, target, bps }) => ({
+        links: data.links.map(({ source, target, xps }) => ({
           source,
           target,
-          value: bps,
+          value: xps,
         })),
         label: {
           formatter: "{b}",
