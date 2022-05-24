@@ -85,7 +85,7 @@ const props = defineProps({
 });
 const emit = defineEmits(["update:modelValue", "cancel"]);
 
-import { ref, watch, computed, nextTick } from "vue";
+import { ref, watch, computed } from "vue";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/vue/solid";
 import InputTimeRange from "@/components/InputTimeRange.vue";
 import InputDimensions from "@/components/InputDimensions.vue";
@@ -97,7 +97,6 @@ import SectionLabel from "./SectionLabel.vue";
 import GraphIcon from "./GraphIcon.vue";
 import { graphTypes } from "./constants";
 import isEqual from "lodash.isequal";
-import isEmpty from "lodash.isempty";
 
 const graphTypeList = Object.entries(graphTypes).map(([, v], idx) => ({
   id: idx + 1,
@@ -154,9 +153,12 @@ watch(
     filter.value = _filter;
     pps.value = units == "pps";
 
-    if (isEmpty(modelValue)) {
+    // A bit risky, but it seems to work.
+    if (!isEqual(modelValue, options.value)) {
       open.value = true;
-      nextTick().then(() => emit("update:modelValue", options.value));
+      if (!hasErrors.value) {
+        emit("update:modelValue", options.value);
+      }
     }
   },
   { immediate: true, deep: true }
