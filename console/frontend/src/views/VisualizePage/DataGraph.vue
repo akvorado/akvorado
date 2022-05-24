@@ -1,8 +1,6 @@
 <template>
   <component
     :is="component"
-    :loading="props.loading"
-    :loading-options="{ maskColor: isDark ? '#000d' : '#fffd', text: '' }"
     :theme="isDark ? 'dark' : null"
     :data="data"
     autoresize

@@ -6,31 +6,32 @@
       @cancel="canAbort && abort()"
     />
     <div class="grow overflow-y-auto">
-      <RequestSummary :request="request" />
-      <div class="mx-4 my-2">
-        <InfoBox v-if="errorMessage" kind="danger">
-          <strong>Unable to fetch data!&nbsp;</strong>{{ errorMessage }}
-        </InfoBox>
-        <ResizeRow
-          :slider-width="10"
-          :height="graphHeight"
-          width="auto"
-          slider-bg-color="#eee1"
-          slider-bg-hover-color="#ccc3"
-        >
-          <DataGraph
-            :loading="isFetching"
+      <LoadingOverlay :loading="isFetching">
+        <RequestSummary :request="request" />
+        <div class="mx-4 my-2">
+          <InfoBox v-if="errorMessage" kind="danger">
+            <strong>Unable to fetch data!&nbsp;</strong>{{ errorMessage }}
+          </InfoBox>
+          <ResizeRow
+            :slider-width="10"
+            :height="graphHeight"
+            width="auto"
+            slider-bg-color="#eee1"
+            slider-bg-hover-color="#ccc3"
+          >
+            <DataGraph
+              :data="fetchedData"
+              :highlight="highlightedSerie"
+              @update-time-range="updateTimeRange"
+            />
+          </ResizeRow>
+          <DataTable
             :data="fetchedData"
-            :highlight="highlightedSerie"
-            @update-time-range="updateTimeRange"
+            class="my-2"
+            @highlighted="(n) => (highlightedSerie = n)"
           />
-        </ResizeRow>
-        <DataTable
-          :data="fetchedData"
-          class="my-2"
-          @highlighted="(n) => (highlightedSerie = n)"
-        />
-      </div>
+        </div>
+      </LoadingOverlay>
     </div>
   </div>
 </template>
@@ -50,6 +51,7 @@ import { Date as SugarDate } from "sugar-date";
 import { ResizeRow } from "vue-resizer";
 import LZString from "lz-string";
 import InfoBox from "@/components/InfoBox.vue";
+import LoadingOverlay from "@/components/LoadingOverlay.vue";
 import DataTable from "./VisualizePage/DataTable.vue";
 import DataGraph from "./VisualizePage/DataGraph.vue";
 import OptionsPanel from "./VisualizePage/OptionsPanel.vue";
