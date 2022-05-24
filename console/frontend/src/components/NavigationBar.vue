@@ -19,7 +19,7 @@
       <div class="flex md:order-2">
         <DarkModeSwitcher />
         <DisclosureButton
-          class="ml-3 inline-flex items-center rounded-lg p-2 text-sm text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-gray-600 md:hidden"
+          class="ml-3 inline-flex items-center rounded-lg p-2 text-sm text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-blue-800 md:hidden"
         >
           <span class="sr-only">Open main menu</span>
           <MenuIcon v-if="!open" class="h-6 w-6" />
@@ -36,7 +36,7 @@
         >
           <li v-for="item in navigation" :key="item.name">
             <router-link
-              class="block rounded py-2 pr-4 pl-3"
+              class="block rounded py-2 pr-4 pl-3 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-800"
               :class="
                 item.current
                   ? [
