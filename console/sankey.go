@@ -110,7 +110,7 @@ func (c *Component) sankeyHandlerFunc(gc *gin.Context) {
 	// Prepare and execute query
 	sqlQuery = c.queryFlowsTable(sqlQuery,
 		query.Start, query.End, resolution)
-	gc.Header("X-SQL-Query", sqlQuery)
+	gc.Header("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
 	results := []struct {
 		Xps        float64  `ch:"xps"`
 		Dimensions []string `ch:"dimensions"`

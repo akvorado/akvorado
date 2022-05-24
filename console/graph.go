@@ -114,7 +114,7 @@ func (c *Component) graphHandlerFunc(gc *gin.Context) {
 	}
 	sqlQuery = c.queryFlowsTable(sqlQuery,
 		query.Start, query.End, resolution)
-	gc.Header("X-SQL-Query", sqlQuery)
+	gc.Header("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
 
 	results := []struct {
 		Time       time.Time `ch:"time"`

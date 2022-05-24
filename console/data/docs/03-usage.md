@@ -87,8 +87,69 @@ instances are still running an older version).
 
 ## Console service
 
-`akvorado console` starts the console service. Currently, only this
-documentation is accessible through this service.
+`akvorado console` starts the console service. It provides a web
+console. The home page is a simple dashboard with a few metrics, some
+graphs and a recent example of flow. The console also contains this
+documentation. The most interesting page is the “visualize” tab which
+allows a user to explore data using graphs.
+
+### Graph options
+
+The collapsible panel on the left has several options to change the
+aspect of the graph.
+
+- Four graph types are provided: “stacked”, “lines” and “grid” to
+  display time series and “sankey” to show flow distributions between
+  various dimensions.
+
+- The time range can be set from a list of preset or directly using
+  natural language. The parsing is done by
+  [SugarJS](https://sugarjs.com/dates/#/Parsing) which provides
+  examples of what can be done. Another alternative is to look at the
+  presets. Dates can also be entered using their ISO format:
+  `2022-05-22 12:33` for example.
+
+- A set of dimensions can be selected. For time series, dimensions are
+  converted to series. They are stacked when using “stacked”,
+  displayed as simple lines with “lines” and displayed in a grid with
+  “grid”. The grid representation can be useful if you need to compare
+  the volume of each dimension. For sankey graphs, dimensions are
+  converted to nodes. In this case, at least two dimensions need to be
+  selected.
+
+- Akvorado will only retrieve a limited number of series and the
+  "limit" parameter tells how many. The remaining values are
+  categorized as "Other".
+
+- The filter box contains an SQL-like expression to limit the data to
+  be graphed.
+
+The URL contains the encoded parameters and can be used to share with
+others. However, currently, no stability of the options are
+guaranteed, so an URL may stop working after a few upgrades.
+
+### Filter language
+
+The filter language looks like SQL with a few variations. Fields
+listed as dimensions can usually be used. Accepted operators are `=`,
+`!=`, `<`, `<=`, `>`, `>=`, `IN`, `LIKE`, `ILIKE`, when they make
+sense. Here are a few examples:
+
+ - `InIfBoundary = external` only selects flows whose incoming
+   interface was classified as external. The value should not be
+   quoted.
+ - `InIfConnectivity = "ix"` selects flows whose incoming interface is
+   connected to an IX.
+ - `SrcAS = AS12322`, `SrcAS = 12322`, `SrcAS IN (12322, 29447)`
+   limits the source AS number of selected flows.
+ - `SrcAddr = 203.0.113.4` only selects flows with the specified
+   address. Note that filtering on IP addresses is usually slower.
+ - `ExporterName LIKE th2-%` selects flows coming from routers
+   starting with `th2-`.
+
+The final SQL query sent to ClickHouse is logged inside the console
+after a successful request. It should be noted than using ports or
+addresses prevent the use of aggregated data and are therefore slower.
 
 ## Other commands
 

@@ -133,7 +133,12 @@ const { data, isFetching, aborted, abort, canAbort, error } = useFetch("", {
   async afterFetch(ctx) {
     // Update data. Not done in a computed value as we want to keep the
     // previous data in case of errors.
-    const { data } = ctx;
+    const { data, response } = ctx;
+    console.groupCollapsed("SQL query");
+    console.info(
+      response.headers.get("x-sql-query").replace(/ {2}( )*/g, "\n$1")
+    );
+    console.groupEnd();
     fetchedData.value = {
       ...data,
       dimensions: payload.value.dimensions,

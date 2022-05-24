@@ -142,6 +142,51 @@ capacity.
 Testing is done by another implementation of an [SNMP
 agent](https://github.com/salyercat/GoSNMPServer).
 
+## Web console
+
+The web console is built as a REST API with a single page application
+on top of it.
+
+### REST API
+
+The REST API is mostly built using the [Gin
+framework](https://gin-gonic.com/) which removes some boilerplate
+compared to using pure Go. Also, it uses the [validator
+package](https://github.com/go-playground/validator) which implements
+value validations based on tags. The validation options are quite
+rich.
+
+### Single page application
+
+The SPA is built using mostly the following components:
+
+- [Yarn](https://yarnpkg.com/) as a package manager,
+- [Vite](https://vitejs.dev/) as a builder,
+- [Vue](https://vuejs.org/) as the reactive JavaScript framework,
+- [TailwindCSS](https://tailwindcss.com/) for styling pages directly inside HTML,
+- [Headless UI](https://headlessui.dev/) for some unstyled UI components,
+- [ECharts](https://echarts.apache.org/) to plot charts.
+
+There is no full-blown component library despite the existence of many candidates:
+
+- [Vuetify](https://vuetifyjs.com/) is only compatible with Vue 2.
+- [BootstrapVue](https://bootstrap-vue.org/) is only compatible with Vue 2.
+- [PrimeVue](https://www.primefaces.org/primevue/) is quite heavyweight and many stuff are not opensource.
+- [VueTailwind](https://www.vue-tailwind.com/) would be the perfect match but it is not compatible with Vue 2.
+- [Naive UI](https://www.naiveui.com/) may be a future option but the
+  styling is not using TailwindCSS which is annoying for responsive
+  stuff, but we can just stay away from the proposed layout.
+
+So, currently, components are mostly taken from
+[Flowbite](https://flowbite.com/), copy/pasted or from Headless UI and
+styled like Flowbite.
+
+Use of TailwindCSS is also a strong choice. Their
+[documentation](https://tailwindcss.com/docs/utility-first) explains
+this choice. It makes sense but this is sometimes a burden. Many
+components are scattered around the web and when there is no need for
+JS, it is just a matter of copy/pasting and customizing.
+
 ## Other components
 
 The core component is the main one. It takes the other as dependencies
