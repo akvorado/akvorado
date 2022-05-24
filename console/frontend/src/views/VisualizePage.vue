@@ -88,10 +88,7 @@ const decodeState = (serialized) => {
       console.debug("no state, return default state");
       return defaultState();
     }
-    return {
-      ...defaultState(),
-      ...JSON.parse(LZString.decompressFromBase64(serialized)),
-    };
+    return JSON.parse(LZString.decompressFromBase64(serialized));
   } catch (error) {
     console.error("cannot decode state:", error);
     return defaultState();
@@ -142,7 +139,7 @@ const { data, isFetching, aborted, abort, canAbort, error } = useFetch("", {
       url: `/api/v0/console/${url}`,
     };
   },
-  afterFetch(ctx) {
+  async afterFetch(ctx) {
     // Update data. Not done in a computed value as we want to keep the
     // previous data in case of errors.
     const { data } = ctx;
@@ -160,9 +157,9 @@ const { data, isFetching, aborted, abort, canAbort, error } = useFetch("", {
       params: { state: encodedState.value },
     };
     if (route.name !== "VisualizeWithState") {
-      router.replace(routeTarget);
+      await router.replace(routeTarget);
     } else {
-      router.push(routeTarget);
+      await router.push(routeTarget);
     }
 
     // Keep current payload for state

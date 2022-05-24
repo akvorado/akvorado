@@ -135,11 +135,11 @@ watch(
       limit,
       points /* eslint-disable-line no-unused-vars */,
       filter: _filter,
-    } = JSON.parse(JSON.stringify(modelValue));
+    } = modelValue;
     graphType.value =
       graphTypeList.find(({ name }) => name === _graphType) || graphTypeList[0];
     timeRange.value = { start, end };
-    dimensions.value = { selected: _dimensions, limit };
+    dimensions.value = { selected: [...(_dimensions || [])], limit };
     filter.value = _filter;
   },
   { immediate: true, deep: true }
