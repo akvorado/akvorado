@@ -183,6 +183,14 @@ func TestGraphHandler(t *testing.T) {
 			333,
 			700,
 		},
+		"95th": []int{
+			4000,
+			750,
+			600,
+			550,
+			500,
+			1000,
+		},
 	}
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), gomock.Any()).

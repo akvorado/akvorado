@@ -81,12 +81,13 @@ ORDER BY time`, strings.Join(with, ",\n "), strings.Join(fields, ",\n "), where)
 }
 
 type graphHandlerOutput struct {
-	Rows    [][]string  `json:"rows"`
-	Time    []time.Time `json:"t"`
-	Points  [][]int     `json:"points"`  // t → row → bps
-	Average []int       `json:"average"` // row → bps
-	Min     []int       `json:"min"`
-	Max     []int       `json:"max"`
+	Rows                 [][]string  `json:"rows"`
+	Time                 []time.Time `json:"t"`
+	Points               [][]int     `json:"points"`  // t → row → bps
+	Average              []int       `json:"average"` // row → bps
+	Min                  []int       `json:"min"`
+	Max                  []int       `json:"max"`
+	NinetyFivePercentile []int       `json:"95th"`
 }
 
 func (c *Component) graphHandlerFunc(gc *gin.Context) {
@@ -174,18 +175,38 @@ func (c *Component) graphHandlerFunc(gc *gin.Context) {
 	output.Average = make([]int, len(rows))
 	output.Min = make([]int, len(rows))
 	output.Max = make([]int, len(rows))
+	output.NinetyFivePercentile = make([]int, len(rows))
 
 	for idx, r := range rows {
 		output.Rows[idx] = rowKeys[r]
 		output.Points[idx] = rowValues[r]
 		output.Average[idx] = int(rowSums[r] / uint64(len(output.Time)))
-		for j, v := range rowValues[r] {
-			if j == 0 || output.Min[idx] > v {
-				output.Min[idx] = v
-			}
-			if j == 0 || output.Max[idx] < v {
-				output.Max[idx] = v
-			}
+		// For 95th percentile, we need to sort the values.
+		// Use that for min/max too.
+		if len(rowValues[r]) == 0 {
+			continue
+		}
+		if len(rowValues[r]) == 1 {
+			v := rowValues[r][0]
+			output.Min[idx] = v
+			output.Max[idx] = v
+			output.NinetyFivePercentile[idx] = v
+			continue
+		}
+
+		s := make([]int, len(rowValues[r]))
+		copy(s, rowValues[r])
+		sort.Ints(s)
+		output.Min[idx] = s[0]
+		output.Max[idx] = s[len(s)-1]
+		index := 0.95 * float64(len(s))
+		j := int(index)
+		if index == float64(j) {
+			output.NinetyFivePercentile[idx] = s[j-1]
+		} else if index > 1 {
+			// We use the average of the two values. This
+			// is good enough for bps
+			output.NinetyFivePercentile[idx] = (s[j-1] + s[j]) / 2
 		}
 	}
 

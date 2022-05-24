@@ -86,6 +86,7 @@ const table = computed(() => {
         { name: "Min", classNames: "text-right" },
         { name: "Max", classNames: "text-right" },
         { name: "Average", classNames: "text-right" },
+        { name: "~95th", classNames: "text-right" },
       ],
       rows:
         data.rows?.map((rows, idx) => {
@@ -97,7 +98,12 @@ const table = computed(() => {
               // Dimensions
               ...rows.map((r) => ({ value: r })),
               // Stats
-              ...[data.min[idx], data.max[idx], data.average[idx]].map((d) => ({
+              ...[
+                data.min[idx],
+                data.max[idx],
+                data.average[idx],
+                data["95th"][idx],
+              ].map((d) => ({
                 value: formatBps(d) + "bps",
                 classNames: "text-right tabular-nums",
               })),
