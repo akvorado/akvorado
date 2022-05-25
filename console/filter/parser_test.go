@@ -75,6 +75,14 @@ func TestValidFilter(t *testing.T) {
                   AND (SrcPort < 1024 OR InIfSpeed >= 1000)`,
 			`DstPort > 1024 AND (SrcPort < 1024 OR InIfSpeed >= 1000)`},
 		{`(ExporterAddress=203.0.113.1)`, `(ExporterAddress = IPv6StringToNum('203.0.113.1'))`},
+		{`ForwardingStatus >= 128 -- Nothing`, `ForwardingStatus >= 128`},
+		{`
+-- Example of commented request
+-- Here we go
+DstPort > 1024 -- Non-privileged port
+AND SrcAS = AS12322 -- Proxad ASN`, `DstPort > 1024 AND SrcAS = 12322`},
+		{`InIfDescription = "This contains a -- comment" -- nope`,
+			`InIfDescription = 'This contains a -- comment'`},
 	}
 	for _, tc := range cases {
 		got, err := Parse("", []byte(tc.Input))

@@ -202,7 +202,8 @@ KW_LIKE "LIKE operator" ← "LIKE"i !IdentStart { return "LIKE", nil }
 KW_ILIKE "ILIKE operator" ← "ILIKE"i !IdentStart { return "ILIKE", nil }
 KW_IN "IN operator" ← "IN"i !IdentStart { return "IN", nil }
 
+SingleLineComment "comment" ← "--" ( !EOL SourceChar )*
 IdentStart ← [A-Za-z_]
-_ "whitespace" ← [ \n\r\t]*
+_ "whitespace" ← ([ \n\r\t] / SingleLineComment)*
 EOF ← !.
 EOL ← '\n'
