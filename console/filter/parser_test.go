@@ -12,6 +12,7 @@ func TestValidFilter(t *testing.T) {
 		Output string
 	}{
 		{`ExporterName = 'something'`, `ExporterName = 'something'`},
+		{`exportername = 'something'`, `ExporterName = 'something'`},
 		{`ExporterName='something'`, `ExporterName = 'something'`},
 		{`ExporterName="something"`, `ExporterName = 'something'`},
 		{`ExporterName="something'"`, `ExporterName = 'something\''`},
@@ -31,6 +32,7 @@ func TestValidFilter(t *testing.T) {
 		{`DstAddr=203.0.113.2`, `DstAddr = IPv6StringToNum('203.0.113.2')`},
 		{`SrcAS=12322`, `SrcAS = 12322`},
 		{`SrcAS=AS12322`, `SrcAS = 12322`},
+		{`SrcAS=as12322`, `SrcAS = 12322`},
 		{`SrcAS IN(12322, 29447)`, `SrcAS IN (12322, 29447)`},
 		{`SrcAS NOT IN(12322, 29447)`, `SrcAS NOT IN (12322, 29447)`},
 		{`SrcAS NOT IN (AS12322, 29447)`, `SrcAS NOT IN (12322, 29447)`},
@@ -50,6 +52,7 @@ func TestValidFilter(t *testing.T) {
 		{`InIfProvider = 'cogent'`, `InIfProvider = 'cogent'`},
 		{`OutIfProvider = 'telia'`, `OutIfProvider = 'telia'`},
 		{`InIfBoundary = external`, `InIfBoundary = 'external'`},
+		{`InIfBoundary = EXTERNAL`, `InIfBoundary = 'external'`},
 		{`OutIfBoundary != internal`, `OutIfBoundary != 'internal'`},
 		{`EType = ipv4`, `EType = 2048`},
 		{`EType != ipv6`, `EType != 34525`},

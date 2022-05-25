@@ -63,44 +63,59 @@ ConditionExpr "conditional" ←
   / ConditionPacketSizeExpr
 
 ConditionIPExpr "condition on IP" ←
- column:("ExporterAddress" / "SrcAddr" / "DstAddr") _ operator:("=" / "!=") _ ip:IP {
+ column:("ExporterAddress"i { return "ExporterAddress", nil }
+      / "SrcAddr"i { return "SrcAddr", nil }
+      / "DstAddr"i { return "DstAddr", nil }) _ operator:("=" / "!=") _ ip:IP {
   return fmt.Sprintf("%s %s IPv6StringToNum(%s)", toString(column), toString(operator), quote(ip)), nil
 }
 ConditionStringExpr "condition on string" ←
- column:("ExporterName"
-      / "ExporterGroup"
-      / "SrcCountry"
-      / "DstCountry"
-      / "InIfName"
-      / "OutIfName"
-      / "InIfDescription"
-      / "OutIfDescription"
-      / "InIfConnectivity"
-      / "OutIfConnectivity"
-      / "InIfProvider"
-      / "OutIfProvider") _
+ column:("ExporterName"i { return "ExporterName", nil }
+      / "ExporterGroup"i { return "ExporterGroup", nil }
+      / "SrcCountry"i { return "SrcCountry", nil }
+      / "DstCountry"i { return "DstCountry", nil }
+      / "InIfName"i { return "InIfName", nil }
+      / "OutIfName"i { return "OutIfName", nil }
+      / "InIfDescription"i { return "InIfDescription", nil }
+      / "OutIfDescription"i { return "OutIfDescription", nil }
+      / "InIfConnectivity"i { return "InIfConnectivity", nil }
+      / "OutIfConnectivity"i { return "OutIfConnectivity", nil }
+      / "InIfProvider"i { return "InIfProvider", nil }
+      / "OutIfProvider"i { return "OutIfProvider", nil }) _
  operator:("=" / "!=" / LikeOperator ) _
  str:StringLiteral {
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator), quote(str)), nil
 }
 ConditionBoundaryExpr "condition on boundary" ←
- column:("InIfBoundary" / "OutIfBoundary") _ operator:("=" / "!=") _ boundary:("external" / "internal") {
-  return fmt.Sprintf("%s %s %s", toString(column), toString(operator), quote(boundary)), nil
+ column:("InIfBoundary"i { return "InIfBoundary", nil }
+      / "OutIfBoundary"i { return "OutIfBoundary", nil }) _
+ operator:("=" / "!=") _
+ boundary:("external"i / "internal"i) {
+  return fmt.Sprintf("%s %s %s", toString(column), toString(operator),
+                     quote(strings.ToLower(toString(boundary)))), nil
 }
 ConditionSpeedExpr "condition on speed" ←
- column:("InIfSpeed" / "OutIfSpeed") _ operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned64 {
+ column:("InIfSpeed"i { return "InIfSpeed", nil }
+      / "OutIfSpeed"i { return "OutIfSpeed", nil }) _
+ operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _
+ value:Unsigned64 {
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
 }
 ConditionForwardingStatusExpr "condition on forwarding status" ←
- column:"ForwardingStatus" _ operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned8 {
+ column:("ForwardingStatus"i { return "ForwardingStatus", nil }) _
+ operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _
+ value:Unsigned8 {
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
 }
 ConditionPortExpr "condition on port" ←
- column:("SrcPort" / "DstPort") _ operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned16 {
+ column:("SrcPort"i { return "SrcPort", nil }
+      / "DstPort"i { return "DstPort", nil }) _
+ operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned16 {
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
 }
 ConditionASExpr "condition on AS number" ←
- column:("SrcAS" / "DstAS") _ rcond:RConditionASExpr {
+ column:("SrcAS"i { return "SrcAS", nil }
+      / "DstAS"i { return "DstAS", nil }) _
+ rcond:RConditionASExpr {
   return fmt.Sprintf("%s %s", toString(column), toString(rcond)), nil
 }
 RConditionASExpr "condition on AS number" ←
@@ -109,7 +124,8 @@ RConditionASExpr "condition on AS number" ←
   return fmt.Sprintf("%s (%s)", toString(operator), toString(value)), nil
 }
 ConditionETypeExpr "condition on Ethernet type" ←
- column:"EType" _ operator:("=" / "!=") _ value:("IPv4"i / "IPv6"i) {
+ column:("EType"i { return "EType", nil }) _
+ operator:("=" / "!=") _ value:("IPv4"i / "IPv6"i) {
   etypes := map[string]uint16{
     "ipv4": 0x0800,
     "ipv6": 0x86dd,
@@ -119,15 +135,17 @@ ConditionETypeExpr "condition on Ethernet type" ←
 }
 ConditionProtoExpr "condition on protocol" ← ConditionProtoIntExpr / ConditionProtoStrExpr
 ConditionProtoIntExpr "condition on protocol as integer" ←
- column:"Proto" _ operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned8 {
+ column:("Proto"i { return "Proto", nil }) _
+ operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned8 {
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
 }
 ConditionProtoStrExpr "condition on protocol as string" ←
- column:"Proto" _ operator:("=" / "!=") _ value:StringLiteral {
+ column:("Proto"i { return "Proto", nil }) _
+ operator:("=" / "!=") _ value:StringLiteral {
   return fmt.Sprintf("dictGetOrDefault('protocols', 'name', %s, '???') %s %s", toString(column), toString(operator), quote(value)), nil
 }
 ConditionPacketSizeExpr "condition on packet size" ←
- "PacketSize" _ operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned16 {
+ "PacketSize"i _ operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned16 {
   return fmt.Sprintf("Bytes/Packets %s %s", toString(operator), toString(value)), nil
 }
 
@@ -139,7 +157,7 @@ IP "IP address" ← [0-9A-Fa-f:.]+ !IdentStart {
   return ip.String(), nil
 }
 
-ASN "AS number" ← "AS"? value:Unsigned32 {
+ASN "AS number" ← "AS"i? value:Unsigned32 {
   return value, nil
 }
 ListASN "list of AS numbers" ←
