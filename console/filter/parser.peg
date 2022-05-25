@@ -7,7 +7,7 @@
     "fmt"
     "net"
   )
-  
+
   func quote(v interface{}) string {
     return "'" + strings.NewReplacer(`\`, `\\`, `'`, `\'`).Replace(toString(v)) + "'"
   }
@@ -158,7 +158,7 @@ SingleStringChar ← !( "'" / EOL ) SourceChar
 Unsigned8 "unsigned 8-bit integer" ← [0-9]+ !IdentStart {
   v, err := strconv.ParseUint(string(c.text), 10, 8)
   if err != nil {
-    return false, errors.New("expecting an unsigned 8-bit integer")
+    return "", errors.New("expecting an unsigned 8-bit integer")
   }
   return fmt.Sprintf("%d", v), nil
 }
@@ -166,7 +166,7 @@ Unsigned8 "unsigned 8-bit integer" ← [0-9]+ !IdentStart {
 Unsigned16 "unsigned 16-bit integer" ← [0-9]+ !IdentStart {
   v, err := strconv.ParseUint(string(c.text), 10, 16)
   if err != nil {
-    return false, errors.New("expecting an unsigned 16-bit integer")
+    return "", errors.New("expecting an unsigned 16-bit integer")
   }
   return fmt.Sprintf("%d", v), nil
 }
@@ -174,7 +174,7 @@ Unsigned16 "unsigned 16-bit integer" ← [0-9]+ !IdentStart {
 Unsigned32 "unsigned 32-bit integer" ← [0-9]+ !IdentStart {
   v, err := strconv.ParseUint(string(c.text), 10, 32)
   if err != nil {
-    return false, errors.New("expecting an unsigned 32-bit integer")
+    return "", errors.New("expecting an unsigned 32-bit integer")
   }
   return fmt.Sprintf("%d", v), nil
 }
@@ -182,7 +182,7 @@ Unsigned32 "unsigned 32-bit integer" ← [0-9]+ !IdentStart {
 Unsigned64 "unsigned 64-bit integer" ← [0-9]+ !IdentStart {
   v, err := strconv.ParseUint(string(c.text), 10, 64)
   if err != nil {
-    return false, errors.New("expecting an unsigned 64-bit integer")
+    return "", errors.New("expecting an unsigned 64-bit integer")
   }
   return fmt.Sprintf("%d", v), nil
 }
