@@ -1,7 +1,7 @@
 <template>
   <aside
     class="transition-height transition-width relative w-full shrink-0 duration-100 lg:h-auto"
-    :class="open ? 'h-96 lg:w-64' : 'h-6 lg:w-6'"
+    :class="open ? 'h-96 md:w-64 lg:w-80' : 'h-6 md:w-6 lg:w-6'"
   >
     <button
       class="absolute right-4 bottom-0 z-50 translate-y-1/2 rounded-full bg-white shadow transition-transform delay-100 duration-500 hover:bg-gray-300 dark:bg-gray-900 dark:shadow-white/10 dark:hover:bg-black lg:top-2 lg:bottom-auto lg:right-0 lg:translate-x-1/2 lg:translate-y-0"
@@ -45,13 +45,7 @@
           :min-dimensions="graphType.name === graphTypes.sankey ? 2 : 0"
         />
         <SectionLabel>Filter</SectionLabel>
-        <InputTextarea
-          v-model="filter"
-          rows="1"
-          label="Filter expression"
-          class="mb-2 font-mono"
-          autosize
-        />
+        <InputFilter v-model="filter" class="mb-2" />
         <div class="flex flex-row items-start justify-between">
           <InputToggle
             v-model="pps"
@@ -89,7 +83,7 @@ import { ref, watch, computed } from "vue";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/vue/solid";
 import InputTimeRange from "@/components/InputTimeRange.vue";
 import InputDimensions from "@/components/InputDimensions.vue";
-import InputTextarea from "@/components/InputTextarea.vue";
+import InputFilter from "@/components/InputFilter.vue";
 import InputListBox from "@/components/InputListBox.vue";
 import InputButton from "@/components/InputButton.vue";
 import InputToggle from "@/components/InputToggle.vue";

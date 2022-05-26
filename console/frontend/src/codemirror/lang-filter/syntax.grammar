@@ -1,0 +1,43 @@
+@top Filter {
+  expression
+}
+@precedence {
+  and @left
+  or @left
+}
+
+expression {
+ "(" expression ")" |
+ expression !or Or expression |
+ expression !and And expression |
+ Not expression |
+ Column Operator Value
+}
+
+Value {
+  String | Literal
+}
+
+@skip { whitespace | LineComment | BlockComment }
+@tokens {
+  whitespace { std.whitespace+ }
+  LineComment { "--" ![\n]* }
+  BlockComment { "/*" BlockCommentRest }
+  BlockCommentRest { ![*] BlockCommentRest | "*" BlockCommentAfterStar }
+  BlockCommentAfterStar { "/" | "*" BlockCommentAfterStar | ![/*] BlockCommentRest }
+
+  Column { std.asciiLetter+ }
+  Operator { $[a-zA-Z!=><]+ }
+
+  String {
+    '"' (![\\\n"] | "\\" _)* '"'? |
+    "'" (![\\\n'] | "\\" _)* "'"?
+  }
+  Literal { (std.digit | std.asciiLetter | $[.:])+ }
+
+  Or { "or" | "OR" | "Or" | "oR" }
+  And { "and" | "AND" | "And" | "ANd" | "AnD" | "aND" | "aNd" | "anD" }
+  Not { "not" | "NOT" | "Not" | "NOt" | "NoT" | "nOT" | "nOt" | "noT" }
+
+  @precedence { Not, Column }
+}
