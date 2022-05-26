@@ -132,8 +132,8 @@ guaranteed, so an URL may stop working after a few upgrades.
 
 The filter language looks like SQL with a few variations. Fields
 listed as dimensions can usually be used. Accepted operators are `=`,
-`!=`, `<`, `<=`, `>`, `>=`, `IN`, `LIKE`, `ILIKE`, when they make
-sense. Here are a few examples:
+`!=`, `<`, `<=`, `>`, `>=`, `IN`, `NOTIN`, `LIKE`, `UNLIKE`, `ILIKE`,
+`IUNLIKE`, when they make sense. Here are a few examples:
 
  - `InIfBoundary = external` only selects flows whose incoming
    interface was classified as external. The value should not be

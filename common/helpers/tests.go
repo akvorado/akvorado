@@ -85,7 +85,7 @@ func TestHTTPEndpoints(t *testing.T, serverAddr net.Addr, cases HTTPEndpointCase
 				tc.StatusCode = 200
 			}
 			if resp.StatusCode != tc.StatusCode {
-				t.Fatalf("GET %s: got status code %d, not %d", tc.URL,
+				t.Errorf("GET %s: got status code %d, not %d", tc.URL,
 					resp.StatusCode, tc.StatusCode)
 			}
 			if tc.JSONOutput != nil {

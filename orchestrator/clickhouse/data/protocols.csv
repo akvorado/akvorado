@@ -5,7 +5,7 @@ proto,name,description
 3,GGP,Gateway-to-Gateway
 4,IPv4,IPv4 encapsulation
 5,ST,Stream
-6,TCP,Transmission Control
+6,TCP,Transmission Control Protocol
 7,CBT,CBT
 8,EGP,Exterior Gateway Protocol
 10,BBN-RCC-MON,BBN RCC Monitoring
@@ -14,7 +14,7 @@ proto,name,description
 14,EMCON,EMCON
 15,XNET,Cross Net Debugger
 16,CHAOS,Chaos
-17,UDP,User Datagram
+17,UDP,User Datagram Protocol
 18,MUX,Multiplexing
 19,DCN-MEAS,DCN Measurement Subsystems
 20,HMP,Host Monitoring

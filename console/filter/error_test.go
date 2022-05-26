@@ -35,3 +35,11 @@ OR`))
 		t.Errorf("AllErrors() (-got, +want):\n%s", diff)
 	}
 }
+
+func TestExpected(t *testing.T) {
+	_, err := Parse("", []byte{}, Entrypoint("ConditionBoundaryExpr"))
+	expected := []string{`"InIfBoundary"i`, `"OutIfBoundary"i`}
+	if diff := helpers.Diff(Expected(err), expected); diff != "" {
+		t.Errorf("AllErrors() (-got, +want):\n%s", diff)
+	}
+}

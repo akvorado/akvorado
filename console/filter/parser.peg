@@ -89,7 +89,7 @@ ConditionBoundaryExpr "condition on boundary" ←
  column:("InIfBoundary"i { return "InIfBoundary", nil }
       / "OutIfBoundary"i { return "OutIfBoundary", nil }) _
  operator:("=" / "!=") _
- boundary:("external"i / "internal"i) {
+ boundary:("external"i / "internal"i / "undefined"i) {
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator),
                      quote(strings.ToLower(toString(boundary)))), nil
 }
@@ -208,17 +208,20 @@ Unsigned64 "unsigned 64-bit integer" ← [0-9]+ !IdentStart {
 LikeOperator "LIKE operators" ←
    KW_LIKE
  / KW_ILIKE
- / (KW_NOT _ KW_LIKE) { return "NOT LIKE", nil }
- / (KW_NOT _ KW_ILIKE) { return "NOT ILIKE", nil }
+ / KW_UNLIKE
+ / KW_IUNLIKE
 InOperator "IN operators" ←
    KW_IN
- / (KW_NOT _ KW_IN) { return "NOT IN", nil }
+ / KW_NOTIN
 KW_AND "AND operator" ← "AND"i !IdentStart { return "AND", nil }
 KW_OR "OR operator" ← "OR"i  !IdentStart { return "OR", nil }
 KW_NOT "NOT operator" ← "NOT"i !IdentStart { return "NOT", nil }
 KW_LIKE "LIKE operator" ← "LIKE"i !IdentStart { return "LIKE", nil }
 KW_ILIKE "ILIKE operator" ← "ILIKE"i !IdentStart { return "ILIKE", nil }
 KW_IN "IN operator" ← "IN"i !IdentStart { return "IN", nil }
+KW_UNLIKE "UNLIKE operator" ← "UNLIKE"i !IdentStart { return "NOT LIKE", nil }
+KW_IUNLIKE "IUNLIKE operator" ← "IUNLIKE"i !IdentStart { return "NOT ILIKE", nil }
+KW_NOTIN "NOTIN operator" ← "NOTIN"i !IdentStart { return "NOT IN", nil }
 
 SingleLineComment "comment" ← "--" ( !EOL SourceChar )*
 MultiLineComment ← "/*" ( !"*/" SourceChar )* ("*/" / EOF {

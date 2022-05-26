@@ -84,6 +84,7 @@ func (c *Component) Start() error {
 	c.d.HTTP.GinRouter.POST("/api/v0/console/graph", c.graphHandlerFunc)
 	c.d.HTTP.GinRouter.POST("/api/v0/console/sankey", c.sankeyHandlerFunc)
 	c.d.HTTP.GinRouter.POST("/api/v0/console/filter/validate", c.filterValidateHandlerFunc)
+	c.d.HTTP.GinRouter.POST("/api/v0/console/filter/complete", c.filterCompleteHandlerFunc)
 
 	c.t.Go(func() error {
 		ticker := time.NewTicker(10 * time.Second)

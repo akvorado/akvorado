@@ -48,3 +48,20 @@ func AllErrors(err error) Errors {
 	}
 	return errs
 }
+
+// Expected returns a list of expected strings from the first error.
+func Expected(err error) []string {
+	el, ok := err.(errList)
+	if !ok {
+		return nil
+	}
+	if len(el) == 0 {
+		return nil
+	}
+	switch e := el[0].(type) {
+	case *parserError:
+		return e.expected
+	default:
+		return nil
+	}
+}
