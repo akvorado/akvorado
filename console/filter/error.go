@@ -18,3 +18,33 @@ func HumanError(err error) string {
 		return e.Error()
 	}
 }
+
+// Errors represents a serializable list of errors.
+type Errors []oneError
+type oneError struct {
+	Message string `json:"message"`
+	Line    int    `json:"line"`
+	Column  int    `json:"column"`
+	Offset  int    `json:"offset"`
+}
+
+// AllErrors returns all parsed errors. The returned value can be serialized to JSON.
+func AllErrors(err error) Errors {
+	el, ok := err.(errList)
+	if !ok {
+		return nil
+	}
+	errs := make([]oneError, 0, len(el))
+	for _, err := range el {
+		switch e := err.(type) {
+		case *parserError:
+			errs = append(errs, oneError{
+				Message: e.Inner.Error(),
+				Line:    e.pos.line,
+				Column:  e.pos.col,
+				Offset:  e.pos.offset,
+			})
+		}
+	}
+	return errs
+}
