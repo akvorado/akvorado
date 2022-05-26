@@ -147,6 +147,9 @@ sense. Here are a few examples:
  - `ExporterName LIKE th2-%` selects flows coming from routers
    starting with `th2-`.
 
+Field names are case-insensitive. Comments can also be added by using
+`--` for single-line comments or enclosing them in `/*` and `*/`.
+
 The final SQL query sent to ClickHouse is logged inside the console
 after a successful request. It should be noted than using ports or
 addresses prevent the use of aggregated data and are therefore slower.

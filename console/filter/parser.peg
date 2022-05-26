@@ -221,7 +221,10 @@ KW_ILIKE "ILIKE operator" ← "ILIKE"i !IdentStart { return "ILIKE", nil }
 KW_IN "IN operator" ← "IN"i !IdentStart { return "IN", nil }
 
 SingleLineComment "comment" ← "--" ( !EOL SourceChar )*
+MultiLineComment ← "/*" ( !"*/" SourceChar )* ("*/" / EOF {
+  return "", errors.New("comment unclosed")
+})
 IdentStart ← [A-Za-z_]
-_ "whitespace" ← ([ \n\r\t] / SingleLineComment)*
+_ "whitespace" ← ([ \n\r\t] / SingleLineComment / MultiLineComment)*
 EOF ← !.
 EOL ← '\n'

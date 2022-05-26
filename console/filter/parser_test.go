@@ -86,6 +86,11 @@ DstPort > 1024 -- Non-privileged port
 AND SrcAS = AS12322 -- Proxad ASN`, `DstPort > 1024 AND SrcAS = 12322`},
 		{`InIfDescription = "This contains a -- comment" -- nope`,
 			`InIfDescription = 'This contains a -- comment'`},
+		{`InIfDescription = "This contains a /* comment"`,
+			`InIfDescription = 'This contains a /* comment'`},
+		{`OutIfProvider /* That's the output provider */ = 'telia'`, `OutIfProvider = 'telia'`},
+		{`OutIfProvider /* That's the
+output provider */ = 'telia'`, `OutIfProvider = 'telia'`},
 	}
 	for _, tc := range cases {
 		got, err := Parse("", []byte(tc.Input))
@@ -122,12 +127,15 @@ func TestInvalidFilter(t *testing.T) {
 		{`AND Proto = 100`},
 		{`Proto = 100AND Proto = 100`},
 		{`Proto = 100 ANDProto = 100`},
+		{`Proto = 100 AND (Proto = 100`},
+		{`Proto = 100 /* Hello !`},
 		{`SrcAS IN (AS12322, 29447`},
 		{`SrcAS IN (AS12322 29447)`},
 		{`SrcAS IN (AS12322,`},
 	}
 	for _, tc := range cases {
-		_, err := Parse("", []byte(tc.Input))
+		out, err := Parse("", []byte(tc.Input))
+		t.Logf("out: %v", out)
 		if err == nil {
 			t.Errorf("Parse(%q) didn't throw an error", tc.Input)
 		}
