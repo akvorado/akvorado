@@ -12,8 +12,8 @@ import (
 	"akvorado/common/helpers"
 )
 
-// sankeyQuery describes the input for the /sankey endpoint.
-type sankeyQuery struct {
+// sankeyHandlerInput describes the input for the /sankey endpoint.
+type sankeyHandlerInput struct {
 	Start      time.Time     `json:"start" binding:"required"`
 	End        time.Time     `json:"end" binding:"required,gtfield=Start"`
 	Dimensions []queryColumn `json:"dimensions" binding:"required,min=2"` // group by ...
@@ -22,57 +22,7 @@ type sankeyQuery struct {
 	Units      string        `json:"units" binding:"required,oneof=pps bps"`
 }
 
-// sankeyQueryToSQL converts a sankey query to an SQL request
-func (query sankeyQuery) toSQL() (string, error) {
-	// Filter
-	where := query.Filter.filter
-	if where == "" {
-		where = "{timefilter}"
-	} else {
-		where = fmt.Sprintf("{timefilter} AND (%s)", where)
-	}
-
-	// Select
-	arrayFields := []string{}
-	dimensions := []string{}
-	for _, column := range query.Dimensions {
-		arrayFields = append(arrayFields, fmt.Sprintf(`if(%s IN (SELECT %s FROM rows), %s, 'Other')`,
-			column.String(),
-			column.String(),
-			column.toSQLSelect()))
-		dimensions = append(dimensions, column.String())
-	}
-	fields := []string{}
-	if query.Units == "pps" {
-		fields = append(fields, `SUM(Packets*SamplingRate/range) AS xps`)
-	} else {
-		fields = append(fields, `SUM(Bytes*SamplingRate*8/range) AS xps`)
-	}
-	fields = append(fields, fmt.Sprintf("[%s] AS dimensions", strings.Join(arrayFields, ",\n  ")))
-
-	// With
-	with := []string{
-		fmt.Sprintf(`(SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM {table} WHERE %s) AS range`, where),
-		fmt.Sprintf(
-			"rows AS (SELECT %s FROM {table} WHERE %s GROUP BY %s ORDER BY SUM(Bytes) DESC LIMIT %d)",
-			strings.Join(dimensions, ", "),
-			where,
-			strings.Join(dimensions, ", "),
-			query.Limit),
-	}
-
-	sqlQuery := fmt.Sprintf(`
-WITH
- %s
-SELECT
- %s
-FROM {table}
-WHERE %s
-GROUP BY dimensions
-ORDER BY xps DESC`, strings.Join(with, ",\n "), strings.Join(fields, ",\n "), where)
-	return sqlQuery, nil
-}
-
+// sankeyHandlerOutput describes the output for the /sankey endpoint.
 type sankeyHandlerOutput struct {
 	// Unprocessed data for table view
 	Rows [][]string `json:"rows"`
@@ -87,29 +37,80 @@ type sankeyLink struct {
 	Xps    int    `json:"xps"`
 }
 
+// sankeyHandlerInputToSQL converts a sankey query to an SQL request
+func (input sankeyHandlerInput) toSQL() (string, error) {
+	// Filter
+	where := input.Filter.filter
+	if where == "" {
+		where = "{timefilter}"
+	} else {
+		where = fmt.Sprintf("{timefilter} AND (%s)", where)
+	}
+
+	// Select
+	arrayFields := []string{}
+	dimensions := []string{}
+	for _, column := range input.Dimensions {
+		arrayFields = append(arrayFields, fmt.Sprintf(`if(%s IN (SELECT %s FROM rows), %s, 'Other')`,
+			column.String(),
+			column.String(),
+			column.toSQLSelect()))
+		dimensions = append(dimensions, column.String())
+	}
+	fields := []string{}
+	if input.Units == "pps" {
+		fields = append(fields, `SUM(Packets*SamplingRate/range) AS xps`)
+	} else {
+		fields = append(fields, `SUM(Bytes*SamplingRate*8/range) AS xps`)
+	}
+	fields = append(fields, fmt.Sprintf("[%s] AS dimensions", strings.Join(arrayFields, ",\n  ")))
+
+	// With
+	with := []string{
+		fmt.Sprintf(`(SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM {table} WHERE %s) AS range`, where),
+		fmt.Sprintf(
+			"rows AS (SELECT %s FROM {table} WHERE %s GROUP BY %s ORDER BY SUM(Bytes) DESC LIMIT %d)",
+			strings.Join(dimensions, ", "),
+			where,
+			strings.Join(dimensions, ", "),
+			input.Limit),
+	}
+
+	sqlQuery := fmt.Sprintf(`
+WITH
+ %s
+SELECT
+ %s
+FROM {table}
+WHERE %s
+GROUP BY dimensions
+ORDER BY xps DESC`, strings.Join(with, ",\n "), strings.Join(fields, ",\n "), where)
+	return sqlQuery, nil
+}
+
 func (c *Component) sankeyHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
-	var query sankeyQuery
-	if err := gc.ShouldBindJSON(&query); err != nil {
+	var input sankeyHandlerInput
+	if err := gc.ShouldBindJSON(&input); err != nil {
 		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 
-	sqlQuery, err := query.toSQL()
+	sqlQuery, err := input.toSQL()
 	if err != nil {
 		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 
 	// We need to select a resolution allowing us to have a somewhat accurate timespan
-	resolution := time.Duration(int64(query.End.Sub(query.Start).Nanoseconds()) / 20)
+	resolution := time.Duration(int64(input.End.Sub(input.Start).Nanoseconds()) / 20)
 	if resolution < time.Second {
 		resolution = time.Second
 	}
 
 	// Prepare and execute query
 	sqlQuery = c.queryFlowsTable(sqlQuery,
-		query.Start, query.End, resolution)
+		input.Start, input.End, resolution)
 	gc.Header("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
 	results := []struct {
 		Xps        float64  `ch:"xps"`
@@ -132,7 +133,7 @@ func (c *Component) sankeyHandlerFunc(gc *gin.Context) {
 		if name != "Other" {
 			return name
 		}
-		return fmt.Sprintf("Other %s", query.Dimensions[index].String())
+		return fmt.Sprintf("Other %s", input.Dimensions[index].String())
 	}
 	addedNodes := map[string]bool{}
 	addNode := func(name string) {
@@ -154,7 +155,7 @@ func (c *Component) sankeyHandlerFunc(gc *gin.Context) {
 		output.Rows = append(output.Rows, result.Dimensions)
 		output.Xps = append(output.Xps, int(result.Xps))
 		// Consider each pair of successive dimensions
-		for i := 0; i < len(query.Dimensions)-1; i++ {
+		for i := 0; i < len(input.Dimensions)-1; i++ {
 			dimension1 := completeName(result.Dimensions[i], i)
 			dimension2 := completeName(result.Dimensions[i+1], i+1)
 			addNode(dimension1)

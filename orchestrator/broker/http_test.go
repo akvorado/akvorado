@@ -6,6 +6,8 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
+
+	"github.com/gin-gonic/gin"
 )
 
 func TestConfigurationEndpoint(t *testing.T) {
@@ -24,13 +26,10 @@ func TestConfigurationEndpoint(t *testing.T) {
 
 	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
 		{
-			URL:         "/api/v0/orchestrator/broker/configuration/inlet",
-			ContentType: "application/json; charset=utf-8",
-			FirstLines: []string{
-				"{",
-				`    "bye": "Goodbye world!",`,
-				`    "hello": "Hello world!"`,
-				"}",
+			URL: "/api/v0/orchestrator/broker/configuration/inlet",
+			JSONOutput: gin.H{
+				"bye":   "Goodbye world!",
+				"hello": "Hello world!",
 			},
 		},
 	})

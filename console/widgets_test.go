@@ -8,6 +8,7 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/benbjohnson/clock"
+	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 
 	"akvorado/common/clickhousedb"
@@ -90,18 +91,15 @@ func TestWidgetLastFlow(t *testing.T) {
 
 	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
 		{
-			URL:         "/api/v0/console/widget/flow-last",
-			ContentType: "application/json; charset=utf-8",
-			FirstLines: []string{
-				`{`,
-				`    "InIfBoundary": "external",`,
-				`    "InIfName": "Hu0/0/1/10",`,
-				`    "InIfSpeed": 100000,`,
-				`    "SamplingRate": 10000,`,
-				`    "SrcAddr": "2001:db8::22",`,
-				`    "SrcCountry": "FR",`,
-				`    "TimeReceived": "2022-04-04T08:36:11.00000001Z"`,
-				`}`,
+			URL: "/api/v0/console/widget/flow-last",
+			JSONOutput: gin.H{
+				"InIfBoundary": "external",
+				"InIfName":     "Hu0/0/1/10",
+				"InIfSpeed":    100000,
+				"SamplingRate": 10000,
+				"SrcAddr":      "2001:db8::22",
+				"SrcCountry":   "FR",
+				"TimeReceived": "2022-04-04T08:36:11.00000001Z",
 			},
 		},
 	})
@@ -132,13 +130,10 @@ func TestFlowRate(t *testing.T) {
 
 	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
 		{
-			URL:         "/api/v0/console/widget/flow-rate",
-			ContentType: "application/json; charset=utf-8",
-			FirstLines: []string{
-				`{`,
-				`    "period": "second",`,
-				`    "rate": 100.1`,
-				`}`,
+			URL: "/api/v0/console/widget/flow-rate",
+			JSONOutput: gin.H{
+				"period": "second",
+				"rate":   100.1,
 			},
 		},
 	})
@@ -173,16 +168,13 @@ func TestWidgetExporters(t *testing.T) {
 
 	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
 		{
-			URL:         "/api/v0/console/widget/exporters",
-			ContentType: "application/json; charset=utf-8",
-			FirstLines: []string{
-				`{`,
-				`    "exporters": [`,
-				`        "exporter1",`,
-				`        "exporter2",`,
-				`        "exporter3"`,
-				`    ]`,
-				`}`,
+			URL: "/api/v0/console/widget/exporters",
+			JSONOutput: gin.H{
+				"exporters": []string{
+					"exporter1",
+					"exporter2",
+					"exporter3",
+				},
 			},
 		},
 	})
@@ -235,29 +227,33 @@ func TestWidgetTop(t *testing.T) {
 
 	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
 		{
-			URL:         "/api/v0/console/widget/top/src-port",
-			ContentType: "application/json; charset=utf-8",
-			FirstLines: []string{
-				`{"top":[{"name":"TCP/443","percent":51},{"name":"UDP/443","percent":20},{"name":"TCP/80","percent":18}]}`,
-			},
+			URL: "/api/v0/console/widget/top/src-port",
+			JSONOutput: gin.H{
+				"top": []gin.H{
+					gin.H{"name": "TCP/443", "percent": 51},
+					gin.H{"name": "UDP/443", "percent": 20},
+					gin.H{"name": "TCP/80", "percent": 18}}},
 		}, {
-			URL:         "/api/v0/console/widget/top/protocol",
-			ContentType: "application/json; charset=utf-8",
-			FirstLines: []string{
-				`{"top":[{"name":"TCP","percent":75},{"name":"UDP","percent":24},{"name":"ESP","percent":1}]}`,
-			},
+			URL: "/api/v0/console/widget/top/protocol",
+			JSONOutput: gin.H{
+				"top": []gin.H{
+					gin.H{"name": "TCP", "percent": 75},
+					gin.H{"name": "UDP", "percent": 24},
+					gin.H{"name": "ESP", "percent": 1}}},
 		}, {
-			URL:         "/api/v0/console/widget/top/exporter",
-			ContentType: "application/json; charset=utf-8",
-			FirstLines: []string{
-				`{"top":[{"name":"exporter1","percent":20},{"name":"exporter3","percent":10},{"name":"exporter5","percent":3}]}`,
-			},
+			URL: "/api/v0/console/widget/top/exporter",
+			JSONOutput: gin.H{
+				"top": []gin.H{
+					gin.H{"name": "exporter1", "percent": 20},
+					gin.H{"name": "exporter3", "percent": 10},
+					gin.H{"name": "exporter5", "percent": 3}}},
 		}, {
-			URL:         "/api/v0/console/widget/top/src-as",
-			ContentType: "application/json; charset=utf-8",
-			FirstLines: []string{
-				`{"top":[{"name":"2906: Netflix","percent":12},{"name":"36040: Youtube","percent":10},{"name":"20940: Akamai","percent":9}]}`,
-			},
+			URL: "/api/v0/console/widget/top/src-as",
+			JSONOutput: gin.H{
+				"top": []gin.H{
+					gin.H{"name": "2906: Netflix", "percent": 12},
+					gin.H{"name": "36040: Youtube", "percent": 10},
+					gin.H{"name": "20940: Akamai", "percent": 9}}},
 		},
 	})
 }
@@ -308,10 +304,15 @@ ORDER BY Time`).
 
 	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
 		{
-			URL:         "/api/v0/console/widget/graph?points=100",
-			ContentType: "application/json; charset=utf-8",
-			FirstLines: []string{
-				`{"data":[{"t":"2009-11-10T23:00:00Z","gbps":25.3},{"t":"2009-11-10T23:01:00Z","gbps":27.8},{"t":"2009-11-10T23:02:00Z","gbps":26.4},{"t":"2009-11-10T23:03:00Z","gbps":29.2},{"t":"2009-11-10T23:04:00Z","gbps":21.3},{"t":"2009-11-10T23:05:00Z","gbps":24.7}]}`,
+			URL: "/api/v0/console/widget/graph?points=100",
+			JSONOutput: gin.H{
+				"data": []gin.H{
+					gin.H{"t": "2009-11-10T23:00:00Z", "gbps": 25.3},
+					gin.H{"t": "2009-11-10T23:01:00Z", "gbps": 27.8},
+					gin.H{"t": "2009-11-10T23:02:00Z", "gbps": 26.4},
+					gin.H{"t": "2009-11-10T23:03:00Z", "gbps": 29.2},
+					gin.H{"t": "2009-11-10T23:04:00Z", "gbps": 21.3},
+					gin.H{"t": "2009-11-10T23:05:00Z", "gbps": 24.7}},
 			},
 		},
 	})

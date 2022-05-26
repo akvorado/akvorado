@@ -12,8 +12,8 @@ import (
 	"akvorado/common/helpers"
 )
 
-// graphQuery describes the input for the /graph endpoint.
-type graphQuery struct {
+// graphHandlerInput describes the input for the /graph endpoint.
+type graphHandlerInput struct {
 	Start      time.Time     `json:"start" binding:"required"`
 	End        time.Time     `json:"end" binding:"required,gtfield=Start"`
 	Points     int           `json:"points" binding:"required,min=5,max=2000"` // minimum number of points
@@ -23,12 +23,23 @@ type graphQuery struct {
 	Units      string        `json:"units" binding:"required,oneof=pps bps"`
 }
 
-// graphQueryToSQL converts a graph query to an SQL request
-func (query graphQuery) toSQL() (string, error) {
-	interval := int64((query.End.Sub(query.Start).Seconds())) / int64(query.Points)
+// graphHandlerOutput describes the output for the /graph endpoint.
+type graphHandlerOutput struct {
+	Rows                 [][]string  `json:"rows"`
+	Time                 []time.Time `json:"t"`
+	Points               [][]int     `json:"points"`  // t → row → xps
+	Average              []int       `json:"average"` // row → xps
+	Min                  []int       `json:"min"`
+	Max                  []int       `json:"max"`
+	NinetyFivePercentile []int       `json:"95th"`
+}
+
+// graphHandlerInputToSQL converts a graph input to an SQL request
+func (input graphHandlerInput) toSQL() (string, error) {
+	interval := int64((input.End.Sub(input.Start).Seconds())) / int64(input.Points)
 
 	// Filter
-	where := query.Filter.filter
+	where := input.Filter.filter
 	if where == "" {
 		where = "{timefilter}"
 	} else {
@@ -39,7 +50,7 @@ func (query graphQuery) toSQL() (string, error) {
 	fields := []string{
 		`toStartOfInterval(TimeReceived, INTERVAL slot second) AS time`,
 	}
-	if query.Units == "pps" {
+	if input.Units == "pps" {
 		fields = append(fields, `SUM(Packets*SamplingRate/slot) AS xps`)
 	} else {
 		fields = append(fields, `SUM(Bytes*SamplingRate*8/slot) AS xps`)
@@ -47,7 +58,7 @@ func (query graphQuery) toSQL() (string, error) {
 	selectFields := []string{}
 	dimensions := []string{}
 	others := []string{}
-	for _, column := range query.Dimensions {
+	for _, column := range input.Dimensions {
 		field := column.toSQLSelect()
 		selectFields = append(selectFields, field)
 		dimensions = append(dimensions, column.String())
@@ -70,7 +81,7 @@ func (query graphQuery) toSQL() (string, error) {
 			strings.Join(dimensions, ", "),
 			where,
 			strings.Join(dimensions, ", "),
-			query.Limit))
+			input.Limit))
 	}
 
 	sqlQuery := fmt.Sprintf(`
@@ -85,35 +96,25 @@ ORDER BY time`, strings.Join(with, ",\n "), strings.Join(fields, ",\n "), where)
 	return sqlQuery, nil
 }
 
-type graphHandlerOutput struct {
-	Rows                 [][]string  `json:"rows"`
-	Time                 []time.Time `json:"t"`
-	Points               [][]int     `json:"points"`  // t → row → xps
-	Average              []int       `json:"average"` // row → xps
-	Min                  []int       `json:"min"`
-	Max                  []int       `json:"max"`
-	NinetyFivePercentile []int       `json:"95th"`
-}
-
 func (c *Component) graphHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
-	var query graphQuery
-	if err := gc.ShouldBindJSON(&query); err != nil {
+	var input graphHandlerInput
+	if err := gc.ShouldBindJSON(&input); err != nil {
 		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 
-	sqlQuery, err := query.toSQL()
+	sqlQuery, err := input.toSQL()
 	if err != nil {
 		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
 		return
 	}
-	resolution := time.Duration(int64(query.End.Sub(query.Start).Nanoseconds()) / int64(query.Points))
+	resolution := time.Duration(int64(input.End.Sub(input.Start).Nanoseconds()) / int64(input.Points))
 	if resolution < time.Second {
 		resolution = time.Second
 	}
 	sqlQuery = c.queryFlowsTable(sqlQuery,
-		query.Start, query.End, resolution)
+		input.Start, input.End, resolution)
 	gc.Header("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
 
 	results := []struct {

@@ -1,10 +1,6 @@
 package console
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	netHTTP "net/http"
 	"strings"
 	"testing"
 	"time"
@@ -22,12 +18,12 @@ import (
 func TestGraphQuerySQL(t *testing.T) {
 	cases := []struct {
 		Description string
-		Input       graphQuery
+		Input       graphHandlerInput
 		Expected    string
 	}{
 		{
 			Description: "no dimensions, no filters, bps",
-			Input: graphQuery{
+			Input: graphHandlerInput{
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
@@ -48,7 +44,7 @@ GROUP BY time, dimensions
 ORDER BY time`,
 		}, {
 			Description: "no dimensions, no filters, pps",
-			Input: graphQuery{
+			Input: graphHandlerInput{
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
@@ -69,7 +65,7 @@ GROUP BY time, dimensions
 ORDER BY time`,
 		}, {
 			Description: "no dimensions",
-			Input: graphQuery{
+			Input: graphHandlerInput{
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
@@ -90,7 +86,7 @@ GROUP BY time, dimensions
 ORDER BY time`,
 		}, {
 			Description: "no filters",
-			Input: graphQuery{
+			Input: graphHandlerInput{
 				Start:  time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:    time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Points: 100,
@@ -160,105 +156,79 @@ func TestGraphHandler(t *testing.T) {
 		{base.Add(2 * time.Minute), 100, []string{"router2", "provider4"}},
 		{base.Add(2 * time.Minute), 100, []string{"Other", "Other"}},
 	}
-	expected := gin.H{
-		// Sorted by sum of bps
-		"rows": [][]string{
-			{"router1", "provider2"}, // 10000
-			{"router1", "provider1"}, // 1600
-			{"router2", "provider2"}, // 1200
-			{"router2", "provider3"}, // 1100
-			{"router2", "provider4"}, // 1000
-			{"Other", "Other"},       // 2100
-		},
-		"t": []string{
-			"2009-11-10T23:00:00Z",
-			"2009-11-10T23:01:00Z",
-			"2009-11-10T23:02:00Z",
-		},
-		"points": [][]int{
-			{2000, 5000, 3000},
-			{1000, 500, 100},
-			{1200, 0, 0},
-			{1100, 0, 0},
-			{0, 900, 100},
-			{1900, 100, 100},
-		},
-		"min": []int{
-			2000,
-			100,
-			0,
-			0,
-			0,
-			100,
-		},
-		"max": []int{
-			5000,
-			1000,
-			1200,
-			1100,
-			900,
-			1900,
-		},
-		"average": []int{
-			3333,
-			533,
-			400,
-			366,
-			333,
-			700,
-		},
-		"95th": []int{
-			4000,
-			750,
-			600,
-			550,
-			500,
-			1000,
-		},
-	}
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), gomock.Any()).
 		SetArg(1, expectedSQL).
 		Return(nil)
 
-	input := graphQuery{
-		Start:  time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-		End:    time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
-		Points: 100,
-		Limit:  20,
-		Dimensions: []queryColumn{
-			queryColumnExporterName,
-			queryColumnInIfProvider,
+	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+		{
+			URL: "/api/v0/console/graph",
+			JSONInput: gin.H{
+				"start":      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
+				"end":        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				"points":     100,
+				"limit":      20,
+				"dimensions": []string{"ExporterName", "InIfProvider"},
+				"filter":     "DstCountry = 'FR' AND SrcCountry = 'US'",
+				"units":      "bps",
+			},
+			JSONOutput: gin.H{
+				// Sorted by sum of bps
+				"rows": [][]string{
+					{"router1", "provider2"}, // 10000
+					{"router1", "provider1"}, // 1600
+					{"router2", "provider2"}, // 1200
+					{"router2", "provider3"}, // 1100
+					{"router2", "provider4"}, // 1000
+					{"Other", "Other"},       // 2100
+				},
+				"t": []string{
+					"2009-11-10T23:00:00Z",
+					"2009-11-10T23:01:00Z",
+					"2009-11-10T23:02:00Z",
+				},
+				"points": [][]int{
+					{2000, 5000, 3000},
+					{1000, 500, 100},
+					{1200, 0, 0},
+					{1100, 0, 0},
+					{0, 900, 100},
+					{1900, 100, 100},
+				},
+				"min": []int{
+					2000,
+					100,
+					0,
+					0,
+					0,
+					100,
+				},
+				"max": []int{
+					5000,
+					1000,
+					1200,
+					1100,
+					900,
+					1900,
+				},
+				"average": []int{
+					3333,
+					533,
+					400,
+					366,
+					333,
+					700,
+				},
+				"95th": []int{
+					4000,
+					750,
+					600,
+					550,
+					500,
+					1000,
+				},
+			},
 		},
-		Filter: queryFilter{"DstCountry = 'FR' AND SrcCountry = 'US'"},
-		Units:  "bps",
-	}
-	payload := new(bytes.Buffer)
-	err = json.NewEncoder(payload).Encode(input)
-	if err != nil {
-		t.Fatalf("Encode() error:\n%+v", err)
-	}
-	resp, err := netHTTP.Post(fmt.Sprintf("http://%s/api/v0/console/graph", h.Address),
-		"application/json", payload)
-	if err != nil {
-		t.Fatalf("POST /api/v0/console/graph:\n%+v", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		t.Errorf("POST /api/v0/console/graph: got status code %d, not 200", resp.StatusCode)
-	}
-	gotContentType := resp.Header.Get("Content-Type")
-	if gotContentType != "application/json; charset=utf-8" {
-		t.Errorf("POST /api/v0/console/graph Content-Type (-got, +want):\n-%s\n+%s",
-			gotContentType, "application/json; charset=utf-8")
-	}
-	decoder := json.NewDecoder(resp.Body)
-	var got gin.H
-	if err := decoder.Decode(&got); err != nil {
-		t.Fatalf("POST /api/v0/console/graph error:\n%+v", err)
-	}
-
-	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Fatalf("POST /api/v0/console/graph (-got, +want):\n%s", diff)
-	}
+	})
 }

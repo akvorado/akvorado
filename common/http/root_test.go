@@ -63,6 +63,9 @@ func TestGinRouter(t *testing.T) {
 			URL:         "/api/v0/test",
 			ContentType: "application/json; charset=utf-8",
 			FirstLines:  []string{`{"message":"ping"}`},
+		}, {
+			URL:        "/api/v0/test",
+			JSONOutput: gin.H{"message": "ping"},
 		},
 	})
 }

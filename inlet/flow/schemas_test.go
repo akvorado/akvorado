@@ -5,6 +5,8 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
+
+	"github.com/gin-gonic/gin"
 )
 
 func TestHTTPEndpoints(t *testing.T) {
@@ -20,16 +22,13 @@ func TestHTTPEndpoints(t *testing.T) {
 				`package decoder;`,
 			},
 		}, {
-			URL:         "/api/v0/inlet/flow/schemas.json",
-			ContentType: "application/json; charset=utf-8",
-			FirstLines: []string{
-				`{`,
-				`    "current-version": 1,`,
-				`    "versions": {`,
-				`        "0": "/api/v0/inlet/flow/schema-0.proto",`,
-				`        "1": "/api/v0/inlet/flow/schema-1.proto"`,
-				`    }`,
-				`}`,
+			URL: "/api/v0/inlet/flow/schemas.json",
+			JSONOutput: gin.H{
+				"current-version": 1,
+				"versions": gin.H{
+					"0": "/api/v0/inlet/flow/schema-0.proto",
+					"1": "/api/v0/inlet/flow/schema-1.proto",
+				},
 			},
 		},
 	}

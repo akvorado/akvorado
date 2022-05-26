@@ -1,10 +1,6 @@
 package console
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	netHTTP "net/http"
 	"strings"
 	"testing"
 	"time"
@@ -22,12 +18,12 @@ import (
 func TestSankeyQuerySQL(t *testing.T) {
 	cases := []struct {
 		Description string
-		Input       sankeyQuery
+		Input       sankeyHandlerInput
 		Expected    string
 	}{
 		{
 			Description: "two dimensions, no filters, bps",
-			Input: sankeyQuery{
+			Input: sankeyHandlerInput{
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Dimensions: []queryColumn{queryColumnSrcAS, queryColumnExporterName},
@@ -49,7 +45,7 @@ GROUP BY dimensions
 ORDER BY xps DESC`,
 		}, {
 			Description: "two dimensions, no filters, pps",
-			Input: sankeyQuery{
+			Input: sankeyHandlerInput{
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Dimensions: []queryColumn{queryColumnSrcAS, queryColumnExporterName},
@@ -71,7 +67,7 @@ GROUP BY dimensions
 ORDER BY xps DESC`,
 		}, {
 			Description: "two dimensions, with filter",
-			Input: sankeyQuery{
+			Input: sankeyHandlerInput{
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Dimensions: []queryColumn{queryColumnSrcAS, queryColumnExporterName},
@@ -147,134 +143,111 @@ func TestSankeyHandler(t *testing.T) {
 		{621, []string{"Other", "Other", "Other"}},
 		{159, []string{"Other", "provider1", "router1"}},
 	}
-	expected := gin.H{
-		// Raw data
-		"rows": [][]string{
-			{"AS100", "Other", "router1"},
-			{"AS300", "provider1", "Other"},
-			{"AS300", "provider2", "router1"},
-			{"AS200", "provider1", "Other"},
-			{"AS100", "provider1", "Other"},
-			{"Other", "provider1", "Other"},
-			{"AS200", "provider3", "Other"},
-			{"AS200", "Other", "router2"},
-			{"AS100", "provider3", "Other"},
-			{"AS100", "provider3", "router2"},
-			{"Other", "Other", "router1"},
-			{"AS300", "provider3", "router2"},
-			{"AS300", "Other", "router1"},
-			{"AS100", "provider1", "router1"},
-			{"AS200", "provider2", "router2"},
-			{"AS100", "provider2", "Other"},
-			{"AS200", "Other", "router1"},
-			{"AS300", "Other", "Other"},
-			{"AS200", "provider3", "router2"},
-			{"Other", "Other", "Other"},
-			{"Other", "provider1", "router1"},
-		},
-		"xps": []int{
-			9677,
-			9472,
-			7593,
-			7234,
-			6006,
-			5988,
-			4675,
-			4348,
-			3999,
-			3978,
-			3623,
-			3080,
-			2915,
-			2623,
-			2482,
-			2234,
-			1360,
-			975,
-			717,
-			621,
-			159,
-		},
-		// For graph
-		"nodes": []string{
-			"AS100",
-			"Other InIfProvider",
-			"router1",
-			"AS300",
-			"provider1",
-			"Other ExporterName",
-			"provider2",
-			"AS200",
-			"Other SrcAS",
-			"provider3",
-			"router2",
-		},
-		"links": []gin.H{
-			{"source": "provider1", "target": "Other ExporterName", "xps": 9472 + 7234 + 6006 + 5988},
-			{"source": "Other InIfProvider", "target": "router1", "xps": 9677 + 3623 + 2915 + 1360},
-			{"source": "AS100", "target": "Other InIfProvider", "xps": 9677},
-			{"source": "AS300", "target": "provider1", "xps": 9472},
-			{"source": "provider3", "target": "Other ExporterName", "xps": 4675 + 3999},
-			{"source": "AS100", "target": "provider1", "xps": 6006 + 2623},
-			{"source": "AS100", "target": "provider3", "xps": 3999 + 3978},
-			{"source": "provider3", "target": "router2", "xps": 3978 + 3080 + 717},
-			{"source": "AS300", "target": "provider2", "xps": 7593},
-			{"source": "provider2", "target": "router1", "xps": 7593},
-			{"source": "AS200", "target": "provider1", "xps": 7234},
-			{"source": "Other SrcAS", "target": "provider1", "xps": 5988 + 159},
-			{"source": "AS200", "target": "Other InIfProvider", "xps": 4348 + 1360},
-			{"source": "AS200", "target": "provider3", "xps": 4675 + 717},
-			{"source": "Other InIfProvider", "target": "router2", "xps": 4348},
-			{"source": "Other SrcAS", "target": "Other InIfProvider", "xps": 3623 + 621},
-			{"source": "AS300", "target": "Other InIfProvider", "xps": 2915 + 975},
-			{"source": "AS300", "target": "provider3", "xps": 3080},
-			{"source": "provider1", "target": "router1", "xps": 2623 + 159},
-			{"source": "AS200", "target": "provider2", "xps": 2482},
-			{"source": "provider2", "target": "router2", "xps": 2482},
-			{"source": "AS100", "target": "provider2", "xps": 2234},
-			{"source": "provider2", "target": "Other ExporterName", "xps": 2234},
-			{"source": "Other InIfProvider", "target": "Other ExporterName", "xps": 975 + 621},
-		},
-	}
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), gomock.Any()).
 		SetArg(1, expectedSQL).
 		Return(nil)
 
-	input := sankeyQuery{
-		Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-		End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
-		Dimensions: []queryColumn{queryColumnSrcAS, queryColumnInIfProvider, queryColumnExporterName},
-		Limit:      10,
-		Filter:     queryFilter{"DstCountry = 'FR'"},
-		Units:      "bps",
-	}
-	payload := new(bytes.Buffer)
-	err = json.NewEncoder(payload).Encode(input)
-	if err != nil {
-		t.Fatalf("Encode() error:\n%+v", err)
-	}
-	resp, err := netHTTP.Post(fmt.Sprintf("http://%s/api/v0/console/sankey", h.Address),
-		"application/json", payload)
-	if err != nil {
-		t.Fatalf("POST /api/v0/console/sankey:\n%+v", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		t.Errorf("POST /api/v0/console/sankey: got status code %d, not 200", resp.StatusCode)
-	}
-	gotContentType := resp.Header.Get("Content-Type")
-	if gotContentType != "application/json; charset=utf-8" {
-		t.Errorf("POST /api/v0/console/sankey Content-Type (-got, +want):\n-%s\n+%s",
-			gotContentType, "application/json; charset=utf-8")
-	}
-	decoder := json.NewDecoder(resp.Body)
-	var got gin.H
-	if err := decoder.Decode(&got); err != nil {
-		t.Fatalf("POST /api/v0/console/sankey error:\n%+v", err)
-	}
-
-	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Fatalf("POST /api/v0/console/sankey (-got, +want):\n%s", diff)
-	}
+	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+		{
+			URL: "/api/v0/console/sankey",
+			JSONInput: gin.H{
+				"start":      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
+				"end":        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				"dimensions": []string{"SrcAS", "InIfProvider", "ExporterName"},
+				"limit":      10,
+				"filter":     "DstCountry = 'FR'",
+				"units":      "bps",
+			},
+			JSONOutput: gin.H{
+				// Raw data
+				"rows": [][]string{
+					{"AS100", "Other", "router1"},
+					{"AS300", "provider1", "Other"},
+					{"AS300", "provider2", "router1"},
+					{"AS200", "provider1", "Other"},
+					{"AS100", "provider1", "Other"},
+					{"Other", "provider1", "Other"},
+					{"AS200", "provider3", "Other"},
+					{"AS200", "Other", "router2"},
+					{"AS100", "provider3", "Other"},
+					{"AS100", "provider3", "router2"},
+					{"Other", "Other", "router1"},
+					{"AS300", "provider3", "router2"},
+					{"AS300", "Other", "router1"},
+					{"AS100", "provider1", "router1"},
+					{"AS200", "provider2", "router2"},
+					{"AS100", "provider2", "Other"},
+					{"AS200", "Other", "router1"},
+					{"AS300", "Other", "Other"},
+					{"AS200", "provider3", "router2"},
+					{"Other", "Other", "Other"},
+					{"Other", "provider1", "router1"},
+				},
+				"xps": []int{
+					9677,
+					9472,
+					7593,
+					7234,
+					6006,
+					5988,
+					4675,
+					4348,
+					3999,
+					3978,
+					3623,
+					3080,
+					2915,
+					2623,
+					2482,
+					2234,
+					1360,
+					975,
+					717,
+					621,
+					159,
+				},
+				// For graph
+				"nodes": []string{
+					"AS100",
+					"Other InIfProvider",
+					"router1",
+					"AS300",
+					"provider1",
+					"Other ExporterName",
+					"provider2",
+					"AS200",
+					"Other SrcAS",
+					"provider3",
+					"router2",
+				},
+				"links": []gin.H{
+					{"source": "provider1", "target": "Other ExporterName", "xps": 9472 + 7234 + 6006 + 5988},
+					{"source": "Other InIfProvider", "target": "router1", "xps": 9677 + 3623 + 2915 + 1360},
+					{"source": "AS100", "target": "Other InIfProvider", "xps": 9677},
+					{"source": "AS300", "target": "provider1", "xps": 9472},
+					{"source": "provider3", "target": "Other ExporterName", "xps": 4675 + 3999},
+					{"source": "AS100", "target": "provider1", "xps": 6006 + 2623},
+					{"source": "AS100", "target": "provider3", "xps": 3999 + 3978},
+					{"source": "provider3", "target": "router2", "xps": 3978 + 3080 + 717},
+					{"source": "AS300", "target": "provider2", "xps": 7593},
+					{"source": "provider2", "target": "router1", "xps": 7593},
+					{"source": "AS200", "target": "provider1", "xps": 7234},
+					{"source": "Other SrcAS", "target": "provider1", "xps": 5988 + 159},
+					{"source": "AS200", "target": "Other InIfProvider", "xps": 4348 + 1360},
+					{"source": "AS200", "target": "provider3", "xps": 4675 + 717},
+					{"source": "Other InIfProvider", "target": "router2", "xps": 4348},
+					{"source": "Other SrcAS", "target": "Other InIfProvider", "xps": 3623 + 621},
+					{"source": "AS300", "target": "Other InIfProvider", "xps": 2915 + 975},
+					{"source": "AS300", "target": "provider3", "xps": 3080},
+					{"source": "provider1", "target": "router1", "xps": 2623 + 159},
+					{"source": "AS200", "target": "provider2", "xps": 2482},
+					{"source": "provider2", "target": "router2", "xps": 2482},
+					{"source": "AS100", "target": "provider2", "xps": 2234},
+					{"source": "provider2", "target": "Other ExporterName", "xps": 2234},
+					{"source": "Other InIfProvider", "target": "Other ExporterName", "xps": 975 + 621},
+				},
+			},
+		},
+	})
 }
