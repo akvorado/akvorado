@@ -45,11 +45,22 @@ LIMIT 20`,
 		Return(nil)
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), `
-SELECT concat('AS', toString(asn)) AS label, detail
-FROM asns
-WHERE positionCaseInsensitive(name, $1) >= 1
-ORDER BY positionCaseInsensitive(name, $1) ASC, asn ASC
-LIMIT 20`,
+SELECT label, detail FROM (
+ SELECT concat('AS', toString(SrcAS)) AS label, dictGet('asns', 'name', SrcAS) AS detail, 1 AS rank
+ FROM flows
+ WHERE TimeReceived > date_sub(minute, 1, now())
+ AND detail != ''
+ AND positionCaseInsensitive(detail, $1) >= 1
+ GROUP BY SrcAS
+ ORDER BY SUM(Bytes) DESC
+ LIMIT 20
+UNION DISTINCT
+ SELECT concat('AS', toString(asn)) AS label, name AS detail, 2 AS rank
+ FROM asns
+ WHERE positionCaseInsensitive(name, $1) >= 1
+ ORDER BY positionCaseInsensitive(name, $1) ASC, asn ASC
+ LIMIT 20
+) ORDER BY rank ASC, rowNumberInBlock() ASC LIMIT 20`,
 			"goog").
 		SetArg(1, []struct {
 			Label  string `ch:"label"`

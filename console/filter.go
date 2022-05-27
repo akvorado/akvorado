@@ -146,29 +146,37 @@ func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 				filterCompletion{"IPv4", "protocol", true},
 				filterCompletion{"IPv6", "protocol", true})
 		case "srcas", "dstas":
-			// Query "asns" dictionary if we have at last 3 letters as a prefix
-			if len(input.Prefix) >= 3 {
-				sqlQuery := `
-SELECT concat('AS', toString(asn)) AS label, detail
-FROM asns
-WHERE positionCaseInsensitive(name, $1) >= 1
-ORDER BY positionCaseInsensitive(name, $1) ASC, asn ASC
-LIMIT 20`
-				results := []struct {
-					Label  string `ch:"label"`
-					Detail string `ch:"detail"`
-				}{}
-				if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
-					c.r.Err(err).Msg("unable to query database")
-					break
-				}
-				for _, result := range results {
-					completions = append(completions, filterCompletion{
-						Label:  result.Label,
-						Detail: result.Detail,
-						Quoted: false,
-					})
-				}
+			results := []struct {
+				Label  string `ch:"label"`
+				Detail string `ch:"detail"`
+			}{}
+			sqlQuery := `
+SELECT label, detail FROM (
+ SELECT concat('AS', toString(SrcAS)) AS label, dictGet('asns', 'name', SrcAS) AS detail, 1 AS rank
+ FROM flows
+ WHERE TimeReceived > date_sub(minute, 1, now())
+ AND detail != ''
+ AND positionCaseInsensitive(detail, $1) >= 1
+ GROUP BY SrcAS
+ ORDER BY SUM(Bytes) DESC
+ LIMIT 20
+UNION DISTINCT
+ SELECT concat('AS', toString(asn)) AS label, name AS detail, 2 AS rank
+ FROM asns
+ WHERE positionCaseInsensitive(name, $1) >= 1
+ ORDER BY positionCaseInsensitive(name, $1) ASC, asn ASC
+ LIMIT 20
+) ORDER BY rank ASC, rowNumberInBlock() ASC LIMIT 20`
+			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
+				c.r.Err(err).Msg("unable to query database")
+				break
+			}
+			for _, result := range results {
+				completions = append(completions, filterCompletion{
+					Label:  result.Label,
+					Detail: result.Detail,
+					Quoted: false,
+				})
 			}
 			input.Prefix = "" // We have handled this internally
 		case "exportername":
