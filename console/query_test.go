@@ -43,3 +43,26 @@ func TestQueryColumnSQLSelect(t *testing.T) {
 		})
 	}
 }
+
+func TestUnmarshalFilter(t *testing.T) {
+	cases := []struct {
+		Input    string
+		Expected string
+	}{
+		{"", ""},
+		{"   ", ""},
+		{"SrcPort=12322", "SrcPort = 12322"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.Input, func(t *testing.T) {
+			var qf queryFilter
+			err := qf.UnmarshalText([]byte(tc.Input))
+			if err != nil {
+				t.Fatalf("UnmarshalText(%q) error:\n%+v", tc.Input, err)
+			}
+			if diff := helpers.Diff(qf.filter, tc.Expected); diff != "" {
+				t.Fatalf("UnmarshalText(%q) (-got, +want):\n%s", tc.Input, diff)
+			}
+		})
+	}
+}

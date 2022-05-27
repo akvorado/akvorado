@@ -3,6 +3,7 @@ package console
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"akvorado/common/helpers"
 	"akvorado/console/filter"
@@ -98,6 +99,10 @@ func (gf queryFilter) MarshalText() ([]byte, error) {
 	return []byte(gf.filter), nil
 }
 func (gf *queryFilter) UnmarshalText(input []byte) error {
+	if strings.TrimSpace(string(input)) == "" {
+		*gf = queryFilter{""}
+		return nil
+	}
 	got, err := filter.Parse("", input)
 	if err != nil {
 		return fmt.Errorf("cannot parse filter: %s", filter.HumanError(err))
