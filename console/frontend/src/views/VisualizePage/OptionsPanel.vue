@@ -1,13 +1,13 @@
 <template>
   <aside
     class="transition-height transition-width w-full shrink-0 duration-100 lg:h-auto"
-    :class="open ? 'h-96 lg:w-64 xl:w-80' : 'h-6 lg:w-6'"
+    :class="open ? 'h-80 lg:w-64 xl:w-80' : 'h-6 lg:w-6'"
   >
     <span
       class="absolute z-30 translate-x-4 transition-transform lg:translate-y-4"
       :class="
         open
-          ? 'translate-y-96 rotate-180 lg:translate-x-64 xl:translate-x-80'
+          ? 'translate-y-80 rotate-180 lg:translate-x-64 xl:translate-x-80'
           : 'translate-y-6 lg:translate-x-0'
       "
     >
