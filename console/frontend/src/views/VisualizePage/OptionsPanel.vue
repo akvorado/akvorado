@@ -1,16 +1,25 @@
 <template>
   <aside
-    class="transition-height transition-width relative w-full shrink-0 duration-100 lg:h-auto"
-    :class="open ? 'h-96 md:w-64 lg:w-80' : 'h-6 md:w-6 lg:w-6'"
+    class="transition-height transition-width w-full shrink-0 duration-100 lg:h-auto"
+    :class="open ? 'h-96 lg:w-64 xl:w-80' : 'h-6 lg:w-6'"
   >
-    <button
-      class="absolute right-4 bottom-0 z-50 translate-y-1/2 rounded-full bg-white shadow transition-transform delay-100 duration-500 hover:bg-gray-300 dark:bg-gray-900 dark:shadow-white/10 dark:hover:bg-black lg:top-2 lg:bottom-auto lg:right-0 lg:translate-x-1/2 lg:translate-y-0"
-      :class="open && 'rotate-180'"
-      @click="open = !open"
+    <span
+      class="absolute z-30 translate-x-4 transition-transform lg:translate-y-4"
+      :class="
+        open
+          ? 'translate-y-96 rotate-180 lg:translate-x-64 xl:translate-x-80'
+          : 'translate-y-6 lg:translate-x-0'
+      "
     >
-      <ChevronRightIcon class="hidden h-8 lg:inline" />
-      <ChevronDownIcon class="h-8 lg:hidden" />
-    </button>
+      <button
+        class="flex h-6 w-6 items-center justify-center rounded-full bg-white shadow transition-transform duration-100 hover:bg-gray-300 dark:bg-gray-900 dark:shadow-white/10 dark:hover:bg-black lg:translate-x-1/2 lg:translate-y-0"
+        :class="open ? 'translate-y-1/2' : '-translate-y-1/2'"
+        @click="open = !open"
+      >
+        <ChevronRightIcon class="hidden lg:inline" />
+        <ChevronDownIcon class="lg:hidden" />
+      </button>
+    </span>
     <form
       class="h-full overflow-y-auto border-r border-gray-300 bg-gray-100 dark:border-slate-700 dark:bg-slate-800"
       autocomplete="off"
@@ -36,7 +45,6 @@
             </div>
           </template>
         </InputListBox>
-
         <SectionLabel>Time range</SectionLabel>
         <InputTimeRange v-model="timeRange" />
         <SectionLabel>Dimensions</SectionLabel>
@@ -44,18 +52,26 @@
           v-model="dimensions"
           :min-dimensions="graphType.name === graphTypes.sankey ? 2 : 0"
         />
-        <SectionLabel>
-          <template #default>Filter</template>
-          <template #hint>
-            <kbd
-              class="rounded border border-gray-300 bg-gray-200 px-1 dark:border-gray-600 dark:bg-gray-900"
-              >Ctrl-Space</kbd
-            >
-            to show completions
-          </template>
-        </SectionLabel>
-        <InputFilter v-model="filter" class="mb-2" />
-        <div class="flex flex-row items-start justify-between">
+        <div
+          class="lg:focus-within:absolute lg:focus-within:inset-0 lg:focus-within:z-40 lg:focus-within:bg-black/50"
+        >
+          <div
+            class="lg:focus-within:absolute lg:focus-within:inset-x-2 lg:focus-within:top-36 lg:focus-within:z-50 lg:focus-within:rounded lg:focus-within:bg-gray-100 lg:focus-within:p-3"
+          >
+            <SectionLabel>
+              <template #default>Filter</template>
+              <template #hint>
+                <kbd
+                  class="rounded border border-gray-300 bg-gray-200 px-1 dark:border-gray-600 dark:bg-gray-900"
+                  >Ctrl-Space</kbd
+                >
+                to show completions
+              </template>
+            </SectionLabel>
+            <InputFilter v-model="filter" class="mb-2" />
+          </div>
+        </div>
+        <div class="mt-2 flex flex-row items-start justify-between">
           <InputToggle
             v-model="pps"
             :label="'Unit: ' + (pps ? 'ᵖ⁄ₛ' : 'ᵇ⁄ₛ')"
