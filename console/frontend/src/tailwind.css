@@ -1,3 +1,30 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* For CodeMirror */
+#app {
+  .cm-editor {
+    &.cm-focused {
+      @apply outline-none;
+    }
+    .cm-tooltip {
+      @apply z-50;
+    }
+    .cm-tooltip-autocomplete {
+      @apply rounded border border-gray-300 bg-white p-1 shadow-md dark:border-gray-700 dark:bg-gray-900 dark:shadow-white/10;
+      li {
+        @apply flex flex-row flex-nowrap items-center justify-between gap-3 rounded-sm px-1;
+        .cm-completionLabel {
+          @apply grow;
+        }
+        .cm-completionDetail {
+          @apply shrink text-sm text-gray-500 dark:text-gray-300;
+        }
+        &[aria-selected] .cm-completionDetail {
+          @apply text-white;
+        }
+      }
+    }
+  }
+}

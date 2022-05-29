@@ -1,6 +1,8 @@
-import { parser } from "./syntax.grammar";
 import { LRLanguage, LanguageSupport } from "@codemirror/language";
 import { styleTags, tags as t } from "@lezer/highlight";
+import { parser } from "./syntax.grammar";
+import { complete } from "./complete";
+import { linterSource } from "./linter";
 
 export const FilterLanguage = LRLanguage.define({
   parser: parser.configure({
@@ -24,6 +26,10 @@ export const FilterLanguage = LRLanguage.define({
   },
 });
 
-export function filter() {
+export function filterLanguage() {
   return new LanguageSupport(FilterLanguage);
 }
+export function filterCompletion() {
+  return FilterLanguage.data.of({ autocomplete: complete });
+}
+export { linterSource as filterLinterSource };

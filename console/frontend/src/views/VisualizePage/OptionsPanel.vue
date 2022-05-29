@@ -44,7 +44,16 @@
           v-model="dimensions"
           :min-dimensions="graphType.name === graphTypes.sankey ? 2 : 0"
         />
-        <SectionLabel>Filter</SectionLabel>
+        <SectionLabel>
+          <template #default>Filter</template>
+          <template #hint>
+            <kbd
+              class="rounded border border-gray-300 bg-gray-200 px-1 dark:border-gray-600 dark:bg-gray-900"
+              >Ctrl-Space</kbd
+            >
+            to show completions
+          </template>
+        </SectionLabel>
         <InputFilter v-model="filter" class="mb-2" />
         <div class="flex flex-row items-start justify-between">
           <InputToggle
@@ -102,7 +111,7 @@ const open = ref(false);
 const graphType = ref(graphTypeList[0]);
 const timeRange = ref({});
 const dimensions = ref([]);
-const filter = ref("");
+const filter = ref({});
 const pps = ref(false);
 
 const options = computed(() => ({
@@ -112,7 +121,7 @@ const options = computed(() => ({
   end: timeRange.value.end,
   dimensions: dimensions.value.selected,
   limit: dimensions.value.limit,
-  filter: filter.value,
+  filter: filter.value.expression,
   units: pps.value ? "pps" : "bps",
   // Only for time series
   ...([stacked, lines].includes(graphType.value.name) && { points: 200 }),
@@ -122,7 +131,8 @@ const applyLabel = computed(() =>
   isEqual(options.value, props.modelValue) ? "Refresh" : "Apply"
 );
 const hasErrors = computed(
-  () => !!(timeRange.value.errors || dimensions.value.errors)
+  () =>
+    !!(timeRange.value.errors || dimensions.value.errors || filter.value.errors)
 );
 
 watch(
@@ -144,7 +154,7 @@ watch(
       graphTypeList.find(({ name }) => name === _graphType) || graphTypeList[0];
     timeRange.value = { start, end };
     dimensions.value = { selected: [..._dimensions], limit };
-    filter.value = _filter;
+    filter.value = { expression: _filter };
     pps.value = units == "pps";
 
     // A bit risky, but it seems to work.

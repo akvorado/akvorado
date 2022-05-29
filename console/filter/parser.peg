@@ -120,7 +120,7 @@ ConditionASExpr "condition on AS number" ←
 }
 RConditionASExpr "condition on AS number" ←
    operator:("=" / "!=") _ value:ASN { return fmt.Sprintf("%s %s", toString(operator), toString(value)), nil }
- / operator:InOperator _ '(' value:ListASN ')' {
+ / operator:InOperator _ '(' _ value:ListASN _ ')' {
   return fmt.Sprintf("%s (%s)", toString(operator), toString(value)), nil
 }
 ConditionETypeExpr "condition on Ethernet type" ←
@@ -161,7 +161,7 @@ ASN "AS number" ← "AS"i? value:Unsigned32 {
   return value, nil
 }
 ListASN "list of AS numbers" ←
-   head:ASN ',' _ tail:ListASN { return fmt.Sprintf("%s, %s", head, tail), nil }
+   head:ASN _ ',' _ tail:ListASN { return fmt.Sprintf("%s, %s", head, tail), nil }
  / value:ASN { return value, nil }
 
 StringLiteral "quoted string" ← ( '"' DoubleStringChar* '"' / "'" SingleStringChar* "'" ) {

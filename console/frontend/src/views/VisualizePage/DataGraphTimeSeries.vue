@@ -18,7 +18,7 @@ const props = defineProps({
     default: null,
   },
 });
-const emit = defineEmits(["updateTimeRange"]);
+const emit = defineEmits(["update:timeRange"]);
 
 import { ref, watch, inject, computed, onMounted, nextTick } from "vue";
 import { formatXps, dataColor, dataColorGrey } from "@/utils";
@@ -276,7 +276,7 @@ const updateTimeRange = (evt) => {
     type: "brush",
     areas: [],
   });
-  emit("updateTimeRange", [start, end]);
+  emit("update:timeRange", [start, end]);
 };
 watch(graph, enableBrush);
 

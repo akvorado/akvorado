@@ -122,7 +122,8 @@ aspect of the graph.
   categorized as "Other".
 
 - The filter box contains an SQL-like expression to limit the data to
-  be graphed.
+  be graphed. It features an auto-completion system that can be
+  triggered with `Ctrl-Space`.
 
 The URL contains the encoded parameters and can be used to share with
 others. However, currently, no stability of the options are

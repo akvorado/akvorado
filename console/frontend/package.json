@@ -10,7 +10,9 @@
     "format": "prettier --loglevel warn --write {src/**/,}*.{js,vue,html}"
   },
   "dependencies": {
+    "@codemirror/autocomplete": "^0.20.2",
     "@codemirror/commands": "^0.20.0",
+    "@codemirror/lint": "^0.20.3",
     "@codemirror/state": "^0.20.0",
     "@codemirror/view": "^0.20.6",
     "@headlessui/vue": "1.6.1",

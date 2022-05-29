@@ -60,7 +60,7 @@ UNION DISTINCT
  WHERE positionCaseInsensitive(name, $1) >= 1
  ORDER BY positionCaseInsensitive(name, $1) ASC, asn ASC
  LIMIT 20
-) ORDER BY rank ASC, rowNumberInBlock() ASC LIMIT 20`,
+) GROUP BY label, detail ORDER BY MIN(rank) ASC, MIN(rowNumberInBlock()) ASC LIMIT 20`,
 			"goog").
 		SetArg(1, []struct {
 			Label  string `ch:"label"`
@@ -89,9 +89,8 @@ UNION DISTINCT
 				"parsed":  `InIfName = 'Gi0/0/0/1'`},
 		},
 		{
-			URL:        "/api/v0/console/filter/validate",
-			StatusCode: 400,
-			JSONInput:  gin.H{"filter": `InIfName = "`},
+			URL:       "/api/v0/console/filter/validate",
+			JSONInput: gin.H{"filter": `InIfName = "`},
 			JSONOutput: gin.H{
 				"message": "at line 1, position 12: string literal not terminated",
 				"errors": []gin.H{{
@@ -116,12 +115,12 @@ UNION DISTINCT
 			StatusCode: 200,
 			JSONInput:  gin.H{"what": "operator", "column": "ExporterName"},
 			JSONOutput: gin.H{"completions": []gin.H{
-				{"label": "!=", "detail": "condition operator", "quoted": false},
-				{"label": "=", "detail": "condition operator", "quoted": false},
-				{"label": "ILIKE", "detail": "condition operator", "quoted": false},
-				{"label": "IUNLIKE", "detail": "condition operator", "quoted": false},
-				{"label": "LIKE", "detail": "condition operator", "quoted": false},
-				{"label": "UNLIKE", "detail": "condition operator", "quoted": false},
+				{"label": "!=", "detail": "comparison operator", "quoted": false},
+				{"label": "=", "detail": "comparison operator", "quoted": false},
+				{"label": "ILIKE", "detail": "comparison operator", "quoted": false},
+				{"label": "IUNLIKE", "detail": "comparison operator", "quoted": false},
+				{"label": "LIKE", "detail": "comparison operator", "quoted": false},
+				{"label": "UNLIKE", "detail": "comparison operator", "quoted": false},
 			}},
 		}, {
 			URL:        "/api/v0/console/filter/complete",

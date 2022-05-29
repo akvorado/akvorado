@@ -166,6 +166,7 @@ The SPA is built using mostly the following components:
 - [TailwindCSS](https://tailwindcss.com/) for styling pages directly inside HTML,
 - [Headless UI](https://headlessui.dev/) for some unstyled UI components,
 - [ECharts](https://echarts.apache.org/) to plot charts.
+- [CodeMirror](https://codemirror.net/6/) to edit filter expressions.
 
 There is no full-blown component library despite the existence of many candidates:
 

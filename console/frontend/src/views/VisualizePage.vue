@@ -22,7 +22,7 @@
             <DataGraph
               :data="fetchedData"
               :highlight="highlightedSerie"
-              @update-time-range="updateTimeRange"
+              @update:time-range="updateTimeRange"
             />
           </ResizeRow>
           <DataTable

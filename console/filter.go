@@ -13,7 +13,7 @@ import (
 
 // filterValidateHandlerInput describes the input for the /filter/validate endpoint.
 type filterValidateHandlerInput struct {
-	Filter string `json:"filter" binding:"required"`
+	Filter string `json:"filter"`
 }
 
 // filterValidateHandlerOutput describes the output for the /filter/validate endpoint.
@@ -30,6 +30,12 @@ func (c *Component) filterValidateHandlerFunc(gc *gin.Context) {
 		return
 	}
 
+	if strings.TrimSpace(input.Filter) == "" {
+		gc.JSON(http.StatusOK, filterValidateHandlerOutput{
+			Message: "ok",
+		})
+		return
+	}
 	got, err := filter.Parse("", []byte(input.Filter))
 	if err == nil {
 		gc.JSON(http.StatusOK, filterValidateHandlerOutput{
@@ -38,7 +44,7 @@ func (c *Component) filterValidateHandlerFunc(gc *gin.Context) {
 		})
 		return
 	}
-	gc.JSON(http.StatusBadRequest, filterValidateHandlerOutput{
+	gc.JSON(http.StatusOK, filterValidateHandlerOutput{
 		Message: filter.HumanError(err),
 		Errors:  filter.AllErrors(err),
 	})
@@ -98,9 +104,12 @@ func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 					strings.TrimSuffix(candidate[1:len(candidate)-1], `"i`),
 					`"`)
 				if candidate != "--" && candidate != "/*" {
+					if candidate == "IN" || candidate == "NOTIN" {
+						candidate = candidate + " ("
+					}
 					completions = append(completions, filterCompletion{
 						Label:  candidate,
-						Detail: "condition operator",
+						Detail: "comparison operator",
 					})
 				}
 			}
@@ -166,7 +175,7 @@ UNION DISTINCT
  WHERE positionCaseInsensitive(name, $1) >= 1
  ORDER BY positionCaseInsensitive(name, $1) ASC, asn ASC
  LIMIT 20
-) ORDER BY rank ASC, rowNumberInBlock() ASC LIMIT 20`
+) GROUP BY label, detail ORDER BY MIN(rank) ASC, MIN(rowNumberInBlock()) ASC LIMIT 20`
 			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
 				c.r.Err(err).Msg("unable to query database")
 				break

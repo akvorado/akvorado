@@ -33,6 +33,7 @@ func TestValidFilter(t *testing.T) {
 		{`SrcAS=AS12322`, `SrcAS = 12322`},
 		{`SrcAS=as12322`, `SrcAS = 12322`},
 		{`SrcAS IN(12322, 29447)`, `SrcAS IN (12322, 29447)`},
+		{`SrcAS IN( 12322  , 29447  )`, `SrcAS IN (12322, 29447)`},
 		{`SrcAS NOTIN(12322, 29447)`, `SrcAS NOT IN (12322, 29447)`},
 		{`SrcAS NOTIN (AS12322, 29447)`, `SrcAS NOT IN (12322, 29447)`},
 		{`DstAS=12322`, `DstAS = 12322`},
