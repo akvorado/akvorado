@@ -20,7 +20,7 @@
         type === 'default' && disabled,
       'cursor-not-allowed': disabled,
     }"
-    class="inline-flex items-center rounded-lg px-5 py-2.5 text-center text-center text-sm transition-colors duration-200 focus:outline-none focus:ring-4"
+    class="inline-flex items-center rounded-lg px-5 py-2.5 text-center text-sm transition-colors duration-200 focus:outline-none focus:ring-4"
   >
     <LoadingSpinner v-if="loading" class="mr-2 h-4 w-4" />
     <slot></slot>

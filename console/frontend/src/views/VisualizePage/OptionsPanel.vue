@@ -29,22 +29,39 @@
       "
     >
       <div v-if="open" class="flex h-full flex-col py-4 px-3 lg:max-h-screen">
-        <InputListBox
-          v-model="graphType"
-          :items="graphTypeList"
-          label="Graph type"
-        >
-          <template #selected>{{ graphType.name }}</template>
-          <template #item="{ name }">
-            <div class="flex w-full items-center justify-between">
-              <span>{{ name }}</span>
-              <GraphIcon
-                :name="name"
-                class="mr-1 inline h-4 text-gray-500 dark:text-gray-400"
-              />
-            </div>
-          </template>
-        </InputListBox>
+        <div class="mb-2 flex flex-row flex-wrap justify-between gap-2">
+          <InputButton
+            attr-type="submit"
+            :disabled="hasErrors && !loading"
+            :loading="loading"
+            :type="loading ? 'default' : 'primary'"
+            class="order-3 w-32 justify-center lg:order-2 lg:grow-0"
+          >
+            {{ loading ? "Cancel" : applyLabel }}
+          </InputButton>
+          <InputToggle
+            v-model="pps"
+            :label="'Unit: ' + (pps ? 'ᵖ⁄ₛ' : 'ᵇ⁄ₛ')"
+            class="order-2 lg:order-1 lg:grow-0"
+          />
+          <InputListBox
+            v-model="graphType"
+            :items="graphTypeList"
+            class="order-1 grow lg:order-3 lg:h-full"
+            label="Graph type"
+          >
+            <template #selected>{{ graphType.name }}</template>
+            <template #item="{ name }">
+              <div class="flex w-full items-center justify-between">
+                <span>{{ name }}</span>
+                <GraphIcon
+                  :name="name"
+                  class="mr-1 inline h-4 text-gray-500 dark:text-gray-400"
+                />
+              </div>
+            </template>
+          </InputListBox>
+        </div>
         <SectionLabel>Time range</SectionLabel>
         <InputTimeRange v-model="timeRange" />
         <SectionLabel>Dimensions</SectionLabel>
@@ -70,21 +87,6 @@
             </SectionLabel>
             <InputFilter v-model="filter" class="mb-2" />
           </div>
-        </div>
-        <div class="mt-2 flex flex-row items-start justify-between">
-          <InputToggle
-            v-model="pps"
-            :label="'Unit: ' + (pps ? 'ᵖ⁄ₛ' : 'ᵇ⁄ₛ')"
-          />
-          <InputButton
-            attr-type="submit"
-            :disabled="hasErrors && !loading"
-            :loading="loading"
-            :type="loading ? 'default' : 'primary'"
-            class="mb-2"
-          >
-            {{ loading ? "Cancel" : applyLabel }}
-          </InputButton>
         </div>
       </div>
     </form>
