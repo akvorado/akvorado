@@ -39,9 +39,13 @@
           >
             {{ loading ? "Cancel" : applyLabel }}
           </InputButton>
-          <InputToggle
-            v-model="pps"
-            :label="'Unit: ' + (pps ? 'ᵖ⁄ₛ' : 'ᵇ⁄ₛ')"
+          <InputChoice
+            v-model="units"
+            :choices="[
+              { label: 'ᵇ⁄ₛ', name: 'bps' },
+              { label: 'ᵖ⁄ₛ', name: 'pps' },
+            ]"
+            label="Unit"
             class="order-2 lg:order-1 lg:grow-0"
           />
           <InputListBox
@@ -113,7 +117,7 @@ import InputDimensions from "@/components/InputDimensions.vue";
 import InputFilter from "@/components/InputFilter.vue";
 import InputListBox from "@/components/InputListBox.vue";
 import InputButton from "@/components/InputButton.vue";
-import InputToggle from "@/components/InputToggle.vue";
+import InputChoice from "@/components/InputChoice.vue";
 import SectionLabel from "./SectionLabel.vue";
 import GraphIcon from "./GraphIcon.vue";
 import { graphTypes } from "./constants";
@@ -130,7 +134,7 @@ const graphType = ref(graphTypeList[0]);
 const timeRange = ref({});
 const dimensions = ref([]);
 const filter = ref({});
-const pps = ref(false);
+const units = ref("bps");
 
 const options = computed(() => ({
   // Common to all graph types
@@ -140,7 +144,7 @@ const options = computed(() => ({
   dimensions: dimensions.value.selected,
   limit: dimensions.value.limit,
   filter: filter.value.expression,
-  units: pps.value ? "pps" : "bps",
+  units: units.value,
   // Only for time series
   ...([stacked, lines].includes(graphType.value.name) && { points: 200 }),
   ...(graphType.value.name === grid && { points: 50 }),
@@ -164,7 +168,7 @@ watch(
       limit = 10,
       points /* eslint-disable-line no-unused-vars */,
       filter: _filter = "InIfBoundary = external",
-      units = "bps",
+      units: _units = "bps",
     } = modelValue;
 
     // Dispatch values in refs
@@ -173,7 +177,7 @@ watch(
     timeRange.value = { start, end };
     dimensions.value = { selected: [..._dimensions], limit };
     filter.value = { expression: _filter };
-    pps.value = units == "pps";
+    units.value = _units;
 
     // A bit risky, but it seems to work.
     if (!isEqual(modelValue, options.value)) {
