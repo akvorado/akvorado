@@ -23,7 +23,7 @@ func TestServeDocs(t *testing.T) {
 			Path   string
 			Expect string
 		}{
-			{"usage", `\u003ca href=\"configuration\"\u003econfiguration section\u003c/a\u003e`},
+			{"usage", `<a href=\"configuration\">configuration section</a>`},
 			{"intro", `data:image/svg`},
 		}
 		for _, tc := range cases {

@@ -128,7 +128,7 @@ func (c *Component) docsHandlerFunc(gc *gin.Context) {
 		return
 	}
 	gc.Header("Cache-Control", "max-age=300")
-	gc.IndentedJSON(http.StatusOK, gin.H{
+	gc.PureJSON(http.StatusOK, gin.H{
 		"markdown": buf.String(),
 		"toc":      toc,
 	})
