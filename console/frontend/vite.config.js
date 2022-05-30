@@ -22,6 +22,13 @@ export default defineConfig({
       "/api": {
         target: "http://localhost:8080",
         changeOrigin: true,
+        headers: {
+          "X-Akvorado-User-Login": "alfred",
+          "X-Akvorado-User-Name": "Alfred Pennyworth",
+          "X-Akvorado-User-Email": "alfred@dccomics.example.com",
+          "X-Akvorado-User-Logout":
+            "https://en.wikipedia.org/wiki/Alfred_Pennyworth",
+        },
       },
     },
   },

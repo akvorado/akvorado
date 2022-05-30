@@ -18,6 +18,7 @@
       </router-link>
       <div class="flex md:order-2">
         <DarkModeSwitcher />
+        <ActiveUser />
         <DisclosureButton
           class="ml-3 inline-flex items-center rounded-lg p-2 text-sm text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-blue-800 md:hidden"
         >
@@ -71,6 +72,7 @@ import {
   PresentationChartLineIcon,
 } from "@heroicons/vue/solid";
 import DarkModeSwitcher from "@/components/DarkModeSwitcher.vue";
+import ActiveUser from "@/components/ActiveUser.vue";
 
 const route = useRoute();
 const navigation = computed(() => [

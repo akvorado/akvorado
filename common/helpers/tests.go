@@ -40,10 +40,12 @@ func Diff(a, b interface{}) string {
 type HTTPEndpointCases []struct {
 	Description string
 	URL         string
+	Header      http.Header
+	JSONInput   interface{}
+
 	ContentType string
 	StatusCode  int
 	FirstLines  []string
-	JSONInput   interface{}
 	JSONOutput  interface{}
 }
 
@@ -63,7 +65,13 @@ func TestHTTPEndpoints(t *testing.T, serverAddr net.Addr, cases HTTPEndpointCase
 			var resp *http.Response
 			var err error
 			if tc.JSONInput == nil {
-				resp, err = http.Get(fmt.Sprintf("http://%s%s", serverAddr, tc.URL))
+				req, _ := http.NewRequest("GET",
+					fmt.Sprintf("http://%s%s", serverAddr, tc.URL),
+					nil)
+				if tc.Header != nil {
+					req.Header = tc.Header
+				}
+				resp, err = http.DefaultClient.Do(req)
 				if err != nil {
 					t.Fatalf("GET %s:\n%+v", tc.URL, err)
 				}
@@ -73,8 +81,14 @@ func TestHTTPEndpoints(t *testing.T, serverAddr net.Addr, cases HTTPEndpointCase
 				if err != nil {
 					t.Fatalf("Encode() error:\n%+v", err)
 				}
-				resp, err = http.Post(fmt.Sprintf("http://%s%s", serverAddr, tc.URL),
-					"application/json", payload)
+				req, _ := http.NewRequest("POST",
+					fmt.Sprintf("http://%s%s", serverAddr, tc.URL),
+					payload)
+				if tc.Header != nil {
+					req.Header = tc.Header
+				}
+				req.Header.Add("Content-Type", "application/json")
+				resp, err = http.DefaultClient.Do(req)
 				if err != nil {
 					t.Fatalf("POST %s:\n%+v", tc.URL, err)
 				}
