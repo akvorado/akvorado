@@ -9,7 +9,7 @@
         v-for="({ name, label: blabel }, idx) in choices"
         :key="name"
         :for="id(name)"
-        class="first:rounded-l-lg last:rounded-r-lg focus-within:z-10 focus-within:ring-2 focus-within:ring-blue-300 dark:focus-within:ring-blue-800"
+        class="cursor-pointer first:rounded-l-lg last:rounded-r-lg focus-within:z-10 focus-within:ring-2 focus-within:ring-blue-300 dark:focus-within:ring-blue-800"
       >
         <input
           :id="id(name)"
