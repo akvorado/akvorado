@@ -22,5 +22,5 @@ import { useFetch } from "@vueuse/core";
 
 const url = computed(() => "/api/v0/console/widget/exporters?" + props.refresh);
 const { data } = useFetch(url, { refetch: true }).get().json();
-const exporters = computed(() => data.value?.exporters.length || "???");
+const exporters = computed(() => data?.value?.exporters?.length || "???");
 </script>

@@ -1,5 +1,5 @@
 <template>
-  <Popover v-if="isAuthenticated" class="relative px-2" as="div">
+  <Popover class="relative px-2" as="div">
     <PopoverButton
       class="flex rounded-full bg-gray-200 focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-800"
     >
@@ -46,6 +46,6 @@
 import { inject } from "vue";
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue";
 
-const { user, isAuthenticated } = inject("user");
+const { user } = inject("user");
 const avatarURL = "/api/v0/console/user/avatar";
 </script>

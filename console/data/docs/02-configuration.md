@@ -376,9 +376,9 @@ an authenticating reverse-proxy for Akvorado:
 - [Authentik](https://goauthentik.io/)
 - [Gluu](https://gluu.org/)
 - [Keycloak](https://www.keycloak.org/)
-- [Ory](https://www.ory.sh/) (no web interface provided in the open source edition)
+- [Ory](https://www.ory.sh/), notably Kratos, Hydra and Oathkeeper
 
 There also exist simpler solutions only providing authentication:
 
-- [OAuth2 Proxy](https://oauth2-proxy.github.io/oauth2-proxy/)
-- [Ory](https://www.ory.sh)
+- [OAuth2 Proxy](https://oauth2-proxy.github.io/oauth2-proxy/), associated with [Dex](https://dexidp.io/)
+- [Ory](https://www.ory.sh), notably Hydra and Oathkeeper

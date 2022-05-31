@@ -1,14 +1,16 @@
 <template>
   <ThemeProvider>
     <TitleProvider>
-      <UserProvider>
-        <div class="flex h-full max-h-screen flex-col">
-          <NavigationBar class="flex-none" />
-          <main class="relative flex grow overflow-y-auto">
-            <router-view />
-          </main>
-        </div>
-      </UserProvider>
+      <router-view v-slot="{ Component }">
+        <UserProvider>
+          <div class="flex h-full max-h-screen flex-col">
+            <NavigationBar class="flex-none" />
+            <main class="relative flex grow overflow-y-auto">
+              <component :is="Component" />
+            </main>
+          </div>
+        </UserProvider>
+      </router-view>
     </TitleProvider>
   </ThemeProvider>
 </template>
