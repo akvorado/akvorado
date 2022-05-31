@@ -100,7 +100,7 @@ const activeSlug = useRouteHash();
 
 // Scroll to the right anchor after loading markdown
 const contentEl = ref(null);
-watch(markdown, async () => {
+watch([markdown, activeSlug], async () => {
   await nextTick();
   let scrollEl = contentEl.value;
   while (window.getComputedStyle(scrollEl).position === "static") {
