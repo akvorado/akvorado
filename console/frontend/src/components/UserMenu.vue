@@ -1,14 +1,10 @@
 <template>
-  <Popover v-if="logged" class="relative px-2" as="div">
+  <Popover v-if="isAuthenticated" class="relative px-2" as="div">
     <PopoverButton
       class="flex rounded-full bg-gray-200 focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-800"
     >
       <span class="sr-only">Open user menu</span>
-      <img
-        class="h-10 w-10 rounded-full"
-        :src="user['avatar-url']"
-        alt="User avatar"
-      />
+      <img class="h-10 w-10 rounded-full" :src="avatarURL" alt="User avatar" />
     </PopoverButton>
     <transition
       enter-active-class="transition duration-200 ease-out"
@@ -23,7 +19,7 @@
       >
         <div class="py-3 px-4">
           <span class="block text-sm text-gray-900 dark:text-white">
-            {{ user.name || user.email || user.login }}
+            {{ user.name || user.email || user.user }}
           </span>
           <span
             v-if="user.name && user.email"
@@ -47,11 +43,9 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
-import { useFetch } from "@vueuse/core";
+import { inject } from "vue";
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue";
 
-const { data } = useFetch("/api/v0/console/user/info").get().json();
-const user = computed(() => data.value);
-const logged = computed(() => data.value?.login !== undefined);
+const { user, isAuthenticated } = inject("user");
+const avatarURL = "/api/v0/console/user/avatar";
 </script>

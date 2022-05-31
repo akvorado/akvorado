@@ -23,7 +23,7 @@ func TestWidgetLastFlow(t *testing.T) {
 	r := reporter.NewMock(t)
 	ch, mockConn := clickhousedb.NewMock(t, r)
 	h := http.NewMock(t, r)
-	c, err := New(r, Configuration{}, Dependencies{
+	c, err := New(r, DefaultConfiguration(), Dependencies{
 		Daemon:       daemon.NewMock(t),
 		HTTP:         h,
 		ClickHouseDB: ch,
@@ -109,7 +109,7 @@ func TestFlowRate(t *testing.T) {
 	r := reporter.NewMock(t)
 	ch, mockConn := clickhousedb.NewMock(t, r)
 	h := http.NewMock(t, r)
-	c, err := New(r, Configuration{}, Dependencies{
+	c, err := New(r, DefaultConfiguration(), Dependencies{
 		Daemon:       daemon.NewMock(t),
 		HTTP:         h,
 		ClickHouseDB: ch,
@@ -143,7 +143,7 @@ func TestWidgetExporters(t *testing.T) {
 	r := reporter.NewMock(t)
 	ch, mockConn := clickhousedb.NewMock(t, r)
 	h := http.NewMock(t, r)
-	c, err := New(r, Configuration{}, Dependencies{
+	c, err := New(r, DefaultConfiguration(), Dependencies{
 		Daemon:       daemon.NewMock(t),
 		HTTP:         h,
 		ClickHouseDB: ch,
@@ -184,7 +184,7 @@ func TestWidgetTop(t *testing.T) {
 	r := reporter.NewMock(t)
 	ch, mockConn := clickhousedb.NewMock(t, r)
 	h := http.NewMock(t, r)
-	c, err := New(r, Configuration{}, Dependencies{
+	c, err := New(r, DefaultConfiguration(), Dependencies{
 		Daemon:       daemon.NewMock(t),
 		HTTP:         h,
 		ClickHouseDB: ch,
@@ -263,7 +263,7 @@ func TestWidgetGraph(t *testing.T) {
 	ch, mockConn := clickhousedb.NewMock(t, r)
 	h := http.NewMock(t, r)
 	mockClock := clock.NewMock()
-	c, err := New(r, Configuration{}, Dependencies{
+	c, err := New(r, DefaultConfiguration(), Dependencies{
 		Daemon:       daemon.NewMock(t),
 		HTTP:         h,
 		ClickHouseDB: ch,

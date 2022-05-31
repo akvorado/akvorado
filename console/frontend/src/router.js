@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import HomePage from "@/views/HomePage.vue";
 import VisualizePage from "@/views/VisualizePage.vue";
 import DocumentationPage from "@/views/DocumentationPage.vue";
-import NotFoundPage from "@/views/NotFoundPage.vue";
+import ErrorPage from "@/views/ErrorPage.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -32,8 +32,9 @@ const router = createRouter({
     {
       path: "/:pathMatch(.*)",
       name: "404",
-      component: NotFoundPage,
+      component: ErrorPage,
       meta: { title: "Not found" },
+      props: { error: "Not found!" },
     },
   ],
 });

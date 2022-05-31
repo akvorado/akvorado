@@ -333,7 +333,7 @@ resolutions:
 
 The main components of the console service are `http` and `console`.
 `http` accepts the [same configuration](#http) as for the inlet
-service. The `console` has no configuration.
+service.
 
 ### Authentication
 
@@ -341,20 +341,44 @@ The console does not store user identities and is unable to
 authenticate them. It expects an authenticating proxy will add some
 headers to the API endpoints:
 
-- `X-Akvorado-User-Login` is the user login,
-- `X-Akvorado-User-Name` is the user display name,
-- `X-Akvorado-User-Email` is the user email address,
-- `X-Akvorado-User-Avatar` is the user's avatar URL,
-- `X-Akvorago-User-Logout` is a link to the logout link.
+- `Remote-User` is the user login,
+- `Remote-Name` is the user display name,
+- `Remote-Email` is the user email address,
+- `X-Logout-URL` is a link to the logout link.
 
-Only the login header is mandatory.
+Only the first header is mandatory. The name of the headers can be
+changed by providing a different mapping under the `headers` key. It
+is also possible to modify the default user (when no header is
+present) by tweaking the `default-user` key:
+
+```yaml
+console:
+  authentication:
+    headers:
+      login: Remote-User
+      name: Remote-Name
+      email: Remote-Email
+      logout-url: X-Logout-URL
+    default-user:
+      login: default
+      name: Default User
+```
+
+To prevent access when not authenticated, the `login` field for the
+`default-user` key should be empty.
 
 There are several systems providing user management with all the bells
 and whistles, including OAuth2 support, multi-factor authentication
 and API tokens. Here is a short selection of solutions able to act as
 an authenticating reverse-proxy for Akvorado:
 
-- [Authentik](https://goauthentik.io/)
 - [Authelia](https://www.authelia.com/)
-- [Ory](https://www.ory.sh/) (no web interface provided in the open source edition)
+- [Authentik](https://goauthentik.io/)
+- [Gluu](https://gluu.org/)
 - [Keycloak](https://www.keycloak.org/)
+- [Ory](https://www.ory.sh/) (no web interface provided in the open source edition)
+
+There also exist simpler solutions only providing authentication:
+
+- [OAuth2 Proxy](https://oauth2-proxy.github.io/oauth2-proxy/)
+- [Ory](https://www.ory.sh)

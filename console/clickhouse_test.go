@@ -17,7 +17,7 @@ func TestRefreshFlowsTables(t *testing.T) {
 	r := reporter.NewMock(t)
 	ch, mockConn := clickhousedb.NewMock(t, r)
 	h := http.NewMock(t, r)
-	c, err := New(r, Configuration{}, Dependencies{
+	c, err := New(r, DefaultConfiguration(), Dependencies{
 		Daemon:       daemon.NewMock(t),
 		HTTP:         h,
 		ClickHouseDB: ch,
@@ -186,7 +186,7 @@ func TestQueryFlowsTables(t *testing.T) {
 	r := reporter.NewMock(t)
 	ch, _ := clickhousedb.NewMock(t, r)
 	h := http.NewMock(t, r)
-	c, err := New(r, Configuration{}, Dependencies{
+	c, err := New(r, DefaultConfiguration(), Dependencies{
 		Daemon:       daemon.NewMock(t),
 		HTTP:         h,
 		ClickHouseDB: ch,

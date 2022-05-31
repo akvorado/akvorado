@@ -21,9 +21,9 @@ func TestServeAssets(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			r := reporter.NewMock(t)
 			h := http.NewMock(t, r)
-			c, err := New(r, Configuration{
-				ServeLiveFS: live,
-			}, Dependencies{
+			conf := DefaultConfiguration()
+			conf.ServeLiveFS = live
+			c, err := New(r, conf, Dependencies{
 				Daemon: daemon.NewMock(t),
 				HTTP:   h,
 			})

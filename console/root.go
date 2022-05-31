@@ -16,6 +16,7 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
+	"akvorado/console/authentication"
 
 	"github.com/benbjohnson/clock"
 	"gopkg.in/tomb.v2"
@@ -45,6 +46,7 @@ type Dependencies struct {
 	HTTP         *http.Component
 	ClickHouseDB *clickhousedb.Component
 	Clock        clock.Clock
+	auth         *authentication.Component
 }
 
 // New creates a new console component.
@@ -52,6 +54,11 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 	if dependencies.Clock == nil {
 		dependencies.Clock = clock.New()
 	}
+	auth, err := authentication.New(r, config.Authentication)
+	if err != nil {
+		return nil, err
+	}
+	dependencies.auth = auth
 	c := Component{
 		r:           r,
 		d:           &dependencies,
@@ -75,7 +82,7 @@ func (c *Component) Start() error {
 	c.r.Info().Msg("starting console component")
 
 	c.d.HTTP.AddHandler("/", netHTTP.HandlerFunc(c.assetsHandlerFunc))
-	endpoint := c.d.HTTP.GinRouter.Group("/api/v0/console", c.userAuthentication())
+	endpoint := c.d.HTTP.GinRouter.Group("/api/v0/console", c.d.auth.UserAuthentication())
 	endpoint.GET("/docs/:name", c.docsHandlerFunc)
 	endpoint.GET("/widget/flow-last", c.widgetFlowLastHandlerFunc)
 	endpoint.GET("/widget/flow-rate", c.widgetFlowRateHandlerFunc)
@@ -86,8 +93,8 @@ func (c *Component) Start() error {
 	endpoint.POST("/sankey", c.sankeyHandlerFunc)
 	endpoint.POST("/filter/validate", c.filterValidateHandlerFunc)
 	endpoint.POST("/filter/complete", c.filterCompleteHandlerFunc)
-	endpoint.GET("/user/info", c.requireUserAuthentication(), c.userInfoHandlerFunc)
-	endpoint.GET("/user/avatar", c.requireUserAuthentication(), c.userAvatarHandlerFunc)
+	endpoint.GET("/user/info", c.d.auth.UserInfoHandlerFunc)
+	endpoint.GET("/user/avatar", c.d.auth.UserAvatarHandlerFunc)
 
 	c.t.Go(func() error {
 		ticker := time.NewTicker(10 * time.Second)
