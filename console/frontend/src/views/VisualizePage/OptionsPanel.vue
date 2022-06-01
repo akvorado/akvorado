@@ -74,10 +74,10 @@
           :min-dimensions="graphType.name === graphTypes.sankey ? 2 : 0"
         />
         <div
-          class="lg:focus-within:absolute lg:focus-within:inset-0 lg:focus-within:z-40 lg:focus-within:bg-black/50"
+          class="lg:focus-within:pointer-events-none lg:focus-within:absolute lg:focus-within:inset-0 lg:focus-within:z-40 lg:focus-within:bg-black/30"
         >
           <div
-            class="lg:focus-within:absolute lg:focus-within:inset-x-2 lg:focus-within:top-36 lg:focus-within:z-50 lg:focus-within:rounded lg:focus-within:bg-gray-100 lg:focus-within:p-3"
+            class="lg:focus-within:pointer-events-auto lg:focus-within:absolute lg:focus-within:inset-x-2 lg:focus-within:top-36 lg:focus-within:z-50 lg:focus-within:rounded lg:focus-within:bg-gray-100 lg:focus-within:p-3"
           >
             <SectionLabel>
               <template #default>Filter</template>
