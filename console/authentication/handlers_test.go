@@ -87,6 +87,16 @@ func TestUserHandler(t *testing.T) {
 				}(),
 				ContentType: "image/png",
 				StatusCode:  200,
+			}, {
+				Description: "avatar, simple user, etag",
+				URL:         "/api/v0/console/user/avatar",
+				Header: func() netHTTP.Header {
+					headers := make(netHTTP.Header)
+					headers.Add("Remote-User", "alfred")
+					headers.Add("If-None-Match", `"b2e72a535032fa89"`)
+					return headers
+				}(),
+				StatusCode: 304,
 			},
 		})
 	})

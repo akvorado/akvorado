@@ -35,6 +35,14 @@ func (c *Component) UserAvatarHandlerFunc(gc *gin.Context) {
 	hash := fnv.New64()
 	hash.Write([]byte(info.Login))
 	randSource := rand.New(rand.NewSource(int64(hash.Sum64())))
+	etag := fmt.Sprintf(`"%x"`, hash.Sum64())
+
+	// Do we have a If-None-Match header?
+	if header := gc.GetHeader("If-None-Match"); header == etag {
+		gc.Header("ETag", etag)
+		gc.Status(http.StatusNotModified)
+		return
+	}
 
 	// Grab list of parts
 	parts := []string{}
@@ -86,8 +94,7 @@ func (c *Component) UserAvatarHandlerFunc(gc *gin.Context) {
 
 	// Serve the result
 	gc.Header("Content-Type", "image/png")
-	gc.Header("Cache-Control", "max-age=86400")
-	gc.Header("Vary", "Remote-User")
+	gc.Header("ETag", etag)
 	gc.Status(http.StatusOK)
 	png.Encode(gc.Writer, img)
 }
