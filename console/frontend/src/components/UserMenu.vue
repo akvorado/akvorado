@@ -18,18 +18,20 @@
         class="absolute right-0 z-50 my-4 max-w-xs list-none divide-y divide-gray-100 rounded bg-white text-base shadow dark:divide-gray-600 dark:bg-gray-700"
       >
         <div class="py-3 px-4">
-          <span class="block text-sm text-gray-900 dark:text-white">
-            {{ user.name || user.email || user.user }}
+          <span
+            class="block whitespace-nowrap text-sm text-gray-900 dark:text-white"
+          >
+            {{ user.name || user.email || user.login }}
           </span>
           <span
             v-if="user.name && user.email"
-            class="block truncate text-sm font-medium text-gray-500 dark:text-gray-400"
+            class="block truncate whitespace-nowrap text-sm font-medium text-gray-500 dark:text-gray-400"
           >
             {{ user.email }}
           </span>
         </div>
-        <ul class="py-1">
-          <li v-if="user['logout-url']">
+        <ul v-if="user['logout-url']" class="py-1">
+          <li>
             <a
               :href="user['logout-url']"
               class="block py-2 px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:text-white"
