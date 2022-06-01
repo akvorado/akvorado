@@ -1,13 +1,13 @@
 <template>
   <aside
     class="transition-height transition-width w-full shrink-0 duration-100 lg:h-auto"
-    :class="open ? 'h-80 lg:w-64 xl:w-80' : 'h-4 lg:w-4'"
+    :class="open ? 'h-80 lg:w-64' : 'h-4 lg:w-4'"
   >
     <span
       class="absolute z-30 translate-x-4 transition-transform lg:translate-y-4"
       :class="
         open
-          ? 'translate-y-80 rotate-180 lg:translate-x-64 xl:translate-x-80'
+          ? 'translate-y-80 rotate-180 lg:translate-x-64'
           : 'translate-y-4 lg:translate-x-0'
       "
     >
@@ -35,7 +35,7 @@
             :disabled="hasErrors && !loading"
             :loading="loading"
             :type="loading ? 'default' : 'primary'"
-            class="order-3 w-32 justify-center lg:order-2 lg:grow-0"
+            class="order-3 w-28 justify-center lg:order-2 lg:grow-0"
           >
             {{ loading ? "Cancel" : applyLabel }}
           </InputButton>
@@ -86,7 +86,7 @@
                   class="rounded border border-gray-300 bg-gray-200 px-1 dark:border-gray-600 dark:bg-gray-900"
                   >Ctrl-Space</kbd
                 >
-                to show completions
+                for completions
               </template>
             </SectionLabel>
             <InputFilter v-model="filter" class="mb-2" />
