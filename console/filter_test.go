@@ -46,13 +46,13 @@ LIMIT 20`,
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), `
 SELECT label, detail FROM (
- SELECT concat('AS', toString(SrcAS)) AS label, dictGet('asns', 'name', SrcAS) AS detail, 1 AS rank
+ SELECT concat('AS', toString(DstAS)) AS label, dictGet('asns', 'name', DstAS) AS detail, 1 AS rank
  FROM flows
  WHERE TimeReceived > date_sub(minute, 1, now())
  AND detail != ''
  AND positionCaseInsensitive(detail, $1) >= 1
- GROUP BY SrcAS
- ORDER BY SUM(Bytes) DESC
+ GROUP BY DstAS
+ ORDER BY COUNT(*) DESC
  LIMIT 20
 UNION DISTINCT
  SELECT concat('AS', toString(asn)) AS label, name AS detail, 2 AS rank
@@ -163,7 +163,7 @@ UNION DISTINCT
 		}, {
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
-			JSONInput:  gin.H{"what": "value", "column": "srcAS", "prefix": "goog"},
+			JSONInput:  gin.H{"what": "value", "column": "dstAS", "prefix": "goog"},
 			JSONOutput: gin.H{"completions": []gin.H{
 				{"label": "AS15169", "detail": "Google", "quoted": false},
 				{"label": "AS16550", "detail": "Google Private Cloud", "quoted": false},

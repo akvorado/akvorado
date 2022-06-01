@@ -159,15 +159,19 @@ func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 				Label  string `ch:"label"`
 				Detail string `ch:"detail"`
 			}{}
-			sqlQuery := `
+			columnName := "SrcAS"
+			if strings.ToLower(input.Column) == "dstas" {
+				columnName = "DstAS"
+			}
+			sqlQuery := fmt.Sprintf(`
 SELECT label, detail FROM (
- SELECT concat('AS', toString(SrcAS)) AS label, dictGet('asns', 'name', SrcAS) AS detail, 1 AS rank
+ SELECT concat('AS', toString(%s)) AS label, dictGet('asns', 'name', %s) AS detail, 1 AS rank
  FROM flows
  WHERE TimeReceived > date_sub(minute, 1, now())
  AND detail != ''
  AND positionCaseInsensitive(detail, $1) >= 1
- GROUP BY SrcAS
- ORDER BY SUM(Bytes) DESC
+ GROUP BY %s
+ ORDER BY COUNT(*) DESC
  LIMIT 20
 UNION DISTINCT
  SELECT concat('AS', toString(asn)) AS label, name AS detail, 2 AS rank
@@ -175,7 +179,8 @@ UNION DISTINCT
  WHERE positionCaseInsensitive(name, $1) >= 1
  ORDER BY positionCaseInsensitive(name, $1) ASC, asn ASC
  LIMIT 20
-) GROUP BY label, detail ORDER BY MIN(rank) ASC, MIN(rowNumberInBlock()) ASC LIMIT 20`
+) GROUP BY label, detail ORDER BY MIN(rank) ASC, MIN(rowNumberInBlock()) ASC LIMIT 20`,
+				columnName, columnName, columnName)
 			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
 				c.r.Err(err).Msg("unable to query database")
 				break
