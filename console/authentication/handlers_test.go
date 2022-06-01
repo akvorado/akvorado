@@ -30,7 +30,7 @@ func TestUserHandler(t *testing.T) {
 				Description: "user info, no user logged in",
 				URL:         "/api/v0/console/user/info",
 				StatusCode:  200,
-				JSONOutput:  gin.H{"login": "default", "name": "Default User"},
+				JSONOutput:  gin.H{"login": "__default", "name": "Default User"},
 			}, {
 				Description: "user info, minimal user logged in",
 				URL:         "/api/v0/console/user/info",
@@ -71,7 +71,7 @@ func TestUserHandler(t *testing.T) {
 					return headers
 				}(),
 				StatusCode: 200,
-				JSONOutput: gin.H{"login": "default", "name": "Default User"},
+				JSONOutput: gin.H{"login": "__default", "name": "Default User"},
 			}, {
 				Description: "avatar, no user logged in",
 				URL:         "/api/v0/console/user/avatar",

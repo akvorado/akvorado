@@ -28,7 +28,7 @@ func DefaultConfiguration() Configuration {
 			LogoutURL: "X-Logout-URL",
 		},
 		DefaultUser: UserInformation{
-			Login: "default",
+			Login: "__default",
 			Name:  "Default User",
 		},
 	}
