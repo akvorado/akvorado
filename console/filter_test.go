@@ -118,8 +118,10 @@ UNION DISTINCT
 				{"label": "!=", "detail": "comparison operator", "quoted": false},
 				{"label": "=", "detail": "comparison operator", "quoted": false},
 				{"label": "ILIKE", "detail": "comparison operator", "quoted": false},
+				{"label": "IN (", "detail": "comparison operator", "quoted": false},
 				{"label": "IUNLIKE", "detail": "comparison operator", "quoted": false},
 				{"label": "LIKE", "detail": "comparison operator", "quoted": false},
+				{"label": "NOTIN (", "detail": "comparison operator", "quoted": false},
 				{"label": "UNLIKE", "detail": "comparison operator", "quoted": false},
 			}},
 		}, {

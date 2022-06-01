@@ -18,6 +18,8 @@ func TestValidFilter(t *testing.T) {
 		{`ExporterName="something'"`, `ExporterName = 'something\''`},
 		{`ExporterName="something\"`, `ExporterName = 'something\\'`},
 		{`ExporterName!="something"`, `ExporterName != 'something'`},
+		{`ExporterName IN ("something")`, `ExporterName IN ('something')`},
+		{`ExporterName IN ("something","something else")`, `ExporterName IN ('something', 'something else')`},
 		{`ExporterName LIKE "something%"`, `ExporterName LIKE 'something%'`},
 		{`ExporterName UNLIKE "something%"`, `ExporterName NOT LIKE 'something%'`},
 		{`ExporterName IUNLIKE "something%"`, `ExporterName NOT ILIKE 'something%'`},

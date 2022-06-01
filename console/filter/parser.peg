@@ -68,6 +68,7 @@ ConditionIPExpr "condition on IP" ←
       / "DstAddr"i { return "DstAddr", nil }) _ operator:("=" / "!=") _ ip:IP {
   return fmt.Sprintf("%s %s IPv6StringToNum(%s)", toString(column), toString(operator), quote(ip)), nil
 }
+
 ConditionStringExpr "condition on string" ←
  column:("ExporterName"i { return "ExporterName", nil }
       / "ExporterGroup"i { return "ExporterGroup", nil }
@@ -80,11 +81,18 @@ ConditionStringExpr "condition on string" ←
       / "InIfConnectivity"i { return "InIfConnectivity", nil }
       / "OutIfConnectivity"i { return "OutIfConnectivity", nil }
       / "InIfProvider"i { return "InIfProvider", nil }
-      / "OutIfProvider"i { return "OutIfProvider", nil }) _
- operator:("=" / "!=" / LikeOperator ) _
- str:StringLiteral {
-  return fmt.Sprintf("%s %s %s", toString(column), toString(operator), quote(str)), nil
+         / "OutIfProvider"i { return "OutIfProvider", nil }) _
+ rcond:RConditionStringExpr {
+  return fmt.Sprintf("%s %s", toString(column), toString(rcond)), nil
 }
+RConditionStringExpr "condition on string" ←
+   operator:("=" / "!=" / LikeOperator ) _ str:StringLiteral {
+     return fmt.Sprintf("%s %s", toString(operator), quote(str)), nil
+   }
+ / operator:InOperator _ '(' _ value:ListString _ ')' {
+  return fmt.Sprintf("%s (%s)", toString(operator), toString(value)), nil
+   }
+
 ConditionBoundaryExpr "condition on boundary" ←
  column:("InIfBoundary"i { return "InIfBoundary", nil }
       / "OutIfBoundary"i { return "OutIfBoundary", nil }) _
@@ -112,6 +120,7 @@ ConditionPortExpr "condition on port" ←
  operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned16 {
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
 }
+
 ConditionASExpr "condition on AS number" ←
  column:("SrcAS"i { return "SrcAS", nil }
       / "DstAS"i { return "DstAS", nil }) _
@@ -123,6 +132,7 @@ RConditionASExpr "condition on AS number" ←
  / operator:InOperator _ '(' _ value:ListASN _ ')' {
   return fmt.Sprintf("%s (%s)", toString(operator), toString(value)), nil
 }
+
 ConditionETypeExpr "condition on Ethernet type" ←
  column:("EType"i { return "EType", nil }) _
  operator:("=" / "!=") _ value:("IPv4"i / "IPv6"i) {
@@ -172,6 +182,9 @@ StringLiteral "quoted string" ← ( '"' DoubleStringChar* '"' / "'" SingleString
 SourceChar ← .
 DoubleStringChar ← !( '"' / EOL ) SourceChar
 SingleStringChar ← !( "'" / EOL ) SourceChar
+ListString "list of strings" ←
+   head:StringLiteral _ ',' _ tail:ListString { return fmt.Sprintf("%s, %s", quote(head), tail), nil }
+ / value:StringLiteral { return quote(value), nil }
 
 Unsigned8 "unsigned 8-bit integer" ← [0-9]+ !IdentStart {
   v, err := strconv.ParseUint(string(c.text), 10, 8)
