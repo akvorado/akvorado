@@ -3,6 +3,7 @@
     <OptionsPanel
       v-model="state"
       :loading="isFetching"
+      class="print:hidden"
       @cancel="canAbort && abort()"
     />
     <div class="grow overflow-y-auto">
@@ -18,6 +19,7 @@
             width="auto"
             slider-bg-color="#eee1"
             slider-bg-hover-color="#ccc3"
+            class="break-inside-avoid-page"
           >
             <DataGraph
               :data="fetchedData"
@@ -27,7 +29,7 @@
           </ResizeRow>
           <DataTable
             :data="fetchedData"
-            class="my-2"
+            class="my-2 break-inside-avoid-page"
             @highlighted="(n) => (highlightedSerie = n)"
           />
         </div>

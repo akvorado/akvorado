@@ -33,8 +33,11 @@
           <th scope="row">
             <div v-if="row.color" class="px-6 py-2 text-right font-medium">
               <div
-                class="w-5 cursor-pointer"
-                :style="{ backgroundColor: row.color }"
+                class="w-5 cursor-pointer rounded"
+                :style="{
+                  backgroundColor: row.color,
+                  printColorAdjust: 'exact',
+                }"
               >
                 &nbsp;
               </div>

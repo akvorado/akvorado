@@ -1,6 +1,6 @@
 <template>
   <div
-    class="z-10 flex w-full flex-wrap items-center gap-x-3 whitespace-nowrap border-b border-gray-300 bg-gray-100 px-4 text-xs text-gray-400 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-500 sm:flex-nowrap"
+    class="z-10 flex w-full flex-wrap items-center gap-x-3 whitespace-nowrap border-b border-gray-300 bg-gray-100 px-4 text-xs text-gray-400 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-500 sm:flex-nowrap print:sm:flex-wrap"
   >
     <span v-if="request.start && request.end" class="shrink-0 py-0.5">
       <CalendarIcon class="inline h-4 px-1 align-middle" />

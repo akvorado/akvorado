@@ -3,8 +3,8 @@
     <TitleProvider>
       <router-view v-slot="{ Component }">
         <UserProvider>
-          <div class="flex h-full max-h-screen flex-col">
-            <NavigationBar class="flex-none" />
+          <div class="flex h-full max-h-screen flex-col print:block">
+            <NavigationBar class="flex-none print:hidden" />
             <main class="relative flex grow overflow-y-auto">
               <component :is="Component" />
             </main>

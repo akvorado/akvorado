@@ -1,7 +1,7 @@
 <template>
   <div class="w-full md:flex md:flex-row">
     <div
-      class="flex-none overflow-y-auto bg-gray-50 py-4 px-4 dark:bg-gray-900 dark:text-gray-200 sm:px-6 md:mx-0 md:pl-0 md:pr-8"
+      class="flex-none overflow-y-auto bg-gray-50 py-4 px-4 dark:bg-gray-900 dark:text-gray-200 print:hidden sm:px-6 md:mx-0 md:pl-0 md:pr-8"
     >
       <nav class="mx-auto text-sm md:mx-0">
         <ul class="space-y-1 pl-6 md:space-y-8">
