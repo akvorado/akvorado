@@ -1,38 +1,40 @@
 <template>
   <div
-    class="z-10 hidden h-7 w-full items-center gap-3 whitespace-nowrap border-b border-gray-300 bg-gray-100 px-4 text-xs text-gray-400 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-500 lg:flex"
+    class="z-10 flex w-full flex-wrap items-center gap-x-3 whitespace-nowrap border-b border-gray-300 bg-gray-100 px-4 text-xs text-gray-400 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-500 sm:flex-nowrap"
   >
-    <span v-if="request.graphType" class="shrink-0">
-      <ChartPieIcon class="inline h-4 px-1 align-middle" />
-      <span class="align-middle">{{ request.graphType }}</span>
-    </span>
-    <span v-if="request.start && request.end" class="shrink-0">
+    <span v-if="request.start && request.end" class="shrink-0 py-0.5">
       <CalendarIcon class="inline h-4 px-1 align-middle" />
       <span class="align-middle">{{ start }} — {{ end }}</span>
     </span>
-    <span
-      v-if="request.dimensions && request.dimensions.length > 0"
-      class="truncate"
-      :title="request.dimensions.join(', ')"
-    >
-      <AdjustmentsIcon class="inline h-4 px-1 align-middle" />
-      <span class="truncate align-middle">{{
-        request.dimensions.join(", ")
-      }}</span>
+    <span v-if="request.graphType" class="shrink-0 py-0.5">
+      <ChartPieIcon class="inline h-4 px-1 align-middle" />
+      <span class="align-middle">{{ request.graphType }}</span>
     </span>
-    <span v-if="request.filter" class="truncate" :title="request.filter">
-      <FilterIcon class="inline h-4 px-1 align-middle" />
-      <span class="max-w-xs align-middle">{{ request.filter }}</span>
-    </span>
-    <span v-if="request.limit" class="shrink-0">
+    <span v-if="request.limit" class="min-w-[4 shrink-0 py-0.5">
       <ArrowUpIcon class="inline h-4 px-1 align-middle" />
       <span class="align-middle">{{ request.limit }}</span>
     </span>
-    <span v-if="request.units" class="shrink-0">
+    <span v-if="request.units" class="min-w-[4 shrink-0 py-0.5">
       <HashtagIcon class="inline h-4 px-1 align-middle" />
       <span class="align-middle">{{
         { bps: "ᵇ⁄ₛ", pps: "ᵖ⁄ₛ" }[request.units] || requests.units
       }}</span>
+    </span>
+    <span
+      v-if="request.dimensions && request.dimensions.length > 0"
+      class="min-w-[3rem] truncate py-0.5"
+      :title="request.dimensions.join(', ')"
+    >
+      <AdjustmentsIcon class="inline h-4 px-1 align-middle" />
+      <span class="align-middle">{{ request.dimensions.join(", ") }}</span>
+    </span>
+    <span
+      v-if="request.filter"
+      class="min-w-[3rem] truncate py-0.5"
+      :title="request.filter"
+    >
+      <FilterIcon class="inline h-4 px-1 align-middle" />
+      <span class="max-w-xs align-middle">{{ request.filter }}</span>
     </span>
   </div>
 </template>

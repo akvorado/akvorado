@@ -1,18 +1,18 @@
 <template>
   <aside
     class="transition-height transition-width w-full shrink-0 duration-100 lg:h-auto"
-    :class="open ? 'h-80 lg:w-64 xl:w-80' : 'h-6 lg:w-6'"
+    :class="open ? 'h-80 lg:w-64 xl:w-80' : 'h-4 lg:w-4'"
   >
     <span
       class="absolute z-30 translate-x-4 transition-transform lg:translate-y-4"
       :class="
         open
           ? 'translate-y-80 rotate-180 lg:translate-x-64 xl:translate-x-80'
-          : 'translate-y-6 lg:translate-x-0'
+          : 'translate-y-4 lg:translate-x-0'
       "
     >
       <button
-        class="flex h-6 w-6 items-center justify-center rounded-full bg-white shadow transition-transform duration-100 hover:bg-gray-300 dark:bg-gray-900 dark:shadow-white/10 dark:hover:bg-black lg:translate-x-1/2 lg:translate-y-0"
+        class="flex h-4 w-4 items-center justify-center rounded-full bg-white shadow transition-transform duration-100 hover:bg-gray-300 dark:bg-gray-900 dark:shadow-white/10 dark:hover:bg-black lg:translate-x-1/2 lg:translate-y-0"
         :class="open ? 'translate-y-1/2' : '-translate-y-1/2'"
         @click="open = !open"
       >
@@ -21,7 +21,7 @@
       </button>
     </span>
     <form
-      class="h-full overflow-y-auto border-r border-gray-300 bg-gray-100 dark:border-slate-700 dark:bg-slate-800"
+      class="h-full overflow-y-auto border-b border-gray-300 bg-gray-100 dark:border-slate-700 dark:bg-slate-800 lg:border-r lg:border-b-0"
       autocomplete="off"
       spellcheck="false"
       @submit.prevent="
