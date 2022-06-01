@@ -1,35 +1,35 @@
 <template>
   <div
-    class="fixed z-10 hidden w-full gap-4 overflow-hidden whitespace-nowrap border-b border-gray-300 bg-gray-100 px-4 pt-1 pb-2 text-sm text-gray-400 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-500 lg:flex"
+    class="fixed z-10 hidden h-7 w-full gap-3 whitespace-nowrap border-b border-gray-300 bg-gray-100 px-4 pt-1 pb-2 text-xs text-gray-400 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-500 lg:flex"
   >
-    <span v-if="request.graphType">
+    <span v-if="request.graphType" class="shrink-0">
       <ChartPieIcon class="inline h-4 px-1 align-middle" />
       <span class="align-middle">{{ request.graphType }}</span>
     </span>
-    <span v-if="request.start && request.end">
+    <span v-if="request.start && request.end" class="shrink-0">
       <CalendarIcon class="inline h-4 px-1 align-middle" />
       <span class="align-middle">{{ start }} — {{ end }}</span>
     </span>
-    <span v-if="request.dimensions && request.dimensions.length > 0">
-      <AdjustmentsIcon class="inline h-4 px-1 align-middle" />
-      <span class="align-middle">{{ request.dimensions.join(", ") }}</span>
-    </span>
-    <span v-if="request.limit">
+    <span v-if="request.limit" class="shrink-0">
       <ArrowUpIcon class="inline h-4 px-1 align-middle" />
       <span class="align-middle">{{ request.limit }}</span>
     </span>
-    <span v-if="request.filter">
-      <FilterIcon class="inline h-4 px-1 align-middle" />
-      <span class="align-middle">{{ request.filter }}</span>
-    </span>
-    <span v-if="request.units">
+    <span v-if="request.units" class="shrink-0">
       <HashtagIcon class="inline h-4 px-1 align-middle" />
       <span class="align-middle">{{
         { bps: "ᵇ⁄ₛ", pps: "ᵖ⁄ₛ" }[request.units] || requests.units
       }}</span>
     </span>
+    <span v-if="request.dimensions && request.dimensions.length > 0">
+      <AdjustmentsIcon class="inline h-4 px-1 align-middle" />
+      <span class="align-middle">{{ request.dimensions.join(", ") }}</span>
+    </span>
+    <span v-if="request.filter" :title="request.filter">
+      <FilterIcon class="inline h-4 px-1 align-middle" />
+      <span class="max-w-xs truncate align-middle">{{ request.filter }}</span>
+    </span>
   </div>
-  <div class="hidden h-8 lg:block"></div>
+  <div class="hidden h-7 lg:block"></div>
 </template>
 
 <script setup>
@@ -52,7 +52,13 @@ import {
 import { Date as SugarDate } from "sugar-date";
 
 const start = computed(() => SugarDate(props.request.start).long());
-const end = computed(() => SugarDate(props.request.end).long());
+const end = computed(() =>
+  SugarDate(props.request.end).format(
+    props.request.start.toDateString() === props.request.end.toDateString()
+      ? "%X"
+      : "{long}"
+  )
+);
 
 // Also set title
 const title = inject("title");
