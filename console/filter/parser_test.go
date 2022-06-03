@@ -31,6 +31,8 @@ func TestValidFilter(t *testing.T) {
 		{`ExporterGroup= "group"`, `ExporterGroup = 'group'`},
 		{`SrcAddr=203.0.113.1`, `SrcAddr = IPv6StringToNum('203.0.113.1')`},
 		{`DstAddr=203.0.113.2`, `DstAddr = IPv6StringToNum('203.0.113.2')`},
+		{`SrcNetName="alpha"`, `SrcNetName = 'alpha'`},
+		{`DstNetName="alpha"`, `DstNetName = 'alpha'`},
 		{`SrcAS=12322`, `SrcAS = 12322`},
 		{`SrcAS=AS12322`, `SrcAS = 12322`},
 		{`SrcAS=as12322`, `SrcAS = 12322`},

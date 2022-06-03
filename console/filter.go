@@ -193,6 +193,27 @@ UNION DISTINCT
 				})
 			}
 			input.Prefix = "" // We have handled this internally
+		case "srcnetname", "dstnetname":
+			results := []struct {
+				Name string `ch:"name"`
+			}{}
+			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, `
+SELECT DISTINCT name
+FROM networks
+WHERE positionCaseInsensitive(name, $1) >= 1
+ORDER BY name
+LIMIT 20`, input.Prefix); err != nil {
+				c.r.Err(err).Msg("unable to query database")
+				break
+			}
+			for _, result := range results {
+				completions = append(completions, filterCompletion{
+					Label:  result.Name,
+					Detail: "network name",
+					Quoted: true,
+				})
+			}
+			input.Prefix = ""
 		case "exportername":
 			column = "ExporterName"
 			detail = "exporter name"

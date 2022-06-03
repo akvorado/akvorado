@@ -16,6 +16,7 @@ const (
 	queryColumnExporterName
 	queryColumnExporterGroup
 	queryColumnSrcAS
+	queryColumnSrcNetName
 	queryColumnSrcCountry
 	queryColumnInIfName
 	queryColumnInIfDescription
@@ -28,6 +29,7 @@ const (
 	queryColumnSrcPort
 	queryColumnSrcAddr
 	queryColumnDstAS
+	queryColumnDstNetName
 	queryColumnDstCountry
 	queryColumnOutIfName
 	queryColumnOutIfDescription
@@ -49,6 +51,8 @@ var queryColumnMap = helpers.NewBimap(map[queryColumn]string{
 	queryColumnDstAddr:           "DstAddr",
 	queryColumnSrcAS:             "SrcAS",
 	queryColumnDstAS:             "DstAS",
+	queryColumnSrcNetName:        "SrcNetName",
+	queryColumnDstNetName:        "DstNetName",
 	queryColumnSrcCountry:        "SrcCountry",
 	queryColumnDstCountry:        "DstCountry",
 	queryColumnInIfName:          "InIfName",

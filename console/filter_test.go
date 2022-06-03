@@ -45,6 +45,17 @@ LIMIT 20`,
 		Return(nil)
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), `
+SELECT DISTINCT name
+FROM networks
+WHERE positionCaseInsensitive(name, $1) >= 1
+ORDER BY name
+LIMIT 20`, "c").
+		SetArg(1, []struct {
+			Name string `ch:"name"`
+		}{{"customer-1"}, {"customer-2"}, {"customer-3"}}).
+		Return(nil)
+	mockConn.EXPECT().
+		Select(gomock.Any(), gomock.Any(), `
 SELECT label, detail FROM (
  SELECT concat('AS', toString(DstAS)) AS label, dictGet('asns', 'name', DstAS) AS detail, 1 AS rank
  FROM flows
@@ -108,6 +119,7 @@ UNION DISTINCT
 				{"label": "DstAS", "detail": "column name", "quoted": false},
 				{"label": "DstAddr", "detail": "column name", "quoted": false},
 				{"label": "DstCountry", "detail": "column name", "quoted": false},
+				{"label": "DstNetName", "detail": "column name", "quoted": false},
 				{"label": "DstPort", "detail": "column name", "quoted": false},
 			}},
 		}, {
@@ -178,6 +190,15 @@ UNION DISTINCT
 				{"label": "AS36492", "detail": "Google", "quoted": false},
 				{"label": "AS36987", "detail": "Google Kenya", "quoted": false},
 				{"label": "AS41264", "detail": "Google Switzerland", "quoted": false},
+			}},
+		}, {
+			URL:        "/api/v0/console/filter/complete",
+			StatusCode: 200,
+			JSONInput:  gin.H{"what": "value", "column": "srcnetName", "prefix": "c"},
+			JSONOutput: gin.H{"completions": []gin.H{
+				{"label": "customer-1", "detail": "network name", "quoted": true},
+				{"label": "customer-2", "detail": "network name", "quoted": true},
+				{"label": "customer-3", "detail": "network name", "quoted": true},
 			}},
 		},
 	})

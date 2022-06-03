@@ -74,6 +74,8 @@ ConditionStringExpr "condition on string" ←
       / "ExporterGroup"i { return "ExporterGroup", nil }
       / "SrcCountry"i { return "SrcCountry", nil }
       / "DstCountry"i { return "DstCountry", nil }
+      / "SrcNetName"i { return "SrcNetName", nil }
+      / "DstNetName"i { return "DstNetName", nil }
       / "InIfName"i { return "InIfName", nil }
       / "OutIfName"i { return "OutIfName", nil }
       / "InIfDescription"i { return "InIfDescription", nil }
@@ -81,7 +83,7 @@ ConditionStringExpr "condition on string" ←
       / "InIfConnectivity"i { return "InIfConnectivity", nil }
       / "OutIfConnectivity"i { return "OutIfConnectivity", nil }
       / "InIfProvider"i { return "InIfProvider", nil }
-         / "OutIfProvider"i { return "OutIfProvider", nil }) _
+      / "OutIfProvider"i { return "OutIfProvider", nil }) _
  rcond:RConditionStringExpr {
   return fmt.Sprintf("%s %s", toString(column), toString(rcond)), nil
 }
@@ -116,14 +118,14 @@ ConditionForwardingStatusExpr "condition on forwarding status" ←
 }
 ConditionPortExpr "condition on port" ←
  column:("SrcPort"i { return "SrcPort", nil }
-      / "DstPort"i { return "DstPort", nil }) _
+       / "DstPort"i { return "DstPort", nil }) _
  operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned16 {
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
 }
 
 ConditionASExpr "condition on AS number" ←
  column:("SrcAS"i { return "SrcAS", nil }
-      / "DstAS"i { return "DstAS", nil }) _
+       / "DstAS"i { return "DstAS", nil }) _
  rcond:RConditionASExpr {
   return fmt.Sprintf("%s %s", toString(column), toString(rcond)), nil
 }
