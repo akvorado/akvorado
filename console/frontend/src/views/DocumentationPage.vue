@@ -36,10 +36,10 @@
                     :class="{
                       'text-blue-600':
                         activeDocument === document.name &&
-                        activeSlug === header.id,
+                        activeSlug.slice(1) === header.id,
                       'dark:text-blue-300':
                         activeDocument === document.name &&
-                        activeSlug === header.id,
+                        activeSlug.slice(1) === header.id,
                     }"
                   >
                     {{ header.title }}
