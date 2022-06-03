@@ -34,6 +34,26 @@ const graph = computed(() => {
       confine: true,
       trigger: "item",
       triggerOn: "mousemove",
+      formatter({ dataType, marker, data, value }) {
+        if (dataType === "node") {
+          return [
+            marker,
+            `<span style="display:inline-block;margin-left:1em;">${data.name}</span>`,
+            `<span style="display:inline-block;margin-left:2em;font-weight:bold;">${formatXps(
+              value
+            )}`,
+          ].join("");
+        } else if (dataType === "edge") {
+          const source = data.source.split(": ").slice(1).join(": ");
+          const target = data.target.split(": ").slice(1).join(": ");
+          return [
+            `${source} → ${target}`,
+            `<span style="display:inline-block;margin-left:2em;font-weight:bold;">${formatXps(
+              data.value
+            )}`,
+          ].join("");
+        }
+      },
       valueFormatter: formatXps,
     },
     series: [
