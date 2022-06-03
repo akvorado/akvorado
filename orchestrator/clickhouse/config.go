@@ -1,10 +1,16 @@
 package clickhouse
 
 import (
+	"errors"
+	"fmt"
+	"net"
+	"reflect"
 	"time"
 
 	"akvorado/common/clickhousedb"
 	"akvorado/common/kafka"
+
+	"github.com/mitchellh/mapstructure"
 )
 
 // Configuration describes the configuration for the ClickHouse configurator.
@@ -15,7 +21,11 @@ type Configuration struct {
 	// Resolutions describe the various resolutions to use to
 	// store data and the associated TTLs.
 	Resolutions []ResolutionConfiguration
-	// OrchestratorURL allows one to override URL to reach orchestrator from Clickhouse
+	// Networks is a mapping from IP networks to names. It is used
+	// to instantiate the SrcNetName and DstNetName columns.
+	Networks NetworkNames
+	// OrchestratorURL allows one to override URL to reach
+	// orchestrator from Clickhouse
 	OrchestratorURL string
 }
 
@@ -50,5 +60,40 @@ func DefaultConfiguration() Configuration {
 			{5 * time.Minute, 3 * 30 * 24 * time.Hour},
 			{time.Hour, 12 * 30 * 24 * time.Hour},
 		},
+	}
+}
+
+// NetworkNames is a mapping from a network to a name.
+type NetworkNames map[string]string
+
+// NetworkNamesUnmarshalerHook decodes NetworkNames mapping and notably check that valid networks are provided as key.
+func NetworkNamesUnmarshalerHook() mapstructure.DecodeHookFunc {
+	return func(from, to reflect.Type, data interface{}) (interface{}, error) {
+		if from != reflect.TypeOf(map[string]string{}) || to != reflect.TypeOf(NetworkNames{}) {
+			return data, nil
+		}
+		input := data.(map[string]string)
+		output := NetworkNames{}
+		if input == nil {
+			input = map[string]string{}
+		}
+		for k, v := range input {
+			// Parse
+			_, ipNet, err := net.ParseCIDR(k)
+			if err != nil {
+				return nil, err
+			}
+			// Convert to IPv6
+			ones, bits := ipNet.Mask.Size()
+			if bits != 32 && bits != 128 {
+				return nil, errors.New("invalid netmask")
+			}
+			if bits == 32 {
+				output[fmt.Sprintf("::ffff:%s/%d", ipNet.IP.String(), ones+96)] = v
+			} else {
+				output[ipNet.String()] = v
+			}
+		}
+		return output, nil
 	}
 }

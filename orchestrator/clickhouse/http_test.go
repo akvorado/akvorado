@@ -11,7 +11,11 @@ import (
 
 func TestHTTPEndpoints(t *testing.T) {
 	r := reporter.NewMock(t)
-	c, err := New(r, DefaultConfiguration(), Dependencies{
+	config := DefaultConfiguration()
+	config.Networks = NetworkNames{
+		"::ffff:192.0.2.0/24": "infra",
+	}
+	c, err := New(r, config, Dependencies{
 		Daemon: daemon.NewMock(t),
 		HTTP:   http.NewMock(t, r),
 	})
@@ -33,6 +37,13 @@ func TestHTTPEndpoints(t *testing.T) {
 			ContentType: "text/csv; charset=utf-8",
 			FirstLines: []string{
 				`"asn","name"`,
+			},
+		}, {
+			URL:         "/api/v0/orchestrator/clickhouse/networks.csv",
+			ContentType: "text/csv; charset=utf-8",
+			FirstLines: []string{
+				`network,name`,
+				`::ffff:192.0.2.0/24,infra`,
 			},
 		}, {
 			URL:         "/api/v0/orchestrator/clickhouse/init.sh",

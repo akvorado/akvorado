@@ -15,6 +15,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"akvorado/inlet/flow"
+	"akvorado/orchestrator/clickhouse"
 )
 
 // ConfigRelatedOptions are command-line options related to handling a
@@ -77,6 +78,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 		},
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			flow.ConfigurationUnmarshalerHook(),
+			clickhouse.NetworkNamesUnmarshalerHook(),
 			mapstructure.TextUnmarshallerHookFunc(),
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.StringToSliceHookFunc(","),

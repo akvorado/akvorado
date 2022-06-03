@@ -188,6 +188,7 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 				"flows_1m0s_consumer",
 				"flows_5m0s",
 				"flows_5m0s_consumer",
+				"networks",
 				"protocols",
 			}
 			if diff := helpers.Diff(got, expected); diff != "" {

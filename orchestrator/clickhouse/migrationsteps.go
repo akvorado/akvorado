@@ -21,6 +21,8 @@ const flowsSchema = `
  DstAddr IPv6,
  SrcAS UInt32,
  DstAS UInt32,
+ SrcNetName LowCardinality(String),
+ DstNetName LowCardinality(String),
  SrcCountry FixedString(2),
  DstCountry FixedString(2),
  InIfName LowCardinality(String),
@@ -43,6 +45,21 @@ const flowsSchema = `
  Packets UInt64,
  ForwardingStatus UInt32
 `
+
+// partialSchema returns the above schema minus some columns
+func partialSchema(remove ...string) string {
+	schema := []string{}
+outer:
+	for _, l := range strings.Split(flowsSchema, "\n") {
+		for _, p := range remove {
+			if strings.HasPrefix(strings.TrimSpace(l), fmt.Sprintf("%s ", p)) {
+				continue outer
+			}
+		}
+		schema = append(schema, l)
+	}
+	return strings.Join(schema, "\n")
+}
 
 var nullMigrationStep = migrationStep{
 	CheckQuery: `SELECT 1`,
@@ -73,8 +90,8 @@ ORDER BY (TimeReceived, ExporterAddress, InIfName, OutIfName)`, flowsSchema))
 		// fields, assuming they won't change for the interval
 		// of time considered. It excludes Bytes and Packets
 		// that are summed. The order is the one we are most
-		// likely to use when filtering. SrcAddress and
-		// DstAddress are removed.
+		// likely to use when filtering. SrcAddr and DstAddr
+		// are removed.
 		tableName := fmt.Sprintf("flows_%s", resolution.Interval)
 		viewName := fmt.Sprintf("%s_consumer", tableName)
 		return migrationStep{
@@ -88,29 +105,28 @@ ORDER BY (TimeReceived, ExporterAddress, InIfName, OutIfName)`, flowsSchema))
 						resolution.Interval, err)
 				}
 
-				// Exclude some fields
-				schema := []string{}
-			outer:
-				for _, l := range strings.Split(flowsSchema, "\n") {
-					for _, p := range []string{"SrcAddr ", "DstAddr ", "SrcPort ", "DstPort "} {
-						if strings.HasPrefix(strings.TrimSpace(l), p) {
-							continue outer
-						}
-					}
-					schema = append(schema, l)
-				}
+				// Primary key does not cover all the sorting key as we cannot modify it.
 				return conn.Exec(ctx, fmt.Sprintf(`
 CREATE TABLE %s (
 %s
 )
 ENGINE = SummingMergeTree((Bytes, Packets))
 PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, INTERVAL 6 hour))
+PRIMARY KEY (TimeReceived,
+          ExporterAddress,
+          EType, Proto,
+          InIfName, SrcAS, ForwardingStatus,
+          OutIfName, DstAS,
+          SamplingRate)
 ORDER BY (TimeReceived,
           ExporterAddress,
           EType, Proto,
           InIfName, SrcAS, ForwardingStatus,
           OutIfName, DstAS,
-          SamplingRate)`, tableName, strings.Join(schema, "\n")))
+          SamplingRate,
+          SrcNetName, DstNetName)`,
+					tableName,
+					partialSchema("SrcAddr", "DstAddr", "SrcPort", "DstPort")))
 			},
 		}
 	}
@@ -137,6 +153,36 @@ ALTER TABLE %s ADD COLUMN PacketSize UInt64 ALIAS intDiv(Bytes, Packets) AFTER P
 	}
 }
 
+func (c *Component) migrationStepAddSrcNetNameDstNetNameColumns(resolution ResolutionConfiguration) migrationStepFunc {
+	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+		var tableName string
+		if resolution.Interval == 0 {
+			tableName = "flows"
+		} else {
+			tableName = fmt.Sprintf("flows_%s", resolution.Interval)
+		}
+		return migrationStep{
+			CheckQuery: `SELECT 1 FROM system.columns WHERE table = $1 AND database = $2 AND name = $3`,
+			Args:       []interface{}{tableName, c.config.Configuration.Database, "DstNetName"},
+			Do: func() error {
+				modifications := []string{
+					`ADD COLUMN SrcNetName LowCardinality(String) AFTER DstAS`,
+					`ADD COLUMN DstNetName LowCardinality(String) AFTER SrcNetName`,
+				}
+				if tableName != "flows" {
+					modifications = append(modifications,
+						`MODIFY ORDER BY (TimeReceived, ExporterAddress, EType, Proto,
+                                                                  InIfName, SrcAS, ForwardingStatus,
+                                                                  OutIfName, DstAS, SamplingRate,
+                                                                  SrcNetName, DstNetName)`)
+				}
+				return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE %s %s`,
+					tableName, strings.Join(modifications, ", ")))
+			},
+		}
+	}
+}
+
 func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution ResolutionConfiguration) migrationStepFunc {
 	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 		if resolution.Interval == 0 {
@@ -145,11 +191,26 @@ func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution Resolution
 		}
 		tableName := fmt.Sprintf("flows_%s", resolution.Interval)
 		viewName := fmt.Sprintf("%s_consumer", tableName)
-		// No GROUP BY, we assume the SummingMergeTree will take care of that
 		return migrationStep{
-			CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2`,
-			Args:       []interface{}{viewName, c.config.Configuration.Database},
+			CheckQuery: `
+SELECT bitAnd(v1, v2) FROM (
+ SELECT 1 AS v1
+ FROM system.tables WHERE name = $1 AND database = $2
+) t1, (
+ SELECT groupBitXor(cityHash64(name,type,position)) == 13289045892922565912 AS v2
+ FROM system.columns
+ WHERE database = $2
+ AND table = $1
+) t2`,
+			Args: []interface{}{viewName, c.config.Configuration.Database},
+			// No GROUP BY, the SummingMergeTree will take care of that
 			Do: func() error {
+				l.Debug().Msg("drop consumer table")
+				err := conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s`, viewName))
+				if err != nil {
+					return fmt.Errorf("cannot drop consumer table: %w", err)
+				}
+				l.Debug().Msg("create consumer table")
 				return conn.Exec(ctx, fmt.Sprintf(`
 CREATE MATERIALIZED VIEW %s TO %s
 AS SELECT
@@ -271,6 +332,30 @@ LAYOUT(HASHED())
 
 }
 
+func (c *Component) migrationStepCreateNetworksDictionary(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+	networksURL := fmt.Sprintf("%s/api/v0/orchestrator/clickhouse/networks.csv", c.config.OrchestratorURL)
+	source := fmt.Sprintf(`SOURCE(HTTP(URL '%s' FORMAT 'CSVWithNames'))`, networksURL)
+	sourceLike := fmt.Sprintf("%% %s %%", source)
+	return migrationStep{
+		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2 AND create_table_query LIKE $3`,
+		Args:       []interface{}{"networks", c.config.Configuration.Database, sourceLike},
+		Do: func() error {
+			return conn.Exec(ctx, fmt.Sprintf(`
+CREATE OR REPLACE DICTIONARY networks (
+ network String,
+ name String
+)
+
+PRIMARY KEY network
+%s
+LIFETIME(MIN 0 MAX 3600)
+LAYOUT(IP_TRIE())
+`, source))
+		},
+	}
+
+}
+
 func (c *Component) migrationStepCreateRawFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	tableName := fmt.Sprintf("flows_%d_raw", flow.CurrentSchemaVersion)
 	kafkaEngine := strings.Join([]string{
@@ -319,7 +404,7 @@ CREATE TABLE %s
 (
 %s
 )
-ENGINE = %s`, tableName, flowsSchema, kafkaEngine))
+ENGINE = %s`, tableName, partialSchema("SrcNetName", "DstNetName"), kafkaEngine))
 		},
 	}
 }
@@ -328,13 +413,30 @@ func (c *Component) migrationStepCreateRawFlowsConsumerView(ctx context.Context,
 	tableName := fmt.Sprintf("flows_%d_raw", flow.CurrentSchemaVersion)
 	viewName := fmt.Sprintf("%s_consumer", tableName)
 	return migrationStep{
-		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2`,
-		Args:       []interface{}{viewName, c.config.Configuration.Database},
+		CheckQuery: `
+SELECT bitAnd(v1, v2) FROM (
+ SELECT 1 AS v1
+ FROM system.tables WHERE name = $1 AND database = $2
+) t1, (
+ SELECT groupBitXor(cityHash64(name,type,position)) == 17364559455632379339 AS v2
+ FROM system.columns
+ WHERE database = $2
+ AND table = $1
+) t2`,
+		Args: []interface{}{viewName, c.config.Configuration.Database},
 		Do: func() error {
+			l.Debug().Msg("drop consumer table")
+			err := conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s`, viewName))
+			if err != nil {
+				return fmt.Errorf("cannot drop consumer table: %w", err)
+			}
+			l.Debug().Msg("create consumer table")
 			return conn.Exec(ctx, fmt.Sprintf(`
 CREATE MATERIALIZED VIEW %s TO flows
 AS SELECT
- *
+ *,
+ dictGetOrDefault('networks', 'name', SrcAddr, '') AS SrcNetName,
+ dictGetOrDefault('networks', 'name', DstAddr, '') AS DstNetName
 FROM %s`, viewName, tableName))
 		},
 	}

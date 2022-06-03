@@ -2,6 +2,7 @@ package clickhouse
 
 import (
 	"embed"
+	"encoding/csv"
 	"fmt"
 	"net/http"
 	"text/template"
@@ -39,12 +40,29 @@ func (c *Component) addHandlerEmbedded(url string, path string) {
 // registerHTTPHandler register some handlers that will be useful for
 // ClickHouse
 func (c *Component) registerHTTPHandlers() error {
+	// init.sh
 	c.d.HTTP.AddHandler("/api/v0/orchestrator/clickhouse/init.sh",
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "text/x-shellscript")
 			initShTemplate.Execute(w, flow.VersionedSchemas)
 		}))
 
+	// networks.csv
+	c.d.HTTP.AddHandler("/api/v0/orchestrator/clickhouse/networks.csv",
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+			w.WriteHeader(http.StatusOK)
+			wr := csv.NewWriter(w)
+			wr.Write([]string{"network", "name"})
+			if c.config.Networks != nil {
+				for k, v := range c.config.Networks {
+					wr.Write([]string{k, v})
+				}
+			}
+			wr.Flush()
+		}))
+
+	// Static CSV files
 	entries, err := data.ReadDir("data")
 	if err != nil {
 		return fmt.Errorf("unable to read data directory: %w", err)
@@ -57,5 +75,6 @@ func (c *Component) registerHTTPHandlers() error {
 		path := fmt.Sprintf("data/%s", entry.Name())
 		c.addHandlerEmbedded(url, path)
 	}
+
 	return nil
 }

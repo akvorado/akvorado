@@ -37,7 +37,11 @@ func (c *Component) migrateDatabase() error {
 	}
 
 	ctx := c.t.Context(nil)
-	steps := []migrationStepWithDescription{}
+	steps := []migrationStepWithDescription{
+		{"create protocols dictionary", c.migrationStepCreateProtocolsDictionary},
+		{"create asns dictionary", c.migrationStepCreateASNsDictionary},
+		{"create networks dictionary", c.migrationStepCreateNetworksDictionary},
+	}
 	for _, resolution := range c.config.Resolutions {
 		steps = append(steps, []migrationStepWithDescription{
 			{
@@ -46,6 +50,9 @@ func (c *Component) migrateDatabase() error {
 			}, {
 				fmt.Sprintf("add PacketSizeBucket to flows table with resolution %s", resolution.Interval),
 				c.migrationStepAddPacketSizeBucketColumn(resolution),
+			}, {
+				fmt.Sprintf("add SrcNetName/DstNetName to flows table with resolution %s", resolution.Interval),
+				c.migrationStepAddSrcNetNameDstNetNameColumns(resolution),
 			}, {
 				fmt.Sprintf("create flows table consumer with resolution %s", resolution.Interval),
 				c.migrationsStepCreateFlowsConsumerTable(resolution),
@@ -57,8 +64,6 @@ func (c *Component) migrateDatabase() error {
 	}
 	steps = append(steps, []migrationStepWithDescription{
 		{"create exporters view", c.migrationStepCreateExportersView},
-		{"create protocols dictionary", c.migrationStepCreateProtocolsDictionary},
-		{"create asns dictionary", c.migrationStepCreateASNsDictionary},
 		{"create raw flows table", c.migrationStepCreateRawFlowsTable},
 		{"create raw flows consumer view", c.migrationStepCreateRawFlowsConsumerView},
 	}...)
