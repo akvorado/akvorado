@@ -45,9 +45,9 @@ const graph = computed(() => {
         },
         data: data.nodes.map((v) => ({
           id: v,
-          name: v.startsWith("Other ") ? "Other" : v,
+          name: v.split(": ").slice(1).join(": "),
           itemStyle: {
-            color: v.startsWith("Other ")
+            color: v.endsWith(" Other")
               ? dataColorGrey(greyNodes++, false, theme)
               : dataColor(colorNodes++, false, theme),
           },

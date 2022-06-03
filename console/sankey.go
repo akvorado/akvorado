@@ -133,10 +133,7 @@ func (c *Component) sankeyHandlerFunc(gc *gin.Context) {
 		Links: make([]sankeyLink, 0),
 	}
 	completeName := func(name string, index int) string {
-		if name != "Other" {
-			return name
-		}
-		return fmt.Sprintf("Other %s", input.Dimensions[index].String())
+		return fmt.Sprintf("%s: %s", input.Dimensions[index].String(), name)
 	}
 	addedNodes := map[string]bool{}
 	addNode := func(name string) {
