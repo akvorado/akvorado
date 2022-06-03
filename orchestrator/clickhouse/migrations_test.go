@@ -2,7 +2,13 @@ package clickhouse
 
 import (
 	"context"
+	"encoding/csv"
+	"fmt"
+	"io"
+	"io/ioutil"
 	"net/url"
+	"os"
+	"path"
 	"strings"
 	"testing"
 	"time"
@@ -13,6 +19,85 @@ import (
 	"akvorado/common/http"
 	"akvorado/common/reporter"
 )
+
+func clearAllTables(t *testing.T, ch *clickhousedb.Component) {
+	rows, err := ch.Query(context.Background(), `
+SELECT engine, table
+FROM system.tables
+WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
+	if err != nil {
+		t.Fatalf("Query() error:\n%+v", err)
+	}
+	for rows.Next() {
+		var engine, table, sql string
+		if err := rows.Scan(&engine, &table); err != nil {
+			t.Fatalf("Scan() error:\n%+v", err)
+		}
+		switch engine {
+		case "Dictionary":
+			sql = "DROP DICTIONARY %s"
+		default:
+			sql = "DROP TABLE %s"
+		}
+		if err := ch.Exec(context.Background(), fmt.Sprintf(sql, table)); err != nil {
+			t.Fatalf("Exec() error:\n%+v", err)
+		}
+	}
+}
+
+func dumpAllTables(t *testing.T, ch *clickhousedb.Component) map[string]string {
+	rows, err := ch.Query(context.Background(), `
+SELECT table, create_table_query
+FROM system.tables
+WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
+	if err != nil {
+		t.Fatalf("Query() error:\n%+v", err)
+	}
+	schemas := map[string]string{}
+	for rows.Next() {
+		var schema, table string
+		if err := rows.Scan(&table, &schema); err != nil {
+			t.Fatalf("Scan() error:\n%+v", err)
+		}
+		schemas[table] = schema
+	}
+	return schemas
+}
+
+func loadTables(t *testing.T, ch *clickhousedb.Component, schemas map[string]string) {
+	for _, schema := range schemas {
+		if err := ch.Exec(context.Background(), schema); err != nil {
+			t.Fatalf("Exec() error:\n%+v", err)
+		}
+	}
+}
+
+// loadAllTables load tables from a CSV file. Use `format CSV` with
+// query from dumpAllTables.
+func loadAllTables(t *testing.T, ch *clickhousedb.Component, filename string) {
+	input, err := os.Open(filename)
+	if err != nil {
+		t.Fatalf("Open(%q) error:\n%+v", filename, err)
+	}
+	defer input.Close()
+	schemas := map[string]string{}
+	r := csv.NewReader(input)
+	for {
+		record, err := r.Read()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			t.Fatalf("Read(%q) error:\n%+v", filename, err)
+		}
+		if len(record) == 0 {
+			continue
+		}
+		schemas[record[0]] = record[1]
+	}
+	clearAllTables(t, ch)
+	loadTables(t, ch, schemas)
+}
 
 func TestGetHTTPBaseURL(t *testing.T) {
 	r := reporter.NewMock(t)
@@ -49,61 +134,81 @@ func TestMigration(t *testing.T) {
 	r := reporter.NewMock(t)
 	chComponent := clickhousedb.SetupClickHouse(t, r)
 
-	func() {
-		// First time
-		configuration := DefaultConfiguration()
-		configuration.OrchestratorURL = "http://something"
-		ch, err := New(r, configuration, Dependencies{
-			Daemon:     daemon.NewMock(t),
-			HTTP:       http.NewMock(t, r),
-			ClickHouse: chComponent,
-		})
-		if err != nil {
-			t.Fatalf("New() error:\n%+v", err)
-		}
-		helpers.StartStop(t, ch)
-		select {
-		case <-ch.migrationsDone:
-		case <-time.After(3 * time.Second):
-			t.Fatalf("Migrations not done")
-		}
-
-		// Check with the ClickHouse client we have our tables
-		rows, err := chComponent.Query(context.Background(), "SHOW TABLES")
-		if err != nil {
-			t.Fatalf("Query() error:\n%+v", err)
-		}
-		got := []string{}
-		for rows.Next() {
-			var table string
-			if err := rows.Scan(&table); err != nil {
-				t.Fatalf("Scan() error:\n%+v", err)
+	var lastRun map[string]string
+	files, err := ioutil.ReadDir("testdata/states")
+	if err != nil {
+		t.Fatalf("ReadDir(%q) error:\n%+v", "testdata/states", err)
+	}
+	for _, f := range files {
+		t.Run(f.Name(), func(t *testing.T) {
+			loadAllTables(t, chComponent, path.Join("testdata/states", f.Name()))
+			r := reporter.NewMock(t)
+			configuration := DefaultConfiguration()
+			configuration.OrchestratorURL = "http://something"
+			ch, err := New(r, configuration, Dependencies{
+				Daemon:     daemon.NewMock(t),
+				HTTP:       http.NewMock(t, r),
+				ClickHouse: chComponent,
+			})
+			if err != nil {
+				t.Fatalf("New() error:\n%+v", err)
 			}
-			if !strings.HasPrefix(table, ".") {
+			helpers.StartStop(t, ch)
+			select {
+			case <-ch.migrationsDone:
+			case <-time.After(3 * time.Second):
+				t.Fatalf("Migrations not done")
+			}
+
+			// Check with the ClickHouse client we have our tables
+			rows, err := chComponent.Query(context.Background(), `
+SELECT table
+FROM system.tables
+WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
+			if err != nil {
+				t.Fatalf("Query() error:\n%+v", err)
+			}
+			got := []string{}
+			for rows.Next() {
+				var table string
+				if err := rows.Scan(&table); err != nil {
+					t.Fatalf("Scan() error:\n%+v", err)
+				}
 				got = append(got, table)
 			}
-		}
-		expected := []string{
-			"asns",
-			"exporters",
-			"flows",
-			"flows_1_raw",
-			"flows_1_raw_consumer",
-			"flows_1h0m0s",
-			"flows_1h0m0s_consumer",
-			"flows_1m0s",
-			"flows_1m0s_consumer",
-			"flows_5m0s",
-			"flows_5m0s_consumer",
-			"protocols",
-		}
-		if diff := helpers.Diff(got, expected); diff != "" {
-			t.Fatalf("SHOW TABLES (-got, +want):\n%s", diff)
-		}
-	}()
+			expected := []string{
+				"asns",
+				"exporters",
+				"flows",
+				"flows_1_raw",
+				"flows_1_raw_consumer",
+				"flows_1h0m0s",
+				"flows_1h0m0s_consumer",
+				"flows_1m0s",
+				"flows_1m0s_consumer",
+				"flows_5m0s",
+				"flows_5m0s_consumer",
+				"protocols",
+			}
+			if diff := helpers.Diff(got, expected); diff != "" {
+				t.Fatalf("SHOW TABLES (-got, +want):\n%s", diff)
+			}
 
-	func() {
-		// Second time
+			currentRun := dumpAllTables(t, chComponent)
+			if lastRun != nil {
+				if diff := helpers.Diff(lastRun, currentRun); diff != "" {
+					t.Fatalf("Final state is different (-last, +current):\n%s", diff)
+				}
+			}
+			lastRun = currentRun
+		})
+		if t.Failed() {
+			break
+		}
+	}
+
+	if !t.Failed() {
+		// One more time
 		r := reporter.NewMock(t)
 		configuration := DefaultConfiguration()
 		configuration.OrchestratorURL = "http://something"
@@ -118,11 +223,11 @@ func TestMigration(t *testing.T) {
 		helpers.StartStop(t, ch)
 		select {
 		case <-ch.migrationsDone:
-		case <-time.After(3 * time.Second):
+		case <-time.After(time.Second):
 			t.Fatalf("Migrations not done")
 		}
 
-		// No migration should have been applied the second time
+		// No migration should have been applied the last time
 		gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_",
 			"applied_steps")
 		expectedMetrics := map[string]string{
@@ -131,6 +236,5 @@ func TestMigration(t *testing.T) {
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Fatalf("Metrics (-got, +want):\n%s", diff)
 		}
-
-	}()
+	}
 }
