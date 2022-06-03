@@ -52,7 +52,7 @@
           <InputListBox
             v-model="graphType"
             :items="graphTypeList"
-            class="order-1 grow lg:order-3 lg:h-full"
+            class="order-1 grow lg:order-3"
             label="Graph type"
           >
             <template #selected>{{ graphType.name }}</template>

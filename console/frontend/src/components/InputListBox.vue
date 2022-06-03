@@ -1,5 +1,6 @@
 <template>
   <Listbox
+    :class="$attrs['class']"
     :multiple="multiple"
     :model-value="modelValue"
     @update:model-value="(item) => $emit('update:modelValue', item)"
@@ -7,7 +8,7 @@
     <div class="relative">
       <InputComponent
         v-slot="{ id, childClass }"
-        v-bind="$attrs"
+        v-bind="otherAttrs"
         :error="error"
       >
         <ListboxButton :id="id" :class="childClass">
@@ -64,6 +65,12 @@
   </Listbox>
 </template>
 
+<script>
+export default {
+  inheritAttrs: false,
+};
+</script>
+
 <script setup>
 defineProps({
   modelValue: {
@@ -86,6 +93,7 @@ defineProps({
 });
 defineEmits(["update:modelValue"]);
 
+import { computed, useAttrs } from "vue";
 import {
   Listbox,
   ListboxButton,
@@ -94,4 +102,11 @@ import {
 } from "@headlessui/vue";
 import { CheckIcon, SelectorIcon } from "@heroicons/vue/solid";
 import InputComponent from "@/components/InputComponent.vue";
+
+const attrs = useAttrs();
+const otherAttrs = computed(() => {
+  // eslint-disable-next-line no-unused-vars
+  const { class: _, ...others } = attrs;
+  return others;
+});
 </script>

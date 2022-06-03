@@ -49,6 +49,12 @@
   </svg>
 </template>
 
+<script>
+export default {
+  inheritAttrs: false,
+};
+</script>
+
 <script setup>
 defineProps({
   name: {
