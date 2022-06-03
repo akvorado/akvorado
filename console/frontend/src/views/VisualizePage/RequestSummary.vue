@@ -62,7 +62,7 @@ import { Date as SugarDate } from "sugar-date";
 const start = computed(() => SugarDate(props.request.start).long());
 const end = computed(() =>
   SugarDate(props.request.end).format(
-    props.request.start.toDateString() === props.request.end.toDateString()
+    props.request.start?.toDateString() === props.request.end?.toDateString()
       ? "%X"
       : "{long}"
   )
