@@ -1,13 +1,13 @@
 <template>
   <aside
     class="transition-height transition-width w-full shrink-0 duration-100 lg:h-auto"
-    :class="open ? 'h-80 lg:w-64' : 'h-4 lg:w-4'"
+    :class="open ? 'h-80 lg:w-72' : 'h-4 lg:w-4'"
   >
     <span
       class="absolute z-30 translate-x-4 transition-transform lg:translate-y-4"
       :class="
         open
-          ? 'translate-y-80 rotate-180 lg:translate-x-64'
+          ? 'translate-y-80 rotate-180 lg:translate-x-72'
           : 'translate-y-4 lg:translate-x-0'
       "
     >
@@ -42,7 +42,8 @@
           <InputChoice
             v-model="units"
             :choices="[
-              { label: 'ᵇ⁄ₛ', name: 'bps' },
+              { label: 'L3ᵇ⁄ₛ', name: 'l3bps' },
+              { label: 'L2ᵇ⁄ₛ', name: 'l2bps' },
               { label: 'ᵖ⁄ₛ', name: 'pps' },
             ]"
             label="Unit"
@@ -134,7 +135,7 @@ const graphType = ref(graphTypeList[0]);
 const timeRange = ref({});
 const dimensions = ref([]);
 const filter = ref({});
-const units = ref("bps");
+const units = ref("l3bps");
 
 const options = computed(() => ({
   // Common to all graph types
@@ -168,7 +169,7 @@ watch(
       limit = 10,
       points /* eslint-disable-line no-unused-vars */,
       filter: _filter = "InIfBoundary = external",
-      units: _units = "bps",
+      units: _units = "l3bps",
     } = modelValue;
 
     // Dispatch values in refs

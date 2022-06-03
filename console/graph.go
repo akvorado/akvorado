@@ -20,7 +20,7 @@ type graphHandlerInput struct {
 	Dimensions []queryColumn `json:"dimensions"`                               // group by ...
 	Limit      int           `json:"limit" binding:"min=1,max=50"`             // limit product of dimensions
 	Filter     queryFilter   `json:"filter"`                                   // where ...
-	Units      string        `json:"units" binding:"required,oneof=pps bps"`
+	Units      string        `json:"units" binding:"required,oneof=pps l2bps l3bps"`
 }
 
 // graphHandlerOutput describes the output for the /graph endpoint.
@@ -50,10 +50,13 @@ func (input graphHandlerInput) toSQL() (string, error) {
 	fields := []string{
 		`toStartOfInterval(TimeReceived, INTERVAL slot second) AS time`,
 	}
-	if input.Units == "pps" {
+	switch input.Units {
+	case "pps":
 		fields = append(fields, `SUM(Packets*SamplingRate/slot) AS xps`)
-	} else {
+	case "l3bps":
 		fields = append(fields, `SUM(Bytes*SamplingRate*8/slot) AS xps`)
+	case "l2bps":
+		fields = append(fields, `SUM((Bytes+18*Packets)*SamplingRate*8/slot) AS xps`)
 	}
 	selectFields := []string{}
 	dimensions := []string{}

@@ -22,14 +22,14 @@ func TestSankeyQuerySQL(t *testing.T) {
 		Expected    string
 	}{
 		{
-			Description: "two dimensions, no filters, bps",
+			Description: "two dimensions, no filters, l3 bps",
 			Input: sankeyHandlerInput{
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Dimensions: []queryColumn{queryColumnSrcAS, queryColumnExporterName},
 				Limit:      5,
 				Filter:     queryFilter{},
-				Units:      "bps",
+				Units:      "l3bps",
 			},
 			Expected: `
 WITH
@@ -37,6 +37,28 @@ WITH
  rows AS (SELECT SrcAS, ExporterName FROM {table} WHERE {timefilter} GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 5)
 SELECT
  SUM(Bytes*SamplingRate*8/range) AS xps,
+ [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
+  if(ExporterName IN (SELECT ExporterName FROM rows), ExporterName, 'Other')] AS dimensions
+FROM {table}
+WHERE {timefilter}
+GROUP BY dimensions
+ORDER BY xps DESC`,
+		}, {
+			Description: "two dimensions, no filters, l2 bps",
+			Input: sankeyHandlerInput{
+				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
+				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Dimensions: []queryColumn{queryColumnSrcAS, queryColumnExporterName},
+				Limit:      5,
+				Filter:     queryFilter{},
+				Units:      "l2bps",
+			},
+			Expected: `
+WITH
+ (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM {table} WHERE {timefilter}) AS range,
+ rows AS (SELECT SrcAS, ExporterName FROM {table} WHERE {timefilter} GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 5)
+SELECT
+ SUM((Bytes+18*Packets)*SamplingRate*8/range) AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
   if(ExporterName IN (SELECT ExporterName FROM rows), ExporterName, 'Other')] AS dimensions
 FROM {table}
@@ -73,7 +95,7 @@ ORDER BY xps DESC`,
 				Dimensions: []queryColumn{queryColumnSrcAS, queryColumnExporterName},
 				Limit:      10,
 				Filter:     queryFilter{"DstCountry = 'FR'"},
-				Units:      "bps",
+				Units:      "l3bps",
 			},
 			Expected: `
 WITH
@@ -157,7 +179,7 @@ func TestSankeyHandler(t *testing.T) {
 				"dimensions": []string{"SrcAS", "InIfProvider", "ExporterName"},
 				"limit":      10,
 				"filter":     "DstCountry = 'FR'",
-				"units":      "bps",
+				"units":      "l3bps",
 			},
 			JSONOutput: gin.H{
 				// Raw data

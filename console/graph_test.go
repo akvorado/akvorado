@@ -29,7 +29,7 @@ func TestGraphQuerySQL(t *testing.T) {
 				Points:     100,
 				Dimensions: []queryColumn{},
 				Filter:     queryFilter{},
-				Units:      "bps",
+				Units:      "l3bps",
 			},
 			Expected: `
 WITH
@@ -37,6 +37,27 @@ WITH
 SELECT
  toStartOfInterval(TimeReceived, INTERVAL slot second) AS time,
  SUM(Bytes*SamplingRate*8/slot) AS xps,
+ emptyArrayString() AS dimensions
+FROM {table}
+WHERE {timefilter}
+GROUP BY time, dimensions
+ORDER BY time`,
+		}, {
+			Description: "no dimensions, no filters, l2 bps",
+			Input: graphHandlerInput{
+				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
+				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Points:     100,
+				Dimensions: []queryColumn{},
+				Filter:     queryFilter{},
+				Units:      "l2bps",
+			},
+			Expected: `
+WITH
+ intDiv(864, {resolution})*{resolution} AS slot
+SELECT
+ toStartOfInterval(TimeReceived, INTERVAL slot second) AS time,
+ SUM((Bytes+18*Packets)*SamplingRate*8/slot) AS xps,
  emptyArrayString() AS dimensions
 FROM {table}
 WHERE {timefilter}
@@ -71,7 +92,7 @@ ORDER BY time`,
 				Points:     100,
 				Dimensions: []queryColumn{},
 				Filter:     queryFilter{"DstCountry = 'FR' AND SrcCountry = 'US'"},
-				Units:      "bps",
+				Units:      "l3bps",
 			},
 			Expected: `
 WITH
@@ -96,7 +117,7 @@ ORDER BY time`,
 					queryColumnInIfProvider,
 				},
 				Filter: queryFilter{},
-				Units:  "bps",
+				Units:  "l3bps",
 			},
 			Expected: `
 WITH
@@ -171,7 +192,7 @@ func TestGraphHandler(t *testing.T) {
 				"limit":      20,
 				"dimensions": []string{"ExporterName", "InIfProvider"},
 				"filter":     "DstCountry = 'FR' AND SrcCountry = 'US'",
-				"units":      "bps",
+				"units":      "l3bps",
 			},
 			JSONOutput: gin.H{
 				// Sorted by sum of bps

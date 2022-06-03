@@ -107,7 +107,7 @@ const table = computed(() => {
                 data.average[idx],
                 data["95th"][idx],
               ].map((d) => ({
-                value: formatXps(d) + data.units,
+                value: formatXps(d) + data.units.slice(-3),
                 classNames: "text-right tabular-nums",
               })),
             ],
@@ -132,7 +132,7 @@ const table = computed(() => {
           ...rows.map((r) => ({ value: r })),
           // Average
           {
-            value: formatXps(data.xps[idx]) + data.units,
+            value: formatXps(data.xps[idx]) + data.units.slice(-3),
             classNames: "text-right tabular-nums",
           },
         ],

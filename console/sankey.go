@@ -19,7 +19,7 @@ type sankeyHandlerInput struct {
 	Dimensions []queryColumn `json:"dimensions" binding:"required,min=2"` // group by ...
 	Limit      int           `json:"limit" binding:"min=1,max=50"`        // limit product of dimensions
 	Filter     queryFilter   `json:"filter"`                              // where ...
-	Units      string        `json:"units" binding:"required,oneof=pps bps"`
+	Units      string        `json:"units" binding:"required,oneof=pps l3bps l2bps"`
 }
 
 // sankeyHandlerOutput describes the output for the /sankey endpoint.
@@ -58,10 +58,13 @@ func (input sankeyHandlerInput) toSQL() (string, error) {
 		dimensions = append(dimensions, column.String())
 	}
 	fields := []string{}
-	if input.Units == "pps" {
+	switch input.Units {
+	case "pps":
 		fields = append(fields, `SUM(Packets*SamplingRate/range) AS xps`)
-	} else {
+	case "l3bps":
 		fields = append(fields, `SUM(Bytes*SamplingRate*8/range) AS xps`)
+	case "l2bps":
+		fields = append(fields, `SUM((Bytes+18*Packets)*SamplingRate*8/range) AS xps`)
 	}
 	fields = append(fields, fmt.Sprintf("[%s] AS dimensions", strings.Join(arrayFields, ",\n  ")))
 
