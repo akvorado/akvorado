@@ -4,7 +4,7 @@
     :class="open ? 'h-80 lg:w-72' : 'h-4 lg:w-4'"
   >
     <span
-      class="absolute z-30 translate-x-4 transition-transform lg:translate-y-4"
+      class="absolute z-40 translate-x-4 transition-transform lg:translate-y-4"
       :class="
         open
           ? 'translate-y-80 rotate-180 lg:translate-x-72'
