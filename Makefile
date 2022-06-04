@@ -62,6 +62,9 @@ $(BIN)/protoc-gen-go: PACKAGE=google.golang.org/protobuf/cmd/protoc-gen-go@v1.28
 PIGEON = $(BIN)/pigeon
 $(BIN)/pigeon: PACKAGE=github.com/mna/pigeon@v1.1.0
 
+WWHRD = $(BIN)/wwhrd
+$(BIN)/wwhrd: PACKAGE=github.com/frapposelli/wwhrd@latest
+
 # Generated files
 
 .DELETE_ON_ERROR:
@@ -146,6 +149,14 @@ fmt: .fmt-go~ .fmt-js~ ; $(info $(M) formatting code…) @ ## Format all source 
 	$Q touch $@
 
 # Misc
+
+.PHONY: licensecheck
+licensecheck: console/frontend/node_modules | $(WWHRD) ; $(info $(M) check dependency licenses…) @ ## Check licenses
+	$Q err=0 ; go mod vendor && $(WWHRD) --quiet check || err=$$? ; rm -rf vendor/ ; exit $$err
+	$Q cd console/frontend ; yarn run --silent license-compliance \
+		--production \
+		--allow "MIT;ISC;Apache-2.0;BSD-3-Clause;WTFPL;0BSD" \
+		--report detailed
 
 .PHONY: clean
 clean: ; $(info $(M) cleaning…)	@ ## Cleanup everything

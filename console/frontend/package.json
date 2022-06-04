@@ -38,6 +38,7 @@
     "eslint": "^8.17.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-vue": "^9.1.1",
+    "license-compliance": "^1.2.3",
     "postcss": "^8.4.14",
     "prettier": "^2.7.0",
     "prettier-plugin-tailwindcss": "^0.1.11",

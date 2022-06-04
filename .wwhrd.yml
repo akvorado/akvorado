@@ -1,0 +1,9 @@
+---
+allowlist:
+  - Apache-2.0
+  - BSD-3-Clause
+  - BSD-2-Clause
+  - BSD-2-Clause-Views
+  - MPL-2.0
+  - MIT
+  - ISC
