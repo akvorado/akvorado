@@ -6,7 +6,7 @@
     @update:model-value="(item) => $emit('update:modelValue', item)"
   >
     <div class="relative">
-      <InputComponent
+      <InputBase
         v-slot="{ id, childClass }"
         v-bind="otherAttrs"
         :error="error"
@@ -21,7 +21,7 @@
             <SelectorIcon class="h-5 w-5 text-gray-400" aria-hidden="true" />
           </span>
         </ListboxButton>
-      </InputComponent>
+      </InputBase>
 
       <transition
         enter-active-class="transition duration-100 ease-out"
@@ -101,7 +101,7 @@ import {
   ListboxOption,
 } from "@headlessui/vue";
 import { CheckIcon, SelectorIcon } from "@heroicons/vue/solid";
-import InputComponent from "@/components/InputComponent.vue";
+import InputBase from "@/components/InputBase.vue";
 
 const attrs = useAttrs();
 const otherAttrs = computed(() => {

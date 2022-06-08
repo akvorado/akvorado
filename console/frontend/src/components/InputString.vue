@@ -1,5 +1,5 @@
 <template>
-  <InputComponent v-slot="{ id, childClass }">
+  <InputBase v-slot="{ id, childClass }">
     <input
       :id="id"
       :class="childClass"
@@ -8,7 +8,7 @@
       :value="modelValue"
       @input="$emit('update:modelValue', $event.target.value)"
     />
-  </InputComponent>
+  </InputBase>
 </template>
 
 <script setup>
@@ -20,5 +20,5 @@ defineProps({
 });
 defineEmits(["update:modelValue"]);
 
-import InputComponent from "@/components/InputComponent.vue";
+import InputBase from "@/components/InputBase.vue";
 </script>

@@ -1,7 +1,7 @@
 <template>
-  <InputComponent v-slot="{ childClass }" :error="error">
+  <InputBase v-slot="{ childClass }" :error="error">
     <div ref="el" :class="childClass"></div>
-  </InputComponent>
+  </InputBase>
 </template>
 
 <script setup>
@@ -16,7 +16,7 @@ const props = defineProps({
 const emit = defineEmits(["update:modelValue"]);
 
 import { ref, inject, watch, computed, onMounted, onBeforeUnmount } from "vue";
-import InputComponent from "@/components/InputComponent.vue";
+import InputBase from "@/components/InputBase.vue";
 const { isDark } = inject("theme");
 
 import { EditorState, StateEffect, Compartment } from "@codemirror/state";
