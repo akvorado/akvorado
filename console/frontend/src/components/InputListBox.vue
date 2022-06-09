@@ -6,11 +6,7 @@
     @update:model-value="(item) => $emit('update:modelValue', item)"
   >
     <div class="relative">
-      <InputBase
-        v-slot="{ id, childClass }"
-        v-bind="otherAttrs"
-        :error="error"
-      >
+      <InputBase v-slot="{ id, childClass }" v-bind="otherAttrs" :error="error">
         <ListboxButton :id="id" :class="childClass">
           <span class="block truncate pr-10 text-left">
             <slot name="selected"></slot>

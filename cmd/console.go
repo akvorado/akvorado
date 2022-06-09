@@ -10,6 +10,7 @@ import (
 	"akvorado/common/http"
 	"akvorado/common/reporter"
 	"akvorado/console"
+	"akvorado/console/authentication"
 )
 
 // ConsoleConfiguration represents the configuration file for the console command.
@@ -18,6 +19,7 @@ type ConsoleConfiguration struct {
 	HTTP       http.Configuration
 	Console    console.Configuration
 	ClickHouse clickhousedb.Configuration
+	Auth       authentication.Configuration
 }
 
 // DefaultConsoleConfiguration is the default configuration for the console command.
@@ -27,6 +29,7 @@ func DefaultConsoleConfiguration() ConsoleConfiguration {
 		Reporting:  reporter.DefaultConfiguration(),
 		Console:    console.DefaultConfiguration(),
 		ClickHouse: clickhousedb.DefaultConfiguration(),
+		Auth:       authentication.DefaultConfiguration(),
 	}
 }
 
@@ -85,6 +88,10 @@ func consoleStart(r *reporter.Reporter, config ConsoleConfiguration, checkOnly b
 	if err != nil {
 		return fmt.Errorf("unable to initialize ClickHouse component: %w", err)
 	}
+	authenticationComponent, err := authentication.New(r, config.Auth)
+	if err != nil {
+		return fmt.Errorf("unable to initialize authentication component: %w", err)
+	}
 	consoleComponent, err := console.New(r, config.Console, console.Dependencies{
 		Daemon:       daemonComponent,
 		HTTP:         httpComponent,
@@ -107,6 +114,7 @@ func consoleStart(r *reporter.Reporter, config ConsoleConfiguration, checkOnly b
 	components := []interface{}{
 		httpComponent,
 		clickhouseComponent,
+		authenticationComponent,
 		consoleComponent,
 	}
 	return StartStopComponents(r, daemonComponent, components)

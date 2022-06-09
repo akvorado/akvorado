@@ -8,11 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 
-	"akvorado/common/clickhousedb"
-	"akvorado/common/daemon"
 	"akvorado/common/helpers"
-	"akvorado/common/http"
-	"akvorado/common/reporter"
 )
 
 func TestGraphQuerySQL(t *testing.T) {
@@ -144,17 +140,7 @@ ORDER BY time`,
 }
 
 func TestGraphHandler(t *testing.T) {
-	r := reporter.NewMock(t)
-	ch, mockConn := clickhousedb.NewMock(t, r)
-	h := http.NewMock(t, r)
-	c, err := New(r, DefaultConfiguration(), Dependencies{
-		Daemon:       daemon.NewMock(t),
-		HTTP:         h,
-		ClickHouseDB: ch,
-	})
-	if err != nil {
-		t.Fatalf("New() error:\n%+v", err)
-	}
+	c, h, mockConn, _ := NewMock(t, DefaultConfiguration())
 	helpers.StartStop(t, c)
 
 	base := time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)

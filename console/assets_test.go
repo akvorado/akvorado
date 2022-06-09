@@ -3,10 +3,7 @@ package console
 import (
 	"testing"
 
-	"akvorado/common/daemon"
 	"akvorado/common/helpers"
-	"akvorado/common/http"
-	"akvorado/common/reporter"
 )
 
 func TestServeAssets(t *testing.T) {
@@ -19,17 +16,9 @@ func TestServeAssets(t *testing.T) {
 			name = "embeddedfs"
 		}
 		t.Run(name, func(t *testing.T) {
-			r := reporter.NewMock(t)
-			h := http.NewMock(t, r)
 			conf := DefaultConfiguration()
 			conf.ServeLiveFS = live
-			c, err := New(r, conf, Dependencies{
-				Daemon: daemon.NewMock(t),
-				HTTP:   h,
-			})
-			if err != nil {
-				t.Fatalf("New() error:\n%+v", err)
-			}
+			c, h, _, _ := NewMock(t, conf)
 			helpers.StartStop(t, c)
 
 			helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{

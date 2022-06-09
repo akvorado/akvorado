@@ -7,30 +7,15 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/benbjohnson/clock"
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 
-	"akvorado/common/clickhousedb"
 	"akvorado/common/clickhousedb/mocks"
-	"akvorado/common/daemon"
 	"akvorado/common/helpers"
-	"akvorado/common/http"
-	"akvorado/common/reporter"
 )
 
 func TestWidgetLastFlow(t *testing.T) {
-	r := reporter.NewMock(t)
-	ch, mockConn := clickhousedb.NewMock(t, r)
-	h := http.NewMock(t, r)
-	c, err := New(r, DefaultConfiguration(), Dependencies{
-		Daemon:       daemon.NewMock(t),
-		HTTP:         h,
-		ClickHouseDB: ch,
-	})
-	if err != nil {
-		t.Fatalf("New() error:\n%+v", err)
-	}
+	c, h, mockConn, _ := NewMock(t, DefaultConfiguration())
 	helpers.StartStop(t, c)
 
 	ctrl := gomock.NewController(t)
@@ -106,17 +91,7 @@ func TestWidgetLastFlow(t *testing.T) {
 }
 
 func TestFlowRate(t *testing.T) {
-	r := reporter.NewMock(t)
-	ch, mockConn := clickhousedb.NewMock(t, r)
-	h := http.NewMock(t, r)
-	c, err := New(r, DefaultConfiguration(), Dependencies{
-		Daemon:       daemon.NewMock(t),
-		HTTP:         h,
-		ClickHouseDB: ch,
-	})
-	if err != nil {
-		t.Fatalf("New() error:\n%+v", err)
-	}
+	c, h, mockConn, _ := NewMock(t, DefaultConfiguration())
 	helpers.StartStop(t, c)
 
 	ctrl := gomock.NewController(t)
@@ -140,17 +115,7 @@ func TestFlowRate(t *testing.T) {
 }
 
 func TestWidgetExporters(t *testing.T) {
-	r := reporter.NewMock(t)
-	ch, mockConn := clickhousedb.NewMock(t, r)
-	h := http.NewMock(t, r)
-	c, err := New(r, DefaultConfiguration(), Dependencies{
-		Daemon:       daemon.NewMock(t),
-		HTTP:         h,
-		ClickHouseDB: ch,
-	})
-	if err != nil {
-		t.Fatalf("New() error:\n%+v", err)
-	}
+	c, h, mockConn, _ := NewMock(t, DefaultConfiguration())
 	helpers.StartStop(t, c)
 
 	expected := []struct {
@@ -181,17 +146,7 @@ func TestWidgetExporters(t *testing.T) {
 }
 
 func TestWidgetTop(t *testing.T) {
-	r := reporter.NewMock(t)
-	ch, mockConn := clickhousedb.NewMock(t, r)
-	h := http.NewMock(t, r)
-	c, err := New(r, DefaultConfiguration(), Dependencies{
-		Daemon:       daemon.NewMock(t),
-		HTTP:         h,
-		ClickHouseDB: ch,
-	})
-	if err != nil {
-		t.Fatalf("New() error:\n%+v", err)
-	}
+	c, h, mockConn, _ := NewMock(t, DefaultConfiguration())
 	helpers.StartStop(t, c)
 
 	gomock.InOrder(
@@ -230,48 +185,36 @@ func TestWidgetTop(t *testing.T) {
 			URL: "/api/v0/console/widget/top/src-port",
 			JSONOutput: gin.H{
 				"top": []gin.H{
-					gin.H{"name": "TCP/443", "percent": 51},
-					gin.H{"name": "UDP/443", "percent": 20},
-					gin.H{"name": "TCP/80", "percent": 18}}},
+					{"name": "TCP/443", "percent": 51},
+					{"name": "UDP/443", "percent": 20},
+					{"name": "TCP/80", "percent": 18}}},
 		}, {
 			URL: "/api/v0/console/widget/top/protocol",
 			JSONOutput: gin.H{
 				"top": []gin.H{
-					gin.H{"name": "TCP", "percent": 75},
-					gin.H{"name": "UDP", "percent": 24},
-					gin.H{"name": "ESP", "percent": 1}}},
+					{"name": "TCP", "percent": 75},
+					{"name": "UDP", "percent": 24},
+					{"name": "ESP", "percent": 1}}},
 		}, {
 			URL: "/api/v0/console/widget/top/exporter",
 			JSONOutput: gin.H{
 				"top": []gin.H{
-					gin.H{"name": "exporter1", "percent": 20},
-					gin.H{"name": "exporter3", "percent": 10},
-					gin.H{"name": "exporter5", "percent": 3}}},
+					{"name": "exporter1", "percent": 20},
+					{"name": "exporter3", "percent": 10},
+					{"name": "exporter5", "percent": 3}}},
 		}, {
 			URL: "/api/v0/console/widget/top/src-as",
 			JSONOutput: gin.H{
 				"top": []gin.H{
-					gin.H{"name": "2906: Netflix", "percent": 12},
-					gin.H{"name": "36040: Youtube", "percent": 10},
-					gin.H{"name": "20940: Akamai", "percent": 9}}},
+					{"name": "2906: Netflix", "percent": 12},
+					{"name": "36040: Youtube", "percent": 10},
+					{"name": "20940: Akamai", "percent": 9}}},
 		},
 	})
 }
 
 func TestWidgetGraph(t *testing.T) {
-	r := reporter.NewMock(t)
-	ch, mockConn := clickhousedb.NewMock(t, r)
-	h := http.NewMock(t, r)
-	mockClock := clock.NewMock()
-	c, err := New(r, DefaultConfiguration(), Dependencies{
-		Daemon:       daemon.NewMock(t),
-		HTTP:         h,
-		ClickHouseDB: ch,
-		Clock:        mockClock,
-	})
-	if err != nil {
-		t.Fatalf("New() error:\n%+v", err)
-	}
+	c, h, mockConn, mockClock := NewMock(t, DefaultConfiguration())
 	helpers.StartStop(t, c)
 
 	base := time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
@@ -307,12 +250,12 @@ ORDER BY Time`).
 			URL: "/api/v0/console/widget/graph?points=100",
 			JSONOutput: gin.H{
 				"data": []gin.H{
-					gin.H{"t": "2009-11-10T23:00:00Z", "gbps": 25.3},
-					gin.H{"t": "2009-11-10T23:01:00Z", "gbps": 27.8},
-					gin.H{"t": "2009-11-10T23:02:00Z", "gbps": 26.4},
-					gin.H{"t": "2009-11-10T23:03:00Z", "gbps": 29.2},
-					gin.H{"t": "2009-11-10T23:04:00Z", "gbps": 21.3},
-					gin.H{"t": "2009-11-10T23:05:00Z", "gbps": 24.7}},
+					{"t": "2009-11-10T23:00:00Z", "gbps": 25.3},
+					{"t": "2009-11-10T23:01:00Z", "gbps": 27.8},
+					{"t": "2009-11-10T23:02:00Z", "gbps": 26.4},
+					{"t": "2009-11-10T23:03:00Z", "gbps": 29.2},
+					{"t": "2009-11-10T23:04:00Z", "gbps": 21.3},
+					{"t": "2009-11-10T23:05:00Z", "gbps": 24.7}},
 			},
 		},
 	})

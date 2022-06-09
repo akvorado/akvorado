@@ -4,28 +4,13 @@ import (
 	"testing"
 	"time"
 
-	"akvorado/common/clickhousedb"
-	"akvorado/common/daemon"
 	"akvorado/common/helpers"
-	"akvorado/common/http"
-	"akvorado/common/reporter"
 
 	"github.com/golang/mock/gomock"
 )
 
 func TestRefreshFlowsTables(t *testing.T) {
-	r := reporter.NewMock(t)
-	ch, mockConn := clickhousedb.NewMock(t, r)
-	h := http.NewMock(t, r)
-	c, err := New(r, DefaultConfiguration(), Dependencies{
-		Daemon:       daemon.NewMock(t),
-		HTTP:         h,
-		ClickHouseDB: ch,
-	})
-	if err != nil {
-		t.Fatalf("New() error:\n%+v", err)
-	}
-
+	c, _, mockConn, _ := NewMock(t, DefaultConfiguration())
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), `
 SELECT name
@@ -183,17 +168,8 @@ func TestQueryFlowsTables(t *testing.T) {
 		},
 	}
 
-	r := reporter.NewMock(t)
-	ch, _ := clickhousedb.NewMock(t, r)
-	h := http.NewMock(t, r)
-	c, err := New(r, DefaultConfiguration(), Dependencies{
-		Daemon:       daemon.NewMock(t),
-		HTTP:         h,
-		ClickHouseDB: ch,
-	})
-	if err != nil {
-		t.Fatalf("New() error:\n%+v", err)
-	}
+	c, _, _, _ := NewMock(t, DefaultConfiguration())
+	helpers.StartStop(t, c)
 	for _, tc := range cases {
 		t.Run(tc.Description, func(t *testing.T) {
 			c.flowsTables = tc.Tables

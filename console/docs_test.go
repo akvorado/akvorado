@@ -7,10 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"akvorado/common/daemon"
 	"akvorado/common/helpers"
-	"akvorado/common/http"
-	"akvorado/common/reporter"
 )
 
 func TestServeDocs(t *testing.T) {
@@ -28,17 +25,9 @@ func TestServeDocs(t *testing.T) {
 		}
 		for _, tc := range cases {
 			t.Run(fmt.Sprintf("%s-%s", name, tc.Path), func(t *testing.T) {
-				r := reporter.NewMock(t)
-				h := http.NewMock(t, r)
 				conf := DefaultConfiguration()
 				conf.ServeLiveFS = live
-				c, err := New(r, conf, Dependencies{
-					Daemon: daemon.NewMock(t),
-					HTTP:   h,
-				})
-				if err != nil {
-					t.Fatalf("New() error:\n%+v", err)
-				}
+				c, h, _, _ := NewMock(t, conf)
 				helpers.StartStop(t, c)
 
 				resp, err := netHTTP.Get(fmt.Sprintf("http://%s/api/v0/console/docs/%s",

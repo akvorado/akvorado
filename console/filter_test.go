@@ -6,25 +6,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
 
-	"akvorado/common/clickhousedb"
-	"akvorado/common/daemon"
 	"akvorado/common/helpers"
-	"akvorado/common/http"
-	"akvorado/common/reporter"
 )
 
 func TestFilterHandlers(t *testing.T) {
-	r := reporter.NewMock(t)
-	ch, mockConn := clickhousedb.NewMock(t, r)
-	h := http.NewMock(t, r)
-	c, err := New(r, DefaultConfiguration(), Dependencies{
-		Daemon:       daemon.NewMock(t),
-		HTTP:         h,
-		ClickHouseDB: ch,
-	})
-	if err != nil {
-		t.Fatalf("New() error:\n%+v", err)
-	}
+	c, h, mockConn, _ := NewMock(t, DefaultConfiguration())
 	helpers.StartStop(t, c)
 
 	mockConn.EXPECT().
