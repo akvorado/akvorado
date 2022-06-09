@@ -15,8 +15,7 @@ import (
 )
 
 func TestWidgetLastFlow(t *testing.T) {
-	c, h, mockConn, _ := NewMock(t, DefaultConfiguration())
-	helpers.StartStop(t, c)
+	_, h, mockConn, _ := NewMock(t, DefaultConfiguration())
 
 	ctrl := gomock.NewController(t)
 	mockRows := mocks.NewMockRows(ctrl)
@@ -91,8 +90,7 @@ func TestWidgetLastFlow(t *testing.T) {
 }
 
 func TestFlowRate(t *testing.T) {
-	c, h, mockConn, _ := NewMock(t, DefaultConfiguration())
-	helpers.StartStop(t, c)
+	_, h, mockConn, _ := NewMock(t, DefaultConfiguration())
 
 	ctrl := gomock.NewController(t)
 	mockRow := mocks.NewMockRow(ctrl)
@@ -115,8 +113,7 @@ func TestFlowRate(t *testing.T) {
 }
 
 func TestWidgetExporters(t *testing.T) {
-	c, h, mockConn, _ := NewMock(t, DefaultConfiguration())
-	helpers.StartStop(t, c)
+	_, h, mockConn, _ := NewMock(t, DefaultConfiguration())
 
 	expected := []struct {
 		ExporterName string
@@ -146,8 +143,7 @@ func TestWidgetExporters(t *testing.T) {
 }
 
 func TestWidgetTop(t *testing.T) {
-	c, h, mockConn, _ := NewMock(t, DefaultConfiguration())
-	helpers.StartStop(t, c)
+	_, h, mockConn, _ := NewMock(t, DefaultConfiguration())
 
 	gomock.InOrder(
 		mockConn.EXPECT().
@@ -214,8 +210,7 @@ func TestWidgetTop(t *testing.T) {
 }
 
 func TestWidgetGraph(t *testing.T) {
-	c, h, mockConn, mockClock := NewMock(t, DefaultConfiguration())
-	helpers.StartStop(t, c)
+	_, h, mockConn, mockClock := NewMock(t, DefaultConfiguration())
 
 	base := time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
 	mockClock.Set(base.Add(24 * time.Hour))

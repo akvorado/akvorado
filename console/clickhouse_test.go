@@ -169,7 +169,6 @@ func TestQueryFlowsTables(t *testing.T) {
 	}
 
 	c, _, _, _ := NewMock(t, DefaultConfiguration())
-	helpers.StartStop(t, c)
 	for _, tc := range cases {
 		t.Run(tc.Description, func(t *testing.T) {
 			c.flowsTables = tc.Tables

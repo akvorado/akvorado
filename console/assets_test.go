@@ -18,8 +18,7 @@ func TestServeAssets(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			conf := DefaultConfiguration()
 			conf.ServeLiveFS = live
-			c, h, _, _ := NewMock(t, conf)
-			helpers.StartStop(t, c)
+			_, h, _, _ := NewMock(t, conf)
 
 			helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
 				{

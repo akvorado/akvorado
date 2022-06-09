@@ -6,8 +6,6 @@ import (
 	netHTTP "net/http"
 	"strings"
 	"testing"
-
-	"akvorado/common/helpers"
 )
 
 func TestServeDocs(t *testing.T) {
@@ -27,8 +25,7 @@ func TestServeDocs(t *testing.T) {
 			t.Run(fmt.Sprintf("%s-%s", name, tc.Path), func(t *testing.T) {
 				conf := DefaultConfiguration()
 				conf.ServeLiveFS = live
-				c, h, _, _ := NewMock(t, conf)
-				helpers.StartStop(t, c)
+				_, h, _, _ := NewMock(t, conf)
 
 				resp, err := netHTTP.Get(fmt.Sprintf("http://%s/api/v0/console/docs/%s",
 					h.Address, tc.Path))

@@ -10,9 +10,11 @@ import (
 	"akvorado/common/clickhousedb"
 	"akvorado/common/clickhousedb/mocks"
 	"akvorado/common/daemon"
+	"akvorado/common/helpers"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
 	"akvorado/console/authentication"
+	"akvorado/console/database"
 )
 
 // NewMock instantiantes a new authentication component
@@ -28,9 +30,11 @@ func NewMock(t *testing.T, config Configuration) (*Component, *http.Component, *
 		ClickHouseDB: ch,
 		Clock:        mockClock,
 		Auth:         authentication.NewMock(t, r),
+		Database:     database.NewMock(t, r),
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
+	helpers.StartStop(t, c)
 	return c, h, mockConn, mockClock
 }

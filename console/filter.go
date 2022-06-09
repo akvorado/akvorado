@@ -3,11 +3,14 @@ package console
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 
 	"akvorado/common/helpers"
+	"akvorado/console/authentication"
+	"akvorado/console/database"
 	"akvorado/console/filter"
 )
 
@@ -267,4 +270,52 @@ LIMIT 20`, column, column, column, column, column)
 	}
 	gc.JSON(http.StatusOK, filterCompleteHandlerOutput{filteredCompletions})
 	return
+}
+
+func (c *Component) filterSavedListHandlerFunc(gc *gin.Context) {
+	ctx := c.t.Context(gc.Request.Context())
+	user := gc.MustGet("user").(authentication.UserInformation).Login
+	filters, err := c.d.Database.ListSavedFilters(ctx, user)
+	if err != nil {
+		c.r.Err(err).Msg("unable to list filters")
+		gc.JSON(http.StatusInternalServerError, gin.H{"message": "unable to list filters"})
+		return
+	}
+	gc.JSON(http.StatusOK, gin.H{"filters": filters})
+}
+
+func (c *Component) filterSavedDeleteHandlerFunc(gc *gin.Context) {
+	ctx := c.t.Context(gc.Request.Context())
+	user := gc.MustGet("user").(authentication.UserInformation).Login
+	id, err := strconv.ParseUint(gc.Param("id"), 10, 64)
+	if err != nil {
+		gc.JSON(http.StatusBadRequest, gin.H{"message": "bad ID format"})
+		return
+	}
+	if err := c.d.Database.DeleteSavedFilter(ctx, database.SavedFilter{
+		ID:   uint(id),
+		User: user,
+	}); err != nil {
+		// Assume this is because it is not found
+		gc.JSON(http.StatusNotFound, gin.H{"message": "filter not found"})
+		return
+	}
+	gc.JSON(http.StatusNoContent, nil)
+}
+
+func (c *Component) filterSavedAddHandlerFunc(gc *gin.Context) {
+	ctx := c.t.Context(gc.Request.Context())
+	user := gc.MustGet("user").(authentication.UserInformation).Login
+	var filter database.SavedFilter
+	if err := gc.ShouldBindJSON(&filter); err != nil {
+		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
+		return
+	}
+	filter.User = user
+	if err := c.d.Database.CreateSavedFilter(ctx, filter); err != nil {
+		c.r.Err(err).Msg("cannot create saved filter")
+		gc.JSON(http.StatusInternalServerError, gin.H{"message": "cannot create new filter"})
+		return
+	}
+	gc.JSON(http.StatusNoContent, nil)
 }

@@ -1,6 +1,7 @@
 package console
 
 import (
+	netHTTP "net/http"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -10,8 +11,7 @@ import (
 )
 
 func TestFilterHandlers(t *testing.T) {
-	c, h, mockConn, _ := NewMock(t, DefaultConfiguration())
-	helpers.StartStop(t, c)
+	_, h, mockConn, _ := NewMock(t, DefaultConfiguration())
 
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), `
@@ -186,6 +186,69 @@ UNION DISTINCT
 				{"label": "customer-2", "detail": "network name", "quoted": true},
 				{"label": "customer-3", "detail": "network name", "quoted": true},
 			}},
+		}, {
+			Description: "list, no filters",
+			URL:         "/api/v0/console/filter/saved",
+			StatusCode:  200,
+			JSONOutput:  gin.H{"filters": []gin.H{}},
+		}, {
+			Description: "store one filter",
+			URL:         "/api/v0/console/filter/saved",
+			StatusCode:  204,
+			JSONInput: gin.H{
+				"description": "test 1",
+				"content":     "InIfBoundary = external",
+			},
+			ContentType: "application/json; charset=utf-8",
+		}, {
+			Description: "list stored filters",
+			URL:         "/api/v0/console/filter/saved",
+			JSONOutput: gin.H{"filters": []gin.H{
+				{
+					"id":          1,
+					"shared":      false,
+					"user":        "__default",
+					"description": "test 1",
+					"content":     "InIfBoundary = external",
+				},
+			}},
+		}, {
+			Description: "list stored filters as another user",
+			URL:         "/api/v0/console/filter/saved",
+			Header: func() netHTTP.Header {
+				headers := make(netHTTP.Header)
+				headers.Add("Remote-User", "alfred")
+				return headers
+			}(),
+			JSONOutput: gin.H{"filters": []gin.H{}},
+		}, {
+			Description: "delete stored filter as another user",
+			Method:      "DELETE",
+			URL:         "/api/v0/console/filter/saved/1",
+			Header: func() netHTTP.Header {
+				headers := make(netHTTP.Header)
+				headers.Add("Remote-User", "alfred")
+				return headers
+			}(),
+			StatusCode: 404,
+			JSONOutput: gin.H{"message": "filter not found"},
+		}, {
+			Description: "delete stored filter",
+			Method:      "DELETE",
+			URL:         "/api/v0/console/filter/saved/1",
+			StatusCode:  204,
+			ContentType: "application/json; charset=utf-8",
+		}, {
+			Description: "delete stored filter with invalid ID",
+			Method:      "DELETE",
+			URL:         "/api/v0/console/filter/saved/kjgdfhgh",
+			StatusCode:  400,
+			JSONOutput:  gin.H{"message": "bad ID format"},
+		}, {
+			Description: "list stored filter after delete",
+			URL:         "/api/v0/console/filter/saved",
+			StatusCode:  200,
+			JSONOutput:  gin.H{"filters": []gin.H{}},
 		},
 	})
 }

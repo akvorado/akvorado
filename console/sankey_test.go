@@ -118,8 +118,7 @@ ORDER BY xps DESC`,
 }
 
 func TestSankeyHandler(t *testing.T) {
-	c, h, mockConn, _ := NewMock(t, DefaultConfiguration())
-	helpers.StartStop(t, c)
+	_, h, mockConn, _ := NewMock(t, DefaultConfiguration())
 
 	expectedSQL := []struct {
 		Xps        float64  `ch:"xps"`

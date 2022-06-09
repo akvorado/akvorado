@@ -17,6 +17,7 @@ import (
 	"akvorado/common/http"
 	"akvorado/common/reporter"
 	"akvorado/console/authentication"
+	"akvorado/console/database"
 
 	"github.com/benbjohnson/clock"
 	"gopkg.in/tomb.v2"
@@ -47,6 +48,7 @@ type Dependencies struct {
 	ClickHouseDB *clickhousedb.Component
 	Clock        clock.Clock
 	Auth         *authentication.Component
+	Database     *database.Component
 }
 
 // New creates a new console component.
@@ -88,6 +90,9 @@ func (c *Component) Start() error {
 	endpoint.POST("/sankey", c.sankeyHandlerFunc)
 	endpoint.POST("/filter/validate", c.filterValidateHandlerFunc)
 	endpoint.POST("/filter/complete", c.filterCompleteHandlerFunc)
+	endpoint.GET("/filter/saved", c.filterSavedListHandlerFunc)
+	endpoint.DELETE("/filter/saved/:id", c.filterSavedDeleteHandlerFunc)
+	endpoint.POST("/filter/saved", c.filterSavedAddHandlerFunc)
 	endpoint.GET("/user/info", c.d.Auth.UserInfoHandlerFunc)
 	endpoint.GET("/user/avatar", c.d.Auth.UserAvatarHandlerFunc)
 

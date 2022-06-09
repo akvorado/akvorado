@@ -140,8 +140,7 @@ ORDER BY time`,
 }
 
 func TestGraphHandler(t *testing.T) {
-	c, h, mockConn, _ := NewMock(t, DefaultConfiguration())
-	helpers.StartStop(t, c)
+	_, h, mockConn, _ := NewMock(t, DefaultConfiguration())
 
 	base := time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
 	expectedSQL := []struct {

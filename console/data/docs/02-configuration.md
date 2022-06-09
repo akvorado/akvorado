@@ -331,9 +331,9 @@ resolutions:
 
 ## Console service
 
-The main components of the console service are `http` and `console`.
-`http` accepts the [same configuration](#http) as for the inlet
-service.
+The main components of the console service are `http`, `console`,
+`authentication` and `database`. `http` accepts the [same
+configuration](#http) as for the inlet service.
 
 ### Authentication
 
@@ -352,16 +352,15 @@ is also possible to modify the default user (when no header is
 present) by tweaking the `default-user` key:
 
 ```yaml
-console:
-  authentication:
-    headers:
-      login: Remote-User
-      name: Remote-Name
-      email: Remote-Email
-      logout-url: X-Logout-URL
-    default-user:
-      login: default
-      name: Default User
+authentication:
+  headers:
+    login: Remote-User
+    name: Remote-Name
+    email: Remote-Email
+    logout-url: X-Logout-URL
+  default-user:
+    login: default
+    name: Default User
 ```
 
 To prevent access when not authenticated, the `login` field for the
@@ -382,3 +381,16 @@ There also exist simpler solutions only providing authentication:
 
 - [OAuth2 Proxy](https://oauth2-proxy.github.io/oauth2-proxy/), associated with [Dex](https://dexidp.io/)
 - [Ory](https://www.ory.sh), notably Hydra and Oathkeeper
+
+### Database
+
+The console stores some data, like per-user filters, into a relational
+database. When the database is not configured, data is only stored in
+memory and will be lost on restart. Currently, the only accepted
+driver is SQLite.
+
+```yaml
+database:
+  driver: sqlite
+  dsn: /var/lib/akvorado/console.sqlite
+```
