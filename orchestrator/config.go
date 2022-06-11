@@ -1,4 +1,4 @@
-package broker
+package orchestrator
 
 // Configuration describes the configuration for the broker.
 type Configuration struct {

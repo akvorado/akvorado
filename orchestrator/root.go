@@ -1,5 +1,5 @@
-// Package broker synchronizes the different internal services.
-package broker
+// Package orchestrator synchronizes the different internal services.
+package orchestrator
 
 import (
 	"sync"

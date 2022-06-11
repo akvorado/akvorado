@@ -9,7 +9,7 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
-	"akvorado/orchestrator/broker"
+	"akvorado/orchestrator"
 	"akvorado/orchestrator/clickhouse"
 	"akvorado/orchestrator/kafka"
 )
@@ -21,7 +21,7 @@ type OrchestratorConfiguration struct {
 	ClickHouseDB clickhousedb.Configuration `yaml:"-"`
 	ClickHouse   clickhouse.Configuration
 	Kafka        kafka.Configuration
-	Broker       broker.Configuration
+	Orchestrator orchestrator.Configuration
 	// Other service configurations
 	Inlet   InletConfiguration
 	Console ConsoleConfiguration
@@ -35,7 +35,7 @@ func DefaultOrchestratorConfiguration() OrchestratorConfiguration {
 		ClickHouseDB: clickhousedb.DefaultConfiguration(),
 		ClickHouse:   clickhouse.DefaultConfiguration(),
 		Kafka:        kafka.DefaultConfiguration(),
-		Broker:       broker.DefaultConfiguration(),
+		Orchestrator: orchestrator.DefaultConfiguration(),
 		// Other service configurations
 		Inlet:   DefaultInletConfiguration(),
 		Console: DefaultConsoleConfiguration(),
@@ -116,14 +116,14 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, c
 	if err != nil {
 		return fmt.Errorf("unable to initialize clickhouse component: %w", err)
 	}
-	brokerComponent, err := broker.New(r, config.Broker, broker.Dependencies{
+	orchestratorComponent, err := orchestrator.New(r, config.Orchestrator, orchestrator.Dependencies{
 		HTTP: httpComponent,
 	})
 	if err != nil {
-		return fmt.Errorf("unable to initialize broker component: %w", err)
+		return fmt.Errorf("unable to initialize orchestrator component: %w", err)
 	}
-	brokerComponent.RegisterConfiguration(broker.InletService, config.Inlet)
-	brokerComponent.RegisterConfiguration(broker.ConsoleService, config.Console)
+	orchestratorComponent.RegisterConfiguration(orchestrator.InletService, config.Inlet)
+	orchestratorComponent.RegisterConfiguration(orchestrator.ConsoleService, config.Console)
 
 	// Expose some informations and metrics
 	addCommonHTTPHandlers(r, "orchestrator", httpComponent)
