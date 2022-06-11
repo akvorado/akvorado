@@ -18,7 +18,7 @@ import (
 type ConsoleConfiguration struct {
 	Reporting  reporter.Configuration
 	HTTP       http.Configuration
-	Console    console.Configuration
+	Console    console.Configuration `mapstructure:",squash" yaml:",inline"`
 	ClickHouse clickhousedb.Configuration
 	Auth       authentication.Configuration
 	Database   database.Configuration

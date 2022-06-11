@@ -21,7 +21,7 @@ type OrchestratorConfiguration struct {
 	ClickHouseDB clickhousedb.Configuration `yaml:"-"`
 	ClickHouse   clickhouse.Configuration
 	Kafka        kafka.Configuration
-	Orchestrator orchestrator.Configuration
+	Orchestrator orchestrator.Configuration `mapstructure:",squash" yaml:",inline"`
 	// Other service configurations
 	Inlet   InletConfiguration
 	Console ConsoleConfiguration
