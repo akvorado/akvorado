@@ -165,7 +165,7 @@ watch(
       graphType: _graphType = graphTypes.stacked,
       start = "6 hours ago",
       end = "now",
-      dimensions: _dimensions = ["SrcAS", "ExporterName"],
+      dimensions: _dimensions = ["SrcAS"],
       limit = 10,
       points /* eslint-disable-line no-unused-vars */,
       filter: _filter = "InIfBoundary = external",
