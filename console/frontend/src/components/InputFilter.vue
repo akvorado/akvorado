@@ -22,7 +22,7 @@ const { isDark } = inject("theme");
 import { EditorState, StateEffect, Compartment } from "@codemirror/state";
 import { EditorView, keymap, placeholder } from "@codemirror/view";
 import { syntaxHighlighting, HighlightStyle } from "@codemirror/language";
-import { standardKeymap } from "@codemirror/commands";
+import { standardKeymap, history } from "@codemirror/commands";
 import { linter } from "@codemirror/lint";
 import {
   autocompletion,
@@ -103,7 +103,11 @@ onMounted(() => {
         error.value = diags.length > 0 ? "Invalid filter expression" : "";
         return diags;
       }),
-      keymap.of([...standardKeymap, { key: "Tab", run: acceptCompletion }]),
+      keymap.of([
+        ...standardKeymap.filter((b) => b.key !== "Mod-a"),
+        { key: "Tab", run: acceptCompletion },
+      ]),
+      history(),
       placeholder("Filter expression"),
       EditorView.lineWrapping,
       EditorView.updateListener.of((viewUpdate) => {
