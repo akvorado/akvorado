@@ -23,7 +23,7 @@ services:
       - 127.0.0.1:9092:9093/tcp
 
   clickhouse:
-    image: clickhouse/clickhouse-server:22.2
+    image: clickhouse/clickhouse-server:22.3
     ports:
       - 127.0.0.1:8123:8123/tcp
       - 127.0.0.1:9000:9000/tcp
