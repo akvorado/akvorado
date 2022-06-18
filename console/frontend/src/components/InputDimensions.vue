@@ -6,6 +6,7 @@
       :error="dimensionsError"
       multiple
       label="Dimensions"
+      filter="name"
       class="col-span-2 lg:col-span-1"
     >
       <template #selected>

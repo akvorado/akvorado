@@ -1,5 +1,6 @@
 <template>
-  <Listbox
+  <component
+    :is="component.Box"
     :class="$attrs['class']"
     :multiple="multiple"
     :model-value="modelValue"
@@ -7,16 +8,29 @@
   >
     <div class="relative">
       <InputBase v-slot="{ id, childClass }" v-bind="otherAttrs" :error="error">
-        <ListboxButton :id="id" :class="childClass">
-          <span class="block truncate pr-10 text-left">
-            <slot name="selected"></slot>
-          </span>
-          <span
-            class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2"
+        <component :is="component.Widget" :id="id" :class="childClass">
+          <div class="flex flex-wrap items-center gap-x-2 pr-10 text-left">
+            <span>
+              <slot name="selected"></slot>
+            </span>
+            <component
+              :is="component.Input"
+              class="w-16 grow border-none p-0 focus:outline-none"
+              placeholder="Search..."
+              @change="query = $event.target.value"
+              @focus="query = ''"
+            >
+            </component>
+          </div>
+          <component
+            :is="component.Button"
+            :id="id"
+            class="absolute inset-y-0 right-0 flex items-center pr-2"
+            :class="{ 'pointer-events-none': !component.Input }"
           >
             <SelectorIcon class="h-5 w-5 text-gray-400" aria-hidden="true" />
-          </span>
-        </ListboxButton>
+          </component>
+        </component>
       </InputBase>
 
       <transition
@@ -27,11 +41,13 @@
         leave-from-class="transform scale-100 opacity-100"
         leave-to-class="transform scale-95 opacity-0"
       >
-        <ListboxOptions
+        <component
+          :is="component.Options"
           class="absolute z-50 max-h-60 w-full overflow-auto rounded bg-white py-1 text-sm text-gray-700 shadow dark:bg-gray-900 dark:text-gray-200 dark:shadow-white/10"
         >
-          <ListboxOption
-            v-for="item in items"
+          <component
+            :is="component.Option"
+            v-for="item in filteredItems"
             v-slot="{ selected, active }"
             :key="item.id"
             :value="item"
@@ -54,11 +70,11 @@
                 <CheckIcon class="h-5 w-5" aria-hidden="true" />
               </span>
             </li>
-          </ListboxOption>
-        </ListboxOptions>
+          </component>
+        </component>
       </transition>
     </div>
-  </Listbox>
+  </component>
 </template>
 
 <script>
@@ -68,7 +84,7 @@ export default {
 </script>
 
 <script setup>
-defineProps({
+const props = defineProps({
   modelValue: {
     type: Object,
     required: true,
@@ -78,28 +94,65 @@ defineProps({
     default: "",
   },
   items: {
-    // Each item in the array is expected to have "id" and "name".
+    // Each item in the array is expected to have "id".
     type: Array,
     required: true,
   },
   multiple: {
+    // Allow to select multiple values.
     type: Boolean,
     default: false,
+  },
+  filter: {
+    // Enable filtering on the provided property.
+    type: String,
+    default: null,
   },
 });
 defineEmits(["update:modelValue"]);
 
-import { computed, useAttrs } from "vue";
+import { ref, computed, useAttrs } from "vue";
 import {
   Listbox,
+  Combobox,
   ListboxButton,
+  ComboboxButton,
   ListboxOptions,
+  ComboboxOptions,
   ListboxOption,
+  ComboboxOption,
+  ComboboxInput,
 } from "@headlessui/vue";
 import { CheckIcon, SelectorIcon } from "@heroicons/vue/solid";
 import InputBase from "@/components/InputBase.vue";
 
 const attrs = useAttrs();
+const query = ref("");
+const component = computed(() =>
+  props.filter === null
+    ? {
+        Box: Listbox,
+        Widget: ListboxButton,
+        Button: "span",
+        Options: ListboxOptions,
+        Option: ListboxOption,
+      }
+    : {
+        Box: Combobox,
+        Widget: "div",
+        Button: ComboboxButton,
+        Options: ComboboxOptions,
+        Option: ComboboxOption,
+        Input: ComboboxInput,
+      }
+);
+const filteredItems = computed(() =>
+  props.filter === null
+    ? props.items
+    : props.items.filter((it) =>
+        it[props.filter].toLowerCase().includes(query.value.toLowerCase())
+      )
+);
 const otherAttrs = computed(() => {
   // eslint-disable-next-line no-unused-vars
   const { class: _, ...others } = attrs;

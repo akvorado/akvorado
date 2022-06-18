@@ -3,6 +3,7 @@
     <InputListBox
       v-model="selectedPreset"
       :items="presets"
+      filter="name"
       label="Presets"
       class="col-span-2 sm:col-span-1"
     >
