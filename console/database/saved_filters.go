@@ -10,7 +10,7 @@ import (
 type SavedFilter struct {
 	ID          uint   `json:"id"`
 	User        string `gorm:"index" json:"user"`
-	Folder      string `json:"folder"`
+	Shared      bool   `json:"shared"`
 	Description string `json:"description" binding:"required"`
 	Content     string `json:"content" binding:"required"`
 }

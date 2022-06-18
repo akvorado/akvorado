@@ -197,7 +197,6 @@ UNION DISTINCT
 			StatusCode:  204,
 			JSONInput: gin.H{
 				"description": "test 1",
-				"folder":      "here",
 				"content":     "InIfBoundary = external",
 			},
 			ContentType: "application/json; charset=utf-8",
@@ -207,8 +206,8 @@ UNION DISTINCT
 			JSONOutput: gin.H{"filters": []gin.H{
 				{
 					"id":          1,
+					"shared":      false,
 					"user":        "__default",
-					"folder":      "here",
 					"description": "test 1",
 					"content":     "InIfBoundary = external",
 				},
