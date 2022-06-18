@@ -75,6 +75,7 @@
           :min-dimensions="graphType.name === graphTypes.sankey ? 2 : 0"
         />
         <div
+          ref="filterControls"
           class="lg:focus-within:pointer-events-none lg:focus-within:absolute lg:focus-within:inset-0 lg:focus-within:z-40 lg:focus-within:bg-black/30"
         >
           <div
@@ -82,7 +83,7 @@
           >
             <SectionLabel>
               <template #default>Filter</template>
-              <template #hint>
+              <template v-if="filterControlsFocused" #hint>
                 <kbd
                   class="rounded border border-gray-300 bg-gray-200 px-1 dark:border-gray-600 dark:bg-gray-900"
                   >Ctrl-Space</kbd
@@ -112,6 +113,7 @@ const props = defineProps({
 const emit = defineEmits(["update:modelValue", "cancel"]);
 
 import { ref, watch, computed } from "vue";
+import { useFocusWithin } from "@vueuse/core";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/vue/solid";
 import InputTimeRange from "@/components/InputTimeRange.vue";
 import InputDimensions from "@/components/InputDimensions.vue";
@@ -157,6 +159,8 @@ const hasErrors = computed(
   () =>
     !!(timeRange.value.errors || dimensions.value.errors || filter.value.errors)
 );
+const filterControls = ref();
+const { focused: filterControlsFocused } = useFocusWithin(filterControls);
 
 watch(
   () => props.modelValue,

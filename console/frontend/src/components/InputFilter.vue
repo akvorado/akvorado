@@ -24,11 +24,7 @@ import { EditorView, keymap, placeholder } from "@codemirror/view";
 import { syntaxHighlighting, HighlightStyle } from "@codemirror/language";
 import { standardKeymap, history } from "@codemirror/commands";
 import { linter } from "@codemirror/lint";
-import {
-  autocompletion,
-  acceptCompletion,
-  startCompletion,
-} from "@codemirror/autocomplete";
+import { autocompletion, acceptCompletion } from "@codemirror/autocomplete";
 import { tags as t } from "@lezer/highlight";
 import {
   filterLanguage,
@@ -115,8 +111,7 @@ onMounted(() => {
           expression.value = viewUpdate.state.doc.toString();
         }
         if (viewUpdate.focusChanged) {
-          if (viewUpdate.view.hasFocus) startCompletion(viewUpdate.view);
-          else {
+          if (!viewUpdate.view.hasFocus) {
             // Trim spaces
             const index = viewUpdate.state.doc.toString().search(/\s+$/);
             if (index !== -1) {
