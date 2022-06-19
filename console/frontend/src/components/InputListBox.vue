@@ -150,7 +150,10 @@ const filteredItems = computed(() =>
   props.filter === null
     ? props.items
     : props.items.filter((it) =>
-        it[props.filter].toLowerCase().includes(query.value.toLowerCase())
+        query.value
+          .toLowerCase()
+          .split(/\W+/)
+          .every((w) => it[props.filter].toLowerCase().includes(w))
       )
 );
 const otherAttrs = computed(() => {
