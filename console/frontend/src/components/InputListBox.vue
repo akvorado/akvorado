@@ -45,6 +45,12 @@
           :is="component.Options"
           class="absolute z-50 max-h-60 w-full overflow-auto rounded bg-white py-1 text-sm text-gray-700 shadow dark:bg-gray-900 dark:text-gray-200 dark:shadow-white/10"
         >
+          <div
+            v-if="filteredItems.length === 0 && query != ''"
+            class="relative cursor-default select-none py-2 px-4 text-gray-700 dark:text-gray-300"
+          >
+            No results
+          </div>
           <component
             :is="component.Option"
             v-for="item in filteredItems"
