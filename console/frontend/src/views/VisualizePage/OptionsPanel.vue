@@ -29,13 +29,15 @@
       "
     >
       <div v-if="open" class="flex h-full flex-col py-4 px-3 lg:max-h-screen">
-        <div class="mb-2 flex flex-row flex-wrap justify-between gap-2">
+        <div
+          class="mb-2 flex flex-row flex-wrap justify-between gap-2 sm:flex-nowrap lg:flex-wrap"
+        >
           <InputButton
             attr-type="submit"
             :disabled="hasErrors && !loading"
             :loading="loading"
             :type="loading ? 'default' : 'primary'"
-            class="order-3 w-28 justify-center lg:order-2 lg:grow-0"
+            class="order-2 w-28 justify-center sm:order-3 lg:order-2"
           >
             {{ loading ? "Cancel" : applyLabel }}
           </InputButton>
@@ -47,12 +49,12 @@
               { label: 'ᵖ⁄ₛ', name: 'pps' },
             ]"
             label="Unit"
-            class="order-2 lg:order-1 lg:grow-0"
+            class="order-1"
           />
           <InputListBox
             v-model="graphType"
             :items="graphTypeList"
-            class="order-1 grow lg:order-3"
+            class="order-3 grow basis-full sm:order-2 sm:basis-0 lg:order-3"
             label="Graph type"
           >
             <template #selected>{{ graphType.name }}</template>

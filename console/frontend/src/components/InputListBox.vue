@@ -9,13 +9,13 @@
     <div class="relative">
       <InputBase v-slot="{ id, childClass }" v-bind="otherAttrs" :error="error">
         <component :is="component.Widget" :id="id" :class="childClass">
-          <div class="flex flex-wrap items-center gap-x-2 pr-10 text-left">
+          <div class="flex flex-wrap items-center gap-x-2 pr-6 text-left">
             <span>
               <slot name="selected"></slot>
             </span>
             <component
               :is="component.Input"
-              class="w-16 grow border-none p-0 focus:outline-none"
+              class="w-10 grow border-none p-0 focus:outline-none"
               placeholder="Search..."
               @change="query = $event.target.value"
               @focus="query = ''"
