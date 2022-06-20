@@ -37,7 +37,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 				return fmt.Errorf("cannot parse configuration URL: %w", err)
 			}
 			if u.Path == "" {
-				u.Path = fmt.Sprintf("/api/v0/orchestrator/broker/configuration/%s", component)
+				u.Path = fmt.Sprintf("/api/v0/orchestrator/configuration/%s", component)
 			}
 			resp, err := http.Get(u.String())
 			if err != nil {

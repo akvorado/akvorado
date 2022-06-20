@@ -62,8 +62,8 @@ at start and does not need the service to be running.
 The following endpoints are exposed to configure other internal
 services:
 
-- `/api/v0/orchestrator/broker/configuration/inlet`
-- `/api/v0/orchestrator/broker/configuration/console`
+- `/api/v0/orchestrator/configuration/inlet`
+- `/api/v0/orchestrator/configuration/console`
 
 The following endpoints are exposed for use by ClickHouse:
 

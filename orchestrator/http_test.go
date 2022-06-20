@@ -26,7 +26,7 @@ func TestConfigurationEndpoint(t *testing.T) {
 
 	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
 		{
-			URL: "/api/v0/orchestrator/broker/configuration/inlet",
+			URL: "/api/v0/orchestrator/configuration/inlet",
 			JSONOutput: gin.H{
 				"bye":   "Goodbye world!",
 				"hello": "Hello world!",
