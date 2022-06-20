@@ -1,2 +1,3 @@
 Dockerfile
-node_modules/
+console/frontend/node_modules/
+bin/
