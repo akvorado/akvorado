@@ -1,10 +1,10 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"mime"
 	"net/http"
 	"net/url"
 	"os"
@@ -44,15 +44,17 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 				return fmt.Errorf("unable to fetch configuration file: %w", err)
 			}
 			defer resp.Body.Close()
-			if contentType := resp.Header.Get("Content-Type"); contentType != "application/json" && !strings.HasPrefix(contentType, "application/json;") {
-				return fmt.Errorf("received configuration file is not JSON (%s)", contentType)
+			contentType := resp.Header.Get("Content-Type")
+			mediaType, _, err := mime.ParseMediaType(contentType)
+			if mediaType != "application/x-yaml" || err != nil {
+				return fmt.Errorf("received configuration file is not YAML (%s)", contentType)
 			}
 			input, err := io.ReadAll(resp.Body)
 			if err != nil {
 				return fmt.Errorf("unable to read configuration file: %w", err)
 			}
-			if err := json.Unmarshal(input, &rawConfig); err != nil {
-				return fmt.Errorf("unable to parse JSON configuration file: %w", err)
+			if err := yaml.Unmarshal(input, &rawConfig); err != nil {
+				return fmt.Errorf("unable to parse YAML configuration file: %w", err)
 			}
 		} else {
 			input, err := ioutil.ReadFile(cfgFile)
@@ -60,7 +62,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 				return fmt.Errorf("unable to read configuration file: %w", err)
 			}
 			if err := yaml.Unmarshal(input, &rawConfig); err != nil {
-				return fmt.Errorf("unable to parse configuration file: %w", err)
+				return fmt.Errorf("unable to parse YAML configuration file: %w", err)
 			}
 		}
 	}

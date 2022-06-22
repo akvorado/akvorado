@@ -219,24 +219,18 @@ module2:
 
 func TestHTTPConfiguration(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, `
-{
- "module1": {
-  "topic": "flows"
- },
- "module2": {
-  "details": {
-   "workers": 5,
-   "interval-value": "20m"
-  },
-  "stuff": "bye",
-  "elements": [
-   {"name": "first", "gauge": 67},
-   {"name": "second"}
-  ]
- }
-}
+		w.Header().Set("Content-Type", "application/x-yaml; charset=utf-8")
+		fmt.Fprint(w, `---
+module1:
+ topic: flows
+module2:
+ details:
+  workers: 5
+  interval-value: 20m
+ stuff: bye
+ elements:
+   - {"name": "first", "gauge": 67}
+   - {"name": "second"}
 `)
 	}))
 	defer ts.Close()

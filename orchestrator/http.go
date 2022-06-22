@@ -14,10 +14,10 @@ func (c *Component) configurationHandlerFunc(gc *gin.Context) {
 	c.serviceLock.Unlock()
 
 	if !ok {
-		gc.JSON(http.StatusNotFound, gin.H{"message": "Configuration not found."})
+		gc.YAML(http.StatusNotFound, gin.H{"message": "Configuration not found."})
 		return
 	}
-	gc.IndentedJSON(http.StatusOK, configuration)
+	gc.YAML(http.StatusOK, configuration)
 
 	c.serviceLock.Lock()
 	if c.registeredServices[ServiceType(service)] == nil {
