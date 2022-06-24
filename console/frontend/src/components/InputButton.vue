@@ -15,14 +15,22 @@
       'bg-red-300 font-medium text-white dark:bg-red-600':
         type === 'danger' && disabled,
       'border border-gray-300 bg-white font-medium text-gray-900 hover:bg-gray-100 focus:ring-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:border-gray-600 dark:hover:bg-gray-700 dark:focus:ring-gray-700':
-        type === 'default' && !disabled,
+        type === 'alternative' && !disabled,
       'border border-gray-300 bg-white font-medium text-gray-900 dark:border-gray-600 dark:bg-gray-700 dark:text-white':
-        type === 'default' && disabled,
+        type === 'alternative' && disabled,
       'cursor-not-allowed': disabled,
+      'px-2 py-1 text-xs focus:ring-2': size === 'small',
+      'px-5 py-2.5 text-sm focus:ring-4': size === 'normal',
     }"
-    class="inline-flex items-center rounded-lg px-5 py-2.5 text-center text-sm transition-colors duration-200 focus:outline-none focus:ring-4"
+    class="inline-flex items-center rounded-lg text-center transition-colors duration-200 focus:outline-none"
   >
-    <LoadingSpinner v-if="loading" class="mr-2 h-4 w-4" />
+    <LoadingSpinner
+      v-if="loading"
+      :class="{
+        'mr-2 h-4 w-4': size === 'normal',
+        'mr-1 h-3 w-3': size === 'small',
+      }"
+    />
     <slot></slot>
   </button>
 </template>
@@ -38,9 +46,16 @@ defineProps({
   },
   type: {
     type: String,
-    default: "default",
+    default: "primary",
     validator(value) {
-      return ["default", "primary", "warning", "danger"].includes(value);
+      return ["alternative", "primary", "warning", "danger"].includes(value);
+    },
+  },
+  size: {
+    type: String,
+    default: "normal",
+    validator(value) {
+      return ["normal", "small"].includes(value);
     },
   },
   disabled: {

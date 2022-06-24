@@ -24,7 +24,7 @@
             >
               <span class="leading-4">{{ dimension.name }}</span>
               <XIcon
-                class="h-4 w-4 cursor-pointer"
+                class="h-4 w-4 cursor-pointer hover:text-blue-700 dark:hover:text-white"
                 @click.stop.prevent="removeDimension(dimension)"
               />
             </span>

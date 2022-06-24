@@ -28,7 +28,7 @@
         loading ? $emit('cancel') : $emit('update:modelValue', options)
       "
     >
-      <div v-if="open" class="flex h-full flex-col py-4 px-3 lg:max-h-screen">
+      <div v-if="open" class="flex flex-col px-3 py-4 lg:max-h-screen">
         <div
           class="mb-2 flex flex-row flex-wrap justify-between gap-2 sm:flex-nowrap lg:flex-wrap"
         >
@@ -76,26 +76,17 @@
           v-model="dimensions"
           :min-dimensions="graphType.name === graphTypes.sankey ? 2 : 0"
         />
-        <div
-          ref="filterControls"
-          class="lg:focus-within:pointer-events-none lg:focus-within:absolute lg:focus-within:inset-0 lg:focus-within:z-40 lg:focus-within:bg-black/30"
-        >
-          <div
-            class="lg:focus-within:pointer-events-auto lg:focus-within:absolute lg:focus-within:inset-x-2 lg:focus-within:top-36 lg:focus-within:z-50 lg:focus-within:rounded lg:focus-within:bg-gray-100 lg:focus-within:p-3"
-          >
-            <SectionLabel>
-              <template #default>Filter</template>
-              <template v-if="filterControlsFocused" #hint>
-                <kbd
-                  class="rounded border border-gray-300 bg-gray-200 px-1 dark:border-gray-600 dark:bg-gray-900"
-                  >Ctrl-Space</kbd
-                >
-                for completions
-              </template>
-            </SectionLabel>
-            <InputFilter v-model="filter" class="mb-2" />
-          </div>
-        </div>
+        <SectionLabel>
+          <template #default>Filter</template>
+          <template #hint>
+            <kbd
+              class="rounded border border-gray-300 bg-gray-200 px-1 dark:border-gray-600 dark:bg-gray-900"
+              >Ctrl-Space</kbd
+            >
+            for completions
+          </template>
+        </SectionLabel>
+        <InputFilter v-model="filter" class="mb-2" />
       </div>
     </form>
   </aside>
@@ -115,14 +106,13 @@ const props = defineProps({
 const emit = defineEmits(["update:modelValue", "cancel"]);
 
 import { ref, watch, computed } from "vue";
-import { useFocusWithin } from "@vueuse/core";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/vue/solid";
 import InputTimeRange from "@/components/InputTimeRange.vue";
 import InputDimensions from "@/components/InputDimensions.vue";
-import InputFilter from "@/components/InputFilter.vue";
 import InputListBox from "@/components/InputListBox.vue";
 import InputButton from "@/components/InputButton.vue";
 import InputChoice from "@/components/InputChoice.vue";
+import InputFilter from "@/components/InputFilter.vue";
 import SectionLabel from "./SectionLabel.vue";
 import GraphIcon from "./GraphIcon.vue";
 import { graphTypes } from "./constants";
@@ -161,8 +151,6 @@ const hasErrors = computed(
   () =>
     !!(timeRange.value.errors || dimensions.value.errors || filter.value.errors)
 );
-const filterControls = ref();
-const { focused: filterControlsFocused } = useFocusWithin(filterControls);
 
 watch(
   () => props.modelValue,

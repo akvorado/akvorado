@@ -52,6 +52,12 @@ func TestSavedFilter(t *testing.T) {
 			Description: "marty's filter",
 			Content:     "SrcAS = 12322",
 		}, {
+			ID:          2,
+			User:        "judith",
+			Shared:      true,
+			Description: "judith's filter",
+			Content:     "InIfBoundary = external",
+		}, {
 			ID:          3,
 			User:        "marty",
 			Shared:      true,
@@ -69,6 +75,12 @@ func TestSavedFilter(t *testing.T) {
 	got, _ = c.ListSavedFilters(context.Background(), "marty")
 	if diff := helpers.Diff(got, []SavedFilter{
 		{
+			ID:          2,
+			User:        "judith",
+			Shared:      true,
+			Description: "judith's filter",
+			Content:     "InIfBoundary = external",
+		}, {
 			ID:          3,
 			User:        "marty",
 			Shared:      true,

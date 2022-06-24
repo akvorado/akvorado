@@ -10,9 +10,7 @@
       <InputBase v-slot="{ id, childClass }" v-bind="otherAttrs" :error="error">
         <component :is="component.Widget" :id="id" :class="childClass">
           <div class="flex flex-wrap items-center gap-x-2 pr-6 text-left">
-            <span>
-              <slot name="selected"></slot>
-            </span>
+            <slot name="selected"></slot>
             <component
               :is="component.Input"
               class="w-10 grow border-none bg-transparent p-0 focus:outline-none"
@@ -47,9 +45,15 @@
         >
           <div
             v-if="filteredItems.length === 0 && query != ''"
-            class="relative cursor-default select-none py-2 px-4 text-gray-700 dark:text-gray-300"
+            class="py-2 px-2.5"
           >
-            No results
+            <slot name="nomatch" :query="query">
+              <div
+                class="cursor-not-allowed select-none text-gray-700 dark:text-gray-300"
+              >
+                No results
+              </div>
+            </slot>
           </div>
           <component
             :is="component.Option"
@@ -60,7 +64,7 @@
             as="template"
           >
             <li
-              class="relative inline-flex w-full cursor-default select-none py-2 pl-10 pr-4 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+              class="relative inline-flex w-full cursor-default select-none py-2 pl-10 pr-2.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
               :class="{
                 'bg-gray-100 dark:bg-gray-600 dark:bg-gray-600 dark:text-white':
                   active,
@@ -71,7 +75,7 @@
               </span>
               <span
                 v-if="selected"
-                class="absolute inset-y-0 left-0 flex items-center pl-3 text-blue-600 dark:text-blue-500"
+                class="absolute inset-y-0 left-0 flex items-center pl-2.5 text-blue-600 dark:text-blue-500"
               >
                 <CheckIcon class="h-5 w-5" aria-hidden="true" />
               </span>

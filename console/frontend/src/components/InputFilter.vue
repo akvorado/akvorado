@@ -1,8 +1,70 @@
 <template>
-  <InputBase v-slot="{ childClass }" :error="error">
-    <div ref="el" :class="childClass"></div>
+  <InputBase v-slot="{ childClass }" :error="error" v-bind="$attrs">
+    <div ref="elEditor" :class="childClass"></div>
   </InputBase>
+  <InputListBox
+    v-model="selectedSavedFilter"
+    v-bind="$attrs"
+    :items="savedFilters"
+    filter="description"
+    label="Saved filters"
+  >
+    <template #item="{ description, shared, user, id }">
+      <div class="flex w-full items-center justify-between">
+        <div class="grow truncate">
+          {{ description }}
+          <span
+            v-if="shared && user != currentUser.login"
+            class="ml-0 block text-xs italic text-gray-500 dark:text-gray-400 sm:ml-1 sm:inline lg:ml-0 lg:block"
+          >
+            Shared by {{ user }}
+          </span>
+        </div>
+        <TrashIcon
+          v-if="user == currentUser.login"
+          class="inline h-4 w-4 shrink cursor-pointer hover:text-blue-700 dark:hover:text-white"
+          @click.stop.prevent="deleteFilter(id)"
+        />
+      </div>
+    </template>
+    <template #nomatch="{ query }">
+      <div class="flex items-center justify-between gap-2">
+        <span class="grow truncate">
+          Save as “<span class="truncate">{{ query }}</span
+          >”...
+        </span>
+        <div class="flex shrink items-center gap-1">
+          <InputButton
+            type="alternative"
+            size="small"
+            title="Share with others"
+            @click.stop.prevent="
+              addFilter({ description: query, shared: true })
+            "
+          >
+            <EyeIcon class="h-3 w-3" />
+          </InputButton>
+          <InputButton
+            type="primary"
+            size="small"
+            title="Keep private"
+            @click.stop.prevent="
+              addFilter({ description: query, shared: false })
+            "
+          >
+            <EyeOffIcon class="h-3 w-3" />
+          </InputButton>
+        </div>
+      </div>
+    </template>
+  </InputListBox>
 </template>
+
+<script>
+export default {
+  inheritAttrs: false,
+};
+</script>
 
 <script setup>
 const props = defineProps({
@@ -16,9 +78,46 @@ const props = defineProps({
 const emit = defineEmits(["update:modelValue"]);
 
 import { ref, inject, watch, computed, onMounted, onBeforeUnmount } from "vue";
+import { useFetch } from "@vueuse/core";
 import InputBase from "@/components/InputBase.vue";
 const { isDark } = inject("theme");
+const { user: currentUser } = inject("user");
 
+// # Saved filters
+import InputListBox from "@/components/InputListBox.vue";
+import InputButton from "@/components/InputButton.vue";
+import { TrashIcon, EyeIcon, EyeOffIcon } from "@heroicons/vue/solid";
+
+const selectedSavedFilter = ref({});
+const { data: rawSavedFilters, execute: refreshSavedFilters } = useFetch(
+  `/api/v0/console/filter/saved`
+).json();
+const savedFilters = computed(() => rawSavedFilters.value?.filters ?? []);
+watch(selectedSavedFilter, (filter) => {
+  if (!filter.content) return;
+  expression.value = filter.content;
+  selectedSavedFilter.value = {};
+});
+
+const deleteFilter = async (id) => {
+  try {
+    await fetch(`/api/v0/console/filter/saved/${id}`, { method: "DELETE" });
+  } finally {
+    refreshSavedFilters();
+  }
+};
+const addFilter = async ({ description, shared }) => {
+  try {
+    await fetch(`/api/v0/console/filter/saved`, {
+      method: "POST",
+      body: JSON.stringify({ description, shared, content: expression.value }),
+    });
+  } finally {
+    refreshSavedFilters();
+  }
+};
+
+// # Editor
 import { EditorState, StateEffect, Compartment } from "@codemirror/state";
 import { EditorView, keymap, placeholder } from "@codemirror/view";
 import { syntaxHighlighting, HighlightStyle } from "@codemirror/language";
@@ -33,7 +132,7 @@ import {
 } from "@/codemirror/lang-filter";
 import { isEqual } from "lodash-es";
 
-const el = ref(null);
+const elEditor = ref(null);
 const expression = ref(""); // Keep in sync with modelValue.expression
 const error = ref(""); // Keep in sync with modelValue.errors
 const component = {
@@ -129,7 +228,7 @@ onMounted(() => {
   });
   component.view = new EditorView({
     state: component.state,
-    parent: el.value,
+    parent: elEditor.value,
   });
 
   watch(

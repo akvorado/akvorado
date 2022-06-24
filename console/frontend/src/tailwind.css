@@ -5,6 +5,9 @@
 /* For CodeMirror */
 #app {
   .cm-editor {
+    .cm-line {
+      @apply px-0;
+    }
     &.cm-focused {
       @apply outline-none;
     }
