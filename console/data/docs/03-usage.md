@@ -98,6 +98,9 @@ allows a user to explore data using graphs.
 The collapsible panel on the left has several options to change the
 aspect of the graph.
 
+- The unit to use on the Y-axis: layer-3 bits per second, layer-2 bits
+  per second (should match interface counters), or packets par second.
+
 - Four graph types are provided: “stacked”, “lines” and “grid” to
   display time series and “sankey” to show flow distributions between
   various dimensions.
