@@ -226,32 +226,17 @@ spawned by the other components and wait for signals to terminate. If
 
 In the future, we may:
 
-- Add more information to the landing page, including some basic statistics.
-- Automatically build dashboards for Grafana.[^grafana]
-- Builds dashboards with [D3.js][].[^d3js]
 - Buffer message to disks instead of blocking (when sending to Kafka)
   or dropping (when querying the SNMP poller). We could probable just
   have a system service running tcpdump dumping packets to a directory
   and use that as input. This would be allow *Akvorado* to block from
   end-to-end instead of trying to be realtime.
 - Collect routes by integrating GoBGP. This is low priority if we
-  consider information from Maxmind good enough for our use.
+  consider information from Maxmind good enough for our use. However,
+  this would also allows us to get AS paths.
 - DDoS service to detect and mitigate DDoS (with Flowspec).
 - Dynamic configuration with something like [go-archaius][] or
   [Harvester][].
 
-[^grafana]: The templating system in Grafana is quite limited.
-    Notably, it is difficult to build different query depending on the
-    input fields. Grafana supports scripted dashboard, but it does not
-    seem to be possible to have a function build the query string.
-[^d3js]: There is a [gallery][] containing many interesting examples,
-    including [stacked area charts][], [small multiple charts][] and
-    [Sankey diagrams][].
-
-[D3.js]: https://d3js.org/
-[gallery]: https://www.d3-graph-gallery.com/
-[stacked area charts]: https://www.d3-graph-gallery.com/stackedarea.html
-[small multiple charts]: https://www.d3-graph-gallery.com/graph/area_smallmultiple.html
-[Sankey diagrams]: https://www.d3-graph-gallery.com/graph/sankey_basic.html
 [go-archaius]: https://github.com/go-chassis/go-archaius
 [Harvester]: https://github.com/beatlabs/harvester
