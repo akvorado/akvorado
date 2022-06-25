@@ -288,7 +288,8 @@ ARRAY JOIN arrayEnumerate([1,2]) AS num
 func (c *Component) migrationStepCreateProtocolsDictionary(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	protocolsURL := fmt.Sprintf("%s/api/v0/orchestrator/clickhouse/protocols.csv", c.config.OrchestratorURL)
 	source := fmt.Sprintf(`SOURCE(HTTP(URL '%s' FORMAT 'CSVWithNames'))`, protocolsURL)
-	sourceLike := fmt.Sprintf("%% %s %%", source)
+	settings := `SETTINGS(format_csv_allow_single_quotes = 0)`
+	sourceLike := fmt.Sprintf("%% %s%% %s%%", source, settings)
 	return migrationStep{
 		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2 AND create_table_query LIKE $3`,
 		Args:       []interface{}{"protocols", c.config.Configuration.Database, sourceLike},
@@ -303,7 +304,8 @@ PRIMARY KEY proto
 %s
 LIFETIME(MIN 0 MAX 3600)
 LAYOUT(HASHED())
-`, source))
+%s
+`, source, settings))
 		},
 	}
 }
@@ -311,7 +313,8 @@ LAYOUT(HASHED())
 func (c *Component) migrationStepCreateASNsDictionary(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	asnsURL := fmt.Sprintf("%s/api/v0/orchestrator/clickhouse/asns.csv", c.config.OrchestratorURL)
 	source := fmt.Sprintf(`SOURCE(HTTP(URL '%s' FORMAT 'CSVWithNames'))`, asnsURL)
-	sourceLike := fmt.Sprintf("%% %s %%", source)
+	settings := `SETTINGS(format_csv_allow_single_quotes = 0)`
+	sourceLike := fmt.Sprintf("%% %s%% %s%%", source, settings)
 	return migrationStep{
 		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2 AND create_table_query LIKE $3`,
 		Args:       []interface{}{"asns", c.config.Configuration.Database, sourceLike},
@@ -326,7 +329,8 @@ PRIMARY KEY asn
 %s
 LIFETIME(MIN 0 MAX 3600)
 LAYOUT(HASHED())
-`, source))
+%s
+`, source, settings))
 		},
 	}
 
@@ -335,7 +339,8 @@ LAYOUT(HASHED())
 func (c *Component) migrationStepCreateNetworksDictionary(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	networksURL := fmt.Sprintf("%s/api/v0/orchestrator/clickhouse/networks.csv", c.config.OrchestratorURL)
 	source := fmt.Sprintf(`SOURCE(HTTP(URL '%s' FORMAT 'CSVWithNames'))`, networksURL)
-	sourceLike := fmt.Sprintf("%% %s %%", source)
+	settings := `SETTINGS(format_csv_allow_single_quotes = 0)`
+	sourceLike := fmt.Sprintf("%% %s%% %s%%", source, settings)
 	return migrationStep{
 		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2 AND create_table_query LIKE $3`,
 		Args:       []interface{}{"networks", c.config.Configuration.Database, sourceLike},
@@ -350,7 +355,8 @@ PRIMARY KEY network
 %s
 LIFETIME(MIN 0 MAX 3600)
 LAYOUT(IP_TRIE())
-`, source))
+%s
+`, source, settings))
 		},
 	}
 
