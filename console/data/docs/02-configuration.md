@@ -303,6 +303,8 @@ provided:
 - `password` is the password to use for authentication
 - `database` defines the database to use to create tables
 - `resolutions` defines the various resolutions to keep data
+- `networks` maps subnets to names (used as `SrcNetName` and `DstNetName`)
+- `asns` maps AS number to names (overriding the builtin ones)
 - `orchestrator-url` defines the URL of the orchestrator to be used
   by Clickhouse (autodetection when not specified)
 

@@ -37,6 +37,7 @@ func TestHTTPEndpoints(t *testing.T) {
 			ContentType: "text/csv; charset=utf-8",
 			FirstLines: []string{
 				`"asn","name"`,
+				`1,"Level 3 Communications"`,
 			},
 		}, {
 			URL:         "/api/v0/orchestrator/clickhouse/networks.csv",
@@ -54,6 +55,35 @@ func TestHTTPEndpoints(t *testing.T) {
 				`cat > /var/lib/clickhouse/format_schemas/flow-0.proto <<'EOPROTO'`,
 				`syntax = "proto3";`,
 				`package decoder;`,
+			},
+		},
+	}
+
+	helpers.TestHTTPEndpoints(t, c.d.HTTP.Address, cases)
+}
+
+func TestAdditionalASNs(t *testing.T) {
+	r := reporter.NewMock(t)
+	config := DefaultConfiguration()
+	config.ASNs = map[uint32]string{
+		1: "New network",
+	}
+	c, err := New(r, config, Dependencies{
+		Daemon: daemon.NewMock(t),
+		HTTP:   http.NewMock(t, r),
+	})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+
+	cases := helpers.HTTPEndpointCases{
+		{
+			URL:         "/api/v0/orchestrator/clickhouse/asns.csv",
+			ContentType: "text/csv; charset=utf-8",
+			FirstLines: []string{
+				`asn,name`,
+				`1,New network`,
+				`2,University of Delaware`,
 			},
 		},
 	}

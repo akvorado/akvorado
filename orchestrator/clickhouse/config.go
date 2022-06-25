@@ -21,6 +21,9 @@ type Configuration struct {
 	// Resolutions describe the various resolutions to use to
 	// store data and the associated TTLs.
 	Resolutions []ResolutionConfiguration
+	// ASNs is a mapping from AS numbers to names. It replaces or
+	// extends the builtin list of AS numbers.
+	ASNs map[uint32]string
 	// Networks is a mapping from IP networks to names. It is used
 	// to instantiate the SrcNetName and DstNetName columns.
 	Networks NetworkNames
