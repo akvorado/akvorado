@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2022 Free Mobile -->
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+
 <template>
   <div class="flex h-full w-full flex-col lg:flex-row">
     <OptionsPanel

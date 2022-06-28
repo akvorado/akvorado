@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 Free Mobile
+// SPDX-License-Identifier: AGPL-3.0-only
+
 // Package snmp handles SNMP polling to get interface names and
 // descriptions. It keeps a cache of retrieved entries and refresh
 // them.

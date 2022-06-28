@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 Free Mobile
+// SPDX-License-Identifier: AGPL-3.0-only
+
 package logger_test
 
 import (
@@ -24,5 +27,5 @@ func ExampleNew() {
 	}
 
 	logger.Info().Int("example", 15).Msg("hello world")
-	// Output: {"level":"info","example":15,"time":"2008-01-08T17:05:05Z","caller":"akvorado/common/reporter/logger/root_example_test.go:26","module":"akvorado/common/reporter/logger_test","message":"hello world"}
+	// Output: {"level":"info","example":15,"time":"2008-01-08T17:05:05Z","caller":"akvorado/common/reporter/logger/root_example_test.go:29","module":"akvorado/common/reporter/logger_test","message":"hello world"}
 }

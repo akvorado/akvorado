@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2022 Free Mobile -->
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+
 <template>
   <p
     class="my-2 flex w-full flex-row flex-nowrap items-center justify-between gap-2"

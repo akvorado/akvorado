@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2022 Free Mobile -->
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+
 <template>
   <div
     class="z-10 flex w-full flex-wrap items-center gap-x-3 whitespace-nowrap border-b border-gray-300 bg-gray-100 px-4 text-xs text-gray-400 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-500 sm:flex-nowrap print:sm:flex-wrap"

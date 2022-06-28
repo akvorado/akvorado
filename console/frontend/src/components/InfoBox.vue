@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2022 Free Mobile -->
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+
 <template>
   <div class="my-4 flex rounded-lg p-4 text-sm" :class="classes" role="alert">
     <InformationCircleIcon class="mr-2 h-5 w-5 shrink-0" />

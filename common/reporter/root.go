@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 Free Mobile
+// SPDX-License-Identifier: AGPL-3.0-only
+
 // Package reporter is a façade for reporting duties in akvorado.
 //
 // Such a façade currently includes logging and metrics.

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 Free Mobile
+// SPDX-License-Identifier: AGPL-3.0-only
+
 export function formatXps(value) {
   const suffixes = ["", "K", "M", "G", "T"];
   let idx = 0;

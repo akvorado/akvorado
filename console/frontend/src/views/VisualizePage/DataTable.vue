@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2022 Free Mobile -->
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+
 <template>
   <div
     class="relative overflow-x-auto shadow-md dark:shadow-white/10 sm:rounded-lg"

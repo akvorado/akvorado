@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 Free Mobile
+// SPDX-License-Identifier: AGPL-3.0-only
+
 // Package clickhouse handles configuration of the ClickHouse database.
 package clickhouse
 

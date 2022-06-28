@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 Free Mobile
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { syntaxTree } from "@codemirror/language";
 
 export const linterSource = async (view) => {
