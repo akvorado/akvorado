@@ -1,8 +1,9 @@
 # Introduction
 
-*Akvorado*[^name] is a flow collector, hydrater and exporter. It
-receives flows, adds some data like interface names and countries, and
-exports them to Kafka.
+*Akvorado*[^name] receives flows (currently Netflow/IPFIX), hydrates
+them with interface names (using SNMP), geo information (using
+MaxMind), and exports them to Kafka, then ClickHouse. It also exposes
+a web interface to browse the result.
 
 [^name]: [Akvorado][] means "water wheel" in Esperanto.
 
