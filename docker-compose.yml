@@ -1,29 +1,117 @@
 ---
 version: "3"
 
+volumes:
+  akvorado-zookeeper:
+  akvorado-kafka:
+  akvorado-geoip:
+  akvorado-clickhouse:
+  akvorado-run:
+  akvorado-console-db:
+
 services:
+  geoip:
+    image: maxmindinc/geoipupdate:v4
+    restart: unless-stopped
+    environment:
+      - GEOIPUPDATE_ACCOUNT_ID
+      - GEOIPUPDATE_LICENSE_KEY
+      - GEOIPUPDATE_EDITION_IDS=GeoLite2-ASN GeoLite2-Country
+      - GEOIPUPDATE_FREQUENCY=48
+    volumes:
+      - akvorado-geoip:/usr/share/GeoIP
+
   zookeeper:
     image: bitnami/zookeeper:3.6
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
-
+    restart: unless-stopped
+    volumes:
+      - akvorado-zookeeper:/bitnami/zookeeper
   kafka:
     image: bitnami/kafka:2.8.1
     environment:
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-      - KAFKA_BROKER_ID=1
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
-      - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093
-      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:9092
-      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
       - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_DELETE_TOPIC_ENABLE=true
+    restart: unless-stopped
     depends_on:
       - zookeeper
+    volumes:
+      - akvorado-kafka:/bitnami/kafka
+    healthcheck:
+      interval: 20s
+      timeout: 10s
+      retries: 3
+      test: ["CMD", "kafka-topics.sh", "--list", "--zookeeper", "zookeeper:2181"]
+
+  akvorado-orchestrator:
+    build: &akvorado-image
+      context: .
+    restart: unless-stopped
+    command: orchestrator /etc/akvorado.yaml
+    volumes:
+      - ./akvorado.yaml:/etc/akvorado.yaml:ro
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.akvorado-orchestrator.rule=PathPrefix(`/api/v0/orchestrator`)
+      - traefik.http.services.akvorado-orchestrator.loadbalancer.server.port=8080
+  akvorado-console:
+    build: *akvorado-image
+    restart: unless-stopped
+    command: console http://akvorado-orchestrator:8080
+    volumes:
+      - akvorado-console-db:/run/akvorado
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.akvorado-console.rule=PathPrefix(`/`)
+      - traefik.http.services.akvorado-console.loadbalancer.server.port=8080
+      - traefik.http.middlewares.testheader.headers.customrequestheaders.Remote-User=alfred
+      - traefik.http.middlewares.testheader.headers.customrequestheaders.Remote-Name=Alfred Pennyworth
+      - traefik.http.middlewares.testheader.headers.customrequestheaders.Remote-Email=alfred@example.com
+  akvorado-inlet:
+    build: *akvorado-image
     ports:
-      - 127.0.0.1:9092:9093/tcp
+      - 2055:2055/udp
+    restart: unless-stopped
+    command: inlet http://akvorado-orchestrator:8080
+    volumes:
+      - akvorado-geoip:/usr/share/GeoIP:ro
+      - akvorado-run:/run/akvorado
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.akvorado-inlet.rule=PathPrefix(`/api/v0/inlet`)
+      - traefik.http.services.akvorado-inlet.loadbalancer.server.port=8080
 
   clickhouse:
     image: clickhouse/clickhouse-server:22.3
+    volumes:
+      - ./orchestrator/clickhouse/data/docker-entrypoint.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+      - akvorado-clickhouse:/var/lib/clickhouse
+    environment:
+      - CLICKHOUSE_INIT_TIMEOUT=60
+    healthcheck:
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      test: ["CMD", "wget", "-T", "1", "--spider", "--no-proxy", "http://clickhouse:8123"]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.clickhouse.rule=PathPrefix(`/clickhouse`)
+      - traefik.http.services.clickhouse.loadbalancer.server.port=8123
+
+  traefik:
+    image: traefik:2.6
+    restart: unless-stopped
+    command:
+      - --api.insecure=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
     ports:
-      - 127.0.0.1:8123:8123/tcp
-      - 127.0.0.1:9000:9000/tcp
+      - 80:80/tcp
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels:
+      - traefik.http.routers.traefik.rule=PathPrefix(`/traefik`)
+      - traefik.http.routers.traefik.service=api@internal

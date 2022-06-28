@@ -1,0 +1,29 @@
+---
+version: "3"
+
+services:
+  zookeeper:
+    image: bitnami/zookeeper:3.6
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+
+  kafka:
+    image: bitnami/kafka:2.8.1
+    environment:
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:9092
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    depends_on:
+      - zookeeper
+    ports:
+      - 127.0.0.1:9092:9093/tcp
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:22.3
+    ports:
+      - 127.0.0.1:8123:8123/tcp
+      - 127.0.0.1:9000:9000/tcp

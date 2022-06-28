@@ -1,0 +1,46 @@
+kafka:
+  topic: flows
+  version: 2.8.1
+  brokers:
+    - kafka:9092
+  topic-configuration:
+    num-partitions: 16
+    replication-factor: 1
+    config-entries:
+      segment.bytes: 1073741824
+      retention.ms: 86400000
+      cleanup.policy: delete
+      compression.type: producer
+
+clickhouse:
+  orchestrator-url: http://akvorado-orchestrator:8080
+  kafka:
+    consumers: 8
+  servers:
+    - clickhouse:9000
+
+inlet:
+  kafka:
+    compression-codec: zstd
+  geoip:
+    asn-database: /usr/share/GeoIP/GeoLite2-ASN.mmdb
+    country-database: /usr/share/GeoIP/GeoLite2-Country.mmdb
+  snmp:
+    workers: 10
+  flow:
+    inputs:
+      - type: udp
+        decoder: netflow
+        listen: 0.0.0.0:2055
+        workers: 6
+        receive-buffer: 10485760
+  core:
+    workers: 6
+    exporter-classifiers:
+      - ClassifyRegex(Exporter.Name, "^([^-]+)-", "$1")
+    interface-classifiers:
+      - |
+        ClassifyConnectivityRegex(Interface.Description, "^(?i)(transit|pni|ppni|ix):? ", "$1") &&
+        ClassifyProviderRegex(Interface.Description, "^[^ ]+? ([^ ]+)", "$1") &&
+        ClassifyExternal()
+      - ClassifyInternal()
