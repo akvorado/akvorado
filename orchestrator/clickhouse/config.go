@@ -32,7 +32,7 @@ type Configuration struct {
 	Networks NetworkNames
 	// OrchestratorURL allows one to override URL to reach
 	// orchestrator from Clickhouse
-	OrchestratorURL string
+	OrchestratorURL string `validate:"isdefault|url"`
 }
 
 // ResolutionConfiguration describes a consolidation interval.
@@ -50,7 +50,7 @@ type ResolutionConfiguration struct {
 type KafkaConfiguration struct {
 	kafka.Configuration `mapstructure:",squash" yaml:"-,inline"`
 	// Consumers tell how many consumers to use to poll data from Kafka
-	Consumers int
+	Consumers int `validate:"min=1"`
 }
 
 // DefaultConfiguration represents the default configuration for the ClickHouse configurator.

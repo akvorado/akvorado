@@ -6,9 +6,9 @@ package database
 // Configuration describes the configuration for the authentication component.
 type Configuration struct {
 	// Driver defines the driver for the database
-	Driver string
+	Driver string `validate:"required"`
 	// DSN defines the DSN to connect to the database
-	DSN string
+	DSN string `validate:"required"`
 }
 
 // DefaultConfiguration represents the default configuration for the console component.

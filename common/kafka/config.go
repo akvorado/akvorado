@@ -8,9 +8,9 @@ import "github.com/Shopify/sarama"
 // Configuration defines how we connect to a Kafka cluster.
 type Configuration struct {
 	// Topic defines the topic to write flows to.
-	Topic string
+	Topic string `validate:"required"`
 	// Brokers is the list of brokers to connect to.
-	Brokers []string
+	Brokers []string `min=1,dive,validate:"listen"`
 	// Version is the version of Kafka we assume to work
 	Version Version
 }

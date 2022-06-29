@@ -14,9 +14,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/mitchellh/mapstructure"
 	"gopkg.in/yaml.v2"
 
+	"akvorado/common/helpers"
 	"akvorado/inlet/flow"
 	"akvorado/orchestrator/clickhouse"
 )
@@ -131,9 +133,17 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 		}
 	}
 
-	// Dump configuration if requested
+	// Validate and dump configuration if requested
 	if c.BeforeDump != nil {
 		c.BeforeDump()
+	}
+	if err := helpers.Validate.Struct(config); err != nil {
+		switch verr := err.(type) {
+		case validator.ValidationErrors:
+			return fmt.Errorf("invalid configuration:\n%w", verr)
+		default:
+			return fmt.Errorf("unexpected internal error: %w", verr)
+		}
 	}
 	if c.Dump {
 		output, err := yaml.Marshal(config)

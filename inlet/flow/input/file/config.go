@@ -8,7 +8,7 @@ import "akvorado/inlet/flow/input"
 // Configuration describes file input configuration.
 type Configuration struct {
 	// Paths to use as input
-	Paths []string
+	Paths []string `validate:"min=1,dive,required"`
 }
 
 // DefaultConfiguration descrives the default configuration for file input.

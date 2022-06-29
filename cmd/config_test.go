@@ -26,9 +26,9 @@ type dummyConfiguration struct {
 	Module2 dummyModule2Configuration
 }
 type dummyModule1Configuration struct {
-	Listen  string
-	Topic   string
-	Workers int
+	Listen  string `validate:"listen"`
+	Topic   string `validate:"gte=3"`
+	Workers int    `validate:"gte=1"`
 }
 type dummyModule2Configuration struct {
 	Details     dummyModule2DetailsConfiguration
@@ -63,6 +63,30 @@ func dummyDefaultConfiguration() dummyConfiguration {
 				IntervalValue: time.Minute,
 			},
 		},
+	}
+}
+
+func TestValidation(t *testing.T) {
+	config := `---
+module1:
+ topic: fl
+ workers: -5
+`
+	configFile := filepath.Join(t.TempDir(), "config.yaml")
+	ioutil.WriteFile(configFile, []byte(config), 0644)
+
+	c := cmd.ConfigRelatedOptions{
+		Path: configFile,
+	}
+
+	parsed := dummyDefaultConfiguration()
+	out := bytes.NewBuffer([]byte{})
+	if err := c.Parse(out, "dummy", &parsed); err == nil {
+		t.Fatal("Parse() didn't error")
+	} else if diff := helpers.Diff(err.Error(), `invalid configuration:
+Key: 'dummyConfiguration.Module1.Topic' Error:Field validation for 'Topic' failed on the 'gte' tag
+Key: 'dummyConfiguration.Module1.Workers' Error:Field validation for 'Workers' failed on the 'gte' tag`); diff != "" {
+		t.Fatalf("Parse() (-got, +want):\n%s", diff)
 	}
 }
 

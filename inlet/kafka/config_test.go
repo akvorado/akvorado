@@ -6,6 +6,8 @@ package kafka
 import (
 	"testing"
 
+	"akvorado/common/helpers"
+
 	"github.com/Shopify/sarama"
 )
 
@@ -35,5 +37,11 @@ func TestCompressionCodecUnmarshal(t *testing.T) {
 			t.Errorf("UnmarshalText(%q) got %v but expected %v", tc.Input, cmp, tc.Expected)
 			continue
 		}
+	}
+}
+
+func TestDefaultConfiguration(t *testing.T) {
+	if err := helpers.Validate.Struct(DefaultConfiguration()); err != nil {
+		t.Fatalf("validate.Struct() error:\n%+v", err)
 	}
 }

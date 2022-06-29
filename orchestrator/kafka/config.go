@@ -15,9 +15,9 @@ type Configuration struct {
 // TopicConfiguration describes the configuration for a topic
 type TopicConfiguration struct {
 	// NumPartitions tells how many partitions should be used for the topic.
-	NumPartitions int32
+	NumPartitions int32 `validate:"min=1"`
 	// ReplicationFactor tells the replication factor for the topic.
-	ReplicationFactor int16
+	ReplicationFactor int16 `validate:"min=1"`
 	// ConfigEntries is a map to specify the topic overrides. Non-listed overrides will be removed
 	ConfigEntries map[string]*string
 }

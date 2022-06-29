@@ -6,7 +6,7 @@ package core
 // Configuration describes the configuration for the core component.
 type Configuration struct {
 	// Number of workers for the core component
-	Workers int
+	Workers int `validate:"min=1"`
 	// ExporterClassifiers defines rules for exporter classification
 	ExporterClassifiers []ExporterClassifierRule
 	// InterfaceClassifiers defines rules for interface classification

@@ -16,9 +16,9 @@ import (
 type Configuration struct {
 	kafka.Configuration `mapstructure:",squash" yaml:"-,inline"`
 	// FlushInterval tells how often to flush pending data to Kafka.
-	FlushInterval time.Duration
+	FlushInterval time.Duration `validate:"min=1s"`
 	// FlushBytes tells to flush when there are many bytes to write
-	FlushBytes int
+	FlushBytes int `validate:"min=1000"`
 	// MaxMessageBytes is the maximum permitted size of a message.
 	// Should be set equal or smaller than broker's
 	// `message.max.bytes`.
@@ -26,7 +26,7 @@ type Configuration struct {
 	// CompressionCodec defines the compression to use.
 	CompressionCodec CompressionCodec
 	// QueueSize defines the size of the channel used to send to Kafka.
-	QueueSize int
+	QueueSize int `validate:"min=0"`
 }
 
 // DefaultConfiguration represents the default configuration for the Kafka exporter.
