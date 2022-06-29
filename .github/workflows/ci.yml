@@ -1,0 +1,111 @@
+---
+name: CI
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: 0 7 1 * *
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      zookeeper:
+        image: bitnami/zookeeper:3.6
+        env:
+          ALLOW_ANONYMOUS_LOGIN: "yes"
+        ports:
+          - 2181:2181
+      kafka:
+        image: bitnami/kafka:2.8.1
+        env:
+          KAFKA_BROKER_ID: "1"
+          KAFKA_CFG_ZOOKEEPER_CONNECT: "zookeeper:2181"
+          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+          KAFKA_CFG_LISTENERS: CLIENT://:9092,EXTERNAL://:9093
+          KAFKA_CFG_ADVERTISED_LISTENERS: CLIENT://kafka:9092,EXTERNAL://localhost:9092
+          KAFKA_CFG_INTER_BROKER_LISTENER_NAME: CLIENT
+          ALLOW_PLAINTEXT_LISTENER: "yes"
+        ports:
+          - 9092:9093
+      clickhouse:
+        image: clickhouse/clickhouse-server:22.3
+        ports:
+          - 9000:9000
+
+    env:
+      CI_AKVORADO_FUNCTIONAL_TESTS: "true"
+    steps:
+      # Setup
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: sudo apt-get install -qqy protobuf-compiler shared-mime-info curl
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # Cache
+      - name: Get yarn cache directory path
+        id: yarn-cache-dir-path
+        run: echo "::set-output name=dir::$(yarn cache dir)"
+      - uses: actions/cache@v3
+        id: yarn-cache
+        with:
+          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+          key: ${{ runner.os }}-yarn-${{ hashFiles('console/frontend/yarn.lock') }}
+      - uses: actions/cache@v3
+        id: gobin-cache
+        with:
+          path: bin
+          key: ${{ runner.os }}-gobin-${{ hashFiles('Makefile') }}
+
+      # Test and build
+      - name: Race tests
+        run: make test-race || make test-race
+      - name: Coverage tests
+        run: make test-coverage || make test-coverage
+      - name: Build
+        run: make
+      - name: Upload binary
+        uses: actions/upload-artifact@v3
+        with:
+          name: binary
+          path: bin/akvorado
+          if-no-files-found: error
+
+  docker:
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    name: Build Docker images
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v3
+      - uses: docker/setup-qemu-action@v1
+      - uses: docker/setup-buildx-action@v1
+      - uses: docker/metadata-action@v3
+        id: meta
+        with:
+          images: |
+            ghcr.io/vincentbernat/akvorado
+          tags: |
+            type=schedule,pattern=master
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+      - uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: Dockerfile
+          platforms: |
+            linux/amd64
+            linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
