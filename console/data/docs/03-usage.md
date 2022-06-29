@@ -27,6 +27,7 @@ file and the other services should point to it.
 $ akvorado orchestrator /etc/akvorado/config.yaml
 $ akvorado inlet http://orchestrator:8080
 $ akvorado console http://orchestrator:8080
+$ akvorado console http://orchestrator:8080#2
 ```
 
 Each service embeds an HTTP server exposing a few endpoints. All

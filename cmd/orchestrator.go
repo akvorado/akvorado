@@ -26,8 +26,8 @@ type OrchestratorConfiguration struct {
 	Kafka        kafka.Configuration
 	Orchestrator orchestrator.Configuration `mapstructure:",squash" yaml:",inline"`
 	// Other service configurations
-	Inlet   InletConfiguration
-	Console ConsoleConfiguration
+	Inlet   []InletConfiguration
+	Console []ConsoleConfiguration
 }
 
 // DefaultOrchestratorConfiguration is the default configuration for the orchestrator command.
@@ -40,8 +40,8 @@ func DefaultOrchestratorConfiguration() OrchestratorConfiguration {
 		Kafka:        kafka.DefaultConfiguration(),
 		Orchestrator: orchestrator.DefaultConfiguration(),
 		// Other service configurations
-		Inlet:   DefaultInletConfiguration(),
-		Console: DefaultConsoleConfiguration(),
+		Inlet:   []InletConfiguration{DefaultInletConfiguration()},
+		Console: []ConsoleConfiguration{DefaultConsoleConfiguration()},
 	}
 }
 
@@ -67,8 +67,12 @@ components and centralizes configuration of the various other components.`,
 			// Override some parts of the configuration
 			config.ClickHouseDB = config.ClickHouse.Configuration
 			config.ClickHouse.Kafka.Configuration = config.Kafka.Configuration
-			config.Inlet.Kafka.Configuration = config.Kafka.Configuration
-			config.Console.ClickHouse = config.ClickHouse.Configuration
+			for idx := range config.Inlet {
+				config.Inlet[idx].Kafka.Configuration = config.Kafka.Configuration
+			}
+			for idx := range config.Console {
+				config.Console[idx].ClickHouse = config.ClickHouse.Configuration
+			}
 		}
 		if err := OrchestratorOptions.Parse(cmd.OutOrStdout(), "orchestrator", &config); err != nil {
 			return err
@@ -125,8 +129,12 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, c
 	if err != nil {
 		return fmt.Errorf("unable to initialize orchestrator component: %w", err)
 	}
-	orchestratorComponent.RegisterConfiguration(orchestrator.InletService, config.Inlet)
-	orchestratorComponent.RegisterConfiguration(orchestrator.ConsoleService, config.Console)
+	for idx := range config.Inlet {
+		orchestratorComponent.RegisterConfiguration(orchestrator.InletService, config.Inlet[idx])
+	}
+	for idx := range config.Console {
+		orchestratorComponent.RegisterConfiguration(orchestrator.ConsoleService, config.Console[idx])
+	}
 
 	// Expose some informations and metrics
 	addCommonHTTPHandlers(r, "orchestrator", httpComponent)

@@ -42,6 +42,9 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 			if u.Path == "" {
 				u.Path = fmt.Sprintf("/api/v0/orchestrator/configuration/%s", component)
 			}
+			if u.Fragment != "" {
+				u.Path = fmt.Sprintf("%s/%s", u.Path, u.Fragment)
+			}
 			resp, err := http.Get(u.String())
 			if err != nil {
 				return fmt.Errorf("unable to fetch configuration file: %w", err)

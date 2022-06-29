@@ -36,7 +36,11 @@ AKVORADO_ORCHESTRATOR_KAFKA_BROKERS=192.0.2.1:9092,192.0.2.2:9092
 
 The orchestrator service has its own configuration, as well as the
 configuration for the other services under the key matching the
-service name (`inlet` and `console`).
+service name (`inlet` and `console`). For each service, it is possible
+to provide a list of configuration. A service can query the
+configuration it wants by appending an index to the configuration URL.
+If the index does not match a provided configuration, the first
+configuration is provided.
 
 Each service is split into several functional components. Each of them
 gets a section of the configuration file matching its name.
