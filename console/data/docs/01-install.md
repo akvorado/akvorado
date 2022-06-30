@@ -53,3 +53,6 @@ and an inlet accepting NetFlow available on port 2055.
 
 The two environment variables are required to get GeoIP database from
 [MaxMind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data).
+Be sure to flush the conntrack table after starting. See the
+[troubleshooting section](05-troubleshooting.md#no-packets-received)
+for more details.
