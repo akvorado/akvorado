@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -76,10 +77,11 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 	}
 
 	// Parse provided configuration
+	var metadata mapstructure.Metadata
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		Result:           &config,
-		ErrorUnused:      true,
-		Metadata:         nil,
+		ErrorUnused:      false,
+		Metadata:         &metadata,
 		WeaklyTypedInput: true,
 		MatchName: func(mapKey, fieldName string) bool {
 			key := strings.ToLower(strings.ReplaceAll(mapKey, "-", ""))
@@ -131,6 +133,18 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 		if err := decoder.Decode(rawConfig); err != nil {
 			return fmt.Errorf("unable to parse override %q: %w", kv[0], err)
 		}
+	}
+
+	// Check for unused keys
+	invalidKeys := []string{}
+	for _, key := range metadata.Unused {
+		if !strings.HasPrefix(key, ".") && !strings.Contains(key, "..") {
+			invalidKeys = append(invalidKeys, fmt.Sprintf("invalid key %q", key))
+		}
+	}
+	sort.Strings(invalidKeys)
+	if len(invalidKeys) > 0 {
+		return fmt.Errorf("invalid configuration:\n%s", strings.Join(invalidKeys, "\n"))
 	}
 
 	// Validate and dump configuration if requested

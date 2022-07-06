@@ -297,3 +297,49 @@ module2:
 		t.Errorf("Parse() (-got, +want):\n%s", diff)
 	}
 }
+
+func TestUnused(t *testing.T) {
+	t.Run("ignored fields", func(t *testing.T) {
+		config := `---
+.unused: should be ignored
+module1:
+ .too: nope
+ topic: flow
+ workers: 10
+`
+		configFile := filepath.Join(t.TempDir(), "config.yaml")
+		ioutil.WriteFile(configFile, []byte(config), 0644)
+
+		c := cmd.ConfigRelatedOptions{Path: configFile}
+
+		parsed := dummyDefaultConfiguration()
+		out := bytes.NewBuffer([]byte{})
+		if err := c.Parse(out, "dummy", &parsed); err != nil {
+			t.Fatalf("Parse() error:\n%+v", err)
+		}
+	})
+
+	t.Run("unused fields", func(t *testing.T) {
+		config := `---
+unused: should not be ignored
+module1:
+ extra: 111
+ topic: flow
+ workers: 10
+`
+		configFile := filepath.Join(t.TempDir(), "config.yaml")
+		ioutil.WriteFile(configFile, []byte(config), 0644)
+
+		c := cmd.ConfigRelatedOptions{Path: configFile}
+
+		parsed := dummyDefaultConfiguration()
+		out := bytes.NewBuffer([]byte{})
+		if err := c.Parse(out, "dummy", &parsed); err == nil {
+			t.Fatal("Parse() didn't error")
+		} else if diff := helpers.Diff(err.Error(), `invalid configuration:
+invalid key "Module1.extra"
+invalid key "unused"`); diff != "" {
+			t.Fatalf("Parse() (-got, +want):\n%s", diff)
+		}
+	})
+}
