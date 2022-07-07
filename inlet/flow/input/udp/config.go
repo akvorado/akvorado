@@ -8,9 +8,9 @@ import "akvorado/inlet/flow/input"
 // Configuration describes UDP input configuration.
 type Configuration struct {
 	// Listen tells which port to listen to.
-	Listen string `validate:"listen"`
+	Listen string `validate:"required,listen"`
 	// Workers define the number of workers to use for receiving flows.
-	Workers int `validate:"min=1"`
+	Workers int `validate:"required,min=1"`
 	// QueueSize defines the size of the channel used to
 	// communicate incoming flows. 0 can be used to disable
 	// buffering.

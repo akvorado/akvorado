@@ -6,7 +6,7 @@ package http
 // Configuration describes the configuration for the HTTP server.
 type Configuration struct {
 	// Listen defines the listening string to listen to.
-	Listen string `validate:"listen"`
+	Listen string `validate:"required,listen"`
 	// Profiler enables Go profiler as /debug
 	Profiler bool
 }
