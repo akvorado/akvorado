@@ -6,6 +6,8 @@
   import (
     "fmt"
     "net"
+
+    "akvorado/common/helpers"
   )
 
   func quote(v interface{}) string {
@@ -139,8 +141,8 @@ ConditionETypeExpr "condition on Ethernet type" ←
  column:("EType"i { return "EType", nil }) _
  operator:("=" / "!=") _ value:("IPv4"i / "IPv6"i) {
   etypes := map[string]uint16{
-    "ipv4": 0x0800,
-    "ipv6": 0x86dd,
+    "ipv4": helpers.ETypeIPv4,
+    "ipv6": helpers.ETypeIPv6,
    }
    etype := etypes[strings.ToLower(toString(value))]
    return fmt.Sprintf("%s %s %d", toString(column), toString(operator), etype), nil

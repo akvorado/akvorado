@@ -25,7 +25,7 @@ func TestQueryColumnSQLSelect(t *testing.T) {
 			Expected: `dictGetOrDefault('protocols', 'name', Proto, '???')`,
 		}, {
 			Input:    queryColumnEType,
-			Expected: `if(EType = 0x800, 'IPv4', if(EType = 0x86dd, 'IPv6', '???'))`,
+			Expected: `if(EType = 2048, 'IPv4', if(EType = 34525, 'IPv6', '???'))`,
 		}, {
 			Input:    queryColumnOutIfSpeed,
 			Expected: `toString(OutIfSpeed)`,

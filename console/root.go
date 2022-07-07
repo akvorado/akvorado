@@ -15,15 +15,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/benbjohnson/clock"
+	"gopkg.in/tomb.v2"
+
 	"akvorado/common/clickhousedb"
 	"akvorado/common/daemon"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
 	"akvorado/console/authentication"
 	"akvorado/console/database"
-
-	"github.com/benbjohnson/clock"
-	"gopkg.in/tomb.v2"
 )
 
 // Component represents the console component.

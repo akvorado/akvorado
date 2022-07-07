@@ -128,7 +128,8 @@ func (gc queryColumn) toSQLSelect() string {
 		strValue = fmt.Sprintf(`concat(toString(%s), ': ', dictGetOrDefault('asns', 'name', %s, '???'))`,
 			gc, gc)
 	case queryColumnEType:
-		strValue = `if(EType = 0x800, 'IPv4', if(EType = 0x86dd, 'IPv6', '???'))`
+		strValue = fmt.Sprintf(`if(EType = %d, 'IPv4', if(EType = %d, 'IPv6', '???'))`,
+			helpers.ETypeIPv4, helpers.ETypeIPv6)
 	case queryColumnProto:
 		strValue = `dictGetOrDefault('protocols', 'name', Proto, '???')`
 	case queryColumnInIfSpeed, queryColumnOutIfSpeed, queryColumnSrcPort, queryColumnDstPort, queryColumnForwardingStatus:
