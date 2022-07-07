@@ -47,7 +47,9 @@ run tests:
   artifacts:
     reports:
       junit: test/tests.xml
-      cobertura: test/coverage.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: test/coverage.xml
 
 # To execute manually:
 #  gitlab-runner exec docker "run tests"
