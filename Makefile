@@ -44,7 +44,7 @@ REVIVE = $(BIN)/revive
 $(BIN)/revive: PACKAGE=github.com/mgechev/revive@latest
 
 GOCOV = $(BIN)/gocov
-$(BIN)/gocov: PACKAGE=github.com/axw/gocov/gocov@latest
+$(BIN)/gocov: PACKAGE=github.com/axw/gocov/gocov@v1.1.0
 
 GOCOVXML = $(BIN)/gocov-xml
 $(BIN)/gocov-xml: PACKAGE=github.com/AlekSi/gocov-xml@latest
