@@ -12,7 +12,6 @@ volumes:
 services:
   geoip:
     image: maxmindinc/geoipupdate:v4
-    restart: unless-stopped
     environment:
       - GEOIPUPDATE_ACCOUNT_ID
       - GEOIPUPDATE_LICENSE_KEY
@@ -82,6 +81,19 @@ services:
       - traefik.enable=true
       - traefik.http.routers.akvorado-inlet.rule=PathPrefix(`/api/v0/inlet`)
       - traefik.http.services.akvorado-inlet.loadbalancer.server.port=8080
+  akvorado-exporter0: &exporter
+    build: *akvorado-image
+    restart: unless-stopped
+    command: fake-exporter http://akvorado-orchestrator:8080#0
+  akvorado-exporter1:
+    <<: *exporter
+    command: fake-exporter http://akvorado-orchestrator:8080#1
+  akvorado-exporter2:
+    <<: *exporter
+    command: fake-exporter http://akvorado-orchestrator:8080#2
+  akvorado-exporter3:
+    <<: *exporter
+    command: fake-exporter http://akvorado-orchestrator:8080#3
 
   clickhouse:
     image: clickhouse/clickhouse-server:22.3

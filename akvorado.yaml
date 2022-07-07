@@ -1,10 +1,11 @@
+---
 kafka:
   topic: flows
   version: 2.8.1
   brokers:
     - kafka:9092
   topic-configuration:
-    num-partitions: 16
+    num-partitions: 8
     replication-factor: 1
     config-entries:
       segment.bytes: 1073741824
@@ -15,16 +16,22 @@ kafka:
 clickhouse:
   orchestrator-url: http://akvorado-orchestrator:8080
   kafka:
-    consumers: 8
+    consumers: 4
   servers:
     - clickhouse:9000
-
+  asns:
+    64501: ACME Corporation
+  networks:
+    - 192.0.2.0/24: customers
+    - 203.0.113.0/24: servers
+    - 2a01:db8:cafe:1::/64: customers
+    - 2a01:db8:cafe:2::/64: servers
 inlet:
   kafka:
     compression-codec: zstd
   geoip:
-    asn-database: /usr/share/GeoIP/GeoLite2-ASN.mmdb
-    country-database: /usr/share/GeoIP/GeoLite2-Country.mmdb
+  #  asn-database: /usr/share/GeoIP/GeoLite2-ASN.mmdb
+  #  country-database: /usr/share/GeoIP/GeoLite2-Country.mmdb
   snmp:
     workers: 10
   flow:
@@ -44,3 +51,384 @@ inlet:
         ClassifyProviderRegex(Interface.Description, "^[^ ]+? ([^ ]+)", "$1") &&
         ClassifyExternal()
       - ClassifyInternal()
+
+.fake-exporter-flows:
+  - &http-src
+    src-port: 80
+    dst-port: 0
+    protocol: tcp
+    size: 1300
+  - &http-dst
+    src-port: 0
+    dst-port: 80
+    protocol: tcp
+    size: 1300
+  - &https-src
+    src-port: 443
+    dst-port: 0
+    protocol: tcp
+    size: 1400
+  - &https-dst
+    src-port: 0
+    dst-port: 443
+    protocol: tcp
+    size: 1400
+  - &quic-src
+    src-port: 443
+    dst-port: 0
+    protocol: udp
+    size: 1200
+  - &ssh-src
+    src-port: 22
+    dst-port: 0
+    protocol: tcp
+    size: 200
+  - &ssh-dst
+    src-port: 0
+    dst-port: 22
+    protocol: tcp
+    size: 300
+  - &to-v4-customers
+    dst-net: 192.0.2.0/24
+    dst-as: 64501
+  - &to-v6-customers
+    dst-net: 2a01:db8:cafe:1::/64
+    dst-as: 64501
+  - &to-v4-servers
+    dst-net: 203.0.113.0/24
+    dst-as: 64501
+  - &to-v6-servers
+    dst-net: 2a01:db8:cafe:2::/64
+    dst-as: 64501
+  - &from-v4-google
+    src-net: 216.58.206.0/24
+    src-as: 15169
+  - &from-v6-google
+    src-net: 2a00:1450:4007:807::2000/124
+    src-as: 15169
+  - &from-v4-facebook
+    src-net: 179.60.192.0/24
+    src-as: 32934
+  - &from-v6-facebook
+    src-net: 2a03:2880:f130:83:face:b00c:0::/112
+    src-as: 32934
+  - &from-v4-netflix
+    src-net: 198.38.120.0/23
+    src-as: 2906
+  - &from-v6-netflix
+    src-net: 2a00:86c0:115:115::/112
+    src-as: 2906
+  - &from-v4-akamai
+    src-net: 23.33.27.0/24
+    src-as: 20940
+  - &from-v6-akamai
+    src-net: 2a02:26f0:9100:28:0:17c0::/112
+    src-as: 20940
+  - &from-v4-amazon
+    src-net: 52.84.175.0/24
+    src-as: 16509
+  - &from-v6-amazon
+    src-net: 2600:9000:218d:4a00:15:74db::/112
+    src-as: 16509
+  - &from-v4-fastly
+    src-net: 199.232.178.0/29
+    src-as: 54113
+  - &from-v6-fastly
+    src-net: 2a04:4e42:1d::/126
+    src-as: 54113
+  - &from-v4-twitch
+    src-net: 52.223.202.128/27
+    src-as: 46489
+  - &from-v4-renater
+    src-net: 138.231.0.0/16
+    src-as: 2269
+  - &from-v4-orange
+    src-net: 92.151.0.0/16
+    src-as: 3215
+  - &from-v6-orange
+    src-net: 2a01:cb00:59::/56
+    src-as: 3215
+
+fake-exporter:
+  - snmp:
+      name: exporter1.example.com
+      interfaces:
+        10: "Transit: Telia"
+        11: "IX: AMSIX"
+        20: "core"
+        21: "core"
+      listen: 0.0.0.0:161
+    flows: &flows1
+      samplingrate: 50000
+      target: akvorado-inlet:2055
+      flows:
+        # Google
+        - per-second: 0.2
+          in-if-index: 10
+          out-if-index: 20
+          peak-hour: 16h
+          multiplier: 3
+          <<: [*from-v4-google, *to-v4-customers, *http-src]
+        - per-second: 1
+          in-if-index: 10
+          out-if-index: 21
+          peak-hour: 16h
+          multiplier: 5
+          <<: [*from-v4-google, *to-v4-customers, *https-src]
+        - per-second: 0.5
+          in-if-index: 10
+          out-if-index: 20
+          peak-hour: 16h
+          multiplier: 5
+          <<: [*from-v4-google, *to-v4-customers, *quic-src]
+        - per-second: 0.2
+          in-if-index: 10
+          out-if-index: 21
+          peak-hour: 21h
+          multiplier: 3
+          <<: [*from-v6-google, *to-v6-customers, *http-src]
+        - per-second: 1.3
+          in-if-index: 10
+          out-if-index: 20
+          peak-hour: 21h
+          multiplier: 5
+          <<: [*from-v6-google, *to-v6-customers, *https-src]
+        - per-second: 0.8
+          in-if-index: 10
+          out-if-index: 21
+          peak-hour: 21h
+          multiplier: 5
+          <<: [*from-v6-google, *to-v6-customers, *quic-src]
+        # Facebook
+        - per-second: 0.14
+          in-if-index: 11
+          out-if-index: 20
+          peak-hour: 16h
+          multiplier: 3
+          <<: [*from-v4-facebook, *to-v4-customers, *http-src]
+        - per-second: 1.1
+          in-if-index: 11
+          out-if-index: 20
+          peak-hour: 16h
+          multiplier: 5
+          <<: [*from-v4-facebook, *to-v4-customers, *https-src]
+        - per-second: 0.2
+          in-if-index: 11
+          out-if-index: 21
+          peak-hour: 16h
+          multiplier: 5
+          <<: [*from-v4-facebook, *to-v4-customers, *quic-src]
+        - per-second: 0.24
+          in-if-index: 11
+          out-if-index: 21
+          peak-hour: 18h
+          multiplier: 3
+          <<: [*from-v6-facebook, *to-v6-customers, *http-src]
+        - per-second: 1.8
+          in-if-index: 10
+          out-if-index: 20
+          peak-hour: 20h
+          multiplier: 5
+          <<: [*from-v6-facebook, *to-v6-customers, *https-src]
+        - per-second: 0.2
+          in-if-index: 11
+          out-if-index: 20
+          peak-hour: 20h
+          multiplier: 3
+          <<: [*from-v6-facebook, *to-v6-customers, *quic-src]
+        # Netflix
+        - per-second: 0.2
+          in-if-index: 10
+          out-if-index: 20
+          peak-hour: 22h
+          multiplier: 20
+          <<: [*from-v4-netflix, *to-v4-customers, *https-src]
+        - per-second: 0.7
+          in-if-index: 10
+          out-if-index: 20
+          peak-hour: 22h
+          multiplier: 20
+          <<: [*from-v6-netflix, *to-v6-customers, *https-src]
+        # Twitch
+        - per-second: 0.12
+          in-if-index: 10
+          out-if-index: 20
+          peak-hour: 21h
+          multiplier: 17
+          <<: [*from-v4-twitch, *to-v4-customers, *https-src]
+        # Akamai
+        - per-second: 0.14
+          in-if-index: 11
+          out-if-index: 20
+          peak-hour: 18h
+          multiplier: 1.3
+          <<: [*from-v4-akamai, *to-v4-customers, *http-src]
+        - per-second: 0.7
+          in-if-index: 11
+          out-if-index: 20
+          peak-hour: 18h
+          multiplier: 1.3
+          <<: [*from-v4-akamai, *to-v4-customers, *https-src]
+        - per-second: 0.1
+          in-if-index: 11
+          out-if-index: 21
+          peak-hour: 18h
+          multiplier: 1.3
+          <<: [*from-v6-akamai, *to-v6-customers, *http-src]
+        - per-second: 0.8
+          in-if-index: 10
+          out-if-index: 20
+          peak-hour: 20h
+          multiplier: 1.3
+          <<: [*from-v6-akamai, *to-v6-customers, *https-src]
+        # Fastly
+        - per-second: 0.4
+          in-if-index: 11
+          out-if-index: 20
+          peak-hour: 15h
+          multiplier: 1.3
+          <<: [*from-v4-fastly, *to-v4-customers, *http-src]
+        - per-second: 0.3
+          in-if-index: 11
+          out-if-index: 20
+          peak-hour: 18h
+          multiplier: 1.3
+          <<: [*from-v4-fastly, *to-v4-customers, *https-src]
+        - per-second: 0.7
+          in-if-index: 11
+          out-if-index: 20
+          peak-hour: 14h
+          multiplier: 1.3
+          <<: [*from-v6-fastly, *to-v6-customers, *http-src]
+        - per-second: 0.8
+          in-if-index: 10
+          out-if-index: 20
+          peak-hour: 20h
+          multiplier: 1.3
+          <<: [*from-v6-fastly, *to-v6-customers, *https-src]
+        # Amazon
+        - per-second: 0.12
+          in-if-index: 11
+          out-if-index: 21
+          peak-hour: 18h
+          multiplier: 1.3
+          <<: [*from-v4-amazon, *to-v4-customers, *http-src]
+        - per-second: 0.3
+          in-if-index: 10
+          out-if-index: 21
+          peak-hour: 18h
+          multiplier: 1.3
+          <<: [*from-v4-amazon, *to-v4-customers, *https-src]
+        - per-second: 0.03
+          in-if-index: 10
+          out-if-index: 21
+          peak-hour: 18h
+          multiplier: 1.3
+          <<: [*from-v6-amazon, *to-v6-customers, *http-src]
+        - per-second: 0.1
+          in-if-index: 11
+          out-if-index: 20
+          peak-hour: 20h
+          multiplier: 1.3
+          <<: [*from-v6-amazon, *to-v6-customers, *https-src]
+
+        # Random SSH
+        - per-second: 0.1
+          in-if-index: 10
+          out-if-index: 21
+          peak-hour: 15h
+          multiplier: 1.2
+          <<: [*from-v4-renater, *to-v4-customers, *ssh-src]
+        # Servers
+        - per-second: 0.1
+          in-if-index: 10
+          out-if-index: 21
+          peak-hour: 15h
+          multiplier: 1.2
+          <<: [*from-v4-renater, *to-v4-servers, *ssh-dst]
+        - per-second: 0.1
+          in-if-index: 10
+          out-if-index: 20
+          peak-hour: 15h
+          multiplier: 1.2
+          <<: [*from-v4-orange, *to-v4-servers, *http-dst]
+        - per-second: 0.2
+          in-if-index: 10
+          out-if-index: 21
+          peak-hour: 17h
+          multiplier: 1.2
+          <<: [*from-v4-orange, *to-v4-servers, *https-dst]
+        - per-second: 0.1
+          in-if-index: 10
+          out-if-index: 21
+          peak-hour: 15h
+          multiplier: 1.2
+          <<: [*from-v6-orange, *to-v6-servers, *http-dst]
+        - per-second: 0.2
+          in-if-index: 10
+          out-if-index: 20
+          peak-hour: 17h
+          multiplier: 1.2
+          <<: [*from-v6-orange, *to-v6-servers, *https-dst]
+
+        # Noise
+        - per-second: 0.05
+          in-if-index: 10
+          out-if-index: 20
+          peak-hour: 20h
+          multiplier: 1
+          <<: [*from-v4-orange, *to-v4-customers]
+          src-port: 0
+          dst-port: 0
+          protocol: tcp
+        - per-second: 0.05
+          in-if-index: 10
+          out-if-index: 20
+          peak-hour: 20h
+          multiplier: 1
+          <<: [*from-v6-orange, *to-v6-customers]
+          src-port: 0
+          dst-port: 0
+          protocol: tcp
+        - per-second: 0.05
+          in-if-index: 10
+          out-if-index: 20
+          peak-hour: 20h
+          multiplier: 1
+          <<: [*from-v6-orange, *to-v6-customers]
+          src-port: 0
+          dst-port: 0
+          protocol: udp
+  - snmp:
+      name: exporter2.example.com
+      interfaces:
+        10: "Transit: Cogent"
+        11: "IX: DECIX"
+        20: "core"
+        21: "core"
+      listen: 0.0.0.0:161
+    flows:
+      <<: *flows1
+      seed: 100
+  - snmp:
+      name: exporter3.example.com
+      interfaces:
+        10: "Transit: Tata"
+        11: "Transit: Lumen"
+        20: "core"
+        21: "core"
+      listen: 0.0.0.0:161
+    flows:
+      <<: *flows1
+      seed: 200
+  - snmp:
+      name: exporter4.example.com
+      interfaces:
+        10: "IX: FranceIX"
+        11: "Transit: Cogent"
+        20: "core"
+        21: "core"
+      listen: 0.0.0.0:161
+    flows:
+      <<: *flows1
+      seed: 300
