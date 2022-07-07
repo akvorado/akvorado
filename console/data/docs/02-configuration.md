@@ -400,3 +400,46 @@ database:
   driver: sqlite
   dsn: /var/lib/akvorado/console.sqlite
 ```
+
+## Fake exporter service
+
+For testing purpose, it is possible to generate flows using the fake
+exporter service. It features a NetFlow generate and a simple SNMP
+agent.
+
+```yaml
+snmp:
+  name: exporter1.example.com
+  interfaces:
+    10: "Transit: Telia"
+    11: "IX: AMSIX"
+    20: "core"
+    21: "core"
+  listen: 0.0.0.0:161
+flows:
+  samplingrate: 50000
+  target: 127.0.0.1:2055
+  flows:
+    - per-second: 0.2
+      in-if-index: 10
+      out-if-index: 20
+      peak-hour: 16h
+      multiplier: 3
+      src-port: 0
+      dst-port: 80
+      protocol: tcp
+      size: 1300
+      dst-net: 192.0.2.0/24
+      dst-as: 64501
+      src-net: 198.38.120.0/23
+      src-as: 2906
+```
+
+In the `snmp` section, all fields are mandatory. The `interfaces`
+section maps interface indexes to their descriptions. In the `flows`
+section, all fields are mandatory. Have a look at the provided
+`akvorado.yaml` configuration file for a more complete example. As
+generating many flows is quite verbose, it may be useful to rely on
+[YAML anchors][] to avoid repeating a lot of stuff.
+
+[YAML anchors]: https://www.linode.com/docs/guides/yaml-anchors-aliases-overrides-extensions/

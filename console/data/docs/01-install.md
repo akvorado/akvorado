@@ -43,16 +43,23 @@ anything else than [Docker](https://docs.docker.com/get-docker):
 # docker build . -t akvorado:main
 ```
 
+## Quick start
+
 A `docker-compose.yml` file is also provided to quickly get started.
 Once running, *Akvorado* web interface should be running on port 80
 and an inlet accepting NetFlow available on port 2055.
 
 ```console
-# env GEOIPUPDATE_ACCOUNT_ID=xxxx GEOIPUPDATE_LICENSE_KEY=xxxx  docker-compose up
+# docker-compose up
 ```
 
-The two environment variables are required to get GeoIP database from
+A few synthetic flows are generated in the background. Take a look at
+the `docker-compose.yml` file if you want to setup the GeoIP database.
+It requires two environment variables to fetch them from
 [MaxMind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data).
+The appropriate configuration also needs to be uncommented in
+`akvorado.yaml`.
+
 Be sure to flush the conntrack table after starting. See the
 [troubleshooting section](05-troubleshooting.md#no-packets-received)
 for more details.
