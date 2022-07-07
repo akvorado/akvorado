@@ -47,8 +47,8 @@ type dummyModule2DetailsConfiguration struct {
 	IntervalValue time.Duration
 }
 
-func dummyDefaultConfiguration() dummyConfiguration {
-	return dummyConfiguration{
+func (c *dummyConfiguration) Reset() {
+	*c = dummyConfiguration{
 		Module1: dummyModule1Configuration{
 			Listen:  "127.0.0.1:8080",
 			Topic:   "nothingness",
@@ -79,7 +79,7 @@ module1:
 		Path: configFile,
 	}
 
-	parsed := dummyDefaultConfiguration()
+	parsed := dummyConfiguration{}
 	out := bytes.NewBuffer([]byte{})
 	if err := c.Parse(out, "dummy", &parsed); err == nil {
 		t.Fatal("Parse() didn't error")
@@ -113,7 +113,7 @@ module2:
 		Dump: true,
 	}
 
-	parsed := dummyDefaultConfiguration()
+	parsed := dummyConfiguration{}
 	out := bytes.NewBuffer([]byte{})
 	if err := c.Parse(out, "dummy", &parsed); err != nil {
 		t.Fatalf("Parse() error:\n%+v", err)
@@ -213,7 +213,7 @@ module2:
 		Dump: true,
 	}
 
-	parsed := dummyDefaultConfiguration()
+	parsed := dummyConfiguration{}
 	out := bytes.NewBuffer([]byte{})
 	if err := c.Parse(out, "dummy", &parsed); err != nil {
 		t.Fatalf("Parse() error:\n%+v", err)
@@ -267,7 +267,7 @@ module2:
 		Dump: true,
 	}
 
-	parsed := dummyDefaultConfiguration()
+	parsed := dummyConfiguration{}
 	out := bytes.NewBuffer([]byte{})
 	if err := c.Parse(out, "dummy", &parsed); err != nil {
 		t.Fatalf("Parse() error:\n%+v", err)
@@ -312,7 +312,7 @@ module1:
 
 		c := cmd.ConfigRelatedOptions{Path: configFile}
 
-		parsed := dummyDefaultConfiguration()
+		parsed := dummyConfiguration{}
 		out := bytes.NewBuffer([]byte{})
 		if err := c.Parse(out, "dummy", &parsed); err != nil {
 			t.Fatalf("Parse() error:\n%+v", err)
@@ -332,7 +332,7 @@ module1:
 
 		c := cmd.ConfigRelatedOptions{Path: configFile}
 
-		parsed := dummyDefaultConfiguration()
+		parsed := dummyConfiguration{}
 		out := bytes.NewBuffer([]byte{})
 		if err := c.Parse(out, "dummy", &parsed); err == nil {
 			t.Fatal("Parse() didn't error")
@@ -341,5 +341,89 @@ invalid key "Module1.extra"
 invalid key "unused"`); diff != "" {
 			t.Fatalf("Parse() (-got, +want):\n%s", diff)
 		}
+	})
+}
+
+func TestDefaultInSlice(t *testing.T) {
+	try := func(t *testing.T, parse func(cmd.ConfigRelatedOptions, *bytes.Buffer) interface{}) {
+		// Configuration file
+		config := `---
+modules:
+- module1:
+    topic: flows1
+- module1:
+    topic: flows2
+`
+		configFile := filepath.Join(t.TempDir(), "config.yaml")
+		ioutil.WriteFile(configFile, []byte(config), 0644)
+
+		c := cmd.ConfigRelatedOptions{
+			Path: configFile,
+			Dump: true,
+		}
+
+		out := bytes.NewBuffer([]byte{})
+		parsed := parse(c, out)
+		// Expected configuration
+		expected := map[string][]dummyConfiguration{
+			"Modules": {
+				{
+					Module1: dummyModule1Configuration{
+						Listen:  "127.0.0.1:8080",
+						Topic:   "flows1",
+						Workers: 100,
+					},
+					Module2: dummyModule2Configuration{
+						MoreDetails: MoreDetails{
+							Stuff: "hello",
+						},
+						Details: dummyModule2DetailsConfiguration{
+							Workers:       1,
+							IntervalValue: time.Minute,
+						},
+					},
+				}, {
+					Module1: dummyModule1Configuration{
+						Listen:  "127.0.0.1:8080",
+						Topic:   "flows2",
+						Workers: 100,
+					},
+					Module2: dummyModule2Configuration{
+						MoreDetails: MoreDetails{
+							Stuff: "hello",
+						},
+						Details: dummyModule2DetailsConfiguration{
+							Workers:       1,
+							IntervalValue: time.Minute,
+						},
+					},
+				},
+			},
+		}
+		if diff := helpers.Diff(parsed, expected); diff != "" {
+			t.Errorf("Parse() (-got, +want):\n%s", diff)
+		}
+	}
+	t.Run("without pointer", func(t *testing.T) {
+		try(t, func(c cmd.ConfigRelatedOptions, out *bytes.Buffer) interface{} {
+			parsed := struct {
+				Modules []dummyConfiguration
+			}{}
+			if err := c.Parse(out, "dummy", &parsed); err != nil {
+				t.Fatalf("Parse() error:\n%+v", err)
+			}
+			return parsed
+		})
+	})
+	t.Run("with pointer", func(t *testing.T) {
+		try(t, func(c cmd.ConfigRelatedOptions, out *bytes.Buffer) interface{} {
+			parsed := struct {
+				Modules []*dummyConfiguration
+			}{}
+			if err := c.Parse(out, "dummy", &parsed); err != nil {
+				t.Fatalf("Parse() error:\n%+v", err)
+			}
+			return parsed
+		})
 	})
 }

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -77,6 +78,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 	}
 
 	// Parse provided configuration
+	defaultHook, disableDefaultHook := DefaultHook()
 	var metadata mapstructure.Metadata
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		Result:           &config,
@@ -89,6 +91,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 			return key == field
 		},
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
+			defaultHook,
 			flow.ConfigurationUnmarshalerHook(),
 			clickhouse.NetworkNamesUnmarshalerHook(),
 			mapstructure.TextUnmarshallerHookFunc(),
@@ -102,6 +105,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 	if err := decoder.Decode(rawConfig); err != nil {
 		return fmt.Errorf("unable to parse configuration: %w", err)
 	}
+	disableDefaultHook()
 
 	// Override with environment variables
 	for _, keyval := range os.Environ() {
@@ -170,4 +174,43 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 	}
 
 	return nil
+}
+
+// DefaultHook will reset the destination value to its default using
+// the Reset() method if present.
+func DefaultHook() (mapstructure.DecodeHookFunc, func()) {
+	disabled := false
+	hook := func(from, to reflect.Value) (interface{}, error) {
+		if disabled {
+			return from.Interface(), nil
+		}
+		if to.Kind() == reflect.Ptr {
+			// We already have a pointer
+			method, ok := to.Type().MethodByName("Reset")
+			if !ok {
+				return from.Interface(), nil
+			}
+			if to.IsNil() {
+				new := reflect.New(to.Type().Elem())
+				method.Func.Call([]reflect.Value{new})
+				to.Set(new)
+				return from.Interface(), nil
+			}
+			method.Func.Call([]reflect.Value{to})
+			return from.Interface(), nil
+		}
+		// Not a pointer, let's check if we take a pointer
+		method, ok := reflect.PointerTo(to.Type()).MethodByName("Reset")
+		if !ok {
+			return from.Interface(), nil
+		}
+		method.Func.Call([]reflect.Value{to.Addr()})
+
+		// Resume decoding
+		return from.Interface(), nil
+	}
+	disable := func() {
+		disabled = true
+	}
+	return hook, disable
 }

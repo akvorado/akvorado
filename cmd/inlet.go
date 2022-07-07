@@ -29,9 +29,9 @@ type InletConfiguration struct {
 	Core      core.Configuration
 }
 
-// DefaultInletConfiguration is the default configuration for the inlet command.
-func DefaultInletConfiguration() InletConfiguration {
-	return InletConfiguration{
+// Reset resets the configuration for the inlet command to its default value.
+func (c *InletConfiguration) Reset() {
+	*c = InletConfiguration{
 		HTTP:      http.DefaultConfiguration(),
 		Reporting: reporter.DefaultConfiguration(),
 		Flow:      flow.DefaultConfiguration(),
@@ -58,7 +58,7 @@ var inletCmd = &cobra.Command{
 hydration and export to Kafka.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		config := DefaultInletConfiguration()
+		config := InletConfiguration{}
 		InletOptions.Path = args[0]
 		if err := InletOptions.Parse(cmd.OutOrStdout(), "inlet", &config); err != nil {
 			return err

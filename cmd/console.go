@@ -27,9 +27,9 @@ type ConsoleConfiguration struct {
 	Database   database.Configuration
 }
 
-// DefaultConsoleConfiguration is the default configuration for the console command.
-func DefaultConsoleConfiguration() ConsoleConfiguration {
-	return ConsoleConfiguration{
+// Reset resets the console configuration to its default value.
+func (c *ConsoleConfiguration) Reset() {
+	*c = ConsoleConfiguration{
 		HTTP:       http.DefaultConfiguration(),
 		Reporting:  reporter.DefaultConfiguration(),
 		Console:    console.DefaultConfiguration(),
@@ -55,7 +55,7 @@ var consoleCmd = &cobra.Command{
 manage collected flows.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		config := DefaultConsoleConfiguration()
+		config := ConsoleConfiguration{}
 		ConsoleOptions.Path = args[0]
 		if err := ConsoleOptions.Parse(cmd.OutOrStdout(), "console", &config); err != nil {
 			return err

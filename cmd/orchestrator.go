@@ -30,9 +30,9 @@ type OrchestratorConfiguration struct {
 	Console []ConsoleConfiguration
 }
 
-// DefaultOrchestratorConfiguration is the default configuration for the orchestrator command.
-func DefaultOrchestratorConfiguration() OrchestratorConfiguration {
-	return OrchestratorConfiguration{
+// Reset resets the configuration of the orchestrator command to its default value.
+func (c *OrchestratorConfiguration) Reset() {
+	*c = OrchestratorConfiguration{
 		Reporting:    reporter.DefaultConfiguration(),
 		HTTP:         http.DefaultConfiguration(),
 		ClickHouseDB: clickhousedb.DefaultConfiguration(),
@@ -40,8 +40,8 @@ func DefaultOrchestratorConfiguration() OrchestratorConfiguration {
 		Kafka:        kafka.DefaultConfiguration(),
 		Orchestrator: orchestrator.DefaultConfiguration(),
 		// Other service configurations
-		Inlet:   []InletConfiguration{DefaultInletConfiguration()},
-		Console: []ConsoleConfiguration{DefaultConsoleConfiguration()},
+		Inlet:   []InletConfiguration{},
+		Console: []ConsoleConfiguration{},
 	}
 }
 
@@ -61,7 +61,7 @@ var orchestratorCmd = &cobra.Command{
 components and centralizes configuration of the various other components.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		config := DefaultOrchestratorConfiguration()
+		config := OrchestratorConfiguration{}
 		OrchestratorOptions.Path = args[0]
 		OrchestratorOptions.BeforeDump = func() {
 			// Override some parts of the configuration
