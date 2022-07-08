@@ -89,7 +89,7 @@ jobs:
           images: |
             ghcr.io/vincentbernat/akvorado
           tags: |
-            type=schedule,pattern=master
+            type=schedule,pattern=main
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
