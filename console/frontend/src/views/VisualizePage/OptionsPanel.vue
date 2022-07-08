@@ -39,7 +39,7 @@
             attr-type="submit"
             :disabled="hasErrors && !loading"
             :loading="loading"
-            :type="loading ? 'default' : 'primary'"
+            :type="loading ? 'alternative' : 'primary'"
             class="order-2 w-28 justify-center sm:order-3 lg:order-2"
           >
             {{ loading ? "Cancel" : applyLabel }}
