@@ -189,8 +189,10 @@ func DefaultHook() (mapstructure.DecodeHookFunc, func()) {
 			method, ok := to.Type().MethodByName("Reset")
 			if !ok {
 				// We may have a pointer to a pointer when totally empty.
-				to = to.Elem()
-				method, ok = to.Type().MethodByName("Reset")
+				if !to.IsNil() {
+					to = to.Elem()
+					method, ok = to.Type().MethodByName("Reset")
+				}
 				if !ok {
 					return from.Interface(), nil
 				}
