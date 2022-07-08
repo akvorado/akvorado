@@ -9,6 +9,8 @@ type Configuration struct {
 	ASNDatabase string
 	// CountryDatabase defines the path to the country database.
 	CountryDatabase string
+	// Optional tells if we need to error if not present on start.
+	Optional bool
 }
 
 // DefaultConfiguration represents the default configuration for the

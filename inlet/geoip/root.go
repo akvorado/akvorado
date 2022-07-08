@@ -90,10 +90,10 @@ func (c *Component) openDatabase(which string, path string, container *atomic.Va
 
 // Start starts the GeoIP component.
 func (c *Component) Start() error {
-	if err := c.openDatabase("country", c.config.CountryDatabase, &c.db.country); err != nil {
+	if err := c.openDatabase("country", c.config.CountryDatabase, &c.db.country); err != nil && !c.config.Optional {
 		return err
 	}
-	if err := c.openDatabase("asn", c.config.ASNDatabase, &c.db.asn); err != nil {
+	if err := c.openDatabase("asn", c.config.ASNDatabase, &c.db.asn); err != nil && !c.config.Optional {
 		return err
 	}
 	if c.db.country.Load() == nil && c.db.asn.Load() == nil {

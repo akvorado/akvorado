@@ -11,6 +11,8 @@ volumes:
 
 services:
   geoip:
+    # Put ACCOUNT_ID and LICENSE_KEY here, or provide them on the command-line
+    # (env GEOIPUPDATE_ACCOUNT_ID=... GEOIPUPDATE_LICENSE_KEY=... docker-compose ...)
     image: maxmindinc/geoipupdate:v4
     environment:
       - GEOIPUPDATE_ACCOUNT_ID

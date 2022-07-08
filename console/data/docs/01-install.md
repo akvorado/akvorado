@@ -57,8 +57,6 @@ A few synthetic flows are generated in the background. Take a look at
 the `docker-compose.yml` file if you want to setup the GeoIP database.
 It requires two environment variables to fetch them from
 [MaxMind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data).
-The appropriate configuration also needs to be uncommented in
-`akvorado.yaml`.
 
 Be sure to flush the conntrack table after starting. See the
 [troubleshooting section](05-troubleshooting.md#no-packets-received)

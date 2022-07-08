@@ -203,6 +203,8 @@ is provided, the component is inactive. It accepts the following keys:
 
 - `asn-database` tells the path to the ASN database
 - `country-database` tells the path to the country database
+- `optional` makes the presence of the databases optional on start
+  (when not present on start, the component is just disabled)
 
 [MaxMind DB file format]: https://maxmind.github.io/MaxMind-DB/
 
