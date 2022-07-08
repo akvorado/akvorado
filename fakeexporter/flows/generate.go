@@ -89,7 +89,8 @@ func generateFlows(flowConfigs []FlowConfiguration, seed int64, now time.Time) [
 	for _, flowConfig := range flowConfigs {
 		// Compute how many per seconds
 		distance := peakHourDistance(nowTime, flowConfig.PeakHour)
-		multiplier := 1 + (flowConfig.Multiplier-1)*distance
+		square := distance * distance
+		multiplier := 1 + (flowConfig.Multiplier-1)*square/(2.*(square-distance)+1.)
 		count := rateToCount(flowConfig.PerSecond*multiplier*(0.9+r.Float64()/5), now)
 		for ; count > 0; count-- {
 			flow := generatedFlow{
