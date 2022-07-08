@@ -153,7 +153,7 @@ func TestGenerateFlows(t *testing.T) {
 					DstAddr: net.ParseIP("203.0.113.91"),
 					EType:   0x800,
 					IPFlow: IPFlow{
-						Octets:        1500,
+						Octets:        1365,
 						Packets:       1,
 						Proto:         6,
 						SrcPort:       443,
@@ -169,7 +169,7 @@ func TestGenerateFlows(t *testing.T) {
 					DstAddr: net.ParseIP("203.0.113.220"),
 					EType:   0x800,
 					IPFlow: IPFlow{
-						Octets:        1283,
+						Octets:        1500,
 						Packets:       1,
 						Proto:         6,
 						SrcPort:       443,
@@ -203,7 +203,7 @@ func TestGenerateFlows(t *testing.T) {
 					DstAddr: net.ParseIP("2001:db8:2:0:245b:11f7:351e:dc1a"),
 					EType:   0x86dd,
 					IPFlow: IPFlow{
-						Octets:        1312,
+						Octets:        1170,
 						Packets:       1,
 						Proto:         6,
 						SrcPort:       34045,

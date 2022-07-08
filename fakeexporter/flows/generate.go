@@ -106,7 +106,7 @@ func generateFlows(flowConfigs []FlowConfiguration, seed int64, now time.Time) [
 			if flowConfig.Size == 0 {
 				flow.Octets = uint32(r.Int31n(1200) + 300)
 			} else {
-				flow.Octets = uint32(float64(flowConfig.Size) * (0.9 + r.Float64()/5))
+				flow.Octets = uint32(float64(flowConfig.Size) * (r.NormFloat64()*0.3 + 1))
 				if flow.Octets > 9000 {
 					flow.Octets = 9000
 				} else if flow.Octets > 1500 && flowConfig.Size <= 1500 {
