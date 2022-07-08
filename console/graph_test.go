@@ -215,9 +215,9 @@ func TestGraphHandler(t *testing.T) {
 				"min": []int{
 					2000,
 					100,
-					0,
-					0,
-					0,
+					1200,
+					1100,
+					100,
 					100,
 				},
 				"max": []int{

@@ -231,8 +231,16 @@ func (c *Component) graphHandlerFunc(gc *gin.Context) {
 		s := make([]int, len(rowValues[r]))
 		copy(s, rowValues[r])
 		sort.Ints(s)
-		output.Min[idx] = s[0]
+		// Min (but not 0)
+		for i := 0; i < len(s); i++ {
+			output.Min[idx] = s[i]
+			if s[i] > 0 {
+				break
+			}
+		}
+		// Max
 		output.Max[idx] = s[len(s)-1]
+		// 95th percentile
 		index := 0.95 * float64(len(s))
 		j := int(index)
 		if index == float64(j) {
