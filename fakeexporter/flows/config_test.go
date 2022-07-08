@@ -15,15 +15,14 @@ func TestDefaultConfiguration(t *testing.T) {
 	config.Flows = []FlowConfiguration{
 		{
 			PerSecond:  10,
-			InIfIndex:  1,
-			OutIfIndex: 2,
+			InIfIndex:  []int{1},
+			OutIfIndex: []int{2},
 			PeakHour:   21 * time.Hour,
 			Multiplier: 3.0,
-			SrcAS:      2906,
-			DstAS:      12322,
-			SrcPort:    443,
-			DstPort:    0,
-			Protocol:   "tcp",
+			SrcAS:      []uint32{2906},
+			DstAS:      []uint32{12322},
+			SrcPort:    []uint16{443},
+			Protocol:   []string{"tcp"},
 			Size:       1400,
 		},
 	}

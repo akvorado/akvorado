@@ -39,17 +39,16 @@ func TestReceiveFlows(t *testing.T) {
 	config.Flows = []FlowConfiguration{
 		{
 			PerSecond:  1,
-			InIfIndex:  10,
-			OutIfIndex: 20,
+			InIfIndex:  []int{10},
+			OutIfIndex: []int{20},
 			PeakHour:   21 * time.Hour,
 			Multiplier: 1,
 			SrcNet:     netip.MustParsePrefix("192.0.2.0/24"),
 			DstNet:     netip.MustParsePrefix("203.0.113.0/24"),
-			SrcAS:      65201,
-			DstAS:      65202,
-			SrcPort:    443,
-			DstPort:    0,
-			Protocol:   "tcp",
+			SrcAS:      []uint32{65201},
+			DstAS:      []uint32{65202},
+			SrcPort:    []uint16{443},
+			Protocol:   []string{"tcp"},
 			Size:       1400,
 		},
 	}

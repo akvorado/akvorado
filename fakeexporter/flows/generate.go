@@ -24,7 +24,7 @@ type generatedFlow struct {
 	DstAddr net.IP
 }
 
-// rateToCount convert a per-second rate to the number of items to
+// rateToCount converts a per-second rate to the number of items to
 // produce for the given time.
 func rateToCount(rate float64, now time.Time) int {
 	seconds := float64(now.Unix() - now.Truncate(time.Hour*24*30*12).Unix())
@@ -32,7 +32,7 @@ func rateToCount(rate float64, now time.Time) int {
 	return int(count)
 }
 
-// Return a random IP in the provided prefix.
+// randomIP returns a random IP in the provided prefix.
 func randomIP(prefix netip.Prefix, r *rand.Rand) net.IP {
 	result := make([]byte, prefix.Addr().BitLen()/8)
 	for i := range result {
@@ -51,13 +51,25 @@ func randomIP(prefix netip.Prefix, r *rand.Rand) net.IP {
 	return net.IP(result)
 }
 
-// Return distance from peak hour (0 to 1)
+// peakHourDistance returns distance from peak hour (0 to 1)
 func peakHourDistance(now, peak time.Duration) float64 {
 	delta := math.Mod(math.Abs((now - peak).Hours()), 24)
 	if 24-delta < delta {
 		delta = 24 - delta
 	}
 	return (12 - delta) / 12
+}
+
+// chooseRandom returns a random value from a slice
+func chooseRandom[T any](r *rand.Rand, slice []T) T {
+	if len(slice) == 0 {
+		var result T
+		return result
+	}
+	if len(slice) == 1 {
+		return slice[0]
+	}
+	return slice[r.Intn(len(slice))]
 }
 
 // generateFlows generate a set of flows using the provided
@@ -83,10 +95,10 @@ func generateFlows(flowConfigs []FlowConfiguration, seed int64, now time.Time) [
 			flow := generatedFlow{
 				IPFlow: IPFlow{
 					Packets:       1,
-					InputInt:      uint32(flowConfig.InIfIndex),
-					OutputInt:     uint32(flowConfig.OutIfIndex),
-					SrcAS:         flowConfig.SrcAS,
-					DstAS:         flowConfig.DstAS,
+					InputInt:      uint32(chooseRandom(r, flowConfig.InIfIndex)),
+					OutputInt:     uint32(chooseRandom(r, flowConfig.OutIfIndex)),
+					SrcAS:         chooseRandom(r, flowConfig.SrcAS),
+					DstAS:         chooseRandom(r, flowConfig.DstAS),
 					ForwardStatus: 64,
 				},
 			}
@@ -102,14 +114,15 @@ func generateFlows(flowConfigs []FlowConfiguration, seed int64, now time.Time) [
 			}
 			flow.SrcAddr = randomIP(flowConfig.SrcNet, r)
 			flow.DstAddr = randomIP(flowConfig.DstNet, r)
-			if flowConfig.Protocol == "tcp" || flowConfig.Protocol == "udp" {
-				if flowConfig.SrcPort != 0 {
-					flow.SrcPort = flowConfig.SrcPort
+			proto := chooseRandom(r, flowConfig.Protocol)
+			if proto == "tcp" || proto == "udp" {
+				if srcPort := chooseRandom(r, flowConfig.SrcPort); srcPort != 0 {
+					flow.SrcPort = srcPort
 				} else {
 					flow.SrcPort = uint16(r.Int31n(2000) + 33000)
 				}
-				if flowConfig.DstPort != 0 {
-					flow.DstPort = flowConfig.DstPort
+				if dstPort := chooseRandom(r, flowConfig.DstPort); dstPort != 0 {
+					flow.DstPort = dstPort
 				} else {
 					flow.DstPort = uint16(r.Int31n(2000) + 33000)
 				}
@@ -119,13 +132,13 @@ func generateFlows(flowConfigs []FlowConfiguration, seed int64, now time.Time) [
 			} else {
 				flow.EType = helpers.ETypeIPv6
 			}
-			if flowConfig.Protocol == "tcp" {
+			if proto == "tcp" {
 				flow.Proto = 6
-			} else if flowConfig.Protocol == "udp" {
+			} else if proto == "udp" {
 				flow.Proto = 17
-			} else if flowConfig.Protocol == "icmp" && flow.EType == helpers.ETypeIPv4 {
+			} else if proto == "icmp" && flow.EType == helpers.ETypeIPv4 {
 				flow.Proto = 1
-			} else if flowConfig.Protocol == "icmp" && flow.EType == helpers.ETypeIPv6 {
+			} else if proto == "icmp" && flow.EType == helpers.ETypeIPv6 {
 				flow.Proto = 58
 			}
 			flows = append(flows, flow)

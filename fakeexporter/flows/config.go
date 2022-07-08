@@ -27,9 +27,9 @@ type FlowConfiguration struct {
 	// PerSecond defines how many of those flows should be created per second
 	PerSecond float64 `validate:"required,gt=0"`
 	// InIfIndex defines the source interface
-	InIfIndex int `validate:"required,min=1"`
+	InIfIndex []int `validate:"min=1,dive,min=1"`
 	// OutIfIndex defines the output interface
-	OutIfIndex int `validate:"required,min=1,nefield=InIfIndex"`
+	OutIfIndex []int `validate:"min=1,dive,min=1"`
 	// PeakHour defines the peak hour
 	PeakHour time.Duration `validate:"required,min=0,max=24h"`
 	// PeakMultiplier defines how to multiply the `PerSecond` when near the peak hour
@@ -39,15 +39,15 @@ type FlowConfiguration struct {
 	// DstNet defines the destination network to use
 	DstNet netip.Prefix `validate:"required"`
 	// SrcAS defines the source AS number to use
-	SrcAS uint32 `validate:"required"`
+	SrcAS []uint32 `validate:"min=1"`
 	// DstAS defines the destination AS number to use
-	DstAS uint32 `validate:"required"`
+	DstAS []uint32 `validate:"min=1"`
 	// SrcPort defines the source port to use
-	SrcPort uint16 `validate:"excluded_if=Protocol icmp"`
+	SrcPort []uint16 `validate:"excluded_if=Protocol icmp"`
 	// DstPort defines the destination port to use
-	DstPort uint16 `validate:"excluded_if=Protocol icmp"`
+	DstPort []uint16 `validate:"excluded_if=Protocol icmp"`
 	// Proto defines the IP protocol to use
-	Protocol string `validate:"isdefault|oneof=tcp udp icmp"`
+	Protocol []string `validate:"min=1,dive,oneof=tcp udp icmp"`
 	// Size defines the packet size to use
 	Size uint `validate:"isdefault|min=64,isdefault|max=9000"`
 }

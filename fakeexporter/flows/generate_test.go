@@ -87,6 +87,46 @@ func TestPeakHourDistance(t *testing.T) {
 	}
 }
 
+func TestChooseRandom(t *testing.T) {
+	cases := [][]int{
+		nil,
+		[]int{},
+		[]int{6},
+		[]int{1, 2, 3, 4, 10, 12},
+	}
+	r := rand.New(rand.NewSource(0))
+	for _, tc := range cases {
+		t.Run(fmt.Sprintf("%v", tc), func(t *testing.T) {
+			results := map[int]bool{}
+			for i := 0; i < 100; i++ {
+				result := chooseRandom(r, tc)
+				results[result] = true
+				if len(tc) == 0 {
+					if result != 0 {
+						t.Fatalf("chooseRandom() == %d instead of 0", result)
+					}
+					break
+				}
+				found := false
+				for _, v := range tc {
+					if v == result {
+						found = true
+						break
+					}
+				}
+				if !found {
+					t.Fatalf("chooseRandom() returned %d, not in slice",
+						result)
+				}
+			}
+			if len(tc) != 0 && len(results) != len(tc) {
+				t.Fatalf("chooseRandom() did not explore all results (only %d)",
+					len(results))
+			}
+		})
+	}
+}
+
 func TestGenerateFlows(t *testing.T) {
 	cases := []struct {
 		FlowConfiguration
@@ -95,48 +135,47 @@ func TestGenerateFlows(t *testing.T) {
 		{
 			FlowConfiguration: FlowConfiguration{
 				PerSecond:  1,
-				InIfIndex:  10,
-				OutIfIndex: 20,
+				InIfIndex:  []int{10},
+				OutIfIndex: []int{20, 21},
 				PeakHour:   21 * time.Hour,
 				Multiplier: 3.1, // 6 hours from peak time → ~2
 				SrcNet:     netip.MustParsePrefix("192.0.2.0/24"),
 				DstNet:     netip.MustParsePrefix("203.0.113.0/24"),
-				SrcAS:      65201,
-				DstAS:      65202,
-				SrcPort:    443,
-				DstPort:    0,
-				Protocol:   "tcp",
+				SrcAS:      []uint32{65201},
+				DstAS:      []uint32{65202},
+				SrcPort:    []uint16{443},
+				Protocol:   []string{"tcp"},
 				Size:       1400,
 			},
 			Expected: []generatedFlow{
 				{
-					SrcAddr: net.ParseIP("192.0.2.218"),
-					DstAddr: net.ParseIP("203.0.113.36"),
+					SrcAddr: net.ParseIP("192.0.2.36"),
+					DstAddr: net.ParseIP("203.0.113.91"),
 					EType:   0x800,
 					IPFlow: IPFlow{
-						Octets:        1434,
+						Octets:        1500,
 						Packets:       1,
 						Proto:         6,
 						SrcPort:       443,
-						DstPort:       33571,
+						DstPort:       34905,
 						InputInt:      10,
-						OutputInt:     20,
+						OutputInt:     21,
 						SrcAS:         65201,
 						DstAS:         65202,
 						ForwardStatus: 64,
 					},
 				}, {
-					SrcAddr: net.ParseIP("192.0.2.247"),
-					DstAddr: net.ParseIP("203.0.113.53"),
+					SrcAddr: net.ParseIP("192.0.2.30"),
+					DstAddr: net.ParseIP("203.0.113.220"),
 					EType:   0x800,
 					IPFlow: IPFlow{
-						Octets:        1333,
+						Octets:        1283,
 						Packets:       1,
 						Proto:         6,
 						SrcPort:       443,
-						DstPort:       34758,
+						DstPort:       33618,
 						InputInt:      10,
-						OutputInt:     20,
+						OutputInt:     21,
 						SrcAS:         65201,
 						DstAS:         65202,
 						ForwardStatus: 64,
@@ -146,32 +185,31 @@ func TestGenerateFlows(t *testing.T) {
 		}, {
 			FlowConfiguration: FlowConfiguration{
 				PerSecond:  1,
-				InIfIndex:  20,
-				OutIfIndex: 10,
+				InIfIndex:  []int{20},
+				OutIfIndex: []int{10, 11},
 				PeakHour:   3 * time.Hour,
 				Multiplier: 4, // 12 hours from peak time → ~1
 				SrcNet:     netip.MustParsePrefix("2001:db8::1/128"),
 				DstNet:     netip.MustParsePrefix("2001:db8:2::/64"),
-				SrcAS:      65201,
-				DstAS:      65202,
-				SrcPort:    0,
-				DstPort:    443,
-				Protocol:   "tcp",
+				SrcAS:      []uint32{65201},
+				DstAS:      []uint32{65202},
+				DstPort:    []uint16{443},
+				Protocol:   []string{"tcp"},
 				Size:       1200,
 			},
 			Expected: []generatedFlow{
 				{
 					SrcAddr: net.ParseIP("2001:db8::1"),
-					DstAddr: net.ParseIP("2001:db8:2:0:da24:5b11:f735:1edc"),
+					DstAddr: net.ParseIP("2001:db8:2:0:245b:11f7:351e:dc1a"),
 					EType:   0x86dd,
 					IPFlow: IPFlow{
-						Octets:        1229,
+						Octets:        1312,
 						Packets:       1,
 						Proto:         6,
-						SrcPort:       33618,
+						SrcPort:       34045,
 						DstPort:       443,
 						InputInt:      20,
-						OutputInt:     10,
+						OutputInt:     11,
 						SrcAS:         65201,
 						DstAS:         65202,
 						ForwardStatus: 64,
