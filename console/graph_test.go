@@ -31,16 +31,17 @@ func TestGraphQuerySQL(t *testing.T) {
 				Units:      "l3bps",
 			},
 			Expected: `
-WITH
- intDiv(864, {resolution})*{resolution} AS slot
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL slot second) AS time,
- SUM(Bytes*SamplingRate*8/slot) AS xps,
+ toStartOfInterval(TimeReceived, INTERVAL (intDiv(864, {resolution})*{resolution}) second) AS time,
+ SUM(Bytes*SamplingRate*8/(intDiv(864, {resolution})*{resolution})) AS xps,
  emptyArrayString() AS dimensions
 FROM {table}
 WHERE {timefilter}
 GROUP BY time, dimensions
-ORDER BY time`,
+ORDER BY time WITH FILL
+ FROM toStartOfInterval({timefilter.Start}, INTERVAL (intDiv(864, {resolution})*{resolution}) second)
+ TO {timefilter.Stop}
+ STEP (intDiv(864, {resolution})*{resolution})`,
 		}, {
 			Description: "no dimensions, no filters, l2 bps",
 			Input: graphHandlerInput{
@@ -52,16 +53,17 @@ ORDER BY time`,
 				Units:      "l2bps",
 			},
 			Expected: `
-WITH
- intDiv(864, {resolution})*{resolution} AS slot
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL slot second) AS time,
- SUM((Bytes+18*Packets)*SamplingRate*8/slot) AS xps,
+ toStartOfInterval(TimeReceived, INTERVAL (intDiv(864, {resolution})*{resolution}) second) AS time,
+ SUM((Bytes+18*Packets)*SamplingRate*8/(intDiv(864, {resolution})*{resolution})) AS xps,
  emptyArrayString() AS dimensions
 FROM {table}
 WHERE {timefilter}
 GROUP BY time, dimensions
-ORDER BY time`,
+ORDER BY time WITH FILL
+ FROM toStartOfInterval({timefilter.Start}, INTERVAL (intDiv(864, {resolution})*{resolution}) second)
+ TO {timefilter.Stop}
+ STEP (intDiv(864, {resolution})*{resolution})`,
 		}, {
 			Description: "no dimensions, no filters, pps",
 			Input: graphHandlerInput{
@@ -73,16 +75,17 @@ ORDER BY time`,
 				Units:      "pps",
 			},
 			Expected: `
-WITH
- intDiv(864, {resolution})*{resolution} AS slot
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL slot second) AS time,
- SUM(Packets*SamplingRate/slot) AS xps,
+ toStartOfInterval(TimeReceived, INTERVAL (intDiv(864, {resolution})*{resolution}) second) AS time,
+ SUM(Packets*SamplingRate/(intDiv(864, {resolution})*{resolution})) AS xps,
  emptyArrayString() AS dimensions
 FROM {table}
 WHERE {timefilter}
 GROUP BY time, dimensions
-ORDER BY time`,
+ORDER BY time WITH FILL
+ FROM toStartOfInterval({timefilter.Start}, INTERVAL (intDiv(864, {resolution})*{resolution}) second)
+ TO {timefilter.Stop}
+ STEP (intDiv(864, {resolution})*{resolution})`,
 		}, {
 			Description: "no dimensions",
 			Input: graphHandlerInput{
@@ -94,16 +97,17 @@ ORDER BY time`,
 				Units:      "l3bps",
 			},
 			Expected: `
-WITH
- intDiv(864, {resolution})*{resolution} AS slot
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL slot second) AS time,
- SUM(Bytes*SamplingRate*8/slot) AS xps,
+ toStartOfInterval(TimeReceived, INTERVAL (intDiv(864, {resolution})*{resolution}) second) AS time,
+ SUM(Bytes*SamplingRate*8/(intDiv(864, {resolution})*{resolution})) AS xps,
  emptyArrayString() AS dimensions
 FROM {table}
 WHERE {timefilter} AND (DstCountry = 'FR' AND SrcCountry = 'US')
 GROUP BY time, dimensions
-ORDER BY time`,
+ORDER BY time WITH FILL
+ FROM toStartOfInterval({timefilter.Start}, INTERVAL (intDiv(864, {resolution})*{resolution}) second)
+ TO {timefilter.Stop}
+ STEP (intDiv(864, {resolution})*{resolution})`,
 		}, {
 			Description: "no filters",
 			Input: graphHandlerInput{
@@ -120,22 +124,25 @@ ORDER BY time`,
 			},
 			Expected: `
 WITH
- intDiv(864, {resolution})*{resolution} AS slot,
  rows AS (SELECT ExporterName, InIfProvider FROM {table} WHERE {timefilter} GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes) DESC LIMIT 20)
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL slot second) AS time,
- SUM(Bytes*SamplingRate*8/slot) AS xps,
+ toStartOfInterval(TimeReceived, INTERVAL (intDiv(864, {resolution})*{resolution}) second) AS time,
+ SUM(Bytes*SamplingRate*8/(intDiv(864, {resolution})*{resolution})) AS xps,
  if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
 FROM {table}
 WHERE {timefilter}
 GROUP BY time, dimensions
-ORDER BY time`,
+ORDER BY time WITH FILL
+ FROM toStartOfInterval({timefilter.Start}, INTERVAL (intDiv(864, {resolution})*{resolution}) second)
+ TO {timefilter.Stop}
+ STEP (intDiv(864, {resolution})*{resolution})`,
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.Description, func(t *testing.T) {
 			got, _ := tc.Input.toSQL()
-			if diff := helpers.Diff(strings.Split(got, "\n"), strings.Split(tc.Expected, "\n")); diff != "" {
+			if diff := helpers.Diff(strings.Split(strings.TrimSpace(got), "\n"),
+				strings.Split(strings.TrimSpace(tc.Expected), "\n")); diff != "" {
 				t.Errorf("toSQL (-got, +want):\n%s", diff)
 			}
 		})

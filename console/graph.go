@@ -40,6 +40,7 @@ type graphHandlerOutput struct {
 // graphHandlerInputToSQL converts a graph input to an SQL request
 func (input graphHandlerInput) toSQL() (string, error) {
 	interval := int64((input.End.Sub(input.Start).Seconds())) / int64(input.Points)
+	slot := fmt.Sprintf(`(intDiv(%d, {resolution})*{resolution})`, interval)
 
 	// Filter
 	where := input.Filter.filter
@@ -51,15 +52,15 @@ func (input graphHandlerInput) toSQL() (string, error) {
 
 	// Select
 	fields := []string{
-		`toStartOfInterval(TimeReceived, INTERVAL slot second) AS time`,
+		fmt.Sprintf(`toStartOfInterval(TimeReceived, INTERVAL %s second) AS time`, slot),
 	}
 	switch input.Units {
 	case "pps":
-		fields = append(fields, `SUM(Packets*SamplingRate/slot) AS xps`)
+		fields = append(fields, fmt.Sprintf(`SUM(Packets*SamplingRate/%s) AS xps`, slot))
 	case "l3bps":
-		fields = append(fields, `SUM(Bytes*SamplingRate*8/slot) AS xps`)
+		fields = append(fields, fmt.Sprintf(`SUM(Bytes*SamplingRate*8/%s) AS xps`, slot))
 	case "l2bps":
-		fields = append(fields, `SUM((Bytes+18*Packets)*SamplingRate*8/slot) AS xps`)
+		fields = append(fields, fmt.Sprintf(`SUM((Bytes+18*Packets)*SamplingRate*8/%s) AS xps`, slot))
 	}
 	selectFields := []string{}
 	dimensions := []string{}
@@ -80,7 +81,7 @@ func (input graphHandlerInput) toSQL() (string, error) {
 	}
 
 	// With
-	with := []string{fmt.Sprintf(`intDiv(%d, {resolution})*{resolution} AS slot`, interval)}
+	with := []string{}
 	if len(dimensions) > 0 {
 		with = append(with, fmt.Sprintf(
 			"rows AS (SELECT %s FROM {table} WHERE %s GROUP BY %s ORDER BY SUM(Bytes) DESC LIMIT %d)",
@@ -89,16 +90,22 @@ func (input graphHandlerInput) toSQL() (string, error) {
 			strings.Join(dimensions, ", "),
 			input.Limit))
 	}
+	withStr := ""
+	if len(with) > 0 {
+		withStr = fmt.Sprintf("WITH\n %s", strings.Join(with, ",\n "))
+	}
 
 	sqlQuery := fmt.Sprintf(`
-WITH
- %s
+%s
 SELECT
  %s
 FROM {table}
 WHERE %s
 GROUP BY time, dimensions
-ORDER BY time`, strings.Join(with, ",\n "), strings.Join(fields, ",\n "), where)
+ORDER BY time WITH FILL
+ FROM toStartOfInterval({timefilter.Start}, INTERVAL %s second)
+ TO {timefilter.Stop}
+ STEP %s`, withStr, strings.Join(fields, ",\n "), where, slot, slot)
 	return sqlQuery, nil
 }
 
@@ -132,6 +139,21 @@ func (c *Component) graphHandlerFunc(gc *gin.Context) {
 		c.r.Err(err).Msg("unable to query database")
 		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to query database."})
 		return
+	}
+
+	// When filling 0 value, we may get an empty dimensions.
+	// From ClickHouse 22.4, it is possible to do interpolation database-side
+	// (INTERPOLATE (['Other', 'Other'] AS Dimensions))
+	if len(input.Dimensions) > 0 {
+		zeroDimensions := make([]string, len(input.Dimensions))
+		for idx := range zeroDimensions {
+			zeroDimensions[idx] = "Other"
+		}
+		for idx := range results {
+			if len(results[idx].Dimensions) == 0 {
+				results[idx].Dimensions = zeroDimensions
+			}
+		}
 	}
 
 	// We want to sort rows depending on how much data they gather each

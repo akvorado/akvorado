@@ -225,21 +225,22 @@ func TestWidgetGraph(t *testing.T) {
 		{base.Add(time.Minute), 27.8},
 		{base.Add(2 * time.Minute), 26.4},
 		{base.Add(3 * time.Minute), 29.2},
-		{base.Add(4 * time.Minute), 21.3},
+		{base.Add(4 * time.Minute), 0},
 		{base.Add(5 * time.Minute), 24.7},
 	}
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), `
-WITH
- intDiv(864, 1)*1 AS slot
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL slot second) AS Time,
- SUM(Bytes*SamplingRate*8/slot)/1000/1000/1000 AS Gbps
+ toStartOfInterval(TimeReceived, INTERVAL (intDiv(864, 1)*1) second) AS Time,
+ SUM(Bytes*SamplingRate*8/(intDiv(864, 1)*1))/1000/1000/1000 AS Gbps
 FROM flows
 WHERE TimeReceived BETWEEN toDateTime('2009-11-10 23:00:00', 'UTC') AND toDateTime('2009-11-11 23:00:00', 'UTC')
 AND InIfBoundary = 'external'
 GROUP BY Time
-ORDER BY Time`).
+ORDER BY Time WITH FILL
+ FROM toStartOfInterval(toDateTime('2009-11-10 23:00:00', 'UTC'), INTERVAL (intDiv(864, 1)*1) second)
+ TO toDateTime('2009-11-11 23:00:00', 'UTC')
+ STEP (intDiv(864, 1)*1)`).
 		SetArg(1, expected).
 		Return(nil)
 
@@ -252,7 +253,7 @@ ORDER BY Time`).
 					{"t": "2009-11-10T23:01:00Z", "gbps": 27.8},
 					{"t": "2009-11-10T23:02:00Z", "gbps": 26.4},
 					{"t": "2009-11-10T23:03:00Z", "gbps": 29.2},
-					{"t": "2009-11-10T23:04:00Z", "gbps": 21.3},
+					{"t": "2009-11-10T23:04:00Z", "gbps": 0},
 					{"t": "2009-11-10T23:05:00Z", "gbps": 24.7}},
 			},
 		},

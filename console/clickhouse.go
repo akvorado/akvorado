@@ -74,12 +74,14 @@ func (c *Component) queryFlowsTable(query string, start, end time.Time, targetRe
 	// Build timefilter to match the resolution
 	start = start.Truncate(resolution)
 	end = end.Truncate(resolution)
-	timeFilter := fmt.Sprintf(`TimeReceived BETWEEN toDateTime('%s', 'UTC') AND toDateTime('%s', 'UTC')`,
-		start.UTC().Format("2006-01-02 15:04:05"),
-		end.UTC().Format("2006-01-02 15:04:05"))
+	timeFilterStart := fmt.Sprintf(`toDateTime('%s', 'UTC')`, start.UTC().Format("2006-01-02 15:04:05"))
+	timeFilterStop := fmt.Sprintf(`toDateTime('%s', 'UTC')`, end.UTC().Format("2006-01-02 15:04:05"))
+	timeFilter := fmt.Sprintf(`TimeReceived BETWEEN %s AND %s`, timeFilterStart, timeFilterStop)
 
 	c.metrics.clickhouseQueries.WithLabelValues(table).Inc()
 	query = strings.ReplaceAll(query, "{timefilter}", timeFilter)
+	query = strings.ReplaceAll(query, "{timefilter.Start}", timeFilterStart)
+	query = strings.ReplaceAll(query, "{timefilter.Stop}", timeFilterStop)
 	query = strings.ReplaceAll(query, "{table}", table)
 	query = strings.ReplaceAll(query, "{resolution}", strconv.Itoa(int(resolution.Seconds())))
 	return query
