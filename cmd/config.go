@@ -188,7 +188,12 @@ func DefaultHook() (mapstructure.DecodeHookFunc, func()) {
 			// We already have a pointer
 			method, ok := to.Type().MethodByName("Reset")
 			if !ok {
-				return from.Interface(), nil
+				// We may have a pointer to a pointer when totally empty.
+				to = to.Elem()
+				method, ok = to.Type().MethodByName("Reset")
+				if !ok {
+					return from.Interface(), nil
+				}
 			}
 			if to.IsNil() {
 				new := reflect.New(to.Type().Elem())

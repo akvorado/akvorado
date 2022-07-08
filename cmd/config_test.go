@@ -427,3 +427,36 @@ modules:
 		})
 	})
 }
+
+func TestDevNullDefault(t *testing.T) {
+	c := cmd.ConfigRelatedOptions{
+		Path: "/dev/null",
+		Dump: true,
+	}
+
+	var parsed dummyConfiguration
+	out := bytes.NewBuffer([]byte{})
+	if err := c.Parse(out, "dummy", &parsed); err != nil {
+		t.Fatalf("Parse() error:\n%+v", err)
+	}
+	// Expected configuration
+	expected := dummyConfiguration{
+		Module1: dummyModule1Configuration{
+			Listen:  "127.0.0.1:8080",
+			Topic:   "nothingness",
+			Workers: 100,
+		},
+		Module2: dummyModule2Configuration{
+			MoreDetails: MoreDetails{
+				Stuff: "hello",
+			},
+			Details: dummyModule2DetailsConfiguration{
+				Workers:       1,
+				IntervalValue: time.Minute,
+			},
+		},
+	}
+	if diff := helpers.Diff(parsed, expected); diff != "" {
+		t.Errorf("Parse() (-got, +want):\n%s", diff)
+	}
+}
