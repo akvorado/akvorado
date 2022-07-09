@@ -94,6 +94,13 @@ func TestQueryFlowsTables(t *testing.T) {
 			End:         time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 			Expected:    "SELECT 1 FROM flows WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:10', 'UTC') AND toDateTime('2022-04-11 15:45:10', 'UTC')",
 		}, {
+			Description: "timefilter.Start and timefilter.Stop",
+			Tables:      []flowsTable{{"flows", 0, time.Date(2022, 03, 10, 15, 45, 10, 0, time.UTC)}},
+			Query:       "SELECT {timefilter.Start}, {timefilter.Stop}",
+			Start:       time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
+			End:         time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+			Expected:    "SELECT toDateTime('2022-04-10 15:45:10', 'UTC'), toDateTime('2022-04-11 15:45:10', 'UTC')",
+		}, {
 			Description: "only flows table and out of range request",
 			Tables:      []flowsTable{{"flows", 0, time.Date(2022, 04, 10, 22, 45, 10, 0, time.UTC)}},
 			Query:       "SELECT 1 FROM {table} WHERE {timefilter}",
@@ -168,6 +175,18 @@ func TestQueryFlowsTables(t *testing.T) {
 			End:        time.Date(2022, 04, 11, 15, 46, 10, 0, time.UTC),
 			Resolution: 2 * time.Minute,
 			Expected:   "SELECT 1 FROM flows_5m0s WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC')",
+		}, {
+			Description: "select best resolution when equality for oldest data",
+			Tables: []flowsTable{
+				{"flows", 0, time.Date(2022, 04, 10, 22, 40, 55, 0, time.UTC)},
+				{"flows_1m0s", time.Minute, time.Date(2022, 04, 10, 22, 40, 00, 0, time.UTC)},
+				{"flows_1h0m0s", time.Hour, time.Date(2022, 04, 10, 22, 00, 10, 0, time.UTC)},
+			},
+			Query:      "SELECT 1 FROM {table} WHERE {timefilter}",
+			Start:      time.Date(2022, 04, 10, 15, 46, 10, 0, time.UTC),
+			End:        time.Date(2022, 04, 11, 15, 46, 10, 0, time.UTC),
+			Resolution: 2 * time.Minute,
+			Expected:   "SELECT 1 FROM flows_1m0s WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:46:00', 'UTC') AND toDateTime('2022-04-11 15:46:00', 'UTC')",
 		},
 	}
 

@@ -38,7 +38,7 @@ func (c *Component) queryFlowsTable(query string, start, end time.Time, targetRe
 		// criteria.
 		candidates := []int{}
 		for idx, table := range c.flowsTables {
-			if start.After(table.Oldest) {
+			if start.After(table.Oldest.Add(table.Resolution)) {
 				candidates = append(candidates, idx)
 			}
 		}
@@ -46,12 +46,22 @@ func (c *Component) queryFlowsTable(query string, start, end time.Time, targetRe
 			// No candidate, fallback to the one with oldest data
 			best := 0
 			for idx, table := range c.flowsTables {
-				if c.flowsTables[best].Oldest.After(table.Oldest) {
+				if c.flowsTables[best].Oldest.After(table.Oldest.Add(table.Resolution)) {
 					best = idx
 				}
 			}
 			candidates = []int{best}
-		} else if len(candidates) > 1 {
+			// Add other candidates that are not far off in term of oldest data
+			for idx, table := range c.flowsTables {
+				if idx == best {
+					continue
+				}
+				if c.flowsTables[best].Oldest.After(table.Oldest) {
+					candidates = append(candidates, idx)
+				}
+			}
+		}
+		if len(candidates) > 1 {
 			// Use resolution to find the best one
 			best := 0
 			for _, idx := range candidates {
