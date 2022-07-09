@@ -152,7 +152,7 @@ func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 WITH
  (SELECT SUM(Bytes*SamplingRate) FROM {table} WHERE {timefilter} %s) AS Total
 SELECT
- %s AS Name,
+ if(empty(%s),'Unknown',%s) AS Name,
  SUM(Bytes*SamplingRate) / Total * 100 AS Percent
 FROM {table}
 WHERE {timefilter}
@@ -160,7 +160,7 @@ WHERE {timefilter}
 GROUP BY %s
 ORDER BY Percent DESC
 LIMIT 5
-`, filter, selector, filter, groupby), now.Add(-5*time.Minute), now, time.Minute)
+`, filter, selector, selector, filter, groupby), now.Add(-5*time.Minute), now, time.Minute)
 	gc.Header("X-SQL-Query", query)
 
 	results := []topResult{}
