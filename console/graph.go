@@ -40,7 +40,7 @@ type graphHandlerOutput struct {
 // graphHandlerInputToSQL converts a graph input to an SQL request
 func (input graphHandlerInput) toSQL() (string, error) {
 	interval := int64((input.End.Sub(input.Start).Seconds())) / int64(input.Points)
-	slot := fmt.Sprintf(`(intDiv(%d, {resolution})*{resolution})`, interval)
+	slot := fmt.Sprintf(`max2(intDiv(%d, {resolution})*{resolution}, 1)`, interval)
 
 	// Filter
 	where := input.Filter.filter
@@ -105,7 +105,7 @@ GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM toStartOfInterval({timefilter.Start}, INTERVAL %s second)
  TO {timefilter.Stop}
- STEP %s`, withStr, strings.Join(fields, ",\n "), where, slot, slot)
+ STEP toUInt32(%s)`, withStr, strings.Join(fields, ",\n "), where, slot, slot)
 	return sqlQuery, nil
 }
 
