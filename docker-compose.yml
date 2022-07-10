@@ -104,6 +104,7 @@ services:
       - akvorado-clickhouse:/var/lib/clickhouse
     environment:
       - CLICKHOUSE_INIT_TIMEOUT=60
+    restart: unless-stopped
     healthcheck:
       interval: 30s
       timeout: 10s
