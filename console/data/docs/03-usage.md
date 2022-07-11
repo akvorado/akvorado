@@ -89,12 +89,25 @@ instances are still running an older version).
 ## Console service
 
 `akvorado console` starts the console service. It provides a web
-console. The home page is a simple dashboard with a few metrics, some
-graphs and a recent example of flow. The console also contains this
-documentation. The most interesting page is the “visualize” tab which
+console.
+
+### Home page
+
+![Home page](home.png)
+
+The home page contains a few statistics:
+
+- number of flows received per second
+- number of exporters
+- flow repartition by AS, ports, protocols, countries, and IP families
+- last flow received
+
+### Visualize page
+
+The most interesting page is the “visualize” tab which
 allows a user to explore data using graphs.
 
-### Graph options
+![Timeseries graph](timeseries.png)
 
 The collapsible panel on the left has several options to change the
 aspect of the graph.
@@ -133,6 +146,8 @@ aspect of the graph.
 The URL contains the encoded parameters and can be used to share with
 others. However, currently, no stability of the options are
 guaranteed, so an URL may stop working after a few upgrades.
+
+![Sankey graph](sankey.png)
 
 ### Filter language
 
