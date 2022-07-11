@@ -5,9 +5,9 @@ with interface names (using SNMP), geo information (using MaxMind),
 and exports them to Kafka, then ClickHouse. It also exposes a web
 interface to browse the collected data.
 
-![Timeseries graph](docs/timeseries.png)
+![Timeseries graph](console/data/docs/timeseries.png)
 
-![Sankey graph](docs/sankey.png)
+![Sankey graph](console/data/docs/sankey.png)
 
 *Akvorado* is developed by [Free](https://www.free.fr), a French ISP,
 and is licensed under the [AGPLv3 license](LICENSE.txt). The
