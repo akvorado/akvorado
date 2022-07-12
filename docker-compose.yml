@@ -55,6 +55,7 @@ services:
       - ./akvorado.yaml:/etc/akvorado.yaml:ro
     labels:
       - traefik.enable=true
+      - traefik.http.routers.akvorado-orchestrator.entrypoints=private # it exposes configuration files with passwords
       - traefik.http.routers.akvorado-orchestrator.rule=PathPrefix(`/api/v0/orchestrator`)
       - traefik.http.services.akvorado-orchestrator.loadbalancer.server.port=8080
   akvorado-console:
@@ -112,6 +113,7 @@ services:
       test: ["CMD", "wget", "-T", "1", "--spider", "--no-proxy", "http://clickhouse:8123"]
     labels:
       - traefik.enable=true
+      - traefik.http.routers.clickhouse.entrypoints=private
       - traefik.http.routers.clickhouse.rule=PathPrefix(`/clickhouse`)
       - traefik.http.services.clickhouse.loadbalancer.server.port=8123
 
@@ -119,14 +121,20 @@ services:
     image: traefik:2.6
     restart: unless-stopped
     command:
-      - --api.insecure=true
+      - --api=true
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
-      - --entrypoints.web.address=:8080
+      - --entrypoints.private.address=:8080
+      - --entrypoints.public.address=:8081
     ports:
-      - 8080:8080/tcp
+      - 127.0.0.1:8080:8080/tcp
+      - 8081:8081/tcp
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     labels:
+      - traefik.enable=true
+      - traefik.http.routers.traefik.entrypoints=private
       - traefik.http.routers.traefik.rule=PathPrefix(`/traefik`)
       - traefik.http.routers.traefik.service=api@internal
+      - traefik.http.routers.traefik.middlewares=strip
+      - traefik.http.middlewares.strip.stripprefix.prefixes=/traefik
