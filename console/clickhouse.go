@@ -4,6 +4,7 @@
 package console
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -143,6 +144,9 @@ AND engine LIKE '%MergeTree'
 			Resolution: resolution,
 			Oldest:     oldest[0].T,
 		})
+	}
+	if len(newFlowsTables) == 0 {
+		return errors.New("no flows table present (yet?)")
 	}
 
 	c.flowsTablesLock.Lock()
