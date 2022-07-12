@@ -122,9 +122,9 @@ services:
       - --api.insecure=true
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
-      - --entrypoints.web.address=:80
+      - --entrypoints.web.address=:8080
     ports:
-      - 80:80/tcp
+      - 8080:8080/tcp
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     labels:
