@@ -131,10 +131,3 @@ services:
       - 8081:8081/tcp
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.traefik.entrypoints=private
-      - traefik.http.routers.traefik.rule=PathPrefix(`/traefik`)
-      - traefik.http.routers.traefik.service=api@internal
-      - traefik.http.routers.traefik.middlewares=strip
-      - traefik.http.middlewares.strip.stripprefix.prefixes=/traefik
