@@ -176,11 +176,13 @@ const graph = computed(() => {
       otherIndex = dataset.dimensions.indexOf("Other");
     const maxY = Math.max(
       ...dataset.source.map((rows) =>
-        Math.max(
-          // Skip "Other" column
-          ...rows.slice(1).slice(0, otherIndex - 1),
-          ...rows.slice(1).slice(otherIndex)
-        )
+        otherIndex === -1
+          ? Math.max(...rows.slice(1))
+          : Math.max(
+              // Skip "Other" column
+              ...rows.slice(1, otherIndex),
+              ...rows.slice(otherIndex + 1)
+            )
       )
     );
     let rowNumber = Math.ceil(Math.sqrt(dataRows.length)),
