@@ -75,6 +75,7 @@ func (c *Component) migrationsStepCreateFlowsTable(resolution ResolutionConfigur
 	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 		if resolution.Interval == 0 {
 			// Unconsolidated flows table
+			partitionInterval := uint64((resolution.TTL / time.Duration(c.config.MaxPartitions)).Seconds())
 			return migrationStep{
 				CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2`,
 				Args:       []interface{}{"flows", c.config.Configuration.Database},
@@ -84,8 +85,8 @@ CREATE TABLE flows (
 %s
 )
 ENGINE = MergeTree
-PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, INTERVAL 6 hour))
-ORDER BY (TimeReceived, ExporterAddress, InIfName, OutIfName)`, flowsSchema))
+PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, INTERVAL %d second))
+ORDER BY (TimeReceived, ExporterAddress, InIfName, OutIfName)`, flowsSchema, partitionInterval))
 				},
 			}
 		}
