@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 
@@ -108,13 +109,14 @@ ORDER BY (TimeReceived, ExporterAddress, InIfName, OutIfName)`, flowsSchema))
 						resolution.Interval, err)
 				}
 
+				partitionInterval := uint64((resolution.TTL / time.Duration(c.config.MaxPartitions)).Seconds())
 				// Primary key does not cover all the sorting key as we cannot modify it.
 				return conn.Exec(ctx, fmt.Sprintf(`
 CREATE TABLE %s (
 %s
 )
 ENGINE = SummingMergeTree((Bytes, Packets))
-PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, INTERVAL 6 hour))
+PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, INTERVAL %d second))
 PRIMARY KEY (TimeReceived,
           ExporterAddress,
           EType, Proto,
@@ -129,7 +131,8 @@ ORDER BY (TimeReceived,
           SamplingRate,
           SrcNetName, DstNetName)`,
 					tableName,
-					partialSchema("SrcAddr", "DstAddr", "SrcPort", "DstPort")))
+					partialSchema("SrcAddr", "DstAddr", "SrcPort", "DstPort"),
+					partitionInterval))
 			},
 		}
 	}

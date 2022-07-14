@@ -309,6 +309,8 @@ provided:
 - `password` is the password to use for authentication
 - `database` defines the database to use to create tables
 - `resolutions` defines the various resolutions to keep data
+- `max-partitions` defines the number of partitions to use when
+  creating consolidated tables
 - `networks` maps subnets to names (used as `SrcNetName` and `DstNetName`)
 - `asns` maps AS number to names (overriding the builtin ones)
 - `orchestrator-url` defines the URL of the orchestrator to be used

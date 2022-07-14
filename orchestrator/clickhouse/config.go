@@ -24,6 +24,9 @@ type Configuration struct {
 	// Resolutions describe the various resolutions to use to
 	// store data and the associated TTLs.
 	Resolutions []ResolutionConfiguration
+	// MaxPartitions define the number of partitions to have for a
+	// consolidated flow tables when full.
+	MaxPartitions int `validate:"isdefault|min=1"`
 	// ASNs is a mapping from AS numbers to names. It replaces or
 	// extends the builtin list of AS numbers.
 	ASNs map[uint32]string
@@ -61,11 +64,12 @@ func DefaultConfiguration() Configuration {
 			Consumers: 1,
 		},
 		Resolutions: []ResolutionConfiguration{
-			{0, 15 * 24 * time.Hour},
-			{time.Minute, 7 * 24 * time.Hour},
-			{5 * time.Minute, 3 * 30 * 24 * time.Hour},
-			{time.Hour, 12 * 30 * 24 * time.Hour},
+			{0, 15 * 24 * time.Hour},                   // 15 days
+			{time.Minute, 7 * 24 * time.Hour},          // 7 days
+			{5 * time.Minute, 3 * 30 * 24 * time.Hour}, // 90 days
+			{time.Hour, 12 * 30 * 24 * time.Hour},      // 1 year
 		},
+		MaxPartitions: 50,
 	}
 }
 
