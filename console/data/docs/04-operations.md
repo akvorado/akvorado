@@ -15,8 +15,6 @@ sampler-map sampler1
 !
 flow exporter-map akvorado
  version v9
-  options interface-table timeout 10
-  options vrf-table timeout 10
   options sampler-table timeout 10
   template options timeout 10
  !
