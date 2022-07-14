@@ -13,6 +13,8 @@ type Configuration struct {
 	InterfaceClassifiers []InterfaceClassifierRule
 	// ClassifierCacheSize defines the size of the classifier (in number of items)
 	ClassifierCacheSize uint
+	// Ignore source/dest AS numbers from received flows
+	IgnoreASNFromFlow bool
 }
 
 // DefaultConfiguration represents the default configuration for the core component.
@@ -22,5 +24,6 @@ func DefaultConfiguration() Configuration {
 		ExporterClassifiers:  []ExporterClassifierRule{},
 		InterfaceClassifiers: []InterfaceClassifierRule{},
 		ClassifierCacheSize:  1000,
+		IgnoreASNFromFlow:    false,
 	}
 }
