@@ -82,7 +82,7 @@ console/filter/parser.go: console/filter/parser.peg | $(PIGEON) ; $(info $(M) ge
 
 console/frontend/node_modules: console/frontend/package.json console/frontend/yarn.lock
 console/frontend/node_modules: ; $(info $(M) fetching node modules…)
-	$Q yarn install --silent --frozen-lockfile --cwd console/frontend && touch $@
+	$Q (cd console/frontend && yarn install --immutable) && touch $@
 console/frontend/data/fields.json: console/query.go ; $(info $(M) generate list of selectable fields…)
 	$Q sed -En -e 's/^\tqueryColumn([a-zA-Z]+)( .*|$$)/  "\1"/p' $< \
 		| sed -E -e '1i [' -e '$$ ! s/$$/,/' -e '$$a ]'> $@
@@ -91,7 +91,7 @@ console/data/frontend: Makefile console/frontend/node_modules
 console/data/frontend: console/frontend/data/fields.json
 console/data/frontend: $(shell $(LSFILES) console/frontend 2> /dev/null)
 console/data/frontend: ; $(info $(M) building console frontend…)
-	$Q cd console/frontend && yarn --silent build
+	$Q cd console/frontend && yarn build
 
 orchestrator/clickhouse/data/asns.csv: ; $(info $(M) generate ASN map…)
 	$Q curl -sL https://vincentbernat.github.io/asn2org/asns.csv | sed 's|,[^,]*$$||' > $@
@@ -136,7 +136,7 @@ lint: .lint-go~ .lint-js~ ; $(info $(M) running lint…) @ ## Run linting
 	$Q $(REVIVE) -formatter friendly -set_exit_status $?
 	$Q touch $@
 .lint-js~: console/frontend/node_modules
-	$Q cd console/frontend && yarn --silent lint
+	$Q cd console/frontend && yarn lint
 	$Q touch $@
 
 .PHONY: fmt
@@ -145,7 +145,7 @@ fmt: .fmt-go~ .fmt-js~ ; $(info $(M) formatting code…) @ ## Format all source 
 	$Q $(GOIMPORTS) -local $(MODULE) -w $? < /dev/null
 	$Q touch $@
 .fmt-js~: console/frontend/node_modules
-	$Q cd console/frontend && yarn --silent format
+	$Q cd console/frontend && yarn format
 	$Q touch $@
 
 # Misc
@@ -153,7 +153,7 @@ fmt: .fmt-go~ .fmt-js~ ; $(info $(M) formatting code…) @ ## Format all source 
 .PHONY: licensecheck
 licensecheck: console/frontend/node_modules | $(WWHRD) ; $(info $(M) check dependency licenses…) @ ## Check licenses
 	$Q err=0 ; go mod vendor && $(WWHRD) --quiet check || err=$$? ; rm -rf vendor/ ; exit $$err
-	$Q cd console/frontend ; yarn run --silent license-compliance \
+	$Q cd console/frontend ; yarn run license-compliance \
 		--production \
 		--allow "MIT;ISC;Apache-2.0;BSD-3-Clause;WTFPL;0BSD" \
 		--report detailed

@@ -16,7 +16,7 @@ run tests:
         - bin/
     - key:
         files:
-          - yarn.lock
+          - console/frontend/yarn.lock
       paths:
         - .yarn-cache
   variables:
@@ -38,7 +38,7 @@ run tests:
   script:
     - time apk add --no-cache git make gcc musl-dev protoc shared-mime-info yarn curl
     - export GOMODCACHE=$PWD/.go-cache
-    - yarn config set cacheFolder $PWD/.yarn-cache
+    - export YARN_CACHE_FOLDER=$PWD/.yarn-cache
     - time go mod download
     - time make test
     - time make test-race || make test-race

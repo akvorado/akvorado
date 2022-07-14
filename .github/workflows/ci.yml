@@ -47,7 +47,7 @@ jobs:
       # Cache
       - name: Get yarn cache directory path
         id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
+        run: echo "::set-output name=dir::$(cd console/frontend ; yarn config get cacheFolder)"
       - uses: actions/cache@v3
         id: yarn-cache
         with:
