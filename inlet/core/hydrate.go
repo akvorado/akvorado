@@ -75,10 +75,10 @@ func (c *Component) hydrateFlow(exporter string, flow *flow.Message) (skip bool)
 		&flow.InIfConnectivity, &flow.InIfProvider, &flow.InIfBoundary)
 
 	// Add GeoIP
-	if flow.SrcAS == 0 {
+	if flow.SrcAS == 0 || c.config.IgnoreASNFromFlow {
 		flow.SrcAS = c.d.GeoIP.LookupASN(net.IP(flow.SrcAddr))
 	}
-	if flow.DstAS == 0 {
+	if flow.DstAS == 0 || c.config.IgnoreASNFromFlow {
 		flow.DstAS = c.d.GeoIP.LookupASN(net.IP(flow.DstAddr))
 	}
 	flow.SrcCountry = c.d.GeoIP.LookupCountry(net.IP(flow.SrcAddr))
