@@ -16,9 +16,9 @@ run tests:
         - bin/
     - key:
         files:
-          - yarn.lock
+          - console/frontend/package-lock.json
       paths:
-        - .yarn-cache
+        - .npm-cache
   variables:
     FF_NETWORK_PER_BUILD: "true"
     CI_AKVORADO_FUNCTIONAL_TESTS: "true"
@@ -36,9 +36,9 @@ run tests:
     - name: clickhouse/clickhouse-server:22.3
       alias: clickhouse
   script:
-    - time apk add --no-cache git make gcc musl-dev protoc shared-mime-info yarn curl
+    - time apk add --no-cache git make gcc musl-dev protoc shared-mime-info npm curl
     - export GOMODCACHE=$PWD/.go-cache
-    - yarn config set cacheFolder $PWD/.yarn-cache
+    - npm config --user set cache $PWD/.npm-cache
     - time go mod download
     - time make test
     - time make test-race || make test-race

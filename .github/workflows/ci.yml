@@ -49,14 +49,11 @@ jobs:
           cache: true
 
       # Cache
-      - name: Get yarn cache directory path
-        id: yarn-cache-dir-path
-        run: echo "::set-output name=dir::$(yarn cache dir)"
       - uses: actions/cache@v3
-        id: yarn-cache
+        id: npm-cache
         with:
-          path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
-          key: ${{ runner.os }}-yarn-${{ hashFiles('console/frontend/yarn.lock') }}
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('console/frontend/package-lock.json') }}
       - uses: actions/cache@v3
         id: gobin-cache
         with:
