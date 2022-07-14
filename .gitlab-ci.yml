@@ -40,6 +40,7 @@ run tests:
     - export GOMODCACHE=$PWD/.go-cache
     - npm config --user set cache $PWD/.npm-cache
     - time go mod download
+    - time make
     - time make test
     - time make test-race || make test-race
     - time make test-coverage || make test-coverage
