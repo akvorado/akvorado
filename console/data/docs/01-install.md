@@ -6,8 +6,15 @@ single binary or Docker image.
 ## Compilation from source
 
 You need a proper installation of [Go](https://go.dev/doc/install)
-(1.17+) as well as [NodeJS](https://nodejs.org/en/download/). Then,
-simply type:
+(1.18+), [NodeJS](https://nodejs.org/en/download/), and
+[protoc](https://grpc.io/docs/protoc-installation/). For example, on
+Debian:
+
+```console
+# apt install golang-1.18 nodejs npm protobuf-compiler
+```
+
+Then, simply type:
 
 ```console
 # make

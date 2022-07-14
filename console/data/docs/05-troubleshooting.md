@@ -20,7 +20,7 @@ If this does not work, be sure to check the logs and the metrics. The
 later can be queried with `curl`:
 
 ```console
-$ curl -s http://akvorado/api/v0/inlet/metrics
+$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet'
 ```
 
 ### No packets received
