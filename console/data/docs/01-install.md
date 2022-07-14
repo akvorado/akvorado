@@ -6,9 +6,8 @@ single binary or Docker image.
 ## Compilation from source
 
 You need a proper installation of [Go](https://go.dev/doc/install)
-(1.17+) as well as
-[Yarn](https://yarnpkg.com/getting-started/install). Then, simply
-type:
+(1.17+) as well as [NodeJS](https://nodejs.org/en/download/). Then,
+simply type:
 
 ```console
 # make

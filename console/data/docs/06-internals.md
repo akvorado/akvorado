@@ -160,7 +160,6 @@ rich.
 
 The SPA is built using mostly the following components:
 
-- [Yarn](https://yarnpkg.com/) as a package manager,
 - [Vite](https://vitejs.dev/) as a builder,
 - [Vue](https://vuejs.org/) as the reactive JavaScript framework,
 - [TailwindCSS](https://tailwindcss.com/) for styling pages directly inside HTML,

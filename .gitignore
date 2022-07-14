@@ -5,10 +5,9 @@
 /orchestrator/clickhouse/data/asns.csv
 /console/filter/parser.go
 
-/console/frontend/node_modules/
 /console/frontend/data/fields.json
 /console/data/frontend/
 
 *~
 /.go-cache
-/.yarn-cache
+/.npm-cache
