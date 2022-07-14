@@ -33,6 +33,17 @@ proxy. This can be fixed by flushing the conntrack table:
 $ conntrack -D -p udp --orig-port-dst 2055
 ```
 
+### Wrong IP address reported for exporters
+
+When running inside Docker, *Akvorado* may report the wrong IP address
+for exporters, making it unable to query them with SNMP. This is
+because Docker sets up a proxy to intercept these packets and forward
+them. This can also be fixed by flushing the conntrack table:
+
+```console
+$ conntrack -D -p udp --orig-port-dst 2055
+```
+
 ### No packets exported
 
 *Akvorado* only exports packets with complete interface information.

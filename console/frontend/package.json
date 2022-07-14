@@ -15,7 +15,7 @@
     "@codemirror/lint": "^6.0.0",
     "@codemirror/state": "^6.0.0",
     "@codemirror/view": "^6.0.0",
-    "@headlessui/vue": "1.6.1",
+    "@headlessui/vue": "^1.6.1",
     "@heroicons/vue": "^1.0.6",
     "@lezer/generator": "^1.0.0",
     "@vueuse/core": "^8.6.0",

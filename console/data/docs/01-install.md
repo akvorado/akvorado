@@ -35,11 +35,11 @@ The following `make` targets are available:
 
 ## Docker image
 
-It is also possible to build a Docker image without installing
-anything else than [Docker](https://docs.docker.com/get-docker):
+It is also possible to get Akvorado as a
+[Docker](https://docs.docker.com/get-docker) image:
 
 ```console
-# docker build . -t akvorado:main
+# docker pull ghcr.io/vincentbernat/akvorado:latest
 ```
 
 ## Quick start

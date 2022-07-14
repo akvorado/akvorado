@@ -132,9 +132,9 @@ func (c *Component) runWorker(workerID int) error {
 				continue
 			}
 
-			// Forward to Kafka (this could block
-			c.d.Kafka.Send(exporter, buf.Bytes())
+			// Forward to Kafka (this could block)
 			c.metrics.flowsForwarded.WithLabelValues(exporter).Inc()
+			c.d.Kafka.Send(exporter, buf.Bytes())
 
 			// If we have HTTP clients, send to them too
 			if atomic.LoadUint32(&c.httpFlowClients) > 0 {
