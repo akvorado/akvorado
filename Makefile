@@ -82,7 +82,7 @@ console/filter/parser.go: console/filter/parser.peg | $(PIGEON) ; $(info $(M) ge
 
 console/frontend/node_modules: console/frontend/package.json console/frontend/package-lock.json
 console/frontend/node_modules: ; $(info $(M) fetching node modules…)
-	$Q (cd console/frontend ; npm ci --quiet --no-audit --no-fund) && touch $@
+	$Q (cd console/frontend ; npm ci --silent --no-audit --no-fund) && touch $@
 console/frontend/data/fields.json: console/query.go ; $(info $(M) generate list of selectable fields…)
 	$Q sed -En -e 's/^\tqueryColumn([a-zA-Z]+)( .*|$$)/  "\1"/p' $< \
 		| sed -E -e '1i [' -e '$$ ! s/$$/,/' -e '$$a ]'> $@
