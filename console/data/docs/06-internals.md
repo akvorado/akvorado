@@ -100,7 +100,7 @@ to reduce buffers as data can be lost during shutdown.
 ## GeoIP
 
 The component is straightforward. It watches for the modification
-of the databases in order to update the a local cached copy.
+of the databases in order to update a local cached copy.
 
 ## Kafka
 
@@ -130,7 +130,7 @@ the name `clickhouse` or on `localhost`.
 
 SNMP polling is accomplished with [GoSNMP](https://github.com/gosnmp/gosnmp).
 The cache layer is tailored specifically for our needs. Cached information
-can expires if not accessed or refreshed periodically.
+can expire if not accessed or refreshed periodically.
 Some coaelescing of the requests are done when they are queued.
 This adds some code complexity, maybe it was not worth it.
 If a exporter fails to answer too frequently, a backoff will be triggered
