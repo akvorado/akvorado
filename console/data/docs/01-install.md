@@ -58,8 +58,8 @@ The following `make` targets are available:
    `coverage.xml` and `profile.out` in `test/coverage.*/`.
  - `make test PKG=helloworld/hello` to restrict test to a package
  - `make clean`
- - `make lint` to run golint
- - `make fmt` to run gofmt
+ - `make lint` to lint source code
+ - `make fmt` to format source code
 
 ## Docker image
 

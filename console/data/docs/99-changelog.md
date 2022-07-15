@@ -18,6 +18,7 @@ identified with a specific icon:
   tables in ClickHouse to limit the number of partitions (this change
   won't be applied on an existing installation)
 - 🌱 *build*: switch from Yarn to npm as a Javascript package manager [PR #4][]
+- 🌱 *docker-compose*: pull image from GitHub instead of building it
 - 🌱 *doc*: add more tips to the troubleshooting section
 
 [PR #4]: https://github.com/vincentbernat/akvorado/pull/4

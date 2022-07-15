@@ -46,9 +46,13 @@ services:
       retries: 3
       test: ["CMD", "kafka-topics.sh", "--list", "--zookeeper", "zookeeper:2181"]
 
+  # Choose one of the two options: build from source, or download
+  # latest stable release from GitHub.
+  .akvorado-image: &akvorado-image
+    # build: {context: .}
+    image: ghcr.io/vincentbernat/akvorado:latest
   akvorado-orchestrator:
-    build: &akvorado-image
-      context: .
+    <<: *akvorado-image
     restart: unless-stopped
     command: orchestrator /etc/akvorado.yaml
     volumes:
@@ -59,7 +63,7 @@ services:
       - traefik.http.routers.akvorado-orchestrator.rule=PathPrefix(`/api/v0/orchestrator`)
       - traefik.http.services.akvorado-orchestrator.loadbalancer.server.port=8080
   akvorado-console:
-    build: *akvorado-image
+    <<: *akvorado-image
     restart: unless-stopped
     command: console http://akvorado-orchestrator:8080
     volumes:
@@ -72,7 +76,7 @@ services:
       - traefik.http.middlewares.testheader.headers.customrequestheaders.Remote-Name=Alfred Pennyworth
       - traefik.http.middlewares.testheader.headers.customrequestheaders.Remote-Email=alfred@example.com
   akvorado-inlet:
-    build: *akvorado-image
+    <<: *akvorado-image
     ports:
       - 2055:2055/udp
     restart: unless-stopped
@@ -86,7 +90,7 @@ services:
       - traefik.http.services.akvorado-inlet.loadbalancer.server.port=8080
   # Remove the following exporters if you don't want to get fake data
   akvorado-exporter0: &exporter
-    build: *akvorado-image
+    <<: *akvorado-image
     restart: unless-stopped
     command: fake-exporter http://akvorado-orchestrator:8080#0
   akvorado-exporter1:
