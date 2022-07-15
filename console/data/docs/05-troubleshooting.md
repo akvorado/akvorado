@@ -33,6 +33,12 @@ proxy. This can be fixed by flushing the conntrack table:
 $ conntrack -D -p udp --orig-port-dst 2055
 ```
 
+To check that you are receiving packets, check the metrics:
+
+```console
+$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet_flow_input_udp_packets'
+```
+
 ### Wrong IP address reported for exporters
 
 When running inside Docker, *Akvorado* may report the wrong IP address
@@ -42,6 +48,12 @@ them. This can also be fixed by flushing the conntrack table:
 
 ```console
 $ conntrack -D -p udp --orig-port-dst 2055
+```
+
+To check that you are now receiving packets from the right IP address, use:
+
+```console
+$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet_flow_input_udp_packets'
 ```
 
 ### No packets exported
@@ -77,6 +89,19 @@ exported. In this case, the logs contain information such as:
 
 The `akvorado_inlet_snmp_poller_failure_requests` metric would also increase
 for the affected exporter.
+
+Check that flow are correctly accepted with:
+
+```console
+$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet_core_flows_forwarded'
+$ curl -s http://akvorado/api/v0/inlet/flows\?limit=1
+```
+
+You can check they are correctly forwarded to Kafka with:
+
+```console
+$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet_kafka_sent_messages_total'
+```
 
 ### Dropped packets
 
