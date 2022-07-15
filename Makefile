@@ -153,7 +153,7 @@ fmt: .fmt-go~ .fmt-js~ ; $(info $(M) formatting code…) @ ## Format all source 
 .PHONY: licensecheck
 licensecheck: console/frontend/node_modules | $(WWHRD) ; $(info $(M) check dependency licenses…) @ ## Check licenses
 	$Q err=0 ; go mod vendor && $(WWHRD) --quiet check || err=$$? ; rm -rf vendor/ ; exit $$err
-	$Q cd console/frontend ; npm run --silent license-compliance \
+	$Q cd console/frontend ; npm exec --no -- license-compliance \
 		--production \
 		--allow "MIT;ISC;Apache-2.0;BSD-3-Clause;WTFPL;0BSD" \
 		--report detailed
