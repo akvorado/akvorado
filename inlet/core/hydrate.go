@@ -19,7 +19,6 @@ import (
 func (c *Component) hydrateFlow(exporter string, flow *flow.Message) (skip bool) {
 	errLogger := c.r.Sample(reporter.BurstSampler(time.Minute, 10))
 
-	// Input interface is mandatory
 	if flow.InIf != 0 {
 		exporterName, iface, err := c.d.Snmp.Lookup(exporter, uint(flow.InIf))
 		if err != nil {
@@ -34,12 +33,8 @@ func (c *Component) hydrateFlow(exporter string, flow *flow.Message) (skip bool)
 			flow.InIfDescription = iface.Description
 			flow.InIfSpeed = uint32(iface.Speed)
 		}
-	} else {
-		c.metrics.flowsErrors.WithLabelValues(exporter, "input interface missing").Inc()
-		skip = true
 	}
 
-	// Output interface is not
 	if flow.OutIf != 0 {
 		exporterName, iface, err := c.d.Snmp.Lookup(exporter, uint(flow.OutIf))
 		if err != nil {
@@ -60,10 +55,17 @@ func (c *Component) hydrateFlow(exporter string, flow *flow.Message) (skip bool)
 		}
 	}
 
+	// We need at least one of them.
+	if flow.OutIf == 0 && flow.InIf == 0 {
+		c.metrics.flowsErrors.WithLabelValues(exporter, "input and output interfaces missing").Inc()
+		skip = true
+	}
+
 	if flow.SamplingRate == 0 {
 		c.metrics.flowsErrors.WithLabelValues(exporter, "sampling rate missing").Inc()
 		skip = true
 	}
+
 	if skip {
 		return
 	}

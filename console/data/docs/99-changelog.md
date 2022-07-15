@@ -17,6 +17,7 @@ identified with a specific icon:
 - 🌱 *orchestrator*: adapt partition key for each consolidated flow
   tables in ClickHouse to limit the number of partitions (this change
   won't be applied on an existing installation)
+- 🌱 *inlet*: only require either input or output interface for a valid flow
 - 🌱 *build*: switch from Yarn to npm as a Javascript package manager [PR #4][]
 - 🌱 *docker-compose*: pull image from GitHub instead of building it
 - 🌱 *doc*: add more tips to the troubleshooting section
