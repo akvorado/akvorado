@@ -12,7 +12,9 @@ identified with a specific icon:
 
 ## Unreleased
 
+- ✨ *inlet*: add an option to ignore ASN received from flows [PR #7](https://github.com/vincentbernat/akvorado/pull/7)
 - 🩹 *console*: fix maximum value computation for the grid view
+- 🌱 *orchestrator*: adapt partition key for each consolidated flow tables in ClickHouse to limit the number of partitions (this change won't be applied on an existing installation)
 - 🌱 *build*: switch from Yarn to npm as a Javascript package manager [PR #4](https://github.com/vincentbernat/akvorado/pull/4)
 
 ## 1.4.1 - 2022-07-12

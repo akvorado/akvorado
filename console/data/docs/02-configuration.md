@@ -143,9 +143,9 @@ The following configuration keys are accepted:
   classifiers are pure, their result is cached in a cache. The metrics
   should tell if the cache is big enough. It should be set at least to
   twice the number of the most busy interfaces.
-- `ignore-asn-from-flow` allows to ignore the AS numbers of the source and
-  destination IP from the received flows. It can be useful for routers with a
-  partial routing table and a default route learned over BGP.
+- `ignore-asn-from-flow` allows one to ignore the AS numbers from the
+  received flows. It can be useful for routers with a partial routing
+  table and a default route learned over BGP.
 
 Classifier rules are written using [expr][].
 
