@@ -40,23 +40,26 @@ func (c *Component) hydrateFlow(exporter string, flow *flow.Message) (skip bool)
 	}
 
 	// Output interface is not
-	exporterName, iface, err := c.d.Snmp.Lookup(exporter, uint(flow.OutIf))
-	if err != nil {
-		// Only register a cache miss if we don't have one.
-		// TODO: maybe we could do one SNMP query for both interfaces.
-		if !skip {
-			if err != snmp.ErrCacheMiss {
-				errLogger.Err(err).Str("exporter", exporter).Msg("unable to query SNMP cache")
+	if flow.OutIf != 0 {
+		exporterName, iface, err := c.d.Snmp.Lookup(exporter, uint(flow.OutIf))
+		if err != nil {
+			// Only register a cache miss if we don't have one.
+			// TODO: maybe we could do one SNMP query for both interfaces.
+			if !skip {
+				if err != snmp.ErrCacheMiss {
+					errLogger.Err(err).Str("exporter", exporter).Msg("unable to query SNMP cache")
+				}
+				c.metrics.flowsErrors.WithLabelValues(exporter, err.Error()).Inc()
+				skip = true
 			}
-			c.metrics.flowsErrors.WithLabelValues(exporter, err.Error()).Inc()
-			skip = true
+		} else {
+			flow.ExporterName = exporterName
+			flow.OutIfName = iface.Name
+			flow.OutIfDescription = iface.Description
+			flow.OutIfSpeed = uint32(iface.Speed)
 		}
-	} else {
-		flow.ExporterName = exporterName
-		flow.OutIfName = iface.Name
-		flow.OutIfDescription = iface.Description
-		flow.OutIfSpeed = uint32(iface.Speed)
 	}
+
 	if flow.SamplingRate == 0 {
 		c.metrics.flowsErrors.WithLabelValues(exporter, "sampling rate missing").Inc()
 		skip = true

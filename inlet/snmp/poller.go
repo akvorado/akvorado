@@ -171,11 +171,11 @@ func (p *realPoller) Poll(ctx context.Context, exporter string, port uint16, com
 			*target = string(result.Variables[idx].Value.([]byte))
 		case gosnmp.NoSuchInstance, gosnmp.NoSuchObject:
 			if mandatory {
-				p.metrics.failures.WithLabelValues(exporter, fmt.Sprintf("%s_missing", what)).Inc()
+				p.metrics.failures.WithLabelValues(exporter, fmt.Sprintf("%s missing", what)).Inc()
 				return false
 			}
 		default:
-			p.metrics.failures.WithLabelValues(exporter, fmt.Sprintf("%s_unknown_type", what)).Inc()
+			p.metrics.failures.WithLabelValues(exporter, fmt.Sprintf("%s unknown type", what)).Inc()
 			return false
 		}
 		return true
@@ -186,11 +186,11 @@ func (p *realPoller) Poll(ctx context.Context, exporter string, port uint16, com
 			*target = result.Variables[idx].Value.(uint)
 		case gosnmp.NoSuchInstance, gosnmp.NoSuchObject:
 			if mandatory {
-				p.metrics.failures.WithLabelValues(exporter, fmt.Sprintf("%s_missing", what)).Inc()
+				p.metrics.failures.WithLabelValues(exporter, fmt.Sprintf("%s missing", what)).Inc()
 				return false
 			}
 		default:
-			p.metrics.failures.WithLabelValues(exporter, fmt.Sprintf("%s_unknown_type", what)).Inc()
+			p.metrics.failures.WithLabelValues(exporter, fmt.Sprintf("%s unknown type", what)).Inc()
 			return false
 		}
 		return true

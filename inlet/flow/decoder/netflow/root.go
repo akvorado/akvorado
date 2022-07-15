@@ -162,9 +162,9 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*decoder.FlowMessage {
 	if err != nil {
 		switch err.(type) {
 		case *netflow.ErrorTemplateNotFound:
-			nd.metrics.errors.WithLabelValues(key, "template_not_found").Inc()
+			nd.metrics.errors.WithLabelValues(key, "template not found").Inc()
 		default:
-			nd.metrics.errors.WithLabelValues(key, "error_decoding").Inc()
+			nd.metrics.errors.WithLabelValues(key, "error decoding").Inc()
 		}
 		return nil
 	}

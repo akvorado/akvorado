@@ -46,10 +46,31 @@ $ conntrack -D -p udp --orig-port-dst 2055
 
 ### No packets exported
 
-*Akvorado* only exports packets with complete interface information.
-They are polled through SNMP. If *Akvorado* is unable to poll a
-exporter, no flows about it will be exported. In this case, the logs
-contain information such as:
+*Akvorado* only exports packets with complete information. You can
+check the metrics to find the cause:
+
+```console
+$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet' | grep _errors
+```
+
+Here is a list of generic errors you may find:
+
+- `SNMP cache miss` means the information about an interface is not
+  found in the SNMP cache. This is expected when Akvorado starts but
+  it should not increase. If this is the case, it may be because the
+  index provided in the flow is not available through SNMP.
+- `sampling rate missing` means the sampling rate information is not
+  present. This is also expected when Akvorado starts but it should
+  not increase. With NetFlow, the sampling rate is sent in an options
+  data packet. Be sure to configure your exporter to send them.
+- `input interface missing` means the flow does not contain the input
+  interface index. This is something to fix on the exporter.
+
+When using NetFlow, you also have the `template not found` error. This
+is expected on start, but then it should not increase anymore.
+
+If *Akvorado* is unable to poll a exporter, no flows about it will be
+exported. In this case, the logs contain information such as:
 
 - `exporter:172.19.162.244 poller breaker open`
 - `exporter:172.19.162.244 unable to GET`
