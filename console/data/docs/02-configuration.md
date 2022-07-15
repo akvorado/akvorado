@@ -143,6 +143,10 @@ The following configuration keys are accepted:
   classifiers are pure, their result is cached in a cache. The metrics
   should tell if the cache is big enough. It should be set at least to
   twice the number of the most busy interfaces.
+- `default-sampling-rate` defines the default sampling rate to use
+  when the information is missing. If not defined, flows without a
+  sampling rate will be rejected. Use this option only if your
+  hardware is unable to advertise a sampling rate.
 - `ignore-asn-from-flow` allows one to ignore the AS numbers from the
   received flows. It can be useful for routers with a partial routing
   table and a default route learned over BGP.

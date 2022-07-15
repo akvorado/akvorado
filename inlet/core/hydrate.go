@@ -62,8 +62,12 @@ func (c *Component) hydrateFlow(exporter string, flow *flow.Message) (skip bool)
 	}
 
 	if flow.SamplingRate == 0 {
-		c.metrics.flowsErrors.WithLabelValues(exporter, "sampling rate missing").Inc()
-		skip = true
+		if c.config.DefaultSamplingRate != 0 {
+			flow.SamplingRate = uint64(c.config.DefaultSamplingRate)
+		} else {
+			c.metrics.flowsErrors.WithLabelValues(exporter, "sampling rate missing").Inc()
+			skip = true
+		}
 	}
 
 	if skip {

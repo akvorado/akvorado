@@ -22,7 +22,7 @@ import (
 	"akvorado/inlet/snmp"
 )
 
-func TestClassifiers(t *testing.T) {
+func TestHydrate(t *testing.T) {
 	cases := []struct {
 		Name          string
 		Configuration string
@@ -42,6 +42,32 @@ func TestClassifiers(t *testing.T) {
 			},
 			OutputFlow: &flow.Message{
 				SamplingRate:     1000,
+				ExporterAddress:  net.ParseIP("192.0.2.142"),
+				ExporterName:     "192_0_2_142",
+				InIf:             100,
+				OutIf:            200,
+				InIfName:         "Gi0/0/100",
+				OutIfName:        "Gi0/0/200",
+				InIfDescription:  "Interface 100",
+				OutIfDescription: "Interface 200",
+				InIfSpeed:        1000,
+				OutIfSpeed:       1000,
+			},
+		},
+		{
+			Name: "no rule, no sampling rate",
+			Configuration: `
+defaultsamplingrate: 500
+`,
+			InputFlow: func() *flow.Message {
+				return &flow.Message{
+					ExporterAddress: net.ParseIP("192.0.2.142"),
+					InIf:            100,
+					OutIf:           200,
+				}
+			},
+			OutputFlow: &flow.Message{
+				SamplingRate:     500,
 				ExporterAddress:  net.ParseIP("192.0.2.142"),
 				ExporterName:     "192_0_2_142",
 				InIf:             100,

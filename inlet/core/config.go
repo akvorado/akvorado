@@ -13,6 +13,8 @@ type Configuration struct {
 	InterfaceClassifiers []InterfaceClassifierRule
 	// ClassifierCacheSize defines the size of the classifier (in number of items)
 	ClassifierCacheSize uint
+	// DefaultSamplingRate defines the default sampling rate to use when the information is missing
+	DefaultSamplingRate uint
 	// Ignore source/dest AS numbers from received flows
 	IgnoreASNFromFlow bool
 }
