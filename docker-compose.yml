@@ -84,6 +84,7 @@ services:
       - traefik.enable=true
       - traefik.http.routers.akvorado-inlet.rule=PathPrefix(`/api/v0/inlet`)
       - traefik.http.services.akvorado-inlet.loadbalancer.server.port=8080
+  # Remove the following exporters if you don't want to get fake data
   akvorado-exporter0: &exporter
     build: *akvorado-image
     restart: unless-stopped

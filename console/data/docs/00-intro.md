@@ -9,6 +9,30 @@ a web interface to browse the result.
 
 [Akvorado]: https://eo.wikipedia.org/wiki/Akvorado
 
+## Quick start
+
+A `docker-compose.yml` file is provided to quickly get started.
+Once running, *Akvorado* web interface should be running on port 80
+and an inlet accepting NetFlow available on port 2055.
+
+```console
+# docker-compose up
+```
+
+A few synthetic flows are generated in the background. They can be
+disabled by removing the `akvorado-exporter*` services from
+`docker-compose.yml` (or you can just stop them with `docker-compose
+stop akvorado-exporter{1,2,3,4}`).
+
+Take a look at the `docker-compose.yml` file if you want to setup the
+GeoIP database. It requires two environment variables to fetch them
+from
+[MaxMind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data).
+
+Be sure to flush the conntrack table after starting. See the
+[troubleshooting section](05-troubleshooting.md#no-packets-received)
+for more details.
+
 ## Big picture
 
 ![General design](design.svg)
@@ -42,6 +66,7 @@ HTTP service, via the `/api/v0/inlet/schemas.json` endpoint.
 
 ## ClickHouse database schemas
 
-Flows are stored in a ClickHouse database using a single table
-`flows`. The configuration service keeps the table schema up-to-date.
-You can check the schema using `SHOW CREATE TABLE flows`.
+Flows are stored in a ClickHouse database using a table `flows` (and a
+few consolidated versions). The orchestrator service keeps the table
+schema up-to-date. You can check the schema using `SHOW CREATE TABLE
+flows`.

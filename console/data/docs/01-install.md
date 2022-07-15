@@ -1,7 +1,10 @@
 # Installation
 
 *Akvorado* is written in Go. It provides its 3 components into a
-single binary or Docker image.
+single binary or Docker image. It also requires an installation of
+[Kafka](https://kafka.apache.org/quickstart) and
+[ClickHouse](https://clickhouse.com/docs/en/getting-started/install/).
+They have to be installed separately.
 
 ## Compilation from source
 
@@ -48,22 +51,3 @@ It is also possible to get Akvorado as a
 ```console
 # docker pull ghcr.io/vincentbernat/akvorado:latest
 ```
-
-## Quick start
-
-A `docker-compose.yml` file is also provided to quickly get started.
-Once running, *Akvorado* web interface should be running on port 80
-and an inlet accepting NetFlow available on port 2055.
-
-```console
-# docker-compose up
-```
-
-A few synthetic flows are generated in the background. Take a look at
-the `docker-compose.yml` file if you want to setup the GeoIP database.
-It requires two environment variables to fetch them from
-[MaxMind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data).
-
-Be sure to flush the conntrack table after starting. See the
-[troubleshooting section](05-troubleshooting.md#no-packets-received)
-for more details.
