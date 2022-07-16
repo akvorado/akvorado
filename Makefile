@@ -75,7 +75,7 @@ inlet/flow/decoder/%.pb.go: inlet/flow/data/schemas/%.proto | $(PROTOC_GEN_GO) ;
 common/clickhousedb/mocks/mock_driver.go: Makefile | $(MOCKGEN) ; $(info $(M) generate mocks for ClickHouse driver…)
 	$Q $(MOCKGEN) -destination $@ -package mocks \
 		github.com/ClickHouse/clickhouse-go/v2/lib/driver Conn,Row,Rows,ColumnType
-	$Q sed -i'' -e '1i //go:build !release' $@
+	$Q ex -sc "1i|//go:build !release" -cx $@
 
 console/filter/parser.go: console/filter/parser.peg | $(PIGEON) ; $(info $(M) generate PEG parser for filters…)
 	$Q $(PIGEON) -optimize-basic-latin $< > $@
@@ -85,7 +85,7 @@ console/frontend/node_modules: ; $(info $(M) fetching node modules…)
 	$Q (cd console/frontend ; npm ci --silent --no-audit --no-fund) && touch $@
 console/frontend/data/fields.json: console/query.go ; $(info $(M) generate list of selectable fields…)
 	$Q sed -En -e 's/^\tqueryColumn([a-zA-Z]+)( .*|$$)/  "\1"/p' $< \
-		| sed -E -e '1i [' -e '$$ ! s/$$/,/' -e '$$a ]'> $@
+		| sed -E -e '$$ ! s/$$/,/' -e '1s/^ */[/' -e '$$s/$$/]/' > $@
 	$Q test -s $@
 console/data/frontend: Makefile console/frontend/node_modules
 console/data/frontend: console/frontend/data/fields.json
