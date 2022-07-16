@@ -132,7 +132,7 @@ func (gc queryColumn) toSQLSelect() string {
 			helpers.ETypeIPv4, helpers.ETypeIPv6)
 	case queryColumnProto:
 		strValue = `dictGetOrDefault('protocols', 'name', Proto, '???')`
-	case queryColumnInIfSpeed, queryColumnOutIfSpeed, queryColumnSrcPort, queryColumnDstPort, queryColumnForwardingStatus:
+	case queryColumnInIfSpeed, queryColumnOutIfSpeed, queryColumnSrcPort, queryColumnDstPort, queryColumnForwardingStatus, queryColumnInIfBoundary, queryColumnOutIfBoundary:
 		strValue = fmt.Sprintf("toString(%s)", gc)
 	default:
 		strValue = gc.String()
