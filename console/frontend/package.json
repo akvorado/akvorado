@@ -6,8 +6,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint {src/**/,}*.{js,vue}",
-    "format": "prettier --loglevel warn --write {src/**/,}*.{js,vue,html}"
+    "lint": "eslint '{src/**/,}*.{js,vue}'",
+    "format": "prettier --loglevel warn --write '{src/**/,}*.{js,vue,html}'"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.0.1",
