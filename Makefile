@@ -21,8 +21,7 @@ GENERATED = \
 	console/filter/parser.go \
 	console/data/frontend \
 	console/frontend/node_modules \
-	console/frontend/data/fields.json \
-	changelog.md
+	console/frontend/data/fields.json
 
 .PHONY: all
 all: fmt lint $(GENERATED) | $(BIN) ; $(info $(M) building executable…) @ ## Build program binary
