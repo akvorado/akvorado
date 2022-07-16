@@ -8,11 +8,15 @@ import (
 	"errors"
 	"net"
 	"os"
+	"runtime"
 	"testing"
 	"time"
 )
 
 func TestParseSocketControlMessage(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("Skip Linux-only test")
+	}
 	server, err := listenConfig.ListenPacket(context.Background(), "udp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("ListenPacket() error:\n%+v", err)
