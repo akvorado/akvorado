@@ -12,6 +12,8 @@ identified with a specific icon:
 
 ## Unreleased
 
+## 1.4.2 - 2022-07-16
+
 - ✨ *inlet*: add an option to ignore ASN received from flows [PR #7][]
 - 🩹 *console*: fix maximum value computation for the grid view
 - 🌱 *orchestrator*: adapt partition key for each consolidated flow
