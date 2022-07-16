@@ -240,11 +240,7 @@ SHOW tables
 
 You should have a few tables, including `flows`, `flows_1m0s` (and
 others), and `flows_1_raw`. If one is missing, look at the log in the
-orchestrator. This is the component creating the tables. Notably, you
-may get `Number of consumers can not be bigger than 2` as an error
-message. This means you have configured too many consumers for the
-number of allocated vCPUs. Reduce the number of consumers to 2 to fix
-this issue.
+orchestrator. This is the component creating the tables.
 
 To check if ClickHouse is late, use the following SQL query through
 `clickhouse client` to get the lag in seconds.

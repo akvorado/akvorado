@@ -315,6 +315,12 @@ provided:
 - `username` is the username to use for authentication
 - `password` is the password to use for authentication
 - `database` defines the database to use to create tables
+- `kafka` defines the configuration for the Kafka consumer. Currently,
+  the only interesting key is `consumers` which defines the number of
+  consumers to use to consume messages from the Kafka topic. It is
+  silently bound by the maximum number of threads ClickHouse will use
+  (by default, the number of CPUs). It should also be less than the
+  number of partitions: the additional consumers will stay idle.
 - `resolutions` defines the various resolutions to keep data
 - `max-partitions` defines the number of partitions to use when
   creating consolidated tables
