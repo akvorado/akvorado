@@ -81,28 +81,26 @@ handled by [mapstructure](https://github.com/mitchellh/mapstructure).
 
 Decoding is handled by
 [GoFlow2](https://github.com/NetSampler/GoFlow2). The network code to
-receive flows is heavily inspired but was not reused. While logging is
+receive flows is heavily inspired by it but not reused. While logging is
 often abstracted, this is not the case for metrics. Moreover, the
 design to scale is a bit different as *Akvorado* will create a socket
-for each worker instead of distributing incoming flows using message
-passing.
+for each worker instead of distributing incoming flows using a channel.
 
-Only Netflow v9 and IPFIX are currently handled. However, as *GoFlow2*
-also supports sFlow, support can be added later.
+Only Netflow v9 and IPFIX are currently supported. However, as *GoFlow2*
+also decodes sFlow, support can be added later.
 
-The design of this component is modular as it is possible to "plug"
+The design of this component is modular. It is possible to "plug"
 new decoders and new inputs easily. It is expected that most buffering
-to be done at this level by input modules that need them. However,
-some buffering also happens in the Kafka module. When the input is the
+is implemented at this level by input modules that require them.
+Additionnal buffering happens in the Kafka module. When the input is the
 network, this does not really matter as we cannot really block without
-losing messages. But with file-backed modules, it may be more reliable
-to not have buffers elsewhere as they can be lost during shutdown.
+losing messages. However, with file-backed modules, it may be more reliable
+to reduce buffers as data can be lost during shutdown.
 
 ## GeoIP
 
-The component is mostly boring, with the exception of having a
-goroutine watching for the modification of the databases to update
-them.
+The component is straightforward. It watches for the modification
+of the databases in order to update the a local cached copy.
 
 ## Kafka
 
@@ -116,12 +114,12 @@ If a real broker is available under the DNS name `kafka` or at
 
 ## ClickHouse
 
-Migrations are done with a simple loop checking if a step is needed
-using a custom query and executing it with Go code. Database migration
-systems exist in Go, notably
+For this OLAP database, migrations are done with a simple loop
+checking if a step is needed using a custom query and executing it with Go code.
+Database migration systems exist in Go, notably
 [migrate](https://github.com/golang-migrate/migrate), but as the
-tables we need to create depend on user configuration, it is more
-flexible to use code to check if the existing tables are up-to-date
+table schemas depend on user configuration, it is preferred
+to use code to check if the existing tables are up-to-date
 and to update them. For example, we may want to check if the Kafka
 settings of a table or the source URL of a dictionary are current.
 
@@ -130,14 +128,13 @@ the name `clickhouse` or on `localhost`.
 
 ## SNMP
 
-SNMP polling is done with [GoSNMP](https://github.com/gosnmp/gosnmp).
-The cache layer is tailored specifically for our needs. Information
-contained in it expires if not accessed and is refreshed periodically
-otherwise. Some coaelescing of the requests are done when they are
-piling up. This adds some code complexity, maybe it was not worth it.
-If a exporter fails to answer too frequently, it will be blacklisted
-for a minute just to ensure it does not eat up all the workers'
-capacity.
+SNMP polling is accomplished with [GoSNMP](https://github.com/gosnmp/gosnmp).
+The cache layer is tailored specifically for our needs. Cached information
+can expires if not accessed or refreshed periodically.
+Some coaelescing of the requests are done when they are queued.
+This adds some code complexity, maybe it was not worth it.
+If a exporter fails to answer too frequently, a backoff will be triggered
+for a minute to ensure it does not eat up all the workers' resources.
 
 Testing is done by another implementation of an [SNMP
 agent](https://github.com/salyercat/GoSNMPServer).
