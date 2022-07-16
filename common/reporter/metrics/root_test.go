@@ -6,6 +6,7 @@ package metrics_test
 import (
 	"fmt"
 	"net/http/httptest"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -45,7 +46,11 @@ func TestNew(t *testing.T) {
 	got := strings.Split(w.Body.String(), "\n")
 
 	// We expect some go_* and process_* gauges
-	for _, expected := range []string{"process_open_fds", "go_threads", "go_sched_goroutines_goroutines"} {
+	expecteds := []string{"go_threads", "go_sched_goroutines_goroutines"}
+	if runtime.GOOS == "linux" {
+		expecteds = append(expecteds, "process_open_fds")
+	}
+	for _, expected := range expecteds {
 		found := false
 		for _, line := range got {
 			if line == fmt.Sprintf("# TYPE %s gauge", expected) {

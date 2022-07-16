@@ -10,7 +10,7 @@ on:
   schedule:
     - cron: 0 7 1 * *
 jobs:
-  build:
+  build-linux:
     runs-on: ubuntu-latest
     services:
       zookeeper:
@@ -86,9 +86,39 @@ jobs:
           path: changelog.md
           if-no-files-found: error
 
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      # Setup
+      - uses: actions/checkout@v3
+      - name: Install dependencies
+        run: brew install protobuf
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # Cache
+      - uses: actions/cache@v3
+        id: npm-cache
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('console/frontend/package-lock.json') }}
+      - uses: actions/cache@v3
+        id: gobin-cache
+        with:
+          path: bin
+          key: ${{ runner.os }}-gobin-${{ hashFiles('Makefile') }}
+
+      # Build and test
+      - name: Build
+        run: make
+      - name: Tests
+        run: make test || make test
+
   docker:
     needs:
-      - build
+      - build-linux
     runs-on: ubuntu-latest
     name: Build Docker images
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
@@ -125,7 +155,8 @@ jobs:
 
   release:
     needs:
-      - build
+      - build-linux
+      - build-macos
       - docker
     runs-on: ubuntu-latest
     name: Publish release
