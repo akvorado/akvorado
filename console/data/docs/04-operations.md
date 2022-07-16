@@ -77,6 +77,176 @@ control-plane
      address ipv4 <akvorado-ip>
 ```
 
+### Juniper
+
+#### IPFIX
+
+For MX devices, you can use IPFIX to export flows.
+
+```junos
+groups {
+  sampling {
+    interfaces {
+      <*> {
+        unit <*> {
+          family inet {
+            sampling {
+              input;
+            }
+          }
+          family inet6 {
+            sampling {
+              input;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+forwarding-options {
+  sampling {
+    instance {
+      sample-ins {
+        input {
+          rate 1024;
+          max-packets-per-second 65535;
+        }
+        family inet {
+          output {
+            flow-server 192.0.2.1 {
+              port 2055;
+              autonomous-system-type origin;
+              source-address 203.0.113.2;
+              version-ipfix {
+                template {
+                  ipv4;
+                }
+              }
+            }
+            inline-jflow {
+              source-address 203.0.113.2;
+            }
+          }
+        }
+        family inet6 {
+          output {
+            flow-server 192.0.2.1 {
+              port 2055;
+              autonomous-system-type origin;
+              source-address 203.0.113.2;
+              version-ipfix {
+                template {
+                  ipv6;
+                }
+              }
+            }
+            inline-jflow {
+              source-address 203.0.113.2;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+chassis {
+  fpc 0 {
+    sampling-instance sample-ins;
+    inline-services {
+      flex-flow-sizing;
+    }
+  }
+}
+services {
+  flow-monitoring {
+    version-ipfix {
+      template ipv4 {
+        flow-active-timeout 10;
+        flow-inactive-timeout 10;
+        template-refresh-rate {
+          packets 30;
+          seconds 30;
+        }
+        option-refresh-rate {
+          packets 30;
+          seconds 30;
+        }
+        ipv4-template;
+      }
+      template ipv6 {
+        flow-active-timeout 10;
+        flow-inactive-timeout 10;
+        template-refresh-rate {
+          packets 30;
+          seconds 30;
+        }
+        option-refresh-rate {
+          packets 30;
+          seconds 30;
+        }
+        ipv6-template;
+      }
+    }
+  }
+}
+```
+
+Then, for each interface you want to enable IPFIX on, use:
+
+```junos
+interfaces {
+  xe-0/0/0 {
+    apply-groups [ sampling ];
+  }
+}
+```
+
+If `inet.0` is not enough to join *Akvorado*, you need to add a specific route:
+
+```junos
+routing-options {
+  static {
+    route 192.0.2.1/32 next-table internet.inet.0;
+  }
+}
+```
+
+#### sFlow
+
+Currently, *Akvorado* does not support sFlow. Once it does, for QFX
+devices, you can use sFlow.
+
+```junos
+protocols {
+    sflow {
+        agent-id 203.0.113.4;
+        polling-interval 5;
+        sample-rate ingress 8192;
+        source-ip 203.0.113.4;
+        collector 192.0.2.1 {
+            udp-port 6343;
+        }
+        interfaces et-0/0/13.0;
+    }
+}
+```
+
+#### SNMP
+
+Then, configure SNMP:
+
+```junos
+snmp {
+  location "Equinix PA1, FR";
+  community blipblop {
+    authorization read-only;
+    routing-instance internet;
+  }
+  routing-instance-access;
+}
+```
+
 ## ClickHouse
 
 While ClickHouse works pretty good out-of-the-box, it is still

@@ -74,7 +74,8 @@ Here is a list of generic errors you may find:
 - `sampling rate missing` means the sampling rate information is not
   present. This is also expected when Akvorado starts but it should
   not increase. With NetFlow, the sampling rate is sent in an options
-  data packet. Be sure to configure your exporter to send them.
+  data packet. Be sure to configure your exporter to send them (look
+  for `sampler-table` in the documentation).
 - `input interface missing` means the flow does not contain the input
   interface index. This is something to fix on the exporter.
 
