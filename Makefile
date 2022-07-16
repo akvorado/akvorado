@@ -21,7 +21,8 @@ GENERATED = \
 	console/filter/parser.go \
 	console/data/frontend \
 	console/frontend/node_modules \
-	console/frontend/data/fields.json
+	console/frontend/data/fields.json \
+	changelog.md
 
 .PHONY: all
 all: fmt lint $(GENERATED) | $(BIN) ; $(info $(M) building executable…) @ ## Build program binary
@@ -101,6 +102,12 @@ orchestrator/clickhouse/data/protocols.csv: # We keep this one in Git
 		| sed -nE -e "1 s/.*/proto,name,description/p" -e "2,$ s/^([0-9]+,[^ ,]+,[^\",]+),.*/\1/p" \
 		> $@
 	$Q test -s $@
+
+changelog.md: docs/99-changelog.md Makefile # To be used by GitHub actions only.
+	$Q >  $@ < docs/99-changelog.md \
+		sed -n '/^## '$${GITHUB_REF##*/v}' -/,/^## /{//!p}'
+	$Q >> $@ echo "**Docker image**: \`docker pull ghcr.io/vincentbernat/$(MODULE):$${GITHUB_REF##*/v}\`"
+	$Q >> $@ echo "**Full changelog**: https://github.com/vincentbernat/$(MODULE)/compare/v$$(< docs/99-changelog.md sed -n '/^## '$${GITHUB_REF##*/v}' -/,/^## /{s/^## \([0-9.]*\) -.*/\1/p}' | tail -1)...v$${GITHUB_REF##*/v}"
 
 # Tests
 

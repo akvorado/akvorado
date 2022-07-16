@@ -77,11 +77,7 @@ jobs:
       # Changelog
       - name: Generate changelog
         if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          < docs/99-changelog.md \
-          > changelog.md \
-          sed -n '/^## '${GITHUB_REF##*/v}' -/,/^## /{//!p}'  \
-            | sed -e :a -e '/./,$!d;/^\n*$/{$d;N;};/\n$/ba'
+        run: make changelog.md
       - name: Upload changelog
         uses: actions/upload-artifact@v3
         if: startsWith(github.ref, 'refs/tags/')

@@ -15,7 +15,7 @@ identified with a specific icon:
 ## 1.4.2 - 2022-07-16
 
 - ✨ *inlet*: add an option to ignore ASN received from flows [PR #7][]
-- 🩹 *console*: fix maximum value computation for the grid view
+- 🩹 *console*: fix maximum value for the grid view
 - 🌱 *orchestrator*: adapt partition key for each consolidated flow
   tables in ClickHouse to limit the number of partitions (this change
   won't be applied on an existing installation)
