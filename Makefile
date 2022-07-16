@@ -141,7 +141,7 @@ lint: .lint-go~ .lint-js~ ; $(info $(M) running lint…) @ ## Run linting
 .lint-go~: $(shell $(LSFILES) '*.go' 2> /dev/null) | $(REVIVE)
 	$Q $(REVIVE) -formatter friendly -set_exit_status $?
 	$Q touch $@
-.lint-js~: console/frontend/node_modules
+.lint-js~: $(shell $(LSFILES) '*.js' '*.vue' '*.html' 2> /dev/null) console/frontend/node_modules
 	$Q cd console/frontend && npm run --silent lint
 	$Q touch $@
 
@@ -150,7 +150,7 @@ fmt: .fmt-go~ .fmt-js~ ; $(info $(M) formatting code…) @ ## Format all source 
 .fmt-go~: $(shell $(LSFILES) '*.go' 2> /dev/null) | $(GOIMPORTS)
 	$Q $(GOIMPORTS) -local $(MODULE) -w $? < /dev/null
 	$Q touch $@
-.fmt-js~: console/frontend/node_modules
+.fmt-js~: $(shell $(LSFILES) '*.js' '*.vue' '*.html' 2> /dev/null) console/frontend/node_modules
 	$Q cd console/frontend && npm run --silent format
 	$Q touch $@
 
