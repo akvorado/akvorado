@@ -12,10 +12,12 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 🩹 *console*: fix use of `InIfBoundary` and `OutIfBoundary` as dimensions [PR #11][]
 - 🩹 *docker-compose*: avoid starting bogus "akvorado-image" service
 - 🌱 *doc*: add configuration for Juniper devices
 - 🌱 *docker-compose*: add [UI for Apache Kafka][] to help debug starter issues
 
+[PR #11]: https://github.com/vincentbernat/akvorado/pull/11
 [UI for Apache Kafka]: https://github.com/provectus/kafka-ui
 
 ## 1.4.2 - 2022-07-16
