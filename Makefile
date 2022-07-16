@@ -137,20 +137,22 @@ test-coverage: | $(GOCOV) $(GOCOVXML) $(GOTESTSUM) ; $(info $(M) running coverag
 		echo "scale=1;$$(sed -En 's/^<coverage line-rate="([0-9.]+)".*/\1/p' test/coverage.xml) * 100 / 1" | bc -q
 
 .PHONY: lint
-lint: .lint-go~ .lint-js~ ; $(info $(M) running lint…) @ ## Run linting
-.lint-go~: $(shell $(LSFILES) '*.go' 2> /dev/null) | $(REVIVE)
+lint: .lint-go~ .lint-js~ ## Run linting
+.lint-go~: $(shell $(LSFILES) '*.go' 2> /dev/null) | $(REVIVE) ; $(info $(M) running golint…)
 	$Q $(REVIVE) -formatter friendly -set_exit_status $?
 	$Q touch $@
-.lint-js~: $(shell $(LSFILES) '*.js' '*.vue' '*.html' 2> /dev/null) console/frontend/node_modules
+.lint-js~: $(shell $(LSFILES) '*.js' '*.vue' '*.html' 2> /dev/null)
+.lint-js~: console/frontend/node_modules ; $(info $(M) running jslint…)
 	$Q cd console/frontend && npm run --silent lint
 	$Q touch $@
 
 .PHONY: fmt
-fmt: .fmt-go~ .fmt-js~ ; $(info $(M) formatting code…) @ ## Format all source files
-.fmt-go~: $(shell $(LSFILES) '*.go' 2> /dev/null) | $(GOIMPORTS)
+fmt: .fmt-go~ .fmt-js~ ## Format all source files
+.fmt-go~: $(shell $(LSFILES) '*.go' 2> /dev/null) | $(GOIMPORTS) ; $(info $(M) formatting Go code…)
 	$Q $(GOIMPORTS) -local $(MODULE) -w $? < /dev/null
 	$Q touch $@
-.fmt-js~: $(shell $(LSFILES) '*.js' '*.vue' '*.html' 2> /dev/null) console/frontend/node_modules
+.fmt-js~: $(shell $(LSFILES) '*.js' '*.vue' '*.html' 2> /dev/null)
+.fmt-js~: console/frontend/node_modules ; $(info $(M) formatting JS code…)
 	$Q cd console/frontend && npm run --silent format
 	$Q touch $@
 
