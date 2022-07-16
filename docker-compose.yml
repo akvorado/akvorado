@@ -1,6 +1,12 @@
 ---
 version: "3"
 
+# Choose one of the two options: build from source, or download
+# latest stable release from GitHub.
+x-akvorado-image: &akvorado-image
+  # build: {context: .}
+  image: ghcr.io/vincentbernat/akvorado:latest
+
 volumes:
   akvorado-zookeeper:
   akvorado-kafka:
@@ -46,11 +52,6 @@ services:
       retries: 3
       test: ["CMD", "kafka-topics.sh", "--list", "--zookeeper", "zookeeper:2181"]
 
-  # Choose one of the two options: build from source, or download
-  # latest stable release from GitHub.
-  .akvorado-image: &akvorado-image
-    # build: {context: .}
-    image: ghcr.io/vincentbernat/akvorado:latest
   akvorado-orchestrator:
     <<: *akvorado-image
     restart: unless-stopped

@@ -12,6 +12,9 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 🩹 *docker-compose*: avoid starting bogus "akvorado-image" service
+- 🌱 *doc*: add configuration for Juniper devices
+
 ## 1.4.2 - 2022-07-16
 
 - ✨ *inlet*: add an option to ignore ASN received from flows [PR #7][]
