@@ -14,6 +14,9 @@ identified with a specific icon:
 
 - 🩹 *docker-compose*: avoid starting bogus "akvorado-image" service
 - 🌱 *doc*: add configuration for Juniper devices
+- 🌱 *docker-compose*: add [UI for Apache Kafka][] to help debug starter issues
+
+[UI for Apache Kafka]: https://github.com/provectus/kafka-ui
 
 ## 1.4.2 - 2022-07-16
 

@@ -51,6 +51,17 @@ services:
       timeout: 10s
       retries: 3
       test: ["CMD", "kafka-topics.sh", "--list", "--zookeeper", "zookeeper:2181"]
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.4.0
+    restart: unless-stopped
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - SERVER_SERVLET_CONTEXT_PATH=/kafka-ui
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.kafka-ui.entrypoints=private
+      - traefik.http.routers.kafka-ui.rule=PathPrefix(`/kafka-ui`)
 
   akvorado-orchestrator:
     <<: *akvorado-image
