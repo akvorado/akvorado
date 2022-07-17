@@ -11,45 +11,65 @@ import (
 
 func TestExporterClassifier(t *testing.T) {
 	cases := []struct {
-		Description   string
-		Program       string
-		ExporterInfo  exporterInfo
-		ExpectedGroup string
-		ExpectedErr   bool
+		Description            string
+		Program                string
+		ExporterInfo           exporterInfo
+		ExpectedClassification exporterClassification
+		ExpectedErr            bool
 	}{
 		{
 			Description: "trivial classifier",
 			Program:     "false",
 		}, {
-			Description:   "constant classifier",
-			Program:       `Classify("europe")`,
-			ExpectedGroup: "europe",
+			Description:            "constant classifier",
+			Program:                `Classify("europe")`,
+			ExpectedClassification: exporterClassification{Group: "europe"},
 		}, {
-			Description:   "access to exporter name",
-			Program:       `Exporter.Name startsWith "expo" && Classify("europe")`,
-			ExporterInfo:  exporterInfo{"127.0.0.1", "exporter"},
-			ExpectedGroup: "europe",
+			Description:            "constant classifier (group)",
+			Program:                `ClassifyGroup("europe")`,
+			ExpectedClassification: exporterClassification{Group: "europe"},
 		}, {
-			Description:   "matches",
-			Program:       `Exporter.Name matches "^e.p.r" && Classify("europe")`,
-			ExporterInfo:  exporterInfo{"127.0.0.1", "exporter"},
-			ExpectedGroup: "europe",
+			Description:            "constant classifier (site)",
+			Program:                `ClassifySite("paris")`,
+			ExpectedClassification: exporterClassification{Site: "paris"},
+		}, {
+			Description:            "constant classifier (role)",
+			Program:                `ClassifyRole("edge")`,
+			ExpectedClassification: exporterClassification{Role: "edge"},
+		}, {
+			Description:            "constant classifier (region)",
+			Program:                `ClassifyRegion("europe")`,
+			ExpectedClassification: exporterClassification{Region: "europe"},
+		}, {
+			Description:            "constant classifier (tenant)",
+			Program:                `ClassifyTenant("mobile")`,
+			ExpectedClassification: exporterClassification{Tenant: "mobile"},
+		}, {
+			Description:            "access to exporter name",
+			Program:                `Exporter.Name startsWith "expo" && Classify("europe")`,
+			ExporterInfo:           exporterInfo{"127.0.0.1", "exporter"},
+			ExpectedClassification: exporterClassification{Group: "europe"},
+		}, {
+			Description:            "matches",
+			Program:                `Exporter.Name matches "^e.p.r" && Classify("europe")`,
+			ExporterInfo:           exporterInfo{"127.0.0.1", "exporter"},
+			ExpectedClassification: exporterClassification{Group: "europe"},
 		}, {
 			Description: "multiline",
 			Program: `Exporter.Name matches "^e.p.r" &&
 Classify("europe")`,
-			ExporterInfo:  exporterInfo{"127.0.0.1", "exporter"},
-			ExpectedGroup: "europe",
+			ExporterInfo:           exporterInfo{"127.0.0.1", "exporter"},
+			ExpectedClassification: exporterClassification{Group: "europe"},
 		}, {
-			Description:   "regex",
-			Program:       `ClassifyRegex(Exporter.Name, "^(e.p+).r", "europe-$1")`,
-			ExporterInfo:  exporterInfo{"127.0.0.1", "exporter"},
-			ExpectedGroup: "europe-exp",
+			Description:            "regex",
+			Program:                `ClassifyRegex(Exporter.Name, "^(e.p+).r", "europe-$1")`,
+			ExporterInfo:           exporterInfo{"127.0.0.1", "exporter"},
+			ExpectedClassification: exporterClassification{Group: "europe-exp"},
 		}, {
-			Description:   "non-matching regex",
-			Program:       `ClassifyRegex(Exporter.Name, "^(ebp+).r", "europe-$1")`,
-			ExporterInfo:  exporterInfo{"127.0.0.1", "exporter"},
-			ExpectedGroup: "",
+			Description:            "non-matching regex",
+			Program:                `ClassifyRegex(Exporter.Name, "^(ebp+).r", "europe-$1")`,
+			ExporterInfo:           exporterInfo{"127.0.0.1", "exporter"},
+			ExpectedClassification: exporterClassification{Group: ""},
 		}, {
 			Description:  "faulty regex",
 			Program:      `ClassifyRegex(Exporter.Name, "^(ebp+.r", "europe-$1")`,
@@ -67,6 +87,10 @@ Classify("europe")`,
 			Description: "another incorrect typing",
 			Program:     `"hello"`,
 			ExpectedErr: true,
+		}, {
+			Description: "inexistant function",
+			Program:     `ClassifyStuff("blip")`,
+			ExpectedErr: true,
 		},
 	}
 	for _, tc := range cases {
@@ -79,14 +103,15 @@ Classify("europe")`,
 			if tc.ExpectedErr && err != nil {
 				return
 			}
-			group, err := scr.exec(tc.ExporterInfo)
+			var classification exporterClassification
+			err = scr.exec(tc.ExporterInfo, &classification)
 			if !tc.ExpectedErr && err != nil {
 				t.Fatalf("exec(%q) error:\n%+v", tc.Program, err)
 			}
 			if tc.ExpectedErr && err == nil {
 				t.Fatalf("exec(%q) no error", tc.Program)
 			}
-			if diff := helpers.Diff(group, tc.ExpectedGroup); diff != "" {
+			if diff := helpers.Diff(classification, tc.ExpectedClassification); diff != "" {
 				t.Fatalf("exec(%q) (-got, +want):\n%s", tc.Program, diff)
 			}
 		})

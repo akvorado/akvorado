@@ -102,31 +102,39 @@ func (c *Component) classifyExporter(ip string, flow *flow.Message) {
 	}
 	name := flow.ExporterName
 	key := fmt.Sprintf("S-%s-%s", ip, name)
-	group, ok := c.classifierCache.Get(key)
-	if ok {
-		flow.ExporterGroup = group.(string)
+	if classification, ok := c.classifierCache.Get(key); ok {
+		flow.ExporterGroup = classification.(exporterClassification).Group
+		flow.ExporterRole = classification.(exporterClassification).Role
+		flow.ExporterSite = classification.(exporterClassification).Site
+		flow.ExporterRegion = classification.(exporterClassification).Region
+		flow.ExporterTenant = classification.(exporterClassification).Tenant
 		return
 	}
 
 	si := exporterInfo{IP: ip, Name: name}
+	var classification exporterClassification
 	for idx, rule := range c.config.ExporterClassifiers {
-		group, err := rule.exec(si)
-		if err != nil {
+		if err := rule.exec(si, &classification); err != nil {
 			c.classifierErrLogger.Err(err).
 				Str("type", "exporter").
 				Int("index", idx).
 				Str("exporter", name).
 				Msg("error executing classifier")
 			c.metrics.classifierErrors.WithLabelValues("exporter", strconv.Itoa(idx)).Inc()
-			c.classifierCache.Set(key, "", 1)
+			c.classifierCache.Set(key, classification, 1)
 			return
 		}
-		if group != "" {
-			c.classifierCache.Set(key, group, 1)
-			flow.ExporterGroup = group
-			return
+		if classification.Group == "" || classification.Role == "" || classification.Site == "" || classification.Region == "" || classification.Tenant == "" {
+			continue
 		}
+		break
 	}
+	c.classifierCache.Set(key, classification, 1)
+	flow.ExporterGroup = classification.Group
+	flow.ExporterRole = classification.Role
+	flow.ExporterSite = classification.Site
+	flow.ExporterRegion = classification.Region
+	flow.ExporterTenant = classification.Tenant
 }
 
 func (c *Component) classifyInterface(ip string, fl *flow.Message,

@@ -45,7 +45,10 @@ inlet:
   core:
     workers: 6
     exporter-classifiers:
-      - ClassifyRegex(Exporter.Name, "^([^-]+)-", "$1")
+      - ClassifySiteRegex(Exporter.Name, "^([^-]+)-", "$1")
+      - ClassifyRegion("europe")
+      - ClassifyTenant("acme")
+      - ClassifyRole("edge")
     interface-classifiers:
       - |
         ClassifyConnectivityRegex(Interface.Description, "^(?i)(transit|pni|ppni|ix):? ", "$1") &&

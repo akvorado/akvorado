@@ -75,6 +75,9 @@ func (c *Component) migrateDatabase() error {
 				fmt.Sprintf("add SrcNetName/DstNetName to flows table with resolution %s", resolution.Interval),
 				c.migrationStepAddSrcNetNameDstNetNameColumns(resolution),
 			}, {
+				fmt.Sprintf("add Exporter* to flows table with resolution %s", resolution.Interval),
+				c.migrationStepAddExporterColumns(resolution),
+			}, {
 				fmt.Sprintf("create flows table consumer with resolution %s", resolution.Interval),
 				c.migrationsStepCreateFlowsConsumerTable(resolution),
 			}, {

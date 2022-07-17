@@ -59,7 +59,7 @@ accept requests from Akvorado.
 
 Flows sent to Kafka are encoded with a versioned schema, described in
 the `flow-*.proto` files. For each version of the schema, a different
-Kafka topic is used. For example, the `flows-v1` topic receive
+Kafka topic is used. For example, the `flows-v2` topic receive
 serialized flows using the first version of the schema. The inlet
 service exports the schemas as well as the current version with its
 HTTP service, via the `/api/v0/inlet/schemas.json` endpoint.
