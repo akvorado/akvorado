@@ -47,29 +47,21 @@ func New(r *reporter.Reporter) decoder.Decoder {
 			Name: "count",
 			Help: "sFlows processed.",
 		},
-		[]string{"exporter", "version"},
+		[]string{"exporter", "agent", "version"},
 	)
 	nd.metrics.setRecordsStatsSum = nd.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "flowset_records_sum",
-			Help: "sFlows FlowSets sum of records.",
+			Name: "sample_records_sum",
+			Help: "sFlows samples sum of records.",
 		},
-		[]string{"exporter", "version", "type"},
+		[]string{"exporter", "agent", "version", "type"},
 	)
 	nd.metrics.setStatsSum = nd.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "flowset_sum",
-			Help: "sFlows FlowSets sum.",
+			Name: "sample_sum",
+			Help: "sFlows samples sum.",
 		},
-		[]string{"exporter", "version", "type"},
-	)
-	nd.metrics.timeStatsSum = nd.r.SummaryVec(
-		reporter.SummaryOpts{
-			Name:       "delay_summary_seconds",
-			Help:       "Netflows time difference between time of flow and processing.",
-			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
-		},
-		[]string{"exporter", "version"},
+		[]string{"exporter", "agent", "version", "type"},
 	)
 
 	return nd
@@ -120,17 +112,17 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*decoder.FlowMessage {
 		case sflow.FlowSample:
 			nd.metrics.setStatsSum.WithLabelValues(key, agent, version, "FlowSample").
 				Inc()
-			nd.metrics.setStatsSum.WithLabelValues(key, agent, version, "FlowSample").
+			nd.metrics.setRecordsStatsSum.WithLabelValues(key, agent, version, "FlowSample").
 				Add(float64(len(sConv.Records)))
 		case sflow.CounterSample:
 			nd.metrics.setStatsSum.WithLabelValues(key, agent, version, "CounterSample").
 				Inc()
-			nd.metrics.setStatsSum.WithLabelValues(key, agent, version, "CounterSample").
+			nd.metrics.setRecordsStatsSum.WithLabelValues(key, agent, version, "CounterSample").
 				Add(float64(len(sConv.Records)))
 		case sflow.ExpandedFlowSample:
 			nd.metrics.setStatsSum.WithLabelValues(key, agent, version, "ExpandedFlowSample").
 				Inc()
-			nd.metrics.setStatsSum.WithLabelValues(key, agent, version, "ExpandedFlowSample").
+			nd.metrics.setRecordsStatsSum.WithLabelValues(key, agent, version, "ExpandedFlowSample").
 				Add(float64(len(sConv.Records)))
 		}
 	}
