@@ -104,7 +104,7 @@ You can check they are correctly forwarded to Kafka with:
 $ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet_kafka_sent_messages_total'
 ```
 
-### Dropped packets
+### Dropped packets under load
 
 There are various bottlenecks leading to dropped packets. This is bad
 as the reported sampling rate is incorrect and we cannot reliably
@@ -221,9 +221,28 @@ Metadata for flows-v1 (from broker -1: kafka:9092/bootstrap):
 $ kcat -b kafka:9092 -C -t flows-v1 -f 'Topic %t [%p] at offset %o: key %k: %T\n' -o -1
 ```
 
+Alternatively, when using `docker-compose`, there is a Kafka UI
+running at `http://127.0.0.1:8080/kafka-ui/`. You can do the following
+checks:
+- are the brokers alive?
+- is the `flows-v1` topic present and receiving messages?
+- is ClickHouse registered as a consumer?
+
 ## ClickHouse
 
-To check if ClickHouse is late, use the following SQL query throught
+First, check that all the tables are present using the following SQL
+query through `clickhouse client` (when running with `docker-compose`,
+you can use `docker-compose exec clickhouse clickhouse-client`) :
+
+```sql
+SHOW tables
+```
+
+You should have a few tables, including `flows`, `flows_1m0s` (and
+others), and `flows_1_raw`. If one is missing, look at the log in the
+orchestrator. This is the component creating the tables.
+
+To check if ClickHouse is late, use the following SQL query through
 `clickhouse client` to get the lag in seconds.
 
 ```sql

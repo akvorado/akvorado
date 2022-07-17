@@ -31,6 +31,9 @@ type migrationStepWithDescription struct {
 
 // migrateDatabase execute database migration
 func (c *Component) migrateDatabase() error {
+	ctx := c.t.Context(nil)
+
+	// Set orchestrator URL
 	if c.config.OrchestratorURL == "" {
 		baseURL, err := c.getHTTPBaseURL("1.1.1.1:80")
 		if err != nil {
@@ -39,7 +42,22 @@ func (c *Component) migrateDatabase() error {
 		c.config.OrchestratorURL = baseURL
 	}
 
-	ctx := c.t.Context(nil)
+	// Limit number of consumers to the number of threads
+	row := c.d.ClickHouse.QueryRow(ctx, `SELECT getSetting('max_threads')`)
+	if err := row.Err(); err != nil {
+		c.r.Err(err).Msg("unable to query database")
+		return fmt.Errorf("unable to query database: %w", err)
+	}
+	var threads uint8
+	if err := row.Scan(&threads); err != nil {
+		c.r.Err(err).Msg("unable to parse number of threads")
+		return fmt.Errorf("unable to parse number of threads")
+	}
+	if c.config.Kafka.Consumers > int(threads) {
+		c.r.Warn().Msgf("too many consumers requested, capping to %d", threads)
+		c.config.Kafka.Consumers = int(threads)
+	}
+
 	steps := []migrationStepWithDescription{
 		{"create protocols dictionary", c.migrationStepCreateProtocolsDictionary},
 		{"create asns dictionary", c.migrationStepCreateASNsDictionary},

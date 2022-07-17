@@ -19,3 +19,8 @@ port 2055 is not accessible (you cannot send you own flows). Please,
 be gentle with this resource. The demo site also enables you to browse
 the [documentation](https://demo.akvorado.net/docs) (which is also
 available in `docs/`).
+
+Be aware that *Akvorado* is still young and should be considered as
+alpha quality. At some point, some features may change in an
+inconvenient way as it is difficult to mutate ClickHouse tables while
+keeping all data intact.

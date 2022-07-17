@@ -230,12 +230,27 @@ In the future, we may:
   have a system service running tcpdump dumping packets to a directory
   and use that as input. This would be allow *Akvorado* to block from
   end-to-end instead of trying to be realtime.
-- Collect routes by integrating GoBGP. This is low priority if we
-  consider information from Maxmind good enough for our use. However,
-  this would also allows us to get AS paths.
+- Collect routes by integrating biorouting or BIRD. This is low
+  priority if we consider information from Maxmind good enough for our
+  use. However, this would also allows us to get AS paths or at least
+  the next AS. GoBGP would be another option, but it is not very
+  efficient with fullviews. biorouting is using a compressed trie.
+  BIRD is still on the balance because it shares data when receiving
+  multiple views.
+- Add more annotations to exporters, interfaces and IP addresses. We
+  already cover quite a lot with connectivity/boundary/provider for
+  interfaces, but exporters can be classified in a single group and we
+  can put names on networks, but we may want to do more: add role,
+  site, region, tenant (for exporters), category, site, region, tenant
+  (for networks). Currently, categorization is done both in the inlet
+  service (when it requires an expression language, like for exporters
+  and interfaces) and in ClickHouse (when a single dictionary lookup
+  is enough). Look at [Flowhouse][] for inspirations.
 - DDoS service to detect and mitigate DDoS (with Flowspec).
-- Dynamic configuration with something like [go-archaius][] or
+- Support VRFS.
+- Add dynamic configuration with something like [go-archaius][] or
   [Harvester][].
 
 [go-archaius]: https://github.com/go-chassis/go-archaius
 [Harvester]: https://github.com/beatlabs/harvester
+[Flowhouse]: https://github.com/bio-routing/flowhouse

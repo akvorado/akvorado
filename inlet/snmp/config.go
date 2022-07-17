@@ -14,7 +14,7 @@ type Configuration struct {
 	// CacheRefresh defines how soon to refresh an existing cached entry
 	CacheRefresh time.Duration `validate:"eq=0|min=1m,eq=0|gtefield=CacheDuration"`
 	// CacheRefreshInterval defines the interval to check for expiration/refresh
-	CacheCheckInterval time.Duration `validate:gtefield=CacheRefresh"`
+	CacheCheckInterval time.Duration `validate:"ltefield=CacheRefresh"`
 	// CachePersist defines a file to store cache and survive restarts
 	CachePersistFile string
 	// DefaultCommunity is the default SNMP community to use
