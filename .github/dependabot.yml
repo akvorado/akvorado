@@ -1,0 +1,19 @@
+---
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    prefix: build
+    schedule:
+      interval: monthly
+  - package-ecosystem: npm
+    directory: /console/frontend
+    prefix: console/frontend
+    versioning-strategy: increase-if-necessary
+    schedule:
+      interval: monthly
+  - package-ecosystem: gomod
+    directory: /
+    prefix: build
+    schedule:
+      interval: monthly
