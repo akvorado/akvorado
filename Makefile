@@ -15,7 +15,7 @@ M = $(shell if [ "$$(tput colors 2> /dev/null || echo 0)" -ge 8 ]; then printf "
 export GO111MODULE=on
 
 GENERATED = \
-	inlet/flow/decoder/flow-1.pb.go \
+	inlet/flow/decoder/flow-2.pb.go \
 	common/clickhousedb/mocks/mock_driver.go \
 	orchestrator/clickhouse/data/asns.csv \
 	console/filter/parser.go \

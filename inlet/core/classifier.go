@@ -31,29 +31,61 @@ type exporterInfo struct {
 	Name string
 }
 
+// exporterClassification contains the information about an exporter classification
+type exporterClassification struct {
+	Group  string
+	Role   string
+	Site   string
+	Region string
+	Tenant string
+}
+
+type classifyStringFunc func(string) bool
+type classifyStringRegexFunc func(string, string, string) (bool, error)
+
 // exporterClassifierEnvironment defines the environment used by the exporter classifier
 type exporterClassifierEnvironment struct {
-	Exporter      exporterInfo
-	Classify      func(group string) bool
-	ClassifyRegex func(str string, regex string, template string) (bool, error)
+	Exporter            exporterInfo
+	Classify            classifyStringFunc
+	ClassifyRegex       classifyStringRegexFunc
+	ClassifyGroup       classifyStringFunc
+	ClassifyGroupRegex  classifyStringRegexFunc
+	ClassifyRole        classifyStringFunc
+	ClassifyRoleRegex   classifyStringRegexFunc
+	ClassifySite        classifyStringFunc
+	ClassifySiteRegex   classifyStringRegexFunc
+	ClassifyRegion      classifyStringFunc
+	ClassifyRegionRegex classifyStringRegexFunc
+	ClassifyTenant      classifyStringFunc
+	ClassifyTenantRegex classifyStringRegexFunc
 }
 
 // exec executes the exporter classifier with the provided exporter.
-func (scr *ExporterClassifierRule) exec(si exporterInfo) (string, error) {
-	var group string
-	classify := func(g string) bool {
-		group = g
-		return true
-	}
+func (scr *ExporterClassifierRule) exec(si exporterInfo, ec *exporterClassification) error {
+	classifyGroup := classifyString(&ec.Group)
+	classifyRole := classifyString(&ec.Role)
+	classifySite := classifyString(&ec.Site)
+	classifyRegion := classifyString(&ec.Region)
+	classifyTenant := classifyString(&ec.Tenant)
 	env := exporterClassifierEnvironment{
-		Exporter:      si,
-		Classify:      classify,
-		ClassifyRegex: withRegex(classify),
+		Exporter:            si,
+		Classify:            classifyGroup,
+		ClassifyRegex:       withRegex(classifyGroup),
+		ClassifyGroup:       classifyGroup,
+		ClassifyGroupRegex:  withRegex(classifyGroup),
+		ClassifyRole:        classifyRole,
+		ClassifyRoleRegex:   withRegex(classifyRole),
+		ClassifySite:        classifySite,
+		ClassifySiteRegex:   withRegex(classifySite),
+		ClassifyRegion:      classifyRegion,
+		ClassifyRegionRegex: withRegex(classifyRegion),
+		ClassifyTenant:      classifyTenant,
+		ClassifyTenantRegex: withRegex(classifyTenant),
 	}
 	if _, err := expr.Run(scr.program, env); err != nil {
-		return "", fmt.Errorf("unable to execute classifier %q: %w", scr, err)
+		return fmt.Errorf("unable to execute classifier %q: %w", scr, err)
 	}
-	return group, nil
+	return nil
 }
 
 // UnmarshalText compiles a classification rule for a exporter.
@@ -115,28 +147,18 @@ type interfaceClassification struct {
 type interfaceClassifierEnvironment struct {
 	Exporter                  exporterInfo
 	Interface                 interfaceInfo
-	ClassifyConnectivity      func(connectivity string) bool
-	ClassifyConnectivityRegex func(str string, regex string, template string) (bool, error)
-	ClassifyProvider          func(provider string) bool
-	ClassifyProviderRegex     func(str string, regex string, template string) (bool, error)
+	ClassifyConnectivity      classifyStringFunc
+	ClassifyConnectivityRegex classifyStringRegexFunc
+	ClassifyProvider          classifyStringFunc
+	ClassifyProviderRegex     classifyStringRegexFunc
 	ClassifyExternal          func() bool
 	ClassifyInternal          func() bool
 }
 
 // exec executes the exporter classifier with the provided interface.
 func (scr *InterfaceClassifierRule) exec(si exporterInfo, ii interfaceInfo, ic *interfaceClassification) error {
-	classifyConnectivity := func(connectivity string) bool {
-		if ic.Connectivity == "" {
-			ic.Connectivity = normalize(connectivity)
-		}
-		return true
-	}
-	classifyProvider := func(provider string) bool {
-		if ic.Provider == "" {
-			ic.Provider = normalize(provider)
-		}
-		return true
-	}
+	classifyConnectivity := classifyString(&ic.Connectivity)
+	classifyProvider := classifyString(&ic.Provider)
 	classifyExternal := func() bool {
 		if ic.Boundary == undefinedBoundary {
 			ic.Boundary = externalBoundary
@@ -225,9 +247,19 @@ func withRegex(fn func(string) bool) func(string, string, string) (bool, error) 
 
 var normalizeRegex = regexp.MustCompile("[^a-z0-9.+-]+")
 
-// Normalize a string (provider or connectivity)
+// Normalize a string by putting it lowercase and only keeping safe characters
 func normalize(str string) string {
 	return normalizeRegex.ReplaceAllString(strings.ToLower(str), "")
+}
+
+// classifyString is an helper to classify from string to string
+func classifyString(output *string) func(string) bool {
+	return func(input string) bool {
+		if *output == "" {
+			*output = normalize(input)
+		}
+		return true
+	}
 }
 
 type regexValidator struct {

@@ -18,6 +18,10 @@ const (
 	queryColumnExporterAddress queryColumn = iota + 1
 	queryColumnExporterName
 	queryColumnExporterGroup
+	queryColumnExporterRole
+	queryColumnExporterSite
+	queryColumnExporterRegion
+	queryColumnExporterTenant
 	queryColumnSrcAS
 	queryColumnSrcNetName
 	queryColumnSrcCountry
@@ -50,6 +54,10 @@ var queryColumnMap = helpers.NewBimap(map[queryColumn]string{
 	queryColumnExporterAddress:   "ExporterAddress",
 	queryColumnExporterName:      "ExporterName",
 	queryColumnExporterGroup:     "ExporterGroup",
+	queryColumnExporterRole:      "ExporterRole",
+	queryColumnExporterSite:      "ExporterSite",
+	queryColumnExporterRegion:    "ExporterRegion",
+	queryColumnExporterTenant:    "ExporterTenant",
 	queryColumnSrcAddr:           "SrcAddr",
 	queryColumnDstAddr:           "DstAddr",
 	queryColumnSrcAS:             "SrcAS",

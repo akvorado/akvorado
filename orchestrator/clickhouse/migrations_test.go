@@ -20,10 +20,16 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/http"
+	"akvorado/common/kafka"
 	"akvorado/common/reporter"
 )
 
-func clearAllTables(t *testing.T, ch *clickhousedb.Component) {
+var ignoredTables = []string{
+	"flows_1_raw",
+	"flows_1_raw_consumer",
+}
+
+func dropAllTables(t *testing.T, ch *clickhousedb.Component) {
 	rows, err := ch.Query(context.Background(), `
 SELECT engine, table
 FROM system.tables
@@ -36,6 +42,7 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 		if err := rows.Scan(&engine, &table); err != nil {
 			t.Fatalf("Scan() error:\n%+v", err)
 		}
+		t.Logf("(%s) Drop table %s", time.Now(), table)
 		switch engine {
 		case "Dictionary":
 			sql = "DROP DICTIONARY %s"
@@ -57,10 +64,16 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 		t.Fatalf("Query() error:\n%+v", err)
 	}
 	schemas := map[string]string{}
+outer:
 	for rows.Next() {
 		var schema, table string
 		if err := rows.Scan(&table, &schema); err != nil {
 			t.Fatalf("Scan() error:\n%+v", err)
+		}
+		for _, ignored := range ignoredTables {
+			if ignored == table {
+				continue outer
+			}
 		}
 		schemas[table] = schema
 	}
@@ -98,8 +111,10 @@ func loadAllTables(t *testing.T, ch *clickhousedb.Component, filename string) {
 		}
 		schemas[record[0]] = record[1]
 	}
-	clearAllTables(t, ch)
+	dropAllTables(t, ch)
+	t.Logf("(%s) Load all tables from dump %s", time.Now(), filename)
 	loadTables(t, ch, schemas)
+	t.Logf("(%s) Loaded all tables from dump %s", time.Now(), filename)
 }
 
 func TestGetHTTPBaseURL(t *testing.T) {
@@ -148,6 +163,7 @@ func TestMigration(t *testing.T) {
 			r := reporter.NewMock(t)
 			configuration := DefaultConfiguration()
 			configuration.OrchestratorURL = "http://something"
+			configuration.Kafka.Configuration = kafka.DefaultConfiguration()
 			ch, err := New(r, configuration, Dependencies{
 				Daemon:     daemon.NewMock(t),
 				HTTP:       http.NewMock(t, r),
@@ -159,7 +175,7 @@ func TestMigration(t *testing.T) {
 			helpers.StartStop(t, ch)
 			select {
 			case <-ch.migrationsDone:
-			case <-time.After(3 * time.Second):
+			case <-time.After(5 * time.Second):
 				t.Fatalf("Migrations not done")
 			}
 
@@ -179,22 +195,32 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 				}
 				got = append(got, table)
 			}
+			filteredGot := []string{}
+		outer:
+			for _, g := range got {
+				for _, ignore := range ignoredTables {
+					if g == ignore {
+						continue outer
+					}
+				}
+				filteredGot = append(filteredGot, g)
+			}
 			expected := []string{
 				"asns",
 				"exporters",
 				"flows",
-				"flows_1_raw",
-				"flows_1_raw_consumer",
 				"flows_1h0m0s",
 				"flows_1h0m0s_consumer",
 				"flows_1m0s",
 				"flows_1m0s_consumer",
+				"flows_2_raw",
+				"flows_2_raw_consumer",
 				"flows_5m0s",
 				"flows_5m0s_consumer",
 				"networks",
 				"protocols",
 			}
-			if diff := helpers.Diff(got, expected); diff != "" {
+			if diff := helpers.Diff(filteredGot, expected); diff != "" {
 				t.Fatalf("SHOW TABLES (-got, +want):\n%s", diff)
 			}
 
@@ -216,6 +242,7 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 		r := reporter.NewMock(t)
 		configuration := DefaultConfiguration()
 		configuration.OrchestratorURL = "http://something"
+		configuration.Kafka.Configuration = kafka.DefaultConfiguration()
 		ch, err := New(r, configuration, Dependencies{
 			Daemon:     daemon.NewMock(t),
 			HTTP:       http.NewMock(t, r),
@@ -227,7 +254,7 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 		helpers.StartStop(t, ch)
 		select {
 		case <-ch.migrationsDone:
-		case <-time.After(time.Second):
+		case <-time.After(5 * time.Second):
 			t.Fatalf("Migrations not done")
 		}
 

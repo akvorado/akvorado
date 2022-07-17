@@ -25,7 +25,7 @@ func TestKafka(t *testing.T) {
 	mockProducer.ExpectInputWithMessageCheckerFunctionAndSucceed(func(got *sarama.ProducerMessage) error {
 		defer close(received)
 		expected := sarama.ProducerMessage{
-			Topic:     "flows-v1",
+			Topic:     "flows-v2",
 			Key:       sarama.StringEncoder("127.0.0.1"),
 			Value:     sarama.ByteEncoder("hello world!"),
 			Partition: 30,
@@ -50,7 +50,7 @@ func TestKafka(t *testing.T) {
 	gotMetrics := r.GetMetrics("akvorado_inlet_kafka_")
 	expectedMetrics := map[string]string{
 		`sent_bytes_total{exporter="127.0.0.1"}`:                                          "26",
-		`errors_total{error="kafka: Failed to produce message to topic flows-v1: noooo"}`: "1",
+		`errors_total{error="kafka: Failed to produce message to topic flows-v2: noooo"}`: "1",
 		`sent_messages_total{exporter="127.0.0.1"}`:                                       "2",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {

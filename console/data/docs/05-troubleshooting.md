@@ -208,24 +208,24 @@ topic. However, the metadata can be read using
 alive with:
 
 ```console
-$ kcat -b kafka:9092 -C -t flows-v1 -L
-Metadata for flows-v1 (from broker -1: kafka:9092/bootstrap):
+$ kcat -b kafka:9092 -C -t flows-v2 -L
+Metadata for flows-v2 (from broker -1: kafka:9092/bootstrap):
  1 brokers:
   broker 1001 at eb6c7781b875:9092 (controller)
  1 topics:
-  topic "flows-v1" with 4 partitions:
+  topic "flows-v2" with 4 partitions:
     partition 0, leader 1001, replicas: 1001, isrs: 1001
     partition 1, leader 1001, replicas: 1001, isrs: 1001
     partition 2, leader 1001, replicas: 1001, isrs: 1001
     partition 3, leader 1001, replicas: 1001, isrs: 1001
-$ kcat -b kafka:9092 -C -t flows-v1 -f 'Topic %t [%p] at offset %o: key %k: %T\n' -o -1
+$ kcat -b kafka:9092 -C -t flows-v2 -f 'Topic %t [%p] at offset %o: key %k: %T\n' -o -1
 ```
 
 Alternatively, when using `docker-compose`, there is a Kafka UI
 running at `http://127.0.0.1:8080/kafka-ui/`. You can do the following
 checks:
 - are the brokers alive?
-- is the `flows-v1` topic present and receiving messages?
+- is the `flows-v2` topic present and receiving messages?
 - is ClickHouse registered as a consumer?
 
 ## ClickHouse
@@ -239,7 +239,7 @@ SHOW tables
 ```
 
 You should have a few tables, including `flows`, `flows_1m0s` (and
-others), and `flows_1_raw`. If one is missing, look at the log in the
+others), and `flows_2_raw`. If one is missing, look at the log in the
 orchestrator. This is the component creating the tables.
 
 To check if ClickHouse is late, use the following SQL query through
@@ -260,8 +260,8 @@ from Kafka's point of view:
 $ kafka-consumer-groups.sh --bootstrap-server kafka:9092 --describe --group clickhouse
 
 GROUP           TOPIC           PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG             CONSUMER-ID                                                                        HOST            CLIENT-ID
-clickhouse      flows-v1        0          5650351527      5650374314      22787           ClickHouse-ee97b7e7e5e0-default-flows_1_raw-0-77740d0a-79b7-4bef-a501-25a819c3cee4 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_1_raw-0
-clickhouse      flows-v1        3          3035602619      3035628290      25671           ClickHouse-ee97b7e7e5e0-default-flows_1_raw-3-1e4629b0-69a3-48dd-899a-20f4b16be0a2 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_1_raw-3
-clickhouse      flows-v1        2          1645914467      1645930257      15790           ClickHouse-ee97b7e7e5e0-default-flows_1_raw-2-79c9bafe-fd36-42fe-921f-a802d46db684 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_1_raw-2
-clickhouse      flows-v1        1          889117276       889129896       12620           ClickHouse-ee97b7e7e5e0-default-flows_1_raw-1-f0421bbe-ba13-49df-998f-83e49045be00 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_1_raw-1
+clickhouse      flows-v2        0          5650351527      5650374314      22787           ClickHouse-ee97b7e7e5e0-default-flows_2_raw-0-77740d0a-79b7-4bef-a501-25a819c3cee4 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_2_raw-0
+clickhouse      flows-v2        3          3035602619      3035628290      25671           ClickHouse-ee97b7e7e5e0-default-flows_2_raw-3-1e4629b0-69a3-48dd-899a-20f4b16be0a2 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_2_raw-3
+clickhouse      flows-v2        2          1645914467      1645930257      15790           ClickHouse-ee97b7e7e5e0-default-flows_2_raw-2-79c9bafe-fd36-42fe-921f-a802d46db684 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_2_raw-2
+clickhouse      flows-v2        1          889117276       889129896       12620           ClickHouse-ee97b7e7e5e0-default-flows_2_raw-1-f0421bbe-ba13-49df-998f-83e49045be00 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_2_raw-1
 ```

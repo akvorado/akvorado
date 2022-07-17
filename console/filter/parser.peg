@@ -74,6 +74,10 @@ ConditionIPExpr "condition on IP" ←
 ConditionStringExpr "condition on string" ←
  column:("ExporterName"i { return "ExporterName", nil }
       / "ExporterGroup"i { return "ExporterGroup", nil }
+      / "ExporterRole"i { return "ExporterRole", nil }
+      / "ExporterSite"i { return "ExporterSite", nil }
+      / "ExporterRegion"i { return "ExporterRegion", nil }
+      / "ExporterTenant"i { return "ExporterTenant", nil }
       / "SrcCountry"i { return "SrcCountry", nil }
       / "DstCountry"i { return "DstCountry", nil }
       / "SrcNetName"i { return "SrcNetName", nil }

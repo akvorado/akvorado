@@ -122,7 +122,8 @@ func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 		}
 	case "value":
 		var column, detail string
-		switch strings.ToLower(input.Column) {
+		inputColumn := strings.ToLower(input.Column)
+		switch inputColumn {
 		case "inifboundary", "outifboundary":
 			completions = append(completions, filterCompletion{
 				Label:  "internal",
@@ -220,12 +221,9 @@ LIMIT 20`, input.Prefix); err != nil {
 				})
 			}
 			input.Prefix = ""
-		case "exportername":
-			column = "ExporterName"
-			detail = "exporter name"
-		case "exportergroup":
-			column = "ExporterGroup"
-			detail = "exporter group"
+		case "exportername", "exportergroup", "exporterrole", "exportersite", "exporterregion", "exportertenant":
+			column = fmt.Sprintf("Exporter%s", helpers.Capitalize(inputColumn[8:]))
+			detail = fmt.Sprintf("exporter %s", inputColumn[8:])
 		case "inifname", "outifname":
 			column = "IfName"
 			detail = "interface name"

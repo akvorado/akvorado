@@ -12,6 +12,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- ✨ *inlet*: classify exporters to group, role, site, region, and tenant [PR #14][]
 - 🩹 *console*: fix use of `InIfBoundary` and `OutIfBoundary` as dimensions [PR #11][]
 - 🩹 *docker-compose*: avoid starting bogus "akvorado-image" service
 - 🩹 *build*: make *Akvorado* compile on MacOS
@@ -20,6 +21,7 @@ identified with a specific icon:
 - 🌱 *docker-compose*: add [UI for Apache Kafka][] to help debug starter issues
 
 [PR #11]: https://github.com/vincentbernat/akvorado/pull/11
+[PR #14]: https://github.com/vincentbernat/akvorado/pull/14
 [UI for Apache Kafka]: https://github.com/provectus/kafka-ui
 
 ## 1.4.2 - 2022-07-16

@@ -27,10 +27,11 @@ func TestHTTPEndpoints(t *testing.T) {
 		}, {
 			URL: "/api/v0/inlet/flow/schemas.json",
 			JSONOutput: gin.H{
-				"current-version": 1,
+				"current-version": 2,
 				"versions": gin.H{
 					"0": "/api/v0/inlet/flow/schema-0.proto",
 					"1": "/api/v0/inlet/flow/schema-1.proto",
+					"2": "/api/v0/inlet/flow/schema-2.proto",
 				},
 			},
 		},
