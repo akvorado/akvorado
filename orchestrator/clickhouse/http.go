@@ -58,10 +58,10 @@ func (c *Component) registerHTTPHandlers() error {
 			w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 			w.WriteHeader(http.StatusOK)
 			wr := csv.NewWriter(w)
-			wr.Write([]string{"network", "name"})
+			wr.Write([]string{"network", "name", "role", "site", "region", "tenant"})
 			if c.config.Networks != nil {
 				for k, v := range c.config.Networks {
-					wr.Write([]string{k, v})
+					wr.Write([]string{k, v.Name, v.Role, v.Site, v.Region, v.Tenant})
 				}
 			}
 			wr.Flush()

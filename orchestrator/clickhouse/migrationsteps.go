@@ -33,6 +33,14 @@ const (
  DstAS UInt32,
  SrcNetName LowCardinality(String),
  DstNetName LowCardinality(String),
+ SrcNetRole LowCardinality(String),
+ DstNetRole LowCardinality(String),
+ SrcNetSite LowCardinality(String),
+ DstNetSite LowCardinality(String),
+ SrcNetRegion LowCardinality(String),
+ DstNetRegion LowCardinality(String),
+ SrcNetTenant LowCardinality(String),
+ DstNetTenant LowCardinality(String),
  SrcCountry FixedString(2),
  DstCountry FixedString(2),
  InIfName LowCardinality(String),
@@ -151,7 +159,11 @@ ORDER BY (TimeReceived,
           InIfName, SrcAS, ForwardingStatus,
           OutIfName, DstAS,
           SamplingRate,
-          SrcNetName, DstNetName)`,
+          SrcNetName, DstNetName,
+          SrcNetRole, DstNetRole,
+          SrcNetSite, DstNetSite,
+          SrcNetRegion, DstNetRegion,
+          SrcNetTenant, DstNetTenant)`,
 					tableName,
 					partialSchema("SrcAddr", "DstAddr", "SrcPort", "DstPort"),
 					partitionInterval))
@@ -215,6 +227,48 @@ WHERE table = $1 AND database = currentDatabase() AND name = $2`,
 	}
 }
 
+func (c *Component) migrationStepAddSrcNetNameDstNetOthersColumns(resolution ResolutionConfiguration) migrationStepFunc {
+	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+		var tableName string
+		if resolution.Interval == 0 {
+			tableName = "flows"
+		} else {
+			tableName = fmt.Sprintf("flows_%s", resolution.Interval)
+		}
+		return migrationStep{
+			CheckQuery: `
+SELECT 1 FROM system.columns
+WHERE table = $1 AND database = currentDatabase() AND name = $2`,
+			Args: []interface{}{tableName, "DstNetRole"},
+			Do: func() error {
+				modifications := []string{
+					`ADD COLUMN SrcNetRole LowCardinality(String) AFTER DstNetName`,
+					`ADD COLUMN DstNetRole LowCardinality(String) AFTER SrcNetRole`,
+					`ADD COLUMN SrcNetSite LowCardinality(String) AFTER DstNetRole`,
+					`ADD COLUMN DstNetSite LowCardinality(String) AFTER SrcNetSite`,
+					`ADD COLUMN SrcNetRegion LowCardinality(String) AFTER DstNetSite`,
+					`ADD COLUMN DstNetRegion LowCardinality(String) AFTER SrcNetRegion`,
+					`ADD COLUMN SrcNetTenant LowCardinality(String) AFTER DstNetRegion`,
+					`ADD COLUMN DstNetTenant LowCardinality(String) AFTER SrcNetTenant`,
+				}
+				if tableName != "flows" {
+					modifications = append(modifications,
+						`MODIFY ORDER BY (TimeReceived, ExporterAddress, EType, Proto,
+                                                                  InIfName, SrcAS, ForwardingStatus,
+                                                                  OutIfName, DstAS, SamplingRate,
+                                                                  SrcNetName, DstNetName,
+                                                                  SrcNetRole, DstNetRole,
+                                                                  SrcNetSite, DstNetSite,
+                                                                  SrcNetRegion, DstNetRegion,
+                                                                  SrcNetTenant, DstNetTenant)`)
+				}
+				return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE %s %s`,
+					tableName, strings.Join(modifications, ", ")))
+			},
+		}
+	}
+}
+
 func (c *Component) migrationStepAddExporterColumns(resolution ResolutionConfiguration) migrationStepFunc {
 	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 		var tableName string
@@ -251,7 +305,7 @@ func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution Resolution
 		tableName := fmt.Sprintf("flows_%s", resolution.Interval)
 		viewName := fmt.Sprintf("%s_consumer", tableName)
 		return migrationStep{
-			CheckQuery: queryTableHash(8417690430320478031, ""),
+			CheckQuery: queryTableHash(7356168458686845598, ""),
 			Args:       []interface{}{viewName},
 			// No GROUP BY, the SummingMergeTree will take care of that
 			Do: func() error {
@@ -404,15 +458,17 @@ func (c *Component) migrationStepCreateNetworksDictionary(ctx context.Context, l
 	settings := `SETTINGS(format_csv_allow_single_quotes = 0)`
 	sourceLike := fmt.Sprintf("%% %s%% %s%%", source, settings)
 	return migrationStep{
-		CheckQuery: `
-SELECT 1 FROM system.tables
-WHERE name = $1 AND database = currentDatabase() AND create_table_query LIKE $2`,
-		Args: []interface{}{"networks", sourceLike},
+		CheckQuery: queryTableHash(5246378884861475308, "AND create_table_query LIKE $2"),
+		Args:       []interface{}{"networks", sourceLike},
 		Do: func() error {
 			return conn.Exec(ctx, fmt.Sprintf(`
 CREATE OR REPLACE DICTIONARY networks (
  network String,
- name String
+ name String,
+ role String,
+ site String,
+ region String,
+ tenant String
 )
 
 PRIMARY KEY network
@@ -461,7 +517,13 @@ CREATE TABLE %s
 (
 %s
 )
-ENGINE = %s`, tableName, partialSchema("SrcNetName", "DstNetName"), kafkaEngine))
+ENGINE = %s`, tableName, partialSchema(
+				"SrcNetName", "DstNetName",
+				"SrcNetRole", "DstNetRole",
+				"SrcNetSite", "DstNetSite",
+				"SrcNetRegion", "DstNetRegion",
+				"SrcNetTenant", "DstNetTenant",
+			), kafkaEngine))
 		},
 	}
 }
@@ -470,7 +532,7 @@ func (c *Component) migrationStepCreateRawFlowsConsumerView(ctx context.Context,
 	tableName := fmt.Sprintf("flows_%d_raw", flow.CurrentSchemaVersion)
 	viewName := fmt.Sprintf("%s_consumer", tableName)
 	return migrationStep{
-		CheckQuery: queryTableHash(16363620252697412587, ""),
+		CheckQuery: queryTableHash(17295069153939039375, ""),
 		Args:       []interface{}{viewName},
 		Do: func() error {
 			l.Debug().Msg("drop consumer table")
@@ -484,7 +546,15 @@ CREATE MATERIALIZED VIEW %s TO flows
 AS SELECT
  *,
  dictGetOrDefault('networks', 'name', SrcAddr, '') AS SrcNetName,
- dictGetOrDefault('networks', 'name', DstAddr, '') AS DstNetName
+ dictGetOrDefault('networks', 'name', DstAddr, '') AS DstNetName,
+ dictGetOrDefault('networks', 'role', SrcAddr, '') AS SrcNetRole,
+ dictGetOrDefault('networks', 'role', DstAddr, '') AS DstNetRole,
+ dictGetOrDefault('networks', 'site', SrcAddr, '') AS SrcNetSite,
+ dictGetOrDefault('networks', 'site', DstAddr, '') AS DstNetSite,
+ dictGetOrDefault('networks', 'region', SrcAddr, '') AS SrcNetRegion,
+ dictGetOrDefault('networks', 'region', DstAddr, '') AS DstNetRegion,
+ dictGetOrDefault('networks', 'tenant', SrcAddr, '') AS SrcNetTenant,
+ dictGetOrDefault('networks', 'tenant', DstAddr, '') AS DstNetTenant
 FROM %s`, viewName, tableName))
 		},
 	}

@@ -200,22 +200,23 @@ UNION DISTINCT
 				})
 			}
 			input.Prefix = "" // We have handled this internally
-		case "srcnetname", "dstnetname":
+		case "srcnetname", "dstnetname", "srcnetrole", "dstnetrole", "srcnetsite", "dstnetsite", "srcnetregion", "dstnetregion", "srcnettenant", "dstnettenant":
+			attributeName := inputColumn[6:]
 			results := []struct {
-				Name string `ch:"name"`
+				Attribute string `ch:"attribute"`
 			}{}
-			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, `
-SELECT DISTINCT name
+			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, fmt.Sprintf(`
+SELECT DISTINCT %s AS attribute
 FROM networks
-WHERE positionCaseInsensitive(name, $1) >= 1
-ORDER BY name
-LIMIT 20`, input.Prefix); err != nil {
+WHERE positionCaseInsensitive(%s, $1) >= 1
+ORDER BY %s
+LIMIT 20`, attributeName, attributeName, attributeName), input.Prefix); err != nil {
 				c.r.Err(err).Msg("unable to query database")
 				break
 			}
 			for _, result := range results {
 				completions = append(completions, filterCompletion{
-					Label:  result.Name,
+					Label:  result.Attribute,
 					Detail: "network name",
 					Quoted: true,
 				})

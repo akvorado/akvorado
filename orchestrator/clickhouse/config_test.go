@@ -6,6 +6,7 @@ package clickhouse
 import (
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/mitchellh/mapstructure"
 
 	"akvorado/common/helpers"
@@ -14,44 +15,68 @@ import (
 func TestNetworkNamesUnmarshalHook(t *testing.T) {
 	cases := []struct {
 		Description string
-		Input       map[string]string
-		Output      NetworkNames
+		Input       map[string]interface{}
+		Output      NetworkMap
 	}{
 		{
 			Description: "nil",
 			Input:       nil,
-			Output:      NetworkNames{},
+			Output:      NetworkMap{},
 		}, {
 			Description: "empty",
-			Input:       map[string]string{},
-			Output:      NetworkNames{},
+			Input:       gin.H{},
+			Output:      NetworkMap{},
 		}, {
-			Description: "IPv4 subnet",
-			Input:       map[string]string{"203.0.113.0/24": "customer"},
-			Output:      NetworkNames{"::ffff:203.0.113.0/120": "customer"},
+			Description: "IPv4",
+			Input:       gin.H{"203.0.113.0/24": gin.H{"name": "customer"}},
+			Output:      NetworkMap{"::ffff:203.0.113.0/120": NetworkAttributes{Name: "customer"}},
 		}, {
-			Description: "IPv6 subnet",
-			Input:       map[string]string{"2001:db8:1::/64": "customer"},
-			Output:      NetworkNames{"2001:db8:1::/64": "customer"},
+			Description: "IPv6",
+			Input:       gin.H{"2001:db8:1::/64": gin.H{"name": "customer"}},
+			Output:      NetworkMap{"2001:db8:1::/64": NetworkAttributes{Name: "customer"}},
+		}, {
+			Description: "IPv4 subnet (compatibility)",
+			Input:       gin.H{"203.0.113.0/24": "customer"},
+			Output:      NetworkMap{"::ffff:203.0.113.0/120": NetworkAttributes{Name: "customer"}},
+		}, {
+			Description: "IPv6 subnet (compatibility)",
+			Input:       gin.H{"2001:db8:1::/64": "customer"},
+			Output:      NetworkMap{"2001:db8:1::/64": NetworkAttributes{Name: "customer"}},
+		}, {
+			Description: "all attributes",
+			Input: gin.H{"203.0.113.0/24": gin.H{
+				"name":   "customer1",
+				"role":   "customer",
+				"site":   "paris",
+				"region": "france",
+				"tenant": "mobile",
+			}},
+			Output: NetworkMap{"::ffff:203.0.113.0/120": NetworkAttributes{
+				Name:   "customer1",
+				Role:   "customer",
+				Site:   "paris",
+				Region: "france",
+				Tenant: "mobile",
+			}},
 		}, {
 			Description: "Invalid subnet (1)",
-			Input:       map[string]string{"192.0.2.1/38": "customer"},
+			Input:       gin.H{"192.0.2.1/38": "customer"},
 			Output:      nil,
 		}, {
 			Description: "Invalid subnet (2)",
-			Input:       map[string]string{"192.0.2.1/255.0.255.0": "customer"},
+			Input:       gin.H{"192.0.2.1/255.0.255.0": "customer"},
 			Output:      nil,
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.Description, func(t *testing.T) {
-			var got NetworkNames
+			var got NetworkMap
 			decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 				Result:      &got,
 				ErrorUnused: true,
 				Metadata:    nil,
 				DecodeHook: mapstructure.ComposeDecodeHookFunc(
-					NetworkNamesUnmarshalerHook(),
+					NetworkMapUnmarshalerHook(),
 				),
 			})
 			if err != nil {

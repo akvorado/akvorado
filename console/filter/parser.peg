@@ -82,6 +82,14 @@ ConditionStringExpr "condition on string" ←
       / "DstCountry"i { return "DstCountry", nil }
       / "SrcNetName"i { return "SrcNetName", nil }
       / "DstNetName"i { return "DstNetName", nil }
+      / "SrcNetRole"i { return "SrcNetRole", nil }
+      / "DstNetRole"i { return "DstNetRole", nil }
+      / "SrcNetSite"i { return "SrcNetSite", nil }
+      / "DstNetSite"i { return "DstNetSite", nil }
+      / "SrcNetRegion"i { return "SrcNetRegion", nil }
+      / "DstNetRegion"i { return "DstNetRegion", nil }
+      / "SrcNetTenant"i { return "SrcNetTenant", nil }
+      / "DstNetTenant"i { return "DstNetTenant", nil }
       / "InIfName"i { return "InIfName", nil }
       / "OutIfName"i { return "OutIfName", nil }
       / "InIfDescription"i { return "InIfDescription", nil }

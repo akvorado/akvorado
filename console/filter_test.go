@@ -34,14 +34,25 @@ LIMIT 20`,
 		Return(nil)
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), `
-SELECT DISTINCT name
+SELECT DISTINCT name AS attribute
 FROM networks
 WHERE positionCaseInsensitive(name, $1) >= 1
 ORDER BY name
 LIMIT 20`, "c").
 		SetArg(1, []struct {
-			Name string `ch:"name"`
+			Attribute string `ch:"attribute"`
 		}{{"customer-1"}, {"customer-2"}, {"customer-3"}}).
+		Return(nil)
+	mockConn.EXPECT().
+		Select(gomock.Any(), gomock.Any(), `
+SELECT DISTINCT role AS attribute
+FROM networks
+WHERE positionCaseInsensitive(role, $1) >= 1
+ORDER BY role
+LIMIT 20`, "c").
+		SetArg(1, []struct {
+			Attribute string `ch:"attribute"`
+		}{{"customer"}}).
 		Return(nil)
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), `
@@ -109,6 +120,10 @@ UNION DISTINCT
 				{"label": "DstAddr", "detail": "column name", "quoted": false},
 				{"label": "DstCountry", "detail": "column name", "quoted": false},
 				{"label": "DstNetName", "detail": "column name", "quoted": false},
+				{"label": "DstNetRegion", "detail": "column name", "quoted": false},
+				{"label": "DstNetRole", "detail": "column name", "quoted": false},
+				{"label": "DstNetSite", "detail": "column name", "quoted": false},
+				{"label": "DstNetTenant", "detail": "column name", "quoted": false},
 				{"label": "DstPort", "detail": "column name", "quoted": false},
 			}},
 		}, {
@@ -188,6 +203,13 @@ UNION DISTINCT
 				{"label": "customer-1", "detail": "network name", "quoted": true},
 				{"label": "customer-2", "detail": "network name", "quoted": true},
 				{"label": "customer-3", "detail": "network name", "quoted": true},
+			}},
+		}, {
+			URL:        "/api/v0/console/filter/complete",
+			StatusCode: 200,
+			JSONInput:  gin.H{"what": "value", "column": "dstnetRole", "prefix": "c"},
+			JSONOutput: gin.H{"completions": []gin.H{
+				{"label": "customer", "detail": "network name", "quoted": true},
 			}},
 		}, {
 			Description: "list, no filters",

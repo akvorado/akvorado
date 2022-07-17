@@ -331,7 +331,9 @@ provided:
 - `resolutions` defines the various resolutions to keep data
 - `max-partitions` defines the number of partitions to use when
   creating consolidated tables
-- `networks` maps subnets to names (used as `SrcNetName` and `DstNetName`)
+- `networks` maps subnets to attributes. Attributes are `name`,
+  `role`, `site`, `region`, and `tenant`. They are exposed as
+  `SrcNetName`, `DstNetName`, `SrcNetRole`, `DstNetRole`, etc.
 - `asns` maps AS number to names (overriding the builtin ones)
 - `orchestrator-url` defines the URL of the orchestrator to be used
   by Clickhouse (autodetection when not specified)
