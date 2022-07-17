@@ -168,7 +168,7 @@ licensecheck: console/frontend/node_modules | $(WWHRD) ; $(info $(M) check depen
 
 .PHONY: clean
 clean: ; $(info $(M) cleaning…)	@ ## Cleanup everything
-	@rm -rf $(BIN) test $(GENERATED) *~
+	@rm -rf $(BIN) test $(GENERATED) inlet/flow/decoder/flow-*.pb.go *~
 
 .PHONY: help
 help:
