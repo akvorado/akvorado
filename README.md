@@ -1,5 +1,7 @@
 # Akvorado: flow collector, hydrater and visualizer.
 
+<img src="console/frontend/src/assets/images/akvorado.svg" class="float: left;" width="20%">
+
 This program receives flows (currently Netflow/IPFIX), hydrates them
 with interface names (using SNMP), geo information (using MaxMind),
 and exports them to Kafka, then ClickHouse. It also exposes a web
