@@ -22,10 +22,18 @@ clickhouse:
   asns:
     64501: ACME Corporation
   networks:
-    - 192.0.2.0/24: customers
-    - 203.0.113.0/24: servers
-    - 2a01:db8:cafe:1::/64: customers
-    - 2a01:db8:cafe:2::/64: servers
+    192.0.2.0/24:
+      name: ipv4-customers
+      role: customers
+    203.0.113.0/24:
+      name: ipv4-servers
+      role: servers
+    2a01:db8:cafe:1::/64:
+      name: ipv6-customers
+      role: customers
+    2a01:db8:cafe:2::/64:
+      name: ipv6-servers
+      role: servers
 inlet:
   kafka:
     compression-codec: zstd

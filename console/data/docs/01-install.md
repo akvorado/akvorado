@@ -69,3 +69,9 @@ It is also possible to get Akvorado as a
 ```console
 # docker pull ghcr.io/vincentbernat/akvorado:latest
 ```
+
+## Upgrade
+
+Be sure to read the [changelog](99-changelog.md) before attempting an
+upgrade. Upgrade the orchestrator first. This will update the
+ClickHouse database. Then, upgrade all inlets. Then the console.

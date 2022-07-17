@@ -239,33 +239,35 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 
 	if !t.Failed() {
 		// One more time
-		r := reporter.NewMock(t)
-		configuration := DefaultConfiguration()
-		configuration.OrchestratorURL = "http://something"
-		configuration.Kafka.Configuration = kafka.DefaultConfiguration()
-		ch, err := New(r, configuration, Dependencies{
-			Daemon:     daemon.NewMock(t),
-			HTTP:       http.NewMock(t, r),
-			ClickHouse: chComponent,
-		})
-		if err != nil {
-			t.Fatalf("New() error:\n%+v", err)
-		}
-		helpers.StartStop(t, ch)
-		select {
-		case <-ch.migrationsDone:
-		case <-time.After(5 * time.Second):
-			t.Fatalf("Migrations not done")
-		}
+		t.Run("idempotency", func(t *testing.T) {
+			r := reporter.NewMock(t)
+			configuration := DefaultConfiguration()
+			configuration.OrchestratorURL = "http://something"
+			configuration.Kafka.Configuration = kafka.DefaultConfiguration()
+			ch, err := New(r, configuration, Dependencies{
+				Daemon:     daemon.NewMock(t),
+				HTTP:       http.NewMock(t, r),
+				ClickHouse: chComponent,
+			})
+			if err != nil {
+				t.Fatalf("New() error:\n%+v", err)
+			}
+			helpers.StartStop(t, ch)
+			select {
+			case <-ch.migrationsDone:
+			case <-time.After(5 * time.Second):
+				t.Fatalf("Migrations not done")
+			}
 
-		// No migration should have been applied the last time
-		gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_",
-			"applied_steps")
-		expectedMetrics := map[string]string{
-			`applied_steps`: "0",
-		}
-		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
-			t.Fatalf("Metrics (-got, +want):\n%s", diff)
-		}
+			// No migration should have been applied the last time
+			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_",
+				"applied_steps")
+			expectedMetrics := map[string]string{
+				`applied_steps`: "0",
+			}
+			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+				t.Fatalf("Metrics (-got, +want):\n%s", diff)
+			}
+		})
 	}
 }

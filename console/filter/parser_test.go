@@ -36,6 +36,8 @@ func TestValidFilter(t *testing.T) {
 		{`DstAddr=203.0.113.2`, `DstAddr = IPv6StringToNum('203.0.113.2')`},
 		{`SrcNetName="alpha"`, `SrcNetName = 'alpha'`},
 		{`DstNetName="alpha"`, `DstNetName = 'alpha'`},
+		{`DstNetRole="stuff"`, `DstNetRole = 'stuff'`},
+		{`SrcNetTenant="mobile"`, `SrcNetTenant = 'mobile'`},
 		{`SrcAS=12322`, `SrcAS = 12322`},
 		{`SrcAS=AS12322`, `SrcAS = 12322`},
 		{`SrcAS=as12322`, `SrcAS = 12322`},
