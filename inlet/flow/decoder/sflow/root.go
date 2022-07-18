@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2022 Free Mobile
+// SPDX-FileCopyrightText: 2022 Tchadel Icard
 // SPDX-License-Identifier: AGPL-3.0-only
 
 // Package sflow handles sFlow v5 decoding.
