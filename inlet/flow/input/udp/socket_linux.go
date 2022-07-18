@@ -16,8 +16,14 @@ import (
 
 var (
 	oobLength        = syscall.CmsgLen(4) + syscall.CmsgLen(16) // uint32 + 2*int64
-	udpSocketOptions = []int{unix.SO_REUSEADDR, unix.SO_REUSEPORT, unix.SO_RXQ_OVFL,
-		unix.SO_TIMESTAMP | unix.SOF_TIMESTAMPING_RX_HARDWARE | unix.SOF_TIMESTAMPING_RX_SOFTWARE}
+	udpSocketOptions = []int{
+		// Allow multiple listeners to bind to the same IP/port
+		unix.SO_REUSEADDR, unix.SO_REUSEPORT,
+		// Get the number of dropped packets
+		unix.SO_RXQ_OVFL,
+		// Ask the kernel to timestamp incoming packets
+		unix.SO_TIMESTAMP | unix.SOF_TIMESTAMPING_RX_HARDWARE | unix.SOF_TIMESTAMPING_RX_SOFTWARE,
+	}
 )
 
 // parseSocketControlMessage parses b and extract the number of drops
