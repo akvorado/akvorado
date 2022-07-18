@@ -122,7 +122,7 @@ The following keys are accepted:
 
 The topic name is suffixed by the version of the schema. For example,
 if the configured topic is `flows` and the current schema version is
-1, the topic used to send received flows will be `flows-v1`.
+1, the topic used to send received flows will be `flows-v2`.
 
 ### Core
 
@@ -155,14 +155,20 @@ Classifier rules are written using [expr][].
 
 Exporter classifiers gets the classifier IP address and its hostname.
 If they can make a decision, they should invoke one of the
-`Classify()` functions with the target group as an argument. Calling
-this function makes the exporter part of the provided group. Evaluation
-of rules stop on first match. The accessible variables and functions
-are:
+`Classify()` functions with the target element as an argument. Once
+classification is done for an element, it cannot be changed by a
+subsequent rule. All strings are normalized (down case, special chars
+removed).
 
 - `Exporter.IP` for the exporter IP address
 - `Exporter.Name` for the exporter name
-- `Classify()` to classify exporter to a group
+- `ClassifyGroup()` to classify the exporter to a group
+- `ClassifyRole()` to classify the exporter for a role (`edge`, `core`)
+- `ClassifySite()` to classify the exporter to a site (`paris`, `berlin`, `newyork`)
+- `ClassifyRegion()` to classify the exporter to a region (`france`, `italy`, `caraibes`)
+- `ClassifyTenant()` to classify the exporter to a tenant (`team-a`, `team-b`)
+
+As a compatibility `Classify()` is an alias for `ClassifyGroup()`.
 
 Interface classifiers gets the following information and, like exporter
 classifiers, should invoke one of the `Classify()` functions to make a
@@ -180,7 +186,8 @@ decision:
 
 Once an interface is classified for a given criteria, it cannot be
 changed by later rule. Once an interface is classified for all
-criteria, remaining rules are skipped. Connectivity and provider are somewhat normalized (down case)
+criteria, remaining rules are skipped. Connectivity and provider are
+normalized (down case, special chars removed).
 
 Each `Classify()` function, with the exception of `ClassifyExternal()`
 and `ClassifyInternal()` have a variant ending with `Regex` which
@@ -324,7 +331,9 @@ provided:
 - `resolutions` defines the various resolutions to keep data
 - `max-partitions` defines the number of partitions to use when
   creating consolidated tables
-- `networks` maps subnets to names (used as `SrcNetName` and `DstNetName`)
+- `networks` maps subnets to attributes. Attributes are `name`,
+  `role`, `site`, `region`, and `tenant`. They are exposed as
+  `SrcNetName`, `DstNetName`, `SrcNetRole`, `DstNetRole`, etc.
 - `asns` maps AS number to names (overriding the builtin ones)
 - `orchestrator-url` defines the URL of the orchestrator to be used
   by Clickhouse (autodetection when not specified)

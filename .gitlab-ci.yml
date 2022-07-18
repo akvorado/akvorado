@@ -36,7 +36,7 @@ run tests:
     - name: clickhouse/clickhouse-server:22.3
       alias: clickhouse
   script:
-    - time apk add --no-cache git make gcc musl-dev protoc shared-mime-info npm curl vim
+    - time apk add --no-cache git make gcc musl-dev protoc shared-mime-info npm curl
     - export GOMODCACHE=$PWD/.go-cache
     - npm config --user set cache $PWD/.npm-cache
     - time go mod download

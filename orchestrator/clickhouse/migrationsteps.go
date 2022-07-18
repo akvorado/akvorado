@@ -15,18 +15,32 @@ import (
 	"akvorado/inlet/flow"
 )
 
-const flowsSchema = `
+const (
+	// flowsSchema is the canonical schema for flows table
+	flowsSchema = `
  TimeReceived DateTime CODEC(DoubleDelta, LZ4),
  SamplingRate UInt64,
  ExporterAddress LowCardinality(IPv6),
  ExporterName LowCardinality(String),
  ExporterGroup LowCardinality(String),
+ ExporterRole LowCardinality(String),
+ ExporterSite LowCardinality(String),
+ ExporterRegion LowCardinality(String),
+ ExporterTenant LowCardinality(String),
  SrcAddr IPv6,
  DstAddr IPv6,
  SrcAS UInt32,
  DstAS UInt32,
  SrcNetName LowCardinality(String),
  DstNetName LowCardinality(String),
+ SrcNetRole LowCardinality(String),
+ DstNetRole LowCardinality(String),
+ SrcNetSite LowCardinality(String),
+ DstNetSite LowCardinality(String),
+ SrcNetRegion LowCardinality(String),
+ DstNetRegion LowCardinality(String),
+ SrcNetTenant LowCardinality(String),
+ DstNetTenant LowCardinality(String),
  SrcCountry FixedString(2),
  DstCountry FixedString(2),
  InIfName LowCardinality(String),
@@ -49,6 +63,21 @@ const flowsSchema = `
  Packets UInt64,
  ForwardingStatus UInt32
 `
+)
+
+// queryTableHash can be used to check if a table exists with the specified schema.
+func queryTableHash(hash uint64, more string) string {
+	return fmt.Sprintf(`
+SELECT bitAnd(v1, v2) FROM (
+ SELECT 1 AS v1
+ FROM system.tables
+ WHERE name = $1 AND database = currentDatabase() %s
+) t1, (
+ SELECT groupBitXor(cityHash64(name,type,position)) == %d AS v2
+ FROM system.columns
+ WHERE table = $1 AND database = currentDatabase()
+) t2`, more, hash)
+}
 
 // partialSchema returns the above schema minus some columns
 func partialSchema(remove ...string) string {
@@ -77,8 +106,8 @@ func (c *Component) migrationsStepCreateFlowsTable(resolution ResolutionConfigur
 			// Unconsolidated flows table
 			partitionInterval := uint64((resolution.TTL / time.Duration(c.config.MaxPartitions)).Seconds())
 			return migrationStep{
-				CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2`,
-				Args:       []interface{}{"flows", c.config.Configuration.Database},
+				CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = currentDatabase()`,
+				Args:       []interface{}{"flows"},
 				Do: func() error {
 					return conn.Exec(ctx, fmt.Sprintf(`
 CREATE TABLE flows (
@@ -100,8 +129,8 @@ ORDER BY (TimeReceived, ExporterAddress, InIfName, OutIfName)`, flowsSchema, par
 		tableName := fmt.Sprintf("flows_%s", resolution.Interval)
 		viewName := fmt.Sprintf("%s_consumer", tableName)
 		return migrationStep{
-			CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2`,
-			Args:       []interface{}{tableName, c.config.Configuration.Database},
+			CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = currentDatabase()`,
+			Args:       []interface{}{tableName},
 			Do: func() error {
 				l.Debug().Msgf("drop flows consumer table for interval %s", resolution.Interval)
 				err := conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s`, viewName))
@@ -130,7 +159,11 @@ ORDER BY (TimeReceived,
           InIfName, SrcAS, ForwardingStatus,
           OutIfName, DstAS,
           SamplingRate,
-          SrcNetName, DstNetName)`,
+          SrcNetName, DstNetName,
+          SrcNetRole, DstNetRole,
+          SrcNetSite, DstNetSite,
+          SrcNetRegion, DstNetRegion,
+          SrcNetTenant, DstNetTenant)`,
 					tableName,
 					partialSchema("SrcAddr", "DstAddr", "SrcPort", "DstPort"),
 					partitionInterval))
@@ -148,8 +181,10 @@ func (c *Component) migrationStepAddPacketSizeBucketColumn(resolution Resolution
 			tableName = fmt.Sprintf("flows_%s", resolution.Interval)
 		}
 		return migrationStep{
-			CheckQuery: `SELECT 1 FROM system.columns WHERE table = $1 AND database = $2 AND name = $3`,
-			Args:       []interface{}{tableName, c.config.Configuration.Database, "PacketSizeBucket"},
+			CheckQuery: `
+SELECT 1 FROM system.columns
+WHERE table = $1 AND database = currentDatabase() AND name = $2`,
+			Args: []interface{}{tableName, "PacketSizeBucket"},
 			Do: func() error {
 				return conn.Exec(ctx, fmt.Sprintf(`
 ALTER TABLE %s ADD COLUMN PacketSize UInt64 ALIAS intDiv(Bytes, Packets) AFTER Packets,
@@ -169,8 +204,10 @@ func (c *Component) migrationStepAddSrcNetNameDstNetNameColumns(resolution Resol
 			tableName = fmt.Sprintf("flows_%s", resolution.Interval)
 		}
 		return migrationStep{
-			CheckQuery: `SELECT 1 FROM system.columns WHERE table = $1 AND database = $2 AND name = $3`,
-			Args:       []interface{}{tableName, c.config.Configuration.Database, "DstNetName"},
+			CheckQuery: `
+SELECT 1 FROM system.columns
+WHERE table = $1 AND database = currentDatabase() AND name = $2`,
+			Args: []interface{}{tableName, "DstNetName"},
 			Do: func() error {
 				modifications := []string{
 					`ADD COLUMN SrcNetName LowCardinality(String) AFTER DstAS`,
@@ -190,6 +227,75 @@ func (c *Component) migrationStepAddSrcNetNameDstNetNameColumns(resolution Resol
 	}
 }
 
+func (c *Component) migrationStepAddSrcNetNameDstNetOthersColumns(resolution ResolutionConfiguration) migrationStepFunc {
+	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+		var tableName string
+		if resolution.Interval == 0 {
+			tableName = "flows"
+		} else {
+			tableName = fmt.Sprintf("flows_%s", resolution.Interval)
+		}
+		return migrationStep{
+			CheckQuery: `
+SELECT 1 FROM system.columns
+WHERE table = $1 AND database = currentDatabase() AND name = $2`,
+			Args: []interface{}{tableName, "DstNetRole"},
+			Do: func() error {
+				modifications := []string{
+					`ADD COLUMN SrcNetRole LowCardinality(String) AFTER DstNetName`,
+					`ADD COLUMN DstNetRole LowCardinality(String) AFTER SrcNetRole`,
+					`ADD COLUMN SrcNetSite LowCardinality(String) AFTER DstNetRole`,
+					`ADD COLUMN DstNetSite LowCardinality(String) AFTER SrcNetSite`,
+					`ADD COLUMN SrcNetRegion LowCardinality(String) AFTER DstNetSite`,
+					`ADD COLUMN DstNetRegion LowCardinality(String) AFTER SrcNetRegion`,
+					`ADD COLUMN SrcNetTenant LowCardinality(String) AFTER DstNetRegion`,
+					`ADD COLUMN DstNetTenant LowCardinality(String) AFTER SrcNetTenant`,
+				}
+				if tableName != "flows" {
+					modifications = append(modifications,
+						`MODIFY ORDER BY (TimeReceived, ExporterAddress, EType, Proto,
+                                                                  InIfName, SrcAS, ForwardingStatus,
+                                                                  OutIfName, DstAS, SamplingRate,
+                                                                  SrcNetName, DstNetName,
+                                                                  SrcNetRole, DstNetRole,
+                                                                  SrcNetSite, DstNetSite,
+                                                                  SrcNetRegion, DstNetRegion,
+                                                                  SrcNetTenant, DstNetTenant)`)
+				}
+				return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE %s %s`,
+					tableName, strings.Join(modifications, ", ")))
+			},
+		}
+	}
+}
+
+func (c *Component) migrationStepAddExporterColumns(resolution ResolutionConfiguration) migrationStepFunc {
+	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+		var tableName string
+		if resolution.Interval == 0 {
+			tableName = "flows"
+		} else {
+			tableName = fmt.Sprintf("flows_%s", resolution.Interval)
+		}
+		return migrationStep{
+			CheckQuery: `
+SELECT 1 FROM system.columns
+WHERE table = $1 AND database = currentDatabase() AND name = $2`,
+			Args: []interface{}{tableName, "ExporterTenant"},
+			Do: func() error {
+				modifications := []string{
+					`ADD COLUMN ExporterRole LowCardinality(String) AFTER ExporterGroup`,
+					`ADD COLUMN ExporterSite LowCardinality(String) AFTER ExporterRole`,
+					`ADD COLUMN ExporterRegion LowCardinality(String) AFTER ExporterSite`,
+					`ADD COLUMN ExporterTenant LowCardinality(String) AFTER ExporterRegion`,
+				}
+				return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE %s %s`,
+					tableName, strings.Join(modifications, ", ")))
+			},
+		}
+	}
+}
+
 func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution ResolutionConfiguration) migrationStepFunc {
 	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 		if resolution.Interval == 0 {
@@ -199,17 +305,8 @@ func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution Resolution
 		tableName := fmt.Sprintf("flows_%s", resolution.Interval)
 		viewName := fmt.Sprintf("%s_consumer", tableName)
 		return migrationStep{
-			CheckQuery: `
-SELECT bitAnd(v1, v2) FROM (
- SELECT 1 AS v1
- FROM system.tables WHERE name = $1 AND database = $2
-) t1, (
- SELECT groupBitXor(cityHash64(name,type,position)) == 13289045892922565912 AS v2
- FROM system.columns
- WHERE database = $2
- AND table = $1
-) t2`,
-			Args: []interface{}{viewName, c.config.Configuration.Database},
+			CheckQuery: queryTableHash(7356168458686845598, ""),
+			Args:       []interface{}{viewName},
 			// No GROUP BY, the SummingMergeTree will take care of that
 			Do: func() error {
 				l.Debug().Msg("drop consumer table")
@@ -249,10 +346,9 @@ func (c *Component) migrationsStepSetTTLFlowsTable(resolution ResolutionConfigur
 		return migrationStep{
 			CheckQuery: `
 SELECT 1 FROM system.tables
-WHERE name = $1 AND database = $2 AND engine_full LIKE $3`,
+WHERE name = $1 AND database = currentDatabase() AND engine_full LIKE $2`,
 			Args: []interface{}{
 				tableName,
-				c.config.Configuration.Database,
 				fmt.Sprintf("%% %s %%", ttl),
 			},
 			Do: func() error {
@@ -266,9 +362,14 @@ WHERE name = $1 AND database = $2 AND engine_full LIKE $3`,
 
 func (c *Component) migrationStepCreateExportersView(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	return migrationStep{
-		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2`,
-		Args:       []interface{}{"exporters", c.config.Configuration.Database},
+		CheckQuery: queryTableHash(9989732154180416521, ""),
+		Args:       []interface{}{"exporters"},
 		Do: func() error {
+			l.Debug().Msg("drop exporters table")
+			err := conn.Exec(ctx, `DROP TABLE IF EXISTS exporters`)
+			if err != nil {
+				return fmt.Errorf("cannot drop exporters table: %w", err)
+			}
 			return conn.Exec(ctx, `
 CREATE MATERIALIZED VIEW exporters
 ENGINE = ReplacingMergeTree(TimeReceived)
@@ -279,6 +380,10 @@ SELECT DISTINCT
  ExporterAddress,
  ExporterName,
  ExporterGroup,
+ ExporterRole,
+ ExporterSite,
+ ExporterRegion,
+ ExporterTenant,
  [InIfName, OutIfName][num] AS IfName,
  [InIfDescription, OutIfDescription][num] AS IfDescription,
  [InIfSpeed, OutIfSpeed][num] AS IfSpeed,
@@ -298,8 +403,10 @@ func (c *Component) migrationStepCreateProtocolsDictionary(ctx context.Context, 
 	settings := `SETTINGS(format_csv_allow_single_quotes = 0)`
 	sourceLike := fmt.Sprintf("%% %s%% %s%%", source, settings)
 	return migrationStep{
-		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2 AND create_table_query LIKE $3`,
-		Args:       []interface{}{"protocols", c.config.Configuration.Database, sourceLike},
+		CheckQuery: `
+SELECT 1 FROM system.tables
+ WHERE name = $1 AND database = currentDatabase() AND create_table_query LIKE $2`,
+		Args: []interface{}{"protocols", sourceLike},
 		Do: func() error {
 			return conn.Exec(ctx, fmt.Sprintf(`
 CREATE OR REPLACE DICTIONARY protocols (
@@ -323,8 +430,10 @@ func (c *Component) migrationStepCreateASNsDictionary(ctx context.Context, l rep
 	settings := `SETTINGS(format_csv_allow_single_quotes = 0)`
 	sourceLike := fmt.Sprintf("%% %s%% %s%%", source, settings)
 	return migrationStep{
-		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2 AND create_table_query LIKE $3`,
-		Args:       []interface{}{"asns", c.config.Configuration.Database, sourceLike},
+		CheckQuery: `
+SELECT 1 FROM system.tables
+WHERE name = $1 AND database = currentDatabase() AND create_table_query LIKE $2`,
+		Args: []interface{}{"asns", sourceLike},
 		Do: func() error {
 			return conn.Exec(ctx, fmt.Sprintf(`
 CREATE OR REPLACE DICTIONARY asns (
@@ -349,13 +458,17 @@ func (c *Component) migrationStepCreateNetworksDictionary(ctx context.Context, l
 	settings := `SETTINGS(format_csv_allow_single_quotes = 0)`
 	sourceLike := fmt.Sprintf("%% %s%% %s%%", source, settings)
 	return migrationStep{
-		CheckQuery: `SELECT 1 FROM system.tables WHERE name = $1 AND database = $2 AND create_table_query LIKE $3`,
-		Args:       []interface{}{"networks", c.config.Configuration.Database, sourceLike},
+		CheckQuery: queryTableHash(5246378884861475308, "AND create_table_query LIKE $2"),
+		Args:       []interface{}{"networks", sourceLike},
 		Do: func() error {
 			return conn.Exec(ctx, fmt.Sprintf(`
 CREATE OR REPLACE DICTIONARY networks (
  network String,
- name String
+ name String,
+ role String,
+ site String,
+ region String,
+ tenant String
 )
 
 PRIMARY KEY network
@@ -379,27 +492,14 @@ func (c *Component) migrationStepCreateRawFlowsTable(ctx context.Context, l repo
 			c.config.Kafka.Topic, flow.CurrentSchemaVersion),
 		`kafka_group_name = 'clickhouse',`,
 		`kafka_format = 'Protobuf',`,
-		fmt.Sprintf(`kafka_schema = 'flow-%d.proto:FlowMessage',`,
-			flow.CurrentSchemaVersion),
+		fmt.Sprintf(`kafka_schema = 'flow-%d.proto:FlowMessagev%d',`,
+			flow.CurrentSchemaVersion, flow.CurrentSchemaVersion),
 		fmt.Sprintf(`kafka_num_consumers = %d,`, c.config.Kafka.Consumers),
 		`kafka_thread_per_consumer = 1`,
 	}, " ")
 	return migrationStep{
-		CheckQuery: `
-SELECT bitAnd(v1, v2) FROM (
- SELECT 1 AS v1
- FROM system.tables
- WHERE name = $1
- AND database = $2
- AND engine_full = $3
-) t1, (
- SELECT groupBitXor(cityHash64(name,type,position)) == 14541584690055279959 AS v2
- FROM system.columns
- WHERE database = $2
- AND table = $1
-) t2
-`,
-		Args: []interface{}{tableName, c.config.Configuration.Database, kafkaEngine},
+		CheckQuery: queryTableHash(4229371004936784880, "AND engine_full = $2"),
+		Args:       []interface{}{tableName, kafkaEngine},
 		Do: func() error {
 			l.Debug().Msg("drop raw consumer table")
 			err := conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s_consumer`, tableName))
@@ -417,7 +517,13 @@ CREATE TABLE %s
 (
 %s
 )
-ENGINE = %s`, tableName, partialSchema("SrcNetName", "DstNetName"), kafkaEngine))
+ENGINE = %s`, tableName, partialSchema(
+				"SrcNetName", "DstNetName",
+				"SrcNetRole", "DstNetRole",
+				"SrcNetSite", "DstNetSite",
+				"SrcNetRegion", "DstNetRegion",
+				"SrcNetTenant", "DstNetTenant",
+			), kafkaEngine))
 		},
 	}
 }
@@ -426,17 +532,8 @@ func (c *Component) migrationStepCreateRawFlowsConsumerView(ctx context.Context,
 	tableName := fmt.Sprintf("flows_%d_raw", flow.CurrentSchemaVersion)
 	viewName := fmt.Sprintf("%s_consumer", tableName)
 	return migrationStep{
-		CheckQuery: `
-SELECT bitAnd(v1, v2) FROM (
- SELECT 1 AS v1
- FROM system.tables WHERE name = $1 AND database = $2
-) t1, (
- SELECT groupBitXor(cityHash64(name,type,position)) == 17364559455632379339 AS v2
- FROM system.columns
- WHERE database = $2
- AND table = $1
-) t2`,
-		Args: []interface{}{viewName, c.config.Configuration.Database},
+		CheckQuery: queryTableHash(17295069153939039375, ""),
+		Args:       []interface{}{viewName},
 		Do: func() error {
 			l.Debug().Msg("drop consumer table")
 			err := conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s`, viewName))
@@ -449,7 +546,15 @@ CREATE MATERIALIZED VIEW %s TO flows
 AS SELECT
  *,
  dictGetOrDefault('networks', 'name', SrcAddr, '') AS SrcNetName,
- dictGetOrDefault('networks', 'name', DstAddr, '') AS DstNetName
+ dictGetOrDefault('networks', 'name', DstAddr, '') AS DstNetName,
+ dictGetOrDefault('networks', 'role', SrcAddr, '') AS SrcNetRole,
+ dictGetOrDefault('networks', 'role', DstAddr, '') AS DstNetRole,
+ dictGetOrDefault('networks', 'site', SrcAddr, '') AS SrcNetSite,
+ dictGetOrDefault('networks', 'site', DstAddr, '') AS DstNetSite,
+ dictGetOrDefault('networks', 'region', SrcAddr, '') AS SrcNetRegion,
+ dictGetOrDefault('networks', 'region', DstAddr, '') AS DstNetRegion,
+ dictGetOrDefault('networks', 'tenant', SrcAddr, '') AS SrcNetTenant,
+ dictGetOrDefault('networks', 'tenant', DstAddr, '') AS DstNetTenant
 FROM %s`, viewName, tableName))
 		},
 	}

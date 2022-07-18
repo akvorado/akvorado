@@ -128,7 +128,7 @@ jobs:
       - uses: actions/checkout@v3
       - uses: docker/setup-qemu-action@v2
       - uses: docker/setup-buildx-action@v2
-      - uses: docker/metadata-action@v3
+      - uses: docker/metadata-action@v4
         id: meta
         with:
           images: |
@@ -165,11 +165,11 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     steps:
       - name: Download binary
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: binary
       - name: Download changelog
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: changelog
       - name: Publish release

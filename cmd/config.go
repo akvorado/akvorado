@@ -93,7 +93,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			defaultHook,
 			flow.ConfigurationUnmarshalerHook(),
-			clickhouse.NetworkNamesUnmarshalerHook(),
+			clickhouse.NetworkMapUnmarshalerHook(),
 			mapstructure.TextUnmarshallerHookFunc(),
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.StringToSliceHookFunc(","),

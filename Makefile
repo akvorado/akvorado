@@ -15,7 +15,7 @@ M = $(shell if [ "$$(tput colors 2> /dev/null || echo 0)" -ge 8 ]; then printf "
 export GO111MODULE=on
 
 GENERATED = \
-	inlet/flow/decoder/flow-1.pb.go \
+	inlet/flow/decoder/flow-2.pb.go \
 	common/clickhousedb/mocks/mock_driver.go \
 	orchestrator/clickhouse/data/asns.csv \
 	console/filter/parser.go \
@@ -69,13 +69,15 @@ $(BIN)/wwhrd: PACKAGE=github.com/frapposelli/wwhrd@latest
 
 .DELETE_ON_ERROR:
 
-inlet/flow/decoder/%.pb.go: inlet/flow/data/schemas/%.proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffers definition…)
+inlet/flow/decoder/flow%.pb.go: inlet/flow/data/schemas/flow%.proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffers definition…)
 	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --go_out=. --go_opt=module=$(MODULE) $<
+	$Q sed -i.bkp s/FlowMessagev./FlowMessage/g $@ && rm $@.bkp
 
 common/clickhousedb/mocks/mock_driver.go: Makefile | $(MOCKGEN) ; $(info $(M) generate mocks for ClickHouse driver…)
-	$Q $(MOCKGEN) -destination $@ -package mocks \
-		github.com/ClickHouse/clickhouse-go/v2/lib/driver Conn,Row,Rows,ColumnType
-	$Q ex -sc "1i|//go:build !release" -cx $@
+	$Q mkdir -p $(dir $@)
+	$Q echo '//go:build !release' > $@
+	$Q $(MOCKGEN) -package mocks \
+		github.com/ClickHouse/clickhouse-go/v2/lib/driver Conn,Row,Rows,ColumnType >> $@
 
 console/filter/parser.go: console/filter/parser.peg | $(PIGEON) ; $(info $(M) generate PEG parser for filters…)
 	$Q $(PIGEON) -optimize-basic-latin $< > $@

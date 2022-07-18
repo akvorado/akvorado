@@ -84,9 +84,9 @@ defaultsamplingrate: 500
 			Name: "exporter rule",
 			Configuration: `
 exporterclassifiers:
-  - Exporter.Name startsWith "hello" && Classify("europe")
-  - Exporter.Name startsWith "192_" && Classify("asia")
-  - Classify("other")
+  - Exporter.Name startsWith "hello" && ClassifyRegion("europe")
+  - Exporter.Name startsWith "192_" && ClassifyRegion("asia")
+  - ClassifyRegion("other") && ClassifySite("unknown") && ClassifyTenant("alfred")
 `,
 			InputFlow: func() *flow.Message {
 				return &flow.Message{
@@ -100,7 +100,9 @@ exporterclassifiers:
 				SamplingRate:     1000,
 				ExporterAddress:  net.ParseIP("192.0.2.142"),
 				ExporterName:     "192_0_2_142",
-				ExporterGroup:    "asia",
+				ExporterRegion:   "asia",
+				ExporterTenant:   "alfred",
+				ExporterSite:     "unknown",
 				InIf:             100,
 				OutIf:            200,
 				InIfName:         "Gi0/0/100",

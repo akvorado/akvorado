@@ -33,28 +33,17 @@ proxy. This can be fixed by flushing the conntrack table:
 $ conntrack -D -p udp --orig-port-dst 2055
 ```
 
+The shipped `docker-compose.yml` file contains an additional service
+to do that automatically.
+
 To check that you are receiving packets, check the metrics:
 
 ```console
 $ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet_flow_input_udp_packets'
 ```
 
-### Wrong IP address reported for exporters
-
-When running inside Docker, *Akvorado* may report the wrong IP address
-for exporters, making it unable to query them with SNMP. This is
-because Docker sets up a proxy to intercept these packets and forward
-them. This can also be fixed by flushing the conntrack table:
-
-```console
-$ conntrack -D -p udp --orig-port-dst 2055
-```
-
-To check that you are now receiving packets from the right IP address, use:
-
-```console
-$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet_flow_input_udp_packets'
-```
+Also check that the source IP for your exporters is correct. This is
+needed for Akvorado to query them using SNMP.
 
 ### No packets exported
 
@@ -69,8 +58,9 @@ Here is a list of generic errors you may find:
 
 - `SNMP cache miss` means the information about an interface is not
   found in the SNMP cache. This is expected when Akvorado starts but
-  it should not increase. If this is the case, it may be because the
-  index provided in the flow is not available through SNMP.
+  it should not increase. If this is the case, it is likely because
+  the exporter is not configured to accept SNMP requests or the
+  community configured for SNMP is incorrect.
 - `sampling rate missing` means the sampling rate information is not
   present. This is also expected when Akvorado starts but it should
   not increase. With NetFlow, the sampling rate is sent in an options
@@ -208,24 +198,24 @@ topic. However, the metadata can be read using
 alive with:
 
 ```console
-$ kcat -b kafka:9092 -C -t flows-v1 -L
-Metadata for flows-v1 (from broker -1: kafka:9092/bootstrap):
+$ kcat -b kafka:9092 -C -t flows-v2 -L
+Metadata for flows-v2 (from broker -1: kafka:9092/bootstrap):
  1 brokers:
   broker 1001 at eb6c7781b875:9092 (controller)
  1 topics:
-  topic "flows-v1" with 4 partitions:
+  topic "flows-v2" with 4 partitions:
     partition 0, leader 1001, replicas: 1001, isrs: 1001
     partition 1, leader 1001, replicas: 1001, isrs: 1001
     partition 2, leader 1001, replicas: 1001, isrs: 1001
     partition 3, leader 1001, replicas: 1001, isrs: 1001
-$ kcat -b kafka:9092 -C -t flows-v1 -f 'Topic %t [%p] at offset %o: key %k: %T\n' -o -1
+$ kcat -b kafka:9092 -C -t flows-v2 -f 'Topic %t [%p] at offset %o: key %k: %T\n' -o -1
 ```
 
 Alternatively, when using `docker-compose`, there is a Kafka UI
 running at `http://127.0.0.1:8080/kafka-ui/`. You can do the following
 checks:
 - are the brokers alive?
-- is the `flows-v1` topic present and receiving messages?
+- is the `flows-v2` topic present and receiving messages?
 - is ClickHouse registered as a consumer?
 
 ## ClickHouse
@@ -239,7 +229,7 @@ SHOW tables
 ```
 
 You should have a few tables, including `flows`, `flows_1m0s` (and
-others), and `flows_1_raw`. If one is missing, look at the log in the
+others), and `flows_2_raw`. If one is missing, look at the log in the
 orchestrator. This is the component creating the tables.
 
 To check if ClickHouse is late, use the following SQL query through
@@ -260,8 +250,8 @@ from Kafka's point of view:
 $ kafka-consumer-groups.sh --bootstrap-server kafka:9092 --describe --group clickhouse
 
 GROUP           TOPIC           PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG             CONSUMER-ID                                                                        HOST            CLIENT-ID
-clickhouse      flows-v1        0          5650351527      5650374314      22787           ClickHouse-ee97b7e7e5e0-default-flows_1_raw-0-77740d0a-79b7-4bef-a501-25a819c3cee4 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_1_raw-0
-clickhouse      flows-v1        3          3035602619      3035628290      25671           ClickHouse-ee97b7e7e5e0-default-flows_1_raw-3-1e4629b0-69a3-48dd-899a-20f4b16be0a2 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_1_raw-3
-clickhouse      flows-v1        2          1645914467      1645930257      15790           ClickHouse-ee97b7e7e5e0-default-flows_1_raw-2-79c9bafe-fd36-42fe-921f-a802d46db684 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_1_raw-2
-clickhouse      flows-v1        1          889117276       889129896       12620           ClickHouse-ee97b7e7e5e0-default-flows_1_raw-1-f0421bbe-ba13-49df-998f-83e49045be00 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_1_raw-1
+clickhouse      flows-v2        0          5650351527      5650374314      22787           ClickHouse-ee97b7e7e5e0-default-flows_2_raw-0-77740d0a-79b7-4bef-a501-25a819c3cee4 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_2_raw-0
+clickhouse      flows-v2        3          3035602619      3035628290      25671           ClickHouse-ee97b7e7e5e0-default-flows_2_raw-3-1e4629b0-69a3-48dd-899a-20f4b16be0a2 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_2_raw-3
+clickhouse      flows-v2        2          1645914467      1645930257      15790           ClickHouse-ee97b7e7e5e0-default-flows_2_raw-2-79c9bafe-fd36-42fe-921f-a802d46db684 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_2_raw-2
+clickhouse      flows-v2        1          889117276       889129896       12620           ClickHouse-ee97b7e7e5e0-default-flows_2_raw-1-f0421bbe-ba13-49df-998f-83e49045be00 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_2_raw-1
 ```
