@@ -73,9 +73,9 @@ inlet/flow/decoder/%.pb.go: inlet/flow/data/schemas/%.proto | $(PROTOC_GEN_GO) ;
 	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --go_out=. --go_opt=module=$(MODULE) $<
 
 common/clickhousedb/mocks/mock_driver.go: Makefile | $(MOCKGEN) ; $(info $(M) generate mocks for ClickHouse driver…)
-	$Q $(MOCKGEN) -destination $@ -package mocks \
-		github.com/ClickHouse/clickhouse-go/v2/lib/driver Conn,Row,Rows,ColumnType
-	$Q ex -sc "1i|//go:build !release" -cx $@
+	$Q echo '//go:build !release' > $@
+	$Q $(MOCKGEN) -package mocks \
+		github.com/ClickHouse/clickhouse-go/v2/lib/driver Conn,Row,Rows,ColumnType >> $@
 
 console/filter/parser.go: console/filter/parser.peg | $(PIGEON) ; $(info $(M) generate PEG parser for filters…)
 	$Q $(PIGEON) -optimize-basic-latin $< > $@
