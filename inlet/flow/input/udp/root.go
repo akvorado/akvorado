@@ -160,19 +160,22 @@ func (in *Input) Start() (<-chan []*decoder.FlowMessage, error) {
 					continue
 				}
 
-				if count < 100 || count%100 == 0 {
-					// No need to update the inDrops counter too often.
-					if drops, err := parseSocketControlMessage(oob[:oobn]); err != nil {
-						errLogger.Err(err).Msg("unable to decode UDP control message")
-					} else {
+				oobMsg, err := parseSocketControlMessage(oob[:oobn])
+				if err != nil {
+					errLogger.Err(err).Msg("unable to decode UDP control message")
+				} else {
+					if count < 100 || count%100 == 0 {
 						in.metrics.inDrops.WithLabelValues(listen, worker).Set(
-							float64(drops))
+							float64(oobMsg.Drops))
 					}
+				}
+				if oobMsg.Received.IsZero() {
+					oobMsg.Received = time.Now()
 				}
 
 				srcIP := source.IP.String()
 				flows := in.decoder.Decode(decoder.RawFlow{
-					TimeReceived: time.Now(),
+					TimeReceived: oobMsg.Received,
 					Payload:      payload[:n],
 					Source:       source.IP,
 				})
