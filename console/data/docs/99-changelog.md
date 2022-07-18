@@ -10,7 +10,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## 1.5.0 - 2022-07-18
+## Unreleased
 
 This release introduce a new protobuf schema. When using
 `docker-compose`, a restart of ClickHouse is needed after upgrading
