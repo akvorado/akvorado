@@ -492,8 +492,8 @@ func (c *Component) migrationStepCreateRawFlowsTable(ctx context.Context, l repo
 			c.config.Kafka.Topic, flow.CurrentSchemaVersion),
 		`kafka_group_name = 'clickhouse',`,
 		`kafka_format = 'Protobuf',`,
-		fmt.Sprintf(`kafka_schema = 'flow-%d.proto:FlowMessage',`,
-			flow.CurrentSchemaVersion),
+		fmt.Sprintf(`kafka_schema = 'flow-%d.proto:FlowMessagev%d',`,
+			flow.CurrentSchemaVersion, flow.CurrentSchemaVersion),
 		fmt.Sprintf(`kafka_num_consumers = %d,`, c.config.Kafka.Consumers),
 		`kafka_thread_per_consumer = 1`,
 	}, " ")

@@ -4,7 +4,7 @@ option go_package = "akvorado/inlet/flow/decoder";
 
 // This is a stripped version from the one in Goflow2, but with GeoIP added.
 
-message FlowMessage {
+message FlowMessagev2 {
 
   uint64 TimeReceived = 2;
   uint32 SequenceNum = 3;
