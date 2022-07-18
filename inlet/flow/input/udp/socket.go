@@ -6,9 +6,15 @@ package udp
 import (
 	"net"
 	"syscall"
+	"time"
 
 	"golang.org/x/sys/unix"
 )
+
+type oobMessage struct {
+	Drops    uint32
+	Received time.Time
+}
 
 var (
 	// listenConfig configures a listening socket to reuse port and return overflows

@@ -66,11 +66,11 @@ outer:
 		t.Errorf("ReadMsgUDP() (-got, +want):\n-%s\n+%s", string(payload[:n]), "hello")
 	}
 
-	drops, err := parseSocketControlMessage(oob[:oobn])
+	oobMsg, err := parseSocketControlMessage(oob[:oobn])
 	if err != nil {
 		t.Fatalf("parseSocketControlMessage() error:\n%+v", err)
 	}
-	if drops == 0 {
+	if oobMsg.Drops == 0 {
 		t.Fatal("no drops detected")
 	}
 }
