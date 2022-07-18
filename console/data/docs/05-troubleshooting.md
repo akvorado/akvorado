@@ -33,28 +33,17 @@ proxy. This can be fixed by flushing the conntrack table:
 $ conntrack -D -p udp --orig-port-dst 2055
 ```
 
+The shipped `docker-compose.yml` file contains an additional service
+to do that automatically.
+
 To check that you are receiving packets, check the metrics:
 
 ```console
 $ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet_flow_input_udp_packets'
 ```
 
-### Wrong IP address reported for exporters
-
-When running inside Docker, *Akvorado* may report the wrong IP address
-for exporters, making it unable to query them with SNMP. This is
-because Docker sets up a proxy to intercept these packets and forward
-them. This can also be fixed by flushing the conntrack table:
-
-```console
-$ conntrack -D -p udp --orig-port-dst 2055
-```
-
-To check that you are now receiving packets from the right IP address, use:
-
-```console
-$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet_flow_input_udp_packets'
-```
+Also check that the source IP for your exporters is correct. This is
+needed for Akvorado to query them using SNMP.
 
 ### No packets exported
 
