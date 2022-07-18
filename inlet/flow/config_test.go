@@ -32,33 +32,10 @@ func TestDecodeConfiguration(t *testing.T) {
 						"decoder": "netflow",
 						"listen":  "192.0.2.1:2055",
 						"workers": 3,
-					},
-				},
-			},
-			Expected: Configuration{
-				Inputs: []InputConfiguration{{
-					Decoder: "netflow",
-					Config: &udp.Configuration{
-						Workers:   3,
-						QueueSize: 100000,
-						Listen:    "192.0.2.1:2055",
-					},
-				}},
-			},
-		}, {
-			Name: "from existing configuration",
-			From: Configuration{
-				Inputs: []InputConfiguration{{
-					Decoder: "netflow",
-					Config:  udp.DefaultConfiguration(),
-				}},
-			},
-			Source: map[string]interface{}{
-				"inputs": []map[string]interface{}{
-					map[string]interface{}{
+					}, {
 						"type":    "udp",
-						"decoder": "netflow",
-						"listen":  "192.0.2.1:2055",
+						"decoder": "sflow",
+						"listen":  "192.0.2.1:6343",
 						"workers": 3,
 					},
 				},
@@ -71,6 +48,56 @@ func TestDecodeConfiguration(t *testing.T) {
 						QueueSize: 100000,
 						Listen:    "192.0.2.1:2055",
 					},
+				}, {
+					Decoder: "sflow",
+					Config: &udp.Configuration{
+						Workers:   3,
+						QueueSize: 100000,
+						Listen:    "192.0.2.1:6343",
+					},
+				}},
+			},
+		}, {
+			Name: "from existing configuration",
+			From: Configuration{
+				Inputs: []InputConfiguration{{
+					Decoder: "netflow",
+					Config:  udp.DefaultConfiguration(),
+				}, {
+					Decoder: "sflow",
+					Config:  udp.DefaultConfiguration(),
+				}},
+			},
+			Source: map[string]interface{}{
+				"inputs": []map[string]interface{}{
+					map[string]interface{}{
+						"type":    "udp",
+						"decoder": "netflow",
+						"listen":  "192.0.2.1:2055",
+						"workers": 3,
+					}, map[string]interface{}{
+						"type":    "udp",
+						"decoder": "sflow",
+						"listen":  "192.0.2.1:6343",
+						"workers": 3,
+					},
+				},
+			},
+			Expected: Configuration{
+				Inputs: []InputConfiguration{{
+					Decoder: "netflow",
+					Config: &udp.Configuration{
+						Workers:   3,
+						QueueSize: 100000,
+						Listen:    "192.0.2.1:2055",
+					},
+				}, {
+					Decoder: "sflow",
+					Config: &udp.Configuration{
+						Workers:   3,
+						QueueSize: 100000,
+						Listen:    "192.0.2.1:6343",
+					},
 				}},
 			},
 		}, {
@@ -79,11 +106,17 @@ func TestDecodeConfiguration(t *testing.T) {
 				Inputs: []InputConfiguration{{
 					Decoder: "netflow",
 					Config:  udp.DefaultConfiguration(),
+				}, {
+					Decoder: "sflow",
+					Config:  udp.DefaultConfiguration(),
 				}},
 			},
 			Source: map[string]interface{}{
 				"inputs": []map[string]interface{}{
 					map[string]interface{}{
+						"type":  "file",
+						"paths": []string{"file1", "file2"},
+					}, map[string]interface{}{
 						"type":  "file",
 						"paths": []string{"file1", "file2"},
 					},
@@ -92,6 +125,11 @@ func TestDecodeConfiguration(t *testing.T) {
 			Expected: Configuration{
 				Inputs: []InputConfiguration{{
 					Decoder: "netflow",
+					Config: &file.Configuration{
+						Paths: []string{"file1", "file2"},
+					},
+				}, {
+					Decoder: "sflow",
 					Config: &file.Configuration{
 						Paths: []string{"file1", "file2"},
 					},
@@ -169,6 +207,13 @@ func TestMarshalYAML(t *testing.T) {
 					QueueSize: 1000,
 					Workers:   3,
 				},
+			}, {
+				Decoder: "sflow",
+				Config: &udp.Configuration{
+					Listen:    "192.0.2.11:6343",
+					QueueSize: 1000,
+					Workers:   3,
+				},
 			},
 		},
 	}
@@ -179,6 +224,12 @@ func TestMarshalYAML(t *testing.T) {
 	expected := `inputs:
 - decoder: netflow
   listen: 192.0.2.11:2055
+  queuesize: 1000
+  receivebuffer: 0
+  type: udp
+  workers: 3
+- decoder: sflow
+  listen: 192.0.2.11:6343
   queuesize: 1000
   receivebuffer: 0
   type: udp
