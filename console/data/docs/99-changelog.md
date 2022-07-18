@@ -10,7 +10,11 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.5.0 - 2022-07-18
+
+This release introduce a new protobuf schema. When using
+`docker-compose`, a restart of ClickHouse is needed after upgrading
+the orchestrator to load this new schema.
 
 - ✨ *inlet*: classify exporters to group, role, site, region, and tenant [PR #14][]
 - ✨ *orchestrator*: add role, site, region, and tenant attributes to networks [PR #15][]
