@@ -6,7 +6,6 @@
 package udp
 
 import (
-	"fmt"
 	"syscall"
 	"time"
 
@@ -41,6 +40,5 @@ func parseSocketControlMessage(b []byte) (oobMessage, error) {
 				int64(helpers.NativeEndian.Uint64(cmsg.Data[8:]))*1000)
 		}
 	}
-	fmt.Println(result)
 	return result, nil
 }
