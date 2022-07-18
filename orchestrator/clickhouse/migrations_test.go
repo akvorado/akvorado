@@ -64,16 +64,10 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 		t.Fatalf("Query() error:\n%+v", err)
 	}
 	schemas := map[string]string{}
-outer:
 	for rows.Next() {
 		var schema, table string
 		if err := rows.Scan(&table, &schema); err != nil {
 			t.Fatalf("Scan() error:\n%+v", err)
-		}
-		for _, ignored := range ignoredTables {
-			if ignored == table {
-				continue outer
-			}
 		}
 		schemas[table] = schema
 	}
@@ -81,7 +75,13 @@ outer:
 }
 
 func loadTables(t *testing.T, ch *clickhousedb.Component, schemas map[string]string) {
-	for _, schema := range schemas {
+outer:
+	for table, schema := range schemas {
+		for _, ignored := range ignoredTables {
+			if ignored == table {
+				continue outer
+			}
+		}
 		if err := ch.Exec(context.Background(), schema); err != nil {
 			t.Fatalf("Exec() error:\n%+v", err)
 		}
@@ -195,16 +195,6 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 				}
 				got = append(got, table)
 			}
-			filteredGot := []string{}
-		outer:
-			for _, g := range got {
-				for _, ignore := range ignoredTables {
-					if g == ignore {
-						continue outer
-					}
-				}
-				filteredGot = append(filteredGot, g)
-			}
 			expected := []string{
 				"asns",
 				"exporters",
@@ -220,7 +210,7 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 				"networks",
 				"protocols",
 			}
-			if diff := helpers.Diff(filteredGot, expected); diff != "" {
+			if diff := helpers.Diff(got, expected); diff != "" {
 				t.Fatalf("SHOW TABLES (-got, +want):\n%s", diff)
 			}
 
