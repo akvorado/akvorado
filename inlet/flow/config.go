@@ -29,6 +29,9 @@ func DefaultConfiguration() Configuration {
 		Inputs: []InputConfiguration{{
 			Decoder: "netflow",
 			Config:  udp.DefaultConfiguration(),
+		}, {
+			Decoder: "sflow",
+			Config:  udp.DefaultConfiguration(),
 		}},
 	}
 }
