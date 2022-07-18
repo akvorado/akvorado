@@ -26,12 +26,12 @@ stop akvorado-exporter{1,2,3,4}`).
 
 Take a look at the `docker-compose.yml` file if you want to setup the
 GeoIP database. It requires two environment variables to fetch them
-from
-[MaxMind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data).
+from [MaxMind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data).
 
 Be sure to flush the conntrack table after starting. See the
 [troubleshooting section](05-troubleshooting.md#no-packets-received)
-for more details.
+for more details. You also need to configure SNMP on your exporters to
+accept requests from Akvorado.
 
 ## Big picture
 

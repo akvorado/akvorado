@@ -69,8 +69,9 @@ Here is a list of generic errors you may find:
 
 - `SNMP cache miss` means the information about an interface is not
   found in the SNMP cache. This is expected when Akvorado starts but
-  it should not increase. If this is the case, it may be because the
-  index provided in the flow is not available through SNMP.
+  it should not increase. If this is the case, it is likely because
+  the exporter is not configured to accept SNMP requests or the
+  community configured for SNMP is incorrect.
 - `sampling rate missing` means the sampling rate information is not
   present. This is also expected when Akvorado starts but it should
   not increase. With NetFlow, the sampling rate is sent in an options
