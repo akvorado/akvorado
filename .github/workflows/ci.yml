@@ -45,21 +45,20 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get install -qqy protobuf-compiler shared-mime-info curl
       - uses: actions/setup-go@v3
+        id: go-setup
         with:
           go-version-file: go.mod
           cache: true
 
       # Cache
       - uses: actions/cache@v3
-        id: npm-cache
         with:
           path: ~/.npm
           key: ${{ runner.os }}-npm-${{ hashFiles('console/frontend/package-lock.json') }}
       - uses: actions/cache@v3
-        id: gobin-cache
         with:
           path: bin
-          key: ${{ runner.os }}-gobin-${{ hashFiles('Makefile') }}
+          key: ${{ runner.os }}-bin-${{ steps.go-setup.outputs.go-version }}-${{ hashFiles('Makefile') }}
 
       # Build and test
       - name: Build
@@ -96,21 +95,20 @@ jobs:
       - name: Install dependencies
         run: brew install protobuf
       - uses: actions/setup-go@v3
+        id: go-setup
         with:
           go-version-file: go.mod
           cache: true
 
       # Cache
       - uses: actions/cache@v3
-        id: npm-cache
         with:
           path: ~/.npm
           key: ${{ runner.os }}-npm-${{ hashFiles('console/frontend/package-lock.json') }}
       - uses: actions/cache@v3
-        id: gobin-cache
         with:
           path: bin
-          key: ${{ runner.os }}-gobin-${{ hashFiles('Makefile') }}
+          key: ${{ runner.os }}-bin-${{ steps.go-setup.outputs.go-version }}-${{ hashFiles('Makefile') }}
 
       # Build and test
       - name: Build
