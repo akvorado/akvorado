@@ -1,6 +1,6 @@
 # Introduction
 
-*Akvorado*[^name] receives flows (currently Netflow/IPFIX), hydrates
+*Akvorado*[^name] receives flows (currently Netflow/IPFIX and sFlow), hydrates
 them with interface names (using SNMP), geo information (using
 MaxMind), and exports them to Kafka, then ClickHouse. It also exposes
 a web interface to browse the result.
@@ -13,8 +13,8 @@ a web interface to browse the result.
 
 A `docker-compose.yml` file is provided to quickly get started. Once
 running, *Akvorado* web interface should be running on port 80 and an
-inlet accepting NetFlow available on port 2055. You need to configure
-SNMP on your exporters to accept requests from Akvorado.
+inlet accepting both NetFlow (port 2055) and sFlow (port 6343).
+You need to configure SNMP on your exporters to accept requests from Akvorado.
 
 ```console
 # docker-compose up

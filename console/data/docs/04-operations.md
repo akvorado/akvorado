@@ -214,8 +214,7 @@ routing-options {
 
 #### sFlow
 
-Currently, *Akvorado* does not support sFlow. Once it does, for QFX
-devices, you can use sFlow.
+For QFX devices, you can use sFlow.
 
 ```junos
 protocols {
@@ -245,6 +244,29 @@ snmp {
   }
   routing-instance-access;
 }
+```
+
+### Arista
+
+#### sFlow
+
+For Arista devices, you can use sFlow.
+
+```eos
+sflow sample 1024
+sflow vrf VRF-MANAGEMENT destination 192.0.2.1
+sflow vrf VRF-MANAGEMENT source-interface Management1
+sflow interface egress enable default
+sflow run
+```
+
+#### SNMP
+
+Then, configure SNMP:
+
+```
+snmp-server community <community> ro
+snmp-server vrf VRF-MANAGEMENT
 ```
 
 ## ClickHouse

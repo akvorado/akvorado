@@ -86,8 +86,7 @@ often abstracted, this is not the case for metrics. Moreover, the
 design to scale is a bit different as *Akvorado* will create a socket
 for each worker instead of distributing incoming flows using a channel.
 
-Only Netflow v9 and IPFIX are currently supported. However, as *GoFlow2*
-also decodes sFlow, support can be added later.
+Netflow v9, IPFIX, and sFlow are currently supported.
 
 The design of this component is modular. It is possible to "plug"
 new decoders and new inputs easily. It is expected that most buffering
@@ -237,10 +236,10 @@ In the future, we may:
   and BGP next hop (or an indirection to keep memory usage down) to
   the next AS and the AS path (in this case, again, an indirection to
   keep memory down). We need a configuration knob to determine what
-  source to use for origin AS: BGP, Netflow (likely the same
+  source to use for origin AS: BGP, Netflow/sFlow (likely the same
   information), or GeoIP. This could be dependant on the fact we have
   a private AS or not.
-- DDoS service to detect and mitigate DDoS (with Flowspec).
+- DDoS service to detect and mitigate DDoS (with Flow-spec).
 - Support VRFs.
 - Add dynamic configuration with something like [go-archaius][] or
   [Harvester][].

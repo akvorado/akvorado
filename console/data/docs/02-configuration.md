@@ -55,9 +55,9 @@ of the inlet services are `flow`, `kafka`, and `core`.
 The flow component handles incoming flows. It only accepts the
 `inputs` key to define the list of inputs to receive incoming flows.
 
-Each input has a `type` and a `decoder`. For `decoder`, only `netflow`
-is currently supported. As for the `type`, both `udp` and `file` are
-supported.
+Each input has a `type` and a `decoder`. For `decoder`, both
+`netflow` or `sflow` are supported. As for the `type`, both `udp`
+and `file` are supported.
 
 For the UDP input, the supported keys are `listen` to set the
 listening endpoint, `workers` to set the number of workers to listen
@@ -71,6 +71,10 @@ flow:
     - type: udp
       decoder: netflow
       listen: 0.0.0.0:2055
+      workers: 3
+    - type: udp
+      decoder: sflow
+      listen: 0.0.0.0:6343
       workers: 3
   workers: 2
 ```
@@ -87,11 +91,16 @@ flow:
       paths:
        - /tmp/flow1.raw
        - /tmp/flow2.raw
+    - type: file
+      decoder: sflow
+      paths:
+       - /tmp/flow1.raw
+       - /tmp/flow2.raw
   workers: 2
 ```
 
 Without configuration, *Akvorado* will listen for incoming
-Netflow/IPFIX flows on a random port (check the logs to know which
+Netflow/IPFIX and sFlow flows on a random port (check the logs to know which
 one).
 
 ### Kafka
