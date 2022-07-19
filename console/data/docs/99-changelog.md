@@ -16,6 +16,7 @@ This release introduce a new protobuf schema. When using
 `docker-compose`, a restart of ClickHouse is needed after upgrading
 the orchestrator to load this new schema.
 
+- ✨ *inlet*: add sflow support [PR #23][]
 - ✨ *inlet*: classify exporters to group, role, site, region, and tenant [PR #14][]
 - ✨ *orchestrator*: add role, site, region, and tenant attributes to networks [PR #15][]
 - ✨ *docker-compose*: clean conntrack entries when inlet container starts
@@ -30,6 +31,7 @@ the orchestrator to load this new schema.
 [PR #11]: https://github.com/vincentbernat/akvorado/pull/11
 [PR #14]: https://github.com/vincentbernat/akvorado/pull/14
 [PR #15]: https://github.com/vincentbernat/akvorado/pull/15
+[PR #23]: https://github.com/vincentbernat/akvorado/pull/23
 [UI for Apache Kafka]: https://github.com/provectus/kafka-ui
 
 ## 1.4.2 - 2022-07-16

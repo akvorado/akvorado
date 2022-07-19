@@ -8,6 +8,7 @@ import (
 
 	"akvorado/inlet/flow/decoder"
 	"akvorado/inlet/flow/decoder/netflow"
+	"akvorado/inlet/flow/decoder/sflow"
 )
 
 // Message describes a decoded flow message.
@@ -51,4 +52,5 @@ func (c *Component) wrapDecoder(d decoder.Decoder) decoder.Decoder {
 
 var decoders = map[string]decoder.NewDecoderFunc{
 	"netflow": netflow.New,
+	"sflow":   sflow.New,
 }
