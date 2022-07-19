@@ -20,12 +20,10 @@ type Decoder struct {
 	r *reporter.Reporter
 
 	metrics struct {
-		errors             *reporter.CounterVec
-		stats              *reporter.CounterVec
-		setRecordsStatsSum *reporter.CounterVec
-		setStatsSum        *reporter.CounterVec
-		timeStatsSum       *reporter.SummaryVec
-		templatesStats     *reporter.CounterVec
+		errors                *reporter.CounterVec
+		stats                 *reporter.CounterVec
+		sampleRecordsStatsSum *reporter.CounterVec
+		sampleStatsSum        *reporter.CounterVec
 	}
 }
 
@@ -49,14 +47,14 @@ func New(r *reporter.Reporter) decoder.Decoder {
 		},
 		[]string{"exporter", "agent", "version"},
 	)
-	nd.metrics.setRecordsStatsSum = nd.r.CounterVec(
+	nd.metrics.sampleRecordsStatsSum = nd.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "sample_records_sum",
 			Help: "sFlows samples sum of records.",
 		},
 		[]string{"exporter", "agent", "version", "type"},
 	)
-	nd.metrics.setStatsSum = nd.r.CounterVec(
+	nd.metrics.sampleStatsSum = nd.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "sample_sum",
 			Help: "sFlows samples sum.",
@@ -78,51 +76,43 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*decoder.FlowMessage {
 	if err != nil {
 		switch err.(type) {
 		case *sflow.ErrorVersion:
-			nd.metrics.errors.WithLabelValues(key, "error_version").Inc()
+			nd.metrics.errors.WithLabelValues(key, "error version").Inc()
 		case *sflow.ErrorIPVersion:
-			nd.metrics.errors.WithLabelValues(key, "error_ip_version").Inc()
+			nd.metrics.errors.WithLabelValues(key, "error ip version").Inc()
 		case *sflow.ErrorDataFormat:
-			nd.metrics.errors.WithLabelValues(key, "error_data_format").Inc()
+			nd.metrics.errors.WithLabelValues(key, "error data format").Inc()
 		default:
-			nd.metrics.errors.WithLabelValues(key, "error_decoding").Inc()
+			nd.metrics.errors.WithLabelValues(key, "error decoding").Inc()
 		}
 		return nil
 	}
 
-	var (
-		agent   string
-		version string
-		samples []interface{}
-	)
-
 	// Update some stats
-	switch msgDecConv := msgDec.(type) {
-	case sflow.Packet:
-		agent = net.IP(msgDecConv.AgentIP).String()
-		version = "5"
-		samples = msgDecConv.Samples
-	default:
-		nd.metrics.stats.WithLabelValues(key, "unknown").
-			Inc()
+	msgDecConv, ok := msgDec.(sflow.Packet)
+	if !ok {
+		nd.metrics.stats.WithLabelValues(key, "unknown", "unknwon").Inc()
 		return nil
 	}
+	agent := net.IP(msgDecConv.AgentIP).String()
+	version := "5"
+	samples := msgDecConv.Samples
 	nd.metrics.stats.WithLabelValues(key, agent, version).Inc()
 	for _, s := range samples {
 		switch sConv := s.(type) {
 		case sflow.FlowSample:
-			nd.metrics.setStatsSum.WithLabelValues(key, agent, version, "FlowSample").
+			nd.metrics.sampleStatsSum.WithLabelValues(key, agent, version, "FlowSample").
 				Inc()
-			nd.metrics.setRecordsStatsSum.WithLabelValues(key, agent, version, "FlowSample").
+			nd.metrics.sampleRecordsStatsSum.WithLabelValues(key, agent, version, "FlowSample").
 				Add(float64(len(sConv.Records)))
 		case sflow.CounterSample:
-			nd.metrics.setStatsSum.WithLabelValues(key, agent, version, "CounterSample").
+			nd.metrics.sampleStatsSum.WithLabelValues(key, agent, version, "CounterSample").
 				Inc()
-			nd.metrics.setRecordsStatsSum.WithLabelValues(key, agent, version, "CounterSample").
+			nd.metrics.sampleRecordsStatsSum.WithLabelValues(key, agent, version, "CounterSample").
 				Add(float64(len(sConv.Records)))
 		case sflow.ExpandedFlowSample:
-			nd.metrics.setStatsSum.WithLabelValues(key, agent, version, "ExpandedFlowSample").
+			nd.metrics.sampleStatsSum.WithLabelValues(key, agent, version, "ExpandedFlowSample").
 				Inc()
-			nd.metrics.setRecordsStatsSum.WithLabelValues(key, agent, version, "ExpandedFlowSample").
+			nd.metrics.sampleRecordsStatsSum.WithLabelValues(key, agent, version, "ExpandedFlowSample").
 				Add(float64(len(sConv.Records)))
 		}
 	}

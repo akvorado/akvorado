@@ -91,6 +91,7 @@ services:
     <<: *akvorado-image
     ports:
       - 2055:2055/udp
+      - 6343:6343/udp
     restart: unless-stopped
     command: inlet http://akvorado-orchestrator:8080
     volumes:
