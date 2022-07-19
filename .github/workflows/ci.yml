@@ -109,7 +109,7 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: bin
-          key: ${{ runner.os }}-gobin-${{ steps.go-setup.outputs.go-version }}-${{ hashFiles('Makefile') }}
+          key: ${{ runner.os }}-bin-${{ steps.go-setup.outputs.go-version }}-${{ hashFiles('Makefile') }}
 
       # Build and test
       - name: Build
