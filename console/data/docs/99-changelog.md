@@ -22,7 +22,6 @@ the orchestrator to load this new schema.
 - ✨ *orchestrator*: add role, site, region, and tenant attributes to networks [PR #15][]
 - ✨ *docker-compose*: clean conntrack entries when inlet container starts
 - 🩹 *console*: fix use of `InIfBoundary` and `OutIfBoundary` as dimensions [PR #11][]
-- 🩹 *docker-compose*: avoid starting bogus "akvorado-image" service
 - 🩹 *build*: make *Akvorado* compile on MacOS
 - 🌱 *inlet*: ask the kernel to timestamp incoming packets
 - 🌱 *orchestrator*: limit number of Kafka consumers in ClickHouse to the number of CPUs

@@ -1,12 +1,6 @@
 ---
 version: "3"
 
-# Choose one of the two options: build from source, or download
-# latest stable release from GitHub.
-x-akvorado-image: &akvorado-image
-  # build: {context: .}
-  image: ghcr.io/vincentbernat/akvorado:latest
-
 volumes:
   akvorado-zookeeper:
   akvorado-kafka:
@@ -62,6 +56,13 @@ services:
       - traefik.enable=true
       - traefik.http.routers.kafka-ui.entrypoints=private
       - traefik.http.routers.kafka-ui.rule=PathPrefix(`/kafka-ui`)
+
+  # Choose one of the two options: build from source, or download
+  # latest stable release from GitHub.
+  x-akvorado-service: &akvorado-image
+    # build: {context: .}
+    image: ghcr.io/vincentbernat/akvorado:latest
+    command: version
 
   akvorado-orchestrator:
     <<: *akvorado-image
