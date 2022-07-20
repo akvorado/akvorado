@@ -202,23 +202,23 @@ spawned by the other components and wait for signals to terminate. If
 
 ## Other interesting dependencies
 
- - [gopkg.in/tomb.v2](https://gopkg.in/tomb.v2) handles clean goroutine
-   tracking and termination. Like contexts, it allows to signal
-   termination of a bunch of goroutines. Unlike contexts, it also
-   enables us to catch errors in goroutines and react to them (most of
-   the time by dying).
- - [github.com/benbjohnson/clock](https://github.com/benbjohnson/clock) is
-   used in place of the `time` module when we want to be able to mock
-   the clock. This is used for example to test the cache of the SNMP
-   poller.
- - [github.com/cenkalti/backoff/v4](https://github.com/cenkalti/backoff)
-   provides an exponential backoff algorithm for retries.
- - [github.com/eapache/go-resiliency](https://github.com/eapache/go-resiliency)
-   implements several resiliency pattersn, including the breaker
-   pattern.
- - [github.com/go-playground/validator](https://github.com/go-playground/validator)
-   implements struct validation using tags. We use it to had better
-   validation on configuration structures.
+- [gopkg.in/tomb.v2](https://gopkg.in/tomb.v2) handles clean goroutine
+  tracking and termination. Like contexts, it allows to signal
+  termination of a bunch of goroutines. Unlike contexts, it also
+  enables us to catch errors in goroutines and react to them (most of
+  the time by dying).
+- [github.com/benbjohnson/clock](https://github.com/benbjohnson/clock) is
+  used in place of the `time` module when we want to be able to mock
+  the clock. This is used for example to test the cache of the SNMP
+  poller.
+- [github.com/cenkalti/backoff/v4](https://github.com/cenkalti/backoff)
+  provides an exponential backoff algorithm for retries.
+- [github.com/eapache/go-resiliency](https://github.com/eapache/go-resiliency)
+  implements several resiliency pattersn, including the breaker
+  pattern.
+- [github.com/go-playground/validator](https://github.com/go-playground/validator)
+  implements struct validation using tags. We use it to had better
+  validation on configuration structures.
 
 ## Future plans
 

@@ -12,9 +12,7 @@ a web interface to browse the result.
 ## Quick start
 
 A `docker-compose.yml` file is provided to quickly get started. Once
-running, *Akvorado* web interface should be running on port 80 and an
-inlet accepting both NetFlow (port 2055) and sFlow (port 6343).
-You need to configure SNMP on your exporters to accept requests from Akvorado.
+running, *Akvorado* web interface should be running on port 8080.
 
 ```console
 # docker-compose up
@@ -24,6 +22,20 @@ A few synthetic flows are generated in the background. They can be
 disabled by removing the `akvorado-exporter*` services from
 `docker-compose.yml` (or you can just stop them with `docker-compose
 stop akvorado-exporter{1,2,3,4}`).
+
+If you want to send you own flows, the inlet is accepting both NetFlow
+(port 2055) and sFlow (port 6343). You should also customize some
+settings in `akvorado.yaml`. They are described in details in the
+[“configuration” section](02-configuration.md) section of the
+documentation.
+
+- `clickhouse` → `asns` to give names to your internal AS numbers
+- `clickhouse` → `networks` to attach attributes to your networks
+- `inlet` → `core` → `exporter-classifiers` to define rules to attach
+  attributes to your exporters
+- `inlet` → `core` → `interface-classifiers` to define rules to attach
+  attributes to your interfaces (including the "boundary" attribute
+  which is used by default by the web interface)
 
 Take a look at the `docker-compose.yml` file if you want to setup the
 GeoIP database. It requires two environment variables to fetch them
@@ -38,15 +50,16 @@ from [MaxMind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data).
 - The **inlet service** receives flows from exporters. It poll each
   exporter using SNMP to get the *system name*, the *interface names*,
   *descriptions* and *speeds*. It query GeoIP databases to get the
-  *country* and the *AS number*. It applies rules to classify
-  exporters into *groups*. Interface rules attach to each interface a
-  *boundary* (external or internal), a *network provider* and a
-  *connectivity type* (PNI, IX, transit). The flow is exported to
-  *Kafka*, serialized using *Protobuf*.
+  *country* and the *AS number*. It applies rules to add attributes to
+  exporters. Interface rules attach to each interface a *boundary*
+  (external or internal), a *network provider* and a *connectivity
+  type* (PNI, IX, transit). The flow is exported to *Kafka*,
+  serialized using *Protobuf*.
 
-- The **configuration service** configures the external components. It
-  creates the *Kafka topic* and configures *ClickHouse* to receive the
-  flows from Kafka.
+- The **orchestrator service** configures the internal and external
+  components. It creates the *Kafka topic* and configures *ClickHouse*
+  to receive the flows from Kafka. It exposes configuration settings
+  for the other services to use.
 
 - The **console service** exposes a web interface to look and
   manipulate the flows stored inside the ClickHouse database.

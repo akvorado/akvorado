@@ -1,7 +1,7 @@
 # Configuration
 
 The orchestrator service is configured through a YAML file and
-includes the configuration of the other services. Other servcies are
+includes the configuration of the other services. Other services are
 expected to query the orchestrator through HTTP on start to retrieve
 their configuration.
 

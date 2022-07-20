@@ -3,6 +3,7 @@
 For each version, changes are listed in order of importance. Minor
 changes are not listed here. Each change is mapped to a category
 identified with a specific icon:
+
 - 💥: breaking change
 - ✨: new feature
 - 🗑️: removed feature

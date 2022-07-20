@@ -156,17 +156,17 @@ listed as dimensions can usually be used. Accepted operators are `=`,
 `!=`, `<`, `<=`, `>`, `>=`, `IN`, `NOTIN`, `LIKE`, `UNLIKE`, `ILIKE`,
 `IUNLIKE`, when they make sense. Here are a few examples:
 
- - `InIfBoundary = external` only selects flows whose incoming
-   interface was classified as external. The value should not be
-   quoted.
- - `InIfConnectivity = "ix"` selects flows whose incoming interface is
-   connected to an IX.
- - `SrcAS = AS12322`, `SrcAS = 12322`, `SrcAS IN (12322, 29447)`
-   limits the source AS number of selected flows.
- - `SrcAddr = 203.0.113.4` only selects flows with the specified
-   address. Note that filtering on IP addresses is usually slower.
- - `ExporterName LIKE th2-%` selects flows coming from routers
-   starting with `th2-`.
+- `InIfBoundary = external` only selects flows whose incoming
+  interface was classified as external. The value should not be
+  quoted.
+- `InIfConnectivity = "ix"` selects flows whose incoming interface is
+  connected to an IX.
+- `SrcAS = AS12322`, `SrcAS = 12322`, `SrcAS IN (12322, 29447)`
+  limits the source AS number of selected flows.
+- `SrcAddr = 203.0.113.4` only selects flows with the specified
+  address. Note that filtering on IP addresses is usually slower.
+- `ExporterName LIKE th2-%` selects flows coming from routers
+  starting with `th2-`.
 
 Field names are case-insensitive. Comments can also be added by using
 `--` for single-line comments or enclosing them in `/*` and `*/`.

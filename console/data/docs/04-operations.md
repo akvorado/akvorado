@@ -43,7 +43,7 @@ flow monitor-map monitor2
 Optionally, AS path can be pushed to the forwarding database and the
 source and destination AS will be present in Netflow packets:
 
-```
+```cisco
 router bgp <asn>
  address-family ipv4 unicast
   bgp attribute-download
@@ -264,7 +264,7 @@ sflow run
 
 Then, configure SNMP:
 
-```
+```eos
 snmp-server community <community> ro
 snmp-server vrf VRF-MANAGEMENT
 ```
@@ -322,3 +322,14 @@ FORMAT Vertical
 [Altinity's knowledge
 base](https://kb.altinity.com/altinity-kb-useful-queries/query_log/)
 contains some other useful queries.
+
+### Errors
+
+You can get the latest errors with:
+
+```sql
+SELECT last_error_time, last_error_message
+FROM system.errors
+ORDER BY last_error_time LIMIT 10
+FORMAT Vertical
+```

@@ -214,6 +214,7 @@ $ kcat -b kafka:9092 -C -t flows-v2 -f 'Topic %t [%p] at offset %o: key %k: %T\n
 Alternatively, when using `docker-compose`, there is a Kafka UI
 running at `http://127.0.0.1:8080/kafka-ui/`. You can do the following
 checks:
+
 - are the brokers alive?
 - is the `flows-v2` topic present and receiving messages?
 - is ClickHouse registered as a consumer?
