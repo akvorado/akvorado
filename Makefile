@@ -134,9 +134,9 @@ test-coverage: | $(GOCOV) $(GOCOVXML) $(GOTESTSUM) ; $(info $(M) running coverag
 		-covermode=$(COVERAGE_MODE) \
 		-coverprofile=test/profile.out.tmp $(PKGS)
 	$Q grep -Ev $$(awk -F: '(NR > 1) {print $$1}' test/profile.out.tmp \
-			| sort | uniq | sed "s+^akvorado/++" \
+			| sort | uniq | sed "s+^$(MODULE)/++" \
 			| xargs grep -lF "DO NOT EDIT" \
-			| sed "s+\(.*\)+^akvorado/\1:+" | paste -sd '|') test/profile.out.tmp > test/profile.out
+			| sed "s+\(.*\)+^$(MODULE)/\1:+" | paste -sd '|') test/profile.out.tmp > test/profile.out
 	$Q $(GO) tool cover -html=test/profile.out -o test/coverage.html
 	$Q $(GOCOV) convert test/profile.out | $(GOCOVXML) > test/coverage.xml
 	@echo -n "Code coverage: "; \
