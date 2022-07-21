@@ -180,7 +180,7 @@ func TestDecodeConfiguration(t *testing.T) {
 					field := strings.ToLower(fieldName)
 					return key == field
 				},
-				DecodeHook: ConfigurationUnmarshalerHook(),
+				DecodeHook: ConfigurationUnmarshallerHook(),
 			})
 			if err != nil {
 				t.Fatalf("NewDecoder() error:\n%+v", err)

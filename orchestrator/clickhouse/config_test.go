@@ -76,7 +76,7 @@ func TestNetworkNamesUnmarshalHook(t *testing.T) {
 				ErrorUnused: true,
 				Metadata:    nil,
 				DecodeHook: mapstructure.ComposeDecodeHookFunc(
-					NetworkMapUnmarshalerHook(),
+					NetworkMapUnmarshallerHook(),
 				),
 			})
 			if err != nil {

@@ -21,8 +21,6 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"akvorado/common/helpers"
-	"akvorado/inlet/flow"
-	"akvorado/orchestrator/clickhouse"
 )
 
 // ConfigRelatedOptions are command-line options related to handling a
@@ -80,6 +78,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 	// Parse provided configuration
 	defaultHook, disableDefaultHook := DefaultHook()
 	var metadata mapstructure.Metadata
+	registeredHooks := helpers.GetMapStructureUnmarshallerHooks()
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 		Result:           &config,
 		ErrorUnused:      false,
@@ -92,8 +91,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 		},
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			defaultHook,
-			flow.ConfigurationUnmarshalerHook(),
-			clickhouse.NetworkMapUnmarshalerHook(),
+			mapstructure.ComposeDecodeHookFunc(registeredHooks...),
 			mapstructure.TextUnmarshallerHookFunc(),
 			mapstructure.StringToTimeDurationHookFunc(),
 			mapstructure.StringToSliceHookFunc(","),

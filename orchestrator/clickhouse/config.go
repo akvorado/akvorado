@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"akvorado/common/clickhousedb"
+	"akvorado/common/helpers"
 	"akvorado/common/kafka"
 
 	"github.com/mitchellh/mapstructure"
@@ -89,10 +90,10 @@ type NetworkAttributes struct {
 	Tenant string
 }
 
-// NetworkMapUnmarshalerHook decodes NetworkMap mapping and notably
+// NetworkMapUnmarshallerHook decodes NetworkMap mapping and notably
 // check that valid networks are provided as key. It also accepts a
 // string instead of attributes for backward compatibility.
-func NetworkMapUnmarshalerHook() mapstructure.DecodeHookFunc {
+func NetworkMapUnmarshallerHook() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Type, data interface{}) (interface{}, error) {
 		if from.Kind() != reflect.Map || to != reflect.TypeOf(NetworkMap{}) {
 			return data, nil
@@ -137,4 +138,8 @@ func NetworkMapUnmarshalerHook() mapstructure.DecodeHookFunc {
 		}
 		return output, nil
 	}
+}
+
+func init() {
+	helpers.AddMapstructureUnmarshallerHook(NetworkMapUnmarshallerHook())
 }

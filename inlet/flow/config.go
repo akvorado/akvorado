@@ -12,6 +12,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 
+	"akvorado/common/helpers"
 	"akvorado/inlet/flow/input"
 	"akvorado/inlet/flow/input/file"
 	"akvorado/inlet/flow/input/udp"
@@ -44,11 +45,11 @@ type InputConfiguration struct {
 	Config input.Configuration
 }
 
-// ConfigurationUnmarshalerHook will help decode the Configuration
+// ConfigurationUnmarshallerHook will help decode the Configuration
 // structure by selecting the appropriate concrete type for
 // input.Connfiguration, depending on the type contained in the
 // source.
-func ConfigurationUnmarshalerHook() mapstructure.DecodeHookFunc {
+func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (interface{}, error) {
 		if to.Type() != reflect.TypeOf(InputConfiguration{}) {
 			return from.Interface(), nil
@@ -131,7 +132,7 @@ func ConfigurationUnmarshalerHook() mapstructure.DecodeHookFunc {
 	}
 }
 
-// MarshalYAML undoes ConfigurationUnmarshalerHook().
+// MarshalYAML undoes ConfigurationUnmarshallerHook().
 func (ic InputConfiguration) MarshalYAML() (interface{}, error) {
 	var typeStr string
 	for k, v := range inputs {
@@ -154,7 +155,7 @@ func (ic InputConfiguration) MarshalYAML() (interface{}, error) {
 	return result, nil
 }
 
-// MarshalJSON undoes ConfigurationUnmarshalerHook().
+// MarshalJSON undoes ConfigurationUnmarshallerHook().
 func (ic InputConfiguration) MarshalJSON() ([]byte, error) {
 	result, err := ic.MarshalYAML()
 	if err != nil {
@@ -166,4 +167,8 @@ func (ic InputConfiguration) MarshalJSON() ([]byte, error) {
 var inputs = map[string](func() input.Configuration){
 	"udp":  udp.DefaultConfiguration,
 	"file": file.DefaultConfiguration,
+}
+
+func init() {
+	helpers.AddMapstructureUnmarshallerHook(ConfigurationUnmarshallerHook())
 }
