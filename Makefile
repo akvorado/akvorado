@@ -1,4 +1,4 @@
-MODULE   = $(shell env GO111MODULE=on $(GO) list -m)
+MODULE   = $(shell $(GO) list -m)
 DATE    ?= $(shell date +%FT%T%z)
 VERSION ?= $(shell git describe --tags --always --dirty --match=v* 2> /dev/null || \
 			cat .version 2> /dev/null || echo v0)
@@ -11,8 +11,6 @@ LSFILES = git ls-files -cmo --exclude-standard --
 V = 0
 Q = $(if $(filter 1,$V),,@)
 M = $(shell if [ "$$(tput colors 2> /dev/null || echo 0)" -ge 8 ]; then printf "\033[34;1m▶\033[0m"; else printf "▶"; fi)
-
-export GO111MODULE=on
 
 GENERATED = \
 	inlet/flow/decoder/flow-2.pb.go \
