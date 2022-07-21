@@ -62,6 +62,15 @@ func (c *dummyConfiguration) Reset() {
 				Workers:       1,
 				IntervalValue: time.Minute,
 			},
+			Elements: []dummyModule2ElementsConfiguration{
+				{
+					Name:  "el1",
+					Gauge: 10,
+				}, {
+					Name:  "el2",
+					Gauge: 11,
+				},
+			},
 		},
 	}
 }
@@ -381,6 +390,15 @@ modules:
 							Workers:       1,
 							IntervalValue: time.Minute,
 						},
+						Elements: []dummyModule2ElementsConfiguration{
+							{
+								Name:  "el1",
+								Gauge: 10,
+							}, {
+								Name:  "el2",
+								Gauge: 11,
+							},
+						},
 					},
 				}, {
 					Module1: dummyModule1Configuration{
@@ -395,6 +413,15 @@ modules:
 						Details: dummyModule2DetailsConfiguration{
 							Workers:       1,
 							IntervalValue: time.Minute,
+						},
+						Elements: []dummyModule2ElementsConfiguration{
+							{
+								Name:  "el1",
+								Gauge: 10,
+							}, {
+								Name:  "el2",
+								Gauge: 11,
+							},
 						},
 					},
 				},
@@ -453,6 +480,15 @@ func TestDevNullDefault(t *testing.T) {
 			Details: dummyModule2DetailsConfiguration{
 				Workers:       1,
 				IntervalValue: time.Minute,
+			},
+			Elements: []dummyModule2ElementsConfiguration{
+				{
+					Name:  "el1",
+					Gauge: 10,
+				}, {
+					Name:  "el2",
+					Gauge: 11,
+				},
 			},
 		},
 	}

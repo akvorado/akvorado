@@ -70,12 +70,12 @@ func TestDecodeConfiguration(t *testing.T) {
 			},
 			Source: map[string]interface{}{
 				"inputs": []map[string]interface{}{
-					map[string]interface{}{
+					{
 						"type":    "udp",
 						"decoder": "netflow",
 						"listen":  "192.0.2.1:2055",
 						"workers": 3,
-					}, map[string]interface{}{
+					}, {
 						"type":    "udp",
 						"decoder": "sflow",
 						"listen":  "192.0.2.1:6343",
@@ -106,17 +106,11 @@ func TestDecodeConfiguration(t *testing.T) {
 				Inputs: []InputConfiguration{{
 					Decoder: "netflow",
 					Config:  udp.DefaultConfiguration(),
-				}, {
-					Decoder: "sflow",
-					Config:  udp.DefaultConfiguration(),
 				}},
 			},
 			Source: map[string]interface{}{
 				"inputs": []map[string]interface{}{
-					map[string]interface{}{
-						"type":  "file",
-						"paths": []string{"file1", "file2"},
-					}, map[string]interface{}{
+					{
 						"type":  "file",
 						"paths": []string{"file1", "file2"},
 					},
@@ -125,11 +119,6 @@ func TestDecodeConfiguration(t *testing.T) {
 			Expected: Configuration{
 				Inputs: []InputConfiguration{{
 					Decoder: "netflow",
-					Config: &file.Configuration{
-						Paths: []string{"file1", "file2"},
-					},
-				}, {
-					Decoder: "sflow",
 					Config: &file.Configuration{
 						Paths: []string{"file1", "file2"},
 					},
@@ -149,7 +138,7 @@ func TestDecodeConfiguration(t *testing.T) {
 			},
 			Source: map[string]interface{}{
 				"inputs": []map[string]interface{}{
-					map[string]interface{}{
+					{
 						"listen": "192.0.2.1:2055",
 					},
 				},

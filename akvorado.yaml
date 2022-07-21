@@ -34,6 +34,7 @@ clickhouse:
     2a01:db8:cafe:2::/64:
       name: ipv6-servers
       role: servers
+
 inlet:
   kafka:
     compression-codec: zstd

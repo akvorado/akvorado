@@ -13,6 +13,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 🩹 *cmd*: do not merge user-provided lists with defaults when parsing configuration
 - 🌱 *console*: add configuration for default options of the visualize
   tab and the top widgets to display on the home page.
 

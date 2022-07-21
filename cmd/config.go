@@ -77,6 +77,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 
 	// Parse provided configuration
 	defaultHook, disableDefaultHook := DefaultHook()
+	zeroSliceHook, disableZeroSliceHook := ZeroSliceHook()
 	var metadata mapstructure.Metadata
 	registeredHooks := helpers.GetMapStructureUnmarshallerHooks()
 	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
@@ -91,6 +92,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 		},
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			defaultHook,
+			zeroSliceHook,
 			mapstructure.ComposeDecodeHookFunc(registeredHooks...),
 			mapstructure.TextUnmarshallerHookFunc(),
 			mapstructure.StringToTimeDurationHookFunc(),
@@ -104,6 +106,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 		return fmt.Errorf("unable to parse configuration: %w", err)
 	}
 	disableDefaultHook()
+	disableZeroSliceHook()
 
 	// Override with environment variables
 	for _, keyval := range os.Environ() {
@@ -210,6 +213,31 @@ func DefaultHook() (mapstructure.DecodeHookFunc, func()) {
 			return from.Interface(), nil
 		}
 		method.Func.Call([]reflect.Value{to.Addr()})
+
+		// Resume decoding
+		return from.Interface(), nil
+	}
+	disable := func() {
+		disabled = true
+	}
+	return hook, disable
+}
+
+// ZeroSliceHook clear a list got as a default value if we get a
+// non-nil slice. Like DefaultHook, it can be disabled.
+func ZeroSliceHook() (mapstructure.DecodeHookFunc, func()) {
+	disabled := false
+	hook := func(from, to reflect.Value) (interface{}, error) {
+		if disabled {
+			return from.Interface(), nil
+		}
+		// Do we try to map a slice to a slice? If yes, the source slice should not be nil.
+		if from.Kind() != reflect.Slice || to.Kind() != reflect.Slice || from.IsNil() || to.IsNil() {
+			return from.Interface(), nil
+		}
+
+		// Zero out the destination slice.
+		to.SetLen(0)
 
 		// Resume decoding
 		return from.Interface(), nil
