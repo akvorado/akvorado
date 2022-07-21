@@ -110,16 +110,16 @@ func TestHTTPEndpoints(t *testing.T, serverAddr net.Addr, cases HTTPEndpointCase
 				tc.StatusCode = 200
 			}
 			if resp.StatusCode != tc.StatusCode {
-				t.Errorf("GET %s: got status code %d, not %d", tc.URL,
-					resp.StatusCode, tc.StatusCode)
+				t.Errorf("%s %s: got status code %d, not %d", tc.URL,
+					tc.Method, resp.StatusCode, tc.StatusCode)
 			}
 			if tc.JSONOutput != nil {
 				tc.ContentType = "application/json; charset=utf-8"
 			}
 			gotContentType := resp.Header.Get("Content-Type")
 			if gotContentType != tc.ContentType {
-				t.Errorf("GET %s Content-Type (-got, +want):\n-%s\n+%s",
-					tc.URL, gotContentType, tc.ContentType)
+				t.Errorf("%s %s Content-Type (-got, +want):\n-%s\n+%s",
+					tc.Method, tc.URL, gotContentType, tc.ContentType)
 			}
 			if tc.JSONOutput == nil {
 				reader := bufio.NewScanner(resp.Body)
@@ -128,16 +128,16 @@ func TestHTTPEndpoints(t *testing.T, serverAddr net.Addr, cases HTTPEndpointCase
 					got = append(got, reader.Text())
 				}
 				if diff := Diff(got, tc.FirstLines); diff != "" {
-					t.Errorf("GET %s (-got, +want):\n%s", tc.URL, diff)
+					t.Errorf("%s %s (-got, +want):\n%s", tc.Method, tc.URL, diff)
 				}
 			} else {
 				decoder := json.NewDecoder(resp.Body)
 				var got gin.H
 				if err := decoder.Decode(&got); err != nil {
-					t.Fatalf("POST %s:\n%+v", tc.URL, err)
+					t.Fatalf("%s %s:\n%+v", tc.Method, tc.URL, err)
 				}
 				if diff := Diff(got, tc.JSONOutput); diff != "" {
-					t.Fatalf("POST %s (-got, +want):\n%s", tc.URL, diff)
+					t.Fatalf("%s %s (-got, +want):\n%s", tc.Method, tc.URL, diff)
 				}
 			}
 		})
