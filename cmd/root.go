@@ -18,7 +18,7 @@ var debug bool
 // RootCmd is the root for all commands
 var RootCmd = &cobra.Command{
 	Use:   "akvorado",
-	Short: "Export flows to Kafka",
+	Short: "Flow collector, hydrater and visualizer",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		if isatty.IsTerminal(os.Stdout.Fd()) {
 			log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})

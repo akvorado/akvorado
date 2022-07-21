@@ -6,15 +6,38 @@ single binary or Docker image. It also requires an installation of
 [ClickHouse](https://clickhouse.com/docs/en/getting-started/install/).
 They have to be installed separately.
 
+## Docker image
+
+You can get *Akvorado* as a
+[Docker](https://docs.docker.com/get-docker) image.
+
+```console
+# docker pull ghcr.io/vincentbernat/akvorado:latest
+# docker run --rm ghcr.io/vincentbernat/akvorado:latest help
+```
+
+Check the `docker-compose.yml` file for an example on how to deploy
+*Akvorado* using containers.
+
+## Pre-built binary
+
+The second option is to get a pre-built binary from the [release page
+on GitHub](https://github.com/vincentbernat/akvorado/releases).
+Currently, only a pre-built binary for Linux x86-64 is provided.
+
 ## Compilation from source
 
 You need a proper installation of [Go](https://go.dev/doc/install)
-(1.18+), [NodeJS](https://nodejs.org/en/download/), and
-[protoc](https://grpc.io/docs/protoc-installation/). For example, on
-Debian:
+(1.18+), [NodeJS](https://nodejs.org/en/download/) (12+) with NPM
+(7+), and [protoc](https://grpc.io/docs/protoc-installation/). For
+example, on Debian:
 
 ```console
 # apt install golang-1.18 nodejs npm protobuf-compiler
+# node --version
+v16.15.1
+# npm --version
+8.14.0
 ```
 
 Then, type:
@@ -60,15 +83,6 @@ The following `make` targets are available:
 - `make clean`
 - `make lint` to lint source code
 - `make fmt` to format source code
-
-## Docker image
-
-It is also possible to get Akvorado as a
-[Docker](https://docs.docker.com/get-docker) image:
-
-```console
-# docker pull ghcr.io/vincentbernat/akvorado:latest
-```
 
 ## Upgrade
 
