@@ -13,7 +13,8 @@ identified with a specific icon:
 
 ## Unreleased
 
-- 🌱 *console*: add configuration for default options of the visualize tab
+- 🌱 *console*: add configuration for default options of the visualize
+  tab and the top widgets to display on the home page.
 
 ## 1.5.0 - 2022-07-20
 

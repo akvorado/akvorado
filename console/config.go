@@ -17,6 +17,8 @@ type Configuration struct {
 	Version string `yaml:"-"`
 	// DefaultVisualizeOptions define some defaults for the "visualize" tab.
 	DefaultVisualizeOptions VisualizeOptionsConfiguration
+	// HomepageTopWidgets defines the list of widgets to display on the home page.
+	HomepageTopWidgets []string `validate:"dive,oneof=src-as dst-as src-country dst-country exporter protocol etype src-port dst-port"`
 }
 
 // VisualizeOptionsConfiguration defines options for the "visualize" tab.
@@ -40,6 +42,7 @@ func DefaultConfiguration() Configuration {
 			Filter:     "InIfBoundary = external",
 			Dimensions: []queryColumn{queryColumnSrcAS},
 		},
+		HomepageTopWidgets: []string{"src-as", "src-port", "protocol", "src-country", "etype"},
 	}
 }
 
@@ -47,5 +50,6 @@ func (c *Component) configHandlerFunc(gc *gin.Context) {
 	gc.JSON(http.StatusOK, gin.H{
 		"version":                 c.config.Version,
 		"defaultVisualizeOptions": c.config.DefaultVisualizeOptions,
+		"topWidgets":              c.config.HomepageTopWidgets,
 	})
 }

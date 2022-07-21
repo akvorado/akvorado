@@ -32,25 +32,11 @@
         :refresh="refreshOften"
         class="order-last col-span-2 row-span-3 xl:order-none"
       />
-      <WidgetTop what="src-as" title="Top AS" :refresh="refreshOccasionally" />
       <WidgetTop
-        what="src-port"
-        title="Top ports"
-        :refresh="refreshOccasionally"
-      />
-      <WidgetTop
-        what="protocol"
-        title="Top protocols"
-        :refresh="refreshOccasionally"
-      />
-      <WidgetTop
-        what="src-country"
-        title="Top countries"
-        :refresh="refreshOccasionally"
-      />
-      <WidgetTop
-        what="etype"
-        title="IPv4/IPv6"
+        v-for="widget in topWidgets"
+        :key="widget"
+        :what="widget"
+        :title="widgetTitle(widget)"
         :refresh="refreshOccasionally"
       />
       <WidgetGraph
@@ -62,12 +48,28 @@
 </template>
 
 <script setup>
+import { inject, computed } from "vue";
 import { useInterval } from "@vueuse/core";
 import WidgetLastFlow from "./HomePage/WidgetLastFlow.vue";
 import WidgetFlowRate from "./HomePage/WidgetFlowRate.vue";
 import WidgetExporters from "./HomePage/WidgetExporters.vue";
 import WidgetTop from "./HomePage/WidgetTop.vue";
 import WidgetGraph from "./HomePage/WidgetGraph.vue";
+
+const serverConfiguration = inject("server-configuration");
+const topWidgets = computed(() => serverConfiguration.value?.topWidgets ?? []);
+const widgetTitle = (name) =>
+  ({
+    "src-as": "Top source AS",
+    "dst-as": "Top destination AS",
+    "src-country": "Top source countries",
+    "dst-country": "Top destination countries",
+    exporter: "Top exporters",
+    protocol: "Top protocols",
+    etype: "IPv4/IPv6",
+    "src-port": "Top source ports",
+    "dst-port": "Top destination ports",
+  }[name] ?? "???");
 
 const refreshOften = useInterval(10_000);
 const refreshOccasionally = useInterval(60_000);
