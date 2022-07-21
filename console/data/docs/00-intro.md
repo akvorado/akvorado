@@ -11,12 +11,19 @@ a web interface to browse the result.
 
 ## Quick start
 
-A `docker-compose.yml` file is provided to quickly get started. Once
-running, *Akvorado* web interface should be running on port 8080.
+A `docker-compose.yml` file is provided to quickly get started. The
+only requirement is to have
+[Docker](https://docs.docker.com/get-docker/) and [Docker
+Compose](https://docs.docker.com/compose/install/). Grab the latest
+tarball from the [release page on
+GitHub](https://github.com/vincentbernat/akvorado/releases), unpack it
+in a directory, then run the `docker-compose` command:
 
 ```console
 # docker-compose up
 ```
+
+Once running, *Akvorado* web interface should be running on port 8080.
 
 A few synthetic flows are generated in the background. They can be
 disabled by removing the `akvorado-exporter*` services from
