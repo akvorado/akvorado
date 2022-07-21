@@ -60,6 +60,7 @@ manage collected flows.`,
 		if err := ConsoleOptions.Parse(cmd.OutOrStdout(), "console", &config); err != nil {
 			return err
 		}
+		config.Console.Version = Version
 
 		r, err := reporter.New(config.Reporting)
 		if err != nil {

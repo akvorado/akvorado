@@ -83,6 +83,7 @@ func (c *Component) Start() error {
 
 	c.d.HTTP.AddHandler("/", netHTTP.HandlerFunc(c.assetsHandlerFunc))
 	endpoint := c.d.HTTP.GinRouter.Group("/api/v0/console", c.d.Auth.UserAuthentication())
+	endpoint.GET("/configuration", c.configHandlerFunc)
 	endpoint.GET("/docs/:name", c.docsHandlerFunc)
 	endpoint.GET("/widget/flow-last", c.widgetFlowLastHandlerFunc)
 	endpoint.GET("/widget/flow-rate", c.widgetFlowRateHandlerFunc)

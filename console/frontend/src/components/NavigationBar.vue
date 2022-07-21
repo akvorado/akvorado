@@ -11,13 +11,17 @@
       <router-link to="/" class="flex items-center">
         <img
           src="@/assets/images/akvorado.svg"
-          class="mr-3 h-6 sm:h-9"
+          class="mr-3 h-9"
           alt="Akvorado Logo"
         />
-        <span
-          class="self-center whitespace-nowrap text-xl font-semibold dark:text-white"
-          >Akvorado</span
-        >
+        <span class="self-center dark:text-white">
+          <span class="block text-xl font-semibold">Akvorado</span>
+          <span
+            class="block max-w-[8em] overflow-hidden text-ellipsis whitespace-nowrap text-xs leading-4 text-gray-600 dark:text-gray-400"
+          >
+            {{ serverConfiguration?.version }}
+          </span>
+        </span>
       </router-link>
       <div class="flex md:order-2">
         <DarkModeSwitcher />
@@ -64,7 +68,7 @@
 </template>
 
 <script setup>
-import { computed } from "vue";
+import { computed, inject } from "vue";
 import { useRoute } from "vue-router";
 import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/vue";
 import {
@@ -77,6 +81,7 @@ import {
 import DarkModeSwitcher from "@/components/DarkModeSwitcher.vue";
 import UserMenu from "@/components/UserMenu.vue";
 
+const serverConfiguration = inject("server-configuration");
 const route = useRoute();
 const navigation = computed(() => [
   { name: "Home", icon: HomeIcon, link: "/", current: route.path == "/" },
