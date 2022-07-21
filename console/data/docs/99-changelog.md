@@ -14,6 +14,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🩹 *cmd*: do not merge user-provided lists with defaults when parsing configuration
+- 🩹 *docker-compose*: make `docker-compose.yml` work with Docker Compose v2/v3
 - 🌱 *console*: add configuration for default options of the visualize
   tab and the top widgets to display on the home page.
 
