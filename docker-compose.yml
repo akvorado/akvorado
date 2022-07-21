@@ -59,7 +59,7 @@ services:
 
   # Choose one of the two options: build from source, or download
   # latest stable release from GitHub.
-  x-akvorado-service: &akvorado-image
+  akvorado-service: &akvorado-image
     # build: {context: .}
     image: ghcr.io/vincentbernat/akvorado:latest
     command: version
