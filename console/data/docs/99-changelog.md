@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🌱 *console*: add configuration for default options of the visualize tab
+
 ## 1.5.0 - 2022-07-20
 
 This release introduce a new protobuf schema. When using

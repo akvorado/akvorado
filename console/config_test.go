@@ -20,6 +20,12 @@ func TestConfigHandler(t *testing.T) {
 			URL: "/api/v0/console/configuration",
 			JSONOutput: gin.H{
 				"version": "1.2.3",
+				"defaultVisualizeOptions": gin.H{
+					"start":      "6 hours ago",
+					"end":        "now",
+					"filter":     "InIfBoundary = external",
+					"dimensions": []string{"SrcAS"},
+				},
 			},
 		},
 	})

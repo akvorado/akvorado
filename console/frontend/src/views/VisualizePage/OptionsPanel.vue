@@ -108,7 +108,7 @@ const props = defineProps({
 });
 const emit = defineEmits(["update:modelValue", "cancel"]);
 
-import { ref, watch, computed } from "vue";
+import { ref, watch, computed, inject } from "vue";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/vue/solid";
 import InputTimeRange from "@/components/InputTimeRange.vue";
 import InputDimensions from "@/components/InputDimensions.vue";
@@ -155,17 +155,19 @@ const hasErrors = computed(
     !!(timeRange.value.errors || dimensions.value.errors || filter.value.errors)
 );
 
+const serverConfiguration = inject("server-configuration");
 watch(
-  () => props.modelValue,
-  (modelValue) => {
+  () => [props.modelValue, serverConfiguration.value?.defaultVisualizeOptions],
+  ([modelValue, defaultOptions]) => {
+    if (defaultOptions === undefined) return;
     const {
       graphType: _graphType = graphTypes.stacked,
-      start = "6 hours ago",
-      end = "now",
-      dimensions: _dimensions = ["SrcAS"],
+      start = defaultOptions?.start,
+      end = defaultOptions?.end,
+      dimensions: _dimensions = defaultOptions?.dimensions,
       limit = 10,
       points /* eslint-disable-line no-unused-vars */,
-      filter: _filter = "InIfBoundary = external",
+      filter: _filter = defaultOptions?.filter,
       units: _units = "l3bps",
     } = modelValue;
 
@@ -173,14 +175,17 @@ watch(
     graphType.value =
       graphTypeList.find(({ name }) => name === _graphType) || graphTypeList[0];
     timeRange.value = { start, end };
-    dimensions.value = { selected: [..._dimensions], limit };
+    dimensions.value = {
+      selected: [..._dimensions],
+      limit,
+    };
     filter.value = { expression: _filter };
     units.value = _units;
 
     // A bit risky, but it seems to work.
     if (!isEqual(modelValue, options.value)) {
       open.value = true;
-      if (!hasErrors.value) {
+      if (!hasErrors.value && start) {
         emit("update:modelValue", options.value);
       }
     }

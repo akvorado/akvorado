@@ -376,6 +376,19 @@ The main components of the console service are `http`, `console`,
 `authentication` and `database`. `http` accepts the [same
 configuration](#http) as for the inlet service.
 
+The console itself accepts the `default-visualize-options` key. Here
+is an example:
+
+```yaml
+console:
+  default-visualize-options:
+    start: 1 day ago
+    end: now
+    filter: InIfBoundary = external
+    dimensions:
+      - ExporterName
+```
+
 ### Authentication
 
 The console does not store user identities and is unable to
