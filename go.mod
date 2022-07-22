@@ -3,7 +3,7 @@ module akvorado
 go 1.18
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.0.14
+	github.com/ClickHouse/clickhouse-go/v2 v2.2.0
 	github.com/Shopify/sarama v1.32.1-0.20220321223103-27b8f1b5973b
 	github.com/antonmedv/expr v1.9.0
 	github.com/benbjohnson/clock v1.3.0
@@ -83,9 +83,9 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
 	github.com/oschwald/maxminddb-golang v1.8.0 // indirect
-	github.com/paulmach/orb v0.5.0 // indirect
+	github.com/paulmach/orb v0.7.1 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
-	github.com/pierrec/lz4/v4 v4.1.14 // indirect
+	github.com/pierrec/lz4/v4 v4.1.15 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/common v0.32.1 // indirect
