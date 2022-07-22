@@ -5,7 +5,7 @@ COPY go.mod ./
 COPY go.sum ./
 RUN go mod download
 COPY . .
-RUN make clean && make && ./bin/akvorado version && git status
+RUN make clean && make && ./bin/akvorado version
 
 # Do not use scratch, we use alpine to get an healthcheck
 FROM alpine
