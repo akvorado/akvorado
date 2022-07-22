@@ -121,15 +121,15 @@ func TestOverflow(t *testing.T) {
 	}
 	time.Sleep(20 * time.Millisecond)
 
-	// Check metrics (same as before because we got only one packet, others were dropped)
+	// Check metrics
 	gotMetrics := r.GetMetrics("akvorado_inlet_flow_input_udp_")
 	expectedMetrics := map[string]string{
-		`bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                              "12",
+		`bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                              "120",
 		`in_drops{listener="127.0.0.1:0",worker="0"}`:                                                "0",
 		`out_drops{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                          "9",
-		`packets{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                            "1",
-		`summary_size_bytes_count{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:           "1",
-		`summary_size_bytes_sum{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:             "12",
+		`packets{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                            "10",
+		`summary_size_bytes_count{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:           "10",
+		`summary_size_bytes_sum{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:             "120",
 		`summary_size_bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0",quantile="0.5"}`:  "12",
 		`summary_size_bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0",quantile="0.9"}`:  "12",
 		`summary_size_bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0",quantile="0.99"}`: "12",

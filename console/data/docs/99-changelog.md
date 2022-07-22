@@ -15,6 +15,7 @@ identified with a specific icon:
 
 - 🩹 *cmd*: do not merge user-provided lists with defaults when parsing configuration
 - 🩹 *docker-compose*: make `docker-compose.yml` work with Docker Compose v2/v3
+- 🩹 *inlet*: update UDP packet counters when receiving packets, not after decoding
 - 🌱 *console*: add configuration for default options of the visualize
   tab and the top widgets to display on the home page.
 

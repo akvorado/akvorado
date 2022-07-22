@@ -174,6 +174,12 @@ func (in *Input) Start() (<-chan []*decoder.FlowMessage, error) {
 				}
 
 				srcIP := source.IP.String()
+				in.metrics.bytes.WithLabelValues(listen, worker, srcIP).
+					Add(float64(n))
+				in.metrics.packets.WithLabelValues(listen, worker, srcIP).
+					Inc()
+				in.metrics.packetSizeSum.WithLabelValues(listen, worker, srcIP).
+					Observe(float64(n))
 				flows := in.decoder.Decode(decoder.RawFlow{
 					TimeReceived: oobMsg.Received,
 					Payload:      payload[:n],
@@ -186,12 +192,6 @@ func (in *Input) Start() (<-chan []*decoder.FlowMessage, error) {
 				case <-in.t.Dying():
 					return nil
 				case in.ch <- flows:
-					in.metrics.bytes.WithLabelValues(listen, worker, srcIP).
-						Add(float64(n))
-					in.metrics.packets.WithLabelValues(listen, worker, srcIP).
-						Inc()
-					in.metrics.packetSizeSum.WithLabelValues(listen, worker, srcIP).
-						Observe(float64(n))
 				default:
 					errLogger.Warn().Msgf("dropping flow due to queue full (size %d)",
 						in.config.QueueSize)
