@@ -4,7 +4,7 @@
 <template>
   <div class="text-left">
     <h1 class="font-semibold leading-relaxed">Last flow</h1>
-    <table class="w-full table-fixed text-sm">
+    <table class="w-full max-w-md text-sm">
       <tbody>
         <tr v-for="[field, value] in lastFlow" :key="field">
           <td class="w-2/5 overflow-hidden text-ellipsis pr-3">

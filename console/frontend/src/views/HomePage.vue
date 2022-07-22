@@ -2,47 +2,46 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
 
 <template>
-  <div class="container mx-auto p-5">
-    <div
-      class="grid grid-cols-2 gap-4 text-center md:grid-cols-4 xl:grid-cols-6"
-    >
-      <div class="col-span-2 flex flex-row">
-        <div class="my-auto mr-4 basis-1/3">
-          <div class="h-24 w-24">
-            <img src="@/assets/images/akvorado.svg" />
+  <div class="container mx-auto">
+    <div class="grid grid-cols-1 gap-4 p-5 text-center xl:grid-cols-3">
+      <div
+        class="grid auto-rows-min grid-cols-2 gap-4 md:grid-cols-4 xl:col-span-2"
+      >
+        <div class="col-span-2 flex flex-row">
+          <div class="my-auto mr-4 basis-1/3">
+            <div class="h-24 w-24">
+              <img src="@/assets/images/akvorado.svg" />
+            </div>
+          </div>
+          <div class="grow">
+            <p class="leading-relaxed">
+              <strong>Akvorado</strong> is a flow collector, hydrater and
+              exporter. It receives flows, adds some data like interface names
+              and countries, and exports them to Kafka.
+            </p>
           </div>
         </div>
-        <div class="grow">
-          <p class="leading-relaxed">
-            <strong>Akvorado</strong> is a flow collector, hydrater and
-            exporter. It receives flows, adds some data like interface names and
-            countries, and exports them to Kafka.
-          </p>
-        </div>
+        <WidgetFlowRate
+          :refresh="refreshOften"
+          class="rounded-md p-4 shadow dark:shadow-white/10"
+        />
+        <WidgetExporters
+          :refresh="refreshOccasionally"
+          class="rounded-md p-4 shadow dark:shadow-white/10"
+        />
+        <WidgetTop
+          v-for="widget in topWidgets"
+          :key="widget"
+          :what="widget"
+          :title="widgetTitle(widget)"
+          :refresh="refreshOccasionally"
+        />
+        <WidgetGraph
+          :refresh="refreshInfrequently"
+          class="col-span-2 md:col-span-3"
+        />
       </div>
-      <WidgetFlowRate
-        :refresh="refreshOften"
-        class="rounded-md p-4 shadow dark:shadow-white/10"
-      />
-      <WidgetExporters
-        :refresh="refreshOccasionally"
-        class="rounded-md p-4 shadow dark:shadow-white/10"
-      />
-      <WidgetLastFlow
-        :refresh="refreshOften"
-        class="order-last col-span-2 row-span-3 xl:order-none"
-      />
-      <WidgetTop
-        v-for="widget in topWidgets"
-        :key="widget"
-        :what="widget"
-        :title="widgetTitle(widget)"
-        :refresh="refreshOccasionally"
-      />
-      <WidgetGraph
-        :refresh="refreshInfrequently"
-        class="col-span-2 md:col-span-3"
-      />
+      <WidgetLastFlow :refresh="refreshOften" />
     </div>
   </div>
 </template>

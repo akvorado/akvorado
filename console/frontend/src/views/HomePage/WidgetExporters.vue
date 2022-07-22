@@ -2,7 +2,7 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
 
 <template>
-  <div>
+  <div class="flex flex-col items-center justify-center">
     <h2
       class="title-font text-3xl font-medium text-gray-900 dark:text-gray-200"
     >
