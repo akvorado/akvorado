@@ -10,7 +10,7 @@ require (
 	github.com/dgraph-io/ristretto v0.1.0
 	github.com/docker/docker v20.10.17+incompatible
 	github.com/eapache/go-resiliency v1.3.0
-	github.com/fsnotify/fsnotify v1.5.1
+	github.com/fsnotify/fsnotify v1.5.4
 	github.com/gin-gonic/gin v1.7.7
 	github.com/go-playground/validator/v10 v10.11.0
 	github.com/golang/mock v1.6.0
