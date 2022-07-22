@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🩹 *build*: remove `-dirty` from version number in released Docker images
+
 ## 1.5.1 - 2022-07-22
 
 - 🩹 *cmd*: do not merge user-provided lists with defaults when parsing configuration
