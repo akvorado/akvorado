@@ -11,7 +11,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.5.1 - 2022-07-22
 
 - 🩹 *cmd*: do not merge user-provided lists with defaults when parsing configuration
 - 🩹 *docker-compose*: make `docker-compose.yml` work with Docker Compose v2/v3
