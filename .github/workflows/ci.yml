@@ -112,7 +112,7 @@ jobs:
 
       # Build and test
       - name: Build
-        run: make
+        run: make && ./bin/akvorado version
       - name: Tests
         run: make test || make test
 
