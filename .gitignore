@@ -1,9 +1,9 @@
 /bin/
 /test/
-/inlet/flow/decoder/flow*.pb.go
-/common/clickhousedb/mocks/
 /orchestrator/clickhouse/data/asns.csv
 /console/filter/parser.go
+*.pb.go
+mock_*.go
 
 /console/frontend/data/fields.json
 /console/data/frontend/

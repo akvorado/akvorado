@@ -72,7 +72,6 @@ inlet/flow/decoder/flow%.pb.go: inlet/flow/data/schemas/flow%.proto | $(PROTOC_G
 	$Q sed -i.bkp s/FlowMessagev./FlowMessage/g $@ && rm $@.bkp
 
 common/clickhousedb/mocks/mock_driver.go: Makefile | $(MOCKGEN) ; $(info $(M) generate mocks for ClickHouse driver…)
-	$Q mkdir -p $(dir $@)
 	$Q echo '//go:build !release' > $@
 	$Q $(MOCKGEN) -package mocks \
 		github.com/ClickHouse/clickhouse-go/v2/lib/driver Conn,Row,Rows,ColumnType >> $@
