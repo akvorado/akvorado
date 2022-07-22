@@ -214,7 +214,7 @@ spawned by the other components and wait for signals to terminate. If
 - [github.com/cenkalti/backoff/v4](https://github.com/cenkalti/backoff)
   provides an exponential backoff algorithm for retries.
 - [github.com/eapache/go-resiliency](https://github.com/eapache/go-resiliency)
-  implements several resiliency pattersn, including the breaker
+  implements several resiliency patterns, including the breaker
   pattern.
 - [github.com/go-playground/validator](https://github.com/go-playground/validator)
   implements struct validation using tags. We use it to had better
