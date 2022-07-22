@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	"gopkg.in/yaml.v2"
 
 	"akvorado/common/daemon"
@@ -290,9 +290,7 @@ interfaceclassifiers:
 					if err != nil {
 						t.Fatalf("Kafka message encoding error:\n%+v", err)
 					}
-					buf := proto.NewBuffer(b)
-					err = buf.DecodeMessage(&got)
-					if err != nil {
+					if err := proto.Unmarshal(b, &got); err != nil {
 						t.Fatalf("Kakfa message decode error:\n%+v", err)
 					}
 

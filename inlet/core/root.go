@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/dgraph-io/ristretto"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/daemon"
@@ -124,8 +124,7 @@ func (c *Component) runWorker(workerID int) error {
 			}
 
 			// Serialize flow (use length-prefixed protobuf)
-			buf := proto.NewBuffer([]byte{})
-			err := buf.EncodeMessage(flow)
+			buf, err := proto.Marshal(flow)
 			if err != nil {
 				errLogger.Err(err).Str("exporter", exporter).Msg("unable to serialize flow")
 				c.metrics.flowsErrors.WithLabelValues(exporter, err.Error()).Inc()
@@ -134,7 +133,7 @@ func (c *Component) runWorker(workerID int) error {
 
 			// Forward to Kafka (this could block)
 			c.metrics.flowsForwarded.WithLabelValues(exporter).Inc()
-			c.d.Kafka.Send(exporter, buf.Bytes())
+			c.d.Kafka.Send(exporter, buf)
 
 			// If we have HTTP clients, send to them too
 			if atomic.LoadUint32(&c.httpFlowClients) > 0 {

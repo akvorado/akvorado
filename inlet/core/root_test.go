@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
@@ -138,9 +138,7 @@ func TestCore(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Kafka message encoding error:\n%+v", err)
 			}
-			buf := proto.NewBuffer(b)
-			err = buf.DecodeMessage(&got)
-			if err != nil {
+			if err := proto.Unmarshal(b, &got); err != nil {
 				t.Fatalf("Kakfa message decode error:\n%+v", err)
 			}
 			expected := flowMessage("192.0.2.142", 434, 677)
