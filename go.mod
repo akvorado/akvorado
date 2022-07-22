@@ -27,7 +27,7 @@ require (
 	github.com/slayercat/gosnmp v1.24.0
 	github.com/spf13/cobra v1.3.0
 	github.com/ti-mo/conntrack v0.4.0
-	github.com/yuin/goldmark v1.4.5
+	github.com/yuin/goldmark v1.4.13
 	github.com/yuin/goldmark-highlighting v0.0.0-20220208100518-594be1970594
 	golang.org/x/sys v0.0.0-20220429233432-b5fbb4746d32
 	google.golang.org/protobuf v1.28.0
