@@ -9,7 +9,7 @@ require (
 	github.com/benbjohnson/clock v1.3.0
 	github.com/dgraph-io/ristretto v0.1.0
 	github.com/docker/docker v20.10.17+incompatible
-	github.com/eapache/go-resiliency v1.2.0
+	github.com/eapache/go-resiliency v1.3.0
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/gin-gonic/gin v1.7.7
 	github.com/go-playground/validator/v10 v10.11.0
