@@ -295,7 +295,7 @@ func (c *Component) filterSavedDeleteHandlerFunc(gc *gin.Context) {
 		return
 	}
 	if err := c.d.Database.DeleteSavedFilter(ctx, database.SavedFilter{
-		ID:   uint(id),
+		ID:   id,
 		User: user,
 	}); err != nil {
 		// Assume this is because it is not found

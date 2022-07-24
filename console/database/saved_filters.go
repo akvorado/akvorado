@@ -11,7 +11,7 @@ import (
 
 // SavedFilter represents a saved filter in database.
 type SavedFilter struct {
-	ID          uint   `json:"id"`
+	ID          uint64 `json:"id"`
 	User        string `gorm:"index" json:"user"`
 	Shared      bool   `json:"shared"`
 	Description string `json:"description" binding:"required"`
