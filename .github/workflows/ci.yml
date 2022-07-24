@@ -42,27 +42,16 @@ jobs:
     steps:
       # Setup
       - uses: actions/checkout@v3
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      # Install dependencies
       - name: Install dependencies
         run: sudo apt-get install -qqy protobuf-compiler shared-mime-info curl
-      - uses: actions/setup-go@v3
-        id: go-setup
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      # Cache
-      - uses: actions/cache@v3
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-npm-${{ hashFiles('console/frontend/package-lock.json') }}
-      - uses: actions/cache@v3
-        with:
-          path: bin
-          key: ${{ runner.os }}-bin-${{ steps.go-setup.outputs.go-version }}-${{ hashFiles('Makefile') }}
 
       # Build and test
       - name: Build
-        run: make
+        run: make && ./bin/akvorado version
       - name: Race tests
         run: make test-race || make test-race
       - name: Coverage tests
@@ -74,41 +63,18 @@ jobs:
           path: bin/akvorado
           if-no-files-found: error
 
-      # Changelog
-      - name: Generate changelog
-        if: startsWith(github.ref, 'refs/tags/')
-        run: make changelog.md
-      - name: Upload changelog
-        uses: actions/upload-artifact@v3
-        if: startsWith(github.ref, 'refs/tags/')
-        with:
-          name: changelog
-          path: changelog.md
-          if-no-files-found: error
-
   build-macos:
     name: Build and test on MacOS
     runs-on: macos-latest
     steps:
       # Setup
       - uses: actions/checkout@v3
+      - name: Setup
+        uses: ./.github/actions/setup
+
+      # Install dependencies
       - name: Install dependencies
         run: brew install protobuf
-      - uses: actions/setup-go@v3
-        id: go-setup
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      # Cache
-      - uses: actions/cache@v3
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-npm-${{ hashFiles('console/frontend/package-lock.json') }}
-      - uses: actions/cache@v3
-        with:
-          path: bin
-          key: ${{ runner.os }}-bin-${{ steps.go-setup.outputs.go-version }}-${{ hashFiles('Makefile') }}
 
       # Build and test
       - name: Build
@@ -162,14 +128,18 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
+      # Changelog
+      - uses: actions/checkout@v3
+      - name: Generate changelog
+        run: make changelog.md
+
+      # Get binary from build step
       - name: Download binary
         uses: actions/download-artifact@v3
         with:
           name: binary
-      - name: Download changelog
-        uses: actions/download-artifact@v3
-        with:
-          name: changelog
+
+      # Publish release
       - name: Publish release
         uses: softprops/action-gh-release@v1
         with:
