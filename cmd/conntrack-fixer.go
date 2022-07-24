@@ -57,7 +57,7 @@ containers started with the label "akvorado.conntrack.fix=1".`,
 			return fmt.Errorf("cannot initialize conntrack support: %w", err)
 		}
 		defer chl.Close()
-		purgeConntrack := func(port int) int {
+		purgeConntrack := func(port uint16) int {
 			flows, err := chl.Dump()
 			if err != nil {
 				r.Err(err).Msg("cannot list conntrack entries")
@@ -65,7 +65,7 @@ containers started with the label "akvorado.conntrack.fix=1".`,
 			}
 			count := 0
 			for _, flow := range flows {
-				if flow.TupleOrig.Proto.Protocol == 17 && flow.TupleOrig.Proto.DestinationPort == uint16(port) {
+				if flow.TupleOrig.Proto.Protocol == 17 && flow.TupleOrig.Proto.DestinationPort == port {
 					count++
 					if err := chl.Delete(flow); err != nil {
 						r.Err(err).Msg("cannot delete conntrack entry")
@@ -133,14 +133,14 @@ containers started with the label "akvorado.conntrack.fix=1".`,
 								ports[binding.HostPort] = true
 							}
 							for hportStr := range ports {
-								hport, err := strconv.Atoi(hportStr)
+								hport, err := strconv.ParseUint(hportStr, 10, 16)
 								if err != nil {
 									panic(err)
 								}
 								l := r.Info().Str("binding",
 									fmt.Sprintf("%s -> %d", rport, hport))
 								l.Msg("clear conntrack for UDP port")
-								if count := purgeConntrack(hport); count > 0 {
+								if count := purgeConntrack(uint16(hport)); count > 0 {
 									l.Msgf("%d entries deleted", count)
 								}
 							}
