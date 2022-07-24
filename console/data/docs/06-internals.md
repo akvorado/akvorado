@@ -241,6 +241,14 @@ In the future, we may:
   a private AS or not.
 - DDoS service to detect and mitigate DDoS (with Flow-spec).
 - Support VRFs.
+- For aggregated tables, add a `MaxBps` and `MaxPps` packets computed
+  over a short period (eg. 1 minute). This would be used to compute a
+  maximum value that does not change with the resolution of the
+  aggregated table. Currently, if you look at a specific day and zoom
+  out to see the month, the maximum is likely to be lower (it switches
+  from the maximum of the averages over one minute, to the maxium of
+  the averages over 5 minutes). This does not seem trivial to
+  implement in ClickHouse.
 - Add dynamic configuration with something like [go-archaius][] or
   [Harvester][].
 
