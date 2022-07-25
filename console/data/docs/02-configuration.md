@@ -202,7 +202,9 @@ Each `Classify()` function, with the exception of `ClassifyExternal()`
 and `ClassifyInternal()` have a variant ending with `Regex` which
 takes a string and a regex before the original string and do a regex
 match. The original string is expanded using the matching parts of the
-regex. The syntax is the one [from Go][].
+regex. The syntax is the one [from Go][]. If you want to use Perl
+character classes, such as `\d` or `\w`, you need to escape the
+backslash character: `\\d` and `\\w`.
 
 Here is an example:
 
@@ -214,7 +216,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")
 ```
 
 [expr]: https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md
-[from Go]: https://pkg.go.dev/regexp#Regexp.Expand
+[from Go]: https://github.com/google/re2/wiki/Syntax
 
 ### GeoIP
 

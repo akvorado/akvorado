@@ -66,6 +66,11 @@ Classify("europe")`,
 			ExporterInfo:           exporterInfo{"127.0.0.1", "exporter"},
 			ExpectedClassification: exporterClassification{Group: "europe-exp"},
 		}, {
+			Description:            "regex with class",
+			Program:                `ClassifyRegex(Exporter.Name, "^(\\w+).r", "europe-$1")`,
+			ExporterInfo:           exporterInfo{"127.0.0.1", "exporter"},
+			ExpectedClassification: exporterClassification{Group: "europe-export"},
+		}, {
 			Description:            "non-matching regex",
 			Program:                `ClassifyRegex(Exporter.Name, "^(ebp+).r", "europe-$1")`,
 			ExporterInfo:           exporterInfo{"127.0.0.1", "exporter"},

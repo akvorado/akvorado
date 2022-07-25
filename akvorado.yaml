@@ -66,7 +66,7 @@ inlet:
     interface-classifiers:
       - |
         ClassifyConnectivityRegex(Interface.Description, "^(?i)(transit|pni|ppni|ix):? ", "$1") &&
-        ClassifyProviderRegex(Interface.Description, "^[^ ]+? ([^ ]+)", "$1") &&
+        ClassifyProviderRegex(Interface.Description, "^\\S+?\\s(\\S+)", "$1") &&
         ClassifyExternal()
       - ClassifyInternal()
 
