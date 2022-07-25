@@ -34,7 +34,8 @@ type Metrics struct {
 func New(logger logger.Logger, configuration Configuration) (*Metrics, error) {
 	reg := prometheus.NewRegistry()
 	reg.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
-	reg.MustRegister(collectors.NewGoCollector())
+	reg.MustRegister(collectors.NewGoCollector(collectors.WithGoCollections(
+		collectors.GoRuntimeMemStatsCollection | collectors.GoRuntimeMetricsCollection)))
 	m := Metrics{
 		logger:       logger,
 		config:       configuration,
