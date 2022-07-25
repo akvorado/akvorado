@@ -14,6 +14,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🩹 *build*: remove `-dirty` from version number in released Docker images
+- 🌱 *console*: hide `::ffff:` prefix from IPv6-mapped IPv4 addresses
 
 ## 1.5.1 - 2022-07-22
 

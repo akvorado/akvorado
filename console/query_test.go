@@ -16,7 +16,7 @@ func TestQueryColumnSQLSelect(t *testing.T) {
 	}{
 		{
 			Input:    queryColumnSrcAddr,
-			Expected: `IPv6NumToString(SrcAddr)`,
+			Expected: `replaceRegexpOne(IPv6NumToString(SrcAddr), '^::ffff:', '')`,
 		}, {
 			Input:    queryColumnDstAS,
 			Expected: `concat(toString(DstAS), ': ', dictGetOrDefault('asns', 'name', DstAS, '???'))`,

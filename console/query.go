@@ -147,7 +147,7 @@ func (gc queryColumn) toSQLSelect() string {
 	var strValue string
 	switch gc {
 	case queryColumnExporterAddress, queryColumnSrcAddr, queryColumnDstAddr:
-		strValue = fmt.Sprintf("IPv6NumToString(%s)", gc)
+		strValue = fmt.Sprintf("replaceRegexpOne(IPv6NumToString(%s), '^::ffff:', '')", gc)
 	case queryColumnSrcAS, queryColumnDstAS:
 		strValue = fmt.Sprintf(`concat(toString(%s), ': ', dictGetOrDefault('asns', 'name', %s, '???'))`,
 			gc, gc)
