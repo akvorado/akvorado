@@ -28,9 +28,9 @@ func TestValidFilter(t *testing.T) {
 		{`ExporterName IUNLIKE "something%"`, `ExporterName NOT ILIKE 'something%'`},
 		{`ExporterName="something with spaces"`, `ExporterName = 'something with spaces'`},
 		{`ExporterName="something with 'quotes'"`, `ExporterName = 'something with \'quotes\''`},
-		{`ExporterAddress=203.0.113.1`, `ExporterAddress = IPv6StringToNum('203.0.113.1')`},
-		{`ExporterAddress=2001:db8::1`, `ExporterAddress = IPv6StringToNum('2001:db8::1')`},
-		{`ExporterAddress=2001:db8:0::1`, `ExporterAddress = IPv6StringToNum('2001:db8::1')`},
+		{`ExporterAddress=203.0.113.1`, `ExporterAddress = toIPv6('203.0.113.1')`},
+		{`ExporterAddress=2001:db8::1`, `ExporterAddress = toIPv6('2001:db8::1')`},
+		{`ExporterAddress=2001:db8:0::1`, `ExporterAddress = toIPv6('2001:db8::1')`},
 		{`ExporterAddress << 2001:db8:0::/64`,
 			`ExporterAddress BETWEEN toIPv6('2001:db8::') AND toIPv6('2001:db8::ffff:ffff:ffff:ffff')`},
 		{`ExporterAddress << 2001:db8::c000/115`,
@@ -46,8 +46,8 @@ func TestValidFilter(t *testing.T) {
 		{`DstAddr !<< 192.168.0.128/27`,
 			`DstAddr NOT BETWEEN toIPv6('::ffff:192.168.0.128') AND toIPv6('::ffff:192.168.0.159')`},
 		{`ExporterGroup= "group"`, `ExporterGroup = 'group'`},
-		{`SrcAddr=203.0.113.1`, `SrcAddr = IPv6StringToNum('203.0.113.1')`},
-		{`DstAddr=203.0.113.2`, `DstAddr = IPv6StringToNum('203.0.113.2')`},
+		{`SrcAddr=203.0.113.1`, `SrcAddr = toIPv6('203.0.113.1')`},
+		{`DstAddr=203.0.113.2`, `DstAddr = toIPv6('203.0.113.2')`},
 		{`SrcNetName="alpha"`, `SrcNetName = 'alpha'`},
 		{`DstNetName="alpha"`, `DstNetName = 'alpha'`},
 		{`DstNetRole="stuff"`, `DstNetRole = 'stuff'`},
@@ -100,7 +100,7 @@ func TestValidFilter(t *testing.T) {
 		{`DstPort > 1024
                   AND (SrcPort < 1024 OR InIfSpeed >= 1000)`,
 			`DstPort > 1024 AND (SrcPort < 1024 OR InIfSpeed >= 1000)`},
-		{`(ExporterAddress=203.0.113.1)`, `(ExporterAddress = IPv6StringToNum('203.0.113.1'))`},
+		{`(ExporterAddress=203.0.113.1)`, `(ExporterAddress = toIPv6('203.0.113.1'))`},
 		{`ForwardingStatus >= 128 -- Nothing`, `ForwardingStatus >= 128`},
 		{`
 -- Example of commented request

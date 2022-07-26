@@ -74,7 +74,7 @@ ColumnIP ←
 ConditionIPExpr "condition on IP" ←
    column:ColumnIP _
    operator:("=" / "!=") _ ip:IP {
-     return fmt.Sprintf("%s %s IPv6StringToNum(%s)", toString(column), toString(operator), quote(ip)), nil
+     return fmt.Sprintf("%s %s toIPv6(%s)", toString(column), toString(operator), quote(ip)), nil
    }
  / column:ColumnIP _
    operator:"<<" _ subnet:Subnet {
