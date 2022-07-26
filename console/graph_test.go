@@ -32,16 +32,16 @@ func TestGraphQuerySQL(t *testing.T) {
 			},
 			Expected: `
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL max2(intDiv(864, {resolution})*{resolution}, 1) second) AS time,
- SUM(Bytes*SamplingRate*8/max2(intDiv(864, {resolution})*{resolution}, 1)) AS xps,
+ toStartOfInterval(TimeReceived, INTERVAL {resolution->864} second) AS time,
+ SUM(Bytes*SamplingRate*8/{resolution->864}) AS xps,
  emptyArrayString() AS dimensions
 FROM {table}
 WHERE {timefilter}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM toStartOfInterval({timefilter.Start}, INTERVAL max2(intDiv(864, {resolution})*{resolution}, 1) second)
+ FROM toStartOfInterval({timefilter.Start}, INTERVAL {resolution->864} second)
  TO {timefilter.Stop}
- STEP toUInt32(max2(intDiv(864, {resolution})*{resolution}, 1))`,
+ STEP {resolution->864}`,
 		}, {
 			Description: "no dimensions, no filters, l2 bps",
 			Input: graphHandlerInput{
@@ -54,16 +54,16 @@ ORDER BY time WITH FILL
 			},
 			Expected: `
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL max2(intDiv(864, {resolution})*{resolution}, 1) second) AS time,
- SUM((Bytes+18*Packets)*SamplingRate*8/max2(intDiv(864, {resolution})*{resolution}, 1)) AS xps,
+ toStartOfInterval(TimeReceived, INTERVAL {resolution->864} second) AS time,
+ SUM((Bytes+18*Packets)*SamplingRate*8/{resolution->864}) AS xps,
  emptyArrayString() AS dimensions
 FROM {table}
 WHERE {timefilter}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM toStartOfInterval({timefilter.Start}, INTERVAL max2(intDiv(864, {resolution})*{resolution}, 1) second)
+ FROM toStartOfInterval({timefilter.Start}, INTERVAL {resolution->864} second)
  TO {timefilter.Stop}
- STEP toUInt32(max2(intDiv(864, {resolution})*{resolution}, 1))`,
+ STEP {resolution->864}`,
 		}, {
 			Description: "no dimensions, no filters, pps",
 			Input: graphHandlerInput{
@@ -76,16 +76,16 @@ ORDER BY time WITH FILL
 			},
 			Expected: `
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL max2(intDiv(864, {resolution})*{resolution}, 1) second) AS time,
- SUM(Packets*SamplingRate/max2(intDiv(864, {resolution})*{resolution}, 1)) AS xps,
+ toStartOfInterval(TimeReceived, INTERVAL {resolution->864} second) AS time,
+ SUM(Packets*SamplingRate/{resolution->864}) AS xps,
  emptyArrayString() AS dimensions
 FROM {table}
 WHERE {timefilter}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM toStartOfInterval({timefilter.Start}, INTERVAL max2(intDiv(864, {resolution})*{resolution}, 1) second)
+ FROM toStartOfInterval({timefilter.Start}, INTERVAL {resolution->864} second)
  TO {timefilter.Stop}
- STEP toUInt32(max2(intDiv(864, {resolution})*{resolution}, 1))`,
+ STEP {resolution->864}`,
 		}, {
 			Description: "no dimensions",
 			Input: graphHandlerInput{
@@ -98,16 +98,16 @@ ORDER BY time WITH FILL
 			},
 			Expected: `
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL max2(intDiv(864, {resolution})*{resolution}, 1) second) AS time,
- SUM(Bytes*SamplingRate*8/max2(intDiv(864, {resolution})*{resolution}, 1)) AS xps,
+ toStartOfInterval(TimeReceived, INTERVAL {resolution->864} second) AS time,
+ SUM(Bytes*SamplingRate*8/{resolution->864}) AS xps,
  emptyArrayString() AS dimensions
 FROM {table}
 WHERE {timefilter} AND (DstCountry = 'FR' AND SrcCountry = 'US')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM toStartOfInterval({timefilter.Start}, INTERVAL max2(intDiv(864, {resolution})*{resolution}, 1) second)
+ FROM toStartOfInterval({timefilter.Start}, INTERVAL {resolution->864} second)
  TO {timefilter.Stop}
- STEP toUInt32(max2(intDiv(864, {resolution})*{resolution}, 1))`,
+ STEP {resolution->864}`,
 		}, {
 			Description: "no filters",
 			Input: graphHandlerInput{
@@ -126,16 +126,16 @@ ORDER BY time WITH FILL
 WITH
  rows AS (SELECT ExporterName, InIfProvider FROM {table} WHERE {timefilter} GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes) DESC LIMIT 20)
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL max2(intDiv(864, {resolution})*{resolution}, 1) second) AS time,
- SUM(Bytes*SamplingRate*8/max2(intDiv(864, {resolution})*{resolution}, 1)) AS xps,
+ toStartOfInterval(TimeReceived, INTERVAL {resolution->864} second) AS time,
+ SUM(Bytes*SamplingRate*8/{resolution->864}) AS xps,
  if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
 FROM {table}
 WHERE {timefilter}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM toStartOfInterval({timefilter.Start}, INTERVAL max2(intDiv(864, {resolution})*{resolution}, 1) second)
+ FROM toStartOfInterval({timefilter.Start}, INTERVAL {resolution->864} second)
  TO {timefilter.Stop}
- STEP toUInt32(max2(intDiv(864, {resolution})*{resolution}, 1))`,
+ STEP {resolution->864}`,
 		},
 	}
 	for _, tc := range cases {

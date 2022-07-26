@@ -146,11 +146,11 @@ func TestQueryFlowsTables(t *testing.T) {
 				{"flows", 0, time.Date(2022, 03, 10, 16, 45, 10, 0, time.UTC)},
 				{"flows_1m0s", time.Minute, time.Date(2022, 03, 10, 17, 45, 10, 0, time.UTC)},
 			},
-			Query:      "SELECT 1 FROM {table} WHERE {timefilter} // {resolution}",
+			Query:      "SELECT 1 FROM {table} WHERE {timefilter} // {resolution} // {resolution->864}",
 			Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 			End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 			Resolution: 30 * time.Second,
-			Expected:   "SELECT 1 FROM flows WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:10', 'UTC') AND toDateTime('2022-04-11 15:45:10', 'UTC') // 1",
+			Expected:   "SELECT 1 FROM flows WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:10', 'UTC') AND toDateTime('2022-04-11 15:45:10', 'UTC') // 1 // 864",
 		}, {
 			Description: "select consolidated table better resolution",
 			Tables: []flowsTable{
@@ -158,11 +158,11 @@ func TestQueryFlowsTables(t *testing.T) {
 				{"flows_5m0s", 5 * time.Minute, time.Date(2022, 04, 2, 22, 45, 10, 0, time.UTC)},
 				{"flows_1m0s", time.Minute, time.Date(2022, 04, 2, 22, 45, 10, 0, time.UTC)},
 			},
-			Query:      "SELECT 1 FROM {table} WHERE {timefilter} // {resolution}",
+			Query:      "SELECT 1 FROM {table} WHERE {timefilter} // {resolution} // {resolution->864}",
 			Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 			End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 			Resolution: 2 * time.Minute,
-			Expected:   "SELECT 1 FROM flows_1m0s WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') // 60",
+			Expected:   "SELECT 1 FROM flows_1m0s WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') // 60 // 840",
 		}, {
 			Description: "select consolidated table better range",
 			Tables: []flowsTable{

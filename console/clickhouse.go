@@ -12,7 +12,10 @@ import (
 	"time"
 )
 
-var addressOrPortRegexp = regexp.MustCompile(`\b(?:Src|Dst)(?:Port|Addr)\b`)
+var (
+	addressOrPortRegexp = regexp.MustCompile(`\b(?:Src|Dst)(?:Port|Addr)\b`)
+	resolutionRegexp    = regexp.MustCompile(`{resolution->(\d+)}`)
+)
 
 // flowsTable describe a consolidated or unconsolidated flows table.
 type flowsTable struct {
@@ -95,6 +98,18 @@ func (c *Component) queryFlowsTable(query string, start, end time.Time, targetRe
 	query = strings.ReplaceAll(query, "{timefilter.Stop}", timeFilterStop)
 	query = strings.ReplaceAll(query, "{table}", table)
 	query = strings.ReplaceAll(query, "{resolution}", strconv.Itoa(int(resolution.Seconds())))
+	query = resolutionRegexp.ReplaceAllStringFunc(query, func(in string) string {
+		matches := resolutionRegexp.FindStringSubmatch(in)
+		target, err := strconv.Atoi(matches[1])
+		if err != nil {
+			panic(err)
+		}
+		target = target / int(resolution.Seconds()) * int(resolution.Seconds())
+		if target < 1 {
+			target = 1
+		}
+		return strconv.Itoa(target)
+	})
 	return query
 }
 

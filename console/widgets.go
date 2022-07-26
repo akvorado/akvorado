@@ -189,7 +189,7 @@ func (c *Component) widgetGraphHandlerFunc(gc *gin.Context) {
 		params.Points = 200
 	}
 	interval := int64((24 * time.Hour).Seconds()) / int64(params.Points)
-	slot := fmt.Sprintf(`max2(intDiv(%d, {resolution})*{resolution}, 1)`, interval)
+	slot := fmt.Sprintf(`{resolution->%d}`, interval)
 	now := c.d.Clock.Now()
 	query := c.queryFlowsTable(fmt.Sprintf(`
 SELECT
@@ -202,7 +202,7 @@ GROUP BY Time
 ORDER BY Time WITH FILL
  FROM toStartOfInterval({timefilter.Start}, INTERVAL %s second)
  TO {timefilter.Stop}
- STEP toUInt32(%s)`, slot, slot, slot, slot), now.Add(-24*time.Hour), now, time.Duration(interval)*time.Second)
+ STEP %s`, slot, slot, slot, slot), now.Add(-24*time.Hour), now, time.Duration(interval)*time.Second)
 	gc.Header("X-SQL-Query", query)
 
 	results := []struct {

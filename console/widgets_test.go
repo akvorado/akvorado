@@ -231,16 +231,16 @@ func TestWidgetGraph(t *testing.T) {
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), `
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL max2(intDiv(864, 1)*1, 1) second) AS Time,
- SUM(Bytes*SamplingRate*8/max2(intDiv(864, 1)*1, 1))/1000/1000/1000 AS Gbps
+ toStartOfInterval(TimeReceived, INTERVAL 864 second) AS Time,
+ SUM(Bytes*SamplingRate*8/864)/1000/1000/1000 AS Gbps
 FROM flows
 WHERE TimeReceived BETWEEN toDateTime('2009-11-10 23:00:00', 'UTC') AND toDateTime('2009-11-11 23:00:00', 'UTC')
 AND InIfBoundary = 'external'
 GROUP BY Time
 ORDER BY Time WITH FILL
- FROM toStartOfInterval(toDateTime('2009-11-10 23:00:00', 'UTC'), INTERVAL max2(intDiv(864, 1)*1, 1) second)
+ FROM toStartOfInterval(toDateTime('2009-11-10 23:00:00', 'UTC'), INTERVAL 864 second)
  TO toDateTime('2009-11-11 23:00:00', 'UTC')
- STEP toUInt32(max2(intDiv(864, 1)*1, 1))`).
+ STEP 864`).
 		SetArg(1, expected).
 		Return(nil)
 
