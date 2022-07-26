@@ -37,8 +37,8 @@ var (
 	OrchestratorService ServiceType = "orchestrator"
 	// ConsoleService represents the console service type
 	ConsoleService ServiceType = "console"
-	// FakeExporterService represents the fake exporter service type
-	FakeExporterService ServiceType = "fake-exporter"
+	// DemoExporterService represents the demo exporter service type
+	DemoExporterService ServiceType = "demo-exporter"
 )
 
 // New creates a new broker component.

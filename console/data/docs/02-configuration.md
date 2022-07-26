@@ -456,9 +456,9 @@ database:
   dsn: /var/lib/akvorado/console.sqlite
 ```
 
-## Fake exporter service
+## Demo exporter service
 
-For testing purpose, it is possible to generate flows using the fake
+For testing purpose, it is possible to generate flows using the demo
 exporter service. It features a NetFlow generate and a simple SNMP
 agent.
 

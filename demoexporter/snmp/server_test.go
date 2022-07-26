@@ -16,7 +16,7 @@ import (
 
 func TestSNMPServer(t *testing.T) {
 	config := Configuration{
-		Name: "fake",
+		Name: "demo",
 		Interfaces: map[int]string{
 			1: "transit: cogent",
 			2: "pni: netflix",
@@ -50,7 +50,7 @@ func TestSNMPServer(t *testing.T) {
 	expected := []gosnmp.SnmpPDU{
 		{
 			Name:  ".1.3.6.1.2.1.1.5.0",
-			Value: []byte("fake"),
+			Value: []byte("demo"),
 			Type:  gosnmp.OctetString,
 		}, {
 			Name:  ".1.3.6.1.2.1.2.2.1.2.1",
@@ -82,7 +82,7 @@ func TestSNMPServer(t *testing.T) {
 		t.Fatalf("Walk() (-got, +want):\n%s", diff)
 	}
 
-	gotMetrics := r.GetMetrics("akvorado_fakeexporter_")
+	gotMetrics := r.GetMetrics("akvorado_demoexporter_")
 	expectedMetrics := map[string]string{
 		`snmp_requests{oid="1.3.6.1.2.1.1.5.0"}`:         "1",
 		`snmp_requests{oid="1.3.6.1.2.1.2.2.1.2.1"}`:     "1",

@@ -70,7 +70,10 @@ inlet:
         ClassifyExternal()
       - ClassifyInternal()
 
-.fake-exporter-flows:
+# The remaining of this configuration file should be removed if you
+# don't want to get demo data.
+
+.demo-exporter-flows:
   - &http-src
     src-port: [80, 443]
     dst-port: 0
@@ -157,7 +160,7 @@ inlet:
     src-net: 2a01:cb00::/32
     src-as: [12322, 3215, 3303, 15557, 3320, 13335, 6185, 202818, 60068, 16276, 8075, 32590]
 
-fake-exporter:
+demo-exporter:
   - snmp:
       name: th2-edge1.example.com
       interfaces:

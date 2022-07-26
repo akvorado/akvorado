@@ -177,9 +177,9 @@ The final SQL query sent to ClickHouse is logged inside the console
 after a successful request. It should be noted than using ports or
 addresses prevent the use of aggregated data and are therefore slower.
 
-## Fake exporter service
+## Demo exporter service
 
-The fake exporter service simulates a NetFlow exporter as well as a
+The demo exporter service simulates a NetFlow exporter as well as a
 simple SNMP agent.
 
 ## Other commands

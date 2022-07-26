@@ -62,7 +62,7 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 		[]string{"error"},
 	)
 
-	c.d.Daemon.Track(&c.t, "fake-exporter/flows")
+	c.d.Daemon.Track(&c.t, "demo-exporter/flows")
 	return &c, nil
 }
 

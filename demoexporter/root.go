@@ -1,29 +1,29 @@
 // SPDX-FileCopyrightText: 2022 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-// Package fakeexporter simulates an exporter (NetFlow and SNMP)
-package fakeexporter
+// Package demoexporter simulates an exporter (NetFlow and SNMP)
+package demoexporter
 
 import (
 	"akvorado/common/reporter"
-	"akvorado/fakeexporter/flows"
-	"akvorado/fakeexporter/snmp"
+	"akvorado/demoexporter/flows"
+	"akvorado/demoexporter/snmp"
 )
 
-// Component represents the fake exporter service.
+// Component represents the demo exporter service.
 type Component struct {
 	r      *reporter.Reporter
 	d      *Dependencies
 	config Configuration
 }
 
-// Dependencies define the dependencies of the fake exporter service.
+// Dependencies define the dependencies of the demo exporter service.
 type Dependencies struct {
 	SNMP  *snmp.Component
 	Flows *flows.Component
 }
 
-// New creates a new fake exporter service.
+// New creates a new demo exporter service.
 func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) (*Component, error) {
 	c := Component{
 		r:      r,

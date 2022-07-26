@@ -28,7 +28,7 @@ type OrchestratorConfiguration struct {
 	// Other service configurations
 	Inlet        []InletConfiguration
 	Console      []ConsoleConfiguration
-	FakeExporter []FakeExporterConfiguration
+	DemoExporter []DemoExporterConfiguration
 }
 
 // Reset resets the configuration of the orchestrator command to its default value.
@@ -47,7 +47,7 @@ func (c *OrchestratorConfiguration) Reset() {
 		// Other service configurations
 		Inlet:        []InletConfiguration{inletConfiguration},
 		Console:      []ConsoleConfiguration{consoleConfiguration},
-		FakeExporter: []FakeExporterConfiguration{},
+		DemoExporter: []DemoExporterConfiguration{},
 	}
 }
 
@@ -141,8 +141,8 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, c
 	for idx := range config.Console {
 		orchestratorComponent.RegisterConfiguration(orchestrator.ConsoleService, config.Console[idx])
 	}
-	for idx := range config.FakeExporter {
-		orchestratorComponent.RegisterConfiguration(orchestrator.FakeExporterService, config.FakeExporter[idx])
+	for idx := range config.DemoExporter {
+		orchestratorComponent.RegisterConfiguration(orchestrator.DemoExporterService, config.DemoExporter[idx])
 	}
 
 	// Expose some informations and metrics

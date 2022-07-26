@@ -9,11 +9,11 @@ import (
 	"akvorado/common/reporter"
 )
 
-func TestFakeExporterStart(t *testing.T) {
+func TestDemoExporterStart(t *testing.T) {
 	r := reporter.NewMock(t)
-	config := FakeExporterConfiguration{}
+	config := DemoExporterConfiguration{}
 	config.Reset()
-	if err := fakeExporterStart(r, config, true); err != nil {
-		t.Fatalf("fakeExporterStart() error:\n%+v", err)
+	if err := demoExporterStart(r, config, true); err != nil {
+		t.Fatalf("demoExporterStart() error:\n%+v", err)
 	}
 }

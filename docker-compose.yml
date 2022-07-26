@@ -111,20 +111,20 @@ services:
     network_mode: host
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-  # Remove the following exporters if you don't want to get fake data
+  # Remove the following exporters if you don't want to get demo data.
   akvorado-exporter0: &exporter
     <<: *akvorado-image
     restart: unless-stopped
-    command: fake-exporter http://akvorado-orchestrator:8080#0
+    command: demo-exporter http://akvorado-orchestrator:8080#0
   akvorado-exporter1:
     <<: *exporter
-    command: fake-exporter http://akvorado-orchestrator:8080#1
+    command: demo-exporter http://akvorado-orchestrator:8080#1
   akvorado-exporter2:
     <<: *exporter
-    command: fake-exporter http://akvorado-orchestrator:8080#2
+    command: demo-exporter http://akvorado-orchestrator:8080#2
   akvorado-exporter3:
     <<: *exporter
-    command: fake-exporter http://akvorado-orchestrator:8080#3
+    command: demo-exporter http://akvorado-orchestrator:8080#3
 
   clickhouse:
     image: clickhouse/clickhouse-server:22.3

@@ -11,48 +11,48 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
-	"akvorado/fakeexporter"
-	"akvorado/fakeexporter/flows"
-	"akvorado/fakeexporter/snmp"
+	"akvorado/demoexporter"
+	"akvorado/demoexporter/flows"
+	"akvorado/demoexporter/snmp"
 )
 
-// FakeExporterConfiguration represents the configuration file for the fake exporter command.
-type FakeExporterConfiguration struct {
+// DemoExporterConfiguration represents the configuration file for the demo exporter command.
+type DemoExporterConfiguration struct {
 	Reporting    reporter.Configuration
 	HTTP         http.Configuration
-	FakeExporter fakeexporter.Configuration `mapstructure:",squash" yaml:",inline"`
+	DemoExporter demoexporter.Configuration `mapstructure:",squash" yaml:",inline"`
 	SNMP         snmp.Configuration
 	Flows        flows.Configuration
 }
 
-// Reset sets the default configuration for the fake exporter command.
-func (c *FakeExporterConfiguration) Reset() {
-	*c = FakeExporterConfiguration{
+// Reset sets the default configuration for the demo exporter command.
+func (c *DemoExporterConfiguration) Reset() {
+	*c = DemoExporterConfiguration{
 		HTTP:         http.DefaultConfiguration(),
 		Reporting:    reporter.DefaultConfiguration(),
-		FakeExporter: fakeexporter.DefaultConfiguration(),
+		DemoExporter: demoexporter.DefaultConfiguration(),
 	}
 }
 
-type fakeExporterOptions struct {
+type demoExporterOptions struct {
 	ConfigRelatedOptions
 	CheckMode bool
 }
 
-// FakeExporterOptions stores the command-line option values for the
-// fake exporter command.
-var FakeExporterOptions fakeExporterOptions
+// DemoExporterOptions stores the command-line option values for the
+// demo exporter command.
+var DemoExporterOptions demoExporterOptions
 
-var fakeExporterCmd = &cobra.Command{
-	Use:   "fake-exporter",
+var demoExporterCmd = &cobra.Command{
+	Use:   "demo-exporter",
 	Short: "Start a synthetic exporter",
 	Long: `For demo and testing purpose, this service exports synthetic flows
 and answers SNMP requests.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		config := FakeExporterConfiguration{}
-		FakeExporterOptions.Path = args[0]
-		if err := FakeExporterOptions.Parse(cmd.OutOrStdout(), "fake-exporter", &config); err != nil {
+		config := DemoExporterConfiguration{}
+		DemoExporterOptions.Path = args[0]
+		if err := DemoExporterOptions.Parse(cmd.OutOrStdout(), "demo-exporter", &config); err != nil {
 			return err
 		}
 
@@ -60,19 +60,19 @@ and answers SNMP requests.`,
 		if err != nil {
 			return fmt.Errorf("unable to initialize reporter: %w", err)
 		}
-		return fakeExporterStart(r, config, FakeExporterOptions.CheckMode)
+		return demoExporterStart(r, config, DemoExporterOptions.CheckMode)
 	},
 }
 
 func init() {
-	RootCmd.AddCommand(fakeExporterCmd)
-	fakeExporterCmd.Flags().BoolVarP(&FakeExporterOptions.ConfigRelatedOptions.Dump, "dump", "D", false,
+	RootCmd.AddCommand(demoExporterCmd)
+	demoExporterCmd.Flags().BoolVarP(&DemoExporterOptions.ConfigRelatedOptions.Dump, "dump", "D", false,
 		"Dump configuration before starting")
-	fakeExporterCmd.Flags().BoolVarP(&FakeExporterOptions.CheckMode, "check", "C", false,
+	demoExporterCmd.Flags().BoolVarP(&DemoExporterOptions.CheckMode, "check", "C", false,
 		"Check configuration, but does not start")
 }
 
-func fakeExporterStart(r *reporter.Reporter, config FakeExporterConfiguration, checkOnly bool) error {
+func demoExporterStart(r *reporter.Reporter, config DemoExporterConfiguration, checkOnly bool) error {
 	daemonComponent, err := daemon.New(r)
 	if err != nil {
 		return fmt.Errorf("unable to initialize daemon component: %w", err)
@@ -95,7 +95,7 @@ func fakeExporterStart(r *reporter.Reporter, config FakeExporterConfiguration, c
 	if err != nil {
 		return fmt.Errorf("unable to initialize flows component: %w", err)
 	}
-	fakeExporterComponent, err := fakeexporter.New(r, config.FakeExporter, fakeexporter.Dependencies{
+	demoExporterComponent, err := demoexporter.New(r, config.DemoExporter, demoexporter.Dependencies{
 		SNMP:  snmpComponent,
 		Flows: flowsComponent,
 	})
@@ -104,7 +104,7 @@ func fakeExporterStart(r *reporter.Reporter, config FakeExporterConfiguration, c
 	}
 
 	// Expose some informations and metrics
-	addCommonHTTPHandlers(r, "fake-exporter", httpComponent)
+	addCommonHTTPHandlers(r, "demo-exporter", httpComponent)
 	versionMetrics(r)
 
 	// If we only asked for a check, stop here.
@@ -117,7 +117,7 @@ func fakeExporterStart(r *reporter.Reporter, config FakeExporterConfiguration, c
 		httpComponent,
 		snmpComponent,
 		flowsComponent,
-		fakeExporterComponent,
+		demoExporterComponent,
 	}
 	return StartStopComponents(r, daemonComponent, components)
 }

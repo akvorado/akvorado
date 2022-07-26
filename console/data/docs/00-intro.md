@@ -28,8 +28,9 @@ Once running, *Akvorado* web interface should be running on port 8080.
 
 A few synthetic flows are generated in the background. They can be
 disabled by removing the `akvorado-exporter*` services from
-`docker-compose.yml` (or you can just stop them with `docker-compose
-stop akvorado-exporter{1,2,3,4}`).
+`docker-compose.yml`, or by stopping them with `docker-compose stop
+akvorado-exporter{1,2,3,4}`, or by removing the associated
+configuration in `akvorado.yaml`.
 
 If you want to send you own flows, the inlet is accepting both NetFlow
 (port 2055) and sFlow (port 6343). You should also customize some

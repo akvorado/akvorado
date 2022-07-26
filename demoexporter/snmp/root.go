@@ -45,7 +45,7 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 		[]string{"oid"},
 	)
 
-	c.d.Daemon.Track(&c.t, "fake-exporter/snmp")
+	c.d.Daemon.Track(&c.t, "demo-exporter/snmp")
 	return &c, nil
 }
 

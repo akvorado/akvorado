@@ -11,7 +11,7 @@ import (
 
 func TestDefaultConfiguration(t *testing.T) {
 	config := DefaultConfiguration()
-	config.Name = "fake"
+	config.Name = "demo"
 	config.Interfaces = map[int]string{
 		1: "Transit: Cogent",
 		2: "Core",

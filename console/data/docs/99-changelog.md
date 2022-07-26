@@ -11,8 +11,9 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.5.3 - 2022-07-26
 
+- 💥 *cmd*: replace the `fake-exporter` subcommand by `demo-exporter` to make easier to understand its purpose
 - 🌱 *console*: make `<<` and `!<<` operators more efficient
 
 ## 1.5.2 - 2022-07-26
