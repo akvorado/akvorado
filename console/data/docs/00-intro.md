@@ -40,11 +40,17 @@ documentation.
 
 - `clickhouse` → `asns` to give names to your internal AS numbers
 - `clickhouse` → `networks` to attach attributes to your networks
+- `inlet` → `snmp` → `default-community` to set the default community
+  to use for SNMP queries
 - `inlet` → `core` → `exporter-classifiers` to define rules to attach
   attributes to your exporters
 - `inlet` → `core` → `interface-classifiers` to define rules to attach
   attributes to your interfaces (including the "boundary" attribute
   which is used by default by the web interface)
+
+You can get all the expanded configuration (with default values) with
+`docker-compose exec akvorado-orchestrator akvorado orchestrator
+--check --dump /etc/akvorado.yaml`.
 
 Take a look at the `docker-compose.yml` file if you want to setup the
 GeoIP database. It requires two environment variables to fetch them
