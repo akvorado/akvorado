@@ -54,6 +54,7 @@ NotExpr "NOT expression" ← KW_NOT _ expr:Expr {
 
 ConditionExpr "conditional" ←
     ConditionIPExpr
+  / ConditionExporterAddrExpr
   / ConditionStringExpr
   / ConditionBoundaryExpr
   / ConditionSpeedExpr
@@ -64,11 +65,26 @@ ConditionExpr "conditional" ←
   / ConditionProtoExpr
   / ConditionPacketSizeExpr
 
+ColumnIP ←
+   "SrcAddr"i { return "SrcAddr", nil }
+ / "DstAddr"i { return "DstAddr", nil }
 ConditionIPExpr "condition on IP" ←
- column:("ExporterAddress"i { return "ExporterAddress", nil }
-      / "SrcAddr"i { return "SrcAddr", nil }
-      / "DstAddr"i { return "DstAddr", nil }) _ operator:("=" / "!=") _ ip:IP {
-  return fmt.Sprintf("%s %s IPv6StringToNum(%s)", toString(column), toString(operator), quote(ip)), nil
+   column:ColumnIP _
+   operator:("=" / "!=") _ ip:IP {
+     return fmt.Sprintf("%s %s IPv6StringToNum(%s)", toString(column), toString(operator), quote(ip)), nil
+   }
+ / column:ColumnIP _
+   operator:"<<" _ subnet:Subnet {
+     return fmt.Sprintf("isIPAddressInRange(toString(%s), %s)", toString(column), quote(subnet)), nil
+   }
+ / column:ColumnIP _
+   operator:"!<<" _ subnet:Subnet {
+     return fmt.Sprintf("NOT isIPAddressInRange(toString(%s), %s)", toString(column), quote(subnet)), nil
+   }
+
+ConditionExporterAddrExpr "condition on ExporterAddr" ←
+ "ExporterAddress"i _ operator:("=" / "!=") _ ip:IP {
+  return fmt.Sprintf("ExporterAddress %s IPv6StringToNum(%s)", toString(operator), quote(ip)), nil
 }
 
 ConditionStringExpr "condition on string" ←
@@ -181,6 +197,18 @@ IP "IP address" ← [0-9A-Fa-f:.]+ !IdentStart {
     return false, fmt.Errorf("expecting an IP address")
   }
   return ip.String(), nil
+}
+
+Subnet "IP subnet" ← [0-9A-Fa-f:.]+ "/" [0-9]+ !IdentStart {
+  _, net, err := net.ParseCIDR(string(c.text))
+  if err != nil {
+    return false, fmt.Errorf("expecting a subnet")
+  }
+  if net.IP.To4() == nil {
+    return net.String(), nil
+  }
+  plen, _ := net.Mask.Size()
+  return fmt.Sprintf("::ffff:%s/%d", net.IP.String(), plen + 96), nil
 }
 
 ASN "AS number" ← "AS"i? value:Unsigned32 {
