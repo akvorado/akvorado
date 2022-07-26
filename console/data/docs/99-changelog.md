@@ -13,8 +13,11 @@ identified with a specific icon:
 
 ## Unreleased
 
+- ✨ *console*: add `<<`/`!<<` operator for `SrcAddr` and `DstAddr` to match on a subnet [PR #57][]
 - 🩹 *build*: remove `-dirty` from version number in released Docker images
 - 🌱 *console*: hide `::ffff:` prefix from IPv6-mapped IPv4 addresses
+
+[PR #57]: https://github.com/vincentbernat/akvorado/pull/47
 
 ## 1.5.1 - 2022-07-22
 

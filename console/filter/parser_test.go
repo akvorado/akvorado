@@ -31,6 +31,10 @@ func TestValidFilter(t *testing.T) {
 		{`ExporterAddress=203.0.113.1`, `ExporterAddress = IPv6StringToNum('203.0.113.1')`},
 		{`ExporterAddress=2001:db8::1`, `ExporterAddress = IPv6StringToNum('2001:db8::1')`},
 		{`ExporterAddress=2001:db8:0::1`, `ExporterAddress = IPv6StringToNum('2001:db8::1')`},
+		{`SrcAddr << 2001:db8:0::/64`, `isIPAddressInRange(toString(SrcAddr), '2001:db8::/64')`},
+		{`DstAddr << 192.168.0.0/24`, `isIPAddressInRange(toString(DstAddr), '::ffff:192.168.0.0/120')`},
+		{`SrcAddr << 192.168.0.1/24`, `isIPAddressInRange(toString(SrcAddr), '::ffff:192.168.0.0/120')`},
+		{`DstAddr !<< 192.168.0.0/24`, `NOT isIPAddressInRange(toString(DstAddr), '::ffff:192.168.0.0/120')`},
 		{`ExporterGroup= "group"`, `ExporterGroup = 'group'`},
 		{`SrcAddr=203.0.113.1`, `SrcAddr = IPv6StringToNum('203.0.113.1')`},
 		{`DstAddr=203.0.113.2`, `DstAddr = IPv6StringToNum('203.0.113.2')`},
@@ -141,6 +145,9 @@ func TestInvalidFilter(t *testing.T) {
 		{`SrcAS IN (AS12322, 29447`},
 		{`SrcAS IN (AS12322 29447)`},
 		{`SrcAS IN (AS12322,`},
+		// Not yet supported
+		{`ExporterAddress << 2001:db8:0::/64`},
+		{`ExporterAddress << 192.168.0.0/24`},
 	}
 	for _, tc := range cases {
 		out, err := Parse("", []byte(tc.Input))
