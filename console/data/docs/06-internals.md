@@ -220,40 +220,6 @@ spawned by the other components and wait for signals to terminate. If
   implements struct validation using tags. We use it to had better
   validation on configuration structures.
 
-## Future plans
-
-In the future, we may:
-
-- Buffer message to disks instead of blocking (when sending to Kafka)
-  or dropping (when querying the SNMP poller). We could probable just
-  have a system service running tcpdump dumping packets to a directory
-  and use that as input. This would be allow *Akvorado* to block from
-  end-to-end instead of trying to be realtime.
-- Collect routes by integrating a BMP server. [bio-routing RIS
-  server][] could serve as a base. All NLRI received are stored in a
-  compressed trie ([cidranger][] seems a good candidate for that).
-  Each node stores the origin AS and a map from exporter IP address
-  and BGP next hop (or an indirection to keep memory usage down) to
-  the next AS and the AS path (in this case, again, an indirection to
-  keep memory down). We need a configuration knob to determine what
-  source to use for origin AS: BGP, Netflow/sFlow (likely the same
-  information), or GeoIP. This could be dependant on the fact we have
-  a private AS or not.
-- DDoS service to detect and mitigate DDoS (with Flow-spec).
-- Support VRFs.
-- For aggregated tables, add a `MaxBps` and `MaxPps` packets computed
-  over a short period (eg. 1 minute). This would be used to compute a
-  maximum value that does not change with the resolution of the
-  aggregated table. Currently, if you look at a specific day and zoom
-  out to see the month, the maximum is likely to be lower (it switches
-  from the maximum of the averages over one minute, to the maxium of
-  the averages over 5 minutes). This does not seem trivial to
-  implement in ClickHouse.
-- Add dynamic configuration with something like [go-archaius][] or
-  [Harvester][].
-
-[cidranger]: https://github.com/yl2chen/cidranger
-[bio-routing RIS server]: https://github.com/bio-routing/bio-rd/tree/master/cmd/ris
 [go-archaius]: https://github.com/go-chassis/go-archaius
 [Harvester]: https://github.com/beatlabs/harvester
 [Flowhouse]: https://github.com/bio-routing/flowhouse
