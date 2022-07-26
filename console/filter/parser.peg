@@ -1,4 +1,7 @@
 {
+  // SPDX-FileCopyrightText: 2022 Free Mobile
+  // SPDX-License-Identifier: AGPL-3.0-only
+
   package filter
   
   // Convert SQL-like language for filters to SQL.
@@ -54,7 +57,6 @@ NotExpr "NOT expression" ← KW_NOT _ expr:Expr {
 
 ConditionExpr "conditional" ←
     ConditionIPExpr
-  / ConditionExporterAddrExpr
   / ConditionStringExpr
   / ConditionBoundaryExpr
   / ConditionSpeedExpr
@@ -66,7 +68,8 @@ ConditionExpr "conditional" ←
   / ConditionPacketSizeExpr
 
 ColumnIP ←
-   "SrcAddr"i { return "SrcAddr", nil }
+   "ExporterAddress"i { return "ExporterAddress", nil }
+ / "SrcAddr"i { return "SrcAddr", nil }
  / "DstAddr"i { return "DstAddr", nil }
 ConditionIPExpr "condition on IP" ←
    column:ColumnIP _
@@ -75,17 +78,12 @@ ConditionIPExpr "condition on IP" ←
    }
  / column:ColumnIP _
    operator:"<<" _ subnet:Subnet {
-     return fmt.Sprintf("isIPAddressInRange(toString(%s), %s)", toString(column), quote(subnet)), nil
+     return fmt.Sprintf("%s %s", toString(column), subnet), nil
    }
  / column:ColumnIP _
    operator:"!<<" _ subnet:Subnet {
-     return fmt.Sprintf("NOT isIPAddressInRange(toString(%s), %s)", toString(column), quote(subnet)), nil
+     return fmt.Sprintf("%s NOT %s", toString(column), subnet), nil
    }
-
-ConditionExporterAddrExpr "condition on ExporterAddr" ←
- "ExporterAddress"i _ operator:("=" / "!=") _ ip:IP {
-  return fmt.Sprintf("ExporterAddress %s IPv6StringToNum(%s)", toString(operator), quote(ip)), nil
-}
 
 ConditionStringExpr "condition on string" ←
  column:("ExporterName"i { return "ExporterName", nil }
@@ -205,10 +203,9 @@ Subnet "IP subnet" ← [0-9A-Fa-f:.]+ "/" [0-9]+ !IdentStart {
     return false, fmt.Errorf("expecting a subnet")
   }
   if net.IP.To4() == nil {
-    return net.String(), nil
+    return fmt.Sprintf("BETWEEN toIPv6('%s') AND toIPv6('%s')", net.IP.String(), lastIP(net).String()), nil
   }
-  plen, _ := net.Mask.Size()
-  return fmt.Sprintf("::ffff:%s/%d", net.IP.String(), plen + 96), nil
+  return fmt.Sprintf("BETWEEN toIPv6('::ffff:%s') AND toIPv6('::ffff:%s')", net.IP.String(), lastIP(net).String()), nil
 }
 
 ASN "AS number" ← "AS"i? value:Unsigned32 {
