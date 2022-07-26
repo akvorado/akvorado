@@ -15,6 +15,10 @@ $ curl -s http://akvorado/api/v0/inlet/flows\?limit=1
 [...]
 ```
 
+Be sure to replace `http://akvorado` with the URL to your *Akvorado*
+setup. If you are running `docker-compose` locally, this is
+`http://127.0.0.1:8080`.
+
 This returns the next flow. The same information is exported to Kafka.
 If this does not work, be sure to check the logs and the metrics. The
 later can be queried with `curl`:
