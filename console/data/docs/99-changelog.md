@@ -14,6 +14,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🌱 *inlet*: add counters for GeoIP database hit/miss
+- 🌱 *docker-compose*: disable healthcheck for the conntrack-fixer container
 
 ## 1.5.3 - 2022-07-26
 
