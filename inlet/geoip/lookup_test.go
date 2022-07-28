@@ -45,4 +45,16 @@ func TestLookup(t *testing.T) {
 			t.Errorf("LookupASN(%q) (-got, +want):\n%s", tc.IP, diff)
 		}
 	}
+	gotMetrics := r.GetMetrics("akvorado_inlet_geoip_")
+	expectedMetrics := map[string]string{
+		`db_hits_total{database="asn"}`:        "2",
+		`db_hits_total{database="country"}`:    "3",
+		`db_misses_total{database="asn"}`:      "2",
+		`db_misses_total{database="country"}`:  "1",
+		`db_refresh_total{database="asn"}`:     "1",
+		`db_refresh_total{database="country"}`: "1",
+	}
+	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+		t.Fatalf("Metrics (-got, +want):\n%s", diff)
+	}
 }

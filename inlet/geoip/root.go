@@ -31,6 +31,8 @@ type Component struct {
 	}
 	metrics struct {
 		databaseRefresh *reporter.CounterVec
+		databaseHit     *reporter.CounterVec
+		databaseMiss    *reporter.CounterVec
 	}
 }
 
@@ -57,6 +59,20 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		reporter.CounterOpts{
 			Name: "db_refresh_total",
 			Help: "Refresh event for a GeoIP database.",
+		},
+		[]string{"database"},
+	)
+	c.metrics.databaseHit = c.r.CounterVec(
+		reporter.CounterOpts{
+			Name: "db_hits_total",
+			Help: "Number of hits for a GeoIP database.",
+		},
+		[]string{"database"},
+	)
+	c.metrics.databaseMiss = c.r.CounterVec(
+		reporter.CounterOpts{
+			Name: "db_misses_total",
+			Help: "Number of misses for a GeoIP database.",
 		},
 		[]string{"database"},
 	)

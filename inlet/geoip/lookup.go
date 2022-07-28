@@ -14,9 +14,11 @@ func (c *Component) LookupASN(ip net.IP) uint32 {
 	asnDB := c.db.asn.Load()
 	if asnDB != nil {
 		asn, err := asnDB.(*geoip2.Reader).ASN(ip)
-		if err == nil {
+		if err == nil && asn.AutonomousSystemNumber != 0 {
+			c.metrics.databaseHit.WithLabelValues("asn").Inc()
 			return uint32(asn.AutonomousSystemNumber)
 		}
+		c.metrics.databaseMiss.WithLabelValues("asn").Inc()
 	}
 	return 0
 }
@@ -26,9 +28,11 @@ func (c *Component) LookupCountry(ip net.IP) string {
 	countryDB := c.db.country.Load()
 	if countryDB != nil {
 		country, err := countryDB.(*geoip2.Reader).Country(ip)
-		if err == nil {
+		if err == nil && country.Country.IsoCode != "" {
+			c.metrics.databaseHit.WithLabelValues("country").Inc()
 			return country.Country.IsoCode
 		}
+		c.metrics.databaseMiss.WithLabelValues("country").Inc()
 	}
 	return ""
 }
