@@ -260,3 +260,24 @@ clickhouse      flows-v2        3          3035602619      3035628290      25671
 clickhouse      flows-v2        2          1645914467      1645930257      15790           ClickHouse-ee97b7e7e5e0-default-flows_2_raw-2-79c9bafe-fd36-42fe-921f-a802d46db684 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_2_raw-2
 clickhouse      flows-v2        1          889117276       889129896       12620           ClickHouse-ee97b7e7e5e0-default-flows_2_raw-1-f0421bbe-ba13-49df-998f-83e49045be00 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_2_raw-1
 ```
+
+If you still have an issue, be sure to check the errors reported by
+ClickHouse:
+
+```sql
+SELECT last_error_time, last_error_message
+FROM system.errors
+ORDER BY last_error_time LIMIT 10
+FORMAT Vertical
+```
+
+Notably, it may complain about a missing schema for a received
+message. In this case, you need to ensure the schemas used by
+*Akvorado* are available. When using `docker-compose`, you can restart
+the orchestrator and ClickHouse to ensure it downloads the latest
+schemas. Otherwise, you can manually execute the script installing the
+schemas on your ClickHouse server and restart:
+
+```sh
+curl http://akvorado/api/v0/orchestrator/clickhouse/init.sh | sh
+```
