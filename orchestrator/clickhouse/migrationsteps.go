@@ -140,7 +140,14 @@ ORDER BY (TimeReceived, ExporterAddress, InIfName, OutIfName)`, flowsSchema, par
 				}
 
 				partitionInterval := uint64((resolution.TTL / time.Duration(c.config.MaxPartitions)).Seconds())
-				// Primary key does not cover all the sorting key as we cannot modify it.
+				// Primary key does not cover all the sorting key as we cannot modify it
+				// and it would impact performance negatively to have a too long
+				// primary key. We do not use ExporterName, ExporterGroup, ... in
+				// ORDER BY because we assume that for a value of ExporterAddress, they
+				// are constant. The same applies for InIfDescription, InIfProvider (for
+				// a value of ExporterAddress and InIfName, they are constant).
+				// That's not the case for SrcNetName and others (they depend on the
+				// SrcAddr which we don't have anymore).
 				return conn.Exec(ctx, fmt.Sprintf(`
 CREATE TABLE %s (
 %s
