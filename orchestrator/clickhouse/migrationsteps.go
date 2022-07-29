@@ -119,13 +119,7 @@ ORDER BY (TimeReceived, ExporterAddress, InIfName, OutIfName)`, flowsSchema, par
 				},
 			}
 		}
-		// Consolidated table. The ORDER BY clause excludes
-		// field that are usually deduced from included
-		// fields, assuming they won't change for the interval
-		// of time considered. It excludes Bytes and Packets
-		// that are summed. The order is the one we are most
-		// likely to use when filtering. SrcAddr and DstAddr
-		// are removed.
+		// Aggregated tables
 		tableName := fmt.Sprintf("flows_%s", resolution.Interval)
 		viewName := fmt.Sprintf("%s_consumer", tableName)
 		return migrationStep{
@@ -140,37 +134,19 @@ ORDER BY (TimeReceived, ExporterAddress, InIfName, OutIfName)`, flowsSchema, par
 				}
 
 				partitionInterval := uint64((resolution.TTL / time.Duration(c.config.MaxPartitions)).Seconds())
-				// Primary key does not cover all the sorting key as we cannot modify it
-				// and it would impact performance negatively to have a too long
-				// primary key. We do not use ExporterName, ExporterGroup, ... in
-				// ORDER BY because we assume that for a value of ExporterAddress, they
-				// are constant. The same applies for InIfDescription, InIfProvider (for
-				// a value of ExporterAddress and InIfName, they are constant).
-				// That's not the case for SrcNetName and others (they depend on the
-				// SrcAddr which we don't have anymore).
+				// ORDER BY will be altered later.
 				return conn.Exec(ctx, fmt.Sprintf(`
 CREATE TABLE %s (
 %s
 )
 ENGINE = SummingMergeTree((Bytes, Packets))
 PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, INTERVAL %d second))
-PRIMARY KEY (TimeReceived,
-          ExporterAddress,
-          EType, Proto,
-          InIfName, SrcAS, ForwardingStatus,
-          OutIfName, DstAS,
-          SamplingRate)
 ORDER BY (TimeReceived,
           ExporterAddress,
           EType, Proto,
           InIfName, SrcAS, ForwardingStatus,
           OutIfName, DstAS,
-          SamplingRate,
-          SrcNetName, DstNetName,
-          SrcNetRole, DstNetRole,
-          SrcNetSite, DstNetSite,
-          SrcNetRegion, DstNetRegion,
-          SrcNetTenant, DstNetTenant)`,
+          SamplingRate)`,
 					tableName,
 					partialSchema("SrcAddr", "DstAddr", "SrcPort", "DstPort"),
 					partitionInterval))
@@ -220,13 +196,6 @@ WHERE table = $1 AND database = currentDatabase() AND name = $2`,
 					`ADD COLUMN SrcNetName LowCardinality(String) AFTER DstAS`,
 					`ADD COLUMN DstNetName LowCardinality(String) AFTER SrcNetName`,
 				}
-				if tableName != "flows" {
-					modifications = append(modifications,
-						`MODIFY ORDER BY (TimeReceived, ExporterAddress, EType, Proto,
-                                                                  InIfName, SrcAS, ForwardingStatus,
-                                                                  OutIfName, DstAS, SamplingRate,
-                                                                  SrcNetName, DstNetName)`)
-				}
 				return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE %s %s`,
 					tableName, strings.Join(modifications, ", ")))
 			},
@@ -258,19 +227,51 @@ WHERE table = $1 AND database = currentDatabase() AND name = $2`,
 					`ADD COLUMN SrcNetTenant LowCardinality(String) AFTER DstNetRegion`,
 					`ADD COLUMN DstNetTenant LowCardinality(String) AFTER SrcNetTenant`,
 				}
-				if tableName != "flows" {
-					modifications = append(modifications,
-						`MODIFY ORDER BY (TimeReceived, ExporterAddress, EType, Proto,
-                                                                  InIfName, SrcAS, ForwardingStatus,
-                                                                  OutIfName, DstAS, SamplingRate,
-                                                                  SrcNetName, DstNetName,
-                                                                  SrcNetRole, DstNetRole,
-                                                                  SrcNetSite, DstNetSite,
-                                                                  SrcNetRegion, DstNetRegion,
-                                                                  SrcNetTenant, DstNetTenant)`)
-				}
 				return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE %s %s`,
 					tableName, strings.Join(modifications, ", ")))
+			},
+		}
+	}
+}
+
+// migrationStepFixOrderByFlowsTable fix the ORDER BY clause of
+// aggregated tables. The table is created with an incomplete ORDER BY
+// clause, matching the primary key. Primary key does not cover all
+// the sorting key as we cannot modify it and it would impact
+// performance negatively to have a too long primary key. We do not
+// use ExporterName, ExporterGroup, ... in ORDER BY because we assume
+// that for a value of ExporterAddress, they are constant. The same
+// applies for InIfDescription, InIfProvider (for a value of
+// ExporterAddress and InIfName, they are constant). That's not the
+// case for SrcNetName and others (they depend on the SrcAddr which we
+// don't have anymore).
+func (c *Component) migrationStepFixOrderByFlowsTable(resolution ResolutionConfiguration) migrationStepFunc {
+	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+		var tableName string
+		if resolution.Interval == 0 {
+			return nullMigrationStep
+		}
+		sortingKey := `
+TimeReceived, ExporterAddress, EType, Proto,
+InIfName, SrcAS, ForwardingStatus,
+OutIfName, DstAS, SamplingRate,
+SrcCountry, DstCountry,
+SrcNetName, DstNetName,
+SrcNetRole, DstNetRole,
+SrcNetSite, DstNetSite,
+SrcNetRegion, DstNetRegion,
+SrcNetTenant, DstNetTenant`
+		tableName = fmt.Sprintf("flows_%s", resolution.Interval)
+		return migrationStep{
+			CheckQuery: `
+SELECT 1 FROM system.tables
+WHERE name = $1 AND database = currentDatabase()
+AND replaceRegexpAll(sorting_key, '\\s+', '') = replaceRegexpAll($2, '\\s+', '')`,
+			Args: []interface{}{tableName, sortingKey},
+			Do: func() error {
+				return conn.Exec(ctx, fmt.Sprintf(`
+ALTER TABLE %s
+MODIFY ORDER BY (%s)`, tableName, sortingKey))
 			},
 		}
 	}

@@ -81,6 +81,9 @@ func (c *Component) migrateDatabase() error {
 				fmt.Sprintf("add Exporter* to flows table with resolution %s", resolution.Interval),
 				c.migrationStepAddExporterColumns(resolution),
 			}, {
+				fmt.Sprintf("fix ORDER BY for flows table with resolution %s", resolution.Interval),
+				c.migrationStepFixOrderByFlowsTable(resolution),
+			}, {
 				fmt.Sprintf("create flows table consumer with resolution %s", resolution.Interval),
 				c.migrationsStepCreateFlowsConsumerTable(resolution),
 			}, {
