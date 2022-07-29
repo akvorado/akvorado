@@ -17,6 +17,7 @@ func TestNetworkNamesUnmarshalHook(t *testing.T) {
 		Description string
 		Input       map[string]interface{}
 		Output      NetworkMap
+		Error       bool
 	}{
 		{
 			Description: "nil",
@@ -61,11 +62,11 @@ func TestNetworkNamesUnmarshalHook(t *testing.T) {
 		}, {
 			Description: "Invalid subnet (1)",
 			Input:       gin.H{"192.0.2.1/38": "customer"},
-			Output:      nil,
+			Error:       true,
 		}, {
 			Description: "Invalid subnet (2)",
 			Input:       gin.H{"192.0.2.1/255.0.255.0": "customer"},
-			Output:      nil,
+			Error:       true,
 		},
 	}
 	for _, tc := range cases {
@@ -75,15 +76,17 @@ func TestNetworkNamesUnmarshalHook(t *testing.T) {
 				Result:      &got,
 				ErrorUnused: true,
 				Metadata:    nil,
-				DecodeHook: mapstructure.ComposeDecodeHookFunc(
-					NetworkMapUnmarshallerHook(),
-				),
+				DecodeHook:  NetworkMapUnmarshallerHook(),
 			})
 			if err != nil {
 				t.Fatalf("NewDecoder() error:\n%+v", err)
 			}
-			decoder.Decode(tc.Input)
-			if diff := helpers.Diff(got, tc.Output); diff != "" {
+			err = decoder.Decode(tc.Input)
+			if err != nil && !tc.Error {
+				t.Fatalf("Decode() error:\n%+v", err)
+			} else if err == nil && tc.Error {
+				t.Fatal("Decode() did not return an error")
+			} else if diff := helpers.Diff(got, tc.Output); diff != "" {
 				t.Fatalf("Decode() (-got, +want):\n%s", diff)
 			}
 		})

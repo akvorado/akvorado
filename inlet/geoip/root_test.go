@@ -36,11 +36,11 @@ func copyFile(src string, dst string) {
 func TestDatabaseRefresh(t *testing.T) {
 	dir := t.TempDir()
 	config := DefaultConfiguration()
-	config.CountryDatabase = filepath.Join(dir, "country.mmdb")
+	config.GeoDatabase = filepath.Join(dir, "country.mmdb")
 	config.ASNDatabase = filepath.Join(dir, "asn.mmdb")
 
 	copyFile(filepath.Join("testdata", "GeoLite2-Country-Test.mmdb"),
-		config.CountryDatabase)
+		config.GeoDatabase)
 	copyFile(filepath.Join("testdata", "GeoLite2-ASN-Test.mmdb"),
 		config.ASNDatabase)
 
@@ -54,8 +54,8 @@ func TestDatabaseRefresh(t *testing.T) {
 	// Check we did load both databases
 	gotMetrics := r.GetMetrics("akvorado_inlet_geoip_db_")
 	expectedMetrics := map[string]string{
-		`refresh_total{database="asn"}`:     "1",
-		`refresh_total{database="country"}`: "1",
+		`refresh_total{database="asn"}`: "1",
+		`refresh_total{database="geo"}`: "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -64,12 +64,12 @@ func TestDatabaseRefresh(t *testing.T) {
 	// Check we can reload the database
 	copyFile(filepath.Join("testdata", "GeoLite2-Country-Test.mmdb"),
 		filepath.Join(dir, "tmp.mmdb"))
-	os.Rename(filepath.Join(dir, "tmp.mmdb"), config.CountryDatabase)
+	os.Rename(filepath.Join(dir, "tmp.mmdb"), config.GeoDatabase)
 	time.Sleep(20 * time.Millisecond)
 	gotMetrics = r.GetMetrics("akvorado_inlet_geoip_db_")
 	expectedMetrics = map[string]string{
-		`refresh_total{database="asn"}`:     "1",
-		`refresh_total{database="country"}`: "2",
+		`refresh_total{database="asn"}`: "1",
+		`refresh_total{database="geo"}`: "2",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -86,15 +86,15 @@ func TestStartWithoutDatabase(t *testing.T) {
 }
 
 func TestStartWithMissingDatabase(t *testing.T) {
-	countryConfiguration := DefaultConfiguration()
-	countryConfiguration.CountryDatabase = "/i/do/not/exist"
+	geoConfiguration := DefaultConfiguration()
+	geoConfiguration.GeoDatabase = "/i/do/not/exist"
 	asnConfiguration := DefaultConfiguration()
 	asnConfiguration.ASNDatabase = "/i/do/not/exist"
 	cases := []struct {
 		Name   string
 		Config Configuration
 	}{
-		{"Inexisting country database", countryConfiguration},
+		{"Inexisting geo database", geoConfiguration},
 		{"Inexisting ASN database", asnConfiguration},
 	}
 	for _, tc := range cases {

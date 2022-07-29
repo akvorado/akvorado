@@ -13,6 +13,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 💥 *inlet*: `inlet.geoip.country-database` has been renamed to `inlet.geoip.geo-database`
 - 🌱 *inlet*: add counters for GeoIP database hit/miss
 - 🌱 *docker-compose*: disable healthcheck for the conntrack-fixer container
 

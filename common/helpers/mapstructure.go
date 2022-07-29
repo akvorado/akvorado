@@ -3,7 +3,11 @@
 
 package helpers
 
-import "github.com/mitchellh/mapstructure"
+import (
+	"strings"
+
+	"github.com/mitchellh/mapstructure"
+)
 
 var mapstructureUnmarshallerHookFuncs = []mapstructure.DecodeHookFunc{}
 
@@ -17,4 +21,11 @@ func AddMapstructureUnmarshallerHook(hook mapstructure.DecodeHookFunc) {
 // hooks for mapstructure.
 func GetMapStructureUnmarshallerHooks() []mapstructure.DecodeHookFunc {
 	return mapstructureUnmarshallerHookFuncs
+}
+
+// MapStructureMatchName tells if map key and field names are equal.
+func MapStructureMatchName(mapKey, fieldName string) bool {
+	key := strings.ToLower(strings.ReplaceAll(mapKey, "-", ""))
+	field := strings.ToLower(fieldName)
+	return key == field
 }

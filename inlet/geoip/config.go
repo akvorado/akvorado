@@ -3,12 +3,21 @@
 
 package geoip
 
+import (
+	"fmt"
+	"reflect"
+
+	"akvorado/common/helpers"
+
+	"github.com/mitchellh/mapstructure"
+)
+
 // Configuration describes the configuration for the GeoIP component.
 type Configuration struct {
 	// ASNDatabase defines the path to the ASN database.
 	ASNDatabase string
-	// CountryDatabase defines the path to the country database.
-	CountryDatabase string
+	// GeoDatabase defines the path to the geo database.
+	GeoDatabase string
 	// Optional tells if we need to error if not present on start.
 	Optional bool
 }
@@ -18,4 +27,38 @@ type Configuration struct {
 // anything.
 func DefaultConfiguration() Configuration {
 	return Configuration{}
+}
+
+// ConfigurationUnmarshallerHook normalize GeoIP configuration:
+//  - replace country-database by geo-database
+func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
+	return func(from, to reflect.Value) (interface{}, error) {
+		if from.Kind() != reflect.Map || from.IsNil() || from.Type().Key().Kind() != reflect.String || to.Type() != reflect.TypeOf(Configuration{}) {
+			return from.Interface(), nil
+		}
+
+		// country-database → geo-database
+		var countryKey *reflect.Value
+		var geoKey *reflect.Value
+		for _, k := range from.MapKeys() {
+			if helpers.MapStructureMatchName(k.String(), "CountryDatabase") {
+				countryKey = &k
+			} else if helpers.MapStructureMatchName(k.String(), "GeoDatabase") {
+				geoKey = &k
+			}
+		}
+		if countryKey != nil && geoKey != nil {
+			return nil, fmt.Errorf("cannot have both %q and %q", countryKey.String(), geoKey.String())
+		}
+		if countryKey != nil {
+			from.SetMapIndex(reflect.ValueOf("geo-database"), from.MapIndex(*countryKey))
+			from.SetMapIndex(*countryKey, reflect.Value{})
+		}
+
+		return from.Interface(), nil
+	}
+}
+
+func init() {
+	helpers.AddMapstructureUnmarshallerHook(ConfigurationUnmarshallerHook())
 }

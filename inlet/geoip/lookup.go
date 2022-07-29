@@ -25,14 +25,14 @@ func (c *Component) LookupASN(ip net.IP) uint32 {
 
 // LookupCountry returns the result of a lookup for country.
 func (c *Component) LookupCountry(ip net.IP) string {
-	countryDB := c.db.country.Load()
-	if countryDB != nil {
-		country, err := countryDB.(*geoip2.Reader).Country(ip)
-		if err == nil && country.Country.IsoCode != "" {
-			c.metrics.databaseHit.WithLabelValues("country").Inc()
-			return country.Country.IsoCode
+	geoDB := c.db.geo.Load()
+	if geoDB != nil {
+		geo, err := geoDB.(*geoip2.Reader).Country(ip)
+		if err == nil && geo.Country.IsoCode != "" {
+			c.metrics.databaseHit.WithLabelValues("geo").Inc()
+			return geo.Country.IsoCode
 		}
-		c.metrics.databaseMiss.WithLabelValues("country").Inc()
+		c.metrics.databaseMiss.WithLabelValues("geo").Inc()
 	}
 	return ""
 }

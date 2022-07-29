@@ -85,11 +85,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 		ErrorUnused:      false,
 		Metadata:         &metadata,
 		WeaklyTypedInput: true,
-		MatchName: func(mapKey, fieldName string) bool {
-			key := strings.ToLower(strings.ReplaceAll(mapKey, "-", ""))
-			field := strings.ToLower(fieldName)
-			return key == field
-		},
+		MatchName:        helpers.MapStructureMatchName,
 		DecodeHook: mapstructure.ComposeDecodeHookFunc(
 			defaultHook,
 			zeroSliceHook,

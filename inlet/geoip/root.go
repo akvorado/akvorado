@@ -26,8 +26,8 @@ type Component struct {
 	config Configuration
 
 	db struct {
-		country atomic.Value // *geoip2.Reader
-		asn     atomic.Value // *geoip2.Reader
+		geo atomic.Value // *geoip2.Reader
+		asn atomic.Value // *geoip2.Reader
 	}
 	metrics struct {
 		databaseRefresh *reporter.CounterVec
@@ -48,8 +48,8 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		d:      &dependencies,
 		config: configuration,
 	}
-	if c.config.CountryDatabase != "" {
-		c.config.CountryDatabase = filepath.Clean(c.config.CountryDatabase)
+	if c.config.GeoDatabase != "" {
+		c.config.GeoDatabase = filepath.Clean(c.config.GeoDatabase)
 	}
 	if c.config.ASNDatabase != "" {
 		c.config.ASNDatabase = filepath.Clean(c.config.ASNDatabase)
@@ -106,13 +106,13 @@ func (c *Component) openDatabase(which string, path string, container *atomic.Va
 
 // Start starts the GeoIP component.
 func (c *Component) Start() error {
-	if err := c.openDatabase("country", c.config.CountryDatabase, &c.db.country); err != nil && !c.config.Optional {
+	if err := c.openDatabase("geo", c.config.GeoDatabase, &c.db.geo); err != nil && !c.config.Optional {
 		return err
 	}
 	if err := c.openDatabase("asn", c.config.ASNDatabase, &c.db.asn); err != nil && !c.config.Optional {
 		return err
 	}
-	if c.db.country.Load() == nil && c.db.asn.Load() == nil {
+	if c.db.geo.Load() == nil && c.db.asn.Load() == nil {
 		c.r.Warn().Msg("skipping GeoIP component: no database specified")
 		return nil
 	}
@@ -126,8 +126,8 @@ func (c *Component) Start() error {
 		return fmt.Errorf("cannot setup watcher: %w", err)
 	}
 	dirs := map[string]bool{}
-	if c.config.CountryDatabase != "" {
-		dirs[filepath.Dir(c.config.CountryDatabase)] = true
+	if c.config.GeoDatabase != "" {
+		dirs[filepath.Dir(c.config.GeoDatabase)] = true
 	}
 	if c.config.ASNDatabase != "" {
 		dirs[filepath.Dir(c.config.ASNDatabase)] = true
@@ -155,8 +155,8 @@ func (c *Component) Start() error {
 				if event.Op&(fsnotify.Write|fsnotify.Create) == 0 {
 					continue
 				}
-				if filepath.Clean(event.Name) == c.config.CountryDatabase {
-					c.openDatabase("country", c.config.CountryDatabase, &c.db.country)
+				if filepath.Clean(event.Name) == c.config.GeoDatabase {
+					c.openDatabase("geo", c.config.GeoDatabase, &c.db.geo)
 				}
 				if filepath.Clean(event.Name) == c.config.ASNDatabase {
 					c.openDatabase("asn", c.config.ASNDatabase, &c.db.asn)
@@ -169,7 +169,7 @@ func (c *Component) Start() error {
 
 // Stop stops the GeoIP component.
 func (c *Component) Stop() error {
-	if c.db.country.Load() == nil && c.db.asn.Load() == nil {
+	if c.db.geo.Load() == nil && c.db.asn.Load() == nil {
 		return nil
 	}
 	c.r.Info().Msg("stopping GeoIP component")

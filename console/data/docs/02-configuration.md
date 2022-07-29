@@ -227,7 +227,7 @@ file format][], one for AS numbers, one for countries. If no database
 is provided, the component is inactive. It accepts the following keys:
 
 - `asn-database` tells the path to the ASN database
-- `country-database` tells the path to the country database
+- `geo-database` tells the path to the geo database (country or city)
 - `optional` makes the presence of the databases optional on start
   (when not present on start, the component is just disabled)
 
