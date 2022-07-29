@@ -94,6 +94,23 @@ outer:
 	return strings.Join(schema, "\n")
 }
 
+// appendToSortingKey returns a sorting key using the original one and
+// adding the specified columns.
+func appendToSortingKey(ctx context.Context, conn clickhouse.Conn, table string, columns ...string) (string, error) {
+	row := conn.QueryRow(
+		ctx,
+		`SELECT sorting_key FROM system.tables WHERE name = $1 AND database = currentDatabase()`,
+		table)
+	if err := row.Err(); err != nil {
+		return "", fmt.Errorf("cannot query sorting key for %q: %w", table, err)
+	}
+	var sortingKey string
+	if err := row.Scan(&sortingKey); err != nil {
+		return "", fmt.Errorf("unable to parse sorting key: %w", err)
+	}
+	return fmt.Sprintf("%s, %s", sortingKey, strings.Join(columns, ", ")), nil
+}
+
 var nullMigrationStep = migrationStep{
 	CheckQuery: `SELECT 1`,
 	Args:       []interface{}{},
@@ -170,7 +187,8 @@ ORDER BY (TimeReceived,
           SrcNetRole, DstNetRole,
           SrcNetSite, DstNetSite,
           SrcNetRegion, DstNetRegion,
-          SrcNetTenant, DstNetTenant)`,
+          SrcNetTenant, DstNetTenant,
+          SrcCountry, DstCountry)`,
 					tableName,
 					partialSchema("SrcAddr", "DstAddr", "SrcPort", "DstPort"),
 					partitionInterval))
@@ -221,11 +239,13 @@ WHERE table = $1 AND database = currentDatabase() AND name = $2`,
 					`ADD COLUMN DstNetName LowCardinality(String) AFTER SrcNetName`,
 				}
 				if tableName != "flows" {
-					modifications = append(modifications,
-						`MODIFY ORDER BY (TimeReceived, ExporterAddress, EType, Proto,
-                                                                  InIfName, SrcAS, ForwardingStatus,
-                                                                  OutIfName, DstAS, SamplingRate,
-                                                                  SrcNetName, DstNetName)`)
+					sortingKey, err := appendToSortingKey(ctx, conn, tableName,
+						"SrcNetName", "DstNetName")
+					if err != nil {
+						return err
+					}
+					modifications = append(modifications, fmt.Sprintf(
+						`MODIFY ORDER BY (%s)`, sortingKey))
 				}
 				return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE %s %s`,
 					tableName, strings.Join(modifications, ", ")))
@@ -259,15 +279,17 @@ WHERE table = $1 AND database = currentDatabase() AND name = $2`,
 					`ADD COLUMN DstNetTenant LowCardinality(String) AFTER SrcNetTenant`,
 				}
 				if tableName != "flows" {
-					modifications = append(modifications,
-						`MODIFY ORDER BY (TimeReceived, ExporterAddress, EType, Proto,
-                                                                  InIfName, SrcAS, ForwardingStatus,
-                                                                  OutIfName, DstAS, SamplingRate,
-                                                                  SrcNetName, DstNetName,
-                                                                  SrcNetRole, DstNetRole,
-                                                                  SrcNetSite, DstNetSite,
-                                                                  SrcNetRegion, DstNetRegion,
-                                                                  SrcNetTenant, DstNetTenant)`)
+					sortingKey, err := appendToSortingKey(ctx, conn, tableName,
+						"SrcNetRole", "DstNetRole",
+						"SrcNetSite", "DstNetSite",
+						"SrcNetRegion", "DstNetRegion",
+						"SrcNetTenant", "DstNetTenant",
+					)
+					if err != nil {
+						return err
+					}
+					modifications = append(modifications, fmt.Sprintf(
+						`MODIFY ORDER BY (%s)`, sortingKey))
 				}
 				return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE %s %s`,
 					tableName, strings.Join(modifications, ", ")))
@@ -298,6 +320,45 @@ WHERE table = $1 AND database = currentDatabase() AND name = $2`,
 				}
 				return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE %s %s`,
 					tableName, strings.Join(modifications, ", ")))
+			},
+		}
+	}
+}
+
+func (c *Component) migrationStepFixOrderByCountry(resolution ResolutionConfiguration) migrationStepFunc {
+	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+		var tableName string
+		if resolution.Interval == 0 {
+			return nullMigrationStep
+		}
+		tableName = fmt.Sprintf("flows_%s", resolution.Interval)
+		return migrationStep{
+			CheckQuery: `
+SELECT 1 FROM system.tables
+WHERE name = $1 AND database = currentDatabase()
+AND has(splitByRegexp(',\\s*', sorting_key), $2)`,
+			Args: []interface{}{tableName, "SrcCountry"},
+			Do: func() error {
+				// Drop the columns
+				l.Debug().Msg("drop SrcCountry/DstCountry columns")
+				err := conn.Exec(ctx,
+					fmt.Sprintf(`ALTER TABLE %s DROP COLUMN SrcCountry, DROP COLUMN DstCountry`,
+						tableName))
+				if err != nil {
+					return fmt.Errorf("cannot drop SrcCountry/DstCountry columns: %w", err)
+				}
+				// Add them back
+				l.Debug().Msg("add back SrcCountry/DstCountry columns")
+				sortingKey, err := appendToSortingKey(ctx, conn, tableName,
+					"SrcCountry", "DstCountry")
+				if err != nil {
+					return err
+				}
+				return conn.Exec(ctx, fmt.Sprintf(`
+ALTER TABLE %s
+ADD COLUMN SrcCountry FixedString(2) AFTER DstNetTenant,
+ADD COLUMN DstCountry FixedString(2) AFTER SrcCountry,
+MODIFY ORDER BY (%s)`, tableName, sortingKey))
 			},
 		}
 	}

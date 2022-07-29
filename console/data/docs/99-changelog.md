@@ -13,9 +13,16 @@ identified with a specific icon:
 
 ## Unreleased
 
-- 💥 *inlet*: `inlet.geoip.country-database` has been renamed to `inlet.geoip.geo-database`
+`SrcCountry`/`DstCountry` were incorrectly filled in aggregated
+tables. This is fixed with this release, but this implies dropping the
+existing data. See [PR #61][] for more details.
+
+- 🩹 *orchestrator*: fix `SrcCountry`/`DstCountry` columns in aggregated tables [PR #61][]
+- 🌱 *inlet*: `inlet.geoip.country-database` has been renamed to `inlet.geoip.geo-database`
 - 🌱 *inlet*: add counters for GeoIP database hit/miss
 - 🌱 *docker-compose*: disable healthcheck for the conntrack-fixer container
+
+[PR #61]: https://github.com/vincentbernat/akvorado/pull/61
 
 ## 1.5.3 - 2022-07-26
 
@@ -28,7 +35,7 @@ identified with a specific icon:
 - 🩹 *build*: remove `-dirty` from version number in released Docker images
 - 🌱 *console*: hide `::ffff:` prefix from IPv6-mapped IPv4 addresses
 
-[PR #57]: https://github.com/vincentbernat/akvorado/pull/47
+[PR #57]: https://github.com/vincentbernat/akvorado/pull/57
 
 ## 1.5.1 - 2022-07-22
 

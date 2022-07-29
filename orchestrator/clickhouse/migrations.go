@@ -51,7 +51,7 @@ func (c *Component) migrateDatabase() error {
 	var threads uint8
 	if err := row.Scan(&threads); err != nil {
 		c.r.Err(err).Msg("unable to parse number of threads")
-		return fmt.Errorf("unable to parse number of threads")
+		return fmt.Errorf("unable to parse number of threads: %w", err)
 	}
 	if c.config.Kafka.Consumers > int(threads) {
 		c.r.Warn().Msgf("too many consumers requested, capping to %d", threads)
@@ -80,6 +80,9 @@ func (c *Component) migrateDatabase() error {
 			}, {
 				fmt.Sprintf("add Exporter* to flows table with resolution %s", resolution.Interval),
 				c.migrationStepAddExporterColumns(resolution),
+			}, {
+				fmt.Sprintf("add SrcCountry/DstCountry to ORDER BY for resolution %s", resolution.Interval),
+				c.migrationStepFixOrderByCountry(resolution),
 			}, {
 				fmt.Sprintf("create flows table consumer with resolution %s", resolution.Interval),
 				c.migrationsStepCreateFlowsConsumerTable(resolution),
