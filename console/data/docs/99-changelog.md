@@ -15,7 +15,8 @@ identified with a specific icon:
 
 `SrcCountry`/`DstCountry` were incorrectly filled in aggregated
 tables. This is fixed with this release, but this implies dropping the
-existing data. See [PR #61][] for more details.
+existing data (only the country information). See [PR #61][] for more
+details.
 
 - 🩹 *orchestrator*: fix `SrcCountry`/`DstCountry` columns in aggregated tables [PR #61][]
 - 🌱 *inlet*: `inlet.geoip.country-database` has been renamed to `inlet.geoip.geo-database`
