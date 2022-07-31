@@ -70,6 +70,8 @@ func SubnetMapUnmarshallerHook[V any]() mapstructure.DecodeHookFunc {
 					}
 					if bits == 32 {
 						key = fmt.Sprintf("::ffff:%s/%d", ipNet.IP.String(), ones+96)
+					} else if ipNet.IP.To4() != nil {
+						key = fmt.Sprintf("::ffff:%s/%d", ipNet.IP.String(), ones)
 					} else {
 						key = ipNet.String()
 					}

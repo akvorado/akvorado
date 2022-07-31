@@ -63,6 +63,16 @@ func TestSubnetMapUnmarshalHook(t *testing.T) {
 				"2001:db8:2::2": "",
 			},
 		}, {
+			Description: "IPv6-mapped-IPv4 subnet",
+			Input:       gin.H{"::ffff:203.0.113.0/120": "customer2"},
+			Tests: map[string]string{
+				"::ffff:203.0.113.10": "customer2",
+				"203.0.113.10":        "customer2",
+				"::ffff:203.0.112.10": "",
+				"203.0.112.10":        "",
+			},
+			YAML: gin.H{"203.0.113.0/24": "customer2"},
+		}, {
 			Description: "IPv6 IP",
 			Input:       gin.H{"2001:db8:1::1": "customer2"},
 			Tests: map[string]string{
