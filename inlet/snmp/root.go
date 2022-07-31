@@ -9,6 +9,7 @@ package snmp
 import (
 	"errors"
 	"fmt"
+	"net"
 	"strconv"
 	"sync"
 	"time"
@@ -282,9 +283,9 @@ func (c *Component) dispatchIncomingRequest(request lookupRequest) {
 // pollerIncomingRequest handles an incoming request to the poller. It
 // uses a breaker to avoid pushing working on non-responsive exporters.
 func (c *Component) pollerIncomingRequest(request lookupRequest) {
-	community, ok := c.config.Communities[request.ExporterIP]
+	community, ok := c.config.Communities.Lookup(net.ParseIP(request.ExporterIP))
 	if !ok {
-		community = c.config.DefaultCommunity
+		community = "public"
 	}
 
 	// Avoid querying too much exporters with errors

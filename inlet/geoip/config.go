@@ -38,13 +38,13 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 		}
 
 		// country-database → geo-database
-		var countryKey *reflect.Value
-		var geoKey *reflect.Value
-		for _, k := range from.MapKeys() {
+		var countryKey, geoKey *reflect.Value
+		fromMap := from.MapKeys()
+		for i, k := range from.MapKeys() {
 			if helpers.MapStructureMatchName(k.String(), "CountryDatabase") {
-				countryKey = &k
+				countryKey = &fromMap[i]
 			} else if helpers.MapStructureMatchName(k.String(), "GeoDatabase") {
-				geoKey = &k
+				geoKey = &fromMap[i]
 			}
 		}
 		if countryKey != nil && geoKey != nil {

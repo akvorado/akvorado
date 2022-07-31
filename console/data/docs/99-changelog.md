@@ -23,6 +23,7 @@ details.
 - 🩹 *orchestrator*: fix `SrcCountry`/`DstCountry` columns in aggregated tables [PR #61][]
 - 🌱 *inlet*: `inlet.geoip.country-database` has been renamed to `inlet.geoip.geo-database`
 - 🌱 *inlet*: add counters for GeoIP database hit/miss
+- 🌱 *inlet*: `inlet.snmp.communities` accepts subnets as keys, `inlet.snmp.default-community` is now deprecated
 - 🌱 *docker-compose*: disable healthcheck for the conntrack-fixer container
 
 [PR #61]: https://github.com/vincentbernat/akvorado/pull/61

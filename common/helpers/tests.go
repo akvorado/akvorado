@@ -29,7 +29,8 @@ var prettyC = pretty.Config{
 	SkipZeroFields:    true,
 	IncludeUnexported: false,
 	Formatter: map[reflect.Type]interface{}{
-		reflect.TypeOf(net.IP{}): fmt.Sprint,
+		reflect.TypeOf(net.IP{}):            fmt.Sprint,
+		reflect.TypeOf(SubnetMap[string]{}): fmt.Sprint,
 	},
 }
 

@@ -41,11 +41,11 @@ func TestLookup(t *testing.T) {
 func TestSNMPCommunities(t *testing.T) {
 	r := reporter.NewMock(t)
 	configuration := DefaultConfiguration()
-	configuration.DefaultCommunity = "notpublic"
-	configuration.Communities = map[string]string{
-		"127.0.0.1": "public",
-		"127.0.0.2": "private",
-	}
+	configuration.Communities, _ = helpers.NewSubnetMap(map[string]string{
+		"::/0":                 "notpublic",
+		"::ffff:127.0.0.1/128": "public",
+		"::ffff:127.0.0.2/128": "private",
+	})
 	c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 
 	// Use "public" as a community. Should work.

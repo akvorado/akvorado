@@ -33,6 +33,37 @@ func (sm *SubnetMap[V]) Lookup(ip net.IP) (V, bool) {
 	return value, ok
 }
 
+// NewSubnetMap creates a subnetmap from a map. Unlike user-provided
+// configuration, this function is stricter and require everything to
+// be IPv6 subnets.
+func NewSubnetMap[V any](from map[string]V) (*SubnetMap[V], error) {
+	trie := tree.NewTreeV6[V]()
+	for k, v := range from {
+		_, ipNet, err := net.ParseCIDR(k)
+		if err != nil {
+			// Should not happen
+			return nil, err
+		}
+		_, bits := ipNet.Mask.Size()
+		if bits != 128 {
+			return nil, fmt.Errorf("%q is not an IPv6 subnet", ipNet)
+		}
+		plen, _ := ipNet.Mask.Size()
+		trie.Set(patricia.NewIPv6Address(ipNet.IP.To16(), uint(plen)), v)
+	}
+	return &SubnetMap[V]{trie}, nil
+}
+
+// MustNewSubnetMap creates a subnet from a map and panic in case of a
+// problem. This should only be used with tests.
+func MustNewSubnetMap[V any](from map[string]V) *SubnetMap[V] {
+	trie, err := NewSubnetMap(from)
+	if err != nil {
+		panic(err)
+	}
+	return trie
+}
+
 // SubnetMapUnmarshallerHook decodes SubnetMap and notably check that
 // valid networks are provided as key. It also accepts a single value
 // instead of a map for backward compatibility.
@@ -106,18 +137,13 @@ func SubnetMapUnmarshallerHook[V any]() mapstructure.DecodeHookFunc {
 		if err := intermediateDecoder.Decode(output); err != nil {
 			return nil, fmt.Errorf("unable to decode %q: %w", reflect.TypeOf(zero).Name(), err)
 		}
-		trie := tree.NewTreeV6[V]()
-		for k, v := range intermediate {
-			_, ipNet, err := net.ParseCIDR(k)
-			if err != nil {
-				// Should not happen
-				return nil, err
-			}
-			plen, _ := ipNet.Mask.Size()
-			trie.Set(patricia.NewIPv6Address(ipNet.IP.To16(), uint(plen)), v)
+		trie, err := NewSubnetMap[V](intermediate)
+		if err != nil {
+			// Should not happen
+			return nil, err
 		}
 
-		return SubnetMap[V]{trie}, nil
+		return trie, nil
 	}
 }
 
@@ -131,4 +157,12 @@ func (sm SubnetMap[V]) MarshalYAML() (interface{}, error) {
 		output[iter.Address().String()] = iter.Tags()[0]
 	}
 	return output, nil
+}
+
+func (sm SubnetMap[V]) String() string {
+	out, err := sm.MarshalYAML()
+	if err != nil {
+		return "SubnetMap???"
+	}
+	return fmt.Sprintf("%v", out)
 }
