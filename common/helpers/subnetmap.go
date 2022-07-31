@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"strings"
 
 	"github.com/kentik/patricia"
 	tree "github.com/kentik/patricia/generics_tree"
@@ -55,22 +56,35 @@ func SubnetMapUnmarshallerHook[V any]() mapstructure.DecodeHookFunc {
 					return nil, fmt.Errorf("key %d is not a string (%s)", i, k.Kind())
 				}
 				// Parse key
-				_, ipNet, err := net.ParseCIDR(k.String())
-				if err != nil {
-					return nil, err
-				}
-				// Convert key to IPv6
-				ones, bits := ipNet.Mask.Size()
-				if bits != 32 && bits != 128 {
-					return nil, fmt.Errorf("key %d has an invalid netmask", i)
-				}
 				var key string
-				if bits == 32 {
-					key = fmt.Sprintf("::ffff:%s/%d", ipNet.IP.String(), ones+96)
+				if strings.Contains(k.String(), "/") {
+					// Subnet
+					_, ipNet, err := net.ParseCIDR(k.String())
+					if err != nil {
+						return nil, err
+					}
+					// Convert key to IPv6
+					ones, bits := ipNet.Mask.Size()
+					if bits != 32 && bits != 128 {
+						return nil, fmt.Errorf("key %d has an invalid netmask", i)
+					}
+					if bits == 32 {
+						key = fmt.Sprintf("::ffff:%s/%d", ipNet.IP.String(), ones+96)
+					} else {
+						key = ipNet.String()
+					}
 				} else {
-					key = ipNet.String()
+					// IP
+					ip := net.ParseIP(k.String())
+					if ip == nil {
+						return nil, fmt.Errorf("key %d is not a valid subnet", i)
+					}
+					if ipv4 := ip.To4(); ipv4 != nil {
+						key = fmt.Sprintf("::ffff:%s/128", ipv4.String())
+					} else {
+						key = fmt.Sprintf("%s/128", ip.String())
+					}
 				}
-
 				output[key] = v.Interface()
 			}
 		} else if from.Type() == reflect.TypeOf(zero) || from.Type().ConvertibleTo(reflect.TypeOf(zero)) {

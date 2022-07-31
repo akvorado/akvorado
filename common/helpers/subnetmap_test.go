@@ -36,7 +36,7 @@ func TestSubnetMapUnmarshalHook(t *testing.T) {
 				"203.0.113.1": "",
 			},
 		}, {
-			Description: "IPv4",
+			Description: "IPv4 subnet",
 			Input:       gin.H{"203.0.113.0/24": "customer1"},
 			Tests: map[string]string{
 				"::ffff:203.0.113.18": "customer1",
@@ -46,13 +46,31 @@ func TestSubnetMapUnmarshalHook(t *testing.T) {
 				"2001:db8:1::12":      "",
 			},
 		}, {
-			Description: "IPv6",
+			Description: "IPv4 IP",
+			Input:       gin.H{"203.0.113.1": "customer1"},
+			Tests: map[string]string{
+				"::ffff:203.0.113.1": "customer1",
+				"203.0.113.1":        "customer1",
+				"2001:db8:1::12":     "",
+			},
+			YAML: gin.H{"203.0.113.1/32": "customer1"},
+		}, {
+			Description: "IPv6 subnet",
 			Input:       gin.H{"2001:db8:1::/64": "customer2"},
 			Tests: map[string]string{
 				"2001:db8:1::1": "customer2",
 				"2001:db8:1::2": "customer2",
 				"2001:db8:2::2": "",
 			},
+		}, {
+			Description: "IPv6 IP",
+			Input:       gin.H{"2001:db8:1::1": "customer2"},
+			Tests: map[string]string{
+				"2001:db8:1::1": "customer2",
+				"2001:db8:1::2": "",
+				"2001:db8:2::2": "",
+			},
+			YAML: gin.H{"2001:db8:1::1/128": "customer2"},
 		}, {
 			Description: "Invalid subnet (1)",
 			Input:       gin.H{"192.0.2.1/38": "customer"},
@@ -64,6 +82,10 @@ func TestSubnetMapUnmarshalHook(t *testing.T) {
 		}, {
 			Description: "Invalid subnet (3)",
 			Input:       gin.H{"2001:db8::/1000": "customer"},
+			Error:       true,
+		}, {
+			Description: "Invalid IP",
+			Input:       gin.H{"200.33.300.1": "customer"},
 			Error:       true,
 		}, {
 			Description: "Single value",
