@@ -19,6 +19,7 @@ existing data (only the country information). See [PR #61][] for more
 details.
 
 - ✨ *inlet*: `inlet.core.default-sampling-rate` also accepts a map from subnet to sampling rate
+- ✨ *inlet*: `inlet.core.override-sampling-rate` enables overriding the sampling rate received from a device
 - 🩹 *orchestrator*: fix `SrcCountry`/`DstCountry` columns in aggregated tables [PR #61][]
 - 🌱 *inlet*: `inlet.geoip.country-database` has been renamed to `inlet.geoip.geo-database`
 - 🌱 *inlet*: add counters for GeoIP database hit/miss

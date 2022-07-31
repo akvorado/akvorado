@@ -157,6 +157,10 @@ The following configuration keys are accepted:
   sampling rate will be rejected. Use this option only if your
   hardware is unable to advertise a sampling rate. This can either be
   a single value or a map from subnets to sampling rates.
+- `override-sampling-rate` defines the sampling rate instead of the
+  one received in the flows. This is useful if a device lie about its
+  sampling rate. This is a map from subnets to sampling rates (but it
+  would also accept a single value).
 - `ignore-asn-from-flow` allows one to ignore the AS numbers from the
   received flows. It can be useful for routers with a partial routing
   table and a default route learned over BGP.

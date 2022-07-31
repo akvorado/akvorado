@@ -17,6 +17,8 @@ type Configuration struct {
 	ClassifierCacheSize uint
 	// DefaultSamplingRate defines the default sampling rate to use when the information is missing
 	DefaultSamplingRate helpers.SubnetMap[uint]
+	// OverrideSamplingRate defines a sampling rate to use instead of the received on
+	OverrideSamplingRate helpers.SubnetMap[uint]
 	// Ignore source/dest AS numbers from received flows
 	IgnoreASNFromFlow bool
 }

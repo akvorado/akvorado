@@ -61,6 +61,9 @@ func (c *Component) hydrateFlow(exporterIP net.IP, exporterStr string, flow *flo
 		skip = true
 	}
 
+	if samplingRate, ok := c.config.OverrideSamplingRate.Lookup(exporterIP); ok && samplingRate > 0 {
+		flow.SamplingRate = uint64(samplingRate)
+	}
 	if flow.SamplingRate == 0 {
 		if samplingRate, ok := c.config.DefaultSamplingRate.Lookup(exporterIP); ok && samplingRate > 0 {
 			flow.SamplingRate = uint64(samplingRate)
