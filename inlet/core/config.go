@@ -3,6 +3,8 @@
 
 package core
 
+import "akvorado/common/helpers"
+
 // Configuration describes the configuration for the core component.
 type Configuration struct {
 	// Number of workers for the core component
@@ -14,7 +16,7 @@ type Configuration struct {
 	// ClassifierCacheSize defines the size of the classifier (in number of items)
 	ClassifierCacheSize uint
 	// DefaultSamplingRate defines the default sampling rate to use when the information is missing
-	DefaultSamplingRate uint
+	DefaultSamplingRate helpers.SubnetMap[uint]
 	// Ignore source/dest AS numbers from received flows
 	IgnoreASNFromFlow bool
 }
@@ -28,4 +30,8 @@ func DefaultConfiguration() Configuration {
 		ClassifierCacheSize:  1000,
 		IgnoreASNFromFlow:    false,
 	}
+}
+
+func init() {
+	helpers.AddMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[uint]())
 }

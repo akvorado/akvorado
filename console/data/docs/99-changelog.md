@@ -18,6 +18,7 @@ tables. This is fixed with this release, but this implies dropping the
 existing data (only the country information). See [PR #61][] for more
 details.
 
+- ✨ *inlet*: `inlet.core.default-sampling-rate` also accepts a map from subnet to sampling rate
 - 🩹 *orchestrator*: fix `SrcCountry`/`DstCountry` columns in aggregated tables [PR #61][]
 - 🌱 *inlet*: `inlet.geoip.country-database` has been renamed to `inlet.geoip.geo-database`
 - 🌱 *inlet*: add counters for GeoIP database hit/miss

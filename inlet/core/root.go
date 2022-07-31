@@ -119,7 +119,7 @@ func (c *Component) runWorker(workerID int) error {
 			c.metrics.flowsReceived.WithLabelValues(exporter).Inc()
 
 			// Hydratation
-			if skip := c.hydrateFlow(exporter, flow); skip {
+			if skip := c.hydrateFlow(flow.ExporterAddress, exporter, flow); skip {
 				continue
 			}
 

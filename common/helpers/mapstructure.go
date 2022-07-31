@@ -17,10 +17,23 @@ func AddMapstructureUnmarshallerHook(hook mapstructure.DecodeHookFunc) {
 	mapstructureUnmarshallerHookFuncs = append(mapstructureUnmarshallerHookFuncs, hook)
 }
 
-// GetMapStructureUnmarshallerHooks returns all the registered decode
-// hooks for mapstructure.
-func GetMapStructureUnmarshallerHooks() []mapstructure.DecodeHookFunc {
-	return mapstructureUnmarshallerHookFuncs
+// GetMapStructureDecoderConfig returns a decoder config for
+// mapstructure with all registered hooks as well as appropriate
+// default configuration.
+func GetMapStructureDecoderConfig(config interface{}, hooks ...mapstructure.DecodeHookFunc) *mapstructure.DecoderConfig {
+	return &mapstructure.DecoderConfig{
+		Result:           config,
+		ErrorUnused:      true,
+		WeaklyTypedInput: true,
+		MatchName:        MapStructureMatchName,
+		DecodeHook: mapstructure.ComposeDecodeHookFunc(
+			mapstructure.ComposeDecodeHookFunc(hooks...),
+			mapstructure.ComposeDecodeHookFunc(mapstructureUnmarshallerHookFuncs...),
+			mapstructure.TextUnmarshallerHookFunc(),
+			mapstructure.StringToTimeDurationHookFunc(),
+			mapstructure.StringToSliceHookFunc(","),
+		),
+	}
 }
 
 // MapStructureMatchName tells if map key and field names are equal.

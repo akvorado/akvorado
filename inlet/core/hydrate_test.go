@@ -9,8 +9,9 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/gin-gonic/gin"
 	"github.com/golang/protobuf/proto"
-	"gopkg.in/yaml.v2"
+	"github.com/mitchellh/mapstructure"
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
@@ -25,13 +26,13 @@ import (
 func TestHydrate(t *testing.T) {
 	cases := []struct {
 		Name          string
-		Configuration string
+		Configuration gin.H
 		InputFlow     func() *flow.Message
 		OutputFlow    *flow.Message
 	}{
 		{
 			Name:          "no rule",
-			Configuration: `{}`,
+			Configuration: gin.H{},
 			InputFlow: func() *flow.Message {
 				return &flow.Message{
 					SamplingRate:    1000,
@@ -55,10 +56,36 @@ func TestHydrate(t *testing.T) {
 			},
 		},
 		{
-			Name: "no rule, no sampling rate",
-			Configuration: `
-defaultsamplingrate: 500
-`,
+			Name:          "no rule, no sampling rate, default is one value",
+			Configuration: gin.H{"defaultsamplingrate": 500},
+			InputFlow: func() *flow.Message {
+				return &flow.Message{
+					ExporterAddress: net.ParseIP("192.0.2.142"),
+					InIf:            100,
+					OutIf:           200,
+				}
+			},
+			OutputFlow: &flow.Message{
+				SamplingRate:     500,
+				ExporterAddress:  net.ParseIP("192.0.2.142"),
+				ExporterName:     "192_0_2_142",
+				InIf:             100,
+				OutIf:            200,
+				InIfName:         "Gi0/0/100",
+				OutIfName:        "Gi0/0/200",
+				InIfDescription:  "Interface 100",
+				OutIfDescription: "Interface 200",
+				InIfSpeed:        1000,
+				OutIfSpeed:       1000,
+			},
+		},
+		{
+			Name: "no rule, no sampling rate, default is map",
+			Configuration: gin.H{"defaultsamplingrate": gin.H{
+				"192.0.2.0/24":   100,
+				"192.0.2.128/25": 500,
+				"192.0.2.141/32": 1000,
+			}},
 			InputFlow: func() *flow.Message {
 				return &flow.Message{
 					ExporterAddress: net.ParseIP("192.0.2.142"),
@@ -82,12 +109,13 @@ defaultsamplingrate: 500
 		},
 		{
 			Name: "exporter rule",
-			Configuration: `
-exporterclassifiers:
-  - Exporter.Name startsWith "hello" && ClassifyRegion("europe")
-  - Exporter.Name startsWith "192_" && ClassifyRegion("asia")
-  - ClassifyRegion("other") && ClassifySite("unknown") && ClassifyTenant("alfred")
-`,
+			Configuration: gin.H{
+				"exporterclassifiers": []string{
+					`Exporter.Name startsWith "hello" && ClassifyRegion("europe")`,
+					`Exporter.Name startsWith "192_" && ClassifyRegion("asia")`,
+					`ClassifyRegion("other") && ClassifySite("unknown") && ClassifyTenant("alfred")`,
+				},
+			},
 			InputFlow: func() *flow.Message {
 				return &flow.Message{
 					SamplingRate:    1000,
@@ -115,15 +143,16 @@ exporterclassifiers:
 		},
 		{
 			Name: "interface rule",
-			Configuration: `
-interfaceclassifiers:
-  - >-
-     Interface.Description startsWith "Transit:" &&
-     ClassifyConnectivity("transit") &&
-     ClassifyExternal() &&
-     ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")
-  - ClassifyInternal()
-`,
+			Configuration: gin.H{
+				"interfaceclassifiers": []string{
+					`
+Interface.Description startsWith "Transit:" &&
+ClassifyConnectivity("transit") &&
+ClassifyExternal() &&
+ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
+					`ClassifyInternal()`,
+				},
+			},
 			InputFlow: func() *flow.Message {
 				return &flow.Message{
 					SamplingRate:    1000,
@@ -150,11 +179,12 @@ interfaceclassifiers:
 		},
 		{
 			Name: "configure twice boundary",
-			Configuration: `
-interfaceclassifiers:
-  - ClassifyInternal()
-  - ClassifyExternal()
-`,
+			Configuration: gin.H{
+				"interfaceclassifiers": []string{
+					`ClassifyInternal()`,
+					`ClassifyExternal()`,
+				},
+			},
 			InputFlow: func() *flow.Message {
 				return &flow.Message{
 					SamplingRate:    1000,
@@ -181,11 +211,12 @@ interfaceclassifiers:
 		},
 		{
 			Name: "configure twice provider",
-			Configuration: `
-interfaceclassifiers:
-  - ClassifyProvider("telia")
-  - ClassifyProvider("cogent")
-`,
+			Configuration: gin.H{
+				"interfaceclassifiers": []string{
+					`ClassifyProvider("telia")`,
+					`ClassifyProvider("cogent")`,
+				},
+			},
 			InputFlow: func() *flow.Message {
 				return &flow.Message{
 					SamplingRate:    1000,
@@ -212,12 +243,13 @@ interfaceclassifiers:
 		},
 		{
 			Name: "classify depending on description",
-			Configuration: `
-interfaceclassifiers:
-  - ClassifyProvider("Othello")
-  - ClassifyConnectivityRegex(Interface.Description, " (1\\d+)$", "P$1") && ClassifyExternal()
-  - ClassifyInternal() && ClassifyConnectivity("core")
-`,
+			Configuration: gin.H{
+				"interfaceclassifiers": []string{
+					`ClassifyProvider("Othello")`,
+					`ClassifyConnectivityRegex(Interface.Description, " (1\\d+)$", "P$1") && ClassifyExternal()`,
+					`ClassifyInternal() && ClassifyConnectivity("core")`,
+				},
+			},
 			InputFlow: func() *flow.Message {
 				return &flow.Message{
 					SamplingRate:    1000,
@@ -262,8 +294,12 @@ interfaceclassifiers:
 
 			// Prepare a configuration
 			configuration := DefaultConfiguration()
-			if err := yaml.Unmarshal([]byte(tc.Configuration), &configuration); err != nil {
-				t.Fatalf("Unmarshal() error:\n%+v", err)
+			decoder, err := mapstructure.NewDecoder(helpers.GetMapStructureDecoderConfig(&configuration))
+			if err != nil {
+				t.Fatalf("NewDecoder() error:\n%+v", err)
+			}
+			if err := decoder.Decode(tc.Configuration); err != nil {
+				t.Fatalf("Decode() error:\n%+v", err)
 			}
 
 			// Instantiate and start core

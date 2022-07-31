@@ -16,16 +16,16 @@ import (
 )
 
 // hydrateFlow adds more data to a flow.
-func (c *Component) hydrateFlow(exporter string, flow *flow.Message) (skip bool) {
+func (c *Component) hydrateFlow(exporterIP net.IP, exporterStr string, flow *flow.Message) (skip bool) {
 	errLogger := c.r.Sample(reporter.BurstSampler(time.Minute, 10))
 
 	if flow.InIf != 0 {
-		exporterName, iface, err := c.d.Snmp.Lookup(exporter, uint(flow.InIf))
+		exporterName, iface, err := c.d.Snmp.Lookup(exporterStr, uint(flow.InIf))
 		if err != nil {
 			if err != snmp.ErrCacheMiss {
-				errLogger.Err(err).Str("exporter", exporter).Msg("unable to query SNMP cache")
+				errLogger.Err(err).Str("exporter", exporterStr).Msg("unable to query SNMP cache")
 			}
-			c.metrics.flowsErrors.WithLabelValues(exporter, err.Error()).Inc()
+			c.metrics.flowsErrors.WithLabelValues(exporterStr, err.Error()).Inc()
 			skip = true
 		} else {
 			flow.ExporterName = exporterName
@@ -36,15 +36,15 @@ func (c *Component) hydrateFlow(exporter string, flow *flow.Message) (skip bool)
 	}
 
 	if flow.OutIf != 0 {
-		exporterName, iface, err := c.d.Snmp.Lookup(exporter, uint(flow.OutIf))
+		exporterName, iface, err := c.d.Snmp.Lookup(exporterStr, uint(flow.OutIf))
 		if err != nil {
 			// Only register a cache miss if we don't have one.
 			// TODO: maybe we could do one SNMP query for both interfaces.
 			if !skip {
 				if err != snmp.ErrCacheMiss {
-					errLogger.Err(err).Str("exporter", exporter).Msg("unable to query SNMP cache")
+					errLogger.Err(err).Str("exporter", exporterStr).Msg("unable to query SNMP cache")
 				}
-				c.metrics.flowsErrors.WithLabelValues(exporter, err.Error()).Inc()
+				c.metrics.flowsErrors.WithLabelValues(exporterStr, err.Error()).Inc()
 				skip = true
 			}
 		} else {
@@ -57,15 +57,15 @@ func (c *Component) hydrateFlow(exporter string, flow *flow.Message) (skip bool)
 
 	// We need at least one of them.
 	if flow.OutIf == 0 && flow.InIf == 0 {
-		c.metrics.flowsErrors.WithLabelValues(exporter, "input and output interfaces missing").Inc()
+		c.metrics.flowsErrors.WithLabelValues(exporterStr, "input and output interfaces missing").Inc()
 		skip = true
 	}
 
 	if flow.SamplingRate == 0 {
-		if c.config.DefaultSamplingRate != 0 {
-			flow.SamplingRate = uint64(c.config.DefaultSamplingRate)
+		if samplingRate, ok := c.config.DefaultSamplingRate.Lookup(exporterIP); ok && samplingRate > 0 {
+			flow.SamplingRate = uint64(samplingRate)
 		} else {
-			c.metrics.flowsErrors.WithLabelValues(exporter, "sampling rate missing").Inc()
+			c.metrics.flowsErrors.WithLabelValues(exporterStr, "sampling rate missing").Inc()
 			skip = true
 		}
 	}
@@ -75,11 +75,11 @@ func (c *Component) hydrateFlow(exporter string, flow *flow.Message) (skip bool)
 	}
 
 	// Classification
-	c.classifyExporter(exporter, flow)
-	c.classifyInterface(exporter, flow,
+	c.classifyExporter(exporterStr, flow)
+	c.classifyInterface(exporterStr, flow,
 		flow.OutIfName, flow.OutIfDescription, flow.OutIfSpeed,
 		&flow.OutIfConnectivity, &flow.OutIfProvider, &flow.OutIfBoundary)
-	c.classifyInterface(exporter, flow,
+	c.classifyInterface(exporterStr, flow,
 		flow.InIfName, flow.InIfDescription, flow.InIfSpeed,
 		&flow.InIfConnectivity, &flow.InIfProvider, &flow.InIfBoundary)
 

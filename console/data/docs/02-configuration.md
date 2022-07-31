@@ -155,7 +155,8 @@ The following configuration keys are accepted:
 - `default-sampling-rate` defines the default sampling rate to use
   when the information is missing. If not defined, flows without a
   sampling rate will be rejected. Use this option only if your
-  hardware is unable to advertise a sampling rate.
+  hardware is unable to advertise a sampling rate. This can either be
+  a single value or a map from subnets to sampling rates.
 - `ignore-asn-from-flow` allows one to ignore the AS numbers from the
   received flows. It can be useful for routers with a partial routing
   table and a default route learned over BGP.

@@ -16,6 +16,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
 	github.com/gosnmp/gosnmp v1.35.0
+	github.com/kentik/patricia v1.0.0
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-isatty v0.0.14
 	github.com/mitchellh/mapstructure v1.5.0
@@ -113,3 +114,5 @@ require (
 )
 
 replace github.com/slayercat/gosnmp => github.com/slayercat/gosnmp v1.24.1-0.20220124233957-4b805977d286
+
+replace github.com/kentik/patricia => github.com/vincentbernat/patricia v0.0.0-20220731174804-18c23f58bc16

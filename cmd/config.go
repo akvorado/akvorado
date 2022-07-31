@@ -79,22 +79,10 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 	defaultHook, disableDefaultHook := DefaultHook()
 	zeroSliceHook, disableZeroSliceHook := ZeroSliceHook()
 	var metadata mapstructure.Metadata
-	registeredHooks := helpers.GetMapStructureUnmarshallerHooks()
-	decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-		Result:           &config,
-		ErrorUnused:      false,
-		Metadata:         &metadata,
-		WeaklyTypedInput: true,
-		MatchName:        helpers.MapStructureMatchName,
-		DecodeHook: mapstructure.ComposeDecodeHookFunc(
-			defaultHook,
-			zeroSliceHook,
-			mapstructure.ComposeDecodeHookFunc(registeredHooks...),
-			mapstructure.TextUnmarshallerHookFunc(),
-			mapstructure.StringToTimeDurationHookFunc(),
-			mapstructure.StringToSliceHookFunc(","),
-		),
-	})
+	decoderConfig := helpers.GetMapStructureDecoderConfig(&config, defaultHook, zeroSliceHook)
+	decoderConfig.ErrorUnused = false
+	decoderConfig.Metadata = &metadata
+	decoder, err := mapstructure.NewDecoder(decoderConfig)
 	if err != nil {
 		return fmt.Errorf("unable to create configuration decoder: %w", err)
 	}
