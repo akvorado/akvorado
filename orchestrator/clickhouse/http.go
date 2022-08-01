@@ -60,7 +60,7 @@ func (c *Component) registerHTTPHandlers() error {
 			wr := csv.NewWriter(w)
 			wr.Write([]string{"network", "name", "role", "site", "region", "tenant"})
 			if c.config.Networks != nil {
-				for k, v := range c.config.Networks {
+				for k, v := range c.config.Networks.ToMap() {
 					wr.Write([]string{k, v.Name, v.Role, v.Site, v.Region, v.Tenant})
 				}
 			}

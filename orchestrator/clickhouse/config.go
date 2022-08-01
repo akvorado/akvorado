@@ -4,8 +4,6 @@
 package clickhouse
 
 import (
-	"fmt"
-	"net"
 	"reflect"
 	"time"
 
@@ -32,7 +30,7 @@ type Configuration struct {
 	ASNs map[uint32]string
 	// Networks is a mapping from IP networks to attributes. It is used
 	// to instantiate the SrcNet* and DstNet* columns.
-	Networks NetworkMap
+	Networks *helpers.SubnetMap[NetworkAttributes]
 	// OrchestratorURL allows one to override URL to reach
 	// orchestrator from Clickhouse
 	OrchestratorURL string `validate:"isdefault|url"`
@@ -73,9 +71,6 @@ func DefaultConfiguration() Configuration {
 	}
 }
 
-// NetworkMap is a mapping from a network to a attributes.
-type NetworkMap map[string]NetworkAttributes
-
 // NetworkAttributes is a set of attributes attached to a network
 type NetworkAttributes struct {
 	// Name is a name attached to the network. May be unique or not.
@@ -90,56 +85,28 @@ type NetworkAttributes struct {
 	Tenant string
 }
 
-// NetworkMapUnmarshallerHook decodes NetworkMap mapping and notably
-// check that valid networks are provided as key. It also accepts a
-// string instead of attributes for backward compatibility.
-func NetworkMapUnmarshallerHook() mapstructure.DecodeHookFunc {
-	return func(from, to reflect.Type, data interface{}) (interface{}, error) {
-		if from.Kind() != reflect.Map || to != reflect.TypeOf(NetworkMap{}) {
-			return data, nil
+// NetworkAttributesUnmarshallerHook decodes network attributes. It
+// also accepts a string instead of attributes for backward
+// compatibility.
+func NetworkAttributesUnmarshallerHook() mapstructure.DecodeHookFunc {
+	return func(from, to reflect.Value) (interface{}, error) {
+		if to.Kind() == reflect.Interface {
+			to = to.Elem()
 		}
-		output := map[string]interface{}{}
-		iter := reflect.ValueOf(data).MapRange()
-		for i := 0; iter.Next(); i++ {
-			k := iter.Key()
-			v := iter.Value()
-			if k.Kind() == reflect.Interface {
-				k = k.Elem()
-			}
-			if k.Kind() != reflect.String {
-				return nil, fmt.Errorf("key %d is not a string (%s)", i, k.Kind())
-			}
-			// Parse key
-			_, ipNet, err := net.ParseCIDR(k.String())
-			if err != nil {
-				return nil, err
-			}
-			// Convert key to IPv6
-			ones, bits := ipNet.Mask.Size()
-			if bits != 32 && bits != 128 {
-				return nil, fmt.Errorf("key %d has an invalid netmask", i)
-			}
-			var key string
-			if bits == 32 {
-				key = fmt.Sprintf("::ffff:%s/%d", ipNet.IP.String(), ones+96)
-			} else {
-				key = ipNet.String()
-			}
-
-			// Parse value (partially)
-			if v.Kind() == reflect.Interface {
-				v = v.Elem()
-			}
-			if v.Kind() == reflect.String {
-				output[key] = NetworkAttributes{Name: v.String()}
-			} else {
-				output[key] = v.Interface()
-			}
+		if from.Kind() == reflect.Interface {
+			from = from.Elem()
 		}
-		return output, nil
+		if to.Type() != reflect.TypeOf(NetworkAttributes{}) {
+			return from.Interface(), nil
+		}
+		if from.Kind() == reflect.String {
+			return NetworkAttributes{Name: from.String()}, nil
+		}
+		return from.Interface(), nil
 	}
 }
 
 func init() {
-	helpers.AddMapstructureUnmarshallerHook(NetworkMapUnmarshallerHook())
+	helpers.AddMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[NetworkAttributes]())
+	helpers.AddMapstructureUnmarshallerHook(NetworkAttributesUnmarshallerHook())
 }

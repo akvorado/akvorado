@@ -15,9 +15,9 @@ import (
 func TestHTTPEndpoints(t *testing.T) {
 	r := reporter.NewMock(t)
 	config := DefaultConfiguration()
-	config.Networks = NetworkMap{
-		"::ffff:192.0.2.0/24": NetworkAttributes{Name: "infra"},
-	}
+	config.Networks = helpers.MustNewSubnetMap(map[string]NetworkAttributes{
+		"::ffff:192.0.2.0/120": {Name: "infra"},
+	})
 	c, err := New(r, config, Dependencies{
 		Daemon: daemon.NewMock(t),
 		HTTP:   http.NewMock(t, r),
@@ -47,7 +47,7 @@ func TestHTTPEndpoints(t *testing.T) {
 			ContentType: "text/csv; charset=utf-8",
 			FirstLines: []string{
 				`network,name,role,site,region,tenant`,
-				`::ffff:192.0.2.0/24,infra,,,,`,
+				`192.0.2.0/24,infra,,,,`,
 			},
 		}, {
 			URL:         "/api/v0/orchestrator/clickhouse/init.sh",

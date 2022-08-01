@@ -33,6 +33,19 @@ func (sm *SubnetMap[V]) Lookup(ip net.IP) (V, bool) {
 	return value, ok
 }
 
+// ToMap return a map of the tree.
+func (sm *SubnetMap[V]) ToMap() map[string]V {
+	output := map[string]V{}
+	if sm == nil || sm.tree == nil {
+		return output
+	}
+	iter := sm.tree.Iterate()
+	for iter.Next() {
+		output[iter.Address().String()] = iter.Tags()[0]
+	}
+	return output
+}
+
 // NewSubnetMap creates a subnetmap from a map. Unlike user-provided
 // configuration, this function is stricter and require everything to
 // be IPv6 subnets.
@@ -137,7 +150,7 @@ func SubnetMapUnmarshallerHook[V any]() mapstructure.DecodeHookFunc {
 		if err := intermediateDecoder.Decode(output); err != nil {
 			return nil, fmt.Errorf("unable to decode %q: %w", reflect.TypeOf(zero).Name(), err)
 		}
-		trie, err := NewSubnetMap[V](intermediate)
+		trie, err := NewSubnetMap(intermediate)
 		if err != nil {
 			// Should not happen
 			return nil, err
@@ -148,21 +161,10 @@ func SubnetMapUnmarshallerHook[V any]() mapstructure.DecodeHookFunc {
 }
 
 func (sm SubnetMap[V]) MarshalYAML() (interface{}, error) {
-	output := map[string]V{}
-	if sm.tree == nil {
-		return output, nil
-	}
-	iter := sm.tree.Iterate()
-	for iter.Next() {
-		output[iter.Address().String()] = iter.Tags()[0]
-	}
-	return output, nil
+	return sm.ToMap(), nil
 }
 
 func (sm SubnetMap[V]) String() string {
-	out, err := sm.MarshalYAML()
-	if err != nil {
-		return "SubnetMap???"
-	}
+	out := sm.ToMap()
 	return fmt.Sprintf("%v", out)
 }
