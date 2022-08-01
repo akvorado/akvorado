@@ -18,7 +18,7 @@
     "@headlessui/vue": "^1.6.1",
     "@heroicons/vue": "^1.0.6",
     "@lezer/generator": "^1.0.0",
-    "@vueuse/core": "^8.6.0",
+    "@vueuse/core": "^9.0.2",
     "@vueuse/router": "^8.6.0",
     "echarts": "^5.3.3",
     "lodash-es": "^4.17.21",
