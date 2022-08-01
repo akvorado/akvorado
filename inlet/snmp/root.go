@@ -285,7 +285,7 @@ func (c *Component) dispatchIncomingRequest(request lookupRequest) {
 func (c *Component) pollerIncomingRequest(request lookupRequest) {
 	community, ok := c.config.Communities.Lookup(net.ParseIP(request.ExporterIP))
 	if !ok {
-		community = "public"
+		community = c.config.DefaultCommunity
 	}
 
 	// Avoid querying too much exporters with errors

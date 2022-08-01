@@ -24,7 +24,7 @@ type SubnetMap[V any] struct {
 // Lookup will search for the most specific subnet matching the
 // provided IP address and return the value associated with it.
 func (sm *SubnetMap[V]) Lookup(ip net.IP) (V, bool) {
-	if sm.tree == nil {
+	if sm == nil || sm.tree == nil {
 		var value V
 		return value, false
 	}

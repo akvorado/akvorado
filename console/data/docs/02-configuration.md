@@ -255,10 +255,10 @@ continuously the exporters. The following keys are accepted:
   about to expire or need an update
 - `cache-persist-file` tells where to store cached data on shutdown and
   read them back on startup
+- `default-community` tells which community to use when polling exporters
 - `communities` is a map from a subnets to the community to use for
-  exporters in the provided subnet. Use `::/0` to set the default
-  value. Alternatively, it also accepts a string to use for all
-  exporters.
+  exporters in the provided subnet, overriding the default value
+  above.
 - `poller-retries` is the number of retries on unsuccessful SNMP requests.
 - `poller-timeout` tells how much time should the poller wait for an answer.
 - `workers` tell how many workers to spawn to handle SNMP polling.

@@ -40,8 +40,8 @@ documentation.
 
 - `clickhouse` → `asns` to give names to your internal AS numbers
 - `clickhouse` → `networks` to attach attributes to your networks
-- `inlet` → `snmp` → `communities` to set the communities to use for
-  SNMP queries
+- `inlet` → `snmp` → `default-community` to set the default community
+  to use for SNMP queries
 - `inlet` → `core` → `exporter-classifiers` to define rules to attach
   attributes to your exporters
 - `inlet` → `core` → `interface-classifiers` to define rules to attach
