@@ -15,7 +15,7 @@ updates:
     commit-message:
       prefix: build
     schedule:
-      interval: monthly
+      interval: weekly
     labels:
       - dependencies
   - package-ecosystem: gomod
@@ -23,6 +23,6 @@ updates:
     commit-message:
       prefix: build
     schedule:
-      interval: monthly
+      interval: weekly
     labels:
       - dependencies
