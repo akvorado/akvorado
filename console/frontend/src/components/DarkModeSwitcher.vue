@@ -4,7 +4,7 @@
 <template>
   <button
     type="button"
-    class="rounded-lg p-2.5 text-sm text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-blue-800"
+    class="cursor-pointer rounded-lg p-2.5 text-sm text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-blue-800"
     @click="toggleDark()"
   >
     <MoonIcon v-if="!isDark" class="h-5 w-5" />

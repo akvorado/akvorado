@@ -25,7 +25,7 @@
       'px-2 py-1 text-xs focus:ring-2': size === 'small',
       'px-5 py-2.5 text-sm focus:ring-4': size === 'normal',
     }"
-    class="inline-flex items-center rounded-lg text-center transition-colors duration-200 focus:outline-none"
+    class="inline-flex cursor-pointer items-center rounded-lg text-center transition-colors duration-200 focus:outline-none"
   >
     <LoadingSpinner
       v-if="loading"
