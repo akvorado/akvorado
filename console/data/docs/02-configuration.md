@@ -183,6 +183,16 @@ removed).
 - `ClassifyTenant()` to classify the exporter to a tenant (`team-a`, `team-b`)
 
 As a compatibility `Classify()` is an alias for `ClassifyGroup()`.
+Here is an example, assuming routers are named
+`th2-ncs55a1-1.example.fr` or `milan-ncs5k8-2.example.it`:
+
+```yaml
+exporter-classifiers:
+  - ClassifySiteRegex(Exporter.Name, "^([^-]+)-", "$1")
+  - Exporter.Name endsWith ".it" && ClassifyRegion("italy")
+  - Exporter.Name matches "^(washington|newyork).*" && ClassifyRegion("usa")
+  - Exporter.Name endsWith ".fr" && ClassifyRegion("france")
+```
 
 Interface classifiers gets the following information and, like exporter
 classifiers, should invoke one of the `Classify()` functions to make a
@@ -209,15 +219,26 @@ takes a string and a regex before the original string and do a regex
 match. The original string is expanded using the matching parts of the
 regex. The syntax is the one [from Go][]. If you want to use Perl
 character classes, such as `\d` or `\w`, you need to escape the
-backslash character: `\\d` and `\\w`.
+backslash character: `\\d` and `\\w`. To test your regex, you can use
+a site like [regular expressions 101][]. Be sure to use the "Golang"
+flavor. You can use the substition function. In this case, append `.*`
+to your regex to get the [expected result][] (you can keep it in the
+final regex if you prefer).
 
-Here is an example:
+[regular expressions 101]: https://regex101.com/
+[expected result]: https://regex101.com/r/eg6drf/1
 
-```
-Interface.Description startsWith "Transit:" &&
-ClassifyConnectivity("transit") &&
-ClassifyExternal() &&
-ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")
+Here is an example, assuming interface descriptions for external
+facing interfaces look like `Transit: Cogent 1-3834938493` or `PNI:
+Netflix (WL6-1190)`.
+
+```yaml
+interface-classifiers:
+  - |
+    ClassifyConnectivityRegex(Interface.Description, "^(?i)(transit|pni|ppni|ix):? ", "$1") &&
+    ClassifyProviderRegex(Interface.Description, "^[^ ]+? ([^ ]+)", "$1") &&
+    ClassifyExternal()
+  - ClassifyInternal()
 ```
 
 [expr]: https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md
