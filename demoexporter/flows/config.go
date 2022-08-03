@@ -50,6 +50,10 @@ type FlowConfiguration struct {
 	Protocol []string `validate:"min=1,dive,oneof=tcp udp icmp"`
 	// Size defines the packet size to use
 	Size uint `validate:"isdefault|min=64,isdefault|max=9000"`
+	// ReverseDirectionRatio generate a second flow for each flow
+	// generated in the opposite direction, by applying the
+	// provided ratio for the Size.
+	ReverseDirectionRatio float32 `validate:"min=0"`
 }
 
 // DefaultConfiguration represents the default configuration for the flows component.

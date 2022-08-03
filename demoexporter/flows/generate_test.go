@@ -216,6 +216,57 @@ func TestGenerateFlows(t *testing.T) {
 					},
 				},
 			},
+		}, {
+			FlowConfiguration: FlowConfiguration{
+				PerSecond:             1,
+				InIfIndex:             []int{20},
+				OutIfIndex:            []int{10, 11},
+				PeakHour:              3 * time.Hour,
+				Multiplier:            4, // 12 hours from peak time → ~1
+				SrcNet:                netip.MustParsePrefix("2001:db8::1/128"),
+				DstNet:                netip.MustParsePrefix("2001:db8:2::/64"),
+				SrcAS:                 []uint32{65201},
+				DstAS:                 []uint32{65202},
+				DstPort:               []uint16{443},
+				Protocol:              []string{"tcp"},
+				Size:                  1200,
+				ReverseDirectionRatio: 0.1,
+			},
+			Expected: []generatedFlow{
+				{
+					SrcAddr: net.ParseIP("2001:db8::1"),
+					DstAddr: net.ParseIP("2001:db8:2:0:245b:11f7:351e:dc1a"),
+					EType:   0x86dd,
+					IPFlow: IPFlow{
+						Octets:        1170,
+						Packets:       1,
+						Proto:         6,
+						SrcPort:       34045,
+						DstPort:       443,
+						InputInt:      20,
+						OutputInt:     11,
+						SrcAS:         65201,
+						DstAS:         65202,
+						ForwardStatus: 64,
+					},
+				}, {
+					DstAddr: net.ParseIP("2001:db8::1"),
+					SrcAddr: net.ParseIP("2001:db8:2:0:245b:11f7:351e:dc1a"),
+					EType:   0x86dd,
+					IPFlow: IPFlow{
+						Octets:        1170 / 10,
+						Packets:       1,
+						Proto:         6,
+						DstPort:       34045,
+						SrcPort:       443,
+						OutputInt:     20,
+						InputInt:      11,
+						DstAS:         65201,
+						SrcAS:         65202,
+						ForwardStatus: 64,
+					},
+				},
+			},
 		},
 	}
 	now := time.Date(2022, 3, 18, 15, 0, 0, 0, time.UTC)

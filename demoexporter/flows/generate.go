@@ -143,6 +143,15 @@ func generateFlows(flowConfigs []FlowConfiguration, seed int64, now time.Time) [
 				flow.Proto = 58
 			}
 			flows = append(flows, flow)
+			if flowConfig.ReverseDirectionRatio > 0 {
+				reverseFlow := flow
+				reverseFlow.Octets = uint32(float32(reverseFlow.Octets) * flowConfig.ReverseDirectionRatio)
+				reverseFlow.DstAS, reverseFlow.SrcAS = reverseFlow.SrcAS, reverseFlow.DstAS
+				reverseFlow.SrcAddr, reverseFlow.DstAddr = reverseFlow.DstAddr, reverseFlow.SrcAddr
+				reverseFlow.SrcPort, reverseFlow.DstPort = reverseFlow.DstPort, reverseFlow.SrcPort
+				reverseFlow.InputInt, reverseFlow.OutputInt = reverseFlow.OutputInt, reverseFlow.InputInt
+				flows = append(flows, reverseFlow)
+			}
 		}
 	}
 	return flows

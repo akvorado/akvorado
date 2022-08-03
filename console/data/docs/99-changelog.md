@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🌱 *demo-exporter*: add a setting to automatically generate a reverse flow
+
 ## 1.5.4 - 2022-08-01
 
 `SrcCountry`/`DstCountry` were incorrectly filled in aggregated
