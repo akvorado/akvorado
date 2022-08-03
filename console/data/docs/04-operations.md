@@ -196,7 +196,8 @@ Then, for each interface you want to enable IPFIX on, use:
 
 ```junos
 interfaces {
-  xe-0/0/0 {
+  xe-0/0/0.0 {
+    description "Transit: Cogent AS179 [3-10109101]";
     apply-groups [ sampling ];
   }
 }
