@@ -89,7 +89,7 @@ jobs:
 
   build-js:
     name: Build JS frontend
-    runs-on: linux-latest
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     strategy:
