@@ -87,6 +87,23 @@ jobs:
       - name: Tests
         run: make test || make test
 
+  build-node:
+    name: Build JS frontend
+    runs-on: linux-latest
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        node-version: [14, 16, 18]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: Build JS frontend
+        run: make console/data/frontend
+
   docker:
     name: Build Docker images
     needs:

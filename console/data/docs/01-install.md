@@ -28,8 +28,8 @@ Currently, only a pre-built binary for Linux x86-64 is provided.
 ## Compilation from source
 
 You need a proper installation of [Go](https://go.dev/doc/install)
-(1.18+), [NodeJS](https://nodejs.org/en/download/) (16+) with NPM
-(7+), and [protoc](https://grpc.io/docs/protoc-installation/). For
+(1.18+), [NodeJS](https://nodejs.org/en/download/) (14+) with NPM
+(6+), and [protoc](https://grpc.io/docs/protoc-installation/). For
 example, on Debian:
 
 ```console

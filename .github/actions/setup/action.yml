@@ -1,6 +1,11 @@
 ---
 name: Setup build
 description: Setup the OS-independent build environment
+inputs:
+  node-version:
+    description: Node version to install
+    required: false
+    default: 16
 runs:
   using: composite
   steps:
@@ -10,12 +15,13 @@ runs:
       with:
         go-version-file: go.mod
         cache: true
+    - uses: actions/setup-node@v3
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: npm
+        cache-dependency-path: console/frontend/package-lock.json
 
     # Cache
-    - uses: actions/cache@v3
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-npm-${{ hashFiles('console/frontend/package-lock.json') }}
     - uses: actions/cache@v3
       with:
         path: bin
