@@ -126,7 +126,7 @@ func (c *Component) graphHandlerFunc(gc *gin.Context) {
 	if resolution < time.Second {
 		resolution = time.Second
 	}
-	sqlQuery = c.queryFlowsTable(sqlQuery,
+	sqlQuery = c.queryFlowsTable(sqlQuery, input.Filter.mainTableRequired,
 		input.Start, input.End, resolution)
 	gc.Header("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
 

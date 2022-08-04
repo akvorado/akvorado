@@ -13,7 +13,7 @@ func TestFilterHumanError(t *testing.T) {
 	_, err := Parse("", []byte(`
 InIfDescription = "Gi0/0/0/0"
 AND Proto = 1000
-OR `))
+OR `), GlobalStore("meta", &Meta{}))
 	expected := "at line 3, position 13: expecting an unsigned 8-bit integer"
 	if diff := helpers.Diff(HumanError(err), expected); diff != "" {
 		t.Errorf("HumanError() (-got, +want):\n%s", diff)
@@ -24,7 +24,7 @@ func TestAllErrors(t *testing.T) {
 	_, err := Parse("", []byte(`
 InIfDescription = "Gi0/0/0/0"
 AND Proto = 1000
-OR`))
+OR`), GlobalStore("meta", &Meta{}))
 	// Currently, the parser stops at the first error.
 	expected := Errors{
 		oneError{
@@ -40,7 +40,7 @@ OR`))
 }
 
 func TestExpected(t *testing.T) {
-	_, err := Parse("", []byte{}, Entrypoint("ConditionBoundaryExpr"))
+	_, err := Parse("", []byte{}, Entrypoint("ConditionBoundaryExpr"), GlobalStore("meta", &Meta{}))
 	expected := []string{`"InIfBoundary"i`, `"OutIfBoundary"i`}
 	if diff := helpers.Diff(Expected(err), expected); diff != "" {
 		t.Errorf("AllErrors() (-got, +want):\n%s", diff)

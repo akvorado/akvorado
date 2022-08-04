@@ -42,7 +42,7 @@ func (c *Component) filterValidateHandlerFunc(gc *gin.Context) {
 		})
 		return
 	}
-	got, err := filter.Parse("", []byte(input.Filter))
+	got, err := filter.Parse("", []byte(input.Filter), filter.GlobalStore("meta", &filter.Meta{}))
 	if err == nil {
 		gc.JSON(http.StatusOK, filterValidateHandlerOutput{
 			Message: "ok",
@@ -84,7 +84,8 @@ func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 	completions := []filterCompletion{}
 	switch input.What {
 	case "column":
-		_, err := filter.Parse("", []byte{}, filter.Entrypoint("ConditionExpr"))
+		_, err := filter.Parse("", []byte{},
+			filter.Entrypoint("ConditionExpr"), filter.GlobalStore("meta", &filter.Meta{}))
 		if err != nil {
 			for _, candidate := range filter.Expected(err) {
 				if !strings.HasSuffix(candidate, `"i`) {
@@ -100,7 +101,8 @@ func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 	case "operator":
 		_, err := filter.Parse("",
 			[]byte(fmt.Sprintf("%s ", input.Column)),
-			filter.Entrypoint("ConditionExpr"))
+			filter.Entrypoint("ConditionExpr"),
+			filter.GlobalStore("meta", &filter.Meta{}))
 		if err != nil {
 			for _, candidate := range filter.Expected(err) {
 				if !strings.HasPrefix(candidate, `"`) {

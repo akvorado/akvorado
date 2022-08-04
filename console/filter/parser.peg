@@ -3,40 +3,19 @@
   // SPDX-License-Identifier: AGPL-3.0-only
 
   package filter
-  
-  // Convert SQL-like language for filters to SQL.
-  
+
   import (
     "fmt"
     "net"
 
     "akvorado/common/helpers"
   )
-
-  func quote(v interface{}) string {
-    return "'" + strings.NewReplacer(`\`, `\\`, `'`, `\'`).Replace(toString(v)) + "'"
-  }
-
-  func toSlice(v interface{}) []interface{} {
-    if v == nil {
-      return nil
-    }
-    return v.([]interface{})
-  }
-
-  func toString(v interface{}) string {
-    switch s := v.(type) {
-    case string:
-      return s
-    case []byte:
-      return string(s)
-    default:
-      panic("not a string")
-    }
-  }
 }
 
 Input ← _ expr:Expr _ EOF {
+  meta := c.globalStore["meta"].(*Meta)
+  _, ok := c.state["main-table-only"]
+  meta.MainTableRequired = ok
   return expr, nil
 }
 
@@ -69,8 +48,10 @@ ConditionExpr "conditional" ←
 
 ColumnIP ←
    "ExporterAddress"i { return "ExporterAddress", nil }
- / "SrcAddr"i { return "SrcAddr", nil }
- / "DstAddr"i { return "DstAddr", nil }
+ / "SrcAddr"i #{ c.state["main-table-only"] = true ; return nil }
+               { return c.reverseDirection("SrcAddr"), nil }
+ / "DstAddr"i #{ c.state["main-table-only"] = true ; return nil }
+               { return c.reverseDirection("DstAddr"), nil }
 ConditionIPExpr "condition on IP" ←
    column:ColumnIP _
    operator:("=" / "!=") _ ip:IP {
@@ -92,26 +73,26 @@ ConditionStringExpr "condition on string" ←
       / "ExporterSite"i { return "ExporterSite", nil }
       / "ExporterRegion"i { return "ExporterRegion", nil }
       / "ExporterTenant"i { return "ExporterTenant", nil }
-      / "SrcCountry"i { return "SrcCountry", nil }
-      / "DstCountry"i { return "DstCountry", nil }
-      / "SrcNetName"i { return "SrcNetName", nil }
-      / "DstNetName"i { return "DstNetName", nil }
-      / "SrcNetRole"i { return "SrcNetRole", nil }
-      / "DstNetRole"i { return "DstNetRole", nil }
-      / "SrcNetSite"i { return "SrcNetSite", nil }
-      / "DstNetSite"i { return "DstNetSite", nil }
-      / "SrcNetRegion"i { return "SrcNetRegion", nil }
-      / "DstNetRegion"i { return "DstNetRegion", nil }
-      / "SrcNetTenant"i { return "SrcNetTenant", nil }
-      / "DstNetTenant"i { return "DstNetTenant", nil }
-      / "InIfName"i { return "InIfName", nil }
-      / "OutIfName"i { return "OutIfName", nil }
-      / "InIfDescription"i { return "InIfDescription", nil }
-      / "OutIfDescription"i { return "OutIfDescription", nil }
-      / "InIfConnectivity"i { return "InIfConnectivity", nil }
-      / "OutIfConnectivity"i { return "OutIfConnectivity", nil }
-      / "InIfProvider"i { return "InIfProvider", nil }
-      / "OutIfProvider"i { return "OutIfProvider", nil }) _
+      / "SrcCountry"i { return c.reverseDirection("SrcCountry"), nil }
+      / "DstCountry"i { return c.reverseDirection("DstCountry"), nil }
+      / "SrcNetName"i { return c.reverseDirection("SrcNetName"), nil }
+      / "DstNetName"i { return c.reverseDirection("DstNetName"), nil }
+      / "SrcNetRole"i { return c.reverseDirection("SrcNetRole"), nil }
+      / "DstNetRole"i { return c.reverseDirection("DstNetRole"), nil }
+      / "SrcNetSite"i { return c.reverseDirection("SrcNetSite"), nil }
+      / "DstNetSite"i { return c.reverseDirection("DstNetSite"), nil }
+      / "SrcNetRegion"i { return c.reverseDirection("SrcNetRegion"), nil }
+      / "DstNetRegion"i { return c.reverseDirection("DstNetRegion"), nil }
+      / "SrcNetTenant"i { return c.reverseDirection("SrcNetTenant"), nil }
+      / "DstNetTenant"i { return c.reverseDirection("DstNetTenant"), nil }
+      / "InIfName"i { return c.reverseDirection("InIfName"), nil }
+      / "OutIfName"i { return c.reverseDirection("OutIfName"), nil }
+      / "InIfDescription"i { return c.reverseDirection("InIfDescription"), nil }
+      / "OutIfDescription"i { return c.reverseDirection("OutIfDescription"), nil }
+      / "InIfConnectivity"i { return c.reverseDirection("InIfConnectivity"), nil }
+      / "OutIfConnectivity"i { return c.reverseDirection("OutIfConnectivity"), nil }
+      / "InIfProvider"i { return c.reverseDirection("InIfProvider"), nil }
+      / "OutIfProvider"i { return c.reverseDirection("OutIfProvider"), nil }) _
  rcond:RConditionStringExpr {
   return fmt.Sprintf("%s %s", toString(column), toString(rcond)), nil
 }
@@ -124,16 +105,16 @@ RConditionStringExpr "condition on string" ←
    }
 
 ConditionBoundaryExpr "condition on boundary" ←
- column:("InIfBoundary"i { return "InIfBoundary", nil }
-      / "OutIfBoundary"i { return "OutIfBoundary", nil }) _
+ column:("InIfBoundary"i { return c.reverseDirection("InIfBoundary"), nil }
+      / "OutIfBoundary"i { return c.reverseDirection("OutIfBoundary"), nil }) _
  operator:("=" / "!=") _
  boundary:("external"i / "internal"i / "undefined"i) {
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator),
                      quote(strings.ToLower(toString(boundary)))), nil
 }
 ConditionSpeedExpr "condition on speed" ←
- column:("InIfSpeed"i { return "InIfSpeed", nil }
-      / "OutIfSpeed"i { return "OutIfSpeed", nil }) _
+ column:("InIfSpeed"i { return c.reverseDirection("InIfSpeed"), nil }
+      / "OutIfSpeed"i { return c.reverseDirection("OutIfSpeed"), nil }) _
  operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _
  value:Unsigned64 {
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
@@ -145,15 +126,15 @@ ConditionForwardingStatusExpr "condition on forwarding status" ←
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
 }
 ConditionPortExpr "condition on port" ←
- column:("SrcPort"i { return "SrcPort", nil }
-       / "DstPort"i { return "DstPort", nil }) _
+ column:("SrcPort"i #{ c.state["main-table-only"] = true ; return nil } { return c.reverseDirection("SrcPort"), nil }
+       / "DstPort"i #{ c.state["main-table-only"] = true ; return nil } { return c.reverseDirection("DstPort"), nil }) _
  operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned16 {
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
 }
 
 ConditionASExpr "condition on AS number" ←
- column:("SrcAS"i { return "SrcAS", nil }
-       / "DstAS"i { return "DstAS", nil }) _
+ column:("SrcAS"i { return c.reverseDirection("SrcAS"), nil }
+       / "DstAS"i { return c.reverseDirection("DstAS"), nil }) _
  rcond:RConditionASExpr {
   return fmt.Sprintf("%s %s", toString(column), toString(rcond)), nil
 }

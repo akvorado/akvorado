@@ -93,7 +93,7 @@ ORDER BY time WITH FILL
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
 				Dimensions: []queryColumn{},
-				Filter:     queryFilter{"DstCountry = 'FR' AND SrcCountry = 'US'"},
+				Filter:     queryFilter{filter: "DstCountry = 'FR' AND SrcCountry = 'US'"},
 				Units:      "l3bps",
 			},
 			Expected: `

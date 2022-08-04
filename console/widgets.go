@@ -105,9 +105,10 @@ type topResult struct {
 func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
 	var (
-		selector string
-		groupby  string
-		filter   string
+		selector          string
+		groupby           string
+		filter            string
+		mainTableRequired bool
 	)
 
 	switch gc.Param("name") {
@@ -139,9 +140,11 @@ func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 	case "src-port":
 		selector = `concat(dictGetOrDefault('protocols', 'name', Proto, '???'), '/', toString(SrcPort))`
 		groupby = `Proto, SrcPort`
+		mainTableRequired = true
 	case "dst-port":
 		selector = `concat(dictGetOrDefault('protocols', 'name', Proto, '???'), '/', toString(DstPort))`
 		groupby = `Proto, DstPort`
+		mainTableRequired = true
 	}
 	if groupby == "" {
 		groupby = selector
@@ -160,7 +163,7 @@ WHERE {timefilter}
 GROUP BY %s
 ORDER BY Percent DESC
 LIMIT 5
-`, filter, selector, selector, filter, groupby), now.Add(-5*time.Minute), now, time.Minute)
+`, filter, selector, selector, filter, groupby), mainTableRequired, now.Add(-5*time.Minute), now, time.Minute)
 	gc.Header("X-SQL-Query", query)
 
 	results := []topResult{}
@@ -202,7 +205,7 @@ GROUP BY Time
 ORDER BY Time WITH FILL
  FROM toStartOfInterval({timefilter.Start}, INTERVAL %s second)
  TO {timefilter.Stop}
- STEP %s`, slot, slot, slot, slot), now.Add(-24*time.Hour), now, time.Duration(interval)*time.Second)
+ STEP %s`, slot, slot, slot, slot), false, now.Add(-24*time.Hour), now, time.Duration(interval)*time.Second)
 	gc.Header("X-SQL-Query", query)
 
 	results := []struct {

@@ -12,10 +12,7 @@ import (
 	"time"
 )
 
-var (
-	addressOrPortRegexp = regexp.MustCompile(`\b(?:Src|Dst)(?:Port|Addr)\b`)
-	resolutionRegexp    = regexp.MustCompile(`{resolution->(\d+)}`)
-)
+var resolutionRegexp = regexp.MustCompile(`{resolution->(\d+)}`)
 
 // flowsTable describe a consolidated or unconsolidated flows table.
 type flowsTable struct {
@@ -29,14 +26,14 @@ type flowsTable struct {
 // should contain `{table}` which will be replaced by the appropriate
 // flows table and {timefilter} which will be replaced by the
 // appropriate time filter.
-func (c *Component) queryFlowsTable(query string, start, end time.Time, targetResolution time.Duration) string {
+func (c *Component) queryFlowsTable(query string, mainTableRequired bool, start, end time.Time, targetResolution time.Duration) string {
 	c.flowsTablesLock.RLock()
 	defer c.flowsTablesLock.RUnlock()
 
 	// Select table
 	table := "flows"
 	resolution := time.Second
-	if !addressOrPortRegexp.MatchString(query) {
+	if !mainTableRequired {
 		// We can use the consolidated data. The first
 		// criteria is to find the tables matching the time
 		// criteria.

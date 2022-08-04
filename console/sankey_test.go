@@ -93,7 +93,7 @@ ORDER BY xps DESC`,
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Dimensions: []queryColumn{queryColumnSrcAS, queryColumnExporterName},
 				Limit:      10,
-				Filter:     queryFilter{"DstCountry = 'FR'"},
+				Filter:     queryFilter{filter: "DstCountry = 'FR'"},
 				Units:      "l3bps",
 			},
 			Expected: `

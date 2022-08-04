@@ -72,20 +72,22 @@ AND engine LIKE '%MergeTree'
 
 func TestQueryFlowsTables(t *testing.T) {
 	cases := []struct {
-		Description string
-		Tables      []flowsTable
-		Query       string
-		Start       time.Time
-		End         time.Time
-		Resolution  time.Duration
-		Expected    string
+		Description       string
+		Tables            []flowsTable
+		Query             string
+		MainTableRequired bool
+		Start             time.Time
+		End               time.Time
+		Resolution        time.Duration
+		Expected          string
 	}{
 		{
-			Description: "query with source port",
-			Query:       "SELECT TimeReceived, SrcPort FROM {table} WHERE {timefilter}",
-			Start:       time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-			End:         time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
-			Expected:    "SELECT TimeReceived, SrcPort FROM flows WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:10', 'UTC') AND toDateTime('2022-04-11 15:45:10', 'UTC')",
+			Description:       "query with source port",
+			Query:             "SELECT TimeReceived, SrcPort FROM {table} WHERE {timefilter}",
+			MainTableRequired: true,
+			Start:             time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
+			End:               time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+			Expected:          "SELECT TimeReceived, SrcPort FROM flows WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:10', 'UTC') AND toDateTime('2022-04-11 15:45:10', 'UTC')",
 		}, {
 			Description: "only flows table available",
 			Tables:      []flowsTable{{"flows", 0, time.Date(2022, 03, 10, 15, 45, 10, 0, time.UTC)}},
@@ -194,7 +196,7 @@ func TestQueryFlowsTables(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.Description, func(t *testing.T) {
 			c.flowsTables = tc.Tables
-			got := c.queryFlowsTable(tc.Query, tc.Start, tc.End, tc.Resolution)
+			got := c.queryFlowsTable(tc.Query, tc.MainTableRequired, tc.Start, tc.End, tc.Resolution)
 			if diff := helpers.Diff(got, tc.Expected); diff != "" {
 				t.Fatalf("queryFlowsTable(): (-got, +want):\n%s", diff)
 			}

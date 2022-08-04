@@ -115,7 +115,7 @@ func (c *Component) sankeyHandlerFunc(gc *gin.Context) {
 	}
 
 	// Prepare and execute query
-	sqlQuery = c.queryFlowsTable(sqlQuery,
+	sqlQuery = c.queryFlowsTable(sqlQuery, input.Filter.mainTableRequired,
 		input.Start, input.End, resolution)
 	gc.Header("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
 	results := []struct {
