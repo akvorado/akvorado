@@ -87,7 +87,7 @@ jobs:
       - name: Tests
         run: make test || make test
 
-  build-node:
+  build-js:
     name: Build JS frontend
     runs-on: linux-latest
     permissions:
@@ -149,6 +149,7 @@ jobs:
     needs:
       - build-linux
       - build-macos
+      - build-js
       - docker
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')

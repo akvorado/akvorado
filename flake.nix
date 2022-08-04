@@ -15,7 +15,7 @@
             pkgs.curl
             pkgs.git
             pkgs.go_1_18
-            pkgs.nodejs
+            pkgs.nodejs-16_x
             pkgs.protobuf
           ];
         };

@@ -1,5 +1,5 @@
 FROM golang:1.18-alpine AS build
-RUN apk add --no-cache git make gcc musl-dev protoc shared-mime-info npm curl
+RUN apk add --no-cache git make gcc musl-dev protoc shared-mime-info nodejs npm curl
 WORKDIR /app
 COPY go.mod ./
 COPY go.sum ./
