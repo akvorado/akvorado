@@ -178,9 +178,9 @@ func (c *Component) Start() error {
 						if !strings.HasSuffix(string(rport), "/udp") {
 							continue
 						}
-						ports := map[string]bool{}
+						ports := map[string]struct{}{}
 						for _, binding := range bindings {
-							ports[binding.HostPort] = true
+							ports[binding.HostPort] = struct{}{}
 						}
 						for hportStr := range ports {
 							hport, err := strconv.ParseUint(hportStr, 10, 16)

@@ -26,7 +26,7 @@ type realPoller struct {
 	config pollerConfig
 	clock  clock.Clock
 
-	pendingRequests     map[string]bool
+	pendingRequests     map[string]struct{}
 	pendingRequestsLock sync.Mutex
 	errLogger           reporter.Logger
 	put                 func(exporterIP, exporterName string, ifIndex uint, iface Interface)
@@ -51,7 +51,7 @@ func newPoller(r *reporter.Reporter, config pollerConfig, clock clock.Clock, put
 		r:               r,
 		config:          config,
 		clock:           clock,
-		pendingRequests: make(map[string]bool),
+		pendingRequests: make(map[string]struct{}),
 		errLogger:       r.Sample(reporter.BurstSampler(10*time.Second, 3)),
 		put:             put,
 	}
@@ -97,7 +97,7 @@ func (p *realPoller) Poll(ctx context.Context, exporter string, port uint16, com
 		key := fmt.Sprintf("%s@%d", exporter, ifIndex)
 		_, ok := p.pendingRequests[key]
 		if !ok {
-			p.pendingRequests[key] = true
+			p.pendingRequests[key] = struct{}{}
 			filteredIfIndexes = append(filteredIfIndexes, ifIndex)
 			keys = append(keys, key)
 		}

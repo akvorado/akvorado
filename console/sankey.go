@@ -138,10 +138,10 @@ func (c *Component) sankeyHandlerFunc(gc *gin.Context) {
 	completeName := func(name string, index int) string {
 		return fmt.Sprintf("%s: %s", input.Dimensions[index].String(), name)
 	}
-	addedNodes := map[string]bool{}
+	addedNodes := map[string]struct{}{}
 	addNode := func(name string) {
 		if _, ok := addedNodes[name]; !ok {
-			addedNodes[name] = true
+			addedNodes[name] = struct{}{}
 			output.Nodes = append(output.Nodes, name)
 		}
 	}

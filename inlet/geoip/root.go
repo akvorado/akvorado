@@ -125,12 +125,12 @@ func (c *Component) Start() error {
 		c.r.Err(err).Msg("cannot setup watcher for GeoIP databases")
 		return fmt.Errorf("cannot setup watcher: %w", err)
 	}
-	dirs := map[string]bool{}
+	dirs := map[string]struct{}{}
 	if c.config.GeoDatabase != "" {
-		dirs[filepath.Dir(c.config.GeoDatabase)] = true
+		dirs[filepath.Dir(c.config.GeoDatabase)] = struct{}{}
 	}
 	if c.config.ASNDatabase != "" {
-		dirs[filepath.Dir(c.config.ASNDatabase)] = true
+		dirs[filepath.Dir(c.config.ASNDatabase)] = struct{}{}
 	}
 	for k := range dirs {
 		if err := watcher.Add(k); err != nil {

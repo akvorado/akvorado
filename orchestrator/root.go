@@ -19,7 +19,6 @@ type Component struct {
 
 	serviceLock           sync.Mutex
 	serviceConfigurations map[ServiceType][]interface{}
-	registeredServices    map[ServiceType][]map[string]bool
 }
 
 // Dependencies define the dependencies of the broker.
