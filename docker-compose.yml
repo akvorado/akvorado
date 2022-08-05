@@ -110,6 +110,8 @@ services:
     command: conntrack-fixer
     restart: unless-stopped
     network_mode: host
+    healthcheck:
+      disable: true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
   # Remove the following exporters if you don't want to get demo data.

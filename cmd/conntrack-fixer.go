@@ -32,7 +32,9 @@ containers started with the label "akvorado.conntrack.fix=1".`,
 		if err != nil {
 			return fmt.Errorf("unable to initialize daemon component: %w", err)
 		}
-		httpComponent, err := http.New(r, http.DefaultConfiguration(), http.Dependencies{
+		httpConfiguration := http.DefaultConfiguration()
+		httpConfiguration.Listen = "127.0.0.1:0" // Run inside host network namespace, can't use 8080
+		httpComponent, err := http.New(r, httpConfiguration, http.Dependencies{
 			Daemon: daemonComponent,
 		})
 		if err != nil {
