@@ -77,9 +77,10 @@ common/clickhousedb/mocks/mock_driver.go: Makefile | $(MOCKGEN) ; $(info $(M) ge
 	$Q $(MOCKGEN) -package mocks \
 		github.com/ClickHouse/clickhouse-go/v2/lib/driver Conn,Row,Rows,ColumnType >> $@
 conntrackfixer/mocks/mock_conntrackfixer.go: Makefile | $(MOCKGEN) ; $(info $(M) generate mocks for conntrack-fixer…)
-	$Q echo '//go:build !release' > $@
-	$Q $(MOCKGEN) -package mocks \
-		akvorado/conntrackfixer ConntrackConn,DockerClient >> $@
+	$Q if [ `$(GO) env GOOS` = "linux" ]; then \
+	   echo '//go:build !release' > $@ ; \
+	   $(MOCKGEN) -package mocks akvorado/conntrackfixer ConntrackConn,DockerClient >> $@ ; \
+	fi
 
 console/filter/parser.go: console/filter/parser.peg | $(PIGEON) ; $(info $(M) generate PEG parser for filters…)
 	$Q $(PIGEON) -optimize-basic-latin $< > $@
