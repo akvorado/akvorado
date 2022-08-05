@@ -15,6 +15,7 @@ M = $(shell if [ "$$(tput colors 2> /dev/null || echo 0)" -ge 8 ]; then printf "
 GENERATED = \
 	inlet/flow/decoder/flow-2.pb.go \
 	common/clickhousedb/mocks/mock_driver.go \
+	conntrackfixer/mocks/mock_conntrackfixer.go \
 	orchestrator/clickhouse/data/asns.csv \
 	console/filter/parser.go \
 	console/data/frontend \
@@ -75,6 +76,10 @@ common/clickhousedb/mocks/mock_driver.go: Makefile | $(MOCKGEN) ; $(info $(M) ge
 	$Q echo '//go:build !release' > $@
 	$Q $(MOCKGEN) -package mocks \
 		github.com/ClickHouse/clickhouse-go/v2/lib/driver Conn,Row,Rows,ColumnType >> $@
+conntrackfixer/mocks/mock_conntrackfixer.go: Makefile | $(MOCKGEN) ; $(info $(M) generate mocks for conntrack-fixer…)
+	$Q echo '//go:build !release' > $@
+	$Q $(MOCKGEN) -package mocks \
+		akvorado/conntrackfixer ConntrackConn,DockerClient >> $@
 
 console/filter/parser.go: console/filter/parser.peg | $(PIGEON) ; $(info $(M) generate PEG parser for filters…)
 	$Q $(PIGEON) -optimize-basic-latin $< > $@
