@@ -110,8 +110,8 @@ orchestrator/clickhouse/data/protocols.csv: # We keep this one in Git
 changelog.md: docs/99-changelog.md Makefile # To be used by GitHub actions only.
 	$Q >  $@ < docs/99-changelog.md \
 		sed -n '/^## '$${GITHUB_REF##*/v}' -/,/^## /{//!p}'
-	$Q >> $@ echo "**Docker image**: \`docker pull ghcr.io/vincentbernat/$(MODULE):$${GITHUB_REF##*/v}\`"
-	$Q >> $@ echo "**Full changelog**: https://github.com/vincentbernat/$(MODULE)/compare/v$$(< docs/99-changelog.md sed -n '/^## '$${GITHUB_REF##*/v}' -/,/^## /{s/^## \([0-9.]*\) -.*/\1/p}' | tail -1)...v$${GITHUB_REF##*/v}"
+	$Q >> $@ echo "**Docker image**: \`docker pull ghcr.io/$${GITHUB_REPOSITORY}:$${GITHUB_REF##*/v}\`"
+	$Q >> $@ echo "**Full changelog**: https://github.com/$${GITHUB_REPOSITORY}/compare/v$$(< docs/99-changelog.md sed -n '/^## '$${GITHUB_REF##*/v}' -/,/^## /{s/^## \([0-9.]*\) -.*/\1/p}' | tail -1)...v$${GITHUB_REF##*/v}"
 
 # Tests
 

@@ -121,7 +121,7 @@ jobs:
         id: meta
         with:
           images: |
-            ghcr.io/vincentbernat/akvorado
+            ghcr.io/${{ github.repository }}
           tags: |
             type=schedule,pattern=main
             type=ref,event=branch
@@ -141,7 +141,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=registry,ref=ghcr.io/vincentbernat/akvorado:main
+          cache-from: type=registry,ref=ghcr.io/${{ github.repository }}:main
           cache-to: type=inline
 
   release:
