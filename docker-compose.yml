@@ -105,7 +105,8 @@ services:
       - akvorado.conntrack.fix=true
   akvorado-conntrack-fixer:
     <<: *akvorado-image
-    privileged: true
+    cap_add:
+      - NET_ADMIN
     command: conntrack-fixer
     restart: unless-stopped
     network_mode: host

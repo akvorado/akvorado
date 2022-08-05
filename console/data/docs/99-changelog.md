@@ -14,6 +14,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🌱 *demo-exporter*: add a setting to automatically generate a reverse flow
+- 🌱 *docker-compose*: loosen required privileges for `conntrack-fixer`
 
 ## 1.5.4 - 2022-08-01
 
