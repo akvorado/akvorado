@@ -84,7 +84,6 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		c.config.Resolutions = append([]ResolutionConfiguration{}, c.config.Resolutions...)
 	}
 
-	c.d.Daemon.Track(&c.t, "orchestrator/clickhouse")
 	return &c, nil
 }
 
