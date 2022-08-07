@@ -148,7 +148,7 @@ test-coverage: | $(GOCOV) $(GOCOVXML) $(GOTESTSUM) ; $(info $(M) running coverag
 .PHONY: lint
 lint: .lint-go~ .lint-js~ ## Run linting
 .lint-go~: $(shell $(LSFILES) '*.go' 2> /dev/null) | $(REVIVE) ; $(info $(M) running golint…)
-	$Q $(REVIVE) -formatter friendly -set_exit_status $?
+	$Q $(REVIVE) -formatter friendly -set_exit_status ./...
 	$Q touch $@
 .lint-js~: $(shell $(LSFILES) '*.js' '*.vue' '*.html' 2> /dev/null)
 .lint-js~: console/frontend/node_modules ; $(info $(M) running jslint…)

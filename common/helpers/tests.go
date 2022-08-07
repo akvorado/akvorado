@@ -3,6 +3,8 @@
 
 //go:build !release
 
+// Package helpers contains small functions usable by any other
+// package, both for testing or not.
 package helpers
 
 import (

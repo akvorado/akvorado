@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
+// Package authentication handles user authentication for the console.
 package authentication
 
 import "akvorado/common/reporter"

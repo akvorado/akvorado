@@ -160,6 +160,7 @@ func SubnetMapUnmarshallerHook[V any]() mapstructure.DecodeHookFunc {
 	}
 }
 
+// MarshalYAML turns a subnet into a map that can be marshaled.
 func (sm SubnetMap[V]) MarshalYAML() (interface{}, error) {
 	return sm.ToMap(), nil
 }
