@@ -13,6 +13,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- ✨ *console*: add a bidirectional mode for graphs to also display flows in the opposite direction
 - 🌱 *demo-exporter*: add a setting to automatically generate a reverse flow
 - 🌱 *docker-compose*: loosen required privileges for `conntrack-fixer`
 

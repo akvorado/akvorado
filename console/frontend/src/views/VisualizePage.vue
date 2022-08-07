@@ -151,6 +151,7 @@ const { data, isFetching, aborted, abort, canAbort, error } = useFetch("", {
       end: payload.value.end,
       graphType: payload.value.graphType,
       units: payload.value.units,
+      bidirectional: payload.value.bidirectional,
     };
 
     // Also update URL.

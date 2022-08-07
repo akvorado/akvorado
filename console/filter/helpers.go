@@ -17,23 +17,28 @@ type Meta struct {
 	MainTableRequired bool
 }
 
-func (c *current) reverseDirection(direct string) string {
-	if c.globalStore["meta"].(*Meta).ReverseDirection {
-		if strings.HasPrefix(direct, "Src") {
-			return "Dst" + direct[3:]
-		}
-		if strings.HasPrefix(direct, "Dst") {
-			return "Src" + direct[3:]
-		}
-		if strings.HasPrefix(direct, "In") {
-			return "Out" + direct[2:]
-		}
-		if strings.HasPrefix(direct, "Out") {
-			return "In" + direct[3:]
-		}
-		panic("no reverse?")
+// ReverseColumnDirection reverts the direction of a provided column name.
+func ReverseColumnDirection(name string) string {
+	if strings.HasPrefix(name, "Src") {
+		return "Dst" + name[3:]
 	}
-	return direct
+	if strings.HasPrefix(name, "Dst") {
+		return "Src" + name[3:]
+	}
+	if strings.HasPrefix(name, "In") {
+		return "Out" + name[2:]
+	}
+	if strings.HasPrefix(name, "Out") {
+		return "In" + name[3:]
+	}
+	return name
+}
+
+func (c *current) reverseColumnDirection(name string) string {
+	if c.globalStore["meta"].(*Meta).ReverseDirection {
+		return ReverseColumnDirection(name)
+	}
+	return name
 }
 
 func lastIP(subnet *net.IPNet) net.IP {

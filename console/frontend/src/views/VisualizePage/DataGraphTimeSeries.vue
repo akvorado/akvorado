@@ -28,6 +28,7 @@ import { formatXps, dataColor, dataColorGrey } from "@/utils";
 import { graphTypes } from "./constants";
 const { isDark } = inject("theme");
 
+import { uniqWith, isEqual, findIndex } from "lodash-es";
 import { use, graphic } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { LineChart } from "echarts/charts";
@@ -69,22 +70,62 @@ const commonGraph = {
       type: "cross",
       label: { backgroundColor: "#6a7985" },
     },
-    valueFormatter: formatXps,
+    formatter: (params) => {
+      // We will use a custom formatter, notably to handle bidirectional tooltips.
+      if (params.length === 0) return;
+      let table = [],
+        bidirectional = false;
+      params.forEach((param) => {
+        let idx = findIndex(table, (r) => r.seriesName === param.seriesName);
+        if (idx === -1) {
+          table.push({
+            marker: param.marker,
+            seriesName: param.seriesName,
+          });
+          idx = table.length - 1;
+        }
+        const val = param.value[param.seriesIndex + 1];
+        if (table[idx].col1 !== undefined || val < 0) {
+          table[idx].col2 = val;
+          bidirectional = true;
+        } else table[idx].col1 = val;
+      });
+      const rows = table
+        .map(
+          (row) => `<tr>
+<td>${row.marker} ${row.seriesName}</td>
+<td class="pl-2">${bidirectional ? "↑" : ""}<b>${formatXps(
+            row.col1 || 0
+          )}</b></td>
+<td class="pl-2">${bidirectional ? "↓" : ""}<b>${
+            bidirectional ? formatXps(row.col2 || 0) : ""
+          }</b></td>
+</tr>`
+        )
+        .join("");
+      return `${params[0].axisValueLabel}<table>${rows}</table>`;
+    },
   },
 };
 const graph = computed(() => {
   const theme = isDark.value ? "dark" : "light";
   const data = props.data || {};
   if (!data.t) return {};
-  const dataset = {
+  const rowName = (row) => row.join(" — ") || "Total",
+    dataset = {
       sourceHeader: false,
-      dimensions: [
-        "time",
-        ...data.rows.map((rows) => rows.join(" — ") || "Total"),
-      ],
+      dimensions: ["time", ...data.rows.map(rowName)],
       source: [
         ...data.t
-          .map((t, timeIdx) => [t, ...data.points.map((rows) => rows[timeIdx])])
+          .map((t, timeIdx) => [
+            t,
+            ...data.points.map(
+              // Unfortunately, eCharts does not seem to make it easy
+              // to inverse an axis and put the result below. Therefore,
+              // we use negative values for the second axis.
+              (row, rowIdx) => row[timeIdx] * (data.axis[rowIdx] == 1 ? 1 : -1)
+            ),
+          ])
           .slice(1, -1),
       ],
     },
@@ -95,7 +136,7 @@ const graph = computed(() => {
     },
     yAxis = {
       type: "value",
-      min: 0,
+      min: data.bidirectional ? undefined : 0,
       axisLabel: { formatter: formatXps },
       axisPointer: {
         label: { formatter: ({ value }) => formatXps(value) },
@@ -104,6 +145,9 @@ const graph = computed(() => {
 
   // Lines and stacked areas
   if ([graphTypes.stacked, graphTypes.lines].includes(data.graphType)) {
+    const uniqRows = uniqWith(data.rows, isEqual),
+      uniqRowIndex = (row) => findIndex(uniqRows, (orow) => isEqual(row, orow));
+
     return {
       grid: {
         left: 60,
@@ -115,8 +159,8 @@ const graph = computed(() => {
       yAxis,
       dataset,
       series: data.rows
-        .map((rows, idx) => {
-          const isOther = rows.some((name) => name === "Other"),
+        .map((row, idx) => {
+          const isOther = row.some((name) => name === "Other"),
             color = isOther ? dataColorGrey : dataColor;
           if (data.graphType === graphTypes.lines && isOther) {
             return undefined;
@@ -125,10 +169,10 @@ const graph = computed(() => {
             type: "line",
             symbol: "none",
             itemStyle: {
-              color: color(idx, false, theme),
+              color: color(uniqRowIndex(row), false, theme),
             },
             lineStyle: {
-              color: color(idx, false, theme),
+              color: color(uniqRowIndex(row), false, theme),
               width: 2,
             },
             emphasis: {
@@ -144,22 +188,23 @@ const graph = computed(() => {
           if (data.graphType === graphTypes.stacked) {
             serie = {
               ...serie,
-              stack: "all",
+              stack: data.axis[idx],
               lineStyle:
-                idx == data.rows.length - 1
+                idx == data.rows.length - 1 ||
+                data.axis[idx] != data.axis[idx + 1]
                   ? {
                       color: isDark.value ? "#ddd" : "#111",
-                      width: 2,
+                      width: 1.5,
                     }
                   : {
-                      color: color(idx, false, theme),
+                      color: color(uniqRowIndex(row), false, theme),
                       width: 1,
                     },
               areaStyle: {
                 opacity: 0.95,
                 color: new graphic.LinearGradient(0, 0, 0, 1, [
-                  { offset: 0, color: color(idx, false, theme) },
-                  { offset: 1, color: color(idx, true, theme) },
+                  { offset: 0, color: color(uniqRowIndex(row), false, theme) },
+                  { offset: 1, color: color(uniqRowIndex(row), true, theme) },
                 ]),
               },
             };
@@ -170,34 +215,38 @@ const graph = computed(() => {
     };
   }
   if (data.graphType === graphTypes.grid) {
-    const dataRows = data.rows.filter((rows) =>
-        rows.some((name) => name !== "Other")
+    const uniqRows = uniqWith(data.rows, isEqual).filter((row) =>
+        row.some((name) => name !== "Other")
       ),
-      otherIndex = dataset.dimensions.indexOf("Other");
-    const maxY = Math.max(
-      ...dataset.source.map((rows) =>
-        otherIndex === -1
-          ? Math.max(...rows.slice(1))
-          : Math.max(
-              // Skip "Other" column
-              ...rows.slice(1, otherIndex),
-              ...rows.slice(otherIndex + 1)
+      uniqRowIndex = (row) => findIndex(uniqRows, (orow) => isEqual(row, orow)),
+      otherIndexes = data.rows
+        .map((row, idx) => (row.some((name) => name === "Other") ? idx : -1))
+        .filter((idx) => idx >= 0),
+      somethingY = (fn) =>
+        fn(
+          ...dataset.source.map((row) =>
+            fn(
+              ...row
+                .slice(1)
+                .filter((_, idx) => !otherIndexes.includes(idx + 1))
             )
-      )
-    );
-    let rowNumber = Math.ceil(Math.sqrt(dataRows.length)),
+          )
+        ),
+      maxY = somethingY(Math.max),
+      minY = somethingY(Math.min);
+    let rowNumber = Math.ceil(Math.sqrt(uniqRows.length)),
       colNumber = rowNumber;
-    if ((rowNumber - 1) * colNumber >= dataRows.length) {
+    if ((rowNumber - 1) * colNumber >= uniqRows.length) {
       rowNumber--;
     }
-    const positions = dataRows.map((_, idx) => ({
+    const positions = uniqRows.map((_, idx) => ({
       left: ((idx % colNumber) / colNumber) * 100,
       top: (Math.floor(idx / colNumber) / rowNumber) * 100,
       width: (1 / colNumber) * 100,
       height: (1 / rowNumber) * 100,
     }));
     return {
-      title: dataRows.map((rows, idx) => ({
+      title: uniqRows.map((_, idx) => ({
         textAlign: "left",
         textStyle: {
           fontSize: 12,
@@ -209,7 +258,7 @@ const graph = computed(() => {
         bottom: 100 - positions[idx].top - positions[idx].height - 0.5 + "%",
         left: positions[idx].left + 0.25 + "%",
       })),
-      grid: dataRows.map((_, idx) => ({
+      grid: uniqRows.map((_, idx) => ({
         show: true,
         borderWidth: 0,
         left: positions[idx].left + 0.25 + "%",
@@ -217,46 +266,55 @@ const graph = computed(() => {
         width: positions[idx].width - 0.5 + "%",
         height: positions[idx].height - 0.5 + "%",
       })),
-      xAxis: dataRows.map((_, idx) => ({
+      xAxis: uniqRows.map((_, idx) => ({
         ...xAxis,
         gridIndex: idx,
         show: false,
       })),
-      yAxis: dataRows.map((_, idx) => ({
+      yAxis: uniqRows.map((_, idx) => ({
         ...yAxis,
         max: maxY,
+        min: data.bidirectional ? minY : 0,
         gridIndex: idx,
         show: false,
       })),
       dataset,
-      series: dataRows.map((rows, idx) => {
-        let serie = {
-          type: "line",
-          symbol: "none",
-          xAxisIndex: idx,
-          yAxisIndex: idx,
-          itemStyle: {
-            color: dataColor(idx, false, theme),
-          },
-          areaStyle: {
-            opacity: 0.95,
-            color: new graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: dataColor(idx, false, theme) },
-              { offset: 1, color: dataColor(idx, true, theme) },
-            ]),
-          },
-          emphasis: {
-            focus: "series",
-          },
-          encode: {
-            x: 0,
-            y: idx + 1,
-            seriesName: idx + 1,
-            seriesId: idx + 1,
-          },
-        };
-        return serie;
-      }),
+      series: data.rows
+        .map((row, idx) => {
+          let serie = {
+            type: "line",
+            symbol: "none",
+            xAxisIndex: uniqRowIndex(row),
+            yAxisIndex: uniqRowIndex(row),
+            itemStyle: {
+              color: dataColor(uniqRowIndex(row), false, theme),
+            },
+            areaStyle: {
+              opacity: 0.95,
+              color: new graphic.LinearGradient(0, 0, 0, 1, [
+                {
+                  offset: 0,
+                  color: dataColor(uniqRowIndex(row), false, theme),
+                },
+                {
+                  offset: 1,
+                  color: dataColor(uniqRowIndex(row), true, theme),
+                },
+              ]),
+            },
+            emphasis: {
+              focus: "series",
+            },
+            encode: {
+              x: 0,
+              y: idx + 1,
+              seriesName: idx + 1,
+              seriesId: idx + 1,
+            },
+          };
+          return serie;
+        })
+        .filter((s) => s.xAxisIndex >= 0),
     };
   }
   return {};

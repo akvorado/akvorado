@@ -14,94 +14,6 @@ import (
 
 type queryColumn int
 
-const (
-	queryColumnExporterAddress queryColumn = iota + 1
-	queryColumnExporterName
-	queryColumnExporterGroup
-	queryColumnExporterRole
-	queryColumnExporterSite
-	queryColumnExporterRegion
-	queryColumnExporterTenant
-	queryColumnSrcAS
-	queryColumnSrcNetName
-	queryColumnSrcNetRole
-	queryColumnSrcNetSite
-	queryColumnSrcNetRegion
-	queryColumnSrcNetTenant
-	queryColumnSrcCountry
-	queryColumnInIfName
-	queryColumnInIfDescription
-	queryColumnInIfSpeed
-	queryColumnInIfConnectivity
-	queryColumnInIfProvider
-	queryColumnInIfBoundary
-	queryColumnEType
-	queryColumnProto
-	queryColumnSrcPort
-	queryColumnSrcAddr
-	queryColumnDstAS
-	queryColumnDstNetName
-	queryColumnDstNetRole
-	queryColumnDstNetSite
-	queryColumnDstNetRegion
-	queryColumnDstNetTenant
-	queryColumnDstCountry
-	queryColumnOutIfName
-	queryColumnOutIfDescription
-	queryColumnOutIfSpeed
-	queryColumnOutIfConnectivity
-	queryColumnOutIfProvider
-	queryColumnOutIfBoundary
-	queryColumnDstAddr
-	queryColumnDstPort
-	queryColumnForwardingStatus
-	queryColumnPacketSizeBucket
-)
-
-var queryColumnMap = helpers.NewBimap(map[queryColumn]string{
-	queryColumnExporterAddress:   "ExporterAddress",
-	queryColumnExporterName:      "ExporterName",
-	queryColumnExporterGroup:     "ExporterGroup",
-	queryColumnExporterRole:      "ExporterRole",
-	queryColumnExporterSite:      "ExporterSite",
-	queryColumnExporterRegion:    "ExporterRegion",
-	queryColumnExporterTenant:    "ExporterTenant",
-	queryColumnSrcAddr:           "SrcAddr",
-	queryColumnDstAddr:           "DstAddr",
-	queryColumnSrcAS:             "SrcAS",
-	queryColumnDstAS:             "DstAS",
-	queryColumnSrcNetName:        "SrcNetName",
-	queryColumnDstNetName:        "DstNetName",
-	queryColumnSrcNetRole:        "SrcNetRole",
-	queryColumnDstNetRole:        "DstNetRole",
-	queryColumnSrcNetSite:        "SrcNetSite",
-	queryColumnDstNetSite:        "DstNetSite",
-	queryColumnSrcNetRegion:      "SrcNetRegion",
-	queryColumnDstNetRegion:      "DstNetRegion",
-	queryColumnSrcNetTenant:      "SrcNetTenant",
-	queryColumnDstNetTenant:      "DstNetTenant",
-	queryColumnSrcCountry:        "SrcCountry",
-	queryColumnDstCountry:        "DstCountry",
-	queryColumnInIfName:          "InIfName",
-	queryColumnOutIfName:         "OutIfName",
-	queryColumnInIfDescription:   "InIfDescription",
-	queryColumnOutIfDescription:  "OutIfDescription",
-	queryColumnInIfSpeed:         "InIfSpeed",
-	queryColumnOutIfSpeed:        "OutIfSpeed",
-	queryColumnInIfConnectivity:  "InIfConnectivity",
-	queryColumnOutIfConnectivity: "OutIfConnectivity",
-	queryColumnInIfProvider:      "InIfProvider",
-	queryColumnOutIfProvider:     "OutIfProvider",
-	queryColumnInIfBoundary:      "InIfBoundary",
-	queryColumnOutIfBoundary:     "OutIfBoundary",
-	queryColumnEType:             "EType",
-	queryColumnProto:             "Proto",
-	queryColumnSrcPort:           "SrcPort",
-	queryColumnDstPort:           "DstPort",
-	queryColumnForwardingStatus:  "ForwardingStatus",
-	queryColumnPacketSizeBucket:  "PacketSizeBucket",
-})
-
 func (gc queryColumn) MarshalText() ([]byte, error) {
 	got, ok := queryColumnMap.LoadValue(gc)
 	if ok {
@@ -128,6 +40,9 @@ type queryFilter struct {
 	mainTableRequired bool
 }
 
+func (gf queryFilter) String() string {
+	return gf.filter
+}
 func (gf queryFilter) MarshalText() ([]byte, error) {
 	return []byte(gf.filter), nil
 }
@@ -171,4 +86,13 @@ func (gc queryColumn) toSQLSelect() string {
 		strValue = gc.String()
 	}
 	return strValue
+}
+
+// reverseDirection reverse the direction of a column (src/dst, in/out)
+func (gc queryColumn) reverseDirection() queryColumn {
+	value, ok := queryColumnMap.LoadKey(filter.ReverseColumnDirection(gc.String()))
+	if !ok {
+		panic("unknown reverse column")
+	}
+	return value
 }

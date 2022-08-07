@@ -208,28 +208,28 @@ demo-exporter:
           out-if-index: [20, 21]
           peak-hour: 16h
           multiplier: 3
-          reverse-direction-ratio: 0.1
+          reverse-direction-ratio: 0.2
           <<: [*from-v4-facebook, *to-v4-customers, *http-src]
         - per-second: 0.2
           in-if-index: [10, 11]
           out-if-index: [20, 21]
           peak-hour: 16h
           multiplier: 3
-          reverse-direction-ratio: 0.1
+          reverse-direction-ratio: 0.2
           <<: [*from-v4-facebook, *to-v4-customers, *quic-src]
         - per-second: 1.8
           in-if-index: [10, 11]
           out-if-index: [20, 21]
           peak-hour: 18h
           multiplier: 3
-          reverse-direction-ratio: 0.1
+          reverse-direction-ratio: 0.2
           <<: [*from-v6-facebook, *to-v6-customers, *http-src]
         - per-second: 0.2
           in-if-index: [10, 11]
           out-if-index: [20, 21]
           peak-hour: 20h
           multiplier: 3
-          reverse-direction-ratio: 0.1
+          reverse-direction-ratio: 0.2
           <<: [*from-v6-facebook, *to-v6-customers, *quic-src]
         # Netflix
         - per-second: 0.2
@@ -252,7 +252,7 @@ demo-exporter:
           out-if-index: [20, 21]
           peak-hour: 21h
           multiplier: 17
-          reverse-direction-ratio: 0.1
+          reverse-direction-ratio: 0.4
           <<: [*from-v4-twitch, *to-v4-customers, *http-src]
         # Akamai
         - per-second: 0.14
@@ -290,14 +290,14 @@ demo-exporter:
           out-if-index: [20, 21]
           peak-hour: 18h
           multiplier: 1.3
-          reverse-direction-ratio: 0.1
+          reverse-direction-ratio: 0.15
           <<: [*from-v4-amazon, *to-v4-customers, *http-src]
         - per-second: 0.1
           in-if-index: 10
           out-if-index: [20, 21]
           peak-hour: 18h
           multiplier: 1.3
-          reverse-direction-ratio: 0.1
+          reverse-direction-ratio: 0.15
           <<: [*from-v6-amazon, *to-v6-customers, *http-src]
 
         # Random SSH
@@ -306,7 +306,7 @@ demo-exporter:
           out-if-index: [20, 21]
           peak-hour: 15h
           multiplier: 1.2
-          reverse-direction-ratio: 0.1
+          reverse-direction-ratio: 0.5
           <<: [*from-v4-renater, *to-v4-customers, *ssh-src]
         # Servers
         - per-second: 0.1
@@ -314,14 +314,14 @@ demo-exporter:
           out-if-index: [20, 21]
           peak-hour: 15h
           multiplier: 1.2
-          reverse-direction-ratio: 0.1
+          reverse-direction-ratio: 0.2
           <<: [*from-v4-renater, *to-v4-servers, *ssh-dst]
         - per-second: 0.2
           in-if-index: 10
           out-if-index: [20, 21]
           peak-hour: 15h
           multiplier: 1.2
-          reverse-direction-ratio: 0.1
+          reverse-direction-ratio: 0.15
           <<: [*from-v4-random, *to-v4-servers, *http-dst]
         - per-second: 0.2
           in-if-index: 10
@@ -340,7 +340,7 @@ demo-exporter:
           multiplier: 1
           protocol: [tcp, udp]
           srcport: [80, 443, 22, 25461, 8080, 4500, 993, 8801]
-          reverse-direction-ratio: 0.1
+          reverse-direction-ratio: 0.25
           <<: [*from-v4-random, *to-v4-customers]
         - <<: [*from-v6-random, *to-v6-customers, *random-flow]
   - snmp:

@@ -33,14 +33,14 @@
     >
       <div v-if="open" class="flex flex-col px-3 py-4 lg:max-h-screen">
         <div
-          class="mb-2 flex flex-row flex-wrap justify-between gap-2 sm:flex-nowrap lg:flex-wrap"
+          class="mb-2 flex flex-row flex-wrap items-center justify-between gap-2 sm:flex-nowrap lg:flex-wrap"
         >
           <InputButton
             attr-type="submit"
             :disabled="hasErrors && !loading"
             :loading="loading"
             :type="loading ? 'alternative' : 'primary'"
-            class="order-2 w-28 justify-center sm:order-3 lg:order-2"
+            class="order-2 w-28 justify-center sm:order-4 lg:order-2"
           >
             {{ loading ? "Cancel" : applyLabel }}
           </InputButton>
@@ -57,7 +57,7 @@
           <InputListBox
             v-model="graphType"
             :items="graphTypeList"
-            class="order-3 grow basis-full sm:order-2 sm:basis-0 lg:order-3"
+            class="order-3 grow basis-full sm:order-3 sm:basis-0 lg:order-3 lg:basis-full"
             label="Graph type"
           >
             <template #selected>{{ graphType.name }}</template>
@@ -71,6 +71,12 @@
               </div>
             </template>
           </InputListBox>
+          <InputCheckbox
+            v-if="[stacked, lines, grid].includes(graphType.name)"
+            v-model="bidirectional"
+            class="order-4 sm:order-2 lg:order-4"
+            label="Bidirectional"
+          />
         </div>
         <SectionLabel>Time range</SectionLabel>
         <InputTimeRange v-model="timeRange" />
@@ -114,6 +120,7 @@ import InputTimeRange from "@/components/InputTimeRange.vue";
 import InputDimensions from "@/components/InputDimensions.vue";
 import InputListBox from "@/components/InputListBox.vue";
 import InputButton from "@/components/InputButton.vue";
+import InputCheckbox from "@/components/InputCheckbox.vue";
 import InputChoice from "@/components/InputChoice.vue";
 import InputFilter from "@/components/InputFilter.vue";
 import SectionLabel from "./SectionLabel.vue";
@@ -133,6 +140,7 @@ const timeRange = ref({});
 const dimensions = ref([]);
 const filter = ref({});
 const units = ref("l3bps");
+const bidirectional = ref(false);
 
 const options = computed(() => ({
   // Common to all graph types
@@ -144,8 +152,14 @@ const options = computed(() => ({
   filter: filter.value.expression,
   units: units.value,
   // Only for time series
-  ...([stacked, lines].includes(graphType.value.name) && { points: 200 }),
-  ...(graphType.value.name === grid && { points: 50 }),
+  ...([stacked, lines].includes(graphType.value.name) && {
+    bidirectional: bidirectional.value,
+    points: 200,
+  }),
+  ...(graphType.value.name === grid && {
+    bidirectional: bidirectional.value,
+    points: 50,
+  }),
 }));
 const applyLabel = computed(() =>
   isEqual(options.value, props.modelValue) ? "Refresh" : "Apply"
@@ -169,6 +183,7 @@ watch(
       points /* eslint-disable-line no-unused-vars */,
       filter: _filter = defaultOptions?.filter,
       units: _units = "l3bps",
+      bidirectional: _bidirectional = false,
     } = modelValue;
 
     // Dispatch values in refs
@@ -181,6 +196,7 @@ watch(
     };
     filter.value = { expression: _filter };
     units.value = _units;
+    bidirectional.value = _bidirectional;
 
     // A bit risky, but it seems to work.
     if (!isEqual(modelValue, options.value)) {
