@@ -28,7 +28,7 @@ runs:
         go-version-file: go.mod
         cache: true
     - uses: actions/setup-node@v3
-      if: $${ inputs.setup-node }}
+      if: ${{ inputs.setup-node }}
       with:
         node-version: ${{ inputs.node-version }}
         cache: npm
