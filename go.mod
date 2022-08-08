@@ -9,6 +9,7 @@ require (
 	github.com/benbjohnson/clock v1.3.0
 	github.com/dgraph-io/ristretto v0.1.0
 	github.com/docker/docker v20.10.17+incompatible
+	github.com/docker/go-connections v0.4.0
 	github.com/eapache/go-resiliency v1.3.0
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/gin-gonic/gin v1.8.1
@@ -21,7 +22,7 @@ require (
 	github.com/mattn/go-isatty v0.0.14
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/netsampler/goflow2 v1.1.0
-	github.com/oschwald/geoip2-golang v1.7.0
+	github.com/oschwald/geoip2-golang v1.8.0
 	github.com/prometheus/client_golang v1.12.2
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rs/zerolog v1.27.0
@@ -31,7 +32,7 @@ require (
 	github.com/ti-mo/conntrack v0.4.0
 	github.com/yuin/goldmark v1.4.13
 	github.com/yuin/goldmark-highlighting v0.0.0-20220208100518-594be1970594
-	golang.org/x/sys v0.0.0-20220429233432-b5fbb4746d32
+	golang.org/x/sys v0.0.0-20220804214406-8e32c043e418
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/sqlite v1.3.6
@@ -46,7 +47,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21 // indirect
@@ -84,7 +84,7 @@ require (
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
-	github.com/oschwald/maxminddb-golang v1.9.0 // indirect
+	github.com/oschwald/maxminddb-golang v1.10.0 // indirect
 	github.com/paulmach/orb v0.7.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.1 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
