@@ -44,7 +44,7 @@ type graphHandlerOutput struct {
 
 // reverseDirection reverts the direction of a provided input
 func (input graphHandlerInput) reverseDirection() graphHandlerInput {
-	input.Filter.filter = input.Filter.reverseFilter
+	input.Filter.Filter, input.Filter.ReverseFilter = input.Filter.ReverseFilter, input.Filter.Filter
 	dimensions := input.Dimensions
 	input.Dimensions = make([]queryColumn, len(dimensions))
 	for i := range dimensions {
@@ -58,7 +58,7 @@ func (input graphHandlerInput) toSQL1(axis int, skipWith bool) string {
 	slot := fmt.Sprintf(`{resolution->%d}`, interval)
 
 	// Filter
-	where := input.Filter.filter
+	where := input.Filter.Filter
 	if where == "" {
 		where = "{timefilter}"
 	} else {
@@ -150,7 +150,7 @@ func (c *Component) graphHandlerFunc(gc *gin.Context) {
 	if resolution < time.Second {
 		resolution = time.Second
 	}
-	sqlQuery = c.queryFlowsTable(sqlQuery, input.Filter.mainTableRequired,
+	sqlQuery = c.queryFlowsTable(sqlQuery, input.Filter.MainTableRequired,
 		input.Start, input.End, resolution)
 	gc.Header("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
 

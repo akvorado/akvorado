@@ -25,8 +25,8 @@ func TestGraphInputReverseDirection(t *testing.T) {
 			queryColumnInIfProvider,
 		},
 		Filter: queryFilter{
-			filter:        "DstCountry = 'FR' AND SrcCountry = 'US'",
-			reverseFilter: "SrcCountry = 'FR' AND DstCountry = 'US'",
+			Filter:        "DstCountry = 'FR' AND SrcCountry = 'US'",
+			ReverseFilter: "SrcCountry = 'FR' AND DstCountry = 'US'",
 		},
 		Units: "l3bps",
 	}
@@ -40,8 +40,8 @@ func TestGraphInputReverseDirection(t *testing.T) {
 			queryColumnOutIfProvider,
 		},
 		Filter: queryFilter{
-			reverseFilter: "DstCountry = 'FR' AND SrcCountry = 'US'",
-			filter:        "SrcCountry = 'FR' ANd DstCountry = 'US'",
+			Filter:        "SrcCountry = 'FR' AND DstCountry = 'US'",
+			ReverseFilter: "DstCountry = 'FR' AND SrcCountry = 'US'",
 		},
 		Units: "l3bps",
 	}
@@ -137,7 +137,7 @@ ORDER BY time WITH FILL
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
 				Dimensions: []queryColumn{},
-				Filter:     queryFilter{filter: "DstCountry = 'FR' AND SrcCountry = 'US'"},
+				Filter:     queryFilter{Filter: "DstCountry = 'FR' AND SrcCountry = 'US'"},
 				Units:      "l3bps",
 			},
 			Expected: `
@@ -161,8 +161,8 @@ ORDER BY time WITH FILL
 				Points:     100,
 				Dimensions: []queryColumn{},
 				Filter: queryFilter{
-					filter:        "DstCountry = 'FR' AND SrcCountry = 'US'",
-					reverseFilter: "SrcCountry = 'FR' AND DstCountry = 'US'",
+					Filter:        "DstCountry = 'FR' AND SrcCountry = 'US'",
+					ReverseFilter: "SrcCountry = 'FR' AND DstCountry = 'US'",
 				},
 				Units:         "l3bps",
 				Bidirectional: true,

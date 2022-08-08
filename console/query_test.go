@@ -63,7 +63,7 @@ func TestUnmarshalFilter(t *testing.T) {
 			if err != nil {
 				t.Fatalf("UnmarshalText(%q) error:\n%+v", tc.Input, err)
 			}
-			if diff := helpers.Diff(qf.filter, tc.Expected); diff != "" {
+			if diff := helpers.Diff(qf.Filter, tc.Expected); diff != "" {
 				t.Fatalf("UnmarshalText(%q) (-got, +want):\n%s", tc.Input, diff)
 			}
 		})

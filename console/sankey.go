@@ -43,7 +43,7 @@ type sankeyLink struct {
 // sankeyHandlerInputToSQL converts a sankey query to an SQL request
 func (input sankeyHandlerInput) toSQL() (string, error) {
 	// Filter
-	where := input.Filter.filter
+	where := input.Filter.Filter
 	if where == "" {
 		where = "{timefilter}"
 	} else {
@@ -115,7 +115,7 @@ func (c *Component) sankeyHandlerFunc(gc *gin.Context) {
 	}
 
 	// Prepare and execute query
-	sqlQuery = c.queryFlowsTable(sqlQuery, input.Filter.mainTableRequired,
+	sqlQuery = c.queryFlowsTable(sqlQuery, input.Filter.MainTableRequired,
 		input.Start, input.End, resolution)
 	gc.Header("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
 	results := []struct {

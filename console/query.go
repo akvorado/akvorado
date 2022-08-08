@@ -35,16 +35,16 @@ func (gc *queryColumn) UnmarshalText(input []byte) error {
 }
 
 type queryFilter struct {
-	filter            string
-	reverseFilter     string
-	mainTableRequired bool
+	Filter            string
+	ReverseFilter     string
+	MainTableRequired bool
 }
 
 func (gf queryFilter) String() string {
-	return gf.filter
+	return gf.Filter
 }
 func (gf queryFilter) MarshalText() ([]byte, error) {
-	return []byte(gf.filter), nil
+	return []byte(gf.Filter), nil
 }
 func (gf *queryFilter) UnmarshalText(input []byte) error {
 	if strings.TrimSpace(string(input)) == "" {
@@ -59,9 +59,9 @@ func (gf *queryFilter) UnmarshalText(input []byte) error {
 	meta = &filter.Meta{ReverseDirection: true}
 	reverse, err := filter.Parse("", input, filter.GlobalStore("meta", meta))
 	*gf = queryFilter{
-		filter:            direct.(string),
-		reverseFilter:     reverse.(string),
-		mainTableRequired: meta.MainTableRequired,
+		Filter:            direct.(string),
+		ReverseFilter:     reverse.(string),
+		MainTableRequired: meta.MainTableRequired,
 	}
 	return nil
 }
