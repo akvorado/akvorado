@@ -100,6 +100,7 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
         with:
+          setup-go: false
           node-version: ${{ matrix.node-version }}
       - name: Build JS frontend
         run: make console/data/frontend

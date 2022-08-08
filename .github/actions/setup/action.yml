@@ -2,6 +2,14 @@
 name: Setup build
 description: Setup the OS-independent build environment
 inputs:
+  setup-go:
+    description: Enable Go setup
+    required: false
+    default: true
+  setup-node:
+    description: Enable Node setup
+    required: false
+    default: true
   node-version:
     description: Node version to install
     required: false
@@ -11,11 +19,13 @@ runs:
   steps:
     # Setup
     - uses: actions/setup-go@v3
+      if: ${{ inputs.setup-go }}
       id: go-setup
       with:
         go-version-file: go.mod
         cache: true
     - uses: actions/setup-node@v3
+      if: ${{ inputs.setup-node }}
       with:
         node-version: ${{ inputs.node-version }}
         cache: npm
