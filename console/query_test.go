@@ -9,6 +9,31 @@ import (
 	"akvorado/common/helpers"
 )
 
+func TestRequireMainTable(t *testing.T) {
+	cases := []struct {
+		Columns  []queryColumn
+		Filter   queryFilter
+		Expected bool
+	}{
+		{[]queryColumn{}, queryFilter{}, false},
+		{[]queryColumn{queryColumnSrcAS}, queryFilter{}, false},
+		{[]queryColumn{queryColumnExporterAddress}, queryFilter{}, false},
+		{[]queryColumn{queryColumnSrcPort}, queryFilter{}, true},
+		{[]queryColumn{queryColumnSrcAddr}, queryFilter{}, true},
+		{[]queryColumn{queryColumnDstPort}, queryFilter{}, true},
+		{[]queryColumn{queryColumnDstAddr}, queryFilter{}, true},
+		{[]queryColumn{queryColumnSrcAS, queryColumnDstAddr}, queryFilter{}, true},
+		{[]queryColumn{queryColumnDstAddr, queryColumnSrcAS}, queryFilter{}, true},
+		{[]queryColumn{}, queryFilter{MainTableRequired: true}, true},
+	}
+	for idx, tc := range cases {
+		got := requireMainTable(tc.Columns, tc.Filter)
+		if got != tc.Expected {
+			t.Errorf("requireMainTable(%d) == %v but expected %v", idx, got, tc.Expected)
+		}
+	}
+}
+
 func TestQueryColumnSQLSelect(t *testing.T) {
 	cases := []struct {
 		Input    queryColumn
