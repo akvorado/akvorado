@@ -22,13 +22,13 @@ runs:
   steps:
     # Setup
     - uses: actions/setup-go@v3
-      if: ${{ inputs.setup-go == 'true' }}
+      if: ${{ inputs.setup-go == true }}
       id: go-setup
       with:
         go-version-file: go.mod
         cache: true
     - uses: actions/setup-node@v3
-      if: ${{ inputs.setup-node == 'true' }}
+      if: ${{ inputs.setup-node == true }}
       with:
         node-version: ${{ inputs.node-version }}
         cache: npm
