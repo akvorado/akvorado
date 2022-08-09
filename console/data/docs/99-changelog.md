@@ -11,7 +11,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.5.5 - 2022-08-09
 
 - ✨ *console*: add an option to also display flows in the opposite direction on time series graph
 - ✨ *console*: add an option to also display the previous period (day, week, month, year) on stacked graphs
