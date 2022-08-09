@@ -75,14 +75,14 @@ func TestRealKafka(t *testing.T) {
 
 	got := []string{}
 	expected := []string{
-		"127.0.0.1:hello world!",
-		"127.0.0.1:goodbye world!",
+		"hello world!",
+		"goodbye world!",
 	}
 	timeout := time.After(15 * time.Second)
 	for i := 0; i < len(expected); i++ {
 		select {
 		case msg := <-partitionConsumer.Messages():
-			got = append(got, fmt.Sprintf("%s:%s", string(msg.Key), string(msg.Value)))
+			got = append(got, string(msg.Value))
 		case err := <-partitionConsumer.Errors():
 			t.Fatalf("consumer.Errors():\n%+v", err)
 		case <-timeout:
