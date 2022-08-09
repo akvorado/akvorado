@@ -104,7 +104,7 @@ WHERE %s
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }}
+ TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }})
 {{ end }}`,
 		templateContext(inputContext{

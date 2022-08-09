@@ -212,7 +212,7 @@ AND InIfBoundary = 'external'
 GROUP BY Time
 ORDER BY Time WITH FILL
  FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }}
+ TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }}
 {{ end }}`,
 		templateContext(inputContext{

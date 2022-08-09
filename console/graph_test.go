@@ -83,7 +83,7 @@ WHERE {{ .Timefilter }}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }}
+ TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }})
 {{ end }}`,
 		}, {
@@ -108,7 +108,7 @@ WHERE {{ .Timefilter }}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }}
+ TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }})
 {{ end }}
 `,
@@ -134,7 +134,7 @@ WHERE {{ .Timefilter }}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }}
+ TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }})
 {{ end }}`,
 		}, {
@@ -159,7 +159,7 @@ WHERE {{ .Timefilter }} AND (DstCountry = 'FR' AND SrcCountry = 'US')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }}
+ TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }})
 {{ end }}`,
 		}, {
@@ -184,7 +184,7 @@ WHERE {{ .Timefilter }} AND (InIfDescription = '{{"{{"}} hello }}' AND SrcCountr
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }}
+ TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }})
 {{ end }}`,
 		}, {
@@ -213,7 +213,7 @@ WHERE {{ .Timefilter }} AND (DstCountry = 'FR' AND SrcCountry = 'US')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }}
+ TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }})
 {{ end }}
 UNION ALL
@@ -228,7 +228,7 @@ WHERE {{ .Timefilter }} AND (SrcCountry = 'FR' AND DstCountry = 'US')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }}
+ TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }})
 {{ end }}`,
 		}, {
@@ -259,7 +259,7 @@ WHERE {{ .Timefilter }}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }}
+ TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }})
 {{ end }}`,
 		}, {
@@ -291,7 +291,7 @@ WHERE {{ .Timefilter }}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }}
+ TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }})
 {{ end }}
 UNION ALL
@@ -306,7 +306,7 @@ WHERE {{ .Timefilter }}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }}
+ TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }})
 {{ end }}`,
 		},

@@ -240,7 +240,7 @@ AND InIfBoundary = 'external'
 GROUP BY Time
 ORDER BY Time WITH FILL
  FROM toDateTime('2009-11-10 23:00:00', 'UTC')
- TO toDateTime('2009-11-11 23:00:00', 'UTC')
+ TO toDateTime('2009-11-11 23:00:00', 'UTC') + INTERVAL 1 second
  STEP 864`)).
 		SetArg(1, expected).
 		Return(nil)
