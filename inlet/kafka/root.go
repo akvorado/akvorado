@@ -5,7 +5,9 @@
 package kafka
 
 import (
+	"encoding/binary"
 	"fmt"
+	"math/rand"
 	"strings"
 	"time"
 
@@ -124,9 +126,11 @@ func (c *Component) Stop() error {
 func (c *Component) Send(exporter string, payload []byte) {
 	c.metrics.bytesSent.WithLabelValues(exporter).Add(float64(len(payload)))
 	c.metrics.messagesSent.WithLabelValues(exporter).Inc()
+	key := make([]byte, 4)
+	binary.BigEndian.PutUint32(key, rand.Uint32())
 	c.kafkaProducer.Input() <- &sarama.ProducerMessage{
 		Topic: c.kafkaTopic,
-		Key:   sarama.StringEncoder(exporter),
+		Key:   sarama.ByteEncoder(key),
 		Value: sarama.ByteEncoder(payload),
 	}
 }

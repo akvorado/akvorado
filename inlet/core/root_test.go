@@ -129,9 +129,6 @@ func TestCore(t *testing.T) {
 			if msg.Topic != expectedTopic {
 				t.Errorf("Kafka message topic (-got, +want):\n-%s\n+%s", msg.Topic, expectedTopic)
 			}
-			if msg.Key != sarama.StringEncoder("192.0.2.142") {
-				t.Errorf("Kafka message key (-got, +want):\n-%s\n+%s", msg.Key, "192.0.2.142")
-			}
 
 			got := flow.Message{}
 			b, err := msg.Value.Encode()

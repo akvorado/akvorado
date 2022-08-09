@@ -26,9 +26,9 @@ func TestKafka(t *testing.T) {
 		defer close(received)
 		expected := sarama.ProducerMessage{
 			Topic:     "flows-v2",
-			Key:       sarama.StringEncoder("127.0.0.1"),
+			Key:       got.Key,
 			Value:     sarama.ByteEncoder("hello world!"),
-			Partition: 30,
+			Partition: got.Partition,
 		}
 		if diff := helpers.Diff(got, expected); diff != "" {
 			t.Fatalf("Send() (-got, +want):\n%s", diff)
