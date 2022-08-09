@@ -42,13 +42,7 @@ type sankeyLink struct {
 
 // sankeyHandlerInputToSQL converts a sankey query to an SQL request
 func (input sankeyHandlerInput) toSQL() (string, error) {
-	// Filter
-	where := input.Filter.Filter
-	if where == "" {
-		where = "{timefilter}"
-	} else {
-		where = fmt.Sprintf("{timefilter} AND (%s)", where)
-	}
+	where := templateWhere(input.Filter)
 
 	// Select
 	arrayFields := []string{}
@@ -60,22 +54,16 @@ func (input sankeyHandlerInput) toSQL() (string, error) {
 			column.toSQLSelect()))
 		dimensions = append(dimensions, column.String())
 	}
-	fields := []string{}
-	switch input.Units {
-	case "pps":
-		fields = append(fields, `SUM(Packets*SamplingRate/range) AS xps`)
-	case "l3bps":
-		fields = append(fields, `SUM(Bytes*SamplingRate*8/range) AS xps`)
-	case "l2bps":
-		fields = append(fields, `SUM((Bytes+18*Packets)*SamplingRate*8/range) AS xps`)
+	fields := []string{
+		`{{ .Units }}/range AS xps`,
+		fmt.Sprintf("[%s] AS dimensions", strings.Join(arrayFields, ",\n  ")),
 	}
-	fields = append(fields, fmt.Sprintf("[%s] AS dimensions", strings.Join(arrayFields, ",\n  ")))
 
 	// With
 	with := []string{
-		fmt.Sprintf(`(SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM {table} WHERE %s) AS range`, where),
+		fmt.Sprintf(`(SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM {{ .Table }} WHERE %s) AS range`, where),
 		fmt.Sprintf(
-			"rows AS (SELECT %s FROM {table} WHERE %s GROUP BY %s ORDER BY SUM(Bytes) DESC LIMIT %d)",
+			"rows AS (SELECT %s FROM {{ .Table }} WHERE %s GROUP BY %s ORDER BY SUM(Bytes) DESC LIMIT %d)",
 			strings.Join(dimensions, ", "),
 			where,
 			strings.Join(dimensions, ", "),
@@ -83,15 +71,25 @@ func (input sankeyHandlerInput) toSQL() (string, error) {
 	}
 
 	sqlQuery := fmt.Sprintf(`
+{{ with %s }}
 WITH
  %s
 SELECT
  %s
-FROM {table}
+FROM {{ .Table }}
 WHERE %s
 GROUP BY dimensions
-ORDER BY xps DESC`, strings.Join(with, ",\n "), strings.Join(fields, ",\n "), where)
-	return sqlQuery, nil
+ORDER BY xps DESC
+{{ end }}`,
+		templateContext(inputContext{
+			Start:             input.Start,
+			End:               input.End,
+			MainTableRequired: requireMainTable(input.Dimensions, input.Filter),
+			Points:            20,
+			Units:             input.Units,
+		}),
+		strings.Join(with, ",\n "), strings.Join(fields, ",\n "), where)
+	return strings.TrimSpace(sqlQuery), nil
 }
 
 func (c *Component) sankeyHandlerFunc(gc *gin.Context) {
@@ -108,15 +106,8 @@ func (c *Component) sankeyHandlerFunc(gc *gin.Context) {
 		return
 	}
 
-	// We need to select a resolution allowing us to have a somewhat accurate timespan
-	resolution := time.Duration(int64(input.End.Sub(input.Start).Nanoseconds()) / 20)
-	if resolution < time.Second {
-		resolution = time.Second
-	}
-
 	// Prepare and execute query
-	sqlQuery = c.queryFlowsTable(sqlQuery, requireMainTable(input.Dimensions, input.Filter),
-		input.Start, input.End, resolution)
+	sqlQuery = c.finalizeQuery(sqlQuery)
 	gc.Header("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
 	results := []struct {
 		Xps        float64  `ch:"xps"`

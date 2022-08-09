@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 	"time"
 
 	"akvorado/common/helpers"
@@ -151,23 +152,31 @@ func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 	}
 
 	now := c.d.Clock.Now()
-	query := c.queryFlowsTable(fmt.Sprintf(`
+	query := c.finalizeQuery(fmt.Sprintf(`
+{{ with %s }}
 WITH
- (SELECT SUM(Bytes*SamplingRate) FROM {table} WHERE {timefilter} %s) AS Total
+ (SELECT SUM(Bytes*SamplingRate) FROM {{ .Table }} WHERE {{ .Timefilter }} %s) AS Total
 SELECT
  if(empty(%s),'Unknown',%s) AS Name,
  SUM(Bytes*SamplingRate) / Total * 100 AS Percent
-FROM {table}
-WHERE {timefilter}
+FROM {{ .Table }}
+WHERE {{ .Timefilter }}
 %s
 GROUP BY %s
 ORDER BY Percent DESC
 LIMIT 5
-`, filter, selector, selector, filter, groupby), mainTableRequired, now.Add(-5*time.Minute), now, time.Minute)
+{{ end }}`,
+		templateContext(inputContext{
+			Start:             now.Add(-5 * time.Minute),
+			End:               now,
+			MainTableRequired: mainTableRequired,
+			Points:            5,
+		}),
+		filter, selector, selector, filter, groupby))
 	gc.Header("X-SQL-Query", query)
 
 	results := []topResult{}
-	err := c.d.ClickHouseDB.Conn.Select(ctx, &results, query)
+	err := c.d.ClickHouseDB.Conn.Select(ctx, &results, strings.TrimSpace(query))
 	if err != nil {
 		c.r.Err(err).Msg("unable to query database")
 		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to query database."})
@@ -177,7 +186,7 @@ LIMIT 5
 }
 
 type widgetParameters struct {
-	Points uint64 `form:"points" binding:"isdefault|min=5,max=1000"`
+	Points uint `form:"points" binding:"isdefault|min=5,max=1000"`
 }
 
 func (c *Component) widgetGraphHandlerFunc(gc *gin.Context) {
@@ -191,28 +200,34 @@ func (c *Component) widgetGraphHandlerFunc(gc *gin.Context) {
 	if params.Points == 0 {
 		params.Points = 200
 	}
-	interval := int64((24 * time.Hour).Seconds()) / int64(params.Points)
-	slot := fmt.Sprintf(`{resolution->%d}`, interval)
 	now := c.d.Clock.Now()
-	query := c.queryFlowsTable(fmt.Sprintf(`
+	query := c.finalizeQuery(fmt.Sprintf(`
+{{ with %s }}
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL %s second) AS Time,
- SUM(Bytes*SamplingRate*8/%s)/1000/1000/1000 AS Gbps
-FROM {table}
-WHERE {timefilter}
+ {{ call .ToStartOfInterval "TimeReceived" }} AS Time,
+ SUM(Bytes*SamplingRate*8/{{ .Interval }})/1000/1000/1000 AS Gbps
+FROM {{ .Table }}
+WHERE {{ .Timefilter }}
 AND InIfBoundary = 'external'
 GROUP BY Time
 ORDER BY Time WITH FILL
- FROM toStartOfInterval({timefilter.Start}, INTERVAL %s second)
- TO {timefilter.Stop}
- STEP %s`, slot, slot, slot, slot), false, now.Add(-24*time.Hour), now, time.Duration(interval)*time.Second)
+ FROM {{ .TimefilterStart }}
+ TO {{ .TimefilterEnd }}
+ STEP {{ .Interval }}
+{{ end }}`,
+		templateContext(inputContext{
+			Start:             now.Add(-24 * time.Hour),
+			End:               now,
+			MainTableRequired: false,
+			Points:            params.Points,
+		})))
 	gc.Header("X-SQL-Query", query)
 
 	results := []struct {
 		Time time.Time `json:"t"`
 		Gbps float64   `json:"gbps"`
 	}{}
-	err := c.d.ClickHouseDB.Conn.Select(ctx, &results, query)
+	err := c.d.ClickHouseDB.Conn.Select(ctx, &results, strings.TrimSpace(query))
 	if err != nil {
 		c.r.Err(err).Msg("unable to query database")
 		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to query database."})

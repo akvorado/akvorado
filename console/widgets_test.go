@@ -6,6 +6,7 @@ package console
 import (
 	"net"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -229,18 +230,18 @@ func TestWidgetGraph(t *testing.T) {
 		{base.Add(5 * time.Minute), 24.7},
 	}
 	mockConn.EXPECT().
-		Select(gomock.Any(), gomock.Any(), `
+		Select(gomock.Any(), gomock.Any(), strings.TrimSpace(`
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL 864 second) AS Time,
+ toStartOfInterval(TimeReceived + INTERVAL 144 second, INTERVAL 864 second) - INTERVAL 144 second AS Time,
  SUM(Bytes*SamplingRate*8/864)/1000/1000/1000 AS Gbps
 FROM flows
 WHERE TimeReceived BETWEEN toDateTime('2009-11-10 23:00:00', 'UTC') AND toDateTime('2009-11-11 23:00:00', 'UTC')
 AND InIfBoundary = 'external'
 GROUP BY Time
 ORDER BY Time WITH FILL
- FROM toStartOfInterval(toDateTime('2009-11-10 23:00:00', 'UTC'), INTERVAL 864 second)
+ FROM toDateTime('2009-11-10 23:00:00', 'UTC')
  TO toDateTime('2009-11-11 23:00:00', 'UTC')
- STEP 864`).
+ STEP 864`)).
 		SetArg(1, expected).
 		Return(nil)
 

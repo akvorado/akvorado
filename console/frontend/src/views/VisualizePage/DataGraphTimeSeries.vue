@@ -126,7 +126,7 @@ const graph = computed(() => {
               (row, rowIdx) => row[timeIdx] * (data.axis[rowIdx] == 1 ? 1 : -1)
             ),
           ])
-          .slice(1, -1),
+          .slice(0, -1),
       ],
     },
     xAxis = {

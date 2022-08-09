@@ -19,7 +19,7 @@ import (
 type graphHandlerInput struct {
 	Start         time.Time     `json:"start" binding:"required"`
 	End           time.Time     `json:"end" binding:"required,gtfield=Start"`
-	Points        int           `json:"points" binding:"required,min=5,max=2000"` // minimum number of points
+	Points        uint          `json:"points" binding:"required,min=5,max=2000"` // minimum number of points
 	Dimensions    []queryColumn `json:"dimensions"`                               // group by ...
 	Limit         int           `json:"limit" binding:"min=1,max=50"`             // limit product of dimensions
 	Filter        queryFilter   `json:"filter"`                                   // where ...
@@ -54,28 +54,12 @@ func (input graphHandlerInput) reverseDirection() graphHandlerInput {
 }
 
 func (input graphHandlerInput) toSQL1(axis int, skipWith bool) string {
-	interval := int64((input.End.Sub(input.Start).Seconds())) / int64(input.Points)
-	slot := fmt.Sprintf(`{resolution->%d}`, interval)
-
-	// Filter
-	where := input.Filter.Filter
-	if where == "" {
-		where = "{timefilter}"
-	} else {
-		where = fmt.Sprintf("{timefilter} AND (%s)", where)
-	}
+	where := templateWhere(input.Filter)
 
 	// Select
 	fields := []string{
-		fmt.Sprintf(`toStartOfInterval(TimeReceived, INTERVAL %s second) AS time`, slot),
-	}
-	switch input.Units {
-	case "pps":
-		fields = append(fields, fmt.Sprintf(`SUM(Packets*SamplingRate/%s) AS xps`, slot))
-	case "l3bps":
-		fields = append(fields, fmt.Sprintf(`SUM(Bytes*SamplingRate*8/%s) AS xps`, slot))
-	case "l2bps":
-		fields = append(fields, fmt.Sprintf(`SUM((Bytes+18*Packets)*SamplingRate*8/%s) AS xps`, slot))
+		`{{ call .ToStartOfInterval "TimeReceived" }} AS time`,
+		`{{ .Units }}/{{ .Interval }} AS xps`,
 	}
 	selectFields := []string{}
 	dimensions := []string{}
@@ -99,7 +83,7 @@ func (input graphHandlerInput) toSQL1(axis int, skipWith bool) string {
 	with := []string{}
 	if len(dimensions) > 0 && !skipWith {
 		with = append(with, fmt.Sprintf(
-			"rows AS (SELECT %s FROM {table} WHERE %s GROUP BY %s ORDER BY SUM(Bytes) DESC LIMIT %d)",
+			"rows AS (SELECT %s FROM {{ .Table }} WHERE %s GROUP BY %s ORDER BY SUM(Bytes) DESC LIMIT %d)",
 			strings.Join(dimensions, ", "),
 			where,
 			strings.Join(dimensions, ", "),
@@ -107,34 +91,40 @@ func (input graphHandlerInput) toSQL1(axis int, skipWith bool) string {
 	}
 	withStr := ""
 	if len(with) > 0 {
-		withStr = fmt.Sprintf("WITH\n %s", strings.Join(with, ",\n "))
+		withStr = fmt.Sprintf("\nWITH\n %s", strings.Join(with, ",\n "))
 	}
 
 	sqlQuery := fmt.Sprintf(`
-%s
+{{ with %s }}%s
 SELECT %d AS axis, * FROM (
 SELECT
  %s
-FROM {table}
+FROM {{ .Table }}
 WHERE %s
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM toStartOfInterval({timefilter.Start}, INTERVAL %s second)
- TO {timefilter.Stop}
- STEP %s)`, withStr, axis, strings.Join(fields, ",\n "), where, slot, slot)
-	return sqlQuery
+ FROM {{ .TimefilterStart }}
+ TO {{ .TimefilterEnd }}
+ STEP {{ .Interval }})
+{{ end }}`,
+		templateContext(inputContext{
+			Start:             input.Start,
+			End:               input.End,
+			MainTableRequired: requireMainTable(input.Dimensions, input.Filter),
+			Points:            input.Points,
+			Units:             input.Units,
+		}),
+		withStr, axis, strings.Join(fields, ",\n "), where)
+	return strings.TrimSpace(sqlQuery)
 }
 
 // graphHandlerInputToSQL converts a graph input to an SQL request
 func (input graphHandlerInput) toSQL() string {
-	result := input.toSQL1(1, false)
+	parts := []string{input.toSQL1(1, false)}
 	if input.Bidirectional {
-		part2 := input.reverseDirection().toSQL1(2, true)
-		result = fmt.Sprintf(`%s
-UNION ALL
-%s`, result, strings.TrimSpace(part2))
+		parts = append(parts, input.reverseDirection().toSQL1(2, true))
 	}
-	return strings.TrimSpace(result)
+	return strings.TrimSpace(strings.Join(parts, "\nUNION ALL\n"))
 }
 
 func (c *Component) graphHandlerFunc(gc *gin.Context) {
@@ -146,12 +136,7 @@ func (c *Component) graphHandlerFunc(gc *gin.Context) {
 	}
 
 	sqlQuery := input.toSQL()
-	resolution := time.Duration(int64(input.End.Sub(input.Start).Nanoseconds()) / int64(input.Points))
-	if resolution < time.Second {
-		resolution = time.Second
-	}
-	sqlQuery = c.queryFlowsTable(sqlQuery, requireMainTable(input.Dimensions, input.Filter),
-		input.Start, input.End, resolution)
+	sqlQuery = c.finalizeQuery(sqlQuery)
 	gc.Header("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
 
 	results := []struct {

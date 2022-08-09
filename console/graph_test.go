@@ -72,18 +72,20 @@ func TestGraphQuerySQL(t *testing.T) {
 				Units:      "l3bps",
 			},
 			Expected: `
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
 SELECT 1 AS axis, * FROM (
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL {resolution->864} second) AS time,
- SUM(Bytes*SamplingRate*8/{resolution->864}) AS xps,
+ {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
-FROM {table}
-WHERE {timefilter}
+FROM {{ .Table }}
+WHERE {{ .Timefilter }}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM toStartOfInterval({timefilter.Start}, INTERVAL {resolution->864} second)
- TO {timefilter.Stop}
- STEP {resolution->864})`,
+ FROM {{ .TimefilterStart }}
+ TO {{ .TimefilterEnd }}
+ STEP {{ .Interval }})
+{{ end }}`,
 		}, {
 			Description: "no dimensions, no filters, l2 bps",
 			Input: graphHandlerInput{
@@ -95,18 +97,21 @@ ORDER BY time WITH FILL
 				Units:      "l2bps",
 			},
 			Expected: `
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l2bps"}@@ }}
 SELECT 1 AS axis, * FROM (
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL {resolution->864} second) AS time,
- SUM((Bytes+18*Packets)*SamplingRate*8/{resolution->864}) AS xps,
+ {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
-FROM {table}
-WHERE {timefilter}
+FROM {{ .Table }}
+WHERE {{ .Timefilter }}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM toStartOfInterval({timefilter.Start}, INTERVAL {resolution->864} second)
- TO {timefilter.Stop}
- STEP {resolution->864})`,
+ FROM {{ .TimefilterStart }}
+ TO {{ .TimefilterEnd }}
+ STEP {{ .Interval }})
+{{ end }}
+`,
 		}, {
 			Description: "no dimensions, no filters, pps",
 			Input: graphHandlerInput{
@@ -118,18 +123,20 @@ ORDER BY time WITH FILL
 				Units:      "pps",
 			},
 			Expected: `
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"pps"}@@ }}
 SELECT 1 AS axis, * FROM (
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL {resolution->864} second) AS time,
- SUM(Packets*SamplingRate/{resolution->864}) AS xps,
+ {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
-FROM {table}
-WHERE {timefilter}
+FROM {{ .Table }}
+WHERE {{ .Timefilter }}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM toStartOfInterval({timefilter.Start}, INTERVAL {resolution->864} second)
- TO {timefilter.Stop}
- STEP {resolution->864})`,
+ FROM {{ .TimefilterStart }}
+ TO {{ .TimefilterEnd }}
+ STEP {{ .Interval }})
+{{ end }}`,
 		}, {
 			Description: "no dimensions",
 			Input: graphHandlerInput{
@@ -141,18 +148,45 @@ ORDER BY time WITH FILL
 				Units:      "l3bps",
 			},
 			Expected: `
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
 SELECT 1 AS axis, * FROM (
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL {resolution->864} second) AS time,
- SUM(Bytes*SamplingRate*8/{resolution->864}) AS xps,
+ {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
-FROM {table}
-WHERE {timefilter} AND (DstCountry = 'FR' AND SrcCountry = 'US')
+FROM {{ .Table }}
+WHERE {{ .Timefilter }} AND (DstCountry = 'FR' AND SrcCountry = 'US')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM toStartOfInterval({timefilter.Start}, INTERVAL {resolution->864} second)
- TO {timefilter.Stop}
- STEP {resolution->864})`,
+ FROM {{ .TimefilterStart }}
+ TO {{ .TimefilterEnd }}
+ STEP {{ .Interval }})
+{{ end }}`,
+		}, {
+			Description: "no dimensions, escaped filter",
+			Input: graphHandlerInput{
+				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
+				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Points:     100,
+				Dimensions: []queryColumn{},
+				Filter:     queryFilter{Filter: "InIfDescription = '{{ hello }}' AND SrcCountry = 'US'"},
+				Units:      "l3bps",
+			},
+			Expected: `
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
+SELECT 1 AS axis, * FROM (
+SELECT
+ {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .Units }}/{{ .Interval }} AS xps,
+ emptyArrayString() AS dimensions
+FROM {{ .Table }}
+WHERE {{ .Timefilter }} AND (InIfDescription = '{{"{{"}} hello }}' AND SrcCountry = 'US')
+GROUP BY time, dimensions
+ORDER BY time WITH FILL
+ FROM {{ .TimefilterStart }}
+ TO {{ .TimefilterEnd }}
+ STEP {{ .Interval }})
+{{ end }}`,
 		}, {
 			Description: "no dimensions, reverse direction",
 			Input: graphHandlerInput{
@@ -168,31 +202,35 @@ ORDER BY time WITH FILL
 				Bidirectional: true,
 			},
 			Expected: `
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
 SELECT 1 AS axis, * FROM (
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL {resolution->864} second) AS time,
- SUM(Bytes*SamplingRate*8/{resolution->864}) AS xps,
+ {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
-FROM {table}
-WHERE {timefilter} AND (DstCountry = 'FR' AND SrcCountry = 'US')
+FROM {{ .Table }}
+WHERE {{ .Timefilter }} AND (DstCountry = 'FR' AND SrcCountry = 'US')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM toStartOfInterval({timefilter.Start}, INTERVAL {resolution->864} second)
- TO {timefilter.Stop}
- STEP {resolution->864})
+ FROM {{ .TimefilterStart }}
+ TO {{ .TimefilterEnd }}
+ STEP {{ .Interval }})
+{{ end }}
 UNION ALL
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
 SELECT 2 AS axis, * FROM (
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL {resolution->864} second) AS time,
- SUM(Bytes*SamplingRate*8/{resolution->864}) AS xps,
+ {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
-FROM {table}
-WHERE {timefilter} AND (SrcCountry = 'FR' AND DstCountry = 'US')
+FROM {{ .Table }}
+WHERE {{ .Timefilter }} AND (SrcCountry = 'FR' AND DstCountry = 'US')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM toStartOfInterval({timefilter.Start}, INTERVAL {resolution->864} second)
- TO {timefilter.Stop}
- STEP {resolution->864})`,
+ FROM {{ .TimefilterStart }}
+ TO {{ .TimefilterEnd }}
+ STEP {{ .Interval }})
+{{ end }}`,
 		}, {
 			Description: "no filters",
 			Input: graphHandlerInput{
@@ -208,20 +246,22 @@ ORDER BY time WITH FILL
 				Units:  "l3bps",
 			},
 			Expected: `
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
 WITH
- rows AS (SELECT ExporterName, InIfProvider FROM {table} WHERE {timefilter} GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes) DESC LIMIT 20)
+ rows AS (SELECT ExporterName, InIfProvider FROM {{ .Table }} WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes) DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL {resolution->864} second) AS time,
- SUM(Bytes*SamplingRate*8/{resolution->864}) AS xps,
+ {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .Units }}/{{ .Interval }} AS xps,
  if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
-FROM {table}
-WHERE {timefilter}
+FROM {{ .Table }}
+WHERE {{ .Timefilter }}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM toStartOfInterval({timefilter.Start}, INTERVAL {resolution->864} second)
- TO {timefilter.Stop}
- STEP {resolution->864})`,
+ FROM {{ .TimefilterStart }}
+ TO {{ .TimefilterEnd }}
+ STEP {{ .Interval }})
+{{ end }}`,
 		}, {
 			Description: "no filters, reverse",
 			Input: graphHandlerInput{
@@ -238,36 +278,41 @@ ORDER BY time WITH FILL
 				Bidirectional: true,
 			},
 			Expected: `
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
 WITH
- rows AS (SELECT ExporterName, InIfProvider FROM {table} WHERE {timefilter} GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes) DESC LIMIT 20)
+ rows AS (SELECT ExporterName, InIfProvider FROM {{ .Table }} WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes) DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL {resolution->864} second) AS time,
- SUM(Bytes*SamplingRate*8/{resolution->864}) AS xps,
+ {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .Units }}/{{ .Interval }} AS xps,
  if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
-FROM {table}
-WHERE {timefilter}
+FROM {{ .Table }}
+WHERE {{ .Timefilter }}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM toStartOfInterval({timefilter.Start}, INTERVAL {resolution->864} second)
- TO {timefilter.Stop}
- STEP {resolution->864})
+ FROM {{ .TimefilterStart }}
+ TO {{ .TimefilterEnd }}
+ STEP {{ .Interval }})
+{{ end }}
 UNION ALL
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
 SELECT 2 AS axis, * FROM (
 SELECT
- toStartOfInterval(TimeReceived, INTERVAL {resolution->864} second) AS time,
- SUM(Bytes*SamplingRate*8/{resolution->864}) AS xps,
+ {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .Units }}/{{ .Interval }} AS xps,
  if((ExporterName, OutIfProvider) IN rows, [ExporterName, OutIfProvider], ['Other', 'Other']) AS dimensions
-FROM {table}
-WHERE {timefilter}
+FROM {{ .Table }}
+WHERE {{ .Timefilter }}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM toStartOfInterval({timefilter.Start}, INTERVAL {resolution->864} second)
- TO {timefilter.Stop}
- STEP {resolution->864})`,
+ FROM {{ .TimefilterStart }}
+ TO {{ .TimefilterEnd }}
+ STEP {{ .Interval }})
+{{ end }}`,
 		},
 	}
 	for _, tc := range cases {
+		tc.Expected = strings.ReplaceAll(tc.Expected, "@@", "`")
 		t.Run(tc.Description, func(t *testing.T) {
 			got := tc.Input.toSQL()
 			if diff := helpers.Diff(strings.Split(strings.TrimSpace(got), "\n"),

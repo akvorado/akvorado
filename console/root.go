@@ -5,7 +5,6 @@
 package console
 
 import (
-	"html/template"
 	"io/fs"
 	netHTTP "net/http"
 	"os"
@@ -13,6 +12,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
+	"text/template"
 	"time"
 
 	"github.com/benbjohnson/clock"

@@ -73,7 +73,7 @@ const options = computed(() => ({
       },
       data: (data.value?.data || [])
         .map(({ t, gbps }) => [t, gbps])
-        .slice(1, -1),
+        .slice(0, -1),
     },
   ],
 }));

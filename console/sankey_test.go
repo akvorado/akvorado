@@ -31,17 +31,19 @@ func TestSankeyQuerySQL(t *testing.T) {
 				Units:      "l3bps",
 			},
 			Expected: `
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l3bps"}@@ }}
 WITH
- (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM {table} WHERE {timefilter}) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM {table} WHERE {timefilter} GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 5)
+ (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM {{ .Table }} WHERE {{ .Timefilter }}) AS range,
+ rows AS (SELECT SrcAS, ExporterName FROM {{ .Table }} WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 5)
 SELECT
- SUM(Bytes*SamplingRate*8/range) AS xps,
+ {{ .Units }}/range AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
   if(ExporterName IN (SELECT ExporterName FROM rows), ExporterName, 'Other')] AS dimensions
-FROM {table}
-WHERE {timefilter}
+FROM {{ .Table }}
+WHERE {{ .Timefilter }}
 GROUP BY dimensions
-ORDER BY xps DESC`,
+ORDER BY xps DESC
+{{ end }}`,
 		}, {
 			Description: "two dimensions, no filters, l2 bps",
 			Input: sankeyHandlerInput{
@@ -53,17 +55,20 @@ ORDER BY xps DESC`,
 				Units:      "l2bps",
 			},
 			Expected: `
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l2bps"}@@ }}
 WITH
- (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM {table} WHERE {timefilter}) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM {table} WHERE {timefilter} GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 5)
+ (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM {{ .Table }} WHERE {{ .Timefilter }}) AS range,
+ rows AS (SELECT SrcAS, ExporterName FROM {{ .Table }} WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 5)
 SELECT
- SUM((Bytes+18*Packets)*SamplingRate*8/range) AS xps,
+ {{ .Units }}/range AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
   if(ExporterName IN (SELECT ExporterName FROM rows), ExporterName, 'Other')] AS dimensions
-FROM {table}
-WHERE {timefilter}
+FROM {{ .Table }}
+WHERE {{ .Timefilter }}
 GROUP BY dimensions
-ORDER BY xps DESC`,
+ORDER BY xps DESC
+{{ end }}
+`,
 		}, {
 			Description: "two dimensions, no filters, pps",
 			Input: sankeyHandlerInput{
@@ -75,17 +80,19 @@ ORDER BY xps DESC`,
 				Units:      "pps",
 			},
 			Expected: `
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"pps"}@@ }}
 WITH
- (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM {table} WHERE {timefilter}) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM {table} WHERE {timefilter} GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 5)
+ (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM {{ .Table }} WHERE {{ .Timefilter }}) AS range,
+ rows AS (SELECT SrcAS, ExporterName FROM {{ .Table }} WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 5)
 SELECT
- SUM(Packets*SamplingRate/range) AS xps,
+ {{ .Units }}/range AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
   if(ExporterName IN (SELECT ExporterName FROM rows), ExporterName, 'Other')] AS dimensions
-FROM {table}
-WHERE {timefilter}
+FROM {{ .Table }}
+WHERE {{ .Timefilter }}
 GROUP BY dimensions
-ORDER BY xps DESC`,
+ORDER BY xps DESC
+{{ end }}`,
 		}, {
 			Description: "two dimensions, with filter",
 			Input: sankeyHandlerInput{
@@ -97,23 +104,27 @@ ORDER BY xps DESC`,
 				Units:      "l3bps",
 			},
 			Expected: `
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l3bps"}@@ }}
 WITH
- (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM {table} WHERE {timefilter} AND (DstCountry = 'FR')) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM {table} WHERE {timefilter} AND (DstCountry = 'FR') GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 10)
+ (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM {{ .Table }} WHERE {{ .Timefilter }} AND (DstCountry = 'FR')) AS range,
+ rows AS (SELECT SrcAS, ExporterName FROM {{ .Table }} WHERE {{ .Timefilter }} AND (DstCountry = 'FR') GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 10)
 SELECT
- SUM(Bytes*SamplingRate*8/range) AS xps,
+ {{ .Units }}/range AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
   if(ExporterName IN (SELECT ExporterName FROM rows), ExporterName, 'Other')] AS dimensions
-FROM {table}
-WHERE {timefilter} AND (DstCountry = 'FR')
+FROM {{ .Table }}
+WHERE {{ .Timefilter }} AND (DstCountry = 'FR')
 GROUP BY dimensions
-ORDER BY xps DESC`,
+ORDER BY xps DESC
+{{ end }}`,
 		},
 	}
 	for _, tc := range cases {
+		tc.Expected = strings.ReplaceAll(tc.Expected, "@@", "`")
 		t.Run(tc.Description, func(t *testing.T) {
 			got, _ := tc.Input.toSQL()
-			if diff := helpers.Diff(strings.Split(got, "\n"), strings.Split(tc.Expected, "\n")); diff != "" {
+			if diff := helpers.Diff(strings.Split(strings.TrimSpace(got), "\n"),
+				strings.Split(strings.TrimSpace(tc.Expected), "\n")); diff != "" {
 				t.Errorf("toSQL (-got, +want):\n%s", diff)
 			}
 		})
