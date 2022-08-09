@@ -150,8 +150,7 @@ const table = computed(() => {
       ],
       rows:
         data.rows
-          ?.filter((_, idx) => data.axis[idx] == displayedAxis.value)
-          .map((row, idx) => {
+          ?.map((row, idx) => {
             const color = row.some((name) => name === "Other")
               ? dataColorGrey
               : dataColor;
@@ -172,7 +171,8 @@ const table = computed(() => {
               ],
               color: color(uniqRowIndex(row), false, theme),
             };
-          }) || [],
+          })
+          .filter((_, idx) => data.axis[idx] == displayedAxis.value) || [],
     };
   }
   if ([sankey].includes(data.graphType)) {
