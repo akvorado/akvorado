@@ -204,7 +204,11 @@ const graph = computed(() => {
               },
               lineStyle: {
                 color: dataColorGrey(1, false, theme),
-                width: 1,
+                shadowColor: "#000",
+                shadowOffsetX: 1,
+                shadowOffsetY: 1,
+                shadowBlur: 2,
+                width: 2,
                 type: "dashed",
               },
             };
