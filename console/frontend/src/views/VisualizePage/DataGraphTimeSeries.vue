@@ -106,6 +106,8 @@ const graph = computed(() => {
         type: "cross",
         label: { backgroundColor: "#6a7985" },
       },
+      backgroundColor: isDark.value ? "#222e" : "#eeee",
+      textStyle: isDark.value ? { color: "#ddd" } : { color: "#222" },
       formatter: (params) => {
         // We will use a custom formatter, notably to handle bidirectional tooltips.
         if (params.length === 0) return;
