@@ -8,7 +8,7 @@
       v-if="axes.length > 1"
       class="border-b border-gray-200 text-center text-sm font-medium text-gray-500 dark:border-gray-700 dark:text-gray-400"
     >
-      <ul class="-mb-px flex flex-wrap">
+      <ul class="flex flex-wrap">
         <li v-for="{ id: axis, name } in axes" :key="axis" class="mr-2">
           <button
             class="pointer-cursor inline-block rounded-t-lg border-b-2 border-transparent p-4 hover:border-gray-300 hover:text-gray-600 dark:hover:text-gray-300"
@@ -99,7 +99,7 @@ import { graphTypes } from "./constants";
 const { isDark } = inject("theme");
 const { stacked, lines, grid, sankey } = graphTypes;
 
-import { uniq, uniqWith, isEqual, findIndex, takeWhile } from "lodash-es";
+import { uniqWith, isEqual, findIndex, takeWhile, toPairs } from "lodash-es";
 
 const highlight = (index) => {
   if (index === null) {
@@ -119,10 +119,10 @@ const highlight = (index) => {
   emit("highlighted", originalIndex);
 };
 const axes = computed(() =>
-  uniq(props.data.axis ?? []).map((axis) => ({
-    id: axis,
-    name: { 1: "Direct", 2: "Reverse" }[axis] ?? "Unknown",
-  }))
+  toPairs(props.data["axis-names"])
+    .map(([k, v]) => ({ id: Number(k), name: v }))
+    .filter(({ id }) => [1, 2].includes(id))
+    .sort(({ id: id1 }, { id: id2 }) => id1 - id2)
 );
 const selectedAxis = ref(1);
 const displayedAxis = computed(() =>

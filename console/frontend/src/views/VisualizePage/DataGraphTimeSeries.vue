@@ -63,49 +63,6 @@ const commonGraph = {
   brush: {
     xAxisIndex: "all",
   },
-  tooltip: {
-    confine: true,
-    trigger: "axis",
-    axisPointer: {
-      type: "cross",
-      label: { backgroundColor: "#6a7985" },
-    },
-    formatter: (params) => {
-      // We will use a custom formatter, notably to handle bidirectional tooltips.
-      if (params.length === 0) return;
-      let table = [],
-        bidirectional = false;
-      params.forEach((param) => {
-        let idx = findIndex(table, (r) => r.seriesName === param.seriesName);
-        if (idx === -1) {
-          table.push({
-            marker: param.marker,
-            seriesName: param.seriesName,
-          });
-          idx = table.length - 1;
-        }
-        const val = param.value[param.seriesIndex + 1];
-        if (table[idx].col1 !== undefined || val < 0) {
-          table[idx].col2 = val;
-          bidirectional = true;
-        } else table[idx].col1 = val;
-      });
-      const rows = table
-        .map(
-          (row) => `<tr>
-<td>${row.marker} ${row.seriesName}</td>
-<td class="pl-2">${bidirectional ? "↑" : ""}<b>${formatXps(
-            row.col1 || 0
-          )}</b></td>
-<td class="pl-2">${bidirectional ? "↓" : ""}<b>${
-            bidirectional ? formatXps(row.col2 || 0) : ""
-          }</b></td>
-</tr>`
-        )
-        .join("");
-      return `${params[0].axisValueLabel}<table>${rows}</table>`;
-    },
-  },
 };
 const graph = computed(() => {
   const theme = isDark.value ? "dark" : "light";
@@ -123,7 +80,7 @@ const graph = computed(() => {
               // Unfortunately, eCharts does not seem to make it easy
               // to inverse an axis and put the result below. Therefore,
               // we use negative values for the second axis.
-              (row, rowIdx) => row[timeIdx] * (data.axis[rowIdx] == 1 ? 1 : -1)
+              (row, rowIdx) => row[timeIdx] * (data.axis[rowIdx] % 2 ? 1 : -1)
             ),
           ])
           .slice(0, -1),
@@ -140,6 +97,57 @@ const graph = computed(() => {
       axisLabel: { formatter: formatXps },
       axisPointer: {
         label: { formatter: ({ value }) => formatXps(value) },
+      },
+    },
+    tooltip = {
+      confine: true,
+      trigger: "axis",
+      axisPointer: {
+        type: "cross",
+        label: { backgroundColor: "#6a7985" },
+      },
+      formatter: (params) => {
+        // We will use a custom formatter, notably to handle bidirectional tooltips.
+        if (params.length === 0) return;
+
+        let table = [];
+        params.forEach((param) => {
+          const axis = data.axis[param.seriesIndex];
+          const seriesName = [1, 2].includes(axis)
+            ? param.seriesName
+            : data["axis-names"][axis];
+          const key = `${Math.floor((axis - 1) / 2)}-${seriesName}`;
+          let idx = findIndex(table, (r) => r.key === key);
+          if (idx === -1) {
+            table.push({
+              key,
+              seriesName,
+              marker: param.marker,
+              up: 0,
+              down: 0,
+            });
+            idx = table.length - 1;
+          }
+          const val = param.value[param.seriesIndex + 1];
+          if (axis % 2 == 1) table[idx].up = val;
+          else table[idx].down = val;
+        });
+        const rows = table
+          .map((row) =>
+            [
+              `<tr>`,
+              `<td>${row.marker} ${row.seriesName}</td>`,
+              `<td class="pl-2">${data.bidirectional ? "↑" : ""}<b>${formatXps(
+                row.up || 0
+              )}</b></td>`,
+              data.bidirectional
+                ? `<td class="pl-2">↓<b>${formatXps(row.down || 0)}</b></td>`
+                : "",
+              `</tr>`,
+            ].join("")
+          )
+          .join("");
+        return `${params[0].axisValueLabel}<table>${rows}</table>`;
       },
     };
 
@@ -158,6 +166,7 @@ const graph = computed(() => {
       xAxis,
       yAxis,
       dataset,
+      tooltip,
       series: data.rows
         .map((row, idx) => {
           const isOther = row.some((name) => name === "Other"),
@@ -185,7 +194,23 @@ const graph = computed(() => {
               seriesId: idx + 1,
             },
           };
-          if (data.graphType === graphTypes.stacked) {
+          if ([3, 4].includes(data.axis[idx])) {
+            serie = {
+              ...serie,
+              itemStyle: {
+                color: dataColorGrey(1, false, theme),
+              },
+              lineStyle: {
+                color: dataColorGrey(1, false, theme),
+                width: 1,
+                type: "dashed",
+              },
+            };
+          }
+          if (
+            data.graphType === graphTypes.stacked &&
+            [1, 2].includes(data.axis[idx])
+          ) {
             serie = {
               ...serie,
               stack: data.axis[idx],

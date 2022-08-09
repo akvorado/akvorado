@@ -17,14 +17,15 @@ import (
 
 // graphHandlerInput describes the input for the /graph endpoint.
 type graphHandlerInput struct {
-	Start         time.Time     `json:"start" binding:"required"`
-	End           time.Time     `json:"end" binding:"required,gtfield=Start"`
-	Points        uint          `json:"points" binding:"required,min=5,max=2000"` // minimum number of points
-	Dimensions    []queryColumn `json:"dimensions"`                               // group by ...
-	Limit         int           `json:"limit" binding:"min=1,max=50"`             // limit product of dimensions
-	Filter        queryFilter   `json:"filter"`                                   // where ...
-	Units         string        `json:"units" binding:"required,oneof=pps l2bps l3bps"`
-	Bidirectional bool          `json:"bidirectional"`
+	Start          time.Time     `json:"start" binding:"required"`
+	End            time.Time     `json:"end" binding:"required,gtfield=Start"`
+	Points         uint          `json:"points" binding:"required,min=5,max=2000"` // minimum number of points
+	Dimensions     []queryColumn `json:"dimensions"`                               // group by ...
+	Limit          int           `json:"limit" binding:"min=1,max=50"`             // limit product of dimensions
+	Filter         queryFilter   `json:"filter"`                                   // where ...
+	Units          string        `json:"units" binding:"required,oneof=pps l2bps l3bps"`
+	Bidirectional  bool          `json:"bidirectional"`
+	PreviousPeriod bool          `json:"previous-period"`
 }
 
 // graphHandlerOutput describes the output for the /graph endpoint. A
@@ -32,14 +33,15 @@ type graphHandlerInput struct {
 // direct direction and axis 2 is for the reverse direction. Rows are
 // sorted by axis, then by the sum of traffic.
 type graphHandlerOutput struct {
-	Time                 []time.Time `json:"t"`
-	Rows                 [][]string  `json:"rows"`    // List of rows
-	Points               [][]int     `json:"points"`  // t → row → xps
-	Axis                 []int       `json:"axis"`    // row → axis
-	Average              []int       `json:"average"` // row → average xps
-	Min                  []int       `json:"min"`     // row → min xps
-	Max                  []int       `json:"max"`     // row → max xps
-	NinetyFivePercentile []int       `json:"95th"`    // row → 95th xps
+	Time                 []time.Time    `json:"t"`
+	Rows                 [][]string     `json:"rows"`   // List of rows
+	Points               [][]int        `json:"points"` // t → row → xps
+	Axis                 []int          `json:"axis"`   // row → axis
+	AxisNames            map[int]string `json:"axis-names"`
+	Average              []int          `json:"average"` // row → average xps
+	Min                  []int          `json:"min"`     // row → min xps
+	Max                  []int          `json:"max"`     // row → max xps
+	NinetyFivePercentile []int          `json:"95th"`    // row → 95th xps
 }
 
 // reverseDirection reverts the direction of a provided input
@@ -53,12 +55,66 @@ func (input graphHandlerInput) reverseDirection() graphHandlerInput {
 	return input
 }
 
-func (input graphHandlerInput) toSQL1(axis int, skipWith bool) string {
+// nearestPeriod returns the name and period matching the provided
+// period length. The year is a special case as we don't know its
+// exact length.
+func nearestPeriod(period time.Duration) (time.Duration, string) {
+	switch {
+	case period < 2*time.Hour:
+		return time.Hour, "hour"
+	case period < 2*24*time.Hour:
+		return 24 * time.Hour, "day"
+	case period < 2*7*24*time.Hour:
+		return 7 * 24 * time.Hour, "week"
+	case period < 2*4*7*24*time.Hour:
+		// We use 4 weeks, not 1 month
+		return 4 * 7 * 24 * time.Hour, "month"
+	default:
+		return 0, "year"
+	}
+}
+
+// previousPeriod shifts the provided input to the previous period.
+// The chosen period depend on the current period. For less than
+// 2-hour period, the previous period is the hour. For less than 2-day
+// period, this is the day. For less than 2-weeks, this is the week,
+// for less than 2-months, this is the month, otherwise, this is the
+// year. Also, dimensions are stripped.
+func (input graphHandlerInput) previousPeriod() graphHandlerInput {
+	input.Dimensions = []queryColumn{}
+	diff := input.End.Sub(input.Start)
+	period, _ := nearestPeriod(diff)
+	if period == 0 {
+		// We use a full year this time (think for example we
+		// want to see how was New Year Eve compared to last
+		// year)
+		input.Start = input.Start.AddDate(-1, 0, 0)
+		input.End = input.End.AddDate(-1, 0, 0)
+		return input
+	}
+	input.Start = input.Start.Add(-period)
+	input.End = input.End.Add(-period)
+	return input
+}
+
+type toSQL1Options struct {
+	skipWithClause bool
+	offsetedStart  time.Time
+}
+
+func (input graphHandlerInput) toSQL1(axis int, options toSQL1Options) string {
+	var startForInterval *time.Time
+	var offsetShift string
+	if !options.offsetedStart.IsZero() {
+		startForInterval = &options.offsetedStart
+		offsetShift = fmt.Sprintf(" + INTERVAL %d second",
+			int64(options.offsetedStart.Sub(input.Start).Seconds()))
+	}
 	where := templateWhere(input.Filter)
 
 	// Select
 	fields := []string{
-		`{{ call .ToStartOfInterval "TimeReceived" }} AS time`,
+		fmt.Sprintf(`{{ call .ToStartOfInterval "TimeReceived" }}%s AS time`, offsetShift),
 		`{{ .Units }}/{{ .Interval }} AS xps`,
 	}
 	selectFields := []string{}
@@ -81,7 +137,7 @@ func (input graphHandlerInput) toSQL1(axis int, skipWith bool) string {
 
 	// With
 	with := []string{}
-	if len(dimensions) > 0 && !skipWith {
+	if len(dimensions) > 0 && !options.skipWithClause {
 		with = append(with, fmt.Sprintf(
 			"rows AS (SELECT %s FROM {{ .Table }} WHERE %s GROUP BY %s ORDER BY SUM(Bytes) DESC LIMIT %d)",
 			strings.Join(dimensions, ", "),
@@ -103,28 +159,43 @@ FROM {{ .Table }}
 WHERE %s
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
+ FROM {{ .TimefilterStart }}%s
+ TO {{ .TimefilterEnd }} + INTERVAL 1 second%s
  STEP {{ .Interval }})
 {{ end }}`,
 		templateContext(inputContext{
 			Start:             input.Start,
 			End:               input.End,
+			StartForInterval:  startForInterval,
 			MainTableRequired: requireMainTable(input.Dimensions, input.Filter),
 			Points:            input.Points,
 			Units:             input.Units,
 		}),
-		withStr, axis, strings.Join(fields, ",\n "), where)
+		withStr, axis, strings.Join(fields, ",\n "), where, offsetShift, offsetShift)
 	return strings.TrimSpace(sqlQuery)
 }
 
 // graphHandlerInputToSQL converts a graph input to an SQL request
 func (input graphHandlerInput) toSQL() string {
-	parts := []string{input.toSQL1(1, false)}
+	parts := []string{input.toSQL1(1, toSQL1Options{})}
+	// Handle specific options. We have to align time periods in
+	// case the previous period does not use the same offsets.
 	if input.Bidirectional {
-		parts = append(parts, input.reverseDirection().toSQL1(2, true))
+		parts = append(parts, input.reverseDirection().toSQL1(2, toSQL1Options{skipWithClause: true}))
 	}
-	return strings.TrimSpace(strings.Join(parts, "\nUNION ALL\n"))
+	if input.PreviousPeriod {
+		parts = append(parts, input.previousPeriod().toSQL1(3, toSQL1Options{
+			skipWithClause: true,
+			offsetedStart:  input.Start,
+		}))
+	}
+	if input.Bidirectional && input.PreviousPeriod {
+		parts = append(parts, input.reverseDirection().previousPeriod().toSQL1(4, toSQL1Options{
+			skipWithClause: true,
+			offsetedStart:  input.Start,
+		}))
+	}
+	return strings.Join(parts, "\nUNION ALL\n")
 }
 
 func (c *Component) graphHandlerFunc(gc *gin.Context) {
@@ -246,6 +317,7 @@ func (c *Component) graphHandlerFunc(gc *gin.Context) {
 	}
 	output.Rows = make([][]string, totalRows)
 	output.Axis = make([]int, totalRows)
+	output.AxisNames = make(map[int]string)
 	output.Points = make([][]int, totalRows)
 	output.Average = make([]int, totalRows)
 	output.Min = make([]int, totalRows)
@@ -303,5 +375,17 @@ func (c *Component) graphHandlerFunc(gc *gin.Context) {
 		}
 	}
 
+	for _, axis := range output.Axis {
+		switch axis {
+		case 1:
+			output.AxisNames[axis] = "Direct"
+		case 2:
+			output.AxisNames[axis] = "Reverse"
+		case 3, 4:
+			diff := input.End.Sub(input.Start)
+			_, name := nearestPeriod(diff)
+			output.AxisNames[axis] = fmt.Sprintf("Previous %s", name)
+		}
+	}
 	gc.JSON(http.StatusOK, output)
 }

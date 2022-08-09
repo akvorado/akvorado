@@ -96,11 +96,12 @@ func (c *Component) finalizeQuery(query string) string {
 }
 
 type inputContext struct {
-	Start             time.Time `json:"start"`
-	End               time.Time `json:"end"`
-	MainTableRequired bool      `json:"main-table-required,omitempty"`
-	Points            uint      `json:"points"`
-	Units             string    `json:"units,omitempty"`
+	Start             time.Time  `json:"start"`
+	End               time.Time  `json:"end"`
+	StartForInterval  *time.Time `json:"start-for-interval,omitempty"`
+	MainTableRequired bool       `json:"main-table-required,omitempty"`
+	Points            uint       `json:"points"`
+	Units             string     `json:"units,omitempty"`
 }
 
 type context struct {
@@ -152,59 +153,14 @@ func (c *Component) contextFunc(inputStr string) context {
 		targetInterval = time.Second
 	}
 
-	c.flowsTablesLock.RLock()
-	defer c.flowsTablesLock.RUnlock()
-
 	// Select table
-	table := "flows"
-	computedInterval := time.Second
-	if !input.MainTableRequired && len(c.flowsTables) > 0 {
-		// We can use the consolidated data. The first
-		// criteria is to find the tables matching the time
-		// criteria.
-		candidates := []int{}
-		for idx, table := range c.flowsTables {
-			if input.Start.After(table.Oldest.Add(table.Resolution)) {
-				candidates = append(candidates, idx)
-			}
-		}
-		if len(candidates) == 0 {
-			// No candidate, fallback to the one with oldest data
-			best := 0
-			for idx, table := range c.flowsTables {
-				if c.flowsTables[best].Oldest.After(table.Oldest.Add(table.Resolution)) {
-					best = idx
-				}
-			}
-			candidates = []int{best}
-			// Add other candidates that are not far off in term of oldest data
-			for idx, table := range c.flowsTables {
-				if idx == best {
-					continue
-				}
-				if c.flowsTables[best].Oldest.After(table.Oldest) {
-					candidates = append(candidates, idx)
-				}
-			}
-		}
-		if len(candidates) > 1 {
-			// Use interval to find the best one
-			best := 0
-			for _, idx := range candidates {
-				if c.flowsTables[idx].Resolution > targetInterval {
-					continue
-				}
-				if c.flowsTables[idx].Resolution > c.flowsTables[best].Resolution {
-					best = idx
-				}
-			}
-			candidates = []int{best}
-		}
-		table = c.flowsTables[candidates[0]].Name
-		computedInterval = c.flowsTables[candidates[0]].Resolution
+	targetIntervalForTableSelection := targetInterval
+	if input.MainTableRequired {
+		targetIntervalForTableSelection = time.Second
 	}
-	if computedInterval < time.Second {
-		computedInterval = time.Second
+	table, computedInterval := c.getBestTable(input.Start, targetIntervalForTableSelection)
+	if input.StartForInterval != nil {
+		_, computedInterval = c.getBestTable(*input.StartForInterval, targetIntervalForTableSelection)
 	}
 
 	// Make start/end match the computed interval (currently equal to the table resolution)
@@ -256,4 +212,62 @@ func (c *Component) contextFunc(inputStr string) context {
 				diffOffset)
 		},
 	}
+}
+
+// Get the best table starting at the specified time.
+func (c *Component) getBestTable(start time.Time, targetInterval time.Duration) (string, time.Duration) {
+	c.flowsTablesLock.RLock()
+	defer c.flowsTablesLock.RUnlock()
+
+	table := "flows"
+	computedInterval := time.Second
+	if len(c.flowsTables) > 0 {
+		// We can use the consolidated data. The first
+		// criteria is to find the tables matching the time
+		// criteria.
+		candidates := []int{}
+		for idx, table := range c.flowsTables {
+			if start.After(table.Oldest.Add(table.Resolution)) {
+				candidates = append(candidates, idx)
+			}
+		}
+		if len(candidates) == 0 {
+			// No candidate, fallback to the one with oldest data
+			best := 0
+			for idx, table := range c.flowsTables {
+				if c.flowsTables[best].Oldest.After(table.Oldest.Add(table.Resolution)) {
+					best = idx
+				}
+			}
+			candidates = []int{best}
+			// Add other candidates that are not far off in term of oldest data
+			for idx, table := range c.flowsTables {
+				if idx == best {
+					continue
+				}
+				if c.flowsTables[best].Oldest.After(table.Oldest) {
+					candidates = append(candidates, idx)
+				}
+			}
+		}
+		if len(candidates) > 1 {
+			// Use interval to find the best one
+			best := 0
+			for _, idx := range candidates {
+				if c.flowsTables[idx].Resolution > targetInterval {
+					continue
+				}
+				if c.flowsTables[idx].Resolution > c.flowsTables[best].Resolution {
+					best = idx
+				}
+			}
+			candidates = []int{best}
+		}
+		table = c.flowsTables[candidates[0]].Name
+		computedInterval = c.flowsTables[candidates[0]].Resolution
+	}
+	if computedInterval < time.Second {
+		computedInterval = time.Second
+	}
+	return table, computedInterval
 }

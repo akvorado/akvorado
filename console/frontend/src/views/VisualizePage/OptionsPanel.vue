@@ -71,12 +71,20 @@
               </div>
             </template>
           </InputListBox>
-          <InputCheckbox
-            v-if="[stacked, lines, grid].includes(graphType.name)"
-            v-model="bidirectional"
-            class="order-4 sm:order-2 lg:order-4"
-            label="Bidirectional"
-          />
+          <div
+            class="order-4 flex grow flex-row justify-between gap-x-3 sm:order-2 sm:grow-0 sm:flex-col lg:order-4 lg:grow lg:flex-row"
+          >
+            <InputCheckbox
+              v-if="[stacked, lines, grid].includes(graphType.name)"
+              v-model="bidirectional"
+              label="Bidirectional"
+            />
+            <InputCheckbox
+              v-if="[stacked].includes(graphType.name)"
+              v-model="previousPeriod"
+              label="Previous period"
+            />
+          </div>
         </div>
         <SectionLabel>Time range</SectionLabel>
         <InputTimeRange v-model="timeRange" />
@@ -141,6 +149,7 @@ const dimensions = ref([]);
 const filter = ref({});
 const units = ref("l3bps");
 const bidirectional = ref(false);
+const previousPeriod = ref(false);
 
 const options = computed(() => ({
   // Common to all graph types
@@ -151,13 +160,16 @@ const options = computed(() => ({
   limit: dimensions.value.limit,
   filter: filter.value.expression,
   units: units.value,
-  // Only for time series
+  // Depending on the graph type...
   ...([stacked, lines].includes(graphType.value.name) && {
     bidirectional: bidirectional.value,
+    previousPeriod:
+      graphType.value.name === stacked ? previousPeriod.value : false,
     points: 200,
   }),
   ...(graphType.value.name === grid && {
     bidirectional: bidirectional.value,
+    previousPeriod: false,
     points: 50,
   }),
 }));
@@ -184,6 +196,7 @@ watch(
       filter: _filter = defaultOptions?.filter,
       units: _units = "l3bps",
       bidirectional: _bidirectional = false,
+      previousPeriod: _previousPeriod = false,
     } = modelValue;
 
     // Dispatch values in refs
@@ -197,6 +210,7 @@ watch(
     filter.value = { expression: _filter };
     units.value = _units;
     bidirectional.value = _bidirectional;
+    previousPeriod.value = _previousPeriod;
 
     // A bit risky, but it seems to work.
     if (!isEqual(modelValue, options.value)) {

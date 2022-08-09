@@ -115,9 +115,18 @@ aspect of the graph.
 - The unit to use on the Y-axis: layer-3 bits per second, layer-2 bits
   per second (should match interface counters), or packets par second.
 
-- Four graph types are provided: “stacked”, “lines” and “grid” to
+- Four graph types are provided: “stacked”, “lines”, and “grid” to
   display time series and “sankey” to show flow distributions between
   various dimensions.
+
+- For “stacked”, “lines”, and “grid” graphs, the *bidirectional*
+  option adds the flows in the opposite direction to the graph. They
+  are displayed as a negative value on the graph.
+
+- For “stacked” graphs, the *previous period* option adds a line for
+  the traffic levels as they were on the previous period. Depending on
+  the current period, the previous period can be the previous hour,
+  day, week, month, or year.
 
 - The time range can be set from a list of preset or directly using
   natural language. The parsing is done by

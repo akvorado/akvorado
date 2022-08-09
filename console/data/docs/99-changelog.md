@@ -13,7 +13,8 @@ identified with a specific icon:
 
 ## Unreleased
 
-- ✨ *console*: add a bidirectional mode for graphs to also display flows in the opposite direction
+- ✨ *console*: add an option to also display flows in the opposite direction on time series graph
+- ✨ *console*: add an option to also display the previous period (day, week, month, year) on stacked graphs
 - 🌱 *inlet*: Kafka key is now a 4-byte random value making scaling less dependent on the number of exporters
 - 🌱 *demo-exporter*: add a setting to automatically generate a reverse flow
 - 🌱 *docker-compose*: loosen required privileges for `conntrack-fixer`

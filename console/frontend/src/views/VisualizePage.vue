@@ -62,7 +62,7 @@ import DataGraph from "./VisualizePage/DataGraph.vue";
 import OptionsPanel from "./VisualizePage/OptionsPanel.vue";
 import RequestSummary from "./VisualizePage/RequestSummary.vue";
 import { graphTypes } from "./VisualizePage/constants";
-import { isEqual } from "lodash-es";
+import { isEqual, omit } from "lodash-es";
 
 const graphHeight = ref(500);
 const highlightedSerie = ref(null);
@@ -109,12 +109,16 @@ const encodedState = computed(() => encodeState(state.value));
 
 // Fetch data
 const fetchedData = ref({});
-const payload = computed(() => ({
+const finalState = computed(() => ({
   ...state.value,
   start: SugarDate.create(state.value.start),
   end: SugarDate.create(state.value.end),
 }));
-const request = ref({}); // Same as payload, but once request is successful
+const jsonPayload = computed(() => ({
+  ...omit(finalState.value, ["previousPeriod", "graphType"]),
+  "previous-period": finalState.value.previousPeriod,
+}));
+const request = ref({}); // Same as finalState, but once request is successful
 const { data, isFetching, aborted, abort, canAbort, error } = useFetch("", {
   beforeFetch(ctx) {
     // Add the URL. Not a computed value as if we change both payload
@@ -146,12 +150,7 @@ const { data, isFetching, aborted, abort, canAbort, error } = useFetch("", {
     console.groupEnd();
     fetchedData.value = {
       ...data,
-      dimensions: payload.value.dimensions,
-      start: payload.value.start,
-      end: payload.value.end,
-      graphType: payload.value.graphType,
-      units: payload.value.units,
-      bidirectional: payload.value.bidirectional,
+      ...omit(finalState.value, ["limit", "filter", "points"]),
     };
 
     // Also update URL.
@@ -166,13 +165,13 @@ const { data, isFetching, aborted, abort, canAbort, error } = useFetch("", {
     }
 
     // Keep current payload for state
-    request.value = payload.value;
+    request.value = finalState.value;
 
     return ctx;
   },
   refetch: true,
 })
-  .post(payload)
+  .post(jsonPayload)
   .json();
 const errorMessage = computed(
   () =>
