@@ -113,7 +113,7 @@ func (c *Component) docsHandlerFunc(gc *gin.Context) {
 			extension.Footnote,
 			extension.Typographer,
 			highlighting.NewHighlighting(
-				highlighting.WithStyle("dracula"),
+				highlighting.WithCustomStyle(draculaStyle),
 			),
 		),
 		goldmark.WithParserOptions(
