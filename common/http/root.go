@@ -100,26 +100,6 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	return &c, nil
 }
 
-type responseWriter struct {
-	http.ResponseWriter
-	status      int
-	wroteHeader bool
-}
-
-func (rw *responseWriter) Status() int {
-	return rw.status
-}
-
-func (rw *responseWriter) WriteHeader(code int) {
-	if rw.wroteHeader {
-		return
-	}
-	rw.status = code
-	rw.ResponseWriter.WriteHeader(code)
-	rw.wroteHeader = true
-	return
-}
-
 // AddHandler registers a new handler for the web server
 func (c *Component) AddHandler(location string, handler http.Handler) {
 	l := c.r.With().Str("handler", location).Logger()
@@ -175,16 +155,14 @@ func (c *Component) Start() error {
 
 	// Gracefully stop when asked to
 	c.t.Go(func() error {
-		select {
-		case <-c.t.Dying():
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			if err := server.Shutdown(ctx); err != nil {
-				c.r.Err(err).Msg("unable to shutdown HTTP server")
-				return fmt.Errorf("unable to shutdown HTTP server: %w", err)
-			}
-			return nil
+		<-c.t.Dying()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := server.Shutdown(ctx); err != nil {
+			c.r.Err(err).Msg("unable to shutdown HTTP server")
+			return fmt.Errorf("unable to shutdown HTTP server: %w", err)
 		}
+		return nil
 	})
 	return nil
 }

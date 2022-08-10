@@ -168,7 +168,7 @@ func (r *imageEmbedder) Transform(node *ast.Document, reader text.Reader, pc par
 		switch node := n.(type) {
 		case *ast.Image:
 			path := string(node.Destination)
-			if strings.Index(path, "/") != -1 || !strings.HasSuffix(path, ".svg") {
+			if strings.Contains(path, "/") || !strings.HasSuffix(path, ".svg") {
 				break
 			}
 			f, err := r.root.Open(path)

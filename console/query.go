@@ -79,6 +79,9 @@ func (qf *queryFilter) UnmarshalText(input []byte) error {
 	}
 	meta = &filter.Meta{ReverseDirection: true}
 	reverse, err := filter.Parse("", input, filter.GlobalStore("meta", meta))
+	if err != nil {
+		return fmt.Errorf("cannot parse reverse filter: %s", filter.HumanError(err))
+	}
 	*qf = queryFilter{
 		Filter:            direct.(string),
 		ReverseFilter:     reverse.(string),

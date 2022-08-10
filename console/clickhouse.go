@@ -120,11 +120,6 @@ func templateEscape(input string) string {
 	return strings.ReplaceAll(input, `{{`, `{{"{{"}}`)
 }
 
-// templateDate turns a date into an UTC string compatible with ClickHouse.
-func templateDate(input time.Time) string {
-	return input.UTC().Format("2006-01-02 15:04:05")
-}
-
 // templateWhere transforms a filter to a WHERE clause
 func templateWhere(qf queryFilter) string {
 	if qf.Filter == "" {

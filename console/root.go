@@ -12,7 +12,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
-	"text/template"
 	"time"
 
 	"github.com/benbjohnson/clock"
@@ -32,9 +31,6 @@ type Component struct {
 	d      *Dependencies
 	t      tomb.Tomb
 	config Configuration
-
-	templates     map[string]*template.Template
-	templatesLock sync.RWMutex
 
 	flowsTables     []flowsTable
 	flowsTablesLock sync.RWMutex

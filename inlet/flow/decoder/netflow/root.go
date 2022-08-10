@@ -218,7 +218,7 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*decoder.FlowMessage {
 		}
 	}
 
-	flowMessageSet, err := producer.ProcessMessageNetFlow(msgDec, sampling)
+	flowMessageSet, _ := producer.ProcessMessageNetFlow(msgDec, sampling)
 	for _, fmsg := range flowMessageSet {
 		fmsg.TimeReceived = ts
 		fmsg.SamplerAddress = in.Source

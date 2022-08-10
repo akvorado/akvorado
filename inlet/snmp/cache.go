@@ -195,9 +195,9 @@ func (sc *snmpCache) entriesOlderThan(older time.Duration, lastAccessed bool) ma
 				what = &iface.LastUpdated
 			}
 			if atomic.LoadInt64(what) < threshold {
-				rifaces, ok := result[ip]
+				_, ok := result[ip]
 				if !ok {
-					rifaces = make(map[uint]Interface)
+					rifaces := make(map[uint]Interface)
 					result[ip] = rifaces
 				}
 				result[ip][ifindex] = iface.Interface

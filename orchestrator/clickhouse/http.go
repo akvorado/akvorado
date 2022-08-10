@@ -74,7 +74,7 @@ func (c *Component) registerHTTPHandlers() error {
 				f, err := data.Open("data/asns.csv")
 				if err != nil {
 					c.r.Err(err).Msg("unable to open data/asns.csv")
-					http.Error(w, fmt.Sprintf("Unable to open ASN file."),
+					http.Error(w, "Unable to open ASN file.",
 						http.StatusInternalServerError)
 					return
 				}

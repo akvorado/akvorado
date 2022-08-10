@@ -73,10 +73,8 @@ func TestHealthcheckCancelContext(t *testing.T) {
 		return reporter.HealthcheckResult{reporter.HealthcheckOK, "all well"}
 	})
 	r.RegisterHealthcheck("hc2", func(ctx context.Context) reporter.HealthcheckResult {
-		select {
-		case <-ctx.Done():
-			return reporter.HealthcheckResult{reporter.HealthcheckError, "I am late, sorry"}
-		}
+		<-ctx.Done()
+		return reporter.HealthcheckResult{reporter.HealthcheckError, "I am late, sorry"}
 	})
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {

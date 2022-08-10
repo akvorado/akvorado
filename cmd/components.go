@@ -36,10 +36,8 @@ func StartStopComponents(r *reporter.Reporter, daemonComponent daemon.Component,
 		Str("version", Version).Str("build-date", BuildDate).
 		Msg("akvorado has started")
 
-	select {
-	case <-daemonComponent.Terminated():
-		r.Info().Msg("stopping all components")
-	}
+	<-daemonComponent.Terminated()
+	r.Info().Msg("stopping all components")
 	return nil
 }
 

@@ -273,7 +273,6 @@ LIMIT 20`, column, column, column, column, column)
 		}
 	}
 	gc.JSON(http.StatusOK, filterCompleteHandlerOutput{filteredCompletions})
-	return
 }
 
 func (c *Component) filterSavedListHandlerFunc(gc *gin.Context) {

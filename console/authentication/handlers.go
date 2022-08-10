@@ -14,16 +14,12 @@ import (
 	"io/fs"
 	"math/rand"
 	"net/http"
-	"regexp"
 
 	"github.com/gin-gonic/gin"
 )
 
-var (
-	//go:embed data/avatars
-	avatarParts  embed.FS
-	avatarRegexp = regexp.MustCompile(`^([a-z]+)_([0-9]+)\.png$`)
-)
+//go:embed data/avatars
+var avatarParts embed.FS
 
 // UserInfoHandlerFunc returns the information about the currently logged user.
 func (c *Component) UserInfoHandlerFunc(gc *gin.Context) {

@@ -277,11 +277,11 @@ func (c *Component) graphHandlerFunc(gc *gin.Context) {
 			lastTimeForAxis[axis] = result.Time
 		}
 		rowKey := fmt.Sprintf("%d-%s", axis, result.Dimensions)
-		row, ok := points[axis][rowKey]
+		_, ok = points[axis][rowKey]
 		if !ok {
 			// Not points for this row yet, create it
 			rows[axis][rowKey] = result.Dimensions
-			row = make([]int, len(output.Time))
+			row := make([]int, len(output.Time))
 			points[axis][rowKey] = row
 			sums[axis][rowKey] = 0
 		}

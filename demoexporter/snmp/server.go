@@ -69,10 +69,8 @@ func (c *Component) startSNMPServer() error {
 		return fmt.Errorf("unable to bind SNMP server: %w", err)
 	}
 	c.t.Go(func() error {
-		select {
-		case <-c.t.Dying():
-			server.Shutdown()
-		}
+		<-c.t.Dying()
+		server.Shutdown()
 		return nil
 	})
 

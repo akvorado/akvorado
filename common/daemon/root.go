@@ -57,19 +57,17 @@ func (c *realComponent) Start() error {
 	// Listen for tombs
 	for _, t := range c.tombs {
 		go func(t tombWithOrigin) {
-			select {
-			case <-t.tomb.Dying():
-				if t.tomb.Err() == nil {
-					c.r.Debug().
-						Str("component", t.origin).
-						Msg("component shutting down, quitting")
-				} else {
-					c.r.Err(t.tomb.Err()).
-						Str("component", t.origin).
-						Msg("component error, quitting")
-				}
-				c.Terminate()
+			<-t.tomb.Dying()
+			if t.tomb.Err() == nil {
+				c.r.Debug().
+					Str("component", t.origin).
+					Msg("component shutting down, quitting")
+			} else {
+				c.r.Err(t.tomb.Err()).
+					Str("component", t.origin).
+					Msg("component error, quitting")
 			}
+			c.Terminate()
 		}(t)
 	}
 	// On signal, terminate
