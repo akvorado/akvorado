@@ -33,7 +33,9 @@ func (c *Component) FlowsHTTPHandler(gc *gin.Context) {
 
 	// Flush from time to time
 	var tickerChan <-chan time.Time
-	tickerChan = time.NewTicker(c.httpFlowFlushDelay).C
+	ticker := time.NewTicker(c.httpFlowFlushDelay)
+	tickerChan = ticker.C
+	defer ticker.Stop()
 
 	for {
 		select {

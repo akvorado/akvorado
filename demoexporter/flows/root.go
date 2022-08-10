@@ -80,6 +80,7 @@ func (c *Component) Start() error {
 	errLogger := c.r.Sample(reporter.BurstSampler(time.Minute, 10))
 
 	c.t.Go(func() error {
+		defer ticker.Stop()
 		ctx := c.t.Context(context.Background())
 		templateCount := 0
 		transmit := func(kind string, payloads <-chan []byte) {
@@ -93,7 +94,6 @@ func (c *Component) Start() error {
 				}
 			}
 		}
-		defer ticker.Stop()
 		for {
 			select {
 			case <-c.t.Dying():
