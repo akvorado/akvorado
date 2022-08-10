@@ -5,6 +5,7 @@
 package geoip
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"sync/atomic"
@@ -149,9 +150,15 @@ func (c *Component) Start() error {
 			select {
 			case <-c.t.Dying():
 				return nil
-			case err := <-watcher.Errors:
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					return errors.New("file watcher died")
+				}
 				errLogger.Err(err).Msg("error from watcher")
-			case event := <-watcher.Events:
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return errors.New("file watcher died")
+				}
 				if event.Op&(fsnotify.Write|fsnotify.Create) == 0 {
 					continue
 				}
