@@ -440,7 +440,7 @@ is also possible to modify the default user (when no header is
 present) by tweaking the `default-user` key:
 
 ```yaml
-authentication:
+auth:
   headers:
     login: Remote-User
     name: Remote-Name
