@@ -9,7 +9,6 @@ package snmp
 import (
 	"errors"
 	"fmt"
-	"net"
 	"strconv"
 	"sync"
 	"time"
@@ -79,8 +78,10 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		pollerBreakers:       make(map[string]*breaker.Breaker),
 		pollerBreakerLoggers: make(map[string]reporter.Logger),
 		poller: newPoller(r, pollerConfig{
-			Retries: configuration.PollerRetries,
-			Timeout: configuration.PollerTimeout,
+			Retries:     configuration.PollerRetries,
+			Timeout:     configuration.PollerTimeout,
+			Versions:    configuration.Versions,
+			Communities: configuration.Communities,
 		}, dependencies.Clock, sc.Put),
 	}
 	c.d.Daemon.Track(&c.t, "inlet/snmp")
@@ -283,11 +284,6 @@ func (c *Component) dispatchIncomingRequest(request lookupRequest) {
 // pollerIncomingRequest handles an incoming request to the poller. It
 // uses a breaker to avoid pushing working on non-responsive exporters.
 func (c *Component) pollerIncomingRequest(request lookupRequest) {
-	community, ok := c.config.Communities.Lookup(net.ParseIP(request.ExporterIP))
-	if !ok {
-		community = "public"
-	}
-
 	// Avoid querying too much exporters with errors
 	c.pollerBreakersLock.Lock()
 	pollerBreaker, ok := c.pollerBreakers[request.ExporterIP]
@@ -301,7 +297,6 @@ func (c *Component) pollerIncomingRequest(request lookupRequest) {
 		return c.poller.Poll(
 			c.t.Context(nil),
 			request.ExporterIP, 161,
-			community,
 			request.IfIndexes)
 	}); err == breaker.ErrBreakerOpen {
 		c.metrics.pollerBreakerOpenCount.WithLabelValues(request.ExporterIP).Inc()

@@ -7,17 +7,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"sync"
 	"time"
 
 	"github.com/benbjohnson/clock"
 	"github.com/gosnmp/gosnmp"
 
+	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 )
 
 type poller interface {
-	Poll(ctx context.Context, exporterIP string, port uint16, community string, ifIndexes []uint) error
+	Poll(ctx context.Context, exporterIP string, port uint16, ifIndexes []uint) error
 }
 
 // realPoller will poll exporters using real SNMP requests.
@@ -41,8 +43,10 @@ type realPoller struct {
 }
 
 type pollerConfig struct {
-	Retries int
-	Timeout time.Duration
+	Retries     int
+	Timeout     time.Duration
+	Communities *helpers.SubnetMap[string]
+	Versions    *helpers.SubnetMap[Version]
 }
 
 // newPoller creates a new SNMP poller.
@@ -88,7 +92,7 @@ func newPoller(r *reporter.Reporter, config pollerConfig, clock clock.Clock, put
 	return p
 }
 
-func (p *realPoller) Poll(ctx context.Context, exporter string, port uint16, community string, ifIndexes []uint) error {
+func (p *realPoller) Poll(ctx context.Context, exporter string, port uint16, ifIndexes []uint) error {
 	// Check if already have a request running
 	filteredIfIndexes := make([]uint, 0, len(ifIndexes))
 	keys := make([]string, 0, len(ifIndexes))
@@ -116,12 +120,14 @@ func (p *realPoller) Poll(ctx context.Context, exporter string, port uint16, com
 	}()
 
 	// Instantiate an SNMP state
+	exporterIP := net.ParseIP(exporter)
 	g := &gosnmp.GoSNMP{
-		Target:                  exporter,
-		Port:                    port,
-		Community:               community,
-		Version:                 gosnmp.Version2c,
-		Context:                 ctx,
+		Context:   ctx,
+		Target:    exporter,
+		Port:      port,
+		Community: p.config.Communities.LookupOrDefault(exporterIP, "public"),
+		Version: gosnmp.SnmpVersion(
+			p.config.Versions.LookupOrDefault(exporterIP, Version(gosnmp.Version2c))),
 		Retries:                 p.config.Retries,
 		Timeout:                 p.config.Timeout,
 		UseUnconnectedUDPSocket: true,

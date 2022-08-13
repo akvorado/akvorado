@@ -179,7 +179,7 @@ type logCoalescePoller struct {
 	received []lookupRequest
 }
 
-func (fcp *logCoalescePoller) Poll(ctx context.Context, exporterIP string, _ uint16, _ string, ifIndexes []uint) error {
+func (fcp *logCoalescePoller) Poll(ctx context.Context, exporterIP string, _ uint16, ifIndexes []uint) error {
 	fcp.received = append(fcp.received, lookupRequest{exporterIP, ifIndexes})
 	return nil
 }
@@ -227,7 +227,7 @@ func TestCoalescing(t *testing.T) {
 
 type errorPoller struct{}
 
-func (fcp *errorPoller) Poll(ctx context.Context, exporterIP string, _ uint16, _ string, ifIndexes []uint) error {
+func (fcp *errorPoller) Poll(ctx context.Context, exporterIP string, _ uint16, ifIndexes []uint) error {
 	return errors.New("noooo")
 }
 

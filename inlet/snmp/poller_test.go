@@ -24,8 +24,10 @@ func TestPoller(t *testing.T) {
 	r := reporter.NewMock(t)
 	clock := clock.NewMock()
 	config := pollerConfig{
-		Retries: 2,
-		Timeout: 100 * time.Millisecond,
+		Retries:     2,
+		Timeout:     100 * time.Millisecond,
+		Versions:    DefaultConfiguration().Versions,
+		Communities: DefaultConfiguration().Communities,
 	}
 	p := newPoller(r, config, clock, func(exporterIP, exporterName string, ifIndex uint, iface Interface) {
 		got = append(got, fmt.Sprintf("%s %s %d %s %s %d", exporterIP, exporterName,
@@ -115,11 +117,11 @@ func TestPoller(t *testing.T) {
 	go server.ServeForever()
 	defer server.Shutdown()
 
-	p.Poll(context.Background(), "127.0.0.1", uint16(port), "public", []uint{641})
-	p.Poll(context.Background(), "127.0.0.1", uint16(port), "public", []uint{642})
-	p.Poll(context.Background(), "127.0.0.1", uint16(port), "public", []uint{643})
-	p.Poll(context.Background(), "127.0.0.1", uint16(port), "public", []uint{644})
-	p.Poll(context.Background(), "127.0.0.1", uint16(port), "public", []uint{0})
+	p.Poll(context.Background(), "127.0.0.1", uint16(port), []uint{641})
+	p.Poll(context.Background(), "127.0.0.1", uint16(port), []uint{642})
+	p.Poll(context.Background(), "127.0.0.1", uint16(port), []uint{643})
+	p.Poll(context.Background(), "127.0.0.1", uint16(port), []uint{644})
+	p.Poll(context.Background(), "127.0.0.1", uint16(port), []uint{0})
 	time.Sleep(50 * time.Millisecond)
 	if diff := helpers.Diff(got, []string{
 		`127.0.0.1 exporter62 641 Gi0/0/0/0 Transit 10000`,

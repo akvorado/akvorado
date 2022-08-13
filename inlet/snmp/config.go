@@ -4,12 +4,14 @@
 package snmp
 
 import (
+	"errors"
 	"reflect"
 	"time"
 
-	"akvorado/common/helpers"
-
+	"github.com/gosnmp/gosnmp"
 	"github.com/mitchellh/mapstructure"
+
+	"akvorado/common/helpers"
 )
 
 // Configuration describes the configuration for the SNMP client
@@ -31,28 +33,30 @@ type Configuration struct {
 	// Workers define the number of workers used to poll SNMP
 	Workers int `validate:"min=1"`
 
-	// Communities is a mapping from exporter IPs to communities
+	// Communities is a mapping from exporter IPs to SNMPv2 communities
 	Communities *helpers.SubnetMap[string]
+	// Versions is a mapping from exporter IPs to SNMP versions
+	Versions *helpers.SubnetMap[Version]
 }
 
 // DefaultConfiguration represents the default configuration for the SNMP client.
 func DefaultConfiguration() Configuration {
-	communities, err := helpers.NewSubnetMap(map[string]string{
-		"::/0": "public",
-	})
-	if err != nil {
-		panic(err)
-	}
 	return Configuration{
 		CacheDuration:      30 * time.Minute,
 		CacheRefresh:       time.Hour,
 		CacheCheckInterval: 2 * time.Minute,
 		CachePersistFile:   "",
-		Communities:        communities,
 		PollerRetries:      1,
 		PollerTimeout:      time.Second,
 		PollerCoalesce:     10,
 		Workers:            1,
+
+		Communities: helpers.MustNewSubnetMap(map[string]string{
+			"::/0": "public",
+		}),
+		Versions: helpers.MustNewSubnetMap(map[string]Version{
+			"::/0": Version(gosnmp.Version2c),
+		}),
 	}
 }
 
@@ -102,7 +106,36 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 	}
 }
 
+// Version represents an SNMP version
+type Version gosnmp.SnmpVersion
+
+// UnmarshalText parses a SNMP version
+func (v *Version) UnmarshalText(text []byte) error {
+	switch string(text) {
+	case "1":
+		*v = Version(gosnmp.Version1)
+	case "2", "2c":
+		*v = Version(gosnmp.Version2c)
+	case "3":
+		*v = Version(gosnmp.Version3)
+	default:
+		return errors.New("unsupported SNMP version")
+	}
+	return nil
+}
+
+// String turns a SNMP version into a string
+func (v Version) String() string {
+	return gosnmp.SnmpVersion(v).String()
+}
+
+// MarshalText turns a Kafka version intro a string
+func (v Version) MarshalText() ([]byte, error) {
+	return []byte(v.String()), nil
+}
+
 func init() {
 	helpers.AddMapstructureUnmarshallerHook(ConfigurationUnmarshallerHook())
 	helpers.AddMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[string]())
+	helpers.AddMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[Version]())
 }

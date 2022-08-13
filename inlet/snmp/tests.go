@@ -8,6 +8,7 @@ package snmp
 import (
 	"context"
 	"fmt"
+	"net"
 	"strings"
 	"testing"
 
@@ -17,23 +18,23 @@ import (
 
 // mockPoller will use static data.
 type mockPoller struct {
-	community string
-	put       func(string, string, uint, Interface)
+	config Configuration
+	put    func(string, string, uint, Interface)
 }
 
 // newMockPoller creates a fake SNMP poller.
-func newMockPoller(community string, put func(string, string, uint, Interface)) *mockPoller {
+func newMockPoller(configuration Configuration, put func(string, string, uint, Interface)) *mockPoller {
 	return &mockPoller{
-		community: community,
-		put:       put,
+		config: configuration,
+		put:    put,
 	}
 }
 
 // Poll just builds synthetic data.
-func (p *mockPoller) Poll(ctx context.Context, exporterIP string, port uint16, community string, ifIndexes []uint) error {
+func (p *mockPoller) Poll(ctx context.Context, exporter string, port uint16, ifIndexes []uint) error {
 	for _, ifIndex := range ifIndexes {
-		if community == p.community {
-			p.put(exporterIP, strings.ReplaceAll(exporterIP, ".", "_"), ifIndex, Interface{
+		if p.config.Communities.LookupOrDefault(net.ParseIP(exporter), "public") == "public" {
+			p.put(exporter, strings.ReplaceAll(exporter, ".", "_"), ifIndex, Interface{
 				Name:        fmt.Sprintf("Gi0/0/%d", ifIndex),
 				Description: fmt.Sprintf("Interface %d", ifIndex),
 				Speed:       1000,
@@ -51,7 +52,7 @@ func NewMock(t *testing.T, reporter *reporter.Reporter, configuration Configurat
 		t.Fatalf("New() error:\n%+v", err)
 	}
 	// Change the poller to a fake one.
-	c.poller = newMockPoller("public", c.sc.Put)
+	c.poller = newMockPoller(configuration, c.sc.Put)
 	helpers.StartStop(t, c)
 	return c
 }

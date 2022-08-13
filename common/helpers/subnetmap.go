@@ -34,6 +34,15 @@ func (sm *SubnetMap[V]) Lookup(ip net.IP) (V, bool) {
 	return value, ok
 }
 
+// LookupOrDefault calls lookup and if not found, will return the
+// provided default value.
+func (sm *SubnetMap[V]) LookupOrDefault(ip net.IP, fallback V) V {
+	if value, ok := sm.Lookup(ip); ok {
+		return value
+	}
+	return fallback
+}
+
 // ToMap return a map of the tree.
 func (sm *SubnetMap[V]) ToMap() map[string]V {
 	output := map[string]V{}

@@ -10,6 +10,7 @@ import (
 	"akvorado/common/helpers"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gosnmp/gosnmp"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -104,6 +105,19 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 					"::/0":                     "public",
 					"::ffff:203.0.113.0/121":   "public",
 					"::ffff:203.0.113.128/121": "private",
+				}),
+			},
+		}, {
+			Description: "SNMP version",
+			Input: gin.H{
+				"versions": "2c",
+			},
+			Output: Configuration{
+				Communities: helpers.MustNewSubnetMap(map[string]string{
+					"::/0": "public",
+				}),
+				Versions: helpers.MustNewSubnetMap(map[string]Version{
+					"::/0": Version(gosnmp.Version2c),
 				}),
 			},
 		},
