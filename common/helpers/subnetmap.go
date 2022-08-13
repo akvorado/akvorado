@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"github.com/kentik/patricia"
@@ -77,6 +78,8 @@ func MustNewSubnetMap[V any](from map[string]V) *SubnetMap[V] {
 	return trie
 }
 
+var subnetLookAlikeRegex = regexp.MustCompile("^([a-fA-F:.0-9]+)(/([0-9]+))?$")
+
 // SubnetMapUnmarshallerHook decodes SubnetMap and notably check that
 // valid networks are provided as key. It also accepts a single value
 // instead of a map for backward compatibility.
@@ -87,7 +90,23 @@ func SubnetMapUnmarshallerHook[V any]() mapstructure.DecodeHookFunc {
 		}
 		output := map[string]interface{}{}
 		var zero V
+		var plausibleSubnetMap bool
 		if from.Kind() == reflect.Map {
+			// When we have a map, we check if all keys look like a subnet.
+			plausibleSubnetMap = true
+			for _, key := range from.MapKeys() {
+				key = ElemOrIdentity(key)
+				if key.Kind() != reflect.String {
+					plausibleSubnetMap = false
+					break
+				}
+				if !subnetLookAlikeRegex.MatchString(key.String()) {
+					plausibleSubnetMap = false
+					break
+				}
+			}
+		}
+		if plausibleSubnetMap {
 			// First case, we have a map
 			iter := from.MapRange()
 			for i := 0; iter.Next(); i++ {
@@ -130,11 +149,9 @@ func SubnetMapUnmarshallerHook[V any]() mapstructure.DecodeHookFunc {
 				}
 				output[key] = v.Interface()
 			}
-		} else if from.Type() == reflect.TypeOf(zero) || from.Type().ConvertibleTo(reflect.TypeOf(zero)) {
-			// Second case, we have a single value
-			output["::/0"] = from.Interface()
 		} else {
-			return from.Interface(), nil
+			// Second case, we have a single value and we let mapstructure handles it
+			output["::/0"] = from.Interface()
 		}
 
 		// We have to decode output map, then turn it into a SubnetMap[V]
@@ -164,5 +181,5 @@ func (sm SubnetMap[V]) MarshalYAML() (interface{}, error) {
 
 func (sm SubnetMap[V]) String() string {
 	out := sm.ToMap()
-	return fmt.Sprintf("%v", out)
+	return fmt.Sprintf("%+v", out)
 }

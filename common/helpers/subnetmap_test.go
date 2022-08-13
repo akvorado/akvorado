@@ -98,6 +98,10 @@ func TestSubnetMapUnmarshalHook(t *testing.T) {
 			Input:       gin.H{"200.33.300.1": "customer"},
 			Error:       true,
 		}, {
+			Description: "Random key",
+			Input:       gin.H{"kfgdjgkfj": "customer"},
+			Error:       true,
+		}, {
 			Description: "Single value",
 			Input:       "customer",
 			Tests: map[string]string{
@@ -154,6 +158,75 @@ func TestSubnetMapUnmarshalHook(t *testing.T) {
 			}
 			if diff := helpers.Diff(got, tc.YAML); diff != "" {
 				t.Fatalf("MarshalYAML() (-got, +want):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestSubnetMapUnmarshalHookWithMapValue(t *testing.T) {
+	type SomeStruct struct {
+		Blip string
+		Blop string
+	}
+	cases := []struct {
+		Description string
+		Input       gin.H
+		Expected    gin.H
+	}{
+		{
+			Description: "single value",
+			Input: gin.H{
+				"blip": "some",
+				"blop": "thing",
+			},
+			Expected: gin.H{
+				"::/0": gin.H{
+					"Blip": "some",
+					"Blop": "thing",
+				},
+			},
+		}, {
+			Description: "proper map",
+			Input: gin.H{
+				"::/0": gin.H{
+					"blip": "some",
+					"blop": "thing",
+				},
+				"203.0.113.14": gin.H{
+					"blip": "other",
+					"blop": "stuff",
+				},
+			},
+			Expected: gin.H{
+				"::/0": gin.H{
+					"Blip": "some",
+					"Blop": "thing",
+				},
+				"203.0.113.14/32": gin.H{
+					"Blip": "other",
+					"Blop": "stuff",
+				},
+			},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.Description, func(t *testing.T) {
+			var tree helpers.SubnetMap[SomeStruct]
+			decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+				Result:      &tree,
+				ErrorUnused: true,
+				Metadata:    nil,
+				DecodeHook:  helpers.SubnetMapUnmarshallerHook[SomeStruct](),
+			})
+			if err != nil {
+				t.Fatalf("NewDecoder() error:\n%+v", err)
+			}
+			err = decoder.Decode(tc.Input)
+			if err != nil {
+				t.Fatalf("Decode() error:\n%+v", err)
+			}
+			if diff := helpers.Diff(tree.ToMap(), tc.Expected); diff != "" {
+				t.Fatalf("Decode() (-got, +want):\n%s", diff)
 			}
 		})
 	}
