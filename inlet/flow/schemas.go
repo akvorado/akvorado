@@ -14,11 +14,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// CurrentSchemaVersion is the version of the protobuf definition
+const CurrentSchemaVersion = 2
+
 var (
-	// CurrentSchemaVersionStr is the version of the protobuf defintion as a string
-	CurrentSchemaVersionStr = "0"
-	// CurrentSchemaVersion is the version of the protobuf definition
-	CurrentSchemaVersion = 0
 	// VersionedSchemas is a mapping from schema version to protobuf definitions
 	VersionedSchemas map[int]string
 	//go:embed data/schemas/flow*.proto
@@ -26,11 +25,6 @@ var (
 )
 
 func init() {
-	var err error
-	CurrentSchemaVersion, err = strconv.Atoi(CurrentSchemaVersionStr)
-	if err != nil {
-		panic(err)
-	}
 	VersionedSchemas = make(map[int]string)
 	entries, err := schemas.ReadDir("data/schemas")
 	if err != nil {
