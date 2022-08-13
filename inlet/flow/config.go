@@ -67,19 +67,14 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 		for _, key := range mapKeys {
 			var keyStr string
 			// YAML may unmarshal keys to interfaces
-			if key.Kind() == reflect.String {
+			if helpers.ElemOrIdentity(key).Kind() == reflect.String {
 				keyStr = key.String()
-			} else if key.Kind() == reflect.Interface && key.Elem().Kind() == reflect.String {
-				keyStr = key.Elem().String()
 			} else {
 				continue
 			}
 			switch strings.ToLower(keyStr) {
 			case "type":
-				inputTypeVal := from.MapIndex(key)
-				if inputTypeVal.Kind() == reflect.Interface {
-					inputTypeVal = inputTypeVal.Elem()
-				}
+				inputTypeVal := helpers.ElemOrIdentity(from.MapIndex(key))
 				if inputTypeVal.Kind() != reflect.String {
 					return nil, fmt.Errorf("type should be a string not %s", inputTypeVal.Kind())
 				}

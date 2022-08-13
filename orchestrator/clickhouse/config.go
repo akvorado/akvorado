@@ -90,12 +90,8 @@ type NetworkAttributes struct {
 // compatibility.
 func NetworkAttributesUnmarshallerHook() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (interface{}, error) {
-		if to.Kind() == reflect.Interface {
-			to = to.Elem()
-		}
-		if from.Kind() == reflect.Interface {
-			from = from.Elem()
-		}
+		from = helpers.ElemOrIdentity(from)
+		to = helpers.ElemOrIdentity(to)
 		if to.Type() != reflect.TypeOf(NetworkAttributes{}) {
 			return from.Interface(), nil
 		}

@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🌱 *inlet*: `inlet.snmp.default-community` is now deprecated
+
 ## 1.5.5 - 2022-08-09
 
 - ✨ *console*: add an option to also display flows in the opposite direction on time series graph

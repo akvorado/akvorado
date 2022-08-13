@@ -24,7 +24,7 @@ type SubnetMap[V any] struct {
 // Lookup will search for the most specific subnet matching the
 // provided IP address and return the value associated with it.
 func (sm *SubnetMap[V]) Lookup(ip net.IP) (V, bool) {
-	if sm == nil || sm.tree == nil {
+	if sm.tree == nil {
 		var value V
 		return value, false
 	}
@@ -91,11 +91,8 @@ func SubnetMapUnmarshallerHook[V any]() mapstructure.DecodeHookFunc {
 			// First case, we have a map
 			iter := from.MapRange()
 			for i := 0; iter.Next(); i++ {
-				k := iter.Key()
+				k := ElemOrIdentity(iter.Key())
 				v := iter.Value()
-				if k.Kind() == reflect.Interface {
-					k = k.Elem()
-				}
 				if k.Kind() != reflect.String {
 					return nil, fmt.Errorf("key %d is not a string (%s)", i, k.Kind())
 				}
