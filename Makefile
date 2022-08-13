@@ -12,8 +12,9 @@ V = 0
 Q = $(if $(filter 1,$V),,@)
 M = $(shell if [ "$$(tput colors 2> /dev/null || echo 0)" -ge 8 ]; then printf "\033[34;1m▶\033[0m"; else printf "▶"; fi)
 
+FLOW_VERSION := $(shell ls inlet/flow/data/schemas/flow-*.proto | tail -1 | sed -e 's/.*-//' -e 's/.proto$$//')
 GENERATED = \
-	inlet/flow/decoder/flow-2.pb.go \
+	inlet/flow/decoder/flow-$(FLOW_VERSION).pb.go \
 	common/clickhousedb/mocks/mock_driver.go \
 	conntrackfixer/mocks/mock_conntrackfixer.go \
 	orchestrator/clickhouse/data/asns.csv \
@@ -68,7 +69,8 @@ $(BIN)/wwhrd: PACKAGE=github.com/frapposelli/wwhrd@latest
 
 .DELETE_ON_ERROR:
 
-inlet/flow/decoder/flow%.pb.go: inlet/flow/data/schemas/flow%.proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffers definition…)
+inlet/flow/decoder/flow-%.pb.go: inlet/flow/data/schemas/flow-%.proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffers definition…)
+	$Q rm -f inlet/flow/decoder/flow-*.pb.go
 	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --go_out=. --go_opt=module=$(MODULE) $<
 	$Q sed -i.bkp s/FlowMessagev./FlowMessage/g $@ && rm $@.bkp
 
@@ -125,7 +127,10 @@ $(TEST_TARGETS): NAME=$(MAKECMDGOALS:test-%=%)
 $(TEST_TARGETS): test
 check test tests: fmt lint $(GENERATED) | $(GOTESTSUM) ; $(info $(M) running $(NAME:%=% )tests…) @ ## Run tests
 	$Q mkdir -p test
-	$Q $(GOTESTSUM) --junitfile test/tests.xml -- -timeout $(TIMEOUT)s $(ARGS) $(PKGS)
+	$Q $(GOTESTSUM) --junitfile test/tests.xml -- \
+		-timeout $(TIMEOUT)s \
+		-ldflags="-X $(MODULE)/inlet/flow.CurrentSchemaVersionStr=$(FLOW_VERSION)" \
+		$(ARGS) $(PKGS)
 
 COVERAGE_MODE = atomic
 .PHONY: test-coverage
@@ -133,6 +138,7 @@ test-coverage: fmt lint $(GENERATED)
 test-coverage: | $(GOCOV) $(GOCOVXML) $(GOTESTSUM) ; $(info $(M) running coverage tests…) @ ## Run coverage tests
 	$Q mkdir -p test
 	$Q $(GOTESTSUM) -- \
+		-ldflags="-X $(MODULE)/inlet/flow.CurrentSchemaVersionStr=$(FLOW_VERSION)" \
 		-coverpkg=$(shell echo $(PKGS) | tr ' ' ',') \
 		-covermode=$(COVERAGE_MODE) \
 		-coverprofile=test/profile.out.tmp $(PKGS)
