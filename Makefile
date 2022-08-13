@@ -72,11 +72,11 @@ inlet/flow/decoder/flow%.pb.go: inlet/flow/data/schemas/flow%.proto | $(PROTOC_G
 	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --go_out=. --go_opt=module=$(MODULE) $<
 	$Q sed -i.bkp s/FlowMessagev./FlowMessage/g $@ && rm $@.bkp
 
-common/clickhousedb/mocks/mock_driver.go: Makefile | $(MOCKGEN) ; $(info $(M) generate mocks for ClickHouse driver…)
+common/clickhousedb/mocks/mock_driver.go: $(MOCKGEN) ; $(info $(M) generate mocks for ClickHouse driver…)
 	$Q echo '//go:build !release' > $@
 	$Q $(MOCKGEN) -package mocks \
 		github.com/ClickHouse/clickhouse-go/v2/lib/driver Conn,Row,Rows,ColumnType >> $@
-conntrackfixer/mocks/mock_conntrackfixer.go: Makefile | $(MOCKGEN) ; $(info $(M) generate mocks for conntrack-fixer…)
+conntrackfixer/mocks/mock_conntrackfixer.go: $(MOCKGEN) ; $(info $(M) generate mocks for conntrack-fixer…)
 	$Q if [ `$(GO) env GOOS` = "linux" ]; then \
 	   echo '//go:build !release' > $@ ; \
 	   $(MOCKGEN) -package mocks akvorado/conntrackfixer ConntrackConn,DockerClient >> $@ ; \
@@ -92,7 +92,7 @@ console/frontend/data/fields.json: console/query_consts.go ; $(info $(M) generat
 	$Q sed -En -e 's/^\tqueryColumn([a-zA-Z]+)( .*|$$)/  "\1"/p' $< \
 		| sed -E -e '$$ ! s/$$/,/' -e '1s/^ */[/' -e '$$s/$$/]/' > $@
 	$Q test -s $@
-console/data/frontend: Makefile console/frontend/node_modules
+console/data/frontend: console/frontend/node_modules
 console/data/frontend: console/frontend/data/fields.json
 console/data/frontend: $(shell $(LSFILES) console/frontend 2> /dev/null)
 console/data/frontend: ; $(info $(M) building console frontend…)
@@ -107,7 +107,7 @@ orchestrator/clickhouse/data/protocols.csv: # We keep this one in Git
 		> $@
 	$Q test -s $@
 
-changelog.md: docs/99-changelog.md Makefile # To be used by GitHub actions only.
+changelog.md: docs/99-changelog.md # To be used by GitHub actions only.
 	$Q >  $@ < docs/99-changelog.md \
 		sed -n '/^## '$${GITHUB_REF##*/v}' -/,/^## /{//!p}'
 	$Q >> $@ echo "**Docker image**: \`docker pull ghcr.io/$${GITHUB_REPOSITORY}:$${GITHUB_REF##*/v}\`"
