@@ -6,6 +6,7 @@ package snmp
 import (
 	"errors"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/gosnmp/gosnmp"
@@ -35,8 +36,18 @@ type Configuration struct {
 
 	// Communities is a mapping from exporter IPs to SNMPv2 communities
 	Communities *helpers.SubnetMap[string]
-	// Versions is a mapping from exporter IPs to SNMP versions
-	Versions *helpers.SubnetMap[Version]
+	// SecurityParameters is a mapping from exporter IPs to SNMPv3 security parameters
+	SecurityParameters *helpers.SubnetMap[SecurityParameters]
+}
+
+// SecurityParameters describes SNMPv3 USM security parameters.
+type SecurityParameters struct {
+	UserName                 string       `validate:"required"`
+	AuthenticationProtocol   AuthProtocol `validate:"required_with=PrivProtocol"`
+	AuthenticationPassphrase string       `validate:"required_with=AuthenticationProtocol"`
+	PrivacyProtocol          PrivProtocol
+	PrivacyPassphrase        string `validate:"required_with=PrivacyProtocol"`
+	ContextName              string
 }
 
 // DefaultConfiguration represents the default configuration for the SNMP client.
@@ -54,9 +65,7 @@ func DefaultConfiguration() Configuration {
 		Communities: helpers.MustNewSubnetMap(map[string]string{
 			"::/0": "public",
 		}),
-		Versions: helpers.MustNewSubnetMap(map[string]Version{
-			"::/0": Version(gosnmp.Version2c),
-		}),
+		SecurityParameters: helpers.MustNewSubnetMap(map[string]SecurityParameters{}),
 	}
 }
 
@@ -106,36 +115,80 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 	}
 }
 
-// Version represents an SNMP version
-type Version gosnmp.SnmpVersion
+// AuthProtocol represents a SNMPv3 authentication protocol
+type AuthProtocol gosnmp.SnmpV3AuthProtocol
 
-// UnmarshalText parses a SNMP version
-func (v *Version) UnmarshalText(text []byte) error {
-	switch string(text) {
-	case "1":
-		*v = Version(gosnmp.Version1)
-	case "2", "2c":
-		*v = Version(gosnmp.Version2c)
-	case "3":
-		*v = Version(gosnmp.Version3)
+// UnmarshalText parses a SNMPv3 authentication protocol
+func (ap *AuthProtocol) UnmarshalText(text []byte) error {
+	switch strings.ToUpper(string(text)) {
+	case "":
+		*ap = AuthProtocol(gosnmp.NoAuth)
+	case "MD5":
+		*ap = AuthProtocol(gosnmp.MD5)
+	case "SHA":
+		*ap = AuthProtocol(gosnmp.SHA)
+	case "SHA224":
+		*ap = AuthProtocol(gosnmp.SHA224)
+	case "SHA256":
+		*ap = AuthProtocol(gosnmp.SHA256)
+	case "SHA384":
+		*ap = AuthProtocol(gosnmp.SHA384)
+	case "SHA512":
+		*ap = AuthProtocol(gosnmp.SHA512)
 	default:
-		return errors.New("unsupported SNMP version")
+		return errors.New("unknown auth protocol")
 	}
 	return nil
 }
 
-// String turns a SNMP version into a string
-func (v Version) String() string {
-	return gosnmp.SnmpVersion(v).String()
+// String turns a SNMPv3 authentication protocol to a string
+func (ap AuthProtocol) String() string {
+	return gosnmp.SnmpV3AuthProtocol(ap).String()
 }
 
-// MarshalText turns a Kafka version intro a string
-func (v Version) MarshalText() ([]byte, error) {
-	return []byte(v.String()), nil
+// MarshalText turns a SNMPv3 authentication protocol to a string
+func (ap AuthProtocol) MarshalText() ([]byte, error) {
+	return []byte(ap.String()), nil
+}
+
+// PrivProtocol represents a SNMPv3 privacy protocol
+type PrivProtocol gosnmp.SnmpV3PrivProtocol
+
+// UnmarshalText parses a SNMPv3 privacy protocol
+func (ap *PrivProtocol) UnmarshalText(text []byte) error {
+	switch strings.ToUpper(string(text)) {
+	case "":
+		*ap = PrivProtocol(gosnmp.NoPriv)
+	case "DES":
+		*ap = PrivProtocol(gosnmp.DES)
+	case "AES":
+		*ap = PrivProtocol(gosnmp.AES)
+	case "AES192":
+		*ap = PrivProtocol(gosnmp.AES192)
+	case "AES256":
+		*ap = PrivProtocol(gosnmp.AES256)
+	case "AES192C":
+		*ap = PrivProtocol(gosnmp.AES192C)
+	case "AES256C":
+		*ap = PrivProtocol(gosnmp.AES256C)
+	default:
+		return errors.New("unknown priv protocol")
+	}
+	return nil
+}
+
+// String turns a SNMPv3 privacy protocol to a string
+func (ap PrivProtocol) String() string {
+	return gosnmp.SnmpV3PrivProtocol(ap).String()
+}
+
+// MarshalText turns a SNMPv3 privacy protocol to a string
+func (ap PrivProtocol) MarshalText() ([]byte, error) {
+	return []byte(ap.String()), nil
 }
 
 func init() {
 	helpers.AddMapstructureUnmarshallerHook(ConfigurationUnmarshallerHook())
 	helpers.AddMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[string]())
-	helpers.AddMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[Version]())
+	helpers.AddMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[SecurityParameters]())
 }

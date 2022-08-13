@@ -78,10 +78,10 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		pollerBreakers:       make(map[string]*breaker.Breaker),
 		pollerBreakerLoggers: make(map[string]reporter.Logger),
 		poller: newPoller(r, pollerConfig{
-			Retries:     configuration.PollerRetries,
-			Timeout:     configuration.PollerTimeout,
-			Versions:    configuration.Versions,
-			Communities: configuration.Communities,
+			Retries:            configuration.PollerRetries,
+			Timeout:            configuration.PollerTimeout,
+			Communities:        configuration.Communities,
+			SecurityParameters: configuration.SecurityParameters,
 		}, dependencies.Clock, sc.Put),
 	}
 	c.d.Daemon.Track(&c.t, "inlet/snmp")

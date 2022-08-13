@@ -108,16 +108,28 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 				}),
 			},
 		}, {
-			Description: "SNMP version",
+			Description: "SNMP security parameters",
 			Input: gin.H{
-				"versions": "2c",
+				"security-parameters": gin.H{
+					"user-name":                 "alfred",
+					"authentication-protocol":   "sha",
+					"authentication-passphrase": "hello",
+					"privacy-protocol":          "aes",
+					"privacy-passphrase":        "bye",
+				},
 			},
 			Output: Configuration{
 				Communities: helpers.MustNewSubnetMap(map[string]string{
 					"::/0": "public",
 				}),
-				Versions: helpers.MustNewSubnetMap(map[string]Version{
-					"::/0": Version(gosnmp.Version2c),
+				SecurityParameters: helpers.MustNewSubnetMap(map[string]SecurityParameters{
+					"::/0": SecurityParameters{
+						UserName:                 "alfred",
+						AuthenticationProtocol:   AuthProtocol(gosnmp.SHA),
+						AuthenticationPassphrase: "hello",
+						PrivacyProtocol:          PrivProtocol(gosnmp.AES),
+						PrivacyPassphrase:        "bye",
+					},
 				}),
 			},
 		},

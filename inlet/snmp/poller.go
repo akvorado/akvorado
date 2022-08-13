@@ -43,10 +43,10 @@ type realPoller struct {
 }
 
 type pollerConfig struct {
-	Retries     int
-	Timeout     time.Duration
-	Communities *helpers.SubnetMap[string]
-	Versions    *helpers.SubnetMap[Version]
+	Retries            int
+	Timeout            time.Duration
+	Communities        *helpers.SubnetMap[string]
+	SecurityParameters *helpers.SubnetMap[SecurityParameters]
 }
 
 // newPoller creates a new SNMP poller.
@@ -122,12 +122,9 @@ func (p *realPoller) Poll(ctx context.Context, exporter string, port uint16, ifI
 	// Instantiate an SNMP state
 	exporterIP := net.ParseIP(exporter)
 	g := &gosnmp.GoSNMP{
-		Context:   ctx,
-		Target:    exporter,
-		Port:      port,
-		Community: p.config.Communities.LookupOrDefault(exporterIP, "public"),
-		Version: gosnmp.SnmpVersion(
-			p.config.Versions.LookupOrDefault(exporterIP, Version(gosnmp.Version2c))),
+		Context:                 ctx,
+		Target:                  exporter,
+		Port:                    port,
 		Retries:                 p.config.Retries,
 		Timeout:                 p.config.Timeout,
 		UseUnconnectedUDPSocket: true,
@@ -136,6 +133,38 @@ func (p *realPoller) Poll(ctx context.Context, exporter string, port uint16, ifI
 			p.metrics.retries.WithLabelValues(exporter).Inc()
 		},
 	}
+	if securityParameters, ok := p.config.SecurityParameters.Lookup(exporterIP); ok {
+		g.Version = gosnmp.Version3
+		g.SecurityModel = gosnmp.UserSecurityModel
+		usmSecurityParameters := gosnmp.UsmSecurityParameters{
+			UserName:                 securityParameters.UserName,
+			AuthenticationProtocol:   gosnmp.SnmpV3AuthProtocol(securityParameters.AuthenticationProtocol),
+			AuthenticationPassphrase: securityParameters.AuthenticationPassphrase,
+			PrivacyProtocol:          gosnmp.SnmpV3PrivProtocol(securityParameters.PrivacyProtocol),
+			PrivacyPassphrase:        securityParameters.PrivacyPassphrase,
+		}
+		g.SecurityParameters = &usmSecurityParameters
+		if usmSecurityParameters.AuthenticationProtocol == gosnmp.NoAuth {
+			if usmSecurityParameters.PrivacyProtocol == gosnmp.NoPriv {
+				g.MsgFlags = gosnmp.NoAuthNoPriv
+			} else {
+				// Not possible
+				g.MsgFlags = gosnmp.NoAuthNoPriv
+			}
+		} else {
+			if usmSecurityParameters.PrivacyProtocol == gosnmp.NoPriv {
+				g.MsgFlags = gosnmp.AuthNoPriv
+			} else {
+				g.MsgFlags = gosnmp.AuthPriv
+			}
+		}
+		g.ContextName = securityParameters.ContextName
+		fmt.Printf("WWWWAA %+v\n", g)
+	} else {
+		g.Version = gosnmp.Version2c
+		g.Community = p.config.Communities.LookupOrDefault(exporterIP, "public")
+	}
+
 	if err := g.Connect(); err != nil {
 		p.metrics.failures.WithLabelValues(exporter, "connect").Inc()
 		p.errLogger.Err(err).Str("exporter", exporter).Msg("unable to connect")

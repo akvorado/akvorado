@@ -276,10 +276,20 @@ continuously the exporters. The following keys are accepted:
   about to expire or need an update
 - `cache-persist-file` tells where to store cached data on shutdown and
   read them back on startup
-- `communities` is a map from a subnets to the community to use for
-  exporters in the provided subnet. Use `::/0` to set the default
+- `communities` is a map from a subnets to the SNMPv2 community to use
+  for exporters in the provided subnet. Use `::/0` to set the default
   value. Alternatively, it also accepts a string to use for all
   exporters.
+- `security-parameters` is a map from subnets to the SNMPv3 USM
+  security parameters. Like for `communities`, `::/0` can be used to
+  the set the default value. The security paramaters accepts the
+  following keys: `user-name`, `authentication-protocol` (can be
+  omitted, otherwise `MD5`, `SHA`, `SHA224`, `SHA256`, `SHA384`, and
+  `SHA512` are accepted), `authentication-passphrase` (if the previous
+  value was set), `privacy-protocol` (can be omitted, otherwise `DES`,
+  `AES`, `AES192`, `AES256`, `AES192C`, and `AES256C` are accepted,
+  the later being Cisco-variant), `privacy-passphrase` (if the
+  previous value was set), and `context-name`.
 - `poller-retries` is the number of retries on unsuccessful SNMP requests.
 - `poller-timeout` tells how much time should the poller wait for an answer.
 - `workers` tell how many workers to spawn to handle SNMP polling.
@@ -287,6 +297,10 @@ continuously the exporters. The following keys are accepted:
 As flows missing interface information are discarded, persisting the
 cache is useful to quickly be able to handle incoming flows. By
 default, no persistent cache is configured.
+
+*Akvorado* will use SNMPv3 if there is a match for the
+`security-parameters` configuration option. Otherwise, it will use
+SNMPv2.
 
 ### HTTP
 

@@ -44,7 +44,7 @@ func (v Version) String() string {
 	return sarama.KafkaVersion(v).String()
 }
 
-// MarshalText turns a Kafka version intro a string
+// MarshalText turns a Kafka version into a string
 func (v Version) MarshalText() ([]byte, error) {
 	return []byte(v.String()), nil
 }
