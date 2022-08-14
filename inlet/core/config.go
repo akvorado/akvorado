@@ -35,5 +35,5 @@ func DefaultConfiguration() Configuration {
 }
 
 func init() {
-	helpers.AddMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[uint]())
+	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[uint]())
 }

@@ -103,6 +103,6 @@ func NetworkAttributesUnmarshallerHook() mapstructure.DecodeHookFunc {
 }
 
 func init() {
-	helpers.AddMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[NetworkAttributes]())
-	helpers.AddMapstructureUnmarshallerHook(NetworkAttributesUnmarshallerHook())
+	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[NetworkAttributes]())
+	helpers.RegisterMapstructureUnmarshallerHook(NetworkAttributesUnmarshallerHook())
 }

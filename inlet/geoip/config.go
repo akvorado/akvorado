@@ -30,7 +30,7 @@ func DefaultConfiguration() Configuration {
 }
 
 // ConfigurationUnmarshallerHook normalize GeoIP configuration:
-//  - replace country-database by geo-database
+//   - replace country-database by geo-database
 func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (interface{}, error) {
 		if from.Kind() != reflect.Map || from.IsNil() || from.Type().Key().Kind() != reflect.String || to.Type() != reflect.TypeOf(Configuration{}) {
@@ -60,5 +60,5 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 }
 
 func init() {
-	helpers.AddMapstructureUnmarshallerHook(ConfigurationUnmarshallerHook())
+	helpers.RegisterMapstructureUnmarshallerHook(ConfigurationUnmarshallerHook())
 }

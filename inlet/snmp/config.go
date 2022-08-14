@@ -188,8 +188,8 @@ func (ap PrivProtocol) MarshalText() ([]byte, error) {
 }
 
 func init() {
-	helpers.AddMapstructureUnmarshallerHook(ConfigurationUnmarshallerHook())
-	helpers.AddMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[string]())
-	helpers.AddMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[SecurityParameters]())
+	helpers.RegisterMapstructureUnmarshallerHook(ConfigurationUnmarshallerHook())
+	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[string]())
+	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[SecurityParameters]())
 	helpers.RegisterSubnetMapValidation[SecurityParameters]()
 }

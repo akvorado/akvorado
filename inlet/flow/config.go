@@ -165,5 +165,5 @@ var inputs = map[string](func() input.Configuration){
 }
 
 func init() {
-	helpers.AddMapstructureUnmarshallerHook(ConfigurationUnmarshallerHook())
+	helpers.RegisterMapstructureUnmarshallerHook(ConfigurationUnmarshallerHook())
 }

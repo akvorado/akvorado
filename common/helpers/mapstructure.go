@@ -11,9 +11,9 @@ import (
 
 var mapstructureUnmarshallerHookFuncs = []mapstructure.DecodeHookFunc{}
 
-// AddMapstructureUnmarshallerHook registers a new decoder hook for
+// RegisterMapstructureUnmarshallerHook registers a new decoder hook for
 // mapstructure. This should only be done during init.
-func AddMapstructureUnmarshallerHook(hook mapstructure.DecodeHookFunc) {
+func RegisterMapstructureUnmarshallerHook(hook mapstructure.DecodeHookFunc) {
 	mapstructureUnmarshallerHookFuncs = append(mapstructureUnmarshallerHookFuncs, hook)
 }
 
