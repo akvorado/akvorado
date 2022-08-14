@@ -5,6 +5,7 @@ package helpers
 
 import (
 	"net"
+	"reflect"
 	"strconv"
 
 	"github.com/go-playground/validator/v10"
@@ -12,6 +13,20 @@ import (
 
 // Validate is a validator instance to be used everywhere.
 var Validate *validator.Validate
+
+// RegisterSubnetMapValidation register a new SubnetMap[] type for
+// validation. As validator requires an explicit type, we cannot just
+// register all subnetmaps.
+func RegisterSubnetMapValidation[V any]() {
+	var zero SubnetMap[V]
+	validatorFunc := func(field reflect.Value) interface{} {
+		if subnetMap, ok := field.Interface().(SubnetMap[V]); ok {
+			return subnetMap.ToMap()
+		}
+		return nil
+	}
+	Validate.RegisterCustomTypeFunc(validatorFunc, zero)
+}
 
 // isListen validates a <dns>:<port> combination for fields typically used for listening address
 func isListen(fl validator.FieldLevel) bool {
@@ -35,4 +50,5 @@ func isListen(fl validator.FieldLevel) bool {
 func init() {
 	Validate = validator.New()
 	Validate.RegisterValidation("listen", isListen)
+	RegisterSubnetMapValidation[string]()
 }

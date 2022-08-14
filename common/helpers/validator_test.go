@@ -37,3 +37,52 @@ func TestListenValidator(t *testing.T) {
 		}
 	}
 }
+
+func TestSubnetMapValidator(t *testing.T) {
+	type SomeStruct struct {
+		Blip *helpers.SubnetMap[string] `validate:"min=2,dive,min=3"`
+	}
+
+	cases := []struct {
+		Description string
+		Value       interface{}
+		Error       bool
+	}{
+		{
+			Description: "Valid SomeStruct",
+			Value: SomeStruct{
+				Blip: helpers.MustNewSubnetMap(map[string]string{
+					"2001:db8::/64":   "hello",
+					"2001:db8:1::/64": "bye",
+				}),
+			},
+		}, {
+			Description: "Missing one key",
+			Value: SomeStruct{
+				Blip: helpers.MustNewSubnetMap(map[string]string{
+					"2001:db8::/64": "hello",
+				}),
+			},
+			Error: true,
+		}, {
+			Description: "One value is too short",
+			Value: SomeStruct{
+				Blip: helpers.MustNewSubnetMap(map[string]string{
+					"2001:db8::/64":   "he",
+					"2001:db8:1::/64": "bye",
+				}),
+			},
+			Error: true,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.Description, func(t *testing.T) {
+			err := helpers.Validate.Struct(tc.Value)
+			if err != nil && !tc.Error {
+				t.Fatalf("Validate() error:\n%+v", err)
+			} else if err == nil && tc.Error {
+				t.Fatal("Validate() did not error")
+			}
+		})
+	}
+}

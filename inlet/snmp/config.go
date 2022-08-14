@@ -191,4 +191,5 @@ func init() {
 	helpers.AddMapstructureUnmarshallerHook(ConfigurationUnmarshallerHook())
 	helpers.AddMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[string]())
 	helpers.AddMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[SecurityParameters]())
+	helpers.RegisterSubnetMapValidation[SecurityParameters]()
 }
