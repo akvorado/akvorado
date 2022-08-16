@@ -11,7 +11,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.5.6 - 2022-08-16
 
 - ✨ *inlet*: add support for SNMPv3 protocol
 - 🌱 *inlet*: `inlet.snmp.default-community` is now deprecated
