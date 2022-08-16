@@ -4,6 +4,7 @@
 package flow
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -19,27 +20,29 @@ import (
 func TestDecodeConfiguration(t *testing.T) {
 	cases := []struct {
 		Name     string
-		From     interface{}
-		Source   interface{}
+		From     func() interface{}
+		Source   func() interface{}
 		Expected interface{}
 	}{
 		{
 			Name: "from empty configuration",
-			From: Configuration{},
-			Source: gin.H{
-				"inputs": []gin.H{
-					{
-						"type":    "udp",
-						"decoder": "netflow",
-						"listen":  "192.0.2.1:2055",
-						"workers": 3,
-					}, {
-						"type":    "udp",
-						"decoder": "sflow",
-						"listen":  "192.0.2.1:6343",
-						"workers": 3,
+			From: func() interface{} { return Configuration{} },
+			Source: func() interface{} {
+				return gin.H{
+					"inputs": []gin.H{
+						{
+							"type":    "udp",
+							"decoder": "netflow",
+							"listen":  "192.0.2.1:2055",
+							"workers": 3,
+						}, {
+							"type":    "udp",
+							"decoder": "sflow",
+							"listen":  "192.0.2.1:6343",
+							"workers": 3,
+						},
 					},
-				},
+				}
 			},
 			Expected: Configuration{
 				Inputs: []InputConfiguration{{
@@ -60,29 +63,33 @@ func TestDecodeConfiguration(t *testing.T) {
 			},
 		}, {
 			Name: "from existing configuration",
-			From: Configuration{
-				Inputs: []InputConfiguration{{
-					Decoder: "netflow",
-					Config:  udp.DefaultConfiguration(),
-				}, {
-					Decoder: "sflow",
-					Config:  udp.DefaultConfiguration(),
-				}},
-			},
-			Source: gin.H{
-				"inputs": []gin.H{
-					{
-						"type":    "udp",
-						"decoder": "netflow",
-						"listen":  "192.0.2.1:2055",
-						"workers": 3,
+			From: func() interface{} {
+				return Configuration{
+					Inputs: []InputConfiguration{{
+						Decoder: "netflow",
+						Config:  udp.DefaultConfiguration(),
 					}, {
-						"type":    "udp",
-						"decoder": "sflow",
-						"listen":  "192.0.2.1:6343",
-						"workers": 3,
+						Decoder: "sflow",
+						Config:  udp.DefaultConfiguration(),
+					}},
+				}
+			},
+			Source: func() interface{} {
+				return gin.H{
+					"inputs": []gin.H{
+						{
+							"type":    "udp",
+							"decoder": "netflow",
+							"listen":  "192.0.2.1:2055",
+							"workers": 3,
+						}, {
+							"type":    "udp",
+							"decoder": "sflow",
+							"listen":  "192.0.2.1:6343",
+							"workers": 3,
+						},
 					},
-				},
+				}
 			},
 			Expected: Configuration{
 				Inputs: []InputConfiguration{{
@@ -103,19 +110,23 @@ func TestDecodeConfiguration(t *testing.T) {
 			},
 		}, {
 			Name: "change type",
-			From: Configuration{
-				Inputs: []InputConfiguration{{
-					Decoder: "netflow",
-					Config:  udp.DefaultConfiguration(),
-				}},
+			From: func() interface{} {
+				return Configuration{
+					Inputs: []InputConfiguration{{
+						Decoder: "netflow",
+						Config:  udp.DefaultConfiguration(),
+					}},
+				}
 			},
-			Source: gin.H{
-				"inputs": []gin.H{
-					{
-						"type":  "file",
-						"paths": []string{"file1", "file2"},
+			Source: func() interface{} {
+				return gin.H{
+					"inputs": []gin.H{
+						{
+							"type":  "file",
+							"paths": []string{"file1", "file2"},
+						},
 					},
-				},
+				}
 			},
 			Expected: Configuration{
 				Inputs: []InputConfiguration{{
@@ -127,22 +138,26 @@ func TestDecodeConfiguration(t *testing.T) {
 			},
 		}, {
 			Name: "only set one item",
-			From: Configuration{
-				Inputs: []InputConfiguration{{
-					Decoder: "netflow",
-					Config: &udp.Configuration{
-						Workers:   2,
-						QueueSize: 100,
-						Listen:    "127.0.0.1:2055",
-					},
-				}},
+			From: func() interface{} {
+				return Configuration{
+					Inputs: []InputConfiguration{{
+						Decoder: "netflow",
+						Config: &udp.Configuration{
+							Workers:   2,
+							QueueSize: 100,
+							Listen:    "127.0.0.1:2055",
+						},
+					}},
+				}
 			},
-			Source: gin.H{
-				"inputs": []gin.H{
-					{
-						"listen": "192.0.2.1:2055",
+			Source: func() interface{} {
+				return gin.H{
+					"inputs": []gin.H{
+						{
+							"listen": "192.0.2.1:2055",
+						},
 					},
-				},
+				}
 			},
 			Expected: Configuration{
 				Inputs: []InputConfiguration{{
@@ -157,33 +172,48 @@ func TestDecodeConfiguration(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		t.Run(tc.Name, func(t *testing.T) {
-			got := tc.From
+		for _, viaYAML := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s (from YAML: %v)", tc.Name, viaYAML), func(t *testing.T) {
+				var source interface{}
+				if viaYAML {
+					// Encode and decode with YAML
+					out, err := yaml.Marshal(tc.Source())
+					if err != nil {
+						t.Fatalf("yaml.Marshal() error:\n%+v", err)
+					}
+					if err := yaml.Unmarshal(out, &source); err != nil {
+						t.Fatalf("yaml.Unmarshal() error:\n%+v", err)
+					}
+				} else {
+					// Just use as is
+					source = tc.Source()
+				}
+				got := tc.From()
 
-			decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
-				Result:           &got,
-				ErrorUnused:      true,
-				Metadata:         nil,
-				WeaklyTypedInput: true,
-				MatchName: func(mapKey, fieldName string) bool {
-					key := strings.ToLower(strings.ReplaceAll(mapKey, "-", ""))
-					field := strings.ToLower(fieldName)
-					return key == field
-				},
-				DecodeHook: ConfigurationUnmarshallerHook(),
+				decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+					Result:           &got,
+					ErrorUnused:      true,
+					Metadata:         nil,
+					WeaklyTypedInput: true,
+					MatchName: func(mapKey, fieldName string) bool {
+						key := strings.ToLower(strings.ReplaceAll(mapKey, "-", ""))
+						field := strings.ToLower(fieldName)
+						return key == field
+					},
+					DecodeHook: ConfigurationUnmarshallerHook(),
+				})
+				if err != nil {
+					t.Fatalf("NewDecoder() error:\n%+v", err)
+				}
+				if err := decoder.Decode(source); err != nil {
+					t.Fatalf("Decode() error:\n%+v", err)
+				}
+
+				if diff := helpers.Diff(got, tc.Expected); diff != "" {
+					t.Fatalf("Decode() (-got, +want):\n%s", diff)
+				}
 			})
-			if err != nil {
-				t.Fatalf("NewDecoder() error:\n%+v", err)
-			}
-			if err := decoder.Decode(tc.Source); err != nil {
-				t.Fatalf("Decode() error:\n%+v", err)
-			}
-
-			expected := tc.Expected
-			if diff := helpers.Diff(got, expected); diff != "" {
-				t.Fatalf("Decode() (-got, +want):\n%s", diff)
-			}
-		})
+		}
 	}
 }
 

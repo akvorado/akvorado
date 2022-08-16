@@ -69,7 +69,7 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 			var keyStr string
 			// YAML may unmarshal keys to interfaces
 			if helpers.ElemOrIdentity(key).Kind() == reflect.String {
-				keyStr = key.String()
+				keyStr = helpers.ElemOrIdentity(key).String()
 			} else {
 				continue
 			}
