@@ -136,7 +136,7 @@ If a exporter fails to answer too frequently, a backoff will be triggered
 for a minute to ensure it does not eat up all the workers' resources.
 
 Testing is done by another implementation of an [SNMP
-agent](https://github.com/salyercat/GoSNMPServer).
+agent](https://github.com/slayercat/GoSNMPServer).
 
 ## Web console
 
