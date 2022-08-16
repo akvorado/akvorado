@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/kentik/patricia"
 	tree "github.com/kentik/patricia/generics_tree"
 	"github.com/mitchellh/mapstructure"
@@ -97,7 +98,7 @@ func SubnetMapUnmarshallerHook[V any]() mapstructure.DecodeHookFunc {
 		if to.Type() != reflect.TypeOf(SubnetMap[V]{}) {
 			return from.Interface(), nil
 		}
-		output := map[string]interface{}{}
+		output := gin.H{}
 		var zero V
 		var plausibleSubnetMap bool
 		if from.Kind() == reflect.Map {

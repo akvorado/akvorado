@@ -133,13 +133,13 @@ func TestHealthcheckHTTPHandler(t *testing.T) {
 
 	reader := bufio.NewReader(w.Body)
 	decoder := json.NewDecoder(reader)
-	var got map[string]interface{}
+	var got gin.H
 	if err := decoder.Decode(&got); err != nil {
 		t.Fatalf("GET /api/v0/healthcheck error:\n%+v", err)
 	}
-	expected := map[string]interface{}{
+	expected := gin.H{
 		"status": "error",
-		"details": map[string]interface{}{
+		"details": gin.H{
 			"hc1": map[string]string{
 				"status": "ok",
 				"reason": "all well",

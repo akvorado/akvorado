@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gin-gonic/gin"
 	"github.com/mitchellh/mapstructure"
 	"gopkg.in/yaml.v2"
 
@@ -25,8 +26,8 @@ func TestDecodeConfiguration(t *testing.T) {
 		{
 			Name: "from empty configuration",
 			From: Configuration{},
-			Source: map[string]interface{}{
-				"inputs": []map[string]interface{}{
+			Source: gin.H{
+				"inputs": []gin.H{
 					{
 						"type":    "udp",
 						"decoder": "netflow",
@@ -68,8 +69,8 @@ func TestDecodeConfiguration(t *testing.T) {
 					Config:  udp.DefaultConfiguration(),
 				}},
 			},
-			Source: map[string]interface{}{
-				"inputs": []map[string]interface{}{
+			Source: gin.H{
+				"inputs": []gin.H{
 					{
 						"type":    "udp",
 						"decoder": "netflow",
@@ -108,8 +109,8 @@ func TestDecodeConfiguration(t *testing.T) {
 					Config:  udp.DefaultConfiguration(),
 				}},
 			},
-			Source: map[string]interface{}{
-				"inputs": []map[string]interface{}{
+			Source: gin.H{
+				"inputs": []gin.H{
 					{
 						"type":  "file",
 						"paths": []string{"file1", "file2"},
@@ -136,8 +137,8 @@ func TestDecodeConfiguration(t *testing.T) {
 					},
 				}},
 			},
-			Source: map[string]interface{}{
-				"inputs": []map[string]interface{}{
+			Source: gin.H{
+				"inputs": []gin.H{
 					{
 						"listen": "192.0.2.1:2055",
 					},

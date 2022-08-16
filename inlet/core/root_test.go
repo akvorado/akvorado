@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	"github.com/gin-gonic/gin"
 	"github.com/golang/protobuf/proto"
 
 	"akvorado/common/daemon"
@@ -231,11 +232,11 @@ func TestCore(t *testing.T) {
 		reader := bufio.NewReader(resp.Body)
 		decoder := json.NewDecoder(reader)
 		for i := 0; i < 10; i++ {
-			var got map[string]interface{}
+			var got gin.H
 			if err := decoder.Decode(&got); err != nil {
 				t.Fatalf("GET /api/v0/inlet/flows error while reading body:\n%+v", err)
 			}
-			expected := map[string]interface{}{
+			expected := gin.H{
 				"TimeReceived":    200,
 				"SequenceNum":     1000,
 				"SamplingRate":    1000,

@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/mitchellh/mapstructure"
 
 	"akvorado/common/helpers"
@@ -55,7 +56,7 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 			return from.Interface(), nil
 		}
 		configField := to.FieldByName("Config")
-		fromConfig := reflect.MakeMap(reflect.TypeOf(map[string]interface{}{}))
+		fromConfig := reflect.MakeMap(reflect.TypeOf(gin.H{}))
 
 		// Find "type" key in map to get input type. Keep
 		// "decoder" as is. Move everything else in "config".
@@ -139,7 +140,7 @@ func (ic InputConfiguration) MarshalYAML() (interface{}, error) {
 	if typeStr == "" {
 		return nil, errors.New("unable to guess input configuration type")
 	}
-	result := map[string]interface{}{
+	result := gin.H{
 		"type":    typeStr,
 		"decoder": ic.Decoder,
 	}

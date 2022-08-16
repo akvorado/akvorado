@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/mitchellh/mapstructure"
 	"gopkg.in/yaml.v2"
@@ -34,7 +35,7 @@ type ConfigRelatedOptions struct {
 // Parse parses the configuration file (if present) and the
 // environment variables into the provided configuration.
 func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config interface{}) error {
-	var rawConfig map[string]interface{}
+	var rawConfig gin.H
 	if cfgFile := c.Path; cfgFile != "" {
 		if strings.HasPrefix(cfgFile, "http://") || strings.HasPrefix(cfgFile, "https://") {
 			u, err := url.Parse(cfgFile)
@@ -114,7 +115,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 				newRawConfig[index] = rawConfig
 				rawConfig = newRawConfig
 			} else {
-				rawConfig = map[string]interface{}{
+				rawConfig = gin.H{
 					kk[i]: rawConfig,
 				}
 			}

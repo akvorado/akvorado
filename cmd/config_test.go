@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v2"
 
 	"akvorado/cmd"
@@ -152,28 +153,28 @@ module2:
 		t.Errorf("Parse() (-got, +want):\n%s", diff)
 	}
 
-	var gotRaw map[string]map[string]interface{}
+	var gotRaw map[string]gin.H
 	if err := yaml.Unmarshal(out.Bytes(), &gotRaw); err != nil {
 		t.Fatalf("Unmarshal() error:\n%+v", err)
 	}
-	expectedRaw := map[string]interface{}{
-		"module1": map[string]interface{}{
+	expectedRaw := gin.H{
+		"module1": gin.H{
 			"listen":  "127.0.0.1:8080",
 			"topic":   "flows",
 			"workers": 100,
 		},
-		"module2": map[string]interface{}{
+		"module2": gin.H{
 			"stuff": "bye",
-			"details": map[string]interface{}{
+			"details": gin.H{
 				"workers":       5,
 				"intervalvalue": "20m0s",
 			},
 			"elements": []interface{}{
-				map[string]interface{}{
+				gin.H{
 					"name":  "first",
 					"gauge": 67,
 				},
-				map[string]interface{}{
+				gin.H{
 					"name":  "second",
 					"gauge": 0,
 				},

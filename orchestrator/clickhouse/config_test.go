@@ -15,7 +15,7 @@ import (
 func TestNetworkNamesUnmarshalHook(t *testing.T) {
 	cases := []struct {
 		Description string
-		Input       map[string]interface{}
+		Input       gin.H
 		Output      map[string]NetworkAttributes
 		Error       bool
 	}{

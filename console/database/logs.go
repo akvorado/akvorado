@@ -7,6 +7,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	gormlogger "gorm.io/gorm/logger"
 	"gorm.io/gorm/utils"
 
@@ -36,7 +37,7 @@ func (l *logger) Error(ctx context.Context, s string, args ...interface{}) {
 func (l *logger) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
 	elapsed := time.Since(begin)
 	sql, _ := fc()
-	fields := map[string]interface{}{
+	fields := gin.H{
 		"sql":      sql,
 		"duration": elapsed,
 		"source":   utils.FileWithLineNum(),
