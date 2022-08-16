@@ -15,6 +15,7 @@ identified with a specific icon:
 
 - ✨ *inlet*: add support for SNMPv3 protocol
 - 🌱 *inlet*: `inlet.snmp.default-community` is now deprecated
+- 🩹 *geoip*: fix `inlet.geoip.country-database` rename to `inlet.geoip.geo-database`
 
 ## 1.5.5 - 2022-08-09
 
