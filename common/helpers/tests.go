@@ -17,6 +17,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"reflect"
 	"testing"
 	"time"
 
@@ -28,15 +29,25 @@ import (
 
 var prettyC = pretty.Config{
 	Diffable:          true,
-	PrintStringers:    true,
+	PrintStringers:    false,
 	SkipZeroFields:    true,
 	IncludeUnexported: false,
+	Formatter: map[reflect.Type]interface{}{
+		reflect.TypeOf(net.IP{}):            fmt.Sprint,
+		reflect.TypeOf(time.Time{}):         fmt.Sprint,
+		reflect.TypeOf(SubnetMap[string]{}): fmt.Sprint,
+	},
 }
 
 // Diff return a diff of two objects. If no diff, an empty string is
 // returned.
 func Diff(a, b interface{}) string {
 	return prettyC.Compare(a, b)
+}
+
+// RegisterDiffFormatter add an additional formatter for pretty diff.
+func RegisterDiffFormatter(t reflect.Type, fn interface{}) {
+	prettyC.Formatter[t] = fn
 }
 
 // HTTPEndpointCases describes case for TestHTTPEndpoints

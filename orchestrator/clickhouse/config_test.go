@@ -4,6 +4,8 @@
 package clickhouse
 
 import (
+	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -90,4 +92,8 @@ func TestDefaultConfiguration(t *testing.T) {
 	if err := helpers.Validate.Struct(config); err != nil {
 		t.Fatalf("validate.Struct() error:\n%+v", err)
 	}
+}
+
+func init() {
+	helpers.RegisterDiffFormatter(reflect.TypeOf(helpers.SubnetMap[NetworkAttributes]{}), fmt.Sprint)
 }
