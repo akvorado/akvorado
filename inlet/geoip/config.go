@@ -33,7 +33,7 @@ func DefaultConfiguration() Configuration {
 //   - replace country-database by geo-database
 func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (interface{}, error) {
-		if from.Kind() != reflect.Map || from.IsNil() || from.Type().Key().Kind() != reflect.String || to.Type() != reflect.TypeOf(Configuration{}) {
+		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(Configuration{}) {
 			return from.Interface(), nil
 		}
 
@@ -41,6 +41,10 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 		var countryKey, geoKey *reflect.Value
 		fromMap := from.MapKeys()
 		for i, k := range fromMap {
+			k = helpers.ElemOrIdentity(k)
+			if k.Kind() != reflect.String {
+				return from.Interface(), nil
+			}
 			if helpers.MapStructureMatchName(k.String(), "CountryDatabase") {
 				countryKey = &fromMap[i]
 			} else if helpers.MapStructureMatchName(k.String(), "GeoDatabase") {

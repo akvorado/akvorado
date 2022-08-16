@@ -17,24 +17,20 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"reflect"
 	"testing"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/kylelemons/godebug/pretty"
+	"github.com/mitchellh/mapstructure"
+	"gopkg.in/yaml.v2"
 )
 
 var prettyC = pretty.Config{
 	Diffable:          true,
-	PrintStringers:    false,
+	PrintStringers:    true,
 	SkipZeroFields:    true,
 	IncludeUnexported: false,
-	Formatter: map[reflect.Type]interface{}{
-		reflect.TypeOf(net.IP{}):            fmt.Sprint,
-		reflect.TypeOf(time.Time{}):         fmt.Sprint,
-		reflect.TypeOf(SubnetMap[string]{}): fmt.Sprint,
-	},
 }
 
 // Diff return a diff of two objects. If no diff, an empty string is
@@ -145,6 +141,65 @@ func TestHTTPEndpoints(t *testing.T, serverAddr net.Addr, cases HTTPEndpointCase
 				}
 			}
 		})
+	}
+}
+
+// ConfigurationDecodeCases describes a test case for configuration
+// decode. We use functions to return value as the decoding process
+// may mutate the configuration.
+type ConfigurationDecodeCases []struct {
+	Description   string
+	Initial       func() interface{} // initial value for configuration
+	Configuration func() interface{} // configuration to decode
+	Expected      interface{}
+	Error         bool
+}
+
+// TestConfigurationDecode helps decoding configuration. It also test decoding from YAML.
+func TestConfigurationDecode(t *testing.T, cases ConfigurationDecodeCases) {
+	t.Helper()
+	for _, tc := range cases {
+		for _, fromYAML := range []bool{false, true} {
+			title := tc.Description
+			if fromYAML {
+				title = fmt.Sprintf("%s (from YAML)", title)
+				if tc.Configuration == nil {
+					continue
+				}
+			}
+			t.Run(title, func(t *testing.T) {
+				var configuration interface{}
+				if fromYAML {
+					// Encode and decode with YAML
+					out, err := yaml.Marshal(tc.Configuration())
+					if err != nil {
+						t.Fatalf("yaml.Marshal() error:\n%+v", err)
+					}
+					if err := yaml.Unmarshal(out, &configuration); err != nil {
+						t.Fatalf("yaml.Unmarshal() error:\n%+v", err)
+					}
+				} else {
+					// Just use as is
+					configuration = tc.Configuration()
+				}
+				got := tc.Initial()
+
+				decoder, err := mapstructure.NewDecoder(GetMapStructureDecoderConfig(&got))
+				if err != nil {
+					t.Fatalf("NewDecoder() error:\n%+v", err)
+				}
+				err = decoder.Decode(configuration)
+				if err != nil && !tc.Error {
+					t.Fatalf("Decode() error:\n%+v", err)
+				} else if err == nil && tc.Error {
+					t.Errorf("Decode() did not error")
+				}
+
+				if diff := Diff(got, tc.Expected); diff != "" && err == nil {
+					t.Fatalf("Decode() (-got, +want):\n%s", diff)
+				}
+			})
+		}
 	}
 }
 

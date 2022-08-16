@@ -11,7 +11,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gosnmp/gosnmp"
-	"github.com/mitchellh/mapstructure"
 )
 
 func TestDefaultConfiguration(t *testing.T) {
@@ -21,29 +20,31 @@ func TestDefaultConfiguration(t *testing.T) {
 }
 
 func TestConfigurationUnmarshallerHook(t *testing.T) {
-	cases := []struct {
-		Description string
-		Input       gin.H
-		Output      Configuration
-	}{
+	helpers.TestConfigurationDecode(t, helpers.ConfigurationDecodeCases{
 		{
-			Description: "nil",
-			Input:       nil,
+			Description:   "nil",
+			Initial:       func() interface{} { return Configuration{} },
+			Configuration: func() interface{} { return nil },
+			Expected:      Configuration{},
 		}, {
-			Description: "empty",
-			Input:       gin.H{},
-			Output: Configuration{
+			Description:   "empty",
+			Initial:       func() interface{} { return Configuration{} },
+			Configuration: func() interface{} { return gin.H{} },
+			Expected: Configuration{
 				Communities: helpers.MustNewSubnetMap(map[string]string{
 					"::/0": "public",
 				}),
 			},
 		}, {
 			Description: "no communities, no default community",
-			Input: gin.H{
-				"cache-refresh":  "10s",
-				"poller-retries": 10,
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"cache-refresh":  "10s",
+					"poller-retries": 10,
+				}
 			},
-			Output: Configuration{
+			Expected: Configuration{
 				CacheRefresh:  10 * time.Second,
 				PollerRetries: 10,
 				Communities: helpers.MustNewSubnetMap(map[string]string{
@@ -52,13 +53,16 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 		}, {
 			Description: "communities, no default community",
-			Input: gin.H{
-				"communities": gin.H{
-					"203.0.113.0/25":   "public",
-					"203.0.113.128/25": "private",
-				},
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"communities": gin.H{
+						"203.0.113.0/25":   "public",
+						"203.0.113.128/25": "private",
+					},
+				}
 			},
-			Output: Configuration{
+			Expected: Configuration{
 				Communities: helpers.MustNewSubnetMap(map[string]string{
 					"::/0":                     "public",
 					"::ffff:203.0.113.0/121":   "public",
@@ -67,24 +71,30 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 		}, {
 			Description: "no communities, default community",
-			Input: gin.H{
-				"default-community": "private",
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"default-community": "private",
+				}
 			},
-			Output: Configuration{
+			Expected: Configuration{
 				Communities: helpers.MustNewSubnetMap(map[string]string{
 					"::/0": "private",
 				}),
 			},
 		}, {
 			Description: "communities, default community",
-			Input: gin.H{
-				"default-community": "private",
-				"communities": gin.H{
-					"203.0.113.0/25":   "public",
-					"203.0.113.128/25": "private",
-				},
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"default-community": "private",
+					"communities": gin.H{
+						"203.0.113.0/25":   "public",
+						"203.0.113.128/25": "private",
+					},
+				}
 			},
-			Output: Configuration{
+			Expected: Configuration{
 				Communities: helpers.MustNewSubnetMap(map[string]string{
 					"::/0":                     "private",
 					"::ffff:203.0.113.0/121":   "public",
@@ -93,14 +103,17 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 		}, {
 			Description: "communities, default-community empty",
-			Input: gin.H{
-				"default-community": "",
-				"communities": gin.H{
-					"203.0.113.0/25":   "public",
-					"203.0.113.128/25": "private",
-				},
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"default-community": "",
+					"communities": gin.H{
+						"203.0.113.0/25":   "public",
+						"203.0.113.128/25": "private",
+					},
+				}
 			},
-			Output: Configuration{
+			Expected: Configuration{
 				Communities: helpers.MustNewSubnetMap(map[string]string{
 					"::/0":                     "public",
 					"::ffff:203.0.113.0/121":   "public",
@@ -109,16 +122,19 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 		}, {
 			Description: "SNMP security parameters",
-			Input: gin.H{
-				"security-parameters": gin.H{
-					"user-name":                 "alfred",
-					"authentication-protocol":   "sha",
-					"authentication-passphrase": "hello",
-					"privacy-protocol":          "aes",
-					"privacy-passphrase":        "bye",
-				},
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"security-parameters": gin.H{
+						"user-name":                 "alfred",
+						"authentication-protocol":   "sha",
+						"authentication-passphrase": "hello",
+						"privacy-protocol":          "aes",
+						"privacy-passphrase":        "bye",
+					},
+				}
 			},
-			Output: Configuration{
+			Expected: Configuration{
 				Communities: helpers.MustNewSubnetMap(map[string]string{
 					"::/0": "public",
 				}),
@@ -133,20 +149,5 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 				}),
 			},
 		},
-	}
-	for _, tc := range cases {
-		t.Run(tc.Description, func(t *testing.T) {
-			var got Configuration
-			decoder, err := mapstructure.NewDecoder(helpers.GetMapStructureDecoderConfig(&got))
-			if err != nil {
-				t.Fatalf("NewDecoder() error:\n%+v", err)
-			}
-			err = decoder.Decode(tc.Input)
-			if err != nil {
-				t.Fatalf("Decode() error:\n%+v", err)
-			} else if diff := helpers.Diff(got, tc.Output); diff != "" {
-				t.Fatalf("Decode() (-got, +want):\n%s", diff)
-			}
-		})
-	}
+	})
 }

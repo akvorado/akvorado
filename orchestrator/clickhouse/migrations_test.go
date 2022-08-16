@@ -136,7 +136,7 @@ func TestGetHTTPBaseURL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Parse(%q) error:\n%+v", rawURL, err)
 	}
-	expectedURL := url.URL{
+	expectedURL := &url.URL{
 		Scheme: "http",
 		Host:   http.Address.String(),
 	}
