@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"bytes"
 	"testing"
 
 	"akvorado/common/reporter"
@@ -15,5 +16,16 @@ func TestOrchestratorStart(t *testing.T) {
 	config.Reset()
 	if err := orchestratorStart(r, config, true); err != nil {
 		t.Fatalf("orchestratorStart() error:\n%+v", err)
+	}
+}
+
+func TestOrchestratorFullConfig(t *testing.T) {
+	root := RootCmd
+	buf := new(bytes.Buffer)
+	root.SetOut(buf)
+	root.SetArgs([]string{"orchestrator", "--dump", "--check", "../akvorado.yaml"})
+	err := root.Execute()
+	if err != nil {
+		t.Errorf("`orchestrator` command error:\n%+v", err)
 	}
 }
