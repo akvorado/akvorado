@@ -74,7 +74,7 @@ func DefaultConfiguration() Configuration {
 //   - ensure we have a default value for communities
 func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (interface{}, error) {
-		if from.Kind() != reflect.Map || from.IsNil() || from.Type().Key().Kind() != reflect.String || to.Type() != reflect.TypeOf(Configuration{}) {
+		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(Configuration{}) {
 			return from.Interface(), nil
 		}
 
@@ -82,6 +82,10 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 		var defaultKey, mapKey *reflect.Value
 		fromMap := from.MapKeys()
 		for i, k := range fromMap {
+			k = helpers.ElemOrIdentity(k)
+			if k.Kind() != reflect.String {
+				return from.Interface(), nil
+			}
 			if helpers.MapStructureMatchName(k.String(), "DefaultCommunity") {
 				defaultKey = &fromMap[i]
 			} else if helpers.MapStructureMatchName(k.String(), "Communities") {

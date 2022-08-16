@@ -123,7 +123,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 					"::/0": "public",
 				}),
 				SecurityParameters: helpers.MustNewSubnetMap(map[string]SecurityParameters{
-					"::/0": SecurityParameters{
+					"::/0": {
 						UserName:                 "alfred",
 						AuthenticationProtocol:   AuthProtocol(gosnmp.SHA),
 						AuthenticationPassphrase: "hello",
