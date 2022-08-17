@@ -161,9 +161,10 @@ The following configuration keys are accepted:
   one received in the flows. This is useful if a device lie about its
   sampling rate. This is a map from subnets to sampling rates (but it
   would also accept a single value).
-- `ignore-asn-from-flow` allows one to ignore the AS numbers from the
-  received flows. It can be useful for routers with a partial routing
-  table and a default route learned over BGP.
+- `asn-providers` defines the source list for AS numbers. The available
+  sources are `flow`, `flow-except-private` (use information from flow
+  except if the ASN is private), and `geoip`. The default value is
+  `flow` and `geoip`.
 
 Classifier rules are written using [expr][].
 

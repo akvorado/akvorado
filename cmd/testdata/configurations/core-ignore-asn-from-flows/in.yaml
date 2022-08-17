@@ -1,0 +1,4 @@
+---
+inlet:
+  core:
+    ignore-asn-from-flow: true

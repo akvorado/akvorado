@@ -4,6 +4,7 @@
 package core
 
 import (
+	"fmt"
 	"net"
 	"testing"
 	"time"
@@ -384,6 +385,49 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 			}
 			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 				t.Fatalf("Metrics (-got, +want):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetASNumber(t *testing.T) {
+	cases := []struct {
+		Flow      uint32
+		Addr      string
+		Providers []ASNProvider
+		Expected  uint32
+	}{
+		{12322, "1.0.0.1", []ASNProvider{ProviderFlow}, 12322},
+		{65536, "1.0.0.1", []ASNProvider{ProviderFlow}, 65536},
+		{65536, "1.0.0.1", []ASNProvider{ProviderFlowExceptPrivate}, 0},
+		{4_200_000_121, "1.0.0.1", []ASNProvider{ProviderFlowExceptPrivate}, 0},
+		{65536, "1.0.0.1", []ASNProvider{ProviderFlowExceptPrivate, ProviderFlow}, 65536},
+		{12322, "1.0.0.1", []ASNProvider{ProviderFlowExceptPrivate}, 12322},
+		{12322, "1.0.0.1", []ASNProvider{ProviderGeoIP}, 15169},
+		{12322, "2.0.0.1", []ASNProvider{ProviderGeoIP}, 0},
+		{12322, "1.0.0.1", []ASNProvider{ProviderGeoIP, ProviderFlow}, 15169},
+		{12322, "1.0.0.1", []ASNProvider{ProviderFlow, ProviderGeoIP}, 12322},
+		{12322, "2.0.0.1", []ASNProvider{ProviderFlow, ProviderGeoIP}, 12322},
+		{12322, "2.0.0.1", []ASNProvider{ProviderGeoIP, ProviderFlow}, 12322},
+	}
+	for i, tc := range cases {
+		i++
+		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
+			r := reporter.NewMock(t)
+
+			// We don't need all components as we won't start the component.
+			configuration := DefaultConfiguration()
+			configuration.ASNProviders = tc.Providers
+			c, err := New(r, configuration, Dependencies{
+				Daemon: daemon.NewMock(t),
+				GeoIP:  geoip.NewMock(t, r),
+			})
+			if err != nil {
+				t.Fatalf("New() error:\n%+v", err)
+			}
+			got := c.getASNumber(tc.Flow, net.ParseIP(tc.Addr))
+			if diff := helpers.Diff(got, tc.Expected); diff != "" {
+				t.Fatalf("getASNumber() (-got, +want):\n%s", diff)
 			}
 		})
 	}

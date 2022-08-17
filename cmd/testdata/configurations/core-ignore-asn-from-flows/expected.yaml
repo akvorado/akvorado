@@ -1,0 +1,4 @@
+---
+paths:
+  inlet.0.core.asnproviders:
+    - geoip

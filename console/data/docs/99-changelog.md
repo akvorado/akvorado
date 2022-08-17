@@ -11,6 +11,12 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🌱 *inlet*: add `inlet.core.asn-providers` to specify how to get AS
+  numbers. `inlet.core.ignore-asn-from-flow` is deprecated and mapped
+  to `geoip`.
+
 ## 1.5.6 - 2022-08-16
 
 - ✨ *inlet*: add support for SNMPv3 protocol

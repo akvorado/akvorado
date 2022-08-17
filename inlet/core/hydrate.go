@@ -86,17 +86,37 @@ func (c *Component) hydrateFlow(exporterIP net.IP, exporterStr string, flow *flo
 		flow.InIfName, flow.InIfDescription, flow.InIfSpeed,
 		&flow.InIfConnectivity, &flow.InIfProvider, &flow.InIfBoundary)
 
-	// Add GeoIP
-	if flow.SrcAS == 0 || c.config.IgnoreASNFromFlow {
-		flow.SrcAS = c.d.GeoIP.LookupASN(net.IP(flow.SrcAddr))
-	}
-	if flow.DstAS == 0 || c.config.IgnoreASNFromFlow {
-		flow.DstAS = c.d.GeoIP.LookupASN(net.IP(flow.DstAddr))
-	}
+	flow.SrcAS = c.getASNumber(flow.SrcAS, net.IP(flow.SrcAddr))
+	flow.DstAS = c.getASNumber(flow.DstAS, net.IP(flow.DstAddr))
 	flow.SrcCountry = c.d.GeoIP.LookupCountry(net.IP(flow.SrcAddr))
 	flow.DstCountry = c.d.GeoIP.LookupCountry(net.IP(flow.DstAddr))
 
 	return
+}
+
+// getASNumber retrieves the AS number for a flow, depending on user preferences.
+func (c *Component) getASNumber(flowAS uint32, flowAddr net.IP) (asn uint32) {
+	for _, provider := range c.config.ASNProviders {
+		if asn != 0 {
+			break
+		}
+		switch provider {
+		case ProviderFlow:
+			asn = flowAS
+		case ProviderFlowExceptPrivate:
+			// See https://www.iana.org/assignments/iana-as-numbers-special-registry/iana-as-numbers-special-registry.xhtml
+			if flowAS == 0 || flowAS == 23456 {
+				break
+			}
+			if 64496 <= flowAS && flowAS <= 65551 || 4_200_000_000 <= flowAS && flowAS <= 4_294_967_295 {
+				break
+			}
+			asn = flowAS
+		case ProviderGeoIP:
+			asn = c.d.GeoIP.LookupASN(flowAddr)
+		}
+	}
+	return asn
 }
 
 func (c *Component) classifyExporter(ip string, flow *flow.Message) {
