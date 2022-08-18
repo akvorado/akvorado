@@ -124,24 +124,20 @@ type AuthProtocol gosnmp.SnmpV3AuthProtocol
 
 // UnmarshalText parses a SNMPv3 authentication protocol
 func (ap *AuthProtocol) UnmarshalText(text []byte) error {
-	switch strings.ToUpper(string(text)) {
-	case "":
-		*ap = AuthProtocol(gosnmp.NoAuth)
-	case "MD5":
-		*ap = AuthProtocol(gosnmp.MD5)
-	case "SHA":
-		*ap = AuthProtocol(gosnmp.SHA)
-	case "SHA224":
-		*ap = AuthProtocol(gosnmp.SHA224)
-	case "SHA256":
-		*ap = AuthProtocol(gosnmp.SHA256)
-	case "SHA384":
-		*ap = AuthProtocol(gosnmp.SHA384)
-	case "SHA512":
-		*ap = AuthProtocol(gosnmp.SHA512)
-	default:
+	protocols := map[string]gosnmp.SnmpV3AuthProtocol{
+		"":       gosnmp.NoAuth,
+		"MD5":    gosnmp.MD5,
+		"SHA":    gosnmp.SHA,
+		"SHA224": gosnmp.SHA224,
+		"SHA256": gosnmp.SHA256,
+		"SHA384": gosnmp.SHA384,
+		"SHA512": gosnmp.SHA512,
+	}
+	protocol, ok := protocols[strings.ToUpper(string(text))]
+	if !ok {
 		return errors.New("unknown auth protocol")
 	}
+	*ap = AuthProtocol(protocol)
 	return nil
 }
 
@@ -159,36 +155,32 @@ func (ap AuthProtocol) MarshalText() ([]byte, error) {
 type PrivProtocol gosnmp.SnmpV3PrivProtocol
 
 // UnmarshalText parses a SNMPv3 privacy protocol
-func (ap *PrivProtocol) UnmarshalText(text []byte) error {
-	switch strings.ToUpper(string(text)) {
-	case "":
-		*ap = PrivProtocol(gosnmp.NoPriv)
-	case "DES":
-		*ap = PrivProtocol(gosnmp.DES)
-	case "AES":
-		*ap = PrivProtocol(gosnmp.AES)
-	case "AES192":
-		*ap = PrivProtocol(gosnmp.AES192)
-	case "AES256":
-		*ap = PrivProtocol(gosnmp.AES256)
-	case "AES192C":
-		*ap = PrivProtocol(gosnmp.AES192C)
-	case "AES256C":
-		*ap = PrivProtocol(gosnmp.AES256C)
-	default:
-		return errors.New("unknown priv protocol")
+func (pp *PrivProtocol) UnmarshalText(text []byte) error {
+	protocols := map[string]gosnmp.SnmpV3PrivProtocol{
+		"":        gosnmp.NoPriv,
+		"DES":     gosnmp.DES,
+		"AES":     gosnmp.AES,
+		"AES192":  gosnmp.AES192,
+		"AES256":  gosnmp.AES256,
+		"AES192C": gosnmp.AES192C,
+		"AES256C": gosnmp.AES256C,
 	}
+	protocol, ok := protocols[strings.ToUpper(string(text))]
+	if !ok {
+		return errors.New("unknown privacy protocol")
+	}
+	*pp = PrivProtocol(protocol)
 	return nil
 }
 
 // String turns a SNMPv3 privacy protocol to a string
-func (ap PrivProtocol) String() string {
-	return gosnmp.SnmpV3PrivProtocol(ap).String()
+func (pp PrivProtocol) String() string {
+	return gosnmp.SnmpV3PrivProtocol(pp).String()
 }
 
 // MarshalText turns a SNMPv3 privacy protocol to a string
-func (ap PrivProtocol) MarshalText() ([]byte, error) {
-	return []byte(ap.String()), nil
+func (pp PrivProtocol) MarshalText() ([]byte, error) {
+	return []byte(pp.String()), nil
 }
 
 func init() {
