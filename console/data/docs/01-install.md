@@ -28,12 +28,12 @@ Currently, only a pre-built binary for Linux x86-64 is provided.
 ## Compilation from source
 
 You need a proper installation of [Go](https://go.dev/doc/install)
-(1.18+), [NodeJS](https://nodejs.org/en/download/) (14+) with NPM
+(1.19+), [NodeJS](https://nodejs.org/en/download/) (14+) with NPM
 (6+), and [protoc](https://grpc.io/docs/protoc-installation/). For
 example, on Debian:
 
 ```console
-# apt install golang-1.18 nodejs npm protobuf-compiler
+# apt install golang-1.19 nodejs npm protobuf-compiler
 # node --version
 v16.15.1
 # npm --version

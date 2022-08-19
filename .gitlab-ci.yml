@@ -6,7 +6,7 @@ stages:
 
 run tests:
   stage: tests
-  image: golang:1.18-alpine
+  image: golang:1.19-alpine
   cache:
     - key:
         files:

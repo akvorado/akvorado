@@ -27,8 +27,8 @@ type Component struct {
 	config Configuration
 
 	db struct {
-		geo atomic.Value // *geoip2.Reader
-		asn atomic.Value // *geoip2.Reader
+		geo atomic.Pointer[geoip2.Reader]
+		asn atomic.Pointer[geoip2.Reader]
 	}
 	metrics struct {
 		databaseRefresh *reporter.CounterVec
@@ -82,7 +82,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 
 // openDatabase opens the provided database and closes the current
 // one. Do nothing if the path is empty.
-func (c *Component) openDatabase(which string, path string, container *atomic.Value) error {
+func (c *Component) openDatabase(which string, path string, container *atomic.Pointer[geoip2.Reader]) error {
 	if path == "" {
 		return nil
 	}
@@ -100,7 +100,7 @@ func (c *Component) openDatabase(which string, path string, container *atomic.Va
 		c.r.Debug().
 			Str("database", path).
 			Msgf("closing previous %s database", which)
-		old.(*geoip2.Reader).Close()
+		old.Close()
 	}
 	return nil
 }

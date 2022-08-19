@@ -5,15 +5,13 @@ package geoip
 
 import (
 	"net"
-
-	"github.com/oschwald/geoip2-golang"
 )
 
 // LookupASN returns the result of a lookup for an AS number.
 func (c *Component) LookupASN(ip net.IP) uint32 {
 	asnDB := c.db.asn.Load()
 	if asnDB != nil {
-		asn, err := asnDB.(*geoip2.Reader).ASN(ip)
+		asn, err := asnDB.ASN(ip)
 		if err == nil && asn.AutonomousSystemNumber != 0 {
 			c.metrics.databaseHit.WithLabelValues("asn").Inc()
 			return uint32(asn.AutonomousSystemNumber)
@@ -27,7 +25,7 @@ func (c *Component) LookupASN(ip net.IP) uint32 {
 func (c *Component) LookupCountry(ip net.IP) string {
 	geoDB := c.db.geo.Load()
 	if geoDB != nil {
-		geo, err := geoDB.(*geoip2.Reader).Country(ip)
+		geo, err := geoDB.Country(ip)
 		if err == nil && geo.Country.IsoCode != "" {
 			c.metrics.databaseHit.WithLabelValues("geo").Inc()
 			return geo.Country.IsoCode

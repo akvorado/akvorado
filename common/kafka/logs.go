@@ -21,7 +21,7 @@ func init() {
 var GlobalKafkaLogger kafkaLogger
 
 type kafkaLogger struct {
-	r atomic.Value
+	r atomic.Pointer[reporter.Reporter]
 }
 
 // Register register the provided reporter to be used for logging with sarama.
@@ -37,24 +37,24 @@ func (l *kafkaLogger) Unregister() {
 
 func (l *kafkaLogger) Print(v ...interface{}) {
 	r := l.r.Load()
-	if r != nil && r.(*reporter.Reporter) != nil {
-		if e := r.(*reporter.Reporter).Debug(); e.Enabled() {
+	if r != nil {
+		if e := r.Debug(); e.Enabled() {
 			e.Msg(fmt.Sprint(v...))
 		}
 	}
 }
 func (l *kafkaLogger) Println(v ...interface{}) {
 	r := l.r.Load()
-	if r != nil && r.(*reporter.Reporter) != nil {
-		if e := r.(*reporter.Reporter).Debug(); e.Enabled() {
+	if r != nil {
+		if e := r.Debug(); e.Enabled() {
 			e.Msg(fmt.Sprint(v...))
 		}
 	}
 }
 func (l *kafkaLogger) Printf(format string, v ...interface{}) {
 	r := l.r.Load()
-	if r != nil && r.(*reporter.Reporter) != nil {
-		if e := r.(*reporter.Reporter).Debug(); e.Enabled() {
+	if r != nil {
+		if e := r.Debug(); e.Enabled() {
 			e.Msg(fmt.Sprintf(format, v...))
 		}
 	}
