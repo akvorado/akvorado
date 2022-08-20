@@ -138,7 +138,7 @@ func TestGetHTTPBaseURL(t *testing.T) {
 	}
 	expectedURL := &url.URL{
 		Scheme: "http",
-		Host:   http.Address.String(),
+		Host:   http.LocalAddr().String(),
 	}
 	parsedURL.Host = parsedURL.Host[strings.LastIndex(parsedURL.Host, ":"):]
 	expectedURL.Host = expectedURL.Host[strings.LastIndex(expectedURL.Host, ":"):]

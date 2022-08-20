@@ -77,7 +77,7 @@ func TestWidgetLastFlow(t *testing.T) {
 			return nil
 		})
 
-	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			URL: "/api/v0/console/widget/flow-last",
 			JSONOutput: gin.H{
@@ -105,7 +105,7 @@ func TestFlowRate(t *testing.T) {
 			`SELECT COUNT(*)/300 AS rate FROM flows WHERE TimeReceived > date_sub(minute, 5, now())`).
 		Return(mockRow)
 
-	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			URL: "/api/v0/console/widget/flow-rate",
 			JSONOutput: gin.H{
@@ -132,7 +132,7 @@ func TestWidgetExporters(t *testing.T) {
 		SetArg(1, expected).
 		Return(nil)
 
-	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			URL: "/api/v0/console/widget/exporters",
 			JSONOutput: gin.H{
@@ -180,7 +180,7 @@ func TestWidgetTop(t *testing.T) {
 			}),
 	)
 
-	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			URL: "/api/v0/console/widget/top/src-port",
 			JSONOutput: gin.H{
@@ -245,7 +245,7 @@ ORDER BY Time WITH FILL
 		SetArg(1, expected).
 		Return(nil)
 
-	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			URL: "/api/v0/console/widget/graph?points=100",
 			JSONOutput: gin.H{

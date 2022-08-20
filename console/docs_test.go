@@ -31,7 +31,7 @@ func TestServeDocs(t *testing.T) {
 				_, h, _, _ := NewMock(t, conf)
 
 				resp, err := netHTTP.Get(fmt.Sprintf("http://%s/api/v0/console/docs/%s",
-					h.Address, tc.Path))
+					h.LocalAddr(), tc.Path))
 				if err != nil {
 					t.Fatalf("GET /api/v0/console/docs/%s:\n%+v", tc.Path, err)
 				}

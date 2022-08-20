@@ -168,7 +168,7 @@ func (c *Component) getHTTPBaseURL(address string) (string, error) {
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 
 	// Combine with HTTP port
-	_, port, err := net.SplitHostPort(c.d.HTTP.Address.String())
+	_, port, err := net.SplitHostPort(c.d.HTTP.LocalAddr().String())
 	if err != nil {
 		return "", fmt.Errorf("cannot get HTTP port: %w", err)
 	}

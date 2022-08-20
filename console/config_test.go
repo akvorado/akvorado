@@ -15,7 +15,7 @@ func TestConfigHandler(t *testing.T) {
 	config := DefaultConfiguration()
 	config.Version = "1.2.3"
 	_, h, _, _ := NewMock(t, config)
-	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			URL: "/api/v0/console/configuration",
 			JSONOutput: gin.H{

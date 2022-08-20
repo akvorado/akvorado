@@ -91,7 +91,7 @@ UNION DISTINCT
 		}).
 		Return(nil)
 
-	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			URL:       "/api/v0/console/filter/validate",
 			JSONInput: gin.H{"filter": `InIfName = "Gi0/0/0/1"`},

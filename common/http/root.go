@@ -36,9 +36,7 @@ type Component struct {
 		durations *reporter.HistogramVec
 		sizes     *reporter.HistogramVec
 	}
-
-	// Local address used by the HTTP server. Only valid after Start().
-	Address net.Addr
+	address net.Addr
 
 	// GinRouter is the router exposed for /api
 	GinRouter *gin.Engine
@@ -142,7 +140,7 @@ func (c *Component) Start() error {
 	if err != nil {
 		return fmt.Errorf("unable to listen to %v: %w", c.config.Listen, err)
 	}
-	c.Address = listener.Addr()
+	c.address = listener.Addr()
 
 	// Start serving requests
 	c.t.Go(func() error {

@@ -204,7 +204,7 @@ func TestCore(t *testing.T) {
 	t.Run("http flows", func(t *testing.T) {
 		c.httpFlowFlushDelay = 20 * time.Millisecond
 
-		resp, err := netHTTP.Get(fmt.Sprintf("http://%s/api/v0/inlet/flows", c.d.HTTP.Address))
+		resp, err := netHTTP.Get(fmt.Sprintf("http://%s/api/v0/inlet/flows", c.d.HTTP.LocalAddr()))
 		if err != nil {
 			t.Fatalf("GET /api/v0/inlet/flows:\n%+v", err)
 		}
@@ -277,7 +277,7 @@ func TestCore(t *testing.T) {
 	// Test HTTP flow clients with a limit
 	time.Sleep(10 * time.Millisecond)
 	t.Run("http flows with limit", func(t *testing.T) {
-		resp, err := netHTTP.Get(fmt.Sprintf("http://%s/api/v0/inlet/flows?limit=4", c.d.HTTP.Address))
+		resp, err := netHTTP.Get(fmt.Sprintf("http://%s/api/v0/inlet/flows?limit=4", c.d.HTTP.LocalAddr()))
 		if err != nil {
 			t.Fatalf("GET /api/v0/inlet/flows:\n%+v", err)
 		}

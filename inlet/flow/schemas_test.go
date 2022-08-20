@@ -37,5 +37,5 @@ func TestHTTPEndpoints(t *testing.T) {
 		},
 	}
 
-	helpers.TestHTTPEndpoints(t, c.d.HTTP.Address, cases)
+	helpers.TestHTTPEndpoints(t, c.d.HTTP.LocalAddr(), cases)
 }

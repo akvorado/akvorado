@@ -29,7 +29,7 @@ func TestConfigurationEndpoint(t *testing.T) {
 		"bye":   "Goodbye pal!",
 	})
 
-	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			URL:         "/api/v0/orchestrator/configuration/inlet",
 			ContentType: "application/x-yaml; charset=utf-8",

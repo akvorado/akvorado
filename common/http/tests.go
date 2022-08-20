@@ -6,6 +6,7 @@
 package http
 
 import (
+	"net"
 	"testing"
 
 	"akvorado/common/daemon"
@@ -25,4 +26,9 @@ func NewMock(t *testing.T, r *reporter.Reporter) *Component {
 	}
 	helpers.StartStop(t, c)
 	return c
+}
+
+// LocalAddr returns the address the HTTP server is listening to.
+func (c *Component) LocalAddr() net.Addr {
+	return c.address
 }

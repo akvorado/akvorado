@@ -23,7 +23,7 @@ func TestServeAssets(t *testing.T) {
 			conf.ServeLiveFS = live
 			_, h, _, _ := NewMock(t, conf)
 
-			helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+			helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 				{
 					URL:         "/",
 					ContentType: "text/html; charset=utf-8",

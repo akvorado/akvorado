@@ -25,7 +25,7 @@ func TestHandler(t *testing.T) {
 		}))
 
 	// Check the HTTP server is running and answering metrics
-	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			URL:         "/test",
 			ContentType: "text/plain; charset=utf-8",
@@ -61,7 +61,7 @@ func TestGinRouter(t *testing.T) {
 		})
 	})
 
-	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			URL:         "/api/v0/test",
 			ContentType: "application/json; charset=utf-8",
@@ -81,7 +81,7 @@ func TestGinRouterPanic(t *testing.T) {
 		panic("heeeelp")
 	})
 
-	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			URL:         "/api/v0/test",
 			StatusCode:  500,

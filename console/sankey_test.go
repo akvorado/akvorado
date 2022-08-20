@@ -169,7 +169,7 @@ func TestSankeyHandler(t *testing.T) {
 		SetArg(1, expectedSQL).
 		Return(nil)
 
-	helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			URL: "/api/v0/console/sankey",
 			JSONInput: gin.H{

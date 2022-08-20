@@ -62,7 +62,7 @@ func TestHTTPEndpoints(t *testing.T) {
 		},
 	}
 
-	helpers.TestHTTPEndpoints(t, c.d.HTTP.Address, cases)
+	helpers.TestHTTPEndpoints(t, c.d.HTTP.LocalAddr(), cases)
 }
 
 func TestAdditionalASNs(t *testing.T) {
@@ -91,5 +91,5 @@ func TestAdditionalASNs(t *testing.T) {
 		},
 	}
 
-	helpers.TestHTTPEndpoints(t, c.d.HTTP.Address, cases)
+	helpers.TestHTTPEndpoints(t, c.d.HTTP.LocalAddr(), cases)
 }

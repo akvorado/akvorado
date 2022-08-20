@@ -28,7 +28,7 @@ func TestUserHandler(t *testing.T) {
 	endpoint.GET("/avatar", c.UserAvatarHandlerFunc)
 
 	t.Run("default user configured", func(t *testing.T) {
-		helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+		helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 			{
 				Description: "user info, no user logged in",
 				URL:         "/api/v0/console/user/info",
@@ -106,7 +106,7 @@ func TestUserHandler(t *testing.T) {
 
 	t.Run("no default user", func(t *testing.T) {
 		c.config.DefaultUser.Login = ""
-		helpers.TestHTTPEndpoints(t, h.Address, helpers.HTTPEndpointCases{
+		helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 			{
 				Description: "user info, no user logged in",
 				URL:         "/api/v0/console/user/info",
