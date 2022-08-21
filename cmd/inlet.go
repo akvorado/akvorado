@@ -11,6 +11,7 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
+	"akvorado/inlet/bmp"
 	"akvorado/inlet/core"
 	"akvorado/inlet/flow"
 	"akvorado/inlet/geoip"
@@ -24,6 +25,7 @@ type InletConfiguration struct {
 	HTTP      http.Configuration
 	Flow      flow.Configuration
 	SNMP      snmp.Configuration
+	BMP       bmp.Configuration
 	GeoIP     geoip.Configuration
 	Kafka     kafka.Configuration
 	Core      core.Configuration
@@ -36,6 +38,7 @@ func (c *InletConfiguration) Reset() {
 		Reporting: reporter.DefaultConfiguration(),
 		Flow:      flow.DefaultConfiguration(),
 		SNMP:      snmp.DefaultConfiguration(),
+		BMP:       bmp.DefaultConfiguration(),
 		GeoIP:     geoip.DefaultConfiguration(),
 		Kafka:     kafka.DefaultConfiguration(),
 		Core:      core.DefaultConfiguration(),
@@ -105,6 +108,12 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 	if err != nil {
 		return fmt.Errorf("unable to initialize SNMP component: %w", err)
 	}
+	bmpComponent, err := bmp.New(r, config.BMP, bmp.Dependencies{
+		Daemon: daemonComponent,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to initialize BMP component: %w", err)
+	}
 	geoipComponent, err := geoip.New(r, config.GeoIP, geoip.Dependencies{
 		Daemon: daemonComponent,
 	})
@@ -120,7 +129,8 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 	coreComponent, err := core.New(r, config.Core, core.Dependencies{
 		Daemon: daemonComponent,
 		Flow:   flowComponent,
-		Snmp:   snmpComponent,
+		SNMP:   snmpComponent,
+		BMP:    bmpComponent,
 		GeoIP:  geoipComponent,
 		Kafka:  kafkaComponent,
 		HTTP:   httpComponent,
@@ -142,6 +152,7 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 	components := []interface{}{
 		httpComponent,
 		snmpComponent,
+		bmpComponent,
 		geoipComponent,
 		kafkaComponent,
 		coreComponent,

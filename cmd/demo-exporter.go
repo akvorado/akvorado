@@ -12,6 +12,7 @@ import (
 	"akvorado/common/http"
 	"akvorado/common/reporter"
 	"akvorado/demoexporter"
+	"akvorado/demoexporter/bmp"
 	"akvorado/demoexporter/flows"
 	"akvorado/demoexporter/snmp"
 )
@@ -22,6 +23,7 @@ type DemoExporterConfiguration struct {
 	HTTP         http.Configuration
 	DemoExporter demoexporter.Configuration `mapstructure:",squash" yaml:",inline"`
 	SNMP         snmp.Configuration
+	BMP          bmp.Configuration
 	Flows        flows.Configuration
 }
 
@@ -31,6 +33,9 @@ func (c *DemoExporterConfiguration) Reset() {
 		HTTP:         http.DefaultConfiguration(),
 		Reporting:    reporter.DefaultConfiguration(),
 		DemoExporter: demoexporter.DefaultConfiguration(),
+		SNMP:         snmp.DefaultConfiguration(),
+		BMP:          bmp.DefaultConfiguration(),
+		Flows:        flows.DefaultConfiguration(),
 	}
 }
 
@@ -89,6 +94,12 @@ func demoExporterStart(r *reporter.Reporter, config DemoExporterConfiguration, c
 	if err != nil {
 		return fmt.Errorf("unable to initialize SNMP component: %w", err)
 	}
+	bmpComponent, err := bmp.New(r, config.BMP, bmp.Dependencies{
+		Daemon: daemonComponent,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to initialize BMP component: %w", err)
+	}
 	flowsComponent, err := flows.New(r, config.Flows, flows.Dependencies{
 		Daemon: daemonComponent,
 	})
@@ -116,6 +127,7 @@ func demoExporterStart(r *reporter.Reporter, config DemoExporterConfiguration, c
 	components := []interface{}{
 		httpComponent,
 		snmpComponent,
+		bmpComponent,
 		flowsComponent,
 		demoExporterComponent,
 	}

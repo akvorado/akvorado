@@ -22,6 +22,7 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
+	"akvorado/inlet/bmp"
 	"akvorado/inlet/flow"
 	"akvorado/inlet/geoip"
 	"akvorado/inlet/kafka"
@@ -38,15 +39,18 @@ func TestCore(t *testing.T) {
 	geoipComponent := geoip.NewMock(t, r)
 	kafkaComponent, kafkaProducer := kafka.NewMock(t, r, kafka.DefaultConfiguration())
 	httpComponent := http.NewMock(t, r)
+	bmpComponent, _ := bmp.NewMock(t, r, bmp.DefaultConfiguration())
+	bmpComponent.PopulateRIB(t)
 
 	// Instantiate and start core
 	c, err := New(r, DefaultConfiguration(), Dependencies{
 		Daemon: daemonComponent,
 		Flow:   flowComponent,
-		Snmp:   snmpComponent,
+		SNMP:   snmpComponent,
 		GeoIP:  geoipComponent,
 		Kafka:  kafkaComponent,
 		HTTP:   httpComponent,
+		BMP:    bmpComponent,
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)

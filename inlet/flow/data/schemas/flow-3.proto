@@ -1,0 +1,104 @@
+syntax = "proto3";
+package decoder;
+option go_package = "akvorado/inlet/flow/decoder";
+
+// This is a stripped version from the one in Goflow2, but with GeoIP added.
+
+message FlowMessagev3 {
+
+  uint64 TimeReceived = 2;
+  uint32 SequenceNum = 3;
+  uint64 SamplingRate = 4;
+  uint32 FlowDirection = 5;
+
+  // Exporter information
+  bytes ExporterAddress = 6;
+  string ExporterName = 99;
+  string ExporterGroup = 98;
+  string ExporterRole = 97;
+  string ExporterSite = 96;
+  string ExporterRegion = 95;
+  string ExporterTenant = 94;
+
+  // Found inside packet
+  uint64 TimeFlowStart = 7;
+  uint64 TimeFlowEnd = 8;
+
+  // Size of the sampled packet
+  uint64 Bytes = 9;
+  uint64 Packets = 10;
+
+  // Source/destination addresses
+  bytes SrcAddr = 11;
+  bytes DstAddr = 12;
+
+  // Layer 3 protocol (IPv4/IPv6/ARP/MPLS...)
+  uint32 Etype = 13;
+
+  // Layer 4 protocol
+  uint32 Proto = 14;
+
+  // Ports for UDP and TCP
+  uint32 SrcPort = 15;
+  uint32 DstPort = 16;
+
+  // Interfaces
+  uint32 InIf = 17;
+  uint32 OutIf = 18;
+
+  // IP and TCP special flags
+  uint32 IPTos = 19;
+  uint32 ForwardingStatus = 20;
+  uint32 IPTTL = 21;
+  uint32 TCPFlags = 22;
+  uint32 IcmpType = 23;
+  uint32 IcmpCode = 24;
+  uint32 IPv6FlowLabel = 25;
+  uint32 FragmentId = 26;
+  uint32 FragmentOffset = 27;
+  uint32 BiFlowDirection = 28;
+
+  // Autonomous system information
+  uint32 SrcAS = 29;
+  uint32 DstAS = 30;
+
+  // Prefix size
+  uint32 SrcNet = 31;
+  uint32 DstNet = 32;
+
+  // Next hop
+  bytes NextHop = 33;
+  uint32 NextHopAS = 34;
+  repeated uint32 ASPath = 35;
+  repeated uint32 Communities = 36;
+  repeated LargeCommunityv3 LargeCommunities = 37;
+
+  // Country
+  string SrcCountry = 100;
+  string DstCountry = 101;
+
+  // Interface names and descriptions
+  enum Boundary {
+    UNDEFINED = 0;
+    EXTERNAL = 1;
+    INTERNAL = 2;
+  }
+  string InIfName = 102;
+  string OutIfName = 103;
+  string InIfDescription = 104;
+  string OutIfDescription = 105;
+  uint32 InIfSpeed = 106;
+  uint32 OutIfSpeed = 107;
+  string InIfConnectivity = 108;
+  string OutIfConnectivity = 109;
+  string InIfProvider = 110;
+  string OutIfProvider = 111;
+  Boundary InIfBoundary = 112;
+  Boundary OutIfBoundary = 113;
+}
+
+message LargeCommunityv3 {
+  uint32 ASN = 1;
+  uint32 LocalData1 = 2;
+  uint32 LocalData2 = 3;
+}

@@ -169,6 +169,35 @@ demo-exporter:
         20: "core"
         21: "core"
       listen: 0.0.0.0:161
+    bmp: &bmp
+      target: akvorado-inlet:10179
+      routes:
+        - prefixes: 192.0.2.0/24,2a01:db8:cafe:1::/64
+          aspath: 64501
+          communities: 65401:10,65401:12
+        - prefixes: 203.0.113.0/24,2a01:db8:cafe:2::/64
+          aspath: 65401
+          communities: 65401:10,65401:13
+        - prefixes: 216.58.206.0/24,2a00:1450:4007:807::2000/124
+          aspath: 174,1299,15169
+        - prefixes: 179.60.192.0/24,2a03:2880:f130:83:face:b00c:0::/112
+          aspath: 1299,1299,32934
+        - prefixes: 198.38.120.0/23,2a00:86c0:115:115::/112
+          aspath: 5511,1299,1299,32934
+        - prefixes: 23.33.27.0/24,2a02:26f0:9100:28:0:17c0::/112
+          aspath: 174,174,174,20940
+        - prefixes: 52.84.175.0/24,2600:9000:218d:4a00:15:74db::/112
+          aspath: 16509
+        - prefixes: 199.232.178.0/29,2a04:4e42:1d::/126
+          aspath: 1299,54113
+        - prefixes: 52.223.202.128/27
+          aspath: 16509,46489
+        - prefixes: 138.231.0.0/16
+          aspath: 1299,174,2269,2269
+        - prefixes: 0.0.0.0/0
+          aspath: 174
+        - prefixes: ::/0
+          aspath: 1299
     flows: &flows1
       samplingrate: 50000
       target: akvorado-inlet:2055
@@ -351,6 +380,8 @@ demo-exporter:
         20: "core"
         21: "core"
       listen: 0.0.0.0:161
+    bmp:
+      <<: *bmp
     flows:
       <<: *flows1
       seed: 100
@@ -362,6 +393,8 @@ demo-exporter:
         20: "core"
         21: "core"
       listen: 0.0.0.0:161
+    bmp:
+      <<: *bmp
     flows:
       <<: *flows1
       seed: 200
@@ -373,6 +406,8 @@ demo-exporter:
         20: "core"
         21: "core"
       listen: 0.0.0.0:161
+    bmp:
+      <<: *bmp
     flows:
       <<: *flows1
       seed: 300

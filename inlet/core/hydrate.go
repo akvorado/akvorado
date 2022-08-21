@@ -21,7 +21,7 @@ func (c *Component) hydrateFlow(exporterIP netip.Addr, exporterStr string, flow 
 	errLogger := c.r.Sample(reporter.BurstSampler(time.Minute, 10))
 
 	if flow.InIf != 0 {
-		exporterName, iface, err := c.d.Snmp.Lookup(exporterIP, uint(flow.InIf))
+		exporterName, iface, err := c.d.SNMP.Lookup(exporterIP, uint(flow.InIf))
 		if err != nil {
 			if err != snmp.ErrCacheMiss {
 				errLogger.Err(err).Str("exporter", exporterStr).Msg("unable to query SNMP cache")
@@ -37,7 +37,7 @@ func (c *Component) hydrateFlow(exporterIP netip.Addr, exporterStr string, flow 
 	}
 
 	if flow.OutIf != 0 {
-		exporterName, iface, err := c.d.Snmp.Lookup(exporterIP, uint(flow.OutIf))
+		exporterName, iface, err := c.d.SNMP.Lookup(exporterIP, uint(flow.OutIf))
 		if err != nil {
 			// Only register a cache miss if we don't have one.
 			// TODO: maybe we could do one SNMP query for both interfaces.
@@ -87,34 +87,52 @@ func (c *Component) hydrateFlow(exporterIP netip.Addr, exporterStr string, flow 
 		flow.InIfName, flow.InIfDescription, flow.InIfSpeed,
 		&flow.InIfConnectivity, &flow.InIfProvider, &flow.InIfBoundary)
 
-	flow.SrcAS = c.getASNumber(flow.SrcAS, net.IP(flow.SrcAddr))
-	flow.DstAS = c.getASNumber(flow.DstAS, net.IP(flow.DstAddr))
+	sourceBMP := c.d.BMP.Lookup(net.IP(flow.SrcAddr), nil)
+	destBMP := c.d.BMP.Lookup(net.IP(flow.DstAddr), net.IP(flow.NextHop))
+	flow.SrcAS = c.getASNumber(net.IP(flow.SrcAddr), flow.SrcAS, sourceBMP.ASN)
+	flow.DstAS = c.getASNumber(net.IP(flow.DstAddr), flow.DstAS, destBMP.ASN)
 	flow.SrcCountry = c.d.GeoIP.LookupCountry(net.IP(flow.SrcAddr))
 	flow.DstCountry = c.d.GeoIP.LookupCountry(net.IP(flow.DstAddr))
+
+	flow.Communities = destBMP.Communities
+	flow.ASPath = destBMP.ASPath
+	if len(destBMP.LargeCommunities) > 0 {
+		flow.LargeCommunities = make([]*decoder.LargeCommunity, len(destBMP.LargeCommunities))
+		for i := 0; i < len(destBMP.LargeCommunities); i++ {
+			flow.LargeCommunities[i] = &decoder.LargeCommunity{
+				ASN:        destBMP.LargeCommunities[i].ASN,
+				LocalData1: destBMP.LargeCommunities[i].LocalData1,
+				LocalData2: destBMP.LargeCommunities[i].LocalData2,
+			}
+		}
+	}
 
 	return
 }
 
 // getASNumber retrieves the AS number for a flow, depending on user preferences.
-func (c *Component) getASNumber(flowAS uint32, flowAddr net.IP) (asn uint32) {
+func (c *Component) getASNumber(flowAddr net.IP, flowAS, bmpAS uint32) (asn uint32) {
 	for _, provider := range c.config.ASNProviders {
 		if asn != 0 {
 			break
 		}
 		switch provider {
+		case ProviderGeoIP:
+			asn = c.d.GeoIP.LookupASN(flowAddr)
 		case ProviderFlow:
 			asn = flowAS
 		case ProviderFlowExceptPrivate:
-			// See https://www.iana.org/assignments/iana-as-numbers-special-registry/iana-as-numbers-special-registry.xhtml
-			if flowAS == 0 || flowAS == 23456 {
-				break
-			}
-			if 64496 <= flowAS && flowAS <= 65551 || 4_200_000_000 <= flowAS && flowAS <= 4_294_967_295 {
-				break
-			}
 			asn = flowAS
-		case ProviderGeoIP:
-			asn = c.d.GeoIP.LookupASN(flowAddr)
+			if isPrivateAS(asn) {
+				asn = 0
+			}
+		case ProviderBMP:
+			asn = bmpAS
+		case ProviderBMPExceptPrivate:
+			asn = bmpAS
+			if isPrivateAS(asn) {
+				asn = 0
+			}
 		}
 	}
 	return asn
@@ -213,4 +231,15 @@ func convertBoundaryToProto(from interfaceBoundary) decoder.FlowMessage_Boundary
 		return decoder.FlowMessage_INTERNAL
 	}
 	return decoder.FlowMessage_UNDEFINED
+}
+
+func isPrivateAS(as uint32) bool {
+	// See https://www.iana.org/assignments/iana-as-numbers-special-registry/iana-as-numbers-special-registry.xhtml
+	if as == 0 || as == 23456 {
+		return true
+	}
+	if 64496 <= as && as <= 65551 || 4_200_000_000 <= as && as <= 4_294_967_295 {
+		return true
+	}
+	return false
 }

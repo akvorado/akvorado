@@ -113,3 +113,12 @@ func (m *Metrics) Desc(skipCallstack int, name, help string, variableLabels []st
 func (m *Metrics) Collector(c prometheus.Collector) {
 	m.registry.MustRegister(c)
 }
+
+// CollectorForCurrentModule register a custom collector and prefix
+// everything with the module name.
+func (m *Metrics) CollectorForCurrentModule(skipCallStack int, c prometheus.Collector) {
+	callStack := stack.Callers()
+	call := callStack[1+skipCallStack] // Should be the same as above !
+	prefix := getPrefix(call.FunctionName())
+	prometheus.WrapRegistererWithPrefix(prefix, m.registry).MustRegister(c)
+}

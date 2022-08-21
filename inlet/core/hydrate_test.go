@@ -18,7 +18,9 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
+	"akvorado/inlet/bmp"
 	"akvorado/inlet/flow"
+	"akvorado/inlet/flow/decoder"
 	"akvorado/inlet/geoip"
 	"akvorado/inlet/kafka"
 	"akvorado/inlet/snmp"
@@ -55,8 +57,7 @@ func TestHydrate(t *testing.T) {
 				InIfSpeed:        1000,
 				OutIfSpeed:       1000,
 			},
-		},
-		{
+		}, {
 			Name: "no rule, override sampling rate",
 			Configuration: gin.H{"overridesamplingrate": gin.H{
 				"192.0.2.0/24":   100,
@@ -84,8 +85,7 @@ func TestHydrate(t *testing.T) {
 				InIfSpeed:        1000,
 				OutIfSpeed:       1000,
 			},
-		},
-		{
+		}, {
 			Name:          "no rule, no sampling rate, default is one value",
 			Configuration: gin.H{"defaultsamplingrate": 500},
 			InputFlow: func() *flow.Message {
@@ -108,8 +108,7 @@ func TestHydrate(t *testing.T) {
 				InIfSpeed:        1000,
 				OutIfSpeed:       1000,
 			},
-		},
-		{
+		}, {
 			Name: "no rule, no sampling rate, default is map",
 			Configuration: gin.H{"defaultsamplingrate": gin.H{
 				"192.0.2.0/24":   100,
@@ -136,8 +135,7 @@ func TestHydrate(t *testing.T) {
 				InIfSpeed:        1000,
 				OutIfSpeed:       1000,
 			},
-		},
-		{
+		}, {
 			Name: "exporter rule",
 			Configuration: gin.H{
 				"exporterclassifiers": []string{
@@ -170,8 +168,7 @@ func TestHydrate(t *testing.T) {
 				InIfSpeed:        1000,
 				OutIfSpeed:       1000,
 			},
-		},
-		{
+		}, {
 			Name: "interface rule",
 			Configuration: gin.H{
 				"interfaceclassifiers": []string{
@@ -206,8 +203,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				InIfBoundary:     2, // Internal
 				OutIfBoundary:    2,
 			},
-		},
-		{
+		}, {
 			Name: "configure twice boundary",
 			Configuration: gin.H{
 				"interfaceclassifiers": []string{
@@ -238,8 +234,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				InIfBoundary:     2, // Internal
 				OutIfBoundary:    2,
 			},
-		},
-		{
+		}, {
 			Name: "configure twice provider",
 			Configuration: gin.H{
 				"interfaceclassifiers": []string{
@@ -270,8 +265,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				InIfProvider:     "telia",
 				OutIfProvider:    "telia",
 			},
-		},
-		{
+		}, {
 			Name: "classify depending on description",
 			Configuration: gin.H{
 				"interfaceclassifiers": []string{
@@ -307,6 +301,41 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				InIfBoundary:      1, // external
 				OutIfBoundary:     2, // internal
 			},
+		}, {
+			Name:          "use data from BMP",
+			Configuration: gin.H{},
+			InputFlow: func() *flow.Message {
+				return &flow.Message{
+					SamplingRate:    1000,
+					ExporterAddress: net.ParseIP("192.0.2.142"),
+					InIf:            100,
+					OutIf:           200,
+					SrcAddr:         net.ParseIP("192.0.2.142"),
+					DstAddr:         net.ParseIP("192.0.2.10"),
+				}
+			},
+			OutputFlow: &flow.Message{
+				SamplingRate:     1000,
+				ExporterAddress:  net.ParseIP("192.0.2.142"),
+				ExporterName:     "192_0_2_142",
+				InIf:             100,
+				OutIf:            200,
+				InIfName:         "Gi0/0/100",
+				OutIfName:        "Gi0/0/200",
+				InIfDescription:  "Interface 100",
+				OutIfDescription: "Interface 200",
+				InIfSpeed:        1000,
+				OutIfSpeed:       1000,
+				SrcAddr:          net.ParseIP("192.0.2.142").To16(),
+				DstAddr:          net.ParseIP("192.0.2.10").To16(),
+				SrcAS:            1299,
+				DstAS:            174,
+				ASPath:           []uint32{64200, 1299, 174},
+				Communities:      []uint32{100, 200, 400},
+				LargeCommunities: []*decoder.LargeCommunity{
+					{ASN: 64200, LocalData1: 2, LocalData2: 3},
+				},
+			},
 		},
 	}
 	for _, tc := range cases {
@@ -321,6 +350,8 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 			geoipComponent := geoip.NewMock(t, r)
 			kafkaComponent, kafkaProducer := kafka.NewMock(t, r, kafka.DefaultConfiguration())
 			httpComponent := http.NewMock(t, r)
+			bmpComponent, _ := bmp.NewMock(t, r, bmp.DefaultConfiguration())
+			bmpComponent.PopulateRIB(t)
 
 			// Prepare a configuration
 			configuration := DefaultConfiguration()
@@ -336,10 +367,11 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 			c, err := New(r, configuration, Dependencies{
 				Daemon: daemonComponent,
 				Flow:   flowComponent,
-				Snmp:   snmpComponent,
+				SNMP:   snmpComponent,
 				GeoIP:  geoipComponent,
 				Kafka:  kafkaComponent,
 				HTTP:   httpComponent,
+				BMP:    bmpComponent,
 			})
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
@@ -392,23 +424,31 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 
 func TestGetASNumber(t *testing.T) {
 	cases := []struct {
-		Flow      uint32
 		Addr      string
+		FlowAS    uint32
+		BMPAS     uint32
 		Providers []ASNProvider
 		Expected  uint32
 	}{
-		{12322, "1.0.0.1", []ASNProvider{ProviderFlow}, 12322},
-		{65536, "1.0.0.1", []ASNProvider{ProviderFlow}, 65536},
-		{65536, "1.0.0.1", []ASNProvider{ProviderFlowExceptPrivate}, 0},
-		{4_200_000_121, "1.0.0.1", []ASNProvider{ProviderFlowExceptPrivate}, 0},
-		{65536, "1.0.0.1", []ASNProvider{ProviderFlowExceptPrivate, ProviderFlow}, 65536},
-		{12322, "1.0.0.1", []ASNProvider{ProviderFlowExceptPrivate}, 12322},
-		{12322, "1.0.0.1", []ASNProvider{ProviderGeoIP}, 15169},
-		{12322, "2.0.0.1", []ASNProvider{ProviderGeoIP}, 0},
-		{12322, "1.0.0.1", []ASNProvider{ProviderGeoIP, ProviderFlow}, 15169},
-		{12322, "1.0.0.1", []ASNProvider{ProviderFlow, ProviderGeoIP}, 12322},
-		{12322, "2.0.0.1", []ASNProvider{ProviderFlow, ProviderGeoIP}, 12322},
-		{12322, "2.0.0.1", []ASNProvider{ProviderGeoIP, ProviderFlow}, 12322},
+		// 1
+		{"1.0.0.1", 12322, 0, []ASNProvider{ProviderFlow}, 12322},
+		{"1.0.0.1", 65536, 0, []ASNProvider{ProviderFlow}, 65536},
+		{"1.0.0.1", 65536, 0, []ASNProvider{ProviderFlowExceptPrivate}, 0},
+		{"1.0.0.1", 4_200_000_121, 0, []ASNProvider{ProviderFlowExceptPrivate}, 0},
+		{"1.0.0.1", 65536, 0, []ASNProvider{ProviderFlowExceptPrivate, ProviderFlow}, 65536},
+		{"1.0.0.1", 12322, 0, []ASNProvider{ProviderFlowExceptPrivate}, 12322},
+		{"1.0.0.1", 12322, 0, []ASNProvider{ProviderGeoIP}, 15169},
+		{"2.0.0.1", 12322, 0, []ASNProvider{ProviderGeoIP}, 0},
+		{"1.0.0.1", 12322, 0, []ASNProvider{ProviderGeoIP, ProviderFlow}, 15169},
+		// 10
+		{"1.0.0.1", 12322, 0, []ASNProvider{ProviderFlow, ProviderGeoIP}, 12322},
+		{"2.0.0.1", 12322, 0, []ASNProvider{ProviderFlow, ProviderGeoIP}, 12322},
+		{"2.0.0.1", 12322, 0, []ASNProvider{ProviderGeoIP, ProviderFlow}, 12322},
+		{"192.0.2.2", 12322, 174, []ASNProvider{ProviderBMP}, 174},
+		{"192.0.2.129", 12322, 1299, []ASNProvider{ProviderBMP}, 1299},
+		{"192.0.2.254", 12322, 0, []ASNProvider{ProviderBMP}, 0},
+		{"1.0.0.1", 12322, 65300, []ASNProvider{ProviderBMP}, 65300},
+		{"1.0.0.1", 12322, 15169, []ASNProvider{ProviderBMPExceptPrivate, ProviderGeoIP}, 15169},
 	}
 	for i, tc := range cases {
 		i++
@@ -418,14 +458,18 @@ func TestGetASNumber(t *testing.T) {
 			// We don't need all components as we won't start the component.
 			configuration := DefaultConfiguration()
 			configuration.ASNProviders = tc.Providers
+			bmpComponent, _ := bmp.NewMock(t, r, bmp.DefaultConfiguration())
+			bmpComponent.PopulateRIB(t)
+
 			c, err := New(r, configuration, Dependencies{
 				Daemon: daemon.NewMock(t),
 				GeoIP:  geoip.NewMock(t, r),
+				BMP:    bmpComponent,
 			})
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
 			}
-			got := c.getASNumber(tc.Flow, net.ParseIP(tc.Addr))
+			got := c.getASNumber(net.ParseIP(tc.Addr), tc.FlowAS, tc.BMPAS)
 			if diff := helpers.Diff(got, tc.Expected); diff != "" {
 				t.Fatalf("getASNumber() (-got, +want):\n%s", diff)
 			}

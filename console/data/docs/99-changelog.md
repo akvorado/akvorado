@@ -13,6 +13,12 @@ identified with a specific icon:
 
 ## Unreleased
 
+This release features a BMP collector to grab BGP routes from one or
+several routers. The routes can be used to determine source and
+destination AS (instead of using GeoIP or information from the flows)
+but also the AS path and the communities.
+
+- ✨ *inlet*: BMP collector to get AS numbers, AS paths, and communities from BGP
 - ✨ *inlet*: add `inlet.snmp.agents` to override exporter IP address for SNMP queries
 - 🩹 *inlet*: handle sFlow specific interface number for locally
   originated/terminated traffic, discarded traffic and traffic sent to

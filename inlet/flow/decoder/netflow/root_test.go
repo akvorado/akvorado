@@ -117,6 +117,7 @@ func TestDecode(t *testing.T) {
 			OutIf:            450,
 			ForwardingStatus: 64,
 			TCPFlags:         16,
+			NextHop:          net.ParseIP("194.149.174.63").To16(),
 		}, {
 			SequenceNum:      44797001,
 			ExporterAddress:  net.ParseIP("127.0.0.1").To16(),
@@ -137,6 +138,7 @@ func TestDecode(t *testing.T) {
 			OutIf:            452,
 			ForwardingStatus: 64,
 			TCPFlags:         16,
+			NextHop:          net.ParseIP("194.149.174.71").To16(),
 		}, {
 			SequenceNum:      44797001,
 			ExporterAddress:  net.ParseIP("127.0.0.1").To16(),
@@ -157,6 +159,7 @@ func TestDecode(t *testing.T) {
 			OutIf:            306,
 			ForwardingStatus: 64,
 			TCPFlags:         16,
+			NextHop:          net.ParseIP("252.223.0.0").To16(),
 		}, {
 			SequenceNum:      44797001,
 			ExporterAddress:  net.ParseIP("127.0.0.1").To16(),
@@ -177,6 +180,7 @@ func TestDecode(t *testing.T) {
 			OutIf:            451,
 			ForwardingStatus: 64,
 			TCPFlags:         16,
+			NextHop:          net.ParseIP("194.149.174.61").To16(),
 		},
 	}
 	for _, f := range got {

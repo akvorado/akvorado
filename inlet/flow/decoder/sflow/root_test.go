@@ -68,6 +68,7 @@ func TestDecode(t *testing.T) {
 			SrcAddr:         net.ParseIP("104.26.8.24").To16(),
 			DstAddr:         net.ParseIP("45.90.161.46").To16(),
 			ExporterAddress: net.ParseIP("172.16.0.3").To16(),
+			NextHop:         net.ParseIP("45.90.161.46").To16(),
 		}, {
 			SequenceNum:     812646826,
 			SamplingRate:    1024,
@@ -111,6 +112,8 @@ func TestDecode(t *testing.T) {
 			SrcAddr:         net.ParseIP("45.90.161.148").To16(),
 			DstAddr:         net.ParseIP("191.87.91.27").To16(),
 			ExporterAddress: net.ParseIP("172.16.0.3").To16(),
+			NextHop:         net.ParseIP("31.14.69.110").To16(),
+			NextHopAS:       203698,
 		}, {
 			SequenceNum:     812646826,
 			SamplingRate:    1024,

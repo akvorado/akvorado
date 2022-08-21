@@ -18,6 +18,7 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
+	"akvorado/inlet/bmp"
 	"akvorado/inlet/flow"
 	"akvorado/inlet/geoip"
 	"akvorado/inlet/kafka"
@@ -46,7 +47,8 @@ type Component struct {
 type Dependencies struct {
 	Daemon daemon.Component
 	Flow   *flow.Component
-	Snmp   *snmp.Component
+	SNMP   *snmp.Component
+	BMP    *bmp.Component
 	GeoIP  *geoip.Component
 	Kafka  *kafka.Component
 	HTTP   *http.Component

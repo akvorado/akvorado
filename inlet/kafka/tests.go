@@ -19,6 +19,7 @@ import (
 // NewMock creates a new Kafka component with a mocked Kafka. It will
 // panic if it cannot be started.
 func NewMock(t *testing.T, reporter *reporter.Reporter, configuration Configuration) (*Component, *mocks.AsyncProducer) {
+	t.Helper()
 	c, err := New(reporter, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)

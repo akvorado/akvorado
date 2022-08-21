@@ -6,6 +6,7 @@ package demoexporter
 
 import (
 	"akvorado/common/reporter"
+	"akvorado/demoexporter/bmp"
 	"akvorado/demoexporter/flows"
 	"akvorado/demoexporter/snmp"
 )
@@ -20,6 +21,7 @@ type Component struct {
 // Dependencies define the dependencies of the demo exporter service.
 type Dependencies struct {
 	SNMP  *snmp.Component
+	BMP   *bmp.Component
 	Flows *flows.Component
 }
 

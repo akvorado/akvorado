@@ -77,6 +77,20 @@ control-plane
      address ipv4 <akvorado-ip>
 ```
 
+To configure BMP, adapt the following snippet:
+
+```cisco
+bmp server 1
+ host <akvorado-ip> port 10179
+ flapping-delay 60
+bmp server all
+ route-monitoring policy post inbound
+router bgp 65400
+ vrf public
+  neighbor 192.0.2.100
+   bmp-activate server 1
+```
+
 ### Juniper
 
 #### IPFIX
@@ -246,6 +260,27 @@ snmp {
   routing-instance-access;
 }
 ```
+
+#### BMP
+
+If needed, you can configure BMP on one router to send all AdjRIB-in
+to Akvorado.
+
+```junos
+routing-options {
+    bmp {
+        connection-mode active;
+        station-address 203.0.113.1;
+        station-port 10179;
+        station collector;
+        hold-down 30 flaps 10 period 30;
+        route-monitoring post-policy;
+        monitor enable;
+    }
+}
+```
+
+See [Juniper's documentation](https://www.juniper.net/documentation/us/en/software/junos/bgp/topics/ref/statement/bmp-edit-routing-options.html) for more details.
 
 ### Arista
 
