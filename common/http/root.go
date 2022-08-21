@@ -176,6 +176,11 @@ func (c *Component) Stop() error {
 	return c.t.Wait()
 }
 
+// LocalAddr returns the address the HTTP server is listening to.
+func (c *Component) LocalAddr() net.Addr {
+	return c.address
+}
+
 func init() {
 	// Disable proxy for client
 	http.DefaultTransport.(*http.Transport).Proxy = nil
