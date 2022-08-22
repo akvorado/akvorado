@@ -88,4 +88,7 @@ The following `make` targets are available:
 
 Be sure to read the [changelog](99-changelog.md) before attempting an
 upgrade. Upgrade the orchestrator first. This will update the
-ClickHouse database. Then, upgrade all inlets. Then the console.
+ClickHouse database. Then, upgrade all inlets. Then the console. With
+`docker-compose`, you can use `docker-compose restart
+akvorado-orchestrator`, `docker-compose restart akvorado-inlet` and
+`docker-compose restart akvorado-console`.
