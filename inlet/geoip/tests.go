@@ -19,8 +19,8 @@ import (
 // NewMock creates a GeoIP component usable for testing. It is already
 // started. It panics if there is an issue. Data of both databases are
 // available here:
-//  - https://github.com/maxmind/MaxMind-DB/blob/main/source-data/GeoLite2-ASN-Test.json
-//  - https://github.com/maxmind/MaxMind-DB/blob/main/source-data/GeoLite2-Country-Test.json
+//   - https://github.com/maxmind/MaxMind-DB/blob/main/source-data/GeoLite2-ASN-Test.json
+//   - https://github.com/maxmind/MaxMind-DB/blob/main/source-data/GeoLite2-Country-Test.json
 func NewMock(t *testing.T, r *reporter.Reporter) *Component {
 	t.Helper()
 	config := DefaultConfiguration()

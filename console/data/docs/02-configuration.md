@@ -306,13 +306,18 @@ SNMPv2.
 ### HTTP
 
 The builtin HTTP server serves various pages. Its configuration
-supports only the `listen` key to specify the address and port to
-listen. For example:
+supports the `listen` key to specify the address and port to listen.
+For example:
 
 ```yaml
 http:
   listen: 0.0.0.0:8000
 ```
+
+It also supports the `profiler` key. When set to `true`, various
+[profiling data](https://pkg.go.dev/net/http/pprof) are made available
+on the `/debug/pprof/` endpoint. This is useful if you wish to
+optimize CPU or memory usage of one of the components.
 
 ### Reporting
 
