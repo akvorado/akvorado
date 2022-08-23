@@ -26,7 +26,7 @@ type Configuration struct {
 	Inputs []InputConfiguration
 	// RateLimit defines a rate limit on the number of flows per
 	// second. The limit is per-exporter.
-	RateLimit rate.Limit `validate:"default|min=100"`
+	RateLimit rate.Limit `validate:"isdefault|min=100"`
 }
 
 // DefaultConfiguration represents the default configuration for the flow component
