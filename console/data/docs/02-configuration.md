@@ -407,13 +407,16 @@ is 0, it applies to the raw data (the one in the `flows` table). For
 each resolution, a materialized view `flows_XXXX` is created with the
 specified interval. It should be noted that consolidated tables do not
 contain information about source/destination IP addresses and ports.
+That's why you may want to keep the interval-0 table data a bit
+longer. *Akvorado* will still use the consolidated tables if the query
+do not require the raw table, for performance reason.
 
 Here is the default configuration:
 
 ```yaml
 resolutions:
   - interval: 0
-    ttl: 6h
+    ttl: 360h  # 15 days
   - interval: 1m
     ttl: 168h  # 1 week
   - interval: 5m
