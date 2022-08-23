@@ -11,7 +11,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.5.7 - 2022-08-23
 
 - ✨ *inlet*: add support for flow rate-limiting with `inlet.flow.rate-limit`
 - 🌱 *inlet*: improve performance of GeoIP lookup
