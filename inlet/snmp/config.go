@@ -37,7 +37,7 @@ type Configuration struct {
 	// Communities is a mapping from exporter IPs to SNMPv2 communities
 	Communities *helpers.SubnetMap[string]
 	// SecurityParameters is a mapping from exporter IPs to SNMPv3 security parameters
-	SecurityParameters *helpers.SubnetMap[SecurityParameters]
+	SecurityParameters *helpers.SubnetMap[SecurityParameters] `validate:"dive"`
 }
 
 // SecurityParameters describes SNMPv3 USM security parameters.

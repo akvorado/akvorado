@@ -23,7 +23,7 @@ import (
 // Configuration describes the configuration for the flow component
 type Configuration struct {
 	// Inputs define a list of input modules to enable
-	Inputs []InputConfiguration
+	Inputs []InputConfiguration `validate:"dive"`
 	// RateLimit defines a rate limit on the number of flows per
 	// second. The limit is per-exporter.
 	RateLimit rate.Limit `validate:"isdefault|min=100"`

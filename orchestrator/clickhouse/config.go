@@ -21,7 +21,7 @@ type Configuration struct {
 	Kafka KafkaConfiguration
 	// Resolutions describe the various resolutions to use to
 	// store data and the associated TTLs.
-	Resolutions []ResolutionConfiguration
+	Resolutions []ResolutionConfiguration `validate:"dive"`
 	// MaxPartitions define the number of partitions to have for a
 	// consolidated flow tables when full.
 	MaxPartitions int `validate:"isdefault|min=1"`
@@ -30,7 +30,7 @@ type Configuration struct {
 	ASNs map[uint32]string
 	// Networks is a mapping from IP networks to attributes. It is used
 	// to instantiate the SrcNet* and DstNet* columns.
-	Networks *helpers.SubnetMap[NetworkAttributes]
+	Networks *helpers.SubnetMap[NetworkAttributes] `validate:"dive"`
 	// OrchestratorURL allows one to override URL to reach
 	// orchestrator from Clickhouse
 	OrchestratorURL string `validate:"isdefault|url"`

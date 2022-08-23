@@ -26,9 +26,9 @@ type OrchestratorConfiguration struct {
 	Kafka        kafka.Configuration
 	Orchestrator orchestrator.Configuration `mapstructure:",squash" yaml:",inline"`
 	// Other service configurations
-	Inlet        []InletConfiguration
-	Console      []ConsoleConfiguration
-	DemoExporter []DemoExporterConfiguration
+	Inlet        []InletConfiguration        `validate:"dive"`
+	Console      []ConsoleConfiguration      `validate:"dive"`
+	DemoExporter []DemoExporterConfiguration `validate:"dive"`
 }
 
 // Reset resets the configuration of the orchestrator command to its default value.

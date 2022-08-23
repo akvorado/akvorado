@@ -13,7 +13,7 @@ type Configuration struct {
 	// SamplingRate defines the sampling rate for this device.
 	SamplingRate int `validate:"min=1"`
 	// Flows describe the flows we want to generate.
-	Flows []FlowConfiguration `validate:"min=1"`
+	Flows []FlowConfiguration `validate:"min=1,dive"`
 	// Target specify the IP address and port to generate flows to.
 	Target string `validate:"required,hostname_port"`
 	// Seed defines a seed to add to the random generator. Without
@@ -43,9 +43,9 @@ type FlowConfiguration struct {
 	// DstAS defines the destination AS number to use
 	DstAS []uint32 `validate:"min=1"`
 	// SrcPort defines the source port to use
-	SrcPort []uint16 `validate:"excluded_if=Protocol icmp"`
+	SrcPort []uint16
 	// DstPort defines the destination port to use
-	DstPort []uint16 `validate:"excluded_if=Protocol icmp"`
+	DstPort []uint16
 	// Proto defines the IP protocol to use
 	Protocol []string `validate:"min=1,dive,oneof=tcp udp icmp"`
 	// Size defines the packet size to use

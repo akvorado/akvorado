@@ -28,7 +28,7 @@ type Configuration struct {
 	// OverrideSamplingRate defines a sampling rate to use instead of the received on
 	OverrideSamplingRate helpers.SubnetMap[uint]
 	// ASNProviders defines the source used to get AS numbers
-	ASNProviders []ASNProvider
+	ASNProviders []ASNProvider `validate:"dive"`
 }
 
 // DefaultConfiguration represents the default configuration for the core component.
