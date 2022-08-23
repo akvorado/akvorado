@@ -226,6 +226,7 @@ func TestMarshalYAML(t *testing.T) {
   receivebuffer: 0
   type: udp
   workers: 3
+ratelimit: 0
 `
 	if diff := helpers.Diff(strings.Split(string(got), "\n"), strings.Split(expected, "\n")); diff != "" {
 		t.Fatalf("Marshal() (-got, +want):\n%s", diff)

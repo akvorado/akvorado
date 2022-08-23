@@ -13,6 +13,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- ✨ *inlet*: add support for flow rate-limiting with `inlet.flow.rate-limit`
 - 🌱 *inlet*: improve performance of GeoIP lookup
 - 🌱 *inlet*: add `inlet.core.asn-providers` to specify how to get AS
   numbers. `inlet.core.ignore-asn-from-flow` is deprecated and mapped

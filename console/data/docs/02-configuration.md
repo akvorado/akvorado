@@ -52,8 +52,12 @@ of the inlet services are `flow`, `kafka`, and `core`.
 
 ### Flow
 
-The flow component handles incoming flows. It only accepts the
-`inputs` key to define the list of inputs to receive incoming flows.
+The flow component handles incoming flows. It accepts the `inputs` key
+to define the list of inputs to receive incoming flows and the
+`rate-limit` key to have an hard-limit on the number of flows/second
+accepted per exporter. When set, the provided rate limit will be
+enforced for each exporter and the sampling rate of the surviving
+flows will be adapted.
 
 Each input has a `type` and a `decoder`. For `decoder`, both
 `netflow` or `sflow` are supported. As for the `type`, both `udp`

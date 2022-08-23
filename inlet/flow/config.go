@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/mitchellh/mapstructure"
+	"golang.org/x/time/rate"
 
 	"akvorado/common/helpers"
 	"akvorado/inlet/flow/input"
@@ -23,6 +24,9 @@ import (
 type Configuration struct {
 	// Inputs define a list of input modules to enable
 	Inputs []InputConfiguration
+	// RateLimit defines a rate limit on the number of flows per
+	// second. The limit is per-exporter.
+	RateLimit rate.Limit `validate:"default|min=100"`
 }
 
 // DefaultConfiguration represents the default configuration for the flow component

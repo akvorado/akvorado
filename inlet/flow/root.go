@@ -8,6 +8,7 @@ import (
 	_ "embed" // for flow.proto
 	"errors"
 	"fmt"
+	"net/netip"
 
 	"gopkg.in/tomb.v2"
 
@@ -34,6 +35,9 @@ type Component struct {
 	// Channel for sending flows out of the package.
 	outgoingFlows chan *Message
 
+	// Per-exporter rate-limiters
+	limiters map[netip.Addr]*limiter
+
 	// Inputs
 	inputs []input.Input
 }
@@ -55,6 +59,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		d:             &dependencies,
 		config:        configuration,
 		outgoingFlows: make(chan *Message),
+		limiters:      make(map[netip.Addr]*limiter),
 		inputs:        make([]input.Input, len(configuration.Inputs)),
 	}
 
@@ -134,11 +139,13 @@ func (c *Component) Start() error {
 				case <-c.t.Dying():
 					return nil
 				case fmsgs := <-ch:
-					for _, fmsg := range fmsgs {
-						select {
-						case <-c.t.Dying():
-							return nil
-						case c.outgoingFlows <- fmsg:
+					if c.allowMessages(fmsgs) {
+						for _, fmsg := range fmsgs {
+							select {
+							case <-c.t.Dying():
+								return nil
+							case c.outgoingFlows <- fmsg:
+							}
 						}
 					}
 				}
