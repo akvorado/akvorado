@@ -270,6 +270,12 @@ snmp-server community <community> ro
 snmp-server vrf VRF-MANAGEMENT
 ```
 
+## Kafka
+
+When using `docker-compose`, there is a Kafka UI running at
+`http://127.0.0.1:8080/kafka-ui/`. It provides various operational
+metrics you can check, notably the space used by each topic.
+
 ## ClickHouse
 
 While ClickHouse works pretty good out-of-the-box, it is still
@@ -305,6 +311,18 @@ table:
 SELECT database, name, formatReadableSize(total_bytes)
 FROM system.tables
 WHERE total_bytes > 0
+```
+
+### Space usage
+
+You can get an idea on how much space is used by each table with the
+following query:
+
+```sql
+SELECT table, formatReadableSize(sum(bytes_on_disk)) AS size, MIN(partition_id) AS oldest
+FROM system.parts
+WHERE table LIKE 'flow%'
+GROUP by table
 ```
 
 ### Slow queries
