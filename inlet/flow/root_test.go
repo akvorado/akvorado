@@ -34,11 +34,9 @@ func TestFlow(t *testing.T) {
 	c := NewMock(t, r, config)
 
 	// Receive flows
-	received := []*Message{}
 	for i := 0; i < 10; i++ {
 		select {
-		case flow := <-c.Flows():
-			received = append(received, flow)
+		case <-c.Flows():
 		case <-time.After(30 * time.Millisecond):
 			t.Fatalf("no flow received")
 		}
