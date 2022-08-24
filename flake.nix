@@ -14,7 +14,7 @@
           buildInputs = [
             pkgs.curl
             pkgs.git
-            pkgs.go_1_18
+            pkgs.go_1_19
             pkgs.nodejs-16_x
             pkgs.protobuf
           ];
