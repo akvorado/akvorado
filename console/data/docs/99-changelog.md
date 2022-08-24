@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🩹 *orchestrator*: validate configuration of other services on start
+
 ## 1.5.7 - 2022-08-23
 
 - ✨ *inlet*: add support for flow rate-limiting with `inlet.flow.rate-limit`
