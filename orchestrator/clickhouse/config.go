@@ -30,7 +30,7 @@ type Configuration struct {
 	ASNs map[uint32]string
 	// Networks is a mapping from IP networks to attributes. It is used
 	// to instantiate the SrcNet* and DstNet* columns.
-	Networks *helpers.SubnetMap[NetworkAttributes] `validate:"dive"`
+	Networks *helpers.SubnetMap[NetworkAttributes] `validate:"omitempty,dive"`
 	// OrchestratorURL allows one to override URL to reach
 	// orchestrator from Clickhouse
 	OrchestratorURL string `validate:"isdefault|url"`
@@ -105,4 +105,5 @@ func NetworkAttributesUnmarshallerHook() mapstructure.DecodeHookFunc {
 func init() {
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[NetworkAttributes]())
 	helpers.RegisterMapstructureUnmarshallerHook(NetworkAttributesUnmarshallerHook())
+	helpers.RegisterSubnetMapValidation[NetworkAttributes]()
 }

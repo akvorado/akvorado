@@ -20,7 +20,10 @@ var Validate *validator.Validate
 func RegisterSubnetMapValidation[V any]() {
 	var zero SubnetMap[V]
 	validatorFunc := func(field reflect.Value) interface{} {
-		if subnetMap, ok := field.Interface().(SubnetMap[V]); ok {
+		switch subnetMap := field.Interface().(type) {
+		case SubnetMap[V]:
+			return subnetMap.ToMap()
+		case *SubnetMap[V]:
 			return subnetMap.ToMap()
 		}
 		return nil
