@@ -103,7 +103,7 @@ func TestFlow(t *testing.T) {
 			// upper limit of the sampling rate. However,
 			// the lower limit should be OK.
 			expectedRate := uint64(30000 / 1000 * nominalRate)
-			if flow.SamplingRate > 1000*expectedRate/100 || flow.SamplingRate < 90*expectedRate/100 {
+			if flow.SamplingRate > 1000*expectedRate/100 || flow.SamplingRate < 70*expectedRate/100 {
 				t.Fatalf("Sampling rate is %d, expected %d", flow.SamplingRate, expectedRate)
 			}
 		case <-time.After(30 * time.Millisecond):
