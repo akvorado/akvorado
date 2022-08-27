@@ -9,7 +9,7 @@ package snmp
 import (
 	"errors"
 	"fmt"
-	"net"
+	"net/netip"
 	"strconv"
 	"sync"
 	"time"
@@ -36,8 +36,8 @@ type Component struct {
 	dispatcherChannel    chan lookupRequest
 	dispatcherBChannel   chan (<-chan bool) // block channel for testing
 	pollerBreakersLock   sync.Mutex
-	pollerBreakerLoggers map[string]reporter.Logger
-	pollerBreakers       map[string]*breaker.Breaker
+	pollerBreakerLoggers map[netip.Addr]reporter.Logger
+	pollerBreakers       map[netip.Addr]*breaker.Breaker
 	poller               poller
 
 	metrics struct {
@@ -76,8 +76,8 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		pollerChannel:        make(chan lookupRequest),
 		dispatcherChannel:    make(chan lookupRequest, 100*configuration.Workers),
 		dispatcherBChannel:   make(chan (<-chan bool)),
-		pollerBreakers:       make(map[string]*breaker.Breaker),
-		pollerBreakerLoggers: make(map[string]reporter.Logger),
+		pollerBreakers:       make(map[netip.Addr]*breaker.Breaker),
+		pollerBreakerLoggers: make(map[netip.Addr]reporter.Logger),
 		poller: newPoller(r, pollerConfig{
 			Retries:            configuration.PollerRetries,
 			Timeout:            configuration.PollerTimeout,
@@ -218,14 +218,14 @@ func (c *Component) Stop() error {
 
 // lookupRequest is used internally to queue a polling request.
 type lookupRequest struct {
-	ExporterIP string
+	ExporterIP netip.Addr
 	IfIndexes  []uint
 }
 
 // Lookup for interface information for the provided exporter and ifIndex.
 // If the information is not in the cache, it will be polled, but
 // won't be returned immediately.
-func (c *Component) Lookup(exporterIP string, ifIndex uint) (string, Interface, error) {
+func (c *Component) Lookup(exporterIP netip.Addr, ifIndex uint) (string, Interface, error) {
 	exporterName, iface, err := c.sc.Lookup(exporterIP, ifIndex)
 	if errors.Is(err, ErrCacheMiss) {
 		req := lookupRequest{
@@ -235,7 +235,7 @@ func (c *Component) Lookup(exporterIP string, ifIndex uint) (string, Interface, 
 		select {
 		case c.dispatcherChannel <- req:
 		default:
-			c.metrics.pollerBusyCount.WithLabelValues(exporterIP).Inc()
+			c.metrics.pollerBusyCount.WithLabelValues(exporterIP.Unmap().String()).Inc()
 		}
 	}
 	return exporterName, iface, err
@@ -244,7 +244,7 @@ func (c *Component) Lookup(exporterIP string, ifIndex uint) (string, Interface, 
 // Dispatch an incoming request to workers. May handle more than the
 // provided request if it can.
 func (c *Component) dispatchIncomingRequest(request lookupRequest) {
-	requestsMap := map[string][]uint{
+	requestsMap := map[netip.Addr][]uint{
 		request.ExporterIP: request.IfIndexes,
 	}
 	for c.config.PollerCoalesce > 0 {
@@ -298,16 +298,16 @@ func (c *Component) pollerIncomingRequest(request lookupRequest) {
 		return c.poller.Poll(
 			c.t.Context(nil),
 			request.ExporterIP,
-			c.config.Ports.LookupOrDefault(net.ParseIP(request.ExporterIP), 161),
+			c.config.Ports.LookupOrDefault(request.ExporterIP, 161),
 			request.IfIndexes)
 	}); err == breaker.ErrBreakerOpen {
-		c.metrics.pollerBreakerOpenCount.WithLabelValues(request.ExporterIP).Inc()
+		c.metrics.pollerBreakerOpenCount.WithLabelValues(request.ExporterIP.Unmap().String()).Inc()
 		c.pollerBreakersLock.Lock()
 		l, ok := c.pollerBreakerLoggers[request.ExporterIP]
 		if !ok {
 			l = c.r.Sample(reporter.BurstSampler(time.Minute, 1)).
 				With().
-				Str("exporter", request.ExporterIP).
+				Str("exporter", request.ExporterIP.Unmap().String()).
 				Logger()
 			c.pollerBreakerLoggers[request.ExporterIP] = l
 		}
@@ -333,7 +333,7 @@ func (c *Component) expireCache() {
 				}:
 					count++
 				default:
-					c.metrics.pollerBusyCount.WithLabelValues(exporter).Inc()
+					c.metrics.pollerBusyCount.WithLabelValues(exporter.Unmap().String()).Inc()
 				}
 			}
 		}

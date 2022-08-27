@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/netip"
 	"strconv"
 	"testing"
 	"time"
@@ -83,8 +84,9 @@ func TestPoller(t *testing.T) {
 			r := reporter.NewMock(t)
 			clock := clock.NewMock()
 			config := tc.Config
-			p := newPoller(r, config, clock, func(exporterIP, exporterName string, ifIndex uint, iface Interface) {
-				got = append(got, fmt.Sprintf("%s %s %d %s %s %d", exporterIP, exporterName,
+			p := newPoller(r, config, clock, func(exporterIP netip.Addr, exporterName string, ifIndex uint, iface Interface) {
+				got = append(got, fmt.Sprintf("%s %s %d %s %s %d",
+					exporterIP.Unmap().String(), exporterName,
 					ifIndex, iface.Name, iface.Description, iface.Speed))
 			})
 
@@ -188,11 +190,11 @@ func TestPoller(t *testing.T) {
 			go server.ServeForever()
 			defer server.Shutdown()
 
-			p.Poll(context.Background(), "127.0.0.1", uint16(port), []uint{641})
-			p.Poll(context.Background(), "127.0.0.1", uint16(port), []uint{642})
-			p.Poll(context.Background(), "127.0.0.1", uint16(port), []uint{643})
-			p.Poll(context.Background(), "127.0.0.1", uint16(port), []uint{644})
-			p.Poll(context.Background(), "127.0.0.1", uint16(port), []uint{0})
+			p.Poll(context.Background(), netip.MustParseAddr("::ffff:127.0.0.1"), uint16(port), []uint{641})
+			p.Poll(context.Background(), netip.MustParseAddr("::ffff:127.0.0.1"), uint16(port), []uint{642})
+			p.Poll(context.Background(), netip.MustParseAddr("::ffff:127.0.0.1"), uint16(port), []uint{643})
+			p.Poll(context.Background(), netip.MustParseAddr("::ffff:127.0.0.1"), uint16(port), []uint{644})
+			p.Poll(context.Background(), netip.MustParseAddr("::ffff:127.0.0.1"), uint16(port), []uint{0})
 			time.Sleep(50 * time.Millisecond)
 			if diff := helpers.Diff(got, []string{
 				`127.0.0.1 exporter62 641 Gi0/0/0/0 Transit 10000`,

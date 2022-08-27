@@ -7,7 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
+	"net/netip"
 	"sync"
 	"time"
 
@@ -19,7 +19,7 @@ import (
 )
 
 type poller interface {
-	Poll(ctx context.Context, exporterIP string, port uint16, ifIndexes []uint) error
+	Poll(ctx context.Context, exporterIP netip.Addr, port uint16, ifIndexes []uint) error
 }
 
 // realPoller will poll exporters using real SNMP requests.
@@ -31,7 +31,7 @@ type realPoller struct {
 	pendingRequests     map[string]struct{}
 	pendingRequestsLock sync.Mutex
 	errLogger           reporter.Logger
-	put                 func(exporterIP, exporterName string, ifIndex uint, iface Interface)
+	put                 func(exporterIP netip.Addr, exporterName string, ifIndex uint, iface Interface)
 
 	metrics struct {
 		pendingRequests reporter.GaugeFunc
@@ -50,7 +50,7 @@ type pollerConfig struct {
 }
 
 // newPoller creates a new SNMP poller.
-func newPoller(r *reporter.Reporter, config pollerConfig, clock clock.Clock, put func(string, string, uint, Interface)) *realPoller {
+func newPoller(r *reporter.Reporter, config pollerConfig, clock clock.Clock, put func(netip.Addr, string, uint, Interface)) *realPoller {
 	p := &realPoller{
 		r:               r,
 		config:          config,
@@ -92,13 +92,14 @@ func newPoller(r *reporter.Reporter, config pollerConfig, clock clock.Clock, put
 	return p
 }
 
-func (p *realPoller) Poll(ctx context.Context, exporter string, port uint16, ifIndexes []uint) error {
+func (p *realPoller) Poll(ctx context.Context, exporter netip.Addr, port uint16, ifIndexes []uint) error {
 	// Check if already have a request running
+	exporterStr := exporter.Unmap().String()
 	filteredIfIndexes := make([]uint, 0, len(ifIndexes))
 	keys := make([]string, 0, len(ifIndexes))
 	p.pendingRequestsLock.Lock()
 	for _, ifIndex := range ifIndexes {
-		key := fmt.Sprintf("%s@%d", exporter, ifIndex)
+		key := fmt.Sprintf("%s@%d", exporterStr, ifIndex)
 		_, ok := p.pendingRequests[key]
 		if !ok {
 			p.pendingRequests[key] = struct{}{}
@@ -120,20 +121,19 @@ func (p *realPoller) Poll(ctx context.Context, exporter string, port uint16, ifI
 	}()
 
 	// Instantiate an SNMP state
-	exporterIP := net.ParseIP(exporter)
 	g := &gosnmp.GoSNMP{
 		Context:                 ctx,
-		Target:                  exporter,
+		Target:                  exporterStr,
 		Port:                    port,
 		Retries:                 p.config.Retries,
 		Timeout:                 p.config.Timeout,
 		UseUnconnectedUDPSocket: true,
 		Logger:                  gosnmp.NewLogger(&goSNMPLogger{p.r}),
 		OnRetry: func(*gosnmp.GoSNMP) {
-			p.metrics.retries.WithLabelValues(exporter).Inc()
+			p.metrics.retries.WithLabelValues(exporterStr).Inc()
 		},
 	}
-	if securityParameters, ok := p.config.SecurityParameters.Lookup(exporterIP); ok {
+	if securityParameters, ok := p.config.SecurityParameters.Lookup(exporter); ok {
 		g.Version = gosnmp.Version3
 		g.SecurityModel = gosnmp.UserSecurityModel
 		usmSecurityParameters := gosnmp.UsmSecurityParameters{
@@ -162,12 +162,12 @@ func (p *realPoller) Poll(ctx context.Context, exporter string, port uint16, ifI
 		fmt.Printf("WWWWAA %+v\n", g)
 	} else {
 		g.Version = gosnmp.Version2c
-		g.Community = p.config.Communities.LookupOrDefault(exporterIP, "public")
+		g.Community = p.config.Communities.LookupOrDefault(exporter, "public")
 	}
 
 	if err := g.Connect(); err != nil {
-		p.metrics.failures.WithLabelValues(exporter, "connect").Inc()
-		p.errLogger.Err(err).Str("exporter", exporter).Msg("unable to connect")
+		p.metrics.failures.WithLabelValues(exporterStr, "connect").Inc()
+		p.errLogger.Err(err).Str("exporter", exporterStr).Msg("unable to connect")
 	}
 	start := p.clock.Now()
 	requests := []string{"1.3.6.1.2.1.1.5.0"}
@@ -184,17 +184,17 @@ func (p *realPoller) Poll(ctx context.Context, exporter string, port uint16, ifI
 		return nil
 	}
 	if err != nil {
-		p.metrics.failures.WithLabelValues(exporter, "get").Inc()
+		p.metrics.failures.WithLabelValues(exporterStr, "get").Inc()
 		p.errLogger.Err(err).
-			Str("exporter", exporter).
+			Str("exporter", exporterStr).
 			Msgf("unable to GET (%d OIDs)", len(requests))
 		return err
 	}
 	if result.Error != gosnmp.NoError && result.ErrorIndex == 0 {
 		// There is some error affecting the whole request
-		p.metrics.failures.WithLabelValues(exporter, "get").Inc()
+		p.metrics.failures.WithLabelValues(exporterStr, "get").Inc()
 		p.errLogger.Error().
-			Str("exporter", exporter).
+			Str("exporter", exporterStr).
 			Stringer("code", result.Error).
 			Msgf("unable to GET (%d OIDs)", len(requests))
 		return fmt.Errorf("SNMP error %s(%d)", result.Error, result.Error)
@@ -206,11 +206,11 @@ func (p *realPoller) Poll(ctx context.Context, exporter string, port uint16, ifI
 			*target = string(result.Variables[idx].Value.([]byte))
 		case gosnmp.NoSuchInstance, gosnmp.NoSuchObject:
 			if mandatory {
-				p.metrics.failures.WithLabelValues(exporter, fmt.Sprintf("%s missing", what)).Inc()
+				p.metrics.failures.WithLabelValues(exporterStr, fmt.Sprintf("%s missing", what)).Inc()
 				return false
 			}
 		default:
-			p.metrics.failures.WithLabelValues(exporter, fmt.Sprintf("%s unknown type", what)).Inc()
+			p.metrics.failures.WithLabelValues(exporterStr, fmt.Sprintf("%s unknown type", what)).Inc()
 			return false
 		}
 		return true
@@ -221,11 +221,11 @@ func (p *realPoller) Poll(ctx context.Context, exporter string, port uint16, ifI
 			*target = result.Variables[idx].Value.(uint)
 		case gosnmp.NoSuchInstance, gosnmp.NoSuchObject:
 			if mandatory {
-				p.metrics.failures.WithLabelValues(exporter, fmt.Sprintf("%s missing", what)).Inc()
+				p.metrics.failures.WithLabelValues(exporterStr, fmt.Sprintf("%s missing", what)).Inc()
 				return false
 			}
 		default:
-			p.metrics.failures.WithLabelValues(exporter, fmt.Sprintf("%s unknown type", what)).Inc()
+			p.metrics.failures.WithLabelValues(exporterStr, fmt.Sprintf("%s unknown type", what)).Inc()
 			return false
 		}
 		return true
@@ -259,10 +259,10 @@ func (p *realPoller) Poll(ctx context.Context, exporter string, port uint16, ifI
 			Description: ifAliasVal,
 			Speed:       ifSpeedVal,
 		})
-		p.metrics.successes.WithLabelValues(exporter).Inc()
+		p.metrics.successes.WithLabelValues(exporterStr).Inc()
 	}
 
-	p.metrics.times.WithLabelValues(exporter).Observe(p.clock.Now().Sub(start).Seconds())
+	p.metrics.times.WithLabelValues(exporterStr).Observe(p.clock.Now().Sub(start).Seconds())
 	return nil
 }
 

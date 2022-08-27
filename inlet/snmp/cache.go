@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net/netip"
 	"os"
 	"path/filepath"
 	"sync"
@@ -26,13 +27,13 @@ var (
 	// ErrCacheVersion is triggered when loading a cache from an incompatible version
 	ErrCacheVersion = errors.New("SNMP cache version mismatch")
 	// cacheCurrentVersionNumber is the current version of the on-disk cache format
-	cacheCurrentVersionNumber = 8
+	cacheCurrentVersionNumber = 9
 )
 
 // snmpCache represents the SNMP cache.
 type snmpCache struct {
 	r         *reporter.Reporter
-	cache     map[string]*cachedExporter
+	cache     map[netip.Addr]*cachedExporter
 	cacheLock sync.RWMutex
 	clock     clock.Clock
 
@@ -69,7 +70,7 @@ type cachedInterface struct {
 func newSNMPCache(r *reporter.Reporter, clock clock.Clock) *snmpCache {
 	sc := &snmpCache{
 		r:     r,
-		cache: make(map[string]*cachedExporter),
+		cache: make(map[netip.Addr]*cachedExporter),
 		clock: clock,
 	}
 	sc.metrics.cacheHit = r.Counter(
@@ -113,11 +114,11 @@ func newSNMPCache(r *reporter.Reporter, clock clock.Clock) *snmpCache {
 
 // Lookup will perform a lookup of the cache. It returns the exporter
 // name as well as the requested interface.
-func (sc *snmpCache) Lookup(ip string, ifIndex uint) (string, Interface, error) {
+func (sc *snmpCache) Lookup(ip netip.Addr, ifIndex uint) (string, Interface, error) {
 	return sc.lookup(ip, ifIndex, true)
 }
 
-func (sc *snmpCache) lookup(ip string, ifIndex uint, touchAccess bool) (string, Interface, error) {
+func (sc *snmpCache) lookup(ip netip.Addr, ifIndex uint, touchAccess bool) (string, Interface, error) {
 	sc.cacheLock.RLock()
 	defer sc.cacheLock.RUnlock()
 	exporter, ok := sc.cache[ip]
@@ -138,7 +139,7 @@ func (sc *snmpCache) lookup(ip string, ifIndex uint, touchAccess bool) (string, 
 }
 
 // Put a new entry in the cache.
-func (sc *snmpCache) Put(ip string, exporterName string, ifIndex uint, iface Interface) {
+func (sc *snmpCache) Put(ip netip.Addr, exporterName string, ifIndex uint, iface Interface) {
 	sc.cacheLock.Lock()
 	defer sc.cacheLock.Unlock()
 
@@ -181,9 +182,9 @@ func (sc *snmpCache) Expire(older time.Duration) (count uint) {
 
 // Return entries older than the provided duration. If LastAccessed is
 // true, rely on last access, otherwise on last update.
-func (sc *snmpCache) entriesOlderThan(older time.Duration, lastAccessed bool) map[string]map[uint]Interface {
+func (sc *snmpCache) entriesOlderThan(older time.Duration, lastAccessed bool) map[netip.Addr]map[uint]Interface {
 	threshold := sc.clock.Now().Add(-older).Unix()
-	result := make(map[string]map[uint]Interface)
+	result := make(map[netip.Addr]map[uint]Interface)
 
 	sc.cacheLock.RLock()
 	defer sc.cacheLock.RUnlock()
@@ -209,13 +210,13 @@ func (sc *snmpCache) entriesOlderThan(older time.Duration, lastAccessed bool) ma
 
 // Need updates returns a map of interface entries that would need to
 // be updated. It relies on last update.
-func (sc *snmpCache) NeedUpdates(older time.Duration) map[string]map[uint]Interface {
+func (sc *snmpCache) NeedUpdates(older time.Duration) map[netip.Addr]map[uint]Interface {
 	return sc.entriesOlderThan(older, false)
 }
 
 // Need updates returns a map of interface entries that would have
 // expired. It relies on last access.
-func (sc *snmpCache) WouldExpire(older time.Duration) map[string]map[uint]Interface {
+func (sc *snmpCache) WouldExpire(older time.Duration) map[netip.Addr]map[uint]Interface {
 	return sc.entriesOlderThan(older, true)
 }
 
@@ -284,7 +285,7 @@ func (sc *snmpCache) GobDecode(data []byte) error {
 	if version != cacheCurrentVersionNumber {
 		return ErrCacheVersion
 	}
-	cache := map[string]*cachedExporter{}
+	cache := map[netip.Addr]*cachedExporter{}
 	if err := decoder.Decode(&cache); err != nil {
 		return err
 	}

@@ -8,7 +8,7 @@ package snmp
 import (
 	"context"
 	"fmt"
-	"net"
+	"net/netip"
 	"strings"
 	"testing"
 
@@ -19,11 +19,11 @@ import (
 // mockPoller will use static data.
 type mockPoller struct {
 	config Configuration
-	put    func(string, string, uint, Interface)
+	put    func(netip.Addr, string, uint, Interface)
 }
 
 // newMockPoller creates a fake SNMP poller.
-func newMockPoller(configuration Configuration, put func(string, string, uint, Interface)) *mockPoller {
+func newMockPoller(configuration Configuration, put func(netip.Addr, string, uint, Interface)) *mockPoller {
 	return &mockPoller{
 		config: configuration,
 		put:    put,
@@ -31,10 +31,10 @@ func newMockPoller(configuration Configuration, put func(string, string, uint, I
 }
 
 // Poll just builds synthetic data.
-func (p *mockPoller) Poll(ctx context.Context, exporter string, port uint16, ifIndexes []uint) error {
+func (p *mockPoller) Poll(ctx context.Context, exporter netip.Addr, port uint16, ifIndexes []uint) error {
 	for _, ifIndex := range ifIndexes {
-		if p.config.Communities.LookupOrDefault(net.ParseIP(exporter), "public") == "public" {
-			p.put(exporter, strings.ReplaceAll(exporter, ".", "_"), ifIndex, Interface{
+		if p.config.Communities.LookupOrDefault(exporter, "public") == "public" {
+			p.put(exporter, strings.ReplaceAll(exporter.Unmap().String(), ".", "_"), ifIndex, Interface{
 				Name:        fmt.Sprintf("Gi0/0/%d", ifIndex),
 				Description: fmt.Sprintf("Interface %d", ifIndex),
 				Speed:       1000,

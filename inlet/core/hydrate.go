@@ -6,6 +6,7 @@ package core
 import (
 	"fmt"
 	"net"
+	"net/netip"
 	"strconv"
 	"time"
 
@@ -16,11 +17,11 @@ import (
 )
 
 // hydrateFlow adds more data to a flow.
-func (c *Component) hydrateFlow(exporterIP net.IP, exporterStr string, flow *flow.Message) (skip bool) {
+func (c *Component) hydrateFlow(exporterIP netip.Addr, exporterStr string, flow *flow.Message) (skip bool) {
 	errLogger := c.r.Sample(reporter.BurstSampler(time.Minute, 10))
 
 	if flow.InIf != 0 {
-		exporterName, iface, err := c.d.Snmp.Lookup(exporterStr, uint(flow.InIf))
+		exporterName, iface, err := c.d.Snmp.Lookup(exporterIP, uint(flow.InIf))
 		if err != nil {
 			if err != snmp.ErrCacheMiss {
 				errLogger.Err(err).Str("exporter", exporterStr).Msg("unable to query SNMP cache")
@@ -36,7 +37,7 @@ func (c *Component) hydrateFlow(exporterIP net.IP, exporterStr string, flow *flo
 	}
 
 	if flow.OutIf != 0 {
-		exporterName, iface, err := c.d.Snmp.Lookup(exporterStr, uint(flow.OutIf))
+		exporterName, iface, err := c.d.Snmp.Lookup(exporterIP, uint(flow.OutIf))
 		if err != nil {
 			// Only register a cache miss if we don't have one.
 			// TODO: maybe we could do one SNMP query for both interfaces.

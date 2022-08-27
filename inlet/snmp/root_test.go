@@ -6,6 +6,7 @@ package snmp
 import (
 	"context"
 	"errors"
+	"net/netip"
 	"path/filepath"
 	"testing"
 	"time"
@@ -19,7 +20,8 @@ import (
 
 func expectSNMPLookup(t *testing.T, c *Component, exporter string, ifIndex uint, expected answer) {
 	t.Helper()
-	gotExporterName, gotInterface, err := c.Lookup(exporter, ifIndex)
+	ip := netip.AddrFrom16(netip.MustParseAddr(exporter).As16())
+	gotExporterName, gotInterface, err := c.Lookup(ip, ifIndex)
 	got := answer{gotExporterName, gotInterface, err}
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Fatalf("Lookup() (-got, +want):\n%s", diff)
@@ -109,9 +111,9 @@ func TestAutoRefresh(t *testing.T) {
 
 	// Keep it in the cache!
 	mockClock.Add(25 * time.Minute)
-	c.Lookup("127.0.0.1", 765)
+	c.Lookup(netip.MustParseAddr("::ffff:127.0.0.1"), 765)
 	mockClock.Add(25 * time.Minute)
-	c.Lookup("127.0.0.1", 765)
+	c.Lookup(netip.MustParseAddr("::ffff:127.0.0.1"), 765)
 
 	// Go forward, we expect the entry to have been refreshed and be still present
 	mockClock.Add(11 * time.Minute)
@@ -179,7 +181,7 @@ type logCoalescePoller struct {
 	received []lookupRequest
 }
 
-func (fcp *logCoalescePoller) Poll(ctx context.Context, exporterIP string, _ uint16, ifIndexes []uint) error {
+func (fcp *logCoalescePoller) Poll(ctx context.Context, exporterIP netip.Addr, _ uint16, ifIndexes []uint) error {
 	fcp.received = append(fcp.received, lookupRequest{exporterIP, ifIndexes})
 	return nil
 }
@@ -218,7 +220,7 @@ func TestCoalescing(t *testing.T) {
 	}
 
 	expectedAccepted := []lookupRequest{
-		{"127.0.0.1", []uint{766, 767, 768, 769}},
+		{netip.MustParseAddr("::ffff:127.0.0.1"), []uint{766, 767, 768, 769}},
 	}
 	if diff := helpers.Diff(lcp.received, expectedAccepted); diff != "" {
 		t.Errorf("Accepted requests (-got, +want):\n%s", diff)
@@ -227,7 +229,7 @@ func TestCoalescing(t *testing.T) {
 
 type errorPoller struct{}
 
-func (fcp *errorPoller) Poll(ctx context.Context, exporterIP string, _ uint16, ifIndexes []uint) error {
+func (fcp *errorPoller) Poll(ctx context.Context, exporterIP netip.Addr, _ uint16, ifIndexes []uint) error {
 	return errors.New("noooo")
 }
 
@@ -252,10 +254,10 @@ func TestPollerBreaker(t *testing.T) {
 			c.metrics.pollerBreakerOpenCount.WithLabelValues("127.0.0.1").Add(0)
 
 			for i := 0; i < 30; i++ {
-				c.Lookup("127.0.0.1", 765)
+				c.Lookup(netip.MustParseAddr("::ffff:127.0.0.1"), 765)
 			}
 			for i := 0; i < 5; i++ {
-				c.Lookup("127.0.0.2", 765)
+				c.Lookup(netip.MustParseAddr("::ffff:127.0.0.2"), 765)
 			}
 			time.Sleep(50 * time.Millisecond)
 

@@ -6,6 +6,7 @@ package helpers
 import (
 	"fmt"
 	"net"
+	"net/netip"
 	"reflect"
 	"regexp"
 	"strings"
@@ -25,19 +26,18 @@ type SubnetMap[V any] struct {
 
 // Lookup will search for the most specific subnet matching the
 // provided IP address and return the value associated with it.
-func (sm *SubnetMap[V]) Lookup(ip net.IP) (V, bool) {
+func (sm *SubnetMap[V]) Lookup(ip netip.Addr) (V, bool) {
 	if sm == nil || sm.tree == nil {
 		var value V
 		return value, false
 	}
-	ip = ip.To16()
-	ok, value := sm.tree.FindDeepestTag(patricia.NewIPv6Address(ip, 128))
+	ok, value := sm.tree.FindDeepestTag(patricia.NewIPv6Address(ip.AsSlice(), 128))
 	return value, ok
 }
 
 // LookupOrDefault calls lookup and if not found, will return the
 // provided default value.
-func (sm *SubnetMap[V]) LookupOrDefault(ip net.IP, fallback V) V {
+func (sm *SubnetMap[V]) LookupOrDefault(ip netip.Addr, fallback V) V {
 	if value, ok := sm.Lookup(ip); ok {
 		return value
 	}

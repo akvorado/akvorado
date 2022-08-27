@@ -4,7 +4,7 @@
 package helpers_test
 
 import (
-	"net"
+	"net/netip"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -27,22 +27,23 @@ func TestSubnetMapUnmarshalHook(t *testing.T) {
 			Description: "nil",
 			Input:       nilMap,
 			Tests: map[string]string{
-				"203.0.113.1": "",
+				"::ffff:203.0.113.1": "",
 			},
 		}, {
 			Description: "empty",
 			Input:       gin.H{},
 			Tests: map[string]string{
-				"203.0.113.1": "",
+				"::ffff:203.0.113.1": "",
 			},
 		}, {
 			Description: "IPv4 subnet",
 			Input:       gin.H{"203.0.113.0/24": "customer1"},
 			Tests: map[string]string{
 				"::ffff:203.0.113.18": "customer1",
-				"203.0.113.16":        "customer1",
-				"203.0.1.1":           "",
+				"::ffff:203.0.113.16": "customer1",
+				"203.0.113.16":        "",
 				"::ffff:203.0.1.1":    "",
+				"203.0.1.1":           "",
 				"2001:db8:1::12":      "",
 			},
 		}, {
@@ -50,7 +51,6 @@ func TestSubnetMapUnmarshalHook(t *testing.T) {
 			Input:       gin.H{"203.0.113.1": "customer1"},
 			Tests: map[string]string{
 				"::ffff:203.0.113.1": "customer1",
-				"203.0.113.1":        "customer1",
 				"2001:db8:1::12":     "",
 			},
 			YAML: gin.H{"203.0.113.1/32": "customer1"},
@@ -67,9 +67,7 @@ func TestSubnetMapUnmarshalHook(t *testing.T) {
 			Input:       gin.H{"::ffff:203.0.113.0/120": "customer2"},
 			Tests: map[string]string{
 				"::ffff:203.0.113.10": "customer2",
-				"203.0.113.10":        "customer2",
 				"::ffff:203.0.112.10": "",
-				"203.0.112.10":        "",
 			},
 			YAML: gin.H{"203.0.113.0/24": "customer2"},
 		}, {
@@ -105,8 +103,8 @@ func TestSubnetMapUnmarshalHook(t *testing.T) {
 			Description: "Single value",
 			Input:       "customer",
 			Tests: map[string]string{
-				"203.0.113.4": "customer",
-				"2001:db8::1": "customer",
+				"::ffff:203.0.113.4": "customer",
+				"2001:db8::1":        "customer",
 			},
 			YAML: map[string]string{
 				"::/0": "customer",
@@ -140,7 +138,7 @@ func TestSubnetMapUnmarshalHook(t *testing.T) {
 			}
 			got := map[string]string{}
 			for k := range tc.Tests {
-				v, _ := tree.Lookup(net.ParseIP(k))
+				v, _ := tree.Lookup(netip.MustParseAddr(k))
 				got[k] = v
 			}
 			if diff := helpers.Diff(got, tc.Tests); diff != "" {
@@ -229,5 +227,20 @@ func TestSubnetMapUnmarshalHookWithMapValue(t *testing.T) {
 				t.Fatalf("Decode() (-got, +want):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestToMap(t *testing.T) {
+	input := helpers.MustNewSubnetMap(map[string]string{
+		"2001:db8::/64":        "hello",
+		"::ffff:192.0.2.0/120": "bye",
+	})
+	got := input.ToMap()
+	expected := map[string]string{
+		"2001:db8::/64": "hello",
+		"192.0.2.0/24":  "bye",
+	}
+	if diff := helpers.Diff(got, expected); diff != "" {
+		t.Fatalf("ToMap() (-got, +want):\n%s", diff)
 	}
 }

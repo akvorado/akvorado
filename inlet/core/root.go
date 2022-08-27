@@ -7,6 +7,7 @@ package core
 import (
 	"fmt"
 	"net"
+	"net/netip"
 	"sync/atomic"
 	"time"
 
@@ -119,7 +120,8 @@ func (c *Component) runWorker(workerID int) error {
 			c.metrics.flowsReceived.WithLabelValues(exporter).Inc()
 
 			// Hydratation
-			if skip := c.hydrateFlow(flow.ExporterAddress, exporter, flow); skip {
+			ip, _ := netip.AddrFromSlice(flow.ExporterAddress)
+			if skip := c.hydrateFlow(ip, exporter, flow); skip {
 				continue
 			}
 
