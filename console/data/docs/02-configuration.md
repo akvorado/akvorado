@@ -371,8 +371,9 @@ kafka:
       cleanup.policy: delete
 ```
 
-Another useful setting is `retention.bytes` to limit the size of the
-topic in bytes too.
+Another useful setting is `retention.bytes` to limit the size of a
+partition in bytes too (divide it by the number of partitions to have
+a limit for the topic).
 
 Currently, the orchestrator service won't update the replication
 factor. The configuration entries are kept in sync with the content of
