@@ -55,6 +55,7 @@ func New(r *reporter.Reporter, dependencies Dependencies) (*Component, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize Docker client: %w", err)
 	}
+	cli.NegotiateAPIVersion(context.Background())
 	chl, err := conntrack.Dial(nil)
 	if err != nil {
 		cli.Close()
