@@ -192,6 +192,7 @@ func init() {
 	helpers.RegisterMapstructureUnmarshallerHook(ConfigurationUnmarshallerHook())
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[string]())
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[SecurityParameters]())
+	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[uint16]())
 	helpers.RegisterSubnetMapValidation[SecurityParameters]()
 	helpers.RegisterSubnetMapValidation[uint16]()
 }
