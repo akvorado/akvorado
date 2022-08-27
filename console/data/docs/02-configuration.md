@@ -295,6 +295,8 @@ continuously the exporters. The following keys are accepted:
   `AES`, `AES192`, `AES256`, `AES192C`, and `AES256C` are accepted,
   the later being Cisco-variant), `privacy-passphrase` (if the
   previous value was set), and `context-name`.
+- `ports` is a map from subnets to the SNMP port to use to poll
+  exporters in the provided subnet.
 - `poller-retries` is the number of retries on unsuccessful SNMP requests.
 - `poller-timeout` tells how much time should the poller wait for an answer.
 - `workers` tell how many workers to spawn to handle SNMP polling.

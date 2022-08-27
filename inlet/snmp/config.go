@@ -38,6 +38,8 @@ type Configuration struct {
 	Communities *helpers.SubnetMap[string]
 	// SecurityParameters is a mapping from exporter IPs to SNMPv3 security parameters
 	SecurityParameters *helpers.SubnetMap[SecurityParameters] `validate:"omitempty,dive"`
+	// Ports is a mapping from exporter IPs to SNMP port
+	Ports *helpers.SubnetMap[uint16]
 }
 
 // SecurityParameters describes SNMPv3 USM security parameters.
@@ -66,6 +68,9 @@ func DefaultConfiguration() Configuration {
 			"::/0": "public",
 		}),
 		SecurityParameters: helpers.MustNewSubnetMap(map[string]SecurityParameters{}),
+		Ports: helpers.MustNewSubnetMap(map[string]uint16{
+			"::/0": 161,
+		}),
 	}
 }
 
@@ -188,4 +193,5 @@ func init() {
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[string]())
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[SecurityParameters]())
 	helpers.RegisterSubnetMapValidation[SecurityParameters]()
+	helpers.RegisterSubnetMapValidation[uint16]()
 }

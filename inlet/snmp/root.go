@@ -9,6 +9,7 @@ package snmp
 import (
 	"errors"
 	"fmt"
+	"net"
 	"strconv"
 	"sync"
 	"time"
@@ -296,7 +297,8 @@ func (c *Component) pollerIncomingRequest(request lookupRequest) {
 	if err := pollerBreaker.Run(func() error {
 		return c.poller.Poll(
 			c.t.Context(nil),
-			request.ExporterIP, 161,
+			request.ExporterIP,
+			c.config.Ports.LookupOrDefault(net.ParseIP(request.ExporterIP), 161),
 			request.IfIndexes)
 	}); err == breaker.ErrBreakerOpen {
 		c.metrics.pollerBreakerOpenCount.WithLabelValues(request.ExporterIP).Inc()
