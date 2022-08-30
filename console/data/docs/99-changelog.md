@@ -15,6 +15,7 @@ identified with a specific icon:
 
 - 🩹 *orchestrator*: validate configuration of other services on start
 - 🩹 *inlet*: correctly parse `inlet.snmp.communities` when it is just a string
+- 🌱 *cmd*: print a shorter message when an internal error happens when parsing configuration
 - 🌱 *inlet*: add `inlet.snmp.ports` to configure SNMP exporter ports
 
 ## 1.5.7 - 2022-08-23

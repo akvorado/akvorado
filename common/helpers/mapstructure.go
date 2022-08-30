@@ -4,6 +4,8 @@
 package helpers
 
 import (
+	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/mitchellh/mapstructure"
@@ -26,13 +28,28 @@ func GetMapStructureDecoderConfig(config interface{}, hooks ...mapstructure.Deco
 		ErrorUnused:      true,
 		WeaklyTypedInput: true,
 		MatchName:        MapStructureMatchName,
-		DecodeHook: mapstructure.ComposeDecodeHookFunc(
-			mapstructure.ComposeDecodeHookFunc(hooks...),
-			mapstructure.ComposeDecodeHookFunc(mapstructureUnmarshallerHookFuncs...),
-			mapstructure.TextUnmarshallerHookFunc(),
-			mapstructure.StringToTimeDurationHookFunc(),
-			mapstructure.StringToSliceHookFunc(","),
+		DecodeHook: ProtectedDecodeHookFunc(
+			mapstructure.ComposeDecodeHookFunc(
+				mapstructure.ComposeDecodeHookFunc(hooks...),
+				mapstructure.ComposeDecodeHookFunc(mapstructureUnmarshallerHookFuncs...),
+				mapstructure.TextUnmarshallerHookFunc(),
+				mapstructure.StringToTimeDurationHookFunc(),
+				mapstructure.StringToSliceHookFunc(","),
+			),
 		),
+	}
+}
+
+// ProtectedDecodeHookFunc wraps a DecodeHookFunc to recover and returns an error on panic.
+func ProtectedDecodeHookFunc(hook mapstructure.DecodeHookFunc) mapstructure.DecodeHookFunc {
+	return func(from, to reflect.Value) (v interface{}, err error) {
+		defer func() {
+			if r := recover(); r != nil {
+				v = nil
+				err = fmt.Errorf("internal error while parsing: %s", r)
+			}
+		}()
+		return mapstructure.DecodeHookExec(hook, from, to)
 	}
 }
 
