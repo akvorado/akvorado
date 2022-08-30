@@ -42,28 +42,31 @@ func TestFlow(t *testing.T) {
 			},
 		},
 	}
-	t.Run("without rate limit", func(t *testing.T) {
-		r := reporter.NewMock(t)
-		config := DefaultConfiguration()
-		config.Inputs = inputs
-		c := NewMock(t, r, config)
 
-		// Receive flows
-		now := time.Now()
-		for i := 0; i < 1000; i++ {
-			select {
-			case <-c.Flows():
-			case <-time.After(30 * time.Millisecond):
-				t.Fatalf("no flow received")
+	for retry := 2; retry >= 0; retry-- {
+		// Without rate limiting
+		{
+			r := reporter.NewMock(t)
+			config := DefaultConfiguration()
+			config.Inputs = inputs
+			c := NewMock(t, r, config)
+
+			// Receive flows
+			now := time.Now()
+			for i := 0; i < 1000; i++ {
+				select {
+				case <-c.Flows():
+				case <-time.After(30 * time.Millisecond):
+					t.Fatalf("no flow received")
+				}
 			}
+			elapsed := time.Now().Sub(now)
+			t.Logf("Elapsed time for 1000 messages is %s", elapsed)
+			nominalRate = int(1000 * (time.Second / elapsed))
 		}
-		elapsed := time.Now().Sub(now)
-		t.Logf("Elapsed time for 1000 messages is %s", elapsed)
-		nominalRate = int(1000 * (time.Second / elapsed))
-	})
 
-	t.Run("with rate limit", func(t *testing.T) {
-		for try := 2; try >= 0; try-- {
+		// With rate limiting
+		{
 			r := reporter.NewMock(t)
 			config := DefaultConfiguration()
 			config.RateLimit = 1000
@@ -83,12 +86,8 @@ func TestFlow(t *testing.T) {
 				}
 			}
 			t.Logf("During the first two seconds, got %d flows", count)
-			t.Logf("Nominal rate was %d/second", nominalRate)
 
 			if count > 2200 || count < 2000 {
-				if try > 0 {
-					continue
-				}
 				t.Fatalf("Got %d flows instead of 2100 (burst included)", count)
 			}
 
@@ -104,17 +103,17 @@ func TestFlow(t *testing.T) {
 				// Therefore, we are super conservative on the
 				// upper limit of the sampling rate. However,
 				// the lower limit should be OK.
+				t.Logf("Nominal rate was %d/second", nominalRate)
 				expectedRate := uint64(30000 / 1000 * nominalRate)
 				if flow.SamplingRate > 1000*expectedRate/100 || flow.SamplingRate < 70*expectedRate/100 {
-					if try > 0 {
-						continue
+					if retry > 0 {
+						t.Fatalf("Sampling rate is %d, expected %d", flow.SamplingRate, expectedRate)
 					}
-					t.Fatalf("Sampling rate is %d, expected %d", flow.SamplingRate, expectedRate)
 				}
 			case <-time.After(30 * time.Millisecond):
 				t.Fatalf("no flow received")
 			}
 			break
 		}
-	})
+	}
 }
