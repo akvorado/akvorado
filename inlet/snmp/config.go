@@ -105,13 +105,17 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 			if mapKey == nil {
 				// Use the fact we can set the default value directly.
 				from.SetMapIndex(reflect.ValueOf("communities"), from.MapIndex(*defaultKey))
+			} else if communities.Kind() == reflect.String {
+				return nil, errors.New("do not provide default-community when using communities")
 			} else {
 				communities.SetMapIndex(reflect.ValueOf("::/0"), from.MapIndex(*defaultKey))
 			}
 		} else {
-			// default-community should contain ::/0
+			// communities should contain ::/0
 			if mapKey == nil {
 				from.SetMapIndex(reflect.ValueOf("communities"), reflect.ValueOf("public"))
+			} else if communities.Kind() == reflect.String {
+				// Do nothing
 			} else if !communities.MapIndex(reflect.ValueOf("::/0")).IsValid() {
 				communities.SetMapIndex(reflect.ValueOf("::/0"), reflect.ValueOf("public"))
 			}

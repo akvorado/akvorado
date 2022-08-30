@@ -102,6 +102,29 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 				}),
 			},
 		}, {
+			Description: "communities as a string",
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"communities": "private",
+				}
+			},
+			Expected: Configuration{
+				Communities: helpers.MustNewSubnetMap(map[string]string{
+					"::/0": "private",
+				}),
+			},
+		}, {
+			Description: "communities as a string, default-community",
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"default-community": "nothing",
+					"communities":       "private",
+				}
+			},
+			Error: true,
+		}, {
 			Description: "communities, default-community empty",
 			Initial:     func() interface{} { return Configuration{} },
 			Configuration: func() interface{} {
