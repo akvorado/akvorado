@@ -159,7 +159,6 @@ func (p *realPoller) Poll(ctx context.Context, exporter netip.Addr, port uint16,
 			}
 		}
 		g.ContextName = securityParameters.ContextName
-		fmt.Printf("WWWWAA %+v\n", g)
 	} else {
 		g.Version = gosnmp.Version2c
 		g.Community = p.config.Communities.LookupOrDefault(exporter, "public")
