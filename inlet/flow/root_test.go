@@ -107,8 +107,9 @@ func TestFlow(t *testing.T) {
 				expectedRate := uint64(30000 / 1000 * nominalRate)
 				if flow.SamplingRate > 1000*expectedRate/100 || flow.SamplingRate < 70*expectedRate/100 {
 					if retry > 0 {
-						t.Fatalf("Sampling rate is %d, expected %d", flow.SamplingRate, expectedRate)
+						continue
 					}
+					t.Fatalf("Sampling rate is %d, expected %d", flow.SamplingRate, expectedRate)
 				}
 			case <-time.After(30 * time.Millisecond):
 				t.Fatalf("no flow received")
