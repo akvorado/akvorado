@@ -63,51 +63,58 @@ func TestFlow(t *testing.T) {
 	})
 
 	t.Run("with rate limit", func(t *testing.T) {
-		r := reporter.NewMock(t)
-		config := DefaultConfiguration()
-		config.RateLimit = 1000
-		config.Inputs = inputs
-		c := NewMock(t, r, config)
+		for try := 2; try >= 0; try-- {
+			r := reporter.NewMock(t)
+			config := DefaultConfiguration()
+			config.RateLimit = 1000
+			config.Inputs = inputs
+			c := NewMock(t, r, config)
 
-		// Receive flows. It's a bit difficult to estimate the rate as
-		// they will come as fast as possible. We'll get an estimate
-		// during the first second.
-		twoSeconds := time.After(2 * time.Second)
-		count := 0
-	outer1:
-		for {
+			// Receive flows
+			twoSeconds := time.After(2 * time.Second)
+			count := 0
+		outer1:
+			for {
+				select {
+				case <-c.Flows():
+					count++
+				case <-twoSeconds:
+					break outer1
+				}
+			}
+			t.Logf("During the first two seconds, got %d flows", count)
+			t.Logf("Nominal rate was %d/second", nominalRate)
+
+			if count > 2200 || count < 2000 {
+				if try > 0 {
+					continue
+				}
+				t.Fatalf("Got %d flows instead of 2100 (burst included)", count)
+			}
+
+			if nominalRate == 0 {
+				return
+			}
 			select {
-			case <-c.Flows():
-				count++
-			case <-twoSeconds:
-				break outer1
+			case flow := <-c.Flows():
+				// This is hard to estimate the number of
+				// flows we should have got. We use the
+				// nominal rate but it was done with rate
+				// limiting disabled (so less code).
+				// Therefore, we are super conservative on the
+				// upper limit of the sampling rate. However,
+				// the lower limit should be OK.
+				expectedRate := uint64(30000 / 1000 * nominalRate)
+				if flow.SamplingRate > 1000*expectedRate/100 || flow.SamplingRate < 70*expectedRate/100 {
+					if try > 0 {
+						continue
+					}
+					t.Fatalf("Sampling rate is %d, expected %d", flow.SamplingRate, expectedRate)
+				}
+			case <-time.After(30 * time.Millisecond):
+				t.Fatalf("no flow received")
 			}
-		}
-		t.Logf("During the first two seconds, got %d flows", count)
-		t.Logf("Nominal rate was %d/second", nominalRate)
-
-		if count > 2200 || count < 2000 {
-			t.Fatalf("Got %d flows instead of 2100 (burst included)", count)
-		}
-
-		if nominalRate == 0 {
-			return
-		}
-		select {
-		case flow := <-c.Flows():
-			// This is hard to estimate the number of
-			// flows we should have got. We use the
-			// nominal rate but it was done with rate
-			// limiting disabled (so less code).
-			// Therefore, we are super conservative on the
-			// upper limit of the sampling rate. However,
-			// the lower limit should be OK.
-			expectedRate := uint64(30000 / 1000 * nominalRate)
-			if flow.SamplingRate > 1000*expectedRate/100 || flow.SamplingRate < 70*expectedRate/100 {
-				t.Fatalf("Sampling rate is %d, expected %d", flow.SamplingRate, expectedRate)
-			}
-		case <-time.After(30 * time.Millisecond):
-			t.Fatalf("no flow received")
+			break
 		}
 	})
 }
