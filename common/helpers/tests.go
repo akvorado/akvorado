@@ -41,15 +41,41 @@ var prettyC = pretty.Config{
 	},
 }
 
+// DiffOption changes the behavior of the Diff function.
+type DiffOption struct {
+	kind int
+	// When this is a formatter
+	t  reflect.Type
+	fn interface{}
+}
+
 // Diff return a diff of two objects. If no diff, an empty string is
 // returned.
-func Diff(a, b interface{}) string {
+func Diff(a, b interface{}, options ...DiffOption) string {
+	prettyC = prettyC
+	for _, option := range options {
+		switch option.kind {
+		case DiffUnexported.kind:
+			prettyC.IncludeUnexported = true
+		case DiffZero.kind:
+			prettyC.SkipZeroFields = false
+		case DiffFormatter(nil, nil).kind:
+			prettyC.Formatter[option.t] = option.fn
+		}
+	}
 	return prettyC.Compare(a, b)
 }
 
-// RegisterDiffFormatter add an additional formatter for pretty diff.
-func RegisterDiffFormatter(t reflect.Type, fn interface{}) {
-	prettyC.Formatter[t] = fn
+var (
+	// DiffUnexported will display diff of unexported fields too.
+	DiffUnexported = DiffOption{kind: 1}
+	// DiffZero will include zero-field in diff
+	DiffZero = DiffOption{kind: 2}
+)
+
+// DiffFormatter adds a new formatter
+func DiffFormatter(t reflect.Type, fn interface{}) DiffOption {
+	return DiffOption{kind: 3, t: t, fn: fn}
 }
 
 // HTTPEndpointCases describes case for TestHTTPEndpoints
@@ -169,7 +195,7 @@ type ConfigurationDecodeCases []struct {
 }
 
 // TestConfigurationDecode helps decoding configuration. It also test decoding from YAML.
-func TestConfigurationDecode(t *testing.T, cases ConfigurationDecodeCases) {
+func TestConfigurationDecode(t *testing.T, cases ConfigurationDecodeCases, options ...DiffOption) {
 	t.Helper()
 	for _, tc := range cases {
 		for _, fromYAML := range []bool{false, true} {
@@ -208,7 +234,7 @@ func TestConfigurationDecode(t *testing.T, cases ConfigurationDecodeCases) {
 					t.Errorf("Decode() did not error")
 				}
 
-				if diff := Diff(got, tc.Expected); diff != "" && err == nil {
+				if diff := Diff(got, tc.Expected, options...); diff != "" && err == nil {
 					t.Fatalf("Decode() (-got, +want):\n%s", diff)
 				}
 			})

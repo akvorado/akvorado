@@ -83,7 +83,7 @@ func TestNetworkNamesUnmarshalHook(t *testing.T) {
 			Configuration: func() interface{} { return gin.H{"192.0.2.1/255.0.255.0": "customer"} },
 			Error:         true,
 		},
-	})
+	}, helpers.DiffFormatter(reflect.TypeOf(helpers.SubnetMap[NetworkAttributes]{}), fmt.Sprint))
 }
 
 func TestDefaultConfiguration(t *testing.T) {
@@ -92,8 +92,4 @@ func TestDefaultConfiguration(t *testing.T) {
 	if err := helpers.Validate.Struct(config); err != nil {
 		t.Fatalf("validate.Struct() error:\n%+v", err)
 	}
-}
-
-func init() {
-	helpers.RegisterDiffFormatter(reflect.TypeOf(helpers.SubnetMap[NetworkAttributes]{}), fmt.Sprint)
 }
