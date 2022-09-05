@@ -21,7 +21,6 @@ import (
 	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
-	"github.com/yuin/goldmark/renderer/html"
 	"github.com/yuin/goldmark/text"
 	"github.com/yuin/goldmark/util"
 )
@@ -106,9 +105,6 @@ func (c *Component) docsHandlerFunc(gc *gin.Context) {
 		return
 	}
 	md := goldmark.New(
-		goldmark.WithRendererOptions(
-			html.WithUnsafe(),
-		),
 		goldmark.WithExtensions(
 			extension.Footnote,
 			extension.Typographer,
