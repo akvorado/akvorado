@@ -108,6 +108,9 @@ jobs:
   build-js:
     name: Build JS frontend
     runs-on: ubuntu-latest
+    needs:
+      - dependabot
+    if: needs.dependabot.outputs.package-ecosystem != 'gomod'
     permissions:
       contents: read
     strategy:
