@@ -139,10 +139,13 @@ test-coverage: | $(GOCOV) $(GOCOVXML) $(GOTESTSUM) ; $(info $(M) running coverag
 		-coverpkg=$(shell echo $(PKGS) | tr ' ' ',') \
 		-covermode=$(COVERAGE_MODE) \
 		-coverprofile=test/profile.out.tmp $(PKGS)
-	$Q grep -Ev $$(awk -F: '(NR > 1) {print $$1}' test/profile.out.tmp \
+	$Q GENERATED=$$(awk -F: '(NR > 1) {print $$1}' test/profile.out.tmp \
 			| sort | uniq | sed "s+^$(MODULE)/++" \
-			| xargs grep -lF "DO NOT EDIT" \
-			| sed "s+\(.*\)+^$(MODULE)/\1:+" | paste -sd '|') test/profile.out.tmp > test/profile.out
+			| xargs grep -l "^//.*DO NOT EDIT\.$$" \
+			| sed "s+\(.*\)+^$(MODULE)/\1:+" | paste -sd '|') ; \
+	   if [ -n "$$GENERATED" ]; then grep -Ev "$$GENERATED" test/profile.out.tmp > test/profile.out ; \
+	   else cp test/profile.out.tmp test/profile.out ; \
+	   fi
 	$Q $(GO) tool cover -html=test/profile.out -o test/coverage.html
 	$Q $(GOCOV) convert test/profile.out | $(GOCOVXML) > test/coverage.xml
 	@echo -n "Code coverage: "; \
