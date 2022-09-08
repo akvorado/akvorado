@@ -60,8 +60,8 @@ services:
   # Choose one of the two options: build from source, or download
   # latest stable release from GitHub.
   akvorado-service: &akvorado-image
-    # build: {context: .}
-    image: ghcr.io/vincentbernat/akvorado:latest
+    build: {context: .}
+    # image: ghcr.io/vincentbernat/akvorado:latest
     command: version
 
   akvorado-orchestrator:
@@ -130,7 +130,7 @@ services:
     command: demo-exporter http://akvorado-orchestrator:8080#3
 
   clickhouse:
-    image: clickhouse/clickhouse-server:22.3
+    image: clickhouse/clickhouse-server:22.8
     volumes:
       - ./orchestrator/clickhouse/data/docker-entrypoint.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
       - akvorado-clickhouse:/var/lib/clickhouse

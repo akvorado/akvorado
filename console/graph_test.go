@@ -166,7 +166,8 @@ GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }})
+ STEP {{ .Interval }}
+ INTERPOLATE (dimensions AS emptyArrayString()))
 {{ end }}`,
 		}, {
 			Description: "no dimensions, no filters, l2 bps",
@@ -191,7 +192,8 @@ GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }})
+ STEP {{ .Interval }}
+ INTERPOLATE (dimensions AS emptyArrayString()))
 {{ end }}
 `,
 		}, {
@@ -217,7 +219,8 @@ GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }})
+ STEP {{ .Interval }}
+ INTERPOLATE (dimensions AS emptyArrayString()))
 {{ end }}`,
 		}, {
 			Description: "no dimensions",
@@ -242,7 +245,8 @@ GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }})
+ STEP {{ .Interval }}
+ INTERPOLATE (dimensions AS emptyArrayString()))
 {{ end }}`,
 		}, {
 			Description: "no dimensions, escaped filter",
@@ -267,7 +271,8 @@ GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }})
+ STEP {{ .Interval }}
+ INTERPOLATE (dimensions AS emptyArrayString()))
 {{ end }}`,
 		}, {
 			Description: "no dimensions, reverse direction",
@@ -296,7 +301,8 @@ GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }})
+ STEP {{ .Interval }}
+ INTERPOLATE (dimensions AS emptyArrayString()))
 {{ end }}
 UNION ALL
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
@@ -311,7 +317,8 @@ GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }})
+ STEP {{ .Interval }}
+ INTERPOLATE (dimensions AS emptyArrayString()))
 {{ end }}`,
 		}, {
 			Description: "no filters",
@@ -342,7 +349,8 @@ GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }})
+ STEP {{ .Interval }}
+ INTERPOLATE (dimensions AS ['Other', 'Other']))
 {{ end }}`,
 		}, {
 			Description: "no filters, reverse",
@@ -374,7 +382,8 @@ GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }})
+ STEP {{ .Interval }}
+ INTERPOLATE (dimensions AS ['Other', 'Other']))
 {{ end }}
 UNION ALL
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
@@ -389,7 +398,8 @@ GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }})
+ STEP {{ .Interval }}
+ INTERPOLATE (dimensions AS ['Other', 'Other']))
 {{ end }}`,
 		}, {
 			Description: "no filters, previous period",
@@ -421,7 +431,8 @@ GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }})
+ STEP {{ .Interval }}
+ INTERPOLATE (dimensions AS ['Other', 'Other']))
 {{ end }}
 UNION ALL
 {{ with context @@{"start":"2022-04-09T15:45:10Z","end":"2022-04-10T15:45:10Z","start-for-interval":"2022-04-10T15:45:10Z","points":100,"units":"l3bps"}@@ }}
@@ -436,7 +447,8 @@ GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }} + INTERVAL 86400 second
  TO {{ .TimefilterEnd }} + INTERVAL 1 second + INTERVAL 86400 second
- STEP {{ .Interval }})
+ STEP {{ .Interval }}
+ INTERPOLATE (dimensions AS emptyArrayString()))
 {{ end }}`,
 		},
 	}

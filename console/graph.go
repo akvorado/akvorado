@@ -119,6 +119,7 @@ func (input graphHandlerInput) toSQL1(axis int, options toSQL1Options) string {
 	}
 	selectFields := []string{}
 	dimensions := []string{}
+	dimensionsInterpolate := ""
 	others := []string{}
 	for _, column := range input.Dimensions {
 		field := column.toSQLSelect()
@@ -131,8 +132,10 @@ func (input graphHandlerInput) toSQL1(axis int, options toSQL1Options) string {
 			strings.Join(dimensions, ", "),
 			strings.Join(selectFields, ", "),
 			strings.Join(others, ", ")))
+		dimensionsInterpolate = fmt.Sprintf("[%s]", strings.Join(others, ", "))
 	} else {
 		fields = append(fields, "emptyArrayString() AS dimensions")
+		dimensionsInterpolate = "emptyArrayString()"
 	}
 
 	// With
@@ -161,7 +164,8 @@ GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}%s
  TO {{ .TimefilterEnd }} + INTERVAL 1 second%s
- STEP {{ .Interval }})
+ STEP {{ .Interval }}
+ INTERPOLATE (dimensions AS %s))
 {{ end }}`,
 		templateContext(inputContext{
 			Start:             input.Start,
@@ -171,7 +175,9 @@ ORDER BY time WITH FILL
 			Points:            input.Points,
 			Units:             input.Units,
 		}),
-		withStr, axis, strings.Join(fields, ",\n "), where, offsetShift, offsetShift)
+		withStr, axis, strings.Join(fields, ",\n "), where, offsetShift, offsetShift,
+		dimensionsInterpolate,
+	)
 	return strings.TrimSpace(sqlQuery)
 }
 

@@ -52,7 +52,7 @@ jobs:
         ports:
           - 9092:9093
       clickhouse:
-        image: clickhouse/clickhouse-server:22.3
+        image: clickhouse/clickhouse-server:22.8
         ports:
           - 9000:9000
     env:

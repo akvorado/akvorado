@@ -13,6 +13,11 @@ identified with a specific icon:
 
 ## Unreleased
 
+This release bumps the minimal required version for ClickHouse to
+22.4. The `docker-compose` file has been updated to use ClickHouse
+22.8 (which is a long term version).
+
+- 💥 *console*: make ClickHouse interpolate missing values (ClickHouse 22.4+ is required)
 - 🩹 *orchestrator*: validate configuration of other services on start
 - 🩹 *inlet*: correctly parse `inlet.snmp.communities` when it is just a string
 - 🌱 *cmd*: print a shorter message when an internal error happens when parsing configuration

@@ -33,7 +33,7 @@ run tests:
       alias: zookeeper
     - name: bitnami/kafka:2.8.1
       alias: kafka
-    - name: clickhouse/clickhouse-server:22.3
+    - name: clickhouse/clickhouse-server:22.8
       alias: clickhouse
   script:
     - time apk add --no-cache git make gcc musl-dev protoc shared-mime-info npm curl

@@ -4,7 +4,8 @@
 single binary or Docker image. It also requires an installation of
 [Kafka](https://kafka.apache.org/quickstart) and
 [ClickHouse](https://clickhouse.com/docs/en/getting-started/install/).
-They have to be installed separately.
+They have to be installed separately. For ClickHouse, the minimal
+version is 22.4 (due to the use of the `INTERPOLATE` directive).
 
 ## Docker image
 
