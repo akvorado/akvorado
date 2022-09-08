@@ -30,10 +30,12 @@ var ignoredTables = []string{
 }
 
 func dropAllTables(t *testing.T, ch *clickhousedb.Component) {
+	// TODO: find the right order. length(table) ordering works good enough here.
 	rows, err := ch.Query(context.Background(), `
 SELECT engine, table
 FROM system.tables
-WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
+WHERE database=currentDatabase() AND table NOT LIKE '.%'
+ORDER BY length(table) DESC`)
 	if err != nil {
 		t.Fatalf("Query() error:\n%+v", err)
 	}
@@ -45,9 +47,9 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 		t.Logf("(%s) Drop table %s", time.Now(), table)
 		switch engine {
 		case "Dictionary":
-			sql = "DROP DICTIONARY %s"
+			sql = "DROP DICTIONARY %s SYNC"
 		default:
-			sql = "DROP TABLE %s"
+			sql = "DROP TABLE %s SYNC"
 		}
 		if err := ch.Exec(context.Background(), fmt.Sprintf(sql, table)); err != nil {
 			t.Fatalf("Exec() error:\n%+v", err)
@@ -56,10 +58,12 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 }
 
 func dumpAllTables(t *testing.T, ch *clickhousedb.Component) map[string]string {
+	// TODO: find the right ordering, this one does not totally work
 	rows, err := ch.Query(context.Background(), `
 SELECT table, create_table_query
 FROM system.tables
-WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
+WHERE database=currentDatabase() AND table NOT LIKE '.%'
+ORDER BY length(table) ASC`)
 	if err != nil {
 		t.Fatalf("Query() error:\n%+v", err)
 	}
@@ -74,16 +78,22 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 	return schemas
 }
 
-func loadTables(t *testing.T, ch *clickhousedb.Component, schemas map[string]string) {
+type tableWithSchema struct {
+	table  string
+	schema string
+}
+
+func loadTables(t *testing.T, ch *clickhousedb.Component, schemas []tableWithSchema) {
 outer:
-	for table, schema := range schemas {
+	for _, tws := range schemas {
 		for _, ignored := range ignoredTables {
-			if ignored == table {
+			if ignored == tws.table {
 				continue outer
 			}
 		}
-		if err := ch.Exec(context.Background(), schema); err != nil {
-			t.Fatalf("Exec() error:\n%+v", err)
+		t.Logf("Load table %s", tws.table)
+		if err := ch.Exec(context.Background(), tws.schema); err != nil {
+			t.Fatalf("Exec(%q) error:\n%+v", tws.schema, err)
 		}
 	}
 }
@@ -96,7 +106,7 @@ func loadAllTables(t *testing.T, ch *clickhousedb.Component, filename string) {
 		t.Fatalf("Open(%q) error:\n%+v", filename, err)
 	}
 	defer input.Close()
-	schemas := map[string]string{}
+	schemas := []tableWithSchema{}
 	r := csv.NewReader(input)
 	for {
 		record, err := r.Read()
@@ -109,7 +119,10 @@ func loadAllTables(t *testing.T, ch *clickhousedb.Component, filename string) {
 		if len(record) == 0 {
 			continue
 		}
-		schemas[record[0]] = record[1]
+		schemas = append(schemas, tableWithSchema{
+			table:  record[0],
+			schema: record[1],
+		})
 	}
 	dropAllTables(t, ch)
 	t.Logf("(%s) Load all tables from dump %s", time.Now(), filename)

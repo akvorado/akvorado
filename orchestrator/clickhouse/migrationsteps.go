@@ -150,7 +150,7 @@ ORDER BY (TimeReceived, ExporterAddress, InIfName, OutIfName)`, flowsSchema, par
 			Args:       []interface{}{tableName},
 			Do: func() error {
 				l.Debug().Msgf("drop flows consumer table for interval %s", resolution.Interval)
-				err := conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s`, viewName))
+				err := conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s SYNC`, viewName))
 				if err != nil {
 					return fmt.Errorf("cannot drop flows consumer table for interval %s: %w",
 						resolution.Interval, err)
@@ -378,7 +378,7 @@ func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution Resolution
 			// No GROUP BY, the SummingMergeTree will take care of that
 			Do: func() error {
 				l.Debug().Msg("drop consumer table")
-				err := conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s`, viewName))
+				err := conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s SYNC`, viewName))
 				if err != nil {
 					return fmt.Errorf("cannot drop consumer table: %w", err)
 				}
@@ -434,7 +434,7 @@ func (c *Component) migrationStepCreateExportersView(ctx context.Context, l repo
 		Args:       []interface{}{"exporters"},
 		Do: func() error {
 			l.Debug().Msg("drop exporters table")
-			err := conn.Exec(ctx, `DROP TABLE IF EXISTS exporters`)
+			err := conn.Exec(ctx, `DROP TABLE IF EXISTS exporters SYNC`)
 			if err != nil {
 				return fmt.Errorf("cannot drop exporters table: %w", err)
 			}
@@ -570,12 +570,12 @@ func (c *Component) migrationStepCreateRawFlowsTable(ctx context.Context, l repo
 		Args:       []interface{}{tableName, kafkaEngine},
 		Do: func() error {
 			l.Debug().Msg("drop raw consumer table")
-			err := conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s_consumer`, tableName))
+			err := conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s_consumer SYNC`, tableName))
 			if err != nil {
 				return fmt.Errorf("cannot drop raw consumer table: %w", err)
 			}
 			l.Debug().Msg("drop raw table")
-			err = conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s`, tableName))
+			err = conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s SYNC`, tableName))
 			if err != nil {
 				return fmt.Errorf("cannot drop raw table: %w", err)
 			}
@@ -604,7 +604,7 @@ func (c *Component) migrationStepCreateRawFlowsConsumerView(ctx context.Context,
 		Args:       []interface{}{viewName},
 		Do: func() error {
 			l.Debug().Msg("drop consumer table")
-			err := conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s`, viewName))
+			err := conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s SYNC`, viewName))
 			if err != nil {
 				return fmt.Errorf("cannot drop consumer table: %w", err)
 			}
