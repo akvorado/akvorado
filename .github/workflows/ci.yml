@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - dependabot
-    if: needs.dependabot.outputs.package-ecosystem != 'npm'
+    if: needs.dependabot.outputs.package-ecosystem != 'npm_and_yarn'
     permissions:
       contents: read
       actions: write
@@ -86,7 +86,7 @@ jobs:
     runs-on: macos-latest
     needs:
       - dependabot
-    if: needs.dependabot.outputs.package-ecosystem != 'npm'
+    if: needs.dependabot.outputs.package-ecosystem != 'npm_and_yarn'
     permissions:
       contents: read
     steps:
