@@ -20,7 +20,7 @@ jobs:
         id: metadata
         uses: dependabot/fetch-metadata@v1.3.3
     outputs:
-      package-ecosystem: ${{ steps.metadata.package-ecosystem }}
+      package-ecosystem: ${{ steps.metadata.outputs.package-ecosystem }}
 
   build-linux:
     name: Build and test on Linux
