@@ -4,7 +4,6 @@
 package netflow
 
 import (
-	"io/ioutil"
 	"net"
 	"path/filepath"
 	"testing"
@@ -19,10 +18,7 @@ func TestDecode(t *testing.T) {
 	nfdecoder := New(r)
 
 	// Send an option template
-	template, err := ioutil.ReadFile(filepath.Join("testdata", "options-template-257.data"))
-	if err != nil {
-		panic(err)
-	}
+	template := helpers.ReadPcapPayload(t, filepath.Join("testdata", "options-template-257.pcap"))
 	got := nfdecoder.Decode(decoder.RawFlow{Payload: template, Source: net.ParseIP("127.0.0.1")})
 	if got == nil {
 		t.Fatalf("Decode() error on options template")
@@ -44,10 +40,7 @@ func TestDecode(t *testing.T) {
 	}
 
 	// Send option data
-	data, err := ioutil.ReadFile(filepath.Join("testdata", "options-data-257.data"))
-	if err != nil {
-		panic(err)
-	}
+	data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "options-data-257.pcap"))
 	got = nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 	if got == nil {
 		t.Fatalf("Decode() error on options data")
@@ -71,10 +64,7 @@ func TestDecode(t *testing.T) {
 	}
 
 	// Send a regular template
-	template, err = ioutil.ReadFile(filepath.Join("testdata", "template-260.data"))
-	if err != nil {
-		panic(err)
-	}
+	template = helpers.ReadPcapPayload(t, filepath.Join("testdata", "template-260.pcap"))
 	got = nfdecoder.Decode(decoder.RawFlow{Payload: template, Source: net.ParseIP("127.0.0.1")})
 	if got == nil {
 		t.Fatalf("Decode() error on template")
@@ -101,10 +91,7 @@ func TestDecode(t *testing.T) {
 	}
 
 	// Send data
-	data, err = ioutil.ReadFile(filepath.Join("testdata", "data-260.data"))
-	if err != nil {
-		panic(err)
-	}
+	data = helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-260.pcap"))
 	got = nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 	if got == nil {
 		t.Fatalf("Decode() error on data")

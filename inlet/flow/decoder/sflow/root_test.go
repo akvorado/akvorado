@@ -4,7 +4,6 @@
 package sflow
 
 import (
-	"io/ioutil"
 	"net"
 	"path/filepath"
 	"testing"
@@ -19,10 +18,7 @@ func TestDecode(t *testing.T) {
 	sdecoder := New(r)
 
 	// Send data
-	data, err := ioutil.ReadFile(filepath.Join("testdata", "data-1140.data"))
-	if err != nil {
-		panic(err)
-	}
+	data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-1140.pcap"))
 	got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 	if got == nil {
 		t.Fatalf("Decode() error on data")

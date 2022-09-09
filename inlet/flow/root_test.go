@@ -4,11 +4,14 @@
 package flow
 
 import (
+	"fmt"
+	"os"
 	"path"
 	"runtime"
 	"testing"
 	"time"
 
+	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 	"akvorado/inlet/flow/input/file"
 )
@@ -17,28 +20,30 @@ func TestFlow(t *testing.T) {
 	var nominalRate int
 	_, src, _, _ := runtime.Caller(0)
 	base := path.Join(path.Dir(src), "decoder", "netflow", "testdata")
+	outDir := t.TempDir()
+	outFiles := []string{}
+	for idx, f := range []string{
+		"options-template-257.pcap",
+		"options-data-257.pcap",
+		"template-260.pcap",
+		"data-260.pcap", "data-260.pcap", "data-260.pcap", "data-260.pcap",
+		"data-260.pcap", "data-260.pcap", "data-260.pcap", "data-260.pcap",
+		"data-260.pcap", "data-260.pcap", "data-260.pcap", "data-260.pcap",
+		"data-260.pcap", "data-260.pcap", "data-260.pcap", "data-260.pcap",
+	} {
+		outFile := path.Join(outDir, fmt.Sprintf("data-%d", idx))
+		err := os.WriteFile(outFile, helpers.ReadPcapPayload(t, path.Join(base, f)), 0666)
+		if err != nil {
+			t.Fatalf("WriteFile(%q) error:\n%+v", outFile, err)
+		}
+		outFiles = append(outFiles, outFile)
+	}
+
 	inputs := []InputConfiguration{
 		{
 			Decoder: "netflow",
 			Config: &file.Configuration{
-				Paths: []string{
-					path.Join(base, "options-template-257.data"),
-					path.Join(base, "options-data-257.data"),
-					path.Join(base, "template-260.data"),
-					path.Join(base, "data-260.data"),
-					path.Join(base, "data-260.data"),
-					path.Join(base, "data-260.data"),
-					path.Join(base, "data-260.data"),
-					path.Join(base, "data-260.data"),
-					path.Join(base, "data-260.data"),
-					path.Join(base, "data-260.data"),
-					path.Join(base, "data-260.data"),
-					path.Join(base, "data-260.data"),
-					path.Join(base, "data-260.data"),
-					path.Join(base, "data-260.data"),
-					path.Join(base, "data-260.data"),
-					path.Join(base, "data-260.data"),
-				},
+				Paths: outFiles,
 			},
 		},
 	}
