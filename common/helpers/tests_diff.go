@@ -42,7 +42,7 @@ type DiffOption struct {
 // Diff return a diff of two objects. If no diff, an empty string is
 // returned.
 func Diff(a, b interface{}, options ...DiffOption) string {
-	prettyC = prettyC
+	prettyC := prettyC
 	prettyC.Formatter = defaultPrettyFormatters()
 	for _, option := range options {
 		switch option.kind {
