@@ -16,7 +16,7 @@
     "@codemirror/state": "^6.0.0",
     "@codemirror/view": "^6.0.0",
     "@headlessui/vue": "^1.6.1",
-    "@heroicons/vue": "^1.0.6",
+    "@heroicons/vue": "^2.0.10",
     "@lezer/generator": "^1.0.0",
     "@vueuse/core": "^9.0.2",
     "@vueuse/router": "^9.0.2",
