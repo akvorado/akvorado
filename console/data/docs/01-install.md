@@ -13,8 +13,8 @@ You can get *Akvorado* as a
 [Docker](https://docs.docker.com/get-docker) image.
 
 ```console
-# docker pull ghcr.io/vincentbernat/akvorado:latest
-# docker run --rm ghcr.io/vincentbernat/akvorado:latest help
+# docker pull ghcr.io/akvorado/akvorado:latest
+# docker run --rm ghcr.io/akvorado/akvorado:latest help
 ```
 
 Check the `docker-compose.yml` file for an example on how to deploy
@@ -23,7 +23,7 @@ Check the `docker-compose.yml` file for an example on how to deploy
 ## Pre-built binary
 
 The second option is to get a pre-built binary from the [release page
-on GitHub](https://github.com/vincentbernat/akvorado/releases).
+on GitHub](https://github.com/akvorado/akvorado/releases).
 Currently, only a pre-built binary for Linux x86-64 is provided.
 
 ## Compilation from source

@@ -11,7 +11,7 @@ actual bugs.
 
 [documenation]: https://demo.akvorado.net/docs/intro
 [troublehooting section]: https://demo.akvorado.net/docs/troubleshooting
-[discussions]: https://github.com/vincentbernat/akvorado/discussions
+[discussions]: https://github.com/akvorado/akvorado/discussions
 
 When putting code snippets (logs, commands), put them between triple
 backticks:

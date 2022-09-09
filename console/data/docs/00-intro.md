@@ -16,7 +16,7 @@ only requirement is to have
 [Docker](https://docs.docker.com/get-docker/) and [Docker
 Compose](https://docs.docker.com/compose/install/). Grab the latest
 tarball from the [release page on
-GitHub](https://github.com/vincentbernat/akvorado/releases), unpack
+GitHub](https://github.com/akvorado/akvorado/releases), unpack
 it, rename the target directory to `akvorado`, then run the
 `docker-compose` command:
 

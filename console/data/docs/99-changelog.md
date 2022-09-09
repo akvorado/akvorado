@@ -15,7 +15,9 @@ identified with a specific icon:
 
 This release bumps the minimal required version for ClickHouse to
 22.4. The `docker-compose` file has been updated to use ClickHouse
-22.8 (which is a long term version).
+22.8 (which is a long term version). Moreover, *Akvorado* now has its
+own organisation and the code is hosted at
+[akvorado/akvorado](https://github.com/akvorado/akvorado).
 
 - 💥 *console*: make ClickHouse interpolate missing values (ClickHouse 22.4+ is required)
 - 🩹 *orchestrator*: validate configuration of other services on start
@@ -61,7 +63,7 @@ details.
 - 🌱 *inlet*: `inlet.snmp.communities` accepts subnets as keys
 - 🌱 *docker-compose*: disable healthcheck for the conntrack-fixer container
 
-[PR #61]: https://github.com/vincentbernat/akvorado/pull/61
+[PR #61]: https://github.com/akvorado/akvorado/pull/61
 
 ## 1.5.3 - 2022-07-26
 
@@ -74,7 +76,7 @@ details.
 - 🩹 *build*: remove `-dirty` from version number in released Docker images
 - 🌱 *console*: hide `::ffff:` prefix from IPv6-mapped IPv4 addresses
 
-[PR #57]: https://github.com/vincentbernat/akvorado/pull/57
+[PR #57]: https://github.com/akvorado/akvorado/pull/57
 
 ## 1.5.1 - 2022-07-22
 
@@ -101,10 +103,10 @@ the orchestrator to load this new schema.
 - 🌱 *doc*: add configuration for Juniper devices
 - 🌱 *docker-compose*: add [UI for Apache Kafka][] to help debug starter issues
 
-[PR #11]: https://github.com/vincentbernat/akvorado/pull/11
-[PR #14]: https://github.com/vincentbernat/akvorado/pull/14
-[PR #15]: https://github.com/vincentbernat/akvorado/pull/15
-[PR #23]: https://github.com/vincentbernat/akvorado/pull/23
+[PR #11]: https://github.com/akvorado/akvorado/pull/11
+[PR #14]: https://github.com/akvorado/akvorado/pull/14
+[PR #15]: https://github.com/akvorado/akvorado/pull/15
+[PR #23]: https://github.com/akvorado/akvorado/pull/23
 [UI for Apache Kafka]: https://github.com/provectus/kafka-ui
 
 ## 1.4.2 - 2022-07-16
@@ -120,8 +122,8 @@ the orchestrator to load this new schema.
 - 🌱 *docker-compose*: pull image from GitHub instead of building it
 - 🌱 *doc*: add more tips to the troubleshooting section
 
-[PR #4]: https://github.com/vincentbernat/akvorado/pull/4
-[PR #7]: https://github.com/vincentbernat/akvorado/pull/7
+[PR #4]: https://github.com/akvorado/akvorado/pull/4
+[PR #7]: https://github.com/akvorado/akvorado/pull/7
 
 ## 1.4.1 - 2022-07-12
 
