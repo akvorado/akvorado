@@ -30,6 +30,7 @@ func (r *Reporter) GetMetrics(prefix string, subset ...string) map[string]string
 	r.MetricsHTTPHandler().ServeHTTP(w, req)
 
 	lines := strings.Split(w.Body.String(), "\n")
+outer:
 	for _, line := range lines {
 		// Very basic parsing
 		if strings.HasPrefix(line, "#") || !strings.HasPrefix(line, prefix) {
@@ -45,14 +46,23 @@ func (r *Reporter) GetMetrics(prefix string, subset ...string) map[string]string
 			}
 		}
 		trimmed := strings.TrimPrefix(result[0], prefix)
+		nonnegative := 0
 		if len(subset) > 0 {
 			for _, oPrefix := range subset {
-				if strings.HasPrefix(trimmed, oPrefix) {
-					results[trimmed] = result[1]
-					break
+				if oPrefix[0] == '-' {
+					if strings.HasPrefix(trimmed, oPrefix[1:]) {
+						continue outer
+					}
+				} else {
+					nonnegative++
+					if strings.HasPrefix(trimmed, oPrefix) {
+						results[trimmed] = result[1]
+						break
+					}
 				}
 			}
-		} else {
+		}
+		if nonnegative == 0 {
 			results[trimmed] = result[1]
 		}
 	}
