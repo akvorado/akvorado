@@ -61,7 +61,7 @@ services:
   # latest stable release from GitHub.
   akvorado-service: &akvorado-image
     # build: {context: .}
-    image: ghcr.io/akvorado/akvorado:latest
+    image: ghcr.io/vincentbernat/akvorado:latest
     command: version
 
   akvorado-orchestrator:
