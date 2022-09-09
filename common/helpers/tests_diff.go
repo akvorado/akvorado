@@ -20,12 +20,15 @@ var prettyC = pretty.Config{
 	PrintStringers:    false,
 	SkipZeroFields:    true,
 	IncludeUnexported: false,
-	Formatter: map[reflect.Type]interface{}{
+}
+
+func defaultPrettyFormatters() map[reflect.Type]interface{} {
+	return map[reflect.Type]interface{}{
 		reflect.TypeOf(net.IP{}):            fmt.Sprint,
 		reflect.TypeOf(netip.Addr{}):        fmt.Sprint,
 		reflect.TypeOf(time.Time{}):         fmt.Sprint,
 		reflect.TypeOf(SubnetMap[string]{}): fmt.Sprint,
-	},
+	}
 }
 
 // DiffOption changes the behavior of the Diff function.
@@ -40,6 +43,7 @@ type DiffOption struct {
 // returned.
 func Diff(a, b interface{}, options ...DiffOption) string {
 	prettyC = prettyC
+	prettyC.Formatter = defaultPrettyFormatters()
 	for _, option := range options {
 		switch option.kind {
 		case DiffUnexported.kind:
