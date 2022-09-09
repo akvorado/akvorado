@@ -110,7 +110,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - dependabot
-    if: needs.dependabot.outputs.package-ecosystem != 'gomod'
+    if: needs.dependabot.outputs.package-ecosystem != 'go_modules'
     permissions:
       contents: read
     strategy:
