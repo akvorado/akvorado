@@ -60,8 +60,8 @@ services:
   # Choose one of the two options: build from source, or download
   # latest stable release from GitHub.
   akvorado-service: &akvorado-image
-    build: {context: .}
-    # image: ghcr.io/akvorado/akvorado:latest
+    # build: {context: .}
+    image: ghcr.io/akvorado/akvorado:latest
     command: version
 
   akvorado-orchestrator:
