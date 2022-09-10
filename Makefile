@@ -49,6 +49,9 @@ $(BIN)/gocov: PACKAGE=github.com/axw/gocov/gocov@v1.1.0
 GOCOVXML = $(BIN)/gocov-xml
 $(BIN)/gocov-xml: PACKAGE=github.com/AlekSi/gocov-xml@latest
 
+GCOV2LCOV = $(BIN)/gcov2lcov
+$(BIN)/gcov2lcov: PACKAGE=github.com/jandelgado/gcov2lcov@latest
+
 GOTESTSUM = $(BIN)/gotestsum
 $(BIN)/gotestsum: PACKAGE=gotest.tools/gotestsum@latest
 
@@ -131,9 +134,9 @@ check test tests: fmt lint $(GENERATED) | $(GOTESTSUM) ; $(info $(M) running $(N
 		$(ARGS) $(PKGS)
 
 COVERAGE_MODE = atomic
-.PHONY: test-coverage
+.PHONY: test-coverage test-coverage-xml test-coverage-lcov
 test-coverage: fmt lint $(GENERATED)
-test-coverage: | $(GOCOV) $(GOCOVXML) $(GOTESTSUM) ; $(info $(M) running coverage tests…) @ ## Run coverage tests
+test-coverage: | $(GOTESTSUM) ; $(info $(M) running coverage tests…) @ ## Run coverage tests
 	$Q mkdir -p test
 	$Q $(GOTESTSUM) -- \
 		-coverpkg=$(shell echo $(PKGS) | tr ' ' ',') \
@@ -147,9 +150,12 @@ test-coverage: | $(GOCOV) $(GOCOVXML) $(GOTESTSUM) ; $(info $(M) running coverag
 	   else cp test/profile.out.tmp test/profile.out ; \
 	   fi
 	$Q $(GO) tool cover -html=test/profile.out -o test/coverage.html
+test-coverage-xml: test-coverage | $(GOCOV) $(GOCOVXML)
 	$Q $(GOCOV) convert test/profile.out | $(GOCOVXML) > test/coverage.xml
 	@echo -n "Code coverage: "; \
 		echo "scale=1;$$(sed -En 's/^<coverage line-rate="([0-9.]+)".*/\1/p' test/coverage.xml) * 100 / 1" | bc -q
+test-coverage-lcov: test-coverage | $(GCOV2LCOV)
+	$Q $(GCOV2LCOV) -infile test/profile.out -outfile test/coverage.lcov
 
 .PHONY: lint
 lint: .lint-go~ .lint-js~ ## Run linting
