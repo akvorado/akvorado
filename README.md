@@ -1,4 +1,4 @@
-# Akvorado: flow collector, hydrater and visualizer.
+# Akvorado: flow collector, hydrater and visualizer &middot; [![Build status](https://img.shields.io/github/workflow/status/akvorado/akvorado/CI?style=flat-square)](https://github.com/akvorado/akvorado/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/akvorado/akvorado?style=flat-square)](LICENSE.txt) [![Latest release](https://img.shields.io/github/v/release/akvorado/akvorado?style=flat-square)](https://github.com/akvorado/akvorado/releases)
 
 This program receives flows (currently Netflow/IPFIX and sFlow), hydrates them
 with interface names (using SNMP), geo information (using MaxMind),
