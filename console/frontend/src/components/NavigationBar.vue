@@ -3,7 +3,6 @@
 
 <template>
   <Disclosure
-    v-slot="{ open }"
     as="nav"
     class="z-40 w-full border-gray-200 bg-gradient-to-r from-blue-100 to-indigo-200 px-2 py-2.5 shadow dark:from-gray-800 dark:to-gray-600 dark:shadow-white/10 sm:px-4"
   >
@@ -30,14 +29,13 @@
           class="ml-3 inline-flex items-center rounded-lg p-2 text-sm text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:text-gray-400 dark:hover:bg-gray-700 dark:focus:ring-blue-800 md:hidden"
         >
           <span class="sr-only">Open main menu</span>
-          <MenuIcon v-if="!open" class="h-6 w-6" />
-          <XIcon v-else class="h-6 w-6" />
+          <MenuIcon class="h-6 w-6 ui-open:hidden" />
+          <XIcon class="h-6 w-6 ui-not-open:hidden" />
         </DisclosureButton>
       </div>
       <DisclosurePanel
         static
-        class="w-full items-center justify-between md:order-1 md:block md:w-auto"
-        :class="open ? 'block' : 'hidden'"
+        class="w-full items-center justify-between ui-open:block ui-not-open:hidden md:order-1 md:block md:w-auto ui-not-open:md:block"
       >
         <ul
           class="mt-4 flex flex-col md:mt-0 md:flex-row md:space-x-8 md:text-sm md:font-medium"

@@ -61,24 +61,18 @@
           <component
             :is="component.Option"
             v-for="item in filteredItems"
-            v-slot="{ selected, active }"
             :key="item.id"
             :value="item"
             as="template"
           >
             <li
-              class="relative inline-flex w-full cursor-default select-none py-2 pl-10 pr-2.5 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
-              :class="{
-                'bg-gray-100 dark:bg-gray-600 dark:bg-gray-600 dark:text-white':
-                  active,
-              }"
+              class="relative inline-flex w-full cursor-default select-none py-2 pl-10 pr-2.5 text-sm hover:bg-gray-100 ui-active:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white ui-active:dark:bg-gray-600 ui-active:dark:bg-gray-600 ui-active:dark:text-white"
             >
               <span class="block w-full truncate">
                 <slot name="item" v-bind="item"></slot>
               </span>
               <span
-                v-if="selected"
-                class="absolute inset-y-0 left-0 flex items-center pl-2.5 text-blue-600 dark:text-blue-500"
+                class="absolute inset-y-0 left-0 flex items-center pl-2.5 text-blue-600 ui-not-selected:hidden dark:text-blue-500"
               >
                 <CheckIcon class="h-5 w-5" aria-hidden="true" />
               </span>
