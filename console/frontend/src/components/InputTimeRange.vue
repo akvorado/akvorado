@@ -94,8 +94,8 @@ const presets = [
   },
   {
     name: "This day last week",
-    start: "1 week from today",
-    end: "6 days from today",
+    start: "0am 1 week ago",
+    end: "0am 6 days ago",
   },
   {
     name: "Previous week",
