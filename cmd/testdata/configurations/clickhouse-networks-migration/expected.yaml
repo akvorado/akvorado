@@ -1,0 +1,27 @@
+---
+paths:
+  clickhouse.networks:
+    192.0.2.0/24:
+      name: customers
+      region: ""
+      role: ""
+      site: ""
+      tenant: ""
+    203.0.113.0/24:
+      name: servers
+      region: ""
+      role: ""
+      site: ""
+      tenant: ""
+    2a01:db8:cafe:1::/64:
+      name: customers
+      region: ""
+      role: ""
+      site: ""
+      tenant: ""
+    2a01:db8:cafe:2::/64:
+      name: servers
+      region: ""
+      role: ""
+      site: ""
+      tenant: ""
