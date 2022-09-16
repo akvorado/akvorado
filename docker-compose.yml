@@ -119,6 +119,8 @@ services:
     <<: *akvorado-image
     restart: unless-stopped
     command: demo-exporter http://akvorado-orchestrator:8080#0
+    depends_on:
+      - akvorado-inlet
   akvorado-exporter1:
     <<: *exporter
     command: demo-exporter http://akvorado-orchestrator:8080#1
