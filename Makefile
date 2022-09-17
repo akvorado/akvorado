@@ -77,7 +77,7 @@ inlet/flow/decoder/flow-ANY.pb.go: inlet/flow/decoder/flow-$(FLOW_VERSION).pb.go
 	   [ $$f = $< ] || rm -f $$f; \
 	done
 inlet/flow/decoder/flow-$(FLOW_VERSION).pb.go: inlet/flow/data/schemas/flow-$(FLOW_VERSION).proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffers definition…)
-	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --go_out=. --go_opt=module=$(MODULE) $<
+	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --go_out=module=$(MODULE):. $<
 	$Q sed -i.bkp s/FlowMessagev./FlowMessage/g $@ && rm $@.bkp
 
 common/clickhousedb/mocks/mock_driver.go: $(MOCKGEN) ; $(info $(M) generate mocks for ClickHouse driver…)
