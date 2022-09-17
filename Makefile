@@ -14,7 +14,7 @@ M = $(shell if [ "$$(tput colors 2> /dev/null || echo 0)" -ge 8 ]; then printf "
 
 FLOW_VERSION := $(shell sed -n 's/^const CurrentSchemaVersion = //p' inlet/flow/schemas.go)
 GENERATED = \
-	inlet/flow/decoder/flow-$(FLOW_VERSION).pb.go \
+	inlet/flow/decoder/flow-ANY.pb.go \
 	common/clickhousedb/mocks/mock_driver.go \
 	conntrackfixer/mocks/mock_conntrackfixer.go \
 	orchestrator/clickhouse/data/asns.csv \
@@ -72,10 +72,13 @@ $(BIN)/wwhrd: PACKAGE=github.com/frapposelli/wwhrd@latest
 
 .DELETE_ON_ERROR:
 
-inlet/flow/decoder/flow-%.pb.go: inlet/flow/data/schemas/flow-%.proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffers definition…)
+inlet/flow/decoder/flow-ANY.pb.go: inlet/flow/decoder/flow-$(FLOW_VERSION).pb.go
+	$Q for f in inlet/flow/decoder/flow-*.pb.go; do \
+	   [ $$f = $< ] || rm -f $$f; \
+	done
+inlet/flow/decoder/flow-$(FLOW_VERSION).pb.go: inlet/flow/data/schemas/flow-$(FLOW_VERSION).proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffers definition…)
 	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --go_out=. --go_opt=module=$(MODULE) $<
 	$Q sed -i.bkp s/FlowMessagev./FlowMessage/g $@ && rm $@.bkp
-	$Q : $$((i=$*)); while [ $$i -ne 0 ]; do : $$((i = i - 1)); rm -f inlet/flow/decoder/flow-$$i.pb.go; done
 
 common/clickhousedb/mocks/mock_driver.go: $(MOCKGEN) ; $(info $(M) generate mocks for ClickHouse driver…)
 	$Q echo '//go:build !release' > $@
