@@ -5,6 +5,7 @@ package kafka
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
+	"akvorado/inlet/flow"
 )
 
 func TestKafka(t *testing.T) {
@@ -25,7 +27,7 @@ func TestKafka(t *testing.T) {
 	mockProducer.ExpectInputWithMessageCheckerFunctionAndSucceed(func(got *sarama.ProducerMessage) error {
 		defer close(received)
 		expected := sarama.ProducerMessage{
-			Topic:     "flows-v2",
+			Topic:     fmt.Sprintf("flows-v%d", flow.CurrentSchemaVersion),
 			Key:       got.Key,
 			Value:     sarama.ByteEncoder("hello world!"),
 			Partition: got.Partition,
@@ -49,9 +51,9 @@ func TestKafka(t *testing.T) {
 	time.Sleep(10 * time.Millisecond)
 	gotMetrics := r.GetMetrics("akvorado_inlet_kafka_")
 	expectedMetrics := map[string]string{
-		`sent_bytes_total{exporter="127.0.0.1"}`:                                          "26",
-		`errors_total{error="kafka: Failed to produce message to topic flows-v2: noooo"}`: "1",
-		`sent_messages_total{exporter="127.0.0.1"}`:                                       "2",
+		`sent_bytes_total{exporter="127.0.0.1"}`: "26",
+		fmt.Sprintf(`errors_total{error="kafka: Failed to produce message to topic flows-v%d: noooo"}`, flow.CurrentSchemaVersion): "1",
+		`sent_messages_total{exporter="127.0.0.1"}`: "2",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)

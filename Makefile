@@ -75,6 +75,7 @@ $(BIN)/wwhrd: PACKAGE=github.com/frapposelli/wwhrd@latest
 inlet/flow/decoder/flow-%.pb.go: inlet/flow/data/schemas/flow-%.proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffers definition…)
 	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --go_out=. --go_opt=module=$(MODULE) $<
 	$Q sed -i.bkp s/FlowMessagev./FlowMessage/g $@ && rm $@.bkp
+	$Q : $$((i=$*)); while [ $$i -ne 0 ]; do : $$((i = i - 1)); rm -f inlet/flow/decoder/flow-$$i.pb.go; done
 
 common/clickhousedb/mocks/mock_driver.go: $(MOCKGEN) ; $(info $(M) generate mocks for ClickHouse driver…)
 	$Q echo '//go:build !release' > $@

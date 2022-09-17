@@ -4,6 +4,8 @@
 package flow
 
 import (
+	"fmt"
+	"strconv"
 	"testing"
 
 	"akvorado/common/helpers"
@@ -15,6 +17,10 @@ import (
 func TestHTTPEndpoints(t *testing.T) {
 	r := reporter.NewMock(t)
 	c := NewMock(t, r, DefaultConfiguration())
+	versions := gin.H{}
+	for i := 0; i < CurrentSchemaVersion+1; i++ {
+		versions[strconv.Itoa(i)] = fmt.Sprintf("/api/v0/inlet/flow/schema-%d.proto", i)
+	}
 
 	cases := helpers.HTTPEndpointCases{
 		{
@@ -27,12 +33,8 @@ func TestHTTPEndpoints(t *testing.T) {
 		}, {
 			URL: "/api/v0/inlet/flow/schemas.json",
 			JSONOutput: gin.H{
-				"current-version": 2,
-				"versions": gin.H{
-					"0": "/api/v0/inlet/flow/schema-0.proto",
-					"1": "/api/v0/inlet/flow/schema-1.proto",
-					"2": "/api/v0/inlet/flow/schema-2.proto",
-				},
+				"current-version": CurrentSchemaVersion,
+				"versions":        versions,
 			},
 		},
 	}
