@@ -11,7 +11,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.5.8 - 2022-09-18
 
 This release bumps the minimal required version for ClickHouse to
 22.4. The `docker-compose` file has been updated to use ClickHouse
