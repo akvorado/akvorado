@@ -402,8 +402,9 @@ github.com/sirupsen/logrus v1.8.1 h1:dJKuHgqk1NNQlqoA6BTlM1Wf9DOH3NBjQyu0h9+AZZE
 github.com/sirupsen/logrus v1.8.1/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
 github.com/slayercat/GoSNMPServer v0.1.2 h1:JnKksP32zVXqUADZ0jKPCAe0qykADsUnfrztqhEzA58=
 github.com/slayercat/GoSNMPServer v0.1.2/go.mod h1:pAsvl4cV65krDY5CNy7IFDTIZ5V56nK3y3PvWOqV2IY=
-github.com/slayercat/gosnmp v1.24.1-0.20220124233957-4b805977d286 h1:oHNN7hHdDUA6fNrY4CjPSz98SEeAkE53ZS0FBpbKjzY=
-github.com/slayercat/gosnmp v1.24.1-0.20220124233957-4b805977d286/go.mod h1:tB/loGhNgiSxOZzz02TRKKhUPUzDrGrkYQSXxD3KfqM=
+github.com/slayercat/gosnmp v1.24.0/go.mod h1:tB/loGhNgiSxOZzz02TRKKhUPUzDrGrkYQSXxD3KfqM=
+github.com/slayercat/gosnmp v1.24.1 h1:brqlcYbSEa5tESH+Dwo82Nm4Hnzt4pk1kTQ6Sxcl68w=
+github.com/slayercat/gosnmp v1.24.1/go.mod h1:EEciH24gj0Z8lijV/NUrlAZ8D1TYHImV0cvLMsUpRmM=
 github.com/spf13/cobra v1.5.0 h1:X+jTBEBqF0bHN+9cSMgmfuvv2VHJ9ezmFNf9Y/XstYU=
 github.com/spf13/cobra v1.5.0/go.mod h1:dWXEIy2H428czQCjInthrTRUg7yKbok+2Qi/yBIJoUM=
 github.com/spf13/pflag v1.0.3/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=
