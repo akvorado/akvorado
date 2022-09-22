@@ -154,3 +154,126 @@ func TestDecode(t *testing.T) {
 		t.Fatalf("Metrics after data (-got, +want):\n%s", diff)
 	}
 }
+
+func TestDecodeInterface(t *testing.T) {
+	r := reporter.NewMock(t)
+	sdecoder := New(r)
+
+	t.Run("local interface", func(t *testing.T) {
+		// Send data
+		data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-local-interface.pcap"))
+		got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+		if got == nil {
+			t.Fatalf("Decode() error on data")
+		}
+		expectedFlows := []*decoder.FlowMessage{
+			{
+				SequenceNum:     812646826,
+				SamplingRate:    1024,
+				TimeFlowStart:   18446744011573954816,
+				TimeFlowEnd:     18446744011573954816,
+				Bytes:           1518,
+				Packets:         1,
+				Etype:           0x86DD,
+				Proto:           6,
+				SrcPort:         46026,
+				DstPort:         22,
+				InIf:            27,
+				OutIf:           0, // local interface
+				IPTos:           8,
+				IPTTL:           64,
+				TCPFlags:        16,
+				IPv6FlowLabel:   426132,
+				SrcAddr:         net.ParseIP("2a0c:8880:2:0:185:21:130:38").To16(),
+				DstAddr:         net.ParseIP("2a0c:8880:2:0:185:21:130:39").To16(),
+				ExporterAddress: net.ParseIP("172.16.0.3").To16(),
+			},
+		}
+		for _, f := range got {
+			f.TimeReceived = 0
+		}
+
+		if diff := helpers.Diff(got, expectedFlows); diff != "" {
+			t.Fatalf("Decode() (-got, +want):\n%s", diff)
+		}
+	})
+
+	t.Run("discard interface", func(t *testing.T) {
+		// Send data
+		data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-discard-interface.pcap"))
+		got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+		if got == nil {
+			t.Fatalf("Decode() error on data")
+		}
+		expectedFlows := []*decoder.FlowMessage{
+			{
+				SequenceNum:      812646826,
+				SamplingRate:     1024,
+				TimeFlowStart:    18446744011573954816,
+				TimeFlowEnd:      18446744011573954816,
+				Bytes:            1518,
+				Packets:          1,
+				Etype:            0x86DD,
+				Proto:            6,
+				SrcPort:          46026,
+				DstPort:          22,
+				InIf:             27,
+				OutIf:            0, // discard interface
+				ForwardingStatus: 128,
+				IPTos:            8,
+				IPTTL:            64,
+				TCPFlags:         16,
+				IPv6FlowLabel:    426132,
+				SrcAddr:          net.ParseIP("2a0c:8880:2:0:185:21:130:38").To16(),
+				DstAddr:          net.ParseIP("2a0c:8880:2:0:185:21:130:39").To16(),
+				ExporterAddress:  net.ParseIP("172.16.0.3").To16(),
+			},
+		}
+		for _, f := range got {
+			f.TimeReceived = 0
+		}
+
+		if diff := helpers.Diff(got, expectedFlows); diff != "" {
+			t.Fatalf("Decode() (-got, +want):\n%s", diff)
+		}
+	})
+
+	t.Run("multiple interfaces", func(t *testing.T) {
+		// Send data
+		data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-multiple-interfaces.pcap"))
+		got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+		if got == nil {
+			t.Fatalf("Decode() error on data")
+		}
+		expectedFlows := []*decoder.FlowMessage{
+			{
+				SequenceNum:     812646826,
+				SamplingRate:    1024,
+				TimeFlowStart:   18446744011573954816,
+				TimeFlowEnd:     18446744011573954816,
+				Bytes:           1518,
+				Packets:         1,
+				Etype:           0x86DD,
+				Proto:           6,
+				SrcPort:         46026,
+				DstPort:         22,
+				InIf:            27,
+				OutIf:           0, // multiple interfaces
+				IPTos:           8,
+				IPTTL:           64,
+				TCPFlags:        16,
+				IPv6FlowLabel:   426132,
+				SrcAddr:         net.ParseIP("2a0c:8880:2:0:185:21:130:38").To16(),
+				DstAddr:         net.ParseIP("2a0c:8880:2:0:185:21:130:39").To16(),
+				ExporterAddress: net.ParseIP("172.16.0.3").To16(),
+			},
+		}
+		for _, f := range got {
+			f.TimeReceived = 0
+		}
+
+		if diff := helpers.Diff(got, expectedFlows); diff != "" {
+			t.Fatalf("Decode() (-got, +want):\n%s", diff)
+		}
+	})
+}

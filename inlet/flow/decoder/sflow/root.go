@@ -15,9 +15,17 @@ import (
 	"akvorado/inlet/flow/decoder"
 )
 
-// localInterface is used for InIf and OutIf when the traffic is
-// locally originated or terminated. We need to translate it to 0.
-const localInterface = 0x3FFFFFFF
+const (
+	// interfaceLocal is used for InIf and OutIf when the traffic is
+	// locally originated or terminated. We need to translate it to 0.
+	interfaceLocal = 0x3fffffff
+	// interfaceOutMask is the mask to interpret output interface type
+	interfaceOutMask = 0xc0000000
+	// interfaceOutDiscard is used for OutIf when the traffic is discarded
+	interfaceOutDiscard = 0x40000000
+	// interfaceOutMultiple is used when there are multiple output interfaces
+	interfaceOutMultiple = 0x80000000
+)
 
 // Decoder contains the state for the sFlow v5 decoder.
 type Decoder struct {
@@ -130,13 +138,18 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*decoder.FlowMessage {
 
 	results := make([]*decoder.FlowMessage, len(flowMessageSet))
 	for idx, fmsg := range flowMessageSet {
-		if fmsg.InIf == localInterface {
-			fmsg.InIf = 0
-		}
-		if fmsg.OutIf == localInterface {
-			fmsg.OutIf = 0
-		}
 		results[idx] = decoder.ConvertGoflowToFlowMessage(fmsg)
+		if fmsg.InIf == interfaceLocal {
+			results[idx].InIf = 0
+		}
+		if fmsg.OutIf == interfaceLocal {
+			results[idx].OutIf = 0
+		} else if fmsg.OutIf&interfaceOutMask == interfaceOutDiscard {
+			results[idx].OutIf = 0
+			results[idx].ForwardingStatus = 128
+		} else if fmsg.OutIf&interfaceOutMask == interfaceOutMultiple {
+			results[idx].OutIf = 0
+		}
 	}
 
 	return results

@@ -13,7 +13,9 @@ identified with a specific icon:
 
 ## Unreleased
 
-- 🩹 *inlet*: handle sFlow specific interface number for locally originated/terminated traffic
+- 🩹 *inlet*: handle sFlow specific interface number for locally
+  originated/terminated traffic, discarded traffic and traffic sent to
+  multiple interfaces.
 
 ## 1.5.8 - 2022-09-18
 
