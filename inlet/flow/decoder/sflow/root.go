@@ -15,6 +15,10 @@ import (
 	"akvorado/inlet/flow/decoder"
 )
 
+// localInterface is used for InIf and OutIf when the traffic is
+// locally originated or terminated. We need to translate it to 0.
+const localInterface = 0x3FFFFFFF
+
 // Decoder contains the state for the sFlow v5 decoder.
 type Decoder struct {
 	r *reporter.Reporter
@@ -126,6 +130,12 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*decoder.FlowMessage {
 
 	results := make([]*decoder.FlowMessage, len(flowMessageSet))
 	for idx, fmsg := range flowMessageSet {
+		if fmsg.InIf == localInterface {
+			fmsg.InIf = 0
+		}
+		if fmsg.OutIf == localInterface {
+			fmsg.OutIf = 0
+		}
 		results[idx] = decoder.ConvertGoflowToFlowMessage(fmsg)
 	}
 

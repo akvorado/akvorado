@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🩹 *inlet*: handle sFlow specific interface number for locally originated/terminated traffic
+
 ## 1.5.8 - 2022-09-18
 
 This release bumps the minimal required version for ClickHouse to
