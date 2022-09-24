@@ -5,6 +5,7 @@ package snmp
 
 import (
 	"errors"
+	"net/netip"
 	"reflect"
 	"strings"
 	"time"
@@ -38,7 +39,9 @@ type Configuration struct {
 	Communities *helpers.SubnetMap[string]
 	// SecurityParameters is a mapping from exporter IPs to SNMPv3 security parameters
 	SecurityParameters *helpers.SubnetMap[SecurityParameters] `validate:"omitempty,dive"`
-	// Ports is a mapping from exporter IPs to SNMP port
+	// Agents is a mapping from exporter IPs to SNMP agent IP
+	Agents map[netip.Addr]netip.Addr
+	// Ports is a mapping from agent IPs to SNMP port
 	Ports *helpers.SubnetMap[uint16]
 }
 

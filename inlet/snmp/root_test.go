@@ -181,7 +181,7 @@ type logCoalescePoller struct {
 	received []lookupRequest
 }
 
-func (fcp *logCoalescePoller) Poll(ctx context.Context, exporterIP netip.Addr, _ uint16, ifIndexes []uint) error {
+func (fcp *logCoalescePoller) Poll(ctx context.Context, exporterIP, agentIP netip.Addr, port uint16, ifIndexes []uint) error {
 	fcp.received = append(fcp.received, lookupRequest{exporterIP, ifIndexes})
 	return nil
 }
@@ -229,7 +229,7 @@ func TestCoalescing(t *testing.T) {
 
 type errorPoller struct{}
 
-func (fcp *errorPoller) Poll(ctx context.Context, exporterIP netip.Addr, _ uint16, ifIndexes []uint) error {
+func (fcp *errorPoller) Poll(ctx context.Context, exporterIP, agentIP netip.Addr, port uint16, ifIndexes []uint) error {
 	return errors.New("noooo")
 }
 
@@ -270,5 +270,39 @@ func TestPollerBreaker(t *testing.T) {
 				t.Errorf("Metrics (-got, +want):\n%s", diff)
 			}
 		})
+	}
+}
+
+type agentLogPoller struct {
+	lastExporter string
+	lastAgent    string
+}
+
+func (alp *agentLogPoller) Poll(ctx context.Context, exporterIP, agentIP netip.Addr, port uint16, ifIndexes []uint) error {
+	alp.lastExporter = exporterIP.Unmap().String()
+	alp.lastAgent = agentIP.Unmap().String()
+	return nil
+}
+
+func TestAgentMapping(t *testing.T) {
+	alp := &agentLogPoller{}
+	r := reporter.NewMock(t)
+	config := DefaultConfiguration()
+	config.Agents = map[netip.Addr]netip.Addr{
+		// Rely on IPv4 → IPv6 conversion in New()
+		netip.MustParseAddr("192.0.2.1"): netip.MustParseAddr("192.0.2.10"),
+	}
+	c := NewMock(t, r, config, Dependencies{Daemon: daemon.NewMock(t)})
+	c.poller = alp
+
+	expectSNMPLookup(t, c, "192.0.2.1", 766, answer{Err: ErrCacheMiss})
+	time.Sleep(20 * time.Millisecond)
+	if alp.lastAgent != "192.0.2.10" {
+		t.Fatalf("last agent should have been 192.0.2.10, not %s", alp.lastAgent)
+	}
+	expectSNMPLookup(t, c, "192.0.2.2", 766, answer{Err: ErrCacheMiss})
+	time.Sleep(20 * time.Millisecond)
+	if alp.lastAgent != "192.0.2.2" {
+		t.Fatalf("last agent should have been 192.0.2.2, not %s", alp.lastAgent)
 	}
 }

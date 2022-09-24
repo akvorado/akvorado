@@ -190,11 +190,12 @@ func TestPoller(t *testing.T) {
 			go server.ServeForever()
 			defer server.Shutdown()
 
-			p.Poll(context.Background(), netip.MustParseAddr("::ffff:127.0.0.1"), uint16(port), []uint{641})
-			p.Poll(context.Background(), netip.MustParseAddr("::ffff:127.0.0.1"), uint16(port), []uint{642})
-			p.Poll(context.Background(), netip.MustParseAddr("::ffff:127.0.0.1"), uint16(port), []uint{643})
-			p.Poll(context.Background(), netip.MustParseAddr("::ffff:127.0.0.1"), uint16(port), []uint{644})
-			p.Poll(context.Background(), netip.MustParseAddr("::ffff:127.0.0.1"), uint16(port), []uint{0})
+			lo := netip.MustParseAddr("::ffff:127.0.0.1")
+			p.Poll(context.Background(), lo, lo, uint16(port), []uint{641})
+			p.Poll(context.Background(), lo, lo, uint16(port), []uint{642})
+			p.Poll(context.Background(), lo, lo, uint16(port), []uint{643})
+			p.Poll(context.Background(), lo, lo, uint16(port), []uint{644})
+			p.Poll(context.Background(), lo, lo, uint16(port), []uint{0})
 			time.Sleep(50 * time.Millisecond)
 			if diff := helpers.Diff(got, []string{
 				`127.0.0.1 exporter62 641 Gi0/0/0/0 Transit 10000`,

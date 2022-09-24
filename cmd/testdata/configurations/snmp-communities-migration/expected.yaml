@@ -13,5 +13,6 @@ paths:
       ::/0: yopla
       203.0.113.0/24: yopli
     securityparameters: {}
+    agents: {}
     ports:
       ::/0: 161

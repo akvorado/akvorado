@@ -63,6 +63,15 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	if configuration.CacheDuration < configuration.CacheCheckInterval {
 		return nil, errors.New("cache duration must be greater than cache check interval")
 	}
+	for exporterIP, agentIP := range configuration.Agents {
+		if exporterIP.Is4() || agentIP.Is4() {
+			delete(configuration.Agents, exporterIP)
+			exporterIP = netip.AddrFrom16(exporterIP.As16())
+			agentIP = netip.AddrFrom16(agentIP.As16())
+			configuration.Agents[exporterIP] = agentIP
+		}
+	}
+
 	if dependencies.Clock == nil {
 		dependencies.Clock = clock.New()
 	}
@@ -294,11 +303,15 @@ func (c *Component) pollerIncomingRequest(request lookupRequest) {
 	}
 	c.pollerBreakersLock.Unlock()
 
+	agentIP, ok := c.config.Agents[request.ExporterIP]
+	if !ok {
+		agentIP = request.ExporterIP
+	}
+	agentPort := c.config.Ports.LookupOrDefault(agentIP, 161)
 	if err := pollerBreaker.Run(func() error {
 		return c.poller.Poll(
 			c.t.Context(nil),
-			request.ExporterIP,
-			c.config.Ports.LookupOrDefault(request.ExporterIP, 161),
+			request.ExporterIP, agentIP, agentPort,
 			request.IfIndexes)
 	}); err == breaker.ErrBreakerOpen {
 		c.metrics.pollerBreakerOpenCount.WithLabelValues(request.ExporterIP.Unmap().String()).Inc()

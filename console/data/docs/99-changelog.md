@@ -13,6 +13,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- ✨ *inlet*: add `inlet.snmp.agents` to override exporter IP address for SNMP queries
 - 🩹 *inlet*: handle sFlow specific interface number for locally
   originated/terminated traffic, discarded traffic and traffic sent to
   multiple interfaces.

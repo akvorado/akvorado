@@ -47,7 +47,9 @@ $ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet_flow_inpu
 ```
 
 Also check that the source IP for your exporters is correct. This is
-needed for Akvorado to query them using SNMP.
+needed for Akvorado to query them using SNMP. If your exporter cannot
+answer SNMP requests on the source IP address, you can specify an
+alternative address with `inlet.snmp.agents`.
 
 ### No packets exported
 

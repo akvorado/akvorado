@@ -19,7 +19,7 @@ import (
 )
 
 type poller interface {
-	Poll(ctx context.Context, exporterIP netip.Addr, port uint16, ifIndexes []uint) error
+	Poll(ctx context.Context, exporterIP, agentIP netip.Addr, port uint16, ifIndexes []uint) error
 }
 
 // realPoller will poll exporters using real SNMP requests.
@@ -92,7 +92,7 @@ func newPoller(r *reporter.Reporter, config pollerConfig, clock clock.Clock, put
 	return p
 }
 
-func (p *realPoller) Poll(ctx context.Context, exporter netip.Addr, port uint16, ifIndexes []uint) error {
+func (p *realPoller) Poll(ctx context.Context, exporter, agent netip.Addr, port uint16, ifIndexes []uint) error {
 	// Check if already have a request running
 	exporterStr := exporter.Unmap().String()
 	filteredIfIndexes := make([]uint, 0, len(ifIndexes))
@@ -123,7 +123,7 @@ func (p *realPoller) Poll(ctx context.Context, exporter netip.Addr, port uint16,
 	// Instantiate an SNMP state
 	g := &gosnmp.GoSNMP{
 		Context:                 ctx,
-		Target:                  exporterStr,
+		Target:                  agent.Unmap().String(),
 		Port:                    port,
 		Retries:                 p.config.Retries,
 		Timeout:                 p.config.Timeout,
