@@ -8,6 +8,7 @@ import (
 	"errors"
 	"net/netip"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -276,9 +277,12 @@ func TestPollerBreaker(t *testing.T) {
 type agentLogPoller struct {
 	lastExporter string
 	lastAgent    string
+	mu           sync.Mutex
 }
 
 func (alp *agentLogPoller) Poll(ctx context.Context, exporterIP, agentIP netip.Addr, port uint16, ifIndexes []uint) error {
+	alp.mu.Lock()
+	defer alp.mu.Unlock()
 	alp.lastExporter = exporterIP.Unmap().String()
 	alp.lastAgent = agentIP.Unmap().String()
 	return nil
@@ -297,12 +301,18 @@ func TestAgentMapping(t *testing.T) {
 
 	expectSNMPLookup(t, c, "192.0.2.1", 766, answer{Err: ErrCacheMiss})
 	time.Sleep(20 * time.Millisecond)
+	alp.mu.Lock()
 	if alp.lastAgent != "192.0.2.10" {
+		alp.mu.Unlock()
 		t.Fatalf("last agent should have been 192.0.2.10, not %s", alp.lastAgent)
 	}
+	alp.mu.Unlock()
 	expectSNMPLookup(t, c, "192.0.2.2", 766, answer{Err: ErrCacheMiss})
 	time.Sleep(20 * time.Millisecond)
+	alp.mu.Lock()
 	if alp.lastAgent != "192.0.2.2" {
+		alp.mu.Unlock()
 		t.Fatalf("last agent should have been 192.0.2.2, not %s", alp.lastAgent)
 	}
+	alp.mu.Unlock()
 }
