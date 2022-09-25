@@ -69,9 +69,9 @@ message FlowMessagev3 {
   // Next hop
   bytes NextHop = 33;
   uint32 NextHopAS = 34;
-  repeated uint32 ASPath = 35;
-  repeated uint32 Communities = 36;
-  repeated LargeCommunityv3 LargeCommunities = 37;
+  repeated uint32 DstASPath = 35;
+  repeated uint32 DstCommunities = 36;
+  repeated LargeCommunityv3 DstLargeCommunities = 37;
 
   // Country
   string SrcCountry = 100;

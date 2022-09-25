@@ -330,9 +330,9 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				DstAddr:          net.ParseIP("192.0.2.10").To16(),
 				SrcAS:            1299,
 				DstAS:            174,
-				ASPath:           []uint32{64200, 1299, 174},
-				Communities:      []uint32{100, 200, 400},
-				LargeCommunities: []*decoder.LargeCommunity{
+				DstASPath:        []uint32{64200, 1299, 174},
+				DstCommunities:   []uint32{100, 200, 400},
+				DstLargeCommunities: []*decoder.LargeCommunity{
 					{ASN: 64200, LocalData1: 2, LocalData2: 3},
 				},
 			},

@@ -43,10 +43,10 @@ const (
  DstNetTenant LowCardinality(String),
  SrcCountry FixedString(2),
  DstCountry FixedString(2),
- ASPath Array(UInt32),
- 1stAS UInt32,
- 2ndAS UInt32,
- 3rdAS UInt32,
+ DstASPath Array(UInt32),
+ Dst1stAS UInt32,
+ Dst2ndAS UInt32,
+ Dst3rdAS UInt32,
  InIfName LowCardinality(String),
  OutIfName LowCardinality(String),
  InIfDescription String,
@@ -227,9 +227,9 @@ ORDER BY (TimeReceived,
           SrcNetRegion, DstNetRegion,
           SrcNetTenant, DstNetTenant,
           SrcCountry, DstCountry,
-          1stAS, 2ndAS, 3rdAS)`,
+          Dst1stAS, Dst2ndAS, Dst3rdAS)`,
 					tableName,
-					partialSchema("SrcAddr", "DstAddr", "SrcPort", "DstPort", "ASPath"),
+					partialSchema("SrcAddr", "DstAddr", "SrcPort", "DstPort", "DstASPath"),
 					partitionInterval))
 			},
 		}
@@ -399,7 +399,7 @@ AND has(splitByRegexp(',\\s*', sorting_key), $2)`,
 	}
 }
 
-func (c *Component) migrationStepAddASPathColumns(resolution ResolutionConfiguration) migrationStepFunc {
+func (c *Component) migrationStepAddDstASPathColumns(resolution ResolutionConfiguration) migrationStepFunc {
 	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 		var tableName string
 		if resolution.Interval == 0 {
@@ -411,26 +411,26 @@ func (c *Component) migrationStepAddASPathColumns(resolution ResolutionConfigura
 			CheckQuery: `
 SELECT 1 FROM system.columns
 WHERE table = $1 AND database = currentDatabase() AND name = $2`,
-			Args: []interface{}{tableName, "1stAS"},
+			Args: []interface{}{tableName, "Dst1stAS"},
 			Do: func() error {
 				var modifications string
 				var err error
 				if tableName == "flows" {
-					// The flows table will get ASPath, 1st, 2nd, 3rd ASN.
+					// The flows table will get DstASPath, 1st, 2nd, 3rd ASN.
 					modifications, err = addColumnsAndUpdateSortingKey(ctx, conn, tableName,
 						"DstCountry",
-						`ASPath Array(UInt32)`,
-						`1stAS UInt32`,
-						`2ndAS UInt32`,
-						`3rdAS UInt32`,
+						`DstASPath Array(UInt32)`,
+						`Dst1stAS UInt32`,
+						`Dst2ndAS UInt32`,
+						`Dst3rdAS UInt32`,
 					)
 				} else {
 					// The consolidated table will only get the three first ASNs.
 					modifications, err = addColumnsAndUpdateSortingKey(ctx, conn, tableName,
 						"DstCountry",
-						`1stAS UInt32`,
-						`2ndAS UInt32`,
-						`3rdAS UInt32`,
+						`Dst1stAS UInt32`,
+						`Dst2ndAS UInt32`,
+						`Dst3rdAS UInt32`,
 					)
 				}
 				if err != nil {
@@ -452,7 +452,7 @@ func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution Resolution
 		tableName := fmt.Sprintf("flows_%s", resolution.Interval)
 		viewName := fmt.Sprintf("%s_consumer", tableName)
 		return migrationStep{
-			CheckQuery: queryTableHash(15154857004282471466, ""),
+			CheckQuery: queryTableHash(10874532506016793032, ""),
 			Args:       []interface{}{viewName},
 			// No GROUP BY, the SummingMergeTree will take care of that
 			Do: func() error {
@@ -466,7 +466,7 @@ func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution Resolution
 CREATE MATERIALIZED VIEW %s TO %s
 AS SELECT
  *
-EXCEPT(SrcAddr, DstAddr, SrcPort, DstPort, ASPath)
+EXCEPT(SrcAddr, DstAddr, SrcPort, DstPort, DstASPath)
 REPLACE(toStartOfInterval(TimeReceived, INTERVAL %d second) AS TimeReceived)
 FROM %s`, viewName, tableName, uint64(resolution.Interval.Seconds()), "flows"))
 			},
@@ -645,7 +645,7 @@ func (c *Component) migrationStepCreateRawFlowsTable(ctx context.Context, l repo
 		`kafka_thread_per_consumer = 1`,
 	}, " ")
 	return migrationStep{
-		CheckQuery: queryTableHash(15258134130465606660, "AND engine_full = $2"),
+		CheckQuery: queryTableHash(16892255124473065455, "AND engine_full = $2"),
 		Args:       []interface{}{tableName, kafkaEngine},
 		Do: func() error {
 			l.Debug().Msg("drop raw consumer table")
@@ -670,7 +670,7 @@ ENGINE = %s`, tableName, partialSchema(
 				"SrcNetSite", "DstNetSite",
 				"SrcNetRegion", "DstNetRegion",
 				"SrcNetTenant", "DstNetTenant",
-				"1stAS", "2ndAS", "3rdAS",
+				"Dst1stAS", "Dst2ndAS", "Dst3rdAS",
 			), kafkaEngine))
 		},
 	}
@@ -680,7 +680,7 @@ func (c *Component) migrationStepCreateRawFlowsConsumerView(ctx context.Context,
 	tableName := fmt.Sprintf("flows_%d_raw", flow.CurrentSchemaVersion)
 	viewName := fmt.Sprintf("%s_consumer", tableName)
 	return migrationStep{
-		CheckQuery: queryTableHash(342414531398135569, ""),
+		CheckQuery: queryTableHash(4664870629477706719, ""),
 		Args:       []interface{}{viewName},
 		Do: func() error {
 			l.Debug().Msg("drop consumer table")
@@ -703,9 +703,9 @@ AS SELECT
  dictGetOrDefault('networks', 'region', DstAddr, '') AS DstNetRegion,
  dictGetOrDefault('networks', 'tenant', SrcAddr, '') AS SrcNetTenant,
  dictGetOrDefault('networks', 'tenant', DstAddr, '') AS DstNetTenant,
- arrayCompact(ASPath)[1] AS 1stAS,
- arrayCompact(ASPath)[2] AS 2ndAS,
- arrayCompact(ASPath)[3] AS 3rdAS
+ arrayCompact(DstASPath)[1] AS Dst1stAS,
+ arrayCompact(DstASPath)[2] AS Dst2ndAS,
+ arrayCompact(DstASPath)[3] AS Dst3rdAS
 FROM %s`, viewName, tableName))
 		},
 	}

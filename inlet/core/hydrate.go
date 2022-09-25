@@ -94,12 +94,12 @@ func (c *Component) hydrateFlow(exporterIP netip.Addr, exporterStr string, flow 
 	flow.SrcCountry = c.d.GeoIP.LookupCountry(net.IP(flow.SrcAddr))
 	flow.DstCountry = c.d.GeoIP.LookupCountry(net.IP(flow.DstAddr))
 
-	flow.Communities = destBMP.Communities
-	flow.ASPath = destBMP.ASPath
+	flow.DstCommunities = destBMP.Communities
+	flow.DstASPath = destBMP.ASPath
 	if len(destBMP.LargeCommunities) > 0 {
-		flow.LargeCommunities = make([]*decoder.LargeCommunity, len(destBMP.LargeCommunities))
+		flow.DstLargeCommunities = make([]*decoder.LargeCommunity, len(destBMP.LargeCommunities))
 		for i := 0; i < len(destBMP.LargeCommunities); i++ {
-			flow.LargeCommunities[i] = &decoder.LargeCommunity{
+			flow.DstLargeCommunities[i] = &decoder.LargeCommunity{
 				ASN:        destBMP.LargeCommunities[i].ASN,
 				LocalData1: destBMP.LargeCommunities[i].LocalData1,
 				LocalData2: destBMP.LargeCommunities[i].LocalData2,

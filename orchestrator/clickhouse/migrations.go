@@ -84,8 +84,8 @@ func (c *Component) migrateDatabase() error {
 				fmt.Sprintf("add SrcCountry/DstCountry to ORDER BY for resolution %s", resolution.Interval),
 				c.migrationStepFixOrderByCountry(resolution),
 			}, {
-				fmt.Sprintf("add ASPath columns to flows table with resolution %s", resolution.Interval),
-				c.migrationStepAddASPathColumns(resolution),
+				fmt.Sprintf("add DstASPath columns to flows table with resolution %s", resolution.Interval),
+				c.migrationStepAddDstASPathColumns(resolution),
 			}, {
 				fmt.Sprintf("create flows table consumer with resolution %s", resolution.Interval),
 				c.migrationsStepCreateFlowsConsumerTable(resolution),
