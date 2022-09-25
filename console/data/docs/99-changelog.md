@@ -17,6 +17,7 @@ identified with a specific icon:
 - 🩹 *inlet*: handle sFlow specific interface number for locally
   originated/terminated traffic, discarded traffic and traffic sent to
   multiple interfaces.
+- 🌱 *build*: Docker image is built using Nix instead of Alpine
 
 ## 1.5.8 - 2022-09-18
 

@@ -1,16 +1,17 @@
-FROM golang:1.19-alpine AS build
-RUN apk add --no-cache git make gcc musl-dev protoc shared-mime-info nodejs npm curl
+FROM nixpkgs/nix-flakes:latest AS build
 WORKDIR /app
-COPY go.mod ./
-COPY go.sum ./
-RUN go mod download
+COPY flake.nix ./
+COPY flake.lock ./
+RUN nix develop -c true && nix run .\#curl -- --version
+# Build
 COPY . .
-RUN make clean && make && ./bin/akvorado version
+RUN mkdir -p /output/store
+RUN nix build --option sandbox false
+RUN cp -va $(nix-store -qR result) /output/store
 
-# Do not use scratch, we use alpine to get an healthcheck
-FROM alpine
-RUN apk add --no-cache shared-mime-info
-COPY --from=build /app/bin/akvorado /usr/local/bin/akvorado
+FROM scratch
+COPY --from=build /output/store /nix/store
+COPY --from=build /app/result/  /usr/local/
 EXPOSE 8080
-HEALTHCHECK CMD wget -Y off -q -O - http://localhost:8080/api/v0/healthcheck || exit 1
+HEALTHCHECK CMD curl -sf --noproxy localhost:8080 http://localhost:8080/api/v0/healthcheck || exit 1
 ENTRYPOINT [ "/usr/local/bin/akvorado" ]
