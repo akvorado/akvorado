@@ -43,6 +43,10 @@ const (
  DstNetTenant LowCardinality(String),
  SrcCountry FixedString(2),
  DstCountry FixedString(2),
+ ASPath Array(UInt32),
+ 1stAS UInt32,
+ 2ndAS UInt32,
+ 3rdAS UInt32,
  InIfName LowCardinality(String),
  OutIfName LowCardinality(String),
  InIfDescription String,
@@ -94,13 +98,19 @@ outer:
 	return strings.Join(schema, "\n")
 }
 
+// columnSpecToName extracts column name from its creation spec
+func columnSpecToName(spec string) string {
+	spec = strings.TrimPrefix(spec, "IF NOT EXISTS ")
+	return strings.Split(spec, " ")[0]
+}
+
 // addColumnsAfter build a string to add columns after another column
 func addColumnsAfter(after string, columns ...string) string {
 	modifications := []string{}
 	last := after
 	for _, column := range columns {
 		modifications = append(modifications, fmt.Sprintf("ADD COLUMN %s AFTER %s", column, last))
-		last = strings.Split(column, " ")[0]
+		last = columnSpecToName(column)
 	}
 	return strings.Join(modifications, ", ")
 }
@@ -127,7 +137,7 @@ func addColumnsAndUpdateSortingKey(ctx context.Context, conn clickhouse.Conn, ta
 	modifications := []string{addColumnsAfter(after, columns...)}
 	columnNames := []string{}
 	for _, column := range columns {
-		columnNames = append(columnNames, strings.Split(column, " ")[0])
+		columnNames = append(columnNames, columnSpecToName(column))
 	}
 	if table != "flows" {
 		sortingKey, err := appendToSortingKey(ctx, conn, table, columnNames...)
@@ -216,9 +226,10 @@ ORDER BY (TimeReceived,
           SrcNetSite, DstNetSite,
           SrcNetRegion, DstNetRegion,
           SrcNetTenant, DstNetTenant,
-          SrcCountry, DstCountry)`,
+          SrcCountry, DstCountry,
+          1stAS, 2ndAS, 3rdAS)`,
 					tableName,
-					partialSchema("SrcAddr", "DstAddr", "SrcPort", "DstPort"),
+					partialSchema("SrcAddr", "DstAddr", "SrcPort", "DstPort", "ASPath"),
 					partitionInterval))
 			},
 		}
@@ -388,6 +399,50 @@ AND has(splitByRegexp(',\\s*', sorting_key), $2)`,
 	}
 }
 
+func (c *Component) migrationStepAddASPathColumns(resolution ResolutionConfiguration) migrationStepFunc {
+	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+		var tableName string
+		if resolution.Interval == 0 {
+			tableName = "flows"
+		} else {
+			tableName = fmt.Sprintf("flows_%s", resolution.Interval)
+		}
+		return migrationStep{
+			CheckQuery: `
+SELECT 1 FROM system.columns
+WHERE table = $1 AND database = currentDatabase() AND name = $2`,
+			Args: []interface{}{tableName, "1stAS"},
+			Do: func() error {
+				var modifications string
+				var err error
+				if tableName == "flows" {
+					// The flows table will get ASPath, 1st, 2nd, 3rd ASN.
+					modifications, err = addColumnsAndUpdateSortingKey(ctx, conn, tableName,
+						"DstCountry",
+						`ASPath Array(UInt32)`,
+						`1stAS UInt32`,
+						`2ndAS UInt32`,
+						`3rdAS UInt32`,
+					)
+				} else {
+					// The consolidated table will only get the three first ASNs.
+					modifications, err = addColumnsAndUpdateSortingKey(ctx, conn, tableName,
+						"DstCountry",
+						`1stAS UInt32`,
+						`2ndAS UInt32`,
+						`3rdAS UInt32`,
+					)
+				}
+				if err != nil {
+					return err
+				}
+				return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE %s %s`,
+					tableName, modifications))
+			},
+		}
+	}
+}
+
 func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution ResolutionConfiguration) migrationStepFunc {
 	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 		if resolution.Interval == 0 {
@@ -397,7 +452,7 @@ func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution Resolution
 		tableName := fmt.Sprintf("flows_%s", resolution.Interval)
 		viewName := fmt.Sprintf("%s_consumer", tableName)
 		return migrationStep{
-			CheckQuery: queryTableHash(7356168458686845598, ""),
+			CheckQuery: queryTableHash(15154857004282471466, ""),
 			Args:       []interface{}{viewName},
 			// No GROUP BY, the SummingMergeTree will take care of that
 			Do: func() error {
@@ -411,7 +466,7 @@ func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution Resolution
 CREATE MATERIALIZED VIEW %s TO %s
 AS SELECT
  *
-EXCEPT(SrcAddr, DstAddr, SrcPort, DstPort)
+EXCEPT(SrcAddr, DstAddr, SrcPort, DstPort, ASPath)
 REPLACE(toStartOfInterval(TimeReceived, INTERVAL %d second) AS TimeReceived)
 FROM %s`, viewName, tableName, uint64(resolution.Interval.Seconds()), "flows"))
 			},
@@ -590,7 +645,7 @@ func (c *Component) migrationStepCreateRawFlowsTable(ctx context.Context, l repo
 		`kafka_thread_per_consumer = 1`,
 	}, " ")
 	return migrationStep{
-		CheckQuery: queryTableHash(4229371004936784880, "AND engine_full = $2"),
+		CheckQuery: queryTableHash(15258134130465606660, "AND engine_full = $2"),
 		Args:       []interface{}{tableName, kafkaEngine},
 		Do: func() error {
 			l.Debug().Msg("drop raw consumer table")
@@ -615,6 +670,7 @@ ENGINE = %s`, tableName, partialSchema(
 				"SrcNetSite", "DstNetSite",
 				"SrcNetRegion", "DstNetRegion",
 				"SrcNetTenant", "DstNetTenant",
+				"1stAS", "2ndAS", "3rdAS",
 			), kafkaEngine))
 		},
 	}
@@ -624,7 +680,7 @@ func (c *Component) migrationStepCreateRawFlowsConsumerView(ctx context.Context,
 	tableName := fmt.Sprintf("flows_%d_raw", flow.CurrentSchemaVersion)
 	viewName := fmt.Sprintf("%s_consumer", tableName)
 	return migrationStep{
-		CheckQuery: queryTableHash(17295069153939039375, ""),
+		CheckQuery: queryTableHash(342414531398135569, ""),
 		Args:       []interface{}{viewName},
 		Do: func() error {
 			l.Debug().Msg("drop consumer table")
@@ -646,7 +702,10 @@ AS SELECT
  dictGetOrDefault('networks', 'region', SrcAddr, '') AS SrcNetRegion,
  dictGetOrDefault('networks', 'region', DstAddr, '') AS DstNetRegion,
  dictGetOrDefault('networks', 'tenant', SrcAddr, '') AS SrcNetTenant,
- dictGetOrDefault('networks', 'tenant', DstAddr, '') AS DstNetTenant
+ dictGetOrDefault('networks', 'tenant', DstAddr, '') AS DstNetTenant,
+ arrayCompact(ASPath)[1] AS 1stAS,
+ arrayCompact(ASPath)[2] AS 2ndAS,
+ arrayCompact(ASPath)[3] AS 3rdAS
 FROM %s`, viewName, tableName))
 		},
 	}
