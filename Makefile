@@ -12,6 +12,8 @@ V = 0
 Q = $(if $(filter 1,$V),,@)
 M = $(shell if [ "$$(tput colors 2> /dev/null || echo 0)" -ge 8 ]; then printf "\033[34;1m▶\033[0m"; else printf "▶"; fi)
 
+export CGO_ENABLED=0
+
 FLOW_VERSION := $(shell sed -n 's/^const CurrentSchemaVersion = //p' inlet/flow/schemas.go)
 GENERATED = \
 	inlet/flow/decoder/flow-ANY.pb.go \
@@ -128,7 +130,7 @@ TEST_TARGETS := test-bench test-short test-verbose test-race
 test-bench:   ARGS=-run=__absolutelynothing__ -bench=. ## Run benchmarks
 test-short:   ARGS=-short        ## Run only short tests
 test-verbose: ARGS=-v            ## Run tests in verbose mode with coverage reporting
-test-race:    ARGS=-race         ## Run tests with race detector
+test-race:    CGO_ENABLED=1 ARGS=-race         ## Run tests with race detector
 $(TEST_TARGETS): NAME=$(MAKECMDGOALS:test-%=%)
 $(TEST_TARGETS): test
 check test tests: fmt lint $(GENERATED) | $(GOTESTSUM) ; $(info $(M) running $(NAME:%=% )tests…) @ ## Run tests
