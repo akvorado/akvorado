@@ -8,7 +8,7 @@ package database
 import (
 	"fmt"
 
-	"gorm.io/driver/sqlite"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 
 	"akvorado/common/reporter"
