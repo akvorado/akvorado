@@ -691,7 +691,7 @@ func (c *Component) migrationStepCreateRawFlowsConsumerView(ctx context.Context,
 			l.Debug().Msg("create consumer table")
 			return conn.Exec(ctx, fmt.Sprintf(`
 CREATE MATERIALIZED VIEW %s TO flows
-AS SELECT
+AS WITH arrayCompact(DstASPath) AS c_DstASPath SELECT
  *,
  dictGetOrDefault('networks', 'name', SrcAddr, '') AS SrcNetName,
  dictGetOrDefault('networks', 'name', DstAddr, '') AS DstNetName,
@@ -703,9 +703,9 @@ AS SELECT
  dictGetOrDefault('networks', 'region', DstAddr, '') AS DstNetRegion,
  dictGetOrDefault('networks', 'tenant', SrcAddr, '') AS SrcNetTenant,
  dictGetOrDefault('networks', 'tenant', DstAddr, '') AS DstNetTenant,
- arrayCompact(DstASPath)[1] AS Dst1stAS,
- arrayCompact(DstASPath)[2] AS Dst2ndAS,
- arrayCompact(DstASPath)[3] AS Dst3rdAS
+ c_DstASPath[1] AS Dst1stAS,
+ c_DstASPath[2] AS Dst2ndAS,
+ c_DstASPath[3] AS Dst3rdAS
 FROM %s`, viewName, tableName))
 		},
 	}

@@ -134,7 +134,10 @@ ConditionPortExpr "condition on port" ←
 
 ConditionASExpr "condition on AS number" ←
  column:("SrcAS"i { return c.reverseColumnDirection("SrcAS"), nil }
-       / "DstAS"i { return c.reverseColumnDirection("DstAS"), nil }) _
+       / "DstAS"i { return c.reverseColumnDirection("DstAS"), nil }
+       / "Dst1stAS"i { return c.reverseColumnDirection("Dst1stAS"), nil }
+       / "Dst2ndAS"i { return c.reverseColumnDirection("Dst2ndAS"), nil }
+       / "Dst3rdAS"i { return c.reverseColumnDirection("Dst3rdAS"), nil }) _
  rcond:RConditionASExpr {
   return fmt.Sprintf("%s %s", toString(column), toString(rcond)), nil
 }

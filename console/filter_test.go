@@ -116,6 +116,9 @@ UNION DISTINCT
 			StatusCode: 200,
 			JSONInput:  gin.H{"what": "column", "prefix": "dSt"},
 			JSONOutput: gin.H{"completions": []gin.H{
+				{"label": "Dst1stAS", "detail": "column name", "quoted": false},
+				{"label": "Dst2ndAS", "detail": "column name", "quoted": false},
+				{"label": "Dst3rdAS", "detail": "column name", "quoted": false},
 				{"label": "DstAS", "detail": "column name", "quoted": false},
 				{"label": "DstAddr", "detail": "column name", "quoted": false},
 				{"label": "DstCountry", "detail": "column name", "quoted": false},

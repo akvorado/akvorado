@@ -163,15 +163,12 @@ func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 				filterCompletion{"PIM", "protocol", true},
 				filterCompletion{"IPv4", "protocol", true},
 				filterCompletion{"IPv6", "protocol", true})
-		case "srcas", "dstas":
+		case "srcas", "dstas", "dst1stas", "dst2ndas", "dst3rdas":
 			results := []struct {
 				Label  string `ch:"label"`
 				Detail string `ch:"detail"`
 			}{}
-			columnName := "SrcAS"
-			if strings.ToLower(input.Column) == "dstas" {
-				columnName = "DstAS"
-			}
+			columnName := fixQueryColumnName(input.Column)
 			sqlQuery := fmt.Sprintf(`
 SELECT label, detail FROM (
  SELECT concat('AS', toString(%s)) AS label, dictGet('asns', 'name', %s) AS detail, 1 AS rank
@@ -225,7 +222,7 @@ LIMIT 20`, attributeName, attributeName, attributeName), input.Prefix); err != n
 			}
 			input.Prefix = ""
 		case "exportername", "exportergroup", "exporterrole", "exportersite", "exporterregion", "exportertenant":
-			column = fmt.Sprintf("Exporter%s", helpers.Capitalize(inputColumn[8:]))
+			column = fixQueryColumnName(inputColumn)
 			detail = fmt.Sprintf("exporter %s", inputColumn[8:])
 		case "inifname", "outifname":
 			column = "IfName"

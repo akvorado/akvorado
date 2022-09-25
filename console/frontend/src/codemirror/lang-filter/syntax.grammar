@@ -30,7 +30,7 @@ ListOfValues {
   blockCommentRest { ![*] blockCommentRest | "*" blockCommentAfterStar }
   blockCommentAfterStar { "/" | "*" blockCommentAfterStar | ![/*] blockCommentRest }
 
-  Column { std.asciiLetter+ }
+  Column { std.asciiLetter (std.asciiLetter|std.digit)* }
   Operator { $[a-zA-Z!=><]+ }
 
   String {

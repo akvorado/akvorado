@@ -99,7 +99,7 @@ console/frontend/node_modules: console/frontend/package.json console/frontend/pa
 console/frontend/node_modules: ; $(info $(M) fetching node modules…)
 	$Q (cd console/frontend ; npm ci --silent --no-audit --no-fund) && touch $@
 console/frontend/data/fields.json: console/query_consts.go ; $(info $(M) generate list of selectable fields…)
-	$Q sed -En -e 's/^\tqueryColumn([a-zA-Z]+)( .*|$$)/  "\1"/p' $< \
+	$Q sed -En -e 's/^\tqueryColumn([a-zA-Z0-9]+)( .*|$$)/  "\1"/p' $< \
 		| sed -E -e '$$ ! s/$$/,/' -e '1s/^ */[/' -e '$$s/$$/]/' > $@
 	$Q test -s $@
 console/data/frontend: console/frontend/node_modules
