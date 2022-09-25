@@ -94,6 +94,17 @@ outer:
 	return strings.Join(schema, "\n")
 }
 
+// addColumnsAfter build a string to add columns after another column
+func addColumnsAfter(after string, columns ...string) string {
+	modifications := []string{}
+	last := after
+	for _, column := range columns {
+		modifications = append(modifications, fmt.Sprintf("ADD COLUMN %s AFTER %s", column, last))
+		last = strings.Split(column, " ")[0]
+	}
+	return strings.Join(modifications, ", ")
+}
+
 // appendToSortingKey returns a sorting key using the original one and
 // adding the specified columns.
 func appendToSortingKey(ctx context.Context, conn clickhouse.Conn, table string, columns ...string) (string, error) {
@@ -109,6 +120,23 @@ func appendToSortingKey(ctx context.Context, conn clickhouse.Conn, table string,
 		return "", fmt.Errorf("unable to parse sorting key: %w", err)
 	}
 	return fmt.Sprintf("%s, %s", sortingKey, strings.Join(columns, ", ")), nil
+}
+
+// addColumnsAndUpdateSortingKey combines addColumnsAfter and appendToSortingKey
+func addColumnsAndUpdateSortingKey(ctx context.Context, conn clickhouse.Conn, table string, after string, columns ...string) (string, error) {
+	modifications := []string{addColumnsAfter(after, columns...)}
+	columnNames := []string{}
+	for _, column := range columns {
+		columnNames = append(columnNames, strings.Split(column, " ")[0])
+	}
+	if table != "flows" {
+		sortingKey, err := appendToSortingKey(ctx, conn, table, columnNames...)
+		if err != nil {
+			return "", err
+		}
+		modifications = append(modifications, fmt.Sprintf("MODIFY ORDER BY (%s)", sortingKey))
+	}
+	return strings.Join(modifications, ", "), nil
 }
 
 var nullMigrationStep = migrationStep{
@@ -211,10 +239,21 @@ SELECT 1 FROM system.columns
 WHERE table = $1 AND database = currentDatabase() AND name = $2`,
 			Args: []interface{}{tableName, "PacketSizeBucket"},
 			Do: func() error {
-				return conn.Exec(ctx, fmt.Sprintf(`
-ALTER TABLE %s ADD COLUMN PacketSize UInt64 ALIAS intDiv(Bytes, Packets) AFTER Packets,
-               ADD COLUMN PacketSizeBucket LowCardinality(String) ALIAS multiIf(PacketSize < 64, '0-63', PacketSize < 128, '64-127', PacketSize < 256, '128-255', PacketSize < 512, '256-511', PacketSize < 768, '512-767', PacketSize < 1024, '768-1023', PacketSize < 1280, '1024-1279', PacketSize < 1501, '1280-1500', PacketSize < 2048, '1501-2047', PacketSize < 3072, '2048-3071', PacketSize < 4096, '3072-4095', PacketSize < 8192, '4096-8191', PacketSize < 10240, '8192-10239', PacketSize < 16384, '10240-16383', PacketSize < 32768, '16384-32767', PacketSize < 65536, '32768-65535', '65536-Inf') AFTER PacketSize`,
-					tableName))
+				boundaries := []int{64, 128, 256, 512, 768, 1024, 1280, 1501,
+					2048, 3072, 4096, 8192, 10240, 16384, 32768, 65536}
+				conditions := []string{}
+				last := 0
+				for _, boundary := range boundaries {
+					conditions = append(conditions, fmt.Sprintf("PacketSize < %d, '%d-%d'",
+						boundary, last, boundary-1))
+					last = boundary
+				}
+				conditions = append(conditions, fmt.Sprintf("'%d-Inf'", last))
+				return conn.Exec(ctx, fmt.Sprintf("ALTER TABLE %s %s",
+					tableName, addColumnsAfter("Packets",
+						"PacketSize UInt64 ALIAS intDiv(Bytes, Packets)",
+						fmt.Sprintf("PacketSizeBucket LowCardinality(String) ALIAS multiIf(%s)",
+							strings.Join(conditions, ", ")))))
 			},
 		}
 	}
@@ -234,21 +273,16 @@ SELECT 1 FROM system.columns
 WHERE table = $1 AND database = currentDatabase() AND name = $2`,
 			Args: []interface{}{tableName, "DstNetName"},
 			Do: func() error {
-				modifications := []string{
-					`ADD COLUMN SrcNetName LowCardinality(String) AFTER DstAS`,
-					`ADD COLUMN DstNetName LowCardinality(String) AFTER SrcNetName`,
-				}
-				if tableName != "flows" {
-					sortingKey, err := appendToSortingKey(ctx, conn, tableName,
-						"SrcNetName", "DstNetName")
-					if err != nil {
-						return err
-					}
-					modifications = append(modifications, fmt.Sprintf(
-						`MODIFY ORDER BY (%s)`, sortingKey))
+				modifications, err := addColumnsAndUpdateSortingKey(ctx, conn, tableName,
+					"DstAS",
+					`SrcNetName LowCardinality(String)`,
+					`DstNetName LowCardinality(String)`,
+				)
+				if err != nil {
+					return err
 				}
 				return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE %s %s`,
-					tableName, strings.Join(modifications, ", ")))
+					tableName, modifications))
 			},
 		}
 	}
@@ -268,31 +302,22 @@ SELECT 1 FROM system.columns
 WHERE table = $1 AND database = currentDatabase() AND name = $2`,
 			Args: []interface{}{tableName, "DstNetRole"},
 			Do: func() error {
-				modifications := []string{
-					`ADD COLUMN SrcNetRole LowCardinality(String) AFTER DstNetName`,
-					`ADD COLUMN DstNetRole LowCardinality(String) AFTER SrcNetRole`,
-					`ADD COLUMN SrcNetSite LowCardinality(String) AFTER DstNetRole`,
-					`ADD COLUMN DstNetSite LowCardinality(String) AFTER SrcNetSite`,
-					`ADD COLUMN SrcNetRegion LowCardinality(String) AFTER DstNetSite`,
-					`ADD COLUMN DstNetRegion LowCardinality(String) AFTER SrcNetRegion`,
-					`ADD COLUMN SrcNetTenant LowCardinality(String) AFTER DstNetRegion`,
-					`ADD COLUMN DstNetTenant LowCardinality(String) AFTER SrcNetTenant`,
-				}
-				if tableName != "flows" {
-					sortingKey, err := appendToSortingKey(ctx, conn, tableName,
-						"SrcNetRole", "DstNetRole",
-						"SrcNetSite", "DstNetSite",
-						"SrcNetRegion", "DstNetRegion",
-						"SrcNetTenant", "DstNetTenant",
-					)
-					if err != nil {
-						return err
-					}
-					modifications = append(modifications, fmt.Sprintf(
-						`MODIFY ORDER BY (%s)`, sortingKey))
+				modifications, err := addColumnsAndUpdateSortingKey(ctx, conn, tableName,
+					"DstNetName",
+					`SrcNetRole LowCardinality(String)`,
+					`DstNetRole LowCardinality(String)`,
+					`SrcNetSite LowCardinality(String)`,
+					`DstNetSite LowCardinality(String)`,
+					`SrcNetRegion LowCardinality(String)`,
+					`DstNetRegion LowCardinality(String)`,
+					`SrcNetTenant LowCardinality(String)`,
+					`DstNetTenant LowCardinality(String)`,
+				)
+				if err != nil {
+					return err
 				}
 				return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE %s %s`,
-					tableName, strings.Join(modifications, ", ")))
+					tableName, modifications))
 			},
 		}
 	}
@@ -312,14 +337,13 @@ SELECT 1 FROM system.columns
 WHERE table = $1 AND database = currentDatabase() AND name = $2`,
 			Args: []interface{}{tableName, "ExporterTenant"},
 			Do: func() error {
-				modifications := []string{
-					`ADD COLUMN ExporterRole LowCardinality(String) AFTER ExporterGroup`,
-					`ADD COLUMN ExporterSite LowCardinality(String) AFTER ExporterRole`,
-					`ADD COLUMN ExporterRegion LowCardinality(String) AFTER ExporterSite`,
-					`ADD COLUMN ExporterTenant LowCardinality(String) AFTER ExporterRegion`,
-				}
 				return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE %s %s`,
-					tableName, strings.Join(modifications, ", ")))
+					tableName, addColumnsAfter("ExporterGroup",
+						`ExporterRole LowCardinality(String)`,
+						`ExporterSite LowCardinality(String)`,
+						`ExporterRegion LowCardinality(String)`,
+						`ExporterTenant LowCardinality(String)`,
+					)))
 			},
 		}
 	}
@@ -349,16 +373,16 @@ AND has(splitByRegexp(',\\s*', sorting_key), $2)`,
 				}
 				// Add them back
 				l.Debug().Msg("add back SrcCountry/DstCountry columns")
-				sortingKey, err := appendToSortingKey(ctx, conn, tableName,
-					"SrcCountry", "DstCountry")
+				modifications, err := addColumnsAndUpdateSortingKey(ctx, conn, tableName,
+					"DstNetTenant",
+					`SrcCountry FixedString(2)`,
+					`DstCountry FixedString(2)`,
+				)
 				if err != nil {
 					return err
 				}
-				return conn.Exec(ctx, fmt.Sprintf(`
-ALTER TABLE %s
-ADD COLUMN SrcCountry FixedString(2) AFTER DstNetTenant,
-ADD COLUMN DstCountry FixedString(2) AFTER SrcCountry,
-MODIFY ORDER BY (%s)`, tableName, sortingKey))
+				return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE %s %s`,
+					tableName, modifications))
 			},
 		}
 	}
