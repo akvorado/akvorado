@@ -14,36 +14,8 @@
           pkgs.nodejs-16_x
           pkgs.protobuf
         ];
-        curlMinimal = (pkgs.curlMinimal.override {
-          http2Support = false;
-          opensslSupport = false;
-          zlibSupport = false;
-          gssSupport = false;
-        }).overrideAttrs
-          (old: {
-            configureFlags = old.configureFlags ++ [
-              "--without-ssl"
-              "--disable-dict"
-              "--disable-file"
-              "--disable-ftp"
-              "--disable-gopher"
-              "--disable-imap"
-              "--disable-mqtt"
-              "--disable-pop3"
-              "--disable-rtsp"
-              "--disable-smtp"
-              "--disable-telnet"
-              "--disable-tftp"
-            ];
-          });
       in
       {
-        apps = {
-          curl = {
-            type = "app";
-            program = "${curlMinimal}/bin/curl";
-          };
-        };
         # This can be built with "nix build --option sandbox false".
         # Not a good example on how to package things for Nix!
         packages.default = pkgs.stdenv.mkDerivation {
@@ -58,7 +30,6 @@
           installPhase = ''
             mkdir -p $out/bin
             cp bin/akvorado $out/bin/.
-            ln -s ${curlMinimal}/bin/curl $out/bin/.
           '';
         };
 
