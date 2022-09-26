@@ -47,6 +47,7 @@ const (
  Dst1stAS UInt32,
  Dst2ndAS UInt32,
  Dst3rdAS UInt32,
+ DstCommunities Array(UInt32),
  InIfName LowCardinality(String),
  OutIfName LowCardinality(String),
  InIfDescription String,
@@ -229,7 +230,9 @@ ORDER BY (TimeReceived,
           SrcCountry, DstCountry,
           Dst1stAS, Dst2ndAS, Dst3rdAS)`,
 					tableName,
-					partialSchema("SrcAddr", "DstAddr", "SrcPort", "DstPort", "DstASPath"),
+					partialSchema(
+						"SrcAddr", "DstAddr", "SrcPort", "DstPort",
+						"DstASPath", "DstCommunities"),
 					partitionInterval))
 			},
 		}
@@ -443,6 +446,24 @@ WHERE table = $1 AND database = currentDatabase() AND name = $2`,
 	}
 }
 
+func (c *Component) migrationStepAddDstCommunitiesColumn(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+	return migrationStep{
+		CheckQuery: `
+SELECT 1 FROM system.columns
+WHERE table = $1 AND database = currentDatabase() AND name = $2`,
+		Args: []interface{}{"flows", "DstCommunities"},
+		Do: func() error {
+			modifications, err := addColumnsAndUpdateSortingKey(ctx, conn, "flows",
+				"Dst3rdAS",
+				"DstCommunities Array(UInt32)")
+			if err != nil {
+				return err
+			}
+			return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE flows %s`, modifications))
+		},
+	}
+}
+
 func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution ResolutionConfiguration) migrationStepFunc {
 	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 		if resolution.Interval == 0 {
@@ -451,9 +472,16 @@ func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution Resolution
 		}
 		tableName := fmt.Sprintf("flows_%s", resolution.Interval)
 		viewName := fmt.Sprintf("%s_consumer", tableName)
+		selectClause := fmt.Sprintf(`
+SELECT *
+EXCEPT (SrcAddr, DstAddr, SrcPort, DstPort, DstASPath, DstCommunities)
+REPLACE toStartOfInterval(TimeReceived, toIntervalSecond(%d)) AS TimeReceived`,
+			uint64(resolution.Interval.Seconds()))
+		selectClause = strings.TrimSpace(strings.ReplaceAll(selectClause, "\n", " "))
 		return migrationStep{
-			CheckQuery: queryTableHash(10874532506016793032, ""),
-			Args:       []interface{}{viewName},
+			CheckQuery: queryTableHash(10874532506016793032,
+				fmt.Sprintf("AND as_select LIKE '%s FROM %%'", selectClause)),
+			Args: []interface{}{viewName},
 			// No GROUP BY, the SummingMergeTree will take care of that
 			Do: func() error {
 				l.Debug().Msg("drop consumer table")
@@ -464,11 +492,8 @@ func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution Resolution
 				l.Debug().Msg("create consumer table")
 				return conn.Exec(ctx, fmt.Sprintf(`
 CREATE MATERIALIZED VIEW %s TO %s
-AS SELECT
- *
-EXCEPT(SrcAddr, DstAddr, SrcPort, DstPort, DstASPath)
-REPLACE(toStartOfInterval(TimeReceived, INTERVAL %d second) AS TimeReceived)
-FROM %s`, viewName, tableName, uint64(resolution.Interval.Seconds()), "flows"))
+AS %s
+FROM %s`, viewName, tableName, selectClause, "flows"))
 			},
 		}
 	}
@@ -645,7 +670,7 @@ func (c *Component) migrationStepCreateRawFlowsTable(ctx context.Context, l repo
 		`kafka_thread_per_consumer = 1`,
 	}, " ")
 	return migrationStep{
-		CheckQuery: queryTableHash(16892255124473065455, "AND engine_full = $2"),
+		CheckQuery: queryTableHash(3949033558422950458, "AND engine_full = $2"),
 		Args:       []interface{}{tableName, kafkaEngine},
 		Do: func() error {
 			l.Debug().Msg("drop raw consumer table")
@@ -680,7 +705,7 @@ func (c *Component) migrationStepCreateRawFlowsConsumerView(ctx context.Context,
 	tableName := fmt.Sprintf("flows_%d_raw", flow.CurrentSchemaVersion)
 	viewName := fmt.Sprintf("%s_consumer", tableName)
 	return migrationStep{
-		CheckQuery: queryTableHash(4664870629477706719, ""),
+		CheckQuery: queryTableHash(17028687354670328753, ""),
 		Args:       []interface{}{viewName},
 		Do: func() error {
 			l.Debug().Msg("drop consumer table")

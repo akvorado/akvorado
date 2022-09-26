@@ -86,7 +86,16 @@ func (c *Component) migrateDatabase() error {
 			}, {
 				fmt.Sprintf("add DstASPath columns to flows table with resolution %s", resolution.Interval),
 				c.migrationStepAddDstASPathColumns(resolution),
-			}, {
+			},
+		}...)
+		if resolution.Interval == 0 {
+			steps = append(steps, migrationStepWithDescription{
+				"add DstCommunities column to flows table",
+				c.migrationStepAddDstCommunitiesColumn,
+			})
+		}
+		steps = append(steps, []migrationStepWithDescription{
+			{
 				fmt.Sprintf("create flows table consumer with resolution %s", resolution.Interval),
 				c.migrationsStepCreateFlowsConsumerTable(resolution),
 			}, {
