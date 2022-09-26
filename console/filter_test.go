@@ -89,7 +89,8 @@ UNION DISTINCT
 			{"AS36987", "Google Kenya"},
 			{"AS41264", "Google Switzerland"},
 		}).
-		Return(nil)
+		Return(nil).
+		MinTimes(2).MaxTimes(2)
 
 	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
@@ -120,6 +121,7 @@ UNION DISTINCT
 				{"label": "Dst2ndAS", "detail": "column name", "quoted": false},
 				{"label": "Dst3rdAS", "detail": "column name", "quoted": false},
 				{"label": "DstAS", "detail": "column name", "quoted": false},
+				{"label": "DstASPath", "detail": "column name", "quoted": false},
 				{"label": "DstAddr", "detail": "column name", "quoted": false},
 				{"label": "DstCountry", "detail": "column name", "quoted": false},
 				{"label": "DstNetName", "detail": "column name", "quoted": false},
@@ -185,6 +187,23 @@ UNION DISTINCT
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
 			JSONInput:  gin.H{"what": "value", "column": "dstAS", "prefix": "goog"},
+			JSONOutput: gin.H{"completions": []gin.H{
+				{"label": "AS15169", "detail": "Google", "quoted": false},
+				{"label": "AS16550", "detail": "Google Private Cloud", "quoted": false},
+				{"label": "AS16591", "detail": "Google Fiber", "quoted": false},
+				{"label": "AS19527", "detail": "Google", "quoted": false},
+				{"label": "AS26910", "detail": "GOOGLE-CLOUD-2", "quoted": false},
+				{"label": "AS36040", "detail": "Google", "quoted": false},
+				{"label": "AS36384", "detail": "Google", "quoted": false},
+				{"label": "AS36385", "detail": "Google IT", "quoted": false},
+				{"label": "AS36492", "detail": "Google", "quoted": false},
+				{"label": "AS36987", "detail": "Google Kenya", "quoted": false},
+				{"label": "AS41264", "detail": "Google Switzerland", "quoted": false},
+			}},
+		}, {
+			URL:        "/api/v0/console/filter/complete",
+			StatusCode: 200,
+			JSONInput:  gin.H{"what": "value", "column": "dstASpath", "prefix": "goog"},
 			JSONOutput: gin.H{"completions": []gin.H{
 				{"label": "AS15169", "detail": "Google", "quoted": false},
 				{"label": "AS16550", "detail": "Google Private Cloud", "quoted": false},

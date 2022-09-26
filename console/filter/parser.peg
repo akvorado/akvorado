@@ -42,6 +42,7 @@ ConditionExpr "conditional" ←
   / ConditionForwardingStatusExpr
   / ConditionPortExpr
   / ConditionASExpr
+  / ConditionASPathExpr
   / ConditionETypeExpr
   / ConditionProtoExpr
   / ConditionPacketSizeExpr
@@ -146,6 +147,12 @@ RConditionASExpr "condition on AS number" ←
  / operator:InOperator _ '(' _ value:ListASN _ ')' {
   return fmt.Sprintf("%s (%s)", toString(operator), toString(value)), nil
 }
+
+ConditionASPathExpr "condition on AS path" ←
+  column:("DstASPath"i { return "DstASPath", nil }) _
+  KW_HAS  _ value:ASN { return fmt.Sprintf("has(%s, %s)", toString(column), toString(value)), nil }
+/ column:("DstASPath"i { return "DstASPath", nil }) _
+  KW_HASNOT  _ value:ASN { return fmt.Sprintf("NOT has(%s, %s)", toString(column), toString(value)), nil }
 
 ConditionETypeExpr "condition on Ethernet type" ←
  column:("EType"i { return "EType", nil }) _
@@ -260,6 +267,8 @@ KW_IN "IN operator" ← "IN"i !IdentStart { return "IN", nil }
 KW_UNLIKE "UNLIKE operator" ← "UNLIKE"i !IdentStart { return "NOT LIKE", nil }
 KW_IUNLIKE "IUNLIKE operator" ← "IUNLIKE"i !IdentStart { return "NOT ILIKE", nil }
 KW_NOTIN "NOTIN operator" ← "NOTIN"i !IdentStart { return "NOT IN", nil }
+KW_HAS "HAS operator" ← "HAS"i !IdentStart
+KW_HASNOT "HASNOT operator" ← "HASNOT"i !IdentStart
 
 SingleLineComment "comment" ← "--" ( !EOL SourceChar )*
 MultiLineComment ← "/*" ( !"*/" SourceChar )* ("*/" / EOF {

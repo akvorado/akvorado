@@ -163,7 +163,8 @@ guaranteed, so an URL may stop working after a few upgrades.
 The filter language looks like SQL with a few variations. Fields
 listed as dimensions can usually be used. Accepted operators are `=`,
 `!=`, `<`, `<=`, `>`, `>=`, `IN`, `NOTIN`, `LIKE`, `UNLIKE`, `ILIKE`,
-`IUNLIKE`, `<<`, `!<<` when they make sense. Here are a few examples:
+`IUNLIKE`, `<<`, `!<<`, `HAS`, `HASNOT` when they make sense. Here are
+a few examples:
 
 - `InIfBoundary = external` only selects flows whose incoming
   interface was classified as external. The value should not be
@@ -178,13 +179,19 @@ listed as dimensions can usually be used. Accepted operators are `=`,
   specified subnet.
 - `ExporterName LIKE th2-%` selects flows coming from routers
   starting with `th2-`.
+- `ASPath HAS AS1299` selects flows whose AS path contains 1299.
 
 Field names are case-insensitive. Comments can also be added by using
 `--` for single-line comments or enclosing them in `/*` and `*/`.
 
 The final SQL query sent to ClickHouse is logged inside the console
-after a successful request. It should be noted than using ports or
-addresses prevent the use of aggregated data and are therefore slower.
+after a successful request. It should be noted than using the
+following fields will prevent use of aggregated data and therefore
+will be slower:
+
+- `SrcAddr` and `DstAddr`,
+- `SrcPort` and `DstPort`,
+- `DstASPath`
 
 ## Demo exporter service
 

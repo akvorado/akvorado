@@ -163,12 +163,15 @@ func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 				filterCompletion{"PIM", "protocol", true},
 				filterCompletion{"IPv4", "protocol", true},
 				filterCompletion{"IPv6", "protocol", true})
-		case "srcas", "dstas", "dst1stas", "dst2ndas", "dst3rdas":
+		case "srcas", "dstas", "dst1stas", "dst2ndas", "dst3rdas", "dstaspath":
 			results := []struct {
 				Label  string `ch:"label"`
 				Detail string `ch:"detail"`
 			}{}
 			columnName := fixQueryColumnName(input.Column)
+			if columnName == "DstASPath" {
+				columnName = "DstAS"
+			}
 			sqlQuery := fmt.Sprintf(`
 SELECT label, detail FROM (
  SELECT concat('AS', toString(%s)) AS label, dictGet('asns', 'name', %s) AS detail, 1 AS rank
