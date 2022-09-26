@@ -35,6 +35,7 @@ const (
 	queryColumnDst1stAS
 	queryColumnDst2ndAS
 	queryColumnDst3rdAS
+	queryColumnDstCommunities
 	queryColumnDstNetName
 	queryColumnDstNetRole
 	queryColumnDstNetSite
@@ -69,6 +70,7 @@ var queryColumnMap = helpers.NewBimap(map[queryColumn]string{
 	queryColumnDst1stAS:          "Dst1stAS",
 	queryColumnDst2ndAS:          "Dst2ndAS",
 	queryColumnDst3rdAS:          "Dst3rdAS",
+	queryColumnDstCommunities:    "DstCommunities",
 	queryColumnSrcNetName:        "SrcNetName",
 	queryColumnDstNetName:        "DstNetName",
 	queryColumnSrcNetRole:        "SrcNetRole",

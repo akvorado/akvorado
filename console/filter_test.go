@@ -91,6 +91,25 @@ UNION DISTINCT
 		}).
 		Return(nil).
 		MinTimes(2).MaxTimes(2)
+	mockConn.EXPECT().
+		Select(gomock.Any(), gomock.Any(), `
+SELECT concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))) AS label FROM (
+ SELECT arrayJoin(DstCommunities) AS c
+ FROM flows
+ WHERE TimeReceived > date_sub(minute, 1, now())
+ GROUP BY c
+ ORDER BY COUNT(*) DESC
+)
+WHERE startsWith(label, $1)
+LIMIT 20`, "6540").
+		SetArg(1, []struct {
+			Label string `ch:"label"`
+		}{
+			{"65401:10"},
+			{"65401:12"},
+			{"65401:13"},
+		}).
+		Return(nil)
 
 	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
@@ -123,6 +142,7 @@ UNION DISTINCT
 				{"label": "DstAS", "detail": "column name", "quoted": false},
 				{"label": "DstASPath", "detail": "column name", "quoted": false},
 				{"label": "DstAddr", "detail": "column name", "quoted": false},
+				{"label": "DstCommunities", "detail": "column name", "quoted": false},
 				{"label": "DstCountry", "detail": "column name", "quoted": false},
 				{"label": "DstNetName", "detail": "column name", "quoted": false},
 				{"label": "DstNetRegion", "detail": "column name", "quoted": false},
@@ -199,6 +219,15 @@ UNION DISTINCT
 				{"label": "AS36492", "detail": "Google", "quoted": false},
 				{"label": "AS36987", "detail": "Google Kenya", "quoted": false},
 				{"label": "AS41264", "detail": "Google Switzerland", "quoted": false},
+			}},
+		}, {
+			URL:        "/api/v0/console/filter/complete",
+			StatusCode: 200,
+			JSONInput:  gin.H{"what": "value", "column": "dstcommunities", "prefix": "6540"},
+			JSONOutput: gin.H{"completions": []gin.H{
+				{"label": "65401:10", "detail": "community", "quoted": false},
+				{"label": "65401:12", "detail": "community", "quoted": false},
+				{"label": "65401:13", "detail": "community", "quoted": false},
 			}},
 		}, {
 			URL:        "/api/v0/console/filter/complete",

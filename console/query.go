@@ -37,11 +37,12 @@ func (qc *queryColumn) UnmarshalText(input []byte) error {
 // queryColumnsRequiringMainTable lists query columns only present in
 // the main table. Also check filter/parser.peg.
 var queryColumnsRequiringMainTable = map[queryColumn]struct{}{
-	queryColumnSrcAddr:   {},
-	queryColumnDstAddr:   {},
-	queryColumnSrcPort:   {},
-	queryColumnDstPort:   {},
-	queryColumnDstASPath: {},
+	queryColumnSrcAddr:        {},
+	queryColumnDstAddr:        {},
+	queryColumnSrcPort:        {},
+	queryColumnDstPort:        {},
+	queryColumnDstASPath:      {},
+	queryColumnDstCommunities: {},
 }
 
 func requireMainTable(qcs []queryColumn, qf queryFilter) bool {
@@ -109,6 +110,8 @@ func (qc queryColumn) toSQLSelect() string {
 		strValue = fmt.Sprintf("toString(%s)", qc)
 	case queryColumnDstASPath:
 		strValue = `arrayStringConcat(DstASPath, ' ')`
+	case queryColumnDstCommunities:
+		strValue = `arrayStringConcat(arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities), ' ')`
 	default:
 		strValue = qc.String()
 	}

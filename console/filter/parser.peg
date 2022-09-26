@@ -43,6 +43,7 @@ ConditionExpr "conditional" ←
   / ConditionPortExpr
   / ConditionASExpr
   / ConditionASPathExpr
+  / ConditionCommunitiesExpr
   / ConditionETypeExpr
   / ConditionProtoExpr
   / ConditionPacketSizeExpr
@@ -149,10 +150,12 @@ RConditionASExpr "condition on AS number" ←
 }
 
 ConditionASPathExpr "condition on AS path" ←
-  column:("DstASPath"i { return "DstASPath", nil }) _
-  KW_HAS  _ value:ASN { return fmt.Sprintf("has(%s, %s)", toString(column), toString(value)), nil }
-/ column:("DstASPath"i { return "DstASPath", nil }) _
-  KW_HASNOT  _ value:ASN { return fmt.Sprintf("NOT has(%s, %s)", toString(column), toString(value)), nil }
+   column:("DstASPath"i #{ c.state["main-table-only"] = true ; return nil }) _ KW_HAS _ value:ASN { return fmt.Sprintf("has(DstASPath, %s)", toString(value)), nil }
+ / column:("DstASPath"i #{ c.state["main-table-only"] = true ; return nil }) _ KW_HASNOT _ value:ASN { return fmt.Sprintf("NOT has(DstASPath, %s)", toString(value)), nil }
+
+ConditionCommunitiesExpr "condition on communities" ←
+   column:("DstCommunities"i #{ c.state["main-table-only"] = true ; return nil }) _ KW_HAS _ value:Community { return fmt.Sprintf("has(DstCommunities, %s)", toString(value)), nil }
+ / column:("DstCommunities"i #{ c.state["main-table-only"] = true ; return nil }) _ KW_HASNOT _ value:Community { return fmt.Sprintf("NOT has(DstCommunities, %s)", toString(value)), nil }
 
 ConditionETypeExpr "condition on Ethernet type" ←
  column:("EType"i { return "EType", nil }) _
@@ -203,8 +206,12 @@ ASN "AS number" ← "AS"i? value:Unsigned32 {
   return value, nil
 }
 ListASN "list of AS numbers" ←
-   head:ASN _ ',' _ tail:ListASN { return fmt.Sprintf("%s, %s", head, tail), nil }
- / value:ASN { return value, nil }
+   head:ASN _ ',' _ tail:ListASN { return fmt.Sprintf("%s, %s", toString(head), tail), nil }
+ / value:ASN { return toString(value), nil }
+
+Community "community" ← value1:Unsigned16 ":" value2:Unsigned16 {
+  return fmt.Sprintf("%d", (uint32(value1.(uint16)) << 16) + uint32(value2.(uint16))), nil
+}
 
 StringLiteral "quoted string" ← ( '"' DoubleStringChar* '"' / "'" SingleStringChar* "'" ) {
     return string(c.text[1:len(c.text)-1]), nil
@@ -223,7 +230,7 @@ Unsigned8 "unsigned 8-bit integer" ← [0-9]+ !IdentStart {
   if err != nil {
     return "", errors.New("expecting an unsigned 8-bit integer")
   }
-  return fmt.Sprintf("%d", v), nil
+  return uint8(v), nil
 }
 
 Unsigned16 "unsigned 16-bit integer" ← [0-9]+ !IdentStart {
@@ -231,7 +238,7 @@ Unsigned16 "unsigned 16-bit integer" ← [0-9]+ !IdentStart {
   if err != nil {
     return "", errors.New("expecting an unsigned 16-bit integer")
   }
-  return fmt.Sprintf("%d", v), nil
+  return uint16(v), nil
 }
 
 Unsigned32 "unsigned 32-bit integer" ← [0-9]+ !IdentStart {
@@ -239,7 +246,7 @@ Unsigned32 "unsigned 32-bit integer" ← [0-9]+ !IdentStart {
   if err != nil {
     return "", errors.New("expecting an unsigned 32-bit integer")
   }
-  return fmt.Sprintf("%d", v), nil
+  return uint32(v), nil
 }
 
 Unsigned64 "unsigned 64-bit integer" ← [0-9]+ !IdentStart {
@@ -247,7 +254,7 @@ Unsigned64 "unsigned 64-bit integer" ← [0-9]+ !IdentStart {
   if err != nil {
     return "", errors.New("expecting an unsigned 64-bit integer")
   }
-  return fmt.Sprintf("%d", v), nil
+  return uint64(v), nil
 }
 
 LikeOperator "LIKE operators" ←

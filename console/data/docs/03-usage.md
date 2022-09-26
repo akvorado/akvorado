@@ -191,7 +191,8 @@ will be slower:
 
 - `SrcAddr` and `DstAddr`,
 - `SrcPort` and `DstPort`,
-- `DstASPath`
+- `DstASPath`,
+- `DstCommunities`.
 
 ## Demo exporter service
 

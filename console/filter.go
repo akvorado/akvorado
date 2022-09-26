@@ -163,6 +163,32 @@ func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 				filterCompletion{"PIM", "protocol", true},
 				filterCompletion{"IPv4", "protocol", true},
 				filterCompletion{"IPv6", "protocol", true})
+		case "dstcommunities":
+			results := []struct {
+				Label string `ch:"label"`
+			}{}
+			sqlQuery := `
+SELECT concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))) AS label FROM (
+ SELECT arrayJoin(DstCommunities) AS c
+ FROM flows
+ WHERE TimeReceived > date_sub(minute, 1, now())
+ GROUP BY c
+ ORDER BY COUNT(*) DESC
+)
+WHERE startsWith(label, $1)
+LIMIT 20`
+			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
+				c.r.Err(err).Msg("unable to query database")
+				break
+			}
+			for _, result := range results {
+				completions = append(completions, filterCompletion{
+					Label:  result.Label,
+					Detail: "community",
+					Quoted: false,
+				})
+			}
+			input.Prefix = ""
 		case "srcas", "dstas", "dst1stas", "dst2ndas", "dst3rdas", "dstaspath":
 			results := []struct {
 				Label  string `ch:"label"`
