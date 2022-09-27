@@ -92,6 +92,9 @@ func (c *Component) migrateDatabase() error {
 			steps = append(steps, migrationStepWithDescription{
 				"add DstCommunities column to flows table",
 				c.migrationStepAddDstCommunitiesColumn,
+			}, migrationStepWithDescription{
+				"add DstLargeCommunities column to flows table",
+				c.migrationStepAddDstLargeCommunitiesColumn,
 			})
 		}
 		steps = append(steps, []migrationStepWithDescription{

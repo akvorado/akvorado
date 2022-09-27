@@ -175,9 +175,11 @@ demo-exporter:
         - prefixes: 192.0.2.0/24,2a01:db8:cafe:1::/64
           aspath: 64501
           communities: 65401:10,65401:12
+          large-communities: 65401:100:200,65401:100:201
         - prefixes: 203.0.113.0/24,2a01:db8:cafe:2::/64
           aspath: 65401
           communities: 65401:10,65401:13
+          large-communities: 65401:100:200,65401:100:213
         - prefixes: 216.58.206.0/24,2a00:1450:4007:807::2000/124
           aspath: 174,1299,15169
           communities: 174:22004,174:21100

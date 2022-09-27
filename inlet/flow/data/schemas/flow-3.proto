@@ -2,7 +2,7 @@ syntax = "proto3";
 package decoder;
 option go_package = "akvorado/inlet/flow/decoder";
 
-// This is a stripped version from the one in Goflow2, but with GeoIP added.
+// This is a stripped version from the one in Goflow2, but with additional fields.
 
 message FlowMessagev3 {
 
@@ -71,7 +71,13 @@ message FlowMessagev3 {
   uint32 NextHopAS = 34;
   repeated uint32 DstASPath = 35;
   repeated uint32 DstCommunities = 36;
-  repeated LargeCommunityv3 DstLargeCommunities = 37;
+  repeated LargeCommunity DstLargeCommunities = 37;
+
+  message LargeCommunity {
+    uint32 ASN = 1;
+    uint32 LocalData1 = 2;
+    uint32 LocalData2 = 3;
+  }
 
   // Country
   string SrcCountry = 100;
@@ -95,10 +101,4 @@ message FlowMessagev3 {
   string OutIfProvider = 111;
   Boundary InIfBoundary = 112;
   Boundary OutIfBoundary = 113;
-}
-
-message LargeCommunityv3 {
-  uint32 ASN = 1;
-  uint32 LocalData1 = 2;
-  uint32 LocalData2 = 3;
 }

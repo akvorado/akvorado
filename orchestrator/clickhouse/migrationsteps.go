@@ -48,6 +48,7 @@ const (
  Dst2ndAS UInt32,
  Dst3rdAS UInt32,
  DstCommunities Array(UInt32),
+ DstLargeCommunities Array(UInt128),
  InIfName LowCardinality(String),
  OutIfName LowCardinality(String),
  InIfDescription String,
@@ -70,7 +71,9 @@ const (
 `
 )
 
-// queryTableHash can be used to check if a table exists with the specified schema.
+// queryTableHash can be used to check if a table exists with the
+// specified schema. This is not foolproof as it needs help if
+// settings or populate query is changed.
 func queryTableHash(hash uint64, more string) string {
 	return fmt.Sprintf(`
 SELECT bitAnd(v1, v2) FROM (
@@ -232,7 +235,7 @@ ORDER BY (TimeReceived,
 					tableName,
 					partialSchema(
 						"SrcAddr", "DstAddr", "SrcPort", "DstPort",
-						"DstASPath", "DstCommunities"),
+						"DstASPath", "DstCommunities", "DstLargeCommunities"),
 					partitionInterval))
 			},
 		}
@@ -464,6 +467,24 @@ WHERE table = $1 AND database = currentDatabase() AND name = $2`,
 	}
 }
 
+func (c *Component) migrationStepAddDstLargeCommunitiesColumn(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+	return migrationStep{
+		CheckQuery: `
+SELECT 1 FROM system.columns
+WHERE table = $1 AND database = currentDatabase() AND name = $2`,
+		Args: []interface{}{"flows", "DstLargeCommunities"},
+		Do: func() error {
+			modifications, err := addColumnsAndUpdateSortingKey(ctx, conn, "flows",
+				"DstCommunities",
+				"DstLargeCommunities Array(UInt128)")
+			if err != nil {
+				return err
+			}
+			return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE flows %s`, modifications))
+		},
+	}
+}
+
 func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution ResolutionConfiguration) migrationStepFunc {
 	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 		if resolution.Interval == 0 {
@@ -474,7 +495,7 @@ func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution Resolution
 		viewName := fmt.Sprintf("%s_consumer", tableName)
 		selectClause := fmt.Sprintf(`
 SELECT *
-EXCEPT (SrcAddr, DstAddr, SrcPort, DstPort, DstASPath, DstCommunities)
+EXCEPT (SrcAddr, DstAddr, SrcPort, DstPort, DstASPath, DstCommunities, DstLargeCommunities)
 REPLACE toStartOfInterval(TimeReceived, toIntervalSecond(%d)) AS TimeReceived`,
 			uint64(resolution.Interval.Seconds()))
 		selectClause = strings.TrimSpace(strings.ReplaceAll(selectClause, "\n", " "))
@@ -670,7 +691,7 @@ func (c *Component) migrationStepCreateRawFlowsTable(ctx context.Context, l repo
 		`kafka_thread_per_consumer = 1`,
 	}, " ")
 	return migrationStep{
-		CheckQuery: queryTableHash(3949033558422950458, "AND engine_full = $2"),
+		CheckQuery: queryTableHash(12139043515526919262, "AND engine_full = $2"),
 		Args:       []interface{}{tableName, kafkaEngine},
 		Do: func() error {
 			l.Debug().Msg("drop raw consumer table")
@@ -687,7 +708,8 @@ func (c *Component) migrationStepCreateRawFlowsTable(ctx context.Context, l repo
 			return conn.Exec(ctx, fmt.Sprintf(`
 CREATE TABLE %s
 (
-%s
+%s,
+DstLargeCommunities Nested(ASN UInt32, LocalData1 UInt32, LocalData2 UInt32)
 )
 ENGINE = %s`, tableName, partialSchema(
 				"SrcNetName", "DstNetName",
@@ -696,6 +718,7 @@ ENGINE = %s`, tableName, partialSchema(
 				"SrcNetRegion", "DstNetRegion",
 				"SrcNetTenant", "DstNetTenant",
 				"Dst1stAS", "Dst2ndAS", "Dst3rdAS",
+				"DstLargeCommunities",
 			), kafkaEngine))
 		},
 	}
@@ -705,7 +728,7 @@ func (c *Component) migrationStepCreateRawFlowsConsumerView(ctx context.Context,
 	tableName := fmt.Sprintf("flows_%d_raw", flow.CurrentSchemaVersion)
 	viewName := fmt.Sprintf("%s_consumer", tableName)
 	return migrationStep{
-		CheckQuery: queryTableHash(17028687354670328753, ""),
+		CheckQuery: queryTableHash(11315614236043053967, ""),
 		Args:       []interface{}{viewName},
 		Do: func() error {
 			l.Debug().Msg("drop consumer table")
@@ -714,10 +737,14 @@ func (c *Component) migrationStepCreateRawFlowsConsumerView(ctx context.Context,
 				return fmt.Errorf("cannot drop consumer table: %w", err)
 			}
 			l.Debug().Msg("create consumer table")
+			largeCommunitiesColumns := strings.Join([]string{
+				"`DstLargeCommunities.ASN`",
+				"`DstLargeCommunities.LocalData1`",
+				"`DstLargeCommunities.LocalData2`"}, ",")
 			return conn.Exec(ctx, fmt.Sprintf(`
 CREATE MATERIALIZED VIEW %s TO flows
 AS WITH arrayCompact(DstASPath) AS c_DstASPath SELECT
- *,
+ * EXCEPT (%s),
  dictGetOrDefault('networks', 'name', SrcAddr, '') AS SrcNetName,
  dictGetOrDefault('networks', 'name', DstAddr, '') AS DstNetName,
  dictGetOrDefault('networks', 'role', SrcAddr, '') AS SrcNetRole,
@@ -730,8 +757,12 @@ AS WITH arrayCompact(DstASPath) AS c_DstASPath SELECT
  dictGetOrDefault('networks', 'tenant', DstAddr, '') AS DstNetTenant,
  c_DstASPath[1] AS Dst1stAS,
  c_DstASPath[2] AS Dst2ndAS,
- c_DstASPath[3] AS Dst3rdAS
-FROM %s`, viewName, tableName))
+ c_DstASPath[3] AS Dst3rdAS,
+ arrayMap((asn, l1, l2) -> bitShiftLeft(asn::UInt128, 64) + bitShiftLeft(l1::UInt128, 32) + l2::UInt128, %s) AS DstLargeCommunities
+FROM %s`,
+				viewName,
+				largeCommunitiesColumns, largeCommunitiesColumns,
+				tableName))
 		},
 	}
 }

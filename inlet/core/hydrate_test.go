@@ -332,7 +332,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				DstAS:            174,
 				DstASPath:        []uint32{64200, 1299, 174},
 				DstCommunities:   []uint32{100, 200, 400},
-				DstLargeCommunities: []*decoder.LargeCommunity{
+				DstLargeCommunities: []*decoder.FlowMessage_LargeCommunity{
 					{ASN: 64200, LocalData1: 2, LocalData2: 3},
 				},
 			},
