@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
 )
 
 // Configuration describes the configuration for the BMP component. Only one peer is emulated.
@@ -34,12 +36,14 @@ type Configuration struct {
 
 // RouteConfiguration describes a route to be generated with BMP.
 type RouteConfiguration struct {
-	// Prefix is the prefix to announce.
+	// Prefix is the set of prefixes to announce.
 	Prefixes []netip.Prefix `validate:"min=1"`
-	// ASPath is the AS path to associate with the prefix.
+	// ASPath is the AS path to associate with the prefixes.
 	ASPath []uint32 `validate:"min=1"`
-	// Communities are the set of standard communities to associate with the prefix
+	// Communities are the set of standard communities to associate with the prefixes.
 	Communities []Community
+	// LargeCommunities are the set of large communities to associate with the prefixes.
+	LargeCommunities []LargeCommunity
 }
 
 // DefaultConfiguration represents the default configuration for the BMP component.
@@ -79,4 +83,40 @@ func (comm *Community) UnmarshalText(input []byte) error {
 // String turns a community to a string.
 func (comm Community) String() string {
 	return fmt.Sprintf("%d:%d", comm>>16, comm&0xffff)
+}
+
+// LargeCommunity represents a large community.
+type LargeCommunity bgp.LargeCommunity
+
+// UnmarshalText parses a large community
+func (comm *LargeCommunity) UnmarshalText(input []byte) error {
+	text := string(input)
+	elems := strings.Split(text, ":")
+	if len(elems) != 3 {
+		return errors.New("community should be ASN:XX:YY")
+	}
+	asn, err := strconv.ParseUint(elems[0], 10, 32)
+	if err != nil {
+		return errors.New("community should be ASN4:XX:YY")
+	}
+	local1, err := strconv.ParseUint(elems[1], 10, 32)
+	if err != nil {
+		return errors.New("community should be ASN:XX4:YY")
+	}
+	local2, err := strconv.ParseUint(elems[2], 10, 32)
+	if err != nil {
+		return errors.New("community should be ASN:XX:YY4")
+	}
+	*comm = LargeCommunity{
+		ASN:        uint32(asn),
+		LocalData1: uint32(local1),
+		LocalData2: uint32(local2),
+	}
+	return nil
+}
+
+// String turns a large community to a string.
+func (comm LargeCommunity) String() string {
+	b := bgp.LargeCommunity(comm)
+	return b.String()
 }

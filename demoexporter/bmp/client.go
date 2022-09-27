@@ -97,6 +97,13 @@ func (c *Component) startBMPClient(ctx context.Context) {
 				}
 				attrs = append(attrs, bgp.NewPathAttributeCommunities(comms))
 			}
+			if route.LargeCommunities != nil {
+				comms := make([]*bgp.LargeCommunity, len(route.LargeCommunities))
+				for idx, comm := range route.LargeCommunities {
+					comms[idx] = (*bgp.LargeCommunity)(&comm)
+				}
+				attrs = append(attrs, bgp.NewPathAttributeLargeCommunities(comms))
+			}
 			pkt, err = bmp.NewBMPRouteMonitoring(*peerHeader,
 				bgp.NewBGPUpdateMessage(nil, attrs, nil)).Serialize()
 			if err != nil {

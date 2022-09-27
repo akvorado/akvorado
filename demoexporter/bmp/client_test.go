@@ -45,6 +45,10 @@ func TestClient(t *testing.T) {
 				netip.MustParsePrefix("2001:db8::/64"),
 			},
 			ASPath: []uint32{65001, 65002},
+			LargeCommunities: []bmp.LargeCommunity{
+				{ASN: 65000, LocalData1: 100, LocalData2: 200},
+				{ASN: 65000, LocalData1: 300, LocalData2: 2000},
+			},
 		},
 	}
 	r := reporter.NewMock(t)
