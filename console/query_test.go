@@ -68,7 +68,7 @@ func TestQueryColumnSQLSelect(t *testing.T) {
 			Expected: `arrayStringConcat(DstASPath, ' ')`,
 		}, {
 			Input:    queryColumnDstCommunities,
-			Expected: `arrayStringConcat(arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities), ' ')`,
+			Expected: `arrayStringConcat(arrayConcat(arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities), arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)), ' ')`,
 		},
 	}
 	for _, tc := range cases {

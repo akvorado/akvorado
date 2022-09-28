@@ -93,21 +93,41 @@ UNION DISTINCT
 		MinTimes(2).MaxTimes(2)
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), `
-SELECT concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))) AS label FROM (
- SELECT arrayJoin(DstCommunities) AS c
- FROM flows
- WHERE TimeReceived > date_sub(minute, 1, now())
- GROUP BY c
- ORDER BY COUNT(*) DESC
+SELECT label, detail FROM (
+ SELECT
+  'community' AS detail,
+  concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))) AS label
+ FROM (
+  SELECT arrayJoin(DstCommunities) AS c
+  FROM flows
+  WHERE TimeReceived > date_sub(minute, 1, now())
+  GROUP BY c
+  ORDER BY COUNT(*) DESC
+ )
+
+ UNION ALL
+
+ SELECT
+  'large community' AS detail,
+  concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))) AS label
+ FROM (
+  SELECT arrayJoin(DstLargeCommunities) AS c
+  FROM flows
+  WHERE TimeReceived > date_sub(minute, 1, now())
+  GROUP BY c
+  ORDER BY COUNT(*) DESC
+ )
 )
 WHERE startsWith(label, $1)
 LIMIT 20`, "6540").
 		SetArg(1, []struct {
-			Label string `ch:"label"`
+			Label  string `ch:"label"`
+			Detail string `ch:"detail"`
 		}{
-			{"65401:10"},
-			{"65401:12"},
-			{"65401:13"},
+			{"65401:10", "community"},
+			{"65401:12", "community"},
+			{"65401:13", "community"},
+			{"65402:200:100", "large community"},
 		}).
 		Return(nil)
 
@@ -228,6 +248,7 @@ LIMIT 20`, "6540").
 				{"label": "65401:10", "detail": "community", "quoted": false},
 				{"label": "65401:12", "detail": "community", "quoted": false},
 				{"label": "65401:13", "detail": "community", "quoted": false},
+				{"label": "65402:200:100", "detail": "large community", "quoted": false},
 			}},
 		}, {
 			URL:        "/api/v0/console/filter/complete",

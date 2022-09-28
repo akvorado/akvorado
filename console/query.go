@@ -111,7 +111,7 @@ func (qc queryColumn) toSQLSelect() string {
 	case queryColumnDstASPath:
 		strValue = `arrayStringConcat(DstASPath, ' ')`
 	case queryColumnDstCommunities:
-		strValue = `arrayStringConcat(arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities), ' ')`
+		strValue = `arrayStringConcat(arrayConcat(arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities), arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)), ' ')`
 	default:
 		strValue = qc.String()
 	}

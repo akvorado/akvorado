@@ -156,6 +156,8 @@ ConditionASPathExpr "condition on AS path" ←
 ConditionCommunitiesExpr "condition on communities" ←
    column:("DstCommunities"i #{ c.state["main-table-only"] = true ; return nil }) _ KW_HAS _ value:Community { return fmt.Sprintf("has(DstCommunities, %s)", toString(value)), nil }
  / column:("DstCommunities"i #{ c.state["main-table-only"] = true ; return nil }) _ KW_HASNOT _ value:Community { return fmt.Sprintf("NOT has(DstCommunities, %s)", toString(value)), nil }
+ / column:("DstCommunities"i #{ c.state["main-table-only"] = true ; return nil }) _ KW_HAS _ value:LargeCommunity { return fmt.Sprintf("has(DstLargeCommunities, %s)", toString(value)), nil }
+ / column:("DstCommunities"i #{ c.state["main-table-only"] = true ; return nil }) _ KW_HASNOT _ value:LargeCommunity { return fmt.Sprintf("NOT has(DstLargeCommunities, %s)", toString(value)), nil }
 
 ConditionETypeExpr "condition on Ethernet type" ←
  column:("EType"i { return "EType", nil }) _
@@ -202,15 +204,18 @@ Subnet "IP subnet" ← [0-9A-Fa-f:.]+ "/" [0-9]+ !IdentStart {
   return fmt.Sprintf("BETWEEN toIPv6('::ffff:%s') AND toIPv6('::ffff:%s')", net.IP.String(), lastIP(net).String()), nil
 }
 
-ASN "AS number" ← "AS"i? value:Unsigned32 {
+ASN "AS number" ← "AS"i? value:Unsigned32 !IdentStart {
   return value, nil
 }
 ListASN "list of AS numbers" ←
    head:ASN _ ',' _ tail:ListASN { return fmt.Sprintf("%s, %s", toString(head), tail), nil }
  / value:ASN { return toString(value), nil }
 
-Community "community" ← value1:Unsigned16 ":" value2:Unsigned16 {
-  return fmt.Sprintf("%d", (uint32(value1.(uint16)) << 16) + uint32(value2.(uint16))), nil
+Community "community" ← value1:Unsigned16 ":" value2:Unsigned16 !IdentStart !":" {
+  return (uint32(value1.(uint16)) << 16) + uint32(value2.(uint16)), nil
+}
+LargeCommunity "large community" ← value1:Unsigned32 ":" value2:Unsigned32 ":" value3:Unsigned32 !IdentStart !":" {
+  return fmt.Sprintf("bitShiftLeft(%d::UInt128, 64) + bitShiftLeft(%d::UInt128, 32) + %d::UInt128", value1, value2, value3), nil
 }
 
 StringLiteral "quoted string" ← ( '"' DoubleStringChar* '"' / "'" SingleStringChar* "'" ) {

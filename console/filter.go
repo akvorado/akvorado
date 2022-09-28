@@ -165,15 +165,34 @@ func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 				filterCompletion{"IPv6", "protocol", true})
 		case "dstcommunities":
 			results := []struct {
-				Label string `ch:"label"`
+				Label  string `ch:"label"`
+				Detail string `ch:"detail"`
 			}{}
 			sqlQuery := `
-SELECT concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))) AS label FROM (
- SELECT arrayJoin(DstCommunities) AS c
- FROM flows
- WHERE TimeReceived > date_sub(minute, 1, now())
- GROUP BY c
- ORDER BY COUNT(*) DESC
+SELECT label, detail FROM (
+ SELECT
+  'community' AS detail,
+  concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))) AS label
+ FROM (
+  SELECT arrayJoin(DstCommunities) AS c
+  FROM flows
+  WHERE TimeReceived > date_sub(minute, 1, now())
+  GROUP BY c
+  ORDER BY COUNT(*) DESC
+ )
+
+ UNION ALL
+
+ SELECT
+  'large community' AS detail,
+  concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))) AS label
+ FROM (
+  SELECT arrayJoin(DstLargeCommunities) AS c
+  FROM flows
+  WHERE TimeReceived > date_sub(minute, 1, now())
+  GROUP BY c
+  ORDER BY COUNT(*) DESC
+ )
 )
 WHERE startsWith(label, $1)
 LIMIT 20`
@@ -184,7 +203,7 @@ LIMIT 20`
 			for _, result := range results {
 				completions = append(completions, filterCompletion{
 					Label:  result.Label,
-					Detail: "community",
+					Detail: result.Detail,
 					Quoted: false,
 				})
 			}
