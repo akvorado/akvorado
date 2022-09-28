@@ -163,7 +163,7 @@ guaranteed, so an URL may stop working after a few upgrades.
 The filter language looks like SQL with a few variations. Fields
 listed as dimensions can usually be used. Accepted operators are `=`,
 `!=`, `<`, `<=`, `>`, `>=`, `IN`, `NOTIN`, `LIKE`, `UNLIKE`, `ILIKE`,
-`IUNLIKE`, `<<`, `!<<`, `HAS`, `HASNOT` when they make sense. Here are
+`IUNLIKE`, `<<`, `!<<`, when they make sense. Here are
 a few examples:
 
 - `InIfBoundary = external` only selects flows whose incoming
@@ -179,7 +179,7 @@ a few examples:
   specified subnet.
 - `ExporterName LIKE th2-%` selects flows coming from routers
   starting with `th2-`.
-- `ASPath HAS AS1299` selects flows whose AS path contains 1299.
+- `ASPath = AS1299` selects flows whose AS path contains 1299.
 
 Field names are case-insensitive. Comments can also be added by using
 `--` for single-line comments or enclosing them in `/*` and `*/`.

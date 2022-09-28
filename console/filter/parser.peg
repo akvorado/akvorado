@@ -150,14 +150,14 @@ RConditionASExpr "condition on AS number" ←
 }
 
 ConditionASPathExpr "condition on AS path" ←
-   column:("DstASPath"i #{ c.state["main-table-only"] = true ; return nil }) _ KW_HAS _ value:ASN { return fmt.Sprintf("has(DstASPath, %s)", toString(value)), nil }
- / column:("DstASPath"i #{ c.state["main-table-only"] = true ; return nil }) _ KW_HASNOT _ value:ASN { return fmt.Sprintf("NOT has(DstASPath, %s)", toString(value)), nil }
+   column:("DstASPath"i #{ c.state["main-table-only"] = true ; return nil }) _ "=" _ value:ASN { return fmt.Sprintf("has(DstASPath, %s)", toString(value)), nil }
+ / column:("DstASPath"i #{ c.state["main-table-only"] = true ; return nil }) _ "!=" _ value:ASN { return fmt.Sprintf("NOT has(DstASPath, %s)", toString(value)), nil }
 
 ConditionCommunitiesExpr "condition on communities" ←
-   column:("DstCommunities"i #{ c.state["main-table-only"] = true ; return nil }) _ KW_HAS _ value:Community { return fmt.Sprintf("has(DstCommunities, %s)", toString(value)), nil }
- / column:("DstCommunities"i #{ c.state["main-table-only"] = true ; return nil }) _ KW_HASNOT _ value:Community { return fmt.Sprintf("NOT has(DstCommunities, %s)", toString(value)), nil }
- / column:("DstCommunities"i #{ c.state["main-table-only"] = true ; return nil }) _ KW_HAS _ value:LargeCommunity { return fmt.Sprintf("has(DstLargeCommunities, %s)", toString(value)), nil }
- / column:("DstCommunities"i #{ c.state["main-table-only"] = true ; return nil }) _ KW_HASNOT _ value:LargeCommunity { return fmt.Sprintf("NOT has(DstLargeCommunities, %s)", toString(value)), nil }
+   column:("DstCommunities"i #{ c.state["main-table-only"] = true ; return nil }) _ "=" _ value:Community { return fmt.Sprintf("has(DstCommunities, %s)", toString(value)), nil }
+ / column:("DstCommunities"i #{ c.state["main-table-only"] = true ; return nil }) _ "!=" _ value:Community { return fmt.Sprintf("NOT has(DstCommunities, %s)", toString(value)), nil }
+ / column:("DstCommunities"i #{ c.state["main-table-only"] = true ; return nil }) _ "=" _ value:LargeCommunity { return fmt.Sprintf("has(DstLargeCommunities, %s)", toString(value)), nil }
+ / column:("DstCommunities"i #{ c.state["main-table-only"] = true ; return nil }) _ "!=" _ value:LargeCommunity { return fmt.Sprintf("NOT has(DstLargeCommunities, %s)", toString(value)), nil }
 
 ConditionETypeExpr "condition on Ethernet type" ←
  column:("EType"i { return "EType", nil }) _
@@ -279,8 +279,6 @@ KW_IN "IN operator" ← "IN"i !IdentStart { return "IN", nil }
 KW_UNLIKE "UNLIKE operator" ← "UNLIKE"i !IdentStart { return "NOT LIKE", nil }
 KW_IUNLIKE "IUNLIKE operator" ← "IUNLIKE"i !IdentStart { return "NOT ILIKE", nil }
 KW_NOTIN "NOTIN operator" ← "NOTIN"i !IdentStart { return "NOT IN", nil }
-KW_HAS "HAS operator" ← "HAS"i !IdentStart
-KW_HASNOT "HASNOT operator" ← "HASNOT"i !IdentStart
 
 SingleLineComment "comment" ← "--" ( !EOL SourceChar )*
 MultiLineComment ← "/*" ( !"*/" SourceChar )* ("*/" / EOF {
