@@ -6,6 +6,7 @@ RUN nix develop -c true
 # Build
 COPY . .
 RUN mkdir -p /output/store
+RUN git describe --tags --always --dirty --match=v* > .version && git add -f .version
 RUN nix build --option sandbox false
 RUN cp -va $(nix-store -qR result) /output/store
 RUN rm -rf /output/store/*-akvorado
