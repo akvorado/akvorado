@@ -286,6 +286,9 @@ clickhouse      flows-v2        2          1645914467      1645930257      15790
 clickhouse      flows-v2        1          889117276       889129896       12620           ClickHouse-ee97b7e7e5e0-default-flows_3_raw-1-f0421bbe-ba13-49df-998f-83e49045be00 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_3_raw-1
 ```
 
+Errors related to Kafka ingestion are kept in the `flows_3_raw_errors`
+table. It should be empty.
+
 If you still have an issue, be sure to check the errors reported by
 ClickHouse:
 

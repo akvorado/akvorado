@@ -111,6 +111,7 @@ func (c *Component) migrateDatabase() error {
 		{"create exporters view", c.migrationStepCreateExportersView},
 		{"create raw flows table", c.migrationStepCreateRawFlowsTable},
 		{"create raw flows consumer view", c.migrationStepCreateRawFlowsConsumerView},
+		{"create raw flows errors view", c.migrationStepCreateRawFlowsErrorsView},
 	}...)
 
 	count := 0

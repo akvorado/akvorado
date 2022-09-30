@@ -677,19 +677,19 @@ LAYOUT(IP_TRIE())
 
 func (c *Component) migrationStepCreateRawFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	tableName := fmt.Sprintf("flows_%d_raw", flow.CurrentSchemaVersion)
-	kafkaEngine := strings.Join([]string{
-		`Kafka SETTINGS`,
-		fmt.Sprintf(`kafka_broker_list = '%s',`,
+	kafkaEngine := fmt.Sprintf("Kafka SETTINGS %s", strings.Join([]string{
+		fmt.Sprintf(`kafka_broker_list = '%s'`,
 			strings.Join(c.config.Kafka.Brokers, ",")),
-		fmt.Sprintf(`kafka_topic_list = '%s-v%d',`,
+		fmt.Sprintf(`kafka_topic_list = '%s-v%d'`,
 			c.config.Kafka.Topic, flow.CurrentSchemaVersion),
-		`kafka_group_name = 'clickhouse',`,
-		`kafka_format = 'Protobuf',`,
-		fmt.Sprintf(`kafka_schema = 'flow-%d.proto:FlowMessagev%d',`,
+		`kafka_group_name = 'clickhouse'`,
+		`kafka_format = 'Protobuf'`,
+		fmt.Sprintf(`kafka_schema = 'flow-%d.proto:FlowMessagev%d'`,
 			flow.CurrentSchemaVersion, flow.CurrentSchemaVersion),
-		fmt.Sprintf(`kafka_num_consumers = %d,`, c.config.Kafka.Consumers),
+		fmt.Sprintf(`kafka_num_consumers = %d`, c.config.Kafka.Consumers),
 		`kafka_thread_per_consumer = 1`,
-	}, " ")
+		`kafka_handle_error_mode = 'stream'`,
+	}, ", "))
 	return migrationStep{
 		CheckQuery: queryTableHash(12139043515526919262, "AND engine_full = $2"),
 		Args:       []interface{}{tableName, kafkaEngine},
@@ -728,7 +728,7 @@ func (c *Component) migrationStepCreateRawFlowsConsumerView(ctx context.Context,
 	tableName := fmt.Sprintf("flows_%d_raw", flow.CurrentSchemaVersion)
 	viewName := fmt.Sprintf("%s_consumer", tableName)
 	return migrationStep{
-		CheckQuery: queryTableHash(11315614236043053967, ""),
+		CheckQuery: queryTableHash(11315614236043053967, "AND as_select LIKE '% WHERE length(_error) = 0'"),
 		Args:       []interface{}{viewName},
 		Do: func() error {
 			l.Debug().Msg("drop consumer table")
@@ -759,9 +759,44 @@ AS WITH arrayCompact(DstASPath) AS c_DstASPath SELECT
  c_DstASPath[2] AS Dst2ndAS,
  c_DstASPath[3] AS Dst3rdAS,
  arrayMap((asn, l1, l2) -> bitShiftLeft(asn::UInt128, 64) + bitShiftLeft(l1::UInt128, 32) + l2::UInt128, %s) AS DstLargeCommunities
-FROM %s`,
+FROM %s
+WHERE length(_error) = 0`,
 				viewName,
 				largeCommunitiesColumns, largeCommunitiesColumns,
+				tableName))
+		},
+	}
+}
+
+func (c *Component) migrationStepCreateRawFlowsErrorsView(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+	tableName := fmt.Sprintf("flows_%d_raw", flow.CurrentSchemaVersion)
+	viewName := fmt.Sprintf("%s_errors", tableName)
+	return migrationStep{
+		CheckQuery: queryTableHash(9120662669408051900, ""),
+		Args:       []interface{}{viewName},
+		Do: func() error {
+			l.Debug().Msg("drop kafka errors table")
+			err := conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s SYNC`, viewName))
+			if err != nil {
+				return fmt.Errorf("cannot drop kafka errors table: %w", err)
+			}
+			l.Debug().Msg("create kafka errors table")
+			return conn.Exec(ctx, fmt.Sprintf(`
+CREATE MATERIALIZED VIEW %s
+ENGINE = MergeTree
+ORDER BY (timestamp, topic, partition, offset)
+PARTITION BY toYYYYMMDDhhmmss(toStartOfHour(timestamp))
+TTL timestamp + INTERVAL 1 DAY
+AS SELECT
+ now() AS timestamp,
+ _topic AS topic,
+ _partition AS partition,
+ _offset AS offset,
+ _raw_message AS raw,
+ _error AS error
+FROM %s
+WHERE length(_error) > 0`,
+				viewName,
 				tableName))
 		},
 	}

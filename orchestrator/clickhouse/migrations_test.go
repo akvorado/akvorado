@@ -218,6 +218,7 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 				"flows_1m0s_consumer",
 				"flows_3_raw",
 				"flows_3_raw_consumer",
+				"flows_3_raw_errors",
 				"flows_5m0s",
 				"flows_5m0s_consumer",
 				"networks",
