@@ -6,6 +6,7 @@ package filter
 
 import (
 	"encoding/binary"
+	"fmt"
 	"net"
 	"strings"
 )
@@ -76,6 +77,8 @@ func toString(v interface{}) string {
 		return s
 	case []byte:
 		return string(s)
+	case uint8, uint16, uint32, uint64:
+		return fmt.Sprintf("%d", s)
 	default:
 		panic("not a string")
 	}

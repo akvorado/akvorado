@@ -216,8 +216,9 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 				"flows_1h0m0s_consumer",
 				"flows_1m0s",
 				"flows_1m0s_consumer",
-				"flows_2_raw",
-				"flows_2_raw_consumer",
+				"flows_3_raw",
+				"flows_3_raw_consumer",
+				"flows_3_raw_errors",
 				"flows_5m0s",
 				"flows_5m0s_consumer",
 				"networks",
@@ -260,6 +261,24 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 			case <-ch.migrationsDone:
 			case <-time.After(5 * time.Second):
 				t.Fatalf("Migrations not done")
+			}
+
+			// Compute hash for all tables
+			rows, err := chComponent.Query(context.Background(), `
+SELECT table, groupBitXor(cityHash64(name,type,position))
+FROM system.columns
+WHERE database = currentDatabase()
+GROUP BY table`)
+			if err != nil {
+				t.Fatalf("Query() error:\n%+v", err)
+			}
+			for rows.Next() {
+				var table string
+				var hash uint64
+				if err := rows.Scan(&table, &hash); err != nil {
+					t.Fatalf("Scan() error:\n%+v", err)
+				}
+				t.Logf("table %s hash is %d", table, hash)
 			}
 
 			// No migration should have been applied the last time

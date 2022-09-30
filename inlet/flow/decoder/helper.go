@@ -44,6 +44,8 @@ func ConvertGoflowToFlowMessage(input *goflowmessage.FlowMessage) *FlowMessage {
 		DstAS:            input.DstAS,
 		SrcNet:           input.SrcNet,
 		DstNet:           input.DstNet,
+		NextHop:          ipCopy(input.NextHop),
+		NextHopAS:        input.NextHopAS,
 	}
 }
 

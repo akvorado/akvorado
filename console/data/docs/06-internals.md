@@ -76,6 +76,8 @@ fatal, or rate-limited and accounted into a metric.
 The CLI (not a component) is handled by
 [Cobra](https://github.com/spf13/cobra). The configuration file is
 handled by [mapstructure](https://github.com/mitchellh/mapstructure).
+Handling backward compatibility is done by registering hooks to
+transform the configuration.
 
 ## Flow decoding
 
@@ -106,7 +108,9 @@ of the databases in order to update a local cached copy.
 The Kafka component relies on
 [Sarama](https://github.com/Shopify/sarama). It is tested using the
 mock interface provided by this package. *Sarama* uses `go-metrics` to
-store metrics. We convert them to Prometheus to keep them.
+store metrics. We convert them to Prometheus to keep them. The logger
+is global and there is a hack to be plug it into the reporter design
+we have.
 
 If a real broker is available under the DNS name `kafka` or at
 `localhost` on port 9092, it will be used for a quick functional test.
@@ -137,6 +141,24 @@ for a minute to ensure it does not eat up all the workers' resources.
 
 Testing is done by another implementation of an [SNMP
 agent](https://github.com/slayercat/GoSNMPServer).
+
+## BMP
+
+The BMP server uses [GoBGP](http://github.com/osrg/gobgp)'s
+implementation. GoBGP does not have a BMP collector, but it's just a
+simple TCP connection receiving BMP messages and we use GoBGP to parse
+them. The data we need is stored in a Patricia tree.
+
+[github.com/kentik/patricia](https://github.com/kentik/patricia)
+implements a fast Patricia tree for IP lookup in a tree of subnets. It
+leverages Go generics to make the code safe. It is used both for
+configuring subnet-dependent settings (eg SNMP communities) and for
+storing data received using BMP.
+
+To save memory, *Akvorado* "interns" next-hops, origin AS, AS paths
+and communities. Each unique combination is associated to a
+reference-counter 32-bit integer, which is used in the RIB in place of
+the original information.
 
 ## Web console
 

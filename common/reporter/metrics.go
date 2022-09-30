@@ -116,6 +116,11 @@ func (r *Reporter) MetricCollector(c prometheus.Collector) {
 	r.metrics.Collector(c)
 }
 
+// MetricCollectorForCurrentModule register a custom collector prefixed by the current module name.
+func (r *Reporter) MetricCollectorForCurrentModule(c prometheus.Collector) {
+	r.metrics.CollectorForCurrentModule(1, c)
+}
+
 // MetricDesc defines a new metric description.
 func (r *Reporter) MetricDesc(name, help string, variableLabels []string) *MetricDesc {
 	return r.metrics.Desc(1, name, help, variableLabels)

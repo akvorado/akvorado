@@ -37,10 +37,12 @@ func (qc *queryColumn) UnmarshalText(input []byte) error {
 // queryColumnsRequiringMainTable lists query columns only present in
 // the main table. Also check filter/parser.peg.
 var queryColumnsRequiringMainTable = map[queryColumn]struct{}{
-	queryColumnSrcAddr: {},
-	queryColumnDstAddr: {},
-	queryColumnSrcPort: {},
-	queryColumnDstPort: {},
+	queryColumnSrcAddr:        {},
+	queryColumnDstAddr:        {},
+	queryColumnSrcPort:        {},
+	queryColumnDstPort:        {},
+	queryColumnDstASPath:      {},
+	queryColumnDstCommunities: {},
 }
 
 func requireMainTable(qcs []queryColumn, qf queryFilter) bool {
@@ -96,7 +98,7 @@ func (qc queryColumn) toSQLSelect() string {
 	switch qc {
 	case queryColumnExporterAddress, queryColumnSrcAddr, queryColumnDstAddr:
 		strValue = fmt.Sprintf("replaceRegexpOne(IPv6NumToString(%s), '^::ffff:', '')", qc)
-	case queryColumnSrcAS, queryColumnDstAS:
+	case queryColumnSrcAS, queryColumnDstAS, queryColumnDst1stAS, queryColumnDst2ndAS, queryColumnDst3rdAS:
 		strValue = fmt.Sprintf(`concat(toString(%s), ': ', dictGetOrDefault('asns', 'name', %s, '???'))`,
 			qc, qc)
 	case queryColumnEType:
@@ -106,6 +108,10 @@ func (qc queryColumn) toSQLSelect() string {
 		strValue = `dictGetOrDefault('protocols', 'name', Proto, '???')`
 	case queryColumnInIfSpeed, queryColumnOutIfSpeed, queryColumnSrcPort, queryColumnDstPort, queryColumnForwardingStatus, queryColumnInIfBoundary, queryColumnOutIfBoundary:
 		strValue = fmt.Sprintf("toString(%s)", qc)
+	case queryColumnDstASPath:
+		strValue = `arrayStringConcat(DstASPath, ' ')`
+	case queryColumnDstCommunities:
+		strValue = `arrayStringConcat(arrayConcat(arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities), arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)), ' ')`
 	default:
 		strValue = qc.String()
 	}
@@ -119,4 +125,15 @@ func (qc queryColumn) reverseDirection() queryColumn {
 		panic("unknown reverse column")
 	}
 	return value
+}
+
+// fixQueryColumnName fix capitalization of the provided column name
+func fixQueryColumnName(name string) string {
+	name = strings.ToLower(name)
+	for _, target := range queryColumnMap.Values() {
+		if strings.ToLower(target) == name {
+			return target
+		}
+	}
+	return ""
 }

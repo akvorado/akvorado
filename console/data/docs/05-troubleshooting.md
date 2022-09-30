@@ -259,7 +259,7 @@ SHOW tables
 ```
 
 You should have a few tables, including `flows`, `flows_1m0s` (and
-others), and `flows_2_raw`. If one is missing, look at the log in the
+others), and `flows_3_raw`. If one is missing, look at the log in the
 orchestrator. This is the component creating the tables.
 
 To check if ClickHouse is late, use the following SQL query through
@@ -280,11 +280,14 @@ from Kafka's point of view:
 $ kafka-consumer-groups.sh --bootstrap-server kafka:9092 --describe --group clickhouse
 
 GROUP           TOPIC           PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG             CONSUMER-ID                                                                        HOST            CLIENT-ID
-clickhouse      flows-v2        0          5650351527      5650374314      22787           ClickHouse-ee97b7e7e5e0-default-flows_2_raw-0-77740d0a-79b7-4bef-a501-25a819c3cee4 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_2_raw-0
-clickhouse      flows-v2        3          3035602619      3035628290      25671           ClickHouse-ee97b7e7e5e0-default-flows_2_raw-3-1e4629b0-69a3-48dd-899a-20f4b16be0a2 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_2_raw-3
-clickhouse      flows-v2        2          1645914467      1645930257      15790           ClickHouse-ee97b7e7e5e0-default-flows_2_raw-2-79c9bafe-fd36-42fe-921f-a802d46db684 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_2_raw-2
-clickhouse      flows-v2        1          889117276       889129896       12620           ClickHouse-ee97b7e7e5e0-default-flows_2_raw-1-f0421bbe-ba13-49df-998f-83e49045be00 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_2_raw-1
+clickhouse      flows-v2        0          5650351527      5650374314      22787           ClickHouse-ee97b7e7e5e0-default-flows_3_raw-0-77740d0a-79b7-4bef-a501-25a819c3cee4 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_3_raw-0
+clickhouse      flows-v2        3          3035602619      3035628290      25671           ClickHouse-ee97b7e7e5e0-default-flows_3_raw-3-1e4629b0-69a3-48dd-899a-20f4b16be0a2 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_3_raw-3
+clickhouse      flows-v2        2          1645914467      1645930257      15790           ClickHouse-ee97b7e7e5e0-default-flows_3_raw-2-79c9bafe-fd36-42fe-921f-a802d46db684 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_3_raw-2
+clickhouse      flows-v2        1          889117276       889129896       12620           ClickHouse-ee97b7e7e5e0-default-flows_3_raw-1-f0421bbe-ba13-49df-998f-83e49045be00 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_3_raw-1
 ```
+
+Errors related to Kafka ingestion are kept in the `flows_3_raw_errors`
+table. It should be empty.
 
 If you still have an issue, be sure to check the errors reported by
 ClickHouse:

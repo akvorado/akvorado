@@ -43,6 +43,12 @@ const (
  DstNetTenant LowCardinality(String),
  SrcCountry FixedString(2),
  DstCountry FixedString(2),
+ DstASPath Array(UInt32),
+ Dst1stAS UInt32,
+ Dst2ndAS UInt32,
+ Dst3rdAS UInt32,
+ DstCommunities Array(UInt32),
+ DstLargeCommunities Array(UInt128),
  InIfName LowCardinality(String),
  OutIfName LowCardinality(String),
  InIfDescription String,
@@ -65,7 +71,9 @@ const (
 `
 )
 
-// queryTableHash can be used to check if a table exists with the specified schema.
+// queryTableHash can be used to check if a table exists with the
+// specified schema. This is not foolproof as it needs help if
+// settings or populate query is changed.
 func queryTableHash(hash uint64, more string) string {
 	return fmt.Sprintf(`
 SELECT bitAnd(v1, v2) FROM (
@@ -94,6 +102,23 @@ outer:
 	return strings.Join(schema, "\n")
 }
 
+// columnSpecToName extracts column name from its creation spec
+func columnSpecToName(spec string) string {
+	spec = strings.TrimPrefix(spec, "IF NOT EXISTS ")
+	return strings.Split(spec, " ")[0]
+}
+
+// addColumnsAfter build a string to add columns after another column
+func addColumnsAfter(after string, columns ...string) string {
+	modifications := []string{}
+	last := after
+	for _, column := range columns {
+		modifications = append(modifications, fmt.Sprintf("ADD COLUMN %s AFTER %s", column, last))
+		last = columnSpecToName(column)
+	}
+	return strings.Join(modifications, ", ")
+}
+
 // appendToSortingKey returns a sorting key using the original one and
 // adding the specified columns.
 func appendToSortingKey(ctx context.Context, conn clickhouse.Conn, table string, columns ...string) (string, error) {
@@ -109,6 +134,23 @@ func appendToSortingKey(ctx context.Context, conn clickhouse.Conn, table string,
 		return "", fmt.Errorf("unable to parse sorting key: %w", err)
 	}
 	return fmt.Sprintf("%s, %s", sortingKey, strings.Join(columns, ", ")), nil
+}
+
+// addColumnsAndUpdateSortingKey combines addColumnsAfter and appendToSortingKey
+func addColumnsAndUpdateSortingKey(ctx context.Context, conn clickhouse.Conn, table string, after string, columns ...string) (string, error) {
+	modifications := []string{addColumnsAfter(after, columns...)}
+	columnNames := []string{}
+	for _, column := range columns {
+		columnNames = append(columnNames, columnSpecToName(column))
+	}
+	if table != "flows" {
+		sortingKey, err := appendToSortingKey(ctx, conn, table, columnNames...)
+		if err != nil {
+			return "", err
+		}
+		modifications = append(modifications, fmt.Sprintf("MODIFY ORDER BY (%s)", sortingKey))
+	}
+	return strings.Join(modifications, ", "), nil
 }
 
 var nullMigrationStep = migrationStep{
@@ -188,9 +230,12 @@ ORDER BY (TimeReceived,
           SrcNetSite, DstNetSite,
           SrcNetRegion, DstNetRegion,
           SrcNetTenant, DstNetTenant,
-          SrcCountry, DstCountry)`,
+          SrcCountry, DstCountry,
+          Dst1stAS, Dst2ndAS, Dst3rdAS)`,
 					tableName,
-					partialSchema("SrcAddr", "DstAddr", "SrcPort", "DstPort"),
+					partialSchema(
+						"SrcAddr", "DstAddr", "SrcPort", "DstPort",
+						"DstASPath", "DstCommunities", "DstLargeCommunities"),
 					partitionInterval))
 			},
 		}
@@ -211,10 +256,21 @@ SELECT 1 FROM system.columns
 WHERE table = $1 AND database = currentDatabase() AND name = $2`,
 			Args: []interface{}{tableName, "PacketSizeBucket"},
 			Do: func() error {
-				return conn.Exec(ctx, fmt.Sprintf(`
-ALTER TABLE %s ADD COLUMN PacketSize UInt64 ALIAS intDiv(Bytes, Packets) AFTER Packets,
-               ADD COLUMN PacketSizeBucket LowCardinality(String) ALIAS multiIf(PacketSize < 64, '0-63', PacketSize < 128, '64-127', PacketSize < 256, '128-255', PacketSize < 512, '256-511', PacketSize < 768, '512-767', PacketSize < 1024, '768-1023', PacketSize < 1280, '1024-1279', PacketSize < 1501, '1280-1500', PacketSize < 2048, '1501-2047', PacketSize < 3072, '2048-3071', PacketSize < 4096, '3072-4095', PacketSize < 8192, '4096-8191', PacketSize < 10240, '8192-10239', PacketSize < 16384, '10240-16383', PacketSize < 32768, '16384-32767', PacketSize < 65536, '32768-65535', '65536-Inf') AFTER PacketSize`,
-					tableName))
+				boundaries := []int{64, 128, 256, 512, 768, 1024, 1280, 1501,
+					2048, 3072, 4096, 8192, 10240, 16384, 32768, 65536}
+				conditions := []string{}
+				last := 0
+				for _, boundary := range boundaries {
+					conditions = append(conditions, fmt.Sprintf("PacketSize < %d, '%d-%d'",
+						boundary, last, boundary-1))
+					last = boundary
+				}
+				conditions = append(conditions, fmt.Sprintf("'%d-Inf'", last))
+				return conn.Exec(ctx, fmt.Sprintf("ALTER TABLE %s %s",
+					tableName, addColumnsAfter("Packets",
+						"PacketSize UInt64 ALIAS intDiv(Bytes, Packets)",
+						fmt.Sprintf("PacketSizeBucket LowCardinality(String) ALIAS multiIf(%s)",
+							strings.Join(conditions, ", ")))))
 			},
 		}
 	}
@@ -234,21 +290,16 @@ SELECT 1 FROM system.columns
 WHERE table = $1 AND database = currentDatabase() AND name = $2`,
 			Args: []interface{}{tableName, "DstNetName"},
 			Do: func() error {
-				modifications := []string{
-					`ADD COLUMN SrcNetName LowCardinality(String) AFTER DstAS`,
-					`ADD COLUMN DstNetName LowCardinality(String) AFTER SrcNetName`,
-				}
-				if tableName != "flows" {
-					sortingKey, err := appendToSortingKey(ctx, conn, tableName,
-						"SrcNetName", "DstNetName")
-					if err != nil {
-						return err
-					}
-					modifications = append(modifications, fmt.Sprintf(
-						`MODIFY ORDER BY (%s)`, sortingKey))
+				modifications, err := addColumnsAndUpdateSortingKey(ctx, conn, tableName,
+					"DstAS",
+					`SrcNetName LowCardinality(String)`,
+					`DstNetName LowCardinality(String)`,
+				)
+				if err != nil {
+					return err
 				}
 				return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE %s %s`,
-					tableName, strings.Join(modifications, ", ")))
+					tableName, modifications))
 			},
 		}
 	}
@@ -268,31 +319,22 @@ SELECT 1 FROM system.columns
 WHERE table = $1 AND database = currentDatabase() AND name = $2`,
 			Args: []interface{}{tableName, "DstNetRole"},
 			Do: func() error {
-				modifications := []string{
-					`ADD COLUMN SrcNetRole LowCardinality(String) AFTER DstNetName`,
-					`ADD COLUMN DstNetRole LowCardinality(String) AFTER SrcNetRole`,
-					`ADD COLUMN SrcNetSite LowCardinality(String) AFTER DstNetRole`,
-					`ADD COLUMN DstNetSite LowCardinality(String) AFTER SrcNetSite`,
-					`ADD COLUMN SrcNetRegion LowCardinality(String) AFTER DstNetSite`,
-					`ADD COLUMN DstNetRegion LowCardinality(String) AFTER SrcNetRegion`,
-					`ADD COLUMN SrcNetTenant LowCardinality(String) AFTER DstNetRegion`,
-					`ADD COLUMN DstNetTenant LowCardinality(String) AFTER SrcNetTenant`,
-				}
-				if tableName != "flows" {
-					sortingKey, err := appendToSortingKey(ctx, conn, tableName,
-						"SrcNetRole", "DstNetRole",
-						"SrcNetSite", "DstNetSite",
-						"SrcNetRegion", "DstNetRegion",
-						"SrcNetTenant", "DstNetTenant",
-					)
-					if err != nil {
-						return err
-					}
-					modifications = append(modifications, fmt.Sprintf(
-						`MODIFY ORDER BY (%s)`, sortingKey))
+				modifications, err := addColumnsAndUpdateSortingKey(ctx, conn, tableName,
+					"DstNetName",
+					`SrcNetRole LowCardinality(String)`,
+					`DstNetRole LowCardinality(String)`,
+					`SrcNetSite LowCardinality(String)`,
+					`DstNetSite LowCardinality(String)`,
+					`SrcNetRegion LowCardinality(String)`,
+					`DstNetRegion LowCardinality(String)`,
+					`SrcNetTenant LowCardinality(String)`,
+					`DstNetTenant LowCardinality(String)`,
+				)
+				if err != nil {
+					return err
 				}
 				return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE %s %s`,
-					tableName, strings.Join(modifications, ", ")))
+					tableName, modifications))
 			},
 		}
 	}
@@ -312,14 +354,13 @@ SELECT 1 FROM system.columns
 WHERE table = $1 AND database = currentDatabase() AND name = $2`,
 			Args: []interface{}{tableName, "ExporterTenant"},
 			Do: func() error {
-				modifications := []string{
-					`ADD COLUMN ExporterRole LowCardinality(String) AFTER ExporterGroup`,
-					`ADD COLUMN ExporterSite LowCardinality(String) AFTER ExporterRole`,
-					`ADD COLUMN ExporterRegion LowCardinality(String) AFTER ExporterSite`,
-					`ADD COLUMN ExporterTenant LowCardinality(String) AFTER ExporterRegion`,
-				}
 				return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE %s %s`,
-					tableName, strings.Join(modifications, ", ")))
+					tableName, addColumnsAfter("ExporterGroup",
+						`ExporterRole LowCardinality(String)`,
+						`ExporterSite LowCardinality(String)`,
+						`ExporterRegion LowCardinality(String)`,
+						`ExporterTenant LowCardinality(String)`,
+					)))
 			},
 		}
 	}
@@ -349,18 +390,98 @@ AND has(splitByRegexp(',\\s*', sorting_key), $2)`,
 				}
 				// Add them back
 				l.Debug().Msg("add back SrcCountry/DstCountry columns")
-				sortingKey, err := appendToSortingKey(ctx, conn, tableName,
-					"SrcCountry", "DstCountry")
+				modifications, err := addColumnsAndUpdateSortingKey(ctx, conn, tableName,
+					"DstNetTenant",
+					`SrcCountry FixedString(2)`,
+					`DstCountry FixedString(2)`,
+				)
 				if err != nil {
 					return err
 				}
-				return conn.Exec(ctx, fmt.Sprintf(`
-ALTER TABLE %s
-ADD COLUMN SrcCountry FixedString(2) AFTER DstNetTenant,
-ADD COLUMN DstCountry FixedString(2) AFTER SrcCountry,
-MODIFY ORDER BY (%s)`, tableName, sortingKey))
+				return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE %s %s`,
+					tableName, modifications))
 			},
 		}
+	}
+}
+
+func (c *Component) migrationStepAddDstASPathColumns(resolution ResolutionConfiguration) migrationStepFunc {
+	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+		var tableName string
+		if resolution.Interval == 0 {
+			tableName = "flows"
+		} else {
+			tableName = fmt.Sprintf("flows_%s", resolution.Interval)
+		}
+		return migrationStep{
+			CheckQuery: `
+SELECT 1 FROM system.columns
+WHERE table = $1 AND database = currentDatabase() AND name = $2`,
+			Args: []interface{}{tableName, "Dst1stAS"},
+			Do: func() error {
+				var modifications string
+				var err error
+				if tableName == "flows" {
+					// The flows table will get DstASPath, 1st, 2nd, 3rd ASN.
+					modifications, err = addColumnsAndUpdateSortingKey(ctx, conn, tableName,
+						"DstCountry",
+						`DstASPath Array(UInt32)`,
+						`Dst1stAS UInt32`,
+						`Dst2ndAS UInt32`,
+						`Dst3rdAS UInt32`,
+					)
+				} else {
+					// The consolidated table will only get the three first ASNs.
+					modifications, err = addColumnsAndUpdateSortingKey(ctx, conn, tableName,
+						"DstCountry",
+						`Dst1stAS UInt32`,
+						`Dst2ndAS UInt32`,
+						`Dst3rdAS UInt32`,
+					)
+				}
+				if err != nil {
+					return err
+				}
+				return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE %s %s`,
+					tableName, modifications))
+			},
+		}
+	}
+}
+
+func (c *Component) migrationStepAddDstCommunitiesColumn(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+	return migrationStep{
+		CheckQuery: `
+SELECT 1 FROM system.columns
+WHERE table = $1 AND database = currentDatabase() AND name = $2`,
+		Args: []interface{}{"flows", "DstCommunities"},
+		Do: func() error {
+			modifications, err := addColumnsAndUpdateSortingKey(ctx, conn, "flows",
+				"Dst3rdAS",
+				"DstCommunities Array(UInt32)")
+			if err != nil {
+				return err
+			}
+			return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE flows %s`, modifications))
+		},
+	}
+}
+
+func (c *Component) migrationStepAddDstLargeCommunitiesColumn(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+	return migrationStep{
+		CheckQuery: `
+SELECT 1 FROM system.columns
+WHERE table = $1 AND database = currentDatabase() AND name = $2`,
+		Args: []interface{}{"flows", "DstLargeCommunities"},
+		Do: func() error {
+			modifications, err := addColumnsAndUpdateSortingKey(ctx, conn, "flows",
+				"DstCommunities",
+				"DstLargeCommunities Array(UInt128)")
+			if err != nil {
+				return err
+			}
+			return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE flows %s`, modifications))
+		},
 	}
 }
 
@@ -372,9 +493,16 @@ func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution Resolution
 		}
 		tableName := fmt.Sprintf("flows_%s", resolution.Interval)
 		viewName := fmt.Sprintf("%s_consumer", tableName)
+		selectClause := fmt.Sprintf(`
+SELECT *
+EXCEPT (SrcAddr, DstAddr, SrcPort, DstPort, DstASPath, DstCommunities, DstLargeCommunities)
+REPLACE toStartOfInterval(TimeReceived, toIntervalSecond(%d)) AS TimeReceived`,
+			uint64(resolution.Interval.Seconds()))
+		selectClause = strings.TrimSpace(strings.ReplaceAll(selectClause, "\n", " "))
 		return migrationStep{
-			CheckQuery: queryTableHash(7356168458686845598, ""),
-			Args:       []interface{}{viewName},
+			CheckQuery: queryTableHash(10874532506016793032,
+				fmt.Sprintf("AND as_select LIKE '%s FROM %%'", selectClause)),
+			Args: []interface{}{viewName},
 			// No GROUP BY, the SummingMergeTree will take care of that
 			Do: func() error {
 				l.Debug().Msg("drop consumer table")
@@ -385,11 +513,8 @@ func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution Resolution
 				l.Debug().Msg("create consumer table")
 				return conn.Exec(ctx, fmt.Sprintf(`
 CREATE MATERIALIZED VIEW %s TO %s
-AS SELECT
- *
-EXCEPT(SrcAddr, DstAddr, SrcPort, DstPort)
-REPLACE(toStartOfInterval(TimeReceived, INTERVAL %d second) AS TimeReceived)
-FROM %s`, viewName, tableName, uint64(resolution.Interval.Seconds()), "flows"))
+AS %s
+FROM %s`, viewName, tableName, selectClause, "flows"))
 			},
 		}
 	}
@@ -552,21 +677,21 @@ LAYOUT(IP_TRIE())
 
 func (c *Component) migrationStepCreateRawFlowsTable(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 	tableName := fmt.Sprintf("flows_%d_raw", flow.CurrentSchemaVersion)
-	kafkaEngine := strings.Join([]string{
-		`Kafka SETTINGS`,
-		fmt.Sprintf(`kafka_broker_list = '%s',`,
+	kafkaEngine := fmt.Sprintf("Kafka SETTINGS %s", strings.Join([]string{
+		fmt.Sprintf(`kafka_broker_list = '%s'`,
 			strings.Join(c.config.Kafka.Brokers, ",")),
-		fmt.Sprintf(`kafka_topic_list = '%s-v%d',`,
+		fmt.Sprintf(`kafka_topic_list = '%s-v%d'`,
 			c.config.Kafka.Topic, flow.CurrentSchemaVersion),
-		`kafka_group_name = 'clickhouse',`,
-		`kafka_format = 'Protobuf',`,
-		fmt.Sprintf(`kafka_schema = 'flow-%d.proto:FlowMessagev%d',`,
+		`kafka_group_name = 'clickhouse'`,
+		`kafka_format = 'Protobuf'`,
+		fmt.Sprintf(`kafka_schema = 'flow-%d.proto:FlowMessagev%d'`,
 			flow.CurrentSchemaVersion, flow.CurrentSchemaVersion),
-		fmt.Sprintf(`kafka_num_consumers = %d,`, c.config.Kafka.Consumers),
+		fmt.Sprintf(`kafka_num_consumers = %d`, c.config.Kafka.Consumers),
 		`kafka_thread_per_consumer = 1`,
-	}, " ")
+		`kafka_handle_error_mode = 'stream'`,
+	}, ", "))
 	return migrationStep{
-		CheckQuery: queryTableHash(4229371004936784880, "AND engine_full = $2"),
+		CheckQuery: queryTableHash(12139043515526919262, "AND engine_full = $2"),
 		Args:       []interface{}{tableName, kafkaEngine},
 		Do: func() error {
 			l.Debug().Msg("drop raw consumer table")
@@ -583,7 +708,8 @@ func (c *Component) migrationStepCreateRawFlowsTable(ctx context.Context, l repo
 			return conn.Exec(ctx, fmt.Sprintf(`
 CREATE TABLE %s
 (
-%s
+%s,
+DstLargeCommunities Nested(ASN UInt32, LocalData1 UInt32, LocalData2 UInt32)
 )
 ENGINE = %s`, tableName, partialSchema(
 				"SrcNetName", "DstNetName",
@@ -591,6 +717,8 @@ ENGINE = %s`, tableName, partialSchema(
 				"SrcNetSite", "DstNetSite",
 				"SrcNetRegion", "DstNetRegion",
 				"SrcNetTenant", "DstNetTenant",
+				"Dst1stAS", "Dst2ndAS", "Dst3rdAS",
+				"DstLargeCommunities",
 			), kafkaEngine))
 		},
 	}
@@ -600,7 +728,7 @@ func (c *Component) migrationStepCreateRawFlowsConsumerView(ctx context.Context,
 	tableName := fmt.Sprintf("flows_%d_raw", flow.CurrentSchemaVersion)
 	viewName := fmt.Sprintf("%s_consumer", tableName)
 	return migrationStep{
-		CheckQuery: queryTableHash(17295069153939039375, ""),
+		CheckQuery: queryTableHash(11315614236043053967, "AND as_select LIKE '% WHERE length(_error) = 0'"),
 		Args:       []interface{}{viewName},
 		Do: func() error {
 			l.Debug().Msg("drop consumer table")
@@ -609,10 +737,14 @@ func (c *Component) migrationStepCreateRawFlowsConsumerView(ctx context.Context,
 				return fmt.Errorf("cannot drop consumer table: %w", err)
 			}
 			l.Debug().Msg("create consumer table")
+			largeCommunitiesColumns := strings.Join([]string{
+				"`DstLargeCommunities.ASN`",
+				"`DstLargeCommunities.LocalData1`",
+				"`DstLargeCommunities.LocalData2`"}, ",")
 			return conn.Exec(ctx, fmt.Sprintf(`
 CREATE MATERIALIZED VIEW %s TO flows
-AS SELECT
- *,
+AS WITH arrayCompact(DstASPath) AS c_DstASPath SELECT
+ * EXCEPT (%s),
  dictGetOrDefault('networks', 'name', SrcAddr, '') AS SrcNetName,
  dictGetOrDefault('networks', 'name', DstAddr, '') AS DstNetName,
  dictGetOrDefault('networks', 'role', SrcAddr, '') AS SrcNetRole,
@@ -622,8 +754,50 @@ AS SELECT
  dictGetOrDefault('networks', 'region', SrcAddr, '') AS SrcNetRegion,
  dictGetOrDefault('networks', 'region', DstAddr, '') AS DstNetRegion,
  dictGetOrDefault('networks', 'tenant', SrcAddr, '') AS SrcNetTenant,
- dictGetOrDefault('networks', 'tenant', DstAddr, '') AS DstNetTenant
-FROM %s`, viewName, tableName))
+ dictGetOrDefault('networks', 'tenant', DstAddr, '') AS DstNetTenant,
+ c_DstASPath[1] AS Dst1stAS,
+ c_DstASPath[2] AS Dst2ndAS,
+ c_DstASPath[3] AS Dst3rdAS,
+ arrayMap((asn, l1, l2) -> bitShiftLeft(asn::UInt128, 64) + bitShiftLeft(l1::UInt128, 32) + l2::UInt128, %s) AS DstLargeCommunities
+FROM %s
+WHERE length(_error) = 0`,
+				viewName,
+				largeCommunitiesColumns, largeCommunitiesColumns,
+				tableName))
+		},
+	}
+}
+
+func (c *Component) migrationStepCreateRawFlowsErrorsView(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+	tableName := fmt.Sprintf("flows_%d_raw", flow.CurrentSchemaVersion)
+	viewName := fmt.Sprintf("%s_errors", tableName)
+	return migrationStep{
+		CheckQuery: queryTableHash(9120662669408051900, ""),
+		Args:       []interface{}{viewName},
+		Do: func() error {
+			l.Debug().Msg("drop kafka errors table")
+			err := conn.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s SYNC`, viewName))
+			if err != nil {
+				return fmt.Errorf("cannot drop kafka errors table: %w", err)
+			}
+			l.Debug().Msg("create kafka errors table")
+			return conn.Exec(ctx, fmt.Sprintf(`
+CREATE MATERIALIZED VIEW %s
+ENGINE = MergeTree
+ORDER BY (timestamp, topic, partition, offset)
+PARTITION BY toYYYYMMDDhhmmss(toStartOfHour(timestamp))
+TTL timestamp + INTERVAL 1 DAY
+AS SELECT
+ now() AS timestamp,
+ _topic AS topic,
+ _partition AS partition,
+ _offset AS offset,
+ _raw_message AS raw,
+ _error AS error
+FROM %s
+WHERE length(_error) > 0`,
+				viewName,
+				tableName))
 		},
 	}
 }

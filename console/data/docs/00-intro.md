@@ -68,8 +68,10 @@ from [MaxMind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data).
   *country* and the *AS number*. It applies rules to add attributes to
   exporters. Interface rules attach to each interface a *boundary*
   (external or internal), a *network provider* and a *connectivity
-  type* (PNI, IX, transit). The flow is exported to *Kafka*,
-  serialized using *Protobuf*.
+  type* (PNI, IX, transit). Optionally, it may also receive BGP routes
+  through the BMP protocol to get the *AS number*, the *AS path*, and
+  the communities. The flow is exported to *Kafka*, serialized using
+  *Protobuf*.
 
 - The **orchestrator service** configures the internal and external
   components. It creates the *Kafka topic* and configures *ClickHouse*

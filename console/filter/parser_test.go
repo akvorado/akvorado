@@ -196,6 +196,12 @@ AND SrcAS = AS12322 -- Proxad ASN`,
 output provider */ = 'telia'`,
 			Output: `OutIfProvider = 'telia'`,
 		},
+		{Input: `DstASPath = 65000`, Output: `has(DstASPath, 65000)`, MetaOut: Meta{MainTableRequired: true}},
+		{Input: `DstASPath != 65000`, Output: `NOT has(DstASPath, 65000)`, MetaOut: Meta{MainTableRequired: true}},
+		{Input: `DstCommunities = 65000:100`, Output: `has(DstCommunities, 4259840100)`, MetaOut: Meta{MainTableRequired: true}},
+		{Input: `DstCommunities != 65000:100`, Output: `NOT has(DstCommunities, 4259840100)`, MetaOut: Meta{MainTableRequired: true}},
+		{Input: `DstCommunities = 65000:100:200`, Output: `has(DstLargeCommunities, bitShiftLeft(65000::UInt128, 64) + bitShiftLeft(100::UInt128, 32) + 200::UInt128)`, MetaOut: Meta{MainTableRequired: true}},
+		{Input: `DstCommunities != 65000:100:200`, Output: `NOT has(DstLargeCommunities, bitShiftLeft(65000::UInt128, 64) + bitShiftLeft(100::UInt128, 32) + 200::UInt128)`, MetaOut: Meta{MainTableRequired: true}},
 	}
 	for _, tc := range cases {
 		got, err := Parse("", []byte(tc.Input), GlobalStore("meta", &tc.MetaIn))

@@ -89,6 +89,46 @@ UNION DISTINCT
 			{"AS36987", "Google Kenya"},
 			{"AS41264", "Google Switzerland"},
 		}).
+		Return(nil).
+		MinTimes(2).MaxTimes(2)
+	mockConn.EXPECT().
+		Select(gomock.Any(), gomock.Any(), `
+SELECT label, detail FROM (
+ SELECT
+  'community' AS detail,
+  concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))) AS label
+ FROM (
+  SELECT arrayJoin(DstCommunities) AS c
+  FROM flows
+  WHERE TimeReceived > date_sub(minute, 1, now())
+  GROUP BY c
+  ORDER BY COUNT(*) DESC
+ )
+
+ UNION ALL
+
+ SELECT
+  'large community' AS detail,
+  concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))) AS label
+ FROM (
+  SELECT arrayJoin(DstLargeCommunities) AS c
+  FROM flows
+  WHERE TimeReceived > date_sub(minute, 1, now())
+  GROUP BY c
+  ORDER BY COUNT(*) DESC
+ )
+)
+WHERE startsWith(label, $1)
+LIMIT 20`, "6540").
+		SetArg(1, []struct {
+			Label  string `ch:"label"`
+			Detail string `ch:"detail"`
+		}{
+			{"65401:10", "community"},
+			{"65401:12", "community"},
+			{"65401:13", "community"},
+			{"65402:200:100", "large community"},
+		}).
 		Return(nil)
 
 	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
@@ -116,8 +156,13 @@ UNION DISTINCT
 			StatusCode: 200,
 			JSONInput:  gin.H{"what": "column", "prefix": "dSt"},
 			JSONOutput: gin.H{"completions": []gin.H{
+				{"label": "Dst1stAS", "detail": "column name", "quoted": false},
+				{"label": "Dst2ndAS", "detail": "column name", "quoted": false},
+				{"label": "Dst3rdAS", "detail": "column name", "quoted": false},
 				{"label": "DstAS", "detail": "column name", "quoted": false},
+				{"label": "DstASPath", "detail": "column name", "quoted": false},
 				{"label": "DstAddr", "detail": "column name", "quoted": false},
+				{"label": "DstCommunities", "detail": "column name", "quoted": false},
 				{"label": "DstCountry", "detail": "column name", "quoted": false},
 				{"label": "DstNetName", "detail": "column name", "quoted": false},
 				{"label": "DstNetRegion", "detail": "column name", "quoted": false},
@@ -182,6 +227,33 @@ UNION DISTINCT
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
 			JSONInput:  gin.H{"what": "value", "column": "dstAS", "prefix": "goog"},
+			JSONOutput: gin.H{"completions": []gin.H{
+				{"label": "AS15169", "detail": "Google", "quoted": false},
+				{"label": "AS16550", "detail": "Google Private Cloud", "quoted": false},
+				{"label": "AS16591", "detail": "Google Fiber", "quoted": false},
+				{"label": "AS19527", "detail": "Google", "quoted": false},
+				{"label": "AS26910", "detail": "GOOGLE-CLOUD-2", "quoted": false},
+				{"label": "AS36040", "detail": "Google", "quoted": false},
+				{"label": "AS36384", "detail": "Google", "quoted": false},
+				{"label": "AS36385", "detail": "Google IT", "quoted": false},
+				{"label": "AS36492", "detail": "Google", "quoted": false},
+				{"label": "AS36987", "detail": "Google Kenya", "quoted": false},
+				{"label": "AS41264", "detail": "Google Switzerland", "quoted": false},
+			}},
+		}, {
+			URL:        "/api/v0/console/filter/complete",
+			StatusCode: 200,
+			JSONInput:  gin.H{"what": "value", "column": "dstcommunities", "prefix": "6540"},
+			JSONOutput: gin.H{"completions": []gin.H{
+				{"label": "65401:10", "detail": "community", "quoted": false},
+				{"label": "65401:12", "detail": "community", "quoted": false},
+				{"label": "65401:13", "detail": "community", "quoted": false},
+				{"label": "65402:200:100", "detail": "large community", "quoted": false},
+			}},
+		}, {
+			URL:        "/api/v0/console/filter/complete",
+			StatusCode: 200,
+			JSONInput:  gin.H{"what": "value", "column": "dstASpath", "prefix": "goog"},
 			JSONOutput: gin.H{"completions": []gin.H{
 				{"label": "AS15169", "detail": "Google", "quoted": false},
 				{"label": "AS16550", "detail": "Google Private Cloud", "quoted": false},

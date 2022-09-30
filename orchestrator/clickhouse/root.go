@@ -6,8 +6,8 @@ package clickhouse
 
 import (
 	"sort"
-	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/clickhousedb"
@@ -87,30 +87,31 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	return &c, nil
 }
 
-// Start the ClickHouse component
+// Start the ClickHouse component.
 func (c *Component) Start() error {
 	c.r.Info().Msg("starting ClickHouse component")
 	c.metrics.migrationsRunning.Set(1)
 	c.t.Go(func() error {
-		if err := c.migrateDatabase(); err == nil {
-			return nil
-		}
+		customBackoff := backoff.NewExponentialBackOff()
+		customBackoff.MaxElapsedTime = 0
+		ticker := backoff.NewTicker(customBackoff)
+		defer ticker.Stop()
 		for {
+			c.r.Info().Msg("attempting database migration")
+			if err := c.migrateDatabase(); err == nil {
+				return nil
+			}
 			select {
 			case <-c.t.Dying():
 				return nil
-			case <-time.After(time.Minute):
-				c.r.Info().Msg("attempting database migration")
-				if err := c.migrateDatabase(); err == nil {
-					return nil
-				}
+			case <-ticker.C:
 			}
 		}
 	})
 	return nil
 }
 
-// Stop stops the ClickHouse component
+// Stop stops the ClickHouse component.
 func (c *Component) Stop() error {
 	c.r.Info().Msg("stopping ClickHouse component")
 	defer c.r.Info().Msg("ClickHouse component stopped")

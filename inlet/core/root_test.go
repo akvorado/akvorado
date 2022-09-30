@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	netHTTP "net/http"
 	"testing"
@@ -22,7 +23,9 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
+	"akvorado/inlet/bmp"
 	"akvorado/inlet/flow"
+	"akvorado/inlet/flow/decoder"
 	"akvorado/inlet/geoip"
 	"akvorado/inlet/kafka"
 	"akvorado/inlet/snmp"
@@ -38,15 +41,18 @@ func TestCore(t *testing.T) {
 	geoipComponent := geoip.NewMock(t, r)
 	kafkaComponent, kafkaProducer := kafka.NewMock(t, r, kafka.DefaultConfiguration())
 	httpComponent := http.NewMock(t, r)
+	bmpComponent, _ := bmp.NewMock(t, r, bmp.DefaultConfiguration())
+	bmpComponent.PopulateRIB(t)
 
 	// Instantiate and start core
 	c, err := New(r, DefaultConfiguration(), Dependencies{
 		Daemon: daemonComponent,
 		Flow:   flowComponent,
-		Snmp:   snmpComponent,
+		SNMP:   snmpComponent,
 		GeoIP:  geoipComponent,
 		Kafka:  kafkaComponent,
 		HTTP:   httpComponent,
+		BMP:    bmpComponent,
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
@@ -322,4 +328,40 @@ func TestCore(t *testing.T) {
 			t.Fatalf("GET /api/v0/inlet/flows got less than 4 flows (%d)", count)
 		}
 	})
+
+	// Test HTTP flow clients using Protobuf
+	t.Run("http flows", func(t *testing.T) {
+		c.httpFlowFlushDelay = 20 * time.Millisecond
+
+		client := netHTTP.Client{}
+		req, err := netHTTP.NewRequest("GET", fmt.Sprintf("http://%s/api/v0/inlet/flows?limit=1", c.d.HTTP.LocalAddr()), nil)
+		if err != nil {
+			t.Fatalf("GET /api/v0/inlet/flows:\n%+v", err)
+		}
+		req.Header.Set("Accept", "application/x-protobuf")
+		resp, err := client.Do(req)
+		if err != nil {
+			t.Fatalf("GET /api/v0/inlet/flows:\n%+v", err)
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != 200 {
+			t.Fatalf("GET /api/v0/inlet/flows status code %d", resp.StatusCode)
+		}
+
+		// Produce one flow
+		kafkaProducer.ExpectInputAndSucceed()
+		flowComponent.Inject(t, flowMessage("192.0.2.142", 434, 677))
+
+		// Decode it
+		raw, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			t.Fatalf("ReadAll() error:\n%+v", err)
+		}
+		var flow decoder.FlowMessage
+		buf := proto.NewBuffer(raw)
+		if err := buf.DecodeMessage(&flow); err != nil {
+			t.Fatalf("DecodeMessage() error:\n%+v", err)
+		}
+	})
+
 }

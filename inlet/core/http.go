@@ -11,6 +11,7 @@ import (
 	"akvorado/common/helpers"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang/protobuf/proto"
 )
 
 type flowsParameters struct {
@@ -27,6 +28,7 @@ func (c *Component) FlowsHTTPHandler(gc *gin.Context) {
 		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
 		return
 	}
+	format := gc.NegotiateFormat("application/json", "application/x-protobuf")
 
 	atomic.AddUint32(&c.httpFlowClients, 1)
 	defer atomic.AddUint32(&c.httpFlowClients, ^uint32(0))
@@ -44,12 +46,23 @@ func (c *Component) FlowsHTTPHandler(gc *gin.Context) {
 		case <-gc.Request.Context().Done():
 			return
 		case msg := <-c.httpFlowChannel:
-			if params.Limit == 1 {
-				gc.IndentedJSON(http.StatusOK, msg)
-			} else {
-				gc.JSON(http.StatusOK, msg)
-				gc.Writer.Write([]byte("\n"))
+			switch format {
+			case "application/json":
+				if params.Limit == 1 {
+					gc.IndentedJSON(http.StatusOK, msg)
+				} else {
+					gc.JSON(http.StatusOK, msg)
+					gc.Writer.Write([]byte("\n"))
+				}
+			case "application/x-protobuf":
+				buf := proto.NewBuffer([]byte{})
+				if err := buf.EncodeMessage(msg); err != nil {
+					continue
+				}
+				gc.Set("Content-Type", format)
+				gc.Writer.Write(buf.Bytes())
 			}
+
 			count++
 			if params.Limit > 0 && count == params.Limit {
 				return

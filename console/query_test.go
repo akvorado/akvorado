@@ -46,6 +46,9 @@ func TestQueryColumnSQLSelect(t *testing.T) {
 			Input:    queryColumnDstAS,
 			Expected: `concat(toString(DstAS), ': ', dictGetOrDefault('asns', 'name', DstAS, '???'))`,
 		}, {
+			Input:    queryColumnDst2ndAS,
+			Expected: `concat(toString(Dst2ndAS), ': ', dictGetOrDefault('asns', 'name', Dst2ndAS, '???'))`,
+		}, {
 			Input:    queryColumnProto,
 			Expected: `dictGetOrDefault('protocols', 'name', Proto, '???')`,
 		}, {
@@ -60,6 +63,12 @@ func TestQueryColumnSQLSelect(t *testing.T) {
 		}, {
 			Input:    queryColumnPacketSizeBucket,
 			Expected: `PacketSizeBucket`,
+		}, {
+			Input:    queryColumnDstASPath,
+			Expected: `arrayStringConcat(DstASPath, ' ')`,
+		}, {
+			Input:    queryColumnDstCommunities,
+			Expected: `arrayStringConcat(arrayConcat(arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities), arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)), ' ')`,
 		},
 	}
 	for _, tc := range cases {

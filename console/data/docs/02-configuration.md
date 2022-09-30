@@ -104,8 +104,36 @@ flow:
 ```
 
 Without configuration, *Akvorado* will listen for incoming
-Netflow/IPFIX and sFlow flows on a random port (check the logs to know which
-one).
+Netflow/IPFIX and sFlow flows on a random port (check the logs to know
+which one).
+
+### BMP
+
+The BMP component handles incoming BMP connections from routers. The
+information received can be used to fetch source and destination AS
+numbers, as well as the AS paths and communities. Not all exporters
+need to send their tables with BMP. *Akvorado* will try to select the
+best route using the next hop advertised in the flow and fallback to
+any next hop if not found.
+
+The following keys are accepted:
+
+- `listen` specifies the IP address and port to listen for incoming connections (default port is 10179)
+- `rds` specifies a list of route distinguisher to accept (0 is meant
+  to accept routes without an associated route distinguisher)
+- `collect-asns` tells if origin AS numbers should be collected
+- `collect-aspaths` tells if AS paths should be collected
+- `collect-communities` tells if communities should be collected (both
+  regular communities and large communities; extended communities are
+  not supported)
+- `keep` tells how much time the routes sent from a terminated BMP
+  connection should be kept
+
+If you are not interested in AS paths and communities, disabling them
+will decrease the memory usage of *Akvorado*.
+
+*Akvorado* supports receiving the AdjRIB-in, with or without
+filtering. It may also work with a LocRIB.
 
 ### Kafka
 
@@ -165,10 +193,11 @@ The following configuration keys are accepted:
   one received in the flows. This is useful if a device lie about its
   sampling rate. This is a map from subnets to sampling rates (but it
   would also accept a single value).
-- `asn-providers` defines the source list for AS numbers. The available
-  sources are `flow`, `flow-except-private` (use information from flow
-  except if the ASN is private), and `geoip`. The default value is
-  `flow` and `geoip`.
+- `asn-providers` defines the source list for AS numbers. The
+  available sources are `flow`, `flow-except-private` (use information
+  from flow except if the ASN is private), `geoip`, `bmp`, and
+  `bmp-except-private`. The default value is `flow`, `bmp`, and
+  `geoip`.
 
 Classifier rules are written using [expr][].
 
@@ -521,8 +550,8 @@ database:
 ## Demo exporter service
 
 For testing purpose, it is possible to generate flows using the demo
-exporter service. It features a NetFlow generate and a simple SNMP
-agent.
+exporter service. It features a NetFlow generator, a simple SNMP
+agent and a BMP exporter.
 
 ```yaml
 snmp:
@@ -533,6 +562,12 @@ snmp:
     20: "core"
     21: "core"
   listen: 0.0.0.0:161
+bmp:
+  target: 127.0.0.1:10179
+  routes:
+    - prefixes: 192.0.2.0/24,2a01:db8:cafe:1::/64
+      aspath: 64501
+      communities: 65401:10,65401:12
 flows:
   samplingrate: 50000
   target: 127.0.0.1:2055
@@ -553,10 +588,12 @@ flows:
 ```
 
 In the `snmp` section, all fields are mandatory. The `interfaces`
-section maps interface indexes to their descriptions. In the `flows`
-section, all fields are mandatory. Have a look at the provided
-`akvorado.yaml` configuration file for a more complete example. As
-generating many flows is quite verbose, it may be useful to rely on
-[YAML anchors][] to avoid repeating a lot of stuff.
+section maps interface indexes to their descriptions. In the `bmp`
+session, for each set of prefixes, the `aspath` is mandatory, but the
+`communities` are optional. In the `flows` section, all fields are
+mandatory. Have a look at the provided `akvorado.yaml` configuration
+file for a more complete example. As generating many flows is quite
+verbose, it may be useful to rely on [YAML anchors][] to avoid
+repeating a lot of stuff.
 
 [YAML anchors]: https://www.linode.com/docs/guides/yaml-anchors-aliases-overrides-extensions/

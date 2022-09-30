@@ -38,7 +38,7 @@ func DefaultConfiguration() Configuration {
 		ExporterClassifiers:  []ExporterClassifierRule{},
 		InterfaceClassifiers: []InterfaceClassifierRule{},
 		ClassifierCacheSize:  1000,
-		ASNProviders:         []ASNProvider{ProviderFlow, ProviderGeoIP},
+		ASNProviders:         []ASNProvider{ProviderFlow, ProviderBMP, ProviderGeoIP},
 	}
 }
 
@@ -52,12 +52,18 @@ const (
 	ProviderFlowExceptPrivate
 	// ProviderGeoIP pulls the AS number from a GeoIP database.
 	ProviderGeoIP
+	// ProviderBMP uses the AS number from BMP
+	ProviderBMP
+	// ProviderBMPExceptPrivate uses the AS number from BMP, except if this is a private AS.
+	ProviderBMPExceptPrivate
 )
 
 var asnProviderMap = helpers.NewBimap(map[ASNProvider]string{
 	ProviderFlow:              "flow",
 	ProviderFlowExceptPrivate: "flow-except-private",
 	ProviderGeoIP:             "geoip",
+	ProviderBMP:               "bmp",
+	ProviderBMPExceptPrivate:  "bmp-except-private",
 })
 
 // MarshalText turns an AS provider to text.

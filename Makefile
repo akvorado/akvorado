@@ -80,7 +80,7 @@ inlet/flow/decoder/flow-ANY.pb.go: inlet/flow/decoder/flow-$(FLOW_VERSION).pb.go
 	done
 inlet/flow/decoder/flow-$(FLOW_VERSION).pb.go: inlet/flow/data/schemas/flow-$(FLOW_VERSION).proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffers definition…)
 	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --go_out=module=$(MODULE):. $<
-	$Q sed -i.bkp s/FlowMessagev./FlowMessage/g $@ && rm $@.bkp
+	$Q sed -i.bkp s/v$(FLOW_VERSION)//g $@ && rm $@.bkp
 
 common/clickhousedb/mocks/mock_driver.go: $(MOCKGEN) ; $(info $(M) generate mocks for ClickHouse driver…)
 	$Q echo '//go:build !release' > $@
@@ -99,7 +99,7 @@ console/frontend/node_modules: console/frontend/package.json console/frontend/pa
 console/frontend/node_modules: ; $(info $(M) fetching node modules…)
 	$Q (cd console/frontend ; npm ci --silent --no-audit --no-fund) && touch $@
 console/frontend/data/fields.json: console/query_consts.go ; $(info $(M) generate list of selectable fields…)
-	$Q sed -En -e 's/^\tqueryColumn([a-zA-Z]+)( .*|$$)/  "\1"/p' $< \
+	$Q sed -En -e 's/^\tqueryColumn([a-zA-Z0-9]+)( .*|$$)/  "\1"/p' $< \
 		| sed -E -e '$$ ! s/$$/,/' -e '1s/^ */[/' -e '$$s/$$/]/' > $@
 	$Q test -s $@
 console/data/frontend: console/frontend/node_modules
@@ -125,9 +125,8 @@ changelog.md: docs/99-changelog.md # To be used by GitHub actions only.
 
 # Tests
 
-TEST_TARGETS := test-bench test-short test-verbose test-race
+TEST_TARGETS := test-short test-verbose test-race
 .PHONY: $(TEST_TARGETS) check test tests
-test-bench:   ARGS=-run=__absolutelynothing__ -bench=. ## Run benchmarks
 test-short:   ARGS=-short        ## Run only short tests
 test-verbose: ARGS=-v            ## Run tests in verbose mode with coverage reporting
 test-race:    CGO_ENABLED=1 ARGS=-race         ## Run tests with race detector
@@ -138,6 +137,9 @@ check test tests: fmt lint $(GENERATED) | $(GOTESTSUM) ; $(info $(M) running $(N
 	$Q $(GOTESTSUM) --junitfile test/tests.xml -- \
 		-timeout $(TIMEOUT)s \
 		$(ARGS) $(PKGS)
+.PHONY: test-bench
+test-bench: $(GENERATED) ; $(info $(M) running benchmarks…) @ ## Run benchmarks
+	$Q $(GOTESTSUM) -f standard-quiet -- --timeout $(TIMEOUT)s -run=__absolutelynothing__ -bench=. $(PKGS)
 
 COVERAGE_MODE = atomic
 .PHONY: test-coverage test-coverage-xml test-coverage-lcov

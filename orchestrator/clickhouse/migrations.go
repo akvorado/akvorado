@@ -84,6 +84,21 @@ func (c *Component) migrateDatabase() error {
 				fmt.Sprintf("add SrcCountry/DstCountry to ORDER BY for resolution %s", resolution.Interval),
 				c.migrationStepFixOrderByCountry(resolution),
 			}, {
+				fmt.Sprintf("add DstASPath columns to flows table with resolution %s", resolution.Interval),
+				c.migrationStepAddDstASPathColumns(resolution),
+			},
+		}...)
+		if resolution.Interval == 0 {
+			steps = append(steps, migrationStepWithDescription{
+				"add DstCommunities column to flows table",
+				c.migrationStepAddDstCommunitiesColumn,
+			}, migrationStepWithDescription{
+				"add DstLargeCommunities column to flows table",
+				c.migrationStepAddDstLargeCommunitiesColumn,
+			})
+		}
+		steps = append(steps, []migrationStepWithDescription{
+			{
 				fmt.Sprintf("create flows table consumer with resolution %s", resolution.Interval),
 				c.migrationsStepCreateFlowsConsumerTable(resolution),
 			}, {
@@ -96,6 +111,7 @@ func (c *Component) migrateDatabase() error {
 		{"create exporters view", c.migrationStepCreateExportersView},
 		{"create raw flows table", c.migrationStepCreateRawFlowsTable},
 		{"create raw flows consumer view", c.migrationStepCreateRawFlowsConsumerView},
+		{"create raw flows errors view", c.migrationStepCreateRawFlowsErrorsView},
 	}...)
 
 	count := 0
