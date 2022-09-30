@@ -71,12 +71,12 @@ message FlowMessagev3 {
   uint32 NextHopAS = 34;
   repeated uint32 DstASPath = 35;
   repeated uint32 DstCommunities = 36;
-  repeated LargeCommunity DstLargeCommunities = 37;
+  LargeCommunities DstLargeCommunities = 37;
 
-  message LargeCommunity {
-    uint32 ASN = 1;
-    uint32 LocalData1 = 2;
-    uint32 LocalData2 = 3;
+  message LargeCommunities {
+    repeated uint32 ASN = 1;
+    repeated uint32 LocalData1 = 2;
+    repeated uint32 LocalData2 = 3;
   }
 
   // Country
