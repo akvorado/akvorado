@@ -130,7 +130,8 @@ The following keys are accepted:
   connection should be kept
 
 If you are not interested in AS paths and communities, disabling them
-will decrease the memory usage of *Akvorado*.
+will decrease the memory usage of *Akvorado*, as well as the disk
+space used in ClickHouse.
 
 *Akvorado* supports receiving the AdjRIB-in, with or without
 filtering. It may also work with a LocRIB.
