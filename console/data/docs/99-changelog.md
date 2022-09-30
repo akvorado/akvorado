@@ -11,12 +11,13 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.6.0 - 2022-09-30
 
 This release features a BMP collector to grab BGP routes from one or
 several routers. The routes can be used to determine source and
 destination AS (instead of using GeoIP or information from the flows)
-but also the AS path and the communities.
+but also the AS paths and the communities. Check `inlet.bmp` and
+`inlet.core` configuration settings for more information.
 
 - ✨ *inlet*: BMP collector to get AS numbers, AS paths, and communities from BGP
 - ✨ *inlet*: add `inlet.snmp.agents` to override exporter IP address for SNMP queries
