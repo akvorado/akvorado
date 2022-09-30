@@ -262,6 +262,24 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 				t.Fatalf("Migrations not done")
 			}
 
+			// Compute hash for all tables
+			rows, err := chComponent.Query(context.Background(), `
+SELECT table, groupBitXor(cityHash64(name,type,position))
+FROM system.columns
+WHERE database = currentDatabase()
+GROUP BY table`)
+			if err != nil {
+				t.Fatalf("Query() error:\n%+v", err)
+			}
+			for rows.Next() {
+				var table string
+				var hash uint64
+				if err := rows.Scan(&table, &hash); err != nil {
+					t.Fatalf("Scan() error:\n%+v", err)
+				}
+				t.Logf("table %s hash is %d", table, hash)
+			}
+
 			// No migration should have been applied the last time
 			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_",
 				"applied_steps")
