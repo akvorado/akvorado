@@ -19,12 +19,14 @@ destination AS (instead of using GeoIP or information from the flows)
 but also the AS paths and the communities. Check `inlet.bmp` and
 `inlet.core` configuration settings for more information.
 
-- ✨ *inlet*: BMP collector to get AS numbers, AS paths, and communities from BGP
+- ✨ *inlet*: BMP collector to get AS numbers, AS paths, and communities from BGP [PR #155][]
 - ✨ *inlet*: add `inlet.snmp.agents` to override exporter IP address for SNMP queries
 - 🩹 *inlet*: handle sFlow specific interface number for locally
   originated/terminated traffic, discarded traffic and traffic sent to
   multiple interfaces.
 - 🌱 *build*: Docker image is built using Nix instead of Alpine
+
+[PR #155]: https://github.com/akvorado/akvorado/pull/155
 
 ## 1.5.8 - 2022-09-18
 
