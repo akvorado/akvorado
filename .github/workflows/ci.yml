@@ -18,7 +18,7 @@ jobs:
       - name: Fetch dependabot metadata
         if: ${{ github.actor == 'dependabot[bot]' }}
         id: metadata
-        uses: dependabot/fetch-metadata@v1.3.3
+        uses: dependabot/fetch-metadata@v1.3.4
     outputs:
       package-ecosystem: ${{ steps.metadata.outputs.package-ecosystem }}
 
