@@ -11,8 +11,7 @@ volumes:
 
 services:
   geoip:
-    # Put ACCOUNT_ID and LICENSE_KEY here, or provide them on the command-line
-    # (env GEOIPUPDATE_ACCOUNT_ID=... GEOIPUPDATE_LICENSE_KEY=... docker-compose ...)
+    # Put GEOIP_ACCOUNT_ID and GEOIP_LICENSE_KEY values in `.env` file.
     image: maxmindinc/geoipupdate:v4
     environment:
       - GEOIPUPDATE_ACCOUNT_ID
@@ -97,6 +96,9 @@ services:
     command: inlet http://akvorado-orchestrator:8080
     volumes:
       - akvorado-geoip:/usr/share/GeoIP:ro
+      # If you prefer to use geo IP databases from host, comment the
+      # above line and uncomment this one:
+      # - /usr/share/GeoIP:/usr/share/GeoIP:ro
       - akvorado-run:/run/akvorado
     labels:
       - traefik.enable=true
