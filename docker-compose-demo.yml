@@ -1,0 +1,19 @@
+---
+version: "3"
+
+services:
+  akvorado-exporter0: &exporter
+    image: ghcr.io/akvorado/akvorado:latest
+    restart: unless-stopped
+    command: demo-exporter http://akvorado-orchestrator:8080#0
+    depends_on:
+      - akvorado-inlet
+  akvorado-exporter1:
+    <<: *exporter
+    command: demo-exporter http://akvorado-orchestrator:8080#1
+  akvorado-exporter2:
+    <<: *exporter
+    command: demo-exporter http://akvorado-orchestrator:8080#2
+  akvorado-exporter3:
+    <<: *exporter
+    command: demo-exporter http://akvorado-orchestrator:8080#3

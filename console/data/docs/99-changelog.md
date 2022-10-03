@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🌱 *docker*: Split demo exporters out of `docker-compose.yml`.
+
 ## 1.6.0 - 2022-09-30
 
 This release features a BMP collector to grab BGP routes from one or

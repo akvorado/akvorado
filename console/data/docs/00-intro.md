@@ -16,9 +16,8 @@ only requirement is to have
 [Docker](https://docs.docker.com/get-docker/) and [Docker
 Compose](https://docs.docker.com/compose/install/). Grab the latest
 tarball from the [release page on
-GitHub](https://github.com/akvorado/akvorado/releases), unpack
-it, rename the target directory to `akvorado`, then run the
-`docker-compose` command:
+GitHub](https://github.com/akvorado/akvorado/releases), unpack it,
+then run the `docker-compose` command:
 
 ```console
 # docker-compose up
@@ -27,8 +26,8 @@ it, rename the target directory to `akvorado`, then run the
 Once running, *Akvorado* web interface should be running on port 8080.
 
 A few synthetic flows are generated in the background. They can be
-disabled by removing the `akvorado-exporter*` services from
-`docker-compose.yml`, or by stopping them with `docker-compose stop
+disabled by removing the `:docker-compose-demo.yml` string from
+`.env`, or by stopping them with `docker-compose stop
 akvorado-exporter{1,2,3,4}`, or by removing the associated
 configuration in `akvorado.yaml`.
 
