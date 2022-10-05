@@ -470,12 +470,17 @@ The main components of the console service are `http`, `console`,
 `authentication` and `database`. `http` accepts the [same
 configuration](#http) as for the inlet service.
 
-The console itself accepts the `default-visualize-options` and the
-`homepage-top-widgets` keys. The first one defines default options for
-the "visualize" tab and the second one defines the widgets to display
-on the home page (among `src-as`, `dst-as`, `src-country`,
-`dst-country`, `exporter`, `protocol`, `etype`, `src-port`, and
-`dst-port`). Here is an example:
+The console itself accepts the following keys:
+
+ - `default-visualize-options` to define default options for the
+   "visualize" tab and the second one defines the widgets to display
+   on the home page (among `src-as`, `dst-as`, `src-country`,
+   `dst-country`, `exporter`, `protocol`, `etype`, `src-port`, and
+   `dst-port`)
+ - `homepage-top-widgets` to define the widgets to display on the home page
+ - `dimensions-limit` to set the upper limit of the number of returned dimensions
+
+Here is an example:
 
 ```yaml
 console:

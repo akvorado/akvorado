@@ -19,6 +19,8 @@ type Configuration struct {
 	DefaultVisualizeOptions VisualizeOptionsConfiguration
 	// HomepageTopWidgets defines the list of widgets to display on the home page.
 	HomepageTopWidgets []string `validate:"dive,oneof=src-as dst-as src-country dst-country exporter protocol etype src-port dst-port"`
+	// DimensionsLimit put an upper limit to the number of dimensions to return.
+	DimensionsLimit int `validate:"min=10"`
 }
 
 // VisualizeOptionsConfiguration defines options for the "visualize" tab.
@@ -43,6 +45,7 @@ func DefaultConfiguration() Configuration {
 			Dimensions: []queryColumn{queryColumnSrcAS},
 		},
 		HomepageTopWidgets: []string{"src-as", "src-port", "protocol", "src-country", "etype"},
+		DimensionsLimit:    50,
 	}
 }
 

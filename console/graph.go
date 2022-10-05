@@ -21,7 +21,7 @@ type graphHandlerInput struct {
 	End            time.Time     `json:"end" binding:"required,gtfield=Start"`
 	Points         uint          `json:"points" binding:"required,min=5,max=2000"` // minimum number of points
 	Dimensions     []queryColumn `json:"dimensions"`                               // group by ...
-	Limit          int           `json:"limit" binding:"min=1,max=50"`             // limit product of dimensions
+	Limit          int           `json:"limit" binding:"min=1"`                    // limit product of dimensions
 	Filter         queryFilter   `json:"filter"`                                   // where ...
 	Units          string        `json:"units" binding:"required,oneof=pps l2bps l3bps"`
 	Bidirectional  bool          `json:"bidirectional"`
@@ -209,6 +209,12 @@ func (c *Component) graphHandlerFunc(gc *gin.Context) {
 	var input graphHandlerInput
 	if err := gc.ShouldBindJSON(&input); err != nil {
 		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
+		return
+	}
+	if input.Limit > c.config.DimensionsLimit {
+		gc.JSON(http.StatusBadRequest,
+			gin.H{"message": fmt.Sprintf("Limit is set beyond maximum value (%d)",
+				c.config.DimensionsLimit)})
 		return
 	}
 

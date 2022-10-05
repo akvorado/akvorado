@@ -13,7 +13,9 @@ identified with a specific icon:
 
 ## Unreleased
 
-- 🌱 *docker*: Split demo exporters out of `docker-compose.yml`.
+- 🌱 *docker*: Split demo exporters out of `docker-compose.yml`
+- 🌱 *console*: Make the upper limit for dimensions configurable
+  (`console.dimensions-limit`)
 
 ## 1.6.0 - 2022-09-30
 
@@ -27,7 +29,7 @@ but also the AS paths and the communities. Check `inlet.bmp` and
 - ✨ *inlet*: add `inlet.snmp.agents` to override exporter IP address for SNMP queries
 - 🩹 *inlet*: handle sFlow specific interface number for locally
   originated/terminated traffic, discarded traffic and traffic sent to
-  multiple interfaces.
+  multiple interfaces
 - 🌱 *build*: Docker image is built using Nix instead of Alpine
 
 [PR #155]: https://github.com/akvorado/akvorado/pull/155
