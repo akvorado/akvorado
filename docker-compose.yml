@@ -56,8 +56,8 @@ services:
       - traefik.http.routers.kafka-ui.entrypoints=private
       - traefik.http.routers.kafka-ui.rule=PathPrefix(`/kafka-ui`)
 
-  # Choose one of the two options: build from source, or download
-  # latest stable release from GitHub.
+  # If you need to build from the source, uncomment the build option
+  # here and use `docker-compose build akvorado-service`.
   akvorado-service: &akvorado-image
     # build: {context: .}
     image: ghcr.io/akvorado/akvorado:latest
