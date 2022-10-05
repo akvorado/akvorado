@@ -12,7 +12,7 @@ import (
 // ConvertGoflowToFlowMessage a flow message from goflow2 to our own
 // format.
 func ConvertGoflowToFlowMessage(input *goflowmessage.FlowMessage) *FlowMessage {
-	return &FlowMessage{
+	result := FlowMessage{
 		TimeReceived:     input.TimeReceived,
 		SequenceNum:      input.SequenceNum,
 		SamplingRate:     input.SamplingRate,
@@ -44,9 +44,14 @@ func ConvertGoflowToFlowMessage(input *goflowmessage.FlowMessage) *FlowMessage {
 		DstAS:            input.DstAS,
 		SrcNet:           input.SrcNet,
 		DstNet:           input.DstNet,
-		NextHop:          ipCopy(input.NextHop),
 		NextHopAS:        input.NextHopAS,
 	}
+	if !net.IP(input.BgpNextHop).IsUnspecified() {
+		result.NextHop = ipCopy(input.BgpNextHop)
+	} else {
+		result.NextHop = ipCopy(input.NextHop)
+	}
+	return &result
 }
 
 // Ensure we copy the IP address. This is similar to To16(), except
