@@ -3,8 +3,10 @@
 }
 
 expression {
- "(" expression ")" |
  Not expression |
+ "(" expression ")" |
+ "(" expression ")" And expression |
+ "(" expression ")" Or expression |
  comparisonExpression And expression |
  comparisonExpression Or expression |
  comparisonExpression

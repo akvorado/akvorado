@@ -107,3 +107,11 @@ SrcAS = 12322 AND (DstAS = 1299 OR SrcAS = 29447)
 Filter(Column, Operator, Value(Literal),
   And, Column, Operator, Value(Literal),
   Or, Column, Operator, Value(Literal))
+
+# Expression with more parentheses
+(SrcAS = 12322 OR DstAS = 174) AND (DstAS = 1299 OR SrcAS = 29447)
+==>
+Filter(Column, Operator, Value(Literal),
+  Or, Column, Operator, Value(Literal),
+  And, Column, Operator, Value(Literal),
+  Or, Column, Operator, Value(Literal))
