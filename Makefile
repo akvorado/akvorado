@@ -126,17 +126,19 @@ changelog.md: docs/99-changelog.md # To be used by GitHub actions only.
 # Tests
 
 TEST_TARGETS := test-short test-verbose test-race
-.PHONY: $(TEST_TARGETS) check test tests
+.PHONY: $(TEST_TARGETS) check test tests test-js
 test-short:   ARGS=-short        ## Run only short tests
 test-verbose: ARGS=-v            ## Run tests in verbose mode with coverage reporting
 test-race:    CGO_ENABLED=1 ARGS=-race         ## Run tests with race detector
 $(TEST_TARGETS): NAME=$(MAKECMDGOALS:test-%=%)
 $(TEST_TARGETS): test
-check test tests: fmt lint $(GENERATED) | $(GOTESTSUM) ; $(info $(M) running $(NAME:%=% )tests…) @ ## Run tests
+check test tests: fmt lint $(GENERATED) test-js | $(GOTESTSUM) ; $(info $(M) running $(NAME:%=% )tests…) @ ## Run tests
 	$Q mkdir -p test
 	$Q $(GOTESTSUM) --junitfile test/tests.xml -- \
 		-timeout $(TIMEOUT)s \
 		$(ARGS) $(PKGS)
+test-js: console/frontend/node_modules ; $(info $(M) running JS tests…) @ ## Run JS tests
+	$Q cd console/frontend && npm run --silent test
 .PHONY: test-bench
 test-bench: $(GENERATED) ; $(info $(M) running benchmarks…) @ ## Run benchmarks
 	$Q $(GOTESTSUM) -f standard-quiet -- --timeout $(TIMEOUT)s -run=__absolutelynothing__ -bench=. $(PKGS)

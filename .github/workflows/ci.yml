@@ -123,8 +123,8 @@ jobs:
         with:
           setup-go: false
           node-version: ${{ matrix.node-version }}
-      - name: Build JS frontend
-        run: make console/data/frontend
+      - name: Test JS frontend
+        run: make test-js
 
   docker:
     name: 🐋 Build Docker images

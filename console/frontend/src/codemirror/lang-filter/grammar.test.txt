@@ -1,0 +1,109 @@
+# Simple expression using InIfBoundary
+InIfBoundary = external
+==>
+Filter(Column, Operator, Value(Literal))
+
+# Simple expression using SrcAS
+SrcAS = 12322
+==>
+Filter(Column, Operator, Value(Literal))
+
+# Simple expression using a quoted string
+InIfProvider = "something"
+==>
+Filter(Column, Operator, Value(String))
+
+# Simple expression using a single quoted string
+ExporterName='something'
+==>
+Filter(Column, Operator, Value(String))
+
+# AND expression
+SrcAS = AS12322 AND InIfProvider = "something"
+==>
+Filter(Column, Operator, Value(Literal), And, Column, Operator, Value(String))
+
+# OR expression
+SrcAS = AS12322 OR InIfProvider = "something"
+==>
+Filter(Column, Operator, Value(Literal), Or, Column, Operator, Value(String))
+
+# NOT expression
+NOT InIfProvider = "something"
+==>
+Filter(Not, Column, Operator, Value(String))
+
+# AND NOT expression
+SrcAS = AS12322 AND NOT InIfProvider = "something"
+==>
+Filter(Column, Operator, Value(Literal), And, Not, Column, Operator, Value(String))
+
+# IN operator
+ExporterName IN ("something","something else")
+==>
+Filter(Column, Operator, Value(
+  ValueLParen,
+    ListOfValues(ListOfValues(String), ValueComma, String),
+  ValueRParen))
+
+# IN operator without spaces
+ExporterName IN("something","something else")
+==>
+Filter(Column, Operator, Value(
+  ValueLParen,
+    ListOfValues(ListOfValues(String), ValueComma, String),
+  ValueRParen))
+
+# IPv4 address
+ExporterAddress=203.0.113.1
+==>
+Filter(Column, Operator, Value(Literal))
+
+# IPv6 address
+ExporterAddress=2001:db8:0::1
+==>
+Filter(Column, Operator, Value(Literal))
+
+# << Operator
+ExporterAddress << 2001:db8:0::/64
+==>
+Filter(Column, Operator, Value(Literal))
+
+# Quoted string with spaces
+OutIfDescription='Some other description'
+==>
+Filter(Column, Operator, Value(String))
+
+# Comments
+OutIfDescription='Some other description' -- one comment
+==>
+Filter(Column, Operator, Value(String), LineComment)
+
+# Multiline with comments
+-- Example of commented request
+-- Here we go
+DstPort > 1024 -- Non-privileged port
+AND SrcAS = AS12322 -- Proxad ASN
+==>
+Filter(LineComment, LineComment,
+ Column, Operator, Value(Literal), LineComment
+ And, Column, Operator, Value(Literal), LineComment)
+
+# DstCommunities
+DstCommunities = 65000:100
+==>
+Filter(Column, Operator, Value(Literal))
+
+# AND and OR operators
+SrcAS = 12322 AND DstAS = 1299 OR SrcAS = 29447
+==>
+Filter(Column, Operator, Value(Literal),
+  And, Column, Operator, Value(Literal),
+  Or, Column, Operator, Value(Literal))
+
+# Expression with parentheses
+SrcAS = 12322 AND (DstAS = 1299 OR SrcAS = 29447)
+==>
+Filter(Column, Operator, Value(Literal),
+  And, Column, Operator, Value(Literal),
+  Or, Column, Operator, Value(Literal))
