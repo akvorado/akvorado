@@ -23,7 +23,7 @@ then run the `docker-compose` command:
 # docker-compose up
 ```
 
-Once running, *Akvorado* web interface should be running on port 8080.
+Once running, *Akvorado* web interface should be running on port 8081.
 
 A few synthetic flows are generated in the background. They can be
 disabled by removing the `:docker-compose-demo.yml` string from
