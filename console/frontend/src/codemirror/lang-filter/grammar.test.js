@@ -10,7 +10,7 @@ const caseFile = path.join(
   "grammar.test.txt"
 );
 
-describe("filter parser tests", () => {
+describe("filter parsing", () => {
   for (let { name, run } of fileTests(
     fs.readFileSync(caseFile, "utf8"),
     "grammar.test.txt"
