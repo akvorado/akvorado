@@ -25,7 +25,7 @@ require (
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-isatty v0.0.16
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/netsampler/goflow2 v1.1.0
+	github.com/netsampler/goflow2 v1.1.1-0.20221008154147-57fad2e0c837
 	github.com/opencontainers/image-spec v1.0.2
 	github.com/oschwald/maxminddb-golang v1.10.0
 	github.com/osrg/gobgp/v3 v3.7.0
@@ -128,5 +128,4 @@ require (
 replace (
 	github.com/benbjohnson/clock => github.com/vincentbernat/go-clock v0.0.0-20220922224448-739bd11b5833
 	github.com/kentik/patricia => github.com/vincentbernat/patricia v0.0.0-20220923091046-b376a1167a94
-	github.com/netsampler/goflow2 => github.com/vincentbernat/goflow2 v1.0.5-0.20221003201434-c5d731004ee0
 )
