@@ -62,8 +62,8 @@ func (c *Component) serveConnection(conn *net.TCPConn) error {
 	// Reading from connection
 	c.handleConnectionUp(exporter)
 	init := false
+	header := make([]byte, bmp.BMP_HEADER_SIZE)
 	for {
-		header := make([]byte, bmp.BMP_HEADER_SIZE)
 		_, err := io.ReadFull(conn, header)
 		if err != nil {
 			if c.t.Alive() && err != io.EOF {
