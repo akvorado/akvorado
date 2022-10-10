@@ -25,7 +25,6 @@ func (c *Component) serveConnection(conn *net.TCPConn) error {
 	conn.SetLinger(0)
 
 	// Stop the connection when exiting this method or when dying
-	conn.CloseWrite()
 	stop := make(chan struct{})
 	c.t.Go(func() error {
 		select {
@@ -35,6 +34,7 @@ func (c *Component) serveConnection(conn *net.TCPConn) error {
 		case <-c.t.Dying():
 			// No need to clean up
 		}
+		conn.CloseWrite()
 		conn.CloseRead()
 		c.metrics.closedConnections.WithLabelValues(exporterStr).Inc()
 		return nil

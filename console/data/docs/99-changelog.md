@@ -14,6 +14,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🩹 *inlet*: fix SrcAS when receiving flows with sFlow
+- 🩹 *inlet*: do not half-close BMP connection (a remote IOS XR closes its own end)
 - 🌱 *docker*: Split demo exporters out of `docker-compose.yml`
 - 🌱 *console*: Make the upper limit for dimensions configurable
   (`console.dimensions-limit`)
