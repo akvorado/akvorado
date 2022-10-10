@@ -92,6 +92,7 @@ services:
     ports:
       - 2055:2055/udp
       - 6343:6343/udp
+      - 10179:10179/tcp
     restart: unless-stopped
     command: inlet http://akvorado-orchestrator:8080
     volumes:
