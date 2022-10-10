@@ -137,8 +137,11 @@ check test tests: fmt lint $(GENERATED) test-js | $(GOTESTSUM) ; $(info $(M) run
 	$Q $(GOTESTSUM) --junitfile test/tests.xml -- \
 		-timeout $(TIMEOUT)s \
 		$(ARGS) $(PKGS)
-test-js: console/frontend/node_modules ; $(info $(M) running JS tests…) @ ## Run JS tests
+test-js: .test-js~ ## Run JS tests
+.test-js~: console/frontend/node_modules
+.test-js~: $(shell $(LSFILES) console/frontend 2> /dev/null) ; $(info $(M) running JS tests…)
 	$Q cd console/frontend && npm run --silent test
+	$Q touch $@
 .PHONY: test-bench
 test-bench: $(GENERATED) ; $(info $(M) running benchmarks…) @ ## Run benchmarks
 	$Q $(GOTESTSUM) -f standard-quiet -- --timeout $(TIMEOUT)s -run=__absolutelynothing__ -bench=. $(PKGS)
