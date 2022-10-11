@@ -11,12 +11,12 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.6.1 - 2022-10-11
 
 - 🩹 *inlet*: fix SrcAS when receiving flows with sFlow
 - 🩹 *inlet*: do not half-close BMP connection (a remote IOS XR closes its own end)
-- 🌱 *docker*: Split demo exporters out of `docker-compose.yml`
-- 🌱 *console*: Make the upper limit for dimensions configurable
+- 🌱 *docker*: split demo exporters out of `docker-compose.yml`
+- 🌱 *console*: make the upper limit for dimensions configurable
   (`console.dimensions-limit`)
 
 ## 1.6.0 - 2022-09-30
