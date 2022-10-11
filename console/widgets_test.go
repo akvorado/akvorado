@@ -24,7 +24,7 @@ func TestWidgetLastFlow(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockRows := mocks.NewMockRows(ctrl)
 	mockConn.EXPECT().Query(gomock.Any(),
-		`SELECT * FROM flows WHERE TimeReceived = (SELECT MAX(TimeReceived) FROM flows) LIMIT 1`).
+		gomock.Any()).
 		Return(mockRows, nil)
 	mockRows.EXPECT().Next().Return(true)
 	mockRows.EXPECT().Close()

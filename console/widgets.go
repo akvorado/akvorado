@@ -17,7 +17,18 @@ import (
 
 func (c *Component) widgetFlowLastHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
-	query := `SELECT * FROM flows WHERE TimeReceived = (SELECT MAX(TimeReceived) FROM flows) LIMIT 1`
+	query := `
+SELECT *
+EXCEPT (DstCommunities, DstLargeCommunities)
+REPLACE
+ arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':',
+                      toString(bitAnd(c, 0xffff))), DstCommunities) AS DstCommunities_,
+ arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':',
+                      toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':',
+                      toString(bitAnd(c, 0xffffffff))), DstLargeCommunities) AS DstLargeCommunities_
+FROM flows
+WHERE TimeReceived=(SELECT MAX(TimeReceived) FROM flows)
+LIMIT 1`
 	gc.Header("X-SQL-Query", query)
 	// Do not increase counter for this one.
 	rows, err := c.d.ClickHouseDB.Conn.Query(ctx, query)
