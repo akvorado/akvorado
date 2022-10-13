@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -84,6 +85,70 @@ func TestNetworkNamesUnmarshalHook(t *testing.T) {
 			Error:         true,
 		},
 	}, helpers.DiffFormatter(reflect.TypeOf(helpers.SubnetMap[NetworkAttributes]{}), fmt.Sprint))
+}
+
+func TestNetworkSourceDecode(t *testing.T) {
+	helpers.TestConfigurationDecode(t, helpers.ConfigurationDecodeCases{
+		{
+			Description: "Empty",
+			Initial:     func() interface{} { return NetworkSource{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"url":      "https://example.net",
+					"interval": "10m",
+				}
+			},
+			Expected: NetworkSource{
+				URL:      "https://example.net",
+				Interval: 10 * time.Minute,
+			},
+		}, {
+			Description: "Simple transform",
+			Initial:     func() interface{} { return NetworkSource{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"url":       "https://example.net",
+					"interval":  "10m",
+					"transform": ".[]",
+				}
+			},
+			Expected: NetworkSource{
+				URL:       "https://example.net",
+				Interval:  10 * time.Minute,
+				Transform: MustParseTransformQuery(".[]"),
+			},
+		}, {
+			Description: "Complex transform",
+			Initial:     func() interface{} { return NetworkSource{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"url":      "https://example.net",
+					"interval": "10m",
+					"transform": `
+.prefixes[] | {prefix: .ip_prefix, tenant: "amazon", region: .region, role: .service|ascii_downcase}
+`,
+				}
+			},
+			Expected: NetworkSource{
+				URL:      "https://example.net",
+				Interval: 10 * time.Minute,
+				Transform: MustParseTransformQuery(`
+.prefixes[] | {prefix: .ip_prefix, tenant: "amazon", region: .region, role: .service|ascii_downcase}
+`),
+			},
+		}, {
+			Description: "Incorrect transform",
+			Initial:     func() interface{} { return NetworkSource{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"url":       "https://example.net",
+					"interval":  "10m",
+					"transform": "878778&&",
+				}
+			},
+			Error: true,
+		},
+	}, helpers.DiffFormatter(reflect.TypeOf(TransformQuery{}), fmt.Sprint), helpers.DiffZero)
 }
 
 func TestDefaultConfiguration(t *testing.T) {

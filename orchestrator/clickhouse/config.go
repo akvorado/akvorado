@@ -11,12 +11,15 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/kafka"
 
+	"github.com/itchyny/gojq"
 	"github.com/mitchellh/mapstructure"
 )
 
 // Configuration describes the configuration for the ClickHouse configurator.
 type Configuration struct {
 	clickhousedb.Configuration `mapstructure:",squash" yaml:"-,inline"`
+	// SkipMigrations tell if we should skip migrations.
+	SkipMigrations bool
 	// Kafka describes Kafka-specific configuration
 	Kafka KafkaConfiguration
 	// Resolutions describe the various resolutions to use to
@@ -31,6 +34,14 @@ type Configuration struct {
 	// Networks is a mapping from IP networks to attributes. It is used
 	// to instantiate the SrcNet* and DstNet* columns.
 	Networks *helpers.SubnetMap[NetworkAttributes] `validate:"omitempty,dive"`
+	// NetworkSources defines a set of remote network
+	// definitions to map IP networks to attributes. It is used to
+	// instantiate the SrcNet* and DstNet* columns. The results
+	// are overridden by the content of Networks.
+	NetworkSources map[string]NetworkSource `validate:"dive"`
+	// NetworkSourceTimeout tells how long to wait for network
+	// sources to be ready. 503 is returned when not.
+	NetworkSourcesTimeout time.Duration `validate:"min=0"`
 	// OrchestratorURL allows one to override URL to reach
 	// orchestrator from Clickhouse
 	OrchestratorURL string `validate:"isdefault|url"`
@@ -67,7 +78,8 @@ func DefaultConfiguration() Configuration {
 			{5 * time.Minute, 3 * 30 * 24 * time.Hour}, // 90 days
 			{time.Hour, 12 * 30 * 24 * time.Hour},      // 1 year
 		},
-		MaxPartitions: 50,
+		MaxPartitions:         50,
+		NetworkSourcesTimeout: 10 * time.Second,
 	}
 }
 
@@ -100,6 +112,50 @@ func NetworkAttributesUnmarshallerHook() mapstructure.DecodeHookFunc {
 		}
 		return from.Interface(), nil
 	}
+}
+
+// NetworkSource defines a remote network definition.
+type NetworkSource struct {
+	// URL is the URL to fetch to get remote network definition.
+	// It should provide a JSON file.
+	URL string `validate:"url"`
+	// Proxy is set to true if a proxy should be used.
+	Proxy bool
+	// Timeout tells the maximum time the remote request should take
+	Timeout time.Duration `validate:"isdefault|min=1s"`
+	// Transform is a jq string to transform the received JSON
+	// data into a list of network attributes.
+	Transform TransformQuery
+	// Interval tells how much time to wait before updating the source.
+	Interval time.Duration `validate:"min=1m"`
+}
+
+// TransformQuery represents a jq query to transform data.
+type TransformQuery struct {
+	*gojq.Query
+}
+
+// UnmarshalText parses a jq query.
+func (jq *TransformQuery) UnmarshalText(text []byte) error {
+	q, err := gojq.Parse(string(text))
+	if err != nil {
+		return err
+	}
+	*jq = TransformQuery{q}
+	return nil
+}
+
+// String turns a jq query into a string.
+func (jq TransformQuery) String() string {
+	if jq.Query != nil {
+		return jq.Query.String()
+	}
+	return ".[]"
+}
+
+// MarshalText turns a jq query into a string.
+func (jq TransformQuery) MarshalText() ([]byte, error) {
+	return []byte(jq.String()), nil
 }
 
 func init() {

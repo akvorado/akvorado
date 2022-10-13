@@ -38,7 +38,7 @@ require (
 	github.com/ti-mo/conntrack v0.4.0
 	github.com/yuin/goldmark v1.5.2
 	github.com/yuin/goldmark-highlighting v0.0.0-20220208100518-594be1970594
-	golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab
+	golang.org/x/sys v0.0.0-20220829200755-d48e67d00261
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
@@ -75,6 +75,8 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-uuid v1.0.2 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/itchyny/gojq v0.12.9 // indirect
+	github.com/itchyny/timefmt-go v0.1.4 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
 	github.com/jcmturner/gofork v1.0.0 // indirect

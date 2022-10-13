@@ -55,10 +55,24 @@ func (c *Component) registerHTTPHandlers() error {
 	// networks.csv
 	c.d.HTTP.AddHandler("/api/v0/orchestrator/clickhouse/networks.csv",
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			select {
+			case <-c.networkSourcesReady:
+			case <-time.After(c.config.NetworkSourcesTimeout):
+				w.WriteHeader(http.StatusServiceUnavailable)
+				return
+			}
 			w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 			w.WriteHeader(http.StatusOK)
 			wr := csv.NewWriter(w)
 			wr.Write([]string{"network", "name", "role", "site", "region", "tenant"})
+			c.networkSourcesLock.RLock()
+			defer c.networkSourcesLock.RUnlock()
+			for _, ss := range c.networkSources {
+				for _, v := range ss {
+					wr.Write([]string{v.Prefix.String(),
+						v.Name, v.Role, v.Site, v.Region, v.Tenant})
+				}
+			}
 			if c.config.Networks != nil {
 				for k, v := range c.config.Networks.ToMap() {
 					wr.Write([]string{k, v.Name, v.Role, v.Site, v.Region, v.Tenant})

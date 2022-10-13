@@ -129,10 +129,7 @@ func (c *Component) Start() error {
 	if c.config.Listen == "" {
 		return nil
 	}
-	server := &http.Server{
-		Addr:    c.config.Listen,
-		Handler: c.mux,
-	}
+	server := &http.Server{Handler: c.mux}
 
 	// Most of the time, if we have an error, it's here!
 	c.r.Info().Str("listen", c.config.Listen).Msg("starting HTTP server")
@@ -141,6 +138,7 @@ func (c *Component) Start() error {
 		return fmt.Errorf("unable to listen to %v: %w", c.config.Listen, err)
 	}
 	c.address = listener.Addr()
+	server.Addr = listener.Addr().String()
 
 	// Start serving requests
 	c.t.Go(func() error {

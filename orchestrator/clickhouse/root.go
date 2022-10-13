@@ -5,9 +5,13 @@
 package clickhouse
 
 import (
+	"context"
 	"sort"
+	"sync"
+	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/itchyny/gojq"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/clickhousedb"
@@ -18,19 +22,16 @@ import (
 
 // Component represents the ClickHouse configurator.
 type Component struct {
-	r      *reporter.Reporter
-	d      *Dependencies
-	t      tomb.Tomb
-	config Configuration
+	r       *reporter.Reporter
+	d       *Dependencies
+	t       tomb.Tomb
+	config  Configuration
+	metrics metrics
 
-	metrics struct {
-		migrationsRunning    reporter.Gauge
-		migrationsApplied    reporter.Counter
-		migrationsNotApplied reporter.Counter
-		migrationsVersion    reporter.Gauge
-	}
-
-	migrationsDone chan bool
+	migrationsDone      chan bool // closed when migrations are done
+	networkSourcesReady chan bool // closed when all network sources are ready
+	networkSourcesLock  sync.RWMutex
+	networkSources      map[string][]externalNetworkAttributes
 }
 
 // Dependencies define the dependencies of the ClickHouse configurator.
@@ -43,38 +44,17 @@ type Dependencies struct {
 // New creates a new ClickHouse component.
 func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
 	c := Component{
-		r:              r,
-		d:              &dependencies,
-		config:         configuration,
-		migrationsDone: make(chan bool),
+		r:                   r,
+		d:                   &dependencies,
+		config:              configuration,
+		migrationsDone:      make(chan bool),
+		networkSourcesReady: make(chan bool),
+		networkSources:      make(map[string][]externalNetworkAttributes),
 	}
+	c.initMetrics()
 	if err := c.registerHTTPHandlers(); err != nil {
 		return nil, err
 	}
-	c.metrics.migrationsRunning = c.r.Gauge(
-		reporter.GaugeOpts{
-			Name: "migrations_running",
-			Help: "Database migrations in progress.",
-		},
-	)
-	c.metrics.migrationsApplied = c.r.Counter(
-		reporter.CounterOpts{
-			Name: "migrations_applied_steps",
-			Help: "Number of migration steps applied",
-		},
-	)
-	c.metrics.migrationsNotApplied = c.r.Counter(
-		reporter.CounterOpts{
-			Name: "migrations_notapplied_steps",
-			Help: "Number of migration steps not applied",
-		},
-	)
-	c.metrics.migrationsVersion = c.r.Gauge(
-		reporter.GaugeOpts{
-			Name: "migrations_version",
-			Help: "Current version for migrations.",
-		},
-	)
 
 	// Ensure resolutions are sorted and we have a 0-interval resolution first.
 	sort.Slice(c.config.Resolutions, func(i, j int) bool {
@@ -90,6 +70,8 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 // Start the ClickHouse component.
 func (c *Component) Start() error {
 	c.r.Info().Msg("starting ClickHouse component")
+
+	// Database migration
 	c.metrics.migrationsRunning.Set(1)
 	c.t.Go(func() error {
 		customBackoff := backoff.NewExponentialBackOff()
@@ -97,9 +79,11 @@ func (c *Component) Start() error {
 		ticker := backoff.NewTicker(customBackoff)
 		defer ticker.Stop()
 		for {
-			c.r.Info().Msg("attempting database migration")
-			if err := c.migrateDatabase(); err == nil {
-				return nil
+			if !c.config.SkipMigrations {
+				c.r.Info().Msg("attempting database migration")
+				if err := c.migrateDatabase(); err == nil {
+					return nil
+				}
 			}
 			select {
 			case <-c.t.Dying():
@@ -108,6 +92,85 @@ func (c *Component) Start() error {
 			}
 		}
 	})
+
+	// Network sources update
+	var notReadySources sync.WaitGroup
+	notReadySources.Add(len(c.config.NetworkSources))
+	go func() {
+		notReadySources.Wait()
+		close(c.networkSourcesReady)
+	}()
+	for name, source := range c.config.NetworkSources {
+		if source.Transform.Query == nil {
+			source.Transform.Query, _ = gojq.Parse(".")
+		}
+		if source.Timeout == 0 {
+			source.Timeout = time.Minute
+		}
+		c.t.Go(func() error {
+			c.metrics.networkSourceCount.WithLabelValues(name).Set(0)
+			newRetryTicker := func() *backoff.Ticker {
+				customBackoff := backoff.NewExponentialBackOff()
+				customBackoff.MaxElapsedTime = 0
+				customBackoff.MaxInterval = source.Interval
+				customBackoff.InitialInterval = source.Interval / 10
+				if customBackoff.InitialInterval > time.Second {
+					customBackoff.InitialInterval = time.Second
+				}
+				return backoff.NewTicker(customBackoff)
+			}
+			newRegularTicker := func() *time.Ticker {
+				return time.NewTicker(source.Interval)
+			}
+			retryTicker := newRetryTicker()
+			regularTicker := newRegularTicker()
+			regularTicker.Stop()
+			success := false
+			ready := false
+			defer func() {
+				if !success {
+					retryTicker.Stop()
+				} else {
+					regularTicker.Stop()
+				}
+				if !ready {
+					notReadySources.Done()
+				}
+			}()
+			for {
+				ctx, cancel := context.WithTimeout(c.t.Context(nil), source.Timeout)
+				count, err := c.updateNetworkSource(ctx, name, source)
+				cancel()
+				if err == nil {
+					c.metrics.networkSourceUpdates.WithLabelValues(name).Inc()
+					c.metrics.networkSourceCount.WithLabelValues(name).Set(float64(count))
+				} else {
+					c.metrics.networkSourceErrors.WithLabelValues(name, err.Error()).Inc()
+				}
+				if err == nil && !ready {
+					ready = true
+					notReadySources.Done()
+				}
+				if err == nil && !success {
+					// On success, change the timer to a regular timer interval
+					retryTicker.Stop()
+					regularTicker = newRegularTicker()
+					success = true
+				} else if err != nil && success {
+					// On failure, switch to the retry ticker
+					regularTicker.Stop()
+					retryTicker = newRetryTicker()
+					success = false
+				}
+				select {
+				case <-c.t.Dying():
+					return nil
+				case <-retryTicker.C:
+				case <-regularTicker.C:
+				}
+			}
+		})
+	}
 	return nil
 }
 

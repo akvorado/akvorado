@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- ✨ *orchestrator*: add `orchestrator.network-sources` to fetch network attributes with HTTP
+
 ## 1.6.1 - 2022-10-11
 
 - 🩹 *inlet*: fix SrcAS when receiving flows with sFlow

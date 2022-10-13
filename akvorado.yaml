@@ -34,6 +34,18 @@ clickhouse:
     2a01:db8:cafe:2::/64:
       name: ipv6-servers
       role: servers
+  network-sources: []
+  # Amazon AWS
+  # - url: https://ip-ranges.amazonaws.com/ip-ranges.json
+  #   interval: 6h
+  #   transform: |
+  #     (.prefixes + .ipv6_prefixes)[] |
+  #     { prefix: (.ip_prefix // .ipv6_prefix), tenant: "amazon", region: .region, role: .service|ascii_downcase }
+  # Google Cloud
+  # - url: https://www.gstatic.com/ipranges/cloud.json
+  #   interval: 6h
+  #   .prefixes[] |
+  #    { prefix: (.ipv4Prefix // .ipv6Prefix), tenant: "google-cloud", region: .scope }
 
 inlet:
   kafka:
