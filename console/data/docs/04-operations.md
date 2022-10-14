@@ -3,7 +3,9 @@
 ## Router configuration
 
 Each router should be configured to send flows to Akvorado inlet
-service and accepts SNMP requests.
+service and accepts SNMP requests. For routers not listed below, have
+a look at the [configuration
+snippets](https://github.com/kentik/config-snippets/) from Kentik.
 
 ### NCS 5500 and ASR 9000
 
