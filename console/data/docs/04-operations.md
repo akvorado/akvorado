@@ -95,9 +95,9 @@ router bgp 65400
 
 ### Juniper
 
-#### IPFIX
+#### Netflow
 
-For MX devices, you can use IPFIX to export flows.
+For MX and SRX devices, you can use Netflow v9 to export flows.
 
 ```junos
 groups {
@@ -134,7 +134,7 @@ forwarding-options {
               port 2055;
               autonomous-system-type origin;
               source-address 203.0.113.2;
-              version-ipfix {
+              version9 {
                 template {
                   ipv4;
                 }
@@ -151,7 +151,7 @@ forwarding-options {
               port 2055;
               autonomous-system-type origin;
               source-address 203.0.113.2;
-              version-ipfix {
+              version9 {
                 template {
                   ipv6;
                 }
@@ -176,7 +176,7 @@ chassis {
 }
 services {
   flow-monitoring {
-    version-ipfix {
+    version9 {
       template ipv4 {
         flow-active-timeout 10;
         flow-inactive-timeout 10;
@@ -228,6 +228,11 @@ routing-options {
   }
 }
 ```
+
+Another option would be IPFIX (replace `version9` by `version-ipfix`).
+However, Juniper includes only *total* counters for bytes and packets
+rather than using *delta* counters. *Akvorado* does not support such
+counters.
 
 #### sFlow
 
