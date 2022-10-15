@@ -125,10 +125,8 @@ changelog.md: docs/99-changelog.md # To be used by GitHub actions only.
 
 # Tests
 
-TEST_TARGETS := test-short test-verbose test-race
+TEST_TARGETS := test-race
 .PHONY: $(TEST_TARGETS) check test tests test-js
-test-short:   ARGS=-short        ## Run only short tests
-test-verbose: ARGS=-v            ## Run tests in verbose mode with coverage reporting
 test-race:    CGO_ENABLED=1 ARGS=-race         ## Run tests with race detector
 $(TEST_TARGETS): NAME=$(MAKECMDGOALS:test-%=%)
 $(TEST_TARGETS): test
