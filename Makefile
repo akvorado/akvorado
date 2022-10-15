@@ -15,15 +15,19 @@ M = $(shell if [ "$$(tput colors 2> /dev/null || echo 0)" -ge 8 ]; then printf "
 export CGO_ENABLED=0
 
 FLOW_VERSION := $(shell sed -n 's/^const CurrentSchemaVersion = //p' inlet/flow/schemas.go)
-GENERATED = \
+GENERATED_JS = \
+	console/frontend/node_modules \
+	console/frontend/data/fields.json
+GENERATED_GO = \
 	inlet/flow/decoder/flow-ANY.pb.go \
 	common/clickhousedb/mocks/mock_driver.go \
 	conntrackfixer/mocks/mock_conntrackfixer.go \
 	orchestrator/clickhouse/data/asns.csv \
-	console/filter/parser.go \
-	console/data/frontend \
-	console/frontend/node_modules \
-	console/frontend/data/fields.json
+	console/filter/parser.go
+GENERATED = \
+	$(GENERATED_GO) \
+	$(GENERATED_JS) \
+	console/data/frontend
 
 .PHONY: all
 all: fmt lint $(GENERATED) | $(BIN) ; $(info $(M) building executable…) @ ## Build program binary
@@ -50,9 +54,6 @@ $(BIN)/gocov: PACKAGE=github.com/axw/gocov/gocov@v1.1.0
 
 GOCOVXML = $(BIN)/gocov-xml
 $(BIN)/gocov-xml: PACKAGE=github.com/AlekSi/gocov-xml@latest
-
-GCOV2LCOV = $(BIN)/gcov2lcov
-$(BIN)/gcov2lcov: PACKAGE=github.com/jandelgado/gcov2lcov@latest
 
 GOTESTSUM = $(BIN)/gotestsum
 $(BIN)/gotestsum: PACKAGE=gotest.tools/gotestsum@latest
@@ -102,8 +103,7 @@ console/frontend/data/fields.json: console/query_consts.go ; $(info $(M) generat
 	$Q sed -En -e 's/^\tqueryColumn([a-zA-Z0-9]+)( .*|$$)/  "\1"/p' $< \
 		| sed -E -e '$$ ! s/$$/,/' -e '1s/^ */[/' -e '$$s/$$/]/' > $@
 	$Q test -s $@
-console/data/frontend: console/frontend/node_modules
-console/data/frontend: console/frontend/data/fields.json
+console/data/frontend: $(GENERATED_JS)
 console/data/frontend: $(shell $(LSFILES) console/frontend 2> /dev/null)
 console/data/frontend: ; $(info $(M) building console frontend…)
 	$Q cd console/frontend && npm run --silent build
@@ -125,33 +125,28 @@ changelog.md: docs/99-changelog.md # To be used by GitHub actions only.
 
 # Tests
 
-TEST_TARGETS := test-race
-.PHONY: $(TEST_TARGETS) check test tests test-js
-test-race:    CGO_ENABLED=1 ARGS=-race         ## Run tests with race detector
-$(TEST_TARGETS): NAME=$(MAKECMDGOALS:test-%=%)
-$(TEST_TARGETS): test
-check test tests: fmt lint $(GENERATED) test-js | $(GOTESTSUM) ; $(info $(M) running $(NAME:%=% )tests…) @ ## Run tests
+.PHONY: check test tests test-race test-bench test-go test-js test-coverage test-coverage-xml
+check test tests: test-go test-js ## Run tests
+
+test-go test-bench test-race test-coverage: .fmt-go~ .lint-go~ $(GENERATED_GO)
+test-go: | $(GOTESTSUM) ; $(info $(M) running Go tests$(MORE)…) @ ## Run Go tests
 	$Q mkdir -p test
 	$Q $(GOTESTSUM) --junitfile test/tests.xml -- \
 		-timeout $(TIMEOUT)s \
 		$(ARGS) $(PKGS)
-test-js: .test-js~ ## Run JS tests
-.test-js~: console/frontend/node_modules
-.test-js~: $(shell $(LSFILES) console/frontend 2> /dev/null) ; $(info $(M) running JS tests…)
-	$Q cd console/frontend && npm run --silent test
-	$Q touch $@
-.PHONY: test-bench
-test-bench: $(GENERATED) ; $(info $(M) running benchmarks…) @ ## Run benchmarks
-	$Q $(GOTESTSUM) -f standard-quiet -- --timeout $(TIMEOUT)s -run=__absolutelynothing__ -bench=. $(PKGS)
-
-COVERAGE_MODE = atomic
-.PHONY: test-coverage test-coverage-xml test-coverage-lcov
-test-coverage: fmt lint $(GENERATED)
-test-coverage: | $(GOTESTSUM) ; $(info $(M) running coverage tests…) @ ## Run coverage tests
+test-race: CGO_ENABLED=1
+test-race: ARGS=-race
+test-race: MORE=, with race detector
+test-race: test-go  ## Run Go tests with race detector
+test-bench: | $(GOTESTSUM) ; $(info $(M) running benchmarks…) @ ## Run Go benchmarks
+	$Q $(GOTESTSUM) -f standard-quiet -- \
+		-timeout $(TIMEOUT)s -run=__absolutelynothing__ -bench=. \
+		$(PKGS)
+test-coverage: | $(GOTESTSUM) ; $(info $(M) running coverage tests…) @ ## Run Go coverage tests
 	$Q mkdir -p test
 	$Q $(GOTESTSUM) -- \
 		-coverpkg=$(shell echo $(PKGS) | tr ' ' ',') \
-		-covermode=$(COVERAGE_MODE) \
+		-covermode=atomic \
 		-coverprofile=test/profile.out.tmp $(PKGS)
 	$Q GENERATED=$$(awk -F: '(NR > 1) {print $$1}' test/profile.out.tmp \
 			| sort | uniq | sed "s+^$(MODULE)/++" \
@@ -165,8 +160,10 @@ test-coverage-xml: test-coverage | $(GOCOV) $(GOCOVXML)
 	$Q $(GOCOV) convert test/profile.out | $(GOCOVXML) > test/coverage.xml
 	@echo -n "Code coverage: "; \
 		echo "scale=1;$$(sed -En 's/^<coverage line-rate="([0-9.]+)".*/\1/p' test/coverage.xml) * 100 / 1" | bc -q
-test-coverage-lcov: test-coverage | $(GCOV2LCOV)
-	$Q $(GCOV2LCOV) -infile test/profile.out -outfile test/coverage.lcov
+
+test-js: .test-js~ ## Run JS tests
+test-js: $(shell $(LSFILES) console/frontend 2> /dev/null) ; $(info $(M) running JS tests…)
+	$Q cd console/frontend && npm run --silent test
 
 .PHONY: lint
 lint: .lint-go~ .lint-js~ ## Run linting
@@ -174,7 +171,7 @@ lint: .lint-go~ .lint-js~ ## Run linting
 	$Q $(REVIVE) -formatter friendly -set_exit_status ./...
 	$Q touch $@
 .lint-js~: $(shell $(LSFILES) '*.js' '*.vue' '*.html' 2> /dev/null)
-.lint-js~: console/frontend/node_modules ; $(info $(M) running jslint…)
+.lint-js~: $(GENERATED_JS) ; $(info $(M) running jslint…)
 	$Q cd console/frontend && npm run --silent lint
 	$Q touch $@
 
@@ -184,7 +181,7 @@ fmt: .fmt-go~ .fmt-js~ ## Format all source files
 	$Q $(GOIMPORTS) -local $(MODULE) -w $? < /dev/null
 	$Q touch $@
 .fmt-js~: $(shell $(LSFILES) '*.js' '*.vue' '*.html' 2> /dev/null)
-.fmt-js~: console/frontend/node_modules ; $(info $(M) formatting JS code…)
+.fmt-js~: $(GENERATED_JS) ; $(info $(M) formatting JS code…)
 	$Q cd console/frontend && npm run --silent format
 	$Q touch $@
 
