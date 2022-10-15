@@ -13,9 +13,9 @@ import (
 )
 
 // NewMock instantiantes a new authentication component
-func NewMock(t *testing.T, r *reporter.Reporter) *Component {
+func NewMock(t *testing.T, r *reporter.Reporter, config Configuration) *Component {
 	t.Helper()
-	c, err := New(r, DefaultConfiguration())
+	c, err := New(r, config)
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}

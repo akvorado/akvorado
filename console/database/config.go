@@ -9,6 +9,8 @@ type Configuration struct {
 	Driver string `validate:"required"`
 	// DSN defines the DSN to connect to the database
 	DSN string `validate:"required"`
+	// SavedFilters is a list of saved filters to include for all users
+	SavedFilters []BuiltinSavedFilter `validate:"dive"`
 }
 
 // DefaultConfiguration represents the default configuration for the console component.
@@ -17,4 +19,10 @@ func DefaultConfiguration() Configuration {
 		Driver: "sqlite",
 		DSN:    "file::memory:?cache=shared",
 	}
+}
+
+// BuiltinSavedFilter is a saved filter
+type BuiltinSavedFilter struct {
+	Description string `validate:"required"`
+	Content     string `validate:"required"`
 }

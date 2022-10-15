@@ -13,7 +13,7 @@ import (
 
 func TestSavedFilter(t *testing.T) {
 	r := reporter.NewMock(t)
-	c := NewMock(t, r)
+	c := NewMock(t, r, DefaultConfiguration())
 
 	// Create
 	if err := c.CreateSavedFilter(context.Background(), SavedFilter{
@@ -95,5 +95,54 @@ func TestSavedFilter(t *testing.T) {
 	}
 	if err := c.DeleteSavedFilter(context.Background(), SavedFilter{ID: 1}); err == nil {
 		t.Fatal("DeleteSavedFilter() no error")
+	}
+}
+
+func TestPopulateSavedFilters(t *testing.T) {
+	config := DefaultConfiguration()
+	config.SavedFilters = []BuiltinSavedFilter{
+		{
+			Description: "first filter",
+			Content:     "content of first filter",
+		}, {
+			Description: "second filter",
+			Content:     "content of second filter",
+		},
+	}
+	r := reporter.NewMock(t)
+	c := NewMock(t, r, config)
+
+	got, _ := c.ListSavedFilters(context.Background(), "marty")
+	if diff := helpers.Diff(got, []SavedFilter{
+		{
+			ID:          1,
+			User:        "__system",
+			Shared:      true,
+			Description: "first filter",
+			Content:     "content of first filter",
+		}, {
+			ID:          2,
+			User:        "__system",
+			Shared:      true,
+			Description: "second filter",
+			Content:     "content of second filter",
+		},
+	}); diff != "" {
+		t.Fatalf("ListSavedFilters() (-got, +want):\n%s", diff)
+	}
+
+	c.config.SavedFilters = c.config.SavedFilters[1:]
+	c.populate()
+	got, _ = c.ListSavedFilters(context.Background(), "marty")
+	if diff := helpers.Diff(got, []SavedFilter{
+		{
+			ID:          2,
+			User:        "__system",
+			Shared:      true,
+			Description: "second filter",
+			Content:     "content of second filter",
+		},
+	}); diff != "" {
+		t.Fatalf("ListSavedFilters() (-got, +want):\n%s", diff)
 	}
 }

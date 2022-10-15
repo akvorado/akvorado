@@ -49,6 +49,9 @@ func (c *Component) Start() error {
 	if err := c.db.AutoMigrate(&SavedFilter{}); err != nil {
 		return fmt.Errorf("cannot migrate database: %w", err)
 	}
+	if err := c.populate(); err != nil {
+		return err
+	}
 	return nil
 }
 

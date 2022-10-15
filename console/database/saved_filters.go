@@ -56,3 +56,44 @@ func (c *Component) DeleteSavedFilter(ctx context.Context, f SavedFilter) error 
 	}
 	return nil
 }
+
+const systemUser = "__system"
+
+// Populate populates the database with the builtin filters.
+func (c *Component) populate() error {
+	// Add new filters
+	for _, filter := range c.config.SavedFilters {
+		c.r.Debug().Msgf("add builtin filter %q", filter.Description)
+		savedFilter := SavedFilter{
+			User:        systemUser,
+			Shared:      true,
+			Description: filter.Description,
+			Content:     filter.Content,
+		}
+		result := c.db.Where(savedFilter).FirstOrCreate(&savedFilter)
+		if result.Error != nil {
+			return fmt.Errorf("unable add builtin filter: %w", result.Error)
+		}
+	}
+
+	// Remove old filters
+	var results []SavedFilter
+	result := c.db.Where(SavedFilter{User: systemUser, Shared: true}).Find(&results)
+	if result.Error != nil {
+		return fmt.Errorf("cannot get existing builtin filters: %w", result.Error)
+	}
+outer:
+	for _, result := range results {
+		for _, filter := range c.config.SavedFilters {
+			if filter.Description == result.Description && filter.Content == result.Content {
+				break outer
+			}
+		}
+		c.r.Info().Msgf("remove old builtin filter %q", result.Description)
+		if result := c.db.Delete(&result); result.Error != nil {
+			return fmt.Errorf("cannot delete old builtin filter: %w", result.Error)
+		}
+	}
+
+	return nil
+}

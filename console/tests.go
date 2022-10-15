@@ -33,7 +33,7 @@ func NewMock(t *testing.T, config Configuration) (*Component, *http.Component, *
 		ClickHouseDB: ch,
 		Clock:        mockClock,
 		Auth:         authentication.NewMock(t, r),
-		Database:     database.NewMock(t, r),
+		Database:     database.NewMock(t, r, database.DefaultConfiguration()),
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)

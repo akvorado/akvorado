@@ -567,6 +567,17 @@ database:
   dsn: /var/lib/akvorado/console.sqlite
 ```
 
+The database configuration also accepts a `saved-filters` key to
+populate the database with the provided filters. Each filter should
+have a `description` and a `content`:
+
+```yaml
+database:
+  saved-filters:
+    - description: From Netflix
+      content: InIfBoundary = external AND SrcAS = AS2906
+```
+
 ## Demo exporter service
 
 For testing purpose, it is possible to generate flows using the demo
