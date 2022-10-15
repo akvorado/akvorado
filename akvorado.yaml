@@ -82,6 +82,17 @@ inlet:
         ClassifyExternal()
       - ClassifyInternal()
 
+console:
+  database:
+    saved-filters:
+      - description: "From Netflix"
+        content: >-
+          InIfBoundary = external AND SrcAS = AS2906
+      - description: "From GAFAM"
+        content: >-
+          InIfBoundary = external AND
+          SrcAS IN (AS15169, AS16509, AS32934, AS6185, AS8075)
+
 # The remaining of this configuration file should be removed if you
 # don't want to get demo data.
 
