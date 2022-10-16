@@ -47,10 +47,12 @@ run tests:
   coverage: '/Code coverage: [0-9.]+/'
   artifacts:
     reports:
-      junit: test/tests.xml
+      junit:
+        - test/go/tests.xml
+        - test/js/tests.xml
       coverage_report:
         coverage_format: cobertura
-        path: test/coverage.xml
+        path: test/go/coverage.xml
 
 # To execute manually:
 #  gitlab-runner exec docker "run tests"
