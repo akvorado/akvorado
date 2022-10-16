@@ -43,7 +43,7 @@ run tests:
     - time make && ./bin/akvorado version
     - time make test
     - time make test-race || make test-race
-    - time make test-coverage-xml || make test-coverage-xml
+    - time make test-coverage || make test-coverage
   coverage: '/Code coverage: [0-9.]+/'
   artifacts:
     reports:

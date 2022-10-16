@@ -125,45 +125,48 @@ changelog.md: docs/99-changelog.md # To be used by GitHub actions only.
 
 # Tests
 
-.PHONY: check test tests test-race test-bench test-go test-js test-coverage test-coverage-xml
+.PHONY: check test tests test-race test-bench test-coverage
+.PHONY: test-go test-js test-coverage-go test-coverage-js
 check test tests: test-go test-js ## Run tests
+test-coverage: test-coverage-go test-coverage-js ## Run coverage tests
 
-test-go test-bench test-race test-coverage: .fmt-go~ .lint-go~ $(GENERATED_GO)
-test-go: | $(GOTESTSUM) ; $(info $(M) running Go tests$(MORE)…) @ ## Run Go tests
-	$Q mkdir -p test
-	$Q $(GOTESTSUM) --junitfile test/tests.xml -- \
+test-go test-bench test-race test-coverage-go: .fmt-go~ .lint-go~ $(GENERATED_GO)
+test-go: | $(GOTESTSUM) ; $(info $(M) running Go tests$(GOTEST_MORE)…) @ ## Run Go tests
+	$Q mkdir -p test/go
+	$Q $(GOTESTSUM) --junitfile test/go/tests.xml -- \
 		-timeout $(TIMEOUT)s \
-		$(ARGS) $(PKGS)
+		$(GOTEST_ARGS) $(PKGS)
 test-race: CGO_ENABLED=1
-test-race: ARGS=-race
-test-race: MORE=, with race detector
-test-race: test-go  ## Run Go tests with race detector
+test-race: GOTEST_ARGS=-race
+test-race: GOTEST_MORE=, with race detector
+test-race: test-go test-js  ## Run tests with race detector
 test-bench: | $(GOTESTSUM) ; $(info $(M) running benchmarks…) @ ## Run Go benchmarks
 	$Q $(GOTESTSUM) -f standard-quiet -- \
 		-timeout $(TIMEOUT)s -run=__absolutelynothing__ -bench=. \
 		$(PKGS)
-test-coverage: | $(GOTESTSUM) ; $(info $(M) running coverage tests…) @ ## Run Go coverage tests
-	$Q mkdir -p test
+test-coverage-go: | $(GOTESTSUM) $(GOCOV) $(GOCOVXML) ; $(info $(M) running Go coverage tests…) @ ## Run Go coverage tests
+	$Q mkdir -p test/go
 	$Q $(GOTESTSUM) -- \
 		-coverpkg=$(shell echo $(PKGS) | tr ' ' ',') \
 		-covermode=atomic \
-		-coverprofile=test/profile.out.tmp $(PKGS)
-	$Q GENERATED=$$(awk -F: '(NR > 1) {print $$1}' test/profile.out.tmp \
+		-coverprofile=test/go/profile.out.tmp $(PKGS)
+	$Q GENERATED=$$(awk -F: '(NR > 1) {print $$1}' test/go/profile.out.tmp \
 			| sort | uniq | sed "s+^$(MODULE)/++" \
 			| xargs grep -l "^//.*DO NOT EDIT\.$$" \
 			| sed "s+\(.*\)+^$(MODULE)/\1:+" | paste -sd '|') ; \
-	   if [ -n "$$GENERATED" ]; then grep -Ev "$$GENERATED" test/profile.out.tmp > test/profile.out ; \
-	   else cp test/profile.out.tmp test/profile.out ; \
+	   if [ -n "$$GENERATED" ]; then grep -Ev "$$GENERATED" test/go/profile.out.tmp > test/go/profile.out ; \
+	   else cp test/go/profile.out.tmp test/go/profile.out ; \
 	   fi
-	$Q $(GO) tool cover -html=test/profile.out -o test/coverage.html
-test-coverage-xml: test-coverage | $(GOCOV) $(GOCOVXML)
-	$Q $(GOCOV) convert test/profile.out | $(GOCOVXML) > test/coverage.xml
+	$Q $(GO) tool cover -html=test/go/profile.out -o test/go/coverage.html
+	$Q $(GOCOV) convert test/go/profile.out | $(GOCOVXML) > test/go/coverage.xml
 	@echo -n "Code coverage: "; \
-		echo "scale=1;$$(sed -En 's/^<coverage line-rate="([0-9.]+)".*/\1/p' test/coverage.xml) * 100 / 1" | bc -q
+		echo "scale=1;$$(sed -En 's/^<coverage line-rate="([0-9.]+)".*/\1/p' test/go/coverage.xml) * 100 / 1" | bc -q
 
-test-js: .test-js~ ## Run JS tests
-test-js: $(shell $(LSFILES) console/frontend 2> /dev/null) ; $(info $(M) running JS tests…)
+test-js: .fmt-js~ .lint-js~ $(GENERATED_JS)
+test-js: ; $(info $(M) running JS tests…) @ ## Run JS tests
 	$Q cd console/frontend && npm run --silent test
+test-coverage-js: ; $(info $(M) running JS coverage tests…) @ ## Run JS coverage tests
+	$Q cd console/frontend && npm run --silent test -- --coverage
 
 .PHONY: lint
 lint: .lint-go~ .lint-js~ ## Run linting

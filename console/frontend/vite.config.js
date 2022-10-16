@@ -20,6 +20,14 @@ export default defineConfig({
     emptyOutDir: true,
     chunkSizeWarningLimit: 2000,
   },
+  test: {
+    reporters: ["default", "junit"],
+    outputFile: "../../test/js/tests.xml",
+    coverage: {
+      reporter: ["text-summary", "html", "cobertura"],
+      reportsDirectory: "../../test/js",
+    },
+  },
   server: {
     proxy: {
       "/api": {
