@@ -72,8 +72,6 @@ jobs:
         run: make && ./bin/akvorado version
       - name: Race tests
         run: make test-race || make test-race
-      - name: Coverage tests
-        run: make test-coverage || make test-coverage
       - name: Upload binary
         uses: actions/upload-artifact@v3
         with:
