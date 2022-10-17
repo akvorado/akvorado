@@ -9,7 +9,7 @@ require (
 	github.com/antonmedv/expr v1.9.0
 	github.com/benbjohnson/clock v1.3.0
 	github.com/cenkalti/backoff/v4 v4.1.3
-	github.com/dgraph-io/ristretto v0.1.0
+	github.com/dgraph-io/ristretto v0.1.1
 	github.com/docker/docker v20.10.19+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/eapache/go-resiliency v1.3.0
@@ -38,7 +38,7 @@ require (
 	github.com/ti-mo/conntrack v0.4.0
 	github.com/yuin/goldmark v1.5.2
 	github.com/yuin/goldmark-highlighting v0.0.0-20220208100518-594be1970594
-	golang.org/x/sys v0.0.0-20220908164124-27713097b956
+	golang.org/x/sys v0.0.0-20221010170243-090e33056c14
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 	gopkg.in/yaml.v2 v2.4.0
