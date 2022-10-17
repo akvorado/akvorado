@@ -24,6 +24,7 @@ const props = defineProps({
 const emit = defineEmits(["update:timeRange"]);
 
 import { ref, watch, inject, computed, onMounted, nextTick } from "vue";
+import { useMediaQuery } from "@vueuse/core";
 import { formatXps, dataColor, dataColorGrey } from "@/utils";
 import { graphTypes } from "./constants";
 const { isDark } = inject("theme");
@@ -353,13 +354,14 @@ const graph = computed(() => {
 const echartsOptions = computed(() => ({ ...commonGraph, ...graph.value }));
 
 // Enable and handle brush
+const isTouchScreen = useMediaQuery("(pointer: coarse");
 const enableBrush = () => {
   nextTick().then(() => {
     chartComponent.value?.dispatchAction({
       type: "takeGlobalCursor",
       key: "brush",
       brushOption: {
-        brushType: "lineX",
+        brushType: isTouchScreen.value ? false : "lineX",
       },
     });
   });
@@ -376,7 +378,7 @@ const updateTimeRange = (evt) => {
   });
   emit("update:timeRange", [start, end]);
 };
-watch(graph, enableBrush);
+watch([graph, isTouchScreen], enableBrush);
 
 // Highlight selected indexes
 watch(
