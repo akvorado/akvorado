@@ -159,7 +159,7 @@ func (c *Component) Start() error {
 				if !ok {
 					return errors.New("file watcher died")
 				}
-				if event.Op&(fsnotify.Write|fsnotify.Create) == 0 {
+				if !event.Has(fsnotify.Write) && !event.Has(fsnotify.Create) {
 					continue
 				}
 				if filepath.Clean(event.Name) == c.config.GeoDatabase {
