@@ -8,8 +8,9 @@ their configuration.
 The default configuration can be obtained with `./akvorado
 orchestrator --dump --check /dev/null`. Note that some sections are
 generated from the configuration of another section. Notably, all
-Kafka configuration comes from upper-level `kafka` key. Durations can
-be written in seconds or using strings like `10h20m`.
+Kafka configuration comes from upper-level `kafka` key. Durations must
+be written using strings like `10h20m` or `5s`. Valid time units are
+`ms`, `s`, `m`, and `h`.
 
 It is also possible to override configuration settings using
 environment variables. You need to remove any `-` from key names and

@@ -52,10 +52,10 @@ type ResolutionConfiguration struct {
 	// Interval is the consolidation interval for this
 	// resolution. An interval of 0 means no consolidation
 	// takes place (it is used for the `flows' table).
-	Interval time.Duration
+	Interval time.Duration `validate:"isdefault|min=5s"`
 	// TTL is how long to keep data for this resolution. A
 	// value of 0 means to never expire.
-	TTL time.Duration
+	TTL time.Duration `validate:"isdefault|min=1h"`
 }
 
 // KafkaConfiguration describes Kafka-specific configuration

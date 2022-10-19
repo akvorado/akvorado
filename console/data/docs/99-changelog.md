@@ -15,6 +15,7 @@ identified with a specific icon:
 
 - ✨ *orchestrator*: add `orchestrator.network-sources` to fetch network attributes with HTTP
 - ✨ *console*: add `console.database.saved-filters` to populate filters from the configuration file
+- 🩹 *doc*: durations must be written using a suffix (like `5s`)
 
 ## 1.6.1 - 2022-10-11
 

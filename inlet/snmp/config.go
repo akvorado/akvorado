@@ -23,13 +23,13 @@ type Configuration struct {
 	// CacheRefresh defines how soon to refresh an existing cached entry
 	CacheRefresh time.Duration `validate:"eq=0|min=1m,eq=0|gtefield=CacheDuration"`
 	// CacheRefreshInterval defines the interval to check for expiration/refresh
-	CacheCheckInterval time.Duration `validate:"ltefield=CacheRefresh"`
+	CacheCheckInterval time.Duration `validate:"ltefield=CacheRefresh,min=1s"`
 	// CachePersist defines a file to store cache and survive restarts
 	CachePersistFile string
 	// PollerRetries tell how many time a poller should retry before giving up
 	PollerRetries int `validate:"min=0"`
 	// PollerTimeout tell how much time a poller should wait for an answer
-	PollerTimeout time.Duration
+	PollerTimeout time.Duration `validate:"min=100ms"`
 	// PollerCoalesce tells how many requests can be contained inside a single SNMP PDU
 	PollerCoalesce int `validate:"min=0"`
 	// Workers define the number of workers used to poll SNMP
