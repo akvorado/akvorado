@@ -111,7 +111,7 @@ watch([markdown, activeSlug], async () => {
   }
   const top =
     (activeSlug.value &&
-      document.querySelector(`#{CSS.escape(activeSlug.value.slice(1))}`)
+      document.querySelector(`#${CSS.escape(activeSlug.value.slice(1))}`)
         ?.offsetTop) ||
     0;
   scrollEl.scrollTo(0, top);
