@@ -84,8 +84,18 @@ exported. In this case, the logs contain information such as:
 - `exporter:172.19.162.244 poller breaker open`
 - `exporter:172.19.162.244 unable to GET`
 
-The `akvorado_inlet_snmp_poller_failure_requests` metric would also increase
-for the affected exporter.
+The `akvorado_inlet_snmp_poller_failure_requests` metric would also
+increase for the affected exporter. If your routers are in
+`172.16.0.0/12` and you are using Docker, Docker subnets may overlap
+with your routers'. To avoid this, you can put that in
+`/etc/docker/daemon.json` and restart Docker:
+
+```json
+{
+ "default-address-pools": [{"base":"240.0.0.0/16","size":24}],
+ "userland-proxy": false
+}
+```
 
 Check that flow are correctly accepted with:
 
