@@ -71,7 +71,7 @@ func TestFlow(t *testing.T) {
 		}
 
 		// With rate limiting
-		{
+		if runtime.GOOS == "Linux" {
 			r := reporter.NewMock(t)
 			config := DefaultConfiguration()
 			config.RateLimit = 1000
