@@ -33,14 +33,14 @@
     >
       <div v-if="open" class="flex flex-col px-3 py-4 lg:max-h-screen">
         <div
-          class="mb-2 flex flex-row flex-wrap items-center justify-between gap-2 sm:flex-nowrap lg:flex-wrap"
+          class="mb-2 flex flex-row flex-wrap items-center justify-between gap-2 sm:max-lg:flex-nowrap"
         >
           <InputButton
             attr-type="submit"
             :disabled="hasErrors && !loading"
             :loading="loading"
             :type="loading ? 'alternative' : 'primary'"
-            class="order-2 w-28 justify-center sm:order-4 lg:order-2"
+            class="order-2 w-28 justify-center sm:max-lg:order-4"
           >
             {{ loading ? "Cancel" : applyLabel }}
           </InputButton>
@@ -57,7 +57,7 @@
           <InputListBox
             v-model="graphType"
             :items="graphTypeList"
-            class="order-3 grow basis-full sm:order-3 sm:basis-0 lg:order-3 lg:basis-full"
+            class="order-3 grow basis-full sm:max-lg:order-3 sm:max-lg:basis-0"
             label="Graph type"
           >
             <template #selected>{{ graphType.name }}</template>
@@ -72,7 +72,7 @@
             </template>
           </InputListBox>
           <div
-            class="order-4 flex grow flex-row justify-between gap-x-3 sm:order-2 sm:grow-0 sm:flex-col lg:order-4 lg:grow lg:flex-row"
+            class="order-4 flex grow flex-row justify-between gap-x-3 sm:max-lg:order-2 sm:max-lg:grow-0 sm:max-lg:flex-col"
           >
             <InputCheckbox
               v-if="[stacked, lines, grid].includes(graphType.name)"
