@@ -13,7 +13,9 @@ a web interface to browse the result.
 
 The easiest way to get started is with
 [Docker](https://docs.docker.com/get-docker) and [Docker
-Compose](https://docs.docker.com/compose/install/).
+Compose](https://docs.docker.com/compose/install/). Depending on your
+version of *Docker Compose*, you may need to use `docker-compose` or
+`docker compose`.
 
 ```console
 # mkdir akvorado
