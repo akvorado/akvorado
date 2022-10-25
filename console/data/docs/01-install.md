@@ -18,7 +18,8 @@ You can get *Akvorado* as a
 ```
 
 Check the `docker-compose.yml` file for an example on how to deploy
-*Akvorado* using containers.
+*Akvorado* using containers. If you want to use `docker-compose`, have
+a look at the [quick start procedure](00-intro#quick-start).
 
 ## Pre-built binary
 
@@ -91,7 +92,13 @@ Be sure to read the [changelog](99-changelog.md) before attempting an
 upgrade. Upgrade the orchestrator first. This will update the
 ClickHouse database. Then, upgrade all inlets. Then the console.
 
-When using `docker-compose`, grab the latest `docker-compose.yaml`,
-execute `docker-compose pull` to update the images. Then, use
-`docker-compose restart akvorado-orchestrator` and `docker-compose up
--d` to update your installation.
+When using `docker-compose`, use the following commands to fetch an
+updated `docker-compose.yml` file:
+
+```console
+# cd akvorado
+# curl -sL https://github.com/akvorado/akvorado/releases/latest/download/docker-compose-quickstart.tar.gz | tar zxvf - docker-compose.yml
+# docker-compose pull
+# docker-compose stop akvorado-orchestrator
+# docker-compose up -d
+```

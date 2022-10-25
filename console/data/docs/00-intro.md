@@ -11,15 +11,14 @@ a web interface to browse the result.
 
 ## Quick start
 
-A `docker-compose.yml` file is provided to quickly get started. The
-only requirement is to have
-[Docker](https://docs.docker.com/get-docker/) and [Docker
-Compose](https://docs.docker.com/compose/install/). Grab the latest
-tarball from the [release page on
-GitHub](https://github.com/akvorado/akvorado/releases), unpack it,
-then run the `docker-compose` command:
+The easiest way to get started is with
+[Docker](https://docs.docker.com/get-docker) and [Docker
+Compose](https://docs.docker.com/compose/install/).
 
 ```console
+# mkdir akvorado
+# cd akvorado
+# curl -sL https://github.com/akvorado/akvorado/releases/latest/download/docker-compose-quickstart.tar.gz | tar zxvf -
 # docker-compose up
 ```
 
@@ -29,7 +28,7 @@ A few synthetic flows are generated in the background. They can be
 disabled by removing the `:docker-compose-demo.yml` string from
 `.env`, or by stopping them with `docker-compose stop
 akvorado-exporter{1,2,3,4}`, or by removing the associated
-configuration in `akvorado.yaml`.
+configuration in `akvorado.yaml`, or by doing all of that.
 
 If you want to send you own flows, the inlet is accepting both NetFlow
 (port 2055) and sFlow (port 6343). You should also customize some
@@ -54,6 +53,9 @@ You can get all the expanded configuration (with default values) with
 Take a look at the `docker-compose.yml` file if you want to setup the
 GeoIP database. It requires two environment variables to fetch them
 from [MaxMind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data).
+
+Once you are ready, you can run everything in the background with
+`docker-compose up -d`.
 
 ## Big picture
 

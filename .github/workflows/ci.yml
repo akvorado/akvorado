@@ -188,6 +188,10 @@ jobs:
         with:
           name: binary
 
+      # Build tarball for docker-compose
+      - name: Build docker-compose "quick start"
+        run: tar zcvf docker-compose-quickstart.tar.gz docker-compose.yml docker-compose-demo.yml .env akvorado.yaml
+
       # Publish release
       - name: Publish release
         uses: softprops/action-gh-release@v1
@@ -197,3 +201,4 @@ jobs:
           fail_on_unmatched_files: true
           files: |
             akvorado
+            docker-compose-quickstart.tar.gz
