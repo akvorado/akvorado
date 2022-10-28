@@ -52,6 +52,8 @@ inlet:
     compression-codec: zstd
   geoip:
     optional: true
+    # When running on Docker, these paths are inside the container.
+    # Check docker-compose.yml for details.
     asn-database: /usr/share/GeoIP/GeoLite2-ASN.mmdb
     geo-database: /usr/share/GeoIP/GeoLite2-Country.mmdb
   snmp:
