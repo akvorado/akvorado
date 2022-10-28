@@ -8,8 +8,10 @@ kafka:
     num-partitions: 8
     replication-factor: 1
     config-entries:
+      # The retention policy in Kafka is mainly here to keep a buffer
+      # for ClickHouse.
       segment.bytes: 1073741824
-      retention.ms: 86400000
+      retention.ms: 86400000 # 1 day
       cleanup.policy: delete
       compression.type: producer
 
@@ -22,6 +24,8 @@ clickhouse:
   asns:
     64501: ACME Corporation
   networks:
+    # You should customize this section with your networks. This
+    # populates the Src/DstNetName/Role/Site/Region/Tenant fields.
     192.0.2.0/24:
       name: ipv4-customers
       role: customers
@@ -73,11 +77,17 @@ inlet:
   core:
     workers: 6
     exporter-classifiers:
+      # This is an example. This should be customized depending on how
+      # your exporters are named.
       - ClassifySiteRegex(Exporter.Name, "^([^-]+)-", "$1")
       - ClassifyRegion("europe")
       - ClassifyTenant("acme")
       - ClassifyRole("edge")
     interface-classifiers:
+      # This is an example. This must be customized depending on the
+      # descriptions of your interfaces. In the following, we assume
+      # external interfaces are named "Transit: Cogent" Or "IX:
+      # FranceIX".
       - |
         ClassifyConnectivityRegex(Interface.Description, "^(?i)(transit|pni|ppni|ix):? ", "$1") &&
         ClassifyProviderRegex(Interface.Description, "^\\S+?\\s(\\S+)", "$1") &&
@@ -87,6 +97,8 @@ inlet:
 console:
   database:
     saved-filters:
+      # These are prepopulated filters you can select in a drop-down
+      # menu. Users can add more filters interactively.
       - description: "From Netflix"
         content: >-
           InIfBoundary = external AND SrcAS = AS2906
