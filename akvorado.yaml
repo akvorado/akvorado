@@ -1,4 +1,8 @@
 ---
+# This configuration file is documented in docs/02-configuration.md.
+# You can get all default values with `akvorado orchestrator /dev/null
+# --dump --check` or `docker-compose run akvorado-orchestrator
+# orchestrator /dev/null --dump --check`.
 kafka:
   topic: flows
   version: 2.8.1
