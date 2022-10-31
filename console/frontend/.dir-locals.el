@@ -1,4 +1,4 @@
-((web-mode . ((mode . apheleia)))
- (css-mode . ((mode . apheleia)))
- (js2-mode . ((mode . apheleia)))
- (js-mode . ((mode . apheleia))))
+((web-mode . ((mode . formal-all)))
+ (css-mode . ((mode . formal-all)))
+ (js2-mode . ((mode . formal-all)))
+ (js-mode . ((mode . formal-all))))
