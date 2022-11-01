@@ -149,8 +149,9 @@ func (c *Component) serveConnection(conn *net.TCPConn) error {
 			// This may be because of an unhandled family we may not care about.
 			msgError, ok := err.(*bgp.MessageError)
 			if ok {
+				// Not a fatal error if this is an unsupported AFI/SAFI. This is
+				// a bit fragile, but there is a unit test covering that.
 				if msgError.TypeCode == bgp.BGP_ERROR_UPDATE_MESSAGE_ERROR && msgError.SubTypeCode == bgp.BGP_ERROR_SUB_INVALID_NETWORK_FIELD && strings.HasPrefix(err.Error(), "unknown route family") && len(msgError.Data) >= 7 && msgError.Data[1] == byte(bgp.BGP_ATTR_TYPE_MP_REACH_NLRI) {
-					// Extract AFI/SAFI from error message
 					afi := binary.BigEndian.Uint16(msgError.Data[4:6])
 					safi := msgError.Data[6]
 					logger.Debug().Msg("unhandled family, skip it")
