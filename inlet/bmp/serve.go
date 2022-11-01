@@ -4,10 +4,12 @@
 package bmp
 
 import (
+	"encoding/binary"
 	"fmt"
 	"io"
 	"net"
 	"net/netip"
+	"strings"
 	"time"
 
 	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
@@ -144,6 +146,18 @@ func (c *Component) serveConnection(conn *net.TCPConn) error {
 		}
 
 		if err := msg.Body.ParseBody(&msg, body, marshallingOptions...); err != nil {
+			// This may be because of an unhandled family we may not care about.
+			msgError, ok := err.(*bgp.MessageError)
+			if ok {
+				if msgError.TypeCode == bgp.BGP_ERROR_UPDATE_MESSAGE_ERROR && msgError.SubTypeCode == bgp.BGP_ERROR_SUB_INVALID_NETWORK_FIELD && strings.HasPrefix(err.Error(), "unknown route family") && len(msgError.Data) >= 7 && msgError.Data[1] == byte(bgp.BGP_ATTR_TYPE_MP_REACH_NLRI) {
+					// Extract AFI/SAFI from error message
+					afi := binary.BigEndian.Uint16(msgError.Data[4:6])
+					safi := msgError.Data[6]
+					logger.Debug().Msg("unhandled family, skip it")
+					c.metrics.unhandledFamily.WithLabelValues(fmt.Sprintf("%d", afi), fmt.Sprintf("%d", safi)).Inc()
+					continue
+				}
+			}
 			logger.Error().Err(err).Msg("cannot parse BMP body")
 			c.metrics.errors.WithLabelValues(exporterStr, "cannot parse BMP body").Inc()
 			return nil

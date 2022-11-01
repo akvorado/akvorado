@@ -803,6 +803,44 @@ func TestBMP(t *testing.T) {
 		}
 	})
 
+	t.Run("init, l3vpn peer, unknown family, reach", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		config := DefaultConfiguration()
+		c, _ := NewMock(t, r, config)
+		helpers.StartStop(t, c)
+		conn := dial(t, c)
+
+		send(t, conn, "bmp-init.pcap")
+		send(t, conn, "bmp-l3vpn.pcap")
+		send(t, conn, "bmp-reach-vpls.pcap")
+		time.Sleep(20 * time.Millisecond)
+		gotMetrics := r.GetMetrics("akvorado_inlet_bmp_", "-locked_duration")
+		expectedMetrics := map[string]string{
+			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
+			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "1",
+			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "4",
+			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "1",
+			`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
+			`peers_total{exporter="127.0.0.1"}`:                                         "1",
+			`routes_total{exporter="127.0.0.1"}`:                                        "2",
+			`unhandled_family_total{afi="25",safi="65"}`:                                "1",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+			t.Errorf("Metrics (-got, +want):\n%s", diff)
+		}
+
+		expectedRIB := map[netip.Addr][]string{
+			netip.MustParseAddr("192.0.2.9"): {
+				"[ipv4-unicast] 192.0.2.8/31 via 192.0.2.9 65500:108/0 65019 [65019] [] []",
+				"[ipv4-unicast] 198.51.100.0/29 via 192.0.2.9 65500:108/0 64476 [65019 65019 64476] [] []",
+			},
+		}
+		gotRIB := dumpRIB(t, c)
+		if diff := helpers.Diff(gotRIB, expectedRIB); diff != "" {
+			t.Errorf("RIB (-got, +want):\n%s", diff)
+		}
+	})
+
 	t.Run("init, l3vpn peer, init, l3vpn peer, connection down, terminate", func(t *testing.T) {
 		r := reporter.NewMock(t)
 		config := DefaultConfiguration()
