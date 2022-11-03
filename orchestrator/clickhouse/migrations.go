@@ -155,7 +155,7 @@ func (c *Component) migrateDatabase() error {
 	}
 
 	if count == 0 {
-		c.r.Debug().Msg("no migration needed")
+		c.r.Info().Msg("no migration needed")
 	} else {
 		c.r.Info().Msg("migrations done")
 	}
