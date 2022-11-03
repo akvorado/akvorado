@@ -27,6 +27,8 @@
             export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
             export GOFLAGS=-trimpath
           '';
+          # We do not use a wrapper to set SSL_CERT_FILE because, either a
+          # binary or a shell wrapper, it would pull the libc (~30M).
           installPhase = ''
             mkdir -p $out/bin $out/share/ca-certificates
             cp bin/akvorado $out/bin/.
