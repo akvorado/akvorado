@@ -152,17 +152,21 @@ func (c *Component) Start() error {
 				if err == nil && !ready {
 					ready = true
 					notReadySources.Done()
+					c.r.Debug().Str("name", name).Msg("source ready")
 				}
 				if err == nil && !success {
 					// On success, change the timer to a regular timer interval
 					retryTicker.Stop()
+					retryTicker.C = nil
 					regularTicker = newRegularTicker()
 					success = true
+					c.r.Debug().Str("name", name).Msg("switch to regular polling")
 				} else if err != nil && success {
 					// On failure, switch to the retry ticker
 					regularTicker.Stop()
 					retryTicker = newRetryTicker()
 					success = false
+					c.r.Debug().Str("name", name).Msg("switch to retry polling")
 				}
 				select {
 				case <-c.t.Dying():
