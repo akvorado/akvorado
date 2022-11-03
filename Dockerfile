@@ -14,6 +14,7 @@ RUN rm -rf /output/store/*-akvorado
 FROM scratch
 COPY --from=build /output/store /nix/store
 COPY --from=build /app/result/  /usr/local/
+ENV SSL_CERT_FILE=/usr/local/share/ca-certificates/ca-bundle.crt
 EXPOSE 8080
 HEALTHCHECK CMD [ "/usr/local/bin/akvorado", "healthcheck" ]
 ENTRYPOINT [ "/usr/local/bin/akvorado" ]

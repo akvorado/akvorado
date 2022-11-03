@@ -28,8 +28,9 @@
             export GOFLAGS=-trimpath
           '';
           installPhase = ''
-            mkdir -p $out/bin
+            mkdir -p $out/bin $out/share/ca-certificates
             cp bin/akvorado $out/bin/.
+            cp ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt $out/share/ca-certificates/.
           '';
         };
 
