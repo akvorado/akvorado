@@ -11,7 +11,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.6.2 - 2022-11-03
 
 - ✨ *orchestrator*: add `orchestrator.network-sources` to fetch network attributes with HTTP
 - ✨ *console*: add `console.database.saved-filters` to populate filters from the configuration file
