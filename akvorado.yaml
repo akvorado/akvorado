@@ -52,8 +52,9 @@ clickhouse:
   # Google Cloud
   # - url: https://www.gstatic.com/ipranges/cloud.json
   #   interval: 6h
-  #   .prefixes[] |
-  #    { prefix: (.ipv4Prefix // .ipv6Prefix), tenant: "google-cloud", region: .scope }
+  #   transform: |
+  #     .prefixes[] |
+  #     { prefix: (.ipv4Prefix // .ipv6Prefix), tenant: "google-cloud", region: .scope }
 
 inlet:
   kafka:

@@ -1,0 +1,17 @@
+---
+clickhouse:
+  network-sources:
+    amazon:
+      url: https://ip-ranges.amazonaws.com/ip-ranges.json
+      proxy: true
+      interval: 6h
+      transform: |
+        (.prefixes + .ipv6_prefixes)[] |
+        { prefix: (.ip_prefix // .ipv6_prefix), tenant: "amazon", region: .region, role: .service|ascii_downcase }
+    gcp:
+      url: https://www.gstatic.com/ipranges/cloud.json
+      proxy: true
+      interval: 6h
+      transform: |
+        .prefixes[] |
+        { prefix: (.ipv4Prefix // .ipv6Prefix), tenant: "google-cloud", region: .scope }
