@@ -107,6 +107,8 @@ func (c *Component) Start() error {
 		if source.Timeout == 0 {
 			source.Timeout = time.Minute
 		}
+		name := name
+		source := source
 		c.t.Go(func() error {
 			c.metrics.networkSourceCount.WithLabelValues(name).Set(0)
 			newRetryTicker := func() *backoff.Ticker {
