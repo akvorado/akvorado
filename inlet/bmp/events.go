@@ -122,7 +122,7 @@ func (c *Component) markExporterAsStale(exporter netip.AddrPort, until time.Time
 }
 
 // handlePeerDownNotification handles a peer-down notification by
-// marking the peer as stale.
+// removing the peer.
 func (c *Component) handlePeerDownNotification(pkey peerKey) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
