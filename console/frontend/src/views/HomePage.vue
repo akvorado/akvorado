@@ -15,7 +15,7 @@
           </div>
           <div class="grow">
             <p class="leading-relaxed">
-              <strong>Akvorado</strong> is a flow collector, hydrater and
+              <strong>Akvorado</strong> is a flow collector, enricher and
               exporter. It receives flows, adds some data like interface names
               and countries, and exports them to Kafka.
             </p>

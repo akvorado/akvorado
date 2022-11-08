@@ -16,8 +16,8 @@ import (
 	"akvorado/inlet/snmp"
 )
 
-// hydrateFlow adds more data to a flow.
-func (c *Component) hydrateFlow(exporterIP netip.Addr, exporterStr string, flow *flow.Message) (skip bool) {
+// enrichFlow adds more data to a flow.
+func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *flow.Message) (skip bool) {
 	errLogger := c.r.Sample(reporter.BurstSampler(time.Minute, 10))
 
 	if flow.InIf != 0 {

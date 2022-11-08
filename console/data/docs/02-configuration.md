@@ -170,7 +170,7 @@ if the configured topic is `flows` and the current schema version is
 ### Core
 
 The core component queries the `geoip` and the `snmp` component to
-hydrates the flows with additional information. It also classifies
+enriches the flows with additional information. It also classifies
 exporters and interfaces into groups with a set of classification
 rules.
 

@@ -1,6 +1,6 @@
-# Akvorado: flow collector, hydrater and visualizer &middot; [![Build status](https://img.shields.io/github/workflow/status/akvorado/akvorado/CI?style=flat-square)](https://github.com/akvorado/akvorado/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/akvorado/akvorado?style=flat-square)](LICENSE.txt) [![Latest release](https://img.shields.io/github/v/release/akvorado/akvorado?style=flat-square)](https://github.com/akvorado/akvorado/releases)
+# Akvorado: flow collector, enricher and visualizer &middot; [![Build status](https://img.shields.io/github/workflow/status/akvorado/akvorado/CI?style=flat-square)](https://github.com/akvorado/akvorado/actions/workflows/ci.yml) [![License](https://img.shields.io/github/license/akvorado/akvorado?style=flat-square)](LICENSE.txt) [![Latest release](https://img.shields.io/github/v/release/akvorado/akvorado?style=flat-square)](https://github.com/akvorado/akvorado/releases)
 
-This program receives flows (currently Netflow/IPFIX and sFlow), hydrates them
+This program receives flows (currently Netflow/IPFIX and sFlow), enrice them
 with interface names (using SNMP), geo information (using MaxMind),
 and exports them to Kafka, then ClickHouse. It also exposes a web
 interface to browse the collected data.

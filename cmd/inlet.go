@@ -58,7 +58,7 @@ var inletCmd = &cobra.Command{
 	Use:   "inlet",
 	Short: "Start Akvorado's inlet service",
 	Long: `Akvorado is a Netflow/IPFIX collector. The inlet service handles flow ingestion,
-hydration and export to Kafka.`,
+enrichment and export to Kafka.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		config := InletConfiguration{}

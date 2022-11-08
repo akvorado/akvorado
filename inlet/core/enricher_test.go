@@ -26,7 +26,7 @@ import (
 	"akvorado/inlet/snmp"
 )
 
-func TestHydrate(t *testing.T) {
+func TestEnrich(t *testing.T) {
 	cases := []struct {
 		Name          string
 		Configuration gin.H

@@ -121,9 +121,9 @@ func (c *Component) runWorker(workerID int) error {
 			exporter := net.IP(flow.ExporterAddress).String()
 			c.metrics.flowsReceived.WithLabelValues(exporter).Inc()
 
-			// Hydratation
+			// Enrichment
 			ip, _ := netip.AddrFromSlice(flow.ExporterAddress)
-			if skip := c.hydrateFlow(ip, exporter, flow); skip {
+			if skip := c.enrichFlow(ip, exporter, flow); skip {
 				continue
 			}
 
