@@ -817,6 +817,7 @@ func TestBMP(t *testing.T) {
 		send(t, conn, "bmp-reach-vpls.pcap")
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_inlet_bmp_", "-locked_duration")
+		ignoredMetric := `ignored_total{error="unknown route family. AFI: 25, SAFI: 65",exporter="127.0.0.1",reason="afi-safi"}`
 		expectedMetrics := map[string]string{
 			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
 			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "1",
@@ -825,7 +826,7 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "1",
 			`routes_total{exporter="127.0.0.1"}`:                                        "2",
-			`unhandled_family_total{afi="25",safi="65"}`:                                "1",
+			ignoredMetric:                                                               "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)

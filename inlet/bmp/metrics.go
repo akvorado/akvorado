@@ -13,7 +13,7 @@ type metrics struct {
 	ignoredNlri          *reporter.CounterVec
 	messages             *reporter.CounterVec
 	errors               *reporter.CounterVec
-	unhandledFamily      *reporter.CounterVec
+	ignored              *reporter.CounterVec
 	panics               *reporter.CounterVec
 	locked               *reporter.SummaryVec
 	peerRemovalDone      *reporter.CounterVec
@@ -68,16 +68,16 @@ func (c *Component) initMetrics() {
 	c.metrics.errors = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "errors_total",
-			Help: "Number of errors while processing BMP messages.",
+			Help: "Number of fatal errors while processing BMP messages.",
 		},
 		[]string{"exporter", "error"},
 	)
-	c.metrics.unhandledFamily = c.r.CounterVec(
+	c.metrics.ignored = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "unhandled_family_total",
-			Help: "Number of update messages skipt because family was not handled.",
+			Name: "ignored_total",
+			Help: "Number of ignored BGP updates.",
 		},
-		[]string{"afi", "safi"},
+		[]string{"exporter", "reason", "error"},
 	)
 	c.metrics.panics = c.r.CounterVec(
 		reporter.CounterOpts{

@@ -13,6 +13,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 🩹 *inlet*: handle non-fatal BMP decoding errors more gracefully
 - 🌱 *inlet*: reduce impact on flow ingestion when handling BMP peer removals 
 - 🌱 *console*: <kbd>Ctrl-Enter</kbd> or <kbd>Cmd-Enter</kbd> when editing a filter now applies the changes.
 

@@ -4,12 +4,10 @@
 package bmp
 
 import (
-	"encoding/binary"
 	"fmt"
 	"io"
 	"net"
 	"net/netip"
-	"strings"
 	"time"
 
 	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
@@ -124,7 +122,9 @@ func (c *Component) serveConnection(conn *net.TCPConn) error {
 			}
 			return nil
 		}
-		if msg.Body == nil {
+		if msg.Body == nil || msg.Header.Type == bmp.BMP_MSG_ROUTE_MIRRORING {
+			// We do not want to parse route mirroring messages as they can
+			// contain malformed BGP messages.
 			continue
 		}
 
@@ -146,22 +146,33 @@ func (c *Component) serveConnection(conn *net.TCPConn) error {
 		}
 
 		if err := msg.Body.ParseBody(&msg, body, marshallingOptions...); err != nil {
-			// This may be because of an unhandled family we may not care about.
 			msgError, ok := err.(*bgp.MessageError)
 			if ok {
-				// Not a fatal error if this is an unsupported AFI/SAFI. This is
-				// a bit fragile, but there is a unit test covering that.
-				if msgError.TypeCode == bgp.BGP_ERROR_UPDATE_MESSAGE_ERROR && msgError.SubTypeCode == bgp.BGP_ERROR_SUB_INVALID_NETWORK_FIELD && strings.HasPrefix(err.Error(), "unknown route family") && len(msgError.Data) >= 7 && msgError.Data[1] == byte(bgp.BGP_ATTR_TYPE_MP_REACH_NLRI) {
-					afi := binary.BigEndian.Uint16(msgError.Data[4:6])
-					safi := msgError.Data[6]
-					logger.Debug().Msg("unhandled family, skip it")
-					c.metrics.unhandledFamily.WithLabelValues(fmt.Sprintf("%d", afi), fmt.Sprintf("%d", safi)).Inc()
+				switch msgError.ErrorHandling {
+				case bgp.ERROR_HANDLING_SESSION_RESET:
+					c.metrics.ignored.WithLabelValues(exporterStr, "session-reset", err.Error()).Inc()
+					continue
+				case bgp.ERROR_HANDLING_AFISAFI_DISABLE:
+					c.metrics.ignored.WithLabelValues(exporterStr, "afi-safi", err.Error()).Inc()
+					continue
+				case bgp.ERROR_HANDLING_TREAT_AS_WITHDRAW:
+					// This is a pickle. This can be an essential attribute (eg.
+					// AS path) that's malformed or something quite minor for
+					// our own usage (eg. a non-optional attribute), let's skip for now.
+					c.metrics.ignored.WithLabelValues(exporterStr, "treat-as-withdraw", err.Error()).Inc()
+					continue
+				case bgp.ERROR_HANDLING_ATTRIBUTE_DISCARD:
+					// Optional attribute, let's handle it
+				case bgp.ERROR_HANDLING_NONE:
+					// Odd?
+					c.metrics.ignored.WithLabelValues(exporterStr, "none", err.Error()).Inc()
 					continue
 				}
+			} else {
+				logger.Err(err).Msg("cannot parse BMP body")
+				c.metrics.errors.WithLabelValues(exporterStr, "cannot parse BMP body").Inc()
+				return nil
 			}
-			logger.Err(err).Msg("cannot parse BMP body")
-			c.metrics.errors.WithLabelValues(exporterStr, "cannot parse BMP body").Inc()
-			return nil
 		}
 
 		// Handle different messages
