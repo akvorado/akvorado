@@ -78,7 +78,7 @@ const props = defineProps({
     required: true,
   },
 });
-const emit = defineEmits(["update:modelValue"]);
+const emit = defineEmits(["update:modelValue", "submit"]);
 
 import { ref, inject, watch, computed, onMounted, onBeforeUnmount } from "vue";
 import { useFetch } from "@vueuse/core";
@@ -188,6 +188,10 @@ const filterTheme = computed(() => [
   EditorView.theme({}, { dark: isDark.value }),
 ]);
 
+const submitFilter = () => {
+  emit("submit");
+};
+
 onMounted(() => {
   // Create Code mirror instance
   component.state = EditorState.create({
@@ -204,6 +208,8 @@ onMounted(() => {
       keymap.of([
         ...standardKeymap.filter((b) => b.key !== "Mod-a"),
         { key: "Tab", run: acceptCompletion },
+        { key: "Ctrl-Enter", run: submitFilter },
+        { key: "Cmd-Enter", run: submitFilter },
       ]),
       history(),
       placeholder("Filter expression"),

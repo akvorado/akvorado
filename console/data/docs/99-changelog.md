@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🌱 *console*: <kbd>Ctrl-Enter</kbd> or <kbd>Cmd-Enter</kbd> when editing a filter now applies the changes.
+
 ## 1.6.2 - 2022-11-03
 
 - ✨ *orchestrator*: add `orchestrator.network-sources` to fetch network attributes with HTTP

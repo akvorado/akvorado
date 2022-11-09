@@ -27,9 +27,7 @@
       class="h-full overflow-y-auto border-b border-gray-300 bg-gray-100 dark:border-slate-700 dark:bg-slate-800 lg:border-r lg:border-b-0"
       autocomplete="off"
       spellcheck="false"
-      @submit.prevent="
-        loading ? $emit('cancel') : $emit('update:modelValue', options)
-      "
+      @submit.prevent="submitOptions()"
     >
       <div v-if="open" class="flex flex-col px-3 py-4 lg:max-h-screen">
         <div
@@ -41,9 +39,8 @@
             :loading="loading"
             :type="loading ? 'alternative' : 'primary'"
             class="order-2 w-28 justify-center sm:max-lg:order-4"
+            >{{ loading ? "Cancel" : applyLabel }}</InputButton
           >
-            {{ loading ? "Cancel" : applyLabel }}
-          </InputButton>
           <InputChoice
             v-model="units"
             :choices="[
@@ -103,7 +100,7 @@
             for completions
           </template>
         </SectionLabel>
-        <InputFilter v-model="filter" class="mb-2" />
+        <InputFilter v-model="filter" @submit="submitOptions()" class="mb-2" />
       </div>
     </form>
   </aside>
@@ -150,6 +147,14 @@ const filter = ref({});
 const units = ref("l3bps");
 const bidirectional = ref(false);
 const previousPeriod = ref(false);
+
+const submitOptions = () => {
+  if (props.loading) {
+    emit("cancel");
+  } else {
+    emit("update:modelValue", options.value);
+  }
+};
 
 const options = computed(() => ({
   // Common to all graph types
