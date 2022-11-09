@@ -1,4 +1,4 @@
-((web-mode . ((mode . formal-all)))
- (css-mode . ((mode . formal-all)))
- (js2-mode . ((mode . formal-all)))
- (js-mode . ((mode . formal-all))))
+((web-mode . ((mode . format-all)))
+ (css-mode . ((mode . format-all)))
+ (js2-mode . ((mode . format-all)))
+ (js-mode . ((mode . format-all))))
