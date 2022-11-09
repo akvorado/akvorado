@@ -43,7 +43,7 @@ func (l *logger) Trace(ctx context.Context, begin time.Time, fc func() (string, 
 		"source":   utils.FileWithLineNum(),
 	}
 	if err != nil {
-		l.r.Error().Err(err).Fields(fields).Msg("SQL query error")
+		l.r.Err(err).Fields(fields).Msg("SQL query error")
 		return
 	}
 

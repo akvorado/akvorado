@@ -45,11 +45,11 @@ func (c *Component) serveConnection(conn *net.TCPConn) error {
 
 	// Setup TCP keepalive
 	if err := conn.SetKeepAlive(true); err != nil {
-		c.r.Error().Err(err).Msg("unable to enable keepalive")
+		c.r.Err(err).Msg("unable to enable keepalive")
 		return nil
 	}
 	if err := conn.SetKeepAlivePeriod(time.Minute); err != nil {
-		c.r.Error().Err(err).Msg("unable to set keepalive period")
+		c.r.Err(err).Msg("unable to set keepalive period")
 		return nil
 	}
 
@@ -119,7 +119,7 @@ func (c *Component) serveConnection(conn *net.TCPConn) error {
 		_, err = io.ReadFull(conn, body)
 		if err != nil {
 			if c.t.Alive() {
-				logger.Error().Err(err).Msg("cannot read BMP body")
+				logger.Err(err).Msg("cannot read BMP body")
 				c.metrics.errors.WithLabelValues(exporterStr, "cannot read BMP body").Inc()
 			}
 			return nil
@@ -132,7 +132,7 @@ func (c *Component) serveConnection(conn *net.TCPConn) error {
 		var pkey peerKey
 		if msg.Header.Type != bmp.BMP_MSG_INITIATION && msg.Header.Type != bmp.BMP_MSG_TERMINATION {
 			if err := msg.PeerHeader.DecodeFromBytes(body); err != nil {
-				logger.Error().Err(err).Msg("cannot parse BMP peer header")
+				logger.Err(err).Msg("cannot parse BMP peer header")
 				c.metrics.errors.WithLabelValues(exporterStr, "cannot parse BMP peer header").Inc()
 				return nil
 			}
@@ -159,7 +159,7 @@ func (c *Component) serveConnection(conn *net.TCPConn) error {
 					continue
 				}
 			}
-			logger.Error().Err(err).Msg("cannot parse BMP body")
+			logger.Err(err).Msg("cannot parse BMP body")
 			c.metrics.errors.WithLabelValues(exporterStr, "cannot parse BMP body").Inc()
 			return nil
 		}
