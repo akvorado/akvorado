@@ -70,13 +70,11 @@ func (c *Component) removeStalePeers() {
 	c.r.Debug().Msg("remove stale peers")
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	defer c.metrics.locked.WithLabelValues("stale").Observe(
-		float64(c.d.Clock.Now().Sub(start).Nanoseconds()) / 1000 / 1000 / 1000)
 	for pkey, pinfo := range c.peers {
 		if pinfo.staleUntil.IsZero() || pinfo.staleUntil.After(start) {
 			continue
 		}
-		c.removePeer(pkey, pinfo)
+		c.removePeer(pkey, "stale")
 	}
 	c.scheduleStalePeersRemoval()
 }
@@ -97,15 +95,23 @@ func (c *Component) addPeer(pkey peerKey) *peerInfo {
 	return pinfo
 }
 
-// removePeer remove a peer.
-func (c *Component) removePeer(pkey peerKey, pinfo *peerInfo) {
+// removePeer remove a peer (with lock held)
+func (c *Component) removePeer(pkey peerKey, reason string) {
 	exporterStr := pkey.exporter.Addr().Unmap().String()
 	peerStr := pkey.ip.Unmap().String()
-	c.r.Info().Msgf("remove peer %s for exporter %s", peerStr, exporterStr)
-	removed := c.rib.flushPeer(pinfo.reference)
-	c.metrics.routes.WithLabelValues(exporterStr).Sub(float64(removed))
-	c.metrics.peers.WithLabelValues(exporterStr).Dec()
-	delete(c.peers, pkey)
+	c.r.Info().Msgf("remove peer %s for exporter %s (reason: %s)", peerStr, exporterStr, reason)
+	select {
+	case c.peerRemovalChan <- pkey:
+		return
+	default:
+	}
+	c.metrics.peerRemovalQueueFull.WithLabelValues(exporterStr).Inc()
+	c.mu.Unlock()
+	select {
+	case c.peerRemovalChan <- pkey:
+	case <-c.t.Dying():
+	}
+	c.mu.Lock()
 }
 
 // markExporterAsStale marks all peers from an exporter as stale.
@@ -126,14 +132,14 @@ func (c *Component) markExporterAsStale(exporter netip.AddrPort, until time.Time
 func (c *Component) handlePeerDownNotification(pkey peerKey) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	pinfo, ok := c.peers[pkey]
+	_, ok := c.peers[pkey]
 	if !ok {
 		c.r.Info().Msgf("received peer down from exporter %s for peer %s, but no peer up",
 			pkey.exporter.Addr().Unmap().String(),
 			pkey.ip.Unmap().String())
 		return
 	}
-	c.removePeer(pkey, pinfo)
+	c.removePeer(pkey, "down")
 }
 
 // handleConnectionDown handles a disconnect or a session termination

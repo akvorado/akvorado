@@ -32,6 +32,7 @@ type Component struct {
 	// RIB management with peers
 	rib               *rib
 	peers             map[peerKey]*peerInfo
+	peerRemovalChan   chan peerKey
 	lastPeerReference uint32
 	staleTimer        *clock.Timer
 	mu                sync.RWMutex
@@ -53,8 +54,9 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		d:      &dependencies,
 		config: configuration,
 
-		rib:   newRIB(),
-		peers: make(map[peerKey]*peerInfo),
+		rib:             newRIB(),
+		peers:           make(map[peerKey]*peerInfo),
+		peerRemovalChan: make(chan peerKey, configuration.PeerRemovalMaxQueue),
 	}
 	if len(c.config.RDs) > 0 {
 		c.acceptedRDs = make(map[uint64]struct{})
@@ -77,6 +79,11 @@ func (c *Component) Start() error {
 		return fmt.Errorf("unable to listen to %v: %w", c.config.Listen, err)
 	}
 	c.address = listener.Addr()
+
+	// Peer removal
+	c.t.Go(c.peerRemovalWorker)
+
+	// Listener
 	c.t.Go(func() error {
 		for {
 			conn, err := listener.Accept()
@@ -101,7 +108,10 @@ func (c *Component) Start() error {
 
 // Stop stops the BMP component
 func (c *Component) Stop() error {
-	defer c.r.Info().Msg("BMP component stopped")
+	defer func() {
+		close(c.peerRemovalChan)
+		c.r.Info().Msg("BMP component stopped")
+	}()
 	c.r.Info().Msg("stopping BMP component")
 	c.t.Kill(nil)
 	return c.t.Wait()

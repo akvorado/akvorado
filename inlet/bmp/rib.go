@@ -4,7 +4,10 @@
 package bmp
 
 import (
+	"context"
 	"net/netip"
+	"runtime"
+	"sync/atomic"
 	"unsafe"
 
 	"akvorado/common/helpers"
@@ -149,10 +152,25 @@ func (r *rib) removePrefix(ip netip.Addr, bits int, old route) int {
 
 // flushPeer removes a whole peer from the RIB, returning the number
 // of removed routes.
-func (r *rib) flushPeer(peer uint32) int {
+func (r *rib) flushPeer(ctx context.Context, peer uint32, min int) (int, bool) {
+	// Handle context done state
+	done := atomic.Bool{}       // signal for the loop to stop when true
+	stop := make(chan struct{}) // signal for the goroutine to stop
+	defer close(stop)
+	go func() {
+		select {
+		case <-stop:
+			return
+		case <-ctx.Done():
+			done.Store(true)
+		}
+	}()
+
+	// Flush routes
 	removed := 0
 	buf := make([]route, 0)
 	iter := r.tree.Iterate()
+	runtime.Gosched()
 	for iter.Next() {
 		removed += iter.DeleteWithBuffer(buf, func(payload route, val route) bool {
 			if payload.peer == peer {
@@ -162,8 +180,13 @@ func (r *rib) flushPeer(peer uint32) int {
 			}
 			return false
 		}, route{})
+		if removed >= min {
+			if done.Load() {
+				return removed, false
+			}
+		}
 	}
-	return removed
+	return removed, true
 }
 
 // newRIB initializes a new RIB.
