@@ -287,6 +287,7 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers_total{exporter="127.0.0.1"}`:                                           "3",
 			`routes_total{exporter="127.0.0.1"}`:                                          "14",
+			`peer_removal_done_total{exporter="127.0.0.1"}`:                               "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -791,6 +792,7 @@ func TestBMP(t *testing.T) {
 			`closed_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "0",
 			`routes_total{exporter="127.0.0.1"}`:                                        "0",
+			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -897,6 +899,7 @@ func TestBMP(t *testing.T) {
 			`closed_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "1",
 			`routes_total{exporter="127.0.0.1"}`:                                        "2",
+			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -926,6 +929,7 @@ func TestBMP(t *testing.T) {
 			`closed_connections_total{exporter="127.0.0.1"}`:                            "2",
 			`peers_total{exporter="127.0.0.1"}`:                                         "1",
 			`routes_total{exporter="127.0.0.1"}`:                                        "2",
+			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -948,6 +952,7 @@ func TestBMP(t *testing.T) {
 			`closed_connections_total{exporter="127.0.0.1"}`:                            "2",
 			`peers_total{exporter="127.0.0.1"}`:                                         "0",
 			`routes_total{exporter="127.0.0.1"}`:                                        "0",
+			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "2",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -958,6 +963,45 @@ func TestBMP(t *testing.T) {
 			t.Errorf("RIB (-got, +want):\n%s", diff)
 		}
 
+	})
+
+	t.Run("init, peers up, eor, reach NLRI, conn down, immediate timeout", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		config := DefaultConfiguration()
+		config.PeerRemovalMaxTime = 1
+		config.PeerRemovalSleepInterval = 1
+		config.PeerRemovalMinRoutes = 1
+		c, mockClock := NewMock(t, r, config)
+		helpers.StartStop(t, c)
+		conn := dial(t, c)
+
+		send(t, conn, "bmp-init.pcap")
+		send(t, conn, "bmp-peers-up.pcap")
+		send(t, conn, "bmp-eor.pcap")
+		send(t, conn, "bmp-reach.pcap")
+		conn.Close()
+		mockClock.Add(2 * time.Hour)
+		time.Sleep(20 * time.Millisecond)
+		if helpers.RaceEnabled {
+			t.Skip("unreliable results when running with the race detector")
+		}
+		gotMetrics := r.GetMetrics("akvorado_inlet_bmp_", "-locked_duration")
+		expectedMetrics := map[string]string{
+			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
+			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
+			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "25",
+			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
+			`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
+			`closed_connections_total{exporter="127.0.0.1"}`:                            "1",
+			`peers_total{exporter="127.0.0.1"}`:                                         "0",
+			`routes_total{exporter="127.0.0.1"}`:                                        "0",
+			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "4",
+			// We have 18 routes, but only 14 routes can be removed while keeping 1 route on each peer.
+			`peer_removal_partial_total{exporter="127.0.0.1"}`: "14",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+			t.Errorf("Metrics (-got, +want):\n%s", diff)
+		}
 	})
 
 	t.Run("lookup", func(t *testing.T) {

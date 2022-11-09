@@ -13,6 +13,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 🌱 *inlet*: reduce impact on flow ingestion when handling BMP peer removals 
 - 🌱 *console*: <kbd>Ctrl-Enter</kbd> or <kbd>Cmd-Enter</kbd> when editing a filter now applies the changes.
 
 ## 1.6.2 - 2022-11-03
