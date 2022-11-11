@@ -229,6 +229,45 @@ correct and that descriptions match what you expect. For example, on
 Juniper, if you enable JFlow on a sub-interface, be sure that the
 description is present on this sub-interface.
 
+### Profiling
+
+On a large scale installation, you may want to check if *Akvorado* is using too
+much CPU or memory. This can be achieved with `pprof`, the [Go
+profiler](https://go.dev/blog/pprof). You need a working [installation of
+Go](https://go.dev/doc/install) on your workstation. Then, enable the profiler
+in the inlet configuration and restart it:
+
+```yaml
+inlet:
+ http:
+  profiler: true
+```
+
+When running on Docker, use `docker inspect` to get the IP address of the inlet:
+
+```console
+$ docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' akvorado_akvorado-console_1
+240.0.4.8
+```
+
+If your Docker host is remote, you also need to use SSH forwarding to expose the
+HTTP port to your workstation:
+
+```console
+$ ssh -L 6060:240.0.4.8:8080 dockerhost.example.com
+```
+
+Then, use one of the two following commands:
+
+```console
+$ go tool pprof http://127.0.0.1:6060/debug/pprof/profile
+$ go tool pprof http://127.0.0.1:6060/debug/pprof/heap
+```
+
+The first one provides a CPU profile. The second one a memory profile. On the
+command-line, you can type `web` to visualize the result in the browser or `svg`
+to get a SVG file you can attach to a bug report if needed.
+
 ## Kafka
 
 There is no easy way to look at the content of the flows in a Kafka
