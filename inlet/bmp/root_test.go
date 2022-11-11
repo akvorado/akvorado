@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/netip"
 	"path"
+	"strconv"
 	"testing"
 	"time"
 
@@ -987,6 +988,16 @@ func TestBMP(t *testing.T) {
 			t.Skip("unreliable results when running with the race detector")
 		}
 		gotMetrics := r.GetMetrics("akvorado_inlet_bmp_", "-locked_duration")
+		// For peer_removal_partial_total, we have 18 routes, but only 14 routes
+		// can be removed while keeping 1 route on each peer. 14 is the max, but
+		// we rely on good-willing from the scheduler to get this number.
+		peerRemovalPartial, _ := strconv.Atoi(gotMetrics[`peer_removal_partial_total{exporter="127.0.0.1"}`])
+		if peerRemovalPartial > 14 {
+			t.Errorf("Metrics: peer_removal_partial_total %d > 14", peerRemovalPartial)
+		}
+		if peerRemovalPartial < 5 {
+			t.Errorf("Metrics: peer_removal_partial_total %d < 5", peerRemovalPartial)
+		}
 		expectedMetrics := map[string]string{
 			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
 			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
@@ -997,8 +1008,7 @@ func TestBMP(t *testing.T) {
 			`peers_total{exporter="127.0.0.1"}`:                                         "0",
 			`routes_total{exporter="127.0.0.1"}`:                                        "0",
 			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "4",
-			// We have 18 routes, but only 14 routes can be removed while keeping 1 route on each peer.
-			`peer_removal_partial_total{exporter="127.0.0.1"}`: "14",
+			`peer_removal_partial_total{exporter="127.0.0.1"}`:                          fmt.Sprintf("%d", peerRemovalPartial),
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
