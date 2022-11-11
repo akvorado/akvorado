@@ -120,7 +120,7 @@ type InterfaceClassifierRule struct {
 	program *vm.Program
 }
 
-// interfaceInfo contains the information we want to expose about a exporter.
+// interfaceInfo contains the information we want to expose about an exporter.
 type interfaceInfo struct {
 	Name        string
 	Description string

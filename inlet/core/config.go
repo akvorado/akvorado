@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"time"
 
 	"akvorado/common/helpers"
 
@@ -22,23 +23,26 @@ type Configuration struct {
 	// InterfaceClassifiers defines rules for interface classification
 	InterfaceClassifiers []InterfaceClassifierRule
 	// ClassifierCacheSize defines the size of the classifier (in number of items)
-	ClassifierCacheSize uint
+	ClassifierCacheDuration time.Duration `validate:"min=1s"`
 	// DefaultSamplingRate defines the default sampling rate to use when the information is missing
 	DefaultSamplingRate helpers.SubnetMap[uint]
 	// OverrideSamplingRate defines a sampling rate to use instead of the received on
 	OverrideSamplingRate helpers.SubnetMap[uint]
 	// ASNProviders defines the source used to get AS numbers
 	ASNProviders []ASNProvider `validate:"dive"`
+
+	// Old configuration settings
+	classifierCacheSize uint
 }
 
 // DefaultConfiguration represents the default configuration for the core component.
 func DefaultConfiguration() Configuration {
 	return Configuration{
-		Workers:              1,
-		ExporterClassifiers:  []ExporterClassifierRule{},
-		InterfaceClassifiers: []InterfaceClassifierRule{},
-		ClassifierCacheSize:  1000,
-		ASNProviders:         []ASNProvider{ProviderFlow, ProviderBMP, ProviderGeoIP},
+		Workers:                 1,
+		ExporterClassifiers:     []ExporterClassifierRule{},
+		InterfaceClassifiers:    []InterfaceClassifierRule{},
+		ClassifierCacheDuration: 5 * time.Minute,
+		ASNProviders:            []ASNProvider{ProviderFlow, ProviderBMP, ProviderGeoIP},
 	}
 }
 

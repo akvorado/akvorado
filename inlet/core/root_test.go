@@ -92,8 +92,8 @@ func TestCore(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_inlet_core_")
 		expectedMetrics := map[string]string{
-			`classifier_cache_hits`:   "0",
-			`classifier_cache_misses`: "0",
+			`classifier_exporter_cache_size_items`:                         "0",
+			`classifier_interface_cache_size_items`:                        "0",
 			`flows_errors{error="SNMP cache miss",exporter="192.0.2.142"}`: "1",
 			`flows_errors{error="SNMP cache miss",exporter="192.0.2.143"}`: "3",
 			`flows_received{exporter="192.0.2.142"}`:                       "1",
@@ -113,8 +113,8 @@ func TestCore(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics = r.GetMetrics("akvorado_inlet_core_", "classifier_", "flows_")
 		expectedMetrics = map[string]string{
-			`classifier_cache_hits`:   "0",
-			`classifier_cache_misses`: "0",
+			`classifier_exporter_cache_size_items`:                         "0",
+			`classifier_interface_cache_size_items`:                        "0",
 			`flows_errors{error="SNMP cache miss",exporter="192.0.2.142"}`: "1",
 			`flows_errors{error="SNMP cache miss",exporter="192.0.2.143"}`: "3",
 			`flows_received{exporter="192.0.2.142"}`:                       "2",
@@ -179,8 +179,8 @@ func TestCore(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics = r.GetMetrics("akvorado_inlet_core_", "classifier_", "flows_")
 		expectedMetrics = map[string]string{
-			`classifier_cache_hits`:   "0",
-			`classifier_cache_misses`: "0",
+			`classifier_exporter_cache_size_items`:                               "0",
+			`classifier_interface_cache_size_items`:                              "0",
 			`flows_errors{error="SNMP cache miss",exporter="192.0.2.142"}`:       "1",
 			`flows_errors{error="SNMP cache miss",exporter="192.0.2.143"}`:       "3",
 			`flows_errors{error="sampling rate missing",exporter="192.0.2.142"}`: "1",

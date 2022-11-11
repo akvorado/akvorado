@@ -182,10 +182,8 @@ The following configuration keys are accepted:
   for exporters
 - `interface-classifiers` is a list of classifier rules to define
   connectivity type, network boundary and provider for an interface
-- `classifier-cache-size` defines the size of the classifier cache. As
-  classifiers are pure, their result is cached in a cache. The metrics
-  should tell if the cache is big enough. It should be set at least to
-  twice the number of the most busy interfaces.
+- `classifier-cache-duration` defines how long to keep the result of a previous
+  classification in memory to reduce CPU usage.
 - `default-sampling-rate` defines the default sampling rate to use
   when the information is missing. If not defined, flows without a
   sampling rate will be rejected. Use this option only if your

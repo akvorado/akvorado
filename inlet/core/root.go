@@ -11,9 +11,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dgraph-io/ristretto"
 	"github.com/golang/protobuf/proto"
 	"gopkg.in/tomb.v2"
+	"zgo.at/zcache/v2"
 
 	"akvorado/common/daemon"
 	"akvorado/common/http"
@@ -39,8 +39,9 @@ type Component struct {
 	httpFlowChannel    chan *flow.Message
 	httpFlowFlushDelay time.Duration
 
-	classifierCache     *ristretto.Cache
-	classifierErrLogger reporter.Logger
+	classifierExporterCache  *zcache.Cache[exporterInfo, exporterClassification]
+	classifierInterfaceCache *zcache.Cache[exporterAndInterfaceInfo, interfaceClassification]
+	classifierErrLogger      reporter.Logger
 }
 
 // Dependencies define the dependencies of the HTTP component.
@@ -56,15 +57,6 @@ type Dependencies struct {
 
 // New creates a new core component.
 func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
-	cache, err := ristretto.NewCache(&ristretto.Config{
-		NumCounters: int64(configuration.ClassifierCacheSize) * 10,
-		MaxCost:     int64(configuration.ClassifierCacheSize),
-		BufferItems: 64,
-		Metrics:     true,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("cannot initialize classifier cache: %w", err)
-	}
 	c := Component{
 		r:      r,
 		d:      &dependencies,
@@ -75,8 +67,9 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		httpFlowChannel:    make(chan *flow.Message, 10),
 		httpFlowFlushDelay: time.Second,
 
-		classifierCache:     cache,
-		classifierErrLogger: r.Sample(reporter.BurstSampler(10*time.Second, 3)),
+		classifierExporterCache:  zcache.New[exporterInfo, exporterClassification](configuration.ClassifierCacheDuration, 2*configuration.ClassifierCacheDuration),
+		classifierInterfaceCache: zcache.New[exporterAndInterfaceInfo, interfaceClassification](configuration.ClassifierCacheDuration, 2*configuration.ClassifierCacheDuration),
+		classifierErrLogger:      r.Sample(reporter.BurstSampler(10*time.Second, 3)),
 	}
 	c.d.Daemon.Track(&c.t, "inlet/core")
 	c.initMetrics()

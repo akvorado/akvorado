@@ -15,9 +15,9 @@ type metrics struct {
 	flowsErrors      *reporter.CounterVec
 	flowsHTTPClients reporter.GaugeFunc
 
-	classifierCacheHits   reporter.CounterFunc
-	classifierCacheMisses reporter.CounterFunc
-	classifierErrors      *reporter.CounterVec
+	classifierExporterCacheSize  reporter.CounterFunc
+	classifierInterfaceCacheSize reporter.CounterFunc
+	classifierErrors             *reporter.CounterVec
 }
 
 func (c *Component) initMetrics() {
@@ -52,22 +52,22 @@ func (c *Component) initMetrics() {
 		},
 	)
 
-	c.metrics.classifierCacheHits = c.r.CounterFunc(
+	c.metrics.classifierExporterCacheSize = c.r.CounterFunc(
 		reporter.CounterOpts{
-			Name: "classifier_cache_hits",
-			Help: "Number of hits in the classifier cache",
+			Name: "classifier_exporter_cache_size_items",
+			Help: "Number of items in the exporter classifier cache",
 		},
 		func() float64 {
-			return float64(c.classifierCache.Metrics.Hits())
+			return float64(c.classifierExporterCache.ItemCount())
 		},
 	)
-	c.metrics.classifierCacheMisses = c.r.CounterFunc(
+	c.metrics.classifierInterfaceCacheSize = c.r.CounterFunc(
 		reporter.CounterOpts{
-			Name: "classifier_cache_misses",
-			Help: "Number of misses in the classifier cache",
+			Name: "classifier_interface_cache_size_items",
+			Help: "Number of items in the interface classifier cache",
 		},
 		func() float64 {
-			return float64(c.classifierCache.Metrics.Misses())
+			return float64(c.classifierInterfaceCache.ItemCount())
 		},
 	)
 	c.metrics.classifierErrors = c.r.CounterVec(

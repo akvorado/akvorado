@@ -4,7 +4,6 @@
 package core
 
 import (
-	"fmt"
 	"net"
 	"net/netip"
 	"strconv"
@@ -15,6 +14,12 @@ import (
 	"akvorado/inlet/flow/decoder"
 	"akvorado/inlet/snmp"
 )
+
+// exporterAndInterfaceInfo aggregates both exporter info and interface info
+type exporterAndInterfaceInfo struct {
+	Exporter  exporterInfo
+	Interface interfaceInfo
+}
 
 // enrichFlow adds more data to a flow.
 func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *flow.Message) (skip bool) {
@@ -145,17 +150,16 @@ func (c *Component) classifyExporter(ip string, flow *flow.Message) {
 		return
 	}
 	name := flow.ExporterName
-	key := fmt.Sprintf("S-%s-%s", ip, name)
-	if classification, ok := c.classifierCache.Get(key); ok {
-		flow.ExporterGroup = classification.(exporterClassification).Group
-		flow.ExporterRole = classification.(exporterClassification).Role
-		flow.ExporterSite = classification.(exporterClassification).Site
-		flow.ExporterRegion = classification.(exporterClassification).Region
-		flow.ExporterTenant = classification.(exporterClassification).Tenant
+	si := exporterInfo{IP: ip, Name: name}
+	if classification, ok := c.classifierExporterCache.Get(si); ok {
+		flow.ExporterGroup = classification.Group
+		flow.ExporterRole = classification.Role
+		flow.ExporterSite = classification.Site
+		flow.ExporterRegion = classification.Region
+		flow.ExporterTenant = classification.Tenant
 		return
 	}
 
-	si := exporterInfo{IP: ip, Name: name}
 	var classification exporterClassification
 	for idx, rule := range c.config.ExporterClassifiers {
 		if err := rule.exec(si, &classification); err != nil {
@@ -165,7 +169,7 @@ func (c *Component) classifyExporter(ip string, flow *flow.Message) {
 				Str("exporter", name).
 				Msg("error executing classifier")
 			c.metrics.classifierErrors.WithLabelValues("exporter", strconv.Itoa(idx)).Inc()
-			c.classifierCache.Set(key, classification, 1)
+			c.classifierExporterCache.Set(si, classification)
 			return
 		}
 		if classification.Group == "" || classification.Role == "" || classification.Site == "" || classification.Region == "" || classification.Tenant == "" {
@@ -173,7 +177,7 @@ func (c *Component) classifyExporter(ip string, flow *flow.Message) {
 		}
 		break
 	}
-	c.classifierCache.Set(key, classification, 1)
+	c.classifierExporterCache.Set(si, classification)
 	flow.ExporterGroup = classification.Group
 	flow.ExporterRole = classification.Role
 	flow.ExporterSite = classification.Site
@@ -187,16 +191,19 @@ func (c *Component) classifyInterface(ip string, fl *flow.Message,
 	if len(c.config.InterfaceClassifiers) == 0 {
 		return
 	}
-	key := fmt.Sprintf("I-%s-%s-%s-%s-%d", ip, fl.ExporterName, ifName, ifDescription, ifSpeed)
-	if classification, ok := c.classifierCache.Get(key); ok {
-		*connectivity = classification.(interfaceClassification).Connectivity
-		*provider = classification.(interfaceClassification).Provider
-		*boundary = convertBoundaryToProto(classification.(interfaceClassification).Boundary)
+	si := exporterInfo{IP: ip, Name: fl.ExporterName}
+	ii := interfaceInfo{Name: ifName, Description: ifDescription, Speed: ifSpeed}
+	key := exporterAndInterfaceInfo{
+		Exporter:  si,
+		Interface: ii,
+	}
+	if classification, ok := c.classifierInterfaceCache.Get(key); ok {
+		*connectivity = classification.Connectivity
+		*provider = classification.Provider
+		*boundary = convertBoundaryToProto(classification.Boundary)
 		return
 	}
 
-	si := exporterInfo{IP: ip, Name: fl.ExporterName}
-	ii := interfaceInfo{Name: ifName, Description: ifDescription, Speed: ifSpeed}
 	var classification interfaceClassification
 	for idx, rule := range c.config.InterfaceClassifiers {
 		err := rule.exec(si, ii, &classification)
@@ -208,7 +215,7 @@ func (c *Component) classifyInterface(ip string, fl *flow.Message,
 				Str("interface", ifName).
 				Msg("error executing classifier")
 			c.metrics.classifierErrors.WithLabelValues("interface", strconv.Itoa(idx)).Inc()
-			c.classifierCache.Set(key, classification, 1)
+			c.classifierInterfaceCache.Set(key, classification)
 			return
 		}
 		if classification.Connectivity == "" || classification.Provider == "" {
@@ -219,7 +226,7 @@ func (c *Component) classifyInterface(ip string, fl *flow.Message,
 		}
 		break
 	}
-	c.classifierCache.Set(key, classification, 1)
+	c.classifierInterfaceCache.Set(key, classification)
 	*connectivity = classification.Connectivity
 	*provider = classification.Provider
 	*boundary = convertBoundaryToProto(classification.Boundary)
