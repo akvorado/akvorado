@@ -203,7 +203,7 @@ func TestRIB(t *testing.T) {
 					r.addPrefix(lookup.prefix, 64,
 						route{
 							peer:    peer,
-							nlri:    nlri{rd: lookup.rd},
+							nlri:    r.nlris.Put(nlri{rd: lookup.rd}),
 							nextHop: r.nextHops.Put(nextHop(lookup.nextHop)),
 							attributes: r.rtas.Put(routeAttributes{
 								asn: lookup.asn,
@@ -216,13 +216,15 @@ func TestRIB(t *testing.T) {
 					prefix := netip.MustParseAddr(fmt.Sprintf("2001:db8:f:%x::",
 						random.Uint32()%300))
 					rd := RD(random.Uint64() % 4)
-					r.removePrefix(prefix, 64,
-						route{
-							peer: peer,
-							nlri: nlri{
-								rd: rd,
-							},
-						})
+					if nlriRef, ok := r.nlris.Ref(nlri{
+						rd: rd,
+					}); ok {
+						r.removePrefix(prefix, 64,
+							route{
+								peer: peer,
+								nlri: nlriRef,
+							})
+					}
 					removeLookup(lookup{
 						peer:   peer,
 						prefix: prefix,
@@ -241,6 +243,7 @@ func TestRIB(t *testing.T) {
 					r.addPrefix(lookup.prefix, 64,
 						route{
 							peer:    peer,
+							nlri:    r.nlris.Put(nlri{}),
 							nextHop: r.nextHops.Put(nextHop(lookup.nextHop)),
 							attributes: r.rtas.Put(routeAttributes{
 								asn: lookup.asn,
@@ -266,7 +269,7 @@ func TestRIB(t *testing.T) {
 			}
 			found := false
 			for _, route := range tags {
-				if r.nextHops.Get(route.nextHop) != nextHop(lookup.nextHop) || route.nlri.rd != lookup.rd {
+				if r.nextHops.Get(route.nextHop) != nextHop(lookup.nextHop) || r.nlris.Get(route.nlri).rd != lookup.rd {
 					continue
 				}
 				if r.rtas.Get(route.attributes).asn != lookup.asn {
@@ -279,7 +282,7 @@ func TestRIB(t *testing.T) {
 				for _, route := range tags {
 					t.Logf("route NH: %s, RD: %s, ASN: %d",
 						netip.Addr(r.nextHops.Get(route.nextHop)),
-						route.nlri.rd, r.rtas.Get(route.attributes).asn)
+						r.nlris.Get(route.nlri).rd, r.rtas.Get(route.attributes).asn)
 				}
 				t.Errorf("cannot find %s/128 for %d; NH: %s, RD: %s, ASN: %d",
 					lookup.prefix, lookup.peer,
@@ -295,9 +298,15 @@ func TestRIB(t *testing.T) {
 			r.flushPeer(context.Background(), peer, 100)
 		}
 
-		// Check for leak of route attributes
+		// Check for leak of interned values
+		if r.nlris.Len() > 0 {
+			t.Errorf("%d NLRIs have leaked", r.nlris.Len())
+		}
+		if r.nextHops.Len() > 0 {
+			t.Errorf("%d next hops have leaked", r.nextHops.Len())
+		}
 		if r.rtas.Len() > 0 {
-			t.Fatalf("%d route attributes have leaked", r.rtas.Len())
+			t.Errorf("%d route attributes have leaked", r.rtas.Len())
 		}
 	}
 }

@@ -302,11 +302,11 @@ func (c *Component) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonito
 			p, _ := netip.AddrFromSlice(prefix)
 			added += c.rib.addPrefix(p, plen, route{
 				peer: pinfo.reference,
-				nlri: nlri{
-					family: routeFamily(bgp.RF_IPv4_UC),
+				nlri: c.rib.nlris.Put(nlri{
+					family: bgp.RF_IPv4_UC,
 					path:   ipprefix.PathIdentifier(),
 					rd:     pkey.distinguisher,
-				},
+				}),
 				nextHop:    c.rib.nextHops.Put(nextHop(nh)),
 				attributes: c.rib.rtas.Put(rta),
 			})
@@ -319,14 +319,16 @@ func (c *Component) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonito
 				plen += 96
 			}
 			p, _ := netip.AddrFromSlice(prefix)
-			removed += c.rib.removePrefix(p, plen, route{
-				peer: pinfo.reference,
-				nlri: nlri{
-					family: routeFamily(bgp.RF_IPv4_UC),
-					path:   ipprefix.PathIdentifier(),
-					rd:     pkey.distinguisher,
-				},
-			})
+			if nlriRef, ok := c.rib.nlris.Ref(nlri{
+				family: bgp.RF_IPv4_UC,
+				path:   ipprefix.PathIdentifier(),
+				rd:     pkey.distinguisher,
+			}); ok {
+				removed += c.rib.removePrefix(p, plen, route{
+					peer: pinfo.reference,
+					nlri: nlriRef,
+				})
+			}
 		}
 	}
 
@@ -393,23 +395,25 @@ func (c *Component) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonito
 			case *bgp.PathAttributeMpReachNLRI:
 				added += c.rib.addPrefix(p, plen, route{
 					peer: pinfo.reference,
-					nlri: nlri{
-						family: routeFamily(bgp.AfiSafiToRouteFamily(ipprefix.AFI(), ipprefix.SAFI())),
+					nlri: c.rib.nlris.Put(nlri{
+						family: bgp.AfiSafiToRouteFamily(ipprefix.AFI(), ipprefix.SAFI()),
 						rd:     rd,
 						path:   ipprefix.PathIdentifier(),
-					},
+					}),
 					nextHop:    c.rib.nextHops.Put(nextHop(nh)),
 					attributes: c.rib.rtas.Put(rta),
 				})
 			case *bgp.PathAttributeMpUnreachNLRI:
-				removed += c.rib.removePrefix(p, plen, route{
-					peer: pinfo.reference,
-					nlri: nlri{
-						family: routeFamily(bgp.AfiSafiToRouteFamily(ipprefix.AFI(), ipprefix.SAFI())),
-						rd:     rd,
-						path:   ipprefix.PathIdentifier(),
-					},
-				})
+				if nlriRef, ok := c.rib.nlris.Ref(nlri{
+					family: bgp.AfiSafiToRouteFamily(ipprefix.AFI(), ipprefix.SAFI()),
+					rd:     rd,
+					path:   ipprefix.PathIdentifier(),
+				}); ok {
+					removed += c.rib.removePrefix(p, plen, route{
+						peer: pinfo.reference,
+						nlri: nlriRef,
+					})
+				}
 			}
 		}
 	}

@@ -35,6 +35,25 @@ func TestPut(t *testing.T) {
 	}
 }
 
+func TestRef(t *testing.T) {
+	p := NewInternPool[likeInt]()
+	a := p.Put(likeInt(10))
+	b, bOK := p.Ref(likeInt(10))
+	c, cOK := p.Ref(likeInt(20))
+	if a != b {
+		t.Error("got two references for Put/Ref(10)")
+	}
+	if !bOK {
+		t.Error("didn't get a ref for Ref(10)")
+	}
+	if cOK {
+		t.Error("got a ref for Ref(20)")
+	}
+	if c != 0 {
+		t.Error("got a value for Ref(20)")
+	}
+}
+
 func TestPutCollision(t *testing.T) {
 	p := NewInternPool[likeInt]()
 

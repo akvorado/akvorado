@@ -14,7 +14,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🩹 *inlet*: handle non-fatal BMP decoding errors more gracefully
-- 🌱 *inlet*: reduce impact on flow ingestion when handling BMP peer removals 
+- 🌱 *inlet*: optimize BMP CPU usage, memory usage, and lock times 
 - 🌱 *inlet**: replace LRU cache for classifiers by a time-based cache
 - 🌱 *console*: <kbd>Ctrl-Enter</kbd> or <kbd>Cmd-Enter</kbd> when editing a filter now applies the changes.
 

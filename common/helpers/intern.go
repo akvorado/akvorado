@@ -72,6 +72,20 @@ func (p *InternPool[T]) Take(ref InternReference[T]) {
 	}
 }
 
+// Ref returns the reference an interned value would have.
+func (p *InternPool[T]) Ref(value T) (InternReference[T], bool) {
+	hash := value.Hash()
+	if index := p.valueIndexes[hash]; index > 0 {
+		for index > 0 {
+			if p.values[index].value.Equal(value) {
+				return index, true
+			}
+			index = p.values[index].next
+		}
+	}
+	return 0, false
+}
+
 // Put adds a value to the intern pool, returning its reference.
 func (p *InternPool[T]) Put(value T) InternReference[T] {
 	v := internValue[T]{

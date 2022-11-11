@@ -45,7 +45,7 @@ func (c *Component) PopulateRIB(t *testing.T) {
 	})
 	c.rib.addPrefix(netip.MustParseAddr("::ffff:192.0.2.0"), 96+27, route{
 		peer:    pinfo.reference,
-		nlri:    nlri{family: routeFamily(bgp.RF_FS_IPv4_UC), path: 1},
+		nlri:    c.rib.nlris.Put(nlri{family: bgp.RF_FS_IPv4_UC, path: 1}),
 		nextHop: c.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.4"))),
 		attributes: c.rib.rtas.Put(routeAttributes{
 			asn:              174,
@@ -56,7 +56,7 @@ func (c *Component) PopulateRIB(t *testing.T) {
 	})
 	c.rib.addPrefix(netip.MustParseAddr("::ffff:192.0.2.0"), 96+27, route{
 		peer:    pinfo.reference,
-		nlri:    nlri{family: routeFamily(bgp.RF_FS_IPv4_UC), path: 2},
+		nlri:    c.rib.nlris.Put(nlri{family: bgp.RF_FS_IPv4_UC, path: 2}),
 		nextHop: c.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
 		attributes: c.rib.rtas.Put(routeAttributes{
 			asn:         174,
@@ -66,7 +66,7 @@ func (c *Component) PopulateRIB(t *testing.T) {
 	})
 	c.rib.addPrefix(netip.MustParseAddr("::ffff:192.0.2.128"), 96+27, route{
 		peer:    pinfo.reference,
-		nlri:    nlri{family: routeFamily(bgp.RF_FS_IPv4_UC)},
+		nlri:    c.rib.nlris.Put(nlri{family: bgp.RF_FS_IPv4_UC}),
 		nextHop: c.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
 		attributes: c.rib.rtas.Put(routeAttributes{
 			asn:         1299,
@@ -76,7 +76,7 @@ func (c *Component) PopulateRIB(t *testing.T) {
 	})
 	c.rib.addPrefix(netip.MustParseAddr("::ffff:1.0.0.0"), 96+24, route{
 		peer:    pinfo.reference,
-		nlri:    nlri{family: routeFamily(bgp.RF_FS_IPv4_UC)},
+		nlri:    c.rib.nlris.Put(nlri{family: bgp.RF_FS_IPv4_UC}),
 		nextHop: c.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
 		attributes: c.rib.rtas.Put(routeAttributes{
 			asn: 65300,

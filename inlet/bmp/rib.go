@@ -20,30 +20,42 @@ import (
 // rib represents the RIB.
 type rib struct {
 	tree     *tree.TreeV6[route]
+	nlris    *helpers.InternPool[nlri]
 	nextHops *helpers.InternPool[nextHop]
 	rtas     *helpers.InternPool[routeAttributes]
 }
 
-// route contains the peer (external opaque value), the NLRI, the next hop and
-// route attributes. The primary key is prefix (implied), peer and nlri. This
-// structure is used a lot. To minimize its size, we order it carefully.
+// route contains the peer (external opaque value), the NLRI, the next
+// hop and route attributes. The primary key is prefix (implied), peer
+// and nlri.
 type route struct {
-	nlri       nlri                                     // 64+32+32
-	peer       uint32                                   // 32
-	nextHop    helpers.InternReference[nextHop]         // 32
-	attributes helpers.InternReference[routeAttributes] // 32
+	peer       uint32
+	nlri       helpers.InternReference[nlri]
+	nextHop    helpers.InternReference[nextHop]
+	attributes helpers.InternReference[routeAttributes]
 }
 
 // nlri is the NLRI for the route (when combined with prefix). The
 // route family is included as we may normalize NLRI accross AFI/SAFI.
 type nlri struct {
-	rd     RD          // 64
-	family routeFamily // 32
-	path   uint32      // 32
+	family bgp.RouteFamily
+	path   uint32
+	rd     RD
 }
 
-// routeFamily should be bgp.RouteFamily, but to be more memory-efficient, we use uint32
-type routeFamily uint32
+// Hash returns a hash for an NLRI
+func (n nlri) Hash() uint64 {
+	state := rtaHashSeed
+	state = rthash((*byte)(unsafe.Pointer(&n.family)), int(unsafe.Sizeof(n.family)), state)
+	state = rthash((*byte)(unsafe.Pointer(&n.path)), int(unsafe.Sizeof(n.path)), state)
+	state = rthash((*byte)(unsafe.Pointer(&n.rd)), int(unsafe.Sizeof(n.rd)), state)
+	return state
+}
+
+// Equal tells if two NLRI are equal.
+func (n nlri) Equal(n2 nlri) bool {
+	return n == n2
+}
 
 // nextHop is just an IP address.
 type nextHop netip.Addr
@@ -128,6 +140,7 @@ func (r *rib) addPrefix(ip netip.Addr, bits int, new route) int {
 		func(r1, r2 route) bool {
 			return r1.peer == r2.peer && r1.nlri == r2.nlri
 		}, func(old route) route {
+			r.nlris.Take(old.nlri)
 			r.nextHops.Take(old.nextHop)
 			r.rtas.Take(old.attributes)
 			return new
@@ -144,6 +157,7 @@ func (r *rib) removePrefix(ip netip.Addr, bits int, old route) int {
 	removed := r.tree.Delete(v6, func(r1, r2 route) bool {
 		// This is not enforced/documented, but the route in the tree is the first one.
 		if r1.peer == r2.peer && r1.nlri == r2.nlri {
+			r.nlris.Take(old.nlri)
 			r.nextHops.Take(old.nextHop)
 			r.rtas.Take(r1.attributes)
 			return true
@@ -177,6 +191,7 @@ func (r *rib) flushPeer(ctx context.Context, peer uint32, min int) (int, bool) {
 	for iter.Next() {
 		removed += iter.DeleteWithBuffer(buf, func(payload route, val route) bool {
 			if payload.peer == peer {
+				r.nlris.Take(payload.nlri)
 				r.nextHops.Take(payload.nextHop)
 				r.rtas.Take(payload.attributes)
 				return true
@@ -196,6 +211,7 @@ func (r *rib) flushPeer(ctx context.Context, peer uint32, min int) (int, bool) {
 func newRIB() *rib {
 	return &rib{
 		tree:     tree.NewTreeV6[route](),
+		nlris:    helpers.NewInternPool[nlri](),
 		nextHops: helpers.NewInternPool[nextHop](),
 		rtas:     helpers.NewInternPool[routeAttributes](),
 	}
