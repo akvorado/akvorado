@@ -21,11 +21,11 @@ func (c *Component) peerRemovalWorker() error {
 					ctx, cancel := context.WithTimeout(c.t.Context(context.Background()),
 						c.config.PeerRemovalMaxTime)
 					defer cancel()
-					c.mu.Lock()
 					start := c.d.Clock.Now()
+					c.mu.Lock()
 					defer func() {
 						c.mu.Unlock()
-						c.metrics.locked.WithLabelValues("stale").Observe(
+						c.metrics.locked.WithLabelValues("peer-removal").Observe(
 							float64(c.d.Clock.Now().Sub(start).Nanoseconds()) / 1000 / 1000 / 1000)
 					}()
 					pinfo := c.peers[pkey]
