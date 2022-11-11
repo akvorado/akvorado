@@ -100,7 +100,7 @@
             for completions
           </template>
         </SectionLabel>
-        <InputFilter v-model="filter" @submit="submitOptions()" class="mb-2" />
+        <InputFilter v-model="filter" class="mb-2" @submit="submitOptions()" />
       </div>
     </form>
   </aside>
