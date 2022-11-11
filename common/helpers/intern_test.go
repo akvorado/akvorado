@@ -166,3 +166,30 @@ func TestTake(t *testing.T) {
 		t.Fatalf("Take() didn't free everything (%d remaining)", diff)
 	}
 }
+
+func TestClone(t *testing.T) {
+	p := NewInternPool[likeInt]()
+	a := p.Put(likeInt(10))
+	b := p.Put(likeInt(11))
+	c := p.Put(likeInt(12))
+
+	q := p.Clone()
+	q.Take(a)
+	q.Take(b)
+	d := q.Put(likeInt(12))
+	e := q.Put(likeInt(13))
+	f := p.Put(likeInt(13))
+
+	if p.Len() != 4 {
+		t.Errorf("p.Len() should be 4, not %d", q.Len())
+	}
+	if q.Len() != 2 {
+		t.Errorf("q.Len() should be 2, not %d", q.Len())
+	}
+	if d != c {
+		t.Error("12 should have the same ref in both")
+	}
+	if e == f {
+		t.Error("13 should not have the same ref in both")
+	}
+}

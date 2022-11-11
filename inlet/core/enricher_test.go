@@ -351,6 +351,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 			kafkaComponent, kafkaProducer := kafka.NewMock(t, r, kafka.DefaultConfiguration())
 			httpComponent := http.NewMock(t, r)
 			bmpComponent, _ := bmp.NewMock(t, r, bmp.DefaultConfiguration())
+			helpers.StartStop(t, bmpComponent)
 			bmpComponent.PopulateRIB(t)
 
 			// Prepare a configuration
@@ -459,6 +460,8 @@ func TestGetASNumber(t *testing.T) {
 			configuration := DefaultConfiguration()
 			configuration.ASNProviders = tc.Providers
 			bmpComponent, _ := bmp.NewMock(t, r, bmp.DefaultConfiguration())
+			bmpComponent.Start()
+			defer bmpComponent.Stop()
 			bmpComponent.PopulateRIB(t)
 
 			c, err := New(r, configuration, Dependencies{
