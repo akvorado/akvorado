@@ -59,7 +59,7 @@ func TestBMP(t *testing.T) {
 				}
 				result[peer.Unmap()] = append(result[peer.Unmap()],
 					fmt.Sprintf("[%s] %s via %s %s/%d %d %v %v %v",
-						route.nlri.family,
+						bgp.RouteFamily(route.nlri.family),
 						addr, netip.Addr(nh).Unmap(),
 						route.nlri.rd, route.nlri.path,
 						attrs.asn, attrs.asPath,
@@ -1026,7 +1026,7 @@ func TestBMP(t *testing.T) {
 		// Add another prefix
 		c.rib.addPrefix(netip.MustParseAddr("2001:db8:1::"), 64, route{
 			peer:       1,
-			nlri:       nlri{family: bgp.RF_FS_IPv4_UC},
+			nlri:       nlri{family: routeFamily(bgp.RF_FS_IPv4_UC)},
 			nextHop:    c.rib.nextHops.Put(nextHop(netip.MustParseAddr("2001:db8::a"))),
 			attributes: c.rib.rtas.Put(routeAttributes{asn: 176}),
 		})

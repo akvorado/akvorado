@@ -24,23 +24,26 @@ type rib struct {
 	rtas     *helpers.InternPool[routeAttributes]
 }
 
-// route contains the peer (external opaque value), the NLRI, the next
-// hop and route attributes. The primary key is prefix (implied), peer
-// and nlri.
+// route contains the peer (external opaque value), the NLRI, the next hop and
+// route attributes. The primary key is prefix (implied), peer and nlri. This
+// structure is used a lot. To minimize its size, we order it carefully.
 type route struct {
-	peer       uint32
-	nlri       nlri
-	nextHop    helpers.InternReference[nextHop]
-	attributes helpers.InternReference[routeAttributes]
+	nlri       nlri                                     // 64+32+32
+	peer       uint32                                   // 32
+	nextHop    helpers.InternReference[nextHop]         // 32
+	attributes helpers.InternReference[routeAttributes] // 32
 }
 
 // nlri is the NLRI for the route (when combined with prefix). The
 // route family is included as we may normalize NLRI accross AFI/SAFI.
 type nlri struct {
-	family bgp.RouteFamily
-	path   uint32
-	rd     RD
+	rd     RD          // 64
+	family routeFamily // 32
+	path   uint32      // 32
 }
+
+// routeFamily should be bgp.RouteFamily, but to be more memory-efficient, we use uint32
+type routeFamily uint32
 
 // nextHop is just an IP address.
 type nextHop netip.Addr

@@ -303,7 +303,7 @@ func (c *Component) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonito
 			added += c.rib.addPrefix(p, plen, route{
 				peer: pinfo.reference,
 				nlri: nlri{
-					family: bgp.RF_IPv4_UC,
+					family: routeFamily(bgp.RF_IPv4_UC),
 					path:   ipprefix.PathIdentifier(),
 					rd:     pkey.distinguisher,
 				},
@@ -322,7 +322,7 @@ func (c *Component) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonito
 			removed += c.rib.removePrefix(p, plen, route{
 				peer: pinfo.reference,
 				nlri: nlri{
-					family: bgp.RF_IPv4_UC,
+					family: routeFamily(bgp.RF_IPv4_UC),
 					path:   ipprefix.PathIdentifier(),
 					rd:     pkey.distinguisher,
 				},
@@ -394,7 +394,7 @@ func (c *Component) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonito
 				added += c.rib.addPrefix(p, plen, route{
 					peer: pinfo.reference,
 					nlri: nlri{
-						family: bgp.AfiSafiToRouteFamily(ipprefix.AFI(), ipprefix.SAFI()),
+						family: routeFamily(bgp.AfiSafiToRouteFamily(ipprefix.AFI(), ipprefix.SAFI())),
 						rd:     rd,
 						path:   ipprefix.PathIdentifier(),
 					},
@@ -405,7 +405,7 @@ func (c *Component) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonito
 				removed += c.rib.removePrefix(p, plen, route{
 					peer: pinfo.reference,
 					nlri: nlri{
-						family: bgp.AfiSafiToRouteFamily(ipprefix.AFI(), ipprefix.SAFI()),
+						family: routeFamily(bgp.AfiSafiToRouteFamily(ipprefix.AFI(), ipprefix.SAFI())),
 						rd:     rd,
 						path:   ipprefix.PathIdentifier(),
 					},
