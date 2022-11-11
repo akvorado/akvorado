@@ -24,9 +24,15 @@ func TestLargeCommunitiesAlign(t *testing.T) {
 	second := unsafe.Pointer(&largeCommunities[1])
 	diff := uintptr(second) - uintptr(first)
 	if diff != 12 {
-		t.Fatalf("Alignment error for large community slices. Got %d, expected 12",
+		t.Errorf("Alignment error for large community slices. Got %d, expected 12",
 			diff)
 	}
+
+	// Also check other stuff we think are true about "unsafe"
+	if unsafe.Sizeof(largeCommunities[0]) != 12 {
+		t.Errorf("Large community size: got %d, expected 12", unsafe.Sizeof(largeCommunities[0]))
+	}
+	const _ = unsafe.Sizeof(largeCommunities[0])
 }
 
 func TestRTAEqual(t *testing.T) {

@@ -73,18 +73,18 @@ type routeAttributes struct {
 // magic, but this is important for performance.
 func (rta routeAttributes) Hash() uint64 {
 	state := rtaHashSeed
-	state = rthash((*byte)(unsafe.Pointer(&rta.asn)), 4, state)
+	state = rthash((*byte)(unsafe.Pointer(&rta.asn)), int(unsafe.Sizeof(rta.asn)), state)
 	if len(rta.asPath) > 0 {
-		state = rthash((*byte)(unsafe.Pointer(&rta.asPath[0])), len(rta.asPath)*4, state)
+		state = rthash((*byte)(unsafe.Pointer(&rta.asPath[0])), len(rta.asPath)*int(unsafe.Sizeof(rta.asPath[0])), state)
 	}
 	if len(rta.communities) > 0 {
-		state = rthash((*byte)(unsafe.Pointer(&rta.communities[0])), len(rta.communities)*4, state)
+		state = rthash((*byte)(unsafe.Pointer(&rta.communities[0])), len(rta.communities)*int(unsafe.Sizeof(rta.communities[0])), state)
 	}
 	if len(rta.largeCommunities) > 0 {
 		// There is a test to check that this computation is
 		// correct (the struct is 12-byte aligned, not
 		// 16-byte).
-		state = rthash((*byte)(unsafe.Pointer(&rta.largeCommunities[0])), len(rta.largeCommunities)*12, state)
+		state = rthash((*byte)(unsafe.Pointer(&rta.largeCommunities[0])), len(rta.largeCommunities)*int(unsafe.Sizeof(rta.largeCommunities[0])), state)
 	}
 	return state & rtaHashMask
 }
