@@ -157,8 +157,8 @@ func (r *rib) removePrefix(ip netip.Addr, bits int, old route) int {
 	removed := r.tree.Delete(v6, func(r1, r2 route) bool {
 		// This is not enforced/documented, but the route in the tree is the first one.
 		if r1.peer == r2.peer && r1.nlri == r2.nlri {
-			r.nlris.Take(old.nlri)
-			r.nextHops.Take(old.nextHop)
+			r.nlris.Take(r1.nlri)
+			r.nextHops.Take(r1.nextHop)
 			r.rtas.Take(r1.attributes)
 			return true
 		}
