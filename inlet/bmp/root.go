@@ -8,7 +8,6 @@ package bmp
 import (
 	"fmt"
 	"net"
-	"sync"
 	"time"
 
 	"github.com/benbjohnson/clock"
@@ -29,13 +28,10 @@ type Component struct {
 	address net.Addr
 	metrics metrics
 
-	// RIB management with peers
-	rib               *rib
-	peers             map[peerKey]*peerInfo
-	peerRemovalChan   chan peerKey
-	lastPeerReference uint32
-	staleTimer        *clock.Timer
-	mu                sync.RWMutex
+	// RIB management
+	ribWorkerChan     chan ribWorkerPayload
+	ribWorkerPrioChan chan ribWorkerPayload
+	peerStaleTimer    *clock.Timer
 }
 
 // Dependencies define the dependencies of the BMP component.
@@ -54,9 +50,8 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		d:      &dependencies,
 		config: configuration,
 
-		rib:             newRIB(),
-		peers:           make(map[peerKey]*peerInfo),
-		peerRemovalChan: make(chan peerKey, configuration.PeerRemovalMaxQueue),
+		ribWorkerChan:     make(chan ribWorkerPayload, 100),
+		ribWorkerPrioChan: make(chan ribWorkerPayload, 100),
 	}
 	if len(c.config.RDs) > 0 {
 		c.acceptedRDs = make(map[uint64]struct{})
@@ -64,7 +59,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 			c.acceptedRDs[uint64(rd)] = struct{}{}
 		}
 	}
-	c.staleTimer = c.d.Clock.AfterFunc(time.Hour, c.removeStalePeers)
+	c.peerStaleTimer = c.d.Clock.AfterFunc(time.Hour, c.handleStalePeers)
 
 	c.d.Daemon.Track(&c.t, "inlet/bmp")
 	c.initMetrics()
@@ -80,8 +75,8 @@ func (c *Component) Start() error {
 	}
 	c.address = listener.Addr()
 
-	// Peer removal
-	c.t.Go(c.peerRemovalWorker)
+	// RIB worker
+	c.t.Go(c.ribWorker)
 
 	// Listener
 	c.t.Go(func() error {
@@ -109,7 +104,8 @@ func (c *Component) Start() error {
 // Stop stops the BMP component
 func (c *Component) Stop() error {
 	defer func() {
-		close(c.peerRemovalChan)
+		close(c.ribWorkerChan)
+		close(c.ribWorkerPrioChan)
 		c.r.Info().Msg("BMP component stopped")
 	}()
 	c.r.Info().Msg("stopping BMP component")
