@@ -31,15 +31,15 @@ func (c *Component) Lookup(addrIP net.IP, nextHopIP net.IP) (result LookupResult
 	nh, _ := netip.AddrFromSlice(nextHopIP.To16())
 	v6 := patricia.NewIPv6Address(ip.AsSlice(), 128)
 
-	c.ribWorkerPrioQueue(func(s *ribWorkerState) error {
+	lookup := func(rib *rib) error {
 		bestFound := false
 		found := false
-		_, routes := s.rib.tree.FindDeepestTagsWithFilter(v6, func(route route) bool {
+		_, routes := rib.tree.FindDeepestTagsWithFilter(v6, func(route route) bool {
 			if bestFound {
 				// We already have the best route, skip remaining routes
 				return false
 			}
-			if s.rib.nextHops.Get(route.nextHop) == nextHop(nh) {
+			if rib.nextHops.Get(route.nextHop) == nextHop(nh) {
 				// Exact match found, use it and don't search further
 				bestFound = true
 				return true
@@ -55,7 +55,7 @@ func (c *Component) Lookup(addrIP net.IP, nextHopIP net.IP) (result LookupResult
 		if len(routes) == 0 {
 			return nil
 		}
-		attributes := s.rib.rtas.Get(routes[len(routes)-1].attributes)
+		attributes := rib.rtas.Get(routes[len(routes)-1].attributes)
 		result = LookupResult{
 			ASN:              attributes.asn,
 			ASPath:           attributes.asPath,
@@ -63,6 +63,15 @@ func (c *Component) Lookup(addrIP net.IP, nextHopIP net.IP) (result LookupResult
 			LargeCommunities: attributes.largeCommunities,
 		}
 		return nil
-	})
+	}
+
+	switch c.config.RIBMode {
+	case RIBModeMemory:
+		c.ribWorkerPrioQueue(func(s *ribWorkerState) error {
+			return lookup(s.rib)
+		})
+	case RIBModePerformance:
+		lookup(c.ribReadonly.Load())
+	}
 	return
 }

@@ -109,6 +109,9 @@ func TestBMP(t *testing.T) {
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
 		}
+		if helpers.RaceEnabled {
+			return
+		}
 		_, err := conn.Write([]byte{1})
 		if err != nil {
 			t.Fatal("Write() did not error while connection should be closed")
@@ -964,44 +967,64 @@ func TestBMP(t *testing.T) {
 
 	})
 
-	t.Run("lookup", func(t *testing.T) {
-		r := reporter.NewMock(t)
-		config := DefaultConfiguration()
-		c, _ := NewMock(t, r, config)
-		helpers.StartStop(t, c)
-		conn := dial(t, c)
+	for _, mode := range []RIBMode{RIBModeMemory, RIBModePerformance} {
+		t.Run(fmt.Sprintf("lookup %s", mode), func(t *testing.T) {
+			r := reporter.NewMock(t)
+			config := DefaultConfiguration()
+			config.RIBMode = mode
+			config.RIBIdleUpdateDelay = 20 * time.Millisecond
+			config.RIBMinimumUpdateDelay = 100 * time.Millisecond
+			config.RIBMaximumUpdateDelay = 5 * time.Second
+			c, _ := NewMock(t, r, config)
+			helpers.StartStop(t, c)
+			conn := dial(t, c)
 
-		send(t, conn, "bmp-init.pcap")
-		send(t, conn, "bmp-peers-up.pcap")
-		send(t, conn, "bmp-reach.pcap")
-		send(t, conn, "bmp-eor.pcap")
-		time.Sleep(20 * time.Millisecond)
+			send(t, conn, "bmp-init.pcap")
+			send(t, conn, "bmp-peers-up.pcap")
+			send(t, conn, "bmp-reach.pcap")
+			send(t, conn, "bmp-eor.pcap")
+			if mode == RIBModePerformance {
+				time.Sleep(50 * time.Millisecond)
+			} else {
+				time.Sleep(20 * time.Millisecond)
+			}
 
-		lookup := c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::a"))
-		if lookup.ASN != 174 {
-			t.Errorf("Lookup() == %d, expected 174", lookup.ASN)
-		}
+			lookup := c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::a"))
+			if lookup.ASN != 174 {
+				t.Errorf("Lookup() == %d, expected 174", lookup.ASN)
+			}
 
-		// Add another prefix
-		c.ribWorkerQueue(func(s *ribWorkerState) error {
-			s.rib.addPrefix(netip.MustParseAddr("2001:db8:1::"), 64, route{
-				peer:       1,
-				nlri:       s.rib.nlris.Put(nlri{family: bgp.RF_FS_IPv4_UC}),
-				nextHop:    s.rib.nextHops.Put(nextHop(netip.MustParseAddr("2001:db8::a"))),
-				attributes: s.rib.rtas.Put(routeAttributes{asn: 176}),
+			// Add another prefix
+			c.ribWorkerQueue(func(s *ribWorkerState) error {
+				s.rib.addPrefix(netip.MustParseAddr("2001:db8:1::"), 64, route{
+					peer:       1,
+					nlri:       s.rib.nlris.Put(nlri{family: bgp.RF_FS_IPv4_UC}),
+					nextHop:    s.rib.nextHops.Put(nextHop(netip.MustParseAddr("2001:db8::a"))),
+					attributes: s.rib.rtas.Put(routeAttributes{asn: 176}),
+				})
+				return nil
 			})
-			return nil
-		})
+			if mode == RIBModePerformance {
+				time.Sleep(50 * time.Millisecond)
+				// Despite that, we hit the minimum update delay
+				lookup := c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::a"))
+				if lookup.ASN != 174 {
+					t.Errorf("Lookup() == %d, expected 174", lookup.ASN)
+				}
+				time.Sleep(100 * time.Millisecond)
+				// Now it should be up-to-date!
+			}
 
-		lookup = c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::a"))
-		if lookup.ASN != 176 {
-			t.Errorf("Lookup() == %d, expected 176", lookup.ASN)
-		}
-		lookup = c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::b"))
-		if lookup.ASN != 174 {
-			t.Errorf("Lookup() == %d, expected 174", lookup.ASN)
-		}
-	})
+			lookup = c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::a"))
+			if lookup.ASN != 176 {
+				t.Errorf("Lookup() == %d, expected 176", lookup.ASN)
+			}
+			lookup = c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::b"))
+			if lookup.ASN != 174 {
+				t.Errorf("Lookup() == %d, expected 174", lookup.ASN)
+			}
+		})
+	}
 
 	t.Run("populate", func(t *testing.T) {
 		r := reporter.NewMock(t)
