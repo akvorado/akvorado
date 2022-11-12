@@ -129,6 +129,13 @@ The following keys are accepted:
   not supported)
 - `keep` tells how much time the routes sent from a terminated BMP
   connection should be kept
+- `rib-mode` gives a choice on how to handle the internal RIB. `memory` (the
+  default) keeps only one copy of the RIB and lookups may be delayed by updates.
+  `performance` copy the live RIB to a read-only version from time to time
+  (after `rib-idle-update-delay` when the RIB is not updated, no more than
+  `rib-minimum-update-delay` but at least every `rib-maximum-update-delay`).
+  With this mode, lookups are not delayed but there are two to three copies of
+  the RIB in memory. With 1 million routes, a RIB is about 30 MB.
 
 If you are not interested in AS paths and communities, disabling them
 will decrease the memory usage of *Akvorado*, as well as the disk

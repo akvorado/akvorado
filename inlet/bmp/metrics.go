@@ -15,6 +15,7 @@ type metrics struct {
 	errors            *reporter.CounterVec
 	ignored           *reporter.CounterVec
 	panics            *reporter.CounterVec
+	ribCopies         *reporter.CounterVec
 }
 
 // initMetrics initialize the metrics for the BMP component.
@@ -81,5 +82,12 @@ func (c *Component) initMetrics() {
 			Help: "Number of fatal errors while processing BMP messages.",
 		},
 		[]string{"exporter"},
+	)
+	c.metrics.ribCopies = c.r.CounterVec(
+		reporter.CounterOpts{
+			Name: "rib_copies_total",
+			Help: "Number of RIB copies to read-only version.",
+		},
+		[]string{"timer"},
 	)
 }

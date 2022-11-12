@@ -63,11 +63,18 @@ func (c *Component) ribWorker() error {
 		rib:   newRIB(),
 		peers: make(map[peerKey]*peerInfo),
 	}
+	// Assume the last copy was done before minimum update delay
+	lastCopy := time.Now().Add(-c.config.RIBMinimumUpdateDelay)
+	nextTimer := time.NewTimer(c.config.RIBMaximumUpdateDelay)
+	timer := "maximum"
 
 	for {
 		select {
 		case <-c.t.Dying():
 			return nil
+		case <-nextTimer.C:
+			c.updateRIBReadonly(state, timer)
+			lastCopy = time.Now()
 		case payload := <-c.ribWorkerPrioChan:
 			err := payload.fn(state)
 			close(payload.done)
@@ -79,6 +86,29 @@ func (c *Component) ribWorker() error {
 			close(payload.done)
 			if err != nil {
 				return err
+			}
+			if c.config.RIBMode == RIBModePerformance {
+				if !nextTimer.Stop() {
+					select {
+					case <-nextTimer.C:
+					default:
+					}
+				}
+				now := time.Now()
+				delta := now.Sub(lastCopy)
+				if delta < c.config.RIBMinimumUpdateDelay {
+					nextTimer.Reset(c.config.RIBMinimumUpdateDelay - delta)
+					timer = "minimum"
+				} else if delta < c.config.RIBMaximumUpdateDelay-c.config.RIBIdleUpdateDelay {
+					nextTimer.Reset(c.config.RIBIdleUpdateDelay)
+					timer = "idle"
+				} else if delta >= c.config.RIBMaximumUpdateDelay {
+					c.updateRIBReadonly(state, "maximum")
+					lastCopy = now
+				} else {
+					nextTimer.Reset(c.config.RIBMaximumUpdateDelay - delta)
+					timer = "maximum"
+				}
 			}
 		}
 	}
@@ -114,6 +144,16 @@ func (c *Component) ribWorkerQueue(fn func(*ribWorkerState) error) {
 // ribWorkerPrioQueue queues a high priority task.
 func (c *Component) ribWorkerPrioQueue(fn func(*ribWorkerState) error) {
 	c.ribWorkerQueueB(fn, true)
+}
+
+// updateRIBReadonly updates the read-only copy of the RIB
+func (c *Component) updateRIBReadonly(s *ribWorkerState, timer string) {
+	if c.config.RIBMode == RIBModePerformance {
+		c.r.Debug().Msg("copy live RIB to read-only version")
+		new := s.rib.clone()
+		c.ribReadonly.Store(new)
+		c.metrics.ribCopies.WithLabelValues(timer).Inc()
+	}
 }
 
 // addPeer provides a reference to a new peer.

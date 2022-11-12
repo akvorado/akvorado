@@ -8,6 +8,7 @@ package bmp
 import (
 	"fmt"
 	"net"
+	"sync/atomic"
 	"time"
 
 	"github.com/benbjohnson/clock"
@@ -29,6 +30,7 @@ type Component struct {
 	metrics metrics
 
 	// RIB management
+	ribReadonly       atomic.Pointer[rib]
 	ribWorkerChan     chan ribWorkerPayload
 	ribWorkerPrioChan chan ribWorkerPayload
 	peerStaleTimer    *clock.Timer
@@ -60,6 +62,9 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		}
 	}
 	c.peerStaleTimer = c.d.Clock.AfterFunc(time.Hour, c.handleStalePeers)
+	if c.config.RIBMode == RIBModePerformance {
+		c.ribReadonly.Store(newRIB())
+	}
 
 	c.d.Daemon.Track(&c.t, "inlet/bmp")
 	c.initMetrics()
