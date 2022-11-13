@@ -150,9 +150,11 @@ func (c *Component) ribWorkerPrioQueue(fn func(*ribWorkerState) error) {
 func (c *Component) updateRIBReadonly(s *ribWorkerState, timer string) {
 	if c.config.RIBMode == RIBModePerformance {
 		c.r.Debug().Msg("copy live RIB to read-only version")
+		start := time.Now()
+		defer c.metrics.ribCopies.WithLabelValues(timer).Observe(
+			float64(time.Now().Sub(start).Nanoseconds()) / 1000 / 1000 / 1000)
 		new := s.rib.clone()
 		c.ribReadonly.Store(new)
-		c.metrics.ribCopies.WithLabelValues(timer).Inc()
 	}
 }
 

@@ -15,7 +15,7 @@ type metrics struct {
 	errors            *reporter.CounterVec
 	ignored           *reporter.CounterVec
 	panics            *reporter.CounterVec
-	ribCopies         *reporter.CounterVec
+	ribCopies         *reporter.SummaryVec
 }
 
 // initMetrics initialize the metrics for the BMP component.
@@ -83,10 +83,11 @@ func (c *Component) initMetrics() {
 		},
 		[]string{"exporter"},
 	)
-	c.metrics.ribCopies = c.r.CounterVec(
-		reporter.CounterOpts{
-			Name: "rib_copies_total",
-			Help: "Number of RIB copies to read-only version.",
+	c.metrics.ribCopies = c.r.SummaryVec(
+		reporter.SummaryOpts{
+			Name:       "rib_copies_total",
+			Help:       "Duration of RIB copies to read-only version.",
+			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		},
 		[]string{"timer"},
 	)
