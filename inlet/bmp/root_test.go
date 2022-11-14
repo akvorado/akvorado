@@ -988,8 +988,8 @@ func TestBMP(t *testing.T) {
 		send(t, conn, "bmp-eor.pcap")
 		send(t, conn, "bmp-reach.pcap")
 		conn.Close()
-		mockClock.Add(2 * time.Hour)
 		time.Sleep(20 * time.Millisecond)
+		mockClock.Add(2 * time.Hour)
 
 		for i := 0; i < 5; i++ {
 			t.Logf("iteration %d", i)
