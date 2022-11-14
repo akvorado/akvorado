@@ -1040,7 +1040,7 @@ func TestBMP(t *testing.T) {
 			r := reporter.NewMock(t)
 			config := DefaultConfiguration()
 			config.RIBMode = mode
-			config.RIBIdleUpdateDelay = 20 * time.Millisecond
+			config.RIBIdleUpdateDelay = 40 * time.Millisecond
 			config.RIBMinimumUpdateDelay = 300 * time.Millisecond
 			config.RIBMaximumUpdateDelay = 5 * time.Second
 			c, _ := NewMock(t, r, config)
@@ -1052,7 +1052,7 @@ func TestBMP(t *testing.T) {
 			send(t, conn, "bmp-reach.pcap")
 			send(t, conn, "bmp-eor.pcap")
 			if mode == RIBModePerformance {
-				time.Sleep(100 * time.Millisecond) // > 20 ms (~ 100 ms)
+				time.Sleep(100 * time.Millisecond) // > 40 ms (~ 100 ms)
 			} else {
 				time.Sleep(20 * time.Millisecond)
 			}
