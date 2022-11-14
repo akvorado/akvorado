@@ -135,7 +135,7 @@ The following keys are accepted:
   (after `rib-idle-update-delay` when the RIB is not updated, no more than
   `rib-minimum-update-delay` but at least every `rib-maximum-update-delay`).
   With this mode, lookups are not delayed but there are two to three copies of
-  the RIB in memory. With 1 million routes, a RIB is about 30 MB.
+  the RIB in memory. With 1 million routes, a RIB is about 50 MB.
 
 If you are not interested in AS paths and communities, disabling them
 will decrease the memory usage of *Akvorado*, as well as the disk
