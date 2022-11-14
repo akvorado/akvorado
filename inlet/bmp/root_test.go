@@ -1041,7 +1041,7 @@ func TestBMP(t *testing.T) {
 			config := DefaultConfiguration()
 			config.RIBMode = mode
 			config.RIBIdleUpdateDelay = 20 * time.Millisecond
-			config.RIBMinimumUpdateDelay = 100 * time.Millisecond
+			config.RIBMinimumUpdateDelay = 200 * time.Millisecond
 			config.RIBMaximumUpdateDelay = 5 * time.Second
 			c, _ := NewMock(t, r, config)
 			helpers.StartStop(t, c)
@@ -1052,7 +1052,7 @@ func TestBMP(t *testing.T) {
 			send(t, conn, "bmp-reach.pcap")
 			send(t, conn, "bmp-eor.pcap")
 			if mode == RIBModePerformance {
-				time.Sleep(50 * time.Millisecond)
+				time.Sleep(100 * time.Millisecond)
 			} else {
 				time.Sleep(20 * time.Millisecond)
 			}
@@ -1073,13 +1073,13 @@ func TestBMP(t *testing.T) {
 				return nil
 			})
 			if mode == RIBModePerformance {
-				time.Sleep(50 * time.Millisecond)
+				time.Sleep(100 * time.Millisecond)
 				// Despite that, we hit the minimum update delay
 				lookup := c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::a"))
 				if lookup.ASN != 174 {
 					t.Errorf("Lookup() == %d, expected 174", lookup.ASN)
 				}
-				time.Sleep(100 * time.Millisecond)
+				time.Sleep(200 * time.Millisecond)
 				// Now it should be up-to-date!
 			}
 
