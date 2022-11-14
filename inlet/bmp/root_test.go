@@ -292,6 +292,7 @@ func TestBMP(t *testing.T) {
 			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:      "5",
 			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers_total{exporter="127.0.0.1"}`:                                           "3",
+			`peer_removal_done_total{exporter="127.0.0.1"}`:                               "1",
 			`routes_total{exporter="127.0.0.1"}`:                                          "14",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
@@ -796,6 +797,7 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`closed_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "0",
+			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "1",
 			`routes_total{exporter="127.0.0.1"}`:                                        "0",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
@@ -903,6 +905,7 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "2",
 			`closed_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "1",
+			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "1",
 			`routes_total{exporter="127.0.0.1"}`:                                        "2",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
@@ -932,6 +935,7 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "2",
 			`closed_connections_total{exporter="127.0.0.1"}`:                            "2",
 			`peers_total{exporter="127.0.0.1"}`:                                         "1",
+			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "1",
 			`routes_total{exporter="127.0.0.1"}`:                                        "2",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
@@ -954,6 +958,7 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "2",
 			`closed_connections_total{exporter="127.0.0.1"}`:                            "2",
 			`peers_total{exporter="127.0.0.1"}`:                                         "0",
+			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "2",
 			`routes_total{exporter="127.0.0.1"}`:                                        "0",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
@@ -964,7 +969,70 @@ func TestBMP(t *testing.T) {
 		if diff := helpers.Diff(gotRIB, expectedRIB); diff != "" {
 			t.Errorf("RIB (-got, +want):\n%s", diff)
 		}
+	})
 
+	t.Run("init, peers up, eor, reach NLRI, conn down, immediate timeout", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		config := DefaultConfiguration()
+		config.RIBPeerRemovalBatchRoutes = 1
+		c, mockClock := NewMock(t, r, config)
+		helpers.StartStop(t, c)
+		conn := dial(t, c)
+
+		pauseFlushPeer := make(chan bool)
+		instrumentFlushPeer = func() { <-pauseFlushPeer }
+		defer func() { instrumentFlushPeer = func() {} }()
+
+		send(t, conn, "bmp-init.pcap")
+		send(t, conn, "bmp-peers-up.pcap")
+		send(t, conn, "bmp-eor.pcap")
+		send(t, conn, "bmp-reach.pcap")
+		conn.Close()
+		mockClock.Add(2 * time.Hour)
+		time.Sleep(20 * time.Millisecond)
+
+		for i := 0; i < 5; i++ {
+			t.Logf("iteration %d", i)
+			// Sleep a bit to be sure flush is blocked
+			time.Sleep(10 * time.Millisecond)
+			done := make(chan bool)
+			go func() {
+				t.Logf("start lookup %d", i)
+				c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::a"))
+				t.Logf("got lookup result %d", i)
+				close(done)
+			}()
+			// Sleep a bit to let some time to queue the request
+			time.Sleep(10 * time.Millisecond)
+			pauseFlushPeer <- false
+			// Wait for request to be completed
+			select {
+			case <-done:
+			case <-time.After(50 * time.Millisecond):
+				close(pauseFlushPeer)
+				t.Fatalf("no lookup answer")
+			}
+		}
+		// Process remaining requests
+		close(pauseFlushPeer)
+		time.Sleep(20 * time.Millisecond)
+
+		gotMetrics := r.GetMetrics("akvorado_inlet_bmp_", "-locked_duration")
+		expectedMetrics := map[string]string{
+			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
+			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
+			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "25",
+			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
+			`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
+			`closed_connections_total{exporter="127.0.0.1"}`:                            "1",
+			`peers_total{exporter="127.0.0.1"}`:                                         "0",
+			`routes_total{exporter="127.0.0.1"}`:                                        "0",
+			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "4",
+			`peer_removal_partial_total{exporter="127.0.0.1"}`:                          "5",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+			t.Errorf("Metrics (-got, +want):\n%s", diff)
+		}
 	})
 
 	for _, mode := range []RIBMode{RIBModeMemory, RIBModePerformance} {

@@ -4,8 +4,10 @@
 package bmp
 
 import (
+	"context"
 	"net/netip"
 	"runtime"
+	"sync/atomic"
 	"unsafe"
 
 	"akvorado/common/helpers"
@@ -168,6 +170,29 @@ func (r *rib) removePrefix(ip netip.Addr, bits int, old route) int {
 // flushPeer removes a whole peer from the RIB, returning the number
 // of removed routes.
 func (r *rib) flushPeer(peer uint32) int {
+	removed, _ := r.flushPeerContext(nil, peer, 0)
+	return removed
+}
+
+// flushPeerContext removes a whole peer from the RIB, with a context returning
+// the number of removed routes and a bool to say if the operation was completed
+// before cancellation.
+func (r *rib) flushPeerContext(ctx context.Context, peer uint32, steps int) (int, bool) {
+	done := atomic.Bool{}
+	stop := make(chan struct{})
+	lastStep := 0
+	if ctx != nil {
+		defer close(stop)
+		go func() {
+			select {
+			case <-stop:
+				return
+			case <-ctx.Done():
+				done.Store(true)
+			}
+		}()
+	}
+
 	// Flush routes
 	removed := 0
 	buf := make([]route, 0)
@@ -183,9 +208,19 @@ func (r *rib) flushPeer(peer uint32) int {
 			}
 			return false
 		}, route{})
+		if ctx != nil && removed/steps > lastStep {
+			runtime.Gosched()
+			instrumentFlushPeer()
+			lastStep = removed / steps
+			if done.Load() {
+				return removed, false
+			}
+		}
 	}
-	return removed
+	return removed, true
 }
+
+var instrumentFlushPeer = func() {}
 
 // clone clone an existing RIB.
 func (r *rib) clone() *rib {

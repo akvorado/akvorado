@@ -36,20 +36,25 @@ type Configuration struct {
 	// every the specified delay (if there are updates). This is only if RIB is
 	// in performance mode.
 	RIBMaximumUpdateDelay time.Duration `validate:"min=1s,gtfield=RIBMinimumUpdateDelay"`
+	// RIBPeerRemovalBatchRoutes tells how many routes to remove before checking
+	// if we have a higher priority request. This is only if RIB is in memory
+	// mode.
+	RIBPeerRemovalBatchRoutes int `validate:"min=1"`
 }
 
 // DefaultConfiguration represents the default configuration for the BMP server
 func DefaultConfiguration() Configuration {
 	return Configuration{
-		Listen:                "0.0.0.0:10179",
-		CollectASNs:           true,
-		CollectASPaths:        true,
-		CollectCommunities:    true,
-		Keep:                  5 * time.Minute,
-		RIBMode:               RIBModeMemory,
-		RIBIdleUpdateDelay:    5 * time.Second,
-		RIBMinimumUpdateDelay: 20 * time.Second,
-		RIBMaximumUpdateDelay: 2 * time.Minute,
+		Listen:                    "0.0.0.0:10179",
+		CollectASNs:               true,
+		CollectASPaths:            true,
+		CollectCommunities:        true,
+		Keep:                      5 * time.Minute,
+		RIBMode:                   RIBModeMemory,
+		RIBIdleUpdateDelay:        5 * time.Second,
+		RIBMinimumUpdateDelay:     20 * time.Second,
+		RIBMaximumUpdateDelay:     2 * time.Minute,
+		RIBPeerRemovalBatchRoutes: 1000,
 	}
 }
 

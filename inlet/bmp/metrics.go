@@ -6,16 +6,18 @@ package bmp
 import "akvorado/common/reporter"
 
 type metrics struct {
-	openedConnections *reporter.CounterVec
-	closedConnections *reporter.CounterVec
-	peers             *reporter.GaugeVec
-	routes            *reporter.GaugeVec
-	ignoredNlri       *reporter.CounterVec
-	messages          *reporter.CounterVec
-	errors            *reporter.CounterVec
-	ignored           *reporter.CounterVec
-	panics            *reporter.CounterVec
-	ribCopies         *reporter.SummaryVec
+	openedConnections  *reporter.CounterVec
+	closedConnections  *reporter.CounterVec
+	peers              *reporter.GaugeVec
+	routes             *reporter.GaugeVec
+	ignoredNlri        *reporter.CounterVec
+	messages           *reporter.CounterVec
+	errors             *reporter.CounterVec
+	ignored            *reporter.CounterVec
+	panics             *reporter.CounterVec
+	ribCopies          *reporter.SummaryVec
+	peerRemovalPartial *reporter.CounterVec
+	peerRemovalDone    *reporter.CounterVec
 }
 
 // initMetrics initialize the metrics for the BMP component.
@@ -90,5 +92,19 @@ func (c *Component) initMetrics() {
 			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		},
 		[]string{"timer"},
+	)
+	c.metrics.peerRemovalDone = c.r.CounterVec(
+		reporter.CounterOpts{
+			Name: "peer_removal_done_total",
+			Help: "Number of peers removed from the RIB.",
+		},
+		[]string{"exporter"},
+	)
+	c.metrics.peerRemovalPartial = c.r.CounterVec(
+		reporter.CounterOpts{
+			Name: "peer_removal_partial_total",
+			Help: "Number of peers partially removed from the RIB.",
+		},
+		[]string{"exporter"},
 	)
 }

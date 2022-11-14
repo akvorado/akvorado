@@ -4,7 +4,9 @@
 package bmp
 
 import (
+	"context"
 	"encoding/binary"
+	"errors"
 	"net/netip"
 	"time"
 
@@ -44,6 +46,7 @@ func peerKeyFromBMPPeerHeader(exporter netip.AddrPort, header *bmp.BMPPeerHeader
 // ribWorkerState is the state of the rib worker (accessible through the worker
 // only).
 type ribWorkerState struct {
+	ctx               context.Context
 	rib               *rib
 	peers             map[peerKey]*peerInfo
 	peerLastReference uint32
@@ -52,9 +55,12 @@ type ribWorkerState struct {
 // ribWorkerPayload is what we provide the RIB worker with. The channel will be
 // closed when done.
 type ribWorkerPayload struct {
-	fn   func(*ribWorkerState) error
-	done chan<- struct{}
+	fn            func(*ribWorkerState) error
+	interruptible bool
+	done          chan<- struct{}
 }
+
+var errRIBWorkerCanceled = errors.New("RIB worker timeout")
 
 // ribWorker handle RIB-related operations (everything involving updating RIB
 // and related structures). Tasks are functions queued inside the worker.
@@ -67,64 +73,130 @@ func (c *Component) ribWorker() error {
 	lastCopy := time.Now().Add(-c.config.RIBMinimumUpdateDelay)
 	nextTimer := time.NewTimer(c.config.RIBMaximumUpdateDelay)
 	timer := "maximum"
+	priorityPayloads := make(chan ribWorkerPayload, 1)
+	pausedPayloads := make(chan ribWorkerPayload, 1)
+
+	handleLowPriorityPayload := func(payload ribWorkerPayload) error {
+		// These low priority operations can be canceled when a high priority request happens.
+		if c.config.RIBMode == RIBModeMemory && payload.interruptible {
+			ctx, cancel := context.WithCancel(c.t.Context(context.Background()))
+			state.ctx = ctx
+			defer cancel()
+			go func() {
+				select {
+				case <-c.t.Dying():
+				case <-ctx.Done():
+				case payload := <-c.ribWorkerPrioChan:
+					priorityPayloads <- payload
+					cancel()
+				}
+			}()
+		}
+
+		err := payload.fn(state)
+		if err == errRIBWorkerCanceled {
+			pausedPayloads <- payload
+			return nil
+		}
+		close(payload.done)
+		if err != nil {
+			return err
+		}
+
+		if c.config.RIBMode == RIBModePerformance {
+			if !nextTimer.Stop() {
+				select {
+				case <-nextTimer.C:
+				default:
+				}
+			}
+			now := time.Now()
+			delta := now.Sub(lastCopy)
+			if delta < c.config.RIBMinimumUpdateDelay {
+				nextTimer.Reset(c.config.RIBMinimumUpdateDelay - delta)
+				timer = "minimum"
+			} else if delta < c.config.RIBMaximumUpdateDelay-c.config.RIBIdleUpdateDelay {
+				nextTimer.Reset(c.config.RIBIdleUpdateDelay)
+				timer = "idle"
+			} else if delta >= c.config.RIBMaximumUpdateDelay {
+				c.updateRIBReadonly(state, "maximum")
+				lastCopy = now
+			} else {
+				nextTimer.Reset(c.config.RIBMaximumUpdateDelay - delta)
+				timer = "maximum"
+			}
+		}
+		return nil
+	}
 
 	for {
+		state.ctx = nil
 		select {
-		case <-c.t.Dying():
-			return nil
-		case <-nextTimer.C:
-			c.updateRIBReadonly(state, timer)
-			lastCopy = time.Now()
+		// Two "high priority" chans: one for internal, one for external
+		case payload := <-priorityPayloads:
+			err := payload.fn(state)
+			close(payload.done)
+			if err != nil {
+				return err
+			}
 		case payload := <-c.ribWorkerPrioChan:
 			err := payload.fn(state)
 			close(payload.done)
 			if err != nil {
 				return err
 			}
-		case payload := <-c.ribWorkerChan:
-			err := payload.fn(state)
-			close(payload.done)
-			if err != nil {
-				return err
-			}
-			if c.config.RIBMode == RIBModePerformance {
-				if !nextTimer.Stop() {
-					select {
-					case <-nextTimer.C:
-					default:
-					}
+		default:
+			select {
+			case <-c.t.Dying():
+				return nil
+			// No need to watch for internal high priority, it should have been
+			// handled before. We can still get high priority requests from the
+			// external one.
+			case payload := <-c.ribWorkerPrioChan:
+				err := payload.fn(state)
+				close(payload.done)
+				if err != nil {
+					return err
 				}
-				now := time.Now()
-				delta := now.Sub(lastCopy)
-				if delta < c.config.RIBMinimumUpdateDelay {
-					nextTimer.Reset(c.config.RIBMinimumUpdateDelay - delta)
-					timer = "minimum"
-				} else if delta < c.config.RIBMaximumUpdateDelay-c.config.RIBIdleUpdateDelay {
-					nextTimer.Reset(c.config.RIBIdleUpdateDelay)
-					timer = "idle"
-				} else if delta >= c.config.RIBMaximumUpdateDelay {
-					c.updateRIBReadonly(state, "maximum")
-					lastCopy = now
-				} else {
-					nextTimer.Reset(c.config.RIBMaximumUpdateDelay - delta)
-					timer = "maximum"
+			case payload := <-pausedPayloads:
+				if err := handleLowPriorityPayload(payload); err != nil {
+					return err
 				}
+			case payload := <-c.ribWorkerChan:
+				if err := handleLowPriorityPayload(payload); err != nil {
+					return err
+				}
+			case <-nextTimer.C:
+				c.updateRIBReadonly(state, timer)
+				lastCopy = time.Now()
 			}
 		}
 	}
 }
 
-// ribWorkerQueue_ queues a new task for the RIB worker thread. We wait for the
+type ribWorkerQueueOptions int
+
+const (
+	ribWorkerHighPriority ribWorkerQueueOptions = iota
+	ribWorkerInterruptible
+)
+
+// ribWorkerQueue queues a new task for the RIB worker thread. We wait for the
 // task to be handled. We don't want to queue up a lot of tasks asynchronously.
-func (c *Component) ribWorkerQueueB(fn func(*ribWorkerState) error, priority bool) {
+func (c *Component) ribWorkerQueue(fn func(*ribWorkerState) error, options ...ribWorkerQueueOptions) {
 	ch := c.ribWorkerChan
-	if priority {
-		ch = c.ribWorkerPrioChan
-	}
 	done := make(chan struct{})
 	payload := ribWorkerPayload{
 		fn:   fn,
 		done: done,
+	}
+	for _, option := range options {
+		switch option {
+		case ribWorkerHighPriority:
+			ch = c.ribWorkerPrioChan
+		case ribWorkerInterruptible:
+			payload.interruptible = true
+		}
 	}
 	select {
 	case <-c.t.Dying():
@@ -134,16 +206,6 @@ func (c *Component) ribWorkerQueueB(fn func(*ribWorkerState) error, priority boo
 		case <-done:
 		}
 	}
-}
-
-// ribWorkerQueue queues a normal priority task.
-func (c *Component) ribWorkerQueue(fn func(*ribWorkerState) error) {
-	c.ribWorkerQueueB(fn, false)
-}
-
-// ribWorkerPrioQueue queues a high priority task.
-func (c *Component) ribWorkerPrioQueue(fn func(*ribWorkerState) error) {
-	c.ribWorkerQueueB(fn, true)
 }
 
 // updateRIBReadonly updates the read-only copy of the RIB
@@ -196,15 +258,21 @@ func (c *Component) scheduleStalePeersRemoval(s *ribWorkerState) {
 }
 
 // removePeer remove a peer.
-func (c *Component) removePeer(s *ribWorkerState, pkey peerKey, reason string) {
+func (c *Component) removePeer(s *ribWorkerState, pkey peerKey, reason string) error {
 	exporterStr := pkey.exporter.Addr().Unmap().String()
 	peerStr := pkey.ip.Unmap().String()
 	pinfo := s.peers[pkey]
 	c.r.Info().Msgf("remove peer %s for exporter %s (reason: %s)", peerStr, exporterStr, reason)
-	removed := s.rib.flushPeer(pinfo.reference)
-	delete(s.peers, pkey)
+	removed, done := s.rib.flushPeerContext(s.ctx, pinfo.reference, c.config.RIBPeerRemovalBatchRoutes)
 	c.metrics.routes.WithLabelValues(exporterStr).Sub(float64(removed))
+	if !done {
+		c.metrics.peerRemovalPartial.WithLabelValues(exporterStr).Inc()
+		return errRIBWorkerCanceled
+	}
+	c.metrics.peerRemovalDone.WithLabelValues(exporterStr).Inc()
 	c.metrics.peers.WithLabelValues(exporterStr).Dec()
+	delete(s.peers, pkey)
+	return nil
 }
 
 // handleStalePeers remove the stale peers.
@@ -216,11 +284,13 @@ func (c *Component) handleStalePeers() {
 			if pinfo.staleUntil.IsZero() || pinfo.staleUntil.After(start) {
 				continue
 			}
-			c.removePeer(s, pkey, "stale")
+			if err := c.removePeer(s, pkey, "stale"); err != nil {
+				return err
+			}
 		}
 		c.scheduleStalePeersRemoval(s)
 		return nil
-	})
+	}, ribWorkerInterruptible)
 }
 
 // handlePeerDownNotification handles a peer-down notification by
@@ -234,9 +304,8 @@ func (c *Component) handlePeerDownNotification(pkey peerKey) {
 				pkey.ip.Unmap().String())
 			return nil
 		}
-		c.removePeer(s, pkey, "down")
-		return nil
-	})
+		return c.removePeer(s, pkey, "down")
+	}, ribWorkerInterruptible)
 }
 
 // handleConnectionDown handles a disconnect or a session termination

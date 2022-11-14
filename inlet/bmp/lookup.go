@@ -67,9 +67,9 @@ func (c *Component) Lookup(addrIP net.IP, nextHopIP net.IP) (result LookupResult
 
 	switch c.config.RIBMode {
 	case RIBModeMemory:
-		c.ribWorkerPrioQueue(func(s *ribWorkerState) error {
+		c.ribWorkerQueue(func(s *ribWorkerState) error {
 			return lookup(s.rib)
-		})
+		}, ribWorkerHighPriority)
 	case RIBModePerformance:
 		lookup(c.ribReadonly.Load())
 	}
