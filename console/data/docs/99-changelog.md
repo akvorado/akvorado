@@ -21,6 +21,7 @@ details.
 
 - 🩹 *inlet*: handle non-fatal BMP decoding errors more gracefully
 - 🩹 *inlet*: fix a small memory leak in BMP collector
+- 🩹 *console*: use configured dimensions limit for “Visualize” tab
 - 🌱 *inlet*: optimize BMP collector (see above)
 - 🌱 *inlet*: replace LRU cache for classifiers by a time-based cache
 - 🌱 *console*: <kbd>Ctrl-Enter</kbd> or <kbd>Cmd-Enter</kbd> when editing a filter now applies the changes.

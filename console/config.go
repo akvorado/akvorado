@@ -53,6 +53,7 @@ func (c *Component) configHandlerFunc(gc *gin.Context) {
 	gc.JSON(http.StatusOK, gin.H{
 		"version":                 c.config.Version,
 		"defaultVisualizeOptions": c.config.DefaultVisualizeOptions,
-		"topWidgets":              c.config.HomepageTopWidgets,
+		"dimensionsLimit":         c.config.DimensionsLimit,
+		"homepageTopWidgets":      c.config.HomepageTopWidgets,
 	})
 }

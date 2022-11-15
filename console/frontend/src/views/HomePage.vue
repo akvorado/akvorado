@@ -56,7 +56,9 @@ import WidgetTop from "./HomePage/WidgetTop.vue";
 import WidgetGraph from "./HomePage/WidgetGraph.vue";
 
 const serverConfiguration = inject("server-configuration");
-const topWidgets = computed(() => serverConfiguration.value?.topWidgets ?? []);
+const topWidgets = computed(
+  () => serverConfiguration.value?.homepageTopWidgets ?? []
+);
 const widgetTitle = (name) =>
   ({
     "src-as": "Top source AS",

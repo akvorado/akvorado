@@ -66,7 +66,7 @@ const props = defineProps({
 });
 const emit = defineEmits(["update:modelValue"]);
 
-import { ref, watch, computed } from "vue";
+import { ref, watch, computed, inject } from "vue";
 import draggable from "vuedraggable";
 import { XIcon, SelectorIcon } from "@heroicons/vue/solid";
 import { dataColor } from "@/utils";
@@ -75,6 +75,7 @@ import InputListBox from "@/components/InputListBox.vue";
 import fields from "@data/fields.json";
 import { isEqual } from "lodash-es";
 
+const serverConfiguration = inject("server-configuration");
 const selectedDimensions = ref([]);
 const dimensionsError = computed(() => {
   if (selectedDimensions.value.length < props.minDimensions) {
@@ -91,8 +92,9 @@ const limitError = computed(() => {
   if (val < 1) {
     return "Should be ≥ 1";
   }
-  if (val > 50) {
-    return "Should be ≤ 50";
+  const upperLimit = serverConfiguration.value?.dimensionsLimit ?? 50;
+  if (val > upperLimit) {
+    return `Should be ≤ ${upperLimit}`;
   }
   return "";
 });

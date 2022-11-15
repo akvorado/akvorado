@@ -26,7 +26,8 @@ func TestConfigHandler(t *testing.T) {
 					"filter":     "InIfBoundary = external",
 					"dimensions": []string{"SrcAS"},
 				},
-				"topWidgets": []string{"src-as", "src-port", "protocol", "src-country", "etype"},
+				"dimensionsLimit":    50,
+				"homepageTopWidgets": []string{"src-as", "src-port", "protocol", "src-country", "etype"},
 			},
 		},
 	})
