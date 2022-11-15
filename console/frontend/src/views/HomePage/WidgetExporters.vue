@@ -12,7 +12,10 @@
   </div>
 </template>
 
-<script setup>
+<script lang="ts" setup>
+import { computed } from "vue";
+import { useFetch } from "@vueuse/core";
+
 const props = defineProps({
   refresh: {
     type: Number,
@@ -20,10 +23,9 @@ const props = defineProps({
   },
 });
 
-import { computed } from "vue";
-import { useFetch } from "@vueuse/core";
-
 const url = computed(() => "/api/v0/console/widget/exporters?" + props.refresh);
-const { data } = useFetch(url, { refetch: true }).get().json();
-const exporters = computed(() => data?.value?.exporters?.length || "???");
+const { data } = useFetch(url, { refetch: true })
+  .get()
+  .json<{ exporters: string[] }>();
+const exporters = computed(() => data.value?.exporters.length || "???");
 </script>

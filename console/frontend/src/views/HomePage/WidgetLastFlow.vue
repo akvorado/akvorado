@@ -19,21 +19,23 @@
   </div>
 </template>
 
-<script setup>
-const props = defineProps({
-  refresh: {
-    type: Number,
-    default: 0,
-  },
-});
-
+<script lang="ts" setup>
 import { computed } from "vue";
 import { useFetch } from "@vueuse/core";
 import { compareFields } from "../../utils";
 
-const url = computed(() => "/api/v0/console/widget/flow-last?" + props.refresh);
-const { data } = useFetch(url, { refetch: true }).get().json();
-const lastFlow = computed(() => ({
+const props = withDefaults(
+  defineProps<{
+    refresh?: number;
+  }>(),
+  { refresh: 0 }
+);
+
+const url = computed(() => `/api/v0/console/widget/flow-last?${props.refresh}`);
+const { data } = useFetch(url, { refetch: true })
+  .get()
+  .json<Record<string, string | number>>();
+const lastFlow = computed((): [string, string | number][] => ({
   ...(lastFlow.value || {}),
   ...Object.entries(data.value || {}).sort(([f1], [f2]) =>
     compareFields(f1, f2)

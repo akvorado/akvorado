@@ -8,31 +8,31 @@
   </div>
 </template>
 
-<script setup>
-const props = defineProps({
-  kind: {
-    type: String,
-    default: "error",
-    validator(value) {
-      return ["info", "danger", "success", "warning"].includes(value);
-    },
-  },
-});
-
+<script lang="ts" setup>
 import { computed } from "vue";
 import { InformationCircleIcon } from "@heroicons/vue/solid";
 
-const classes = computed(() => {
+const props = withDefaults(
+  defineProps<{
+    kind?: "info" | "error" | "success" | "warning";
+  }>(),
+  {
+    kind: "error",
+  }
+);
+
+const classes = computed<string>(() => {
   switch (props.kind) {
     case "info":
       return "text-blue-700 bg-blue-100 dark:bg-blue-200 dark:text-blue-800";
-    case "danger":
+    case "error":
       return "text-red-700 bg-red-100 dark:bg-red-200 dark:text-red-800";
     case "success":
       return "text-green-700 bg-green-100 dark:bg-green-200 dark:text-green-800";
     case "warning":
       return "text-yellow-700 bg-yellow-100 dark:bg-yellow-200 dark:text-yellow-800";
+    default:
+      return "";
   }
-  return "";
 });
 </script>

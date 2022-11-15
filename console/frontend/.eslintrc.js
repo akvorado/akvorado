@@ -9,7 +9,12 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 2021,
   },
-  extends: ["plugin:vue/vue3-recommended", "eslint:recommended", "prettier"],
+  extends: [
+    "plugin:vue/vue3-recommended",
+    "eslint:recommended",
+    "@vue/eslint-config-typescript",
+    "@vue/eslint-config-prettier",
+  ],
   rules: {
     "vue/no-unused-vars": "error",
     "vue/no-v-html": "off",

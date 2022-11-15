@@ -18,35 +18,31 @@
   </div>
 </template>
 
-<script setup>
-const props = defineProps({
-  modelValue: {
-    // start: start time
-    // end: end time
-    // errors: is there an input error?
-    type: Object,
-    required: true,
-  },
-});
-const emit = defineEmits(["update:modelValue"]);
-
+<script lang="ts" setup>
 import { ref, computed, watch } from "vue";
 import { Date as SugarDate } from "sugar-date";
 import InputString from "@/components/InputString.vue";
 import InputListBox from "@/components/InputListBox.vue";
 import { isEqual } from "lodash-es";
 
+const props = defineProps<{
+  modelValue: ModelType;
+}>();
+const emit = defineEmits<{
+  (e: "update:modelValue", value: typeof props.modelValue): void;
+}>();
+
 const startTime = ref("");
 const endTime = ref("");
 const parsedStartTime = computed(() => SugarDate.create(startTime.value));
 const parsedEndTime = computed(() => SugarDate.create(endTime.value));
 const startTimeError = computed(() =>
-  isNaN(parsedStartTime.value) ? "Invalid date" : ""
+  isNaN(parsedStartTime.value.valueOf()) ? "Invalid date" : ""
 );
 const endTimeError = computed(
   () =>
-    (isNaN(parsedEndTime.value) ? "Invalid date" : "") ||
-    (!isNaN(parsedStartTime.value) &&
+    (isNaN(parsedEndTime.value.valueOf()) ? "Invalid date" : "") ||
+    (!isNaN(parsedStartTime.value.valueOf()) &&
       parsedStartTime.value > parsedEndTime.value &&
       "End date should be before start date") ||
     ""
@@ -124,13 +120,15 @@ watch(selectedPreset, (preset) => {
 watch(
   () => props.modelValue,
   (m) => {
-    startTime.value = m.start;
-    endTime.value = m.end;
+    if (m) {
+      startTime.value = m.start;
+      endTime.value = m.end;
+    }
   },
   { immediate: true, deep: true }
 );
 watch(
-  [startTime, endTime, hasErrors],
+  [startTime, endTime, hasErrors] as const,
   ([start, end, errors]) => {
     // Find the right preset
     const newPreset =
@@ -151,4 +149,12 @@ watch(
   },
   { immediate: true }
 );
+</script>
+
+<script lang="ts">
+export type ModelType = {
+  start: string;
+  end: string;
+  errors?: boolean;
+} | null;
 </script>

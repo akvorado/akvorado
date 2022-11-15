@@ -173,7 +173,7 @@ lint: .lint-go~ .lint-js~ ## Run linting
 .lint-go~: $(shell $(LSFILES) '*.go' 2> /dev/null) | $(REVIVE) ; $(info $(M) running golint…)
 	$Q $(REVIVE) -formatter friendly -set_exit_status ./...
 	$Q touch $@
-.lint-js~: $(shell $(LSFILES) '*.js' '*.vue' '*.html' 2> /dev/null)
+.lint-js~: $(shell $(LSFILES) '*.js' '*.ts' '*.vue' '*.html' 2> /dev/null)
 .lint-js~: $(GENERATED_JS) ; $(info $(M) running jslint…)
 	$Q cd console/frontend && npm run --silent lint
 	$Q touch $@
@@ -183,7 +183,7 @@ fmt: .fmt-go~ .fmt-js~ ## Format all source files
 .fmt-go~: $(shell $(LSFILES) '*.go' 2> /dev/null) | $(GOIMPORTS) ; $(info $(M) formatting Go code…)
 	$Q $(GOIMPORTS) -local $(MODULE) -w $? < /dev/null
 	$Q touch $@
-.fmt-js~: $(shell $(LSFILES) '*.js' '*.vue' '*.html' 2> /dev/null)
+.fmt-js~: $(shell $(LSFILES) '*.js' '*.ts' '*.vue' '*.html' 2> /dev/null)
 .fmt-js~: $(GENERATED_JS) ; $(info $(M) formatting JS code…)
 	$Q cd console/frontend && npm run --silent format
 	$Q touch $@

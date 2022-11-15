@@ -1,0 +1,14 @@
+diff --git a/node_modules/sugar-date/sugar.d.ts b/node_modules/sugar-date/sugar.d.ts
+index 7dc9665..a0d33d3 100644
+--- a/node_modules/sugar-date/sugar.d.ts
++++ b/node_modules/sugar-date/sugar.d.ts
+@@ -704,4 +1304,9 @@ declare module "sugar" {
+   export = Sugar;
+ }
+ 
++declare module "sugar-date" {
++  const Sugar: sugarjs.Sugar;
++  export = Sugar;
++}
++
+ declare var Sugar: sugarjs.Sugar;

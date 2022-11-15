@@ -4,15 +4,15 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import { lezer } from "@lezer/generator/rollup";
-import path from "path";
+import { fileURLToPath, URL } from "node:url";
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [vue(), lezer()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
-      "@data": path.resolve(__dirname, "./data"),
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+      "@data": fileURLToPath(new URL("./data", import.meta.url)),
     },
   },
   build: {

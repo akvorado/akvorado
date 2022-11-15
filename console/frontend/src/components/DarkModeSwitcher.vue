@@ -12,8 +12,9 @@
   </button>
 </template>
 
-<script setup>
+<script lang="ts" setup>
 import { inject } from "vue";
 import { SunIcon, MoonIcon } from "@heroicons/vue/solid";
-const { isDark, toggleDark } = inject("theme");
+import { ThemeKey } from "@/components/ThemeProvider.vue";
+const { isDark, toggleDark } = inject(ThemeKey)!;
 </script>

@@ -46,7 +46,7 @@
   </div>
 </template>
 
-<script setup>
+<script lang="ts" setup>
 import { inject, computed } from "vue";
 import { useInterval } from "@vueuse/core";
 import WidgetLastFlow from "./HomePage/WidgetLastFlow.vue";
@@ -54,12 +54,13 @@ import WidgetFlowRate from "./HomePage/WidgetFlowRate.vue";
 import WidgetExporters from "./HomePage/WidgetExporters.vue";
 import WidgetTop from "./HomePage/WidgetTop.vue";
 import WidgetGraph from "./HomePage/WidgetGraph.vue";
+import { ServerConfigKey } from "@/components/ServerConfigProvider.vue";
 
-const serverConfiguration = inject("server-configuration");
+const serverConfiguration = inject(ServerConfigKey)!;
 const topWidgets = computed(
   () => serverConfiguration.value?.homepageTopWidgets ?? []
 );
-const widgetTitle = (name) =>
+const widgetTitle = (name: string) =>
   ({
     "src-as": "Top source AS",
     "dst-as": "Top destination AS",

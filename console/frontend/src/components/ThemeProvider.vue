@@ -5,15 +5,23 @@
   <slot></slot>
 </template>
 
-<script setup>
+<script lang="ts" setup>
 import { provide, readonly } from "vue";
 import { useDark, useToggle } from "@vueuse/core";
 
 const isDark = useDark();
 const toggleDark = useToggle(isDark);
 
-provide("theme", {
+provide(ThemeKey, {
   isDark: readonly(isDark),
   toggleDark,
 });
+</script>
+
+<script lang="ts">
+import type { InjectionKey, Ref } from "vue";
+export const ThemeKey: InjectionKey<{
+  isDark: Readonly<Ref<boolean>>;
+  toggleDark: () => void;
+}> = Symbol();
 </script>

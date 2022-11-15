@@ -5,12 +5,32 @@
   <slot></slot>
 </template>
 
-<script setup>
+<script lang="ts" setup>
 import { provide, readonly } from "vue";
 import { useFetch } from "@vueuse/core";
 
-// TODO: handle error
-const { data } = useFetch("/api/v0/console/configuration").get().json();
+const { data } = useFetch("/api/v0/console/configuration")
+  .get()
+  .json<ServerConfig>();
 
-provide("server-configuration", readonly(data));
+provide(ServerConfigKey, readonly(data));
+</script>
+
+<script lang="ts">
+import type { InjectionKey, Ref } from "vue";
+
+type ServerConfig = {
+  version: string;
+  defaultVisualizeOptions: {
+    start: string;
+    end: string;
+    filter: string;
+    dimensions: string[];
+  };
+  dimensionsLimit: number;
+  homepageTopWidgets: string[];
+};
+
+export const ServerConfigKey: InjectionKey<Readonly<Ref<ServerConfig>>> =
+  Symbol();
 </script>

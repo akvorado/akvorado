@@ -12,29 +12,34 @@
   </div>
 </template>
 
-<script setup>
-const props = defineProps({
-  refresh: {
-    type: Number,
-    default: 0,
-  },
-});
-
+<script lang="ts" setup>
 import { computed } from "vue";
 import { useFetch } from "@vueuse/core";
 
-const url = computed(() => "/api/v0/console/widget/flow-rate?" + props.refresh);
-const { data } = useFetch(url, { refetch: true }).get().json();
+const props = withDefaults(
+  defineProps<{
+    refresh?: number;
+  }>(),
+  {
+    refresh: 0,
+  }
+);
+
+const url = computed(() => `/api/v0/console/widget/flow-rate?${props.refresh}`);
+const { data } = useFetch(url, { refetch: true }).get().json<{
+  rate: number;
+  period: string;
+}>();
 const rate = computed(() => {
+  if (!data.value?.rate) {
+    return "???";
+  }
   if (data.value?.rate > 1_500_000) {
     return (data.value.rate / 1_000_000).toFixed(1) + "M";
   }
   if (data.value?.rate > 1_500) {
     return (data.value.rate / 1_000).toFixed(1) + "K";
   }
-  if (data.value?.rate >= 0) {
-    return data.value.rate.toFixed(0);
-  }
-  return "???";
+  return data.value.rate.toFixed(0);
 });
 </script>

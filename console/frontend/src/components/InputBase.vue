@@ -33,18 +33,19 @@
   </div>
 </template>
 
-<script setup>
-defineProps({
-  label: {
-    type: String,
-    default: null,
-  },
-  error: {
-    type: String,
-    default: "",
-  },
-});
-
+<script lang="ts" setup>
 import { v4 as uuidv4 } from "uuid";
+
+withDefaults(
+  defineProps<{
+    label?: string;
+    error?: string;
+  }>(),
+  {
+    label: "",
+    error: "",
+  }
+);
+
 const id = uuidv4();
 </script>

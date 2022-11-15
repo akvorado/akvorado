@@ -4,33 +4,32 @@
 <template>
   <component
     :is="component"
-    :theme="isDark ? 'dark' : null"
+    :theme="isDark ? 'dark' : undefined"
     :data="data"
     autoresize
   />
 </template>
 
-<script setup>
-const props = defineProps({
-  data: {
-    type: Object,
-    default: null,
-  },
-});
-
+<script lang="ts" setup>
 import { computed, inject } from "vue";
-import { graphTypes } from "./constants";
 import DataGraphTimeSeries from "./DataGraphTimeSeries.vue";
 import DataGraphSankey from "./DataGraphSankey.vue";
-const { isDark } = inject("theme");
+import type { GraphHandlerResult, SankeyHandlerResult } from ".";
+import { ThemeKey } from "@/components/ThemeProvider.vue";
+const { isDark } = inject(ThemeKey)!;
+
+const props = defineProps<{
+  data: GraphHandlerResult | SankeyHandlerResult | null;
+}>();
 
 const component = computed(() => {
-  const { stacked, lines, grid, sankey } = graphTypes;
-  if ([stacked, lines, grid].includes(props.data.graphType)) {
-    return DataGraphTimeSeries;
-  }
-  if ([sankey].includes(props.data.graphType)) {
-    return DataGraphSankey;
+  switch (props.data?.graphType) {
+    case "stacked":
+    case "lines":
+    case "grid":
+      return DataGraphTimeSeries;
+    case "sankey":
+      return DataGraphSankey;
   }
   return "div";
 });

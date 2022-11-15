@@ -18,13 +18,10 @@
   </div>
 </template>
 
-<script setup>
-defineProps({
-  loading: {
-    type: Boolean,
-    required: true,
-  },
-});
-
+<script lang="ts" setup>
 import LoadingSpinner from "@/components/LoadingSpinner.vue";
+
+defineProps<{
+  loading: boolean;
+}>();
 </script>

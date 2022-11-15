@@ -65,7 +65,7 @@
   </Disclosure>
 </template>
 
-<script setup>
+<script lang="ts" setup>
 import { computed, inject } from "vue";
 import { useRoute } from "vue-router";
 import { Disclosure, DisclosureButton, DisclosurePanel } from "@headlessui/vue";
@@ -78,8 +78,9 @@ import {
 } from "@heroicons/vue/solid";
 import DarkModeSwitcher from "@/components/DarkModeSwitcher.vue";
 import UserMenu from "@/components/UserMenu.vue";
+import { ServerConfigKey } from "@/components/ServerConfigProvider.vue";
 
-const serverConfiguration = inject("server-configuration");
+const serverConfiguration = inject(ServerConfigKey);
 const route = useRoute();
 const navigation = computed(() => [
   { name: "Home", icon: HomeIcon, link: "/", current: route.path == "/" },

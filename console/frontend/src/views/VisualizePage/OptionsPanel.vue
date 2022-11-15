@@ -72,12 +72,16 @@
             class="order-4 flex grow flex-row justify-between gap-x-3 sm:max-lg:order-2 sm:max-lg:grow-0 sm:max-lg:flex-col"
           >
             <InputCheckbox
-              v-if="[stacked, lines, grid].includes(graphType.name)"
+              v-if="
+                graphType.type === 'stacked' ||
+                graphType.type === 'lines' ||
+                graphType.type === 'grid'
+              "
               v-model="bidirectional"
               label="Bidirectional"
             />
             <InputCheckbox
-              v-if="[stacked].includes(graphType.name)"
+              v-if="graphType.type === 'stacked'"
               v-model="previousPeriod"
               label="Previous period"
             />
@@ -106,45 +110,57 @@
   </aside>
 </template>
 
-<script setup>
-const props = defineProps({
-  modelValue: {
-    type: Object,
-    required: true,
-  },
-  loading: {
-    type: Boolean,
-    default: false,
-  },
-});
-const emit = defineEmits(["update:modelValue", "cancel"]);
-
-import { ref, watch, computed, inject } from "vue";
+<script lang="ts" setup>
+import { ref, watch, computed, inject, toRaw } from "vue";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/vue/solid";
-import InputTimeRange from "@/components/InputTimeRange.vue";
-import InputDimensions from "@/components/InputDimensions.vue";
+import {
+  default as InputTimeRange,
+  type ModelType as InputTimeRangeModelType,
+} from "@/components/InputTimeRange.vue";
+import {
+  default as InputDimensions,
+  type ModelType as InputDimensionsModelType,
+} from "@/components/InputDimensions.vue";
 import InputListBox from "@/components/InputListBox.vue";
 import InputButton from "@/components/InputButton.vue";
 import InputCheckbox from "@/components/InputCheckbox.vue";
 import InputChoice from "@/components/InputChoice.vue";
-import InputFilter from "@/components/InputFilter.vue";
+import {
+  default as InputFilter,
+  type ModelType as InputFilterModelType,
+} from "@/components/InputFilter.vue";
+import { ServerConfigKey } from "@/components/ServerConfigProvider.vue";
 import SectionLabel from "./SectionLabel.vue";
 import GraphIcon from "./GraphIcon.vue";
-import { graphTypes } from "./constants";
+import type { Units } from ".";
 import { isEqual } from "lodash-es";
 
-const graphTypeList = Object.entries(graphTypes).map(([, v], idx) => ({
+const props = withDefaults(
+  defineProps<{
+    modelValue: ModelType;
+    loading?: boolean;
+  }>(),
+  {
+    loading: false,
+  }
+);
+const emit = defineEmits<{
+  (e: "update:modelValue", value: typeof props.modelValue): void;
+  (e: "cancel"): void;
+}>();
+
+const graphTypeList = Object.entries(graphTypes).map(([k, v], idx) => ({
   id: idx + 1,
+  type: k as keyof typeof graphTypes, // why isn't it infered?
   name: v,
 }));
-const { stacked, lines, grid } = graphTypes;
 
 const open = ref(false);
 const graphType = ref(graphTypeList[0]);
-const timeRange = ref({});
-const dimensions = ref([]);
-const filter = ref({});
-const units = ref("l3bps");
+const timeRange = ref<InputTimeRangeModelType>(null);
+const dimensions = ref<InputDimensionsModelType>(null);
+const filter = ref<InputFilterModelType>(null);
+const units = ref<Units>("l3bps");
 const bidirectional = ref(false);
 const previousPeriod = ref(false);
 
@@ -156,75 +172,104 @@ const submitOptions = () => {
   }
 };
 
-const options = computed(() => ({
-  // Common to all graph types
-  graphType: graphType.value.name,
-  start: timeRange.value.start,
-  end: timeRange.value.end,
-  dimensions: dimensions.value.selected,
-  limit: dimensions.value.limit,
-  filter: filter.value.expression,
-  units: units.value,
-  // Depending on the graph type...
-  ...([stacked, lines].includes(graphType.value.name) && {
-    bidirectional: bidirectional.value,
-    previousPeriod:
-      graphType.value.name === stacked ? previousPeriod.value : false,
-    points: 200,
-  }),
-  ...(graphType.value.name === grid && {
-    bidirectional: bidirectional.value,
+const options = computed((): ModelType => {
+  if (!timeRange.value || !dimensions.value || !filter.value) {
+    return options.value;
+  }
+  return {
+    graphType: graphType.value.type,
+    start: timeRange.value?.start,
+    end: timeRange.value?.end,
+    dimensions: dimensions.value?.selected,
+    limit: dimensions.value?.limit,
+    filter: filter.value?.expression,
+    units: units.value,
+    bidirectional: false,
     previousPeriod: false,
-    points: 50,
-  }),
-}));
+    // Depending on the graph type...
+    ...(graphType.value.type === "stacked" && {
+      bidirectional: bidirectional.value,
+      previousPeriod: previousPeriod.value,
+    }),
+    ...(graphType.value.type === "lines" && {
+      bidirectional: bidirectional.value,
+    }),
+    ...(graphType.value.type === "grid" && {
+      bidirectional: bidirectional.value,
+    }),
+  };
+});
 const applyLabel = computed(() =>
   isEqual(options.value, props.modelValue) ? "Refresh" : "Apply"
 );
 const hasErrors = computed(
   () =>
-    !!(timeRange.value.errors || dimensions.value.errors || filter.value.errors)
+    !!(
+      timeRange.value?.errors ||
+      dimensions.value?.errors ||
+      filter.value?.errors
+    )
 );
 
-const serverConfiguration = inject("server-configuration");
+const serverConfiguration = inject(ServerConfigKey)!;
 watch(
-  () => [props.modelValue, serverConfiguration.value?.defaultVisualizeOptions],
+  () =>
+    [
+      props.modelValue,
+      serverConfiguration.value?.defaultVisualizeOptions,
+    ] as const,
   ([modelValue, defaultOptions]) => {
-    if (defaultOptions === undefined) return;
-    const {
-      graphType: _graphType = graphTypes.stacked,
-      start = defaultOptions?.start,
-      end = defaultOptions?.end,
-      dimensions: _dimensions = defaultOptions?.dimensions,
-      limit = 10,
-      points /* eslint-disable-line no-unused-vars */,
-      filter: _filter = defaultOptions?.filter,
-      units: _units = "l3bps",
-      bidirectional: _bidirectional = false,
-      previousPeriod: _previousPeriod = false,
-    } = modelValue;
+    if (!defaultOptions) return;
+    const currentValue: NonNullable<ModelType> = modelValue ?? {
+      graphType: "stacked",
+      start: defaultOptions.start,
+      end: defaultOptions.end,
+      dimensions: toRaw(defaultOptions.dimensions),
+      limit: 10,
+      filter: defaultOptions.filter,
+      units: "l3bps",
+      bidirectional: false,
+      previousPeriod: false,
+    };
 
     // Dispatch values in refs
+    const t = currentValue.graphType;
     graphType.value =
-      graphTypeList.find(({ name }) => name === _graphType) || graphTypeList[0];
-    timeRange.value = { start, end };
+      graphTypeList.find(({ type }) => type === t) || graphTypeList[0];
+    timeRange.value = { start: currentValue.start, end: currentValue.end };
     dimensions.value = {
-      selected: [..._dimensions],
-      limit,
+      selected: [...currentValue.dimensions],
+      limit: currentValue.limit,
     };
-    filter.value = { expression: _filter };
-    units.value = _units;
-    bidirectional.value = _bidirectional;
-    previousPeriod.value = _previousPeriod;
+    filter.value = { expression: currentValue.filter };
+    units.value = currentValue.units;
+    bidirectional.value = currentValue.bidirectional;
+    previousPeriod.value = currentValue.previousPeriod;
 
     // A bit risky, but it seems to work.
     if (!isEqual(modelValue, options.value)) {
       open.value = true;
-      if (!hasErrors.value && start) {
+      if (!hasErrors.value) {
         emit("update:modelValue", options.value);
       }
     }
   },
   { immediate: true, deep: true }
 );
+</script>
+
+<script lang="ts">
+import { graphTypes } from "./constants";
+
+export type ModelType = {
+  graphType: keyof typeof graphTypes;
+  start: string;
+  end: string;
+  dimensions: string[];
+  limit: number;
+  filter: string;
+  units: Units;
+  bidirectional: boolean;
+  previousPeriod: boolean;
+} | null;
 </script>
