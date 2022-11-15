@@ -50,33 +50,32 @@
   </div>
 </template>
 
-<script setup>
-const props = defineProps({
-  modelValue: {
-    // selected: selected dimensions (names)
-    // limit: limit as an integer
-    // errors: is there an input error?
-    type: Object,
-    required: true,
-  },
-  minDimensions: {
-    type: Number,
-    default: 0,
-  },
-});
-const emit = defineEmits(["update:modelValue"]);
-
+<script lang="ts" setup>
 import { ref, watch, computed, inject } from "vue";
 import draggable from "vuedraggable";
 import { XIcon, SelectorIcon } from "@heroicons/vue/solid";
 import { dataColor } from "@/utils";
 import InputString from "@/components/InputString.vue";
 import InputListBox from "@/components/InputListBox.vue";
+import { ServerConfigKey } from "@/components/ServerConfigProvider.vue";
 import fields from "@data/fields.json";
 import { isEqual } from "lodash-es";
 
-const serverConfiguration = inject("server-configuration");
-const selectedDimensions = ref([]);
+const props = withDefaults(
+  defineProps<{
+    modelValue: ModelType;
+    minDimensions?: number;
+  }>(),
+  {
+    minDimensions: 0,
+  }
+);
+const emit = defineEmits<{
+  (e: "update:modelValue", value: typeof props.modelValue): void;
+}>();
+
+const serverConfiguration = inject(ServerConfigKey)!;
+const selectedDimensions = ref<Array<typeof dimensions[0]>>([]);
 const dimensionsError = computed(() => {
   if (selectedDimensions.value.length < props.minDimensions) {
     return "At least two dimensions are required";
@@ -110,7 +109,7 @@ const dimensions = fields.map((v, idx) => ({
   ),
 }));
 
-const removeDimension = (dimension) => {
+const removeDimension = (dimension: typeof dimensions[0]) => {
   selectedDimensions.value = selectedDimensions.value.filter(
     (d) => d !== dimension
   );
@@ -119,19 +118,22 @@ const removeDimension = (dimension) => {
 watch(
   () => props.modelValue,
   (value) => {
-    limit.value = value.limit.toString();
-    selectedDimensions.value = value.selected
-      .map((name) => dimensions.find((d) => d.name === name))
-      .filter((d) => d !== undefined);
+    if (value) {
+      limit.value = value.limit.toString();
+    }
+    if (value)
+      selectedDimensions.value = value.selected
+        .map((name) => dimensions.find((d) => d.name === name))
+        .filter((d): d is typeof dimensions[0] => !!d);
   },
   { immediate: true, deep: true }
 );
 watch(
-  [selectedDimensions, limit, hasErrors],
+  [selectedDimensions, limit, hasErrors] as const,
   ([selected, limit, hasErrors]) => {
     const updated = {
       selected: selected.map((d) => d.name),
-      limit: parseInt(limit) || limit,
+      limit: parseInt(limit) || 10,
       errors: hasErrors,
     };
     if (!isEqual(updated, props.modelValue)) {
@@ -139,4 +141,12 @@ watch(
     }
   }
 );
+</script>
+
+<script lang="ts">
+export type ModelType = {
+  selected: string[];
+  limit: number;
+  errors?: boolean;
+} | null;
 </script>

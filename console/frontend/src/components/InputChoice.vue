@@ -9,17 +9,20 @@
       role="group"
     >
       <label
-        v-for="({ name, label: blabel }, idx) in choices"
-        :key="name"
-        :for="id(name)"
+        v-for="(choice, idx) in choices"
+        :key="choice.name"
+        :for="id(choice.name)"
         class="cursor-pointer first:rounded-l-md last:rounded-r-md focus-within:z-10 focus-within:ring-2 focus-within:ring-blue-300 dark:focus-within:ring-blue-800"
       >
         <input
-          :id="id(name)"
+          :id="id(choice.name)"
           type="radio"
-          :checked="modelValue === name"
+          :checked="modelValue === choice.name"
           class="peer sr-only"
-          @change="$event.target.checked && $emit('update:modelValue', name)"
+          @change="
+            ($event.target as HTMLInputElement).checked &&
+              $emit('update:modelValue', choice.name)
+          "
         />
         <div
           :class="{
@@ -28,31 +31,25 @@
           }"
           class="border-t border-b border-gray-200 bg-white py-0.5 px-1 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 peer-checked:bg-blue-700 peer-checked:bg-blue-700 peer-checked:text-white peer-checked:hover:bg-blue-800 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600 dark:hover:text-white peer-checked:dark:bg-blue-600 peer-checked:dark:hover:bg-blue-700"
         >
-          {{ blabel }}
+          {{ choice.label }}
         </div>
       </label>
     </div>
   </div>
 </template>
 
-<script setup>
-defineProps({
-  label: {
-    type: String,
-    required: true,
-  },
-  choices: {
-    type: Array,
-    required: true,
-  },
-  modelValue: {
-    type: String,
-    required: true,
-  },
-});
-defineEmits(["update:modelValue"]);
-
+<script lang="ts" setup>
 import { v4 as uuidv4 } from "uuid";
+
+defineProps<{
+  label: string;
+  choices: Array<{ name: string; label: string }>;
+  modelValue: string;
+}>();
+defineEmits<{
+  (e: "update:modelValue", value: string): void;
+}>();
+
 const baseID = uuidv4();
-const id = (name) => `${baseID}-${name}`;
+const id = (name: string) => `${baseID}-${name}`;
 </script>

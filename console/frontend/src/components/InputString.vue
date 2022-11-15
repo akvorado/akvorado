@@ -9,19 +9,20 @@
       type="text"
       placeholder=" "
       :value="modelValue"
-      @input="$emit('update:modelValue', $event.target.value)"
+      @input="
+        $emit('update:modelValue', ($event.target as HTMLInputElement).value)
+      "
     />
   </InputBase>
 </template>
 
-<script setup>
-defineProps({
-  modelValue: {
-    type: String,
-    required: true,
-  },
-});
-defineEmits(["update:modelValue"]);
-
+<script lang="ts" setup>
 import InputBase from "@/components/InputBase.vue";
+
+defineProps<{
+  modelValue: string;
+}>();
+defineEmits<{
+  (e: "update:modelValue", value: string): void;
+}>();
 </script>

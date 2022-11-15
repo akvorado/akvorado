@@ -1,0 +1,13 @@
+diff --git a/node_modules/echarts/types/src/component/tooltip/TooltipView.d.ts b/node_modules/echarts/types/src/component/tooltip/TooltipView.d.ts
+index 3dafdab..067ea0b 100644
+--- a/node_modules/echarts/types/src/component/tooltip/TooltipView.d.ts
++++ b/node_modules/echarts/types/src/component/tooltip/TooltipView.d.ts
+@@ -29,7 +29,7 @@ interface HideTipPayload {
+     from?: string;
+     dispatchAction?: ExtensionAPI['dispatchAction'];
+ }
+-declare type TooltipCallbackDataParams = CallbackDataParams & {
++export declare type TooltipCallbackDataParams = CallbackDataParams & {
+     axisDim?: string;
+     axisIndex?: number;
+     axisType?: string;

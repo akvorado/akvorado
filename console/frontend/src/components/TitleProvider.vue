@@ -5,7 +5,7 @@
   <slot></slot>
 </template>
 
-<script setup>
+<script lang="ts" setup>
 import { provide, computed, ref } from "vue";
 import { useTitle } from "@vueuse/core";
 import { useRouter, useRoute } from "vue-router";
@@ -17,7 +17,7 @@ import { useRouter, useRoute } from "vue-router";
 const route = useRoute();
 const applicationName = "Akvorado";
 const viewName = computed(() => route.meta?.title);
-const documentTitle = ref(null);
+const documentTitle = ref<string | null>(null);
 const title = computed(() =>
   [applicationName, viewName.value, documentTitle.value]
     .filter((k) => !!k)
@@ -30,5 +30,12 @@ useRouter().beforeEach((to, from) => {
   }
 });
 
-provide("title", { set: (t) => (documentTitle.value = t) });
+provide(TitleKey, { set: (t: string) => (documentTitle.value = t) });
+</script>
+
+<script lang="ts">
+import type { InjectionKey } from "vue";
+export const TitleKey: InjectionKey<{
+  set: (t: string) => void;
+}> = Symbol();
 </script>

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2022 Free Mobile
+// SPDX-License-Identifier: AGPL-3.0-only
+
 import { parser } from "./syntax.grammar";
 import { fileTests } from "@lezer/generator/dist/test";
 import { describe, it } from "vitest";
@@ -11,7 +14,7 @@ const caseFile = path.join(
 );
 
 describe("filter parsing", () => {
-  for (let { name, run } of fileTests(
+  for (const { name, run } of fileTests(
     fs.readFileSync(caseFile, "utf8"),
     "grammar.test.txt"
   ))

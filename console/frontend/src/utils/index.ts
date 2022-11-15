@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-export function formatXps(value) {
+export function formatXps(value: number) {
   value = Math.abs(value);
   const suffixes = ["", "K", "M", "G", "T"];
   let idx = 0;
@@ -9,13 +9,12 @@ export function formatXps(value) {
     value /= 1000;
     idx++;
   }
-  value = value.toFixed(2);
-  return `${value}${suffixes[idx]}`;
+  return `${value.toFixed(2)}${suffixes[idx]}`;
 }
 
 // Order function for field names
-export function compareFields(f1, f2) {
-  const metric = {
+export function compareFields(f1: string, f2: string) {
+  const metric: { [prefix: string]: number } = {
     Dat: 1,
     Tim: 2,
     Byt: 3,

@@ -7,6 +7,13 @@ import VisualizePage from "@/views/VisualizePage.vue";
 import DocumentationPage from "@/views/DocumentationPage.vue";
 import ErrorPage from "@/views/ErrorPage.vue";
 
+declare module "vue-router" {
+  interface RouteMeta {
+    title: string;
+    notAuthenticated?: boolean;
+  }
+}
+
 const router = createRouter({
   history: createWebHistory(),
   routes: [

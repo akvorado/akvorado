@@ -70,15 +70,19 @@ const colors = {
   ],
 };
 
-const orderedColors = ["blue", "orange", "aqua", "green", "magenta"];
+const orderedColors = ["blue", "orange", "aqua", "green", "magenta"] as const;
 
 const darkPalette = [5, 6, 7, 8, 9, 10]
-  .map((idx) => orderedColors.map((colorName) => colors[colorName][idx]))
+  .map((idx) =>
+    orderedColors.map(
+      (colorName: keyof typeof colors) => colors[colorName][idx]
+    )
+  )
   .flat();
 const lightPalette = [5, 4, 3, 2, 1, 0]
   .map((idx) => orderedColors.map((colorName) => colors[colorName][idx]))
   .flat();
-const lightenColor = (color, amount) =>
+const lightenColor = (color: string, amount: number) =>
   "#" +
   color
     .replace(/^#/, "")
@@ -86,10 +90,14 @@ const lightenColor = (color, amount) =>
       (
         "0" +
         Math.min(255, Math.max(0, parseInt(color, 16) + amount)).toString(16)
-      ).substr(-2)
+      ).slice(-2)
     );
 
-export function dataColor(index, alternate = false, theme = "light") {
+export function dataColor(
+  index: number,
+  alternate = false,
+  theme: "light" | "dark" = "light"
+) {
   const palette = theme === "light" ? lightPalette : darkPalette;
   const correctedIndex = index % 2 === 0 ? index : index + orderedColors.length;
   const computed = palette[correctedIndex % palette.length];
@@ -99,7 +107,11 @@ export function dataColor(index, alternate = false, theme = "light") {
   return lightenColor(computed, 20);
 }
 
-export function dataColorGrey(index, alternate = false, theme = "light") {
+export function dataColorGrey(
+  index: number,
+  alternate = false,
+  theme: "light" | "dark" = "light"
+) {
   const palette =
     theme === "light"
       ? ["#aaaaaa", "#bbbbbb", "#999999", "#cccccc", "#888888"]

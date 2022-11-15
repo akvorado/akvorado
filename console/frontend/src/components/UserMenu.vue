@@ -47,10 +47,11 @@
   </Popover>
 </template>
 
-<script setup>
+<script lang="ts" setup>
 import { inject } from "vue";
 import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue";
+import { UserKey } from "@/components/UserProvider.vue";
 
-const { user } = inject("user");
+const { user } = inject(UserKey)!;
 const avatarURL = "/api/v0/console/user/avatar";
 </script>

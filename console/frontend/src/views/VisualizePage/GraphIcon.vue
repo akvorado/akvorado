@@ -52,19 +52,14 @@
   </svg>
 </template>
 
-<script>
+<script lang="ts">
 export default {
   inheritAttrs: false,
 };
 </script>
 
-<script setup>
-defineProps({
-  name: {
-    type: String,
-    required: true,
-  },
-});
-
+<script lang="ts" setup>
 import { graphTypes } from "./constants.js";
+
+defineProps<{ name: string }>();
 </script>

@@ -20,7 +20,7 @@
   </ServerConfigProvider>
 </template>
 
-<script setup>
+<script lang="ts" setup>
 import "./tailwind.css";
 
 import NavigationBar from "@/components/NavigationBar.vue";

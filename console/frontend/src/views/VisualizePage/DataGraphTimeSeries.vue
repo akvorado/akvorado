@@ -4,43 +4,38 @@
 <template>
   <v-chart
     ref="chartComponent"
-    :option="echartsOptions"
+    :option="option"
     :update-options="{ notMerge: true }"
     @brush-end="updateTimeRange"
   />
 </template>
 
-<script setup>
-const props = defineProps({
-  data: {
-    type: Object,
-    default: () => {},
-  },
-  highlight: {
-    type: Number,
-    default: null,
-  },
-});
-const emit = defineEmits(["update:timeRange"]);
-
+<script lang="ts" setup>
 import { ref, watch, inject, computed, onMounted, nextTick } from "vue";
 import { useMediaQuery } from "@vueuse/core";
 import { formatXps, dataColor, dataColorGrey } from "@/utils";
-import { graphTypes } from "./constants";
-const { isDark } = inject("theme");
-
+import { ThemeKey } from "@/components/ThemeProvider.vue";
+import type { GraphHandlerResult } from ".";
 import { uniqWith, isEqual, findIndex } from "lodash-es";
-import { use, graphic } from "echarts/core";
+import { use, graphic, type ComposeOption } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
-import { LineChart } from "echarts/charts";
+import { LineChart, type LineSeriesOption } from "echarts/charts";
 import {
   TooltipComponent,
+  type TooltipComponentOption,
   GridComponent,
+  type GridComponentOption,
   BrushComponent,
+  type BrushComponentOption,
   ToolboxComponent,
+  type ToolboxComponentOption,
   DatasetComponent,
+  type DatasetComponentOption,
   TitleComponent,
+  type TitleComponentOption,
 } from "echarts/components";
+import type { default as BrushModel } from "echarts/types/src/component/brush/BrushModel";
+import type { TooltipCallbackDataParams } from "echarts/types/src/component/tooltip/TooltipView";
 import VChart from "vue-echarts";
 use([
   CanvasRenderer,
@@ -52,10 +47,29 @@ use([
   DatasetComponent,
   TitleComponent,
 ]);
+type ECOption = ComposeOption<
+  | LineSeriesOption
+  | TooltipComponentOption
+  | GridComponentOption
+  | BrushComponentOption
+  | ToolboxComponentOption
+  | DatasetComponentOption
+  | TitleComponentOption
+>;
+
+const props = defineProps<{
+  data: GraphHandlerResult;
+  highlight: number | null;
+}>();
+const emit = defineEmits<{
+  (e: "update:timeRange", range: [Date, Date]): void;
+}>();
+
+const { isDark } = inject(ThemeKey)!;
 
 // Graph component
-const chartComponent = ref(null);
-const commonGraph = {
+const chartComponent = ref<typeof VChart | null>(null);
+const commonGraph: ECOption = {
   backgroundColor: "transparent",
   animationDuration: 500,
   toolbox: {
@@ -65,42 +79,48 @@ const commonGraph = {
     xAxisIndex: "all",
   },
 };
-const graph = computed(() => {
+const graph = computed((): ECOption => {
   const theme = isDark.value ? "dark" : "light";
-  const data = props.data || {};
-  if (!data.t) return {};
-  const rowName = (row) => row.join(" — ") || "Total",
-    dataset = {
+  const data = props.data;
+  if (!data) return {};
+  const rowName = (row: string[]) => row.join(" — ") || "Total";
+  const source: [string, ...number[]][] = [
+    ...data.t
+      .map((t, timeIdx) => {
+        const result: [string, ...number[]] = [
+          t,
+          ...data.points.map(
+            // Unfortunately, eCharts does not seem to make it easy
+            // to inverse an axis and put the result below. Therefore,
+            // we use negative values for the second axis.
+            (row, rowIdx) => row[timeIdx] * (data.axis[rowIdx] % 2 ? 1 : -1)
+          ),
+        ];
+        return result;
+      })
+      .slice(0, -1), // trim last point
+  ];
+  const dataset = {
       sourceHeader: false,
       dimensions: ["time", ...data.rows.map(rowName)],
-      source: [
-        ...data.t
-          .map((t, timeIdx) => [
-            t,
-            ...data.points.map(
-              // Unfortunately, eCharts does not seem to make it easy
-              // to inverse an axis and put the result below. Therefore,
-              // we use negative values for the second axis.
-              (row, rowIdx) => row[timeIdx] * (data.axis[rowIdx] % 2 ? 1 : -1)
-            ),
-          ])
-          .slice(0, -1),
-      ],
+      source,
     },
-    xAxis = {
+    xAxis: ECOption["xAxis"] = {
       type: "time",
       min: data.start,
       max: data.end,
     },
-    yAxis = {
+    yAxis: ECOption["yAxis"] = {
       type: "value",
       min: data.bidirectional ? undefined : 0,
       axisLabel: { formatter: formatXps },
       axisPointer: {
-        label: { formatter: ({ value }) => formatXps(value) },
+        label: {
+          formatter: ({ value }) => formatXps(value.valueOf() as number),
+        },
       },
     },
-    tooltip = {
+    tooltip: ECOption["tooltip"] = {
       confine: true,
       trigger: "axis",
       axisPointer: {
@@ -111,14 +131,22 @@ const graph = computed(() => {
       textStyle: isDark.value ? { color: "#ddd" } : { color: "#222" },
       formatter: (params) => {
         // We will use a custom formatter, notably to handle bidirectional tooltips.
-        if (params.length === 0) return;
+        if (!Array.isArray(params) || params.length === 0) return "";
 
-        let table = [];
-        params.forEach((param) => {
+        let table: {
+          key: string;
+          seriesName: string;
+          marker: typeof params[0]["marker"];
+          up: number;
+          down: number;
+        }[] = [];
+        (params as TooltipCallbackDataParams[]).forEach((param) => {
+          if (!param.seriesIndex) return;
           const axis = data.axis[param.seriesIndex];
           const seriesName = [1, 2].includes(axis)
             ? param.seriesName
             : data["axis-names"][axis];
+          if (!seriesName) return;
           const key = `${Math.floor((axis - 1) / 2)}-${seriesName}`;
           let idx = findIndex(table, (r) => r.key === key);
           if (idx === -1) {
@@ -131,7 +159,7 @@ const graph = computed(() => {
             });
             idx = table.length - 1;
           }
-          const val = param.value[param.seriesIndex + 1];
+          const val = (param.value as number[])[param.seriesIndex + 1];
           if (axis % 2 == 1) table[idx].up = val;
           else table[idx].down = val;
         });
@@ -141,23 +169,26 @@ const graph = computed(() => {
               `<tr>`,
               `<td>${row.marker} ${row.seriesName}</td>`,
               `<td class="pl-2">${data.bidirectional ? "↑" : ""}<b>${formatXps(
-                row.up || 0
+                row.up
               )}</b></td>`,
               data.bidirectional
-                ? `<td class="pl-2">↓<b>${formatXps(row.down || 0)}</b></td>`
+                ? `<td class="pl-2">↓<b>${formatXps(row.down)}</b></td>`
                 : "",
               `</tr>`,
             ].join("")
           )
           .join("");
-        return `${params[0].axisValueLabel}<table>${rows}</table>`;
+        return `${
+          (params as TooltipCallbackDataParams[])[0].axisValueLabel
+        }<table>${rows}</table>`;
       },
     };
 
   // Lines and stacked areas
-  if ([graphTypes.stacked, graphTypes.lines].includes(data.graphType)) {
+  if (data.graphType === "stacked" || data.graphType === "lines") {
     const uniqRows = uniqWith(data.rows, isEqual),
-      uniqRowIndex = (row) => findIndex(uniqRows, (orow) => isEqual(row, orow));
+      uniqRowIndex = (row: string[]) =>
+        findIndex(uniqRows, (orow) => isEqual(row, orow));
 
     return {
       grid: {
@@ -174,10 +205,10 @@ const graph = computed(() => {
         .map((row, idx) => {
           const isOther = row.some((name) => name === "Other"),
             color = isOther ? dataColorGrey : dataColor;
-          if (data.graphType === graphTypes.lines && isOther) {
+          if (data.graphType === "lines" && isOther) {
             return undefined;
           }
-          let serie = {
+          let serie: LineSeriesOption = {
             type: "line",
             symbol: "none",
             itemStyle: {
@@ -214,13 +245,10 @@ const graph = computed(() => {
               },
             };
           }
-          if (
-            data.graphType === graphTypes.stacked &&
-            [1, 2].includes(data.axis[idx])
-          ) {
+          if (data.graphType === "stacked" && [1, 2].includes(data.axis[idx])) {
             serie = {
               ...serie,
-              stack: data.axis[idx],
+              stack: data.axis[idx].toString(),
               lineStyle:
                 idx == data.rows.length - 1 ||
                 data.axis[idx] != data.axis[idx + 1]
@@ -243,26 +271,28 @@ const graph = computed(() => {
           }
           return serie;
         })
-        .filter((s) => s !== undefined),
+        .filter((s): s is LineSeriesOption => !!s),
     };
   }
-  if (data.graphType === graphTypes.grid) {
+  if (data.graphType === "grid") {
     const uniqRows = uniqWith(data.rows, isEqual).filter((row) =>
         row.some((name) => name !== "Other")
       ),
-      uniqRowIndex = (row) => findIndex(uniqRows, (orow) => isEqual(row, orow)),
+      uniqRowIndex = (row: string[]) =>
+        findIndex(uniqRows, (orow) => isEqual(row, orow)),
       otherIndexes = data.rows
         .map((row, idx) => (row.some((name) => name === "Other") ? idx : -1))
         .filter((idx) => idx >= 0),
-      somethingY = (fn) =>
-        fn(
-          ...dataset.source.map((row) =>
-            fn(
-              ...row
-                .slice(1)
-                .filter((_, idx) => !otherIndexes.includes(idx + 1))
-            )
-          )
+      somethingY = (fn: (...n: number[]) => number) =>
+        fn.apply(
+          null,
+          dataset.source.map((row) => {
+            const [, ...cdr] = row;
+            return fn.apply(
+              null,
+              cdr.filter((_, idx) => !otherIndexes.includes(idx + 1))
+            );
+          })
         ),
       maxY = somethingY(Math.max),
       minY = somethingY(Math.min);
@@ -313,7 +343,7 @@ const graph = computed(() => {
       dataset,
       series: data.rows
         .map((row, idx) => {
-          let serie = {
+          let serie: LineSeriesOption = {
             type: "line",
             symbol: "none",
             xAxisIndex: uniqRowIndex(row),
@@ -346,12 +376,12 @@ const graph = computed(() => {
           };
           return serie;
         })
-        .filter((s) => s.xAxisIndex >= 0),
+        .filter((s) => s.xAxisIndex! >= 0),
     };
   }
   return {};
 });
-const echartsOptions = computed(() => ({ ...commonGraph, ...graph.value }));
+const option = computed((): ECOption => ({ ...commonGraph, ...graph.value }));
 
 // Enable and handle brush
 const isTouchScreen = useMediaQuery("(pointer: coarse");
@@ -367,22 +397,28 @@ const enableBrush = () => {
   });
 };
 onMounted(enableBrush);
-const updateTimeRange = (evt) => {
-  if (evt.areas.length === 0) {
+const updateTimeRange = (evt: BrushModel) => {
+  if (
+    !chartComponent.value ||
+    evt.areas.length === 0 ||
+    !evt.areas[0].coordRange
+  ) {
     return;
   }
-  const [start, end] = evt.areas[0].coordRange.map((t) => new Date(t));
+  const [start, end] = evt.areas[0].coordRange.map(
+    (t) => new Date(t as number)
+  );
   chartComponent.value.dispatchAction({
     type: "brush",
     areas: [],
   });
   emit("update:timeRange", [start, end]);
 };
-watch([graph, isTouchScreen], enableBrush);
+watch([graph, isTouchScreen] as const, enableBrush);
 
 // Highlight selected indexes
 watch(
-  () => [props.highlight, props.data],
+  () => [props.highlight, props.data] as const,
   ([index]) => {
     chartComponent.value?.dispatchAction({
       type: "highlight",

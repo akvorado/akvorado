@@ -2,30 +2,37 @@
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
 
 <template>
-  <v-chart :option="graph" />
+  <v-chart :option="option" />
 </template>
 
-<script setup>
-const props = defineProps({
-  data: {
-    type: Object,
-    default: null,
-  },
-});
-
+<script lang="ts" setup>
 import { inject, computed } from "vue";
 import { formatXps, dataColor, dataColorGrey } from "@/utils";
-const { isDark } = inject("theme");
-
-import { use } from "echarts/core";
+import { ThemeKey } from "@/components/ThemeProvider.vue";
+import type { SankeyHandlerResult } from ".";
+import { use, type ComposeOption } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
-import { SankeyChart } from "echarts/charts";
-import { TooltipComponent } from "echarts/components";
+import { SankeyChart, type SankeySeriesOption } from "echarts/charts";
+import {
+  TooltipComponent,
+  type TooltipComponentOption,
+  type GridComponentOption,
+} from "echarts/components";
+import type { TooltipCallbackDataParams } from "echarts/types/src/component/tooltip/TooltipView";
 import VChart from "vue-echarts";
 use([CanvasRenderer, SankeyChart, TooltipComponent]);
+type ECOption = ComposeOption<
+  SankeySeriesOption | TooltipComponentOption | GridComponentOption
+>;
+
+const props = defineProps<{
+  data: SankeyHandlerResult;
+}>();
+
+const { isDark } = inject(ThemeKey)!;
 
 // Graph component
-const graph = computed(() => {
+const option = computed((): ECOption => {
   const theme = isDark.value ? "dark" : "light";
   const data = props.data || {};
   if (!data.xps) return {};
@@ -37,27 +44,39 @@ const graph = computed(() => {
       confine: true,
       trigger: "item",
       triggerOn: "mousemove",
-      formatter({ dataType, marker, data, value }) {
+      formatter(params) {
+        if (Array.isArray(params)) return "";
+        const { dataType, marker, data, value } =
+          params as TooltipCallbackDataParams;
         if (dataType === "node") {
+          const nodeData = data as NonNullable<SankeySeriesOption["nodes"]>[0];
           return [
             marker,
-            `<span style="display:inline-block;margin-left:1em;">${data.name}</span>`,
+            `<span style="display:inline-block;margin-left:1em;">${nodeData.name}</span>`,
             `<span style="display:inline-block;margin-left:2em;font-weight:bold;">${formatXps(
-              value
+              value.valueOf() as number
             )}`,
           ].join("");
         } else if (dataType === "edge") {
-          const source = data.source.split(": ").slice(1).join(": ");
-          const target = data.target.split(": ").slice(1).join(": ");
-          return [
-            `${source} → ${target}`,
-            `<span style="display:inline-block;margin-left:2em;font-weight:bold;">${formatXps(
-              data.value
-            )}`,
-          ].join("");
+          const edgeData = data as NonNullable<SankeySeriesOption["edges"]>[0];
+          const source =
+            edgeData.source?.toString().split(": ").slice(1).join(": ") ??
+            "???";
+          const target =
+            edgeData.target?.toString().split(": ").slice(1).join(": ") ??
+            "???";
+          return value
+            ? [
+                `${source} → ${target}`,
+                `<span style="display:inline-block;margin-left:2em;font-weight:bold;">${formatXps(
+                  value.valueOf() as number
+                )}`,
+              ].join("")
+            : "";
         }
+        return "";
       },
-      valueFormatter: formatXps,
+      valueFormatter: (value) => formatXps(value.valueOf() as number),
     },
     series: [
       {

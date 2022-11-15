@@ -7,7 +7,7 @@
     :class="$attrs['class']"
     :multiple="multiple"
     :model-value="modelValue"
-    @update:model-value="(item) => $emit('update:modelValue', item)"
+    @update:model-value="(selected: any) => $emit('update:modelValue', selected)"
   >
     <div class="relative">
       <InputBase v-slot="{ id, childClass }" v-bind="otherAttrs" :error="error">
@@ -84,40 +84,13 @@
   </component>
 </template>
 
-<script>
+<script lang="ts">
 export default {
   inheritAttrs: false,
 };
 </script>
 
-<script setup>
-const props = defineProps({
-  modelValue: {
-    type: Object,
-    required: true,
-  },
-  error: {
-    type: String,
-    default: "",
-  },
-  items: {
-    // Each item in the array is expected to have "id".
-    type: Array,
-    required: true,
-  },
-  multiple: {
-    // Allow to select multiple values.
-    type: Boolean,
-    default: false,
-  },
-  filter: {
-    // Enable filtering on the provided property.
-    type: String,
-    default: null,
-  },
-});
-defineEmits(["update:modelValue"]);
-
+<script lang="ts" setup>
 import { ref, computed, useAttrs } from "vue";
 import {
   Listbox,
@@ -132,6 +105,24 @@ import {
 } from "@headlessui/vue";
 import { CheckIcon, SelectorIcon } from "@heroicons/vue/solid";
 import InputBase from "@/components/InputBase.vue";
+
+const props = withDefaults(
+  defineProps<{
+    modelValue: any; // vue is not smart enough to use any | any[]
+    multiple?: boolean;
+    filter?: string | null; // should be keyof items
+    items: Array<{ id: number; [n: string]: any }>;
+    error?: string;
+  }>(),
+  {
+    filter: null,
+    error: "",
+    multiple: false,
+  }
+);
+defineEmits<{
+  (e: "update:modelValue", value: typeof props.modelValue): void;
+}>();
 
 const attrs = useAttrs();
 const query = ref("");
@@ -153,16 +144,15 @@ const component = computed(() =>
         Input: ComboboxInput,
       }
 );
-const filteredItems = computed(() =>
-  props.filter === null
-    ? props.items
-    : props.items.filter((it) =>
-        query.value
-          .toLowerCase()
-          .split(/\W+/)
-          .every((w) => it[props.filter].toLowerCase().includes(w))
-      )
-);
+const filteredItems = computed(() => {
+  if (props.filter === null) return props.items;
+  return props.items.filter((it) =>
+    query.value
+      .toLowerCase()
+      .split(/\W+/)
+      .every((w) => `${it[props.filter!]}`.toLowerCase().includes(w))
+  );
+});
 const otherAttrs = computed(() => {
   // eslint-disable-next-line no-unused-vars
   const { class: _, ...others } = attrs;

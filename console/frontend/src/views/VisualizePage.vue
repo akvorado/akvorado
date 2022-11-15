@@ -13,7 +13,7 @@
       <LoadingOverlay :loading="isFetching">
         <RequestSummary :request="request" />
         <div class="mx-4 my-2">
-          <InfoBox v-if="errorMessage" kind="danger">
+          <InfoBox v-if="errorMessage" kind="error">
             <strong>Unable to fetch data!&nbsp;</strong>{{ errorMessage }}
           </InfoBox>
           <ResizeRow
@@ -41,56 +41,69 @@
   </div>
 </template>
 
-<script setup>
-const props = defineProps({
-  routeState: {
-    type: String,
-    default: "",
-  },
-});
-
+<script lang="ts" setup>
 import { ref, watch, computed } from "vue";
-import { useFetch } from "@vueuse/core";
+import { useFetch, type AfterFetchContext } from "@vueuse/core";
 import { useRouter, useRoute } from "vue-router";
 import { Date as SugarDate } from "sugar-date";
 import { ResizeRow } from "vue-resizer";
 import LZString from "lz-string";
 import InfoBox from "@/components/InfoBox.vue";
 import LoadingOverlay from "@/components/LoadingOverlay.vue";
+import RequestSummary from "./VisualizePage/RequestSummary.vue";
 import DataTable from "./VisualizePage/DataTable.vue";
 import DataGraph from "./VisualizePage/DataGraph.vue";
-import OptionsPanel from "./VisualizePage/OptionsPanel.vue";
-import RequestSummary from "./VisualizePage/RequestSummary.vue";
-import { graphTypes } from "./VisualizePage/constants";
-import { isEqual, omit } from "lodash-es";
+import {
+  default as OptionsPanel,
+  type ModelType,
+} from "./VisualizePage/OptionsPanel.vue";
+import type { GraphType } from "./VisualizePage/constants";
+import type {
+  SankeyHandlerInput,
+  GraphHandlerInput,
+  SankeyHandlerOutput,
+  GraphHandlerOutput,
+  SankeyHandlerResult,
+  GraphHandlerResult,
+} from "./VisualizePage";
+import { isEqual, omit, pick } from "lodash-es";
+
+const props = defineProps<{ routeState?: string }>();
 
 const graphHeight = ref(500);
-const highlightedSerie = ref(null);
+const highlightedSerie = ref<number | null>(null);
 
-const updateTimeRange = ([start, end]) => {
+const updateTimeRange = ([start, end]: [Date, Date]) => {
+  if (state.value === null) return;
   state.value.start = start.toISOString();
   state.value.end = end.toISOString();
 };
 
 // Main state
-const state = ref({});
+const state = ref<ModelType>(null);
 
 // Load data from URL
 const route = useRoute();
 const router = useRouter();
-const decodeState = (serialized) => {
+const decodeState = (serialized: string | undefined): ModelType => {
   try {
     if (!serialized) {
       console.debug("no state");
-      return {};
+      return null;
     }
-    return JSON.parse(LZString.decompressFromBase64(serialized));
+    const unserialized = LZString.decompressFromBase64(serialized);
+    if (!unserialized) {
+      console.debug("empty state");
+      return null;
+    }
+    return JSON.parse(unserialized);
   } catch (error) {
     console.error("cannot decode state:", error);
-    return {};
+    return null;
   }
 };
-const encodeState = (state) => {
+const encodeState = (state: ModelType) => {
+  if (state === null) return "";
   return LZString.compressToBase64(
     JSON.stringify(state, Object.keys(state).sort())
   );
@@ -108,50 +121,88 @@ watch(
 const encodedState = computed(() => encodeState(state.value));
 
 // Fetch data
-const fetchedData = ref({});
-const finalState = computed(() => ({
-  ...state.value,
-  start: SugarDate.create(state.value.start),
-  end: SugarDate.create(state.value.end),
-}));
-const jsonPayload = computed(() => ({
-  ...omit(finalState.value, ["previousPeriod", "graphType"]),
-  "previous-period": finalState.value.previousPeriod,
-}));
-const request = ref({}); // Same as finalState, but once request is successful
+const fetchedData = ref<GraphHandlerResult | SankeyHandlerResult | null>(null);
+const finalState = computed((): ModelType => {
+  return state.value === null
+    ? null
+    : {
+        ...state.value,
+        start: SugarDate.create(state.value.start).toISOString(),
+        end: SugarDate.create(state.value.end).toISOString(),
+      };
+});
+const jsonPayload = computed(
+  (): SankeyHandlerInput | GraphHandlerInput | null => {
+    if (finalState.value === null) return null;
+    if (finalState.value.graphType === "sankey") {
+      const input: SankeyHandlerInput = omit(finalState.value, [
+        "graphType",
+        "bidirectional",
+        "previousPeriod",
+      ]);
+      return input;
+    }
+    const input: GraphHandlerInput = {
+      ...omit(finalState.value, ["graphType", "previousPeriod"]),
+      "previous-period": finalState.value.previousPeriod,
+      points: finalState.value.graphType === "grid" ? 50 : 200,
+    };
+    return input;
+  }
+);
+const request = ref<ModelType>(null); // Same as finalState, but once request is successful
 const { data, isFetching, aborted, abort, canAbort, error } = useFetch("", {
   beforeFetch(ctx) {
     // Add the URL. Not a computed value as if we change both payload
     // and URL, the query will be triggered twice.
     const { cancel } = ctx;
-    const endpoint = {
-      [graphTypes.stacked]: "graph",
-      [graphTypes.lines]: "graph",
-      [graphTypes.grid]: "graph",
-      [graphTypes.sankey]: "sankey",
-    };
-    const url = endpoint[state.value.graphType];
-    if (url === undefined) {
+    if (finalState.value === null) {
       cancel();
+      return ctx;
     }
+    const endpoint: Record<GraphType, string> = {
+      stacked: "graph",
+      lines: "graph",
+      grid: "graph",
+      sankey: "sankey",
+    };
+    const url = endpoint[finalState.value.graphType];
     return {
       ...ctx,
       url: `/api/v0/console/${url}`,
     };
   },
-  async afterFetch(ctx) {
+  async afterFetch(
+    ctx: AfterFetchContext<GraphHandlerOutput | SankeyHandlerOutput>
+  ) {
     // Update data. Not done in a computed value as we want to keep the
     // previous data in case of errors.
     const { data, response } = ctx;
+    if (data === null || !finalState.value) return ctx;
     console.groupCollapsed("SQL query");
     console.info(
-      response.headers.get("x-sql-query").replace(/ {2}( )*/g, "\n$1")
+      response.headers.get("x-sql-query")?.replace(/ {2}( )*/g, "\n$1")
     );
     console.groupEnd();
-    fetchedData.value = {
-      ...data,
-      ...omit(finalState.value, ["limit", "filter", "points"]),
-    };
+    if (finalState.value.graphType === "sankey") {
+      fetchedData.value = {
+        graphType: "sankey",
+        ...(data as SankeyHandlerOutput),
+        ...pick(finalState.value, ["start", "end", "dimensions", "units"]),
+      };
+    } else {
+      fetchedData.value = {
+        graphType: finalState.value.graphType,
+        ...(data as GraphHandlerOutput),
+        ...pick(finalState.value, [
+          "start",
+          "end",
+          "dimensions",
+          "units",
+          "bidirectional",
+        ]),
+      };
+    }
 
     // Also update URL.
     const routeTarget = {
@@ -171,13 +222,14 @@ const { data, isFetching, aborted, abort, canAbort, error } = useFetch("", {
   },
   refetch: true,
 })
-  .post(jsonPayload)
-  .json();
+  .post(jsonPayload, "json") // this will trigger a refetch
+  .json<GraphHandlerOutput | SankeyHandlerOutput | { message: string }>();
 const errorMessage = computed(
   () =>
     (error.value &&
       !aborted.value &&
-      (data.value?.message || `Server returned an error: ${error.value}`)) ||
+      ((data.value && "message" in data.value && data.value.message) ||
+        `Server returned an error: ${error.value}`)) ||
     ""
 );
 </script>

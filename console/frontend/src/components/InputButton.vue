@@ -38,38 +38,23 @@
   </button>
 </template>
 
-<script setup>
-defineProps({
-  attrType: {
-    type: String,
-    default: "button",
-    validator(value) {
-      return ["submit", "button", "reset"].includes(value);
-    },
-  },
-  type: {
-    type: String,
-    default: "primary",
-    validator(value) {
-      return ["alternative", "primary", "warning", "danger"].includes(value);
-    },
-  },
-  size: {
-    type: String,
-    default: "normal",
-    validator(value) {
-      return ["normal", "small"].includes(value);
-    },
-  },
-  disabled: {
-    type: Boolean,
-    default: false,
-  },
-  loading: {
-    type: Boolean,
-    default: false,
-  },
-});
-
+<script lang="ts" setup>
 import LoadingSpinner from "@/components/LoadingSpinner.vue";
+
+withDefaults(
+  defineProps<{
+    attrType?: "submit" | "button" | "reset";
+    type?: "alternative" | "primary" | "warning" | "danger";
+    size?: "normal" | "small";
+    disabled?: boolean;
+    loading?: boolean;
+  }>(),
+  {
+    attrType: "button",
+    type: "primary",
+    size: "normal",
+    disabled: false,
+    floading: false,
+  }
+);
 </script>

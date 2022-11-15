@@ -11,11 +11,8 @@
   </div>
 </template>
 
-<script setup>
-defineProps({
-  error: {
-    type: String,
-    required: true,
-  },
-});
+<script lang="ts" setup>
+defineProps<{
+  error: string;
+}>();
 </script>

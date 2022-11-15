@@ -59,7 +59,7 @@
       class="flex grow md:relative md:overflow-y-auto md:shadow-md md:dark:shadow-white/10"
     >
       <div class="max-w-full py-4 px-4 md:px-16">
-        <InfoBox v-if="errorMessage" kind="danger">
+        <InfoBox v-if="errorMessage" kind="error">
           <strong>Unable to fetch documentation page!</strong>
           {{ errorMessage }}
         </InfoBox>
@@ -72,47 +72,70 @@
   </div>
 </template>
 
-<script setup>
-const props = defineProps({
-  id: {
-    type: String,
-    required: true,
-  },
-});
-
+<script lang="ts" setup>
 import { ref, computed, watch, inject, nextTick } from "vue";
 import { useFetch } from "@vueuse/core";
 import { useRouteHash } from "@vueuse/router";
 import InfoBox from "@/components/InfoBox.vue";
+import { TitleKey } from "@/components/TitleProvider.vue";
 
-const title = inject("title");
+const props = defineProps<{ id: string }>();
+const title = inject(TitleKey)!;
 
 // Grab document
 const url = computed(() => `/api/v0/console/docs/${props.id}`);
-const { data, error } = useFetch(url, { refetch: true }).get().json();
+const { data, error } = useFetch(url, { refetch: true }).get().json<
+  | { message: string } // on error
+  | {
+      markdown: string;
+      toc: Array<{
+        name: string;
+        headers: Array<{ level: number; id: string; title: string }>;
+      }>;
+    }
+>();
 const errorMessage = computed(
   () =>
     (error.value &&
-      (data.value?.message || `Server returned an error: ${error.value}`)) ||
+      data.value &&
+      "message" in data.value &&
+      (data.value.message || `Server returned an error: ${error.value}`)) ||
     ""
 );
-const markdown = computed(() => (!error.value && data.value?.markdown) || "");
-const toc = computed(() => (!error.value && data.value?.toc) || []);
+const markdown = computed(
+  () =>
+    (!error.value &&
+      data.value &&
+      "markdown" in data.value &&
+      data.value.markdown) ||
+    ""
+);
+const toc = computed(
+  () =>
+    (!error.value && data.value && "toc" in data.value && data.value.toc) || []
+);
 const activeDocument = computed(() => props.id || null);
 const activeSlug = useRouteHash();
 
 // Scroll to the right anchor after loading markdown
-const contentEl = ref(null);
-watch([markdown, activeSlug], async () => {
+const contentEl = ref<HTMLElement | null>(null);
+watch([markdown, activeSlug] as const, async () => {
   await nextTick();
+  if (contentEl.value === null) return;
   let scrollEl = contentEl.value;
-  while (window.getComputedStyle(scrollEl).position === "static") {
+  while (
+    window.getComputedStyle(scrollEl).position === "static" &&
+    scrollEl.parentNode instanceof HTMLElement
+  ) {
     scrollEl = scrollEl.parentNode;
   }
   const top =
     (activeSlug.value &&
-      document.querySelector(`#${CSS.escape(activeSlug.value.slice(1))}`)
-        ?.offsetTop) ||
+      (
+        document.querySelector(
+          `#${CSS.escape(activeSlug.value.slice(1))}`
+        ) as HTMLElement | null
+      )?.offsetTop) ||
     0;
   scrollEl.scrollTo(0, top);
 });
@@ -120,6 +143,7 @@ watch([markdown, activeSlug], async () => {
 // Update title
 watch(markdown, async () => {
   await nextTick();
-  title.set(contentEl.value?.querySelector("h1")?.textContent);
+  const t = contentEl.value?.querySelector("h1")?.textContent;
+  if (t) title.set(t);
 });
 </script>
