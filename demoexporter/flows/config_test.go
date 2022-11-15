@@ -4,6 +4,7 @@
 package flows
 
 import (
+	"net/netip"
 	"testing"
 	"time"
 
@@ -19,6 +20,8 @@ func TestDefaultConfiguration(t *testing.T) {
 			OutIfIndex:            []int{2},
 			PeakHour:              21 * time.Hour,
 			Multiplier:            3.0,
+			SrcNet:                netip.MustParsePrefix("2001:db8:1::/64"),
+			DstNet:                netip.MustParsePrefix("2001:db8:2::/64"),
 			SrcAS:                 []uint32{2906},
 			DstAS:                 []uint32{12322},
 			SrcPort:               []uint16{443},

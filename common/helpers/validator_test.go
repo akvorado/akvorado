@@ -4,6 +4,7 @@
 package helpers_test
 
 import (
+	"net/netip"
 	"testing"
 
 	"akvorado/common/helpers"
@@ -71,6 +72,62 @@ func TestSubnetMapValidator(t *testing.T) {
 					"2001:db8::/64":   "he",
 					"2001:db8:1::/64": "bye",
 				}),
+			},
+			Error: true,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.Description, func(t *testing.T) {
+			err := helpers.Validate.Struct(tc.Value)
+			if err != nil && !tc.Error {
+				t.Fatalf("Validate() error:\n%+v", err)
+			} else if err == nil && tc.Error {
+				t.Fatal("Validate() did not error")
+			}
+		})
+	}
+}
+
+func TestNetIPValidation(t *testing.T) {
+	type SomeStruct struct {
+		Src     netip.Addr   `validate:"required"`
+		DstNet  netip.Prefix `validate:"required"`
+		Nothing netip.Addr   `validate:"isdefault"`
+	}
+	cases := []struct {
+		Description string
+		Value       interface{}
+		Error       bool
+	}{
+		{
+			Description: "Valid SomeStruct",
+			Value: SomeStruct{
+				Src:     netip.MustParseAddr("203.0.113.14"),
+				DstNet:  netip.MustParsePrefix("203.0.113.0/24"),
+				Nothing: netip.Addr{},
+			},
+		}, {
+			Description: "Missing netip.Addr",
+			Value: SomeStruct{
+				Src:     netip.Addr{},
+				DstNet:  netip.MustParsePrefix("203.0.113.0/24"),
+				Nothing: netip.Addr{},
+			},
+			Error: true,
+		}, {
+			Description: "Missing netip.Prefix",
+			Value: SomeStruct{
+				Src:     netip.MustParseAddr("203.0.113.14"),
+				DstNet:  netip.Prefix{},
+				Nothing: netip.Addr{},
+			},
+			Error: true,
+		}, {
+			Description: "Non-default netip.Addr",
+			Value: SomeStruct{
+				Src:     netip.MustParseAddr("203.0.113.14"),
+				DstNet:  netip.MustParsePrefix("203.0.113.0/24"),
+				Nothing: netip.MustParseAddr("2001:db8::1"),
 			},
 			Error: true,
 		},

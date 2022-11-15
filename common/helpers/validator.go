@@ -5,6 +5,7 @@ package helpers
 
 import (
 	"net"
+	"net/netip"
 	"reflect"
 	"strconv"
 
@@ -31,6 +32,23 @@ func RegisterSubnetMapValidation[V any]() {
 	Validate.RegisterCustomTypeFunc(validatorFunc, zero)
 }
 
+// netipValidation validates netip.Addr and netip.Prefix by turning them into a string.
+func netipValidation(fl reflect.Value) interface{} {
+	switch netipSomething := fl.Interface().(type) {
+	case netip.Addr:
+		if (netipSomething == netip.Addr{}) {
+			return ""
+		}
+		return netipSomething.String()
+	case netip.Prefix:
+		if (netipSomething == netip.Prefix{}) {
+			return ""
+		}
+		return netipSomething.String()
+	}
+	return nil
+}
+
 // isListen validates a <dns>:<port> combination for fields typically used for listening address
 func isListen(fl validator.FieldLevel) bool {
 	val := fl.Field().String()
@@ -53,5 +71,6 @@ func isListen(fl validator.FieldLevel) bool {
 func init() {
 	Validate = validator.New()
 	Validate.RegisterValidation("listen", isListen)
+	Validate.RegisterCustomTypeFunc(netipValidation, netip.Addr{}, netip.Prefix{})
 	RegisterSubnetMapValidation[string]()
 }
