@@ -1054,15 +1054,17 @@ func TestBMP(t *testing.T) {
 			send(t, conn, "bmp-peers-up.pcap")
 			send(t, conn, "bmp-reach.pcap")
 			send(t, conn, "bmp-eor.pcap")
-			if mode == RIBModePerformance {
-				time.Sleep(100 * time.Millisecond) // > 40 ms (~ 100 ms)
-			} else {
-				time.Sleep(20 * time.Millisecond)
-			}
 
-			lookup := c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::a"))
-			if lookup.ASN != 174 {
-				t.Errorf("Lookup() == %d, expected 174", lookup.ASN)
+			for i := 0; i < 50; i++ {
+				lookup := c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::a"))
+				if lookup.ASN != 174 {
+					if i == 99 {
+						t.Errorf("Lookup() == %d, expected 174", lookup.ASN)
+					}
+				} else {
+					break
+				}
+				time.Sleep(5 * time.Millisecond)
 			}
 
 			// Add another prefix
@@ -1076,21 +1078,26 @@ func TestBMP(t *testing.T) {
 				return nil
 			})
 			if mode == RIBModePerformance {
-				time.Sleep(100 * time.Millisecond) // < 300 ms (~ 200 ms)
+				time.Sleep(100 * time.Millisecond) // < 300 ms but > 40 ms
 				// Despite that, we hit the minimum update delay
 				lookup := c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::a"))
 				if lookup.ASN != 174 {
 					t.Errorf("Lookup() == %d, expected 174", lookup.ASN)
 				}
-				time.Sleep(200 * time.Millisecond) // > 300 ms (~ 400 ms)
-				// Now it should be up-to-date!
 			}
 
-			lookup = c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::a"))
-			if lookup.ASN != 176 {
-				t.Errorf("Lookup() == %d, expected 176", lookup.ASN)
+			for i := 0; i < 100; i++ {
+				lookup := c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::a"))
+				if lookup.ASN != 176 {
+					if i == 99 {
+						t.Errorf("Lookup() == %d, expected 176", lookup.ASN)
+					} else {
+						break
+					}
+					time.Sleep(5 * time.Millisecond)
+				}
 			}
-			lookup = c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::b"))
+			lookup := c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::b"))
 			if lookup.ASN != 174 {
 				t.Errorf("Lookup() == %d, expected 174", lookup.ASN)
 			}
