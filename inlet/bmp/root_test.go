@@ -112,9 +112,12 @@ func TestBMP(t *testing.T) {
 		if helpers.RaceEnabled {
 			return
 		}
-		_, err := conn.Write([]byte{1})
-		if err != nil {
-			t.Fatal("Write() did not error while connection should be closed")
+		for i := 0; i < 100; i++ {
+			if _, err := conn.Write([]byte{1}); err != nil {
+				break
+			} else if err == nil && i == 99 {
+				t.Fatal("Write() did not error while connection should be closed")
+			}
 		}
 
 		mockClock.Add(2 * time.Hour)
