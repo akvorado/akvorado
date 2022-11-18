@@ -10,6 +10,8 @@ import (
 	"net/netip"
 	"time"
 
+	"akvorado/common/reporter"
+
 	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
 	"github.com/osrg/gobgp/v3/pkg/packet/bmp"
 )
@@ -73,8 +75,24 @@ func (c *Component) ribWorker() error {
 	lastCopy := time.Now().Add(-c.config.RIBMinimumUpdateDelay)
 	nextTimer := time.NewTimer(c.config.RIBMaximumUpdateDelay)
 	timer := "maximum"
+	uptodate := true
 	priorityPayloads := make(chan ribWorkerPayload, 1)
 	pausedPayloads := make(chan ribWorkerPayload, 1)
+
+	if c.config.RIBMode == RIBModePerformance {
+		c.r.GaugeFunc(
+			reporter.GaugeOpts{
+				Name: "rib_lag_seconds",
+				Help: "How outdated is the readonly RIB.",
+			},
+			func() float64 {
+				if uptodate {
+					return 0
+				}
+				return time.Now().Sub(lastCopy).Seconds()
+			},
+		)
+	}
 
 	handleLowPriorityPayload := func(payload ribWorkerPayload) error {
 		// These low priority operations can be canceled when a high priority request happens.
@@ -93,6 +111,7 @@ func (c *Component) ribWorker() error {
 			}()
 		}
 
+		uptodate = false
 		err := payload.fn(state)
 		if err == errRIBWorkerCanceled {
 			pausedPayloads <- payload
@@ -121,6 +140,7 @@ func (c *Component) ribWorker() error {
 			} else if delta >= c.config.RIBMaximumUpdateDelay {
 				c.updateRIBReadonly(state, "maximum")
 				lastCopy = now
+				uptodate = true
 			} else {
 				nextTimer.Reset(c.config.RIBMaximumUpdateDelay - delta)
 				timer = "maximum"
@@ -169,6 +189,7 @@ func (c *Component) ribWorker() error {
 			case <-nextTimer.C:
 				c.updateRIBReadonly(state, timer)
 				lastCopy = time.Now()
+				uptodate = true
 			}
 		}
 	}
