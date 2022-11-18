@@ -111,6 +111,7 @@ func (c *Component) runWorker(workerID int) error {
 				return nil
 			}
 
+			start := time.Now()
 			exporter := net.IP(flow.ExporterAddress).String()
 			c.metrics.flowsReceived.WithLabelValues(exporter).Inc()
 
@@ -128,6 +129,7 @@ func (c *Component) runWorker(workerID int) error {
 				c.metrics.flowsErrors.WithLabelValues(exporter, err.Error()).Inc()
 				continue
 			}
+			c.metrics.flowsProcessingTime.Observe(time.Now().Sub(start).Seconds())
 
 			// Forward to Kafka (this could block)
 			c.metrics.flowsForwarded.WithLabelValues(exporter).Inc()

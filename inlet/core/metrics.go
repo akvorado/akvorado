@@ -10,10 +10,11 @@ import (
 )
 
 type metrics struct {
-	flowsReceived    *reporter.CounterVec
-	flowsForwarded   *reporter.CounterVec
-	flowsErrors      *reporter.CounterVec
-	flowsHTTPClients reporter.GaugeFunc
+	flowsReceived       *reporter.CounterVec
+	flowsForwarded      *reporter.CounterVec
+	flowsErrors         *reporter.CounterVec
+	flowsHTTPClients    reporter.GaugeFunc
+	flowsProcessingTime reporter.Summary
 
 	classifierExporterCacheSize  reporter.CounterFunc
 	classifierInterfaceCacheSize reporter.CounterFunc
@@ -49,6 +50,13 @@ func (c *Component) initMetrics() {
 		},
 		func() float64 {
 			return float64(atomic.LoadUint32(&c.httpFlowClients))
+		},
+	)
+	c.metrics.flowsProcessingTime = c.r.Summary(
+		reporter.SummaryOpts{
+			Name:       "flows_processing_seconds",
+			Help:       "Processing time for received flows.",
+			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		},
 	)
 

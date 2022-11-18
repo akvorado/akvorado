@@ -91,7 +91,7 @@ func TestCore(t *testing.T) {
 		flowComponent.Inject(t, flowMessage("192.0.2.143", 434, 679))
 
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics := r.GetMetrics("akvorado_inlet_core_")
+		gotMetrics := r.GetMetrics("akvorado_inlet_core_", "-flows_processing_")
 		expectedMetrics := map[string]string{
 			`classifier_exporter_cache_size_items`:                         "0",
 			`classifier_interface_cache_size_items`:                        "0",
@@ -112,7 +112,7 @@ func TestCore(t *testing.T) {
 		flowComponent.Inject(t, flowMessage("192.0.2.143", 437, 679))
 
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics = r.GetMetrics("akvorado_inlet_core_", "classifier_", "flows_")
+		gotMetrics = r.GetMetrics("akvorado_inlet_core_", "classifier_", "-flows_processing_", "flows_")
 		expectedMetrics = map[string]string{
 			`classifier_exporter_cache_size_items`:                         "0",
 			`classifier_interface_cache_size_items`:                        "0",
@@ -178,7 +178,7 @@ func TestCore(t *testing.T) {
 		input.SamplingRate = 0
 		flowComponent.Inject(t, input)
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics = r.GetMetrics("akvorado_inlet_core_", "classifier_", "flows_")
+		gotMetrics = r.GetMetrics("akvorado_inlet_core_", "classifier_", "-flows_processing_", "flows_")
 		expectedMetrics = map[string]string{
 			`classifier_exporter_cache_size_items`:                               "0",
 			`classifier_interface_cache_size_items`:                              "0",
@@ -221,7 +221,7 @@ func TestCore(t *testing.T) {
 		}
 
 		// Metrics should tell we have a client
-		gotMetrics := r.GetMetrics("akvorado_inlet_core_", "flows_http_clients")
+		gotMetrics := r.GetMetrics("akvorado_inlet_core_", "flows_http_clients", "-flows_processing_")
 		expectedMetrics := map[string]string{
 			`flows_http_clients`: "1",
 		}

@@ -409,7 +409,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 			case <-time.After(1 * time.Second):
 				t.Fatal("Kafka message not received")
 			}
-			gotMetrics := r.GetMetrics("akvorado_inlet_core_flows_")
+			gotMetrics := r.GetMetrics("akvorado_inlet_core_flows_", "-processing_")
 			expectedMetrics := map[string]string{
 				`errors{error="SNMP cache miss",exporter="192.0.2.142"}`: "1",
 				`http_clients`:                      "0",
