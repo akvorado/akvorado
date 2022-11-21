@@ -270,6 +270,21 @@ func TestFinalizeQuery(t *testing.T) {
 				Points: 720,
 			},
 			Expected: `toStartOfInterval(TimeReceived + INTERVAL 50 second, INTERVAL 120 second) - INTERVAL 50 second`,
+		}, {
+			Description: "Small interval outside main table expiration",
+			Query:       "SELECT InIfProvider FROM {{ .Table }}",
+			Tables: []flowsTable{
+				{"flows", time.Duration(0), time.Date(2022, 11, 06, 12, 0, 0, 0, time.UTC)},
+				{"flows_1h0m0s", time.Hour, time.Date(2022, 04, 25, 18, 0, 0, 0, time.UTC)},
+				{"flows_1m0s", time.Minute, time.Date(2022, 11, 14, 12, 0, 0, 0, time.UTC)},
+				{"flows_5m0s", 5 * time.Minute, time.Date(2022, 8, 23, 12, 0, 0, 0, time.UTC)},
+			},
+			Context: inputContext{
+				Start:  time.Date(2022, 10, 30, 1, 0, 0, 0, time.UTC),
+				End:    time.Date(2022, 10, 30, 12, 0, 0, 0, time.UTC),
+				Points: 200,
+			},
+			Expected: "SELECT InIfProvider FROM flows_5m0s",
 		},
 	}
 

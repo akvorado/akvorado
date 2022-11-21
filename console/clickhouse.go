@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"text/template"
 	"time"
@@ -220,10 +221,12 @@ func (c *Component) getBestTable(start time.Time, targetInterval time.Duration) 
 		// We can use the consolidated data. The first
 		// criteria is to find the tables matching the time
 		// criteria.
+		fmt.Println(c.flowsTables)
 		candidates := []int{}
 		for idx, table := range c.flowsTables {
 			if start.After(table.Oldest.Add(table.Resolution)) {
 				candidates = append(candidates, idx)
+				fmt.Println(candidates)
 			}
 		}
 		if len(candidates) == 0 {
@@ -245,20 +248,19 @@ func (c *Component) getBestTable(start time.Time, targetInterval time.Duration) 
 				}
 			}
 		}
-		if len(candidates) > 1 {
-			// Use interval to find the best one
-			best := 0
-			for _, idx := range candidates {
-				if c.flowsTables[idx].Resolution > targetInterval {
-					continue
-				}
-				if c.flowsTables[idx].Resolution > c.flowsTables[best].Resolution {
-					best = idx
-				}
+		sort.Slice(candidates, func(i, j int) bool {
+			return c.flowsTables[candidates[i]].Resolution < c.flowsTables[candidates[j]].Resolution
+		})
+		// If possible, use the first resolution before the target interval
+		for len(candidates) > 1 {
+			if c.flowsTables[candidates[1]].Resolution < targetInterval {
+				candidates = candidates[1:]
+			} else {
+				break
 			}
-			candidates = []int{best}
 		}
 		table = c.flowsTables[candidates[0]].Name
+		fmt.Println(table)
 		computedInterval = c.flowsTables[candidates[0]].Resolution
 	}
 	if computedInterval < time.Second {
