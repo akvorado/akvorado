@@ -64,7 +64,7 @@
           {{ errorMessage }}
         </InfoBox>
         <div
-          class="prose-img:center prose prose-sm mx-auto prose-h1:border-b-2 prose-pre:rounded dark:prose-invert dark:prose-h1:border-gray-700 md:prose-base"
+          class="prose-img:center prose prose-sm mx-auto prose-h1:border-b-2 prose-pre:whitespace-pre-wrap prose-pre:break-all prose-pre:rounded dark:prose-invert dark:prose-h1:border-gray-700 md:prose-base"
           v-html="markdown"
         ></div>
       </div>
