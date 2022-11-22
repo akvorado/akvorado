@@ -221,12 +221,10 @@ func (c *Component) getBestTable(start time.Time, targetInterval time.Duration) 
 		// We can use the consolidated data. The first
 		// criteria is to find the tables matching the time
 		// criteria.
-		fmt.Println(c.flowsTables)
 		candidates := []int{}
 		for idx, table := range c.flowsTables {
 			if start.After(table.Oldest.Add(table.Resolution)) {
 				candidates = append(candidates, idx)
-				fmt.Println(candidates)
 			}
 		}
 		if len(candidates) == 0 {
@@ -260,7 +258,6 @@ func (c *Component) getBestTable(start time.Time, targetInterval time.Duration) 
 			}
 		}
 		table = c.flowsTables[candidates[0]].Name
-		fmt.Println(table)
 		computedInterval = c.flowsTables[candidates[0]].Resolution
 	}
 	if computedInterval < time.Second {
