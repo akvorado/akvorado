@@ -42,8 +42,10 @@ type Dependencies struct {
 // New creates a new HTTP component.
 func New(reporter *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
 	// Build Kafka configuration
-	kafkaConfig := sarama.NewConfig()
-	kafkaConfig.Version = sarama.KafkaVersion(configuration.Version)
+	kafkaConfig, err := kafka.NewConfig(configuration.Configuration)
+	if err != nil {
+		return nil, err
+	}
 	kafkaConfig.Metadata.AllowAutoTopicCreation = true
 	kafkaConfig.Producer.MaxMessageBytes = configuration.MaxMessageBytes
 	kafkaConfig.Producer.Compression = sarama.CompressionCodec(configuration.CompressionCodec)

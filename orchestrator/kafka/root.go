@@ -26,8 +26,10 @@ type Component struct {
 
 // New creates a new Kafka configurator.
 func New(r *reporter.Reporter, config Configuration) (*Component, error) {
-	kafkaConfig := sarama.NewConfig()
-	kafkaConfig.Version = sarama.KafkaVersion(config.Version)
+	kafkaConfig, err := kafka.NewConfig(config.Configuration)
+	if err != nil {
+		return nil, err
+	}
 	if err := kafkaConfig.Validate(); err != nil {
 		return nil, fmt.Errorf("cannot validate Kafka configuration: %w", err)
 	}

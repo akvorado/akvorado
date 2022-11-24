@@ -157,8 +157,8 @@ flow is written in the [length-delimited format][].
 
 The following keys are accepted:
 
-- `topic`, `brokers` and `version` keys are described in the
-  configuration for the [inlet service](#kafka) (the values of these
+- `topic`, `brokers`, `tls`, and `version` keys are described in the
+  configuration for the [orchestrator service](#kafka-1) (the values of these
   keys come from the orchestrator configuration)
 - `flush-interval` defines the maximum flush interval to send received
   flows to Kafka
@@ -387,9 +387,27 @@ flows. It accepts the following keys:
 
 - `brokers` specifies the list of brokers to use to bootstrap the
   connection to the Kafka cluster
+- `tls` defines the TLS configuration to connect to the cluster
 - `version` tells which minimal version of Kafka to expect
 - `topic` defines the base topic name
 - `topic-configuration` describes how the topic should be configured
+
+The following keys are accepted for the TLS configuration:
+
+- `enable` should be set to `true` to enable TLS.
+- `verify` can be set to `false` to skip checking server certificate (not recommended).
+- `ca-file` gives the location of the file containing the CA certificate in PEM
+  format to check the server certificate. If not provided, the system
+  certificates are used instead.
+- `cert-file` and `key-file` defines the location of the client certificate pair
+  in PEM format to authenticate to the broker. If the first one is empty, no
+  client certificate is used. If the second one is empty, the key is expected to
+  be in the certificate file.
+- `sasl-username` and `sasl-password` enables SASL authentication with the
+  provided user and password.
+- `sasl-algorithm` tells which SASL mechanism to use for authentication. This
+  can be `none`, `plain`, `scram-sha256`, or `scram-sha512`. This should not be
+  set to none when SASL is used.
 
 The following keys are accepted for the topic configuration:
 

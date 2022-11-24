@@ -26,6 +26,7 @@ details.
 - 🩹 *console*: use configured dimensions limit for “Visualize” tab
 - 🌱 *inlet*: optimize BMP collector (see above)
 - 🌱 *inlet*: replace LRU cache for classifiers by a time-based cache
+- 🌱 *inlet*: add TLS support for Kafka transport
 - 🌱 *console*: <kbd>Ctrl-Enter</kbd> or <kbd>Cmd-Enter</kbd> when editing a filter now applies the changes
 - 🌱 *console*: switch to TypeScript for the frontend code
 
