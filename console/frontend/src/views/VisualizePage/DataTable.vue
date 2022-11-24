@@ -147,6 +147,7 @@ const table = computed(
     if (data === null) return null;
     if (
       data.graphType === "stacked" ||
+      data.graphType === "stacked100" ||
       data.graphType === "lines" ||
       data.graphType === "grid"
     ) {

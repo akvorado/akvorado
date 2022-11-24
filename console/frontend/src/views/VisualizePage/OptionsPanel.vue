@@ -74,6 +74,7 @@
             <InputCheckbox
               v-if="
                 graphType.type === 'stacked' ||
+                graphType.type === 'stacked100' ||
                 graphType.type === 'lines' ||
                 graphType.type === 'grid'
               "
@@ -190,6 +191,9 @@ const options = computed((): ModelType => {
     ...(graphType.value.type === "stacked" && {
       bidirectional: bidirectional.value,
       previousPeriod: previousPeriod.value,
+    }),
+    ...(graphType.value.type === "stacked100" && {
+      bidirectional: bidirectional.value,
     }),
     ...(graphType.value.type === "lines" && {
       bidirectional: bidirectional.value,

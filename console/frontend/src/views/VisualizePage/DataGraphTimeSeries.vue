@@ -87,7 +87,7 @@ const graph = computed((): ECOption => {
   const source: [string, ...number[]][] = [
     ...data.t
       .map((t, timeIdx) => {
-        const result: [string, ...number[]] = [
+        let result: [string, ...number[]] = [
           t,
           ...data.points.map(
             // Unfortunately, eCharts does not seem to make it easy
@@ -96,6 +96,28 @@ const graph = computed((): ECOption => {
             (row, rowIdx) => row[timeIdx] * (data.axis[rowIdx] % 2 ? 1 : -1)
           ),
         ];
+        if (data.graphType === "stacked100") {
+          // Normalize values between 0 and 1 (or -1 and 0)
+          const [, ...values] = result;
+          const positiveSum = values.reduce(
+            (prev, cur) => (cur > 0 ? prev + cur : prev),
+            0
+          );
+          const negativeSum = values.reduce(
+            (prev, cur) => (cur < 0 ? prev + cur : prev),
+            0
+          );
+          result = [
+            t,
+            ...values.map((v) =>
+              v > 0 && positiveSum > 0
+                ? v / positiveSum
+                : v < 0 && negativeSum < 0
+                ? -v / negativeSum
+                : v
+            ),
+          ];
+        }
         return result;
       })
       .slice(0, -1), // trim last point
@@ -112,11 +134,24 @@ const graph = computed((): ECOption => {
     },
     yAxis: ECOption["yAxis"] = {
       type: "value",
-      min: data.bidirectional ? undefined : 0,
-      axisLabel: { formatter: formatXps },
+      min: data.bidirectional
+        ? data.graphType === "stacked100"
+          ? -1
+          : undefined
+        : 0,
+      max: data.graphType === "stacked100" ? 1 : undefined,
+      axisLabel: {
+        formatter:
+          data.graphType === "stacked100"
+            ? (v: number) => (v * 100).toFixed(0)
+            : formatXps,
+      },
       axisPointer: {
         label: {
-          formatter: ({ value }) => formatXps(value.valueOf() as number),
+          formatter:
+            data.graphType === "stacked100"
+              ? ({ value }) => ((value.valueOf() as number) * 100).toFixed(1)
+              : ({ value }) => formatXps(value.valueOf() as number),
         },
       },
     },
@@ -159,7 +194,9 @@ const graph = computed((): ECOption => {
             });
             idx = table.length - 1;
           }
-          const val = (param.value as number[])[param.seriesIndex + 1];
+          // We need to find the origin value in data.points, notably when using
+          // stacked100.
+          const val = data.points[param.seriesIndex][param.dataIndex];
           if (axis % 2 == 1) table[idx].up = val;
           else table[idx].down = val;
         });
@@ -185,7 +222,11 @@ const graph = computed((): ECOption => {
     };
 
   // Lines and stacked areas
-  if (data.graphType === "stacked" || data.graphType === "lines") {
+  if (
+    data.graphType === "stacked" ||
+    data.graphType === "stacked100" ||
+    data.graphType === "lines"
+  ) {
     const uniqRows = uniqWith(data.rows, isEqual),
       uniqRowIndex = (row: string[]) =>
         findIndex(uniqRows, (orow) => isEqual(row, orow));
@@ -245,7 +286,10 @@ const graph = computed((): ECOption => {
               },
             };
           }
-          if (data.graphType === "stacked" && [1, 2].includes(data.axis[idx])) {
+          if (
+            (data.graphType === "stacked" || data.graphType === "stacked100") &&
+            [1, 2].includes(data.axis[idx])
+          ) {
             serie = {
               ...serie,
               stack: data.axis[idx].toString(),

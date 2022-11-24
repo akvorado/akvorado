@@ -25,6 +25,7 @@ const props = defineProps<{
 const component = computed(() => {
   switch (props.data?.graphType) {
     case "stacked":
+    case "stacked100":
     case "lines":
     case "grid":
       return DataGraphTimeSeries;

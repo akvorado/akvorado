@@ -19,6 +19,7 @@ can be selected with `inlet.bmp.rib-mode`. If you have several million routes,
 be sure to check the [BMP documentation](02-configuration.md#bmp) for more
 details.
 
+- ✨ *console*: add *100% stacked* graph type
 - 🩹 *inlet*: handle non-fatal BMP decoding errors more gracefully
 - 🩹 *inlet*: fix a small memory leak in BMP collector
 - 🩹 *console*: fix selection of the aggregate table to not get empty graphs

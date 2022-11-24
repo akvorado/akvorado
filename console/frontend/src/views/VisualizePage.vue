@@ -162,6 +162,7 @@ const { data, isFetching, aborted, abort, canAbort, error } = useFetch("", {
     }
     const endpoint: Record<GraphType, string> = {
       stacked: "graph",
+      stacked100: "graph",
       lines: "graph",
       grid: "graph",
       sankey: "sankey",

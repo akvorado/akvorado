@@ -3,6 +3,7 @@
 
 export const graphTypes = {
   stacked: "Stacked areas",
+  stacked100: "100% stacked",
   lines: "Lines",
   grid: "Grid",
   sankey: "Sankey",
