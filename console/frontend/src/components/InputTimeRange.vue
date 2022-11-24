@@ -34,16 +34,18 @@ const emit = defineEmits<{
 
 const startTime = ref("");
 const endTime = ref("");
-const parsedStartTime = computed(() => SugarDate.create(startTime.value));
-const parsedEndTime = computed(() => SugarDate.create(endTime.value));
+const parsedTimes = computed(() => ({
+  start: SugarDate.create(startTime.value),
+  end: SugarDate.create(endTime.value),
+}));
 const startTimeError = computed(() =>
-  isNaN(parsedStartTime.value.valueOf()) ? "Invalid date" : ""
+  isNaN(parsedTimes.value.start.valueOf()) ? "Invalid date" : ""
 );
 const endTimeError = computed(
   () =>
-    (isNaN(parsedEndTime.value.valueOf()) ? "Invalid date" : "") ||
-    (!isNaN(parsedStartTime.value.valueOf()) &&
-      parsedStartTime.value > parsedEndTime.value &&
+    (isNaN(parsedTimes.value.end.valueOf()) ? "Invalid date" : "") ||
+    (!isNaN(parsedTimes.value.start.valueOf()) &&
+      parsedTimes.value.start > parsedTimes.value.end &&
       "End date should be before start date") ||
     ""
 );
