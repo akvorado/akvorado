@@ -259,7 +259,7 @@ watch(
 </script>
 
 <script lang="ts">
-import { graphTypes } from "./constants";
+import { graphTypes } from "./graphtypes";
 
 export type ModelType = {
   graphType: keyof typeof graphTypes;

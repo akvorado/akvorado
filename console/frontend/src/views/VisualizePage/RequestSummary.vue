@@ -55,7 +55,7 @@ import {
 } from "@heroicons/vue/solid";
 import { Date as SugarDate } from "sugar-date";
 import type { ModelType } from "./OptionsPanel.vue";
-import { graphTypes } from "./constants";
+import { graphTypes } from "./graphtypes";
 import { TitleKey } from "@/components/TitleProvider.vue";
 
 const props = defineProps<{ request: ModelType }>();

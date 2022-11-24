@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import type { GraphType } from "./constants";
+import type { GraphType } from "./graphtypes";
 
 export type Units = "l3bps" | "l2bps" | "pps";
 export type SankeyHandlerInput = {

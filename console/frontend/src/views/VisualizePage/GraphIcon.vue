@@ -59,7 +59,7 @@ export default {
 </script>
 
 <script lang="ts" setup>
-import { graphTypes } from "./constants.js";
+import { graphTypes } from "./graphtypes";
 
 defineProps<{ name: string }>();
 </script>

@@ -57,7 +57,7 @@ import {
   default as OptionsPanel,
   type ModelType,
 } from "./VisualizePage/OptionsPanel.vue";
-import type { GraphType } from "./VisualizePage/constants";
+import type { GraphType } from "./VisualizePage/graphtypes";
 import type {
   SankeyHandlerInput,
   GraphHandlerInput,
