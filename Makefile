@@ -164,9 +164,9 @@ test-coverage-go: | $(GOTESTSUM) $(GOCOV) $(GOCOVXML) ; $(info $(M) running Go c
 
 test-js: .fmt-js~ .lint-js~ $(GENERATED_JS)
 test-js: ; $(info $(M) running JS tests…) @ ## Run JS tests
-	$Q cd console/frontend && npm run --silent test
+	$Q cd console/frontend && npm run --silent type-check && npm run --silent test
 test-coverage-js: ; $(info $(M) running JS coverage tests…) @ ## Run JS coverage tests
-	$Q cd console/frontend && npm run --silent test -- --coverage
+	$Q cd console/frontend && npm run --silent type-check && npm run --silent test -- --coverage
 
 .PHONY: lint
 lint: .lint-go~ .lint-js~ ## Run linting
