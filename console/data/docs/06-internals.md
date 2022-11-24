@@ -178,6 +178,7 @@ rich.
 
 The SPA is built using mostly the following components:
 
+- [TypeScript](https://www.typescriptlang.org) instead of JavaScript,
 - [Vite](https://vitejs.dev/) as a builder,
 - [Vue](https://vuejs.org/) as the reactive JavaScript framework,
 - [TailwindCSS](https://tailwindcss.com/) for styling pages directly inside HTML,
