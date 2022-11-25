@@ -21,16 +21,15 @@ version of *Docker Compose*, you may need to use `docker-compose` or
 # mkdir akvorado
 # cd akvorado
 # curl -sL https://github.com/akvorado/akvorado/releases/latest/download/docker-compose-quickstart.tar.gz | tar zxvf -
-# docker-compose up
+# docker-compose up -d
 ```
 
-Once running, *Akvorado* web interface should be running on port 8081.
+Once running, *Akvorado* web interface should be running on port 8081. A few
+synthetic flows are generated in the background. To disable them:
 
-A few synthetic flows are generated in the background. They can be
-disabled by removing the `:docker-compose-demo.yml` string from
-`.env`, or by stopping them with `docker-compose stop
-akvorado-exporter{1,2,3,4}`, or by removing the associated
-configuration in `akvorado.yaml`, or by doing all of that.
+1. Remove `:docker-compose-demo.yml` from `.env`,
+2. Remove the associated configuration at the end of `akvorado.yaml`, and
+3. Run `docker-compose up -d --remove-orphans`.
 
 If you want to send you own flows, the inlet is accepting both NetFlow
 (port 2055) and sFlow (port 6343). You should also customize some
