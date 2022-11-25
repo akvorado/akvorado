@@ -11,7 +11,7 @@ volumes:
 
 services:
   geoip:
-    # Put GEOIP_ACCOUNT_ID and GEOIP_LICENSE_KEY values in `.env` file.
+    # Put GEOIPUPDATE_ACCOUNT_ID and GEOIPUPDATE_LICENSE_KEY values in `.env` file.
     image: maxmindinc/geoipupdate:v4
     environment:
       - GEOIPUPDATE_ACCOUNT_ID
