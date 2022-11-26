@@ -42,7 +42,6 @@ func TestCore(t *testing.T) {
 	kafkaComponent, kafkaProducer := kafka.NewMock(t, r, kafka.DefaultConfiguration())
 	httpComponent := http.NewMock(t, r)
 	bmpComponent, _ := bmp.NewMock(t, r, bmp.DefaultConfiguration())
-	helpers.StartStop(t, bmpComponent)
 	bmpComponent.PopulateRIB(t)
 
 	// Instantiate and start core

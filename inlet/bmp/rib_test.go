@@ -4,6 +4,7 @@
 package bmp
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"net/netip"
@@ -294,7 +295,7 @@ func TestRIB(t *testing.T) {
 
 		// Remove everything
 		for _, peer := range peers {
-			r.flushPeer(peer)
+			r.flushPeer(context.Background(), peer, 100)
 		}
 
 		// Check for leak of interned values

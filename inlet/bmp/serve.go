@@ -61,7 +61,6 @@ func (c *Component) serveConnection(conn *net.TCPConn) error {
 
 	// Reading from connection
 	c.handleConnectionUp(exporter)
-	peerAddPathModes := map[peerKey]map[bgp.RouteFamily]bgp.BGPAddPathMode{}
 	init := false
 	header := make([]byte, bmp.BMP_HEADER_SIZE)
 	for {
@@ -139,9 +138,11 @@ func (c *Component) serveConnection(conn *net.TCPConn) error {
 			}
 			body = body[bmp.BMP_PEER_HEADER_SIZE:]
 			pkey = peerKeyFromBMPPeerHeader(exporter, &msg.PeerHeader)
-			if modes, ok := peerAddPathModes[pkey]; ok {
-				marshallingOptions = []*bgp.MarshallingOption{{AddPath: modes}}
+			c.mu.RLock()
+			if pinfo, ok := c.peers[pkey]; ok {
+				marshallingOptions = pinfo.marshallingOptions
 			}
+			c.mu.RUnlock()
 		}
 
 		if err := msg.Body.ParseBody(&msg, body, marshallingOptions...); err != nil {
@@ -201,44 +202,6 @@ func (c *Component) serveConnection(conn *net.TCPConn) error {
 			logger.Info().Msg("termination message received")
 			return nil
 		case *bmp.BMPPeerUpNotification:
-			// Check for ADD-PATH support.
-			receivedAddPath := map[bgp.RouteFamily]bgp.BGPAddPathMode{}
-			received, _ := body.ReceivedOpenMsg.Body.(*bgp.BGPOpen)
-			for _, param := range received.OptParams {
-				switch param := param.(type) {
-				case *bgp.OptionParameterCapability:
-					for _, cap := range param.Capability {
-						switch cap := cap.(type) {
-						case *bgp.CapAddPath:
-							for _, tuple := range cap.Tuples {
-								receivedAddPath[tuple.RouteFamily] = tuple.Mode
-							}
-						}
-					}
-				}
-			}
-			sent, _ := body.SentOpenMsg.Body.(*bgp.BGPOpen)
-			addPathOption := map[bgp.RouteFamily]bgp.BGPAddPathMode{}
-			for _, param := range sent.OptParams {
-				switch param := param.(type) {
-				case *bgp.OptionParameterCapability:
-					for _, cap := range param.Capability {
-						switch cap := cap.(type) {
-						case *bgp.CapAddPath:
-							for _, sent := range cap.Tuples {
-								receivedMode := receivedAddPath[sent.RouteFamily]
-								if receivedMode == bgp.BGP_ADD_PATH_BOTH || receivedMode == bgp.BGP_ADD_PATH_SEND {
-									if sent.Mode == bgp.BGP_ADD_PATH_BOTH || sent.Mode == bgp.BGP_ADD_PATH_RECEIVE {
-										// We have at least the receive mode. We only do decoding.
-										addPathOption[sent.RouteFamily] = bgp.BGP_ADD_PATH_RECEIVE
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-			peerAddPathModes[pkey] = addPathOption
 			c.handlePeerUpNotification(pkey, body)
 		case *bmp.BMPPeerDownNotification:
 			c.handlePeerDownNotification(pkey)

@@ -13,18 +13,12 @@ identified with a specific icon:
 
 ## Unreleased
 
-The BMP collector has been optimized in memory (more than 50%) and locks were
-removed to reduce latency during lookups. There are two modes available. They
-can be selected with `inlet.bmp.rib-mode`. If you have several million routes,
-be sure to check the [BMP documentation](02-configuration.md#bmp) for more
-details.
-
 - ✨ *console*: add *100% stacked* graph type
 - 🩹 *inlet*: handle non-fatal BMP decoding errors more gracefully
 - 🩹 *inlet*: fix a small memory leak in BMP collector
 - 🩹 *console*: fix selection of the aggregate table to not get empty graphs
 - 🩹 *console*: use configured dimensions limit for “Visualize” tab
-- 🌱 *inlet*: optimize BMP collector (see above)
+- 🌱 *inlet*: optimize BMP CPU usage, memory usage, and lock times 
 - 🌱 *inlet*: replace LRU cache for classifiers by a time-based cache
 - 🌱 *inlet*: add TLS support for Kafka transport
 - 🌱 *console*: <kbd>Ctrl-Enter</kbd> or <kbd>Cmd-Enter</kbd> when editing a filter now applies the changes

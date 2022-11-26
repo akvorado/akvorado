@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/netip"
 	"path"
+	"strconv"
 	"testing"
 	"time"
 
@@ -38,37 +39,36 @@ func TestBMP(t *testing.T) {
 	}
 	dumpRIB := func(t *testing.T, c *Component) map[netip.Addr][]string {
 		t.Helper()
+		c.mu.RLock()
+		defer c.mu.RUnlock()
 		result := map[netip.Addr][]string{}
-		c.ribWorkerQueue(func(s *ribWorkerState) error {
-			iter := s.rib.tree.Iterate()
-			for iter.Next() {
-				addr := iter.Address()
-				for _, route := range iter.Tags() {
-					nlriRef := s.rib.nlris.Get(route.nlri)
-					nh := s.rib.nextHops.Get(route.nextHop)
-					attrs := s.rib.rtas.Get(route.attributes)
-					var peer netip.Addr
-					for pkey, pinfo := range s.peers {
-						if pinfo.reference == route.peer {
-							peer = pkey.ip
-							break
-						}
+		iter := c.rib.tree.Iterate()
+		for iter.Next() {
+			addr := iter.Address()
+			for _, route := range iter.Tags() {
+				nlriRef := c.rib.nlris.Get(route.nlri)
+				nh := c.rib.nextHops.Get(route.nextHop)
+				attrs := c.rib.rtas.Get(route.attributes)
+				var peer netip.Addr
+				for pkey, pinfo := range c.peers {
+					if pinfo.reference == route.peer {
+						peer = pkey.ip
+						break
 					}
-					if _, ok := result[peer.Unmap()]; !ok {
-						result[peer.Unmap()] = []string{}
-					}
-					result[peer.Unmap()] = append(result[peer.Unmap()],
-						fmt.Sprintf("[%s] %s via %s %s/%d %d %v %v %v",
-							nlriRef.family,
-							addr, netip.Addr(nh).Unmap(),
-							nlriRef.rd,
-							nlriRef.path,
-							attrs.asn, attrs.asPath,
-							attrs.communities, attrs.largeCommunities))
 				}
+				if _, ok := result[peer.Unmap()]; !ok {
+					result[peer.Unmap()] = []string{}
+				}
+				result[peer.Unmap()] = append(result[peer.Unmap()],
+					fmt.Sprintf("[%s] %s via %s %s/%d %d %v %v %v",
+						nlriRef.family,
+						addr, netip.Addr(nh).Unmap(),
+						nlriRef.rd,
+						nlriRef.path,
+						attrs.asn, attrs.asPath,
+						attrs.communities, attrs.largeCommunities))
 			}
-			return nil
-		})
+		}
 		return result
 	}
 
@@ -295,8 +295,8 @@ func TestBMP(t *testing.T) {
 			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:      "5",
 			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers_total{exporter="127.0.0.1"}`:                                           "3",
-			`peer_removal_done_total{exporter="127.0.0.1"}`:                               "1",
 			`routes_total{exporter="127.0.0.1"}`:                                          "14",
+			`peer_removal_done_total{exporter="127.0.0.1"}`:                               "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -800,8 +800,8 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`closed_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "0",
-			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "1",
 			`routes_total{exporter="127.0.0.1"}`:                                        "0",
+			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -908,8 +908,8 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "2",
 			`closed_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "1",
-			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "1",
 			`routes_total{exporter="127.0.0.1"}`:                                        "2",
+			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -938,8 +938,8 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "2",
 			`closed_connections_total{exporter="127.0.0.1"}`:                            "2",
 			`peers_total{exporter="127.0.0.1"}`:                                         "1",
-			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "1",
 			`routes_total{exporter="127.0.0.1"}`:                                        "2",
+			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -961,8 +961,8 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "2",
 			`closed_connections_total{exporter="127.0.0.1"}`:                            "2",
 			`peers_total{exporter="127.0.0.1"}`:                                         "0",
-			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "2",
 			`routes_total{exporter="127.0.0.1"}`:                                        "0",
+			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "2",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -972,55 +972,40 @@ func TestBMP(t *testing.T) {
 		if diff := helpers.Diff(gotRIB, expectedRIB); diff != "" {
 			t.Errorf("RIB (-got, +want):\n%s", diff)
 		}
+
 	})
 
 	t.Run("init, peers up, eor, reach NLRI, conn down, immediate timeout", func(t *testing.T) {
 		r := reporter.NewMock(t)
 		config := DefaultConfiguration()
-		config.RIBPeerRemovalBatchRoutes = 1
+		config.PeerRemovalMaxTime = 1
+		config.PeerRemovalSleepInterval = 1
+		config.PeerRemovalMinRoutes = 1
 		c, mockClock := NewMock(t, r, config)
 		helpers.StartStop(t, c)
 		conn := dial(t, c)
-
-		pauseFlushPeer := make(chan bool)
-		instrumentFlushPeer = func() { <-pauseFlushPeer }
-		defer func() { instrumentFlushPeer = func() {} }()
 
 		send(t, conn, "bmp-init.pcap")
 		send(t, conn, "bmp-peers-up.pcap")
 		send(t, conn, "bmp-eor.pcap")
 		send(t, conn, "bmp-reach.pcap")
 		conn.Close()
-		time.Sleep(20 * time.Millisecond)
 		mockClock.Add(2 * time.Hour)
-
-		for i := 0; i < 5; i++ {
-			t.Logf("iteration %d", i)
-			// Sleep a bit to be sure flush is blocked
-			time.Sleep(10 * time.Millisecond)
-			done := make(chan bool)
-			go func() {
-				t.Logf("start lookup %d", i)
-				c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::a"))
-				t.Logf("got lookup result %d", i)
-				close(done)
-			}()
-			// Sleep a bit to let some time to queue the request
-			time.Sleep(10 * time.Millisecond)
-			pauseFlushPeer <- false
-			// Wait for request to be completed
-			select {
-			case <-done:
-			case <-time.After(50 * time.Millisecond):
-				close(pauseFlushPeer)
-				t.Fatalf("no lookup answer")
-			}
-		}
-		// Process remaining requests
-		close(pauseFlushPeer)
 		time.Sleep(20 * time.Millisecond)
-
+		if helpers.RaceEnabled {
+			t.Skip("unreliable results when running with the race detector")
+		}
 		gotMetrics := r.GetMetrics("akvorado_inlet_bmp_", "-locked_duration")
+		// For peer_removal_partial_total, we have 18 routes, but only 14 routes
+		// can be removed while keeping 1 route on each peer. 14 is the max, but
+		// we rely on good-willing from the scheduler to get this number.
+		peerRemovalPartial, _ := strconv.Atoi(gotMetrics[`peer_removal_partial_total{exporter="127.0.0.1"}`])
+		if peerRemovalPartial > 14 {
+			t.Errorf("Metrics: peer_removal_partial_total %d > 14", peerRemovalPartial)
+		}
+		if peerRemovalPartial < 5 {
+			t.Errorf("Metrics: peer_removal_partial_total %d < 5", peerRemovalPartial)
+		}
 		expectedMetrics := map[string]string{
 			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
 			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
@@ -1031,78 +1016,48 @@ func TestBMP(t *testing.T) {
 			`peers_total{exporter="127.0.0.1"}`:                                         "0",
 			`routes_total{exporter="127.0.0.1"}`:                                        "0",
 			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "4",
-			`peer_removal_partial_total{exporter="127.0.0.1"}`:                          "5",
+			`peer_removal_partial_total{exporter="127.0.0.1"}`:                          fmt.Sprintf("%d", peerRemovalPartial),
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
 		}
 	})
 
-	for _, mode := range []RIBMode{RIBModeMemory, RIBModePerformance} {
-		t.Run(fmt.Sprintf("lookup %s", mode), func(t *testing.T) {
-			r := reporter.NewMock(t)
-			config := DefaultConfiguration()
-			config.RIBMode = mode
-			config.RIBIdleUpdateDelay = 40 * time.Millisecond
-			config.RIBMinimumUpdateDelay = 300 * time.Millisecond
-			config.RIBMaximumUpdateDelay = 5 * time.Second
-			c, _ := NewMock(t, r, config)
-			helpers.StartStop(t, c)
-			conn := dial(t, c)
+	t.Run("lookup", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		config := DefaultConfiguration()
+		c, _ := NewMock(t, r, config)
+		helpers.StartStop(t, c)
+		conn := dial(t, c)
 
-			send(t, conn, "bmp-init.pcap")
-			send(t, conn, "bmp-peers-up.pcap")
-			send(t, conn, "bmp-reach.pcap")
-			send(t, conn, "bmp-eor.pcap")
+		send(t, conn, "bmp-init.pcap")
+		send(t, conn, "bmp-peers-up.pcap")
+		send(t, conn, "bmp-reach.pcap")
+		send(t, conn, "bmp-eor.pcap")
+		time.Sleep(20 * time.Millisecond)
 
-			for i := 0; i < 50; i++ {
-				lookup := c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::a"))
-				if lookup.ASN != 174 {
-					if i == 99 {
-						t.Errorf("Lookup() == %d, expected 174", lookup.ASN)
-					}
-				} else {
-					break
-				}
-				time.Sleep(5 * time.Millisecond)
-			}
+		lookup := c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::a"))
+		if lookup.ASN != 174 {
+			t.Errorf("Lookup() == %d, expected 174", lookup.ASN)
+		}
 
-			// Add another prefix
-			c.ribWorkerQueue(func(s *ribWorkerState) error {
-				s.rib.addPrefix(netip.MustParseAddr("2001:db8:1::"), 64, route{
-					peer:       1,
-					nlri:       s.rib.nlris.Put(nlri{family: bgp.RF_FS_IPv4_UC}),
-					nextHop:    s.rib.nextHops.Put(nextHop(netip.MustParseAddr("2001:db8::a"))),
-					attributes: s.rib.rtas.Put(routeAttributes{asn: 176}),
-				})
-				return nil
-			})
-			if mode == RIBModePerformance {
-				time.Sleep(100 * time.Millisecond) // < 300 ms but > 40 ms
-				// Despite that, we hit the minimum update delay
-				lookup := c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::a"))
-				if lookup.ASN != 174 {
-					t.Errorf("Lookup() == %d, expected 174", lookup.ASN)
-				}
-			}
-
-			for i := 0; i < 100; i++ {
-				lookup := c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::a"))
-				if lookup.ASN != 176 {
-					if i == 99 {
-						t.Errorf("Lookup() == %d, expected 176", lookup.ASN)
-					} else {
-						break
-					}
-					time.Sleep(5 * time.Millisecond)
-				}
-			}
-			lookup := c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::b"))
-			if lookup.ASN != 174 {
-				t.Errorf("Lookup() == %d, expected 174", lookup.ASN)
-			}
+		// Add another prefix
+		c.rib.addPrefix(netip.MustParseAddr("2001:db8:1::"), 64, route{
+			peer:       1,
+			nlri:       c.rib.nlris.Put(nlri{family: bgp.RF_FS_IPv4_UC}),
+			nextHop:    c.rib.nextHops.Put(nextHop(netip.MustParseAddr("2001:db8::a"))),
+			attributes: c.rib.rtas.Put(routeAttributes{asn: 176}),
 		})
-	}
+
+		lookup = c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::a"))
+		if lookup.ASN != 176 {
+			t.Errorf("Lookup() == %d, expected 176", lookup.ASN)
+		}
+		lookup = c.Lookup(net.ParseIP("2001:db8:1::10"), net.ParseIP("2001:db8::b"))
+		if lookup.ASN != 174 {
+			t.Errorf("Lookup() == %d, expected 174", lookup.ASN)
+		}
+	})
 
 	t.Run("populate", func(t *testing.T) {
 		r := reporter.NewMock(t)

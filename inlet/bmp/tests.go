@@ -37,53 +37,50 @@ func NewMock(t *testing.T, r *reporter.Reporter, conf Configuration) (*Component
 // PopulateRIB populates the RIB with a few entries.
 func (c *Component) PopulateRIB(t *testing.T) {
 	t.Helper()
-	c.ribWorkerQueue(func(s *ribWorkerState) error {
-		pinfo := c.addPeer(s, peerKey{
-			exporter: netip.MustParseAddrPort("[::ffff:127.0.0.1]:47389"),
-			ip:       netip.MustParseAddr("::ffff:203.0.113.4"),
-			ptype:    bmp.BMP_PEER_TYPE_GLOBAL,
-			asn:      64500,
-		})
-		s.rib.addPrefix(netip.MustParseAddr("::ffff:192.0.2.0"), 96+27, route{
-			peer:    pinfo.reference,
-			nlri:    s.rib.nlris.Put(nlri{family: bgp.RF_FS_IPv4_UC, path: 1}),
-			nextHop: s.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.4"))),
-			attributes: s.rib.rtas.Put(routeAttributes{
-				asn:              174,
-				asPath:           []uint32{64200, 1299, 174},
-				communities:      []uint32{100, 200, 400},
-				largeCommunities: []bgp.LargeCommunity{{ASN: 64200, LocalData1: 2, LocalData2: 3}},
-			}),
-		})
-		s.rib.addPrefix(netip.MustParseAddr("::ffff:192.0.2.0"), 96+27, route{
-			peer:    pinfo.reference,
-			nlri:    s.rib.nlris.Put(nlri{family: bgp.RF_FS_IPv4_UC, path: 2}),
-			nextHop: s.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
-			attributes: s.rib.rtas.Put(routeAttributes{
-				asn:         174,
-				asPath:      []uint32{64200, 174, 174, 174},
-				communities: []uint32{100},
-			}),
-		})
-		s.rib.addPrefix(netip.MustParseAddr("::ffff:192.0.2.128"), 96+27, route{
-			peer:    pinfo.reference,
-			nlri:    s.rib.nlris.Put(nlri{family: bgp.RF_FS_IPv4_UC}),
-			nextHop: s.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
-			attributes: s.rib.rtas.Put(routeAttributes{
-				asn:         1299,
-				asPath:      []uint32{64200, 1299},
-				communities: []uint32{500},
-			}),
-		})
-		s.rib.addPrefix(netip.MustParseAddr("::ffff:1.0.0.0"), 96+24, route{
-			peer:    pinfo.reference,
-			nlri:    s.rib.nlris.Put(nlri{family: bgp.RF_FS_IPv4_UC}),
-			nextHop: s.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
-			attributes: s.rib.rtas.Put(routeAttributes{
-				asn: 65300,
-			}),
-		})
-		return nil
+	pinfo := c.addPeer(peerKey{
+		exporter: netip.MustParseAddrPort("[::ffff:127.0.0.1]:47389"),
+		ip:       netip.MustParseAddr("::ffff:203.0.113.4"),
+		ptype:    bmp.BMP_PEER_TYPE_GLOBAL,
+		asn:      64500,
+	})
+	c.rib.addPrefix(netip.MustParseAddr("::ffff:192.0.2.0"), 96+27, route{
+		peer:    pinfo.reference,
+		nlri:    c.rib.nlris.Put(nlri{family: bgp.RF_FS_IPv4_UC, path: 1}),
+		nextHop: c.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.4"))),
+		attributes: c.rib.rtas.Put(routeAttributes{
+			asn:              174,
+			asPath:           []uint32{64200, 1299, 174},
+			communities:      []uint32{100, 200, 400},
+			largeCommunities: []bgp.LargeCommunity{{ASN: 64200, LocalData1: 2, LocalData2: 3}},
+		}),
+	})
+	c.rib.addPrefix(netip.MustParseAddr("::ffff:192.0.2.0"), 96+27, route{
+		peer:    pinfo.reference,
+		nlri:    c.rib.nlris.Put(nlri{family: bgp.RF_FS_IPv4_UC, path: 2}),
+		nextHop: c.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
+		attributes: c.rib.rtas.Put(routeAttributes{
+			asn:         174,
+			asPath:      []uint32{64200, 174, 174, 174},
+			communities: []uint32{100},
+		}),
+	})
+	c.rib.addPrefix(netip.MustParseAddr("::ffff:192.0.2.128"), 96+27, route{
+		peer:    pinfo.reference,
+		nlri:    c.rib.nlris.Put(nlri{family: bgp.RF_FS_IPv4_UC}),
+		nextHop: c.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
+		attributes: c.rib.rtas.Put(routeAttributes{
+			asn:         1299,
+			asPath:      []uint32{64200, 1299},
+			communities: []uint32{500},
+		}),
+	})
+	c.rib.addPrefix(netip.MustParseAddr("::ffff:1.0.0.0"), 96+24, route{
+		peer:    pinfo.reference,
+		nlri:    c.rib.nlris.Put(nlri{family: bgp.RF_FS_IPv4_UC}),
+		nextHop: c.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
+		attributes: c.rib.rtas.Put(routeAttributes{
+			asn: 65300,
+		}),
 	})
 }
 

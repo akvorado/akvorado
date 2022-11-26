@@ -23,55 +23,45 @@ type LookupResult struct {
 // provided next hop if provided. This is somewhat approximate because
 // we use the best route we have, while the exporter may not have this
 // best route available. The returned result should not be modified!
-func (c *Component) Lookup(addrIP net.IP, nextHopIP net.IP) (result LookupResult) {
+func (c *Component) Lookup(addrIP net.IP, nextHopIP net.IP) LookupResult {
 	if !c.config.CollectASNs && !c.config.CollectASPaths && !c.config.CollectCommunities {
-		return
+		return LookupResult{}
 	}
 	ip, _ := netip.AddrFromSlice(addrIP.To16())
 	nh, _ := netip.AddrFromSlice(nextHopIP.To16())
 	v6 := patricia.NewIPv6Address(ip.AsSlice(), 128)
 
-	lookup := func(rib *rib) error {
-		bestFound := false
-		found := false
-		_, routes := rib.tree.FindDeepestTagsWithFilter(v6, func(route route) bool {
-			if bestFound {
-				// We already have the best route, skip remaining routes
-				return false
-			}
-			if rib.nextHops.Get(route.nextHop) == nextHop(nh) {
-				// Exact match found, use it and don't search further
-				bestFound = true
-				return true
-			}
-			// If we don't have a match already, use this one.
-			if !found {
-				found = true
-				return true
-			}
-			// Otherwise, skip it
-			return false
-		})
-		if len(routes) == 0 {
-			return nil
-		}
-		attributes := rib.rtas.Get(routes[len(routes)-1].attributes)
-		result = LookupResult{
-			ASN:              attributes.asn,
-			ASPath:           attributes.asPath,
-			Communities:      attributes.communities,
-			LargeCommunities: attributes.largeCommunities,
-		}
-		return nil
-	}
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
-	switch c.config.RIBMode {
-	case RIBModeMemory:
-		c.ribWorkerQueue(func(s *ribWorkerState) error {
-			return lookup(s.rib)
-		}, ribWorkerHighPriority)
-	case RIBModePerformance:
-		lookup(c.ribReadonly.Load())
+	bestFound := false
+	found := false
+	_, routes := c.rib.tree.FindDeepestTagsWithFilter(v6, func(route route) bool {
+		if bestFound {
+			// We already have the best route, skip remaining routes
+			return false
+		}
+		if c.rib.nextHops.Get(route.nextHop) == nextHop(nh) {
+			// Exact match found, use it and don't search further
+			bestFound = true
+			return true
+		}
+		// If we don't have a match already, use this one.
+		if !found {
+			found = true
+			return true
+		}
+		// Otherwise, skip it
+		return false
+	})
+	if len(routes) == 0 {
+		return LookupResult{}
 	}
-	return
+	attributes := c.rib.rtas.Get(routes[len(routes)-1].attributes)
+	return LookupResult{
+		ASN:              attributes.asn,
+		ASPath:           attributes.asPath,
+		Communities:      attributes.communities,
+		LargeCommunities: attributes.largeCommunities,
+	}
 }

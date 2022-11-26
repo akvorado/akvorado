@@ -206,13 +206,6 @@ for other exporters. However, ensuring the exporters accept to answer
 requests is the first fix. If not enough, you can increase the number
 of workers. Workers handle SNMP requests synchronously.
 
-#### BMP collector
-
-The BMP collector may handle million of routes. This can stress the system
-during large updates. If you send many routes to the BMP collector, you can
-switch the RIB mode of the collector to `performance`. Check the [documentation
-about BMP](02-configuration.md#bmp) for more details.
-
 ### Reported traffic levels are incorrect
 
 Use `curl -s http://akvorado/api/v0/inlet/flows\?limit=1 | grep
