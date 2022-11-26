@@ -114,7 +114,9 @@ func generateFlows(flowConfigs []FlowConfiguration, seed int64, now time.Time) [
 				}
 			}
 			flow.SrcAddr = randomIP(flowConfig.SrcNet, r)
+			flow.SrcMask = uint8(flowConfig.SrcNet.Bits())
 			flow.DstAddr = randomIP(flowConfig.DstNet, r)
+			flow.DstMask = uint8(flowConfig.DstNet.Bits())
 			proto := chooseRandom(r, flowConfig.Protocol)
 			if proto == "tcp" || proto == "udp" {
 				if srcPort := chooseRandom(r, flowConfig.SrcPort); srcPort != 0 {
@@ -148,6 +150,7 @@ func generateFlows(flowConfigs []FlowConfiguration, seed int64, now time.Time) [
 				reverseFlow.Octets = uint32(float32(reverseFlow.Octets) * flowConfig.ReverseDirectionRatio)
 				reverseFlow.DstAS, reverseFlow.SrcAS = reverseFlow.SrcAS, reverseFlow.DstAS
 				reverseFlow.SrcAddr, reverseFlow.DstAddr = reverseFlow.DstAddr, reverseFlow.SrcAddr
+				reverseFlow.SrcMask, reverseFlow.DstMask = reverseFlow.DstMask, reverseFlow.SrcMask
 				reverseFlow.SrcPort, reverseFlow.DstPort = reverseFlow.DstPort, reverseFlow.SrcPort
 				reverseFlow.InputInt, reverseFlow.OutputInt = reverseFlow.OutputInt, reverseFlow.InputInt
 				flows = append(flows, reverseFlow)

@@ -90,9 +90,9 @@ func TestPeakHourDistance(t *testing.T) {
 func TestChooseRandom(t *testing.T) {
 	cases := [][]int{
 		nil,
-		[]int{},
-		[]int{6},
-		[]int{1, 2, 3, 4, 10, 12},
+		{},
+		{6},
+		{1, 2, 3, 4, 10, 12},
 	}
 	r := rand.New(rand.NewSource(0))
 	for _, tc := range cases {
@@ -163,6 +163,8 @@ func TestGenerateFlows(t *testing.T) {
 						SrcAS:         65201,
 						DstAS:         65202,
 						ForwardStatus: 64,
+						SrcMask:       24,
+						DstMask:       24,
 					},
 				}, {
 					SrcAddr: net.ParseIP("192.0.2.30"),
@@ -179,6 +181,8 @@ func TestGenerateFlows(t *testing.T) {
 						SrcAS:         65201,
 						DstAS:         65202,
 						ForwardStatus: 64,
+						SrcMask:       24,
+						DstMask:       24,
 					},
 				},
 			},
@@ -213,6 +217,8 @@ func TestGenerateFlows(t *testing.T) {
 						SrcAS:         65201,
 						DstAS:         65202,
 						ForwardStatus: 64,
+						SrcMask:       128,
+						DstMask:       64,
 					},
 				},
 			},
@@ -248,6 +254,8 @@ func TestGenerateFlows(t *testing.T) {
 						SrcAS:         65201,
 						DstAS:         65202,
 						ForwardStatus: 64,
+						SrcMask:       128,
+						DstMask:       64,
 					},
 				}, {
 					DstAddr: net.ParseIP("2001:db8::1"),
@@ -264,6 +272,8 @@ func TestGenerateFlows(t *testing.T) {
 						DstAS:         65201,
 						SrcAS:         65202,
 						ForwardStatus: 64,
+						DstMask:       128,
+						SrcMask:       64,
 					},
 				},
 			},

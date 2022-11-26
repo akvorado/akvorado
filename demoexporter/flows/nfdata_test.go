@@ -49,6 +49,8 @@ func TestGetNetflowData(t *testing.T) {
 					SrcAS:         65201,
 					DstAS:         65202,
 					ForwardStatus: 64,
+					SrcMask:       24,
+					DstMask:       23,
 				},
 			}, {
 				SrcAddr: net.ParseIP("2001:db8::1"),
@@ -65,6 +67,8 @@ func TestGetNetflowData(t *testing.T) {
 					SrcAS:         65201,
 					DstAS:         65202,
 					ForwardStatus: 64,
+					SrcMask:       48,
+					DstMask:       48,
 				},
 			}, {
 				SrcAddr: net.ParseIP("192.0.2.236"),
@@ -81,6 +85,8 @@ func TestGetNetflowData(t *testing.T) {
 					SrcAS:         65201,
 					DstAS:         65202,
 					ForwardStatus: 64,
+					SrcMask:       24,
+					DstMask:       24,
 				},
 			},
 		},
@@ -113,6 +119,8 @@ func TestGetNetflowData(t *testing.T) {
 				ForwardingStatus: 64,
 				SrcAS:            65201,
 				DstAS:            65202,
+				SrcNet:           24,
+				DstNet:           23,
 			},
 			&decoder.FlowMessage{
 				SequenceNum:      100,
@@ -133,6 +141,8 @@ func TestGetNetflowData(t *testing.T) {
 				ForwardingStatus: 64,
 				SrcAS:            65201,
 				DstAS:            65202,
+				SrcNet:           24,
+				DstNet:           24,
 			},
 		},
 		[]interface{}{
@@ -155,6 +165,8 @@ func TestGetNetflowData(t *testing.T) {
 				ForwardingStatus: 64,
 				SrcAS:            65201,
 				DstAS:            65202,
+				SrcNet:           48,
+				DstNet:           48,
 			},
 		},
 	}
