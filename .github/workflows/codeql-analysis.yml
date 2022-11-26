@@ -28,6 +28,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - if: matrix.language == 'go'
+        uses: actions/setup-go@v3
+        with:
+          go-version-file: go.mod
+          cache: true
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
