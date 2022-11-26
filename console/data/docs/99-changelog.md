@@ -11,6 +11,16 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+The BMP collector has been optimized in memory (more than 50%) and locks were
+removed to reduce latency during lookups. There are two modes available. They
+can be selected with `inlet.bmp.rib-mode`. If you have several million routes,
+be sure to check the [BMP documentation](02-configuration.md#bmp) for more
+details.
+
+- 🌱 *inlet*: optimize BMP collector (see above)
+
 ## 1.6.3 - 2022-11-26
 
 - ✨ *console*: add *100% stacked* graph type
