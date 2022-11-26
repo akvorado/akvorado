@@ -139,7 +139,7 @@ test-go: | $(GOTESTSUM) ; $(info $(M) running Go tests$(GOTEST_MORE)…) @ ## Ru
 test-race: CGO_ENABLED=1
 test-race: GOTEST_ARGS=-race
 test-race: GOTEST_MORE=, with race detector
-test-race: test-go test-js  ## Run tests with race detector
+test-race: test-go  ## Run Go tests with race detector
 test-bench: | $(GOTESTSUM) ; $(info $(M) running benchmarks…) @ ## Run Go benchmarks
 	$Q $(GOTESTSUM) -f standard-quiet -- \
 		-timeout $(TIMEOUT)s -run=__absolutelynothing__ -bench=. \

@@ -70,8 +70,12 @@ jobs:
       # Build and test
       - name: Build
         run: make && ./bin/akvorado version
-      - name: Race tests
-        run: make test-race || make test-race
+      - name: Go tests
+        run: make test-go
+      - name: Go race tests
+        run: make test-race
+      - name: JS tests
+        run: make test-js
       - name: Upload binary
         uses: actions/upload-artifact@v3
         with:
