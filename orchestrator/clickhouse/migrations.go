@@ -98,6 +98,9 @@ func (c *Component) migrateDatabase() error {
 			}, migrationStepWithDescription{
 				"add SrcNetMask/DstNetMask column to flows table",
 				c.migrationStepAddSrcNetMaskDstNetMaskColumns,
+			}, migrationStepWithDescription{
+				"add SrcNetPrefix/DstNetPrefix aliases to flows table",
+				c.migrationStepAddSrcNetPrefixDstNetPrefixColumn,
 			})
 		}
 		steps = append(steps, []migrationStepWithDescription{

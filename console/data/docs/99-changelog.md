@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- ✨ *console*: add `SrcNetPrefix` and `DstNetPrefix` as available dimensions
+
 ## 1.6.3 - 2022-11-26
 
 - ✨ *console*: add *100% stacked* graph type

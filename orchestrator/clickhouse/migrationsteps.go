@@ -508,6 +508,29 @@ WHERE table = $1 AND database = currentDatabase() AND name = $2`,
 	}
 }
 
+func (c *Component) migrationStepAddSrcNetPrefixDstNetPrefixColumn(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+	return migrationStep{
+		CheckQuery: `
+SELECT 1 FROM system.columns
+WHERE table = $1 AND database = currentDatabase() AND name = $2`,
+		Args: []interface{}{"flows", "SrcNetPrefix"},
+		Do: func() error {
+			sql := func(prefix string) string {
+				return fmt.Sprintf(`
+%sNetPrefix String ALIAS
+CASE
+ WHEN EType = 0x800 THEN concat(replaceRegexpOne(IPv6CIDRToRange(%sAddr, (96 + %sNetMask)::UInt8).1::String, '^::ffff:', ''), '/', %sNetMask::String)
+ WHEN EType = 0x86dd THEN concat(IPv6CIDRToRange(%sAddr, %sNetMask).1::String, '/', %sNetMask::String)
+ ELSE ''
+END
+`, prefix, prefix, prefix, prefix, prefix, prefix, prefix)
+			}
+			return conn.Exec(ctx, fmt.Sprintf("ALTER TABLE flows %s",
+				addColumnsAfter("DstNetMask", sql("Src"), sql("Dst"))))
+		},
+	}
+}
+
 func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution ResolutionConfiguration) migrationStepFunc {
 	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 		if resolution.Interval == 0 {

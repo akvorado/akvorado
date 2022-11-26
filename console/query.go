@@ -39,6 +39,8 @@ func (qc *queryColumn) UnmarshalText(input []byte) error {
 var queryColumnsRequiringMainTable = map[queryColumn]struct{}{
 	queryColumnSrcAddr:        {},
 	queryColumnDstAddr:        {},
+	queryColumnSrcNetPrefix:   {},
+	queryColumnDstNetPrefix:   {},
 	queryColumnSrcPort:        {},
 	queryColumnDstPort:        {},
 	queryColumnDstASPath:      {},

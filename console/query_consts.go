@@ -30,6 +30,7 @@ const (
 	queryColumnProto
 	queryColumnSrcPort
 	queryColumnSrcAddr
+	queryColumnSrcNetPrefix
 	queryColumnDstAS
 	queryColumnDstASPath
 	queryColumnDst1stAS
@@ -49,6 +50,7 @@ const (
 	queryColumnOutIfProvider
 	queryColumnOutIfBoundary
 	queryColumnDstAddr
+	queryColumnDstNetPrefix
 	queryColumnDstPort
 	queryColumnForwardingStatus
 	queryColumnPacketSizeBucket
@@ -64,6 +66,8 @@ var queryColumnMap = helpers.NewBimap(map[queryColumn]string{
 	queryColumnExporterTenant:    "ExporterTenant",
 	queryColumnSrcAddr:           "SrcAddr",
 	queryColumnDstAddr:           "DstAddr",
+	queryColumnSrcNetPrefix:      "SrcNetPrefix",
+	queryColumnDstNetPrefix:      "DstNetPrefix",
 	queryColumnSrcAS:             "SrcAS",
 	queryColumnDstAS:             "DstAS",
 	queryColumnDstASPath:         "DstASPath",
