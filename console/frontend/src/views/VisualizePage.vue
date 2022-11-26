@@ -225,12 +225,10 @@ const { data, isFetching, aborted, abort, canAbort, error } = useFetch("", {
 })
   .post(jsonPayload, "json") // this will trigger a refetch
   .json<GraphHandlerOutput | SankeyHandlerOutput | { message: string }>();
-const errorMessage = computed(
-  () =>
-    (error.value &&
-      !aborted.value &&
-      ((data.value && "message" in data.value && data.value.message) ||
-        `Server returned an error: ${error.value}`)) ||
-    ""
-);
+const errorMessage = computed(() => {
+  console.log(error.value, aborted.value, data.value);
+  if (!error.value || aborted.value) return "";
+  if (data.value && "message" in data.value) return data.value.message;
+  return `Server returned an error: ${error.value}`;
+});
 </script>
