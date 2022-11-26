@@ -29,6 +29,10 @@ func (c *Component) peerRemovalWorker() error {
 							float64(c.d.Clock.Now().Sub(start).Nanoseconds()) / 1000 / 1000 / 1000)
 					}()
 					pinfo := c.peers[pkey]
+					if pinfo == nil {
+						// Already removed (removal can be queued several times)
+						return 0, true
+					}
 					removed, done := c.rib.flushPeer(ctx, pinfo.reference, c.config.PeerRemovalMinRoutes)
 					if done {
 						// Run was complete, remove the peer (we need the lock)
