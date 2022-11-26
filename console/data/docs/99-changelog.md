@@ -11,7 +11,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.6.3 - 2022-11-26
 
 - ✨ *console*: add *100% stacked* graph type
 - 🩹 *inlet*: handle non-fatal BMP decoding errors more gracefully
