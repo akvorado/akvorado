@@ -177,7 +177,6 @@ const graph = computed((): ECOption => {
         }[] = [];
         (params as TooltipCallbackDataParams[]).forEach((param) => {
           if (param.seriesIndex === undefined) return;
-          console.log(param.seriesIndex);
           const axis = data.axis[param.seriesIndex];
           const seriesName = [1, 2].includes(axis)
             ? param.seriesName
