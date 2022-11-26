@@ -24,7 +24,7 @@ jobs:
       matrix:
         language:
           - go
-          - javascript
+          - typescript
 
     steps:
       - uses: actions/checkout@v3
