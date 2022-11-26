@@ -27,16 +27,17 @@ jobs:
           - typescript
 
     steps:
+      # Setup
       - uses: actions/checkout@v3
-      - if: matrix.language == 'go'
-        name: Install Go
-        uses: actions/setup-go@v3
+      - name: Setup
+        uses: ./.github/actions/setup
         with:
-          go-version-file: go.mod
-          cache: true
+          setup-node: false
       - if: matrix.language == 'go'
         name: Install dependencies
         run: sudo apt-get install -qqy protobuf-compiler shared-mime-info curl
+
+      # Run CodeQL
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
