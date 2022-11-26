@@ -119,8 +119,8 @@ func TestGetNetflowData(t *testing.T) {
 				ForwardingStatus: 64,
 				SrcAS:            65201,
 				DstAS:            65202,
-				SrcNet:           24,
-				DstNet:           23,
+				SrcNetMask:       24,
+				DstNetMask:       23,
 			},
 			&decoder.FlowMessage{
 				SequenceNum:      100,
@@ -141,8 +141,8 @@ func TestGetNetflowData(t *testing.T) {
 				ForwardingStatus: 64,
 				SrcAS:            65201,
 				DstAS:            65202,
-				SrcNet:           24,
-				DstNet:           24,
+				SrcNetMask:       24,
+				DstNetMask:       24,
 			},
 		},
 		[]interface{}{
@@ -165,8 +165,8 @@ func TestGetNetflowData(t *testing.T) {
 				ForwardingStatus: 64,
 				SrcAS:            65201,
 				DstAS:            65202,
-				SrcNet:           48,
-				DstNet:           48,
+				SrcNetMask:       48,
+				DstNetMask:       48,
 			},
 		},
 	}

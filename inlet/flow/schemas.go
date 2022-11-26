@@ -15,7 +15,7 @@ import (
 )
 
 // CurrentSchemaVersion is the version of the protobuf definition
-const CurrentSchemaVersion = 3
+const CurrentSchemaVersion = 4
 
 var (
 	// VersionedSchemas is a mapping from schema version to protobuf definitions

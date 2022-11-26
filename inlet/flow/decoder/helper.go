@@ -42,8 +42,8 @@ func ConvertGoflowToFlowMessage(input *goflowmessage.FlowMessage) *FlowMessage {
 		BiFlowDirection:  input.BiFlowDirection,
 		SrcAS:            input.SrcAS,
 		DstAS:            input.DstAS,
-		SrcNet:           input.SrcNet,
-		DstNet:           input.DstNet,
+		SrcNetMask:       input.SrcNet,
+		DstNetMask:       input.DstNet,
 		NextHopAS:        input.NextHopAS,
 	}
 	if !net.IP(input.BgpNextHop).IsUnspecified() {
