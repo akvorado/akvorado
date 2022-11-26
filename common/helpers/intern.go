@@ -146,3 +146,18 @@ func (p *InternPool[T]) Put(value T) InternReference[T] {
 func (p *InternPool[T]) Len() int {
 	return len(p.values) - len(p.availableIndexes) - 1
 }
+
+// Clone returns a copy of the intern pool.
+func (p *InternPool[T]) Clone() *InternPool[T] {
+	result := &InternPool[T]{
+		values:           make([]internValue[T], len(p.values)),
+		availableIndexes: make([]InternReference[T], len(p.availableIndexes)),
+		valueIndexes:     make(map[uint64]InternReference[T], len(p.valueIndexes)),
+	}
+	copy(result.values, p.values)
+	copy(result.availableIndexes, p.availableIndexes)
+	for k, v := range p.valueIndexes {
+		result.valueIndexes[k] = v
+	}
+	return result
+}
