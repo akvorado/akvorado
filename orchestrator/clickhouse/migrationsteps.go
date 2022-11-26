@@ -29,6 +29,8 @@ const (
  ExporterTenant LowCardinality(String),
  SrcAddr IPv6,
  DstAddr IPv6,
+ SrcNetMask UInt8,
+ DstNetMask UInt8,
  SrcAS UInt32,
  DstAS UInt32,
  SrcNetName LowCardinality(String),
@@ -234,7 +236,9 @@ ORDER BY (TimeReceived,
           Dst1stAS, Dst2ndAS, Dst3rdAS)`,
 					tableName,
 					partialSchema(
-						"SrcAddr", "DstAddr", "SrcPort", "DstPort",
+						"SrcAddr", "DstAddr",
+						"SrcNetMask", "DstNetMask",
+						"SrcPort", "DstPort",
 						"DstASPath", "DstCommunities", "DstLargeCommunities"),
 					partitionInterval))
 			},
@@ -485,6 +489,25 @@ WHERE table = $1 AND database = currentDatabase() AND name = $2`,
 	}
 }
 
+func (c *Component) migrationStepAddSrcNetMaskDstNetMaskColumns(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
+	return migrationStep{
+		CheckQuery: `
+SELECT 1 FROM system.columns
+WHERE table = $1 AND database = currentDatabase() AND name = $2`,
+		Args: []interface{}{"flows", "SrcNetMask"},
+		Do: func() error {
+			modifications, err := addColumnsAndUpdateSortingKey(ctx, conn, "flows",
+				"DstAddr",
+				"SrcNetMask UInt8",
+				"DstNetMask UInt8")
+			if err != nil {
+				return err
+			}
+			return conn.Exec(ctx, fmt.Sprintf(`ALTER TABLE flows %s`, modifications))
+		},
+	}
+}
+
 func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution ResolutionConfiguration) migrationStepFunc {
 	return func(ctx context.Context, l reporter.Logger, conn clickhouse.Conn) migrationStep {
 		if resolution.Interval == 0 {
@@ -495,7 +518,7 @@ func (c *Component) migrationsStepCreateFlowsConsumerTable(resolution Resolution
 		viewName := fmt.Sprintf("%s_consumer", tableName)
 		selectClause := fmt.Sprintf(`
 SELECT *
-EXCEPT (SrcAddr, DstAddr, SrcPort, DstPort, DstASPath, DstCommunities, DstLargeCommunities)
+EXCEPT (SrcAddr, DstAddr, SrcNetMask, DstNetMask, SrcPort, DstPort, DstASPath, DstCommunities, DstLargeCommunities)
 REPLACE toStartOfInterval(TimeReceived, toIntervalSecond(%d)) AS TimeReceived`,
 			uint64(resolution.Interval.Seconds()))
 		selectClause = strings.TrimSpace(strings.ReplaceAll(selectClause, "\n", " "))
@@ -691,7 +714,7 @@ func (c *Component) migrationStepCreateRawFlowsTable(ctx context.Context, l repo
 		`kafka_handle_error_mode = 'stream'`,
 	}, ", "))
 	return migrationStep{
-		CheckQuery: queryTableHash(12139043515526919262, "AND engine_full = $2"),
+		CheckQuery: queryTableHash(8163754828379578018, "AND engine_full = $2"),
 		Args:       []interface{}{tableName, kafkaEngine},
 		Do: func() error {
 			l.Debug().Msg("drop raw consumer table")
@@ -728,7 +751,7 @@ func (c *Component) migrationStepCreateRawFlowsConsumerView(ctx context.Context,
 	tableName := fmt.Sprintf("flows_%d_raw", flow.CurrentSchemaVersion)
 	viewName := fmt.Sprintf("%s_consumer", tableName)
 	return migrationStep{
-		CheckQuery: queryTableHash(11315614236043053967, "AND as_select LIKE '% WHERE length(_error) = 0'"),
+		CheckQuery: queryTableHash(7925127510274634003, "AND as_select LIKE '% WHERE length(_error) = 0'"),
 		Args:       []interface{}{viewName},
 		Do: func() error {
 			l.Debug().Msg("drop consumer table")
