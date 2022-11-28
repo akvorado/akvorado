@@ -1,17 +1,18 @@
 // SPDX-FileCopyrightText: 2022 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package helpers_test
+package bimap_test
 
 import (
 	"sort"
 	"testing"
 
 	"akvorado/common/helpers"
+	"akvorado/common/helpers/bimap"
 )
 
 func TestBimapLoadValue(t *testing.T) {
-	input := helpers.NewBimap(map[int]string{
+	input := bimap.New(map[int]string{
 		1: "hello",
 		2: "world",
 		3: "happy",
@@ -38,7 +39,7 @@ func TestBimapLoadValue(t *testing.T) {
 }
 
 func TestBimapLoadKey(t *testing.T) {
-	input := helpers.NewBimap(map[int]string{
+	input := bimap.New(map[int]string{
 		1: "hello",
 		2: "world",
 		3: "happy",
@@ -65,7 +66,7 @@ func TestBimapLoadKey(t *testing.T) {
 }
 
 func TestBimapKeys(t *testing.T) {
-	input := helpers.NewBimap(map[int]string{
+	input := bimap.New(map[int]string{
 		1: "hello",
 		2: "world",
 		3: "happy",
@@ -80,7 +81,7 @@ func TestBimapKeys(t *testing.T) {
 }
 
 func TestBimapValues(t *testing.T) {
-	input := helpers.NewBimap(map[int]string{
+	input := bimap.New(map[int]string{
 		1: "hello",
 		2: "world",
 		3: "happy",

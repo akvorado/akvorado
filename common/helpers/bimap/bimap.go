@@ -1,7 +1,8 @@
 // SPDX-FileCopyrightText: 2022 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package helpers
+// Package bimap exposes a bidirectional map structure.
+package bimap
 
 import "fmt"
 
@@ -11,8 +12,8 @@ type Bimap[K, V comparable] struct {
 	inverse map[V]K
 }
 
-// NewBimap returns a new bimap from an existing map.
-func NewBimap[K, V comparable](input map[K]V) *Bimap[K, V] {
+// New returns a new bimap from an existing map.
+func New[K, V comparable](input map[K]V) *Bimap[K, V] {
 	output := &Bimap[K, V]{
 		forward: make(map[K]V),
 		inverse: make(map[V]K),

@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"unsafe"
 
-	"akvorado/common/helpers"
+	"akvorado/common/helpers/intern"
 
 	"github.com/kentik/patricia"
 	tree "github.com/kentik/patricia/generics_tree"
@@ -20,9 +20,9 @@ import (
 // rib represents the RIB.
 type rib struct {
 	tree     *tree.TreeV6[route]
-	nlris    *helpers.InternPool[nlri]
-	nextHops *helpers.InternPool[nextHop]
-	rtas     *helpers.InternPool[routeAttributes]
+	nlris    *intern.Pool[nlri]
+	nextHops *intern.Pool[nextHop]
+	rtas     *intern.Pool[routeAttributes]
 }
 
 // route contains the peer (external opaque value), the NLRI, the next
@@ -30,9 +30,9 @@ type rib struct {
 // and nlri.
 type route struct {
 	peer       uint32
-	nlri       helpers.InternReference[nlri]
-	nextHop    helpers.InternReference[nextHop]
-	attributes helpers.InternReference[routeAttributes]
+	nlri       intern.Reference[nlri]
+	nextHop    intern.Reference[nextHop]
+	attributes intern.Reference[routeAttributes]
 }
 
 // nlri is the NLRI for the route (when combined with prefix). The
@@ -211,8 +211,8 @@ func (r *rib) flushPeer(ctx context.Context, peer uint32, min int) (int, bool) {
 func newRIB() *rib {
 	return &rib{
 		tree:     tree.NewTreeV6[route](),
-		nlris:    helpers.NewInternPool[nlri](),
-		nextHops: helpers.NewInternPool[nextHop](),
-		rtas:     helpers.NewInternPool[routeAttributes](),
+		nlris:    intern.NewPool[nlri](),
+		nextHops: intern.NewPool[nextHop](),
+		rtas:     intern.NewPool[routeAttributes](),
 	}
 }

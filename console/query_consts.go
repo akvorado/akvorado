@@ -3,7 +3,7 @@
 
 package console
 
-import "akvorado/common/helpers"
+import "akvorado/common/helpers/bimap"
 
 const (
 	queryColumnExporterAddress queryColumn = iota + 1
@@ -56,7 +56,7 @@ const (
 	queryColumnPacketSizeBucket
 )
 
-var queryColumnMap = helpers.NewBimap(map[queryColumn]string{
+var queryColumnMap = bimap.New(map[queryColumn]string{
 	queryColumnExporterAddress:   "ExporterAddress",
 	queryColumnExporterName:      "ExporterName",
 	queryColumnExporterGroup:     "ExporterGroup",

@@ -14,9 +14,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Shopify/sarama"
+	"akvorado/common/helpers/bimap"
 
-	"akvorado/common/helpers"
+	"github.com/Shopify/sarama"
 )
 
 // Configuration defines how we connect to a Kafka cluster.
@@ -98,7 +98,7 @@ const (
 	SASLSCRAMSHA512                      // SASLSCRAMSHA512 enables SCRAM challenge with SHA512
 )
 
-var saslAlgorithmMap = helpers.NewBimap(map[SASLMechanism]string{
+var saslAlgorithmMap = bimap.New(map[SASLMechanism]string{
 	SASLNone:        "none",
 	SASLPlainText:   "plain",
 	SASLSCRAMSHA256: "scram-sha256",

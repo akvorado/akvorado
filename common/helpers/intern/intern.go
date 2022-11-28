@@ -1,55 +1,57 @@
 // SPDX-FileCopyrightText: 2022 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package helpers
+// Package intern manages a pool of interned values. An interned value is
+// replaced by a small int.
+package intern
 
-// InternValue is the interface that should be implemented by types
+// Value is the interface that should be implemented by types
 // used in an intern pool. Also, it should be immutable.
-type InternValue[T any] interface {
+type Value[T any] interface {
 	Hash() uint64
 	Equal(T) bool
 }
 
-// InternReference is a reference to an interned value. 0 is not a
+// Reference is a reference to an interned value. 0 is not a
 // valid reference value.
-type InternReference[T any] uint32
+type Reference[T any] uint32
 
-// InternPool keeps values in a pool by storing only one distinct copy
+// Pool keeps values in a pool by storing only one distinct copy
 // of each. Values will be referred as an uint32 (implemented as an
 // index).
-type InternPool[T InternValue[T]] struct {
+type Pool[T Value[T]] struct {
 	values           []internValue[T]
-	availableIndexes []InternReference[T]
-	valueIndexes     map[uint64]InternReference[T]
+	availableIndexes []Reference[T]
+	valueIndexes     map[uint64]Reference[T]
 }
 
 // internValue is the value stored in an intern pool. It adds resource
 // keeping to the raw value.
-type internValue[T InternValue[T]] struct {
-	next     InternReference[T] // next value with the same hash
-	previous InternReference[T] // previous value with the same hash
+type internValue[T Value[T]] struct {
+	next     Reference[T] // next value with the same hash
+	previous Reference[T] // previous value with the same hash
 	refCount uint32
 
 	value T
 }
 
-// NewInternPool creates a new intern pool.
-func NewInternPool[T InternValue[T]]() *InternPool[T] {
-	return &InternPool[T]{
+// NewPool creates a new intern pool.
+func NewPool[T Value[T]]() *Pool[T] {
+	return &Pool[T]{
 		values:           make([]internValue[T], 1), // first slot is reserved
-		availableIndexes: make([]InternReference[T], 0),
-		valueIndexes:     make(map[uint64]InternReference[T]),
+		availableIndexes: make([]Reference[T], 0),
+		valueIndexes:     make(map[uint64]Reference[T]),
 	}
 }
 
 // Get retrieves a (copy of the) value from the intern pool using its reference.
-func (p *InternPool[T]) Get(ref InternReference[T]) T {
+func (p *Pool[T]) Get(ref Reference[T]) T {
 	return p.values[ref].value
 }
 
 // Take removes a value from the intern pool. If this is the last
 // used reference, it will be deleted from the pool.
-func (p *InternPool[T]) Take(ref InternReference[T]) {
+func (p *Pool[T]) Take(ref Reference[T]) {
 	value := &p.values[ref]
 	value.refCount--
 	if value.refCount == 0 {
@@ -73,7 +75,7 @@ func (p *InternPool[T]) Take(ref InternReference[T]) {
 }
 
 // Ref returns the reference an interned value would have.
-func (p *InternPool[T]) Ref(value T) (InternReference[T], bool) {
+func (p *Pool[T]) Ref(value T) (Reference[T], bool) {
 	hash := value.Hash()
 	if index := p.valueIndexes[hash]; index > 0 {
 		for index > 0 {
@@ -87,7 +89,7 @@ func (p *InternPool[T]) Ref(value T) (InternReference[T], bool) {
 }
 
 // Put adds a value to the intern pool, returning its reference.
-func (p *InternPool[T]) Put(value T) InternReference[T] {
+func (p *Pool[T]) Put(value T) Reference[T] {
 	v := internValue[T]{
 		value:    value,
 		refCount: 1,
@@ -96,7 +98,7 @@ func (p *InternPool[T]) Put(value T) InternReference[T] {
 	}
 
 	// Allocate a new index
-	newIndex := func() InternReference[T] {
+	newIndex := func() Reference[T] {
 		availCount := len(p.availableIndexes)
 		if availCount > 0 {
 			index := p.availableIndexes[availCount-1]
@@ -111,7 +113,7 @@ func (p *InternPool[T]) Put(value T) InternReference[T] {
 		}
 		index := len(p.values)
 		p.values = p.values[:index+1]
-		return InternReference[T](index)
+		return Reference[T](index)
 	}
 
 	// Check if we have already something
@@ -143,6 +145,6 @@ func (p *InternPool[T]) Put(value T) InternReference[T] {
 }
 
 // Len returns the number of elements in the pool.
-func (p *InternPool[T]) Len() int {
+func (p *Pool[T]) Len() int {
 	return len(p.values) - len(p.availableIndexes) - 1
 }

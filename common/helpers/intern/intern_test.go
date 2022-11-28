@@ -1,9 +1,13 @@
 // SPDX-FileCopyrightText: 2022 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package helpers
+package intern
 
-import "testing"
+import (
+	"testing"
+
+	"akvorado/common/helpers"
+)
 
 type likeInt int
 
@@ -11,7 +15,7 @@ func (i likeInt) Equal(j likeInt) bool { return i == j }
 func (i likeInt) Hash() uint64         { return uint64(i) % 10 }
 
 func TestPut(t *testing.T) {
-	p := NewInternPool[likeInt]()
+	p := NewPool[likeInt]()
 
 	a := p.Put(likeInt(10))
 	b := p.Put(likeInt(10))
@@ -36,7 +40,7 @@ func TestPut(t *testing.T) {
 }
 
 func TestRef(t *testing.T) {
-	p := NewInternPool[likeInt]()
+	p := NewPool[likeInt]()
 	a := p.Put(likeInt(10))
 	b, bOK := p.Ref(likeInt(10))
 	c, cOK := p.Ref(likeInt(20))
@@ -55,7 +59,7 @@ func TestRef(t *testing.T) {
 }
 
 func TestPutCollision(t *testing.T) {
-	p := NewInternPool[likeInt]()
+	p := NewPool[likeInt]()
 
 	a := p.Put(likeInt(10))
 	b := p.Put(likeInt(20))
@@ -67,7 +71,7 @@ func TestPutCollision(t *testing.T) {
 }
 
 func TestTake(t *testing.T) {
-	p := NewInternPool[likeInt]()
+	p := NewPool[likeInt]()
 
 	val1 := likeInt(10)
 	ref1 := p.Put(val1)
@@ -87,7 +91,7 @@ func TestTake(t *testing.T) {
 		{value: 22, refCount: 1, previous: 2, next: 4},
 		{value: 32, refCount: 1, previous: 3},
 	}
-	if diff := Diff(p.values, expectedValues, DiffUnexported); diff != "" {
+	if diff := helpers.Diff(p.values, expectedValues, helpers.DiffUnexported); diff != "" {
 		t.Fatalf("p.values (-got, +want):\n%s", diff)
 	}
 
@@ -100,7 +104,7 @@ func TestTake(t *testing.T) {
 		{value: 22, refCount: 0, previous: 2, next: 4}, // free
 		{value: 32, refCount: 1, previous: 2},
 	}
-	if diff := Diff(p.values, expectedValues, DiffUnexported); diff != "" {
+	if diff := helpers.Diff(p.values, expectedValues, helpers.DiffUnexported); diff != "" {
 		t.Fatalf("p.values (-got, +want):\n%s", diff)
 	}
 
@@ -116,7 +120,7 @@ func TestTake(t *testing.T) {
 		{value: 42, refCount: 1, previous: 4},
 		{value: 32, refCount: 1, previous: 2, next: 3},
 	}
-	if diff := Diff(p.values, expectedValues, DiffUnexported); diff != "" {
+	if diff := helpers.Diff(p.values, expectedValues, helpers.DiffUnexported); diff != "" {
 		t.Fatalf("p.values (-got, +want):\n%s", diff)
 	}
 
@@ -129,7 +133,7 @@ func TestTake(t *testing.T) {
 		{value: 42, refCount: 1, previous: 4},
 		{value: 32, refCount: 1, next: 3},
 	}
-	if diff := Diff(p.values, expectedValues, DiffUnexported); diff != "" {
+	if diff := helpers.Diff(p.values, expectedValues, helpers.DiffUnexported); diff != "" {
 		t.Fatalf("p.values (-got, +want):\n%s", diff)
 	}
 
@@ -142,7 +146,7 @@ func TestTake(t *testing.T) {
 		{value: 42, refCount: 1},
 		{value: 32, refCount: 0, next: 3}, // free
 	}
-	if diff := Diff(p.values, expectedValues, DiffUnexported); diff != "" {
+	if diff := helpers.Diff(p.values, expectedValues, helpers.DiffUnexported); diff != "" {
 		t.Fatalf("p.values (-got, +want):\n%s", diff)
 	}
 
@@ -155,7 +159,7 @@ func TestTake(t *testing.T) {
 		{value: 42, refCount: 0},          // free
 		{value: 32, refCount: 0, next: 3}, // free
 	}
-	if diff := Diff(p.values, expectedValues, DiffUnexported); diff != "" {
+	if diff := helpers.Diff(p.values, expectedValues, helpers.DiffUnexported); diff != "" {
 		t.Fatalf("p.values (-got, +want):\n%s", diff)
 	}
 

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"akvorado/common/helpers"
+	"akvorado/common/helpers/bimap"
 
 	"github.com/mitchellh/mapstructure"
 )
@@ -62,7 +63,7 @@ const (
 	ProviderBMPExceptPrivate
 )
 
-var asnProviderMap = helpers.NewBimap(map[ASNProvider]string{
+var asnProviderMap = bimap.New(map[ASNProvider]string{
 	ProviderFlow:              "flow",
 	ProviderFlowExceptPrivate: "flow-except-private",
 	ProviderGeoIP:             "geoip",
