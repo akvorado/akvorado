@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"akvorado/common/helpers"
+	"akvorado/common/helpers/race"
 	"akvorado/common/reporter"
 
 	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
@@ -109,7 +110,7 @@ func TestBMP(t *testing.T) {
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
 		}
-		if helpers.RaceEnabled {
+		if race.Enabled {
 			return
 		}
 		for i := 0; i < 100; i++ {
@@ -992,7 +993,7 @@ func TestBMP(t *testing.T) {
 		conn.Close()
 		mockClock.Add(2 * time.Hour)
 		time.Sleep(20 * time.Millisecond)
-		if helpers.RaceEnabled {
+		if race.Enabled {
 			t.Skip("unreliable results when running with the race detector")
 		}
 		gotMetrics := r.GetMetrics("akvorado_inlet_bmp_", "-locked_duration")
