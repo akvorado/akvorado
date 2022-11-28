@@ -20,29 +20,29 @@ type Configuration struct {
 	CollectCommunities bool
 	// Keep tells how long to keep routes from a BMP client when it goes down
 	Keep time.Duration `validate:"min=1s"`
-	// PeerRemovalMaxTime tells the maximum time the removal worker should run to remove a peer
-	PeerRemovalMaxTime time.Duration `validate:"min=10ms"`
-	// PeerRemovalSleepInterval tells how much time to sleep between two runs of the removal worker
-	PeerRemovalSleepInterval time.Duration `validate:"min=10ms"`
-	// PeerRemovalMaxQueue tells how many pending removal requests to keep
-	PeerRemovalMaxQueue int `validate:"min=1"`
+	// RIBPeerRemovalMaxTime tells the maximum time the removal worker should run to remove a peer
+	RIBPeerRemovalMaxTime time.Duration `validate:"min=10ms"`
+	// RIBPeerRemovalSleepInterval tells how much time to sleep between two runs of the removal worker
+	RIBPeerRemovalSleepInterval time.Duration `validate:"min=10ms"`
+	// RIBPeerRemovalMaxQueue tells how many pending removal requests to keep
+	RIBPeerRemovalMaxQueue int `validate:"min=1"`
 	// RIBPeerRemovalBatchRoutes tells how many routes to remove before checking
 	// if we have a higher priority request. This is only if RIB is in memory
 	// mode.
-	PeerRemovalBatchRoutes int `validate:"min=1"`
+	RIBPeerRemovalBatchRoutes int `validate:"min=1"`
 }
 
 // DefaultConfiguration represents the default configuration for the BMP server
 func DefaultConfiguration() Configuration {
 	return Configuration{
-		Listen:                   "0.0.0.0:10179",
-		CollectASNs:              true,
-		CollectASPaths:           true,
-		CollectCommunities:       true,
-		Keep:                     5 * time.Minute,
-		PeerRemovalMaxTime:       100 * time.Millisecond,
-		PeerRemovalSleepInterval: 500 * time.Millisecond,
-		PeerRemovalMaxQueue:      10000,
-		PeerRemovalBatchRoutes:   5000,
+		Listen:                      "0.0.0.0:10179",
+		CollectASNs:                 true,
+		CollectASPaths:              true,
+		CollectCommunities:          true,
+		Keep:                        5 * time.Minute,
+		RIBPeerRemovalMaxTime:       100 * time.Millisecond,
+		RIBPeerRemovalSleepInterval: 500 * time.Millisecond,
+		RIBPeerRemovalMaxQueue:      10000,
+		RIBPeerRemovalBatchRoutes:   5000,
 	}
 }

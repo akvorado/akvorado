@@ -19,7 +19,7 @@ func (c *Component) peerRemovalWorker() error {
 				// Do one run of removal.
 				removed, done := func() (int, bool) {
 					ctx, cancel := context.WithTimeout(c.t.Context(context.Background()),
-						c.config.PeerRemovalMaxTime)
+						c.config.RIBPeerRemovalMaxTime)
 					defer cancel()
 					start := c.d.Clock.Now()
 					c.mu.Lock()
@@ -33,7 +33,7 @@ func (c *Component) peerRemovalWorker() error {
 						// Already removed (removal can be queued several times)
 						return 0, true
 					}
-					removed, done := c.rib.flushPeerContext(ctx, pinfo.reference, c.config.PeerRemovalBatchRoutes)
+					removed, done := c.rib.flushPeerContext(ctx, pinfo.reference, c.config.RIBPeerRemovalBatchRoutes)
 					if done {
 						// Run was complete, remove the peer (we need the lock)
 						delete(c.peers, pkey)
@@ -54,7 +54,7 @@ func (c *Component) peerRemovalWorker() error {
 				case <-c.t.Dying():
 					c.mu.RUnlock()
 					return nil
-				case <-time.After(c.config.PeerRemovalSleepInterval):
+				case <-time.After(c.config.RIBPeerRemovalSleepInterval):
 				}
 				c.mu.RUnlock()
 			}

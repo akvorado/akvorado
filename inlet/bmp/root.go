@@ -56,7 +56,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 
 		rib:             newRIB(),
 		peers:           make(map[peerKey]*peerInfo),
-		peerRemovalChan: make(chan peerKey, configuration.PeerRemovalMaxQueue),
+		peerRemovalChan: make(chan peerKey, configuration.RIBPeerRemovalMaxQueue),
 	}
 	if len(c.config.RDs) > 0 {
 		c.acceptedRDs = make(map[uint64]struct{})

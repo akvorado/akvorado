@@ -978,9 +978,9 @@ func TestBMP(t *testing.T) {
 	t.Run("init, peers up, eor, reach NLRI, conn down, immediate timeout", func(t *testing.T) {
 		r := reporter.NewMock(t)
 		config := DefaultConfiguration()
-		config.PeerRemovalMaxTime = 1
-		config.PeerRemovalSleepInterval = 1
-		config.PeerRemovalBatchRoutes = 1
+		config.RIBPeerRemovalMaxTime = 1
+		config.RIBPeerRemovalSleepInterval = 1
+		config.RIBPeerRemovalBatchRoutes = 1
 		c, mockClock := NewMock(t, r, config)
 		helpers.StartStop(t, c)
 		conn := dial(t, c)
