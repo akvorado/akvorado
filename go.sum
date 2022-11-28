@@ -34,10 +34,10 @@ dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7
 github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 h1:UQHMgLO+TxOElx5B5HZ4hJQsoJ/PvUvKRhJHDQXO8P8=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/ClickHouse/ch-go v0.49.0 h1:wNCBr+BDU6hltD0bx0ZWFWdT6vMwuAD0CQrX/jlVNmg=
-github.com/ClickHouse/ch-go v0.49.0/go.mod h1:anN1SwKZd9POpMAAcQGhT9c9AmheQb6durSbod1Vrc8=
-github.com/ClickHouse/clickhouse-go/v2 v2.4.1 h1:QtY7mSs8CcngPY7XVI/W17G8CUekKSFrD/YmZ5vPdT4=
-github.com/ClickHouse/clickhouse-go/v2 v2.4.1/go.mod h1:VfC9gf4vv3mOEYWzUMmFyRYTxWn9QolLFqD6wgDLu/w=
+github.com/ClickHouse/ch-go v0.50.0 h1:f5Bv6WEVIcvhT9ez5+uqGZiggVTxAJ2+tgk1mYQCgAs=
+github.com/ClickHouse/ch-go v0.50.0/go.mod h1:lCZ+zUH/OCr16xF4PIg8Q5SfaUVDQLU3b21FMXU+qlQ=
+github.com/ClickHouse/clickhouse-go/v2 v2.4.2 h1:KGxgC753ToUwSE0ngb3xfSYpmXrntkMON2aBHkXgt94=
+github.com/ClickHouse/clickhouse-go/v2 v2.4.2/go.mod h1:Q95k4+cA11bh5eqQvoxlNG6NCGi0rIAEDbroVIzqng8=
 github.com/DATA-DOG/go-sqlmock v1.3.3/go.mod h1:f/Ixk793poVmq4qj/V1dPUg2JEAKC73Q5eFN3EC/SaM=
 github.com/Microsoft/go-winio v0.5.2 h1:a9IhgEQBCUEk6QCdml9CiJGhAws+YwffDHEMp1VMrpA=
 github.com/Microsoft/go-winio v0.5.2/go.mod h1:WpS1mjBmmwHBEWmogvA2mj8546UReBk4v8QkMxJ6pZY=
