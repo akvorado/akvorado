@@ -980,7 +980,7 @@ func TestBMP(t *testing.T) {
 		config := DefaultConfiguration()
 		config.PeerRemovalMaxTime = 1
 		config.PeerRemovalSleepInterval = 1
-		config.PeerRemovalMinRoutes = 1
+		config.PeerRemovalBatchRoutes = 1
 		c, mockClock := NewMock(t, r, config)
 		helpers.StartStop(t, c)
 		conn := dial(t, c)

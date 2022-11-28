@@ -33,7 +33,7 @@ func (c *Component) peerRemovalWorker() error {
 						// Already removed (removal can be queued several times)
 						return 0, true
 					}
-					removed, done := c.rib.flushPeer(ctx, pinfo.reference, c.config.PeerRemovalMinRoutes)
+					removed, done := c.rib.flushPeerContext(ctx, pinfo.reference, c.config.PeerRemovalBatchRoutes)
 					if done {
 						// Run was complete, remove the peer (we need the lock)
 						delete(c.peers, pkey)

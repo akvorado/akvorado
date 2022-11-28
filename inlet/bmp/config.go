@@ -26,8 +26,10 @@ type Configuration struct {
 	PeerRemovalSleepInterval time.Duration `validate:"min=10ms"`
 	// PeerRemovalMaxQueue tells how many pending removal requests to keep
 	PeerRemovalMaxQueue int `validate:"min=1"`
-	// PeerRemovalMinRoutes tells how many routes we have to remove in one run before yielding
-	PeerRemovalMinRoutes int `validate:"min=1"`
+	// RIBPeerRemovalBatchRoutes tells how many routes to remove before checking
+	// if we have a higher priority request. This is only if RIB is in memory
+	// mode.
+	PeerRemovalBatchRoutes int `validate:"min=1"`
 }
 
 // DefaultConfiguration represents the default configuration for the BMP server
@@ -41,6 +43,6 @@ func DefaultConfiguration() Configuration {
 		PeerRemovalMaxTime:       100 * time.Millisecond,
 		PeerRemovalSleepInterval: 500 * time.Millisecond,
 		PeerRemovalMaxQueue:      10000,
-		PeerRemovalMinRoutes:     5000,
+		PeerRemovalBatchRoutes:   5000,
 	}
 }

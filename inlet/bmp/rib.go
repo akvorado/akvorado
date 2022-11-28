@@ -169,19 +169,29 @@ func (r *rib) removePrefix(ip netip.Addr, bits int, old route) int {
 
 // flushPeer removes a whole peer from the RIB, returning the number
 // of removed routes.
-func (r *rib) flushPeer(ctx context.Context, peer uint32, min int) (int, bool) {
-	// Handle context done state
-	done := atomic.Bool{}       // signal for the loop to stop when true
-	stop := make(chan struct{}) // signal for the goroutine to stop
-	defer close(stop)
-	go func() {
-		select {
-		case <-stop:
-			return
-		case <-ctx.Done():
-			done.Store(true)
-		}
-	}()
+func (r *rib) flushPeer(peer uint32) int {
+	removed, _ := r.flushPeerContext(nil, peer, 0)
+	return removed
+}
+
+// flushPeerContext removes a whole peer from the RIB, with a context returning
+// the number of removed routes and a bool to say if the operation was completed
+// before cancellation.
+func (r *rib) flushPeerContext(ctx context.Context, peer uint32, steps int) (int, bool) {
+	done := atomic.Bool{}
+	stop := make(chan struct{})
+	lastStep := 0
+	if ctx != nil {
+		defer close(stop)
+		go func() {
+			select {
+			case <-stop:
+				return
+			case <-ctx.Done():
+				done.Store(true)
+			}
+		}()
+	}
 
 	// Flush routes
 	removed := 0
@@ -198,7 +208,9 @@ func (r *rib) flushPeer(ctx context.Context, peer uint32, min int) (int, bool) {
 			}
 			return false
 		}, route{})
-		if removed >= min {
+		if ctx != nil && removed/steps > lastStep {
+			runtime.Gosched()
+			lastStep = removed / steps
 			if done.Load() {
 				return removed, false
 			}
