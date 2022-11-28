@@ -38,7 +38,7 @@ func DefaultConfiguration() Configuration {
 		CollectASPaths:           true,
 		CollectCommunities:       true,
 		Keep:                     5 * time.Minute,
-		PeerRemovalMaxTime:       200 * time.Millisecond,
+		PeerRemovalMaxTime:       100 * time.Millisecond,
 		PeerRemovalSleepInterval: 500 * time.Millisecond,
 		PeerRemovalMaxQueue:      10000,
 		PeerRemovalMinRoutes:     5000,

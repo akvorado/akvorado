@@ -8,13 +8,13 @@ package bmp
 import (
 	"fmt"
 	"net"
-	"sync"
 	"time"
 
 	"github.com/benbjohnson/clock"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/daemon"
+	"akvorado/common/helpers/sync"
 	"akvorado/common/reporter"
 )
 

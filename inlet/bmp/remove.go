@@ -24,7 +24,7 @@ func (c *Component) peerRemovalWorker() error {
 					start := c.d.Clock.Now()
 					c.mu.Lock()
 					defer func() {
-						c.mu.Unlock()
+						c.mu.DowngradeLock()
 						c.metrics.locked.WithLabelValues("peer-removal").Observe(
 							float64(c.d.Clock.Now().Sub(start).Nanoseconds()) / 1000 / 1000 / 1000)
 					}()
@@ -45,15 +45,18 @@ func (c *Component) peerRemovalWorker() error {
 					// Run was complete, update metrics
 					c.metrics.peers.WithLabelValues(exporterStr).Dec()
 					c.metrics.peerRemovalDone.WithLabelValues(exporterStr).Inc()
+					c.mu.RUnlock()
 					break
 				}
-				// Run is incompletem, update metrics and sleep a bit
+				// Run is incomplete, update metrics and sleep a bit
 				c.metrics.peerRemovalPartial.WithLabelValues(exporterStr).Inc()
 				select {
 				case <-c.t.Dying():
+					c.mu.RUnlock()
 					return nil
 				case <-time.After(c.config.PeerRemovalSleepInterval):
 				}
+				c.mu.RUnlock()
 			}
 		}
 	}
