@@ -16,7 +16,7 @@ jobs:
     permissions: {}
     steps:
       - name: Fetch dependabot metadata
-        if: ${{ github.actor == 'dependabot[bot]' }}
+        if: ${{ github.actor == 'dependabot[bot]' && github.event_name == 'pull_request' }}
         id: metadata
         uses: dependabot/fetch-metadata@v1.3.4
     outputs:
