@@ -21,10 +21,12 @@ func TestConfigHandler(t *testing.T) {
 			JSONOutput: gin.H{
 				"version": "1.2.3",
 				"defaultVisualizeOptions": gin.H{
+					"graphType":  "stacked",
 					"start":      "6 hours ago",
 					"end":        "now",
 					"filter":     "InIfBoundary = external",
 					"dimensions": []string{"SrcAS"},
+					"limit":      10,
 				},
 				"dimensionsLimit":    50,
 				"homepageTopWidgets": []string{"src-as", "src-port", "protocol", "src-country", "etype"},

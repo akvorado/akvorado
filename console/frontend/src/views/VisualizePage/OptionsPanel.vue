@@ -225,11 +225,11 @@ watch(
   ([modelValue, defaultOptions]) => {
     if (!defaultOptions) return;
     const currentValue: NonNullable<ModelType> = modelValue ?? {
-      graphType: "stacked",
+      graphType: defaultOptions.graphType,
       start: defaultOptions.start,
       end: defaultOptions.end,
       dimensions: toRaw(defaultOptions.dimensions),
-      limit: 10,
+      limit: defaultOptions.limit,
       filter: defaultOptions.filter,
       units: "l3bps",
       bidirectional: false,

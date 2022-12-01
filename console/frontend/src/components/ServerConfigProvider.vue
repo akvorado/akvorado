@@ -8,6 +8,7 @@
 <script lang="ts" setup>
 import { provide, readonly } from "vue";
 import { useFetch } from "@vueuse/core";
+import type { graphTypes } from "../views/VisualizePage/graphtypes";
 
 const { data } = useFetch("/api/v0/console/configuration")
   .get()
@@ -22,10 +23,12 @@ import type { InjectionKey, Ref } from "vue";
 type ServerConfig = {
   version: string;
   defaultVisualizeOptions: {
+    graphType: keyof typeof graphTypes;
     start: string;
     end: string;
     filter: string;
     dimensions: string[];
+    limit: number;
   };
   dimensionsLimit: number;
   homepageTopWidgets: string[];
