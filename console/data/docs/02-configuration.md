@@ -5,12 +5,12 @@ includes the configuration of the other services. Other services are
 expected to query the orchestrator through HTTP on start to retrieve
 their configuration.
 
-The default configuration can be obtained with `./akvorado
-orchestrator --dump --check /dev/null`. Note that some sections are
-generated from the configuration of another section. Notably, all
-Kafka configuration comes from upper-level `kafka` key. Durations must
-be written using strings like `10h20m` or `5s`. Valid time units are
-`ms`, `s`, `m`, and `h`.
+The default configuration can be obtained with `docker-compose exec
+akvorado-orchestrator akvorado orchestrator --dump --check /dev/null`. Note that
+some sections are generated from the configuration of another section. Notably,
+all Kafka configuration comes from upper-level `kafka` key. Durations must be
+written using strings like `10h20m` or `5s`. Valid time units are `ms`, `s`,
+`m`, and `h`.
 
 It is also possible to override configuration settings using
 environment variables. You need to remove any `-` from key names and
@@ -310,7 +310,7 @@ continuously the exporters. The following keys are accepted:
   about to expire or need an update
 - `cache-persist-file` tells where to store cached data on shutdown and
   read them back on startup
-- `communities` is a map from a subnets to the SNMPv2 community to use
+- `communities` is a map from subnets to the SNMPv2 community to use
   for exporters in the provided subnet. Use `::/0` to set the default
   value. Alternatively, it also accepts a string to use for all
   exporters.
