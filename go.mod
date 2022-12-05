@@ -3,7 +3,7 @@ module akvorado
 go 1.19
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.4.2
+	github.com/ClickHouse/clickhouse-go/v2 v2.4.3
 	github.com/Shopify/sarama v1.32.1-0.20220321223103-27b8f1b5973b
 	github.com/alecthomas/chroma v0.10.0
 	github.com/antonmedv/expr v1.9.0
