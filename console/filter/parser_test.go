@@ -65,6 +65,18 @@ func TestValidFilter(t *testing.T) {
 			Input:   `DstAddr !<< 192.168.0.128/27`,
 			Output:  `DstAddr NOT BETWEEN toIPv6('::ffff:192.168.0.128') AND toIPv6('::ffff:192.168.0.159')`,
 			MetaOut: Meta{MainTableRequired: true},
+		}, {
+			Input:   `DstNetPrefix = 192.168.0.128/27`,
+			Output:  `DstAddr BETWEEN toIPv6('::ffff:192.168.0.128') AND toIPv6('::ffff:192.168.0.159') AND DstNetMask = 27`,
+			MetaOut: Meta{MainTableRequired: true},
+		}, {
+			Input:   `SrcNetPrefix = 192.168.0.128/27`,
+			Output:  `SrcAddr BETWEEN toIPv6('::ffff:192.168.0.128') AND toIPv6('::ffff:192.168.0.159') AND SrcNetMask = 27`,
+			MetaOut: Meta{MainTableRequired: true},
+		}, {
+			Input:   `SrcNetPrefix = 2001:db8::/48`,
+			Output:  `SrcAddr BETWEEN toIPv6('2001:db8::') AND toIPv6('2001:db8:0:ffff:ffff:ffff:ffff:ffff') AND SrcNetMask = 48`,
+			MetaOut: Meta{MainTableRequired: true},
 		},
 		{Input: `ExporterGroup= "group"`, Output: `ExporterGroup = 'group'`},
 		{Input: `SrcAddr=203.0.113.1`, Output: `SrcAddr = toIPv6('203.0.113.1')`,

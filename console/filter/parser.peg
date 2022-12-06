@@ -6,7 +6,7 @@
 
   import (
     "fmt"
-    "net"
+    "net/netip"
 
     "akvorado/common/helpers"
   )
@@ -36,6 +36,7 @@ NotExpr "NOT expression" ← KW_NOT _ expr:Expr {
 
 ConditionExpr "conditional" ←
     ConditionIPExpr
+  / ConditionPrefixExpr
   / ConditionStringExpr
   / ConditionBoundaryExpr
   / ConditionSpeedExpr
@@ -66,6 +67,17 @@ ConditionIPExpr "condition on IP" ←
  / column:ColumnIP _
    operator:"!<<" _ subnet:Subnet {
      return fmt.Sprintf("%s NOT %s", toString(column), subnet), nil
+   }
+
+ConditionPrefixExpr "condition on prefix" ←
+   column:("SrcNetPrefix"i #{ c.state["main-table-only"] = true ; return nil } { return "Src", nil }
+         / "DstNetPrefix"i #{ c.state["main-table-only"] = true ; return nil } { return "Dst", nil }) _
+   operator:("=" / "!=") _ prefix:Prefix {
+     switch toString(operator) {
+       case "=": return fmt.Sprintf("%sAddr %s", toString(column), fmt.Sprintf(toString(prefix), toString(column))), nil
+       case "!=": return fmt.Sprintf("NOT (%sAddr %s)", toString(column), fmt.Sprintf(toString(prefix), toString(column))), nil
+     }
+     return "", nil
    }
 
 ConditionStringExpr "condition on string" ←
@@ -186,22 +198,36 @@ ConditionPacketSizeExpr "condition on packet size" ←
 }
 
 IP "IP address" ← [0-9A-Fa-f:.]+ !IdentStart {
-  ip := net.ParseIP(string(c.text))
-  if ip == nil {
+  ip, err := netip.ParseAddr(string(c.text))
+  if err != nil {
     return false, fmt.Errorf("expecting an IP address")
   }
   return ip.String(), nil
 }
 
 Subnet "IP subnet" ← [0-9A-Fa-f:.]+ "/" [0-9]+ !IdentStart {
-  _, net, err := net.ParseCIDR(string(c.text))
+  net, err := netip.ParsePrefix(string(c.text))
   if err != nil {
     return false, fmt.Errorf("expecting a subnet")
   }
-  if net.IP.To4() == nil {
-    return fmt.Sprintf("BETWEEN toIPv6('%s') AND toIPv6('%s')", net.IP.String(), lastIP(net).String()), nil
+  if net.Addr().Is6() {
+    return fmt.Sprintf("BETWEEN toIPv6('%s') AND toIPv6('%s')", net.Masked().Addr().String(), lastIP(net).String()), nil
   }
-  return fmt.Sprintf("BETWEEN toIPv6('::ffff:%s') AND toIPv6('::ffff:%s')", net.IP.String(), lastIP(net).String()), nil
+  return fmt.Sprintf("BETWEEN toIPv6('::ffff:%s') AND toIPv6('::ffff:%s')", net.Masked().Addr().String(), lastIP(net).String()), nil
+}
+
+Prefix "IP prefix" ← [0-9A-Fa-f:.]+ "/" [0-9]+ !IdentStart {
+  // This returns a string with a %s placeholder
+  net, err := netip.ParsePrefix(string(c.text))
+  if err != nil {
+    return false, fmt.Errorf("expecting a prefix")
+  }
+  if net.Addr().Is6() {
+    return fmt.Sprintf("BETWEEN toIPv6('%s') AND toIPv6('%s') AND %%sNetMask = %d",
+      net.Masked().Addr().String(), lastIP(net).String(), net.Bits()), nil
+  }
+  return fmt.Sprintf("BETWEEN toIPv6('::ffff:%s') AND toIPv6('::ffff:%s') AND %%sNetMask = %d",
+    net.Masked().Addr().String(), lastIP(net).String(), net.Bits()), nil
 }
 
 ASN "AS number" ← "AS"i? value:Unsigned32 !IdentStart {

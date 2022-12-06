@@ -13,7 +13,7 @@ identified with a specific icon:
 
 ## Unreleased
 
-- ✨ *console*: add `SrcNetPrefix` and `DstNetPrefix` as available dimensions
+- ✨ *console*: add `SrcNetPrefix` and `DstNetPrefix` (as a dimension and a filter attribute)
 - 🌱 *console*: add `limit` and `graph-type` to `console.default-visualize-options` 
 
 ## 1.6.3 - 2022-11-26

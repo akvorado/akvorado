@@ -165,6 +165,7 @@ LIMIT 20`, "6540").
 				{"label": "DstCommunities", "detail": "column name", "quoted": false},
 				{"label": "DstCountry", "detail": "column name", "quoted": false},
 				{"label": "DstNetName", "detail": "column name", "quoted": false},
+				{"label": "DstNetPrefix", "detail": "column name", "quoted": false},
 				{"label": "DstNetRegion", "detail": "column name", "quoted": false},
 				{"label": "DstNetRole", "detail": "column name", "quoted": false},
 				{"label": "DstNetSite", "detail": "column name", "quoted": false},

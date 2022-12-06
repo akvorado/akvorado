@@ -5,9 +5,8 @@
 package filter
 
 import (
-	"encoding/binary"
 	"fmt"
-	"net"
+	"net/netip"
 	"strings"
 )
 
@@ -43,21 +42,22 @@ func (c *current) reverseColumnDirection(name string) string {
 	return name
 }
 
-func lastIP(subnet *net.IPNet) net.IP {
-	if subnet.IP.To4() != nil {
-		// IPv4 case
-		ip := make(net.IP, len(subnet.IP.To4()))
-		binary.BigEndian.PutUint32(ip,
-			binary.BigEndian.Uint32(subnet.IP.To4())|^binary.BigEndian.Uint32(net.IP(subnet.Mask).To4()))
-		return ip
+func lastIP(subnet netip.Prefix) netip.Addr {
+	a16 := subnet.Addr().As16()
+	var off uint8
+	var bits uint8 = 128
+	if subnet.Addr().Is4() {
+		off = 12
+		bits = 32
 	}
-	// IPv6 case
-	ip := make(net.IP, len(subnet.IP))
-	copy(ip, subnet.IP)
-	for i := range subnet.Mask {
-		ip[i] = ip[i] | ^subnet.Mask[i]
+	for b := uint8(subnet.Bits()); b < bits; b++ {
+		byteNum, bitInByte := b/8, 7-(b%8)
+		a16[off+byteNum] |= 1 << uint(bitInByte)
 	}
-	return ip
+	if subnet.Addr().Is4() {
+		return netip.AddrFrom16(a16).Unmap()
+	}
+	return netip.AddrFrom16(a16)
 }
 
 func quote(v interface{}) string {
