@@ -824,10 +824,10 @@ func TestBMP(t *testing.T) {
 
 		send(t, conn, "bmp-init.pcap")
 		send(t, conn, "bmp-l3vpn.pcap")
-		send(t, conn, "bmp-reach-vpls.pcap")
+		send(t, conn, "bmp-reach-unknown-family.pcap")
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_inlet_bmp_", "-locked_duration")
-		ignoredMetric := `ignored_total{error="unknown route family. AFI: 25, SAFI: 65",exporter="127.0.0.1",reason="afi-safi"}`
+		ignoredMetric := `ignored_total{error="unknown route family. AFI: 57, SAFI: 65",exporter="127.0.0.1",reason="afi-safi"}`
 		expectedMetrics := map[string]string{
 			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
 			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "1",
@@ -851,6 +851,33 @@ func TestBMP(t *testing.T) {
 		gotRIB := dumpRIB(t, c)
 		if diff := helpers.Diff(gotRIB, expectedRIB); diff != "" {
 			t.Errorf("RIB (-got, +want):\n%s", diff)
+		}
+	})
+
+	t.Run("init, l3vpn peer, unhandled family, reach", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		config := DefaultConfiguration()
+		c, _ := NewMock(t, r, config)
+		helpers.StartStop(t, c)
+		conn := dial(t, c)
+
+		send(t, conn, "bmp-init.pcap")
+		send(t, conn, "bmp-l3vpn.pcap")
+		send(t, conn, "bmp-reach-vpls.pcap")
+		time.Sleep(20 * time.Millisecond)
+		gotMetrics := r.GetMetrics("akvorado_inlet_bmp_", "-locked_duration")
+		expectedMetrics := map[string]string{
+			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
+			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "1",
+			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "4",
+			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "1",
+			`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
+			`peers_total{exporter="127.0.0.1"}`:                                         "2",
+			`routes_total{exporter="127.0.0.1"}`:                                        "2",
+			`ignored_nlri_total{exporter="127.0.0.1",type="l2vpn-vpls"}`:                "1",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+			t.Errorf("Metrics (-got, +want):\n%s", diff)
 		}
 	})
 
