@@ -17,7 +17,7 @@ func (c *Component) peerRemovalWorker() error {
 			exporterStr := pkey.exporter.Addr().Unmap().String()
 			for {
 				// Do one run of removal (read/write lock)
-				removed, done := func() (int, bool) {
+				removed, done, duplicate := func() (int, bool, bool) {
 					start := c.d.Clock.Now()
 					ctx, cancel := context.WithTimeout(c.t.Context(context.Background()),
 						c.config.RIBPeerRemovalMaxTime)
@@ -31,7 +31,7 @@ func (c *Component) peerRemovalWorker() error {
 					pinfo := c.peers[pkey]
 					if pinfo == nil {
 						// Already removed (removal can be queued several times)
-						return 0, true
+						return 0, true, true
 					}
 					removed, done := c.rib.flushPeerContext(ctx, pinfo.reference,
 						c.config.RIBPeerRemovalBatchRoutes)
@@ -39,7 +39,7 @@ func (c *Component) peerRemovalWorker() error {
 						// Run was complete, remove the peer (we need the lock)
 						delete(c.peers, pkey)
 					}
-					return removed, done
+					return removed, done, false
 				}()
 
 				// Update stats and optionally sleep (read lock)
@@ -48,8 +48,10 @@ func (c *Component) peerRemovalWorker() error {
 					c.metrics.routes.WithLabelValues(exporterStr).Sub(float64(removed))
 					if done {
 						// Run was complete, update metrics
-						c.metrics.peers.WithLabelValues(exporterStr).Dec()
-						c.metrics.peerRemovalDone.WithLabelValues(exporterStr).Inc()
+						if !duplicate {
+							c.metrics.peers.WithLabelValues(exporterStr).Dec()
+							c.metrics.peerRemovalDone.WithLabelValues(exporterStr).Inc()
+						}
 						return
 					}
 					// Run is incomplete, update metrics and sleep a bit
