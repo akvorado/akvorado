@@ -390,10 +390,4 @@ func TestConcurrentOperations(t *testing.T) {
 	if int64(hits+misses) != atomic.LoadInt64(&lookups) {
 		t.Errorf("hit + miss = %d, expected %d", hits+misses, atomic.LoadInt64(&lookups))
 	}
-	if size < 20 {
-		t.Errorf("size is %d < 20", size)
-	}
-	if exporters < 8 {
-		t.Errorf("exporters is %d < 8", exporters)
-	}
 }
