@@ -385,8 +385,6 @@ func TestConcurrentOperations(t *testing.T) {
 	gotMetrics := r.GetMetrics("akvorado_inlet_snmp_cache_")
 	hits, _ := strconv.Atoi(gotMetrics["hit"])
 	misses, _ := strconv.Atoi(gotMetrics["miss"])
-	size, _ := strconv.Atoi(gotMetrics["size"])
-	exporters, _ := strconv.Atoi(gotMetrics["exporters"])
 	if int64(hits+misses) != atomic.LoadInt64(&lookups) {
 		t.Errorf("hit + miss = %d, expected %d", hits+misses, atomic.LoadInt64(&lookups))
 	}
