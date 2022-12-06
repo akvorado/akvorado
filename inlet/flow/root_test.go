@@ -61,7 +61,7 @@ func TestFlow(t *testing.T) {
 			for i := 0; i < 1000; i++ {
 				select {
 				case <-c.Flows():
-				case <-time.After(30 * time.Millisecond):
+				case <-time.After(100 * time.Millisecond):
 					t.Fatalf("no flow received")
 				}
 			}
@@ -116,7 +116,7 @@ func TestFlow(t *testing.T) {
 					}
 					t.Fatalf("Sampling rate is %d, expected %d", flow.SamplingRate, expectedRate)
 				}
-			case <-time.After(30 * time.Millisecond):
+			case <-time.After(100 * time.Millisecond):
 				t.Fatalf("no flow received")
 			}
 			break
