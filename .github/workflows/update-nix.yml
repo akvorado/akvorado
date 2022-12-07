@@ -1,0 +1,24 @@
+---
+name: Update nixpkgs
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "10 4 * * 1"
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: cachix/install-nix-action@v18
+      - name: Update Nix lockfile
+        run: nix flake lock --update-input nixpkgs
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v4
+        with:
+          add-paths: flake.lock
+          branch: nix/flake-lock-update
+          labels: dependencies
+          commit-message: "build: flake.lock automated update"
+          title: "Nixpkgs update"
+          body: ""
