@@ -49,7 +49,7 @@ const formatGbps = (value: number) => formatXps(value * 1_000_000_000);
 const url = computed(() => `/api/v0/console/widget/graph?${props.refresh}`);
 const { data } = useFetch(url, { refetch: true })
   .get()
-  .json<{ data: Array<{ t: string; gbps: number }> }>();
+  .json<{ data: Array<{ t: string; gbps: number }> } | { message: string }>();
 const option = computed(
   (): ECOption => ({
     darkMode: isDark.value,
@@ -89,9 +89,10 @@ const option = computed(
             },
           ]),
         },
-        data: (data.value?.data || [])
-          .map(({ t, gbps }) => [t, gbps])
-          .slice(0, -1),
+        data:
+          !data.value || "message" in data.value
+            ? []
+            : data.value.data.map(({ t, gbps }) => [t, gbps]).slice(0, -1),
       },
     ],
   })

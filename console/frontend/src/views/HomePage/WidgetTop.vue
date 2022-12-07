@@ -48,7 +48,9 @@ const url = computed(
 );
 const { data } = useFetch(url, { refetch: true })
   .get()
-  .json<{ top: Array<{ name: string; percent: number }> }>();
+  .json<
+    { top: Array<{ name: string; percent: number }> } | { message: string }
+  >();
 const options = computed(
   (): ECOption => ({
     darkMode: isDark.value,
@@ -80,21 +82,28 @@ const options = computed(
         label: { show: false },
         center: ["50%", "40%"],
         radius: "60%",
-        data: [
-          ...(data.value?.top || [])
-            .filter(({ percent }) => percent > 0)
-            .map(({ name, percent }) => ({
-              name,
-              value: percent,
-            })),
-          {
-            name: "Others",
-            value: Math.max(
-              100 - (data.value?.top || []).reduce((c, n) => c + n.percent, 0),
-              0
-            ),
-          },
-        ].filter(({ value }) => value > 0.05),
+        data:
+          !data.value || "message" in data.value
+            ? []
+            : [
+                ...(data.value?.top || [])
+                  .filter(({ percent }) => percent > 0)
+                  .map(({ name, percent }) => ({
+                    name,
+                    value: percent,
+                  })),
+                {
+                  name: "Others",
+                  value: Math.max(
+                    100 -
+                      (data.value?.top || []).reduce(
+                        (c, n) => c + n.percent,
+                        0
+                      ),
+                    0
+                  ),
+                },
+              ].filter(({ value }) => value > 0.05),
         itemStyle: {
           color({ name, dataIndex }: { name: string; dataIndex: number }) {
             const theme = isDark.value ? "dark" : "light";

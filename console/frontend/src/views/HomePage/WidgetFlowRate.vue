@@ -26,18 +26,21 @@ const props = withDefaults(
 );
 
 const url = computed(() => `/api/v0/console/widget/flow-rate?${props.refresh}`);
-const { data } = useFetch(url, { refetch: true }).get().json<{
-  rate: number;
-  period: string;
-}>();
+const { data } = useFetch(url, { refetch: true }).get().json<
+  | {
+      rate: number;
+      period: string;
+    }
+  | { message: string }
+>();
 const rate = computed(() => {
-  if (!data.value?.rate) {
+  if (!data.value || "message" in data.value) {
     return "???";
   }
-  if (data.value?.rate > 1_500_000) {
+  if (data.value.rate > 1_500_000) {
     return (data.value.rate / 1_000_000).toFixed(1) + "M";
   }
-  if (data.value?.rate > 1_500) {
+  if (data.value.rate > 1_500) {
     return (data.value.rate / 1_000).toFixed(1) + "K";
   }
   return data.value.rate.toFixed(0);
