@@ -13,6 +13,9 @@ identified with a specific icon:
 
 ## Unreleased
 
+There is a schema update in this version: you also have to restart ClickHouse
+after upgrading for it to pick the new schema.
+
 - ✨ *console*: add `SrcNetPrefix` and `DstNetPrefix` (as a dimension and a filter attribute)
 - 🌱 *console*: add `limit` and `graph-type` to `console.default-visualize-options` 
 
