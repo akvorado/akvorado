@@ -36,7 +36,6 @@ const { data } = useFetch(url, { refetch: true })
   .get()
   .json<Record<string, string | number>>();
 const lastFlow = computed((): [string, string | number][] => ({
-  ...(lastFlow.value || {}),
   ...Object.entries(data.value || {}).sort(([f1], [f2]) =>
     compareFields(f1, f2)
   ),
