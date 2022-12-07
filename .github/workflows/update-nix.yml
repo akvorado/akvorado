@@ -7,6 +7,7 @@ on:
 
 jobs:
   lockfile:
+    name: Update Nix lockfile
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
