@@ -17,9 +17,10 @@ You can get *Akvorado* as a
 # docker run --rm ghcr.io/akvorado/akvorado:latest help
 ```
 
-Check the `docker-compose.yml` file for an example on how to deploy
-*Akvorado* using containers. If you want to use `docker-compose`, have
-a look at the [quick start procedure](00-intro#quick-start).
+Check the `docker-compose.yml` file for an example on how to deploy *Akvorado*
+using containers. If you want to use `docker-compose`, have a look at the [quick
+start procedure](00-intro#quick-start). This documentation assumes you are
+running the `docker-compose` setup.
 
 ## Pre-built binary
 

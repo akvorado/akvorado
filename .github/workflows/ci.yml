@@ -195,6 +195,7 @@ jobs:
       # Build tarball for docker-compose
       - name: Build docker-compose "quick start"
         run: |
+          sed -i s,akvorado:latest,akvorado:${GITHUB_REF_NAME#v}, docker-compose*.yml
           tar zcvf docker-compose-quickstart.tar.gz \
             docker-compose.yml docker-compose-demo.yml .env \
             orchestrator/clickhouse/data/docker-entrypoint.sh \
