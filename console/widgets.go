@@ -19,13 +19,12 @@ func (c *Component) widgetFlowLastHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
 	query := `
 SELECT *
-EXCEPT (DstCommunities, DstLargeCommunities)
-REPLACE
+EXCEPT (DstCommunities, DstLargeCommunities),
  arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':',
-                      toString(bitAnd(c, 0xffff))), DstCommunities) AS DstCommunities_,
+                      toString(bitAnd(c, 0xffff))), DstCommunities) AS DstCommunities,
  arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':',
                       toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':',
-                      toString(bitAnd(c, 0xffffffff))), DstLargeCommunities) AS DstLargeCommunities_
+                      toString(bitAnd(c, 0xffffffff))), DstLargeCommunities) AS DstLargeCommunities
 FROM flows
 WHERE TimeReceived=(SELECT MAX(TimeReceived) FROM flows)
 LIMIT 1`
