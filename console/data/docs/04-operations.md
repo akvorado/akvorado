@@ -9,7 +9,7 @@ snippets](https://github.com/kentik/config-snippets/) from Kentik.
 
 ### Cisco IOS-XE
 
-On each router, Netflow can be enabled with the following configuration:
+Netflow can be enabled with the following configuration:
 
 ```cisco
 flow record Akvorado
@@ -57,11 +57,10 @@ interface GigabitEthernet0/0/3
 !
 ```
 
-***Note***
-
-See Issue [#89](https://github.com/akvorado/akvorado/issues/89).
-
-The solution is to set a default sample rate in akvorado.yaml
+As per [issue #89](https://github.com/akvorado/akvorado/issues/89), the sample
+rate is not reported correctly on this platform. The solution is to set a
+default sample rate in `akvorado.yaml`. Check the
+[documentation](02-configuration.html#core) for more details.
 
 ```yaml
 inlet:
