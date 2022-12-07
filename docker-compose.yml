@@ -22,7 +22,7 @@ services:
       - akvorado-geoip:/usr/share/GeoIP
 
   zookeeper:
-    image: bitnami/zookeeper:3.6
+    image: bitnami/zookeeper:3.7
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
     restart: unless-stopped

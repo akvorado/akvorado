@@ -34,7 +34,7 @@ jobs:
 
     services:
       zookeeper:
-        image: bitnami/zookeeper:3.6
+        image: bitnami/zookeeper:3.7
         env:
           ALLOW_ANONYMOUS_LOGIN: "yes"
         ports:

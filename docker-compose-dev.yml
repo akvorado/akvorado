@@ -3,7 +3,7 @@ version: "3"
 
 services:
   zookeeper:
-    image: bitnami/zookeeper:3.6
+    image: bitnami/zookeeper:3.7
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
 
