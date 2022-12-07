@@ -30,8 +30,8 @@ flow record Akvorado
     collect timestamp sys-uptime first
     collect timestamp sys-uptime last
 !
-sampler random1in1000
-    mode random 1 out-of 1000
+sampler random1in100
+    mode random 1 out-of 100
 !
 flow exporter AkvoradoExport
     destination <akvorado-ip> vrf monitoring
@@ -52,8 +52,8 @@ To enable Netflow on an interface, use the following snippet:
 
 ```cisco
 interface GigabitEthernet0/0/3
- ip flow monitor AkvoradoMonitor sampler random1in1000 input
- ip flow monitor AkvoradoMonitor sampler random1in1000 output
+ ip flow monitor AkvoradoMonitor sampler random1in100 input
+ ip flow monitor AkvoradoMonitor sampler random1in100 output
 !
 ```
 
