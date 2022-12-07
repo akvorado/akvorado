@@ -40,7 +40,7 @@ jobs:
         ports:
           - 2181:2181
       kafka:
-        image: bitnami/kafka:2.8.1
+        image: bitnami/kafka:3.3
         env:
           KAFKA_BROKER_ID: "1"
           KAFKA_CFG_ZOOKEEPER_CONNECT: "zookeeper:2181"

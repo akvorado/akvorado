@@ -19,6 +19,7 @@ after upgrading for it to pick the new schema.
 - ✨ *console*: add `SrcNetPrefix` and `DstNetPrefix` (as a dimension and a filter attribute)
 - 🌱 *console*: add `limit` and `graph-type` to `console.default-visualize-options` 
 - 🌱 *docker*: published `docker-compose.yml` file pins Akvorado image to the associated release
+- 🌱 *docker*: update Zookeeper and Kafka images (this upgrade is optional)
 
 ## 1.6.3 - 2022-11-26
 

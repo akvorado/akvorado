@@ -31,7 +31,7 @@ run tests:
   services:
     - name: bitnami/zookeeper:3.7
       alias: zookeeper
-    - name: bitnami/kafka:2.8.1
+    - name: bitnami/kafka:3.3
       alias: kafka
     - name: clickhouse/clickhouse-server:22.8
       alias: clickhouse
