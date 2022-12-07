@@ -7,6 +7,68 @@ service and accepts SNMP requests. For routers not listed below, have
 a look at the [configuration
 snippets](https://github.com/kentik/config-snippets/) from Kentik.
 
+### Cisco IOS-XE
+
+On each router, Netflow can be enabled with the following configuration:
+
+```cisco
+flow record Akvorado
+    match ipv4 tos
+    match ipv4 protocol
+    match ipv4 source address
+    match ipv4 destination address
+    match transport source-port
+    match transport destination-port
+    collect routing source as 4-octet
+    collect routing destination as 4-octet
+    collect routing next-hop address ipv4
+    collect transport tcp flags
+    collect interface output
+    collect interface input
+    collect counter bytes
+    collect counter packets
+    collect timestamp sys-uptime first
+    collect timestamp sys-uptime last
+!
+sampler random1in1000
+    mode random 1 out-of 1000
+!
+flow exporter AkvoradoExport
+    destination <akvorado-ip> vrf monitoring
+    source Loopback20
+    transport udp 2055
+    version 9
+    option sampler-table timeout 10
+!
+flow monitor AkvoradoMonitor
+    exporter AkvoradoExport
+    cache timeout inactive 10
+    cache timeout active 60
+    record Akvorado
+! 
+```
+
+To enable Netflow on an interface, use the following snippet:
+
+```cisco
+interface GigabitEthernet0/0/3
+ ip flow monitor AkvoradoMonitor sampler random1in1000 input
+ ip flow monitor AkvoradoMonitor sampler random1in1000 output
+!
+```
+
+***Note***
+
+See Issue [#89](https://github.com/akvorado/akvorado/issues/89).
+
+The solution is to set a default sample rate in akvorado.yaml
+
+```yaml
+inlet:
+  core:
+    default-sampling-rate: 100
+```
+
 ### NCS 5500 and ASR 9000
 
 On each router, Netflow can be enabled with the following configuration:
