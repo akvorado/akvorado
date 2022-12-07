@@ -110,6 +110,31 @@ You can check they are correctly forwarded to Kafka with:
 $ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet_kafka_sent_messages_total'
 ```
 
+### 4 byte ASN 23456 showing in flow data
+
+If you are seeing flows with source or destination AS of 23456 your exporter 
+needs to be configured with 4-byte ASN support.
+
+See Cisco IOS-XE examples below (only relevant config lines shown).
+
+2-byte ASN flow record config:
+
+```cisco
+flow record Akvorado
+    collect routing source as
+    collect routing destination as
+!
+```
+
+4-byte ASN flow record config:
+
+```cisco
+flow record Akvorado
+    collect routing source as 4-octet
+    collect routing destination as 4-octet
+!
+```
+
 ### Dropped packets under load
 
 There are various bottlenecks leading to dropped packets. This is bad
@@ -121,6 +146,7 @@ infer the number of bytes and packets.
 The first problem may come from the exporter dropping some of the
 flows. Most of the time, there are counters to detect this situation
 and it can be solved by lowering the exporter rate.
+
 
 ##### NCS5500 routers
 
