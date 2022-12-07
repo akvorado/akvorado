@@ -67,6 +67,8 @@ inlet:
     geo-database: /usr/share/GeoIP/GeoLite2-Country.mmdb
   snmp:
     workers: 10
+    communities:
+      ::/0: public
   flow:
     inputs:
       - type: udp
