@@ -188,14 +188,14 @@ func (c *Component) Start() error {
 							if err != nil {
 								panic(err)
 							}
-							l := c.r.Info().Str("binding",
-								fmt.Sprintf("%s -> %d", rport, hport))
-							l.Msg("clear conntrack for UDP port")
+							l := c.r.With().Str("binding",
+								fmt.Sprintf("%s -> %d", rport, hport)).Logger()
+							l.Info().Msg("clear conntrack for UDP port")
 							if count := c.purgeConntrack(uint16(hport)); count > 0 {
 								c.metrics.conntrackDeleted.
 									WithLabelValues(container.ID, hportStr).
 									Add(float64(count))
-								l.Msgf("%d entries deleted", count)
+								l.Info().Msgf("%d entries deleted", count)
 							}
 						}
 					}
