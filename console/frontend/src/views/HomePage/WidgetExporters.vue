@@ -26,11 +26,11 @@ const props = defineProps({
 const url = computed(() => "/api/v0/console/widget/exporters?" + props.refresh);
 const { data } = useFetch(url, { refetch: true })
   .get()
-  .json<{ exporters: string[] }|{ message: string }>();
+  .json<{ exporters: string[] } | { message: string }>();
 const exporters = computed(() => {
   if (data.value && "exporters" in data.value) {
     return data.value.exporters.length;
   }
   return "???";
-  });
+});
 </script>
