@@ -21,13 +21,17 @@ type Configuration struct {
 	// The value cannot exceed the kernel max value
 	// (net.core.wmem_max).
 	ReceiveBuffer uint
+	// AgentIdSrcAddrOverwrite replaces the exporter address by the UDP flow source.
+	// default is false, meaning that the agent id inside the flowmessage is used
+	AgentIDSrcAddrOverwrite bool
 }
 
 // DefaultConfiguration is the default configuration for this input
 func DefaultConfiguration() input.Configuration {
 	return &Configuration{
-		Listen:    "0.0.0.0:0",
-		Workers:   1,
-		QueueSize: 100000,
+		Listen:                  "0.0.0.0:0",
+		Workers:                 1,
+		QueueSize:               100000,
+		AgentIDSrcAddrOverwrite: false,
 	}
 }
