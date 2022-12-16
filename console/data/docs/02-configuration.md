@@ -68,7 +68,11 @@ For the UDP input, the supported keys are `listen` to set the
 listening endpoint, `workers` to set the number of workers to listen
 to the socket, `receive-buffer` to set the size of the kernel's
 incoming buffer for each listening socket, and `queue-size` to define
-the number of messages to buffer inside each worker. For example:
+the number of messages to buffer inside each worker.
+With `use-src-addr-for-exporter-addr` set to true, 
+the source ip of the received flow packet is used as exporter address.
+
+For example:
 
 ```yaml
 flow:
@@ -77,10 +81,12 @@ flow:
       decoder: netflow
       listen: 0.0.0.0:2055
       workers: 3
+      use-src-addr-for-exporter-addr: true
     - type: udp
       decoder: sflow
       listen: 0.0.0.0:6343
       workers: 3
+      use-src-addr-for-exporter-addr: false
   workers: 2
 ```
 

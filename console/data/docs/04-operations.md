@@ -7,6 +7,13 @@ service and accepts SNMP requests. For routers not listed below, have
 a look at the [configuration
 snippets](https://github.com/kentik/config-snippets/) from Kentik.
 
+### Exporter Address
+The exporter address is set from the field inside the flow message by default, and used e.g. for SNMP requests.
+However, if for some reasons the set flow address (also called agent id) is wrong, you can use the source IP of the flow packet instead by setting `use-src-addr-for-exporter-addr: true` for the flow configuration.
+
+Please note that with this configuration, your deployment must not touch the Source IP!
+This might occur with Docker or Kubernetes networking.
+
 ### Cisco IOS-XE
 
 Netflow can be enabled with the following configuration:

@@ -17,6 +17,7 @@ There is a schema update in this version: you also have to restart ClickHouse
 after upgrading for it to pick the new schema.
 
 - ✨ *console*: add `SrcNetPrefix` and `DstNetPrefix` (as a dimension and a filter attribute)
+- ✨ *inlet*: add `use-src-addr-for-exporter-addr` to flow input
 - 🌱 *console*: add `limit` and `graph-type` to `console.default-visualize-options` 
 - 🌱 *docker*: published `docker-compose.yml` file pins Akvorado image to the associated release
 - 🌱 *docker*: update Zookeeper and Kafka images (this upgrade is optional)
