@@ -24,10 +24,11 @@ func TestDecodeConfiguration(t *testing.T) {
 				return gin.H{
 					"inputs": []gin.H{
 						{
-							"type":    "udp",
-							"decoder": "netflow",
-							"listen":  "192.0.2.1:2055",
-							"workers": 3,
+							"type":                      "udp",
+							"decoder":                   "netflow",
+							"listen":                    "192.0.2.1:2055",
+							"workers":                   3,
+							"usesrcaddrforexporteraddr": true,
 						}, {
 							"type":    "udp",
 							"decoder": "sflow",
@@ -41,16 +42,18 @@ func TestDecodeConfiguration(t *testing.T) {
 				Inputs: []InputConfiguration{{
 					Decoder: "netflow",
 					Config: &udp.Configuration{
-						Workers:   3,
-						QueueSize: 100000,
-						Listen:    "192.0.2.1:2055",
+						Workers:                   3,
+						QueueSize:                 100000,
+						Listen:                    "192.0.2.1:2055",
+						UseSrcAddrForExporterAddr: true,
 					},
 				}, {
 					Decoder: "sflow",
 					Config: &udp.Configuration{
-						Workers:   3,
-						QueueSize: 100000,
-						Listen:    "192.0.2.1:6343",
+						Workers:                   3,
+						QueueSize:                 100000,
+						Listen:                    "192.0.2.1:6343",
+						UseSrcAddrForExporterAddr: false,
 					},
 				}},
 			},
@@ -88,16 +91,18 @@ func TestDecodeConfiguration(t *testing.T) {
 				Inputs: []InputConfiguration{{
 					Decoder: "netflow",
 					Config: &udp.Configuration{
-						Workers:   3,
-						QueueSize: 100000,
-						Listen:    "192.0.2.1:2055",
+						Workers:                   3,
+						QueueSize:                 100000,
+						Listen:                    "192.0.2.1:2055",
+						UseSrcAddrForExporterAddr: false,
 					},
 				}, {
 					Decoder: "sflow",
 					Config: &udp.Configuration{
-						Workers:   3,
-						QueueSize: 100000,
-						Listen:    "192.0.2.1:6343",
+						Workers:                   3,
+						QueueSize:                 100000,
+						Listen:                    "192.0.2.1:6343",
+						UseSrcAddrForExporterAddr: false,
 					},
 				}},
 			},
@@ -156,9 +161,10 @@ func TestDecodeConfiguration(t *testing.T) {
 				Inputs: []InputConfiguration{{
 					Decoder: "netflow",
 					Config: &udp.Configuration{
-						Workers:   2,
-						QueueSize: 100,
-						Listen:    "192.0.2.1:2055",
+						Workers:                   2,
+						QueueSize:                 100,
+						Listen:                    "192.0.2.1:2055",
+						UseSrcAddrForExporterAddr: false,
 					},
 				}},
 			},
@@ -202,9 +208,10 @@ func TestMarshalYAML(t *testing.T) {
 			}, {
 				Decoder: "sflow",
 				Config: &udp.Configuration{
-					Listen:    "192.0.2.11:6343",
-					QueueSize: 1000,
-					Workers:   3,
+					Listen:                    "192.0.2.11:6343",
+					QueueSize:                 1000,
+					Workers:                   3,
+					UseSrcAddrForExporterAddr: true,
 				},
 			},
 		},
@@ -219,12 +226,14 @@ func TestMarshalYAML(t *testing.T) {
   queuesize: 1000
   receivebuffer: 0
   type: udp
+  usesrcaddrforexporteraddr: false
   workers: 3
 - decoder: sflow
   listen: 192.0.2.11:6343
   queuesize: 1000
   receivebuffer: 0
   type: udp
+  usesrcaddrforexporteraddr: true
   workers: 3
 ratelimit: 0
 `
