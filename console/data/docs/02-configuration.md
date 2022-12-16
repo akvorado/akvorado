@@ -81,12 +81,12 @@ flow:
       decoder: netflow
       listen: 0.0.0.0:2055
       workers: 3
-      agent-id-src-addr-overwrite: true
+      use-src-addr-for-exporter-addr: true
     - type: udp
       decoder: sflow
       listen: 0.0.0.0:6343
       workers: 3
-      agent-id-src-addr-overwrite: false
+      use-src-addr-for-exporter-addr: false
   workers: 2
 ```
 
