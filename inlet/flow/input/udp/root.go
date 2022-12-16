@@ -185,12 +185,6 @@ func (in *Input) Start() (<-chan []*decoder.FlowMessage, error) {
 					Payload:      payload[:n],
 					Source:       source.IP,
 				})
-				// if the agent Id SrcAddrOverwrite is set, we actually overwrite the exporter Address
-				if in.config.UseSrcAddrForExporterAddr {
-					for _, f := range flows {
-						f.ExporterAddress = source.IP
-					}
-				}
 				if len(flows) == 0 {
 					continue
 				}

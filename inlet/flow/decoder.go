@@ -15,8 +15,9 @@ import (
 type Message = decoder.FlowMessage
 
 type wrappedDecoder struct {
-	c    *Component
-	orig decoder.Decoder
+	c                         *Component
+	orig                      decoder.Decoder
+	useSrcAddrForExporterAddr bool
 }
 
 // Decode decodes a flow while keeping some stats.
@@ -30,6 +31,13 @@ func (wd *wrappedDecoder) Decode(in decoder.RawFlow) []*Message {
 			Inc()
 		return nil
 	}
+
+	if wd.useSrcAddrForExporterAddr {
+		for _, f := range decoded {
+			f.ExporterAddress = in.Source.To16()
+		}
+	}
+
 	wd.c.metrics.decoderTime.WithLabelValues(wd.orig.Name()).
 		Observe(float64((timeTrackStop.Sub(timeTrackStart)).Nanoseconds()) / 1000 / 1000 / 1000)
 	wd.c.metrics.decoderStats.WithLabelValues(wd.orig.Name()).
@@ -43,10 +51,11 @@ func (wd *wrappedDecoder) Name() string {
 }
 
 // wrapDecoder wraps the provided decoders to get statistics from it.
-func (c *Component) wrapDecoder(d decoder.Decoder) decoder.Decoder {
+func (c *Component) wrapDecoder(d decoder.Decoder, useSrcAddrForExporterAddr bool) decoder.Decoder {
 	return &wrappedDecoder{
-		c:    c,
-		orig: d,
+		c:                         c,
+		orig:                      d,
+		useSrcAddrForExporterAddr: useSrcAddrForExporterAddr,
 	}
 }
 

@@ -64,13 +64,12 @@ Each input has a `type` and a `decoder`. For `decoder`, both
 `netflow` or `sflow` are supported. As for the `type`, both `udp`
 and `file` are supported.
 
-For the UDP input, the supported keys are `listen` to set the
-listening endpoint, `workers` to set the number of workers to listen
-to the socket, `receive-buffer` to set the size of the kernel's
-incoming buffer for each listening socket, and `queue-size` to define
-the number of messages to buffer inside each worker.
-With `use-src-addr-for-exporter-addr` set to true, 
-the source ip of the received flow packet is used as exporter address.
+For the UDP input, the supported keys are `listen` to set the listening
+endpoint, `workers` to set the number of workers to listen to the socket,
+`receive-buffer` to set the size of the kernel's incoming buffer for each
+listening socket, and `queue-size` to define the number of messages to buffer
+inside each worker. With `use-src-addr-for-exporter-addr` set to true, the
+source ip of the received flow packet is used as exporter address.
 
 For example:
 
@@ -86,7 +85,6 @@ flow:
       decoder: sflow
       listen: 0.0.0.0:6343
       workers: 3
-      use-src-addr-for-exporter-addr: false
   workers: 2
 ```
 

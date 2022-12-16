@@ -46,6 +46,9 @@ func DefaultConfiguration() Configuration {
 type InputConfiguration struct {
 	// Decoder is the decoder to associate to the input.
 	Decoder string
+	// UseSrcAddrForExporterAddr replaces the exporter address by the transport
+	// source address.
+	UseSrcAddrForExporterAddr bool
 	// Config is the actual configuration of the input.
 	Config input.Configuration
 }
@@ -77,7 +80,7 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 			} else {
 				continue
 			}
-			switch strings.ToLower(keyStr) {
+			switch strings.ReplaceAll(strings.ToLower(keyStr), "-", "") {
 			case "type":
 				inputTypeVal := helpers.ElemOrIdentity(from.MapIndex(key))
 				if inputTypeVal.Kind() != reflect.String {
@@ -85,7 +88,7 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 				}
 				inputType = strings.ToLower(inputTypeVal.String())
 				from.SetMapIndex(key, reflect.Value{})
-			case "decoder":
+			case "decoder", "usesrcaddrforexporteraddr":
 				// Leave as is
 			case "config":
 				return nil, errors.New("input configuration should not have a config key")
@@ -145,8 +148,9 @@ func (ic InputConfiguration) MarshalYAML() (interface{}, error) {
 		return nil, errors.New("unable to guess input configuration type")
 	}
 	result := gin.H{
-		"type":    typeStr,
-		"decoder": ic.Decoder,
+		"type":                      typeStr,
+		"decoder":                   ic.Decoder,
+		"usesrcaddrforexporteraddr": ic.UseSrcAddrForExporterAddr,
 	}
 	configStruct := reflect.ValueOf(ic.Config).Elem()
 	for i, field := range reflect.VisibleFields(configStruct.Type()) {
