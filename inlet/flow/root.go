@@ -78,7 +78,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		}
 		dec = decoderfunc(r)
 		alreadyInitialized[input.Decoder] = dec
-		decs[idx] = c.wrapDecoder(dec, &input)
+		decs[idx] = c.wrapDecoder(dec)
 	}
 
 	// Initialize inputs
