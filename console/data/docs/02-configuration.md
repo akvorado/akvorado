@@ -69,7 +69,8 @@ listening endpoint, `workers` to set the number of workers to listen
 to the socket, `receive-buffer` to set the size of the kernel's
 incoming buffer for each listening socket, and `queue-size` to define
 the number of messages to buffer inside each worker.
-With `agent-id-src-addr-overwrite` set to true, the source ip of the received flow packet is used as Exporter Address.
+With `use-src-addr-for-exporter-addr` set to true, 
+the source ip of the received flow packet is used as exporter address.
 
 For example:
 
