@@ -72,6 +72,7 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 			return nil, errors.New("input configuration should be a map")
 		}
 		mapKeys := from.MapKeys()
+	outer:
 		for _, key := range mapKeys {
 			var keyStr string
 			// YAML may unmarshal keys to interfaces
@@ -80,7 +81,7 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 			} else {
 				continue
 			}
-			switch strings.ReplaceAll(strings.ToLower(keyStr), "-", "") {
+			switch strings.ToLower(keyStr) {
 			case "type":
 				inputTypeVal := helpers.ElemOrIdentity(from.MapIndex(key))
 				if inputTypeVal.Kind() != reflect.String {
@@ -88,11 +89,16 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 				}
 				inputType = strings.ToLower(inputTypeVal.String())
 				from.SetMapIndex(key, reflect.Value{})
-			case "decoder", "usesrcaddrforexporteraddr":
-				// Leave as is
 			case "config":
 				return nil, errors.New("input configuration should not have a config key")
 			default:
+				t := to.Type()
+				for i := 0; i < t.NumField(); i++ {
+					if helpers.MapStructureMatchName(t.Field(i).Name, keyStr) {
+						// Don't touch
+						continue outer
+					}
+				}
 				fromConfig.SetMapIndex(reflect.ValueOf(keyStr), from.MapIndex(key))
 				from.SetMapIndex(key, reflect.Value{})
 			}
@@ -147,14 +153,16 @@ func (ic InputConfiguration) MarshalYAML() (interface{}, error) {
 	if typeStr == "" {
 		return nil, errors.New("unable to guess input configuration type")
 	}
-	result := gin.H{
-		"type":                      typeStr,
-		"decoder":                   ic.Decoder,
-		"usesrcaddrforexporteraddr": ic.UseSrcAddrForExporterAddr,
+	result := gin.H{"type": typeStr}
+	outerConfigStruct := reflect.ValueOf(ic)
+	for i, field := range reflect.VisibleFields(outerConfigStruct.Type()) {
+		if field.Name != "Config" {
+			result[strings.ToLower(field.Name)] = outerConfigStruct.Field(i).Interface()
+		}
 	}
-	configStruct := reflect.ValueOf(ic.Config).Elem()
-	for i, field := range reflect.VisibleFields(configStruct.Type()) {
-		result[strings.ToLower(field.Name)] = configStruct.Field(i).Interface()
+	innerConfigStruct := reflect.ValueOf(ic.Config).Elem()
+	for i, field := range reflect.VisibleFields(innerConfigStruct.Type()) {
+		result[strings.ToLower(field.Name)] = innerConfigStruct.Field(i).Interface()
 	}
 	return result, nil
 }
