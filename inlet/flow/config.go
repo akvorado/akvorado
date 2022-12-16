@@ -33,11 +33,13 @@ type Configuration struct {
 func DefaultConfiguration() Configuration {
 	return Configuration{
 		Inputs: []InputConfiguration{{
-			Decoder: "netflow",
-			Config:  udp.DefaultConfiguration(),
+			Decoder:                   "netflow",
+			Config:                    udp.DefaultConfiguration(),
+			UseSrcAddrForExporterAddr: false,
 		}, {
-			Decoder: "sflow",
-			Config:  udp.DefaultConfiguration(),
+			Decoder:                   "sflow",
+			Config:                    udp.DefaultConfiguration(),
+			UseSrcAddrForExporterAddr: false,
 		}},
 	}
 }
@@ -48,6 +50,9 @@ type InputConfiguration struct {
 	Decoder string
 	// Config is the actual configuration of the input.
 	Config input.Configuration
+	// UseSrcAddrForExporterAddr replaces the exporter address by the UDP flow source.
+	// default is false, meaning that the agent id inside the flowmessage is used
+	UseSrcAddrForExporterAddr bool
 }
 
 // ConfigurationUnmarshallerHook will help decode the Configuration
@@ -86,6 +91,8 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 				inputType = strings.ToLower(inputTypeVal.String())
 				from.SetMapIndex(key, reflect.Value{})
 			case "decoder":
+				// Leave as is
+			case "use-src-addr-for-exporter-addr":
 				// Leave as is
 			case "config":
 				return nil, errors.New("input configuration should not have a config key")
