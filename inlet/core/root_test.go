@@ -313,7 +313,7 @@ func TestCore(t *testing.T) {
 		for {
 			_, err := reader.ReadString('\n')
 			if err == io.EOF {
-				fmt.Println("EOF")
+				t.Log("EOF")
 				break
 			}
 			if err != nil {

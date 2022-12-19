@@ -94,7 +94,7 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 			default:
 				t := to.Type()
 				for i := 0; i < t.NumField(); i++ {
-					if helpers.MapStructureMatchName(t.Field(i).Name, keyStr) {
+					if helpers.MapStructureMatchName(keyStr, t.Field(i).Name) {
 						// Don't touch
 						continue outer
 					}

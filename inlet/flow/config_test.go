@@ -24,11 +24,11 @@ func TestDecodeConfiguration(t *testing.T) {
 				return gin.H{
 					"inputs": []gin.H{
 						{
-							"type":                      "udp",
-							"decoder":                   "netflow",
-							"listen":                    "192.0.2.1:2055",
-							"workers":                   3,
-							"usesrcaddrforexporteraddr": true,
+							"type":                           "udp",
+							"decoder":                        "netflow",
+							"listen":                         "192.0.2.1:2055",
+							"workers":                        3,
+							"use-src-addr-for-exporter-addr": true,
 						}, {
 							"type":    "udp",
 							"decoder": "sflow",
