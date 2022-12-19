@@ -44,7 +44,7 @@
     "@types/node": "^18.11.9",
     "@types/uuid": "^9.0.0",
     "@vitejs/plugin-vue": "^3.0.0",
-    "@vitest/coverage-c8": "^0.25.0",
+    "@vitest/coverage-c8": "^0.26.0",
     "@volar/vue-language-server": "^1.0.9",
     "@vue/eslint-config-prettier": "^7.0.0",
     "@vue/eslint-config-typescript": "^11.0.0",
