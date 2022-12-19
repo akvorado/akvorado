@@ -45,7 +45,6 @@
 import { ref, watch, computed } from "vue";
 import { useFetch, type AfterFetchContext } from "@vueuse/core";
 import { useRouter, useRoute } from "vue-router";
-import { Date as SugarDate } from "sugar-date";
 import { ResizeRow } from "vue-resizer";
 import LZString from "lz-string";
 import InfoBox from "@/components/InfoBox.vue";
@@ -122,35 +121,39 @@ const encodedState = computed(() => encodeState(state.value));
 
 // Fetch data
 const fetchedData = ref<GraphHandlerResult | SankeyHandlerResult | null>(null);
-const finalState = computed((): ModelType => {
-  return state.value === null
-    ? null
-    : {
-        ...state.value,
-        start: SugarDate.create(state.value.start).toISOString(),
-        end: SugarDate.create(state.value.end).toISOString(),
-      };
-});
 const jsonPayload = computed(
   (): SankeyHandlerInput | GraphHandlerInput | null => {
-    if (finalState.value === null) return null;
-    if (finalState.value.graphType === "sankey") {
-      const input: SankeyHandlerInput = omit(finalState.value, [
-        "graphType",
-        "bidirectional",
-        "previousPeriod",
-      ]);
+    if (state.value === null) return null;
+    if (state.value.graphType === "sankey") {
+      const input: SankeyHandlerInput = {
+        ...omit(state.value, [
+          "graphType",
+          "bidirectional",
+          "previousPeriod",
+          "computedStart",
+          "computedEnd",
+        ]),
+        start: state.value.computedStart,
+        end: state.value.computedEnd,
+      };
       return input;
     }
     const input: GraphHandlerInput = {
-      ...omit(finalState.value, ["graphType", "previousPeriod"]),
-      "previous-period": finalState.value.previousPeriod,
-      points: finalState.value.graphType === "grid" ? 50 : 200,
+      ...omit(state.value, [
+        "graphType",
+        "previousPeriod",
+        "computedStart",
+        "computedEnd",
+      ]),
+      start: state.value.computedStart,
+      end: state.value.computedEnd,
+      points: state.value.graphType === "grid" ? 50 : 200,
+      "previous-period": state.value.previousPeriod,
     };
     return input;
   }
 );
-const request = ref<ModelType>(null); // Same as finalState, but once request is successful
+const request = ref<ModelType>(null); // Same as state, but once request is successful
 const { data, execute, isFetching, aborted, abort, canAbort, error } = useFetch(
   "",
   {
@@ -158,7 +161,7 @@ const { data, execute, isFetching, aborted, abort, canAbort, error } = useFetch(
       // Add the URL. Not a computed value as if we change both payload
       // and URL, the query will be triggered twice.
       const { cancel } = ctx;
-      if (finalState.value === null) {
+      if (state.value === null) {
         cancel();
         return ctx;
       }
@@ -169,7 +172,7 @@ const { data, execute, isFetching, aborted, abort, canAbort, error } = useFetch(
         grid: "graph",
         sankey: "sankey",
       };
-      const url = endpoint[finalState.value.graphType];
+      const url = endpoint[state.value.graphType];
       return {
         ...ctx,
         url: `/api/v0/console/${url}`,
@@ -181,29 +184,27 @@ const { data, execute, isFetching, aborted, abort, canAbort, error } = useFetch(
       // Update data. Not done in a computed value as we want to keep the
       // previous data in case of errors.
       const { data, response } = ctx;
-      if (data === null || !finalState.value) return ctx;
+      if (data === null || !state.value) return ctx;
       console.groupCollapsed("SQL query");
       console.info(
         response.headers.get("x-sql-query")?.replace(/ {2}( )*/g, "\n$1")
       );
       console.groupEnd();
-      if (finalState.value.graphType === "sankey") {
+      if (state.value.graphType === "sankey") {
         fetchedData.value = {
           graphType: "sankey",
           ...(data as SankeyHandlerOutput),
-          ...pick(finalState.value, ["start", "end", "dimensions", "units"]),
+          ...pick(state.value, ["dimensions", "units"]),
+          start: state.value.computedStart,
+          end: state.value.computedEnd,
         };
       } else {
         fetchedData.value = {
-          graphType: finalState.value.graphType,
+          graphType: state.value.graphType,
           ...(data as GraphHandlerOutput),
-          ...pick(finalState.value, [
-            "start",
-            "end",
-            "dimensions",
-            "units",
-            "bidirectional",
-          ]),
+          ...pick(state.value, ["dimensions", "units", "bidirectional"]),
+          start: state.value.computedStart,
+          end: state.value.computedEnd,
         };
       }
 
@@ -219,7 +220,7 @@ const { data, execute, isFetching, aborted, abort, canAbort, error } = useFetch(
       }
 
       // Keep current payload for state
-      request.value = finalState.value;
+      request.value = state.value;
 
       return ctx;
     },

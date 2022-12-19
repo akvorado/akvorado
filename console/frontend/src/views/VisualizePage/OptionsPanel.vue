@@ -113,6 +113,7 @@
 
 <script lang="ts" setup>
 import { ref, watch, computed, inject, toRaw } from "vue";
+import { Date as SugarDate } from "sugar-date";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/vue/solid";
 import {
   default as InputTimeRange,
@@ -134,7 +135,7 @@ import { ServerConfigKey } from "@/components/ServerConfigProvider.vue";
 import SectionLabel from "./SectionLabel.vue";
 import GraphIcon from "./GraphIcon.vue";
 import type { Units } from ".";
-import { isEqual } from "lodash-es";
+import { isEqual, omit } from "lodash-es";
 
 const props = withDefaults(
   defineProps<{
@@ -165,15 +166,21 @@ const units = ref<Units>("l3bps");
 const bidirectional = ref(false);
 const previousPeriod = ref(false);
 
-const submitOptions = () => {
-  if (props.loading) {
+const submitOptions = (force?: boolean) => {
+  if (!force && props.loading) {
     emit("cancel");
   } else {
-    emit("update:modelValue", options.value);
+    if (options.value !== null && !hasErrors.value) {
+      emit("update:modelValue", {
+        ...options.value,
+        computedStart: SugarDate.create(options.value.start).toISOString(),
+        computedEnd: SugarDate.create(options.value.end).toISOString(),
+      });
+    }
   }
 };
 
-const options = computed((): ModelType => {
+const options = computed((): InternalModelType => {
   if (!timeRange.value || !dimensions.value || !filter.value) {
     return options.value;
   }
@@ -224,7 +231,7 @@ watch(
     ] as const,
   ([modelValue, defaultOptions]) => {
     if (!defaultOptions) return;
-    const currentValue: NonNullable<ModelType> = modelValue ?? {
+    const currentValue: NonNullable<InternalModelType> = modelValue ?? {
       graphType: defaultOptions.graphType,
       start: defaultOptions.start,
       end: defaultOptions.end,
@@ -251,11 +258,17 @@ watch(
     previousPeriod.value = currentValue.previousPeriod;
 
     // A bit risky, but it seems to work.
-    if (!isEqual(modelValue, options.value)) {
+    if (
+      modelValue === null ||
+      !modelValue.computedStart ||
+      !modelValue.computedEnd ||
+      !isEqual(
+        omit(modelValue, ["computedStart", "computedEnd"]),
+        options.value
+      )
+    ) {
       open.value = true;
-      if (!hasErrors.value) {
-        emit("update:modelValue", options.value);
-      }
+      submitOptions(true);
     }
   },
   { immediate: true, deep: true }
@@ -269,6 +282,8 @@ export type ModelType = {
   graphType: keyof typeof graphTypes;
   start: string;
   end: string;
+  computedStart: string;
+  computedEnd: string;
   dimensions: string[];
   limit: number;
   filter: string;
@@ -276,4 +291,8 @@ export type ModelType = {
   bidirectional: boolean;
   previousPeriod: boolean;
 } | null;
+type InternalModelType = Omit<
+  NonNullable<ModelType>,
+  "computedStart" | "computedEnd"
+> | null;
 </script>
