@@ -74,8 +74,8 @@ const highlightedSerie = ref<number | null>(null);
 
 const updateTimeRange = ([start, end]: [Date, Date]) => {
   if (state.value === null) return;
-  state.value.start = start.toISOString();
-  state.value.end = end.toISOString();
+  state.value.humanStart = start.toISOString();
+  state.value.humanEnd = end.toISOString();
 };
 
 // Main state
@@ -130,11 +130,9 @@ const jsonPayload = computed(
           "graphType",
           "bidirectional",
           "previousPeriod",
-          "computedStart",
-          "computedEnd",
+          "humanStart",
+          "humanEnd",
         ]),
-        start: state.value.computedStart,
-        end: state.value.computedEnd,
       };
       return input;
     }
@@ -142,11 +140,9 @@ const jsonPayload = computed(
       ...omit(state.value, [
         "graphType",
         "previousPeriod",
-        "computedStart",
-        "computedEnd",
+        "humanStart",
+        "humanEnd",
       ]),
-      start: state.value.computedStart,
-      end: state.value.computedEnd,
       points: state.value.graphType === "grid" ? 50 : 200,
       "previous-period": state.value.previousPeriod,
     };
@@ -194,17 +190,19 @@ const { data, execute, isFetching, aborted, abort, canAbort, error } = useFetch(
         fetchedData.value = {
           graphType: "sankey",
           ...(data as SankeyHandlerOutput),
-          ...pick(state.value, ["dimensions", "units"]),
-          start: state.value.computedStart,
-          end: state.value.computedEnd,
+          ...pick(state.value, ["start", "end", "dimensions", "units"]),
         };
       } else {
         fetchedData.value = {
           graphType: state.value.graphType,
           ...(data as GraphHandlerOutput),
-          ...pick(state.value, ["dimensions", "units", "bidirectional"]),
-          start: state.value.computedStart,
-          end: state.value.computedEnd,
+          ...pick(state.value, [
+            "start",
+            "end",
+            "dimensions",
+            "units",
+            "bidirectional",
+          ]),
         };
       }
 

@@ -173,8 +173,8 @@ const submitOptions = (force?: boolean) => {
     if (options.value !== null && !hasErrors.value) {
       emit("update:modelValue", {
         ...options.value,
-        computedStart: SugarDate.create(options.value.start).toISOString(),
-        computedEnd: SugarDate.create(options.value.end).toISOString(),
+        start: SugarDate.create(options.value.humanStart).toISOString(),
+        end: SugarDate.create(options.value.humanEnd).toISOString(),
       });
     }
   }
@@ -186,8 +186,8 @@ const options = computed((): InternalModelType => {
   }
   return {
     graphType: graphType.value.type,
-    start: timeRange.value?.start,
-    end: timeRange.value?.end,
+    humanStart: timeRange.value?.start,
+    humanEnd: timeRange.value?.end,
     dimensions: dimensions.value?.selected,
     limit: dimensions.value?.limit,
     filter: filter.value?.expression,
@@ -233,8 +233,8 @@ watch(
     if (!defaultOptions) return;
     const currentValue: NonNullable<InternalModelType> = modelValue ?? {
       graphType: defaultOptions.graphType,
-      start: defaultOptions.start,
-      end: defaultOptions.end,
+      humanStart: defaultOptions.start,
+      humanEnd: defaultOptions.end,
       dimensions: toRaw(defaultOptions.dimensions),
       limit: defaultOptions.limit,
       filter: defaultOptions.filter,
@@ -247,7 +247,10 @@ watch(
     const t = currentValue.graphType;
     graphType.value =
       graphTypeList.find(({ type }) => type === t) || graphTypeList[0];
-    timeRange.value = { start: currentValue.start, end: currentValue.end };
+    timeRange.value = {
+      start: currentValue.humanStart,
+      end: currentValue.humanEnd,
+    };
     dimensions.value = {
       selected: [...currentValue.dimensions],
       limit: currentValue.limit,
@@ -260,12 +263,9 @@ watch(
     // A bit risky, but it seems to work.
     if (
       modelValue === null ||
-      !modelValue.computedStart ||
-      !modelValue.computedEnd ||
-      !isEqual(
-        omit(modelValue, ["computedStart", "computedEnd"]),
-        options.value
-      )
+      !modelValue.start ||
+      !modelValue.end ||
+      !isEqual(omit(modelValue, ["start", "end"]), options.value)
     ) {
       open.value = true;
       submitOptions(true);
@@ -282,8 +282,8 @@ export type ModelType = {
   graphType: keyof typeof graphTypes;
   start: string;
   end: string;
-  computedStart: string;
-  computedEnd: string;
+  humanStart: string;
+  humanEnd: string;
   dimensions: string[];
   limit: number;
   filter: string;
@@ -291,8 +291,5 @@ export type ModelType = {
   bidirectional: boolean;
   previousPeriod: boolean;
 } | null;
-type InternalModelType = Omit<
-  NonNullable<ModelType>,
-  "computedStart" | "computedEnd"
-> | null;
+type InternalModelType = Omit<NonNullable<ModelType>, "start" | "end"> | null;
 </script>
