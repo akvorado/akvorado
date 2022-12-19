@@ -63,16 +63,15 @@ const props = defineProps<{ request: ModelType }>();
 const start = computed(() =>
   props.request ? SugarDate(props.request.start).long() : null
 );
-const end = computed(() =>
-  props.request
-    ? SugarDate(props.request.end).format(
-        SugarDate(props.request.start).toDateString() ===
-          SugarDate(props.request.end).toDateString()
-          ? "%X"
-          : "{long}"
-      )
-    : null
-);
+const end = computed(() => {
+  if (props.request === null) return null;
+  return SugarDate(props.request.end).format(
+    SugarDate(props.request.start).toDateString().raw ===
+      SugarDate(props.request.end).toDateString().raw
+      ? "%X"
+      : "{long}"
+  );
+});
 
 // Also set title
 const title = inject(TitleKey)!;
