@@ -126,7 +126,7 @@ func (c *Component) docsHandlerFunc(gc *gin.Context) {
 		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to render document."})
 		return
 	}
-	gc.Header("Cache-Control", "max-age=300")
+	gc.Header("Cache-Control", "max-age=300, public")
 	gc.PureJSON(http.StatusOK, gin.H{
 		"markdown": buf.String(),
 		"toc":      toc,
