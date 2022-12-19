@@ -151,80 +151,85 @@ const jsonPayload = computed(
   }
 );
 const request = ref<ModelType>(null); // Same as finalState, but once request is successful
-const { data, isFetching, aborted, abort, canAbort, error } = useFetch("", {
-  beforeFetch(ctx) {
-    // Add the URL. Not a computed value as if we change both payload
-    // and URL, the query will be triggered twice.
-    const { cancel } = ctx;
-    if (finalState.value === null) {
-      cancel();
+const { data, execute, isFetching, aborted, abort, canAbort, error } = useFetch(
+  "",
+  {
+    beforeFetch(ctx) {
+      // Add the URL. Not a computed value as if we change both payload
+      // and URL, the query will be triggered twice.
+      const { cancel } = ctx;
+      if (finalState.value === null) {
+        cancel();
+        return ctx;
+      }
+      const endpoint: Record<GraphType, string> = {
+        stacked: "graph",
+        stacked100: "graph",
+        lines: "graph",
+        grid: "graph",
+        sankey: "sankey",
+      };
+      const url = endpoint[finalState.value.graphType];
+      return {
+        ...ctx,
+        url: `/api/v0/console/${url}`,
+      };
+    },
+    async afterFetch(
+      ctx: AfterFetchContext<GraphHandlerOutput | SankeyHandlerOutput>
+    ) {
+      // Update data. Not done in a computed value as we want to keep the
+      // previous data in case of errors.
+      const { data, response } = ctx;
+      if (data === null || !finalState.value) return ctx;
+      console.groupCollapsed("SQL query");
+      console.info(
+        response.headers.get("x-sql-query")?.replace(/ {2}( )*/g, "\n$1")
+      );
+      console.groupEnd();
+      if (finalState.value.graphType === "sankey") {
+        fetchedData.value = {
+          graphType: "sankey",
+          ...(data as SankeyHandlerOutput),
+          ...pick(finalState.value, ["start", "end", "dimensions", "units"]),
+        };
+      } else {
+        fetchedData.value = {
+          graphType: finalState.value.graphType,
+          ...(data as GraphHandlerOutput),
+          ...pick(finalState.value, [
+            "start",
+            "end",
+            "dimensions",
+            "units",
+            "bidirectional",
+          ]),
+        };
+      }
+
+      // Also update URL.
+      const routeTarget = {
+        name: "VisualizeWithState",
+        params: { state: encodedState.value },
+      };
+      if (route.name !== "VisualizeWithState") {
+        await router.replace(routeTarget);
+      } else {
+        await router.push(routeTarget);
+      }
+
+      // Keep current payload for state
+      request.value = finalState.value;
+
       return ctx;
-    }
-    const endpoint: Record<GraphType, string> = {
-      stacked: "graph",
-      stacked100: "graph",
-      lines: "graph",
-      grid: "graph",
-      sankey: "sankey",
-    };
-    const url = endpoint[finalState.value.graphType];
-    return {
-      ...ctx,
-      url: `/api/v0/console/${url}`,
-    };
-  },
-  async afterFetch(
-    ctx: AfterFetchContext<GraphHandlerOutput | SankeyHandlerOutput>
-  ) {
-    // Update data. Not done in a computed value as we want to keep the
-    // previous data in case of errors.
-    const { data, response } = ctx;
-    if (data === null || !finalState.value) return ctx;
-    console.groupCollapsed("SQL query");
-    console.info(
-      response.headers.get("x-sql-query")?.replace(/ {2}( )*/g, "\n$1")
-    );
-    console.groupEnd();
-    if (finalState.value.graphType === "sankey") {
-      fetchedData.value = {
-        graphType: "sankey",
-        ...(data as SankeyHandlerOutput),
-        ...pick(finalState.value, ["start", "end", "dimensions", "units"]),
-      };
-    } else {
-      fetchedData.value = {
-        graphType: finalState.value.graphType,
-        ...(data as GraphHandlerOutput),
-        ...pick(finalState.value, [
-          "start",
-          "end",
-          "dimensions",
-          "units",
-          "bidirectional",
-        ]),
-      };
-    }
-
-    // Also update URL.
-    const routeTarget = {
-      name: "VisualizeWithState",
-      params: { state: encodedState.value },
-    };
-    if (route.name !== "VisualizeWithState") {
-      await router.replace(routeTarget);
-    } else {
-      await router.push(routeTarget);
-    }
-
-    // Keep current payload for state
-    request.value = finalState.value;
-
-    return ctx;
-  },
-  refetch: true,
-})
-  .post(jsonPayload, "json") // this will trigger a refetch
+    },
+    immediate: false,
+  }
+)
+  .post(jsonPayload, "json")
   .json<GraphHandlerOutput | SankeyHandlerOutput | { message: string }>();
+watch(jsonPayload, () => execute(), { immediate: true });
+
 const errorMessage = computed(() => {
   if (!error.value || aborted.value) return "";
   if (data.value && "message" in data.value) return data.value.message;
