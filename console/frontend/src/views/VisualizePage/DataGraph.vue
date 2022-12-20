@@ -35,9 +35,3 @@ const component = computed(() => {
   return "div";
 });
 </script>
-
-<style scoped>
-:deep(x-vue-echarts) > :deep(div:first-child) {
-  width: auto !important;
-}
-</style>
