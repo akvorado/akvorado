@@ -70,8 +70,6 @@ jobs:
       # Build and test
       - name: Build
         run: make && ./bin/akvorado version
-      - name: Go tests
-        run: make test-go
       - name: Go race tests
         run: make test-race
       - name: JS tests
