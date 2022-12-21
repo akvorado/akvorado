@@ -67,3 +67,152 @@ func TestProtectedDecodeHook(t *testing.T) {
 		}
 	}
 }
+
+func TestParametrizedConfig(t *testing.T) {
+	type InnerConfigurationType1 struct {
+		CC string
+		DD string
+	}
+	type InnerConfigurationType2 struct {
+		CC string
+		EE string
+	}
+	type OuterConfiguration struct {
+		AA     string
+		BB     string
+		Config interface{}
+	}
+	available := map[string](func() interface{}){
+		"type1": func() interface{} {
+			return InnerConfigurationType1{
+				CC: "cc1",
+				DD: "dd1",
+			}
+		},
+		"type2": func() interface{} {
+			return InnerConfigurationType2{
+				CC: "cc2",
+				EE: "ee2",
+			}
+		},
+	}
+	RegisterMapstructureUnmarshallerHook(ParametrizedConfigurationUnmarshallerHook(OuterConfiguration{}, available))
+
+	t.Run("unmarshal", func(t *testing.T) {
+		TestConfigurationDecode(t, ConfigurationDecodeCases{
+			{
+				Description: "type1",
+				Initial:     func() interface{} { return OuterConfiguration{} },
+				Configuration: func() interface{} {
+					return gin.H{
+						"type": "type1",
+						"aa":   "a1",
+						"bb":   "b1",
+						"cc":   "c1",
+						"dd":   "d1",
+					}
+				},
+				Expected: OuterConfiguration{
+					AA: "a1",
+					BB: "b1",
+					Config: InnerConfigurationType1{
+						CC: "c1",
+						DD: "d1",
+					},
+				},
+			}, {
+				Description: "type2",
+				Initial:     func() interface{} { return OuterConfiguration{} },
+				Configuration: func() interface{} {
+					return gin.H{
+						"type": "type2",
+						"aa":   "a2",
+						"bb":   "b2",
+						"cc":   "c2",
+						"ee":   "e2",
+					}
+				},
+				Expected: OuterConfiguration{
+					AA: "a2",
+					BB: "b2",
+					Config: InnerConfigurationType2{
+						CC: "c2",
+						EE: "e2",
+					},
+				},
+			}, {
+				Description: "unknown type",
+				Initial:     func() interface{} { return OuterConfiguration{} },
+				Configuration: func() interface{} {
+					return gin.H{
+						"type": "type3",
+						"aa":   "a2",
+						"bb":   "b2",
+						"cc":   "c2",
+						"ee":   "e2",
+					}
+				},
+				Error: true,
+			},
+		})
+
+	})
+	t.Run("marshal", func(t *testing.T) {
+		config1 := OuterConfiguration{
+			AA: "a1",
+			BB: "b1",
+			Config: InnerConfigurationType1{
+				CC: "c1",
+				DD: "d1",
+			},
+		}
+		expected1 := gin.H{
+			"type": "type1",
+			"aa":   "a1",
+			"bb":   "b1",
+			"cc":   "c1",
+			"dd":   "d1",
+		}
+		got1, err := ParametrizedConfigurationMarshalYAML(config1, available)
+		if err != nil {
+			t.Fatalf("ParametrizedConfigurationMarshalYAML() error:\n%+v", err)
+		}
+		if diff := Diff(got1, expected1); diff != "" {
+			t.Fatalf("ParametrizedConfigurationMarshalYAML() (-got, +want):\n%s", diff)
+		}
+
+		config2 := OuterConfiguration{
+			AA: "a2",
+			BB: "b2",
+			Config: InnerConfigurationType2{
+				CC: "c2",
+				EE: "e2",
+			},
+		}
+		expected2 := gin.H{
+			"type": "type2",
+			"aa":   "a2",
+			"bb":   "b2",
+			"cc":   "c2",
+			"ee":   "e2",
+		}
+		got2, err := ParametrizedConfigurationMarshalYAML(config2, available)
+		if err != nil {
+			t.Fatalf("ParametrizedConfigurationMarshalYAML() error:\n%+v", err)
+		}
+		if diff := Diff(got2, expected2); diff != "" {
+			t.Fatalf("ParametrizedConfigurationMarshalYAML() (-got, +want):\n%s", diff)
+		}
+
+		config3 := OuterConfiguration{
+			AA: "a3",
+			BB: "b3",
+			Config: struct {
+				FF string
+			}{},
+		}
+		if _, err := ParametrizedConfigurationMarshalYAML(config3, available); err == nil {
+			t.Fatal("ParametrizedConfigurationMarshalYAML() did not error")
+		}
+	})
+}

@@ -9,7 +9,7 @@ import "reflect"
 // interface, else it returns the value unmodified.
 func ElemOrIdentity(value reflect.Value) reflect.Value {
 	if value.Kind() == reflect.Interface {
-		return value.Elem()
+		value = value.Elem()
 	}
 	return value
 }
