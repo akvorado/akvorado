@@ -11,7 +11,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.6.4 - 2022-12-22
 
 There is a schema update in this version: you also have to restart ClickHouse
 after upgrading for it to pick the new schema.
