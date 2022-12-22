@@ -100,6 +100,16 @@ func DefaultConfiguration() Configuration {
 	}
 }
 
+// MarshalYAML undoes ConfigurationUnmarshallerHook().
+func (cc CacheConfiguration) MarshalYAML() (interface{}, error) {
+	return helpers.ParametrizedConfigurationMarshalYAML(cc, cacheConfigurationMap)
+}
+
+// MarshalJSON undoes ConfigurationUnmarshallerHook().
+func (cc CacheConfiguration) MarshalJSON() ([]byte, error) {
+	return helpers.ParametrizedConfigurationMarshalJSON(cc, cacheConfigurationMap)
+}
+
 var cacheConfigurationMap = map[string](func() CacheBackendConfiguration){
 	"memory": DefaultMemoryCacheConfiguration,
 	"redis":  DefaultRedisCacheConfiguration,

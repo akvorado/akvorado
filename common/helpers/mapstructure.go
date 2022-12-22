@@ -144,7 +144,7 @@ func ParametrizedConfigurationUnmarshallerHook[OuterConfiguration any, InnerConf
 		// Alter config with a copy of the concrete type
 		defaultV := innerConfiguration()
 		original := reflect.Indirect(reflect.ValueOf(defaultV))
-		if !configField.IsNil() && configField.Elem().Type().Elem() == reflect.TypeOf(defaultV).Elem() {
+		if !configField.IsNil() && configField.Elem().Type() == reflect.TypeOf(defaultV) {
 			// Use the value we already have instead of default.
 			original = reflect.Indirect(configField.Elem())
 		}

@@ -102,6 +102,10 @@ inlet:
       - ClassifyInternal()
 
 console:
+  http:
+    cache:
+      type: redis
+      server: redis:6379
   database:
     saved-filters:
       # These are prepopulated filters you can select in a drop-down
