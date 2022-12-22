@@ -41,9 +41,9 @@ run tests:
     - npm config --user set cache $PWD/.npm-cache
     - time go mod download
     - time make && ./bin/akvorado version
-    - time make test
-    - time make test-race || make test-race
-    - time make test-coverage || make test-coverage
+    - time make test-race
+    - time make test-js
+    - time make test-coverage
   coverage: '/Code coverage: [0-9.]+/'
   artifacts:
     reports:
