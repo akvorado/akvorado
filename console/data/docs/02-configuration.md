@@ -526,6 +526,7 @@ The console itself accepts the following keys:
    `dst-port`)
  - `homepage-top-widgets` to define the widgets to display on the home page
  - `dimensions-limit` to set the upper limit of the number of returned dimensions
+ - `cache-ttl` sets the time costly requests are kept in cache
 
 Here is an example:
 

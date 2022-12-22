@@ -5,6 +5,7 @@ package console
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,6 +22,8 @@ type Configuration struct {
 	HomepageTopWidgets []string `validate:"dive,oneof=src-as dst-as src-country dst-country exporter protocol etype src-port dst-port"`
 	// DimensionsLimit put an upper limit to the number of dimensions to return.
 	DimensionsLimit int `validate:"min=10"`
+	// CacheTTL tells how long to keep the most costly requests in cache.
+	CacheTTL time.Duration `validate:"min=5s"`
 }
 
 // VisualizeOptionsConfiguration defines options for the "visualize" tab.
@@ -52,6 +55,7 @@ func DefaultConfiguration() Configuration {
 		},
 		HomepageTopWidgets: []string{"src-as", "src-port", "protocol", "src-country", "etype"},
 		DimensionsLimit:    50,
+		CacheTTL:           30 * time.Minute,
 	}
 }
 
