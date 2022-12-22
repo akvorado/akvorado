@@ -121,6 +121,14 @@ const encodedState = computed(() => encodeState(state.value));
 
 // Fetch data
 const fetchedData = ref<GraphHandlerResult | SankeyHandlerResult | null>(null);
+const orderedJSONPayload = <T extends Record<string, any>>(input: T): T => {
+  return Object.keys(input)
+    .sort()
+    .reduce(
+      (o, k) => ((o[k] = input[k]), o),
+      {} as { [key: string]: any }
+    ) as T;
+};
 const jsonPayload = computed(
   (): SankeyHandlerInput | GraphHandlerInput | null => {
     if (state.value === null) return null;
@@ -134,19 +142,20 @@ const jsonPayload = computed(
           "humanEnd",
         ]),
       };
-      return input;
+      return orderedJSONPayload(input);
+    } else {
+      const input: GraphHandlerInput = {
+        ...omit(state.value, [
+          "graphType",
+          "previousPeriod",
+          "humanStart",
+          "humanEnd",
+        ]),
+        points: state.value.graphType === "grid" ? 50 : 200,
+        "previous-period": state.value.previousPeriod,
+      };
+      return orderedJSONPayload(input);
     }
-    const input: GraphHandlerInput = {
-      ...omit(state.value, [
-        "graphType",
-        "previousPeriod",
-        "humanStart",
-        "humanEnd",
-      ]),
-      points: state.value.graphType === "grid" ? 50 : 200,
-      "previous-period": state.value.previousPeriod,
-    };
-    return input;
   }
 );
 const request = ref<ModelType>(null); // Same as state, but once request is successful

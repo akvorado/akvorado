@@ -10,8 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"akvorado/common/helpers"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -195,21 +193,8 @@ LIMIT 5
 	gc.JSON(http.StatusOK, gin.H{"top": results})
 }
 
-type widgetParameters struct {
-	Points uint `form:"points" binding:"isdefault|min=5,max=1000"`
-}
-
 func (c *Component) widgetGraphHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
-
-	var params widgetParameters
-	if err := gc.ShouldBindQuery(&params); err != nil {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
-		return
-	}
-	if params.Points == 0 {
-		params.Points = 200
-	}
 	now := c.d.Clock.Now()
 	query := c.finalizeQuery(fmt.Sprintf(`
 {{ with %s }}
@@ -229,7 +214,7 @@ ORDER BY Time WITH FILL
 			Start:             now.Add(-24 * time.Hour),
 			End:               now,
 			MainTableRequired: false,
-			Points:            params.Points,
+			Points:            200,
 		})))
 	gc.Header("X-SQL-Query", query)
 

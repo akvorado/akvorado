@@ -51,6 +51,12 @@ jobs:
           ALLOW_PLAINTEXT_LISTENER: "yes"
         ports:
           - 9092:9093
+      redis:
+        image: bitnami/redis:7.0
+        env:
+          ALLOW_EMPTY_PASSWORD: "yes"
+        ports:
+          - 6379:6379
       clickhouse:
         image: clickhouse/clickhouse-server:22.8
         ports:

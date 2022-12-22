@@ -232,8 +232,8 @@ func TestWidgetGraph(t *testing.T) {
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), strings.TrimSpace(`
 SELECT
- toStartOfInterval(TimeReceived + INTERVAL 144 second, INTERVAL 864 second) - INTERVAL 144 second AS Time,
- SUM(Bytes*SamplingRate*8/864)/1000/1000/1000 AS Gbps
+ toStartOfInterval(TimeReceived + INTERVAL 144 second, INTERVAL 432 second) - INTERVAL 144 second AS Time,
+ SUM(Bytes*SamplingRate*8/432)/1000/1000/1000 AS Gbps
 FROM flows
 WHERE TimeReceived BETWEEN toDateTime('2009-11-10 23:00:00', 'UTC') AND toDateTime('2009-11-11 23:00:00', 'UTC')
 AND InIfBoundary = 'external'
@@ -241,13 +241,13 @@ GROUP BY Time
 ORDER BY Time WITH FILL
  FROM toDateTime('2009-11-10 23:00:00', 'UTC')
  TO toDateTime('2009-11-11 23:00:00', 'UTC') + INTERVAL 1 second
- STEP 864`)).
+ STEP 432`)).
 		SetArg(1, expected).
 		Return(nil)
 
 	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
-			URL: "/api/v0/console/widget/graph?points=100",
+			URL: "/api/v0/console/widget/graph",
 			JSONOutput: gin.H{
 				"data": []gin.H{
 					{"t": "2009-11-10T23:00:00Z", "gbps": 25.3},

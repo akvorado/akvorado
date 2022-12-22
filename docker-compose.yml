@@ -56,6 +56,12 @@ services:
       - traefik.http.routers.kafka-ui.entrypoints=private
       - traefik.http.routers.kafka-ui.rule=PathPrefix(`/kafka-ui`)
 
+  redis:
+    image: bitnami/redis:7.0
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    restart: unless-stopped
+
   # If you need to build from the source, uncomment the build option
   # here and use `docker-compose build akvorado-service`.
   akvorado-service: &akvorado-image
@@ -77,6 +83,8 @@ services:
   akvorado-console:
     <<: *akvorado-image
     restart: unless-stopped
+    depends_on:
+      - redis
     command: console http://akvorado-orchestrator:8080
     volumes:
       - akvorado-console-db:/run/akvorado

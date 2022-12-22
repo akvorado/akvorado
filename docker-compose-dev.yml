@@ -22,6 +22,13 @@ services:
     ports:
       - 127.0.0.1:9092:9093/tcp
 
+  redis:
+    image: bitnami/redis:7.0
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    ports:
+      - 127.0.0.1:6379:6379/tcp
+
   clickhouse:
     image: clickhouse/clickhouse-server:22.8
     ports:

@@ -16,6 +16,14 @@ identified with a specific icon:
 There is a schema update in this version: you also have to restart ClickHouse
 after upgrading for it to pick the new schema.
 
+This version also introduces a cache for some HTTP requests, notably those to
+plot the graphs in the “Visualize” tab. The default backend is in-memory,
+however the shipped `akvorado.yaml` configuration file is using Redis instead.
+The `docker-compose` setup has also been updated to start a Redis container for
+this usage. Use of Redis is preferred but on upgrade, you need to enable it
+explicitely by adding `console.http.cache` in your configuration.
+
+- ✨ *console*: cache some costly requests to the backend
 - ✨ *console*: add `SrcNetPrefix` and `DstNetPrefix` (as a dimension and a filter attribute)
 - ✨ *inlet*: add `inlet.flow.inputs.use-src-addr-for-exporter-addr` to override exporter address
 - 🌱 *console*: add `limit` and `graph-type` to `console.default-visualize-options` 

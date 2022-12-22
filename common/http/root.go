@@ -12,6 +12,7 @@ import (
 	"net/http/pprof"
 	"time"
 
+	"github.com/chenyahui/gin-cache/persist"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -30,16 +31,12 @@ type Component struct {
 	config Configuration
 
 	mux     *http.ServeMux
-	metrics struct {
-		inflights reporter.Gauge
-		requests  *reporter.CounterVec
-		durations *reporter.HistogramVec
-		sizes     *reporter.HistogramVec
-	}
+	metrics metrics
 	address net.Addr
 
 	// GinRouter is the router exposed for /api
-	GinRouter *gin.Engine
+	GinRouter  *gin.Engine
+	cacheStore persist.CacheStore
 }
 
 // Dependencies define the dependencies of the HTTP component.
@@ -49,6 +46,7 @@ type Dependencies struct {
 
 // New creates a new HTTP component.
 func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
+	var err error
 	c := Component{
 		r:      r,
 		d:      &dependencies,
@@ -57,35 +55,12 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		mux:       http.NewServeMux(),
 		GinRouter: gin.New(),
 	}
+	c.initMetrics()
 	c.d.Daemon.Track(&c.t, "common/http")
-
-	c.metrics.inflights = c.r.Gauge(
-		reporter.GaugeOpts{
-			Name: "inflight_requests",
-			Help: "Number of requests currently being served by the HTTP server.",
-		},
-	)
-	c.metrics.requests = c.r.CounterVec(
-		reporter.CounterOpts{
-			Name: "requests_total",
-			Help: "Number of requests handled by an handler.",
-		}, []string{"handler", "code", "method"},
-	)
-	c.metrics.durations = c.r.HistogramVec(
-		reporter.HistogramOpts{
-			Name:    "request_duration_seconds",
-			Help:    "Latencies for served requests.",
-			Buckets: []float64{.25, .5, 1, 2.5, 5, 10},
-		}, []string{"handler", "method"},
-	)
-	c.metrics.sizes = c.r.HistogramVec(
-		reporter.HistogramOpts{
-			Name:    "response_size_bytes",
-			Help:    "Response sizes for requests.",
-			Buckets: []float64{200, 500, 1000, 1500, 5000},
-		}, []string{"handler", "method"},
-	)
-
+	c.cacheStore, err = configuration.Cache.Config.New()
+	if err != nil {
+		return nil, err
+	}
 	c.GinRouter.Use(gin.Recovery())
 	c.AddHandler("/api/", c.GinRouter)
 	if configuration.Profiler {

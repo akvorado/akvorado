@@ -347,18 +347,30 @@ SNMPv2.
 ### HTTP
 
 The builtin HTTP server serves various pages. Its configuration
-supports the `listen` key to specify the address and port to listen.
-For example:
+supports the following keys:
+
+- `listen` defines the address and port to listen to.
+- `profiler` enables [Go profiler HTTP
+  interface](https://pkg.go.dev/net/http/pprof). Check the [troubleshooting
+  section]( 05-troubleshooting.html#profiling) for details.
+- `cache` defines the cache backend to use for some HTTP requests. It accepts a
+  `type` key which can be either `memory` (the default value) or `redis`. When
+  using the Redis backend, the following additional keys are also accepted:
+  `protocol` (`tcp` or `unix`), `server` (host and port), `username`,
+  `password`, and `db` (an integer to specify which database to use).
 
 ```yaml
 http:
   listen: 0.0.0.0:8000
+  cache:
+    type: redis
+    username: akvorado
+    password: akvorado
 ```
 
-It also supports the `profiler` key. When set to `true`, various
-[profiling data](https://pkg.go.dev/net/http/pprof) are made available
-on the `/debug/pprof/` endpoint. This is useful if you wish to
-optimize CPU or memory usage of one of the components.
+Note that the cache backend is currently only useful with the console. You need
+to define the cache in the `http` key of the `console` section for it to be
+useful (not in the `inlet` section).
 
 ### Reporting
 
