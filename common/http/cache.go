@@ -5,7 +5,7 @@ package http
 
 import (
 	"bytes"
-	"hash/fnv"
+	"crypto"
 	"io/ioutil"
 	"time"
 
@@ -35,7 +35,7 @@ func (c *Component) CacheByRequestBody(expire time.Duration) gin.HandlerFunc {
 		if err != nil {
 			return false, cache.Strategy{}
 		}
-		h := fnv.New128()
+		h := crypto.SHA256.New()
 		bodyHash := string(h.Sum(requestBody))
 		return true, cache.Strategy{
 			CacheKey: bodyHash,
