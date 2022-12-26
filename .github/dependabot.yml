@@ -18,6 +18,7 @@ updates:
       interval: weekly
     labels:
       - dependencies
+    open-pull-requests-limit: 10
   - package-ecosystem: gomod
     directory: /
     commit-message:
