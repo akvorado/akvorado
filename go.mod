@@ -17,7 +17,7 @@ require (
 	github.com/gin-gonic/gin v1.8.2
 	github.com/glebarez/sqlite v1.6.0
 	github.com/go-playground/validator/v10 v10.11.1
-	github.com/go-redis/redis/v8 v8.11.4
+	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang/mock v1.6.0
 	github.com/golang/protobuf v1.5.2
 	github.com/google/gopacket v1.1.19
