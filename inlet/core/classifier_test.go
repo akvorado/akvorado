@@ -129,6 +129,7 @@ func TestInterfaceClassifier(t *testing.T) {
 		Program                string
 		ExporterInfo           exporterInfo
 		InterfaceInfo          interfaceInfo
+		ExpectedInterfaceInfo  interfaceInfo
 		ExpectedClassification interfaceClassification
 		ExpectedErr            bool
 	}{
@@ -164,10 +165,31 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")
 				Description: "Transit: Telia (GWDM something something)",
 				Speed:       1000,
 			},
+			ExpectedInterfaceInfo: interfaceInfo{
+				Name:        "Gi0/0/0",
+				Description: "Transit: Telia (GWDM something something)",
+				Speed:       1000,
+			},
 			ExpectedClassification: interfaceClassification{
 				Connectivity: "transit",
 				Provider:     "telia",
 				Boundary:     externalBoundary,
+			},
+		},
+		{
+			Description: "setname test",
+			Program: `
+			Interface.VLAN != "0" && SetName(Interface.Name + "." + Interface.VLAN)
+            `,
+			InterfaceInfo: interfaceInfo{
+				Name:  "Gi0/0/0",
+				Speed: 1000,
+				VLAN:  "44",
+			},
+			ExpectedInterfaceInfo: interfaceInfo{
+				Name:  "Gi0/0/0.44",
+				Speed: 1000,
+				VLAN:  "44",
 			},
 		},
 	}
@@ -182,12 +204,16 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")
 				return
 			}
 			var gotClassification interfaceClassification
-			err = scr.exec(tc.ExporterInfo, tc.InterfaceInfo, &gotClassification)
+			gotInterfaceInfo := tc.InterfaceInfo
+			err = scr.exec(tc.ExporterInfo, &gotInterfaceInfo, &gotClassification)
 			if !tc.ExpectedErr && err != nil {
 				t.Fatalf("exec(%q) error:\n%+v", tc.Program, err)
 			}
 			if tc.ExpectedErr && err == nil {
 				t.Fatalf("exec(%q) no error", tc.Program)
+			}
+			if diff := helpers.Diff(gotInterfaceInfo, tc.ExpectedInterfaceInfo); diff != "" {
+				t.Fatalf("exec(%q) (-got, +want):\n%s", tc.Program, diff)
 			}
 			if diff := helpers.Diff(gotClassification, tc.ExpectedClassification); diff != "" {
 				t.Fatalf("exec(%q) (-got, +want):\n%s", tc.Program, diff)

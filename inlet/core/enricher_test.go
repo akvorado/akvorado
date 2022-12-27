@@ -335,6 +335,48 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 					ASN: []uint32{64200}, LocalData1: []uint32{2}, LocalData2: []uint32{3},
 				},
 			},
+		}, {
+			Name: "classify depending on description and vlanid",
+			Configuration: gin.H{
+				"interfaceclassifiers": []string{
+					`Interface.Description matches "^Interface 444" && (
+						Interface.VLAN == "10" && SetDescription("IX: Amazon") ||
+						Interface.VLAN == "60" && SetDescription("IX: Netflix") ||
+						Interface.VLAN == "901" && SetDescription("Transit: Vocus") ||
+						SetDescription("Customer: vlan" + Interface.VLAN))`,
+					`ClassifyProviderRegex(Interface.Description, "^IX: (.+)$", "$1") && ClassifyExternal()`,
+					`ClassifyConnectivityRegex(Interface.Description, "^Customer: (.+)$", "$1") && ClassifyExternal()`,
+					`ClassifyInternal() && ClassifyConnectivity("core")`,
+				},
+			},
+			InputFlow: func() *flow.Message {
+				return &flow.Message{
+					SamplingRate:    1000,
+					ExporterAddress: net.ParseIP("192.0.2.142"),
+					InIf:            444, // Special for our regex
+					OutIf:           200,
+					VlanID:          60,
+				}
+			},
+			OutputFlow: &flow.Message{
+				SamplingRate:      1000,
+				ExporterAddress:   net.ParseIP("192.0.2.142"),
+				ExporterName:      "192_0_2_142",
+				InIf:              444,
+				OutIf:             200,
+				InIfName:          "Gi0/0/444",
+				OutIfName:         "Gi0/0/200",
+				VlanID:            60,
+				InIfDescription:   "IX: Netflix",
+				OutIfDescription:  "Interface 200",
+				InIfSpeed:         1000,
+				OutIfSpeed:        1000,
+				InIfConnectivity:  "core",
+				OutIfConnectivity: "core",
+				InIfProvider:      "netflix",
+				InIfBoundary:      1, // external
+				OutIfBoundary:     2, // internal
+			},
 		},
 	}
 	for _, tc := range cases {

@@ -327,3 +327,186 @@ func TestDecodeInterface(t *testing.T) {
 
 	})
 }
+
+func TestDecodeInterfaceVLANs(t *testing.T) {
+	r := reporter.NewMock(t)
+	sdecoder := New(r)
+
+	// Send data
+	data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-vlan-interfaces.pcap"))
+	got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+	if got == nil {
+		t.Fatalf("Decode() error on data")
+	}
+	expectedFlows := []*decoder.FlowMessage{
+		{
+			SequenceNum:     204609,
+			SamplingRate:    1024,
+			TimeFlowStart:   18446744011573954816,
+			TimeFlowEnd:     18446744011573954816,
+			Bytes:           1502,
+			Packets:         1,
+			Etype:           0x800,
+			Proto:           6,
+			SrcPort:         443,
+			DstPort:         49683,
+			InIf:            13,
+			OutIf:           50,
+			IPTTL:           63,
+			TCPFlags:        16,
+			FragmentId:      16466,
+			FragmentOffset:  16384,
+			VlanID:          131,
+			SrcAddr:         net.ParseIP("23.62.157.110").To16(),
+			DstAddr:         net.ParseIP("103.167.249.200").To16(),
+			ExporterAddress: net.ParseIP("10.88.11.251").To16(),
+		}, {
+			SequenceNum:     204609,
+			SamplingRate:    1024,
+			TimeFlowStart:   18446744011573954816,
+			TimeFlowEnd:     18446744011573954816,
+			Bytes:           1492,
+			Packets:         1,
+			Etype:           0x800,
+			Proto:           6,
+			SrcPort:         443,
+			DstPort:         60081,
+			InIf:            19,
+			OutIf:           49,
+			IPTTL:           63,
+			TCPFlags:        16,
+			FragmentId:      36446,
+			FragmentOffset:  16384,
+			VlanID:          890,
+			SrcAddr:         net.ParseIP("23.45.168.73").To16(),
+			DstAddr:         net.ParseIP("103.167.249.36").To16(),
+			ExporterAddress: net.ParseIP("10.88.11.251").To16(),
+		}, {
+			SequenceNum:     204609,
+			SamplingRate:    1024,
+			TimeFlowStart:   18446744011573954816,
+			TimeFlowEnd:     18446744011573954816,
+			Bytes:           1522,
+			Packets:         1,
+			Etype:           0x800,
+			Proto:           6,
+			SrcPort:         80,
+			DstPort:         59230,
+			InIf:            19,
+			OutIf:           49,
+			IPTTL:           62,
+			TCPFlags:        16,
+			FragmentId:      14683,
+			FragmentOffset:  16384,
+			VlanID:          890,
+			SrcAddr:         net.ParseIP("203.134.13.48").To16(),
+			DstAddr:         net.ParseIP("111.235.140.4").To16(),
+			ExporterAddress: net.ParseIP("10.88.11.251").To16(),
+		}, {
+			SequenceNum:     204609,
+			SamplingRate:    1024,
+			TimeFlowStart:   18446744011573954816,
+			TimeFlowEnd:     18446744011573954816,
+			Bytes:           74,
+			Packets:         1,
+			Etype:           0x800,
+			Proto:           6,
+			SrcPort:         60350,
+			DstPort:         80,
+			InIf:            21,
+			OutIf:           51,
+			IPTTL:           62,
+			IPTos:           160,
+			TCPFlags:        16,
+			FragmentId:      7225,
+			FragmentOffset:  16384,
+			VlanID:          3016,
+			SrcAddr:         net.ParseIP("103.126.144.78").To16(),
+			DstAddr:         net.ParseIP("203.134.13.7").To16(),
+			ExporterAddress: net.ParseIP("10.88.11.251").To16(),
+		}, {
+			SequenceNum:     204609,
+			SamplingRate:    1024,
+			TimeFlowStart:   18446744011573954816,
+			TimeFlowEnd:     18446744011573954816,
+			Bytes:           1522,
+			Packets:         1,
+			Etype:           0x800,
+			Proto:           6,
+			SrcPort:         443,
+			DstPort:         49410,
+			InIf:            12,
+			OutIf:           49,
+			IPTTL:           50,
+			TCPFlags:        16,
+			FragmentId:      16486,
+			FragmentOffset:  16384,
+			VlanID:          120,
+			SrcAddr:         net.ParseIP("185.180.14.234").To16(),
+			DstAddr:         net.ParseIP("111.235.140.236").To16(),
+			ExporterAddress: net.ParseIP("10.88.11.251").To16(),
+		}, {
+			SequenceNum:     204609,
+			SamplingRate:    1024,
+			TimeFlowStart:   18446744011573954816,
+			TimeFlowEnd:     18446744011573954816,
+			Bytes:           1522,
+			Packets:         1,
+			Etype:           0x800,
+			Proto:           6,
+			SrcPort:         80,
+			DstPort:         59230,
+			InIf:            19,
+			OutIf:           49,
+			IPTTL:           62,
+			TCPFlags:        16,
+			FragmentId:      14734,
+			FragmentOffset:  16384,
+			VlanID:          890,
+			SrcAddr:         net.ParseIP("203.134.13.48").To16(),
+			DstAddr:         net.ParseIP("111.235.140.4").To16(),
+			ExporterAddress: net.ParseIP("10.88.11.251").To16(),
+		}, {
+			SequenceNum:     204609,
+			SamplingRate:    1024,
+			TimeFlowStart:   18446744011573954816,
+			TimeFlowEnd:     18446744011573954816,
+			Bytes:           1502,
+			Packets:         1,
+			Etype:           0x800,
+			Proto:           6,
+			SrcPort:         80,
+			DstPort:         24604,
+			InIf:            19,
+			OutIf:           49,
+			IPTTL:           63,
+			TCPFlags:        24,
+			FragmentId:      25972,
+			FragmentOffset:  16384,
+			VlanID:          890,
+			SrcAddr:         net.ParseIP("23.45.168.201").To16(),
+			DstAddr:         net.ParseIP("123.100.144.100").To16(),
+			ExporterAddress: net.ParseIP("10.88.11.251").To16(),
+		},
+	}
+	for _, f := range got {
+		f.TimeReceived = 0
+	}
+
+	if diff := helpers.Diff(got, expectedFlows); diff != "" {
+		t.Fatalf("Decode() (-got, +want):\n%s", diff)
+	}
+	gotMetrics := r.GetMetrics(
+		"akvorado_inlet_flow_decoder_sflow_",
+		"count",
+		"sample_",
+	)
+	expectedMetrics := map[string]string{
+		`count{agent="10.88.11.251",exporter="127.0.0.1",version="5"}`:                                "1",
+		`sample_records_sum{agent="10.88.11.251",exporter="127.0.0.1",type="FlowSample",version="5"}`: "7",
+		`sample_sum{agent="10.88.11.251",exporter="127.0.0.1",type="FlowSample",version="5"}`:         "7",
+	}
+	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+		t.Fatalf("Metrics after data (-got, +want):\n%s", diff)
+	}
+}

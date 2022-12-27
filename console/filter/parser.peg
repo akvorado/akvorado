@@ -2,6 +2,8 @@
   // SPDX-FileCopyrightText: 2022 Free Mobile
   // SPDX-License-Identifier: AGPL-3.0-only
 
+  //TODO something in here?
+
   package filter
 
   import (
@@ -48,6 +50,7 @@ ConditionExpr "conditional" ←
   / ConditionETypeExpr
   / ConditionProtoExpr
   / ConditionPacketSizeExpr
+  / ConditionVlanIDExpr
 
 ColumnIP ←
    "ExporterAddress"i #{ return c.metaColumn("ExporterAddress") } { return c.acceptColumn() }
@@ -193,6 +196,10 @@ ConditionProtoStrExpr "condition on protocol as string" ←
 ConditionPacketSizeExpr "condition on packet size" ←
  "PacketSize"i _ operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned16 {
   return fmt.Sprintf("Bytes/Packets %s %s", toString(operator), toString(value)), nil
+}
+ConditionVlanIDExpr "condition on vlan id" ←
+ "VlanID"i _ operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned16 {
+  return fmt.Sprintf("VlanID %s %s", toString(operator), toString(value)), nil
 }
 
 IP "IP address" ← [0-9A-Fa-f:.]+ !IdentStart {

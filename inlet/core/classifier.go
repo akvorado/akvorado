@@ -40,6 +40,7 @@ type exporterClassification struct {
 	Tenant string
 }
 
+type setStringFunc func(string) bool
 type classifyStringFunc func(string) bool
 type classifyStringRegexFunc func(string, string, string) (bool, error)
 
@@ -125,6 +126,10 @@ type interfaceInfo struct {
 	Name        string
 	Description string
 	Speed       uint32
+	// VLAN is a string here because antonmedv/expr can't cast int to string
+	// Quoting the VLAN in the expr is more friendly than using an Int()
+	// helper when concatenating with a string
+	VLAN string
 }
 
 // interfaceBoundary tells if an interface is internal or external
@@ -146,19 +151,23 @@ type interfaceClassification struct {
 // interfaceClassifierEnvironment defines the environment used by the interface classifier
 type interfaceClassifierEnvironment struct {
 	Exporter                  exporterInfo
-	Interface                 interfaceInfo
+	Interface                 *interfaceInfo
 	ClassifyConnectivity      classifyStringFunc
 	ClassifyConnectivityRegex classifyStringRegexFunc
 	ClassifyProvider          classifyStringFunc
 	ClassifyProviderRegex     classifyStringRegexFunc
 	ClassifyExternal          func() bool
 	ClassifyInternal          func() bool
+	SetDescription            setStringFunc
+	SetName                   setStringFunc
 }
 
-// exec executes the exporter classifier with the provided interface.
-func (scr *InterfaceClassifierRule) exec(si exporterInfo, ii interfaceInfo, ic *interfaceClassification) error {
+// exec executes the interface classifier with the provided interface.
+func (scr *InterfaceClassifierRule) exec(si exporterInfo, ii *interfaceInfo, ic *interfaceClassification) error {
 	classifyConnectivity := classifyString(&ic.Connectivity)
 	classifyProvider := classifyString(&ic.Provider)
+	setDescription := setString(&ii.Description)
+	setName := setString(&ii.Name)
 	classifyExternal := func() bool {
 		if ic.Boundary == undefinedBoundary {
 			ic.Boundary = externalBoundary
@@ -180,6 +189,8 @@ func (scr *InterfaceClassifierRule) exec(si exporterInfo, ii interfaceInfo, ic *
 		ClassifyInternal:          classifyInternal,
 		ClassifyConnectivityRegex: withRegex(classifyConnectivity),
 		ClassifyProviderRegex:     withRegex(classifyProvider),
+		SetDescription:            setDescription,
+		SetName:                   setName,
 	}
 	if _, err := expr.Run(scr.program, env); err != nil {
 		return fmt.Errorf("unable to execute classifier %q: %w", scr, err)
@@ -258,6 +269,14 @@ func classifyString(output *string) func(string) bool {
 		if *output == "" {
 			*output = normalize(input)
 		}
+		return true
+	}
+}
+
+// setString is a helper to update the value of a string
+func setString(output *string) func(string) bool {
+	return func(input string) bool {
+		*output = input
 		return true
 	}
 }

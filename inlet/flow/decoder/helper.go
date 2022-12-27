@@ -45,6 +45,9 @@ func ConvertGoflowToFlowMessage(input *goflowmessage.FlowMessage) *FlowMessage {
 		SrcNetMask:       input.SrcNet,
 		DstNetMask:       input.DstNet,
 		NextHopAS:        input.NextHopAS,
+		// Note casing of ID in VlanID changes here to make
+		// golint happy wherever we use it in future
+		VlanID: input.VlanId,
 	}
 	if !net.IP(input.BgpNextHop).IsUnspecified() {
 		result.NextHop = ipCopy(input.BgpNextHop)

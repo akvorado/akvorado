@@ -4,6 +4,7 @@
 package core
 
 import (
+	"fmt"
 	"net"
 	"net/netip"
 	"strconv"
@@ -86,10 +87,10 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	// Classification
 	c.classifyExporter(exporterStr, flow)
 	c.classifyInterface(exporterStr, flow,
-		flow.OutIfName, flow.OutIfDescription, flow.OutIfSpeed,
+		&flow.OutIfName, &flow.OutIfDescription, flow.OutIfSpeed,
 		&flow.OutIfConnectivity, &flow.OutIfProvider, &flow.OutIfBoundary)
 	c.classifyInterface(exporterStr, flow,
-		flow.InIfName, flow.InIfDescription, flow.InIfSpeed,
+		&flow.InIfName, &flow.InIfDescription, flow.InIfSpeed,
 		&flow.InIfConnectivity, &flow.InIfProvider, &flow.InIfBoundary)
 
 	sourceBMP := c.d.BMP.Lookup(net.IP(flow.SrcAddr), nil)
@@ -186,13 +187,13 @@ func (c *Component) classifyExporter(ip string, flow *flow.Message) {
 }
 
 func (c *Component) classifyInterface(ip string, fl *flow.Message,
-	ifName, ifDescription string, ifSpeed uint32,
+	ifName, ifDescription *string, ifSpeed uint32,
 	connectivity, provider *string, boundary *decoder.FlowMessage_Boundary) {
 	if len(c.config.InterfaceClassifiers) == 0 {
 		return
 	}
 	si := exporterInfo{IP: ip, Name: fl.ExporterName}
-	ii := interfaceInfo{Name: ifName, Description: ifDescription, Speed: ifSpeed}
+	ii := interfaceInfo{Name: *ifName, Description: *ifDescription, Speed: ifSpeed, VLAN: fmt.Sprintf("%d", fl.VlanID)}
 	key := exporterAndInterfaceInfo{
 		Exporter:  si,
 		Interface: ii,
@@ -206,13 +207,13 @@ func (c *Component) classifyInterface(ip string, fl *flow.Message,
 
 	var classification interfaceClassification
 	for idx, rule := range c.config.InterfaceClassifiers {
-		err := rule.exec(si, ii, &classification)
+		err := rule.exec(si, &ii, &classification)
 		if err != nil {
 			c.classifierErrLogger.Err(err).
 				Str("type", "interface").
 				Int("index", idx).
 				Str("exporter", fl.ExporterName).
-				Str("interface", ifName).
+				Str("interface", *ifName).
 				Msg("error executing classifier")
 			c.metrics.classifierErrors.WithLabelValues("interface", strconv.Itoa(idx)).Inc()
 			c.classifierInterfaceCache.Set(key, classification)
@@ -230,6 +231,8 @@ func (c *Component) classifyInterface(ip string, fl *flow.Message,
 	*connectivity = classification.Connectivity
 	*provider = classification.Provider
 	*boundary = convertBoundaryToProto(classification.Boundary)
+	*ifName = ii.Name
+	*ifDescription = ii.Description
 }
 
 func convertBoundaryToProto(from interfaceBoundary) decoder.FlowMessage_Boundary {

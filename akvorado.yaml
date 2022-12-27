@@ -91,6 +91,15 @@ inlet:
       - ClassifyTenant("acme")
       - ClassifyRole("edge")
     interface-classifiers:
+      # This is an example overriding SNMP interface names and descriptions
+      # prior to classification.
+      - |
+        Interface.Description matches "^Trunk: " && (
+        Interface.VLAN == "10" && SetDescription("IX: Amazon") ||
+        Interface.VLAN == "60" && SetDescription("IX: Netflix") ||
+        Interface.VLAN == "901" && SetDescription("Transit: Vocus") ||
+        SetDescription("Customer: vlan" + Interface.VLAN))
+      - Interface.VLAN != "0" && SetName(Interface.Name + "." + Interface.VLAN)
       # This is an example. This must be customized depending on the
       # descriptions of your interfaces. In the following, we assume
       # external interfaces are named "Transit: Cogent" Or "IX:
