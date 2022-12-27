@@ -43,7 +43,7 @@ services:
       interval: 20s
       timeout: 10s
       retries: 3
-      test: ["CMD", "kafka-topics.sh", "--list", "--bootstrap-server", "zookeeper:9092"]
+      test: ["CMD", "kafka-topics.sh", "--list", "--bootstrap-server", "kafka:9092"]
   kafka-ui:
     image: provectuslabs/kafka-ui:v0.4.0
     restart: unless-stopped
