@@ -25,10 +25,11 @@ var RootCmd = &cobra.Command{
 		} else {
 			log.Logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
 		}
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		logLevel := zerolog.InfoLevel
 		if debug {
-			zerolog.SetGlobalLevel(zerolog.DebugLevel)
+			logLevel = zerolog.DebugLevel
 		}
+		zerolog.SetGlobalLevel(logLevel)
 	},
 	SilenceErrors: true,
 	SilenceUsage:  true,
