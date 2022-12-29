@@ -109,6 +109,8 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*decoder.FlowMessage {
 	version := "5"
 	samples := msgDecConv.Samples
 	nd.metrics.stats.WithLabelValues(key, agent, version).Inc()
+	hasFlowSamples := false
+	hasExpandedFlowSamples := false
 	for _, s := range samples {
 		switch sConv := s.(type) {
 		case sflow.FlowSample:
@@ -116,17 +118,29 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*decoder.FlowMessage {
 				Inc()
 			nd.metrics.sampleRecordsStatsSum.WithLabelValues(key, agent, version, "FlowSample").
 				Add(float64(len(sConv.Records)))
-		case sflow.CounterSample:
-			nd.metrics.sampleStatsSum.WithLabelValues(key, agent, version, "CounterSample").
-				Inc()
-			nd.metrics.sampleRecordsStatsSum.WithLabelValues(key, agent, version, "CounterSample").
-				Add(float64(len(sConv.Records)))
+			hasFlowSamples = true
 		case sflow.ExpandedFlowSample:
 			nd.metrics.sampleStatsSum.WithLabelValues(key, agent, version, "ExpandedFlowSample").
 				Inc()
 			nd.metrics.sampleRecordsStatsSum.WithLabelValues(key, agent, version, "ExpandedFlowSample").
 				Add(float64(len(sConv.Records)))
+			hasExpandedFlowSamples = true
+		case sflow.CounterSample:
+			nd.metrics.sampleStatsSum.WithLabelValues(key, agent, version, "CounterSample").
+				Inc()
+			nd.metrics.sampleRecordsStatsSum.WithLabelValues(key, agent, version, "CounterSample").
+				Add(float64(len(sConv.Records)))
 		}
+	}
+	if hasFlowSamples && hasExpandedFlowSamples {
+		// We assume routers are either exporting one or the others. The
+		// alternative would be to keep count of the received flows and their
+		// types into a bitset. However, this would rely on the fact that
+		// GoFlow2 keep everything in order and therefore may not be
+		// future-proof. Better have people not have flows at all than having
+		// something wrong.
+		nd.metrics.errors.WithLabelValues(key, "sflow packet has both regular and expanded flows").Inc()
+		return nil
 	}
 
 	flowMessageSet, _ := producer.ProcessMessageSFlow(msgDec)
@@ -144,10 +158,10 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*decoder.FlowMessage {
 		}
 		if fmsg.OutIf == interfaceLocal {
 			results[idx].OutIf = 0
-		} else if fmsg.OutIf&interfaceOutMask == interfaceOutDiscard {
+		} else if hasFlowSamples && fmsg.OutIf&interfaceOutMask == interfaceOutDiscard {
 			results[idx].OutIf = 0
 			results[idx].ForwardingStatus = 128
-		} else if fmsg.OutIf&interfaceOutMask == interfaceOutMultiple {
+		} else if hasFlowSamples && fmsg.OutIf&interfaceOutMask == interfaceOutMultiple {
 			results[idx].OutIf = 0
 		}
 	}

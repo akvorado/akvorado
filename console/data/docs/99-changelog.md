@@ -13,6 +13,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 🩹 *inlet*: handle correctly interfaces with high indexes for sFlow
 - 🩹 *docker*: fix Kafka healthcheck
 
 ## 1.6.4 - 2022-12-22

@@ -279,4 +279,51 @@ func TestDecodeInterface(t *testing.T) {
 			t.Fatalf("Decode() (-got, +want):\n%s", diff)
 		}
 	})
+
+	t.Run("expanded flow sample", func(t *testing.T) {
+		// Send data
+		data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-sflow-expanded-sample.pcap"))
+		got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+		if got == nil {
+			t.Fatalf("Decode() error on data")
+		}
+		expectedFlows := []*decoder.FlowMessage{
+			{
+				SequenceNum:     115694180,
+				SamplingRate:    1000,
+				TimeFlowStart:   18446744011573954816,
+				TimeFlowEnd:     18446744011573954816,
+				Bytes:           126,
+				Packets:         1,
+				Etype:           2048,
+				Proto:           6,
+				SrcPort:         22,
+				DstPort:         52237,
+				InIf:            29001,
+				OutIf:           1285816721,
+				IPTos:           8,
+				IPTTL:           61,
+				TCPFlags:        24,
+				FragmentId:      43854,
+				FragmentOffset:  16384,
+				SrcNetMask:      32,
+				DstNetMask:      22,
+				SrcAddr:         net.ParseIP("52.52.52.52").To16(),
+				DstAddr:         net.ParseIP("53.53.53.53").To16(),
+				ExporterAddress: net.ParseIP("49.49.49.49").To16(),
+				NextHop:         net.ParseIP("54.54.54.54").To16(),
+				NextHopAS:       8218,
+				SrcAS:           203476,
+				DstAS:           203361,
+			},
+		}
+		for _, f := range got {
+			f.TimeReceived = 0
+		}
+
+		if diff := helpers.Diff(got, expectedFlows); diff != "" {
+			t.Fatalf("Decode() (-got, +want):\n%s", diff)
+		}
+
+	})
 }
