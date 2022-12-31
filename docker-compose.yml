@@ -62,10 +62,7 @@ services:
       - ALLOW_EMPTY_PASSWORD=yes
     restart: unless-stopped
 
-  # If you need to build from the source, uncomment the build option
-  # here and use `docker-compose build akvorado-service`.
   akvorado-service: &akvorado-image
-    # build: {context: .}
     image: ghcr.io/akvorado/akvorado:latest
     command: version
 

@@ -22,6 +22,10 @@ using containers. If you want to use `docker-compose`, have a look at the [quick
 start procedure](00-intro#quick-start). This documentation assumes you are
 running the `docker-compose` setup.
 
+If you want to compile the Docker image yourself, you can use `docker build -t
+akvorado:latest .`. Then, in `docker-compose.yml`, replace
+`ghcr.io/akvorado/akvorado:latest` by `akvorado:latest`.
+
 ## Pre-built binary
 
 The second option is to get a pre-built binary from the [release page
