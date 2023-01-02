@@ -425,7 +425,12 @@ table:
 SELECT database, name, formatReadableSize(total_bytes)
 FROM system.tables
 WHERE total_bytes > 0
+ORDER BY total_bytes DESC
 ```
+
+If you see tables suffixed by `_0` or `_1`, they can be deleted: they are
+created when ClickHouse is updated with the data from the tables before the
+upgrade.
 
 ### Space usage
 
