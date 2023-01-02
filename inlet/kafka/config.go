@@ -4,7 +4,6 @@
 package kafka
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -46,19 +45,7 @@ type CompressionCodec sarama.CompressionCodec
 
 // UnmarshalText produces a compression codec
 func (cc *CompressionCodec) UnmarshalText(text []byte) error {
-	codecs := map[string]sarama.CompressionCodec{
-		"none":   sarama.CompressionNone,
-		"gzip":   sarama.CompressionGZIP,
-		"snappy": sarama.CompressionSnappy,
-		"lz4":    sarama.CompressionLZ4,
-		"zstd":   sarama.CompressionZSTD,
-	}
-	codec, ok := codecs[string(text)]
-	if !ok {
-		return fmt.Errorf("cannot parse %q as a compression codec", string(text))
-	}
-	*cc = CompressionCodec(codec)
-	return nil
+	return (*sarama.CompressionCodec)(cc).UnmarshalText(text)
 }
 
 // String turns a compression codec into a string
