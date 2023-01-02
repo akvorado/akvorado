@@ -58,116 +58,54 @@ func (c *Component) migrateDatabase() error {
 		c.config.Kafka.Consumers = int(threads)
 	}
 
-	steps := []migrationStepWithDescription{
-		{"create protocols dictionary", c.migrationStepCreateProtocolsDictionary},
-		{"create asns dictionary", c.migrationStepCreateASNsDictionary},
-		{"create networks dictionary", c.migrationStepCreateNetworksDictionary},
+	// Create dictionaries
+	err := c.wrapMigrations(
+		func() error {
+			return c.createDictionary(ctx, "asns", "hashed",
+				"`asn` UInt32 INJECTIVE, `name` String", "asn")
+		}, func() error {
+			return c.createDictionary(ctx, "protocols", "hashed",
+				"`proto` UInt8 INJECTIVE, `name` String, `description` String", "proto")
+		}, func() error {
+			return c.createDictionary(ctx, "networks", "ip_trie",
+				"`network` String, `name` String, `role` String, `site` String, `region` String, `tenant` String",
+				"network")
+		})
+	if err != nil {
+		return err
 	}
+
+	// Create the various non-raw flow tables
 	for _, resolution := range c.config.Resolutions {
-		steps = append(steps, []migrationStepWithDescription{
-			{
-				fmt.Sprintf("create flows table with resolution %s", resolution.Interval),
-				c.migrationsStepCreateFlowsTable(resolution),
-			}, {
-				fmt.Sprintf("add PacketSizeBucket to flows table with resolution %s", resolution.Interval),
-				c.migrationStepAddPacketSizeBucketColumn(resolution),
-			}, {
-				fmt.Sprintf("add SrcNetName/DstNetName to flows table with resolution %s", resolution.Interval),
-				c.migrationStepAddSrcNetNameDstNetNameColumns(resolution),
-			}, {
-				fmt.Sprintf("add SrcNet*/DstNet* to flows table with resolution %s", resolution.Interval),
-				c.migrationStepAddSrcNetNameDstNetOthersColumns(resolution),
-			}, {
-				fmt.Sprintf("add Exporter* to flows table with resolution %s", resolution.Interval),
-				c.migrationStepAddExporterColumns(resolution),
-			}, {
-				fmt.Sprintf("add SrcCountry/DstCountry to ORDER BY for resolution %s", resolution.Interval),
-				c.migrationStepFixOrderByCountry(resolution),
-			}, {
-				fmt.Sprintf("add DstASPath columns to flows table with resolution %s", resolution.Interval),
-				c.migrationStepAddDstASPathColumns(resolution),
-			},
-		}...)
-		if resolution.Interval == 0 {
-			steps = append(steps, migrationStepWithDescription{
-				"add DstCommunities column to flows table",
-				c.migrationStepAddDstCommunitiesColumn,
-			}, migrationStepWithDescription{
-				"add DstLargeCommunities column to flows table",
-				c.migrationStepAddDstLargeCommunitiesColumn,
-			}, migrationStepWithDescription{
-				"add SrcNetMask/DstNetMask column to flows table",
-				c.migrationStepAddSrcNetMaskDstNetMaskColumns,
-			}, migrationStepWithDescription{
-				"add SrcNetPrefix/DstNetPrefix aliases to flows table",
-				c.migrationStepAddSrcNetPrefixDstNetPrefixColumn,
+		err := c.wrapMigrations(
+			func() error {
+				return c.createOrUpdateFlowsTable(ctx, resolution)
+			}, func() error {
+				return c.createFlowsConsumerView(ctx, resolution)
 			})
-		}
-		steps = append(steps, []migrationStepWithDescription{
-			{
-				fmt.Sprintf("create flows table consumer with resolution %s", resolution.Interval),
-				c.migrationsStepCreateFlowsConsumerTable(resolution),
-			}, {
-				fmt.Sprintf("configure TTL for flows table with resolution %s", resolution.Interval),
-				c.migrationsStepSetTTLFlowsTable(resolution),
-			},
-		}...)
-	}
-	steps = append(steps, []migrationStepWithDescription{
-		{"create exporters view", c.migrationStepCreateExportersView},
-		{"create raw flows table", c.migrationStepCreateRawFlowsTable},
-		{"create raw flows consumer view", c.migrationStepCreateRawFlowsConsumerView},
-		{"create raw flows errors view", c.migrationStepCreateRawFlowsErrorsView},
-	}...)
-
-	count := 0
-	total := 0
-	for _, step := range steps {
-		total++
-		l := c.r.Logger.With().Str("step", step.Description).Logger()
-		l.Debug().Msg("checking migration step")
-		step := step.Step(ctx, l, c.d.ClickHouse)
-		rows, err := c.d.ClickHouse.Query(ctx, step.CheckQuery, step.Args...)
 		if err != nil {
-			l.Err(err).Msg("cannot execute check")
-			return fmt.Errorf("cannot execute check: %w", err)
+			return err
 		}
-		if rows.Next() {
-			var val uint8
-			if err := rows.Scan(&val); err != nil {
-				rows.Close()
-				l.Err(err).Msg("cannot parse check result")
-				return fmt.Errorf("cannot parse check result: %w", err)
-			}
-			if val != 0 {
-				rows.Close()
-				l.Debug().Msg("result not equal to 0, skipping step")
-				c.metrics.migrationsNotApplied.Inc()
-				continue
-			} else {
-				l.Debug().Msg("got 0, executing step")
-			}
-		} else {
-			l.Debug().Msg("no result, executing step")
-		}
-		rows.Close()
-		if err := step.Do(); err != nil {
-			l.Err(err).Msg("cannot execute migration step")
-			return fmt.Errorf("during migration step: %w", err)
-		}
-		l.Info().Msg("migration step executed successfully")
-		c.metrics.migrationsApplied.Inc()
-		count++
 	}
 
-	if count == 0 {
-		c.r.Info().Msg("no migration needed")
-	} else {
-		c.r.Info().Msg("migrations done")
+	// Remaining tables
+	err = c.wrapMigrations(
+		func() error {
+			return c.createExportersView(ctx)
+		}, func() error {
+			return c.createRawFlowsTable(ctx)
+		}, func() error {
+			return c.createRawFlowsConsumerView(ctx)
+		}, func() error {
+			return c.createRawFlowsErrorsView(ctx)
+		},
+	)
+	if err != nil {
+		return err
 	}
+
 	close(c.migrationsDone)
 	c.metrics.migrationsRunning.Set(0)
-	c.metrics.migrationsVersion.Set(float64(total))
 
 	// Reload dictionaries
 	if err := c.d.ClickHouse.Exec(ctx, "SYSTEM RELOAD DICTIONARIES"); err != nil {

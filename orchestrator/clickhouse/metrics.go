@@ -9,7 +9,6 @@ type metrics struct {
 	migrationsRunning    reporter.Gauge
 	migrationsApplied    reporter.Counter
 	migrationsNotApplied reporter.Counter
-	migrationsVersion    reporter.Gauge
 
 	networkSourceUpdates *reporter.CounterVec
 	networkSourceErrors  *reporter.CounterVec
@@ -33,12 +32,6 @@ func (c *Component) initMetrics() {
 		reporter.CounterOpts{
 			Name: "migrations_notapplied_steps",
 			Help: "Number of migration steps not applied",
-		},
-	)
-	c.metrics.migrationsVersion = c.r.Gauge(
-		reporter.GaugeOpts{
-			Name: "migrations_version",
-			Help: "Current version for migrations.",
 		},
 	)
 

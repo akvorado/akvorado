@@ -81,7 +81,9 @@ func (c *Component) Start() error {
 		for {
 			if !c.config.SkipMigrations {
 				c.r.Info().Msg("attempting database migration")
-				if err := c.migrateDatabase(); err == nil {
+				if err := c.migrateDatabase(); err != nil {
+					c.r.Err(err).Msg("database migration error")
+				} else {
 					return nil
 				}
 			}

@@ -22,6 +22,8 @@ import (
 	"akvorado/common/http"
 	"akvorado/common/kafka"
 	"akvorado/common/reporter"
+
+	"github.com/ClickHouse/clickhouse-go/v2/lib/proto"
 )
 
 var ignoredTables = []string{
@@ -237,6 +239,16 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 			lastRun = currentRun
 		})
 		if t.Failed() {
+			row := chComponent.QueryRow(context.Background(), `
+SELECT query
+FROM system.query_log
+WHERE client_name = $1
+ORDER BY event_time_microseconds DESC
+LIMIT 1`, proto.ClientName)
+			var lastQuery string
+			if err := row.Scan(&lastQuery); err == nil {
+				t.Logf("last ClickHouse query: %s", lastQuery)
+			}
 			break
 		}
 	}
@@ -261,24 +273,6 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 			case <-ch.migrationsDone:
 			case <-time.After(5 * time.Second):
 				t.Fatalf("Migrations not done")
-			}
-
-			// Compute hash for all tables
-			rows, err := chComponent.Query(context.Background(), `
-SELECT table, groupBitXor(cityHash64(name,type,position))
-FROM system.columns
-WHERE database = currentDatabase()
-GROUP BY table`)
-			if err != nil {
-				t.Fatalf("Query() error:\n%+v", err)
-			}
-			for rows.Next() {
-				var table string
-				var hash uint64
-				if err := rows.Scan(&table, &hash); err != nil {
-					t.Fatalf("Scan() error:\n%+v", err)
-				}
-				t.Logf("table %s hash is %d", table, hash)
 			}
 
 			// No migration should have been applied the last time
