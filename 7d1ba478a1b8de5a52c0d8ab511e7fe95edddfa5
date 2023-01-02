@@ -1,0 +1,6 @@
+Hashing was not as fragile as we were only hashing column names, types
+and positions, so it is unknown if the new way is strictly better.
+
+The next steps are to use the schema abstraction in other places where
+the schema is hard coded: column names for
+console (`console/query_consts.go`), protobuf file and flow decoding.
