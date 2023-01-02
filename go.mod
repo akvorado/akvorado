@@ -44,7 +44,7 @@ require (
 	golang.org/x/time v0.0.0-20220722155302-e5dcc9cfc0b9
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 	gopkg.in/yaml.v2 v2.4.0
-	gorm.io/gorm v1.24.2
+	gorm.io/gorm v1.24.3
 	zgo.at/zcache/v2 v2.1.0
 )
 
