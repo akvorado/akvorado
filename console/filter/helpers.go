@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"net/netip"
 	"strings"
+
+	"akvorado/common/schema"
 )
 
 // Meta is used to inject/retrieve state from the parser.
@@ -20,26 +22,55 @@ type Meta struct {
 
 // ReverseColumnDirection reverts the direction of a provided column name.
 func ReverseColumnDirection(name string) string {
+	var candidate string
 	if strings.HasPrefix(name, "Src") {
-		return "Dst" + name[3:]
+		candidate = "Dst" + name[3:]
 	}
 	if strings.HasPrefix(name, "Dst") {
-		return "Src" + name[3:]
+		candidate = "Src" + name[3:]
 	}
 	if strings.HasPrefix(name, "In") {
-		return "Out" + name[2:]
+		candidate = "Out" + name[2:]
 	}
 	if strings.HasPrefix(name, "Out") {
-		return "In" + name[3:]
+		candidate = "In" + name[3:]
+	}
+	for _, column := range schema.Flows.Columns {
+		if candidate == column.Name {
+			return candidate
+		}
 	}
 	return name
 }
 
-func (c *current) reverseColumnDirection(name string) string {
-	if c.globalStore["meta"].(*Meta).ReverseDirection {
-		return ReverseColumnDirection(name)
+// acceptColumn normalizes and returns the matched column name. It should be used
+// in predicate code blocks.
+func (c *current) acceptColumn() (string, error) {
+	name := string(c.text)
+	for _, column := range schema.Flows.Columns {
+		if strings.EqualFold(name, column.Name) {
+			if c.globalStore["meta"].(*Meta).ReverseDirection {
+				return ReverseColumnDirection(column.Name), nil
+			}
+			return column.Name, nil
+		}
 	}
-	return name
+	return "", fmt.Errorf("unknown column %q", name)
+}
+
+// metaColumn remembers the matched column name in meta data. It should be used
+// in state change blocks. Unfortunately, it cannot extract matched text, so it
+// should be provided.
+func (c *current) metaColumn(name string) error {
+	for _, column := range schema.Flows.Columns {
+		if strings.EqualFold(name, column.Name) {
+			if column.MainOnly {
+				c.state["main-table-only"] = true
+			}
+			return nil
+		}
+	}
+	return nil
 }
 
 func lastIP(subnet netip.Prefix) netip.Addr {

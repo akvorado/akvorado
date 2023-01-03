@@ -50,11 +50,9 @@ ConditionExpr "conditional" ←
   / ConditionPacketSizeExpr
 
 ColumnIP ←
-   "ExporterAddress"i { return "ExporterAddress", nil }
- / "SrcAddr"i #{ c.state["main-table-only"] = true ; return nil }
-               { return c.reverseColumnDirection("SrcAddr"), nil }
- / "DstAddr"i #{ c.state["main-table-only"] = true ; return nil }
-               { return c.reverseColumnDirection("DstAddr"), nil }
+   "ExporterAddress"i #{ return c.metaColumn("ExporterAddress") } { return c.acceptColumn() }
+ / "SrcAddr"i #{ return c.metaColumn("SrcAddr") } { return c.acceptColumn() }
+ / "DstAddr"i #{ return c.metaColumn("DstAddr") } { return c.acceptColumn() }
 ConditionIPExpr "condition on IP" ←
    column:ColumnIP _
    operator:("=" / "!=") _ ip:IP {
@@ -70,43 +68,43 @@ ConditionIPExpr "condition on IP" ←
    }
 
 ConditionPrefixExpr "condition on prefix" ←
-   column:("SrcNetPrefix"i #{ c.state["main-table-only"] = true ; return nil } { return "Src", nil }
-         / "DstNetPrefix"i #{ c.state["main-table-only"] = true ; return nil } { return "Dst", nil }) _
+   column:("SrcNetPrefix"i #{ return c.metaColumn("SrcNetPrefix") } { return c.acceptColumn() }
+         / "DstNetPrefix"i #{ return c.metaColumn("DstNetPrefix") } { return c.acceptColumn() }) _
    operator:("=" / "!=") _ prefix:Prefix {
      switch toString(operator) {
-       case "=": return fmt.Sprintf("%sAddr %s", toString(column), fmt.Sprintf(toString(prefix), toString(column))), nil
-       case "!=": return fmt.Sprintf("NOT (%sAddr %s)", toString(column), fmt.Sprintf(toString(prefix), toString(column))), nil
+       case "=": return fmt.Sprintf("%sAddr %s", toString(column)[:3], fmt.Sprintf(toString(prefix), toString(column)[:3])), nil
+       case "!=": return fmt.Sprintf("NOT (%sAddr %s)", toString(column)[:3], fmt.Sprintf(toString(prefix), toString(column)[:3])), nil
      }
      return "", nil
    }
 
 ConditionStringExpr "condition on string" ←
- column:("ExporterName"i { return "ExporterName", nil }
-      / "ExporterGroup"i { return "ExporterGroup", nil }
-      / "ExporterRole"i { return "ExporterRole", nil }
-      / "ExporterSite"i { return "ExporterSite", nil }
-      / "ExporterRegion"i { return "ExporterRegion", nil }
-      / "ExporterTenant"i { return "ExporterTenant", nil }
-      / "SrcCountry"i { return c.reverseColumnDirection("SrcCountry"), nil }
-      / "DstCountry"i { return c.reverseColumnDirection("DstCountry"), nil }
-      / "SrcNetName"i { return c.reverseColumnDirection("SrcNetName"), nil }
-      / "DstNetName"i { return c.reverseColumnDirection("DstNetName"), nil }
-      / "SrcNetRole"i { return c.reverseColumnDirection("SrcNetRole"), nil }
-      / "DstNetRole"i { return c.reverseColumnDirection("DstNetRole"), nil }
-      / "SrcNetSite"i { return c.reverseColumnDirection("SrcNetSite"), nil }
-      / "DstNetSite"i { return c.reverseColumnDirection("DstNetSite"), nil }
-      / "SrcNetRegion"i { return c.reverseColumnDirection("SrcNetRegion"), nil }
-      / "DstNetRegion"i { return c.reverseColumnDirection("DstNetRegion"), nil }
-      / "SrcNetTenant"i { return c.reverseColumnDirection("SrcNetTenant"), nil }
-      / "DstNetTenant"i { return c.reverseColumnDirection("DstNetTenant"), nil }
-      / "InIfName"i { return c.reverseColumnDirection("InIfName"), nil }
-      / "OutIfName"i { return c.reverseColumnDirection("OutIfName"), nil }
-      / "InIfDescription"i { return c.reverseColumnDirection("InIfDescription"), nil }
-      / "OutIfDescription"i { return c.reverseColumnDirection("OutIfDescription"), nil }
-      / "InIfConnectivity"i { return c.reverseColumnDirection("InIfConnectivity"), nil }
-      / "OutIfConnectivity"i { return c.reverseColumnDirection("OutIfConnectivity"), nil }
-      / "InIfProvider"i { return c.reverseColumnDirection("InIfProvider"), nil }
-      / "OutIfProvider"i { return c.reverseColumnDirection("OutIfProvider"), nil }) _
+ column:("ExporterName"i #{ return c.metaColumn("ExporterName") } { return c.acceptColumn() }
+      / "ExporterGroup"i #{ return c.metaColumn("ExporterGroup") } { return c.acceptColumn() }
+      / "ExporterRole"i #{ return c.metaColumn("ExporterRole") } { return c.acceptColumn() }
+      / "ExporterSite"i #{ return c.metaColumn("ExporterSite") } { return c.acceptColumn() }
+      / "ExporterRegion"i #{ return c.metaColumn("ExporterRegion") } { return c.acceptColumn() }
+      / "ExporterTenant"i #{ return c.metaColumn("ExporterTenant") } { return c.acceptColumn() }
+      / "SrcCountry"i #{ return c.metaColumn("SrcCountry") } { return c.acceptColumn() }
+      / "DstCountry"i #{ return c.metaColumn("DstCountry") } { return c.acceptColumn() }
+      / "SrcNetName"i #{ return c.metaColumn("SrcNetName") } { return c.acceptColumn() }
+      / "DstNetName"i #{ return c.metaColumn("DstNetName") } { return c.acceptColumn() }
+      / "SrcNetRole"i #{ return c.metaColumn("SrcNetRole") } { return c.acceptColumn() }
+      / "DstNetRole"i #{ return c.metaColumn("DstNetRole") } { return c.acceptColumn() }
+      / "SrcNetSite"i #{ return c.metaColumn("SrcNetSite") } { return c.acceptColumn() }
+      / "DstNetSite"i #{ return c.metaColumn("DstNetSite") } { return c.acceptColumn() }
+      / "SrcNetRegion"i #{ return c.metaColumn("SrcNetRegion") } { return c.acceptColumn() }
+      / "DstNetRegion"i #{ return c.metaColumn("DstNetRegion") } { return c.acceptColumn() }
+      / "SrcNetTenant"i #{ return c.metaColumn("SrcNetTenant") } { return c.acceptColumn() }
+      / "DstNetTenant"i #{ return c.metaColumn("DstNetTenant") } { return c.acceptColumn() }
+      / "InIfName"i #{ return c.metaColumn("InIfName") } { return c.acceptColumn() }
+      / "OutIfName"i #{ return c.metaColumn("OutIfName") } { return c.acceptColumn() }
+      / "InIfDescription"i #{ return c.metaColumn("InIfDescription") } { return c.acceptColumn() }
+      / "OutIfDescription"i #{ return c.metaColumn("OutIfDescription") } { return c.acceptColumn() }
+      / "InIfConnectivity"i #{ return c.metaColumn("InIfConnectivity") } { return c.acceptColumn() }
+      / "OutIfConnectivity"i #{ return c.metaColumn("OutIfConnectivity") } { return c.acceptColumn() }
+      / "InIfProvider"i #{ return c.metaColumn("InIfProvider") } { return c.acceptColumn() }
+      / "OutIfProvider"i #{ return c.metaColumn("OutIfProvider") } { return c.acceptColumn() }) _
  rcond:RConditionStringExpr {
   return fmt.Sprintf("%s %s", toString(column), toString(rcond)), nil
 }
@@ -119,39 +117,39 @@ RConditionStringExpr "condition on string" ←
    }
 
 ConditionBoundaryExpr "condition on boundary" ←
- column:("InIfBoundary"i { return c.reverseColumnDirection("InIfBoundary"), nil }
-      / "OutIfBoundary"i { return c.reverseColumnDirection("OutIfBoundary"), nil }) _
+ column:("InIfBoundary"i #{ return c.metaColumn("InIfBoundary") } { return c.acceptColumn() }
+      / "OutIfBoundary"i #{ return c.metaColumn("OutIfBoundary") } { return c.acceptColumn() }) _
  operator:("=" / "!=") _
  boundary:("external"i / "internal"i / "undefined"i) {
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator),
                      quote(strings.ToLower(toString(boundary)))), nil
 }
 ConditionSpeedExpr "condition on speed" ←
- column:("InIfSpeed"i { return c.reverseColumnDirection("InIfSpeed"), nil }
-      / "OutIfSpeed"i { return c.reverseColumnDirection("OutIfSpeed"), nil }) _
+ column:("InIfSpeed"i #{ return c.metaColumn("InIfSpeed") } { return c.acceptColumn() }
+      / "OutIfSpeed"i #{ return c.metaColumn("OutIfSpeed") } { return c.acceptColumn() }) _
  operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _
  value:Unsigned64 {
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
 }
 ConditionForwardingStatusExpr "condition on forwarding status" ←
- column:("ForwardingStatus"i { return "ForwardingStatus", nil }) _
+ column:("ForwardingStatus"i #{ return c.metaColumn("ForwardingStatus") } { return c.acceptColumn() }) _
  operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _
  value:Unsigned8 {
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
 }
 ConditionPortExpr "condition on port" ←
- column:("SrcPort"i #{ c.state["main-table-only"] = true ; return nil } { return c.reverseColumnDirection("SrcPort"), nil }
-       / "DstPort"i #{ c.state["main-table-only"] = true ; return nil } { return c.reverseColumnDirection("DstPort"), nil }) _
+ column:("SrcPort"i #{ return c.metaColumn("SrcPort") } { return c.acceptColumn() }
+       / "DstPort"i #{ return c.metaColumn("DstPort") } { return c.acceptColumn() }) _
  operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned16 {
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
 }
 
 ConditionASExpr "condition on AS number" ←
- column:("SrcAS"i { return c.reverseColumnDirection("SrcAS"), nil }
-       / "DstAS"i { return c.reverseColumnDirection("DstAS"), nil }
-       / "Dst1stAS"i { return c.reverseColumnDirection("Dst1stAS"), nil }
-       / "Dst2ndAS"i { return c.reverseColumnDirection("Dst2ndAS"), nil }
-       / "Dst3rdAS"i { return c.reverseColumnDirection("Dst3rdAS"), nil }) _
+ column:("SrcAS"i #{ return c.metaColumn("SrcAS") } { return c.acceptColumn() }
+       / "DstAS"i #{ return c.metaColumn("DstAS") } { return c.acceptColumn() }
+       / "Dst1stAS"i #{ return c.metaColumn("Dst1stAS") } { return c.acceptColumn() }
+       / "Dst2ndAS"i #{ return c.metaColumn("Dst2ndAS") } { return c.acceptColumn() }
+       / "Dst3rdAS"i #{ return c.metaColumn("Dst3rdAS") } { return c.acceptColumn() }) _
  rcond:RConditionASExpr {
   return fmt.Sprintf("%s %s", toString(column), toString(rcond)), nil
 }
@@ -162,17 +160,17 @@ RConditionASExpr "condition on AS number" ←
 }
 
 ConditionASPathExpr "condition on AS path" ←
-   column:("DstASPath"i #{ c.state["main-table-only"] = true ; return nil }) _ "=" _ value:ASN { return fmt.Sprintf("has(DstASPath, %s)", toString(value)), nil }
- / column:("DstASPath"i #{ c.state["main-table-only"] = true ; return nil }) _ "!=" _ value:ASN { return fmt.Sprintf("NOT has(DstASPath, %s)", toString(value)), nil }
+   column:("DstASPath"i #{ return c.metaColumn("DstASPath") } { return c.acceptColumn() }) _ "=" _ value:ASN { return fmt.Sprintf("has(DstASPath, %s)", toString(value)), nil }
+ / column:("DstASPath"i #{ return c.metaColumn("DstASPath") } { return c.acceptColumn() }) _ "!=" _ value:ASN { return fmt.Sprintf("NOT has(DstASPath, %s)", toString(value)), nil }
 
 ConditionCommunitiesExpr "condition on communities" ←
-   column:("DstCommunities"i #{ c.state["main-table-only"] = true ; return nil }) _ "=" _ value:Community { return fmt.Sprintf("has(DstCommunities, %s)", toString(value)), nil }
- / column:("DstCommunities"i #{ c.state["main-table-only"] = true ; return nil }) _ "!=" _ value:Community { return fmt.Sprintf("NOT has(DstCommunities, %s)", toString(value)), nil }
- / column:("DstCommunities"i #{ c.state["main-table-only"] = true ; return nil }) _ "=" _ value:LargeCommunity { return fmt.Sprintf("has(DstLargeCommunities, %s)", toString(value)), nil }
- / column:("DstCommunities"i #{ c.state["main-table-only"] = true ; return nil }) _ "!=" _ value:LargeCommunity { return fmt.Sprintf("NOT has(DstLargeCommunities, %s)", toString(value)), nil }
+   column:("DstCommunities"i #{ return c.metaColumn("DstCommunities") } { return c.acceptColumn() }) _ "=" _ value:Community { return fmt.Sprintf("has(DstCommunities, %s)", toString(value)), nil }
+ / column:("DstCommunities"i #{ return c.metaColumn("DstCommunities") } { return c.acceptColumn() }) _ "!=" _ value:Community { return fmt.Sprintf("NOT has(DstCommunities, %s)", toString(value)), nil }
+ / column:("DstCommunities"i #{ return c.metaColumn("DstCommunities") } { return c.acceptColumn() }) _ "=" _ value:LargeCommunity { return fmt.Sprintf("has(DstLargeCommunities, %s)", toString(value)), nil }
+ / column:("DstCommunities"i #{ return c.metaColumn("DstCommunities") } { return c.acceptColumn() }) _ "!=" _ value:LargeCommunity { return fmt.Sprintf("NOT has(DstLargeCommunities, %s)", toString(value)), nil }
 
 ConditionETypeExpr "condition on Ethernet type" ←
- column:("EType"i { return "EType", nil }) _
+ column:("EType"i #{ return c.metaColumn("EType") } { return c.acceptColumn() }) _
  operator:("=" / "!=") _ value:("IPv4"i / "IPv6"i) {
   etypes := map[string]uint16{
     "ipv4": helpers.ETypeIPv4,
@@ -183,12 +181,12 @@ ConditionETypeExpr "condition on Ethernet type" ←
 }
 ConditionProtoExpr "condition on protocol" ← ConditionProtoIntExpr / ConditionProtoStrExpr
 ConditionProtoIntExpr "condition on protocol as integer" ←
- column:("Proto"i { return "Proto", nil }) _
+ column:("Proto"i #{ return c.metaColumn("Proto") } { return c.acceptColumn() }) _
  operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned8 {
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
 }
 ConditionProtoStrExpr "condition on protocol as string" ←
- column:("Proto"i { return "Proto", nil }) _
+ column:("Proto"i #{ return c.metaColumn("Proto") } { return c.acceptColumn() }) _
  operator:("=" / "!=") _ value:StringLiteral {
   return fmt.Sprintf("dictGetOrDefault('protocols', 'name', %s, '???') %s %s", toString(column), toString(operator), quote(value)), nil
 }
