@@ -98,6 +98,8 @@ func (c *Component) migrateDatabase() error {
 			return c.createRawFlowsConsumerView(ctx)
 		}, func() error {
 			return c.createRawFlowsErrorsView(ctx)
+		}, func() error {
+			return c.setTTLSystemLogsTables(ctx)
 		},
 	)
 	if err != nil {

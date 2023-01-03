@@ -522,3 +522,34 @@ FROM {{ .Database }}.flows`, gin.H{
 	}
 	return nil
 }
+
+func (c *Component) setTTLSystemLogsTables(ctx context.Context) error {
+	if c.config.SystemLogTTL == 0 {
+		return errSkipStep
+	}
+	ttlClause := fmt.Sprintf("TTL event_date + toIntervalSecond(%d)", uint64(c.config.SystemLogTTL.Seconds()))
+	var tables []struct {
+		Name string `ch:"table"`
+	}
+	if err := c.d.ClickHouse.Select(ctx, &tables, `
+SELECT table
+FROM system.tables
+WHERE database = 'system'
+AND engine = 'MergeTree'
+AND match(table, '.*_log(_\\d+){0,1}')
+AND engine_full NOT LIKE $1`, fmt.Sprintf("%% %s %%", ttlClause)); err != nil {
+		return fmt.Errorf("cannot query system log tables: %w", err)
+	}
+	for _, table := range tables {
+		c.r.Info().Msgf("set TTL of system.%s", table.Name)
+		alterQuery := fmt.Sprintf("ALTER TABLE system.%s MODIFY %s", table.Name, ttlClause)
+		if err := c.d.ClickHouse.Exec(ctx, alterQuery); err != nil {
+			// Maybe we don't have the rights for that! Non fatal.
+			c.r.Err(err).Msgf("cannot alter TTL for system.%s", table.Name)
+		}
+	}
+	if len(tables) > 0 {
+		return nil
+	}
+	return errSkipStep
+}

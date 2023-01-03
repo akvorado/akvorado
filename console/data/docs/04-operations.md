@@ -399,24 +399,12 @@ with various other tips.
 
 ### System tables
 
-ClickHouse is configured to log various events into MergeTree tables.
-By default, these tables are unbounded. You should set a TTL to avoid
-them to grow indefinitely:
-
-```sql
-ALTER TABLE system.trace_log MODIFY TTL event_date + INTERVAL 30 day DELETE ;
-ALTER TABLE system.query_thread_log MODIFY TTL event_date + INTERVAL 30 day DELETE ;
-ALTER TABLE system.query_log MODIFY TTL event_date + INTERVAL 30 day DELETE ;
-ALTER TABLE system.asynchronous_metric_log MODIFY TTL event_date + INTERVAL 30 day DELETE ;
-ALTER TABLE system.metric_log MODIFY TTL event_date + INTERVAL 30 day DELETE ;
-ALTER TABLE system.part_log MODIFY TTL event_date + INTERVAL 30 day DELETE ;
-ALTER TABLE system.session_log MODIFY TTL event_date + INTERVAL 30 day DELETE
-```
-
-These tables can also be customized in the configuration files or
-disabled completly. See [ClickHouse
-documentation](https://clickhouse.com/docs/en/operations/system-tables/)
-for more details.
+ClickHouse is configured to log various events into MergeTree tables. By
+default, these tables are unbounded. Unless configured otherwise, the
+orchestrator sets a TTL of 30 days. These tables can also be customized in the
+configuration files or disabled completly. See [ClickHouse
+documentation](https://clickhouse.com/docs/en/operations/system-tables/) for
+more details.
 
 The following request is useful to see how much space is used for each
 table:

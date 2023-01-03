@@ -13,8 +13,15 @@ identified with a specific icon:
 
 ## Unreleased
 
+From this version, the orchestrator automatically defines the TTL for the system
+log tables (like `system.query_log`). They don't have a TTL by default, so many
+installations may end up eating space because of that. The default TTL is 30
+days. You can disable that by setting `orchestrator.clickhouse.system-logs-ttl`
+to 0.
+
 - 🩹 *inlet*: handle correctly interfaces with high indexes for sFlow
 - 🩹 *docker*: fix Kafka healthcheck
+- 🌱 *orchestrator*: set TTL for ClickHouse system log tables
 
 ## 1.6.4 - 2022-12-22
 

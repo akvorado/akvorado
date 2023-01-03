@@ -464,6 +464,9 @@ provided:
 - `resolutions` defines the various resolutions to keep data
 - `max-partitions` defines the number of partitions to use when
   creating consolidated tables
+- `system-log-ttl` defines the TTL for system log tables. Set to 0 to disable.
+  As these tables are partitioned by month, it's useless to use a too low value.
+  The default value is 30 days.
 - `networks` maps subnets to attributes. Attributes are `name`,
   `role`, `site`, `region`, and `tenant`. They are exposed as
   `SrcNetName`, `DstNetName`, `SrcNetRole`, `DstNetRole`, etc.
