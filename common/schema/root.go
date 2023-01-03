@@ -6,9 +6,12 @@
 // will use it.
 package schema
 
+import orderedmap "github.com/elliotchance/orderedmap/v2"
+
 // Schema is the data schema.
 type Schema struct {
-	Columns []Column
+	// We use an ordered map for direct access to columns.
+	Columns *orderedmap.OrderedMap[string, Column]
 
 	// For ClickHouse. This is the set of primary keys (order is important and
 	// may not follow column order).

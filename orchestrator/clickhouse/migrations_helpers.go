@@ -125,7 +125,8 @@ LAYOUT({{ .Layout }}())
 func (c *Component) createExportersView(ctx context.Context) error {
 	// Select the columns we need
 	cols := []string{}
-	for _, column := range schema.Flows.Columns {
+	for pair := schema.Flows.Columns.Front(); pair != nil; pair = pair.Next() {
+		column := pair.Value
 		if column.Name == "TimeReceived" || strings.HasPrefix(column.Name, "Exporter") {
 			cols = append(cols, column.Name)
 		}
@@ -398,7 +399,8 @@ ORDER BY position ASC
 	modifications := []string{}
 	previousColumn := ""
 outer:
-	for _, wantedColumn := range schema.Flows.Columns {
+	for pair := schema.Flows.Columns.Front(); pair != nil; pair = pair.Next() {
+		wantedColumn := pair.Value
 		if resolution.Interval > 0 && wantedColumn.MainOnly {
 			continue
 		}

@@ -63,7 +63,8 @@ func (schema Schema) SelectColumns(options ...TableOption) []string {
 }
 
 func (schema Schema) iterate(fn func(column Column), options ...TableOption) {
-	for _, column := range schema.Columns {
+	for pair := schema.Columns.Front(); pair != nil; pair = pair.Next() {
+		column := pair.Value
 		if slices.Contains(options, SkipTimeReceived) && column.Name == "TimeReceived" {
 			continue
 		}
@@ -101,7 +102,8 @@ func (schema Schema) iterate(fn func(column Column), options ...TableOption) {
 // SortingKeys returns the list of sorting keys, prefixed by the primary keys.
 func (schema Schema) SortingKeys() []string {
 	cols := append([]string{}, schema.PrimaryKeys...)
-	for _, column := range schema.Columns {
+	for pair := schema.Columns.Front(); pair != nil; pair = pair.Next() {
+		column := pair.Value
 		if column.NotSortingKey || column.MainOnly {
 			continue
 		}

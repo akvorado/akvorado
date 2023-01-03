@@ -35,10 +35,8 @@ func ReverseColumnDirection(name string) string {
 	if strings.HasPrefix(name, "Out") {
 		candidate = "In" + name[3:]
 	}
-	for _, column := range schema.Flows.Columns {
-		if candidate == column.Name {
-			return candidate
-		}
+	if column, ok := schema.Flows.Columns.Get(candidate); ok {
+		return column.Name
 	}
 	return name
 }
@@ -47,7 +45,8 @@ func ReverseColumnDirection(name string) string {
 // in predicate code blocks.
 func (c *current) acceptColumn() (string, error) {
 	name := string(c.text)
-	for _, column := range schema.Flows.Columns {
+	for pair := schema.Flows.Columns.Front(); pair != nil; pair = pair.Next() {
+		column := pair.Value
 		if strings.EqualFold(name, column.Name) {
 			if c.globalStore["meta"].(*Meta).ReverseDirection {
 				return ReverseColumnDirection(column.Name), nil
@@ -62,12 +61,9 @@ func (c *current) acceptColumn() (string, error) {
 // in state change blocks. Unfortunately, it cannot extract matched text, so it
 // should be provided.
 func (c *current) metaColumn(name string) error {
-	for _, column := range schema.Flows.Columns {
-		if strings.EqualFold(name, column.Name) {
-			if column.MainOnly {
-				c.state["main-table-only"] = true
-			}
-			return nil
+	if column, ok := schema.Flows.Columns.Get(name); ok {
+		if column.MainOnly {
+			c.state["main-table-only"] = true
 		}
 	}
 	return nil

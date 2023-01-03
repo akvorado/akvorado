@@ -6,6 +6,8 @@ package schema
 import (
 	"fmt"
 	"strings"
+
+	orderedmap "github.com/elliotchance/orderedmap/v2"
 )
 
 // Flows is the data schema for flows tables. Any column starting with Src/InIf
@@ -24,7 +26,7 @@ var Flows = Schema{
 		"DstAS",
 		"SamplingRate",
 	},
-	Columns: []Column{
+	Columns: buildMapFromColumns([]Column{
 		{
 			Name:  "TimeReceived",
 			Type:  "DateTime",
@@ -143,44 +145,39 @@ END`,
 			}(),
 		},
 		{Name: "ForwardingStatus", Type: "UInt32"},
-	},
+	}),
 }
 
-func init() {
-	// Expand the schema Src → Dst and InIf → OutIf
-	newSchema := []Column{}
-	for _, column := range Flows.Columns {
-		newSchema = append(newSchema, column)
+func buildMapFromColumns(columns []Column) *orderedmap.OrderedMap[string, Column] {
+	omap := orderedmap.NewOrderedMap[string, Column]()
+	for _, column := range columns {
+		// Add non-main columns with an alias to NotSortingKey
+		if !column.MainOnly && column.Alias != "" {
+			column.NotSortingKey = true
+		}
+		omap.Set(column.Name, column)
+		// Expand the schema Src → Dst and InIf → OutIf
 		if strings.HasPrefix(column.Name, "Src") {
 			column.Name = fmt.Sprintf("Dst%s", column.Name[3:])
 			column.Alias = strings.ReplaceAll(column.Alias, "Src", "Dst")
-			newSchema = append(newSchema, column)
+			omap.Set(column.Name, column)
 		} else if strings.HasPrefix(column.Name, "InIf") {
 			column.Name = fmt.Sprintf("OutIf%s", column.Name[4:])
 			column.Alias = strings.ReplaceAll(column.Alias, "InIf", "OutIf")
-			newSchema = append(newSchema, column)
+			omap.Set(column.Name, column)
 		}
 	}
-	Flows.Columns = newSchema
+	return omap
+}
 
-	// Add non-main columns with an alias to NotSortingKey
-	for idx, column := range Flows.Columns {
-		if !column.MainOnly && column.Alias != "" {
-			Flows.Columns[idx].NotSortingKey = true
-		}
-	}
-
-	// Also do some checks.
-outer:
+func init() {
 	for _, key := range Flows.PrimaryKeys {
-		for _, column := range Flows.Columns {
-			if column.Name == key {
-				if column.NotSortingKey {
-					panic(fmt.Sprintf("primary key %q is marked as a non-sorting key", key))
-				}
-				continue outer
+		if column, ok := Flows.Columns.Get(key); !ok {
+			panic(fmt.Sprintf("primary key %q not a column", key))
+		} else {
+			if column.NotSortingKey {
+				panic(fmt.Sprintf("primary key %q is marked as a non-sorting key", key))
 			}
 		}
-		panic(fmt.Sprintf("primary key %q not a column", key))
 	}
 }
