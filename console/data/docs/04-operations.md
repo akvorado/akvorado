@@ -432,6 +432,36 @@ WHERE table LIKE 'flow%'
 GROUP by table
 ```
 
+The following query shows how much space is eaten by each column for the `flows`
+table and how much they are compressed. This can be helpful if you find too much
+space is used by this table.
+
+```sql
+SELECT
+    database,
+    table,
+    column,
+    type,
+    sum(rows) AS rows,
+    sum(column_data_compressed_bytes) AS compressed_bytes,
+    formatReadableSize(compressed_bytes) AS compressed,
+    formatReadableSize(sum(column_data_uncompressed_bytes)) AS uncompressed,
+    sum(column_data_uncompressed_bytes) / compressed_bytes AS ratio,
+    any(compression_codec) AS codec
+FROM system.parts_columns AS pc
+LEFT JOIN system.columns AS c ON (pc.database = c.database) AND (c.table = pc.table) AND (c.name = pc.column)
+WHERE table = 'flows' AND active
+GROUP BY
+    database,
+    table,
+    column,
+    type
+ORDER BY
+    database ASC,
+    table ASC,
+    sum(column_data_compressed_bytes) DESC
+```
+
 ### Slow queries
 
 You can extract slow queries with:
