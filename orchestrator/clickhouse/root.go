@@ -29,6 +29,7 @@ type Component struct {
 	metrics metrics
 
 	migrationsDone      chan bool // closed when migrations are done
+	migrationsOnce      chan bool // closed after first attempt to migrate
 	networkSourcesReady chan bool // closed when all network sources are ready
 	networkSourcesLock  sync.RWMutex
 	networkSources      map[string][]externalNetworkAttributes
@@ -48,6 +49,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		d:                   &dependencies,
 		config:              configuration,
 		migrationsDone:      make(chan bool),
+		migrationsOnce:      make(chan bool),
 		networkSourcesReady: make(chan bool),
 		networkSources:      make(map[string][]externalNetworkAttributes),
 	}

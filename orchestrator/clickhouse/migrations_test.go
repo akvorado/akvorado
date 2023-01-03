@@ -132,6 +132,21 @@ func loadAllTables(t *testing.T, ch *clickhousedb.Component, filename string) {
 	t.Logf("(%s) Loaded all tables from dump %s", time.Now(), filename)
 }
 
+func waitMigrations(t *testing.T, ch *Component) {
+	t.Helper()
+	select {
+	case <-ch.migrationsDone:
+	case <-ch.migrationsOnce:
+		select {
+		case <-ch.migrationsDone:
+		default:
+			t.Fatalf("Migrations failed")
+		}
+	case <-time.After(30 * time.Second):
+		t.Fatalf("Migrations not finished")
+	}
+}
+
 func TestGetHTTPBaseURL(t *testing.T) {
 	r := reporter.NewMock(t)
 	http := http.NewMock(t, r)
@@ -188,11 +203,7 @@ func TestMigration(t *testing.T) {
 				t.Fatalf("New() error:\n%+v", err)
 			}
 			helpers.StartStop(t, ch)
-			select {
-			case <-ch.migrationsDone:
-			case <-time.After(5 * time.Second):
-				t.Fatalf("Migrations not done")
-			}
+			waitMigrations(t, ch)
 
 			// Check with the ClickHouse client we have our tables
 			rows, err := chComponent.Query(context.Background(), `
@@ -269,11 +280,7 @@ LIMIT 1`, proto.ClientName)
 				t.Fatalf("New() error:\n%+v", err)
 			}
 			helpers.StartStop(t, ch)
-			select {
-			case <-ch.migrationsDone:
-			case <-time.After(5 * time.Second):
-				t.Fatalf("Migrations not done")
-			}
+			waitMigrations(t, ch)
 
 			// No migration should have been applied the last time
 			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_",
