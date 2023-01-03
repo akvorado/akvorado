@@ -25,7 +25,7 @@ func TestSankeyQuerySQL(t *testing.T) {
 			Input: sankeyHandlerInput{
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
-				Dimensions: []queryColumn{queryColumnSrcAS, queryColumnExporterName},
+				Dimensions: []queryColumn{"SrcAS", "ExporterName"},
 				Limit:      5,
 				Filter:     queryFilter{},
 				Units:      "l3bps",
@@ -49,7 +49,7 @@ ORDER BY xps DESC
 			Input: sankeyHandlerInput{
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
-				Dimensions: []queryColumn{queryColumnSrcAS, queryColumnExporterName},
+				Dimensions: []queryColumn{"SrcAS", "ExporterName"},
 				Limit:      5,
 				Filter:     queryFilter{},
 				Units:      "l2bps",
@@ -74,7 +74,7 @@ ORDER BY xps DESC
 			Input: sankeyHandlerInput{
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
-				Dimensions: []queryColumn{queryColumnSrcAS, queryColumnExporterName},
+				Dimensions: []queryColumn{"SrcAS", "ExporterName"},
 				Limit:      5,
 				Filter:     queryFilter{},
 				Units:      "pps",
@@ -98,7 +98,7 @@ ORDER BY xps DESC
 			Input: sankeyHandlerInput{
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
-				Dimensions: []queryColumn{queryColumnSrcAS, queryColumnExporterName},
+				Dimensions: []queryColumn{"SrcAS", "ExporterName"},
 				Limit:      10,
 				Filter:     queryFilter{Filter: "DstCountry = 'FR'"},
 				Units:      "l3bps",

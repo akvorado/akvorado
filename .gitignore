@@ -5,7 +5,6 @@
 *.pb.go
 mock_*.go
 
-/console/frontend/data/fields.json
 /console/data/frontend/
 
 *~

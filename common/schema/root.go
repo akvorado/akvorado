@@ -36,4 +36,7 @@ type Column struct {
 	GenerateFrom  string
 	TransformFrom []Column
 	TransformTo   string
+
+	// For the console.
+	NotSelectable bool
 }

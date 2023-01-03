@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"akvorado/common/schema"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -50,7 +52,7 @@ func DefaultConfiguration() Configuration {
 			Start:      "6 hours ago",
 			End:        "now",
 			Filter:     "InIfBoundary = external",
-			Dimensions: []queryColumn{queryColumnSrcAS},
+			Dimensions: []queryColumn{"SrcAS"},
 			Limit:      10,
 		},
 		HomepageTopWidgets: []string{"src-as", "src-port", "protocol", "src-country", "etype"},
@@ -65,5 +67,6 @@ func (c *Component) configHandlerFunc(gc *gin.Context) {
 		"defaultVisualizeOptions": c.config.DefaultVisualizeOptions,
 		"dimensionsLimit":         c.config.DimensionsLimit,
 		"homepageTopWidgets":      c.config.HomepageTopWidgets,
+		"dimensions":              schema.Flows.SelectColumns(schema.SkipNotDimension),
 	})
 }

@@ -58,7 +58,6 @@ import { dataColor } from "@/utils";
 import InputString from "@/components/InputString.vue";
 import InputListBox from "@/components/InputListBox.vue";
 import { ServerConfigKey } from "@/components/ServerConfigProvider.vue";
-import fields from "@data/fields.json";
 import { isEqual } from "lodash-es";
 
 const props = withDefaults(
@@ -75,7 +74,7 @@ const emit = defineEmits<{
 }>();
 
 const serverConfiguration = inject(ServerConfigKey)!;
-const selectedDimensions = ref<Array<typeof dimensions[0]>>([]);
+const selectedDimensions = ref<Array<typeof dimensions.value[0]>>([]);
 const dimensionsError = computed(() => {
   if (selectedDimensions.value.length < props.minDimensions) {
     return "At least two dimensions are required";
@@ -99,25 +98,27 @@ const limitError = computed(() => {
 });
 const hasErrors = computed(() => !!limitError.value || !!dimensionsError.value);
 
-const dimensions = fields.map((v, idx) => ({
-  id: idx + 1,
-  name: v,
-  color: dataColor(
-    ["Exporter", "Src", "Dst", "In", "Out", ""]
-      .map((p) => v.startsWith(p))
-      .indexOf(true)
-  ),
-}));
+const dimensions = computed(() =>
+  serverConfiguration.value?.dimensions.map((v, idx) => ({
+    id: idx + 1,
+    name: v,
+    color: dataColor(
+      ["Exporter", "Src", "Dst", "In", "Out", ""]
+        .map((p) => v.startsWith(p))
+        .indexOf(true)
+    ),
+  }))
+);
 
-const removeDimension = (dimension: typeof dimensions[0]) => {
+const removeDimension = (dimension: typeof dimensions.value[0]) => {
   selectedDimensions.value = selectedDimensions.value.filter(
     (d) => d !== dimension
   );
 };
 
 watch(
-  () => props.modelValue,
-  (value) => {
+  () => [props.modelValue, dimensions.value] as const,
+  ([value, dimensions]) => {
     if (value) {
       limit.value = value.limit.toString();
     }

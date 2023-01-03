@@ -16,8 +16,7 @@ export CGO_ENABLED=0
 
 FLOW_VERSION := $(shell sed -n 's/^const CurrentSchemaVersion = //p' inlet/flow/schemas.go)
 GENERATED_JS = \
-	console/frontend/node_modules \
-	console/frontend/data/fields.json
+	console/frontend/node_modules
 GENERATED_GO = \
 	inlet/flow/decoder/flow-ANY.pb.go \
 	common/clickhousedb/mocks/mock_driver.go \
@@ -99,10 +98,6 @@ console/filter/parser.go: console/filter/parser.peg | $(PIGEON) ; $(info $(M) ge
 console/frontend/node_modules: console/frontend/package.json console/frontend/package-lock.json
 console/frontend/node_modules: ; $(info $(M) fetching node modules…)
 	$Q (cd console/frontend ; npm ci --silent --no-audit --no-fund) && touch $@
-console/frontend/data/fields.json: console/query_consts.go ; $(info $(M) generate list of selectable fields…)
-	$Q sed -En -e 's/^\tqueryColumn([a-zA-Z0-9]+)( .*|$$)/  "\1"/p' $< \
-		| sed -E -e '$$ ! s/$$/,/' -e '1s/^ */[/' -e '$$s/$$/]/' > $@
-	$Q test -s $@
 console/data/frontend: $(GENERATED_JS)
 console/data/frontend: $(shell $(LSFILES) console/frontend 2> /dev/null)
 console/data/frontend: ; $(info $(M) building console frontend…)

@@ -30,6 +30,7 @@ type ServerConfig = {
     dimensions: string[];
     limit: number;
   };
+  dimensions: string[];
   dimensionsLimit: number;
   homepageTopWidgets: string[];
 };

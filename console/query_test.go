@@ -16,14 +16,14 @@ func TestRequireMainTable(t *testing.T) {
 		Expected bool
 	}{
 		{[]queryColumn{}, queryFilter{}, false},
-		{[]queryColumn{queryColumnSrcAS}, queryFilter{}, false},
-		{[]queryColumn{queryColumnExporterAddress}, queryFilter{}, false},
-		{[]queryColumn{queryColumnSrcPort}, queryFilter{}, true},
-		{[]queryColumn{queryColumnSrcAddr}, queryFilter{}, true},
-		{[]queryColumn{queryColumnDstPort}, queryFilter{}, true},
-		{[]queryColumn{queryColumnDstAddr}, queryFilter{}, true},
-		{[]queryColumn{queryColumnSrcAS, queryColumnDstAddr}, queryFilter{}, true},
-		{[]queryColumn{queryColumnDstAddr, queryColumnSrcAS}, queryFilter{}, true},
+		{[]queryColumn{"SrcAS"}, queryFilter{}, false},
+		{[]queryColumn{"ExporterAddress"}, queryFilter{}, false},
+		{[]queryColumn{"SrcPort"}, queryFilter{}, true},
+		{[]queryColumn{"SrcAddr"}, queryFilter{}, true},
+		{[]queryColumn{"DstPort"}, queryFilter{}, true},
+		{[]queryColumn{"DstAddr"}, queryFilter{}, true},
+		{[]queryColumn{"SrcAS", "DstAddr"}, queryFilter{}, true},
+		{[]queryColumn{"DstAddr", "SrcAS"}, queryFilter{}, true},
 		{[]queryColumn{}, queryFilter{MainTableRequired: true}, true},
 	}
 	for idx, tc := range cases {
@@ -34,40 +34,65 @@ func TestRequireMainTable(t *testing.T) {
 	}
 }
 
+func TestUnmarshalQueryColumn(t *testing.T) {
+	cases := []struct {
+		Input    string
+		Expected string
+		Error    bool
+	}{
+		{"DstAddr", "DstAddr", false},
+		{"TimeReceived", "", true},
+		{"Nothing", "", true},
+	}
+	for _, tc := range cases {
+		var qc queryColumn
+		err := qc.UnmarshalText([]byte(tc.Input))
+		if err != nil && !tc.Error {
+			t.Fatalf("UnmarshalText(%q) error:\n%+v", tc.Input, err)
+		}
+		if err == nil && tc.Error {
+			t.Fatalf("UnmarshalText(%q) did not error", tc.Input)
+		}
+		if diff := helpers.Diff(qc, tc.Expected); diff != "" {
+			t.Fatalf("UnmarshalText(%q) (-got, +want):\n%s", tc.Input, diff)
+		}
+	}
+}
+
 func TestQueryColumnSQLSelect(t *testing.T) {
 	cases := []struct {
 		Input    queryColumn
 		Expected string
 	}{
 		{
-			Input:    queryColumnSrcAddr,
+			Input:    "SrcAddr",
 			Expected: `replaceRegexpOne(IPv6NumToString(SrcAddr), '^::ffff:', '')`,
 		}, {
-			Input:    queryColumnDstAS,
+			Input:    "DstAS",
 			Expected: `concat(toString(DstAS), ': ', dictGetOrDefault('asns', 'name', DstAS, '???'))`,
 		}, {
-			Input:    queryColumnDst2ndAS,
+			Input:    "Dst2ndAS",
 			Expected: `concat(toString(Dst2ndAS), ': ', dictGetOrDefault('asns', 'name', Dst2ndAS, '???'))`,
 		}, {
-			Input:    queryColumnProto,
+			Input:    "Proto",
 			Expected: `dictGetOrDefault('protocols', 'name', Proto, '???')`,
 		}, {
-			Input:    queryColumnEType,
+			Input:    "EType",
 			Expected: `if(EType = 2048, 'IPv4', if(EType = 34525, 'IPv6', '???'))`,
 		}, {
-			Input:    queryColumnOutIfSpeed,
+			Input:    "OutIfSpeed",
 			Expected: `toString(OutIfSpeed)`,
 		}, {
-			Input:    queryColumnExporterName,
+			Input:    "ExporterName",
 			Expected: `ExporterName`,
 		}, {
-			Input:    queryColumnPacketSizeBucket,
+			Input:    "PacketSizeBucket",
 			Expected: `PacketSizeBucket`,
 		}, {
-			Input:    queryColumnDstASPath,
+			Input:    "DstASPath",
 			Expected: `arrayStringConcat(DstASPath, ' ')`,
 		}, {
-			Input:    queryColumnDstCommunities,
+			Input:    "DstCommunities",
 			Expected: `arrayStringConcat(arrayConcat(arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities), arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)), ' ')`,
 		},
 	}

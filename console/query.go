@@ -9,42 +9,25 @@ import (
 	"strings"
 
 	"akvorado/common/helpers"
+	"akvorado/common/schema"
 	"akvorado/console/filter"
 )
 
-type queryColumn int
+type queryColumn string
 
 func (qc queryColumn) MarshalText() ([]byte, error) {
-	got, ok := queryColumnMap.LoadValue(qc)
-	if ok {
-		return []byte(got), nil
-	}
-	return nil, errors.New("unknown field")
+	return []byte(qc), nil
 }
 func (qc queryColumn) String() string {
-	got, _ := queryColumnMap.LoadValue(qc)
-	return got
+	return string(qc)
 }
 func (qc *queryColumn) UnmarshalText(input []byte) error {
-	got, ok := queryColumnMap.LoadKey(string(input))
-	if ok {
-		*qc = got
+	name := string(input)
+	if column, ok := schema.Flows.Columns.Get(name); ok && !column.NotSelectable {
+		*qc = queryColumn(name)
 		return nil
 	}
 	return errors.New("unknown field")
-}
-
-// queryColumnsRequiringMainTable lists query columns only present in
-// the main table. Also check filter/parser.peg.
-var queryColumnsRequiringMainTable = map[queryColumn]struct{}{
-	queryColumnSrcAddr:        {},
-	queryColumnDstAddr:        {},
-	queryColumnSrcNetPrefix:   {},
-	queryColumnDstNetPrefix:   {},
-	queryColumnSrcPort:        {},
-	queryColumnDstPort:        {},
-	queryColumnDstASPath:      {},
-	queryColumnDstCommunities: {},
 }
 
 func requireMainTable(qcs []queryColumn, qf queryFilter) bool {
@@ -52,7 +35,7 @@ func requireMainTable(qcs []queryColumn, qf queryFilter) bool {
 		return true
 	}
 	for _, qc := range qcs {
-		if _, ok := queryColumnsRequiringMainTable[qc]; ok {
+		if column, ok := schema.Flows.Columns.Get(string(qc)); ok && column.MainOnly {
 			return true
 		}
 	}
@@ -98,21 +81,21 @@ func (qf *queryFilter) UnmarshalText(input []byte) error {
 func (qc queryColumn) toSQLSelect() string {
 	var strValue string
 	switch qc {
-	case queryColumnExporterAddress, queryColumnSrcAddr, queryColumnDstAddr:
+	case "ExporterAddress", "SrcAddr", "DstAddr":
 		strValue = fmt.Sprintf("replaceRegexpOne(IPv6NumToString(%s), '^::ffff:', '')", qc)
-	case queryColumnSrcAS, queryColumnDstAS, queryColumnDst1stAS, queryColumnDst2ndAS, queryColumnDst3rdAS:
+	case "SrcAS", "DstAS", "Dst1stAS", "Dst2ndAS", "Dst3rdAS":
 		strValue = fmt.Sprintf(`concat(toString(%s), ': ', dictGetOrDefault('asns', 'name', %s, '???'))`,
 			qc, qc)
-	case queryColumnEType:
+	case "EType":
 		strValue = fmt.Sprintf(`if(EType = %d, 'IPv4', if(EType = %d, 'IPv6', '???'))`,
 			helpers.ETypeIPv4, helpers.ETypeIPv6)
-	case queryColumnProto:
+	case "Proto":
 		strValue = `dictGetOrDefault('protocols', 'name', Proto, '???')`
-	case queryColumnInIfSpeed, queryColumnOutIfSpeed, queryColumnSrcPort, queryColumnDstPort, queryColumnForwardingStatus, queryColumnInIfBoundary, queryColumnOutIfBoundary:
+	case "InIfSpeed", "OutIfSpeed", "SrcPort", "DstPort", "ForwardingStatus", "InIfBoundary", "OutIfBoundary":
 		strValue = fmt.Sprintf("toString(%s)", qc)
-	case queryColumnDstASPath:
+	case "DstASPath":
 		strValue = `arrayStringConcat(DstASPath, ' ')`
-	case queryColumnDstCommunities:
+	case "DstCommunities":
 		strValue = `arrayStringConcat(arrayConcat(arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities), arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)), ' ')`
 	default:
 		strValue = qc.String()
@@ -122,19 +105,15 @@ func (qc queryColumn) toSQLSelect() string {
 
 // reverseDirection reverse the direction of a column (src/dst, in/out)
 func (qc queryColumn) reverseDirection() queryColumn {
-	value, ok := queryColumnMap.LoadKey(filter.ReverseColumnDirection(qc.String()))
-	if !ok {
-		panic("unknown reverse column")
-	}
-	return value
+	return queryColumn(filter.ReverseColumnDirection(string(qc)))
 }
 
 // fixQueryColumnName fix capitalization of the provided column name
 func fixQueryColumnName(name string) string {
 	name = strings.ToLower(name)
-	for _, target := range queryColumnMap.Values() {
-		if strings.ToLower(target) == name {
-			return target
+	for _, k := range schema.Flows.Columns.Keys() {
+		if strings.ToLower(k) == name {
+			return k
 		}
 	}
 	return ""

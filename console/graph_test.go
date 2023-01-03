@@ -21,8 +21,8 @@ func TestGraphInputReverseDirection(t *testing.T) {
 		End:    time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 		Points: 100,
 		Dimensions: []queryColumn{
-			queryColumnExporterName,
-			queryColumnInIfProvider,
+			"ExporterName",
+			"InIfProvider",
 		},
 		Filter: queryFilter{
 			Filter:        "DstCountry = 'FR' AND SrcCountry = 'US'",
@@ -36,8 +36,8 @@ func TestGraphInputReverseDirection(t *testing.T) {
 		End:    time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 		Points: 100,
 		Dimensions: []queryColumn{
-			queryColumnExporterName,
-			queryColumnOutIfProvider,
+			"ExporterName",
+			"OutIfProvider",
 		},
 		Filter: queryFilter{
 			Filter:        "SrcCountry = 'FR' AND DstCountry = 'US'",
@@ -120,8 +120,8 @@ func TestGraphPreviousPeriod(t *testing.T) {
 				Start: start,
 				End:   end,
 				Dimensions: []queryColumn{
-					queryColumnExporterAddress,
-					queryColumnExporterName,
+					"ExporterAddress",
+					"ExporterName",
 				},
 			}
 			got := input.previousPeriod()
@@ -328,8 +328,8 @@ ORDER BY time WITH FILL
 				Points: 100,
 				Limit:  20,
 				Dimensions: []queryColumn{
-					queryColumnExporterName,
-					queryColumnInIfProvider,
+					"ExporterName",
+					"InIfProvider",
 				},
 				Filter: queryFilter{},
 				Units:  "l3bps",
@@ -360,8 +360,8 @@ ORDER BY time WITH FILL
 				Points: 100,
 				Limit:  20,
 				Dimensions: []queryColumn{
-					queryColumnExporterName,
-					queryColumnInIfProvider,
+					"ExporterName",
+					"InIfProvider",
 				},
 				Filter:        queryFilter{},
 				Units:         "l3bps",
@@ -409,8 +409,8 @@ ORDER BY time WITH FILL
 				Points: 100,
 				Limit:  20,
 				Dimensions: []queryColumn{
-					queryColumnExporterName,
-					queryColumnInIfProvider,
+					"ExporterName",
+					"InIfProvider",
 				},
 				Filter:         queryFilter{},
 				Units:          "l3bps",

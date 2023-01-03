@@ -36,6 +36,8 @@ const (
 	SkipAliasedColumns
 	// SkipTimeReceived skips the time received column
 	SkipTimeReceived
+	// SkipNotDimension skips columns that cannot be used as a dimension
+	SkipNotDimension
 	// UseTransformFromType uses the type from TransformFrom if any
 	UseTransformFromType
 	// SubstituteGenerates changes the column name to use the default generated value
@@ -78,6 +80,9 @@ func (schema Schema) iterate(fn func(column Column), options ...TableOption) {
 			continue
 		}
 		if slices.Contains(options, SkipAliasedColumns) && column.Alias != "" {
+			continue
+		}
+		if slices.Contains(options, SkipNotDimension) && column.NotSelectable {
 			continue
 		}
 		if slices.Contains(options, UseTransformFromType) && column.TransformFrom != nil {
