@@ -313,6 +313,7 @@ func TestDecodeInterface(t *testing.T) {
 				ExporterAddress: net.ParseIP("49.49.49.49").To16(),
 				NextHop:         net.ParseIP("54.54.54.54").To16(),
 				NextHopAS:       8218,
+				VlanID:          809,
 				SrcAS:           203476,
 				DstAS:           203361,
 			},
