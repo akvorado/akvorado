@@ -6,6 +6,7 @@ package http
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"time"
 
 	"akvorado/common/helpers"
@@ -74,11 +75,12 @@ func (c RedisCacheConfiguration) New() (persist.CacheStore, error) {
 		Password: c.Password,
 		DB:       c.DB,
 	})
-	// TODO: defer client.Close()
+	store := persist.NewRedisStore(client)
+	runtime.SetFinalizer(store, func(*persist.RedisStore) { client.Close() })
 	if _, err := client.Ping(context.Background()).Result(); err != nil {
 		return nil, fmt.Errorf("cannot ping Redis server: %w", err)
 	}
-	return persist.NewRedisStore(client), nil
+	return store, nil
 }
 
 // DefaultRedisCacheConfiguration returns the default configuration for a
