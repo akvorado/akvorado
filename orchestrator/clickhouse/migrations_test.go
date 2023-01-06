@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -59,13 +60,15 @@ ORDER BY length(table) DESC`)
 	}
 }
 
-func dumpAllTables(t *testing.T, ch *clickhousedb.Component) map[string]string {
-	// TODO: find the right ordering, this one does not totally work
-	rows, err := ch.Query(context.Background(), `
+const dumpAllTablesQuery = `
 SELECT table, create_table_query
 FROM system.tables
 WHERE database=currentDatabase() AND table NOT LIKE '.%'
-ORDER BY length(table) ASC`)
+ORDER BY length(table) ASC`
+
+func dumpAllTables(t *testing.T, ch *clickhousedb.Component) map[string]string {
+	// TODO: find the right ordering, this one does not totally work
+	rows, err := ch.Query(context.Background(), dumpAllTablesQuery)
 	if err != nil {
 		t.Fatalf("Query() error:\n%+v", err)
 	}
@@ -186,6 +189,7 @@ func TestMigration(t *testing.T) {
 	}
 
 	var lastRun map[string]string
+	var lastSteps int
 	files, err := ioutil.ReadDir("testdata/states")
 	if err != nil {
 		t.Fatalf("ReadDir(%q) error:\n%+v", "testdata/states", err)
@@ -250,7 +254,9 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 					t.Fatalf("Final state is different (-last, +current):\n%s", diff)
 				}
 			}
+			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps")
 			lastRun = currentRun
+			lastSteps, _ = strconv.Atoi(gotMetrics["applied_steps"])
 		})
 		if t.Failed() {
 			row := chComponent.QueryRow(context.Background(), `
@@ -286,14 +292,15 @@ LIMIT 1`, proto.ClientName)
 			waitMigrations(t, ch)
 
 			// No migration should have been applied the last time
-			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_",
-				"applied_steps")
-			expectedMetrics := map[string]string{
-				`applied_steps`: "0",
-			}
+			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps")
+			expectedMetrics := map[string]string{`applied_steps`: "0"}
 			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 				t.Fatalf("Metrics (-got, +want):\n%s", diff)
 			}
 		})
+	}
+
+	if !t.Failed() && lastSteps != 0 {
+		t.Fatalf("Last step was not idempotent. Record a new one with:\n%s FORMAT CSV", dumpAllTablesQuery)
 	}
 }
