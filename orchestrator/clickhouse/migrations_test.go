@@ -181,6 +181,9 @@ func TestGetHTTPBaseURL(t *testing.T) {
 func TestMigration(t *testing.T) {
 	r := reporter.NewMock(t)
 	chComponent := clickhousedb.SetupClickHouse(t, r)
+	if err := chComponent.Exec(context.Background(), "DROP TABLE IF EXISTS system.metric_log"); err != nil {
+		t.Fatalf("Exec() error:\n%+v", err)
+	}
 
 	var lastRun map[string]string
 	files, err := ioutil.ReadDir("testdata/states")
