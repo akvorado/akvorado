@@ -21,7 +21,7 @@ to 0.
 
 - 🩹 *inlet*: handle correctly interfaces with high indexes for sFlow
 - 🩹 *docker*: fix Kafka healthcheck
-- 🌱 *orchestrator*: set TTL for ClickHouse system log tables
+- 🌱 *orchestrator*: set TTL for ClickHouse system log tables and `exporters` table
 
 ## 1.6.4 - 2022-12-22
 

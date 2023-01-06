@@ -148,8 +148,11 @@ func (c *Component) createExportersView(ctx context.Context) error {
 		return fmt.Errorf("cannot build query to create exporters view: %w", err)
 	}
 
-	// Check if the table already exists with these columns.
-	if ok, err := c.tableAlreadyExists(ctx, "exporters", "as_select", selectQuery); err != nil {
+	// Check if the table already exists with these columns and with a TTL.
+	if ok, err := c.tableAlreadyExists(ctx,
+		"exporters",
+		"IF(position(create_table_query, 'TTL TimeReceived ') > 0, as_select, 'NOTTL')",
+		selectQuery); err != nil {
 		return err
 	} else if ok {
 		c.r.Info().Msg("exporters view already exists, skip migration")
@@ -165,7 +168,9 @@ func (c *Component) createExportersView(ctx context.Context) error {
 CREATE MATERIALIZED VIEW exporters
 ENGINE = ReplacingMergeTree(TimeReceived)
 ORDER BY (ExporterAddress, IfName)
-AS %s`, selectQuery)); err != nil {
+TTL TimeReceived + INTERVAL 1 DAY
+AS %s
+`, selectQuery)); err != nil {
 		return fmt.Errorf("cannot create exporters view: %w", err)
 	}
 
