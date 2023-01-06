@@ -519,7 +519,7 @@ FROM {{ .Database }}.flows`, gin.H{
 		return fmt.Errorf("cannot drop table %s: %w", viewName, err)
 	}
 	if err := c.d.ClickHouse.Exec(ctx,
-		fmt.Sprintf(`CREATE MATERIALIZED VIEW %s TO flows AS %s`, viewName, selectQuery)); err != nil {
+		fmt.Sprintf(`CREATE MATERIALIZED VIEW %s TO %s AS %s`, viewName, tableName, selectQuery)); err != nil {
 		return fmt.Errorf("cannot create %s: %w", viewName, err)
 	}
 	return nil
