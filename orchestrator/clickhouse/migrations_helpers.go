@@ -542,17 +542,14 @@ AND match(table, '.*_log(_\\d+){0,1}')
 AND engine_full NOT LIKE $1`, fmt.Sprintf("%% %s %%", ttlClause)); err != nil {
 		return fmt.Errorf("cannot query system log tables: %w", err)
 	}
-	c.t.Go(func() error {
-		for _, table := range tables {
-			c.r.Info().Msgf("set TTL of system.%s", table.Name)
-			alterQuery := fmt.Sprintf("ALTER TABLE system.%s MODIFY %s", table.Name, ttlClause)
-			if err := c.d.ClickHouse.Exec(ctx, alterQuery); err != nil {
-				// Maybe we don't have the rights for that! Non fatal.
-				c.r.Err(err).Msgf("cannot alter TTL for system.%s", table.Name)
-			}
+	for _, table := range tables {
+		c.r.Info().Msgf("set TTL of system.%s", table.Name)
+		alterQuery := fmt.Sprintf("ALTER TABLE system.%s MODIFY %s", table.Name, ttlClause)
+		if err := c.d.ClickHouse.Exec(ctx, alterQuery); err != nil {
+			// Maybe we don't have the rights for that! Non fatal.
+			c.r.Err(err).Msgf("cannot alter TTL for system.%s", table.Name)
 		}
-		return nil
-	})
+	}
 	if len(tables) > 0 {
 		return nil
 	}
