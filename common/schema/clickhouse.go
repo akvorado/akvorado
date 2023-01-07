@@ -10,106 +10,101 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// String turns a column into a declaration for ClickHouse
-func (column Column) String() string {
-	result := []string{fmt.Sprintf("`%s`", column.Name), column.Type}
-	if column.Codec != "" {
-		result = append(result, fmt.Sprintf("CODEC(%s)", column.Codec))
+// ClickHouseDefinition turns a column into a declaration for ClickHouse
+func (column Column) ClickHouseDefinition() string {
+	result := []string{fmt.Sprintf("`%s`", column.Name), column.ClickHouseType}
+	if column.ClickHouseCodec != "" {
+		result = append(result, fmt.Sprintf("CODEC(%s)", column.ClickHouseCodec))
 	}
-	if column.Alias != "" {
-		result = append(result, fmt.Sprintf("ALIAS %s", column.Alias))
+	if column.ClickHouseAlias != "" {
+		result = append(result, fmt.Sprintf("ALIAS %s", column.ClickHouseAlias))
 	}
 	return strings.Join(result, " ")
 }
 
-// TableOption is an option to alter the values returned by Table() and Columns().
-type TableOption int
+// ClickHouseTableOption is an option to alter the values returned by ClickHouseCreateTable() and ClickHouseSelectColumns().
+type ClickHouseTableOption int
 
 const (
-	// SkipMainOnlyColumns skips the columns for the main flows table only.
-	SkipMainOnlyColumns TableOption = iota
-	// SkipGeneratedColumns skips the columns with a GenerateFrom value
-	SkipGeneratedColumns
-	// SkipTransformColumns skips the columns with a TransformFrom value
-	SkipTransformColumns
-	// SkipAliasedColumns skips the columns with a Alias value
-	SkipAliasedColumns
-	// SkipTimeReceived skips the time received column
-	SkipTimeReceived
-	// SkipNotDimension skips columns that cannot be used as a dimension
-	SkipNotDimension
-	// UseTransformFromType uses the type from TransformFrom if any
-	UseTransformFromType
-	// SubstituteGenerates changes the column name to use the default generated value
-	SubstituteGenerates
-	// SubstituteTransforms changes the column name to use the transformed value
-	SubstituteTransforms
+	// ClickHouseSkipMainOnlyColumns skips the columns for the main flows table only.
+	ClickHouseSkipMainOnlyColumns ClickHouseTableOption = iota
+	// ClickHouseSkipGeneratedColumns skips the columns with a GenerateFrom value
+	ClickHouseSkipGeneratedColumns
+	// ClickHouseSkipTransformColumns skips the columns with a TransformFrom value
+	ClickHouseSkipTransformColumns
+	// ClickHouseSkipAliasedColumns skips the columns with a Alias value
+	ClickHouseSkipAliasedColumns
+	// ClickHouseSkipTimeReceived skips the time received column
+	ClickHouseSkipTimeReceived
+	// ClickHouseUseTransformFromType uses the type from TransformFrom if any
+	ClickHouseUseTransformFromType
+	// ClickHouseSubstituteGenerates changes the column name to use the default generated value
+	ClickHouseSubstituteGenerates
+	// ClickHouseSubstituteTransforms changes the column name to use the transformed value
+	ClickHouseSubstituteTransforms
 )
 
-// CreateTable returns the columns for the CREATE TABLE clause in ClickHouse.
-func (schema Schema) CreateTable(options ...TableOption) string {
+// ClickHouseCreateTable returns the columns for the CREATE TABLE clause in ClickHouse.
+func (schema Schema) ClickHouseCreateTable(options ...ClickHouseTableOption) string {
 	lines := []string{}
-	schema.iterate(func(column Column) {
-		lines = append(lines, column.String())
+	schema.clickhouseIterate(func(column Column) {
+		lines = append(lines, column.ClickHouseDefinition())
 	}, options...)
 	return strings.Join(lines, ",\n")
 }
 
-// SelectColumns returns the column for the SELECT clause in ClickHouse.
-func (schema Schema) SelectColumns(options ...TableOption) []string {
+// ClickHouseSelectColumns returns the columns matching the options for use in SELECT
+func (schema Schema) ClickHouseSelectColumns(options ...ClickHouseTableOption) []string {
 	cols := []string{}
-	schema.iterate(func(column Column) {
+	schema.clickhouseIterate(func(column Column) {
 		cols = append(cols, column.Name)
 	}, options...)
 	return cols
 }
 
-func (schema Schema) iterate(fn func(column Column), options ...TableOption) {
+func (schema Schema) clickhouseIterate(fn func(column Column), options ...ClickHouseTableOption) {
 	for pair := schema.Columns.Front(); pair != nil; pair = pair.Next() {
 		column := pair.Value
-		if slices.Contains(options, SkipTimeReceived) && column.Name == "TimeReceived" {
+		if slices.Contains(options, ClickHouseSkipTimeReceived) && column.Name == "TimeReceived" {
 			continue
 		}
-		if slices.Contains(options, SkipMainOnlyColumns) && column.MainOnly {
+		if slices.Contains(options, ClickHouseSkipMainOnlyColumns) && column.MainOnly {
 			continue
 		}
-		if slices.Contains(options, SkipGeneratedColumns) && column.GenerateFrom != "" {
+		if slices.Contains(options, ClickHouseSkipGeneratedColumns) && column.ClickHouseGenerateFrom != "" {
 			continue
 		}
-		if slices.Contains(options, SkipTransformColumns) && column.TransformFrom != nil {
+		if slices.Contains(options, ClickHouseSkipTransformColumns) && column.ClickHouseTransformFrom != nil {
 			continue
 		}
-		if slices.Contains(options, SkipAliasedColumns) && column.Alias != "" {
+		if slices.Contains(options, ClickHouseSkipAliasedColumns) && column.ClickHouseAlias != "" {
 			continue
 		}
-		if slices.Contains(options, SkipNotDimension) && column.NotSelectable {
-			continue
-		}
-		if slices.Contains(options, UseTransformFromType) && column.TransformFrom != nil {
-			for _, ocol := range column.TransformFrom {
+		if slices.Contains(options, ClickHouseUseTransformFromType) && column.ClickHouseTransformFrom != nil {
+			for _, ocol := range column.ClickHouseTransformFrom {
 				// We assume we only need to use name/type
 				column.Name = ocol.Name
-				column.Type = ocol.Type
+				column.ClickHouseType = ocol.ClickHouseType
 				fn(column)
 			}
 			continue
 		}
-		if slices.Contains(options, SubstituteGenerates) && column.GenerateFrom != "" {
-			column.Name = fmt.Sprintf("%s AS %s", column.GenerateFrom, column.Name)
+		if slices.Contains(options, ClickHouseSubstituteGenerates) && column.ClickHouseGenerateFrom != "" {
+			column.Name = fmt.Sprintf("%s AS %s", column.ClickHouseGenerateFrom, column.Name)
 		}
-		if slices.Contains(options, SubstituteTransforms) && column.TransformFrom != nil {
-			column.Name = fmt.Sprintf("%s AS %s", column.TransformTo, column.Name)
+		if slices.Contains(options, ClickHouseSubstituteTransforms) && column.ClickHouseTransformFrom != nil {
+			column.Name = fmt.Sprintf("%s AS %s", column.ClickHouseTransformTo, column.Name)
 		}
 		fn(column)
 	}
 }
 
-// SortingKeys returns the list of sorting keys, prefixed by the primary keys.
-func (schema Schema) SortingKeys() []string {
-	cols := append([]string{}, schema.PrimaryKeys...)
+// ClickHouseSortingKeys returns the list of sorting keys, prefixed by the primary keys.
+func (schema Schema) ClickHouseSortingKeys() []string {
+	cols := append([]string{}, schema.ClickHousePrimaryKeys...)
 	for pair := schema.Columns.Front(); pair != nil; pair = pair.Next() {
 		column := pair.Value
-		if column.NotSortingKey || column.MainOnly {
+		if column.ClickHouseNotSortingKey || column.MainOnly {
 			continue
 		}
 		if !slices.Contains(cols, column.Name) {

@@ -62,11 +62,19 @@ func DefaultConfiguration() Configuration {
 }
 
 func (c *Component) configHandlerFunc(gc *gin.Context) {
+	dimensions := []string{}
+	for pair := schema.Flows.Columns.Front(); pair != nil; pair = pair.Next() {
+		column := pair.Value
+		if column.ConsoleNotDimension {
+			continue
+		}
+		dimensions = append(dimensions, column.Name)
+	}
 	gc.JSON(http.StatusOK, gin.H{
 		"version":                 c.config.Version,
 		"defaultVisualizeOptions": c.config.DefaultVisualizeOptions,
 		"dimensionsLimit":         c.config.DimensionsLimit,
 		"homepageTopWidgets":      c.config.HomepageTopWidgets,
-		"dimensions":              schema.Flows.SelectColumns(schema.SkipNotDimension),
+		"dimensions":              dimensions,
 	})
 }

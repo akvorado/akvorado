@@ -200,10 +200,10 @@ func (c *Component) createRawFlowsTable(ctx context.Context) error {
 		gin.H{
 			"Database": c.config.Database,
 			"Table":    tableName,
-			"Schema": schema.Flows.CreateTable(
-				schema.SkipGeneratedColumns,
-				schema.UseTransformFromType,
-				schema.SkipAliasedColumns),
+			"Schema": schema.Flows.ClickHouseCreateTable(
+				schema.ClickHouseSkipGeneratedColumns,
+				schema.ClickHouseUseTransformFromType,
+				schema.ClickHouseSkipAliasedColumns),
 			"Engine": kafkaEngine,
 		})
 	if err != nil {
@@ -245,10 +245,10 @@ func (c *Component) createRawFlowsConsumerView(ctx context.Context) error {
 		`{{ .With }} SELECT {{ .Columns }} FROM {{ .Database }}.{{ .Table }} WHERE length(_error) = 0`,
 		gin.H{
 			"With": "WITH arrayCompact(DstASPath) AS c_DstASPath",
-			"Columns": strings.Join(schema.Flows.SelectColumns(
-				schema.SubstituteGenerates,
-				schema.SubstituteTransforms,
-				schema.SkipAliasedColumns), ", "),
+			"Columns": strings.Join(schema.Flows.ClickHouseSelectColumns(
+				schema.ClickHouseSubstituteGenerates,
+				schema.ClickHouseSubstituteTransforms,
+				schema.ClickHouseSkipAliasedColumns), ", "),
 			"Database": c.config.Database,
 			"Table":    tableName,
 		})
@@ -352,7 +352,7 @@ PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, INTERVAL {{ .Parti
 ORDER BY (TimeReceived, ExporterAddress, InIfName, OutIfName)
 TTL TimeReceived + toIntervalSecond({{ .TTL }})
 `, gin.H{
-				"Schema":            schema.Flows.CreateTable(),
+				"Schema":            schema.Flows.ClickHouseCreateTable(),
 				"PartitionInterval": partitionInterval,
 				"TTL":               ttl,
 			})
@@ -366,10 +366,10 @@ ORDER BY ({{ .SortingKey }})
 TTL TimeReceived + toIntervalSecond({{ .TTL }})
 `, gin.H{
 				"Table":             tableName,
-				"Schema":            schema.Flows.CreateTable(schema.SkipMainOnlyColumns),
+				"Schema":            schema.Flows.ClickHouseCreateTable(schema.ClickHouseSkipMainOnlyColumns),
 				"PartitionInterval": partitionInterval,
-				"PrimaryKey":        strings.Join(schema.Flows.PrimaryKeys, ", "),
-				"SortingKey":        strings.Join(schema.Flows.SortingKeys(), ", "),
+				"PrimaryKey":        strings.Join(schema.Flows.ClickHousePrimaryKeys, ", "),
+				"SortingKey":        strings.Join(schema.Flows.ClickHouseSortingKeys(), ", "),
 				"TTL":               ttl,
 			})
 		}
@@ -413,15 +413,15 @@ outer:
 		for _, existingColumn := range existingColumns {
 			if wantedColumn.Name == existingColumn.Name {
 				// Do a few sanity checks
-				if wantedColumn.Type != existingColumn.Type {
+				if wantedColumn.ClickHouseType != existingColumn.Type {
 					return fmt.Errorf("table %s, column %s has a non-matching type: %s vs %s",
-						tableName, wantedColumn.Name, existingColumn.Type, wantedColumn.Type)
+						tableName, wantedColumn.Name, existingColumn.Type, wantedColumn.ClickHouseType)
 				}
-				if resolution.Interval > 0 && slices.Contains(schema.Flows.PrimaryKeys, wantedColumn.Name) && existingColumn.IsPrimaryKey == 0 {
+				if resolution.Interval > 0 && slices.Contains(schema.Flows.ClickHousePrimaryKeys, wantedColumn.Name) && existingColumn.IsPrimaryKey == 0 {
 					return fmt.Errorf("table %s, column %s should be a primary key, cannot change that",
 						tableName, wantedColumn.Name)
 				}
-				if resolution.Interval > 0 && !wantedColumn.NotSortingKey && existingColumn.IsSortingKey == 0 {
+				if resolution.Interval > 0 && !wantedColumn.ClickHouseNotSortingKey && existingColumn.IsSortingKey == 0 {
 					// That's something we can fix, but we need to drop it before recreating it
 					err := c.d.ClickHouse.Exec(ctx,
 						fmt.Sprintf("ALTER TABLE %s DROP COLUMN %s", tableName, existingColumn.Name))
@@ -431,27 +431,27 @@ outer:
 					}
 					// Schedule adding it back
 					modifications = append(modifications,
-						fmt.Sprintf("ADD COLUMN %s AFTER %s", wantedColumn, previousColumn))
+						fmt.Sprintf("ADD COLUMN %s AFTER %s", wantedColumn.ClickHouseDefinition(), previousColumn))
 				}
 				previousColumn = wantedColumn.Name
 				continue outer
 			}
 		}
 		// Add the missing column. Only if not primary.
-		if resolution.Interval > 0 && slices.Contains(schema.Flows.PrimaryKeys, wantedColumn.Name) {
+		if resolution.Interval > 0 && slices.Contains(schema.Flows.ClickHousePrimaryKeys, wantedColumn.Name) {
 			return fmt.Errorf("table %s, column %s is missing but it is a primary key",
 				tableName, wantedColumn.Name)
 		}
 		c.r.Debug().Msgf("add missing column %s to %s", wantedColumn.Name, tableName)
 		modifications = append(modifications,
-			fmt.Sprintf("ADD COLUMN %s AFTER %s", wantedColumn, previousColumn))
+			fmt.Sprintf("ADD COLUMN %s AFTER %s", wantedColumn.ClickHouseDefinition(), previousColumn))
 		previousColumn = wantedColumn.Name
 	}
 	if len(modifications) > 0 {
 		// Also update ORDER BY
 		if resolution.Interval > 0 {
 			modifications = append(modifications,
-				fmt.Sprintf("MODIFY ORDER BY (%s)", strings.Join(schema.Flows.SortingKeys(), ", ")))
+				fmt.Sprintf("MODIFY ORDER BY (%s)", strings.Join(schema.Flows.ClickHouseSortingKeys(), ", ")))
 		}
 		c.r.Info().Msgf("apply %d modifications to %s", len(modifications), tableName)
 		if resolution.Interval > 0 {
@@ -501,10 +501,10 @@ SELECT
 FROM {{ .Database }}.flows`, gin.H{
 		"Database": c.config.Database,
 		"Seconds":  uint64(resolution.Interval.Seconds()),
-		"Columns": strings.Join(schema.Flows.SelectColumns(
-			schema.SkipTimeReceived,
-			schema.SkipMainOnlyColumns,
-			schema.SkipAliasedColumns), ",\n "),
+		"Columns": strings.Join(schema.Flows.ClickHouseSelectColumns(
+			schema.ClickHouseSkipTimeReceived,
+			schema.ClickHouseSkipMainOnlyColumns,
+			schema.ClickHouseSkipAliasedColumns), ",\n "),
 	})
 	if err != nil {
 		return fmt.Errorf("cannot build select statement for consumer %s: %w", viewName, err)

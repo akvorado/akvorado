@@ -15,7 +15,7 @@ type Schema struct {
 
 	// For ClickHouse. This is the set of primary keys (order is important and
 	// may not follow column order).
-	PrimaryKeys []string
+	ClickHousePrimaryKeys []string
 }
 
 // Column represents a column of data.
@@ -29,14 +29,14 @@ type Column struct {
 	// retrieved from the protobuf. `TransformFrom' and `TransformTo' work in
 	// pairs. The first one is the set of column in the raw table while the
 	// second one is how to transform it for the main table.
-	Type          string
-	Codec         string
-	Alias         string
-	NotSortingKey bool
-	GenerateFrom  string
-	TransformFrom []Column
-	TransformTo   string
+	ClickHouseType          string
+	ClickHouseCodec         string
+	ClickHouseAlias         string
+	ClickHouseNotSortingKey bool
+	ClickHouseGenerateFrom  string
+	ClickHouseTransformFrom []Column
+	ClickHouseTransformTo   string
 
 	// For the console.
-	NotSelectable bool
+	ConsoleNotDimension bool
 }

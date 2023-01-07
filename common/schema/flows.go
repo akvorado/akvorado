@@ -14,7 +14,7 @@ import (
 // will be duplicated as Dst/OutIf during init. That's not the case for columns
 // in `PrimaryKeys'.
 var Flows = Schema{
-	PrimaryKeys: []string{
+	ClickHousePrimaryKeys: []string{
 		"TimeReceived",
 		"ExporterAddress",
 		"EType",
@@ -28,113 +28,113 @@ var Flows = Schema{
 	},
 	Columns: buildMapFromColumns([]Column{
 		{
-			Name:          "TimeReceived",
-			Type:          "DateTime",
-			Codec:         "DoubleDelta, LZ4",
-			NotSelectable: true,
+			Name:                "TimeReceived",
+			ClickHouseType:      "DateTime",
+			ClickHouseCodec:     "DoubleDelta, LZ4",
+			ConsoleNotDimension: true,
 		},
-		{Name: "SamplingRate", Type: "UInt64", NotSelectable: true},
-		{Name: "ExporterAddress", Type: "LowCardinality(IPv6)"},
-		{Name: "ExporterName", Type: "LowCardinality(String)", NotSortingKey: true},
-		{Name: "ExporterGroup", Type: "LowCardinality(String)", NotSortingKey: true},
-		{Name: "ExporterRole", Type: "LowCardinality(String)", NotSortingKey: true},
-		{Name: "ExporterSite", Type: "LowCardinality(String)", NotSortingKey: true},
-		{Name: "ExporterRegion", Type: "LowCardinality(String)", NotSortingKey: true},
-		{Name: "ExporterTenant", Type: "LowCardinality(String)", NotSortingKey: true},
+		{Name: "SamplingRate", ClickHouseType: "UInt64", ConsoleNotDimension: true},
+		{Name: "ExporterAddress", ClickHouseType: "LowCardinality(IPv6)"},
+		{Name: "ExporterName", ClickHouseType: "LowCardinality(String)", ClickHouseNotSortingKey: true},
+		{Name: "ExporterGroup", ClickHouseType: "LowCardinality(String)", ClickHouseNotSortingKey: true},
+		{Name: "ExporterRole", ClickHouseType: "LowCardinality(String)", ClickHouseNotSortingKey: true},
+		{Name: "ExporterSite", ClickHouseType: "LowCardinality(String)", ClickHouseNotSortingKey: true},
+		{Name: "ExporterRegion", ClickHouseType: "LowCardinality(String)", ClickHouseNotSortingKey: true},
+		{Name: "ExporterTenant", ClickHouseType: "LowCardinality(String)", ClickHouseNotSortingKey: true},
 		{
-			Name:     "SrcAddr",
-			Type:     "IPv6",
-			MainOnly: true,
+			Name:           "SrcAddr",
+			MainOnly:       true,
+			ClickHouseType: "IPv6",
 		}, {
-			Name:          "SrcNetMask",
-			Type:          "UInt8",
-			MainOnly:      true,
-			NotSelectable: true,
+			Name:                "SrcNetMask",
+			MainOnly:            true,
+			ClickHouseType:      "UInt8",
+			ConsoleNotDimension: true,
 		}, {
-			Name:     "SrcNetPrefix",
-			Type:     "String",
-			MainOnly: true,
-			Alias: `CASE
+			Name:           "SrcNetPrefix",
+			MainOnly:       true,
+			ClickHouseType: "String",
+			ClickHouseAlias: `CASE
  WHEN EType = 0x800 THEN concat(replaceRegexpOne(IPv6CIDRToRange(SrcAddr, (96 + SrcNetMask)::UInt8).1::String, '^::ffff:', ''), '/', SrcNetMask::String)
  WHEN EType = 0x86dd THEN concat(IPv6CIDRToRange(SrcAddr, SrcNetMask).1::String, '/', SrcNetMask::String)
  ELSE ''
 END`,
 		},
-		{Name: "SrcAS", Type: "UInt32"},
+		{Name: "SrcAS", ClickHouseType: "UInt32"},
 		{
-			Name:         "SrcNetName",
-			Type:         "LowCardinality(String)",
-			GenerateFrom: "dictGetOrDefault('networks', 'name', SrcAddr, '')",
+			Name:                   "SrcNetName",
+			ClickHouseType:         "LowCardinality(String)",
+			ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'name', SrcAddr, '')",
 		}, {
-			Name:         "SrcNetRole",
-			Type:         "LowCardinality(String)",
-			GenerateFrom: "dictGetOrDefault('networks', 'role', SrcAddr, '')",
+			Name:                   "SrcNetRole",
+			ClickHouseType:         "LowCardinality(String)",
+			ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'role', SrcAddr, '')",
 		}, {
-			Name:         "SrcNetSite",
-			Type:         "LowCardinality(String)",
-			GenerateFrom: "dictGetOrDefault('networks', 'site', SrcAddr, '')",
+			Name:                   "SrcNetSite",
+			ClickHouseType:         "LowCardinality(String)",
+			ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'site', SrcAddr, '')",
 		}, {
-			Name:         "SrcNetRegion",
-			Type:         "LowCardinality(String)",
-			GenerateFrom: "dictGetOrDefault('networks', 'region', SrcAddr, '')",
+			Name:                   "SrcNetRegion",
+			ClickHouseType:         "LowCardinality(String)",
+			ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'region', SrcAddr, '')",
 		}, {
-			Name:         "SrcNetTenant",
-			Type:         "LowCardinality(String)",
-			GenerateFrom: "dictGetOrDefault('networks', 'tenant', SrcAddr, '')",
+			Name:                   "SrcNetTenant",
+			ClickHouseType:         "LowCardinality(String)",
+			ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'tenant', SrcAddr, '')",
 		},
-		{Name: "SrcCountry", Type: "FixedString(2)"},
+		{Name: "SrcCountry", ClickHouseType: "FixedString(2)"},
 		{
-			Name:     "DstASPath",
-			Type:     "Array(UInt32)",
-			MainOnly: true,
+			Name:           "DstASPath",
+			MainOnly:       true,
+			ClickHouseType: "Array(UInt32)",
 		}, {
-			Name:         "Dst1stAS",
-			Type:         "UInt32",
-			GenerateFrom: "c_DstASPath[1]",
+			Name:                   "Dst1stAS",
+			ClickHouseType:         "UInt32",
+			ClickHouseGenerateFrom: "c_DstASPath[1]",
 		}, {
-			Name:         "Dst2ndAS",
-			Type:         "UInt32",
-			GenerateFrom: "c_DstASPath[2]",
+			Name:                   "Dst2ndAS",
+			ClickHouseType:         "UInt32",
+			ClickHouseGenerateFrom: "c_DstASPath[2]",
 		}, {
-			Name:         "Dst3rdAS",
-			Type:         "UInt32",
-			GenerateFrom: "c_DstASPath[3]",
+			Name:                   "Dst3rdAS",
+			ClickHouseType:         "UInt32",
+			ClickHouseGenerateFrom: "c_DstASPath[3]",
 		}, {
-			Name:     "DstCommunities",
-			Type:     "Array(UInt32)",
-			MainOnly: true,
+			Name:           "DstCommunities",
+			MainOnly:       true,
+			ClickHouseType: "Array(UInt32)",
 		}, {
-			Name:     "DstLargeCommunities",
-			Type:     "Array(UInt128)",
-			MainOnly: true,
-			TransformFrom: []Column{
-				{Name: "DstLargeCommunities.ASN", Type: "Array(UInt32)"},
-				{Name: "DstLargeCommunities.LocalData1", Type: "Array(UInt32)"},
-				{Name: "DstLargeCommunities.LocalData2", Type: "Array(UInt32)"},
+			Name:           "DstLargeCommunities",
+			MainOnly:       true,
+			ClickHouseType: "Array(UInt128)",
+			ClickHouseTransformFrom: []Column{
+				{Name: "DstLargeCommunities.ASN", ClickHouseType: "Array(UInt32)"},
+				{Name: "DstLargeCommunities.LocalData1", ClickHouseType: "Array(UInt32)"},
+				{Name: "DstLargeCommunities.LocalData2", ClickHouseType: "Array(UInt32)"},
 			},
-			TransformTo:   "arrayMap((asn, l1, l2) -> ((bitShiftLeft(CAST(asn, 'UInt128'), 64) + bitShiftLeft(CAST(l1, 'UInt128'), 32)) + CAST(l2, 'UInt128')), `DstLargeCommunities.ASN`, `DstLargeCommunities.LocalData1`, `DstLargeCommunities.LocalData2`)",
-			NotSelectable: true,
+			ClickHouseTransformTo: "arrayMap((asn, l1, l2) -> ((bitShiftLeft(CAST(asn, 'UInt128'), 64) + bitShiftLeft(CAST(l1, 'UInt128'), 32)) + CAST(l2, 'UInt128')), `DstLargeCommunities.ASN`, `DstLargeCommunities.LocalData1`, `DstLargeCommunities.LocalData2`)",
+			ConsoleNotDimension:   true,
 		},
-		{Name: "InIfName", Type: "LowCardinality(String)"},
-		{Name: "InIfDescription", Type: "String", NotSortingKey: true},
-		{Name: "InIfSpeed", Type: "UInt32", NotSortingKey: true},
-		{Name: "InIfConnectivity", Type: "LowCardinality(String)", NotSortingKey: true},
-		{Name: "InIfProvider", Type: "LowCardinality(String)", NotSortingKey: true},
-		{Name: "InIfBoundary", Type: "Enum8('undefined' = 0, 'external' = 1, 'internal' = 2)", NotSortingKey: true},
-		{Name: "EType", Type: "UInt32"},
-		{Name: "Proto", Type: "UInt32"},
-		{Name: "SrcPort", Type: "UInt32", MainOnly: true},
-		{Name: "Bytes", Type: "UInt64", NotSortingKey: true, NotSelectable: true},
-		{Name: "Packets", Type: "UInt64", NotSortingKey: true, NotSelectable: true},
+		{Name: "InIfName", ClickHouseType: "LowCardinality(String)"},
+		{Name: "InIfDescription", ClickHouseType: "String", ClickHouseNotSortingKey: true},
+		{Name: "InIfSpeed", ClickHouseType: "UInt32", ClickHouseNotSortingKey: true},
+		{Name: "InIfConnectivity", ClickHouseType: "LowCardinality(String)", ClickHouseNotSortingKey: true},
+		{Name: "InIfProvider", ClickHouseType: "LowCardinality(String)", ClickHouseNotSortingKey: true},
+		{Name: "InIfBoundary", ClickHouseType: "Enum8('undefined' = 0, 'external' = 1, 'internal' = 2)", ClickHouseNotSortingKey: true},
+		{Name: "EType", ClickHouseType: "UInt32"},
+		{Name: "Proto", ClickHouseType: "UInt32"},
+		{Name: "SrcPort", ClickHouseType: "UInt32", MainOnly: true},
+		{Name: "Bytes", ClickHouseType: "UInt64", ClickHouseNotSortingKey: true, ConsoleNotDimension: true},
+		{Name: "Packets", ClickHouseType: "UInt64", ClickHouseNotSortingKey: true, ConsoleNotDimension: true},
 		{
-			Name:          "PacketSize",
-			Type:          "UInt64",
-			Alias:         "intDiv(Bytes, Packets)",
-			NotSelectable: true,
+			Name:                "PacketSize",
+			ClickHouseType:      "UInt64",
+			ClickHouseAlias:     "intDiv(Bytes, Packets)",
+			ConsoleNotDimension: true,
 		}, {
-			Name: "PacketSizeBucket",
-			Type: "LowCardinality(String)",
-			Alias: func() string {
+			Name:           "PacketSizeBucket",
+			ClickHouseType: "LowCardinality(String)",
+			ClickHouseAlias: func() string {
 				boundaries := []int{64, 128, 256, 512, 768, 1024, 1280, 1501,
 					2048, 3072, 4096, 8192, 10240, 16384, 32768, 65536}
 				conditions := []string{}
@@ -148,7 +148,7 @@ END`,
 				return fmt.Sprintf("multiIf(%s)", strings.Join(conditions, ", "))
 			}(),
 		},
-		{Name: "ForwardingStatus", Type: "UInt32"},
+		{Name: "ForwardingStatus", ClickHouseType: "UInt32"},
 	}),
 }
 
@@ -156,18 +156,18 @@ func buildMapFromColumns(columns []Column) *orderedmap.OrderedMap[string, Column
 	omap := orderedmap.NewOrderedMap[string, Column]()
 	for _, column := range columns {
 		// Add non-main columns with an alias to NotSortingKey
-		if !column.MainOnly && column.Alias != "" {
-			column.NotSortingKey = true
+		if !column.MainOnly && column.ClickHouseAlias != "" {
+			column.ClickHouseNotSortingKey = true
 		}
 		omap.Set(column.Name, column)
 		// Expand the schema Src → Dst and InIf → OutIf
 		if strings.HasPrefix(column.Name, "Src") {
 			column.Name = fmt.Sprintf("Dst%s", column.Name[3:])
-			column.Alias = strings.ReplaceAll(column.Alias, "Src", "Dst")
+			column.ClickHouseAlias = strings.ReplaceAll(column.ClickHouseAlias, "Src", "Dst")
 			omap.Set(column.Name, column)
 		} else if strings.HasPrefix(column.Name, "InIf") {
 			column.Name = fmt.Sprintf("OutIf%s", column.Name[4:])
-			column.Alias = strings.ReplaceAll(column.Alias, "InIf", "OutIf")
+			column.ClickHouseAlias = strings.ReplaceAll(column.ClickHouseAlias, "InIf", "OutIf")
 			omap.Set(column.Name, column)
 		}
 	}
@@ -175,11 +175,11 @@ func buildMapFromColumns(columns []Column) *orderedmap.OrderedMap[string, Column
 }
 
 func init() {
-	for _, key := range Flows.PrimaryKeys {
+	for _, key := range Flows.ClickHousePrimaryKeys {
 		if column, ok := Flows.Columns.Get(key); !ok {
 			panic(fmt.Sprintf("primary key %q not a column", key))
 		} else {
-			if column.NotSortingKey {
+			if column.ClickHouseNotSortingKey {
 				panic(fmt.Sprintf("primary key %q is marked as a non-sorting key", key))
 			}
 		}

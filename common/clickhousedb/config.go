@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Configuration defines how we connect to a Clickhouse database
+// Configuration defines how we connect to a ClickHouse database
 type Configuration struct {
 	// Servers define the list of clickhouse servers to connect to (with ports)
 	Servers []string `validate:"min=1,dive,listen"`
@@ -23,7 +23,7 @@ type Configuration struct {
 	DialTimeout time.Duration `validate:"min=100ms"`
 }
 
-// DefaultConfiguration represents the default configuration for connecting to Clickhouse
+// DefaultConfiguration represents the default configuration for connecting to ClickHouse
 func DefaultConfiguration() Configuration {
 	return Configuration{
 		Servers:      []string{"127.0.0.1:9000"},
