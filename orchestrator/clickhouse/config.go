@@ -45,7 +45,7 @@ type Configuration struct {
 	// sources to be ready. 503 is returned when not.
 	NetworkSourcesTimeout time.Duration `validate:"min=0"`
 	// OrchestratorURL allows one to override URL to reach
-	// orchestrator from Clickhouse
+	// orchestrator from ClickHouse
 	OrchestratorURL string `validate:"isdefault|url"`
 }
 

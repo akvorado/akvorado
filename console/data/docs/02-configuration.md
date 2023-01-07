@@ -486,7 +486,7 @@ provided:
     `akvorado.yaml` configuration file.
 - `asns` maps AS number to names (overriding the builtin ones)
 - `orchestrator-url` defines the URL of the orchestrator to be used
-  by Clickhouse (autodetection when not specified)
+  by ClickHouse (autodetection when not specified)
 
 The `resolutions` setting contains a list of resolutions. Each
 resolution has two keys: `interval` and `ttl`. The first one is the

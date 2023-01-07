@@ -146,7 +146,7 @@ func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 				Detail: "ethernet type",
 			})
 		case "proto":
-			// Do not complete from Clickhouse, we want a subset of options
+			// Do not complete from ClickHouse, we want a subset of options
 			completions = append(completions,
 				filterCompletion{"TCP", "protocol", true},
 				filterCompletion{"UDP", "protocol", true},

@@ -23,7 +23,7 @@ func (qc queryColumn) String() string {
 }
 func (qc *queryColumn) UnmarshalText(input []byte) error {
 	name := string(input)
-	if column, ok := schema.Flows.Columns.Get(name); ok && !column.NotSelectable {
+	if column, ok := schema.Flows.Columns.Get(name); ok && !column.ConsoleNotDimension {
 		*qc = queryColumn(name)
 		return nil
 	}
