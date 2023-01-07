@@ -12,7 +12,7 @@ import (
 )
 
 // NewMock creates a new reporter for tests. Currently, this is the same as a production reporter.
-func NewMock(t *testing.T) *Reporter {
+func NewMock(t testing.TB) *Reporter {
 	t.Helper()
 	r, err := New(Configuration{})
 	if err != nil {

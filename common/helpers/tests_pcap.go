@@ -16,7 +16,7 @@ import (
 )
 
 // ReadPcapPayload reads and parses a PCAP file and return the payload (after Layer 4).
-func ReadPcapPayload(t *testing.T, pcapfile string) []byte {
+func ReadPcapPayload(t testing.TB, pcapfile string) []byte {
 	t.Helper()
 	f, err := os.Open(pcapfile)
 	if err != nil {
