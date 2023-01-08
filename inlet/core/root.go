@@ -96,6 +96,7 @@ func (c *Component) runWorker(workerID int) error {
 	c.r.Debug().Int("worker", workerID).Msg("starting core worker")
 
 	errLogger := c.r.Sample(reporter.BurstSampler(time.Minute, 10))
+	buf := proto.NewBuffer([]byte{})
 	for {
 		select {
 		case <-c.t.Dying():
@@ -122,7 +123,7 @@ func (c *Component) runWorker(workerID int) error {
 			}
 
 			// Serialize flow (use length-prefixed protobuf)
-			buf := proto.NewBuffer([]byte{})
+			buf.Reset()
 			err := buf.EncodeMessage(flow)
 			if err != nil {
 				errLogger.Err(err).Str("exporter", exporter).Msg("unable to serialize flow")
