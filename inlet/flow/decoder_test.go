@@ -38,8 +38,8 @@ func BenchmarkDecodeEncodeNetflow(b *testing.B) {
 	if got == nil || len(got) != 0 {
 		b.Fatalf("Decode() error on template")
 	}
+	data = helpers.ReadPcapPayload(b, filepath.Join("decoder", "netflow", "testdata", "data-260.pcap"))
 	for i := 0; i < b.N; i++ {
-		data = helpers.ReadPcapPayload(b, filepath.Join("decoder", "netflow", "testdata", "data-260.pcap"))
 		got = nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 		for _, flow := range got {
 			buf := proto.NewBuffer([]byte{})
@@ -54,8 +54,8 @@ func BenchmarkDecodeEncodeSflow(b *testing.B) {
 	r := reporter.NewMock(b)
 	sdecoder := sflow.New(r)
 
+	data := helpers.ReadPcapPayload(b, filepath.Join("decoder", "sflow", "testdata", "data-1140.pcap"))
 	for i := 0; i < b.N; i++ {
-		data := helpers.ReadPcapPayload(b, filepath.Join("decoder", "sflow", "testdata", "data-1140.pcap"))
 		got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 		for _, flow := range got {
 			buf := proto.NewBuffer([]byte{})
