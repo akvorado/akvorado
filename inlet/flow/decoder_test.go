@@ -8,13 +8,14 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/gogo/protobuf/proto"
-
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 	"akvorado/inlet/flow/decoder"
 	"akvorado/inlet/flow/decoder/netflow"
 	"akvorado/inlet/flow/decoder/sflow"
+
+	"google.golang.org/protobuf/encoding/protowire"
+	"google.golang.org/protobuf/proto"
 )
 
 // The goal is to benchmark flow decoding + encoding to protobuf
@@ -46,13 +47,16 @@ func BenchmarkDecodeEncodeNetflow(b *testing.B) {
 			title = "without encoding"
 		}
 		b.Run(title, func(b *testing.B) {
-			buf := proto.NewBuffer([]byte{})
+			buf := []byte{}
 			for i := 0; i < b.N; i++ {
 				got = nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 				if withEncoding {
 					for _, flow := range got {
-						buf.Reset()
-						if err := buf.EncodeMessage(flow); err != nil {
+						var err error
+						buf = buf[:0]
+						buf = protowire.AppendVarint(buf, uint64(proto.Size(flow)))
+						buf, err = proto.MarshalOptions{}.MarshalAppend(buf, flow)
+						if err != nil {
 							b.Fatalf("EncodeMessage() error:\n%+v", err)
 						}
 					}
@@ -73,13 +77,16 @@ func BenchmarkDecodeEncodeSflow(b *testing.B) {
 			title = "without encoding"
 		}
 		b.Run(title, func(b *testing.B) {
-			buf := proto.NewBuffer([]byte{})
+			buf := []byte{}
 			for i := 0; i < b.N; i++ {
 				got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 				if withEncoding {
 					for _, flow := range got {
-						buf.Reset()
-						if err := buf.EncodeMessage(flow); err != nil {
+						var err error
+						buf = buf[:0]
+						buf = protowire.AppendVarint(buf, uint64(proto.Size(flow)))
+						buf, err = proto.MarshalOptions{}.MarshalAppend(buf, flow)
+						if err != nil {
 							b.Fatalf("EncodeMessage() error:\n%+v", err)
 						}
 					}

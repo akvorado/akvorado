@@ -11,7 +11,8 @@ import (
 	"akvorado/common/helpers"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protowire"
+	"google.golang.org/protobuf/proto"
 )
 
 type flowsParameters struct {
@@ -39,6 +40,7 @@ func (c *Component) FlowsHTTPHandler(gc *gin.Context) {
 	tickerChan = ticker.C
 	defer ticker.Stop()
 
+	buf := []byte{}
 	for {
 		select {
 		case <-c.t.Dying():
@@ -55,12 +57,15 @@ func (c *Component) FlowsHTTPHandler(gc *gin.Context) {
 					gc.Writer.Write([]byte("\n"))
 				}
 			case "application/x-protobuf":
-				buf := proto.NewBuffer([]byte{})
-				if err := buf.EncodeMessage(msg); err != nil {
+				var err error
+				buf = buf[:0]
+				buf = protowire.AppendVarint(buf, uint64(proto.Size(msg)))
+				buf, err = proto.MarshalOptions{}.MarshalAppend(buf, msg)
+				if err != nil {
 					continue
 				}
 				gc.Set("Content-Type", format)
-				gc.Writer.Write(buf.Bytes())
+				gc.Writer.Write(buf)
 			}
 
 			count++

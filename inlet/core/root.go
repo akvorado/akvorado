@@ -11,7 +11,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protowire"
+	"google.golang.org/protobuf/proto"
 	"gopkg.in/tomb.v2"
 	"zgo.at/zcache/v2"
 
@@ -96,7 +97,7 @@ func (c *Component) runWorker(workerID int) error {
 	c.r.Debug().Int("worker", workerID).Msg("starting core worker")
 
 	errLogger := c.r.Sample(reporter.BurstSampler(time.Minute, 10))
-	buf := proto.NewBuffer([]byte{})
+	buf := []byte{}
 	for {
 		select {
 		case <-c.t.Dying():
@@ -123,8 +124,10 @@ func (c *Component) runWorker(workerID int) error {
 			}
 
 			// Serialize flow (use length-prefixed protobuf)
-			buf.Reset()
-			err := buf.EncodeMessage(flow)
+			var err error
+			buf = buf[:0]
+			buf = protowire.AppendVarint(buf, uint64(proto.Size(flow)))
+			buf, err = proto.MarshalOptions{}.MarshalAppend(buf, flow)
 			if err != nil {
 				errLogger.Err(err).Str("exporter", exporter).Msg("unable to serialize flow")
 				c.metrics.flowsErrors.WithLabelValues(exporter, err.Error()).Inc()
@@ -134,7 +137,7 @@ func (c *Component) runWorker(workerID int) error {
 
 			// Forward to Kafka (this could block)
 			c.metrics.flowsForwarded.WithLabelValues(exporter).Inc()
-			c.d.Kafka.Send(exporter, buf.Bytes())
+			c.d.Kafka.Send(exporter, buf)
 
 			// If we have HTTP clients, send to them too
 			if atomic.LoadUint32(&c.httpFlowClients) > 0 {
