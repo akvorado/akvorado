@@ -11,12 +11,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"google.golang.org/protobuf/encoding/protowire"
-	"google.golang.org/protobuf/proto"
 	"gopkg.in/tomb.v2"
 	"zgo.at/zcache/v2"
 
 	"akvorado/common/daemon"
+	"akvorado/common/helpers"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
 	"akvorado/inlet/bmp"
@@ -125,9 +124,7 @@ func (c *Component) runWorker(workerID int) error {
 
 			// Serialize flow (use length-prefixed protobuf)
 			var err error
-			buf = buf[:0]
-			buf = protowire.AppendVarint(buf, uint64(proto.Size(flow)))
-			buf, err = proto.MarshalOptions{}.MarshalAppend(buf, flow)
+			buf, err = helpers.MarshalProto(buf, flow)
 			if err != nil {
 				errLogger.Err(err).Str("exporter", exporter).Msg("unable to serialize flow")
 				c.metrics.flowsErrors.WithLabelValues(exporter, err.Error()).Inc()

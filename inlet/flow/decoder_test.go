@@ -13,9 +13,6 @@ import (
 	"akvorado/inlet/flow/decoder"
 	"akvorado/inlet/flow/decoder/netflow"
 	"akvorado/inlet/flow/decoder/sflow"
-
-	"google.golang.org/protobuf/encoding/protowire"
-	"google.golang.org/protobuf/proto"
 )
 
 // The goal is to benchmark flow decoding + encoding to protobuf
@@ -53,9 +50,7 @@ func BenchmarkDecodeEncodeNetflow(b *testing.B) {
 				if withEncoding {
 					for _, flow := range got {
 						var err error
-						buf = buf[:0]
-						buf = protowire.AppendVarint(buf, uint64(proto.Size(flow)))
-						buf, err = proto.MarshalOptions{}.MarshalAppend(buf, flow)
+						buf, err = helpers.MarshalProto(buf, flow)
 						if err != nil {
 							b.Fatalf("EncodeMessage() error:\n%+v", err)
 						}
@@ -83,9 +78,7 @@ func BenchmarkDecodeEncodeSflow(b *testing.B) {
 				if withEncoding {
 					for _, flow := range got {
 						var err error
-						buf = buf[:0]
-						buf = protowire.AppendVarint(buf, uint64(proto.Size(flow)))
-						buf, err = proto.MarshalOptions{}.MarshalAppend(buf, flow)
+						buf, err = helpers.MarshalProto(buf, flow)
 						if err != nil {
 							b.Fatalf("EncodeMessage() error:\n%+v", err)
 						}

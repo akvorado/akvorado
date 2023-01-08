@@ -11,8 +11,6 @@ import (
 	"akvorado/common/helpers"
 
 	"github.com/gin-gonic/gin"
-	"google.golang.org/protobuf/encoding/protowire"
-	"google.golang.org/protobuf/proto"
 )
 
 type flowsParameters struct {
@@ -58,9 +56,7 @@ func (c *Component) FlowsHTTPHandler(gc *gin.Context) {
 				}
 			case "application/x-protobuf":
 				var err error
-				buf = buf[:0]
-				buf = protowire.AppendVarint(buf, uint64(proto.Size(msg)))
-				buf, err = proto.MarshalOptions{}.MarshalAppend(buf, msg)
+				buf, err = helpers.MarshalProto(buf, msg)
 				if err != nil {
 					continue
 				}

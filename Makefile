@@ -62,7 +62,9 @@ $(BIN)/mockgen: PACKAGE=github.com/golang/mock/mockgen@v1.6.0
 
 PROTOC = protoc
 PROTOC_GEN_GO = $(BIN)/protoc-gen-go
-$(BIN)/protoc-gen-go: PACKAGE=google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.0
+PROTOC_GEN_GO_VTPROTO = $(BIN)/protoc-gen-go-vtproto
+$(BIN)/protoc-gen-go: PACKAGE=google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1
+$(BIN)/protoc-gen-go-vtproto: PACKAGE=github.com/planetscale/vtprotobuf/cmd/protoc-gen-go-vtproto@v0.3.0
 
 PIGEON = $(BIN)/pigeon
 $(BIN)/pigeon: PACKAGE=github.com/mna/pigeon@v1.1.0
@@ -74,13 +76,17 @@ $(BIN)/wwhrd: PACKAGE=github.com/frapposelli/wwhrd@latest
 
 .DELETE_ON_ERROR:
 
-inlet/flow/decoder/flow-ANY.pb.go: inlet/flow/decoder/flow-$(FLOW_VERSION).pb.go
+inlet/flow/decoder/flow-ANY.pb.go: inlet/flow/decoder/flow-$(FLOW_VERSION).pb.go inlet/flow/decoder/flow-$(FLOW_VERSION)_vtproto.pb.go
 	$Q for f in inlet/flow/decoder/flow-*.pb.go; do \
-	   [ $$f = $< ] || rm -f $$f; \
+	   echo $^ | grep -Fwq $$f || rm -f $$f; \
 	done
-inlet/flow/decoder/flow-$(FLOW_VERSION).pb.go: inlet/flow/data/schemas/flow-$(FLOW_VERSION).proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffers definition…)
-	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --go_out=module=$(MODULE):. $<
-	$Q sed -i.bkp s/v$(FLOW_VERSION)//g $@ && rm $@.bkp
+	$Q sed -i.bkp s/v$(FLOW_VERSION)//g inlet/flow/decoder/flow-*.pb.go && rm inlet/flow/decoder/flow-*.pb.go.bkp
+
+inlet/flow/decoder/flow-$(FLOW_VERSION).pb.go inlet/flow/decoder/flow-$(FLOW_VERSION)_vtproto.pb.go: inlet/flow/data/schemas/flow-$(FLOW_VERSION).proto | $(PROTOC_GEN_GO) $(PROTOC_GEN_GO_VTPROTO) ; $(info $(M) compiling protocol buffers definition…)
+	$Q $(PROTOC) -I=. \
+		--plugin=$(PROTOC_GEN_GO) --go_out=module=$(MODULE):. \
+		--plugin=$(PROTOC_GEN_GO_VTPROTO) --go-vtproto_out=module=$(MODULE):. --go-vtproto_opt=features=marshal+size \
+		$<
 
 common/clickhousedb/mocks/mock_driver.go: $(MOCKGEN) ; $(info $(M) generate mocks for ClickHouse driver…)
 	$Q echo '//go:build !release' > $@
