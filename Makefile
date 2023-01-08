@@ -61,8 +61,8 @@ MOCKGEN = $(BIN)/mockgen
 $(BIN)/mockgen: PACKAGE=github.com/golang/mock/mockgen@v1.6.0
 
 PROTOC = protoc
-PROTOC_GEN_GO = $(BIN)/protoc-gen-go
-$(BIN)/protoc-gen-go: PACKAGE=google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.0
+PROTOC_GEN_GO = $(BIN)/protoc-gen-gogofaster
+$(BIN)/protoc-gen-gogofaster: PACKAGE=github.com/gogo/protobuf/protoc-gen-gogofaster@v1.3.2
 
 PIGEON = $(BIN)/pigeon
 $(BIN)/pigeon: PACKAGE=github.com/mna/pigeon@v1.1.0
@@ -79,7 +79,8 @@ inlet/flow/decoder/flow-ANY.pb.go: inlet/flow/decoder/flow-$(FLOW_VERSION).pb.go
 	   [ $$f = $< ] || rm -f $$f; \
 	done
 inlet/flow/decoder/flow-$(FLOW_VERSION).pb.go: inlet/flow/data/schemas/flow-$(FLOW_VERSION).proto | $(PROTOC_GEN_GO) ; $(info $(M) compiling protocol buffers definition…)
-	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --go_out=module=$(MODULE):. $<
+	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --gogofaster_out=module=$(MODULE):. $<
+	$Q mv akvorado/$@ $@ && rm -rf akvorado
 	$Q sed -i.bkp s/v$(FLOW_VERSION)//g $@ && rm $@.bkp
 
 common/clickhousedb/mocks/mock_driver.go: $(MOCKGEN) ; $(info $(M) generate mocks for ClickHouse driver…)
