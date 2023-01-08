@@ -39,29 +39,50 @@ func BenchmarkDecodeEncodeNetflow(b *testing.B) {
 		b.Fatalf("Decode() error on template")
 	}
 	data = helpers.ReadPcapPayload(b, filepath.Join("decoder", "netflow", "testdata", "data-260.pcap"))
-	for i := 0; i < b.N; i++ {
-		got = nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
-		for _, flow := range got {
-			buf := proto.NewBuffer([]byte{})
-			if err := buf.EncodeMessage(flow); err != nil {
-				b.Fatalf("EncodeMessage() error:\n%+v", err)
-			}
+
+	for _, withEncoding := range []bool{true, false} {
+		title := "with encoding"
+		if !withEncoding {
+			title = "without encoding"
 		}
+		b.Run(title, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				got = nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+				if withEncoding {
+					for _, flow := range got {
+						buf := proto.NewBuffer([]byte{})
+						if err := buf.EncodeMessage(flow); err != nil {
+							b.Fatalf("EncodeMessage() error:\n%+v", err)
+						}
+					}
+				}
+			}
+		})
 	}
 }
 
 func BenchmarkDecodeEncodeSflow(b *testing.B) {
 	r := reporter.NewMock(b)
 	sdecoder := sflow.New(r)
-
 	data := helpers.ReadPcapPayload(b, filepath.Join("decoder", "sflow", "testdata", "data-1140.pcap"))
-	for i := 0; i < b.N; i++ {
-		got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
-		for _, flow := range got {
-			buf := proto.NewBuffer([]byte{})
-			if err := buf.EncodeMessage(flow); err != nil {
-				b.Fatalf("EncodeMessage() error:\n%+v", err)
-			}
+
+	for _, withEncoding := range []bool{true, false} {
+		title := "with encoding"
+		if !withEncoding {
+			title = "without encoding"
 		}
+		b.Run(title, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+				if withEncoding {
+					for _, flow := range got {
+						buf := proto.NewBuffer([]byte{})
+						if err := buf.EncodeMessage(flow); err != nil {
+							b.Fatalf("EncodeMessage() error:\n%+v", err)
+						}
+					}
+				}
+			}
+		})
 	}
 }
