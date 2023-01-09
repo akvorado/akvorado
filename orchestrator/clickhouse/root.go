@@ -74,6 +74,7 @@ func (c *Component) Start() error {
 	c.r.Info().Msg("starting ClickHouse component")
 
 	// Database migration
+	migrationsOnce := false
 	c.metrics.migrationsRunning.Set(1)
 	c.t.Go(func() error {
 		customBackoff := backoff.NewExponentialBackOff()
@@ -87,6 +88,10 @@ func (c *Component) Start() error {
 					c.r.Err(err).Msg("database migration error")
 				} else {
 					return nil
+				}
+				if !migrationsOnce {
+					close(c.migrationsOnce)
+					migrationsOnce = true
 				}
 			}
 			select {

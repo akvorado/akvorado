@@ -32,7 +32,6 @@ type migrationStepWithDescription struct {
 // migrateDatabase execute database migration
 func (c *Component) migrateDatabase() error {
 	ctx := c.t.Context(nil)
-	defer close(c.migrationsOnce)
 
 	// Set orchestrator URL
 	if c.config.OrchestratorURL == "" {
