@@ -6,7 +6,7 @@ PKGS     = $(or $(PKG),$(shell env GO111MODULE=on $(GO) list ./...))
 BIN      = bin
 
 GO      = go
-TIMEOUT = 15
+TIMEOUT = 30
 LSFILES = git ls-files -cmo --exclude-standard --
 V = 0
 Q = $(if $(filter 1,$V),,@)
