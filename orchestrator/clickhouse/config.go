@@ -28,8 +28,6 @@ type Configuration struct {
 	// MaxPartitions define the number of partitions to have for a
 	// consolidated flow tables when full.
 	MaxPartitions int `validate:"isdefault|min=1"`
-	// SystemLogTTL is the TTL to set for system log tables.
-	SystemLogTTL time.Duration `validate:"isdefault|min=1m"`
 	// ASNs is a mapping from AS numbers to names. It replaces or
 	// extends the builtin list of AS numbers.
 	ASNs map[uint32]string
@@ -82,7 +80,6 @@ func DefaultConfiguration() Configuration {
 		},
 		MaxPartitions:         50,
 		NetworkSourcesTimeout: 10 * time.Second,
-		SystemLogTTL:          30 * 24 * time.Hour, // 30 days
 	}
 }
 

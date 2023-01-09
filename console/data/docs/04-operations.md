@@ -400,8 +400,7 @@ with various other tips.
 ### System tables
 
 ClickHouse is configured to log various events into MergeTree tables. By
-default, these tables are unbounded. Unless configured otherwise, the
-orchestrator sets a TTL of 30 days. These tables can also be customized in the
+default, these tables are unbounded. These tables can also be customized in the
 configuration files or disabled completly. See [ClickHouse
 documentation](https://clickhouse.com/docs/en/operations/system-tables/) for
 more details.

@@ -257,6 +257,7 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps")
 			lastRun = currentRun
 			lastSteps, _ = strconv.Atoi(gotMetrics["applied_steps"])
+			t.Logf("%d steps applied for this migration", lastSteps)
 		})
 		if t.Failed() {
 			row := chComponent.QueryRow(context.Background(), `
