@@ -14,10 +14,11 @@ type ProtoMessage interface {
 // MarshalProto will marshal a protobuf message using the length-prefixed
 // representation.
 func MarshalProto(buf []byte, msg ProtoMessage) ([]byte, error) {
-	size := msg.SizeVT()
+	messageSize := msg.SizeVT()
 	buf = buf[:0]
-	buf = protowire.AppendVarint(buf, uint64(size))
-	totalSize := len(buf) + size
+	buf = protowire.AppendVarint(buf, uint64(messageSize))
+	prefixSize := len(buf)
+	totalSize := prefixSize + messageSize
 	if cap(buf) < totalSize {
 		newBuf := make([]byte, totalSize)
 		copy(newBuf, buf)
@@ -25,6 +26,6 @@ func MarshalProto(buf []byte, msg ProtoMessage) ([]byte, error) {
 	} else {
 		buf = buf[:totalSize]
 	}
-	_, err := msg.MarshalToSizedBufferVT(buf)
+	_, err := msg.MarshalToSizedBufferVT(buf[prefixSize:])
 	return buf, err
 }
