@@ -15,6 +15,7 @@ identified with a specific icon:
 
 - 🩹 *inlet*: handle correctly interfaces with high indexes for sFlow
 - 🩹 *docker*: fix Kafka healthcheck
+- 🌱 *inlet*: improve performance of Protobuf encoding
 
 ## 1.6.4 - 2022-12-22
 
