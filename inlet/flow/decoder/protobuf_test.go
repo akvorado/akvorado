@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2023 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package helpers_test
+package decoder_test
 
 import (
 	"testing"
@@ -16,15 +16,15 @@ func TestProtoMarshalEmpty(t *testing.T) {
 	var err error
 	flow := decoder.FlowMessage{}
 	buf := []byte{}
-	buf, err = helpers.MarshalProto(buf, &flow)
+	buf, err = flow.EncodeMessage(buf)
 	if err != nil {
 		t.Fatalf("MarshalProto() error:\n%+v", err)
 	}
 
-	// Use old API to check
 	got := decoder.FlowMessage{}
-	pbuf := proto.NewBuffer(buf)
-	err = pbuf.DecodeMessage(&got)
+	if err := got.DecodeMessage(buf); err != nil {
+		t.Fatalf("DecodeMessage() error:\n%+v", err)
+	}
 
 	if diff := helpers.Diff(got, flow); diff != "" {
 		t.Fatalf("MarshalProto() (-got, +want):\n%s", diff)
@@ -39,15 +39,15 @@ func TestProtoMarshal(t *testing.T) {
 		DstCountry:   "US",
 	}
 	buf := []byte{}
-	buf, err = helpers.MarshalProto(buf, &flow)
+	buf, err = flow.EncodeMessage(buf)
 	if err != nil {
 		t.Fatalf("MarshalProto() error:\n%+v", err)
 	}
 
-	// Use old API to check
 	got := decoder.FlowMessage{}
-	pbuf := proto.NewBuffer(buf)
-	err = pbuf.DecodeMessage(&got)
+	if err := got.DecodeMessage(buf); err != nil {
+		t.Fatalf("DecodeMessage() error:\n%+v", err)
+	}
 
 	if diff := helpers.Diff(got, flow); diff != "" {
 		t.Fatalf("MarshalProto() (-got, +want):\n%s", diff)
@@ -64,15 +64,17 @@ func TestProtoMarshalBufferSizes(t *testing.T) {
 				SrcCountry:   "FR",
 				DstCountry:   "US",
 			}
-			buf, err = helpers.MarshalProto(buf, &flow)
+			buf, err = flow.EncodeMessage(buf)
 			if err != nil {
 				t.Fatalf("MarshalProto() error:\n%+v", err)
 			}
 
-			// Use old API to check
 			got := decoder.FlowMessage{}
 			pbuf := proto.NewBuffer(buf)
 			err = pbuf.DecodeMessage(&got)
+			if err != nil {
+				t.Fatalf("DecodeMessage() error:\n%+v", err)
+			}
 
 			if diff := helpers.Diff(got, flow); diff != "" {
 				t.Fatalf("MarshalProto() (-got, +want):\n%s", diff)

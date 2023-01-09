@@ -50,7 +50,7 @@ func BenchmarkDecodeEncodeNetflow(b *testing.B) {
 				if withEncoding {
 					for _, flow := range got {
 						var err error
-						buf, err = helpers.MarshalProto(buf, flow)
+						buf, err = flow.EncodeMessage(buf)
 						if err != nil {
 							b.Fatalf("EncodeMessage() error:\n%+v", err)
 						}
@@ -78,7 +78,7 @@ func BenchmarkDecodeEncodeSflow(b *testing.B) {
 				if withEncoding {
 					for _, flow := range got {
 						var err error
-						buf, err = helpers.MarshalProto(buf, flow)
+						buf, err = flow.EncodeMessage(buf)
 						if err != nil {
 							b.Fatalf("EncodeMessage() error:\n%+v", err)
 						}

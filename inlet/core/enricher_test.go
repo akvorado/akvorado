@@ -11,7 +11,6 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/gin-gonic/gin"
-	"github.com/golang/protobuf/proto"
 	"github.com/mitchellh/mapstructure"
 
 	"akvorado/common/daemon"
@@ -388,10 +387,8 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 					if err != nil {
 						t.Fatalf("Kafka message encoding error:\n%+v", err)
 					}
-					buf := proto.NewBuffer(b)
-					err = buf.DecodeMessage(&got)
-					if err != nil {
-						t.Fatalf("Kakfa message decode error:\n%+v", err)
+					if err = got.DecodeMessage(b); err != nil {
+						t.Fatalf("DecodeMessage() error:\n%+v", err)
 					}
 
 					if diff := helpers.Diff(&got, tc.OutputFlow); diff != "" {

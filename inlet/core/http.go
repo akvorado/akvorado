@@ -56,7 +56,7 @@ func (c *Component) FlowsHTTPHandler(gc *gin.Context) {
 				}
 			case "application/x-protobuf":
 				var err error
-				buf, err = helpers.MarshalProto(buf, msg)
+				buf, err = msg.EncodeMessage(buf)
 				if err != nil {
 					continue
 				}

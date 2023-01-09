@@ -15,7 +15,6 @@ import (
 	"zgo.at/zcache/v2"
 
 	"akvorado/common/daemon"
-	"akvorado/common/helpers"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
 	"akvorado/inlet/bmp"
@@ -124,7 +123,7 @@ func (c *Component) runWorker(workerID int) error {
 
 			// Serialize flow (use length-prefixed protobuf)
 			var err error
-			buf, err = helpers.MarshalProto(buf, flow)
+			buf, err = flow.EncodeMessage(buf)
 			if err != nil {
 				errLogger.Err(err).Str("exporter", exporter).Msg("unable to serialize flow")
 				c.metrics.flowsErrors.WithLabelValues(exporter, err.Error()).Inc()
