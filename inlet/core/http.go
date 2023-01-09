@@ -38,7 +38,6 @@ func (c *Component) FlowsHTTPHandler(gc *gin.Context) {
 	tickerChan = ticker.C
 	defer ticker.Stop()
 
-	buf := []byte{}
 	for {
 		select {
 		case <-c.t.Dying():
@@ -55,8 +54,7 @@ func (c *Component) FlowsHTTPHandler(gc *gin.Context) {
 					gc.Writer.Write([]byte("\n"))
 				}
 			case "application/x-protobuf":
-				var err error
-				buf, err = msg.EncodeMessage(buf)
+				buf, err := msg.EncodeMessage()
 				if err != nil {
 					continue
 				}

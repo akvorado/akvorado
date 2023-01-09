@@ -11,19 +11,13 @@ import (
 
 // EncodeMessage will marshal a protobuf message using the length-prefixed
 // representation.
-func (m *FlowMessage) EncodeMessage(buf []byte) ([]byte, error) {
+func (m *FlowMessage) EncodeMessage() ([]byte, error) {
 	messageSize := m.SizeVT()
-	buf = buf[:0]
-	buf = protowire.AppendVarint(buf, uint64(messageSize))
-	prefixSize := len(buf)
+	prefixSize := protowire.SizeVarint(uint64(messageSize))
 	totalSize := prefixSize + messageSize
-	if cap(buf) < totalSize {
-		newBuf := make([]byte, totalSize)
-		copy(newBuf, buf)
-		buf = newBuf
-	} else {
-		buf = buf[:totalSize]
-	}
+	buf := make([]byte, 0, totalSize)
+	buf = protowire.AppendVarint(buf, uint64(messageSize))
+	buf = buf[:totalSize]
 	n, err := m.MarshalToSizedBufferVT(buf[prefixSize:])
 	if n != messageSize {
 		return buf, fmt.Errorf("incorrect size for proto buffer (%d vs %d)", n, messageSize)

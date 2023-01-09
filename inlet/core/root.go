@@ -95,7 +95,6 @@ func (c *Component) runWorker(workerID int) error {
 	c.r.Debug().Int("worker", workerID).Msg("starting core worker")
 
 	errLogger := c.r.Sample(reporter.BurstSampler(time.Minute, 10))
-	buf := []byte{}
 	for {
 		select {
 		case <-c.t.Dying():
@@ -121,9 +120,8 @@ func (c *Component) runWorker(workerID int) error {
 				continue
 			}
 
-			// Serialize flow (use length-prefixed protobuf)
-			var err error
-			buf, err = flow.EncodeMessage(buf)
+			// Serialize flow to Protobuf
+			buf, err := flow.EncodeMessage()
 			if err != nil {
 				errLogger.Err(err).Str("exporter", exporter).Msg("unable to serialize flow")
 				c.metrics.flowsErrors.WithLabelValues(exporter, err.Error()).Inc()
@@ -131,7 +129,8 @@ func (c *Component) runWorker(workerID int) error {
 			}
 			c.metrics.flowsProcessingTime.Observe(time.Now().Sub(start).Seconds())
 
-			// Forward to Kafka (this could block)
+			// Forward to Kafka. This could block and buf is now owned by the
+			// Kafka subsystem!
 			c.metrics.flowsForwarded.WithLabelValues(exporter).Inc()
 			c.d.Kafka.Send(exporter, buf)
 

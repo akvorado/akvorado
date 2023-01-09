@@ -44,13 +44,11 @@ func BenchmarkDecodeEncodeNetflow(b *testing.B) {
 			title = "without encoding"
 		}
 		b.Run(title, func(b *testing.B) {
-			buf := []byte{}
 			for i := 0; i < b.N; i++ {
 				got = nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 				if withEncoding {
 					for _, flow := range got {
-						var err error
-						buf, err = flow.EncodeMessage(buf)
+						_, err := flow.EncodeMessage()
 						if err != nil {
 							b.Fatalf("EncodeMessage() error:\n%+v", err)
 						}
@@ -72,13 +70,12 @@ func BenchmarkDecodeEncodeSflow(b *testing.B) {
 			title = "without encoding"
 		}
 		b.Run(title, func(b *testing.B) {
-			buf := []byte{}
 			for i := 0; i < b.N; i++ {
 				got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 				if withEncoding {
 					for _, flow := range got {
 						var err error
-						buf, err = flow.EncodeMessage(buf)
+						_, err = flow.EncodeMessage()
 						if err != nil {
 							b.Fatalf("EncodeMessage() error:\n%+v", err)
 						}
