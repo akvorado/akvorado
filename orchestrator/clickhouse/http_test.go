@@ -62,6 +62,7 @@ func TestHTTPEndpoints(t *testing.T) {
 			FirstLines: []string{
 				`#!/bin/sh`,
 				``,
+				`# Install Protobuf schemas`,
 				`cat > /var/lib/clickhouse/format_schemas/flow-0.proto <<'EOPROTO'`,
 				`syntax = "proto3";`,
 				`package decoder;`,

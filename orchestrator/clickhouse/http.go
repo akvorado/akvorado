@@ -4,6 +4,7 @@
 package clickhouse
 
 import (
+	"bytes"
 	"embed"
 	"encoding/csv"
 	"fmt"
@@ -21,13 +22,34 @@ var (
 	//go:embed data/asns.csv
 	data           embed.FS
 	initShTemplate = template.Must(template.New("initsh").Parse(`#!/bin/sh
-{{ range $version, $schema := . }}
+
+# Install Protobuf schemas
+{{- range $version, $schema := .FlowSchemaVersions }}
 cat > /var/lib/clickhouse/format_schemas/flow-{{ $version }}.proto <<'EOPROTO'
 {{ $schema }}
 EOPROTO
 {{ end }}
+
+# Alter ClickHouse configuration
+cat > /etc/clickhouse-server/config.d/akvorado.xml <<'EOCONFIG'
+<clickhouse>
+{{- if gt .SystemLogTTL 0 }}
+{{- range $table := .SystemLogTables }}
+ <{{ $table }}>
+  <ttl>event_date + INTERVAL {{ $.SystemLogTTL }} SECOND DELETE</ttl>
+ </{{ $table }}>
+{{- end }}
+{{- end }}
+</clickhouse>
+EOCONFIG
 `))
 )
+
+type initShVariables struct {
+	FlowSchemaVersions map[int]string
+	SystemLogTTL       int
+	SystemLogTables    []string
+}
 
 func (c *Component) addHandlerEmbedded(url string, path string) {
 	c.d.HTTP.AddHandler(url,
@@ -48,8 +70,25 @@ func (c *Component) registerHTTPHandlers() error {
 	// init.sh
 	c.d.HTTP.AddHandler("/api/v0/orchestrator/clickhouse/init.sh",
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var result bytes.Buffer
+			if err := initShTemplate.Execute(&result, initShVariables{
+				FlowSchemaVersions: flow.VersionedSchemas,
+				SystemLogTTL:       int(c.config.SystemLogTTL.Seconds()),
+				SystemLogTables: []string{
+					"asynchronous_metric_log",
+					"metric_log",
+					"part_log",
+					"query_log",
+					"query_thread_log",
+					"trace_log",
+				},
+			}); err != nil {
+				c.r.Err(err).Msg("unable to serialize init.sh")
+				http.Error(w, fmt.Sprintf("Unable to serialize init.sh"), http.StatusInternalServerError)
+				return
+			}
 			w.Header().Set("Content-Type", "text/x-shellscript")
-			initShTemplate.Execute(w, flow.VersionedSchemas)
+			w.Write(result.Bytes())
 		}))
 
 	// networks.csv
