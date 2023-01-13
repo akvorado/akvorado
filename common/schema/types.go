@@ -11,15 +11,16 @@ import orderedmap "github.com/elliotchance/orderedmap/v2"
 // Schema is the data schema.
 type Schema struct {
 	// We use an ordered map for direct access to columns.
-	Columns *orderedmap.OrderedMap[string, Column]
+	Columns *orderedmap.OrderedMap[ColumnKey, Column]
 
 	// For ClickHouse. This is the set of primary keys (order is important and
 	// may not follow column order).
-	ClickHousePrimaryKeys []string
+	ClickHousePrimaryKeys []ColumnKey
 }
 
 // Column represents a column of data.
 type Column struct {
+	Key      ColumnKey
 	Name     string
 	MainOnly bool
 
@@ -40,3 +41,6 @@ type Column struct {
 	// For the console.
 	ConsoleNotDimension bool
 }
+
+// ColumnKey is the name of a column
+type ColumnKey int

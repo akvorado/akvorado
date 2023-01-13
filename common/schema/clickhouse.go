@@ -62,10 +62,11 @@ func (schema Schema) ClickHouseSelectColumns(options ...ClickHouseTableOption) [
 	return cols
 }
 
-func (schema Schema) clickhouseIterate(fn func(column Column), options ...ClickHouseTableOption) {
+func (schema Schema) clickhouseIterate(fn func(Column), options ...ClickHouseTableOption) {
 	for pair := schema.Columns.Front(); pair != nil; pair = pair.Next() {
+		key := pair.Key
 		column := pair.Value
-		if slices.Contains(options, ClickHouseSkipTimeReceived) && column.Name == "TimeReceived" {
+		if slices.Contains(options, ClickHouseSkipTimeReceived) && key == ColumnTimeReceived {
 			continue
 		}
 		if slices.Contains(options, ClickHouseSkipMainOnlyColumns) && column.MainOnly {
@@ -101,7 +102,10 @@ func (schema Schema) clickhouseIterate(fn func(column Column), options ...ClickH
 
 // ClickHouseSortingKeys returns the list of sorting keys, prefixed by the primary keys.
 func (schema Schema) ClickHouseSortingKeys() []string {
-	cols := append([]string{}, schema.ClickHousePrimaryKeys...)
+	cols := []string{}
+	for _, key := range schema.ClickHousePrimaryKeys {
+		cols = append(cols, key.String())
+	}
 	for pair := schema.Columns.Front(); pair != nil; pair = pair.Next() {
 		column := pair.Value
 		if column.ClickHouseNotSortingKey || column.MainOnly {

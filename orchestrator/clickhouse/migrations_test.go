@@ -261,15 +261,18 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 		})
 		if t.Failed() {
 			row := chComponent.QueryRow(context.Background(), `
-SELECT query
+SELECT query, exception
 FROM system.query_log
 WHERE client_name = $1
 AND query NOT LIKE '%ORDER BY event_time_microseconds%'
 ORDER BY event_time_microseconds DESC
 LIMIT 1`, proto.ClientName)
-			var lastQuery string
-			if err := row.Scan(&lastQuery); err == nil {
+			var lastQuery, exception string
+			if err := row.Scan(&lastQuery, &exception); err == nil {
 				t.Logf("last ClickHouse query: %s", lastQuery)
+				if exception != "" {
+					t.Logf("last ClickHouse error: %s", exception)
+				}
 			}
 			break
 		}

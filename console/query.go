@@ -13,18 +13,18 @@ import (
 	"akvorado/console/filter"
 )
 
-type queryColumn string
+type queryColumn schema.ColumnKey
 
 func (qc queryColumn) MarshalText() ([]byte, error) {
-	return []byte(qc), nil
+	return []byte(schema.ColumnKey(qc).String()), nil
 }
 func (qc queryColumn) String() string {
-	return string(qc)
+	return schema.ColumnKey(qc).String()
 }
 func (qc *queryColumn) UnmarshalText(input []byte) error {
 	name := string(input)
-	if column, ok := schema.Flows.Columns.Get(name); ok && !column.ConsoleNotDimension {
-		*qc = queryColumn(name)
+	if column, ok := schema.Flows.LookupColumnByName(name); ok && !column.ConsoleNotDimension {
+		*qc = queryColumn(column.Key)
 		return nil
 	}
 	return errors.New("unknown field")
@@ -35,7 +35,7 @@ func requireMainTable(qcs []queryColumn, qf queryFilter) bool {
 		return true
 	}
 	for _, qc := range qcs {
-		if column, ok := schema.Flows.Columns.Get(string(qc)); ok && column.MainOnly {
+		if column, ok := schema.Flows.Columns.Get(schema.ColumnKey(qc)); ok && column.MainOnly {
 			return true
 		}
 	}
@@ -80,22 +80,22 @@ func (qf *queryFilter) UnmarshalText(input []byte) error {
 // toSQLSelect transforms a column into an expression to use in SELECT
 func (qc queryColumn) toSQLSelect() string {
 	var strValue string
-	switch qc {
-	case "ExporterAddress", "SrcAddr", "DstAddr":
+	switch schema.ColumnKey(qc) {
+	case schema.ColumnExporterAddress, schema.ColumnSrcAddr, schema.ColumnDstAddr:
 		strValue = fmt.Sprintf("replaceRegexpOne(IPv6NumToString(%s), '^::ffff:', '')", qc)
-	case "SrcAS", "DstAS", "Dst1stAS", "Dst2ndAS", "Dst3rdAS":
+	case schema.ColumnSrcAS, schema.ColumnDstAS, schema.ColumnDst1stAS, schema.ColumnDst2ndAS, schema.ColumnDst3rdAS:
 		strValue = fmt.Sprintf(`concat(toString(%s), ': ', dictGetOrDefault('asns', 'name', %s, '???'))`,
 			qc, qc)
-	case "EType":
+	case schema.ColumnEType:
 		strValue = fmt.Sprintf(`if(EType = %d, 'IPv4', if(EType = %d, 'IPv6', '???'))`,
 			helpers.ETypeIPv4, helpers.ETypeIPv6)
-	case "Proto":
+	case schema.ColumnProto:
 		strValue = `dictGetOrDefault('protocols', 'name', Proto, '???')`
-	case "InIfSpeed", "OutIfSpeed", "SrcPort", "DstPort", "ForwardingStatus", "InIfBoundary", "OutIfBoundary":
+	case schema.ColumnInIfSpeed, schema.ColumnOutIfSpeed, schema.ColumnSrcPort, schema.ColumnDstPort, schema.ColumnForwardingStatus, schema.ColumnInIfBoundary, schema.ColumnOutIfBoundary:
 		strValue = fmt.Sprintf("toString(%s)", qc)
-	case "DstASPath":
+	case schema.ColumnDstASPath:
 		strValue = `arrayStringConcat(DstASPath, ' ')`
-	case "DstCommunities":
+	case schema.ColumnDstCommunities:
 		strValue = `arrayStringConcat(arrayConcat(arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities), arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)), ' ')`
 	default:
 		strValue = qc.String()
@@ -103,17 +103,13 @@ func (qc queryColumn) toSQLSelect() string {
 	return strValue
 }
 
-// reverseDirection reverse the direction of a column (src/dst, in/out)
-func (qc queryColumn) reverseDirection() queryColumn {
-	return queryColumn(filter.ReverseColumnDirection(string(qc)))
-}
-
 // fixQueryColumnName fix capitalization of the provided column name
 func fixQueryColumnName(name string) string {
 	name = strings.ToLower(name)
-	for _, k := range schema.Flows.Columns.Keys() {
-		if strings.ToLower(k) == name {
-			return k
+	for pair := schema.Flows.Columns.Front(); pair != nil; pair = pair.Next() {
+		column := pair.Value
+		if strings.ToLower(column.Name) == name {
+			return column.Name
 		}
 	}
 	return ""

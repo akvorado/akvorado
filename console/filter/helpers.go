@@ -35,7 +35,7 @@ func ReverseColumnDirection(name string) string {
 	if strings.HasPrefix(name, "Out") {
 		candidate = "In" + name[3:]
 	}
-	if column, ok := schema.Flows.Columns.Get(candidate); ok {
+	if column, ok := schema.Flows.LookupColumnByName(candidate); ok {
 		return column.Name
 	}
 	return name
@@ -46,11 +46,12 @@ func ReverseColumnDirection(name string) string {
 func (c *current) acceptColumn() (string, error) {
 	name := string(c.text)
 	for _, columnName := range schema.Flows.Columns.Keys() {
-		if strings.EqualFold(name, columnName) {
+		columnNameStr := columnName.String()
+		if strings.EqualFold(name, columnNameStr) {
 			if c.globalStore["meta"].(*Meta).ReverseDirection {
-				return ReverseColumnDirection(columnName), nil
+				return ReverseColumnDirection(columnNameStr), nil
 			}
-			return columnName, nil
+			return columnNameStr, nil
 		}
 	}
 	return "", fmt.Errorf("unknown column %q", name)
@@ -60,7 +61,7 @@ func (c *current) acceptColumn() (string, error) {
 // in state change blocks. Unfortunately, it cannot extract matched text, so it
 // should be provided.
 func (c *current) metaColumn(name string) error {
-	if column, ok := schema.Flows.Columns.Get(name); ok {
+	if column, ok := schema.Flows.LookupColumnByName(name); ok {
 		if column.MainOnly {
 			c.state["main-table-only"] = true
 		}

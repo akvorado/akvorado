@@ -13,6 +13,7 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"akvorado/common/helpers"
+	"akvorado/common/schema"
 )
 
 func TestGraphInputReverseDirection(t *testing.T) {
@@ -21,8 +22,8 @@ func TestGraphInputReverseDirection(t *testing.T) {
 		End:    time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 		Points: 100,
 		Dimensions: []queryColumn{
-			"ExporterName",
-			"InIfProvider",
+			queryColumn(schema.ColumnExporterName),
+			queryColumn(schema.ColumnInIfProvider),
 		},
 		Filter: queryFilter{
 			Filter:        "DstCountry = 'FR' AND SrcCountry = 'US'",
@@ -36,8 +37,8 @@ func TestGraphInputReverseDirection(t *testing.T) {
 		End:    time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 		Points: 100,
 		Dimensions: []queryColumn{
-			"ExporterName",
-			"OutIfProvider",
+			queryColumn(schema.ColumnExporterName),
+			queryColumn(schema.ColumnOutIfProvider),
 		},
 		Filter: queryFilter{
 			Filter:        "SrcCountry = 'FR' AND DstCountry = 'US'",
@@ -120,8 +121,8 @@ func TestGraphPreviousPeriod(t *testing.T) {
 				Start: start,
 				End:   end,
 				Dimensions: []queryColumn{
-					"ExporterAddress",
-					"ExporterName",
+					queryColumn(schema.ColumnExporterAddress),
+					queryColumn(schema.ColumnExporterName),
 				},
 			}
 			got := input.previousPeriod()
@@ -328,8 +329,8 @@ ORDER BY time WITH FILL
 				Points: 100,
 				Limit:  20,
 				Dimensions: []queryColumn{
-					"ExporterName",
-					"InIfProvider",
+					queryColumn(schema.ColumnExporterName),
+					queryColumn(schema.ColumnInIfProvider),
 				},
 				Filter: queryFilter{},
 				Units:  "l3bps",
@@ -360,8 +361,8 @@ ORDER BY time WITH FILL
 				Points: 100,
 				Limit:  20,
 				Dimensions: []queryColumn{
-					"ExporterName",
-					"InIfProvider",
+					queryColumn(schema.ColumnExporterName),
+					queryColumn(schema.ColumnInIfProvider),
 				},
 				Filter:        queryFilter{},
 				Units:         "l3bps",
@@ -409,8 +410,8 @@ ORDER BY time WITH FILL
 				Points: 100,
 				Limit:  20,
 				Dimensions: []queryColumn{
-					"ExporterName",
-					"InIfProvider",
+					queryColumn(schema.ColumnExporterName),
+					queryColumn(schema.ColumnInIfProvider),
 				},
 				Filter:         queryFilter{},
 				Units:          "l3bps",
