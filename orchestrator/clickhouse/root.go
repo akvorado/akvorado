@@ -79,8 +79,7 @@ func (c *Component) Start() error {
 	c.t.Go(func() error {
 		customBackoff := backoff.NewExponentialBackOff()
 		customBackoff.MaxElapsedTime = 0
-		ticker := backoff.NewTicker(customBackoff)
-		defer ticker.Stop()
+		customBackoff.InitialInterval = time.Second
 		for {
 			if !c.config.SkipMigrations {
 				c.r.Info().Msg("attempting database migration")
@@ -92,12 +91,14 @@ func (c *Component) Start() error {
 				if !migrationsOnce {
 					close(c.migrationsOnce)
 					migrationsOnce = true
+					customBackoff.Reset()
 				}
 			}
+			next := customBackoff.NextBackOff()
 			select {
 			case <-c.t.Dying():
 				return nil
-			case <-ticker.C:
+			case <-time.Tick(next):
 			}
 		}
 	})

@@ -264,6 +264,7 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 SELECT query
 FROM system.query_log
 WHERE client_name = $1
+AND query NOT LIKE '%ORDER BY event_time_microseconds%'
 ORDER BY event_time_microseconds DESC
 LIMIT 1`, proto.ClientName)
 			var lastQuery string
