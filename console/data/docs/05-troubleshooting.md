@@ -252,7 +252,7 @@ in the inlet configuration (`inlet.http.profiler` set to `true`) and restart it.
 When running on Docker, use `docker inspect` to get the IP address of the inlet:
 
 ```console
-$ docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' akvorado_akvorado-console_1
+$ docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' akvorado_akvorado-inlet_1
 240.0.4.8
 ```
 
