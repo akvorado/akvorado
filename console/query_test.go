@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"akvorado/common/helpers"
+	"akvorado/common/schema"
 )
 
 func TestRequireMainTable(t *testing.T) {
@@ -16,14 +17,14 @@ func TestRequireMainTable(t *testing.T) {
 		Expected bool
 	}{
 		{[]queryColumn{}, queryFilter{}, false},
-		{[]queryColumn{"SrcAS"}, queryFilter{}, false},
-		{[]queryColumn{"ExporterAddress"}, queryFilter{}, false},
-		{[]queryColumn{"SrcPort"}, queryFilter{}, true},
-		{[]queryColumn{"SrcAddr"}, queryFilter{}, true},
-		{[]queryColumn{"DstPort"}, queryFilter{}, true},
-		{[]queryColumn{"DstAddr"}, queryFilter{}, true},
-		{[]queryColumn{"SrcAS", "DstAddr"}, queryFilter{}, true},
-		{[]queryColumn{"DstAddr", "SrcAS"}, queryFilter{}, true},
+		{[]queryColumn{queryColumn(schema.ColumnSrcAS)}, queryFilter{}, false},
+		{[]queryColumn{queryColumn(schema.ColumnExporterAddress)}, queryFilter{}, false},
+		{[]queryColumn{queryColumn(schema.ColumnSrcPort)}, queryFilter{}, true},
+		{[]queryColumn{queryColumn(schema.ColumnSrcAddr)}, queryFilter{}, true},
+		{[]queryColumn{queryColumn(schema.ColumnDstPort)}, queryFilter{}, true},
+		{[]queryColumn{queryColumn(schema.ColumnDstAddr)}, queryFilter{}, true},
+		{[]queryColumn{queryColumn(schema.ColumnSrcAS), queryColumn(schema.ColumnDstAddr)}, queryFilter{}, true},
+		{[]queryColumn{queryColumn(schema.ColumnDstAddr), queryColumn(schema.ColumnSrcAS)}, queryFilter{}, true},
 		{[]queryColumn{}, queryFilter{MainTableRequired: true}, true},
 	}
 	for idx, tc := range cases {
@@ -37,12 +38,12 @@ func TestRequireMainTable(t *testing.T) {
 func TestUnmarshalQueryColumn(t *testing.T) {
 	cases := []struct {
 		Input    string
-		Expected string
+		Expected schema.ColumnKey
 		Error    bool
 	}{
-		{"DstAddr", "DstAddr", false},
-		{"TimeReceived", "", true},
-		{"Nothing", "", true},
+		{"DstAddr", schema.ColumnDstAddr, false},
+		{"TimeReceived", 0, true},
+		{"Nothing", 0, true},
 	}
 	for _, tc := range cases {
 		var qc queryColumn
@@ -61,44 +62,44 @@ func TestUnmarshalQueryColumn(t *testing.T) {
 
 func TestQueryColumnSQLSelect(t *testing.T) {
 	cases := []struct {
-		Input    queryColumn
+		Input    schema.ColumnKey
 		Expected string
 	}{
 		{
-			Input:    "SrcAddr",
+			Input:    schema.ColumnSrcAddr,
 			Expected: `replaceRegexpOne(IPv6NumToString(SrcAddr), '^::ffff:', '')`,
 		}, {
-			Input:    "DstAS",
+			Input:    schema.ColumnDstAS,
 			Expected: `concat(toString(DstAS), ': ', dictGetOrDefault('asns', 'name', DstAS, '???'))`,
 		}, {
-			Input:    "Dst2ndAS",
+			Input:    schema.ColumnDst2ndAS,
 			Expected: `concat(toString(Dst2ndAS), ': ', dictGetOrDefault('asns', 'name', Dst2ndAS, '???'))`,
 		}, {
-			Input:    "Proto",
+			Input:    schema.ColumnProto,
 			Expected: `dictGetOrDefault('protocols', 'name', Proto, '???')`,
 		}, {
-			Input:    "EType",
+			Input:    schema.ColumnEType,
 			Expected: `if(EType = 2048, 'IPv4', if(EType = 34525, 'IPv6', '???'))`,
 		}, {
-			Input:    "OutIfSpeed",
+			Input:    schema.ColumnOutIfSpeed,
 			Expected: `toString(OutIfSpeed)`,
 		}, {
-			Input:    "ExporterName",
+			Input:    schema.ColumnExporterName,
 			Expected: `ExporterName`,
 		}, {
-			Input:    "PacketSizeBucket",
+			Input:    schema.ColumnPacketSizeBucket,
 			Expected: `PacketSizeBucket`,
 		}, {
-			Input:    "DstASPath",
+			Input:    schema.ColumnDstASPath,
 			Expected: `arrayStringConcat(DstASPath, ' ')`,
 		}, {
-			Input:    "DstCommunities",
+			Input:    schema.ColumnDstCommunities,
 			Expected: `arrayStringConcat(arrayConcat(arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities), arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)), ' ')`,
 		},
 	}
 	for _, tc := range cases {
-		t.Run(tc.Input.String(), func(t *testing.T) {
-			got := tc.Input.toSQLSelect()
+		t.Run(queryColumn(tc.Input).String(), func(t *testing.T) {
+			got := queryColumn(tc.Input).toSQLSelect()
 			if diff := helpers.Diff(got, tc.Expected); diff != "" {
 				t.Errorf("toSQLWhere (-got, +want):\n%s", diff)
 			}

@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"akvorado/common/helpers"
+	"akvorado/common/schema"
 )
 
 // graphHandlerInput describes the input for the /graph endpoint.
@@ -50,7 +51,7 @@ func (input graphHandlerInput) reverseDirection() graphHandlerInput {
 	dimensions := input.Dimensions
 	input.Dimensions = make([]queryColumn, len(dimensions))
 	for i := range dimensions {
-		input.Dimensions[i] = dimensions[i].reverseDirection()
+		input.Dimensions[i] = queryColumn(schema.Flows.ReverseColumnDirection(schema.ColumnKey(dimensions[i])))
 	}
 	return input
 }

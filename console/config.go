@@ -52,7 +52,7 @@ func DefaultConfiguration() Configuration {
 			Start:      "6 hours ago",
 			End:        "now",
 			Filter:     "InIfBoundary = external",
-			Dimensions: []queryColumn{"SrcAS"},
+			Dimensions: []queryColumn{queryColumn(schema.ColumnSrcAS)},
 			Limit:      10,
 		},
 		HomepageTopWidgets: []string{"src-as", "src-port", "protocol", "src-country", "etype"},

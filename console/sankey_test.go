@@ -12,6 +12,7 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"akvorado/common/helpers"
+	"akvorado/common/schema"
 )
 
 func TestSankeyQuerySQL(t *testing.T) {
@@ -25,7 +26,7 @@ func TestSankeyQuerySQL(t *testing.T) {
 			Input: sankeyHandlerInput{
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
-				Dimensions: []queryColumn{"SrcAS", "ExporterName"},
+				Dimensions: []queryColumn{queryColumn(schema.ColumnSrcAS), queryColumn(schema.ColumnExporterName)},
 				Limit:      5,
 				Filter:     queryFilter{},
 				Units:      "l3bps",
@@ -49,7 +50,7 @@ ORDER BY xps DESC
 			Input: sankeyHandlerInput{
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
-				Dimensions: []queryColumn{"SrcAS", "ExporterName"},
+				Dimensions: []queryColumn{queryColumn(schema.ColumnSrcAS), queryColumn(schema.ColumnExporterName)},
 				Limit:      5,
 				Filter:     queryFilter{},
 				Units:      "l2bps",
@@ -74,7 +75,7 @@ ORDER BY xps DESC
 			Input: sankeyHandlerInput{
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
-				Dimensions: []queryColumn{"SrcAS", "ExporterName"},
+				Dimensions: []queryColumn{queryColumn(schema.ColumnSrcAS), queryColumn(schema.ColumnExporterName)},
 				Limit:      5,
 				Filter:     queryFilter{},
 				Units:      "pps",
@@ -98,7 +99,7 @@ ORDER BY xps DESC
 			Input: sankeyHandlerInput{
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
-				Dimensions: []queryColumn{"SrcAS", "ExporterName"},
+				Dimensions: []queryColumn{queryColumn(schema.ColumnSrcAS), queryColumn(schema.ColumnExporterName)},
 				Limit:      10,
 				Filter:     queryFilter{Filter: "DstCountry = 'FR'"},
 				Units:      "l3bps",
