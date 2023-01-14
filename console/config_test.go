@@ -72,6 +72,7 @@ func TestConfigHandler(t *testing.T) {
 					"OutIfProvider",
 					"InIfBoundary",
 					"OutIfBoundary",
+					"VlanID",
 					"EType",
 					"Proto",
 					"SrcPort",
