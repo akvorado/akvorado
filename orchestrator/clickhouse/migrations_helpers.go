@@ -125,10 +125,8 @@ LAYOUT({{ .Layout }}())
 func (c *Component) createExportersView(ctx context.Context) error {
 	// Select the columns we need
 	cols := []string{}
-	for pair := schema.Flows.Columns.Front(); pair != nil; pair = pair.Next() {
-		column := pair.Value
-		key := pair.Key
-		if key == schema.ColumnTimeReceived || strings.HasPrefix(column.Name, "Exporter") {
+	for _, column := range schema.Flows.Columns() {
+		if column.Key == schema.ColumnTimeReceived || strings.HasPrefix(column.Name, "Exporter") {
 			cols = append(cols, column.Name)
 		}
 		if strings.HasPrefix(column.Name, "InIf") {
@@ -358,10 +356,6 @@ TTL TimeReceived + toIntervalSecond({{ .TTL }})
 				"TTL":               ttl,
 			})
 		} else {
-			primaryKeys := []string{}
-			for _, key := range schema.Flows.ClickHousePrimaryKeys {
-				primaryKeys = append(primaryKeys, key.String())
-			}
 			createQuery, err = stemplate(`
 CREATE TABLE {{ .Table }} ({{ .Schema }})
 ENGINE = SummingMergeTree((Bytes, Packets))
@@ -373,7 +367,7 @@ TTL TimeReceived + toIntervalSecond({{ .TTL }})
 				"Table":             tableName,
 				"Schema":            schema.Flows.ClickHouseCreateTable(schema.ClickHouseSkipMainOnlyColumns),
 				"PartitionInterval": partitionInterval,
-				"PrimaryKey":        strings.Join(primaryKeys, ", "),
+				"PrimaryKey":        strings.Join(schema.Flows.ClickHousePrimaryKeys(), ", "),
 				"SortingKey":        strings.Join(schema.Flows.ClickHouseSortingKeys(), ", "),
 				"TTL":               ttl,
 			})
@@ -409,9 +403,7 @@ ORDER BY position ASC
 	modifications := []string{}
 	previousColumn := ""
 outer:
-	for pair := schema.Flows.Columns.Front(); pair != nil; pair = pair.Next() {
-		wantedColumn := pair.Value
-		wantedColumnKey := pair.Key
+	for _, wantedColumn := range schema.Flows.Columns() {
 		if resolution.Interval > 0 && wantedColumn.MainOnly {
 			continue
 		}
@@ -423,7 +415,7 @@ outer:
 					return fmt.Errorf("table %s, column %s has a non-matching type: %s vs %s",
 						tableName, wantedColumn.Name, existingColumn.Type, wantedColumn.ClickHouseType)
 				}
-				if resolution.Interval > 0 && slices.Contains(schema.Flows.ClickHousePrimaryKeys, wantedColumnKey) && existingColumn.IsPrimaryKey == 0 {
+				if resolution.Interval > 0 && slices.Contains(schema.Flows.ClickHousePrimaryKeys(), wantedColumn.Name) && existingColumn.IsPrimaryKey == 0 {
 					return fmt.Errorf("table %s, column %s should be a primary key, cannot change that",
 						tableName, wantedColumn.Name)
 				}
@@ -444,7 +436,7 @@ outer:
 			}
 		}
 		// Add the missing column. Only if not primary.
-		if resolution.Interval > 0 && slices.Contains(schema.Flows.ClickHousePrimaryKeys, wantedColumnKey) {
+		if resolution.Interval > 0 && slices.Contains(schema.Flows.ClickHousePrimaryKeys(), wantedColumn.Name) {
 			return fmt.Errorf("table %s, column %s is missing but it is a primary key",
 				tableName, wantedColumn.Name)
 		}

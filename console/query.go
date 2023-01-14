@@ -35,7 +35,7 @@ func requireMainTable(qcs []queryColumn, qf queryFilter) bool {
 		return true
 	}
 	for _, qc := range qcs {
-		if column, ok := schema.Flows.Columns.Get(schema.ColumnKey(qc)); ok && column.MainOnly {
+		if column, ok := schema.Flows.LookupColumnByKey(schema.ColumnKey(qc)); ok && column.MainOnly {
 			return true
 		}
 	}
@@ -106,8 +106,7 @@ func (qc queryColumn) toSQLSelect() string {
 // fixQueryColumnName fix capitalization of the provided column name
 func fixQueryColumnName(name string) string {
 	name = strings.ToLower(name)
-	for pair := schema.Flows.Columns.Front(); pair != nil; pair = pair.Next() {
-		column := pair.Value
+	for _, column := range schema.Flows.Columns() {
 		if strings.ToLower(column.Name) == name {
 			return column.Name
 		}

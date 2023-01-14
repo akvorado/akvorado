@@ -11,7 +11,12 @@ func (schema Schema) LookupColumnByName(name string) (Column, bool) {
 	if !ok {
 		return Column{}, false
 	}
-	return schema.Columns.Get(key)
+	return schema.columns.Get(key)
+}
+
+// LookupColumnByKey can lookup a column by its key.
+func (schema Schema) LookupColumnByKey(key ColumnKey) (Column, bool) {
+	return schema.columns.Get(key)
 }
 
 // ReverseColumnDirection reverts the direction of a provided column name.
@@ -31,9 +36,18 @@ func (schema Schema) ReverseColumnDirection(key ColumnKey) ColumnKey {
 		candidateName = "In" + name[3:]
 	}
 	if candidateKey, ok := columnNameMap.LoadKey(candidateName); ok {
-		if _, ok := schema.Columns.Get(candidateKey); ok {
+		if _, ok := schema.columns.Get(candidateKey); ok {
 			return candidateKey
 		}
 	}
 	return key
+}
+
+// Columns returns the columns.
+func (schema Schema) Columns() []Column {
+	result := []Column{}
+	for pair := schema.columns.Front(); pair != nil; pair = pair.Next() {
+		result = append(result, pair.Value)
+	}
+	return result
 }
