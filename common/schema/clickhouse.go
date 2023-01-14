@@ -63,7 +63,7 @@ func (schema Schema) ClickHouseSelectColumns(options ...ClickHouseTableOption) [
 }
 
 func (schema Schema) clickhouseIterate(fn func(Column), options ...ClickHouseTableOption) {
-	for pair := schema.Columns.Front(); pair != nil; pair = pair.Next() {
+	for pair := schema.columns.Front(); pair != nil; pair = pair.Next() {
 		key := pair.Key
 		column := pair.Value
 		if slices.Contains(options, ClickHouseSkipTimeReceived) && key == ColumnTimeReceived {
@@ -102,11 +102,8 @@ func (schema Schema) clickhouseIterate(fn func(Column), options ...ClickHouseTab
 
 // ClickHouseSortingKeys returns the list of sorting keys, prefixed by the primary keys.
 func (schema Schema) ClickHouseSortingKeys() []string {
-	cols := []string{}
-	for _, key := range schema.ClickHousePrimaryKeys {
-		cols = append(cols, key.String())
-	}
-	for pair := schema.Columns.Front(); pair != nil; pair = pair.Next() {
+	cols := schema.ClickHousePrimaryKeys()
+	for pair := schema.columns.Front(); pair != nil; pair = pair.Next() {
 		column := pair.Value
 		if column.ClickHouseNotSortingKey || column.MainOnly {
 			continue
@@ -114,6 +111,15 @@ func (schema Schema) ClickHouseSortingKeys() []string {
 		if !slices.Contains(cols, column.Name) {
 			cols = append(cols, column.Name)
 		}
+	}
+	return cols
+}
+
+// ClickHousePrimaryKeys returns the list of primary keys.
+func (schema Schema) ClickHousePrimaryKeys() []string {
+	cols := []string{}
+	for _, key := range schema.clickHousePrimaryKeys {
+		cols = append(cols, key.String())
 	}
 	return cols
 }

@@ -45,13 +45,12 @@ func ReverseColumnDirection(name string) string {
 // in predicate code blocks.
 func (c *current) acceptColumn() (string, error) {
 	name := string(c.text)
-	for _, columnName := range schema.Flows.Columns.Keys() {
-		columnNameStr := columnName.String()
-		if strings.EqualFold(name, columnNameStr) {
+	for _, column := range schema.Flows.Columns() {
+		if strings.EqualFold(name, column.Name) {
 			if c.globalStore["meta"].(*Meta).ReverseDirection {
-				return ReverseColumnDirection(columnNameStr), nil
+				return ReverseColumnDirection(column.Name), nil
 			}
-			return columnNameStr, nil
+			return column.Name, nil
 		}
 	}
 	return "", fmt.Errorf("unknown column %q", name)

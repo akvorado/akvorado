@@ -63,8 +63,7 @@ func DefaultConfiguration() Configuration {
 
 func (c *Component) configHandlerFunc(gc *gin.Context) {
 	dimensions := []string{}
-	for pair := schema.Flows.Columns.Front(); pair != nil; pair = pair.Next() {
-		column := pair.Value
+	for _, column := range schema.Flows.Columns() {
 		if column.ConsoleNotDimension {
 			continue
 		}

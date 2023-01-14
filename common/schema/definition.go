@@ -148,7 +148,7 @@ func (c ColumnKey) String() string {
 // will be duplicated as Dst/OutIf during init. That's not the case for columns
 // in `PrimaryKeys'.
 var Flows = Schema{
-	ClickHousePrimaryKeys: []ColumnKey{
+	clickHousePrimaryKeys: []ColumnKey{
 		ColumnTimeReceived,
 		ColumnExporterAddress,
 		ColumnEType,
@@ -160,7 +160,7 @@ var Flows = Schema{
 		ColumnDstAS,
 		ColumnSamplingRate,
 	},
-	Columns: buildMapFromColumns([]Column{
+	columns: buildMapFromColumns([]Column{
 		{
 			Key:                 ColumnTimeReceived,
 			ClickHouseType:      "DateTime",
@@ -334,8 +334,8 @@ func buildMapFromColumns(columns []Column) *orderedmap.OrderedMap[ColumnKey, Col
 }
 
 func init() {
-	for _, key := range Flows.ClickHousePrimaryKeys {
-		if column, ok := Flows.Columns.Get(key); !ok {
+	for _, key := range Flows.clickHousePrimaryKeys {
+		if column, ok := Flows.columns.Get(key); !ok {
 			panic(fmt.Sprintf("primary key %q not a column", key))
 		} else {
 			if column.ClickHouseNotSortingKey {
