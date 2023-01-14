@@ -91,7 +91,7 @@ func (qc queryColumn) toSQLSelect() string {
 			helpers.ETypeIPv4, helpers.ETypeIPv6)
 	case "Proto":
 		strValue = `dictGetOrDefault('protocols', 'name', Proto, '???')`
-	case "InIfSpeed", "OutIfSpeed", "SrcPort", "DstPort", "ForwardingStatus", "InIfBoundary", "OutIfBoundary":
+	case "InIfSpeed", "OutIfSpeed", "SrcPort", "DstPort", "ForwardingStatus", "InIfBoundary", "OutIfBoundary", "VlanID":
 		strValue = fmt.Sprintf("toString(%s)", qc)
 	case "DstASPath":
 		strValue = `arrayStringConcat(DstASPath, ' ')`
