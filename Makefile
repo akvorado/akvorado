@@ -143,7 +143,7 @@ test-race: GOTEST_MORE=, with race detector
 test-race: test-go  ## Run Go tests with race detector
 test-bench: | $(GOTESTSUM) ; $(info $(M) running benchmarks…) @ ## Run Go benchmarks
 	$Q $(GOTESTSUM) -f standard-quiet -- \
-		-timeout $(TIMEOUT)s -run=__absolutelynothing__ -bench=. \
+		-timeout $(TIMEOUT)s -run=__absolutelynothing__ -bench=. -benchmem \
 		$(PKGS)
 test-coverage-go: | $(GOTESTSUM) $(GOCOV) $(GOCOVXML) ; $(info $(M) running Go coverage tests…) @ ## Run Go coverage tests
 	$Q mkdir -p test/go
