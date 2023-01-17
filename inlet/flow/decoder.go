@@ -4,15 +4,14 @@
 package flow
 
 import (
+	"net/netip"
 	"time"
 
+	"akvorado/common/schema"
 	"akvorado/inlet/flow/decoder"
 	"akvorado/inlet/flow/decoder/netflow"
 	"akvorado/inlet/flow/decoder/sflow"
 )
-
-// Message describes a decoded flow message.
-type Message = decoder.FlowMessage
 
 type wrappedDecoder struct {
 	c                         *Component
@@ -21,7 +20,13 @@ type wrappedDecoder struct {
 }
 
 // Decode decodes a flow while keeping some stats.
-func (wd *wrappedDecoder) Decode(in decoder.RawFlow) []*Message {
+func (wd *wrappedDecoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
+	defer func() {
+		if r := recover(); r != nil {
+			wd.c.metrics.decoderErrors.WithLabelValues(wd.orig.Name()).
+				Inc()
+		}
+	}()
 	timeTrackStart := time.Now()
 	decoded := wd.orig.Decode(in)
 	timeTrackStop := time.Now()
@@ -33,8 +38,9 @@ func (wd *wrappedDecoder) Decode(in decoder.RawFlow) []*Message {
 	}
 
 	if wd.useSrcAddrForExporterAddr {
+		exporterAddress, _ := netip.AddrFromSlice(in.Source.To16())
 		for _, f := range decoded {
-			f.ExporterAddress = in.Source.To16()
+			f.ExporterAddress = exporterAddress
 		}
 	}
 

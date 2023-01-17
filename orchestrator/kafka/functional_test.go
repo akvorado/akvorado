@@ -14,7 +14,7 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/kafka"
 	"akvorado/common/reporter"
-	"akvorado/inlet/flow"
+	"akvorado/common/schema"
 )
 
 func TestTopicCreation(t *testing.T) {
@@ -22,7 +22,7 @@ func TestTopicCreation(t *testing.T) {
 
 	rand.Seed(time.Now().UnixMicro())
 	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
-	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, flow.CurrentSchemaVersion)
+	expectedTopicName := fmt.Sprintf("%s-%s", topicName, schema.Flows.ProtobufMessageHash())
 	retentionMs := "76548"
 	segmentBytes := "107374184"
 	segmentBytes2 := "10737184"
@@ -96,7 +96,7 @@ func TestTopicMorePartitions(t *testing.T) {
 
 	rand.Seed(time.Now().UnixMicro())
 	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
-	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, flow.CurrentSchemaVersion)
+	expectedTopicName := fmt.Sprintf("%s-%s", topicName, schema.Flows.ProtobufMessageHash())
 
 	configuration := DefaultConfiguration()
 	configuration.Topic = topicName

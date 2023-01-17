@@ -6,11 +6,13 @@ package flows
 import (
 	"context"
 	"net"
+	"net/netip"
 	"testing"
 	"time"
 
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/inlet/flow/decoder"
 	"akvorado/inlet/flow/decoder/netflow"
 )
@@ -100,73 +102,70 @@ func TestGetNetflowData(t *testing.T) {
 	expected := []interface{}{
 		[]interface{}{}, // templates
 		[]interface{}{
-			&decoder.FlowMessage{
-				SequenceNum:      100,
-				SamplingRate:     30000,
-				ExporterAddress:  net.ParseIP("127.0.0.1"),
-				TimeFlowStart:    1647361980,
-				TimeFlowEnd:      1647361980,
-				Bytes:            1500,
-				Packets:          1,
-				SrcAddr:          net.ParseIP("192.0.2.206"),
-				DstAddr:          net.ParseIP("203.0.113.165"),
-				Etype:            0x800,
-				Proto:            6,
-				SrcPort:          443,
-				DstPort:          34974,
-				InIf:             10,
-				OutIf:            20,
-				ForwardingStatus: 64,
-				SrcAS:            65201,
-				DstAS:            65202,
-				SrcNetMask:       24,
-				DstNetMask:       23,
+			&schema.FlowMessage{
+				SamplingRate:    30000,
+				ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+				SrcAddr:         netip.MustParseAddr("::ffff:192.0.2.206"),
+				DstAddr:         netip.MustParseAddr("::ffff:203.0.113.165"),
+				InIf:            10,
+				OutIf:           20,
+				SrcAS:           65201,
+				DstAS:           65202,
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnBytes:            1500,
+					schema.ColumnPackets:          1,
+					schema.ColumnEType:            helpers.ETypeIPv4,
+					schema.ColumnProto:            6,
+					schema.ColumnSrcPort:          443,
+					schema.ColumnDstPort:          34974,
+					schema.ColumnForwardingStatus: 64,
+					schema.ColumnSrcNetMask:       24,
+					schema.ColumnDstNetMask:       23,
+				},
 			},
-			&decoder.FlowMessage{
-				SequenceNum:      100,
-				SamplingRate:     30000,
-				ExporterAddress:  net.ParseIP("127.0.0.1"),
-				TimeFlowStart:    1647361980,
-				TimeFlowEnd:      1647361980,
-				Bytes:            1339,
-				Packets:          1,
-				SrcAddr:          net.ParseIP("192.0.2.236"),
-				DstAddr:          net.ParseIP("203.0.113.67"),
-				Etype:            0x800,
-				Proto:            6,
-				SrcPort:          443,
-				DstPort:          33199,
-				InIf:             10,
-				OutIf:            20,
-				ForwardingStatus: 64,
-				SrcAS:            65201,
-				DstAS:            65202,
-				SrcNetMask:       24,
-				DstNetMask:       24,
+			&schema.FlowMessage{
+				SamplingRate:    30000,
+				ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+				SrcAddr:         netip.MustParseAddr("::ffff:192.0.2.236"),
+				DstAddr:         netip.MustParseAddr("::ffff:203.0.113.67"),
+				InIf:            10,
+				OutIf:           20,
+				SrcAS:           65201,
+				DstAS:           65202,
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnBytes:            1339,
+					schema.ColumnPackets:          1,
+					schema.ColumnEType:            helpers.ETypeIPv4,
+					schema.ColumnProto:            6,
+					schema.ColumnSrcPort:          443,
+					schema.ColumnDstPort:          33199,
+					schema.ColumnForwardingStatus: 64,
+					schema.ColumnSrcNetMask:       24,
+					schema.ColumnDstNetMask:       24,
+				},
 			},
 		},
 		[]interface{}{
-			&decoder.FlowMessage{
-				SequenceNum:      101,
-				SamplingRate:     30000,
-				ExporterAddress:  net.ParseIP("127.0.0.1"),
-				TimeFlowStart:    1647361980,
-				TimeFlowEnd:      1647361980,
-				Bytes:            1300,
-				Packets:          1,
-				SrcAddr:          net.ParseIP("2001:db8::1"),
-				DstAddr:          net.ParseIP("2001:db8:2:0:cea5:d643:ec43:3772"),
-				Etype:            0x86dd,
-				Proto:            6,
-				SrcPort:          33179,
-				DstPort:          443,
-				InIf:             20,
-				OutIf:            10,
-				ForwardingStatus: 64,
-				SrcAS:            65201,
-				DstAS:            65202,
-				SrcNetMask:       48,
-				DstNetMask:       48,
+			&schema.FlowMessage{
+				SamplingRate:    30000,
+				ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+				SrcAddr:         netip.MustParseAddr("2001:db8::1"),
+				DstAddr:         netip.MustParseAddr("2001:db8:2:0:cea5:d643:ec43:3772"),
+				InIf:            20,
+				OutIf:           10,
+				SrcAS:           65201,
+				DstAS:           65202,
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnBytes:            1300,
+					schema.ColumnPackets:          1,
+					schema.ColumnEType:            helpers.ETypeIPv6,
+					schema.ColumnProto:            6,
+					schema.ColumnSrcPort:          33179,
+					schema.ColumnDstPort:          443,
+					schema.ColumnForwardingStatus: 64,
+					schema.ColumnSrcNetMask:       48,
+					schema.ColumnDstNetMask:       48,
+				},
 			},
 		},
 	}
@@ -175,7 +174,7 @@ func TestGetNetflowData(t *testing.T) {
 			continue
 		}
 		switch g := got[idx1].(type) {
-		case []*decoder.FlowMessage:
+		case []*schema.FlowMessage:
 			for idx2 := range g {
 				g[idx2].TimeReceived = 0
 			}

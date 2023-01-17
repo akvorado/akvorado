@@ -17,7 +17,6 @@ import (
 	"golang.org/x/exp/slices"
 
 	"akvorado/common/schema"
-	"akvorado/inlet/flow"
 )
 
 var errSkipStep = errors.New("migration: skip this step")
@@ -178,16 +177,16 @@ AS %s
 
 // createRawFlowsTable creates the raw flow table
 func (c *Component) createRawFlowsTable(ctx context.Context) error {
-	tableName := fmt.Sprintf("flows_%d_raw", flow.CurrentSchemaVersion)
+	hash := schema.Flows.ProtobufMessageHash()
+	tableName := fmt.Sprintf("flows_%s_raw", hash)
 	kafkaEngine := fmt.Sprintf("Kafka SETTINGS %s", strings.Join([]string{
 		fmt.Sprintf(`kafka_broker_list = '%s'`,
 			strings.Join(c.config.Kafka.Brokers, ",")),
-		fmt.Sprintf(`kafka_topic_list = '%s-v%d'`,
-			c.config.Kafka.Topic, flow.CurrentSchemaVersion),
+		fmt.Sprintf(`kafka_topic_list = '%s-%s'`,
+			c.config.Kafka.Topic, hash),
 		`kafka_group_name = 'clickhouse'`,
 		`kafka_format = 'Protobuf'`,
-		fmt.Sprintf(`kafka_schema = 'flow-%d.proto:FlowMessagev%d'`,
-			flow.CurrentSchemaVersion, flow.CurrentSchemaVersion),
+		fmt.Sprintf(`kafka_schema = 'flow-%s.proto:FlowMessagev%s'`, hash, hash),
 		fmt.Sprintf(`kafka_num_consumers = %d`, c.config.Kafka.Consumers),
 		`kafka_thread_per_consumer = 1`,
 		`kafka_handle_error_mode = 'stream'`,
@@ -236,7 +235,7 @@ func (c *Component) createRawFlowsTable(ctx context.Context) error {
 }
 
 func (c *Component) createRawFlowsConsumerView(ctx context.Context) error {
-	tableName := fmt.Sprintf("flows_%d_raw", flow.CurrentSchemaVersion)
+	tableName := fmt.Sprintf("flows_%s_raw", schema.Flows.ProtobufMessageHash())
 	viewName := fmt.Sprintf("%s_consumer", tableName)
 
 	// Build SELECT query
@@ -278,7 +277,7 @@ func (c *Component) createRawFlowsConsumerView(ctx context.Context) error {
 }
 
 func (c *Component) createRawFlowsErrorsView(ctx context.Context) error {
-	tableName := fmt.Sprintf("flows_%d_raw", flow.CurrentSchemaVersion)
+	tableName := fmt.Sprintf("flows_%s_raw", schema.Flows.ProtobufMessageHash())
 	viewName := fmt.Sprintf("%s_errors", tableName)
 
 	// Build SELECT query

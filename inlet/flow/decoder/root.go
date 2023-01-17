@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 )
 
 // Decoder is the interface each decoder should implement.
@@ -17,7 +18,7 @@ type Decoder interface {
 	// Decoder takes a raw flow and returns a
 	// slice of flow messages. Returning nil means there was an
 	// error during decoding.
-	Decode(in RawFlow) []*FlowMessage
+	Decode(in RawFlow) []*schema.FlowMessage
 
 	// Name returns the decoder name
 	Name() string

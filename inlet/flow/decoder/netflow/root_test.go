@@ -4,12 +4,16 @@
 package netflow
 
 import (
+	"fmt"
 	"net"
+	"net/netip"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/inlet/flow/decoder"
 )
 
@@ -96,98 +100,90 @@ func TestDecode(t *testing.T) {
 	if got == nil {
 		t.Fatalf("Decode() error on data")
 	}
-	expectedFlows := []*decoder.FlowMessage{
+	expectedFlows := []*schema.FlowMessage{
 		{
-			SequenceNum:      44797001,
-			ExporterAddress:  net.ParseIP("127.0.0.1").To16(),
-			SamplingRate:     30000,
-			TimeFlowStart:    1647285926,
-			TimeFlowEnd:      1647285926,
-			Bytes:            1500,
-			Packets:          1,
-			SrcAddr:          net.ParseIP("198.38.121.178").To16(),
-			DstAddr:          net.ParseIP("91.170.143.87").To16(),
-			SrcNetMask:       24,
-			DstNetMask:       14,
-			Etype:            0x800,
-			Proto:            6,
-			SrcPort:          443,
-			DstPort:          19624,
-			InIf:             335,
-			OutIf:            450,
-			ForwardingStatus: 64,
-			TCPFlags:         16,
-			NextHop:          net.ParseIP("194.149.174.63").To16(),
+			SamplingRate:    30000,
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("::ffff:198.38.121.178"),
+			DstAddr:         netip.MustParseAddr("::ffff:91.170.143.87"),
+			NextHop:         netip.MustParseAddr("::ffff:194.149.174.63"),
+			InIf:            335,
+			OutIf:           450,
+			ProtobufDebug: map[schema.ColumnKey]interface{}{
+				schema.ColumnBytes:            1500,
+				schema.ColumnPackets:          1,
+				schema.ColumnSrcNetMask:       24,
+				schema.ColumnDstNetMask:       14,
+				schema.ColumnEType:            helpers.ETypeIPv4,
+				schema.ColumnProto:            6,
+				schema.ColumnSrcPort:          443,
+				schema.ColumnDstPort:          19624,
+				schema.ColumnForwardingStatus: 64,
+			},
 		}, {
-			SequenceNum:      44797001,
-			ExporterAddress:  net.ParseIP("127.0.0.1").To16(),
-			SamplingRate:     30000,
-			TimeFlowStart:    1647285926,
-			TimeFlowEnd:      1647285926,
-			Bytes:            1500,
-			Packets:          1,
-			SrcAddr:          net.ParseIP("198.38.121.219").To16(),
-			DstAddr:          net.ParseIP("88.122.57.97").To16(),
-			SrcNetMask:       24,
-			DstNetMask:       14,
-			Etype:            0x800,
-			Proto:            6,
-			SrcPort:          443,
-			DstPort:          2444,
-			InIf:             335,
-			OutIf:            452,
-			ForwardingStatus: 64,
-			TCPFlags:         16,
-			NextHop:          net.ParseIP("194.149.174.71").To16(),
+			SamplingRate:    30000,
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("::ffff:198.38.121.219"),
+			DstAddr:         netip.MustParseAddr("::ffff:88.122.57.97"),
+			InIf:            335,
+			OutIf:           452,
+			NextHop:         netip.MustParseAddr("::ffff:194.149.174.71"),
+			ProtobufDebug: map[schema.ColumnKey]interface{}{
+				schema.ColumnBytes:            1500,
+				schema.ColumnPackets:          1,
+				schema.ColumnSrcNetMask:       24,
+				schema.ColumnDstNetMask:       14,
+				schema.ColumnEType:            helpers.ETypeIPv4,
+				schema.ColumnProto:            6,
+				schema.ColumnSrcPort:          443,
+				schema.ColumnDstPort:          2444,
+				schema.ColumnForwardingStatus: 64,
+			},
 		}, {
-			SequenceNum:      44797001,
-			ExporterAddress:  net.ParseIP("127.0.0.1").To16(),
-			SamplingRate:     30000,
-			TimeFlowStart:    1647285926,
-			TimeFlowEnd:      1647285926,
-			Bytes:            1400,
-			Packets:          1,
-			SrcAddr:          net.ParseIP("173.194.190.106").To16(),
-			DstAddr:          net.ParseIP("37.165.129.20").To16(),
-			SrcNetMask:       20,
-			DstNetMask:       18,
-			Etype:            0x800,
-			Proto:            6,
-			SrcPort:          443,
-			DstPort:          53697,
-			InIf:             461,
-			OutIf:            306,
-			ForwardingStatus: 64,
-			TCPFlags:         16,
-			NextHop:          net.ParseIP("252.223.0.0").To16(),
+			SamplingRate:    30000,
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("::ffff:173.194.190.106"),
+			DstAddr:         netip.MustParseAddr("::ffff:37.165.129.20"),
+			InIf:            461,
+			OutIf:           306,
+			NextHop:         netip.MustParseAddr("::ffff:252.223.0.0"),
+			ProtobufDebug: map[schema.ColumnKey]interface{}{
+				schema.ColumnBytes:            1400,
+				schema.ColumnPackets:          1,
+				schema.ColumnSrcNetMask:       20,
+				schema.ColumnDstNetMask:       18,
+				schema.ColumnEType:            helpers.ETypeIPv4,
+				schema.ColumnProto:            6,
+				schema.ColumnSrcPort:          443,
+				schema.ColumnDstPort:          53697,
+				schema.ColumnForwardingStatus: 64,
+			},
 		}, {
-			SequenceNum:      44797001,
-			ExporterAddress:  net.ParseIP("127.0.0.1").To16(),
-			SamplingRate:     30000,
-			TimeFlowStart:    1647285926,
-			TimeFlowEnd:      1647285926,
-			Bytes:            1448,
-			Packets:          1,
-			SrcAddr:          net.ParseIP("74.125.100.234").To16(),
-			DstAddr:          net.ParseIP("88.120.219.117").To16(),
-			SrcNetMask:       16,
-			DstNetMask:       14,
-			Etype:            0x800,
-			Proto:            6,
-			SrcPort:          443,
-			DstPort:          52300,
-			InIf:             461,
-			OutIf:            451,
-			ForwardingStatus: 64,
-			TCPFlags:         16,
-			NextHop:          net.ParseIP("194.149.174.61").To16(),
+			SamplingRate:    30000,
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("::ffff:74.125.100.234"),
+			DstAddr:         netip.MustParseAddr("::ffff:88.120.219.117"),
+			NextHop:         netip.MustParseAddr("::ffff:194.149.174.61"),
+			InIf:            461,
+			OutIf:           451,
+			ProtobufDebug: map[schema.ColumnKey]interface{}{
+				schema.ColumnBytes:            1448,
+				schema.ColumnPackets:          1,
+				schema.ColumnSrcNetMask:       16,
+				schema.ColumnDstNetMask:       14,
+				schema.ColumnEType:            helpers.ETypeIPv4,
+				schema.ColumnProto:            6,
+				schema.ColumnSrcPort:          443,
+				schema.ColumnDstPort:          52300,
+				schema.ColumnForwardingStatus: 64,
+			},
 		},
 	}
 	for _, f := range got {
 		f.TimeReceived = 0
 	}
 
-	if diff := helpers.Diff(got, expectedFlows); diff != "" {
+	if diff := helpers.Diff(got, expectedFlows, helpers.DiffFormatter(reflect.TypeOf(schema.ColumnBytes), fmt.Sprint)); diff != "" {
 		t.Fatalf("Decode() (-got, +want):\n%s", diff)
 	}
 	gotMetrics = r.GetMetrics(

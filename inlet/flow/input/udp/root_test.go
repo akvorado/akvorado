@@ -4,13 +4,17 @@
 package udp
 
 import (
+	"fmt"
 	"net"
+	"net/netip"
+	"reflect"
 	"testing"
 	"time"
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/inlet/flow/decoder"
 )
 
@@ -44,7 +48,7 @@ func TestUDPInput(t *testing.T) {
 	}
 
 	// Get it back
-	var got []*decoder.FlowMessage
+	var got []*schema.FlowMessage
 	select {
 	case got = <-ch:
 		if len(got) == 0 {
@@ -58,16 +62,18 @@ func TestUDPInput(t *testing.T) {
 	if delta > 1 {
 		t.Errorf("TimeReceived out of range: %d (now: %d)", got[0].TimeReceived, time.Now().UTC().Unix())
 	}
-	expected := []*decoder.FlowMessage{
+	expected := []*schema.FlowMessage{
 		{
 			TimeReceived:    got[0].TimeReceived,
-			ExporterAddress: net.ParseIP("127.0.0.1"),
-			Bytes:           12,
-			Packets:         1,
-			InIfDescription: "hello world!",
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			ProtobufDebug: map[schema.ColumnKey]interface{}{
+				schema.ColumnBytes:           12,
+				schema.ColumnPackets:         1,
+				schema.ColumnInIfDescription: []byte("hello world!"),
+			},
 		},
 	}
-	if diff := helpers.Diff(got, expected); diff != "" {
+	if diff := helpers.Diff(got, expected, helpers.DiffFormatter(reflect.TypeOf(schema.ColumnBytes), fmt.Sprint)); diff != "" {
 		t.Fatalf("Input data (-got, +want):\n%s", diff)
 	}
 

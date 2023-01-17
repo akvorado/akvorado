@@ -110,7 +110,7 @@ func TestFlow(t *testing.T) {
 				// the lower limit should be OK.
 				t.Logf("Nominal rate was %d/second", nominalRate)
 				expectedRate := uint64(30000 / 1000 * nominalRate)
-				if flow.SamplingRate > 1000*expectedRate/100 || flow.SamplingRate < 70*expectedRate/100 {
+				if flow.SamplingRate > uint32(1000*expectedRate/100) || flow.SamplingRate < uint32(70*expectedRate/100) {
 					if retry > 0 {
 						continue
 					}

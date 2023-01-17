@@ -11,6 +11,7 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/inlet/flow/decoder"
 )
 
@@ -40,7 +41,7 @@ out:
 		select {
 		case got1 := <-ch:
 			for _, fl := range got1 {
-				got = append(got, string(fl.InIfDescription))
+				got = append(got, string(fl.ProtobufDebug[schema.ColumnInIfDescription].([]byte)))
 			}
 		case <-time.After(50 * time.Millisecond):
 			break out

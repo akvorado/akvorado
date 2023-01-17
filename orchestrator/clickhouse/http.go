@@ -14,7 +14,7 @@ import (
 	"text/template"
 	"time"
 
-	"akvorado/inlet/flow"
+	"akvorado/common/schema"
 )
 
 var (
@@ -23,12 +23,10 @@ var (
 	data           embed.FS
 	initShTemplate = template.Must(template.New("initsh").Parse(`#!/bin/sh
 
-# Install Protobuf schemas
-{{- range $version, $schema := .FlowSchemaVersions }}
-cat > /var/lib/clickhouse/format_schemas/flow-{{ $version }}.proto <<'EOPROTO'
-{{ $schema }}
+# Install Protobuf schema
+cat > /var/lib/clickhouse/format_schemas/flow-{{ .FlowSchemaHash }}.proto <<'EOPROTO'
+{{ .FlowSchema }}
 EOPROTO
-{{ end }}
 
 # Alter ClickHouse configuration
 cat > /etc/clickhouse-server/config.d/akvorado.xml <<'EOCONFIG'
@@ -46,9 +44,10 @@ EOCONFIG
 )
 
 type initShVariables struct {
-	FlowSchemaVersions map[int]string
-	SystemLogTTL       int
-	SystemLogTables    []string
+	FlowSchemaHash  string
+	FlowSchema      string
+	SystemLogTTL    int
+	SystemLogTables []string
 }
 
 func (c *Component) addHandlerEmbedded(url string, path string) {
@@ -72,8 +71,9 @@ func (c *Component) registerHTTPHandlers() error {
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var result bytes.Buffer
 			if err := initShTemplate.Execute(&result, initShVariables{
-				FlowSchemaVersions: flow.VersionedSchemas,
-				SystemLogTTL:       int(c.config.SystemLogTTL.Seconds()),
+				FlowSchemaHash: schema.Flows.ProtobufMessageHash(),
+				FlowSchema:     schema.Flows.ProtobufDefinition(),
+				SystemLogTTL:   int(c.config.SystemLogTTL.Seconds()),
 				SystemLogTables: []string{
 					"asynchronous_metric_log",
 					"metric_log",

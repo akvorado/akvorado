@@ -15,6 +15,7 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 )
 
 func TestHTTPEndpoints(t *testing.T) {
@@ -62,10 +63,11 @@ func TestHTTPEndpoints(t *testing.T) {
 			FirstLines: []string{
 				`#!/bin/sh`,
 				``,
-				`# Install Protobuf schemas`,
-				`cat > /var/lib/clickhouse/format_schemas/flow-0.proto <<'EOPROTO'`,
+				`# Install Protobuf schema`,
+				fmt.Sprintf(`cat > /var/lib/clickhouse/format_schemas/flow-%s.proto <<'EOPROTO'`,
+					schema.Flows.ProtobufMessageHash()),
+				"",
 				`syntax = "proto3";`,
-				`package decoder;`,
 			},
 		},
 	}

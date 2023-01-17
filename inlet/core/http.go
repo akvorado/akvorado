@@ -53,13 +53,6 @@ func (c *Component) FlowsHTTPHandler(gc *gin.Context) {
 					gc.JSON(http.StatusOK, msg)
 					gc.Writer.Write([]byte("\n"))
 				}
-			case "application/x-protobuf":
-				buf, err := msg.EncodeMessage()
-				if err != nil {
-					continue
-				}
-				gc.Set("Content-Type", format)
-				gc.Writer.Write(buf)
 			}
 
 			count++

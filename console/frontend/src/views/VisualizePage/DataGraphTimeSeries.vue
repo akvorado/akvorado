@@ -171,7 +171,7 @@ const graph = computed((): ECOption => {
         let table: {
           key: string;
           seriesName: string;
-          marker: typeof params[0]["marker"];
+          marker: (typeof params)[0]["marker"];
           up: number;
           down: number;
         }[] = [];

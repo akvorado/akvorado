@@ -2,7 +2,6 @@
 /test/
 /orchestrator/clickhouse/data/asns.csv
 /console/filter/parser.go
-*.pb.go
 mock_*.go
 
 /console/data/frontend/

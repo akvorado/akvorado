@@ -12,6 +12,7 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/inlet/flow/input/udp"
 )
 
@@ -42,6 +43,6 @@ func NewMock(t *testing.T, r *reporter.Reporter, config Configuration) *Componen
 }
 
 // Inject inject the provided flow message, as if it was received.
-func (c *Component) Inject(t *testing.T, fmsg *Message) {
+func (c *Component) Inject(t *testing.T, fmsg *schema.FlowMessage) {
 	c.outgoingFlows <- fmsg
 }

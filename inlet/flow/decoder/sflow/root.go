@@ -9,9 +9,9 @@ import (
 	"net"
 
 	"github.com/netsampler/goflow2/decoders/sflow"
-	"github.com/netsampler/goflow2/producer"
 
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/inlet/flow/decoder"
 )
 
@@ -78,7 +78,7 @@ func New(r *reporter.Reporter) decoder.Decoder {
 }
 
 // Decode decodes an sFlow payload.
-func (nd *Decoder) Decode(in decoder.RawFlow) []*decoder.FlowMessage {
+func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 	buf := bytes.NewBuffer(in.Payload)
 	key := in.Source.String()
 
@@ -109,8 +109,6 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*decoder.FlowMessage {
 	version := "5"
 	samples := msgDecConv.Samples
 	nd.metrics.stats.WithLabelValues(key, agent, version).Inc()
-	hasFlowSamples := false
-	hasExpandedFlowSamples := false
 	for _, s := range samples {
 		switch sConv := s.(type) {
 		case sflow.FlowSample:
@@ -118,13 +116,11 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*decoder.FlowMessage {
 				Inc()
 			nd.metrics.sampleRecordsStatsSum.WithLabelValues(key, agent, version, "FlowSample").
 				Add(float64(len(sConv.Records)))
-			hasFlowSamples = true
 		case sflow.ExpandedFlowSample:
 			nd.metrics.sampleStatsSum.WithLabelValues(key, agent, version, "ExpandedFlowSample").
 				Inc()
 			nd.metrics.sampleRecordsStatsSum.WithLabelValues(key, agent, version, "ExpandedFlowSample").
 				Add(float64(len(sConv.Records)))
-			hasExpandedFlowSamples = true
 		case sflow.CounterSample:
 			nd.metrics.sampleStatsSum.WithLabelValues(key, agent, version, "CounterSample").
 				Inc()
@@ -132,41 +128,13 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*decoder.FlowMessage {
 				Add(float64(len(sConv.Records)))
 		}
 	}
-	if hasFlowSamples && hasExpandedFlowSamples {
-		// We assume routers are either exporting one or the others. The
-		// alternative would be to keep count of the received flows and their
-		// types into a bitset. However, this would rely on the fact that
-		// GoFlow2 keep everything in order and therefore may not be
-		// future-proof. Better have people not have flows at all than having
-		// something wrong.
-		nd.metrics.errors.WithLabelValues(key, "sflow packet has both regular and expanded flows").Inc()
-		return nil
-	}
 
-	flowMessageSet, _ := producer.ProcessMessageSFlow(msgDec)
+	flowMessageSet := decode(msgDec)
 	for _, fmsg := range flowMessageSet {
 		fmsg.TimeReceived = ts
-		fmsg.TimeFlowStart = ts
-		fmsg.TimeFlowEnd = ts
 	}
 
-	results := make([]*decoder.FlowMessage, len(flowMessageSet))
-	for idx, fmsg := range flowMessageSet {
-		results[idx] = decoder.ConvertGoflowToFlowMessage(fmsg)
-		if fmsg.InIf == interfaceLocal {
-			results[idx].InIf = 0
-		}
-		if fmsg.OutIf == interfaceLocal {
-			results[idx].OutIf = 0
-		} else if hasFlowSamples && fmsg.OutIf&interfaceOutMask == interfaceOutDiscard {
-			results[idx].OutIf = 0
-			results[idx].ForwardingStatus = 128
-		} else if hasFlowSamples && fmsg.OutIf&interfaceOutMask == interfaceOutMultiple {
-			results[idx].OutIf = 0
-		}
-	}
-
-	return results
+	return flowMessageSet
 }
 
 // Name returns the name of the decoder.

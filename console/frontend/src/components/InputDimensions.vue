@@ -74,7 +74,7 @@ const emit = defineEmits<{
 }>();
 
 const serverConfiguration = inject(ServerConfigKey)!;
-const selectedDimensions = ref<Array<typeof dimensions.value[0]>>([]);
+const selectedDimensions = ref<Array<(typeof dimensions.value)[0]>>([]);
 const dimensionsError = computed(() => {
   if (selectedDimensions.value.length < props.minDimensions) {
     return "At least two dimensions are required";
@@ -110,7 +110,7 @@ const dimensions = computed(() =>
   }))
 );
 
-const removeDimension = (dimension: typeof dimensions.value[0]) => {
+const removeDimension = (dimension: (typeof dimensions.value)[0]) => {
   selectedDimensions.value = selectedDimensions.value.filter(
     (d) => d !== dimension
   );
@@ -125,7 +125,7 @@ watch(
     if (value)
       selectedDimensions.value = value.selected
         .map((name) => dimensions.find((d) => d.name === name))
-        .filter((d): d is typeof dimensions[0] => !!d);
+        .filter((d): d is (typeof dimensions)[0] => !!d);
   },
   { immediate: true, deep: true }
 );

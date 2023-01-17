@@ -5,7 +5,8 @@ package core
 
 import (
 	"fmt"
-	"net"
+	"net/netip"
+	"reflect"
 	"testing"
 	"time"
 
@@ -17,9 +18,9 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/inlet/bmp"
 	"akvorado/inlet/flow"
-	"akvorado/inlet/flow/decoder"
 	"akvorado/inlet/geoip"
 	"akvorado/inlet/kafka"
 	"akvorado/inlet/snmp"
@@ -29,32 +30,32 @@ func TestEnrich(t *testing.T) {
 	cases := []struct {
 		Name          string
 		Configuration gin.H
-		InputFlow     func() *flow.Message
-		OutputFlow    *flow.Message
+		InputFlow     func() *schema.FlowMessage
+		OutputFlow    *schema.FlowMessage
 	}{
 		{
 			Name:          "no rule",
 			Configuration: gin.H{},
-			InputFlow: func() *flow.Message {
-				return &flow.Message{
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
 					SamplingRate:    1000,
-					ExporterAddress: net.ParseIP("192.0.2.142"),
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
 					InIf:            100,
 					OutIf:           200,
 				}
 			},
-			OutputFlow: &flow.Message{
-				SamplingRate:     1000,
-				ExporterAddress:  net.ParseIP("192.0.2.142"),
-				ExporterName:     "192_0_2_142",
-				InIf:             100,
-				OutIf:            200,
-				InIfName:         "Gi0/0/100",
-				OutIfName:        "Gi0/0/200",
-				InIfDescription:  "Interface 100",
-				OutIfDescription: "Interface 200",
-				InIfSpeed:        1000,
-				OutIfSpeed:       1000,
+			OutputFlow: &schema.FlowMessage{
+				SamplingRate:    1000,
+				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnExporterName:     "192_0_2_142",
+					schema.ColumnInIfName:         "Gi0/0/100",
+					schema.ColumnOutIfName:        "Gi0/0/200",
+					schema.ColumnInIfDescription:  "Interface 100",
+					schema.ColumnOutIfDescription: "Interface 200",
+					schema.ColumnInIfSpeed:        1000,
+					schema.ColumnOutIfSpeed:       1000,
+				},
 			},
 		}, {
 			Name: "no rule, override sampling rate",
@@ -63,49 +64,49 @@ func TestEnrich(t *testing.T) {
 				"192.0.2.128/25": 500,
 				"192.0.2.141/32": 1000,
 			}},
-			InputFlow: func() *flow.Message {
-				return &flow.Message{
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
 					SamplingRate:    1000,
-					ExporterAddress: net.ParseIP("192.0.2.142"),
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
 					InIf:            100,
 					OutIf:           200,
 				}
 			},
-			OutputFlow: &flow.Message{
-				SamplingRate:     500,
-				ExporterAddress:  net.ParseIP("192.0.2.142"),
-				ExporterName:     "192_0_2_142",
-				InIf:             100,
-				OutIf:            200,
-				InIfName:         "Gi0/0/100",
-				OutIfName:        "Gi0/0/200",
-				InIfDescription:  "Interface 100",
-				OutIfDescription: "Interface 200",
-				InIfSpeed:        1000,
-				OutIfSpeed:       1000,
+			OutputFlow: &schema.FlowMessage{
+				SamplingRate:    500,
+				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnExporterName:     "192_0_2_142",
+					schema.ColumnInIfName:         "Gi0/0/100",
+					schema.ColumnOutIfName:        "Gi0/0/200",
+					schema.ColumnInIfDescription:  "Interface 100",
+					schema.ColumnOutIfDescription: "Interface 200",
+					schema.ColumnInIfSpeed:        1000,
+					schema.ColumnOutIfSpeed:       1000,
+				},
 			},
 		}, {
 			Name:          "no rule, no sampling rate, default is one value",
 			Configuration: gin.H{"defaultsamplingrate": 500},
-			InputFlow: func() *flow.Message {
-				return &flow.Message{
-					ExporterAddress: net.ParseIP("192.0.2.142"),
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
 					InIf:            100,
 					OutIf:           200,
 				}
 			},
-			OutputFlow: &flow.Message{
-				SamplingRate:     500,
-				ExporterAddress:  net.ParseIP("192.0.2.142"),
-				ExporterName:     "192_0_2_142",
-				InIf:             100,
-				OutIf:            200,
-				InIfName:         "Gi0/0/100",
-				OutIfName:        "Gi0/0/200",
-				InIfDescription:  "Interface 100",
-				OutIfDescription: "Interface 200",
-				InIfSpeed:        1000,
-				OutIfSpeed:       1000,
+			OutputFlow: &schema.FlowMessage{
+				SamplingRate:    500,
+				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnExporterName:     "192_0_2_142",
+					schema.ColumnInIfName:         "Gi0/0/100",
+					schema.ColumnOutIfName:        "Gi0/0/200",
+					schema.ColumnInIfDescription:  "Interface 100",
+					schema.ColumnOutIfDescription: "Interface 200",
+					schema.ColumnInIfSpeed:        1000,
+					schema.ColumnOutIfSpeed:       1000,
+				},
 			},
 		}, {
 			Name: "no rule, no sampling rate, default is map",
@@ -114,25 +115,25 @@ func TestEnrich(t *testing.T) {
 				"192.0.2.128/25": 500,
 				"192.0.2.141/32": 1000,
 			}},
-			InputFlow: func() *flow.Message {
-				return &flow.Message{
-					ExporterAddress: net.ParseIP("192.0.2.142"),
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
 					InIf:            100,
 					OutIf:           200,
 				}
 			},
-			OutputFlow: &flow.Message{
-				SamplingRate:     500,
-				ExporterAddress:  net.ParseIP("192.0.2.142"),
-				ExporterName:     "192_0_2_142",
-				InIf:             100,
-				OutIf:            200,
-				InIfName:         "Gi0/0/100",
-				OutIfName:        "Gi0/0/200",
-				InIfDescription:  "Interface 100",
-				OutIfDescription: "Interface 200",
-				InIfSpeed:        1000,
-				OutIfSpeed:       1000,
+			OutputFlow: &schema.FlowMessage{
+				SamplingRate:    500,
+				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnExporterName:     "192_0_2_142",
+					schema.ColumnInIfName:         "Gi0/0/100",
+					schema.ColumnOutIfName:        "Gi0/0/200",
+					schema.ColumnInIfDescription:  "Interface 100",
+					schema.ColumnOutIfDescription: "Interface 200",
+					schema.ColumnInIfSpeed:        1000,
+					schema.ColumnOutIfSpeed:       1000,
+				},
 			},
 		}, {
 			Name: "exporter rule",
@@ -143,29 +144,29 @@ func TestEnrich(t *testing.T) {
 					`ClassifyRegion("other") && ClassifySite("unknown") && ClassifyTenant("alfred")`,
 				},
 			},
-			InputFlow: func() *flow.Message {
-				return &flow.Message{
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
 					SamplingRate:    1000,
-					ExporterAddress: net.ParseIP("192.0.2.142"),
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
 					InIf:            100,
 					OutIf:           200,
 				}
 			},
-			OutputFlow: &flow.Message{
-				SamplingRate:     1000,
-				ExporterAddress:  net.ParseIP("192.0.2.142"),
-				ExporterName:     "192_0_2_142",
-				ExporterRegion:   "asia",
-				ExporterTenant:   "alfred",
-				ExporterSite:     "unknown",
-				InIf:             100,
-				OutIf:            200,
-				InIfName:         "Gi0/0/100",
-				OutIfName:        "Gi0/0/200",
-				InIfDescription:  "Interface 100",
-				OutIfDescription: "Interface 200",
-				InIfSpeed:        1000,
-				OutIfSpeed:       1000,
+			OutputFlow: &schema.FlowMessage{
+				SamplingRate:    1000,
+				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnExporterName:     "192_0_2_142",
+					schema.ColumnExporterRegion:   "asia",
+					schema.ColumnExporterTenant:   "alfred",
+					schema.ColumnExporterSite:     "unknown",
+					schema.ColumnInIfName:         "Gi0/0/100",
+					schema.ColumnOutIfName:        "Gi0/0/200",
+					schema.ColumnInIfDescription:  "Interface 100",
+					schema.ColumnOutIfDescription: "Interface 200",
+					schema.ColumnInIfSpeed:        1000,
+					schema.ColumnOutIfSpeed:       1000,
+				},
 			},
 		}, {
 			Name: "interface rule",
@@ -179,28 +180,28 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 					`ClassifyInternal()`,
 				},
 			},
-			InputFlow: func() *flow.Message {
-				return &flow.Message{
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
 					SamplingRate:    1000,
-					ExporterAddress: net.ParseIP("192.0.2.142"),
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
 					InIf:            100,
 					OutIf:           200,
 				}
 			},
-			OutputFlow: &flow.Message{
-				SamplingRate:     1000,
-				ExporterAddress:  net.ParseIP("192.0.2.142"),
-				ExporterName:     "192_0_2_142",
-				InIf:             100,
-				OutIf:            200,
-				InIfName:         "Gi0/0/100",
-				OutIfName:        "Gi0/0/200",
-				InIfDescription:  "Interface 100",
-				OutIfDescription: "Interface 200",
-				InIfSpeed:        1000,
-				OutIfSpeed:       1000,
-				InIfBoundary:     2, // Internal
-				OutIfBoundary:    2,
+			OutputFlow: &schema.FlowMessage{
+				SamplingRate:    1000,
+				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnExporterName:     "192_0_2_142",
+					schema.ColumnInIfName:         "Gi0/0/100",
+					schema.ColumnOutIfName:        "Gi0/0/200",
+					schema.ColumnInIfDescription:  "Interface 100",
+					schema.ColumnOutIfDescription: "Interface 200",
+					schema.ColumnInIfSpeed:        1000,
+					schema.ColumnOutIfSpeed:       1000,
+					schema.ColumnInIfBoundary:     internalBoundary,
+					schema.ColumnOutIfBoundary:    internalBoundary,
+				},
 			},
 		}, {
 			Name: "configure twice boundary",
@@ -210,28 +211,28 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 					`ClassifyExternal()`,
 				},
 			},
-			InputFlow: func() *flow.Message {
-				return &flow.Message{
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
 					SamplingRate:    1000,
-					ExporterAddress: net.ParseIP("192.0.2.142"),
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
 					InIf:            100,
 					OutIf:           200,
 				}
 			},
-			OutputFlow: &flow.Message{
-				SamplingRate:     1000,
-				ExporterAddress:  net.ParseIP("192.0.2.142"),
-				ExporterName:     "192_0_2_142",
-				InIf:             100,
-				OutIf:            200,
-				InIfName:         "Gi0/0/100",
-				OutIfName:        "Gi0/0/200",
-				InIfDescription:  "Interface 100",
-				OutIfDescription: "Interface 200",
-				InIfSpeed:        1000,
-				OutIfSpeed:       1000,
-				InIfBoundary:     2, // Internal
-				OutIfBoundary:    2,
+			OutputFlow: &schema.FlowMessage{
+				SamplingRate:    1000,
+				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnExporterName:     "192_0_2_142",
+					schema.ColumnInIfName:         "Gi0/0/100",
+					schema.ColumnOutIfName:        "Gi0/0/200",
+					schema.ColumnInIfDescription:  "Interface 100",
+					schema.ColumnOutIfDescription: "Interface 200",
+					schema.ColumnInIfSpeed:        1000,
+					schema.ColumnOutIfSpeed:       1000,
+					schema.ColumnInIfBoundary:     2, // Internal
+					schema.ColumnOutIfBoundary:    2,
+				},
 			},
 		}, {
 			Name: "configure twice provider",
@@ -241,28 +242,28 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 					`ClassifyProvider("cogent")`,
 				},
 			},
-			InputFlow: func() *flow.Message {
-				return &flow.Message{
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
 					SamplingRate:    1000,
-					ExporterAddress: net.ParseIP("192.0.2.142"),
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
 					InIf:            100,
 					OutIf:           200,
 				}
 			},
-			OutputFlow: &flow.Message{
-				SamplingRate:     1000,
-				ExporterAddress:  net.ParseIP("192.0.2.142"),
-				ExporterName:     "192_0_2_142",
-				InIf:             100,
-				OutIf:            200,
-				InIfName:         "Gi0/0/100",
-				OutIfName:        "Gi0/0/200",
-				InIfDescription:  "Interface 100",
-				OutIfDescription: "Interface 200",
-				InIfSpeed:        1000,
-				OutIfSpeed:       1000,
-				InIfProvider:     "telia",
-				OutIfProvider:    "telia",
+			OutputFlow: &schema.FlowMessage{
+				SamplingRate:    1000,
+				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnExporterName:     "192_0_2_142",
+					schema.ColumnInIfName:         "Gi0/0/100",
+					schema.ColumnOutIfName:        "Gi0/0/200",
+					schema.ColumnInIfDescription:  "Interface 100",
+					schema.ColumnOutIfDescription: "Interface 200",
+					schema.ColumnInIfSpeed:        1000,
+					schema.ColumnOutIfSpeed:       1000,
+					schema.ColumnInIfProvider:     "telia",
+					schema.ColumnOutIfProvider:    "telia",
+				},
 			},
 		}, {
 			Name: "classify depending on description",
@@ -273,66 +274,66 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 					`ClassifyInternal() && ClassifyConnectivity("core")`,
 				},
 			},
-			InputFlow: func() *flow.Message {
-				return &flow.Message{
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
 					SamplingRate:    1000,
-					ExporterAddress: net.ParseIP("192.0.2.142"),
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
 					InIf:            100,
 					OutIf:           200,
 				}
 			},
-			OutputFlow: &flow.Message{
-				SamplingRate:      1000,
-				ExporterAddress:   net.ParseIP("192.0.2.142"),
-				ExporterName:      "192_0_2_142",
-				InIf:              100,
-				OutIf:             200,
-				InIfName:          "Gi0/0/100",
-				OutIfName:         "Gi0/0/200",
-				InIfDescription:   "Interface 100",
-				OutIfDescription:  "Interface 200",
-				InIfSpeed:         1000,
-				OutIfSpeed:        1000,
-				InIfConnectivity:  "p100",
-				OutIfConnectivity: "core",
-				InIfProvider:      "othello",
-				OutIfProvider:     "othello",
-				InIfBoundary:      1, // external
-				OutIfBoundary:     2, // internal
+			OutputFlow: &schema.FlowMessage{
+				SamplingRate:    1000,
+				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnExporterName:      "192_0_2_142",
+					schema.ColumnInIfName:          "Gi0/0/100",
+					schema.ColumnOutIfName:         "Gi0/0/200",
+					schema.ColumnInIfDescription:   "Interface 100",
+					schema.ColumnOutIfDescription:  "Interface 200",
+					schema.ColumnInIfSpeed:         1000,
+					schema.ColumnOutIfSpeed:        1000,
+					schema.ColumnInIfConnectivity:  "p100",
+					schema.ColumnOutIfConnectivity: "core",
+					schema.ColumnInIfProvider:      "othello",
+					schema.ColumnOutIfProvider:     "othello",
+					schema.ColumnInIfBoundary:      1, // external
+					schema.ColumnOutIfBoundary:     2, // internal
+				},
 			},
 		}, {
 			Name:          "use data from BMP",
 			Configuration: gin.H{},
-			InputFlow: func() *flow.Message {
-				return &flow.Message{
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
 					SamplingRate:    1000,
-					ExporterAddress: net.ParseIP("192.0.2.142"),
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
 					InIf:            100,
 					OutIf:           200,
-					SrcAddr:         net.ParseIP("192.0.2.142"),
-					DstAddr:         net.ParseIP("192.0.2.10"),
+					SrcAddr:         netip.MustParseAddr("::ffff:192.0.2.142"),
+					DstAddr:         netip.MustParseAddr("::ffff:192.0.2.10"),
 				}
 			},
-			OutputFlow: &flow.Message{
-				SamplingRate:     1000,
-				ExporterAddress:  net.ParseIP("192.0.2.142"),
-				ExporterName:     "192_0_2_142",
-				InIf:             100,
-				OutIf:            200,
-				InIfName:         "Gi0/0/100",
-				OutIfName:        "Gi0/0/200",
-				InIfDescription:  "Interface 100",
-				OutIfDescription: "Interface 200",
-				InIfSpeed:        1000,
-				OutIfSpeed:       1000,
-				SrcAddr:          net.ParseIP("192.0.2.142").To16(),
-				DstAddr:          net.ParseIP("192.0.2.10").To16(),
-				SrcAS:            1299,
-				DstAS:            174,
-				DstASPath:        []uint32{64200, 1299, 174},
-				DstCommunities:   []uint32{100, 200, 400},
-				DstLargeCommunities: &decoder.FlowMessage_LargeCommunities{
-					ASN: []uint32{64200}, LocalData1: []uint32{2}, LocalData2: []uint32{3},
+			OutputFlow: &schema.FlowMessage{
+				SamplingRate:    1000,
+				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+				SrcAddr:         netip.MustParseAddr("::ffff:192.0.2.142"),
+				DstAddr:         netip.MustParseAddr("::ffff:192.0.2.10"),
+				SrcAS:           1299,
+				DstAS:           174,
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnExporterName:                  "192_0_2_142",
+					schema.ColumnInIfName:                      "Gi0/0/100",
+					schema.ColumnOutIfName:                     "Gi0/0/200",
+					schema.ColumnInIfDescription:               "Interface 100",
+					schema.ColumnOutIfDescription:              "Interface 200",
+					schema.ColumnInIfSpeed:                     1000,
+					schema.ColumnOutIfSpeed:                    1000,
+					schema.ColumnDstASPath:                     []uint32{64200, 1299, 174},
+					schema.ColumnDstCommunities:                []uint32{100, 200, 400},
+					schema.ColumnDstLargeCommunitiesASN:        []int32{64200},
+					schema.ColumnDstLargeCommunitiesLocalData1: []int32{2},
+					schema.ColumnDstLargeCommunitiesLocalData2: []int32{3},
 				},
 			},
 		},
@@ -382,16 +383,13 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 			kafkaProducer.ExpectInputWithMessageCheckerFunctionAndSucceed(
 				func(msg *sarama.ProducerMessage) error {
 					defer close(received)
-					got := flow.Message{}
 					b, err := msg.Value.Encode()
 					if err != nil {
 						t.Fatalf("Kafka message encoding error:\n%+v", err)
 					}
-					if err = got.DecodeMessage(b); err != nil {
-						t.Fatalf("DecodeMessage() error:\n%+v", err)
-					}
-
-					if diff := helpers.Diff(&got, tc.OutputFlow); diff != "" {
+					t.Logf("Raw message: %v", b)
+					got := schema.Flows.ProtobufDecode(t, b)
+					if diff := helpers.Diff(&got, tc.OutputFlow, helpers.DiffFormatter(reflect.TypeOf(schema.ColumnBytes), fmt.Sprint)); diff != "" {
 						t.Errorf("Classifier (-got, +want):\n%s", diff)
 					}
 					return nil
@@ -429,6 +427,7 @@ func TestGetASNumber(t *testing.T) {
 	}{
 		// 1
 		{"1.0.0.1", 12322, 0, []ASNProvider{ProviderFlow}, 12322},
+		{"::ffff:1.0.0.1", 12322, 0, []ASNProvider{ProviderFlow}, 12322},
 		{"1.0.0.1", 65536, 0, []ASNProvider{ProviderFlow}, 65536},
 		{"1.0.0.1", 65536, 0, []ASNProvider{ProviderFlowExceptPrivate}, 0},
 		{"1.0.0.1", 4_200_000_121, 0, []ASNProvider{ProviderFlowExceptPrivate}, 0},
@@ -466,7 +465,7 @@ func TestGetASNumber(t *testing.T) {
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
 			}
-			got := c.getASNumber(net.ParseIP(tc.Addr), tc.FlowAS, tc.BMPAS)
+			got := c.getASNumber(netip.MustParseAddr(tc.Addr), tc.FlowAS, tc.BMPAS)
 			if diff := helpers.Diff(got, tc.Expected); diff != "" {
 				t.Fatalf("getASNumber() (-got, +want):\n%s", diff)
 			}

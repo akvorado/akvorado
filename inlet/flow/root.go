@@ -5,9 +5,9 @@
 package flow
 
 import (
-	_ "embed" // for flow.proto
 	"errors"
 	"fmt"
+	netHTTP "net/http"
 	"net/netip"
 
 	"gopkg.in/tomb.v2"
@@ -15,6 +15,7 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/inlet/flow/decoder"
 	"akvorado/inlet/flow/input"
 )
@@ -33,7 +34,7 @@ type Component struct {
 	}
 
 	// Channel for sending flows out of the package.
-	outgoingFlows chan *Message
+	outgoingFlows chan *schema.FlowMessage
 
 	// Per-exporter rate-limiters
 	limiters map[netip.Addr]*limiter
@@ -58,7 +59,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		r:             r,
 		d:             &dependencies,
 		config:        configuration,
-		outgoingFlows: make(chan *Message),
+		outgoingFlows: make(chan *schema.FlowMessage),
 		limiters:      make(map[netip.Addr]*limiter),
 		inputs:        make([]input.Input, len(configuration.Inputs)),
 	}
@@ -115,12 +116,18 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	)
 
 	c.d.Daemon.Track(&c.t, "inlet/flow")
-	c.initHTTP()
+
+	c.d.HTTP.AddHandler("/api/v0/inlet/flow/schema.proto",
+		netHTTP.HandlerFunc(func(w netHTTP.ResponseWriter, r *netHTTP.Request) {
+			w.Header().Set("Content-Type", "text/plain")
+			w.Write([]byte(schema.Flows.ProtobufDefinition()))
+		}))
+
 	return &c, nil
 }
 
 // Flows returns a channel to receive flows.
-func (c *Component) Flows() <-chan *Message {
+func (c *Component) Flows() <-chan *schema.FlowMessage {
 	return c.outgoingFlows
 }
 
