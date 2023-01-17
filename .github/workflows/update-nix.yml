@@ -24,5 +24,5 @@ jobs:
           branch: nix/flake-lock-update
           labels: dependencies
           commit-message: "build: flake.lock automated update"
-          title: "Nixpkgs update"
+          title: "build: nixpkgs update"
           body: ""
