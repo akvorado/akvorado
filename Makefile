@@ -123,9 +123,8 @@ test-race: GOTEST_MORE=, with race detector
 test-race: test-go  ## Run Go tests with race detector
 test-bench: | $(GOTESTSUM) ; $(info $(M) running benchmarks…) @ ## Run Go benchmarks
 	$Q $(GOTESTSUM) -f standard-quiet -- \
-		-timeout $(TIMEOUT)s -run=__absolutelynothing__ -bench=. \
-		-benchmem -memprofile test/go/memprofile.out -cpuprofile test/go/cpuprofile.out \
-		$(PKGS)
+		-timeout $(TIMEOUT)s -run=__absolutelynothing__ -bench=. -benchmem \
+		$(PKGS) # -memprofile test/go/memprofile.out -cpuprofile test/go/cpuprofile.out
 test-coverage-go: | $(GOTESTSUM) $(GOCOV) $(GOCOVXML) ; $(info $(M) running Go coverage tests…) @ ## Run Go coverage tests
 	$Q mkdir -p test/go
 	$Q $(GOTESTSUM) -- \
