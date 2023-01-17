@@ -28,11 +28,6 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2/lib/proto"
 )
 
-var ignoredTables = []string{
-	"flows_1_raw",
-	"flows_1_raw_consumer",
-}
-
 func dropAllTables(t *testing.T, ch *clickhousedb.Component) {
 	// TODO: find the right order. length(table) ordering works good enough here.
 	rows, err := ch.Query(context.Background(), `
@@ -92,12 +87,9 @@ type tableWithSchema struct {
 }
 
 func loadTables(t *testing.T, ch *clickhousedb.Component, schemas []tableWithSchema) {
-outer:
 	for _, tws := range schemas {
-		for _, ignored := range ignoredTables {
-			if ignored == tws.table {
-				continue outer
-			}
+		if oldTable(tws.table) {
+			continue
 		}
 		t.Logf("Load table %s", tws.table)
 		if err := ch.Exec(context.Background(), tws.schema); err != nil {
