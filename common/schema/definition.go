@@ -280,9 +280,9 @@ END`,
 				2: "INTERNAL",
 			},
 		},
-		{Key: ColumnEType, ClickHouseType: "UInt32"},
-		{Key: ColumnProto, ClickHouseType: "UInt32"},
-		{Key: ColumnSrcPort, ClickHouseType: "UInt32", MainOnly: true},
+		{Key: ColumnEType, ClickHouseType: "UInt32"}, // TODO: UInt16 but hard to change, primary key
+		{Key: ColumnProto, ClickHouseType: "UInt32"}, // TODO: UInt8 but hard to change, primary key
+		{Key: ColumnSrcPort, ClickHouseType: "UInt16", MainOnly: true},
 		{Key: ColumnBytes, ClickHouseType: "UInt64", ClickHouseNotSortingKey: true, ConsoleNotDimension: true},
 		{Key: ColumnPackets, ClickHouseType: "UInt64", ClickHouseNotSortingKey: true, ConsoleNotDimension: true},
 		{
@@ -307,7 +307,7 @@ END`,
 				return fmt.Sprintf("multiIf(%s)", strings.Join(conditions, ", "))
 			}(),
 		},
-		{Key: ColumnForwardingStatus, ClickHouseType: "UInt32"},
+		{Key: ColumnForwardingStatus, ClickHouseType: "UInt32"}, // TODO: UInt8 but hard to change, primary key
 	},
 }.finalize()
 

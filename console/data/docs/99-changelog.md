@@ -23,6 +23,7 @@ to 0.
 - 🩹 *docker*: fix Kafka healthcheck
 - 🌱 *inlet*: improve decoding/encoding performance (twice faster!)
 - 🌱 *orchestrator*: set TTL for ClickHouse system log tables and `exporters` table
+- 🌱 *orchestrator*: reduce storage size for `SrcPort` and `DstPort`
 - 🌱 *common*: more flexible data schema (first step to make this configurable)
 
 ## 1.6.4 - 2022-12-22

@@ -411,8 +411,10 @@ outer:
 			if wantedColumn.Name == existingColumn.Name {
 				// Do a few sanity checks
 				if wantedColumn.ClickHouseType != existingColumn.Type {
-					return fmt.Errorf("table %s, column %s has a non-matching type: %s vs %s",
-						tableName, wantedColumn.Name, existingColumn.Type, wantedColumn.ClickHouseType)
+					if slices.Contains(schema.Flows.ClickHousePrimaryKeys(), wantedColumn.Name) {
+						return fmt.Errorf("table %s, primary key column %s has a non-matching type: %s vs %s",
+							tableName, wantedColumn.Name, existingColumn.Type, wantedColumn.ClickHouseType)
+					}
 				}
 				if resolution.Interval > 0 && slices.Contains(schema.Flows.ClickHousePrimaryKeys(), wantedColumn.Name) && existingColumn.IsPrimaryKey == 0 {
 					return fmt.Errorf("table %s, column %s should be a primary key, cannot change that",
@@ -429,6 +431,9 @@ outer:
 					// Schedule adding it back
 					modifications = append(modifications,
 						fmt.Sprintf("ADD COLUMN %s AFTER %s", wantedColumn.ClickHouseDefinition(), previousColumn))
+				} else if wantedColumn.ClickHouseType != existingColumn.Type {
+					modifications = append(modifications,
+						fmt.Sprintf("MODIFY COLUMN %s", wantedColumn.ClickHouseDefinition()))
 				}
 				previousColumn = wantedColumn.Name
 				continue outer
