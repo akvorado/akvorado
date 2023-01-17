@@ -7,13 +7,14 @@ package input
 import (
 	"akvorado/common/daemon"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/inlet/flow/decoder"
 )
 
 // Input is the interface any input should meet
 type Input interface {
 	// Start instructs an input to start producing flows on the returned channel.
-	Start() (<-chan []*decoder.FlowMessage, error)
+	Start() (<-chan []*schema.FlowMessage, error)
 	// Stop instructs the input to stop producing flows.
 	Stop() error
 }

@@ -15,7 +15,7 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
-	"akvorado/inlet/flow"
+	"akvorado/common/schema"
 )
 
 func TestKafka(t *testing.T) {
@@ -27,7 +27,7 @@ func TestKafka(t *testing.T) {
 	mockProducer.ExpectInputWithMessageCheckerFunctionAndSucceed(func(got *sarama.ProducerMessage) error {
 		defer close(received)
 		expected := sarama.ProducerMessage{
-			Topic:     fmt.Sprintf("flows-v%d", flow.CurrentSchemaVersion),
+			Topic:     fmt.Sprintf("flows-%s", schema.Flows.ProtobufMessageHash()),
 			Key:       got.Key,
 			Value:     sarama.ByteEncoder("hello world!"),
 			Partition: got.Partition,
@@ -52,7 +52,7 @@ func TestKafka(t *testing.T) {
 	gotMetrics := r.GetMetrics("akvorado_inlet_kafka_")
 	expectedMetrics := map[string]string{
 		`sent_bytes_total{exporter="127.0.0.1"}`: "26",
-		fmt.Sprintf(`errors_total{error="kafka: Failed to produce message to topic flows-v%d: noooo"}`, flow.CurrentSchemaVersion): "1",
+		fmt.Sprintf(`errors_total{error="kafka: Failed to produce message to topic flows-%s: noooo"}`, schema.Flows.ProtobufMessageHash()): "1",
 		`sent_messages_total{exporter="127.0.0.1"}`: "2",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {

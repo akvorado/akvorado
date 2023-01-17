@@ -6,21 +6,25 @@ package schema
 import "strings"
 
 // LookupColumnByName can lookup a column by its name.
-func (schema Schema) LookupColumnByName(name string) (Column, bool) {
+func (schema *Schema) LookupColumnByName(name string) (*Column, bool) {
 	key, ok := columnNameMap.LoadKey(name)
 	if !ok {
-		return Column{}, false
+		return &Column{}, false
 	}
-	return schema.columns.Get(key)
+	return schema.LookupColumnByKey(key)
 }
 
 // LookupColumnByKey can lookup a column by its key.
-func (schema Schema) LookupColumnByKey(key ColumnKey) (Column, bool) {
-	return schema.columns.Get(key)
+func (schema *Schema) LookupColumnByKey(key ColumnKey) (*Column, bool) {
+	column := schema.columnIndex[key]
+	if column == nil {
+		return &Column{}, false
+	}
+	return column, true
 }
 
 // ReverseColumnDirection reverts the direction of a provided column name.
-func (schema Schema) ReverseColumnDirection(key ColumnKey) ColumnKey {
+func (schema *Schema) ReverseColumnDirection(key ColumnKey) ColumnKey {
 	var candidateName string
 	name := key.String()
 	if strings.HasPrefix(name, "Src") {
@@ -36,7 +40,7 @@ func (schema Schema) ReverseColumnDirection(key ColumnKey) ColumnKey {
 		candidateName = "In" + name[3:]
 	}
 	if candidateKey, ok := columnNameMap.LoadKey(candidateName); ok {
-		if _, ok := schema.columns.Get(candidateKey); ok {
+		if _, ok := schema.LookupColumnByKey(candidateKey); ok {
 			return candidateKey
 		}
 	}
@@ -44,10 +48,6 @@ func (schema Schema) ReverseColumnDirection(key ColumnKey) ColumnKey {
 }
 
 // Columns returns the columns.
-func (schema Schema) Columns() []Column {
-	result := []Column{}
-	for pair := schema.columns.Front(); pair != nil; pair = pair.Next() {
-		result = append(result, pair.Value)
-	}
-	return result
+func (schema *Schema) Columns() []Column {
+	return schema.columns[:]
 }

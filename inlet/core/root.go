@@ -6,8 +6,6 @@ package core
 
 import (
 	"fmt"
-	"net"
-	"net/netip"
 	"sync/atomic"
 	"time"
 
@@ -17,6 +15,7 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/inlet/bmp"
 	"akvorado/inlet/flow"
 	"akvorado/inlet/geoip"
@@ -35,7 +34,7 @@ type Component struct {
 
 	healthy            chan reporter.ChannelHealthcheckFunc
 	httpFlowClients    uint32 // for dumping flows
-	httpFlowChannel    chan *flow.Message
+	httpFlowChannel    chan *schema.FlowMessage
 	httpFlowFlushDelay time.Duration
 
 	classifierExporterCache  *zcache.Cache[exporterInfo, exporterClassification]
@@ -63,7 +62,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 
 		healthy:            make(chan reporter.ChannelHealthcheckFunc),
 		httpFlowClients:    0,
-		httpFlowChannel:    make(chan *flow.Message, 10),
+		httpFlowChannel:    make(chan *schema.FlowMessage, 10),
 		httpFlowFlushDelay: time.Second,
 
 		classifierExporterCache:  zcache.New[exporterInfo, exporterClassification](configuration.ClassifierCacheDuration, 2*configuration.ClassifierCacheDuration),
@@ -94,7 +93,6 @@ func (c *Component) Start() error {
 func (c *Component) runWorker(workerID int) error {
 	c.r.Debug().Int("worker", workerID).Msg("starting core worker")
 
-	errLogger := c.r.Sample(reporter.BurstSampler(time.Minute, 10))
 	for {
 		select {
 		case <-c.t.Dying():
@@ -111,22 +109,17 @@ func (c *Component) runWorker(workerID int) error {
 			}
 
 			start := time.Now()
-			exporter := net.IP(flow.ExporterAddress).String()
+			exporter := flow.ExporterAddress.Unmap().String()
 			c.metrics.flowsReceived.WithLabelValues(exporter).Inc()
 
 			// Enrichment
-			ip, _ := netip.AddrFromSlice(flow.ExporterAddress)
+			ip := flow.ExporterAddress
 			if skip := c.enrichFlow(ip, exporter, flow); skip {
 				continue
 			}
 
 			// Serialize flow to Protobuf
-			buf, err := flow.EncodeMessage()
-			if err != nil {
-				errLogger.Err(err).Str("exporter", exporter).Msg("unable to serialize flow")
-				c.metrics.flowsErrors.WithLabelValues(exporter, err.Error()).Inc()
-				continue
-			}
+			buf := schema.Flows.ProtobufMarshal(flow)
 			c.metrics.flowsProcessingTime.Observe(time.Now().Sub(start).Seconds())
 
 			// Forward to Kafka. This could block and buf is now owned by the

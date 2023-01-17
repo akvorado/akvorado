@@ -12,7 +12,7 @@ import (
 
 	"akvorado/common/kafka"
 	"akvorado/common/reporter"
-	"akvorado/inlet/flow"
+	"akvorado/common/schema"
 )
 
 // Component represents the Kafka configurator.
@@ -39,7 +39,7 @@ func New(r *reporter.Reporter, config Configuration) (*Component, error) {
 		config: config,
 
 		kafkaConfig: kafkaConfig,
-		kafkaTopic:  fmt.Sprintf("%s-v%d", config.Topic, flow.CurrentSchemaVersion),
+		kafkaTopic:  fmt.Sprintf("%s-%s", config.Topic, schema.Flows.ProtobufMessageHash()),
 	}, nil
 }
 

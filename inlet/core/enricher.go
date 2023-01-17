@@ -4,14 +4,12 @@
 package core
 
 import (
-	"net"
 	"net/netip"
 	"strconv"
 	"time"
 
 	"akvorado/common/reporter"
-	"akvorado/inlet/flow"
-	"akvorado/inlet/flow/decoder"
+	"akvorado/common/schema"
 	"akvorado/inlet/snmp"
 )
 
@@ -22,7 +20,11 @@ type exporterAndInterfaceInfo struct {
 }
 
 // enrichFlow adds more data to a flow.
-func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *flow.Message) (skip bool) {
+func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *schema.FlowMessage) (skip bool) {
+	var flowExporterName string
+	var flowInIfName, flowInIfDescription, flowOutIfName, flowOutIfDescription string
+	var flowInIfSpeed, flowOutIfSpeed uint32
+
 	errLogger := c.r.Sample(reporter.BurstSampler(time.Minute, 10))
 
 	if flow.InIf != 0 {
@@ -34,10 +36,10 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 			c.metrics.flowsErrors.WithLabelValues(exporterStr, err.Error()).Inc()
 			skip = true
 		} else {
-			flow.ExporterName = exporterName
-			flow.InIfName = iface.Name
-			flow.InIfDescription = iface.Description
-			flow.InIfSpeed = uint32(iface.Speed)
+			flowExporterName = exporterName
+			flowInIfName = iface.Name
+			flowInIfDescription = iface.Description
+			flowInIfSpeed = uint32(iface.Speed)
 		}
 	}
 
@@ -54,10 +56,10 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 				skip = true
 			}
 		} else {
-			flow.ExporterName = exporterName
-			flow.OutIfName = iface.Name
-			flow.OutIfDescription = iface.Description
-			flow.OutIfSpeed = uint32(iface.Speed)
+			flowExporterName = exporterName
+			flowOutIfName = iface.Name
+			flowOutIfDescription = iface.Description
+			flowOutIfSpeed = uint32(iface.Speed)
 		}
 	}
 
@@ -68,11 +70,11 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	}
 
 	if samplingRate, ok := c.config.OverrideSamplingRate.Lookup(exporterIP); ok && samplingRate > 0 {
-		flow.SamplingRate = uint64(samplingRate)
+		flow.SamplingRate = uint32(samplingRate)
 	}
 	if flow.SamplingRate == 0 {
 		if samplingRate, ok := c.config.DefaultSamplingRate.Lookup(exporterIP); ok && samplingRate > 0 {
-			flow.SamplingRate = uint64(samplingRate)
+			flow.SamplingRate = uint32(samplingRate)
 		} else {
 			c.metrics.flowsErrors.WithLabelValues(exporterStr, "sampling rate missing").Inc()
 			skip = true
@@ -84,41 +86,48 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	}
 
 	// Classification
-	c.classifyExporter(exporterStr, flow)
-	c.classifyInterface(exporterStr, flow,
-		flow.OutIfName, flow.OutIfDescription, flow.OutIfSpeed,
-		&flow.OutIfConnectivity, &flow.OutIfProvider, &flow.OutIfBoundary)
-	c.classifyInterface(exporterStr, flow,
-		flow.InIfName, flow.InIfDescription, flow.InIfSpeed,
-		&flow.InIfConnectivity, &flow.InIfProvider, &flow.InIfBoundary)
+	c.classifyExporter(exporterStr, flowExporterName, flow)
+	c.classifyInterface(exporterStr, flowExporterName, flow,
+		flowOutIfName, flowOutIfDescription, flowOutIfSpeed,
+		false)
+	c.classifyInterface(exporterStr, flowExporterName, flow,
+		flowInIfName, flowInIfDescription, flowInIfSpeed,
+		true)
 
-	sourceBMP := c.d.BMP.Lookup(net.IP(flow.SrcAddr), nil)
-	destBMP := c.d.BMP.Lookup(net.IP(flow.DstAddr), net.IP(flow.NextHop))
-	flow.SrcAS = c.getASNumber(net.IP(flow.SrcAddr), flow.SrcAS, sourceBMP.ASN)
-	flow.DstAS = c.getASNumber(net.IP(flow.DstAddr), flow.DstAS, destBMP.ASN)
-	flow.SrcCountry = c.d.GeoIP.LookupCountry(net.IP(flow.SrcAddr))
-	flow.DstCountry = c.d.GeoIP.LookupCountry(net.IP(flow.DstAddr))
-
-	flow.DstCommunities = destBMP.Communities
-	flow.DstASPath = destBMP.ASPath
-	if len(destBMP.LargeCommunities) > 0 {
-		flow.DstLargeCommunities = &decoder.FlowMessage_LargeCommunities{
-			ASN:        make([]uint32, len(destBMP.LargeCommunities)),
-			LocalData1: make([]uint32, len(destBMP.LargeCommunities)),
-			LocalData2: make([]uint32, len(destBMP.LargeCommunities)),
-		}
-		for i := 0; i < len(destBMP.LargeCommunities); i++ {
-			flow.DstLargeCommunities.ASN[i] = destBMP.LargeCommunities[i].ASN
-			flow.DstLargeCommunities.LocalData1[i] = destBMP.LargeCommunities[i].LocalData1
-			flow.DstLargeCommunities.LocalData2[i] = destBMP.LargeCommunities[i].LocalData2
-		}
+	sourceBMP := c.d.BMP.Lookup(flow.SrcAddr, netip.Addr{})
+	destBMP := c.d.BMP.Lookup(flow.DstAddr, flow.NextHop)
+	flow.SrcAS = c.getASNumber(flow.SrcAddr, flow.SrcAS, sourceBMP.ASN)
+	flow.DstAS = c.getASNumber(flow.DstAddr, flow.DstAS, destBMP.ASN)
+	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnSrcCountry, []byte(c.d.GeoIP.LookupCountry(flow.SrcAddr)))
+	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnDstCountry, []byte(c.d.GeoIP.LookupCountry(flow.DstAddr)))
+	for _, comm := range destBMP.Communities {
+		schema.Flows.ProtobufAppendVarint(flow, schema.ColumnDstCommunities, uint64(comm))
 	}
+	for _, asn := range destBMP.ASPath {
+		schema.Flows.ProtobufAppendVarint(flow, schema.ColumnDstASPath, uint64(asn))
+	}
+	for _, comm := range destBMP.LargeCommunities {
+		schema.Flows.ProtobufAppendVarintForce(flow,
+			schema.ColumnDstLargeCommunitiesASN, uint64(comm.ASN))
+		schema.Flows.ProtobufAppendVarintForce(flow,
+			schema.ColumnDstLargeCommunitiesLocalData1, uint64(comm.LocalData1))
+		schema.Flows.ProtobufAppendVarintForce(flow,
+			schema.ColumnDstLargeCommunitiesLocalData2, uint64(comm.LocalData2))
+	}
+
+	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnExporterName, []byte(flowExporterName))
+	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnInIfName, []byte(flowInIfName))
+	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnInIfDescription, []byte(flowInIfDescription))
+	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnOutIfName, []byte(flowOutIfName))
+	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnOutIfDescription, []byte(flowOutIfDescription))
+	schema.Flows.ProtobufAppendVarint(flow, schema.ColumnInIfSpeed, uint64(flowInIfSpeed))
+	schema.Flows.ProtobufAppendVarint(flow, schema.ColumnOutIfSpeed, uint64(flowOutIfSpeed))
 
 	return
 }
 
 // getASNumber retrieves the AS number for a flow, depending on user preferences.
-func (c *Component) getASNumber(flowAddr net.IP, flowAS, bmpAS uint32) (asn uint32) {
+func (c *Component) getASNumber(flowAddr netip.Addr, flowAS, bmpAS uint32) (asn uint32) {
 	for _, provider := range c.config.ASNProviders {
 		if asn != 0 {
 			break
@@ -145,18 +154,21 @@ func (c *Component) getASNumber(flowAddr net.IP, flowAS, bmpAS uint32) (asn uint
 	return asn
 }
 
-func (c *Component) classifyExporter(ip string, flow *flow.Message) {
+func writeExporter(flow *schema.FlowMessage, classification exporterClassification) {
+	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnExporterGroup, []byte(classification.Group))
+	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnExporterRole, []byte(classification.Role))
+	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnExporterSite, []byte(classification.Site))
+	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnExporterRegion, []byte(classification.Region))
+	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnExporterTenant, []byte(classification.Tenant))
+}
+
+func (c *Component) classifyExporter(ip string, name string, flow *schema.FlowMessage) {
 	if len(c.config.ExporterClassifiers) == 0 {
 		return
 	}
-	name := flow.ExporterName
 	si := exporterInfo{IP: ip, Name: name}
 	if classification, ok := c.classifierExporterCache.Get(si); ok {
-		flow.ExporterGroup = classification.Group
-		flow.ExporterRole = classification.Role
-		flow.ExporterSite = classification.Site
-		flow.ExporterRegion = classification.Region
-		flow.ExporterTenant = classification.Tenant
+		writeExporter(flow, classification)
 		return
 	}
 
@@ -178,29 +190,33 @@ func (c *Component) classifyExporter(ip string, flow *flow.Message) {
 		break
 	}
 	c.classifierExporterCache.Set(si, classification)
-	flow.ExporterGroup = classification.Group
-	flow.ExporterRole = classification.Role
-	flow.ExporterSite = classification.Site
-	flow.ExporterRegion = classification.Region
-	flow.ExporterTenant = classification.Tenant
+	writeExporter(flow, classification)
 }
 
-func (c *Component) classifyInterface(ip string, fl *flow.Message,
-	ifName, ifDescription string, ifSpeed uint32,
-	connectivity, provider *string, boundary *decoder.FlowMessage_Boundary) {
+func writeInterface(flow *schema.FlowMessage, classification interfaceClassification, directionIn bool) {
+	if directionIn {
+		schema.Flows.ProtobufAppendBytes(flow, schema.ColumnInIfConnectivity, []byte(classification.Connectivity))
+		schema.Flows.ProtobufAppendBytes(flow, schema.ColumnInIfProvider, []byte(classification.Provider))
+		schema.Flows.ProtobufAppendVarint(flow, schema.ColumnInIfBoundary, uint64(classification.Boundary))
+	} else {
+		schema.Flows.ProtobufAppendBytes(flow, schema.ColumnOutIfConnectivity, []byte(classification.Connectivity))
+		schema.Flows.ProtobufAppendBytes(flow, schema.ColumnOutIfProvider, []byte(classification.Provider))
+		schema.Flows.ProtobufAppendVarint(flow, schema.ColumnOutIfBoundary, uint64(classification.Boundary))
+	}
+}
+
+func (c *Component) classifyInterface(ip string, exporterName string, fl *schema.FlowMessage, ifName, ifDescription string, ifSpeed uint32, directionIn bool) {
 	if len(c.config.InterfaceClassifiers) == 0 {
 		return
 	}
-	si := exporterInfo{IP: ip, Name: fl.ExporterName}
+	si := exporterInfo{IP: ip, Name: exporterName}
 	ii := interfaceInfo{Name: ifName, Description: ifDescription, Speed: ifSpeed}
 	key := exporterAndInterfaceInfo{
 		Exporter:  si,
 		Interface: ii,
 	}
 	if classification, ok := c.classifierInterfaceCache.Get(key); ok {
-		*connectivity = classification.Connectivity
-		*provider = classification.Provider
-		*boundary = convertBoundaryToProto(classification.Boundary)
+		writeInterface(fl, classification, directionIn)
 		return
 	}
 
@@ -211,7 +227,7 @@ func (c *Component) classifyInterface(ip string, fl *flow.Message,
 			c.classifierErrLogger.Err(err).
 				Str("type", "interface").
 				Int("index", idx).
-				Str("exporter", fl.ExporterName).
+				Str("exporter", exporterName).
 				Str("interface", ifName).
 				Msg("error executing classifier")
 			c.metrics.classifierErrors.WithLabelValues("interface", strconv.Itoa(idx)).Inc()
@@ -227,19 +243,7 @@ func (c *Component) classifyInterface(ip string, fl *flow.Message,
 		break
 	}
 	c.classifierInterfaceCache.Set(key, classification)
-	*connectivity = classification.Connectivity
-	*provider = classification.Provider
-	*boundary = convertBoundaryToProto(classification.Boundary)
-}
-
-func convertBoundaryToProto(from interfaceBoundary) decoder.FlowMessage_Boundary {
-	switch from {
-	case externalBoundary:
-		return decoder.FlowMessage_EXTERNAL
-	case internalBoundary:
-		return decoder.FlowMessage_INTERNAL
-	}
-	return decoder.FlowMessage_UNDEFINED
+	writeInterface(fl, classification, directionIn)
 }
 
 func isPrivateAS(as uint32) bool {

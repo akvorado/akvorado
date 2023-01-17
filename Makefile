@@ -14,11 +14,9 @@ M = $(shell if [ "$$(tput colors 2> /dev/null || echo 0)" -ge 8 ]; then printf "
 
 export CGO_ENABLED=0
 
-FLOW_VERSION := $(shell sed -n 's/^const CurrentSchemaVersion = //p' inlet/flow/schemas.go)
 GENERATED_JS = \
 	console/frontend/node_modules
 GENERATED_GO = \
-	inlet/flow/decoder/flow-ANY.pb.go \
 	common/clickhousedb/mocks/mock_driver.go \
 	conntrackfixer/mocks/mock_conntrackfixer.go \
 	orchestrator/clickhouse/data/asns.csv \
@@ -60,12 +58,6 @@ $(BIN)/gotestsum: PACKAGE=gotest.tools/gotestsum@latest
 MOCKGEN = $(BIN)/mockgen
 $(BIN)/mockgen: PACKAGE=github.com/golang/mock/mockgen@v1.6.0
 
-PROTOC = protoc
-PROTOC_GEN_GO = $(BIN)/protoc-gen-go
-PROTOC_GEN_GO_VTPROTO = $(BIN)/protoc-gen-go-vtproto
-$(BIN)/protoc-gen-go: PACKAGE=google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1
-$(BIN)/protoc-gen-go-vtproto: PACKAGE=github.com/planetscale/vtprotobuf/cmd/protoc-gen-go-vtproto@v0.3.0
-
 PIGEON = $(BIN)/pigeon
 $(BIN)/pigeon: PACKAGE=github.com/mna/pigeon@v1.1.0
 
@@ -75,18 +67,6 @@ $(BIN)/wwhrd: PACKAGE=github.com/frapposelli/wwhrd@latest
 # Generated files
 
 .DELETE_ON_ERROR:
-
-inlet/flow/decoder/flow-ANY.pb.go: inlet/flow/decoder/flow-$(FLOW_VERSION).pb.go inlet/flow/decoder/flow-$(FLOW_VERSION)_vtproto.pb.go
-	$Q for f in inlet/flow/decoder/flow-*.pb.go; do \
-	   echo $^ | grep -Fwq $$f || rm -f $$f; \
-	done
-	$Q sed -i.bkp s/v$(FLOW_VERSION)//g inlet/flow/decoder/flow-*.pb.go && rm inlet/flow/decoder/flow-*.pb.go.bkp
-
-inlet/flow/decoder/flow-$(FLOW_VERSION).pb.go inlet/flow/decoder/flow-$(FLOW_VERSION)_vtproto.pb.go: inlet/flow/data/schemas/flow-$(FLOW_VERSION).proto | $(PROTOC_GEN_GO) $(PROTOC_GEN_GO_VTPROTO) ; $(info $(M) compiling protocol buffers definition…)
-	$Q $(PROTOC) -I=. \
-		--plugin=$(PROTOC_GEN_GO) --go_out=module=$(MODULE):. \
-		--plugin=$(PROTOC_GEN_GO_VTPROTO) --go-vtproto_out=module=$(MODULE):. --go-vtproto_opt=features=marshal+size \
-		$<
 
 common/clickhousedb/mocks/mock_driver.go: $(MOCKGEN) ; $(info $(M) generate mocks for ClickHouse driver…)
 	$Q echo '//go:build !release' > $@
@@ -143,7 +123,8 @@ test-race: GOTEST_MORE=, with race detector
 test-race: test-go  ## Run Go tests with race detector
 test-bench: | $(GOTESTSUM) ; $(info $(M) running benchmarks…) @ ## Run Go benchmarks
 	$Q $(GOTESTSUM) -f standard-quiet -- \
-		-timeout $(TIMEOUT)s -run=__absolutelynothing__ -bench=. -benchmem \
+		-timeout $(TIMEOUT)s -run=__absolutelynothing__ -bench=. \
+		-benchmem -memprofile test/go/memprofile.out -cpuprofile test/go/cpuprofile.out \
 		$(PKGS)
 test-coverage-go: | $(GOTESTSUM) $(GOCOV) $(GOCOVXML) ; $(info $(M) running Go coverage tests…) @ ## Run Go coverage tests
 	$Q mkdir -p test/go

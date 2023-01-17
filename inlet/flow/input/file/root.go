@@ -14,6 +14,7 @@ import (
 
 	"akvorado/common/daemon"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/inlet/flow/decoder"
 	"akvorado/inlet/flow/input"
 )
@@ -24,7 +25,7 @@ type Input struct {
 	t      tomb.Tomb
 	config *Configuration
 
-	ch      chan []*decoder.FlowMessage // channel to send flows to
+	ch      chan []*schema.FlowMessage // channel to send flows to
 	decoder decoder.Decoder
 }
 
@@ -36,7 +37,7 @@ func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Comp
 	input := &Input{
 		r:       r,
 		config:  configuration,
-		ch:      make(chan []*decoder.FlowMessage),
+		ch:      make(chan []*schema.FlowMessage),
 		decoder: dec,
 	}
 	daemon.Track(&input.t, "inlet/flow/input/file")
@@ -44,7 +45,7 @@ func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Comp
 }
 
 // Start starts listening to the provided UDP socket and producing flows.
-func (in *Input) Start() (<-chan []*decoder.FlowMessage, error) {
+func (in *Input) Start() (<-chan []*schema.FlowMessage, error) {
 	in.r.Info().Msg("file input starting")
 	in.t.Go(func() error {
 		for idx := 0; true; idx++ {

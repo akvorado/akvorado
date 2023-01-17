@@ -5,6 +5,7 @@ package geoip
 
 import (
 	"net"
+	"net/netip"
 )
 
 type asn struct {
@@ -18,11 +19,12 @@ type country struct {
 }
 
 // LookupASN returns the result of a lookup for an AS number.
-func (c *Component) LookupASN(ip net.IP) uint32 {
+func (c *Component) LookupASN(ip netip.Addr) uint32 {
 	asnDB := c.db.asn.Load()
 	if asnDB != nil {
 		var asn asn
-		err := asnDB.Lookup(ip, &asn)
+		ip := ip.As16()
+		err := asnDB.Lookup(net.IP(ip[:]), &asn)
 		if err == nil && asn.AutonomousSystemNumber != 0 {
 			c.metrics.databaseHit.WithLabelValues("asn").Inc()
 			return uint32(asn.AutonomousSystemNumber)
@@ -33,11 +35,12 @@ func (c *Component) LookupASN(ip net.IP) uint32 {
 }
 
 // LookupCountry returns the result of a lookup for country.
-func (c *Component) LookupCountry(ip net.IP) string {
+func (c *Component) LookupCountry(ip netip.Addr) string {
 	geoDB := c.db.geo.Load()
 	if geoDB != nil {
 		var country country
-		err := geoDB.Lookup(ip, &country)
+		ip := ip.As16()
+		err := geoDB.Lookup(net.IP(ip[:]), &country)
 		if err == nil && country.Country.IsoCode != "" {
 			c.metrics.databaseHit.WithLabelValues("geo").Inc()
 			return country.Country.IsoCode

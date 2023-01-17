@@ -21,8 +21,9 @@ to 0.
 
 - 🩹 *inlet*: handle correctly interfaces with high indexes for sFlow
 - 🩹 *docker*: fix Kafka healthcheck
-- 🌱 *inlet*: improve performance of Protobuf encoding
+- 🌱 *inlet*: improve decoding/encoding performance (twice faster!)
 - 🌱 *orchestrator*: set TTL for ClickHouse system log tables and `exporters` table
+- 🌱 *common*: more flexible data schema (first step to make this configurable)
 
 ## 1.6.4 - 2022-12-22
 

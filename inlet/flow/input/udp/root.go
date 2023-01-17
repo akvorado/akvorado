@@ -16,6 +16,7 @@ import (
 
 	"akvorado/common/daemon"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/inlet/flow/decoder"
 	"akvorado/inlet/flow/input"
 )
@@ -35,9 +36,9 @@ type Input struct {
 		inDrops       *reporter.GaugeVec
 	}
 
-	address net.Addr                    // listening address, for testing purpoese
-	ch      chan []*decoder.FlowMessage // channel to send flows to
-	decoder decoder.Decoder             // decoder to use
+	address net.Addr                   // listening address, for testing purpoese
+	ch      chan []*schema.FlowMessage // channel to send flows to
+	decoder decoder.Decoder            // decoder to use
 }
 
 // New instantiate a new UDP listener from the provided configuration.
@@ -45,7 +46,7 @@ func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Comp
 	input := &Input{
 		r:       r,
 		config:  configuration,
-		ch:      make(chan []*decoder.FlowMessage, configuration.QueueSize),
+		ch:      make(chan []*schema.FlowMessage, configuration.QueueSize),
 		decoder: dec,
 	}
 
@@ -98,7 +99,7 @@ func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Comp
 }
 
 // Start starts listening to the provided UDP socket and producing flows.
-func (in *Input) Start() (<-chan []*decoder.FlowMessage, error) {
+func (in *Input) Start() (<-chan []*schema.FlowMessage, error) {
 	in.r.Info().Str("listen", in.config.Listen).Msg("starting UDP input")
 
 	// Listen to UDP port

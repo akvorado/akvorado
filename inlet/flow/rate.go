@@ -4,10 +4,9 @@
 package flow
 
 import (
-	"net/netip"
 	"time"
 
-	"akvorado/inlet/flow/decoder"
+	"akvorado/common/schema"
 
 	"golang.org/x/time/rate"
 )
@@ -23,12 +22,12 @@ type limiter struct {
 // allowMessages tell if we can transmit the provided messages,
 // depending on the rate limiter configuration. If yes, their sampling
 // rate may be modified to match current drop rate.
-func (c *Component) allowMessages(fmsgs []*decoder.FlowMessage) bool {
+func (c *Component) allowMessages(fmsgs []*schema.FlowMessage) bool {
 	count := len(fmsgs)
 	if c.config.RateLimit == 0 || count == 0 {
 		return true
 	}
-	exporter, _ := netip.AddrFromSlice(fmsgs[0].ExporterAddress)
+	exporter := fmsgs[0].ExporterAddress
 	exporterLimiter, ok := c.limiters[exporter]
 	if !ok {
 		exporterLimiter = &limiter{
@@ -51,7 +50,7 @@ func (c *Component) allowMessages(fmsgs []*decoder.FlowMessage) bool {
 	}
 	if exporterLimiter.dropRate > 0 {
 		for _, flow := range fmsgs {
-			flow.SamplingRate *= uint64(1 / (1 - exporterLimiter.dropRate))
+			flow.SamplingRate *= uint32(1 / (1 - exporterLimiter.dropRate))
 		}
 	}
 	return true

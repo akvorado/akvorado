@@ -23,6 +23,7 @@ import (
 	"akvorado/common/http"
 	"akvorado/common/kafka"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/proto"
 )
@@ -78,7 +79,9 @@ func dumpAllTables(t *testing.T, ch *clickhousedb.Component) map[string]string {
 		if err := rows.Scan(&table, &schema); err != nil {
 			t.Fatalf("Scan() error:\n%+v", err)
 		}
-		schemas[table] = schema
+		if !oldTable(table) {
+			schemas[table] = schema
+		}
 	}
 	return schemas
 }
@@ -101,6 +104,16 @@ outer:
 			t.Fatalf("Exec(%q) error:\n%+v", tws.schema, err)
 		}
 	}
+}
+
+func oldTable(table string) bool {
+	if strings.Contains(table, schema.Flows.ProtobufMessageHash()) {
+		return false
+	}
+	if strings.HasSuffix(table, "_raw") || strings.HasSuffix(table, "_raw_consumer") || strings.HasSuffix(table, "_raw_errors") {
+		return true
+	}
+	return false
 }
 
 // loadAllTables load tables from a CSV file. Use `format CSV` with
@@ -220,13 +233,16 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 			if err != nil {
 				t.Fatalf("Query() error:\n%+v", err)
 			}
+			hash := schema.Flows.ProtobufMessageHash()
 			got := []string{}
 			for rows.Next() {
 				var table string
 				if err := rows.Scan(&table); err != nil {
 					t.Fatalf("Scan() error:\n%+v", err)
 				}
-				got = append(got, table)
+				if !oldTable(table) {
+					got = append(got, table)
+				}
 			}
 			expected := []string{
 				"asns",
@@ -236,11 +252,11 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 				"flows_1h0m0s_consumer",
 				"flows_1m0s",
 				"flows_1m0s_consumer",
-				"flows_4_raw",
-				"flows_4_raw_consumer",
-				"flows_4_raw_errors",
 				"flows_5m0s",
 				"flows_5m0s_consumer",
+				fmt.Sprintf("flows_%s_raw", hash),
+				fmt.Sprintf("flows_%s_raw_consumer", hash),
+				fmt.Sprintf("flows_%s_raw_errors", hash),
 				"networks",
 				"protocols",
 			}
@@ -305,7 +321,11 @@ LIMIT 1`, proto.ClientName)
 		})
 	}
 
-	if !t.Failed() && lastSteps != 0 {
-		t.Fatalf("Last step was not idempotent. Record a new one with:\n%s FORMAT CSV", dumpAllTablesQuery)
+	if !t.Failed() {
+		t.Run("final state", func(t *testing.T) {
+			if lastSteps != 0 {
+				t.Fatalf("Last step was not idempotent. Record a new one with:\n%s FORMAT CSV", dumpAllTablesQuery)
+			}
+		})
 	}
 }

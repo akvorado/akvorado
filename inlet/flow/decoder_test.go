@@ -10,6 +10,7 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/inlet/flow/decoder"
 	"akvorado/inlet/flow/decoder/netflow"
 	"akvorado/inlet/flow/decoder/sflow"
@@ -18,23 +19,24 @@ import (
 // The goal is to benchmark flow decoding + encoding to protobuf
 
 func BenchmarkDecodeEncodeNetflow(b *testing.B) {
+	schema.DisableDebug(b)
 	r := reporter.NewMock(b)
 	nfdecoder := netflow.New(r)
 
 	template := helpers.ReadPcapPayload(b, filepath.Join("decoder", "netflow", "testdata", "options-template-257.pcap"))
 	got := nfdecoder.Decode(decoder.RawFlow{Payload: template, Source: net.ParseIP("127.0.0.1")})
 	if got == nil || len(got) != 0 {
-		b.Fatalf("Decode() error on options template")
+		b.Fatal("Decode() error on options template")
 	}
 	data := helpers.ReadPcapPayload(b, filepath.Join("decoder", "netflow", "testdata", "options-data-257.pcap"))
 	got = nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 	if got == nil || len(got) != 0 {
-		b.Fatalf("Decode() error on options data")
+		b.Fatal("Decode() error on options data")
 	}
 	template = helpers.ReadPcapPayload(b, filepath.Join("decoder", "netflow", "testdata", "template-260.pcap"))
 	got = nfdecoder.Decode(decoder.RawFlow{Payload: template, Source: net.ParseIP("127.0.0.1")})
 	if got == nil || len(got) != 0 {
-		b.Fatalf("Decode() error on template")
+		b.Fatal("Decode() error on template")
 	}
 	data = helpers.ReadPcapPayload(b, filepath.Join("decoder", "netflow", "testdata", "data-260.pcap"))
 
@@ -48,18 +50,19 @@ func BenchmarkDecodeEncodeNetflow(b *testing.B) {
 				got = nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 				if withEncoding {
 					for _, flow := range got {
-						_, err := flow.EncodeMessage()
-						if err != nil {
-							b.Fatalf("EncodeMessage() error:\n%+v", err)
-						}
+						schema.Flows.ProtobufMarshal(flow)
 					}
 				}
+			}
+			if got[0].ProtobufDebug != nil {
+				b.Fatal("debug is enabled")
 			}
 		})
 	}
 }
 
 func BenchmarkDecodeEncodeSflow(b *testing.B) {
+	schema.DisableDebug(b)
 	r := reporter.NewMock(b)
 	sdecoder := sflow.New(r)
 	data := helpers.ReadPcapPayload(b, filepath.Join("decoder", "sflow", "testdata", "data-1140.pcap"))
@@ -69,18 +72,18 @@ func BenchmarkDecodeEncodeSflow(b *testing.B) {
 		if !withEncoding {
 			title = "without encoding"
 		}
+		var got []*schema.FlowMessage
 		b.Run(title, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+				got = sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 				if withEncoding {
 					for _, flow := range got {
-						var err error
-						_, err = flow.EncodeMessage()
-						if err != nil {
-							b.Fatalf("EncodeMessage() error:\n%+v", err)
-						}
+						schema.Flows.ProtobufMarshal(flow)
 					}
 				}
+			}
+			if got[0].ProtobufDebug != nil {
+				b.Fatal("debug is enabled")
 			}
 		})
 	}

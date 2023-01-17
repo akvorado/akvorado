@@ -1,17 +1,23 @@
 // SPDX-FileCopyrightText: 2022 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-// Package schema is an abstraction of the data schema used by Akvorado. It is a
-// leaky abstraction as there are multiple parts dependant of the subsystem that
-// will use it.
+// Package schema is an abstraction of the data schema for flows used by
+// Akvorado. It is a leaky abstraction as there are multiple parts dependant of
+// the subsystem that will use it.
 package schema
 
-import orderedmap "github.com/elliotchance/orderedmap/v2"
+import (
+	"net/netip"
+
+	"github.com/bits-and-blooms/bitset"
+	"google.golang.org/protobuf/encoding/protowire"
+	"google.golang.org/protobuf/reflect/protoreflect"
+)
 
 // Schema is the data schema.
 type Schema struct {
-	// We use an ordered map for direct access to columns.
-	columns *orderedmap.OrderedMap[ColumnKey, Column]
+	columns     []Column  // Ordered list of columns
+	columnIndex []*Column // Columns indexed by ColumnKey
 
 	// For ClickHouse. This is the set of primary keys (order is important and
 	// may not follow column order).
@@ -40,7 +46,45 @@ type Column struct {
 
 	// For the console.
 	ConsoleNotDimension bool
+
+	// For protobuf. The index is automatically derived from the position,
+	// unless specified. Use -1 to not include the column into the protobuf
+	// schema.
+	ProtobufIndex    protowire.Number
+	ProtobufType     protoreflect.Kind // Uint64Kind, Uint32Kind, BytesKind, StringKind, EnumKind
+	ProtobufEnum     map[int]string
+	ProtobufEnumName string
+	ProtobufRepeated bool
 }
 
 // ColumnKey is the name of a column
 type ColumnKey int
+
+// FlowMessage is the abstract representation of a flow through various subsystems.
+type FlowMessage struct {
+	TimeReceived uint64
+	SamplingRate uint32
+
+	// For exporter classifier
+	ExporterAddress netip.Addr
+
+	// For interface classifier
+	InIf  uint32
+	OutIf uint32
+
+	// For geolocation or BMP
+	SrcAddr netip.Addr
+	DstAddr netip.Addr
+	NextHop netip.Addr
+
+	// Core component may override them
+	SrcAS uint32
+	DstAS uint32
+
+	// protobuf is the protobuf representation for the information not contained above.
+	protobuf      []byte
+	protobufSet   bitset.BitSet
+	ProtobufDebug map[ColumnKey]interface{} `json:"-"` // for testing purpose
+}
+
+const maxSizeVarint = 10 // protowire.SizeVarint(^uint64(0))

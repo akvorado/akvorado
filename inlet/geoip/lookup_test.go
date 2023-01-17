@@ -4,7 +4,7 @@
 package geoip
 
 import (
-	"net"
+	"net/netip"
 	"testing"
 
 	"akvorado/common/helpers"
@@ -24,6 +24,9 @@ func TestLookup(t *testing.T) {
 			IP:          "1.0.0.0",
 			ExpectedASN: 15169,
 		}, {
+			IP:          "::ffff:1.0.0.0",
+			ExpectedASN: 15169,
+		}, {
 			IP:              "2.125.160.216",
 			ExpectedCountry: "GB",
 		}, {
@@ -36,21 +39,21 @@ func TestLookup(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		gotCountry := c.LookupCountry(net.ParseIP(tc.IP))
+		gotCountry := c.LookupCountry(netip.MustParseAddr(tc.IP))
 		if diff := helpers.Diff(gotCountry, tc.ExpectedCountry); diff != "" {
 			t.Errorf("LookupCountry(%q) (-got, +want):\n%s", tc.IP, diff)
 		}
-		gotASN := c.LookupASN(net.ParseIP(tc.IP))
+		gotASN := c.LookupASN(netip.MustParseAddr(tc.IP))
 		if diff := helpers.Diff(gotASN, tc.ExpectedASN); diff != "" {
 			t.Errorf("LookupASN(%q) (-got, +want):\n%s", tc.IP, diff)
 		}
 	}
 	gotMetrics := r.GetMetrics("akvorado_inlet_geoip_")
 	expectedMetrics := map[string]string{
-		`db_hits_total{database="asn"}`:    "2",
+		`db_hits_total{database="asn"}`:    "3",
 		`db_hits_total{database="geo"}`:    "3",
 		`db_misses_total{database="asn"}`:  "2",
-		`db_misses_total{database="geo"}`:  "1",
+		`db_misses_total{database="geo"}`:  "2",
 		`db_refresh_total{database="asn"}`: "1",
 		`db_refresh_total{database="geo"}`: "1",
 	}

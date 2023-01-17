@@ -6,10 +6,9 @@
 package decoder
 
 import (
-	"fmt"
+	"net/netip"
 
-	"google.golang.org/protobuf/encoding/protowire"
-	"google.golang.org/protobuf/proto"
+	"akvorado/common/schema"
 )
 
 // DummyDecoder is a simple decoder producing flows from random data.
@@ -17,36 +16,19 @@ import (
 type DummyDecoder struct{}
 
 // Decode returns uninteresting flow messages.
-func (dc *DummyDecoder) Decode(in RawFlow) []*FlowMessage {
-	return []*FlowMessage{
-		{
-			TimeReceived:    uint64(in.TimeReceived.UTC().Unix()),
-			ExporterAddress: in.Source.To16(),
-			Bytes:           uint64(len(in.Payload)),
-			Packets:         1,
-			InIfDescription: string(in.Payload),
-		},
+func (dc *DummyDecoder) Decode(in RawFlow) []*schema.FlowMessage {
+	exporterAddress, _ := netip.AddrFromSlice(in.Source.To16())
+	f := &schema.FlowMessage{
+		TimeReceived:    uint64(in.TimeReceived.UTC().Unix()),
+		ExporterAddress: exporterAddress,
 	}
+	schema.Flows.ProtobufAppendVarint(f, schema.ColumnBytes, uint64(len(in.Payload)))
+	schema.Flows.ProtobufAppendVarint(f, schema.ColumnPackets, 1)
+	schema.Flows.ProtobufAppendBytes(f, schema.ColumnInIfDescription, in.Payload)
+	return []*schema.FlowMessage{f}
 }
 
 // Name returns the original name.
 func (dc *DummyDecoder) Name() string {
 	return "dummy"
-}
-
-// DecodeMessage decodes a length-prefixed protobuf message. It assumes the
-// whole buffer is used. This does not use VT functions.
-func (m *FlowMessage) DecodeMessage(buf []byte) error {
-	messageSize, n := protowire.ConsumeVarint(buf)
-	if n < 0 {
-		return protowire.ParseError(n)
-	}
-	buf = buf[n:]
-	if uint64(len(buf)) != messageSize {
-		return fmt.Errorf("input buffer is of incorrect size (%d vs %d)", len(buf), messageSize)
-	}
-	if err := proto.Unmarshal(buf, m); err != nil {
-		return err
-	}
-	return nil
 }

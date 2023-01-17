@@ -16,7 +16,7 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/kafka"
 	"akvorado/common/reporter"
-	"akvorado/inlet/flow"
+	"akvorado/common/schema"
 )
 
 func TestRealKafka(t *testing.T) {
@@ -29,7 +29,7 @@ func TestRealKafka(t *testing.T) {
 	configuration.Brokers = brokers
 	configuration.Version = kafka.Version(sarama.V2_8_1_0)
 	configuration.FlushInterval = 100 * time.Millisecond
-	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, flow.CurrentSchemaVersion)
+	expectedTopicName := fmt.Sprintf("%s-%s", topicName, schema.Flows.ProtobufMessageHash())
 	r := reporter.NewMock(t)
 	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {

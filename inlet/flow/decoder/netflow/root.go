@@ -6,6 +6,7 @@ package netflow
 
 import (
 	"bytes"
+	"net/netip"
 	"strconv"
 	"sync"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/netsampler/goflow2/producer"
 
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/inlet/flow/decoder"
 )
 
@@ -20,18 +22,16 @@ import (
 type Decoder struct {
 	r *reporter.Reporter
 
-	// Templates and sampling
-	templatesLock sync.RWMutex
-	templates     map[string]*templateSystem
-	samplingLock  sync.RWMutex
-	sampling      map[string]producer.SamplingRateSystem
+	// Templates and sampling systems
+	systemsLock sync.RWMutex
+	templates   map[string]*templateSystem
+	sampling    map[string]producer.SamplingRateSystem
 
 	metrics struct {
 		errors             *reporter.CounterVec
 		stats              *reporter.CounterVec
 		setRecordsStatsSum *reporter.CounterVec
 		setStatsSum        *reporter.CounterVec
-		timeStatsSum       *reporter.SummaryVec
 		templatesStats     *reporter.CounterVec
 	}
 }
@@ -71,14 +71,6 @@ func New(r *reporter.Reporter) decoder.Decoder {
 			Help: "Netflows FlowSets sum.",
 		},
 		[]string{"exporter", "version", "type"},
-	)
-	nd.metrics.timeStatsSum = nd.r.SummaryVec(
-		reporter.SummaryOpts{
-			Name:       "delay_summary_seconds",
-			Help:       "Netflows time difference between time of flow and processing.",
-			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
-		},
-		[]string{"exporter", "version"},
 	)
 	nd.metrics.templatesStats = nd.r.CounterVec(
 		reporter.CounterOpts{
@@ -130,29 +122,27 @@ func (s *templateSystem) GetTemplate(version uint16, obsDomainID uint32, templat
 }
 
 // Decode decodes a Netflow payload.
-func (nd *Decoder) Decode(in decoder.RawFlow) []*decoder.FlowMessage {
+func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 	key := in.Source.String()
-	nd.templatesLock.RLock()
-	templates, ok := nd.templates[key]
-	nd.templatesLock.RUnlock()
-	if !ok {
+	nd.systemsLock.RLock()
+	templates, tok := nd.templates[key]
+	sampling, sok := nd.sampling[key]
+	nd.systemsLock.RUnlock()
+	if !tok {
 		templates = &templateSystem{
 			nd:        nd,
 			templates: netflow.CreateTemplateSystem(),
 			key:       key,
 		}
-		nd.templatesLock.Lock()
+		nd.systemsLock.Lock()
 		nd.templates[key] = templates
-		nd.templatesLock.Unlock()
+		nd.systemsLock.Unlock()
 	}
-	nd.samplingLock.RLock()
-	sampling, ok := nd.sampling[key]
-	nd.samplingLock.RUnlock()
-	if !ok {
+	if !sok {
 		sampling = producer.CreateSamplingSystem()
-		nd.samplingLock.Lock()
+		nd.systemsLock.Lock()
 		nd.sampling[key] = sampling
-		nd.samplingLock.Unlock()
+		nd.systemsLock.Unlock()
 	}
 
 	ts := uint64(in.TimeReceived.UTC().Unix())
@@ -218,21 +208,14 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*decoder.FlowMessage {
 		}
 	}
 
-	flowMessageSet, _ := producer.ProcessMessageNetFlow(msgDec, sampling)
+	flowMessageSet := decode(msgDec, sampling)
+	exporterAddress, _ := netip.AddrFromSlice(in.Source.To16())
 	for _, fmsg := range flowMessageSet {
 		fmsg.TimeReceived = ts
-		fmsg.SamplerAddress = in.Source
-		timeDiff := fmsg.TimeReceived - fmsg.TimeFlowEnd
-		nd.metrics.timeStatsSum.WithLabelValues(key, version).
-			Observe(float64(timeDiff))
+		fmsg.ExporterAddress = exporterAddress
 	}
 
-	results := make([]*decoder.FlowMessage, len(flowMessageSet))
-	for idx, fmsg := range flowMessageSet {
-		results[idx] = decoder.ConvertGoflowToFlowMessage(fmsg)
-	}
-
-	return results
+	return flowMessageSet
 }
 
 // Name returns the name of the decoder.

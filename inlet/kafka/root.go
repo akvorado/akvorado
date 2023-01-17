@@ -17,7 +17,7 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/kafka"
 	"akvorado/common/reporter"
-	"akvorado/inlet/flow"
+	"akvorado/common/schema"
 )
 
 // Component represents the Kafka exporter.
@@ -65,7 +65,7 @@ func New(reporter *reporter.Reporter, configuration Configuration, dependencies 
 		config: configuration,
 
 		kafkaConfig: kafkaConfig,
-		kafkaTopic:  fmt.Sprintf("%s-v%d", configuration.Topic, flow.CurrentSchemaVersion),
+		kafkaTopic:  fmt.Sprintf("%s-%s", configuration.Topic, schema.Flows.ProtobufMessageHash()),
 	}
 	c.initMetrics()
 	c.createKafkaProducer = func() (sarama.AsyncProducer, error) {
@@ -101,12 +101,14 @@ func (c *Component) Start() error {
 				c.r.Debug().Msg("stop error logger")
 				return nil
 			case msg := <-kafkaProducer.Errors():
-				c.metrics.errors.WithLabelValues(msg.Error()).Inc()
-				errLogger.Err(msg.Err).
-					Str("topic", msg.Msg.Topic).
-					Int64("offset", msg.Msg.Offset).
-					Int32("partition", msg.Msg.Partition).
-					Msg("Kafka producer error")
+				if msg != nil {
+					c.metrics.errors.WithLabelValues(msg.Error()).Inc()
+					errLogger.Err(msg.Err).
+						Str("topic", msg.Msg.Topic).
+						Int64("offset", msg.Msg.Offset).
+						Int32("partition", msg.Msg.Partition).
+						Msg("Kafka producer error")
+				}
 			}
 		}
 	})
