@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"strings"
 
-	"akvorado/common/helpers/bimap"
-
 	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -80,68 +78,6 @@ const (
 )
 
 // revive:enable
-
-var columnNameMap = bimap.New(map[ColumnKey]string{
-	ColumnTimeReceived:                  "TimeReceived",
-	ColumnSamplingRate:                  "SamplingRate",
-	ColumnExporterAddress:               "ExporterAddress",
-	ColumnExporterName:                  "ExporterName",
-	ColumnExporterGroup:                 "ExporterGroup",
-	ColumnExporterRole:                  "ExporterRole",
-	ColumnExporterSite:                  "ExporterSite",
-	ColumnExporterRegion:                "ExporterRegion",
-	ColumnExporterTenant:                "ExporterTenant",
-	ColumnSrcAddr:                       "SrcAddr",
-	ColumnDstAddr:                       "DstAddr",
-	ColumnSrcNetMask:                    "SrcNetMask",
-	ColumnDstNetMask:                    "DstNetMask",
-	ColumnSrcNetPrefix:                  "SrcNetPrefix",
-	ColumnDstNetPrefix:                  "DstNetPrefix",
-	ColumnSrcAS:                         "SrcAS",
-	ColumnDstAS:                         "DstAS",
-	ColumnSrcNetName:                    "SrcNetName",
-	ColumnDstNetName:                    "DstNetName",
-	ColumnSrcNetRole:                    "SrcNetRole",
-	ColumnDstNetRole:                    "DstNetRole",
-	ColumnSrcNetSite:                    "SrcNetSite",
-	ColumnDstNetSite:                    "DstNetSite",
-	ColumnSrcNetRegion:                  "SrcNetRegion",
-	ColumnDstNetRegion:                  "DstNetRegion",
-	ColumnSrcNetTenant:                  "SrcNetTenant",
-	ColumnDstNetTenant:                  "DstNetTenant",
-	ColumnSrcCountry:                    "SrcCountry",
-	ColumnDstCountry:                    "DstCountry",
-	ColumnDstASPath:                     "DstASPath",
-	ColumnDst1stAS:                      "Dst1stAS",
-	ColumnDst2ndAS:                      "Dst2ndAS",
-	ColumnDst3rdAS:                      "Dst3rdAS",
-	ColumnDstCommunities:                "DstCommunities",
-	ColumnDstLargeCommunities:           "DstLargeCommunities",
-	ColumnDstLargeCommunitiesASN:        "DstLargeCommunitiesASN",
-	ColumnDstLargeCommunitiesLocalData1: "DstLargeCommunitiesLocalData1",
-	ColumnDstLargeCommunitiesLocalData2: "DstLargeCommunitiesLocalData2",
-	ColumnInIfName:                      "InIfName",
-	ColumnOutIfName:                     "OutIfName",
-	ColumnInIfDescription:               "InIfDescription",
-	ColumnOutIfDescription:              "OutIfDescription",
-	ColumnInIfSpeed:                     "InIfSpeed",
-	ColumnOutIfSpeed:                    "OutIfSpeed",
-	ColumnInIfProvider:                  "InIfProvider",
-	ColumnOutIfProvider:                 "OutIfProvider",
-	ColumnInIfConnectivity:              "InIfConnectivity",
-	ColumnOutIfConnectivity:             "OutIfConnectivity",
-	ColumnInIfBoundary:                  "InIfBoundary",
-	ColumnOutIfBoundary:                 "OutIfBoundary",
-	ColumnEType:                         "EType",
-	ColumnProto:                         "Proto",
-	ColumnSrcPort:                       "SrcPort",
-	ColumnDstPort:                       "DstPort",
-	ColumnBytes:                         "Bytes",
-	ColumnPackets:                       "Packets",
-	ColumnPacketSize:                    "PacketSize",
-	ColumnPacketSizeBucket:              "PacketSizeBucket",
-	ColumnForwardingStatus:              "ForwardingStatus",
-})
 
 func (c ColumnKey) String() string {
 	name, _ := columnNameMap.LoadValue(c)

@@ -18,6 +18,7 @@ GENERATED_JS = \
 	console/frontend/node_modules
 GENERATED_GO = \
 	common/clickhousedb/mocks/mock_driver.go \
+	common/schema/definition_gen.go \
 	conntrackfixer/mocks/mock_conntrackfixer.go \
 	orchestrator/clickhouse/data/asns.csv \
 	console/filter/parser.go
@@ -68,15 +69,19 @@ $(BIN)/wwhrd: PACKAGE=github.com/frapposelli/wwhrd@latest
 
 .DELETE_ON_ERROR:
 
-common/clickhousedb/mocks/mock_driver.go: $(MOCKGEN) ; $(info $(M) generate mocks for ClickHouse driver…)
+common/clickhousedb/mocks/mock_driver.go: | $(MOCKGEN) ; $(info $(M) generate mocks for ClickHouse driver…)
 	$Q echo '//go:build !release' > $@
 	$Q $(MOCKGEN) -package mocks \
 		github.com/ClickHouse/clickhouse-go/v2/lib/driver Conn,Row,Rows,ColumnType >> $@
-conntrackfixer/mocks/mock_conntrackfixer.go: $(MOCKGEN) ; $(info $(M) generate mocks for conntrack-fixer…)
+conntrackfixer/mocks/mock_conntrackfixer.go: | $(MOCKGEN) ; $(info $(M) generate mocks for conntrack-fixer…)
 	$Q if [ `$(GO) env GOOS` = "linux" ]; then \
 	   echo '//go:build !release' > $@ ; \
 	   $(MOCKGEN) -package mocks akvorado/conntrackfixer ConntrackConn,DockerClient >> $@ ; \
 	fi
+
+common/schema/definition_gen.go: common/schema/definition.go common/schema/definition_gen.sh ; $(info $(M) generate column definitions…)
+	$Q ./common/schema/definition_gen.sh > $@
+	$Q $(GOIMPORTS) -w $@
 
 console/filter/parser.go: console/filter/parser.peg | $(PIGEON) ; $(info $(M) generate PEG parser for filters…)
 	$Q $(PIGEON) -optimize-basic-latin $< > $@
