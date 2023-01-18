@@ -13,16 +13,19 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"akvorado/common/helpers"
+	"akvorado/common/schema"
+	"akvorado/console/query"
 )
 
 // sankeyHandlerInput describes the input for the /sankey endpoint.
 type sankeyHandlerInput struct {
-	Start      time.Time     `json:"start" binding:"required"`
-	End        time.Time     `json:"end" binding:"required,gtfield=Start"`
-	Dimensions []queryColumn `json:"dimensions" binding:"required,min=2"` // group by ...
-	Limit      int           `json:"limit" binding:"min=1,max=50"`        // limit product of dimensions
-	Filter     queryFilter   `json:"filter"`                              // where ...
-	Units      string        `json:"units" binding:"required,oneof=pps l3bps l2bps"`
+	schema     *schema.Component
+	Start      time.Time      `json:"start" binding:"required"`
+	End        time.Time      `json:"end" binding:"required,gtfield=Start"`
+	Dimensions []query.Column `json:"dimensions" binding:"required,min=2"` // group by ...
+	Limit      int            `json:"limit" binding:"min=1,max=50"`        // limit product of dimensions
+	Filter     query.Filter   `json:"filter"`                              // where ...
+	Units      string         `json:"units" binding:"required,oneof=pps l3bps l2bps"`
 }
 
 // sankeyHandlerOutput describes the output for the /sankey endpoint.
@@ -51,7 +54,7 @@ func (input sankeyHandlerInput) toSQL() (string, error) {
 		arrayFields = append(arrayFields, fmt.Sprintf(`if(%s IN (SELECT %s FROM rows), %s, 'Other')`,
 			column.String(),
 			column.String(),
-			column.toSQLSelect()))
+			column.ToSQLSelect()))
 		dimensions = append(dimensions, column.String())
 	}
 	fields := []string{
@@ -84,7 +87,7 @@ ORDER BY xps DESC
 		templateContext(inputContext{
 			Start:             input.Start,
 			End:               input.End,
-			MainTableRequired: requireMainTable(input.Dimensions, input.Filter),
+			MainTableRequired: requireMainTable(input.schema, input.Dimensions, input.Filter),
 			Points:            20,
 			Units:             input.Units,
 		}),
@@ -94,8 +97,16 @@ ORDER BY xps DESC
 
 func (c *Component) sankeyHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
-	var input sankeyHandlerInput
+	input := sankeyHandlerInput{schema: c.d.Schema}
 	if err := gc.ShouldBindJSON(&input); err != nil {
+		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
+		return
+	}
+	if err := query.Columns(input.Dimensions).Validate(input.schema); err != nil {
+		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
+		return
+	}
+	if err := input.Filter.Validate(input.schema); err != nil {
 		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
 		return
 	}

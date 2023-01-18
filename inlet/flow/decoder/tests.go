@@ -13,7 +13,9 @@ import (
 
 // DummyDecoder is a simple decoder producing flows from random data.
 // The payload is copied in IfDescription
-type DummyDecoder struct{}
+type DummyDecoder struct {
+	Schema *schema.Component
+}
 
 // Decode returns uninteresting flow messages.
 func (dc *DummyDecoder) Decode(in RawFlow) []*schema.FlowMessage {
@@ -22,9 +24,9 @@ func (dc *DummyDecoder) Decode(in RawFlow) []*schema.FlowMessage {
 		TimeReceived:    uint64(in.TimeReceived.UTC().Unix()),
 		ExporterAddress: exporterAddress,
 	}
-	schema.Flows.ProtobufAppendVarint(f, schema.ColumnBytes, uint64(len(in.Payload)))
-	schema.Flows.ProtobufAppendVarint(f, schema.ColumnPackets, 1)
-	schema.Flows.ProtobufAppendBytes(f, schema.ColumnInIfDescription, in.Payload)
+	dc.Schema.ProtobufAppendVarint(f, schema.ColumnBytes, uint64(len(in.Payload)))
+	dc.Schema.ProtobufAppendVarint(f, schema.ColumnPackets, 1)
+	dc.Schema.ProtobufAppendBytes(f, schema.ColumnInIfDescription, in.Payload)
 	return []*schema.FlowMessage{f}
 }
 

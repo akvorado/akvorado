@@ -11,22 +11,25 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/exp/slices"
 
 	"akvorado/common/helpers"
 	"akvorado/common/schema"
+	"akvorado/console/query"
 )
 
 // graphHandlerInput describes the input for the /graph endpoint.
 type graphHandlerInput struct {
-	Start          time.Time     `json:"start" binding:"required"`
-	End            time.Time     `json:"end" binding:"required,gtfield=Start"`
-	Points         uint          `json:"points" binding:"required,min=5,max=2000"` // minimum number of points
-	Dimensions     []queryColumn `json:"dimensions"`                               // group by ...
-	Limit          int           `json:"limit" binding:"min=1"`                    // limit product of dimensions
-	Filter         queryFilter   `json:"filter"`                                   // where ...
-	Units          string        `json:"units" binding:"required,oneof=pps l2bps l3bps"`
-	Bidirectional  bool          `json:"bidirectional"`
-	PreviousPeriod bool          `json:"previous-period"`
+	schema         *schema.Component
+	Start          time.Time      `json:"start" binding:"required"`
+	End            time.Time      `json:"end" binding:"required,gtfield=Start"`
+	Points         uint           `json:"points" binding:"required,min=5,max=2000"` // minimum number of points
+	Dimensions     []query.Column `json:"dimensions"`                               // group by ...
+	Limit          int            `json:"limit" binding:"min=1"`                    // limit product of dimensions
+	Filter         query.Filter   `json:"filter"`                                   // where ...
+	Units          string         `json:"units" binding:"required,oneof=pps l2bps l3bps"`
+	Bidirectional  bool           `json:"bidirectional"`
+	PreviousPeriod bool           `json:"previous-period"`
 }
 
 // graphHandlerOutput describes the output for the /graph endpoint. A
@@ -45,14 +48,12 @@ type graphHandlerOutput struct {
 	NinetyFivePercentile []int          `json:"95th"`    // row → 95th xps
 }
 
-// reverseDirection reverts the direction of a provided input
+// reverseDirection reverts the direction of a provided input. It does not
+// modify the original.
 func (input graphHandlerInput) reverseDirection() graphHandlerInput {
-	input.Filter.Filter, input.Filter.ReverseFilter = input.Filter.ReverseFilter, input.Filter.Filter
-	dimensions := input.Dimensions
-	input.Dimensions = make([]queryColumn, len(dimensions))
-	for i := range dimensions {
-		input.Dimensions[i] = queryColumn(schema.Flows.ReverseColumnDirection(schema.ColumnKey(dimensions[i])))
-	}
+	input.Filter.Swap()
+	input.Dimensions = slices.Clone(input.Dimensions)
+	query.Columns(input.Dimensions).Reverse(input.schema)
 	return input
 }
 
@@ -82,7 +83,7 @@ func nearestPeriod(period time.Duration) (time.Duration, string) {
 // for less than 2-months, this is the month, otherwise, this is the
 // year. Also, dimensions are stripped.
 func (input graphHandlerInput) previousPeriod() graphHandlerInput {
-	input.Dimensions = []queryColumn{}
+	input.Dimensions = []query.Column{}
 	diff := input.End.Sub(input.Start)
 	period, _ := nearestPeriod(diff)
 	if period == 0 {
@@ -123,7 +124,7 @@ func (input graphHandlerInput) toSQL1(axis int, options toSQL1Options) string {
 	dimensionsInterpolate := ""
 	others := []string{}
 	for _, column := range input.Dimensions {
-		field := column.toSQLSelect()
+		field := column.ToSQLSelect()
 		selectFields = append(selectFields, field)
 		dimensions = append(dimensions, column.String())
 		others = append(others, "'Other'")
@@ -172,7 +173,7 @@ ORDER BY time WITH FILL
 			Start:             input.Start,
 			End:               input.End,
 			StartForInterval:  startForInterval,
-			MainTableRequired: requireMainTable(input.Dimensions, input.Filter),
+			MainTableRequired: requireMainTable(input.schema, input.Dimensions, input.Filter),
 			Points:            input.Points,
 			Units:             input.Units,
 		}),
@@ -207,8 +208,16 @@ func (input graphHandlerInput) toSQL() string {
 
 func (c *Component) graphHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
-	var input graphHandlerInput
+	input := graphHandlerInput{schema: c.d.Schema}
 	if err := gc.ShouldBindJSON(&input); err != nil {
+		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
+		return
+	}
+	if err := query.Columns(input.Dimensions).Validate(input.schema); err != nil {
+		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
+		return
+	}
+	if err := input.Filter.Validate(input.schema); err != nil {
 		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
 		return
 	}

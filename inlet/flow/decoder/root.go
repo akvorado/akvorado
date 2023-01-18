@@ -24,6 +24,11 @@ type Decoder interface {
 	Name() string
 }
 
+// Dependencies are the dependencies for the decoder
+type Dependencies struct {
+	Schema *schema.Component
+}
+
 // RawFlow is an undecoded flow.
 type RawFlow struct {
 	TimeReceived time.Time
@@ -32,4 +37,4 @@ type RawFlow struct {
 }
 
 // NewDecoderFunc is the signature of a function to instantiate a decoder.
-type NewDecoderFunc func(*reporter.Reporter) Decoder
+type NewDecoderFunc func(*reporter.Reporter, Dependencies) Decoder

@@ -8,8 +8,9 @@ import (
 )
 
 func TestFlowsClickHouse(t *testing.T) {
-	for _, key := range Flows.clickHousePrimaryKeys {
-		if column := Flows.columnIndex[key]; column.Key == 0 {
+	c := NewMock(t)
+	for _, key := range c.clickHousePrimaryKeys {
+		if column := c.columnIndex[key]; column.Key == 0 {
 			t.Errorf("primary key %q not a column", key)
 		} else {
 			if column.ClickHouseNotSortingKey {
@@ -20,7 +21,8 @@ func TestFlowsClickHouse(t *testing.T) {
 }
 
 func TestFlowsProtobuf(t *testing.T) {
-	for _, column := range Flows.Columns() {
+	c := NewMock(t)
+	for _, column := range c.Columns() {
 		if column.ProtobufIndex >= 0 {
 			if column.ProtobufType == 0 {
 				t.Errorf("column %s has not protobuf type", column.Name)
@@ -30,8 +32,9 @@ func TestFlowsProtobuf(t *testing.T) {
 }
 
 func TestColumnIndex(t *testing.T) {
+	c := NewMock(t)
 	for i := ColumnTimeReceived; i < ColumnLast; i++ {
-		if _, ok := Flows.LookupColumnByKey(i); !ok {
+		if _, ok := c.LookupColumnByKey(i); !ok {
 			t.Errorf("column %s cannot be looked up by key", i)
 		}
 	}

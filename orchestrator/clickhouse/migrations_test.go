@@ -62,7 +62,7 @@ FROM system.tables
 WHERE database=currentDatabase() AND table NOT LIKE '.%'
 ORDER BY length(table) ASC`
 
-func dumpAllTables(t *testing.T, ch *clickhousedb.Component) map[string]string {
+func dumpAllTables(t *testing.T, ch *clickhousedb.Component, schemaComponent *schema.Component) map[string]string {
 	// TODO: find the right ordering, this one does not totally work
 	rows, err := ch.Query(context.Background(), dumpAllTablesQuery)
 	if err != nil {
@@ -74,7 +74,7 @@ func dumpAllTables(t *testing.T, ch *clickhousedb.Component) map[string]string {
 		if err := rows.Scan(&table, &schema); err != nil {
 			t.Fatalf("Scan() error:\n%+v", err)
 		}
-		if !oldTable(table) {
+		if !oldTable(schemaComponent, table) {
 			schemas[table] = schema
 		}
 	}
@@ -86,9 +86,9 @@ type tableWithSchema struct {
 	schema string
 }
 
-func loadTables(t *testing.T, ch *clickhousedb.Component, schemas []tableWithSchema) {
+func loadTables(t *testing.T, ch *clickhousedb.Component, sch *schema.Component, schemas []tableWithSchema) {
 	for _, tws := range schemas {
-		if oldTable(tws.table) {
+		if oldTable(sch, tws.table) {
 			continue
 		}
 		t.Logf("Load table %s", tws.table)
@@ -98,8 +98,8 @@ func loadTables(t *testing.T, ch *clickhousedb.Component, schemas []tableWithSch
 	}
 }
 
-func oldTable(table string) bool {
-	if strings.Contains(table, schema.Flows.ProtobufMessageHash()) {
+func oldTable(schema *schema.Component, table string) bool {
+	if strings.Contains(table, schema.ProtobufMessageHash()) {
 		return false
 	}
 	if strings.HasSuffix(table, "_raw") || strings.HasSuffix(table, "_raw_consumer") || strings.HasSuffix(table, "_raw_errors") {
@@ -110,7 +110,7 @@ func oldTable(table string) bool {
 
 // loadAllTables load tables from a CSV file. Use `format CSV` with
 // query from dumpAllTables.
-func loadAllTables(t *testing.T, ch *clickhousedb.Component, filename string) {
+func loadAllTables(t *testing.T, ch *clickhousedb.Component, sch *schema.Component, filename string) {
 	input, err := os.Open(filename)
 	if err != nil {
 		t.Fatalf("Open(%q) error:\n%+v", filename, err)
@@ -136,7 +136,7 @@ func loadAllTables(t *testing.T, ch *clickhousedb.Component, filename string) {
 	}
 	dropAllTables(t, ch)
 	t.Logf("(%s) Load all tables from dump %s", time.Now(), filename)
-	loadTables(t, ch, schemas)
+	loadTables(t, ch, sch, schemas)
 	t.Logf("(%s) Loaded all tables from dump %s", time.Now(), filename)
 }
 
@@ -161,6 +161,7 @@ func TestGetHTTPBaseURL(t *testing.T) {
 	c, err := New(r, DefaultConfiguration(), Dependencies{
 		Daemon: daemon.NewMock(t),
 		HTTP:   http,
+		Schema: schema.NewMock(t),
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
@@ -201,7 +202,7 @@ func TestMigration(t *testing.T) {
 	}
 	for _, f := range files {
 		t.Run(f.Name(), func(t *testing.T) {
-			loadAllTables(t, chComponent, path.Join("testdata/states", f.Name()))
+			loadAllTables(t, chComponent, schema.NewMock(t), path.Join("testdata/states", f.Name()))
 			r := reporter.NewMock(t)
 			configuration := DefaultConfiguration()
 			configuration.OrchestratorURL = "http://something"
@@ -209,6 +210,7 @@ func TestMigration(t *testing.T) {
 			ch, err := New(r, configuration, Dependencies{
 				Daemon:     daemon.NewMock(t),
 				HTTP:       http.NewMock(t, r),
+				Schema:     schema.NewMock(t),
 				ClickHouse: chComponent,
 			})
 			if err != nil {
@@ -225,14 +227,14 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 			if err != nil {
 				t.Fatalf("Query() error:\n%+v", err)
 			}
-			hash := schema.Flows.ProtobufMessageHash()
+			hash := ch.d.Schema.ProtobufMessageHash()
 			got := []string{}
 			for rows.Next() {
 				var table string
 				if err := rows.Scan(&table); err != nil {
 					t.Fatalf("Scan() error:\n%+v", err)
 				}
-				if !oldTable(table) {
+				if !oldTable(ch.d.Schema, table) {
 					got = append(got, table)
 				}
 			}
@@ -256,7 +258,7 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 				t.Fatalf("SHOW TABLES (-got, +want):\n%s", diff)
 			}
 
-			currentRun := dumpAllTables(t, chComponent)
+			currentRun := dumpAllTables(t, chComponent, ch.d.Schema)
 			if lastRun != nil {
 				if diff := helpers.Diff(lastRun, currentRun); diff != "" {
 					t.Fatalf("Final state is different (-last, +current):\n%s", diff)
@@ -296,6 +298,7 @@ LIMIT 1`, proto.ClientName)
 			ch, err := New(r, configuration, Dependencies{
 				Daemon:     daemon.NewMock(t),
 				HTTP:       http.NewMock(t, r),
+				Schema:     schema.NewMock(t),
 				ClickHouse: chComponent,
 			})
 			if err != nil {

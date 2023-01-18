@@ -21,8 +21,10 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/console/authentication"
 	"akvorado/console/database"
+	"akvorado/console/query"
 )
 
 // Component represents the console component.
@@ -48,12 +50,16 @@ type Dependencies struct {
 	Clock        clock.Clock
 	Auth         *authentication.Component
 	Database     *database.Component
+	Schema       *schema.Component
 }
 
 // New creates a new console component.
 func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) (*Component, error) {
 	if dependencies.Clock == nil {
 		dependencies.Clock = clock.New()
+	}
+	if err := query.Columns(config.DefaultVisualizeOptions.Dimensions).Validate(dependencies.Schema); err != nil {
+		return nil, err
 	}
 	c := Component{
 		r:           r,

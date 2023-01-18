@@ -12,6 +12,7 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/console"
 	"akvorado/console/authentication"
 	"akvorado/console/database"
@@ -103,12 +104,17 @@ func consoleStart(r *reporter.Reporter, config ConsoleConfiguration, checkOnly b
 	if err != nil {
 		return fmt.Errorf("unable to initialize database component: %w", err)
 	}
+	schemaComponent, err := schema.New()
+	if err != nil {
+		return fmt.Errorf("unable to initialize schema component: %w", err)
+	}
 	consoleComponent, err := console.New(r, config.Console, console.Dependencies{
 		Daemon:       daemonComponent,
 		HTTP:         httpComponent,
 		ClickHouseDB: clickhouseComponent,
 		Auth:         authenticationComponent,
 		Database:     databaseComponent,
+		Schema:       schemaComponent,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to initialize console component: %w", err)

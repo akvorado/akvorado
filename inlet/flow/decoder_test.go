@@ -21,7 +21,8 @@ import (
 func BenchmarkDecodeEncodeNetflow(b *testing.B) {
 	schema.DisableDebug(b)
 	r := reporter.NewMock(b)
-	nfdecoder := netflow.New(r)
+	sch := schema.NewMock(b)
+	nfdecoder := netflow.New(r, decoder.Dependencies{Schema: sch})
 
 	template := helpers.ReadPcapPayload(b, filepath.Join("decoder", "netflow", "testdata", "options-template-257.pcap"))
 	got := nfdecoder.Decode(decoder.RawFlow{Payload: template, Source: net.ParseIP("127.0.0.1")})
@@ -50,7 +51,7 @@ func BenchmarkDecodeEncodeNetflow(b *testing.B) {
 				got = nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 				if withEncoding {
 					for _, flow := range got {
-						schema.Flows.ProtobufMarshal(flow)
+						sch.ProtobufMarshal(flow)
 					}
 				}
 			}
@@ -64,7 +65,8 @@ func BenchmarkDecodeEncodeNetflow(b *testing.B) {
 func BenchmarkDecodeEncodeSflow(b *testing.B) {
 	schema.DisableDebug(b)
 	r := reporter.NewMock(b)
-	sdecoder := sflow.New(r)
+	sch := schema.NewMock(b)
+	sdecoder := sflow.New(r, decoder.Dependencies{Schema: sch})
 	data := helpers.ReadPcapPayload(b, filepath.Join("decoder", "sflow", "testdata", "data-1140.pcap"))
 
 	for _, withEncoding := range []bool{true, false} {
@@ -78,7 +80,7 @@ func BenchmarkDecodeEncodeSflow(b *testing.B) {
 				got = sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 				if withEncoding {
 					for _, flow := range got {
-						schema.Flows.ProtobufMarshal(flow)
+						sch.ProtobufMarshal(flow)
 					}
 				}
 			}

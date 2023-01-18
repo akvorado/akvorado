@@ -11,6 +11,7 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/inlet/bmp"
 	"akvorado/inlet/core"
 	"akvorado/inlet/flow"
@@ -95,9 +96,14 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 	if err != nil {
 		return fmt.Errorf("unable to initialize http component: %w", err)
 	}
+	schemaComponent, err := schema.New()
+	if err != nil {
+		return fmt.Errorf("unable to initialize schema component: %w", err)
+	}
 	flowComponent, err := flow.New(r, config.Flow, flow.Dependencies{
 		Daemon: daemonComponent,
 		HTTP:   httpComponent,
+		Schema: schemaComponent,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to initialize flow component: %w", err)
@@ -122,6 +128,7 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 	}
 	kafkaComponent, err := kafka.New(r, config.Kafka, kafka.Dependencies{
 		Daemon: daemonComponent,
+		Schema: schemaComponent,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to initialize Kafka component: %w", err)
@@ -134,6 +141,7 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 		GeoIP:  geoipComponent,
 		Kafka:  kafkaComponent,
 		HTTP:   httpComponent,
+		Schema: schemaComponent,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to initialize core component: %w", err)

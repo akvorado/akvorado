@@ -53,6 +53,7 @@ func TestCore(t *testing.T) {
 		Kafka:  kafkaComponent,
 		HTTP:   httpComponent,
 		BMP:    bmpComponent,
+		Schema: schema.NewMock(t),
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)

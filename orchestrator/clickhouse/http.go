@@ -13,8 +13,6 @@ import (
 	"strconv"
 	"text/template"
 	"time"
-
-	"akvorado/common/schema"
 )
 
 var (
@@ -71,8 +69,8 @@ func (c *Component) registerHTTPHandlers() error {
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var result bytes.Buffer
 			if err := initShTemplate.Execute(&result, initShVariables{
-				FlowSchemaHash: schema.Flows.ProtobufMessageHash(),
-				FlowSchema:     schema.Flows.ProtobufDefinition(),
+				FlowSchemaHash: c.d.Schema.ProtobufMessageHash(),
+				FlowSchema:     c.d.Schema.ProtobufDefinition(),
 				SystemLogTTL:   int(c.config.SystemLogTTL.Seconds()),
 				SystemLogTables: []string{
 					"asynchronous_metric_log",

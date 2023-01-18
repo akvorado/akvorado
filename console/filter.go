@@ -42,7 +42,7 @@ func (c *Component) filterValidateHandlerFunc(gc *gin.Context) {
 		})
 		return
 	}
-	got, err := filter.Parse("", []byte(input.Filter), filter.GlobalStore("meta", &filter.Meta{}))
+	got, err := filter.Parse("", []byte(input.Filter), filter.GlobalStore("meta", &filter.Meta{Schema: c.d.Schema}))
 	if err == nil {
 		gc.JSON(http.StatusOK, filterValidateHandlerOutput{
 			Message: "ok",
@@ -85,7 +85,7 @@ func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 	switch input.What {
 	case "column":
 		_, err := filter.Parse("", []byte{},
-			filter.Entrypoint("ConditionExpr"), filter.GlobalStore("meta", &filter.Meta{}))
+			filter.Entrypoint("ConditionExpr"), filter.GlobalStore("meta", &filter.Meta{Schema: c.d.Schema}))
 		if err != nil {
 			for _, candidate := range filter.Expected(err) {
 				if !strings.HasSuffix(candidate, `"i`) {
@@ -102,7 +102,7 @@ func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 		_, err := filter.Parse("",
 			[]byte(fmt.Sprintf("%s ", input.Column)),
 			filter.Entrypoint("ConditionExpr"),
-			filter.GlobalStore("meta", &filter.Meta{}))
+			filter.GlobalStore("meta", &filter.Meta{Schema: c.d.Schema}))
 		if err != nil {
 			for _, candidate := range filter.Expected(err) {
 				if !strings.HasPrefix(candidate, `"`) {
@@ -213,7 +213,7 @@ LIMIT 20`
 				Label  string `ch:"label"`
 				Detail string `ch:"detail"`
 			}{}
-			columnName := fixQueryColumnName(input.Column)
+			columnName := c.fixQueryColumnName(input.Column)
 			if columnName == "DstASPath" {
 				columnName = "DstAS"
 			}
@@ -270,7 +270,7 @@ LIMIT 20`, attributeName, attributeName, attributeName), input.Prefix); err != n
 			}
 			input.Prefix = ""
 		case "exportername", "exportergroup", "exporterrole", "exportersite", "exporterregion", "exportertenant":
-			column = fixQueryColumnName(inputColumn)
+			column = c.fixQueryColumnName(inputColumn)
 			detail = fmt.Sprintf("exporter %s", inputColumn[8:])
 		case "inifname", "outifname":
 			column = "IfName"

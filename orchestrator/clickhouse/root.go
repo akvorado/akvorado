@@ -18,6 +18,7 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 )
 
 // Component represents the ClickHouse configurator.
@@ -40,6 +41,7 @@ type Dependencies struct {
 	Daemon     daemon.Component
 	HTTP       *http.Component
 	ClickHouse *clickhousedb.Component
+	Schema     *schema.Component
 }
 
 // New creates a new ClickHouse component.

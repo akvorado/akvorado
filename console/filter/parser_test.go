@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"akvorado/common/helpers"
+	"akvorado/common/schema"
 )
 
 func TestValidFilter(t *testing.T) {
@@ -216,6 +217,8 @@ output provider */ = 'telia'`,
 		{Input: `DstCommunities != 65000:100:200`, Output: `NOT has(DstLargeCommunities, bitShiftLeft(65000::UInt128, 64) + bitShiftLeft(100::UInt128, 32) + 200::UInt128)`, MetaOut: Meta{MainTableRequired: true}},
 	}
 	for _, tc := range cases {
+		tc.MetaIn.Schema = schema.NewMock(t)
+		tc.MetaOut.Schema = tc.MetaIn.Schema
 		got, err := Parse("", []byte(tc.Input), GlobalStore("meta", &tc.MetaIn))
 		if err != nil {
 			t.Errorf("Parse(%q) error:\n%+v", tc.Input, err)
@@ -260,7 +263,7 @@ func TestInvalidFilter(t *testing.T) {
 		{`SrcAS IN (AS12322,`},
 	}
 	for _, tc := range cases {
-		out, err := Parse("", []byte(tc.Input), GlobalStore("meta", &Meta{}))
+		out, err := Parse("", []byte(tc.Input), GlobalStore("meta", &Meta{Schema: schema.NewMock(t)}))
 		t.Logf("out: %v", out)
 		if err == nil {
 			t.Errorf("Parse(%q) didn't throw an error", tc.Input)

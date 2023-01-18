@@ -12,6 +12,7 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/orchestrator"
 	"akvorado/orchestrator/clickhouse"
 	"akvorado/orchestrator/kafka"
@@ -111,7 +112,11 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, c
 	if err != nil {
 		return fmt.Errorf("unable to initialize HTTP component: %w", err)
 	}
-	kafkaComponent, err := kafka.New(r, config.Kafka)
+	schemaComponent, err := schema.New()
+	if err != nil {
+		return fmt.Errorf("unable to initialize schema component: %w", err)
+	}
+	kafkaComponent, err := kafka.New(r, config.Kafka, kafka.Dependencies{Schema: schemaComponent})
 	if err != nil {
 		return fmt.Errorf("unable to initialize kafka component: %w", err)
 	}
@@ -125,6 +130,7 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, c
 		Daemon:     daemonComponent,
 		HTTP:       httpComponent,
 		ClickHouse: clickhouseDBComponent,
+		Schema:     schemaComponent,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to initialize clickhouse component: %w", err)

@@ -4,9 +4,7 @@
 package schema
 
 import (
-	"fmt"
 	"net/netip"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -113,18 +111,19 @@ message FlowMessagevLH2TTFF7P352DSYYCJYWFCXHAM {
 }
 
 func TestProtobufMarshal(t *testing.T) {
+	c := NewMock(t)
 	exporterAddress := netip.MustParseAddr("::ffff:203.0.113.14")
 	bf := &FlowMessage{}
 	bf.TimeReceived = 1000
 	bf.SamplingRate = 20000
 	bf.ExporterAddress = exporterAddress
-	Flows.ProtobufAppendVarint(bf, ColumnDstAS, 65000)
-	Flows.ProtobufAppendVarint(bf, ColumnBytes, 200)
-	Flows.ProtobufAppendVarint(bf, ColumnPackets, 300)
-	Flows.ProtobufAppendVarint(bf, ColumnBytes, 300) // duplicate!
-	Flows.ProtobufAppendBytes(bf, ColumnDstCountry, []byte("FR"))
+	c.ProtobufAppendVarint(bf, ColumnDstAS, 65000)
+	c.ProtobufAppendVarint(bf, ColumnBytes, 200)
+	c.ProtobufAppendVarint(bf, ColumnPackets, 300)
+	c.ProtobufAppendVarint(bf, ColumnBytes, 300) // duplicate!
+	c.ProtobufAppendBytes(bf, ColumnDstCountry, []byte("FR"))
 
-	got := Flows.ProtobufMarshal(bf)
+	got := c.ProtobufMarshal(bf)
 
 	size, n := protowire.ConsumeVarint(got)
 	if uint64(len(got)-n) != size {
@@ -154,7 +153,7 @@ func TestProtobufMarshal(t *testing.T) {
 	})
 
 	t.Run("compare as protobuf message", func(t *testing.T) {
-		got := Flows.ProtobufDecode(t, got)
+		got := c.ProtobufDecode(t, got)
 		expected := FlowMessage{
 			TimeReceived:    1000,
 			SamplingRate:    20000,
@@ -166,13 +165,14 @@ func TestProtobufMarshal(t *testing.T) {
 				ColumnDstCountry: "FR",
 			},
 		}
-		if diff := helpers.Diff(got, expected, helpers.DiffFormatter(reflect.TypeOf(ColumnBytes), fmt.Sprint)); diff != "" {
+		if diff := helpers.Diff(got, expected); diff != "" {
 			t.Fatalf("ProtobufDecode() (-got, +want):\n%s", diff)
 		}
 	})
 }
 
 func BenchmarkProtobufMarshal(b *testing.B) {
+	c := NewMock(b)
 	exporterAddress := netip.MustParseAddr("::ffff:203.0.113.14")
 	DisableDebug(b)
 	for i := 0; i < b.N; i++ {
@@ -181,11 +181,11 @@ func BenchmarkProtobufMarshal(b *testing.B) {
 			SamplingRate:    20000,
 			ExporterAddress: exporterAddress,
 		}
-		Flows.ProtobufAppendVarint(bf, ColumnDstAS, 65000)
-		Flows.ProtobufAppendVarint(bf, ColumnBytes, 200)
-		Flows.ProtobufAppendVarint(bf, ColumnPackets, 300)
-		Flows.ProtobufAppendVarint(bf, ColumnBytes, 300) // duplicate!
-		Flows.ProtobufAppendBytes(bf, ColumnDstCountry, []byte("FR"))
-		Flows.ProtobufMarshal(bf)
+		c.ProtobufAppendVarint(bf, ColumnDstAS, 65000)
+		c.ProtobufAppendVarint(bf, ColumnBytes, 200)
+		c.ProtobufAppendVarint(bf, ColumnPackets, 300)
+		c.ProtobufAppendVarint(bf, ColumnBytes, 300) // duplicate!
+		c.ProtobufAppendBytes(bf, ColumnDstCountry, []byte("FR"))
+		c.ProtobufMarshal(bf)
 	}
 }

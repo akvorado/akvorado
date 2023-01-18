@@ -6,10 +6,13 @@
 package schema
 
 import (
+	"fmt"
 	"net/netip"
 	"reflect"
 	"strings"
 	"testing"
+
+	"akvorado/common/helpers"
 
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
@@ -19,12 +22,23 @@ import (
 
 var debug = true
 
-// DisableDebug disables debug during the provided test.
+// DisableDebug disables debug during the provided test. We keep this as a
+// global function for performance reason (when release, debug is a const).
 func DisableDebug(t testing.TB) {
 	debug = false
 	t.Cleanup(func() {
 		debug = true
 	})
+}
+
+// NewMock create a new schema component.
+func NewMock(t testing.TB) *Component {
+	t.Helper()
+	c, err := New()
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	return c
 }
 
 // ProtobufDecode decodes the provided protobuf message.
@@ -100,4 +114,8 @@ func (schema *Schema) ProtobufDecode(t *testing.T, input []byte) *FlowMessage {
 	}
 
 	return &flow
+}
+
+func init() {
+	helpers.AddPrettyFormatter(reflect.TypeOf(ColumnBytes), fmt.Sprint)
 }

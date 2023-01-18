@@ -28,6 +28,7 @@ func TestHTTPEndpoints(t *testing.T) {
 	c, err := New(r, config, Dependencies{
 		Daemon: daemon.NewMock(t),
 		HTTP:   http.NewMock(t, r),
+		Schema: schema.NewMock(t),
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
@@ -65,7 +66,7 @@ func TestHTTPEndpoints(t *testing.T) {
 				``,
 				`# Install Protobuf schema`,
 				fmt.Sprintf(`cat > /var/lib/clickhouse/format_schemas/flow-%s.proto <<'EOPROTO'`,
-					schema.Flows.ProtobufMessageHash()),
+					c.d.Schema.ProtobufMessageHash()),
 				"",
 				`syntax = "proto3";`,
 			},
@@ -84,6 +85,7 @@ func TestAdditionalASNs(t *testing.T) {
 	c, err := New(r, config, Dependencies{
 		Daemon: daemon.NewMock(t),
 		HTTP:   http.NewMock(t, r),
+		Schema: schema.NewMock(t),
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
@@ -177,6 +179,7 @@ func TestNetworkSources(t *testing.T) {
 	c, err := New(r, config, Dependencies{
 		Daemon: daemon.NewMock(t),
 		HTTP:   http.NewMock(t, r),
+		Schema: schema.NewMock(t),
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)

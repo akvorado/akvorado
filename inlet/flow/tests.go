@@ -34,6 +34,7 @@ func NewMock(t *testing.T, r *reporter.Reporter, config Configuration) *Componen
 	c, err := New(r, config, Dependencies{
 		Daemon: daemon.NewMock(t),
 		HTTP:   http.NewMock(t, r),
+		Schema: schema.NewMock(t),
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)

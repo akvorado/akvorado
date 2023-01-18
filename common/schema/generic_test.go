@@ -3,9 +3,12 @@
 
 package schema
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestLookupColumnByName(t *testing.T) {
+	c := NewMock(t)
 	cases := []string{
 		"TimeReceived",
 		"InIfProvider",
@@ -14,7 +17,7 @@ func TestLookupColumnByName(t *testing.T) {
 		"ForwardingStatus",
 	}
 	for _, name := range cases {
-		column, ok := Flows.LookupColumnByName(name)
+		column, ok := c.LookupColumnByName(name)
 		if !ok {
 			t.Fatalf("LookupByName(%q) not found", name)
 		}
@@ -25,6 +28,7 @@ func TestLookupColumnByName(t *testing.T) {
 }
 
 func TestReverseColumnDirection(t *testing.T) {
+	c := NewMock(t)
 	cases := []struct {
 		Input  ColumnKey
 		Output ColumnKey
@@ -37,7 +41,7 @@ func TestReverseColumnDirection(t *testing.T) {
 		{ColumnExporterName, ColumnExporterName},
 	}
 	for _, tc := range cases {
-		got := Flows.ReverseColumnDirection(tc.Input)
+		got := c.ReverseColumnDirection(tc.Input)
 		if got != tc.Output {
 			t.Errorf("ReverseColumnDirection(%q) == %q but expected %q",
 				tc.Input.String(), got.String(), tc.Output.String())

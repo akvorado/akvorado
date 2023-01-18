@@ -22,11 +22,11 @@ func TestTopicCreation(t *testing.T) {
 
 	rand.Seed(time.Now().UnixMicro())
 	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
-	expectedTopicName := fmt.Sprintf("%s-%s", topicName, schema.Flows.ProtobufMessageHash())
 	retentionMs := "76548"
 	segmentBytes := "107374184"
 	segmentBytes2 := "10737184"
 	cleanupPolicy := "delete"
+	expectedTopicName := fmt.Sprintf("%s-%s", topicName, schema.NewMock(t).ProtobufMessageHash())
 
 	cases := []struct {
 		Name          string
@@ -65,7 +65,7 @@ func TestTopicCreation(t *testing.T) {
 			}
 			configuration.Brokers = brokers
 			configuration.Version = kafka.Version(sarama.V2_8_1_0)
-			c, err := New(reporter.NewMock(t), configuration)
+			c, err := New(reporter.NewMock(t), configuration, Dependencies{Schema: schema.NewMock(t)})
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
 			}
@@ -96,7 +96,7 @@ func TestTopicMorePartitions(t *testing.T) {
 
 	rand.Seed(time.Now().UnixMicro())
 	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
-	expectedTopicName := fmt.Sprintf("%s-%s", topicName, schema.Flows.ProtobufMessageHash())
+	expectedTopicName := fmt.Sprintf("%s-%s", topicName, schema.NewMock(t).ProtobufMessageHash())
 
 	configuration := DefaultConfiguration()
 	configuration.Topic = topicName
@@ -108,7 +108,7 @@ func TestTopicMorePartitions(t *testing.T) {
 
 	configuration.Brokers = brokers
 	configuration.Version = kafka.Version(sarama.V2_8_1_0)
-	c, err := New(reporter.NewMock(t), configuration)
+	c, err := New(reporter.NewMock(t), configuration, Dependencies{Schema: schema.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
@@ -133,7 +133,7 @@ func TestTopicMorePartitions(t *testing.T) {
 
 	// Increase number of partitions
 	configuration.TopicConfiguration.NumPartitions = 4
-	c, err = New(reporter.NewMock(t), configuration)
+	c, err = New(reporter.NewMock(t), configuration, Dependencies{Schema: schema.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}

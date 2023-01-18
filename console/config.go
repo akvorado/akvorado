@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"akvorado/common/schema"
+	"akvorado/console/query"
 
 	"github.com/gin-gonic/gin"
 )
@@ -39,7 +39,7 @@ type VisualizeOptionsConfiguration struct {
 	// Filter  is the the filter string
 	Filter string `json:"filter"`
 	// Dimensions is the array of dimensions to use
-	Dimensions []queryColumn `json:"dimensions"`
+	Dimensions []query.Column `json:"dimensions"`
 	// Limit is the default limit to use
 	Limit int `json:"limit" validate:"min=5"`
 }
@@ -52,7 +52,7 @@ func DefaultConfiguration() Configuration {
 			Start:      "6 hours ago",
 			End:        "now",
 			Filter:     "InIfBoundary = external",
-			Dimensions: []queryColumn{queryColumn(schema.ColumnSrcAS)},
+			Dimensions: []query.Column{query.NewColumn("SrcAS")},
 			Limit:      10,
 		},
 		HomepageTopWidgets: []string{"src-as", "src-port", "protocol", "src-country", "etype"},
@@ -63,7 +63,7 @@ func DefaultConfiguration() Configuration {
 
 func (c *Component) configHandlerFunc(gc *gin.Context) {
 	dimensions := []string{}
-	for _, column := range schema.Flows.Columns() {
+	for _, column := range c.d.Schema.Columns() {
 		if column.ConsoleNotDimension {
 			continue
 		}

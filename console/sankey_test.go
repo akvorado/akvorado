@@ -13,6 +13,7 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/schema"
+	"akvorado/console/query"
 )
 
 func TestSankeyQuerySQL(t *testing.T) {
@@ -24,12 +25,14 @@ func TestSankeyQuerySQL(t *testing.T) {
 		{
 			Description: "two dimensions, no filters, l3 bps",
 			Input: sankeyHandlerInput{
-				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
-				Dimensions: []queryColumn{queryColumn(schema.ColumnSrcAS), queryColumn(schema.ColumnExporterName)},
-				Limit:      5,
-				Filter:     queryFilter{},
-				Units:      "l3bps",
+				Start: time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
+				End:   time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Dimensions: []query.Column{
+					query.NewColumn("SrcAS"),
+					query.NewColumn("ExporterName")},
+				Limit:  5,
+				Filter: query.Filter{},
+				Units:  "l3bps",
 			},
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l3bps"}@@ }}
@@ -48,12 +51,14 @@ ORDER BY xps DESC
 		}, {
 			Description: "two dimensions, no filters, l2 bps",
 			Input: sankeyHandlerInput{
-				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
-				Dimensions: []queryColumn{queryColumn(schema.ColumnSrcAS), queryColumn(schema.ColumnExporterName)},
-				Limit:      5,
-				Filter:     queryFilter{},
-				Units:      "l2bps",
+				Start: time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
+				End:   time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Dimensions: []query.Column{
+					query.NewColumn("SrcAS"),
+					query.NewColumn("ExporterName")},
+				Limit:  5,
+				Filter: query.Filter{},
+				Units:  "l2bps",
 			},
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l2bps"}@@ }}
@@ -73,12 +78,14 @@ ORDER BY xps DESC
 		}, {
 			Description: "two dimensions, no filters, pps",
 			Input: sankeyHandlerInput{
-				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
-				Dimensions: []queryColumn{queryColumn(schema.ColumnSrcAS), queryColumn(schema.ColumnExporterName)},
-				Limit:      5,
-				Filter:     queryFilter{},
-				Units:      "pps",
+				Start: time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
+				End:   time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Dimensions: []query.Column{
+					query.NewColumn("SrcAS"),
+					query.NewColumn("ExporterName")},
+				Limit:  5,
+				Filter: query.Filter{},
+				Units:  "pps",
 			},
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"pps"}@@ }}
@@ -97,12 +104,14 @@ ORDER BY xps DESC
 		}, {
 			Description: "two dimensions, with filter",
 			Input: sankeyHandlerInput{
-				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
-				Dimensions: []queryColumn{queryColumn(schema.ColumnSrcAS), queryColumn(schema.ColumnExporterName)},
-				Limit:      10,
-				Filter:     queryFilter{Filter: "DstCountry = 'FR'"},
-				Units:      "l3bps",
+				Start: time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
+				End:   time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Dimensions: []query.Column{
+					query.NewColumn("SrcAS"),
+					query.NewColumn("ExporterName")},
+				Limit:  10,
+				Filter: query.NewFilter("DstCountry = 'FR'"),
+				Units:  "l3bps",
 			},
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l3bps"}@@ }}
@@ -121,6 +130,13 @@ ORDER BY xps DESC
 		},
 	}
 	for _, tc := range cases {
+		tc.Input.schema = schema.NewMock(t)
+		if err := query.Columns(tc.Input.Dimensions).Validate(tc.Input.schema); err != nil {
+			t.Fatalf("Validate() error:\n%+v", err)
+		}
+		if err := tc.Input.Filter.Validate(tc.Input.schema); err != nil {
+			t.Fatalf("Validate() error:\n%+v", err)
+		}
 		tc.Expected = strings.ReplaceAll(tc.Expected, "@@", "`")
 		t.Run(tc.Description, func(t *testing.T) {
 			got, _ := tc.Input.toSQL()

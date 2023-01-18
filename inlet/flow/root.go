@@ -47,6 +47,7 @@ type Component struct {
 type Dependencies struct {
 	Daemon daemon.Component
 	HTTP   *http.Component
+	Schema *schema.Component
 }
 
 // New creates a new flow component.
@@ -77,7 +78,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		if !ok {
 			return nil, fmt.Errorf("unknown decoder %q", input.Decoder)
 		}
-		dec = decoderfunc(r)
+		dec = decoderfunc(r, decoder.Dependencies{Schema: c.d.Schema})
 		alreadyInitialized[input.Decoder] = dec
 		decs[idx] = c.wrapDecoder(dec, input.UseSrcAddrForExporterAddr)
 	}
@@ -120,7 +121,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	c.d.HTTP.AddHandler("/api/v0/inlet/flow/schema.proto",
 		netHTTP.HandlerFunc(func(w netHTTP.ResponseWriter, r *netHTTP.Request) {
 			w.Header().Set("Content-Type", "text/plain")
-			w.Write([]byte(schema.Flows.ProtobufDefinition()))
+			w.Write([]byte(c.d.Schema.ProtobufDefinition()))
 		}))
 
 	return &c, nil

@@ -16,6 +16,7 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/console/authentication"
 	"akvorado/console/database"
 )
@@ -34,6 +35,7 @@ func NewMock(t *testing.T, config Configuration) (*Component, *http.Component, *
 		Clock:        mockClock,
 		Auth:         authentication.NewMock(t, r),
 		Database:     database.NewMock(t, r, database.DefaultConfiguration()),
+		Schema:       schema.NewMock(t),
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)

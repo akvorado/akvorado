@@ -12,6 +12,8 @@ import (
 	"strings"
 	"text/template"
 	"time"
+
+	"akvorado/console/query"
 )
 
 // flowsTable describe a consolidated or unconsolidated flows table.
@@ -122,11 +124,11 @@ func templateEscape(input string) string {
 }
 
 // templateWhere transforms a filter to a WHERE clause
-func templateWhere(qf queryFilter) string {
-	if qf.Filter == "" {
+func templateWhere(qf query.Filter) string {
+	if qf.Direct() == "" {
 		return `{{ .Timefilter }}`
 	}
-	return fmt.Sprintf(`{{ .Timefilter }} AND (%s)`, templateEscape(qf.Filter))
+	return fmt.Sprintf(`{{ .Timefilter }} AND (%s)`, templateEscape(qf.Direct()))
 }
 
 // templateTable builds a template directive to select the right table

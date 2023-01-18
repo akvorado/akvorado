@@ -14,7 +14,7 @@ import (
 	"github.com/netsampler/goflow2/decoders/sflow"
 )
 
-func decode(msgDec interface{}) []*schema.FlowMessage {
+func (nd *Decoder) decode(msgDec interface{}) []*schema.FlowMessage {
 	flowMessageSet := []*schema.FlowMessage{}
 	switch msgDec.(type) {
 	case sflow.Packet:
@@ -54,33 +54,33 @@ func decode(msgDec interface{}) []*schema.FlowMessage {
 		}
 
 		bf.ExporterAddress = decodeIP(packet.AgentIP)
-		schema.Flows.ProtobufAppendVarint(bf, schema.ColumnPackets, 1)
-		schema.Flows.ProtobufAppendVarint(bf, schema.ColumnForwardingStatus, uint64(forwardingStatus))
+		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnPackets, 1)
+		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnForwardingStatus, uint64(forwardingStatus))
 
 		for _, record := range records {
 			switch recordData := record.Data.(type) {
 			case sflow.SampledHeader:
-				schema.Flows.ProtobufAppendVarint(bf, schema.ColumnBytes, uint64(recordData.FrameLength))
-				parseSampledHeader(bf, &recordData)
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnBytes, uint64(recordData.FrameLength))
+				nd.parseSampledHeader(bf, &recordData)
 			case sflow.SampledIPv4:
 				bf.SrcAddr = decodeIP(recordData.Base.SrcIP)
 				bf.DstAddr = decodeIP(recordData.Base.DstIP)
-				schema.Flows.ProtobufAppendVarint(bf, schema.ColumnBytes, uint64(recordData.Base.Length))
-				schema.Flows.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(recordData.Base.Protocol))
-				schema.Flows.ProtobufAppendVarint(bf, schema.ColumnSrcPort, uint64(recordData.Base.SrcPort))
-				schema.Flows.ProtobufAppendVarint(bf, schema.ColumnDstPort, uint64(recordData.Base.DstPort))
-				schema.Flows.ProtobufAppendVarint(bf, schema.ColumnEType, helpers.ETypeIPv4)
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnBytes, uint64(recordData.Base.Length))
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(recordData.Base.Protocol))
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPort, uint64(recordData.Base.SrcPort))
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPort, uint64(recordData.Base.DstPort))
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, helpers.ETypeIPv4)
 			case sflow.SampledIPv6:
 				bf.SrcAddr = decodeIP(recordData.Base.SrcIP)
 				bf.DstAddr = decodeIP(recordData.Base.DstIP)
-				schema.Flows.ProtobufAppendVarint(bf, schema.ColumnBytes, uint64(recordData.Base.Length))
-				schema.Flows.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(recordData.Base.Protocol))
-				schema.Flows.ProtobufAppendVarint(bf, schema.ColumnSrcPort, uint64(recordData.Base.SrcPort))
-				schema.Flows.ProtobufAppendVarint(bf, schema.ColumnDstPort, uint64(recordData.Base.DstPort))
-				schema.Flows.ProtobufAppendVarint(bf, schema.ColumnEType, helpers.ETypeIPv6)
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnBytes, uint64(recordData.Base.Length))
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(recordData.Base.Protocol))
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPort, uint64(recordData.Base.SrcPort))
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPort, uint64(recordData.Base.DstPort))
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, helpers.ETypeIPv6)
 			case sflow.ExtendedRouter:
-				schema.Flows.ProtobufAppendVarint(bf, schema.ColumnSrcNetMask, uint64(recordData.SrcMaskLen))
-				schema.Flows.ProtobufAppendVarint(bf, schema.ColumnDstNetMask, uint64(recordData.DstMaskLen))
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcNetMask, uint64(recordData.SrcMaskLen))
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstNetMask, uint64(recordData.DstMaskLen))
 				bf.NextHop = decodeIP(recordData.NextHop)
 			case sflow.ExtendedGateway:
 				bf.NextHop = decodeIP(recordData.NextHop)
@@ -101,15 +101,15 @@ func decode(msgDec interface{}) []*schema.FlowMessage {
 	return flowMessageSet
 }
 
-func parseSampledHeader(bf *schema.FlowMessage, header *sflow.SampledHeader) {
+func (nd *Decoder) parseSampledHeader(bf *schema.FlowMessage, header *sflow.SampledHeader) {
 	data := header.HeaderData
 	switch header.Protocol {
 	case 1: // Ethernet
-		parseEthernetHeader(bf, data)
+		nd.parseEthernetHeader(bf, data)
 	}
 }
 
-func parseEthernetHeader(bf *schema.FlowMessage, data []byte) {
+func (nd *Decoder) parseEthernetHeader(bf *schema.FlowMessage, data []byte) {
 	if len(data) < 14 {
 		return
 	}
@@ -150,7 +150,7 @@ func parseEthernetHeader(bf *schema.FlowMessage, data []byte) {
 		if len(data) < 20 {
 			return
 		}
-		schema.Flows.ProtobufAppendVarint(bf, schema.ColumnEType, helpers.ETypeIPv4)
+		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, helpers.ETypeIPv4)
 		bf.SrcAddr = decodeIP(data[12:16])
 		bf.DstAddr = decodeIP(data[16:20])
 		proto = data[9]
@@ -165,19 +165,19 @@ func parseEthernetHeader(bf *schema.FlowMessage, data []byte) {
 		if len(data) < 40 {
 			return
 		}
-		schema.Flows.ProtobufAppendVarint(bf, schema.ColumnEType, helpers.ETypeIPv6)
+		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, helpers.ETypeIPv6)
 		bf.SrcAddr = decodeIP(data[8:24])
 		bf.DstAddr = decodeIP(data[24:40])
 		proto = data[6]
 		data = data[40:]
 	}
-	schema.Flows.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(proto))
+	nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(proto))
 
 	if proto == 6 || proto == 17 {
 		if len(data) > 4 {
-			schema.Flows.ProtobufAppendVarint(bf, schema.ColumnSrcPort,
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPort,
 				uint64(binary.BigEndian.Uint16(data[0:2])))
-			schema.Flows.ProtobufAppendVarint(bf, schema.ColumnDstPort,
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPort,
 				uint64(binary.BigEndian.Uint16(data[2:4])))
 		}
 	}

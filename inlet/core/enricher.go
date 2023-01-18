@@ -98,30 +98,30 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	destBMP := c.d.BMP.Lookup(flow.DstAddr, flow.NextHop)
 	flow.SrcAS = c.getASNumber(flow.SrcAddr, flow.SrcAS, sourceBMP.ASN)
 	flow.DstAS = c.getASNumber(flow.DstAddr, flow.DstAS, destBMP.ASN)
-	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnSrcCountry, []byte(c.d.GeoIP.LookupCountry(flow.SrcAddr)))
-	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnDstCountry, []byte(c.d.GeoIP.LookupCountry(flow.DstAddr)))
+	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnSrcCountry, []byte(c.d.GeoIP.LookupCountry(flow.SrcAddr)))
+	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnDstCountry, []byte(c.d.GeoIP.LookupCountry(flow.DstAddr)))
 	for _, comm := range destBMP.Communities {
-		schema.Flows.ProtobufAppendVarint(flow, schema.ColumnDstCommunities, uint64(comm))
+		c.d.Schema.ProtobufAppendVarint(flow, schema.ColumnDstCommunities, uint64(comm))
 	}
 	for _, asn := range destBMP.ASPath {
-		schema.Flows.ProtobufAppendVarint(flow, schema.ColumnDstASPath, uint64(asn))
+		c.d.Schema.ProtobufAppendVarint(flow, schema.ColumnDstASPath, uint64(asn))
 	}
 	for _, comm := range destBMP.LargeCommunities {
-		schema.Flows.ProtobufAppendVarintForce(flow,
+		c.d.Schema.ProtobufAppendVarintForce(flow,
 			schema.ColumnDstLargeCommunitiesASN, uint64(comm.ASN))
-		schema.Flows.ProtobufAppendVarintForce(flow,
+		c.d.Schema.ProtobufAppendVarintForce(flow,
 			schema.ColumnDstLargeCommunitiesLocalData1, uint64(comm.LocalData1))
-		schema.Flows.ProtobufAppendVarintForce(flow,
+		c.d.Schema.ProtobufAppendVarintForce(flow,
 			schema.ColumnDstLargeCommunitiesLocalData2, uint64(comm.LocalData2))
 	}
 
-	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnExporterName, []byte(flowExporterName))
-	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnInIfName, []byte(flowInIfName))
-	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnInIfDescription, []byte(flowInIfDescription))
-	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnOutIfName, []byte(flowOutIfName))
-	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnOutIfDescription, []byte(flowOutIfDescription))
-	schema.Flows.ProtobufAppendVarint(flow, schema.ColumnInIfSpeed, uint64(flowInIfSpeed))
-	schema.Flows.ProtobufAppendVarint(flow, schema.ColumnOutIfSpeed, uint64(flowOutIfSpeed))
+	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnExporterName, []byte(flowExporterName))
+	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnInIfName, []byte(flowInIfName))
+	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnInIfDescription, []byte(flowInIfDescription))
+	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnOutIfName, []byte(flowOutIfName))
+	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnOutIfDescription, []byte(flowOutIfDescription))
+	c.d.Schema.ProtobufAppendVarint(flow, schema.ColumnInIfSpeed, uint64(flowInIfSpeed))
+	c.d.Schema.ProtobufAppendVarint(flow, schema.ColumnOutIfSpeed, uint64(flowOutIfSpeed))
 
 	return
 }
@@ -154,12 +154,12 @@ func (c *Component) getASNumber(flowAddr netip.Addr, flowAS, bmpAS uint32) (asn 
 	return asn
 }
 
-func writeExporter(flow *schema.FlowMessage, classification exporterClassification) {
-	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnExporterGroup, []byte(classification.Group))
-	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnExporterRole, []byte(classification.Role))
-	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnExporterSite, []byte(classification.Site))
-	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnExporterRegion, []byte(classification.Region))
-	schema.Flows.ProtobufAppendBytes(flow, schema.ColumnExporterTenant, []byte(classification.Tenant))
+func (c *Component) writeExporter(flow *schema.FlowMessage, classification exporterClassification) {
+	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnExporterGroup, []byte(classification.Group))
+	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnExporterRole, []byte(classification.Role))
+	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnExporterSite, []byte(classification.Site))
+	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnExporterRegion, []byte(classification.Region))
+	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnExporterTenant, []byte(classification.Tenant))
 }
 
 func (c *Component) classifyExporter(ip string, name string, flow *schema.FlowMessage) {
@@ -168,7 +168,7 @@ func (c *Component) classifyExporter(ip string, name string, flow *schema.FlowMe
 	}
 	si := exporterInfo{IP: ip, Name: name}
 	if classification, ok := c.classifierExporterCache.Get(si); ok {
-		writeExporter(flow, classification)
+		c.writeExporter(flow, classification)
 		return
 	}
 
@@ -190,18 +190,18 @@ func (c *Component) classifyExporter(ip string, name string, flow *schema.FlowMe
 		break
 	}
 	c.classifierExporterCache.Set(si, classification)
-	writeExporter(flow, classification)
+	c.writeExporter(flow, classification)
 }
 
-func writeInterface(flow *schema.FlowMessage, classification interfaceClassification, directionIn bool) {
+func (c *Component) writeInterface(flow *schema.FlowMessage, classification interfaceClassification, directionIn bool) {
 	if directionIn {
-		schema.Flows.ProtobufAppendBytes(flow, schema.ColumnInIfConnectivity, []byte(classification.Connectivity))
-		schema.Flows.ProtobufAppendBytes(flow, schema.ColumnInIfProvider, []byte(classification.Provider))
-		schema.Flows.ProtobufAppendVarint(flow, schema.ColumnInIfBoundary, uint64(classification.Boundary))
+		c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnInIfConnectivity, []byte(classification.Connectivity))
+		c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnInIfProvider, []byte(classification.Provider))
+		c.d.Schema.ProtobufAppendVarint(flow, schema.ColumnInIfBoundary, uint64(classification.Boundary))
 	} else {
-		schema.Flows.ProtobufAppendBytes(flow, schema.ColumnOutIfConnectivity, []byte(classification.Connectivity))
-		schema.Flows.ProtobufAppendBytes(flow, schema.ColumnOutIfProvider, []byte(classification.Provider))
-		schema.Flows.ProtobufAppendVarint(flow, schema.ColumnOutIfBoundary, uint64(classification.Boundary))
+		c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnOutIfConnectivity, []byte(classification.Connectivity))
+		c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnOutIfProvider, []byte(classification.Provider))
+		c.d.Schema.ProtobufAppendVarint(flow, schema.ColumnOutIfBoundary, uint64(classification.Boundary))
 	}
 }
 
@@ -216,7 +216,7 @@ func (c *Component) classifyInterface(ip string, exporterName string, fl *schema
 		Interface: ii,
 	}
 	if classification, ok := c.classifierInterfaceCache.Get(key); ok {
-		writeInterface(fl, classification, directionIn)
+		c.writeInterface(fl, classification, directionIn)
 		return
 	}
 
@@ -243,7 +243,7 @@ func (c *Component) classifyInterface(ip string, exporterName string, fl *schema
 		break
 	}
 	c.classifierInterfaceCache.Set(key, classification)
-	writeInterface(fl, classification, directionIn)
+	c.writeInterface(fl, classification, directionIn)
 }
 
 func isPrivateAS(as uint32) bool {

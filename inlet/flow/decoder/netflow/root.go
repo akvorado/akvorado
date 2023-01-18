@@ -21,6 +21,7 @@ import (
 // Decoder contains the state for the Netflow v9 decoder.
 type Decoder struct {
 	r *reporter.Reporter
+	d decoder.Dependencies
 
 	// Templates and sampling systems
 	systemsLock sync.RWMutex
@@ -37,9 +38,10 @@ type Decoder struct {
 }
 
 // New instantiates a new netflow decoder.
-func New(r *reporter.Reporter) decoder.Decoder {
+func New(r *reporter.Reporter, dependencies decoder.Dependencies) decoder.Decoder {
 	nd := &Decoder{
 		r:         r,
+		d:         dependencies,
 		templates: map[string]*templateSystem{},
 		sampling:  map[string]producer.SamplingRateSystem{},
 	}
@@ -208,7 +210,7 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 		}
 	}
 
-	flowMessageSet := decode(msgDec, sampling)
+	flowMessageSet := nd.decode(msgDec, sampling)
 	exporterAddress, _ := netip.AddrFromSlice(in.Source.To16())
 	for _, fmsg := range flowMessageSet {
 		fmsg.TimeReceived = ts

@@ -4,11 +4,9 @@
 package netflow
 
 import (
-	"fmt"
 	"net"
 	"net/netip"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"akvorado/common/helpers"
@@ -19,7 +17,7 @@ import (
 
 func TestDecode(t *testing.T) {
 	r := reporter.NewMock(t)
-	nfdecoder := New(r)
+	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t)})
 
 	// Send an option template
 	template := helpers.ReadPcapPayload(t, filepath.Join("testdata", "options-template-257.pcap"))
@@ -183,7 +181,7 @@ func TestDecode(t *testing.T) {
 		f.TimeReceived = 0
 	}
 
-	if diff := helpers.Diff(got, expectedFlows, helpers.DiffFormatter(reflect.TypeOf(schema.ColumnBytes), fmt.Sprint)); diff != "" {
+	if diff := helpers.Diff(got, expectedFlows); diff != "" {
 		t.Fatalf("Decode() (-got, +want):\n%s", diff)
 	}
 	gotMetrics = r.GetMetrics(

@@ -37,6 +37,7 @@ type Component struct {
 // Dependencies define the dependencies of the Kafka exporter.
 type Dependencies struct {
 	Daemon daemon.Component
+	Schema *schema.Component
 }
 
 // New creates a new HTTP component.
@@ -65,7 +66,7 @@ func New(reporter *reporter.Reporter, configuration Configuration, dependencies 
 		config: configuration,
 
 		kafkaConfig: kafkaConfig,
-		kafkaTopic:  fmt.Sprintf("%s-%s", configuration.Topic, schema.Flows.ProtobufMessageHash()),
+		kafkaTopic:  fmt.Sprintf("%s-%s", configuration.Topic, dependencies.Schema.ProtobufMessageHash()),
 	}
 	c.initMetrics()
 	c.createKafkaProducer = func() (sarama.AsyncProducer, error) {

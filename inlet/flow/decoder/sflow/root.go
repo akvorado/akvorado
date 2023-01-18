@@ -30,6 +30,7 @@ const (
 // Decoder contains the state for the sFlow v5 decoder.
 type Decoder struct {
 	r *reporter.Reporter
+	d decoder.Dependencies
 
 	metrics struct {
 		errors                *reporter.CounterVec
@@ -40,9 +41,10 @@ type Decoder struct {
 }
 
 // New instantiates a new sFlow decoder.
-func New(r *reporter.Reporter) decoder.Decoder {
+func New(r *reporter.Reporter, dependencies decoder.Dependencies) decoder.Decoder {
 	nd := &Decoder{
 		r: r,
+		d: dependencies,
 	}
 
 	nd.metrics.errors = nd.r.CounterVec(
@@ -129,7 +131,7 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 		}
 	}
 
-	flowMessageSet := decode(msgDec)
+	flowMessageSet := nd.decode(msgDec)
 	for _, fmsg := range flowMessageSet {
 		fmsg.TimeReceived = ts
 	}

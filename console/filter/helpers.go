@@ -14,14 +14,16 @@ import (
 
 // Meta is used to inject/retrieve state from the parser.
 type Meta struct {
+	// Schema is the data schema (used as input)
+	Schema *schema.Component
 	// ReverseDirection tells if we require the reverse direction for the provided filter (used as input)
 	ReverseDirection bool
 	// MainTableRequired tells if the main table is required to execute the expression (used as output)
 	MainTableRequired bool
 }
 
-// ReverseColumnDirection reverts the direction of a provided column name.
-func ReverseColumnDirection(name string) string {
+// reverseColumnDirection reverts the direction of a provided column name.
+func reverseColumnDirection(schema *schema.Component, name string) string {
 	var candidate string
 	if strings.HasPrefix(name, "Src") {
 		candidate = "Dst" + name[3:]
@@ -35,7 +37,7 @@ func ReverseColumnDirection(name string) string {
 	if strings.HasPrefix(name, "Out") {
 		candidate = "In" + name[3:]
 	}
-	if column, ok := schema.Flows.LookupColumnByName(candidate); ok {
+	if column, ok := schema.LookupColumnByName(candidate); ok {
 		return column.Name
 	}
 	return name
@@ -45,10 +47,11 @@ func ReverseColumnDirection(name string) string {
 // in predicate code blocks.
 func (c *current) acceptColumn() (string, error) {
 	name := string(c.text)
-	for _, column := range schema.Flows.Columns() {
+	schema := c.globalStore["meta"].(*Meta).Schema
+	for _, column := range schema.Columns() {
 		if strings.EqualFold(name, column.Name) {
 			if c.globalStore["meta"].(*Meta).ReverseDirection {
-				return ReverseColumnDirection(column.Name), nil
+				return reverseColumnDirection(schema, column.Name), nil
 			}
 			return column.Name, nil
 		}
@@ -60,7 +63,7 @@ func (c *current) acceptColumn() (string, error) {
 // in state change blocks. Unfortunately, it cannot extract matched text, so it
 // should be provided.
 func (c *current) metaColumn(name string) error {
-	if column, ok := schema.Flows.LookupColumnByName(name); ok {
+	if column, ok := c.globalStore["meta"].(*Meta).Schema.LookupColumnByName(name); ok {
 		if column.MainOnly {
 			c.state["main-table-only"] = true
 		}

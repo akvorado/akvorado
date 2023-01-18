@@ -4,11 +4,9 @@
 package sflow
 
 import (
-	"fmt"
 	"net"
 	"net/netip"
 	"path/filepath"
-	"reflect"
 	"testing"
 
 	"akvorado/common/helpers"
@@ -19,7 +17,7 @@ import (
 
 func TestDecode(t *testing.T) {
 	r := reporter.NewMock(t)
-	sdecoder := New(r)
+	sdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t)})
 
 	// Send data
 	data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-1140.pcap"))
@@ -119,7 +117,7 @@ func TestDecode(t *testing.T) {
 		f.TimeReceived = 0
 	}
 
-	if diff := helpers.Diff(got, expectedFlows, helpers.DiffFormatter(reflect.TypeOf(schema.ColumnBytes), fmt.Sprint)); diff != "" {
+	if diff := helpers.Diff(got, expectedFlows); diff != "" {
 		t.Fatalf("Decode() (-got, +want):\n%s", diff)
 	}
 	gotMetrics := r.GetMetrics(
@@ -139,7 +137,7 @@ func TestDecode(t *testing.T) {
 
 func TestDecodeInterface(t *testing.T) {
 	r := reporter.NewMock(t)
-	sdecoder := New(r)
+	sdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t)})
 
 	t.Run("local interface", func(t *testing.T) {
 		// Send data
@@ -170,7 +168,7 @@ func TestDecodeInterface(t *testing.T) {
 			f.TimeReceived = 0
 		}
 
-		if diff := helpers.Diff(got, expectedFlows, helpers.DiffFormatter(reflect.TypeOf(schema.ColumnBytes), fmt.Sprint)); diff != "" {
+		if diff := helpers.Diff(got, expectedFlows); diff != "" {
 			t.Fatalf("Decode() (-got, +want):\n%s", diff)
 		}
 	})
@@ -205,7 +203,7 @@ func TestDecodeInterface(t *testing.T) {
 			f.TimeReceived = 0
 		}
 
-		if diff := helpers.Diff(got, expectedFlows, helpers.DiffFormatter(reflect.TypeOf(schema.ColumnBytes), fmt.Sprint)); diff != "" {
+		if diff := helpers.Diff(got, expectedFlows); diff != "" {
 			t.Fatalf("Decode() (-got, +want):\n%s", diff)
 		}
 	})
@@ -239,7 +237,7 @@ func TestDecodeInterface(t *testing.T) {
 			f.TimeReceived = 0
 		}
 
-		if diff := helpers.Diff(got, expectedFlows, helpers.DiffFormatter(reflect.TypeOf(schema.ColumnBytes), fmt.Sprint)); diff != "" {
+		if diff := helpers.Diff(got, expectedFlows); diff != "" {
 			t.Fatalf("Decode() (-got, +want):\n%s", diff)
 		}
 	})
@@ -278,7 +276,7 @@ func TestDecodeInterface(t *testing.T) {
 			f.TimeReceived = 0
 		}
 
-		if diff := helpers.Diff(got, expectedFlows, helpers.DiffFormatter(reflect.TypeOf(schema.ColumnBytes), fmt.Sprint)); diff != "" {
+		if diff := helpers.Diff(got, expectedFlows); diff != "" {
 			t.Fatalf("Decode() (-got, +want):\n%s", diff)
 		}
 

@@ -29,9 +29,9 @@ func TestRealKafka(t *testing.T) {
 	configuration.Brokers = brokers
 	configuration.Version = kafka.Version(sarama.V2_8_1_0)
 	configuration.FlushInterval = 100 * time.Millisecond
-	expectedTopicName := fmt.Sprintf("%s-%s", topicName, schema.Flows.ProtobufMessageHash())
+	expectedTopicName := fmt.Sprintf("%s-%s", topicName, schema.NewMock(t).ProtobufMessageHash())
 	r := reporter.NewMock(t)
-	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
+	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t), Schema: schema.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}

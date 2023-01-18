@@ -19,7 +19,9 @@ func TestFileInput(t *testing.T) {
 	r := reporter.NewMock(t)
 	configuration := DefaultConfiguration().(*Configuration)
 	configuration.Paths = []string{path.Join("testdata", "file1.txt"), path.Join("testdata", "file2.txt")}
-	in, err := configuration.New(r, daemon.NewMock(t), &decoder.DummyDecoder{})
+	in, err := configuration.New(r, daemon.NewMock(t), &decoder.DummyDecoder{
+		Schema: schema.NewMock(t),
+	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}

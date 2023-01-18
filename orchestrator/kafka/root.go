@@ -18,14 +18,20 @@ import (
 // Component represents the Kafka configurator.
 type Component struct {
 	r      *reporter.Reporter
+	d      Dependencies
 	config Configuration
 
 	kafkaConfig *sarama.Config
 	kafkaTopic  string
 }
 
+// Dependencies are the dependencies for the Kafka component
+type Dependencies struct {
+	Schema *schema.Component
+}
+
 // New creates a new Kafka configurator.
-func New(r *reporter.Reporter, config Configuration) (*Component, error) {
+func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) (*Component, error) {
 	kafkaConfig, err := kafka.NewConfig(config.Configuration)
 	if err != nil {
 		return nil, err
@@ -36,10 +42,11 @@ func New(r *reporter.Reporter, config Configuration) (*Component, error) {
 
 	return &Component{
 		r:      r,
+		d:      dependencies,
 		config: config,
 
 		kafkaConfig: kafkaConfig,
-		kafkaTopic:  fmt.Sprintf("%s-%s", config.Topic, schema.Flows.ProtobufMessageHash()),
+		kafkaTopic:  fmt.Sprintf("%s-%s", config.Topic, dependencies.Schema.ProtobufMessageHash()),
 	}, nil
 }
 

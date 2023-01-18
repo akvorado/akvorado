@@ -6,7 +6,6 @@ package core
 import (
 	"fmt"
 	"net/netip"
-	"reflect"
 	"testing"
 	"time"
 
@@ -372,6 +371,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				Kafka:  kafkaComponent,
 				HTTP:   httpComponent,
 				BMP:    bmpComponent,
+				Schema: schema.NewMock(t),
 			})
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
@@ -388,8 +388,8 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 						t.Fatalf("Kafka message encoding error:\n%+v", err)
 					}
 					t.Logf("Raw message: %v", b)
-					got := schema.Flows.ProtobufDecode(t, b)
-					if diff := helpers.Diff(&got, tc.OutputFlow, helpers.DiffFormatter(reflect.TypeOf(schema.ColumnBytes), fmt.Sprint)); diff != "" {
+					got := c.d.Schema.ProtobufDecode(t, b)
+					if diff := helpers.Diff(&got, tc.OutputFlow); diff != "" {
 						t.Errorf("Classifier (-got, +want):\n%s", diff)
 					}
 					return nil
@@ -461,6 +461,7 @@ func TestGetASNumber(t *testing.T) {
 				Daemon: daemon.NewMock(t),
 				GeoIP:  geoip.NewMock(t, r),
 				BMP:    bmpComponent,
+				Schema: schema.NewMock(t),
 			})
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)

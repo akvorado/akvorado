@@ -14,38 +14,36 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/schema"
+	"akvorado/console/query"
 )
 
 func TestGraphInputReverseDirection(t *testing.T) {
 	input := graphHandlerInput{
+		schema: schema.NewMock(t),
 		Start:  time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 		End:    time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 		Points: 100,
-		Dimensions: []queryColumn{
-			queryColumn(schema.ColumnExporterName),
-			queryColumn(schema.ColumnInIfProvider),
+		Dimensions: query.Columns{
+			query.NewColumn("ExporterName"),
+			query.NewColumn("InIfProvider"),
 		},
-		Filter: queryFilter{
-			Filter:        "DstCountry = 'FR' AND SrcCountry = 'US'",
-			ReverseFilter: "SrcCountry = 'FR' AND DstCountry = 'US'",
-		},
-		Units: "l3bps",
+		Filter: query.NewFilter("DstCountry = 'FR' AND SrcCountry = 'US'"),
+		Units:  "l3bps",
 	}
 	original1 := fmt.Sprintf("%+v", input)
 	expected := graphHandlerInput{
 		Start:  time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 		End:    time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 		Points: 100,
-		Dimensions: []queryColumn{
-			queryColumn(schema.ColumnExporterName),
-			queryColumn(schema.ColumnOutIfProvider),
+		Dimensions: query.Columns{
+			query.NewColumn("ExporterName"),
+			query.NewColumn("OutIfProvider"),
 		},
-		Filter: queryFilter{
-			Filter:        "SrcCountry = 'FR' AND DstCountry = 'US'",
-			ReverseFilter: "DstCountry = 'FR' AND SrcCountry = 'US'",
-		},
-		Units: "l3bps",
+		Filter: query.NewFilter("SrcCountry = 'FR' AND DstCountry = 'US'"),
+		Units:  "l3bps",
 	}
+	query.Columns(input.Dimensions).Validate(input.schema)
+	query.Columns(expected.Dimensions).Validate(input.schema)
 	got := input.reverseDirection()
 	original2 := fmt.Sprintf("%+v", input)
 	if diff := helpers.Diff(got, expected); diff != "" {
@@ -118,18 +116,20 @@ func TestGraphPreviousPeriod(t *testing.T) {
 				t.Fatalf("time.Parse(%q) error:\n%+v", tc.ExpectedEnd, err)
 			}
 			input := graphHandlerInput{
-				Start: start,
-				End:   end,
-				Dimensions: []queryColumn{
-					queryColumn(schema.ColumnExporterAddress),
-					queryColumn(schema.ColumnExporterName),
+				schema: schema.NewMock(t),
+				Start:  start,
+				End:    end,
+				Dimensions: query.Columns{
+					query.NewColumn("ExporterAddress"),
+					query.NewColumn("ExporterName"),
 				},
 			}
+			query.Columns(input.Dimensions).Validate(input.schema)
 			got := input.previousPeriod()
 			expected := graphHandlerInput{
 				Start:      expectedStart,
 				End:        expectedEnd,
-				Dimensions: []queryColumn{},
+				Dimensions: []query.Column{},
 			}
 			if diff := helpers.Diff(got, expected); diff != "" {
 				t.Fatalf("previousPeriod() (-got, +want):\n%s", diff)
@@ -150,8 +150,8 @@ func TestGraphQuerySQL(t *testing.T) {
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
-				Dimensions: []queryColumn{},
-				Filter:     queryFilter{},
+				Dimensions: []query.Column{},
+				Filter:     query.Filter{},
 				Units:      "l3bps",
 			},
 			Expected: `
@@ -176,8 +176,8 @@ ORDER BY time WITH FILL
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
-				Dimensions: []queryColumn{},
-				Filter:     queryFilter{},
+				Dimensions: []query.Column{},
+				Filter:     query.Filter{},
 				Units:      "l2bps",
 			},
 			Expected: `
@@ -203,8 +203,8 @@ ORDER BY time WITH FILL
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
-				Dimensions: []queryColumn{},
-				Filter:     queryFilter{},
+				Dimensions: []query.Column{},
+				Filter:     query.Filter{},
 				Units:      "pps",
 			},
 			Expected: `
@@ -229,8 +229,8 @@ ORDER BY time WITH FILL
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
-				Dimensions: []queryColumn{},
-				Filter:     queryFilter{Filter: "DstCountry = 'FR' AND SrcCountry = 'US'"},
+				Dimensions: []query.Column{},
+				Filter:     query.NewFilter("DstCountry = 'FR' AND SrcCountry = 'US'"),
 				Units:      "l3bps",
 			},
 			Expected: `
@@ -255,8 +255,8 @@ ORDER BY time WITH FILL
 				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
-				Dimensions: []queryColumn{},
-				Filter:     queryFilter{Filter: "InIfDescription = '{{ hello }}' AND SrcCountry = 'US'"},
+				Dimensions: []query.Column{},
+				Filter:     query.NewFilter("InIfDescription = '{{ hello }}' AND SrcCountry = 'US'"),
 				Units:      "l3bps",
 			},
 			Expected: `
@@ -278,14 +278,11 @@ ORDER BY time WITH FILL
 		}, {
 			Description: "no dimensions, reverse direction",
 			Input: graphHandlerInput{
-				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
-				Points:     100,
-				Dimensions: []queryColumn{},
-				Filter: queryFilter{
-					Filter:        "DstCountry = 'FR' AND SrcCountry = 'US'",
-					ReverseFilter: "SrcCountry = 'FR' AND DstCountry = 'US'",
-				},
+				Start:         time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
+				End:           time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Points:        100,
+				Dimensions:    []query.Column{},
+				Filter:        query.NewFilter("DstCountry = 'FR' AND SrcCountry = 'US'"),
 				Units:         "l3bps",
 				Bidirectional: true,
 			},
@@ -328,11 +325,11 @@ ORDER BY time WITH FILL
 				End:    time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Points: 100,
 				Limit:  20,
-				Dimensions: []queryColumn{
-					queryColumn(schema.ColumnExporterName),
-					queryColumn(schema.ColumnInIfProvider),
+				Dimensions: []query.Column{
+					query.NewColumn("ExporterName"),
+					query.NewColumn("InIfProvider"),
 				},
-				Filter: queryFilter{},
+				Filter: query.Filter{},
 				Units:  "l3bps",
 			},
 			Expected: `
@@ -360,11 +357,11 @@ ORDER BY time WITH FILL
 				End:    time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Points: 100,
 				Limit:  20,
-				Dimensions: []queryColumn{
-					queryColumn(schema.ColumnExporterName),
-					queryColumn(schema.ColumnInIfProvider),
+				Dimensions: []query.Column{
+					query.NewColumn("ExporterName"),
+					query.NewColumn("InIfProvider"),
 				},
-				Filter:        queryFilter{},
+				Filter:        query.Filter{},
 				Units:         "l3bps",
 				Bidirectional: true,
 			},
@@ -409,11 +406,11 @@ ORDER BY time WITH FILL
 				End:    time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
 				Points: 100,
 				Limit:  20,
-				Dimensions: []queryColumn{
-					queryColumn(schema.ColumnExporterName),
-					queryColumn(schema.ColumnInIfProvider),
+				Dimensions: []query.Column{
+					query.NewColumn("ExporterName"),
+					query.NewColumn("InIfProvider"),
 				},
-				Filter:         queryFilter{},
+				Filter:         query.Filter{},
 				Units:          "l3bps",
 				PreviousPeriod: true,
 			},
@@ -454,6 +451,13 @@ ORDER BY time WITH FILL
 		},
 	}
 	for _, tc := range cases {
+		tc.Input.schema = schema.NewMock(t)
+		if err := query.Columns(tc.Input.Dimensions).Validate(tc.Input.schema); err != nil {
+			t.Fatalf("Validate() error:\n%+v", err)
+		}
+		if err := tc.Input.Filter.Validate(tc.Input.schema); err != nil {
+			t.Fatalf("Validate() error:\n%+v", err)
+		}
 		tc.Expected = strings.ReplaceAll(tc.Expected, "@@", "`")
 		t.Run(tc.Description, func(t *testing.T) {
 			got := tc.Input.toSQL()

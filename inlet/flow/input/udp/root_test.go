@@ -4,10 +4,8 @@
 package udp
 
 import (
-	"fmt"
 	"net"
 	"net/netip"
-	"reflect"
 	"testing"
 	"time"
 
@@ -22,7 +20,7 @@ func TestUDPInput(t *testing.T) {
 	r := reporter.NewMock(t)
 	configuration := DefaultConfiguration().(*Configuration)
 	configuration.Listen = "127.0.0.1:0"
-	in, err := configuration.New(r, daemon.NewMock(t), &decoder.DummyDecoder{})
+	in, err := configuration.New(r, daemon.NewMock(t), &decoder.DummyDecoder{Schema: schema.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
@@ -73,7 +71,7 @@ func TestUDPInput(t *testing.T) {
 			},
 		},
 	}
-	if diff := helpers.Diff(got, expected, helpers.DiffFormatter(reflect.TypeOf(schema.ColumnBytes), fmt.Sprint)); diff != "" {
+	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Fatalf("Input data (-got, +want):\n%s", diff)
 	}
 
@@ -99,7 +97,9 @@ func TestOverflow(t *testing.T) {
 	configuration := DefaultConfiguration().(*Configuration)
 	configuration.Listen = "127.0.0.1:0"
 	configuration.QueueSize = 1
-	in, err := configuration.New(r, daemon.NewMock(t), &decoder.DummyDecoder{})
+	in, err := configuration.New(r, daemon.NewMock(t), &decoder.DummyDecoder{
+		Schema: schema.NewMock(t),
+	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}

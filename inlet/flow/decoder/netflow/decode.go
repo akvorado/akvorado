@@ -15,7 +15,7 @@ import (
 	"github.com/netsampler/goflow2/producer"
 )
 
-func decode(msgDec interface{}, samplingRateSys producer.SamplingRateSystem) []*schema.FlowMessage {
+func (nd *Decoder) decode(msgDec interface{}, samplingRateSys producer.SamplingRateSystem) []*schema.FlowMessage {
 	flowMessageSet := []*schema.FlowMessage{}
 	var obsDomainID uint32
 	var dataFlowSet []netflow.DataFlowSet
@@ -47,7 +47,7 @@ func decode(msgDec interface{}, samplingRateSys producer.SamplingRateSystem) []*
 	// Parse fields
 	for _, dataFlowSetItem := range dataFlowSet {
 		for _, record := range dataFlowSetItem.Records {
-			flow := decodeRecord(version, record.Values)
+			flow := nd.decodeRecord(version, record.Values)
 			if flow != nil {
 				flow.SamplingRate = samplingRate
 				flowMessageSet = append(flowMessageSet, flow)
@@ -58,7 +58,7 @@ func decode(msgDec interface{}, samplingRateSys producer.SamplingRateSystem) []*
 	return flowMessageSet
 }
 
-func decodeRecord(version int, fields []netflow.DataField) *schema.FlowMessage {
+func (nd *Decoder) decodeRecord(version int, fields []netflow.DataField) *schema.FlowMessage {
 	var etype uint16
 	bf := &schema.FlowMessage{}
 	for _, field := range fields {
@@ -73,9 +73,9 @@ func decodeRecord(version int, fields []netflow.DataField) *schema.FlowMessage {
 		switch field.Type {
 		// Statistics
 		case netflow.NFV9_FIELD_IN_BYTES, netflow.NFV9_FIELD_OUT_BYTES:
-			schema.Flows.ProtobufAppendVarint(bf, schema.ColumnBytes, decodeUNumber(v))
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnBytes, decodeUNumber(v))
 		case netflow.NFV9_FIELD_IN_PKTS, netflow.NFV9_FIELD_OUT_PKTS:
-			schema.Flows.ProtobufAppendVarint(bf, schema.ColumnPackets, decodeUNumber(v))
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnPackets, decodeUNumber(v))
 
 		// L3
 		case netflow.NFV9_FIELD_IPV4_SRC_ADDR:
@@ -91,19 +91,19 @@ func decodeRecord(version int, fields []netflow.DataField) *schema.FlowMessage {
 			etype = helpers.ETypeIPv6
 			bf.DstAddr = decodeIP(v)
 		case netflow.NFV9_FIELD_SRC_MASK, netflow.NFV9_FIELD_IPV6_SRC_MASK:
-			schema.Flows.ProtobufAppendVarint(bf, schema.ColumnSrcNetMask, decodeUNumber(v))
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcNetMask, decodeUNumber(v))
 		case netflow.NFV9_FIELD_DST_MASK, netflow.NFV9_FIELD_IPV6_DST_MASK:
-			schema.Flows.ProtobufAppendVarint(bf, schema.ColumnDstNetMask, decodeUNumber(v))
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstNetMask, decodeUNumber(v))
 		case netflow.NFV9_FIELD_IPV4_NEXT_HOP, netflow.NFV9_FIELD_BGP_IPV4_NEXT_HOP, netflow.NFV9_FIELD_IPV6_NEXT_HOP, netflow.NFV9_FIELD_BGP_IPV6_NEXT_HOP:
 			bf.NextHop = decodeIP(v)
 
 		// L4
 		case netflow.NFV9_FIELD_L4_SRC_PORT:
-			schema.Flows.ProtobufAppendVarint(bf, schema.ColumnSrcPort, decodeUNumber(v))
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPort, decodeUNumber(v))
 		case netflow.NFV9_FIELD_L4_DST_PORT:
-			schema.Flows.ProtobufAppendVarint(bf, schema.ColumnDstPort, decodeUNumber(v))
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPort, decodeUNumber(v))
 		case netflow.NFV9_FIELD_PROTOCOL:
-			schema.Flows.ProtobufAppendVarint(bf, schema.ColumnProto, decodeUNumber(v))
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnProto, decodeUNumber(v))
 
 		// Network
 		case netflow.NFV9_FIELD_SRC_AS:
@@ -119,10 +119,10 @@ func decodeRecord(version int, fields []netflow.DataField) *schema.FlowMessage {
 
 		// Remaining
 		case netflow.NFV9_FIELD_FORWARDING_STATUS:
-			schema.Flows.ProtobufAppendVarint(bf, schema.ColumnForwardingStatus, decodeUNumber(v))
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnForwardingStatus, decodeUNumber(v))
 		}
 	}
-	schema.Flows.ProtobufAppendVarint(bf, schema.ColumnEType, uint64(etype))
+	nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, uint64(etype))
 	return bf
 }
 

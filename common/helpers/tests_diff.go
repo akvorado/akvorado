@@ -23,12 +23,24 @@ var prettyC = pretty.Config{
 }
 
 func defaultPrettyFormatters() map[reflect.Type]interface{} {
-	return map[reflect.Type]interface{}{
+	result := map[reflect.Type]interface{}{
 		reflect.TypeOf(net.IP{}):            fmt.Sprint,
 		reflect.TypeOf(netip.Addr{}):        fmt.Sprint,
 		reflect.TypeOf(time.Time{}):         fmt.Sprint,
 		reflect.TypeOf(SubnetMap[string]{}): fmt.Sprint,
 	}
+	for t, fn := range nonDefaultPrettyFormatters {
+		result[t] = fn
+	}
+	return result
+}
+
+var nonDefaultPrettyFormatters = map[reflect.Type]interface{}{}
+
+// AddPrettyFormatter add a global pretty formatter. We cannot put everything in
+// the default map due to cycles.
+func AddPrettyFormatter(t reflect.Type, fn interface{}) {
+	nonDefaultPrettyFormatters[t] = fn
 }
 
 // DiffOption changes the behavior of the Diff function.

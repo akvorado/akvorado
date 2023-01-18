@@ -27,7 +27,7 @@ func TestKafka(t *testing.T) {
 	mockProducer.ExpectInputWithMessageCheckerFunctionAndSucceed(func(got *sarama.ProducerMessage) error {
 		defer close(received)
 		expected := sarama.ProducerMessage{
-			Topic:     fmt.Sprintf("flows-%s", schema.Flows.ProtobufMessageHash()),
+			Topic:     fmt.Sprintf("flows-%s", c.d.Schema.ProtobufMessageHash()),
 			Key:       got.Key,
 			Value:     sarama.ByteEncoder("hello world!"),
 			Partition: got.Partition,
@@ -52,7 +52,7 @@ func TestKafka(t *testing.T) {
 	gotMetrics := r.GetMetrics("akvorado_inlet_kafka_")
 	expectedMetrics := map[string]string{
 		`sent_bytes_total{exporter="127.0.0.1"}`: "26",
-		fmt.Sprintf(`errors_total{error="kafka: Failed to produce message to topic flows-%s: noooo"}`, schema.Flows.ProtobufMessageHash()): "1",
+		fmt.Sprintf(`errors_total{error="kafka: Failed to produce message to topic flows-%s: noooo"}`, c.d.Schema.ProtobufMessageHash()): "1",
 		`sent_messages_total{exporter="127.0.0.1"}`: "2",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
@@ -62,7 +62,7 @@ func TestKafka(t *testing.T) {
 
 func TestKafkaMetrics(t *testing.T) {
 	r := reporter.NewMock(t)
-	c, err := New(r, DefaultConfiguration(), Dependencies{Daemon: daemon.NewMock(t)})
+	c, err := New(r, DefaultConfiguration(), Dependencies{Daemon: daemon.NewMock(t), Schema: schema.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}

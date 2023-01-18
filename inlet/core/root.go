@@ -51,6 +51,7 @@ type Dependencies struct {
 	GeoIP  *geoip.Component
 	Kafka  *kafka.Component
 	HTTP   *http.Component
+	Schema *schema.Component
 }
 
 // New creates a new core component.
@@ -119,7 +120,7 @@ func (c *Component) runWorker(workerID int) error {
 			}
 
 			// Serialize flow to Protobuf
-			buf := schema.Flows.ProtobufMarshal(flow)
+			buf := c.d.Schema.ProtobufMarshal(flow)
 			c.metrics.flowsProcessingTime.Observe(time.Now().Sub(start).Seconds())
 
 			// Forward to Kafka. This could block and buf is now owned by the
