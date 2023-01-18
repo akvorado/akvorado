@@ -118,18 +118,18 @@ func flows() Schema {
 			{Key: ColumnExporterRegion, ClickHouseType: "LowCardinality(String)", ClickHouseNotSortingKey: true},
 			{Key: ColumnExporterTenant, ClickHouseType: "LowCardinality(String)", ClickHouseNotSortingKey: true},
 			{
-				Key:            ColumnSrcAddr,
-				MainOnly:       true,
-				ClickHouseType: "IPv6",
+				Key:                ColumnSrcAddr,
+				ClickHouseMainOnly: true,
+				ClickHouseType:     "IPv6",
 			}, {
 				Key:                 ColumnSrcNetMask,
-				MainOnly:            true,
+				ClickHouseMainOnly:  true,
 				ClickHouseType:      "UInt8",
 				ConsoleNotDimension: true,
 			}, {
-				Key:            ColumnSrcNetPrefix,
-				MainOnly:       true,
-				ClickHouseType: "String",
+				Key:                ColumnSrcNetPrefix,
+				ClickHouseMainOnly: true,
+				ClickHouseType:     "String",
 				ClickHouseAlias: `CASE
  WHEN EType = 0x800 THEN concat(replaceRegexpOne(IPv6CIDRToRange(SrcAddr, (96 + SrcNetMask)::UInt8).1::String, '^::ffff:', ''), '/', SrcNetMask::String)
  WHEN EType = 0x86dd THEN concat(IPv6CIDRToRange(SrcAddr, SrcNetMask).1::String, '/', SrcNetMask::String)
@@ -160,9 +160,9 @@ END`,
 			},
 			{Key: ColumnSrcCountry, ClickHouseType: "FixedString(2)"},
 			{
-				Key:            ColumnDstASPath,
-				MainOnly:       true,
-				ClickHouseType: "Array(UInt32)",
+				Key:                ColumnDstASPath,
+				ClickHouseMainOnly: true,
+				ClickHouseType:     "Array(UInt32)",
 			}, {
 				Key:                    ColumnDst1stAS,
 				ClickHouseType:         "UInt32",
@@ -176,13 +176,13 @@ END`,
 				ClickHouseType:         "UInt32",
 				ClickHouseGenerateFrom: "c_DstASPath[3]",
 			}, {
-				Key:            ColumnDstCommunities,
-				MainOnly:       true,
-				ClickHouseType: "Array(UInt32)",
+				Key:                ColumnDstCommunities,
+				ClickHouseMainOnly: true,
+				ClickHouseType:     "Array(UInt32)",
 			}, {
-				Key:            ColumnDstLargeCommunities,
-				MainOnly:       true,
-				ClickHouseType: "Array(UInt128)",
+				Key:                ColumnDstLargeCommunities,
+				ClickHouseMainOnly: true,
+				ClickHouseType:     "Array(UInt128)",
 				ClickHouseTransformFrom: []Column{
 					{
 						Key:            ColumnDstLargeCommunitiesASN,
@@ -219,7 +219,7 @@ END`,
 			},
 			{Key: ColumnEType, ClickHouseType: "UInt32"}, // TODO: UInt16 but hard to change, primary key
 			{Key: ColumnProto, ClickHouseType: "UInt32"}, // TODO: UInt8 but hard to change, primary key
-			{Key: ColumnSrcPort, ClickHouseType: "UInt16", MainOnly: true},
+			{Key: ColumnSrcPort, ClickHouseType: "UInt16", ClickHouseMainOnly: true},
 			{Key: ColumnBytes, ClickHouseType: "UInt64", ClickHouseNotSortingKey: true, ConsoleNotDimension: true},
 			{Key: ColumnPackets, ClickHouseType: "UInt64", ClickHouseNotSortingKey: true, ConsoleNotDimension: true},
 			{
@@ -273,7 +273,7 @@ func (schema Schema) finalize() Schema {
 		}
 
 		// Add non-main columns with an alias to NotSortingKey
-		if !column.MainOnly && column.ClickHouseAlias != "" {
+		if !column.ClickHouseMainOnly && column.ClickHouseAlias != "" {
 			column.ClickHouseNotSortingKey = true
 		}
 

@@ -23,12 +23,11 @@ type Schema struct {
 
 // Column represents a column of data.
 type Column struct {
-	Key      ColumnKey
-	Name     string
-	MainOnly bool
+	Key  ColumnKey
+	Name string
 
 	// For ClickHouse. `NotSortingKey' is for columns generated from other
-	// columns. It is only useful if not MainOnly and not Alias. `GenerateFrom'
+	// columns. It is only useful if not ClickHouseMainOnly and not Alias. `GenerateFrom'
 	// is for a column that's generated from an SQL expression instead of being
 	// retrieved from the protobuf. `TransformFrom' and `TransformTo' work in
 	// pairs. The first one is the set of column in the raw table while the
@@ -40,6 +39,7 @@ type Column struct {
 	ClickHouseGenerateFrom  string
 	ClickHouseTransformFrom []Column
 	ClickHouseTransformTo   string
+	ClickHouseMainOnly      bool
 
 	// For the console.
 	ConsoleNotDimension bool

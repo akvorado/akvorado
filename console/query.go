@@ -15,7 +15,7 @@ func requireMainTable(sch *schema.Component, qcs []query.Column, qf query.Filter
 		return true
 	}
 	for _, qc := range qcs {
-		if column, ok := sch.LookupColumnByKey(qc.Key()); ok && column.MainOnly {
+		if column, ok := sch.LookupColumnByKey(qc.Key()); ok && column.ClickHouseMainOnly {
 			return true
 		}
 	}

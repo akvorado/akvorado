@@ -403,7 +403,7 @@ ORDER BY position ASC
 	previousColumn := ""
 outer:
 	for _, wantedColumn := range c.d.Schema.Columns() {
-		if resolution.Interval > 0 && wantedColumn.MainOnly {
+		if resolution.Interval > 0 && wantedColumn.ClickHouseMainOnly {
 			continue
 		}
 		// Check if the column already exists

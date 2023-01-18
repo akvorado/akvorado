@@ -64,7 +64,7 @@ func (c *current) acceptColumn() (string, error) {
 // should be provided.
 func (c *current) metaColumn(name string) error {
 	if column, ok := c.globalStore["meta"].(*Meta).Schema.LookupColumnByName(name); ok {
-		if column.MainOnly {
+		if column.ClickHouseMainOnly {
 			c.state["main-table-only"] = true
 		}
 	}
