@@ -52,7 +52,11 @@ var versionCmd = &cobra.Command{
 		for k := schema.ColumnTimeReceived; k < schema.ColumnLast; k++ {
 			column, ok := sch.LookupColumnByKey(k)
 			if ok && column.Disabled {
-				cmd.Printf("- %s\n", column.Name)
+				cmd.Printf("- %s", column.Name)
+				if column.ClickHouseMainOnly {
+					cmd.Print(" (main table only)")
+				}
+				cmd.Println()
 			}
 		}
 		return nil
