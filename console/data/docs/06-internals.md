@@ -160,6 +160,28 @@ and communities. Each unique combination is associated to a
 reference-counter 32-bit integer, which is used in the RIB in place of
 the original information.
 
+## Schema
+
+*Akvorado* schema is a bit dynamic. One can add or remove columns of data.
+However, everything needs to be predefined in the code. To add a new column, one
+needs to follow these steps:
+
+1. Add its symbol to `common/schema/definition.go`.
+2. Add it to the `flow()` function in `common/schema/definition.go`. Be sure to
+   specify the right/smaller ClickHouse type. If the columns is prefixed with
+   `Src` or `InIf`, don't add the opposite direction, this is done
+   automatically. Use `ClickHouseMainOnly` if the column is expected to take a
+   lot of space. Add the column to the end and set `Disabled` field to `true`.
+3. Make it usable in the filters by adding it to `console/filter/parser.peg`.
+   Don't forget to add a test in `console/filter/parser_test.go`.
+4. Modify `console/query/column.go` to alter the display of the column (it
+   should be a string).
+5. If it does not have a proper type in ClickHouse to be displayed as is (like a
+   MAC address stored as a 64-bit integer), also modify
+   `widgetFlowLastHandlerFunc()` in `console/widgets.go`.
+6. Modify `inlet/flow/decoder/netflow/decode.go` and
+   `inlet/flow/decoder/sflow/decode.go` to extract the data from the flows.
+
 ## Web console
 
 The web console is built as a REST API with a single page application
