@@ -12,7 +12,6 @@
           pkgs.git
           pkgs.go_1_19
           pkgs.nodejs-16_x
-          pkgs.protobuf
         ];
       in
       {

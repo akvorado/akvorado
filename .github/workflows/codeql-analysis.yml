@@ -35,7 +35,7 @@ jobs:
           setup-node: false
       - if: matrix.language == 'go'
         name: Install dependencies
-        run: sudo apt-get install -qqy protobuf-compiler shared-mime-info curl
+        run: sudo apt-get install -qqy shared-mime-info curl
 
       # Run CodeQL
       - name: Initialize CodeQL
