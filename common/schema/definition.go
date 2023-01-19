@@ -75,6 +75,10 @@ const (
 	ColumnOutIfConnectivity
 	ColumnInIfBoundary
 	ColumnOutIfBoundary
+	ColumnSrcAddrNAT
+	ColumnDstAddrNAT
+	ColumnSrcPortNAT
+	ColumnDstPortNAT
 
 	ColumnLast
 )
@@ -256,6 +260,8 @@ END`,
 				}(),
 			},
 			{Key: ColumnForwardingStatus, ClickHouseType: "UInt32"}, // TODO: UInt8 but hard to change, primary key
+			{Key: ColumnSrcAddrNAT, Disabled: true, ClickHouseType: "IPv6", ClickHouseMainOnly: true},
+			{Key: ColumnSrcPortNAT, Disabled: true, ClickHouseType: "UInt16", ClickHouseMainOnly: true},
 		},
 	}.finalize()
 }

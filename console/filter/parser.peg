@@ -51,6 +51,8 @@ ColumnIP ←
    "ExporterAddress"i #{ return c.metaColumn("ExporterAddress") } { return c.acceptColumn() }
  / "SrcAddr"i #{ return c.metaColumn("SrcAddr") } { return c.acceptColumn() }
  / "DstAddr"i #{ return c.metaColumn("DstAddr") } { return c.acceptColumn() }
+ / "SrcAddrNAT"i #{ return c.metaColumn("SrcAddrNAT") } { return c.acceptColumn() }
+ / "DstAddrNAT"i #{ return c.metaColumn("DstAddrNAT") } { return c.acceptColumn() }
 ConditionIPExpr "condition on IP" ←
    column:ColumnIP _
    operator:("=" / "!=") _ ip:IP {
@@ -128,6 +130,8 @@ ConditionUintExpr "condition on integer" ←
        / "OutIfSpeed"i #{ return c.metaColumn("OutIfSpeed") } { return c.acceptColumn() }
        / "SrcPort"i #{ return c.metaColumn("SrcPort") } { return c.acceptColumn() }
        / "DstPort"i #{ return c.metaColumn("DstPort") } { return c.acceptColumn() }
+       / "SrcPortNAT"i #{ return c.metaColumn("SrcPortNAT") } { return c.acceptColumn() }
+       / "DstPortNAT"i #{ return c.metaColumn("DstPortNAT") } { return c.acceptColumn() }
        / "SrcVlan"i #{ return c.metaColumn("SrcVlan") } { return c.acceptColumn() }
        / "DstVlan"i #{ return c.metaColumn("DstVlan") } { return c.acceptColumn() }
        / "ForwardingStatus"i #{ return c.metaColumn("ForwardingStatus") } { return c.acceptColumn() }) _

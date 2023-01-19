@@ -123,6 +123,16 @@ func (nd *Decoder) decodeRecord(version int, fields []netflow.DataField) *schema
 		case netflow.NFV9_FIELD_OUTPUT_SNMP:
 			bf.OutIf = uint32(decodeUNumber(v))
 
+		// NAT
+		case netflow.IPFIX_FIELD_postNATSourceIPv4Address:
+			nd.d.Schema.ProtobufAppendIP(bf, schema.ColumnSrcAddrNAT, decodeIP(v))
+		case netflow.IPFIX_FIELD_postNATDestinationIPv4Address:
+			nd.d.Schema.ProtobufAppendIP(bf, schema.ColumnDstAddrNAT, decodeIP(v))
+		case netflow.IPFIX_FIELD_postNAPTSourceTransportPort:
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPortNAT, decodeUNumber(v))
+		case netflow.IPFIX_FIELD_postNAPTDestinationTransportPort:
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPortNAT, decodeUNumber(v))
+
 		// Remaining
 		case netflow.NFV9_FIELD_FORWARDING_STATUS:
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnForwardingStatus, decodeUNumber(v))

@@ -215,9 +215,19 @@ output provider */ = 'telia'`,
 		{Input: `DstCommunities != 65000:100`, Output: `NOT has(DstCommunities, 4259840100)`, MetaOut: Meta{MainTableRequired: true}},
 		{Input: `DstCommunities = 65000:100:200`, Output: `has(DstLargeCommunities, bitShiftLeft(65000::UInt128, 64) + bitShiftLeft(100::UInt128, 32) + 200::UInt128)`, MetaOut: Meta{MainTableRequired: true}},
 		{Input: `DstCommunities != 65000:100:200`, Output: `NOT has(DstLargeCommunities, bitShiftLeft(65000::UInt128, 64) + bitShiftLeft(100::UInt128, 32) + 200::UInt128)`, MetaOut: Meta{MainTableRequired: true}},
+		{Input: `SrcVlan = 1000`, Output: `SrcVlan = 1000`},
+		{Input: `DstVlan = 1000`, Output: `DstVlan = 1000`},
+		{Input: `SrcAddrNAT = 203.0.113.4`, Output: `SrcAddrNAT = toIPv6('203.0.113.4')`,
+			MetaOut: Meta{MainTableRequired: true}},
+		{Input: `DstAddrNAT = 203.0.113.4`, Output: `DstAddrNAT = toIPv6('203.0.113.4')`,
+			MetaOut: Meta{MainTableRequired: true}},
+		{Input: `SrcPortNAT = 22`, Output: `SrcPortNAT = 22`,
+			MetaOut: Meta{MainTableRequired: true}},
+		{Input: `DstPortNAT = 22`, Output: `DstPortNAT = 22`,
+			MetaOut: Meta{MainTableRequired: true}},
 	}
 	for _, tc := range cases {
-		tc.MetaIn.Schema = schema.NewMock(t)
+		tc.MetaIn.Schema = schema.NewMock(t).EnableAllColumns()
 		tc.MetaOut.Schema = tc.MetaIn.Schema
 		got, err := Parse("", []byte(tc.Input), GlobalStore("meta", &tc.MetaIn))
 		if err != nil {
@@ -231,28 +241,6 @@ output provider */ = 'telia'`,
 			t.Errorf("Parse(%q) meta (-got, +want):\n%s", tc.Input, diff)
 		}
 	}
-}
-
-func TestFilterDisabled(t *testing.T) {
-	cases := []struct {
-		Input  string
-		Output string
-	}{
-		{`SrcVlan = 1000`, `SrcVlan = 1000`},
-		{`DstVlan = 1000`, `DstVlan = 1000`},
-	}
-	for _, tc := range cases {
-		got, err := Parse("", []byte(tc.Input),
-			GlobalStore("meta", &Meta{Schema: schema.NewMock(t).EnableAllColumns()}))
-		if err != nil {
-			t.Errorf("Parse(%q) error:\n%+v", tc.Input, err)
-			continue
-		}
-		if diff := helpers.Diff(got.(string), tc.Output); diff != "" {
-			t.Errorf("Parse(%q) (-got, +want):\n%s", tc.Input, diff)
-		}
-	}
-
 }
 
 func TestInvalidFilter(t *testing.T) {
