@@ -34,7 +34,7 @@ func DisableDebug(t testing.TB) {
 // NewMock create a new schema component.
 func NewMock(t testing.TB) *Component {
 	t.Helper()
-	c, err := New()
+	c, err := New(DefaultConfiguration())
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}

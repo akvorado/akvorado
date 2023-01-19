@@ -1,0 +1,16 @@
+---
+paths:
+  inlet.0.schema:
+    disabled:
+      - SrcCountry
+      - DstCountry
+    enabled:
+      - SrcVlan
+      - DstVlan
+  console.0.schema:
+    disabled:
+      - SrcCountry
+      - DstCountry
+    enabled:
+      - SrcVlan
+      - DstVlan

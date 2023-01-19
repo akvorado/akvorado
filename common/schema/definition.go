@@ -81,11 +81,6 @@ const (
 
 // revive:enable
 
-func (c ColumnKey) String() string {
-	name, _ := columnNameMap.LoadValue(c)
-	return name
-}
-
 // Flows is the data schema for flows tables. Any column starting with Src/InIf
 // will be duplicated as Dst/OutIf during init. That's not the case for columns
 // in `PrimaryKeys'.
@@ -106,12 +101,13 @@ func flows() Schema {
 		columns: []Column{
 			{
 				Key:                 ColumnTimeReceived,
+				NoDisable:           true,
 				ClickHouseType:      "DateTime",
 				ClickHouseCodec:     "DoubleDelta, LZ4",
 				ConsoleNotDimension: true,
 				ProtobufType:        protoreflect.Uint64Kind,
 			},
-			{Key: ColumnSamplingRate, ClickHouseType: "UInt64", ConsoleNotDimension: true},
+			{Key: ColumnSamplingRate, NoDisable: true, ClickHouseType: "UInt64", ConsoleNotDimension: true},
 			{Key: ColumnExporterAddress, ClickHouseType: "LowCardinality(IPv6)"},
 			{Key: ColumnExporterName, ClickHouseType: "LowCardinality(String)", ClickHouseNotSortingKey: true},
 			{Key: ColumnExporterGroup, ClickHouseType: "LowCardinality(String)", ClickHouseNotSortingKey: true},
@@ -223,8 +219,20 @@ END`,
 			{Key: ColumnEType, ClickHouseType: "UInt32"}, // TODO: UInt16 but hard to change, primary key
 			{Key: ColumnProto, ClickHouseType: "UInt32"}, // TODO: UInt8 but hard to change, primary key
 			{Key: ColumnSrcPort, ClickHouseType: "UInt16", ClickHouseMainOnly: true},
-			{Key: ColumnBytes, ClickHouseType: "UInt64", ClickHouseNotSortingKey: true, ConsoleNotDimension: true},
-			{Key: ColumnPackets, ClickHouseType: "UInt64", ClickHouseNotSortingKey: true, ConsoleNotDimension: true},
+			{
+				Key:                     ColumnBytes,
+				NoDisable:               true,
+				ClickHouseType:          "UInt64",
+				ClickHouseNotSortingKey: true,
+				ConsoleNotDimension:     true,
+			},
+			{
+				Key:                     ColumnPackets,
+				NoDisable:               true,
+				ClickHouseType:          "UInt64",
+				ClickHouseNotSortingKey: true,
+				ConsoleNotDimension:     true,
+			},
 			{
 				Key:                 ColumnPacketSize,
 				ClickHouseType:      "UInt64",
@@ -275,7 +283,7 @@ func (schema Schema) finalize() Schema {
 			}
 		}
 
-		// Add non-main columns with an alias to NotSortingKey
+		// Non-main columns with an alias are NotSortingKey
 		if !column.ClickHouseMainOnly && column.ClickHouseAlias != "" {
 			column.ClickHouseNotSortingKey = true
 		}

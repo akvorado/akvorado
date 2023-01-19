@@ -19,6 +19,7 @@ installations may end up eating space because of that. The default TTL is 30
 days. You can disable that by setting `orchestrator.clickhouse.system-logs-ttl`
 to 0.
 
+- ✨ *inlet*: add `schema.enable` and `schema.disable` to add or remove collected data
 - 🩹 *inlet*: handle correctly interfaces with high indexes for sFlow
 - 🩹 *docker*: fix Kafka healthcheck
 - 🌱 *inlet*: improve decoding/encoding performance (twice faster!)

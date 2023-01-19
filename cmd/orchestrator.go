@@ -26,6 +26,7 @@ type OrchestratorConfiguration struct {
 	ClickHouse   clickhouse.Configuration
 	Kafka        kafka.Configuration
 	Orchestrator orchestrator.Configuration `mapstructure:",squash" yaml:",inline"`
+	Schema       schema.Configuration
 	// Other service configurations
 	Inlet        []InletConfiguration        `validate:"dive"`
 	Console      []ConsoleConfiguration      `validate:"dive"`
@@ -45,6 +46,7 @@ func (c *OrchestratorConfiguration) Reset() {
 		ClickHouse:   clickhouse.DefaultConfiguration(),
 		Kafka:        kafka.DefaultConfiguration(),
 		Orchestrator: orchestrator.DefaultConfiguration(),
+		Schema:       schema.DefaultConfiguration(),
 		// Other service configurations
 		Inlet:        []InletConfiguration{inletConfiguration},
 		Console:      []ConsoleConfiguration{consoleConfiguration},
@@ -76,9 +78,11 @@ components and centralizes configuration of the various other components.`,
 			config.ClickHouse.Kafka.Configuration = config.Kafka.Configuration
 			for idx := range config.Inlet {
 				config.Inlet[idx].Kafka.Configuration = config.Kafka.Configuration
+				config.Inlet[idx].Schema = config.Schema
 			}
 			for idx := range config.Console {
 				config.Console[idx].ClickHouse = config.ClickHouse.Configuration
+				config.Console[idx].Schema = config.Schema
 			}
 		}
 		if err := OrchestratorOptions.Parse(cmd.OutOrStdout(), "orchestrator", &config); err != nil {
@@ -112,7 +116,7 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, c
 	if err != nil {
 		return fmt.Errorf("unable to initialize HTTP component: %w", err)
 	}
-	schemaComponent, err := schema.New()
+	schemaComponent, err := schema.New(config.Schema)
 	if err != nil {
 		return fmt.Errorf("unable to initialize schema component: %w", err)
 	}

@@ -26,6 +26,7 @@ type ConsoleConfiguration struct {
 	ClickHouse clickhousedb.Configuration
 	Auth       authentication.Configuration
 	Database   database.Configuration
+	Schema     schema.Configuration
 }
 
 // Reset resets the console configuration to its default value.
@@ -37,6 +38,7 @@ func (c *ConsoleConfiguration) Reset() {
 		ClickHouse: clickhousedb.DefaultConfiguration(),
 		Auth:       authentication.DefaultConfiguration(),
 		Database:   database.DefaultConfiguration(),
+		Schema:     schema.DefaultConfiguration(),
 	}
 }
 
@@ -104,7 +106,7 @@ func consoleStart(r *reporter.Reporter, config ConsoleConfiguration, checkOnly b
 	if err != nil {
 		return fmt.Errorf("unable to initialize database component: %w", err)
 	}
-	schemaComponent, err := schema.New()
+	schemaComponent, err := schema.New(config.Schema)
 	if err != nil {
 		return fmt.Errorf("unable to initialize schema component: %w", err)
 	}

@@ -344,6 +344,22 @@ default, no persistent cache is configured.
 `security-parameters` configuration option. Otherwise, it will use
 SNMPv2.
 
+### Schema
+
+It is possible to alter the data schema used by *Akvorado* by adding and
+removing columns. For example, to add the `SrcVlan` and `DstVlan` columns while
+removing the `SrcCountry` and `DstCountry`, one can use:
+
+```yaml
+schema:
+  disabled:
+    - SrcCountry
+    - DstCountry
+  enabled:
+    - SrcVlan
+    - DstVlan
+```
+
 ### HTTP
 
 The builtin HTTP server serves various pages. Its configuration
@@ -383,10 +399,11 @@ nothing to configure either.
 
 ## Orchestrator service
 
-The two main components of the orchestrator service are `clickhouse`
-and `kafka`. It also uses the [HTTP](#http) and
-[reporting](#reporting) component from the inlet service and accepts
-the same configuration settings.
+The two main components of the orchestrator service are `clickhouse` and
+`kafka`. It also uses the [HTTP](#http), [reporting](#reporting), and
+[schema](#schema) components from the inlet service and accepts the same
+configuration settings. For the schema, disabling a column won't delete existing
+data.
 
 ### Kafka
 
@@ -518,8 +535,9 @@ resolutions:
 ## Console service
 
 The main components of the console service are `http`, `console`,
-`authentication` and `database`. `http` accepts the [same
-configuration](#http) as for the inlet service.
+`authentication` and `database`. `http` accepts the [same configuration](#http)
+as for the inlet service, while `schema` also accepts the [same
+configuration](#schema) as for the inlet service.
 
 The console itself accepts the following keys:
 

@@ -23,9 +23,10 @@ type Schema struct {
 
 // Column represents a column of data.
 type Column struct {
-	Key      ColumnKey
-	Name     string
-	Disabled bool
+	Key       ColumnKey
+	Name      string
+	Disabled  bool
+	NoDisable bool
 
 	// For ClickHouse. `NotSortingKey' is for columns generated from other
 	// columns. It is only useful if not ClickHouseMainOnly and not Alias. `GenerateFrom'

@@ -30,6 +30,7 @@ type InletConfiguration struct {
 	GeoIP     geoip.Configuration
 	Kafka     kafka.Configuration
 	Core      core.Configuration
+	Schema    schema.Configuration
 }
 
 // Reset resets the configuration for the inlet command to its default value.
@@ -43,6 +44,7 @@ func (c *InletConfiguration) Reset() {
 		GeoIP:     geoip.DefaultConfiguration(),
 		Kafka:     kafka.DefaultConfiguration(),
 		Core:      core.DefaultConfiguration(),
+		Schema:    schema.DefaultConfiguration(),
 	}
 }
 
@@ -96,7 +98,7 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 	if err != nil {
 		return fmt.Errorf("unable to initialize http component: %w", err)
 	}
-	schemaComponent, err := schema.New()
+	schemaComponent, err := schema.New(config.Schema)
 	if err != nil {
 		return fmt.Errorf("unable to initialize schema component: %w", err)
 	}
