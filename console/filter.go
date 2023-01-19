@@ -92,10 +92,12 @@ func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 					continue
 				}
 				candidate = candidate[1 : len(candidate)-2]
-				completions = append(completions, filterCompletion{
-					Label:  candidate,
-					Detail: "column name",
-				})
+				if column, ok := c.d.Schema.LookupColumnByName(candidate); ok && !column.Disabled {
+					completions = append(completions, filterCompletion{
+						Label:  candidate,
+						Detail: "column name",
+					})
+				}
 			}
 		}
 	case "operator":

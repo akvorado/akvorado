@@ -38,6 +38,8 @@ const (
 	ColumnDstNetPrefix
 	ColumnSrcAS
 	ColumnDstAS
+	ColumnSrcVlan
+	ColumnDstVlan
 	ColumnSrcPort
 	ColumnDstPort
 	ColumnSrcNetName
@@ -158,6 +160,7 @@ END`,
 				ClickHouseType:         "LowCardinality(String)",
 				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'tenant', SrcAddr, '')",
 			},
+			{Key: ColumnSrcVlan, ClickHouseType: "UInt16", Disabled: true},
 			{Key: ColumnSrcCountry, ClickHouseType: "FixedString(2)"},
 			{
 				Key:                ColumnDstASPath,

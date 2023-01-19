@@ -134,12 +134,12 @@ func TestProtobufMarshal(t *testing.T) {
 		expected := []byte{
 			// 15: 65000
 			0x78, 0xe8, 0xfb, 0x03,
-			// 39: 200
-			0xb8, 0x02, 0xc8, 0x01,
-			// 40: 300
-			0xc0, 0x02, 0xac, 0x02,
-			// 17: FR
-			0x8a, 0x01, 0x02, 0x46, 0x52,
+			// 41: 200
+			0xc8, 0x02, 0xc8, 0x01,
+			// 42: 300
+			0xd0, 0x02, 0xac, 0x02,
+			// 19: FR
+			0x9a, 0x01, 0x02, 0x46, 0x52,
 			// 1: 1000
 			0x08, 0xe8, 0x07,
 			// 2: 20000
@@ -148,6 +148,7 @@ func TestProtobufMarshal(t *testing.T) {
 			0x1a, 0x10, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xff, 0xff, 0xcb, 0x0, 0x71, 0xe,
 		}
 		if diff := helpers.Diff(got[n:], expected); diff != "" {
+			t.Logf("got: %v", got)
 			t.Fatalf("ProtobufMarshal() (-got, +want):\n%s", diff)
 		}
 	})
@@ -184,7 +185,8 @@ func BenchmarkProtobufMarshal(b *testing.B) {
 		c.ProtobufAppendVarint(bf, ColumnDstAS, 65000)
 		c.ProtobufAppendVarint(bf, ColumnBytes, 200)
 		c.ProtobufAppendVarint(bf, ColumnPackets, 300)
-		c.ProtobufAppendVarint(bf, ColumnBytes, 300) // duplicate!
+		c.ProtobufAppendVarint(bf, ColumnBytes, 300)    // duplicate!
+		c.ProtobufAppendVarint(bf, ColumnSrcVlan, 1600) // disabled!
 		c.ProtobufAppendBytes(bf, ColumnDstCountry, []byte("FR"))
 		c.ProtobufMarshal(bf)
 	}

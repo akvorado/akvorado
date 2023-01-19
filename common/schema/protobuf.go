@@ -140,7 +140,7 @@ func (column *Column) ProtobufAppendVarint(bf *FlowMessage, value uint64) {
 // ProtobufAppendVarintForce append a varint to the protobuf representation of a flow, even when 0.
 func (column *Column) ProtobufAppendVarintForce(bf *FlowMessage, value uint64) {
 	bf.init()
-	if column.ProtobufIndex > 0 && (column.ProtobufRepeated || !bf.protobufSet.Test(uint(column.ProtobufIndex))) {
+	if column.protobufCanAppend(bf) {
 		bf.protobuf = protowire.AppendTag(bf.protobuf, column.ProtobufIndex, protowire.VarintType)
 		bf.protobuf = protowire.AppendVarint(bf.protobuf, value)
 		bf.protobufSet.Set(uint(column.ProtobufIndex))
@@ -148,6 +148,12 @@ func (column *Column) ProtobufAppendVarintForce(bf *FlowMessage, value uint64) {
 			column.appendDebug(bf, value)
 		}
 	}
+}
+
+func (column Column) protobufCanAppend(bf *FlowMessage) bool {
+	return column.ProtobufIndex > 0 &&
+		!column.Disabled &&
+		(column.ProtobufRepeated || !bf.protobufSet.Test(uint(column.ProtobufIndex)))
 }
 
 // ProtobufAppendBytes append a slice of bytes to the protobuf representation
@@ -177,7 +183,7 @@ func (column *Column) ProtobufAppendBytes(bf *FlowMessage, value []byte) {
 // of a flow, even when empty
 func (column *Column) ProtobufAppendBytesForce(bf *FlowMessage, value []byte) {
 	bf.init()
-	if column.ProtobufIndex > 0 && (column.ProtobufRepeated || !bf.protobufSet.Test(uint(column.ProtobufIndex))) {
+	if column.protobufCanAppend(bf) {
 		bf.protobuf = protowire.AppendTag(bf.protobuf, column.ProtobufIndex, protowire.BytesType)
 		bf.protobuf = protowire.AppendBytes(bf.protobuf, value)
 		bf.protobufSet.Set(uint(column.ProtobufIndex))
@@ -208,7 +214,7 @@ func (column *Column) ProtobufAppendIP(bf *FlowMessage, value netip.Addr) {
 // of a flow, even when not valid
 func (column *Column) ProtobufAppendIPForce(bf *FlowMessage, value netip.Addr) {
 	bf.init()
-	if column.ProtobufIndex > 0 && (column.ProtobufRepeated || !bf.protobufSet.Test(uint(column.ProtobufIndex))) {
+	if column.protobufCanAppend(bf) {
 		v := value.As16()
 		bf.protobuf = protowire.AppendTag(bf.protobuf, column.ProtobufIndex, protowire.BytesType)
 		bf.protobuf = protowire.AppendBytes(bf.protobuf, v[:])

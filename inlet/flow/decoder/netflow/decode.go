@@ -77,6 +77,12 @@ func (nd *Decoder) decodeRecord(version int, fields []netflow.DataField) *schema
 		case netflow.NFV9_FIELD_IN_PKTS, netflow.NFV9_FIELD_OUT_PKTS:
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnPackets, decodeUNumber(v))
 
+		// L2
+		case netflow.NFV9_FIELD_SRC_VLAN:
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcVlan, decodeUNumber(v))
+		case netflow.NFV9_FIELD_DST_VLAN:
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstVlan, decodeUNumber(v))
+
 		// L3
 		case netflow.NFV9_FIELD_IPV4_SRC_ADDR:
 			etype = helpers.ETypeIPv4

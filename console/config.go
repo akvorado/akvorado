@@ -64,7 +64,7 @@ func DefaultConfiguration() Configuration {
 func (c *Component) configHandlerFunc(gc *gin.Context) {
 	dimensions := []string{}
 	for _, column := range c.d.Schema.Columns() {
-		if column.ConsoleNotDimension {
+		if column.ConsoleNotDimension || column.Disabled {
 			continue
 		}
 		dimensions = append(dimensions, column.Name)

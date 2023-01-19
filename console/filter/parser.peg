@@ -39,9 +39,7 @@ ConditionExpr "conditional" ←
   / ConditionPrefixExpr
   / ConditionStringExpr
   / ConditionBoundaryExpr
-  / ConditionSpeedExpr
-  / ConditionForwardingStatusExpr
-  / ConditionPortExpr
+  / ConditionUintExpr
   / ConditionASExpr
   / ConditionASPathExpr
   / ConditionCommunitiesExpr
@@ -124,23 +122,17 @@ ConditionBoundaryExpr "condition on boundary" ←
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator),
                      quote(strings.ToLower(toString(boundary)))), nil
 }
-ConditionSpeedExpr "condition on speed" ←
+
+ConditionUintExpr "condition on integer" ←
  column:("InIfSpeed"i #{ return c.metaColumn("InIfSpeed") } { return c.acceptColumn() }
-      / "OutIfSpeed"i #{ return c.metaColumn("OutIfSpeed") } { return c.acceptColumn() }) _
+       / "OutIfSpeed"i #{ return c.metaColumn("OutIfSpeed") } { return c.acceptColumn() }
+       / "SrcPort"i #{ return c.metaColumn("SrcPort") } { return c.acceptColumn() }
+       / "DstPort"i #{ return c.metaColumn("DstPort") } { return c.acceptColumn() }
+       / "SrcVlan"i #{ return c.metaColumn("SrcVlan") } { return c.acceptColumn() }
+       / "DstVlan"i #{ return c.metaColumn("DstVlan") } { return c.acceptColumn() }
+       / "ForwardingStatus"i #{ return c.metaColumn("ForwardingStatus") } { return c.acceptColumn() }) _
  operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _
  value:Unsigned64 {
-  return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
-}
-ConditionForwardingStatusExpr "condition on forwarding status" ←
- column:("ForwardingStatus"i #{ return c.metaColumn("ForwardingStatus") } { return c.acceptColumn() }) _
- operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _
- value:Unsigned8 {
-  return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
-}
-ConditionPortExpr "condition on port" ←
- column:("SrcPort"i #{ return c.metaColumn("SrcPort") } { return c.acceptColumn() }
-       / "DstPort"i #{ return c.metaColumn("DstPort") } { return c.acceptColumn() }) _
- operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned16 {
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
 }
 
@@ -281,7 +273,7 @@ Unsigned32 "unsigned 32-bit integer" ← [0-9]+ !IdentStart {
 Unsigned64 "unsigned 64-bit integer" ← [0-9]+ !IdentStart {
   v, err := strconv.ParseUint(string(c.text), 10, 64)
   if err != nil {
-    return "", errors.New("expecting an unsigned 64-bit integer")
+    return "", errors.New("expecting an unsigned integer")
   }
   return uint64(v), nil
 }

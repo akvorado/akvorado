@@ -233,6 +233,28 @@ output provider */ = 'telia'`,
 	}
 }
 
+func TestFilterDisabled(t *testing.T) {
+	cases := []struct {
+		Input  string
+		Output string
+	}{
+		{`SrcVlan = 1000`, `SrcVlan = 1000`},
+		{`DstVlan = 1000`, `DstVlan = 1000`},
+	}
+	for _, tc := range cases {
+		got, err := Parse("", []byte(tc.Input),
+			GlobalStore("meta", &Meta{Schema: schema.NewMock(t).EnableAllColumns()}))
+		if err != nil {
+			t.Errorf("Parse(%q) error:\n%+v", tc.Input, err)
+			continue
+		}
+		if diff := helpers.Diff(got.(string), tc.Output); diff != "" {
+			t.Errorf("Parse(%q) (-got, +want):\n%s", tc.Input, diff)
+		}
+	}
+
+}
+
 func TestInvalidFilter(t *testing.T) {
 	cases := []struct {
 		Input string
@@ -249,9 +271,6 @@ func TestInvalidFilter(t *testing.T) {
 		{`SrcAS=12322a`},
 		{`SrcAS=785473854857857485784`},
 		{`EType = ipv7`},
-		{`Proto = 1000`},
-		{`SrcPort = 1000000`},
-		{`ForwardingStatus >= 900`},
 		{`Proto = 100 AND`},
 		{`AND Proto = 100`},
 		{`Proto = 100AND Proto = 100`},
@@ -261,12 +280,13 @@ func TestInvalidFilter(t *testing.T) {
 		{`SrcAS IN (AS12322, 29447`},
 		{`SrcAS IN (AS12322 29447)`},
 		{`SrcAS IN (AS12322,`},
+		{`SrcVlan = 1000`},
+		{`DstVlan = 1000`},
 	}
 	for _, tc := range cases {
 		out, err := Parse("", []byte(tc.Input), GlobalStore("meta", &Meta{Schema: schema.NewMock(t)}))
-		t.Logf("out: %v", out)
 		if err == nil {
-			t.Errorf("Parse(%q) didn't throw an error", tc.Input)
+			t.Errorf("Parse(%q) didn't throw an error (got %s)", tc.Input, out)
 		}
 	}
 }

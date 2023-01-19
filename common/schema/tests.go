@@ -116,6 +116,14 @@ func (schema *Schema) ProtobufDecode(t *testing.T, input []byte) *FlowMessage {
 	return &flow
 }
 
+// EnableAllColumns enable all columns and returns itself.
+func (schema *Component) EnableAllColumns() *Component {
+	for i := range schema.columns {
+		schema.columns[i].Disabled = false
+	}
+	return schema
+}
+
 func init() {
 	helpers.AddPrettyFormatter(reflect.TypeOf(ColumnBytes), fmt.Sprint)
 }

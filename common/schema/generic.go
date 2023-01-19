@@ -40,7 +40,7 @@ func (schema *Schema) ReverseColumnDirection(key ColumnKey) ColumnKey {
 		candidateName = "In" + name[3:]
 	}
 	if candidateKey, ok := columnNameMap.LoadKey(candidateName); ok {
-		if _, ok := schema.LookupColumnByKey(candidateKey); ok {
+		if column, ok := schema.LookupColumnByKey(candidateKey); ok && !column.Disabled {
 			return candidateKey
 		}
 	}
@@ -49,5 +49,11 @@ func (schema *Schema) ReverseColumnDirection(key ColumnKey) ColumnKey {
 
 // Columns returns the columns.
 func (schema *Schema) Columns() []Column {
-	return schema.columns[:]
+	columns := make([]Column, 0, len(schema.columns))
+	for _, column := range schema.columns {
+		if !column.Disabled {
+			columns = append(columns, column)
+		}
+	}
+	return columns
 }

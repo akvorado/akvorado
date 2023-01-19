@@ -59,7 +59,7 @@ func (qc *Column) Key() schema.ColumnKey {
 // Validate should be called before using the column. We need a schema component
 // for that.
 func (qc *Column) Validate(schema *schema.Component) error {
-	if column, ok := schema.LookupColumnByName(qc.name); ok && !column.ConsoleNotDimension {
+	if column, ok := schema.LookupColumnByName(qc.name); ok && !column.ConsoleNotDimension && !column.Disabled {
 		qc.key = column.Key
 		qc.validated = true
 		return nil

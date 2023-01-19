@@ -63,7 +63,7 @@ func (schema Schema) ClickHouseSelectColumns(options ...ClickHouseTableOption) [
 }
 
 func (schema Schema) clickhouseIterate(fn func(Column), options ...ClickHouseTableOption) {
-	for _, column := range schema.columns {
+	for _, column := range schema.Columns() {
 		if slices.Contains(options, ClickHouseSkipTimeReceived) && column.Key == ColumnTimeReceived {
 			continue
 		}
@@ -101,7 +101,7 @@ func (schema Schema) clickhouseIterate(fn func(Column), options ...ClickHouseTab
 // ClickHouseSortingKeys returns the list of sorting keys, prefixed by the primary keys.
 func (schema Schema) ClickHouseSortingKeys() []string {
 	cols := schema.ClickHousePrimaryKeys()
-	for _, column := range schema.columns {
+	for _, column := range schema.Columns() {
 		if column.ClickHouseNotSortingKey || column.ClickHouseMainOnly {
 			continue
 		}
