@@ -29,7 +29,7 @@ func TestVersion(t *testing.T) {
 		fmt.Sprintf("  Built with: %s", runtime.Version()),
 		"",
 	}
-	got := strings.Split(buf.String(), "\n")
+	got := strings.Split(buf.String(), "\n")[:len(want)]
 	if diff := helpers.Diff(got, want); diff != "" {
 		t.Errorf("`version` (-got, +want):\n%s", diff)
 	}

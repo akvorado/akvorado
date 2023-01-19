@@ -9,8 +9,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/slices"
 
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 )
 
 var (
@@ -28,10 +30,32 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version",
 	Long:  `Display version and build information about akvorado.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.Printf("akvorado %s\n", Version)
 		cmd.Printf("  Build date: %s\n", BuildDate)
 		cmd.Printf("  Built with: %s\n", runtime.Version())
+		cmd.Println()
+
+		sch, err := schema.New(schema.DefaultConfiguration())
+		if err != nil {
+			return err
+		}
+		cmd.Println("Can be disabled:")
+		for k := schema.ColumnTimeReceived; k < schema.ColumnLast; k++ {
+			column, ok := sch.LookupColumnByKey(k)
+			if ok && !column.Disabled && !column.NoDisable && !slices.Contains(sch.ClickHousePrimaryKeys(), column.Name) {
+				cmd.Printf("- %s\n", column.Name)
+			}
+		}
+		cmd.Println()
+		cmd.Println("Can be enabled:")
+		for k := schema.ColumnTimeReceived; k < schema.ColumnLast; k++ {
+			column, ok := sch.LookupColumnByKey(k)
+			if ok && column.Disabled {
+				cmd.Printf("- %s\n", column.Name)
+			}
+		}
+		return nil
 	},
 }
 

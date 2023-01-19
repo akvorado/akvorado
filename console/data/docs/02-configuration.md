@@ -360,6 +360,9 @@ schema:
     - DstVlan
 ```
 
+You can get the list of columns you can enable or disable with `akvorado
+version`.
+
 ### HTTP
 
 The builtin HTTP server serves various pages. Its configuration
