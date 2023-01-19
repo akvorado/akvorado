@@ -19,20 +19,16 @@ installations may end up eating space because of that. The default TTL is 30
 days. You can disable that by setting `orchestrator.clickhouse.system-logs-ttl`
 to 0.
 
-- ✨ *inlet*: add `schema.enabled` and `schema.disabled` to add or remove collected data
+- ✨ *inlet*: add `schema.enabled` and `schema.disabled` to alter collected data
 - ✨ *inlet*: add the following collected data (disabled by default):
-  - `SrcAddrNAT`
-  - `DstAddrNAT`
-  - `SrcPortNAT`
-  - `DstPortNAT`
-  - `SrcMAC`
-  - `DstMAC`
+  - `SrcAddrNAT` and `DstAddrNAT`
+  - `SrcPortNAT` and `DstPortNAT`
+  - `SrcMAC` and `DstMAC`
 - 🩹 *inlet*: handle correctly interfaces with high indexes for sFlow
 - 🩹 *docker*: fix Kafka healthcheck
 - 🌱 *inlet*: improve decoding/encoding performance (twice faster!)
 - 🌱 *orchestrator*: set TTL for ClickHouse system log tables and `exporters` table
 - 🌱 *orchestrator*: reduce storage size for `SrcPort` and `DstPort`
-- 🌱 *common*: more flexible data schema (first step to make this configurable)
 - 🌱 *common*: Go profiler endpoints are enabled by default
 
 ## 1.6.4 - 2022-12-22
