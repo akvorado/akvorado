@@ -23,6 +23,8 @@ func (c *Component) widgetFlowLastHandlerFunc(gc *gin.Context) {
 		schema.ColumnDstLargeCommunities: `arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':',
                       toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':',
                       toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)`,
+		schema.ColumnSrcMAC: `MACNumToString(SrcMAC)`,
+		schema.ColumnDstMAC: `MACNumToString(DstMAC)`,
 	}
 	selectClause := []string{"SELECT *"}
 	except := []string{}

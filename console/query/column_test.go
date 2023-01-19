@@ -79,12 +79,15 @@ func TestQueryColumnSQLSelect(t *testing.T) {
 		}, {
 			Input:    schema.ColumnDstCommunities,
 			Expected: `arrayStringConcat(arrayConcat(arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities), arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)), ' ')`,
+		}, {
+			Input:    schema.ColumnDstMAC,
+			Expected: `MACNumToString(DstMAC)`,
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.Input.String(), func(t *testing.T) {
 			column := query.NewColumn(tc.Input.String())
-			if err := column.Validate(schema.NewMock(t)); err != nil {
+			if err := column.Validate(schema.NewMock(t).EnableAllColumns()); err != nil {
 				t.Fatalf("Validate() error:\n%+v", err)
 			}
 			got := column.ToSQLSelect()

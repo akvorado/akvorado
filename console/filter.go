@@ -165,6 +165,31 @@ func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 				filterCompletion{"PIM", "protocol", true},
 				filterCompletion{"IPv4", "protocol", true},
 				filterCompletion{"IPv6", "protocol", true})
+		case "srcmac", "dstmac":
+			results := []struct {
+				Label string `ch:"label"`
+			}{}
+			columnName := c.fixQueryColumnName(input.Column)
+			sqlQuery := fmt.Sprintf(`
+SELECT MACNumToString(%s) AS label
+FROM flows
+WHERE TimeReceived > date_sub(minute, 1, now())
+AND positionCaseInsensitive(label, $1) >= 1
+GROUP BY %s
+ORDER BY COUNT(*) DESC
+LIMIT 20`, columnName, columnName)
+			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
+				c.r.Err(err).Msg("unable to query database")
+				break
+			}
+			for _, result := range results {
+				completions = append(completions, filterCompletion{
+					Label:  result.Label,
+					Detail: "MAC address",
+					Quoted: false,
+				})
+			}
+			input.Prefix = "" // We have handled this internally
 		case "dstcommunities":
 			results := []struct {
 				Label  string `ch:"label"`

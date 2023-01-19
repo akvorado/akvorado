@@ -114,6 +114,8 @@ func (qc Column) ToSQLSelect() string {
 		strValue = `arrayStringConcat(DstASPath, ' ')`
 	case schema.ColumnDstCommunities:
 		strValue = `arrayStringConcat(arrayConcat(arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities), arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)), ' ')`
+	case schema.ColumnSrcMAC, schema.ColumnDstMAC:
+		strValue = fmt.Sprintf("MACNumToString(%s)", qc)
 	default:
 		strValue = qc.String()
 	}

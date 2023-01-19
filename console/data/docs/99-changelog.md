@@ -20,7 +20,13 @@ days. You can disable that by setting `orchestrator.clickhouse.system-logs-ttl`
 to 0.
 
 - ✨ *inlet*: add `schema.enabled` and `schema.disabled` to add or remove collected data
-- ✨ *inlet*: add `SrcAddrNAT`, `DstAddrNAT`, `SrcPortNAT`, `DstPortNAT` as disabled by default columns
+- ✨ *inlet*: add the following collected data (disabled by default):
+  - `SrcAddrNAT`
+  - `DstAddrNAT`
+  - `SrcPortNAT`
+  - `DstPortNAT`
+  - `SrcMAC`
+  - `DstMAC`
 - 🩹 *inlet*: handle correctly interfaces with high indexes for sFlow
 - 🩹 *docker*: fix Kafka healthcheck
 - 🌱 *inlet*: improve decoding/encoding performance (twice faster!)

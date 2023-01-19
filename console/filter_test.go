@@ -11,6 +11,7 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"akvorado/common/helpers"
+	"akvorado/common/schema"
 )
 
 func TestFilterHandlers(t *testing.T) {
@@ -347,6 +348,42 @@ LIMIT 20`, "6540").
 			URL:         "/api/v0/console/filter/saved",
 			StatusCode:  200,
 			JSONOutput:  gin.H{"filters": []gin.H{}},
+		},
+	})
+}
+
+func TestFilterHandlersMore(t *testing.T) {
+	c, h, mockConn, _ := NewMock(t, DefaultConfiguration())
+	c.d.Schema = schema.NewMock(t).EnableAllColumns()
+
+	mockConn.EXPECT().
+		Select(gomock.Any(), gomock.Any(), `
+SELECT MACNumToString(SrcMAC) AS label
+FROM flows
+WHERE TimeReceived > date_sub(minute, 1, now())
+AND positionCaseInsensitive(label, $1) >= 1
+GROUP BY SrcMAC
+ORDER BY COUNT(*) DESC
+LIMIT 20`, "11:").
+		SetArg(1, []struct {
+			Label string `ch:"label"`
+		}{
+			{"11:22:33:44:55:66"},
+			{"11:33:33:44:55:66"},
+			{"11:ff:33:44:55:66"},
+		}).
+		Return(nil)
+
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
+		{
+			URL:        "/api/v0/console/filter/complete",
+			StatusCode: 200,
+			JSONInput:  gin.H{"what": "value", "column": "srcMAC", "prefix": "11:"},
+			JSONOutput: gin.H{"completions": []gin.H{
+				{"label": "11:22:33:44:55:66", "detail": "MAC address", "quoted": false},
+				{"label": "11:33:33:44:55:66", "detail": "MAC address", "quoted": false},
+				{"label": "11:ff:33:44:55:66", "detail": "MAC address", "quoted": false},
+			}},
 		},
 	})
 }

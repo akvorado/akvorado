@@ -42,6 +42,8 @@ func TestDecode(t *testing.T) {
 				schema.ColumnDstPort: 22,
 				schema.ColumnSrcVlan: 100,
 				schema.ColumnDstVlan: 100,
+				schema.ColumnSrcMAC:  40057391053392,
+				schema.ColumnDstMAC:  40057381862408,
 			},
 		}, {
 			SamplingRate:    1024,
@@ -63,6 +65,8 @@ func TestDecode(t *testing.T) {
 				schema.ColumnSrcNetMask: 20,
 				schema.ColumnDstNetMask: 27,
 				schema.ColumnDstVlan:    100,
+				schema.ColumnSrcMAC:     216372595274807,
+				schema.ColumnDstMAC:     191421060163210,
 			},
 		}, {
 			SamplingRate:    1024,
@@ -80,6 +84,8 @@ func TestDecode(t *testing.T) {
 				schema.ColumnDstPort: 22,
 				schema.ColumnSrcVlan: 100,
 				schema.ColumnDstVlan: 100,
+				schema.ColumnSrcMAC:  40057391053392,
+				schema.ColumnDstMAC:  40057381862408,
 			},
 		}, {
 			SamplingRate:    1024,
@@ -101,6 +107,8 @@ func TestDecode(t *testing.T) {
 				schema.ColumnSrcNetMask: 27,
 				schema.ColumnDstNetMask: 17,
 				schema.ColumnSrcVlan:    100,
+				schema.ColumnSrcMAC:     138617863011056,
+				schema.ColumnDstMAC:     216372595274807,
 			},
 		}, {
 			SamplingRate:    1024,
@@ -118,6 +126,8 @@ func TestDecode(t *testing.T) {
 				schema.ColumnDstPort: 22,
 				schema.ColumnSrcVlan: 100,
 				schema.ColumnDstVlan: 100,
+				schema.ColumnSrcMAC:  40057391053392,
+				schema.ColumnDstMAC:  40057381862408,
 			},
 		},
 	}

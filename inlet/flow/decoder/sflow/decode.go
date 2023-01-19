@@ -120,6 +120,10 @@ func (nd *Decoder) parseEthernetHeader(bf *schema.FlowMessage, data []byte) {
 	if len(data) < 14 {
 		return
 	}
+	nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstMAC,
+		binary.BigEndian.Uint64([]byte{0, 0, data[0], data[1], data[2], data[3], data[4], data[5]}))
+	nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcMAC,
+		binary.BigEndian.Uint64([]byte{0, 0, data[6], data[7], data[8], data[9], data[10], data[11]}))
 	etherType := data[12:14]
 	data = data[14:]
 	if etherType[0] == 0x81 && etherType[1] == 0x00 {

@@ -5,6 +5,7 @@
   package filter
 
   import (
+    "errors"
     "fmt"
     "net/netip"
 
@@ -37,6 +38,7 @@ NotExpr "NOT expression" ← KW_NOT _ expr:Expr {
 ConditionExpr "conditional" ←
     ConditionIPExpr
   / ConditionPrefixExpr
+  / ConditionMACExpr
   / ConditionStringExpr
   / ConditionBoundaryExpr
   / ConditionUintExpr
@@ -76,6 +78,13 @@ ConditionPrefixExpr "condition on prefix" ←
        case "!=": return fmt.Sprintf("NOT (%sAddr %s)", toString(column)[:3], fmt.Sprintf(toString(prefix), toString(column)[:3])), nil
      }
      return "", nil
+   }
+
+ConditionMACExpr "condition on MAC" ←
+   column:("SrcMAC"i !IdentStart #{ return c.metaColumn("SrcMAC") } { return c.acceptColumn() }
+         / "DstMAC"i !IdentStart #{ return c.metaColumn("DstMAC") } { return c.acceptColumn() }) _
+   operator:("=" / "!=") _ mac:MAC {
+       return fmt.Sprintf("%s %s MACStringToNum(%s)", toString(column), toString(operator), quote(mac)), nil
    }
 
 ConditionStringExpr "condition on string" ←
@@ -194,7 +203,7 @@ ConditionPacketSizeExpr "condition on packet size" ←
 IP "IP address" ← [0-9A-Fa-f:.]+ !IdentStart {
   ip, err := netip.ParseAddr(string(c.text))
   if err != nil {
-    return false, fmt.Errorf("expecting an IP address")
+    return "", errors.New("expecting an IP address")
   }
   return ip.String(), nil
 }
@@ -202,7 +211,7 @@ IP "IP address" ← [0-9A-Fa-f:.]+ !IdentStart {
 Subnet "IP subnet" ← [0-9A-Fa-f:.]+ "/" [0-9]+ !IdentStart {
   net, err := netip.ParsePrefix(string(c.text))
   if err != nil {
-    return false, fmt.Errorf("expecting a subnet")
+    return "", errors.New("expecting a subnet")
   }
   if net.Addr().Is6() {
     return fmt.Sprintf("BETWEEN toIPv6('%s') AND toIPv6('%s')", net.Masked().Addr().String(), lastIP(net).String()), nil
@@ -214,7 +223,7 @@ Prefix "IP prefix" ← [0-9A-Fa-f:.]+ "/" [0-9]+ !IdentStart {
   // This returns a string with a %s placeholder
   net, err := netip.ParsePrefix(string(c.text))
   if err != nil {
-    return false, fmt.Errorf("expecting a prefix")
+    return "", errors.New("expecting a prefix")
   }
   if net.Addr().Is6() {
     return fmt.Sprintf("BETWEEN toIPv6('%s') AND toIPv6('%s') AND %%sNetMask = %d",
@@ -222,6 +231,17 @@ Prefix "IP prefix" ← [0-9A-Fa-f:.]+ "/" [0-9]+ !IdentStart {
   }
   return fmt.Sprintf("BETWEEN toIPv6('::ffff:%s') AND toIPv6('::ffff:%s') AND %%sNetMask = %d",
     net.Masked().Addr().String(), lastIP(net).String(), net.Bits()), nil
+}
+
+MAC "MAC address" ← [0-9A-Fa-f:.]+ !IdentStart {
+  hw, err := net.ParseMAC(string(c.text))
+  if err != nil {
+    return "", errors.New("expecting a MAC address")
+  }
+  if len(hw) != 6 {
+    return "", errors.New("expecting a 6-byte MAC address")
+  }
+  return hw.String(), nil
 }
 
 ASN "AS number" ← "AS"i? value:Unsigned32 !IdentStart {

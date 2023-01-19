@@ -225,6 +225,10 @@ output provider */ = 'telia'`,
 			MetaOut: Meta{MainTableRequired: true}},
 		{Input: `DstPortNAT = 22`, Output: `DstPortNAT = 22`,
 			MetaOut: Meta{MainTableRequired: true}},
+		{Input: `SrcMAC = 00:11:22:33:44:55`, Output: `SrcMAC = MACStringToNum('00:11:22:33:44:55')`},
+		{Input: `DstMAC = 00:11:22:33:44:55`, Output: `DstMAC = MACStringToNum('00:11:22:33:44:55')`},
+		{Input: `SrcMAC != 00:0c:fF:33:44:55`, Output: `SrcMAC != MACStringToNum('00:0c:ff:33:44:55')`},
+		{Input: `SrcMAC = 0000.5e00.5301`, Output: `SrcMAC = MACStringToNum('00:00:5e:00:53:01')`},
 	}
 	for _, tc := range cases {
 		tc.MetaIn.Schema = schema.NewMock(t).EnableAllColumns()
@@ -245,34 +249,40 @@ output provider */ = 'telia'`,
 
 func TestInvalidFilter(t *testing.T) {
 	cases := []struct {
-		Input string
+		Input     string
+		EnableAll bool
 	}{
-		{`ExporterName`},
-		{`ExporterName = `},
-		{`ExporterName = 'something`},
-		{`ExporterName='something"`},
-		{`ExporterNamee="something"`},
-		{`ExporterName>"something"`},
-		{`ExporterAddress=203.0.113`},
-		{`ExporterAddress=2001:db8`},
-		{`ExporterAddress="2001:db8:0::1"`},
-		{`SrcAS=12322a`},
-		{`SrcAS=785473854857857485784`},
-		{`EType = ipv7`},
-		{`Proto = 100 AND`},
-		{`AND Proto = 100`},
-		{`Proto = 100AND Proto = 100`},
-		{`Proto = 100 ANDProto = 100`},
-		{`Proto = 100 AND (Proto = 100`},
-		{`Proto = 100 /* Hello !`},
-		{`SrcAS IN (AS12322, 29447`},
-		{`SrcAS IN (AS12322 29447)`},
-		{`SrcAS IN (AS12322,`},
-		{`SrcVlan = 1000`},
-		{`DstVlan = 1000`},
+		{Input: `ExporterName`},
+		{Input: `ExporterName = `},
+		{Input: `ExporterName = 'something`},
+		{Input: `ExporterName='something"`},
+		{Input: `ExporterNamee="something"`},
+		{Input: `ExporterName>"something"`},
+		{Input: `ExporterAddress=203.0.113`},
+		{Input: `ExporterAddress=2001:db8`},
+		{Input: `ExporterAddress="2001:db8:0::1"`},
+		{Input: `SrcAS=12322a`},
+		{Input: `SrcAS=785473854857857485784`},
+		{Input: `EType = ipv7`},
+		{Input: `Proto = 100 AND`},
+		{Input: `AND Proto = 100`},
+		{Input: `Proto = 100AND Proto = 100`},
+		{Input: `Proto = 100 ANDProto = 100`},
+		{Input: `Proto = 100 AND (Proto = 100`},
+		{Input: `Proto = 100 /* Hello !`},
+		{Input: `SrcAS IN (AS12322, 29447`},
+		{Input: `SrcAS IN (AS12322 29447)`},
+		{Input: `SrcAS IN (AS12322,`},
+		{Input: `SrcVlan = 1000`},
+		{Input: `DstVlan = 1000`},
+		{Input: `SrcMAC = 00:11:22:33:44:55:66`, EnableAll: true},
 	}
 	for _, tc := range cases {
-		out, err := Parse("", []byte(tc.Input), GlobalStore("meta", &Meta{Schema: schema.NewMock(t)}))
+		sch := schema.NewMock(t)
+		if tc.EnableAll {
+			sch.EnableAllColumns()
+		}
+		out, err := Parse("", []byte(tc.Input), GlobalStore("meta", &Meta{Schema: sch}))
 		if err == nil {
 			t.Errorf("Parse(%q) didn't throw an error (got %s)", tc.Input, out)
 		}
