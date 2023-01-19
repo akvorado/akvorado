@@ -98,7 +98,7 @@ func (qcs Columns) Validate(schema *schema.Component) error {
 func (qc Column) ToSQLSelect() string {
 	var strValue string
 	switch qc.Key() {
-	case schema.ColumnExporterAddress, schema.ColumnSrcAddr, schema.ColumnDstAddr:
+	case schema.ColumnExporterAddress, schema.ColumnSrcAddr, schema.ColumnDstAddr, schema.ColumnSrcAddrNAT, schema.ColumnDstAddrNAT:
 		strValue = fmt.Sprintf("replaceRegexpOne(IPv6NumToString(%s), '^::ffff:', '')", qc)
 	case schema.ColumnSrcAS, schema.ColumnDstAS, schema.ColumnDst1stAS, schema.ColumnDst2ndAS, schema.ColumnDst3rdAS:
 		strValue = fmt.Sprintf(`concat(toString(%s), ': ', dictGetOrDefault('asns', 'name', %s, '???'))`,
@@ -108,7 +108,7 @@ func (qc Column) ToSQLSelect() string {
 			helpers.ETypeIPv4, helpers.ETypeIPv6)
 	case schema.ColumnProto:
 		strValue = `dictGetOrDefault('protocols', 'name', Proto, '???')`
-	case schema.ColumnInIfSpeed, schema.ColumnOutIfSpeed, schema.ColumnSrcPort, schema.ColumnDstPort, schema.ColumnForwardingStatus, schema.ColumnInIfBoundary, schema.ColumnOutIfBoundary:
+	case schema.ColumnInIfSpeed, schema.ColumnOutIfSpeed, schema.ColumnSrcPort, schema.ColumnDstPort, schema.ColumnForwardingStatus, schema.ColumnInIfBoundary, schema.ColumnOutIfBoundary, schema.ColumnSrcPortNAT, schema.ColumnDstPortNAT:
 		strValue = fmt.Sprintf("toString(%s)", qc)
 	case schema.ColumnDstASPath:
 		strValue = `arrayStringConcat(DstASPath, ' ')`
