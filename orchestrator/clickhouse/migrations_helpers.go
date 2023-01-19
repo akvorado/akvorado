@@ -239,17 +239,20 @@ func (c *Component) createRawFlowsConsumerView(ctx context.Context) error {
 	viewName := fmt.Sprintf("%s_consumer", tableName)
 
 	// Build SELECT query
+	args := gin.H{
+		"Columns": strings.Join(c.d.Schema.ClickHouseSelectColumns(
+			schema.ClickHouseSubstituteGenerates,
+			schema.ClickHouseSubstituteTransforms,
+			schema.ClickHouseSkipAliasedColumns), ", "),
+		"Database": c.config.Database,
+		"Table":    tableName,
+	}
+	if column, ok := c.d.Schema.LookupColumnByKey(schema.ColumnDstASPath); ok && !column.Disabled {
+		args["With"] = "WITH arrayCompact(DstASPath) AS c_DstASPath"
+	}
 	selectQuery, err := stemplate(
 		`{{ .With }} SELECT {{ .Columns }} FROM {{ .Database }}.{{ .Table }} WHERE length(_error) = 0`,
-		gin.H{
-			"With": "WITH arrayCompact(DstASPath) AS c_DstASPath",
-			"Columns": strings.Join(c.d.Schema.ClickHouseSelectColumns(
-				schema.ClickHouseSubstituteGenerates,
-				schema.ClickHouseSubstituteTransforms,
-				schema.ClickHouseSkipAliasedColumns), ", "),
-			"Database": c.config.Database,
-			"Table":    tableName,
-		})
+		args)
 	if err != nil {
 		return fmt.Errorf("cannot build select statement for raw flows consumer view: %w", err)
 	}
