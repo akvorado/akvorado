@@ -181,6 +181,8 @@ needs to follow these steps:
    `widgetFlowLastHandlerFunc()` in `console/widgets.go`.
 6. Modify `inlet/flow/decoder/netflow/decode.go` and
    `inlet/flow/decoder/sflow/decode.go` to extract the data from the flows.
+7. If useful, add a completion in `filterCompleteHandlerFunc()` in
+   `akvorado/console/filter.go`.
 
 ## Web console
 
