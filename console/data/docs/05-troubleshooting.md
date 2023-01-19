@@ -246,8 +246,7 @@ description is present on this sub-interface.
 On a large scale installation, you may want to check if *Akvorado* is using too
 much CPU or memory. This can be achieved with `pprof`, the [Go
 profiler](https://go.dev/blog/pprof). You need a working [installation of
-Go](https://go.dev/doc/install) on your workstation. Then, enable the profiler
-in the inlet configuration (`inlet.http.profiler` set to `true`) and restart it.
+Go](https://go.dev/doc/install) on your workstation.
 
 When running on Docker, use `docker inspect` to get the IP address of the inlet:
 

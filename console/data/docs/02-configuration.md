@@ -352,7 +352,8 @@ supports the following keys:
 - `listen` defines the address and port to listen to.
 - `profiler` enables [Go profiler HTTP
   interface](https://pkg.go.dev/net/http/pprof). Check the [troubleshooting
-  section]( 05-troubleshooting.html#profiling) for details.
+  section](05-troubleshooting.html#profiling) for details. It is enabled by
+  default.
 - `cache` defines the cache backend to use for some HTTP requests. It accepts a
   `type` key which can be either `memory` (the default value) or `redis`. When
   using the Redis backend, the following additional keys are also accepted:

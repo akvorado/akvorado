@@ -25,6 +25,7 @@ to 0.
 - 🌱 *orchestrator*: set TTL for ClickHouse system log tables and `exporters` table
 - 🌱 *orchestrator*: reduce storage size for `SrcPort` and `DstPort`
 - 🌱 *common*: more flexible data schema (first step to make this configurable)
+- 🌱 *common*: Go profiler endpoints are enabled by default
 
 ## 1.6.4 - 2022-12-22
 
