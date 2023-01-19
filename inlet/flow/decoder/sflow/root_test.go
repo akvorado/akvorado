@@ -17,7 +17,7 @@ import (
 
 func TestDecode(t *testing.T) {
 	r := reporter.NewMock(t)
-	sdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t)})
+	sdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()})
 
 	// Send data
 	data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-1140.pcap"))
@@ -40,6 +40,8 @@ func TestDecode(t *testing.T) {
 				schema.ColumnProto:   6,
 				schema.ColumnSrcPort: 46026,
 				schema.ColumnDstPort: 22,
+				schema.ColumnSrcVlan: 100,
+				schema.ColumnDstVlan: 100,
 			},
 		}, {
 			SamplingRate:    1024,
@@ -60,6 +62,7 @@ func TestDecode(t *testing.T) {
 				schema.ColumnDstPort:    56876,
 				schema.ColumnSrcNetMask: 20,
 				schema.ColumnDstNetMask: 27,
+				schema.ColumnDstVlan:    100,
 			},
 		}, {
 			SamplingRate:    1024,
@@ -75,6 +78,8 @@ func TestDecode(t *testing.T) {
 				schema.ColumnProto:   6,
 				schema.ColumnSrcPort: 46026,
 				schema.ColumnDstPort: 22,
+				schema.ColumnSrcVlan: 100,
+				schema.ColumnDstVlan: 100,
 			},
 		}, {
 			SamplingRate:    1024,
@@ -95,6 +100,7 @@ func TestDecode(t *testing.T) {
 				schema.ColumnDstPort:    5555,
 				schema.ColumnSrcNetMask: 27,
 				schema.ColumnDstNetMask: 17,
+				schema.ColumnSrcVlan:    100,
 			},
 		}, {
 			SamplingRate:    1024,
@@ -110,6 +116,8 @@ func TestDecode(t *testing.T) {
 				schema.ColumnProto:   6,
 				schema.ColumnSrcPort: 46026,
 				schema.ColumnDstPort: 22,
+				schema.ColumnSrcVlan: 100,
+				schema.ColumnDstVlan: 100,
 			},
 		},
 	}

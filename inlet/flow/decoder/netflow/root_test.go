@@ -17,7 +17,7 @@ import (
 
 func TestDecode(t *testing.T) {
 	r := reporter.NewMock(t)
-	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t)})
+	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()})
 
 	// Send an option template
 	template := helpers.ReadPcapPayload(t, filepath.Join("testdata", "options-template-257.pcap"))

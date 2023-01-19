@@ -79,8 +79,12 @@ func (nd *Decoder) decode(msgDec interface{}) []*schema.FlowMessage {
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPort, uint64(recordData.Base.DstPort))
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, helpers.ETypeIPv6)
 			case sflow.ExtendedSwitch:
-				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcVlan, uint64(recordData.SrcVlan))
-				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstVlan, uint64(recordData.DstVlan))
+				if recordData.SrcVlan < 4096 {
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcVlan, uint64(recordData.SrcVlan))
+				}
+				if recordData.DstVlan < 4096 {
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstVlan, uint64(recordData.DstVlan))
+				}
 			case sflow.ExtendedRouter:
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcNetMask, uint64(recordData.SrcMaskLen))
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstNetMask, uint64(recordData.DstMaskLen))
