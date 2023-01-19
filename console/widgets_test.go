@@ -23,8 +23,16 @@ func TestWidgetLastFlow(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	mockRows := mocks.NewMockRows(ctrl)
-	mockConn.EXPECT().Query(gomock.Any(),
-		gomock.Any()).
+	mockConn.EXPECT().Query(gomock.Any(), `
+SELECT * EXCEPT (DstCommunities, DstLargeCommunities),
+ arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':',
+                      toString(bitAnd(c, 0xffff))), DstCommunities) AS DstCommunities,
+ arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':',
+                      toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':',
+                      toString(bitAnd(c, 0xffffffff))), DstLargeCommunities) AS DstLargeCommunities
+FROM flows
+WHERE TimeReceived=(SELECT MAX(TimeReceived) FROM flows)
+LIMIT 1`).
 		Return(mockRows, nil)
 	mockRows.EXPECT().Next().Return(true)
 	mockRows.EXPECT().Close()

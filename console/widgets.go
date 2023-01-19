@@ -11,21 +11,39 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+
+	"akvorado/common/schema"
 )
 
 func (c *Component) widgetFlowLastHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
-	query := `
-SELECT *
-EXCEPT (DstCommunities, DstLargeCommunities),
- arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':',
-                      toString(bitAnd(c, 0xffff))), DstCommunities) AS DstCommunities,
- arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':',
+	replace := map[schema.ColumnKey]string{
+		schema.ColumnDstCommunities: `arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':',
+                      toString(bitAnd(c, 0xffff))), DstCommunities)`,
+		schema.ColumnDstLargeCommunities: `arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':',
                       toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':',
-                      toString(bitAnd(c, 0xffffffff))), DstLargeCommunities) AS DstLargeCommunities
+                      toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)`,
+	}
+	selectClause := []string{"SELECT *"}
+	except := []string{}
+	for k := range replace {
+		if column, ok := c.d.Schema.LookupColumnByKey(k); ok && column.Disabled {
+			delete(replace, k)
+		} else if ok {
+			except = append(except, k.String())
+		}
+	}
+	if len(except) > 0 {
+		selectClause = []string{fmt.Sprintf("SELECT * EXCEPT (%s)", strings.Join(except, ", "))}
+	}
+	for k, replacement := range replace {
+		selectClause = append(selectClause, fmt.Sprintf("%s AS %s", replacement, k))
+	}
+	query := fmt.Sprintf(`
+%s
 FROM flows
 WHERE TimeReceived=(SELECT MAX(TimeReceived) FROM flows)
-LIMIT 1`
+LIMIT 1`, strings.Join(selectClause, ",\n "))
 	gc.Header("X-SQL-Query", query)
 	// Do not increase counter for this one.
 	rows, err := c.d.ClickHouseDB.Conn.Query(ctx, query)
