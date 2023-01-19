@@ -485,8 +485,8 @@ github.com/ugorji/go/codec v1.2.7/go.mod h1:WGN1fab3R1fzQlVQTkfxVtIBhWDRqOviHU95
 github.com/urfave/cli/v2 v2.1.1/go.mod h1:SE9GqnLQmjVa0iPEY0f1w3ygNIYcIJ0OKPMoW2caLfQ=
 github.com/vincentbernat/go-clock v0.0.0-20220922224448-739bd11b5833 h1:eeHgOFlrGNESR9TF+AJovNWOxH8AdmXWK2nGXKa6RUU=
 github.com/vincentbernat/go-clock v0.0.0-20220922224448-739bd11b5833/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
-github.com/vincentbernat/goflow2 v1.0.5-0.20230119075524-e65432c88a7d h1:U2XyWb7KrphSXqF1wzU0mVyY6W7NXLV8/LRNR/SjEjg=
-github.com/vincentbernat/goflow2 v1.0.5-0.20230119075524-e65432c88a7d/go.mod h1:oNIeGj67SjwrRSTEukErjNT1zZ02W9+8M5mSgQCkZC8=
+github.com/vincentbernat/goflow2 v1.0.5-0.20230119111129-c797534c51e4 h1:peywq/qLmgBq11JZgus3XqnOf8NqDnSQ7ygi+X0O6w8=
+github.com/vincentbernat/goflow2 v1.0.5-0.20230119111129-c797534c51e4/go.mod h1:oNIeGj67SjwrRSTEukErjNT1zZ02W9+8M5mSgQCkZC8=
 github.com/vincentbernat/patricia v0.0.0-20220923091046-b376a1167a94 h1:T7+yyM6300NYIv1kqlXX53d2cjEHpgDt6cFbBYO+upk=
 github.com/vincentbernat/patricia v0.0.0-20220923091046-b376a1167a94/go.mod h1:6jY40ESetsbfi04/S12iJlsiS6DYL2B2W+WAcqoDHtw=
 github.com/vishvananda/netns v0.0.0-20180720170159-13995c7128cc/go.mod h1:ZjcWmFBXmLKZu9Nxj3WKYEafiSqer2rnvPr0en9UNpI=
