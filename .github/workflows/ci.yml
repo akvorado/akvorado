@@ -79,7 +79,6 @@ jobs:
       - name: Go race tests
         run: make test-race
       - name: Run benchmark tests
-        if: ${{ github.event_name != 'pull_request' }}
         run: make test-bench
       - name: JS tests
         run: make test-js
