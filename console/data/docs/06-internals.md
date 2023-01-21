@@ -172,6 +172,8 @@ needs to follow these steps:
    `Src` or `InIf`, don't add the opposite direction, this is done
    automatically. Use `ClickHouseMainOnly` if the column is expected to take a
    lot of space. Add the column to the end and set `Disabled` field to `true`.
+   If you add several fields, create a group and use it on decoding to keep
+   decoding/encoding fast for people not enabling them.
 3. Make it usable in the filters by adding it to `console/filter/parser.peg`.
    Don't forget to add a test in `console/filter/parser_test.go`.
 4. Modify `console/query/column.go` to alter the display of the column (it

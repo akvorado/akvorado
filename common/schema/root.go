@@ -47,6 +47,6 @@ func New(config Configuration) (*Component, error) {
 	}
 	return &Component{
 		c:      config,
-		Schema: schema,
+		Schema: schema.finalize(),
 	}, nil
 }

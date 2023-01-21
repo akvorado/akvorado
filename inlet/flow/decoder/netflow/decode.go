@@ -77,20 +77,6 @@ func (nd *Decoder) decodeRecord(version int, fields []netflow.DataField) *schema
 		case netflow.NFV9_FIELD_IN_PKTS, netflow.NFV9_FIELD_OUT_PKTS:
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnPackets, decodeUNumber(v))
 
-		// L2
-		case netflow.NFV9_FIELD_SRC_VLAN:
-			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcVlan, decodeUNumber(v))
-		case netflow.NFV9_FIELD_DST_VLAN:
-			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstVlan, decodeUNumber(v))
-		case netflow.NFV9_FIELD_IN_SRC_MAC:
-			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcMAC, decodeUNumber(v))
-		case netflow.NFV9_FIELD_IN_DST_MAC:
-			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstMAC, decodeUNumber(v))
-		case netflow.NFV9_FIELD_OUT_SRC_MAC:
-			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcMAC, decodeUNumber(v))
-		case netflow.NFV9_FIELD_OUT_DST_MAC:
-			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstMAC, decodeUNumber(v))
-
 		// L3
 		case netflow.NFV9_FIELD_IPV4_SRC_ADDR:
 			etype = helpers.ETypeIPv4
@@ -131,19 +117,42 @@ func (nd *Decoder) decodeRecord(version int, fields []netflow.DataField) *schema
 		case netflow.NFV9_FIELD_OUTPUT_SNMP:
 			bf.OutIf = uint32(decodeUNumber(v))
 
-		// NAT
-		case netflow.IPFIX_FIELD_postNATSourceIPv4Address:
-			nd.d.Schema.ProtobufAppendIP(bf, schema.ColumnSrcAddrNAT, decodeIP(v))
-		case netflow.IPFIX_FIELD_postNATDestinationIPv4Address:
-			nd.d.Schema.ProtobufAppendIP(bf, schema.ColumnDstAddrNAT, decodeIP(v))
-		case netflow.IPFIX_FIELD_postNAPTSourceTransportPort:
-			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPortNAT, decodeUNumber(v))
-		case netflow.IPFIX_FIELD_postNAPTDestinationTransportPort:
-			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPortNAT, decodeUNumber(v))
-
 		// Remaining
 		case netflow.NFV9_FIELD_FORWARDING_STATUS:
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnForwardingStatus, decodeUNumber(v))
+		default:
+
+			if !nd.d.Schema.IsDisabled(schema.ColumnGroupNAT) {
+				// NAT
+				switch field.Type {
+				case netflow.IPFIX_FIELD_postNATSourceIPv4Address:
+					nd.d.Schema.ProtobufAppendIP(bf, schema.ColumnSrcAddrNAT, decodeIP(v))
+				case netflow.IPFIX_FIELD_postNATDestinationIPv4Address:
+					nd.d.Schema.ProtobufAppendIP(bf, schema.ColumnDstAddrNAT, decodeIP(v))
+				case netflow.IPFIX_FIELD_postNAPTSourceTransportPort:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPortNAT, decodeUNumber(v))
+				case netflow.IPFIX_FIELD_postNAPTDestinationTransportPort:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPortNAT, decodeUNumber(v))
+				}
+			}
+
+			if !nd.d.Schema.IsDisabled(schema.ColumnGroupL2) {
+				// L2
+				switch field.Type {
+				case netflow.NFV9_FIELD_SRC_VLAN:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcVlan, decodeUNumber(v))
+				case netflow.NFV9_FIELD_DST_VLAN:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstVlan, decodeUNumber(v))
+				case netflow.NFV9_FIELD_IN_SRC_MAC:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcMAC, decodeUNumber(v))
+				case netflow.NFV9_FIELD_IN_DST_MAC:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstMAC, decodeUNumber(v))
+				case netflow.NFV9_FIELD_OUT_SRC_MAC:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcMAC, decodeUNumber(v))
+				case netflow.NFV9_FIELD_OUT_DST_MAC:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstMAC, decodeUNumber(v))
+				}
+			}
 		}
 	}
 	nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, uint64(etype))

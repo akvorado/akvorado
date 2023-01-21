@@ -57,3 +57,8 @@ func (schema *Schema) Columns() []Column {
 	}
 	return columns
 }
+
+// IsDisabled tells if a column group is disabled.
+func (schema *Schema) IsDisabled(group ColumnGroup) bool {
+	return schema.disabledGroups.Test(uint(group))
+}

@@ -5,6 +5,8 @@ package schema
 
 import (
 	"testing"
+
+	"akvorado/common/helpers"
 )
 
 func TestFlowsClickHouse(t *testing.T) {
@@ -37,5 +39,30 @@ func TestColumnIndex(t *testing.T) {
 		if _, ok := c.LookupColumnByKey(i); !ok {
 			t.Errorf("column %s cannot be looked up by key", i)
 		}
+	}
+}
+
+func TestFinalizeTwice(t *testing.T) {
+	c := NewMock(t)
+	old := c.Schema
+	new := c.finalize()
+	if diff := helpers.Diff(old, new, helpers.DiffUnexported); diff != "" {
+		t.Fatalf("finalize() (-old, +new):\n%s", diff)
+	}
+}
+
+func TestDisabledGroup(t *testing.T) {
+	c := flows()
+	if !c.IsDisabled(ColumnGroupNAT) {
+		t.Error("ColumnGroupNAT is not disabled while it should")
+	}
+	if !c.IsDisabled(ColumnGroupL2) {
+		t.Error("ColumnGroupL2 is not disabled while it should")
+	}
+	column, _ := c.LookupColumnByKey(ColumnSrcAddrNAT)
+	column.Disabled = false
+	c = c.finalize()
+	if c.IsDisabled(ColumnGroupNAT) {
+		t.Error("ColumnGroupNAT is disabled while it should not")
 	}
 }

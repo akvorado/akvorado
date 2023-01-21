@@ -121,6 +121,7 @@ func (schema *Component) EnableAllColumns() *Component {
 	for i := range schema.columns {
 		schema.columns[i].Disabled = false
 	}
+	schema.Schema = schema.finalize()
 	return schema
 }
 

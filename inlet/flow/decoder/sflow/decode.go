@@ -79,11 +79,13 @@ func (nd *Decoder) decode(msgDec interface{}) []*schema.FlowMessage {
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPort, uint64(recordData.Base.DstPort))
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, helpers.ETypeIPv6)
 			case sflow.ExtendedSwitch:
-				if recordData.SrcVlan < 4096 {
-					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcVlan, uint64(recordData.SrcVlan))
-				}
-				if recordData.DstVlan < 4096 {
-					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstVlan, uint64(recordData.DstVlan))
+				if !nd.d.Schema.IsDisabled(schema.ColumnGroupL2) {
+					if recordData.SrcVlan < 4096 {
+						nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcVlan, uint64(recordData.SrcVlan))
+					}
+					if recordData.DstVlan < 4096 {
+						nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstVlan, uint64(recordData.DstVlan))
+					}
 				}
 			case sflow.ExtendedRouter:
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcNetMask, uint64(recordData.SrcMaskLen))
@@ -120,10 +122,12 @@ func (nd *Decoder) parseEthernetHeader(bf *schema.FlowMessage, data []byte) {
 	if len(data) < 14 {
 		return
 	}
-	nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstMAC,
-		binary.BigEndian.Uint64([]byte{0, 0, data[0], data[1], data[2], data[3], data[4], data[5]}))
-	nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcMAC,
-		binary.BigEndian.Uint64([]byte{0, 0, data[6], data[7], data[8], data[9], data[10], data[11]}))
+	if !nd.d.Schema.IsDisabled(schema.ColumnGroupL2) {
+		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstMAC,
+			binary.BigEndian.Uint64([]byte{0, 0, data[0], data[1], data[2], data[3], data[4], data[5]}))
+		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcMAC,
+			binary.BigEndian.Uint64([]byte{0, 0, data[6], data[7], data[8], data[9], data[10], data[11]}))
+	}
 	etherType := data[12:14]
 	data = data[14:]
 	if etherType[0] == 0x81 && etherType[1] == 0x00 {
@@ -131,8 +135,10 @@ func (nd *Decoder) parseEthernetHeader(bf *schema.FlowMessage, data []byte) {
 		if len(data) < 4 {
 			return
 		}
-		vlan := (uint64(data[0]&0xf) << 8) + uint64(data[1])
-		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcVlan, uint64(vlan))
+		if !nd.d.Schema.IsDisabled(schema.ColumnGroupL2) {
+			vlan := (uint64(data[0]&0xf) << 8) + uint64(data[1])
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcVlan, uint64(vlan))
+		}
 		etherType = data[2:4]
 		data = data[4:]
 	}

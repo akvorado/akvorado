@@ -16,6 +16,7 @@ $(grep -oEw 'Column[a-zA-Z0-9]+' common/schema/definition.go \
     | sed 's/^Column//' \
     | grep -vFx Last \
     | grep -vFx Key \
+    | grep -v '^Group' \
     | sort | uniq \
     | awk '{ print "Column"$1": \""$1"\","}')
 })

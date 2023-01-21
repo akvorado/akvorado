@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/bits-and-blooms/bitset"
 	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -83,6 +84,13 @@ const (
 	ColumnDstMAC
 
 	ColumnLast
+)
+
+const (
+	ColumnGroupL2 ColumnGroup = iota + 1
+	ColumnGroupNAT
+
+	ColumnGroupLast
 )
 
 // revive:enable
@@ -162,7 +170,7 @@ END`,
 				ClickHouseType:         "LowCardinality(String)",
 				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'tenant', SrcAddr, '')",
 			},
-			{Key: ColumnSrcVlan, ClickHouseType: "UInt16", Disabled: true},
+			{Key: ColumnSrcVlan, ClickHouseType: "UInt16", Disabled: true, Group: ColumnGroupL2},
 			{Key: ColumnSrcCountry, ClickHouseType: "FixedString(2)"},
 			{
 				Key:                ColumnDstASPath,
@@ -262,9 +270,21 @@ END`,
 				}(),
 			},
 			{Key: ColumnForwardingStatus, ClickHouseType: "UInt32"}, // TODO: UInt8 but hard to change, primary key
-			{Key: ColumnSrcAddrNAT, Disabled: true, ClickHouseType: "IPv6", ClickHouseMainOnly: true},
-			{Key: ColumnSrcPortNAT, Disabled: true, ClickHouseType: "UInt16", ClickHouseMainOnly: true},
-			{Key: ColumnSrcMAC, Disabled: true, ClickHouseType: "Uint64"},
+			{
+				Key:                ColumnSrcAddrNAT,
+				Disabled:           true,
+				Group:              ColumnGroupNAT,
+				ClickHouseType:     "IPv6",
+				ClickHouseMainOnly: true,
+			},
+			{
+				Key:                ColumnSrcPortNAT,
+				Disabled:           true,
+				Group:              ColumnGroupNAT,
+				ClickHouseType:     "UInt16",
+				ClickHouseMainOnly: true,
+			},
+			{Key: ColumnSrcMAC, Disabled: true, Group: ColumnGroupL2, ClickHouseType: "Uint64"},
 		},
 	}.finalize()
 }
@@ -300,24 +320,37 @@ func (schema Schema) finalize() Schema {
 		ncolumns = append(ncolumns, column)
 
 		// Expand the schema Src → Dst and InIf → OutIf
+		alreadyExists := func(name string) bool {
+			key, _ := columnNameMap.LoadKey(name)
+			for _, column := range schema.columns {
+				if column.Key == key {
+					return true
+				}
+			}
+			return false
+		}
 		if strings.HasPrefix(column.Name, "Src") {
 			column.Name = fmt.Sprintf("Dst%s", column.Name[3:])
-			column.Key, ok = columnNameMap.LoadKey(column.Name)
-			if !ok {
-				panic(fmt.Sprintf("missing name mapping for %q", column.Name))
+			if !alreadyExists(column.Name) {
+				column.Key, ok = columnNameMap.LoadKey(column.Name)
+				if !ok {
+					panic(fmt.Sprintf("missing name mapping for %q", column.Name))
+				}
+				column.ClickHouseAlias = strings.ReplaceAll(column.ClickHouseAlias, "Src", "Dst")
+				column.ClickHouseTransformFrom = slices.Clone(column.ClickHouseTransformFrom)
+				ncolumns = append(ncolumns, column)
 			}
-			column.ClickHouseAlias = strings.ReplaceAll(column.ClickHouseAlias, "Src", "Dst")
-			column.ClickHouseTransformFrom = slices.Clone(column.ClickHouseTransformFrom)
-			ncolumns = append(ncolumns, column)
 		} else if strings.HasPrefix(column.Name, "InIf") {
 			column.Name = fmt.Sprintf("OutIf%s", column.Name[4:])
-			column.Key, ok = columnNameMap.LoadKey(column.Name)
-			if !ok {
-				panic(fmt.Sprintf("missing name mapping for %q", column.Name))
+			if !alreadyExists(column.Name) {
+				column.Key, ok = columnNameMap.LoadKey(column.Name)
+				if !ok {
+					panic(fmt.Sprintf("missing name mapping for %q", column.Name))
+				}
+				column.ClickHouseAlias = strings.ReplaceAll(column.ClickHouseAlias, "InIf", "OutIf")
+				column.ClickHouseTransformFrom = slices.Clone(column.ClickHouseTransformFrom)
+				ncolumns = append(ncolumns, column)
 			}
-			column.ClickHouseAlias = strings.ReplaceAll(column.ClickHouseAlias, "InIf", "OutIf")
-			column.ClickHouseTransformFrom = slices.Clone(column.ClickHouseTransformFrom)
-			ncolumns = append(ncolumns, column)
 		}
 	}
 	schema.columns = ncolumns
@@ -372,6 +405,17 @@ func (schema Schema) finalize() Schema {
 		schema.columnIndex[column.Key] = &schema.columns[i]
 		for j, column := range column.ClickHouseTransformFrom {
 			schema.columnIndex[column.Key] = &schema.columns[i].ClickHouseTransformFrom[j]
+		}
+	}
+
+	// Update disabledGroups
+	schema.disabledGroups = *bitset.New(uint(ColumnGroupLast))
+	for group := ColumnGroup(0); group < ColumnGroupLast; group++ {
+		schema.disabledGroups.Set(uint(group))
+		for _, column := range schema.columns {
+			if !column.Disabled && column.Group == group {
+				schema.disabledGroups.Clear(uint(group))
+			}
 		}
 	}
 

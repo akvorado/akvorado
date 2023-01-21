@@ -13,8 +13,9 @@ import (
 
 // Schema is the data schema.
 type Schema struct {
-	columns     []Column  // Ordered list of columns
-	columnIndex []*Column // Columns indexed by ColumnKey
+	columns        []Column      // Ordered list of columns
+	columnIndex    []*Column     // Columns indexed by ColumnKey
+	disabledGroups bitset.BitSet // Disabled column groups
 
 	// For ClickHouse. This is the set of primary keys (order is important and
 	// may not follow column order).
@@ -27,6 +28,7 @@ type Column struct {
 	Name      string
 	Disabled  bool
 	NoDisable bool
+	Group     ColumnGroup
 
 	// For ClickHouse. `NotSortingKey' is for columns generated from other
 	// columns. It is only useful if not ClickHouseMainOnly and not Alias. `GenerateFrom'
@@ -58,6 +60,9 @@ type Column struct {
 
 // ColumnKey is the name of a column
 type ColumnKey int
+
+// ColumnGroup represents a group of columns
+type ColumnGroup uint
 
 // FlowMessage is the abstract representation of a flow through various subsystems.
 type FlowMessage struct {
