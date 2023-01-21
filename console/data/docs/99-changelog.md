@@ -24,6 +24,7 @@ to 0.
   - `SrcAddrNAT` and `DstAddrNAT`
   - `SrcPortNAT` and `DstPortNAT`
   - `SrcMAC` and `DstMAC`
+  - `SrcVlan` and `DstVlan`
 - 🩹 *inlet*: handle correctly interfaces with high indexes for sFlow
 - 🩹 *docker*: fix Kafka healthcheck
 - 🌱 *inlet*: improve decoding/encoding performance (twice faster!)
