@@ -40,8 +40,8 @@ type exporterClassification struct {
 	Tenant string
 }
 
-type classifyStringFunc func(string) bool
-type classifyStringRegexFunc func(string, string, string) (bool, error)
+type classifyStringFunc = func(string) bool
+type classifyStringRegexFunc = func(string, string, string) (bool, error)
 
 // exporterClassifierEnvironment defines the environment used by the exporter classifier
 type exporterClassifierEnvironment struct {
@@ -266,13 +266,16 @@ type regexValidator struct {
 	invalidRegexes []string
 }
 
-func (r *regexValidator) Enter(_ *ast.Node) {}
-func (r *regexValidator) Exit(node *ast.Node) {
-	n, ok := (*node).(*ast.FunctionNode)
+func (r *regexValidator) Visit(node *ast.Node) {
+	n, ok := (*node).(*ast.CallNode)
 	if !ok {
 		return
 	}
-	if !strings.HasSuffix(n.Name, "Regex") || len(n.Arguments) != 3 {
+	identifier, ok := n.Callee.(*ast.IdentifierNode)
+	if !ok {
+		return
+	}
+	if !strings.HasSuffix(identifier.Value, "Regex") || len(n.Arguments) != 3 {
 		return
 	}
 	str, ok := n.Arguments[1].(*ast.StringNode)
