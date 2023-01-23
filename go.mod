@@ -11,7 +11,7 @@ require (
 	github.com/bits-and-blooms/bitset v1.4.0
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/chenyahui/gin-cache v1.7.2-0.20221230102232-cd1fa6cf7b54
-	github.com/docker/docker v20.10.22+incompatible
+	github.com/docker/docker v20.10.23+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/eapache/go-resiliency v1.3.0
 	github.com/fsnotify/fsnotify v1.6.0
@@ -29,7 +29,6 @@ require (
 	github.com/mattn/go-isatty v0.0.17
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/netsampler/goflow2 v1.1.1-0.20221008154147-57fad2e0c837
-	github.com/opencontainers/image-spec v1.0.3-0.20211202183452-c5a74bcca799
 	github.com/oschwald/maxminddb-golang v1.10.0
 	github.com/osrg/gobgp/v3 v3.10.0
 	github.com/prometheus/client_golang v1.14.0
@@ -99,6 +98,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
+	github.com/opencontainers/image-spec v1.0.3-0.20211202183452-c5a74bcca799 // indirect
 	github.com/paulmach/orb v0.8.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
 	github.com/pierrec/lz4/v4 v4.1.17 // indirect
