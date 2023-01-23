@@ -17,29 +17,28 @@ import (
 
 func (c *Component) widgetFlowLastHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
-	replace := map[schema.ColumnKey]string{
-		schema.ColumnDstCommunities: `arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':',
-                      toString(bitAnd(c, 0xffff))), DstCommunities)`,
-		schema.ColumnDstLargeCommunities: `arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':',
+	replace := []struct {
+		key         schema.ColumnKey
+		replaceWith string
+	}{
+		{schema.ColumnDstCommunities, `arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':',
+                      toString(bitAnd(c, 0xffff))), DstCommunities)`},
+		{schema.ColumnDstLargeCommunities, `arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':',
                       toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':',
-                      toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)`,
-		schema.ColumnSrcMAC: `MACNumToString(SrcMAC)`,
-		schema.ColumnDstMAC: `MACNumToString(DstMAC)`,
+                      toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)`},
+		{schema.ColumnSrcMAC, `MACNumToString(SrcMAC)`},
+		{schema.ColumnDstMAC, `MACNumToString(DstMAC)`},
 	}
 	selectClause := []string{"SELECT *"}
 	except := []string{}
-	for k := range replace {
-		if column, ok := c.d.Schema.LookupColumnByKey(k); ok && column.Disabled {
-			delete(replace, k)
-		} else if ok {
-			except = append(except, k.String())
+	for _, r := range replace {
+		if column, ok := c.d.Schema.LookupColumnByKey(r.key); ok && !column.Disabled {
+			except = append(except, r.key.String())
+			selectClause = append(selectClause, fmt.Sprintf("%s AS %s", r.replaceWith, r.key))
 		}
 	}
 	if len(except) > 0 {
-		selectClause = []string{fmt.Sprintf("SELECT * EXCEPT (%s)", strings.Join(except, ", "))}
-	}
-	for k, replacement := range replace {
-		selectClause = append(selectClause, fmt.Sprintf("%s AS %s", replacement, k))
+		selectClause[0] = fmt.Sprintf("SELECT * EXCEPT (%s)", strings.Join(except, ", "))
 	}
 	query := fmt.Sprintf(`
 %s
