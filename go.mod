@@ -6,7 +6,7 @@ require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.5.1
 	github.com/Shopify/sarama v1.38.1
 	github.com/alecthomas/chroma v0.10.0
-	github.com/antonmedv/expr v1.9.0
+	github.com/antonmedv/expr v1.10.4
 	github.com/benbjohnson/clock v1.3.0
 	github.com/bits-and-blooms/bitset v1.4.0
 	github.com/cenkalti/backoff/v4 v4.2.0
