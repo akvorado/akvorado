@@ -323,4 +323,25 @@ LIMIT 1`, proto.ClientName)
 			}
 		})
 	}
+
+	// Also try with a full schema
+	if !t.Failed() {
+		t.Run("full schema", func(t *testing.T) {
+			r := reporter.NewMock(t)
+			configuration := DefaultConfiguration()
+			configuration.OrchestratorURL = "http://something"
+			configuration.Kafka.Configuration = kafka.DefaultConfiguration()
+			ch, err := New(r, configuration, Dependencies{
+				Daemon:     daemon.NewMock(t),
+				HTTP:       http.NewMock(t, r),
+				Schema:     schema.NewMock(t).EnableAllColumns(),
+				ClickHouse: chComponent,
+			})
+			if err != nil {
+				t.Fatalf("New() error:\n%+v", err)
+			}
+			helpers.StartStop(t, ch)
+			waitMigrations(t, ch)
+		})
+	}
 }

@@ -284,7 +284,7 @@ END`,
 				ClickHouseType:     "UInt16",
 				ClickHouseMainOnly: true,
 			},
-			{Key: ColumnSrcMAC, Disabled: true, Group: ColumnGroupL2, ClickHouseType: "Uint64"},
+			{Key: ColumnSrcMAC, Disabled: true, Group: ColumnGroupL2, ClickHouseType: "UInt64"},
 		},
 	}.finalize()
 }
