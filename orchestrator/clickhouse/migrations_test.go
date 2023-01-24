@@ -342,6 +342,12 @@ LIMIT 1`, proto.ClientName)
 			}
 			helpers.StartStop(t, ch)
 			waitMigrations(t, ch)
+
+			// We need to have at least one migration
+			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps")
+			if gotMetrics["applied_steps"] == "0" {
+				t.Fatal("No migration applied when enabling all columns")
+			}
 		})
 	}
 }
