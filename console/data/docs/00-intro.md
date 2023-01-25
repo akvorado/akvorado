@@ -85,12 +85,11 @@ Once you are ready, you can run everything in the background with
 
 ## Serialized flow schemas
 
-Flows sent to Kafka are encoded with a versioned schema, described in
-the `flow-*.proto` files. For each version of the schema, a different
-Kafka topic is used. For example, the `flows-v2` topic receive
-serialized flows using the first version of the schema. The inlet
-service exports the schemas as well as the current version with its
-HTTP service, via the `/api/v0/inlet/schemas.json` endpoint.
+Flows sent to Kafka are encoded with a versioned schema. When the schema
+changes, a different Kafka topic is used. For example, the
+`flows-ZUYGDTE3EBIXX352XPM3YEEFV4` topic receive serialized flows using a
+specific version of the schema. The inlet service exports the schema with its
+HTTP service, via the `/api/v0/inlet/flow.proto` endpoint.
 
 ## ClickHouse database schemas
 

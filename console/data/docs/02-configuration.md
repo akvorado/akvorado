@@ -143,9 +143,8 @@ filtering. It may also work with a LocRIB.
 
 ### Kafka
 
-Received flows are exported to a Kafka topic using the [protocol
-buffers format][]. The definition file is `flow/flow-*.proto`. Each
-flow is written in the [length-delimited format][].
+Received flows are exported to a Kafka topic using the [protocol buffers
+format][]. Each flow is written in the [length-delimited format][].
 
 [protocol buffers format]: https://developers.google.com/protocol-buffers
 [length-delimited format]: https://cwiki.apache.org/confluence/display/GEODE/Delimiting+Protobuf+Messages
@@ -167,9 +166,7 @@ The following keys are accepted:
   messages to Kafka. Increasing this value will improve performance,
   at the cost of losing messages in case of problems.
 
-The topic name is suffixed by the version of the schema. For example,
-if the configured topic is `flows` and the current schema version is
-1, the topic used to send received flows will be `flows-v2`.
+The topic name is suffixed by a hash of the schema.
 
 ### Core
 
