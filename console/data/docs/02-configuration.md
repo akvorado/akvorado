@@ -403,6 +403,22 @@ schema:
 You can get the list of columns you can enable or disable with `akvorado
 version`. Disabling a column won't delete existing data.
 
+It is also possible to make make some columns available on the main table only
+or on all tables with `main-table-only` and `not-main-table-only`. For example:
+
+```yaml
+schema:
+  enabled:
+    - SrcMAC
+    - DstMAC
+  main-table-only:
+    - SrcMAC
+    - DstMAC
+  not-main-table-only:
+    - SrcAddr
+    - DstAddr
+```
+
 ### Kafka
 
 The Kafka component creates or updates the Kafka topic to receive

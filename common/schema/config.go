@@ -10,7 +10,11 @@ type Configuration struct {
 	// Disabled lists the columns disabled (in addition to the ones disabled by default).
 	Disabled []ColumnKey
 	// Enabled lists the columns enabled (in addition to the ones enabled by default).
-	Enabled []ColumnKey
+	Enabled []ColumnKey `validate:"ninterfield=Disabled"`
+	// MainTableOnly lists columns to be moved to the main table only
+	MainTableOnly []ColumnKey
+	// NotMainTableOnly lists columns to be moved out of the main table only
+	NotMainTableOnly []ColumnKey `validate:"ninterfield=NotMainTableOnly"`
 }
 
 // DefaultConfiguration returns the default configuration for the schema component.

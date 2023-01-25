@@ -56,7 +56,7 @@ func isListen(fl validator.FieldLevel) bool {
 	if err != nil {
 		return false
 	}
-	// Port must be a iny <= 65535.
+	// Port must be a <= 65535.
 	if portNum, err := strconv.ParseInt(port, 10, 32); err != nil || portNum > 65535 || portNum < 0 {
 		return false
 	}
@@ -68,9 +68,33 @@ func isListen(fl validator.FieldLevel) bool {
 	return true
 }
 
+// noIntersectField validates a field value does not intersect with another one
+// (both fields should be a slice)
+func noIntersectField(fl validator.FieldLevel) bool {
+	field := fl.Field()
+	currentField, _, ok := fl.GetStructFieldOK()
+	if !ok {
+		return false
+	}
+	if field.Kind() != reflect.Slice || currentField.Kind() != reflect.Slice {
+		return false
+	}
+	for i := 0; i < field.Len(); i++ {
+		el1 := field.Index(i).Interface()
+		for j := 0; j < currentField.Len(); j++ {
+			el2 := currentField.Index(i).Interface()
+			if el1 == el2 {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 func init() {
 	Validate = validator.New()
 	Validate.RegisterValidation("listen", isListen)
+	Validate.RegisterValidation("ninterfield", noIntersectField)
 	Validate.RegisterCustomTypeFunc(netipValidation, netip.Addr{}, netip.Prefix{})
 	RegisterSubnetMapValidation[string]()
 }

@@ -4,5 +4,8 @@ schema:
     - SrcCountry
     - DstCountry
   enabled:
-    - SrcVlan
-    - DstVlan
+    - SrcMAC
+    - DstMAC
+  main-table-only:
+    - SrcMAC
+    - DstMAC

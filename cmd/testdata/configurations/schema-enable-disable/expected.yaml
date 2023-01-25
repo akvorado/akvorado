@@ -5,12 +5,20 @@ paths:
       - SrcCountry
       - DstCountry
     enabled:
-      - SrcVlan
-      - DstVlan
+      - SrcMAC
+      - DstMAC
+    maintableonly:
+      - SrcMAC
+      - DstMAC
+    notmaintableonly: []
   console.0.schema:
     disabled:
       - SrcCountry
       - DstCountry
     enabled:
-      - SrcVlan
-      - DstVlan
+      - SrcMAC
+      - DstMAC
+    maintableonly:
+      - SrcMAC
+      - DstMAC
+    notmaintableonly: []

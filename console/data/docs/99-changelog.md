@@ -19,7 +19,8 @@ installations may end up eating space because of that. The default TTL is 30
 days. You can disable that by setting `orchestrator.clickhouse.system-logs-ttl`
 to 0.
 
-- ✨ *inlet*: add `schema.enabled` and `schema.disabled` to alter collected data
+- ✨ *inlet*: add `schema.enabled`, `schema.disabled`, `schema.main-table-only`,
+  and `schema.not-main-table-only` to alter collected data
 - ✨ *inlet*: add the following collected data (disabled by default):
   - `SrcAddrNAT` and `DstAddrNAT`
   - `SrcPortNAT` and `DstPortNAT`

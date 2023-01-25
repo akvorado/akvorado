@@ -32,9 +32,39 @@ func TestListenValidator(t *testing.T) {
 		s.Listen = tc.Listen
 		err := helpers.Validate.Struct(s)
 		if err == nil && tc.Err {
-			t.Error("Validate.Struct() expected an error")
+			t.Errorf("Validate.Struct(%q) expected an error", tc.Listen)
 		} else if err != nil && !tc.Err {
-			t.Errorf("Validate.Struct() error:\n%+v", err)
+			t.Errorf("Validate.Struct(%q) error:\n%+v", tc.Listen, err)
+		}
+	}
+}
+
+func TestNoIntersectWithValidator(t *testing.T) {
+	s := struct {
+		Set1 []string
+		Set2 []string `validate:"ninterfield=Set1"`
+	}{}
+	cases := []struct {
+		Set1 []string
+		Set2 []string
+		Err  bool
+	}{
+		{nil, nil, false},
+		{nil, []string{"aaa"}, false},
+		{[]string{"bbb"}, nil, false},
+		{[]string{"aaa"}, []string{"bbb"}, false},
+		{[]string{"aaa"}, []string{"aaa"}, true},
+		{[]string{"aaa", "ccc"}, []string{"bbb", "ddd"}, false},
+		{[]string{"aaa", "ccc"}, []string{"bbb", "ccc"}, true},
+	}
+	for _, tc := range cases {
+		s.Set1 = tc.Set1
+		s.Set2 = tc.Set2
+		err := helpers.Validate.Struct(s)
+		if err == nil && tc.Err {
+			t.Errorf("Validate.Struct(%+v) expected an error", s)
+		} else if err != nil && !tc.Err {
+			t.Errorf("Validate.Struct(%+v) error:\n%+v", s, err)
 		}
 	}
 }

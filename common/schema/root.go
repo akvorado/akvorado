@@ -22,13 +22,6 @@ type Component struct {
 // New creates a new schema component.
 func New(config Configuration) (*Component, error) {
 	schema := flows()
-	for _, k1 := range config.Enabled {
-		for _, k2 := range config.Disabled {
-			if k1 == k2 {
-				return nil, fmt.Errorf("column %q contained in both EnabledColumns and DisabledColumns", k1)
-			}
-		}
-	}
 	for _, k := range config.Enabled {
 		if column, ok := schema.LookupColumnByKey(k); ok {
 			column.Disabled = false
@@ -43,6 +36,23 @@ func New(config Configuration) (*Component, error) {
 				return nil, fmt.Errorf("column %q cannot be disabled (primary key)", k)
 			}
 			column.Disabled = true
+		}
+	}
+	for _, k := range config.NotMainTableOnly {
+		if column, ok := schema.LookupColumnByKey(k); ok {
+			column.ClickHouseMainOnly = false
+		}
+	}
+	for _, k := range config.MainTableOnly {
+		if column, ok := schema.LookupColumnByKey(k); ok {
+			if column.NoDisable {
+				return nil, fmt.Errorf("column %q cannot be present on main table only", k)
+			}
+			if slices.Contains(schema.clickHousePrimaryKeys, k) {
+				// Primary keys are part of the sorting key.
+				return nil, fmt.Errorf("column %q cannot be present on main table only (primary key)", k)
+			}
+			column.ClickHouseMainOnly = true
 		}
 	}
 	return &Component{
