@@ -65,6 +65,9 @@ type KafkaConfiguration struct {
 	kafka.Configuration `mapstructure:",squash" yaml:"-,inline"`
 	// Consumers tell how many consumers to use to poll data from Kafka
 	Consumers int `validate:"min=1"`
+	// EngineSettings allows one to set arbitrary settings for Kafka engine in
+	// ClickHouse.
+	EngineSettings []string
 }
 
 // DefaultConfiguration represents the default configuration for the ClickHouse configurator.

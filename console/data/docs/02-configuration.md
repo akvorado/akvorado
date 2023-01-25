@@ -471,12 +471,15 @@ provided:
 - `username` is the username to use for authentication
 - `password` is the password to use for authentication
 - `database` defines the database to use to create tables
-- `kafka` defines the configuration for the Kafka consumer. Currently,
-  the only interesting key is `consumers` which defines the number of
-  consumers to use to consume messages from the Kafka topic. It is
-  silently bound by the maximum number of threads ClickHouse will use
-  (by default, the number of CPUs). It should also be less than the
-  number of partitions: the additional consumers will stay idle.
+- `kafka` defines the configuration for the Kafka consumer. The accepted keys are:
+  - `consumers` defines the number of consumers to use to consume messages from
+    the Kafka topic. It is silently bound by the maximum number of threads
+    ClickHouse will use (by default, the number of CPUs). It should also be less
+    than the number of partitions: the additional consumers will stay idle.
+  - `engine-settings` defines a list of additional settings for the Kafka engine
+    in ClickHouse. Check [ClickHouse documentation][] for possible values. You
+    can notably tune `kafka_max_block_size`, `kafka_poll_timeout_ms`,
+    `kafka_poll_max_batch_size`, and `kafka_flush_interval_ms`.
 - `resolutions` defines the various resolutions to keep data
 - `max-partitions` defines the number of partitions to use when
   creating consolidated tables
@@ -681,3 +684,4 @@ verbose, it may be useful to rely on [YAML anchors][] to avoid
 repeating a lot of stuff.
 
 [YAML anchors]: https://www.linode.com/docs/guides/yaml-anchors-aliases-overrides-extensions/
+[clickhouse documentation]: https://clickhouse.com/docs/en/engines/table-engines/integrations/kafka/#table_engine-kafka-creating-a-table

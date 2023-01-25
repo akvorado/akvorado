@@ -179,7 +179,7 @@ AS %s
 func (c *Component) createRawFlowsTable(ctx context.Context) error {
 	hash := c.d.Schema.ProtobufMessageHash()
 	tableName := fmt.Sprintf("flows_%s_raw", hash)
-	kafkaEngine := fmt.Sprintf("Kafka SETTINGS %s", strings.Join([]string{
+	kafkaSettings := []string{
 		fmt.Sprintf(`kafka_broker_list = '%s'`,
 			strings.Join(c.config.Kafka.Brokers, ",")),
 		fmt.Sprintf(`kafka_topic_list = '%s-%s'`,
@@ -190,7 +190,11 @@ func (c *Component) createRawFlowsTable(ctx context.Context) error {
 		fmt.Sprintf(`kafka_num_consumers = %d`, c.config.Kafka.Consumers),
 		`kafka_thread_per_consumer = 1`,
 		`kafka_handle_error_mode = 'stream'`,
-	}, ", "))
+	}
+	for _, setting := range c.config.Kafka.EngineSettings {
+		kafkaSettings = append(kafkaSettings, setting)
+	}
+	kafkaEngine := fmt.Sprintf("Kafka SETTINGS %s", strings.Join(kafkaSettings, ", "))
 
 	// Build CREATE query
 	createQuery, err := stemplate(

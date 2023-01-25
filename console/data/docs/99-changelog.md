@@ -30,6 +30,7 @@ to 0.
 - 🌱 *inlet*: improve decoding/encoding performance (twice faster!)
 - 🌱 *orchestrator*: set TTL for ClickHouse system log tables and `exporters` table
 - 🌱 *orchestrator*: reduce storage size for `SrcPort` and `DstPort`
+- 🌱 *orchestrator*: add `clickhouse.kafka.engine-settings` to configure additional settings for the Kafka engine
 - 🌱 *common*: Go profiler endpoints are enabled by default
 
 ## 1.6.4 - 2022-12-22
