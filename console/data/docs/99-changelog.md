@@ -11,13 +11,16 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.7.0 - 2023-01-26
 
-From this version, the orchestrator automatically defines the TTL for the system
-log tables (like `system.query_log`). They don't have a TTL by default, so many
-installations may end up eating space because of that. The default TTL is 30
-days. You can disable that by setting `orchestrator.clickhouse.system-logs-ttl`
-to 0.
+This version introduces the ability to customize the data schema used by
+*Akvorado*. This change is quite invasive and you should be cautious when
+deploying it. It requires a restart of ClickHouse after upgrading the
+orchestrator.
+
+The orchestrator automatically defines the TTL for the system log tables (like
+`system.query_log`). The default TTL is 30 days. You can disable that by setting
+`orchestrator.clickhouse.system-logs-ttl` to 0.
 
 - ✨ *inlet*: add `schema.enabled`, `schema.disabled`, `schema.main-table-only`,
   and `schema.not-main-table-only` to alter collected data
