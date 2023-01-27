@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🌱 *docker*: update Kafka UI image
+
 ## 1.7.0 - 2023-01-26
 
 This version introduces the ability to customize the data schema used by
