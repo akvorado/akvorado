@@ -82,8 +82,9 @@ type FlowMessage struct {
 	NextHop netip.Addr
 
 	// Core component may override them
-	SrcAS uint32
-	DstAS uint32
+	SrcAS     uint32
+	DstAS     uint32
+	GotASPath bool
 
 	// protobuf is the protobuf representation for the information not contained above.
 	protobuf      []byte

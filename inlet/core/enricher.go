@@ -103,8 +103,10 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	for _, comm := range destBMP.Communities {
 		c.d.Schema.ProtobufAppendVarint(flow, schema.ColumnDstCommunities, uint64(comm))
 	}
-	for _, asn := range destBMP.ASPath {
-		c.d.Schema.ProtobufAppendVarint(flow, schema.ColumnDstASPath, uint64(asn))
+	if !flow.GotASPath {
+		for _, asn := range destBMP.ASPath {
+			c.d.Schema.ProtobufAppendVarint(flow, schema.ColumnDstASPath, uint64(asn))
+		}
 	}
 	for _, comm := range destBMP.LargeCommunities {
 		c.d.Schema.ProtobufAppendVarintForce(flow,

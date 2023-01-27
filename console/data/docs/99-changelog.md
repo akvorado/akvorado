@@ -13,6 +13,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 🌱 *inlet*: if available, use sFlow for `DstASPath`
 - 🌱 *docker*: update Kafka UI image
 
 ## 1.7.0 - 2023-01-26

@@ -95,12 +95,18 @@ func (nd *Decoder) decode(msgDec interface{}) []*schema.FlowMessage {
 				bf.NextHop = decodeIP(recordData.NextHop)
 				bf.DstAS = recordData.AS
 				bf.SrcAS = recordData.AS
-				if len(recordData.ASPath) > 0 {
-					bf.DstAS = recordData.ASPath[len(recordData.ASPath)-1]
-				}
 				if recordData.SrcAS > 0 {
 					bf.SrcAS = recordData.SrcAS
 				}
+				if len(recordData.ASPath) > 0 {
+					bf.DstAS = recordData.ASPath[len(recordData.ASPath)-1]
+					if column, _ := nd.d.Schema.LookupColumnByKey(schema.ColumnDstASPath); !column.Disabled {
+						for _, asn := range recordData.ASPath {
+							column.ProtobufAppendVarint(bf, uint64(asn))
+						}
+					}
+				}
+				bf.GotASPath = true
 			}
 		}
 

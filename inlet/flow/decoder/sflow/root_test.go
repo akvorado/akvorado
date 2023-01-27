@@ -55,6 +55,7 @@ func TestDecode(t *testing.T) {
 			OutIf:           25,
 			SrcAS:           13335,
 			DstAS:           39421,
+			GotASPath:       true,
 			ProtobufDebug: map[schema.ColumnKey]interface{}{
 				schema.ColumnBytes:      439,
 				schema.ColumnPackets:    1,
@@ -97,6 +98,7 @@ func TestDecode(t *testing.T) {
 			DstAddr:         netip.MustParseAddr("::ffff:191.87.91.27"),
 			ExporterAddress: netip.MustParseAddr("::ffff:172.16.0.3"),
 			NextHop:         netip.MustParseAddr("::ffff:31.14.69.110"),
+			GotASPath:       true,
 			ProtobufDebug: map[schema.ColumnKey]interface{}{
 				schema.ColumnBytes:      64,
 				schema.ColumnPackets:    1,
@@ -109,6 +111,7 @@ func TestDecode(t *testing.T) {
 				schema.ColumnSrcVlan:    100,
 				schema.ColumnSrcMAC:     138617863011056,
 				schema.ColumnDstMAC:     216372595274807,
+				schema.ColumnDstASPath:  []uint32{203698, 6762, 26615},
 			},
 		}, {
 			SamplingRate:    1024,
@@ -278,6 +281,7 @@ func TestDecodeInterface(t *testing.T) {
 				NextHop:         netip.MustParseAddr("::ffff:54.54.54.54"),
 				SrcAS:           203476,
 				DstAS:           203361,
+				GotASPath:       true,
 				ProtobufDebug: map[schema.ColumnKey]interface{}{
 					schema.ColumnBytes:      126,
 					schema.ColumnPackets:    1,
@@ -287,6 +291,7 @@ func TestDecodeInterface(t *testing.T) {
 					schema.ColumnDstPort:    52237,
 					schema.ColumnSrcNetMask: 32,
 					schema.ColumnDstNetMask: 22,
+					schema.ColumnDstASPath:  []uint32{8218, 29605, 203361},
 				},
 			},
 		}
