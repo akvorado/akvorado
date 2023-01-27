@@ -82,6 +82,7 @@ services:
     restart: unless-stopped
     depends_on:
       - redis
+      - clickhouse
     command: console http://akvorado-orchestrator:8080
     volumes:
       - akvorado-console-db:/run/akvorado
