@@ -211,7 +211,9 @@ const options = computed((): InternalModelType => {
   };
 });
 const applyLabel = computed(() =>
-  isEqual(options.value, props.modelValue) ? "Refresh" : "Apply"
+  isEqual(options.value, omit(props.modelValue, ["start", "end"]))
+    ? "Refresh"
+    : "Apply"
 );
 const hasErrors = computed(
   () =>
