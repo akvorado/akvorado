@@ -133,18 +133,18 @@ func (c *Component) getASNumber(flowAddr netip.Addr, flowAS, bmpAS uint32) (asn 
 			break
 		}
 		switch provider {
-		case ProviderGeoIP:
+		case ASNProviderGeoIP:
 			asn = c.d.GeoIP.LookupASN(flowAddr)
-		case ProviderFlow:
+		case ASNProviderFlow:
 			asn = flowAS
-		case ProviderFlowExceptPrivate:
+		case ASNProviderFlowExceptPrivate:
 			asn = flowAS
 			if isPrivateAS(asn) {
 				asn = 0
 			}
-		case ProviderBMP:
+		case ASNProviderBMP:
 			asn = bmpAS
-		case ProviderBMPExceptPrivate:
+		case ASNProviderBMPExceptPrivate:
 			asn = bmpAS
 			if isPrivateAS(asn) {
 				asn = 0

@@ -426,25 +426,25 @@ func TestGetASNumber(t *testing.T) {
 		Expected  uint32
 	}{
 		// 1
-		{"1.0.0.1", 12322, 0, []ASNProvider{ProviderFlow}, 12322},
-		{"::ffff:1.0.0.1", 12322, 0, []ASNProvider{ProviderFlow}, 12322},
-		{"1.0.0.1", 65536, 0, []ASNProvider{ProviderFlow}, 65536},
-		{"1.0.0.1", 65536, 0, []ASNProvider{ProviderFlowExceptPrivate}, 0},
-		{"1.0.0.1", 4_200_000_121, 0, []ASNProvider{ProviderFlowExceptPrivate}, 0},
-		{"1.0.0.1", 65536, 0, []ASNProvider{ProviderFlowExceptPrivate, ProviderFlow}, 65536},
-		{"1.0.0.1", 12322, 0, []ASNProvider{ProviderFlowExceptPrivate}, 12322},
-		{"1.0.0.1", 12322, 0, []ASNProvider{ProviderGeoIP}, 15169},
-		{"2.0.0.1", 12322, 0, []ASNProvider{ProviderGeoIP}, 0},
-		{"1.0.0.1", 12322, 0, []ASNProvider{ProviderGeoIP, ProviderFlow}, 15169},
+		{"1.0.0.1", 12322, 0, []ASNProvider{ASNProviderFlow}, 12322},
+		{"::ffff:1.0.0.1", 12322, 0, []ASNProvider{ASNProviderFlow}, 12322},
+		{"1.0.0.1", 65536, 0, []ASNProvider{ASNProviderFlow}, 65536},
+		{"1.0.0.1", 65536, 0, []ASNProvider{ASNProviderFlowExceptPrivate}, 0},
+		{"1.0.0.1", 4_200_000_121, 0, []ASNProvider{ASNProviderFlowExceptPrivate}, 0},
+		{"1.0.0.1", 65536, 0, []ASNProvider{ASNProviderFlowExceptPrivate, ASNProviderFlow}, 65536},
+		{"1.0.0.1", 12322, 0, []ASNProvider{ASNProviderFlowExceptPrivate}, 12322},
+		{"1.0.0.1", 12322, 0, []ASNProvider{ASNProviderGeoIP}, 15169},
+		{"2.0.0.1", 12322, 0, []ASNProvider{ASNProviderGeoIP}, 0},
+		{"1.0.0.1", 12322, 0, []ASNProvider{ASNProviderGeoIP, ASNProviderFlow}, 15169},
 		// 10
-		{"1.0.0.1", 12322, 0, []ASNProvider{ProviderFlow, ProviderGeoIP}, 12322},
-		{"2.0.0.1", 12322, 0, []ASNProvider{ProviderFlow, ProviderGeoIP}, 12322},
-		{"2.0.0.1", 12322, 0, []ASNProvider{ProviderGeoIP, ProviderFlow}, 12322},
-		{"192.0.2.2", 12322, 174, []ASNProvider{ProviderBMP}, 174},
-		{"192.0.2.129", 12322, 1299, []ASNProvider{ProviderBMP}, 1299},
-		{"192.0.2.254", 12322, 0, []ASNProvider{ProviderBMP}, 0},
-		{"1.0.0.1", 12322, 65300, []ASNProvider{ProviderBMP}, 65300},
-		{"1.0.0.1", 12322, 15169, []ASNProvider{ProviderBMPExceptPrivate, ProviderGeoIP}, 15169},
+		{"1.0.0.1", 12322, 0, []ASNProvider{ASNProviderFlow, ASNProviderGeoIP}, 12322},
+		{"2.0.0.1", 12322, 0, []ASNProvider{ASNProviderFlow, ASNProviderGeoIP}, 12322},
+		{"2.0.0.1", 12322, 0, []ASNProvider{ASNProviderGeoIP, ASNProviderFlow}, 12322},
+		{"192.0.2.2", 12322, 174, []ASNProvider{ASNProviderBMP}, 174},
+		{"192.0.2.129", 12322, 1299, []ASNProvider{ASNProviderBMP}, 1299},
+		{"192.0.2.254", 12322, 0, []ASNProvider{ASNProviderBMP}, 0},
+		{"1.0.0.1", 12322, 65300, []ASNProvider{ASNProviderBMP}, 65300},
+		{"1.0.0.1", 12322, 15169, []ASNProvider{ASNProviderBMPExceptPrivate, ASNProviderGeoIP}, 15169},
 	}
 	for i, tc := range cases {
 		i++

@@ -43,7 +43,7 @@ func DefaultConfiguration() Configuration {
 		ExporterClassifiers:     []ExporterClassifierRule{},
 		InterfaceClassifiers:    []InterfaceClassifierRule{},
 		ClassifierCacheDuration: 5 * time.Minute,
-		ASNProviders:            []ASNProvider{ProviderFlow, ProviderBMP, ProviderGeoIP},
+		ASNProviders:            []ASNProvider{ASNProviderFlow, ASNProviderBMP, ASNProviderGeoIP},
 	}
 }
 
@@ -51,24 +51,24 @@ func DefaultConfiguration() Configuration {
 type ASNProvider int
 
 const (
-	// ProviderFlow uses the AS number embedded in flows.
-	ProviderFlow ASNProvider = iota
-	// ProviderFlowExceptPrivate uses the AS number embedded in flows, except if this is a private AS.
-	ProviderFlowExceptPrivate
-	// ProviderGeoIP pulls the AS number from a GeoIP database.
-	ProviderGeoIP
-	// ProviderBMP uses the AS number from BMP
-	ProviderBMP
-	// ProviderBMPExceptPrivate uses the AS number from BMP, except if this is a private AS.
-	ProviderBMPExceptPrivate
+	// ASNProviderFlow uses the AS number embedded in flows.
+	ASNProviderFlow ASNProvider = iota
+	// ASNProviderFlowExceptPrivate uses the AS number embedded in flows, except if this is a private AS.
+	ASNProviderFlowExceptPrivate
+	// ASNProviderGeoIP pulls the AS number from a GeoIP database.
+	ASNProviderGeoIP
+	// ASNProviderBMP uses the AS number from BMP
+	ASNProviderBMP
+	// ASNProviderBMPExceptPrivate uses the AS number from BMP, except if this is a private AS.
+	ASNProviderBMPExceptPrivate
 )
 
 var asnProviderMap = bimap.New(map[ASNProvider]string{
-	ProviderFlow:              "flow",
-	ProviderFlowExceptPrivate: "flow-except-private",
-	ProviderGeoIP:             "geoip",
-	ProviderBMP:               "bmp",
-	ProviderBMPExceptPrivate:  "bmp-except-private",
+	ASNProviderFlow:              "flow",
+	ASNProviderFlowExceptPrivate: "flow-except-private",
+	ASNProviderGeoIP:             "geoip",
+	ASNProviderBMP:               "bmp",
+	ASNProviderBMPExceptPrivate:  "bmp-except-private",
 })
 
 // MarshalText turns an AS provider to text.
@@ -125,7 +125,7 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 			oldValue := helpers.ElemOrIdentity(from.MapIndex(*oldKey))
 			if oldValue.Kind() == reflect.Bool && oldValue.Bool() == true {
 				from.SetMapIndex(reflect.ValueOf("asn-providers"),
-					reflect.ValueOf([]ASNProvider{ProviderGeoIP}))
+					reflect.ValueOf([]ASNProvider{ASNProviderGeoIP}))
 			}
 			from.SetMapIndex(*oldKey, reflect.Value{})
 		}

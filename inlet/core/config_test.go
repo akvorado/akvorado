@@ -47,7 +47,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 				}
 			},
 			Expected: Configuration{
-				ASNProviders: []ASNProvider{ProviderGeoIP},
+				ASNProviders: []ASNProvider{ASNProviderGeoIP},
 			},
 		}, {
 			Description: "ignore-asn-from-flow and asn-providers",
@@ -68,7 +68,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 				}
 			},
 			Expected: Configuration{
-				ASNProviders: []ASNProvider{ProviderFlowExceptPrivate, ProviderGeoIP, ProviderFlow},
+				ASNProviders: []ASNProvider{ASNProviderFlowExceptPrivate, ASNProviderGeoIP, ASNProviderFlow},
 			},
 		},
 	})
