@@ -16,7 +16,8 @@ identified with a specific icon:
 This version introduces the ability to customize the data schema used by
 *Akvorado*. This change is quite invasive and you should be cautious when
 deploying it. It requires a restart of ClickHouse after upgrading the
-orchestrator.
+orchestrator. It also takes some time to reduce the storage size for `SrcPort`
+and `DstPort`.
 
 The orchestrator automatically defines the TTL for the system log tables (like
 `system.query_log`). The default TTL is 30 days. You can disable that by setting
