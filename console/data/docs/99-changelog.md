@@ -11,8 +11,12 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.7.1 - 2023-01-27
 
+This is an important bugfix release. `DstNet*` values were classified using the
+source address instead of the destination address.
+
+- 🩹 *orchestrator*: fix `DstNet*` values
 - 🌱 *inlet*: if available, use sFlow for `DstASPath`
 - 🌱 *docker*: update Kafka UI image
 

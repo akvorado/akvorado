@@ -154,21 +154,41 @@ END`,
 				ClickHouseType:         "LowCardinality(String)",
 				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'name', SrcAddr, '')",
 			}, {
+				Key:                    ColumnDstNetName,
+				ClickHouseType:         "LowCardinality(String)",
+				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'name', DstAddr, '')",
+			}, {
 				Key:                    ColumnSrcNetRole,
 				ClickHouseType:         "LowCardinality(String)",
 				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'role', SrcAddr, '')",
+			}, {
+				Key:                    ColumnDstNetRole,
+				ClickHouseType:         "LowCardinality(String)",
+				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'role', DstAddr, '')",
 			}, {
 				Key:                    ColumnSrcNetSite,
 				ClickHouseType:         "LowCardinality(String)",
 				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'site', SrcAddr, '')",
 			}, {
+				Key:                    ColumnDstNetSite,
+				ClickHouseType:         "LowCardinality(String)",
+				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'site', DstAddr, '')",
+			}, {
 				Key:                    ColumnSrcNetRegion,
 				ClickHouseType:         "LowCardinality(String)",
 				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'region', SrcAddr, '')",
 			}, {
+				Key:                    ColumnDstNetRegion,
+				ClickHouseType:         "LowCardinality(String)",
+				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'region', DstAddr, '')",
+			}, {
 				Key:                    ColumnSrcNetTenant,
 				ClickHouseType:         "LowCardinality(String)",
 				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'tenant', SrcAddr, '')",
+			}, {
+				Key:                    ColumnDstNetTenant,
+				ClickHouseType:         "LowCardinality(String)",
+				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'tenant', DstAddr, '')",
 			},
 			{Key: ColumnSrcVlan, ClickHouseType: "UInt16", Disabled: true, Group: ColumnGroupL2},
 			{Key: ColumnSrcCountry, ClickHouseType: "FixedString(2)"},
