@@ -165,7 +165,7 @@ func ChannelHealthcheck(ctx context.Context, contact chan<- ChannelHealthcheckFu
 		signalFunc := func(status HealthcheckStatus, reason string) {
 			// The answer chan may be closed, because this
 			// function was called too late.
-			defer recover()
+			defer func() { recover() }()
 			answerChan <- HealthcheckResult{status, reason}
 		}
 
