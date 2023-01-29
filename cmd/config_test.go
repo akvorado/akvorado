@@ -16,7 +16,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"gopkg.in/yaml.v3"
+
+	"akvorado/common/helpers/yaml"
 
 	"akvorado/cmd"
 	"akvorado/common/helpers"

@@ -6,11 +6,11 @@ package cmd
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime"
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"reflect"
 	"sort"
 	"strconv"
@@ -19,7 +19,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/mitchellh/mapstructure"
-	"gopkg.in/yaml.v3"
+
+	"akvorado/common/helpers/yaml"
 
 	"akvorado/common/helpers"
 )
@@ -66,11 +67,15 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 				return fmt.Errorf("unable to parse YAML configuration file: %w", err)
 			}
 		} else {
-			input, err := ioutil.ReadFile(cfgFile)
+			cfgFile, err := filepath.EvalSymlinks(cfgFile)
 			if err != nil {
-				return fmt.Errorf("unable to read configuration file: %w", err)
+				return fmt.Errorf("cannot follow symlink: %w", err)
 			}
-			if err := yaml.Unmarshal(input, &rawConfig); err != nil {
+			dirname, filename := filepath.Split(cfgFile)
+			if dirname == "" {
+				dirname = "."
+			}
+			if err := yaml.UnmarshalWithInclude(os.DirFS(dirname), filename, &rawConfig); err != nil {
 				return fmt.Errorf("unable to parse YAML configuration file: %w", err)
 			}
 		}
