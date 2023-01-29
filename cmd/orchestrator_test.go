@@ -15,7 +15,7 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 func TestOrchestratorStart(t *testing.T) {

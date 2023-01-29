@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"akvorado/common/helpers"
 	"akvorado/inlet/flow/input/file"
@@ -218,20 +218,20 @@ func TestMarshalYAML(t *testing.T) {
 		t.Fatalf("Marshal() error:\n%+v", err)
 	}
 	expected := `inputs:
-- decoder: netflow
-  listen: 192.0.2.11:2055
-  queuesize: 1000
-  receivebuffer: 0
-  type: udp
-  usesrcaddrforexporteraddr: false
-  workers: 3
-- decoder: sflow
-  listen: 192.0.2.11:6343
-  queuesize: 1000
-  receivebuffer: 0
-  type: udp
-  usesrcaddrforexporteraddr: true
-  workers: 3
+    - decoder: netflow
+      listen: 192.0.2.11:2055
+      queuesize: 1000
+      receivebuffer: 0
+      type: udp
+      usesrcaddrforexporteraddr: false
+      workers: 3
+    - decoder: sflow
+      listen: 192.0.2.11:6343
+      queuesize: 1000
+      receivebuffer: 0
+      type: udp
+      usesrcaddrforexporteraddr: true
+      workers: 3
 ratelimit: 0
 `
 	if diff := helpers.Diff(strings.Split(string(got), "\n"), strings.Split(expected, "\n")); diff != "" {
