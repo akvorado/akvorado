@@ -109,7 +109,6 @@ func (c *Component) runWorker(workerID int) error {
 				return nil
 			}
 
-			start := time.Now()
 			exporter := flow.ExporterAddress.Unmap().String()
 			c.metrics.flowsReceived.WithLabelValues(exporter).Inc()
 
@@ -121,7 +120,6 @@ func (c *Component) runWorker(workerID int) error {
 
 			// Serialize flow to Protobuf
 			buf := c.d.Schema.ProtobufMarshal(flow)
-			c.metrics.flowsProcessingTime.Observe(time.Now().Sub(start).Seconds())
 
 			// Forward to Kafka. This could block and buf is now owned by the
 			// Kafka subsystem!

@@ -23,7 +23,7 @@ type Configuration struct {
 	ExporterClassifiers []ExporterClassifierRule
 	// InterfaceClassifiers defines rules for interface classification
 	InterfaceClassifiers []InterfaceClassifierRule
-	// ClassifierCacheSize defines the size of the classifier (in number of items)
+	// ClassifierCacheDuration defines the default TTL for classifier cache
 	ClassifierCacheDuration time.Duration `validate:"min=1s"`
 	// DefaultSamplingRate defines the default sampling rate to use when the information is missing
 	DefaultSamplingRate helpers.SubnetMap[uint]
