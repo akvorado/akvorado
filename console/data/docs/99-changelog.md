@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🌱 *common*: accept an `!include` tag to include other YAML files in `akvorado.yaml`
+
 ## 1.7.2 - 2023-02-12
 
 When upgrading to this release, it takes some time to reduce the storage size
