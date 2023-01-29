@@ -1,0 +1,11 @@
+---
+
+.hidden:
+  - &squid
+    protocol: tcp
+    size: 1300
+
+"":
+  - *squid
+  - el2
+  - el3

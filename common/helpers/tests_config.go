@@ -10,7 +10,8 @@ import (
 	"testing"
 
 	"github.com/mitchellh/mapstructure"
-	"gopkg.in/yaml.v3"
+
+	"akvorado/common/helpers/yaml"
 )
 
 // ConfigurationDecodeCases describes a test case for configuration

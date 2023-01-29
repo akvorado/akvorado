@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🌱 *common*: accept an `!include` tag to include other YAML files in `akvorado.yaml`
+
 ## 1.7.1 - 2023-01-27
 
 This is an important bugfix release. `DstNet*` values were classified using the
