@@ -5,7 +5,6 @@ package flow
 
 import (
 	"net/netip"
-	"time"
 
 	"akvorado/common/schema"
 	"akvorado/inlet/flow/decoder"
@@ -27,9 +26,7 @@ func (wd *wrappedDecoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 				Inc()
 		}
 	}()
-	timeTrackStart := time.Now()
 	decoded := wd.orig.Decode(in)
-	timeTrackStop := time.Now()
 
 	if decoded == nil {
 		wd.c.metrics.decoderErrors.WithLabelValues(wd.orig.Name()).
@@ -44,8 +41,6 @@ func (wd *wrappedDecoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 		}
 	}
 
-	wd.c.metrics.decoderTime.WithLabelValues(wd.orig.Name()).
-		Observe(float64((timeTrackStop.Sub(timeTrackStart)).Nanoseconds()) / 1000 / 1000 / 1000)
 	wd.c.metrics.decoderStats.WithLabelValues(wd.orig.Name()).
 		Inc()
 	return decoded

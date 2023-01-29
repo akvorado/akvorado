@@ -30,7 +30,6 @@ type Component struct {
 	metrics struct {
 		decoderStats  *reporter.CounterVec
 		decoderErrors *reporter.CounterVec
-		decoderTime   *reporter.SummaryVec
 	}
 
 	// Channel for sending flows out of the package.
@@ -104,14 +103,6 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		reporter.CounterOpts{
 			Name: "decoder_error_count",
 			Help: "Decoder processed error count.",
-		},
-		[]string{"name"},
-	)
-	c.metrics.decoderTime = c.r.SummaryVec(
-		reporter.SummaryOpts{
-			Name:       "summary_decoding_time_seconds",
-			Help:       "Decoding time summary.",
-			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		},
 		[]string{"name"},
 	)
