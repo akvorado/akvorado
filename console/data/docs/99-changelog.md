@@ -13,6 +13,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 🩹 *orchestrator*: fix disabling of `DstASPath`
 - 🌱 *common*: accept an `!include` tag to include other YAML files in `akvorado.yaml`
 
 ## 1.7.1 - 2023-01-27

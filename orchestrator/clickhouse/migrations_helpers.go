@@ -39,7 +39,7 @@ func (c *Component) wrapMigrations(fns ...func() error) error {
 
 // stemplate is a simple wrapper around text/template.
 func stemplate(t string, data any) (string, error) {
-	tpl, err := template.New("tpl").Parse(t)
+	tpl, err := template.New("tpl").Option("missingkey=error").Parse(t)
 	if err != nil {
 		return "", err
 	}
@@ -252,10 +252,12 @@ func (c *Component) createRawFlowsConsumerView(ctx context.Context) error {
 		"Table":    tableName,
 	}
 	if column, ok := c.d.Schema.LookupColumnByKey(schema.ColumnDstASPath); ok && !column.Disabled {
-		args["With"] = "WITH arrayCompact(DstASPath) AS c_DstASPath"
+		args["With"] = "WITH arrayCompact(DstASPath) AS c_DstASPath "
+	} else {
+		args["With"] = ""
 	}
 	selectQuery, err := stemplate(
-		`{{ .With }} SELECT {{ .Columns }} FROM {{ .Database }}.{{ .Table }} WHERE length(_error) = 0`,
+		`{{ .With }}SELECT {{ .Columns }} FROM {{ .Database }}.{{ .Table }} WHERE length(_error) = 0`,
 		args)
 	if err != nil {
 		return fmt.Errorf("cannot build select statement for raw flows consumer view: %w", err)

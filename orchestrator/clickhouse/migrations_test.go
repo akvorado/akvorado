@@ -350,4 +350,45 @@ LIMIT 1`, proto.ClientName)
 			}
 		})
 	}
+
+	// And with a partial one
+	if !t.Failed() {
+		t.Run("partial schema", func(t *testing.T) {
+			r := reporter.NewMock(t)
+			schConfig := schema.DefaultConfiguration()
+			schConfig.Disabled = []schema.ColumnKey{
+				schema.ColumnDst1stAS, schema.ColumnDst2ndAS, schema.ColumnDst3rdAS,
+				schema.ColumnDstASPath,
+				schema.ColumnDstCommunities,
+				schema.ColumnDstLargeCommunities,
+				schema.ColumnDstLargeCommunitiesASN,
+				schema.ColumnDstLargeCommunitiesLocalData1,
+				schema.ColumnDstLargeCommunitiesLocalData2,
+			}
+			sch, err := schema.New(schConfig)
+			if err != nil {
+				t.Fatalf("schema.New() error:\n%+v", err)
+			}
+			configuration := DefaultConfiguration()
+			configuration.OrchestratorURL = "http://something"
+			configuration.Kafka.Configuration = kafka.DefaultConfiguration()
+			ch, err := New(r, configuration, Dependencies{
+				Daemon:     daemon.NewMock(t),
+				HTTP:       http.NewMock(t, r),
+				Schema:     sch,
+				ClickHouse: chComponent,
+			})
+			if err != nil {
+				t.Fatalf("New() error:\n%+v", err)
+			}
+			helpers.StartStop(t, ch)
+			waitMigrations(t, ch)
+
+			// We need to have at least one migration
+			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps")
+			if gotMetrics["applied_steps"] == "0" {
+				t.Fatal("No migration applied when disabling some columns")
+			}
+		})
+	}
 }
