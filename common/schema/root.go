@@ -38,6 +38,15 @@ func New(config Configuration) (*Component, error) {
 			column.Disabled = true
 		}
 	}
+	for _, k := range config.Disabled {
+		if column, ok := schema.LookupColumnByKey(k); ok {
+			for _, depend := range column.Depends {
+				if ocolumn, _ := schema.LookupColumnByKey(depend); !ocolumn.Disabled {
+					return nil, fmt.Errorf("column %q cannot be disabled without disabling %q", k, depend)
+				}
+			}
+		}
+	}
 	for _, k := range config.NotMainTableOnly {
 		if column, ok := schema.LookupColumnByKey(k); ok {
 			column.ClickHouseMainOnly = false

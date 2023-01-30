@@ -29,6 +29,7 @@ type Column struct {
 	Disabled  bool
 	NoDisable bool
 	Group     ColumnGroup
+	Depends   []ColumnKey
 
 	// For ClickHouse. `NotSortingKey' is for columns generated from other
 	// columns. It is only useful if not ClickHouseMainOnly and not Alias. `GenerateFrom'

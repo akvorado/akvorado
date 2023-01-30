@@ -198,14 +198,17 @@ END`,
 				ClickHouseType:     "Array(UInt32)",
 			}, {
 				Key:                    ColumnDst1stAS,
+				Depends:                []ColumnKey{ColumnDstASPath},
 				ClickHouseType:         "UInt32",
 				ClickHouseGenerateFrom: "c_DstASPath[1]",
 			}, {
 				Key:                    ColumnDst2ndAS,
+				Depends:                []ColumnKey{ColumnDstASPath},
 				ClickHouseType:         "UInt32",
 				ClickHouseGenerateFrom: "c_DstASPath[2]",
 			}, {
 				Key:                    ColumnDst3rdAS,
+				Depends:                []ColumnKey{ColumnDstASPath},
 				ClickHouseType:         "UInt32",
 				ClickHouseGenerateFrom: "c_DstASPath[3]",
 			}, {
@@ -269,11 +272,13 @@ END`,
 			},
 			{
 				Key:                 ColumnPacketSize,
+				Depends:             []ColumnKey{ColumnBytes, ColumnPackets},
 				ClickHouseType:      "UInt64",
 				ClickHouseAlias:     "intDiv(Bytes, Packets)",
 				ConsoleNotDimension: true,
 			}, {
 				Key:            ColumnPacketSizeBucket,
+				Depends:        []ColumnKey{ColumnPacketSize},
 				ClickHouseType: "LowCardinality(String)",
 				ClickHouseAlias: func() string {
 					boundaries := []int{64, 128, 256, 512, 768, 1024, 1280, 1501,
@@ -336,6 +341,17 @@ func (schema Schema) finalize() Schema {
 		if !column.ClickHouseMainOnly && column.ClickHouseAlias != "" {
 			column.ClickHouseNotSortingKey = true
 		}
+
+		// Transform implicit dependencies
+		for idx := range column.ClickHouseTransformFrom {
+			deps := column.ClickHouseTransformFrom[idx].Depends
+			deps = append(deps, column.Key)
+			slices.Sort(deps)
+			column.ClickHouseTransformFrom[idx].Depends = slices.Compact(deps)
+			column.Depends = append(column.Depends, column.ClickHouseTransformFrom[idx].Key)
+		}
+		slices.Sort(column.Depends)
+		column.Depends = slices.Compact(column.Depends)
 
 		ncolumns = append(ncolumns, column)
 
