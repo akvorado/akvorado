@@ -33,15 +33,15 @@ func setupTestCache(t *testing.T) (*reporter.Reporter, *clock.Mock, *snmpCache) 
 type answer struct {
 	ExporterName string
 	Interface    Interface
-	Err          error
+	NOk          bool
 }
 
 func expectCacheLookup(t *testing.T, sc *snmpCache, exporterIP string, ifIndex uint, expected answer) {
 	t.Helper()
 	ip := netip.MustParseAddr(exporterIP)
 	ip = netip.AddrFrom16(ip.As16())
-	gotExporterName, gotInterface, err := sc.lookup(ip, ifIndex, false)
-	got := answer{gotExporterName, gotInterface, err}
+	gotExporterName, gotInterface, ok := sc.lookup(ip, ifIndex, false)
+	got := answer{gotExporterName, gotInterface, !ok}
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Errorf("Lookup() (-got, +want):\n%s", diff)
 	}
@@ -49,15 +49,14 @@ func expectCacheLookup(t *testing.T, sc *snmpCache, exporterIP string, ifIndex u
 
 func TestGetEmpty(t *testing.T) {
 	r, _, sc := setupTestCache(t)
-	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{Err: ErrCacheMiss})
+	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{NOk: true})
 
 	gotMetrics := r.GetMetrics("akvorado_inlet_snmp_cache_")
 	expectedMetrics := map[string]string{
-		`expired`:   "0",
-		`hit`:       "0",
-		`miss`:      "1",
-		`size`:      "0",
-		`exporters`: "0",
+		`expired`: "0",
+		`hit`:     "0",
+		`miss`:    "1",
+		`size`:    "0",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -70,16 +69,15 @@ func TestSimpleLookup(t *testing.T) {
 	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{
 		ExporterName: "localhost",
 		Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit", Speed: 1000}})
-	expectCacheLookup(t, sc, "127.0.0.1", 787, answer{Err: ErrCacheMiss})
-	expectCacheLookup(t, sc, "127.0.0.2", 676, answer{Err: ErrCacheMiss})
+	expectCacheLookup(t, sc, "127.0.0.1", 787, answer{NOk: true})
+	expectCacheLookup(t, sc, "127.0.0.2", 676, answer{NOk: true})
 
 	gotMetrics := r.GetMetrics("akvorado_inlet_snmp_cache_")
 	expectedMetrics := map[string]string{
-		`expired`:   "0",
-		`hit`:       "1",
-		`miss`:      "2",
-		`size`:      "1",
-		`exporters`: "1",
+		`expired`: "0",
+		`hit`:     "1",
+		`miss`:    "2",
+		`size`:    "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -96,7 +94,7 @@ func TestExpire(t *testing.T) {
 	clock.Add(10 * time.Minute)
 	sc.Expire(time.Hour)
 	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{
-		ExporterName: "localhost2",
+		ExporterName: "localhost",
 		Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
 	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{
 		ExporterName: "localhost2",
@@ -105,7 +103,7 @@ func TestExpire(t *testing.T) {
 		ExporterName: "localhost3",
 		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"}})
 	sc.Expire(29 * time.Minute)
-	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{Err: ErrCacheMiss})
+	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{NOk: true})
 	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{
 		ExporterName: "localhost2",
 		Interface:    Interface{Name: "Gi0/0/0/2", Description: "Peering"}})
@@ -113,15 +111,15 @@ func TestExpire(t *testing.T) {
 		ExporterName: "localhost3",
 		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"}})
 	sc.Expire(19 * time.Minute)
-	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{Err: ErrCacheMiss})
-	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{Err: ErrCacheMiss})
+	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{NOk: true})
+	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{NOk: true})
 	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
 		ExporterName: "localhost3",
 		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"}})
 	sc.Expire(9 * time.Minute)
-	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{Err: ErrCacheMiss})
-	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{Err: ErrCacheMiss})
-	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{Err: ErrCacheMiss})
+	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{NOk: true})
+	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{NOk: true})
+	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{NOk: true})
 	sc.Put(netip.MustParseAddr("::ffff:127.0.0.1"), "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
 	clock.Add(10 * time.Minute)
 	sc.Expire(19 * time.Minute)
@@ -131,11 +129,10 @@ func TestExpire(t *testing.T) {
 
 	gotMetrics := r.GetMetrics("akvorado_inlet_snmp_cache_")
 	expectedMetrics := map[string]string{
-		`expired`:   "3",
-		`hit`:       "7",
-		`miss`:      "6",
-		`size`:      "1",
-		`exporters`: "1",
+		`expired`: "3",
+		`hit`:     "7",
+		`miss`:    "6",
+		`size`:    "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -159,60 +156,10 @@ func TestExpireRefresh(t *testing.T) {
 	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{
 		ExporterName: "localhost",
 		Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
-	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{Err: ErrCacheMiss})
+	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{NOk: true})
 	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
 		ExporterName: "localhost2",
 		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"}})
-}
-
-func TestWouldExpire(t *testing.T) {
-	_, clock, sc := setupTestCache(t)
-	sc.Put(netip.MustParseAddr("::ffff:127.0.0.1"), "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
-	clock.Add(10 * time.Minute)
-	sc.Put(netip.MustParseAddr("::ffff:127.0.0.1"), "localhost", 678, Interface{Name: "Gi0/0/0/2", Description: "Peering"})
-	clock.Add(10 * time.Minute)
-	sc.Put(netip.MustParseAddr("::ffff:127.0.0.2"), "localhost2", 678, Interface{Name: "Gi0/0/0/1", Description: "IX"})
-	clock.Add(10 * time.Minute)
-	// Refresh
-	sc.Lookup(netip.MustParseAddr("::ffff:127.0.0.1"), 676)
-	clock.Add(10 * time.Minute)
-
-	cases := []struct {
-		Minutes  time.Duration
-		Expected map[string]map[uint]Interface
-	}{
-		{9, map[string]map[uint]Interface{
-			"::ffff:127.0.0.1": {
-				676: Interface{Name: "Gi0/0/0/1", Description: "Transit"},
-				678: Interface{Name: "Gi0/0/0/2", Description: "Peering"},
-			},
-			"::ffff:127.0.0.2": {
-				678: Interface{Name: "Gi0/0/0/1", Description: "IX"},
-			},
-		}},
-		{19, map[string]map[uint]Interface{
-			"::ffff:127.0.0.1": {
-				678: Interface{Name: "Gi0/0/0/2", Description: "Peering"},
-			},
-			"::ffff:127.0.0.2": {
-				678: Interface{Name: "Gi0/0/0/1", Description: "IX"},
-			},
-		}},
-		{29, map[string]map[uint]Interface{
-			"::ffff:127.0.0.1": {
-				678: Interface{Name: "Gi0/0/0/2", Description: "Peering"},
-			},
-		}},
-		{39, map[string]map[uint]Interface{}},
-	}
-	for _, tc := range cases {
-		t.Run(fmt.Sprintf("%d minutes", tc.Minutes), func(t *testing.T) {
-			got := sc.WouldExpire(tc.Minutes * time.Minute)
-			if diff := helpers.Diff(got, tc.Expected); diff != "" {
-				t.Fatalf("WouldExpire(%d minutes) (-got, +want):\n%s", tc.Minutes, diff)
-			}
-		})
-	}
 }
 
 func TestNeedUpdates(t *testing.T) {
@@ -293,32 +240,13 @@ func TestSaveLoad(t *testing.T) {
 	}
 
 	sc.Expire(29 * time.Minute)
-	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{Err: ErrCacheMiss})
+	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{NOk: true})
 	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{
 		ExporterName: "localhost",
 		Interface:    Interface{Name: "Gi0/0/0/2", Description: "Peering"}})
 	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
 		ExporterName: "localhost2",
 		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX", Speed: 1000}})
-}
-
-func TestLoadMismatchVersion(t *testing.T) {
-	_, _, sc := setupTestCache(t)
-	sc.Put(netip.MustParseAddr("::ffff:127.0.0.1"), "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
-	target := filepath.Join(t.TempDir(), "cache")
-
-	cacheCurrentVersionNumber++
-	if err := sc.Save(target); err != nil {
-		cacheCurrentVersionNumber--
-		t.Fatalf("sc.Save() error:\n%s", err)
-	}
-	cacheCurrentVersionNumber--
-
-	// Try to load it
-	_, _, sc = setupTestCache(t)
-	if err := sc.Load(target); !errors.Is(err, ErrCacheVersion) {
-		t.Fatalf("sc.Load() error:\n%s", err)
-	}
 }
 
 func TestConcurrentOperations(t *testing.T) {

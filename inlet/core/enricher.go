@@ -6,11 +6,8 @@ package core
 import (
 	"net/netip"
 	"strconv"
-	"time"
 
-	"akvorado/common/reporter"
 	"akvorado/common/schema"
-	"akvorado/inlet/snmp"
 )
 
 // exporterAndInterfaceInfo aggregates both exporter info and interface info
@@ -25,15 +22,10 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	var flowInIfName, flowInIfDescription, flowOutIfName, flowOutIfDescription string
 	var flowInIfSpeed, flowOutIfSpeed uint32
 
-	errLogger := c.r.Sample(reporter.BurstSampler(time.Minute, 10))
-
 	if flow.InIf != 0 {
-		exporterName, iface, err := c.d.SNMP.Lookup(exporterIP, uint(flow.InIf))
-		if err != nil {
-			if err != snmp.ErrCacheMiss {
-				errLogger.Err(err).Str("exporter", exporterStr).Msg("unable to query SNMP cache")
-			}
-			c.metrics.flowsErrors.WithLabelValues(exporterStr, err.Error()).Inc()
+		exporterName, iface, ok := c.d.SNMP.Lookup(exporterIP, uint(flow.InIf))
+		if !ok {
+			c.metrics.flowsErrors.WithLabelValues(exporterStr, "SNMP cache miss").Inc()
 			skip = true
 		} else {
 			flowExporterName = exporterName
@@ -44,15 +36,12 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	}
 
 	if flow.OutIf != 0 {
-		exporterName, iface, err := c.d.SNMP.Lookup(exporterIP, uint(flow.OutIf))
-		if err != nil {
+		exporterName, iface, ok := c.d.SNMP.Lookup(exporterIP, uint(flow.OutIf))
+		if !ok {
 			// Only register a cache miss if we don't have one.
 			// TODO: maybe we could do one SNMP query for both interfaces.
 			if !skip {
-				if err != snmp.ErrCacheMiss {
-					errLogger.Err(err).Str("exporter", exporterStr).Msg("unable to query SNMP cache")
-				}
-				c.metrics.flowsErrors.WithLabelValues(exporterStr, err.Error()).Inc()
+				c.metrics.flowsErrors.WithLabelValues(exporterStr, "SNMP cache miss").Inc()
 				skip = true
 			}
 		} else {

@@ -234,9 +234,9 @@ type lookupRequest struct {
 // Lookup for interface information for the provided exporter and ifIndex.
 // If the information is not in the cache, it will be polled, but
 // won't be returned immediately.
-func (c *Component) Lookup(exporterIP netip.Addr, ifIndex uint) (string, Interface, error) {
-	exporterName, iface, err := c.sc.Lookup(exporterIP, ifIndex)
-	if errors.Is(err, ErrCacheMiss) {
+func (c *Component) Lookup(exporterIP netip.Addr, ifIndex uint) (string, Interface, bool) {
+	exporterName, iface, ok := c.sc.Lookup(exporterIP, ifIndex)
+	if !ok {
 		req := lookupRequest{
 			ExporterIP: exporterIP,
 			IfIndexes:  []uint{ifIndex},
@@ -247,7 +247,7 @@ func (c *Component) Lookup(exporterIP netip.Addr, ifIndex uint) (string, Interfa
 			c.metrics.pollerBusyCount.WithLabelValues(exporterIP.Unmap().String()).Inc()
 		}
 	}
-	return exporterName, iface, err
+	return exporterName, iface, ok
 }
 
 // Dispatch an incoming request to workers. May handle more than the
