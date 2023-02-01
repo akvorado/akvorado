@@ -15,6 +15,7 @@ identified with a specific icon:
 
 - 🩹 *orchestrator*: fix disabling of `DstASPath`
 - 🩹 *console*: fix time range selection
+- 🩹 *console*: fix calculation of the L2 overhead when selecting L2 bps
 - 🌱 *common*: accept an `!include` tag to include other YAML files in `akvorado.yaml`
 - 🌱 *inlet*: optimize to reduce the number of queries to the system clock
 
