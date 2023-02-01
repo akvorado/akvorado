@@ -58,7 +58,7 @@ func (c *Component) initMetrics() {
 			Help: "Number of items in the exporter classifier cache",
 		},
 		func() float64 {
-			return float64(c.classifierExporterCache.ItemCount())
+			return float64(c.classifierExporterCache.Size())
 		},
 	)
 	c.metrics.classifierInterfaceCacheSize = c.r.CounterFunc(
@@ -67,7 +67,7 @@ func (c *Component) initMetrics() {
 			Help: "Number of items in the interface classifier cache",
 		},
 		func() float64 {
-			return float64(c.classifierInterfaceCache.ItemCount())
+			return float64(c.classifierInterfaceCache.Size())
 		},
 	)
 	c.metrics.classifierErrors = c.r.CounterVec(

@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/slayercat/GoSNMPServer"
 	"github.com/slayercat/gosnmp"
 
@@ -82,9 +81,8 @@ func TestPoller(t *testing.T) {
 			}
 			got := []string{}
 			r := reporter.NewMock(t)
-			clock := clock.NewMock()
 			config := tc.Config
-			p := newPoller(r, config, clock, func(exporterIP netip.Addr, exporterName string, ifIndex uint, iface Interface) {
+			p := newPoller(r, config, func(exporterIP netip.Addr, exporterName string, ifIndex uint, iface Interface) {
 				got = append(got, fmt.Sprintf("%s %s %d %s %s %d",
 					exporterIP.Unmap().String(), exporterName,
 					ifIndex, iface.Name, iface.Description, iface.Speed))

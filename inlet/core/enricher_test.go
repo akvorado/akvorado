@@ -389,6 +389,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 					}
 					t.Logf("Raw message: %v", b)
 					got := c.d.Schema.ProtobufDecode(t, b)
+					got.TimeReceived = 0
 					if diff := helpers.Diff(&got, tc.OutputFlow); diff != "" {
 						t.Errorf("Classifier (-got, +want):\n%s", diff)
 					}

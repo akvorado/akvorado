@@ -75,7 +75,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	if dependencies.Clock == nil {
 		dependencies.Clock = clock.New()
 	}
-	sc := newSNMPCache(r, dependencies.Clock)
+	sc := newSNMPCache(r)
 	c := Component{
 		r:      r,
 		d:      &dependencies,
@@ -92,7 +92,9 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 			Timeout:            configuration.PollerTimeout,
 			Communities:        configuration.Communities,
 			SecurityParameters: configuration.SecurityParameters,
-		}, dependencies.Clock, sc.Put),
+		}, func(ip netip.Addr, exporterName string, index uint, iface Interface) {
+			sc.Put(dependencies.Clock.Now(), ip, exporterName, index, iface)
+		}),
 	}
 	c.d.Daemon.Track(&c.t, "inlet/snmp")
 
@@ -234,8 +236,8 @@ type lookupRequest struct {
 // Lookup for interface information for the provided exporter and ifIndex.
 // If the information is not in the cache, it will be polled, but
 // won't be returned immediately.
-func (c *Component) Lookup(exporterIP netip.Addr, ifIndex uint) (string, Interface, bool) {
-	exporterName, iface, ok := c.sc.Lookup(exporterIP, ifIndex)
+func (c *Component) Lookup(t time.Time, exporterIP netip.Addr, ifIndex uint) (string, Interface, bool) {
+	exporterName, iface, ok := c.sc.Lookup(t, exporterIP, ifIndex)
 	if !ok {
 		req := lookupRequest{
 			ExporterIP: exporterIP,
@@ -331,12 +333,12 @@ func (c *Component) pollerIncomingRequest(request lookupRequest) {
 
 // expireCache handles cache expiration and refresh.
 func (c *Component) expireCache() {
-	c.sc.Expire(c.config.CacheDuration)
+	c.sc.Expire(c.d.Clock.Now().Add(-c.config.CacheDuration))
 	if c.config.CacheRefresh > 0 {
 		c.r.Debug().Msg("refresh SNMP cache")
 		c.metrics.cacheRefreshRuns.Inc()
 		count := 0
-		toRefresh := c.sc.NeedUpdates(c.config.CacheRefresh)
+		toRefresh := c.sc.NeedUpdates(c.d.Clock.Now().Add(-c.config.CacheRefresh))
 		for exporter, ifaces := range toRefresh {
 			for ifIndex := range ifaces {
 				select {

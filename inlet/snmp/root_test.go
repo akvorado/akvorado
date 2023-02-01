@@ -22,7 +22,7 @@ import (
 func expectSNMPLookup(t *testing.T, c *Component, exporter string, ifIndex uint, expected answer) {
 	t.Helper()
 	ip := netip.AddrFrom16(netip.MustParseAddr(exporter).As16())
-	gotExporterName, gotInterface, ok := c.Lookup(ip, ifIndex)
+	gotExporterName, gotInterface, ok := c.Lookup(time.Now(), ip, ifIndex)
 	got := answer{gotExporterName, gotInterface, !ok}
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Fatalf("Lookup() (-got, +want):\n%s", diff)
@@ -112,9 +112,9 @@ func TestAutoRefresh(t *testing.T) {
 
 	// Keep it in the cache!
 	mockClock.Add(25 * time.Minute)
-	c.Lookup(netip.MustParseAddr("::ffff:127.0.0.1"), 765)
+	c.Lookup(mockClock.Now(), netip.MustParseAddr("::ffff:127.0.0.1"), 765)
 	mockClock.Add(25 * time.Minute)
-	c.Lookup(netip.MustParseAddr("::ffff:127.0.0.1"), 765)
+	c.Lookup(mockClock.Now(), netip.MustParseAddr("::ffff:127.0.0.1"), 765)
 
 	// Go forward, we expect the entry to have been refreshed and be still present
 	mockClock.Add(11 * time.Minute)
@@ -257,10 +257,10 @@ func TestPollerBreaker(t *testing.T) {
 			c.metrics.pollerBreakerOpenCount.WithLabelValues("127.0.0.1").Add(0)
 
 			for i := 0; i < 30; i++ {
-				c.Lookup(netip.MustParseAddr("::ffff:127.0.0.1"), 765)
+				c.Lookup(c.d.Clock.Now(), netip.MustParseAddr("::ffff:127.0.0.1"), 765)
 			}
 			for i := 0; i < 5; i++ {
-				c.Lookup(netip.MustParseAddr("::ffff:127.0.0.2"), 765)
+				c.Lookup(c.d.Clock.Now(), netip.MustParseAddr("::ffff:127.0.0.2"), 765)
 			}
 			time.Sleep(50 * time.Millisecond)
 

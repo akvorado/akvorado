@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"gopkg.in/tomb.v2"
-	"zgo.at/zcache/v2"
 
 	"akvorado/common/daemon"
+	"akvorado/common/helpers/cache"
 	"akvorado/common/http"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
@@ -37,8 +37,8 @@ type Component struct {
 	httpFlowChannel    chan *schema.FlowMessage
 	httpFlowFlushDelay time.Duration
 
-	classifierExporterCache  *zcache.Cache[exporterInfo, exporterClassification]
-	classifierInterfaceCache *zcache.Cache[exporterAndInterfaceInfo, interfaceClassification]
+	classifierExporterCache  *cache.Cache[exporterInfo, exporterClassification]
+	classifierInterfaceCache *cache.Cache[exporterAndInterfaceInfo, interfaceClassification]
 	classifierErrLogger      reporter.Logger
 }
 
@@ -66,8 +66,8 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		httpFlowChannel:    make(chan *schema.FlowMessage, 10),
 		httpFlowFlushDelay: time.Second,
 
-		classifierExporterCache:  zcache.New[exporterInfo, exporterClassification](configuration.ClassifierCacheDuration, 2*configuration.ClassifierCacheDuration),
-		classifierInterfaceCache: zcache.New[exporterAndInterfaceInfo, interfaceClassification](configuration.ClassifierCacheDuration, 2*configuration.ClassifierCacheDuration),
+		classifierExporterCache:  cache.New[exporterInfo, exporterClassification](),
+		classifierInterfaceCache: cache.New[exporterAndInterfaceInfo, interfaceClassification](),
 		classifierErrLogger:      r.Sample(reporter.BurstSampler(10*time.Second, 3)),
 	}
 	c.d.Daemon.Track(&c.t, "inlet/core")
@@ -84,6 +84,20 @@ func (c *Component) Start() error {
 			return c.runWorker(workerID)
 		})
 	}
+
+	// Classifier cache expiration
+	c.t.Go(func() error {
+		for {
+			select {
+			case <-c.t.Dying():
+				return nil
+			case <-time.After(c.config.ClassifierCacheDuration):
+				before := time.Now().Add(-c.config.ClassifierCacheDuration)
+				c.classifierExporterCache.DeleteLastAccessedBefore(before)
+				c.classifierInterfaceCache.DeleteLastAccessedBefore(before)
+			}
+		}
+	})
 
 	c.r.RegisterHealthcheck("core", c.channelHealthcheck())
 	c.d.HTTP.GinRouter.GET("/api/v0/inlet/flows", c.FlowsHTTPHandler)

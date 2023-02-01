@@ -48,7 +48,6 @@ require (
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/gorm v1.24.3
-	zgo.at/zcache/v2 v2.1.0
 )
 
 require (

@@ -170,9 +170,6 @@ func (in *Input) Start() (<-chan []*schema.FlowMessage, error) {
 							float64(oobMsg.Drops))
 					}
 				}
-				if oobMsg.Received.IsZero() {
-					oobMsg.Received = time.Now()
-				}
 
 				srcIP := source.IP.String()
 				in.metrics.bytes.WithLabelValues(listen, worker, srcIP).

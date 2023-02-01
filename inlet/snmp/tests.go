@@ -52,7 +52,9 @@ func NewMock(t *testing.T, reporter *reporter.Reporter, configuration Configurat
 		t.Fatalf("New() error:\n%+v", err)
 	}
 	// Change the poller to a fake one.
-	c.poller = newMockPoller(configuration, c.sc.Put)
+	c.poller = newMockPoller(configuration, func(ip netip.Addr, exporterName string, index uint, iface Interface) {
+		c.sc.Put(c.d.Clock.Now(), ip, exporterName, index, iface)
+	})
 	helpers.StartStop(t, c)
 	return c
 }

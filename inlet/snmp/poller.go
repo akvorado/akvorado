@@ -11,7 +11,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/gosnmp/gosnmp"
 
 	"akvorado/common/helpers"
@@ -26,7 +25,6 @@ type poller interface {
 type realPoller struct {
 	r      *reporter.Reporter
 	config pollerConfig
-	clock  clock.Clock
 
 	pendingRequests     map[string]struct{}
 	pendingRequestsLock sync.Mutex
@@ -50,11 +48,10 @@ type pollerConfig struct {
 }
 
 // newPoller creates a new SNMP poller.
-func newPoller(r *reporter.Reporter, config pollerConfig, clock clock.Clock, put func(netip.Addr, string, uint, Interface)) *realPoller {
+func newPoller(r *reporter.Reporter, config pollerConfig, put func(netip.Addr, string, uint, Interface)) *realPoller {
 	p := &realPoller{
 		r:               r,
 		config:          config,
-		clock:           clock,
 		pendingRequests: make(map[string]struct{}),
 		errLogger:       r.Sample(reporter.BurstSampler(10*time.Second, 3)),
 		put:             put,
@@ -168,7 +165,7 @@ func (p *realPoller) Poll(ctx context.Context, exporter, agent netip.Addr, port 
 		p.metrics.failures.WithLabelValues(exporterStr, "connect").Inc()
 		p.errLogger.Err(err).Str("exporter", exporterStr).Msg("unable to connect")
 	}
-	start := p.clock.Now()
+	start := time.Now()
 	requests := []string{"1.3.6.1.2.1.1.5.0"}
 	for _, ifIndex := range ifIndexes {
 		moreRequests := []string{
@@ -261,7 +258,7 @@ func (p *realPoller) Poll(ctx context.Context, exporter, agent netip.Addr, port 
 		p.metrics.successes.WithLabelValues(exporterStr).Inc()
 	}
 
-	p.metrics.times.WithLabelValues(exporterStr).Observe(p.clock.Now().Sub(start).Seconds())
+	p.metrics.times.WithLabelValues(exporterStr).Observe(time.Now().Sub(start).Seconds())
 	return nil
 }
 

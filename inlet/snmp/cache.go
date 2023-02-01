@@ -7,8 +7,6 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/benbjohnson/clock"
-
 	"akvorado/common/helpers/cache"
 	"akvorado/common/reporter"
 )
@@ -17,7 +15,6 @@ import (
 type snmpCache struct {
 	r     *reporter.Reporter
 	cache *cache.Cache[key, value]
-	clock clock.Clock
 
 	metrics struct {
 		cacheHit     reporter.Counter
@@ -43,11 +40,10 @@ type value struct {
 	Interface
 }
 
-func newSNMPCache(r *reporter.Reporter, clock clock.Clock) *snmpCache {
+func newSNMPCache(r *reporter.Reporter) *snmpCache {
 	sc := &snmpCache{
 		r:     r,
 		cache: cache.New[key, value](),
-		clock: clock,
 	}
 	sc.metrics.cacheHit = r.Counter(
 		reporter.CounterOpts{
@@ -76,15 +72,7 @@ func newSNMPCache(r *reporter.Reporter, clock clock.Clock) *snmpCache {
 
 // Lookup will perform a lookup of the cache. It returns the exporter
 // name as well as the requested interface.
-func (sc *snmpCache) Lookup(ip netip.Addr, index uint) (string, Interface, bool) {
-	return sc.lookup(ip, index, true)
-}
-
-func (sc *snmpCache) lookup(ip netip.Addr, index uint, touchAccess bool) (string, Interface, bool) {
-	t := time.Time{}
-	if touchAccess {
-		t = sc.clock.Now()
-	}
+func (sc *snmpCache) Lookup(t time.Time, ip netip.Addr, index uint) (string, Interface, bool) {
 	result, ok := sc.cache.Get(t, key{ip, index})
 	if !ok {
 		sc.metrics.cacheMiss.Inc()
@@ -95,28 +83,25 @@ func (sc *snmpCache) lookup(ip netip.Addr, index uint, touchAccess bool) (string
 }
 
 // Put a new entry in the cache.
-func (sc *snmpCache) Put(ip netip.Addr, exporterName string, index uint, iface Interface) {
-	t := sc.clock.Now()
+func (sc *snmpCache) Put(t time.Time, ip netip.Addr, exporterName string, index uint, iface Interface) {
 	sc.cache.Put(t, key{ip, index}, value{
 		ExporterName: exporterName,
 		Interface:    iface,
 	})
 }
 
-// Expire expire entries older than the provided duration (rely on last access).
-func (sc *snmpCache) Expire(older time.Duration) int {
-	threshold := sc.clock.Now().Add(-older)
-	expired := sc.cache.DeleteLastAccessedBefore(threshold)
+// Expire expire entries whose last access is before the provided time
+func (sc *snmpCache) Expire(before time.Time) int {
+	expired := sc.cache.DeleteLastAccessedBefore(before)
 	sc.metrics.cacheExpired.Add(float64(expired))
 	return expired
 }
 
 // NeedUpdates returns a map of interface entries that would need to
 // be updated. It relies on last update.
-func (sc *snmpCache) NeedUpdates(older time.Duration) map[netip.Addr]map[uint]Interface {
-	t := sc.clock.Now().Add(-older)
+func (sc *snmpCache) NeedUpdates(before time.Time) map[netip.Addr]map[uint]Interface {
 	result := map[netip.Addr]map[uint]Interface{}
-	for k, v := range sc.cache.ItemsLastUpdatedBefore(t) {
+	for k, v := range sc.cache.ItemsLastUpdatedBefore(before) {
 		interfaces, ok := result[k.IP]
 		if !ok {
 			interfaces = map[uint]Interface{}

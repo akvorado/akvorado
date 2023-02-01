@@ -6,6 +6,7 @@ package core
 import (
 	"net/netip"
 	"strconv"
+	"time"
 
 	"akvorado/common/schema"
 )
@@ -22,8 +23,13 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	var flowInIfName, flowInIfDescription, flowOutIfName, flowOutIfDescription string
 	var flowInIfSpeed, flowOutIfSpeed uint32
 
+	t := time.Now() // only call it once
+	if flow.TimeReceived == 0 {
+		flow.TimeReceived = uint64(t.UTC().Unix())
+	}
+
 	if flow.InIf != 0 {
-		exporterName, iface, ok := c.d.SNMP.Lookup(exporterIP, uint(flow.InIf))
+		exporterName, iface, ok := c.d.SNMP.Lookup(t, exporterIP, uint(flow.InIf))
 		if !ok {
 			c.metrics.flowsErrors.WithLabelValues(exporterStr, "SNMP cache miss").Inc()
 			skip = true
@@ -36,7 +42,7 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	}
 
 	if flow.OutIf != 0 {
-		exporterName, iface, ok := c.d.SNMP.Lookup(exporterIP, uint(flow.OutIf))
+		exporterName, iface, ok := c.d.SNMP.Lookup(t, exporterIP, uint(flow.OutIf))
 		if !ok {
 			// Only register a cache miss if we don't have one.
 			// TODO: maybe we could do one SNMP query for both interfaces.
@@ -75,11 +81,11 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	}
 
 	// Classification
-	c.classifyExporter(exporterStr, flowExporterName, flow)
-	c.classifyInterface(exporterStr, flowExporterName, flow,
+	c.classifyExporter(t, exporterStr, flowExporterName, flow)
+	c.classifyInterface(t, exporterStr, flowExporterName, flow,
 		flowOutIfName, flowOutIfDescription, flowOutIfSpeed,
 		false)
-	c.classifyInterface(exporterStr, flowExporterName, flow,
+	c.classifyInterface(t, exporterStr, flowExporterName, flow,
 		flowInIfName, flowInIfDescription, flowInIfSpeed,
 		true)
 
@@ -153,12 +159,12 @@ func (c *Component) writeExporter(flow *schema.FlowMessage, classification expor
 	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnExporterTenant, []byte(classification.Tenant))
 }
 
-func (c *Component) classifyExporter(ip string, name string, flow *schema.FlowMessage) {
+func (c *Component) classifyExporter(t time.Time, ip string, name string, flow *schema.FlowMessage) {
 	if len(c.config.ExporterClassifiers) == 0 {
 		return
 	}
 	si := exporterInfo{IP: ip, Name: name}
-	if classification, ok := c.classifierExporterCache.Get(si); ok {
+	if classification, ok := c.classifierExporterCache.Get(t, si); ok {
 		c.writeExporter(flow, classification)
 		return
 	}
@@ -172,7 +178,7 @@ func (c *Component) classifyExporter(ip string, name string, flow *schema.FlowMe
 				Str("exporter", name).
 				Msg("error executing classifier")
 			c.metrics.classifierErrors.WithLabelValues("exporter", strconv.Itoa(idx)).Inc()
-			c.classifierExporterCache.Set(si, classification)
+			c.classifierExporterCache.Put(t, si, classification)
 			return
 		}
 		if classification.Group == "" || classification.Role == "" || classification.Site == "" || classification.Region == "" || classification.Tenant == "" {
@@ -180,7 +186,7 @@ func (c *Component) classifyExporter(ip string, name string, flow *schema.FlowMe
 		}
 		break
 	}
-	c.classifierExporterCache.Set(si, classification)
+	c.classifierExporterCache.Put(t, si, classification)
 	c.writeExporter(flow, classification)
 }
 
@@ -196,7 +202,7 @@ func (c *Component) writeInterface(flow *schema.FlowMessage, classification inte
 	}
 }
 
-func (c *Component) classifyInterface(ip string, exporterName string, fl *schema.FlowMessage, ifName, ifDescription string, ifSpeed uint32, directionIn bool) {
+func (c *Component) classifyInterface(t time.Time, ip string, exporterName string, fl *schema.FlowMessage, ifName, ifDescription string, ifSpeed uint32, directionIn bool) {
 	if len(c.config.InterfaceClassifiers) == 0 {
 		return
 	}
@@ -206,7 +212,7 @@ func (c *Component) classifyInterface(ip string, exporterName string, fl *schema
 		Exporter:  si,
 		Interface: ii,
 	}
-	if classification, ok := c.classifierInterfaceCache.Get(key); ok {
+	if classification, ok := c.classifierInterfaceCache.Get(t, key); ok {
 		c.writeInterface(fl, classification, directionIn)
 		return
 	}
@@ -222,7 +228,7 @@ func (c *Component) classifyInterface(ip string, exporterName string, fl *schema
 				Str("interface", ifName).
 				Msg("error executing classifier")
 			c.metrics.classifierErrors.WithLabelValues("interface", strconv.Itoa(idx)).Inc()
-			c.classifierInterfaceCache.Set(key, classification)
+			c.classifierInterfaceCache.Put(t, key, classification)
 			return
 		}
 		if classification.Connectivity == "" || classification.Provider == "" {
@@ -233,7 +239,7 @@ func (c *Component) classifyInterface(ip string, exporterName string, fl *schema
 		}
 		break
 	}
-	c.classifierInterfaceCache.Set(key, classification)
+	c.classifierInterfaceCache.Put(t, key, classification)
 	c.writeInterface(fl, classification, directionIn)
 }
 
