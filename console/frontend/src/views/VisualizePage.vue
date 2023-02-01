@@ -74,8 +74,13 @@ const highlightedSerie = ref<number | null>(null);
 
 const updateTimeRange = ([start, end]: [Date, Date]) => {
   if (state.value === null) return;
-  state.value.humanStart = start.toISOString();
-  state.value.humanEnd = end.toISOString();
+  state.value = {
+    ...state.value,
+    start: start.toISOString(),
+    end: end.toISOString(),
+    humanStart: start.toISOString(),
+    humanEnd: end.toISOString(),
+  };
 };
 
 // Main state

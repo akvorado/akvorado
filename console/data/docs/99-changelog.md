@@ -14,6 +14,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🩹 *orchestrator*: fix disabling of `DstASPath`
+- 🩹 *console*: fix time range selection
 - 🌱 *common*: accept an `!include` tag to include other YAML files in `akvorado.yaml`
 - 🌱 *inlet*: optimize to reduce the number of queries to the system clock
 
