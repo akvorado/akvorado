@@ -255,13 +255,16 @@ func TestConcurrentOperations(t *testing.T) {
 	now := time.Now()
 	done := make(chan bool)
 	var wg sync.WaitGroup
+	var nowLock sync.RWMutex
 
 	// Make the clock go forward
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		for {
+			nowLock.Lock()
 			now = now.Add(1 * time.Minute)
+			nowLock.Unlock()
 			select {
 			case <-done:
 				return
@@ -274,6 +277,9 @@ func TestConcurrentOperations(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for {
+				nowLock.RLock()
+				now := now
+				nowLock.RUnlock()
 				ip := rand.Intn(10)
 				iface := rand.Intn(100)
 				sc.Put(now, netip.MustParseAddr(fmt.Sprintf("::ffff:127.0.0.%d", ip)),
@@ -293,6 +299,9 @@ func TestConcurrentOperations(t *testing.T) {
 		go func() {
 			defer wg.Done()
 			for {
+				nowLock.RLock()
+				now := now
+				nowLock.RUnlock()
 				ip := rand.Intn(10)
 				iface := rand.Intn(100)
 				sc.Lookup(now, netip.MustParseAddr(fmt.Sprintf("::ffff:127.0.0.%d", ip)),
