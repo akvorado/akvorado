@@ -316,7 +316,9 @@ func TestConcurrentOperations(t *testing.T) {
 		}()
 	}
 	time.Sleep(30 * time.Millisecond)
+	nowLock.RLock()
 	sc.Expire(now.Add(-5 * time.Minute))
+	nowLock.RUnlock()
 	time.Sleep(30 * time.Millisecond)
 	close(done)
 	wg.Wait()
