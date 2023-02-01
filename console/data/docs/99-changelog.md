@@ -15,7 +15,7 @@ identified with a specific icon:
 
 - 🩹 *orchestrator*: fix disabling of `DstASPath`
 - 🌱 *common*: accept an `!include` tag to include other YAML files in `akvorado.yaml`
-- 🌱 *inlet*: optimize to reduce the number of calls to `time.Now()`
+- 🌱 *inlet*: optimize to reduce the number of queries to the system clock
 
 ## 1.7.1 - 2023-01-27
 
