@@ -105,7 +105,8 @@ func (c *Cache[K, V]) DeleteLastAccessedBefore(before time.Time) int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	for k, v := range c.items {
-		if v.LastAccessed < before.Unix() {
+		last := atomic.LoadInt64(&v.LastAccessed)
+		if last < before.Unix() {
 			delete(c.items, k)
 			count++
 		}
