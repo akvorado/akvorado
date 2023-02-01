@@ -24,9 +24,6 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	var flowInIfSpeed, flowOutIfSpeed uint32
 
 	t := time.Now() // only call it once
-	if flow.TimeReceived == 0 {
-		flow.TimeReceived = uint64(t.UTC().Unix())
-	}
 
 	if flow.InIf != 0 {
 		exporterName, iface, ok := c.d.SNMP.Lookup(t, exporterIP, uint(flow.InIf))

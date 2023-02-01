@@ -8,6 +8,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"net"
+	"time"
 
 	"gopkg.in/tomb.v2"
 
@@ -55,8 +56,9 @@ func (in *Input) Start() (<-chan []*schema.FlowMessage, error) {
 				return err
 			}
 			flows := in.decoder.Decode(decoder.RawFlow{
-				Payload: data,
-				Source:  net.ParseIP("127.0.0.1"),
+				TimeReceived: time.Now(),
+				Payload:      data,
+				Source:       net.ParseIP("127.0.0.1"),
 			})
 			if len(flows) == 0 {
 				continue
