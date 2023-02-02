@@ -217,3 +217,30 @@ func TestRegexValidation(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkClassifier(b *testing.B) {
+	program := `
+Interface.Description startsWith "Transit:" &&
+ClassifyConnectivity("transit") &&
+ClassifyExternal() &&
+ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")
+`
+	var scr InterfaceClassifierRule
+	if err := scr.UnmarshalText([]byte(program)); err != nil {
+		b.Fatalf("UnmarshalText() error:\n%+v", err)
+	}
+	ei := exporterInfo{}
+	ii := interfaceInfo{
+		Name:        "Gi0/0/0",
+		Description: "Transit: Telia (GWDM something something)",
+		Speed:       1000,
+	}
+	var err error
+	var gotClassification interfaceClassification
+	for i := 0; i < b.N; i++ {
+		err = scr.exec(ei, ii, &gotClassification)
+	}
+	if err != nil {
+		b.Fatalf("exec() error:\n%+v", err)
+	}
+}
