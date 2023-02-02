@@ -19,7 +19,7 @@ You can get *Akvorado* as a
 
 Check the `docker-compose.yml` file for an example on how to deploy *Akvorado*
 using containers. If you want to use `docker-compose`, have a look at the [quick
-start procedure](00-intro#quick-start). This documentation assumes you are
+start procedure](00-intro.md#quick-start). This documentation assumes you are
 running the `docker-compose` setup.
 
 If you want to compile the Docker image yourself, you can use `docker build -t
