@@ -18,7 +18,7 @@ type Schema struct {
 	disabledGroups bitset.BitSet // Disabled column groups
 
 	// For ClickHouse. This is the set of primary keys (order is important and
-	// may not follow column order).
+	// may not follow column order) for the aggregated tables.
 	clickHousePrimaryKeys []ColumnKey
 }
 

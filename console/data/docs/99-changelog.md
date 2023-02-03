@@ -18,6 +18,7 @@ identified with a specific icon:
 - 🩹 *console*: fix calculation of the L2 overhead when selecting L2 bps
 - 🌱 *common*: accept an `!include` tag to include other YAML files in `akvorado.yaml`
 - 🌱 *inlet*: optimize to reduce the number of queries to the system clock
+- 🌱 *orchestrator*: reduce storage for `InIfDescription`, `OutIfDescription`, `SrcAddr`, `DstAddr`, `Bytes`, and `Packets`
 
 ## 1.7.1 - 2023-01-27
 

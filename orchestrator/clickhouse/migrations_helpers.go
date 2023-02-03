@@ -391,13 +391,14 @@ TTL TimeReceived + toIntervalSecond({{ .TTL }})
 
 	// Get existing columns
 	var existingColumns []struct {
-		Name         string `ch:"name"`
-		Type         string `ch:"type"`
-		IsSortingKey uint8  `ch:"is_in_sorting_key"`
-		IsPrimaryKey uint8  `ch:"is_in_primary_key"`
+		Name             string `ch:"name"`
+		Type             string `ch:"type"`
+		CompressionCodec string `ch:"compression_codec"`
+		IsSortingKey     uint8  `ch:"is_in_sorting_key"`
+		IsPrimaryKey     uint8  `ch:"is_in_primary_key"`
 	}
 	if err := c.d.ClickHouse.Select(ctx, &existingColumns, `
-SELECT name, type, is_in_sorting_key, is_in_primary_key
+SELECT name, type, compression_codec, is_in_sorting_key, is_in_primary_key
 FROM system.columns
 WHERE database = $1
 AND table = $2
@@ -418,11 +419,18 @@ outer:
 		// Check if the column already exists
 		for _, existingColumn := range existingColumns {
 			if wantedColumn.Name == existingColumn.Name {
-				// Do a few sanity checks
+				modifyTypeOrCodec := false
 				if wantedColumn.ClickHouseType != existingColumn.Type {
+					modifyTypeOrCodec = true
 					if slices.Contains(c.d.Schema.ClickHousePrimaryKeys(), wantedColumn.Name) {
 						return fmt.Errorf("table %s, primary key column %s has a non-matching type: %s vs %s",
 							tableName, wantedColumn.Name, existingColumn.Type, wantedColumn.ClickHouseType)
+					}
+				}
+				if wantedColumn.ClickHouseCodec != "" {
+					wantedCodec := fmt.Sprintf("CODEC(%s)", wantedColumn.ClickHouseCodec)
+					if wantedCodec != existingColumn.CompressionCodec {
+						modifyTypeOrCodec = true
 					}
 				}
 				if resolution.Interval > 0 && slices.Contains(c.d.Schema.ClickHousePrimaryKeys(), wantedColumn.Name) && existingColumn.IsPrimaryKey == 0 {
@@ -440,7 +448,7 @@ outer:
 					// Schedule adding it back
 					modifications = append(modifications,
 						fmt.Sprintf("ADD COLUMN %s AFTER %s", wantedColumn.ClickHouseDefinition(), previousColumn))
-				} else if wantedColumn.ClickHouseType != existingColumn.Type {
+				} else if modifyTypeOrCodec {
 					modifications = append(modifications,
 						fmt.Sprintf("MODIFY COLUMN %s", wantedColumn.ClickHouseDefinition()))
 				}
