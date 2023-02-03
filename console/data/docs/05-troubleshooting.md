@@ -325,7 +325,19 @@ FROM flows
 ```
 
 If the lag is too big, you need to increase the number of consumers. See
-[ClickHouse configuration](02-configuration.md#clickhouse) for details.
+[ClickHouse configuration](02-configuration.md#clickhouse) for details. If
+ClickHouse ingestion stalls from time to time, it may be because ClickHouse
+consumer group is being rebalanced. In
+`/var/log/clickhouse-server/clickhouse-server.err.log`, you may see something
+about `Application maximum poll interval exceeded: leaving group`. In this case,
+you may want to lower the flush interval:
+
+```yaml
+clickhouse:
+  kafka:
+    engine-settings:
+      - kafka_flush_interval_ms = 1000
+```
 
 Another way to achieve the same thing is to look at the consumer group
 from Kafka's point of view:
