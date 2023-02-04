@@ -43,6 +43,7 @@ func NewMock(t testing.TB) *Component {
 
 // ProtobufDecode decodes the provided protobuf message.
 func (schema *Schema) ProtobufDecode(t *testing.T, input []byte) *FlowMessage {
+	t.Helper()
 	parser := protoparse.Parser{
 		Accessor: protoparse.FileContentsFromMap(map[string]string{
 			"flow.proto": schema.ProtobufDefinition(),
