@@ -184,9 +184,11 @@ licensecheck: console/frontend/node_modules | $(WWHRD) ; $(info $(M) check depen
 		--allow "MIT;ISC;Apache-2.0;BSD-3-Clause;WTFPL;0BSD" \
 		--report detailed
 
-.PHONY: clean
-clean: ; $(info $(M) cleaning…)	@ ## Cleanup everything
-	@rm -rf $(BIN) test $(GENERATED) inlet/flow/decoder/flow-*.pb.go *~
+.PHONY: clean mrproper
+clean: ; $(info $(M) cleaning…)	@ ## Cleanup almost everything
+	@rm -rf test $(GENERATED) inlet/flow/decoder/flow-*.pb.go *~
+mrproper: clean
+	@rm -rf bin
 
 .PHONY: help
 help:
