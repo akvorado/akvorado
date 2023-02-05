@@ -42,10 +42,10 @@ func BenchmarkDecodeEncodeNetflow(b *testing.B) {
 	data = helpers.ReadPcapPayload(b, filepath.Join("decoder", "netflow", "testdata", "data-260.pcap"))
 
 	for _, withEncoding := range []bool{true, false} {
-		title := "with encoding"
-		if !withEncoding {
-			title = "without encoding"
-		}
+		title := map[bool]string{
+			true:  "with encoding",
+			false: "without encoding",
+		}[withEncoding]
 		b.Run(title, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				got = nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
@@ -70,10 +70,10 @@ func BenchmarkDecodeEncodeSflow(b *testing.B) {
 	data := helpers.ReadPcapPayload(b, filepath.Join("decoder", "sflow", "testdata", "data-1140.pcap"))
 
 	for _, withEncoding := range []bool{true, false} {
-		title := "with encoding"
-		if !withEncoding {
-			title = "without encoding"
-		}
+		title := map[bool]string{
+			true:  "with encoding",
+			false: "without encoding",
+		}[withEncoding]
 		var got []*schema.FlowMessage
 		b.Run(title, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
