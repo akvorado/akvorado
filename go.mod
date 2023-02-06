@@ -11,7 +11,7 @@ require (
 	github.com/bits-and-blooms/bitset v1.5.0
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/chenyahui/gin-cache v1.7.2-0.20221230102232-cd1fa6cf7b54
-	github.com/docker/docker v20.10.23+incompatible
+	github.com/docker/docker v23.0.0+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/eapache/go-resiliency v1.3.0
 	github.com/fsnotify/fsnotify v1.6.0
