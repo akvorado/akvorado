@@ -24,8 +24,6 @@ import (
 	"akvorado/common/kafka"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
-
-	"github.com/ClickHouse/clickhouse-go/v2/lib/proto"
 )
 
 func dropAllTables(t *testing.T, ch *clickhousedb.Component) {
@@ -273,10 +271,10 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 			row := chComponent.QueryRow(context.Background(), `
 SELECT query, exception
 FROM system.query_log
-WHERE client_name = $1
+WHERE client_name LIKE 'akvorado/%'
 AND query NOT LIKE '%ORDER BY event_time_microseconds%'
 ORDER BY event_time_microseconds DESC
-LIMIT 1`, proto.ClientName)
+LIMIT 1`)
 			var lastQuery, exception string
 			if err := row.Scan(&lastQuery, &exception); err == nil {
 				t.Logf("last ClickHouse query: %s", lastQuery)

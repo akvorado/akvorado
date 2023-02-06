@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slices"
 
+	"akvorado/common/clickhousedb"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 )
@@ -24,6 +25,7 @@ var (
 
 func init() {
 	RootCmd.AddCommand(versionCmd)
+	clickhousedb.AkvoradoVersion = Version
 }
 
 var versionCmd = &cobra.Command{

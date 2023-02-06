@@ -15,6 +15,9 @@ import (
 	"akvorado/common/reporter"
 )
 
+// AkvoradoVersion is the current version for Akvorado.
+var AkvoradoVersion = "dev"
+
 // Component represents the ClickHouse wrapper
 type Component struct {
 	r      *reporter.Reporter
@@ -45,6 +48,14 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 		MaxOpenConns:    config.MaxOpenConns,
 		MaxIdleConns:    config.MaxOpenConns/2 + 1,
 		ConnMaxLifetime: time.Hour,
+		ClientInfo: clickhouse.ClientInfo{
+			Products: []struct {
+				Name    string
+				Version string
+			}{
+				{Name: "akvorado", Version: AkvoradoVersion},
+			},
+		},
 	})
 	if err != nil {
 		return nil, err

@@ -3,7 +3,7 @@ module akvorado
 go 1.19
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.5.1
+	github.com/ClickHouse/clickhouse-go/v2 v2.6.0
 	github.com/Shopify/sarama v1.38.1
 	github.com/alecthomas/chroma v0.10.0
 	github.com/antonmedv/expr v1.11.0
@@ -51,7 +51,7 @@ require (
 )
 
 require (
-	github.com/ClickHouse/ch-go v0.51.0 // indirect
+	github.com/ClickHouse/ch-go v0.51.2 // indirect
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect

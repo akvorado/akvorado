@@ -36,8 +36,13 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/ClickHouse/ch-go v0.51.0 h1:APpjlLifKMgRp1b94cujX7dRZLL4DjbtMVs7qRoUPqg=
 github.com/ClickHouse/ch-go v0.51.0/go.mod h1:laZ+vBk0hO3UBQblUXqECDcy71K+/tcIfs7ZjN0evgc=
+github.com/ClickHouse/ch-go v0.51.2 h1:PesdqjUImi21U61yPKsDhfer8wiQ3geTsjdjZzXd/3s=
+github.com/ClickHouse/ch-go v0.51.2/go.mod h1:z+/hEezvvHvRMV/I00CaXBnxOx+td4zRe7HJpBYLwGU=
+github.com/ClickHouse/clickhouse-go v1.5.4 h1:cKjXeYLNWVJIx2J1K6H2CqyRmfwVJVY1OV1coaaFcI0=
 github.com/ClickHouse/clickhouse-go/v2 v2.5.1 h1:+KebkZtGJKaCilgNF0vQBrc7hOdNWnheue0bX1OVhl4=
 github.com/ClickHouse/clickhouse-go/v2 v2.5.1/go.mod h1:21ga8MAMxWl6AKFJTaoT/ur/zIo8OJccxj/5bF8T9SE=
+github.com/ClickHouse/clickhouse-go/v2 v2.6.0 h1:NmnPY2Cg4hCqS2ZGBep9EWHfQPAco2Vkpwb02VXtWew=
+github.com/ClickHouse/clickhouse-go/v2 v2.6.0/go.mod h1:SvXuWqDsiHJE3VAn2+3+nz9W9exOSigyskcs4DAcxJQ=
 github.com/Microsoft/go-winio v0.5.2 h1:a9IhgEQBCUEk6QCdml9CiJGhAws+YwffDHEMp1VMrpA=
 github.com/Microsoft/go-winio v0.5.2/go.mod h1:WpS1mjBmmwHBEWmogvA2mj8546UReBk4v8QkMxJ6pZY=
 github.com/Shopify/sarama v1.38.1 h1:lqqPUPQZ7zPqYlWpTh+LQ9bhYNu2xJL6k1SJN4WVe2A=
