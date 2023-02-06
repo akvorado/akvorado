@@ -34,8 +34,7 @@ func (c *Component) serveConnection(conn *net.TCPConn) error {
 		case <-c.t.Dying():
 			// No need to clean up
 		}
-		conn.CloseWrite()
-		conn.CloseRead()
+		conn.Close()
 		c.metrics.closedConnections.WithLabelValues(exporterStr).Inc()
 		return nil
 	})

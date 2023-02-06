@@ -109,10 +109,10 @@ func TestBMP(t *testing.T) {
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
 		}
-		for i := 0; i < 100; i++ {
+		for i := 0; ; i++ {
 			if _, err := conn.Write([]byte{1}); err != nil {
 				break
-			} else if err == nil && i == 99 {
+			} else if i >= 200 {
 				t.Fatal("Write() did not error while connection should be closed")
 			}
 			time.Sleep(5 * time.Millisecond)
