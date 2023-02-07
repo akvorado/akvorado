@@ -100,9 +100,9 @@
           <template #hint>
             <kbd
               class="rounded border border-gray-300 bg-gray-200 px-1 dark:border-gray-600 dark:bg-gray-900"
-              >Ctrl-Space</kbd
+              >Ctrl-Enter</kbd
             >
-            for completions
+            to execute
           </template>
         </SectionLabel>
         <InputFilter v-model="filter" class="mb-2" @submit="submitOptions()" />

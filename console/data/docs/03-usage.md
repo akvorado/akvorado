@@ -146,10 +146,10 @@ aspect of the graph.
   "limit" parameter tells how many. The remaining values are
   categorized as "Other".
 
-- The filter box contains an SQL-like expression to limit the data to
-  be graphed. It features an auto-completion system that can be
-  triggered with `Ctrl-Space`. Filters can be saved by providing a
-  description. A filter can be shared with other users or not.
+- The filter box contains an SQL-like expression to limit the data to be
+  graphed. It features an auto-completion system that can be triggered manually
+  with `Ctrl-Space`. `Ctrl-Enter` executes the request. Filters can be saved by
+  providing a description. A filter can be shared with other users or not.
 
 The URL contains the encoded parameters and can be used to share with
 others. However, currently, no stability of the options are
