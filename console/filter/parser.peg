@@ -47,7 +47,6 @@ ConditionExpr "conditional" ←
   / ConditionCommunitiesExpr
   / ConditionETypeExpr
   / ConditionProtoExpr
-  / ConditionPacketSizeExpr
 
 ColumnIP ←
    "ExporterAddress"i !IdentStart #{ return c.metaColumn("ExporterAddress") } { return c.acceptColumn() }
@@ -143,6 +142,7 @@ ConditionUintExpr "condition on integer" ←
        / "DstPortNAT"i !IdentStart #{ return c.metaColumn("DstPortNAT") } { return c.acceptColumn() }
        / "SrcVlan"i !IdentStart #{ return c.metaColumn("SrcVlan") } { return c.acceptColumn() }
        / "DstVlan"i !IdentStart #{ return c.metaColumn("DstVlan") } { return c.acceptColumn() }
+       / "PacketSize"i !IdentStart #{ return c.metaColumn("PacketSize") } { return c.acceptColumn() }
        / "ForwardingStatus"i !IdentStart #{ return c.metaColumn("ForwardingStatus") } { return c.acceptColumn() }) _
  operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _
  value:Unsigned64 {
@@ -194,10 +194,6 @@ ConditionProtoStrExpr "condition on protocol as string" ←
  column:("Proto"i !IdentStart #{ return c.metaColumn("Proto") } { return c.acceptColumn() }) _
  operator:("=" / "!=") _ value:StringLiteral {
   return fmt.Sprintf("dictGetOrDefault('protocols', 'name', %s, '???') %s %s", toString(column), toString(operator), quote(value)), nil
-}
-ConditionPacketSizeExpr "condition on packet size" ←
- "PacketSize"i !IdentStart _ operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned16 {
-  return fmt.Sprintf("Bytes/Packets %s %s", toString(operator), toString(value)), nil
 }
 
 IP "IP address" ← [0-9A-Fa-f:.]+ !IdentStart {

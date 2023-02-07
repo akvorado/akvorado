@@ -155,7 +155,7 @@ func TestValidFilter(t *testing.T) {
 		{Input: `DstPort > 1024`, Output: `DstPort > 1024`,
 			MetaOut: Meta{MainTableRequired: true}},
 		{Input: `ForwardingStatus >= 128`, Output: `ForwardingStatus >= 128`},
-		{Input: `PacketSize > 1500`, Output: `Bytes/Packets > 1500`},
+		{Input: `PacketSize > 1500`, Output: `PacketSize > 1500`},
 		{Input: `DstPort > 1024 AND SrcPort < 1024`, Output: `DstPort > 1024 AND SrcPort < 1024`,
 			MetaOut: Meta{MainTableRequired: true}},
 		{Input: `DstPort > 1024 OR SrcPort < 1024`, Output: `DstPort > 1024 OR SrcPort < 1024`,
