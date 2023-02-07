@@ -116,7 +116,7 @@ changelog.md: docs/99-changelog.md # To be used by GitHub actions only.
 check test tests: test-go test-js ## Run tests
 test-coverage: test-coverage-go test-coverage-js ## Run coverage tests
 
-test-go test-bench test-race test-coverage-go: .fmt-go~ .lint-go~ $(GENERATED_GO)
+test-go test-bench test-race test-coverage-go: .fmt-go~ .lint-go~ $(GENERATED)
 test-go: | $(GOTESTSUM) ; $(info $(M) running Go tests$(GOTEST_MORE)…) @ ## Run Go tests
 	$Q mkdir -p test/go
 	$Q $(GOTESTSUM) --junitfile test/go/tests.xml -- \
