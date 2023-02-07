@@ -13,6 +13,9 @@ identified with a specific icon:
 
 ## Unreleased
 
+When upgrading to this release, it takes some time to reduce the storage size
+for a few columns.
+
 - 🩹 *orchestrator*: fix disabling of `DstASPath`
 - 🩹 *console*: fix time range selection
 - 🩹 *console*: fix calculation of the L2 overhead when selecting L2 bps
