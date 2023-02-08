@@ -134,10 +134,10 @@ watch(
   ([selected, limit, hasErrors]) => {
     const updated = {
       selected: selected.map((d) => d.name),
-      limit: parseInt(limit) || 10,
+      limit: parseInt(limit),
       errors: hasErrors,
     };
-    if (!isEqual(updated, props.modelValue)) {
+    if (!isEqual(updated, props.modelValue) && !isNaN(updated.limit)) {
       emit("update:modelValue", updated);
     }
   }
