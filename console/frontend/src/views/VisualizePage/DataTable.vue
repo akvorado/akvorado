@@ -145,6 +145,11 @@ const table = computed(
     const theme = isDark.value ? "dark" : "light";
     const data = props.data;
     if (data === null) return null;
+    const unit = ["inl2%", "outl2%"].includes(data.units)
+      ? "%"
+      : data.units.slice(-3);
+    const formatValue = (v: number): string =>
+      unit === "%" ? `${v.toFixed(0)}%` : `${formatXps(v)}${unit}`;
     if (
       data.graphType === "stacked" ||
       data.graphType === "stacked100" ||
@@ -183,7 +188,7 @@ const table = computed(
                     data.average[idx],
                     data["95th"][idx],
                   ].map((d) => ({
-                    value: formatXps(d) + data.units.slice(-3),
+                    value: formatValue(d),
                     classNames: "text-right tabular-nums",
                   })),
                 ],
@@ -208,7 +213,7 @@ const table = computed(
             ...row.map((r) => ({ value: r })),
             // Average
             {
-              value: formatXps(data.xps[idx]) + data.units.slice(-3),
+              value: formatValue(data.xps[idx]),
               classNames: "text-right tabular-nums",
             },
           ],

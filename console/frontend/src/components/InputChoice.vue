@@ -3,7 +3,7 @@
 
 <template>
   <div class="inline-flex items-center gap-1">
-    <span class="text-sm">{{ label }}</span>
+    <span class="text-sm lg:hidden">{{ label }}</span>
     <div
       class="inline-flex rounded-md shadow-sm dark:shadow-white/10"
       role="group"
@@ -29,7 +29,7 @@
             'rounded-l-md border-l': idx === 0,
             'rounded-r-md border-r': idx === choices.length - 1,
           }"
-          class="border-t border-b border-gray-200 bg-white py-0.5 px-1 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 peer-checked:bg-blue-700 peer-checked:bg-blue-700 peer-checked:text-white peer-checked:hover:bg-blue-800 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600 dark:hover:text-white peer-checked:dark:bg-blue-600 peer-checked:dark:hover:bg-blue-700"
+          class="border-t border-b border-gray-200 bg-white py-0.5 px-1 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 peer-checked:bg-blue-700 peer-checked:bg-blue-700 peer-checked:text-white peer-checked:hover:bg-blue-800 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600 dark:hover:text-white peer-checked:dark:bg-blue-600 peer-checked:dark:hover:bg-blue-700 lg:px-0.5 lg:tracking-tighter"
         >
           {{ choice.label }}
         </div>

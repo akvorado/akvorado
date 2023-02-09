@@ -27,7 +27,7 @@ type graphHandlerInput struct {
 	Dimensions     []query.Column `json:"dimensions"`                               // group by ...
 	Limit          int            `json:"limit" binding:"min=1"`                    // limit product of dimensions
 	Filter         query.Filter   `json:"filter"`                                   // where ...
-	Units          string         `json:"units" binding:"required,oneof=pps l2bps l3bps"`
+	Units          string         `json:"units" binding:"required,oneof=pps l2bps l3bps inl2% outl2%"`
 	Bidirectional  bool           `json:"bidirectional"`
 	PreviousPeriod bool           `json:"previous-period"`
 }

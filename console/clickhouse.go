@@ -196,6 +196,13 @@ func (c *Component) contextFunc(inputStr string) context {
 		// often not used with external entities. Both sFlow and IPFIX may have
 		// a better view of that, but we don't collect it yet.
 		units = `SUM((Bytes+38*Packets)*SamplingRate*8)`
+	case "inl2%":
+		// That's like l2bps, but this time we use the interface speed to get a
+		// percent value
+		units = `SUM((Bytes+38*Packets)*SamplingRate*8*100/(InIfSpeed*1000000))/COUNT(DISTINCT ExporterName, InIfName)`
+	case "outl2%":
+		// Same but using output interface as reference
+		units = `SUM((Bytes+38*Packets)*SamplingRate*8*100/(OutIfSpeed*1000000))/COUNT(DISTINCT ExporterName, OutIfName)`
 	}
 
 	c.metrics.clickhouseQueries.WithLabelValues(table).Inc()

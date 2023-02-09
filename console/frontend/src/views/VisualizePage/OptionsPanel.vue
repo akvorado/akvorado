@@ -46,6 +46,8 @@
             :choices="[
               { label: 'L3ᵇ⁄ₛ', name: 'l3bps' },
               { label: 'L2ᵇ⁄ₛ', name: 'l2bps' },
+              { label: '→%', name: 'inl2%' },
+              { label: '%→', name: 'outl2%' },
               { label: 'ᵖ⁄ₛ', name: 'pps' },
             ]"
             label="Unit"

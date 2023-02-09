@@ -21,7 +21,13 @@
     <span class="min-w-[4 shrink-0 py-0.5">
       <HashtagIcon class="inline h-4 px-1 align-middle" />
       <span class="align-middle">{{
-        { l3bps: "L3ᵇ⁄ₛ", l2bps: "L2ᵇ⁄ₛ", pps: "ᵖ⁄ₛ" }[request.units]
+        {
+          l3bps: "L3ᵇ⁄ₛ",
+          l2bps: "L2ᵇ⁄ₛ",
+          "inl2%": "→L2%",
+          "outl2%": "L2%→",
+          pps: "ᵖ⁄ₛ",
+        }[request.units]
       }}</span>
     </span>
     <span

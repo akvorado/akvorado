@@ -111,8 +111,11 @@ allows a user to explore data using graphs.
 The collapsible panel on the left has several options to change the
 aspect of the graph.
 
-- The unit to use on the Y-axis: layer-3 bits per second, layer-2 bits
-  per second (should match interface counters), or packets par second.
+- The unit to use on the Y-axis: layer-3 bits per second, layer-2 bits per
+  second (should match interface counters), packets par second, percentage of
+  use of the input interface or output interface. For percentage use, you should
+  group by exporter name and interface name or description for it to make sense.
+  Otherwise, you would get an average over the matched interfaces.
 
 - Four graph types are provided: “stacked”, “lines”, and “grid” to
   display time series and “sankey” to show flow distributions between

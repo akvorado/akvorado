@@ -3,7 +3,7 @@
 
 import type { GraphType } from "./graphtypes";
 
-export type Units = "l3bps" | "l2bps" | "pps";
+export type Units = "l3bps" | "l2bps" | "pps" | "inl2%" | "outl2%";
 export type SankeyHandlerInput = {
   start: string;
   end: string;
