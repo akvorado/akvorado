@@ -100,8 +100,9 @@ func (input graphHandlerInput) previousPeriod() graphHandlerInput {
 }
 
 type toSQL1Options struct {
-	skipWithClause bool
-	offsetedStart  time.Time
+	skipWithClause   bool
+	reverseDirection bool
+	offsetedStart    time.Time
 }
 
 func (input graphHandlerInput) toSQL1(axis int, options toSQL1Options) string {
@@ -155,6 +156,17 @@ func (input graphHandlerInput) toSQL1(axis int, options toSQL1Options) string {
 		withStr = fmt.Sprintf("\nWITH\n %s", strings.Join(with, ",\n "))
 	}
 
+	// Units
+	units := input.Units
+	if options.reverseDirection {
+		switch units {
+		case "inl2%":
+			units = "outl2%"
+		case "outl2%":
+			units = "inl2%"
+		}
+	}
+
 	sqlQuery := fmt.Sprintf(`
 {{ with %s }}%s
 SELECT %d AS axis, * FROM (
@@ -175,7 +187,7 @@ ORDER BY time WITH FILL
 			StartForInterval:  startForInterval,
 			MainTableRequired: requireMainTable(input.schema, input.Dimensions, input.Filter),
 			Points:            input.Points,
-			Units:             input.Units,
+			Units:             units,
 		}),
 		withStr, axis, strings.Join(fields, ",\n "), where, offsetShift, offsetShift,
 		dimensionsInterpolate,
@@ -189,7 +201,10 @@ func (input graphHandlerInput) toSQL() string {
 	// Handle specific options. We have to align time periods in
 	// case the previous period does not use the same offsets.
 	if input.Bidirectional {
-		parts = append(parts, input.reverseDirection().toSQL1(2, toSQL1Options{skipWithClause: true}))
+		parts = append(parts, input.reverseDirection().toSQL1(2, toSQL1Options{
+			skipWithClause:   true,
+			reverseDirection: true,
+		}))
 	}
 	if input.PreviousPeriod {
 		parts = append(parts, input.previousPeriod().toSQL1(3, toSQL1Options{
@@ -199,8 +214,9 @@ func (input graphHandlerInput) toSQL() string {
 	}
 	if input.Bidirectional && input.PreviousPeriod {
 		parts = append(parts, input.reverseDirection().previousPeriod().toSQL1(4, toSQL1Options{
-			skipWithClause: true,
-			offsetedStart:  input.Start,
+			skipWithClause:   true,
+			reverseDirection: true,
+			offsetedStart:    input.Start,
 		}))
 	}
 	return strings.Join(parts, "\nUNION ALL\n")

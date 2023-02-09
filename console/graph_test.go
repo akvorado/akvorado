@@ -319,6 +319,49 @@ ORDER BY time WITH FILL
  INTERPOLATE (dimensions AS emptyArrayString()))
 {{ end }}`,
 		}, {
+			Description: "no dimensions, reverse direction, inl2%",
+			Input: graphHandlerInput{
+				Start:         time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
+				End:           time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Points:        100,
+				Dimensions:    []query.Column{},
+				Filter:        query.NewFilter("DstCountry = 'FR' AND SrcCountry = 'US'"),
+				Units:         "inl2%",
+				Bidirectional: true,
+			},
+			Expected: `
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"inl2%"}@@ }}
+SELECT 1 AS axis, * FROM (
+SELECT
+ {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .Units }}/{{ .Interval }} AS xps,
+ emptyArrayString() AS dimensions
+FROM {{ .Table }}
+WHERE {{ .Timefilter }} AND (DstCountry = 'FR' AND SrcCountry = 'US')
+GROUP BY time, dimensions
+ORDER BY time WITH FILL
+ FROM {{ .TimefilterStart }}
+ TO {{ .TimefilterEnd }} + INTERVAL 1 second
+ STEP {{ .Interval }}
+ INTERPOLATE (dimensions AS emptyArrayString()))
+{{ end }}
+UNION ALL
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"outl2%"}@@ }}
+SELECT 2 AS axis, * FROM (
+SELECT
+ {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .Units }}/{{ .Interval }} AS xps,
+ emptyArrayString() AS dimensions
+FROM {{ .Table }}
+WHERE {{ .Timefilter }} AND (SrcCountry = 'FR' AND DstCountry = 'US')
+GROUP BY time, dimensions
+ORDER BY time WITH FILL
+ FROM {{ .TimefilterStart }}
+ TO {{ .TimefilterEnd }} + INTERVAL 1 second
+ STEP {{ .Interval }}
+ INTERPOLATE (dimensions AS emptyArrayString()))
+{{ end }}`,
+		}, {
 			Description: "no filters",
 			Input: graphHandlerInput{
 				Start:  time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
