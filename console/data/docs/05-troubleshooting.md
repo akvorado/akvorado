@@ -10,7 +10,6 @@ as expected is to request a flow:
 $ curl -s http://akvorado/api/v0/inlet/flows\?limit=1
 {
  "TimeReceived": 1648305235,
- "SequenceNum": 425385846,
  "SamplingRate": 30000,
 [...]
 ```
@@ -231,15 +230,13 @@ aggregated interface, not for the individual sub interfaces.
 
 ### No traffic visible on the web interface despite receiving flows
 
-The various widgets on the home page are relying on interface
-classification to retrieve information. Notably, they expect
-f`InIfBoundary` or `OutIfBoundary` to be set to external. You can
-check that classification is done correctly with `curl -s
-http://akvorado/api/v0/inlet/flows\?limit=1 | grep -E
-'If(Boundary|Description|Name)'`. If not, be sure that your rules are
-correct and that descriptions match what you expect. For example, on
-Juniper, if you enable JFlow on a sub-interface, be sure that the
-description is present on this sub-interface.
+The various widgets on the home page are relying on interface classification to
+retrieve information. Notably, they expect f`InIfBoundary` or `OutIfBoundary` to
+be set to external. You can check that classification is done correctly by
+removing any filter rule on the interface and by grouping on `InIfBoundary` (for
+example). If not, be sure that your rules are correct and that descriptions
+match what you expect. For example, on Juniper, if you enable JFlow on a
+sub-interface, be sure that the description is present on this sub-interface.
 
 ### Profiling
 
