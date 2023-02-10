@@ -29,6 +29,7 @@ require (
 	github.com/mattn/go-isatty v0.0.17
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/netsampler/goflow2 v1.1.1-0.20221008154147-57fad2e0c837
+	github.com/opencontainers/image-spec v1.0.3-0.20211202183452-c5a74bcca799
 	github.com/oschwald/maxminddb-golang v1.10.0
 	github.com/osrg/gobgp/v3 v3.11.0
 	github.com/prometheus/client_golang v1.14.0
@@ -97,7 +98,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.0.3-0.20211202183452-c5a74bcca799 // indirect
 	github.com/paulmach/orb v0.8.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect
 	github.com/pierrec/lz4/v4 v4.1.17 // indirect
@@ -137,5 +137,5 @@ require (
 replace (
 	github.com/benbjohnson/clock => github.com/vincentbernat/go-clock v0.0.0-20220922224448-739bd11b5833
 	github.com/kentik/patricia => github.com/vincentbernat/patricia v0.0.0-20220923091046-b376a1167a94
-	github.com/netsampler/goflow2 => github.com/vincentbernat/goflow2 v1.0.5-0.20230119111129-c797534c51e4
+	github.com/netsampler/goflow2 => github.com/vincentbernat/goflow2 v1.0.5-0.20230210215259-34e153ff515d
 )

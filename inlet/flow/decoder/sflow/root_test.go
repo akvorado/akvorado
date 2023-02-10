@@ -304,4 +304,40 @@ func TestDecodeInterface(t *testing.T) {
 		}
 
 	})
+
+	t.Run("flow sample with IPv4 data", func(t *testing.T) {
+		// Send data
+		data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-sflow-ipv4-data.pcap"))
+		got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+		if got == nil {
+			t.Fatalf("Decode() error on data")
+		}
+		expectedFlows := []*schema.FlowMessage{
+			{
+				SamplingRate:    256,
+				InIf:            0,
+				OutIf:           182,
+				SrcAddr:         netip.MustParseAddr("::ffff:50.50.50.50"),
+				DstAddr:         netip.MustParseAddr("::ffff:51.51.51.51"),
+				ExporterAddress: netip.MustParseAddr("::ffff:49.49.49.49"),
+				GotASPath:       false,
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnBytes:   1390,
+					schema.ColumnPackets: 1,
+					schema.ColumnEType:   helpers.ETypeIPv4,
+					schema.ColumnProto:   17,
+					schema.ColumnSrcPort: 46622,
+					schema.ColumnDstPort: 58631,
+				},
+			},
+		}
+		for _, f := range got {
+			f.TimeReceived = 0
+		}
+
+		if diff := helpers.Diff(got, expectedFlows); diff != "" {
+			t.Fatalf("Decode() (-got, +want):\n%s", diff)
+		}
+
+	})
 }
