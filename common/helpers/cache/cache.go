@@ -14,10 +14,8 @@ import (
 	"time"
 )
 
-var (
-	// ErrVersion is triggered when loading a cache from an incompatible version
-	ErrVersion = errors.New("cache version mismatch")
-)
+// ErrVersion is triggered when loading a cache from an incompatible version
+var ErrVersion = errors.New("cache version mismatch")
 
 // Cache is a thread-safe in-memory key/value store
 type Cache[K comparable, V any] struct {

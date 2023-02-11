@@ -30,7 +30,8 @@ func TestConfigHandler(t *testing.T) {
 				},
 				"homepageTopWidgets": []string{"src-as", "src-port", "protocol", "src-country", "etype"},
 				"dimensionsLimit":    50,
-				"dimensions": []string{"ExporterAddress",
+				"dimensions": []string{
+					"ExporterAddress",
 					"ExporterName",
 					"ExporterGroup",
 					"ExporterRole",

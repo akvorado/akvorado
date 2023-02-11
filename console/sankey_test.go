@@ -25,11 +25,12 @@ func TestSankeyQuerySQL(t *testing.T) {
 		{
 			Description: "two dimensions, no filters, l3 bps",
 			Input: sankeyHandlerInput{
-				Start: time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				End:   time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Dimensions: []query.Column{
 					query.NewColumn("SrcAS"),
-					query.NewColumn("ExporterName")},
+					query.NewColumn("ExporterName"),
+				},
 				Limit:  5,
 				Filter: query.Filter{},
 				Units:  "l3bps",
@@ -51,11 +52,12 @@ ORDER BY xps DESC
 		}, {
 			Description: "two dimensions, no filters, l2 bps",
 			Input: sankeyHandlerInput{
-				Start: time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				End:   time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Dimensions: []query.Column{
 					query.NewColumn("SrcAS"),
-					query.NewColumn("ExporterName")},
+					query.NewColumn("ExporterName"),
+				},
 				Limit:  5,
 				Filter: query.Filter{},
 				Units:  "l2bps",
@@ -78,11 +80,12 @@ ORDER BY xps DESC
 		}, {
 			Description: "two dimensions, no filters, pps",
 			Input: sankeyHandlerInput{
-				Start: time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				End:   time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Dimensions: []query.Column{
 					query.NewColumn("SrcAS"),
-					query.NewColumn("ExporterName")},
+					query.NewColumn("ExporterName"),
+				},
 				Limit:  5,
 				Filter: query.Filter{},
 				Units:  "pps",
@@ -104,11 +107,12 @@ ORDER BY xps DESC
 		}, {
 			Description: "two dimensions, with filter",
 			Input: sankeyHandlerInput{
-				Start: time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				End:   time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Dimensions: []query.Column{
 					query.NewColumn("SrcAS"),
-					query.NewColumn("ExporterName")},
+					query.NewColumn("ExporterName"),
+				},
 				Limit:  10,
 				Filter: query.NewFilter("DstCountry = 'FR'"),
 				Units:  "l3bps",
@@ -190,8 +194,8 @@ func TestSankeyHandler(t *testing.T) {
 		{
 			URL: "/api/v0/console/sankey",
 			JSONInput: gin.H{
-				"start":      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				"end":        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				"start":      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				"end":        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				"dimensions": []string{"SrcAS", "InIfProvider", "ExporterName"},
 				"limit":      10,
 				"filter":     "DstCountry = 'FR'",
@@ -260,54 +264,102 @@ func TestSankeyHandler(t *testing.T) {
 					"ExporterName: router2",
 				},
 				"links": []gin.H{
-					{"source": "InIfProvider: provider1", "target": "ExporterName: Other",
-						"xps": 9472 + 7234 + 6006 + 5988},
-					{"source": "InIfProvider: Other", "target": "ExporterName: router1",
-						"xps": 9677 + 3623 + 2915 + 1360},
-					{"source": "SrcAS: AS100", "target": "InIfProvider: Other",
-						"xps": 9677},
-					{"source": "SrcAS: AS300", "target": "InIfProvider: provider1",
-						"xps": 9472},
-					{"source": "InIfProvider: provider3", "target": "ExporterName: Other",
-						"xps": 4675 + 3999},
-					{"source": "SrcAS: AS100", "target": "InIfProvider: provider1",
-						"xps": 6006 + 2623},
-					{"source": "SrcAS: AS100", "target": "InIfProvider: provider3",
-						"xps": 3999 + 3978},
-					{"source": "InIfProvider: provider3", "target": "ExporterName: router2",
-						"xps": 3978 + 3080 + 717},
-					{"source": "InIfProvider: provider2", "target": "ExporterName: router1",
-						"xps": 7593},
-					{"source": "SrcAS: AS300", "target": "InIfProvider: provider2",
-						"xps": 7593},
-					{"source": "SrcAS: AS200", "target": "InIfProvider: provider1",
-						"xps": 7234},
-					{"source": "SrcAS: Other", "target": "InIfProvider: provider1",
-						"xps": 5988 + 159},
-					{"source": "SrcAS: AS200", "target": "InIfProvider: Other",
-						"xps": 4348 + 1360},
-					{"source": "SrcAS: AS200", "target": "InIfProvider: provider3",
-						"xps": 4675 + 717},
-					{"source": "InIfProvider: Other", "target": "ExporterName: router2",
-						"xps": 4348},
-					{"source": "SrcAS: Other", "target": "InIfProvider: Other",
-						"xps": 3623 + 621},
-					{"source": "SrcAS: AS300", "target": "InIfProvider: Other",
-						"xps": 2915 + 975},
-					{"source": "SrcAS: AS300", "target": "InIfProvider: provider3",
-						"xps": 3080},
-					{"source": "InIfProvider: provider1", "target": "ExporterName: router1",
-						"xps": 2623 + 159},
-					{"source": "InIfProvider: provider2", "target": "ExporterName: router2",
-						"xps": 2482},
-					{"source": "SrcAS: AS200", "target": "InIfProvider: provider2",
-						"xps": 2482},
-					{"source": "InIfProvider: provider2", "target": "ExporterName: Other",
-						"xps": 2234},
-					{"source": "SrcAS: AS100", "target": "InIfProvider: provider2",
-						"xps": 2234},
-					{"source": "InIfProvider: Other", "target": "ExporterName: Other",
-						"xps": 975 + 621},
+					{
+						"source": "InIfProvider: provider1", "target": "ExporterName: Other",
+						"xps": 9472 + 7234 + 6006 + 5988,
+					},
+					{
+						"source": "InIfProvider: Other", "target": "ExporterName: router1",
+						"xps": 9677 + 3623 + 2915 + 1360,
+					},
+					{
+						"source": "SrcAS: AS100", "target": "InIfProvider: Other",
+						"xps": 9677,
+					},
+					{
+						"source": "SrcAS: AS300", "target": "InIfProvider: provider1",
+						"xps": 9472,
+					},
+					{
+						"source": "InIfProvider: provider3", "target": "ExporterName: Other",
+						"xps": 4675 + 3999,
+					},
+					{
+						"source": "SrcAS: AS100", "target": "InIfProvider: provider1",
+						"xps": 6006 + 2623,
+					},
+					{
+						"source": "SrcAS: AS100", "target": "InIfProvider: provider3",
+						"xps": 3999 + 3978,
+					},
+					{
+						"source": "InIfProvider: provider3", "target": "ExporterName: router2",
+						"xps": 3978 + 3080 + 717,
+					},
+					{
+						"source": "InIfProvider: provider2", "target": "ExporterName: router1",
+						"xps": 7593,
+					},
+					{
+						"source": "SrcAS: AS300", "target": "InIfProvider: provider2",
+						"xps": 7593,
+					},
+					{
+						"source": "SrcAS: AS200", "target": "InIfProvider: provider1",
+						"xps": 7234,
+					},
+					{
+						"source": "SrcAS: Other", "target": "InIfProvider: provider1",
+						"xps": 5988 + 159,
+					},
+					{
+						"source": "SrcAS: AS200", "target": "InIfProvider: Other",
+						"xps": 4348 + 1360,
+					},
+					{
+						"source": "SrcAS: AS200", "target": "InIfProvider: provider3",
+						"xps": 4675 + 717,
+					},
+					{
+						"source": "InIfProvider: Other", "target": "ExporterName: router2",
+						"xps": 4348,
+					},
+					{
+						"source": "SrcAS: Other", "target": "InIfProvider: Other",
+						"xps": 3623 + 621,
+					},
+					{
+						"source": "SrcAS: AS300", "target": "InIfProvider: Other",
+						"xps": 2915 + 975,
+					},
+					{
+						"source": "SrcAS: AS300", "target": "InIfProvider: provider3",
+						"xps": 3080,
+					},
+					{
+						"source": "InIfProvider: provider1", "target": "ExporterName: router1",
+						"xps": 2623 + 159,
+					},
+					{
+						"source": "InIfProvider: provider2", "target": "ExporterName: router2",
+						"xps": 2482,
+					},
+					{
+						"source": "SrcAS: AS200", "target": "InIfProvider: provider2",
+						"xps": 2482,
+					},
+					{
+						"source": "InIfProvider: provider2", "target": "ExporterName: Other",
+						"xps": 2234,
+					},
+					{
+						"source": "SrcAS: AS100", "target": "InIfProvider: provider2",
+						"xps": 2234,
+					},
+					{
+						"source": "InIfProvider: Other", "target": "ExporterName: Other",
+						"xps": 975 + 621,
+					},
 				},
 			},
 		},

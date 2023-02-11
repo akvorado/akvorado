@@ -195,28 +195,36 @@ func TestWidgetTop(t *testing.T) {
 				"top": []gin.H{
 					{"name": "TCP/443", "percent": 51},
 					{"name": "UDP/443", "percent": 20},
-					{"name": "TCP/80", "percent": 18}}},
+					{"name": "TCP/80", "percent": 18},
+				},
+			},
 		}, {
 			URL: "/api/v0/console/widget/top/protocol",
 			JSONOutput: gin.H{
 				"top": []gin.H{
 					{"name": "TCP", "percent": 75},
 					{"name": "UDP", "percent": 24},
-					{"name": "ESP", "percent": 1}}},
+					{"name": "ESP", "percent": 1},
+				},
+			},
 		}, {
 			URL: "/api/v0/console/widget/top/exporter",
 			JSONOutput: gin.H{
 				"top": []gin.H{
 					{"name": "exporter1", "percent": 20},
 					{"name": "exporter3", "percent": 10},
-					{"name": "exporter5", "percent": 3}}},
+					{"name": "exporter5", "percent": 3},
+				},
+			},
 		}, {
 			URL: "/api/v0/console/widget/top/src-as",
 			JSONOutput: gin.H{
 				"top": []gin.H{
 					{"name": "2906: Netflix", "percent": 12},
 					{"name": "36040: Youtube", "percent": 10},
-					{"name": "20940: Akamai", "percent": 9}}},
+					{"name": "20940: Akamai", "percent": 9},
+				},
+			},
 		},
 	})
 }
@@ -263,9 +271,9 @@ ORDER BY Time WITH FILL
 					{"t": "2009-11-10T23:02:00Z", "gbps": 26.4},
 					{"t": "2009-11-10T23:03:00Z", "gbps": 29.2},
 					{"t": "2009-11-10T23:04:00Z", "gbps": 0},
-					{"t": "2009-11-10T23:05:00Z", "gbps": 24.7}},
+					{"t": "2009-11-10T23:05:00Z", "gbps": 24.7},
+				},
 			},
 		},
 	})
-
 }

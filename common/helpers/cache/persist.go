@@ -36,7 +36,6 @@ func (c *Cache[K, V]) Save(cacheFile string) error {
 		return fmt.Errorf("unable to write cache file %q: %w", cacheFile, err)
 	}
 	return nil
-
 }
 
 // Load loads the cache from the provided location.

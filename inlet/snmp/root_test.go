@@ -211,7 +211,6 @@ func TestCoalescing(t *testing.T) {
 		expectSNMPLookup(t, c, "127.0.0.1", 767, answer{NOk: true})
 		expectSNMPLookup(t, c, "127.0.0.1", 768, answer{NOk: true})
 		expectSNMPLookup(t, c, "127.0.0.1", 769, answer{NOk: true})
-
 	})
 
 	gotMetrics := r.GetMetrics("akvorado_inlet_snmp_poller_", "coalesced_count")

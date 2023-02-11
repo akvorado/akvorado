@@ -29,10 +29,12 @@ func TestProtobufDefinition(t *testing.T) {
 			{
 				Key:            ColumnSrcAddr,
 				ClickHouseType: "IPv6",
-			}, {
+			},
+			{
 				Key:            ColumnSrcNetMask,
 				ClickHouseType: "UInt8",
-			}, {
+			},
+			{
 				Key:             ColumnSrcNetPrefix,
 				ClickHouseType:  "String",
 				ClickHouseAlias: `something`,
@@ -47,7 +49,8 @@ func TestProtobufDefinition(t *testing.T) {
 			{
 				Key:            ColumnDstASPath,
 				ClickHouseType: "Array(UInt32)",
-			}, {
+			},
+			{
 				Key:            ColumnDstLargeCommunities,
 				ClickHouseType: "Array(UInt128)",
 				ClickHouseTransformFrom: []Column{
@@ -107,7 +110,6 @@ message FlowMessagevLH2TTFF7P352DSYYCJYWFCXHAM {
 	if diff := helpers.Diff(strings.Split(got, "\n"), strings.Split(expected, "\n")); diff != "" {
 		t.Fatalf("ProtobufDefinition() (-got, +want): %s", diff)
 	}
-
 }
 
 func TestProtobufMarshal(t *testing.T) {

@@ -86,7 +86,6 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 
 	ts := uint64(in.TimeReceived.UTC().Unix())
 	msgDec, err := sflow.DecodeMessage(buf)
-
 	if err != nil {
 		switch err.(type) {
 		case *sflow.ErrorVersion:

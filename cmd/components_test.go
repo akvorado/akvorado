@@ -24,6 +24,7 @@ func (c *Startable) Start() error {
 	c.Started = true
 	return nil
 }
+
 func (c *Stopable) Stop() error {
 	c.Stopped = true
 	return nil
@@ -39,10 +40,12 @@ type ComponentStop struct {
 type ComponentStart struct {
 	Startable
 }
-type ComponentNone struct{}
-type ComponentStartError struct {
-	Stopable
-}
+type (
+	ComponentNone       struct{}
+	ComponentStartError struct {
+		Stopable
+	}
+)
 
 func (c ComponentStartError) Start() error {
 	return errors.New("nooo")

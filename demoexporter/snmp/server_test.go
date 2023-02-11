@@ -95,5 +95,4 @@ func TestSNMPServer(t *testing.T) {
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
-
 }

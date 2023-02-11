@@ -150,7 +150,6 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 	ts := uint64(in.TimeReceived.UTC().Unix())
 	buf := bytes.NewBuffer(in.Payload)
 	msgDec, err := netflow.DecodeMessage(buf, templates)
-
 	if err != nil {
 		switch err.(type) {
 		case *netflow.ErrorTemplateNotFound:

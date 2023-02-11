@@ -150,5 +150,4 @@ func TestTLSConfiguration(t *testing.T) {
 			},
 		},
 	})
-
 }

@@ -106,8 +106,10 @@ func (c *Component) registerHTTPHandlers() error {
 			defer c.networkSourcesLock.RUnlock()
 			for _, ss := range c.networkSources {
 				for _, v := range ss {
-					wr.Write([]string{v.Prefix.String(),
-						v.Name, v.Role, v.Site, v.Region, v.Tenant})
+					wr.Write([]string{
+						v.Prefix.String(),
+						v.Name, v.Role, v.Site, v.Region, v.Tenant,
+					})
 				}
 			}
 			if c.config.Networks != nil {

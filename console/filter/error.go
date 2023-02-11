@@ -23,13 +23,15 @@ func HumanError(err error) string {
 }
 
 // Errors represents a serializable list of errors.
-type Errors []oneError
-type oneError struct {
-	Message string `json:"message"`
-	Line    int    `json:"line"`
-	Column  int    `json:"column"`
-	Offset  int    `json:"offset"`
-}
+type (
+	Errors   []oneError
+	oneError struct {
+		Message string `json:"message"`
+		Line    int    `json:"line"`
+		Column  int    `json:"column"`
+		Offset  int    `json:"offset"`
+	}
+)
 
 // AllErrors returns all parsed errors. The returned value can be serialized to JSON.
 func AllErrors(err error) Errors {

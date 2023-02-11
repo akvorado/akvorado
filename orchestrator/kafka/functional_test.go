@@ -88,7 +88,6 @@ func TestTopicCreation(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestTopicMorePartitions(t *testing.T) {

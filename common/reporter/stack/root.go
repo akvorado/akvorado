@@ -27,6 +27,7 @@ var pcStackPool = sync.Pool{
 func poolBuf() []uintptr {
 	return pcStackPool.Get().([]uintptr)
 }
+
 func putPoolBuf(p []uintptr) {
 	pcStackPool.Put(p)
 }

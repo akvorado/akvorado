@@ -187,6 +187,5 @@ func ChannelHealthcheck(ctx context.Context, contact chan<- ChannelHealthcheckFu
 		case result := <-answerChan:
 			return result
 		}
-
 	}
 }

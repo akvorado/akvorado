@@ -155,7 +155,6 @@ func TestParametrizedConfig(t *testing.T) {
 				Error: true,
 			},
 		})
-
 	})
 	t.Run("marshal", func(t *testing.T) {
 		config1 := OuterConfiguration{

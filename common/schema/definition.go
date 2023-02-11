@@ -134,12 +134,14 @@ func flows() Schema {
 				ClickHouseMainOnly: true,
 				ClickHouseType:     "IPv6",
 				ClickHouseCodec:    "ZSTD(1)",
-			}, {
+			},
+			{
 				Key:                 ColumnSrcNetMask,
 				ClickHouseMainOnly:  true,
 				ClickHouseType:      "UInt8",
 				ConsoleNotDimension: true,
-			}, {
+			},
+			{
 				Key:                ColumnSrcNetPrefix,
 				ClickHouseMainOnly: true,
 				ClickHouseType:     "String",
@@ -154,39 +156,48 @@ END`,
 				Key:                    ColumnSrcNetName,
 				ClickHouseType:         "LowCardinality(String)",
 				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'name', SrcAddr, '')",
-			}, {
+			},
+			{
 				Key:                    ColumnDstNetName,
 				ClickHouseType:         "LowCardinality(String)",
 				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'name', DstAddr, '')",
-			}, {
+			},
+			{
 				Key:                    ColumnSrcNetRole,
 				ClickHouseType:         "LowCardinality(String)",
 				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'role', SrcAddr, '')",
-			}, {
+			},
+			{
 				Key:                    ColumnDstNetRole,
 				ClickHouseType:         "LowCardinality(String)",
 				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'role', DstAddr, '')",
-			}, {
+			},
+			{
 				Key:                    ColumnSrcNetSite,
 				ClickHouseType:         "LowCardinality(String)",
 				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'site', SrcAddr, '')",
-			}, {
+			},
+			{
 				Key:                    ColumnDstNetSite,
 				ClickHouseType:         "LowCardinality(String)",
 				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'site', DstAddr, '')",
-			}, {
+			},
+			{
 				Key:                    ColumnSrcNetRegion,
 				ClickHouseType:         "LowCardinality(String)",
 				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'region', SrcAddr, '')",
-			}, {
+			},
+			{
 				Key:                    ColumnDstNetRegion,
 				ClickHouseType:         "LowCardinality(String)",
 				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'region', DstAddr, '')",
-			}, {
+			},
+			{
 				Key:                    ColumnSrcNetTenant,
 				ClickHouseType:         "LowCardinality(String)",
 				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'tenant', SrcAddr, '')",
-			}, {
+			},
+			{
 				Key:                    ColumnDstNetTenant,
 				ClickHouseType:         "LowCardinality(String)",
 				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'tenant', DstAddr, '')",
@@ -197,26 +208,31 @@ END`,
 				Key:                ColumnDstASPath,
 				ClickHouseMainOnly: true,
 				ClickHouseType:     "Array(UInt32)",
-			}, {
+			},
+			{
 				Key:                    ColumnDst1stAS,
 				Depends:                []ColumnKey{ColumnDstASPath},
 				ClickHouseType:         "UInt32",
 				ClickHouseGenerateFrom: "c_DstASPath[1]",
-			}, {
+			},
+			{
 				Key:                    ColumnDst2ndAS,
 				Depends:                []ColumnKey{ColumnDstASPath},
 				ClickHouseType:         "UInt32",
 				ClickHouseGenerateFrom: "c_DstASPath[2]",
-			}, {
+			},
+			{
 				Key:                    ColumnDst3rdAS,
 				Depends:                []ColumnKey{ColumnDstASPath},
 				ClickHouseType:         "UInt32",
 				ClickHouseGenerateFrom: "c_DstASPath[3]",
-			}, {
+			},
+			{
 				Key:                ColumnDstCommunities,
 				ClickHouseMainOnly: true,
 				ClickHouseType:     "Array(UInt32)",
-			}, {
+			},
+			{
 				Key:                ColumnDstLargeCommunities,
 				ClickHouseMainOnly: true,
 				ClickHouseType:     "Array(UInt128)",
@@ -279,13 +295,16 @@ END`,
 				ClickHouseType:      "UInt64",
 				ClickHouseAlias:     "intDiv(Bytes, Packets)",
 				ConsoleNotDimension: true,
-			}, {
+			},
+			{
 				Key:            ColumnPacketSizeBucket,
 				Depends:        []ColumnKey{ColumnPacketSize},
 				ClickHouseType: "LowCardinality(String)",
 				ClickHouseAlias: func() string {
-					boundaries := []int{64, 128, 256, 512, 768, 1024, 1280, 1501,
-						2048, 3072, 4096, 8192, 10240, 16384, 32768, 65536}
+					boundaries := []int{
+						64, 128, 256, 512, 768, 1024, 1280, 1501,
+						2048, 3072, 4096, 8192, 10240, 16384, 32768, 65536,
+					}
 					conditions := []string{}
 					last := 0
 					for _, boundary := range boundaries {

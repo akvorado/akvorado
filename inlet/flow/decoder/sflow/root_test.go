@@ -302,7 +302,6 @@ func TestDecodeInterface(t *testing.T) {
 		if diff := helpers.Diff(got, expectedFlows); diff != "" {
 			t.Fatalf("Decode() (-got, +want):\n%s", diff)
 		}
-
 	})
 
 	t.Run("flow sample with IPv4 data", func(t *testing.T) {
@@ -338,6 +337,5 @@ func TestDecodeInterface(t *testing.T) {
 		if diff := helpers.Diff(got, expectedFlows); diff != "" {
 			t.Fatalf("Decode() (-got, +want):\n%s", diff)
 		}
-
 	})
 }

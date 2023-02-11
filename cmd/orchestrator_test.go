@@ -51,8 +51,10 @@ func TestOrchestratorConfig(t *testing.T) {
 			root := RootCmd
 			buf := new(bytes.Buffer)
 			root.SetOut(buf)
-			root.SetArgs([]string{"orchestrator", "--dump", "--check",
-				filepath.Join("testdata/configurations", test.Name(), "in.yaml")})
+			root.SetArgs([]string{
+				"orchestrator", "--dump", "--check",
+				filepath.Join("testdata/configurations", test.Name(), "in.yaml"),
+			})
 			if err := root.Execute(); err != nil {
 				t.Fatalf("`orchestrator` command error:\n%+v", err)
 			}

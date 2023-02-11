@@ -271,6 +271,7 @@ func (l *goSNMPLogger) Print(v ...interface{}) {
 		e.Msg(fmt.Sprint(v...))
 	}
 }
+
 func (l *goSNMPLogger) Printf(format string, v ...interface{}) {
 	if e := l.r.Debug(); e.Enabled() {
 		e.Msg(fmt.Sprintf(format, v...))

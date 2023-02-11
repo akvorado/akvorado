@@ -65,7 +65,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	}
 
 	// Initialize decoders (at most once each)
-	var alreadyInitialized = map[string]decoder.Decoder{}
+	alreadyInitialized := map[string]decoder.Decoder{}
 	decs := make([]decoder.Decoder, len(configuration.Inputs))
 	for idx, input := range c.config.Inputs {
 		dec, ok := alreadyInitialized[input.Decoder]

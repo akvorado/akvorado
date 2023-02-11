@@ -4,8 +4,7 @@
 package demoexporter
 
 // Configuration describes the configuration for the demo exporter component.
-type Configuration struct {
-}
+type Configuration struct{}
 
 // DefaultConfiguration represents the default configuration for the demo exporter component.
 func DefaultConfiguration() Configuration {

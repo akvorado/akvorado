@@ -40,8 +40,10 @@ type exporterClassification struct {
 	Tenant string
 }
 
-type classifyStringFunc = func(string) bool
-type classifyStringRegexFunc = func(string, string, string) (bool, error)
+type (
+	classifyStringFunc      = func(string) bool
+	classifyStringRegexFunc = func(string, string, string) (bool, error)
+)
 
 // exporterClassifierEnvironment defines the environment used by the exporter classifier
 type exporterClassifierEnvironment struct {

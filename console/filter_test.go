@@ -31,7 +31,8 @@ LIMIT 20`,
 		}{
 			{"th2-router1"},
 			{"th2-router2"},
-			{"th2-router3"}}).
+			{"th2-router3"},
+		}).
 		Return(nil)
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), `
@@ -138,7 +139,8 @@ LIMIT 20`, "6540").
 			JSONInput: gin.H{"filter": `InIfName = "Gi0/0/0/1"`},
 			JSONOutput: gin.H{
 				"message": "ok",
-				"parsed":  `InIfName = 'Gi0/0/0/1'`},
+				"parsed":  `InIfName = 'Gi0/0/0/1'`,
+			},
 		},
 		{
 			URL:       "/api/v0/console/filter/validate",
@@ -152,7 +154,8 @@ LIMIT 20`, "6540").
 					"message": "string literal not terminated",
 				}},
 			},
-		}, {
+		},
+		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
 			JSONInput:  gin.H{"what": "column", "prefix": "dSt"},
@@ -173,7 +176,8 @@ LIMIT 20`, "6540").
 				{"label": "DstNetTenant", "detail": "column name", "quoted": false},
 				{"label": "DstPort", "detail": "column name", "quoted": false},
 			}},
-		}, {
+		},
+		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
 			JSONInput:  gin.H{"what": "operator", "column": "ExporterName"},
@@ -187,7 +191,8 @@ LIMIT 20`, "6540").
 				{"label": "NOTIN (", "detail": "comparison operator", "quoted": false},
 				{"label": "UNLIKE", "detail": "comparison operator", "quoted": false},
 			}},
-		}, {
+		},
+		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
 			JSONInput:  gin.H{"what": "value", "column": "outifboundary"},
@@ -196,7 +201,8 @@ LIMIT 20`, "6540").
 				{"label": "external", "detail": "network boundary", "quoted": false},
 				{"label": "undefined", "detail": "network boundary", "quoted": false},
 			}},
-		}, {
+		},
+		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
 			JSONInput:  gin.H{"what": "value", "column": "etype"},
@@ -204,7 +210,8 @@ LIMIT 20`, "6540").
 				{"label": "IPv4", "detail": "ethernet type", "quoted": false},
 				{"label": "IPv6", "detail": "ethernet type", "quoted": false},
 			}},
-		}, {
+		},
+		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
 			JSONInput:  gin.H{"what": "value", "column": "proto", "prefix": "I"},
@@ -216,7 +223,8 @@ LIMIT 20`, "6540").
 				{"label": "IPv4", "detail": "protocol", "quoted": true},
 				{"label": "IPv6", "detail": "protocol", "quoted": true},
 			}},
-		}, {
+		},
+		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
 			JSONInput:  gin.H{"what": "value", "column": "exportername", "prefix": "th2-"},
@@ -225,7 +233,8 @@ LIMIT 20`, "6540").
 				{"label": "th2-router2", "detail": "exporter name", "quoted": true},
 				{"label": "th2-router3", "detail": "exporter name", "quoted": true},
 			}},
-		}, {
+		},
+		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
 			JSONInput:  gin.H{"what": "value", "column": "dstAS", "prefix": "goog"},
@@ -242,7 +251,8 @@ LIMIT 20`, "6540").
 				{"label": "AS36987", "detail": "Google Kenya", "quoted": false},
 				{"label": "AS41264", "detail": "Google Switzerland", "quoted": false},
 			}},
-		}, {
+		},
+		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
 			JSONInput:  gin.H{"what": "value", "column": "dstcommunities", "prefix": "6540"},
@@ -252,7 +262,8 @@ LIMIT 20`, "6540").
 				{"label": "65401:13", "detail": "community", "quoted": false},
 				{"label": "65402:200:100", "detail": "large community", "quoted": false},
 			}},
-		}, {
+		},
+		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
 			JSONInput:  gin.H{"what": "value", "column": "dstASpath", "prefix": "goog"},
@@ -269,7 +280,8 @@ LIMIT 20`, "6540").
 				{"label": "AS36987", "detail": "Google Kenya", "quoted": false},
 				{"label": "AS41264", "detail": "Google Switzerland", "quoted": false},
 			}},
-		}, {
+		},
+		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
 			JSONInput:  gin.H{"what": "value", "column": "srcnetName", "prefix": "c"},
@@ -278,19 +290,22 @@ LIMIT 20`, "6540").
 				{"label": "customer-2", "detail": "network name", "quoted": true},
 				{"label": "customer-3", "detail": "network name", "quoted": true},
 			}},
-		}, {
+		},
+		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
 			JSONInput:  gin.H{"what": "value", "column": "dstnetRole", "prefix": "c"},
 			JSONOutput: gin.H{"completions": []gin.H{
 				{"label": "customer", "detail": "network name", "quoted": true},
 			}},
-		}, {
+		},
+		{
 			Description: "list, no filters",
 			URL:         "/api/v0/console/filter/saved",
 			StatusCode:  200,
 			JSONOutput:  gin.H{"filters": []gin.H{}},
-		}, {
+		},
+		{
 			Description: "store one filter",
 			URL:         "/api/v0/console/filter/saved",
 			StatusCode:  204,
@@ -299,7 +314,8 @@ LIMIT 20`, "6540").
 				"content":     "InIfBoundary = external",
 			},
 			ContentType: "application/json; charset=utf-8",
-		}, {
+		},
+		{
 			Description: "list stored filters",
 			URL:         "/api/v0/console/filter/saved",
 			JSONOutput: gin.H{"filters": []gin.H{
@@ -311,7 +327,8 @@ LIMIT 20`, "6540").
 					"content":     "InIfBoundary = external",
 				},
 			}},
-		}, {
+		},
+		{
 			Description: "list stored filters as another user",
 			URL:         "/api/v0/console/filter/saved",
 			Header: func() netHTTP.Header {
@@ -320,7 +337,8 @@ LIMIT 20`, "6540").
 				return headers
 			}(),
 			JSONOutput: gin.H{"filters": []gin.H{}},
-		}, {
+		},
+		{
 			Description: "delete stored filter as another user",
 			Method:      "DELETE",
 			URL:         "/api/v0/console/filter/saved/1",
@@ -331,19 +349,22 @@ LIMIT 20`, "6540").
 			}(),
 			StatusCode: 404,
 			JSONOutput: gin.H{"message": "filter not found"},
-		}, {
+		},
+		{
 			Description: "delete stored filter",
 			Method:      "DELETE",
 			URL:         "/api/v0/console/filter/saved/1",
 			StatusCode:  204,
 			ContentType: "application/json; charset=utf-8",
-		}, {
+		},
+		{
 			Description: "delete stored filter with invalid ID",
 			Method:      "DELETE",
 			URL:         "/api/v0/console/filter/saved/kjgdfhgh",
 			StatusCode:  400,
 			JSONOutput:  gin.H{"message": "bad ID format"},
-		}, {
+		},
+		{
 			Description: "list stored filter after delete",
 			URL:         "/api/v0/console/filter/saved",
 			StatusCode:  200,

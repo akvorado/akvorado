@@ -20,8 +20,8 @@ import (
 func TestGraphInputReverseDirection(t *testing.T) {
 	input := graphHandlerInput{
 		schema: schema.NewMock(t),
-		Start:  time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-		End:    time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+		Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+		End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 		Points: 100,
 		Dimensions: query.Columns{
 			query.NewColumn("ExporterName"),
@@ -32,8 +32,8 @@ func TestGraphInputReverseDirection(t *testing.T) {
 	}
 	original1 := fmt.Sprintf("%+v", input)
 	expected := graphHandlerInput{
-		Start:  time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-		End:    time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+		Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+		End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 		Points: 100,
 		Dimensions: query.Columns{
 			query.NewColumn("ExporterName"),
@@ -147,8 +147,8 @@ func TestGraphQuerySQL(t *testing.T) {
 		{
 			Description: "no dimensions, no filters, bps",
 			Input: graphHandlerInput{
-				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
 				Dimensions: []query.Column{},
 				Filter:     query.Filter{},
@@ -173,8 +173,8 @@ ORDER BY time WITH FILL
 		}, {
 			Description: "no dimensions, no filters, l2 bps",
 			Input: graphHandlerInput{
-				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
 				Dimensions: []query.Column{},
 				Filter:     query.Filter{},
@@ -200,8 +200,8 @@ ORDER BY time WITH FILL
 		}, {
 			Description: "no dimensions, no filters, pps",
 			Input: graphHandlerInput{
-				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
 				Dimensions: []query.Column{},
 				Filter:     query.Filter{},
@@ -226,8 +226,8 @@ ORDER BY time WITH FILL
 		}, {
 			Description: "no dimensions",
 			Input: graphHandlerInput{
-				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
 				Dimensions: []query.Column{},
 				Filter:     query.NewFilter("DstCountry = 'FR' AND SrcCountry = 'US'"),
@@ -252,8 +252,8 @@ ORDER BY time WITH FILL
 		}, {
 			Description: "no dimensions, escaped filter",
 			Input: graphHandlerInput{
-				Start:      time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				End:        time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
 				Dimensions: []query.Column{},
 				Filter:     query.NewFilter("InIfDescription = '{{ hello }}' AND SrcCountry = 'US'"),
@@ -278,8 +278,8 @@ ORDER BY time WITH FILL
 		}, {
 			Description: "no dimensions, reverse direction",
 			Input: graphHandlerInput{
-				Start:         time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				End:           time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Start:         time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:           time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points:        100,
 				Dimensions:    []query.Column{},
 				Filter:        query.NewFilter("DstCountry = 'FR' AND SrcCountry = 'US'"),
@@ -321,8 +321,8 @@ ORDER BY time WITH FILL
 		}, {
 			Description: "no dimensions, reverse direction, inl2%",
 			Input: graphHandlerInput{
-				Start:         time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				End:           time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Start:         time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:           time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points:        100,
 				Dimensions:    []query.Column{},
 				Filter:        query.NewFilter("DstCountry = 'FR' AND SrcCountry = 'US'"),
@@ -364,8 +364,8 @@ ORDER BY time WITH FILL
 		}, {
 			Description: "no filters",
 			Input: graphHandlerInput{
-				Start:  time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				End:    time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points: 100,
 				Limit:  20,
 				Dimensions: []query.Column{
@@ -396,8 +396,8 @@ ORDER BY time WITH FILL
 		}, {
 			Description: "no filters, reverse",
 			Input: graphHandlerInput{
-				Start:  time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				End:    time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points: 100,
 				Limit:  20,
 				Dimensions: []query.Column{
@@ -445,8 +445,8 @@ ORDER BY time WITH FILL
 		}, {
 			Description: "no filters, previous period",
 			Input: graphHandlerInput{
-				Start:  time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				End:    time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points: 100,
 				Limit:  20,
 				Dimensions: []query.Column{
@@ -624,8 +624,8 @@ func TestGraphHandler(t *testing.T) {
 			Description: "single direction",
 			URL:         "/api/v0/console/graph",
 			JSONInput: gin.H{
-				"start":         time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				"end":           time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				"start":         time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				"end":           time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				"points":        100,
 				"limit":         20,
 				"dimensions":    []string{"ExporterName", "InIfProvider"},
@@ -699,8 +699,8 @@ func TestGraphHandler(t *testing.T) {
 			Description: "bidirectional",
 			URL:         "/api/v0/console/graph",
 			JSONInput: gin.H{
-				"start":         time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				"end":           time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				"start":         time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				"end":           time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				"points":        100,
 				"limit":         20,
 				"dimensions":    []string{"ExporterName", "InIfProvider"},
@@ -818,8 +818,8 @@ func TestGraphHandler(t *testing.T) {
 			Description: "previous period",
 			URL:         "/api/v0/console/graph",
 			JSONInput: gin.H{
-				"start":           time.Date(2022, 04, 10, 15, 45, 10, 0, time.UTC),
-				"end":             time.Date(2022, 04, 11, 15, 45, 10, 0, time.UTC),
+				"start":           time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				"end":             time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				"points":          100,
 				"limit":           20,
 				"dimensions":      []string{"ExporterName", "InIfProvider"},

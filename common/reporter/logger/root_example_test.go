@@ -17,7 +17,7 @@ func ExampleNew() {
 	// Initialize zerolog
 	log.Logger = zerolog.New(os.Stdout).With().Timestamp().Logger()
 	zerolog.TimestampFunc = func() time.Time {
-		return time.Date(2008, 1, 8, 17, 5, 05, 0, time.UTC)
+		return time.Date(2008, 1, 8, 17, 5, 5, 0, time.UTC)
 	}
 
 	// Initialize logger

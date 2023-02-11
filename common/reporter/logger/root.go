@@ -30,7 +30,7 @@ type Logger struct {
 // New creates a new logger
 func New(config Configuration) (Logger, error) {
 	// Initialize the logger
-	var logger = log.Logger.Hook(contextHook{})
+	logger := log.Logger.Hook(contextHook{})
 	return Logger{logger}, nil
 }
 

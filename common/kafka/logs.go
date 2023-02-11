@@ -43,6 +43,7 @@ func (l *kafkaLogger) Print(v ...interface{}) {
 		}
 	}
 }
+
 func (l *kafkaLogger) Println(v ...interface{}) {
 	r := l.r.Load()
 	if r != nil {
@@ -51,6 +52,7 @@ func (l *kafkaLogger) Println(v ...interface{}) {
 		}
 	}
 }
+
 func (l *kafkaLogger) Printf(format string, v ...interface{}) {
 	r := l.r.Load()
 	if r != nil {

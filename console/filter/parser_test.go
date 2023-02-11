@@ -18,8 +18,10 @@ func TestValidFilter(t *testing.T) {
 		MetaOut Meta
 	}{
 		{Input: `ExporterName = 'something'`, Output: `ExporterName = 'something'`},
-		{Input: `ExporterName = 'something'`, Output: `ExporterName = 'something'`,
-			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true}},
+		{
+			Input: `ExporterName = 'something'`, Output: `ExporterName = 'something'`,
+			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true},
+		},
 		{Input: `exportername = 'something'`, Output: `ExporterName = 'something'`},
 		{Input: `ExporterName='something'`, Output: `ExporterName = 'something'`},
 		{Input: `ExporterName="something"`, Output: `ExporterName = 'something'`},
@@ -39,59 +41,75 @@ func TestValidFilter(t *testing.T) {
 		{
 			Input:  `ExporterAddress << 2001:db8:0::/64`,
 			Output: `ExporterAddress BETWEEN toIPv6('2001:db8::') AND toIPv6('2001:db8::ffff:ffff:ffff:ffff')`,
-		}, {
+		},
+		{
 			Input:  `ExporterAddress << 2001:db8::c000/115`,
 			Output: `ExporterAddress BETWEEN toIPv6('2001:db8::c000') AND toIPv6('2001:db8::dfff')`,
-		}, {
+		},
+		{
 			Input:  `ExporterAddress << 192.168.0.0/24`,
 			Output: `ExporterAddress BETWEEN toIPv6('::ffff:192.168.0.0') AND toIPv6('::ffff:192.168.0.255')`,
-		}, {
+		},
+		{
 			Input:   `DstAddr << 192.168.0.0/24`,
 			Output:  `DstAddr BETWEEN toIPv6('::ffff:192.168.0.0') AND toIPv6('::ffff:192.168.0.255')`,
 			MetaOut: Meta{MainTableRequired: true},
-		}, {
+		},
+		{
 			Input:   `DstAddr << 192.168.0.0/24`,
 			Output:  `SrcAddr BETWEEN toIPv6('::ffff:192.168.0.0') AND toIPv6('::ffff:192.168.0.255')`,
 			MetaIn:  Meta{ReverseDirection: true},
 			MetaOut: Meta{ReverseDirection: true, MainTableRequired: true},
-		}, {
+		},
+		{
 			Input:   `SrcAddr << 192.168.0.1/24`,
 			Output:  `SrcAddr BETWEEN toIPv6('::ffff:192.168.0.0') AND toIPv6('::ffff:192.168.0.255')`,
 			MetaOut: Meta{MainTableRequired: true},
-		}, {
+		},
+		{
 			Input:   `DstAddr !<< 192.168.0.0/24`,
 			Output:  `DstAddr NOT BETWEEN toIPv6('::ffff:192.168.0.0') AND toIPv6('::ffff:192.168.0.255')`,
 			MetaOut: Meta{MainTableRequired: true},
-		}, {
+		},
+		{
 			Input:   `DstAddr !<< 192.168.0.128/27`,
 			Output:  `DstAddr NOT BETWEEN toIPv6('::ffff:192.168.0.128') AND toIPv6('::ffff:192.168.0.159')`,
 			MetaOut: Meta{MainTableRequired: true},
-		}, {
+		},
+		{
 			Input:   `DstNetPrefix = 192.168.0.128/27`,
 			Output:  `DstAddr BETWEEN toIPv6('::ffff:192.168.0.128') AND toIPv6('::ffff:192.168.0.159') AND DstNetMask = 27`,
 			MetaOut: Meta{MainTableRequired: true},
-		}, {
+		},
+		{
 			Input:   `SrcNetPrefix = 192.168.0.128/27`,
 			Output:  `SrcAddr BETWEEN toIPv6('::ffff:192.168.0.128') AND toIPv6('::ffff:192.168.0.159') AND SrcNetMask = 27`,
 			MetaOut: Meta{MainTableRequired: true},
-		}, {
+		},
+		{
 			Input:   `SrcNetPrefix = 2001:db8::/48`,
 			Output:  `SrcAddr BETWEEN toIPv6('2001:db8::') AND toIPv6('2001:db8:0:ffff:ffff:ffff:ffff:ffff') AND SrcNetMask = 48`,
 			MetaOut: Meta{MainTableRequired: true},
 		},
 		{Input: `ExporterGroup= "group"`, Output: `ExporterGroup = 'group'`},
-		{Input: `SrcAddr=203.0.113.1`, Output: `SrcAddr = toIPv6('203.0.113.1')`,
-			MetaOut: Meta{MainTableRequired: true}},
-		{Input: `DstAddr=203.0.113.2`, Output: `DstAddr = toIPv6('203.0.113.2')`,
-			MetaOut: Meta{MainTableRequired: true}},
+		{
+			Input: `SrcAddr=203.0.113.1`, Output: `SrcAddr = toIPv6('203.0.113.1')`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input: `DstAddr=203.0.113.2`, Output: `DstAddr = toIPv6('203.0.113.2')`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
 		{Input: `SrcNetName="alpha"`, Output: `SrcNetName = 'alpha'`},
 		{Input: `DstNetName="alpha"`, Output: `DstNetName = 'alpha'`},
 		{Input: `DstNetRole="stuff"`, Output: `DstNetRole = 'stuff'`},
 		{Input: `SrcNetTenant="mobile"`, Output: `SrcNetTenant = 'mobile'`},
 		{Input: `SrcAS=12322`, Output: `SrcAS = 12322`},
 		{Input: `SrcAS=AS12322`, Output: `SrcAS = 12322`},
-		{Input: `SrcAS=AS12322`, Output: `DstAS = 12322`,
-			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true}},
+		{
+			Input: `SrcAS=AS12322`, Output: `DstAS = 12322`,
+			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true},
+		},
 		{Input: `SrcAS=as12322`, Output: `SrcAS = 12322`},
 		{Input: `SrcAS IN(12322, 29447)`, Output: `SrcAS IN (12322, 29447)`},
 		{Input: `SrcAS IN( 12322  , 29447  )`, Output: `SrcAS IN (12322, 29447)`},
@@ -99,88 +117,134 @@ func TestValidFilter(t *testing.T) {
 		{Input: `SrcAS NOTIN (AS12322, 29447)`, Output: `SrcAS NOT IN (12322, 29447)`},
 		{Input: `DstAS=12322`, Output: `DstAS = 12322`},
 		{Input: `SrcCountry='FR'`, Output: `SrcCountry = 'FR'`},
-		{Input: `SrcCountry='FR'`, Output: `DstCountry = 'FR'`,
-			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true}},
+		{
+			Input: `SrcCountry='FR'`, Output: `DstCountry = 'FR'`,
+			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true},
+		},
 		{Input: `DstCountry='FR'`, Output: `DstCountry = 'FR'`},
-		{Input: `DstCountry='FR'`, Output: `SrcCountry = 'FR'`,
-			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true}},
+		{
+			Input: `DstCountry='FR'`, Output: `SrcCountry = 'FR'`,
+			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true},
+		},
 		{Input: `InIfName='Gi0/0/0/1'`, Output: `InIfName = 'Gi0/0/0/1'`},
-		{Input: `InIfName='Gi0/0/0/1'`, Output: `OutIfName = 'Gi0/0/0/1'`,
-			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true}},
+		{
+			Input: `InIfName='Gi0/0/0/1'`, Output: `OutIfName = 'Gi0/0/0/1'`,
+			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true},
+		},
 		{Input: `OutIfName = 'Gi0/0/0/1'`, Output: `OutIfName = 'Gi0/0/0/1'`},
-		{Input: `OutIfName = 'Gi0/0/0/1'`, Output: `InIfName = 'Gi0/0/0/1'`,
-			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true}},
+		{
+			Input: `OutIfName = 'Gi0/0/0/1'`, Output: `InIfName = 'Gi0/0/0/1'`,
+			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true},
+		},
 		{Input: `InIfDescription='Some description'`, Output: `InIfDescription = 'Some description'`},
-		{Input: `InIfDescription='Some description'`, Output: `OutIfDescription = 'Some description'`,
-			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true}},
+		{
+			Input: `InIfDescription='Some description'`, Output: `OutIfDescription = 'Some description'`,
+			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true},
+		},
 		{Input: `OutIfDescription='Some other description'`, Output: `OutIfDescription = 'Some other description'`},
-		{Input: `OutIfDescription='Some other description'`, Output: `InIfDescription = 'Some other description'`,
-			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true}},
+		{
+			Input: `OutIfDescription='Some other description'`, Output: `InIfDescription = 'Some other description'`,
+			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true},
+		},
 		{Input: `InIfSpeed>=1000`, Output: `InIfSpeed >= 1000`},
-		{Input: `InIfSpeed>=1000`, Output: `OutIfSpeed >= 1000`,
-			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true}},
+		{
+			Input: `InIfSpeed>=1000`, Output: `OutIfSpeed >= 1000`,
+			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true},
+		},
 		{Input: `InIfSpeed!=1000`, Output: `InIfSpeed != 1000`},
 		{Input: `InIfSpeed<1000`, Output: `InIfSpeed < 1000`},
 		{Input: `OutIfSpeed!=1000`, Output: `OutIfSpeed != 1000`},
-		{Input: `OutIfSpeed!=1000`, Output: `InIfSpeed != 1000`,
-			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true}},
+		{
+			Input: `OutIfSpeed!=1000`, Output: `InIfSpeed != 1000`,
+			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true},
+		},
 		{Input: `InIfConnectivity = 'pni'`, Output: `InIfConnectivity = 'pni'`},
-		{Input: `InIfConnectivity = 'pni'`, Output: `OutIfConnectivity = 'pni'`,
-			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true}},
+		{
+			Input: `InIfConnectivity = 'pni'`, Output: `OutIfConnectivity = 'pni'`,
+			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true},
+		},
 		{Input: `OutIfConnectivity = 'ix'`, Output: `OutIfConnectivity = 'ix'`},
-		{Input: `OutIfConnectivity = 'ix'`, Output: `InIfConnectivity = 'ix'`,
-			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true}},
+		{
+			Input: `OutIfConnectivity = 'ix'`, Output: `InIfConnectivity = 'ix'`,
+			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true},
+		},
 		{Input: `InIfProvider = 'cogent'`, Output: `InIfProvider = 'cogent'`},
-		{Input: `InIfProvider = 'cogent'`, Output: `OutIfProvider = 'cogent'`,
-			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true}},
+		{
+			Input: `InIfProvider = 'cogent'`, Output: `OutIfProvider = 'cogent'`,
+			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true},
+		},
 		{Input: `OutIfProvider = 'telia'`, Output: `OutIfProvider = 'telia'`},
-		{Input: `OutIfProvider = 'telia'`, Output: `InIfProvider = 'telia'`,
-			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true}},
+		{
+			Input: `OutIfProvider = 'telia'`, Output: `InIfProvider = 'telia'`,
+			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true},
+		},
 		{Input: `InIfBoundary = external`, Output: `InIfBoundary = 'external'`},
-		{Input: `InIfBoundary = external`, Output: `OutIfBoundary = 'external'`,
-			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true}},
+		{
+			Input: `InIfBoundary = external`, Output: `OutIfBoundary = 'external'`,
+			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true},
+		},
 		{Input: `InIfBoundary = EXTERNAL`, Output: `InIfBoundary = 'external'`},
-		{Input: `InIfBoundary = EXTERNAL`, Output: `OutIfBoundary = 'external'`,
-			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true}},
+		{
+			Input: `InIfBoundary = EXTERNAL`, Output: `OutIfBoundary = 'external'`,
+			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true},
+		},
 		{Input: `OutIfBoundary != internal`, Output: `OutIfBoundary != 'internal'`},
 		{Input: `EType = ipv4`, Output: `EType = 2048`},
 		{Input: `EType != ipv6`, Output: `EType != 34525`},
 		{Input: `Proto = 1`, Output: `Proto = 1`},
 		{Input: `Proto = 'gre'`, Output: `dictGetOrDefault('protocols', 'name', Proto, '???') = 'gre'`},
-		{Input: `SrcPort = 80`, Output: `SrcPort = 80`,
-			MetaOut: Meta{MainTableRequired: true}},
-		{Input: `SrcPort = 80`, Output: `DstPort = 80`,
+		{
+			Input: `SrcPort = 80`, Output: `SrcPort = 80`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input: `SrcPort = 80`, Output: `DstPort = 80`,
 			MetaIn:  Meta{ReverseDirection: true},
-			MetaOut: Meta{ReverseDirection: true, MainTableRequired: true}},
-		{Input: `DstPort > 1024`, Output: `DstPort > 1024`,
-			MetaOut: Meta{MainTableRequired: true}},
+			MetaOut: Meta{ReverseDirection: true, MainTableRequired: true},
+		},
+		{
+			Input: `DstPort > 1024`, Output: `DstPort > 1024`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
 		{Input: `ForwardingStatus >= 128`, Output: `ForwardingStatus >= 128`},
 		{Input: `PacketSize > 1500`, Output: `PacketSize > 1500`},
-		{Input: `DstPort > 1024 AND SrcPort < 1024`, Output: `DstPort > 1024 AND SrcPort < 1024`,
-			MetaOut: Meta{MainTableRequired: true}},
-		{Input: `DstPort > 1024 OR SrcPort < 1024`, Output: `DstPort > 1024 OR SrcPort < 1024`,
-			MetaOut: Meta{MainTableRequired: true}},
-		{Input: `NOT DstPort > 1024 AND SrcPort < 1024`, Output: `NOT DstPort > 1024 AND SrcPort < 1024`,
-			MetaOut: Meta{MainTableRequired: true}},
-		{Input: `not DstPort > 1024 and SrcPort < 1024`, Output: `NOT DstPort > 1024 AND SrcPort < 1024`,
-			MetaOut: Meta{MainTableRequired: true}},
+		{
+			Input: `DstPort > 1024 AND SrcPort < 1024`, Output: `DstPort > 1024 AND SrcPort < 1024`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input: `DstPort > 1024 OR SrcPort < 1024`, Output: `DstPort > 1024 OR SrcPort < 1024`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input: `NOT DstPort > 1024 AND SrcPort < 1024`, Output: `NOT DstPort > 1024 AND SrcPort < 1024`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input: `not DstPort > 1024 and SrcPort < 1024`, Output: `NOT DstPort > 1024 AND SrcPort < 1024`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
 		{
 			Input:   `DstPort > 1024 AND SrcPort < 1024 OR InIfSpeed >= 1000`,
 			Output:  `DstPort > 1024 AND SrcPort < 1024 OR InIfSpeed >= 1000`,
 			MetaOut: Meta{MainTableRequired: true},
-		}, {
+		},
+		{
 			Input:   `DstPort > 1024 AND (SrcPort < 1024 OR InIfSpeed >= 1000)`,
 			Output:  `DstPort > 1024 AND (SrcPort < 1024 OR InIfSpeed >= 1000)`,
 			MetaOut: Meta{MainTableRequired: true},
-		}, {
+		},
+		{
 			Input:   `  DstPort >   1024   AND   (  SrcPort   <   1024   OR   InIfSpeed   >=   1000   )  `,
 			Output:  `DstPort > 1024 AND (SrcPort < 1024 OR InIfSpeed >= 1000)`,
 			MetaOut: Meta{MainTableRequired: true},
-		}, {
+		},
+		{
 			Input:   `DstPort > 1024 AND(SrcPort < 1024 OR InIfSpeed >= 1000)`,
 			Output:  `DstPort > 1024 AND (SrcPort < 1024 OR InIfSpeed >= 1000)`,
 			MetaOut: Meta{MainTableRequired: true},
-		}, {
+		},
+		{
 			Input: `DstPort > 1024
                   AND (SrcPort < 1024 OR InIfSpeed >= 1000)`,
 			Output:  `DstPort > 1024 AND (SrcPort < 1024 OR InIfSpeed >= 1000)`,
@@ -196,10 +260,12 @@ DstPort > 1024 -- Non-privileged port
 AND SrcAS = AS12322 -- Proxad ASN`,
 			Output:  `DstPort > 1024 AND SrcAS = 12322`,
 			MetaOut: Meta{MainTableRequired: true},
-		}, {
+		},
+		{
 			Input:  `InIfDescription = "This contains a -- comment" -- nope`,
 			Output: `InIfDescription = 'This contains a -- comment'`,
-		}, {
+		},
+		{
 			Input:  `InIfDescription = "This contains a /* comment"`,
 			Output: `InIfDescription = 'This contains a /* comment'`,
 		},
@@ -217,14 +283,22 @@ output provider */ = 'telia'`,
 		{Input: `DstCommunities != 65000:100:200`, Output: `NOT has(DstLargeCommunities, bitShiftLeft(65000::UInt128, 64) + bitShiftLeft(100::UInt128, 32) + 200::UInt128)`, MetaOut: Meta{MainTableRequired: true}},
 		{Input: `SrcVlan = 1000`, Output: `SrcVlan = 1000`},
 		{Input: `DstVlan = 1000`, Output: `DstVlan = 1000`},
-		{Input: `SrcAddrNAT = 203.0.113.4`, Output: `SrcAddrNAT = toIPv6('203.0.113.4')`,
-			MetaOut: Meta{MainTableRequired: true}},
-		{Input: `DstAddrNAT = 203.0.113.4`, Output: `DstAddrNAT = toIPv6('203.0.113.4')`,
-			MetaOut: Meta{MainTableRequired: true}},
-		{Input: `SrcPortNAT = 22`, Output: `SrcPortNAT = 22`,
-			MetaOut: Meta{MainTableRequired: true}},
-		{Input: `DstPortNAT = 22`, Output: `DstPortNAT = 22`,
-			MetaOut: Meta{MainTableRequired: true}},
+		{
+			Input: `SrcAddrNAT = 203.0.113.4`, Output: `SrcAddrNAT = toIPv6('203.0.113.4')`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input: `DstAddrNAT = 203.0.113.4`, Output: `DstAddrNAT = toIPv6('203.0.113.4')`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input: `SrcPortNAT = 22`, Output: `SrcPortNAT = 22`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input: `DstPortNAT = 22`, Output: `DstPortNAT = 22`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
 		{Input: `SrcMAC = 00:11:22:33:44:55`, Output: `SrcMAC = MACStringToNum('00:11:22:33:44:55')`},
 		{Input: `DstMAC = 00:11:22:33:44:55`, Output: `DstMAC = MACStringToNum('00:11:22:33:44:55')`},
 		{Input: `SrcMAC != 00:0c:fF:33:44:55`, Output: `SrcMAC != MACStringToNum('00:0c:ff:33:44:55')`},

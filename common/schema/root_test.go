@@ -29,7 +29,6 @@ func TestEnableDisableColumns(t *testing.T) {
 	} else if !column.Disabled {
 		t.Fatal("DstCountry is not disabled")
 	}
-
 }
 
 func TestDisableForbiddenColumns(t *testing.T) {

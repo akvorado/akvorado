@@ -46,79 +46,98 @@ func TestRTAEqual(t *testing.T) {
 			routeAttributes{asn: 2038, asPath: []uint32{}},
 			routeAttributes{asn: 2038},
 			true,
-		}, {
+		},
+		{
 			routeAttributes{asn: 2038, asPath: []uint32{}},
 			routeAttributes{asn: 2039},
 			false,
-		}, {
+		},
+		{
 			routeAttributes{asn: 2038, communities: []uint32{}},
 			routeAttributes{asn: 2038},
 			true,
-		}, {
+		},
+		{
 			routeAttributes{asn: 2038, communities: []uint32{}},
 			routeAttributes{asn: 2039},
 			false,
-		}, {
+		},
+		{
 			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{}},
 			routeAttributes{asn: 2038},
 			true,
-		}, {
+		},
+		{
 			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{}},
 			routeAttributes{asn: 2039},
 			false,
-		}, {
+		},
+		{
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3}},
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3}},
 			true,
-		}, {
+		},
+		{
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3}},
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 4}},
 			false,
-		}, {
+		},
+		{
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3}},
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 0}},
 			false,
-		}, {
+		},
+		{
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3}},
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 4}},
 			false,
-		}, {
+		},
+		{
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 4}},
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 4}},
 			true,
-		}, {
+		},
+		{
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34}},
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34}},
 			true,
-		}, {
+		},
+		{
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34}},
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 35}},
 			false,
-		}, {
+		},
+		{
 			routeAttributes{asn: 2038, communities: []uint32{100, 200, 300, 400}},
 			routeAttributes{asn: 2038, communities: []uint32{100, 200, 300, 400}},
 			true,
-		}, {
+		},
+		{
 			routeAttributes{asn: 2038, communities: []uint32{100, 200, 300, 400}},
 			routeAttributes{asn: 2038, communities: []uint32{100, 200, 300, 402}},
 			false,
-		}, {
+		},
+		{
 			routeAttributes{asn: 2038, communities: []uint32{100, 200, 300}},
 			routeAttributes{asn: 2038, communities: []uint32{100, 200, 300, 400}},
 			false,
-		}, {
+		},
+		{
 			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}, {ASN: 3, LocalData1: 4, LocalData2: 5}, {ASN: 5, LocalData1: 6, LocalData2: 7}}},
 			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}, {ASN: 3, LocalData1: 4, LocalData2: 5}, {ASN: 5, LocalData1: 6, LocalData2: 7}}},
 			true,
-		}, {
+		},
+		{
 			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}, {ASN: 3, LocalData1: 4, LocalData2: 5}, {ASN: 5, LocalData1: 6, LocalData2: 7}}},
 			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}, {ASN: 3, LocalData1: 4, LocalData2: 5}, {ASN: 5, LocalData1: 6, LocalData2: 8}}},
 			false,
-		}, {
+		},
+		{
 			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}, {ASN: 3, LocalData1: 4, LocalData2: 5}, {ASN: 5, LocalData1: 6, LocalData2: 7}}},
 			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 4}, {ASN: 3, LocalData1: 4, LocalData2: 5}, {ASN: 5, LocalData1: 6, LocalData2: 7}}},
 			false,
-		}, {
+		},
+		{
 			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}, {ASN: 3, LocalData1: 4, LocalData2: 5}}},
 			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}, {ASN: 3, LocalData1: 4, LocalData2: 5}, {ASN: 5, LocalData1: 6, LocalData2: 7}}},
 			false,

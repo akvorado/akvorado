@@ -47,7 +47,8 @@ func TestMetrics(t *testing.T) {
 
 	gauge3 := r.GaugeVec(reporter.GaugeOpts{
 		Name: "gauge3",
-		Help: "Another gauge"},
+		Help: "Another gauge",
+	},
 		[]string{"label1", "label2"})
 	gauge3.WithLabelValues("value1", "value2").Set(44)
 	gauge3.WithLabelValues("value3", "value4").Set(48)

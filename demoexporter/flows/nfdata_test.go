@@ -25,12 +25,13 @@ func TestGetNetflowData(t *testing.T) {
 		context.Background(),
 		50,
 		30000,
-		time.Date(2022, 03, 15, 14, 33, 0, 0, time.UTC),
-		time.Date(2022, 03, 15, 15, 33, 0, 0, time.UTC))
+		time.Date(2022, 3, 15, 14, 33, 0, 0, time.UTC),
+		time.Date(2022, 3, 15, 15, 33, 0, 0, time.UTC))
 	got := []interface{}{}
 	for payload := range ch {
 		got = append(got, nfdecoder.Decode(decoder.RawFlow{
-			Payload: payload, Source: net.ParseIP("127.0.0.1")}))
+			Payload: payload, Source: net.ParseIP("127.0.0.1"),
+		}))
 	}
 
 	ch = getNetflowData(
@@ -93,11 +94,12 @@ func TestGetNetflowData(t *testing.T) {
 			},
 		},
 		100,
-		time.Date(2022, 03, 15, 14, 33, 0, 0, time.UTC),
-		time.Date(2022, 03, 15, 16, 33, 0, 0, time.UTC))
+		time.Date(2022, 3, 15, 14, 33, 0, 0, time.UTC),
+		time.Date(2022, 3, 15, 16, 33, 0, 0, time.UTC))
 	for payload := range ch {
 		got = append(got, nfdecoder.Decode(decoder.RawFlow{
-			Payload: payload, Source: net.ParseIP("127.0.0.1")}))
+			Payload: payload, Source: net.ParseIP("127.0.0.1"),
+		}))
 	}
 	expected := []interface{}{
 		[]interface{}{}, // templates

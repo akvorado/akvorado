@@ -1004,7 +1004,6 @@ func TestBMP(t *testing.T) {
 		if diff := helpers.Diff(gotRIB, expectedRIB); diff != "" {
 			t.Errorf("RIB (-got, +want):\n%s", diff)
 		}
-
 	})
 
 	t.Run("init, peers up, eor, reach NLRI, conn down, immediate timeout", func(t *testing.T) {

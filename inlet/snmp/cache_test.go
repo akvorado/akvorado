@@ -65,7 +65,8 @@ func TestSimpleLookup(t *testing.T) {
 	sc.Put(time.Now(), netip.MustParseAddr("::ffff:127.0.0.1"), "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit", Speed: 1000})
 	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{
 		ExporterName: "localhost",
-		Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit", Speed: 1000}})
+		Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit", Speed: 1000},
+	})
 	expectCacheLookup(t, sc, "127.0.0.1", 787, answer{NOk: true})
 	expectCacheLookup(t, sc, "127.0.0.2", 676, answer{NOk: true})
 
@@ -93,27 +94,33 @@ func TestExpire(t *testing.T) {
 	sc.Expire(now.Add(-time.Hour))
 	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{
 		ExporterName: "localhost",
-		Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
+		Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit"},
+	})
 	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{
 		ExporterName: "localhost2",
-		Interface:    Interface{Name: "Gi0/0/0/2", Description: "Peering"}})
+		Interface:    Interface{Name: "Gi0/0/0/2", Description: "Peering"},
+	})
 	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
 		ExporterName: "localhost3",
-		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"}})
+		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"},
+	})
 	sc.Expire(now.Add(-29 * time.Minute))
 	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{NOk: true})
 	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{
 		ExporterName: "localhost2",
-		Interface:    Interface{Name: "Gi0/0/0/2", Description: "Peering"}})
+		Interface:    Interface{Name: "Gi0/0/0/2", Description: "Peering"},
+	})
 	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
 		ExporterName: "localhost3",
-		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"}})
+		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"},
+	})
 	sc.Expire(now.Add(-19 * time.Minute))
 	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{NOk: true})
 	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{NOk: true})
 	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
 		ExporterName: "localhost3",
-		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"}})
+		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"},
+	})
 	sc.Expire(now.Add(-9 * time.Minute))
 	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{NOk: true})
 	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{NOk: true})
@@ -123,7 +130,8 @@ func TestExpire(t *testing.T) {
 	sc.Expire(now.Add(-19 * time.Minute))
 	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{
 		ExporterName: "localhost",
-		Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
+		Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit"},
+	})
 
 	gotMetrics := r.GetMetrics("akvorado_inlet_snmp_cache_")
 	expectedMetrics := map[string]string{
@@ -154,11 +162,13 @@ func TestExpireRefresh(t *testing.T) {
 	sc.Expire(now.Add(-29 * time.Minute))
 	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{
 		ExporterName: "localhost",
-		Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
+		Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit"},
+	})
 	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{NOk: true})
 	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
 		ExporterName: "localhost2",
-		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"}})
+		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"},
+	})
 }
 
 func TestNeedUpdates(t *testing.T) {
@@ -244,10 +254,12 @@ func TestSaveLoad(t *testing.T) {
 	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{NOk: true})
 	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{
 		ExporterName: "localhost",
-		Interface:    Interface{Name: "Gi0/0/0/2", Description: "Peering"}})
+		Interface:    Interface{Name: "Gi0/0/0/2", Description: "Peering"},
+	})
 	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
 		ExporterName: "localhost2",
-		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX", Speed: 1000}})
+		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX", Speed: 1000},
+	})
 }
 
 func TestConcurrentOperations(t *testing.T) {
