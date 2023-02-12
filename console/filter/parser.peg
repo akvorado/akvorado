@@ -67,6 +67,11 @@ ConditionIPExpr "condition on IP" ←
    operator:"!<<" _ subnet:Subnet {
      return fmt.Sprintf("%s NOT %s", toString(column), subnet), nil
    }
+ / column:ColumnIP _
+   operator:InOperator _ '(' _ value:ListIP _ ')' {
+     return fmt.Sprintf("%s %s (%s)", toString(column), toString(operator), toString(value)), nil
+   }
+
 
 ConditionPrefixExpr "condition on prefix" ←
    column:("SrcNetPrefix"i !IdentStart #{ return c.metaColumn("SrcNetPrefix") } { return c.acceptColumn() }
@@ -203,6 +208,9 @@ IP "IP address" ← [0-9A-Fa-f:.]+ !IdentStart {
   }
   return ip.String(), nil
 }
+ListIP "list IP addresses" ←
+   head:IP _ ',' _ tail:ListIP { return fmt.Sprintf("toIPv6(%s), %s", quote(head), tail), nil }
+ / value:IP { return fmt.Sprintf("toIPv6(%s)", quote(value)), nil }
 
 Subnet "IP subnet" ← [0-9A-Fa-f:.]+ "/" [0-9]+ !IdentStart {
   net, err := netip.ParsePrefix(string(c.text))

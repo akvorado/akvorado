@@ -100,6 +100,14 @@ func TestValidFilter(t *testing.T) {
 			Input: `DstAddr=203.0.113.2`, Output: `DstAddr = toIPv6('203.0.113.2')`,
 			MetaOut: Meta{MainTableRequired: true},
 		},
+		{
+			Input: `SrcAddr IN (203.0.113.1)`, Output: `SrcAddr IN (toIPv6('203.0.113.1'))`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input: `SrcAddr IN (203.0.113.1, 2001:db8::1)`, Output: `SrcAddr IN (toIPv6('203.0.113.1'), toIPv6('2001:db8::1'))`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
 		{Input: `SrcNetName="alpha"`, Output: `SrcNetName = 'alpha'`},
 		{Input: `DstNetName="alpha"`, Output: `DstNetName = 'alpha'`},
 		{Input: `DstNetRole="stuff"`, Output: `DstNetRole = 'stuff'`},
