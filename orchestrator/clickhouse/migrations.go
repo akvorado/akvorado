@@ -106,6 +106,7 @@ func (c *Component) migrateDatabase() error {
 
 	close(c.migrationsDone)
 	c.metrics.migrationsRunning.Set(0)
+	c.r.Info().Msg("database migration done")
 
 	// Reload dictionaries
 	if err := c.d.ClickHouse.Exec(ctx, "SYSTEM RELOAD DICTIONARIES"); err != nil {
