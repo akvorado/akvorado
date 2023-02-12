@@ -137,5 +137,5 @@ require (
 replace (
 	github.com/benbjohnson/clock => github.com/vincentbernat/go-clock v0.0.0-20220922224448-739bd11b5833
 	github.com/kentik/patricia => github.com/vincentbernat/patricia v0.0.0-20220923091046-b376a1167a94
-	github.com/netsampler/goflow2 => github.com/vincentbernat/goflow2 v1.0.5-0.20230210215259-34e153ff515d
+	github.com/netsampler/goflow2 => github.com/vincentbernat/goflow2 v1.0.5-0.20230212130531-75622155c20e
 )

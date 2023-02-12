@@ -57,12 +57,35 @@ func (nd *Decoder) decode(msgDec interface{}) []*schema.FlowMessage {
 		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnPackets, 1)
 		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnForwardingStatus, uint64(forwardingStatus))
 
+		// Optimization: avoid parsing sampled header if we have everything already parsed
+		hasSampledIPv4 := false
+		hasSampledIPv6 := false
+		hasSampledEthernet := false
+		hasExtendedSwitch := false
+		for _, record := range records {
+			switch record.Data.(type) {
+			case sflow.SampledIPv4:
+				hasSampledIPv4 = true
+			case sflow.SampledIPv6:
+				hasSampledIPv6 = true
+			case sflow.SampledEthernet:
+				hasSampledEthernet = true
+			case sflow.ExtendedSwitch:
+				hasExtendedSwitch = true
+			}
+		}
+
 		var l3length uint64
 		for _, record := range records {
 			switch recordData := record.Data.(type) {
 			case sflow.SampledHeader:
-				if l := nd.parseSampledHeader(bf, &recordData); l > 0 {
-					l3length = l
+				// Only process this header if:
+				//  - we don't have a sampled IPv4 header nor a sampled IPv4 header, or
+				//  - we need L2 data and we don't have sampled ethernet header or we don't have extended switch record
+				if !hasSampledIPv4 && !hasSampledIPv6 || !nd.d.Schema.IsDisabled(schema.ColumnGroupL2) && (!hasSampledEthernet || !hasExtendedSwitch) {
+					if l := nd.parseSampledHeader(bf, &recordData); l > 0 {
+						l3length = l
+					}
 				}
 			case sflow.SampledIPv4:
 				bf.SrcAddr = decodeIP(recordData.Base.SrcIP)
