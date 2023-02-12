@@ -69,9 +69,9 @@ services:
   akvorado-orchestrator:
     <<: *akvorado-image
     restart: unless-stopped
-    command: orchestrator /etc/akvorado.yaml
+    command: orchestrator /etc/akvorado/akvorado.yaml
     volumes:
-      - ./akvorado.yaml:/etc/akvorado.yaml:ro
+      - ./config:/etc/akvorado:ro
     labels:
       - traefik.enable=true
       - traefik.http.routers.akvorado-orchestrator.entrypoints=private # it exposes configuration files with passwords
