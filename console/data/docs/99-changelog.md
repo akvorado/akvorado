@@ -13,7 +13,9 @@ identified with a specific icon:
 
 ## Unreleased
 
-- 🌱 *common*: accept an `!include` tag to include other YAML files in `akvorado.yaml`
+- 💥 *docker-compose*: the configuration files are now shipped in a `config/`
+  directory: you need to move your `akvorado.yaml` in `config/` as well
+- 🌱 *orchestrator*: accept an `!include` tag to include other YAML files in `akvorado.yaml`
 
 ## 1.7.2 - 2023-02-12
 

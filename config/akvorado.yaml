@@ -57,8 +57,8 @@ clickhouse:
     #     .prefixes[] |
     #     { prefix: (.ipv4Prefix // .ipv6Prefix), tenant: "google-cloud", region: .scope }
 
-inlet: !include "akvorado-inlet.yaml"
-console: !include "akvorado-console.yaml"
+inlet: !include "inlet.yaml"
+console: !include "console.yaml"
 
 # Remove the following line if you don't want to get demo data
-demo-exporter: !include "akvorado-demo.yaml"
+demo-exporter: !include "demo.yaml"

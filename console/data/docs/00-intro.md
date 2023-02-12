@@ -49,7 +49,7 @@ documentation.
 
 You can get all the expanded configuration (with default values) with
 `docker-compose exec akvorado-orchestrator akvorado orchestrator
---check --dump /etc/akvorado.yaml`.
+--check --dump /etc/akvorado/akvorado.yaml`.
 
 Take a look at the `docker-compose.yml` file if you want to setup the
 GeoIP database. It requires two environment variables to fetch them
