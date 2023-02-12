@@ -9,8 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/mitchellh/mapstructure"
-
-	"akvorado/common/helpers/yaml"
+	"gopkg.in/yaml.v3"
 
 	"akvorado/common/helpers"
 )

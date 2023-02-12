@@ -1,6 +1,0 @@
----
-# We cannot include a list, so we use a map with an empty key
-"":
-  - el1
-  - el2
-  - el3

@@ -24,7 +24,6 @@ for a few columns.
 - 🩹 *console*: fix calculation of the L2 overhead when selecting L2 bps
 - 🩹 *console*: fix behavior of dimension limit field when empty
 - 🌱 *console*: accept `IN` and `NOTIN` operators for `ExporterAddr`, `SrcAddr`, `DstAddr`, `SrcAddrNAT`, `DstAddrNAT`
-- 🌱 *common*: accept an `!include` tag to include other YAML files in `akvorado.yaml`
 - 🌱 *inlet*: optimize to reduce the number of queries to the system clock
 - 🌱 *orchestrator*: reduce storage for `InIfDescription`, `OutIfDescription`, `SrcAddr`, `DstAddr`, `Bytes`, and `Packets`
 

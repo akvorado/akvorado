@@ -8,8 +8,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-
-	"akvorado/common/helpers/yaml"
+	"gopkg.in/yaml.v3"
 
 	"akvorado/common/helpers"
 	"akvorado/inlet/flow/input/file"

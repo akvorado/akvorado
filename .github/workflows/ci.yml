@@ -201,7 +201,7 @@ jobs:
           tar zcvf docker-compose-quickstart.tar.gz \
             docker-compose.yml docker-compose-demo.yml .env \
             orchestrator/clickhouse/data/docker-entrypoint.sh \
-            akvorado*.yaml
+            akvorado.yaml
 
       # Publish release
       - name: Publish release
