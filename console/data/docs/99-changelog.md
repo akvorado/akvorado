@@ -18,6 +18,7 @@ for a few columns.
 
 - ✨ *console*: add “%” to available units
 - 🩹 *inlet*: fix parsing of sFlow IPv4/IPv6 data
+- 🩹 *inlet*: fix `Bytes` value for sFlow (this is the L3 length)
 - 🩹 *orchestrator*: fix disabling of `DstASPath`
 - 🩹 *console*: fix time range selection
 - 🩹 *console*: fix calculation of the L2 overhead when selecting L2 bps

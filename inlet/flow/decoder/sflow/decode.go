@@ -57,15 +57,17 @@ func (nd *Decoder) decode(msgDec interface{}) []*schema.FlowMessage {
 		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnPackets, 1)
 		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnForwardingStatus, uint64(forwardingStatus))
 
+		var l3length uint64
 		for _, record := range records {
 			switch recordData := record.Data.(type) {
 			case sflow.SampledHeader:
-				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnBytes, uint64(recordData.FrameLength))
-				nd.parseSampledHeader(bf, &recordData)
+				if l := nd.parseSampledHeader(bf, &recordData); l > 0 {
+					l3length = l
+				}
 			case sflow.SampledIPv4:
 				bf.SrcAddr = decodeIP(recordData.Base.SrcIP)
 				bf.DstAddr = decodeIP(recordData.Base.DstIP)
-				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnBytes, uint64(recordData.Base.Length))
+				l3length = uint64(recordData.Base.Length)
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(recordData.Base.Protocol))
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPort, uint64(recordData.Base.SrcPort))
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPort, uint64(recordData.Base.DstPort))
@@ -73,11 +75,20 @@ func (nd *Decoder) decode(msgDec interface{}) []*schema.FlowMessage {
 			case sflow.SampledIPv6:
 				bf.SrcAddr = decodeIP(recordData.Base.SrcIP)
 				bf.DstAddr = decodeIP(recordData.Base.DstIP)
-				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnBytes, uint64(recordData.Base.Length))
+				l3length = uint64(recordData.Base.Length)
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(recordData.Base.Protocol))
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPort, uint64(recordData.Base.SrcPort))
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPort, uint64(recordData.Base.DstPort))
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, helpers.ETypeIPv6)
+			case sflow.SampledEthernet:
+				if l3length == 0 {
+					// That's the best we can guess.
+					l3length = uint64(recordData.Length) - 16 // (MACs, ethertype, FCS)
+				}
+				if !nd.d.Schema.IsDisabled(schema.ColumnGroupL2) {
+					nd.d.Schema.ProtobufAppendBytes(bf, schema.ColumnSrcMAC, recordData.SrcMac)
+					nd.d.Schema.ProtobufAppendBytes(bf, schema.ColumnDstMAC, recordData.DstMac)
+				}
 			case sflow.ExtendedSwitch:
 				if !nd.d.Schema.IsDisabled(schema.ColumnGroupL2) {
 					if recordData.SrcVlan < 4096 {
@@ -110,23 +121,27 @@ func (nd *Decoder) decode(msgDec interface{}) []*schema.FlowMessage {
 			}
 		}
 
+		if l3length > 0 {
+			nd.d.Schema.ProtobufAppendVarintForce(bf, schema.ColumnBytes, l3length)
+		}
 		flowMessageSet = append(flowMessageSet, bf)
 	}
 
 	return flowMessageSet
 }
 
-func (nd *Decoder) parseSampledHeader(bf *schema.FlowMessage, header *sflow.SampledHeader) {
+func (nd *Decoder) parseSampledHeader(bf *schema.FlowMessage, header *sflow.SampledHeader) uint64 {
 	data := header.HeaderData
 	switch header.Protocol {
 	case 1: // Ethernet
-		nd.parseEthernetHeader(bf, data)
+		return nd.parseEthernetHeader(bf, data)
 	}
+	return 0
 }
 
-func (nd *Decoder) parseEthernetHeader(bf *schema.FlowMessage, data []byte) {
+func (nd *Decoder) parseEthernetHeader(bf *schema.FlowMessage, data []byte) uint64 {
 	if len(data) < 14 {
-		return
+		return 0
 	}
 	if !nd.d.Schema.IsDisabled(schema.ColumnGroupL2) {
 		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstMAC,
@@ -139,7 +154,7 @@ func (nd *Decoder) parseEthernetHeader(bf *schema.FlowMessage, data []byte) {
 	if etherType[0] == 0x81 && etherType[1] == 0x00 {
 		// 802.1q
 		if len(data) < 4 {
-			return
+			return 0
 		}
 		if !nd.d.Schema.IsDisabled(schema.ColumnGroupL2) {
 			vlan := (uint64(data[0]&0xf) << 8) + uint64(data[1])
@@ -152,7 +167,7 @@ func (nd *Decoder) parseEthernetHeader(bf *schema.FlowMessage, data []byte) {
 		// MPLS
 		for {
 			if len(data) < 5 {
-				return
+				return 0
 			}
 			label := binary.BigEndian.Uint32(append([]byte{0}, data[:3]...)) >> 4
 			bottom := data[2] & 1
@@ -163,19 +178,21 @@ func (nd *Decoder) parseEthernetHeader(bf *schema.FlowMessage, data []byte) {
 				} else if data[0]&0xf0>>4 == 6 {
 					etherType = []byte{0x86, 0xdd}
 				} else {
-					return
+					return 0
 				}
 				break
 			}
 		}
 	}
+	var l3length uint64
 	var proto uint8
 	if etherType[0] == 0x8 && etherType[1] == 0x0 {
 		// IPv4
 		if len(data) < 20 {
-			return
+			return 0
 		}
 		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, helpers.ETypeIPv4)
+		l3length = uint64(binary.BigEndian.Uint16(data[2:4]))
 		bf.SrcAddr = decodeIP(data[12:16])
 		bf.DstAddr = decodeIP(data[16:20])
 		proto = data[9]
@@ -188,8 +205,9 @@ func (nd *Decoder) parseEthernetHeader(bf *schema.FlowMessage, data []byte) {
 	} else if etherType[0] == 0x86 && etherType[1] == 0xdd {
 		// IPv6
 		if len(data) < 40 {
-			return
+			return 0
 		}
+		l3length = uint64(binary.BigEndian.Uint16(data[4:6])) + 40
 		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, helpers.ETypeIPv6)
 		bf.SrcAddr = decodeIP(data[8:24])
 		bf.DstAddr = decodeIP(data[24:40])
@@ -206,6 +224,7 @@ func (nd *Decoder) parseEthernetHeader(bf *schema.FlowMessage, data []byte) {
 				uint64(binary.BigEndian.Uint16(data[2:4])))
 		}
 	}
+	return l3length
 }
 
 func decodeIP(b []byte) netip.Addr {

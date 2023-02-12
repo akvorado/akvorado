@@ -34,7 +34,7 @@ func TestDecode(t *testing.T) {
 			DstAddr:         netip.MustParseAddr("2a0c:8880:2:0:185:21:130:39"),
 			ExporterAddress: netip.MustParseAddr("::ffff:172.16.0.3"),
 			ProtobufDebug: map[schema.ColumnKey]interface{}{
-				schema.ColumnBytes:   1518,
+				schema.ColumnBytes:   1500,
 				schema.ColumnPackets: 1,
 				schema.ColumnEType:   helpers.ETypeIPv6,
 				schema.ColumnProto:   6,
@@ -57,7 +57,7 @@ func TestDecode(t *testing.T) {
 			DstAS:           39421,
 			GotASPath:       true,
 			ProtobufDebug: map[schema.ColumnKey]interface{}{
-				schema.ColumnBytes:      439,
+				schema.ColumnBytes:      421,
 				schema.ColumnPackets:    1,
 				schema.ColumnEType:      helpers.ETypeIPv4,
 				schema.ColumnProto:      6,
@@ -77,7 +77,7 @@ func TestDecode(t *testing.T) {
 			InIf:            27,
 			OutIf:           28,
 			ProtobufDebug: map[schema.ColumnKey]interface{}{
-				schema.ColumnBytes:   1518,
+				schema.ColumnBytes:   1500,
 				schema.ColumnPackets: 1,
 				schema.ColumnEType:   helpers.ETypeIPv6,
 				schema.ColumnProto:   6,
@@ -100,7 +100,7 @@ func TestDecode(t *testing.T) {
 			NextHop:         netip.MustParseAddr("::ffff:31.14.69.110"),
 			GotASPath:       true,
 			ProtobufDebug: map[schema.ColumnKey]interface{}{
-				schema.ColumnBytes:      64,
+				schema.ColumnBytes:      40,
 				schema.ColumnPackets:    1,
 				schema.ColumnEType:      helpers.ETypeIPv4,
 				schema.ColumnProto:      6,
@@ -121,7 +121,7 @@ func TestDecode(t *testing.T) {
 			InIf:            27,
 			OutIf:           28,
 			ProtobufDebug: map[schema.ColumnKey]interface{}{
-				schema.ColumnBytes:   1518,
+				schema.ColumnBytes:   1500,
 				schema.ColumnPackets: 1,
 				schema.ColumnEType:   helpers.ETypeIPv6,
 				schema.ColumnProto:   6,
@@ -176,7 +176,7 @@ func TestDecodeInterface(t *testing.T) {
 				InIf:            27,
 				OutIf:           0, // local interface
 				ProtobufDebug: map[schema.ColumnKey]interface{}{
-					schema.ColumnBytes:   1518,
+					schema.ColumnBytes:   1500,
 					schema.ColumnPackets: 1,
 					schema.ColumnEType:   helpers.ETypeIPv6,
 					schema.ColumnProto:   6,
@@ -210,7 +210,7 @@ func TestDecodeInterface(t *testing.T) {
 				InIf:            27,
 				OutIf:           0, // discard interface
 				ProtobufDebug: map[schema.ColumnKey]interface{}{
-					schema.ColumnBytes:            1518,
+					schema.ColumnBytes:            1500,
 					schema.ColumnPackets:          1,
 					schema.ColumnEType:            helpers.ETypeIPv6,
 					schema.ColumnProto:            6,
@@ -245,7 +245,7 @@ func TestDecodeInterface(t *testing.T) {
 				InIf:            27,
 				OutIf:           0, // multiple interfaces
 				ProtobufDebug: map[schema.ColumnKey]interface{}{
-					schema.ColumnBytes:   1518,
+					schema.ColumnBytes:   1500,
 					schema.ColumnPackets: 1,
 					schema.ColumnEType:   helpers.ETypeIPv6,
 					schema.ColumnProto:   6,
@@ -283,7 +283,7 @@ func TestDecodeInterface(t *testing.T) {
 				DstAS:           203361,
 				GotASPath:       true,
 				ProtobufDebug: map[schema.ColumnKey]interface{}{
-					schema.ColumnBytes:      126,
+					schema.ColumnBytes:      104,
 					schema.ColumnPackets:    1,
 					schema.ColumnEType:      helpers.ETypeIPv4,
 					schema.ColumnProto:      6,
@@ -321,7 +321,7 @@ func TestDecodeInterface(t *testing.T) {
 				ExporterAddress: netip.MustParseAddr("::ffff:49.49.49.49"),
 				GotASPath:       false,
 				ProtobufDebug: map[schema.ColumnKey]interface{}{
-					schema.ColumnBytes:   1390,
+					schema.ColumnBytes:   1344,
 					schema.ColumnPackets: 1,
 					schema.ColumnEType:   helpers.ETypeIPv4,
 					schema.ColumnProto:   17,
