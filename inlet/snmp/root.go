@@ -249,10 +249,6 @@ func (c *Component) Lookup(t time.Time, exporterIP netip.Addr, ifIndex uint) (st
 			c.metrics.pollerBusyCount.WithLabelValues(exporterIP.Unmap().String()).Inc()
 		}
 	}
-	if iface.Name == "" && ifIndex > 0 {
-		// That's a negative cache
-		return exporterName, Interface{}, false
-	}
 	return exporterName, iface, ok
 }
 

@@ -42,7 +42,6 @@ func TestLookup(t *testing.T) {
 	})
 	expectSNMPLookup(t, c, "127.0.0.1", 999, answer{
 		ExporterName: "127_0_0_1",
-		NOk:          true,
 	})
 }
 
