@@ -82,10 +82,10 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	// Classification
 	if !c.classifyExporter(t, exporterStr, flowExporterName, flow) ||
 		!c.classifyInterface(t, exporterStr, flowExporterName, flow,
-			flowOutIfIndex, flowOutIfName, flowOutIfDescription, flowOutIfSpeed,
+			flowOutIfIndex, &flowOutIfName, &flowOutIfDescription, flowOutIfSpeed,
 			false) ||
 		!c.classifyInterface(t, exporterStr, flowExporterName, flow,
-			flowInIfIndex, flowInIfName, flowInIfDescription, flowInIfSpeed,
+			flowInIfIndex, &flowInIfName, &flowInIfDescription, flowInIfSpeed,
 			true) {
 		// Flow is rejected
 		return true
@@ -211,12 +211,12 @@ func (c *Component) writeInterface(flow *schema.FlowMessage, classification inte
 	return true
 }
 
-func (c *Component) classifyInterface(t time.Time, ip string, exporterName string, fl *schema.FlowMessage, ifIndex uint32, ifName, ifDescription string, ifSpeed uint32, directionIn bool) bool {
+func (c *Component) classifyInterface(t time.Time, ip string, exporterName string, fl *schema.FlowMessage, ifIndex uint32, ifName, ifDescription *string, ifSpeed uint32, directionIn bool) bool {
 	if len(c.config.InterfaceClassifiers) == 0 {
 		return true
 	}
 	si := exporterInfo{IP: ip, Name: exporterName}
-	ii := interfaceInfo{Index: ifIndex, Name: ifName, Description: ifDescription, Speed: ifSpeed}
+	ii := interfaceInfo{Index: ifIndex, Name: *ifName, Description: *ifDescription, Speed: ifSpeed}
 	key := exporterAndInterfaceInfo{
 		Exporter:  si,
 		Interface: ii,
@@ -233,11 +233,17 @@ func (c *Component) classifyInterface(t time.Time, ip string, exporterName strin
 				Str("type", "interface").
 				Int("index", idx).
 				Str("exporter", exporterName).
-				Str("interface", ifName).
+				Str("interface", *ifName).
 				Msg("error executing classifier")
 			c.metrics.classifierErrors.WithLabelValues("interface", strconv.Itoa(idx)).Inc()
 			c.classifierInterfaceCache.Put(t, key, classification)
 			return true // on error, we don't drop the flow
+		}
+		if classification.Name != "" {
+			*ifName = classification.Name
+		}
+		if classification.Description != "" {
+			*ifDescription = classification.Description
 		}
 		if classification.Connectivity == "" || classification.Provider == "" {
 			continue

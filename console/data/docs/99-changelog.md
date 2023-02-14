@@ -18,6 +18,7 @@ identified with a specific icon:
 - 💥 *inlet*: unknown interfaces are not skipped anymore
 - ✨ *inlet*: expose `Interface.Index` to interface classification
 - ✨ *inlet*: add `Reject()` to the set of classification functions to drop the current flow
+- ✨ *inlet*: add `SetName()` and `SetDescription()` to modify interface name and description during classification
 - 🌱 *orchestrator*: accept an `!include` tag to include other YAML files in `akvorado.yaml`
 
 ## 1.7.2 - 2023-02-12

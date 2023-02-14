@@ -162,6 +162,13 @@ func TestInterfaceClassifier(t *testing.T) {
 			Program:                `ClassifyInternal()`,
 			ExpectedClassification: interfaceClassification{Boundary: internalBoundary},
 		}, {
+			Description: "set name and description",
+			Program:     `SetName("newname") && SetDescription("newdescription")`,
+			ExpectedClassification: interfaceClassification{
+				Name:        "newname",
+				Description: "newdescription",
+			},
+		}, {
 			Description:            "reject",
 			Program:                `Reject()`,
 			ExpectedClassification: interfaceClassification{Reject: true},

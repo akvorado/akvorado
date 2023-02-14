@@ -244,6 +244,8 @@ decision:
 - `ClassifyProvider()` to classify for a provider (Cogent, Telia, ...)
 - `ClassifyExternal()` to classify the interface as external
 - `ClassifyInternal()` to classify the interface as internal
+- `SetName()` to change the interface name
+- `SetDescription()` to change the interface description
 - `Reject()` to reject the flow
 
 Once an interface is classified for a given criteria, it cannot be

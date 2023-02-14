@@ -151,6 +151,8 @@ type interfaceClassification struct {
 	Provider     string
 	Boundary     interfaceBoundary
 	Reject       bool
+	Name         string
+	Description  string
 }
 
 // interfaceClassifierEnvironment defines the environment used by the interface classifier
@@ -163,6 +165,8 @@ type interfaceClassifierEnvironment struct {
 	ClassifyProviderRegex     classifyStringRegexFunc
 	ClassifyExternal          func() bool
 	ClassifyInternal          func() bool
+	SetName                   func(string) bool
+	SetDescription            func(string) bool
 	Reject                    func() bool
 }
 
@@ -182,6 +186,18 @@ func (scr *InterfaceClassifierRule) exec(si exporterInfo, ii interfaceInfo, ic *
 		}
 		return true
 	}
+	setName := func(name string) bool {
+		if ic.Name == "" {
+			ic.Name = name
+		}
+		return true
+	}
+	setDescription := func(description string) bool {
+		if ic.Description == "" {
+			ic.Description = description
+		}
+		return true
+	}
 	env := interfaceClassifierEnvironment{
 		Exporter:                  si,
 		Interface:                 ii,
@@ -191,6 +207,8 @@ func (scr *InterfaceClassifierRule) exec(si exporterInfo, ii interfaceInfo, ic *
 		ClassifyInternal:          classifyInternal,
 		ClassifyConnectivityRegex: withRegex(classifyConnectivity),
 		ClassifyProviderRegex:     withRegex(classifyProvider),
+		SetName:                   setName,
+		SetDescription:            setDescription,
 		Reject: func() bool {
 			ic.Reject = true
 			return false

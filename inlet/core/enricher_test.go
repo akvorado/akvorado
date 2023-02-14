@@ -261,6 +261,35 @@ func TestEnrich(t *testing.T) {
 				},
 			},
 		}, {
+			Name: "interface rule with rename",
+			Configuration: gin.H{
+				"interfaceclassifiers": []string{
+					`Interface.Name == "Gi0/0/100" && SetName("eth100")`,
+					`Interface.Name == "Gi0/0/200" && SetDescription("Super Speed")`,
+				},
+			},
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
+					SamplingRate:    1000,
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+					InIf:            100,
+					OutIf:           200,
+				}
+			},
+			OutputFlow: &schema.FlowMessage{
+				SamplingRate:    1000,
+				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnExporterName:     "192_0_2_142",
+					schema.ColumnInIfName:         "eth100",
+					schema.ColumnOutIfName:        "Gi0/0/200",
+					schema.ColumnInIfDescription:  "Interface 100",
+					schema.ColumnOutIfDescription: "Super Speed",
+					schema.ColumnInIfSpeed:        1000,
+					schema.ColumnOutIfSpeed:       1000,
+				},
+			},
+		}, {
 			Name: "interface rule",
 			Configuration: gin.H{
 				"interfaceclassifiers": []string{
