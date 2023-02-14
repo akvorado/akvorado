@@ -169,6 +169,13 @@ func TestInterfaceClassifier(t *testing.T) {
 				Description: "newdescription",
 			},
 		}, {
+			Description:   "classify with form",
+			Program:       `ClassifyProvider(Format("II-%s", Interface.Name))`,
+			InterfaceInfo: interfaceInfo{Name: "Gi0/0/0"},
+			ExpectedClassification: interfaceClassification{
+				Provider: "ii-gi000",
+			},
+		}, {
 			Description:            "reject",
 			Program:                `Reject()`,
 			ExpectedClassification: interfaceClassification{Reject: true},

@@ -217,6 +217,7 @@ removed).
 - `ClassifyRegion()` to classify the exporter to a region (`france`, `italy`, `caraibes`)
 - `ClassifyTenant()` to classify the exporter to a tenant (`team-a`, `team-b`)
 - `Reject()` to reject the flow
+- `Format()` to format a string: `Format("name: %s", Exporter.Name)`
 
 As a compatibility `Classify()` is an alias for `ClassifyGroup()`.
 Here is an example, assuming routers are named
@@ -247,6 +248,7 @@ decision:
 - `SetName()` to change the interface name
 - `SetDescription()` to change the interface description
 - `Reject()` to reject the flow
+- `Format()` to format a string: `Format("name: %s", Interface.Name)`
 
 Once an interface is classified for a given criteria, it cannot be
 changed by later rule. Once an interface is classified for all

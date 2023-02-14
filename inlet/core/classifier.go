@@ -48,6 +48,7 @@ type (
 
 // exporterClassifierEnvironment defines the environment used by the exporter classifier
 type exporterClassifierEnvironment struct {
+	Format              func(string, ...any) string
 	Exporter            exporterInfo
 	Classify            classifyStringFunc
 	ClassifyRegex       classifyStringRegexFunc
@@ -64,6 +65,10 @@ type exporterClassifierEnvironment struct {
 	Reject              func() bool
 }
 
+func format(format string, a ...any) string {
+	return fmt.Sprintf(format, a...)
+}
+
 // exec executes the exporter classifier with the provided exporter.
 func (scr *ExporterClassifierRule) exec(si exporterInfo, ec *exporterClassification) error {
 	classifyGroup := classifyString(&ec.Group)
@@ -72,6 +77,7 @@ func (scr *ExporterClassifierRule) exec(si exporterInfo, ec *exporterClassificat
 	classifyRegion := classifyString(&ec.Region)
 	classifyTenant := classifyString(&ec.Tenant)
 	env := exporterClassifierEnvironment{
+		Format:              format,
 		Exporter:            si,
 		Classify:            classifyGroup,
 		ClassifyRegex:       withRegex(classifyGroup),
@@ -157,6 +163,7 @@ type interfaceClassification struct {
 
 // interfaceClassifierEnvironment defines the environment used by the interface classifier
 type interfaceClassifierEnvironment struct {
+	Format                    func(string, ...any) string
 	Exporter                  exporterInfo
 	Interface                 interfaceInfo
 	ClassifyConnectivity      classifyStringFunc
@@ -199,6 +206,7 @@ func (scr *InterfaceClassifierRule) exec(si exporterInfo, ii interfaceInfo, ic *
 		return true
 	}
 	env := interfaceClassifierEnvironment{
+		Format:                    format,
 		Exporter:                  si,
 		Interface:                 ii,
 		ClassifyConnectivity:      classifyConnectivity,
