@@ -140,6 +140,7 @@ type interfaceInfo struct {
 	Name        string
 	Description string
 	Speed       uint32
+	VLAN        uint16
 }
 
 // interfaceBoundary tells if an interface is internal or external

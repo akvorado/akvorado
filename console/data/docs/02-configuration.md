@@ -241,6 +241,7 @@ decision:
 - `Interface.Name` for the interface name
 - `Interface.Description` for the interface description
 - `Interface.Speed` for the interface speed
+- `Interface.VLAN` for VLAN number (you need to enable `SrcVlan` and `DstVlan` in schema)
 - `ClassifyConnectivity()` to classify for a connectivity type (transit, PNI, PPNI, IX, customer, core, ...)
 - `ClassifyProvider()` to classify for a provider (Cogent, Telia, ...)
 - `ClassifyExternal()` to classify the interface as external

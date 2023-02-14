@@ -115,10 +115,10 @@ func (nd *Decoder) decode(msgDec interface{}) []*schema.FlowMessage {
 			case sflow.ExtendedSwitch:
 				if !nd.d.Schema.IsDisabled(schema.ColumnGroupL2) {
 					if recordData.SrcVlan < 4096 {
-						nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcVlan, uint64(recordData.SrcVlan))
+						bf.SrcVlan = uint16(recordData.SrcVlan)
 					}
 					if recordData.DstVlan < 4096 {
-						nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstVlan, uint64(recordData.DstVlan))
+						bf.DstVlan = uint16(recordData.DstVlan)
 					}
 				}
 			case sflow.ExtendedRouter:
@@ -180,8 +180,7 @@ func (nd *Decoder) parseEthernetHeader(bf *schema.FlowMessage, data []byte) uint
 			return 0
 		}
 		if !nd.d.Schema.IsDisabled(schema.ColumnGroupL2) {
-			vlan := (uint64(data[0]&0xf) << 8) + uint64(data[1])
-			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcVlan, uint64(vlan))
+			bf.SrcVlan = (uint16(data[0]&0xf) << 8) + uint16(data[1])
 		}
 		etherType = data[2:4]
 		data = data[4:]

@@ -22,6 +22,7 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	var flowExporterName string
 	var flowInIfName, flowInIfDescription, flowOutIfName, flowOutIfDescription string
 	var flowInIfSpeed, flowOutIfSpeed, flowInIfIndex, flowOutIfIndex uint32
+	var flowInIfVlan, flowOutIfVlan uint16
 
 	t := time.Now() // only call it once
 
@@ -36,6 +37,7 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 			flowInIfName = iface.Name
 			flowInIfDescription = iface.Description
 			flowInIfSpeed = uint32(iface.Speed)
+			flowInIfVlan = flow.SrcVlan
 		}
 	}
 
@@ -54,6 +56,7 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 			flowOutIfName = iface.Name
 			flowOutIfDescription = iface.Description
 			flowOutIfSpeed = uint32(iface.Speed)
+			flowOutIfVlan = flow.DstVlan
 		}
 	}
 
@@ -82,10 +85,10 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	// Classification
 	if !c.classifyExporter(t, exporterStr, flowExporterName, flow) ||
 		!c.classifyInterface(t, exporterStr, flowExporterName, flow,
-			flowOutIfIndex, &flowOutIfName, &flowOutIfDescription, flowOutIfSpeed,
+			flowOutIfIndex, &flowOutIfName, &flowOutIfDescription, flowOutIfSpeed, flowOutIfVlan,
 			false) ||
 		!c.classifyInterface(t, exporterStr, flowExporterName, flow,
-			flowInIfIndex, &flowInIfName, &flowInIfDescription, flowInIfSpeed,
+			flowInIfIndex, &flowInIfName, &flowInIfDescription, flowInIfSpeed, flowInIfVlan,
 			true) {
 		// Flow is rejected
 		return true
@@ -211,12 +214,12 @@ func (c *Component) writeInterface(flow *schema.FlowMessage, classification inte
 	return true
 }
 
-func (c *Component) classifyInterface(t time.Time, ip string, exporterName string, fl *schema.FlowMessage, ifIndex uint32, ifName, ifDescription *string, ifSpeed uint32, directionIn bool) bool {
+func (c *Component) classifyInterface(t time.Time, ip string, exporterName string, fl *schema.FlowMessage, ifIndex uint32, ifName, ifDescription *string, ifSpeed uint32, ifVlan uint16, directionIn bool) bool {
 	if len(c.config.InterfaceClassifiers) == 0 {
 		return true
 	}
 	si := exporterInfo{IP: ip, Name: exporterName}
-	ii := interfaceInfo{Index: ifIndex, Name: *ifName, Description: *ifDescription, Speed: ifSpeed}
+	ii := interfaceInfo{Index: ifIndex, Name: *ifName, Description: *ifDescription, Speed: ifSpeed, VLAN: ifVlan}
 	key := exporterAndInterfaceInfo{
 		Exporter:  si,
 		Interface: ii,

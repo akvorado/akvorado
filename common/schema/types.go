@@ -74,8 +74,10 @@ type FlowMessage struct {
 	ExporterAddress netip.Addr
 
 	// For interface classifier
-	InIf  uint32
-	OutIf uint32
+	InIf    uint32
+	OutIf   uint32
+	SrcVlan uint16
+	DstVlan uint16
 
 	// For geolocation or BMP
 	SrcAddr netip.Addr

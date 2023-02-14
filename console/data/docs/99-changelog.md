@@ -16,7 +16,7 @@ identified with a specific icon:
 - 💥 *docker-compose*: the configuration files are now shipped in a `config/`
   directory: you need to move your `akvorado.yaml` in `config/` as well
 - 💥 *inlet*: unknown interfaces are not skipped anymore
-- ✨ *inlet*: expose `Interface.Index` to interface classification
+- ✨ *inlet*: expose `Interface.Index` and `Interface.VLAN` to interface classification
 - ✨ *inlet*: add `Reject()` to the set of classification functions to drop the current flow
 - ✨ *inlet*: add `SetName()` and `SetDescription()` to modify interface name and description during classification
 - ✨ *inlet*: add `Format()` to format a string during classification

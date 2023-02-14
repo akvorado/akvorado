@@ -104,6 +104,10 @@ func (schema *Schema) ProtobufMarshal(bf *FlowMessage) []byte {
 	schema.ProtobufAppendVarint(bf, ColumnDstAS, uint64(bf.DstAS))
 	schema.ProtobufAppendIP(bf, ColumnSrcAddr, bf.SrcAddr)
 	schema.ProtobufAppendIP(bf, ColumnDstAddr, bf.DstAddr)
+	if !schema.IsDisabled(ColumnGroupL2) {
+		schema.ProtobufAppendVarint(bf, ColumnSrcVlan, uint64(bf.SrcVlan))
+		schema.ProtobufAppendVarint(bf, ColumnDstVlan, uint64(bf.DstVlan))
+	}
 
 	// Add length and move it as a prefix
 	end := len(bf.protobuf)

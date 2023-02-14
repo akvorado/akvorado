@@ -140,9 +140,9 @@ func (nd *Decoder) decodeRecord(version int, fields []netflow.DataField) *schema
 				// L2
 				switch field.Type {
 				case netflow.NFV9_FIELD_SRC_VLAN:
-					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcVlan, decodeUNumber(v))
+					bf.SrcVlan = uint16(decodeUNumber(v))
 				case netflow.NFV9_FIELD_DST_VLAN:
-					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstVlan, decodeUNumber(v))
+					bf.DstVlan = uint16(decodeUNumber(v))
 				case netflow.NFV9_FIELD_IN_SRC_MAC:
 					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcMAC, decodeUNumber(v))
 				case netflow.NFV9_FIELD_IN_DST_MAC:
