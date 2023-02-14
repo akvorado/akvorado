@@ -216,6 +216,7 @@ removed).
 - `ClassifySite()` to classify the exporter to a site (`paris`, `berlin`, `newyork`)
 - `ClassifyRegion()` to classify the exporter to a region (`france`, `italy`, `caraibes`)
 - `ClassifyTenant()` to classify the exporter to a tenant (`team-a`, `team-b`)
+- `Reject()` to reject the flow
 
 As a compatibility `Classify()` is an alias for `ClassifyGroup()`.
 Here is an example, assuming routers are named
@@ -242,6 +243,7 @@ decision:
 - `ClassifyProvider()` to classify for a provider (Cogent, Telia, ...)
 - `ClassifyExternal()` to classify the interface as external
 - `ClassifyInternal()` to classify the interface as internal
+- `Reject()` to reject the flow
 
 Once an interface is classified for a given criteria, it cannot be
 changed by later rule. Once an interface is classified for all

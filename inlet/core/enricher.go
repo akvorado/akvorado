@@ -78,13 +78,16 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	}
 
 	// Classification
-	c.classifyExporter(t, exporterStr, flowExporterName, flow)
-	c.classifyInterface(t, exporterStr, flowExporterName, flow,
-		flowOutIfName, flowOutIfDescription, flowOutIfSpeed,
-		false)
-	c.classifyInterface(t, exporterStr, flowExporterName, flow,
-		flowInIfName, flowInIfDescription, flowInIfSpeed,
-		true)
+	if !c.classifyExporter(t, exporterStr, flowExporterName, flow) ||
+		!c.classifyInterface(t, exporterStr, flowExporterName, flow,
+			flowOutIfName, flowOutIfDescription, flowOutIfSpeed,
+			false) ||
+		!c.classifyInterface(t, exporterStr, flowExporterName, flow,
+			flowInIfName, flowInIfDescription, flowInIfSpeed,
+			true) {
+		// Flow is rejected
+		return true
+	}
 
 	sourceBMP := c.d.BMP.Lookup(flow.SrcAddr, netip.Addr{})
 	destBMP := c.d.BMP.Lookup(flow.DstAddr, flow.NextHop)
@@ -148,22 +151,25 @@ func (c *Component) getASNumber(flowAddr netip.Addr, flowAS, bmpAS uint32) (asn 
 	return asn
 }
 
-func (c *Component) writeExporter(flow *schema.FlowMessage, classification exporterClassification) {
+func (c *Component) writeExporter(flow *schema.FlowMessage, classification exporterClassification) bool {
+	if classification.Reject {
+		return false
+	}
 	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnExporterGroup, []byte(classification.Group))
 	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnExporterRole, []byte(classification.Role))
 	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnExporterSite, []byte(classification.Site))
 	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnExporterRegion, []byte(classification.Region))
 	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnExporterTenant, []byte(classification.Tenant))
+	return true
 }
 
-func (c *Component) classifyExporter(t time.Time, ip string, name string, flow *schema.FlowMessage) {
+func (c *Component) classifyExporter(t time.Time, ip string, name string, flow *schema.FlowMessage) bool {
 	if len(c.config.ExporterClassifiers) == 0 {
-		return
+		return true
 	}
 	si := exporterInfo{IP: ip, Name: name}
 	if classification, ok := c.classifierExporterCache.Get(t, si); ok {
-		c.writeExporter(flow, classification)
-		return
+		return c.writeExporter(flow, classification)
 	}
 
 	var classification exporterClassification
@@ -176,7 +182,7 @@ func (c *Component) classifyExporter(t time.Time, ip string, name string, flow *
 				Msg("error executing classifier")
 			c.metrics.classifierErrors.WithLabelValues("exporter", strconv.Itoa(idx)).Inc()
 			c.classifierExporterCache.Put(t, si, classification)
-			return
+			return true // on error, we don't drop the flow
 		}
 		if classification.Group == "" || classification.Role == "" || classification.Site == "" || classification.Region == "" || classification.Tenant == "" {
 			continue
@@ -184,10 +190,13 @@ func (c *Component) classifyExporter(t time.Time, ip string, name string, flow *
 		break
 	}
 	c.classifierExporterCache.Put(t, si, classification)
-	c.writeExporter(flow, classification)
+	return c.writeExporter(flow, classification)
 }
 
-func (c *Component) writeInterface(flow *schema.FlowMessage, classification interfaceClassification, directionIn bool) {
+func (c *Component) writeInterface(flow *schema.FlowMessage, classification interfaceClassification, directionIn bool) bool {
+	if classification.Reject {
+		return false
+	}
 	if directionIn {
 		c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnInIfConnectivity, []byte(classification.Connectivity))
 		c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnInIfProvider, []byte(classification.Provider))
@@ -197,11 +206,12 @@ func (c *Component) writeInterface(flow *schema.FlowMessage, classification inte
 		c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnOutIfProvider, []byte(classification.Provider))
 		c.d.Schema.ProtobufAppendVarint(flow, schema.ColumnOutIfBoundary, uint64(classification.Boundary))
 	}
+	return true
 }
 
-func (c *Component) classifyInterface(t time.Time, ip string, exporterName string, fl *schema.FlowMessage, ifName, ifDescription string, ifSpeed uint32, directionIn bool) {
+func (c *Component) classifyInterface(t time.Time, ip string, exporterName string, fl *schema.FlowMessage, ifName, ifDescription string, ifSpeed uint32, directionIn bool) bool {
 	if len(c.config.InterfaceClassifiers) == 0 {
-		return
+		return true
 	}
 	si := exporterInfo{IP: ip, Name: exporterName}
 	ii := interfaceInfo{Name: ifName, Description: ifDescription, Speed: ifSpeed}
@@ -210,8 +220,7 @@ func (c *Component) classifyInterface(t time.Time, ip string, exporterName strin
 		Interface: ii,
 	}
 	if classification, ok := c.classifierInterfaceCache.Get(t, key); ok {
-		c.writeInterface(fl, classification, directionIn)
-		return
+		return c.writeInterface(fl, classification, directionIn)
 	}
 
 	var classification interfaceClassification
@@ -226,7 +235,7 @@ func (c *Component) classifyInterface(t time.Time, ip string, exporterName strin
 				Msg("error executing classifier")
 			c.metrics.classifierErrors.WithLabelValues("interface", strconv.Itoa(idx)).Inc()
 			c.classifierInterfaceCache.Put(t, key, classification)
-			return
+			return true // on error, we don't drop the flow
 		}
 		if classification.Connectivity == "" || classification.Provider == "" {
 			continue
@@ -237,7 +246,7 @@ func (c *Component) classifyInterface(t time.Time, ip string, exporterName strin
 		break
 	}
 	c.classifierInterfaceCache.Put(t, key, classification)
-	c.writeInterface(fl, classification, directionIn)
+	return c.writeInterface(fl, classification, directionIn)
 }
 
 func isPrivateAS(as uint32) bool {

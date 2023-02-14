@@ -38,6 +38,7 @@ type exporterClassification struct {
 	Site   string
 	Region string
 	Tenant string
+	Reject bool
 }
 
 type (
@@ -60,6 +61,7 @@ type exporterClassifierEnvironment struct {
 	ClassifyRegionRegex classifyStringRegexFunc
 	ClassifyTenant      classifyStringFunc
 	ClassifyTenantRegex classifyStringRegexFunc
+	Reject              func() bool
 }
 
 // exec executes the exporter classifier with the provided exporter.
@@ -83,6 +85,10 @@ func (scr *ExporterClassifierRule) exec(si exporterInfo, ec *exporterClassificat
 		ClassifyRegionRegex: withRegex(classifyRegion),
 		ClassifyTenant:      classifyTenant,
 		ClassifyTenantRegex: withRegex(classifyTenant),
+		Reject: func() bool {
+			ec.Reject = true
+			return false
+		},
 	}
 	if _, err := expr.Run(scr.program, env); err != nil {
 		return fmt.Errorf("unable to execute classifier %q: %w", scr, err)
@@ -143,6 +149,7 @@ type interfaceClassification struct {
 	Connectivity string
 	Provider     string
 	Boundary     interfaceBoundary
+	Reject       bool
 }
 
 // interfaceClassifierEnvironment defines the environment used by the interface classifier
@@ -155,6 +162,7 @@ type interfaceClassifierEnvironment struct {
 	ClassifyProviderRegex     classifyStringRegexFunc
 	ClassifyExternal          func() bool
 	ClassifyInternal          func() bool
+	Reject                    func() bool
 }
 
 // exec executes the exporter classifier with the provided interface.
@@ -182,6 +190,10 @@ func (scr *InterfaceClassifierRule) exec(si exporterInfo, ii interfaceInfo, ic *
 		ClassifyInternal:          classifyInternal,
 		ClassifyConnectivityRegex: withRegex(classifyConnectivity),
 		ClassifyProviderRegex:     withRegex(classifyProvider),
+		Reject: func() bool {
+			ic.Reject = true
+			return false
+		},
 	}
 	if _, err := expr.Run(scr.program, env); err != nil {
 		return fmt.Errorf("unable to execute classifier %q: %w", scr, err)

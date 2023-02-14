@@ -76,6 +76,16 @@ Classify("europe")`,
 			ExporterInfo:           exporterInfo{"127.0.0.1", "exporter"},
 			ExpectedClassification: exporterClassification{Group: ""},
 		}, {
+			Description:            "reject",
+			Program:                `ClassifyTenant("mobile") && Reject()`,
+			ExporterInfo:           exporterInfo{"127.0.0.1", "exporter"},
+			ExpectedClassification: exporterClassification{Tenant: "mobile", Reject: true},
+		}, {
+			Description:            "selective reject",
+			Program:                `Exporter.Name startsWith "nothing" && Reject()`,
+			ExporterInfo:           exporterInfo{"127.0.0.1", "exporter"},
+			ExpectedClassification: exporterClassification{},
+		}, {
 			Description:  "faulty regex",
 			Program:      `ClassifyRegex(Exporter.Name, "^(ebp+.r", "europe-$1")`,
 			ExporterInfo: exporterInfo{"127.0.0.1", "exporter"},
@@ -151,6 +161,10 @@ func TestInterfaceClassifier(t *testing.T) {
 			Description:            "constant classifier for boundary internal",
 			Program:                `ClassifyInternal()`,
 			ExpectedClassification: interfaceClassification{Boundary: internalBoundary},
+		}, {
+			Description:            "reject",
+			Program:                `Reject()`,
+			ExpectedClassification: interfaceClassification{Reject: true},
 		}, {
 			Description: "complex example",
 			Program: `

@@ -168,6 +168,68 @@ func TestEnrich(t *testing.T) {
 				},
 			},
 		}, {
+			Name: "exporter rule with an error",
+			Configuration: gin.H{
+				"exporterclassifiers": []string{
+					`ClassifyTenant("alfred")`,
+					`Exporter.Name > "hello"`,
+				},
+			},
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
+					SamplingRate:    1000,
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+					InIf:            100,
+					OutIf:           200,
+				}
+			},
+			OutputFlow: &schema.FlowMessage{
+				SamplingRate:    1000,
+				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnExporterName:     "192_0_2_142",
+					schema.ColumnExporterTenant:   "alfred",
+					schema.ColumnInIfName:         "Gi0/0/100",
+					schema.ColumnOutIfName:        "Gi0/0/200",
+					schema.ColumnInIfDescription:  "Interface 100",
+					schema.ColumnOutIfDescription: "Interface 200",
+					schema.ColumnInIfSpeed:        1000,
+					schema.ColumnOutIfSpeed:       1000,
+				},
+			},
+		}, {
+			Name: "exporter rule with reject",
+			Configuration: gin.H{
+				"exporterclassifiers": []string{
+					`Reject()`,
+				},
+			},
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
+					SamplingRate:    1000,
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+					InIf:            100,
+					OutIf:           200,
+				}
+			},
+			OutputFlow: nil,
+		}, {
+			Name: "interface rule with reject",
+			Configuration: gin.H{
+				"interfaceclassifiers": []string{
+					`Reject()`,
+				},
+			},
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
+					SamplingRate:    1000,
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+					InIf:            100,
+					OutIf:           200,
+				}
+			},
+			OutputFlow: nil,
+		}, {
 			Name: "interface rule",
 			Configuration: gin.H{
 				"interfaceclassifiers": []string{
@@ -380,35 +442,44 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 
 			// Inject twice since otherwise, we get a cache miss
 			received := make(chan bool)
-			kafkaProducer.ExpectInputWithMessageCheckerFunctionAndSucceed(
-				func(msg *sarama.ProducerMessage) error {
-					defer close(received)
-					b, err := msg.Value.Encode()
-					if err != nil {
-						t.Fatalf("Kafka message encoding error:\n%+v", err)
-					}
-					t.Logf("Raw message: %v", b)
-					got := c.d.Schema.ProtobufDecode(t, b)
-					if diff := helpers.Diff(&got, tc.OutputFlow); diff != "" {
-						t.Errorf("Classifier (-got, +want):\n%s", diff)
-					}
-					return nil
-				})
-
+			if tc.OutputFlow != nil {
+				kafkaProducer.ExpectInputWithMessageCheckerFunctionAndSucceed(
+					func(msg *sarama.ProducerMessage) error {
+						defer close(received)
+						b, err := msg.Value.Encode()
+						if err != nil {
+							t.Fatalf("Kafka message encoding error:\n%+v", err)
+						}
+						t.Logf("Raw message: %v", b)
+						got := c.d.Schema.ProtobufDecode(t, b)
+						if diff := helpers.Diff(&got, tc.OutputFlow); diff != "" {
+							t.Errorf("Classifier (-got, +want):\n%s", diff)
+						}
+						return nil
+					})
+			} else {
+				// We should not get a message, but that's not possible to test.
+			}
 			flowComponent.Inject(t, tc.InputFlow())
 			time.Sleep(50 * time.Millisecond) // Needed to let poller does its job
 			flowComponent.Inject(t, tc.InputFlow())
-			select {
-			case <-received:
-			case <-time.After(1 * time.Second):
-				t.Fatal("Kafka message not received")
+			if tc.OutputFlow != nil {
+				select {
+				case <-received:
+				case <-time.After(1 * time.Second):
+					t.Fatal("Kafka message not received")
+				}
+			} else {
+				time.Sleep(100 * time.Millisecond)
 			}
 			gotMetrics := r.GetMetrics("akvorado_inlet_core_flows_", "-processing_")
 			expectedMetrics := map[string]string{
 				`errors{error="SNMP cache miss",exporter="192.0.2.142"}`: "1",
-				`http_clients`:                      "0",
-				`received{exporter="192.0.2.142"}`:  "2",
-				`forwarded{exporter="192.0.2.142"}`: "1",
+				`http_clients`:                     "0",
+				`received{exporter="192.0.2.142"}`: "2",
+			}
+			if tc.OutputFlow != nil {
+				expectedMetrics[`forwarded{exporter="192.0.2.142"}`] = "1"
 			}
 			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 				t.Fatalf("Metrics (-got, +want):\n%s", diff)
