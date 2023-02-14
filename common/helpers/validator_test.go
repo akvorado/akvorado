@@ -51,11 +51,15 @@ func TestNoIntersectWithValidator(t *testing.T) {
 	}{
 		{nil, nil, false},
 		{nil, []string{"aaa"}, false},
+		{[]string{}, []string{"bbb"}, false},
+		{[]string{}, []string{"bbb"}, false},
 		{[]string{"bbb"}, nil, false},
 		{[]string{"aaa"}, []string{"bbb"}, false},
+		{[]string{"aaa", "ccc"}, []string{"bbb"}, false},
 		{[]string{"aaa"}, []string{"aaa"}, true},
 		{[]string{"aaa", "ccc"}, []string{"bbb", "ddd"}, false},
 		{[]string{"aaa", "ccc"}, []string{"bbb", "ccc"}, true},
+		{[]string{"aaa", "ccc"}, []string{"ccc", "bbb"}, true},
 	}
 	for _, tc := range cases {
 		s.Set1 = tc.Set1

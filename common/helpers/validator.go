@@ -82,7 +82,7 @@ func noIntersectField(fl validator.FieldLevel) bool {
 	for i := 0; i < field.Len(); i++ {
 		el1 := field.Index(i).Interface()
 		for j := 0; j < currentField.Len(); j++ {
-			el2 := currentField.Index(i).Interface()
+			el2 := currentField.Index(j).Interface()
 			if el1 == el2 {
 				return false
 			}

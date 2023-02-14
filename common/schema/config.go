@@ -14,7 +14,7 @@ type Configuration struct {
 	// MainTableOnly lists columns to be moved to the main table only
 	MainTableOnly []ColumnKey
 	// NotMainTableOnly lists columns to be moved out of the main table only
-	NotMainTableOnly []ColumnKey `validate:"ninterfield=NotMainTableOnly"`
+	NotMainTableOnly []ColumnKey `validate:"ninterfield=MainTableOnly"`
 }
 
 // DefaultConfiguration returns the default configuration for the schema component.
