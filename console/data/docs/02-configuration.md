@@ -236,6 +236,7 @@ decision:
 
 - `Exporter.IP` for the exporter IP address
 - `Exporter.Name` for the exporter name
+- `Interface.Index` for the interface index
 - `Interface.Name` for the interface name
 - `Interface.Description` for the interface description
 - `Interface.Speed` for the interface speed

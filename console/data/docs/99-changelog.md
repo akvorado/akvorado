@@ -15,8 +15,8 @@ identified with a specific icon:
 
 - 💥 *docker-compose*: the configuration files are now shipped in a `config/`
   directory: you need to move your `akvorado.yaml` in `config/` as well
-- 💥 *inlet*: unknown interfaces are not skipped anymore, use `Interface.Name !=
-  "" || Reject()` to restore previous behavior
+- 💥 *inlet*: unknown interfaces are not skipped anymore
+- ✨ *inlet*: expose `Interface.Index` to interface classification
 - ✨ *inlet*: add `Reject()` to the set of classification functions to drop the current flow
 - 🌱 *orchestrator*: accept an `!include` tag to include other YAML files in `akvorado.yaml`
 

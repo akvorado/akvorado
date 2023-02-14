@@ -230,6 +230,37 @@ func TestEnrich(t *testing.T) {
 			},
 			OutputFlow: nil,
 		}, {
+			Name: "interface rule with index",
+			Configuration: gin.H{
+				"interfaceclassifiers": []string{
+					`Interface.Index == 100 && ClassifyProvider("index1")`,
+					`Interface.Index == 200 && ClassifyProvider("index2")`,
+				},
+			},
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
+					SamplingRate:    1000,
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+					InIf:            100,
+					OutIf:           200,
+				}
+			},
+			OutputFlow: &schema.FlowMessage{
+				SamplingRate:    1000,
+				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnExporterName:     "192_0_2_142",
+					schema.ColumnInIfProvider:     "index1",
+					schema.ColumnOutIfProvider:    "index2",
+					schema.ColumnInIfName:         "Gi0/0/100",
+					schema.ColumnOutIfName:        "Gi0/0/200",
+					schema.ColumnInIfDescription:  "Interface 100",
+					schema.ColumnOutIfDescription: "Interface 200",
+					schema.ColumnInIfSpeed:        1000,
+					schema.ColumnOutIfSpeed:       1000,
+				},
+			},
+		}, {
 			Name: "interface rule",
 			Configuration: gin.H{
 				"interfaceclassifiers": []string{

@@ -166,6 +166,14 @@ func TestInterfaceClassifier(t *testing.T) {
 			Program:                `Reject()`,
 			ExpectedClassification: interfaceClassification{Reject: true},
 		}, {
+			Description: "use index",
+			InterfaceInfo: interfaceInfo{
+				Index: 200,
+				Name:  "Gi0/0/0",
+			},
+			Program:                `Interface.Index == 200 && Reject()`,
+			ExpectedClassification: interfaceClassification{Reject: true},
+		}, {
 			Description: "complex example",
 			Program: `
 Interface.Description startsWith "Transit:" &&
