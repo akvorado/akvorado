@@ -198,7 +198,9 @@ func TestPoller(t *testing.T) {
 			if diff := helpers.Diff(got, []string{
 				`127.0.0.1 exporter62 641 Gi0/0/0/0 Transit 10000`,
 				`127.0.0.1 exporter62 642 Gi0/0/0/1 Peering 20000`,
-				`127.0.0.1 exporter62 0 unknown  0`,
+				`127.0.0.1 exporter62 643   0`, // negative cache
+				`127.0.0.1 exporter62 644   0`, // negative cache
+				`127.0.0.1 exporter62 0   0`,
 			}); diff != "" {
 				t.Fatalf("Poll() (-got, +want):\n%s", diff)
 			}

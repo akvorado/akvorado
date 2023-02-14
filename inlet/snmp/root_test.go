@@ -34,10 +34,15 @@ func TestLookup(t *testing.T) {
 	c := NewMock(t, r, DefaultConfiguration(), Dependencies{Daemon: daemon.NewMock(t)})
 
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{NOk: true})
+	expectSNMPLookup(t, c, "127.0.0.1", 999, answer{NOk: true})
 	time.Sleep(30 * time.Millisecond)
 	expectSNMPLookup(t, c, "127.0.0.1", 765, answer{
 		ExporterName: "127_0_0_1",
 		Interface:    Interface{Name: "Gi0/0/765", Description: "Interface 765", Speed: 1000},
+	})
+	expectSNMPLookup(t, c, "127.0.0.1", 999, answer{
+		ExporterName: "127_0_0_1",
+		NOk:          true,
 	})
 }
 

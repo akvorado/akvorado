@@ -196,30 +196,26 @@ func (p *realPoller) Poll(ctx context.Context, exporter, agent netip.Addr, port 
 		return fmt.Errorf("SNMP error %s(%d)", result.Error, result.Error)
 	}
 
-	processStr := func(idx int, what string, target *string, mandatory bool) bool {
+	processStr := func(idx int, what string, target *string) bool {
 		switch result.Variables[idx].Type {
 		case gosnmp.OctetString:
 			*target = string(result.Variables[idx].Value.([]byte))
 		case gosnmp.NoSuchInstance, gosnmp.NoSuchObject:
-			if mandatory {
-				p.metrics.failures.WithLabelValues(exporterStr, fmt.Sprintf("%s missing", what)).Inc()
-				return false
-			}
+			p.metrics.failures.WithLabelValues(exporterStr, fmt.Sprintf("%s missing", what)).Inc()
+			return false
 		default:
 			p.metrics.failures.WithLabelValues(exporterStr, fmt.Sprintf("%s unknown type", what)).Inc()
 			return false
 		}
 		return true
 	}
-	processUint := func(idx int, what string, target *uint, mandatory bool) bool {
+	processUint := func(idx int, what string, target *uint) bool {
 		switch result.Variables[idx].Type {
 		case gosnmp.Gauge32:
 			*target = result.Variables[idx].Value.(uint)
 		case gosnmp.NoSuchInstance, gosnmp.NoSuchObject:
-			if mandatory {
-				p.metrics.failures.WithLabelValues(exporterStr, fmt.Sprintf("%s missing", what)).Inc()
-				return false
-			}
+			p.metrics.failures.WithLabelValues(exporterStr, fmt.Sprintf("%s missing", what)).Inc()
+			return false
 		default:
 			p.metrics.failures.WithLabelValues(exporterStr, fmt.Sprintf("%s unknown type", what)).Inc()
 			return false
@@ -228,34 +224,38 @@ func (p *realPoller) Poll(ctx context.Context, exporter, agent netip.Addr, port 
 	}
 	var (
 		sysNameVal string
-		ifDescrVal = "unknown"
+		ifDescrVal string
 		ifAliasVal string
 		ifSpeedVal uint
 	)
-	if !processStr(0, "sysname", &sysNameVal, true) {
+	if !processStr(0, "sysname", &sysNameVal) {
 		return errors.New("unable to get sysName")
 	}
 	for idx := 1; idx < len(requests)-2; idx += 3 {
 		ifIndex := ifIndexes[(idx-1)/3]
 		ok := true
-		if !processStr(idx, "ifdescr", &ifDescrVal, ifIndex > 0) {
+		// We do not process results when index is 0 (this can happen for local
+		// traffic, we only care for exporter name).
+		if ifIndex > 0 && !processStr(idx, "ifdescr", &ifDescrVal) {
+			// This is not mandatory.
+		}
+		if ifIndex > 0 && !processStr(idx+1, "ifalias", &ifAliasVal) {
 			ok = false
 		}
-		if !processStr(idx+1, "ifalias", &ifAliasVal, ifIndex > 0) {
-			ok = false
-		}
-		if !processUint(idx+2, "ifspeed", &ifSpeedVal, ifIndex > 0) {
+		if ifIndex > 0 && !processUint(idx+2, "ifspeed", &ifSpeedVal) {
 			ok = false
 		}
 		if !ok {
-			continue
+			// Negative cache
+			p.put(exporter, sysNameVal, ifIndex, Interface{})
+		} else {
+			p.put(exporter, sysNameVal, ifIndex, Interface{
+				Name:        ifDescrVal,
+				Description: ifAliasVal,
+				Speed:       ifSpeedVal,
+			})
+			p.metrics.successes.WithLabelValues(exporterStr).Inc()
 		}
-		p.put(exporter, sysNameVal, ifIndex, Interface{
-			Name:        ifDescrVal,
-			Description: ifAliasVal,
-			Speed:       ifSpeedVal,
-		})
-		p.metrics.successes.WithLabelValues(exporterStr).Inc()
 	}
 
 	p.metrics.times.WithLabelValues(exporterStr).Observe(time.Now().Sub(start).Seconds())

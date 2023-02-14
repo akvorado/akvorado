@@ -53,7 +53,11 @@ func NewMock(t *testing.T, reporter *reporter.Reporter, configuration Configurat
 	}
 	// Change the poller to a fake one.
 	c.poller = newMockPoller(configuration, func(ip netip.Addr, exporterName string, index uint, iface Interface) {
-		c.sc.Put(c.d.Clock.Now(), ip, exporterName, index, iface)
+		if index != 999 {
+			c.sc.Put(c.d.Clock.Now(), ip, exporterName, index, iface)
+		} else {
+			c.sc.Put(c.d.Clock.Now(), ip, exporterName, index, Interface{})
+		}
 	})
 	helpers.StartStop(t, c)
 	return c
