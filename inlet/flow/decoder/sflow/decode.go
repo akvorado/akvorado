@@ -158,8 +158,62 @@ func (nd *Decoder) parseSampledHeader(bf *schema.FlowMessage, header *sflow.Samp
 	switch header.Protocol {
 	case 1: // Ethernet
 		return nd.parseEthernetHeader(bf, data)
+	case 11: // IPv4
+		return nd.parseIPv4Header(bf, data)
+	case 12: // IPv6
+		return nd.parseIPv6Header(bf, data)
 	}
 	return 0
+}
+
+func (nd *Decoder) parseIPv4Header(bf *schema.FlowMessage, data []byte) uint64 {
+	var l3length uint64
+	var proto uint8
+	if len(data) < 20 {
+		return 0
+	}
+	nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, helpers.ETypeIPv4)
+	l3length = uint64(binary.BigEndian.Uint16(data[2:4]))
+	bf.SrcAddr = decodeIP(data[12:16])
+	bf.DstAddr = decodeIP(data[16:20])
+	proto = data[9]
+	ihl := int((data[0] & 0xf) * 4)
+	if len(data) >= ihl {
+		data = data[ihl:]
+	} else {
+		data = data[:0]
+	}
+	nd.parseTCPUDPHeader(bf, data, proto)
+	return l3length
+}
+
+func (nd *Decoder) parseIPv6Header(bf *schema.FlowMessage, data []byte) uint64 {
+	var l3length uint64
+	var proto uint8
+	if len(data) < 40 {
+		return 0
+	}
+	l3length = uint64(binary.BigEndian.Uint16(data[4:6])) + 40
+	nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, helpers.ETypeIPv6)
+	bf.SrcAddr = decodeIP(data[8:24])
+	bf.DstAddr = decodeIP(data[24:40])
+	proto = data[6]
+	data = data[40:]
+	nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(proto))
+	nd.parseTCPUDPHeader(bf, data, proto)
+	return l3length
+}
+
+func (nd *Decoder) parseTCPUDPHeader(bf *schema.FlowMessage, data []byte, proto uint8) {
+	nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(proto))
+	if proto == 6 || proto == 17 {
+		if len(data) > 4 {
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPort,
+				uint64(binary.BigEndian.Uint16(data[0:2])))
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPort,
+				uint64(binary.BigEndian.Uint16(data[2:4])))
+		}
+	}
 }
 
 func (nd *Decoder) parseEthernetHeader(bf *schema.FlowMessage, data []byte) uint64 {
@@ -206,47 +260,12 @@ func (nd *Decoder) parseEthernetHeader(bf *schema.FlowMessage, data []byte) uint
 			}
 		}
 	}
-	var l3length uint64
-	var proto uint8
 	if etherType[0] == 0x8 && etherType[1] == 0x0 {
-		// IPv4
-		if len(data) < 20 {
-			return 0
-		}
-		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, helpers.ETypeIPv4)
-		l3length = uint64(binary.BigEndian.Uint16(data[2:4]))
-		bf.SrcAddr = decodeIP(data[12:16])
-		bf.DstAddr = decodeIP(data[16:20])
-		proto = data[9]
-		ihl := int((data[0] & 0xf) * 4)
-		if len(data) >= ihl {
-			data = data[ihl:]
-		} else {
-			data = data[:0]
-		}
+		return nd.parseIPv4Header(bf, data)
 	} else if etherType[0] == 0x86 && etherType[1] == 0xdd {
-		// IPv6
-		if len(data) < 40 {
-			return 0
-		}
-		l3length = uint64(binary.BigEndian.Uint16(data[4:6])) + 40
-		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, helpers.ETypeIPv6)
-		bf.SrcAddr = decodeIP(data[8:24])
-		bf.DstAddr = decodeIP(data[24:40])
-		proto = data[6]
-		data = data[40:]
+		return nd.parseIPv6Header(bf, data)
 	}
-	nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(proto))
-
-	if proto == 6 || proto == 17 {
-		if len(data) > 4 {
-			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPort,
-				uint64(binary.BigEndian.Uint16(data[0:2])))
-			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPort,
-				uint64(binary.BigEndian.Uint16(data[2:4])))
-		}
-	}
-	return l3length
+	return 0
 }
 
 func decodeIP(b []byte) netip.Addr {

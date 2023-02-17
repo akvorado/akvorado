@@ -338,4 +338,51 @@ func TestDecodeInterface(t *testing.T) {
 			t.Fatalf("Decode() (-got, +want):\n%s", diff)
 		}
 	})
+
+	t.Run("flow sample with IPv4 raw packet", func(t *testing.T) {
+		data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-sflow-raw-ipv4.pcap"))
+		got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+		if got == nil {
+			t.Fatalf("Decode() error on data")
+		}
+		expectedFlows := []*schema.FlowMessage{
+			{
+				SamplingRate:    1,
+				InIf:            0,
+				OutIf:           2,
+				SrcAddr:         netip.MustParseAddr("::ffff:69.58.92.107"),
+				DstAddr:         netip.MustParseAddr("::ffff:92.222.186.1"),
+				ExporterAddress: netip.MustParseAddr("::ffff:172.19.64.116"),
+				GotASPath:       false,
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnBytes:   32,
+					schema.ColumnPackets: 1,
+					schema.ColumnEType:   helpers.ETypeIPv4,
+					schema.ColumnProto:   1,
+				},
+			}, {
+				SamplingRate:    1,
+				InIf:            0,
+				OutIf:           2,
+				SrcAddr:         netip.MustParseAddr("::ffff:69.58.92.107"),
+				DstAddr:         netip.MustParseAddr("::ffff:92.222.184.1"),
+				ExporterAddress: netip.MustParseAddr("::ffff:172.19.64.116"),
+				GotASPath:       false,
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnBytes:   32,
+					schema.ColumnPackets: 1,
+					schema.ColumnEType:   helpers.ETypeIPv4,
+					schema.ColumnProto:   1,
+				},
+			},
+		}
+		for _, f := range got {
+			f.TimeReceived = 0
+		}
+
+		if diff := helpers.Diff(got, expectedFlows); diff != "" {
+			t.Fatalf("Decode() (-got, +want):\n%s", diff)
+		}
+
+	})
 }
