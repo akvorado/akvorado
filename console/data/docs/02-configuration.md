@@ -628,6 +628,7 @@ an authenticating reverse-proxy for Akvorado:
 - [Gluu](https://gluu.org/)
 - [Keycloak](https://www.keycloak.org/)
 - [Ory](https://www.ory.sh/), notably Kratos, Hydra and Oathkeeper
+- [Casdoor](https://casdoor.org/)
 
 There also exist simpler solutions only providing authentication:
 
