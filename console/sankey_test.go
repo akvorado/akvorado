@@ -19,12 +19,12 @@ import (
 func TestSankeyQuerySQL(t *testing.T) {
 	cases := []struct {
 		Description string
-		Input       sankeyHandlerInput
+		Input       graphSankeyHandlerInput
 		Expected    string
 	}{
 		{
 			Description: "two dimensions, no filters, l3 bps",
-			Input: sankeyHandlerInput{
+			Input: graphSankeyHandlerInput{
 				Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Dimensions: []query.Column{
@@ -51,7 +51,7 @@ ORDER BY xps DESC
 {{ end }}`,
 		}, {
 			Description: "two dimensions, no filters, l2 bps",
-			Input: sankeyHandlerInput{
+			Input: graphSankeyHandlerInput{
 				Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Dimensions: []query.Column{
@@ -79,7 +79,7 @@ ORDER BY xps DESC
 `,
 		}, {
 			Description: "two dimensions, no filters, pps",
-			Input: sankeyHandlerInput{
+			Input: graphSankeyHandlerInput{
 				Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Dimensions: []query.Column{
@@ -106,7 +106,7 @@ ORDER BY xps DESC
 {{ end }}`,
 		}, {
 			Description: "two dimensions, with filter",
-			Input: sankeyHandlerInput{
+			Input: graphSankeyHandlerInput{
 				Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Dimensions: []query.Column{
@@ -192,7 +192,7 @@ func TestSankeyHandler(t *testing.T) {
 
 	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
-			URL: "/api/v0/console/sankey",
+			URL: "/api/v0/console/graph/sankey",
 			JSONInput: gin.H{
 				"start":      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				"end":        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),

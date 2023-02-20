@@ -12,14 +12,14 @@
 
 <script lang="ts" setup>
 import { computed, inject } from "vue";
-import DataGraphTimeSeries from "./DataGraphTimeSeries.vue";
+import DataGraphLine from "./DataGraphLine.vue";
 import DataGraphSankey from "./DataGraphSankey.vue";
-import type { GraphHandlerResult, SankeyHandlerResult } from ".";
+import type { GraphLineHandlerResult, GraphSankeyHandlerResult } from ".";
 import { ThemeKey } from "@/components/ThemeProvider.vue";
 const { isDark } = inject(ThemeKey)!;
 
 const props = defineProps<{
-  data: GraphHandlerResult | SankeyHandlerResult | null;
+  data: GraphLineHandlerResult | GraphSankeyHandlerResult | null;
 }>();
 
 const component = computed(() => {
@@ -28,7 +28,7 @@ const component = computed(() => {
     case "stacked100":
     case "lines":
     case "grid":
-      return DataGraphTimeSeries;
+      return DataGraphLine;
     case "sankey":
       return DataGraphSankey;
   }

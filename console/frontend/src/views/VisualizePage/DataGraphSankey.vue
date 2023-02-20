@@ -9,7 +9,7 @@
 import { inject, computed } from "vue";
 import { formatXps, dataColor, dataColorGrey } from "@/utils";
 import { ThemeKey } from "@/components/ThemeProvider.vue";
-import type { SankeyHandlerResult } from ".";
+import type { GraphSankeyHandlerResult } from ".";
 import { use, type ComposeOption } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { SankeyChart, type SankeySeriesOption } from "echarts/charts";
@@ -26,7 +26,7 @@ type ECOption = ComposeOption<
 >;
 
 const props = defineProps<{
-  data: SankeyHandlerResult;
+  data: GraphSankeyHandlerResult;
 }>();
 
 const { isDark } = inject(ThemeKey)!;

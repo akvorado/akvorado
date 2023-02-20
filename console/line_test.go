@@ -17,8 +17,8 @@ import (
 	"akvorado/console/query"
 )
 
-func TestGraphInputReverseDirection(t *testing.T) {
-	input := graphHandlerInput{
+func TestGraphLineInputReverseDirection(t *testing.T) {
+	input := graphLineHandlerInput{
 		schema: schema.NewMock(t),
 		Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 		End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
@@ -31,7 +31,7 @@ func TestGraphInputReverseDirection(t *testing.T) {
 		Units:  "l3bps",
 	}
 	original1 := fmt.Sprintf("%+v", input)
-	expected := graphHandlerInput{
+	expected := graphLineHandlerInput{
 		Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 		End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 		Points: 100,
@@ -115,7 +115,7 @@ func TestGraphPreviousPeriod(t *testing.T) {
 			if err != nil {
 				t.Fatalf("time.Parse(%q) error:\n%+v", tc.ExpectedEnd, err)
 			}
-			input := graphHandlerInput{
+			input := graphLineHandlerInput{
 				schema: schema.NewMock(t),
 				Start:  start,
 				End:    end,
@@ -126,7 +126,7 @@ func TestGraphPreviousPeriod(t *testing.T) {
 			}
 			query.Columns(input.Dimensions).Validate(input.schema)
 			got := input.previousPeriod()
-			expected := graphHandlerInput{
+			expected := graphLineHandlerInput{
 				Start:      expectedStart,
 				End:        expectedEnd,
 				Dimensions: []query.Column{},
@@ -141,12 +141,12 @@ func TestGraphPreviousPeriod(t *testing.T) {
 func TestGraphQuerySQL(t *testing.T) {
 	cases := []struct {
 		Description string
-		Input       graphHandlerInput
+		Input       graphLineHandlerInput
 		Expected    string
 	}{
 		{
 			Description: "no dimensions, no filters, bps",
-			Input: graphHandlerInput{
+			Input: graphLineHandlerInput{
 				Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
@@ -172,7 +172,7 @@ ORDER BY time WITH FILL
 {{ end }}`,
 		}, {
 			Description: "no dimensions, no filters, l2 bps",
-			Input: graphHandlerInput{
+			Input: graphLineHandlerInput{
 				Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
@@ -199,7 +199,7 @@ ORDER BY time WITH FILL
 `,
 		}, {
 			Description: "no dimensions, no filters, pps",
-			Input: graphHandlerInput{
+			Input: graphLineHandlerInput{
 				Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
@@ -225,7 +225,7 @@ ORDER BY time WITH FILL
 {{ end }}`,
 		}, {
 			Description: "no dimensions",
-			Input: graphHandlerInput{
+			Input: graphLineHandlerInput{
 				Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
@@ -251,7 +251,7 @@ ORDER BY time WITH FILL
 {{ end }}`,
 		}, {
 			Description: "no dimensions, escaped filter",
-			Input: graphHandlerInput{
+			Input: graphLineHandlerInput{
 				Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points:     100,
@@ -277,7 +277,7 @@ ORDER BY time WITH FILL
 {{ end }}`,
 		}, {
 			Description: "no dimensions, reverse direction",
-			Input: graphHandlerInput{
+			Input: graphLineHandlerInput{
 				Start:         time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:           time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points:        100,
@@ -320,7 +320,7 @@ ORDER BY time WITH FILL
 {{ end }}`,
 		}, {
 			Description: "no dimensions, reverse direction, inl2%",
-			Input: graphHandlerInput{
+			Input: graphLineHandlerInput{
 				Start:         time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:           time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points:        100,
@@ -363,7 +363,7 @@ ORDER BY time WITH FILL
 {{ end }}`,
 		}, {
 			Description: "no filters",
-			Input: graphHandlerInput{
+			Input: graphLineHandlerInput{
 				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points: 100,
@@ -395,7 +395,7 @@ ORDER BY time WITH FILL
 {{ end }}`,
 		}, {
 			Description: "no filters, reverse",
-			Input: graphHandlerInput{
+			Input: graphLineHandlerInput{
 				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points: 100,
@@ -444,7 +444,7 @@ ORDER BY time WITH FILL
 {{ end }}`,
 		}, {
 			Description: "no filters, previous period",
-			Input: graphHandlerInput{
+			Input: graphLineHandlerInput{
 				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points: 100,
@@ -512,7 +512,7 @@ ORDER BY time WITH FILL
 	}
 }
 
-func TestGraphHandler(t *testing.T) {
+func TestGraphLineHandler(t *testing.T) {
 	_, h, mockConn, _ := NewMock(t, DefaultConfiguration())
 	base := time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
 
@@ -622,7 +622,7 @@ func TestGraphHandler(t *testing.T) {
 	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			Description: "single direction",
-			URL:         "/api/v0/console/graph",
+			URL:         "/api/v0/console/graph/line",
 			JSONInput: gin.H{
 				"start":         time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				"end":           time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
@@ -697,7 +697,7 @@ func TestGraphHandler(t *testing.T) {
 			},
 		}, {
 			Description: "bidirectional",
-			URL:         "/api/v0/console/graph",
+			URL:         "/api/v0/console/graph/line",
 			JSONInput: gin.H{
 				"start":         time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				"end":           time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
@@ -816,7 +816,7 @@ func TestGraphHandler(t *testing.T) {
 			},
 		}, {
 			Description: "previous period",
-			URL:         "/api/v0/console/graph",
+			URL:         "/api/v0/console/graph/line",
 			JSONInput: gin.H{
 				"start":           time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				"end":             time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),

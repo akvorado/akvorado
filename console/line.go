@@ -18,8 +18,8 @@ import (
 	"akvorado/console/query"
 )
 
-// graphHandlerInput describes the input for the /graph endpoint.
-type graphHandlerInput struct {
+// graphLineHandlerInput describes the input for the /graph/line endpoint.
+type graphLineHandlerInput struct {
 	schema         *schema.Component
 	Start          time.Time      `json:"start" binding:"required"`
 	End            time.Time      `json:"end" binding:"required,gtfield=Start"`
@@ -32,11 +32,11 @@ type graphHandlerInput struct {
 	PreviousPeriod bool           `json:"previous-period"`
 }
 
-// graphHandlerOutput describes the output for the /graph endpoint. A
+// graphLineHandlerOutput describes the output for the /graph/line endpoint. A
 // row is a set of values for dimensions. Currently, axis 1 is for the
 // direct direction and axis 2 is for the reverse direction. Rows are
 // sorted by axis, then by the sum of traffic.
-type graphHandlerOutput struct {
+type graphLineHandlerOutput struct {
 	Time                 []time.Time    `json:"t"`
 	Rows                 [][]string     `json:"rows"`   // List of rows
 	Points               [][]int        `json:"points"` // t → row → xps
@@ -50,7 +50,7 @@ type graphHandlerOutput struct {
 
 // reverseDirection reverts the direction of a provided input. It does not
 // modify the original.
-func (input graphHandlerInput) reverseDirection() graphHandlerInput {
+func (input graphLineHandlerInput) reverseDirection() graphLineHandlerInput {
 	input.Filter.Swap()
 	input.Dimensions = slices.Clone(input.Dimensions)
 	query.Columns(input.Dimensions).Reverse(input.schema)
@@ -82,7 +82,7 @@ func nearestPeriod(period time.Duration) (time.Duration, string) {
 // period, this is the day. For less than 2-weeks, this is the week,
 // for less than 2-months, this is the month, otherwise, this is the
 // year. Also, dimensions are stripped.
-func (input graphHandlerInput) previousPeriod() graphHandlerInput {
+func (input graphLineHandlerInput) previousPeriod() graphLineHandlerInput {
 	input.Dimensions = []query.Column{}
 	diff := input.End.Sub(input.Start)
 	period, _ := nearestPeriod(diff)
@@ -105,7 +105,7 @@ type toSQL1Options struct {
 	offsetedStart    time.Time
 }
 
-func (input graphHandlerInput) toSQL1(axis int, options toSQL1Options) string {
+func (input graphLineHandlerInput) toSQL1(axis int, options toSQL1Options) string {
 	var startForInterval *time.Time
 	var offsetShift string
 	if !options.offsetedStart.IsZero() {
@@ -195,8 +195,8 @@ ORDER BY time WITH FILL
 	return strings.TrimSpace(sqlQuery)
 }
 
-// graphHandlerInputToSQL converts a graph input to an SQL request
-func (input graphHandlerInput) toSQL() string {
+// toSQL converts a graph input to an SQL request
+func (input graphLineHandlerInput) toSQL() string {
 	parts := []string{input.toSQL1(1, toSQL1Options{})}
 	// Handle specific options. We have to align time periods in
 	// case the previous period does not use the same offsets.
@@ -222,9 +222,9 @@ func (input graphHandlerInput) toSQL() string {
 	return strings.Join(parts, "\nUNION ALL\n")
 }
 
-func (c *Component) graphHandlerFunc(gc *gin.Context) {
+func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
-	input := graphHandlerInput{schema: c.d.Schema}
+	input := graphLineHandlerInput{schema: c.d.Schema}
 	if err := gc.ShouldBindJSON(&input); err != nil {
 		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
 		return
@@ -276,7 +276,7 @@ func (c *Component) graphHandlerFunc(gc *gin.Context) {
 	}
 
 	// Set time axis. We assume the first returned axis has the complete view.
-	output := graphHandlerOutput{
+	output := graphLineHandlerOutput{
 		Time: []time.Time{},
 	}
 	lastTime := time.Time{}

@@ -90,11 +90,11 @@ import { computed, inject, ref } from "vue";
 import { uniqWith, isEqual, findIndex, takeWhile, toPairs } from "lodash-es";
 import { formatXps, dataColor, dataColorGrey } from "@/utils";
 import { ThemeKey } from "@/components/ThemeProvider.vue";
-import type { GraphHandlerResult, SankeyHandlerResult } from ".";
+import type { GraphLineHandlerResult, GraphSankeyHandlerResult } from ".";
 const { isDark } = inject(ThemeKey)!;
 
 const props = defineProps<{
-  data: GraphHandlerResult | SankeyHandlerResult | null;
+  data: GraphLineHandlerResult | GraphSankeyHandlerResult | null;
 }>();
 const emit = defineEmits<{
   (e: "highlighted", index: number | null): void;

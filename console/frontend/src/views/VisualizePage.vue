@@ -58,12 +58,12 @@ import {
 } from "./VisualizePage/OptionsPanel.vue";
 import type { GraphType } from "./VisualizePage/graphtypes";
 import type {
-  SankeyHandlerInput,
-  GraphHandlerInput,
-  SankeyHandlerOutput,
-  GraphHandlerOutput,
-  SankeyHandlerResult,
-  GraphHandlerResult,
+  GraphSankeyHandlerInput,
+  GraphLineHandlerInput,
+  GraphSankeyHandlerOutput,
+  GraphLineHandlerOutput,
+  GraphSankeyHandlerResult,
+  GraphLineHandlerResult,
 } from "./VisualizePage";
 import { isEqual, omit, pick } from "lodash-es";
 
@@ -125,7 +125,9 @@ watch(
 const encodedState = computed(() => encodeState(state.value));
 
 // Fetch data
-const fetchedData = ref<GraphHandlerResult | SankeyHandlerResult | null>(null);
+const fetchedData = ref<
+  GraphLineHandlerResult | GraphSankeyHandlerResult | null
+>(null);
 const orderedJSONPayload = <T extends Record<string, any>>(input: T): T => {
   return Object.keys(input)
     .sort()
@@ -135,10 +137,10 @@ const orderedJSONPayload = <T extends Record<string, any>>(input: T): T => {
     ) as T;
 };
 const jsonPayload = computed(
-  (): SankeyHandlerInput | GraphHandlerInput | null => {
+  (): GraphSankeyHandlerInput | GraphLineHandlerInput | null => {
     if (state.value === null) return null;
     if (state.value.graphType === "sankey") {
-      const input: SankeyHandlerInput = {
+      const input: GraphSankeyHandlerInput = {
         ...omit(state.value, [
           "graphType",
           "bidirectional",
@@ -149,7 +151,7 @@ const jsonPayload = computed(
       };
       return orderedJSONPayload(input);
     } else {
-      const input: GraphHandlerInput = {
+      const input: GraphLineHandlerInput = {
         ...omit(state.value, [
           "graphType",
           "previousPeriod",
@@ -176,20 +178,20 @@ const { data, execute, isFetching, aborted, abort, canAbort, error } = useFetch(
         return ctx;
       }
       const endpoint: Record<GraphType, string> = {
-        stacked: "graph",
-        stacked100: "graph",
-        lines: "graph",
-        grid: "graph",
+        stacked: "line",
+        stacked100: "line",
+        lines: "line",
+        grid: "line",
         sankey: "sankey",
       };
       const url = endpoint[state.value.graphType];
       return {
         ...ctx,
-        url: `/api/v0/console/${url}`,
+        url: `/api/v0/console/graph/${url}`,
       };
     },
     async afterFetch(
-      ctx: AfterFetchContext<GraphHandlerOutput | SankeyHandlerOutput>
+      ctx: AfterFetchContext<GraphLineHandlerOutput | GraphSankeyHandlerOutput>
     ) {
       // Update data. Not done in a computed value as we want to keep the
       // previous data in case of errors.
@@ -203,13 +205,13 @@ const { data, execute, isFetching, aborted, abort, canAbort, error } = useFetch(
       if (state.value.graphType === "sankey") {
         fetchedData.value = {
           graphType: "sankey",
-          ...(data as SankeyHandlerOutput),
+          ...(data as GraphSankeyHandlerOutput),
           ...pick(state.value, ["start", "end", "dimensions", "units"]),
         };
       } else {
         fetchedData.value = {
           graphType: state.value.graphType,
-          ...(data as GraphHandlerOutput),
+          ...(data as GraphLineHandlerOutput),
           ...pick(state.value, [
             "start",
             "end",
@@ -240,7 +242,9 @@ const { data, execute, isFetching, aborted, abort, canAbort, error } = useFetch(
   }
 )
   .post(jsonPayload, "json")
-  .json<GraphHandlerOutput | SankeyHandlerOutput | { message: string }>();
+  .json<
+    GraphLineHandlerOutput | GraphSankeyHandlerOutput | { message: string }
+  >();
 watch(jsonPayload, () => execute(), { immediate: true });
 
 const errorMessage = computed(() => {

@@ -15,7 +15,7 @@ import { ref, watch, inject, computed, onMounted, nextTick } from "vue";
 import { useMediaQuery } from "@vueuse/core";
 import { formatXps, dataColor, dataColorGrey } from "@/utils";
 import { ThemeKey } from "@/components/ThemeProvider.vue";
-import type { GraphHandlerResult } from ".";
+import type { GraphLineHandlerResult } from ".";
 import { uniqWith, isEqual, findIndex } from "lodash-es";
 import { use, graphic, type ComposeOption } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
@@ -58,7 +58,7 @@ type ECOption = ComposeOption<
 >;
 
 const props = defineProps<{
-  data: GraphHandlerResult;
+  data: GraphLineHandlerResult;
   highlight: number | null;
 }>();
 const emit = defineEmits<{

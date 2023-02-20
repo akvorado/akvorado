@@ -17,8 +17,8 @@ import (
 	"akvorado/console/query"
 )
 
-// sankeyHandlerInput describes the input for the /sankey endpoint.
-type sankeyHandlerInput struct {
+// graphSankeyHandlerInput describes the input for the /graph/sankey endpoint.
+type graphSankeyHandlerInput struct {
 	schema     *schema.Component
 	Start      time.Time      `json:"start" binding:"required"`
 	End        time.Time      `json:"end" binding:"required,gtfield=Start"`
@@ -28,8 +28,8 @@ type sankeyHandlerInput struct {
 	Units      string         `json:"units" binding:"required,oneof=pps l3bps l2bps inl2% outl2%"`
 }
 
-// sankeyHandlerOutput describes the output for the /sankey endpoint.
-type sankeyHandlerOutput struct {
+// graphSankeyHandlerOutput describes the output for the /graph/sankey endpoint.
+type graphSankeyHandlerOutput struct {
 	// Unprocessed data for table view
 	Rows [][]string `json:"rows"`
 	Xps  []int      `json:"xps"` // row → xps
@@ -44,7 +44,7 @@ type sankeyLink struct {
 }
 
 // sankeyHandlerInputToSQL converts a sankey query to an SQL request
-func (input sankeyHandlerInput) toSQL() (string, error) {
+func (input graphSankeyHandlerInput) toSQL() (string, error) {
 	where := templateWhere(input.Filter)
 
 	// Select
@@ -95,9 +95,9 @@ ORDER BY xps DESC
 	return strings.TrimSpace(sqlQuery), nil
 }
 
-func (c *Component) sankeyHandlerFunc(gc *gin.Context) {
+func (c *Component) graphSankeyHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
-	input := sankeyHandlerInput{schema: c.d.Schema}
+	input := graphSankeyHandlerInput{schema: c.d.Schema}
 	if err := gc.ShouldBindJSON(&input); err != nil {
 		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
 		return
@@ -131,7 +131,7 @@ func (c *Component) sankeyHandlerFunc(gc *gin.Context) {
 	}
 
 	// Prepare output
-	output := sankeyHandlerOutput{
+	output := graphSankeyHandlerOutput{
 		Rows:  make([][]string, 0, len(results)),
 		Xps:   make([]int, 0, len(results)),
 		Nodes: make([]string, 0),

@@ -4,7 +4,7 @@
 import type { GraphType } from "./graphtypes";
 
 export type Units = "l3bps" | "l2bps" | "pps" | "inl2%" | "outl2%";
-export type SankeyHandlerInput = {
+export type GraphSankeyHandlerInput = {
   start: string;
   end: string;
   dimensions: string[];
@@ -12,12 +12,12 @@ export type SankeyHandlerInput = {
   filter: string;
   units: Units;
 };
-export type GraphHandlerInput = SankeyHandlerInput & {
+export type GraphLineHandlerInput = GraphSankeyHandlerInput & {
   points: number;
   bidirectional: boolean;
   "previous-period": boolean;
 };
-export type SankeyHandlerOutput = {
+export type GraphSankeyHandlerOutput = {
   rows: string[][];
   xps: number[];
   nodes: string[];
@@ -27,7 +27,7 @@ export type SankeyHandlerOutput = {
     xps: number;
   }[];
 };
-export type GraphHandlerOutput = {
+export type GraphLineHandlerOutput = {
   t: string[];
   rows: string[][];
   points: number[][];
@@ -38,12 +38,12 @@ export type GraphHandlerOutput = {
   max: number[];
   "95th": number[];
 };
-export type SankeyHandlerResult = SankeyHandlerOutput & {
+export type GraphSankeyHandlerResult = GraphSankeyHandlerOutput & {
   graphType: Extract<GraphType, "sankey">;
-} & Pick<SankeyHandlerInput, "start" | "end" | "dimensions" | "units">;
-export type GraphHandlerResult = GraphHandlerOutput & {
+} & Pick<GraphSankeyHandlerInput, "start" | "end" | "dimensions" | "units">;
+export type GraphLineHandlerResult = GraphLineHandlerOutput & {
   graphType: Exclude<GraphType, "sankey">;
 } & Pick<
-    GraphHandlerInput,
+    GraphLineHandlerInput,
     "start" | "end" | "dimensions" | "units" | "bidirectional"
   >;
