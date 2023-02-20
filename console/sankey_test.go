@@ -40,13 +40,14 @@ func TestSankeyQuerySQL(t *testing.T) {
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l3bps"}@@ }}
 WITH
- (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM {{ .Table }} WHERE {{ .Timefilter }}) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM {{ .Table }} WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 5)
+ source AS (SELECT * FROM {{ .Table }}),
+ (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }}) AS range,
+ rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 5)
 SELECT
  {{ .Units }}/range AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
   if(ExporterName IN (SELECT ExporterName FROM rows), ExporterName, 'Other')] AS dimensions
-FROM {{ .Table }}
+FROM source
 WHERE {{ .Timefilter }}
 GROUP BY dimensions
 ORDER BY xps DESC
@@ -69,13 +70,14 @@ ORDER BY xps DESC
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l2bps"}@@ }}
 WITH
- (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM {{ .Table }} WHERE {{ .Timefilter }}) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM {{ .Table }} WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 5)
+ source AS (SELECT * FROM {{ .Table }}),
+ (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }}) AS range,
+ rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 5)
 SELECT
  {{ .Units }}/range AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
   if(ExporterName IN (SELECT ExporterName FROM rows), ExporterName, 'Other')] AS dimensions
-FROM {{ .Table }}
+FROM source
 WHERE {{ .Timefilter }}
 GROUP BY dimensions
 ORDER BY xps DESC
@@ -99,13 +101,14 @@ ORDER BY xps DESC
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"pps"}@@ }}
 WITH
- (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM {{ .Table }} WHERE {{ .Timefilter }}) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM {{ .Table }} WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 5)
+ source AS (SELECT * FROM {{ .Table }}),
+ (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }}) AS range,
+ rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 5)
 SELECT
  {{ .Units }}/range AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
   if(ExporterName IN (SELECT ExporterName FROM rows), ExporterName, 'Other')] AS dimensions
-FROM {{ .Table }}
+FROM source
 WHERE {{ .Timefilter }}
 GROUP BY dimensions
 ORDER BY xps DESC
@@ -128,13 +131,14 @@ ORDER BY xps DESC
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l3bps"}@@ }}
 WITH
- (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM {{ .Table }} WHERE {{ .Timefilter }} AND (DstCountry = 'FR')) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM {{ .Table }} WHERE {{ .Timefilter }} AND (DstCountry = 'FR') GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 10)
+ source AS (SELECT * FROM {{ .Table }}),
+ (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }} AND (DstCountry = 'FR')) AS range,
+ rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{ .Timefilter }} AND (DstCountry = 'FR') GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 10)
 SELECT
  {{ .Units }}/range AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
   if(ExporterName IN (SELECT ExporterName FROM rows), ExporterName, 'Other')] AS dimensions
-FROM {{ .Table }}
+FROM source
 WHERE {{ .Timefilter }} AND (DstCountry = 'FR')
 GROUP BY dimensions
 ORDER BY xps DESC

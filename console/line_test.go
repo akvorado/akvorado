@@ -166,12 +166,14 @@ func TestGraphQuerySQL(t *testing.T) {
 			},
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
+WITH
+ source AS (SELECT * FROM {{ .Table }})
 SELECT 1 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
-FROM {{ .Table }}
+FROM source
 WHERE {{ .Timefilter }}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
@@ -194,12 +196,14 @@ ORDER BY time WITH FILL
 			},
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l2bps"}@@ }}
+WITH
+ source AS (SELECT * FROM {{ .Table }})
 SELECT 1 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
-FROM {{ .Table }}
+FROM source
 WHERE {{ .Timefilter }}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
@@ -223,12 +227,14 @@ ORDER BY time WITH FILL
 			},
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"pps"}@@ }}
+WITH
+ source AS (SELECT * FROM {{ .Table }})
 SELECT 1 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
-FROM {{ .Table }}
+FROM source
 WHERE {{ .Timefilter }}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
@@ -236,6 +242,39 @@ ORDER BY time WITH FILL
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }}
  INTERPOLATE (dimensions AS emptyArrayString()))
+{{ end }}`,
+		}, {
+			Description: "truncated source address",
+			Input: graphLineHandlerInput{
+				graphCommonHandlerInput: graphCommonHandlerInput{
+					Start:          time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					End:            time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					Dimensions:     []query.Column{query.NewColumn("SrcAddr")},
+					Filter:         query.NewFilter("SrcAddr << 1.0.0.0/8"),
+					TruncateAddrV4: 24,
+					TruncateAddrV6: 48,
+					Units:          "l3bps",
+				},
+				Points: 100,
+			},
+			Expected: `
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","main-table-required":true,"points":100,"units":"l3bps"}@@ }}
+WITH
+ source AS (SELECT * REPLACE (tupleElement(IPv6CIDRToRange(SrcAddr, if(tupleElement(IPv6CIDRToRange(SrcAddr, 96), 1) = toIPv6('::ffff:0.0.0.0'), 120, 48)), 1) AS SrcAddr) FROM {{ .Table }}),
+ rows AS (SELECT SrcAddr FROM source WHERE {{ .Timefilter }} AND (SrcAddr BETWEEN toIPv6('::ffff:1.0.0.0') AND toIPv6('::ffff:1.255.255.255')) GROUP BY SrcAddr ORDER BY SUM(Bytes) DESC LIMIT 0)
+SELECT 1 AS axis, * FROM (
+SELECT
+ {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .Units }}/{{ .Interval }} AS xps,
+ if((SrcAddr) IN rows, [replaceRegexpOne(IPv6NumToString(SrcAddr), '^::ffff:', '')], ['Other']) AS dimensions
+FROM source
+WHERE {{ .Timefilter }} AND (SrcAddr BETWEEN toIPv6('::ffff:1.0.0.0') AND toIPv6('::ffff:1.255.255.255'))
+GROUP BY time, dimensions
+ORDER BY time WITH FILL
+ FROM {{ .TimefilterStart }}
+ TO {{ .TimefilterEnd }} + INTERVAL 1 second
+ STEP {{ .Interval }}
+ INTERPOLATE (dimensions AS ['Other']))
 {{ end }}`,
 		}, {
 			Description: "no dimensions",
@@ -251,12 +290,14 @@ ORDER BY time WITH FILL
 			},
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
+WITH
+ source AS (SELECT * FROM {{ .Table }})
 SELECT 1 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
-FROM {{ .Table }}
+FROM source
 WHERE {{ .Timefilter }} AND (DstCountry = 'FR' AND SrcCountry = 'US')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
@@ -279,12 +320,14 @@ ORDER BY time WITH FILL
 			},
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
+WITH
+ source AS (SELECT * FROM {{ .Table }})
 SELECT 1 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
-FROM {{ .Table }}
+FROM source
 WHERE {{ .Timefilter }} AND (InIfDescription = '{{"{{"}} hello }}' AND SrcCountry = 'US')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
@@ -308,12 +351,14 @@ ORDER BY time WITH FILL
 			},
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
+WITH
+ source AS (SELECT * FROM {{ .Table }})
 SELECT 1 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
-FROM {{ .Table }}
+FROM source
 WHERE {{ .Timefilter }} AND (DstCountry = 'FR' AND SrcCountry = 'US')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
@@ -329,7 +374,7 @@ SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
-FROM {{ .Table }}
+FROM source
 WHERE {{ .Timefilter }} AND (SrcCountry = 'FR' AND DstCountry = 'US')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
@@ -353,12 +398,14 @@ ORDER BY time WITH FILL
 			},
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"inl2%"}@@ }}
+WITH
+ source AS (SELECT * FROM {{ .Table }})
 SELECT 1 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
-FROM {{ .Table }}
+FROM source
 WHERE {{ .Timefilter }} AND (DstCountry = 'FR' AND SrcCountry = 'US')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
@@ -374,7 +421,7 @@ SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
-FROM {{ .Table }}
+FROM source
 WHERE {{ .Timefilter }} AND (SrcCountry = 'FR' AND DstCountry = 'US')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
@@ -402,13 +449,14 @@ ORDER BY time WITH FILL
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
 WITH
- rows AS (SELECT ExporterName, InIfProvider FROM {{ .Table }} WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes) DESC LIMIT 20)
+ source AS (SELECT * FROM {{ .Table }}),
+ rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes) DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
-FROM {{ .Table }}
+FROM source
 WHERE {{ .Timefilter }}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
@@ -437,13 +485,14 @@ ORDER BY time WITH FILL
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
 WITH
- rows AS (SELECT ExporterName, InIfProvider FROM {{ .Table }} WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes) DESC LIMIT 20)
+ source AS (SELECT * FROM {{ .Table }}),
+ rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes) DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
-FROM {{ .Table }}
+FROM source
 WHERE {{ .Timefilter }}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
@@ -459,7 +508,7 @@ SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  if((ExporterName, OutIfProvider) IN rows, [ExporterName, OutIfProvider], ['Other', 'Other']) AS dimensions
-FROM {{ .Table }}
+FROM source
 WHERE {{ .Timefilter }}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
@@ -488,13 +537,14 @@ ORDER BY time WITH FILL
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
 WITH
- rows AS (SELECT ExporterName, InIfProvider FROM {{ .Table }} WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes) DESC LIMIT 20)
+ source AS (SELECT * FROM {{ .Table }}),
+ rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes) DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
-FROM {{ .Table }}
+FROM source
 WHERE {{ .Timefilter }}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
@@ -510,7 +560,7 @@ SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} + INTERVAL 86400 second AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
-FROM {{ .Table }}
+FROM source
 WHERE {{ .Timefilter }}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL

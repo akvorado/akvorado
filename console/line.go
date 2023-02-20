@@ -135,18 +135,20 @@ func (input graphLineHandlerInput) toSQL1(axis int, options toSQL1Options) strin
 	}
 
 	// With
-	with := []string{}
-	if len(dimensions) > 0 && !options.skipWithClause {
-		with = append(with, fmt.Sprintf(
-			"rows AS (SELECT %s FROM {{ .Table }} WHERE %s GROUP BY %s ORDER BY SUM(Bytes) DESC LIMIT %d)",
-			strings.Join(dimensions, ", "),
-			where,
-			strings.Join(dimensions, ", "),
-			input.Limit))
-	}
 	withStr := ""
-	if len(with) > 0 {
-		withStr = fmt.Sprintf("\nWITH\n %s", strings.Join(with, ",\n "))
+	if !options.skipWithClause {
+		with := []string{fmt.Sprintf("source AS (%s)", input.sourceSelect())}
+		if len(dimensions) > 0 {
+			with = append(with, fmt.Sprintf(
+				"rows AS (SELECT %s FROM source WHERE %s GROUP BY %s ORDER BY SUM(Bytes) DESC LIMIT %d)",
+				strings.Join(dimensions, ", "),
+				where,
+				strings.Join(dimensions, ", "),
+				input.Limit))
+		}
+		if len(with) > 0 {
+			withStr = fmt.Sprintf("\nWITH\n %s", strings.Join(with, ",\n "))
+		}
 	}
 
 	// Units
@@ -165,7 +167,7 @@ func (input graphLineHandlerInput) toSQL1(axis int, options toSQL1Options) strin
 SELECT %d AS axis, * FROM (
 SELECT
  %s
-FROM {{ .Table }}
+FROM source
 WHERE %s
 GROUP BY time, dimensions
 ORDER BY time WITH FILL

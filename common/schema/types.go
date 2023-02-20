@@ -32,11 +32,11 @@ type Column struct {
 	Depends   []ColumnKey
 
 	// For ClickHouse. `NotSortingKey' is for columns generated from other
-	// columns. It is only useful if not ClickHouseMainOnly and not Alias. `GenerateFrom'
-	// is for a column that's generated from an SQL expression instead of being
-	// retrieved from the protobuf. `TransformFrom' and `TransformTo' work in
-	// pairs. The first one is the set of column in the raw table while the
-	// second one is how to transform it for the main table.
+	// columns. It is only useful if not ClickHouseMainOnly and not Alias.
+	// `GenerateFrom' is for a column that's generated from an SQL expression
+	// instead of being retrieved from the protobuf. `TransformFrom' and
+	// `TransformTo' work in pairs. The first one is the set of column in the
+	// raw table while the second one is how to transform it for the main table.
 	ClickHouseType          string
 	ClickHouseCodec         string
 	ClickHouseAlias         string
@@ -46,8 +46,10 @@ type Column struct {
 	ClickHouseTransformTo   string
 	ClickHouseMainOnly      bool
 
-	// For the console.
+	// For the console. `ClickHouseTruncateIP' makes the specified column
+	// truncatable when used as a dimension.
 	ConsoleNotDimension bool
+	ConsoleTruncateIP   bool
 
 	// For protobuf. The index is automatically derived from the position,
 	// unless specified. Use -1 to not include the column into the protobuf

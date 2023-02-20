@@ -134,6 +134,7 @@ func flows() Schema {
 				ClickHouseMainOnly: true,
 				ClickHouseType:     "IPv6",
 				ClickHouseCodec:    "ZSTD(1)",
+				ConsoleTruncateIP:  true,
 			},
 			{
 				Key:                 ColumnSrcNetMask,
@@ -323,6 +324,7 @@ END`,
 				Group:              ColumnGroupNAT,
 				ClickHouseType:     "IPv6",
 				ClickHouseMainOnly: true,
+				ConsoleTruncateIP:  true,
 			},
 			{
 				Key:                ColumnSrcPortNAT,
