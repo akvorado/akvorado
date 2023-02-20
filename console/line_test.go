@@ -19,28 +19,32 @@ import (
 
 func TestGraphLineInputReverseDirection(t *testing.T) {
 	input := graphLineHandlerInput{
-		schema: schema.NewMock(t),
-		Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-		End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-		Points: 100,
-		Dimensions: query.Columns{
-			query.NewColumn("ExporterName"),
-			query.NewColumn("InIfProvider"),
+		graphCommonHandlerInput: graphCommonHandlerInput{
+			schema: schema.NewMock(t),
+			Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+			End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+			Dimensions: query.Columns{
+				query.NewColumn("ExporterName"),
+				query.NewColumn("InIfProvider"),
+			},
+			Filter: query.NewFilter("DstCountry = 'FR' AND SrcCountry = 'US'"),
+			Units:  "l3bps",
 		},
-		Filter: query.NewFilter("DstCountry = 'FR' AND SrcCountry = 'US'"),
-		Units:  "l3bps",
+		Points: 100,
 	}
 	original1 := fmt.Sprintf("%+v", input)
 	expected := graphLineHandlerInput{
-		Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-		End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-		Points: 100,
-		Dimensions: query.Columns{
-			query.NewColumn("ExporterName"),
-			query.NewColumn("OutIfProvider"),
+		graphCommonHandlerInput: graphCommonHandlerInput{
+			Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+			End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+			Dimensions: query.Columns{
+				query.NewColumn("ExporterName"),
+				query.NewColumn("OutIfProvider"),
+			},
+			Filter: query.NewFilter("SrcCountry = 'FR' AND DstCountry = 'US'"),
+			Units:  "l3bps",
 		},
-		Filter: query.NewFilter("SrcCountry = 'FR' AND DstCountry = 'US'"),
-		Units:  "l3bps",
+		Points: 100,
 	}
 	query.Columns(input.Dimensions).Validate(input.schema)
 	query.Columns(expected.Dimensions).Validate(input.schema)
@@ -116,20 +120,24 @@ func TestGraphPreviousPeriod(t *testing.T) {
 				t.Fatalf("time.Parse(%q) error:\n%+v", tc.ExpectedEnd, err)
 			}
 			input := graphLineHandlerInput{
-				schema: schema.NewMock(t),
-				Start:  start,
-				End:    end,
-				Dimensions: query.Columns{
-					query.NewColumn("ExporterAddress"),
-					query.NewColumn("ExporterName"),
+				graphCommonHandlerInput: graphCommonHandlerInput{
+					schema: schema.NewMock(t),
+					Start:  start,
+					End:    end,
+					Dimensions: query.Columns{
+						query.NewColumn("ExporterAddress"),
+						query.NewColumn("ExporterName"),
+					},
 				},
 			}
 			query.Columns(input.Dimensions).Validate(input.schema)
 			got := input.previousPeriod()
 			expected := graphLineHandlerInput{
-				Start:      expectedStart,
-				End:        expectedEnd,
-				Dimensions: []query.Column{},
+				graphCommonHandlerInput: graphCommonHandlerInput{
+					Start:      expectedStart,
+					End:        expectedEnd,
+					Dimensions: []query.Column{},
+				},
 			}
 			if diff := helpers.Diff(got, expected); diff != "" {
 				t.Fatalf("previousPeriod() (-got, +want):\n%s", diff)
@@ -147,12 +155,14 @@ func TestGraphQuerySQL(t *testing.T) {
 		{
 			Description: "no dimensions, no filters, bps",
 			Input: graphLineHandlerInput{
-				Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-				End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-				Points:     100,
-				Dimensions: []query.Column{},
-				Filter:     query.Filter{},
-				Units:      "l3bps",
+				graphCommonHandlerInput: graphCommonHandlerInput{
+					Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					Dimensions: []query.Column{},
+					Filter:     query.Filter{},
+					Units:      "l3bps",
+				},
+				Points: 100,
 			},
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
@@ -173,12 +183,14 @@ ORDER BY time WITH FILL
 		}, {
 			Description: "no dimensions, no filters, l2 bps",
 			Input: graphLineHandlerInput{
-				Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-				End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-				Points:     100,
-				Dimensions: []query.Column{},
-				Filter:     query.Filter{},
-				Units:      "l2bps",
+				graphCommonHandlerInput: graphCommonHandlerInput{
+					Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					Dimensions: []query.Column{},
+					Filter:     query.Filter{},
+					Units:      "l2bps",
+				},
+				Points: 100,
 			},
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l2bps"}@@ }}
@@ -200,12 +212,14 @@ ORDER BY time WITH FILL
 		}, {
 			Description: "no dimensions, no filters, pps",
 			Input: graphLineHandlerInput{
-				Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-				End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-				Points:     100,
-				Dimensions: []query.Column{},
-				Filter:     query.Filter{},
-				Units:      "pps",
+				graphCommonHandlerInput: graphCommonHandlerInput{
+					Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					Dimensions: []query.Column{},
+					Filter:     query.Filter{},
+					Units:      "pps",
+				},
+				Points: 100,
 			},
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"pps"}@@ }}
@@ -226,12 +240,14 @@ ORDER BY time WITH FILL
 		}, {
 			Description: "no dimensions",
 			Input: graphLineHandlerInput{
-				Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-				End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-				Points:     100,
-				Dimensions: []query.Column{},
-				Filter:     query.NewFilter("DstCountry = 'FR' AND SrcCountry = 'US'"),
-				Units:      "l3bps",
+				graphCommonHandlerInput: graphCommonHandlerInput{
+					Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					Dimensions: []query.Column{},
+					Filter:     query.NewFilter("DstCountry = 'FR' AND SrcCountry = 'US'"),
+					Units:      "l3bps",
+				},
+				Points: 100,
 			},
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
@@ -252,12 +268,14 @@ ORDER BY time WITH FILL
 		}, {
 			Description: "no dimensions, escaped filter",
 			Input: graphLineHandlerInput{
-				Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-				End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-				Points:     100,
-				Dimensions: []query.Column{},
-				Filter:     query.NewFilter("InIfDescription = '{{ hello }}' AND SrcCountry = 'US'"),
-				Units:      "l3bps",
+				graphCommonHandlerInput: graphCommonHandlerInput{
+					Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					Dimensions: []query.Column{},
+					Filter:     query.NewFilter("InIfDescription = '{{ hello }}' AND SrcCountry = 'US'"),
+					Units:      "l3bps",
+				},
+				Points: 100,
 			},
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
@@ -278,12 +296,14 @@ ORDER BY time WITH FILL
 		}, {
 			Description: "no dimensions, reverse direction",
 			Input: graphLineHandlerInput{
-				Start:         time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-				End:           time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+				graphCommonHandlerInput: graphCommonHandlerInput{
+					Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					Dimensions: []query.Column{},
+					Filter:     query.NewFilter("DstCountry = 'FR' AND SrcCountry = 'US'"),
+					Units:      "l3bps",
+				},
 				Points:        100,
-				Dimensions:    []query.Column{},
-				Filter:        query.NewFilter("DstCountry = 'FR' AND SrcCountry = 'US'"),
-				Units:         "l3bps",
 				Bidirectional: true,
 			},
 			Expected: `
@@ -321,12 +341,14 @@ ORDER BY time WITH FILL
 		}, {
 			Description: "no dimensions, reverse direction, inl2%",
 			Input: graphLineHandlerInput{
-				Start:         time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-				End:           time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+				graphCommonHandlerInput: graphCommonHandlerInput{
+					Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					Dimensions: []query.Column{},
+					Filter:     query.NewFilter("DstCountry = 'FR' AND SrcCountry = 'US'"),
+					Units:      "inl2%",
+				},
 				Points:        100,
-				Dimensions:    []query.Column{},
-				Filter:        query.NewFilter("DstCountry = 'FR' AND SrcCountry = 'US'"),
-				Units:         "inl2%",
 				Bidirectional: true,
 			},
 			Expected: `
@@ -364,16 +386,18 @@ ORDER BY time WITH FILL
 		}, {
 			Description: "no filters",
 			Input: graphLineHandlerInput{
-				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-				Points: 100,
-				Limit:  20,
-				Dimensions: []query.Column{
-					query.NewColumn("ExporterName"),
-					query.NewColumn("InIfProvider"),
+				graphCommonHandlerInput: graphCommonHandlerInput{
+					Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					Limit: 20,
+					Dimensions: []query.Column{
+						query.NewColumn("ExporterName"),
+						query.NewColumn("InIfProvider"),
+					},
+					Filter: query.Filter{},
+					Units:  "l3bps",
 				},
-				Filter: query.Filter{},
-				Units:  "l3bps",
+				Points: 100,
 			},
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
@@ -396,16 +420,18 @@ ORDER BY time WITH FILL
 		}, {
 			Description: "no filters, reverse",
 			Input: graphLineHandlerInput{
-				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-				Points: 100,
-				Limit:  20,
-				Dimensions: []query.Column{
-					query.NewColumn("ExporterName"),
-					query.NewColumn("InIfProvider"),
+				graphCommonHandlerInput: graphCommonHandlerInput{
+					Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					Limit: 20,
+					Dimensions: []query.Column{
+						query.NewColumn("ExporterName"),
+						query.NewColumn("InIfProvider"),
+					},
+					Filter: query.Filter{},
+					Units:  "l3bps",
 				},
-				Filter:        query.Filter{},
-				Units:         "l3bps",
+				Points:        100,
 				Bidirectional: true,
 			},
 			Expected: `
@@ -445,16 +471,18 @@ ORDER BY time WITH FILL
 		}, {
 			Description: "no filters, previous period",
 			Input: graphLineHandlerInput{
-				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-				Points: 100,
-				Limit:  20,
-				Dimensions: []query.Column{
-					query.NewColumn("ExporterName"),
-					query.NewColumn("InIfProvider"),
+				graphCommonHandlerInput: graphCommonHandlerInput{
+					Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					Limit: 20,
+					Dimensions: []query.Column{
+						query.NewColumn("ExporterName"),
+						query.NewColumn("InIfProvider"),
+					},
+					Filter: query.Filter{},
+					Units:  "l3bps",
 				},
-				Filter:         query.Filter{},
-				Units:          "l3bps",
+				Points:         100,
 				PreviousPeriod: true,
 			},
 			Expected: `

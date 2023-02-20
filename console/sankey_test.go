@@ -25,15 +25,17 @@ func TestSankeyQuerySQL(t *testing.T) {
 		{
 			Description: "two dimensions, no filters, l3 bps",
 			Input: graphSankeyHandlerInput{
-				Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-				End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-				Dimensions: []query.Column{
-					query.NewColumn("SrcAS"),
-					query.NewColumn("ExporterName"),
+				graphCommonHandlerInput{
+					Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					Dimensions: []query.Column{
+						query.NewColumn("SrcAS"),
+						query.NewColumn("ExporterName"),
+					},
+					Limit:  5,
+					Filter: query.Filter{},
+					Units:  "l3bps",
 				},
-				Limit:  5,
-				Filter: query.Filter{},
-				Units:  "l3bps",
 			},
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l3bps"}@@ }}
@@ -52,15 +54,17 @@ ORDER BY xps DESC
 		}, {
 			Description: "two dimensions, no filters, l2 bps",
 			Input: graphSankeyHandlerInput{
-				Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-				End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-				Dimensions: []query.Column{
-					query.NewColumn("SrcAS"),
-					query.NewColumn("ExporterName"),
+				graphCommonHandlerInput{
+					Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					Dimensions: []query.Column{
+						query.NewColumn("SrcAS"),
+						query.NewColumn("ExporterName"),
+					},
+					Limit:  5,
+					Filter: query.Filter{},
+					Units:  "l2bps",
 				},
-				Limit:  5,
-				Filter: query.Filter{},
-				Units:  "l2bps",
 			},
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l2bps"}@@ }}
@@ -80,15 +84,17 @@ ORDER BY xps DESC
 		}, {
 			Description: "two dimensions, no filters, pps",
 			Input: graphSankeyHandlerInput{
-				Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-				End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-				Dimensions: []query.Column{
-					query.NewColumn("SrcAS"),
-					query.NewColumn("ExporterName"),
+				graphCommonHandlerInput{
+					Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					Dimensions: []query.Column{
+						query.NewColumn("SrcAS"),
+						query.NewColumn("ExporterName"),
+					},
+					Limit:  5,
+					Filter: query.Filter{},
+					Units:  "pps",
 				},
-				Limit:  5,
-				Filter: query.Filter{},
-				Units:  "pps",
 			},
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"pps"}@@ }}
@@ -107,15 +113,17 @@ ORDER BY xps DESC
 		}, {
 			Description: "two dimensions, with filter",
 			Input: graphSankeyHandlerInput{
-				Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-				End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-				Dimensions: []query.Column{
-					query.NewColumn("SrcAS"),
-					query.NewColumn("ExporterName"),
+				graphCommonHandlerInput{
+					Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					Dimensions: []query.Column{
+						query.NewColumn("SrcAS"),
+						query.NewColumn("ExporterName"),
+					},
+					Limit:  10,
+					Filter: query.NewFilter("DstCountry = 'FR'"),
+					Units:  "l3bps",
 				},
-				Limit:  10,
-				Filter: query.NewFilter("DstCountry = 'FR'"),
-				Units:  "l3bps",
 			},
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l3bps"}@@ }}

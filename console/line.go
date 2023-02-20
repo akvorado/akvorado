@@ -14,22 +14,15 @@ import (
 	"golang.org/x/exp/slices"
 
 	"akvorado/common/helpers"
-	"akvorado/common/schema"
 	"akvorado/console/query"
 )
 
 // graphLineHandlerInput describes the input for the /graph/line endpoint.
 type graphLineHandlerInput struct {
-	schema         *schema.Component
-	Start          time.Time      `json:"start" binding:"required"`
-	End            time.Time      `json:"end" binding:"required,gtfield=Start"`
-	Points         uint           `json:"points" binding:"required,min=5,max=2000"` // minimum number of points
-	Dimensions     []query.Column `json:"dimensions"`                               // group by ...
-	Limit          int            `json:"limit" binding:"min=1"`                    // limit product of dimensions
-	Filter         query.Filter   `json:"filter"`                                   // where ...
-	Units          string         `json:"units" binding:"required,oneof=pps l2bps l3bps inl2% outl2%"`
-	Bidirectional  bool           `json:"bidirectional"`
-	PreviousPeriod bool           `json:"previous-period"`
+	graphCommonHandlerInput
+	Points         uint `json:"points" binding:"required,min=5,max=2000"` // minimum number of points
+	Bidirectional  bool `json:"bidirectional"`
+	PreviousPeriod bool `json:"previous-period"`
 }
 
 // graphLineHandlerOutput describes the output for the /graph/line endpoint. A
@@ -224,7 +217,7 @@ func (input graphLineHandlerInput) toSQL() string {
 
 func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
-	input := graphLineHandlerInput{schema: c.d.Schema}
+	input := graphLineHandlerInput{graphCommonHandlerInput: graphCommonHandlerInput{schema: c.d.Schema}}
 	if err := gc.ShouldBindJSON(&input); err != nil {
 		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
 		return

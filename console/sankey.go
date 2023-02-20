@@ -8,24 +8,16 @@ import (
 	"net/http"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/gin-gonic/gin"
 
 	"akvorado/common/helpers"
-	"akvorado/common/schema"
 	"akvorado/console/query"
 )
 
 // graphSankeyHandlerInput describes the input for the /graph/sankey endpoint.
 type graphSankeyHandlerInput struct {
-	schema     *schema.Component
-	Start      time.Time      `json:"start" binding:"required"`
-	End        time.Time      `json:"end" binding:"required,gtfield=Start"`
-	Dimensions []query.Column `json:"dimensions" binding:"required,min=2"` // group by ...
-	Limit      int            `json:"limit" binding:"min=1,max=50"`        // limit product of dimensions
-	Filter     query.Filter   `json:"filter"`                              // where ...
-	Units      string         `json:"units" binding:"required,oneof=pps l3bps l2bps inl2% outl2%"`
+	graphCommonHandlerInput
 }
 
 // graphSankeyHandlerOutput describes the output for the /graph/sankey endpoint.
@@ -97,7 +89,7 @@ ORDER BY xps DESC
 
 func (c *Component) graphSankeyHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
-	input := graphSankeyHandlerInput{schema: c.d.Schema}
+	input := graphSankeyHandlerInput{graphCommonHandlerInput: graphCommonHandlerInput{schema: c.d.Schema}}
 	if err := gc.ShouldBindJSON(&input); err != nil {
 		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
 		return
@@ -108,6 +100,12 @@ func (c *Component) graphSankeyHandlerFunc(gc *gin.Context) {
 	}
 	if err := input.Filter.Validate(input.schema); err != nil {
 		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
+		return
+	}
+	if input.Limit > c.config.DimensionsLimit {
+		gc.JSON(http.StatusBadRequest,
+			gin.H{"message": fmt.Sprintf("Limit is set beyond maximum value (%d)",
+				c.config.DimensionsLimit)})
 		return
 	}
 
