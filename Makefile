@@ -34,6 +34,9 @@ all: fmt lint $(GENERATED) | $(BIN) ; $(info $(M) building executable…) @ ## B
 		-ldflags '-X $(MODULE)/cmd.Version=$(VERSION) -X $(MODULE)/cmd.BuildDate=$(DATE)' \
 		-o $(BIN)/$(basename $(MODULE)) main.go
 
+.PHONY: all_js
+all_js: .fmt-js~ .lint-js~ $(GENERATED_JS) console/data/frontend
+
 # Tools
 
 $(BIN):
