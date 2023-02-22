@@ -63,17 +63,22 @@ func DefaultConfiguration() Configuration {
 
 func (c *Component) configHandlerFunc(gc *gin.Context) {
 	dimensions := []string{}
+	truncatable := []string{}
 	for _, column := range c.d.Schema.Columns() {
 		if column.ConsoleNotDimension || column.Disabled {
 			continue
 		}
 		dimensions = append(dimensions, column.Name)
+		if column.ConsoleTruncateIP {
+			truncatable = append(truncatable, column.Name)
+		}
 	}
 	gc.JSON(http.StatusOK, gin.H{
 		"version":                 c.config.Version,
 		"defaultVisualizeOptions": c.config.DefaultVisualizeOptions,
 		"dimensionsLimit":         c.config.DimensionsLimit,
-		"homepageTopWidgets":      c.config.HomepageTopWidgets,
 		"dimensions":              dimensions,
+		"truncatable":             truncatable,
+		"homepageTopWidgets":      c.config.HomepageTopWidgets,
 	})
 }
