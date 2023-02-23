@@ -192,6 +192,8 @@ const options = computed((): InternalModelType => {
     humanEnd: timeRange.value?.end,
     dimensions: dimensions.value?.selected,
     limit: dimensions.value?.limit,
+    "truncate-v4": dimensions.value?.truncate4,
+    "truncate-v6": dimensions.value?.truncate6,
     filter: filter.value?.expression,
     units: units.value,
     bidirectional: false,
@@ -241,6 +243,8 @@ watch(
       humanEnd: defaultOptions.end,
       dimensions: toRaw(defaultOptions.dimensions),
       limit: defaultOptions.limit,
+      "truncate-v4": 32,
+      "truncate-v6": 128,
       filter: defaultOptions.filter,
       units: "l3bps",
       bidirectional: false,
@@ -258,6 +262,8 @@ watch(
     dimensions.value = {
       selected: [...currentValue.dimensions],
       limit: currentValue.limit,
+      truncate4: currentValue["truncate-v4"] || 32,
+      truncate6: currentValue["truncate-v6"] || 128,
     };
     filter.value = { expression: currentValue.filter };
     units.value = currentValue.units;
@@ -290,6 +296,8 @@ export type ModelType = {
   humanEnd: string;
   dimensions: string[];
   limit: number;
+  "truncate-v4": number;
+  "truncate-v6": number;
   filter: string;
   units: Units;
   bidirectional: boolean;

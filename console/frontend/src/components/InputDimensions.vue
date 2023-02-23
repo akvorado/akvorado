@@ -46,7 +46,28 @@
         {{ name }}
       </template>
     </InputListBox>
-    <InputString v-model="limit" label="Limit" :error="limitError" />
+    <div class="flex flex-row flex-nowrap gap-2">
+      <InputString
+        class="grow"
+        v-if="canAggregate"
+        v-model="truncate4"
+        label="IPv4 cut"
+        :error="truncate4Error"
+      />
+      <InputString
+        class="grow"
+        v-if="canAggregate"
+        v-model="truncate6"
+        label="IPv6 cut"
+        :error="truncate6Error"
+      />
+      <InputString
+        class="grow"
+        v-model="limit"
+        label="Limit"
+        :error="limitError"
+      />
+    </div>
   </div>
 </template>
 
@@ -58,7 +79,7 @@ import { dataColor } from "@/utils";
 import InputString from "@/components/InputString.vue";
 import InputListBox from "@/components/InputListBox.vue";
 import { ServerConfigKey } from "@/components/ServerConfigProvider.vue";
-import { isEqual } from "lodash-es";
+import { isEqual, intersection } from "lodash-es";
 
 const props = withDefaults(
   defineProps<{
@@ -96,7 +117,36 @@ const limitError = computed(() => {
   }
   return "";
 });
-const hasErrors = computed(() => !!limitError.value || !!dimensionsError.value);
+const canAggregate = computed(
+  () =>
+    intersection(
+      selectedDimensions.value.map((dim) => dim.name),
+      serverConfiguration.value?.truncatable || []
+    ).length > 0
+);
+const truncate4 = ref("32");
+const truncate4Error = computed(() => {
+  const val = parseInt(truncate4.value);
+  if (isNaN(val) || val <= 0 || val > 32) {
+    return "0 < x ≤ 32";
+  }
+  return "";
+});
+const truncate6 = ref("128");
+const truncate6Error = computed(() => {
+  const val = parseInt(truncate6.value);
+  if (isNaN(val) || val <= 0 || val > 128) {
+    return "0 < x ≤ 128";
+  }
+  return "";
+});
+const hasErrors = computed(
+  () =>
+    !!limitError.value ||
+    !!dimensionsError.value ||
+    !!truncate4Error.value ||
+    !!truncate6Error.value
+);
 
 const dimensions = computed(() =>
   serverConfiguration.value?.dimensions.map((v, idx) => ({
@@ -121,6 +171,8 @@ watch(
   ([value, dimensions]) => {
     if (value) {
       limit.value = value.limit.toString();
+      truncate4.value = value.truncate4.toString();
+      truncate6.value = value.truncate6.toString();
     }
     if (value)
       selectedDimensions.value = value.selected
@@ -130,14 +182,21 @@ watch(
   { immediate: true, deep: true }
 );
 watch(
-  [selectedDimensions, limit, hasErrors] as const,
-  ([selected, limit, hasErrors]) => {
+  [selectedDimensions, limit, truncate4, truncate6, hasErrors] as const,
+  ([selected, limit, truncate4, truncate6, hasErrors]) => {
     const updated = {
       selected: selected.map((d) => d.name),
       limit: parseInt(limit),
+      truncate4: parseInt(truncate4),
+      truncate6: parseInt(truncate6),
       errors: hasErrors,
     };
-    if (!isEqual(updated, props.modelValue) && !isNaN(updated.limit)) {
+    if (
+      !isEqual(updated, props.modelValue) &&
+      !isNaN(updated.limit) &&
+      !isNaN(updated.truncate4) &&
+      !isNaN(updated.truncate6)
+    ) {
       emit("update:modelValue", updated);
     }
   }
@@ -148,6 +207,8 @@ watch(
 export type ModelType = {
   selected: string[];
   limit: number;
+  truncate4: number;
+  truncate6: number;
   errors?: boolean;
 } | null;
 </script>
