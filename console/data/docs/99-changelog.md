@@ -11,7 +11,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.8.0 - 2023-02-25
 
 - 💥 *docker-compose*: the configuration files are now shipped in a `config/`
   directory: you need to move your `akvorado.yaml` in `config/` as well
