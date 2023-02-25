@@ -48,7 +48,7 @@ $ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet_flow_inpu
 Also check that the source IP for your exporters is correct. This is
 needed for Akvorado to query them using SNMP. If your exporter cannot
 answer SNMP requests on the source IP address, you can specify an
-alternative address with `inlet.snmp.agents`.
+alternative address with `inlet`→`snmp`→`agents`.
 
 ### No packets exported
 
@@ -71,7 +71,7 @@ Here is a list of generic errors you may find:
   NetFlow, the sampling rate is sent in an options data packet. Be sure to
   configure your exporter to send them (look for `sampler-table` in the
   documentation). Alternatively, you can configure
-  `inlet.core.default-sampling-rate` to workaround this issue.
+  `inlet`→`core`→`default-sampling-rate` to workaround this issue.
 - `input interface missing` means the flow does not contain the input
   interface index. This is something to fix on the exporter.
 
@@ -222,7 +222,7 @@ of workers. Workers handle SNMP requests synchronously.
 
 Use `curl -s http://akvorado/api/v0/inlet/flows\?limit=1 | grep
 SamplingRate` to check if the reported sampling rate is correct. If
-not, you can override it with `inlet.core.override-sampling-rate`.
+not, you can override it with `inlet`→`core`→`override-sampling-rate`.
 
 Another cause possible cause is when your router is configured to send
 flows for both an interface and its parent. For example, if you have

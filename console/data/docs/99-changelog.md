@@ -59,7 +59,7 @@ and `DstPort`.
 
 The orchestrator automatically defines the TTL for the system log tables (like
 `system.query_log`). The default TTL is 30 days. You can disable that by setting
-`orchestrator.clickhouse.system-logs-ttl` to 0.
+`orchestrator`→`clickhouse`→`system-logs-ttl` to 0.
 
 - ✨ *inlet*: add `schema.enabled`, `schema.disabled`, `schema.main-table-only`,
   and `schema.not-main-table-only` to alter collected data
@@ -86,12 +86,12 @@ plot the graphs in the “Visualize” tab. The default backend is in-memory,
 however the shipped `akvorado.yaml` configuration file is using Redis instead.
 The `docker-compose` setup has also been updated to start a Redis container for
 this usage. Use of Redis is preferred but on upgrade, you need to enable it
-explicitely by adding `console.http.cache` in your configuration.
+explicitely by adding `console`→`http`→`cache` in your configuration.
 
 - ✨ *console*: cache some costly requests to the backend
 - ✨ *console*: add `SrcNetPrefix` and `DstNetPrefix` (as a dimension and a filter attribute)
-- ✨ *inlet*: add `inlet.flow.inputs.use-src-addr-for-exporter-addr` to override exporter address
-- 🌱 *console*: add `limit` and `graph-type` to `console.default-visualize-options` 
+- ✨ *inlet*: add `inlet`→`flow`→`inputs`→`use-src-addr-for-exporter-addr` to override exporter address
+- 🌱 *console*: add `limit` and `graph-type` to `console`→`default-visualize-options` 
 - 🌱 *docker*: published `docker-compose.yml` file pins Akvorado image to the associated release
 - 🌱 *docker*: update Zookeeper and Kafka images (this upgrade is optional)
 
@@ -110,8 +110,8 @@ explicitely by adding `console.http.cache` in your configuration.
 
 ## 1.6.2 - 2022-11-03
 
-- ✨ *orchestrator*: add `orchestrator.network-sources` to fetch network attributes with HTTP
-- ✨ *console*: add `console.database.saved-filters` to populate filters from the configuration file
+- ✨ *orchestrator*: add `orchestrator`→`network-sources` to fetch network attributes with HTTP
+- ✨ *console*: add `console`→`database`→`saved-filters` to populate filters from the configuration file
 - 🩹 *doc*: durations must be written using a suffix (like `5s`)
 - 🌱 *docker*: provider a tarball with essential files to install or upgrade a `docker-compose` setup
 - 🌱 *inlet*: skip unknown AFI/SAFI in BMP route monitoring messages
@@ -122,18 +122,18 @@ explicitely by adding `console.http.cache` in your configuration.
 - 🩹 *inlet*: do not half-close BMP connection (a remote IOS XR closes its own end)
 - 🌱 *docker*: split demo exporters out of `docker-compose.yml`
 - 🌱 *console*: make the upper limit for dimensions configurable
-  (`console.dimensions-limit`)
+  (`console`→`dimensions-limit`)
 
 ## 1.6.0 - 2022-09-30
 
 This release features a BMP collector to grab BGP routes from one or
 several routers. The routes can be used to determine source and
 destination AS (instead of using GeoIP or information from the flows)
-but also the AS paths and the communities. Check `inlet.bmp` and
-`inlet.core` configuration settings for more information.
+but also the AS paths and the communities. Check `inlet`→`bmp` and
+`inlet`→`core` configuration settings for more information.
 
 - ✨ *inlet*: BMP collector to get AS numbers, AS paths, and communities from BGP [PR #155][]
-- ✨ *inlet*: add `inlet.snmp.agents` to override exporter IP address for SNMP queries
+- ✨ *inlet*: add `inlet`→`snmp`→`agents` to override exporter IP address for SNMP queries
 - 🩹 *inlet*: handle sFlow specific interface number for locally
   originated/terminated traffic, discarded traffic and traffic sent to
   multiple interfaces
@@ -151,24 +151,24 @@ own organisation and the code is hosted at
 
 - 💥 *console*: make ClickHouse interpolate missing values (ClickHouse 22.4+ is required)
 - 🩹 *orchestrator*: validate configuration of other services on start
-- 🩹 *inlet*: correctly parse `inlet.snmp.communities` when it is just a string
+- 🩹 *inlet*: correctly parse `inlet`→`snmp`→`communities` when it is just a string
 - 🌱 *cmd*: print a shorter message when an internal error happens when parsing configuration
-- 🌱 *inlet*: add `inlet.snmp.ports` to configure SNMP exporter ports
+- 🌱 *inlet*: add `inlet`→`snmp`→`ports` to configure SNMP exporter ports
 
 ## 1.5.7 - 2022-08-23
 
-- ✨ *inlet*: add support for flow rate-limiting with `inlet.flow.rate-limit`
+- ✨ *inlet*: add support for flow rate-limiting with `inlet`→`flow`→`rate-limit`
 - 🌱 *inlet*: improve performance of GeoIP lookup
-- 🌱 *inlet*: add `inlet.core.asn-providers` to specify how to get AS
-  numbers. `inlet.core.ignore-asn-from-flow` is deprecated and mapped
+- 🌱 *inlet*: add `inlet`→`core`→`asn-providers` to specify how to get AS
+  numbers. `inlet`→`core`→`ignore-asn-from-flow` is deprecated and mapped
   to `geoip`.
 
 ## 1.5.6 - 2022-08-16
 
 - ✨ *inlet*: add support for SNMPv3 protocol
-- 🌱 *inlet*: `inlet.snmp.default-community` is now deprecated
+- 🌱 *inlet*: `inlet`→`snmp`→`default-community` is now deprecated
 - 🌱 *console*: make “previous period” line more visible
-- 🩹 *geoip*: fix `inlet.geoip.country-database` rename to `inlet.geoip.geo-database`
+- 🩹 *geoip*: fix `inlet`→`geoip`→`country-database` rename to `inlet`→`geoip`→`geo-database`
 
 ## 1.5.5 - 2022-08-09
 
@@ -185,12 +185,12 @@ tables. This is fixed with this release, but this implies dropping the
 existing data (only the country information). See [PR #61][] for more
 details.
 
-- ✨ *inlet*: `inlet.core.default-sampling-rate` also accepts a map from subnet to sampling rate
-- ✨ *inlet*: `inlet.core.override-sampling-rate` enables overriding the sampling rate received from a device
+- ✨ *inlet*: `inlet`→`core`→`default-sampling-rate` also accepts a map from subnet to sampling rate
+- ✨ *inlet*: `inlet`→`core`→`override-sampling-rate` enables overriding the sampling rate received from a device
 - 🩹 *orchestrator*: fix `SrcCountry`/`DstCountry` columns in aggregated tables [PR #61][]
-- 🌱 *inlet*: `inlet.geoip.country-database` has been renamed to `inlet.geoip.geo-database`
+- 🌱 *inlet*: `inlet`→`geoip`→`country-database` has been renamed to `inlet`→`geoip`→`geo-database`
 - 🌱 *inlet*: add counters for GeoIP database hit/miss
-- 🌱 *inlet*: `inlet.snmp.communities` accepts subnets as keys
+- 🌱 *inlet*: `inlet`→`snmp`→`communities` accepts subnets as keys
 - 🌱 *docker-compose*: disable healthcheck for the conntrack-fixer container
 
 [PR #61]: https://github.com/akvorado/akvorado/pull/61
