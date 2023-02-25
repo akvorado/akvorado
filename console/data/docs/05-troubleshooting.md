@@ -66,11 +66,12 @@ Here is a list of generic errors you may find:
   it should not increase. If this is the case, it is likely because
   the exporter is not configured to accept SNMP requests or the
   community configured for SNMP is incorrect.
-- `sampling rate missing` means the sampling rate information is not
-  present. This is also expected when Akvorado starts but it should
-  not increase. With NetFlow, the sampling rate is sent in an options
-  data packet. Be sure to configure your exporter to send them (look
-  for `sampler-table` in the documentation).
+- `sampling rate missing` means the sampling rate information is not present.
+  This is also expected when Akvorado starts but it should not increase. With
+  NetFlow, the sampling rate is sent in an options data packet. Be sure to
+  configure your exporter to send them (look for `sampler-table` in the
+  documentation). Alternatively, you can configure
+  `inlet.core.default-sampling-rate` to workaround this issue.
 - `input interface missing` means the flow does not contain the input
   interface index. This is something to fix on the exporter.
 
