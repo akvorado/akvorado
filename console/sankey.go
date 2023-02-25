@@ -124,7 +124,7 @@ func (c *Component) graphSankeyHandlerFunc(gc *gin.Context) {
 		Dimensions []string `ch:"dimensions"`
 	}{}
 	if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
-		c.r.Err(err).Msg("unable to query database")
+		c.r.Err(err).Str("query", sqlQuery).Msg("unable to query database")
 		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to query database."})
 		return
 	}
