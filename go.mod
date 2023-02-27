@@ -23,7 +23,7 @@ require (
 	github.com/google/gopacket v1.1.19
 	github.com/gosnmp/gosnmp v1.35.0
 	github.com/itchyny/gojq v0.12.11
-	github.com/jhump/protoreflect v1.14.1
+	github.com/jhump/protoreflect v1.15.0
 	github.com/kentik/patricia v1.2.0
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-isatty v0.0.17
@@ -44,7 +44,7 @@ require (
 	golang.org/x/exp v0.0.0-20221217163422-3c43f8badb15
 	golang.org/x/sys v0.5.0
 	golang.org/x/time v0.3.0
-	google.golang.org/protobuf v1.28.1
+	google.golang.org/protobuf v1.28.2-0.20220831092852-f930b1dc76e8
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/gorm v1.24.5
@@ -55,6 +55,7 @@ require (
 	github.com/Microsoft/go-winio v0.5.2 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/bufbuild/protocompile v0.2.1-0.20230123224550-da57cd758c2f // indirect
 	github.com/bytedance/sonic v1.8.0 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
@@ -131,7 +132,6 @@ require (
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
-	google.golang.org/genproto v0.0.0-20221024183307-1bc688fe9f3e // indirect
 	gotest.tools/v3 v3.3.0 // indirect
 	modernc.org/libc v1.22.2 // indirect
 	modernc.org/mathutil v1.5.0 // indirect
