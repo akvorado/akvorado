@@ -45,7 +45,7 @@ func (input graphCommonHandlerInput) sourceSelect() string {
 				truncated = append(truncated,
 					fmt.Sprintf("tupleElement(IPv6CIDRToRange(%s, %d), 1) AS %s",
 						qc.String(), input.TruncateAddrV6, qc.String()))
-			} else if input.TruncateAddrV6 != 128 && input.TruncateAddrV4 != 32 {
+			} else {
 				truncated = append(truncated,
 					fmt.Sprintf("tupleElement(IPv6CIDRToRange(%s, if(tupleElement(IPv6CIDRToRange(%s, 96), 1) = toIPv6('::ffff:0.0.0.0'), %d, %d)), 1) AS %s",
 						qc.String(), qc.String(),

@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🩹 *console*: fix subnet aggregation when IPv4 or IPv6 is set to its default value
+
 ## 1.8.0 - 2023-02-25
 
 - 💥 *docker-compose*: the configuration files are now shipped in a `config/`
