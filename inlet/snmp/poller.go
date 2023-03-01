@@ -34,7 +34,7 @@ type realPoller struct {
 	metrics struct {
 		pendingRequests reporter.GaugeFunc
 		successes       *reporter.CounterVec
-		failures        *reporter.CounterVec
+		errors          *reporter.CounterVec
 		retries         *reporter.CounterVec
 		times           *reporter.SummaryVec
 	}
@@ -70,9 +70,9 @@ func newPoller(r *reporter.Reporter, config pollerConfig, put func(netip.Addr, s
 			Name: "poller_success_requests",
 			Help: "Number of successful requests.",
 		}, []string{"exporter"})
-	p.metrics.failures = r.CounterVec(
+	p.metrics.errors = r.CounterVec(
 		reporter.CounterOpts{
-			Name: "poller_failure_requests",
+			Name: "poller_error_requests",
 			Help: "Number of failed requests.",
 		}, []string{"exporter", "error"})
 	p.metrics.retries = r.CounterVec(
@@ -162,7 +162,7 @@ func (p *realPoller) Poll(ctx context.Context, exporter, agent netip.Addr, port 
 	}
 
 	if err := g.Connect(); err != nil {
-		p.metrics.failures.WithLabelValues(exporterStr, "connect").Inc()
+		p.metrics.errors.WithLabelValues(exporterStr, "connect").Inc()
 		p.errLogger.Err(err).Str("exporter", exporterStr).Msg("unable to connect")
 	}
 	start := time.Now()
@@ -180,7 +180,7 @@ func (p *realPoller) Poll(ctx context.Context, exporter, agent netip.Addr, port 
 		return nil
 	}
 	if err != nil {
-		p.metrics.failures.WithLabelValues(exporterStr, "get").Inc()
+		p.metrics.errors.WithLabelValues(exporterStr, "get").Inc()
 		p.errLogger.Err(err).
 			Str("exporter", exporterStr).
 			Msgf("unable to GET (%d OIDs)", len(requests))
@@ -188,7 +188,7 @@ func (p *realPoller) Poll(ctx context.Context, exporter, agent netip.Addr, port 
 	}
 	if result.Error != gosnmp.NoError && result.ErrorIndex == 0 {
 		// There is some error affecting the whole request
-		p.metrics.failures.WithLabelValues(exporterStr, "get").Inc()
+		p.metrics.errors.WithLabelValues(exporterStr, "get").Inc()
 		p.errLogger.Error().
 			Str("exporter", exporterStr).
 			Stringer("code", result.Error).
@@ -201,10 +201,10 @@ func (p *realPoller) Poll(ctx context.Context, exporter, agent netip.Addr, port 
 		case gosnmp.OctetString:
 			*target = string(result.Variables[idx].Value.([]byte))
 		case gosnmp.NoSuchInstance, gosnmp.NoSuchObject:
-			p.metrics.failures.WithLabelValues(exporterStr, fmt.Sprintf("%s missing", what)).Inc()
+			p.metrics.errors.WithLabelValues(exporterStr, fmt.Sprintf("%s missing", what)).Inc()
 			return false
 		default:
-			p.metrics.failures.WithLabelValues(exporterStr, fmt.Sprintf("%s unknown type", what)).Inc()
+			p.metrics.errors.WithLabelValues(exporterStr, fmt.Sprintf("%s unknown type", what)).Inc()
 			return false
 		}
 		return true
@@ -214,10 +214,10 @@ func (p *realPoller) Poll(ctx context.Context, exporter, agent netip.Addr, port 
 		case gosnmp.Gauge32:
 			*target = result.Variables[idx].Value.(uint)
 		case gosnmp.NoSuchInstance, gosnmp.NoSuchObject:
-			p.metrics.failures.WithLabelValues(exporterStr, fmt.Sprintf("%s missing", what)).Inc()
+			p.metrics.errors.WithLabelValues(exporterStr, fmt.Sprintf("%s missing", what)).Inc()
 			return false
 		default:
-			p.metrics.failures.WithLabelValues(exporterStr, fmt.Sprintf("%s unknown type", what)).Inc()
+			p.metrics.errors.WithLabelValues(exporterStr, fmt.Sprintf("%s unknown type", what)).Inc()
 			return false
 		}
 		return true

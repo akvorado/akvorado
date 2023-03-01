@@ -205,11 +205,11 @@ func TestPoller(t *testing.T) {
 				t.Fatalf("Poll() (-got, +want):\n%s", diff)
 			}
 
-			gotMetrics := r.GetMetrics("akvorado_inlet_snmp_poller_", "failure_", "pending_", "success_")
+			gotMetrics := r.GetMetrics("akvorado_inlet_snmp_poller_", "error_", "pending_", "success_")
 			expectedMetrics := map[string]string{
-				`failure_requests{error="ifalias missing",exporter="127.0.0.1"}`: "2", // 643+644
-				`failure_requests{error="ifdescr missing",exporter="127.0.0.1"}`: "1", // 644
-				`failure_requests{error="ifspeed missing",exporter="127.0.0.1"}`: "1", // 644
+				`error_requests{error="ifalias missing",exporter="127.0.0.1"}`: "2", // 643+644
+				`error_requests{error="ifdescr missing",exporter="127.0.0.1"}`: "1", // 644
+				`error_requests{error="ifspeed missing",exporter="127.0.0.1"}`: "1", // 644
 				`pending_requests`:                       "0",
 				`success_requests{exporter="127.0.0.1"}`: "3", // 641+642+0
 			}
