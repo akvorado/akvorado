@@ -10,7 +10,7 @@ jobs:
     name: Update Nix lockfile
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: cachix/install-nix-action@v20
       - name: Update Nix lockfile
         run: nix flake lock --update-input nixpkgs
