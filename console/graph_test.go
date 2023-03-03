@@ -23,7 +23,7 @@ func TestSourceSelect(t *testing.T) {
 			Input: graphCommonHandlerInput{
 				Dimensions: []query.Column{},
 			},
-			Expected: "SELECT * FROM {{ .Table }}",
+			Expected: "SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1",
 		}, {
 			Description: "no truncatable dimensions",
 			Input: graphCommonHandlerInput{
@@ -31,13 +31,13 @@ func TestSourceSelect(t *testing.T) {
 				TruncateAddrV4: 16,
 				TruncateAddrV6: 40,
 			},
-			Expected: "SELECT * FROM {{ .Table }}",
+			Expected: "SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1",
 		}, {
 			Description: "no truncatation",
 			Input: graphCommonHandlerInput{
 				Dimensions: []query.Column{query.NewColumn("SrcAddr")},
 			},
-			Expected: "SELECT * FROM {{ .Table }}",
+			Expected: "SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1",
 		}, {
 			Description: "IPv4/IPv6 same prefix length",
 			Input: graphCommonHandlerInput{
@@ -45,7 +45,7 @@ func TestSourceSelect(t *testing.T) {
 				TruncateAddrV4: 16,
 				TruncateAddrV6: 112,
 			},
-			Expected: "SELECT * REPLACE (tupleElement(IPv6CIDRToRange(SrcAddr, 112), 1) AS SrcAddr) FROM {{ .Table }}",
+			Expected: "SELECT * REPLACE (tupleElement(IPv6CIDRToRange(SrcAddr, 112), 1) AS SrcAddr) FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1",
 		}, {
 			Description: "IPv4/IPv6 different prefix length",
 			Input: graphCommonHandlerInput{
@@ -53,7 +53,7 @@ func TestSourceSelect(t *testing.T) {
 				TruncateAddrV4: 24,
 				TruncateAddrV6: 40,
 			},
-			Expected: "SELECT * REPLACE (tupleElement(IPv6CIDRToRange(SrcAddr, if(tupleElement(IPv6CIDRToRange(SrcAddr, 96), 1) = toIPv6('::ffff:0.0.0.0'), 120, 40)), 1) AS SrcAddr) FROM {{ .Table }}",
+			Expected: "SELECT * REPLACE (tupleElement(IPv6CIDRToRange(SrcAddr, if(tupleElement(IPv6CIDRToRange(SrcAddr, 96), 1) = toIPv6('::ffff:0.0.0.0'), 120, 40)), 1) AS SrcAddr) FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1",
 		},
 	}
 	for _, tc := range cases {

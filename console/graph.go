@@ -55,7 +55,7 @@ func (input graphCommonHandlerInput) sourceSelect() string {
 		}
 	}
 	if len(truncated) == 0 {
-		return "SELECT * FROM {{ .Table }}"
+		return "SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1"
 	}
-	return fmt.Sprintf("SELECT * REPLACE (%s) FROM {{ .Table }}", strings.Join(truncated, ", "))
+	return fmt.Sprintf("SELECT * REPLACE (%s) FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1", strings.Join(truncated, ", "))
 }

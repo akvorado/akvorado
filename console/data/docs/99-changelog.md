@@ -14,6 +14,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🩹 *console*: fix subnet aggregation when IPv4 or IPv6 is set to its default value
+- 🩹 *console*: fix `SrcNetPrefix`, `DstNetPrefix`, `PacketSize`, and `PacketSizeBucket` dimensions
 
 ## 1.8.0 - 2023-02-25
 

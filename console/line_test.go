@@ -167,7 +167,7 @@ func TestGraphQuerySQL(t *testing.T) {
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
 WITH
- source AS (SELECT * FROM {{ .Table }})
+ source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
@@ -197,7 +197,7 @@ ORDER BY time WITH FILL
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l2bps"}@@ }}
 WITH
- source AS (SELECT * FROM {{ .Table }})
+ source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
@@ -228,7 +228,7 @@ ORDER BY time WITH FILL
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"pps"}@@ }}
 WITH
- source AS (SELECT * FROM {{ .Table }})
+ source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
@@ -260,7 +260,7 @@ ORDER BY time WITH FILL
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","main-table-required":true,"points":100,"units":"l3bps"}@@ }}
 WITH
- source AS (SELECT * REPLACE (tupleElement(IPv6CIDRToRange(SrcAddr, if(tupleElement(IPv6CIDRToRange(SrcAddr, 96), 1) = toIPv6('::ffff:0.0.0.0'), 120, 48)), 1) AS SrcAddr) FROM {{ .Table }}),
+ source AS (SELECT * REPLACE (tupleElement(IPv6CIDRToRange(SrcAddr, if(tupleElement(IPv6CIDRToRange(SrcAddr, 96), 1) = toIPv6('::ffff:0.0.0.0'), 120, 48)), 1) AS SrcAddr) FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  rows AS (SELECT SrcAddr FROM source WHERE {{ .Timefilter }} AND (SrcAddr BETWEEN toIPv6('::ffff:1.0.0.0') AND toIPv6('::ffff:1.255.255.255')) GROUP BY SrcAddr ORDER BY SUM(Bytes) DESC LIMIT 0)
 SELECT 1 AS axis, * FROM (
 SELECT
@@ -291,7 +291,7 @@ ORDER BY time WITH FILL
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
 WITH
- source AS (SELECT * FROM {{ .Table }})
+ source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
@@ -321,7 +321,7 @@ ORDER BY time WITH FILL
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
 WITH
- source AS (SELECT * FROM {{ .Table }})
+ source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
@@ -352,7 +352,7 @@ ORDER BY time WITH FILL
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
 WITH
- source AS (SELECT * FROM {{ .Table }})
+ source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
@@ -399,7 +399,7 @@ ORDER BY time WITH FILL
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"inl2%"}@@ }}
 WITH
- source AS (SELECT * FROM {{ .Table }})
+ source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
@@ -449,7 +449,7 @@ ORDER BY time WITH FILL
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
 WITH
- source AS (SELECT * FROM {{ .Table }}),
+ source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes) DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
 SELECT
@@ -485,7 +485,7 @@ ORDER BY time WITH FILL
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
 WITH
- source AS (SELECT * FROM {{ .Table }}),
+ source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes) DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
 SELECT
@@ -537,7 +537,7 @@ ORDER BY time WITH FILL
 			Expected: `
 {{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
 WITH
- source AS (SELECT * FROM {{ .Table }}),
+ source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY SUM(Bytes) DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
 SELECT

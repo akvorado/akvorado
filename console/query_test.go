@@ -25,6 +25,7 @@ func TestRequireMainTable(t *testing.T) {
 		{[]query.Column{query.NewColumn("DstAddr")}, query.NewFilter(""), true},
 		{[]query.Column{query.NewColumn("SrcAS"), query.NewColumn("DstAddr")}, query.NewFilter(""), true},
 		{[]query.Column{query.NewColumn("DstAddr"), query.NewColumn("SrcAS")}, query.NewFilter(""), true},
+		{[]query.Column{query.NewColumn("DstNetPrefix")}, query.NewFilter(""), true},
 		{[]query.Column{}, query.NewFilter("SrcAddr = 203.0.113.15"), true},
 	}
 	sch := schema.NewMock(t)
