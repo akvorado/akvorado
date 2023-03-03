@@ -11,10 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: cachix/install-nix-action@v18
-        with:
-          extra_nix_config: |
-            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/install-nix-action@v20
       - name: Update Nix lockfile
         run: nix flake lock --update-input nixpkgs
       - name: Create pull request
