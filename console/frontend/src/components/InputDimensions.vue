@@ -48,22 +48,22 @@
     </InputListBox>
     <div class="flex flex-row flex-nowrap gap-2">
       <InputString
-        class="grow"
         v-if="canAggregate"
         v-model="truncate4"
-        label="IPv4 cut"
+        class="grow"
+        label="IPv4 /x"
         :error="truncate4Error"
       />
       <InputString
-        class="grow"
         v-if="canAggregate"
         v-model="truncate6"
-        label="IPv6 cut"
+        class="grow"
+        label="IPv6 /x"
         :error="truncate6Error"
       />
       <InputString
-        class="grow"
         v-model="limit"
+        class="grow"
         label="Limit"
         :error="limitError"
       />
