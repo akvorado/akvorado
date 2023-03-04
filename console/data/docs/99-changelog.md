@@ -11,7 +11,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.8.1 - 2023-03-04
 
 - 🩹 *console*: fix subnet aggregation when IPv4 or IPv6 is set to its default value
 - 🩹 *console*: fix `SrcNetPrefix`, `DstNetPrefix`, `PacketSize`, and `PacketSizeBucket` dimensions
