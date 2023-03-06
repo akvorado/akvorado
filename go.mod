@@ -22,7 +22,7 @@ require (
 	github.com/golang/mock v1.6.0
 	github.com/google/gopacket v1.1.19
 	github.com/gosnmp/gosnmp v1.35.0
-	github.com/itchyny/gojq v0.12.11
+	github.com/itchyny/gojq v0.12.12
 	github.com/jhump/protoreflect v1.15.1
 	github.com/kentik/patricia v1.2.0
 	github.com/kylelemons/godebug v1.1.0
