@@ -44,7 +44,7 @@ require (
 	golang.org/x/exp v0.0.0-20221217163422-3c43f8badb15
 	golang.org/x/sys v0.6.0
 	golang.org/x/time v0.3.0
-	google.golang.org/protobuf v1.28.2-0.20230222093303-bc1253ad3743
+	google.golang.org/protobuf v1.29.0
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/gorm v1.24.6
