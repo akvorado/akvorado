@@ -185,7 +185,7 @@ type logCoalescePoller struct {
 	received []lookupRequest
 }
 
-func (fcp *logCoalescePoller) Poll(ctx context.Context, exporterIP, agentIP netip.Addr, port uint16, ifIndexes []uint) error {
+func (fcp *logCoalescePoller) Poll(_ context.Context, exporterIP, _ netip.Addr, _ uint16, ifIndexes []uint) error {
 	fcp.received = append(fcp.received, lookupRequest{exporterIP, ifIndexes})
 	return nil
 }
@@ -235,7 +235,7 @@ func TestCoalescing(t *testing.T) {
 
 type errorPoller struct{}
 
-func (fcp *errorPoller) Poll(ctx context.Context, exporterIP, agentIP netip.Addr, port uint16, ifIndexes []uint) error {
+func (fcp *errorPoller) Poll(_ context.Context, _, _ netip.Addr, _ uint16, _ []uint) error {
 	return errors.New("noooo")
 }
 
@@ -285,7 +285,7 @@ type agentLogPoller struct {
 	mu           sync.Mutex
 }
 
-func (alp *agentLogPoller) Poll(ctx context.Context, exporterIP, agentIP netip.Addr, port uint16, ifIndexes []uint) error {
+func (alp *agentLogPoller) Poll(_ context.Context, exporterIP, agentIP netip.Addr, _ uint16, _ []uint) error {
 	alp.mu.Lock()
 	defer alp.mu.Unlock()
 	alp.lastExporter = exporterIP.Unmap().String()

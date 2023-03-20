@@ -39,5 +39,5 @@ func (c *MockComponent) Stop() error {
 }
 
 // Track does nothing
-func (c *MockComponent) Track(t *tomb.Tomb, who string) {
+func (c *MockComponent) Track(_ *tomb.Tomb, _ string) {
 }

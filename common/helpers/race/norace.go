@@ -20,13 +20,13 @@ func Enable() {
 }
 
 // Acquire has the same semantics as runtime.Acquire.
-func Acquire(addr unsafe.Pointer) {
+func Acquire(_ unsafe.Pointer) {
 }
 
 // Release has the same semantics as runtime.Release.
-func Release(addr unsafe.Pointer) {
+func Release(_ unsafe.Pointer) {
 }
 
 // ReleaseMerge has the same semantics as runtime.ReleaseMerge.
-func ReleaseMerge(addr unsafe.Pointer) {
+func ReleaseMerge(_ unsafe.Pointer) {
 }

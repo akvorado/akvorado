@@ -135,7 +135,7 @@ func (c *Component) docsHandlerFunc(gc *gin.Context) {
 
 type internalLinkTransformer struct{}
 
-func (r *internalLinkTransformer) Transform(node *ast.Document, reader text.Reader, pc parser.Context) {
+func (r *internalLinkTransformer) Transform(node *ast.Document, _ text.Reader, _ parser.Context) {
 	replaceLinks := func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
 			return ast.WalkContinue, nil
@@ -156,7 +156,7 @@ type imageEmbedder struct {
 	root fs.FS
 }
 
-func (r *imageEmbedder) Transform(node *ast.Document, reader text.Reader, pc parser.Context) {
+func (r *imageEmbedder) Transform(node *ast.Document, _ text.Reader, _ parser.Context) {
 	replaceLinks := func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
 			return ast.WalkContinue, nil
@@ -187,7 +187,7 @@ type tocLogger struct {
 	headers []Header
 }
 
-func (r *tocLogger) Transform(node *ast.Document, reader text.Reader, pc parser.Context) {
+func (r *tocLogger) Transform(node *ast.Document, reader text.Reader, _ parser.Context) {
 	r.headers = []Header{}
 	logHeaders := func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {

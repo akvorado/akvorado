@@ -44,6 +44,6 @@ func NewMock(t *testing.T, r *reporter.Reporter, config Configuration) *Componen
 }
 
 // Inject inject the provided flow message, as if it was received.
-func (c *Component) Inject(t *testing.T, fmsg *schema.FlowMessage) {
+func (c *Component) Inject(fmsg *schema.FlowMessage) {
 	c.outgoingFlows <- fmsg
 }

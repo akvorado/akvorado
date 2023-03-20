@@ -20,16 +20,13 @@ func (nd *Decoder) decode(msgDec interface{}, samplingRateSys producer.SamplingR
 	var obsDomainID uint32
 	var dataFlowSet []netflow.DataFlowSet
 	var optionsDataFlowSet []netflow.OptionsDataFlowSet
-	var version int
 	switch msgDecConv := msgDec.(type) {
 	case netflow.NFv9Packet:
 		dataFlowSet, _, _, optionsDataFlowSet = producer.SplitNetFlowSets(msgDecConv)
 		obsDomainID = msgDecConv.SourceId
-		version = 9
 	case netflow.IPFIXPacket:
 		dataFlowSet, _, _, optionsDataFlowSet = producer.SplitIPFIXSets(msgDecConv)
 		obsDomainID = msgDecConv.ObservationDomainId
-		version = 10
 	default:
 		return nil
 	}
@@ -47,7 +44,7 @@ func (nd *Decoder) decode(msgDec interface{}, samplingRateSys producer.SamplingR
 	// Parse fields
 	for _, dataFlowSetItem := range dataFlowSet {
 		for _, record := range dataFlowSetItem.Records {
-			flow := nd.decodeRecord(version, record.Values)
+			flow := nd.decodeRecord(record.Values)
 			if flow != nil {
 				flow.SamplingRate = samplingRate
 				flowMessageSet = append(flowMessageSet, flow)
@@ -58,7 +55,7 @@ func (nd *Decoder) decode(msgDec interface{}, samplingRateSys producer.SamplingR
 	return flowMessageSet
 }
 
-func (nd *Decoder) decodeRecord(version int, fields []netflow.DataField) *schema.FlowMessage {
+func (nd *Decoder) decodeRecord(fields []netflow.DataField) *schema.FlowMessage {
 	var etype uint16
 	bf := &schema.FlowMessage{}
 	for _, field := range fields {

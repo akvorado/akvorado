@@ -31,7 +31,7 @@ func newMockPoller(configuration Configuration, put func(netip.Addr, string, uin
 }
 
 // Poll just builds synthetic data.
-func (p *mockPoller) Poll(ctx context.Context, exporter, agent netip.Addr, port uint16, ifIndexes []uint) error {
+func (p *mockPoller) Poll(_ context.Context, exporter, _ netip.Addr, _ uint16, ifIndexes []uint) error {
 	for _, ifIndex := range ifIndexes {
 		if p.config.Communities.LookupOrDefault(exporter, "public") == "public" {
 			p.put(exporter, strings.ReplaceAll(exporter.Unmap().String(), ".", "_"), ifIndex, Interface{

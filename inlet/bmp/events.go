@@ -183,10 +183,10 @@ func (c *Component) handlePeerUpNotification(pkey peerKey, body *bmp.BMPPeerUpNo
 	for _, param := range received.OptParams {
 		switch param := param.(type) {
 		case *bgp.OptionParameterCapability:
-			for _, cap := range param.Capability {
-				switch cap := cap.(type) {
+			for _, capability := range param.Capability {
+				switch capability := capability.(type) {
 				case *bgp.CapAddPath:
-					for _, tuple := range cap.Tuples {
+					for _, tuple := range capability.Tuples {
 						receivedAddPath[tuple.RouteFamily] = tuple.Mode
 					}
 				}
@@ -198,10 +198,10 @@ func (c *Component) handlePeerUpNotification(pkey peerKey, body *bmp.BMPPeerUpNo
 	for _, param := range sent.OptParams {
 		switch param := param.(type) {
 		case *bgp.OptionParameterCapability:
-			for _, cap := range param.Capability {
-				switch cap := cap.(type) {
+			for _, capability := range param.Capability {
+				switch capability := capability.(type) {
 				case *bgp.CapAddPath:
-					for _, sent := range cap.Tuples {
+					for _, sent := range capability.Tuples {
 						receivedMode := receivedAddPath[sent.RouteFamily]
 						if receivedMode == bgp.BGP_ADD_PATH_BOTH || receivedMode == bgp.BGP_ADD_PATH_SEND {
 							if sent.Mode == bgp.BGP_ADD_PATH_BOTH || sent.Mode == bgp.BGP_ADD_PATH_RECEIVE {

@@ -28,7 +28,7 @@ type Logger struct {
 }
 
 // New creates a new logger
-func New(config Configuration) (Logger, error) {
+func New(_ Configuration) (Logger, error) {
 	// Initialize the logger
 	logger := log.Logger.Hook(contextHook{})
 	return Logger{logger}, nil
@@ -37,7 +37,7 @@ func New(config Configuration) (Logger, error) {
 type contextHook struct{}
 
 // Run adds more context to an event, including "module" and "caller".
-func (h contextHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
+func (h contextHook) Run(e *zerolog.Event, _ zerolog.Level, _ string) {
 	callStack := stack.Callers()
 	callStack = callStack[3:] // Trial and error, there is a test to check it works
 	caller := callStack[0].SourceFile(true)

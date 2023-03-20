@@ -235,10 +235,7 @@ func (p *realPoller) Poll(ctx context.Context, exporter, agent netip.Addr, port 
 		ifIndex := ifIndexes[(idx-1)/3]
 		ok := true
 		// We do not process results when index is 0 (this can happen for local
-		// traffic, we only care for exporter name).
-		if ifIndex > 0 && !processStr(idx, "ifdescr", &ifDescrVal) {
-			// This is not mandatory.
-		}
+		// traffic, we only care for exporter name). ifDescr is not mandatory.
 		if ifIndex > 0 && !processStr(idx+1, "ifalias", &ifAliasVal) {
 			ok = false
 		}

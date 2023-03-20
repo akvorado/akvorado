@@ -189,9 +189,9 @@ func DefaultHook() (mapstructure.DecodeHookFunc, func()) {
 				}
 			}
 			if to.IsNil() {
-				new := reflect.New(to.Type().Elem())
-				method.Func.Call([]reflect.Value{new})
-				to.Set(new)
+				newV := reflect.New(to.Type().Elem())
+				method.Func.Call([]reflect.Value{newV})
+				to.Set(newV)
 				return from.Interface(), nil
 			}
 			method.Func.Call([]reflect.Value{to})

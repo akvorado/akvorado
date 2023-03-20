@@ -547,12 +547,11 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 						}
 						return nil
 					})
-			} else {
-				// We should not get a message, but that's not possible to test.
 			}
-			flowComponent.Inject(t, tc.InputFlow())
+			// Else, we should not get a message, but that's not possible to test.
+			flowComponent.Inject(tc.InputFlow())
 			time.Sleep(50 * time.Millisecond) // Needed to let poller does its job
-			flowComponent.Inject(t, tc.InputFlow())
+			flowComponent.Inject(tc.InputFlow())
 			if tc.OutputFlow != nil {
 				select {
 				case <-received:

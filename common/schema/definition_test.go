@@ -44,9 +44,9 @@ func TestColumnIndex(t *testing.T) {
 
 func TestFinalizeTwice(t *testing.T) {
 	c := NewMock(t)
-	old := c.Schema
-	new := c.finalize()
-	if diff := helpers.Diff(old, new, helpers.DiffUnexported); diff != "" {
+	oldSchema := c.Schema
+	newSchema := c.finalize()
+	if diff := helpers.Diff(oldSchema, newSchema, helpers.DiffUnexported); diff != "" {
 		t.Fatalf("finalize() (-old, +new):\n%s", diff)
 	}
 }

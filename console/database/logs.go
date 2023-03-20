@@ -22,19 +22,19 @@ func (l *logger) LogMode(gormlogger.LogLevel) gormlogger.Interface {
 	return l
 }
 
-func (l *logger) Info(ctx context.Context, s string, args ...interface{}) {
+func (l *logger) Info(_ context.Context, s string, args ...interface{}) {
 	l.r.Info().Msgf(s, args...)
 }
 
-func (l *logger) Warn(ctx context.Context, s string, args ...interface{}) {
+func (l *logger) Warn(_ context.Context, s string, args ...interface{}) {
 	l.r.Warn().Msgf(s, args...)
 }
 
-func (l *logger) Error(ctx context.Context, s string, args ...interface{}) {
+func (l *logger) Error(_ context.Context, s string, args ...interface{}) {
 	l.r.Error().Msgf(s, args...)
 }
 
-func (l *logger) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
+func (l *logger) Trace(_ context.Context, begin time.Time, fc func() (string, int64), err error) {
 	elapsed := time.Since(begin)
 	sql, _ := fc()
 	fields := gin.H{

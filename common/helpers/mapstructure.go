@@ -148,9 +148,9 @@ func ParametrizedConfigurationUnmarshallerHook[OuterConfiguration any, InnerConf
 			// Use the value we already have instead of default.
 			original = reflect.Indirect(configField.Elem())
 		}
-		copy := reflect.New(original.Type())
-		copy.Elem().Set(reflect.ValueOf(original.Interface()))
-		configField.Set(copy)
+		copied := reflect.New(original.Type())
+		copied.Elem().Set(reflect.ValueOf(original.Interface()))
+		configField.Set(copied)
 
 		// Resume decoding
 		return from.Interface(), nil

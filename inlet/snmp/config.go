@@ -117,9 +117,7 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 			// communities should contain ::/0
 			if mapKey == nil {
 				from.SetMapIndex(reflect.ValueOf("communities"), reflect.ValueOf("public"))
-			} else if communities.Kind() == reflect.String {
-				// Do nothing
-			} else if !communities.MapIndex(reflect.ValueOf("::/0")).IsValid() {
+			} else if communities.Kind() != reflect.String && !communities.MapIndex(reflect.ValueOf("::/0")).IsValid() {
 				communities.SetMapIndex(reflect.ValueOf("::/0"), reflect.ValueOf("public"))
 			}
 		}
