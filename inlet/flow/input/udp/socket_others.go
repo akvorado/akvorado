@@ -13,6 +13,6 @@ var (
 )
 
 // parseSocketControlMessage always returns 0.
-func parseSocketControlMessage(b []byte) (oobMessage, error) {
+func parseSocketControlMessage(_ []byte) (oobMessage, error) {
 	return oobMessage{}, nil
 }
