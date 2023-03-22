@@ -219,7 +219,13 @@ func (c *Component) classifyInterface(t time.Time, ip string, exporterName strin
 		return true
 	}
 	si := exporterInfo{IP: ip, Name: exporterName}
-	ii := interfaceInfo{Index: ifIndex, Name: *ifName, Description: *ifDescription, Speed: ifSpeed, VLAN: ifVlan}
+	ii := interfaceInfo{
+		Index:       ifIndex,
+		Name:        *ifName,
+		Description: *ifDescription,
+		Speed:       ifSpeed,
+		VLAN:        ifVlan,
+	}
 	key := exporterAndInterfaceInfo{
 		Exporter:  si,
 		Interface: ii,
