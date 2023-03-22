@@ -85,10 +85,10 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	// Classification
 	if !c.classifyExporter(t, exporterStr, flowExporterName, flow) ||
 		!c.classifyInterface(t, exporterStr, flowExporterName, flow,
-			flowOutIfIndex, &flowOutIfName, &flowOutIfDescription, flowOutIfSpeed, flowOutIfVlan,
+			flowOutIfIndex, flowOutIfName, flowOutIfDescription, flowOutIfSpeed, flowOutIfVlan,
 			false) ||
 		!c.classifyInterface(t, exporterStr, flowExporterName, flow,
-			flowInIfIndex, &flowInIfName, &flowInIfDescription, flowInIfSpeed, flowInIfVlan,
+			flowInIfIndex, flowInIfName, flowInIfDescription, flowInIfSpeed, flowInIfVlan,
 			true) {
 		// Flow is rejected
 		return true
@@ -118,10 +118,6 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	}
 
 	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnExporterName, []byte(flowExporterName))
-	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnInIfName, []byte(flowInIfName))
-	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnInIfDescription, []byte(flowInIfDescription))
-	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnOutIfName, []byte(flowOutIfName))
-	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnOutIfDescription, []byte(flowOutIfDescription))
 	c.d.Schema.ProtobufAppendVarint(flow, schema.ColumnInIfSpeed, uint64(flowInIfSpeed))
 	c.d.Schema.ProtobufAppendVarint(flow, schema.ColumnOutIfSpeed, uint64(flowOutIfSpeed))
 
@@ -186,8 +182,7 @@ func (c *Component) classifyExporter(t time.Time, ip string, name string, flow *
 				Str("exporter", name).
 				Msg("error executing classifier")
 			c.metrics.classifierErrors.WithLabelValues("exporter", strconv.Itoa(idx)).Inc()
-			c.classifierExporterCache.Put(t, si, classification)
-			return true // on error, we don't drop the flow
+			break
 		}
 		if classification.Group == "" || classification.Role == "" || classification.Site == "" || classification.Region == "" || classification.Tenant == "" {
 			continue
@@ -203,10 +198,14 @@ func (c *Component) writeInterface(flow *schema.FlowMessage, classification inte
 		return false
 	}
 	if directionIn {
+		c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnInIfName, []byte(classification.Name))
+		c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnInIfDescription, []byte(classification.Description))
 		c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnInIfConnectivity, []byte(classification.Connectivity))
 		c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnInIfProvider, []byte(classification.Provider))
 		c.d.Schema.ProtobufAppendVarint(flow, schema.ColumnInIfBoundary, uint64(classification.Boundary))
 	} else {
+		c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnOutIfName, []byte(classification.Name))
+		c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnOutIfDescription, []byte(classification.Description))
 		c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnOutIfConnectivity, []byte(classification.Connectivity))
 		c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnOutIfProvider, []byte(classification.Provider))
 		c.d.Schema.ProtobufAppendVarint(flow, schema.ColumnOutIfBoundary, uint64(classification.Boundary))
@@ -214,15 +213,19 @@ func (c *Component) writeInterface(flow *schema.FlowMessage, classification inte
 	return true
 }
 
-func (c *Component) classifyInterface(t time.Time, ip string, exporterName string, fl *schema.FlowMessage, ifIndex uint32, ifName, ifDescription *string, ifSpeed uint32, ifVlan uint16, directionIn bool) bool {
+func (c *Component) classifyInterface(t time.Time, ip string, exporterName string, fl *schema.FlowMessage, ifIndex uint32, ifName, ifDescription string, ifSpeed uint32, ifVlan uint16, directionIn bool) bool {
 	if len(c.config.InterfaceClassifiers) == 0 {
+		c.writeInterface(fl, interfaceClassification{
+			Name:        ifName,
+			Description: ifDescription,
+		}, directionIn)
 		return true
 	}
 	si := exporterInfo{IP: ip, Name: exporterName}
 	ii := interfaceInfo{
 		Index:       ifIndex,
-		Name:        *ifName,
-		Description: *ifDescription,
+		Name:        ifName,
+		Description: ifDescription,
 		Speed:       ifSpeed,
 		VLAN:        ifVlan,
 	}
@@ -242,17 +245,10 @@ func (c *Component) classifyInterface(t time.Time, ip string, exporterName strin
 				Str("type", "interface").
 				Int("index", idx).
 				Str("exporter", exporterName).
-				Str("interface", *ifName).
+				Str("interface", ifName).
 				Msg("error executing classifier")
 			c.metrics.classifierErrors.WithLabelValues("interface", strconv.Itoa(idx)).Inc()
-			c.classifierInterfaceCache.Put(t, key, classification)
-			return true // on error, we don't drop the flow
-		}
-		if classification.Name != "" {
-			*ifName = classification.Name
-		}
-		if classification.Description != "" {
-			*ifDescription = classification.Description
+			break
 		}
 		if classification.Connectivity == "" || classification.Provider == "" {
 			continue
@@ -261,6 +257,12 @@ func (c *Component) classifyInterface(t time.Time, ip string, exporterName strin
 			continue
 		}
 		break
+	}
+	if classification.Name == "" {
+		classification.Name = ifName
+	}
+	if classification.Description == "" {
+		classification.Description = ifDescription
 	}
 	c.classifierInterfaceCache.Put(t, key, classification)
 	return c.writeInterface(fl, classification, directionIn)

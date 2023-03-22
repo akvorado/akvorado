@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🩹 *inlet*: fix caching when setting interface name or description
+
 ## 1.8.1 - 2023-03-04
 
 - 🩹 *console*: fix subnet aggregation when IPv4 or IPv6 is set to its default value
