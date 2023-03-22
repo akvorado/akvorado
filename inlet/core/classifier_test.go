@@ -205,6 +205,30 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")
 				Provider:     "telia",
 				Boundary:     externalBoundary,
 			},
+		}, {
+			Description: "classify with VLANs",
+			Program:     `Interface.VLAN == 100 && ClassifyExternal()`,
+			InterfaceInfo: interfaceInfo{
+				Name:        "Gi0/0/0",
+				Description: "Transit: Telia (GWDM something something)",
+				Speed:       1000,
+				VLAN:        100,
+			},
+			ExpectedClassification: interfaceClassification{
+				Boundary: externalBoundary,
+			},
+		}, {
+			Description: "classify with another VLAN",
+			Program:     `Interface.VLAN == 100 && ClassifyExternal()`,
+			InterfaceInfo: interfaceInfo{
+				Name:        "Gi0/0/0",
+				Description: "Transit: Telia (GWDM something something)",
+				Speed:       1000,
+				VLAN:        200,
+			},
+			ExpectedClassification: interfaceClassification{
+				Boundary: undefinedBoundary,
+			},
 		},
 	}
 	for _, tc := range cases {
