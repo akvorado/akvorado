@@ -396,9 +396,10 @@ TTL TimeReceived + toIntervalSecond({{ .TTL }})
 		CompressionCodec string `ch:"compression_codec"`
 		IsSortingKey     uint8  `ch:"is_in_sorting_key"`
 		IsPrimaryKey     uint8  `ch:"is_in_primary_key"`
+		DefaultKind      string `ch:"default_kind"`
 	}
 	if err := c.d.ClickHouse.Select(ctx, &existingColumns, `
-SELECT name, type, compression_codec, is_in_sorting_key, is_in_primary_key
+SELECT name, type, compression_codec, is_in_sorting_key, is_in_primary_key, default_kind
 FROM system.columns
 WHERE database = $1
 AND table = $2
@@ -433,6 +434,21 @@ outer:
 						modifyTypeOrCodec = true
 					}
 				}
+				// change alias existence has changed. ALIAS expression changes are not yet checked here.
+				if (wantedColumn.ClickHouseAlias != "") != (existingColumn.DefaultKind == "ALIAS") {
+					// either the column was an alias and should be none, or the other way around. Either way, we need to recreate.
+					c.r.Logger.Debug().Msg(fmt.Sprintf("column %s alias content has changed, recreating. New ALIAS: %s", existingColumn.Name, wantedColumn.ClickHouseAlias))
+					err := c.d.ClickHouse.Exec(ctx,
+						fmt.Sprintf("ALTER TABLE %s DROP COLUMN %s", tableName, existingColumn.Name))
+					if err != nil {
+						return fmt.Errorf("cannot drop %s from %s to cleanup aliasing: %w",
+							existingColumn.Name, tableName, err)
+					}
+					// Schedule adding it back
+					modifications = append(modifications,
+						fmt.Sprintf("ADD COLUMN %s AFTER %s", wantedColumn.ClickHouseDefinition(), previousColumn))
+				}
+
 				if resolution.Interval > 0 && slices.Contains(c.d.Schema.ClickHousePrimaryKeys(), wantedColumn.Name) && existingColumn.IsPrimaryKey == 0 {
 					return fmt.Errorf("table %s, column %s should be a primary key, cannot change that",
 						tableName, wantedColumn.Name)
