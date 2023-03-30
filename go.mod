@@ -26,7 +26,7 @@ require (
 	github.com/jhump/protoreflect v1.15.1
 	github.com/kentik/patricia v1.2.0
 	github.com/kylelemons/godebug v1.1.0
-	github.com/mattn/go-isatty v0.0.17
+	github.com/mattn/go-isatty v0.0.18
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/netsampler/goflow2 v1.1.1-0.20221008154147-57fad2e0c837
 	github.com/oschwald/maxminddb-golang v1.10.0
