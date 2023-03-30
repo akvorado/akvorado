@@ -13,6 +13,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- ✨ *orchestrator*: add an option to materialize a column instead of using an alias
 - 🩹 *inlet*: fix caching when setting interface name or description
 
 ## 1.8.1 - 2023-03-04

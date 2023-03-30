@@ -22,7 +22,7 @@ type Component struct {
 // New creates a new schema component.
 func New(config Configuration) (*Component, error) {
 	schema := flows()
-	for _, k := range config.Generate {
+	for _, k := range config.Materialize {
 		if column, ok := schema.LookupColumnByKey(k); ok {
 			if column.ClickHouseAlias != "" {
 				column.ClickHouseGenerateFrom = column.ClickHouseAlias

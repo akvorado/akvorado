@@ -7,7 +7,7 @@ paths:
     enabled:
       - SrcMAC
       - DstMAC
-    generate: []
+    materialize: []
     maintableonly:
       - SrcMAC
       - DstMAC
@@ -19,7 +19,7 @@ paths:
     enabled:
       - SrcMAC
       - DstMAC
-    generate: []
+    materialize: []
     maintableonly:
       - SrcMAC
       - DstMAC
