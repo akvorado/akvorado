@@ -15,6 +15,8 @@ type Configuration struct {
 	MainTableOnly []ColumnKey
 	// NotMainTableOnly lists columns to be moved out of the main table only
 	NotMainTableOnly []ColumnKey `validate:"ninterfield=MainTableOnly"`
+	// Generate lists columns that shall be generated at ingest instead of generated at query time
+	Generate []ColumnKey
 }
 
 // DefaultConfiguration returns the default configuration for the schema component.

@@ -22,6 +22,16 @@ type Component struct {
 // New creates a new schema component.
 func New(config Configuration) (*Component, error) {
 	schema := flows()
+	for _, k := range config.Generate {
+		if column, ok := schema.LookupColumnByKey(k); ok {
+			if column.ClickHouseAlias != "" {
+				column.ClickHouseGenerateFrom = column.ClickHouseAlias
+				column.ClickHouseAlias = ""
+			} else {
+				return nil, fmt.Errorf("no alias configured for %s that can be converted to generate", k)
+			}
+		}
+	}
 	for _, k := range config.Enabled {
 		if column, ok := schema.LookupColumnByKey(k); ok {
 			column.Disabled = false
