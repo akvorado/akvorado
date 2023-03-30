@@ -389,4 +389,54 @@ LIMIT 1`)
 			}
 		})
 	}
+
+	// Convert a column from alias to materialize
+	if !t.Failed() {
+		t.Run("materialize alias", func(t *testing.T) {
+			r := reporter.NewMock(t)
+			schConfig := schema.DefaultConfiguration()
+			schConfig.Materialize = []schema.ColumnKey{
+				schema.ColumnSrcNetPrefix,
+			}
+			sch, err := schema.New(schConfig)
+			if err != nil {
+				t.Fatalf("schema.New() error:\n%+v", err)
+			}
+			configuration := DefaultConfiguration()
+			configuration.OrchestratorURL = "http://something"
+			configuration.Kafka.Configuration = kafka.DefaultConfiguration()
+			ch, err := New(r, configuration, Dependencies{
+				Daemon:     daemon.NewMock(t),
+				HTTP:       http.NewMock(t, r),
+				Schema:     sch,
+				ClickHouse: chComponent,
+			})
+			if err != nil {
+				t.Fatalf("New() error:\n%+v", err)
+			}
+			helpers.StartStop(t, ch)
+			waitMigrations(t, ch)
+
+			// We need to have at least one migration
+			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps")
+			if gotMetrics["applied_steps"] == "0" {
+				t.Fatal("No migration applied when disabling some columns")
+			}
+
+			// We need SrcNetPrefix materialized and DstNetPrefix an alias
+			row := ch.d.ClickHouse.QueryRow(context.Background(), `
+SELECT toString(groupArray(tuple(name, default_kind)))
+FROM system.columns
+WHERE table = $1
+AND database = $2
+AND name LIKE $3`, "flows", ch.config.Database, "%NetPrefix")
+			var existing string
+			if err := row.Scan(&existing); err != nil {
+				t.Fatalf("Scan() error:\n%+v", err)
+			}
+			if diff := helpers.Diff(existing, "[('SrcNetPrefix',''),('DstNetPrefix','ALIAS')]"); diff != "" {
+				t.Fatalf("Unexpected state:\n%s", diff)
+			}
+		})
+	}
 }
