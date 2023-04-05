@@ -10,7 +10,7 @@
         deps = [
           pkgs.curl
           pkgs.git
-          pkgs.go_1_19
+          pkgs.go_1_20
           pkgs.nodejs-16_x
         ];
       in
