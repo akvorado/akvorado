@@ -109,6 +109,28 @@ jobs:
       - name: Tests
         run: make test || make test
 
+  build-go:
+    name: 🔭 Build Go backend
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: [ '1.19', 'stable' ]
+    needs:
+      - dependabot
+    if: needs.dependabot.outputs.package-ecosystem != 'npm_and_yarn'
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup
+        uses: ./.github/actions/setup
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Build
+        run: make && ./bin/akvorado version
+      - name: Tests
+        run: make test || make test
+
   build-js:
     name: 🔭 Build JS frontend
     runs-on: ubuntu-latest

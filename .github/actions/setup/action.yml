@@ -17,6 +17,11 @@ inputs:
     type: number
     required: false
     default: 16
+  go-version:
+    description: Go version to install
+    type: string
+    required: false
+    default: 'stable'
 runs:
   using: composite
   steps:
@@ -25,7 +30,7 @@ runs:
       if: ${{ inputs.setup-go == 'true' }}
       id: go-setup
       with:
-        go-version-file: go.mod
+        go-version: ${{ inputs.go-version }}
         cache: true
     - uses: actions/setup-node@v3
       if: ${{ inputs.setup-node == 'true' }}
