@@ -197,6 +197,7 @@ jobs:
     needs:
       - build-linux
       - build-macos
+      - build-go
       - build-js
       - docker
     runs-on: ubuntu-latest
