@@ -11,7 +11,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.8.2 - 2023-04-08
 
 - ✨ *orchestrator*: add an option to materialize a column instead of using an alias
 - 🩹 *inlet*: fix caching when setting interface name or description
