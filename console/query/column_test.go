@@ -45,6 +45,7 @@ func TestUnmarshalQueryColumn(t *testing.T) {
 }
 
 func TestQueryColumnSQLSelect(t *testing.T) {
+	sch := schema.NewMock(t)
 	cases := []struct {
 		Input    schema.ColumnKey
 		Expected string
@@ -52,6 +53,12 @@ func TestQueryColumnSQLSelect(t *testing.T) {
 		{
 			Input:    schema.ColumnSrcAddr,
 			Expected: `replaceRegexpOne(IPv6NumToString(SrcAddr), '^::ffff:', '')`,
+		}, {
+			Input:    schema.ColumnDstAddrNAT,
+			Expected: `replaceRegexpOne(IPv6NumToString(DstAddrNAT), '^::ffff:', '')`,
+		}, {
+			Input:    schema.ColumnExporterAddress,
+			Expected: `replaceRegexpOne(IPv6NumToString(ExporterAddress), '^::ffff:', '')`,
 		}, {
 			Input:    schema.ColumnDstAS,
 			Expected: `concat(toString(DstAS), ': ', dictGetOrDefault('asns', 'name', DstAS, '???'))`,
@@ -67,6 +74,9 @@ func TestQueryColumnSQLSelect(t *testing.T) {
 		}, {
 			Input:    schema.ColumnOutIfSpeed,
 			Expected: `toString(OutIfSpeed)`,
+		}, {
+			Input:    schema.ColumnDstVlan,
+			Expected: `toString(DstVlan)`,
 		}, {
 			Input:    schema.ColumnExporterName,
 			Expected: `ExporterName`,
@@ -90,7 +100,7 @@ func TestQueryColumnSQLSelect(t *testing.T) {
 			if err := column.Validate(schema.NewMock(t).EnableAllColumns()); err != nil {
 				t.Fatalf("Validate() error:\n%+v", err)
 			}
-			got := column.ToSQLSelect()
+			got := column.ToSQLSelect(sch)
 			if diff := helpers.Diff(got, tc.Expected); diff != "" {
 				t.Errorf("toSQLWhere (-got, +want):\n%s", diff)
 			}

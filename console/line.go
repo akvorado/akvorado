@@ -118,7 +118,7 @@ func (input graphLineHandlerInput) toSQL1(axis int, options toSQL1Options) strin
 	dimensionsInterpolate := ""
 	others := []string{}
 	for _, column := range input.Dimensions {
-		field := column.ToSQLSelect()
+		field := column.ToSQLSelect(input.schema)
 		selectFields = append(selectFields, field)
 		dimensions = append(dimensions, column.String())
 		others = append(others, "'Other'")

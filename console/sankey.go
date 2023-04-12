@@ -46,7 +46,7 @@ func (input graphSankeyHandlerInput) toSQL() (string, error) {
 		arrayFields = append(arrayFields, fmt.Sprintf(`if(%s IN (SELECT %s FROM rows), %s, 'Other')`,
 			column.String(),
 			column.String(),
-			column.ToSQLSelect()))
+			column.ToSQLSelect(input.schema)))
 		dimensions = append(dimensions, column.String())
 	}
 	fields := []string{

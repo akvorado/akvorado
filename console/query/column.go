@@ -7,6 +7,7 @@ package query
 
 import (
 	"fmt"
+	"strings"
 
 	"akvorado/common/helpers"
 	"akvorado/common/schema"
@@ -95,11 +96,11 @@ func (qcs Columns) Validate(schema *schema.Component) error {
 }
 
 // ToSQLSelect transforms a column into an expression to use in SELECT
-func (qc Column) ToSQLSelect() string {
+func (qc Column) ToSQLSelect(sch *schema.Component) string {
 	var strValue string
-	switch qc.Key() {
-	case schema.ColumnExporterAddress, schema.ColumnSrcAddr, schema.ColumnDstAddr, schema.ColumnSrcAddrNAT, schema.ColumnDstAddrNAT:
-		strValue = fmt.Sprintf("replaceRegexpOne(IPv6NumToString(%s), '^::ffff:', '')", qc)
+	key := qc.Key()
+	switch key {
+	// Special cases
 	case schema.ColumnSrcAS, schema.ColumnDstAS, schema.ColumnDst1stAS, schema.ColumnDst2ndAS, schema.ColumnDst3rdAS:
 		strValue = fmt.Sprintf(`concat(toString(%s), ': ', dictGetOrDefault('asns', 'name', %s, '???'))`,
 			qc, qc)
@@ -108,16 +109,23 @@ func (qc Column) ToSQLSelect() string {
 			helpers.ETypeIPv4, helpers.ETypeIPv6)
 	case schema.ColumnProto:
 		strValue = `dictGetOrDefault('protocols', 'name', Proto, '???')`
-	case schema.ColumnInIfSpeed, schema.ColumnOutIfSpeed, schema.ColumnSrcPort, schema.ColumnDstPort, schema.ColumnForwardingStatus, schema.ColumnInIfBoundary, schema.ColumnOutIfBoundary, schema.ColumnSrcPortNAT, schema.ColumnDstPortNAT:
-		strValue = fmt.Sprintf("toString(%s)", qc)
 	case schema.ColumnDstASPath:
 		strValue = `arrayStringConcat(DstASPath, ' ')`
 	case schema.ColumnDstCommunities:
 		strValue = `arrayStringConcat(arrayConcat(arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities), arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)), ' ')`
 	case schema.ColumnSrcMAC, schema.ColumnDstMAC:
 		strValue = fmt.Sprintf("MACNumToString(%s)", qc)
+
+	// Generic cases
 	default:
 		strValue = qc.String()
+		if col, ok := sch.LookupColumnByKey(key); ok {
+			if strings.HasPrefix(col.ClickHouseType, "UInt") {
+				strValue = fmt.Sprintf(`toString(%s)`, qc)
+			} else if col.ClickHouseType == "IPv6" || col.ClickHouseType == "LowCardinality(IPv6)" {
+				strValue = fmt.Sprintf("replaceRegexpOne(IPv6NumToString(%s), '^::ffff:', '')", qc)
+			}
+		}
 	}
 	return strValue
 }

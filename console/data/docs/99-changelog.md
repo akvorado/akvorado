@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🩹 *console*: fix `SrcVlan` and `DstVlan` as a dimension
+
 ## 1.8.2 - 2023-04-08
 
 - ✨ *orchestrator*: add an option to materialize a column instead of using an alias
