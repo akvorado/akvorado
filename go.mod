@@ -9,7 +9,7 @@ require (
 	github.com/antonmedv/expr v1.12.5
 	github.com/benbjohnson/clock v1.3.0
 	github.com/bits-and-blooms/bitset v1.5.0
-	github.com/cenkalti/backoff/v4 v4.2.0
+	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/chenyahui/gin-cache v1.8.1
 	github.com/docker/docker v23.0.3+incompatible
 	github.com/docker/go-connections v0.4.0
