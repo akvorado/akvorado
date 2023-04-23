@@ -68,6 +68,56 @@ func TestProtectedDecodeHook(t *testing.T) {
 	}
 }
 
+func TestDefaultValuesConfig(t *testing.T) {
+	type InnerConfiguration struct {
+		AA string
+		BB string
+		CC int
+	}
+	type OuterConfiguration struct {
+		DD []InnerConfiguration
+	}
+	RegisterMapstructureUnmarshallerHook(DefaultValuesUnmarshallerHook(InnerConfiguration{
+		BB: "hello",
+		CC: 10,
+	}))
+	TestConfigurationDecode(t, ConfigurationDecodeCases{
+		{
+			Initial: func() interface{} { return OuterConfiguration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"dd": []gin.H{
+						{
+							"aa": "hello1",
+							"bb": "hello2",
+							"cc": 43,
+						},
+						{"cc": 44},
+						{"aa": "bye"},
+					},
+				}
+			},
+			Expected: OuterConfiguration{
+				DD: []InnerConfiguration{
+					{
+						AA: "hello1",
+						BB: "hello2",
+						CC: 43,
+					}, {
+						AA: "",
+						BB: "hello",
+						CC: 44,
+					}, {
+						AA: "bye",
+						BB: "hello",
+						CC: 10,
+					},
+				},
+			},
+		},
+	})
+}
+
 func TestParametrizedConfig(t *testing.T) {
 	type InnerConfigurationType1 struct {
 		CC string

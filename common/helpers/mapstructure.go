@@ -63,6 +63,50 @@ func MapStructureMatchName(mapKey, fieldName string) bool {
 	return key == field
 }
 
+// DefaultValuesUnmarshallerHook adds default values from the provided
+// configuration. For each missing non-default key, it will add them.
+func DefaultValuesUnmarshallerHook[Configuration any](defaultConfiguration Configuration) mapstructure.DecodeHookFunc {
+	return func(from, to reflect.Value) (interface{}, error) {
+		from = ElemOrIdentity(from)
+		to = ElemOrIdentity(to)
+		if to.Type() != reflect.TypeOf(defaultConfiguration) {
+			return from.Interface(), nil
+		}
+		if from.Kind() != reflect.Map {
+			return from.Interface(), nil
+		}
+
+		// Which field is not to the default value in the default configuration?
+		found := map[string]bool{}
+		defaultV := reflect.ValueOf(defaultConfiguration)
+		for i := 0; i < defaultV.NumField(); i++ {
+			if !defaultV.Field(i).IsZero() {
+				found[defaultV.Type().Field(i).Name] = false
+			}
+		}
+		mapKeys := from.MapKeys()
+		for _, key := range mapKeys {
+			var keyStr string
+			if ElemOrIdentity(key).Kind() == reflect.String {
+				keyStr = ElemOrIdentity(key).String()
+			} else {
+				continue
+			}
+			for fieldName := range found {
+				if MapStructureMatchName(keyStr, fieldName) {
+					found[fieldName] = true
+				}
+			}
+		}
+		for fieldName := range found {
+			if !found[fieldName] {
+				from.SetMapIndex(reflect.ValueOf(fieldName), defaultV.FieldByName(fieldName))
+			}
+		}
+		return from.Interface(), nil
+	}
+}
+
 // ParametrizedConfigurationUnmarshallerHook will help decode a configuration
 // structure parametrized by a type by selecting the appropriate concrete type
 // depending on the type contained in the source. We have two configuration

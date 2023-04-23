@@ -140,42 +140,11 @@ type NetworkSource struct {
 	Interval time.Duration `validate:"min=1m"`
 }
 
-// NetworkSourceUnmarshallerHook decodes network sources, setting default
-// values.
-func NetworkSourceUnmarshallerHook() mapstructure.DecodeHookFunc {
-	return func(from, to reflect.Value) (interface{}, error) {
-		from = helpers.ElemOrIdentity(from)
-		to = helpers.ElemOrIdentity(to)
-		if to.Type() != reflect.TypeOf(NetworkSource{}) {
-			return from.Interface(), nil
-		}
-		if from.Kind() != reflect.Map {
-			return from.Interface(), nil
-		}
-
-		var methodFound, timeoutFound bool
-		mapKeys := from.MapKeys()
-		for _, key := range mapKeys {
-			var keyStr string
-			if helpers.ElemOrIdentity(key).Kind() == reflect.String {
-				keyStr = helpers.ElemOrIdentity(key).String()
-			} else {
-				continue
-			}
-			if helpers.MapStructureMatchName(keyStr, "Method") {
-				methodFound = true
-			}
-			if helpers.MapStructureMatchName(keyStr, "Timeout") {
-				timeoutFound = true
-			}
-		}
-		if !methodFound {
-			from.SetMapIndex(reflect.ValueOf("method"), reflect.ValueOf("GET"))
-		}
-		if !timeoutFound {
-			from.SetMapIndex(reflect.ValueOf("timeout"), reflect.ValueOf("1m"))
-		}
-		return from.Interface(), nil
+// DefaultNetworkSourceConfiguration is the default configuration for a network source.
+func DefaultNetworkSourceConfiguration() NetworkSource {
+	return NetworkSource{
+		Method:  "GET",
+		Timeout: time.Minute,
 	}
 }
 
@@ -210,6 +179,6 @@ func (jq TransformQuery) MarshalText() ([]byte, error) {
 func init() {
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[NetworkAttributes]())
 	helpers.RegisterMapstructureUnmarshallerHook(NetworkAttributesUnmarshallerHook())
-	helpers.RegisterMapstructureUnmarshallerHook(NetworkSourceUnmarshallerHook())
+	helpers.RegisterMapstructureUnmarshallerHook(helpers.DefaultValuesUnmarshallerHook[NetworkSource](DefaultNetworkSourceConfiguration()))
 	helpers.RegisterSubnetMapValidation[NetworkAttributes]()
 }
