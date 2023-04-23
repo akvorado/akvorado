@@ -116,9 +116,6 @@ func (c *Component) Start() error {
 		if source.Transform.Query == nil {
 			source.Transform.Query, _ = gojq.Parse(".")
 		}
-		if source.Timeout == 0 {
-			source.Timeout = time.Minute
-		}
 		name := name
 		source := source
 		c.t.Go(func() error {

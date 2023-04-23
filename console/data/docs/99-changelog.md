@@ -14,6 +14,8 @@ identified with a specific icon:
 ## Unreleased
 
 - 🩹 *console*: fix `SrcVlan` and `DstVlan` as a dimension
+- 🌱 *orchestrator*: add `method` and `headers` to specify HTTP method and
+  additional headers to use when requesting a network source
 
 ## 1.8.2 - 2023-04-08
 

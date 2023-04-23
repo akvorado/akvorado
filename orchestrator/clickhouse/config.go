@@ -125,15 +125,58 @@ type NetworkSource struct {
 	// URL is the URL to fetch to get remote network definition.
 	// It should provide a JSON file.
 	URL string `validate:"url"`
+	// Method defines which method to use (GET or POST)
+	Method string `validate:"oneof=GET POST"`
+	// Headers defines additional headers to send
+	Headers map[string]string
 	// Proxy is set to true if a proxy should be used.
 	Proxy bool
 	// Timeout tells the maximum time the remote request should take
-	Timeout time.Duration `validate:"isdefault|min=1s"`
+	Timeout time.Duration `validate:"min=1s"`
 	// Transform is a jq string to transform the received JSON
 	// data into a list of network attributes.
 	Transform TransformQuery
 	// Interval tells how much time to wait before updating the source.
 	Interval time.Duration `validate:"min=1m"`
+}
+
+// NetworkSourceUnmarshallerHook decodes network sources, setting default
+// values.
+func NetworkSourceUnmarshallerHook() mapstructure.DecodeHookFunc {
+	return func(from, to reflect.Value) (interface{}, error) {
+		from = helpers.ElemOrIdentity(from)
+		to = helpers.ElemOrIdentity(to)
+		if to.Type() != reflect.TypeOf(NetworkSource{}) {
+			return from.Interface(), nil
+		}
+		if from.Kind() != reflect.Map {
+			return from.Interface(), nil
+		}
+
+		var methodFound, timeoutFound bool
+		mapKeys := from.MapKeys()
+		for _, key := range mapKeys {
+			var keyStr string
+			if helpers.ElemOrIdentity(key).Kind() == reflect.String {
+				keyStr = helpers.ElemOrIdentity(key).String()
+			} else {
+				continue
+			}
+			if helpers.MapStructureMatchName(keyStr, "Method") {
+				methodFound = true
+			}
+			if helpers.MapStructureMatchName(keyStr, "Timeout") {
+				timeoutFound = true
+			}
+		}
+		if !methodFound {
+			from.SetMapIndex(reflect.ValueOf("method"), reflect.ValueOf("GET"))
+		}
+		if !timeoutFound {
+			from.SetMapIndex(reflect.ValueOf("timeout"), reflect.ValueOf("1m"))
+		}
+		return from.Interface(), nil
+	}
 }
 
 // TransformQuery represents a jq query to transform data.
@@ -167,5 +210,6 @@ func (jq TransformQuery) MarshalText() ([]byte, error) {
 func init() {
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[NetworkAttributes]())
 	helpers.RegisterMapstructureUnmarshallerHook(NetworkAttributesUnmarshallerHook())
+	helpers.RegisterMapstructureUnmarshallerHook(NetworkSourceUnmarshallerHook())
 	helpers.RegisterSubnetMapValidation[NetworkAttributes]()
 }

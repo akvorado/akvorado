@@ -526,6 +526,8 @@ provided:
   fetched through HTTP. It accepts a map from source names to sources.
   Each source accepts the following attributes:
   - `url` is the URL to fetch
+  - `method` is the method to use (`GET` or `POST`)
+  - `headers` is a map from header names to values to add to the request
   - `proxy` says if we should use a proxy (defined through environment variables like `http_proxy`)
   - `timeout` defines the timeout for fetching and parsing
   - `interval` is the interval at which the source should be refreshed

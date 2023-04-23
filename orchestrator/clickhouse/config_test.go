@@ -100,6 +100,8 @@ func TestNetworkSourceDecode(t *testing.T) {
 			},
 			Expected: NetworkSource{
 				URL:      "https://example.net",
+				Method:   "GET",
+				Timeout:  time.Minute,
 				Interval: 10 * time.Minute,
 			},
 		}, {
@@ -114,6 +116,27 @@ func TestNetworkSourceDecode(t *testing.T) {
 			},
 			Expected: NetworkSource{
 				URL:       "https://example.net",
+				Method:    "GET",
+				Timeout:   time.Minute,
+				Interval:  10 * time.Minute,
+				Transform: MustParseTransformQuery(".[]"),
+			},
+		}, {
+			Description: "Use POST",
+			Initial:     func() interface{} { return NetworkSource{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"url":       "https://example.net",
+					"method":    "POST",
+					"timeout":   "2m",
+					"interval":  "10m",
+					"transform": ".[]",
+				}
+			},
+			Expected: NetworkSource{
+				URL:       "https://example.net",
+				Method:    "POST",
+				Timeout:   2 * time.Minute,
 				Interval:  10 * time.Minute,
 				Transform: MustParseTransformQuery(".[]"),
 			},
@@ -131,6 +154,8 @@ func TestNetworkSourceDecode(t *testing.T) {
 			},
 			Expected: NetworkSource{
 				URL:      "https://example.net",
+				Method:   "GET",
+				Timeout:  time.Minute,
 				Interval: 10 * time.Minute,
 				Transform: MustParseTransformQuery(`
 .prefixes[] | {prefix: .ip_prefix, tenant: "amazon", region: .region, role: .service|ascii_downcase}

@@ -29,7 +29,10 @@ func (c *Component) updateNetworkSource(ctx context.Context, name string, source
 	client := &http.Client{Transport: &http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 	}}
-	req, err := http.NewRequestWithContext(ctx, "GET", source.URL, nil)
+	req, err := http.NewRequestWithContext(ctx, source.Method, source.URL, nil)
+	for headerName, headerValue := range source.Headers {
+		req.Header.Set(headerName, headerValue)
+	}
 	req.Header.Set("accept", "application/json")
 	if err != nil {
 		l.Err(err).Msg("unable to build new request")
