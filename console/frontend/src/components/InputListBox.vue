@@ -48,7 +48,7 @@
         >
           <div
             v-if="filteredItems.length === 0 && query != ''"
-            class="py-2 px-2.5"
+            class="px-2.5 py-2"
           >
             <slot name="nomatch" :query="query">
               <div

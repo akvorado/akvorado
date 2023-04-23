@@ -23,7 +23,7 @@
           'text-gray-500 peer-focus-within:text-blue-600 dark:text-gray-400 dark:peer-focus-within:text-blue-500':
             !error,
         }"
-        class="z-5 -peer-focus-within:translate-y-3 absolute top-3 left-2.5 origin-[0] -translate-y-3 scale-75 transform font-sans text-sm duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus-within:scale-75"
+        class="z-5 -peer-focus-within:translate-y-3 absolute left-2.5 top-3 origin-[0] -translate-y-3 scale-75 transform font-sans text-sm duration-300 peer-placeholder-shown:translate-y-0 peer-placeholder-shown:scale-100 peer-focus-within:scale-75"
         >{{ label }}</label
       >
     </div>

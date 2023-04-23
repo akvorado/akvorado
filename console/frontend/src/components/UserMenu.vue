@@ -20,7 +20,7 @@
       <PopoverPanel
         class="absolute right-0 z-50 my-4 max-w-xs list-none divide-y divide-gray-100 rounded bg-white text-base shadow dark:divide-gray-600 dark:bg-gray-700"
       >
-        <div class="py-3 px-4">
+        <div class="px-4 py-3">
           <span
             class="block whitespace-nowrap text-sm text-gray-900 dark:text-white"
           >
@@ -37,7 +37,7 @@
           <li>
             <a
               :href="user['logout-url']"
-              class="block py-2 px-4 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:text-white"
+              class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:text-white"
               >Logout</a
             >
           </li>

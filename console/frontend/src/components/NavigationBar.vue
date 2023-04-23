@@ -42,7 +42,7 @@
         >
           <li v-for="item in navigation" :key="item.name">
             <router-link
-              class="block rounded py-2 pr-4 pl-3 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-800"
+              class="block rounded py-2 pl-3 pr-4 focus:outline-none focus:ring-2 focus:ring-blue-300 dark:focus:ring-blue-800"
               :class="
                 item.current
                   ? [

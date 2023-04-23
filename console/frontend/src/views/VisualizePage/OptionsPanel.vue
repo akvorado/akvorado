@@ -24,7 +24,7 @@
       </button>
     </span>
     <form
-      class="h-full overflow-y-auto border-b border-gray-300 bg-gray-100 dark:border-slate-700 dark:bg-slate-800 lg:border-r lg:border-b-0"
+      class="h-full overflow-y-auto border-b border-gray-300 bg-gray-100 dark:border-slate-700 dark:bg-slate-800 lg:border-b-0 lg:border-r"
       autocomplete="off"
       spellcheck="false"
       @submit.prevent="submitOptions()"
