@@ -2,7 +2,6 @@
 version: "3"
 
 volumes:
-  akvorado-zookeeper:
   akvorado-kafka:
   akvorado-geoip:
   akvorado-clickhouse:
@@ -21,22 +20,13 @@ services:
     volumes:
       - akvorado-geoip:/usr/share/GeoIP
 
-  zookeeper:
-    image: bitnami/zookeeper:3.7
-    environment:
-      - ALLOW_ANONYMOUS_LOGIN=yes
-    restart: unless-stopped
-    volumes:
-      - akvorado-zookeeper:/bitnami/zookeeper
   kafka:
     image: bitnami/kafka:3.3
     environment:
-      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
       - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_ENABLE_KRAFT=yes
       - KAFKA_DELETE_TOPIC_ENABLE=true
     restart: unless-stopped
-    depends_on:
-      - zookeeper
     volumes:
       - akvorado-kafka:/bitnami/kafka
     healthcheck:

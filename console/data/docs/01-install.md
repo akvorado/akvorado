@@ -107,6 +107,6 @@ When using `docker-compose`, use the following commands to fetch an updated
 # docker-compose up -d
 ```
 
-Note that if Zookeeper or Kakfa gets upgraded in the process, this can be
-disruptive. Feel free to only use `docker-compose pull akvorado-orchestrator` to
-only update Akvorado image.
+Note that if Kakfa gets upgraded in the process, this can be disruptive. Feel
+free to only use `docker-compose pull akvorado-orchestrator` to only update
+Akvorado image.
