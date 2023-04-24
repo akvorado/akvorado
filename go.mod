@@ -7,7 +7,7 @@ require (
 	github.com/Shopify/sarama v1.38.1
 	github.com/alecthomas/chroma v0.10.0
 	github.com/antonmedv/expr v1.12.5
-	github.com/benbjohnson/clock v1.3.0
+	github.com/benbjohnson/clock v1.3.3
 	github.com/bits-and-blooms/bitset v1.6.0
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/chenyahui/gin-cache v1.8.1
@@ -29,6 +29,7 @@ require (
 	github.com/mattn/go-isatty v0.0.18
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/netsampler/goflow2 v1.1.1-0.20221008154147-57fad2e0c837
+	github.com/opencontainers/image-spec v1.0.3-0.20211202183452-c5a74bcca799
 	github.com/oschwald/maxminddb-golang v1.10.0
 	github.com/osrg/gobgp/v3 v3.13.0
 	github.com/prometheus/client_golang v1.15.0
@@ -102,7 +103,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.0.3-0.20211202183452-c5a74bcca799 // indirect
 	github.com/paulmach/orb v0.9.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.7 // indirect
 	github.com/pierrec/lz4/v4 v4.1.17 // indirect
@@ -140,7 +140,6 @@ require (
 )
 
 replace (
-	github.com/benbjohnson/clock => github.com/vincentbernat/go-clock v0.0.0-20220922224448-739bd11b5833
 	github.com/kentik/patricia => github.com/vincentbernat/patricia v0.0.0-20220923091046-b376a1167a94
 	github.com/netsampler/goflow2 => github.com/vincentbernat/goflow2 v1.0.5-0.20230212130531-75622155c20e
 )

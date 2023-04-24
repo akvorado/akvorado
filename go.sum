@@ -15,6 +15,8 @@ github.com/andybalholm/brotli v1.0.5 h1:8uQZIdzKmjc/iuPu7O2ioW48L81FgatrcpfFmiq/
 github.com/andybalholm/brotli v1.0.5/go.mod h1:fO7iG3H7G2nSZ7m0zPUDn85XEX2GTukHGRSepvi9Eig=
 github.com/antonmedv/expr v1.12.5 h1:Fq4okale9swwL3OeLLs9WD9H6GbgBLJyN/NUHRv+n0E=
 github.com/antonmedv/expr v1.12.5/go.mod h1:FPC8iWArxls7axbVLsW+kpg1mz29A1b2M6jt+hZfDkU=
+github.com/benbjohnson/clock v1.3.3 h1:g+rSsSaAzhHJYcIQE78hJ3AhyjjtQvleKDjlhdBnIhc=
+github.com/benbjohnson/clock v1.3.3/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/bits-and-blooms/bitset v1.6.0 h1:FVfaUsleKAUTJnaN9Fd1YFFi1S8vAX5xeXnXHFYOojM=
@@ -337,8 +339,6 @@ github.com/ugorji/go/codec v1.1.7/go.mod h1:Ax+UKWsSmolVDwsd+7N3ZtXu+yMGCf907BLY
 github.com/ugorji/go/codec v1.2.9 h1:rmenucSohSTiyL09Y+l2OCk+FrMxGMzho2+tjr5ticU=
 github.com/ugorji/go/codec v1.2.9/go.mod h1:UNopzCgEMSXjBc6AOMqYvWC1ktqTAfzJZUZgYf6w6lg=
 github.com/urfave/cli/v2 v2.1.1/go.mod h1:SE9GqnLQmjVa0iPEY0f1w3ygNIYcIJ0OKPMoW2caLfQ=
-github.com/vincentbernat/go-clock v0.0.0-20220922224448-739bd11b5833 h1:eeHgOFlrGNESR9TF+AJovNWOxH8AdmXWK2nGXKa6RUU=
-github.com/vincentbernat/go-clock v0.0.0-20220922224448-739bd11b5833/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/vincentbernat/goflow2 v1.0.5-0.20230212130531-75622155c20e h1:J/87Kkw8g6KDnf4qAa0CXQd/KC90okTDhYbpSOXUGvo=
 github.com/vincentbernat/goflow2 v1.0.5-0.20230212130531-75622155c20e/go.mod h1:oNIeGj67SjwrRSTEukErjNT1zZ02W9+8M5mSgQCkZC8=
 github.com/vincentbernat/patricia v0.0.0-20220923091046-b376a1167a94 h1:T7+yyM6300NYIv1kqlXX53d2cjEHpgDt6cFbBYO+upk=
