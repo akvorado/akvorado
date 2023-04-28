@@ -34,7 +34,9 @@ services:
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
       - ALLOW_PLAINTEXT_LISTENER=yes
       - KAFKA_DELETE_TOPIC_ENABLE=true
+      # Do not enable KRaft yet!
       - KAFKA_ENABLE_KRAFT=no
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
     restart: unless-stopped
     depends_on:
       - zookeeper
