@@ -11,8 +11,9 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.8.3 - 2023-04-28
 
+- 🩹 *docker*: ensure Kafka is not using KRaft by default
 - 🩹 *console*: fix `SrcVlan` and `DstVlan` as a dimension
 - 🌱 *orchestrator*: add `method` and `headers` to specify HTTP method and
   additional headers to use when requesting a network source
