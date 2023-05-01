@@ -248,8 +248,8 @@ github.com/opencontainers/image-spec v1.0.3-0.20211202183452-c5a74bcca799 h1:rc3
 github.com/opencontainers/image-spec v1.0.3-0.20211202183452-c5a74bcca799/go.mod h1:BtxoFyWECRxE4U/7sNtV5W15zMzWCbyJoFRP3s7yZA0=
 github.com/oschwald/maxminddb-golang v1.10.0 h1:Xp1u0ZhqkSuopaKmk1WwHtjF0H9Hd9181uj2MQ5Vndg=
 github.com/oschwald/maxminddb-golang v1.10.0/go.mod h1:Y2ELenReaLAZ0b400URyGwvYxHV1dLIxBuyOsyYjHK0=
-github.com/osrg/gobgp/v3 v3.13.0 h1:Q1XiEA5SU179LRCkIJBAVu1YQ1duuZRIS8/daPGR3FA=
-github.com/osrg/gobgp/v3 v3.13.0/go.mod h1:/4V2uQr+3vE7iad2ZoIDVen/SADDZnpfx/XXqEGOIIA=
+github.com/osrg/gobgp/v3 v3.14.0 h1:zfXhM8+QSfAPUkzWYTbH8pMkvxkcUfvQEKnBU7ikk4g=
+github.com/osrg/gobgp/v3 v3.14.0/go.mod h1:tSUXn/s9uggSRTKP3IBeT5zI4ayOUX3O7fG5+n+SHPc=
 github.com/paulmach/orb v0.9.0 h1:MwA1DqOKtvCgm7u9RZ/pnYejTeDJPnr0+0oFajBbJqk=
 github.com/paulmach/orb v0.9.0/go.mod h1:SudmOk85SXtmXAB3sLGyJ6tZy/8pdfrV0o6ef98Xc30=
 github.com/paulmach/protoscan v0.2.1/go.mod h1:SpcSwydNLrxUGSDvXvO0P7g7AuhJ7lcKfDlhJCDw2gY=
