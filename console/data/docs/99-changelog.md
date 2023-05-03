@@ -26,6 +26,10 @@ identified with a specific icon:
 - 🩹 *inlet*: fix Netflow processing when template is received with data
 - 🩹 *console*: fix display when using “%” units and interface speed is 0
 - 🌱 *build*: minimum supported Node version is now 16
+- 🌱 *docker*: update ClickHouse to 23.3 (this is not mandatory)
+- 🩹 *orchestrator*: create flows table with
+  `allow_suspicious_low_cardinality_types` to ensure we can use
+  `LowCardinality(IPv6)`.
 
 ## 1.8.3 - 2023-04-28
 
