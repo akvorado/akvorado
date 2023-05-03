@@ -11,6 +11,13 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🩹 *orchestrator*: create flows table with
+  `allow_suspicious_low_cardinality_types` to ensure we can use
+  `LowCardinality(IPv6)`.
+- 🌱 *docker*: update ClickHouse to 23.3 (this is not mandatory)
+
 ## 1.8.3 - 2023-04-28
 
 - 🩹 *docker*: ensure Kafka is not using KRaft by default
