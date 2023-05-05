@@ -11,7 +11,7 @@
           pkgs.curl
           pkgs.git
           pkgs.go_1_20
-          pkgs.nodejs-16_x
+          pkgs.nodejs-18_x
         ];
       in
       {

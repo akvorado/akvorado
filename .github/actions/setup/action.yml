@@ -16,7 +16,7 @@ inputs:
     description: Node version to install
     type: number
     required: false
-    default: 16
+    default: 18
   go-version:
     description: Go version to install
     type: string
