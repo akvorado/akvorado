@@ -15,12 +15,12 @@ flow:
   inputs:
     - type: udp
       decoder: netflow
-      listen: 0.0.0.0:2055
+      listen: :2055
       workers: 6
       receive-buffer: 10485760
     - type: udp
       decoder: sflow
-      listen: 0.0.0.0:6343
+      listen: :6343
       workers: 6
       receive-buffer: 10485760
 core:

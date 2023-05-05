@@ -22,6 +22,8 @@ func TestListenValidator(t *testing.T) {
 		{"localhost:161", false},
 		{"0.0.0.0:161", false},
 		{"0.0.0.0:0", false},
+		{":161", false},
+		{":0", false},
 		{"127.0.0.1:0", false},
 		{"localhost", true},
 		{"127.0.0.1", true},

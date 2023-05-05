@@ -18,6 +18,6 @@ type Configuration struct {
 // DefaultConfiguration represents the default configuration for the SNMP component.
 func DefaultConfiguration() Configuration {
 	return Configuration{
-		Listen: "0.0.0.0:161",
+		Listen: ":161",
 	}
 }

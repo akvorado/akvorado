@@ -26,7 +26,7 @@ type Configuration struct {
 // DefaultConfiguration is the default configuration for this input
 func DefaultConfiguration() input.Configuration {
 	return &Configuration{
-		Listen:    "0.0.0.0:0",
+		Listen:    ":0",
 		Workers:   1,
 		QueueSize: 100000,
 	}

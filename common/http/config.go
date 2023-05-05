@@ -95,7 +95,7 @@ func DefaultRedisCacheConfiguration() CacheBackendConfiguration {
 // DefaultConfiguration is the default configuration of the HTTP server.
 func DefaultConfiguration() Configuration {
 	return Configuration{
-		Listen:   "0.0.0.0:8080",
+		Listen:   ":8080",
 		Profiler: true,
 		Cache: CacheConfiguration{
 			Config: DefaultMemoryCacheConfiguration(),

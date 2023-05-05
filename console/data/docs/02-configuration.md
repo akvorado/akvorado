@@ -78,12 +78,12 @@ flow:
   inputs:
     - type: udp
       decoder: netflow
-      listen: 0.0.0.0:2055
+      listen: :2055
       workers: 3
       use-src-addr-for-exporter-addr: true
     - type: udp
       decoder: sflow
-      listen: 0.0.0.0:6343
+      listen: :6343
       workers: 3
   workers: 2
 ```
@@ -367,7 +367,7 @@ supports the following keys:
 
 ```yaml
 http:
-  listen: 0.0.0.0:8000
+  listen: :8000
   cache:
     type: redis
     username: akvorado
@@ -683,7 +683,7 @@ snmp:
     11: "IX: AMSIX"
     20: "core"
     21: "core"
-  listen: 0.0.0.0:161
+  listen: :161
 bmp:
   target: 127.0.0.1:10179
   routes:

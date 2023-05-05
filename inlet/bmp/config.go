@@ -35,7 +35,7 @@ type Configuration struct {
 // DefaultConfiguration represents the default configuration for the BMP server
 func DefaultConfiguration() Configuration {
 	return Configuration{
-		Listen:                      "0.0.0.0:10179",
+		Listen:                      ":10179",
 		CollectASNs:                 true,
 		CollectASPaths:              true,
 		CollectCommunities:          true,

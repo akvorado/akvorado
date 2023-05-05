@@ -94,7 +94,7 @@
         11: "IX: AMSIX"
         20: "core"
         21: "core"
-      listen: 0.0.0.0:161
+      listen: :161
     bmp: &bmp
       target: akvorado-inlet:10179
       routes:
@@ -313,7 +313,7 @@
         11: "IX: DECIX"
         20: "core"
         21: "core"
-      listen: 0.0.0.0:161
+      listen: :161
     bmp:
       <<: *bmp
     flows:
@@ -326,7 +326,7 @@
         11: "Transit: Lumen"
         20: "core"
         21: "core"
-      listen: 0.0.0.0:161
+      listen: :161
     bmp:
       <<: *bmp
     flows:
@@ -339,7 +339,7 @@
         11: "Transit: Cogent"
         20: "core"
         21: "core"
-      listen: 0.0.0.0:161
+      listen: :161
     bmp:
       <<: *bmp
     flows:
