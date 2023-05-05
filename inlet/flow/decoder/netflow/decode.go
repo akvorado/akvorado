@@ -88,9 +88,9 @@ func (nd *Decoder) decodeRecord(fields []netflow.DataField) *schema.FlowMessage 
 			etype = helpers.ETypeIPv6
 			bf.DstAddr = decodeIP(v)
 		case netflow.NFV9_FIELD_SRC_MASK, netflow.NFV9_FIELD_IPV6_SRC_MASK:
-			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcNetMask, decodeUNumber(v))
+			bf.SrcNetMask = uint8(decodeUNumber(v))
 		case netflow.NFV9_FIELD_DST_MASK, netflow.NFV9_FIELD_IPV6_DST_MASK:
-			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstNetMask, decodeUNumber(v))
+			bf.DstNetMask = uint8(decodeUNumber(v))
 		case netflow.NFV9_FIELD_IPV4_NEXT_HOP, netflow.NFV9_FIELD_BGP_IPV4_NEXT_HOP, netflow.NFV9_FIELD_IPV6_NEXT_HOP, netflow.NFV9_FIELD_BGP_IPV6_NEXT_HOP:
 			bf.NextHop = decodeIP(v)
 

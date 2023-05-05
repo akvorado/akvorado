@@ -96,6 +96,11 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 
 	sourceBMP := c.d.BMP.Lookup(flow.SrcAddr, netip.Addr{})
 	destBMP := c.d.BMP.Lookup(flow.DstAddr, flow.NextHop)
+	// set prefix len according to user config
+	flow.SrcNetMask = c.getNetMask(flow.SrcNetMask, sourceBMP.PfxLen)
+	flow.DstNetMask = c.getNetMask(flow.DstNetMask, destBMP.PfxLen)
+
+	// set asns according to user config
 	flow.SrcAS = c.getASNumber(flow.SrcAddr, flow.SrcAS, sourceBMP.ASN)
 	flow.DstAS = c.getASNumber(flow.DstAddr, flow.DstAS, destBMP.ASN)
 	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnSrcCountry, []byte(c.d.GeoIP.LookupCountry(flow.SrcAddr)))
@@ -150,6 +155,22 @@ func (c *Component) getASNumber(flowAddr netip.Addr, flowAS, bmpAS uint32) (asn 
 		}
 	}
 	return asn
+}
+
+// getPfxLen retrieves the prefix length for a flow, depending on user preferences.
+func (c *Component) getNetMask(flowMask, bmpMask uint8) (mask uint8) {
+	for _, provider := range c.config.NetProviders {
+		if mask != 0 { // TODO: Consider better handling, as 0 is expected for default routes
+			break
+		}
+		switch provider {
+		case NetProviderFlow:
+			mask = flowMask
+		case NetProviderBMP:
+			mask = bmpMask
+		}
+	}
+	return mask
 }
 
 func (c *Component) writeExporter(flow *schema.FlowMessage, classification exporterClassification) bool {

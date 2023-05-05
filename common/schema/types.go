@@ -91,6 +91,9 @@ type FlowMessage struct {
 	DstAS     uint32
 	GotASPath bool
 
+	SrcNetMask uint8
+	DstNetMask uint8
+
 	// protobuf is the protobuf representation for the information not contained above.
 	protobuf      []byte
 	protobufSet   bitset.BitSet

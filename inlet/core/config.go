@@ -31,7 +31,8 @@ type Configuration struct {
 	OverrideSamplingRate helpers.SubnetMap[uint]
 	// ASNProviders defines the source used to get AS numbers
 	ASNProviders []ASNProvider `validate:"dive"`
-
+	// NetProviders defines the source used to get Prefix/Network Information
+	NetProviders []NetProvider `validate:"dive"`
 	// Old configuration settings
 	classifierCacheSize uint
 }
@@ -44,11 +45,16 @@ func DefaultConfiguration() Configuration {
 		InterfaceClassifiers:    []InterfaceClassifierRule{},
 		ClassifierCacheDuration: 5 * time.Minute,
 		ASNProviders:            []ASNProvider{ASNProviderFlow, ASNProviderBMP, ASNProviderGeoIP},
+		NetProviders:            []NetProvider{NetProviderFlow, NetProviderBMP},
 	}
 }
 
-// ASNProvider describes one AS number provider.
-type ASNProvider int
+type (
+	// ASNProvider describes one AS number provider.
+	ASNProvider int
+	// NetProvider describes one network mask provider.
+	NetProvider int
+)
 
 const (
 	// ASNProviderFlow uses the AS number embedded in flows.
@@ -91,6 +97,43 @@ func (ap *ASNProvider) UnmarshalText(input []byte) error {
 	got, ok := asnProviderMap.LoadKey(string(input))
 	if ok {
 		*ap = got
+		return nil
+	}
+	return errors.New("unknown provider")
+}
+
+const (
+	// NetProviderFlow uses the network mask embedded in flows, if any
+	NetProviderFlow NetProvider = iota
+	// NetProviderBMP uses looks the netmask up with BMP
+	NetProviderBMP
+)
+
+var netProviderMap = bimap.New(map[NetProvider]string{
+	NetProviderFlow: "flow",
+	NetProviderBMP:  "bmp",
+})
+
+// MarshalText turns an AS provider to text.
+func (np NetProvider) MarshalText() ([]byte, error) {
+	got, ok := netProviderMap.LoadValue(np)
+	if ok {
+		return []byte(got), nil
+	}
+	return nil, errors.New("unknown field")
+}
+
+// String turns an AS provider to string.
+func (np NetProvider) String() string {
+	got, _ := netProviderMap.LoadValue(np)
+	return got
+}
+
+// UnmarshalText provides an AS provider from a string.
+func (np *NetProvider) UnmarshalText(input []byte) error {
+	got, ok := netProviderMap.LoadKey(string(input))
+	if ok {
+		*np = got
 		return nil
 	}
 	return errors.New("unknown provider")
