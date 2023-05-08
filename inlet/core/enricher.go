@@ -97,8 +97,8 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	sourceBMP := c.d.BMP.Lookup(flow.SrcAddr, netip.Addr{})
 	destBMP := c.d.BMP.Lookup(flow.DstAddr, flow.NextHop)
 	// set prefix len according to user config
-	flow.SrcNetMask = c.getNetMask(flow.SrcNetMask, sourceBMP.PfxLen)
-	flow.DstNetMask = c.getNetMask(flow.DstNetMask, destBMP.PfxLen)
+	flow.SrcNetMask = c.getNetMask(flow.SrcNetMask, sourceBMP.NetMask)
+	flow.DstNetMask = c.getNetMask(flow.DstNetMask, destBMP.NetMask)
 
 	// set asns according to user config
 	flow.SrcAS = c.getASNumber(flow.SrcAddr, flow.SrcAS, sourceBMP.ASN)

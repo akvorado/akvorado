@@ -16,7 +16,7 @@ type LookupResult struct {
 	ASPath           []uint32
 	Communities      []uint32
 	LargeCommunities []bgp.LargeCommunity
-	PfxLen           uint8
+	NetMask          uint8
 }
 
 // Lookup lookups a route for the provided IP address. It favors the
@@ -61,6 +61,6 @@ func (c *Component) Lookup(ip netip.Addr, nh netip.Addr) LookupResult {
 		ASPath:           attributes.asPath,
 		Communities:      attributes.communities,
 		LargeCommunities: attributes.largeCommunities,
-		PfxLen:           0, // this is an ToDo
+		NetMask:          0, // this is an ToDo
 	}
 }
