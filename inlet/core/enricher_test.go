@@ -633,3 +633,61 @@ func TestGetASNumber(t *testing.T) {
 		})
 	}
 }
+
+func TestGetNetMask(t *testing.T) {
+	cases := []struct {
+		//		Addr        string
+		FlowNetMask uint8
+		BMPNetMask  uint8
+		Providers   []NetProvider
+		Expected    uint8
+	}{
+		// Flow
+		{0, 0, []NetProvider{NetProviderFlow}, 0},
+		{32, 0, []NetProvider{NetProviderFlow}, 32},
+		{0, 16, []NetProvider{NetProviderFlow}, 0},
+		// BMP
+		{0, 0, []NetProvider{NetProviderBMP}, 0},
+		{32, 12, []NetProvider{NetProviderBMP}, 12},
+		{0, 16, []NetProvider{NetProviderBMP}, 16},
+		{24, 0, []NetProvider{NetProviderBMP}, 0},
+		// Both, the first provider with a non-default route is taken
+		{0, 0, []NetProvider{NetProviderBMP, NetProviderFlow}, 0},
+		{12, 0, []NetProvider{NetProviderBMP, NetProviderFlow}, 12},
+		{0, 13, []NetProvider{NetProviderBMP, NetProviderFlow}, 13},
+		{12, 0, []NetProvider{NetProviderBMP, NetProviderFlow}, 12},
+		{12, 24, []NetProvider{NetProviderBMP, NetProviderFlow}, 24},
+
+		{0, 0, []NetProvider{NetProviderFlow, NetProviderBMP}, 0},
+		{12, 0, []NetProvider{NetProviderFlow, NetProviderBMP}, 12},
+		{0, 13, []NetProvider{NetProviderFlow, NetProviderBMP}, 13},
+		{12, 0, []NetProvider{NetProviderFlow, NetProviderBMP}, 12},
+		{12, 24, []NetProvider{NetProviderFlow, NetProviderBMP}, 12},
+	}
+	for i, tc := range cases {
+		i++
+		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
+			r := reporter.NewMock(t)
+
+			// We don't need all components as we won't start the component.
+			configuration := DefaultConfiguration()
+			configuration.NetProviders = tc.Providers
+			bmpComponent, _ := bmp.NewMock(t, r, bmp.DefaultConfiguration())
+			bmpComponent.PopulateRIB(t)
+
+			c, err := New(r, configuration, Dependencies{
+				Daemon: daemon.NewMock(t),
+				GeoIP:  geoip.NewMock(t, r),
+				BMP:    bmpComponent,
+				Schema: schema.NewMock(t),
+			})
+			if err != nil {
+				t.Fatalf("New() error:\n%+v", err)
+			}
+			got := c.getNetMask(tc.FlowNetMask, uint8(tc.BMPNetMask))
+			if diff := helpers.Diff(got, tc.Expected); diff != "" {
+				t.Fatalf("getNetMask() (-got, +want):\n%s", diff)
+			}
+		})
+	}
+}
