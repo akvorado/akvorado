@@ -160,7 +160,7 @@ func (c *Component) getASNumber(flowAddr netip.Addr, flowAS, bmpAS uint32) (asn 
 // getPfxLen retrieves the prefix length for a flow, depending on user preferences.
 func (c *Component) getNetMask(flowMask, bmpMask uint8) (mask uint8) {
 	for _, provider := range c.config.NetProviders {
-		if mask != 0 { // TODO: Consider better handling, as 0 is expected for default routes
+		if mask != 0 {
 			break
 		}
 		switch provider {
