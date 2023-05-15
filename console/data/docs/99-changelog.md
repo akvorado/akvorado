@@ -13,6 +13,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 🩹 *inlet*: fix Netflow processing when template is received with data
 - 🩹 *orchestrator*: create flows table with
   `allow_suspicious_low_cardinality_types` to ensure we can use
   `LowCardinality(IPv6)`.

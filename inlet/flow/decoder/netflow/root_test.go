@@ -207,3 +207,26 @@ func TestDecode(t *testing.T) {
 		t.Fatalf("Metrics after data (-got, +want):\n%s", diff)
 	}
 }
+
+func TestTemplatesMixedWithData(t *testing.T) {
+	r := reporter.NewMock(t)
+	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t)})
+
+	// Send packet with both data and templates
+	template := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data+templates-256-257.pcap"))
+	nfdecoder.Decode(decoder.RawFlow{Payload: template, Source: net.ParseIP("127.0.0.1")})
+
+	// We don't really care about the data, but we should have accepted the
+	// templates. Check the stats.
+	gotMetrics := r.GetMetrics(
+		"akvorado_inlet_flow_decoder_netflow_",
+		"templates_",
+	)
+	expectedMetrics := map[string]string{
+		`templates_count{exporter="127.0.0.1",obs_domain_id="17170432",template_id="256",type="options_template",version="9"}`: "1",
+		`templates_count{exporter="127.0.0.1",obs_domain_id="17170432",template_id="257",type="template",version="9"}`:         "1",
+	}
+	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+		t.Fatalf("Metrics after data (-got, +want):\n%s", diff)
+	}
+}
