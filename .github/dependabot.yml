@@ -15,7 +15,7 @@ updates:
     commit-message:
       prefix: build
     schedule:
-      interval: weekly
+      interval: monthly
     labels:
       - dependencies
     open-pull-requests-limit: 10
