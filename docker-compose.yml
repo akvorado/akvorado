@@ -155,7 +155,6 @@ services:
       - --api=true
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
-      # - --providers.docker.allowEmptyServices=true
       - --entrypoints.private.address=:8080
       - --entrypoints.public.address=:8081
     ports:
