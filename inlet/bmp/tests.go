@@ -52,6 +52,7 @@ func (c *Component) PopulateRIB(t *testing.T) {
 			asPath:           []uint32{64200, 1299, 174},
 			communities:      []uint32{100, 200, 400},
 			largeCommunities: []bgp.LargeCommunity{{ASN: 64200, LocalData1: 2, LocalData2: 3}},
+			plen:             96 + 27,
 		}),
 	})
 	c.rib.addPrefix(netip.MustParseAddr("::ffff:192.0.2.0"), 96+27, route{
@@ -62,6 +63,7 @@ func (c *Component) PopulateRIB(t *testing.T) {
 			asn:         174,
 			asPath:      []uint32{64200, 174, 174, 174},
 			communities: []uint32{100},
+			plen:        96 + 27,
 		}),
 	})
 	c.rib.addPrefix(netip.MustParseAddr("::ffff:192.0.2.128"), 96+27, route{
@@ -72,6 +74,7 @@ func (c *Component) PopulateRIB(t *testing.T) {
 			asn:         1299,
 			asPath:      []uint32{64200, 1299},
 			communities: []uint32{500},
+			plen:        96 + 27,
 		}),
 	})
 	c.rib.addPrefix(netip.MustParseAddr("::ffff:1.0.0.0"), 96+24, route{
@@ -79,7 +82,8 @@ func (c *Component) PopulateRIB(t *testing.T) {
 		nlri:    c.rib.nlris.Put(nlri{family: bgp.RF_FS_IPv4_UC}),
 		nextHop: c.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
 		attributes: c.rib.rtas.Put(routeAttributes{
-			asn: 65300,
+			asn:  65300,
+			plen: 96 + 24,
 		}),
 	})
 }
