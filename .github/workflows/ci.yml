@@ -59,7 +59,7 @@ jobs:
         ports:
           - 6379:6379
       clickhouse:
-        image: clickhouse/clickhouse-server:23.3
+        image: clickhouse/clickhouse-server:22.8
         ports:
           - 9000:9000
     env:

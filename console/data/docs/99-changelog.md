@@ -13,10 +13,6 @@ identified with a specific icon:
 
 ## Unreleased
 
-- 🩹 *orchestrator*: create flows table with
-  `allow_suspicious_low_cardinality_types` to ensure we can use
-  `LowCardinality(IPv6)`.
-- 🌱 *docker*: update ClickHouse to 23.3 (this is not mandatory)
 - 🌱 *build*: minimum supported Node version is now 16
 
 ## 1.8.3 - 2023-04-28
