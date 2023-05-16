@@ -300,6 +300,7 @@ func (c *Component) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonito
 				plen += 96
 			}
 			p, _ := netip.AddrFromSlice(prefix)
+			rta.plen = uint8(plen)
 			added += c.rib.addPrefix(p, plen, route{
 				peer: pinfo.reference,
 				nlri: c.rib.nlris.Put(nlri{
@@ -393,6 +394,7 @@ func (c *Component) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonito
 			}
 			switch attr.(type) {
 			case *bgp.PathAttributeMpReachNLRI:
+				rta.plen = uint8(plen)
 				added += c.rib.addPrefix(p, plen, route{
 					peer: pinfo.reference,
 					nlri: c.rib.nlris.Put(nlri{

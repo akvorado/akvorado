@@ -56,11 +56,16 @@ func (c *Component) Lookup(ip netip.Addr, nh netip.Addr) LookupResult {
 		return LookupResult{}
 	}
 	attributes := c.rib.rtas.Get(routes[len(routes)-1].attributes)
+	// prefix len is v6 coded in the bmp rib. We need to substract 96 if it's a v4 prefix
+	plen := attributes.plen
+	if ip.Is4() || ip.Is4In6() {
+		plen = plen - 96
+	}
 	return LookupResult{
 		ASN:              attributes.asn,
 		ASPath:           attributes.asPath,
 		Communities:      attributes.communities,
 		LargeCommunities: attributes.largeCommunities,
-		NetMask:          0, // this is an ToDo
+		NetMask:          plen,
 	}
 }

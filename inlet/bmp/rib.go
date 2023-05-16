@@ -77,6 +77,7 @@ type routeAttributes struct {
 	asn         uint32
 	asPath      []uint32
 	communities []uint32
+	plen        uint8
 	// extendedCommunities []uint64
 	largeCommunities []bgp.LargeCommunity
 }
