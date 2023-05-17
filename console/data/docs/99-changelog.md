@@ -13,7 +13,6 @@ identified with a specific icon:
 
 ## Unreleased
 
-- 🌱 *inlet*: force socket buffer size to `receive-buffer` value if possible (on Linux)
 - 🌱 *build*: minimum supported Node version is now 16
 
 ## 1.8.3 - 2023-04-28
