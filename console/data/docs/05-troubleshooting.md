@@ -187,9 +187,8 @@ UNCONN           0                0                                        *:205
          skmem:(r0,rb212992,t0,tb212992,f4096,w0,o0,bl0,d486525)
 ```
 
-In the example above, there were 486525 drops. This can be solved
-either by increasing the number of workers for the UDP input or by
-increasing the value of `net.core.rmem_max` sysctl and increasing the
+In the example above, there were 486525 drops. This can be solved either by
+increasing the number of workers for the UDP input or by increasing the
 `receive-buffer` setting attached to the input.
 
 #### Internal queues
