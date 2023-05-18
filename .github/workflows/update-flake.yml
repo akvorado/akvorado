@@ -1,0 +1,29 @@
+---
+name: Update flake.nix
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - go.mod
+      - go.sum
+      - console/frontend/package-lock.json
+jobs:
+  flake:
+    name: Update hashs in flake.nix
+    runs-on: ubuntu-latest
+    concurrency:
+      group: update-flake-nix
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v3
+      - uses: cachix/install-nix-action@v20
+      - name: Update flake.nix
+        run: nix run .#update
+      - name: Push update
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add flake.nix flake.lock
+          ! git commit -m "build: update flake.nix" || git push
