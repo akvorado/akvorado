@@ -68,6 +68,10 @@ $(BIN)/pigeon: PACKAGE=github.com/mna/pigeon@v1.1.0
 WWHRD = $(BIN)/wwhrd
 $(BIN)/wwhrd: PACKAGE=github.com/frapposelli/wwhrd@latest
 
+.PHONY: nix-update
+nix-update: ; $(info $(M) update Nix hashes…) @ ## Update nix hashes
+	$Q nix run ".#update"
+
 # Generated files
 
 .DELETE_ON_ERROR:

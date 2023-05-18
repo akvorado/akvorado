@@ -4,4 +4,6 @@
 // Package mocks contains mocks for conntrackfixer package.
 package mocks
 
-// This is empty to ensure the package exists to help Dependabot.
+import (
+	_ "github.com/golang/mock/mockgen/model" // for mockgen in vendor mode
+)
