@@ -4,4 +4,7 @@
 // Package mocks contains mocks for clickhousedb package.
 package mocks
 
-// This is empty to ensure the package exists to help Dependabot.
+import (
+	_ "github.com/ClickHouse/clickhouse-go/v2/lib/driver" // for mockgen in vendor mode
+	_ "github.com/golang/mock/mockgen/model"              // for mockgen in vendor mode
+)
