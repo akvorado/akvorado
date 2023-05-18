@@ -130,7 +130,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
   clickhouse:
-    image: clickhouse/clickhouse-server:23.3
+    image: clickhouse/clickhouse-server:22.8
     volumes:
       - ./orchestrator/clickhouse/data/docker-entrypoint.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
       - akvorado-clickhouse:/var/lib/clickhouse
@@ -155,7 +155,6 @@ services:
       - --api=true
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
-      # - --providers.docker.allowEmptyServices=true
       - --entrypoints.private.address=:8080
       - --entrypoints.public.address=:8081
     ports:

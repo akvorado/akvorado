@@ -6,6 +6,7 @@
 package udp
 
 import (
+	"net"
 	"syscall"
 	"time"
 
@@ -47,4 +48,21 @@ func parseSocketControlMessage(b []byte) (oobMessage, error) {
 		}
 	}
 	return result, nil
+}
+
+// setReadBuffer sets the read buffer for an UDP connection.
+func setReadBuffer(conn *net.UDPConn, bytes int) error {
+	if err := conn.SetReadBuffer(bytes); err != nil {
+		// Also try with SO_RCVBUFFORCE
+		if fd, err := conn.SyscallConn(); err == nil {
+			if err := fd.Control(func(fd uintptr) {
+				unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, syscall.SO_RCVBUFFORCE,
+					bytes)
+			}); err == nil {
+				return nil
+			}
+		}
+		return err
+	}
+	return nil
 }

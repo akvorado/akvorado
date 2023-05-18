@@ -3,15 +3,15 @@ module akvorado
 go 1.19
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.9.1
+	github.com/ClickHouse/clickhouse-go/v2 v2.9.3
 	github.com/Shopify/sarama v1.38.1
 	github.com/alecthomas/chroma v0.10.0
 	github.com/antonmedv/expr v1.12.5
-	github.com/benbjohnson/clock v1.3.3
+	github.com/benbjohnson/clock v1.3.4
 	github.com/bits-and-blooms/bitset v1.7.0
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/chenyahui/gin-cache v1.8.1
-	github.com/docker/docker v23.0.5+incompatible
+	github.com/docker/docker v23.0.6+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/eapache/go-resiliency v1.3.0
 	github.com/fsnotify/fsnotify v1.6.0
@@ -43,12 +43,12 @@ require (
 	github.com/yuin/goldmark v1.5.4
 	github.com/yuin/goldmark-highlighting v0.0.0-20220208100518-594be1970594
 	golang.org/x/exp v0.0.0-20221217163422-3c43f8badb15
-	golang.org/x/sys v0.7.0
+	golang.org/x/sys v0.8.0
 	golang.org/x/time v0.3.0
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 	gopkg.in/yaml.v3 v3.0.1
-	gorm.io/gorm v1.25.0
+	gorm.io/gorm v1.25.1
 )
 
 require (

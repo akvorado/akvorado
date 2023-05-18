@@ -48,9 +48,6 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 		MaxOpenConns:    config.MaxOpenConns,
 		MaxIdleConns:    config.MaxOpenConns/2 + 1,
 		ConnMaxLifetime: time.Hour,
-		Settings: clickhouse.Settings{
-			"allow_suspicious_low_cardinality_types": 1,
-		},
 		ClientInfo: clickhouse.ClientInfo{
 			Products: []struct {
 				Name    string
