@@ -13,6 +13,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 🩹 *inlet*: fix Netflow processing when template is received with data
 - 🌱 *build*: minimum supported Node version is now 16
 
 ## 1.8.3 - 2023-04-28
