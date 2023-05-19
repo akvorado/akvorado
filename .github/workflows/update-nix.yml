@@ -1,5 +1,5 @@
 ---
-name: Update nixpkgs
+name: Update nixpkgs and asn2org
 on:
   workflow_dispatch:
   schedule:
@@ -9,17 +9,22 @@ jobs:
   lockfile:
     name: Update Nix lockfile
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        source:
+          - nixpkgs
+          - asn2org
     steps:
       - uses: actions/checkout@v3
       - uses: cachix/install-nix-action@v20
       - name: Update Nix lockfile
-        run: nix flake lock --update-input nixpkgs
+        run: nix flake lock --update-input ${{ source }}
       - name: Create pull request
         uses: peter-evans/create-pull-request@v5
         with:
           add-paths: flake.lock
-          branch: nix/flake-lock-update
+          branch: nix/flake-lock-update-${{ source }}
           labels: dependencies
-          commit-message: "build: flake.lock automated update"
-          title: "build: nixpkgs update"
+          commit-message: "build: flake.lock automated update for ${{ source }}"
+          title: "build: ${{ source }} update"
           body: ""
