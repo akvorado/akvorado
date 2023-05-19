@@ -12,10 +12,16 @@
       let
         pkgs = import nixpkgs {
           inherit system;
+          # we use an overlay to set the desired versions of go and nodejs
+          overlays = [
+            (final: prev: {
+              go = prev.go_1_20;
+              nodejs = prev.nodejs-18_x;
+            })
+          ];
         };
-        nodejs = pkgs.nodejs-18_x;
-        go = pkgs.go_1_20;
-        frontend = pkgs.buildNpmPackage.override { inherit nodejs; } {
+
+        frontend = pkgs.buildNpmPackage {
           name = "akvorado-frontend";
           src = ./console/frontend;
           npmDepsHash = "sha256-xs2WHPrQFPtcjYEpB2Fb/gegP6Mf9ZD0VK/DcPg1zS8=";
@@ -25,11 +31,12 @@
             cp -r ../data/frontend $out/data
           '';
         };
-        backend = pkgs.buildGoModule.override { inherit go; } {
+
+        akvorado = pkgs.buildGoModule {
           doCheck = false;
           name = "akvorado";
           src = ./.;
-          vendorHash = "sha256-cxL3WuvSKpsutVS3k5kduEDdAvk1ZM2XVU6YjcT+OTk=";
+          vendorHash = "sha256-0IO+mWdMTTPKgn1sisiRjT6uKXtxYOta8Uk9csi1604=";
           buildPhase = ''
             cp ${asn2org}/asns.csv orchestrator/clickhouse/data/asns.csv
             cp -r ${frontend}/node_modules console/frontend/node_modules
@@ -46,49 +53,44 @@
           '';
           # We do not use a wrapper to set SSL_CERT_FILE because, either a
           # binary or a shell wrapper, it would pull the libc (~30M).
-          installPhase= ''
+          installPhase = ''
             mkdir -p $out/bin $out/share/ca-certificates
             cp bin/akvorado $out/bin/.
             cp ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt $out/share/ca-certificates/.
           '';
+          # passthru is a special attribute that is not passed to the builder,
+          # changing anything here does not invalidate the derivation output
+          passthru = {
+            # updates (in-place) vendorHash, which is needed to fetch go
+            # dependencies, run with
+            # nix run .#default.passthru.update-vendorHash
+            update-vendorHash = pkgs.writeShellScriptBin "update-vendorHash" ''
+              VENDOR_DIR=$(mktemp -d)
+              ${pkgs.go}/bin/go mod vendor -v -o $VENDOR_DIR
+              NEW_VENDOR_HASH=$(${pkgs.nix}/bin/nix hash path $VENDOR_DIR)
+              ${pkgs.gnused}/bin/sed -i "s,${akvorado.vendorHash},$NEW_VENDOR_HASH," flake.nix
+            '';
+            # updates (in-place) npmDepsHash, which is needed to fetch nodejs
+            # dependencies, run with
+            # nix run .#default.passthru.update-npmDepsHash
+            update-npmDepsHash = pkgs.writeShellScriptBin "update-npmDepsHash" ''
+              NEW_DEPS_HASH=$(${pkgs.prefetch-npm-deps}/bin/prefetch-npm-deps ./console/frontend/package-lock.json)
+              ${pkgs.gnused}/bin/sed -i "s,${frontend.npmDepsHash},$NEW_DEPS_HASH," flake.nix
+            '';
+          };
         };
       in
-      rec {
-        apps = {
-          update = let
-            script = pkgs.writeShellScriptBin "nix-update-akvorado" ''
-              # go
-              sha256=$(2>&1 nix build --no-link .#backend.go-modules \
-                          | ${pkgs.gnused}/bin/sed -nE "s/\s+got:\s+(sha256-.*)/\1/p")
-              [[ -z "$sha256" ]] || \
-                 ${pkgs.gnused}/bin/sed -Ei "s,^(\s+[v]endorHash =).*,\1 \"''${sha256}\";," flake.nix
-
-              # npm
-              sha256=$(2>&1 nix build --no-link .#frontend.npmDeps \
-                          | ${pkgs.gnused}/bin/sed -nE "s/\s+got:\s+(sha256-.*)/\1/p")
-              [[ -z "$sha256" ]] || \
-                 ${pkgs.gnused}/bin/sed -Ei "s,^(\s+[n]pmDepsHash =).*,\1 \"''${sha256}\";," flake.nix
-
-              # asn2org
-              nix flake lock --update-input asn2org
-            '';
-            in {
-              type = "app";
-              program = "${script}/bin/nix-update-akvorado";
-            };
-        };
-
+      {
         packages = {
-          inherit backend frontend;
-          default = backend;
+          default = akvorado;
         };
 
         # Activate with "nix develop"
         devShells.default = pkgs.mkShell {
           name = "akvorado-dev";
           nativeBuildInputs = [
-            go
-            nodejs
+            pkgs.go
+            pkgs.nodejs
             pkgs.git
             pkgs.curl
             pkgs.gomod2nix

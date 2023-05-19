@@ -19,8 +19,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: cachix/install-nix-action@v20
-      - name: Update flake.nix
-        run: nix run .#update
+      - name: Update npmDepsHash in flake.nix
+        run: nix run .#default.passthru.update-npmDepsHash
+      - name: Update vendorHash in flake.nix
+        run: nix run .#default.passthru.update-vendorHash
       - name: Push update
         run: |
           git config --local user.name "github-actions[bot]"
