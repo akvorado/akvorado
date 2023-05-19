@@ -96,7 +96,6 @@
             nodejs
             pkgs.git
             pkgs.curl
-            pkgs.gomod2nix
           ];
         };
       });
