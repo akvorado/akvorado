@@ -10,3 +10,4 @@ mock_*.go
 *~
 /.go-cache
 /.npm-cache
+/result
