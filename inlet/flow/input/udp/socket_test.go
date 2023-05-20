@@ -74,21 +74,3 @@ outer:
 		t.Fatal("no drops detected")
 	}
 }
-
-func TestSetReadBuffer(t *testing.T) {
-	server, err := listenConfig.ListenPacket(context.Background(), "udp", "127.0.0.1:0")
-	if err != nil {
-		t.Fatalf("ListenPacket() error:\n%+v", err)
-	}
-	defer server.Close()
-
-	client, err := net.Dial("udp", server.(*net.UDPConn).LocalAddr().String())
-	if err != nil {
-		t.Fatalf("Dial() error:\n%+v", err)
-	}
-
-	conn := client.(*net.UDPConn)
-	if err := setReadBuffer(conn, 256); err != nil {
-		t.Fatalf("setReadBuffer() error:\n%+v", err)
-	}
-}

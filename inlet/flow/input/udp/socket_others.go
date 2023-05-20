@@ -5,11 +5,7 @@
 
 package udp
 
-import (
-	"net"
-
-	"golang.org/x/sys/unix"
-)
+import "golang.org/x/sys/unix"
 
 var (
 	oobLength        = 0
@@ -19,9 +15,4 @@ var (
 // parseSocketControlMessage always returns 0.
 func parseSocketControlMessage(_ []byte) (oobMessage, error) {
 	return oobMessage{}, nil
-}
-
-// setReadBuffer sets the read buffer for an UDP connection.
-func setReadBuffer(conn *net.UDPConn, bytes int) error {
-	return conn.SetReadBuffer(bytes)
 }

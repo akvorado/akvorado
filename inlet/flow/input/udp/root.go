@@ -127,7 +127,7 @@ func (in *Input) Start() (<-chan []*schema.FlowMessage, error) {
 			in.r.Info().Str("listen", in.address.String()).Msg("UDP input listening")
 		}
 		if in.config.ReceiveBuffer > 0 {
-			if err := setReadBuffer(udpConn, int(in.config.ReceiveBuffer)); err != nil {
+			if err := udpConn.SetReadBuffer(int(in.config.ReceiveBuffer)); err != nil {
 				in.r.Warn().
 					Str("error", err.Error()).
 					Str("listen", in.config.Listen).
