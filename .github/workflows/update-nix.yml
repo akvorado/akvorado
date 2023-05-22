@@ -18,13 +18,13 @@ jobs:
       - uses: actions/checkout@v3
       - uses: cachix/install-nix-action@v20
       - name: Update Nix lockfile
-        run: nix flake lock --update-input ${{ source }}
+        run: nix flake lock --update-input ${{ matrix.source }}
       - name: Create pull request
         uses: peter-evans/create-pull-request@v5
         with:
           add-paths: flake.lock
-          branch: nix/flake-lock-update-${{ source }}
+          branch: nix/flake-lock-update-${{ matrix.source }}
           labels: dependencies
-          commit-message: "build: flake.lock automated update for ${{ source }}"
-          title: "build: ${{ source }} update"
+          commit-message: "build: flake.lock automated update for ${{ matrix.source }}"
+          title: "build: ${{ matrix.source }} update"
           body: ""
