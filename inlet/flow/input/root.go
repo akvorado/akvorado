@@ -19,8 +19,8 @@ type Input interface {
 	Stop() error
 }
 
-// Configuration the interface for the configuration for an input module.
+// Configuration defines the interface to instantiate an input module from its configuration.
 type Configuration interface {
-	// New instantiantes a new input from its configuration.
+	// New instantiates a new input from its configuration.
 	New(r *reporter.Reporter, daemon daemon.Component, dec decoder.Decoder) (Input, error)
 }
