@@ -199,12 +199,10 @@ The following configuration keys are accepted:
   from flow except if the ASN is private), `geoip`, `bmp`, and
   `bmp-except-private`. The default value is `flow`, `bmp`, and
   `geoip`.
-- `net-providers` defines the sources for NetMasks/Prefixes.
-  `flow` uses the value provided by the flow message (if any), 
-  while `bmp` looks it up using the BMP component (currently work in progress).
-  If multiple sources are provided, the value of the first source 
-  providing a non-default route is taken.
-  The default value is `flow` and `bmp`.
+- `net-providers` defines the sources for prefix lengths. `flow` uses the value
+  provided by the flow message (if any), while `bmp` looks it up using the BMP
+  component. If multiple sources are provided, the value of the first source
+  providing a non-default route is taken. The default value is `flow` and `bmp`.
 
 Classifier rules are written using [expr][].
 

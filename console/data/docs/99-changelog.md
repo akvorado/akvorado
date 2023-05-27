@@ -13,6 +13,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- ✨ *inlet*: allow extraction of prefix length from BMP. See `inlet`→`core`→`net-providers`.
 - 🩹 *inlet*: fix Netflow processing when template is received with data
 - 🌱 *build*: minimum supported Node version is now 16
 
