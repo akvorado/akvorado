@@ -24,6 +24,12 @@ type Query struct {
 	IfIndex    uint
 }
 
+// BatchQuery is a batched query.
+type BatchQuery struct {
+	ExporterIP netip.Addr
+	IfIndexes  []uint
+}
+
 // Answer is the answer received from a provider.
 type Answer struct {
 	ExporterName string
@@ -36,11 +42,11 @@ type Update struct {
 	Answer
 }
 
-// Provider is the interface any provider should meet.
+// Provider is the interface a provider should implement.
 type Provider interface {
-	// Query asks the provider to query metadata for exporter and interface. The
-	// update will be returned by calling the provided callback.
-	Query(ctx context.Context, query Query, put func(Update)) error
+	// Query asks the provider to query metadata for several requests. The
+	// updates will be returned by calling the provided callback for each one.
+	Query(ctx context.Context, query BatchQuery, put func(Update)) error
 }
 
 // Configuration defines an interface to configure a provider.

@@ -217,11 +217,10 @@ func TestPoller(t *testing.T) {
 					update.IfIndex, update.Name, update.Description, update.Speed))
 			}
 
-			p.Query(context.Background(), provider.Query{ExporterIP: tc.ExporterIP, IfIndex: 641}, put)
-			p.Query(context.Background(), provider.Query{ExporterIP: tc.ExporterIP, IfIndex: 642}, put)
-			p.Query(context.Background(), provider.Query{ExporterIP: tc.ExporterIP, IfIndex: 643}, put)
-			p.Query(context.Background(), provider.Query{ExporterIP: tc.ExporterIP, IfIndex: 644}, put)
-			p.Query(context.Background(), provider.Query{ExporterIP: tc.ExporterIP, IfIndex: 0}, put)
+			p.Query(context.Background(), provider.BatchQuery{ExporterIP: tc.ExporterIP, IfIndexes: []uint{641}}, put)
+			p.Query(context.Background(), provider.BatchQuery{ExporterIP: tc.ExporterIP, IfIndexes: []uint{642}}, put)
+			p.Query(context.Background(), provider.BatchQuery{ExporterIP: tc.ExporterIP, IfIndexes: []uint{643, 644}}, put)
+			p.Query(context.Background(), provider.BatchQuery{ExporterIP: tc.ExporterIP, IfIndexes: []uint{0}}, put)
 			exporterStr := tc.ExporterIP.Unmap().String()
 			time.Sleep(50 * time.Millisecond)
 			if diff := helpers.Diff(got, []string{

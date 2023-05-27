@@ -20,18 +20,20 @@ import (
 type mockProvider struct{}
 
 // Query query the mock provider for a value.
-func (mp mockProvider) Query(_ context.Context, query provider.Query, put func(provider.Update)) error {
-	answer := provider.Answer{
-		ExporterName: strings.ReplaceAll(query.ExporterIP.Unmap().String(), ".", "_"),
-	}
-	if query.IfIndex != 999 {
-		answer.Interface = Interface{
-			Name:        fmt.Sprintf("Gi0/0/%d", query.IfIndex),
-			Description: fmt.Sprintf("Interface %d", query.IfIndex),
-			Speed:       1000,
+func (mp mockProvider) Query(_ context.Context, query provider.BatchQuery, put func(provider.Update)) error {
+	for _, ifIndex := range query.IfIndexes {
+		answer := provider.Answer{
+			ExporterName: strings.ReplaceAll(query.ExporterIP.Unmap().String(), ".", "_"),
 		}
+		if ifIndex != 999 {
+			answer.Interface = Interface{
+				Name:        fmt.Sprintf("Gi0/0/%d", ifIndex),
+				Description: fmt.Sprintf("Interface %d", ifIndex),
+				Speed:       1000,
+			}
+		}
+		put(provider.Update{Query: provider.Query{ExporterIP: query.ExporterIP, IfIndex: ifIndex}, Answer: answer})
 	}
-	put(provider.Update{Query: query, Answer: answer})
 	return nil
 }
 

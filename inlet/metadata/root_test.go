@@ -156,7 +156,7 @@ func TestStartStopWithMultipleWorkers(t *testing.T) {
 
 type errorProvider struct{}
 
-func (ep errorProvider) Query(_ context.Context, _ provider.Query, _ func(provider.Update)) error {
+func (ep errorProvider) Query(_ context.Context, _ provider.BatchQuery, _ func(provider.Update)) error {
 	return errors.New("noooo")
 }
 
@@ -179,6 +179,7 @@ func TestProviderBreaker(t *testing.T) {
 		t.Run(tc.Name, func(t *testing.T) {
 			r := reporter.NewMock(t)
 			configuration := DefaultConfiguration()
+			configuration.MaxBatchRequests = 0
 			configuration.Provider.Config = tc.ProviderConfiguration
 			c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 			c.metrics.providerBreakerOpenCount.WithLabelValues("127.0.0.1").Add(0)
@@ -199,5 +200,69 @@ func TestProviderBreaker(t *testing.T) {
 				t.Errorf("Metrics (-got, +want):\n%s", diff)
 			}
 		})
+	}
+}
+
+type batchProvider struct {
+	config *batchProviderConfiguration
+}
+
+func (bp *batchProvider) Query(_ context.Context, query provider.BatchQuery, _ func(provider.Update)) error {
+	bp.config.received = append(bp.config.received, query)
+	return nil
+}
+
+type batchProviderConfiguration struct {
+	received []provider.BatchQuery
+}
+
+func (bpc *batchProviderConfiguration) New(_ *reporter.Reporter) (provider.Provider, error) {
+	return &batchProvider{config: bpc}, nil
+}
+
+func TestBatching(t *testing.T) {
+	bcp := batchProviderConfiguration{
+		received: []provider.BatchQuery{},
+	}
+	r := reporter.NewMock(t)
+	t.Run("run", func(t *testing.T) {
+		configuration := DefaultConfiguration()
+		configuration.Provider.Config = &bcp
+		c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
+
+		// Block dispatcher
+		blocker := make(chan bool)
+		c.dispatcherBChannel <- blocker
+
+		defer func() {
+			// Unblock
+			time.Sleep(20 * time.Millisecond)
+			close(blocker)
+			time.Sleep(20 * time.Millisecond)
+		}()
+
+		// Queue requests
+		c.Lookup(c.d.Clock.Now(), netip.MustParseAddr("::ffff:127.0.0.1"), 766)
+		c.Lookup(c.d.Clock.Now(), netip.MustParseAddr("::ffff:127.0.0.1"), 767)
+		c.Lookup(c.d.Clock.Now(), netip.MustParseAddr("::ffff:127.0.0.1"), 768)
+		c.Lookup(c.d.Clock.Now(), netip.MustParseAddr("::ffff:127.0.0.1"), 769)
+	})
+
+	gotMetrics := r.GetMetrics("akvorado_inlet_metadata_provider_", "batched_count")
+	expectedMetrics := map[string]string{
+		`batched_count`: "4",
+	}
+	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+		t.Errorf("Metrics (-got, +want):\n%s", diff)
+	}
+
+	expectedAccepted := []provider.BatchQuery{
+		{
+			ExporterIP: netip.MustParseAddr("::ffff:127.0.0.1"),
+			IfIndexes:  []uint{766, 767, 768, 769},
+		},
+	}
+	if diff := helpers.Diff(bcp.received, expectedAccepted); diff != "" {
+		t.Errorf("Accepted requests (-got, +want):\n%s", diff)
 	}
 }

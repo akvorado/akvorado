@@ -27,6 +27,8 @@ type Configuration struct {
 
 	// Workers define the number of workers used to poll metadata
 	Workers int `validate:"min=1"`
+	// MaxBatchRequests define how many requests to pass to a worker at once if possible
+	MaxBatchRequests int `validate:"min=0"`
 }
 
 // DefaultConfiguration represents the default configuration for the metadata provider.
@@ -37,6 +39,7 @@ func DefaultConfiguration() Configuration {
 		CacheCheckInterval: 2 * time.Minute,
 		CachePersistFile:   "",
 		Workers:            1,
+		MaxBatchRequests:   10,
 	}
 }
 

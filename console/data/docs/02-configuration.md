@@ -325,6 +325,7 @@ providers available to poll metadata. The following keys are accepted:
 - `poller-retries` is the number of retries on unsuccessful SNMP requests.
 - `poller-timeout` tells how much time should the poller wait for an answer.
 - `workers` tell how many workers to spawn to handle SNMP polling.
+- `max-batch-requests` define how many requests can be batched together
 - `provider` defines the provider configuration
 
 As flows missing interface information are discarded, persisting the

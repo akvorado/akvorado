@@ -33,8 +33,9 @@ type Component struct {
 	sc *metadataCache
 
 	healthyWorkers         chan reporter.ChannelHealthcheckFunc
-	providerChannel        chan provider.Query
+	providerChannel        chan provider.BatchQuery
 	dispatcherChannel      chan provider.Query
+	dispatcherBChannel     chan (<-chan bool) // block channel for testing
 	providerBreakersLock   sync.Mutex
 	providerBreakerLoggers map[netip.Addr]reporter.Logger
 	providerBreakers       map[netip.Addr]*breaker.Breaker
@@ -45,6 +46,7 @@ type Component struct {
 		cacheRefresh             reporter.Counter
 		providerBusyCount        *reporter.CounterVec
 		providerBreakerOpenCount *reporter.CounterVec
+		providerBatchedCount     reporter.Counter
 	}
 }
 
@@ -73,8 +75,9 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		config: configuration,
 		sc:     sc,
 
-		providerChannel:        make(chan provider.Query),
+		providerChannel:        make(chan provider.BatchQuery),
 		dispatcherChannel:      make(chan provider.Query, 100*configuration.Workers),
+		dispatcherBChannel:     make(chan (<-chan bool)),
 		providerBreakers:       make(map[netip.Addr]*breaker.Breaker),
 		providerBreakerLoggers: make(map[netip.Addr]reporter.Logger),
 	}
@@ -109,6 +112,12 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 			Help: "Provider breaker was opened due to too many errors.",
 		},
 		[]string{"exporter"})
+	c.metrics.providerBatchedCount = r.Counter(
+		reporter.CounterOpts{
+			Name: "provider_batched_count",
+			Help: "Several requests were batched into one.",
+		},
+	)
 	return &c, nil
 }
 
@@ -159,8 +168,11 @@ func (c *Component) Start() error {
 				if ok {
 					cb(reporter.HealthcheckOK, "ok")
 				}
+			case ch := <-c.dispatcherBChannel:
+				// This is to test batching
+				<-ch
 			case request := <-c.dispatcherChannel:
-				c.providerChannel <- request
+				c.dispatchIncomingRequest(request)
 			}
 		}
 	})
@@ -224,9 +236,49 @@ func (c *Component) Lookup(t time.Time, exporterIP netip.Addr, ifIndex uint) (st
 	return answer.ExporterName, answer.Interface, ok
 }
 
+// dispatchIncomingRequest dispatches an incoming request to workers. It may
+// handle more than the provided request if it can.
+func (c *Component) dispatchIncomingRequest(request provider.Query) {
+	requestsMap := map[netip.Addr][]uint{
+		request.ExporterIP: {request.IfIndex},
+	}
+	for c.config.MaxBatchRequests > 0 {
+		select {
+		case request := <-c.dispatcherChannel:
+			indexes, ok := requestsMap[request.ExporterIP]
+			if !ok {
+				indexes = []uint{request.IfIndex}
+			} else {
+				indexes = append(indexes, request.IfIndex)
+			}
+			requestsMap[request.ExporterIP] = indexes
+			// We don't want to exceed the configured limit but also there is no
+			// point of batching requests of too many exporters.
+			if len(indexes) < c.config.MaxBatchRequests && len(requestsMap) < 4 {
+				continue
+			}
+		case <-c.t.Dying():
+			return
+		default:
+			// No more requests in queue
+		}
+		break
+	}
+	for exporterIP, ifIndexes := range requestsMap {
+		if len(ifIndexes) > 1 {
+			c.metrics.providerBatchedCount.Add(float64(len(ifIndexes)))
+		}
+		select {
+		case <-c.t.Dying():
+			return
+		case c.providerChannel <- provider.BatchQuery{ExporterIP: exporterIP, IfIndexes: ifIndexes}:
+		}
+	}
+}
+
 // providerIncomingRequest handles an incoming request to the provider. It
 // uses a breaker to avoid pushing working on non-responsive exporters.
-func (c *Component) providerIncomingRequest(request provider.Query) {
+func (c *Component) providerIncomingRequest(request provider.BatchQuery) {
 	// Avoid querying too much exporters with errors
 	c.providerBreakersLock.Lock()
 	providerBreaker, ok := c.providerBreakers[request.ExporterIP]
