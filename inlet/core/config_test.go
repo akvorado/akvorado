@@ -70,6 +70,17 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Expected: Configuration{
 				ASNProviders: []ASNProvider{ASNProviderFlowExceptPrivate, ASNProviderGeoIP, ASNProviderFlow},
 			},
+		}, {
+			Description: "net-providers",
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"net-providers": []string{"flow", "bmp"},
+				}
+			},
+			Expected: Configuration{
+				NetProviders: []NetProvider{NetProviderFlow, NetProviderBMP},
+			},
 		},
 	})
 }

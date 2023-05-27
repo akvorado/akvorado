@@ -122,8 +122,8 @@ func (nd *Decoder) decode(msgDec interface{}) []*schema.FlowMessage {
 					}
 				}
 			case sflow.ExtendedRouter:
-				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcNetMask, uint64(recordData.SrcMaskLen))
-				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstNetMask, uint64(recordData.DstMaskLen))
+				bf.SrcNetMask = uint8(recordData.SrcMaskLen)
+				bf.DstNetMask = uint8(recordData.DstMaskLen)
 				bf.NextHop = decodeIP(recordData.NextHop)
 			case sflow.ExtendedGateway:
 				bf.NextHop = decodeIP(recordData.NextHop)

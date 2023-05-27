@@ -102,6 +102,8 @@ func (schema *Schema) ProtobufMarshal(bf *FlowMessage) []byte {
 	schema.ProtobufAppendIP(bf, ColumnExporterAddress, bf.ExporterAddress)
 	schema.ProtobufAppendVarint(bf, ColumnSrcAS, uint64(bf.SrcAS))
 	schema.ProtobufAppendVarint(bf, ColumnDstAS, uint64(bf.DstAS))
+	schema.ProtobufAppendVarint(bf, ColumnSrcNetMask, uint64(bf.SrcNetMask))
+	schema.ProtobufAppendVarint(bf, ColumnDstNetMask, uint64(bf.DstNetMask))
 	schema.ProtobufAppendIP(bf, ColumnSrcAddr, bf.SrcAddr)
 	schema.ProtobufAppendIP(bf, ColumnDstAddr, bf.DstAddr)
 	if !schema.IsDisabled(ColumnGroupL2) {

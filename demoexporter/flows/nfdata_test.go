@@ -113,6 +113,8 @@ func TestGetNetflowData(t *testing.T) {
 				OutIf:           20,
 				SrcAS:           65201,
 				DstAS:           65202,
+				SrcNetMask:      24,
+				DstNetMask:      23,
 				ProtobufDebug: map[schema.ColumnKey]interface{}{
 					schema.ColumnBytes:            1500,
 					schema.ColumnPackets:          1,
@@ -121,8 +123,6 @@ func TestGetNetflowData(t *testing.T) {
 					schema.ColumnSrcPort:          443,
 					schema.ColumnDstPort:          34974,
 					schema.ColumnForwardingStatus: 64,
-					schema.ColumnSrcNetMask:       24,
-					schema.ColumnDstNetMask:       23,
 				},
 			},
 			&schema.FlowMessage{
@@ -134,6 +134,8 @@ func TestGetNetflowData(t *testing.T) {
 				OutIf:           20,
 				SrcAS:           65201,
 				DstAS:           65202,
+				SrcNetMask:      24,
+				DstNetMask:      24,
 				ProtobufDebug: map[schema.ColumnKey]interface{}{
 					schema.ColumnBytes:            1339,
 					schema.ColumnPackets:          1,
@@ -142,8 +144,6 @@ func TestGetNetflowData(t *testing.T) {
 					schema.ColumnSrcPort:          443,
 					schema.ColumnDstPort:          33199,
 					schema.ColumnForwardingStatus: 64,
-					schema.ColumnSrcNetMask:       24,
-					schema.ColumnDstNetMask:       24,
 				},
 			},
 		},
@@ -157,6 +157,8 @@ func TestGetNetflowData(t *testing.T) {
 				OutIf:           10,
 				SrcAS:           65201,
 				DstAS:           65202,
+				SrcNetMask:      48,
+				DstNetMask:      48,
 				ProtobufDebug: map[schema.ColumnKey]interface{}{
 					schema.ColumnBytes:            1300,
 					schema.ColumnPackets:          1,
@@ -165,8 +167,6 @@ func TestGetNetflowData(t *testing.T) {
 					schema.ColumnSrcPort:          33179,
 					schema.ColumnDstPort:          443,
 					schema.ColumnForwardingStatus: 64,
-					schema.ColumnSrcNetMask:       48,
-					schema.ColumnDstNetMask:       48,
 				},
 			},
 		},
