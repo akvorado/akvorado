@@ -84,8 +84,9 @@ The orchestrator automatically defines the TTL for the system log tables (like
 `system.query_log`). The default TTL is 30 days. You can disable that by setting
 `orchestrator`→`clickhouse`→`system-logs-ttl` to 0.
 
-- ✨ *inlet*: add `schema.enabled`, `schema.disabled`, `schema.main-table-only`,
-  and `schema.not-main-table-only` to alter collected data
+- ✨ *inlet*: add `schema`→`enabled`, `schema`→`disabled`,
+  `schema`→`main-table-only`, and `schema`→`not-main-table-only` to alter
+  collected data
 - ✨ *inlet*: add the following collected data (disabled by default):
   - `SrcAddrNAT` and `DstAddrNAT`
   - `SrcPortNAT` and `DstPortNAT`
@@ -96,7 +97,7 @@ The orchestrator automatically defines the TTL for the system log tables (like
 - 🌱 *inlet*: improve decoding/encoding performance (twice faster!)
 - 🌱 *orchestrator*: set TTL for ClickHouse system log tables and `exporters` table
 - 🌱 *orchestrator*: reduce storage size for `SrcPort` and `DstPort`
-- 🌱 *orchestrator*: add `clickhouse.kafka.engine-settings` to configure additional settings for the Kafka engine
+- 🌱 *orchestrator*: add `clickhouse`→`kafka`→`engine-settings` to configure additional settings for the Kafka engine
 - 🌱 *common*: Go profiler endpoints are enabled by default
 
 ## 1.6.4 - 2022-12-22
