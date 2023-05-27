@@ -8,88 +8,16 @@ import (
 	"errors"
 	"fmt"
 	"net/netip"
-	"sync"
 	"time"
 
 	"github.com/gosnmp/gosnmp"
 
-	"akvorado/common/helpers"
 	"akvorado/common/reporter"
+	"akvorado/inlet/metadata/provider"
 )
 
-type poller interface {
-	Poll(ctx context.Context, exporterIP, agentIP netip.Addr, port uint16, ifIndexes []uint) error
-}
-
-// realPoller will poll exporters using real SNMP requests.
-type realPoller struct {
-	r      *reporter.Reporter
-	config pollerConfig
-
-	pendingRequests     map[string]struct{}
-	pendingRequestsLock sync.Mutex
-	errLogger           reporter.Logger
-	put                 func(exporterIP netip.Addr, exporterName string, ifIndex uint, iface Interface)
-
-	metrics struct {
-		pendingRequests reporter.GaugeFunc
-		successes       *reporter.CounterVec
-		errors          *reporter.CounterVec
-		retries         *reporter.CounterVec
-		times           *reporter.SummaryVec
-	}
-}
-
-type pollerConfig struct {
-	Retries            int
-	Timeout            time.Duration
-	Communities        *helpers.SubnetMap[string]
-	SecurityParameters *helpers.SubnetMap[SecurityParameters]
-}
-
-// newPoller creates a new SNMP poller.
-func newPoller(r *reporter.Reporter, config pollerConfig, put func(netip.Addr, string, uint, Interface)) *realPoller {
-	p := &realPoller{
-		r:               r,
-		config:          config,
-		pendingRequests: make(map[string]struct{}),
-		errLogger:       r.Sample(reporter.BurstSampler(10*time.Second, 3)),
-		put:             put,
-	}
-	p.metrics.pendingRequests = r.GaugeFunc(
-		reporter.GaugeOpts{
-			Name: "poller_pending_requests",
-			Help: "Number of pending requests in pollers.",
-		}, func() float64 {
-			p.pendingRequestsLock.Lock()
-			defer p.pendingRequestsLock.Unlock()
-			return float64(len(p.pendingRequests))
-		})
-	p.metrics.successes = r.CounterVec(
-		reporter.CounterOpts{
-			Name: "poller_success_requests",
-			Help: "Number of successful requests.",
-		}, []string{"exporter"})
-	p.metrics.errors = r.CounterVec(
-		reporter.CounterOpts{
-			Name: "poller_error_requests",
-			Help: "Number of failed requests.",
-		}, []string{"exporter", "error"})
-	p.metrics.retries = r.CounterVec(
-		reporter.CounterOpts{
-			Name: "poller_retry_requests",
-			Help: "Number of retried requests.",
-		}, []string{"exporter"})
-	p.metrics.times = r.SummaryVec(
-		reporter.SummaryOpts{
-			Name:       "poller_seconds",
-			Help:       "Time to successfully poll for values.",
-			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
-		}, []string{"exporter"})
-	return p
-}
-
-func (p *realPoller) Poll(ctx context.Context, exporter, agent netip.Addr, port uint16, ifIndexes []uint) error {
+// Poll polls the SNMP provider for the requested interface indexes.
+func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port uint16, ifIndexes []uint, put func(provider.Update)) error {
 	// Check if already have a request running
 	exporterStr := exporter.Unmap().String()
 	filteredIfIndexes := make([]uint, 0, len(ifIndexes))
@@ -122,8 +50,8 @@ func (p *realPoller) Poll(ctx context.Context, exporter, agent netip.Addr, port 
 		Context:                 ctx,
 		Target:                  agent.Unmap().String(),
 		Port:                    port,
-		Retries:                 p.config.Retries,
-		Timeout:                 p.config.Timeout,
+		Retries:                 p.config.PollerRetries,
+		Timeout:                 p.config.PollerTimeout,
 		UseUnconnectedUDPSocket: true,
 		Logger:                  gosnmp.NewLogger(&goSNMPLogger{p.r}),
 		OnRetry: func(*gosnmp.GoSNMP) {
@@ -246,17 +174,25 @@ func (p *realPoller) Poll(ctx context.Context, exporter, agent netip.Addr, port 
 		if ifIndex > 0 && !processUint(idx+2, "ifspeed", &ifSpeedVal) {
 			ok = false
 		}
-		if !ok {
-			// Negative cache
-			p.put(exporter, sysNameVal, ifIndex, Interface{})
-		} else {
-			p.put(exporter, sysNameVal, ifIndex, Interface{
+		var iface provider.Interface
+		if ok {
+			iface = provider.Interface{
 				Name:        ifDescrVal,
 				Description: ifAliasVal,
 				Speed:       ifSpeedVal,
-			})
+			}
 			p.metrics.successes.WithLabelValues(exporterStr).Inc()
 		}
+		put(provider.Update{
+			Query: provider.Query{
+				ExporterIP: exporter,
+				IfIndex:    ifIndex,
+			},
+			Answer: provider.Answer{
+				ExporterName: sysNameVal,
+				Interface:    iface,
+			},
+		})
 	}
 
 	p.metrics.times.WithLabelValues(exporterStr).Observe(time.Now().Sub(start).Seconds())

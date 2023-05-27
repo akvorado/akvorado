@@ -84,7 +84,7 @@ exported. In this case, the logs contain information such as:
 - `exporter:172.19.162.244 poller breaker open`
 - `exporter:172.19.162.244 unable to GET`
 
-The `akvorado_inlet_snmp_poller_error_requests` metric would also
+The `akvorado_inlet_metadata_provider_snmp_error_requests` metric would also
 increase for the affected exporter. If your routers are in
 `172.16.0.0/12` and you are using Docker, Docker subnets may overlap
 with your routers'. To avoid this, you can put that in
@@ -211,7 +211,7 @@ There are several ways to fix that:
 To process a flow, the inlet service needs the interface name and
 description. This information is provided by the `snmp` submodule.
 When all workers of the SNMP pollers are busy, new requests are
-dropped. In this case, the `akvorado_inlet_snmp_poller_busy_count`
+dropped. In this case, the `akvorado_inlet_metadata_provider_busy_count`
 counter is increased. To mitigate this issue, the inlet service tries
 to skip exporters with too many errors to avoid blocking SNMP requests
 for other exporters. However, ensuring the exporters accept to answer

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package snmp
+package metadata
 
 import (
 	"errors"
@@ -18,27 +18,29 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
+	"akvorado/inlet/metadata/provider"
 )
 
-func setupTestCache(t *testing.T) (*reporter.Reporter, *snmpCache) {
+func setupTestCache(t *testing.T) (*reporter.Reporter, *metadataCache) {
 	t.Helper()
 	r := reporter.NewMock(t)
-	sc := newSNMPCache(r)
+	sc := newMetadataCache(r)
 	return r, sc
 }
 
-type answer struct {
-	ExporterName string
-	Interface    Interface
-	NOk          bool
-}
-
-func expectCacheLookup(t *testing.T, sc *snmpCache, exporterIP string, ifIndex uint, expected answer) {
+func expectCacheLookup(t *testing.T, sc *metadataCache, exporterIP string, ifIndex uint, expected provider.Answer) {
 	t.Helper()
 	ip := netip.MustParseAddr(exporterIP)
 	ip = netip.AddrFrom16(ip.As16())
-	gotExporterName, gotInterface, ok := sc.Lookup(time.Time{}, ip, ifIndex)
-	got := answer{gotExporterName, gotInterface, !ok}
+	got, ok := sc.Lookup(time.Time{}, provider.Query{
+		ExporterIP: ip,
+		IfIndex:    ifIndex,
+	})
+	if ok && (got == provider.Answer{}) {
+		t.Error("Lookup() returned an empty result")
+	} else if !ok && (got != provider.Answer{}) {
+		t.Error("Lookup() returned a non-empty result")
+	}
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Errorf("Lookup() (-got, +want):\n%s", diff)
 	}
@@ -46,9 +48,9 @@ func expectCacheLookup(t *testing.T, sc *snmpCache, exporterIP string, ifIndex u
 
 func TestGetEmpty(t *testing.T) {
 	r, sc := setupTestCache(t)
-	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{NOk: true})
+	expectCacheLookup(t, sc, "127.0.0.1", 676, provider.Answer{})
 
-	gotMetrics := r.GetMetrics("akvorado_inlet_snmp_cache_")
+	gotMetrics := r.GetMetrics("akvorado_inlet_metadata_cache_")
 	expectedMetrics := map[string]string{
 		`expired`: "0",
 		`hit`:     "0",
@@ -62,15 +64,23 @@ func TestGetEmpty(t *testing.T) {
 
 func TestSimpleLookup(t *testing.T) {
 	r, sc := setupTestCache(t)
-	sc.Put(time.Now(), netip.MustParseAddr("::ffff:127.0.0.1"), "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit", Speed: 1000})
-	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{
+	sc.Put(time.Now(),
+		provider.Query{
+			ExporterIP: netip.MustParseAddr("::ffff:127.0.0.1"),
+			IfIndex:    676,
+		},
+		provider.Answer{
+			ExporterName: "localhost",
+			Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit", Speed: 1000},
+		})
+	expectCacheLookup(t, sc, "127.0.0.1", 676, provider.Answer{
 		ExporterName: "localhost",
 		Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit", Speed: 1000},
 	})
-	expectCacheLookup(t, sc, "127.0.0.1", 787, answer{NOk: true})
-	expectCacheLookup(t, sc, "127.0.0.2", 676, answer{NOk: true})
+	expectCacheLookup(t, sc, "127.0.0.1", 787, provider.Answer{})
+	expectCacheLookup(t, sc, "127.0.0.2", 676, provider.Answer{})
 
-	gotMetrics := r.GetMetrics("akvorado_inlet_snmp_cache_")
+	gotMetrics := r.GetMetrics("akvorado_inlet_metadata_cache_")
 	expectedMetrics := map[string]string{
 		`expired`: "0",
 		`hit`:     "1",
@@ -85,55 +95,87 @@ func TestSimpleLookup(t *testing.T) {
 func TestExpire(t *testing.T) {
 	r, sc := setupTestCache(t)
 	now := time.Now()
-	sc.Put(now, netip.MustParseAddr("::ffff:127.0.0.1"), "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
+	sc.Put(now,
+		provider.Query{
+			ExporterIP: netip.MustParseAddr("::ffff:127.0.0.1"),
+			IfIndex:    676,
+		},
+		provider.Answer{
+			ExporterName: "localhost",
+			Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit"},
+		})
 	now = now.Add(10 * time.Minute)
-	sc.Put(now, netip.MustParseAddr("::ffff:127.0.0.1"), "localhost2", 678, Interface{Name: "Gi0/0/0/2", Description: "Peering"})
+	sc.Put(now,
+		provider.Query{
+			ExporterIP: netip.MustParseAddr("::ffff:127.0.0.1"),
+			IfIndex:    678,
+		},
+		provider.Answer{
+			ExporterName: "localhost2",
+			Interface:    Interface{Name: "Gi0/0/0/2", Description: "Peering"},
+		})
 	now = now.Add(10 * time.Minute)
-	sc.Put(now, netip.MustParseAddr("::ffff:127.0.0.2"), "localhost3", 678, Interface{Name: "Gi0/0/0/1", Description: "IX"})
+	sc.Put(now,
+		provider.Query{
+			ExporterIP: netip.MustParseAddr("::ffff:127.0.0.2"),
+			IfIndex:    678,
+		},
+		provider.Answer{
+			ExporterName: "localhost3",
+			Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"},
+		})
 	now = now.Add(10 * time.Minute)
 	sc.Expire(now.Add(-time.Hour))
-	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{
+	expectCacheLookup(t, sc, "127.0.0.1", 676, provider.Answer{
 		ExporterName: "localhost",
 		Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit"},
 	})
-	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{
+	expectCacheLookup(t, sc, "127.0.0.1", 678, provider.Answer{
 		ExporterName: "localhost2",
 		Interface:    Interface{Name: "Gi0/0/0/2", Description: "Peering"},
 	})
-	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
+	expectCacheLookup(t, sc, "127.0.0.2", 678, provider.Answer{
 		ExporterName: "localhost3",
 		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"},
 	})
 	sc.Expire(now.Add(-29 * time.Minute))
-	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{NOk: true})
-	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{
+	expectCacheLookup(t, sc, "127.0.0.1", 676, provider.Answer{})
+	expectCacheLookup(t, sc, "127.0.0.1", 678, provider.Answer{
 		ExporterName: "localhost2",
 		Interface:    Interface{Name: "Gi0/0/0/2", Description: "Peering"},
 	})
-	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
+	expectCacheLookup(t, sc, "127.0.0.2", 678, provider.Answer{
 		ExporterName: "localhost3",
 		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"},
 	})
 	sc.Expire(now.Add(-19 * time.Minute))
-	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{NOk: true})
-	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{NOk: true})
-	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
+	expectCacheLookup(t, sc, "127.0.0.1", 676, provider.Answer{})
+	expectCacheLookup(t, sc, "127.0.0.1", 678, provider.Answer{})
+	expectCacheLookup(t, sc, "127.0.0.2", 678, provider.Answer{
 		ExporterName: "localhost3",
 		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"},
 	})
 	sc.Expire(now.Add(-9 * time.Minute))
-	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{NOk: true})
-	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{NOk: true})
-	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{NOk: true})
-	sc.Put(now, netip.MustParseAddr("::ffff:127.0.0.1"), "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
+	expectCacheLookup(t, sc, "127.0.0.1", 676, provider.Answer{})
+	expectCacheLookup(t, sc, "127.0.0.1", 678, provider.Answer{})
+	expectCacheLookup(t, sc, "127.0.0.2", 678, provider.Answer{})
+	sc.Put(now,
+		provider.Query{
+			ExporterIP: netip.MustParseAddr("::ffff:127.0.0.1"),
+			IfIndex:    676,
+		},
+		provider.Answer{
+			ExporterName: "localhost",
+			Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit"},
+		})
 	now = now.Add(10 * time.Minute)
 	sc.Expire(now.Add(-19 * time.Minute))
-	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{
+	expectCacheLookup(t, sc, "127.0.0.1", 676, provider.Answer{
 		ExporterName: "localhost",
 		Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit"},
 	})
 
-	gotMetrics := r.GetMetrics("akvorado_inlet_snmp_cache_")
+	gotMetrics := r.GetMetrics("akvorado_inlet_metadata_cache_")
 	expectedMetrics := map[string]string{
 		`expired`: "3",
 		`hit`:     "7",
@@ -148,24 +190,51 @@ func TestExpire(t *testing.T) {
 func TestExpireRefresh(t *testing.T) {
 	_, sc := setupTestCache(t)
 	now := time.Now()
-	sc.Put(now, netip.MustParseAddr("::ffff:127.0.0.1"), "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
+	sc.Put(now,
+		provider.Query{
+			ExporterIP: netip.MustParseAddr("::ffff:127.0.0.1"),
+			IfIndex:    676,
+		},
+		provider.Answer{
+			ExporterName: "localhost",
+			Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit"},
+		})
 	now = now.Add(10 * time.Minute)
-	sc.Put(now, netip.MustParseAddr("::ffff:127.0.0.1"), "localhost", 678, Interface{Name: "Gi0/0/0/2", Description: "Peering"})
+	sc.Put(now,
+		provider.Query{
+			ExporterIP: netip.MustParseAddr("::ffff:127.0.0.1"),
+			IfIndex:    678,
+		},
+		provider.Answer{
+			ExporterName: "localhost",
+			Interface:    Interface{Name: "Gi0/0/0/2", Description: "Peering"},
+		})
 	now = now.Add(10 * time.Minute)
-	sc.Put(now, netip.MustParseAddr("::ffff:127.0.0.2"), "localhost2", 678, Interface{Name: "Gi0/0/0/1", Description: "IX"})
+	sc.Put(now,
+		provider.Query{
+			ExporterIP: netip.MustParseAddr("::ffff:127.0.0.2"),
+			IfIndex:    678,
+		},
+		provider.Answer{
+			ExporterName: "localhost2",
+			Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"},
+		})
 	now = now.Add(10 * time.Minute)
 
 	// Refresh first entry
-	sc.Lookup(now, netip.MustParseAddr("::ffff:127.0.0.1"), 676)
+	sc.Lookup(now, provider.Query{
+		ExporterIP: netip.MustParseAddr("::ffff:127.0.0.1"),
+		IfIndex:    676,
+	})
 	now = now.Add(10 * time.Minute)
 
 	sc.Expire(now.Add(-29 * time.Minute))
-	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{
+	expectCacheLookup(t, sc, "127.0.0.1", 676, provider.Answer{
 		ExporterName: "localhost",
 		Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit"},
 	})
-	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{NOk: true})
-	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
+	expectCacheLookup(t, sc, "127.0.0.1", 678, provider.Answer{})
+	expectCacheLookup(t, sc, "127.0.0.2", 678, provider.Answer{
 		ExporterName: "localhost2",
 		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"},
 	})
@@ -174,14 +243,46 @@ func TestExpireRefresh(t *testing.T) {
 func TestNeedUpdates(t *testing.T) {
 	_, sc := setupTestCache(t)
 	now := time.Now()
-	sc.Put(now, netip.MustParseAddr("::ffff:127.0.0.1"), "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
+	sc.Put(now,
+		provider.Query{
+			ExporterIP: netip.MustParseAddr("::ffff:127.0.0.1"),
+			IfIndex:    676,
+		},
+		provider.Answer{
+			ExporterName: "localhost",
+			Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit"},
+		})
 	now = now.Add(10 * time.Minute)
-	sc.Put(now, netip.MustParseAddr("::ffff:127.0.0.1"), "localhost", 678, Interface{Name: "Gi0/0/0/2", Description: "Peering"})
+	sc.Put(now,
+		provider.Query{
+			ExporterIP: netip.MustParseAddr("::ffff:127.0.0.1"),
+			IfIndex:    678,
+		},
+		provider.Answer{
+			ExporterName: "localhost",
+			Interface:    Interface{Name: "Gi0/0/0/2", Description: "Peering"},
+		})
 	now = now.Add(10 * time.Minute)
-	sc.Put(now, netip.MustParseAddr("::ffff:127.0.0.2"), "localhost2", 678, Interface{Name: "Gi0/0/0/1", Description: "IX"})
+	sc.Put(now,
+		provider.Query{
+			ExporterIP: netip.MustParseAddr("::ffff:127.0.0.2"),
+			IfIndex:    678,
+		},
+		provider.Answer{
+			ExporterName: "localhost2",
+			Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX"},
+		})
 	now = now.Add(10 * time.Minute)
 	// Refresh
-	sc.Put(now, netip.MustParseAddr("::ffff:127.0.0.1"), "localhost1", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
+	sc.Put(now,
+		provider.Query{
+			ExporterIP: netip.MustParseAddr("::ffff:127.0.0.1"),
+			IfIndex:    676,
+		},
+		provider.Answer{
+			ExporterName: "localhost1",
+			Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit"},
+		})
 	now = now.Add(10 * time.Minute)
 
 	cases := []struct {
@@ -233,11 +334,35 @@ func TestLoadNotExist(t *testing.T) {
 func TestSaveLoad(t *testing.T) {
 	_, sc := setupTestCache(t)
 	now := time.Now()
-	sc.Put(now, netip.MustParseAddr("::ffff:127.0.0.1"), "localhost", 676, Interface{Name: "Gi0/0/0/1", Description: "Transit"})
+	sc.Put(now,
+		provider.Query{
+			ExporterIP: netip.MustParseAddr("::ffff:127.0.0.1"),
+			IfIndex:    676,
+		},
+		provider.Answer{
+			ExporterName: "localhost",
+			Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit"},
+		})
 	now = now.Add(10 * time.Minute)
-	sc.Put(now, netip.MustParseAddr("::ffff:127.0.0.1"), "localhost", 678, Interface{Name: "Gi0/0/0/2", Description: "Peering"})
+	sc.Put(now,
+		provider.Query{
+			ExporterIP: netip.MustParseAddr("::ffff:127.0.0.1"),
+			IfIndex:    678,
+		},
+		provider.Answer{
+			ExporterName: "localhost",
+			Interface:    Interface{Name: "Gi0/0/0/2", Description: "Peering"},
+		})
 	now = now.Add(10 * time.Minute)
-	sc.Put(now, netip.MustParseAddr("::ffff:127.0.0.2"), "localhost2", 678, Interface{Name: "Gi0/0/0/1", Description: "IX", Speed: 1000})
+	sc.Put(now,
+		provider.Query{
+			ExporterIP: netip.MustParseAddr("::ffff:127.0.0.2"),
+			IfIndex:    678,
+		},
+		provider.Answer{
+			ExporterName: "localhost2",
+			Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX", Speed: 1000},
+		})
 
 	target := filepath.Join(t.TempDir(), "cache")
 	if err := sc.Save(target); err != nil {
@@ -251,12 +376,12 @@ func TestSaveLoad(t *testing.T) {
 	}
 
 	sc.Expire(now.Add(-29 * time.Minute))
-	expectCacheLookup(t, sc, "127.0.0.1", 676, answer{NOk: true})
-	expectCacheLookup(t, sc, "127.0.0.1", 678, answer{
+	expectCacheLookup(t, sc, "127.0.0.1", 676, provider.Answer{})
+	expectCacheLookup(t, sc, "127.0.0.1", 678, provider.Answer{
 		ExporterName: "localhost",
 		Interface:    Interface{Name: "Gi0/0/0/2", Description: "Peering"},
 	})
-	expectCacheLookup(t, sc, "127.0.0.2", 678, answer{
+	expectCacheLookup(t, sc, "127.0.0.2", 678, provider.Answer{
 		ExporterName: "localhost2",
 		Interface:    Interface{Name: "Gi0/0/0/1", Description: "IX", Speed: 1000},
 	})
@@ -294,9 +419,13 @@ func TestConcurrentOperations(t *testing.T) {
 				nowLock.RUnlock()
 				ip := rand.Intn(10)
 				iface := rand.Intn(100)
-				sc.Put(now, netip.MustParseAddr(fmt.Sprintf("::ffff:127.0.0.%d", ip)),
-					fmt.Sprintf("localhost%d", ip),
-					uint(iface), Interface{Name: "Gi0/0/0/1", Description: "Transit"})
+				sc.Put(now, provider.Query{
+					ExporterIP: netip.MustParseAddr(fmt.Sprintf("::ffff:127.0.0.%d", ip)),
+					IfIndex:    uint(iface),
+				}, provider.Answer{
+					ExporterName: fmt.Sprintf("localhost%d", ip),
+					Interface:    Interface{Name: "Gi0/0/0/1", Description: "Transit"},
+				})
 				select {
 				case <-done:
 					return
@@ -316,8 +445,10 @@ func TestConcurrentOperations(t *testing.T) {
 				nowLock.RUnlock()
 				ip := rand.Intn(10)
 				iface := rand.Intn(100)
-				sc.Lookup(now, netip.MustParseAddr(fmt.Sprintf("::ffff:127.0.0.%d", ip)),
-					uint(iface))
+				sc.Lookup(now, provider.Query{
+					ExporterIP: netip.MustParseAddr(fmt.Sprintf("::ffff:127.0.0.%d", ip)),
+					IfIndex:    uint(iface),
+				})
 				atomic.AddInt64(&lookups, 1)
 				select {
 				case <-done:
@@ -335,7 +466,7 @@ func TestConcurrentOperations(t *testing.T) {
 	close(done)
 	wg.Wait()
 
-	gotMetrics := r.GetMetrics("akvorado_inlet_snmp_cache_")
+	gotMetrics := r.GetMetrics("akvorado_inlet_metadata_cache_")
 	hits, _ := strconv.Atoi(gotMetrics["hit"])
 	misses, _ := strconv.Atoi(gotMetrics["miss"])
 	if int64(hits+misses) != atomic.LoadInt64(&lookups) {

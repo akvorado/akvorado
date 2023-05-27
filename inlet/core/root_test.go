@@ -26,7 +26,7 @@ import (
 	"akvorado/inlet/flow"
 	"akvorado/inlet/geoip"
 	"akvorado/inlet/kafka"
-	"akvorado/inlet/snmp"
+	"akvorado/inlet/metadata"
 )
 
 func TestCore(t *testing.T) {
@@ -34,8 +34,8 @@ func TestCore(t *testing.T) {
 
 	// Prepare all components.
 	daemonComponent := daemon.NewMock(t)
-	snmpComponent := snmp.NewMock(t, r, snmp.DefaultConfiguration(),
-		snmp.Dependencies{Daemon: daemonComponent})
+	metadataComponent := metadata.NewMock(t, r, metadata.DefaultConfiguration(),
+		metadata.Dependencies{Daemon: daemonComponent})
 	flowComponent := flow.NewMock(t, r, flow.DefaultConfiguration())
 	geoipComponent := geoip.NewMock(t, r)
 	kafkaComponent, kafkaProducer := kafka.NewMock(t, r, kafka.DefaultConfiguration())
@@ -46,14 +46,14 @@ func TestCore(t *testing.T) {
 	// Instantiate and start core
 	sch := schema.NewMock(t)
 	c, err := New(r, DefaultConfiguration(), Dependencies{
-		Daemon: daemonComponent,
-		Flow:   flowComponent,
-		SNMP:   snmpComponent,
-		GeoIP:  geoipComponent,
-		Kafka:  kafkaComponent,
-		HTTP:   httpComponent,
-		BMP:    bmpComponent,
-		Schema: sch,
+		Daemon:   daemonComponent,
+		Flow:     flowComponent,
+		Metadata: metadataComponent,
+		GeoIP:    geoipComponent,
+		Kafka:    kafkaComponent,
+		HTTP:     httpComponent,
+		BMP:      bmpComponent,
+		Schema:   sch,
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)

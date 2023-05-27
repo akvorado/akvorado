@@ -22,7 +22,7 @@ import (
 	"akvorado/inlet/flow"
 	"akvorado/inlet/geoip"
 	"akvorado/inlet/kafka"
-	"akvorado/inlet/snmp"
+	"akvorado/inlet/metadata"
 )
 
 func TestEnrich(t *testing.T) {
@@ -497,8 +497,8 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 
 			// Prepare all components.
 			daemonComponent := daemon.NewMock(t)
-			snmpComponent := snmp.NewMock(t, r, snmp.DefaultConfiguration(),
-				snmp.Dependencies{Daemon: daemonComponent})
+			metadataComponent := metadata.NewMock(t, r, metadata.DefaultConfiguration(),
+				metadata.Dependencies{Daemon: daemonComponent})
 			flowComponent := flow.NewMock(t, r, flow.DefaultConfiguration())
 			geoipComponent := geoip.NewMock(t, r)
 			kafkaComponent, kafkaProducer := kafka.NewMock(t, r, kafka.DefaultConfiguration())
@@ -518,14 +518,14 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 
 			// Instantiate and start core
 			c, err := New(r, configuration, Dependencies{
-				Daemon: daemonComponent,
-				Flow:   flowComponent,
-				SNMP:   snmpComponent,
-				GeoIP:  geoipComponent,
-				Kafka:  kafkaComponent,
-				HTTP:   httpComponent,
-				BMP:    bmpComponent,
-				Schema: schema.NewMock(t),
+				Daemon:   daemonComponent,
+				Flow:     flowComponent,
+				Metadata: metadataComponent,
+				GeoIP:    geoipComponent,
+				Kafka:    kafkaComponent,
+				HTTP:     httpComponent,
+				BMP:      bmpComponent,
+				Schema:   schema.NewMock(t),
 			})
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)

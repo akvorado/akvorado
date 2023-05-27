@@ -17,7 +17,8 @@ import (
 	"akvorado/inlet/flow"
 	"akvorado/inlet/geoip"
 	"akvorado/inlet/kafka"
-	"akvorado/inlet/snmp"
+	"akvorado/inlet/metadata"
+	"akvorado/inlet/metadata/provider/snmp"
 )
 
 // InletConfiguration represents the configuration file for the inlet command.
@@ -25,7 +26,7 @@ type InletConfiguration struct {
 	Reporting reporter.Configuration
 	HTTP      httpserver.Configuration
 	Flow      flow.Configuration
-	SNMP      snmp.Configuration
+	Metadata  metadata.Configuration
 	BMP       bmp.Configuration
 	GeoIP     geoip.Configuration
 	Kafka     kafka.Configuration
@@ -39,13 +40,14 @@ func (c *InletConfiguration) Reset() {
 		HTTP:      httpserver.DefaultConfiguration(),
 		Reporting: reporter.DefaultConfiguration(),
 		Flow:      flow.DefaultConfiguration(),
-		SNMP:      snmp.DefaultConfiguration(),
+		Metadata:  metadata.DefaultConfiguration(),
 		BMP:       bmp.DefaultConfiguration(),
 		GeoIP:     geoip.DefaultConfiguration(),
 		Kafka:     kafka.DefaultConfiguration(),
 		Core:      core.DefaultConfiguration(),
 		Schema:    schema.DefaultConfiguration(),
 	}
+	c.Metadata.Provider.Config = snmp.DefaultConfiguration()
 }
 
 type inletOptions struct {
@@ -110,11 +112,11 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 	if err != nil {
 		return fmt.Errorf("unable to initialize flow component: %w", err)
 	}
-	snmpComponent, err := snmp.New(r, config.SNMP, snmp.Dependencies{
+	metadataComponent, err := metadata.New(r, config.Metadata, metadata.Dependencies{
 		Daemon: daemonComponent,
 	})
 	if err != nil {
-		return fmt.Errorf("unable to initialize SNMP component: %w", err)
+		return fmt.Errorf("unable to initialize METADATA component: %w", err)
 	}
 	bmpComponent, err := bmp.New(r, config.BMP, bmp.Dependencies{
 		Daemon: daemonComponent,
@@ -136,14 +138,14 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 		return fmt.Errorf("unable to initialize Kafka component: %w", err)
 	}
 	coreComponent, err := core.New(r, config.Core, core.Dependencies{
-		Daemon: daemonComponent,
-		Flow:   flowComponent,
-		SNMP:   snmpComponent,
-		BMP:    bmpComponent,
-		GeoIP:  geoipComponent,
-		Kafka:  kafkaComponent,
-		HTTP:   httpComponent,
-		Schema: schemaComponent,
+		Daemon:   daemonComponent,
+		Flow:     flowComponent,
+		Metadata: metadataComponent,
+		BMP:      bmpComponent,
+		GeoIP:    geoipComponent,
+		Kafka:    kafkaComponent,
+		HTTP:     httpComponent,
+		Schema:   schemaComponent,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to initialize core component: %w", err)
@@ -161,7 +163,7 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 	// Start all the components.
 	components := []interface{}{
 		httpComponent,
-		snmpComponent,
+		metadataComponent,
 		bmpComponent,
 		geoipComponent,
 		kafkaComponent,
