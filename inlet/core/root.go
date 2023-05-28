@@ -13,7 +13,7 @@ import (
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers/cache"
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 	"akvorado/inlet/bmp"
@@ -50,7 +50,7 @@ type Dependencies struct {
 	BMP    *bmp.Component
 	GeoIP  *geoip.Component
 	Kafka  *kafka.Component
-	HTTP   *http.Component
+	HTTP   *httpserver.Component
 	Schema *schema.Component
 }
 

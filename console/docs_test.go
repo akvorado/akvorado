@@ -6,7 +6,7 @@ package console
 import (
 	"fmt"
 	"io/ioutil"
-	netHTTP "net/http"
+	"net/http"
 	"strings"
 	"testing"
 )
@@ -30,7 +30,7 @@ func TestServeDocs(t *testing.T) {
 				conf.ServeLiveFS = live
 				_, h, _, _ := NewMock(t, conf)
 
-				resp, err := netHTTP.Get(fmt.Sprintf("http://%s/api/v0/console/docs/%s",
+				resp, err := http.Get(fmt.Sprintf("http://%s/api/v0/console/docs/%s",
 					h.LocalAddr(), tc.Path))
 				if err != nil {
 					t.Fatalf("GET /api/v0/console/docs/%s:\n%+v", tc.Path, err)

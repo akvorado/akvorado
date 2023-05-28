@@ -4,7 +4,7 @@
 package console
 
 import (
-	netHTTP "net/http"
+	"net/http"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -331,8 +331,8 @@ LIMIT 20`, "6540").
 		{
 			Description: "list stored filters as another user",
 			URL:         "/api/v0/console/filter/saved",
-			Header: func() netHTTP.Header {
-				headers := make(netHTTP.Header)
+			Header: func() http.Header {
+				headers := make(http.Header)
 				headers.Add("Remote-User", "alfred")
 				return headers
 			}(),
@@ -342,8 +342,8 @@ LIMIT 20`, "6540").
 			Description: "delete stored filter as another user",
 			Method:      "DELETE",
 			URL:         "/api/v0/console/filter/saved/1",
-			Header: func() netHTTP.Header {
-				headers := make(netHTTP.Header)
+			Header: func() http.Header {
+				headers := make(http.Header)
 				headers.Add("Remote-User", "alfred")
 				return headers
 			}(),

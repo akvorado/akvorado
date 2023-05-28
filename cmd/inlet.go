@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"akvorado/common/daemon"
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 	"akvorado/inlet/bmp"
@@ -23,7 +23,7 @@ import (
 // InletConfiguration represents the configuration file for the inlet command.
 type InletConfiguration struct {
 	Reporting reporter.Configuration
-	HTTP      http.Configuration
+	HTTP      httpserver.Configuration
 	Flow      flow.Configuration
 	SNMP      snmp.Configuration
 	BMP       bmp.Configuration
@@ -36,7 +36,7 @@ type InletConfiguration struct {
 // Reset resets the configuration for the inlet command to its default value.
 func (c *InletConfiguration) Reset() {
 	*c = InletConfiguration{
-		HTTP:      http.DefaultConfiguration(),
+		HTTP:      httpserver.DefaultConfiguration(),
 		Reporting: reporter.DefaultConfiguration(),
 		Flow:      flow.DefaultConfiguration(),
 		SNMP:      snmp.DefaultConfiguration(),
@@ -92,7 +92,7 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 	if err != nil {
 		return fmt.Errorf("unable to initialize daemon component: %w", err)
 	}
-	httpComponent, err := http.New(r, config.HTTP, http.Dependencies{
+	httpComponent, err := httpserver.New(r, config.HTTP, httpserver.Dependencies{
 		Daemon: daemonComponent,
 	})
 	if err != nil {

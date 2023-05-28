@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"io"
 	"net"
-	netHTTP "net/http"
+	"net/http"
 	"testing"
 	"time"
 
@@ -21,7 +21,7 @@ import (
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 	"akvorado/inlet/bmp"
@@ -40,7 +40,7 @@ func TestCore(t *testing.T) {
 	flowComponent := flow.NewMock(t, r, flow.DefaultConfiguration())
 	geoipComponent := geoip.NewMock(t, r)
 	kafkaComponent, kafkaProducer := kafka.NewMock(t, r, kafka.DefaultConfiguration())
-	httpComponent := http.NewMock(t, r)
+	httpComponent := httpserver.NewMock(t, r)
 	bmpComponent, _ := bmp.NewMock(t, r, bmp.DefaultConfiguration())
 	bmpComponent.PopulateRIB(t)
 
@@ -209,7 +209,7 @@ func TestCore(t *testing.T) {
 	t.Run("http flows", func(t *testing.T) {
 		c.httpFlowFlushDelay = 20 * time.Millisecond
 
-		resp, err := netHTTP.Get(fmt.Sprintf("http://%s/api/v0/inlet/flows", c.d.HTTP.LocalAddr()))
+		resp, err := http.Get(fmt.Sprintf("http://%s/api/v0/inlet/flows", c.d.HTTP.LocalAddr()))
 		if err != nil {
 			t.Fatalf("GET /api/v0/inlet/flows:\n%+v", err)
 		}
@@ -282,7 +282,7 @@ func TestCore(t *testing.T) {
 	// Test HTTP flow clients with a limit
 	time.Sleep(10 * time.Millisecond)
 	t.Run("http flows with limit", func(t *testing.T) {
-		resp, err := netHTTP.Get(fmt.Sprintf("http://%s/api/v0/inlet/flows?limit=4", c.d.HTTP.LocalAddr()))
+		resp, err := http.Get(fmt.Sprintf("http://%s/api/v0/inlet/flows?limit=4", c.d.HTTP.LocalAddr()))
 		if err != nil {
 			t.Fatalf("GET /api/v0/inlet/flows:\n%+v", err)
 		}

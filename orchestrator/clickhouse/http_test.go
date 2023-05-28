@@ -9,7 +9,7 @@ import (
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 )
@@ -23,7 +23,7 @@ func TestHTTPEndpoints(t *testing.T) {
 	})
 	c, err := New(r, config, Dependencies{
 		Daemon: daemon.NewMock(t),
-		HTTP:   http.NewMock(t, r),
+		HTTP:   httpserver.NewMock(t, r),
 		Schema: schema.NewMock(t),
 	})
 	if err != nil {
@@ -80,7 +80,7 @@ func TestAdditionalASNs(t *testing.T) {
 	}
 	c, err := New(r, config, Dependencies{
 		Daemon: daemon.NewMock(t),
-		HTTP:   http.NewMock(t, r),
+		HTTP:   httpserver.NewMock(t, r),
 		Schema: schema.NewMock(t),
 	})
 	if err != nil {

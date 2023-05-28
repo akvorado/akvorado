@@ -7,13 +7,13 @@ package flow
 import (
 	"errors"
 	"fmt"
-	netHTTP "net/http"
+	"net/http"
 	"net/netip"
 
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/daemon"
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 	"akvorado/inlet/flow/decoder"
@@ -45,7 +45,7 @@ type Component struct {
 // Dependencies are the dependencies of the flow component.
 type Dependencies struct {
 	Daemon daemon.Component
-	HTTP   *http.Component
+	HTTP   *httpserver.Component
 	Schema *schema.Component
 }
 
@@ -110,7 +110,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	c.d.Daemon.Track(&c.t, "inlet/flow")
 
 	c.d.HTTP.AddHandler("/api/v0/inlet/flow/schema.proto",
-		netHTTP.HandlerFunc(func(w netHTTP.ResponseWriter, r *netHTTP.Request) {
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "text/plain")
 			w.Write([]byte(c.d.Schema.ProtobufDefinition()))
 		}))

@@ -15,7 +15,7 @@ import (
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 	"akvorado/inlet/bmp"
@@ -502,7 +502,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 			flowComponent := flow.NewMock(t, r, flow.DefaultConfiguration())
 			geoipComponent := geoip.NewMock(t, r)
 			kafkaComponent, kafkaProducer := kafka.NewMock(t, r, kafka.DefaultConfiguration())
-			httpComponent := http.NewMock(t, r)
+			httpComponent := httpserver.NewMock(t, r)
 			bmpComponent, _ := bmp.NewMock(t, r, bmp.DefaultConfiguration())
 			bmpComponent.PopulateRIB(t)
 

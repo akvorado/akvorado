@@ -16,7 +16,7 @@ import (
 
 	"akvorado/common/clickhousedb"
 	"akvorado/common/daemon"
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 )
@@ -39,7 +39,7 @@ type Component struct {
 // Dependencies define the dependencies of the ClickHouse configurator.
 type Dependencies struct {
 	Daemon     daemon.Component
-	HTTP       *http.Component
+	HTTP       *httpserver.Component
 	ClickHouse *clickhousedb.Component
 	Schema     *schema.Component
 }

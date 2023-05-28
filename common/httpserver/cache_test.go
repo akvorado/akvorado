@@ -1,17 +1,17 @@
 // SPDX-FileCopyrightText: 2022 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package http_test
+package httpserver_test
 
 import (
 	"context"
-	netHTTP "net/http"
+	"net/http"
 	"testing"
 	"time"
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 
 	"github.com/gin-gonic/gin"
@@ -20,14 +20,14 @@ import (
 
 func TestCacheByRequestPath(t *testing.T) {
 	r := reporter.NewMock(t)
-	h := http.NewMock(t, r)
+	h := httpserver.NewMock(t, r)
 
 	count := 0
 	h.GinRouter.GET("/api/v0/test",
 		h.CacheByRequestPath(time.Minute),
 		func(c *gin.Context) {
 			count++
-			c.JSON(netHTTP.StatusOK, gin.H{
+			c.JSON(http.StatusOK, gin.H{
 				"message": "ping",
 				"count":   count,
 			})
@@ -50,7 +50,7 @@ func TestCacheByRequestPath(t *testing.T) {
 		},
 	})
 
-	gotMetrics := r.GetMetrics("akvorado_common_http_", "requests_", "cache_")
+	gotMetrics := r.GetMetrics("akvorado_common_httpserver_", "requests_", "cache_")
 	expectedMetrics := map[string]string{
 		`cache_hit_total{method="GET",path="/api/v0/test"}`:       "2",
 		`cache_miss_total{method="GET",path="/api/v0/test"}`:      "1",
@@ -63,7 +63,7 @@ func TestCacheByRequestPath(t *testing.T) {
 
 func TestCacheByRequestBody(t *testing.T) {
 	r := reporter.NewMock(t)
-	h := http.NewMock(t, r)
+	h := httpserver.NewMock(t, r)
 
 	count := 0
 	h.GinRouter.POST("/api/v0/test",
@@ -74,7 +74,7 @@ func TestCacheByRequestBody(t *testing.T) {
 			if err != nil {
 				t.Fatalf("GetRawData() error:\n%+v", err)
 			}
-			c.JSON(netHTTP.StatusOK, gin.H{
+			c.JSON(http.StatusOK, gin.H{
 				"message": "ping",
 				"count":   count,
 				"body":    string(data),
@@ -106,7 +106,7 @@ func TestCacheByRequestBody(t *testing.T) {
 		},
 	})
 
-	gotMetrics := r.GetMetrics("akvorado_common_http_", "requests_", "cache_")
+	gotMetrics := r.GetMetrics("akvorado_common_httpserver_", "requests_", "cache_")
 	expectedMetrics := map[string]string{
 		`cache_hit_total{method="POST",path="/api/v0/test"}`:       "2",
 		`cache_miss_total{method="POST",path="/api/v0/test"}`:      "2",
@@ -131,14 +131,14 @@ func TestRedis(t *testing.T) {
 	r := reporter.NewMock(t)
 
 	// HTTP with Redis
-	config := http.DefaultConfiguration()
+	config := httpserver.DefaultConfiguration()
 	config.Listen = "127.0.0.1:0"
-	config.Cache.Config = http.RedisCacheConfiguration{
+	config.Cache.Config = httpserver.RedisCacheConfiguration{
 		Protocol: "tcp",
 		Server:   server,
 		DB:       10,
 	}
-	h, err := http.New(r, config, http.Dependencies{Daemon: daemon.NewMock(t)})
+	h, err := httpserver.New(r, config, httpserver.Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
@@ -149,7 +149,7 @@ func TestRedis(t *testing.T) {
 		h.CacheByRequestPath(time.Minute),
 		func(c *gin.Context) {
 			count++
-			c.JSON(netHTTP.StatusOK, gin.H{
+			c.JSON(http.StatusOK, gin.H{
 				"message": "ping",
 				"count":   count,
 			})

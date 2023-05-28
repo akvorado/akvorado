@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"akvorado/common/daemon"
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/demoexporter"
 	"akvorado/demoexporter/bmp"
@@ -20,7 +20,7 @@ import (
 // DemoExporterConfiguration represents the configuration file for the demo exporter command.
 type DemoExporterConfiguration struct {
 	Reporting    reporter.Configuration
-	HTTP         http.Configuration
+	HTTP         httpserver.Configuration
 	DemoExporter demoexporter.Configuration `mapstructure:",squash" yaml:",inline"`
 	SNMP         snmp.Configuration
 	BMP          bmp.Configuration
@@ -30,7 +30,7 @@ type DemoExporterConfiguration struct {
 // Reset sets the default configuration for the demo exporter command.
 func (c *DemoExporterConfiguration) Reset() {
 	*c = DemoExporterConfiguration{
-		HTTP:         http.DefaultConfiguration(),
+		HTTP:         httpserver.DefaultConfiguration(),
 		Reporting:    reporter.DefaultConfiguration(),
 		DemoExporter: demoexporter.DefaultConfiguration(),
 		SNMP:         snmp.DefaultConfiguration(),
@@ -82,7 +82,7 @@ func demoExporterStart(r *reporter.Reporter, config DemoExporterConfiguration, c
 	if err != nil {
 		return fmt.Errorf("unable to initialize daemon component: %w", err)
 	}
-	httpComponent, err := http.New(r, config.HTTP, http.Dependencies{
+	httpComponent, err := httpserver.New(r, config.HTTP, httpserver.Dependencies{
 		Daemon: daemonComponent,
 	})
 	if err != nil {

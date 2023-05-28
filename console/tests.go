@@ -14,7 +14,7 @@ import (
 	"akvorado/common/clickhousedb/mocks"
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 	"akvorado/console/authentication"
@@ -22,10 +22,10 @@ import (
 )
 
 // NewMock instantiantes a new authentication component
-func NewMock(t *testing.T, config Configuration) (*Component, *http.Component, *mocks.MockConn, *clock.Mock) {
+func NewMock(t *testing.T, config Configuration) (*Component, *httpserver.Component, *mocks.MockConn, *clock.Mock) {
 	t.Helper()
 	r := reporter.NewMock(t)
-	h := http.NewMock(t, r)
+	h := httpserver.NewMock(t, r)
 	ch, mockConn := clickhousedb.NewMock(t, r)
 	mockClock := clock.NewMock()
 	c, err := New(r, config, Dependencies{

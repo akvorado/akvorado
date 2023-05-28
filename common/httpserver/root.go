@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2022 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-// Package http handles the internal web server for akvorado.
-package http
+// Package httpserver handles the internal web server for akvorado.
+package httpserver
 
 import (
 	"context"

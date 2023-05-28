@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"akvorado/common/daemon"
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/conntrackfixer"
 )
@@ -32,9 +32,9 @@ containers started with the label "akvorado.conntrack.fix=1".`,
 		if err != nil {
 			return fmt.Errorf("unable to initialize daemon component: %w", err)
 		}
-		httpConfiguration := http.DefaultConfiguration()
+		httpConfiguration := httpserver.DefaultConfiguration()
 		httpConfiguration.Listen = "127.0.0.1:0" // Run inside host network namespace, can't use 8080
-		httpComponent, err := http.New(r, httpConfiguration, http.Dependencies{
+		httpComponent, err := httpserver.New(r, httpConfiguration, httpserver.Dependencies{
 			Daemon: daemonComponent,
 		})
 		if err != nil {

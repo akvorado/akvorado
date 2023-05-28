@@ -10,7 +10,7 @@ import (
 
 	"akvorado/common/clickhousedb"
 	"akvorado/common/daemon"
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 	"akvorado/console"
@@ -21,7 +21,7 @@ import (
 // ConsoleConfiguration represents the configuration file for the console command.
 type ConsoleConfiguration struct {
 	Reporting  reporter.Configuration
-	HTTP       http.Configuration
+	HTTP       httpserver.Configuration
 	Console    console.Configuration `mapstructure:",squash" yaml:",inline"`
 	ClickHouse clickhousedb.Configuration
 	Auth       authentication.Configuration
@@ -32,7 +32,7 @@ type ConsoleConfiguration struct {
 // Reset resets the console configuration to its default value.
 func (c *ConsoleConfiguration) Reset() {
 	*c = ConsoleConfiguration{
-		HTTP:       http.DefaultConfiguration(),
+		HTTP:       httpserver.DefaultConfiguration(),
 		Reporting:  reporter.DefaultConfiguration(),
 		Console:    console.DefaultConfiguration(),
 		ClickHouse: clickhousedb.DefaultConfiguration(),
@@ -86,7 +86,7 @@ func consoleStart(r *reporter.Reporter, config ConsoleConfiguration, checkOnly b
 	if err != nil {
 		return fmt.Errorf("unable to initialize daemon component: %w", err)
 	}
-	httpComponent, err := http.New(r, config.HTTP, http.Dependencies{
+	httpComponent, err := httpserver.New(r, config.HTTP, httpserver.Dependencies{
 		Daemon: daemonComponent,
 	})
 	if err != nil {

@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"akvorado/common/daemon"
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 
 	"github.com/docker/docker/api/types"
@@ -45,7 +45,7 @@ type Component struct {
 
 // Dependencies define the dependencies of the broker.
 type Dependencies struct {
-	HTTP   *http.Component
+	HTTP   *httpserver.Component
 	Daemon daemon.Component
 }
 

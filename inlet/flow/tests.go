@@ -10,7 +10,7 @@ import (
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 	"akvorado/inlet/flow/input/udp"
@@ -33,7 +33,7 @@ func NewMock(t *testing.T, r *reporter.Reporter, config Configuration) *Componen
 	}
 	c, err := New(r, config, Dependencies{
 		Daemon: daemon.NewMock(t),
-		HTTP:   http.NewMock(t, r),
+		HTTP:   httpserver.NewMock(t, r),
 		Schema: schema.NewMock(t),
 	})
 	if err != nil {

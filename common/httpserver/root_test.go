@@ -1,15 +1,15 @@
 // SPDX-FileCopyrightText: 2022 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package http_test
+package httpserver_test
 
 import (
 	"fmt"
-	netHTTP "net/http"
+	"net/http"
 	"testing"
 
 	"akvorado/common/helpers"
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 
 	"github.com/gin-gonic/gin"
@@ -17,10 +17,10 @@ import (
 
 func TestHandler(t *testing.T) {
 	r := reporter.NewMock(t)
-	h := http.NewMock(t, r)
+	h := httpserver.NewMock(t, r)
 
 	h.AddHandler("/test",
-		netHTTP.HandlerFunc(func(w netHTTP.ResponseWriter, r *netHTTP.Request) {
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "Hello !")
 		}))
 
@@ -33,7 +33,8 @@ func TestHandler(t *testing.T) {
 		},
 	})
 
-	gotMetrics := r.GetMetrics("akvorado_common_http_", "inflight_", "requests_total", "response_size")
+	gotMetrics := r.GetMetrics("akvorado_common_httpserver_",
+		"inflight_", "requests_total", "response_size")
 	expectedMetrics := map[string]string{
 		`inflight_requests`: "0",
 		`requests_total{code="200",handler="/test",method="get"}`:            "1",
@@ -53,10 +54,10 @@ func TestHandler(t *testing.T) {
 
 func TestGinRouter(t *testing.T) {
 	r := reporter.NewMock(t)
-	h := http.NewMock(t, r)
+	h := httpserver.NewMock(t, r)
 
 	h.GinRouter.GET("/api/v0/test", func(c *gin.Context) {
-		c.JSON(netHTTP.StatusOK, gin.H{
+		c.JSON(http.StatusOK, gin.H{
 			"message": "ping",
 		})
 	})
@@ -75,7 +76,7 @@ func TestGinRouter(t *testing.T) {
 
 func TestGinRouterPanic(t *testing.T) {
 	r := reporter.NewMock(t)
-	h := http.NewMock(t, r)
+	h := httpserver.NewMock(t, r)
 
 	h.GinRouter.GET("/api/v0/test", func(c *gin.Context) {
 		panic("heeeelp")

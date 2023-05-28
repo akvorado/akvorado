@@ -19,14 +19,14 @@ import (
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/conntrackfixer/mocks"
 )
 
 func TestRoot(t *testing.T) {
 	r := reporter.NewMock(t)
-	h := http.NewMock(t, r)
+	h := httpserver.NewMock(t, r)
 	c, err := New(r, Dependencies{
 		HTTP:   h,
 		Daemon: daemon.NewMock(t),

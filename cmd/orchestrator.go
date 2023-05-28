@@ -10,7 +10,7 @@ import (
 
 	"akvorado/common/clickhousedb"
 	"akvorado/common/daemon"
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 	"akvorado/orchestrator"
@@ -21,7 +21,7 @@ import (
 // OrchestratorConfiguration represents the configuration file for the orchestrator command.
 type OrchestratorConfiguration struct {
 	Reporting    reporter.Configuration
-	HTTP         http.Configuration
+	HTTP         httpserver.Configuration
 	ClickHouseDB clickhousedb.Configuration `yaml:"-"`
 	ClickHouse   clickhouse.Configuration
 	Kafka        kafka.Configuration
@@ -41,7 +41,7 @@ func (c *OrchestratorConfiguration) Reset() {
 	consoleConfiguration.Reset()
 	*c = OrchestratorConfiguration{
 		Reporting:    reporter.DefaultConfiguration(),
-		HTTP:         http.DefaultConfiguration(),
+		HTTP:         httpserver.DefaultConfiguration(),
 		ClickHouseDB: clickhousedb.DefaultConfiguration(),
 		ClickHouse:   clickhouse.DefaultConfiguration(),
 		Kafka:        kafka.DefaultConfiguration(),
@@ -110,7 +110,7 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, c
 	if err != nil {
 		return fmt.Errorf("unable to initialize daemon component: %w", err)
 	}
-	httpComponent, err := http.New(r, config.HTTP, http.Dependencies{
+	httpComponent, err := httpserver.New(r, config.HTTP, httpserver.Dependencies{
 		Daemon: daemonComponent,
 	})
 	if err != nil {

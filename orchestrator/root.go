@@ -7,7 +7,7 @@ package orchestrator
 import (
 	"sync"
 
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 )
 
@@ -23,7 +23,7 @@ type Component struct {
 
 // Dependencies define the dependencies of the broker.
 type Dependencies struct {
-	HTTP *http.Component
+	HTTP *httpserver.Component
 }
 
 // ServiceType describes the different internal services

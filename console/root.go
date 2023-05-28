@@ -6,7 +6,7 @@ package console
 
 import (
 	"io/fs"
-	netHTTP "net/http"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -19,7 +19,7 @@ import (
 
 	"akvorado/common/clickhousedb"
 	"akvorado/common/daemon"
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 	"akvorado/console/authentication"
@@ -45,7 +45,7 @@ type Component struct {
 // Dependencies define the dependencies of the console component.
 type Dependencies struct {
 	Daemon       daemon.Component
-	HTTP         *http.Component
+	HTTP         *httpserver.Component
 	ClickHouseDB *clickhousedb.Component
 	Clock        clock.Clock
 	Auth         *authentication.Component
@@ -83,7 +83,7 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 func (c *Component) Start() error {
 	c.r.Info().Msg("starting console component")
 
-	c.d.HTTP.AddHandler("/", netHTTP.HandlerFunc(c.assetsHandlerFunc))
+	c.d.HTTP.AddHandler("/", http.HandlerFunc(c.assetsHandlerFunc))
 	endpoint := c.d.HTTP.GinRouter.Group("/api/v0/console", c.d.Auth.UserAuthentication())
 	endpoint.GET("/configuration", c.configHandlerFunc)
 	endpoint.GET("/docs/:name", c.docsHandlerFunc)

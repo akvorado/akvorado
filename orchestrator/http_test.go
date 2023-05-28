@@ -7,13 +7,13 @@ import (
 	"testing"
 
 	"akvorado/common/helpers"
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 )
 
 func TestConfigurationEndpoint(t *testing.T) {
 	r := reporter.NewMock(t)
-	h := http.NewMock(t, r)
+	h := httpserver.NewMock(t, r)
 	c, err := New(r, DefaultConfiguration(), Dependencies{
 		HTTP: h,
 	})

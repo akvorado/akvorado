@@ -4,11 +4,11 @@
 package authentication
 
 import (
-	netHTTP "net/http"
+	"net/http"
 	"testing"
 
 	"akvorado/common/helpers"
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 
 	"github.com/gin-gonic/gin"
@@ -16,7 +16,7 @@ import (
 
 func TestUserHandler(t *testing.T) {
 	r := reporter.NewMock(t)
-	h := http.NewMock(t, r)
+	h := httpserver.NewMock(t, r)
 	c, err := New(r, DefaultConfiguration())
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
@@ -37,8 +37,8 @@ func TestUserHandler(t *testing.T) {
 			}, {
 				Description: "user info, minimal user logged in",
 				URL:         "/api/v0/console/user/info",
-				Header: func() netHTTP.Header {
-					headers := make(netHTTP.Header)
+				Header: func() http.Header {
+					headers := make(http.Header)
 					headers.Add("Remote-User", "alfred")
 					return headers
 				}(),
@@ -49,8 +49,8 @@ func TestUserHandler(t *testing.T) {
 			}, {
 				Description: "user info, complete user logged in",
 				URL:         "/api/v0/console/user/info",
-				Header: func() netHTTP.Header {
-					headers := make(netHTTP.Header)
+				Header: func() http.Header {
+					headers := make(http.Header)
 					headers.Add("Remote-User", "alfred")
 					headers.Add("Remote-Name", "Alfred Pennyworth")
 					headers.Add("Remote-Email", "alfred@batman.com")
@@ -67,8 +67,8 @@ func TestUserHandler(t *testing.T) {
 			}, {
 				Description: "user info, invalid user logged in",
 				URL:         "/api/v0/console/user/info",
-				Header: func() netHTTP.Header {
-					headers := make(netHTTP.Header)
+				Header: func() http.Header {
+					headers := make(http.Header)
 					headers.Add("Remote-User", "alfred")
 					headers.Add("Remote-Email", "alfrednooo")
 					return headers
@@ -83,8 +83,8 @@ func TestUserHandler(t *testing.T) {
 			}, {
 				Description: "avatar, simple user",
 				URL:         "/api/v0/console/user/avatar",
-				Header: func() netHTTP.Header {
-					headers := make(netHTTP.Header)
+				Header: func() http.Header {
+					headers := make(http.Header)
 					headers.Add("Remote-User", "alfred")
 					return headers
 				}(),
@@ -93,8 +93,8 @@ func TestUserHandler(t *testing.T) {
 			}, {
 				Description: "avatar, simple user, etag",
 				URL:         "/api/v0/console/user/avatar",
-				Header: func() netHTTP.Header {
-					headers := make(netHTTP.Header)
+				Header: func() http.Header {
+					headers := make(http.Header)
 					headers.Add("Remote-User", "alfred")
 					headers.Add("If-None-Match", `"b2e72a535032fa89"`)
 					return headers
@@ -115,8 +115,8 @@ func TestUserHandler(t *testing.T) {
 			}, {
 				Description: "user info, invalid user logged in",
 				URL:         "/api/v0/console/user/info",
-				Header: func() netHTTP.Header {
-					headers := make(netHTTP.Header)
+				Header: func() http.Header {
+					headers := make(http.Header)
 					headers.Add("Remote-User", "alfred")
 					headers.Add("Remote-Email", "alfrednooo")
 					return headers

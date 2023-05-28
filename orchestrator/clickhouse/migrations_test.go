@@ -20,7 +20,7 @@ import (
 	"akvorado/common/clickhousedb"
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/kafka"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
@@ -155,7 +155,7 @@ func waitMigrations(t *testing.T, ch *Component) {
 
 func TestGetHTTPBaseURL(t *testing.T) {
 	r := reporter.NewMock(t)
-	http := http.NewMock(t, r)
+	http := httpserver.NewMock(t, r)
 	c, err := New(r, DefaultConfiguration(), Dependencies{
 		Daemon: daemon.NewMock(t),
 		HTTP:   http,
@@ -207,7 +207,7 @@ func TestMigration(t *testing.T) {
 			configuration.Kafka.Configuration = kafka.DefaultConfiguration()
 			ch, err := New(r, configuration, Dependencies{
 				Daemon:     daemon.NewMock(t),
-				HTTP:       http.NewMock(t, r),
+				HTTP:       httpserver.NewMock(t, r),
 				Schema:     schema.NewMock(t),
 				ClickHouse: chComponent,
 			})
@@ -295,7 +295,7 @@ LIMIT 1`)
 			configuration.Kafka.Configuration = kafka.DefaultConfiguration()
 			ch, err := New(r, configuration, Dependencies{
 				Daemon:     daemon.NewMock(t),
-				HTTP:       http.NewMock(t, r),
+				HTTP:       httpserver.NewMock(t, r),
 				Schema:     schema.NewMock(t),
 				ClickHouse: chComponent,
 			})
@@ -331,7 +331,7 @@ LIMIT 1`)
 			configuration.Kafka.Configuration = kafka.DefaultConfiguration()
 			ch, err := New(r, configuration, Dependencies{
 				Daemon:     daemon.NewMock(t),
-				HTTP:       http.NewMock(t, r),
+				HTTP:       httpserver.NewMock(t, r),
 				Schema:     schema.NewMock(t).EnableAllColumns(),
 				ClickHouse: chComponent,
 			})
@@ -372,7 +372,7 @@ LIMIT 1`)
 			configuration.Kafka.Configuration = kafka.DefaultConfiguration()
 			ch, err := New(r, configuration, Dependencies{
 				Daemon:     daemon.NewMock(t),
-				HTTP:       http.NewMock(t, r),
+				HTTP:       httpserver.NewMock(t, r),
 				Schema:     sch,
 				ClickHouse: chComponent,
 			})
@@ -407,7 +407,7 @@ LIMIT 1`)
 			configuration.Kafka.Configuration = kafka.DefaultConfiguration()
 			ch, err := New(r, configuration, Dependencies{
 				Daemon:     daemon.NewMock(t),
-				HTTP:       http.NewMock(t, r),
+				HTTP:       httpserver.NewMock(t, r),
 				Schema:     sch,
 				ClickHouse: chComponent,
 			})

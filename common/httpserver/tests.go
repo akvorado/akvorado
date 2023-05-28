@@ -3,7 +3,7 @@
 
 //go:build !release
 
-package http
+package httpserver
 
 import (
 	"testing"

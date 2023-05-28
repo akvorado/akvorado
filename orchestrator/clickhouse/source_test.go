@@ -7,13 +7,13 @@ import (
 	"context"
 	"fmt"
 	"net"
-	netHTTP "net/http"
+	"net/http"
 	"testing"
 	"time"
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
-	"akvorado/common/http"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 )
@@ -21,8 +21,8 @@ import (
 func TestNetworkSources(t *testing.T) {
 	// Mux to answer requests
 	ready := make(chan bool)
-	mux := netHTTP.NewServeMux()
-	mux.Handle("/amazon.json", netHTTP.HandlerFunc(func(w netHTTP.ResponseWriter, r *netHTTP.Request) {
+	mux := http.NewServeMux()
+	mux.Handle("/amazon.json", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-ready:
 		default:
@@ -66,7 +66,7 @@ func TestNetworkSources(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Listen() error:\n%+v", err)
 	}
-	server := &netHTTP.Server{
+	server := &http.Server{
 		Addr:    listener.Addr().String(),
 		Handler: mux,
 	}
@@ -95,7 +95,7 @@ func TestNetworkSources(t *testing.T) {
 	}
 	c, err := New(r, config, Dependencies{
 		Daemon: daemon.NewMock(t),
-		HTTP:   http.NewMock(t, r),
+		HTTP:   httpserver.NewMock(t, r),
 		Schema: schema.NewMock(t),
 	})
 	if err != nil {
