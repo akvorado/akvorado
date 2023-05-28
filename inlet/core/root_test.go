@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: 2022 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-//go:build none
-
 package core
 
 import (
@@ -11,8 +9,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
+	"net/netip"
 	"testing"
 	"time"
 
@@ -36,7 +34,8 @@ func TestCore(t *testing.T) {
 
 	// Prepare all components.
 	daemonComponent := daemon.NewMock(t)
-	snmpComponent := snmp.NewMock(t, r, snmp.DefaultConfiguration(), snmp.Dependencies{Daemon: daemonComponent})
+	snmpComponent := snmp.NewMock(t, r, snmp.DefaultConfiguration(),
+		snmp.Dependencies{Daemon: daemonComponent})
 	flowComponent := flow.NewMock(t, r, flow.DefaultConfiguration())
 	geoipComponent := geoip.NewMock(t, r)
 	kafkaComponent, kafkaProducer := kafka.NewMock(t, r, kafka.DefaultConfiguration())
@@ -45,6 +44,7 @@ func TestCore(t *testing.T) {
 	bmpComponent.PopulateRIB(t)
 
 	// Instantiate and start core
+	sch := schema.NewMock(t)
 	c, err := New(r, DefaultConfiguration(), Dependencies{
 		Daemon: daemonComponent,
 		Flow:   flowComponent,
@@ -53,42 +53,45 @@ func TestCore(t *testing.T) {
 		Kafka:  kafkaComponent,
 		HTTP:   httpComponent,
 		BMP:    bmpComponent,
-		Schema: schema.NewMock(t),
+		Schema: sch,
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
 	helpers.StartStop(t, c)
 
-	flowMessage := func(exporter string, in, out uint32) *schema.BasicFlow {
-		return &schema.BasicFlow{
+	flowMessage := func(exporter string, in, out uint32) *schema.FlowMessage {
+		msg := &schema.FlowMessage{
 			TimeReceived:    200,
-			SequenceNum:     1000,
 			SamplingRate:    1000,
-			FlowDirection:   1,
-			ExporterAddress: net.ParseIP(exporter),
-			TimeFlowStart:   100,
-			TimeFlowEnd:     200,
-			Bytes:           6765,
-			Packets:         4,
+			ExporterAddress: netip.MustParseAddr(exporter),
 			InIf:            in,
 			OutIf:           out,
-			SrcAddr:         net.ParseIP("67.43.156.77"),
-			DstAddr:         net.ParseIP("2.125.160.216"),
-			Etype:           0x800,
-			Proto:           6,
-			SrcPort:         8534,
-			DstPort:         80,
+			SrcAddr:         netip.MustParseAddr("67.43.156.77"),
+			DstAddr:         netip.MustParseAddr("2.125.160.216"),
+			ProtobufDebug: map[schema.ColumnKey]interface{}{
+				schema.ColumnBytes:   6765,
+				schema.ColumnPackets: 4,
+				schema.ColumnEType:   0x800,
+				schema.ColumnProto:   6,
+				schema.ColumnSrcPort: 8534,
+				schema.ColumnDstPort: 80,
+			},
 		}
+		for k, v := range msg.ProtobufDebug {
+			vi := v.(int)
+			sch.ProtobufAppendVarint(msg, k, uint64(vi))
+		}
+		return msg
 	}
 
 	t.Run("kafka", func(t *testing.T) {
 		// Inject several messages with a cache miss from the SNMP
 		// component for each of them. No message sent to Kafka.
-		flowComponent.Inject(t, flowMessage("192.0.2.142", 434, 677))
-		flowComponent.Inject(t, flowMessage("192.0.2.143", 434, 677))
-		flowComponent.Inject(t, flowMessage("192.0.2.143", 437, 677))
-		flowComponent.Inject(t, flowMessage("192.0.2.143", 434, 679))
+		flowComponent.Inject(flowMessage("192.0.2.142", 434, 677))
+		flowComponent.Inject(flowMessage("192.0.2.143", 434, 677))
+		flowComponent.Inject(flowMessage("192.0.2.143", 437, 677))
+		flowComponent.Inject(flowMessage("192.0.2.143", 434, 679))
 
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_inlet_core_", "-flows_processing_")
@@ -107,9 +110,9 @@ func TestCore(t *testing.T) {
 
 		// Inject again the messages, this time, we will get a cache hit!
 		kafkaProducer.ExpectInputAndSucceed()
-		flowComponent.Inject(t, flowMessage("192.0.2.142", 434, 677))
+		flowComponent.Inject(flowMessage("192.0.2.142", 434, 677))
 		kafkaProducer.ExpectInputAndSucceed()
-		flowComponent.Inject(t, flowMessage("192.0.2.143", 437, 679))
+		flowComponent.Inject(flowMessage("192.0.2.143", 437, 679))
 
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics = r.GetMetrics("akvorado_inlet_core_", "classifier_", "-flows_processing_", "flows_")
@@ -133,38 +136,40 @@ func TestCore(t *testing.T) {
 		received := make(chan bool)
 		kafkaProducer.ExpectInputWithMessageCheckerFunctionAndSucceed(func(msg *sarama.ProducerMessage) error {
 			defer close(received)
-			expectedTopic := fmt.Sprintf("flows-%s", schema.Flows.ProtobufMessageHash())
+			expectedTopic := fmt.Sprintf("flows-%s", sch.ProtobufMessageHash())
 			if msg.Topic != expectedTopic {
 				t.Errorf("Kafka message topic (-got, +want):\n-%s\n+%s", msg.Topic, expectedTopic)
 			}
 
-			got := &schema.BasicFlow{}
 			b, err := msg.Value.Encode()
 			if err != nil {
 				t.Fatalf("Kafka message encoding error:\n%+v", err)
 			}
-			if err := got.DecodeMessage(b); err != nil {
-				t.Fatalf("Kakfa message decode error:\n%+v", err)
-			}
+			got := sch.ProtobufDecode(t, b)
 			expected := flowMessage("192.0.2.142", 434, 677)
 			expected.SrcAS = 35908
-			expected.SrcCountry = "BT"
 			expected.DstAS = 0 // not in database
-			expected.DstCountry = "GB"
-			expected.InIfName = "Gi0/0/434"
-			expected.OutIfName = "Gi0/0/677"
-			expected.InIfDescription = "Interface 434"
-			expected.OutIfDescription = "Interface 677"
-			expected.InIfSpeed = 1000
-			expected.OutIfSpeed = 1000
-			expected.ExporterName = "192_0_2_142"
+			expected.InIf = 0  // not serialized
+			expected.OutIf = 0 // not serialized
+			expected.ExporterAddress = netip.AddrFrom16(expected.ExporterAddress.As16())
+			expected.SrcAddr = netip.AddrFrom16(expected.SrcAddr.As16())
+			expected.DstAddr = netip.AddrFrom16(expected.DstAddr.As16())
+			expected.ProtobufDebug[schema.ColumnSrcCountry] = "BT"
+			expected.ProtobufDebug[schema.ColumnDstCountry] = "GB"
+			expected.ProtobufDebug[schema.ColumnInIfName] = "Gi0/0/434"
+			expected.ProtobufDebug[schema.ColumnOutIfName] = "Gi0/0/677"
+			expected.ProtobufDebug[schema.ColumnInIfDescription] = "Interface 434"
+			expected.ProtobufDebug[schema.ColumnOutIfDescription] = "Interface 677"
+			expected.ProtobufDebug[schema.ColumnInIfSpeed] = 1000
+			expected.ProtobufDebug[schema.ColumnOutIfSpeed] = 1000
+			expected.ProtobufDebug[schema.ColumnExporterName] = "192_0_2_142"
 			if diff := helpers.Diff(&got, expected); diff != "" {
 				t.Errorf("Kafka message (-got, +want):\n%s", diff)
 			}
 
 			return nil
 		})
-		flowComponent.Inject(t, input)
+		flowComponent.Inject(input)
 		select {
 		case <-received:
 		case <-time.After(time.Second):
@@ -174,7 +179,7 @@ func TestCore(t *testing.T) {
 		// Try to inject a message with missing sampling rate
 		input = flowMessage("192.0.2.142", 434, 677)
 		input.SamplingRate = 0
-		flowComponent.Inject(t, input)
+		flowComponent.Inject(input)
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics = r.GetMetrics("akvorado_inlet_core_", "classifier_", "-flows_processing_", "flows_")
 		expectedMetrics = map[string]string{
@@ -230,7 +235,7 @@ func TestCore(t *testing.T) {
 		// Produce some flows
 		for i := 0; i < 12; i++ {
 			kafkaProducer.ExpectInputAndSucceed()
-			flowComponent.Inject(t, flowMessage("192.0.2.142", 434, 677))
+			flowComponent.Inject(flowMessage("192.0.2.142", 434, 677))
 		}
 
 		// Decode some of them
@@ -243,35 +248,21 @@ func TestCore(t *testing.T) {
 			}
 			expected := gin.H{
 				"TimeReceived":    200,
-				"SequenceNum":     1000,
 				"SamplingRate":    1000,
-				"FlowDirection":   1,
 				"ExporterAddress": "192.0.2.142",
-				"TimeFlowStart":   100,
-				"TimeFlowEnd":     200,
-				"Bytes":           6765,
-				"Packets":         4,
-				"InIf":            434,
-				"OutIf":           677,
 				"SrcAddr":         "67.43.156.77",
 				"DstAddr":         "2.125.160.216",
-				"Etype":           0x800,
-				"Proto":           6,
-				"SrcPort":         8534,
-				"DstPort":         80,
-				// Added info
-				"InIfDescription":  "Interface 434",
-				"InIfName":         "Gi0/0/434",
-				"OutIfDescription": "Interface 677",
-				"OutIfName":        "Gi0/0/677",
-				"InIfSpeed":        1000,
-				"OutIfSpeed":       1000,
-				"InIfBoundary":     "UNDEFINED",
-				"OutIfBoundary":    "UNDEFINED",
-				"DstCountry":       "GB",
-				"SrcCountry":       "BT",
-				"SrcAS":            35908,
-				"ExporterName":     "192_0_2_142",
+				"SrcAS":           35908,
+				"InIf":            434,
+				"OutIf":           677,
+
+				"NextHop":    "",
+				"SrcNetMask": 0,
+				"DstNetMask": 0,
+				"SrcVlan":    0,
+				"DstVlan":    0,
+				"GotASPath":  false,
+				"DstAS":      0,
 			}
 			if diff := helpers.Diff(got, expected); diff != "" {
 				t.Fatalf("GET /api/v0/inlet/flows (-got, +want):\n%s", diff)
@@ -303,7 +294,7 @@ func TestCore(t *testing.T) {
 		// Produce some flows
 		for i := 0; i < 12; i++ {
 			kafkaProducer.ExpectInputAndSucceed()
-			flowComponent.Inject(t, flowMessage("192.0.2.142", 434, 677))
+			flowComponent.Inject(flowMessage("192.0.2.142", 434, 677))
 		}
 
 		// Check we got only 4
