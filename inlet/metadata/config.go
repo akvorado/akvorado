@@ -45,8 +45,6 @@ func DefaultConfiguration() Configuration {
 
 // ProviderConfiguration represents the configuration for a metadata provider.
 type ProviderConfiguration struct {
-	// Type is the type of the provider
-	Type string
 	// Config is the actual configuration for the provider.
 	Config provider.Configuration
 }

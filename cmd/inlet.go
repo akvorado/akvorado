@@ -5,10 +5,14 @@ package cmd
 
 import (
 	"fmt"
+	"reflect"
 
+	"github.com/gin-gonic/gin"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 
 	"akvorado/common/daemon"
+	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
@@ -171,4 +175,70 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 		flowComponent,
 	}
 	return StartStopComponents(r, daemonComponent, components)
+}
+
+// InletConfigurationUnmarshallerHook renames SNMP configuration to metadata
+func InletConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
+	return func(from, to reflect.Value) (interface{}, error) {
+		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(InletConfiguration{}) {
+			return from.Interface(), nil
+		}
+
+		// snmp → metadata
+		var snmpKey, metadataKey *reflect.Value
+		fromKeys := from.MapKeys()
+		for i, k := range fromKeys {
+			k = helpers.ElemOrIdentity(k)
+			if k.Kind() != reflect.String {
+				return from.Interface(), nil
+			}
+			if helpers.MapStructureMatchName(k.String(), "Snmp") {
+				snmpKey = &fromKeys[i]
+			} else if helpers.MapStructureMatchName(k.String(), "Metadata") {
+				metadataKey = &fromKeys[i]
+			}
+		}
+		if snmpKey == nil {
+			return from.Interface(), nil
+		}
+		if snmpKey != nil && metadataKey != nil {
+			return nil, fmt.Errorf("cannot have both %q and %q", snmpKey.String(), metadataKey.String())
+		}
+
+		// Build the metadata configuration
+		providerValue := gin.H{}
+		metadataValue := gin.H{}
+		// Dispatch values from snmp key into metadata
+		snmpMap := helpers.ElemOrIdentity(from.MapIndex(*snmpKey))
+		snmpKeys := snmpMap.MapKeys()
+	outer:
+		for i, k := range snmpKeys {
+			k = helpers.ElemOrIdentity(k)
+			if k.Kind() != reflect.String {
+				continue
+			}
+			if helpers.MapStructureMatchName(k.String(), "PollerCoalesce") {
+				metadataValue["MaxBatchRequests"] = snmpMap.MapIndex(snmpKeys[i]).Interface()
+				continue
+			}
+			metadataConfig := reflect.TypeOf(metadata.Configuration{})
+			for j := 0; j < metadataConfig.NumField(); j++ {
+				if helpers.MapStructureMatchName(k.String(), metadataConfig.Field(j).Name) {
+					metadataValue[k.String()] = snmpMap.MapIndex(snmpKeys[i]).Interface()
+					continue outer
+				}
+			}
+			providerValue[k.String()] = snmpMap.MapIndex(snmpKeys[i]).Interface()
+		}
+
+		providerValue["type"] = "snmp"
+		metadataValue["provider"] = providerValue
+		from.SetMapIndex(reflect.ValueOf("metadata"), reflect.ValueOf(metadataValue))
+		from.SetMapIndex(*snmpKey, reflect.Value{})
+		return from.Interface(), nil
+	}
+}
+
+func init() {
+	helpers.RegisterMapstructureUnmarshallerHook(InletConfigurationUnmarshallerHook())
 }
