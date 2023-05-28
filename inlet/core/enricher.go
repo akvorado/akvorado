@@ -157,7 +157,7 @@ func (c *Component) getASNumber(flowAddr netip.Addr, flowAS, bmpAS uint32) (asn 
 	return asn
 }
 
-// getPfxLen retrieves the prefix length for a flow, depending on user preferences.
+// getNetMask retrieves the prefix length for a flow, depending on user preferences.
 func (c *Component) getNetMask(flowMask, bmpMask uint8) (mask uint8) {
 	for _, provider := range c.config.NetProviders {
 		if mask != 0 {
