@@ -5,7 +5,6 @@ package snmp
 
 import (
 	"testing"
-	"time"
 
 	"akvorado/common/helpers"
 
@@ -40,12 +39,10 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Initial:     func() interface{} { return Configuration{} },
 			Configuration: func() interface{} {
 				return gin.H{
-					"cache-refresh":  "10s",
 					"poller-retries": 10,
 				}
 			},
 			Expected: Configuration{
-				CacheRefresh:  10 * time.Second,
 				PollerRetries: 10,
 				Communities: helpers.MustNewSubnetMap(map[string]string{
 					"::/0": "public",

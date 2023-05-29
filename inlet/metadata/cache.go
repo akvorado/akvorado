@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package snmp
+package metadata
 
 import (
 	"net/netip"
@@ -9,12 +9,16 @@ import (
 
 	"akvorado/common/helpers/cache"
 	"akvorado/common/reporter"
+	"akvorado/inlet/metadata/provider"
 )
 
-// snmpCache represents the SNMP cache.
-type snmpCache struct {
+// Interface describes an interface.
+type Interface = provider.Interface
+
+// metadataCache represents the metadata cache.
+type metadataCache struct {
 	r     *reporter.Reporter
-	cache *cache.Cache[key, value]
+	cache *cache.Cache[provider.Query, provider.Answer]
 
 	metrics struct {
 		cacheHit     reporter.Counter
@@ -24,26 +28,10 @@ type snmpCache struct {
 	}
 }
 
-// Interface contains the information about an interface.
-type Interface struct {
-	Name        string
-	Description string
-	Speed       uint
-}
-
-type key struct {
-	IP    netip.Addr
-	Index uint
-}
-type value struct {
-	ExporterName string
-	Interface
-}
-
-func newSNMPCache(r *reporter.Reporter) *snmpCache {
-	sc := &snmpCache{
+func newMetadataCache(r *reporter.Reporter) *metadataCache {
+	sc := &metadataCache{
 		r:     r,
-		cache: cache.New[key, value](),
+		cache: cache.New[provider.Query, provider.Answer](),
 	}
 	sc.metrics.cacheHit = r.Counter(
 		reporter.CounterOpts{
@@ -72,26 +60,23 @@ func newSNMPCache(r *reporter.Reporter) *snmpCache {
 
 // Lookup will perform a lookup of the cache. It returns the exporter
 // name as well as the requested interface.
-func (sc *snmpCache) Lookup(t time.Time, ip netip.Addr, index uint) (string, Interface, bool) {
-	result, ok := sc.cache.Get(t, key{ip, index})
+func (sc *metadataCache) Lookup(t time.Time, query provider.Query) (provider.Answer, bool) {
+	result, ok := sc.cache.Get(t, query)
 	if !ok {
 		sc.metrics.cacheMiss.Inc()
-		return "", Interface{}, false
+		return provider.Answer{}, false
 	}
 	sc.metrics.cacheHit.Inc()
-	return result.ExporterName, result.Interface, true
+	return result, true
 }
 
 // Put a new entry in the cache.
-func (sc *snmpCache) Put(t time.Time, ip netip.Addr, exporterName string, index uint, iface Interface) {
-	sc.cache.Put(t, key{ip, index}, value{
-		ExporterName: exporterName,
-		Interface:    iface,
-	})
+func (sc *metadataCache) Put(t time.Time, query provider.Query, answer provider.Answer) {
+	sc.cache.Put(t, query, answer)
 }
 
 // Expire expire entries whose last access is before the provided time
-func (sc *snmpCache) Expire(before time.Time) int {
+func (sc *metadataCache) Expire(before time.Time) int {
 	expired := sc.cache.DeleteLastAccessedBefore(before)
 	sc.metrics.cacheExpired.Add(float64(expired))
 	return expired
@@ -99,25 +84,25 @@ func (sc *snmpCache) Expire(before time.Time) int {
 
 // NeedUpdates returns a map of interface entries that would need to
 // be updated. It relies on last update.
-func (sc *snmpCache) NeedUpdates(before time.Time) map[netip.Addr]map[uint]Interface {
+func (sc *metadataCache) NeedUpdates(before time.Time) map[netip.Addr]map[uint]Interface {
 	result := map[netip.Addr]map[uint]Interface{}
 	for k, v := range sc.cache.ItemsLastUpdatedBefore(before) {
-		interfaces, ok := result[k.IP]
+		interfaces, ok := result[k.ExporterIP]
 		if !ok {
 			interfaces = map[uint]Interface{}
-			result[k.IP] = interfaces
+			result[k.ExporterIP] = interfaces
 		}
-		interfaces[k.Index] = v.Interface
+		interfaces[k.IfIndex] = v.Interface
 	}
 	return result
 }
 
 // Save stores the cache to the provided location.
-func (sc *snmpCache) Save(cacheFile string) error {
+func (sc *metadataCache) Save(cacheFile string) error {
 	return sc.cache.Save(cacheFile)
 }
 
 // Load loads the cache from the provided location.
-func (sc *snmpCache) Load(cacheFile string) error {
+func (sc *metadataCache) Load(cacheFile string) error {
 	return sc.cache.Load(cacheFile)
 }

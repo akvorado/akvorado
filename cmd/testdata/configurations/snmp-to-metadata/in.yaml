@@ -1,0 +1,10 @@
+---
+inlet:
+  snmp:
+    workers: 10
+    poller-retries: 3
+    poller-coalesce: 20
+    cache-refresh: 30m
+    agents:
+      192.0.2.10: 192.0.2.11
+    defaultcommunity: private

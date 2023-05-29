@@ -20,7 +20,7 @@ import (
 	"akvorado/inlet/flow"
 	"akvorado/inlet/geoip"
 	"akvorado/inlet/kafka"
-	"akvorado/inlet/snmp"
+	"akvorado/inlet/metadata"
 )
 
 // Component represents the HTTP compomenent.
@@ -44,14 +44,14 @@ type Component struct {
 
 // Dependencies define the dependencies of the HTTP component.
 type Dependencies struct {
-	Daemon daemon.Component
-	Flow   *flow.Component
-	SNMP   *snmp.Component
-	BMP    *bmp.Component
-	GeoIP  *geoip.Component
-	Kafka  *kafka.Component
-	HTTP   *httpserver.Component
-	Schema *schema.Component
+	Daemon   daemon.Component
+	Flow     *flow.Component
+	Metadata *metadata.Component
+	BMP      *bmp.Component
+	GeoIP    *geoip.Component
+	Kafka    *kafka.Component
+	HTTP     *httpserver.Component
+	Schema   *schema.Component
 }
 
 // New creates a new core component.

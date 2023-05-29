@@ -1,0 +1,20 @@
+---
+paths:
+  inlet.0.metadata:
+    workers: 10
+    maxbatchrequests: 20
+    cacheduration: 30m0s
+    cacherefresh: 30m0s
+    cachecheckinterval: 2m0s
+    cachepersistfile: ""
+    provider:
+      config:
+        pollerretries: 3
+        pollertimeout: 1s
+        agents:
+          192.0.2.10: 192.0.2.11
+        communities:
+          ::/0: private
+        ports:
+          ::/0: 161
+        securityparameters: {}

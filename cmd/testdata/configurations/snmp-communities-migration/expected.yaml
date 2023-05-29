@@ -1,14 +1,8 @@
 ---
 paths:
-  inlet.0.snmp:
-    cacheduration: 30m0s
-    cacherefresh: 1h0m0s
-    cachecheckinterval: 2m0s
-    cachepersistfile: ""
+  inlet.0.metadata.provider.config:
     pollerretries: 1
     pollertimeout: 1s
-    pollercoalesce: 10
-    workers: 1
     communities:
       ::/0: yopla
       203.0.113.0/24: yopli

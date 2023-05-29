@@ -7,10 +7,12 @@ geoip:
   # Check docker-compose.yml for details.
   asn-database: /usr/share/GeoIP/GeoLite2-ASN.mmdb
   geo-database: /usr/share/GeoIP/GeoLite2-Country.mmdb
-snmp:
+metadata:
   workers: 10
-  communities:
-    ::/0: public
+  provider:
+    type: snmp
+    communities:
+      ::/0: public
 flow:
   inputs:
     - type: udp

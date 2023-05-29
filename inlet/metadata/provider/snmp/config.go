@@ -14,26 +14,15 @@ import (
 	"github.com/mitchellh/mapstructure"
 
 	"akvorado/common/helpers"
+	"akvorado/inlet/metadata/provider"
 )
 
 // Configuration describes the configuration for the SNMP client
 type Configuration struct {
-	// CacheDuration defines how long to keep cached entries without access
-	CacheDuration time.Duration `validate:"min=1m"`
-	// CacheRefresh defines how soon to refresh an existing cached entry
-	CacheRefresh time.Duration `validate:"eq=0|min=1m,eq=0|gtefield=CacheDuration"`
-	// CacheRefreshInterval defines the interval to check for expiration/refresh
-	CacheCheckInterval time.Duration `validate:"ltefield=CacheRefresh,min=1s"`
-	// CachePersist defines a file to store cache and survive restarts
-	CachePersistFile string
 	// PollerRetries tell how many time a poller should retry before giving up
 	PollerRetries int `validate:"min=0"`
 	// PollerTimeout tell how much time a poller should wait for an answer
 	PollerTimeout time.Duration `validate:"min=100ms"`
-	// PollerCoalesce tells how many requests can be contained inside a single SNMP PDU
-	PollerCoalesce int `validate:"min=0"`
-	// Workers define the number of workers used to poll SNMP
-	Workers int `validate:"min=1"`
 
 	// Communities is a mapping from exporter IPs to SNMPv2 communities
 	Communities *helpers.SubnetMap[string]
@@ -56,16 +45,10 @@ type SecurityParameters struct {
 }
 
 // DefaultConfiguration represents the default configuration for the SNMP client.
-func DefaultConfiguration() Configuration {
+func DefaultConfiguration() provider.Configuration {
 	return Configuration{
-		CacheDuration:      30 * time.Minute,
-		CacheRefresh:       time.Hour,
-		CacheCheckInterval: 2 * time.Minute,
-		CachePersistFile:   "",
-		PollerRetries:      1,
-		PollerTimeout:      time.Second,
-		PollerCoalesce:     10,
-		Workers:            1,
+		PollerRetries: 1,
+		PollerTimeout: time.Second,
 
 		Communities: helpers.MustNewSubnetMap(map[string]string{
 			"::/0": "public",

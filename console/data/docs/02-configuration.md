@@ -170,7 +170,7 @@ The topic name is suffixed by a hash of the schema.
 
 ### Core
 
-The core component queries the `geoip` and the `snmp` component to
+The core component queries the `geoip` and the `metadata` component to
 enriches the flows with additional information. It also classifies
 exporters and interfaces into groups with a set of classification
 rules.
@@ -309,12 +309,11 @@ is provided, the component is inactive. It accepts the following keys:
 If the files are updated while *Akvorado* is running, they are
 automatically refreshed.
 
-### SNMP
+### Metadata
 
-Flows only include interface indexes. To associate them with an
-interface name and description, SNMP is used to poll the exporter
-sending each flows. A cache is maintained to avoid polling
-continuously the exporters. The following keys are accepted:
+Flows only include interface indexes. To associate them with an interface name
+and description, metadata are polled. A cache is maintained. There are several
+providers available to poll metadata. The following keys are accepted:
 
 - `cache-duration` tells how much time to keep data in the cache
 - `cache-refresh` tells how much time to wait before updating an entry
@@ -323,6 +322,20 @@ continuously the exporters. The following keys are accepted:
   about to expire or need an update
 - `cache-persist-file` tells where to store cached data on shutdown and
   read them back on startup
+- `poller-retries` is the number of retries on unsuccessful SNMP requests.
+- `poller-timeout` tells how much time should the poller wait for an answer.
+- `workers` tell how many workers to spawn to handle SNMP polling.
+- `max-batch-requests` define how many requests can be batched together
+- `provider` defines the provider configuration
+
+As flows missing interface information are discarded, persisting the
+cache is useful to quickly be able to handle incoming flows. By
+default, no persistent cache is configured.
+
+The `provider` key contains the configuration of the provider. The provider type
+is defined by the `type` key. The `snmp` provider accepts the following
+configuration keys:
+
 - `communities` is a map from subnets to the SNMPv2 community to use
   for exporters in the provided subnet. Use `::/0` to set the default
   value. Alternatively, it also accepts a string to use for all
@@ -341,17 +354,54 @@ continuously the exporters. The following keys are accepted:
   match, the exporter IP is used)
 - `ports` is a map from subnets to the SNMP port to use to poll
   agents in the provided subnet.
-- `poller-retries` is the number of retries on unsuccessful SNMP requests.
-- `poller-timeout` tells how much time should the poller wait for an answer.
-- `workers` tell how many workers to spawn to handle SNMP polling.
 
-As flows missing interface information are discarded, persisting the
-cache is useful to quickly be able to handle incoming flows. By
-default, no persistent cache is configured.
+For example:
+
+```yaml
+metadata:
+  workers: 10
+  provider:
+    type: snmp
+    communities:
+      ::/0: private
+```
 
 *Akvorado* will use SNMPv3 if there is a match for the
 `security-parameters` configuration option. Otherwise, it will use
 SNMPv2.
+
+The `static` providers accepts an `exporters` key which maps exporter subnets to
+an exporter configuration. An exporter configuration is map:
+
+- `name` is the name of the exporter
+- `default` is the default interface when no match is found
+- `ifindexes` is a map from interface indexes to interface
+
+An interface is a `name`, a `description` and a `speed`.
+
+For example:
+
+```yaml
+metadata
+  provider:
+    type: static
+    exporters:
+      2001:db8:1::1:
+        name: exporter1
+        default:
+          name: unknown
+          description: Unknown interface
+          speed: 100
+        ifindexes:
+          10:
+            name: Gi0/0/10
+            description: PNI Netflix
+            speed: 1000
+          11:
+            name: Gi0/0/15
+            description: PNI Google
+            speed: 1000
+```
 
 ### HTTP
 
