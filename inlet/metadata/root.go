@@ -84,7 +84,9 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	c.d.Daemon.Track(&c.t, "inlet/metadata")
 
 	// Initialize the provider
-	selectedProvider, err := c.config.Provider.Config.New(r)
+	selectedProvider, err := c.config.Provider.Config.New(r, func(update provider.Update) {
+		c.sc.Put(c.d.Clock.Now(), update.Query, update.Answer)
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -289,9 +291,7 @@ func (c *Component) providerIncomingRequest(request provider.BatchQuery) {
 	c.providerBreakersLock.Unlock()
 
 	if err := providerBreaker.Run(func() error {
-		return c.provider.Query(c.t.Context(nil), request, func(update provider.Update) {
-			c.sc.Put(c.d.Clock.Now(), update.Query, update.Answer)
-		})
+		return c.provider.Query(c.t.Context(nil), request)
 	}); err == breaker.ErrBreakerOpen {
 		c.metrics.providerBreakerOpenCount.WithLabelValues(request.ExporterIP.Unmap().String()).Inc()
 		c.providerBreakersLock.Lock()

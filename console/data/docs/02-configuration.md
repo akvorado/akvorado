@@ -333,8 +333,8 @@ cache is useful to quickly be able to handle incoming flows. By
 default, no persistent cache is configured.
 
 The `provider` key contains the configuration of the provider. The provider type
-is defined by the `type` key. Currently, only `snmp` is accepted. It accepts the
-following configuration keys:
+is defined by the `type` key. The `snmp` provider accepts the following
+configuration keys:
 
 - `communities` is a map from subnets to the SNMPv2 community to use
   for exporters in the provided subnet. Use `::/0` to set the default
@@ -369,6 +369,39 @@ metadata:
 *Akvorado* will use SNMPv3 if there is a match for the
 `security-parameters` configuration option. Otherwise, it will use
 SNMPv2.
+
+The `static` providers accepts an `exporters` key which maps exporter subnets to
+an exporter configuration. An exporter configuration is map:
+
+- `name` is the name of the exporter
+- `default` is the default interface when no match is found
+- `ifindexes` is a map from interface indexes to interface
+
+An interface is a `name`, a `description` and a `speed`.
+
+For example:
+
+```yaml
+metadata
+  provider:
+    type: static
+    exporters:
+      2001:db8:1::1:
+        name: exporter1
+        default:
+          name: unknown
+          description: Unknown interface
+          speed: 100
+        ifindexes:
+          10:
+            name: Gi0/0/10
+            description: PNI Netflix
+            speed: 1000
+          11:
+            name: Gi0/0/15
+            description: PNI Google
+            speed: 1000
+```
 
 ### HTTP
 

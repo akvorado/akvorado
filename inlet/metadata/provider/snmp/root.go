@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 // Package snmp handles SNMP polling to get interface names and
-// descriptions. It keeps a cache of retrieved entries and refresh
-// them.
+// descriptions.
 package snmp
 
 import (
@@ -25,6 +24,8 @@ type Provider struct {
 	pendingRequestsLock sync.Mutex
 	errLogger           reporter.Logger
 
+	put func(provider.Update)
+
 	metrics struct {
 		pendingRequests reporter.GaugeFunc
 		successes       *reporter.CounterVec
@@ -35,7 +36,7 @@ type Provider struct {
 }
 
 // New creates a new SNMP provider from configuration
-func (configuration Configuration) New(r *reporter.Reporter) (provider.Provider, error) {
+func (configuration Configuration) New(r *reporter.Reporter, put func(provider.Update)) (provider.Provider, error) {
 	for exporterIP, agentIP := range configuration.Agents {
 		if exporterIP.Is4() || agentIP.Is4() {
 			delete(configuration.Agents, exporterIP)
@@ -51,6 +52,8 @@ func (configuration Configuration) New(r *reporter.Reporter) (provider.Provider,
 
 		pendingRequests: make(map[string]struct{}),
 		errLogger:       r.Sample(reporter.BurstSampler(10*time.Second, 3)),
+
+		put: put,
 	}
 
 	p.metrics.pendingRequests = r.GaugeFunc(
@@ -88,12 +91,12 @@ func (configuration Configuration) New(r *reporter.Reporter) (provider.Provider,
 }
 
 // Query queries exporter to get information through SNMP.
-func (p *Provider) Query(ctx context.Context, query provider.BatchQuery, put func(provider.Update)) error {
+func (p *Provider) Query(ctx context.Context, query provider.BatchQuery) error {
 	// Avoid querying too much exporters with errors
 	agentIP, ok := p.config.Agents[query.ExporterIP]
 	if !ok {
 		agentIP = query.ExporterIP
 	}
 	agentPort := p.config.Ports.LookupOrDefault(agentIP, 161)
-	return p.Poll(ctx, query.ExporterIP, agentIP, agentPort, query.IfIndexes, put)
+	return p.Poll(ctx, query.ExporterIP, agentIP, agentPort, query.IfIndexes, p.put)
 }

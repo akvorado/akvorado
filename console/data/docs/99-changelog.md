@@ -13,6 +13,9 @@ identified with a specific icon:
 
 ## Unreleased
 
+- ✨ *inlet*: metadata retrieval is now pluggable. In addition to SNMP, it is
+  now possible to set exporter names, interface names and descriptions directly
+  in the configuration file. See `inlet`→`metadata`.
 - ✨ *inlet*: allow extraction of prefix length from BMP. See `inlet`→`core`→`net-providers`.
 - 🩹 *inlet*: fix Netflow processing when template is received with data
 - 🌱 *build*: minimum supported Node version is now 16

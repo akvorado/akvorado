@@ -207,20 +207,20 @@ func TestPoller(t *testing.T) {
 			config.Ports = helpers.MustNewSubnetMap(map[string]uint16{
 				"::/0": uint16(port),
 			})
-			p, err := config.New(r)
-			if err != nil {
-				t.Fatalf("New() error:\n%+v", err)
-			}
 			put := func(update provider.Update) {
 				got = append(got, fmt.Sprintf("%s %s %d %s %s %d",
 					update.ExporterIP.Unmap().String(), update.ExporterName,
 					update.IfIndex, update.Name, update.Description, update.Speed))
 			}
+			p, err := config.New(r, put)
+			if err != nil {
+				t.Fatalf("New() error:\n%+v", err)
+			}
 
-			p.Query(context.Background(), provider.BatchQuery{ExporterIP: tc.ExporterIP, IfIndexes: []uint{641}}, put)
-			p.Query(context.Background(), provider.BatchQuery{ExporterIP: tc.ExporterIP, IfIndexes: []uint{642}}, put)
-			p.Query(context.Background(), provider.BatchQuery{ExporterIP: tc.ExporterIP, IfIndexes: []uint{643, 644}}, put)
-			p.Query(context.Background(), provider.BatchQuery{ExporterIP: tc.ExporterIP, IfIndexes: []uint{0}}, put)
+			p.Query(context.Background(), provider.BatchQuery{ExporterIP: tc.ExporterIP, IfIndexes: []uint{641}})
+			p.Query(context.Background(), provider.BatchQuery{ExporterIP: tc.ExporterIP, IfIndexes: []uint{642}})
+			p.Query(context.Background(), provider.BatchQuery{ExporterIP: tc.ExporterIP, IfIndexes: []uint{643, 644}})
+			p.Query(context.Background(), provider.BatchQuery{ExporterIP: tc.ExporterIP, IfIndexes: []uint{0}})
 			exporterStr := tc.ExporterIP.Unmap().String()
 			time.Sleep(50 * time.Millisecond)
 			if diff := helpers.Diff(got, []string{

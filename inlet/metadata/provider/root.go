@@ -13,9 +13,9 @@ import (
 
 // Interface contains the information about an interface.
 type Interface struct {
-	Name        string
-	Description string
-	Speed       uint
+	Name        string `validate:"required"`
+	Description string `validate:"required"`
+	Speed       uint   `validate:"required"`
 }
 
 // Query is the query sent to a provider.
@@ -44,13 +44,12 @@ type Update struct {
 
 // Provider is the interface a provider should implement.
 type Provider interface {
-	// Query asks the provider to query metadata for several requests. The
-	// updates will be returned by calling the provided callback for each one.
-	Query(ctx context.Context, query BatchQuery, put func(Update)) error
+	// Query asks the provider to query metadata for several requests.
+	Query(ctx context.Context, query BatchQuery) error
 }
 
 // Configuration defines an interface to configure a provider.
 type Configuration interface {
 	// New instantiates a new provider from its configuration.
-	New(r *reporter.Reporter) (Provider, error)
+	New(r *reporter.Reporter, put func(Update)) (Provider, error)
 }

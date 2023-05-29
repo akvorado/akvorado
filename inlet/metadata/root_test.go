@@ -156,13 +156,13 @@ func TestStartStopWithMultipleWorkers(t *testing.T) {
 
 type errorProvider struct{}
 
-func (ep errorProvider) Query(_ context.Context, _ provider.BatchQuery, _ func(provider.Update)) error {
+func (ep errorProvider) Query(_ context.Context, _ provider.BatchQuery) error {
 	return errors.New("noooo")
 }
 
 type errorProviderConfiguration struct{}
 
-func (epc errorProviderConfiguration) New(_ *reporter.Reporter) (provider.Provider, error) {
+func (epc errorProviderConfiguration) New(_ *reporter.Reporter, _ func(provider.Update)) (provider.Provider, error) {
 	return errorProvider{}, nil
 }
 
@@ -207,7 +207,7 @@ type batchProvider struct {
 	config *batchProviderConfiguration
 }
 
-func (bp *batchProvider) Query(_ context.Context, query provider.BatchQuery, _ func(provider.Update)) error {
+func (bp *batchProvider) Query(_ context.Context, query provider.BatchQuery) error {
 	bp.config.received = append(bp.config.received, query)
 	return nil
 }
@@ -216,7 +216,7 @@ type batchProviderConfiguration struct {
 	received []provider.BatchQuery
 }
 
-func (bpc *batchProviderConfiguration) New(_ *reporter.Reporter) (provider.Provider, error) {
+func (bpc *batchProviderConfiguration) New(_ *reporter.Reporter, _ func(provider.Update)) (provider.Provider, error) {
 	return &batchProvider{config: bpc}, nil
 }
 

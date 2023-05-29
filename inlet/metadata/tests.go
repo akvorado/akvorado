@@ -17,10 +17,12 @@ import (
 )
 
 // mockProvider represents a mock provider.
-type mockProvider struct{}
+type mockProvider struct {
+	put func(provider.Update)
+}
 
 // Query query the mock provider for a value.
-func (mp mockProvider) Query(_ context.Context, query provider.BatchQuery, put func(provider.Update)) error {
+func (mp mockProvider) Query(_ context.Context, query provider.BatchQuery) error {
 	for _, ifIndex := range query.IfIndexes {
 		answer := provider.Answer{
 			ExporterName: strings.ReplaceAll(query.ExporterIP.Unmap().String(), ".", "_"),
@@ -32,7 +34,7 @@ func (mp mockProvider) Query(_ context.Context, query provider.BatchQuery, put f
 				Speed:       1000,
 			}
 		}
-		put(provider.Update{Query: provider.Query{ExporterIP: query.ExporterIP, IfIndex: ifIndex}, Answer: answer})
+		mp.put(provider.Update{Query: provider.Query{ExporterIP: query.ExporterIP, IfIndex: ifIndex}, Answer: answer})
 	}
 	return nil
 }
@@ -41,8 +43,8 @@ func (mp mockProvider) Query(_ context.Context, query provider.BatchQuery, put f
 type mockProviderConfiguration struct{}
 
 // New returns a new mock provider.
-func (mpc mockProviderConfiguration) New(_ *reporter.Reporter) (provider.Provider, error) {
-	return mockProvider{}, nil
+func (mpc mockProviderConfiguration) New(_ *reporter.Reporter, put func(provider.Update)) (provider.Provider, error) {
+	return mockProvider{put: put}, nil
 }
 
 // NewMock creates a new metadata component building synthetic values. It is already started.

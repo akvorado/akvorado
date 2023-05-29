@@ -9,6 +9,7 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/inlet/metadata/provider"
 	"akvorado/inlet/metadata/provider/snmp"
+	"akvorado/inlet/metadata/provider/static"
 )
 
 // Configuration describes the configuration for the metadata client
@@ -50,7 +51,8 @@ type ProviderConfiguration struct {
 }
 
 var providers = map[string](func() provider.Configuration){
-	"snmp": snmp.DefaultConfiguration,
+	"snmp":   snmp.DefaultConfiguration,
+	"static": static.DefaultConfiguration,
 }
 
 func init() {
