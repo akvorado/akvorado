@@ -1,6 +1,7 @@
 ---
 paths:
-  inlet.0.metadata.provider.config:
+  inlet.0.metadata.provider:
+    type: snmp
     pollerretries: 1
     pollertimeout: 1s
     communities:

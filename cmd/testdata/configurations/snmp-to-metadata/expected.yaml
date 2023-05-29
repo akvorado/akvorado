@@ -8,13 +8,13 @@ paths:
     cachecheckinterval: 2m0s
     cachepersistfile: ""
     provider:
-      config:
-        pollerretries: 3
-        pollertimeout: 1s
-        agents:
-          192.0.2.10: 192.0.2.11
-        communities:
-          ::/0: private
-        ports:
-          ::/0: 161
-        securityparameters: {}
+      type: snmp
+      pollerretries: 3
+      pollertimeout: 1s
+      agents:
+        192.0.2.10: 192.0.2.11
+      communities:
+        ::/0: private
+      ports:
+        ::/0: 161
+      securityparameters: {}
