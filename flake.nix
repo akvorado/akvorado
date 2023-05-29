@@ -31,7 +31,7 @@
           src = ./.;
           vendorHash = builtins.readFile nix/vendorHash.txt;
           buildPhase = ''
-            sed 's|,[^,]*$$||' ${asn2org}/asns.csv > orchestrator/clickhouse/data/asns.csv
+            sed 's|,[^,]*$||' ${asn2org}/asns.csv > orchestrator/clickhouse/data/asns.csv
             cp -r ${frontend}/node_modules console/frontend/node_modules
             cp -r ${frontend}/data console/data/frontend
 
