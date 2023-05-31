@@ -168,14 +168,22 @@ func (nd *Decoder) decodeRecord(fields []netflow.DataField) *schema.FlowMessage 
 					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPFragmentOffset, decodeUNumber(v))
 
 				// ICMP
-				case netflow.NFV9_FIELD_ICMP_TYPE, netflow.IPFIX_FIELD_icmpTypeCodeIPv6:
+				case netflow.NFV9_FIELD_ICMP_TYPE:
 					icmpTypeCode := decodeUNumber(v)
-					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPType, icmpTypeCode>>8)
-					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPCode, icmpTypeCode&0xff)
-				case netflow.IPFIX_FIELD_icmpTypeIPv4, netflow.IPFIX_FIELD_icmpTypeIPv6:
-					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPType, decodeUNumber(v))
-				case netflow.IPFIX_FIELD_icmpCodeIPv4, netflow.IPFIX_FIELD_icmpCodeIPv6:
-					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPCode, decodeUNumber(v))
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv4Type, icmpTypeCode>>8)
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv4Code, icmpTypeCode&0xff)
+				case netflow.IPFIX_FIELD_icmpTypeIPv4:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv4Type, decodeUNumber(v))
+				case netflow.IPFIX_FIELD_icmpCodeIPv4:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv4Code, decodeUNumber(v))
+				case netflow.IPFIX_FIELD_icmpTypeCodeIPv6:
+					icmpTypeCode := decodeUNumber(v)
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv6Type, icmpTypeCode>>8)
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv6Code, icmpTypeCode&0xff)
+				case netflow.IPFIX_FIELD_icmpTypeIPv6:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv6Type, decodeUNumber(v))
+				case netflow.IPFIX_FIELD_icmpCodeIPv6:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv6Code, decodeUNumber(v))
 				}
 			}
 		}

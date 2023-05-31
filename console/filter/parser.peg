@@ -155,8 +155,10 @@ ConditionUintExpr "condition on integer" ←
        / "IPFragmentOffset"i !IdentStart #{ return c.metaColumn("IPFragmentOffset") } { return c.acceptColumn() }
        / "IPv6FlowLabel"i !IdentStart #{ return c.metaColumn("IPv6FlowLabel") } { return c.acceptColumn() }
        / "TCPFlags"i !IdentStart #{ return c.metaColumn("TCPFlags") } { return c.acceptColumn() }
-       / "ICMPType"i !IdentStart #{ return c.metaColumn("ICMPType") } { return c.acceptColumn() }
-       / "ICMPCode"i !IdentStart #{ return c.metaColumn("ICMPCode") } { return c.acceptColumn() }) _
+       / "ICMPv4Type"i !IdentStart #{ return c.metaColumn("ICMPv4Type") } { return c.acceptColumn() }
+       / "ICMPv4Code"i !IdentStart #{ return c.metaColumn("ICMPv4Code") } { return c.acceptColumn() }
+       / "ICMPv6Type"i !IdentStart #{ return c.metaColumn("ICMPv6Type") } { return c.acceptColumn() }
+       / "ICMPv6Code"i !IdentStart #{ return c.metaColumn("ICMPv6Code") } { return c.acceptColumn() }) _
  operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _
  value:Unsigned64 {
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil

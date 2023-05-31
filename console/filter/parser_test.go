@@ -317,7 +317,8 @@ output provider */ = 'telia'`,
 		{Input: `ipfragmentoffset = 3`, Output: `IPFragmentOffset = 3`},
 		{Input: `ipv6flowlabel = 0`, Output: `IPv6FlowLabel = 0`},
 		{Input: `tcpflags = 2`, Output: `TCPFlags = 2`},
-		{Input: `icmptype = 8 AND icmpcode = 0`, Output: `ICMPType = 8 AND ICMPCode = 0`},
+		{Input: `icmpv4type = 8 AND icmpv4code = 0`, Output: `ICMPv4Type = 8 AND ICMPv4Code = 0`},
+		{Input: `icmpv6type = 8 or icmpv6code = 0`, Output: `ICMPv6Type = 8 OR ICMPv6Code = 0`},
 	}
 	for _, tc := range cases {
 		tc.MetaIn.Schema = schema.NewMock(t).EnableAllColumns()

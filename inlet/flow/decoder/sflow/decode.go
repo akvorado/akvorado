@@ -241,12 +241,20 @@ func (nd *Decoder) parseL4Header(bf *schema.FlowMessage, data []byte, proto uint
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnTCPFlags,
 					uint64(data[13]))
 			}
-		} else if proto == 1 || proto == 58 {
-			// ICMP and ICMPv6
+		} else if proto == 1 {
+			// ICMPv4
 			if len(data) > 2 {
-				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPType,
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv4Type,
 					uint64(data[0]))
-				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPCode,
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv4Code,
+					uint64(data[1]))
+			}
+		} else if proto == 58 {
+			// ICMPv6
+			if len(data) > 2 {
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv6Type,
+					uint64(data[0]))
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv6Code,
 					uint64(data[1]))
 			}
 		}

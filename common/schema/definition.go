@@ -88,8 +88,10 @@ const (
 	ColumnIPFragmentOffset
 	ColumnIPv6FlowLabel
 	ColumnTCPFlags
-	ColumnICMPType
-	ColumnICMPCode
+	ColumnICMPv4Type
+	ColumnICMPv4Code
+	ColumnICMPv6Type
+	ColumnICMPv6Code
 
 	ColumnLast
 )
@@ -349,8 +351,10 @@ END`,
 			{Key: ColumnIPFragmentOffset, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt16"},
 			{Key: ColumnIPv6FlowLabel, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt32"},
 			{Key: ColumnTCPFlags, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt16"},
-			{Key: ColumnICMPType, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt8"},
-			{Key: ColumnICMPCode, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt8"},
+			{Key: ColumnICMPv4Type, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt8"},
+			{Key: ColumnICMPv4Code, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt8"},
+			{Key: ColumnICMPv6Type, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt8"},
+			{Key: ColumnICMPv6Code, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt8"},
 		},
 	}.finalize()
 }
