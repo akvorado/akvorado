@@ -148,7 +148,15 @@ ConditionUintExpr "condition on integer" ←
        / "SrcVlan"i !IdentStart #{ return c.metaColumn("SrcVlan") } { return c.acceptColumn() }
        / "DstVlan"i !IdentStart #{ return c.metaColumn("DstVlan") } { return c.acceptColumn() }
        / "PacketSize"i !IdentStart #{ return c.metaColumn("PacketSize") } { return c.acceptColumn() }
-       / "ForwardingStatus"i !IdentStart #{ return c.metaColumn("ForwardingStatus") } { return c.acceptColumn() }) _
+       / "ForwardingStatus"i !IdentStart #{ return c.metaColumn("ForwardingStatus") } { return c.acceptColumn() }
+       / "IPTTL"i !IdentStart #{ return c.metaColumn("IPTTL") } { return c.acceptColumn() }
+       / "IPTos"i !IdentStart #{ return c.metaColumn("IPTos") } { return c.acceptColumn() }
+       / "IPFragmentID"i !IdentStart #{ return c.metaColumn("IPFragmentID") } { return c.acceptColumn() }
+       / "IPFragmentOffset"i !IdentStart #{ return c.metaColumn("IPFragmentOffset") } { return c.acceptColumn() }
+       / "IPv6FlowLabel"i !IdentStart #{ return c.metaColumn("IPv6FlowLabel") } { return c.acceptColumn() }
+       / "TCPFlags"i !IdentStart #{ return c.metaColumn("TCPFlags") } { return c.acceptColumn() }
+       / "ICMPType"i !IdentStart #{ return c.metaColumn("ICMPType") } { return c.acceptColumn() }
+       / "ICMPCode"i !IdentStart #{ return c.metaColumn("ICMPCode") } { return c.acceptColumn() }) _
  operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _
  value:Unsigned64 {
   return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil

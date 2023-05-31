@@ -82,6 +82,14 @@ const (
 	ColumnDstPortNAT
 	ColumnSrcMAC
 	ColumnDstMAC
+	ColumnIPTTL
+	ColumnIPTos
+	ColumnIPFragmentID
+	ColumnIPFragmentOffset
+	ColumnIPv6FlowLabel
+	ColumnTCPFlags
+	ColumnICMPType
+	ColumnICMPCode
 
 	ColumnLast
 )
@@ -89,6 +97,7 @@ const (
 const (
 	ColumnGroupL2 ColumnGroup = iota + 1
 	ColumnGroupNAT
+	ColumnGroupL3L4
 
 	ColumnGroupLast
 )
@@ -334,6 +343,14 @@ END`,
 				ClickHouseMainOnly: true,
 			},
 			{Key: ColumnSrcMAC, Disabled: true, Group: ColumnGroupL2, ClickHouseType: "UInt64"},
+			{Key: ColumnIPTTL, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt8"},
+			{Key: ColumnIPTos, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt8"},
+			{Key: ColumnIPFragmentID, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt32"},
+			{Key: ColumnIPFragmentOffset, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt16"},
+			{Key: ColumnIPv6FlowLabel, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt32"},
+			{Key: ColumnTCPFlags, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt16"},
+			{Key: ColumnICMPType, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt8"},
+			{Key: ColumnICMPCode, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt8"},
 		},
 	}.finalize()
 }

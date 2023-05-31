@@ -150,6 +150,34 @@ func (nd *Decoder) decodeRecord(fields []netflow.DataField) *schema.FlowMessage 
 					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstMAC, decodeUNumber(v))
 				}
 			}
+
+			if !nd.d.Schema.IsDisabled(schema.ColumnGroupL3L4) {
+				// Misc L3/L4 fields
+				switch field.Type {
+				case netflow.NFV9_FIELD_MIN_TTL:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPTTL, decodeUNumber(v))
+				case netflow.NFV9_FIELD_SRC_TOS:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPTos, decodeUNumber(v))
+				case netflow.NFV9_FIELD_IPV6_FLOW_LABEL:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPv6FlowLabel, decodeUNumber(v))
+				case netflow.NFV9_FIELD_TCP_FLAGS:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnTCPFlags, decodeUNumber(v))
+				case netflow.NFV9_FIELD_IPV4_IDENT:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPFragmentID, decodeUNumber(v))
+				case netflow.NFV9_FIELD_FRAGMENT_OFFSET:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPFragmentOffset, decodeUNumber(v))
+
+				// ICMP
+				case netflow.NFV9_FIELD_ICMP_TYPE, netflow.IPFIX_FIELD_icmpTypeCodeIPv6:
+					icmpTypeCode := decodeUNumber(v)
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPType, icmpTypeCode>>8)
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPCode, icmpTypeCode&0xff)
+				case netflow.IPFIX_FIELD_icmpTypeIPv4, netflow.IPFIX_FIELD_icmpTypeIPv6:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPType, decodeUNumber(v))
+				case netflow.IPFIX_FIELD_icmpCodeIPv4, netflow.IPFIX_FIELD_icmpCodeIPv6:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPCode, decodeUNumber(v))
+				}
+			}
 		}
 	}
 	nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, uint64(etype))

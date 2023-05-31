@@ -117,6 +117,7 @@ func TestDecode(t *testing.T) {
 				schema.ColumnSrcPort:          443,
 				schema.ColumnDstPort:          19624,
 				schema.ColumnForwardingStatus: 64,
+				schema.ColumnTCPFlags:         16,
 			},
 		}, {
 			SamplingRate:    30000,
@@ -136,6 +137,7 @@ func TestDecode(t *testing.T) {
 				schema.ColumnSrcPort:          443,
 				schema.ColumnDstPort:          2444,
 				schema.ColumnForwardingStatus: 64,
+				schema.ColumnTCPFlags:         16,
 			},
 		}, {
 			SamplingRate:    30000,
@@ -155,6 +157,7 @@ func TestDecode(t *testing.T) {
 				schema.ColumnSrcPort:          443,
 				schema.ColumnDstPort:          53697,
 				schema.ColumnForwardingStatus: 64,
+				schema.ColumnTCPFlags:         16,
 			},
 		}, {
 			SamplingRate:    30000,
@@ -174,6 +177,7 @@ func TestDecode(t *testing.T) {
 				schema.ColumnSrcPort:          443,
 				schema.ColumnDstPort:          52300,
 				schema.ColumnForwardingStatus: 64,
+				schema.ColumnTCPFlags:         16,
 			},
 		},
 	}
