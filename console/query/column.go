@@ -115,6 +115,23 @@ func (qc Column) ToSQLSelect(sch *schema.Component) string {
 		strValue = `arrayStringConcat(arrayConcat(arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities), arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)), ' ')`
 	case schema.ColumnSrcMAC, schema.ColumnDstMAC:
 		strValue = fmt.Sprintf("MACNumToString(%s)", qc)
+	case schema.ColumnTCPFlags:
+		bits := []string{
+			"FIN",
+			"SYN",
+			"RST",
+			"PSH",
+			".ACK",
+			"URG",
+			"ECE",
+			"CWR",
+			"NS",
+		}
+		array := make([]string, len(bits))
+		for bit, v := range bits {
+			array[bit] = fmt.Sprintf("if(bitTest(%s, %d) = 1, '%s', '')", qc, bit, v[:1])
+		}
+		strValue = fmt.Sprintf("arrayStringConcat([%s], '')", strings.Join(array, ", "))
 
 	// Generic cases
 	default:
