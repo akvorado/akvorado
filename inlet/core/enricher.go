@@ -96,8 +96,9 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	}
 
 	ctx := c.t.Context(context.Background())
-	sourceRouting := c.d.Routing.Lookup(ctx, flow.SrcAddr, netip.Addr{})
-	destRouting := c.d.Routing.Lookup(ctx, flow.DstAddr, flow.NextHop)
+	sourceRouting := c.d.Routing.Lookup(ctx, flow.SrcAddr, netip.Addr{}, flow.ExporterAddress)
+	destRouting := c.d.Routing.Lookup(ctx, flow.DstAddr, flow.NextHop, flow.ExporterAddress)
+
 	// set prefix len according to user config
 	flow.SrcNetMask = c.getNetMask(flow.SrcNetMask, sourceRouting.NetMask)
 	flow.DstNetMask = c.getNetMask(flow.DstNetMask, destRouting.NetMask)

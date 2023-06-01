@@ -5,6 +5,7 @@ package bmp
 
 import (
 	"context"
+	"fmt"
 	"net/netip"
 
 	"github.com/kentik/patricia"
@@ -19,9 +20,10 @@ type LookupResult = provider.LookupResult
 // provided next hop if provided. This is somewhat approximate because
 // we use the best route we have, while the exporter may not have this
 // best route available. The returned result should not be modified!
-func (p *Provider) Lookup(_ context.Context, ip netip.Addr, nh netip.Addr) LookupResult {
+// The last parameter, the agent, is ignored by this provider.
+func (p *Provider) Lookup(_ context.Context, ip netip.Addr, nh netip.Addr, _ netip.Addr) (LookupResult, error) {
 	if !p.config.CollectASNs && !p.config.CollectASPaths && !p.config.CollectCommunities {
-		return LookupResult{}
+		return LookupResult{}, nil
 	}
 	v6 := patricia.NewIPv6Address(ip.AsSlice(), 128)
 
@@ -49,7 +51,7 @@ func (p *Provider) Lookup(_ context.Context, ip netip.Addr, nh netip.Addr) Looku
 		return false
 	})
 	if len(routes) == 0 {
-		return LookupResult{}
+		return LookupResult{}, fmt.Errorf("no route found for %s", ip)
 	}
 	attributes := p.rib.rtas.Get(routes[len(routes)-1].attributes)
 	// prefix len is v6 coded in the bmp rib. We need to substract 96 if it's a v4 prefix
@@ -63,5 +65,5 @@ func (p *Provider) Lookup(_ context.Context, ip netip.Addr, nh netip.Addr) Looku
 		Communities:      attributes.communities,
 		LargeCommunities: attributes.largeCommunities,
 		NetMask:          plen,
-	}
+	}, nil
 }

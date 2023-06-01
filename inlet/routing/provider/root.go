@@ -35,7 +35,7 @@ type Dependencies struct {
 type Provider interface {
 	// Lookup asks the provider about information for a given IP address and
 	// next-hop.
-	Lookup(ctx context.Context, ip netip.Addr, nh netip.Addr) LookupResult
+	Lookup(ctx context.Context, ip netip.Addr, nh netip.Addr, agent netip.Addr) (LookupResult, error)
 }
 
 // Configuration defines an interface to configure a provider.
