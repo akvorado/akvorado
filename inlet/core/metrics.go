@@ -10,10 +10,11 @@ import (
 )
 
 type metrics struct {
-	flowsReceived    *reporter.CounterVec
-	flowsForwarded   *reporter.CounterVec
-	flowsErrors      *reporter.CounterVec
-	flowsHTTPClients reporter.GaugeFunc
+	flowsReceived     *reporter.CounterVec
+	flowsForwarded    *reporter.CounterVec
+	flowsErrors       *reporter.CounterVec
+	flowsHTTPClients  reporter.GaugeFunc
+	flowsLookupFailed *reporter.CounterVec
 
 	classifierExporterCacheSize  reporter.CounterFunc
 	classifierInterfaceCacheSize reporter.CounterFunc
@@ -51,7 +52,13 @@ func (c *Component) initMetrics() {
 			return float64(atomic.LoadUint32(&c.httpFlowClients))
 		},
 	)
-
+	c.metrics.flowsLookupFailed = c.r.CounterVec(
+		reporter.CounterOpts{
+			Name: "flows_lookup_failed",
+			Help: "Number of flows with failed ris lookup.",
+		},
+		[]string{"exporter"},
+	)
 	c.metrics.classifierExporterCacheSize = c.r.CounterFunc(
 		reporter.CounterOpts{
 			Name: "classifier_exporter_cache_size_items",

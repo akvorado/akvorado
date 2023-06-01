@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"akvorado/common/schema"
+	"akvorado/inlet/bmp"
 )
 
 // exporterAndInterfaceInfo aggregates both exporter info and interface info
@@ -94,8 +95,31 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 		return true
 	}
 
-	sourceBMP := c.d.BMP.Lookup(flow.SrcAddr, netip.Addr{})
-	destBMP := c.d.BMP.Lookup(flow.DstAddr, flow.NextHop)
+	// by default, we use the internal BMP. However, if an bioris configuration is available, we swap this to bioris.
+	var (
+		sourceBMP bmp.LookupResult
+		destBMP   bmp.LookupResult
+		err       error
+	)
+	if c.config.RISProvider == RISProviderBioRis {
+		sourceBMP, err = c.d.BioRIS.Lookup(flow.SrcAddr, flow.ExporterAddress, netip.IPv4Unspecified())
+		if err != nil {
+			c.metrics.flowsLookupFailed.WithLabelValues(exporterStr).Inc()
+			c.r.Logger.Warn().Err(err).Msg("failed to lookup src ip in BioRIS")
+			// flow is rejected
+			return true
+		}
+		destBMP, err = c.d.BioRIS.Lookup(flow.DstAddr, flow.ExporterAddress, flow.NextHop)
+		if err != nil {
+			c.metrics.flowsLookupFailed.WithLabelValues(exporterStr).Inc()
+			c.r.Logger.Warn().Err(err).Msg("failed to lookup dst ip in BioRIS")
+			// flow is rejected
+			return true
+		}
+	} else {
+		sourceBMP = c.d.BMP.Lookup(flow.SrcAddr, netip.IPv4Unspecified())
+		destBMP = c.d.BMP.Lookup(flow.DstAddr, flow.NextHop)
+	}
 	// set prefix len according to user config
 	flow.SrcNetMask = c.getNetMask(flow.SrcNetMask, sourceBMP.NetMask)
 	flow.DstNetMask = c.getNetMask(flow.DstNetMask, destBMP.NetMask)

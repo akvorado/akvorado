@@ -112,7 +112,20 @@ Without configuration, *Akvorado* will listen for incoming
 Netflow/IPFIX and sFlow flows on a random port (check the logs to know
 which one).
 
-### BMP
+### BMP/RIS Lookup
+
+There are two BMP/RIS implementations available:
+The default is the internal BMP component, intended to directly terminate BMP Sessions from routers.
+Alternatively, BioRIS is available, intended to lookup routing information from existing [bio-rd RIS](https://github.com/bio-routing/bio-rd/tree/master/cmd/ris) instances.
+
+You can choose by setting the `ris-provider`:
+```yaml
+inlet:
+  core:
+    ris-provider: bioris
+```
+
+#### Internal BMP Component
 
 The BMP component handles incoming BMP connections from routers. The
 information received can be used to fetch source and destination AS
@@ -140,6 +153,27 @@ space used in ClickHouse.
 
 *Akvorado* supports receiving the AdjRIB-in, with or without
 filtering. It may also work with a LocRIB.
+
+#### BioRIS component
+
+The connection to an existing BioRIS instance is configured with the following keys:
+```yaml
+inlet:
+  bioris:
+    risinstances:
+      - grpcaddr: ris:port
+        vrf: 0:0
+        grpcsecure: true
+```
+
+In general, this components sends LPM requests to the RIS reachable at `grpcaddr`. The connection will be set up using TLS if `grpcsecure` is true.
+The `vrf` specifies in which VRF bioris should look up. Alternative, we can also specify `vrf-id` as numeric VRF distinguisher.
+
+The component chooses the router for the LPM lookup with the following scheme:
+First, it checks all routers present on the RIS. If one of the router IDs matches the exporter address for the flow, this router is used.
+As alternative (no exact match), a random router is chosen.
+
+BioRIS currently supports setting NetMask/Prefix, AS, AS Path and Communities for the given flow.
 
 ### Kafka
 

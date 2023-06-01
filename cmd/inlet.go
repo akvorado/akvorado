@@ -16,6 +16,7 @@ import (
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
+	"akvorado/inlet/bioris"
 	"akvorado/inlet/bmp"
 	"akvorado/inlet/core"
 	"akvorado/inlet/flow"
@@ -33,6 +34,7 @@ type InletConfiguration struct {
 	Metadata  metadata.Configuration
 	BMP       bmp.Configuration
 	GeoIP     geoip.Configuration
+	BioRIS    bioris.Configuration
 	Kafka     kafka.Configuration
 	Core      core.Configuration
 	Schema    schema.Configuration
@@ -47,6 +49,7 @@ func (c *InletConfiguration) Reset() {
 		Metadata:  metadata.DefaultConfiguration(),
 		BMP:       bmp.DefaultConfiguration(),
 		GeoIP:     geoip.DefaultConfiguration(),
+		BioRIS:    bioris.DefaultConfiguration(),
 		Kafka:     kafka.DefaultConfiguration(),
 		Core:      core.DefaultConfiguration(),
 		Schema:    schema.DefaultConfiguration(),
@@ -134,6 +137,12 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 	if err != nil {
 		return fmt.Errorf("unable to initialize GeoIP component: %w", err)
 	}
+	biorisComponent, err := bioris.New(r, config.BioRIS, bioris.Dependencies{
+		Daemon: daemonComponent,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to initialize BioRIS component: %w", err)
+	}
 	kafkaComponent, err := kafka.New(r, config.Kafka, kafka.Dependencies{
 		Daemon: daemonComponent,
 		Schema: schemaComponent,
@@ -147,6 +156,7 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 		Metadata: metadataComponent,
 		BMP:      bmpComponent,
 		GeoIP:    geoipComponent,
+		BioRIS:   biorisComponent,
 		Kafka:    kafkaComponent,
 		HTTP:     httpComponent,
 		Schema:   schemaComponent,
@@ -170,6 +180,7 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 		metadataComponent,
 		bmpComponent,
 		geoipComponent,
+		biorisComponent,
 		kafkaComponent,
 		coreComponent,
 		flowComponent,

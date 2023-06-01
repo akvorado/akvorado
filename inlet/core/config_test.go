@@ -82,5 +82,29 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 				NetProviders: []NetProvider{NetProviderFlow, NetProviderBMP},
 			},
 		},
+		{
+			Description: "ris-provider",
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"ris-provider": "internal",
+				}
+			},
+			Expected: Configuration{
+				RISProvider: RISProviderInternal,
+			},
+		},
+		{
+			Description: "ris-provider-bio",
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"ris-provider": "bioris",
+				}
+			},
+			Expected: Configuration{
+				RISProvider: RISProviderBioRis,
+			},
+		},
 	})
 }

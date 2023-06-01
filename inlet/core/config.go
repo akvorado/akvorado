@@ -33,6 +33,8 @@ type Configuration struct {
 	ASNProviders []ASNProvider `validate:"dive"`
 	// NetProviders defines the source used to get Prefix/Network Information
 	NetProviders []NetProvider `validate:"dive"`
+	// RISProvider defines the BMP source to use
+	RISProvider RISProvider
 	// Old configuration settings
 	classifierCacheSize uint
 }
@@ -134,6 +136,46 @@ func (np *NetProvider) UnmarshalText(input []byte) error {
 	got, ok := netProviderMap.LoadKey(string(input))
 	if ok {
 		*np = got
+		return nil
+	}
+	return errors.New("unknown provider")
+}
+
+// RISProvider describes one BMP/RIS number provider.
+type RISProvider int
+
+const (
+	// RISProviderInternal uses akvorado's own provider for ris
+	RISProviderInternal RISProvider = iota
+	// RISProviderBioRis pulls the data from a Bio Routing RIS Client
+	RISProviderBioRis
+)
+
+var risProviderMap = bimap.New(map[RISProvider]string{
+	RISProviderInternal: "internal",
+	RISProviderBioRis:   "bioris",
+})
+
+// MarshalText turns an RIS provider to text.
+func (rp RISProvider) MarshalText() ([]byte, error) {
+	got, ok := risProviderMap.LoadValue(rp)
+	if ok {
+		return []byte(got), nil
+	}
+	return nil, errors.New("unknown field")
+}
+
+// String turns an RIS provider to string.
+func (rp RISProvider) String() string {
+	got, _ := risProviderMap.LoadValue(rp)
+	return got
+}
+
+// UnmarshalText provides an AS provider from a string.
+func (rp *RISProvider) UnmarshalText(input []byte) error {
+	got, ok := risProviderMap.LoadKey(string(input))
+	if ok {
+		*rp = got
 		return nil
 	}
 	return errors.New("unknown provider")

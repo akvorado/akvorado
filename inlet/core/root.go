@@ -16,6 +16,7 @@ import (
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
+	"akvorado/inlet/bioris"
 	"akvorado/inlet/bmp"
 	"akvorado/inlet/flow"
 	"akvorado/inlet/geoip"
@@ -48,6 +49,7 @@ type Dependencies struct {
 	Flow     *flow.Component
 	Metadata *metadata.Component
 	BMP      *bmp.Component
+	BioRIS   *bioris.Component
 	GeoIP    *geoip.Component
 	Kafka    *kafka.Component
 	HTTP     *httpserver.Component
