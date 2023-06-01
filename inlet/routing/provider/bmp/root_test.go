@@ -1090,9 +1090,9 @@ func TestBMP(t *testing.T) {
 		send(t, conn, "bmp-eor.pcap")
 		time.Sleep(20 * time.Millisecond)
 
-		lookup := p.Lookup(context.Background(),
+		lookup, _ := p.Lookup(context.Background(),
 			netip.MustParseAddr("2001:db8:1::10"),
-			netip.MustParseAddr("2001:db8::a"))
+			netip.MustParseAddr("2001:db8::a"), netip.Addr{})
 		if lookup.ASN != 174 {
 			t.Errorf("Lookup() == %d, expected 174", lookup.ASN)
 		}
@@ -1105,15 +1105,15 @@ func TestBMP(t *testing.T) {
 			attributes: p.rib.rtas.Put(routeAttributes{asn: 176}),
 		})
 
-		lookup = p.Lookup(context.Background(),
+		lookup, _ = p.Lookup(context.Background(),
 			netip.MustParseAddr("2001:db8:1::10"),
-			netip.MustParseAddr("2001:db8::a"))
+			netip.MustParseAddr("2001:db8::a"), netip.Addr{})
 		if lookup.ASN != 176 {
 			t.Errorf("Lookup() == %d, expected 176", lookup.ASN)
 		}
-		lookup = p.Lookup(context.Background(),
+		lookup, _ = p.Lookup(context.Background(),
 			netip.MustParseAddr("2001:db8:1::10"),
-			netip.MustParseAddr("2001:db8::b"))
+			netip.MustParseAddr("2001:db8::b"), netip.Addr{})
 		if lookup.ASN != 174 {
 			t.Errorf("Lookup() == %d, expected 174", lookup.ASN)
 		}
@@ -1126,15 +1126,15 @@ func TestBMP(t *testing.T) {
 		helpers.StartStop(t, p)
 		p.PopulateRIB(t)
 
-		lookup := p.Lookup(context.Background(),
+		lookup, _ := p.Lookup(context.Background(),
 			netip.MustParseAddr("::ffff:192.0.2.2"),
-			netip.MustParseAddr("::ffff:198.51.100.200"))
+			netip.MustParseAddr("::ffff:198.51.100.200"), netip.Addr{})
 		if lookup.ASN != 174 {
 			t.Errorf("Lookup() == %d, expected 174", lookup.ASN)
 		}
-		lookup = p.Lookup(context.Background(),
+		lookup, _ = p.Lookup(context.Background(),
 			netip.MustParseAddr("::ffff:192.0.2.254"),
-			netip.MustParseAddr("::ffff:198.51.100.200"))
+			netip.MustParseAddr("::ffff:198.51.100.200"), netip.Addr{})
 		if lookup.ASN != 0 {
 			t.Errorf("Lookup() == %d, expected 0", lookup.ASN)
 		}
