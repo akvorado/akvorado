@@ -394,6 +394,32 @@ LIMIT 20`, "11:").
 			{"11:ff:33:44:55:66"},
 		}).
 		Return(nil)
+	mockConn.EXPECT().
+		Select(gomock.Any(), gomock.Any(), `
+SELECT label FROM (
+ SELECT ICMPv6 AS label, 1 AS rank
+ FROM flows
+ WHERE TimeReceived > date_sub(minute, 1, now())
+ AND Proto = 58
+ AND positionCaseInsensitive(label, $1) >= 1
+ GROUP BY ICMPv6
+ ORDER BY COUNT(*) DESC
+ LIMIT 20
+UNION DISTINCT
+ SELECT name AS label, 2 AS rank
+ FROM icmp
+ WHERE positionCaseInsensitive(label, $1) >= 1
+ AND proto = 58
+ ORDER BY positionCaseInsensitive(label, $1) ASC, type ASC, code ASC
+ LIMIT 20
+) GROUP BY label ORDER BY MIN(rank) ASC, MIN(rowNumberInBlock()) ASC LIMIT 20`, "echo").
+		SetArg(1, []struct {
+			Label string `ch:"label"`
+		}{
+			{"echo-request"},
+			{"echo-reply"},
+		}).
+		Return(nil)
 
 	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
@@ -404,6 +430,15 @@ LIMIT 20`, "11:").
 				{"label": "11:22:33:44:55:66", "detail": "MAC address", "quoted": false},
 				{"label": "11:33:33:44:55:66", "detail": "MAC address", "quoted": false},
 				{"label": "11:ff:33:44:55:66", "detail": "MAC address", "quoted": false},
+			}},
+		},
+		{
+			URL:        "/api/v0/console/filter/complete",
+			StatusCode: 200,
+			JSONInput:  gin.H{"what": "value", "column": "icmpv6", "prefix": "echo"},
+			JSONOutput: gin.H{"completions": []gin.H{
+				{"label": "echo-request", "detail": "ICMPv6", "quoted": true},
+				{"label": "echo-reply", "detail": "ICMPv6", "quoted": true},
 			}},
 		},
 	})

@@ -17,6 +17,7 @@ import (
 
 var (
 	//go:embed data/protocols.csv
+	//go:embed data/icmp.csv
 	//go:embed data/asns.csv
 	data           embed.FS
 	initShTemplate = template.Must(template.New("initsh").Parse(`#!/bin/sh

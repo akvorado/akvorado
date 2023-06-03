@@ -117,7 +117,9 @@ ConditionStringExpr "condition on string" ←
       / "InIfConnectivity"i !IdentStart #{ return c.metaColumn("InIfConnectivity") } { return c.acceptColumn() }
       / "OutIfConnectivity"i !IdentStart #{ return c.metaColumn("OutIfConnectivity") } { return c.acceptColumn() }
       / "InIfProvider"i !IdentStart #{ return c.metaColumn("InIfProvider") } { return c.acceptColumn() }
-      / "OutIfProvider"i !IdentStart #{ return c.metaColumn("OutIfProvider") } { return c.acceptColumn() }) _
+      / "OutIfProvider"i !IdentStart #{ return c.metaColumn("OutIfProvider") } { return c.acceptColumn() }
+      / "ICMPv4"i !IdentStart #{ return c.metaColumn("ICMPv4") } { return c.acceptColumn() }
+      / "ICMPv6"i !IdentStart #{ return c.metaColumn("ICMPv6") } { return c.acceptColumn() }) _
  rcond:RConditionStringExpr {
   return fmt.Sprintf("%s %s", toString(column), toString(rcond)), nil
 }

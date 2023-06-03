@@ -319,6 +319,7 @@ output provider */ = 'telia'`,
 		{Input: `tcpflags = 2`, Output: `TCPFlags = 2`},
 		{Input: `icmpv4type = 8 AND icmpv4code = 0`, Output: `ICMPv4Type = 8 AND ICMPv4Code = 0`},
 		{Input: `icmpv6type = 8 or icmpv6code = 0`, Output: `ICMPv6Type = 8 OR ICMPv6Code = 0`},
+		{Input: `icmpv6 = "echo-reply"`, Output: `ICMPv6 = 'echo-reply'`},
 	}
 	for _, tc := range cases {
 		tc.MetaIn.Schema = schema.NewMock(t).EnableAllColumns()

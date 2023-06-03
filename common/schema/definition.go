@@ -88,8 +88,10 @@ const (
 	ColumnIPFragmentOffset
 	ColumnIPv6FlowLabel
 	ColumnTCPFlags
+	ColumnICMPv4
 	ColumnICMPv4Type
 	ColumnICMPv4Code
+	ColumnICMPv6
 	ColumnICMPv6Type
 	ColumnICMPv6Code
 
@@ -355,6 +357,25 @@ END`,
 			{Key: ColumnICMPv4Code, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt8"},
 			{Key: ColumnICMPv6Type, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt8"},
 			{Key: ColumnICMPv6Code, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt8"},
+			{
+				Key:            ColumnICMPv4,
+				Depends:        []ColumnKey{ColumnProto, ColumnICMPv4Type, ColumnICMPv4Code},
+				Disabled:       true,
+				Group:          ColumnGroupL3L4,
+				ClickHouseType: "LowCardinality(String)",
+				ClickHouseAlias: `if(Proto = 1, ` +
+					`dictGetOrDefault('icmp', 'name', tuple(Proto, ICMPv4Type, ICMPv4Code), ` +
+					`concat(toString(ICMPv4Type), '/', toString(ICMPv4Code))), '')`,
+			}, {
+				Key:            ColumnICMPv6,
+				Depends:        []ColumnKey{ColumnProto, ColumnICMPv6Type, ColumnICMPv6Code},
+				Disabled:       true,
+				Group:          ColumnGroupL3L4,
+				ClickHouseType: "LowCardinality(String)",
+				ClickHouseAlias: `if(Proto = 58, ` +
+					`dictGetOrDefault('icmp', 'name', tuple(Proto, ICMPv6Type, ICMPv6Code), ` +
+					`concat(toString(ICMPv6Type), '/', toString(ICMPv6Code))), '')`,
+			},
 		},
 	}.finalize()
 }

@@ -296,6 +296,47 @@ LIMIT 20`, attributeName, attributeName, attributeName), input.Prefix); err != n
 				})
 			}
 			input.Prefix = ""
+		case "icmpv4", "icmpv6":
+			columnName := c.fixQueryColumnName(input.Column)
+			proto := 1
+			if columnName == "ICMPv6" {
+				proto = 58
+			}
+			results := []struct {
+				Label string `ch:"label"`
+			}{}
+			err := c.d.ClickHouseDB.Conn.Select(ctx, &results, fmt.Sprintf(`
+SELECT label FROM (
+ SELECT %s AS label, 1 AS rank
+ FROM flows
+ WHERE TimeReceived > date_sub(minute, 1, now())
+ AND Proto = %d
+ AND positionCaseInsensitive(label, $1) >= 1
+ GROUP BY %s
+ ORDER BY COUNT(*) DESC
+ LIMIT 20
+UNION DISTINCT
+ SELECT name AS label, 2 AS rank
+ FROM icmp
+ WHERE positionCaseInsensitive(label, $1) >= 1
+ AND proto = %d
+ ORDER BY positionCaseInsensitive(label, $1) ASC, type ASC, code ASC
+ LIMIT 20
+) GROUP BY label ORDER BY MIN(rank) ASC, MIN(rowNumberInBlock()) ASC LIMIT 20`,
+				columnName, proto, columnName, proto),
+				input.Prefix)
+			if err != nil {
+				c.r.Err(err).Msg("unable to query database")
+				break
+			}
+			for _, result := range results {
+				completions = append(completions, filterCompletion{
+					Label:  result.Label,
+					Detail: columnName,
+					Quoted: true,
+				})
+			}
+			input.Prefix = ""
 		case "exportername", "exportergroup", "exporterrole", "exportersite", "exporterregion", "exportertenant":
 			column = c.fixQueryColumnName(inputColumn)
 			detail = fmt.Sprintf("exporter %s", inputColumn[8:])

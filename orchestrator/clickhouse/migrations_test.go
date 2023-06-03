@@ -249,6 +249,7 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 				fmt.Sprintf("flows_%s_raw", hash),
 				fmt.Sprintf("flows_%s_raw_consumer", hash),
 				fmt.Sprintf("flows_%s_raw_errors", hash),
+				"icmp",
 				"networks",
 				"protocols",
 			}
