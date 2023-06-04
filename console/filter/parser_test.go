@@ -311,6 +311,15 @@ output provider */ = 'telia'`,
 		{Input: `DstMAC = 00:11:22:33:44:55`, Output: `DstMAC = MACStringToNum('00:11:22:33:44:55')`},
 		{Input: `SrcMAC != 00:0c:fF:33:44:55`, Output: `SrcMAC != MACStringToNum('00:0c:ff:33:44:55')`},
 		{Input: `SrcMAC = 0000.5e00.5301`, Output: `SrcMAC = MACStringToNum('00:00:5e:00:53:01')`},
+		{Input: `ipttl > 50`, Output: `IPTTL > 50`},
+		{Input: `iptos = 0`, Output: `IPTos = 0`},
+		{Input: `ipfragmentid != 0`, Output: `IPFragmentID != 0`},
+		{Input: `ipfragmentoffset = 3`, Output: `IPFragmentOffset = 3`},
+		{Input: `ipv6flowlabel = 0`, Output: `IPv6FlowLabel = 0`},
+		{Input: `tcpflags = 2`, Output: `TCPFlags = 2`},
+		{Input: `icmpv4type = 8 AND icmpv4code = 0`, Output: `ICMPv4Type = 8 AND ICMPv4Code = 0`},
+		{Input: `icmpv6type = 8 or icmpv6code = 0`, Output: `ICMPv6Type = 8 OR ICMPv6Code = 0`},
+		{Input: `icmpv6 = "echo-reply"`, Output: `ICMPv6 = 'echo-reply'`},
 	}
 	for _, tc := range cases {
 		tc.MetaIn.Schema = schema.NewMock(t).EnableAllColumns()

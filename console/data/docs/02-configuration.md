@@ -489,6 +489,10 @@ schema:
     - DstAddr
 ```
 
+For ICMP, you get `ICMPv4Type`, `ICMPv4Code`, `ICMPv6Type`, `ICMPv6Code`,
+`ICMPv4`, and `ICMPv6`. The two latest one are displayed as a string in the
+console (like `echo-reply` or `frag-needed`).
+
 ### Kafka
 
 The Kafka component creates or updates the Kafka topic to receive

@@ -82,6 +82,18 @@ const (
 	ColumnDstPortNAT
 	ColumnSrcMAC
 	ColumnDstMAC
+	ColumnIPTTL
+	ColumnIPTos
+	ColumnIPFragmentID
+	ColumnIPFragmentOffset
+	ColumnIPv6FlowLabel
+	ColumnTCPFlags
+	ColumnICMPv4
+	ColumnICMPv4Type
+	ColumnICMPv4Code
+	ColumnICMPv6
+	ColumnICMPv6Type
+	ColumnICMPv6Code
 
 	ColumnLast
 )
@@ -89,6 +101,7 @@ const (
 const (
 	ColumnGroupL2 ColumnGroup = iota + 1
 	ColumnGroupNAT
+	ColumnGroupL3L4
 
 	ColumnGroupLast
 )
@@ -334,6 +347,35 @@ END`,
 				ClickHouseMainOnly: true,
 			},
 			{Key: ColumnSrcMAC, Disabled: true, Group: ColumnGroupL2, ClickHouseType: "UInt64"},
+			{Key: ColumnIPTTL, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt8"},
+			{Key: ColumnIPTos, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt8"},
+			{Key: ColumnIPFragmentID, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt32"},
+			{Key: ColumnIPFragmentOffset, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt16"},
+			{Key: ColumnIPv6FlowLabel, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt32"},
+			{Key: ColumnTCPFlags, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt16"},
+			{Key: ColumnICMPv4Type, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt8"},
+			{Key: ColumnICMPv4Code, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt8"},
+			{Key: ColumnICMPv6Type, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt8"},
+			{Key: ColumnICMPv6Code, Disabled: true, Group: ColumnGroupL3L4, ClickHouseType: "UInt8"},
+			{
+				Key:            ColumnICMPv4,
+				Depends:        []ColumnKey{ColumnProto, ColumnICMPv4Type, ColumnICMPv4Code},
+				Disabled:       true,
+				Group:          ColumnGroupL3L4,
+				ClickHouseType: "LowCardinality(String)",
+				ClickHouseAlias: `if(Proto = 1, ` +
+					`dictGetOrDefault('icmp', 'name', tuple(Proto, ICMPv4Type, ICMPv4Code), ` +
+					`concat(toString(ICMPv4Type), '/', toString(ICMPv4Code))), '')`,
+			}, {
+				Key:            ColumnICMPv6,
+				Depends:        []ColumnKey{ColumnProto, ColumnICMPv6Type, ColumnICMPv6Code},
+				Disabled:       true,
+				Group:          ColumnGroupL3L4,
+				ClickHouseType: "LowCardinality(String)",
+				ClickHouseAlias: `if(Proto = 58, ` +
+					`dictGetOrDefault('icmp', 'name', tuple(Proto, ICMPv6Type, ICMPv6Code), ` +
+					`concat(toString(ICMPv6Type), '/', toString(ICMPv6Code))), '')`,
+			},
 		},
 	}.finalize()
 }

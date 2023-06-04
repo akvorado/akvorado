@@ -67,6 +67,9 @@ func (c *Component) migrateDatabase() error {
 			return c.createDictionary(ctx, "protocols", "hashed",
 				"`proto` UInt8 INJECTIVE, `name` String, `description` String", "proto")
 		}, func() error {
+			return c.createDictionary(ctx, "icmp", "complex_key_hashed",
+				"`proto` UInt8, `type` UInt8, `code` UInt8, `name` String", "proto, type, code")
+		}, func() error {
 			return c.createDictionary(ctx, "networks", "ip_trie",
 				"`network` String, `name` String, `role` String, `site` String, `region` String, `tenant` String",
 				"network")

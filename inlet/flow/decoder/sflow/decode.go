@@ -82,7 +82,8 @@ func (nd *Decoder) decode(msgDec interface{}) []*schema.FlowMessage {
 				// Only process this header if:
 				//  - we don't have a sampled IPv4 header nor a sampled IPv4 header, or
 				//  - we need L2 data and we don't have sampled ethernet header or we don't have extended switch record
-				if !hasSampledIPv4 && !hasSampledIPv6 || !nd.d.Schema.IsDisabled(schema.ColumnGroupL2) && (!hasSampledEthernet || !hasExtendedSwitch) {
+				//  - we need L3/L4 data
+				if !hasSampledIPv4 && !hasSampledIPv6 || !nd.d.Schema.IsDisabled(schema.ColumnGroupL2) && (!hasSampledEthernet || !hasExtendedSwitch) || !nd.d.Schema.IsDisabled(schema.ColumnGroupL3L4) {
 					if l := nd.parseSampledHeader(bf, &recordData); l > 0 {
 						l3length = l
 					}
@@ -95,6 +96,7 @@ func (nd *Decoder) decode(msgDec interface{}) []*schema.FlowMessage {
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPort, uint64(recordData.Base.SrcPort))
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPort, uint64(recordData.Base.DstPort))
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, helpers.ETypeIPv4)
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPTos, uint64(recordData.Tos))
 			case sflow.SampledIPv6:
 				bf.SrcAddr = decodeIP(recordData.Base.SrcIP)
 				bf.DstAddr = decodeIP(recordData.Base.DstIP)
@@ -103,6 +105,7 @@ func (nd *Decoder) decode(msgDec interface{}) []*schema.FlowMessage {
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPort, uint64(recordData.Base.SrcPort))
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPort, uint64(recordData.Base.DstPort))
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, helpers.ETypeIPv6)
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPTos, uint64(recordData.Priority))
 			case sflow.SampledEthernet:
 				if l3length == 0 {
 					// That's the best we can guess.
@@ -177,13 +180,21 @@ func (nd *Decoder) parseIPv4Header(bf *schema.FlowMessage, data []byte) uint64 {
 	bf.SrcAddr = decodeIP(data[12:16])
 	bf.DstAddr = decodeIP(data[16:20])
 	proto = data[9]
+	if !nd.d.Schema.IsDisabled(schema.ColumnGroupL3L4) {
+		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPTos, uint64(data[1]))
+		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPTTL, uint64(data[8]))
+		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPFragmentID,
+			uint64(binary.BigEndian.Uint16(data[4:6])))
+		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPFragmentOffset,
+			uint64(binary.BigEndian.Uint16(data[6:8])&0x1fff))
+	}
 	ihl := int((data[0] & 0xf) * 4)
 	if len(data) >= ihl {
 		data = data[ihl:]
 	} else {
 		data = data[:0]
 	}
-	nd.parseTCPUDPHeader(bf, data, proto)
+	nd.parseL4Header(bf, data, proto)
 	return l3length
 }
 
@@ -198,20 +209,54 @@ func (nd *Decoder) parseIPv6Header(bf *schema.FlowMessage, data []byte) uint64 {
 	bf.SrcAddr = decodeIP(data[8:24])
 	bf.DstAddr = decodeIP(data[24:40])
 	proto = data[6]
-	data = data[40:]
 	nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(proto))
-	nd.parseTCPUDPHeader(bf, data, proto)
+	if !nd.d.Schema.IsDisabled(schema.ColumnGroupL3L4) {
+		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPTos,
+			uint64(binary.BigEndian.Uint16(data[0:2])&0xff0>>4))
+		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPTTL, uint64(data[7]))
+		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPv6FlowLabel,
+			uint64(binary.BigEndian.Uint32(data[0:4])&0xfffff))
+		// TODO fragmentID/fragmentOffset are in a separate header
+	}
+	data = data[40:]
+	nd.parseL4Header(bf, data, proto)
 	return l3length
 }
 
-func (nd *Decoder) parseTCPUDPHeader(bf *schema.FlowMessage, data []byte, proto uint8) {
+func (nd *Decoder) parseL4Header(bf *schema.FlowMessage, data []byte, proto uint8) {
 	nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(proto))
 	if proto == 6 || proto == 17 {
+		// UDP or TCP
 		if len(data) > 4 {
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPort,
 				uint64(binary.BigEndian.Uint16(data[0:2])))
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPort,
 				uint64(binary.BigEndian.Uint16(data[2:4])))
+		}
+	}
+	if !nd.d.Schema.IsDisabled(schema.ColumnGroupL3L4) {
+		if proto == 6 {
+			// TCP
+			if len(data) > 13 {
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnTCPFlags,
+					uint64(data[13]))
+			}
+		} else if proto == 1 {
+			// ICMPv4
+			if len(data) > 2 {
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv4Type,
+					uint64(data[0]))
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv4Code,
+					uint64(data[1]))
+			}
+		} else if proto == 58 {
+			// ICMPv6
+			if len(data) > 2 {
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv6Type,
+					uint64(data[0]))
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv6Code,
+					uint64(data[1]))
+			}
 		}
 	}
 }
