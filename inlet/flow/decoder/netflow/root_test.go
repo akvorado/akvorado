@@ -234,3 +234,75 @@ func TestTemplatesMixedWithData(t *testing.T) {
 		t.Fatalf("Metrics after data (-got, +want):\n%s", diff)
 	}
 }
+
+func TestDecodeICMP(t *testing.T) {
+	r := reporter.NewMock(t)
+	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()})
+
+	data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "icmp-1.pcap"))
+	got := nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+	data = helpers.ReadPcapPayload(t, filepath.Join("testdata", "icmp-2.pcap"))
+	got = append(got, nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})...)
+
+	expectedFlows := []*schema.FlowMessage{
+		{
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("2001:db8::"),
+			DstAddr:         netip.MustParseAddr("2001:db8::1"),
+			ProtobufDebug: map[schema.ColumnKey]interface{}{
+				schema.ColumnBytes:      104,
+				schema.ColumnDstPort:    32768,
+				schema.ColumnEType:      34525,
+				schema.ColumnICMPv6Type: 128, // Code: 0
+				schema.ColumnPackets:    1,
+				schema.ColumnProto:      58,
+			},
+		},
+		{
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("2001:db8::1"),
+			DstAddr:         netip.MustParseAddr("2001:db8::"),
+			ProtobufDebug: map[schema.ColumnKey]interface{}{
+				schema.ColumnBytes:      104,
+				schema.ColumnDstPort:    33024,
+				schema.ColumnEType:      34525,
+				schema.ColumnICMPv6Type: 129, // Code: 0
+				schema.ColumnPackets:    1,
+				schema.ColumnProto:      58,
+			},
+		},
+		{
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("::ffff:203.0.113.4"),
+			DstAddr:         netip.MustParseAddr("::ffff:203.0.113.5"),
+			ProtobufDebug: map[schema.ColumnKey]interface{}{
+				schema.ColumnBytes:      84,
+				schema.ColumnDstPort:    2048,
+				schema.ColumnEType:      2048,
+				schema.ColumnICMPv4Type: 8, // Code: 0
+				schema.ColumnPackets:    1,
+				schema.ColumnProto:      1,
+			},
+		},
+		{
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("::ffff:203.0.113.5"),
+			DstAddr:         netip.MustParseAddr("::ffff:203.0.113.4"),
+			ProtobufDebug: map[schema.ColumnKey]interface{}{
+				schema.ColumnBytes:   84,
+				schema.ColumnEType:   2048,
+				schema.ColumnPackets: 1,
+				schema.ColumnProto:   1,
+				// Type/Code  = 0
+			},
+		},
+	}
+	for _, f := range got {
+		f.TimeReceived = 0
+	}
+
+	if diff := helpers.Diff(got, expectedFlows); diff != "" {
+		t.Fatalf("Decode() (-got, +want):\n%s", diff)
+	}
+
+}

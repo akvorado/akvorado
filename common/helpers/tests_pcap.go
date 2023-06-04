@@ -15,7 +15,7 @@ import (
 	"github.com/google/gopacket/pcapgo"
 )
 
-// ReadPcapPayload reads and parses a PCAP file and return the payload (after Layer 4).
+// ReadPcapPayload reads and parses a PCAP file and return the payload (Layer 4).
 func ReadPcapPayload(t testing.TB, pcapfile string) []byte {
 	t.Helper()
 	f, err := os.Open(pcapfile)
