@@ -56,7 +56,9 @@ func (nd *Decoder) decode(msgDec interface{}, samplingRateSys producer.SamplingR
 }
 
 func (nd *Decoder) decodeRecord(fields []netflow.DataField) *schema.FlowMessage {
-	var etype uint16
+	var etype, dstPort, srcPort uint16
+	var proto, icmpType, icmpCode uint8
+	var foundIcmpTypeCode bool
 	bf := &schema.FlowMessage{}
 	for _, field := range fields {
 		v, ok := field.Value.([]byte)
@@ -96,11 +98,14 @@ func (nd *Decoder) decodeRecord(fields []netflow.DataField) *schema.FlowMessage 
 
 		// L4
 		case netflow.NFV9_FIELD_L4_SRC_PORT:
-			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPort, decodeUNumber(v))
+			srcPort = uint16(decodeUNumber(v))
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPort, uint64(srcPort))
 		case netflow.NFV9_FIELD_L4_DST_PORT:
-			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPort, decodeUNumber(v))
+			dstPort = uint16(decodeUNumber(v))
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPort, uint64(dstPort))
 		case netflow.NFV9_FIELD_PROTOCOL:
-			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnProto, decodeUNumber(v))
+			proto = uint8(decodeUNumber(v))
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(proto))
 
 		// Network
 		case netflow.NFV9_FIELD_SRC_AS:
@@ -168,24 +173,43 @@ func (nd *Decoder) decodeRecord(fields []netflow.DataField) *schema.FlowMessage 
 					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPFragmentOffset, decodeUNumber(v))
 
 				// ICMP
-				case netflow.NFV9_FIELD_ICMP_TYPE:
+				case netflow.NFV9_FIELD_ICMP_TYPE, netflow.IPFIX_FIELD_icmpTypeCodeIPv6:
 					icmpTypeCode := decodeUNumber(v)
-					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv4Type, icmpTypeCode>>8)
-					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv4Code, icmpTypeCode&0xff)
-				case netflow.IPFIX_FIELD_icmpTypeIPv4:
-					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv4Type, decodeUNumber(v))
-				case netflow.IPFIX_FIELD_icmpCodeIPv4:
-					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv4Code, decodeUNumber(v))
-				case netflow.IPFIX_FIELD_icmpTypeCodeIPv6:
-					icmpTypeCode := decodeUNumber(v)
-					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv6Type, icmpTypeCode>>8)
-					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv6Code, icmpTypeCode&0xff)
-				case netflow.IPFIX_FIELD_icmpTypeIPv6:
-					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv6Type, decodeUNumber(v))
-				case netflow.IPFIX_FIELD_icmpCodeIPv6:
-					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv6Code, decodeUNumber(v))
+					icmpType = uint8(icmpTypeCode >> 8)
+					icmpCode = uint8(icmpTypeCode & 0xff)
+					foundIcmpTypeCode = true
+				case netflow.IPFIX_FIELD_icmpTypeIPv4, netflow.IPFIX_FIELD_icmpTypeIPv6:
+					icmpType = uint8(decodeUNumber(v))
+					foundIcmpTypeCode = true
+				case netflow.IPFIX_FIELD_icmpCodeIPv4, netflow.IPFIX_FIELD_icmpCodeIPv6:
+					icmpCode = uint8(decodeUNumber(v))
+					foundIcmpTypeCode = true
 				}
 			}
+		}
+	}
+	if !nd.d.Schema.IsDisabled(schema.ColumnGroupL3L4) && (proto == 1 || proto == 58) {
+		// ICMP
+		if !foundIcmpTypeCode {
+			// Some implementations may use source and destination ports, some
+			// other only destination port. The following heuristic is safe as
+			// the only valid code for type 0 is 0 (echo reply).
+			if srcPort == 0 {
+				// Use destination port instead (Cisco on NFv5 that still exists
+				// today with NFv9 and IPFIX).
+				icmpType = uint8(dstPort >> 8)
+				icmpCode = uint8(dstPort & 0xff)
+			} else {
+				icmpType = uint8(srcPort)
+				icmpType = uint8(dstPort)
+			}
+		}
+		if proto == 1 {
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv4Type, uint64(icmpType))
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv4Code, uint64(icmpCode))
+		} else {
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv6Type, uint64(icmpType))
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnICMPv6Code, uint64(icmpCode))
 		}
 	}
 	nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, uint64(etype))
