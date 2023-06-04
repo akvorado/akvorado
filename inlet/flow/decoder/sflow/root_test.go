@@ -280,6 +280,11 @@ func TestDecodeInterface(t *testing.T) {
 			t.Fatalf("Decode() (-got, +want):\n%s", diff)
 		}
 	})
+}
+
+func TestDecodeSamples(t *testing.T) {
+	r := reporter.NewMock(t)
+	sdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()})
 
 	t.Run("expanded flow sample", func(t *testing.T) {
 		// Send data
@@ -299,17 +304,24 @@ func TestDecodeInterface(t *testing.T) {
 				NextHop:         netip.MustParseAddr("::ffff:54.54.54.54"),
 				SrcAS:           203476,
 				DstAS:           203361,
+				SrcVlan:         809,
 				GotASPath:       true,
 				SrcNetMask:      32,
 				DstNetMask:      22,
 				ProtobufDebug: map[schema.ColumnKey]interface{}{
-					schema.ColumnBytes:     104,
-					schema.ColumnPackets:   1,
-					schema.ColumnEType:     helpers.ETypeIPv4,
-					schema.ColumnProto:     6,
-					schema.ColumnSrcPort:   22,
-					schema.ColumnDstPort:   52237,
-					schema.ColumnDstASPath: []uint32{8218, 29605, 203361},
+					schema.ColumnBytes:        104,
+					schema.ColumnPackets:      1,
+					schema.ColumnEType:        helpers.ETypeIPv4,
+					schema.ColumnProto:        6,
+					schema.ColumnSrcPort:      22,
+					schema.ColumnDstPort:      52237,
+					schema.ColumnDstASPath:    []uint32{8218, 29605, 203361},
+					schema.ColumnTCPFlags:     0x18,
+					schema.ColumnIPFragmentID: 0xab4e,
+					schema.ColumnIPTTL:        61,
+					schema.ColumnIPTos:        0x8,
+					schema.ColumnSrcMAC:       0x948ed30a713b,
+					schema.ColumnDstMAC:       0x22421f4a9fcd,
 				},
 			},
 		}
@@ -334,17 +346,22 @@ func TestDecodeInterface(t *testing.T) {
 				SamplingRate:    256,
 				InIf:            0,
 				OutIf:           182,
+				DstVlan:         3001,
 				SrcAddr:         netip.MustParseAddr("::ffff:50.50.50.50"),
 				DstAddr:         netip.MustParseAddr("::ffff:51.51.51.51"),
 				ExporterAddress: netip.MustParseAddr("::ffff:49.49.49.49"),
 				GotASPath:       false,
 				ProtobufDebug: map[schema.ColumnKey]interface{}{
-					schema.ColumnBytes:   1344,
-					schema.ColumnPackets: 1,
-					schema.ColumnEType:   helpers.ETypeIPv4,
-					schema.ColumnProto:   17,
-					schema.ColumnSrcPort: 46622,
-					schema.ColumnDstPort: 58631,
+					schema.ColumnBytes:        1344,
+					schema.ColumnPackets:      1,
+					schema.ColumnEType:        helpers.ETypeIPv4,
+					schema.ColumnProto:        17,
+					schema.ColumnSrcPort:      46622,
+					schema.ColumnDstPort:      58631,
+					schema.ColumnSrcMAC:       1094287164743,
+					schema.ColumnDstMAC:       1101091482116,
+					schema.ColumnIPFragmentID: 41647,
+					schema.ColumnIPTTL:        64,
 				},
 			},
 		}
@@ -373,10 +390,13 @@ func TestDecodeInterface(t *testing.T) {
 				ExporterAddress: netip.MustParseAddr("::ffff:172.19.64.116"),
 				GotASPath:       false,
 				ProtobufDebug: map[schema.ColumnKey]interface{}{
-					schema.ColumnBytes:   32,
-					schema.ColumnPackets: 1,
-					schema.ColumnEType:   helpers.ETypeIPv4,
-					schema.ColumnProto:   1,
+					schema.ColumnBytes:        32,
+					schema.ColumnPackets:      1,
+					schema.ColumnEType:        helpers.ETypeIPv4,
+					schema.ColumnProto:        1,
+					schema.ColumnIPFragmentID: 4329,
+					schema.ColumnIPTTL:        64,
+					schema.ColumnIPTos:        8,
 				},
 			}, {
 				SamplingRate:    1,
@@ -387,10 +407,84 @@ func TestDecodeInterface(t *testing.T) {
 				ExporterAddress: netip.MustParseAddr("::ffff:172.19.64.116"),
 				GotASPath:       false,
 				ProtobufDebug: map[schema.ColumnKey]interface{}{
-					schema.ColumnBytes:   32,
-					schema.ColumnPackets: 1,
-					schema.ColumnEType:   helpers.ETypeIPv4,
-					schema.ColumnProto:   1,
+					schema.ColumnBytes:        32,
+					schema.ColumnPackets:      1,
+					schema.ColumnEType:        helpers.ETypeIPv4,
+					schema.ColumnProto:        1,
+					schema.ColumnIPFragmentID: 62945,
+					schema.ColumnIPTTL:        64,
+					schema.ColumnIPTos:        8,
+				},
+			},
+		}
+		for _, f := range got {
+			f.TimeReceived = 0
+		}
+
+		if diff := helpers.Diff(got, expectedFlows); diff != "" {
+			t.Fatalf("Decode() (-got, +want):\n%s", diff)
+		}
+	})
+
+	t.Run("flow sample with ICMPv4", func(t *testing.T) {
+		data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-icmpv4.pcap"))
+		got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+		if got == nil {
+			t.Fatalf("Decode() error on data")
+		}
+		expectedFlows := []*schema.FlowMessage{
+			{
+				SamplingRate:    1,
+				SrcAddr:         netip.MustParseAddr("::ffff:203.0.113.4"),
+				DstAddr:         netip.MustParseAddr("::ffff:203.0.113.5"),
+				ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+				GotASPath:       false,
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnBytes:      84,
+					schema.ColumnPackets:    1,
+					schema.ColumnEType:      helpers.ETypeIPv4,
+					schema.ColumnProto:      1,
+					schema.ColumnDstMAC:     0xd25b45ee5ecf,
+					schema.ColumnSrcMAC:     0xe2efc68f8cd4,
+					schema.ColumnICMPv4Type: 8,
+					// schema.ColumnICMPv4Code:   0,
+					schema.ColumnIPTTL:        64,
+					schema.ColumnIPFragmentID: 0x90c5,
+				},
+			},
+		}
+		for _, f := range got {
+			f.TimeReceived = 0
+		}
+
+		if diff := helpers.Diff(got, expectedFlows); diff != "" {
+			t.Fatalf("Decode() (-got, +want):\n%s", diff)
+		}
+	})
+
+	t.Run("flow sample with ICMPv6", func(t *testing.T) {
+		data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-icmpv6.pcap"))
+		got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+		if got == nil {
+			t.Fatalf("Decode() error on data")
+		}
+		expectedFlows := []*schema.FlowMessage{
+			{
+				SamplingRate:    1,
+				SrcAddr:         netip.MustParseAddr("fe80::d05b:45ff:feee:5ecf"),
+				DstAddr:         netip.MustParseAddr("2001:db8::"),
+				ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+				GotASPath:       false,
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnBytes:      72,
+					schema.ColumnPackets:    1,
+					schema.ColumnEType:      helpers.ETypeIPv6,
+					schema.ColumnProto:      58,
+					schema.ColumnSrcMAC:     0xd25b45ee5ecf,
+					schema.ColumnDstMAC:     0xe2efc68f8cd4,
+					schema.ColumnIPTTL:      255,
+					schema.ColumnICMPv6Type: 135,
+					// schema.ColumnICMPv6Code:   0,
 				},
 			},
 		}
