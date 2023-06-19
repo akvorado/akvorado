@@ -697,6 +697,7 @@ an authenticating reverse-proxy for Akvorado:
 - [Keycloak](https://www.keycloak.org/)
 - [Ory](https://www.ory.sh/), notably Kratos, Hydra and Oathkeeper
 - [Casdoor](https://casdoor.org/)
+- [Zitadel](https://zitadel.com/) combined with [OAuth2 Proxy](https://zitadel.com/docs/examples/identity-proxy/oauth2-proxy)
 
 There also exist simpler solutions only providing authentication:
 
