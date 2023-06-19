@@ -248,8 +248,8 @@ github.com/opencontainers/go-digest v1.0.0 h1:apOUWs51W5PlhuyGyz9FCeeBIOUDA/6nW8
 github.com/opencontainers/go-digest v1.0.0/go.mod h1:0JzlMkj0TRzQZfJkVvzbP0HBR3IKzErnv2BNG4W4MAM=
 github.com/opencontainers/image-spec v1.1.0-rc.3 h1:GT9Xon8YrLxz6N7sErbN81V8J4lOQKGUZQmI3ioviqU=
 github.com/opencontainers/image-spec v1.1.0-rc.3/go.mod h1:X4pATf0uXsnn3g5aiGIsVnJBR4mxhKzfwmvK/B2NTm8=
-github.com/oschwald/maxminddb-golang v1.10.0 h1:Xp1u0ZhqkSuopaKmk1WwHtjF0H9Hd9181uj2MQ5Vndg=
-github.com/oschwald/maxminddb-golang v1.10.0/go.mod h1:Y2ELenReaLAZ0b400URyGwvYxHV1dLIxBuyOsyYjHK0=
+github.com/oschwald/maxminddb-golang v1.11.0 h1:aSXMqYR/EPNjGE8epgqwDay+P30hCBZIveY0WZbAWh0=
+github.com/oschwald/maxminddb-golang v1.11.0/go.mod h1:YmVI+H0zh3ySFR3w+oz8PCfglAFj3PuCmui13+P9zDg=
 github.com/osrg/gobgp/v3 v3.15.0 h1:Zu4iL7EbBtRpVue61k0F3c3HdFZiTJV3uaveb7m92sM=
 github.com/osrg/gobgp/v3 v3.15.0/go.mod h1:tSUXn/s9uggSRTKP3IBeT5zI4ayOUX3O7fG5+n+SHPc=
 github.com/paulmach/orb v0.9.0 h1:MwA1DqOKtvCgm7u9RZ/pnYejTeDJPnr0+0oFajBbJqk=
@@ -323,8 +323,8 @@ github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
 github.com/stretchr/testify v1.8.1/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
 github.com/stretchr/testify v1.8.2/go.mod h1:w2LPCIKwWwSfY2zedu0+kehJoqGctiVI29o6fzry7u4=
-github.com/stretchr/testify v1.8.3 h1:RP3t2pwF7cMEbC1dqtB6poj3niw/9gnV4Cjg5oW5gtY=
 github.com/stretchr/testify v1.8.3/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
+github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
 github.com/ti-mo/conntrack v0.4.0 h1:6TZXNqhsJmeBl1Pyzg43Y0V1Nx8jyZ4dpOtItCVXE+8=
 github.com/ti-mo/conntrack v0.4.0/go.mod h1:L0vkIzG/TECsuVYMMlID9QWmZQLjyP9gDq8XKTlbg4Q=
 github.com/ti-mo/netfilter v0.3.1 h1:+ZTmeTx+64Jw2N/1gmqm42kruDWjQ90SMjWEB1e6VDs=
