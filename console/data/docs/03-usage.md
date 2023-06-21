@@ -115,7 +115,9 @@ aspect of the graph.
   second (should match interface counters), packets par second, percentage of
   use of the input interface or output interface. For percentage use, you should
   group by exporter name and interface name or description for it to make sense.
-  Otherwise, you would get an average over the matched interfaces.
+  Otherwise, you would get an average over the matched interfaces. Also, because
+  interface speeds are retrieved infrequently, the percentage may be temporarily
+  incorrect when an interface speed changes.
 
 - Four graph types are provided: “stacked”, “lines”, and “grid” to
   display time series and “sankey” to show flow distributions between

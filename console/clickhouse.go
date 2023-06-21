@@ -199,10 +199,10 @@ func (c *Component) contextFunc(inputStr string) context {
 	case "inl2%":
 		// That's like l2bps, but this time we use the interface speed to get a
 		// percent value
-		units = `SUM((Bytes+38*Packets)*SamplingRate*8*100/(InIfSpeed*1000000))/COUNT(DISTINCT ExporterAddress, InIfName)`
+		units = `ifNotFinite(SUM((Bytes+38*Packets)*SamplingRate*8*100/(InIfSpeed*1000000))/COUNT(DISTINCT ExporterAddress, InIfName),0)`
 	case "outl2%":
 		// Same but using output interface as reference
-		units = `SUM((Bytes+38*Packets)*SamplingRate*8*100/(OutIfSpeed*1000000))/COUNT(DISTINCT ExporterAddress, OutIfName)`
+		units = `ifNotFinite(SUM((Bytes+38*Packets)*SamplingRate*8*100/(OutIfSpeed*1000000))/COUNT(DISTINCT ExporterAddress, OutIfName),0)`
 	}
 
 	c.metrics.clickhouseQueries.WithLabelValues(table).Inc()
