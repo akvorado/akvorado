@@ -18,7 +18,7 @@ jobs:
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v3
-      - uses: cachix/install-nix-action@v21
+      - uses: cachix/install-nix-action@v22
       - name: Update flake.nix
         run: nix run .#passthru.update
       - name: Push update
