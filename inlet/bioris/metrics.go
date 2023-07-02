@@ -22,56 +22,56 @@ func (c *Component) initMetrics() {
 	c.metrics.risUp = c.r.GaugeVec(
 		reporter.GaugeOpts{
 			Name: "connection_up",
-			Help: "Connection to BioRIS Instance Up",
+			Help: "Connection to BioRIS instance up.",
 		},
 		[]string{"ris"},
 	)
 	c.metrics.knownRouters = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "known_routers",
-			Help: "Number of known routers per RIS",
+			Name: "known_routers_total",
+			Help: "Number of known routers per RIS.",
 		},
 		[]string{"ris"},
 	)
 	c.metrics.lpmRequests = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "lpm_requests",
-			Help: "Number of lpm requests per RIS and Router",
+			Name: "lpm_requests_total",
+			Help: "Number of LPM requests per RIS and router.",
 		},
 		[]string{"ris", "router"},
 	)
 	c.metrics.lpmRequestErrors = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "lpm_request_errors",
-			Help: "Number of failed lpm requests per RIS and Router",
+			Help: "Number of failed LPM requests per RIS and router.",
 		},
 		[]string{"ris", "router"},
 	)
 	c.metrics.lpmRequestContextCanceled = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "lpm_request_context_canceled",
-			Help: "Timed out lpm requests per RIS and Router",
+			Name: "lpm_request_canceled",
+			Help: "Timed out LPM requests per RIS and router.",
 		},
 		[]string{"ris", "router"},
 	)
 	c.metrics.lpmRequestSuccess = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "lpm_request_success",
-			Help: "Number of successfull requests per RIS and Router",
+			Help: "Number of successfull requests per RIS and router.",
 		},
 		[]string{"ris", "router"},
 	)
 	c.metrics.routerChosenAgentIDMatch = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "router_chosen_agent_id_match",
-			Help: "Numbers the router was chosen because the agent id matched the router id",
+			Name: "router_request_agentid",
+			Help: "Number of times the router was chosen because the agent id matched the router ID.",
 		},
 		[]string{"ris", "router"},
 	)
 	c.metrics.routerChosenRandom = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "router_chosen_random",
-			Help: "Numbers the router was chosen randomly",
+			Help: "Number of times the router was chosen randomly.",
 		},
 		[]string{"ris", "router"},
 	)

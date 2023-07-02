@@ -21,7 +21,6 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"gopkg.in/tomb.v2"
 
-	"akvorado/common/daemon"
 	"akvorado/common/reporter"
 	"akvorado/inlet/bmp"
 )
@@ -35,32 +34,25 @@ type RISInstanceRuntime struct {
 
 // Component represents the BioRIS component.
 type Component struct {
-	r             *reporter.Reporter
-	d             *Dependencies
-	t             tomb.Tomb
+	r      *reporter.Reporter
+	t      tomb.Tomb
+	config Configuration
+
 	i             map[string]*RISInstanceRuntime
 	log           reporter.Logger
 	metrics       metrics
-	config        Configuration
 	router        map[netip.Addr][]*RISInstanceRuntime
 	clientMetrics *grpc_prometheus.ClientMetrics
 }
 
-// Dependencies define the dependencies of the BioRis component.
-type Dependencies struct {
-	Daemon daemon.Component
-}
-
 // New creates a new BioRIS component.
-func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
+func New(r *reporter.Reporter, configuration Configuration) (*Component, error) {
 	c := Component{
 		r:      r,
-		d:      &dependencies,
 		i:      make(map[string]*RISInstanceRuntime),
 		config: configuration,
 		router: make(map[netip.Addr][]*RISInstanceRuntime),
 	}
-	c.d.Daemon.Track(&c.t, "inlet/bioris")
 	c.clientMetrics = grpc_prometheus.NewClientMetrics()
 	c.initMetrics()
 
@@ -89,14 +81,15 @@ func (c *Component) Start() error {
 		)
 		if err != nil {
 			c.metrics.risUp.WithLabelValues(con.GRPCAddr).Set(0)
-			c.log.Err(err).Msg("err while dialing RIS " + con.GRPCAddr)
+			c.log.Err(err).Msgf("error while dialing RIS %s", con.GRPCAddr)
 			continue
 		}
 		client := pb.NewRoutingInformationServiceClient(conn)
 		if client == nil {
 			c.metrics.risUp.WithLabelValues(con.GRPCAddr).Set(0)
-			// we only fail softly here, as a single unavailable client is no reason for the complete inlet to crash
-			c.log.Error().Msg("err while opening RoutingInformationServiceClient " + con.GRPCAddr)
+			// We only fail softly here, as a single unavailable client is no
+			// reason to let inlet crash
+			c.log.Error().Msgf("error while opening RIS client %s", con.GRPCAddr)
 			continue
 		}
 		c.metrics.risUp.WithLabelValues(con.GRPCAddr).Set(1)
@@ -104,8 +97,9 @@ func (c *Component) Start() error {
 		r, err := client.GetRouters(context.Background(), &pb.GetRoutersRequest{})
 		if err != nil {
 			c.metrics.risUp.WithLabelValues(con.GRPCAddr).Set(0)
-			// we only fail softly here, as a single unavailable client is no reason for the complete inlet to crash
-			c.log.Err(err).Msg("err while getting routers from " + con.GRPCAddr)
+			// We only fail softly here, as a single unavailable client is no
+			// reason to let inlet crash
+			c.log.Err(err).Msgf("error while getting routers from %s", con.GRPCAddr)
 			continue
 		}
 
@@ -119,15 +113,16 @@ func (c *Component) Start() error {
 			routerAddress, e := netip.ParseAddr(router.Address)
 
 			if e != nil {
-				c.log.Err(e).Msg("err while parsing router address " + router.Address)
+				c.log.Err(e).Msgf("error while parsing router address %s", router.Address)
 				continue
 			}
-			// akvorado handles everything as IPv6-mapped addr. Therefore, we also convert our router id to ipv6 mapped
+			// Akvorado handles everything as IPv6-mapped addr. Therefore, we
+			// also convert our router id to ipv6 mapped
 			routerAddress = netip.AddrFrom16(routerAddress.As16())
 
 			c.router[routerAddress] = append(c.router[routerAddress], c.i[con.GRPCAddr])
 			c.metrics.knownRouters.WithLabelValues(con.GRPCAddr).Inc()
-			// we need to initialize all the counters here
+			// We need to initialize all the counters here
 			c.metrics.lpmRequestContextCanceled.WithLabelValues(con.GRPCAddr, router.Address)
 			c.metrics.lpmRequestErrors.WithLabelValues(con.GRPCAddr, router.Address)
 			c.metrics.lpmRequestSuccess.WithLabelValues(con.GRPCAddr, router.Address)
@@ -139,21 +134,22 @@ func (c *Component) Start() error {
 	return nil
 }
 
-// choose router selects the the router id best suited for the given agent ip. It returns router id and ris instance
+// chooseRouter selects the router ID best suited for the given agent ip. It
+// returns router ID and RIS instance.
 func (c *Component) chooseRouter(agent netip.Addr) (netip.Addr, *RISInstanceRuntime, error) {
 	var chosenRis *RISInstanceRuntime
 	chosenRouterID := netip.IPv4Unspecified()
-	// all routers that could be of interest for us
+	// All routers that could be of interest for us
 	var routers []netip.Addr
 	exactMatch := false
-	// First try: Try to found router which exactly matches the agent id
+	// First try: try to find router which exactly matches the agent ID
 	for r := range c.router {
 		if r == agent {
 			routers = append(routers, r)
 			exactMatch = true
 		}
 	}
-	// second try: Choose a random router, if no exact match was found yet
+	// Second try: choose a random router, if no exact match was found yet
 	if !exactMatch {
 		for r := range c.router {
 			routers = append(routers, r)
@@ -163,13 +159,13 @@ func (c *Component) chooseRouter(agent netip.Addr) (netip.Addr, *RISInstanceRunt
 	if len(routers) < 1 {
 		return chosenRouterID, nil, errors.New("no applicable router found for bio flow lookup")
 	}
-	// now choose one of the routers
+	// Now choose one of the routers
 	chosenRouterID = routers[rand.Intn(len(routers))]
 
-	// randomly select a ris providing the router id
+	// Randomly select a ris providing the router ID
 	chosenRis = c.router[chosenRouterID][rand.Intn(len(c.router[chosenRouterID]))]
 
-	// update metrics with the chosen router/ris combination
+	// Update metrics with the chosen router/ris combination
 	if exactMatch {
 		c.metrics.routerChosenAgentIDMatch.WithLabelValues(chosenRis.config.GRPCAddr, chosenRouterID.String()).Inc()
 	} else {
@@ -193,10 +189,10 @@ func (c *Component) lpmResponseToLookupResult(lpm *pb.LPMResponse) (bmp.LookupRe
 		return res, fmt.Errorf("lpm: result empty")
 	}
 
-	// first: Find longest matching prefix under all applicable routes
+	// First: find longest matching prefix under all applicable routes
 	for _, tr := range lpm.Routes {
 		if int(tr.Pfx.Length) > largestPfxLen {
-			// we have found a better prefix, set that as the currently used one
+			// We have found a better prefix, set that as the currently used one
 			r = tr
 			largestPfxLen = int(tr.Pfx.Length)
 		}
@@ -206,7 +202,7 @@ func (c *Component) lpmResponseToLookupResult(lpm *pb.LPMResponse) (bmp.LookupRe
 		return res, fmt.Errorf("lpm: no route returned")
 	}
 
-	// assume the first path is the preferred path, we are interested only in that path
+	// Assume the first path is the preferred path, we are interested only in that path
 	if len(r.Paths) < 1 {
 		return res, fmt.Errorf("lpm: no path found")
 	}
@@ -216,12 +212,13 @@ func (c *Component) lpmResponseToLookupResult(lpm *pb.LPMResponse) (bmp.LookupRe
 	}
 
 	if p.BgpPath == nil {
-		return res, fmt.Errorf("lpm: path has no bgp path")
+		return res, fmt.Errorf("lpm: path has no BGP path")
 	}
 
 	res.Communities = append(res.Communities, p.BgpPath.Communities...)
 	for _, c := range p.BgpPath.LargeCommunities {
-		res.LargeCommunities = append(res.LargeCommunities, *bgp.NewLargeCommunity(c.GetGlobalAdministrator(), c.GetDataPart1(), c.GetDataPart2()))
+		res.LargeCommunities = append(res.LargeCommunities,
+			*bgp.NewLargeCommunity(c.GetGlobalAdministrator(), c.GetDataPart1(), c.GetDataPart2()))
 	}
 
 	for _, asP := range p.BgpPath.AsPath {
@@ -235,10 +232,12 @@ func (c *Component) lpmResponseToLookupResult(lpm *pb.LPMResponse) (bmp.LookupRe
 	return res, nil
 }
 
-// Lookup does an lookup on one of the specified RIS Instances, and returns the well known bmp lookup result. NextHopIP is ignored, but maintained for compatibility to the internal bmp
+// Lookup does an lookup on one of the specified RIS Instances and returns the
+// well known bmp lookup result. NextHopIP is ignored, but maintained for
+// compatibility to the internal bmp
 func (c *Component) Lookup(addrIP netip.Addr, agentIP netip.Addr, _ netip.Addr) (bmp.LookupResult, error) {
 
-	lpmRes, lpmErr := c.LPM(addrIP, agentIP)
+	lpmRes, lpmErr := c.lookupLPM(addrIP, agentIP)
 
 	if lpmErr != nil {
 		return bmp.LookupResult{}, lpmErr
@@ -250,8 +249,8 @@ func (c *Component) Lookup(addrIP netip.Addr, agentIP netip.Addr, _ netip.Addr) 
 	return r, err
 }
 
-// LPM does an LPM GRPC call to an BioRis instance
-func (c *Component) LPM(ip netip.Addr, agent netip.Addr) (*pb.LPMResponse, error) {
+// lookupLPM does an lookupLPM GRPC call to an BioRis instance
+func (c *Component) lookupLPM(ip netip.Addr, agent netip.Addr) (*pb.LPMResponse, error) {
 	// first step: choose router id and ris
 	chosenRouterID, chosenRis, err := c.chooseRouter(agent)
 	if err != nil {
@@ -272,10 +271,12 @@ func (c *Component) LPM(ip netip.Addr, agent netip.Addr) (*pb.LPMResponse, error
 	c.metrics.lpmRequests.WithLabelValues(chosenRis.config.GRPCAddr, chosenRouterID.String()).Inc()
 
 	clientDeadline := time.Now().Add(time.Duration(200) * time.Millisecond)
-	ctx, _ := context.WithDeadline(context.Background(), clientDeadline)
+	// TODO: provide a real context here
+	ctx, cancel := context.WithDeadline(context.Background(), clientDeadline)
+	defer cancel()
 
 	var res *pb.LPMResponse
-	// attention: the ris does not understand ipv6-mapped router ids, so we need to unmap them
+	// The RIS does not understand IPv6-mapped router IDs, so we need to unmap them.
 	res, err = chosenRis.client.LPM(ctx, &pb.LPMRequest{
 		Router: chosenRouterID.Unmap().String(),
 		VrfId:  chosenRis.config.VRFId,
@@ -288,7 +289,7 @@ func (c *Component) LPM(ip netip.Addr, agent netip.Addr) (*pb.LPMResponse, error
 	}
 	if err != nil {
 		c.metrics.lpmRequestErrors.WithLabelValues(chosenRis.config.GRPCAddr, chosenRouterID.String()).Inc()
-		return nil, err
+		return nil, fmt.Errorf("lpm lookup failed: %w", err)
 	}
 
 	c.metrics.lpmRequestSuccess.WithLabelValues(chosenRis.config.GRPCAddr, chosenRouterID.String()).Inc()

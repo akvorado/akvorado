@@ -16,9 +16,7 @@ import (
 )
 
 func TestChooseRouter(t *testing.T) {
-	// we test the method to choose an appropriate router/ris for lookup here
 	r := reporter.NewMock(t)
-	// first step: Mock a component
 	c := &Component{
 		r:      r,
 		i:      make(map[string]*RISInstanceRuntime),
@@ -27,7 +25,7 @@ func TestChooseRouter(t *testing.T) {
 
 	c.initMetrics()
 
-	// first test: we have no routers/ris instances and fail with an error
+	// First test: we have no routers/ris instances and fail with an error
 	t.Run("no router", func(t *testing.T) {
 		expected := "no applicable router found for bio flow lookup"
 		_, _, err := c.chooseRouter(netip.MustParseAddr("10.0.0.0"))
@@ -36,24 +34,24 @@ func TestChooseRouter(t *testing.T) {
 		}
 	})
 
-	// create some RisInstanceRuntime objects
+	// Create some RisInstanceRuntime objects
 	ris1 := &RISInstanceRuntime{config: RISInstance{GRPCAddr: "ris1"}}
 	ris2 := &RISInstanceRuntime{config: RISInstance{GRPCAddr: "ris2"}}
 	ris3 := &RISInstanceRuntime{config: RISInstance{GRPCAddr: "ris3"}}
 
-	// add them to the component
+	// Add them to the component
 	c.i["ris1"] = ris1
 	c.i["ris2"] = ris2
 	c.i["ris3"] = ris3
 
-	// create a few routers
+	// Create a few routers
 	r1 := netip.MustParseAddr("10.0.0.1")
 	r2 := netip.MustParseAddr("10.0.0.2")
 	r3 := netip.MustParseAddr("10.0.0.3")
 	r4 := netip.MustParseAddr("10.0.0.4")
 	r5 := netip.MustParseAddr("10.0.0.5")
 
-	// add routers to the ris components
+	// Add routers to the ris components
 	// r1 is on ris1 and ris3
 	c.router[r1] = []*RISInstanceRuntime{ris1, ris3}
 	// r2 is on ris2
@@ -65,7 +63,7 @@ func TestChooseRouter(t *testing.T) {
 	// r5 is on ris1
 	c.router[r5] = []*RISInstanceRuntime{ris1}
 
-	// test exact match for r1
+	// Test exact match for r1
 	t.Run("exact match r1", func(t *testing.T) {
 		// expectedRis is a list of expected ris instances (ris1 and ris3)
 		expectedRis := []*RISInstanceRuntime{ris1, ris3}
@@ -78,7 +76,7 @@ func TestChooseRouter(t *testing.T) {
 		if diff := helpers.Diff(router, expectedRouter); diff != "" {
 			t.Errorf("Router (-got, +want):\n%s", diff)
 		}
-		// check if ris is in the list of expected ris instances, if not fail
+		// Check if ris is in the list of expected ris instances, if not fail
 		if !slices.Contains(expectedRis, ris) {
 			t.Errorf("Unexpected ris instance: %s", ris.config.GRPCAddr)
 		}
@@ -180,7 +178,7 @@ func TestLPMResponseToLookupResult(t *testing.T) {
 				},
 			},
 			expected: bmp.LookupResult{},
-			err:      "lpm: path has no bgp path",
+			err:      "lpm: path has no BGP path",
 		},
 		{
 			name: "LPM with default route and more specific, content in BGP Path",

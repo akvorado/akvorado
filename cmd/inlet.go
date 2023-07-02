@@ -137,9 +137,7 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 	if err != nil {
 		return fmt.Errorf("unable to initialize GeoIP component: %w", err)
 	}
-	biorisComponent, err := bioris.New(r, config.BioRIS, bioris.Dependencies{
-		Daemon: daemonComponent,
-	})
+	biorisComponent, err := bioris.New(r, config.BioRIS)
 	if err != nil {
 		return fmt.Errorf("unable to initialize BioRIS component: %w", err)
 	}
