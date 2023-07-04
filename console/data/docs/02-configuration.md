@@ -169,9 +169,12 @@ inlet:
 In general, this components sends LPM requests to the RIS reachable at `grpcaddr`. The connection will be set up using TLS if `grpcsecure` is true.
 The `vrf` specifies in which VRF bioris should look up. Alternative, we can also specify `vrf-id` as numeric VRF distinguisher.
 
-The component chooses the router for the LPM lookup with the following scheme:
-First, it checks all routers present on the RIS. If one of the router IDs matches the exporter address for the flow, this router is used.
-As alternative (no exact match), a random router is chosen.
+BioRIS tries to query the RIB of the router that sent the flow. If this router's RIB is not available in all known RIS instances, an other router is implictly used as fallback.
+After the router id is determined, BioRIS queries one of the RIS Instances known holding the RIB.
+
+RIS and Router ID queried as either exact match or fallback are exported as metrics, if exact matching is required you can set up an alarm against those.
+
+Refreshing of available routers and ris instances requires an restart of the inlet service (this might change in the future).
 
 BioRIS currently supports setting NetMask/Prefix, AS, AS Path and Communities for the given flow.
 

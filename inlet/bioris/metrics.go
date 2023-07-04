@@ -9,7 +9,7 @@ type metrics struct {
 	lpmRequestErrors          *reporter.CounterVec
 	lpmRequestContextCanceled *reporter.CounterVec
 	lpmRequestSuccess         *reporter.CounterVec
-	routerChosenRandom        *reporter.CounterVec
+	routerChosenFallback      *reporter.CounterVec
 	routerChosenAgentIDMatch  *reporter.CounterVec
 }
 
@@ -64,14 +64,14 @@ func (c *Component) initMetrics() {
 	c.metrics.routerChosenAgentIDMatch = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "router_request_agentid",
-			Help: "Number of times the router was chosen because the agent id matched the router ID.",
+			Help: "Number of times the router/ris combination was requested as exact match of the agent ID.",
 		},
 		[]string{"ris", "router"},
 	)
-	c.metrics.routerChosenRandom = c.r.CounterVec(
+	c.metrics.routerChosenFallback = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "router_chosen_random",
-			Help: "Number of times the router was chosen randomly.",
+			Name: "router_request_fallback",
+			Help: "Number of times the router/ris combination was request as fallback.",
 		},
 		[]string{"ris", "router"},
 	)

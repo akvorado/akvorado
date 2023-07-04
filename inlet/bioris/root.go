@@ -128,7 +128,7 @@ func (c *Component) Start() error {
 			c.metrics.lpmRequestSuccess.WithLabelValues(con.GRPCAddr, router.Address)
 			c.metrics.lpmRequests.WithLabelValues(con.GRPCAddr, router.Address)
 			c.metrics.routerChosenAgentIDMatch.WithLabelValues(con.GRPCAddr, router.Address)
-			c.metrics.routerChosenRandom.WithLabelValues(con.GRPCAddr, router.Address)
+			c.metrics.routerChosenFallback.WithLabelValues(con.GRPCAddr, router.Address)
 		}
 	}
 	return nil
@@ -139,37 +139,32 @@ func (c *Component) Start() error {
 func (c *Component) chooseRouter(agent netip.Addr) (netip.Addr, *RISInstanceRuntime, error) {
 	var chosenRis *RISInstanceRuntime
 	chosenRouterID := netip.IPv4Unspecified()
-	// All routers that could be of interest for us
-	var routers []netip.Addr
 	exactMatch := false
-	// First try: try to find router which exactly matches the agent ID
+	// we try all routers
 	for r := range c.router {
+		chosenRouterID = r
+		// if we find an exact match of router id and agent ip, we are done
 		if r == agent {
-			routers = append(routers, r)
 			exactMatch = true
+			break
 		}
-	}
-	// Second try: choose a random router, if no exact match was found yet
-	if !exactMatch {
-		for r := range c.router {
-			routers = append(routers, r)
-		}
+		// if not, we are implicitly using the last router id we found
 	}
 
-	if len(routers) < 1 {
+	// verify that an actual router was found
+	if chosenRouterID.IsUnspecified() {
 		return chosenRouterID, nil, errors.New("no applicable router found for bio flow lookup")
 	}
-	// Now choose one of the routers
-	chosenRouterID = routers[rand.Intn(len(routers))]
 
-	// Randomly select a ris providing the router ID
+	// Randomly select a ris providing the router ID we selected earlier.
+	// In the future, we might also want to exclude currently unavailable ris instances
 	chosenRis = c.router[chosenRouterID][rand.Intn(len(c.router[chosenRouterID]))]
 
 	// Update metrics with the chosen router/ris combination
 	if exactMatch {
 		c.metrics.routerChosenAgentIDMatch.WithLabelValues(chosenRis.config.GRPCAddr, chosenRouterID.String()).Inc()
 	} else {
-		c.metrics.routerChosenRandom.WithLabelValues(chosenRis.config.GRPCAddr, chosenRouterID.String()).Inc()
+		c.metrics.routerChosenFallback.WithLabelValues(chosenRis.config.GRPCAddr, chosenRouterID.String()).Inc()
 	}
 
 	if chosenRis == nil || chosenRouterID.IsUnspecified() {
