@@ -16,7 +16,7 @@ require (
 	github.com/eapache/go-resiliency v1.3.0
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gin-gonic/gin v1.9.1
-	github.com/glebarez/sqlite v1.8.0
+	github.com/glebarez/sqlite v1.9.0
 	github.com/go-playground/validator/v10 v10.14.1
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/golang/mock v1.6.0
@@ -69,7 +69,7 @@ require (
 	github.com/eapache/queue v1.1.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
-	github.com/glebarez/go-sqlite v1.21.1 // indirect
+	github.com/glebarez/go-sqlite v1.21.2 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.6.1 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
@@ -134,10 +134,10 @@ require (
 	golang.org/x/sync v0.2.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	gotest.tools/v3 v3.3.0 // indirect
-	modernc.org/libc v1.22.3 // indirect
+	modernc.org/libc v1.22.5 // indirect
 	modernc.org/mathutil v1.5.0 // indirect
 	modernc.org/memory v1.5.0 // indirect
-	modernc.org/sqlite v1.21.1 // indirect
+	modernc.org/sqlite v1.23.1 // indirect
 )
 
 replace (
