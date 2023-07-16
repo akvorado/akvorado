@@ -19,6 +19,28 @@ updates:
     labels:
       - dependencies
     open-pull-requests-limit: 10
+    groups:
+      vueuse:
+        patterns:
+          - "@vueuse/*"
+      vue:
+        patterns:
+          - "vue"
+          - "vue-*"
+      codemirror:
+        patterns:
+          - "@codemirror/*"
+          - "@lezer/*"
+      dev-dependencies:
+        patterns:
+          - "@volar/*"
+          - "@vitest/*"
+          - "vitest"
+          - "eslint*"
+          - "prettier*"
+      typing:
+        patterns:
+          - "@types/*"
   - package-ecosystem: gomod
     directory: /
     commit-message:
