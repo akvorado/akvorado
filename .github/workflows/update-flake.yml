@@ -17,6 +17,8 @@ jobs:
       group: update-flake-nix
       cancel-in-progress: true
     steps:
+      - name: Sleep a bit
+        run: sleep 120
       - uses: actions/checkout@v3
       - uses: cachix/install-nix-action@v22
       - name: Update flake.nix
