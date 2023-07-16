@@ -26,7 +26,8 @@ updates:
       vue:
         patterns:
           - "vue"
-          - "vue-*"
+          - "vue-router"
+          - "vue-tsc"
       codemirror:
         patterns:
           - "@codemirror/*"
