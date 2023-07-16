@@ -28,6 +28,9 @@ updates:
           - "vue"
           - "vue-router"
           - "vue-tsc"
+          - "@vue/*"
+        exclude-patterns:
+          - "@vue/eslint-*"
       codemirror:
         patterns:
           - "@codemirror/*"
