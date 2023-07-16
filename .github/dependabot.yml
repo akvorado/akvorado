@@ -37,6 +37,7 @@ updates:
           - "@lezer/*"
       dev-dependencies:
         patterns:
+          - "@vitejs/*"
           - "@vitest/*"
           - "@volar/*"
           - "@vue/eslint-*"
@@ -45,6 +46,7 @@ updates:
           - "patch-package"
           - "postcss"
           - "prettier*"
+          - "vite"
           - "vitest"
       tailwindcss:
         patterns:
