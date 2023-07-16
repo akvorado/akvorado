@@ -1,0 +1,14 @@
+---
+inlet:
+  bmp:
+    listen: 127.0.0.1:1179
+    collect-asns: true
+    collect-aspaths: false
+    keep: 1h
+  core:
+    asn-providers:
+      - flow
+      - bmp
+      - geoip
+    net-providers:
+      - bmp
