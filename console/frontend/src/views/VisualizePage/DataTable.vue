@@ -116,7 +116,7 @@ const highlight = (index: number | null) => {
     (() => {
       let count = 0;
       return (_, idx) => axis[idx] != displayedAxis.value || count++ < index;
-    })()
+    })(),
   ).length;
   emit("highlighted", originalIndex);
 };
@@ -221,6 +221,6 @@ const table = computed(
       };
     }
     return null;
-  }
+  },
 );
 </script>

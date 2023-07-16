@@ -146,7 +146,7 @@ const props = withDefaults(
   }>(),
   {
     loading: false,
-  }
+  },
 );
 const emit = defineEmits<{
   (e: "update:modelValue", value: typeof props.modelValue): void;
@@ -217,7 +217,7 @@ const options = computed((): InternalModelType => {
 const applyLabel = computed(() =>
   isEqual(options.value, omit(props.modelValue, ["start", "end"]))
     ? "Refresh"
-    : "Apply"
+    : "Apply",
 );
 const hasErrors = computed(
   () =>
@@ -225,7 +225,7 @@ const hasErrors = computed(
       timeRange.value?.errors ||
       dimensions.value?.errors ||
       filter.value?.errors
-    )
+    ),
 );
 
 const serverConfiguration = inject(ServerConfigKey)!;
@@ -281,7 +281,7 @@ watch(
       submitOptions(true);
     }
   },
-  { immediate: true, deep: true }
+  { immediate: true, deep: true },
 );
 </script>
 

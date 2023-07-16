@@ -75,8 +75,8 @@ const orderedColors = ["blue", "orange", "aqua", "green", "magenta"] as const;
 const darkPalette = [5, 6, 7, 8, 9, 10]
   .map((idx) =>
     orderedColors.map(
-      (colorName: keyof typeof colors) => colors[colorName][idx]
-    )
+      (colorName: keyof typeof colors) => colors[colorName][idx],
+    ),
   )
   .flat();
 const lightPalette = [5, 4, 3, 2, 1, 0]
@@ -90,13 +90,13 @@ const lightenColor = (color: string, amount: number) =>
       (
         "0" +
         Math.min(255, Math.max(0, parseInt(color, 16) + amount)).toString(16)
-      ).slice(-2)
+      ).slice(-2),
     );
 
 export function dataColor(
   index: number,
   alternate = false,
-  theme: "light" | "dark" = "light"
+  theme: "light" | "dark" = "light",
 ) {
   const palette = theme === "light" ? lightPalette : darkPalette;
   const correctedIndex = index % 2 === 0 ? index : index + orderedColors.length;
@@ -110,7 +110,7 @@ export function dataColor(
 export function dataColorGrey(
   index: number,
   alternate = false,
-  theme: "light" | "dark" = "light"
+  theme: "light" | "dark" = "light",
 ) {
   const palette =
     theme === "light"

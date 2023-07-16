@@ -114,7 +114,7 @@ type SavedFilter = {
 
 const selectedSavedFilter = ref<SavedFilter | null>(null);
 const { data: rawSavedFilters, execute: refreshSavedFilters } = useFetch(
-  `/api/v0/console/filter/saved`
+  `/api/v0/console/filter/saved`,
 ).json<{
   filters: Array<SavedFilter>;
 }>();
@@ -161,7 +161,7 @@ watch(
   (model) => {
     if (model) expression.value = model.expression;
   },
-  { immediate: true }
+  { immediate: true },
 );
 watch(
   () => ({ expression: expression.value, errors: !!error.value }),
@@ -170,7 +170,7 @@ watch(
       emit("update:modelValue", value);
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 // https://github.com/surmon-china/vue-codemirror/blob/59598ff72327ab6c5ee70a640edc9e2eb2518775/src/codemirror.ts#L52
@@ -198,7 +198,7 @@ const filterTheme = computed(() => [
       { tag: t.string, color: isDark.value ? "#ff0086" : "#880000" },
       { tag: t.comment, color: isDark.value ? "#7d8799" : "#4f4f4f" },
       { tag: t.operator, color: isDark.value ? "#00a3ff" : "#333399" },
-    ])
+    ]),
   ),
   /* Theme is in tailwind.css */
   EditorView.theme({}, { dark: isDark.value }),
@@ -274,7 +274,7 @@ onMounted(() => {
         });
       }
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   // Dynamic extensions
@@ -286,7 +286,7 @@ onMounted(() => {
       const exts = extensions.filter((e) => !!e);
       if (component.view !== null) dynamicExtensions(component.view, exts);
     },
-    { immediate: true }
+    { immediate: true },
   );
 });
 onBeforeUnmount(() => component.view?.destroy());

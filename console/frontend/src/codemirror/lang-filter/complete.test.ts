@@ -16,7 +16,7 @@ async function get(doc: string) {
     extensions: [filterLanguage(), filterCompletion(), autocompletion()],
   });
   return await state.languageDataAt<typeof complete>("autocomplete", cur)[0](
-    new CompletionContext(state, cur, true)
+    new CompletionContext(state, cur, true),
   );
 }
 
@@ -68,7 +68,7 @@ describe("filter completion", () => {
                         { label: "!=", detail: "operator", quoted: false },
                         { label: "IN", detail: "operator", quoted: false },
                       ].filter(({ label }) =>
-                        label.startsWith(body.prefix ?? "")
+                        label.startsWith(body.prefix ?? ""),
                       ),
                     };
                   default:
@@ -90,7 +90,7 @@ describe("filter completion", () => {
                           quoted: "true",
                         },
                       ].filter(({ label }) =>
-                        label.startsWith(body.prefix ?? "")
+                        label.startsWith(body.prefix ?? ""),
                       ),
                     };
 
@@ -122,7 +122,7 @@ describe("filter completion", () => {
             }
           },
         };
-      })
+      }),
     );
   });
 

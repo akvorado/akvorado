@@ -109,7 +109,7 @@ const decodeState = (serialized: string | undefined): ModelType => {
 const encodeState = (state: ModelType) => {
   if (state === null) return "";
   return LZString.compressToBase64(
-    JSON.stringify(state, Object.keys(state).sort())
+    JSON.stringify(state, Object.keys(state).sort()),
   );
 };
 watch(
@@ -120,7 +120,7 @@ watch(
       state.value = newState;
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 const encodedState = computed(() => encodeState(state.value));
 
@@ -133,7 +133,7 @@ const orderedJSONPayload = <T extends Record<string, any>>(input: T): T => {
     .sort()
     .reduce(
       (o, k) => ((o[k] = input[k]), o),
-      {} as { [key: string]: any }
+      {} as { [key: string]: any },
     ) as T;
 };
 const jsonPayload = computed(
@@ -163,7 +163,7 @@ const jsonPayload = computed(
       };
       return orderedJSONPayload(input);
     }
-  }
+  },
 );
 const request = ref<ModelType>(null); // Same as state, but once request is successful
 const { data, execute, isFetching, aborted, abort, canAbort, error } = useFetch(
@@ -191,7 +191,7 @@ const { data, execute, isFetching, aborted, abort, canAbort, error } = useFetch(
       };
     },
     async afterFetch(
-      ctx: AfterFetchContext<GraphLineHandlerOutput | GraphSankeyHandlerOutput>
+      ctx: AfterFetchContext<GraphLineHandlerOutput | GraphSankeyHandlerOutput>,
     ) {
       // Update data. Not done in a computed value as we want to keep the
       // previous data in case of errors.
@@ -199,7 +199,7 @@ const { data, execute, isFetching, aborted, abort, canAbort, error } = useFetch(
       if (data === null || !state.value) return ctx;
       console.groupCollapsed("SQL query");
       console.info(
-        response.headers.get("x-sql-query")?.replace(/ {2}( )*/g, "\n$1")
+        response.headers.get("x-sql-query")?.replace(/ {2}( )*/g, "\n$1"),
       );
       console.groupEnd();
       if (state.value.graphType === "sankey") {
@@ -239,7 +239,7 @@ const { data, execute, isFetching, aborted, abort, canAbort, error } = useFetch(
       return ctx;
     },
     immediate: false,
-  }
+  },
 )
   .post(jsonPayload, "json")
   .json<

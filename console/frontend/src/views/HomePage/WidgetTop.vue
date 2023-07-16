@@ -44,7 +44,7 @@ type ECOption = ComposeOption<
 >;
 
 const url = computed(
-  () => `/api/v0/console/widget/top/${props.what}?${props.refresh}`
+  () => `/api/v0/console/widget/top/${props.what}?${props.refresh}`,
 );
 const { data } = useFetch(url, { refetch: true })
   .get()
@@ -98,9 +98,9 @@ const options = computed(
                     100 -
                       (data.value?.top || []).reduce(
                         (c, n) => c + n.percent,
-                        0
+                        0,
                       ),
-                    0
+                    0,
                   ),
                 },
               ].filter(({ value }) => value > 0.05),
@@ -115,6 +115,6 @@ const options = computed(
         },
       },
     ],
-  })
+  }),
 );
 </script>

@@ -10,13 +10,13 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 const caseFile = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
-  "grammar.test.txt"
+  "grammar.test.txt",
 );
 
 describe("filter parsing", () => {
   for (const { name, run } of fileTests(
     fs.readFileSync(caseFile, "utf8"),
-    "grammar.test.txt"
+    "grammar.test.txt",
   ))
     it(name, () => run(parser));
 });

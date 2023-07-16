@@ -18,7 +18,7 @@ const props = withDefaults(
   }>(),
   {
     kind: "error",
-  }
+  },
 );
 
 const classes = computed<string>(() => {

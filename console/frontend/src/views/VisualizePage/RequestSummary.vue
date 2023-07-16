@@ -67,7 +67,7 @@ import { TitleKey } from "@/components/TitleProvider.vue";
 const props = defineProps<{ request: ModelType }>();
 
 const start = computed(() =>
-  props.request ? SugarDate(props.request.start).long() : null
+  props.request ? SugarDate(props.request.start).long() : null,
 );
 const end = computed(() => {
   if (props.request === null) return null;
@@ -75,7 +75,7 @@ const end = computed(() => {
     SugarDate(props.request.start).toDateString().raw ===
       SugarDate(props.request.end).toDateString().raw
       ? "%X"
-      : "{long}"
+      : "{long}",
   );
 });
 
@@ -90,7 +90,7 @@ const computedTitle = computed(() =>
     end.value,
   ]
     .filter((e) => !!e)
-    .join(" · ")
+    .join(" · "),
 );
 watch(computedTitle, (t) => title.set(t));
 </script>

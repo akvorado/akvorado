@@ -34,7 +34,7 @@ export const linterSource = async (view: EditorView) => {
           severity: "error",
           message: message,
         };
-      }
+      },
     ) || [];
   return diagnostic;
 };

@@ -55,6 +55,6 @@ withDefaults(
     size: "normal",
     disabled: false,
     floading: false,
-  }
+  },
 );
 </script>

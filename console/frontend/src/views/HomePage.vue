@@ -58,7 +58,7 @@ import { ServerConfigKey } from "@/components/ServerConfigProvider.vue";
 
 const serverConfiguration = inject(ServerConfigKey)!;
 const topWidgets = computed(
-  () => serverConfiguration.value?.homepageTopWidgets ?? []
+  () => serverConfiguration.value?.homepageTopWidgets ?? [],
 );
 const widgetTitle = (name: string) =>
   ({
@@ -71,7 +71,7 @@ const widgetTitle = (name: string) =>
     etype: "IPv4/IPv6",
     "src-port": "Top source ports",
     "dst-port": "Top destination ports",
-  }[name] ?? "???");
+  })[name] ?? "???";
 
 const refreshOften = useInterval(10_000);
 const refreshOccasionally = useInterval(60_000);

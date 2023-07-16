@@ -44,7 +44,7 @@ withDefaults(
   {
     label: "",
     error: "",
-  }
+  },
 );
 
 const id = uuidv4();

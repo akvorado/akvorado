@@ -33,7 +33,7 @@ watch(
       execute(false);
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 provide(UserKey, {

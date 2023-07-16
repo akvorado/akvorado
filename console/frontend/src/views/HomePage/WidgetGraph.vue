@@ -36,7 +36,7 @@ const props = withDefaults(
   }>(),
   {
     refresh: 0,
-  }
+  },
 );
 
 type ECOption = ComposeOption<
@@ -95,6 +95,6 @@ const option = computed(
             : data.value.data.map(({ t, gbps }) => [t, gbps]).slice(0, -1),
       },
     ],
-  })
+  }),
 );
 </script>

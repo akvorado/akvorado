@@ -24,7 +24,7 @@ export const complete = async (ctx: CompletionContext) => {
   // Remote completion
   const remote = async (
     payload: { what: string; column?: string; prefix?: string },
-    transform = (x: { label: string; detail?: string }) => x
+    transform = (x: { label: string; detail?: string }) => x,
   ) => {
     const response = await fetch("/api/v0/console/filter/complete", {
       method: "POST",
@@ -39,7 +39,7 @@ export const complete = async (ctx: CompletionContext) => {
         transform({
           label: quoted ? `"${label}"` : label,
           detail,
-        })
+        }),
       ),
     ];
   };
@@ -107,7 +107,7 @@ export const complete = async (ctx: CompletionContext) => {
     if (c?.name === "Column") {
       let prefix: string | undefined = ctx.state.sliceDoc(
         nodeBefore.from,
-        nodeBefore.to
+        nodeBefore.to,
       );
       completion.from = nodeBefore.from;
       completion.to = nodeBefore.to;
@@ -130,7 +130,7 @@ export const complete = async (ctx: CompletionContext) => {
         (o) =>
           nodeAncestor(nodeBefore, ["ListOfValues", "ValueLParen"])
             ? { ...o, apply: `${o.label},` }
-            : o
+            : o,
       );
     }
   } else if (nodeBefore.name === "Filter" || nodeBefore.name === "⚠") {

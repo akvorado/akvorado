@@ -93,7 +93,7 @@ const graph = computed((): ECOption => {
             // Unfortunately, eCharts does not seem to make it easy
             // to inverse an axis and put the result below. Therefore,
             // we use negative values for the second axis.
-            (row, rowIdx) => row[timeIdx] * (data.axis[rowIdx] % 2 ? 1 : -1)
+            (row, rowIdx) => row[timeIdx] * (data.axis[rowIdx] % 2 ? 1 : -1),
           ),
         ];
         if (data.graphType === "stacked100") {
@@ -101,11 +101,11 @@ const graph = computed((): ECOption => {
           const [, ...values] = result;
           const positiveSum = values.reduce(
             (prev, cur) => (cur > 0 ? prev + cur : prev),
-            0
+            0,
           );
           const negativeSum = values.reduce(
             (prev, cur) => (cur < 0 ? prev + cur : prev),
-            0
+            0,
           );
           result = [
             t,
@@ -114,7 +114,7 @@ const graph = computed((): ECOption => {
                 ? v / positiveSum
                 : v < 0 && negativeSum < 0
                 ? -v / negativeSum
-                : v
+                : v,
             ),
           ];
         }
@@ -210,13 +210,13 @@ const graph = computed((): ECOption => {
               `<tr>`,
               `<td>${row.marker} ${row.seriesName}</td>`,
               `<td class="pl-2">${data.bidirectional ? "↑" : ""}<b>${formatXps(
-                row.up
+                row.up,
               )}</b></td>`,
               data.bidirectional
                 ? `<td class="pl-2">↓<b>${formatXps(row.down)}</b></td>`
                 : "",
               `</tr>`,
-            ].join("")
+            ].join(""),
           )
           .join("");
         return `${
@@ -324,7 +324,7 @@ const graph = computed((): ECOption => {
   }
   if (data.graphType === "grid") {
     const uniqRows = uniqWith(data.rows, isEqual).filter((row) =>
-        row.some((name) => name !== "Other")
+        row.some((name) => name !== "Other"),
       ),
       uniqRowIndex = (row: string[]) =>
         findIndex(uniqRows, (orow) => isEqual(row, orow)),
@@ -338,9 +338,9 @@ const graph = computed((): ECOption => {
             const [, ...cdr] = row;
             return fn.apply(
               null,
-              cdr.filter((_, idx) => !otherIndexes.includes(idx + 1))
+              cdr.filter((_, idx) => !otherIndexes.includes(idx + 1)),
             );
-          })
+          }),
         ),
       maxY = somethingY(Math.max),
       minY = somethingY(Math.min);
@@ -454,7 +454,7 @@ const updateTimeRange = (evt: BrushModel) => {
     return;
   }
   const [start, end] = evt.areas[0].coordRange.map(
-    (t) => new Date(t as number)
+    (t) => new Date(t as number),
   );
   chartComponent.value.dispatchAction({
     type: "brush",
@@ -472,6 +472,6 @@ watch(
       type: "highlight",
       seriesIndex: index,
     });
-  }
+  },
 );
 </script>

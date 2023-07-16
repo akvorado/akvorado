@@ -54,7 +54,7 @@ const option = computed((): ECOption => {
             marker,
             `<span style="display:inline-block;margin-left:1em;">${nodeData.name}</span>`,
             `<span style="display:inline-block;margin-left:2em;font-weight:bold;">${formatXps(
-              value.valueOf() as number
+              value.valueOf() as number,
             )}`,
           ].join("");
         } else if (dataType === "edge") {
@@ -69,7 +69,7 @@ const option = computed((): ECOption => {
             ? [
                 `${source} → ${target}`,
                 `<span style="display:inline-block;margin-left:2em;font-weight:bold;">${formatXps(
-                  value.valueOf() as number
+                  value.valueOf() as number,
                 )}`,
               ].join("")
             : "";

@@ -88,7 +88,7 @@ const props = withDefaults(
   }>(),
   {
     minDimensions: 0,
-  }
+  },
 );
 const emit = defineEmits<{
   (e: "update:modelValue", value: typeof props.modelValue): void;
@@ -121,8 +121,8 @@ const canAggregate = computed(
   () =>
     intersection(
       selectedDimensions.value.map((dim) => dim.name),
-      serverConfiguration.value?.truncatable || []
-    ).length > 0
+      serverConfiguration.value?.truncatable || [],
+    ).length > 0,
 );
 const truncate4 = ref("32");
 const truncate4Error = computed(() => {
@@ -145,24 +145,25 @@ const hasErrors = computed(
     !!limitError.value ||
     !!dimensionsError.value ||
     !!truncate4Error.value ||
-    !!truncate6Error.value
+    !!truncate6Error.value,
 );
 
-const dimensions = computed(() =>
-  serverConfiguration.value?.dimensions.map((v, idx) => ({
-    id: idx + 1,
-    name: v,
-    color: dataColor(
-      ["Exporter", "Src", "Dst", "In", "Out", ""]
-        .map((p) => v.startsWith(p))
-        .indexOf(true)
-    ),
-  }))
+const dimensions = computed(
+  () =>
+    serverConfiguration.value?.dimensions.map((v, idx) => ({
+      id: idx + 1,
+      name: v,
+      color: dataColor(
+        ["Exporter", "Src", "Dst", "In", "Out", ""]
+          .map((p) => v.startsWith(p))
+          .indexOf(true),
+      ),
+    })),
 );
 
 const removeDimension = (dimension: (typeof dimensions.value)[0]) => {
   selectedDimensions.value = selectedDimensions.value.filter(
-    (d) => d !== dimension
+    (d) => d !== dimension,
   );
 };
 
@@ -179,7 +180,7 @@ watch(
         .map((name) => dimensions.find((d) => d.name === name))
         .filter((d): d is (typeof dimensions)[0] => !!d);
   },
-  { immediate: true, deep: true }
+  { immediate: true, deep: true },
 );
 watch(
   [selectedDimensions, limit, truncate4, truncate6, hasErrors] as const,
@@ -199,7 +200,7 @@ watch(
     ) {
       emit("update:modelValue", updated);
     }
-  }
+  },
 );
 </script>
 

@@ -39,7 +39,7 @@ const parsedTimes = computed(() => ({
   end: SugarDate.create(endTime.value),
 }));
 const startTimeError = computed(() =>
-  isNaN(parsedTimes.value.start.valueOf()) ? "Invalid date" : ""
+  isNaN(parsedTimes.value.start.valueOf()) ? "Invalid date" : "",
 );
 const endTimeError = computed(
   () =>
@@ -47,10 +47,10 @@ const endTimeError = computed(
     (!isNaN(parsedTimes.value.start.valueOf()) &&
       parsedTimes.value.start > parsedTimes.value.end &&
       "End date should be before start date") ||
-    ""
+    "",
 );
 const hasErrors = computed(
-  () => !!(startTimeError.value || endTimeError.value)
+  () => !!(startTimeError.value || endTimeError.value),
 );
 
 const presets = [
@@ -127,7 +127,7 @@ watch(
       endTime.value = m.end;
     }
   },
-  { immediate: true, deep: true }
+  { immediate: true, deep: true },
 );
 watch(
   [startTime, endTime, hasErrors] as const,
@@ -149,7 +149,7 @@ watch(
       emit("update:modelValue", newModel);
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 </script>
 

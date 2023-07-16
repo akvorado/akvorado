@@ -100,7 +100,7 @@ const errorMessage = computed(
       data.value &&
       "message" in data.value &&
       (data.value.message || `Server returned an error: ${error.value}`)) ||
-    ""
+    "",
 );
 const markdown = computed(
   () =>
@@ -108,11 +108,11 @@ const markdown = computed(
       data.value &&
       "markdown" in data.value &&
       data.value.markdown) ||
-    ""
+    "",
 );
 const toc = computed(
   () =>
-    (!error.value && data.value && "toc" in data.value && data.value.toc) || []
+    (!error.value && data.value && "toc" in data.value && data.value.toc) || [],
 );
 const activeDocument = computed(() => props.id || null);
 const activeSlug = useRouteHash();
@@ -133,7 +133,7 @@ watch([markdown, activeSlug] as const, async () => {
     (activeSlug.value &&
       (
         document.querySelector(
-          `#${CSS.escape(activeSlug.value.slice(1))}`
+          `#${CSS.escape(activeSlug.value.slice(1))}`,
         ) as HTMLElement | null
       )?.offsetTop) ||
     0;

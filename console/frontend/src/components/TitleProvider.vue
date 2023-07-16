@@ -21,7 +21,7 @@ const documentTitle = ref<string | null>(null);
 const title = computed(() =>
   [applicationName, viewName.value, documentTitle.value]
     .filter((k) => !!k)
-    .join(" | ")
+    .join(" | "),
 );
 useTitle(title);
 useRouter().beforeEach((to, from) => {

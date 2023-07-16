@@ -7,7 +7,9 @@
     :class="$attrs['class']"
     :multiple="multiple"
     :model-value="modelValue"
-    @update:model-value="(selected: any) => $emit('update:modelValue', selected)"
+    @update:model-value="
+      (selected: any) => $emit('update:modelValue', selected)
+    "
   >
     <div class="relative">
       <InputBase v-slot="{ id, childClass }" v-bind="otherAttrs" :error="error">
@@ -118,7 +120,7 @@ const props = withDefaults(
     filter: null,
     error: "",
     multiple: false,
-  }
+  },
 );
 defineEmits<{
   (e: "update:modelValue", value: typeof props.modelValue): void;
@@ -142,7 +144,7 @@ const component = computed(() =>
         Options: ComboboxOptions,
         Option: ComboboxOption,
         Input: ComboboxInput,
-      }
+      },
 );
 const filteredItems = computed(() => {
   if (props.filter === null) return props.items;
@@ -150,7 +152,7 @@ const filteredItems = computed(() => {
     query.value
       .toLowerCase()
       .split(/\W+/)
-      .every((w) => `${it[props.filter!]}`.toLowerCase().includes(w))
+      .every((w) => `${it[props.filter!]}`.toLowerCase().includes(w)),
   );
 });
 const otherAttrs = computed(() => {

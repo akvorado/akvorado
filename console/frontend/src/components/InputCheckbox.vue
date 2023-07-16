@@ -12,7 +12,7 @@
         @change="
           $emit(
             'update:modelValue',
-            ($event.target as HTMLInputElement).checked
+            ($event.target as HTMLInputElement).checked,
           )
         "
       />

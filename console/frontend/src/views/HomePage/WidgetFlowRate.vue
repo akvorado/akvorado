@@ -22,7 +22,7 @@ const props = withDefaults(
   }>(),
   {
     refresh: 0,
-  }
+  },
 );
 
 const url = computed(() => `/api/v0/console/widget/flow-rate?${props.refresh}`);
