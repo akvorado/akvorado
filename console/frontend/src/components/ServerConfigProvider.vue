@@ -6,7 +6,7 @@
 </template>
 
 <script lang="ts" setup>
-import { provide, readonly } from "vue";
+import { provide, shallowReadonly } from "vue";
 import { useFetch } from "@vueuse/core";
 import type { graphTypes } from "../views/VisualizePage/graphtypes";
 
@@ -14,7 +14,7 @@ const { data } = useFetch("/api/v0/console/configuration")
   .get()
   .json<ServerConfig>();
 
-provide(ServerConfigKey, readonly(data));
+provide(ServerConfigKey, shallowReadonly(data));
 </script>
 
 <script lang="ts">
@@ -36,6 +36,6 @@ type ServerConfig = {
   homepageTopWidgets: string[];
 };
 
-export const ServerConfigKey: InjectionKey<Readonly<Ref<ServerConfig>>> =
+export const ServerConfigKey: InjectionKey<Readonly<Ref<ServerConfig | null>>> =
   Symbol();
 </script>

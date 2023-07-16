@@ -6,7 +6,7 @@
 </template>
 
 <script lang="ts" setup>
-import { provide, readonly, watch } from "vue";
+import { provide, shallowReadonly, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useFetch } from "@vueuse/core";
 
@@ -37,7 +37,7 @@ watch(
 );
 
 provide(UserKey, {
-  user: readonly(data),
+  user: shallowReadonly(data),
 });
 </script>
 
@@ -51,6 +51,6 @@ export type UserInfo = {
   "logout-url"?: string;
 };
 export const UserKey: InjectionKey<{
-  user: Readonly<Ref<UserInfo>>;
+  user: Readonly<Ref<UserInfo | null>>;
 }> = Symbol();
 </script>

@@ -158,7 +158,7 @@ const dimensions = computed(
           .map((p) => v.startsWith(p))
           .indexOf(true),
       ),
-    })),
+    })) || [],
 );
 
 const removeDimension = (dimension: (typeof dimensions.value)[0]) => {

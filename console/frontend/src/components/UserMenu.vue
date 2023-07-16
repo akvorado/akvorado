@@ -24,16 +24,16 @@
           <span
             class="block whitespace-nowrap text-sm text-gray-900 dark:text-white"
           >
-            {{ user.name || user.email || user.login }}
+            {{ user?.name || user?.email || user?.login || "Guest" }}
           </span>
           <span
-            v-if="user.name && user.email"
+            v-if="user?.name && user?.email"
             class="block truncate whitespace-nowrap text-sm font-medium text-gray-500 dark:text-gray-400"
           >
             {{ user.email }}
           </span>
         </div>
-        <ul v-if="user['logout-url']" class="py-1">
+        <ul v-if="user?.['logout-url']" class="py-1">
           <li>
             <a
               :href="user['logout-url']"
