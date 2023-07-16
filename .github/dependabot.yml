@@ -34,12 +34,20 @@ updates:
           - "@lezer/*"
       dev-dependencies:
         patterns:
-          - "@volar/*"
           - "@vitest/*"
-          - "vitest"
-          - "eslint*"
+          - "@volar/*"
           - "@vue/eslint-*"
+          - "autoprefixer"
+          - "eslint*"
+          - "patch-package"
+          - "postcss"
           - "prettier*"
+          - "vitest"
+      tailwindcss:
+        patterns:
+          - "tailwindcss"
+          - "@tailwindcss/*"
+          - "@headlessui/tailwindcss"
       typing:
         patterns:
           - "@types/*"
