@@ -4,42 +4,38 @@
 package bmp
 
 import (
+	"context"
 	"net/netip"
 
 	"github.com/kentik/patricia"
-	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
+
+	"akvorado/inlet/routing/provider"
 )
 
 // LookupResult is the result of the Lookup() function.
-type LookupResult struct {
-	ASN              uint32
-	ASPath           []uint32
-	Communities      []uint32
-	LargeCommunities []bgp.LargeCommunity
-	NetMask          uint8
-}
+type LookupResult = provider.LookupResult
 
 // Lookup lookups a route for the provided IP address. It favors the
 // provided next hop if provided. This is somewhat approximate because
 // we use the best route we have, while the exporter may not have this
 // best route available. The returned result should not be modified!
-func (c *Component) Lookup(ip netip.Addr, nh netip.Addr) LookupResult {
-	if !c.config.CollectASNs && !c.config.CollectASPaths && !c.config.CollectCommunities {
+func (p *Provider) Lookup(_ context.Context, ip netip.Addr, nh netip.Addr) LookupResult {
+	if !p.config.CollectASNs && !p.config.CollectASPaths && !p.config.CollectCommunities {
 		return LookupResult{}
 	}
 	v6 := patricia.NewIPv6Address(ip.AsSlice(), 128)
 
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	p.mu.RLock()
+	defer p.mu.RUnlock()
 
 	bestFound := false
 	found := false
-	_, routes := c.rib.tree.FindDeepestTagsWithFilter(v6, func(route route) bool {
+	_, routes := p.rib.tree.FindDeepestTagsWithFilter(v6, func(route route) bool {
 		if bestFound {
 			// We already have the best route, skip remaining routes
 			return false
 		}
-		if c.rib.nextHops.Get(route.nextHop) == nextHop(nh) {
+		if p.rib.nextHops.Get(route.nextHop) == nextHop(nh) {
 			// Exact match found, use it and don't search further
 			bestFound = true
 			return true
@@ -55,7 +51,7 @@ func (c *Component) Lookup(ip netip.Addr, nh netip.Addr) LookupResult {
 	if len(routes) == 0 {
 		return LookupResult{}
 	}
-	attributes := c.rib.rtas.Get(routes[len(routes)-1].attributes)
+	attributes := p.rib.rtas.Get(routes[len(routes)-1].attributes)
 	// prefix len is v6 coded in the bmp rib. We need to substract 96 if it's a v4 prefix
 	plen := attributes.plen
 	if ip.Is4() || ip.Is4In6() {

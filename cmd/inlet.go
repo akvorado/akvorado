@@ -16,13 +16,14 @@ import (
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
-	"akvorado/inlet/bmp"
 	"akvorado/inlet/core"
 	"akvorado/inlet/flow"
 	"akvorado/inlet/geoip"
 	"akvorado/inlet/kafka"
 	"akvorado/inlet/metadata"
 	"akvorado/inlet/metadata/provider/snmp"
+	"akvorado/inlet/routing"
+	"akvorado/inlet/routing/provider/bmp"
 )
 
 // InletConfiguration represents the configuration file for the inlet command.
@@ -31,7 +32,7 @@ type InletConfiguration struct {
 	HTTP      httpserver.Configuration
 	Flow      flow.Configuration
 	Metadata  metadata.Configuration
-	BMP       bmp.Configuration
+	Routing   routing.Configuration
 	GeoIP     geoip.Configuration
 	Kafka     kafka.Configuration
 	Core      core.Configuration
@@ -45,13 +46,14 @@ func (c *InletConfiguration) Reset() {
 		Reporting: reporter.DefaultConfiguration(),
 		Flow:      flow.DefaultConfiguration(),
 		Metadata:  metadata.DefaultConfiguration(),
-		BMP:       bmp.DefaultConfiguration(),
+		Routing:   routing.DefaultConfiguration(),
 		GeoIP:     geoip.DefaultConfiguration(),
 		Kafka:     kafka.DefaultConfiguration(),
 		Core:      core.DefaultConfiguration(),
 		Schema:    schema.DefaultConfiguration(),
 	}
 	c.Metadata.Provider.Config = snmp.DefaultConfiguration()
+	c.Routing.Provider.Config = bmp.DefaultConfiguration()
 }
 
 type inletOptions struct {
@@ -120,13 +122,13 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 		Daemon: daemonComponent,
 	})
 	if err != nil {
-		return fmt.Errorf("unable to initialize METADATA component: %w", err)
+		return fmt.Errorf("unable to initialize metadata component: %w", err)
 	}
-	bmpComponent, err := bmp.New(r, config.BMP, bmp.Dependencies{
+	routingComponent, err := routing.New(r, config.Routing, routing.Dependencies{
 		Daemon: daemonComponent,
 	})
 	if err != nil {
-		return fmt.Errorf("unable to initialize BMP component: %w", err)
+		return fmt.Errorf("unable to initialize routing component: %w", err)
 	}
 	geoipComponent, err := geoip.New(r, config.GeoIP, geoip.Dependencies{
 		Daemon: daemonComponent,
@@ -145,7 +147,7 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 		Daemon:   daemonComponent,
 		Flow:     flowComponent,
 		Metadata: metadataComponent,
-		BMP:      bmpComponent,
+		Routing:  routingComponent,
 		GeoIP:    geoipComponent,
 		Kafka:    kafkaComponent,
 		HTTP:     httpComponent,
@@ -168,7 +170,7 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 	components := []interface{}{
 		httpComponent,
 		metadataComponent,
-		bmpComponent,
+		routingComponent,
 		geoipComponent,
 		kafkaComponent,
 		coreComponent,

@@ -3,7 +3,11 @@
 
 package bmp
 
-import "time"
+import (
+	"time"
+
+	"akvorado/inlet/routing/provider"
+)
 
 // Configuration describes the configuration for the BMP server.
 type Configuration struct {
@@ -33,7 +37,7 @@ type Configuration struct {
 }
 
 // DefaultConfiguration represents the default configuration for the BMP server
-func DefaultConfiguration() Configuration {
+func DefaultConfiguration() provider.Configuration {
 	return Configuration{
 		Listen:                      ":10179",
 		CollectASNs:                 true,

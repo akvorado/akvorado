@@ -112,16 +112,20 @@ Without configuration, *Akvorado* will listen for incoming
 Netflow/IPFIX and sFlow flows on a random port (check the logs to know
 which one).
 
-### BMP
+### Routing
 
-The BMP component handles incoming BMP connections from routers. The
-information received can be used to fetch source and destination AS
-numbers, as well as the AS paths and communities. Not all exporters
-need to send their tables with BMP. *Akvorado* will try to select the
-best route using the next hop advertised in the flow and fallback to
-any next hop if not found.
+The routing component optionally fetches source and destination AS numbers, as
+well as the AS paths and communities. Not all exporters need to provide this
+information. Currently, the only available provider is BMP. *Akvorado* will try
+to select the best route using the next hop advertised in the flow and fallback
+to any next hop if not found.
 
-The following keys are accepted:
+The component accepts only a `provider` key, which defines the provider
+configuration. Inside the provider configuration, the provider type is defined
+by the `type` key (only `bmp` is currently supported). The remaining keys are
+specific to the provider.
+
+For the BMP provider, the following keys are accepted:
 
 - `listen` specifies the IP address and port to listen for incoming connections (default port is 10179)
 - `rds` specifies a list of route distinguisher to accept (0 is meant
@@ -140,6 +144,18 @@ space used in ClickHouse.
 
 *Akvorado* supports receiving the AdjRIB-in, with or without
 filtering. It may also work with a LocRIB.
+
+For example:
+
+```yaml
+routing:
+  provider:
+    type: bmp
+    listen: 0.0.0.0:10179
+    collect-asns: true
+    collect-aspaths: true
+    collect-communities: false
+```
 
 ### Kafka
 
@@ -196,13 +212,13 @@ The following configuration keys are accepted:
   would also accept a single value).
 - `asn-providers` defines the source list for AS numbers. The
   available sources are `flow`, `flow-except-private` (use information
-  from flow except if the ASN is private), `geoip`, `bmp`, and
-  `bmp-except-private`. The default value is `flow`, `bmp`, and
+  from flow except if the ASN is private), `geoip`, `routing`, and
+  `routing-except-private`. The default value is `flow`, `routing`, and
   `geoip`.
 - `net-providers` defines the sources for prefix lengths. `flow` uses the value
-  provided by the flow message (if any), while `bmp` looks it up using the BMP
+  provided by the flow message (if any), while `routing` looks it up using the BMP
   component. If multiple sources are provided, the value of the first source
-  providing a non-default route is taken. The default value is `flow` and `bmp`.
+  providing a non-default route is taken. The default value is `flow` and `routing`.
 
 Classifier rules are written using [expr][].
 

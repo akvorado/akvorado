@@ -71,7 +71,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 				ASNProviders: []ASNProvider{ASNProviderFlowExceptPrivate, ASNProviderGeoIP, ASNProviderFlow},
 			},
 		}, {
-			Description: "net-providers",
+			Description: "net-providers with bmp",
 			Initial:     func() interface{} { return Configuration{} },
 			Configuration: func() interface{} {
 				return gin.H{
@@ -79,7 +79,29 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 				}
 			},
 			Expected: Configuration{
-				NetProviders: []NetProvider{NetProviderFlow, NetProviderBMP},
+				NetProviders: []NetProvider{NetProviderFlow, NetProviderRouting},
+			},
+		}, {
+			Description: "asn-providers with bmp",
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"asn-providers": []string{"flow", "bmp", "bmp-except-private"},
+				}
+			},
+			Expected: Configuration{
+				ASNProviders: []ASNProvider{ASNProviderFlow, ASNProviderRouting, ASNProviderRoutingExceptPrivate},
+			},
+		}, {
+			Description: "net-providers",
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"net-providers": []string{"flow", "routing"},
+				}
+			},
+			Expected: Configuration{
+				NetProviders: []NetProvider{NetProviderFlow, NetProviderRouting},
 			},
 		},
 	})

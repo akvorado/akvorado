@@ -4,6 +4,7 @@
 package core
 
 import (
+	"context"
 	"net/netip"
 	"strconv"
 	"time"
@@ -94,26 +95,27 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 		return true
 	}
 
-	sourceBMP := c.d.BMP.Lookup(flow.SrcAddr, netip.Addr{})
-	destBMP := c.d.BMP.Lookup(flow.DstAddr, flow.NextHop)
+	ctx := c.t.Context(context.Background())
+	sourceRouting := c.d.Routing.Lookup(ctx, flow.SrcAddr, netip.Addr{})
+	destRouting := c.d.Routing.Lookup(ctx, flow.DstAddr, flow.NextHop)
 	// set prefix len according to user config
-	flow.SrcNetMask = c.getNetMask(flow.SrcNetMask, sourceBMP.NetMask)
-	flow.DstNetMask = c.getNetMask(flow.DstNetMask, destBMP.NetMask)
+	flow.SrcNetMask = c.getNetMask(flow.SrcNetMask, sourceRouting.NetMask)
+	flow.DstNetMask = c.getNetMask(flow.DstNetMask, destRouting.NetMask)
 
 	// set asns according to user config
-	flow.SrcAS = c.getASNumber(flow.SrcAddr, flow.SrcAS, sourceBMP.ASN)
-	flow.DstAS = c.getASNumber(flow.DstAddr, flow.DstAS, destBMP.ASN)
+	flow.SrcAS = c.getASNumber(flow.SrcAddr, flow.SrcAS, sourceRouting.ASN)
+	flow.DstAS = c.getASNumber(flow.DstAddr, flow.DstAS, destRouting.ASN)
 	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnSrcCountry, []byte(c.d.GeoIP.LookupCountry(flow.SrcAddr)))
 	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnDstCountry, []byte(c.d.GeoIP.LookupCountry(flow.DstAddr)))
-	for _, comm := range destBMP.Communities {
+	for _, comm := range destRouting.Communities {
 		c.d.Schema.ProtobufAppendVarint(flow, schema.ColumnDstCommunities, uint64(comm))
 	}
 	if !flow.GotASPath {
-		for _, asn := range destBMP.ASPath {
+		for _, asn := range destRouting.ASPath {
 			c.d.Schema.ProtobufAppendVarint(flow, schema.ColumnDstASPath, uint64(asn))
 		}
 	}
-	for _, comm := range destBMP.LargeCommunities {
+	for _, comm := range destRouting.LargeCommunities {
 		c.d.Schema.ProtobufAppendVarintForce(flow,
 			schema.ColumnDstLargeCommunitiesASN, uint64(comm.ASN))
 		c.d.Schema.ProtobufAppendVarintForce(flow,
@@ -145,9 +147,9 @@ func (c *Component) getASNumber(flowAddr netip.Addr, flowAS, bmpAS uint32) (asn 
 			if isPrivateAS(asn) {
 				asn = 0
 			}
-		case ASNProviderBMP:
+		case ASNProviderRouting:
 			asn = bmpAS
-		case ASNProviderBMPExceptPrivate:
+		case ASNProviderRoutingExceptPrivate:
 			asn = bmpAS
 			if isPrivateAS(asn) {
 				asn = 0
@@ -166,7 +168,7 @@ func (c *Component) getNetMask(flowMask, bmpMask uint8) (mask uint8) {
 		switch provider {
 		case NetProviderFlow:
 			mask = flowMask
-		case NetProviderBMP:
+		case NetProviderRouting:
 			mask = bmpMask
 		}
 	}

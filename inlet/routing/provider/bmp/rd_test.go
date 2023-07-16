@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"akvorado/common/helpers"
-	"akvorado/inlet/bmp"
+	"akvorado/inlet/routing/provider/bmp"
 
 	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
 )

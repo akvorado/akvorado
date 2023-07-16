@@ -22,11 +22,11 @@ import (
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
-	"akvorado/inlet/bmp"
 	"akvorado/inlet/flow"
 	"akvorado/inlet/geoip"
 	"akvorado/inlet/kafka"
 	"akvorado/inlet/metadata"
+	"akvorado/inlet/routing"
 )
 
 func TestCore(t *testing.T) {
@@ -40,8 +40,8 @@ func TestCore(t *testing.T) {
 	geoipComponent := geoip.NewMock(t, r)
 	kafkaComponent, kafkaProducer := kafka.NewMock(t, r, kafka.DefaultConfiguration())
 	httpComponent := httpserver.NewMock(t, r)
-	bmpComponent, _ := bmp.NewMock(t, r, bmp.DefaultConfiguration())
-	bmpComponent.PopulateRIB(t)
+	routingComponent := routing.NewMock(t, r)
+	routingComponent.PopulateRIB(t)
 
 	// Instantiate and start core
 	sch := schema.NewMock(t)
@@ -52,7 +52,7 @@ func TestCore(t *testing.T) {
 		GeoIP:    geoipComponent,
 		Kafka:    kafkaComponent,
 		HTTP:     httpComponent,
-		BMP:      bmpComponent,
+		Routing:  routingComponent,
 		Schema:   sch,
 	})
 	if err != nil {

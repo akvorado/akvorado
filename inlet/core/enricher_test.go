@@ -18,11 +18,11 @@ import (
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
-	"akvorado/inlet/bmp"
 	"akvorado/inlet/flow"
 	"akvorado/inlet/geoip"
 	"akvorado/inlet/kafka"
 	"akvorado/inlet/metadata"
+	"akvorado/inlet/routing"
 )
 
 func TestEnrich(t *testing.T) {
@@ -453,7 +453,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				},
 			},
 		}, {
-			Name:          "use data from BMP",
+			Name:          "use data from routing",
 			Configuration: gin.H{},
 			InputFlow: func() *schema.FlowMessage {
 				return &schema.FlowMessage{
@@ -503,8 +503,8 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 			geoipComponent := geoip.NewMock(t, r)
 			kafkaComponent, kafkaProducer := kafka.NewMock(t, r, kafka.DefaultConfiguration())
 			httpComponent := httpserver.NewMock(t, r)
-			bmpComponent, _ := bmp.NewMock(t, r, bmp.DefaultConfiguration())
-			bmpComponent.PopulateRIB(t)
+			routingComponent := routing.NewMock(t, r)
+			routingComponent.PopulateRIB(t)
 
 			// Prepare a configuration
 			configuration := DefaultConfiguration()
@@ -524,7 +524,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				GeoIP:    geoipComponent,
 				Kafka:    kafkaComponent,
 				HTTP:     httpComponent,
-				BMP:      bmpComponent,
+				Routing:  routingComponent,
 				Schema:   schema.NewMock(t),
 			})
 			if err != nil {
@@ -602,11 +602,11 @@ func TestGetASNumber(t *testing.T) {
 		{"1.0.0.1", 12322, 0, []ASNProvider{ASNProviderFlow, ASNProviderGeoIP}, 12322},
 		{"2.0.0.1", 12322, 0, []ASNProvider{ASNProviderFlow, ASNProviderGeoIP}, 12322},
 		{"2.0.0.1", 12322, 0, []ASNProvider{ASNProviderGeoIP, ASNProviderFlow}, 12322},
-		{"192.0.2.2", 12322, 174, []ASNProvider{ASNProviderBMP}, 174},
-		{"192.0.2.129", 12322, 1299, []ASNProvider{ASNProviderBMP}, 1299},
-		{"192.0.2.254", 12322, 0, []ASNProvider{ASNProviderBMP}, 0},
-		{"1.0.0.1", 12322, 65300, []ASNProvider{ASNProviderBMP}, 65300},
-		{"1.0.0.1", 12322, 15169, []ASNProvider{ASNProviderBMPExceptPrivate, ASNProviderGeoIP}, 15169},
+		{"192.0.2.2", 12322, 174, []ASNProvider{ASNProviderRouting}, 174},
+		{"192.0.2.129", 12322, 1299, []ASNProvider{ASNProviderRouting}, 1299},
+		{"192.0.2.254", 12322, 0, []ASNProvider{ASNProviderRouting}, 0},
+		{"1.0.0.1", 12322, 65300, []ASNProvider{ASNProviderRouting}, 65300},
+		{"1.0.0.1", 12322, 15169, []ASNProvider{ASNProviderRoutingExceptPrivate, ASNProviderGeoIP}, 15169},
 	}
 	for i, tc := range cases {
 		i++
@@ -616,14 +616,14 @@ func TestGetASNumber(t *testing.T) {
 			// We don't need all components as we won't start the component.
 			configuration := DefaultConfiguration()
 			configuration.ASNProviders = tc.Providers
-			bmpComponent, _ := bmp.NewMock(t, r, bmp.DefaultConfiguration())
-			bmpComponent.PopulateRIB(t)
+			routingComponent := routing.NewMock(t, r)
+			routingComponent.PopulateRIB(t)
 
 			c, err := New(r, configuration, Dependencies{
-				Daemon: daemon.NewMock(t),
-				GeoIP:  geoip.NewMock(t, r),
-				BMP:    bmpComponent,
-				Schema: schema.NewMock(t),
+				Daemon:  daemon.NewMock(t),
+				GeoIP:   geoip.NewMock(t, r),
+				Routing: routingComponent,
+				Schema:  schema.NewMock(t),
 			})
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
@@ -649,22 +649,22 @@ func TestGetNetMask(t *testing.T) {
 		{32, 0, []NetProvider{NetProviderFlow}, 32},
 		{0, 16, []NetProvider{NetProviderFlow}, 0},
 		// BMP
-		{0, 0, []NetProvider{NetProviderBMP}, 0},
-		{32, 12, []NetProvider{NetProviderBMP}, 12},
-		{0, 16, []NetProvider{NetProviderBMP}, 16},
-		{24, 0, []NetProvider{NetProviderBMP}, 0},
+		{0, 0, []NetProvider{NetProviderRouting}, 0},
+		{32, 12, []NetProvider{NetProviderRouting}, 12},
+		{0, 16, []NetProvider{NetProviderRouting}, 16},
+		{24, 0, []NetProvider{NetProviderRouting}, 0},
 		// Both, the first provider with a non-default route is taken
-		{0, 0, []NetProvider{NetProviderBMP, NetProviderFlow}, 0},
-		{12, 0, []NetProvider{NetProviderBMP, NetProviderFlow}, 12},
-		{0, 13, []NetProvider{NetProviderBMP, NetProviderFlow}, 13},
-		{12, 0, []NetProvider{NetProviderBMP, NetProviderFlow}, 12},
-		{12, 24, []NetProvider{NetProviderBMP, NetProviderFlow}, 24},
+		{0, 0, []NetProvider{NetProviderRouting, NetProviderFlow}, 0},
+		{12, 0, []NetProvider{NetProviderRouting, NetProviderFlow}, 12},
+		{0, 13, []NetProvider{NetProviderRouting, NetProviderFlow}, 13},
+		{12, 0, []NetProvider{NetProviderRouting, NetProviderFlow}, 12},
+		{12, 24, []NetProvider{NetProviderRouting, NetProviderFlow}, 24},
 
-		{0, 0, []NetProvider{NetProviderFlow, NetProviderBMP}, 0},
-		{12, 0, []NetProvider{NetProviderFlow, NetProviderBMP}, 12},
-		{0, 13, []NetProvider{NetProviderFlow, NetProviderBMP}, 13},
-		{12, 0, []NetProvider{NetProviderFlow, NetProviderBMP}, 12},
-		{12, 24, []NetProvider{NetProviderFlow, NetProviderBMP}, 12},
+		{0, 0, []NetProvider{NetProviderFlow, NetProviderRouting}, 0},
+		{12, 0, []NetProvider{NetProviderFlow, NetProviderRouting}, 12},
+		{0, 13, []NetProvider{NetProviderFlow, NetProviderRouting}, 13},
+		{12, 0, []NetProvider{NetProviderFlow, NetProviderRouting}, 12},
+		{12, 24, []NetProvider{NetProviderFlow, NetProviderRouting}, 12},
 	}
 	for i, tc := range cases {
 		i++
@@ -674,14 +674,14 @@ func TestGetNetMask(t *testing.T) {
 			// We don't need all components as we won't start the component.
 			configuration := DefaultConfiguration()
 			configuration.NetProviders = tc.Providers
-			bmpComponent, _ := bmp.NewMock(t, r, bmp.DefaultConfiguration())
-			bmpComponent.PopulateRIB(t)
+			routingComponent := routing.NewMock(t, r)
+			routingComponent.PopulateRIB(t)
 
 			c, err := New(r, configuration, Dependencies{
-				Daemon: daemon.NewMock(t),
-				GeoIP:  geoip.NewMock(t, r),
-				BMP:    bmpComponent,
-				Schema: schema.NewMock(t),
+				Daemon:  daemon.NewMock(t),
+				GeoIP:   geoip.NewMock(t, r),
+				Routing: routingComponent,
+				Schema:  schema.NewMock(t),
 			})
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
