@@ -13,9 +13,8 @@ import (
 	"testing"
 
 	"akvorado/common/helpers"
-	"akvorado/common/reporter"
-
 	"akvorado/common/helpers/yaml"
+	"akvorado/common/reporter"
 )
 
 func TestOrchestratorStart(t *testing.T) {
