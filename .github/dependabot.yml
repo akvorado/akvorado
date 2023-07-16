@@ -38,6 +38,7 @@ updates:
           - "@vitest/*"
           - "vitest"
           - "eslint*"
+          - "@vue/eslint-*"
           - "prettier*"
       typing:
         patterns:
