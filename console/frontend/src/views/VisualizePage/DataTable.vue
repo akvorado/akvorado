@@ -97,7 +97,7 @@ const props = defineProps<{
   data: GraphLineHandlerResult | GraphSankeyHandlerResult | null;
 }>();
 const emit = defineEmits<{
-  (e: "highlighted", index: number | null): void;
+  highlighted: [index: number | null];
 }>();
 
 const highlight = (index: number | null) => {

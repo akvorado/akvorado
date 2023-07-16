@@ -62,7 +62,7 @@ const props = defineProps<{
   highlight: number | null;
 }>();
 const emit = defineEmits<{
-  (e: "update:timeRange", range: [Date, Date]): void;
+  "update:timeRange": [range: [Date, Date]];
 }>();
 
 const { isDark } = inject(ThemeKey)!;

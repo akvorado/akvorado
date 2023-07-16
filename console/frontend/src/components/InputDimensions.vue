@@ -91,7 +91,7 @@ const props = withDefaults(
   },
 );
 const emit = defineEmits<{
-  (e: "update:modelValue", value: typeof props.modelValue): void;
+  "update:modelValue": [value: typeof props.modelValue];
 }>();
 
 const serverConfiguration = inject(ServerConfigKey)!;

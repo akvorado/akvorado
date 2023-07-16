@@ -31,7 +31,7 @@ defineProps<{
   modelValue: boolean;
 }>();
 defineEmits<{
-  (e: "update:modelValue", value: boolean): void;
+  "update:modelValue": [value: boolean];
 }>();
 
 const id = uuidv4();

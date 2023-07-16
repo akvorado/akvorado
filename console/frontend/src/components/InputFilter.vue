@@ -96,8 +96,8 @@ const props = defineProps<{
   modelValue: ModelType;
 }>();
 const emit = defineEmits<{
-  (e: "update:modelValue", value: typeof props.modelValue): void;
-  (e: "submit"): void;
+  "update:modelValue": [value: typeof props.modelValue];
+  submit: [];
 }>();
 
 const { isDark } = inject(ThemeKey)!;

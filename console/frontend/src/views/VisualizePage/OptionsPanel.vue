@@ -149,8 +149,8 @@ const props = withDefaults(
   },
 );
 const emit = defineEmits<{
-  (e: "update:modelValue", value: typeof props.modelValue): void;
-  (e: "cancel"): void;
+  "update:modelValue": [value: typeof props.modelValue];
+  cancel: [];
 }>();
 
 const graphTypeList = Object.entries(graphTypes).map(([k, v], idx) => ({

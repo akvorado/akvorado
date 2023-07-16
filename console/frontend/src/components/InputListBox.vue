@@ -17,8 +17,8 @@
           <div class="flex flex-wrap items-center gap-x-2 pr-6 text-left">
             <slot name="selected"></slot>
             <component
-              v-if="component.Input"
               :is="component.Input"
+              v-if="component.Input"
               class="w-10 grow border-none bg-transparent p-0 focus:outline-none"
               placeholder="Search..."
               @change="query = $event.target.value"
@@ -124,7 +124,7 @@ const props = withDefaults(
   },
 );
 defineEmits<{
-  (e: "update:modelValue", value: typeof props.modelValue): void;
+  "update:modelValue": [value: typeof props.modelValue];
 }>();
 
 const attrs = useAttrs();
