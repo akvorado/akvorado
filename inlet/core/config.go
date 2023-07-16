@@ -4,6 +4,7 @@
 package core
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"reflect"
@@ -44,8 +45,8 @@ func DefaultConfiguration() Configuration {
 		ExporterClassifiers:     []ExporterClassifierRule{},
 		InterfaceClassifiers:    []InterfaceClassifierRule{},
 		ClassifierCacheDuration: 5 * time.Minute,
-		ASNProviders:            []ASNProvider{ASNProviderFlow, ASNProviderBMP, ASNProviderGeoIP},
-		NetProviders:            []NetProvider{NetProviderFlow, NetProviderBMP},
+		ASNProviders:            []ASNProvider{ASNProviderFlow, ASNProviderRouting, ASNProviderGeoIP},
+		NetProviders:            []NetProvider{NetProviderFlow, NetProviderRouting},
 	}
 }
 
@@ -63,18 +64,18 @@ const (
 	ASNProviderFlowExceptPrivate
 	// ASNProviderGeoIP pulls the AS number from a GeoIP database.
 	ASNProviderGeoIP
-	// ASNProviderBMP uses the AS number from BMP
-	ASNProviderBMP
-	// ASNProviderBMPExceptPrivate uses the AS number from BMP, except if this is a private AS.
-	ASNProviderBMPExceptPrivate
+	// ASNProviderRouting uses the AS number from BMP
+	ASNProviderRouting
+	// ASNProviderRoutingExceptPrivate uses the AS number from BMP, except if this is a private AS.
+	ASNProviderRoutingExceptPrivate
 )
 
 var asnProviderMap = bimap.New(map[ASNProvider]string{
-	ASNProviderFlow:              "flow",
-	ASNProviderFlowExceptPrivate: "flow-except-private",
-	ASNProviderGeoIP:             "geoip",
-	ASNProviderBMP:               "bmp",
-	ASNProviderBMPExceptPrivate:  "bmp-except-private",
+	ASNProviderFlow:                 "flow",
+	ASNProviderFlowExceptPrivate:    "flow-except-private",
+	ASNProviderGeoIP:                "geoip",
+	ASNProviderRouting:              "routing",
+	ASNProviderRoutingExceptPrivate: "routing-except-private",
 })
 
 // MarshalText turns an AS provider to text.
@@ -94,6 +95,11 @@ func (ap ASNProvider) String() string {
 
 // UnmarshalText provides an AS provider from a string.
 func (ap *ASNProvider) UnmarshalText(input []byte) error {
+	if bytes.Equal(input, []byte("bmp")) {
+		input = []byte("routing")
+	} else if bytes.Equal(input, []byte("bmp-except-private")) {
+		input = []byte("routing-except-private")
+	}
 	got, ok := asnProviderMap.LoadKey(string(input))
 	if ok {
 		*ap = got
@@ -105,13 +111,13 @@ func (ap *ASNProvider) UnmarshalText(input []byte) error {
 const (
 	// NetProviderFlow uses the network mask embedded in flows, if any
 	NetProviderFlow NetProvider = iota
-	// NetProviderBMP uses looks the netmask up with BMP
-	NetProviderBMP
+	// NetProviderRouting uses looks the netmask up with BMP
+	NetProviderRouting
 )
 
 var netProviderMap = bimap.New(map[NetProvider]string{
-	NetProviderFlow: "flow",
-	NetProviderBMP:  "bmp",
+	NetProviderFlow:    "flow",
+	NetProviderRouting: "routing",
 })
 
 // MarshalText turns an AS provider to text.
@@ -131,6 +137,10 @@ func (np NetProvider) String() string {
 
 // UnmarshalText provides an AS provider from a string.
 func (np *NetProvider) UnmarshalText(input []byte) error {
+	// "bmp" becomes "routing"
+	if bytes.Equal(input, []byte("bmp")) {
+		input = []byte("routing")
+	}
 	got, ok := netProviderMap.LoadKey(string(input))
 	if ok {
 		*np = got

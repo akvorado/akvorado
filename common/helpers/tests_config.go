@@ -38,6 +38,7 @@ func TestConfigurationDecode(t *testing.T, cases ConfigurationDecodeCases, optio
 				}
 			}
 			t.Run(title, func(t *testing.T) {
+				t.Helper()
 				var configuration interface{}
 				if fromYAML {
 					// Encode and decode with YAML

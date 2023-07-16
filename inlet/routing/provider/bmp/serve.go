@@ -15,38 +15,38 @@ import (
 )
 
 // serveConnection handle the connection from an exporter.
-func (c *Component) serveConnection(conn *net.TCPConn) error {
+func (p *Provider) serveConnection(conn *net.TCPConn) error {
 	remote := conn.RemoteAddr().(*net.TCPAddr)
 	exporterIP, _ := netip.AddrFromSlice(remote.IP)
 	exporter := netip.AddrPortFrom(exporterIP, uint16(remote.Port))
 	exporterStr := exporter.Addr().Unmap().String()
-	c.metrics.openedConnections.WithLabelValues(exporterStr).Inc()
-	logger := c.r.With().Str("exporter", exporterStr).Logger()
+	p.metrics.openedConnections.WithLabelValues(exporterStr).Inc()
+	logger := p.r.With().Str("exporter", exporterStr).Logger()
 	conn.SetLinger(0)
 
 	// Stop the connection when exiting this method or when dying
 	stop := make(chan struct{})
-	c.t.Go(func() error {
+	p.t.Go(func() error {
 		select {
 		case <-stop:
 			logger.Info().Msgf("connection down for %s", exporterStr)
-			c.handleConnectionDown(exporter)
-		case <-c.t.Dying():
+			p.handleConnectionDown(exporter)
+		case <-p.t.Dying():
 			// No need to clean up
 		}
 		conn.Close()
-		c.metrics.closedConnections.WithLabelValues(exporterStr).Inc()
+		p.metrics.closedConnections.WithLabelValues(exporterStr).Inc()
 		return nil
 	})
 	defer close(stop)
 
 	// Setup TCP keepalive
 	if err := conn.SetKeepAlive(true); err != nil {
-		c.r.Err(err).Msg("unable to enable keepalive")
+		p.r.Err(err).Msg("unable to enable keepalive")
 		return nil
 	}
 	if err := conn.SetKeepAlivePeriod(time.Minute); err != nil {
-		c.r.Err(err).Msg("unable to set keepalive period")
+		p.r.Err(err).Msg("unable to set keepalive period")
 		return nil
 	}
 
@@ -54,70 +54,70 @@ func (c *Component) serveConnection(conn *net.TCPConn) error {
 	defer func() {
 		if r := recover(); r != nil {
 			logger.Panic().Str("panic", fmt.Sprintf("%+v", r)).Msg("fatal error while processing BMP messages")
-			c.metrics.panics.WithLabelValues(exporterStr).Inc()
+			p.metrics.panics.WithLabelValues(exporterStr).Inc()
 		}
 	}()
 
 	// Reading from connection
-	c.handleConnectionUp(exporter)
+	p.handleConnectionUp(exporter)
 	init := false
 	header := make([]byte, bmp.BMP_HEADER_SIZE)
 	for {
 		_, err := io.ReadFull(conn, header)
 		if err != nil {
-			if c.t.Alive() && err != io.EOF {
+			if p.t.Alive() && err != io.EOF {
 				logger.Err(err).Msg("cannot read BMP header")
-				c.metrics.errors.WithLabelValues(exporterStr, "cannot read BMP header").Inc()
+				p.metrics.errors.WithLabelValues(exporterStr, "cannot read BMP header").Inc()
 			}
 			return nil
 		}
 		msg := bmp.BMPMessage{}
 		if err := msg.Header.DecodeFromBytes(header); err != nil {
 			logger.Err(err).Msg("cannot decode BMP header")
-			c.metrics.errors.WithLabelValues(exporterStr, "cannot decode BMP header").Inc()
+			p.metrics.errors.WithLabelValues(exporterStr, "cannot decode BMP header").Inc()
 			return nil
 		}
 		switch msg.Header.Type {
 		case bmp.BMP_MSG_ROUTE_MONITORING:
 			msg.Body = &bmp.BMPRouteMonitoring{}
-			c.metrics.messages.WithLabelValues(exporterStr, "route-monitoring").Inc()
+			p.metrics.messages.WithLabelValues(exporterStr, "route-monitoring").Inc()
 		case bmp.BMP_MSG_STATISTICS_REPORT:
 			// Ignore
-			c.metrics.messages.WithLabelValues(exporterStr, "statistics-report").Inc()
+			p.metrics.messages.WithLabelValues(exporterStr, "statistics-report").Inc()
 		case bmp.BMP_MSG_PEER_DOWN_NOTIFICATION:
 			msg.Body = &bmp.BMPPeerDownNotification{}
-			c.metrics.messages.WithLabelValues(exporterStr, "peer-down-notification").Inc()
+			p.metrics.messages.WithLabelValues(exporterStr, "peer-down-notification").Inc()
 		case bmp.BMP_MSG_PEER_UP_NOTIFICATION:
 			msg.Body = &bmp.BMPPeerUpNotification{}
-			c.metrics.messages.WithLabelValues(exporterStr, "peer-up-notification").Inc()
+			p.metrics.messages.WithLabelValues(exporterStr, "peer-up-notification").Inc()
 		case bmp.BMP_MSG_INITIATION:
 			msg.Body = &bmp.BMPInitiation{}
-			c.metrics.messages.WithLabelValues(exporterStr, "initiation").Inc()
+			p.metrics.messages.WithLabelValues(exporterStr, "initiation").Inc()
 			init = true
 		case bmp.BMP_MSG_TERMINATION:
 			msg.Body = &bmp.BMPTermination{}
-			c.metrics.messages.WithLabelValues(exporterStr, "termination").Inc()
+			p.metrics.messages.WithLabelValues(exporterStr, "termination").Inc()
 		case bmp.BMP_MSG_ROUTE_MIRRORING:
 			// Ignore
-			c.metrics.messages.WithLabelValues(exporterStr, "route-mirroring").Inc()
+			p.metrics.messages.WithLabelValues(exporterStr, "route-mirroring").Inc()
 		default:
 			logger.Info().Msgf("unknown BMP message type %d", msg.Header.Type)
-			c.metrics.messages.WithLabelValues(exporterStr, "unknown").Inc()
+			p.metrics.messages.WithLabelValues(exporterStr, "unknown").Inc()
 		}
 
 		// First message should be BMP_MSG_INITIATION
 		if !init {
 			logger.Error().Msg("first message is not `initiation'")
-			c.metrics.errors.WithLabelValues(exporterStr, "first message not initiation").Inc()
+			p.metrics.errors.WithLabelValues(exporterStr, "first message not initiation").Inc()
 			return nil
 		}
 
 		body := make([]byte, msg.Header.Length-bmp.BMP_HEADER_SIZE)
 		_, err = io.ReadFull(conn, body)
 		if err != nil {
-			if c.t.Alive() {
+			if p.t.Alive() {
 				logger.Err(err).Msg("cannot read BMP body")
-				c.metrics.errors.WithLabelValues(exporterStr, "cannot read BMP body").Inc()
+				p.metrics.errors.WithLabelValues(exporterStr, "cannot read BMP body").Inc()
 			}
 			return nil
 		}
@@ -132,16 +132,16 @@ func (c *Component) serveConnection(conn *net.TCPConn) error {
 		if msg.Header.Type != bmp.BMP_MSG_INITIATION && msg.Header.Type != bmp.BMP_MSG_TERMINATION {
 			if err := msg.PeerHeader.DecodeFromBytes(body); err != nil {
 				logger.Err(err).Msg("cannot parse BMP peer header")
-				c.metrics.errors.WithLabelValues(exporterStr, "cannot parse BMP peer header").Inc()
+				p.metrics.errors.WithLabelValues(exporterStr, "cannot parse BMP peer header").Inc()
 				return nil
 			}
 			body = body[bmp.BMP_PEER_HEADER_SIZE:]
 			pkey = peerKeyFromBMPPeerHeader(exporter, &msg.PeerHeader)
-			c.mu.RLock()
-			if pinfo, ok := c.peers[pkey]; ok {
+			p.mu.RLock()
+			if pinfo, ok := p.peers[pkey]; ok {
 				marshallingOptions = pinfo.marshallingOptions
 			}
-			c.mu.RUnlock()
+			p.mu.RUnlock()
 		}
 
 		if err := msg.Body.ParseBody(&msg, body, marshallingOptions...); err != nil {
@@ -149,27 +149,27 @@ func (c *Component) serveConnection(conn *net.TCPConn) error {
 			if ok {
 				switch msgError.ErrorHandling {
 				case bgp.ERROR_HANDLING_SESSION_RESET:
-					c.metrics.ignored.WithLabelValues(exporterStr, "session-reset", err.Error()).Inc()
+					p.metrics.ignored.WithLabelValues(exporterStr, "session-reset", err.Error()).Inc()
 					continue
 				case bgp.ERROR_HANDLING_AFISAFI_DISABLE:
-					c.metrics.ignored.WithLabelValues(exporterStr, "afi-safi", err.Error()).Inc()
+					p.metrics.ignored.WithLabelValues(exporterStr, "afi-safi", err.Error()).Inc()
 					continue
 				case bgp.ERROR_HANDLING_TREAT_AS_WITHDRAW:
 					// This is a pickle. This can be an essential attribute (eg.
 					// AS path) that's malformed or something quite minor for
 					// our own usage (eg. a non-optional attribute), let's skip for now.
-					c.metrics.ignored.WithLabelValues(exporterStr, "treat-as-withdraw", err.Error()).Inc()
+					p.metrics.ignored.WithLabelValues(exporterStr, "treat-as-withdraw", err.Error()).Inc()
 					continue
 				case bgp.ERROR_HANDLING_ATTRIBUTE_DISCARD:
 					// Optional attribute, let's handle it
 				case bgp.ERROR_HANDLING_NONE:
 					// Odd?
-					c.metrics.ignored.WithLabelValues(exporterStr, "none", err.Error()).Inc()
+					p.metrics.ignored.WithLabelValues(exporterStr, "none", err.Error()).Inc()
 					continue
 				}
 			} else {
 				logger.Err(err).Msg("cannot parse BMP body")
-				c.metrics.errors.WithLabelValues(exporterStr, "cannot parse BMP body").Inc()
+				p.metrics.errors.WithLabelValues(exporterStr, "cannot parse BMP body").Inc()
 				return nil
 			}
 		}
@@ -201,11 +201,11 @@ func (c *Component) serveConnection(conn *net.TCPConn) error {
 			logger.Info().Msg("termination message received")
 			return nil
 		case *bmp.BMPPeerUpNotification:
-			c.handlePeerUpNotification(pkey, body)
+			p.handlePeerUpNotification(pkey, body)
 		case *bmp.BMPPeerDownNotification:
-			c.handlePeerDownNotification(pkey)
+			p.handlePeerDownNotification(pkey)
 		case *bmp.BMPRouteMonitoring:
-			c.handleRouteMonitoring(pkey, body)
+			p.handleRouteMonitoring(pkey, body)
 		}
 	}
 }
