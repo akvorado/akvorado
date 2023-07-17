@@ -13,6 +13,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/exp/slices"
 
@@ -162,6 +163,9 @@ func (c *Component) createExportersView(ctx context.Context) error {
 	if err := c.d.ClickHouse.Exec(ctx, `DROP TABLE IF EXISTS exporters SYNC`); err != nil {
 		return fmt.Errorf("cannot drop existing exporters view: %w", err)
 	}
+	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
+		"allow_suspicious_low_cardinality_types": 1,
+	}))
 	if err := c.d.ClickHouse.Exec(ctx, fmt.Sprintf(`
 CREATE MATERIALIZED VIEW exporters
 ENGINE = ReplacingMergeTree(TimeReceived)
@@ -231,6 +235,9 @@ func (c *Component) createRawFlowsTable(ctx context.Context) error {
 			return fmt.Errorf("cannot drop %s: %w", table, err)
 		}
 	}
+	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
+		"allow_suspicious_low_cardinality_types": 1,
+	}))
 	if err := c.d.ClickHouse.Exec(ctx, createQuery); err != nil {
 		return fmt.Errorf("cannot create raw flows table: %w", err)
 	}
@@ -336,6 +343,9 @@ AS %s`,
 }
 
 func (c *Component) createOrUpdateFlowsTable(ctx context.Context, resolution ResolutionConfiguration) error {
+	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
+		"allow_suspicious_low_cardinality_types": 1,
+	}))
 	var tableName string
 	if resolution.Interval == 0 {
 		tableName = "flows"

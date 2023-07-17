@@ -24,6 +24,8 @@ import (
 	"akvorado/common/kafka"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
+
+	"github.com/ClickHouse/clickhouse-go/v2"
 )
 
 func dropAllTables(t *testing.T, ch *clickhousedb.Component) {
@@ -85,12 +87,15 @@ type tableWithSchema struct {
 }
 
 func loadTables(t *testing.T, ch *clickhousedb.Component, sch *schema.Component, schemas []tableWithSchema) {
+	ctx := clickhouse.Context(context.Background(), clickhouse.WithSettings(clickhouse.Settings{
+		"allow_suspicious_low_cardinality_types": 1,
+	}))
 	for _, tws := range schemas {
 		if oldTable(sch, tws.table) {
 			continue
 		}
 		t.Logf("Load table %s", tws.table)
-		if err := ch.Exec(context.Background(), tws.schema); err != nil {
+		if err := ch.Exec(ctx, tws.schema); err != nil {
 			t.Fatalf("Exec(%q) error:\n%+v", tws.schema, err)
 		}
 	}
