@@ -42,20 +42,24 @@ func (c *Component) migrateDatabase() error {
 		c.config.OrchestratorURL = baseURL
 	}
 
-	// Limit number of consumers to the number of threads
-	row := c.d.ClickHouse.QueryRow(ctx, `SELECT getSetting('max_threads')`)
+	// Grab some information about the database
+	row := c.d.ClickHouse.QueryRow(ctx, `SELECT getSetting('max_threads'), version()`)
 	if err := row.Err(); err != nil {
 		c.r.Err(err).Msg("unable to query database")
 		return fmt.Errorf("unable to query database: %w", err)
 	}
 	var threads uint8
-	if err := row.Scan(&threads); err != nil {
-		c.r.Err(err).Msg("unable to parse number of threads")
-		return fmt.Errorf("unable to parse number of threads: %w", err)
+	var version string
+	if err := row.Scan(&threads, &version); err != nil {
+		c.r.Err(err).Msg("unable to parse database settings")
+		return fmt.Errorf("unable to parse database settings: %w", err)
 	}
 	if c.config.Kafka.Consumers > int(threads) {
 		c.r.Warn().Msgf("too many consumers requested, capping to %d", threads)
 		c.config.Kafka.Consumers = int(threads)
+	}
+	if err := validateVersion(version); err != nil {
+		return fmt.Errorf("incorrect Clickhouse version: %w", err)
 	}
 
 	// Create dictionaries
