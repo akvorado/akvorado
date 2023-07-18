@@ -8,7 +8,7 @@ import (
 
 	"akvorado/common/helpers"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 )
 
 func TestCompressionCodecUnmarshal(t *testing.T) {

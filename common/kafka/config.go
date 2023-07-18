@@ -16,7 +16,7 @@ import (
 
 	"akvorado/common/helpers/bimap"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 )
 
 // Configuration defines how we connect to a Kafka cluster.

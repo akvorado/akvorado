@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2013 Shopify
 // SPDX-License-Identifier: MIT
 
-// From https://github.com/Shopify/sarama/blob/main/examples/sasl_scram_client/scram_client.go
+// From https://github.com/IBM/sarama/blob/main/examples/sasl_scram_client/scram_client.go
 
 package kafka
 

@@ -8,7 +8,7 @@ import (
 
 	"akvorado/common/helpers"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/gin-gonic/gin"
 )
 

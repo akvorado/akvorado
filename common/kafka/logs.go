@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 
 	"akvorado/common/reporter"
 )

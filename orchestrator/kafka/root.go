@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 
 	"akvorado/common/kafka"
 	"akvorado/common/reporter"

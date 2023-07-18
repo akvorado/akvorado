@@ -106,7 +106,7 @@ of the databases in order to update a local cached copy.
 ## Kafka
 
 The Kafka component relies on
-[Sarama](https://github.com/Shopify/sarama). It is tested using the
+[Sarama](https://github.com/IBM/sarama). It is tested using the
 mock interface provided by this package. *Sarama* uses `go-metrics` to
 store metrics. We convert them to Prometheus to keep them. The logger
 is global and there is a hack to be plug it into the reporter design

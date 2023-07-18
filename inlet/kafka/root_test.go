@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	gometrics "github.com/rcrowley/go-metrics"
 
 	"akvorado/common/daemon"

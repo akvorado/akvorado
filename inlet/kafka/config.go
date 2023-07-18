@@ -6,7 +6,7 @@ package kafka
 import (
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 
 	"akvorado/common/kafka"
 )

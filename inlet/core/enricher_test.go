@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/gin-gonic/gin"
 	"github.com/mitchellh/mapstructure"
 

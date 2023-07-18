@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 
 	"akvorado/common/helpers"
 	"akvorado/common/kafka"

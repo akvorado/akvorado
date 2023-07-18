@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
