@@ -322,9 +322,7 @@ providers available to poll metadata. The following keys are accepted:
   about to expire or need an update
 - `cache-persist-file` tells where to store cached data on shutdown and
   read them back on startup
-- `poller-retries` is the number of retries on unsuccessful SNMP requests.
-- `poller-timeout` tells how much time should the poller wait for an answer.
-- `workers` tell how many workers to spawn to handle SNMP polling.
+- `workers` tell how many workers to spawn to fetch metadata.
 - `max-batch-requests` define how many requests can be batched together
 - `provider` defines the provider configuration
 
@@ -352,8 +350,11 @@ configuration keys:
   previous value was set), and `context-name`.
 - `agents` is a map from exporter IPs to agent IPs (when there is no
   match, the exporter IP is used)
-- `ports` is a map from subnets to the SNMP port to use to poll
-  agents in the provided subnet.
+- `ports` is a map from subnets to the SNMP port to use to poll agents in the
+  provided subnet. Unlike `communities` and `security-parameters`, the provided
+  subnet is the subnet of agent IP addresses, not exporter IP addresses!
+- `poller-retries` is the number of retries on unsuccessful SNMP requests.
+- `poller-timeout` tells how much time should the poller wait for an answer.
 
 For example:
 
