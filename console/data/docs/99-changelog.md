@@ -13,6 +13,9 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 💥 *inlet*: `inlet`→`metadata`→`provider(snmp)`→`ports` is now a map from
+  exporter subnets to ports, instead of a map from agent subnets to ports. This
+  is aligned with how `communities` and `security-parameters` options behave.
 - ✨ *inlet*: metadata retrieval is now pluggable. In addition to SNMP, it is
   now possible to set exporter names, interface names and descriptions directly
   in the configuration file. See `inlet`→`metadata`.

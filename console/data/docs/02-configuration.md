@@ -334,25 +334,24 @@ The `provider` key contains the configuration of the provider. The provider type
 is defined by the `type` key. The `snmp` provider accepts the following
 configuration keys:
 
-- `communities` is a map from subnets to the SNMPv2 community to use
-  for exporters in the provided subnet. Use `::/0` to set the default
-  value. Alternatively, it also accepts a string to use for all
-  exporters.
-- `security-parameters` is a map from subnets to the SNMPv3 USM
-  security parameters. Like for `communities`, `::/0` can be used to
-  the set the default value. The security paramaters accepts the
-  following keys: `user-name`, `authentication-protocol` (can be
-  omitted, otherwise `MD5`, `SHA`, `SHA224`, `SHA256`, `SHA384`, and
-  `SHA512` are accepted), `authentication-passphrase` (if the previous
-  value was set), `privacy-protocol` (can be omitted, otherwise `DES`,
-  `AES`, `AES192`, `AES256`, `AES192C`, and `AES256C` are accepted,
-  the later being Cisco-variant), `privacy-passphrase` (if the
-  previous value was set), and `context-name`.
-- `agents` is a map from exporter IPs to agent IPs (when there is no
-  match, the exporter IP is used)
-- `ports` is a map from subnets to the SNMP port to use to poll agents in the
-  provided subnet. Unlike `communities` and `security-parameters`, the provided
-  subnet is the subnet of agent IP addresses, not exporter IP addresses!
+- `communities` is a map from exporter subnets to the SNMPv2 communities. Use
+  `::/0` to set the default value. Alternatively, it also accepts a string to
+  use for all exporters.
+- `security-parameters` is a map from exporter subnets to the SNMPv3 USM
+  security parameters. Like for `communities`, `::/0` can be used to the set the
+  default value. The security paramaters accepts the following keys:
+  `user-name`, `authentication-protocol` (can be omitted, otherwise `MD5`,
+  `SHA`, `SHA224`, `SHA256`, `SHA384`, and `SHA512` are accepted),
+  `authentication-passphrase` (if the previous value was set),
+  `privacy-protocol` (can be omitted, otherwise `DES`, `AES`, `AES192`,
+  `AES256`, `AES192C`, and `AES256C` are accepted, the later being
+  Cisco-variant), `privacy-passphrase` (if the previous value was set), and
+  `context-name`.
+- `ports` is a map from exporter subnets to the SNMP port to use to poll
+  exporters in the provided subnet.
+- `agents` is a map from exporter IPs to agent IPs. When there is no match, the
+  exporter IP is used. Other options are still using the exporter IP as a key,
+  not the agent IP.
 - `poller-retries` is the number of retries on unsuccessful SNMP requests.
 - `poller-timeout` tells how much time should the poller wait for an answer.
 
@@ -371,7 +370,11 @@ metadata:
 `security-parameters` configuration option. Otherwise, it will use
 SNMPv2.
 
-The `static` providers accepts an `exporters` key which maps exporter subnets to
+The `gnmi` provider accepts the following keys:
+
+
+
+The `static` provider accepts an `exporters` key which maps exporter subnets to
 an exporter configuration. An exporter configuration is map:
 
 - `name` is the name of the exporter

@@ -97,6 +97,6 @@ func (p *Provider) Query(ctx context.Context, query provider.BatchQuery) error {
 	if !ok {
 		agentIP = query.ExporterIP
 	}
-	agentPort := p.config.Ports.LookupOrDefault(agentIP, 161)
+	agentPort := p.config.Ports.LookupOrDefault(query.ExporterIP, 161)
 	return p.Poll(ctx, query.ExporterIP, agentIP, agentPort, query.IfIndexes, p.put)
 }
