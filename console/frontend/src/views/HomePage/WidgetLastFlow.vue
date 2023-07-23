@@ -7,10 +7,10 @@
     <table class="w-full max-w-md text-sm">
       <tbody>
         <tr v-for="[field, value] in lastFlow" :key="field">
-          <td class="w-2/5 overflow-hidden text-ellipsis pr-3">
+          <td class="w-2/5 overflow-hidden text-ellipsis pr-3 align-top">
             {{ field }}
           </td>
-          <td class="w-3/5 overflow-hidden text-ellipsis">
+          <td class="w-3/5 overflow-hidden text-ellipsis align-top">
             {{ value }}
           </td>
         </tr>
