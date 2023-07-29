@@ -168,6 +168,7 @@ used. It accepts the following keys:
 
 - `ris-instances` is a list of instances
 - `timeout` tells how much time to wait to get an answer from a RIS instance
+- `refresh` tells how much time to wait between two refresh of the list of routers
 
 Each instance accepts the following keys:
 
@@ -182,21 +183,15 @@ routing:
   provider:
     type: bioris
     risinstances:
-      - grpcaddr: ris:port
-        vrf: 0:0
+      - grpcaddr: 192.0.2.15:4321
         grpcsecure: true
+        vrf: 0:0
 ```
 
 BioRIS tries to query the RIB of the router that sent the flow. If this router's
 RIB is not available in all known RIS instances, an other router is implictly
 used as fallback. After the router id is determined, BioRIS queries one of the
-RIS Instances known holding the RIB.
-
-RIS and Router ID queried as either exact match or fallback are exported as
-metrics, if exact matching is required you can set up an alarm against those.
-
-Refreshing of available routers and ris instances requires an restart of the
-inlet service (this might change in the future).
+RIS instances known holding the RIB.
 
 BioRIS currently supports setting prefix, AS, AS Path and communities for the
 given flow.

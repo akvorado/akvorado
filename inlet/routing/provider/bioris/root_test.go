@@ -28,17 +28,17 @@ import (
 
 func TestChooseRouter(t *testing.T) {
 	r := reporter.NewMock(t)
-	c := &Provider{
-		r:         r,
-		instances: make(map[string]*RISInstanceRuntime),
-		router:    make(map[netip.Addr][]*RISInstanceRuntime),
+	config := DefaultConfiguration()
+	p, err := config.New(r, provider.Dependencies{Daemon: daemon.NewMock(t)})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
 	}
-
-	c.initMetrics()
+	helpers.StartStop(t, p)
+	c := p.(*Provider)
 
 	// First test: we have no routers/ris instances and fail with an error
 	t.Run("no router", func(t *testing.T) {
-		expected := "no applicable router found for bio flow lookup"
+		expected := "no applicable router found for flow lookup"
 		_, _, err := c.chooseRouter(netip.MustParseAddr("10.0.0.0"))
 		if diff := helpers.Diff(err.Error(), expected); diff != "" {
 			t.Errorf("Error (-got, +want):\n%s", diff)
@@ -64,15 +64,15 @@ func TestChooseRouter(t *testing.T) {
 
 	// Add routers to the ris components
 	// r1 is on ris1 and ris3
-	c.router[r1] = []*RISInstanceRuntime{ris1, ris3}
+	c.routers[r1] = []*RISInstanceRuntime{ris1, ris3}
 	// r2 is on ris2
-	c.router[r2] = []*RISInstanceRuntime{ris2}
+	c.routers[r2] = []*RISInstanceRuntime{ris2}
 	// r3 is on ris1 and ris3
-	c.router[r3] = []*RISInstanceRuntime{ris1, ris3}
+	c.routers[r3] = []*RISInstanceRuntime{ris1, ris3}
 	// r4 is on ris2
-	c.router[r4] = []*RISInstanceRuntime{ris2}
+	c.routers[r4] = []*RISInstanceRuntime{ris2}
 	// r5 is on ris1
-	c.router[r5] = []*RISInstanceRuntime{ris1}
+	c.routers[r5] = []*RISInstanceRuntime{ris1}
 
 	// Test exact match for r1
 	t.Run("exact match r1", func(t *testing.T) {
@@ -126,9 +126,13 @@ func TestChooseRouter(t *testing.T) {
 
 func TestLPMResponseToLookupResult(t *testing.T) {
 	r := reporter.NewMock(t)
-	c := &Provider{
-		r: r,
+	config := DefaultConfiguration()
+	p, err := config.New(r, provider.Dependencies{Daemon: daemon.NewMock(t)})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
 	}
+	helpers.StartStop(t, p)
+	c := p.(*Provider)
 
 	// create some bnet prefixes
 	p1Ip, _ := bnet.IPFromString("::")
@@ -414,6 +418,7 @@ func TestBioRIS(t *testing.T) {
 	addr := rpcListener.Addr().String()
 	config := Configuration{
 		Timeout: 200 * time.Millisecond,
+		Refresh: 1 * time.Minute,
 		RISInstances: []RISInstance{{
 			GRPCAddr:   addr,
 			GRPCSecure: false,
@@ -429,10 +434,13 @@ func TestBioRIS(t *testing.T) {
 	helpers.StartStop(t, p)
 
 	{
-		got, _ := p.Lookup(context.Background(),
+		got, err := p.Lookup(context.Background(),
 			netip.MustParseAddr("2001:db8:1::10"),
 			netip.Addr{},
 			netip.MustParseAddr("2001:db8::7"))
+		if err != nil {
+			t.Fatalf("Lookup() error:\n%+v", err)
+		}
 		expected := provider.LookupResult{
 			NetMask:     64,
 			ASN:         174,
