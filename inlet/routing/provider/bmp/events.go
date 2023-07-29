@@ -45,9 +45,9 @@ func peerKeyFromBMPPeerHeader(exporter netip.AddrPort, header *bmp.BMPPeerHeader
 
 // scheduleStalePeersRemoval schedule the next time a peer should be
 // removed. This should be called with the lock held.
-func (c *Component) scheduleStalePeersRemoval() {
+func (p *Provider) scheduleStalePeersRemoval() {
 	var next time.Time
-	for _, pinfo := range c.peers {
+	for _, pinfo := range p.peers {
 		if pinfo.staleUntil.IsZero() {
 			continue
 		}
@@ -56,125 +56,125 @@ func (c *Component) scheduleStalePeersRemoval() {
 		}
 	}
 	if next.IsZero() {
-		c.r.Debug().Msg("no stale peer")
-		c.staleTimer.Stop()
+		p.r.Debug().Msg("no stale peer")
+		p.staleTimer.Stop()
 	} else {
-		c.r.Debug().Msgf("next removal for stale peer scheduled on %s", next)
-		c.staleTimer.Reset(c.d.Clock.Until(next))
+		p.r.Debug().Msgf("next removal for stale peer scheduled on %s", next)
+		p.staleTimer.Reset(p.d.Clock.Until(next))
 	}
 }
 
 // removeStalePeers remove the stale peers.
-func (c *Component) removeStalePeers() {
-	start := c.d.Clock.Now()
-	c.r.Debug().Msg("remove stale peers")
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	for pkey, pinfo := range c.peers {
+func (p *Provider) removeStalePeers() {
+	start := p.d.Clock.Now()
+	p.r.Debug().Msg("remove stale peers")
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	for pkey, pinfo := range p.peers {
 		if pinfo.staleUntil.IsZero() || pinfo.staleUntil.After(start) {
 			continue
 		}
-		c.removePeer(pkey, "stale")
+		p.removePeer(pkey, "stale")
 	}
-	c.scheduleStalePeersRemoval()
+	p.scheduleStalePeersRemoval()
 }
 
-func (c *Component) addPeer(pkey peerKey) *peerInfo {
-	c.lastPeerReference++
-	if c.lastPeerReference == 0 {
+func (p *Provider) addPeer(pkey peerKey) *peerInfo {
+	p.lastPeerReference++
+	if p.lastPeerReference == 0 {
 		// This is a very unlikely event, but we don't
 		// have anything better. Let's crash (and
 		// hopefully be restarted).
-		c.r.Fatal().Msg("too many peer up events")
-		go c.Stop()
+		p.r.Fatal().Msg("too many peer up events")
+		go p.Stop()
 	}
 	pinfo := &peerInfo{
-		reference: c.lastPeerReference,
+		reference: p.lastPeerReference,
 	}
-	c.peers[pkey] = pinfo
+	p.peers[pkey] = pinfo
 	return pinfo
 }
 
 // removePeer remove a peer (with lock held)
-func (c *Component) removePeer(pkey peerKey, reason string) {
+func (p *Provider) removePeer(pkey peerKey, reason string) {
 	exporterStr := pkey.exporter.Addr().Unmap().String()
 	peerStr := pkey.ip.Unmap().String()
-	c.r.Info().Msgf("remove peer %s for exporter %s (reason: %s)", peerStr, exporterStr, reason)
+	p.r.Info().Msgf("remove peer %s for exporter %s (reason: %s)", peerStr, exporterStr, reason)
 	select {
-	case c.peerRemovalChan <- pkey:
+	case p.peerRemovalChan <- pkey:
 		return
 	default:
 	}
-	c.metrics.peerRemovalQueueFull.WithLabelValues(exporterStr).Inc()
-	c.mu.Unlock()
+	p.metrics.peerRemovalQueueFull.WithLabelValues(exporterStr).Inc()
+	p.mu.Unlock()
 	select {
-	case c.peerRemovalChan <- pkey:
-	case <-c.t.Dying():
+	case p.peerRemovalChan <- pkey:
+	case <-p.t.Dying():
 	}
-	c.mu.Lock()
+	p.mu.Lock()
 }
 
 // markExporterAsStale marks all peers from an exporter as stale.
-func (c *Component) markExporterAsStale(exporter netip.AddrPort, until time.Time) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	for pkey, pinfo := range c.peers {
+func (p *Provider) markExporterAsStale(exporter netip.AddrPort, until time.Time) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	for pkey, pinfo := range p.peers {
 		if pkey.exporter != exporter {
 			continue
 		}
 		pinfo.staleUntil = until
 	}
-	c.scheduleStalePeersRemoval()
+	p.scheduleStalePeersRemoval()
 }
 
 // handlePeerDownNotification handles a peer-down notification by
 // removing the peer.
-func (c *Component) handlePeerDownNotification(pkey peerKey) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	_, ok := c.peers[pkey]
+func (p *Provider) handlePeerDownNotification(pkey peerKey) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	_, ok := p.peers[pkey]
 	if !ok {
-		c.r.Info().Msgf("received peer down from exporter %s for peer %s, but no peer up",
+		p.r.Info().Msgf("received peer down from exporter %s for peer %s, but no peer up",
 			pkey.exporter.Addr().Unmap().String(),
 			pkey.ip.Unmap().String())
 		return
 	}
-	c.removePeer(pkey, "down")
+	p.removePeer(pkey, "down")
 }
 
 // handleConnectionDown handles a disconnect or a session termination
 // by marking all associated peers as stale.
-func (c *Component) handleConnectionDown(exporter netip.AddrPort) {
-	until := c.d.Clock.Now().Add(c.config.Keep)
-	c.markExporterAsStale(exporter, until)
+func (p *Provider) handleConnectionDown(exporter netip.AddrPort) {
+	until := p.d.Clock.Now().Add(p.config.Keep)
+	p.markExporterAsStale(exporter, until)
 }
 
 // handleConnectionUp handles the connection from a new exporter.
-func (c *Component) handleConnectionUp(exporter netip.AddrPort) {
+func (p *Provider) handleConnectionUp(exporter netip.AddrPort) {
 	exporterStr := exporter.Addr().Unmap().String()
 	// Do not set to 0, exporterStr may cover several exporters.
-	c.metrics.peers.WithLabelValues(exporterStr).Add(0)
-	c.metrics.routes.WithLabelValues(exporterStr).Add(0)
+	p.metrics.peers.WithLabelValues(exporterStr).Add(0)
+	p.metrics.routes.WithLabelValues(exporterStr).Add(0)
 }
 
 // handlePeerUpNotification handles a new peer.
-func (c *Component) handlePeerUpNotification(pkey peerKey, body *bmp.BMPPeerUpNotification) {
+func (p *Provider) handlePeerUpNotification(pkey peerKey, body *bmp.BMPPeerUpNotification) {
 	if body.ReceivedOpenMsg == nil || body.SentOpenMsg == nil {
 		return
 	}
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	p.mu.Lock()
+	defer p.mu.Unlock()
 
 	exporterStr := pkey.exporter.Addr().Unmap().String()
 	peerStr := pkey.ip.Unmap().String()
-	pinfo, ok := c.peers[pkey]
+	pinfo, ok := p.peers[pkey]
 	if ok {
-		c.r.Info().Msgf("received extra peer up from exporter %s for peer %s",
+		p.r.Info().Msgf("received extra peer up from exporter %s for peer %s",
 			exporterStr, peerStr)
 	} else {
 		// Peer does not exist at all
-		c.metrics.peers.WithLabelValues(exporterStr).Inc()
-		pinfo = c.addPeer(pkey)
+		p.metrics.peers.WithLabelValues(exporterStr).Inc()
+		pinfo = p.addPeer(pkey)
 	}
 
 	// Check for ADD-PATH support.
@@ -216,12 +216,12 @@ func (c *Component) handlePeerUpNotification(pkey peerKey, body *bmp.BMPPeerUpNo
 	}
 	pinfo.marshallingOptions = []*bgp.MarshallingOption{{AddPath: addPathOption}}
 
-	c.r.Debug().
+	p.r.Debug().
 		Str("addpath", fmt.Sprintf("%s", addPathOption)).
 		Msgf("new peer %s from exporter %s", peerStr, exporterStr)
 }
 
-func (c *Component) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitoring) {
+func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitoring) {
 	// We expect to have a BGP update message
 	if body.BGPUpdate == nil || body.BGPUpdate.Body == nil {
 		return
@@ -231,24 +231,24 @@ func (c *Component) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonito
 		return
 	}
 
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	p.mu.Lock()
+	defer p.mu.Unlock()
 
 	// Ignore this peer if this is a L3VPN and it does not have
 	// the right RD.
-	if pkey.ptype == bmp.BMP_PEER_TYPE_L3VPN && !c.isAcceptedRD(pkey.distinguisher) {
+	if pkey.ptype == bmp.BMP_PEER_TYPE_L3VPN && !p.isAcceptedRD(pkey.distinguisher) {
 		return
 	}
 
 	exporterStr := pkey.exporter.Addr().Unmap().String()
 	peerStr := pkey.ip.Unmap().String()
-	pinfo, ok := c.peers[pkey]
+	pinfo, ok := p.peers[pkey]
 	if !ok {
 		// We may have missed the peer down notification?
-		c.r.Info().Msgf("received route monitoring from exporter %s for peer %s, but no peer up",
+		p.r.Info().Msgf("received route monitoring from exporter %s for peer %s, but no peer up",
 			exporterStr, peerStr)
-		c.metrics.peers.WithLabelValues(exporterStr).Inc()
-		pinfo = c.addPeer(pkey)
+		p.metrics.peers.WithLabelValues(exporterStr).Inc()
+		pinfo = p.addPeer(pkey)
 	}
 
 	var nh netip.Addr
@@ -258,15 +258,15 @@ func (c *Component) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonito
 		case *bgp.PathAttributeNextHop:
 			nh, _ = netip.AddrFromSlice(attr.Value.To16())
 		case *bgp.PathAttributeAsPath:
-			if c.config.CollectASNs || c.config.CollectASPaths {
+			if p.config.CollectASNs || p.config.CollectASPaths {
 				rta.asPath = asPathFlat(attr)
 			}
 		case *bgp.PathAttributeCommunities:
-			if c.config.CollectCommunities {
+			if p.config.CollectCommunities {
 				rta.communities = attr.Value
 			}
 		case *bgp.PathAttributeLargeCommunities:
-			if c.config.CollectCommunities {
+			if p.config.CollectCommunities {
 				rta.largeCommunities = make([]bgp.LargeCommunity, len(attr.Values))
 				for idx, c := range attr.Values {
 					rta.largeCommunities[idx] = *c
@@ -276,14 +276,14 @@ func (c *Component) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonito
 	}
 	// If no AS path, consider the peer AS as the origin AS,
 	// otherwise the last AS.
-	if c.config.CollectASNs {
+	if p.config.CollectASNs {
 		if path := rta.asPath; len(path) == 0 {
 			rta.asn = pkey.asn
 		} else {
 			rta.asn = path[len(path)-1]
 		}
 	}
-	if !c.config.CollectASPaths {
+	if !p.config.CollectASPaths {
 		rta.asPath = rta.asPath[:0]
 	}
 
@@ -291,7 +291,7 @@ func (c *Component) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonito
 	removed := 0
 
 	// Regular NLRI and withdrawn routes
-	if pkey.ptype == bmp.BMP_PEER_TYPE_L3VPN || c.isAcceptedRD(0) {
+	if pkey.ptype == bmp.BMP_PEER_TYPE_L3VPN || p.isAcceptedRD(0) {
 		for _, ipprefix := range update.NLRI {
 			prefix := ipprefix.Prefix
 			plen := int(ipprefix.Length)
@@ -299,17 +299,17 @@ func (c *Component) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonito
 				prefix = prefix.To16()
 				plen += 96
 			}
-			p, _ := netip.AddrFromSlice(prefix)
+			pf, _ := netip.AddrFromSlice(prefix)
 			rta.plen = uint8(plen)
-			added += c.rib.addPrefix(p, plen, route{
+			added += p.rib.addPrefix(pf, plen, route{
 				peer: pinfo.reference,
-				nlri: c.rib.nlris.Put(nlri{
+				nlri: p.rib.nlris.Put(nlri{
 					family: bgp.RF_IPv4_UC,
 					path:   ipprefix.PathIdentifier(),
 					rd:     pkey.distinguisher,
 				}),
-				nextHop:    c.rib.nextHops.Put(nextHop(nh)),
-				attributes: c.rib.rtas.Put(rta),
+				nextHop:    p.rib.nextHops.Put(nextHop(nh)),
+				attributes: p.rib.rtas.Put(rta),
 			})
 		}
 		for _, ipprefix := range update.WithdrawnRoutes {
@@ -319,13 +319,13 @@ func (c *Component) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonito
 				prefix = prefix.To16()
 				plen += 96
 			}
-			p, _ := netip.AddrFromSlice(prefix)
-			if nlriRef, ok := c.rib.nlris.Ref(nlri{
+			pf, _ := netip.AddrFromSlice(prefix)
+			if nlriRef, ok := p.rib.nlris.Ref(nlri{
 				family: bgp.RF_IPv4_UC,
 				path:   ipprefix.PathIdentifier(),
 				rd:     pkey.distinguisher,
 			}); ok {
-				removed += c.rib.removePrefix(p, plen, route{
+				removed += p.rib.removePrefix(pf, plen, route{
 					peer: pinfo.reference,
 					nlri: nlriRef,
 				})
@@ -335,7 +335,7 @@ func (c *Component) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonito
 
 	// MP reach and unreach NLRI
 	for _, attr := range update.PathAttributes {
-		var p netip.Addr
+		var pf netip.Addr
 		var plen int
 		var rd RD
 		var ipprefixes []bgp.AddrPrefixInterface
@@ -349,27 +349,27 @@ func (c *Component) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonito
 		for _, ipprefix := range ipprefixes {
 			switch ipprefix := ipprefix.(type) {
 			case *bgp.IPAddrPrefix:
-				p, _ = netip.AddrFromSlice(ipprefix.Prefix.To16())
+				pf, _ = netip.AddrFromSlice(ipprefix.Prefix.To16())
 				plen = int(ipprefix.Length + 96)
 				rd = pkey.distinguisher
 			case *bgp.IPv6AddrPrefix:
-				p, _ = netip.AddrFromSlice(ipprefix.Prefix.To16())
+				pf, _ = netip.AddrFromSlice(ipprefix.Prefix.To16())
 				plen = int(ipprefix.Length)
 				rd = pkey.distinguisher
 			case *bgp.LabeledIPAddrPrefix:
-				p, _ = netip.AddrFromSlice(ipprefix.Prefix.To16())
+				pf, _ = netip.AddrFromSlice(ipprefix.Prefix.To16())
 				plen = int(ipprefix.IPPrefixLen() + 96)
 				rd = pkey.distinguisher
 			case *bgp.LabeledIPv6AddrPrefix:
-				p, _ = netip.AddrFromSlice(ipprefix.Prefix.To16())
+				pf, _ = netip.AddrFromSlice(ipprefix.Prefix.To16())
 				plen = int(ipprefix.IPPrefixLen())
 				rd = pkey.distinguisher
 			case *bgp.LabeledVPNIPAddrPrefix:
-				p, _ = netip.AddrFromSlice(ipprefix.Prefix.To16())
+				pf, _ = netip.AddrFromSlice(ipprefix.Prefix.To16())
 				plen = int(ipprefix.IPPrefixLen() + 96)
 				rd = RDFromRouteDistinguisherInterface(ipprefix.RD)
 			case *bgp.LabeledVPNIPv6AddrPrefix:
-				p, _ = netip.AddrFromSlice(ipprefix.Prefix.To16())
+				pf, _ = netip.AddrFromSlice(ipprefix.Prefix.To16())
 				plen = int(ipprefix.IPPrefixLen())
 				rd = RDFromRouteDistinguisherInterface(ipprefix.RD)
 			case *bgp.EVPNNLRI:
@@ -381,37 +381,37 @@ func (c *Component) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonito
 						prefix = prefix.To16()
 						plen += 96
 					}
-					p, _ = netip.AddrFromSlice(prefix.To16())
+					pf, _ = netip.AddrFromSlice(prefix.To16())
 					rd = RDFromRouteDistinguisherInterface(route.RD)
 				}
 			default:
-				c.metrics.ignoredNlri.WithLabelValues(exporterStr,
+				p.metrics.ignoredNlri.WithLabelValues(exporterStr,
 					bgp.AfiSafiToRouteFamily(ipprefix.AFI(), ipprefix.SAFI()).String()).Inc()
 				continue
 			}
-			if pkey.ptype != bmp.BMP_PEER_TYPE_L3VPN && !c.isAcceptedRD(rd) {
+			if pkey.ptype != bmp.BMP_PEER_TYPE_L3VPN && !p.isAcceptedRD(rd) {
 				continue
 			}
 			switch attr.(type) {
 			case *bgp.PathAttributeMpReachNLRI:
 				rta.plen = uint8(plen)
-				added += c.rib.addPrefix(p, plen, route{
+				added += p.rib.addPrefix(pf, plen, route{
 					peer: pinfo.reference,
-					nlri: c.rib.nlris.Put(nlri{
+					nlri: p.rib.nlris.Put(nlri{
 						family: bgp.AfiSafiToRouteFamily(ipprefix.AFI(), ipprefix.SAFI()),
 						rd:     rd,
 						path:   ipprefix.PathIdentifier(),
 					}),
-					nextHop:    c.rib.nextHops.Put(nextHop(nh)),
-					attributes: c.rib.rtas.Put(rta),
+					nextHop:    p.rib.nextHops.Put(nextHop(nh)),
+					attributes: p.rib.rtas.Put(rta),
 				})
 			case *bgp.PathAttributeMpUnreachNLRI:
-				if nlriRef, ok := c.rib.nlris.Ref(nlri{
+				if nlriRef, ok := p.rib.nlris.Ref(nlri{
 					family: bgp.AfiSafiToRouteFamily(ipprefix.AFI(), ipprefix.SAFI()),
 					rd:     rd,
 					path:   ipprefix.PathIdentifier(),
 				}); ok {
-					removed += c.rib.removePrefix(p, plen, route{
+					removed += p.rib.removePrefix(pf, plen, route{
 						peer: pinfo.reference,
 						nlri: nlriRef,
 					})
@@ -420,13 +420,13 @@ func (c *Component) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonito
 		}
 	}
 
-	c.metrics.routes.WithLabelValues(exporterStr).Add(float64(added - removed))
+	p.metrics.routes.WithLabelValues(exporterStr).Add(float64(added - removed))
 }
 
-func (c *Component) isAcceptedRD(rd RD) bool {
-	if len(c.acceptedRDs) == 0 {
+func (p *Provider) isAcceptedRD(rd RD) bool {
+	if len(p.acceptedRDs) == 0 {
 		return true
 	}
-	_, ok := c.acceptedRDs[uint64(rd)]
+	_, ok := p.acceptedRDs[uint64(rd)]
 	return ok
 }

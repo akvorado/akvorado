@@ -13,13 +13,13 @@ import (
 	"github.com/benbjohnson/clock"
 	"gopkg.in/tomb.v2"
 
-	"akvorado/common/daemon"
 	"akvorado/common/helpers/sync"
 	"akvorado/common/reporter"
+	"akvorado/inlet/routing/provider"
 )
 
-// Component represents the BMP compomenent.
-type Component struct {
+// Provider represents the BMP provider.
+type Provider struct {
 	r           *reporter.Reporter
 	d           *Dependencies
 	t           tomb.Tomb
@@ -39,17 +39,14 @@ type Component struct {
 }
 
 // Dependencies define the dependencies of the BMP component.
-type Dependencies struct {
-	Daemon daemon.Component
-	Clock  clock.Clock
-}
+type Dependencies = provider.Dependencies
 
-// New creates a new BMP component.
-func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
+// New creates a new BMP component from its configuration.
+func (configuration Configuration) New(r *reporter.Reporter, dependencies Dependencies) (provider.Provider, error) {
 	if dependencies.Clock == nil {
 		dependencies.Clock = clock.New()
 	}
-	c := Component{
+	p := Provider{
 		r:      r,
 		d:      &dependencies,
 		config: configuration,
@@ -58,61 +55,61 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		peers:           make(map[peerKey]*peerInfo),
 		peerRemovalChan: make(chan peerKey, configuration.RIBPeerRemovalMaxQueue),
 	}
-	if len(c.config.RDs) > 0 {
-		c.acceptedRDs = make(map[uint64]struct{})
-		for _, rd := range c.config.RDs {
-			c.acceptedRDs[uint64(rd)] = struct{}{}
+	if len(p.config.RDs) > 0 {
+		p.acceptedRDs = make(map[uint64]struct{})
+		for _, rd := range p.config.RDs {
+			p.acceptedRDs[uint64(rd)] = struct{}{}
 		}
 	}
-	c.staleTimer = c.d.Clock.AfterFunc(time.Hour, c.removeStalePeers)
+	p.staleTimer = p.d.Clock.AfterFunc(time.Hour, p.removeStalePeers)
 
-	c.d.Daemon.Track(&c.t, "inlet/bmp")
-	c.initMetrics()
-	return &c, nil
+	p.d.Daemon.Track(&p.t, "inlet/bmp")
+	p.initMetrics()
+	return &p, nil
 }
 
-// Start starts the BMP component.
-func (c *Component) Start() error {
-	c.r.Info().Msg("starting BMP component")
-	listener, err := net.Listen("tcp", c.config.Listen)
+// Start starts the BMP provider.
+func (p *Provider) Start() error {
+	p.r.Info().Msg("starting BMP provider")
+	listener, err := net.Listen("tcp", p.config.Listen)
 	if err != nil {
-		return fmt.Errorf("unable to listen to %v: %w", c.config.Listen, err)
+		return fmt.Errorf("unable to listen to %v: %w", p.config.Listen, err)
 	}
-	c.address = listener.Addr()
+	p.address = listener.Addr()
 
 	// Peer removal
-	c.t.Go(c.peerRemovalWorker)
+	p.t.Go(p.peerRemovalWorker)
 
 	// Listener
-	c.t.Go(func() error {
+	p.t.Go(func() error {
 		for {
 			conn, err := listener.Accept()
 			if err != nil {
-				if c.t.Alive() {
+				if p.t.Alive() {
 					return fmt.Errorf("cannot accept new connection: %w", err)
 				}
 				return nil
 			}
-			c.t.Go(func() error {
-				return c.serveConnection(conn.(*net.TCPConn))
+			p.t.Go(func() error {
+				return p.serveConnection(conn.(*net.TCPConn))
 			})
 		}
 	})
-	c.t.Go(func() error {
-		<-c.t.Dying()
+	p.t.Go(func() error {
+		<-p.t.Dying()
 		listener.Close()
 		return nil
 	})
 	return nil
 }
 
-// Stop stops the BMP component
-func (c *Component) Stop() error {
+// Stop stops the BMP provider.
+func (p *Provider) Stop() error {
 	defer func() {
-		close(c.peerRemovalChan)
-		c.r.Info().Msg("BMP component stopped")
+		close(p.peerRemovalChan)
+		p.r.Info().Msg("BMP component stopped")
 	}()
-	c.r.Info().Msg("stopping BMP component")
-	c.t.Kill(nil)
-	return c.t.Wait()
+	p.r.Info().Msg("stopping BMP component")
+	p.t.Kill(nil)
+	return p.t.Wait()
 }

@@ -16,13 +16,14 @@ import (
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
-	"akvorado/inlet/bmp"
 	"akvorado/inlet/core"
 	"akvorado/inlet/flow"
 	"akvorado/inlet/geoip"
 	"akvorado/inlet/kafka"
 	"akvorado/inlet/metadata"
 	"akvorado/inlet/metadata/provider/snmp"
+	"akvorado/inlet/routing"
+	"akvorado/inlet/routing/provider/bmp"
 )
 
 // InletConfiguration represents the configuration file for the inlet command.
@@ -31,7 +32,7 @@ type InletConfiguration struct {
 	HTTP      httpserver.Configuration
 	Flow      flow.Configuration
 	Metadata  metadata.Configuration
-	BMP       bmp.Configuration
+	Routing   routing.Configuration
 	GeoIP     geoip.Configuration
 	Kafka     kafka.Configuration
 	Core      core.Configuration
@@ -45,13 +46,14 @@ func (c *InletConfiguration) Reset() {
 		Reporting: reporter.DefaultConfiguration(),
 		Flow:      flow.DefaultConfiguration(),
 		Metadata:  metadata.DefaultConfiguration(),
-		BMP:       bmp.DefaultConfiguration(),
+		Routing:   routing.DefaultConfiguration(),
 		GeoIP:     geoip.DefaultConfiguration(),
 		Kafka:     kafka.DefaultConfiguration(),
 		Core:      core.DefaultConfiguration(),
 		Schema:    schema.DefaultConfiguration(),
 	}
 	c.Metadata.Provider.Config = snmp.DefaultConfiguration()
+	c.Routing.Provider.Config = bmp.DefaultConfiguration()
 }
 
 type inletOptions struct {
@@ -120,13 +122,13 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 		Daemon: daemonComponent,
 	})
 	if err != nil {
-		return fmt.Errorf("unable to initialize METADATA component: %w", err)
+		return fmt.Errorf("unable to initialize metadata component: %w", err)
 	}
-	bmpComponent, err := bmp.New(r, config.BMP, bmp.Dependencies{
+	routingComponent, err := routing.New(r, config.Routing, routing.Dependencies{
 		Daemon: daemonComponent,
 	})
 	if err != nil {
-		return fmt.Errorf("unable to initialize BMP component: %w", err)
+		return fmt.Errorf("unable to initialize routing component: %w", err)
 	}
 	geoipComponent, err := geoip.New(r, config.GeoIP, geoip.Dependencies{
 		Daemon: daemonComponent,
@@ -145,7 +147,7 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 		Daemon:   daemonComponent,
 		Flow:     flowComponent,
 		Metadata: metadataComponent,
-		BMP:      bmpComponent,
+		Routing:  routingComponent,
 		GeoIP:    geoipComponent,
 		Kafka:    kafkaComponent,
 		HTTP:     httpComponent,
@@ -168,7 +170,7 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 	components := []interface{}{
 		httpComponent,
 		metadataComponent,
-		bmpComponent,
+		routingComponent,
 		geoipComponent,
 		kafkaComponent,
 		coreComponent,
@@ -177,7 +179,8 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 	return StartStopComponents(r, daemonComponent, components)
 }
 
-// InletConfigurationUnmarshallerHook renames SNMP configuration to metadata
+// InletConfigurationUnmarshallerHook renames SNMP configuration to metadata and
+// BMP configuration to routing.
 func InletConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (interface{}, error) {
 		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(InletConfiguration{}) {
@@ -185,56 +188,107 @@ func InletConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 		}
 
 		// snmp → metadata
-		var snmpKey, metadataKey *reflect.Value
-		fromKeys := from.MapKeys()
-		for i, k := range fromKeys {
-			k = helpers.ElemOrIdentity(k)
-			if k.Kind() != reflect.String {
-				return from.Interface(), nil
-			}
-			if helpers.MapStructureMatchName(k.String(), "Snmp") {
-				snmpKey = &fromKeys[i]
-			} else if helpers.MapStructureMatchName(k.String(), "Metadata") {
-				metadataKey = &fromKeys[i]
-			}
-		}
-		if snmpKey == nil {
-			return from.Interface(), nil
-		}
-		if snmpKey != nil && metadataKey != nil {
-			return nil, fmt.Errorf("cannot have both %q and %q", snmpKey.String(), metadataKey.String())
-		}
-
-		// Build the metadata configuration
-		providerValue := gin.H{}
-		metadataValue := gin.H{}
-		// Dispatch values from snmp key into metadata
-		snmpMap := helpers.ElemOrIdentity(from.MapIndex(*snmpKey))
-		snmpKeys := snmpMap.MapKeys()
-	outer:
-		for i, k := range snmpKeys {
-			k = helpers.ElemOrIdentity(k)
-			if k.Kind() != reflect.String {
-				continue
-			}
-			if helpers.MapStructureMatchName(k.String(), "PollerCoalesce") {
-				metadataValue["MaxBatchRequests"] = snmpMap.MapIndex(snmpKeys[i]).Interface()
-				continue
-			}
-			metadataConfig := reflect.TypeOf(metadata.Configuration{})
-			for j := 0; j < metadataConfig.NumField(); j++ {
-				if helpers.MapStructureMatchName(k.String(), metadataConfig.Field(j).Name) {
-					metadataValue[k.String()] = snmpMap.MapIndex(snmpKeys[i]).Interface()
-					continue outer
+		{
+			var snmpKey, metadataKey *reflect.Value
+			fromKeys := from.MapKeys()
+			for i, k := range fromKeys {
+				k = helpers.ElemOrIdentity(k)
+				if k.Kind() != reflect.String {
+					return from.Interface(), nil
+				}
+				if helpers.MapStructureMatchName(k.String(), "Snmp") {
+					snmpKey = &fromKeys[i]
+				} else if helpers.MapStructureMatchName(k.String(), "Metadata") {
+					metadataKey = &fromKeys[i]
 				}
 			}
-			providerValue[k.String()] = snmpMap.MapIndex(snmpKeys[i]).Interface()
+			if snmpKey != nil {
+				if snmpKey != nil && metadataKey != nil {
+					return nil, fmt.Errorf("cannot have both %q and %q", snmpKey.String(), metadataKey.String())
+				}
+
+				// Build the metadata configuration
+				providerValue := gin.H{}
+				metadataValue := gin.H{}
+				// Dispatch values from snmp key into metadata
+				snmpMap := helpers.ElemOrIdentity(from.MapIndex(*snmpKey))
+				snmpKeys := snmpMap.MapKeys()
+			outerSNMP:
+				for i, k := range snmpKeys {
+					k = helpers.ElemOrIdentity(k)
+					if k.Kind() != reflect.String {
+						continue
+					}
+					if helpers.MapStructureMatchName(k.String(), "PollerCoalesce") {
+						metadataValue["MaxBatchRequests"] = snmpMap.MapIndex(snmpKeys[i]).Interface()
+						continue
+					}
+					metadataConfig := reflect.TypeOf(metadata.Configuration{})
+					for j := 0; j < metadataConfig.NumField(); j++ {
+						if helpers.MapStructureMatchName(k.String(), metadataConfig.Field(j).Name) {
+							metadataValue[k.String()] = snmpMap.MapIndex(snmpKeys[i]).Interface()
+							continue outerSNMP
+						}
+					}
+					providerValue[k.String()] = snmpMap.MapIndex(snmpKeys[i]).Interface()
+				}
+
+				providerValue["type"] = "snmp"
+				metadataValue["provider"] = providerValue
+				from.SetMapIndex(reflect.ValueOf("metadata"), reflect.ValueOf(metadataValue))
+				from.SetMapIndex(*snmpKey, reflect.Value{})
+			}
 		}
 
-		providerValue["type"] = "snmp"
-		metadataValue["provider"] = providerValue
-		from.SetMapIndex(reflect.ValueOf("metadata"), reflect.ValueOf(metadataValue))
-		from.SetMapIndex(*snmpKey, reflect.Value{})
+		// bmp → routing
+		{
+			var bmpKey, routingKey *reflect.Value
+			fromKeys := from.MapKeys()
+			for i, k := range fromKeys {
+				k = helpers.ElemOrIdentity(k)
+				if k.Kind() != reflect.String {
+					return from.Interface(), nil
+				}
+				if helpers.MapStructureMatchName(k.String(), "Bmp") {
+					bmpKey = &fromKeys[i]
+				} else if helpers.MapStructureMatchName(k.String(), "Routing") {
+					routingKey = &fromKeys[i]
+				}
+			}
+			if bmpKey != nil {
+				if bmpKey != nil && routingKey != nil {
+					return nil, fmt.Errorf("cannot have both %q and %q", bmpKey.String(), routingKey.String())
+				}
+
+				// Build the routing configuration
+				providerValue := gin.H{}
+				routingValue := gin.H{}
+				// Dispatch values from bmp key into routing
+				bmpMap := helpers.ElemOrIdentity(from.MapIndex(*bmpKey))
+				bmpKeys := bmpMap.MapKeys()
+			outerBMP:
+				for i, k := range bmpKeys {
+					k = helpers.ElemOrIdentity(k)
+					if k.Kind() != reflect.String {
+						continue
+					}
+					routingConfig := reflect.TypeOf(routing.Configuration{})
+					for j := 0; j < routingConfig.NumField(); j++ {
+						if helpers.MapStructureMatchName(k.String(), routingConfig.Field(j).Name) {
+							routingValue[k.String()] = bmpMap.MapIndex(bmpKeys[i]).Interface()
+							continue outerBMP
+						}
+					}
+					providerValue[k.String()] = bmpMap.MapIndex(bmpKeys[i]).Interface()
+				}
+
+				providerValue["type"] = "bmp"
+				routingValue["provider"] = providerValue
+				from.SetMapIndex(reflect.ValueOf("routing"), reflect.ValueOf(routingValue))
+				from.SetMapIndex(*bmpKey, reflect.Value{})
+			}
+		}
+
 		return from.Interface(), nil
 	}
 }

@@ -16,11 +16,11 @@ import (
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
-	"akvorado/inlet/bmp"
 	"akvorado/inlet/flow"
 	"akvorado/inlet/geoip"
 	"akvorado/inlet/kafka"
 	"akvorado/inlet/metadata"
+	"akvorado/inlet/routing"
 )
 
 // Component represents the HTTP compomenent.
@@ -47,7 +47,7 @@ type Dependencies struct {
 	Daemon   daemon.Component
 	Flow     *flow.Component
 	Metadata *metadata.Component
-	BMP      *bmp.Component
+	Routing  *routing.Component
 	GeoIP    *geoip.Component
 	Kafka    *kafka.Component
 	HTTP     *httpserver.Component

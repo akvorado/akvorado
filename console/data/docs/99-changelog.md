@@ -22,7 +22,10 @@ identified with a specific icon:
 - ✨ *inlet*: metadata retrieval is now pluggable. In addition to SNMP, it is
   now possible to set exporter names, interface names and descriptions directly
   in the configuration file. See `inlet`→`metadata`.
-- ✨ *inlet*: allow extraction of prefix length from BMP. See `inlet`→`core`→`net-providers`.
+- ✨ *inlet*: routing information is now pluggable. Currently, only BMP is
+  supported. See `inlet`→`routing`.
+- ✨ *inlet*: allow extraction of prefix length from routing information. See
+  `inlet`→`core`→`net-providers`.
 - ✨ *inlet*: add the following collected data (disabled by default):
   - `IPTTL`
   - `IPTos`

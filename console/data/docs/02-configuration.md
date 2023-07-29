@@ -112,18 +112,25 @@ Without configuration, *Akvorado* will listen for incoming
 Netflow/IPFIX and sFlow flows on a random port (check the logs to know
 which one).
 
-### BMP
+### Routing
 
-The BMP component handles incoming BMP connections from routers. The
-information received can be used to fetch source and destination AS
-numbers, as well as the AS paths and communities. Not all exporters
-need to send their tables with BMP. *Akvorado* will try to select the
-best route using the next hop advertised in the flow and fallback to
-any next hop if not found.
+The routing component optionally fetches source and destination AS numbers, as
+well as the AS paths and communities. Not all exporters need to provide this
+information. Currently, the default provider is BMP. *Akvorado* will try
+to select the best route using the next hop advertised in the flow and fallback
+to any next hop if not found.
 
-The following keys are accepted:
+The component accepts only a `provider` key, which defines the provider
+configuration. Inside the provider configuration, the provider type is defined
+by the `type` key (`bmp` and `bioris` are currently supported). The remaining
+keys are specific to the provider.
 
-- `listen` specifies the IP address and port to listen for incoming connections (default port is 10179)
+#### BMP provider
+
+For the BMP provider, the following keys are accepted:
+
+- `listen` specifies the IP address and port to listen for incoming connections
+  (default port is 10179)
 - `rds` specifies a list of route distinguisher to accept (0 is meant
   to accept routes without an associated route distinguisher)
 - `collect-asns` tells if origin AS numbers should be collected
@@ -140,6 +147,54 @@ space used in ClickHouse.
 
 *Akvorado* supports receiving the AdjRIB-in, with or without
 filtering. It may also work with a LocRIB.
+
+For example:
+
+```yaml
+routing:
+  provider:
+    type: bmp
+    listen: 0.0.0.0:10179
+    collect-asns: true
+    collect-aspaths: true
+    collect-communities: false
+```
+
+#### BioRIS provider
+
+As alternative to the internal BMP, an connection to an existing [bio-rd
+RIS](https://github.com/bio-routing/bio-rd/tree/master/cmd/ris) instance may be
+used. It accepts the following keys:
+
+- `ris-instances` is a list of instances
+- `timeout` tells how much time to wait to get an answer from a RIS instance
+- `refresh` tells how much time to wait between two refresh of the list of routers
+
+Each instance accepts the following keys:
+
+- `grpc-addr` is the address and port of a RIS instance
+- `grpc-secure` tells if a connection should be set using TLS
+- `vrf` (as a string) or `vrf-id` (as an ID) tell which VRF we should look up
+
+This is configured as follows:
+
+```yaml
+routing:
+  provider:
+    type: bioris
+    risinstances:
+      - grpcaddr: 192.0.2.15:4321
+        grpcsecure: true
+        vrf: 0:0
+```
+
+BioRIS tries to query the RIB of the router that sent the flow. If this router's
+RIB is not available in all known RIS instances, an other router is implictly
+used as fallback. After the router id is determined, BioRIS queries one of the
+RIS instances known holding the RIB.
+
+BioRIS currently supports setting prefix, AS, AS Path and communities for the
+given flow.
 
 ### Kafka
 
@@ -196,13 +251,13 @@ The following configuration keys are accepted:
   would also accept a single value).
 - `asn-providers` defines the source list for AS numbers. The
   available sources are `flow`, `flow-except-private` (use information
-  from flow except if the ASN is private), `geoip`, `bmp`, and
-  `bmp-except-private`. The default value is `flow`, `bmp`, and
+  from flow except if the ASN is private), `geoip`, `routing`, and
+  `routing-except-private`. The default value is `flow`, `routing`, and
   `geoip`.
 - `net-providers` defines the sources for prefix lengths. `flow` uses the value
-  provided by the flow message (if any), while `bmp` looks it up using the BMP
+  provided by the flow message (if any), while `routing` looks it up using the BMP
   component. If multiple sources are provided, the value of the first source
-  providing a non-default route is taken. The default value is `flow` and `bmp`.
+  providing a non-default route is taken. The default value is `flow` and `routing`.
 
 Classifier rules are written using [expr][].
 

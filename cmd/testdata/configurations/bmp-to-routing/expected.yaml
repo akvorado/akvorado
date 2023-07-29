@@ -1,0 +1,21 @@
+---
+paths:
+  inlet.0.routing:
+    provider:
+      type: bmp
+      listen: 127.0.0.1:1179
+      collectasns: true
+      collectaspaths: false
+      collectcommunities: true
+      keep: 1h0m0s
+      rds: []
+      ribpeerremovalbatchroutes: 5000
+      ribpeerremovalmaxqueue: 10000
+      ribpeerremovalmaxtime: 100ms
+      ribpeerremovalsleepinterval: 500ms
+  inlet.0.core.asnproviders:
+    - flow
+    - routing
+    - geoip
+  inlet.0.core.netproviders:
+    - routing
