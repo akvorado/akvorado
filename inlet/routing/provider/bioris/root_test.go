@@ -29,9 +29,9 @@ import (
 func TestChooseRouter(t *testing.T) {
 	r := reporter.NewMock(t)
 	c := &Provider{
-		r:      r,
-		i:      make(map[string]*RISInstanceRuntime),
-		router: make(map[netip.Addr][]*RISInstanceRuntime),
+		r:         r,
+		instances: make(map[string]*RISInstanceRuntime),
+		router:    make(map[netip.Addr][]*RISInstanceRuntime),
 	}
 
 	c.initMetrics()
@@ -51,9 +51,9 @@ func TestChooseRouter(t *testing.T) {
 	ris3 := &RISInstanceRuntime{config: RISInstance{GRPCAddr: "ris3"}}
 
 	// Add them to the component
-	c.i["ris1"] = ris1
-	c.i["ris2"] = ris2
-	c.i["ris3"] = ris3
+	c.instances["ris1"] = ris1
+	c.instances["ris2"] = ris2
+	c.instances["ris3"] = ris3
 
 	// Create a few routers
 	r1 := netip.MustParseAddr("10.0.0.1")

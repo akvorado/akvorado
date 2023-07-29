@@ -37,8 +37,7 @@ type Provider struct {
 	d      *Dependencies
 	config Configuration
 
-	i             map[string]*RISInstanceRuntime
-	log           reporter.Logger
+	instances     map[string]*RISInstanceRuntime
 	metrics       metrics
 	router        map[netip.Addr][]*RISInstanceRuntime
 	clientMetrics *grpc_prometheus.ClientMetrics
@@ -50,11 +49,11 @@ type Dependencies = provider.Dependencies
 // New creates a new BioRIS provider.
 func (configuration Configuration) New(r *reporter.Reporter, dependencies Dependencies) (provider.Provider, error) {
 	c := Provider{
-		r:      r,
-		i:      make(map[string]*RISInstanceRuntime),
-		d:      &dependencies,
-		config: configuration,
-		router: make(map[netip.Addr][]*RISInstanceRuntime),
+		r:         r,
+		d:         &dependencies,
+		instances: make(map[string]*RISInstanceRuntime),
+		config:    configuration,
+		router:    make(map[netip.Addr][]*RISInstanceRuntime),
 	}
 	c.clientMetrics = grpc_prometheus.NewClientMetrics()
 	c.initMetrics()
@@ -83,7 +82,7 @@ func (c *Provider) Start() error {
 		)
 		if err != nil {
 			c.metrics.risUp.WithLabelValues(con.GRPCAddr).Set(0)
-			c.log.Err(err).Msgf("error while dialing RIS %s", con.GRPCAddr)
+			c.r.Err(err).Msgf("error while dialing RIS %s", con.GRPCAddr)
 			continue
 		}
 		client := pb.NewRoutingInformationServiceClient(conn)
@@ -91,7 +90,7 @@ func (c *Provider) Start() error {
 			c.metrics.risUp.WithLabelValues(con.GRPCAddr).Set(0)
 			// We only fail softly here, as a single unavailable client is no
 			// reason to let inlet crash
-			c.log.Error().Msgf("error while opening RIS client %s", con.GRPCAddr)
+			c.r.Error().Msgf("error while opening RIS client %s", con.GRPCAddr)
 			conn.Close()
 			continue
 		}
@@ -102,12 +101,12 @@ func (c *Provider) Start() error {
 			c.metrics.risUp.WithLabelValues(con.GRPCAddr).Set(0)
 			// We only fail softly here, as a single unavailable client is no
 			// reason to let inlet crash
-			c.log.Err(err).Msgf("error while getting routers from %s", con.GRPCAddr)
+			c.r.Err(err).Msgf("error while getting routers from %s", con.GRPCAddr)
 			conn.Close()
 			continue
 		}
 
-		c.i[con.GRPCAddr] = &RISInstanceRuntime{
+		c.instances[con.GRPCAddr] = &RISInstanceRuntime{
 			config: con,
 			client: client,
 			conn:   conn,
@@ -117,14 +116,14 @@ func (c *Provider) Start() error {
 			routerAddress, e := netip.ParseAddr(router.Address)
 
 			if e != nil {
-				c.log.Err(e).Msgf("error while parsing router address %s", router.Address)
+				c.r.Err(e).Msgf("error while parsing router address %s", router.Address)
 				continue
 			}
 			// Akvorado handles everything as IPv6-mapped addr. Therefore, we
 			// also convert our router id to ipv6 mapped
 			routerAddress = netip.AddrFrom16(routerAddress.As16())
 
-			c.router[routerAddress] = append(c.router[routerAddress], c.i[con.GRPCAddr])
+			c.router[routerAddress] = append(c.router[routerAddress], c.instances[con.GRPCAddr])
 			c.metrics.knownRouters.WithLabelValues(con.GRPCAddr).Inc()
 			// We need to initialize all the counters here
 			c.metrics.lpmRequestTimeouts.WithLabelValues(con.GRPCAddr, router.Address)
@@ -294,7 +293,7 @@ func (c *Provider) lookupLPM(ctx context.Context, ip netip.Addr, agent netip.Add
 
 // Stop closes connection to ris
 func (c *Provider) Stop() error {
-	for _, v := range c.i {
+	for _, v := range c.instances {
 		v.conn.Close()
 	}
 	return nil
