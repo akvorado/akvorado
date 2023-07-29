@@ -84,6 +84,13 @@ jobs:
         run: make test-bench
       - name: JS tests
         run: make test-js
+      - name: Run coverage tests
+        run: make test-coverage
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./test/go/coverage.xml,./test/js/cobertura-coverage.xml
+          flags: unittests
       - name: Upload binary
         uses: actions/upload-artifact@v3
         with:
