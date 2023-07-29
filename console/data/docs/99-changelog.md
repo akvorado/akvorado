@@ -13,6 +13,9 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 💥 *cmd*: use `AKVORADO_CFG_` as a prefix for environment variables used to
+  modify configuration (`AKVORADO_CFG_ORCHESTRATOR_HTTP_LISTEN` instead of
+  `AKVORADO_ORCHESTRATOR_HTTP_LISTEN`)
 - 💥 *inlet*: `inlet`→`metadata`→`provider(snmp)`→`ports` is now a map from
   exporter subnets to ports, instead of a map from agent subnets to ports. This
   is aligned with how `communities` and `security-parameters` options behave.

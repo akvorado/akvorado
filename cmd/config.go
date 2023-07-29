@@ -105,16 +105,16 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 			continue
 		}
 		kk := strings.Split(kv[0], "_")
-		if len(kk) < 3 || kk[0] != "AKVORADO" || kk[1] != strings.ToUpper(component) {
+		if len(kk) < 4 || kk[0] != "AKVORADO" || kk[1] != "CFG" || kk[2] != strings.ToUpper(component) {
 			continue
 		}
-		// From AKVORADO_CMP_SQUID_PURPLE_QUIRK=47, we
+		// From AKVORADO_CFG_CMP_SQUID_PURPLE_QUIRK=47, we
 		// build a map "squid -> purple -> quirk ->
-		// 47". From AKVORADO_CMP_SQUID_3_PURPLE=47, we
+		// 47". From AKVORADO_CFG_CMP_SQUID_3_PURPLE=47, we
 		// build "squid[3] -> purple -> 47"
 		var rawConfig interface{}
 		rawConfig = kv[1]
-		for i := len(kk) - 1; i > 1; i-- {
+		for i := len(kk) - 1; i > 2; i-- {
 			if index, err := strconv.Atoi(kk[i]); err == nil {
 				newRawConfig := make([]interface{}, index+1)
 				newRawConfig[index] = rawConfig

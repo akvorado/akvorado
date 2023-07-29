@@ -14,7 +14,7 @@ written using strings like `10h20m` or `5s`. Valid time units are `ms`, `s`,
 
 It is also possible to override configuration settings using
 environment variables. You need to remove any `-` from key names and
-use `_` to handle nesting. Then, put `AKVORADO_ORCHESTRATOR_` as a
+use `_` to handle nesting. Then, put `AKVORADO_CFG_ORCHESTRATOR_` as a
 prefix. For example, let's consider the following configuration file:
 
 ```yaml
@@ -30,9 +30,9 @@ kafka:
 It can be translated to:
 
 ```sh
-AKVORADO_ORCHESTRATOR_HTTP_LISTEN=127.0.0.1:8081
-AKVORADO_ORCHESTRATOR_KAFKA_TOPIC=test-topic
-AKVORADO_ORCHESTRATOR_KAFKA_BROKERS=192.0.2.1:9092,192.0.2.2:9092
+AKVORADO_CFG_ORCHESTRATOR_HTTP_LISTEN=127.0.0.1:8081
+AKVORADO_CFG_ORCHESTRATOR_KAFKA_TOPIC=test-topic
+AKVORADO_CFG_ORCHESTRATOR_KAFKA_BROKERS=192.0.2.1:9092,192.0.2.2:9092
 ```
 
 The orchestrator service has its own configuration, as well as the

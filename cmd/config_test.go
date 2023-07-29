@@ -203,21 +203,21 @@ module2:
 	// Environment
 	clean := func() {
 		for _, env := range os.Environ() {
-			if strings.HasPrefix(env, "AKVORADO_DUMMY_") {
+			if strings.HasPrefix(env, "AKVORADO_CFG_DUMMY_") {
 				os.Unsetenv(strings.Split(env, "=")[0])
 			}
 		}
 	}
 	clean()
 	defer clean()
-	os.Setenv("AKVORADO_DUMMY_MODULE1_LISTEN", "127.0.0.1:9000")
-	os.Setenv("AKVORADO_DUMMY_MODULE1_TOPIC", "something")
-	os.Setenv("AKVORADO_DUMMY_MODULE2_DETAILS_INTERVALVALUE", "10m")
-	os.Setenv("AKVORADO_DUMMY_MODULE2_STUFF", "bye")
-	os.Setenv("AKVORADO_DUMMY_MODULE2_ELEMENTS_0_NAME", "something")
-	os.Setenv("AKVORADO_DUMMY_MODULE2_ELEMENTS_0_GAUGE", "18")
-	os.Setenv("AKVORADO_DUMMY_MODULE2_ELEMENTS_1_NAME", "something else")
-	os.Setenv("AKVORADO_DUMMY_MODULE2_ELEMENTS_1_GAUGE", "7")
+	os.Setenv("AKVORADO_CFG_DUMMY_MODULE1_LISTEN", "127.0.0.1:9000")
+	os.Setenv("AKVORADO_CFG_DUMMY_MODULE1_TOPIC", "something")
+	os.Setenv("AKVORADO_CFG_DUMMY_MODULE2_DETAILS_INTERVALVALUE", "10m")
+	os.Setenv("AKVORADO_CFG_DUMMY_MODULE2_STUFF", "bye")
+	os.Setenv("AKVORADO_CFG_DUMMY_MODULE2_ELEMENTS_0_NAME", "something")
+	os.Setenv("AKVORADO_CFG_DUMMY_MODULE2_ELEMENTS_0_GAUGE", "18")
+	os.Setenv("AKVORADO_CFG_DUMMY_MODULE2_ELEMENTS_1_NAME", "something else")
+	os.Setenv("AKVORADO_CFG_DUMMY_MODULE2_ELEMENTS_1_GAUGE", "7")
 
 	c := cmd.ConfigRelatedOptions{
 		Path: configFile,
