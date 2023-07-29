@@ -17,6 +17,7 @@ import (
 	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
+	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"gopkg.in/tomb.v2"
@@ -68,7 +69,12 @@ func (configuration Configuration) New(r *reporter.Reporter, dependencies Depend
 // Start starts the bioris provider.
 func (p *Provider) Start() error {
 	p.r.Info().Msg("starting BioRIS provider")
-	p.Refresh(context.Background())
+	refresh := func(ctx context.Context) {
+		ctx, cancel := context.WithDeadline(ctx, time.Now().Add(p.config.RefreshTimeout))
+		defer cancel()
+		p.Refresh(ctx)
+	}
+	refresh(context.Background())
 	p.d.Daemon.Track(&p.t, "inlet/bmp")
 	p.t.Go(func() error {
 		ticker := time.NewTicker(p.config.Refresh)
@@ -78,7 +84,7 @@ func (p *Provider) Start() error {
 			case <-p.t.Dying():
 				return nil
 			case <-ticker.C:
-				p.Refresh(p.t.Context(context.Background()))
+				refresh(p.t.Context(context.Background()))
 			}
 		}
 	})
@@ -97,7 +103,6 @@ func (p *Provider) Dial(config RISInstance) (*RISInstanceRuntime, error) {
 		securityOption = grpc.WithTransportCredentials(credentials.NewTLS(config))
 	}
 	backoff := backoff.DefaultConfig
-
 	conn, err := grpc.Dial(config.GRPCAddr, securityOption,
 		grpc.WithUnaryInterceptor(p.clientMetrics.UnaryClientInterceptor()),
 		grpc.WithStreamInterceptor(p.clientMetrics.StreamClientInterceptor()),
@@ -111,7 +116,22 @@ func (p *Provider) Dial(config RISInstance) (*RISInstanceRuntime, error) {
 		conn.Close()
 		return nil, fmt.Errorf("error while opening RIS client %s", config.GRPCAddr)
 	}
-	p.metrics.risUp.WithLabelValues(config.GRPCAddr).Set(1)
+	p.metrics.risUp.WithLabelValues(config.GRPCAddr).Set(0)
+	p.t.Go(func() error {
+		for {
+			state := conn.GetState()
+			if !conn.WaitForStateChange(p.t.Context(context.Background()), state) {
+				return nil
+			}
+			state = conn.GetState()
+			p.metrics.risUp.WithLabelValues(config.GRPCAddr).Set(func() float64 {
+				if state == connectivity.Ready {
+					return 1
+				}
+				return 0
+			}())
+		}
+	})
 
 	return &RISInstanceRuntime{
 		config: config,
@@ -140,8 +160,6 @@ func (p *Provider) Refresh(ctx context.Context) {
 		r, err := instance.client.GetRouters(ctx, &pb.GetRoutersRequest{})
 		if err != nil {
 			p.r.Err(err).Msgf("error while getting routers from %s", config.GRPCAddr)
-			instance.conn.Close()
-			instances[config.GRPCAddr] = nil
 			continue
 		}
 		p.metrics.knownRouters.WithLabelValues(config.GRPCAddr).Set(0)
@@ -161,14 +179,6 @@ func (p *Provider) Refresh(ctx context.Context) {
 			p.metrics.lpmRequests.WithLabelValues(config.GRPCAddr, router.Address)
 			p.metrics.routerChosenAgentIDMatch.WithLabelValues(config.GRPCAddr, router.Address)
 			p.metrics.routerChosenFallback.WithLabelValues(config.GRPCAddr, router.Address)
-		}
-	}
-
-	for _, config := range p.config.RISInstances {
-		if instances[config.GRPCAddr] == nil {
-			p.metrics.risUp.WithLabelValues(config.GRPCAddr).Set(0)
-		} else {
-			p.metrics.risUp.WithLabelValues(config.GRPCAddr).Set(1)
 		}
 	}
 

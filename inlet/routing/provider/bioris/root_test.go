@@ -416,16 +416,14 @@ func TestBioRIS(t *testing.T) {
 	// Instantiate provider
 	r := reporter.NewMock(t)
 	addr := rpcListener.Addr().String()
-	config := Configuration{
-		Timeout: 200 * time.Millisecond,
-		Refresh: 1 * time.Minute,
-		RISInstances: []RISInstance{{
-			GRPCAddr:   addr,
-			GRPCSecure: false,
-			VRFId:      0,
-		}},
-	}
-	p, err := config.New(r, provider.Dependencies{
+	config := DefaultConfiguration()
+	configP := config.(Configuration)
+	configP.RISInstances = []RISInstance{{
+		GRPCAddr:   addr,
+		GRPCSecure: false,
+		VRFId:      0,
+	}}
+	p, err := configP.New(r, provider.Dependencies{
 		Daemon: daemon.NewMock(t),
 	})
 	if err != nil {

@@ -17,6 +17,8 @@ type Configuration struct {
 	Timeout time.Duration `validate:"min=1ms"`
 	// Refresh defines the interval to refresh router list from RIS instances
 	Refresh time.Duration `validate:"min=1s"`
+	// RefreshTimeout defines the timeout to retrieve the list of routers from one RIS instance
+	RefreshTimeout time.Duration `validate:"min=1s"`
 }
 
 // RISInstance stores the connection details of a single RIS connection
@@ -32,8 +34,9 @@ type RISInstance struct {
 // anything.
 func DefaultConfiguration() provider.Configuration {
 	return Configuration{
-		RISInstances: []RISInstance{},
-		Timeout:      200 * time.Millisecond,
-		Refresh:      30 * time.Minute,
+		RISInstances:   []RISInstance{},
+		Timeout:        200 * time.Millisecond,
+		Refresh:        30 * time.Minute,
+		RefreshTimeout: 10 * time.Second,
 	}
 }
