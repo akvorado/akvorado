@@ -8,15 +8,15 @@ import "akvorado/inlet/routing/provider"
 // Configuration describes the configuration for the BioRIS component.
 type Configuration struct {
 	// RISInstances holds the different ris connections
-	RISInstances []RISInstance
+	RISInstances []RISInstance `validate:"dive"`
 }
 
 // RISInstance stores the connection details of a single RIS connection
 type RISInstance struct {
-	GRPCAddr   string
+	GRPCAddr   string `validate:"required,listen"`
 	GRPCSecure bool
-	VRFId      uint64
-	VRF        string
+	VRFId      uint64 `validate:"excluded_with=vrf"`
+	VRF        string `validate:"excluded_with=vrfid"`
 }
 
 // DefaultConfiguration represents the default configuration for the

@@ -122,12 +122,15 @@ to any next hop if not found.
 
 The component accepts only a `provider` key, which defines the provider
 configuration. Inside the provider configuration, the provider type is defined
-by the `type` key (only `bmp` is currently supported). The remaining keys are
-specific to the provider.
+by the `type` key (`bmp` and `bioris` are currently supported). The remaining
+keys are specific to the provider.
+
+#### BMP provider
 
 For the BMP provider, the following keys are accepted:
 
-- `listen` specifies the IP address and port to listen for incoming connections (default port is 10179)
+- `listen` specifies the IP address and port to listen for incoming connections
+  (default port is 10179)
 - `rds` specifies a list of route distinguisher to accept (0 is meant
   to accept routes without an associated route distinguisher)
 - `collect-asns` tells if origin AS numbers should be collected
@@ -157,9 +160,16 @@ routing:
     collect-communities: false
 ```
 
-#### BioRIS Routing Provider
+#### BioRIS provider
 
-As alternative to the internal BMP, an connection to an existing [bio-rd RIS](https://github.com/bio-routing/bio-rd/tree/master/cmd/ris) instance may be used.
+As alternative to the internal BMP, an connection to an existing [bio-rd
+RIS](https://github.com/bio-routing/bio-rd/tree/master/cmd/ris) instance may be
+used. It accepts a single key, `ris-instances` which is a list of instances.
+Each instance accepts the following keys:
+
+- `grpc-addr` is the address and port of a RIS instance
+- `grpc-secure` tells if a connection should be set using TLS
+- `vrf` (as a string) or `vrf-id` (as an ID) tell which VRF we should look up
 
 This is configured as follows:
 
@@ -173,17 +183,19 @@ routing:
         grpcsecure: true
 ```
 
-In general, this components sends LPM requests to the RIS reachable at `grpcaddr`. The connection will be set up using TLS if `grpcsecure` is true.
-The `vrf` specifies in which VRF bioris should look up. Alternative, we can also specify `vrf-id` as numeric VRF distinguisher.
+BioRIS tries to query the RIB of the router that sent the flow. If this router's
+RIB is not available in all known RIS instances, an other router is implictly
+used as fallback. After the router id is determined, BioRIS queries one of the
+RIS Instances known holding the RIB.
 
-BioRIS tries to query the RIB of the router that sent the flow. If this router's RIB is not available in all known RIS instances, an other router is implictly used as fallback.
-After the router id is determined, BioRIS queries one of the RIS Instances known holding the RIB.
+RIS and Router ID queried as either exact match or fallback are exported as
+metrics, if exact matching is required you can set up an alarm against those.
 
-RIS and Router ID queried as either exact match or fallback are exported as metrics, if exact matching is required you can set up an alarm against those.
+Refreshing of available routers and ris instances requires an restart of the
+inlet service (this might change in the future).
 
-Refreshing of available routers and ris instances requires an restart of the inlet service (this might change in the future).
-
-BioRIS currently supports setting NetMask/Prefix, AS, AS Path and Communities for the given flow.
+BioRIS currently supports setting prefix, AS, AS Path and communities for the
+given flow.
 
 ### Kafka
 
