@@ -151,6 +151,7 @@ require (
 )
 
 replace (
+	github.com/bio-routing/bio-rd => github.com/vincentbernat/bio-rd v0.0.0-20230729180419-5319c47d7575
 	github.com/kentik/patricia => github.com/vincentbernat/patricia v0.0.0-20220923091046-b376a1167a94
 	github.com/netsampler/goflow2 => github.com/vincentbernat/goflow2 v1.0.5-0.20230515164450-049536ab1b9d
 )
