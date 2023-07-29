@@ -164,7 +164,11 @@ routing:
 
 As alternative to the internal BMP, an connection to an existing [bio-rd
 RIS](https://github.com/bio-routing/bio-rd/tree/master/cmd/ris) instance may be
-used. It accepts a single key, `ris-instances` which is a list of instances.
+used. It accepts the following keys:
+
+- `ris-instances` is a list of instances
+- `timeout` tells how much time to wait to get an answer from a RIS instance
+
 Each instance accepts the following keys:
 
 - `grpc-addr` is the address and port of a RIS instance

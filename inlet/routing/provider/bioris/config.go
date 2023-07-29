@@ -3,12 +3,18 @@
 // Package bioris provides an interface to hydrate flow from biorouting ris
 package bioris
 
-import "akvorado/inlet/routing/provider"
+import (
+	"time"
+
+	"akvorado/inlet/routing/provider"
+)
 
 // Configuration describes the configuration for the BioRIS component.
 type Configuration struct {
 	// RISInstances holds the different ris connections
 	RISInstances []RISInstance `validate:"dive"`
+	// Timeout defines the timeout to retrieve a result from ris connections
+	Timeout time.Duration `validate:"min=1ms"`
 }
 
 // RISInstance stores the connection details of a single RIS connection
@@ -25,5 +31,6 @@ type RISInstance struct {
 func DefaultConfiguration() provider.Configuration {
 	return Configuration{
 		RISInstances: []RISInstance{},
+		Timeout:      200 * time.Millisecond,
 	}
 }

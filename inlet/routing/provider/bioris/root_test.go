@@ -413,6 +413,7 @@ func TestBioRIS(t *testing.T) {
 	r := reporter.NewMock(t)
 	addr := rpcListener.Addr().String()
 	config := Configuration{
+		Timeout: 200 * time.Millisecond,
 		RISInstances: []RISInstance{{
 			GRPCAddr:   addr,
 			GRPCSecure: false,

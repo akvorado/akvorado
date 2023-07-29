@@ -268,7 +268,7 @@ func (c *Provider) lookupLPM(ctx context.Context, ip netip.Addr, agent netip.Add
 
 	c.metrics.lpmRequests.WithLabelValues(chosenRis.config.GRPCAddr, chosenRouterID.Unmap().String()).Inc()
 
-	clientDeadline := time.Now().Add(time.Duration(200) * time.Millisecond)
+	clientDeadline := time.Now().Add(c.config.Timeout)
 	ctx, cancel := context.WithDeadline(ctx, clientDeadline)
 	defer cancel()
 
