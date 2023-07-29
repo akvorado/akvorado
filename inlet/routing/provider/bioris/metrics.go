@@ -3,14 +3,14 @@ package bioris
 import "akvorado/common/reporter"
 
 type metrics struct {
-	risUp                     *reporter.GaugeVec
-	knownRouters              *reporter.CounterVec
-	lpmRequests               *reporter.CounterVec
-	lpmRequestErrors          *reporter.CounterVec
-	lpmRequestContextCanceled *reporter.CounterVec
-	lpmRequestSuccess         *reporter.CounterVec
-	routerChosenFallback      *reporter.CounterVec
-	routerChosenAgentIDMatch  *reporter.CounterVec
+	risUp                    *reporter.GaugeVec
+	knownRouters             *reporter.CounterVec
+	lpmRequests              *reporter.CounterVec
+	lpmRequestErrors         *reporter.CounterVec
+	lpmRequestTimeouts       *reporter.CounterVec
+	lpmRequestSuccess        *reporter.CounterVec
+	routerChosenFallback     *reporter.CounterVec
+	routerChosenAgentIDMatch *reporter.CounterVec
 }
 
 // initMetrics initialize the metrics for the BMP component.
@@ -47,9 +47,9 @@ func (c *Provider) initMetrics() {
 		},
 		[]string{"ris", "router"},
 	)
-	c.metrics.lpmRequestContextCanceled = c.r.CounterVec(
+	c.metrics.lpmRequestTimeouts = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "lpm_request_canceled",
+			Name: "lpm_request_timeouts",
 			Help: "Timed out LPM requests per RIS and router.",
 		},
 		[]string{"ris", "router"},
@@ -64,14 +64,14 @@ func (c *Provider) initMetrics() {
 	c.metrics.routerChosenAgentIDMatch = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "router_request_agentid",
-			Help: "Number of times the router/ris combination was requested as exact match of the agent ID.",
+			Help: "Number of times the router/ris combination was returned with an exact match of the agent ID.",
 		},
 		[]string{"ris", "router"},
 	)
 	c.metrics.routerChosenFallback = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "router_request_fallback",
-			Help: "Number of times the router/ris combination was request as fallback.",
+			Help: "Number of times the router/ris combination was returned without an exact match of the agent ID.",
 		},
 		[]string{"ris", "router"},
 	)

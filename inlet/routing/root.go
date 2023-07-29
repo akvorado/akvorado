@@ -32,7 +32,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	c := Component{
 		r:         r,
 		config:    configuration,
-		errLogger: r.Sample(reporter.BurstSampler(10*time.Second, 3)),
+		errLogger: r.Sample(reporter.BurstSampler(time.Minute, 3)),
 	}
 	c.initMetrics()
 	// Initialize the provider
@@ -74,9 +74,7 @@ type stopper interface {
 	Stop() error
 }
 
-// Lookup uses the selected provider to get an answer. It does not return an
-// error, even when the context times out. Instead, it should just returns an
-// empty answer.
+// Lookup uses the selected provider to get an answer.
 func (c *Component) Lookup(ctx context.Context, ip netip.Addr, nh netip.Addr, agent netip.Addr) provider.LookupResult {
 	c.metrics.routingLookups.WithLabelValues().Inc()
 	result, err := c.provider.Lookup(ctx, ip, nh, agent)

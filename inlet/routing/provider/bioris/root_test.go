@@ -1,18 +1,29 @@
 package bioris
 
 import (
+	"context"
+	"fmt"
+	"net"
 	"net/netip"
+	"path"
 	"testing"
-
-	"akvorado/common/helpers"
-	"akvorado/common/reporter"
-	"akvorado/inlet/routing/provider"
+	"time"
 
 	pb "github.com/bio-routing/bio-rd/cmd/ris/api"
+	"github.com/bio-routing/bio-rd/cmd/ris/risserver"
 	bnet "github.com/bio-routing/bio-rd/net"
+	"github.com/bio-routing/bio-rd/protocols/bgp/server"
 	rpb "github.com/bio-routing/bio-rd/route/api"
 	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
 	"golang.org/x/exp/slices"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/reflection"
+
+	"akvorado/common/daemon"
+	"akvorado/common/helpers"
+	"akvorado/common/reporter"
+	"akvorado/inlet/routing/provider"
 )
 
 func TestChooseRouter(t *testing.T) {
@@ -305,5 +316,155 @@ func TestLPMResponseToLookupResult(t *testing.T) {
 				t.Errorf("Result (-got, +want):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestBioRIS(t *testing.T) {
+	// Spawn a BMP receiver
+	b := server.NewBMPReceiver(server.BMPReceiverConfig{
+		KeepalivePeriod: 10 * time.Second,
+		AcceptAny:       true,
+	})
+	defer b.Close()
+	if err := b.Listen("127.0.0.1:0"); err != nil {
+		t.Fatalf("Listen() error:\n%+v", err)
+	}
+	go b.Serve()
+
+	// Inject some routes
+	{
+		send := func(t *testing.T, conn net.Conn, pcap string) {
+			t.Helper()
+			_, err := conn.Write(helpers.ReadPcapPayload(t, path.Join("..", "bmp", "testdata", pcap)))
+			if err != nil {
+				t.Fatalf("Write() error:\n%+v", err)
+			}
+		}
+		bmpConn, err := net.Dial("tcp", b.LocalAddr().String())
+		if err != nil {
+			t.Fatalf("Dial() error:\n%+v", err)
+		}
+		defer bmpConn.Close()
+		send(t, bmpConn, "bmp-init.pcap")
+		send(t, bmpConn, "bmp-peers-up.pcap")
+		send(t, bmpConn, "bmp-eor.pcap")
+		send(t, bmpConn, "bmp-reach.pcap")
+		time.Sleep(20 * time.Millisecond)
+	}
+
+	// Check we have our routes
+	{
+		router := b.GetRouter("127.0.0.1")
+		if router == nil {
+			t.Fatal("GetRouter() did not return a router")
+		}
+		vrf := router.GetVRF(0)
+		if vrf == nil {
+			t.Fatal("GetVRF() did not return a VRF")
+		}
+		if vrf.IPv4UnicastRIB().RouteCount() != 4 {
+			t.Fatalf("IPv4 route count should be 4, not %d", vrf.IPv4UnicastRIB().RouteCount())
+		}
+		if vrf.IPv6UnicastRIB().RouteCount() != 4 {
+			t.Fatalf("IPv6 route count should be 6, not %d", vrf.IPv6UnicastRIB().RouteCount())
+		}
+	}
+
+	// Prepare BioRIS server
+	s := risserver.NewServer(b)
+	rpc := grpc.NewServer()
+	reflection.Register(rpc)
+	pb.RegisterRoutingInformationServiceServer(rpc, s)
+
+	rpcListener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen() error:\n%+v", err)
+	}
+	defer rpcListener.Close()
+	go rpc.Serve(rpcListener)
+
+	// Check BioRIS server
+	{
+		risConn, err := grpc.Dial(rpcListener.Addr().String(),
+			grpc.WithTransportCredentials(insecure.NewCredentials()))
+		if err != nil {
+			t.Fatalf("Dial() error:\n%+v", err)
+		}
+		defer risConn.Close()
+		client := pb.NewRoutingInformationServiceClient(risConn)
+		if client == nil {
+			t.Fatal("pb.NewRoutingInformationServiceClient() returned nil")
+		}
+		ipAddr, _ := bnet.IPFromString("2001:db8:1::")
+		r, err := client.Get(context.Background(), &pb.GetRequest{
+			Router: "127.0.0.1",
+			VrfId:  0,
+			Pfx:    bnet.NewPfx(ipAddr, 64).ToProto(),
+		})
+		if err != nil {
+			t.Fatalf("Get() error:\n%+v", err)
+		}
+		if len(r.Routes) == 0 {
+			t.Fatal("Get() returned no route")
+		}
+	}
+
+	// Instantiate provider
+	r := reporter.NewMock(t)
+	addr := rpcListener.Addr().String()
+	config := Configuration{
+		RISInstances: []RISInstance{{
+			GRPCAddr:   addr,
+			GRPCSecure: false,
+			VRFId:      0,
+		}},
+	}
+	p, err := config.New(r, provider.Dependencies{
+		Daemon: daemon.NewMock(t),
+	})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	helpers.StartStop(t, p)
+
+	{
+		got, _ := p.Lookup(context.Background(),
+			netip.MustParseAddr("2001:db8:1::10"),
+			netip.Addr{},
+			netip.MustParseAddr("2001:db8::7"))
+		expected := provider.LookupResult{
+			NetMask:     64,
+			ASN:         174,
+			ASPath:      []uint32{65017, 65013, 174, 174, 174},
+			Communities: []uint32{4260954122, 4260954132},
+			LargeCommunities: []bgp.LargeCommunity{
+				{
+					ASN:        65017,
+					LocalData1: 300,
+					LocalData2: 4,
+				},
+			},
+		}
+		if diff := helpers.Diff(got, expected); diff != "" {
+			t.Errorf("Lookup() (-got, +want):\n%s", diff)
+		}
+	}
+
+	{
+		gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bioris_")
+		expectedMetrics := map[string]string{
+			fmt.Sprintf(`connection_up{ris="%s"}`, addr):                              "1",
+			fmt.Sprintf(`known_routers_total{ris="%s"}`, addr):                        "1",
+			fmt.Sprintf(`lpm_request_errors{ris="%s",router="127.0.0.1"}`, addr):      "0",
+			fmt.Sprintf(`lpm_request_success{ris="%s",router="127.0.0.1"}`, addr):     "1",
+			fmt.Sprintf(`lpm_request_timeouts{ris="%s",router="127.0.0.1"}`, addr):    "0",
+			fmt.Sprintf(`lpm_requests_total{ris="%s",router="127.0.0.1"}`, addr):      "1",
+			fmt.Sprintf(`router_request_agentid{ris="%s",router="127.0.0.1"}`, addr):  "0",
+			fmt.Sprintf(`router_request_fallback{ris="%s",router="127.0.0.1"}`, addr): "1",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+			t.Errorf("Metrics (-got, +want):\n%s", diff)
+		}
+
 	}
 }

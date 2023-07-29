@@ -12,10 +12,8 @@ import (
 	pb "github.com/bio-routing/bio-rd/cmd/ris/api"
 	bnet "github.com/bio-routing/bio-rd/net"
 	rpb "github.com/bio-routing/bio-rd/route/api"
-	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
-
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus"
-
+	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/credentials"
@@ -26,7 +24,7 @@ import (
 	"akvorado/inlet/routing/provider/bmp"
 )
 
-// RISInstanceRuntime represents all connections etc. to a single RIS
+// RISInstanceRuntime represents all connections to a single RIS
 type RISInstanceRuntime struct {
 	conn   *grpc.ClientConn
 	client pb.RoutingInformationServiceClient
@@ -94,6 +92,7 @@ func (c *Provider) Start() error {
 			// We only fail softly here, as a single unavailable client is no
 			// reason to let inlet crash
 			c.log.Error().Msgf("error while opening RIS client %s", con.GRPCAddr)
+			conn.Close()
 			continue
 		}
 		c.metrics.risUp.WithLabelValues(con.GRPCAddr).Set(1)
@@ -104,6 +103,7 @@ func (c *Provider) Start() error {
 			// We only fail softly here, as a single unavailable client is no
 			// reason to let inlet crash
 			c.log.Err(err).Msgf("error while getting routers from %s", con.GRPCAddr)
+			conn.Close()
 			continue
 		}
 
@@ -127,7 +127,7 @@ func (c *Provider) Start() error {
 			c.router[routerAddress] = append(c.router[routerAddress], c.i[con.GRPCAddr])
 			c.metrics.knownRouters.WithLabelValues(con.GRPCAddr).Inc()
 			// We need to initialize all the counters here
-			c.metrics.lpmRequestContextCanceled.WithLabelValues(con.GRPCAddr, router.Address)
+			c.metrics.lpmRequestTimeouts.WithLabelValues(con.GRPCAddr, router.Address)
 			c.metrics.lpmRequestErrors.WithLabelValues(con.GRPCAddr, router.Address)
 			c.metrics.lpmRequestSuccess.WithLabelValues(con.GRPCAddr, router.Address)
 			c.metrics.lpmRequests.WithLabelValues(con.GRPCAddr, router.Address)
@@ -154,26 +154,24 @@ func (c *Provider) Lookup(ctx context.Context, ip netip.Addr, _ netip.Addr, agen
 	return r, nil
 }
 
-// starting from here, this are internal functions of the provider
-
 // chooseRouter selects the router ID best suited for the given agent ip. It
 // returns router ID and RIS instance.
 func (c *Provider) chooseRouter(agent netip.Addr) (netip.Addr, *RISInstanceRuntime, error) {
 	var chosenRis *RISInstanceRuntime
 	chosenRouterID := netip.IPv4Unspecified()
 	exactMatch := false
-	// we try all routers
+	// We try all routers
 	for r := range c.router {
 		chosenRouterID = r
-		// if we find an exact match of router id and agent ip, we are done
+		// If we find an exact match of router id and agent ip, we are done
 		if r == agent {
 			exactMatch = true
 			break
 		}
-		// if not, we are implicitly using the last router id we found
+		// If not, we are implicitly using the last router id we found
 	}
 
-	// verify that an actual router was found
+	// Verify that an actual router was found
 	if chosenRouterID.IsUnspecified() {
 		return chosenRouterID, nil, errors.New("no applicable router found for bio flow lookup")
 	}
@@ -249,15 +247,15 @@ func (c *Provider) lpmResponseToLookupResult(lpm *pb.LPMResponse) (bmp.LookupRes
 	return res, nil
 }
 
-// lookupLPM does an lookupLPM GRPC call to an BioRis instance
+// lookupLPM does an lookupLPM GRPC call to a BioRis instance
 func (c *Provider) lookupLPM(ctx context.Context, ip netip.Addr, agent netip.Addr) (*pb.LPMResponse, error) {
-	// first step: choose router id and ris
+	// Choose router id and ris
 	chosenRouterID, chosenRis, err := c.chooseRouter(agent)
 	if err != nil {
 		return nil, err
 	}
 
-	ipAddr, err := bnet.IPFromString(ip.String())
+	ipAddr, err := bnet.IPFromBytes(ip.Unmap().AsSlice())
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +273,6 @@ func (c *Provider) lookupLPM(ctx context.Context, ip netip.Addr, agent netip.Add
 	defer cancel()
 
 	var res *pb.LPMResponse
-	// The RIS does not understand IPv6-mapped router IDs, so we need to unmap them.
 	res, err = chosenRis.client.LPM(ctx, &pb.LPMRequest{
 		Router: chosenRouterID.Unmap().String(),
 		VrfId:  chosenRis.config.VRFId,
@@ -283,8 +280,8 @@ func (c *Provider) lookupLPM(ctx context.Context, ip netip.Addr, agent netip.Add
 		Pfx:    pfx.ToProto(),
 	})
 	if errors.Is(ctx.Err(), context.Canceled) {
-		c.metrics.lpmRequestContextCanceled.WithLabelValues(chosenRis.config.GRPCAddr, chosenRouterID.Unmap().String()).Inc()
-		return nil, errors.New("lpm lookup canceled")
+		c.metrics.lpmRequestTimeouts.WithLabelValues(chosenRis.config.GRPCAddr, chosenRouterID.Unmap().String()).Inc()
+		return nil, errors.New("lpm lookup timeout")
 	}
 	if err != nil {
 		c.metrics.lpmRequestErrors.WithLabelValues(chosenRis.config.GRPCAddr, chosenRouterID.Unmap().String()).Inc()
