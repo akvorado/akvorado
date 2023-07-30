@@ -116,7 +116,12 @@ jobs:
       - name: Build
         run: make && ./bin/akvorado version
       - name: Tests
-        run: make test || make test
+        run: make test-coverage
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./test/go/coverage.xml,./test/js/cobertura-coverage.xml
+          flags: unittests
 
   build-go:
     name: 🔭 Build Go backend
