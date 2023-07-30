@@ -475,3 +475,29 @@ func TestBioRIS(t *testing.T) {
 
 	}
 }
+
+func TestNonWorkingBioRIS(t *testing.T) {
+	r := reporter.NewMock(t)
+	config := DefaultConfiguration()
+	configP := config.(Configuration)
+	configP.RISInstances = []RISInstance{
+		{GRPCAddr: "ris.invalid:1000"},
+		{GRPCAddr: "192.0.2.10:1000"},
+	}
+	p, err := configP.New(r, provider.Dependencies{
+		Daemon: daemon.NewMock(t),
+	})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	helpers.StartStop(t, p)
+
+	gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bioris_")
+	expectedMetrics := map[string]string{
+		`connection_up{ris="ris.invalid:1000"}`: "0",
+		`connection_up{ris="192.0.2.10:1000"}`:  "0",
+	}
+	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+		t.Errorf("Metrics (-got, +want):\n%s", diff)
+	}
+}

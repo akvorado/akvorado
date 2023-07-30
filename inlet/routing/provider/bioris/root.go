@@ -69,6 +69,16 @@ func (configuration Configuration) New(r *reporter.Reporter, dependencies Depend
 // Start starts the bioris provider.
 func (p *Provider) Start() error {
 	p.r.Info().Msg("starting BioRIS provider")
+
+	// Connect to RIS backend (done in background)
+	for _, config := range p.config.RISInstances {
+		instance, err := p.Dial(config)
+		if err != nil {
+			return fmt.Errorf("error while dialing %s: %w", config.GRPCAddr, err)
+		}
+		p.instances[config.GRPCAddr] = instance
+	}
+
 	refresh := func(ctx context.Context) {
 		ctx, cancel := context.WithDeadline(ctx, time.Now().Add(p.config.RefreshTimeout))
 		defer cancel()
@@ -116,10 +126,9 @@ func (p *Provider) Dial(config RISInstance) (*RISInstanceRuntime, error) {
 		conn.Close()
 		return nil, fmt.Errorf("error while opening RIS client %s", config.GRPCAddr)
 	}
-	p.metrics.risUp.WithLabelValues(config.GRPCAddr).Set(0)
 	p.t.Go(func() error {
+		var state connectivity.State = -1
 		for {
-			state := conn.GetState()
 			if !conn.WaitForStateChange(p.t.Context(context.Background()), state) {
 				return nil
 			}
@@ -130,6 +139,7 @@ func (p *Provider) Dial(config RISInstance) (*RISInstanceRuntime, error) {
 				}
 				return 0
 			}())
+			state = conn.GetState()
 		}
 	})
 
@@ -142,21 +152,9 @@ func (p *Provider) Dial(config RISInstance) (*RISInstanceRuntime, error) {
 
 // Refresh retrieves the list of routers
 func (p *Provider) Refresh(ctx context.Context) {
-	instances := make(map[string]*RISInstanceRuntime)
 	routers := make(map[netip.Addr][]*RISInstanceRuntime)
 	for _, config := range p.config.RISInstances {
-		if p.instances[config.GRPCAddr] == nil {
-			instance, err := p.Dial(config)
-			if err != nil {
-				p.r.Err(err).Msgf("error while dialing %s", config.GRPCAddr)
-				continue
-			}
-			instances[config.GRPCAddr] = instance
-		} else {
-			instances[config.GRPCAddr] = p.instances[config.GRPCAddr]
-		}
-
-		instance := instances[config.GRPCAddr]
+		instance := p.instances[config.GRPCAddr]
 		r, err := instance.client.GetRouters(ctx, &pb.GetRoutersRequest{})
 		if err != nil {
 			p.r.Err(err).Msgf("error while getting routers from %s", config.GRPCAddr)
@@ -170,7 +168,7 @@ func (p *Provider) Refresh(ctx context.Context) {
 				continue
 			}
 			routerAddress = netip.AddrFrom16(routerAddress.As16())
-			routers[routerAddress] = append(routers[routerAddress], instances[config.GRPCAddr])
+			routers[routerAddress] = append(routers[routerAddress], p.instances[config.GRPCAddr])
 
 			p.metrics.knownRouters.WithLabelValues(config.GRPCAddr).Inc()
 			p.metrics.lpmRequestTimeouts.WithLabelValues(config.GRPCAddr, router.Address)
@@ -183,7 +181,6 @@ func (p *Provider) Refresh(ctx context.Context) {
 	}
 
 	p.mu.Lock()
-	p.instances = instances
 	p.routers = routers
 	p.mu.Unlock()
 }
