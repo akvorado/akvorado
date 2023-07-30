@@ -105,7 +105,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 			continue
 		}
 		kk := strings.Split(kv[0], "_")
-		if len(kk) < 4 || kk[0] != "AKVORADO" || kk[1] != "CFG" || kk[2] != strings.ToUpper(component) {
+		if len(kk) < 4 || kk[0] != "AKVORADO" || kk[1] != "CFG" || kk[2] != strings.ReplaceAll(strings.ToUpper(component), "-", "") {
 			continue
 		}
 		// From AKVORADO_CFG_CMP_SQUID_PURPLE_QUIRK=47, we

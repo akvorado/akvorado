@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"bytes"
 	"testing"
 
 	"akvorado/common/reporter"
@@ -15,5 +16,16 @@ func TestInletStart(t *testing.T) {
 	config.Reset()
 	if err := inletStart(r, config, true); err != nil {
 		t.Fatalf("inletStart() error:\n%+v", err)
+	}
+}
+
+func TestInlet(t *testing.T) {
+	root := RootCmd
+	buf := new(bytes.Buffer)
+	root.SetOut(buf)
+	root.SetArgs([]string{"inlet", "--check", "/dev/null"})
+	err := root.Execute()
+	if err != nil {
+		t.Errorf("`inlet` error:\n%+v", err)
 	}
 }

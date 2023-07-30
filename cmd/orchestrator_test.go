@@ -97,3 +97,14 @@ func TestOrchestratorConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestOrchestrator(t *testing.T) {
+	root := RootCmd
+	buf := new(bytes.Buffer)
+	root.SetOut(buf)
+	root.SetArgs([]string{"orchestrator", "--check", "/dev/null"})
+	err := root.Execute()
+	if err != nil {
+		t.Errorf("`orchestrator` error:\n%+v", err)
+	}
+}

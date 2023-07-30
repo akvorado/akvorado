@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"bytes"
 	"testing"
 
 	"akvorado/common/reporter"
@@ -15,5 +16,16 @@ func TestConsoleStart(t *testing.T) {
 	config.Reset()
 	if err := consoleStart(r, config, true); err != nil {
 		t.Fatalf("consoleStart() error:\n%+v", err)
+	}
+}
+
+func TestConsole(t *testing.T) {
+	root := RootCmd
+	buf := new(bytes.Buffer)
+	root.SetOut(buf)
+	root.SetArgs([]string{"console", "--check", "/dev/null"})
+	err := root.Execute()
+	if err != nil {
+		t.Errorf("`console` error:\n%+v", err)
 	}
 }
