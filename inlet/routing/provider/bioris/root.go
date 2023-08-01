@@ -139,7 +139,6 @@ func (p *Provider) Dial(config RISInstance) (*RISInstanceRuntime, error) {
 				}
 				return 0
 			}())
-			state = conn.GetState()
 		}
 	})
 
