@@ -83,7 +83,7 @@ const option = computed((): ECOption => {
         type: "sankey",
         animationDuration: 500,
         emphasis: {
-          focus: "adjacency",
+          focus: "trajectory",
         },
         data: data.nodes.map((v) => ({
           id: v,

@@ -36,6 +36,7 @@ identified with a specific icon:
 - 🩹 *console*: fix display when using “%” units and interface speed is 0
 - 🌱 *build*: minimum supported Node version is now 16
 - 🌱 *docker*: update ClickHouse to 23.3 (this is not mandatory)
+- 🌱 *console*: emphasize trajectory on Sankey graphs
 - 🩹 *orchestrator*: create flows table with
   `allow_suspicious_low_cardinality_types` to ensure we can use
   `LowCardinality(IPv6)`.
