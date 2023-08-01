@@ -37,7 +37,7 @@
     "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
-    "@headlessui/tailwindcss": "^0.1.1",
+    "@headlessui/tailwindcss": "^0.2.0",
     "@tailwindcss/typography": "^0.5.2",
     "@tsconfig/node18": "^18.2.0",
     "@types/jsdom": "^21.1.0",
