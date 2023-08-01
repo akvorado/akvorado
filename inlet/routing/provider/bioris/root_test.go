@@ -457,9 +457,10 @@ func TestBioRIS(t *testing.T) {
 		}
 	}
 
-	{
+	for try := 2; try >= 0; try-- {
 		gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bioris_")
 		expectedMetrics := map[string]string{
+			// connection_up may take a bit of time
 			fmt.Sprintf(`connection_up{ris="%s"}`, addr):                              "1",
 			fmt.Sprintf(`known_routers_total{ris="%s"}`, addr):                        "1",
 			fmt.Sprintf(`lpm_request_errors{ris="%s",router="127.0.0.1"}`, addr):      "0",
@@ -470,9 +471,14 @@ func TestBioRIS(t *testing.T) {
 			fmt.Sprintf(`router_request_fallback{ris="%s",router="127.0.0.1"}`, addr): "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
-			t.Errorf("Metrics (-got, +want):\n%s", diff)
+			if try == 0 {
+				t.Fatalf("Metrics (-got, +want):\n%s", diff)
+			} else {
+				time.Sleep(20 * time.Millisecond)
+			}
+		} else {
+			break
 		}
-
 	}
 }
 
