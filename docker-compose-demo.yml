@@ -1,6 +1,5 @@
 ---
 version: "3"
-
 services:
   akvorado-exporter0: &exporter
     image: ghcr.io/akvorado/akvorado:latest

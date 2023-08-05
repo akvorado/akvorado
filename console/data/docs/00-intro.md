@@ -2,8 +2,8 @@
 
 *Akvorado*[^name] receives flows (currently Netflow/IPFIX and sFlow), enriches
 them with interface names (using SNMP), geo information (using
-MaxMind), and exports them to Kafka, then ClickHouse. It also exposes
-a web interface to browse the result.
+[IPinfo](https://ipinfo.io/) or MaxMind), and exports them to Kafka, then
+ClickHouse. It also exposes a web interface to browse the result.
 
 [^name]: [Akvorado][] means "water wheel" in Esperanto.
 
@@ -50,10 +50,6 @@ documentation.
 You can get all the expanded configuration (with default values) with
 `docker-compose exec akvorado-orchestrator akvorado orchestrator
 --check --dump /etc/akvorado/akvorado.yaml`.
-
-Take a look at the `docker-compose.yml` file if you want to setup the
-GeoIP database. It requires two environment variables to fetch them
-from [MaxMind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data).
 
 Once you are ready, you can run everything in the background with
 `docker-compose up -d`.

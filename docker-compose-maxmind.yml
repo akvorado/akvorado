@@ -1,0 +1,13 @@
+---
+version: "3"
+services:
+  geoip:
+    # Put GEOIPUPDATE_ACCOUNT_ID and GEOIPUPDATE_LICENSE_KEY values in `.env` file.
+    image: maxmindinc/geoipupdate:v4
+    environment:
+      - GEOIPUPDATE_ACCOUNT_ID
+      - GEOIPUPDATE_LICENSE_KEY
+      - GEOIPUPDATE_EDITION_IDS=GeoLite2-ASN GeoLite2-Country
+      - GEOIPUPDATE_FREQUENCY=48
+    volumes:
+      - akvorado-geoip:/usr/share/GeoIP

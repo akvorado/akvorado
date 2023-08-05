@@ -1,0 +1,10 @@
+---
+version: "3"
+services:
+  geoip:
+    image: ipinfo/ipinfo-db:latest
+    environment:
+      - IPINFO_TOKEN=a2632ea59736c7
+      - UPDATE_FREQUENCY=48h
+    volumes:
+      - akvorado-geoip:/data
