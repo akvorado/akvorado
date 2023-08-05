@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/oschwald/maxminddb-golang"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/daemon"
@@ -27,8 +26,8 @@ type Component struct {
 	config Configuration
 
 	db struct {
-		geo atomic.Pointer[maxminddb.Reader]
-		asn atomic.Pointer[maxminddb.Reader]
+		geo atomic.Pointer[geoDatabase]
+		asn atomic.Pointer[geoDatabase]
 	}
 	metrics struct {
 		databaseRefresh *reporter.CounterVec
@@ -78,31 +77,6 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		[]string{"database"},
 	)
 	return &c, nil
-}
-
-// openDatabase opens the provided database and closes the current
-// one. Do nothing if the path is empty.
-func (c *Component) openDatabase(which string, path string, container *atomic.Pointer[maxminddb.Reader]) error {
-	if path == "" {
-		return nil
-	}
-	c.r.Debug().Str("database", path).Msgf("opening %s database", which)
-	db, err := maxminddb.Open(path)
-	if err != nil {
-		c.r.Err(err).
-			Str("database", path).
-			Msgf("cannot open %s database", which)
-		return fmt.Errorf("cannot open %s database: %w", which, err)
-	}
-	old := container.Swap(db)
-	c.metrics.databaseRefresh.WithLabelValues(which).Inc()
-	if old != nil {
-		c.r.Debug().
-			Str("database", path).
-			Msgf("closing previous %s database", which)
-		old.Close()
-	}
-	return nil
 }
 
 // Start starts the GeoIP component.

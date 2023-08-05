@@ -5,8 +5,10 @@ package geoip
 
 import (
 	"net/netip"
+	"path/filepath"
 	"testing"
 
+	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 )
@@ -59,5 +61,49 @@ func TestLookup(t *testing.T) {
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
+	}
+}
+
+func TestLookupIPInfo(t *testing.T) {
+	r := reporter.NewMock(t)
+	config := DefaultConfiguration()
+	// The JSON version of this one is here:
+	// https://github.com/ipinfo/sample-database/blob/main/IP%20to%20Country%20ASN/ip_country_asn_sample.json
+	config.GeoDatabase = filepath.Join("testdata", "ip_country_asn_sample.mmdb")
+	config.ASNDatabase = filepath.Join("testdata", "ip_country_asn_sample.mmdb")
+	c, err := New(r, config, Dependencies{Daemon: daemon.NewMock(t)})
+	if err != nil {
+		t.Fatalf("New() error:\n%+s", err)
+	}
+	helpers.StartStop(t, c)
+
+	cases := []struct {
+		IP              string
+		ExpectedASN     uint32
+		ExpectedCountry string
+	}{
+		{
+			IP:              "2.19.4.138",
+			ExpectedASN:     32787,
+			ExpectedCountry: "SG",
+		}, {
+			IP:              "2a09:bac1:14a0:fd0::a:1",
+			ExpectedASN:     13335,
+			ExpectedCountry: "CA",
+		}, {
+			IP:              "213.248.218.137",
+			ExpectedASN:     43519,
+			ExpectedCountry: "HK",
+		},
+	}
+	for _, tc := range cases {
+		gotCountry := c.LookupCountry(netip.MustParseAddr(tc.IP))
+		if diff := helpers.Diff(gotCountry, tc.ExpectedCountry); diff != "" {
+			t.Errorf("LookupCountry(%q) (-got, +want):\n%s", tc.IP, diff)
+		}
+		gotASN := c.LookupASN(netip.MustParseAddr(tc.IP))
+		if diff := helpers.Diff(gotASN, tc.ExpectedASN); diff != "" {
+			t.Errorf("LookupASN(%q) (-got, +want):\n%s", tc.IP, diff)
+		}
 	}
 }
