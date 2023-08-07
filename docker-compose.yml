@@ -18,7 +18,7 @@ services:
     volumes:
       - akvorado-zookeeper:/bitnami/zookeeper
   kafka:
-    image: bitnami/kafka:3.3
+    image: bitnami/kafka:3.3.2-debian-11-r175
     environment:
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
       - ALLOW_PLAINTEXT_LISTENER=yes
