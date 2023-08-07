@@ -23,7 +23,6 @@ available in `docs/`).
 By default, *Akvorado* is using [IPinfo](https://ipinfo.io) databases for
 geolocation data.
 
-Be aware that *Akvorado* is still young and should be considered as
-alpha quality. At some point, some features may change in an
-inconvenient way as it is difficult to mutate ClickHouse tables while
-keeping all data intact.
+Be aware that *Akvorado* is still young and should be considered as beta
+quality. Be sure to always read the
+[changelog](console/data/docs/99-changelog.md) before upgrading.
