@@ -20,6 +20,9 @@ be gentle with this resource. The demo site also enables you to browse
 the [documentation](https://demo.akvorado.net/docs) (which is also
 available in `docs/`).
 
+By default, *Akvorado* is using [IPinfo](https://ipinfo.io) databases for
+geolocation data.
+
 Be aware that *Akvorado* is still young and should be considered as
 alpha quality. At some point, some features may change in an
 inconvenient way as it is difficult to mutate ClickHouse tables while

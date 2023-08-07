@@ -5,8 +5,8 @@ geoip:
   optional: true
   # When running on Docker, these paths are inside the container. By default,
   # IPinfo databases are used. (https://ipinfo.io/)
-  asn-database: /usr/share/GeoIP/country_asn.mmdb
-  geo-database: /usr/share/GeoIP/country_asn.mmdb
+  asn-database: /usr/share/GeoIP/asn.mmdb
+  geo-database: /usr/share/GeoIP/country.mmdb
   # If you want to use MaxmindDB, check `.env`, `docker-compose-maxmind.yml` and
   # update these paths:
   #asn-database: /usr/share/GeoIP/GeoLite2-ASN.mmdb
