@@ -36,7 +36,7 @@ run tests:
   services:
     - name: bitnami/zookeeper:3.7
       alias: zookeeper
-    - name: bitnami/kafka:3.3
+    - name: bitnami/kafka:3.3.2-debian-11-r175
       alias: kafka
     - name: bitnami/redis:7.0
       alias: redis

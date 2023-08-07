@@ -41,7 +41,7 @@ jobs:
         ports:
           - 2181:2181
       kafka:
-        image: bitnami/kafka:3.3
+        image: bitnami/kafka:3.3.2-debian-11-r175
         env:
           KAFKA_BROKER_ID: "1"
           KAFKA_ENABLE_KRAFT: "no"
