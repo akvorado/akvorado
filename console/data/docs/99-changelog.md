@@ -11,6 +11,14 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## 1.8.4 - 2023-08-07
+
+This release only contains the change about the Docker image for Kafka and is
+targeted for new installs. You don't need to upgrade. See
+[#832](https://github.com/akvorado/akvorado/issues/832) for more details.
+
+- 🩹 *docker*: pin Kafka Docker image
+
 ## 1.8.3 - 2023-04-28
 
 - 🩹 *docker*: ensure Kafka is not using KRaft by default
