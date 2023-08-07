@@ -71,6 +71,9 @@ func TestTopicCreation(t *testing.T) {
 			}
 			helpers.StartStop(t, c)
 
+			if err := client.RefreshMetadata(); err != nil {
+				t.Fatalf("RefreshMetadata() error:\n%+v", err)
+			}
 			adminClient, err := sarama.NewClusterAdminFromClient(client)
 			if err != nil {
 				t.Fatalf("NewClusterAdmin() error:\n%+v", err)
@@ -113,6 +116,9 @@ func TestTopicMorePartitions(t *testing.T) {
 	}
 	helpers.StartStop(t, c)
 
+	if err := client.RefreshMetadata(); err != nil {
+		t.Fatalf("RefreshMetadata() error:\n%+v", err)
+	}
 	adminClient, err := sarama.NewClusterAdminFromClient(client)
 	if err != nil {
 		t.Fatalf("NewClusterAdmin() error:\n%+v", err)
@@ -138,6 +144,9 @@ func TestTopicMorePartitions(t *testing.T) {
 	}
 	helpers.StartStop(t, c)
 
+	if err := client.RefreshMetadata(); err != nil {
+		t.Fatalf("RefreshMetadata() error:\n%+v", err)
+	}
 	topics, err = adminClient.ListTopics()
 	if err != nil {
 		t.Fatalf("ListTopics() error:\n%+v", err)
