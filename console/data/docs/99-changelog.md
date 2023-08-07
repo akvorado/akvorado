@@ -37,7 +37,9 @@ identified with a specific icon:
 - 🩹 *inlet*: fix Netflow processing when template is received with data
 - 🩹 *console*: fix display when using “%” units and interface speed is 0
 - 🌱 *build*: minimum supported Node version is now 16
-- 🌱 *docker*: update ClickHouse to 23.3 (this is not mandatory)
+- 🌱 *docker*: update ClickHouse to 23.3 (not mandatory)
+- 🌱 *docker*: update to Zookeeper 3.8 (not mandatory)
+- 🌱 *docker*: update to Kafka 3.5 (not mandatory, but there is also a configuration change)
 - 🌱 *console*: emphasize trajectory on Sankey graphs
 - 🩹 *orchestrator*: create flows table with
   `allow_suspicious_low_cardinality_types` to ensure we can use
