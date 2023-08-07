@@ -89,7 +89,6 @@ func (c *Component) Start() error {
 	}
 	if c.db.geo.Load() == nil && c.db.asn.Load() == nil {
 		c.r.Warn().Msg("skipping GeoIP component: no database specified")
-		return nil
 	}
 
 	c.r.Info().Msg("starting GeoIP component")
