@@ -94,3 +94,27 @@ func TestBimapValues(t *testing.T) {
 		t.Errorf("Values() (-got, +want):\n%s", diff)
 	}
 }
+
+func TestBimapInsert(t *testing.T) {
+	bmap := bimap.New(map[int]string{
+		1: "hello",
+		2: "world",
+		3: "happy",
+	})
+	bmap.Insert(4, "test")
+	v, ok := bmap.LoadValue(4)
+	if !ok {
+		t.Errorf("LoadValue(4) ok: %v but expected %v", ok, true)
+	}
+	if v != "test" {
+		t.Errorf("LoadValue(4) got: %q but expected %q", v, "test")
+	}
+	var k int
+	k, ok = bmap.LoadKey("test")
+	if !ok {
+		t.Errorf("LoadKey(\"test\") ok: %v but expected %v", ok, true)
+	}
+	if k != 4 {
+		t.Errorf("LoadKey(\"test\") got: %q but expected %q", k, 4)
+	}
+}

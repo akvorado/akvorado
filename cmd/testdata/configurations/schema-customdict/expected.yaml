@@ -1,0 +1,48 @@
+---
+paths:
+  inlet.0.schema:
+    customdictionaries:
+      test:
+        source: test.csv
+        layout: hashed
+        keys:
+          - name: addr
+            type: String
+            matchdimension: ""
+            matchdimensionsuffix: ""
+        attributes:
+          - name: AddrValue
+            type: String
+            default: ""
+            label: ""
+        dimensions:
+          - SrcAddr
+          - DstAddr
+    disabled: []
+    enabled: []
+    materialize: []
+    maintableonly: []
+    notmaintableonly: []
+  console.0.schema:
+    customdictionaries:
+      test:
+        source: test.csv
+        layout: hashed
+        keys:
+          - name: addr
+            type: String
+            matchdimension: ""
+            matchdimensionsuffix: ""
+        attributes:
+          - name: AddrValue
+            type: String
+            default: ""
+            label: ""
+        dimensions:
+          - SrcAddr
+          - DstAddr
+    disabled: []
+    enabled: []
+    materialize: []
+    maintableonly: []
+    notmaintableonly: []

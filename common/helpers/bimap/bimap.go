@@ -59,3 +59,9 @@ func (bi *Bimap[K, V]) Values() []V {
 func (bi *Bimap[K, V]) String() string {
 	return fmt.Sprintf("Bi%v", bi.forward)
 }
+
+// Insert inserts a new key/value pair
+func (bi *Bimap[K, V]) Insert(k K, v V) {
+	bi.forward[k] = v
+	bi.inverse[v] = k
+}

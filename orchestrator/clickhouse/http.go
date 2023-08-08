@@ -9,6 +9,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"text/template"
@@ -89,6 +90,29 @@ func (c *Component) registerHTTPHandlers() error {
 			w.Header().Set("Content-Type", "text/x-shellscript")
 			w.Write(result.Bytes())
 		}))
+
+	// add handler for custom dicts
+	for name, dict := range c.d.Schema.GetCustomDictConfig() {
+		// we need to call this a func to avoid issues with the for loop
+		k := name
+		v := dict
+		c.d.HTTP.AddHandler(fmt.Sprintf("/api/v0/orchestrator/clickhouse/custom_dict_%s.csv", k), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			select {
+			case <-c.networkSourcesReady:
+			case <-time.After(c.config.NetworkSourcesTimeout):
+				w.WriteHeader(http.StatusServiceUnavailable)
+				return
+			}
+			file, err := ioutil.ReadFile(v.Source)
+			if err != nil {
+				c.r.Err(err).Msg("unable to deliver custom dict csv file")
+				http.Error(w, fmt.Sprintf("unable to deliver custom dict csv file %s", v.Source), http.StatusNotFound)
+			}
+			w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+			w.WriteHeader(http.StatusOK)
+			w.Write(file)
+		}))
+	}
 
 	// networks.csv
 	c.d.HTTP.AddHandler("/api/v0/orchestrator/clickhouse/networks.csv",

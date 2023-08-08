@@ -96,6 +96,7 @@ const (
 	ColumnICMPv6Code
 	ColumnNextHop
 
+	// ColumnLast points to after the last static column, custom dictionaries (dynamic columns) come after ColumnLast
 	ColumnLast
 )
 
@@ -385,6 +386,7 @@ END`,
 				ClickHouseCodec: "ZSTD(1)",
 			},
 		},
+		dynamicColumns: 0,
 	}.finalize()
 }
 
@@ -510,7 +512,7 @@ func (schema Schema) finalize() Schema {
 	schema.columns = ncolumns
 
 	// Build column index
-	schema.columnIndex = make([]*Column, ColumnLast)
+	schema.columnIndex = make([]*Column, ColumnLast+schema.dynamicColumns)
 	for i, column := range schema.columns {
 		schema.columnIndex[column.Key] = &schema.columns[i]
 		for j, column := range column.ClickHouseTransformFrom {

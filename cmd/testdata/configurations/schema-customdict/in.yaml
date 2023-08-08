@@ -1,0 +1,12 @@
+---
+schema:
+  custom-dictionaries:
+    test:
+      source: test.csv
+      keys:
+        - name: addr
+      attributes:
+        - name: AddrValue
+      dimensions:
+        - SrcAddr
+        - DstAddr

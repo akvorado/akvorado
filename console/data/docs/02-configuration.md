@@ -552,6 +552,72 @@ For ICMP, you get `ICMPv4Type`, `ICMPv4Code`, `ICMPv6Type`, `ICMPv6Code`,
 `ICMPv4`, and `ICMPv6`. The two latest one are displayed as a string in the
 console (like `echo-reply` or `frag-needed`).
 
+#### Custom Dictionaries
+You can add custom dimensions to be looked up via a dictionary. This is useful to enrich your flow with additional informations not possible to get in the classifier.
+
+**Note:**
+Filtering by dictionaries is not possible with the current state of development.
+
+This works by providing the database with a CSV files containing the values.
+
+```yaml
+schema:
+  custom-dictionaries:
+    ips:
+      layout: complex_key_hashed
+      keys:
+        - name: addr
+          type: String
+      attributes:
+        - name: role
+          type: String
+          default: DefaultRole
+          label: IPRole
+      source: ips_annotation.csv
+      dimensions:
+        - SrcAddr
+        - DstAddr
+```
+
+This example expects a CSV file named `ips_annotation.csv` with the following format:
+```
+addr,role
+2001:db8::1,ExampleRole
+```
+
+If the SrcAddr has the value `2001:db8::1` (matches the key), the dimension `SrcAddrIPRole` will be set to `ExampleRole`.
+
+Independently, if the DstAddr has the value `2001:db8::1`, the dimension `DstAddrIPRole` will be set to `ExampleRole`.
+
+All other IPs will get "DefaultRole" in their "SrcAddrIPRole"/"DstAddrIPRole" dimension.
+
+The `label`and `default` keys are optional.
+
+It is possible to add the same dictionary to multiple dimensions, usually for the "Input" and "Output"-direction.
+
+By default, the value of the key tries to match a dimension. For multiple keys, it is necessary to explicitly specify the dimension name to match by either specifing `match-dimension` or `match-dimension-suffix`:
+```yaml
+schema:
+  custom-dictionaries:
+    interfaces:
+      layout: complex_key_hashed
+      keys:
+        - name: agent
+          type: String
+          match-dimension: ExporterAddress # csv col agent matches ExporterAddress dimension
+        - name: interface
+          type: String
+          match-dimension-suffix: Name # csv col interface matches either OutIfName or InIfName, match name is added as suffix to dimension
+      attributes:
+        - name: information # this column is added as OutIfInformation/InIfInformation to the flow on matches
+          type: String # no default: If no match of both agent and interface, the Information-Dimension is empty
+      source: interfaces.csv
+      dimensions:
+        - OutIf
+        - InIf
+
+```
+
 ### Kafka
 
 The Kafka component creates or updates the Kafka topic to receive
