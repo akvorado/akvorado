@@ -7,10 +7,12 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"strings"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 )
 
 type migrationStep struct {
@@ -78,6 +80,39 @@ func (c *Component) migrateDatabase() error {
 				"`network` String, `name` String, `role` String, `site` String, `region` String, `tenant` String",
 				"network")
 		})
+	if err != nil {
+		return err
+	}
+
+	// prepare custom dictionary migrations
+	var dictMigrations []func() error
+	for k, v := range c.d.Schema.GetCustomDictConfig() {
+		var schemaStr []string
+		var keys []string
+		for _, a := range v.Keys {
+			// This is a key. We need it in the schema and in primary keys.
+			schemaStr = append(schemaStr, fmt.Sprintf("`%s` %s", a.Name, a.Type))
+			keys = append(keys, a.Name)
+		}
+
+		for _, a := range v.Attributes {
+			defaultValue := "None"
+			if a.Default != "" {
+				defaultValue = a.Default
+			}
+			// this is only an attribute. We only need it in the schema
+			schemaStr = append(schemaStr, fmt.Sprintf("`%s` %s DEFAULT '%s'", a.Name, a.Type, defaultValue))
+		}
+		// we need to do this as function, otherwise we get problems with the for.
+		m := func(k string, v schema.CustomDict, schemaStr []string) func() error {
+			return func() error {
+				return c.createDictionary(ctx, fmt.Sprintf("custom_dict_%s", k), v.Layout, strings.Join(schemaStr[:], ", "), strings.Join(keys[:], ", "))
+			}
+		}(k, v, schemaStr)
+		dictMigrations = append(dictMigrations, m)
+	}
+	// create custom dictionaries
+	err = c.wrapMigrations(dictMigrations...)
 	if err != nil {
 		return err
 	}

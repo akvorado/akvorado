@@ -3,7 +3,11 @@
 
 package schema
 
-import "errors"
+import (
+	"errors"
+
+	"akvorado/common/helpers"
+)
 
 // Configuration describes the configuration for the schema component.
 type Configuration struct {
@@ -17,6 +21,33 @@ type Configuration struct {
 	NotMainTableOnly []ColumnKey `validate:"ninterfield=MainTableOnly"`
 	// Materialize lists columns that shall be materialized at ingest instead of computed at query time
 	Materialize []ColumnKey
+	// CustomDictionaries allows enrichment of flows with custom metadata
+	CustomDictionaries map[string]CustomDict `validate:"dive"`
+}
+
+// CustomDict represents a single custom dictionary
+type CustomDict struct {
+	Keys       []CustomDictKey       `validate:"required,dive"`
+	Attributes []CustomDictAttribute `validate:"required,dive"`
+	Source     string                `validate:"required"`
+	Layout     string                `validate:"required,oneof=hashed iptrie complex_key_hashed"`
+	Dimensions []string              `validate:"required"`
+}
+
+// CustomDictKey represents a single key (matching) column of a custom dictionary
+type CustomDictKey struct {
+	Name                 string `validate:"required,alphanum"`
+	Type                 string `validate:"required,oneof=String UInt8 UInt16 UInt32 UInt64 IPv4 IPv6"`
+	MatchDimension       string `validate:"omitempty,alphanum"`
+	MatchDimensionSuffix string `validate:"omitempty,alphanum"`
+}
+
+// CustomDictAttribute represents a single value column of a custom dictionary
+type CustomDictAttribute struct {
+	Name    string `validate:"required,alphanum"`
+	Type    string `validate:"required,oneof=String UInt8 UInt16 UInt32 UInt64 IPv4 IPv6"`
+	Label   string `validate:"omitempty,alphanum"` // empty label is acceptable, in this case fallback to name
+	Default string `validate:"omitempty,alphanum"`
 }
 
 // DefaultConfiguration returns the default configuration for the schema component.
@@ -46,4 +77,36 @@ func (ck *ColumnKey) UnmarshalText(input []byte) error {
 		return nil
 	}
 	return errors.New("unknown provider")
+}
+
+// GetCustomDictConfig returns the custom dicts encoded in this schema
+func (c *Component) GetCustomDictConfig() map[string]CustomDict {
+	return c.c.CustomDictionaries
+}
+
+// DefaultCustomDictConfiguration is the default config for a CustomDict
+func DefaultCustomDictConfiguration() CustomDict {
+	return CustomDict{
+		Layout: "hashed",
+	}
+}
+
+// DefaultCustomDictKeyConfiguration is the default config for a CustomDictKey
+func DefaultCustomDictKeyConfiguration() CustomDictKey {
+	return CustomDictKey{
+		Type: "String",
+	}
+}
+
+// DefaultCustomDictAttributeConfiguration is the default config for a CustomDictAttribute
+func DefaultCustomDictAttributeConfiguration() CustomDictAttribute {
+	return CustomDictAttribute{
+		Type: "String",
+	}
+}
+
+func init() {
+	helpers.RegisterMapstructureUnmarshallerHook(helpers.DefaultValuesUnmarshallerHook[CustomDict](DefaultCustomDictConfiguration()))
+	helpers.RegisterMapstructureUnmarshallerHook(helpers.DefaultValuesUnmarshallerHook[CustomDictKey](DefaultCustomDictKeyConfiguration()))
+	helpers.RegisterMapstructureUnmarshallerHook(helpers.DefaultValuesUnmarshallerHook[CustomDictAttribute](DefaultCustomDictAttributeConfiguration()))
 }

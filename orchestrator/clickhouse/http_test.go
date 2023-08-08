@@ -21,10 +21,25 @@ func TestHTTPEndpoints(t *testing.T) {
 	config.Networks = helpers.MustNewSubnetMap(map[string]NetworkAttributes{
 		"::ffff:192.0.2.0/120": {Name: "infra"},
 	})
+	// setup schema config for custom dicts
+	schemaConfig := schema.DefaultConfiguration()
+	schemaConfig.CustomDictionaries = make(map[string]schema.CustomDict)
+	schemaConfig.CustomDictionaries["test"] = schema.CustomDict{
+		Source: "testdata/dicts/test.csv",
+	}
+	schemaConfig.CustomDictionaries["none"] = schema.CustomDict{
+		Source: "none.csv",
+	}
+
+	sch, err := schema.New(schemaConfig)
+	if err != nil {
+		t.Fatalf("schema.New() error:\n%+v", err)
+	}
+	// create http entry
 	c, err := New(r, config, Dependencies{
 		Daemon: daemon.NewMock(t),
 		HTTP:   httpserver.NewMock(t, r),
-		Schema: schema.NewMock(t),
+		Schema: sch,
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
@@ -65,6 +80,22 @@ func TestHTTPEndpoints(t *testing.T) {
 					c.d.Schema.ProtobufMessageHash()),
 				"",
 				`syntax = "proto3";`,
+			},
+		},
+		{
+			URL:         "/api/v0/orchestrator/clickhouse/custom_dict_none.csv",
+			ContentType: "text/plain; charset=utf-8",
+			StatusCode:  404,
+			FirstLines: []string{
+				"unable to deliver custom dict csv file none.csv",
+			},
+		},
+		{
+			URL:         "/api/v0/orchestrator/clickhouse/custom_dict_test.csv",
+			ContentType: "text/csv; charset=utf-8",
+			FirstLines: []string{
+				`col_a,col_b`,
+				`1,2`,
 			},
 		},
 	}

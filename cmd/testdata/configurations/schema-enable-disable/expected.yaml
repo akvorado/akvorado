@@ -1,6 +1,7 @@
 ---
 paths:
   inlet.0.schema:
+    customdictionaries: {}
     disabled:
       - SrcCountry
       - DstCountry
@@ -13,6 +14,7 @@ paths:
       - DstMAC
     notmaintableonly: []
   console.0.schema:
+    customdictionaries: {}
     disabled:
       - SrcCountry
       - DstCountry

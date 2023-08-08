@@ -446,3 +446,201 @@ AND name LIKE $3`, "flows", ch.config.Database, "%NetPrefix")
 		})
 	}
 }
+
+func TestCustomDictMigration(t *testing.T) {
+	r := reporter.NewMock(t)
+	chComponent := clickhousedb.SetupClickHouse(t, r)
+	if err := chComponent.Exec(context.Background(), "DROP TABLE IF EXISTS system.metric_log"); err != nil {
+		t.Fatalf("Exec() error:\n%+v", err)
+	}
+	// start clean
+	dropAllTables(t, chComponent)
+	// First, setup a default configuration
+	t.Run("default schema", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		sch, err := schema.New(schema.DefaultConfiguration())
+		if err != nil {
+			t.Fatalf("schema.New() error:\n%+v", err)
+		}
+		configuration := DefaultConfiguration()
+		configuration.OrchestratorURL = "http://something"
+		configuration.Kafka.Configuration = kafka.DefaultConfiguration()
+		ch, err := New(r, configuration, Dependencies{
+			Daemon:     daemon.NewMock(t),
+			HTTP:       httpserver.NewMock(t, r),
+			Schema:     sch,
+			ClickHouse: chComponent,
+		})
+		if err != nil {
+			t.Fatalf("New() error:\n%+v", err)
+		}
+		helpers.StartStop(t, ch)
+		waitMigrations(t, ch)
+
+		// We need to have at least one migration
+		gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps")
+		if gotMetrics["applied_steps"] == "0" {
+			t.Fatal("No migration applied when applying a fresh default schema")
+		}
+	})
+	// Now, create a custom dictionary on top
+	if !t.Failed() {
+		t.Run("custom dictionary", func(t *testing.T) {
+			r := reporter.NewMock(t)
+			schConfig := schema.DefaultConfiguration()
+			schConfig.CustomDictionaries = make(map[string]schema.CustomDict)
+			schConfig.CustomDictionaries["test"] = schema.CustomDict{
+				Keys: []schema.CustomDictKey{
+					{Name: "SrcAddr", Type: "String"},
+				},
+				Attributes: []schema.CustomDictAttribute{
+					{Name: "csv_col_name", Type: "String", Label: "DimensionAttribute"},
+					{Name: "csv_col_default", Type: "String", Label: "DefaultDimensionAttribute", Default: "Hello World"},
+				},
+				Source:     "test.csv",
+				Dimensions: []string{"SrcAddr", "DstAddr"},
+				Layout:     "complex_key_hashed",
+			}
+			sch, err := schema.New(schConfig)
+
+			if err != nil {
+				t.Fatalf("schema.New() error:\n%+v", err)
+			}
+			configuration := DefaultConfiguration()
+			configuration.OrchestratorURL = "http://something"
+			configuration.Kafka.Configuration = kafka.DefaultConfiguration()
+			ch, err := New(r, configuration, Dependencies{
+				Daemon:     daemon.NewMock(t),
+				HTTP:       httpserver.NewMock(t, r),
+				Schema:     sch,
+				ClickHouse: chComponent,
+			})
+			if err != nil {
+				t.Fatalf("New() error:\n%+v", err)
+			}
+			helpers.StartStop(t, ch)
+			waitMigrations(t, ch)
+
+			// We need to have at least one migration
+			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps")
+			if gotMetrics["applied_steps"] == "0" {
+				t.Fatal("No migration applied when enabling a custom dictionary")
+			}
+
+			// check if the rows were created in the main flows table
+			row := ch.d.ClickHouse.QueryRow(context.Background(), `
+	SELECT toString(groupArray(tuple(name, type, default_expression)))
+	FROM system.columns
+	WHERE table = $1
+	AND database = $2
+	AND name LIKE $3`, "flows", ch.config.Database, "%DimensionAttribute")
+			var existing string
+			if err := row.Scan(&existing); err != nil {
+				t.Fatalf("Scan() error:\n%+v", err)
+			}
+			if diff := helpers.Diff(existing,
+				"[('SrcAddrDimensionAttribute','LowCardinality(String)',''),('SrcAddrDefaultDimensionAttribute','LowCardinality(String)',''),('DstAddrDimensionAttribute','LowCardinality(String)',''),('DstAddrDefaultDimensionAttribute','LowCardinality(String)','')]"); diff != "" {
+				t.Fatalf("Unexpected state:\n%s", diff)
+			}
+
+			// check if the rows were created in the consumer flows table
+			rowConsumer := ch.d.ClickHouse.QueryRow(context.Background(), `
+		SHOW CREATE flows_ZUYGDTE3EBIXX352XPM3YEEFV4_raw_consumer`)
+			var existingConsumer string
+			if err := rowConsumer.Scan(&existingConsumer); err != nil {
+				t.Fatalf("Scan() error:\n%+v", err)
+			}
+			// check if the definitions are part of the consumer
+			expectedStatements := []string{
+				"dictGet('default.custom_dict_test', 'csv_col_name', DstAddr) AS DstAddrDimensionAttribute",
+				"dictGet('default.custom_dict_test', 'csv_col_name', SrcAddr) AS SrcAddrDimensionAttribute",
+				"dictGet('default.custom_dict_test', 'csv_col_default', SrcAddr) AS SrcAddrDefaultDimensionAttribute",
+				"dictGet('default.custom_dict_test', 'csv_col_default', DstAddr) AS DstAddrDefaultDimensionAttribute",
+			}
+			for _, s := range expectedStatements {
+				if !strings.Contains(existingConsumer, s) {
+					t.Fatalf("Missing statement in consumer:\n%s", s)
+				}
+			}
+
+			// check if the dictionary was created
+			dictCreate := ch.d.ClickHouse.QueryRow(context.Background(), `
+		SHOW CREATE custom_dict_test`)
+			var dictCreateString string
+			if err := dictCreate.Scan(&dictCreateString); err != nil {
+				t.Fatalf("Scan() error:\n%+v", err)
+			}
+			if diff := helpers.Diff(dictCreateString,
+				"CREATE DICTIONARY default.custom_dict_test\n(\n    `SrcAddr` String,\n    `csv_col_name` String DEFAULT 'None',\n    `csv_col_default` String DEFAULT 'Hello World'\n)\nPRIMARY KEY SrcAddr\nSOURCE(HTTP(URL 'http://something/api/v0/orchestrator/clickhouse/custom_dict_test.csv' FORMAT 'CSVWithNames'))\nLIFETIME(MIN 0 MAX 3600)\nLAYOUT(COMPLEX_KEY_HASHED())\nSETTINGS(format_csv_allow_single_quotes = 0)"); diff != "" {
+				t.Fatalf("Unexpected state:\n%s", diff)
+			}
+		})
+	}
+	// next test: with the custom dict removed again, the cols should still exist, but the consumer should be gone
+	if !t.Failed() {
+		t.Run("remove custom dictionary", func(t *testing.T) {
+			r := reporter.NewMock(t)
+			sch, err := schema.New(schema.DefaultConfiguration())
+
+			if err != nil {
+				t.Fatalf("schema.New() error:\n%+v", err)
+			}
+			configuration := DefaultConfiguration()
+			configuration.OrchestratorURL = "http://something"
+			configuration.Kafka.Configuration = kafka.DefaultConfiguration()
+			ch, err := New(r, configuration, Dependencies{
+				Daemon:     daemon.NewMock(t),
+				HTTP:       httpserver.NewMock(t, r),
+				Schema:     sch,
+				ClickHouse: chComponent,
+			})
+			if err != nil {
+				t.Fatalf("New() error:\n%+v", err)
+			}
+			helpers.StartStop(t, ch)
+			waitMigrations(t, ch)
+
+			// We need to have at least one migration
+			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps")
+			if gotMetrics["applied_steps"] == "0" {
+				t.Fatal("No migration applied when disabling the custom dict")
+			}
+
+			// check if the rows were created in the main flows table
+			row := ch.d.ClickHouse.QueryRow(context.Background(), `
+	SELECT toString(groupArray(tuple(name, type, default_expression)))
+	FROM system.columns
+	WHERE table = $1
+	AND database = $2
+	AND name LIKE $3`, "flows", ch.config.Database, "%DimensionAttribute")
+			var existing string
+			if err := row.Scan(&existing); err != nil {
+				t.Fatalf("Scan() error:\n%+v", err)
+			}
+			if diff := helpers.Diff(existing,
+				"[('SrcAddrDimensionAttribute','LowCardinality(String)',''),('SrcAddrDefaultDimensionAttribute','LowCardinality(String)',''),('DstAddrDimensionAttribute','LowCardinality(String)',''),('DstAddrDefaultDimensionAttribute','LowCardinality(String)','')]"); diff != "" {
+				t.Fatalf("Unexpected state:\n%s", diff)
+			}
+
+			// check if the rows were removed in the consumer flows table
+			rowConsumer := ch.d.ClickHouse.QueryRow(context.Background(), `
+		SHOW CREATE flows_ZUYGDTE3EBIXX352XPM3YEEFV4_raw_consumer`)
+			var existingConsumer string
+			if err := rowConsumer.Scan(&existingConsumer); err != nil {
+				t.Fatalf("Scan() error:\n%+v", err)
+			}
+			// check if the definitions are missing in the consumer
+			expectedStatements := []string{
+				"dictGet('default.custom_dict_test', 'csv_col_name', DstAddr) AS DstAddrDimensionAttribute",
+				"dictGet('default.custom_dict_test', 'csv_col_name', SrcAddr) AS SrcAddrDimensionAttribute",
+				"dictGet('default.custom_dict_test', 'csv_col_default', SrcAddr) AS SrcAddrDefaultDimensionAttribute",
+				"dictGet('default.custom_dict_test', 'csv_col_default', DstAddr) AS DstAddrDefaultDimensionAttribute",
+			}
+			for _, s := range expectedStatements {
+				if strings.Contains(existingConsumer, s) {
+					t.Fatalf("Unexpected Statement found in consumer:\n%s", s)
+				}
+			}
+		})
+	}
+}

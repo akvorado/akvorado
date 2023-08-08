@@ -17,6 +17,8 @@ type Schema struct {
 	columnIndex    []*Column     // Columns indexed by ColumnKey
 	disabledGroups bitset.BitSet // Disabled column groups
 
+	// dynamicColumns is the number of columns that are generated at runtime and appended after columnLast
+	dynamicColumns ColumnKey
 	// For ClickHouse. This is the set of primary keys (order is important and
 	// may not follow column order) for the aggregated tables.
 	clickHousePrimaryKeys []ColumnKey
