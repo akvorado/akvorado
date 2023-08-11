@@ -35,6 +35,7 @@ identified with a specific icon:
   - `TCPFlags`
   - `ICMPv4Type`, `ICMPv4Code`, `ICMPv6Type`, `ICMPv6Code`, `ICMPv4`, and `ICMPv6`
 - 🩹 *inlet*: fix Netflow processing when template is received with data
+- 🩹 *inlet*: use sampling rate in Netflow data packet if available
 - 🩹 *console*: fix display when using “%” units and interface speed is 0
 - 🌱 *build*: minimum supported Node version is now 16
 - 🌱 *docker*: update ClickHouse to 23.3 (not mandatory)

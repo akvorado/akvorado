@@ -46,7 +46,9 @@ func (nd *Decoder) decode(msgDec interface{}, samplingRateSys producer.SamplingR
 		for _, record := range dataFlowSetItem.Records {
 			flow := nd.decodeRecord(record.Values)
 			if flow != nil {
-				flow.SamplingRate = samplingRate
+				if flow.SamplingRate == 0 {
+					flow.SamplingRate = samplingRate
+				}
 				flowMessageSet = append(flowMessageSet, flow)
 			}
 		}
@@ -75,6 +77,8 @@ func (nd *Decoder) decodeRecord(fields []netflow.DataField) *schema.FlowMessage 
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnBytes, decodeUNumber(v))
 		case netflow.NFV9_FIELD_IN_PKTS, netflow.NFV9_FIELD_OUT_PKTS:
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnPackets, decodeUNumber(v))
+		case netflow.NFV9_FIELD_SAMPLING_INTERVAL, netflow.NFV9_FIELD_FLOW_SAMPLER_RANDOM_INTERVAL:
+			bf.SamplingRate = uint32(decodeUNumber(v))
 
 		// L3
 		case netflow.NFV9_FIELD_IPV4_SRC_ADDR:

@@ -235,6 +235,44 @@ func TestTemplatesMixedWithData(t *testing.T) {
 	}
 }
 
+func TestDecodeSamplingRate(t *testing.T) {
+	r := reporter.NewMock(t)
+	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()})
+
+	data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "template-1507.pcap"))
+	got := nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+	data = helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-1507.pcap"))
+	got = append(got, nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})...)
+
+	expectedFlows := []*schema.FlowMessage{
+		{
+			SamplingRate:    2048,
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("::ffff:232.131.215.65"),
+			DstAddr:         netip.MustParseAddr("::ffff:142.183.180.65"),
+			InIf:            13,
+			SrcVlan:         701,
+			NextHop:         netip.MustParseAddr("::ffff:0.0.0.0"),
+			ProtobufDebug: map[schema.ColumnKey]interface{}{
+				schema.ColumnPackets: 1,
+				schema.ColumnBytes:   160,
+				schema.ColumnProto:   6,
+				schema.ColumnSrcPort: 13245,
+				schema.ColumnDstPort: 10907,
+				schema.ColumnEType:   helpers.ETypeIPv4,
+			},
+		},
+	}
+
+	for _, f := range got {
+		f.TimeReceived = 0
+	}
+
+	if diff := helpers.Diff(got[:1], expectedFlows); diff != "" {
+		t.Fatalf("Decode() (-got, +want):\n%s", diff)
+	}
+}
+
 func TestDecodeICMP(t *testing.T) {
 	r := reporter.NewMock(t)
 	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()})
