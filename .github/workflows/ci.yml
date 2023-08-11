@@ -85,11 +85,13 @@ jobs:
         run: make test-js
       - name: Run coverage tests
         run: make test-coverage
-      - name: Upload coverage
-        uses: codecov/codecov-action@v3
+      - uses: actions/upload-artifact@v3
         with:
-          files: ./test/go/coverage.xml,./test/js/cobertura-coverage.xml
-          flags: unittests
+          name: linux-coverage
+          if-no-files-found: error
+          path: |
+            test/go/coverage.xml
+            test/js/cobertura-coverage.xml
       - name: Upload binary
         uses: actions/upload-artifact@v3
         with:
@@ -116,11 +118,38 @@ jobs:
         run: make && ./bin/akvorado version
       - name: Tests
         run: make test-coverage
+      - uses: actions/upload-artifact@v3
+        with:
+          name: macos-coverage
+          if-no-files-found: error
+          path: |
+            test/go/coverage.xml
+            test/js/cobertura-coverage.xml
+
+  coverage:
+    name: 🔍 Upload code coverage
+    needs:
+      - build-linux
+      - build-macos
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+        with:
+          name: linux-coverage
+          path: test/linux
+      - uses: actions/download-artifact@v3
+        with:
+          name: macos-coverage
+          path: test/macos
       - name: Upload coverage
         uses: codecov/codecov-action@v3
         with:
-          files: ./test/go/coverage.xml,./test/js/cobertura-coverage.xml
+          files: ./test/linux/go/coverage.xml,./test/linux/js/cobertura-coverage.xml, ./test/macos/go/coverage.xml,./test/macos/js/cobertura-coverage.xml
           flags: unittests
+          fail_ci_if_error: true
 
   build-go:
     name: 🔭 Build Go backend
