@@ -8,7 +8,7 @@ require (
 	github.com/alecthomas/chroma v0.10.0
 	github.com/antonmedv/expr v1.12.7
 	github.com/benbjohnson/clock v1.3.5
-	github.com/bio-routing/bio-rd v0.1.9
+	github.com/bio-routing/bio-rd v0.1.10-0.20230730142204-f71bc383fe42
 	github.com/bits-and-blooms/bitset v1.8.0
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/chenyahui/gin-cache v1.8.1
@@ -151,7 +151,6 @@ require (
 )
 
 replace (
-	github.com/bio-routing/bio-rd => github.com/vincentbernat/bio-rd v0.0.0-20230729180419-5319c47d7575
 	github.com/kentik/patricia => github.com/vincentbernat/patricia v0.0.0-20220923091046-b376a1167a94
 	github.com/netsampler/goflow2 => github.com/vincentbernat/goflow2 v1.0.5-0.20230515164450-049536ab1b9d
 )
