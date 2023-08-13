@@ -15,7 +15,7 @@ $ curl -s http://akvorado/api/v0/inlet/flows\?limit=1
 ```
 
 Be sure to replace `http://akvorado` with the URL to your *Akvorado*
-setup. If you are running `docker-compose` locally, this is
+setup. If you are running `docker compose` locally, this is
 `http://127.0.0.1:8080`.
 
 This returns the next flow. The same information is exported to Kafka.
@@ -292,7 +292,7 @@ Metadata for flows-ZUYGDTE3EBIXX352XPM3YEEFV4 (from broker -1: kafka:9092/bootst
 $ kcat -b kafka:9092 -C -t flows-ZUYGDTE3EBIXX352XPM3YEEFV4 -f 'Topic %t [%p] at offset %o: key %k: %T\n' -o -1
 ```
 
-Alternatively, when using `docker-compose`, there is a Kafka UI
+Alternatively, when using `docker compose`, there is a Kafka UI
 running at `http://127.0.0.1:8080/kafka-ui/`. You can do the following
 checks:
 
@@ -303,8 +303,8 @@ checks:
 ## ClickHouse
 
 First, check that all the tables are present using the following SQL
-query through `clickhouse client` (when running with `docker-compose`,
-you can use `docker-compose exec clickhouse clickhouse-client`) :
+query through `clickhouse client` (when running with `docker compose`,
+you can use `docker compose exec clickhouse clickhouse-client`) :
 
 ```sql
 SHOW tables
@@ -365,7 +365,7 @@ FORMAT Vertical
 
 Notably, it may complain about a missing schema for a received
 message. In this case, you need to ensure the schemas used by
-*Akvorado* are available. When using `docker-compose`, you can restart
+*Akvorado* are available. When using `docker compose`, you can restart
 the orchestrator and ClickHouse to ensure it downloads the latest
 schemas. Otherwise, you can manually execute the script installing the
 schemas on your ClickHouse server and restart:

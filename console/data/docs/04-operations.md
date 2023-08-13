@@ -386,7 +386,7 @@ snmp-server vrf VRF-MANAGEMENT
 
 ## Kafka
 
-When using `docker-compose`, there is a Kafka UI running at
+When using `docker compose`, there is a Kafka UI running at
 `http://127.0.0.1:8080/kafka-ui/`. It provides various operational
 metrics you can check, notably the space used by each topic.
 

@@ -20,7 +20,7 @@ import (
 // as a named service or on a specific port on localhost. This applies
 // for example for Kafka and ClickHouse. The timeouts are quite short,
 // but we suppose that either the services are run through
-// docker-compose manually and ready, either through CI and they are
+// docker compose manually and ready, either through CI and they are
 // checked for readiness.
 func CheckExternalService(t *testing.T, name string, dnsCandidates []string, port string) string {
 	t.Helper()

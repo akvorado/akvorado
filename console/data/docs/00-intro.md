@@ -13,15 +13,15 @@ ClickHouse. It also exposes a web interface to browse the result.
 
 The easiest way to get started is with
 [Docker](https://docs.docker.com/get-docker) and [Docker
-Compose](https://docs.docker.com/compose/install/). Depending on your
-version of *Docker Compose*, you may need to use `docker-compose` or
-`docker compose`.
+Compose](https://docs.docker.com/compose/install/). Depending on your version of
+*Docker Compose*, you may need to use `docker-compose` instead of `docker
+compose`.
 
 ```console
 # mkdir akvorado
 # cd akvorado
 # curl -sL https://github.com/akvorado/akvorado/releases/latest/download/docker-compose-quickstart.tar.gz | tar zxvf -
-# docker-compose up -d
+# docker compose up -d
 ```
 
 Once running, *Akvorado* web interface should be running on port 8081. A few
@@ -29,7 +29,7 @@ synthetic flows are generated in the background. To disable them:
 
 1. Remove `:docker-compose-demo.yml` from `.env`,
 2. Comment the last line of `akvorado.yaml`, and
-3. Run `docker-compose up -d --remove-orphans`.
+3. Run `docker compose up -d --remove-orphans`.
 
 If you want to send you own flows, the inlet is accepting both NetFlow
 (port 2055) and sFlow (port 6343). You should also customize some
@@ -48,11 +48,11 @@ documentation.
   which is used by default by the web interface)
 
 You can get all the expanded configuration (with default values) with
-`docker-compose exec akvorado-orchestrator akvorado orchestrator
+`docker compose exec akvorado-orchestrator akvorado orchestrator
 --check --dump /etc/akvorado/akvorado.yaml`.
 
 Once you are ready, you can run everything in the background with
-`docker-compose up -d`.
+`docker compose up -d`.
 
 ## Big picture
 

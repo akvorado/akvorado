@@ -259,7 +259,7 @@ jobs:
         with:
           name: binary
 
-      # Build tarball for docker-compose
+      # Build tarball for docker compose
       - name: Build docker-compose "quick start"
         run: |
           sed -i s,akvorado:latest,akvorado:${GITHUB_REF_NAME#v}, docker-compose*.yml
