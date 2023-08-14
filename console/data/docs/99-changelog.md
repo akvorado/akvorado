@@ -44,6 +44,7 @@ identified with a specific icon:
 - 🌱 *docker*: update ClickHouse to 23.3 (not mandatory)
 - 🌱 *docker*: update to Zookeeper 3.8 (not mandatory)
 - 🌱 *docker*: update to Kafka 3.5 (not mandatory, but there is also a configuration change)
+- 🌱 *docker*: add healthchecks for Redis and Zookeeper
 - 🌱 *console*: emphasize trajectory on Sankey graphs
 
 ## 1.8.3 - 2023-04-28

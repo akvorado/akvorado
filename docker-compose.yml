@@ -14,9 +14,15 @@ services:
     image: bitnami/zookeeper:3.8
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
+      - ZOO_4LW_COMMANDS_WHITELIST=srvr,mntr,ruok
     restart: unless-stopped
     volumes:
       - akvorado-zookeeper:/bitnami/zookeeper
+    healthcheck:
+      interval: 20s
+      timeout: 10s
+      retries: 3
+      test: ["CMD-SHELL", "echo ruok | nc -w3 127.0.0.1 2181 | grep -xFq imok"]
   kafka:
     image: bitnami/kafka:3.5
     environment:
@@ -56,6 +62,11 @@ services:
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
     restart: unless-stopped
+    healthcheck:
+      interval: 20s
+      timeout: 10s
+      retries: 3
+      test: ["CMD-SHELL", "timeout 3 redis-cli ping | grep -q PONG"]
 
   akvorado-service: &akvorado-image
     image: ghcr.io/akvorado/akvorado:latest
