@@ -41,6 +41,7 @@ identified with a specific icon:
   `allow_suspicious_low_cardinality_types` to ensure we can use
   `LowCardinality(IPv6)`.
 - 🌱 *build*: minimum supported Node version is now 16
+- 🌱 *docker*: move Docker-related files to `docker/`
 - 🌱 *docker*: update ClickHouse to 23.3 (not mandatory)
 - 🌱 *docker*: update to Zookeeper 3.8 (not mandatory)
 - 🌱 *docker*: update to Kafka 3.5 (not mandatory, but there is also a configuration change)

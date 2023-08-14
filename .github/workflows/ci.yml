@@ -226,7 +226,7 @@ jobs:
       - uses: docker/build-push-action@v4
         with:
           context: .
-          file: Dockerfile
+          file: docker/Dockerfile
           platforms: ${{ startsWith(github.ref, 'refs/tags/') && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -262,9 +262,9 @@ jobs:
       # Build tarball for docker compose
       - name: Build docker-compose "quick start"
         run: |
-          sed -i s,akvorado:latest,akvorado:${GITHUB_REF_NAME#v}, docker-compose*.yml
+          sed -i s,akvorado:latest,akvorado:${GITHUB_REF_NAME#v}, docker/docker-compose*.yml
           tar zcvf docker-compose-quickstart.tar.gz \
-            docker-compose.yml docker-compose-demo.yml .env \
+            .env docker/* \
             orchestrator/clickhouse/data/docker-entrypoint.sh \
             config/*.yaml
 

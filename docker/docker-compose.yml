@@ -77,7 +77,7 @@ services:
     restart: unless-stopped
     command: orchestrator /etc/akvorado/akvorado.yaml
     volumes:
-      - ./config:/etc/akvorado:ro
+      - ../config:/etc/akvorado:ro
     labels:
       - traefik.enable=true
       - traefik.http.routers.akvorado-orchestrator.entrypoints=private # it exposes configuration files with passwords
@@ -133,7 +133,7 @@ services:
   clickhouse:
     image: clickhouse/clickhouse-server:23.3
     volumes:
-      - ./orchestrator/clickhouse/data/docker-entrypoint.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+      - ../orchestrator/clickhouse/data/docker-entrypoint.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
       - akvorado-clickhouse:/var/lib/clickhouse
     environment:
       - CLICKHOUSE_INIT_TIMEOUT=60
