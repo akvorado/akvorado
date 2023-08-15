@@ -66,7 +66,7 @@
               })
             rec {
               update-vendorHash = ''
-                sha256=$(2>&1 nix build --no-link .#backend.go-modules \
+                sha256=$(2>&1 nix build --no-link .#backend.goModules \
                             | ${pkgs.gnused}/bin/sed -nE "s/\s+got:\s+(sha256-.*)/\1/p")
                 [[ -z "$sha256" ]] || echo $sha256 > nix/vendorHash.txt
               '';
