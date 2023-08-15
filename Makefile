@@ -122,7 +122,8 @@ test-coverage: test-coverage-go test-coverage-js ## Run coverage tests
 test-go test-bench test-race test-coverage-go: .fmt-go~ .lint-go~ $(GENERATED)
 test-go: | $(GOTESTSUM) ; $(info $(M) running Go tests$(GOTEST_MORE)…) @ ## Run Go tests
 	$Q mkdir -p test/go
-	$Q $(GOTESTSUM) --junitfile test/go/tests.xml -- \
+	$Q env PATH=$(dir $(abspath $(shell command -v $(GO)))):$(PATH) $(GOTESTSUM) \
+        --junitfile test/go/tests.xml -- \
 		-timeout $(TIMEOUT)s \
 		$(GOTEST_ARGS) $(PKGS)
 test-race: CGO_ENABLED=1
@@ -130,12 +131,13 @@ test-race: GOTEST_ARGS=-race
 test-race: GOTEST_MORE=, with race detector
 test-race: test-go  ## Run Go tests with race detector
 test-bench: | $(GOTESTSUM) ; $(info $(M) running benchmarks…) @ ## Run Go benchmarks
-	$Q $(GOTESTSUM) -f standard-quiet -- \
+	$Q env PATH=$(dir $(abspath $(shell command -v $(GO)))):$(PATH) $(GOTESTSUM) \
+        -f standard-quiet -- \
 		-timeout $(TIMEOUT)s -run=__absolutelynothing__ -bench=. -benchmem \
 		$(PKGS) # -memprofile test/go/memprofile.out -cpuprofile test/go/cpuprofile.out
 test-coverage-go: | $(GOTESTSUM) $(GOCOV) $(GOCOVXML) ; $(info $(M) running Go coverage tests…) @ ## Run Go coverage tests
 	$Q mkdir -p test/go
-	$Q $(GOTESTSUM) -- \
+	$Q env PATH=$(dir $(abspath $(shell command -v $(GO)))):$(PATH) $(GOTESTSUM) -- \
 		-coverpkg=$(shell echo $(PKGS) | tr ' ' ',') \
 		-covermode=atomic \
 		-coverprofile=test/go/profile.out.tmp $(PKGS)
