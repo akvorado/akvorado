@@ -33,7 +33,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/netsampler/goflow2 v1.1.1-0.20221008154147-57fad2e0c837
 	github.com/oschwald/maxminddb-golang v1.11.0
-	github.com/osrg/gobgp/v3 v3.16.0
+	github.com/osrg/gobgp/v3 v3.17.0
 	github.com/prometheus/client_golang v1.16.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rs/zerolog v1.30.0
