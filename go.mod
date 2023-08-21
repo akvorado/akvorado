@@ -14,7 +14,7 @@ require (
 	github.com/chenyahui/gin-cache v1.8.1
 	github.com/docker/docker v24.0.5+incompatible
 	github.com/docker/go-connections v0.4.0
-	github.com/eapache/go-resiliency v1.3.0
+	github.com/eapache/go-resiliency v1.4.0
 	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gin-gonic/gin v1.9.1
 	github.com/glebarez/sqlite v1.9.0
