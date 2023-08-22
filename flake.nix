@@ -78,7 +78,6 @@
               update = ''
                 ${update-vendorHash}
                 ${update-npmDepsHash}
-                nix flake lock --update-input asn2org
               '';
             };
         };
