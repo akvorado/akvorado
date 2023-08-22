@@ -19,6 +19,7 @@ jobs:
     steps:
       - name: Sleep a bit
         run: sleep 120
+        if: ${{ github.event_name == 'push' }}
       - uses: actions/checkout@v3
       - uses: cachix/install-nix-action@v22
       - name: Update flake.nix
