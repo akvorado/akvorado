@@ -40,6 +40,8 @@ identified with a specific icon:
 - 🩹 *orchestrator*: create flows table with
   `allow_suspicious_low_cardinality_types` to ensure we can use
   `LowCardinality(IPv6)`.
+- 🌱 *inlet*: update [Expr](https://expr.medv.io/), the language behind the
+  classifiers: new builtins are available
 - 🌱 *build*: minimum supported Node version is now 16
 - 🌱 *docker*: move Docker-related files to `docker/`
 - 🌱 *docker*: update ClickHouse to 23.3 (not mandatory)

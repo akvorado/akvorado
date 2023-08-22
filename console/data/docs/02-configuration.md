@@ -259,7 +259,7 @@ The following configuration keys are accepted:
   component. If multiple sources are provided, the value of the first source
   providing a non-default route is taken. The default value is `flow` and `routing`.
 
-Classifier rules are written using [expr][].
+Classifier rules are written using [Expr][].
 
 Exporter classifiers gets the classifier IP address and its hostname.
 If they can make a decision, they should invoke one of the
@@ -343,7 +343,7 @@ interface-classifiers:
   - ClassifyInternal()
 ```
 
-[expr]: https://github.com/antonmedv/expr/blob/master/docs/Language-Definition.md
+[expr]: https://expr.medv.io/docs/Language-Definition
 [from Go]: https://github.com/google/re2/wiki/Syntax
 
 ### GeoIP
