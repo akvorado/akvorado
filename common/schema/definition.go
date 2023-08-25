@@ -94,6 +94,7 @@ const (
 	ColumnICMPv6
 	ColumnICMPv6Type
 	ColumnICMPv6Code
+	ColumnNextHop
 
 	ColumnLast
 )
@@ -366,7 +367,8 @@ END`,
 				ClickHouseAlias: `if(Proto = 1, ` +
 					`dictGetOrDefault('icmp', 'name', tuple(Proto, ICMPv4Type, ICMPv4Code), ` +
 					`concat(toString(ICMPv4Type), '/', toString(ICMPv4Code))), '')`,
-			}, {
+			},
+			{
 				Key:            ColumnICMPv6,
 				Depends:        []ColumnKey{ColumnProto, ColumnICMPv6Type, ColumnICMPv6Code},
 				Disabled:       true,
@@ -375,6 +377,11 @@ END`,
 				ClickHouseAlias: `if(Proto = 58, ` +
 					`dictGetOrDefault('icmp', 'name', tuple(Proto, ICMPv6Type, ICMPv6Code), ` +
 					`concat(toString(ICMPv6Type), '/', toString(ICMPv6Code))), '')`,
+			},
+			{
+				Key:             ColumnNextHop,
+				ClickHouseType:  "IPv6",
+				ClickHouseCodec: "ZSTD(1)",
 			},
 		},
 	}.finalize()

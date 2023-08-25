@@ -294,6 +294,16 @@ func (p *Provider) lpmResponseToLookupResult(lpm *pb.LPMResponse) (bmp.LookupRes
 	}
 
 	res.NetMask = uint8(r.Pfx.GetLength())
+	nh := pfx.BgpPath.GetNextHop()
+	if nh != nil {
+		bnh := bnet.IPFromProtoIP(nh)
+		nhAddr, ok := netip.AddrFromSlice(bnh.ToNetIP())
+		if !ok {
+			return res, fmt.Errorf("lpm: invalid next hop")
+		}
+		res.NextHop = nhAddr
+	}
+
 	return res, nil
 }
 

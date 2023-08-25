@@ -693,3 +693,61 @@ func TestGetNetMask(t *testing.T) {
 		})
 	}
 }
+
+func TestGetNextHop(t *testing.T) {
+	nh1 := netip.MustParseAddr("2001:db8::1")
+	nh2 := netip.MustParseAddr("2001:db8::2")
+	cases := []struct {
+		FlowNextHop    netip.Addr
+		RoutingNextHop netip.Addr
+		Providers      []NetProvider
+		Expected       netip.Addr
+	}{
+		// Flow
+		{netip.IPv6Unspecified(), netip.IPv6Unspecified(), []NetProvider{NetProviderFlow}, netip.IPv6Unspecified()},
+		{nh1, netip.IPv6Unspecified(), []NetProvider{NetProviderFlow}, nh1},
+		{netip.IPv6Unspecified(), nh1, []NetProvider{NetProviderFlow}, netip.IPv6Unspecified()},
+		// Routing
+		{netip.IPv6Unspecified(), netip.IPv6Unspecified(), []NetProvider{NetProviderRouting}, netip.IPv6Unspecified()},
+		{nh1, netip.IPv6Unspecified(), []NetProvider{NetProviderRouting}, netip.IPv6Unspecified()},
+		{netip.IPv6Unspecified(), nh1, []NetProvider{NetProviderRouting}, nh1},
+		// Both
+		{netip.IPv6Unspecified(), netip.IPv6Unspecified(), []NetProvider{NetProviderRouting, NetProviderFlow}, netip.IPv6Unspecified()},
+		{nh1, netip.IPv6Unspecified(), []NetProvider{NetProviderRouting, NetProviderFlow}, nh1},
+		{netip.IPv6Unspecified(), nh2, []NetProvider{NetProviderRouting, NetProviderFlow}, nh2},
+		{nh1, netip.IPv6Unspecified(), []NetProvider{NetProviderRouting, NetProviderFlow}, nh1},
+		{nh1, nh2, []NetProvider{NetProviderRouting, NetProviderFlow}, nh2},
+
+		{netip.IPv6Unspecified(), netip.IPv6Unspecified(), []NetProvider{NetProviderFlow, NetProviderRouting}, netip.IPv6Unspecified()},
+		{nh1, netip.IPv6Unspecified(), []NetProvider{NetProviderFlow, NetProviderRouting}, nh1},
+		{netip.IPv6Unspecified(), nh2, []NetProvider{NetProviderFlow, NetProviderRouting}, nh2},
+		{nh1, netip.IPv6Unspecified(), []NetProvider{NetProviderFlow, NetProviderRouting}, nh1},
+		{nh1, nh2, []NetProvider{NetProviderFlow, NetProviderRouting}, nh1},
+	}
+	for i, tc := range cases {
+		i++
+		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
+			r := reporter.NewMock(t)
+
+			// We don't need all components as we won't start the component.
+			configuration := DefaultConfiguration()
+			configuration.NetProviders = tc.Providers
+			routingComponent := routing.NewMock(t, r)
+			routingComponent.PopulateRIB(t)
+
+			c, err := New(r, configuration, Dependencies{
+				Daemon:  daemon.NewMock(t),
+				GeoIP:   geoip.NewMock(t, r),
+				Routing: routingComponent,
+				Schema:  schema.NewMock(t),
+			})
+			if err != nil {
+				t.Fatalf("New() error:\n%+v", err)
+			}
+			got := c.getNextHop(tc.FlowNextHop, tc.RoutingNextHop)
+			if diff := helpers.Diff(got, tc.Expected); diff != "" {
+				t.Fatalf("getNextHop() (-got, +want):\n%s", diff)
+			}
+		})
+	}
+}
