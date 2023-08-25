@@ -35,6 +35,9 @@ identified with a specific icon:
   - `TCPFlags`
   - `ICMPv4Type`, `ICMPv4Code`, `ICMPv6Type`, `ICMPv6Code`, `ICMPv4`, and `ICMPv6`
   - `NextHop`
+- ✨ *orchestrator*: add custom dictionaries for additional flow hydration. See
+  `orchestrator`→`schema`→`custom-dictionaries`. Currently, filtering on the
+  generated data is not available.
 - 🩹 *inlet*: fix Netflow processing when template is received with data
 - 🩹 *inlet*: use sampling rate in Netflow data packet if available
 - 🩹 *console*: fix display when using “%” units and interface speed is 0

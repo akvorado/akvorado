@@ -552,13 +552,15 @@ For ICMP, you get `ICMPv4Type`, `ICMPv4Code`, `ICMPv6Type`, `ICMPv6Code`,
 `ICMPv4`, and `ICMPv6`. The two latest one are displayed as a string in the
 console (like `echo-reply` or `frag-needed`).
 
-#### Custom Dictionaries
-You can add custom dimensions to be looked up via a dictionary. This is useful to enrich your flow with additional informations not possible to get in the classifier.
+#### Custom dictionaries
 
-**Note:**
-Filtering by dictionaries is not possible with the current state of development.
+You can add custom dimensions to be looked up via a dictionary. This is useful
+to enrich your flow with additional informations not possible to get in the
+classifier. This works by providing the database with a CSV files containing the
+values.
 
-This works by providing the database with a CSV files containing the values.
+**Note:** filtering by dictionaries is not possible with the current state of
+development.
 
 ```yaml
 schema:
@@ -580,22 +582,30 @@ schema:
 ```
 
 This example expects a CSV file named `ips_annotation.csv` with the following format:
-```
+
+```csv
 addr,role
 2001:db8::1,ExampleRole
 ```
 
-If the SrcAddr has the value `2001:db8::1` (matches the key), the dimension `SrcAddrIPRole` will be set to `ExampleRole`.
+If `SrcAddr` has the value `2001:db8::1` (matches the key), the dimension
+`SrcAddrIPRole` will be set to `ExampleRole`.
 
-Independently, if the DstAddr has the value `2001:db8::1`, the dimension `DstAddrIPRole` will be set to `ExampleRole`.
+Independently, if `DstAddr` has the value `2001:db8::1`, the dimension
+`DstAddrIPRole` will be set to `ExampleRole`.
 
-All other IPs will get "DefaultRole" in their "SrcAddrIPRole"/"DstAddrIPRole" dimension.
+All other IPs will get "DefaultRole" in their `SrcAddrIPRole`/`DstAddrIPRole`
+dimension.
 
 The `label`and `default` keys are optional.
 
-It is possible to add the same dictionary to multiple dimensions, usually for the "Input" and "Output"-direction.
+It is possible to add the same dictionary to multiple dimensions, usually for
+the "Input" and "Output"-direction.
 
-By default, the value of the key tries to match a dimension. For multiple keys, it is necessary to explicitly specify the dimension name to match by either specifing `match-dimension` or `match-dimension-suffix`:
+By default, the value of the key tries to match a dimension. For multiple keys,
+it is necessary to explicitly specify the dimension name to match by either
+specifing `match-dimension` or `match-dimension-suffix`:
+
 ```yaml
 schema:
   custom-dictionaries:
@@ -615,7 +625,6 @@ schema:
       dimensions:
         - OutIf
         - InIf
-
 ```
 
 ### Kafka
