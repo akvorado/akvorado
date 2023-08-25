@@ -451,6 +451,7 @@ func TestBioRIS(t *testing.T) {
 					LocalData2: 4,
 				},
 			},
+			NextHop: netip.MustParseAddr("2001:db8::7"),
 		}
 		if diff := helpers.Diff(got, expected); diff != "" {
 			t.Errorf("Lookup() (-got, +want):\n%s", diff)

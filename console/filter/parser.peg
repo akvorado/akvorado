@@ -54,6 +54,7 @@ ColumnIP ←
  / "DstAddr"i !IdentStart #{ return c.metaColumn("DstAddr") } { return c.acceptColumn() }
  / "SrcAddrNAT"i !IdentStart #{ return c.metaColumn("SrcAddrNAT") } { return c.acceptColumn() }
  / "DstAddrNAT"i !IdentStart #{ return c.metaColumn("DstAddrNAT") } { return c.acceptColumn() }
+ / "NextHop"i !IdentStart #{ return c.metaColumn("NextHop") } { return c.acceptColumn() }
 ConditionIPExpr "condition on IP" ←
    column:ColumnIP _
    operator:("=" / "!=") _ ip:IP {

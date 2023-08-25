@@ -53,7 +53,11 @@ func (p *Provider) Lookup(_ context.Context, ip netip.Addr, nh netip.Addr, _ net
 	if len(routes) == 0 {
 		return LookupResult{}, fmt.Errorf("no route found for %s", ip)
 	}
-	attributes := p.rib.rtas.Get(routes[len(routes)-1].attributes)
+	route := routes[len(routes)-1]
+	attributes := p.rib.rtas.Get(route.attributes)
+	// the next hop is updated from the rib in every case, because the user "opted in" for bmp as source if the lookup result is evaluated
+	nh = netip.Addr(p.rib.nextHops.Get(route.nextHop))
+
 	// prefix len is v6 coded in the bmp rib. We need to substract 96 if it's a v4 prefix
 	plen := attributes.plen
 	if ip.Is4() || ip.Is4In6() {
@@ -65,5 +69,6 @@ func (p *Provider) Lookup(_ context.Context, ip netip.Addr, nh netip.Addr, _ net
 		Communities:      attributes.communities,
 		LargeCommunities: attributes.largeCommunities,
 		NetMask:          plen,
+		NextHop:          nh,
 	}, nil
 }

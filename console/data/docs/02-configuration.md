@@ -254,7 +254,7 @@ The following configuration keys are accepted:
   from flow except if the ASN is private), `geoip`, `routing`, and
   `routing-except-private`. The default value is `flow`, `routing`, and
   `geoip`.
-- `net-providers` defines the sources for prefix lengths. `flow` uses the value
+- `net-providers` defines the sources for prefix lengths and nexthop. `flow` uses the value
   provided by the flow message (if any), while `routing` looks it up using the BMP
   component. If multiple sources are provided, the value of the first source
   providing a non-default route is taken. The default value is `flow` and `routing`.

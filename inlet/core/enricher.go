@@ -103,6 +103,9 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	flow.SrcNetMask = c.getNetMask(flow.SrcNetMask, sourceRouting.NetMask)
 	flow.DstNetMask = c.getNetMask(flow.DstNetMask, destRouting.NetMask)
 
+	// set next hop according to user config
+	flow.NextHop = c.getNextHop(flow.NextHop, destRouting.NextHop)
+
 	// set asns according to user config
 	flow.SrcAS = c.getASNumber(flow.SrcAddr, flow.SrcAS, sourceRouting.ASN)
 	flow.DstAS = c.getASNumber(flow.DstAddr, flow.DstAS, destRouting.ASN)
@@ -174,6 +177,22 @@ func (c *Component) getNetMask(flowMask, bmpMask uint8) (mask uint8) {
 		}
 	}
 	return mask
+}
+
+func (c *Component) getNextHop(flowNextHop netip.Addr, bmpNextHop netip.Addr) (nextHop netip.Addr) {
+	nextHop = netip.IPv6Unspecified()
+	for _, provider := range c.config.NetProviders {
+		if !nextHop.IsUnspecified() {
+			break
+		}
+		switch provider {
+		case NetProviderFlow:
+			nextHop = flowNextHop
+		case NetProviderRouting:
+			nextHop = bmpNextHop
+		}
+	}
+	return nextHop
 }
 
 func (c *Component) writeExporter(flow *schema.FlowMessage, classification exporterClassification) bool {

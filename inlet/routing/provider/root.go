@@ -23,6 +23,7 @@ type LookupResult struct {
 	Communities      []uint32
 	LargeCommunities []bgp.LargeCommunity
 	NetMask          uint8
+	NextHop          netip.Addr
 }
 
 // Dependencies are the dependencies for a provider.
