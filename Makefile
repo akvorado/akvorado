@@ -72,11 +72,11 @@ $(BIN)/wwhrd: PACKAGE=github.com/frapposelli/wwhrd@latest
 
 .DELETE_ON_ERROR:
 
-common/clickhousedb/mocks/mock_driver.go: | $(MOCKGEN) ; $(info $(M) generate mocks for ClickHouse driver…)
+common/clickhousedb/mocks/mock_driver.go: go.mod | $(MOCKGEN) ; $(info $(M) generate mocks for ClickHouse driver…)
 	$Q echo '//go:build !release' > $@
 	$Q $(MOCKGEN) -package mocks \
 		github.com/ClickHouse/clickhouse-go/v2/lib/driver Conn,Row,Rows,ColumnType >> $@
-conntrackfixer/mocks/mock_conntrackfixer.go: | $(MOCKGEN) ; $(info $(M) generate mocks for conntrack-fixer…)
+conntrackfixer/mocks/mock_conntrackfixer.go: go.mod | $(MOCKGEN) ; $(info $(M) generate mocks for conntrack-fixer…)
 	$Q if [ `$(GO) env GOOS` = "linux" ]; then \
 	   echo '//go:build !release' > $@ ; \
 	   $(MOCKGEN) -package mocks akvorado/conntrackfixer ConntrackConn,DockerClient >> $@ ; \
