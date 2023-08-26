@@ -11,7 +11,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.9.0 - 2023-08-26
 
 - 💥 *cmd*: use `AKVORADO_CFG_` as a prefix for environment variables used to
   modify configuration (`AKVORADO_CFG_ORCHESTRATOR_HTTP_LISTEN` instead of
