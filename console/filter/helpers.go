@@ -22,38 +22,54 @@ type Meta struct {
 	MainTableRequired bool
 }
 
-// reverseColumnDirection reverts the direction of a provided column name.
-func reverseColumnDirection(schema *schema.Component, name string) string {
-	var candidate string
-	if strings.HasPrefix(name, "Src") {
-		candidate = "Dst" + name[3:]
+const mainTableOnlyMarker = "@@M!M...🫠@@"
+
+// extractMeta will extract metadata from parsed expression.
+func (c *current) extractMeta(expr string, meta *Meta) string {
+	newExpr := strings.Replace(expr, mainTableOnlyMarker, "", -1)
+	if len(newExpr) != len(expr) {
+		meta.MainTableRequired = true
 	}
-	if strings.HasPrefix(name, "Dst") {
-		candidate = "Src" + name[3:]
-	}
-	if strings.HasPrefix(name, "In") {
-		candidate = "Out" + name[2:]
-	}
-	if strings.HasPrefix(name, "Out") {
-		candidate = "In" + name[3:]
-	}
-	if column, ok := schema.LookupColumnByName(candidate); ok {
-		return column.Name
-	}
-	return name
+	return newExpr
 }
 
-// acceptColumn normalizes and returns the matched column name. It should be used
-// in predicate code blocks.
+// encodeMeta encode metadata inside column name.
+func encodeMeta(column schema.Column) string {
+	if !column.ClickHouseMainOnly {
+		return column.Name
+	}
+	return fmt.Sprintf("%s%s", column.Name, mainTableOnlyMarker)
+}
+
+// acceptColumn normalizes and returns the matched column name. It should be
+// used in predicate code blocks. It uses a special marker if the column
+// requires the main table. This is quite hacky and it should be ensured that
+// the column name is preserved during parsing (notably for rules we know the
+// column name, we should still use the output of this function).
 func (c *current) acceptColumn() (string, error) {
 	name := string(c.text)
 	schema := c.globalStore["meta"].(*Meta).Schema
 	for _, column := range schema.Columns() {
 		if strings.EqualFold(name, column.Name) {
 			if c.globalStore["meta"].(*Meta).ReverseDirection {
-				return reverseColumnDirection(schema, column.Name), nil
+				var candidate string
+				if strings.HasPrefix(name, "Src") {
+					candidate = "Dst" + name[3:]
+				}
+				if strings.HasPrefix(name, "Dst") {
+					candidate = "Src" + name[3:]
+				}
+				if strings.HasPrefix(name, "In") {
+					candidate = "Out" + name[2:]
+				}
+				if strings.HasPrefix(name, "Out") {
+					candidate = "In" + name[3:]
+				}
+				if column, ok := schema.LookupColumnByName(candidate); ok {
+					return encodeMeta(*column), nil
+				}
 			}
-			return column.Name, nil
+			return encodeMeta(column), nil
 		}
 	}
 	return "", fmt.Errorf("unknown column %q", name)
