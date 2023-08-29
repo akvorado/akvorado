@@ -15,23 +15,23 @@
 
 Input ← _ expr:Expr _ EOF {
   meta := c.globalStore["meta"].(*Meta)
-  expr = c.extractMeta(toString(expr), meta)
-  return expr, nil
+  return c.compileExpr(toSlice(expr), meta), nil
 }
 
 Expr "expression" ← head:(SubExpr / NotExpr / ConditionExpr) rest:( _ ( KW_AND / KW_OR ) _ Expr )* {
-  expr := []string{head.(string)}
+  expr := []any{head}
   for _, e := range toSlice(rest) {
     rest := toSlice(e)
-    expr = append(expr, fmt.Sprintf("%s %s", strings.ToUpper(toString(rest[1])), toString(rest[3])));
+    expr = append(expr, strings.ToUpper(toString(rest[1])))
+    expr = append(expr, rest[3])
   }
-  return strings.Join(expr, " "), nil
+  return expr, nil
 }
 SubExpr "sub-expression" ← '(' _ expr:Expr _ ')' {
-  return fmt.Sprintf("(%s)", toString(expr)), nil
+  return []any{"(", expr, ")"}, nil
 }
 NotExpr "NOT expression" ← KW_NOT _ expr:Expr {
-  return fmt.Sprintf("NOT %s", toString(expr)), nil
+  return []any{"NOT", expr}, nil
 }
 
 ConditionExpr "conditional" ←
@@ -57,29 +57,38 @@ ColumnIP ←
 ConditionIPExpr "condition on IP" ←
    column:ColumnIP _
    operator:("=" / "!=") _ ip:IP {
-     return fmt.Sprintf("%s %s toIPv6(%s)", toString(column), toString(operator), quote(ip)), nil
+     return []any{column, operator, "toIPv6(", quote(ip), ")"}, nil
    }
  / column:ColumnIP _
    operator:"<<" _ subnet:Subnet {
-     return fmt.Sprintf("%s %s", toString(column), subnet), nil
+     return []any{column, subnet}, nil
    }
  / column:ColumnIP _
    operator:"!<<" _ subnet:Subnet {
-     return fmt.Sprintf("%s NOT %s", toString(column), subnet), nil
+     return []any{column, "NOT", subnet}, nil
    }
  / column:ColumnIP _
    operator:InOperator _ '(' _ value:ListIP _ ')' {
-     return fmt.Sprintf("%s %s (%s)", toString(column), toString(operator), toString(value)), nil
+     return []any{column, operator, "(", value, ")"}, nil
    }
 
 
 ConditionPrefixExpr "condition on prefix" ←
-   column:("SrcNetPrefix"i !IdentStart { return c.acceptColumn() }
-         / "DstNetPrefix"i !IdentStart { return c.acceptColumn() }) _
-   operator:("=" / "!=") _ prefix:Prefix {
+   column:("SrcNetPrefix"i !IdentStart { return c.acceptColumn() }) _
+   operator:("=" / "!=") _
+   prefix:SourcePrefix {
      switch toString(operator) {
-       case "=": return fmt.Sprintf("%s %s", strings.Replace(toString(column), "NetPrefix", "Addr", 1), fmt.Sprintf(toString(prefix), toString(column)[:3])), nil
-       case "!=": return fmt.Sprintf("NOT (%s %s)", strings.Replace(toString(column), "NetPrefix", "Addr", 1), fmt.Sprintf(toString(prefix), toString(column)[:3])), nil
+       case "=": return []any{c.getColumn("SrcAddr"), prefix}, nil
+       case "!=": return []any{"NOT (", c.getColumn("SrcAddr"), prefix, ")"}, nil
+     }
+     return "", nil
+   }
+ / column:("DstNetPrefix"i !IdentStart { return c.acceptColumn() }) _
+   operator:("=" / "!=") _
+   prefix:DestinationPrefix {
+     switch toString(operator) {
+       case "=": return []any{c.getColumn("DstAddr"), prefix}, nil
+       case "!=": return []any{"NOT (", c.getColumn("DstAddr"), prefix, ")"}, nil
      }
      return "", nil
    }
@@ -88,7 +97,7 @@ ConditionMACExpr "condition on MAC" ←
    column:("SrcMAC"i !IdentStart { return c.acceptColumn() }
          / "DstMAC"i !IdentStart { return c.acceptColumn() }) _
    operator:("=" / "!=") _ mac:MAC {
-       return fmt.Sprintf("%s %s MACStringToNum(%s)", toString(column), toString(operator), quote(mac)), nil
+       return []any{column, operator, "MACStringToNum(", quote(mac), ")"}, nil
    }
 
 ConditionStringExpr "condition on string" ←
@@ -121,14 +130,14 @@ ConditionStringExpr "condition on string" ←
       / "ICMPv4"i !IdentStart { return c.acceptColumn() }
       / "ICMPv6"i !IdentStart { return c.acceptColumn() }) _
  rcond:RConditionStringExpr {
-  return fmt.Sprintf("%s %s", toString(column), toString(rcond)), nil
+  return []any{column, rcond}, nil
 }
 RConditionStringExpr "condition on string" ←
    operator:("=" / "!=" / LikeOperator ) _ str:StringLiteral {
-     return fmt.Sprintf("%s %s", toString(operator), quote(str)), nil
+     return []any{operator, quote(str)}, nil
    }
  / operator:InOperator _ '(' _ value:ListString _ ')' {
-  return fmt.Sprintf("%s (%s)", toString(operator), toString(value)), nil
+  return []any{operator, "(", value, ")"}, nil
    }
 
 ConditionBoundaryExpr "condition on boundary" ←
@@ -136,8 +145,7 @@ ConditionBoundaryExpr "condition on boundary" ←
       / "OutIfBoundary"i !IdentStart { return c.acceptColumn() }) _
  operator:("=" / "!=") _
  boundary:("external"i / "internal"i / "undefined"i) {
-  return fmt.Sprintf("%s %s %s", toString(column), toString(operator),
-                     quote(strings.ToLower(toString(boundary)))), nil
+  return []any{column, operator, quote(strings.ToLower(toString(boundary)))}, nil
 }
 
 ConditionUintExpr "condition on integer" ←
@@ -163,7 +171,7 @@ ConditionUintExpr "condition on integer" ←
        / "ICMPv6Code"i !IdentStart { return c.acceptColumn() }) _
  operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _
  value:Unsigned64 {
-  return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
+  return []any{column, operator, value}, nil
 }
 
 ConditionASExpr "condition on AS number" ←
@@ -173,23 +181,23 @@ ConditionASExpr "condition on AS number" ←
        / "Dst2ndAS"i !IdentStart { return c.acceptColumn() }
        / "Dst3rdAS"i !IdentStart { return c.acceptColumn() }) _
  rcond:RConditionASExpr {
-  return fmt.Sprintf("%s %s", toString(column), toString(rcond)), nil
+  return []any{column, rcond}, nil
 }
 RConditionASExpr "condition on AS number" ←
-   operator:("=" / "!=") _ value:ASN { return fmt.Sprintf("%s %s", toString(operator), toString(value)), nil }
+   operator:("=" / "!=") _ value:ASN { return []any{operator, value}, nil }
  / operator:InOperator _ '(' _ value:ListASN _ ')' {
-  return fmt.Sprintf("%s (%s)", toString(operator), toString(value)), nil
+  return []any{operator, "(", value, ")"}, nil
 }
 
 ConditionASPathExpr "condition on AS path" ←
-   column:("DstASPath"i !IdentStart { return c.acceptColumn() }) _ "=" _ value:ASN { return fmt.Sprintf("has(%s, %s)", toString(column), toString(value)), nil }
- / column:("DstASPath"i !IdentStart { return c.acceptColumn() }) _ "!=" _ value:ASN { return fmt.Sprintf("NOT has(%s, %s)", toString(column), toString(value)), nil }
+   column:("DstASPath"i !IdentStart { return c.acceptColumn() }) _ "=" _ value:ASN { return []any{"has(", column, ",", value, ")"}, nil }
+ / column:("DstASPath"i !IdentStart { return c.acceptColumn() }) _ "!=" _ value:ASN { return []any{"NOT has(", column, ",", value, ")"}, nil }
 
 ConditionCommunitiesExpr "condition on communities" ←
-   column:("DstCommunities"i !IdentStart { return c.acceptColumn() }) _ "=" _ value:Community { return fmt.Sprintf("has(%s, %s)", toString(column), toString(value)), nil }
- / column:("DstCommunities"i !IdentStart { return c.acceptColumn() }) _ "!=" _ value:Community { return fmt.Sprintf("NOT has(%s, %s)", toString(column), toString(value)), nil }
- / column:("DstCommunities"i !IdentStart { return c.acceptColumn() }) _ "=" _ value:LargeCommunity { return fmt.Sprintf("has(%s, %s)", strings.Replace(toString(column), "Communities", "LargeCommunities", 1), toString(value)), nil }
- / column:("DstCommunities"i !IdentStart { return c.acceptColumn() }) _ "!=" _ value:LargeCommunity { return fmt.Sprintf("NOT has(%s, %s)", strings.Replace(toString(column), "Communities", "LargeCommunities", 1), toString(value)), nil }
+   column:("DstCommunities"i !IdentStart { return c.acceptColumn() }) _ "=" _ value:Community { return []any{"has(", column, ",", value, ")"}, nil }
+ / column:("DstCommunities"i !IdentStart { return c.acceptColumn() }) _ "!=" _ value:Community { return []any{"NOT has(", column, ",", value, ")"}, nil }
+ / column:("DstCommunities"i !IdentStart { return c.acceptColumn() }) _ "=" _ value:LargeCommunity { return []any{"has(", c.getColumn("DstLargeCommunities"), ",", value, ")"}, nil }
+ / column:("DstCommunities"i !IdentStart { return c.acceptColumn() }) _ "!=" _ value:LargeCommunity { return []any{"NOT has(", c.getColumn("DstLargeCommunities"), ",", value, ")"}, nil }
 
 ConditionETypeExpr "condition on Ethernet type" ←
  column:("EType"i !IdentStart { return c.acceptColumn() }) _
@@ -199,18 +207,18 @@ ConditionETypeExpr "condition on Ethernet type" ←
     "ipv6": helpers.ETypeIPv6,
    }
    etype := etypes[strings.ToLower(toString(value))]
-   return fmt.Sprintf("%s %s %d", toString(column), toString(operator), etype), nil
+   return []any{column, operator, etype}, nil
 }
 ConditionProtoExpr "condition on protocol" ← ConditionProtoIntExpr / ConditionProtoStrExpr
 ConditionProtoIntExpr "condition on protocol as integer" ←
  column:("Proto"i !IdentStart { return c.acceptColumn() }) _
  operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned8 {
-  return fmt.Sprintf("%s %s %s", toString(column), toString(operator), toString(value)), nil
+  return []any{column, operator, value}, nil
 }
 ConditionProtoStrExpr "condition on protocol as string" ←
  column:("Proto"i !IdentStart { return c.acceptColumn() }) _
  operator:("=" / "!=") _ value:StringLiteral {
-  return fmt.Sprintf("dictGetOrDefault('protocols', 'name', %s, '???') %s %s", toString(column), toString(operator), quote(value)), nil
+  return []any{"dictGetOrDefault('protocols', 'name', ", column, ", '???')", operator, quote(value)}, nil
 }
 
 IP "IP address" ← [0-9A-Fa-f:.]+ !IdentStart {
@@ -235,18 +243,11 @@ Subnet "IP subnet" ← [0-9A-Fa-f:.]+ "/" [0-9]+ !IdentStart {
   return fmt.Sprintf("BETWEEN toIPv6('::ffff:%s') AND toIPv6('::ffff:%s')", net.Masked().Addr().String(), lastIP(net).String()), nil
 }
 
-Prefix "IP prefix" ← [0-9A-Fa-f:.]+ "/" [0-9]+ !IdentStart {
-  // This returns a string with a %s placeholder
-  net, err := netip.ParsePrefix(string(c.text))
-  if err != nil {
-    return "", errors.New("expecting a prefix")
-  }
-  if net.Addr().Is6() {
-    return fmt.Sprintf("BETWEEN toIPv6('%s') AND toIPv6('%s') AND %%sNetMask = %d",
-      net.Masked().Addr().String(), lastIP(net).String(), net.Bits()), nil
-  }
-  return fmt.Sprintf("BETWEEN toIPv6('::ffff:%s') AND toIPv6('::ffff:%s') AND %%sNetMask = %d",
-    net.Masked().Addr().String(), lastIP(net).String(), net.Bits()), nil
+SourcePrefix "IP prefix" ← [0-9A-Fa-f:.]+ "/" [0-9]+ !IdentStart {
+  return c.parsePrefix("Src")
+}
+DestinationPrefix "IP prefix" ← [0-9A-Fa-f:.]+ "/" [0-9]+ !IdentStart {
+  return c.parsePrefix("Dst")
 }
 
 MAC "MAC address" ← [0-9A-Fa-f:.]+ !IdentStart {
