@@ -4,6 +4,7 @@
 package snmp
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"strconv"
@@ -86,6 +87,24 @@ func (c *Component) startSNMPServer() error {
 	c.snmpPort = port
 
 	c.r.Debug().Int("port", port).Msg("SNMP server listening")
-	c.t.Go(server.ServeForever)
+	c.t.Go(func() error {
+		for {
+			// There is a race condition between ServeNextRequest() and
+			// Shutdown(). We try to reduce it by checking if we are alive
+			// before handling the next request.
+			if !c.t.Alive() {
+				return nil
+			}
+			err := server.ServeNextRequest()
+			if err != nil {
+				var opError *net.OpError
+				if errors.As(err, &opError) {
+					return nil
+				}
+
+				return fmt.Errorf("unable to serve next request: %w", err)
+			}
+		}
+	})
 	return nil
 }
