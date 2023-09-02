@@ -37,6 +37,7 @@ updates:
           - "@lezer/*"
       dev-dependencies:
         patterns:
+          - "@tsconfig/*"
           - "@vitejs/*"
           - "@vitest/*"
           - "@volar/*"
