@@ -5,7 +5,14 @@
 
 package clickhouse
 
-import "github.com/itchyny/gojq"
+import (
+	"fmt"
+	"reflect"
+
+	"akvorado/common/helpers"
+
+	"github.com/itchyny/gojq"
+)
 
 // MustParseTransformQuery parses a transform query or panic.
 func MustParseTransformQuery(src string) TransformQuery {
@@ -14,4 +21,8 @@ func MustParseTransformQuery(src string) TransformQuery {
 		panic(err)
 	}
 	return TransformQuery{q}
+}
+
+func init() {
+	helpers.AddPrettyFormatter(reflect.TypeOf(helpers.SubnetMap[NetworkAttributes]{}), fmt.Sprint)
 }

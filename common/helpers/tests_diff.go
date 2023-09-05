@@ -28,6 +28,8 @@ func defaultPrettyFormatters() map[reflect.Type]interface{} {
 		reflect.TypeOf(netip.Addr{}):        fmt.Sprint,
 		reflect.TypeOf(time.Time{}):         fmt.Sprint,
 		reflect.TypeOf(SubnetMap[string]{}): fmt.Sprint,
+		reflect.TypeOf(SubnetMap[uint]{}):   fmt.Sprint,
+		reflect.TypeOf(SubnetMap[uint16]{}): fmt.Sprint,
 	}
 	for t, fn := range nonDefaultPrettyFormatters {
 		result[t] = fn
