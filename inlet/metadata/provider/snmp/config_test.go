@@ -186,6 +186,74 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 					},
 				}),
 			},
+		}, {
+			Description: "SNMP security parameters without privacy protocol",
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"poller-timeout": "200ms",
+					"security-parameters": gin.H{
+						"user-name":                 "alfred",
+						"authentication-protocol":   "sha",
+						"authentication-passphrase": "hello",
+					},
+				}
+			},
+			Expected: Configuration{
+				PollerTimeout: 200 * time.Millisecond,
+				Communities: helpers.MustNewSubnetMap(map[string]string{
+					"::/0": "public",
+				}),
+				SecurityParameters: helpers.MustNewSubnetMap(map[string]SecurityParameters{
+					"::/0": {
+						UserName:                 "alfred",
+						AuthenticationProtocol:   AuthProtocol(gosnmp.SHA),
+						AuthenticationPassphrase: "hello",
+					},
+				}),
+			},
+		}, {
+			Description: "SNMP security parameters without authentication protocol",
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"poller-timeout": "200ms",
+					"security-parameters": gin.H{
+						"user-name":          "alfred",
+						"privacy-protocol":   "aes192",
+						"privacy-passphrase": "hello",
+					},
+				}
+			},
+			Error: true,
+		}, {
+			Description: "SNMP security parameters without authentication passphrase",
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"poller-timeout": "200ms",
+					"security-parameters": gin.H{
+						"user-name":               "alfred",
+						"authentication-protocol": "sha",
+					},
+				}
+			},
+			Error: true,
+		}, {
+			Description: "SNMP security parameters without username",
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"poller-timeout": "200ms",
+					"security-parameters": gin.H{
+						"::/0": gin.H{
+							"authentication-protocol":   "sha",
+							"authentication-passphrase": "hello",
+						},
+					},
+				}
+			},
+			Error: true,
 		},
 	})
 }
