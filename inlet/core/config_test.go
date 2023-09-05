@@ -20,15 +20,17 @@ func TestDefaultConfiguration(t *testing.T) {
 func TestConfigurationUnmarshallerHook(t *testing.T) {
 	helpers.TestConfigurationDecode(t, helpers.ConfigurationDecodeCases{
 		{
-			Description:   "nil",
-			Initial:       func() interface{} { return Configuration{} },
-			Configuration: func() interface{} { return nil },
-			Expected:      Configuration{},
+			Description:    "nil",
+			Initial:        func() interface{} { return Configuration{} },
+			Configuration:  func() interface{} { return nil },
+			Expected:       Configuration{},
+			SkipValidation: true,
 		}, {
-			Description:   "empty",
-			Initial:       func() interface{} { return Configuration{} },
-			Configuration: func() interface{} { return gin.H{} },
-			Expected:      Configuration{},
+			Description:    "empty",
+			Initial:        func() interface{} { return Configuration{} },
+			Configuration:  func() interface{} { return gin.H{} },
+			Expected:       Configuration{},
+			SkipValidation: true,
 		}, {
 			Description: "ignore-asn-from-flow = false",
 			Initial:     func() interface{} { return Configuration{} },
@@ -37,7 +39,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 					"ignore-asn-from-flow": false,
 				}
 			},
-			Expected: Configuration{},
+			Expected:       Configuration{},
+			SkipValidation: true,
 		}, {
 			Description: "ignore-asn-from-flow = true",
 			Initial:     func() interface{} { return Configuration{} },
@@ -49,6 +52,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Expected: Configuration{
 				ASNProviders: []ASNProvider{ASNProviderGeoIP},
 			},
+			SkipValidation: true,
 		}, {
 			Description: "ignore-asn-from-flow and asn-providers",
 			Initial:     func() interface{} { return Configuration{} },
@@ -58,7 +62,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 					"asn-providers":        []string{"geoip", "flow"},
 				}
 			},
-			Error: true,
+			Error:          true,
+			SkipValidation: true,
 		}, {
 			Description: "asn-providers only",
 			Initial:     func() interface{} { return Configuration{} },
@@ -70,6 +75,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Expected: Configuration{
 				ASNProviders: []ASNProvider{ASNProviderFlowExceptPrivate, ASNProviderGeoIP, ASNProviderFlow},
 			},
+			SkipValidation: true,
 		}, {
 			Description: "net-providers with bmp",
 			Initial:     func() interface{} { return Configuration{} },
@@ -81,6 +87,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Expected: Configuration{
 				NetProviders: []NetProvider{NetProviderFlow, NetProviderRouting},
 			},
+			SkipValidation: true,
 		}, {
 			Description: "asn-providers with bmp",
 			Initial:     func() interface{} { return Configuration{} },
@@ -92,6 +99,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Expected: Configuration{
 				ASNProviders: []ASNProvider{ASNProviderFlow, ASNProviderRouting, ASNProviderRoutingExceptPrivate},
 			},
+			SkipValidation: true,
 		}, {
 			Description: "net-providers",
 			Initial:     func() interface{} { return Configuration{} },
@@ -103,6 +111,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Expected: Configuration{
 				NetProviders: []NetProvider{NetProviderFlow, NetProviderRouting},
 			},
+			SkipValidation: true,
 		},
 	})
 }

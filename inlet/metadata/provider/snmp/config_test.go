@@ -5,6 +5,7 @@ package snmp
 
 import (
 	"testing"
+	"time"
 
 	"akvorado/common/helpers"
 
@@ -21,10 +22,11 @@ func TestDefaultConfiguration(t *testing.T) {
 func TestConfigurationUnmarshallerHook(t *testing.T) {
 	helpers.TestConfigurationDecode(t, helpers.ConfigurationDecodeCases{
 		{
-			Description:   "nil",
-			Initial:       func() interface{} { return Configuration{} },
-			Configuration: func() interface{} { return nil },
-			Expected:      Configuration{},
+			Description:    "nil",
+			Initial:        func() interface{} { return Configuration{} },
+			Configuration:  func() interface{} { return nil },
+			Expected:       Configuration{},
+			SkipValidation: true,
 		}, {
 			Description:   "empty",
 			Initial:       func() interface{} { return Configuration{} },
@@ -34,16 +36,19 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 					"::/0": "public",
 				}),
 			},
+			SkipValidation: true,
 		}, {
 			Description: "no communities, no default community",
 			Initial:     func() interface{} { return Configuration{} },
 			Configuration: func() interface{} {
 				return gin.H{
 					"poller-retries": 10,
+					"poller-timeout": "200ms",
 				}
 			},
 			Expected: Configuration{
 				PollerRetries: 10,
+				PollerTimeout: 200 * time.Millisecond,
 				Communities: helpers.MustNewSubnetMap(map[string]string{
 					"::/0": "public",
 				}),
@@ -53,6 +58,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Initial:     func() interface{} { return Configuration{} },
 			Configuration: func() interface{} {
 				return gin.H{
+					"poller-timeout": "200ms",
 					"communities": gin.H{
 						"203.0.113.0/25":   "public",
 						"203.0.113.128/25": "private",
@@ -60,6 +66,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 				}
 			},
 			Expected: Configuration{
+				PollerTimeout: 200 * time.Millisecond,
 				Communities: helpers.MustNewSubnetMap(map[string]string{
 					"::/0":                     "public",
 					"::ffff:203.0.113.0/121":   "public",
@@ -71,10 +78,12 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Initial:     func() interface{} { return Configuration{} },
 			Configuration: func() interface{} {
 				return gin.H{
+					"poller-timeout":    "200ms",
 					"default-community": "private",
 				}
 			},
 			Expected: Configuration{
+				PollerTimeout: 200 * time.Millisecond,
 				Communities: helpers.MustNewSubnetMap(map[string]string{
 					"::/0": "private",
 				}),
@@ -84,6 +93,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Initial:     func() interface{} { return Configuration{} },
 			Configuration: func() interface{} {
 				return gin.H{
+					"poller-timeout":    "200ms",
 					"default-community": "private",
 					"communities": gin.H{
 						"203.0.113.0/25":   "public",
@@ -92,6 +102,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 				}
 			},
 			Expected: Configuration{
+				PollerTimeout: 200 * time.Millisecond,
 				Communities: helpers.MustNewSubnetMap(map[string]string{
 					"::/0":                     "private",
 					"::ffff:203.0.113.0/121":   "public",
@@ -103,10 +114,12 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Initial:     func() interface{} { return Configuration{} },
 			Configuration: func() interface{} {
 				return gin.H{
-					"communities": "private",
+					"poller-timeout": "200ms",
+					"communities":    "private",
 				}
 			},
 			Expected: Configuration{
+				PollerTimeout: 200 * time.Millisecond,
 				Communities: helpers.MustNewSubnetMap(map[string]string{
 					"::/0": "private",
 				}),
@@ -116,6 +129,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Initial:     func() interface{} { return Configuration{} },
 			Configuration: func() interface{} {
 				return gin.H{
+					"poller-timeout":    "200ms",
 					"default-community": "nothing",
 					"communities":       "private",
 				}
@@ -126,6 +140,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Initial:     func() interface{} { return Configuration{} },
 			Configuration: func() interface{} {
 				return gin.H{
+					"poller-timeout":    "200ms",
 					"default-community": "",
 					"communities": gin.H{
 						"203.0.113.0/25":   "public",
@@ -134,6 +149,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 				}
 			},
 			Expected: Configuration{
+				PollerTimeout: 200 * time.Millisecond,
 				Communities: helpers.MustNewSubnetMap(map[string]string{
 					"::/0":                     "public",
 					"::ffff:203.0.113.0/121":   "public",
@@ -145,6 +161,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Initial:     func() interface{} { return Configuration{} },
 			Configuration: func() interface{} {
 				return gin.H{
+					"poller-timeout": "200ms",
 					"security-parameters": gin.H{
 						"user-name":                 "alfred",
 						"authentication-protocol":   "sha",
@@ -155,6 +172,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 				}
 			},
 			Expected: Configuration{
+				PollerTimeout: 200 * time.Millisecond,
 				Communities: helpers.MustNewSubnetMap(map[string]string{
 					"::/0": "public",
 				}),

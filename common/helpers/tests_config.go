@@ -18,11 +18,12 @@ import (
 // decode. We use functions to return value as the decoding process
 // may mutate the configuration.
 type ConfigurationDecodeCases []struct {
-	Description   string
-	Initial       func() interface{} // initial value for configuration
-	Configuration func() interface{} // configuration to decode
-	Expected      interface{}
-	Error         bool
+	Description    string
+	Initial        func() interface{} // initial value for configuration
+	Configuration  func() interface{} // configuration to decode
+	Expected       interface{}
+	Error          bool
+	SkipValidation bool
 }
 
 // TestConfigurationDecode helps decoding configuration. It also test decoding from YAML.
@@ -62,8 +63,24 @@ func TestConfigurationDecode(t *testing.T, cases ConfigurationDecodeCases, optio
 				err = decoder.Decode(configuration)
 				if err != nil && !tc.Error {
 					t.Fatalf("Decode() error:\n%+v", err)
-				} else if err == nil && tc.Error {
-					t.Errorf("Decode() did not error")
+				} else if tc.Error && err != nil {
+					return
+				}
+
+				if !tc.SkipValidation {
+					err = Validate.Struct(got)
+					if err != nil && !tc.Error {
+						t.Fatalf("Validate() error:\n%+v", err)
+					} else if tc.Error && err != nil {
+						return
+					}
+					if tc.Error {
+						t.Errorf("Decode() and Validate() did not error")
+					}
+				} else {
+					if tc.Error {
+						t.Errorf("Decode() did not error")
+					}
 				}
 
 				if diff := Diff(got, tc.Expected, options...); diff != "" && err == nil {
