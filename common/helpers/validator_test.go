@@ -79,6 +79,15 @@ func TestSubnetMapValidator(t *testing.T) {
 	type SomeStruct struct {
 		Blip *helpers.SubnetMap[string] `validate:"min=2,dive,min=3"`
 	}
+	type NestedStruct struct {
+		First  string `validate:"required"`
+		Second string `validate:"oneof=one two"`
+	}
+	type OtherStruct struct {
+		Blip *helpers.SubnetMap[NestedStruct] `validate:"omitempty,dive"`
+	}
+
+	helpers.RegisterSubnetMapValidation[NestedStruct]()
 
 	cases := []struct {
 		Description string
@@ -107,6 +116,42 @@ func TestSubnetMapValidator(t *testing.T) {
 				Blip: helpers.MustNewSubnetMap(map[string]string{
 					"2001:db8::/64":   "he",
 					"2001:db8:1::/64": "bye",
+				}),
+			},
+			Error: true,
+		}, {
+			Description: "Valid OtherStruct",
+			Value: OtherStruct{
+				Blip: helpers.MustNewSubnetMap(map[string]NestedStruct{
+					"2001:db8::/64": {
+						First:  "hello",
+						Second: "two",
+					},
+				}),
+			},
+		}, {
+			Description: "Empty OtherStruct",
+			Value: OtherStruct{
+				Blip: helpers.MustNewSubnetMap(map[string]NestedStruct{}),
+			},
+		}, {
+			Description: "OtherStruct missing required in NestedStruct",
+			Value: OtherStruct{
+				Blip: helpers.MustNewSubnetMap(map[string]NestedStruct{
+					"2001:db8::/64": {
+						Second: "two",
+					},
+				}),
+			},
+			Error: true,
+		}, {
+			Description: "OtherStruct incorrect NestedStruct",
+			Value: OtherStruct{
+				Blip: helpers.MustNewSubnetMap(map[string]NestedStruct{
+					"2001:db8::/64": {
+						First:  "hello",
+						Second: "three",
+					},
 				}),
 			},
 			Error: true,

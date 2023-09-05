@@ -29,7 +29,7 @@ func RegisterSubnetMapValidation[V any]() {
 		}
 		return nil
 	}
-	Validate.RegisterCustomTypeFunc(validatorFunc, zero)
+	Validate.RegisterCustomTypeFunc(validatorFunc, zero, &zero)
 }
 
 // netipValidation validates netip.Addr and netip.Prefix by turning them into a string.
