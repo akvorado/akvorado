@@ -14,6 +14,7 @@ import (
 	"github.com/mitchellh/mapstructure"
 
 	"akvorado/common/helpers"
+	"akvorado/common/helpers/bimap"
 	"akvorado/inlet/metadata/provider"
 )
 
@@ -115,18 +116,19 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 // AuthProtocol represents a SNMPv3 authentication protocol
 type AuthProtocol gosnmp.SnmpV3AuthProtocol
 
+var authProtocolMap = bimap.New(map[gosnmp.SnmpV3AuthProtocol]string{
+	gosnmp.NoAuth: "",
+	gosnmp.MD5:    "MD5",
+	gosnmp.SHA:    "SHA",
+	gosnmp.SHA224: "SHA224",
+	gosnmp.SHA256: "SHA256",
+	gosnmp.SHA384: "SHA384",
+	gosnmp.SHA512: "SHA512",
+})
+
 // UnmarshalText parses a SNMPv3 authentication protocol
 func (ap *AuthProtocol) UnmarshalText(text []byte) error {
-	protocols := map[string]gosnmp.SnmpV3AuthProtocol{
-		"":       gosnmp.NoAuth,
-		"MD5":    gosnmp.MD5,
-		"SHA":    gosnmp.SHA,
-		"SHA224": gosnmp.SHA224,
-		"SHA256": gosnmp.SHA256,
-		"SHA384": gosnmp.SHA384,
-		"SHA512": gosnmp.SHA512,
-	}
-	protocol, ok := protocols[strings.ToUpper(string(text))]
+	protocol, ok := authProtocolMap.LoadKey(strings.ToUpper(string(text)))
 	if !ok {
 		return errors.New("unknown auth protocol")
 	}
@@ -136,7 +138,11 @@ func (ap *AuthProtocol) UnmarshalText(text []byte) error {
 
 // String turns a SNMPv3 authentication protocol to a string
 func (ap AuthProtocol) String() string {
-	return gosnmp.SnmpV3AuthProtocol(ap).String()
+	protocol, ok := authProtocolMap.LoadValue(gosnmp.SnmpV3AuthProtocol(ap))
+	if !ok {
+		return ""
+	}
+	return protocol
 }
 
 // MarshalText turns a SNMPv3 authentication protocol to a string
@@ -147,18 +153,19 @@ func (ap AuthProtocol) MarshalText() ([]byte, error) {
 // PrivProtocol represents a SNMPv3 privacy protocol
 type PrivProtocol gosnmp.SnmpV3PrivProtocol
 
+var privProtocolMap = bimap.New(map[gosnmp.SnmpV3PrivProtocol]string{
+	gosnmp.NoPriv:  "",
+	gosnmp.DES:     "DES",
+	gosnmp.AES:     "AES",
+	gosnmp.AES192:  "AES192",
+	gosnmp.AES256:  "AES256",
+	gosnmp.AES192C: "AES192C",
+	gosnmp.AES256C: "AES256C",
+})
+
 // UnmarshalText parses a SNMPv3 privacy protocol
 func (pp *PrivProtocol) UnmarshalText(text []byte) error {
-	protocols := map[string]gosnmp.SnmpV3PrivProtocol{
-		"":        gosnmp.NoPriv,
-		"DES":     gosnmp.DES,
-		"AES":     gosnmp.AES,
-		"AES192":  gosnmp.AES192,
-		"AES256":  gosnmp.AES256,
-		"AES192C": gosnmp.AES192C,
-		"AES256C": gosnmp.AES256C,
-	}
-	protocol, ok := protocols[strings.ToUpper(string(text))]
+	protocol, ok := privProtocolMap.LoadKey(strings.ToUpper(string(text)))
 	if !ok {
 		return errors.New("unknown privacy protocol")
 	}
@@ -168,7 +175,11 @@ func (pp *PrivProtocol) UnmarshalText(text []byte) error {
 
 // String turns a SNMPv3 privacy protocol to a string
 func (pp PrivProtocol) String() string {
-	return gosnmp.SnmpV3PrivProtocol(pp).String()
+	protocol, ok := privProtocolMap.LoadValue(gosnmp.SnmpV3PrivProtocol(pp))
+	if !ok {
+		return ""
+	}
+	return protocol
 }
 
 // MarshalText turns a SNMPv3 privacy protocol to a string
