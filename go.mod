@@ -33,7 +33,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/netsampler/goflow2 v1.1.1-0.20221008154147-57fad2e0c837
 	github.com/oschwald/maxminddb-golang v1.12.0
-	github.com/osrg/gobgp/v3 v3.17.0
+	github.com/osrg/gobgp/v3 v3.18.0
 	github.com/prometheus/client_golang v1.16.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rs/zerolog v1.30.0
@@ -46,6 +46,7 @@ require (
 	github.com/yuin/goldmark-highlighting v0.0.0-20220208100518-594be1970594
 	golang.org/x/exp v0.0.0-20221217163422-3c43f8badb15
 	golang.org/x/sys v0.11.0
+	golang.org/x/text v0.12.0
 	golang.org/x/time v0.3.0
 	google.golang.org/grpc v1.57.0
 	google.golang.org/protobuf v1.31.0
@@ -140,7 +141,6 @@ require (
 	golang.org/x/crypto v0.12.0 // indirect
 	golang.org/x/net v0.14.0 // indirect
 	golang.org/x/sync v0.3.0 // indirect
-	golang.org/x/text v0.12.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230525234030-28d5490b6b19 // indirect
 	gotest.tools/v3 v3.3.0 // indirect
 	modernc.org/libc v1.22.5 // indirect
