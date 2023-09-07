@@ -46,6 +46,7 @@ ConditionExpr "conditional" ←
   / ConditionCommunitiesExpr
   / ConditionETypeExpr
   / ConditionProtoExpr
+  / ConditionCustomStringExpr
 
 ColumnIP ←
    "ExporterAddress"i !IdentStart { return c.acceptColumn() }
@@ -72,9 +73,14 @@ ConditionIPExpr "condition on IP" ←
      return []any{column, operator, "(", value, ")"}, nil
    }
 
+ColumnSrcPrefix ←
+   "SrcNetPrefix"i !IdentStart { return c.acceptColumn() }
+
+ColumnDstPrefix ←
+   "DstNetPrefix"i !IdentStart { return c.acceptColumn() }
 
 ConditionPrefixExpr "condition on prefix" ←
-   column:("SrcNetPrefix"i !IdentStart { return c.acceptColumn() }) _
+   column:ColumnSrcPrefix _
    operator:("=" / "!=") _
    prefix:SourcePrefix {
      switch toString(operator) {
@@ -83,7 +89,7 @@ ConditionPrefixExpr "condition on prefix" ←
      }
      return "", nil
    }
- / column:("DstNetPrefix"i !IdentStart { return c.acceptColumn() }) _
+ / column:ColumnDstPrefix _
    operator:("=" / "!=") _
    prefix:DestinationPrefix {
      switch toString(operator) {
@@ -93,42 +99,47 @@ ConditionPrefixExpr "condition on prefix" ←
      return "", nil
    }
 
+ColumnMAC ←
+    "SrcMAC"i !IdentStart { return c.acceptColumn() }
+  / "DstMAC"i !IdentStart { return c.acceptColumn() }
 ConditionMACExpr "condition on MAC" ←
-   column:("SrcMAC"i !IdentStart { return c.acceptColumn() }
-         / "DstMAC"i !IdentStart { return c.acceptColumn() }) _
+   column:ColumnMAC _
    operator:("=" / "!=") _ mac:MAC {
        return []any{column, operator, "MACStringToNum(", quote(mac), ")"}, nil
    }
 
+ColumnString ←
+   "ExporterName"i !IdentStart { return c.acceptColumn() }
+ / "ExporterGroup"i !IdentStart { return c.acceptColumn() }
+ / "ExporterRole"i !IdentStart { return c.acceptColumn() }
+ / "ExporterSite"i !IdentStart { return c.acceptColumn() }
+ / "ExporterRegion"i !IdentStart { return c.acceptColumn() }
+ / "ExporterTenant"i !IdentStart { return c.acceptColumn() }
+ / "SrcCountry"i !IdentStart { return c.acceptColumn() }
+ / "DstCountry"i !IdentStart { return c.acceptColumn() }
+ / "SrcNetName"i !IdentStart { return c.acceptColumn() }
+ / "DstNetName"i !IdentStart { return c.acceptColumn() }
+ / "SrcNetRole"i !IdentStart { return c.acceptColumn() }
+ / "DstNetRole"i !IdentStart { return c.acceptColumn() }
+ / "SrcNetSite"i !IdentStart { return c.acceptColumn() }
+ / "DstNetSite"i !IdentStart { return c.acceptColumn() }
+ / "SrcNetRegion"i !IdentStart { return c.acceptColumn() }
+ / "DstNetRegion"i !IdentStart { return c.acceptColumn() }
+ / "SrcNetTenant"i !IdentStart { return c.acceptColumn() }
+ / "DstNetTenant"i !IdentStart { return c.acceptColumn() }
+ / "InIfName"i !IdentStart { return c.acceptColumn() }
+ / "OutIfName"i !IdentStart { return c.acceptColumn() }
+ / "InIfDescription"i !IdentStart { return c.acceptColumn() }
+ / "OutIfDescription"i !IdentStart { return c.acceptColumn() }
+ / "InIfConnectivity"i !IdentStart { return c.acceptColumn() }
+ / "OutIfConnectivity"i !IdentStart { return c.acceptColumn() }
+ / "InIfProvider"i !IdentStart { return c.acceptColumn() }
+ / "OutIfProvider"i !IdentStart { return c.acceptColumn() }
+ / "ICMPv4"i !IdentStart { return c.acceptColumn() }
+ / "ICMPv6"i !IdentStart { return c.acceptColumn() }
+
 ConditionStringExpr "condition on string" ←
- column:("ExporterName"i !IdentStart { return c.acceptColumn() }
-      / "ExporterGroup"i !IdentStart { return c.acceptColumn() }
-      / "ExporterRole"i !IdentStart { return c.acceptColumn() }
-      / "ExporterSite"i !IdentStart { return c.acceptColumn() }
-      / "ExporterRegion"i !IdentStart { return c.acceptColumn() }
-      / "ExporterTenant"i !IdentStart { return c.acceptColumn() }
-      / "SrcCountry"i !IdentStart { return c.acceptColumn() }
-      / "DstCountry"i !IdentStart { return c.acceptColumn() }
-      / "SrcNetName"i !IdentStart { return c.acceptColumn() }
-      / "DstNetName"i !IdentStart { return c.acceptColumn() }
-      / "SrcNetRole"i !IdentStart { return c.acceptColumn() }
-      / "DstNetRole"i !IdentStart { return c.acceptColumn() }
-      / "SrcNetSite"i !IdentStart { return c.acceptColumn() }
-      / "DstNetSite"i !IdentStart { return c.acceptColumn() }
-      / "SrcNetRegion"i !IdentStart { return c.acceptColumn() }
-      / "DstNetRegion"i !IdentStart { return c.acceptColumn() }
-      / "SrcNetTenant"i !IdentStart { return c.acceptColumn() }
-      / "DstNetTenant"i !IdentStart { return c.acceptColumn() }
-      / "InIfName"i !IdentStart { return c.acceptColumn() }
-      / "OutIfName"i !IdentStart { return c.acceptColumn() }
-      / "InIfDescription"i !IdentStart { return c.acceptColumn() }
-      / "OutIfDescription"i !IdentStart { return c.acceptColumn() }
-      / "InIfConnectivity"i !IdentStart { return c.acceptColumn() }
-      / "OutIfConnectivity"i !IdentStart { return c.acceptColumn() }
-      / "InIfProvider"i !IdentStart { return c.acceptColumn() }
-      / "OutIfProvider"i !IdentStart { return c.acceptColumn() }
-      / "ICMPv4"i !IdentStart { return c.acceptColumn() }
-      / "ICMPv6"i !IdentStart { return c.acceptColumn() }) _
+ column:ColumnString _
  rcond:RConditionStringExpr {
   return []any{column, rcond}, nil
 }
@@ -140,46 +151,55 @@ RConditionStringExpr "condition on string" ←
   return []any{operator, "(", value, ")"}, nil
    }
 
+ColumnBoundary ←
+        "InIfBoundary"i !IdentStart { return c.acceptColumn() }
+      / "OutIfBoundary"i !IdentStart { return c.acceptColumn() }
+
 ConditionBoundaryExpr "condition on boundary" ←
- column:("InIfBoundary"i !IdentStart { return c.acceptColumn() }
-      / "OutIfBoundary"i !IdentStart { return c.acceptColumn() }) _
+ column:ColumnBoundary _
  operator:("=" / "!=") _
  boundary:("external"i / "internal"i / "undefined"i) {
   return []any{column, operator, quote(strings.ToLower(toString(boundary)))}, nil
 }
 
+ColumnUint ←
+   "InIfSpeed"i !IdentStart { return c.acceptColumn() }
+ / "OutIfSpeed"i !IdentStart { return c.acceptColumn() }
+ / "SrcPort"i !IdentStart { return c.acceptColumn() }
+ / "DstPort"i !IdentStart { return c.acceptColumn() }
+ / "SrcPortNAT"i !IdentStart { return c.acceptColumn() }
+ / "DstPortNAT"i !IdentStart { return c.acceptColumn() }
+ / "SrcVlan"i !IdentStart { return c.acceptColumn() }
+ / "DstVlan"i !IdentStart { return c.acceptColumn() }
+ / "PacketSize"i !IdentStart { return c.acceptColumn() }
+ / "ForwardingStatus"i !IdentStart { return c.acceptColumn() }
+ / "IPTTL"i !IdentStart { return c.acceptColumn() }
+ / "IPTos"i !IdentStart { return c.acceptColumn() }
+ / "IPFragmentID"i !IdentStart { return c.acceptColumn() }
+ / "IPFragmentOffset"i !IdentStart { return c.acceptColumn() }
+ / "IPv6FlowLabel"i !IdentStart { return c.acceptColumn() }
+ / "TCPFlags"i !IdentStart { return c.acceptColumn() }
+ / "ICMPv4Type"i !IdentStart { return c.acceptColumn() }
+ / "ICMPv4Code"i !IdentStart { return c.acceptColumn() }
+ / "ICMPv6Type"i !IdentStart { return c.acceptColumn() }
+ / "ICMPv6Code"i !IdentStart { return c.acceptColumn() }
+
 ConditionUintExpr "condition on integer" ←
- column:("InIfSpeed"i !IdentStart { return c.acceptColumn() }
-       / "OutIfSpeed"i !IdentStart { return c.acceptColumn() }
-       / "SrcPort"i !IdentStart { return c.acceptColumn() }
-       / "DstPort"i !IdentStart { return c.acceptColumn() }
-       / "SrcPortNAT"i !IdentStart { return c.acceptColumn() }
-       / "DstPortNAT"i !IdentStart { return c.acceptColumn() }
-       / "SrcVlan"i !IdentStart { return c.acceptColumn() }
-       / "DstVlan"i !IdentStart { return c.acceptColumn() }
-       / "PacketSize"i !IdentStart { return c.acceptColumn() }
-       / "ForwardingStatus"i !IdentStart { return c.acceptColumn() }
-       / "IPTTL"i !IdentStart { return c.acceptColumn() }
-       / "IPTos"i !IdentStart { return c.acceptColumn() }
-       / "IPFragmentID"i !IdentStart { return c.acceptColumn() }
-       / "IPFragmentOffset"i !IdentStart { return c.acceptColumn() }
-       / "IPv6FlowLabel"i !IdentStart { return c.acceptColumn() }
-       / "TCPFlags"i !IdentStart { return c.acceptColumn() }
-       / "ICMPv4Type"i !IdentStart { return c.acceptColumn() }
-       / "ICMPv4Code"i !IdentStart { return c.acceptColumn() }
-       / "ICMPv6Type"i !IdentStart { return c.acceptColumn() }
-       / "ICMPv6Code"i !IdentStart { return c.acceptColumn() }) _
+ column:ColumnUint _
  operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _
  value:Unsigned64 {
   return []any{column, operator, value}, nil
 }
 
+ColumnAS ←
+   "SrcAS"i !IdentStart { return c.acceptColumn() }
+ / "DstAS"i !IdentStart { return c.acceptColumn() }
+ / "Dst1stAS"i !IdentStart { return c.acceptColumn() }
+ / "Dst2ndAS"i !IdentStart { return c.acceptColumn() }
+ / "Dst3rdAS"i !IdentStart { return c.acceptColumn() }
+
 ConditionASExpr "condition on AS number" ←
- column:("SrcAS"i !IdentStart { return c.acceptColumn() }
-       / "DstAS"i !IdentStart { return c.acceptColumn() }
-       / "Dst1stAS"i !IdentStart { return c.acceptColumn() }
-       / "Dst2ndAS"i !IdentStart { return c.acceptColumn() }
-       / "Dst3rdAS"i !IdentStart { return c.acceptColumn() }) _
+ column:ColumnAS _
  rcond:RConditionASExpr {
   return []any{column, rcond}, nil
 }
@@ -189,18 +209,26 @@ RConditionASExpr "condition on AS number" ←
   return []any{operator, "(", value, ")"}, nil
 }
 
-ConditionASPathExpr "condition on AS path" ←
-   column:("DstASPath"i !IdentStart { return c.acceptColumn() }) _ "=" _ value:ASN { return []any{"has(", column, ",", value, ")"}, nil }
- / column:("DstASPath"i !IdentStart { return c.acceptColumn() }) _ "!=" _ value:ASN { return []any{"NOT has(", column, ",", value, ")"}, nil }
+ColumnASPath ←     
+  "DstASPath"i !IdentStart { return c.acceptColumn() }
 
+ConditionASPathExpr "condition on AS path" ←
+   column:ColumnASPath _ "=" _ value:ASN { return []any{"has(", column, ",", value, ")"}, nil }
+ / column:ColumnASPath _ "!=" _ value:ASN { return []any{"NOT has(", column, ",", value, ")"}, nil }
+
+ColumnCommunities ←
+  "DstCommunities"i !IdentStart { return c.acceptColumn() }
 ConditionCommunitiesExpr "condition on communities" ←
-   column:("DstCommunities"i !IdentStart { return c.acceptColumn() }) _ "=" _ value:Community { return []any{"has(", column, ",", value, ")"}, nil }
- / column:("DstCommunities"i !IdentStart { return c.acceptColumn() }) _ "!=" _ value:Community { return []any{"NOT has(", column, ",", value, ")"}, nil }
- / column:("DstCommunities"i !IdentStart { return c.acceptColumn() }) _ "=" _ value:LargeCommunity { return []any{"has(", c.getColumn("DstLargeCommunities"), ",", value, ")"}, nil }
- / column:("DstCommunities"i !IdentStart { return c.acceptColumn() }) _ "!=" _ value:LargeCommunity { return []any{"NOT has(", c.getColumn("DstLargeCommunities"), ",", value, ")"}, nil }
+   column:ColumnCommunities _ "=" _ value:Community { return []any{"has(", column, ",", value, ")"}, nil }
+ / column:ColumnCommunities _ "!=" _ value:Community { return []any{"NOT has(", column, ",", value, ")"}, nil }
+ / column:ColumnCommunities _ "=" _ value:LargeCommunity { return []any{"has(", c.getColumn("DstLargeCommunities"), ",", value, ")"}, nil }
+ / column:ColumnCommunities _ "!=" _ value:LargeCommunity { return []any{"NOT has(", c.getColumn("DstLargeCommunities"), ",", value, ")"}, nil }
+
+ColumnEType ←
+  "EType"i !IdentStart { return c.acceptColumn() }
 
 ConditionETypeExpr "condition on Ethernet type" ←
- column:("EType"i !IdentStart { return c.acceptColumn() }) _
+ column:ColumnEType _
  operator:("=" / "!=") _ value:("IPv4"i / "IPv6"i) {
   etypes := map[string]uint16{
     "ipv4": helpers.ETypeIPv4,
@@ -209,17 +237,48 @@ ConditionETypeExpr "condition on Ethernet type" ←
    etype := etypes[strings.ToLower(toString(value))]
    return []any{column, operator, etype}, nil
 }
+
+ColumnProto ←
+  "Proto"i !IdentStart { return c.acceptColumn() }
+
 ConditionProtoExpr "condition on protocol" ← ConditionProtoIntExpr / ConditionProtoStrExpr
 ConditionProtoIntExpr "condition on protocol as integer" ←
- column:("Proto"i !IdentStart { return c.acceptColumn() }) _
+ column:ColumnProto _
  operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned8 {
   return []any{column, operator, value}, nil
 }
 ConditionProtoStrExpr "condition on protocol as string" ←
- column:("Proto"i !IdentStart { return c.acceptColumn() }) _
+ column:ColumnProto _
  operator:("=" / "!=") _ value:StringLiteral {
   return []any{"dictGetOrDefault('protocols', 'name', ", column, ", '???')", operator, quote(value)}, nil
 }
+
+ConditionCustomStringExpr "condition on custom string" ←
+// for custom strings, we first need to deny all the other columns to avoid false matches - then we match all column names and check inside the acceptDynamicColumn()
+ column:(!(
+  ColumnIP/
+  ColumnSrcPrefix/
+  ColumnDstPrefix/
+  ColumnMAC/
+  ColumnString/
+  ColumnBoundary/
+  ColumnUint/
+  ColumnAS/
+  ColumnASPath/
+  ColumnCommunities/
+  ColumnEType/
+  ColumnProto
+  ) [a-zA-Z][a-zA-Z0-9]+ !IdentStart { return c.acceptDynamicColumn() }) _
+ rcond:RConditionStringExpr {
+  return []any{column, rcond}, nil
+}
+RConditionCustomStringExpr "condition on custom string" ←
+   operator:("=" / "!=" / LikeOperator ) _ str:StringLiteral {
+     return []any{operator, quote(str)}, nil
+   }
+ / operator:InOperator _ '(' _ value:ListString _ ')' {
+  return []any{operator, "(", value, ")"}, nil
+   }
 
 IP "IP address" ← [0-9A-Fa-f:.]+ !IdentStart {
   ip, err := netip.ParseAddr(string(c.text))

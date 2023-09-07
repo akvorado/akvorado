@@ -112,6 +112,21 @@ func (c *current) acceptColumn() (schema.Column, error) {
 	return schema.Column{}, fmt.Errorf("unknown column %q", name)
 }
 
+func (c *current) acceptDynamicColumn() (schema.Column, error) {
+	name := string(c.text)
+	sch := c.globalStore["meta"].(*Meta).Schema
+	for _, column := range sch.Columns() {
+		if strings.EqualFold(name, column.Name) {
+			// check, if we actually have a dynamic column. Dynamic column keys start at ColumnLast
+			if column.Key < schema.ColumnLast {
+				return schema.Column{}, fmt.Errorf("not a dynamic column: %q", name)
+			}
+			return column, nil
+		}
+	}
+	return schema.Column{}, fmt.Errorf("unknown column %q", name)
+}
+
 // getColumn gets a column by its name.
 func (c *current) getColumn(name string) schema.Column {
 	sch := c.globalStore["meta"].(*Meta).Schema

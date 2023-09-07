@@ -320,9 +320,30 @@ output provider */ = 'telia'`,
 		{Input: `icmpv4type = 8 AND icmpv4code = 0`, Output: `ICMPv4Type = 8 AND ICMPv4Code = 0`},
 		{Input: `icmpv6type = 8 or icmpv6code = 0`, Output: `ICMPv6Type = 8 OR ICMPv6Code = 0`},
 		{Input: `icmpv6 = "echo-reply"`, Output: `ICMPv6 = 'echo-reply'`},
+		// starting from here custom dicts
+		{Input: `SrcAddrDimensionAttribute = "Test"`, Output: `SrcAddrDimensionAttribute = 'Test'`},
+		{Input: `DstAddrDimensionAttribute = "Test"`, Output: `DstAddrDimensionAttribute = 'Test'`},
+		{Input: `SrcAddrDimensionAttribute IN ("Test", "None")`, Output: `SrcAddrDimensionAttribute IN ('Test', 'None')`},
 	}
+	config := schema.DefaultConfiguration()
+	config.CustomDictionaries = make(map[string]schema.CustomDict)
+	config.CustomDictionaries["test"] = schema.CustomDict{
+		Keys: []schema.CustomDictKey{
+			{Name: "SrcAddr", Type: "string"},
+		},
+		Attributes: []schema.CustomDictAttribute{
+			{Name: "csv_col_name", Type: "string", Label: "DimensionAttribute"},
+			{Name: "role", Type: "string"},
+		},
+		Source:     "test.csv",
+		Dimensions: []string{"SrcAddr", "DstAddr"},
+	}
+
+	s, _ := schema.New(config)
+	s = s.EnableAllColumns()
+
 	for _, tc := range cases {
-		tc.MetaIn.Schema = schema.NewMock(t).EnableAllColumns()
+		tc.MetaIn.Schema = s
 		tc.MetaOut.Schema = tc.MetaIn.Schema
 		got, err := Parse("", []byte(tc.Input), GlobalStore("meta", &tc.MetaIn))
 		if err != nil {
@@ -367,13 +388,31 @@ func TestInvalidFilter(t *testing.T) {
 		{Input: `SrcVlan = 1000`},
 		{Input: `DstVlan = 1000`},
 		{Input: `SrcMAC = 00:11:22:33:44:55:66`, EnableAll: true},
+		// starting from here custom dicts
+		{Input: `SrcAddrDimensionAttribute = 8`},
+		{Input: `InvalidDimensionAttribute = "Test"`},
 	}
+	config := schema.DefaultConfiguration()
+	config.CustomDictionaries = make(map[string]schema.CustomDict)
+	config.CustomDictionaries["test"] = schema.CustomDict{
+		Keys: []schema.CustomDictKey{
+			{Name: "SrcAddr", Type: "string"},
+		},
+		Attributes: []schema.CustomDictAttribute{
+			{Name: "csv_col_name", Type: "string", Label: "DimensionAttribute"},
+			{Name: "role", Type: "string"},
+		},
+		Source:     "test.csv",
+		Dimensions: []string{"SrcAddr", "DstAddr"},
+	}
+
+	s, _ := schema.New(config)
+
 	for _, tc := range cases {
-		sch := schema.NewMock(t)
 		if tc.EnableAll {
-			sch.EnableAllColumns()
+			s = s.EnableAllColumns()
 		}
-		out, err := Parse("", []byte(tc.Input), GlobalStore("meta", &Meta{Schema: sch}))
+		out, err := Parse("", []byte(tc.Input), GlobalStore("meta", &Meta{Schema: s}))
 		if err == nil {
 			t.Errorf("Parse(%q) didn't throw an error (got %s)", tc.Input, out)
 		}
