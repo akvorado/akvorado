@@ -559,8 +559,8 @@ to enrich your flow with additional informations not possible to get in the
 classifier. This works by providing the database with a CSV files containing the
 values.
 
-**Note:** filtering by dictionaries is not possible with the current state of
-development.
+**Note:** filtering by dictionaries is at the moment possible 
+with string-based custom dimensions.
 
 ```yaml
 schema:

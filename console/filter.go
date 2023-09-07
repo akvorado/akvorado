@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"akvorado/common/helpers"
+	"akvorado/common/schema"
 	"akvorado/console/authentication"
 	"akvorado/console/database"
 	"akvorado/console/filter"
@@ -84,6 +85,7 @@ func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 	completions := []filterCompletion{}
 	switch input.What {
 	case "column":
+		// section 1: "regular" columns via parser
 		_, err := filter.Parse("", []byte{},
 			filter.Entrypoint("ConditionExpr"), filter.GlobalStore("meta", &filter.Meta{Schema: c.d.Schema}))
 		if err != nil {
@@ -95,6 +97,18 @@ func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 				if column, ok := c.d.Schema.LookupColumnByName(candidate); ok && !column.Disabled {
 					completions = append(completions, filterCompletion{
 						Label:  candidate,
+						Detail: "column name",
+					})
+				}
+			}
+		}
+		// section 2: dynamic columns manually filtered by iterating over all available
+		for _, column := range c.d.Schema.Columns() {
+			if column.Key >= schema.ColumnLast {
+				// check case-insensitive, if input and column name overlap
+				if strings.HasPrefix(strings.ToLower(column.Name), strings.ToLower(input.Prefix)) {
+					completions = append(completions, filterCompletion{
+						Label:  column.Name,
 						Detail: "column name",
 					})
 				}
@@ -378,6 +392,33 @@ LIMIT 20`, column, column, column, column, column)
 			}
 			input.Prefix = ""
 		}
+		// custom columns are handled here
+		for _, col := range c.d.Schema.Columns() {
+			// first filter out custom columns, iterate and try to match
+			if col.Key >= schema.ColumnLast {
+				if inputColumn == strings.ToLower(col.Name) {
+					results := []struct {
+						Attribute string `ch:"attribute"`
+					}{}
+					if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, fmt.Sprintf(`
+SELECT DISTINCT %s AS attribute
+FROM flows
+WHERE TimeReceived > date_sub(minute, 10, now()) AND startsWith(attribute, $1)
+ORDER BY %s
+LIMIT 20`, col.Name, col.Name), input.Prefix); err != nil {
+						c.r.Err(err).Msg("unable to query database")
+						break
+					}
+					for _, result := range results {
+						completions = append(completions, filterCompletion{
+							Label:  result.Attribute,
+							Quoted: true,
+						})
+					}
+				}
+			}
+		}
+
 	}
 	filteredCompletions := []filterCompletion{}
 	for _, completion := range completions {
