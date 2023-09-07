@@ -25,7 +25,6 @@ func TestVersion(t *testing.T) {
 	}
 	want := []string{
 		"akvorado dev",
-		"  Build date: unknown",
 		fmt.Sprintf("  Built with: %s", runtime.Version()),
 		"",
 	}

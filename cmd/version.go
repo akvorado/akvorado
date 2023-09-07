@@ -19,8 +19,6 @@ import (
 var (
 	// Version contains the current version.
 	Version = "dev"
-	// BuildDate contains a string with the build date.
-	BuildDate = "unknown"
 )
 
 func init() {
@@ -34,7 +32,6 @@ var versionCmd = &cobra.Command{
 	Long:  `Display version and build information about akvorado.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cmd.Printf("akvorado %s\n", Version)
-		cmd.Printf("  Build date: %s\n", BuildDate)
 		cmd.Printf("  Built with: %s\n", runtime.Version())
 		cmd.Println()
 
@@ -67,9 +64,8 @@ var versionCmd = &cobra.Command{
 
 func versionHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
-		"version":    Version,
-		"build-date": BuildDate,
-		"compiler":   runtime.Version(),
+		"version":  Version,
+		"compiler": runtime.Version(),
 	})
 }
 
@@ -77,6 +73,6 @@ func versionMetrics(r *reporter.Reporter) {
 	r.GaugeVec(reporter.GaugeOpts{
 		Name: "info",
 		Help: "Akvorado build information",
-	}, []string{"version", "build_date", "compiler"}).
-		WithLabelValues(Version, BuildDate, runtime.Version()).Set(1)
+	}, []string{"version", "compiler"}).
+		WithLabelValues(Version, runtime.Version()).Set(1)
 }
