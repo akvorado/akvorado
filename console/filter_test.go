@@ -431,3 +431,96 @@ UNION DISTINCT
 		},
 	})
 }
+
+func TestFilterHandlersCustomDict(t *testing.T) {
+	c, h, mockConn, _ := NewMock(t, DefaultConfiguration())
+
+	mockConn.EXPECT().
+		Select(gomock.Any(), gomock.Any(), `
+SELECT DISTINCT DstAddrRole AS attribute
+FROM flows
+WHERE TimeReceived > date_sub(minute, 10, now()) AND startsWith(attribute, $1)
+ORDER BY DstAddrRole
+LIMIT 20`, "").
+		SetArg(1, []struct {
+			Attribute string `ch:"attribute"`
+		}{{"a-role"}, {"b-role"}, {"c-role"}}).
+		Return(nil)
+
+	mockConn.EXPECT().
+		Select(gomock.Any(), gomock.Any(), `
+SELECT DISTINCT DstAddrRole AS attribute
+FROM flows
+WHERE TimeReceived > date_sub(minute, 10, now()) AND startsWith(attribute, $1)
+ORDER BY DstAddrRole
+LIMIT 20`, "a").
+		SetArg(1, []struct {
+			Attribute string `ch:"attribute"`
+		}{{"a-role"}}).
+		Return(nil)
+
+	config := schema.DefaultConfiguration()
+	config.CustomDictionaries = make(map[string]schema.CustomDict)
+	config.CustomDictionaries["test"] = schema.CustomDict{
+		Keys: []schema.CustomDictKey{
+			{Name: "SrcAddr", Type: "String"},
+		},
+		Attributes: []schema.CustomDictAttribute{
+			{Name: "csv_col_name", Type: "String", Label: "DimensionAttribute"},
+			{Name: "role", Type: "String"},
+		},
+		Source:     "test.csv",
+		Dimensions: []string{"SrcAddr", "DstAddr"},
+	}
+
+	s, _ := schema.New(config)
+	c.d.Schema = s
+
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
+		{
+			URL:        "/api/v0/console/filter/complete",
+			StatusCode: 200,
+			JSONInput:  gin.H{"what": "column", "prefix": "dSta"},
+			JSONOutput: gin.H{"completions": []gin.H{
+				{"label": "DstAS", "detail": "column name", "quoted": false},
+				{"label": "DstASPath", "detail": "column name", "quoted": false},
+				{"label": "DstAddr", "detail": "column name", "quoted": false},
+				{"label": "DstAddrDimensionAttribute", "detail": "column name", "quoted": false},
+				{"label": "DstAddrRole", "detail": "column name", "quoted": false},
+			}},
+		},
+		{
+			URL:        "/api/v0/console/filter/complete",
+			StatusCode: 200,
+			JSONInput:  gin.H{"what": "operator", "column": "DstAddrRole"},
+			JSONOutput: gin.H{"completions": []gin.H{
+				{"label": "!=", "detail": "comparison operator", "quoted": false},
+				{"label": "=", "detail": "comparison operator", "quoted": false},
+				{"label": "ILIKE", "detail": "comparison operator", "quoted": false},
+				{"label": "IN (", "detail": "comparison operator", "quoted": false},
+				{"label": "IUNLIKE", "detail": "comparison operator", "quoted": false},
+				{"label": "LIKE", "detail": "comparison operator", "quoted": false},
+				{"label": "NOTIN (", "detail": "comparison operator", "quoted": false},
+				{"label": "UNLIKE", "detail": "comparison operator", "quoted": false},
+			}},
+		},
+		{
+			URL:        "/api/v0/console/filter/complete",
+			StatusCode: 200,
+			JSONInput:  gin.H{"what": "value", "column": "dstaddrrole"},
+			JSONOutput: gin.H{"completions": []gin.H{
+				{"label": "a-role", "quoted": true},
+				{"label": "b-role", "quoted": true},
+				{"label": "c-role", "quoted": true},
+			}},
+		},
+		{
+			URL:        "/api/v0/console/filter/complete",
+			StatusCode: 200,
+			JSONInput:  gin.H{"what": "value", "column": "dstaddrrole", "prefix": "a"},
+			JSONOutput: gin.H{"completions": []gin.H{
+				{"label": "a-role", "quoted": true},
+			}},
+		},
+	})
+}

@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"akvorado/common/helpers"
+	"akvorado/common/schema"
 	"akvorado/console/authentication"
 	"akvorado/console/database"
 	"akvorado/console/filter"
@@ -380,7 +381,36 @@ LIMIT 20`, column, column, column, column, column)
 			}
 			input.Prefix = ""
 		}
+
+		// Custom columns are handled here
+		for _, col := range c.d.Schema.Columns() {
+			// First filter out custom columns, iterate and try to match
+			if col.Key >= schema.ColumnLast {
+				if inputColumn != strings.ToLower(col.Name) || col.ParserType != "string" {
+					continue
+				}
+				results := []struct {
+					Attribute string `ch:"attribute"`
+				}{}
+				if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, fmt.Sprintf(`
+SELECT DISTINCT %s AS attribute
+FROM flows
+WHERE TimeReceived > date_sub(minute, 10, now()) AND startsWith(attribute, $1)
+ORDER BY %s
+LIMIT 20`, col.Name, col.Name), input.Prefix); err != nil {
+					c.r.Err(err).Msg("unable to query database")
+					break
+				}
+				for _, result := range results {
+					completions = append(completions, filterCompletion{
+						Label:  result.Attribute,
+						Quoted: true,
+					})
+				}
+			}
+		}
 	}
+
 	filteredCompletions := []filterCompletion{}
 	for _, completion := range completions {
 		if strings.HasPrefix(strings.ToLower(completion.Label), strings.ToLower(input.Prefix)) {
