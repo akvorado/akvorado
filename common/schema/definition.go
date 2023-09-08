@@ -159,9 +159,10 @@ func flows() Schema {
 				ConsoleNotDimension: true,
 			},
 			{
-				Key:                ColumnSrcNetPrefix,
-				ClickHouseMainOnly: true,
-				ClickHouseType:     "String",
+				Key:                        ColumnSrcNetPrefix,
+				ClickHouseMainOnly:         true,
+				ClickHouseType:             "String",
+				ClickHouseMaterializedType: "LowCardinality(String)",
 				ClickHouseAlias: `CASE
  WHEN EType = 0x800 THEN concat(replaceRegexpOne(IPv6CIDRToRange(SrcAddr, (96 + SrcNetMask)::UInt8).1::String, '^::ffff:', ''), '/', SrcNetMask::String)
  WHEN EType = 0x86dd THEN concat(IPv6CIDRToRange(SrcAddr, SrcNetMask).1::String, '/', SrcNetMask::String)
