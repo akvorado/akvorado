@@ -127,11 +127,21 @@ func (c *current) parsePrefix(direction string) ([]any, error) {
 	if err != nil {
 		return []any{}, errors.New("expecting a prefix")
 	}
+	// if the prefix was materialized, we can directly access it
+	col := c.getColumn(fmt.Sprintf("%sNetPrefix", direction))
+	if col.ClickHouseMaterialized {
+		return []any{
+			fmt.Sprintf("%sNetPrefix", direction), "=",
+			fmt.Sprintf("'%s'", net.String())}, nil
+	}
+	// it the prefix is not materialized, we use the "between" operator
+	c.globalStore["meta"].(*Meta).MainTableRequired = true
 	prefix := "::ffff:"
 	if net.Addr().Is6() {
 		prefix = ""
 	}
 	return []any{
+		fmt.Sprintf("%sAddr", direction),
 		fmt.Sprintf("BETWEEN toIPv6('%s%s') AND toIPv6('%s%s') AND",
 			prefix, net.Masked().Addr().String(), prefix, lastIP(net).String()),
 		c.getColumn(fmt.Sprintf("%sNetMask", direction)), "=", net.Bits(),

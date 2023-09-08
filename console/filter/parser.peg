@@ -78,8 +78,8 @@ ConditionPrefixExpr "condition on prefix" ←
    operator:("=" / "!=") _
    prefix:SourcePrefix {
      switch toString(operator) {
-       case "=": return []any{c.getColumn("SrcAddr"), prefix}, nil
-       case "!=": return []any{"NOT (", c.getColumn("SrcAddr"), prefix, ")"}, nil
+       case "=": return []any{prefix}, nil
+       case "!=": return []any{"NOT (", prefix, ")"}, nil
      }
      return "", nil
    }
@@ -87,8 +87,8 @@ ConditionPrefixExpr "condition on prefix" ←
    operator:("=" / "!=") _
    prefix:DestinationPrefix {
      switch toString(operator) {
-       case "=": return []any{c.getColumn("DstAddr"), prefix}, nil
-       case "!=": return []any{"NOT (", c.getColumn("DstAddr"), prefix, ")"}, nil
+       case "=": return []any{prefix}, nil
+       case "!=": return []any{"NOT (", prefix, ")"}, nil
      }
      return "", nil
    }

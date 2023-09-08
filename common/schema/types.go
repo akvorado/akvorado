@@ -39,14 +39,18 @@ type Column struct {
 	// instead of being retrieved from the protobuf. `TransformFrom' and
 	// `TransformTo' work in pairs. The first one is the set of column in the
 	// raw table while the second one is how to transform it for the main table.
-	ClickHouseType          string
-	ClickHouseCodec         string
-	ClickHouseAlias         string
-	ClickHouseNotSortingKey bool
-	ClickHouseGenerateFrom  string
-	ClickHouseTransformFrom []Column
-	ClickHouseTransformTo   string
-	ClickHouseMainOnly      bool
+	ClickHouseType             string
+	ClickHouseMaterializedType string
+	ClickHouseCodec            string
+	ClickHouseAlias            string
+	ClickHouseNotSortingKey    bool
+	ClickHouseGenerateFrom     string
+	ClickHouseTransformFrom    []Column
+	ClickHouseTransformTo      string
+	ClickHouseMainOnly         bool
+
+	// ClickHouseMaterialized indicates that the column was materialized (and is not by default)
+	ClickHouseMaterialized bool
 
 	// For the console. `ClickHouseTruncateIP' makes the specified column
 	// truncatable when used as a dimension.

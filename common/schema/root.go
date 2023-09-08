@@ -30,8 +30,14 @@ func New(config Configuration) (*Component, error) {
 			if column.ClickHouseAlias != "" {
 				column.ClickHouseGenerateFrom = column.ClickHouseAlias
 				column.ClickHouseAlias = ""
+				column.ClickHouseMaterialized = true
 			} else {
 				return nil, fmt.Errorf("no alias configured for %s that can be converted to generate", k)
+			}
+
+			// in case we have another data type for materialized columns, set it
+			if column.ClickHouseMaterializedType != "" {
+				column.ClickHouseType = column.ClickHouseMaterializedType
 			}
 		}
 	}

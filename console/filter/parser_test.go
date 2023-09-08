@@ -338,6 +338,52 @@ output provider */ = 'telia'`,
 	}
 }
 
+func TestValidMaterializedFilter(t *testing.T) {
+	cases := []struct {
+		Input   string
+		Output  string
+		MetaIn  Meta
+		MetaOut Meta
+	}{
+		{
+			Input:   `DstNetPrefix = 192.168.0.128/27`,
+			Output:  `DstNetPrefix = '192.168.0.128/27'`,
+			MetaOut: Meta{MainTableRequired: false},
+		},
+		{
+			Input:   `SrcNetPrefix = 192.168.0.128/27`,
+			Output:  `SrcNetPrefix = '192.168.0.128/27'`,
+			MetaOut: Meta{MainTableRequired: false},
+		},
+		{
+			Input:   `SrcNetPrefix = 2001:db8::/48`,
+			Output:  `SrcNetPrefix = '2001:db8::/48'`,
+			MetaOut: Meta{MainTableRequired: false},
+		},
+	}
+	for _, tc := range cases {
+		s := schema.NewMock(t).EnableAllColumns()
+		cd, _ := s.Schema.LookupColumnByKey(schema.ColumnDstNetPrefix)
+		cd.ClickHouseMaterialized = true
+		cs, _ := s.Schema.LookupColumnByKey(schema.ColumnSrcNetPrefix)
+		cs.ClickHouseMaterialized = true
+
+		tc.MetaIn.Schema = s
+		tc.MetaOut.Schema = tc.MetaIn.Schema
+		got, err := Parse("", []byte(tc.Input), GlobalStore("meta", &tc.MetaIn))
+		if err != nil {
+			t.Errorf("Parse(%q) error:\n%+v", tc.Input, err)
+			continue
+		}
+		if diff := helpers.Diff(got.(string), tc.Output); diff != "" {
+			t.Errorf("Parse(%q) (-got, +want):\n%s", tc.Input, diff)
+		}
+		if diff := helpers.Diff(tc.MetaIn, tc.MetaOut); diff != "" {
+			t.Errorf("Parse(%q) meta (-got, +want):\n%s", tc.Input, diff)
+		}
+	}
+}
+
 func TestInvalidFilter(t *testing.T) {
 	cases := []struct {
 		Input     string
