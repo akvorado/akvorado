@@ -15,6 +15,8 @@ identified with a specific icon:
 
 - 🌱 *inlet*: update [Expr](https://expr.medv.io/), the language behind the
   classifiers: support for variables
+- 🌱 *orchestrator*: improve performance when looking up for `SrcNetPrefix` and
+  `DstNetPrefix` when these columns are materialized
 
 ## 1.9.0 - 2023-08-26
 
