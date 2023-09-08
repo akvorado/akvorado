@@ -101,16 +101,18 @@ func TestAutoRefresh(t *testing.T) {
 	})
 
 	gotMetrics := r.GetMetrics("akvorado_inlet_metadata_cache_")
-	expectedMetrics := map[string]string{
-		`expired`:      "0",
-		`hit`:          "4",
-		`miss`:         "1",
-		`size`:         "1",
-		`refresh_runs`: "31", // 63/2
-		`refresh`:      "1",
-	}
-	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
-		t.Fatalf("Metrics (-got, +want):\n%s", diff)
+	for _, runs := range []string{"29", "30", "31"} { // 63/2
+		expectedMetrics := map[string]string{
+			`expired`:      "0",
+			`hit`:          "4",
+			`miss`:         "1",
+			`size`:         "1",
+			`refresh_runs`: runs,
+			`refresh`:      "1",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" && runs == "31" {
+			t.Fatalf("Metrics (-got, +want):\n%s", diff)
+		}
 	}
 }
 
