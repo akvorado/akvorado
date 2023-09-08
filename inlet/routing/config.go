@@ -13,7 +13,7 @@ import (
 // Configuration describes the configuration for the routing client.
 type Configuration struct {
 	// Provider defines the configuration of the provider to use
-	Provider ProviderConfiguration `validate:"dive"`
+	Provider ProviderConfiguration
 }
 
 // DefaultConfiguration represents the default configuration for the routing client.

@@ -19,7 +19,7 @@ type Configuration struct {
 	// Version is the version to display to the user.
 	Version string `yaml:"-"`
 	// DefaultVisualizeOptions define some defaults for the "visualize" tab.
-	DefaultVisualizeOptions VisualizeOptionsConfiguration `validate:"dive"`
+	DefaultVisualizeOptions VisualizeOptionsConfiguration
 	// HomepageTopWidgets defines the list of widgets to display on the home page.
 	HomepageTopWidgets []string `validate:"dive,oneof=src-as dst-as src-country dst-country exporter protocol etype src-port dst-port"`
 	// DimensionsLimit put an upper limit to the number of dimensions to return.

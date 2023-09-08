@@ -24,7 +24,7 @@ type Configuration struct {
 	CachePersistFile string
 
 	// Provider defines the configuration of the provider to sue
-	Provider ProviderConfiguration `validate:"dive"`
+	Provider ProviderConfiguration
 
 	// Workers define the number of workers used to poll metadata
 	Workers int `validate:"min=1"`
