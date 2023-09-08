@@ -11,6 +11,11 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🌱 *inlet*: update [Expr](https://expr.medv.io/), the language behind the
+  classifiers: support for variables
+
 ## 1.9.0 - 2023-08-26
 
 - 💥 *cmd*: use `AKVORADO_CFG_` as a prefix for environment variables used to
