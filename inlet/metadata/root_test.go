@@ -112,6 +112,8 @@ func TestAutoRefresh(t *testing.T) {
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" && runs == "31" {
 			t.Fatalf("Metrics (-got, +want):\n%s", diff)
+		} else if diff == "" {
+			break
 		}
 	}
 }
