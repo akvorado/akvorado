@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.13.4
-	github.com/IBM/sarama v1.41.0
+	github.com/IBM/sarama v1.41.1
 	github.com/alecthomas/chroma v0.10.0
 	github.com/antonmedv/expr v1.15.1
 	github.com/benbjohnson/clock v1.3.5
