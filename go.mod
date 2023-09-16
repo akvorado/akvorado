@@ -42,7 +42,7 @@ require (
 	github.com/spf13/cobra v1.7.0
 	github.com/ti-mo/conntrack v0.4.0
 	github.com/xdg-go/scram v1.1.2
-	github.com/yuin/goldmark v1.5.5
+	github.com/yuin/goldmark v1.5.6
 	github.com/yuin/goldmark-highlighting v0.0.0-20220208100518-594be1970594
 	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea
 	golang.org/x/sys v0.11.0
