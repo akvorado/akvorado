@@ -20,7 +20,7 @@ func TestDecode(t *testing.T) {
 	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()})
 
 	// Send an option template
-	template := helpers.ReadPcapPayload(t, filepath.Join("testdata", "options-template-257.pcap"))
+	template := helpers.ReadPcapPayload(t, filepath.Join("testdata", "options-template.pcap"))
 	got := nfdecoder.Decode(decoder.RawFlow{Payload: template, Source: net.ParseIP("127.0.0.1")})
 	if got == nil {
 		t.Fatalf("Decode() error on options template")
@@ -42,7 +42,7 @@ func TestDecode(t *testing.T) {
 	}
 
 	// Send option data
-	data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "options-data-257.pcap"))
+	data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "options-data.pcap"))
 	got = nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 	if got == nil {
 		t.Fatalf("Decode() error on options data")
@@ -66,7 +66,7 @@ func TestDecode(t *testing.T) {
 	}
 
 	// Send a regular template
-	template = helpers.ReadPcapPayload(t, filepath.Join("testdata", "template-260.pcap"))
+	template = helpers.ReadPcapPayload(t, filepath.Join("testdata", "template.pcap"))
 	got = nfdecoder.Decode(decoder.RawFlow{Payload: template, Source: net.ParseIP("127.0.0.1")})
 	if got == nil {
 		t.Fatalf("Decode() error on template")
@@ -93,7 +93,7 @@ func TestDecode(t *testing.T) {
 	}
 
 	// Send data
-	data = helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-260.pcap"))
+	data = helpers.ReadPcapPayload(t, filepath.Join("testdata", "data.pcap"))
 	got = nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 	if got == nil {
 		t.Fatalf("Decode() error on data")
@@ -217,7 +217,7 @@ func TestTemplatesMixedWithData(t *testing.T) {
 	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t)})
 
 	// Send packet with both data and templates
-	template := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data+templates-256-257.pcap"))
+	template := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data+templates.pcap"))
 	nfdecoder.Decode(decoder.RawFlow{Payload: template, Source: net.ParseIP("127.0.0.1")})
 
 	// We don't really care about the data, but we should have accepted the
@@ -239,9 +239,9 @@ func TestDecodeSamplingRate(t *testing.T) {
 	r := reporter.NewMock(t)
 	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()})
 
-	data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "template-1507.pcap"))
+	data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "samplingrate-template.pcap"))
 	got := nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
-	data = helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-1507.pcap"))
+	data = helpers.ReadPcapPayload(t, filepath.Join("testdata", "samplingrate-data.pcap"))
 	got = append(got, nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})...)
 
 	expectedFlows := []*schema.FlowMessage{
@@ -277,9 +277,9 @@ func TestDecodeICMP(t *testing.T) {
 	r := reporter.NewMock(t)
 	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()})
 
-	data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "icmp-1.pcap"))
+	data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "icmp-template.pcap"))
 	got := nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
-	data = helpers.ReadPcapPayload(t, filepath.Join("testdata", "icmp-2.pcap"))
+	data = helpers.ReadPcapPayload(t, filepath.Join("testdata", "icmp-data.pcap"))
 	got = append(got, nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})...)
 
 	expectedFlows := []*schema.FlowMessage{

@@ -24,22 +24,22 @@ func BenchmarkDecodeEncodeNetflow(b *testing.B) {
 	sch := schema.NewMock(b)
 	nfdecoder := netflow.New(r, decoder.Dependencies{Schema: sch})
 
-	template := helpers.ReadPcapPayload(b, filepath.Join("decoder", "netflow", "testdata", "options-template-257.pcap"))
+	template := helpers.ReadPcapPayload(b, filepath.Join("decoder", "netflow", "testdata", "options-template.pcap"))
 	got := nfdecoder.Decode(decoder.RawFlow{Payload: template, Source: net.ParseIP("127.0.0.1")})
 	if got == nil || len(got) != 0 {
 		b.Fatal("Decode() error on options template")
 	}
-	data := helpers.ReadPcapPayload(b, filepath.Join("decoder", "netflow", "testdata", "options-data-257.pcap"))
+	data := helpers.ReadPcapPayload(b, filepath.Join("decoder", "netflow", "testdata", "options-data.pcap"))
 	got = nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 	if got == nil || len(got) != 0 {
 		b.Fatal("Decode() error on options data")
 	}
-	template = helpers.ReadPcapPayload(b, filepath.Join("decoder", "netflow", "testdata", "template-260.pcap"))
+	template = helpers.ReadPcapPayload(b, filepath.Join("decoder", "netflow", "testdata", "template.pcap"))
 	got = nfdecoder.Decode(decoder.RawFlow{Payload: template, Source: net.ParseIP("127.0.0.1")})
 	if got == nil || len(got) != 0 {
 		b.Fatal("Decode() error on template")
 	}
-	data = helpers.ReadPcapPayload(b, filepath.Join("decoder", "netflow", "testdata", "data-260.pcap"))
+	data = helpers.ReadPcapPayload(b, filepath.Join("decoder", "netflow", "testdata", "data.pcap"))
 
 	for _, withEncoding := range []bool{true, false} {
 		title := map[bool]string{

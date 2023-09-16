@@ -23,13 +23,13 @@ func TestFlow(t *testing.T) {
 	outDir := t.TempDir()
 	outFiles := []string{}
 	for idx, f := range []string{
-		"options-template-257.pcap",
-		"options-data-257.pcap",
-		"template-260.pcap",
-		"data-260.pcap", "data-260.pcap", "data-260.pcap", "data-260.pcap",
-		"data-260.pcap", "data-260.pcap", "data-260.pcap", "data-260.pcap",
-		"data-260.pcap", "data-260.pcap", "data-260.pcap", "data-260.pcap",
-		"data-260.pcap", "data-260.pcap", "data-260.pcap", "data-260.pcap",
+		"options-template.pcap",
+		"options-data.pcap",
+		"template.pcap",
+		"data.pcap", "data.pcap", "data.pcap", "data.pcap",
+		"data.pcap", "data.pcap", "data.pcap", "data.pcap",
+		"data.pcap", "data.pcap", "data.pcap", "data.pcap",
+		"data.pcap", "data.pcap", "data.pcap", "data.pcap",
 	} {
 		outFile := path.Join(outDir, fmt.Sprintf("data-%d", idx))
 		err := os.WriteFile(outFile, helpers.ReadPcapPayload(t, path.Join(base, f)), 0o666)
