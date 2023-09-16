@@ -344,3 +344,44 @@ func TestDecodeICMP(t *testing.T) {
 	}
 
 }
+
+func TestDecodeDataLink(t *testing.T) {
+	r := reporter.NewMock(t)
+	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()})
+
+	data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "datalink-template.pcap"))
+	got := nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+	data = helpers.ReadPcapPayload(t, filepath.Join("testdata", "datalink-data.pcap"))
+	got = append(got, nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})...)
+
+	expectedFlows := []*schema.FlowMessage{
+		{
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("::ffff:51.51.51.51"),
+			DstAddr:         netip.MustParseAddr("::ffff:52.52.52.52"),
+			SrcVlan:         231,
+			InIf:            582,
+			OutIf:           0,
+			ProtobufDebug: map[schema.ColumnKey]interface{}{
+				schema.ColumnBytes:        96,
+				schema.ColumnSrcPort:      55501,
+				schema.ColumnDstPort:      11777,
+				schema.ColumnEType:        helpers.ETypeIPv4,
+				schema.ColumnPackets:      1,
+				schema.ColumnProto:        17,
+				schema.ColumnSrcMAC:       0xb402165592f4,
+				schema.ColumnDstMAC:       0x182ad36e503f,
+				schema.ColumnIPFragmentID: 0x8f00,
+				schema.ColumnIPTTL:        119,
+			},
+		},
+	}
+	for _, f := range got {
+		f.TimeReceived = 0
+	}
+
+	if diff := helpers.Diff(got, expectedFlows); diff != "" {
+		t.Fatalf("Decode() (-got, +want):\n%s", diff)
+	}
+
+}

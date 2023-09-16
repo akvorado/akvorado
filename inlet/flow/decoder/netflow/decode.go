@@ -10,6 +10,7 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/schema"
+	"akvorado/inlet/flow/decoder"
 
 	"github.com/netsampler/goflow2/decoders/netflow"
 	"github.com/netsampler/goflow2/producer"
@@ -62,7 +63,8 @@ func (nd *Decoder) decodeRecord(fields []netflow.DataField) *schema.FlowMessage 
 	var proto, icmpType, icmpCode uint8
 	var foundIcmpTypeCode bool
 	bf := &schema.FlowMessage{}
-	for _, field := range fields {
+	dataLinkFrameSectionIdx := -1
+	for idx, field := range fields {
 		v, ok := field.Value.([]byte)
 		if !ok {
 			continue
@@ -122,6 +124,12 @@ func (nd *Decoder) decodeRecord(fields []netflow.DataField) *schema.FlowMessage 
 			bf.InIf = uint32(decodeUNumber(v))
 		case netflow.NFV9_FIELD_OUTPUT_SNMP:
 			bf.OutIf = uint32(decodeUNumber(v))
+
+		// RFC7133: process it later to not override other fields
+		case netflow.IPFIX_FIELD_dataLinkFrameSize:
+			// We are going to ignore it as we don't know L3 size yet.
+		case netflow.IPFIX_FIELD_dataLinkFrameSection:
+			dataLinkFrameSectionIdx = idx
 
 		// Remaining
 		case netflow.NFV9_FIELD_FORWARDING_STATUS:
@@ -190,6 +198,13 @@ func (nd *Decoder) decodeRecord(fields []netflow.DataField) *schema.FlowMessage 
 					foundIcmpTypeCode = true
 				}
 			}
+		}
+	}
+	if dataLinkFrameSectionIdx >= 0 {
+		data := fields[dataLinkFrameSectionIdx].Value.([]byte)
+		if l3Length := decoder.ParseEthernet(nd.d.Schema, bf, data); l3Length > 0 {
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnBytes, l3Length)
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnPackets, 1)
 		}
 	}
 	if !nd.d.Schema.IsDisabled(schema.ColumnGroupL3L4) && (proto == 1 || proto == 58) {

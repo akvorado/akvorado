@@ -16,6 +16,7 @@ identified with a specific icon:
 - 🌱 *console*: add filtering support for custom columns
 - 🌱 *inlet*: update [Expr](https://expr.medv.io/), the language behind the
   classifiers: support for variables
+- 🌱 *inlet*: support for RFC 7133 for IPFIX
 - 🌱 *orchestrator*: improve performance when looking up for `SrcNetPrefix` and
   `DstNetPrefix` when these columns are materialized
 
