@@ -33,6 +33,9 @@ type Column struct {
 	Group     ColumnGroup
 	Depends   []ColumnKey
 
+	// For parser.
+	ParserType string
+
 	// For ClickHouse. `NotSortingKey' is for columns generated from other
 	// columns. It is only useful if not ClickHouseMainOnly and not Alias.
 	// `GenerateFrom' is for a column that's generated from an SQL expression

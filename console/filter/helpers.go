@@ -100,7 +100,7 @@ func (c *current) compileExpr(expr []any, meta *Meta) string {
 }
 
 // acceptColumn normalizes and returns the matched column name. It should be
-// used in predicate code blocks.
+// used in action code blocks.
 func (c *current) acceptColumn() (schema.Column, error) {
 	name := string(c.text)
 	sch := c.globalStore["meta"].(*Meta).Schema
@@ -110,6 +110,28 @@ func (c *current) acceptColumn() (schema.Column, error) {
 		}
 	}
 	return schema.Column{}, fmt.Errorf("unknown column %q", name)
+}
+
+// columnIsOfType returns true if the column is of one of the provided type. It
+// should be used in predicate code blocks.
+func (c *current) columnIsOfType(name any, types ...string) (bool, error) {
+	nameSl := name.([]any)
+	var columnName string
+	for _, s := range nameSl {
+		columnName += string(s.([]byte))
+	}
+	sch := c.globalStore["meta"].(*Meta).Schema
+	for _, column := range sch.Columns() {
+		if strings.EqualFold(columnName, column.Name) {
+			for _, t := range types {
+				if column.ParserType == t {
+					return true, nil
+				}
+			}
+			return false, nil
+		}
+	}
+	return false, nil
 }
 
 // getColumn gets a column by its name.

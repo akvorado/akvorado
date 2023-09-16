@@ -6,6 +6,7 @@ package console
 import (
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -84,21 +85,22 @@ func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 	completions := []filterCompletion{}
 	switch input.What {
 	case "column":
-		_, err := filter.Parse("", []byte{},
-			filter.Entrypoint("ConditionExpr"), filter.GlobalStore("meta", &filter.Meta{Schema: c.d.Schema}))
-		if err != nil {
-			for _, candidate := range filter.Expected(err) {
-				if !strings.HasSuffix(candidate, `"i`) {
-					continue
-				}
-				candidate = candidate[1 : len(candidate)-2]
-				if column, ok := c.d.Schema.LookupColumnByName(candidate); ok && !column.Disabled {
-					completions = append(completions, filterCompletion{
-						Label:  candidate,
-						Detail: "column name",
-					})
-				}
+		// We use the schema directly.
+		columns := []string{}
+		for _, column := range c.d.Schema.Columns() {
+			if column.Disabled {
+				continue
 			}
+			if strings.HasPrefix(strings.ToLower(column.Name), strings.ToLower(input.Prefix)) {
+				columns = append(columns, column.Name)
+			}
+		}
+		sort.Strings(columns)
+		for _, column := range columns {
+			completions = append(completions, filterCompletion{
+				Label:  column,
+				Detail: "column name",
+			})
 		}
 	case "operator":
 		_, err := filter.Parse("",

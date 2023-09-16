@@ -48,12 +48,9 @@ ConditionExpr "conditional" ←
   / ConditionProtoExpr
 
 ColumnIP ←
-   "ExporterAddress"i !IdentStart { return c.acceptColumn() }
- / "SrcAddr"i !IdentStart { return c.acceptColumn() }
- / "DstAddr"i !IdentStart { return c.acceptColumn() }
- / "SrcAddrNAT"i !IdentStart { return c.acceptColumn() }
- / "DstAddrNAT"i !IdentStart { return c.acceptColumn() }
- / "NextHop"i !IdentStart { return c.acceptColumn() }
+ column:[A-Za-z0-9]+ !IdentStart
+   &{ return c.columnIsOfType(column, "ip") }
+    { return c.acceptColumn() }
 ConditionIPExpr "condition on IP" ←
    column:ColumnIP _
    operator:("=" / "!=") _ ip:IP {
@@ -101,34 +98,9 @@ ConditionMACExpr "condition on MAC" ←
    }
 
 ConditionStringExpr "condition on string" ←
- column:("ExporterName"i !IdentStart { return c.acceptColumn() }
-      / "ExporterGroup"i !IdentStart { return c.acceptColumn() }
-      / "ExporterRole"i !IdentStart { return c.acceptColumn() }
-      / "ExporterSite"i !IdentStart { return c.acceptColumn() }
-      / "ExporterRegion"i !IdentStart { return c.acceptColumn() }
-      / "ExporterTenant"i !IdentStart { return c.acceptColumn() }
-      / "SrcCountry"i !IdentStart { return c.acceptColumn() }
-      / "DstCountry"i !IdentStart { return c.acceptColumn() }
-      / "SrcNetName"i !IdentStart { return c.acceptColumn() }
-      / "DstNetName"i !IdentStart { return c.acceptColumn() }
-      / "SrcNetRole"i !IdentStart { return c.acceptColumn() }
-      / "DstNetRole"i !IdentStart { return c.acceptColumn() }
-      / "SrcNetSite"i !IdentStart { return c.acceptColumn() }
-      / "DstNetSite"i !IdentStart { return c.acceptColumn() }
-      / "SrcNetRegion"i !IdentStart { return c.acceptColumn() }
-      / "DstNetRegion"i !IdentStart { return c.acceptColumn() }
-      / "SrcNetTenant"i !IdentStart { return c.acceptColumn() }
-      / "DstNetTenant"i !IdentStart { return c.acceptColumn() }
-      / "InIfName"i !IdentStart { return c.acceptColumn() }
-      / "OutIfName"i !IdentStart { return c.acceptColumn() }
-      / "InIfDescription"i !IdentStart { return c.acceptColumn() }
-      / "OutIfDescription"i !IdentStart { return c.acceptColumn() }
-      / "InIfConnectivity"i !IdentStart { return c.acceptColumn() }
-      / "OutIfConnectivity"i !IdentStart { return c.acceptColumn() }
-      / "InIfProvider"i !IdentStart { return c.acceptColumn() }
-      / "OutIfProvider"i !IdentStart { return c.acceptColumn() }
-      / "ICMPv4"i !IdentStart { return c.acceptColumn() }
-      / "ICMPv6"i !IdentStart { return c.acceptColumn() }) _
+ column:(value:[A-Za-z0-9]+ !IdentStart
+           &{ return c.columnIsOfType(value, "string") }
+            { return c.acceptColumn() }) _
  rcond:RConditionStringExpr {
   return []any{column, rcond}, nil
 }
@@ -149,26 +121,9 @@ ConditionBoundaryExpr "condition on boundary" ←
 }
 
 ConditionUintExpr "condition on integer" ←
- column:("InIfSpeed"i !IdentStart { return c.acceptColumn() }
-       / "OutIfSpeed"i !IdentStart { return c.acceptColumn() }
-       / "SrcPort"i !IdentStart { return c.acceptColumn() }
-       / "DstPort"i !IdentStart { return c.acceptColumn() }
-       / "SrcPortNAT"i !IdentStart { return c.acceptColumn() }
-       / "DstPortNAT"i !IdentStart { return c.acceptColumn() }
-       / "SrcVlan"i !IdentStart { return c.acceptColumn() }
-       / "DstVlan"i !IdentStart { return c.acceptColumn() }
-       / "PacketSize"i !IdentStart { return c.acceptColumn() }
-       / "ForwardingStatus"i !IdentStart { return c.acceptColumn() }
-       / "IPTTL"i !IdentStart { return c.acceptColumn() }
-       / "IPTos"i !IdentStart { return c.acceptColumn() }
-       / "IPFragmentID"i !IdentStart { return c.acceptColumn() }
-       / "IPFragmentOffset"i !IdentStart { return c.acceptColumn() }
-       / "IPv6FlowLabel"i !IdentStart { return c.acceptColumn() }
-       / "TCPFlags"i !IdentStart { return c.acceptColumn() }
-       / "ICMPv4Type"i !IdentStart { return c.acceptColumn() }
-       / "ICMPv4Code"i !IdentStart { return c.acceptColumn() }
-       / "ICMPv6Type"i !IdentStart { return c.acceptColumn() }
-       / "ICMPv6Code"i !IdentStart { return c.acceptColumn() }) _
+ column:(value:[A-Za-z0-9]+ !IdentStart
+           &{ return c.columnIsOfType(value, "uint") }
+            { return c.acceptColumn() }) _
  operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _
  value:Unsigned64 {
   return []any{column, operator, value}, nil

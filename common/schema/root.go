@@ -84,10 +84,10 @@ func New(config Configuration) (*Component, error) {
 		}
 	}
 
+	// Add new columns from custom dictionaries after the static ones as we dont
+	// reference the dicts in the code and they are created during runtime from
+	// the config, this is enough for us.
 	customDictColumns := []Column{}
-	// add new columns from custom dictionaries after the static ones
-	// as we dont reference the dicts in the code and they are created during runtime from the config, this is enough for us.
-
 	for dname, v := range config.CustomDictionaries {
 		for _, d := range v.Dimensions {
 			// check if we can actually create the dictionary (we need to know what to match on)
@@ -130,12 +130,21 @@ func New(config Configuration) (*Component, error) {
 					l = cases.Title(language.Und).String(a.Name)
 				}
 				name := fmt.Sprintf("%s%s", d, l)
-				// compute the key for this new dynamic column, added after the last dynamic column
 				key := ColumnLast + schema.dynamicColumns
+				parserType := ""
+				switch a.Type {
+				case "IPv6":
+					parserType = "ip"
+				case "String":
+					parserType = "string"
+				case "UInt8", "UInt16", "UInt32", "UInt64":
+					parserType = "uint"
+				}
 				customDictColumns = append(customDictColumns,
 					Column{
 						Key:            key,
 						Name:           name,
+						ParserType:     parserType,
 						ClickHouseType: fmt.Sprintf("LowCardinality(%s)", a.Type),
 						ClickHouseGenerateFrom: fmt.Sprintf("dictGet('custom_dict_%s', '%s', %s)", dname, a.Name,
 							matchingString),
