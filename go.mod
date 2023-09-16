@@ -12,7 +12,7 @@ require (
 	github.com/bits-and-blooms/bitset v1.8.0
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/chenyahui/gin-cache v1.8.1
-	github.com/docker/docker v24.0.5+incompatible
+	github.com/docker/docker v24.0.6+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/eapache/go-resiliency v1.4.0
 	github.com/fsnotify/fsnotify v1.6.0
