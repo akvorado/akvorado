@@ -37,7 +37,7 @@ type CustomDict struct {
 // CustomDictKey represents a single key (matching) column of a custom dictionary
 type CustomDictKey struct {
 	Name                 string `validate:"required,alphanum"`
-	Type                 string `validate:"required,oneof=String UInt8 UInt16 UInt32 UInt64 IPv4 IPv6"`
+	Type                 string `validate:"required,oneof=String UInt8 UInt16 UInt32 UInt64 IPv6"`
 	MatchDimension       string `validate:"omitempty,alphanum"`
 	MatchDimensionSuffix string `validate:"omitempty,alphanum"`
 }
@@ -45,7 +45,7 @@ type CustomDictKey struct {
 // CustomDictAttribute represents a single value column of a custom dictionary
 type CustomDictAttribute struct {
 	Name    string `validate:"required,alphanum"`
-	Type    string `validate:"required,oneof=String UInt8 UInt16 UInt32 UInt64 IPv4 IPv6"`
+	Type    string `validate:"required,oneof=String UInt8 UInt16 UInt32 UInt64 IPv6"`
 	Label   string `validate:"omitempty,alphanum"` // empty label is acceptable, in this case fallback to name
 	Default string `validate:"omitempty,alphanum"`
 }
