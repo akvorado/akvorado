@@ -1,0 +1,34 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/whitelist-source-range: {{ .Values.console.acl }}
+  name: akvorado-ingress
+  namespace: {{ .Values.environment }}-{{ .Values.namespace }}
+spec:
+  rules:
+  - host: {{ .Values.host }}
+    http:
+      paths:
+      - path: /api/v0/orchestrator
+        pathType: Prefix
+        backend:
+          service:
+            name: orchestrator
+            port:
+              number: 8080
+      - path: /api/v0/inlet
+        pathType: Prefix
+        backend:
+          service:
+            name: inlet-http
+            port:
+              number: 8080
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: console
+            port:
+              number: 8080

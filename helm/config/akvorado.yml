@@ -1,0 +1,44 @@
+---
+kafka:
+  topic: flows
+  version: 3.3.1
+  brokers:
+    - my-cluster-kafka-brokers.kafka.svc.cluster.local:9092
+  topic-configuration:
+    num-partitions: 8
+    replication-factor: 1
+    config-entries:
+      segment.bytes: 1073741824
+      retention.ms: 86400000 # 1 day
+      cleanup.policy: delete
+      compression.type: producer
+clickhouse:
+  orchestrator-url: http://stage-flow.mydomain.com:80
+  kafka:
+    consumers: 1
+  servers:
+    - clickhouse-stage-clickhouse.stage-clickhouse.svc.cluster.local:9000
+  username: akvorado
+  password: akvorado_password
+  database: flow
+  asns:
+    65580: ACME Inc
+  networks:
+    100.64.0.0/10:
+      name: my-cgnat-network-in-pop-1
+      role: cgnat
+  network-sources: []
+    # amazon:
+    #   url: https://ip-ranges.amazonaws.com/ip-ranges.json
+    #   interval: 6h
+    #   transform: |
+    #     (.prefixes + .ipv6_prefixes)[] |
+    #     { prefix: (.ip_prefix // .ipv6_prefix), tenant: "amazon", region: .region, role: .service|ascii_downcase }
+    # gcp:
+    #   url: https://www.gstatic.com/ipranges/cloud.json
+    #   interval: 6h
+    #   transform: |
+    #     .prefixes[] |
+    #     { prefix: (.ipv4Prefix // .ipv6Prefix), tenant: "google-cloud", region: .scope }
+inlet: !include "inlet.yaml"
+console: !include "console.yaml"
