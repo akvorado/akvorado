@@ -225,8 +225,8 @@ github.com/gorilla/securecookie v1.1.1/go.mod h1:ra0sb63/xPlUeL+yeDciTfxMRAA+MP+
 github.com/gorilla/sessions v1.2.1/go.mod h1:dk2InVEVJ0sfLlnXv9EAgkf6ecYs/i80K/zI+bUmuGM=
 github.com/gosnmp/gosnmp v1.36.1 h1:LaTyGWIM8Z91NmCUELJi45d+BtOafI8U82nVUGI1P+w=
 github.com/gosnmp/gosnmp v1.36.1/go.mod h1:iLcZxN2MxKhH0jPQDVMZaSNypw1ykqVi27O79koQj6w=
-github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.0.0-rc.0 h1:mdLirNAJBxnGgyB6pjZLcs6ue/6eZGBui6gXspfq4ks=
-github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.0.0-rc.0/go.mod h1:kdXbOySqcQeTxiqglW7aahTmWZy3Pgi6SYL36yvKeyA=
+github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.0.0 h1:f4tggROQKKcnh4eItay6z/HbHLqghBxS8g7pyMhmDio=
+github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.0.0/go.mod h1:hKAkSgNkL0FII46ZkJcpVEAai4KV+swlIWCKfekd1pA=
 github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.0.0-rc.3 h1:o95KDiV/b1xdkumY5YbLR0/n2+wBxUpgf3HgfKgTyLI=
 github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.0.0-rc.3/go.mod h1:hTxjzRcX49ogbTGVJ1sM5mz5s+SSgiGIyL3jjPxl32E=
 github.com/hashicorp/errwrap v1.0.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=
