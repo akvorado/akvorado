@@ -342,8 +342,8 @@ github.com/opencontainers/image-spec v1.1.0-rc4 h1:oOxKUJWnFC4YGHCCMNql1x4YaDfYB
 github.com/opencontainers/image-spec v1.1.0-rc4/go.mod h1:X4pATf0uXsnn3g5aiGIsVnJBR4mxhKzfwmvK/B2NTm8=
 github.com/oschwald/maxminddb-golang v1.12.0 h1:9FnTOD0YOhP7DGxGsq4glzpGy5+w7pq50AS6wALUMYs=
 github.com/oschwald/maxminddb-golang v1.12.0/go.mod h1:q0Nob5lTCqyQ8WT6FYgS1L7PXKVVbgiymefNwIjPzgY=
-github.com/osrg/gobgp/v3 v3.18.0 h1:/IbSvOv62lAsXXaIRLnGV6c8rzeZZZ1l/hNsmLaQ/EA=
-github.com/osrg/gobgp/v3 v3.18.0/go.mod h1:tSUXn/s9uggSRTKP3IBeT5zI4ayOUX3O7fG5+n+SHPc=
+github.com/osrg/gobgp/v3 v3.19.0 h1:SHjeu707EVp5h2LR8qLxDz/PzFU6oO+jhquGzGsigTI=
+github.com/osrg/gobgp/v3 v3.19.0/go.mod h1:TszzyYD/31jXlljifRhxFEmPsITEloZmGU5CTN21W18=
 github.com/paulmach/orb v0.10.0 h1:guVYVqzxHE/CQ1KpfGO077TR0ATHSNjp4s6XGLn3W9s=
 github.com/paulmach/orb v0.10.0/go.mod h1:5mULz1xQfs3bmQm63QEJA6lNGujuRafwA5S/EnuLaLU=
 github.com/paulmach/protoscan v0.2.1/go.mod h1:SpcSwydNLrxUGSDvXvO0P7g7AuhJ7lcKfDlhJCDw2gY=
@@ -389,8 +389,8 @@ github.com/shopspring/decimal v1.3.1/go.mod h1:DKyhrW/HYNuLGql+MJL6WCR6knT2jwCFR
 github.com/shurcooL/sanitized_anchor_name v1.0.0/go.mod h1:1NzhyTcUVG4SuEtjjoZeVRXNmyL/1OwPU0+IJeTBvfc=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
 github.com/sirupsen/logrus v1.8.1/go.mod h1:yWOB1SBYBC5VeMP7gHvWumXLIWorT60ONWic61uBYv0=
-github.com/sirupsen/logrus v1.9.0 h1:trlNQbNUG3OdDrDil03MCb1H2o9nJ1x4/5LYw7byDE0=
-github.com/sirupsen/logrus v1.9.0/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
+github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=
+github.com/sirupsen/logrus v1.9.3/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
 github.com/slayercat/GoSNMPServer v0.1.2 h1:JnKksP32zVXqUADZ0jKPCAe0qykADsUnfrztqhEzA58=
 github.com/slayercat/GoSNMPServer v0.1.2/go.mod h1:pAsvl4cV65krDY5CNy7IFDTIZ5V56nK3y3PvWOqV2IY=
 github.com/slayercat/gosnmp v1.24.0/go.mod h1:tB/loGhNgiSxOZzz02TRKKhUPUzDrGrkYQSXxD3KfqM=

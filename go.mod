@@ -33,7 +33,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/netsampler/goflow2 v1.1.1-0.20221008154147-57fad2e0c837
 	github.com/oschwald/maxminddb-golang v1.12.0
-	github.com/osrg/gobgp/v3 v3.18.0
+	github.com/osrg/gobgp/v3 v3.19.0
 	github.com/prometheus/client_golang v1.16.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rs/zerolog v1.31.0
@@ -123,7 +123,7 @@ require (
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect
-	github.com/sirupsen/logrus v1.9.0 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/ti-mo/netfilter v0.3.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.10 // indirect
