@@ -11,7 +11,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.9.1 - 2023-10-06
 
 - 🌱 *console*: add filtering support for custom columns
 - 🌱 *inlet*: update [Expr](https://expr.medv.io/), the language behind the
