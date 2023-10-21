@@ -27,7 +27,7 @@ require (
 	github.com/hashicorp/go-version v1.6.0
 	github.com/itchyny/gojq v0.12.13
 	github.com/jhump/protoreflect v1.15.3
-	github.com/kentik/patricia v1.2.0
+	github.com/kentik/patricia v1.2.1
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-isatty v0.0.19
 	github.com/mitchellh/mapstructure v1.5.0
@@ -151,7 +151,4 @@ require (
 	modernc.org/sqlite v1.23.1 // indirect
 )
 
-replace (
-	github.com/kentik/patricia => github.com/vincentbernat/patricia v0.0.0-20220923091046-b376a1167a94
-	github.com/netsampler/goflow2 => github.com/vincentbernat/goflow2 v1.0.5-0.20230515164450-049536ab1b9d
-)
+replace github.com/netsampler/goflow2 => github.com/vincentbernat/goflow2 v1.0.5-0.20230515164450-049536ab1b9d

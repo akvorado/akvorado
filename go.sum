@@ -279,6 +279,8 @@ github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnr
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/jstemmer/go-junit-report v0.0.0-20190106144839-af01ea7f8024/go.mod h1:6v2b51hI/fHJwM22ozAgKL4VKDeJcHhJFhtBdhmNjmU=
 github.com/jstemmer/go-junit-report v0.9.1/go.mod h1:Brl9GWCQeLvo8nXZwPNNblvFj/XSXhF0NWZEnDohbsk=
+github.com/kentik/patricia v1.2.1 h1:+ZyPXnEiFLbmT1yZR0JRfRUuNXmxROXdzI8YiSpTx5w=
+github.com/kentik/patricia v1.2.1/go.mod h1:6jY40ESetsbfi04/S12iJlsiS6DYL2B2W+WAcqoDHtw=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
 github.com/klauspost/compress v1.13.6/go.mod h1:/3/Vjq9QcHkK5uEr5lBEmyoZ1iFhe47etQ6QUkpK6sk=
@@ -436,8 +438,6 @@ github.com/ugorji/go/codec v1.2.11/go.mod h1:UNopzCgEMSXjBc6AOMqYvWC1ktqTAfzJZUZ
 github.com/urfave/cli/v2 v2.1.1/go.mod h1:SE9GqnLQmjVa0iPEY0f1w3ygNIYcIJ0OKPMoW2caLfQ=
 github.com/vincentbernat/goflow2 v1.0.5-0.20230515164450-049536ab1b9d h1:8Unblv8CgNHb35jAnFP6+imH9d+NvKUSuJ5HRvYEO90=
 github.com/vincentbernat/goflow2 v1.0.5-0.20230515164450-049536ab1b9d/go.mod h1:/L2WgrPDXp8BpT6Doyo8nRsa991Yf3Nf7UrfavX/nxc=
-github.com/vincentbernat/patricia v0.0.0-20220923091046-b376a1167a94 h1:T7+yyM6300NYIv1kqlXX53d2cjEHpgDt6cFbBYO+upk=
-github.com/vincentbernat/patricia v0.0.0-20220923091046-b376a1167a94/go.mod h1:6jY40ESetsbfi04/S12iJlsiS6DYL2B2W+WAcqoDHtw=
 github.com/vishvananda/netns v0.0.0-20180720170159-13995c7128cc/go.mod h1:ZjcWmFBXmLKZu9Nxj3WKYEafiSqer2rnvPr0en9UNpI=
 github.com/vishvananda/netns v0.0.4 h1:Oeaw1EM2JMxD51g9uhtC0D7erkIjgmj8+JZc26m1YX8=
 github.com/xdg-go/pbkdf2 v1.0.0 h1:Su7DPu48wXMwC3bs7MCNG+z4FhcyEuz5dlvchbq0B0c=
