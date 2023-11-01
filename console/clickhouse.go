@@ -190,7 +190,7 @@ func (c *Component) contextFunc(inputStr string) context {
 	case "l3bps":
 		units = `SUM(Bytes*SamplingRate*8)`
 	case "l2bps":
-		// For each packet, we add the Ethernet header (14 bytes), the CRC (4
+		// For each packet, we add the Ethernet header (14 bytes), the FCS (4
 		// bytes), the preamble and start frame delimiter (8 bytes) and the IPG
 		// (~ 12 bytes). We don't include the VLAN header (4 bytes) as it is
 		// often not used with external entities. Both sFlow and IPFIX may have

@@ -106,8 +106,11 @@ func (nd *Decoder) decode(msgDec interface{}) []*schema.FlowMessage {
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPTos, uint64(recordData.Priority))
 			case sflow.SampledEthernet:
 				if l3length == 0 {
-					// That's the best we can guess.
-					l3length = uint64(recordData.Length) - 16 // (MACs, ethertype, FCS)
+					// That's the best we can guess. sFlow says: For a layer 2
+					// header_protocol, length is total number of octets of data
+					// received on the network (excluding framing bits but
+					// including FCS octets).
+					l3length = uint64(recordData.Length) - 16
 				}
 				if !nd.d.Schema.IsDisabled(schema.ColumnGroupL2) {
 					nd.d.Schema.ProtobufAppendBytes(bf, schema.ColumnSrcMAC, recordData.SrcMac)
