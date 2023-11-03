@@ -47,6 +47,7 @@ updates:
           - "patch-package"
           - "postcss"
           - "prettier*"
+          - "typescript-language-server"
           - "vite"
           - "vitest"
       tailwindcss:
