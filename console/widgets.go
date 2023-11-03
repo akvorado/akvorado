@@ -213,6 +213,11 @@ LIMIT 5
 }
 
 func (c *Component) widgetGraphHandlerFunc(gc *gin.Context) {
+	// first step: define which filter to use
+	filter := c.config.HomepageGraphFilter
+	if filter != "" {
+		filter = fmt.Sprintf("AND %s", filter)
+	}
 	ctx := c.t.Context(gc.Request.Context())
 	now := c.d.Clock.Now()
 	query := c.finalizeQuery(fmt.Sprintf(`
@@ -222,7 +227,7 @@ SELECT
  SUM(Bytes*SamplingRate*8/{{ .Interval }})/1000/1000/1000 AS Gbps
 FROM {{ .Table }}
 WHERE {{ .Timefilter }}
-AND InIfBoundary = 'external'
+%s
 GROUP BY Time
 ORDER BY Time WITH FILL
  FROM {{ .TimefilterStart }}
@@ -234,7 +239,8 @@ ORDER BY Time WITH FILL
 			End:               now,
 			MainTableRequired: false,
 			Points:            200,
-		})))
+		}),
+		filter))
 	gc.Header("X-SQL-Query", query)
 
 	results := []struct {

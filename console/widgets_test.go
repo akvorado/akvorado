@@ -230,23 +230,13 @@ func TestWidgetTop(t *testing.T) {
 }
 
 func TestWidgetGraph(t *testing.T) {
-	_, h, mockConn, mockClock := NewMock(t, DefaultConfiguration())
-
-	base := time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
-	mockClock.Set(base.Add(24 * time.Hour))
-	expected := []struct {
-		Time time.Time `json:"t"`
-		Gbps float64   `json:"gbps"`
+	testcases := []struct {
+		config Configuration
+		query  string
 	}{
-		{base, 25.3},
-		{base.Add(time.Minute), 27.8},
-		{base.Add(2 * time.Minute), 26.4},
-		{base.Add(3 * time.Minute), 29.2},
-		{base.Add(4 * time.Minute), 0},
-		{base.Add(5 * time.Minute), 24.7},
-	}
-	mockConn.EXPECT().
-		Select(gomock.Any(), gomock.Any(), strings.TrimSpace(`
+		{
+			config: DefaultConfiguration(),
+			query: `
 SELECT
  toStartOfInterval(TimeReceived + INTERVAL 144 second, INTERVAL 432 second) - INTERVAL 144 second AS Time,
  SUM(Bytes*SamplingRate*8/432)/1000/1000/1000 AS Gbps
@@ -257,23 +247,82 @@ GROUP BY Time
 ORDER BY Time WITH FILL
  FROM toDateTime('2009-11-10 23:00:00', 'UTC')
  TO toDateTime('2009-11-11 23:00:00', 'UTC') + INTERVAL 1 second
- STEP 432`)).
-		SetArg(1, expected).
-		Return(nil)
-
-	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
+ STEP 432`,
+		},
 		{
-			URL: "/api/v0/console/widget/graph",
-			JSONOutput: gin.H{
-				"data": []gin.H{
-					{"t": "2009-11-10T23:00:00Z", "gbps": 25.3},
-					{"t": "2009-11-10T23:01:00Z", "gbps": 27.8},
-					{"t": "2009-11-10T23:02:00Z", "gbps": 26.4},
-					{"t": "2009-11-10T23:03:00Z", "gbps": 29.2},
-					{"t": "2009-11-10T23:04:00Z", "gbps": 0},
-					{"t": "2009-11-10T23:05:00Z", "gbps": 24.7},
+			config: func() Configuration {
+				c := DefaultConfiguration()
+				c.HomepageGraphFilter = ""
+				return c
+			}(),
+			query: `
+SELECT
+ toStartOfInterval(TimeReceived + INTERVAL 144 second, INTERVAL 432 second) - INTERVAL 144 second AS Time,
+ SUM(Bytes*SamplingRate*8/432)/1000/1000/1000 AS Gbps
+FROM flows
+WHERE TimeReceived BETWEEN toDateTime('2009-11-10 23:00:00', 'UTC') AND toDateTime('2009-11-11 23:00:00', 'UTC')
+
+GROUP BY Time
+ORDER BY Time WITH FILL
+ FROM toDateTime('2009-11-10 23:00:00', 'UTC')
+ TO toDateTime('2009-11-11 23:00:00', 'UTC') + INTERVAL 1 second
+ STEP 432`,
+		},
+		{
+			config: func() Configuration {
+				c := DefaultConfiguration()
+				c.HomepageGraphFilter = "OutIfBoundary = 'external'"
+				return c
+			}(),
+			query: `
+SELECT
+ toStartOfInterval(TimeReceived + INTERVAL 144 second, INTERVAL 432 second) - INTERVAL 144 second AS Time,
+ SUM(Bytes*SamplingRate*8/432)/1000/1000/1000 AS Gbps
+FROM flows
+WHERE TimeReceived BETWEEN toDateTime('2009-11-10 23:00:00', 'UTC') AND toDateTime('2009-11-11 23:00:00', 'UTC')
+AND OutIfBoundary = 'external'
+GROUP BY Time
+ORDER BY Time WITH FILL
+ FROM toDateTime('2009-11-10 23:00:00', 'UTC')
+ TO toDateTime('2009-11-11 23:00:00', 'UTC') + INTERVAL 1 second
+ STEP 432`,
+		},
+	}
+	for _, tcase := range testcases {
+		_, h, mockConn, mockClock := NewMock(t, tcase.config)
+
+		base := time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
+		mockClock.Set(base.Add(24 * time.Hour))
+		expected := []struct {
+			Time time.Time `json:"t"`
+			Gbps float64   `json:"gbps"`
+		}{
+			{base, 25.3},
+			{base.Add(time.Minute), 27.8},
+			{base.Add(2 * time.Minute), 26.4},
+			{base.Add(3 * time.Minute), 29.2},
+			{base.Add(4 * time.Minute), 0},
+			{base.Add(5 * time.Minute), 24.7},
+		}
+		mockConn.EXPECT().
+			Select(gomock.Any(), gomock.Any(), strings.TrimSpace(tcase.query)).
+			SetArg(1, expected).
+			Return(nil)
+
+		helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
+			{
+				URL: "/api/v0/console/widget/graph",
+				JSONOutput: gin.H{
+					"data": []gin.H{
+						{"t": "2009-11-10T23:00:00Z", "gbps": 25.3},
+						{"t": "2009-11-10T23:01:00Z", "gbps": 27.8},
+						{"t": "2009-11-10T23:02:00Z", "gbps": 26.4},
+						{"t": "2009-11-10T23:03:00Z", "gbps": 29.2},
+						{"t": "2009-11-10T23:04:00Z", "gbps": 0},
+						{"t": "2009-11-10T23:05:00Z", "gbps": 24.7},
+					},
 				},
 			},
-		},
-	})
+		})
+	}
 }
