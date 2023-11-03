@@ -20,6 +20,7 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
+	"akvorado/common/s3"
 	"akvorado/common/schema"
 	"akvorado/orchestrator/geoip"
 )
@@ -53,6 +54,7 @@ type Dependencies struct {
 	ClickHouse *clickhousedb.Component
 	Schema     *schema.Component
 	GeoIP      *geoip.Component
+	S3         *s3.Component
 }
 
 // New creates a new ClickHouse component.

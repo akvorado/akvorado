@@ -15,6 +15,8 @@ import (
 	"strconv"
 	"text/template"
 	"time"
+
+	"akvorado/common/schema"
 )
 
 var (
@@ -112,14 +114,42 @@ func (c *Component) registerHTTPHandlers() error {
 	// Add handler for custom dicts
 	for name, dict := range c.d.Schema.GetCustomDictConfig() {
 		c.d.HTTP.AddHandler(fmt.Sprintf("/api/v0/orchestrator/clickhouse/custom_dict_%s.csv", name), http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			file, err := os.ReadFile(dict.Source)
-			if err != nil {
-				c.r.Err(err).Msg("unable to deliver custom dict csv file")
-				http.Error(w, fmt.Sprintf("unable to deliver custom dict csv file %s", dict.Source), http.StatusNotFound)
+			switch dict.SourceType {
+			case schema.SourceFile:
+				// fetch dict.Source as local file
+				file, err := os.ReadFile(dict.Source)
+				if err != nil {
+					c.r.Err(err).Msg("unable to deliver custom dict csv file")
+					http.Error(w, fmt.Sprintf("unable to deliver custom dict csv file %s", dict.Source), http.StatusNotFound)
+				}
+				w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+				w.WriteHeader(http.StatusOK)
+				w.Write(file)
+			case schema.SourceHTTP:
+				// fetch dict.Source using an http client, and forward it to the http request
+				resp, err := http.Get(dict.Source)
+				if err != nil {
+					c.r.Err(err).Msg("unable to fetch custom dict csv file")
+
+					http.Error(w, fmt.Sprintf("unable to fetch custom dict csv file %s", dict.Source), http.StatusInternalServerError)
+					return
+				}
+				defer resp.Body.Close()
+				w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+				w.WriteHeader(http.StatusOK)
+				io.Copy(w, resp.Body)
+			case schema.SourceS3:
+				read, err := c.d.S3.GetObject(dict.S3Config, dict.Source)
+				if err != nil {
+					c.r.Err(err).Msgf("unable to fetch custom dict csv file '%s' from S3", dict.Source)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				defer read.Close()
+				w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+				w.WriteHeader(http.StatusOK)
+				io.Copy(w, read)
 			}
-			w.Header().Set("Content-Type", "text/csv; charset=utf-8")
-			w.WriteHeader(http.StatusOK)
-			w.Write(file)
 		}))
 	}
 
