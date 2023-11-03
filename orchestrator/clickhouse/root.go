@@ -18,6 +18,7 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
+	"akvorado/common/s3"
 	"akvorado/common/schema"
 )
 
@@ -42,6 +43,7 @@ type Dependencies struct {
 	HTTP       *httpserver.Component
 	ClickHouse *clickhousedb.Component
 	Schema     *schema.Component
+	S3         *s3.Component
 }
 
 // New creates a new ClickHouse component.

@@ -14,6 +14,8 @@ import (
 	"strconv"
 	"text/template"
 	"time"
+
+	"akvorado/common/schema"
 )
 
 var (
@@ -117,14 +119,42 @@ func (c *Component) registerHTTPHandlers() error {
 				w.WriteHeader(http.StatusServiceUnavailable)
 				return
 			}
-			file, err := os.ReadFile(v.Source)
-			if err != nil {
-				c.r.Err(err).Msg("unable to deliver custom dict csv file")
-				http.Error(w, fmt.Sprintf("unable to deliver custom dict csv file %s", v.Source), http.StatusNotFound)
+			switch v.SourceType {
+			case schema.SourceFile:
+				// fetch v.Source as local file
+				file, err := os.ReadFile(v.Source)
+				if err != nil {
+					c.r.Err(err).Msg("unable to deliver custom dict csv file")
+					http.Error(w, fmt.Sprintf("unable to deliver custom dict csv file %s", v.Source), http.StatusNotFound)
+				}
+				w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+				w.WriteHeader(http.StatusOK)
+				w.Write(file)
+			case schema.SourceHTTP:
+				// fetch v.Source using an http client, and forward it to the http request
+				resp, err := http.Get(v.Source)
+				if err != nil {
+					c.r.Err(err).Msg("unable to fetch custom dict csv file")
+
+					http.Error(w, fmt.Sprintf("unable to fetch custom dict csv file %s", v.Source), http.StatusInternalServerError)
+					return
+				}
+				defer resp.Body.Close()
+				w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+				w.WriteHeader(http.StatusOK)
+				io.Copy(w, resp.Body)
+			case schema.SourceS3:
+				read, err := c.d.S3.GetObject(v.S3Config, v.Source)
+				if err != nil {
+					c.r.Err(err).Msg("unable to fetch custom dict csv file from S3")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				defer read.Close()
+				w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+				w.WriteHeader(http.StatusOK)
+				io.Copy(w, read)
 			}
-			w.Header().Set("Content-Type", "text/csv; charset=utf-8")
-			w.WriteHeader(http.StatusOK)
-			w.Write(file)
 		}))
 	}
 
