@@ -26,6 +26,8 @@ type Configuration struct {
 	DimensionsLimit int `validate:"min=10"`
 	// CacheTTL tells how long to keep the most costly requests in cache.
 	CacheTTL time.Duration `validate:"min=5s"`
+	// HomepageGraphFilter defines the filtering string to use for the homepage graph
+	HomepageGraphFilter string
 }
 
 // VisualizeOptionsConfiguration defines options for the "visualize" tab.
@@ -55,9 +57,10 @@ func DefaultConfiguration() Configuration {
 			Dimensions: []query.Column{query.NewColumn("SrcAS")},
 			Limit:      10,
 		},
-		HomepageTopWidgets: []string{"src-as", "src-port", "protocol", "src-country", "etype"},
-		DimensionsLimit:    50,
-		CacheTTL:           30 * time.Minute,
+		HomepageTopWidgets:  []string{"src-as", "src-port", "protocol", "src-country", "etype"},
+		DimensionsLimit:     50,
+		CacheTTL:            30 * time.Minute,
+		HomepageGraphFilter: "InIfBoundary = 'external'",
 	}
 }
 
