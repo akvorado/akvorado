@@ -22,12 +22,12 @@ type Configuration struct {
 	DefaultVisualizeOptions VisualizeOptionsConfiguration
 	// HomepageTopWidgets defines the list of widgets to display on the home page.
 	HomepageTopWidgets []string `validate:"dive,oneof=src-as dst-as src-country dst-country exporter protocol etype src-port dst-port"`
+	// HomepageGraphFilter defines the filtering string to use for the homepage graph
+	HomepageGraphFilter string
 	// DimensionsLimit put an upper limit to the number of dimensions to return.
 	DimensionsLimit int `validate:"min=10"`
 	// CacheTTL tells how long to keep the most costly requests in cache.
 	CacheTTL time.Duration `validate:"min=5s"`
-	// HomepageGraphFilter defines the filtering string to use for the homepage graph
-	HomepageGraphFilter string
 }
 
 // VisualizeOptionsConfiguration defines options for the "visualize" tab.
