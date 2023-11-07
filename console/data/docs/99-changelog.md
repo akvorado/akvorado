@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🌱 *docker*: update ClickHouse to 23.8 (this is not mandatory)
+
 ## 1.9.1 - 2023-10-06
 
 - 🌱 *console*: add filtering support for custom columns

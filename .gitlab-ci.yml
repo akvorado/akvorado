@@ -41,7 +41,7 @@ run tests:
       alias: kafka
     - name: bitnami/redis:7.0
       alias: redis
-    - name: clickhouse/clickhouse-server:23.3
+    - name: clickhouse/clickhouse-server:23.8
       alias: clickhouse
   script:
     - time apk add --no-cache git make gcc musl-dev shared-mime-info npm curl
