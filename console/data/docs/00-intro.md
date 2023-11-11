@@ -27,7 +27,7 @@ compose`.
 Once running, *Akvorado* web interface should be running on port 8081. A few
 synthetic flows are generated in the background. To disable them:
 
-1. Remove `:docker-compose-demo.yml` from `.env`,
+1. Remove the reference for `docker-compose-demo.yml` from `.env`,
 2. Comment the last line of `akvorado.yaml`, and
 3. Run `docker compose up -d --remove-orphans`.
 
