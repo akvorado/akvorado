@@ -14,6 +14,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 💥 *inlet*: many metrics renamed to match [Prometheus best practices](https://prometheus.io/docs/practices/naming/)
+- 🩹 *docker*: ensure ClickHouse init script is executed even when database already exists
 - 🌱 *docker*: update ClickHouse to 23.8 (this is not mandatory)
 - 🌱 *orchestrator*: add `orchestrator`→`clickhouse`→`prometheus-endpoint` to configure an endpoint to expose metrics to Prometheus
 
