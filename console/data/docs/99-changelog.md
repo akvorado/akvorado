@@ -13,6 +13,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 💥 *inlet*: many metrics renamed to match [Prometheus best practices](https://prometheus.io/docs/practices/naming/)
 - 🌱 *docker*: update ClickHouse to 23.8 (this is not mandatory)
 
 ## 1.9.1 - 2023-10-06

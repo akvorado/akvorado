@@ -49,14 +49,14 @@ func New(r *reporter.Reporter, dependencies decoder.Dependencies) decoder.Decode
 
 	nd.metrics.errors = nd.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "errors_count",
+			Name: "errors_total",
 			Help: "sFlows processed errors.",
 		},
 		[]string{"exporter", "error"},
 	)
 	nd.metrics.stats = nd.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "count",
+			Name: "flows_total",
 			Help: "sFlows processed.",
 		},
 		[]string{"exporter", "agent", "version"},

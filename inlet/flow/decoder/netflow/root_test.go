@@ -32,10 +32,10 @@ func TestDecode(t *testing.T) {
 	// Check metrics
 	gotMetrics := r.GetMetrics("akvorado_inlet_flow_decoder_netflow_")
 	expectedMetrics := map[string]string{
-		`count{exporter="127.0.0.1",version="9"}`:                                                                       "1",
+		`flows_total{exporter="127.0.0.1",version="9"}`:                                                                 "1",
 		`flowset_records_sum{exporter="127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                           "1",
 		`flowset_sum{exporter="127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                   "1",
-		`templates_count{exporter="127.0.0.1",obs_domain_id="0",template_id="257",type="options_template",version="9"}`: "1",
+		`templates_total{exporter="127.0.0.1",obs_domain_id="0",template_id="257",type="options_template",version="9"}`: "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics after template (-got, +want):\n%s", diff)
@@ -54,12 +54,12 @@ func TestDecode(t *testing.T) {
 	// Check metrics
 	gotMetrics = r.GetMetrics("akvorado_inlet_flow_decoder_netflow_")
 	expectedMetrics = map[string]string{
-		`count{exporter="127.0.0.1",version="9"}`:                                                                       "2",
+		`flows_total{exporter="127.0.0.1",version="9"}`:                                                                 "2",
 		`flowset_records_sum{exporter="127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                           "1",
 		`flowset_records_sum{exporter="127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                               "4",
 		`flowset_sum{exporter="127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                   "1",
 		`flowset_sum{exporter="127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                                       "1",
-		`templates_count{exporter="127.0.0.1",obs_domain_id="0",template_id="257",type="options_template",version="9"}`: "1",
+		`templates_total{exporter="127.0.0.1",obs_domain_id="0",template_id="257",type="options_template",version="9"}`: "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics after template (-got, +want):\n%s", diff)
@@ -78,15 +78,15 @@ func TestDecode(t *testing.T) {
 	// Check metrics
 	gotMetrics = r.GetMetrics("akvorado_inlet_flow_decoder_netflow_")
 	expectedMetrics = map[string]string{
-		`count{exporter="127.0.0.1",version="9"}`:                                                                       "3",
+		`flows_total{exporter="127.0.0.1",version="9"}`:                                                                 "3",
 		`flowset_records_sum{exporter="127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                           "1",
 		`flowset_records_sum{exporter="127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                               "4",
 		`flowset_records_sum{exporter="127.0.0.1",type="TemplateFlowSet",version="9"}`:                                  "1",
 		`flowset_sum{exporter="127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                   "1",
 		`flowset_sum{exporter="127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                                       "1",
 		`flowset_sum{exporter="127.0.0.1",type="TemplateFlowSet",version="9"}`:                                          "1",
-		`templates_count{exporter="127.0.0.1",obs_domain_id="0",template_id="257",type="options_template",version="9"}`: "1",
-		`templates_count{exporter="127.0.0.1",obs_domain_id="0",template_id="260",type="template",version="9"}`:         "1",
+		`templates_total{exporter="127.0.0.1",obs_domain_id="0",template_id="257",type="options_template",version="9"}`: "1",
+		`templates_total{exporter="127.0.0.1",obs_domain_id="0",template_id="260",type="template",version="9"}`:         "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics after template (-got, +want):\n%s", diff)
@@ -190,12 +190,12 @@ func TestDecode(t *testing.T) {
 	}
 	gotMetrics = r.GetMetrics(
 		"akvorado_inlet_flow_decoder_netflow_",
-		"count",
+		"flows_total",
 		"flowset_",
 		"templates_",
 	)
 	expectedMetrics = map[string]string{
-		`count{exporter="127.0.0.1",version="9"}`:                                                                       "4",
+		`flows_total{exporter="127.0.0.1",version="9"}`:                                                                 "4",
 		`flowset_records_sum{exporter="127.0.0.1",type="DataFlowSet",version="9"}`:                                      "4",
 		`flowset_records_sum{exporter="127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                               "4",
 		`flowset_records_sum{exporter="127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                           "1",
@@ -204,8 +204,8 @@ func TestDecode(t *testing.T) {
 		`flowset_sum{exporter="127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                                       "1",
 		`flowset_sum{exporter="127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                   "1",
 		`flowset_sum{exporter="127.0.0.1",type="TemplateFlowSet",version="9"}`:                                          "1",
-		`templates_count{exporter="127.0.0.1",obs_domain_id="0",template_id="257",type="options_template",version="9"}`: "1",
-		`templates_count{exporter="127.0.0.1",obs_domain_id="0",template_id="260",type="template",version="9"}`:         "1",
+		`templates_total{exporter="127.0.0.1",obs_domain_id="0",template_id="257",type="options_template",version="9"}`: "1",
+		`templates_total{exporter="127.0.0.1",obs_domain_id="0",template_id="260",type="template",version="9"}`:         "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics after data (-got, +want):\n%s", diff)
@@ -227,8 +227,8 @@ func TestTemplatesMixedWithData(t *testing.T) {
 		"templates_",
 	)
 	expectedMetrics := map[string]string{
-		`templates_count{exporter="127.0.0.1",obs_domain_id="17170432",template_id="256",type="options_template",version="9"}`: "1",
-		`templates_count{exporter="127.0.0.1",obs_domain_id="17170432",template_id="257",type="template",version="9"}`:         "1",
+		`templates_total{exporter="127.0.0.1",obs_domain_id="17170432",template_id="256",type="options_template",version="9"}`: "1",
+		`templates_total{exporter="127.0.0.1",obs_domain_id="17170432",template_id="257",type="template",version="9"}`:         "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics after data (-got, +want):\n%s", diff)

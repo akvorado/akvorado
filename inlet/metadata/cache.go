@@ -35,22 +35,22 @@ func newMetadataCache(r *reporter.Reporter) *metadataCache {
 	}
 	sc.metrics.cacheHit = r.Counter(
 		reporter.CounterOpts{
-			Name: "cache_hit",
+			Name: "cache_hits_total",
 			Help: "Number of lookups retrieved from cache.",
 		})
 	sc.metrics.cacheMiss = r.Counter(
 		reporter.CounterOpts{
-			Name: "cache_miss",
+			Name: "cache_misses_total",
 			Help: "Number of lookup miss.",
 		})
 	sc.metrics.cacheExpired = r.Counter(
 		reporter.CounterOpts{
-			Name: "cache_expired",
+			Name: "cache_expired_entries_total",
 			Help: "Number of cache entries expired.",
 		})
 	sc.metrics.cacheSize = r.GaugeFunc(
 		reporter.GaugeOpts{
-			Name: "cache_size",
+			Name: "cache_size_entries",
 			Help: "Number of entries in cache.",
 		}, func() float64 {
 			return float64(sc.cache.Size())

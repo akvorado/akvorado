@@ -52,10 +52,10 @@ func TestGetEmpty(t *testing.T) {
 
 	gotMetrics := r.GetMetrics("akvorado_inlet_metadata_cache_")
 	expectedMetrics := map[string]string{
-		`expired`: "0",
-		`hit`:     "0",
-		`miss`:    "1",
-		`size`:    "0",
+		`expired_entries_total`: "0",
+		`hits_total`:            "0",
+		`misses_total`:          "1",
+		`size_entries`:          "0",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -82,10 +82,10 @@ func TestSimpleLookup(t *testing.T) {
 
 	gotMetrics := r.GetMetrics("akvorado_inlet_metadata_cache_")
 	expectedMetrics := map[string]string{
-		`expired`: "0",
-		`hit`:     "1",
-		`miss`:    "2",
-		`size`:    "1",
+		`expired_entries_total`: "0",
+		`hits_total`:            "1",
+		`misses_total`:          "2",
+		`size_entries`:          "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -177,10 +177,10 @@ func TestExpire(t *testing.T) {
 
 	gotMetrics := r.GetMetrics("akvorado_inlet_metadata_cache_")
 	expectedMetrics := map[string]string{
-		`expired`: "3",
-		`hit`:     "7",
-		`miss`:    "6",
-		`size`:    "1",
+		`expired_entries_total`: "3",
+		`hits_total`:            "7",
+		`misses_total`:          "6",
+		`size_entries`:          "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -467,8 +467,8 @@ func TestConcurrentOperations(t *testing.T) {
 	wg.Wait()
 
 	gotMetrics := r.GetMetrics("akvorado_inlet_metadata_cache_")
-	hits, _ := strconv.Atoi(gotMetrics["hit"])
-	misses, _ := strconv.Atoi(gotMetrics["miss"])
+	hits, _ := strconv.Atoi(gotMetrics["hits_total"])
+	misses, _ := strconv.Atoi(gotMetrics["misses_total"])
 	if int64(hits+misses) != atomic.LoadInt64(&lookups) {
 		t.Errorf("hit + miss = %d, expected %d", hits+misses, atomic.LoadInt64(&lookups))
 	}

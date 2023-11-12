@@ -49,14 +49,14 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 
 	c.metrics.sent = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "sent",
+			Name: "sent_packets_total",
 			Help: "Number of packets sent.",
 		},
 		[]string{"type"},
 	)
 	c.metrics.errors = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "errors",
+			Name: "errors_total",
 			Help: "Number of transmission errors.",
 		},
 		[]string{"error"},

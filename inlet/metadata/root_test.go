@@ -103,12 +103,12 @@ func TestAutoRefresh(t *testing.T) {
 	gotMetrics := r.GetMetrics("akvorado_inlet_metadata_cache_")
 	for _, runs := range []string{"29", "30", "31"} { // 63/2
 		expectedMetrics := map[string]string{
-			`expired`:      "0",
-			`hit`:          "4",
-			`miss`:         "1",
-			`size`:         "1",
-			`refresh_runs`: runs,
-			`refresh`:      "1",
+			`expired_entries_total`: "0",
+			`hits_total`:            "4",
+			`misses_total`:          "1",
+			`size_entries`:          "1",
+			`refresh_runs_total`:    runs,
+			`refreshs`:              "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" && runs == "31" {
 			t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -196,9 +196,9 @@ func TestProviderBreaker(t *testing.T) {
 			}
 			time.Sleep(50 * time.Millisecond)
 
-			gotMetrics := r.GetMetrics("akvorado_inlet_metadata_provider_", "breaker_open_count")
+			gotMetrics := r.GetMetrics("akvorado_inlet_metadata_provider_", "breaker_opens_total")
 			expectedMetrics := map[string]string{
-				`breaker_open_count{exporter="127.0.0.1"}`: tc.ExpectedCount,
+				`breaker_opens_total{exporter="127.0.0.1"}`: tc.ExpectedCount,
 			}
 			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 				t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -252,9 +252,9 @@ func TestBatching(t *testing.T) {
 		c.Lookup(c.d.Clock.Now(), netip.MustParseAddr("::ffff:127.0.0.1"), 769)
 	})
 
-	gotMetrics := r.GetMetrics("akvorado_inlet_metadata_provider_", "batched_count")
+	gotMetrics := r.GetMetrics("akvorado_inlet_metadata_provider_", "batched_requests_total")
 	expectedMetrics := map[string]string{
-		`batched_count`: "4",
+		`batched_requests_total`: "4",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Errorf("Metrics (-got, +want):\n%s", diff)

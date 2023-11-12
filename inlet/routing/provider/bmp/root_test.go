@@ -87,7 +87,7 @@ func TestBMP(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bmp_")
 		expectedMetrics := map[string]string{
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`: "1",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`: "1",
 			`opened_connections_total{exporter="127.0.0.1"}`:                  "1",
 			`peers_total{exporter="127.0.0.1"}`:                               "0",
 			`routes_total{exporter="127.0.0.1"}`:                              "0",
@@ -101,8 +101,8 @@ func TestBMP(t *testing.T) {
 		gotMetrics = r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
 		expectedMetrics = map[string]string{
 			`closed_connections_total{exporter="127.0.0.1"}`:                   "1",
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:  "1",
-			`messages_received_total{exporter="127.0.0.1",type="termination"}`: "1",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:  "1",
+			`received_messages_total{exporter="127.0.0.1",type="termination"}`: "1",
 			`opened_connections_total{exporter="127.0.0.1"}`:                   "1",
 			`peers_total{exporter="127.0.0.1"}`:                                "0",
 			`routes_total{exporter="127.0.0.1"}`:                               "0",
@@ -126,8 +126,8 @@ func TestBMP(t *testing.T) {
 			gotMetrics = r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
 			expectedMetrics = map[string]string{
 				`closed_connections_total{exporter="127.0.0.1"}`:                   "1",
-				`messages_received_total{exporter="127.0.0.1",type="initiation"}`:  "1",
-				`messages_received_total{exporter="127.0.0.1",type="termination"}`: "1",
+				`received_messages_total{exporter="127.0.0.1",type="initiation"}`:  "1",
+				`received_messages_total{exporter="127.0.0.1",type="termination"}`: "1",
 				`opened_connections_total{exporter="127.0.0.1"}`:                   "1",
 				`peers_total{exporter="127.0.0.1"}`:                                "0",
 				`routes_total{exporter="127.0.0.1"}`:                               "0",
@@ -154,10 +154,10 @@ func TestBMP(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
 		expectedMetrics := map[string]string{
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
-			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
-			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "8",
-			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
+			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:     "8",
+			`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "4",
 			`routes_total{exporter="127.0.0.1"}`:                                        "0",
@@ -182,10 +182,10 @@ func TestBMP(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
 		expectedMetrics := map[string]string{
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
-			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
-			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "26",
-			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
+			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:     "26",
+			`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "4",
 			`routes_total{exporter="127.0.0.1"}`:                                        "18",
@@ -241,8 +241,8 @@ func TestBMP(t *testing.T) {
 		gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
 		expectedMetrics := map[string]string{
 			// Same metrics as previously, except the AddPath peer.
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:       "1",
-			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`: "17",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:       "1",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`: "17",
 			`opened_connections_total{exporter="127.0.0.1"}`:                        "1",
 			`peers_total{exporter="127.0.0.1"}`:                                     "3",
 			`routes_total{exporter="127.0.0.1"}`:                                    "17",
@@ -266,10 +266,10 @@ func TestBMP(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
 		expectedMetrics := map[string]string{
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
-			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
-			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "25",
-			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
+			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:     "25",
+			`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "4",
 			`routes_total{exporter="127.0.0.1"}`:                                        "17",
@@ -294,15 +294,15 @@ func TestBMP(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
 		expectedMetrics := map[string]string{
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:             "1",
-			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`:   "4",
-			`messages_received_total{exporter="127.0.0.1",type="peer-down-notification"}`: "1",
-			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:       "25",
-			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:      "5",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:             "1",
+			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`:   "4",
+			`received_messages_total{exporter="127.0.0.1",type="peer-down-notification"}`: "1",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:       "25",
+			`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:      "5",
 			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers_total{exporter="127.0.0.1"}`:                                           "3",
 			`routes_total{exporter="127.0.0.1"}`:                                          "14",
-			`peer_removal_done_total{exporter="127.0.0.1"}`:                               "1",
+			`removed_peers_total{exporter="127.0.0.1"}`:                                   "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -350,10 +350,10 @@ func TestBMP(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
 		expectedMetrics := map[string]string{
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
-			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
-			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "25",
-			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
+			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:     "25",
+			`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "4",
 			`routes_total{exporter="127.0.0.1"}`:                                        "1",
@@ -389,10 +389,10 @@ func TestBMP(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
 		expectedMetrics := map[string]string{
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
-			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
-			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "25",
-			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
+			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:     "25",
+			`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "4",
 			`routes_total{exporter="127.0.0.1"}`:                                        "10",
@@ -442,10 +442,10 @@ func TestBMP(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
 		expectedMetrics := map[string]string{
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
-			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
-			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "33",
-			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
+			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:     "33",
+			`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "4",
 			`routes_total{exporter="127.0.0.1"}`:                                        "0",
@@ -473,10 +473,10 @@ func TestBMP(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
 		expectedMetrics := map[string]string{
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
-			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "1",
-			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "3",
-			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "1",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
+			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "1",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:     "3",
+			`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:    "1",
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "1",
 			`routes_total{exporter="127.0.0.1"}`:                                        "2",
@@ -619,10 +619,10 @@ func TestBMP(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
 		expectedMetrics := map[string]string{
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
-			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
-			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "16",
-			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
+			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:     "16",
+			`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "4",
 			`routes_total{exporter="127.0.0.1"}`:                                        "0",
@@ -652,10 +652,10 @@ func TestBMP(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
 		expectedMetrics := map[string]string{
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
-			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
-			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "41",
-			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
+			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:     "41",
+			`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "4",
 			`routes_total{exporter="127.0.0.1"}`:                                        "1",
@@ -692,10 +692,10 @@ func TestBMP(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
 		expectedMetrics := map[string]string{
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
-			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
-			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "41",
-			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
+			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:     "41",
+			`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "4",
 			`routes_total{exporter="127.0.0.1"}`:                                        "1",
@@ -722,10 +722,10 @@ func TestBMP(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
 		expectedMetrics := map[string]string{
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
-			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
-			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "25",
-			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
+			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:     "25",
+			`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "4",
 			`routes_total{exporter="127.0.0.1"}`:                                        "17",
@@ -781,10 +781,10 @@ func TestBMP(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
 		expectedMetrics := map[string]string{
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
-			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "1",
-			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "3",
-			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "1",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
+			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "1",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:     "3",
+			`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:    "1",
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`closed_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "1",
@@ -809,15 +809,15 @@ func TestBMP(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics = r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
 		expectedMetrics = map[string]string{
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
-			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "1",
-			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "3",
-			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "1",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
+			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "1",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:     "3",
+			`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:    "1",
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`closed_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "0",
 			`routes_total{exporter="127.0.0.1"}`:                                        "0",
-			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "1",
+			`removed_peers_total{exporter="127.0.0.1"}`:                                 "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -842,12 +842,12 @@ func TestBMP(t *testing.T) {
 		send(t, conn, "bmp-reach-unknown-family.pcap")
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
-		ignoredMetric := `ignored_total{error="unknown route family. AFI: 57, SAFI: 65",exporter="127.0.0.1",reason="afi-safi"}`
+		ignoredMetric := `ignored_updates_total{error="unknown route family. AFI: 57, SAFI: 65",exporter="127.0.0.1",reason="afi-safi"}`
 		expectedMetrics := map[string]string{
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
-			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "1",
-			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "4",
-			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "1",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
+			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "1",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:     "4",
+			`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:    "1",
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "1",
 			`routes_total{exporter="127.0.0.1"}`:                                        "2",
@@ -882,10 +882,10 @@ func TestBMP(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
 		expectedMetrics := map[string]string{
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
-			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "1",
-			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "4",
-			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "1",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
+			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "1",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:     "4",
+			`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:    "1",
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "2",
 			`routes_total{exporter="127.0.0.1"}`:                                        "2",
@@ -915,10 +915,10 @@ func TestBMP(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
 		expectedMetrics := map[string]string{
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "2",
-			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "2",
-			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "6",
-			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "2",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "2",
+			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "2",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:     "6",
+			`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:    "2",
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "2",
 			`closed_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "2",
@@ -945,15 +945,15 @@ func TestBMP(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics = r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
 		expectedMetrics = map[string]string{
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "2",
-			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "2",
-			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "6",
-			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "2",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "2",
+			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "2",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:     "6",
+			`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:    "2",
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "2",
 			`closed_connections_total{exporter="127.0.0.1"}`:                            "1",
 			`peers_total{exporter="127.0.0.1"}`:                                         "1",
 			`routes_total{exporter="127.0.0.1"}`:                                        "2",
-			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "1",
+			`removed_peers_total{exporter="127.0.0.1"}`:                                 "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -974,16 +974,16 @@ func TestBMP(t *testing.T) {
 		time.Sleep(30 * time.Millisecond)
 		gotMetrics = r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
 		expectedMetrics = map[string]string{
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "2",
-			`messages_received_total{exporter="127.0.0.1",type="termination"}`:          "1",
-			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "2",
-			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "6",
-			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "2",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "2",
+			`received_messages_total{exporter="127.0.0.1",type="termination"}`:          "1",
+			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "2",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:     "6",
+			`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:    "2",
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "2",
 			`closed_connections_total{exporter="127.0.0.1"}`:                            "2",
 			`peers_total{exporter="127.0.0.1"}`:                                         "1",
 			`routes_total{exporter="127.0.0.1"}`:                                        "2",
-			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "1",
+			`removed_peers_total{exporter="127.0.0.1"}`:                                 "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -997,16 +997,16 @@ func TestBMP(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics = r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
 		expectedMetrics = map[string]string{
-			`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "2",
-			`messages_received_total{exporter="127.0.0.1",type="termination"}`:          "1",
-			`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "2",
-			`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "6",
-			`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "2",
+			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "2",
+			`received_messages_total{exporter="127.0.0.1",type="termination"}`:          "1",
+			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "2",
+			`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:     "6",
+			`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:    "2",
 			`opened_connections_total{exporter="127.0.0.1"}`:                            "2",
 			`closed_connections_total{exporter="127.0.0.1"}`:                            "2",
 			`peers_total{exporter="127.0.0.1"}`:                                         "0",
 			`routes_total{exporter="127.0.0.1"}`:                                        "0",
-			`peer_removal_done_total{exporter="127.0.0.1"}`:                             "2",
+			`removed_peers_total{exporter="127.0.0.1"}`:                                 "2",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -1039,33 +1039,33 @@ func TestBMP(t *testing.T) {
 		for tries := 20; tries >= 0; tries-- {
 			time.Sleep(5 * time.Millisecond)
 			gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bmp_", "-locked_duration")
-			// For peer_removal_partial_total, we have 18 routes, but only 14 routes
+			// For removed_partial_peers_total, we have 18 routes, but only 14 routes
 			// can be removed while keeping 1 route on each peer. 14 is the max, but
 			// we rely on good-willing from the scheduler to get this number.
-			peerRemovalPartial, _ := strconv.Atoi(gotMetrics[`peer_removal_partial_total{exporter="127.0.0.1"}`])
+			peerRemovalPartial, _ := strconv.Atoi(gotMetrics[`removed_partial_peers_total{exporter="127.0.0.1"}`])
 			if peerRemovalPartial > 14 {
 				if tries > 0 {
 					continue
 				}
-				t.Errorf("Metrics: peer_removal_partial_total %d > 14", peerRemovalPartial)
+				t.Errorf("Metrics: removed_partial_peers_total %d > 14", peerRemovalPartial)
 			}
 			if peerRemovalPartial < 5 {
 				if tries > 0 {
 					continue
 				}
-				t.Errorf("Metrics: peer_removal_partial_total %d < 5", peerRemovalPartial)
+				t.Errorf("Metrics: removed_partial_peers_total %d < 5", peerRemovalPartial)
 			}
 			expectedMetrics := map[string]string{
-				`messages_received_total{exporter="127.0.0.1",type="initiation"}`:           "1",
-				`messages_received_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
-				`messages_received_total{exporter="127.0.0.1",type="route-monitoring"}`:     "25",
-				`messages_received_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
+				`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
+				`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
+				`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:     "25",
+				`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
 				`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
 				`closed_connections_total{exporter="127.0.0.1"}`:                            "1",
 				`peers_total{exporter="127.0.0.1"}`:                                         "0",
 				`routes_total{exporter="127.0.0.1"}`:                                        "0",
-				`peer_removal_done_total{exporter="127.0.0.1"}`:                             "4",
-				`peer_removal_partial_total{exporter="127.0.0.1"}`:                          fmt.Sprintf("%d", peerRemovalPartial),
+				`removed_peers_total{exporter="127.0.0.1"}`:                                 "4",
+				`removed_partial_peers_total{exporter="127.0.0.1"}`:                         fmt.Sprintf("%d", peerRemovalPartial),
 			}
 			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 				if tries > 0 {

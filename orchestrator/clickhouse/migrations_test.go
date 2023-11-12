@@ -268,9 +268,9 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 					t.Fatalf("Final state is different (-last, +current):\n%s", diff)
 				}
 			}
-			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps")
+			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
 			lastRun = currentRun
-			lastSteps, _ = strconv.Atoi(gotMetrics["applied_steps"])
+			lastSteps, _ = strconv.Atoi(gotMetrics["applied_steps_total"])
 			t.Logf("%d steps applied for this migration", lastSteps)
 		})
 		if t.Failed() {
@@ -312,8 +312,8 @@ LIMIT 1`)
 			waitMigrations(t, ch)
 
 			// No migration should have been applied the last time
-			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps")
-			expectedMetrics := map[string]string{`applied_steps`: "0"}
+			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
+			expectedMetrics := map[string]string{`applied_steps_total`: "0"}
 			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 				t.Fatalf("Metrics (-got, +want):\n%s", diff)
 			}
@@ -348,8 +348,8 @@ LIMIT 1`)
 			waitMigrations(t, ch)
 
 			// We need to have at least one migration
-			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps")
-			if gotMetrics["applied_steps"] == "0" {
+			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
+			if gotMetrics["applied_steps_total"] == "0" {
 				t.Fatal("No migration applied when enabling all columns")
 			}
 		})
@@ -389,8 +389,8 @@ LIMIT 1`)
 			waitMigrations(t, ch)
 
 			// We need to have at least one migration
-			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps")
-			if gotMetrics["applied_steps"] == "0" {
+			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
+			if gotMetrics["applied_steps_total"] == "0" {
 				t.Fatal("No migration applied when disabling some columns")
 			}
 		})
@@ -424,8 +424,8 @@ LIMIT 1`)
 			waitMigrations(t, ch)
 
 			// We need to have at least one migration
-			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps")
-			if gotMetrics["applied_steps"] == "0" {
+			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
+			if gotMetrics["applied_steps_total"] == "0" {
 				t.Fatal("No migration applied when disabling some columns")
 			}
 
@@ -478,8 +478,8 @@ func TestCustomDictMigration(t *testing.T) {
 		waitMigrations(t, ch)
 
 		// We need to have at least one migration
-		gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps")
-		if gotMetrics["applied_steps"] == "0" {
+		gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
+		if gotMetrics["applied_steps_total"] == "0" {
 			t.Fatal("No migration applied when applying a fresh default schema")
 		}
 	})
@@ -522,8 +522,8 @@ func TestCustomDictMigration(t *testing.T) {
 			waitMigrations(t, ch)
 
 			// We need to have at least one migration
-			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps")
-			if gotMetrics["applied_steps"] == "0" {
+			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
+			if gotMetrics["applied_steps_total"] == "0" {
 				t.Fatal("No migration applied when enabling a custom dictionary")
 			}
 
@@ -601,8 +601,8 @@ func TestCustomDictMigration(t *testing.T) {
 			waitMigrations(t, ch)
 
 			// We need to have at least one migration
-			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps")
-			if gotMetrics["applied_steps"] == "0" {
+			gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
+			if gotMetrics["applied_steps_total"] == "0" {
 				t.Fatal("No migration applied when disabling the custom dict")
 			}
 

@@ -235,11 +235,11 @@ func TestPoller(t *testing.T) {
 
 			gotMetrics := r.GetMetrics("akvorado_inlet_metadata_provider_snmp_poller_", "error_", "pending_", "success_")
 			expectedMetrics := map[string]string{
-				fmt.Sprintf(`error_requests{error="ifalias missing",exporter="%s"}`, exporterStr): "2", // 643+644
-				fmt.Sprintf(`error_requests{error="ifdescr missing",exporter="%s"}`, exporterStr): "1", // 644
-				fmt.Sprintf(`error_requests{error="ifspeed missing",exporter="%s"}`, exporterStr): "1", // 644
+				fmt.Sprintf(`error_requests_total{error="ifalias missing",exporter="%s"}`, exporterStr): "2", // 643+644
+				fmt.Sprintf(`error_requests_total{error="ifdescr missing",exporter="%s"}`, exporterStr): "1", // 644
+				fmt.Sprintf(`error_requests_total{error="ifspeed missing",exporter="%s"}`, exporterStr): "1", // 644
 				`pending_requests`: "0",
-				fmt.Sprintf(`success_requests{exporter="%s"}`, exporterStr): "3", // 641+642+0
+				fmt.Sprintf(`success_requests_total{exporter="%s"}`, exporterStr): "3", // 641+642+0
 			}
 			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 				t.Fatalf("Metrics (-got, +want):\n%s", diff)

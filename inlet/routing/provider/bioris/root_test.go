@@ -462,14 +462,14 @@ func TestBioRIS(t *testing.T) {
 		gotMetrics := r.GetMetrics("akvorado_inlet_routing_provider_bioris_")
 		expectedMetrics := map[string]string{
 			// connection_up may take a bit of time
-			fmt.Sprintf(`connection_up{ris="%s"}`, addr):                              "1",
-			fmt.Sprintf(`known_routers_total{ris="%s"}`, addr):                        "1",
-			fmt.Sprintf(`lpm_request_errors{ris="%s",router="127.0.0.1"}`, addr):      "0",
-			fmt.Sprintf(`lpm_request_success{ris="%s",router="127.0.0.1"}`, addr):     "1",
-			fmt.Sprintf(`lpm_request_timeouts{ris="%s",router="127.0.0.1"}`, addr):    "0",
-			fmt.Sprintf(`lpm_requests_total{ris="%s",router="127.0.0.1"}`, addr):      "1",
-			fmt.Sprintf(`router_request_agentid{ris="%s",router="127.0.0.1"}`, addr):  "0",
-			fmt.Sprintf(`router_request_fallback{ris="%s",router="127.0.0.1"}`, addr): "1",
+			fmt.Sprintf(`connection_up{ris="%s"}`, addr):                                     "1",
+			fmt.Sprintf(`known_routers_total{ris="%s"}`, addr):                               "1",
+			fmt.Sprintf(`lpm_request_errors_total{ris="%s",router="127.0.0.1"}`, addr):       "0",
+			fmt.Sprintf(`lpm_success_requests_total{ris="%s",router="127.0.0.1"}`, addr):     "1",
+			fmt.Sprintf(`lpm_request_timeouts_total{ris="%s",router="127.0.0.1"}`, addr):     "0",
+			fmt.Sprintf(`lpm_requests_total{ris="%s",router="127.0.0.1"}`, addr):             "1",
+			fmt.Sprintf(`router_agentid_requests_total{ris="%s",router="127.0.0.1"}`, addr):  "0",
+			fmt.Sprintf(`router_fallback_requests_total{ris="%s",router="127.0.0.1"}`, addr): "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			if try == 0 {

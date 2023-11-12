@@ -78,9 +78,9 @@ func TestUDPInput(t *testing.T) {
 	// Check metrics
 	gotMetrics := r.GetMetrics("akvorado_inlet_flow_input_udp_")
 	expectedMetrics := map[string]string{
-		`bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                              "12",
-		`packets{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                            "1",
-		`in_drops{listener="127.0.0.1:0",worker="0"}`:                                                "0",
+		`bytes_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                        "12",
+		`packets_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                      "1",
+		`in_dropped_packets_total{listener="127.0.0.1:0",worker="0"}`:                                "0",
 		`summary_size_bytes_count{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:           "1",
 		`summary_size_bytes_sum{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:             "12",
 		`summary_size_bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0",quantile="0.5"}`:  "12",
@@ -130,10 +130,10 @@ func TestOverflow(t *testing.T) {
 	// Check metrics
 	gotMetrics := r.GetMetrics("akvorado_inlet_flow_input_udp_")
 	expectedMetrics := map[string]string{
-		`bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                              "120",
-		`in_drops{listener="127.0.0.1:0",worker="0"}`:                                                "0",
-		`out_drops{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                          "9",
-		`packets{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                            "10",
+		`bytes_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                        "120",
+		`in_dropped_packets_total{listener="127.0.0.1:0",worker="0"}`:                                "0",
+		`out_dropped_packets_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:          "9",
+		`packets_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                      "10",
 		`summary_size_bytes_count{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:           "10",
 		`summary_size_bytes_sum{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:             "120",
 		`summary_size_bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0",quantile="0.5"}`:  "12",

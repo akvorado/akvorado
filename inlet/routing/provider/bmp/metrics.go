@@ -60,7 +60,7 @@ func (p *Provider) initMetrics() {
 	)
 	p.metrics.messages = p.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "messages_received_total",
+			Name: "received_messages_total",
 			Help: "Number of BMP messages received.",
 		},
 		[]string{"exporter", "type"},
@@ -74,7 +74,7 @@ func (p *Provider) initMetrics() {
 	)
 	p.metrics.ignored = p.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "ignored_total",
+			Name: "ignored_updates_total",
 			Help: "Number of ignored BGP updates.",
 		},
 		[]string{"exporter", "reason", "error"},
@@ -96,21 +96,21 @@ func (p *Provider) initMetrics() {
 	)
 	p.metrics.peerRemovalDone = p.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "peer_removal_done_total",
+			Name: "removed_peers_total",
 			Help: "Number of peers removed from the RIB.",
 		},
 		[]string{"exporter"},
 	)
 	p.metrics.peerRemovalPartial = p.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "peer_removal_partial_total",
+			Name: "removed_partial_peers_total",
 			Help: "Number of peers partially removed from the RIB.",
 		},
 		[]string{"exporter"},
 	)
 	p.metrics.peerRemovalQueueFull = p.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "peer_removal_queue_full_total",
+			Name: "removal_queue_full_total",
 			Help: "Number of time the removal queue was full.",
 		},
 		[]string{"exporter"},

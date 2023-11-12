@@ -39,7 +39,7 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 
 	c.metrics.requests = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "requests",
+			Name: "requests_total",
 			Help: "Number of SNMP requests handled.",
 		},
 		[]string{"oid"},

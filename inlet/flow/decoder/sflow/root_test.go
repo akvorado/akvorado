@@ -161,11 +161,11 @@ func TestDecode(t *testing.T) {
 	}
 	gotMetrics := r.GetMetrics(
 		"akvorado_inlet_flow_decoder_sflow_",
-		"count",
+		"flows_total",
 		"sample_",
 	)
 	expectedMetrics := map[string]string{
-		`count{agent="172.16.0.3",exporter="127.0.0.1",version="5"}`:                                "1",
+		`flows_total{agent="172.16.0.3",exporter="127.0.0.1",version="5"}`:                          "1",
 		`sample_records_sum{agent="172.16.0.3",exporter="127.0.0.1",type="FlowSample",version="5"}`: "14",
 		`sample_sum{agent="172.16.0.3",exporter="127.0.0.1",type="FlowSample",version="5"}`:         "5",
 	}

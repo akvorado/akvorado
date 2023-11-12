@@ -67,17 +67,17 @@ func (configuration Configuration) New(r *reporter.Reporter, put func(provider.U
 		})
 	p.metrics.successes = r.CounterVec(
 		reporter.CounterOpts{
-			Name: "poller_success_requests",
+			Name: "poller_success_requests_total",
 			Help: "Number of successful requests.",
 		}, []string{"exporter"})
 	p.metrics.errors = r.CounterVec(
 		reporter.CounterOpts{
-			Name: "poller_error_requests",
+			Name: "poller_error_requests_total",
 			Help: "Number of failed requests.",
 		}, []string{"exporter", "error"})
 	p.metrics.retries = r.CounterVec(
 		reporter.CounterOpts{
-			Name: "poller_retry_requests",
+			Name: "poller_retry_requests_total",
 			Help: "Number of retried requests.",
 		}, []string{"exporter"})
 	p.metrics.times = r.SummaryVec(

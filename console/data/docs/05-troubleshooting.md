@@ -56,7 +56,7 @@ alternative address with `inlet`→`snmp`→`agents`.
 check the metrics to find the cause:
 
 ```console
-$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet' | grep _error
+$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet' | grep _errors
 ```
 
 Here is a list of generic errors you may find:
@@ -84,7 +84,7 @@ exported. In this case, the logs contain information such as:
 - `exporter:172.19.162.244 poller breaker open`
 - `exporter:172.19.162.244 unable to GET`
 
-The `akvorado_inlet_metadata_provider_snmp_error_requests` metric would also
+The `akvorado_inlet_metadata_provider_snmp_error_requests_total` metric would also
 increase for the affected exporter. If your routers are in
 `172.16.0.0/12` and you are using Docker, Docker subnets may overlap
 with your routers'. To avoid this, you can put that in
@@ -100,7 +100,7 @@ with your routers'. To avoid this, you can put that in
 Check that flow are correctly accepted with:
 
 ```console
-$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet_core_flows_forwarded'
+$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet_core_forwarded_flows_total'
 $ curl -s http://akvorado/api/v0/inlet/flows\?limit=1
 ```
 

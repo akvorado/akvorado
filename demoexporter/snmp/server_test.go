@@ -84,13 +84,13 @@ func TestSNMPServer(t *testing.T) {
 
 	gotMetrics := r.GetMetrics("akvorado_demoexporter_")
 	expectedMetrics := map[string]string{
-		`snmp_requests{oid="1.3.6.1.2.1.1.5.0"}`:         "1",
-		`snmp_requests{oid="1.3.6.1.2.1.2.2.1.2.1"}`:     "1",
-		`snmp_requests{oid="1.3.6.1.2.1.2.2.1.2.2"}`:     "1",
-		`snmp_requests{oid="1.3.6.1.2.1.31.1.1.1.15.1"}`: "1",
-		`snmp_requests{oid="1.3.6.1.2.1.31.1.1.1.15.2"}`: "1",
-		`snmp_requests{oid="1.3.6.1.2.1.31.1.1.1.18.1"}`: "1",
-		`snmp_requests{oid="1.3.6.1.2.1.31.1.1.1.18.2"}`: "1",
+		`snmp_requests_total{oid="1.3.6.1.2.1.1.5.0"}`:         "1",
+		`snmp_requests_total{oid="1.3.6.1.2.1.2.2.1.2.1"}`:     "1",
+		`snmp_requests_total{oid="1.3.6.1.2.1.2.2.1.2.2"}`:     "1",
+		`snmp_requests_total{oid="1.3.6.1.2.1.31.1.1.1.15.1"}`: "1",
+		`snmp_requests_total{oid="1.3.6.1.2.1.31.1.1.1.15.2"}`: "1",
+		`snmp_requests_total{oid="1.3.6.1.2.1.31.1.1.1.18.1"}`: "1",
+		`snmp_requests_total{oid="1.3.6.1.2.1.31.1.1.1.18.2"}`: "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)

@@ -39,35 +39,35 @@ func (p *Provider) initMetrics() {
 	)
 	p.metrics.lpmRequestErrors = p.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "lpm_request_errors",
+			Name: "lpm_request_errors_total",
 			Help: "Number of failed LPM requests per RIS and router.",
 		},
 		[]string{"ris", "router"},
 	)
 	p.metrics.lpmRequestTimeouts = p.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "lpm_request_timeouts",
+			Name: "lpm_request_timeouts_total",
 			Help: "Timed out LPM requests per RIS and router.",
 		},
 		[]string{"ris", "router"},
 	)
 	p.metrics.lpmRequestSuccess = p.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "lpm_request_success",
+			Name: "lpm_success_requests_total",
 			Help: "Number of successfull requests per RIS and router.",
 		},
 		[]string{"ris", "router"},
 	)
 	p.metrics.routerChosenAgentIDMatch = p.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "router_request_agentid",
+			Name: "router_agentid_requests_total",
 			Help: "Number of times the router/ris combination was returned with an exact match of the agent ID.",
 		},
 		[]string{"ris", "router"},
 	)
 	p.metrics.routerChosenFallback = p.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "router_request_fallback",
+			Name: "router_fallback_requests_total",
 			Help: "Number of times the router/ris combination was returned without an exact match of the agent ID.",
 		},
 		[]string{"ris", "router"},

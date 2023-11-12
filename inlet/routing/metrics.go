@@ -11,14 +11,14 @@ type metrics struct {
 func (c *Component) initMetrics() {
 	c.metrics.routingLookups = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "routing_lookups",
+			Name: "routing_lookups_total",
 			Help: "Number of routing lookups",
 		},
 		[]string{},
 	)
 	c.metrics.routingLookupsFailed = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "routing_lookups_failed",
+			Name: "routing_failed_lookups_total",
 			Help: "Number of failed routing lookups",
 		},
 		[]string{},

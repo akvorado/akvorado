@@ -48,14 +48,14 @@ func New(r *reporter.Reporter, dependencies decoder.Dependencies) decoder.Decode
 
 	nd.metrics.errors = nd.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "errors_count",
+			Name: "errors_total",
 			Help: "Netflows processed errors.",
 		},
 		[]string{"exporter", "error"},
 	)
 	nd.metrics.stats = nd.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "count",
+			Name: "flows_total",
 			Help: "Netflows processed.",
 		},
 		[]string{"exporter", "version"},
@@ -76,7 +76,7 @@ func New(r *reporter.Reporter, dependencies decoder.Dependencies) decoder.Decode
 	)
 	nd.metrics.templatesStats = nd.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "templates_count",
+			Name: "templates_total",
 			Help: "Netflows Template count.",
 		},
 		[]string{"exporter", "version", "obs_domain_id", "template_id", "type"},

@@ -52,14 +52,14 @@ func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Comp
 
 	input.metrics.bytes = r.CounterVec(
 		reporter.CounterOpts{
-			Name: "bytes",
+			Name: "bytes_total",
 			Help: "Bytes received by the application.",
 		},
 		[]string{"listener", "worker", "exporter"},
 	)
 	input.metrics.packets = r.CounterVec(
 		reporter.CounterOpts{
-			Name: "packets",
+			Name: "packets_total",
 			Help: "Packets received by the application.",
 		},
 		[]string{"listener", "worker", "exporter"},
@@ -74,21 +74,21 @@ func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Comp
 	)
 	input.metrics.errors = r.CounterVec(
 		reporter.CounterOpts{
-			Name: "errors",
+			Name: "errors_total",
 			Help: "Errors while receiving packets by the application.",
 		},
 		[]string{"listener", "worker"},
 	)
 	input.metrics.outDrops = r.CounterVec(
 		reporter.CounterOpts{
-			Name: "out_drops",
+			Name: "out_dropped_packets_total",
 			Help: "Dropped packets due to internal queue full.",
 		},
 		[]string{"listener", "worker", "exporter"},
 	)
 	input.metrics.inDrops = r.GaugeVec(
 		reporter.GaugeOpts{
-			Name: "in_drops",
+			Name: "in_dropped_packets_total",
 			Help: "Dropped packets due to listen queue full.",
 		},
 		[]string{"listener", "worker"},

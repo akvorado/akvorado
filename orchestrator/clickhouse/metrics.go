@@ -18,19 +18,19 @@ type metrics struct {
 func (c *Component) initMetrics() {
 	c.metrics.migrationsRunning = c.r.Gauge(
 		reporter.GaugeOpts{
-			Name: "migrations_running",
+			Name: "running_migrations",
 			Help: "Database migrations in progress.",
 		},
 	)
 	c.metrics.migrationsApplied = c.r.Counter(
 		reporter.CounterOpts{
-			Name: "migrations_applied_steps",
+			Name: "migrations_applied_steps_total",
 			Help: "Number of migration steps applied",
 		},
 	)
 	c.metrics.migrationsNotApplied = c.r.Counter(
 		reporter.CounterOpts{
-			Name: "migrations_notapplied_steps",
+			Name: "migrations_notapplied_steps_total",
 			Help: "Number of migration steps not applied",
 		},
 	)

@@ -96,13 +96,13 @@ func TestCore(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_inlet_core_", "-flows_processing_")
 		expectedMetrics := map[string]string{
-			`classifier_exporter_cache_size_items`:                         "0",
-			`classifier_interface_cache_size_items`:                        "0",
-			`flows_errors{error="SNMP cache miss",exporter="192.0.2.142"}`: "1",
-			`flows_errors{error="SNMP cache miss",exporter="192.0.2.143"}`: "3",
-			`flows_received{exporter="192.0.2.142"}`:                       "1",
-			`flows_received{exporter="192.0.2.143"}`:                       "3",
-			`flows_http_clients`:                                           "0",
+			`classifier_exporter_cache_size_items`:                               "0",
+			`classifier_interface_cache_size_items`:                              "0",
+			`flows_errors_total{error="SNMP cache miss",exporter="192.0.2.142"}`: "1",
+			`flows_errors_total{error="SNMP cache miss",exporter="192.0.2.143"}`: "3",
+			`received_flows_total{exporter="192.0.2.142"}`:                       "1",
+			`received_flows_total{exporter="192.0.2.143"}`:                       "3",
+			`flows_http_clients`:                                                 "0",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -115,17 +115,17 @@ func TestCore(t *testing.T) {
 		flowComponent.Inject(flowMessage("192.0.2.143", 437, 679))
 
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics = r.GetMetrics("akvorado_inlet_core_", "classifier_", "-flows_processing_", "flows_")
+		gotMetrics = r.GetMetrics("akvorado_inlet_core_", "classifier_", "-flows_processing_", "flows_", "received_", "forwarded_")
 		expectedMetrics = map[string]string{
-			`classifier_exporter_cache_size_items`:                         "0",
-			`classifier_interface_cache_size_items`:                        "0",
-			`flows_errors{error="SNMP cache miss",exporter="192.0.2.142"}`: "1",
-			`flows_errors{error="SNMP cache miss",exporter="192.0.2.143"}`: "3",
-			`flows_received{exporter="192.0.2.142"}`:                       "2",
-			`flows_received{exporter="192.0.2.143"}`:                       "4",
-			`flows_forwarded{exporter="192.0.2.142"}`:                      "1",
-			`flows_forwarded{exporter="192.0.2.143"}`:                      "1",
-			`flows_http_clients`:                                           "0",
+			`classifier_exporter_cache_size_items`:                               "0",
+			`classifier_interface_cache_size_items`:                              "0",
+			`flows_errors_total{error="SNMP cache miss",exporter="192.0.2.142"}`: "1",
+			`flows_errors_total{error="SNMP cache miss",exporter="192.0.2.143"}`: "3",
+			`received_flows_total{exporter="192.0.2.142"}`:                       "2",
+			`received_flows_total{exporter="192.0.2.143"}`:                       "4",
+			`forwarded_flows_total{exporter="192.0.2.142"}`:                      "1",
+			`forwarded_flows_total{exporter="192.0.2.143"}`:                      "1",
+			`flows_http_clients`:                                                 "0",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Fatalf("Metrics (-got, +want):\n%s", diff)
@@ -181,18 +181,18 @@ func TestCore(t *testing.T) {
 		input.SamplingRate = 0
 		flowComponent.Inject(input)
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics = r.GetMetrics("akvorado_inlet_core_", "classifier_", "-flows_processing_", "flows_")
+		gotMetrics = r.GetMetrics("akvorado_inlet_core_", "classifier_", "-flows_processing_", "flows_", "forwarded_", "received_")
 		expectedMetrics = map[string]string{
-			`classifier_exporter_cache_size_items`:                               "0",
-			`classifier_interface_cache_size_items`:                              "0",
-			`flows_errors{error="SNMP cache miss",exporter="192.0.2.142"}`:       "1",
-			`flows_errors{error="SNMP cache miss",exporter="192.0.2.143"}`:       "3",
-			`flows_errors{error="sampling rate missing",exporter="192.0.2.142"}`: "1",
-			`flows_received{exporter="192.0.2.142"}`:                             "4",
-			`flows_received{exporter="192.0.2.143"}`:                             "4",
-			`flows_forwarded{exporter="192.0.2.142"}`:                            "2",
-			`flows_forwarded{exporter="192.0.2.143"}`:                            "1",
-			`flows_http_clients`:                                                 "0",
+			`classifier_exporter_cache_size_items`:                                     "0",
+			`classifier_interface_cache_size_items`:                                    "0",
+			`flows_errors_total{error="SNMP cache miss",exporter="192.0.2.142"}`:       "1",
+			`flows_errors_total{error="SNMP cache miss",exporter="192.0.2.143"}`:       "3",
+			`flows_errors_total{error="sampling rate missing",exporter="192.0.2.142"}`: "1",
+			`received_flows_total{exporter="192.0.2.142"}`:                             "4",
+			`received_flows_total{exporter="192.0.2.143"}`:                             "4",
+			`forwarded_flows_total{exporter="192.0.2.142"}`:                            "2",
+			`forwarded_flows_total{exporter="192.0.2.143"}`:                            "1",
+			`flows_http_clients`: "0",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Fatalf("Metrics (-got, +want):\n%s", diff)

@@ -23,21 +23,21 @@ type metrics struct {
 func (c *Component) initMetrics() {
 	c.metrics.flowsReceived = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "flows_received",
+			Name: "received_flows_total",
 			Help: "Number of incoming flows.",
 		},
 		[]string{"exporter"},
 	)
 	c.metrics.flowsForwarded = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "flows_forwarded",
+			Name: "forwarded_flows_total",
 			Help: "Number of flows forwarded to Kafka.",
 		},
 		[]string{"exporter"},
 	)
 	c.metrics.flowsErrors = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "flows_errors",
+			Name: "flows_errors_total",
 			Help: "Number of flows with errors.",
 		},
 		[]string{"exporter", "error"},
@@ -72,7 +72,7 @@ func (c *Component) initMetrics() {
 	)
 	c.metrics.classifierErrors = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "classifier_errors",
+			Name: "classifier_errors_total",
 			Help: "Number of errors when evaluating a classifer",
 		},
 		[]string{"type", "index"})

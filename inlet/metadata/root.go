@@ -94,29 +94,29 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 
 	c.metrics.cacheRefreshRuns = r.Counter(
 		reporter.CounterOpts{
-			Name: "cache_refresh_runs",
+			Name: "cache_refresh_runs_total",
 			Help: "Number of times the cache refresh was triggered.",
 		})
 	c.metrics.cacheRefresh = r.Counter(
 		reporter.CounterOpts{
-			Name: "cache_refresh",
+			Name: "cache_refreshs",
 			Help: "Number of entries refreshed in cache.",
 		})
 	c.metrics.providerBusyCount = r.CounterVec(
 		reporter.CounterOpts{
-			Name: "provider_busy_count",
+			Name: "provider_dropped_requests_total",
 			Help: "Providers where too busy and dropped requests.",
 		},
 		[]string{"exporter"})
 	c.metrics.providerBreakerOpenCount = r.CounterVec(
 		reporter.CounterOpts{
-			Name: "provider_breaker_open_count",
+			Name: "provider_breaker_opens_total",
 			Help: "Provider breaker was opened due to too many errors.",
 		},
 		[]string{"exporter"})
 	c.metrics.providerBatchedCount = r.Counter(
 		reporter.CounterOpts{
-			Name: "provider_batched_count",
+			Name: "provider_batched_requests_total",
 			Help: "Several requests were batched into one.",
 		},
 	)

@@ -94,14 +94,14 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	// Metrics
 	c.metrics.decoderStats = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "decoder_count",
+			Name: "decoder_flows_total",
 			Help: "Decoder processed count.",
 		},
 		[]string{"name"},
 	)
 	c.metrics.decoderErrors = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "decoder_error_count",
+			Name: "decoder_errors_total",
 			Help: "Decoder processed error count.",
 		},
 		[]string{"name"},

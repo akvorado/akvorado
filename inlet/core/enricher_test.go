@@ -563,14 +563,14 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 			} else {
 				time.Sleep(100 * time.Millisecond)
 			}
-			gotMetrics := r.GetMetrics("akvorado_inlet_core_flows_", "-processing_")
+			gotMetrics := r.GetMetrics("akvorado_inlet_core_", "-processing_", "flows_", "received_", "forwarded_")
 			expectedMetrics := map[string]string{
-				`errors{error="SNMP cache miss",exporter="192.0.2.142"}`: "1",
-				`http_clients`:                     "0",
-				`received{exporter="192.0.2.142"}`: "2",
+				`flows_errors_total{error="SNMP cache miss",exporter="192.0.2.142"}`: "1",
+				`flows_http_clients`:                           "0",
+				`received_flows_total{exporter="192.0.2.142"}`: "2",
 			}
 			if tc.OutputFlow != nil {
-				expectedMetrics[`forwarded{exporter="192.0.2.142"}`] = "1"
+				expectedMetrics[`forwarded_flows_total{exporter="192.0.2.142"}`] = "1"
 			}
 			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 				t.Fatalf("Metrics (-got, +want):\n%s", diff)
