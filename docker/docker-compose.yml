@@ -95,10 +95,11 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.akvorado-console.rule=PathPrefix(`/`)
+      - traefik.http.routers.akvorado-console.middlewares=console-auth-headers
+      - traefik.http.middlewares.console-auth-headers.headers.customrequestheaders.Remote-User=alfred
+      - traefik.http.middlewares.console-auth-headers.headers.customrequestheaders.Remote-Name=Alfred Pennyworth
+      - traefik.http.middlewares.console-auth-headers.headers.customrequestheaders.Remote-Email=alfred@example.com
       - traefik.http.services.akvorado-console.loadbalancer.server.port=8080
-      - traefik.http.middlewares.testheader.headers.customrequestheaders.Remote-User=alfred
-      - traefik.http.middlewares.testheader.headers.customrequestheaders.Remote-Name=Alfred Pennyworth
-      - traefik.http.middlewares.testheader.headers.customrequestheaders.Remote-Email=alfred@example.com
   akvorado-inlet:
     <<: *akvorado-image
     ports:
