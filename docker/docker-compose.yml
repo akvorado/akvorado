@@ -147,6 +147,8 @@ services:
       - traefik.enable=true
       - traefik.http.routers.clickhouse.entrypoints=private
       - traefik.http.routers.clickhouse.rule=PathPrefix(`/clickhouse`)
+      - traefik.http.routers.clickhouse.middlewares=clickhouse-strip
+      - traefik.http.middlewares.clickhouse-strip.stripprefix.prefixes=/clickhouse
       - traefik.http.services.clickhouse.loadbalancer.server.port=8123
 
   traefik:
