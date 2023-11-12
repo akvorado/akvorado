@@ -5,7 +5,7 @@ package console
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -40,7 +40,7 @@ func TestServeDocs(t *testing.T) {
 					t.Errorf("GET /api/v0/console/docs/%s: got status code %d, not 200",
 						tc.Path, resp.StatusCode)
 				}
-				body, _ := ioutil.ReadAll(resp.Body)
+				body, _ := io.ReadAll(resp.Body)
 				if !strings.Contains(string(body), tc.Expect) {
 					t.Logf("Body:\n%s", string(body))
 					t.Errorf("GET /api/v0/console/docs/%s: does not contain %q",

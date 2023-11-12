@@ -6,7 +6,7 @@ package httpserver
 import (
 	"bytes"
 	"crypto"
-	"io/ioutil"
+	"io"
 	"time"
 
 	cache "github.com/chenyahui/gin-cache"
@@ -31,7 +31,7 @@ func (c *Component) CacheByRequestBody(expire time.Duration) gin.HandlerFunc {
 	opts := c.commonCacheOptions()
 	opts = append(opts, cache.WithCacheStrategyByRequest(func(gc *gin.Context) (bool, cache.Strategy) {
 		requestBody, err := gc.GetRawData()
-		gc.Request.Body = ioutil.NopCloser(bytes.NewBuffer(requestBody))
+		gc.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
 		if err != nil {
 			return false, cache.Strategy{}
 		}

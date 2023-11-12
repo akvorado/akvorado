@@ -7,14 +7,13 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
 
 // Save persists the cache to the specified file
 func (c *Cache[K, V]) Save(cacheFile string) error {
-	tmpFile, err := ioutil.TempFile(
+	tmpFile, err := os.CreateTemp(
 		filepath.Dir(cacheFile),
 		fmt.Sprintf("%s-*", filepath.Base(cacheFile)))
 	if err != nil {

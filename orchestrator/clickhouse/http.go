@@ -9,8 +9,8 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"text/template"
 	"time"
@@ -103,7 +103,7 @@ func (c *Component) registerHTTPHandlers() error {
 				w.WriteHeader(http.StatusServiceUnavailable)
 				return
 			}
-			file, err := ioutil.ReadFile(v.Source)
+			file, err := os.ReadFile(v.Source)
 			if err != nil {
 				c.r.Err(err).Msg("unable to deliver custom dict csv file")
 				http.Error(w, fmt.Sprintf("unable to deliver custom dict csv file %s", v.Source), http.StatusNotFound)

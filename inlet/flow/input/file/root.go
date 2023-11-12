@@ -6,8 +6,8 @@ package file
 
 import (
 	"errors"
-	"io/ioutil"
 	"net"
+	"os"
 	"time"
 
 	"gopkg.in/tomb.v2"
@@ -50,7 +50,7 @@ func (in *Input) Start() (<-chan []*schema.FlowMessage, error) {
 	in.t.Go(func() error {
 		for idx := 0; true; idx++ {
 			path := in.config.Paths[idx%len(in.config.Paths)]
-			data, err := ioutil.ReadFile(path)
+			data, err := os.ReadFile(path)
 			if err != nil {
 				in.r.Err(err).Str("path", path).Msg("unable to read path")
 				return err

@@ -8,7 +8,6 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"path"
@@ -199,7 +198,7 @@ func TestMigration(t *testing.T) {
 
 	var lastRun map[string]string
 	var lastSteps int
-	files, err := ioutil.ReadDir("testdata/states")
+	files, err := os.ReadDir("testdata/states")
 	if err != nil {
 		t.Fatalf("ReadDir(%q) error:\n%+v", "testdata/states", err)
 	}

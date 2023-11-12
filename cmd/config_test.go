@@ -6,7 +6,6 @@ package cmd_test
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -84,7 +83,7 @@ module1:
  workers: -5
 `
 	configFile := filepath.Join(t.TempDir(), "config.yaml")
-	ioutil.WriteFile(configFile, []byte(config), 0o644)
+	os.WriteFile(configFile, []byte(config), 0o644)
 
 	c := cmd.ConfigRelatedOptions{
 		Path: configFile,
@@ -117,7 +116,7 @@ module2:
   - name: second
 `
 	configFile := filepath.Join(t.TempDir(), "config.yaml")
-	ioutil.WriteFile(configFile, []byte(config), 0o644)
+	os.WriteFile(configFile, []byte(config), 0o644)
 
 	c := cmd.ConfigRelatedOptions{
 		Path: configFile,
@@ -198,7 +197,7 @@ module2:
   interval-value: 20m
 `
 	configFile := filepath.Join(t.TempDir(), "config.yaml")
-	ioutil.WriteFile(configFile, []byte(config), 0o644)
+	os.WriteFile(configFile, []byte(config), 0o644)
 
 	// Environment
 	clean := func() {
@@ -319,7 +318,7 @@ module1:
  workers: 10
 `
 		configFile := filepath.Join(t.TempDir(), "config.yaml")
-		ioutil.WriteFile(configFile, []byte(config), 0o644)
+		os.WriteFile(configFile, []byte(config), 0o644)
 
 		c := cmd.ConfigRelatedOptions{Path: configFile}
 
@@ -339,7 +338,7 @@ module1:
  workers: 10
 `
 		configFile := filepath.Join(t.TempDir(), "config.yaml")
-		ioutil.WriteFile(configFile, []byte(config), 0o644)
+		os.WriteFile(configFile, []byte(config), 0o644)
 
 		c := cmd.ConfigRelatedOptions{Path: configFile}
 
@@ -366,7 +365,7 @@ modules:
     topic: flows2
 `
 		configFile := filepath.Join(t.TempDir(), "config.yaml")
-		ioutil.WriteFile(configFile, []byte(config), 0o644)
+		os.WriteFile(configFile, []byte(config), 0o644)
 
 		c := cmd.ConfigRelatedOptions{
 			Path: configFile,

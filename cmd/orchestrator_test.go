@@ -5,7 +5,7 @@ package cmd
 
 import (
 	"bytes"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -27,7 +27,7 @@ func TestOrchestratorStart(t *testing.T) {
 }
 
 func TestOrchestratorConfig(t *testing.T) {
-	tests, err := ioutil.ReadDir("testdata/configurations")
+	tests, err := os.ReadDir("testdata/configurations")
 	if err != nil {
 		t.Fatalf("ReadDir(%q) error:\n%+v", "testdata/configurations", err)
 	}
@@ -36,7 +36,7 @@ func TestOrchestratorConfig(t *testing.T) {
 			continue
 		}
 		t.Run(test.Name(), func(t *testing.T) {
-			expected, err := ioutil.ReadFile(
+			expected, err := os.ReadFile(
 				filepath.Join("testdata/configurations", test.Name(), "expected.yaml"))
 			if err != nil {
 				t.Fatalf("ReadFile() error:\n%+v", err)

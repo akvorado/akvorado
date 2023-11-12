@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strings"
@@ -74,7 +73,7 @@ func (c *Component) docsHandlerFunc(gc *gin.Context) {
 		}
 
 		// Markdown rendering to build ToC
-		content, _ := ioutil.ReadAll(f)
+		content, _ := io.ReadAll(f)
 		f.Close()
 		if matches[3] == requestedDocument {
 			// That's the one we need to do final rendering on.
