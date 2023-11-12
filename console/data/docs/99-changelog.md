@@ -15,6 +15,7 @@ identified with a specific icon:
 
 - 💥 *inlet*: many metrics renamed to match [Prometheus best practices](https://prometheus.io/docs/practices/naming/)
 - 🌱 *docker*: update ClickHouse to 23.8 (this is not mandatory)
+- 🌱 *orchestrator*: add `orchestrator`→`clickhouse`→`prometheus-endpoint` to configure an endpoint to expose metrics to Prometheus
 
 ## 1.9.1 - 2023-10-06
 

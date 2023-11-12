@@ -6,4 +6,9 @@ datasources:
     access: proxy
     url: http://prometheus:9090/prometheus
     uid: PBFA97CFB590B2093
+  - name: Akvorado
+    type: marcusolsson-json-datasource
+    access: direct
+    url: /api/v0/console/lines
+    uid: P92BCD8FE492171BD
     isDefault: true

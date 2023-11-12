@@ -38,16 +38,25 @@ cat > /etc/clickhouse-server/config.d/akvorado.xml <<'EOCONFIG'
  </{{ $table }}>
 {{- end }}
 {{- end }}
+{{- if ne .PrometheusEndpoint "" }}
+ <prometheus>
+  <endpoint>{{ .PrometheusEndpoint }}</endpoint>
+  <metrics>true</metrics>
+  <events>true</events>
+  <asynchronous_metrics>true</asynchronous_metrics>
+ </prometheus>
+{{- end }}
 </clickhouse>
 EOCONFIG
 `))
 )
 
 type initShVariables struct {
-	FlowSchemaHash  string
-	FlowSchema      string
-	SystemLogTTL    int
-	SystemLogTables []string
+	FlowSchemaHash     string
+	FlowSchema         string
+	SystemLogTTL       int
+	SystemLogTables    []string
+	PrometheusEndpoint string
 }
 
 func (c *Component) addHandlerEmbedded(url string, path string) {
@@ -82,6 +91,7 @@ func (c *Component) registerHTTPHandlers() error {
 					"query_thread_log",
 					"trace_log",
 				},
+				PrometheusEndpoint: c.config.PrometheusEndpoint,
 			}); err != nil {
 				c.r.Err(err).Msg("unable to serialize init.sh")
 				http.Error(w, fmt.Sprintf("Unable to serialize init.sh"), http.StatusInternalServerError)

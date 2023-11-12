@@ -26,6 +26,7 @@ clickhouse:
     consumers: 4
   servers:
     - clickhouse:9000
+  prometheus-endpoint: /metrics
   asns:
     64501: ACME Corporation
   networks:

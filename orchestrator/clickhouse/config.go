@@ -30,6 +30,9 @@ type Configuration struct {
 	MaxPartitions int `validate:"isdefault|min=1"`
 	// SystemLogTTL is the TTL to set for system log tables.
 	SystemLogTTL time.Duration `validate:"isdefault|min=1m"`
+	// PrometheusEndpoint defines the endpoint ClickHouse can use to expose
+	// metrics to Prometheus. If not defined, this is not configured.
+	PrometheusEndpoint string
 	// ASNs is a mapping from AS numbers to names. It replaces or
 	// extends the builtin list of AS numbers.
 	ASNs map[uint32]string
