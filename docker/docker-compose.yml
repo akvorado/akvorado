@@ -133,8 +133,9 @@ services:
   clickhouse:
     image: clickhouse/clickhouse-server:23.3
     volumes:
-      - ../orchestrator/clickhouse/data/docker-entrypoint.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+      - ../orchestrator/clickhouse/data/docker-entrypoint.sh:/entrypoint-override.sh:ro
       - akvorado-clickhouse:/var/lib/clickhouse
+    entrypoint: /entrypoint-override.sh
     environment:
       - CLICKHOUSE_INIT_TIMEOUT=60
     restart: unless-stopped

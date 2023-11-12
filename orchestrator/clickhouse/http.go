@@ -24,11 +24,15 @@ var (
 	initShTemplate = template.Must(template.New("initsh").Parse(`#!/bin/sh
 
 # Install Protobuf schema
+mkdir -p /var/lib/clickhouse/format_schemas
+echo "Install flow schema flow-{{ .FlowSchemaHash }}.proto"
 cat > /var/lib/clickhouse/format_schemas/flow-{{ .FlowSchemaHash }}.proto <<'EOPROTO'
 {{ .FlowSchema }}
 EOPROTO
 
 # Alter ClickHouse configuration
+mkdir -p /etc/clickhouse-server/config.d
+echo "Add Akvorado-specific configuration to ClickHouse"
 cat > /etc/clickhouse-server/config.d/akvorado.xml <<'EOCONFIG'
 <clickhouse>
 {{- if gt .SystemLogTTL 0 }}

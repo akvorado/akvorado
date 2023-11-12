@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## 1.9.2 - 2023-11-28
+
+- 🩹 *docker*: ensure ClickHouse init script is executed even when database already exists
+
 ## 1.9.1 - 2023-10-06
 
 - 🌱 *console*: add filtering support for custom columns
