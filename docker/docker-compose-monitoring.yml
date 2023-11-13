@@ -25,6 +25,17 @@ services:
       - traefik.http.routers.prometheus.rule=PathPrefix(`/prometheus`)
       - traefik.http.services.prometheus.loadbalancer.server.port=9090
 
+  kafka-jmx-exporter:
+    image: bitnami/jmx-exporter:0
+    restart: unless-stopped
+    depends_on:
+      - kafka
+    volumes:
+      - ./kafka-jmx-exporter-config.yaml:/etc/jmx-kafka/config.yaml:ro
+    command:
+      - "5556"
+      - /etc/jmx-kafka/config.yaml
+
   kafka-ui:
     image: provectuslabs/kafka-ui:v0.5.0
     restart: unless-stopped

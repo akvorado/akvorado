@@ -40,6 +40,7 @@ services:
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
       - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - JMX_PORT=5555
     restart: unless-stopped
     depends_on:
       - zookeeper
