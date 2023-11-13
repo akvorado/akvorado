@@ -14,8 +14,14 @@ services:
     image: bitnami/zookeeper:3.8
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
+      - ZOO_ENABLE_PROMETHEUS_METRICS=yes
       - ZOO_4LW_COMMANDS_WHITELIST=srvr,mntr,ruok
     restart: unless-stopped
+    expose:
+      - 2181/tcp
+      - 2888/tcp
+      - 3888/tcp
+      - 7000/tcp                # Prometheus metrics
     volumes:
       - akvorado-zookeeper:/bitnami/zookeeper
     healthcheck:

@@ -18,6 +18,19 @@ scrape_configs:
             values:
               - com.docker.compose.project=akvorado
               - com.docker.compose.service=grafana
+  - job_name: zookeeper
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 30s
+        filters:
+          - name: label
+            values:
+              - com.docker.compose.project=akvorado
+              - com.docker.compose.service=zookeeper
+    relabel_configs:
+      - source_labels: [__meta_docker_port_private]
+        regex: 7000
+        action: keep
   - job_name: akvorado
     metrics_path: /api/v0/metrics
     docker_sd_configs:
