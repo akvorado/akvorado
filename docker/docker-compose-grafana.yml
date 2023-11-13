@@ -2,30 +2,7 @@
 version: "3"
 volumes:
   akvorado-grafana:
-  akvorado-prometheus:
 services:
-  prometheus:
-    image: prom/prometheus:v2.47.2
-    restart: unless-stopped
-    user: root                  # for access to /var/run/docker.sock
-    volumes:
-      - akvorado-prometheus:/prometheus
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    command:
-      # Those are the defaults
-      - --config.file=/etc/prometheus/prometheus.yml
-      - --storage.tsdb.path=/prometheus
-      - --web.console.libraries=/usr/share/prometheus/console_libraries
-      - --web.console.templates=/usr/share/prometheus/consoles
-      # Those are not the defaults
-      - --web.external-url=/prometheus
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.prometheus.entrypoints=public
-      - traefik.http.routers.prometheus.rule=PathPrefix(`/prometheus`)
-      - traefik.http.services.prometheus.loadbalancer.server.port=9090
-
   grafana:
     image: grafana/grafana-oss:10.2.0
     environment:

@@ -29,6 +29,7 @@ services:
       timeout: 10s
       retries: 3
       test: ["CMD-SHELL", "echo ruok | nc -w3 127.0.0.1 2181 | grep -xFq imok"]
+
   kafka:
     image: bitnami/kafka:3.5
     environment:
@@ -49,19 +50,6 @@ services:
       timeout: 10s
       retries: 3
       test: ["CMD", "kafka-topics.sh", "--list", "--bootstrap-server", "kafka:9092"]
-  kafka-ui:
-    image: provectuslabs/kafka-ui:v0.5.0
-    restart: unless-stopped
-    depends_on:
-      - kafka
-    environment:
-      - KAFKA_CLUSTERS_0_NAME=local
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
-      - SERVER_SERVLET_CONTEXT_PATH=/kafka-ui
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.kafka-ui.entrypoints=private
-      - traefik.http.routers.kafka-ui.rule=PathPrefix(`/kafka-ui`)
 
   redis:
     image: bitnami/redis:7.0
@@ -77,7 +65,6 @@ services:
   akvorado-service: &akvorado-image
     image: ghcr.io/akvorado/akvorado:latest
     command: version
-
   akvorado-orchestrator:
     <<: *akvorado-image
     restart: unless-stopped
