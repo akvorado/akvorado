@@ -81,11 +81,12 @@ inlet:
 
 ### NCS 5500 and ASR 9000
 
-On each router, Netflow can be enabled with the following configuration:
+On each router, Netflow can be enabled with the following configuration. It is
+important to use a power of two for the sampling rate (at least on NCS).
 
 ```cisco
 sampler-map sampler1
- random 1 out-of 30000
+ random 1 out-of 32768
 !
 flow exporter-map akvorado
  version v9
@@ -138,7 +139,7 @@ interface Bundle-Ether4000
 Also check the [troubleshooting section](05-troubleshooting.md) on how
 to scale Netflow on the NCS 5500.
 
-Also, SNMP needs to be enabled:
+Then, SNMP needs to be enabled:
 
 ```cisco
 snmp-server community <community> RO IPv4
