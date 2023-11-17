@@ -34,6 +34,7 @@ type Input struct {
 		errors        *reporter.CounterVec
 		outDrops      *reporter.CounterVec
 		inDrops       *reporter.GaugeVec
+		decodedFlows  *reporter.CounterVec
 	}
 
 	address net.Addr                   // listening address, for testing purpoese
@@ -92,6 +93,13 @@ func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Comp
 			Help: "Dropped packets due to listen queue full.",
 		},
 		[]string{"listener", "worker"},
+	)
+	input.metrics.decodedFlows = r.CounterVec(
+		reporter.CounterOpts{
+			Name: "decoded_flows_total",
+			Help: "Number of flows decoded and written to the internal queue",
+		},
+		[]string{"listener", "worker", "exporter"},
 	)
 
 	daemon.Track(&input.t, "inlet/flow/input/udp")
@@ -193,6 +201,8 @@ func (in *Input) Start() (<-chan []*schema.FlowMessage, error) {
 				case <-in.t.Dying():
 					return nil
 				case in.ch <- flows:
+					in.metrics.decodedFlows.WithLabelValues(listen, worker, srcIP).
+						Add(float64(len((flows))))
 				default:
 					errLogger.Warn().Msgf("dropping flow due to queue full (size %d)",
 						in.config.QueueSize)

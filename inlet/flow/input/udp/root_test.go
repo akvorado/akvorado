@@ -79,6 +79,7 @@ func TestUDPInput(t *testing.T) {
 	gotMetrics := r.GetMetrics("akvorado_inlet_flow_input_udp_")
 	expectedMetrics := map[string]string{
 		`bytes_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                        "12",
+		`decoded_flows_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                "1",
 		`packets_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                      "1",
 		`in_dropped_packets_total{listener="127.0.0.1:0",worker="0"}`:                                "0",
 		`summary_size_bytes_count{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:           "1",
@@ -131,6 +132,7 @@ func TestOverflow(t *testing.T) {
 	gotMetrics := r.GetMetrics("akvorado_inlet_flow_input_udp_")
 	expectedMetrics := map[string]string{
 		`bytes_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                        "120",
+		`decoded_flows_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                "1",
 		`in_dropped_packets_total{listener="127.0.0.1:0",worker="0"}`:                                "0",
 		`out_dropped_packets_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:          "9",
 		`packets_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                      "10",
