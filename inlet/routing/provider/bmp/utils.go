@@ -17,9 +17,7 @@ func asPathFlat(aspath *bgp.PathAttributeAsPath) []uint32 {
 		case bgp.BGP_ASPATH_ATTR_TYPE_CONFED_SET, bgp.BGP_ASPATH_ATTR_TYPE_SET:
 			asList = asList[:1]
 		}
-		for _, as := range asList {
-			s = append(s, as)
-		}
+		s = append(s, asList...)
 	}
 	return s
 }
