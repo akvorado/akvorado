@@ -40,6 +40,15 @@ scrape_configs:
             values:
               - com.docker.compose.project=akvorado
               - com.docker.compose.service=kafka-jmx-exporter
+  - job_name: node-exporter
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 30s
+        filters:
+          - name: label
+            values:
+              - com.docker.compose.project=akvorado
+              - com.docker.compose.service=node-exporter
   - job_name: akvorado
     metrics_path: /api/v0/metrics
     docker_sd_configs:
