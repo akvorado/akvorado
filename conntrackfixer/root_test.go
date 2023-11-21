@@ -76,7 +76,7 @@ func TestRoot(t *testing.T) {
 			},
 		}, nil)
 	conntrackConnMock.EXPECT().
-		Dump().
+		Dump(nil).
 		Return([]conntrack.Flow{
 			{
 				ID: 1,
@@ -151,7 +151,7 @@ func TestRoot(t *testing.T) {
 				},
 			}, nil)
 		conntrackConnMock.EXPECT().
-			Dump().
+			Dump(nil).
 			Return([]conntrack.Flow{
 				{
 					ID: 3,

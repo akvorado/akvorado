@@ -13,7 +13,7 @@ import (
 // ConntrackConn is the part of conntrack.Conn we use
 type ConntrackConn interface {
 	Close() error
-	Dump() ([]conntrack.Flow, error)
+	Dump(opts *conntrack.DumpOptions) ([]conntrack.Flow, error)
 	Delete(f conntrack.Flow) error
 }
 

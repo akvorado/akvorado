@@ -233,7 +233,7 @@ func (c *Component) channelHealthcheck() reporter.HealthcheckFunc {
 
 // purgeConntrack purge the conntrack for the given port.
 func (c *Component) purgeConntrack(port uint16) int {
-	flows, err := c.conntrackConn.Dump()
+	flows, err := c.conntrackConn.Dump(nil)
 	if err != nil {
 		c.r.Err(err).Msg("cannot list conntrack entries")
 		c.metrics.errors.WithLabelValues("cannot list conntrack entries").Inc()
