@@ -96,6 +96,36 @@ func TestQueryColumnSQLSelect(t *testing.T) {
 			Input: schema.ColumnTCPFlags,
 			// Can be tested with "WITH 16 AS TCPFlags SELECT ..."
 			Expected: `arrayStringConcat([if(bitTest(TCPFlags, 0) = 1, 'F', ''), if(bitTest(TCPFlags, 1) = 1, 'S', ''), if(bitTest(TCPFlags, 2) = 1, 'R', ''), if(bitTest(TCPFlags, 3) = 1, 'P', ''), if(bitTest(TCPFlags, 4) = 1, '.', ''), if(bitTest(TCPFlags, 5) = 1, 'U', ''), if(bitTest(TCPFlags, 6) = 1, 'E', ''), if(bitTest(TCPFlags, 7) = 1, 'C', ''), if(bitTest(TCPFlags, 8) = 1, 'N', '')], '')`,
+		}, {
+			Input:    schema.ColumnMplsLabel1,
+			Expected: `toString(MplsLabel1)`,
+		}, {
+			Input:    schema.ColumnMplsLabel2,
+			Expected: `toString(MplsLabel2)`,
+		}, {
+			Input:    schema.ColumnMplsLabel3,
+			Expected: `toString(MplsLabel3)`,
+		}, {
+			Input:    schema.ColumnMplsLabel4,
+			Expected: `toString(MplsLabel4)`,
+		}, {
+			Input:    schema.ColumnMplsLabel5,
+			Expected: `toString(MplsLabel5)`,
+		}, {
+			Input:    schema.ColumnMplsLabel6,
+			Expected: `toString(MplsLabel6)`,
+		}, {
+			Input:    schema.ColumnMplsLabel7,
+			Expected: `toString(MplsLabel7)`,
+		}, {
+			Input:    schema.ColumnMplsLabel8,
+			Expected: `toString(MplsLabel8)`,
+		}, {
+			Input:    schema.ColumnMplsLabel9,
+			Expected: `toString(MplsLabel9)`,
+		}, {
+			Input:    schema.ColumnMplsLabel10,
+			Expected: `toString(MplsLabel10)`,
 		},
 	}
 	for _, tc := range cases {
