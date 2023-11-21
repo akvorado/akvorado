@@ -95,7 +95,17 @@ const (
 	ColumnICMPv6Type
 	ColumnICMPv6Code
 	ColumnNextHop
-
+	ColumnMplsLabel1
+	ColumnMplsLabel2
+	ColumnMplsLabel3
+	ColumnMplsLabel4
+	ColumnMplsLabel5
+	ColumnMplsLabel6
+	ColumnMplsLabel7
+	ColumnMplsLabel8
+	ColumnMplsLabel9
+	ColumnMplsLabel10
+    
 	// ColumnLast points to after the last static column, custom dictionaries
 	// (dynamic columns) come after ColumnLast
 	ColumnLast
@@ -105,7 +115,8 @@ const (
 	ColumnGroupL2 ColumnGroup = iota + 1
 	ColumnGroupNAT
 	ColumnGroupL3L4
-
+	ColumnGroupMPLS
+    
 	ColumnGroupLast
 )
 
@@ -404,6 +415,17 @@ END`,
 				ClickHouseType:  "LowCardinality(IPv6)",
 				ClickHouseCodec: "ZSTD(1)",
 			},
+			{Key: ColumnMplsLabel1, Disabled: true, Group: ColumnGroupMPLS, ParserType: "uint", ClickHouseType: "UInt32"},
+			{Key: ColumnMplsLabel2, Disabled: true, Group: ColumnGroupMPLS, ParserType: "uint", ClickHouseType: "UInt32"},
+			{Key: ColumnMplsLabel3, Disabled: true, Group: ColumnGroupMPLS, ParserType: "uint", ClickHouseType: "UInt32"},
+			{Key: ColumnMplsLabel4, Disabled: true, Group: ColumnGroupMPLS, ParserType: "uint", ClickHouseType: "UInt32"},
+			{Key: ColumnMplsLabel5, Disabled: true, Group: ColumnGroupMPLS, ParserType: "uint", ClickHouseType: "UInt32"},
+			{Key: ColumnMplsLabel6, Disabled: true, Group: ColumnGroupMPLS, ParserType: "uint", ClickHouseType: "UInt32"},
+			{Key: ColumnMplsLabel7, Disabled: true, Group: ColumnGroupMPLS, ParserType: "uint", ClickHouseType: "UInt32"},
+			{Key: ColumnMplsLabel8, Disabled: true, Group: ColumnGroupMPLS, ParserType: "uint", ClickHouseType: "UInt32"},
+			{Key: ColumnMplsLabel9, Disabled: true, Group: ColumnGroupMPLS, ParserType: "uint", ClickHouseType: "UInt32"},
+			{Key: ColumnMplsLabel10, Disabled: true, Group: ColumnGroupMPLS, ParserType: "uint", ClickHouseType: "UInt32"},
+
 		},
 	}.finalize()
 }
