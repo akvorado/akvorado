@@ -198,6 +198,32 @@ func (nd *Decoder) decodeRecord(fields []netflow.DataField) *schema.FlowMessage 
 					foundIcmpTypeCode = true
 				}
 			}
+			// MPLS
+			if !nd.d.Schema.IsDisabled(schema.ColumnGroupMPLS) {
+				// MPLS
+				switch field.Type {
+				case netflow.NFV9_FIELD_MPLS_LABEL_1:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnMplsLabel1, decodeUNumber(v))
+				case netflow.NFV9_FIELD_MPLS_LABEL_2:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnMplsLabel2, decodeUNumber(v))
+				case netflow.NFV9_FIELD_MPLS_LABEL_3:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnMplsLabel3, decodeUNumber(v))
+				case netflow.NFV9_FIELD_MPLS_LABEL_4:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnMplsLabel4, decodeUNumber(v))
+				case netflow.NFV9_FIELD_MPLS_LABEL_5:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnMplsLabel5, decodeUNumber(v))
+				case netflow.NFV9_FIELD_MPLS_LABEL_6:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnMplsLabel6, decodeUNumber(v))
+				case netflow.NFV9_FIELD_MPLS_LABEL_7:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnMplsLabel7, decodeUNumber(v))
+				case netflow.NFV9_FIELD_MPLS_LABEL_8:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnMplsLabel8, decodeUNumber(v))
+				case netflow.NFV9_FIELD_MPLS_LABEL_9:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnMplsLabel9, decodeUNumber(v))
+				case netflow.NFV9_FIELD_MPLS_LABEL_10:
+					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnMplsLabel10, decodeUNumber(v))
+				}
+			}
 		}
 	}
 	if dataLinkFrameSectionIdx >= 0 {
