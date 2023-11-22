@@ -9,7 +9,7 @@ require (
 	github.com/antonmedv/expr v1.15.3
 	github.com/benbjohnson/clock v1.3.5
 	github.com/bio-routing/bio-rd v0.1.10-0.20230730142204-f71bc383fe42
-	github.com/bits-and-blooms/bitset v1.10.0
+	github.com/bits-and-blooms/bitset v1.11.0
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/chenyahui/gin-cache v1.8.1
 	github.com/docker/docker v24.0.7+incompatible
@@ -32,7 +32,6 @@ require (
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/netsampler/goflow2 v1.1.1-0.20221008154147-57fad2e0c837
-	github.com/opencontainers/image-spec v1.1.0-rc4
 	github.com/oschwald/maxminddb-golang v1.12.0
 	github.com/osrg/gobgp/v3 v3.20.0
 	github.com/prometheus/client_golang v1.17.0
@@ -114,6 +113,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
+	github.com/opencontainers/image-spec v1.1.0-rc4 // indirect
 	github.com/paulmach/orb v0.10.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect
