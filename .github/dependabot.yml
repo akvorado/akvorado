@@ -66,3 +66,7 @@ updates:
       interval: weekly
     labels:
       - dependencies
+    groups:
+      golang-org-x:
+        patterns:
+          - "golang.org/x/*"
