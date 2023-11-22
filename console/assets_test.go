@@ -33,7 +33,7 @@ func TestServeAssets(t *testing.T) {
 					ContentType: "text/html; charset=utf-8",
 					FirstLines:  []string{"<!doctype html>"},
 				}, {
-					URL:         "/assets/akvorado-399701ee.svg",
+					URL:         "/assets/akvorado-14Svw3Su.svg",
 					ContentType: "image/svg+xml",
 					FirstLines:  []string{`<?xml version="1.0" encoding="UTF-8" standalone="no"?>`},
 				}, {
