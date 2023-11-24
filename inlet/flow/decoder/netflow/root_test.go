@@ -385,3 +385,59 @@ func TestDecodeDataLink(t *testing.T) {
 	}
 
 }
+
+func TestDecodeMPLS(t *testing.T) {
+	r := reporter.NewMock(t)
+	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()})
+
+	data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "mpls.pcap"))
+	got := nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+
+	expectedFlows := []*schema.FlowMessage{
+		{
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("fd00::1:0:1:7:1"),
+			DstAddr:         netip.MustParseAddr("fd00::1:0:1:5:1"),
+			NextHop:         netip.MustParseAddr("::ffff:0.0.0.0"),
+			SamplingRate:    1,
+			OutIf:           16,
+			ProtobufDebug: map[schema.ColumnKey]interface{}{
+				schema.ColumnBytes:            89,
+				schema.ColumnPackets:          1,
+				schema.ColumnEType:            helpers.ETypeIPv6,
+				schema.ColumnForwardingStatus: 66,
+				schema.ColumnIPTTL:            255,
+				schema.ColumnProto:            17,
+				schema.ColumnSrcPort:          49153,
+				schema.ColumnDstPort:          862,
+				schema.ColumnMPLSLabels:       []uint32{20005, 524250},
+			},
+		}, {
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("fd00::1:0:1:7:1"),
+			DstAddr:         netip.MustParseAddr("fd00::1:0:1:6:1"),
+			NextHop:         netip.MustParseAddr("::ffff:0.0.0.0"),
+			SamplingRate:    1,
+			OutIf:           17,
+			ProtobufDebug: map[schema.ColumnKey]interface{}{
+				schema.ColumnBytes:            890,
+				schema.ColumnPackets:          10,
+				schema.ColumnEType:            helpers.ETypeIPv6,
+				schema.ColumnForwardingStatus: 66,
+				schema.ColumnIPTTL:            255,
+				schema.ColumnProto:            17,
+				schema.ColumnSrcPort:          49153,
+				schema.ColumnDstPort:          862,
+				schema.ColumnMPLSLabels:       []uint32{20006, 524275},
+			},
+		},
+	}
+	for _, f := range got {
+		f.TimeReceived = 0
+	}
+
+	if diff := helpers.Diff(got, expectedFlows); diff != "" {
+		t.Fatalf("Decode() (-got, +want):\n%s", diff)
+	}
+
+}

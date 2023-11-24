@@ -139,6 +139,7 @@ func ParseEthernet(sch *schema.Component, bf *schema.FlowMessage, data []byte) u
 			label := binary.BigEndian.Uint32(append([]byte{0}, data[:3]...)) >> 4
 			bottom := data[2] & 1
 			data = data[4:]
+			sch.ProtobufAppendVarint(bf, schema.ColumnMPLSLabels, uint64(label))
 			if bottom == 1 || label <= 15 {
 				if data[0]&0xf0>>4 == 4 {
 					etherType = []byte{0x8, 0x0}

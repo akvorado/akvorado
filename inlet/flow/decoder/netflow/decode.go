@@ -131,6 +131,10 @@ func (nd *Decoder) decodeRecord(fields []netflow.DataField) *schema.FlowMessage 
 		case netflow.IPFIX_FIELD_dataLinkFrameSection:
 			dataLinkFrameSectionIdx = idx
 
+		// MPLS
+		case netflow.NFV9_FIELD_MPLS_LABEL_1, netflow.NFV9_FIELD_MPLS_LABEL_2, netflow.NFV9_FIELD_MPLS_LABEL_3, netflow.NFV9_FIELD_MPLS_LABEL_4, netflow.NFV9_FIELD_MPLS_LABEL_5, netflow.NFV9_FIELD_MPLS_LABEL_6, netflow.NFV9_FIELD_MPLS_LABEL_7, netflow.NFV9_FIELD_MPLS_LABEL_8, netflow.NFV9_FIELD_MPLS_LABEL_9, netflow.NFV9_FIELD_MPLS_LABEL_10:
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnMPLSLabels, decodeUNumber(v)>>4)
+
 		// Remaining
 		case netflow.NFV9_FIELD_FORWARDING_STATUS:
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnForwardingStatus, decodeUNumber(v))

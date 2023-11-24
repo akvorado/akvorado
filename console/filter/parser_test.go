@@ -326,6 +326,11 @@ output provider */ = 'telia'`,
 		{Input: `DstAddrPriority = 200`, Output: `DstAddrPriority = 200`},
 		{Input: `DstAddrSibling = 2001:db8::1`, Output: `DstAddrSibling = toIPv6('2001:db8::1')`},
 		{Input: `SrcAddrDimensionAttribute IN ("Test", "None")`, Output: `SrcAddrDimensionAttribute IN ('Test', 'None')`},
+		{Input: `MPLSLabels = 76876`, Output: `has(MPLSLabels, 76876)`, MetaOut: Meta{MainTableRequired: true}},
+		{Input: `MPLSLabels != 76876`, Output: `NOT has(MPLSLabels, 76876)`, MetaOut: Meta{MainTableRequired: true}},
+		{Input: `MPLS1stLabel = 76876`, Output: `MPLS1stLabel = 76876`, MetaOut: Meta{MainTableRequired: true}},
+		{Input: `MPLS2ndLabel > 76876`, Output: `MPLS2ndLabel > 76876`, MetaOut: Meta{MainTableRequired: true}},
+		{Input: `MPLS3rdLabel < 76876`, Output: `MPLS3rdLabel < 76876`, MetaOut: Meta{MainTableRequired: true}},
 	}
 	config := schema.DefaultConfiguration()
 	config.CustomDictionaries = make(map[string]schema.CustomDict)

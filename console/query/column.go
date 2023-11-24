@@ -109,6 +109,8 @@ func (qc Column) ToSQLSelect(sch *schema.Component) string {
 			helpers.ETypeIPv4, helpers.ETypeIPv6)
 	case schema.ColumnProto:
 		strValue = `dictGetOrDefault('protocols', 'name', Proto, '???')`
+	case schema.ColumnMPLSLabels:
+		strValue = `arrayStringConcat(MPLSLabels, ' ')`
 	case schema.ColumnDstASPath:
 		strValue = `arrayStringConcat(DstASPath, ' ')`
 	case schema.ColumnDstCommunities:
