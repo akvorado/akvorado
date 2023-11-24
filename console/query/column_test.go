@@ -93,6 +93,12 @@ func TestQueryColumnSQLSelect(t *testing.T) {
 			Input:    schema.ColumnDstMAC,
 			Expected: `MACNumToString(DstMAC)`,
 		}, {
+			Input:    schema.ColumnMPLSLabels,
+			Expected: `arrayStringConcat(MPLSLabels, ' ')`,
+		}, {
+			Input:    schema.ColumnMPLS3rdLabel,
+			Expected: `toString(MPLS3rdLabel)`,
+		}, {
 			Input: schema.ColumnTCPFlags,
 			// Can be tested with "WITH 16 AS TCPFlags SELECT ..."
 			Expected: `arrayStringConcat([if(bitTest(TCPFlags, 0) = 1, 'F', ''), if(bitTest(TCPFlags, 1) = 1, 'S', ''), if(bitTest(TCPFlags, 2) = 1, 'R', ''), if(bitTest(TCPFlags, 3) = 1, 'P', ''), if(bitTest(TCPFlags, 4) = 1, '.', ''), if(bitTest(TCPFlags, 5) = 1, 'U', ''), if(bitTest(TCPFlags, 6) = 1, 'E', ''), if(bitTest(TCPFlags, 7) = 1, 'C', ''), if(bitTest(TCPFlags, 8) = 1, 'N', '')], '')`,

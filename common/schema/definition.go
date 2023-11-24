@@ -95,6 +95,10 @@ const (
 	ColumnICMPv6Type
 	ColumnICMPv6Code
 	ColumnNextHop
+	ColumnMPLSLabels
+	ColumnMPLS1stLabel
+	ColumnMPLS2ndLabel
+	ColumnMPLS3rdLabel
 
 	// ColumnLast points to after the last static column, custom dictionaries
 	// (dynamic columns) come after ColumnLast
@@ -403,6 +407,40 @@ END`,
 				ParserType:      "ip",
 				ClickHouseType:  "LowCardinality(IPv6)",
 				ClickHouseCodec: "ZSTD(1)",
+			},
+			{
+				Key:                ColumnMPLSLabels,
+				Disabled:           true,
+				ClickHouseMainOnly: true,
+				ClickHouseType:     "Array(UInt32)",
+				ParserType:         "array(uint)",
+			},
+			{
+				Key:                ColumnMPLS1stLabel,
+				Disabled:           true,
+				Depends:            []ColumnKey{ColumnMPLSLabels},
+				ClickHouseMainOnly: true,
+				ClickHouseType:     "UInt32",
+				ClickHouseAlias:    "MPLSLabels[1]",
+				ParserType:         "uint",
+			},
+			{
+				Key:                ColumnMPLS2ndLabel,
+				Disabled:           true,
+				Depends:            []ColumnKey{ColumnMPLSLabels},
+				ClickHouseMainOnly: true,
+				ClickHouseType:     "UInt32",
+				ClickHouseAlias:    "MPLSLabels[2]",
+				ParserType:         "uint",
+			},
+			{
+				Key:                ColumnMPLS3rdLabel,
+				Disabled:           true,
+				Depends:            []ColumnKey{ColumnMPLSLabels},
+				ClickHouseMainOnly: true,
+				ClickHouseType:     "UInt32",
+				ClickHouseAlias:    "MPLSLabels[3]",
+				ParserType:         "uint",
 			},
 		},
 	}.finalize()

@@ -41,6 +41,7 @@ ConditionExpr "conditional" ←
   / ConditionStringExpr
   / ConditionBoundaryExpr
   / ConditionUintExpr
+  / ConditionArrayUintExpr
   / ConditionASExpr
   / ConditionASPathExpr
   / ConditionCommunitiesExpr
@@ -128,6 +129,20 @@ ConditionUintExpr "condition on integer" ←
  value:Unsigned64 {
   return []any{column, operator, value}, nil
 }
+
+ConditionArrayUintExpr "condition on array of integers" ←
+   column:(value:[A-Za-z0-9]+ !IdentStart
+           &{ return c.columnIsOfType(value, "array(uint)") }
+            { return c.acceptColumn() }) _
+   "=" _ value:Unsigned64 {
+     return []any{"has(", column, ",", value, ")"}, nil
+   }
+ / column:(value:[A-Za-z0-9]+ !IdentStart
+           &{ return c.columnIsOfType(value, "array(uint)") }
+            { return c.acceptColumn() }) _
+   "!=" _ value:Unsigned64 {
+     return []any{"NOT has(", column, ",", value, ")"}, nil
+   }
 
 ConditionASExpr "condition on AS number" ←
  column:("SrcAS"i !IdentStart { return c.acceptColumn() }
