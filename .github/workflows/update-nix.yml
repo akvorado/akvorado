@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v23
       - name: Update Nix lockfile
-        run: nix flake lock --update-input ${{ matrix.source }}
+        run: nix flake update ${{ matrix.source }}
       - name: Create pull request
         uses: peter-evans/create-pull-request@v5
         with:
