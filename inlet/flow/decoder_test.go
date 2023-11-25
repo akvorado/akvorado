@@ -24,22 +24,22 @@ func BenchmarkDecodeEncodeNetflow(b *testing.B) {
 	sch := schema.NewMock(b)
 	nfdecoder := netflow.New(r, decoder.Dependencies{Schema: sch})
 
-	template := helpers.ReadPcapPayload(b, filepath.Join("decoder", "netflow", "testdata", "options-template.pcap"))
+	template := helpers.ReadPcapL4(b, filepath.Join("decoder", "netflow", "testdata", "options-template.pcap"))
 	got := nfdecoder.Decode(decoder.RawFlow{Payload: template, Source: net.ParseIP("127.0.0.1")})
 	if got == nil || len(got) != 0 {
 		b.Fatal("Decode() error on options template")
 	}
-	data := helpers.ReadPcapPayload(b, filepath.Join("decoder", "netflow", "testdata", "options-data.pcap"))
+	data := helpers.ReadPcapL4(b, filepath.Join("decoder", "netflow", "testdata", "options-data.pcap"))
 	got = nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 	if got == nil || len(got) != 0 {
 		b.Fatal("Decode() error on options data")
 	}
-	template = helpers.ReadPcapPayload(b, filepath.Join("decoder", "netflow", "testdata", "template.pcap"))
+	template = helpers.ReadPcapL4(b, filepath.Join("decoder", "netflow", "testdata", "template.pcap"))
 	got = nfdecoder.Decode(decoder.RawFlow{Payload: template, Source: net.ParseIP("127.0.0.1")})
 	if got == nil || len(got) != 0 {
 		b.Fatal("Decode() error on template")
 	}
-	data = helpers.ReadPcapPayload(b, filepath.Join("decoder", "netflow", "testdata", "data.pcap"))
+	data = helpers.ReadPcapL4(b, filepath.Join("decoder", "netflow", "testdata", "data.pcap"))
 
 	for _, withEncoding := range []bool{true, false} {
 		title := map[bool]string{
@@ -67,7 +67,7 @@ func BenchmarkDecodeEncodeSflow(b *testing.B) {
 	r := reporter.NewMock(b)
 	sch := schema.NewMock(b)
 	sdecoder := sflow.New(r, decoder.Dependencies{Schema: sch})
-	data := helpers.ReadPcapPayload(b, filepath.Join("decoder", "sflow", "testdata", "data-1140.pcap"))
+	data := helpers.ReadPcapL4(b, filepath.Join("decoder", "sflow", "testdata", "data-1140.pcap"))
 
 	for _, withEncoding := range []bool{true, false} {
 		title := map[bool]string{

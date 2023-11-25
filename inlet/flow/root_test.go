@@ -32,7 +32,7 @@ func TestFlow(t *testing.T) {
 		"data.pcap", "data.pcap", "data.pcap", "data.pcap",
 	} {
 		outFile := path.Join(outDir, fmt.Sprintf("data-%d", idx))
-		err := os.WriteFile(outFile, helpers.ReadPcapPayload(t, path.Join(base, f)), 0o666)
+		err := os.WriteFile(outFile, helpers.ReadPcapL4(t, path.Join(base, f)), 0o666)
 		if err != nil {
 			t.Fatalf("WriteFile(%q) error:\n%+v", outFile, err)
 		}

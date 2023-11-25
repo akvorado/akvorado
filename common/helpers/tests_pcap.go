@@ -15,23 +15,45 @@ import (
 	"github.com/google/gopacket/pcapgo"
 )
 
-// ReadPcapPayload reads and parses a PCAP file and return the payload (Layer 4).
-func ReadPcapPayload(t testing.TB, pcapfile string) []byte {
-	t.Helper()
+// readPcap reads and parse a PCAP file.
+func readPcap(t testing.TB, pcapfile string) *gopacket.PacketSource {
 	f, err := os.Open(pcapfile)
 	if err != nil {
 		t.Fatalf("Open(%q) error:\n%+v", pcapfile, err)
 	}
-	defer f.Close()
+	t.Cleanup(func() {
+		f.Close()
+	})
 
 	reader, err := pcapgo.NewReader(f)
 	if err != nil {
 		t.Fatalf("NewReader(%q) error:\n%+v", pcapfile, err)
 	}
+	return gopacket.NewPacketSource(reader, layers.LayerTypeEthernet)
+}
+
+// ReadPcapL4 reads and parses a PCAP file and returns the payload (Layer 4). If
+// there are several packets, they are concatenated.
+func ReadPcapL4(t testing.TB, pcapfile string) []byte {
+	t.Helper()
+	source := readPcap(t, pcapfile)
 	payload := bytes.NewBuffer([]byte{})
-	source := gopacket.NewPacketSource(reader, layers.LayerTypeEthernet)
 	for packet := range source.Packets() {
 		payload.Write(packet.TransportLayer().LayerPayload())
+	}
+	return payload.Bytes()
+}
+
+// ReadPcapL2 reads and parses a PCAP file and returns the payload (Layer 2). If
+// there are several packets, only the first one is returned.
+func ReadPcapL2(t testing.TB, pcapfile string) []byte {
+	t.Helper()
+	source := readPcap(t, pcapfile)
+	payload := bytes.NewBuffer([]byte{})
+	for packet := range source.Packets() {
+		payload.Write(packet.LinkLayer().LayerContents())
+		payload.Write(packet.LinkLayer().LayerPayload())
+		break
 	}
 	return payload.Bytes()
 }
