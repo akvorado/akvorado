@@ -20,7 +20,7 @@ func TestDecode(t *testing.T) {
 	sdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()})
 
 	// Send data
-	data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-1140.pcap"))
+	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-1140.pcap"))
 	got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 	if got == nil {
 		t.Fatalf("Decode() error on data")
@@ -180,7 +180,7 @@ func TestDecodeInterface(t *testing.T) {
 
 	t.Run("local interface", func(t *testing.T) {
 		// Send data
-		data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-local-interface.pcap"))
+		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-local-interface.pcap"))
 		got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 		if got == nil {
 			t.Fatalf("Decode() error on data")
@@ -214,7 +214,7 @@ func TestDecodeInterface(t *testing.T) {
 
 	t.Run("discard interface", func(t *testing.T) {
 		// Send data
-		data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-discard-interface.pcap"))
+		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-discard-interface.pcap"))
 		got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 		if got == nil {
 			t.Fatalf("Decode() error on data")
@@ -249,7 +249,7 @@ func TestDecodeInterface(t *testing.T) {
 
 	t.Run("multiple interfaces", func(t *testing.T) {
 		// Send data
-		data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-multiple-interfaces.pcap"))
+		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-multiple-interfaces.pcap"))
 		got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 		if got == nil {
 			t.Fatalf("Decode() error on data")
@@ -288,7 +288,7 @@ func TestDecodeSamples(t *testing.T) {
 
 	t.Run("expanded flow sample", func(t *testing.T) {
 		// Send data
-		data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-sflow-expanded-sample.pcap"))
+		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-sflow-expanded-sample.pcap"))
 		got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 		if got == nil {
 			t.Fatalf("Decode() error on data")
@@ -336,7 +336,7 @@ func TestDecodeSamples(t *testing.T) {
 
 	t.Run("flow sample with IPv4 data", func(t *testing.T) {
 		// Send data
-		data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-sflow-ipv4-data.pcap"))
+		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-sflow-ipv4-data.pcap"))
 		got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 		if got == nil {
 			t.Fatalf("Decode() error on data")
@@ -375,7 +375,7 @@ func TestDecodeSamples(t *testing.T) {
 	})
 
 	t.Run("flow sample with IPv4 raw packet", func(t *testing.T) {
-		data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-sflow-raw-ipv4.pcap"))
+		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-sflow-raw-ipv4.pcap"))
 		got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 		if got == nil {
 			t.Fatalf("Decode() error on data")
@@ -427,7 +427,7 @@ func TestDecodeSamples(t *testing.T) {
 	})
 
 	t.Run("flow sample with ICMPv4", func(t *testing.T) {
-		data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-icmpv4.pcap"))
+		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-icmpv4.pcap"))
 		got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 		if got == nil {
 			t.Fatalf("Decode() error on data")
@@ -463,7 +463,7 @@ func TestDecodeSamples(t *testing.T) {
 	})
 
 	t.Run("flow sample with ICMPv6", func(t *testing.T) {
-		data := helpers.ReadPcapPayload(t, filepath.Join("testdata", "data-icmpv6.pcap"))
+		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-icmpv6.pcap"))
 		got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 		if got == nil {
 			t.Fatalf("Decode() error on data")

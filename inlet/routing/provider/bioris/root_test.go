@@ -339,7 +339,7 @@ func TestBioRIS(t *testing.T) {
 	{
 		send := func(t *testing.T, conn net.Conn, pcap string) {
 			t.Helper()
-			_, err := conn.Write(helpers.ReadPcapPayload(t, path.Join("..", "bmp", "testdata", pcap)))
+			_, err := conn.Write(helpers.ReadPcapL4(t, path.Join("..", "bmp", "testdata", pcap)))
 			if err != nil {
 				t.Fatalf("Write() error:\n%+v", err)
 			}
