@@ -6,6 +6,7 @@ package cmd_test
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -495,5 +496,66 @@ func TestDevNullDefault(t *testing.T) {
 	}
 	if diff := helpers.Diff(parsed, expected); diff != "" {
 		t.Errorf("Parse() (-got, +want):\n%s", diff)
+	}
+}
+
+func TestZeroCanOverrideDefault(t *testing.T) {
+	config := `---
+module1:
+ topic: flows
+ workers: 10
+module2:
+ details:
+  workers: 0
+ stuff: ""
+`
+	configFile := filepath.Join(t.TempDir(), "config.yaml")
+	os.WriteFile(configFile, []byte(config), 0o644)
+
+	c := cmd.ConfigRelatedOptions{
+		Path: configFile,
+		Dump: true,
+	}
+
+	parsed := dummyConfiguration{}
+	expected := dummyConfiguration{
+		Module1: dummyModule1Configuration{
+			Listen:  "127.0.0.1:8080",
+			Topic:   "flows",
+			Workers: 10,
+		},
+		Module2: dummyModule2Configuration{
+			Details: dummyModule2DetailsConfiguration{
+				Workers:       0,
+				IntervalValue: time.Minute,
+			},
+			MoreDetails: MoreDetails{
+				Stuff: "",
+			},
+			Elements: []dummyModule2ElementsConfiguration{
+				{
+					Name:  "el1",
+					Gauge: 10,
+				}, {
+					Name:  "el2",
+					Gauge: 11,
+				},
+			},
+		},
+	}
+	out := bytes.NewBuffer([]byte{})
+	if err := c.Parse(out, "dummy", &parsed); err != nil {
+		t.Fatalf("Parse() error:\n%+v", err)
+	}
+	if diff := helpers.Diff(parsed, expected); diff != "" {
+		t.Fatalf("Parse() (-got, +want):\n%s", diff)
+	}
+
+	log.Printf("output:\n%s", out.Bytes())
+	if !bytes.Contains(out.Bytes(), []byte(`stuff: ""`)) {
+		t.Errorf("Dumped configuration should contain `stuff: \"\"`")
+	}
+	if !bytes.Contains(out.Bytes(), []byte(`workers: 0`)) {
+		t.Errorf("Dumped configuration should contain `workers: 0`")
 	}
 }
