@@ -16,6 +16,7 @@ identified with a specific icon:
 - 💥 *inlet*: many metrics renamed to match [Prometheus best practices](https://prometheus.io/docs/practices/naming/)
 - ✨ *inlet*: add the following collected data (disabled by default):
   `MPLSLabels`, `MPLS1stLabel`, `MPLS2ndLabel`, and `MPLS3rdLabel`
+- 🩹 *inlet*: fix static metadata provider configuration validation
 - 🩹 *docker*: ensure ClickHouse init script is executed even when database already exists
 - 🌱 *docker*: update ClickHouse to 23.8 (this is not mandatory)
 - 🌱 *orchestrator*: add `orchestrator`→`clickhouse`→`prometheus-endpoint` to configure an endpoint to expose metrics to Prometheus

@@ -19,7 +19,7 @@ type ExporterConfiguration struct {
 	// Name is the name of the exporter
 	Name string `validate:"required"`
 	// Default is used if not empty for any unknown ifindexes
-	Default provider.Interface `validate:"omitempty,dive"`
+	Default provider.Interface `validate:"omitempty"`
 	// IfIndexes is a map from interface indexes to interfaces
 	IfIndexes map[uint]provider.Interface `validate:"omitempty,dive"`
 }
