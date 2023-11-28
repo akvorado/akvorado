@@ -99,6 +99,7 @@ const (
 	ColumnMPLS1stLabel
 	ColumnMPLS2ndLabel
 	ColumnMPLS3rdLabel
+	ColumnMPLS4thLabel
 
 	// ColumnLast points to after the last static column, custom dictionaries
 	// (dynamic columns) come after ColumnLast
@@ -440,6 +441,15 @@ END`,
 				ClickHouseMainOnly: true,
 				ClickHouseType:     "UInt32",
 				ClickHouseAlias:    "MPLSLabels[3]",
+				ParserType:         "uint",
+			},
+			{
+				Key:                ColumnMPLS4thLabel,
+				Disabled:           true,
+				Depends:            []ColumnKey{ColumnMPLSLabels},
+				ClickHouseMainOnly: true,
+				ClickHouseType:     "UInt32",
+				ClickHouseAlias:    "MPLSLabels[4]",
 				ParserType:         "uint",
 			},
 		},
