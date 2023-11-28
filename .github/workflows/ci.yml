@@ -117,7 +117,7 @@ jobs:
       - name: Build
         run: make && ./bin/akvorado version
       - name: Tests
-        run: make test-coverage
+        run: make test-coverage-go
       - uses: actions/upload-artifact@v3
         with:
           name: macos-coverage
