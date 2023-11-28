@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/netip"
+	"strings"
 	"testing"
 	"time"
 
@@ -85,6 +86,27 @@ func TestCore(t *testing.T) {
 		return msg
 	}
 
+	expectedFlowMessage := func(exporter string, in, out uint32) *schema.FlowMessage {
+		expected := flowMessage(exporter, in, out)
+		expected.SrcAS = 35908
+		expected.DstAS = 0 // not in database
+		expected.InIf = 0  // not serialized
+		expected.OutIf = 0 // not serialized
+		expected.ExporterAddress = netip.AddrFrom16(expected.ExporterAddress.As16())
+		expected.SrcAddr = netip.AddrFrom16(expected.SrcAddr.As16())
+		expected.DstAddr = netip.AddrFrom16(expected.DstAddr.As16())
+		expected.ProtobufDebug[schema.ColumnSrcCountry] = "BT"
+		expected.ProtobufDebug[schema.ColumnDstCountry] = "GB"
+		expected.ProtobufDebug[schema.ColumnInIfName] = fmt.Sprintf("Gi0/0/%d", in)
+		expected.ProtobufDebug[schema.ColumnOutIfName] = fmt.Sprintf("Gi0/0/%d", out)
+		expected.ProtobufDebug[schema.ColumnInIfDescription] = fmt.Sprintf("Interface %d", in)
+		expected.ProtobufDebug[schema.ColumnOutIfDescription] = fmt.Sprintf("Interface %d", out)
+		expected.ProtobufDebug[schema.ColumnInIfSpeed] = 1000
+		expected.ProtobufDebug[schema.ColumnOutIfSpeed] = 1000
+		expected.ProtobufDebug[schema.ColumnExporterName] = strings.ReplaceAll(exporter, ".", "_")
+		return expected
+	}
+
 	t.Run("kafka", func(t *testing.T) {
 		// Inject several messages with a cache miss from the SNMP
 		// component for each of them. No message sent to Kafka.
@@ -146,23 +168,7 @@ func TestCore(t *testing.T) {
 				t.Fatalf("Kafka message encoding error:\n%+v", err)
 			}
 			got := sch.ProtobufDecode(t, b)
-			expected := flowMessage("192.0.2.142", 434, 677)
-			expected.SrcAS = 35908
-			expected.DstAS = 0 // not in database
-			expected.InIf = 0  // not serialized
-			expected.OutIf = 0 // not serialized
-			expected.ExporterAddress = netip.AddrFrom16(expected.ExporterAddress.As16())
-			expected.SrcAddr = netip.AddrFrom16(expected.SrcAddr.As16())
-			expected.DstAddr = netip.AddrFrom16(expected.DstAddr.As16())
-			expected.ProtobufDebug[schema.ColumnSrcCountry] = "BT"
-			expected.ProtobufDebug[schema.ColumnDstCountry] = "GB"
-			expected.ProtobufDebug[schema.ColumnInIfName] = "Gi0/0/434"
-			expected.ProtobufDebug[schema.ColumnOutIfName] = "Gi0/0/677"
-			expected.ProtobufDebug[schema.ColumnInIfDescription] = "Interface 434"
-			expected.ProtobufDebug[schema.ColumnOutIfDescription] = "Interface 677"
-			expected.ProtobufDebug[schema.ColumnInIfSpeed] = 1000
-			expected.ProtobufDebug[schema.ColumnOutIfSpeed] = 1000
-			expected.ProtobufDebug[schema.ColumnExporterName] = "192_0_2_142"
+			expected := expectedFlowMessage("192.0.2.142", 434, 677)
 			if diff := helpers.Diff(&got, expected); diff != "" {
 				t.Errorf("Kafka message (-got, +want):\n%s", diff)
 			}
@@ -210,7 +216,7 @@ func TestCore(t *testing.T) {
 		}
 	})
 
-	// Test HTTP flow clients
+	// Test HTTP flow clients (JSON)
 	t.Run("http flows", func(t *testing.T) {
 		c.httpFlowFlushDelay = 20 * time.Millisecond
 
@@ -316,6 +322,46 @@ func TestCore(t *testing.T) {
 		}
 		if count != 4 {
 			t.Fatalf("GET /api/v0/inlet/flows got less than 4 flows (%d)", count)
+		}
+	})
+
+	// Test HTTP flow clients using protobuf
+	time.Sleep(10 * time.Millisecond)
+	t.Run("http flows with protovuf", func(t *testing.T) {
+		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s/api/v0/inlet/flows?limit=1", c.d.HTTP.LocalAddr()), nil)
+		if err != nil {
+			t.Fatalf("http.NewRequest() error:\n%+v", err)
+		}
+		req.Header.Set("accept", "application/x-protobuf")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatalf("GET /api/v0/inlet/flows:\n%+v", err)
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != 200 {
+			t.Fatalf("GET /api/v0/inlet/flows status code %d", resp.StatusCode)
+		}
+
+		// Produce some flows
+		for i := 0; i < 12; i++ {
+			kafkaProducer.ExpectInputAndSucceed()
+			flowComponent.Inject(flowMessage("192.0.2.142", 434, 677))
+		}
+
+		// Get the resulting flow
+		reader := bufio.NewReader(resp.Body)
+		got, err := io.ReadAll(reader)
+		if err != nil {
+			t.Fatalf("GET /api/v0/inlet/flows error while reading:\n%+v", err)
+		}
+		t.Logf("got %v", got)
+
+		// Decode
+		sch := schema.NewMock(t)
+		decoded := sch.ProtobufDecode(t, got)
+		expected := expectedFlowMessage("192.0.2.142", 434, 677)
+		if diff := helpers.Diff(decoded, expected); diff != "" {
+			t.Errorf("HTTP message (-got, +want):\n%s", diff)
 		}
 	})
 }

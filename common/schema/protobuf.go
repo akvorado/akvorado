@@ -119,6 +119,7 @@ func (schema *Schema) ProtobufMarshal(bf *FlowMessage) []byte {
 	sizeLen := len(bf.protobuf) - end
 	result := bf.protobuf[maxSizeVarint-sizeLen : end]
 	copy(result, bf.protobuf[end:end+sizeLen])
+	bf.protobuf = result
 
 	return result
 }
@@ -245,6 +246,12 @@ func (column *Column) appendDebug(bf *FlowMessage, value interface{}) {
 	} else {
 		bf.ProtobufDebug[column.Key] = value
 	}
+}
+
+// Bytes returns protobuf bytes. The flow should have been processed by
+// `ProtobufMarshal` first.
+func (bf *FlowMessage) Bytes() []byte {
+	return bf.protobuf
 }
 
 func (bf *FlowMessage) init() {
