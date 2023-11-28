@@ -137,7 +137,7 @@ and `DstPort`.
 
 The orchestrator automatically defines the TTL for the system log tables (like
 `system.query_log`). The default TTL is 30 days. You can disable that by setting
-`orchestrator`→`clickhouse`→`system-logs-ttl` to 0.
+`orchestrator`→`clickhouse`→`system-log-ttl` to 0.
 
 - ✨ *inlet*: add `schema`→`enabled`, `schema`→`disabled`,
   `schema`→`main-table-only`, and `schema`→`not-main-table-only` to alter
