@@ -113,8 +113,8 @@ const graph = computed((): ECOption => {
               v > 0 && positiveSum > 0
                 ? v / positiveSum
                 : v < 0 && negativeSum < 0
-                ? -v / negativeSum
-                : v,
+                  ? -v / negativeSum
+                  : v,
             ),
           ];
         }
@@ -145,8 +145,8 @@ const graph = computed((): ECOption => {
           data.graphType === "stacked100"
             ? (v: number) => (v * 100).toFixed(0)
             : ["inl2%", "outl2%"].includes(data.units)
-            ? (v: number) => v.toFixed(0)
-            : formatXps,
+              ? (v: number) => v.toFixed(0)
+              : formatXps,
       },
       axisPointer: {
         label: {
@@ -154,8 +154,8 @@ const graph = computed((): ECOption => {
             data.graphType === "stacked100"
               ? ({ value }) => ((value.valueOf() as number) * 100).toFixed(1)
               : ["inl2%", "outl2%"].includes(data.units)
-              ? ({ value }) => (value.valueOf() as number).toFixed(0)
-              : ({ value }) => formatXps(value.valueOf() as number),
+                ? ({ value }) => (value.valueOf() as number).toFixed(0)
+                : ({ value }) => formatXps(value.valueOf() as number),
         },
       },
     },
