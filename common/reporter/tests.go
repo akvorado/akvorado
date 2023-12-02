@@ -16,7 +16,7 @@ func NewMock(t testing.TB) *Reporter {
 	t.Helper()
 	r, err := New(Configuration{})
 	if err != nil {
-		t.Errorf("New() error:\n%+v", err)
+		t.Fatalf("New() error:\n%+v", err)
 	}
 	return r
 }
