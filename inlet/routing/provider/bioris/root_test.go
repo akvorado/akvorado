@@ -38,7 +38,7 @@ func TestChooseRouter(t *testing.T) {
 
 	// First test: we have no routers/ris instances and fail with an error
 	t.Run("no router", func(t *testing.T) {
-		expected := "no applicable router found for flow lookup"
+		expected := "no router"
 		_, _, err := c.chooseRouter(netip.MustParseAddr("10.0.0.0"))
 		if diff := helpers.Diff(err.Error(), expected); diff != "" {
 			t.Errorf("Error (-got, +want):\n%s", diff)
@@ -150,13 +150,13 @@ func TestLPMResponseToLookupResult(t *testing.T) {
 			name:     "LPM without route",
 			lpm:      &pb.LPMResponse{},
 			expected: provider.LookupResult{},
-			err:      "lpm: no route returned",
+			err:      "no route found",
 		},
 		{
 			name:     "LPM is nil",
 			lpm:      nil,
 			expected: provider.LookupResult{},
-			err:      "lpm: result empty",
+			err:      "result empty",
 		},
 		{
 			name: "LPM without path",
@@ -164,7 +164,7 @@ func TestLPMResponseToLookupResult(t *testing.T) {
 				Routes: []*rpb.Route{},
 			},
 			expected: provider.LookupResult{},
-			err:      "lpm: no route returned",
+			err:      "no route found",
 		},
 		{
 			name: "LPM with empty path",
@@ -177,7 +177,7 @@ func TestLPMResponseToLookupResult(t *testing.T) {
 				},
 			},
 			expected: provider.LookupResult{},
-			err:      "lpm: no path found",
+			err:      "no path found",
 		},
 		{
 			name: "LPM with nil path",
@@ -192,7 +192,7 @@ func TestLPMResponseToLookupResult(t *testing.T) {
 				},
 			},
 			expected: provider.LookupResult{},
-			err:      "lpm: path has no BGP path",
+			err:      "no path found",
 		},
 		{
 			name: "LPM with default route and more specific, content in BGP Path",

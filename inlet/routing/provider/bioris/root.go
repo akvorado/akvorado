@@ -27,6 +27,15 @@ import (
 	"akvorado/inlet/routing/provider/bmp"
 )
 
+var (
+	errNoRouter       = errors.New("no router")
+	errNoInstance     = errors.New("no RIS instance available")
+	errResultEmpty    = errors.New("result empty")
+	errNoRouteFound   = errors.New("no route found")
+	errNoPathFound    = errors.New("no path found")
+	errInvalidNextHop = errors.New("invalid next hop")
+)
+
 // RISInstanceRuntime represents all connections to a single RIS
 type RISInstanceRuntime struct {
 	conn   *grpc.ClientConn
@@ -222,7 +231,7 @@ func (p *Provider) chooseRouter(agent netip.Addr) (netip.Addr, *RISInstanceRunti
 
 	// Verify that an actual router was found
 	if chosenRouterID.IsUnspecified() {
-		return chosenRouterID, nil, errors.New("no applicable router found for flow lookup")
+		return chosenRouterID, nil, errNoRouter
 	}
 
 	// Randomly select a ris providing the router ID we selected earlier.
@@ -230,7 +239,7 @@ func (p *Provider) chooseRouter(agent netip.Addr) (netip.Addr, *RISInstanceRunti
 	chosenRis = p.routers[chosenRouterID][rand.Intn(len(p.routers[chosenRouterID]))]
 
 	if chosenRis == nil || chosenRouterID.IsUnspecified() {
-		return chosenRouterID, nil, errors.New("no instance available for flow lookup")
+		return chosenRouterID, nil, errNoInstance
 	}
 
 	// Update metrics with the chosen router/ris combination
@@ -251,7 +260,7 @@ func (p *Provider) lpmResponseToLookupResult(lpm *pb.LPMResponse) (bmp.LookupRes
 	var r *rpb.Route
 	largestPfxLen := -1
 	if lpm == nil {
-		return res, fmt.Errorf("lpm: result empty")
+		return res, errResultEmpty
 	}
 
 	// First: find longest matching prefix under all applicable routes
@@ -264,20 +273,20 @@ func (p *Provider) lpmResponseToLookupResult(lpm *pb.LPMResponse) (bmp.LookupRes
 	}
 
 	if r == nil {
-		return res, fmt.Errorf("lpm: no route returned")
+		return res, errNoRouteFound
 	}
 
 	// Assume the first path is the preferred path, we are interested only in that path
 	if len(r.Paths) < 1 {
-		return res, fmt.Errorf("lpm: no path found")
+		return res, errNoPathFound
 	}
 	pfx := r.Paths[0]
 	if pfx == nil {
-		return res, fmt.Errorf("lpm: path is nil")
+		return res, errNoPathFound
 	}
 
 	if pfx.BgpPath == nil {
-		return res, fmt.Errorf("lpm: path has no BGP path")
+		return res, errNoPathFound
 	}
 
 	res.Communities = append(res.Communities, pfx.BgpPath.Communities...)
@@ -299,7 +308,7 @@ func (p *Provider) lpmResponseToLookupResult(lpm *pb.LPMResponse) (bmp.LookupRes
 		bnh := bnet.IPFromProtoIP(nh)
 		nhAddr, ok := netip.AddrFromSlice(bnh.ToNetIP())
 		if !ok {
-			return res, fmt.Errorf("lpm: invalid next hop")
+			return res, errInvalidNextHop
 		}
 		res.NextHop = nhAddr
 	}

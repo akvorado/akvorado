@@ -8,6 +8,7 @@ package bmp
 import (
 	"fmt"
 	"net"
+	"sync/atomic"
 	"time"
 
 	"github.com/benbjohnson/clock"
@@ -25,6 +26,7 @@ type Provider struct {
 	t           tomb.Tomb
 	config      Configuration
 	acceptedRDs map[uint64]struct{}
+	active      atomic.Bool
 
 	address net.Addr
 	metrics metrics
@@ -90,6 +92,7 @@ func (p *Provider) Start() error {
 				}
 				return nil
 			}
+			p.active.Store(true)
 			p.t.Go(func() error {
 				return p.serveConnection(conn.(*net.TCPConn))
 			})

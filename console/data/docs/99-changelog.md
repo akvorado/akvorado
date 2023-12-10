@@ -17,9 +17,12 @@ identified with a specific icon:
 - ✨ *inlet*: add the following collected data (disabled by default):
   `MPLSLabels`, `MPLS1stLabel`, `MPLS2ndLabel`, `MPLS3rdLabel`, and `MPLS4thLabel`
 - 🩹 *inlet*: fix static metadata provider configuration validation
+- 🩹 *inlet*: fix a [performance regression]() when enriching flows
 - 🩹 *docker*: ensure ClickHouse init script is executed even when database already exists
 - 🌱 *docker*: update ClickHouse to 23.8 (this is not mandatory)
 - 🌱 *orchestrator*: add `orchestrator`→`clickhouse`→`prometheus-endpoint` to configure an endpoint to expose metrics to Prometheus
+
+[performance regression](https://github.com/akvorado/akvorado/discussions/988)
 
 ## 1.9.1 - 2023-10-06
 

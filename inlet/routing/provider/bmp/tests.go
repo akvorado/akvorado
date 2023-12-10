@@ -39,6 +39,7 @@ func NewMock(t *testing.T, r *reporter.Reporter, conf provider.Configuration) (*
 // PopulateRIB populates the RIB with a few entries.
 func (p *Provider) PopulateRIB(t *testing.T) {
 	t.Helper()
+	p.active.Store(true)
 	pinfo := p.addPeer(peerKey{
 		exporter: netip.MustParseAddrPort("[::ffff:127.0.0.1]:47389"),
 		ip:       netip.MustParseAddr("::ffff:203.0.113.4"),

@@ -5,7 +5,7 @@ package bmp
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"net/netip"
 
 	"github.com/kentik/patricia"
@@ -16,6 +16,8 @@ import (
 // LookupResult is the result of the Lookup() function.
 type LookupResult = provider.LookupResult
 
+var errNoRouteFound = errors.New("no route found")
+
 // Lookup lookups a route for the provided IP address. It favors the
 // provided next hop if provided. This is somewhat approximate because
 // we use the best route we have, while the exporter may not have this
@@ -23,6 +25,9 @@ type LookupResult = provider.LookupResult
 // The last parameter, the agent, is ignored by this provider.
 func (p *Provider) Lookup(_ context.Context, ip netip.Addr, nh netip.Addr, _ netip.Addr) (LookupResult, error) {
 	if !p.config.CollectASNs && !p.config.CollectASPaths && !p.config.CollectCommunities {
+		return LookupResult{}, nil
+	}
+	if !p.active.Load() {
 		return LookupResult{}, nil
 	}
 	v6 := patricia.NewIPv6Address(ip.AsSlice(), 128)
@@ -51,14 +56,15 @@ func (p *Provider) Lookup(_ context.Context, ip netip.Addr, nh netip.Addr, _ net
 		return false
 	})
 	if len(routes) == 0 {
-		return LookupResult{}, fmt.Errorf("no route found for %s", ip)
+		return LookupResult{}, errNoRouteFound
 	}
 	route := routes[len(routes)-1]
 	attributes := p.rib.rtas.Get(route.attributes)
-	// the next hop is updated from the rib in every case, because the user "opted in" for bmp as source if the lookup result is evaluated
+	// The next hop is updated from the rib in every case, because the user
+	// "opted in" for bmp as source if the lookup result is evaluated
 	nh = netip.Addr(p.rib.nextHops.Get(route.nextHop))
 
-	// prefix len is v6 coded in the bmp rib. We need to substract 96 if it's a v4 prefix
+	// Prefix len is v6 coded in the bmp rib. We need to substract 96 if it's a v4 prefix
 	plen := attributes.plen
 	if ip.Is4() || ip.Is4In6() {
 		plen = plen - 96
