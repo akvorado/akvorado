@@ -91,7 +91,7 @@ console/filter/parser.go: console/filter/parser.peg | $(PIGEON) ; $(info $(M) ge
 
 console/frontend/node_modules: console/frontend/package.json console/frontend/package-lock.json
 console/frontend/node_modules: ; $(info $(M) fetching node modules…)
-	$Q (cd console/frontend ; npm ci --silent --no-audit --no-fund) && touch $@
+	$Q (cd console/frontend ; npm ci --loglevel=error --no-audit --no-fund) && touch $@
 console/data/frontend: $(GENERATED_JS)
 console/data/frontend: $(shell $(LSFILES) console/frontend 2> /dev/null)
 console/data/frontend: ; $(info $(M) building console frontend…)
