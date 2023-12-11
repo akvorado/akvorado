@@ -9,7 +9,7 @@ require (
 	github.com/antonmedv/expr v1.15.5
 	github.com/benbjohnson/clock v1.3.5
 	github.com/bio-routing/bio-rd v0.1.10-0.20230730142204-f71bc383fe42
-	github.com/bits-and-blooms/bitset v1.11.0
+	github.com/bits-and-blooms/bitset v1.12.0
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/chenyahui/gin-cache v1.9.0
 	github.com/docker/docker v24.0.7+incompatible
