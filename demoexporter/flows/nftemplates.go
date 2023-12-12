@@ -11,7 +11,7 @@ import (
 
 	"akvorado/common/helpers"
 
-	"github.com/netsampler/goflow2/decoders/netflow"
+	"github.com/netsampler/goflow2/v2/decoders/netflow"
 )
 
 type flowFamilySettings struct {

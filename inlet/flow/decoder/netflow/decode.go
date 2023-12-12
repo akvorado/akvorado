@@ -12,28 +12,30 @@ import (
 	"akvorado/common/schema"
 	"akvorado/inlet/flow/decoder"
 
-	"github.com/netsampler/goflow2/decoders/netflow"
-	"github.com/netsampler/goflow2/producer"
+	"github.com/netsampler/goflow2/v2/decoders/netflow"
+	protoproducer "github.com/netsampler/goflow2/v2/producer/proto"
 )
 
-func (nd *Decoder) decode(msgDec interface{}, samplingRateSys producer.SamplingRateSystem) []*schema.FlowMessage {
+func (nd *Decoder) decodeIPFIX(packet netflow.IPFIXPacket, samplingRateSys protoproducer.SamplingRateSystem) []*schema.FlowMessage {
+	dataFlowSet, _, _, optionsDataFlowSet := protoproducer.SplitIPFIXSets(packet)
+	obsDomainID := packet.ObservationDomainId
+	return nd.decodeCommon(obsDomainID, dataFlowSet, optionsDataFlowSet, samplingRateSys)
+}
+
+func (nd *Decoder) decodeNFv9(packet netflow.NFv9Packet, samplingRateSys protoproducer.SamplingRateSystem) []*schema.FlowMessage {
+	dataFlowSet, _, _, optionsDataFlowSet := protoproducer.SplitNetFlowSets(packet)
+	obsDomainID := packet.SourceId
+	return nd.decodeCommon(obsDomainID, dataFlowSet, optionsDataFlowSet, samplingRateSys)
+}
+
+func (nd *Decoder) decodeCommon(obsDomainID uint32, dataFlowSet []netflow.DataFlowSet, optionsDataFlowSet []netflow.OptionsDataFlowSet, samplingRateSys protoproducer.SamplingRateSystem) []*schema.FlowMessage {
 	flowMessageSet := []*schema.FlowMessage{}
-	var obsDomainID uint32
-	var dataFlowSet []netflow.DataFlowSet
-	var optionsDataFlowSet []netflow.OptionsDataFlowSet
-	switch msgDecConv := msgDec.(type) {
-	case netflow.NFv9Packet:
-		dataFlowSet, _, _, optionsDataFlowSet = producer.SplitNetFlowSets(msgDecConv)
-		obsDomainID = msgDecConv.SourceId
-	case netflow.IPFIXPacket:
-		dataFlowSet, _, _, optionsDataFlowSet = producer.SplitIPFIXSets(msgDecConv)
-		obsDomainID = msgDecConv.ObservationDomainId
-	default:
-		return nil
-	}
 
 	// Get sampling rate
-	samplingRate, found := producer.SearchNetFlowOptionDataSets(optionsDataFlowSet)
+	samplingRate, found, err := protoproducer.SearchNetFlowOptionDataSets(optionsDataFlowSet)
+	if err != nil {
+		return nil
+	}
 	if samplingRateSys != nil {
 		if found {
 			samplingRateSys.AddSamplingRate(10, obsDomainID, samplingRate)

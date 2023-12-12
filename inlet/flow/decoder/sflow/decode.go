@@ -9,17 +9,11 @@ import (
 	"akvorado/common/schema"
 	"akvorado/inlet/flow/decoder"
 
-	"github.com/netsampler/goflow2/decoders/sflow"
+	"github.com/netsampler/goflow2/v2/decoders/sflow"
 )
 
-func (nd *Decoder) decode(msgDec interface{}) []*schema.FlowMessage {
+func (nd *Decoder) decode(packet sflow.Packet) []*schema.FlowMessage {
 	flowMessageSet := []*schema.FlowMessage{}
-	switch msgDec.(type) {
-	case sflow.Packet:
-	default:
-		return nil
-	}
-	packet := msgDec.(sflow.Packet)
 
 	for _, flowSample := range packet.Samples {
 		var records []sflow.FlowRecord
@@ -87,21 +81,21 @@ func (nd *Decoder) decode(msgDec interface{}) []*schema.FlowMessage {
 					}
 				}
 			case sflow.SampledIPv4:
-				bf.SrcAddr = decoder.DecodeIP(recordData.Base.SrcIP)
-				bf.DstAddr = decoder.DecodeIP(recordData.Base.DstIP)
-				l3length = uint64(recordData.Base.Length)
-				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(recordData.Base.Protocol))
-				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPort, uint64(recordData.Base.SrcPort))
-				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPort, uint64(recordData.Base.DstPort))
+				bf.SrcAddr = decoder.DecodeIP(recordData.SrcIP)
+				bf.DstAddr = decoder.DecodeIP(recordData.DstIP)
+				l3length = uint64(recordData.Length)
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(recordData.Protocol))
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPort, uint64(recordData.SrcPort))
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPort, uint64(recordData.DstPort))
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, helpers.ETypeIPv4)
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPTos, uint64(recordData.Tos))
 			case sflow.SampledIPv6:
-				bf.SrcAddr = decoder.DecodeIP(recordData.Base.SrcIP)
-				bf.DstAddr = decoder.DecodeIP(recordData.Base.DstIP)
-				l3length = uint64(recordData.Base.Length)
-				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(recordData.Base.Protocol))
-				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPort, uint64(recordData.Base.SrcPort))
-				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPort, uint64(recordData.Base.DstPort))
+				bf.SrcAddr = decoder.DecodeIP(recordData.SrcIP)
+				bf.DstAddr = decoder.DecodeIP(recordData.DstIP)
+				l3length = uint64(recordData.Length)
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(recordData.Protocol))
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPort, uint64(recordData.SrcPort))
+				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPort, uint64(recordData.DstPort))
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, helpers.ETypeIPv6)
 				nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPTos, uint64(recordData.Priority))
 			case sflow.SampledEthernet:

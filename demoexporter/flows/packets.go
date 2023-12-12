@@ -3,7 +3,7 @@
 
 package flows
 
-import "github.com/netsampler/goflow2/decoders/netflow"
+import "github.com/netsampler/goflow2/v2/decoders/netflow"
 
 type nfv9Header struct {
 	Version        uint16

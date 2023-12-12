@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/netsampler/goflow2/decoders/netflow"
-	"github.com/netsampler/goflow2/producer"
+	"github.com/netsampler/goflow2/v2/decoders/netflow"
+	protoproducer "github.com/netsampler/goflow2/v2/producer/proto"
 
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
@@ -26,7 +26,7 @@ type Decoder struct {
 	// Templates and sampling systems
 	systemsLock sync.RWMutex
 	templates   map[string]*templateSystem
-	sampling    map[string]producer.SamplingRateSystem
+	sampling    map[string]protoproducer.SamplingRateSystem
 
 	metrics struct {
 		errors             *reporter.CounterVec
@@ -43,7 +43,7 @@ func New(r *reporter.Reporter, dependencies decoder.Dependencies) decoder.Decode
 		r:         r,
 		d:         dependencies,
 		templates: map[string]*templateSystem{},
-		sampling:  map[string]producer.SamplingRateSystem{},
+		sampling:  map[string]protoproducer.SamplingRateSystem{},
 	}
 
 	nd.metrics.errors = nd.r.CounterVec(
@@ -88,16 +88,15 @@ func New(r *reporter.Reporter, dependencies decoder.Dependencies) decoder.Decode
 type templateSystem struct {
 	nd        *Decoder
 	key       string
-	templates *netflow.BasicTemplateSystem
+	templates netflow.NetFlowTemplateSystem
 }
 
-func (s *templateSystem) AddTemplate(version uint16, obsDomainID uint32, template interface{}) {
-	s.templates.AddTemplate(version, obsDomainID, template)
+func (s *templateSystem) AddTemplate(version uint16, obsDomainID uint32, templateID uint16, template interface{}) error {
+	if err := s.templates.AddTemplate(version, obsDomainID, templateID, template); err != nil {
+		return nil
+	}
 
-	var (
-		templateID uint16
-		typeStr    string
-	)
+	var typeStr string
 	switch templateIDConv := template.(type) {
 	case netflow.IPFIXOptionsTemplateRecord:
 		templateID = templateIDConv.TemplateId
@@ -117,10 +116,15 @@ func (s *templateSystem) AddTemplate(version uint16, obsDomainID uint32, templat
 		strconv.Itoa(int(templateID)),
 		typeStr,
 	).Inc()
+	return nil
 }
 
 func (s *templateSystem) GetTemplate(version uint16, obsDomainID uint32, templateID uint16) (interface{}, error) {
 	return s.templates.GetTemplate(version, obsDomainID, templateID)
+}
+
+func (s *templateSystem) RemoveTemplate(version uint16, obsDomainID uint32, templateID uint16) (interface{}, error) {
+	return s.templates.RemoveTemplate(version, obsDomainID, templateID)
 }
 
 // Decode decodes a Netflow payload.
@@ -141,7 +145,7 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 		nd.systemsLock.Unlock()
 	}
 	if !sok {
-		sampling = producer.CreateSamplingSystem()
+		sampling = protoproducer.CreateSamplingSystem()
 		nd.systemsLock.Lock()
 		nd.sampling[key] = sampling
 		nd.systemsLock.Unlock()
@@ -149,11 +153,14 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 
 	ts := uint64(in.TimeReceived.UTC().Unix())
 	buf := bytes.NewBuffer(in.Payload)
-	msgDec, err := netflow.DecodeMessage(buf, templates)
-	if err != nil {
+	var (
+		packetNFv9  netflow.NFv9Packet
+		packetIPFIX netflow.IPFIXPacket
+	)
+	if err := netflow.DecodeMessageVersion(buf, templates, &packetNFv9, &packetIPFIX); err != nil {
 		switch err.(type) {
-		case *netflow.ErrorTemplateNotFound:
-			nd.metrics.errors.WithLabelValues(key, "template not found").Inc()
+		case *netflow.DecoderError:
+			nd.metrics.errors.WithLabelValues(key, err.Error()).Inc()
 		default:
 			nd.metrics.errors.WithLabelValues(key, "error decoding").Inc()
 		}
@@ -166,14 +173,13 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 	)
 
 	// Update some stats
-	switch msgDecConv := msgDec.(type) {
-	case netflow.IPFIXPacket:
-		version = "10"
-		flowSets = msgDecConv.FlowSets
-	case netflow.NFv9Packet:
+	if packetNFv9.Version == 9 {
 		version = "9"
-		flowSets = msgDecConv.FlowSets
-	default:
+		flowSets = packetNFv9.FlowSets
+	} else if packetIPFIX.Version == 10 {
+		version = "10"
+		flowSets = packetIPFIX.FlowSets
+	} else {
 		nd.metrics.stats.WithLabelValues(key, "unknown").
 			Inc()
 		return nil
@@ -209,7 +215,12 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 		}
 	}
 
-	flowMessageSet := nd.decode(msgDec, sampling)
+	var flowMessageSet []*schema.FlowMessage
+	if packetNFv9.Version == 9 {
+		flowMessageSet = nd.decodeNFv9(packetNFv9, sampling)
+	} else if packetIPFIX.Version == 10 {
+		flowMessageSet = nd.decodeIPFIX(packetIPFIX, sampling)
+	}
 	exporterAddress, _ := netip.AddrFromSlice(in.Source.To16())
 	for _, fmsg := range flowMessageSet {
 		fmsg.TimeReceived = ts
