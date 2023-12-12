@@ -8,7 +8,7 @@ import (
 	"bytes"
 	"net"
 
-	"github.com/netsampler/goflow2/decoders/sflow"
+	"github.com/netsampler/goflow2/v2/decoders/sflow"
 
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
@@ -85,15 +85,11 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 	key := in.Source.String()
 
 	ts := uint64(in.TimeReceived.UTC().Unix())
-	msgDec, err := sflow.DecodeMessage(buf)
-	if err != nil {
+	var packet sflow.Packet
+	if err := sflow.DecodeMessageVersion(buf, &packet); err != nil {
 		switch err.(type) {
-		case *sflow.ErrorVersion:
-			nd.metrics.errors.WithLabelValues(key, "error version").Inc()
-		case *sflow.ErrorIPVersion:
-			nd.metrics.errors.WithLabelValues(key, "error ip version").Inc()
-		case *sflow.ErrorDataFormat:
-			nd.metrics.errors.WithLabelValues(key, "error data format").Inc()
+		case *sflow.DecoderError:
+			nd.metrics.errors.WithLabelValues(key, err.Error()).Inc()
 		default:
 			nd.metrics.errors.WithLabelValues(key, "error decoding").Inc()
 		}
@@ -101,14 +97,9 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 	}
 
 	// Update some stats
-	msgDecConv, ok := msgDec.(sflow.Packet)
-	if !ok {
-		nd.metrics.stats.WithLabelValues(key, "unknown", "unknwon").Inc()
-		return nil
-	}
-	agent := net.IP(msgDecConv.AgentIP).String()
+	agent := net.IP(packet.AgentIP).String()
 	version := "5"
-	samples := msgDecConv.Samples
+	samples := packet.Samples
 	nd.metrics.stats.WithLabelValues(key, agent, version).Inc()
 	for _, s := range samples {
 		switch sConv := s.(type) {
@@ -130,7 +121,7 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 		}
 	}
 
-	flowMessageSet := nd.decode(msgDec)
+	flowMessageSet := nd.decode(packet)
 	for _, fmsg := range flowMessageSet {
 		fmsg.TimeReceived = ts
 	}

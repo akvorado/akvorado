@@ -31,7 +31,8 @@ require (
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/netsampler/goflow2 v1.1.1-0.20221008154147-57fad2e0c837
+	github.com/netsampler/goflow2/v2 v2.0.1-0.20231209195630-1a5d58e3cf2f
+	github.com/opencontainers/image-spec v1.1.0-rc5
 	github.com/oschwald/maxminddb-golang v1.12.0
 	github.com/osrg/gobgp/v3 v3.21.0
 	github.com/prometheus/client_golang v1.17.0
@@ -113,7 +114,6 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect
 	github.com/paulmach/orb v0.10.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect
@@ -154,4 +154,4 @@ require (
 	modernc.org/sqlite v1.23.1 // indirect
 )
 
-replace github.com/netsampler/goflow2 => github.com/vincentbernat/goflow2 v1.0.5-0.20231030050810-c2707ac87e7a
+replace github.com/netsampler/goflow2/v2 => github.com/vincentbernat/goflow2/v2 v2.0.0-20231212205418-5bbb9b608ddf

@@ -434,8 +434,8 @@ github.com/ugorji/go/codec v1.1.7/go.mod h1:Ax+UKWsSmolVDwsd+7N3ZtXu+yMGCf907BLY
 github.com/ugorji/go/codec v1.2.11 h1:BMaWp1Bb6fHwEtbplGBGJ498wD+LKlNSl25MjdZY4dU=
 github.com/ugorji/go/codec v1.2.11/go.mod h1:UNopzCgEMSXjBc6AOMqYvWC1ktqTAfzJZUZgYf6w6lg=
 github.com/urfave/cli/v2 v2.1.1/go.mod h1:SE9GqnLQmjVa0iPEY0f1w3ygNIYcIJ0OKPMoW2caLfQ=
-github.com/vincentbernat/goflow2 v1.0.5-0.20231030050810-c2707ac87e7a h1:7cU4DA2flQDqDUswK0cIJzbLPXzu+y/rGC8zdNpnuLo=
-github.com/vincentbernat/goflow2 v1.0.5-0.20231030050810-c2707ac87e7a/go.mod h1:4UZsVGVAs//iMCptUHn3WNScztJeUhZH7kDW2+/vDdQ=
+github.com/vincentbernat/goflow2/v2 v2.0.0-20231212205418-5bbb9b608ddf h1:22fCie695dIdfawLorVvBofR/gkL4/6ttNDMaIPKB1c=
+github.com/vincentbernat/goflow2/v2 v2.0.0-20231212205418-5bbb9b608ddf/go.mod h1:ukZvnBygXBdj29ujoFNiuVZ5xUxJC5DbWLziR8bnvEE=
 github.com/vishvananda/netns v0.0.4 h1:Oeaw1EM2JMxD51g9uhtC0D7erkIjgmj8+JZc26m1YX8=
 github.com/xdg-go/pbkdf2 v1.0.0 h1:Su7DPu48wXMwC3bs7MCNG+z4FhcyEuz5dlvchbq0B0c=
 github.com/xdg-go/pbkdf2 v1.0.0/go.mod h1:jrpuAogTd400dnrH08LKmI/xc1MbPOebTwRqcT5RDeI=
