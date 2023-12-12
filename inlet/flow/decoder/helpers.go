@@ -23,13 +23,14 @@ func ParseIPv4(sch *schema.Component, bf *schema.FlowMessage, data []byte) uint6
 	bf.SrcAddr = DecodeIP(data[12:16])
 	bf.DstAddr = DecodeIP(data[16:20])
 	proto = data[9]
+	fragoffset := binary.BigEndian.Uint16(data[6:8]) & 0x1fff
 	if !sch.IsDisabled(schema.ColumnGroupL3L4) {
 		sch.ProtobufAppendVarint(bf, schema.ColumnIPTos, uint64(data[1]))
 		sch.ProtobufAppendVarint(bf, schema.ColumnIPTTL, uint64(data[8]))
 		sch.ProtobufAppendVarint(bf, schema.ColumnIPFragmentID,
 			uint64(binary.BigEndian.Uint16(data[4:6])))
 		sch.ProtobufAppendVarint(bf, schema.ColumnIPFragmentOffset,
-			uint64(binary.BigEndian.Uint16(data[6:8])&0x1fff))
+			uint64(fragoffset))
 	}
 	ihl := int((data[0] & 0xf) * 4)
 	if len(data) >= ihl {
@@ -37,7 +38,10 @@ func ParseIPv4(sch *schema.Component, bf *schema.FlowMessage, data []byte) uint6
 	} else {
 		data = data[:0]
 	}
-	ParseL4(sch, bf, data, proto)
+	sch.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(proto))
+	if fragoffset == 0 {
+		ParseL4(sch, bf, data, proto)
+	}
 	return l3length
 }
 
@@ -63,13 +67,13 @@ func ParseIPv6(sch *schema.Component, bf *schema.FlowMessage, data []byte) uint6
 		// TODO fragmentID/fragmentOffset are in a separate header
 	}
 	data = data[40:]
+	sch.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(proto))
 	ParseL4(sch, bf, data, proto)
 	return l3length
 }
 
 // ParseL4 parses L4 layer.
 func ParseL4(sch *schema.Component, bf *schema.FlowMessage, data []byte, proto uint8) {
-	sch.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(proto))
 	if proto == 6 || proto == 17 {
 		// UDP or TCP
 		if len(data) > 4 {

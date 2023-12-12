@@ -18,6 +18,7 @@ identified with a specific icon:
   `MPLSLabels`, `MPLS1stLabel`, `MPLS2ndLabel`, `MPLS3rdLabel`, and `MPLS4thLabel`
 - 🩹 *inlet*: fix static metadata provider configuration validation
 - 🩹 *inlet*: fix a [performance regression]() when enriching flows
+- 🩹 *inlet*: do not decode L4 header if IP packet is fragmented
 - 🌱 *docker*: update ClickHouse to 23.8 (this is not mandatory)
 - 🌱 *orchestrator*: add `orchestrator`→`clickhouse`→`prometheus-endpoint` to configure an endpoint to expose metrics to Prometheus
 
