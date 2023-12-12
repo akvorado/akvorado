@@ -159,7 +159,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [ '1.19', 'stable' ]
+        go-version: [ '1.20', 'stable' ]
     needs:
       - dependabot
     if: needs.dependabot.outputs.package-ecosystem != 'npm_and_yarn'

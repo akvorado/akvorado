@@ -1,6 +1,6 @@
 module akvorado
 
-go 1.19
+go 1.20
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.16.0
