@@ -17,6 +17,9 @@ type ConfigEntry struct {
 	Bucket      string      `validate:"required"`
 	Prefix      string
 	Timeout     time.Duration
+	EndpointURL string
+	Mock        bool
+	PathStyle   bool
 }
 
 // Credentials holds the credentials for an S3 bucket. More credential providers might be added in the future.
@@ -26,7 +29,9 @@ type Credentials struct {
 
 // DefaultConfiguration is the default configuration of the s3 client
 func DefaultConfiguration() Configuration {
-	return Configuration{}
+	return Configuration{
+		S3Config: map[string]ConfigEntry{},
+	}
 }
 
 // DefaultConfigEntryConfiguration is the default configuration of a single s3 client/bucket

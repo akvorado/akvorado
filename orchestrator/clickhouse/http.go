@@ -147,6 +147,7 @@ func (c *Component) registerHTTPHandlers() error {
 				read, err := c.d.S3.GetObject(v.S3Config, v.Source)
 				if err != nil {
 					c.r.Err(err).Msg("unable to fetch custom dict csv file from S3")
+					http.Error(w, "unable to fetch custom dict csv file from S3", http.StatusInternalServerError)
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}

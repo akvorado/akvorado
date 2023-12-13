@@ -3,11 +3,14 @@ package s3
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
+	"net/http"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 
 	"gopkg.in/tomb.v2"
@@ -50,6 +53,26 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 			awsConfigOptions = append(awsConfigOptions, config.WithRegion(entry.Credentials.Region))
 		}
 
+		// specify an endpoint, if we have one in config
+		if entry.EndpointURL != "" {
+			awsConfigOptions = append(awsConfigOptions, config.WithEndpointResolverWithOptions(
+				aws.EndpointResolverWithOptionsFunc(func(_, _ string, _ ...interface{}) (aws.Endpoint, error) {
+					return aws.Endpoint{URL: entry.EndpointURL}, nil
+				})))
+		}
+
+		// mock-specific settings
+		if entry.Mock {
+			awsConfigOptions = append(awsConfigOptions,
+				config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider("KEY", "SECRET", "SESSION")),
+				config.WithHTTPClient(&http.Client{
+					Transport: &http.Transport{
+						TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+					},
+				}),
+			)
+		}
+
 		ctx, cancel := context.WithTimeout(c.t.Context(nil), entry.Timeout)
 		defer cancel()
 
@@ -58,8 +81,13 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 			c.r.Logger.Err(err).Msgf("failed to load s3 configuration for %s", name)
 			continue
 		}
-
-		c.clients[name] = s3.NewFromConfig(cfg)
+		if entry.PathStyle {
+			c.clients[name] = s3.NewFromConfig(cfg, func(o *s3.Options) {
+				o.UsePathStyle = true
+			})
+		} else {
+			c.clients[name] = s3.NewFromConfig(cfg)
+		}
 		c.r.Logger.Debug().Msgf("created s3 client %s", name)
 	}
 
@@ -77,6 +105,10 @@ func (c *Component) GetObject(config string, name string) (io.ReadCloser, error)
 	if !ok {
 		c.metrics.getObjectError.WithLabelValues("undefined", "undefined").Inc()
 		return nil, fmt.Errorf("no s3 client configured for %s", config)
+	}
+	if clientconf.Bucket == "" {
+		c.metrics.getObjectError.WithLabelValues(config, "undefined").Inc()
+		return nil, fmt.Errorf("no s3 bucket configured for %s", config)
 	}
 
 	key := clientconf.Prefix + "/" + name
