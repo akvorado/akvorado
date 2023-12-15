@@ -273,6 +273,78 @@ func TestDecodeSamplingRate(t *testing.T) {
 	}
 }
 
+func TestDecodeMultipleSamplingRates(t *testing.T) {
+	r := reporter.NewMock(t)
+	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()})
+
+	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "multiplesamplingrates-options-template.pcap"))
+	got := nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+	data = helpers.ReadPcapL4(t, filepath.Join("testdata", "multiplesamplingrates-options-data.pcap"))
+	got = nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+	data = helpers.ReadPcapL4(t, filepath.Join("testdata", "multiplesamplingrates-template.pcap"))
+	got = nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+	data = helpers.ReadPcapL4(t, filepath.Join("testdata", "multiplesamplingrates-data.pcap"))
+	got = nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+
+	expectedFlows := []*schema.FlowMessage{
+		{
+			SamplingRate:    4000,
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("ffff::68"),
+			DstAddr:         netip.MustParseAddr("ffff::1a"),
+			NextHop:         netip.MustParseAddr("ffff::2"),
+			SrcNetMask:      48,
+			DstNetMask:      56,
+			InIf:            97,
+			OutIf:           6,
+			ProtobufDebug: map[schema.ColumnKey]interface{}{
+				schema.ColumnPackets:          18,
+				schema.ColumnBytes:            1348,
+				schema.ColumnProto:            6,
+				schema.ColumnSrcPort:          443,
+				schema.ColumnDstPort:          52616,
+				schema.ColumnForwardingStatus: 64,
+				schema.ColumnIPTTL:            127,
+				schema.ColumnIPTos:            64,
+				schema.ColumnIPv6FlowLabel:    252813,
+				schema.ColumnTCPFlags:         16,
+				schema.ColumnEType:            helpers.ETypeIPv6,
+			},
+		},
+		{
+			SamplingRate:    2000,
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("ffff::5a"),
+			DstAddr:         netip.MustParseAddr("ffff::f"),
+			NextHop:         netip.MustParseAddr("ffff::3c"),
+			SrcNetMask:      36,
+			DstNetMask:      48,
+			InIf:            103,
+			OutIf:           6,
+			ProtobufDebug: map[schema.ColumnKey]interface{}{
+				schema.ColumnPackets:          4,
+				schema.ColumnBytes:            579,
+				schema.ColumnProto:            17,
+				schema.ColumnSrcPort:          2121,
+				schema.ColumnDstPort:          2121,
+				schema.ColumnForwardingStatus: 64,
+				schema.ColumnIPTTL:            57,
+				schema.ColumnIPTos:            40,
+				schema.ColumnIPv6FlowLabel:    570164,
+				schema.ColumnEType:            helpers.ETypeIPv6,
+			},
+		},
+	}
+
+	for _, f := range got {
+		f.TimeReceived = 0
+	}
+
+	if diff := helpers.Diff(got[:2], expectedFlows); diff != "" {
+		t.Fatalf("Decode() (-got, +want):\n%s", diff)
+	}
+}
+
 func TestDecodeICMP(t *testing.T) {
 	r := reporter.NewMock(t)
 	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()})
