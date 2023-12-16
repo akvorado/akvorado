@@ -19,16 +19,16 @@ import (
 func (nd *Decoder) decodeIPFIX(packet netflow.IPFIXPacket, samplingRateSys protoproducer.SamplingRateSystem) []*schema.FlowMessage {
 	dataFlowSet, _, _, optionsDataFlowSet := protoproducer.SplitIPFIXSets(packet)
 	obsDomainID := packet.ObservationDomainId
-	return nd.decodeCommon(obsDomainID, dataFlowSet, optionsDataFlowSet, samplingRateSys)
+	return nd.decodeCommon(10, obsDomainID, dataFlowSet, optionsDataFlowSet, samplingRateSys)
 }
 
 func (nd *Decoder) decodeNFv9(packet netflow.NFv9Packet, samplingRateSys protoproducer.SamplingRateSystem) []*schema.FlowMessage {
 	dataFlowSet, _, _, optionsDataFlowSet := protoproducer.SplitNetFlowSets(packet)
 	obsDomainID := packet.SourceId
-	return nd.decodeCommon(obsDomainID, dataFlowSet, optionsDataFlowSet, samplingRateSys)
+	return nd.decodeCommon(9, obsDomainID, dataFlowSet, optionsDataFlowSet, samplingRateSys)
 }
 
-func (nd *Decoder) decodeCommon(obsDomainID uint32, dataFlowSet []netflow.DataFlowSet, optionsDataFlowSet []netflow.OptionsDataFlowSet, samplingRateSys protoproducer.SamplingRateSystem) []*schema.FlowMessage {
+func (nd *Decoder) decodeCommon(version uint16, obsDomainID uint32, dataFlowSet []netflow.DataFlowSet, optionsDataFlowSet []netflow.OptionsDataFlowSet, samplingRateSys protoproducer.SamplingRateSystem) []*schema.FlowMessage {
 	flowMessageSet := []*schema.FlowMessage{}
 
 	// Get sampling rate
@@ -38,9 +38,9 @@ func (nd *Decoder) decodeCommon(obsDomainID uint32, dataFlowSet []netflow.DataFl
 	}
 	if samplingRateSys != nil {
 		if found {
-			samplingRateSys.AddSamplingRate(10, obsDomainID, samplingRate)
+			samplingRateSys.AddSamplingRate(version, obsDomainID, samplingRate)
 		} else {
-			samplingRate, _ = samplingRateSys.GetSamplingRate(10, obsDomainID)
+			samplingRate, _ = samplingRateSys.GetSamplingRate(version, obsDomainID)
 		}
 	}
 
