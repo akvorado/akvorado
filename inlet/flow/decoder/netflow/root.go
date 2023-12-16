@@ -9,6 +9,7 @@ import (
 	"net/netip"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/netsampler/goflow2/v2/decoders/netflow"
 
@@ -19,8 +20,9 @@ import (
 
 // Decoder contains the state for the Netflow v9 decoder.
 type Decoder struct {
-	r *reporter.Reporter
-	d decoder.Dependencies
+	r         *reporter.Reporter
+	d         decoder.Dependencies
+	errLogger reporter.Logger
 
 	// Templates and sampling systems
 	systemsLock sync.RWMutex
@@ -41,6 +43,7 @@ func New(r *reporter.Reporter, dependencies decoder.Dependencies) decoder.Decode
 	nd := &Decoder{
 		r:         r,
 		d:         dependencies,
+		errLogger: r.Sample(reporter.BurstSampler(30*time.Second, 3)),
 		templates: map[string]*templateSystem{},
 		sampling:  map[string]*samplingRateSystem{},
 	}
@@ -191,12 +194,8 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 		packetIPFIX netflow.IPFIXPacket
 	)
 	if err := netflow.DecodeMessageVersion(buf, templates, &packetNFv9, &packetIPFIX); err != nil {
-		switch err.(type) {
-		case *netflow.DecoderError:
-			nd.metrics.errors.WithLabelValues(key, err.Error()).Inc()
-		default:
-			nd.metrics.errors.WithLabelValues(key, "error decoding").Inc()
-		}
+		nd.metrics.errors.WithLabelValues(key, "NetFlow/IPFIX decoding error").Inc()
+		nd.errLogger.Err(err).Str("exporter", key).Msg("error while decoding NetFlow/IPFIX")
 		return nil
 	}
 

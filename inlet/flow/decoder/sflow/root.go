@@ -7,6 +7,7 @@ package sflow
 import (
 	"bytes"
 	"net"
+	"time"
 
 	"github.com/netsampler/goflow2/v2/decoders/sflow"
 
@@ -29,8 +30,9 @@ const (
 
 // Decoder contains the state for the sFlow v5 decoder.
 type Decoder struct {
-	r *reporter.Reporter
-	d decoder.Dependencies
+	r         *reporter.Reporter
+	d         decoder.Dependencies
+	errLogger reporter.Logger
 
 	metrics struct {
 		errors                *reporter.CounterVec
@@ -43,8 +45,9 @@ type Decoder struct {
 // New instantiates a new sFlow decoder.
 func New(r *reporter.Reporter, dependencies decoder.Dependencies) decoder.Decoder {
 	nd := &Decoder{
-		r: r,
-		d: dependencies,
+		r:         r,
+		d:         dependencies,
+		errLogger: r.Sample(reporter.BurstSampler(30*time.Second, 3)),
 	}
 
 	nd.metrics.errors = nd.r.CounterVec(
@@ -87,12 +90,8 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 	ts := uint64(in.TimeReceived.UTC().Unix())
 	var packet sflow.Packet
 	if err := sflow.DecodeMessageVersion(buf, &packet); err != nil {
-		switch err.(type) {
-		case *sflow.DecoderError:
-			nd.metrics.errors.WithLabelValues(key, err.Error()).Inc()
-		default:
-			nd.metrics.errors.WithLabelValues(key, "error decoding").Inc()
-		}
+		nd.metrics.errors.WithLabelValues(key, "sFlow decoding error").Inc()
+		nd.errLogger.Err(err).Str("exporter", key).Msg("error while decoding sFlow")
 		return nil
 	}
 
