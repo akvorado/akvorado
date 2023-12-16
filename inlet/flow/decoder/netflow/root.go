@@ -11,7 +11,6 @@ import (
 	"sync"
 
 	"github.com/netsampler/goflow2/v2/decoders/netflow"
-	protoproducer "github.com/netsampler/goflow2/v2/producer/proto"
 
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
@@ -26,7 +25,7 @@ type Decoder struct {
 	// Templates and sampling systems
 	systemsLock sync.RWMutex
 	templates   map[string]*templateSystem
-	sampling    map[string]protoproducer.SamplingRateSystem
+	sampling    map[string]*samplingRateSystem
 
 	metrics struct {
 		errors             *reporter.CounterVec
@@ -43,7 +42,7 @@ func New(r *reporter.Reporter, dependencies decoder.Dependencies) decoder.Decode
 		r:         r,
 		d:         dependencies,
 		templates: map[string]*templateSystem{},
-		sampling:  map[string]protoproducer.SamplingRateSystem{},
+		sampling:  map[string]*samplingRateSystem{},
 	}
 
 	nd.metrics.errors = nd.r.CounterVec(
@@ -127,6 +126,38 @@ func (s *templateSystem) RemoveTemplate(version uint16, obsDomainID uint32, temp
 	return s.templates.RemoveTemplate(version, obsDomainID, templateID)
 }
 
+type samplingRateKey struct {
+	version     uint16
+	obsDomainID uint32
+	samplerID   uint64
+}
+
+type samplingRateSystem struct {
+	lock  sync.RWMutex
+	rates map[samplingRateKey]uint32
+}
+
+func (s *samplingRateSystem) GetSamplingRate(version uint16, obsDomainID uint32, samplerID uint64) uint32 {
+	s.lock.RLock()
+	defer s.lock.RUnlock()
+	rate, _ := s.rates[samplingRateKey{
+		version:     version,
+		obsDomainID: obsDomainID,
+		samplerID:   samplerID,
+	}]
+	return rate
+}
+
+func (s *samplingRateSystem) SetSamplingRate(version uint16, obsDomainID uint32, samplerID uint64, samplingRate uint32) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	s.rates[samplingRateKey{
+		version:     version,
+		obsDomainID: obsDomainID,
+		samplerID:   samplerID,
+	}] = samplingRate
+}
+
 // Decode decodes a Netflow payload.
 func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 	key := in.Source.String()
@@ -145,7 +176,9 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 		nd.systemsLock.Unlock()
 	}
 	if !sok {
-		sampling = protoproducer.CreateSamplingSystem()
+		sampling = &samplingRateSystem{
+			rates: map[samplingRateKey]uint32{},
+		}
 		nd.systemsLock.Lock()
 		nd.sampling[key] = sampling
 		nd.systemsLock.Unlock()

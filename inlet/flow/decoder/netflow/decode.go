@@ -16,42 +16,54 @@ import (
 	protoproducer "github.com/netsampler/goflow2/v2/producer/proto"
 )
 
-func (nd *Decoder) decodeIPFIX(packet netflow.IPFIXPacket, samplingRateSys protoproducer.SamplingRateSystem) []*schema.FlowMessage {
+func (nd *Decoder) decodeIPFIX(packet netflow.IPFIXPacket, samplingRateSys *samplingRateSystem) []*schema.FlowMessage {
 	dataFlowSet, _, _, optionsDataFlowSet := protoproducer.SplitIPFIXSets(packet)
 	obsDomainID := packet.ObservationDomainId
 	return nd.decodeCommon(10, obsDomainID, dataFlowSet, optionsDataFlowSet, samplingRateSys)
 }
 
-func (nd *Decoder) decodeNFv9(packet netflow.NFv9Packet, samplingRateSys protoproducer.SamplingRateSystem) []*schema.FlowMessage {
+func (nd *Decoder) decodeNFv9(packet netflow.NFv9Packet, samplingRateSys *samplingRateSystem) []*schema.FlowMessage {
 	dataFlowSet, _, _, optionsDataFlowSet := protoproducer.SplitNetFlowSets(packet)
 	obsDomainID := packet.SourceId
 	return nd.decodeCommon(9, obsDomainID, dataFlowSet, optionsDataFlowSet, samplingRateSys)
 }
 
-func (nd *Decoder) decodeCommon(version uint16, obsDomainID uint32, dataFlowSet []netflow.DataFlowSet, optionsDataFlowSet []netflow.OptionsDataFlowSet, samplingRateSys protoproducer.SamplingRateSystem) []*schema.FlowMessage {
+func (nd *Decoder) decodeCommon(version uint16, obsDomainID uint32, dataFlowSet []netflow.DataFlowSet, optionsDataFlowSet []netflow.OptionsDataFlowSet, samplingRateSys *samplingRateSystem) []*schema.FlowMessage {
 	flowMessageSet := []*schema.FlowMessage{}
 
-	// Get sampling rate
-	samplingRate, found, err := protoproducer.SearchNetFlowOptionDataSets(optionsDataFlowSet)
-	if err != nil {
-		return nil
-	}
-	if samplingRateSys != nil {
-		if found {
-			samplingRateSys.AddSamplingRate(version, obsDomainID, samplingRate)
-		} else {
-			samplingRate, _ = samplingRateSys.GetSamplingRate(version, obsDomainID)
+	// Look for sampling rate in option data flowsets
+	for _, optionsDataFlowSetItem := range optionsDataFlowSet {
+		for _, record := range optionsDataFlowSetItem.Records {
+			var (
+				samplingRate uint32
+				samplerID    uint64
+			)
+			for _, field := range record.OptionsValues {
+				v, ok := field.Value.([]byte)
+				if !ok {
+					continue
+				}
+				if field.PenProvided {
+					continue
+				}
+				switch field.Type {
+				case netflow.NFV9_FIELD_SAMPLING_INTERVAL, netflow.NFV9_FIELD_FLOW_SAMPLER_RANDOM_INTERVAL, netflow.IPFIX_FIELD_samplingPacketInterval:
+					samplingRate = uint32(decodeUNumber(v))
+				case netflow.NFV9_FIELD_FLOW_SAMPLER_ID, netflow.IPFIX_FIELD_selectorId:
+					samplerID = uint64(decodeUNumber(v))
+				}
+			}
+			if samplingRate > 0 {
+				samplingRateSys.SetSamplingRate(version, obsDomainID, samplerID, samplingRate)
+			}
 		}
 	}
 
 	// Parse fields
 	for _, dataFlowSetItem := range dataFlowSet {
 		for _, record := range dataFlowSetItem.Records {
-			flow := nd.decodeRecord(record.Values)
+			flow := nd.decodeRecord(version, obsDomainID, samplingRateSys, record.Values)
 			if flow != nil {
-				if flow.SamplingRate == 0 {
-					flow.SamplingRate = samplingRate
-				}
 				flowMessageSet = append(flowMessageSet, flow)
 			}
 		}
@@ -60,7 +72,7 @@ func (nd *Decoder) decodeCommon(version uint16, obsDomainID uint32, dataFlowSet 
 	return flowMessageSet
 }
 
-func (nd *Decoder) decodeRecord(fields []netflow.DataField) *schema.FlowMessage {
+func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRateSys *samplingRateSystem, fields []netflow.DataField) *schema.FlowMessage {
 	var etype, dstPort, srcPort uint16
 	var proto, icmpType, icmpCode uint8
 	var foundIcmpTypeCode bool
@@ -81,8 +93,10 @@ func (nd *Decoder) decodeRecord(fields []netflow.DataField) *schema.FlowMessage 
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnBytes, decodeUNumber(v))
 		case netflow.NFV9_FIELD_IN_PKTS, netflow.NFV9_FIELD_OUT_PKTS:
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnPackets, decodeUNumber(v))
-		case netflow.NFV9_FIELD_SAMPLING_INTERVAL, netflow.NFV9_FIELD_FLOW_SAMPLER_RANDOM_INTERVAL:
+		case netflow.NFV9_FIELD_SAMPLING_INTERVAL, netflow.NFV9_FIELD_FLOW_SAMPLER_RANDOM_INTERVAL, netflow.IPFIX_FIELD_samplingPacketInterval:
 			bf.SamplingRate = uint32(decodeUNumber(v))
+		case netflow.NFV9_FIELD_FLOW_SAMPLER_ID, netflow.IPFIX_FIELD_selectorId:
+			bf.SamplingRate = samplingRateSys.GetSamplingRate(version, obsDomainID, decodeUNumber(v))
 
 		// L3
 		case netflow.NFV9_FIELD_IPV4_SRC_ADDR:
@@ -238,6 +252,9 @@ func (nd *Decoder) decodeRecord(fields []netflow.DataField) *schema.FlowMessage 
 		}
 	}
 	nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, uint64(etype))
+	if bf.SamplingRate == 0 {
+		bf.SamplingRate = samplingRateSys.GetSamplingRate(version, obsDomainID, 0)
+	}
 	return bf
 }
 
