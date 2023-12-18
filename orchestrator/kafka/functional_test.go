@@ -46,6 +46,13 @@ func TestTopicCreation(t *testing.T) {
 				"cleanup.policy": &cleanupPolicy,
 			},
 		}, {
+			Name: "Do not alter equivalent config",
+			ConfigEntries: map[string]*string{
+				"retention.ms":   &retentionMs,
+				"segment.bytes":  &segmentBytes2,
+				"cleanup.policy": &cleanupPolicy,
+			},
+		}, {
 			Name: "Remove item",
 			ConfigEntries: map[string]*string{
 				"retention.ms":  &retentionMs,
