@@ -9,6 +9,5 @@ inlet:
     asn-providers:
       - flow
       - bmp
-      - geoip
     net-providers:
       - bmp

@@ -16,6 +16,5 @@ paths:
   inlet.0.core.asnproviders:
     - flow
     - routing
-    - geoip
   inlet.0.core.netproviders:
     - routing

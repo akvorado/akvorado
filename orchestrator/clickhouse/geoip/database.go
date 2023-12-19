@@ -7,20 +7,37 @@ import (
 	"fmt"
 	"net"
 	"strings"
-	"sync/atomic"
 
 	"github.com/oschwald/maxminddb-golang"
 )
 
+// GeoIterFunc is the required signature to iter a geo database.
+type GeoIterFunc func(*net.IPNet, GeoInfo) error
+
+// AsnIterFunc is the required signature to iter an asn database;
+type AsnIterFunc func(*net.IPNet, ASNInfo) error
+
 type geoDatabase interface {
 	Close()
-	LookupCountry(ip net.IP) (string, error)
-	LookupASN(ip net.IP) (uint32, error)
+	IterASNDatabase(AsnIterFunc) error
+	IterGeoDatabase(GeoIterFunc) error
 }
 
 // openDatabase opens the provided database and closes the current
 // one. Do nothing if the path is empty.
-func (c *Component) openDatabase(which string, path string, container *atomic.Pointer[geoDatabase]) error {
+func (c *Component) openDatabase(which string, index int, path string) error {
+	// notify open channel when a database is (re)loaded
+	defer func() {
+		// prevent the fanout thread from closing the channel until everying is written
+		c.notifyDone.Add(1)
+		c.onOpenChan <- DBNotification{
+			Path:  path,
+			Kind:  which,
+			Index: index,
+		}
+		c.notifyDone.Done()
+	}()
+
 	if path == "" {
 		return nil
 	}
@@ -36,13 +53,23 @@ func (c *Component) openDatabase(which string, path string, container *atomic.Po
 	if err != nil {
 		return err
 	}
-	oldOne := container.Swap(&newOne)
+	c.db.lock.Lock()
+	defer c.db.lock.Unlock()
+	var oldOne geoDatabase
+	switch which {
+	case "asn":
+		oldOne = c.db.asn[path]
+		c.db.asn[path] = newOne
+	case "geo":
+		oldOne = c.db.geo[path]
+		c.db.geo[path] = newOne
+	}
 	c.metrics.databaseRefresh.WithLabelValues(which).Inc()
 	if oldOne != nil {
 		c.r.Debug().
 			Str("database", path).
 			Msgf("closing previous %s database", which)
-		(*oldOne).Close()
+		oldOne.Close()
 	}
 	return nil
 }

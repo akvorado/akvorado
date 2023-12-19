@@ -1,5 +1,0 @@
----
-inlet:
-  geoip:
-    asn-database: /usr/share/GeoIP/GeoLite2-ASN.mmdb
-    country-database: /usr/share/GeoIP/GeoLite2-Country.mmdb

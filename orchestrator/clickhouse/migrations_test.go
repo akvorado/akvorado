@@ -23,6 +23,7 @@ import (
 	"akvorado/common/kafka"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
+	"akvorado/orchestrator/clickhouse/geoip"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 )
@@ -155,15 +156,18 @@ func waitMigrations(t *testing.T, ch *Component) {
 	case <-time.After(30 * time.Second):
 		t.Fatalf("Migrations not finished")
 	}
+	t.Log("Migrations done")
 }
 
 func TestGetHTTPBaseURL(t *testing.T) {
 	r := reporter.NewMock(t)
 	http := httpserver.NewMock(t, r)
 	c, err := New(r, DefaultConfiguration(), Dependencies{
-		Daemon: daemon.NewMock(t),
-		HTTP:   http,
-		Schema: schema.NewMock(t),
+		Daemon:     daemon.NewMock(t),
+		HTTP:       http,
+		Schema:     schema.NewMock(t),
+		GeoIP:      geoip.NewMock(t, r, true),
+		ClickHouse: clickhousedb.SetupClickHouse(t, r),
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
@@ -214,6 +218,7 @@ func TestMigration(t *testing.T) {
 				HTTP:       httpserver.NewMock(t, r),
 				Schema:     schema.NewMock(t),
 				ClickHouse: chComponent,
+				GeoIP:      geoip.NewMock(t, r, true),
 			})
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
@@ -241,7 +246,7 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 				}
 			}
 			expected := []string{
-				"asns",
+				schema.DictionaryASNs,
 				"exporters",
 				"flows",
 				"flows_1h0m0s",
@@ -253,9 +258,9 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 				fmt.Sprintf("flows_%s_raw", hash),
 				fmt.Sprintf("flows_%s_raw_consumer", hash),
 				fmt.Sprintf("flows_%s_raw_errors", hash),
-				"icmp",
-				"networks",
-				"protocols",
+				schema.DictionaryICMP,
+				schema.DictionaryNetworks,
+				schema.DictionaryProtocols,
 			}
 			if diff := helpers.Diff(got, expected); diff != "" {
 				t.Fatalf("SHOW TABLES (-got, +want):\n%s", diff)
@@ -303,6 +308,7 @@ LIMIT 1`)
 				HTTP:       httpserver.NewMock(t, r),
 				Schema:     schema.NewMock(t),
 				ClickHouse: chComponent,
+				GeoIP:      geoip.NewMock(t, r, true),
 			})
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
@@ -339,6 +345,7 @@ LIMIT 1`)
 				HTTP:       httpserver.NewMock(t, r),
 				Schema:     schema.NewMock(t).EnableAllColumns(),
 				ClickHouse: chComponent,
+				GeoIP:      geoip.NewMock(t, r, true),
 			})
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
@@ -380,6 +387,7 @@ LIMIT 1`)
 				HTTP:       httpserver.NewMock(t, r),
 				Schema:     sch,
 				ClickHouse: chComponent,
+				GeoIP:      geoip.NewMock(t, r, true),
 			})
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
@@ -415,6 +423,7 @@ LIMIT 1`)
 				HTTP:       httpserver.NewMock(t, r),
 				Schema:     sch,
 				ClickHouse: chComponent,
+				GeoIP:      geoip.NewMock(t, r, true),
 			})
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
@@ -469,6 +478,7 @@ func TestCustomDictMigration(t *testing.T) {
 			HTTP:       httpserver.NewMock(t, r),
 			Schema:     sch,
 			ClickHouse: chComponent,
+			GeoIP:      geoip.NewMock(t, r, true),
 		})
 		if err != nil {
 			t.Fatalf("New() error:\n%+v", err)
@@ -513,6 +523,7 @@ func TestCustomDictMigration(t *testing.T) {
 				HTTP:       httpserver.NewMock(t, r),
 				Schema:     sch,
 				ClickHouse: chComponent,
+				GeoIP:      geoip.NewMock(t, r, true),
 			})
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
@@ -544,7 +555,7 @@ func TestCustomDictMigration(t *testing.T) {
 
 			// Check if the rows were created in the consumer flows table
 			rowConsumer := ch.d.ClickHouse.QueryRow(context.Background(), `
-		SHOW CREATE flows_ZUYGDTE3EBIXX352XPM3YEEFV4_raw_consumer`)
+		SHOW CREATE flows_LAABIGYMRYZPTGOYIIFZNYDEQM_raw_consumer`)
 			var existingConsumer string
 			if err := rowConsumer.Scan(&existingConsumer); err != nil {
 				t.Fatalf("Scan() error:\n%+v", err)
@@ -592,6 +603,7 @@ func TestCustomDictMigration(t *testing.T) {
 				HTTP:       httpserver.NewMock(t, r),
 				Schema:     sch,
 				ClickHouse: chComponent,
+				GeoIP:      geoip.NewMock(t, r, true),
 			})
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
@@ -623,7 +635,7 @@ func TestCustomDictMigration(t *testing.T) {
 
 			// Check if the rows were removed in the consumer flows table
 			rowConsumer := ch.d.ClickHouse.QueryRow(context.Background(), `
-		SHOW CREATE flows_ZUYGDTE3EBIXX352XPM3YEEFV4_raw_consumer`)
+		SHOW CREATE flows_LAABIGYMRYZPTGOYIIFZNYDEQM_raw_consumer`)
 			var existingConsumer string
 			if err := rowConsumer.Scan(&existingConsumer); err != nil {
 				t.Fatalf("Scan() error:\n%+v", err)

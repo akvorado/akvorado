@@ -12,6 +12,7 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 )
 
 type migrationStep struct {
@@ -66,17 +67,17 @@ func (c *Component) migrateDatabase() error {
 	// Create dictionaries
 	err := c.wrapMigrations(
 		func() error {
-			return c.createDictionary(ctx, "asns", "hashed",
+			return c.createDictionary(ctx, schema.DictionaryASNs, "hashed",
 				"`asn` UInt32 INJECTIVE, `name` String", "asn")
 		}, func() error {
-			return c.createDictionary(ctx, "protocols", "hashed",
+			return c.createDictionary(ctx, schema.DictionaryProtocols, "hashed",
 				"`proto` UInt8 INJECTIVE, `name` String, `description` String", "proto")
 		}, func() error {
-			return c.createDictionary(ctx, "icmp", "complex_key_hashed",
+			return c.createDictionary(ctx, schema.DictionaryICMP, "complex_key_hashed",
 				"`proto` UInt8, `type` UInt8, `code` UInt8, `name` String", "proto, type, code")
 		}, func() error {
-			return c.createDictionary(ctx, "networks", "ip_trie",
-				"`network` String, `name` String, `role` String, `site` String, `region` String, `tenant` String",
+			return c.createDictionary(ctx, schema.DictionaryNetworks, "ip_trie",
+				"`network` String, `name` String, `role` String, `site` String, `region` String, `city` String, `state` String, `country` String, `tenant` String, `asn` UInt32",
 				"network")
 		})
 	if err != nil {
@@ -179,4 +180,9 @@ func (c *Component) getHTTPBaseURL(address string) (string, error) {
 		net.JoinHostPort(localAddr.IP.String(), port))
 	c.r.Debug().Msgf("detected base URL is %s", base)
 	return base, nil
+}
+
+// ReloadDictionary will reload the specified dictionnary.
+func (c *Component) ReloadDictionary(ctx context.Context, dictName string) error {
+	return c.d.ClickHouse.Exec(ctx, fmt.Sprintf("SYSTEM RELOAD DICTIONARY %s", dictName))
 }

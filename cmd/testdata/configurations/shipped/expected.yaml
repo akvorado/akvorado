@@ -2,28 +2,44 @@
 paths:
   clickhouse.networks:
     192.0.2.0/24:
+      asn: 0
+      city: ""
+      country: ""
       name: ipv4-customers
       role: customers
       region: ""
       site: ""
+      state: ""
       tenant: ""
     203.0.113.0/24:
+      asn: 0
+      city: ""
+      country: ""
       name: ipv4-servers
       role: servers
       region: ""
       site: ""
+      state: ""
       tenant: ""
     2a01:db8:cafe:1::/64:
+      asn: 0
+      city: ""
+      country: ""
       name: ipv6-customers
       role: customers
       region: ""
       site: ""
+      state: ""
       tenant: ""
     2a01:db8:cafe:2::/64:
+      asn: 0
+      city: ""
+      country: ""
       name: ipv6-servers
       role: servers
       region: ""
       site: ""
+      state: ""
       tenant: ""
   kafka.brokers:
     - kafka:9092

@@ -70,7 +70,7 @@ func (schema Schema) clickhouseIterate(fn func(Column), options ...ClickHouseTab
 		if slices.Contains(options, ClickHouseSkipMainOnlyColumns) && column.ClickHouseMainOnly {
 			continue
 		}
-		if slices.Contains(options, ClickHouseSkipGeneratedColumns) && column.ClickHouseGenerateFrom != "" {
+		if slices.Contains(options, ClickHouseSkipGeneratedColumns) && column.ClickHouseGenerateFrom != "" && !column.ClickHouseSelfGenerated {
 			continue
 		}
 		if slices.Contains(options, ClickHouseSkipTransformColumns) && column.ClickHouseTransformFrom != nil {

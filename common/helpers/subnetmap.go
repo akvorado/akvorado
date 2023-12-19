@@ -57,25 +57,69 @@ func (sm *SubnetMap[V]) ToMap() map[string]V {
 	return output
 }
 
+// Set inserts the given key k into the SubnetMap, replacing any existing value if it exists.
+func (sm *SubnetMap[V]) Set(k string, v V) error {
+	subnetK, err := SubnetMapParseKey(k)
+	if err != nil {
+		return err
+	}
+	_, ipNet, err := net.ParseCIDR(subnetK)
+	if err != nil {
+		// Should not happen
+		return err
+	}
+	_, bits := ipNet.Mask.Size()
+	if bits != 128 {
+		return fmt.Errorf("%q is not an IPv6 subnet", ipNet)
+	}
+	plen, _ := ipNet.Mask.Size()
+	sm.tree.Set(patricia.NewIPv6Address(ipNet.IP.To16(), uint(plen)), v)
+	return nil
+}
+
+// Update inserts the given key k into the SubnetMap, calling updateFunc with the existing value.
+func (sm *SubnetMap[V]) Update(k string, v V, updateFunc tree.UpdatesFunc[V]) error {
+	subnetK, err := SubnetMapParseKey(k)
+	if err != nil {
+		return err
+	}
+	_, ipNet, err := net.ParseCIDR(subnetK)
+	if err != nil {
+		// Should not happen
+		return err
+	}
+	_, bits := ipNet.Mask.Size()
+	if bits != 128 {
+		return fmt.Errorf("%q is not an IPv6 subnet", ipNet)
+	}
+	plen, _ := ipNet.Mask.Size()
+	sm.tree.SetOrUpdate(patricia.NewIPv6Address(ipNet.IP.To16(), uint(plen)), v, updateFunc)
+	return nil
+}
+
+// Iter enables iteration of the SubnetMap, calling f for every entry. If f returns an error, the iteration is aborted.
+func (sm *SubnetMap[V]) Iter(f func(address patricia.IPv6Address, tags [][]V) error) error {
+	iter := sm.tree.Iterate()
+	for iter.Next() {
+		if err := f(iter.Address(), iter.TagsFromRoot()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // NewSubnetMap creates a subnetmap from a map. Unlike user-provided
 // configuration, this function is stricter and require everything to
 // be IPv6 subnets.
 func NewSubnetMap[V any](from map[string]V) (*SubnetMap[V], error) {
-	trie := tree.NewTreeV6[V]()
-	for k, v := range from {
-		_, ipNet, err := net.ParseCIDR(k)
-		if err != nil {
-			// Should not happen
-			return nil, err
-		}
-		_, bits := ipNet.Mask.Size()
-		if bits != 128 {
-			return nil, fmt.Errorf("%q is not an IPv6 subnet", ipNet)
-		}
-		plen, _ := ipNet.Mask.Size()
-		trie.Set(patricia.NewIPv6Address(ipNet.IP.To16(), uint(plen)), v)
+	trie := &SubnetMap[V]{tree.NewTreeV6[V]()}
+	if from == nil {
+		return trie, nil
 	}
-	return &SubnetMap[V]{trie}, nil
+	for k, v := range from {
+		trie.Set(k, v)
+	}
+	return trie, nil
 }
 
 // MustNewSubnetMap creates a subnet from a map and panic in case of a

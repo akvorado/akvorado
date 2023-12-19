@@ -45,7 +45,7 @@ func DefaultConfiguration() Configuration {
 		ExporterClassifiers:     []ExporterClassifierRule{},
 		InterfaceClassifiers:    []InterfaceClassifierRule{},
 		ClassifierCacheDuration: 5 * time.Minute,
-		ASNProviders:            []ASNProvider{ASNProviderFlow, ASNProviderRouting, ASNProviderGeoIP},
+		ASNProviders:            []ASNProvider{ASNProviderFlow, ASNProviderRouting},
 		NetProviders:            []NetProvider{NetProviderFlow, NetProviderRouting},
 	}
 }
@@ -62,8 +62,6 @@ const (
 	ASNProviderFlow ASNProvider = iota
 	// ASNProviderFlowExceptPrivate uses the AS number embedded in flows, except if this is a private AS.
 	ASNProviderFlowExceptPrivate
-	// ASNProviderGeoIP pulls the AS number from a GeoIP database.
-	ASNProviderGeoIP
 	// ASNProviderRouting uses the AS number from BMP
 	ASNProviderRouting
 	// ASNProviderRoutingExceptPrivate uses the AS number from BMP, except if this is a private AS.
@@ -73,7 +71,6 @@ const (
 var asnProviderMap = bimap.New(map[ASNProvider]string{
 	ASNProviderFlow:                 "flow",
 	ASNProviderFlowExceptPrivate:    "flow-except-private",
-	ASNProviderGeoIP:                "geoip",
 	ASNProviderRouting:              "routing",
 	ASNProviderRoutingExceptPrivate: "routing-except-private",
 })
@@ -178,7 +175,7 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 			oldValue := helpers.ElemOrIdentity(from.MapIndex(*oldKey))
 			if oldValue.Kind() == reflect.Bool && oldValue.Bool() == true {
 				from.SetMapIndex(reflect.ValueOf("asn-providers"),
-					reflect.ValueOf([]ASNProvider{ASNProviderGeoIP}))
+					reflect.ValueOf([]ASNProvider{ASNProviderRouting}))
 			}
 			from.SetMapIndex(*oldKey, reflect.Value{})
 		}

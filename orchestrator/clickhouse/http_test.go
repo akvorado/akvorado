@@ -7,11 +7,13 @@ import (
 	"fmt"
 	"testing"
 
+	"akvorado/common/clickhousedb"
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
+	"akvorado/orchestrator/clickhouse/geoip"
 )
 
 func TestHTTPEndpoints(t *testing.T) {
@@ -37,9 +39,11 @@ func TestHTTPEndpoints(t *testing.T) {
 	}
 	// create http entry
 	c, err := New(r, config, Dependencies{
-		Daemon: daemon.NewMock(t),
-		HTTP:   httpserver.NewMock(t, r),
-		Schema: sch,
+		Daemon:     daemon.NewMock(t),
+		HTTP:       httpserver.NewMock(t, r),
+		Schema:     sch,
+		GeoIP:      geoip.NewMock(t, r, false),
+		ClickHouse: clickhousedb.SetupClickHouse(t, r),
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
@@ -66,8 +70,8 @@ func TestHTTPEndpoints(t *testing.T) {
 			URL:         "/api/v0/orchestrator/clickhouse/networks.csv",
 			ContentType: "text/csv; charset=utf-8",
 			FirstLines: []string{
-				`network,name,role,site,region,tenant`,
-				`192.0.2.0/24,infra,,,,`,
+				`network,name,role,site,region,country,state,city,tenant,asn`,
+				`192.0.2.0/24,infra,,,,,,,,`,
 			},
 		}, {
 			URL:         "/api/v0/orchestrator/clickhouse/init.sh",
@@ -113,9 +117,11 @@ func TestAdditionalASNs(t *testing.T) {
 		1: "New network",
 	}
 	c, err := New(r, config, Dependencies{
-		Daemon: daemon.NewMock(t),
-		HTTP:   httpserver.NewMock(t, r),
-		Schema: schema.NewMock(t),
+		Daemon:     daemon.NewMock(t),
+		HTTP:       httpserver.NewMock(t, r),
+		Schema:     schema.NewMock(t),
+		GeoIP:      geoip.NewMock(t, r, false),
+		ClickHouse: clickhousedb.SetupClickHouse(t, r),
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)

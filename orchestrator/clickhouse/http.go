@@ -14,6 +14,8 @@ import (
 	"strconv"
 	"text/template"
 	"time"
+
+	"github.com/kentik/patricia"
 )
 
 var (
@@ -131,22 +133,59 @@ func (c *Component) registerHTTPHandlers() error {
 			w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 			w.WriteHeader(http.StatusOK)
 			wr := csv.NewWriter(w)
-			wr.Write([]string{"network", "name", "role", "site", "region", "tenant"})
-			c.networkSourcesLock.RLock()
-			defer c.networkSourcesLock.RUnlock()
-			for _, ss := range c.networkSources {
-				for _, v := range ss {
-					wr.Write([]string{
-						v.Prefix.String(),
-						v.Name, v.Role, v.Site, v.Region, v.Tenant,
-					})
+			wr.Write([]string{"network", "name", "role", "site", "region", "country", "state", "city", "tenant", "asn"})
+			c.convergedNetworksLock.RLock()
+			defer c.convergedNetworksLock.RUnlock()
+			// merge the upstream items to the downstream when they are missing
+			var currentASN uint32
+			c.convergedNetworks.Iter(func(address patricia.IPv6Address, tags [][]NetworkAttributes) error {
+				// make final network attributes, by merging tags of the leaf
+				var currentName, currentRegion, currentRole, currentTenant, currentSite, currentCountry, currentCity, currentState string
+				for _, nodeTags := range tags {
+					for _, tag := range nodeTags {
+						if tag.Name != "" {
+							currentName = tag.Name
+						}
+						if tag.Region != "" {
+							currentRegion = tag.Region
+						}
+						if tag.Role != "" {
+							currentRole = tag.Role
+						}
+						if tag.Tenant != "" {
+							currentTenant = tag.Tenant
+						}
+						if tag.Site != "" {
+							currentSite = tag.Site
+						}
+						if tag.ASN != 0 {
+							currentASN = tag.ASN
+						}
+						if tag.Country != "" {
+							currentCountry = tag.Country
+						}
+						if tag.Country != "" {
+							currentCountry = tag.Country
+						}
+						if tag.State != "" {
+							currentState = tag.State
+						}
+						if tag.City != "" {
+							currentCity = tag.City
+						}
+					}
 				}
-			}
-			if c.config.Networks != nil {
-				for k, v := range c.config.Networks.ToMap() {
-					wr.Write([]string{k, v.Name, v.Role, v.Site, v.Region, v.Tenant})
+
+				var asnVal string
+				if currentASN != 0 {
+					asnVal = strconv.Itoa(int(currentASN))
 				}
-			}
+				wr.Write([]string{
+					address.String(),
+					currentName, currentRole, currentSite, currentRegion, currentCountry, currentState, currentCity, currentTenant, asnVal,
+				})
+				return nil
+			})
 			wr.Flush()
 		}))
 

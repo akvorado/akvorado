@@ -11,7 +11,9 @@ import (
 	"testing"
 	"time"
 
+	"akvorado/common/clickhousedb"
 	"akvorado/common/remotedatasourcefetcher"
+	"akvorado/orchestrator/clickhouse/geoip"
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
@@ -96,9 +98,11 @@ func TestNetworkSources(t *testing.T) {
 		},
 	}
 	c, err := New(r, config, Dependencies{
-		Daemon: daemon.NewMock(t),
-		HTTP:   httpserver.NewMock(t, r),
-		Schema: schema.NewMock(t),
+		Daemon:     daemon.NewMock(t),
+		HTTP:       httpserver.NewMock(t, r),
+		Schema:     schema.NewMock(t),
+		GeoIP:      geoip.NewMock(t, r, false),
+		ClickHouse: clickhousedb.SetupClickHouse(t, r),
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
@@ -121,10 +125,10 @@ func TestNetworkSources(t *testing.T) {
 			URL:         "/api/v0/orchestrator/clickhouse/networks.csv",
 			ContentType: "text/csv; charset=utf-8",
 			FirstLines: []string{
-				`network,name,role,site,region,tenant`,
-				`3.2.34.0/26,,amazon,,af-south-1,amazon`,
-				`2600:1ff2:4000::/40,,amazon,,us-west-2,amazon`,
-				`2600:1f14:fff:f800::/56,,route53_healthchecks,,us-west-2,amazon`,
+				`network,name,role,site,region,country,state,city,tenant,asn`,
+				`3.2.34.0/26,,amazon,,af-south-1,,,,amazon,`,
+				`2600:1f14:fff:f800::/56,,route53_healthchecks,,us-west-2,,,,amazon,`,
+				`2600:1ff2:4000::/40,,amazon,,us-west-2,,,,amazon,`,
 			},
 		},
 	})

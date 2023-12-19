@@ -17,7 +17,6 @@ import (
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 	"akvorado/inlet/flow"
-	"akvorado/inlet/geoip"
 	"akvorado/inlet/kafka"
 	"akvorado/inlet/metadata"
 	"akvorado/inlet/routing"
@@ -48,7 +47,6 @@ type Dependencies struct {
 	Flow     *flow.Component
 	Metadata *metadata.Component
 	Routing  *routing.Component
-	GeoIP    *geoip.Component
 	Kafka    *kafka.Component
 	HTTP     *httpserver.Component
 	Schema   *schema.Component

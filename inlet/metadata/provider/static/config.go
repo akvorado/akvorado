@@ -26,7 +26,7 @@ type Configuration struct {
 
 // ExporterConfiguration is the interface configuration for an exporter.
 type ExporterConfiguration struct {
-	provider.Exporter `mapstructure:",squash" yaml:"inline"`
+	provider.Exporter `mapstructure:",squash" yaml:",inline"`
 	// Default is used if not empty for any unknown ifindexes
 	Default provider.Interface `validate:"omitempty"`
 	// IfIndexes is a map from interface indexes to interfaces

@@ -21,12 +21,20 @@ import (
 // available here:
 //   - https://github.com/maxmind/MaxMind-DB/blob/main/source-data/GeoLite2-ASN-Test.json
 //   - https://github.com/maxmind/MaxMind-DB/blob/main/source-data/GeoLite2-Country-Test.json
-func NewMock(t *testing.T, r *reporter.Reporter) *Component {
+func NewMock(t *testing.T, r *reporter.Reporter, withData bool) *Component {
 	t.Helper()
 	config := DefaultConfiguration()
 	_, src, _, _ := runtime.Caller(0)
-	config.GeoDatabase = filepath.Join(path.Dir(src), "testdata", "GeoLite2-Country-Test.mmdb")
-	config.ASNDatabase = filepath.Join(path.Dir(src), "testdata", "GeoLite2-ASN-Test.mmdb")
+	if withData {
+		config.GeoDatabase = []string{
+			filepath.Join(path.Dir(src), "testdata", "GeoLite2-Country-Test.mmdb"),
+			filepath.Join(path.Dir(src), "testdata", "ip_country_asn_sample.mmdb"),
+		}
+		config.ASNDatabase = []string{
+			filepath.Join(path.Dir(src), "testdata", "GeoLite2-ASN-Test.mmdb"),
+			filepath.Join(path.Dir(src), "testdata", "ip_country_asn_sample.mmdb"),
+		}
+	}
 	c, err := New(r, config, Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+s", err)

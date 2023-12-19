@@ -208,3 +208,7 @@ help:
 .PHONY: version
 version:
 	@echo $(VERSION)
+
+.PHONY: docker
+docker:
+	docker build -f docker/Dockerfile -t ghcr.io/akvorado/akvorado:latest .
