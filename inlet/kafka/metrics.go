@@ -75,7 +75,7 @@ func (c *Component) initMetrics() {
 		"Distribution of the request size in bytes for a given broker.",
 		[]string{"broker"})
 	c.metrics.kafkaRequestLatency = c.r.MetricDesc(
-		"brokers_request_latency_seconds",
+		"brokers_request_latency_ms",
 		"Distribution of the request latency in ms for a given broker.",
 		[]string{"broker"})
 	c.metrics.kafkaResponseRate = c.r.MetricDesc(
