@@ -697,6 +697,9 @@ provided:
     the Kafka topic. It is silently bound by the maximum number of threads
     ClickHouse will use (by default, the number of CPUs). It should also be less
     than the number of partitions: the additional consumers will stay idle.
+  - `group-name` defines the group name consumers will use to consume messages from the
+    Kafka topic.
+    The default value is "clickhouse".
   - `engine-settings` defines a list of additional settings for the Kafka engine
     in ClickHouse. Check [ClickHouse documentation][] for possible values. You
     can notably tune `kafka_max_block_size`, `kafka_poll_timeout_ms`,
