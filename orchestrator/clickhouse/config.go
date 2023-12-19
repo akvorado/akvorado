@@ -68,6 +68,9 @@ type KafkaConfiguration struct {
 	kafka.Configuration `mapstructure:",squash" yaml:"-,inline"`
 	// Consumers tell how many consumers to use to poll data from Kafka
 	Consumers int `validate:"min=1"`
+	// GroupName defines the Kafka consumers group used to poll data from topic,
+	// shared between all Consumers.
+	GroupName string
 	// EngineSettings allows one to set arbitrary settings for Kafka engine in
 	// ClickHouse.
 	EngineSettings []string
@@ -79,6 +82,7 @@ func DefaultConfiguration() Configuration {
 		Configuration: clickhousedb.DefaultConfiguration(),
 		Kafka: KafkaConfiguration{
 			Consumers: 1,
+			GroupName: "clickhouse",
 		},
 		Resolutions: []ResolutionConfiguration{
 			{0, 15 * 24 * time.Hour},                   // 15 days

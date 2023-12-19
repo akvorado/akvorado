@@ -188,7 +188,7 @@ func (c *Component) createRawFlowsTable(ctx context.Context) error {
 			strings.Join(c.config.Kafka.Brokers, ",")),
 		fmt.Sprintf(`kafka_topic_list = '%s-%s'`,
 			c.config.Kafka.Topic, hash),
-		`kafka_group_name = 'clickhouse'`,
+		fmt.Sprintf(`kafka_group_name = '%s'`, c.config.Kafka.GroupName),
 		`kafka_format = 'Protobuf'`,
 		fmt.Sprintf(`kafka_schema = 'flow-%s.proto:FlowMessagev%s'`, hash, hash),
 		fmt.Sprintf(`kafka_num_consumers = %d`, c.config.Kafka.Consumers),
