@@ -66,6 +66,17 @@ func (ib *InterfaceBoundary) UnmarshalText(input []byte) error {
 	return errUnknownInterfaceBoundary
 }
 
+const (
+	// DictionaryASNs is the name of the asns clickhouse dictionary.
+	DictionaryASNs string = "asns"
+	// DictionaryProtocols is the name of the protocols clickhouse dictionary.
+	DictionaryProtocols string = "protocols"
+	// DictionaryICMP is the name of the icmp clickhouse dictionary.
+	DictionaryICMP string = "icmp"
+	// DictionaryNetworks is the name of the networks clickhouse dictionary.
+	DictionaryNetworks string = "networks"
+)
+
 // revive:disable
 const (
 	ColumnTimeReceived ColumnKey = iota + 1
@@ -108,6 +119,10 @@ const (
 	ColumnDstNetTenant
 	ColumnSrcCountry
 	ColumnDstCountry
+	ColumnSrcGeoState
+	ColumnDstGeoState
+	ColumnSrcGeoCity
+	ColumnDstGeoCity
 	ColumnDstASPath
 	ColumnDst1stAS
 	ColumnDst2ndAS
@@ -228,69 +243,115 @@ func flows() Schema {
  ELSE ''
 END`,
 			},
-			{Key: ColumnSrcAS, ClickHouseType: "UInt32"},
+			{
+				Key:                     ColumnSrcAS,
+				ClickHouseType:          "UInt32",
+				ClickHouseGenerateFrom:  fmt.Sprintf("if(SrcAS = 0, dictGetOrDefault('%s', 'asn', SrcAddr, 0), SrcAS)", DictionaryNetworks),
+				ClickHouseSelfGenerated: true,
+			},
+			{
+				Key:                     ColumnDstAS,
+				ClickHouseType:          "UInt32",
+				ClickHouseGenerateFrom:  fmt.Sprintf("if(DstAS = 0, dictGetOrDefault('%s', 'asn', DstAddr, 0), DstAS)", DictionaryNetworks),
+				ClickHouseSelfGenerated: true,
+			},
 			{
 				Key:                    ColumnSrcNetName,
 				ParserType:             "string",
 				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'name', SrcAddr, '')",
+				ClickHouseGenerateFrom: fmt.Sprintf("dictGetOrDefault('%s', 'name', SrcAddr, '')", DictionaryNetworks),
 			},
 			{
 				Key:                    ColumnDstNetName,
 				ParserType:             "string",
 				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'name', DstAddr, '')",
+				ClickHouseGenerateFrom: fmt.Sprintf("dictGetOrDefault('%s', 'name', DstAddr, '')", DictionaryNetworks),
 			},
 			{
 				Key:                    ColumnSrcNetRole,
 				ParserType:             "string",
 				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'role', SrcAddr, '')",
+				ClickHouseGenerateFrom: fmt.Sprintf("dictGetOrDefault('%s', 'role', SrcAddr, '')", DictionaryNetworks),
 			},
 			{
 				Key:                    ColumnDstNetRole,
 				ParserType:             "string",
 				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'role', DstAddr, '')",
+				ClickHouseGenerateFrom: fmt.Sprintf("dictGetOrDefault('%s', 'role', DstAddr, '')", DictionaryNetworks),
 			},
 			{
 				Key:                    ColumnSrcNetSite,
 				ParserType:             "string",
 				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'site', SrcAddr, '')",
+				ClickHouseGenerateFrom: fmt.Sprintf("dictGetOrDefault('%s', 'site', SrcAddr, '')", DictionaryNetworks),
 			},
 			{
 				Key:                    ColumnDstNetSite,
 				ParserType:             "string",
 				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'site', DstAddr, '')",
+				ClickHouseGenerateFrom: fmt.Sprintf("dictGetOrDefault('%s', 'site', DstAddr, '')", DictionaryNetworks),
 			},
 			{
 				Key:                    ColumnSrcNetRegion,
 				ParserType:             "string",
 				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'region', SrcAddr, '')",
+				ClickHouseGenerateFrom: fmt.Sprintf("dictGetOrDefault('%s', 'region', SrcAddr, '')", DictionaryNetworks),
 			},
 			{
 				Key:                    ColumnDstNetRegion,
 				ParserType:             "string",
 				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'region', DstAddr, '')",
+				ClickHouseGenerateFrom: fmt.Sprintf("dictGetOrDefault('%s', 'region', DstAddr, '')", DictionaryNetworks),
 			},
 			{
 				Key:                    ColumnSrcNetTenant,
 				ParserType:             "string",
 				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'tenant', SrcAddr, '')",
+				ClickHouseGenerateFrom: fmt.Sprintf("dictGetOrDefault('%s', 'tenant', SrcAddr, '')", DictionaryNetworks),
 			},
 			{
 				Key:                    ColumnDstNetTenant,
 				ParserType:             "string",
 				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "dictGetOrDefault('networks', 'tenant', DstAddr, '')",
+				ClickHouseGenerateFrom: fmt.Sprintf("dictGetOrDefault('%s', 'tenant', DstAddr, '')", DictionaryNetworks),
 			},
 			{Key: ColumnSrcVlan, ParserType: "uint", ClickHouseType: "UInt16", Disabled: true, Group: ColumnGroupL2},
-			{Key: ColumnSrcCountry, ParserType: "string", ClickHouseType: "FixedString(2)"},
+			{
+				Key:                    ColumnSrcCountry,
+				ParserType:             "string",
+				ClickHouseType:         "FixedString(2)",
+				ClickHouseGenerateFrom: fmt.Sprintf("dictGetOrDefault('%s', 'country', SrcAddr, '')", DictionaryNetworks),
+			},
+			{
+				Key:                    ColumnDstCountry,
+				ParserType:             "string",
+				ClickHouseType:         "FixedString(2)",
+				ClickHouseGenerateFrom: fmt.Sprintf("dictGetOrDefault('%s', 'country', DstAddr, '')", DictionaryNetworks),
+			},
+			{
+				Key:                    ColumnSrcGeoCity,
+				ParserType:             "string",
+				ClickHouseType:         "LowCardinality(String)",
+				ClickHouseGenerateFrom: fmt.Sprintf("dictGetOrDefault('%s', 'city', SrcAddr, '')", DictionaryNetworks),
+			},
+			{
+				Key:                    ColumnDstGeoCity,
+				ParserType:             "string",
+				ClickHouseType:         "LowCardinality(String)",
+				ClickHouseGenerateFrom: fmt.Sprintf("dictGetOrDefault('%s', 'city', DstAddr, '')", DictionaryNetworks),
+			},
+			{
+				Key:                    ColumnSrcGeoState,
+				ParserType:             "string",
+				ClickHouseType:         "LowCardinality(String)",
+				ClickHouseGenerateFrom: fmt.Sprintf("dictGetOrDefault('%s', 'state', SrcAddr, '')", DictionaryNetworks),
+			},
+			{
+				Key:                    ColumnDstGeoState,
+				ParserType:             "string",
+				ClickHouseType:         "LowCardinality(String)",
+				ClickHouseGenerateFrom: fmt.Sprintf("dictGetOrDefault('%s', 'state', DstAddr, '')", DictionaryNetworks),
+			},
 			{
 				Key:                ColumnDstASPath,
 				ClickHouseMainOnly: true,
@@ -441,7 +502,7 @@ END`,
 				ParserType:     "string",
 				ClickHouseType: "LowCardinality(String)",
 				ClickHouseAlias: `if(Proto = 1, ` +
-					`dictGetOrDefault('icmp', 'name', tuple(Proto, ICMPv4Type, ICMPv4Code), ` +
+					fmt.Sprintf(`dictGetOrDefault('%s', 'name', tuple(Proto, ICMPv4Type, ICMPv4Code), `, DictionaryICMP) +
 					`concat(toString(ICMPv4Type), '/', toString(ICMPv4Code))), '')`,
 			},
 			{
@@ -452,7 +513,7 @@ END`,
 				ParserType:     "string",
 				ClickHouseType: "LowCardinality(String)",
 				ClickHouseAlias: `if(Proto = 58, ` +
-					`dictGetOrDefault('icmp', 'name', tuple(Proto, ICMPv6Type, ICMPv6Code), ` +
+					fmt.Sprintf(`dictGetOrDefault('%s', 'name', tuple(Proto, ICMPv6Type, ICMPv6Code), `, DictionaryICMP) +
 					`concat(toString(ICMPv6Type), '/', toString(ICMPv6Code))), '')`,
 			},
 			{
@@ -507,6 +568,12 @@ END`,
 			},
 		},
 	}.finalize()
+}
+
+func (column *Column) shouldBeProto() bool {
+	return column.ClickHouseTransformFrom == nil &&
+		(column.ClickHouseGenerateFrom == "" || column.ClickHouseSelfGenerated) &&
+		column.ClickHouseAlias == ""
 }
 
 func (schema Schema) finalize() Schema {
@@ -596,9 +663,7 @@ func (schema Schema) finalize() Schema {
 		}
 		for _, column := range pcolumns {
 			if column.ProtobufIndex == 0 {
-				if column.ClickHouseTransformFrom != nil ||
-					column.ClickHouseGenerateFrom != "" ||
-					column.ClickHouseAlias != "" {
+				if !column.shouldBeProto() {
 					column.ProtobufIndex = -1
 					continue
 				}
@@ -608,9 +673,7 @@ func (schema Schema) finalize() Schema {
 			}
 
 			if column.ProtobufType == 0 &&
-				column.ClickHouseTransformFrom == nil &&
-				column.ClickHouseGenerateFrom == "" &&
-				column.ClickHouseAlias == "" {
+				column.shouldBeProto() {
 				switch column.ClickHouseType {
 				case "String", "LowCardinality(String)", "FixedString(2)":
 					column.ProtobufType = protoreflect.StringKind

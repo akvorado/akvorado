@@ -15,6 +15,7 @@ import (
 	"akvorado/common/schema"
 	"akvorado/orchestrator"
 	"akvorado/orchestrator/clickhouse"
+	"akvorado/orchestrator/clickhouse/geoip"
 	"akvorado/orchestrator/kafka"
 )
 
@@ -130,11 +131,20 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, c
 	if err != nil {
 		return fmt.Errorf("unable to initialize ClickHouse component: %w", err)
 	}
+
+	geoipComponent, err := geoip.New(r, config.ClickHouse.GeoIP, geoip.Dependencies{
+		Daemon: daemonComponent,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to initialize GeoIP component: %w", err)
+	}
+
 	clickhouseComponent, err := clickhouse.New(r, config.ClickHouse, clickhouse.Dependencies{
 		Daemon:     daemonComponent,
 		HTTP:       httpComponent,
 		ClickHouse: clickhouseDBComponent,
 		Schema:     schemaComponent,
+		GeoIP:      geoipComponent,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to initialize clickhouse component: %w", err)
@@ -166,6 +176,7 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, c
 
 	// Start all the components.
 	components := []interface{}{
+		geoipComponent,
 		httpComponent,
 		clickhouseDBComponent,
 		clickhouseComponent,

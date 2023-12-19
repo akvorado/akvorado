@@ -18,7 +18,6 @@ import (
 	"akvorado/common/schema"
 	"akvorado/inlet/core"
 	"akvorado/inlet/flow"
-	"akvorado/inlet/geoip"
 	"akvorado/inlet/kafka"
 	"akvorado/inlet/metadata"
 	"akvorado/inlet/metadata/provider/snmp"
@@ -33,7 +32,6 @@ type InletConfiguration struct {
 	Flow      flow.Configuration
 	Metadata  metadata.Configuration
 	Routing   routing.Configuration
-	GeoIP     geoip.Configuration
 	Kafka     kafka.Configuration
 	Core      core.Configuration
 	Schema    schema.Configuration
@@ -47,7 +45,6 @@ func (c *InletConfiguration) Reset() {
 		Flow:      flow.DefaultConfiguration(),
 		Metadata:  metadata.DefaultConfiguration(),
 		Routing:   routing.DefaultConfiguration(),
-		GeoIP:     geoip.DefaultConfiguration(),
 		Kafka:     kafka.DefaultConfiguration(),
 		Core:      core.DefaultConfiguration(),
 		Schema:    schema.DefaultConfiguration(),
@@ -130,12 +127,6 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 	if err != nil {
 		return fmt.Errorf("unable to initialize routing component: %w", err)
 	}
-	geoipComponent, err := geoip.New(r, config.GeoIP, geoip.Dependencies{
-		Daemon: daemonComponent,
-	})
-	if err != nil {
-		return fmt.Errorf("unable to initialize GeoIP component: %w", err)
-	}
 	kafkaComponent, err := kafka.New(r, config.Kafka, kafka.Dependencies{
 		Daemon: daemonComponent,
 		Schema: schemaComponent,
@@ -148,7 +139,6 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 		Flow:     flowComponent,
 		Metadata: metadataComponent,
 		Routing:  routingComponent,
-		GeoIP:    geoipComponent,
 		Kafka:    kafkaComponent,
 		HTTP:     httpComponent,
 		Schema:   schemaComponent,
@@ -171,7 +161,6 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 		httpComponent,
 		metadataComponent,
 		routingComponent,
-		geoipComponent,
 		kafkaComponent,
 		coreComponent,
 		flowComponent,

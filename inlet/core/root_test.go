@@ -24,7 +24,6 @@ import (
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 	"akvorado/inlet/flow"
-	"akvorado/inlet/geoip"
 	"akvorado/inlet/kafka"
 	"akvorado/inlet/metadata"
 	"akvorado/inlet/routing"
@@ -38,7 +37,6 @@ func TestCore(t *testing.T) {
 	metadataComponent := metadata.NewMock(t, r, metadata.DefaultConfiguration(),
 		metadata.Dependencies{Daemon: daemonComponent})
 	flowComponent := flow.NewMock(t, r, flow.DefaultConfiguration())
-	geoipComponent := geoip.NewMock(t, r)
 	kafkaComponent, kafkaProducer := kafka.NewMock(t, r, kafka.DefaultConfiguration())
 	httpComponent := httpserver.NewMock(t, r)
 	routingComponent := routing.NewMock(t, r)
@@ -50,7 +48,6 @@ func TestCore(t *testing.T) {
 		Daemon:   daemonComponent,
 		Flow:     flowComponent,
 		Metadata: metadataComponent,
-		GeoIP:    geoipComponent,
 		Kafka:    kafkaComponent,
 		HTTP:     httpComponent,
 		Routing:  routingComponent,
@@ -88,15 +85,13 @@ func TestCore(t *testing.T) {
 
 	expectedFlowMessage := func(exporter string, in, out uint32) *schema.FlowMessage {
 		expected := flowMessage(exporter, in, out)
-		expected.SrcAS = 35908
-		expected.DstAS = 0 // not in database
+		expected.SrcAS = 0 // no geoip enrich anymore
+		expected.DstAS = 0 // no geoip enrich anymore
 		expected.InIf = 0  // not serialized
 		expected.OutIf = 0 // not serialized
 		expected.ExporterAddress = netip.AddrFrom16(expected.ExporterAddress.As16())
 		expected.SrcAddr = netip.AddrFrom16(expected.SrcAddr.As16())
 		expected.DstAddr = netip.AddrFrom16(expected.DstAddr.As16())
-		expected.ProtobufDebug[schema.ColumnSrcCountry] = "BT"
-		expected.ProtobufDebug[schema.ColumnDstCountry] = "GB"
 		expected.ProtobufDebug[schema.ColumnInIfName] = fmt.Sprintf("Gi0/0/%d", in)
 		expected.ProtobufDebug[schema.ColumnOutIfName] = fmt.Sprintf("Gi0/0/%d", out)
 		expected.ProtobufDebug[schema.ColumnInIfDescription] = fmt.Sprintf("Interface %d", in)
@@ -258,7 +253,7 @@ func TestCore(t *testing.T) {
 				"ExporterAddress": "192.0.2.142",
 				"SrcAddr":         "67.43.156.77",
 				"DstAddr":         "2.125.160.216",
-				"SrcAS":           35908,
+				"SrcAS":           0, // no geoip enrich anymore
 				"InIf":            434,
 				"OutIf":           677,
 
@@ -327,7 +322,7 @@ func TestCore(t *testing.T) {
 
 	// Test HTTP flow clients using protobuf
 	time.Sleep(10 * time.Millisecond)
-	t.Run("http flows with protovuf", func(t *testing.T) {
+	t.Run("http flows with protobuf", func(t *testing.T) {
 		req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s/api/v0/inlet/flows?limit=1", c.d.HTTP.LocalAddr()), nil)
 		if err != nil {
 			t.Fatalf("http.NewRequest() error:\n%+v", err)

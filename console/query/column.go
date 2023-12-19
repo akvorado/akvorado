@@ -102,15 +102,15 @@ func (qc Column) ToSQLSelect(sch *schema.Component) string {
 	switch key {
 	// Special cases
 	case schema.ColumnSrcAS, schema.ColumnDstAS, schema.ColumnDst1stAS, schema.ColumnDst2ndAS, schema.ColumnDst3rdAS:
-		strValue = fmt.Sprintf(`concat(toString(%s), ': ', dictGetOrDefault('asns', 'name', %s, '???'))`,
-			qc, qc)
+		strValue = fmt.Sprintf(`concat(toString(%s), ': ', dictGetOrDefault('%s', 'name', %s, '???'))`,
+			qc, schema.DictionaryASNs, qc)
 	case schema.ColumnInIfBoundary, schema.ColumnOutIfBoundary:
 		strValue = fmt.Sprintf(`toString(%s)`, qc.String())
 	case schema.ColumnEType:
 		strValue = fmt.Sprintf(`if(EType = %d, 'IPv4', if(EType = %d, 'IPv6', '???'))`,
 			helpers.ETypeIPv4, helpers.ETypeIPv6)
 	case schema.ColumnProto:
-		strValue = `dictGetOrDefault('protocols', 'name', Proto, '???')`
+		strValue = fmt.Sprintf(`dictGetOrDefault('%s', 'name', Proto, '???')`, schema.DictionaryProtocols)
 	case schema.ColumnMPLSLabels:
 		strValue = `arrayStringConcat(MPLSLabels, ' ')`
 	case schema.ColumnDstASPath:

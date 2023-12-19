@@ -144,11 +144,11 @@ func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 		gc.JSON(http.StatusNotFound, gin.H{"message": "Unknown top request."})
 		return
 	case "src-as":
-		selector = `concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???'))`
+		selector = fmt.Sprintf(`concat(toString(SrcAS), ': ', dictGetOrDefault('%s', 'name', SrcAS, '???'))`, schema.DictionaryASNs)
 		groupby = `SrcAS`
 		filter = "AND InIfBoundary = 'external'"
 	case "dst-as":
-		selector = `concat(toString(DstAS), ': ', dictGetOrDefault('asns', 'name', DstAS, '???'))`
+		selector = fmt.Sprintf(`concat(toString(DstAS), ': ', dictGetOrDefault('%s', 'name', DstAS, '???'))`, schema.DictionaryASNs)
 		groupby = `DstAS`
 		filter = "AND OutIfBoundary = 'external'"
 	case "src-country":
@@ -160,17 +160,17 @@ func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 	case "exporter":
 		selector = "ExporterName"
 	case "protocol":
-		selector = `dictGetOrDefault('protocols', 'name', Proto, '???')`
+		selector = fmt.Sprintf(`dictGetOrDefault('%s', 'name', Proto, '???')`, schema.DictionaryProtocols)
 		groupby = `Proto`
 	case "etype":
 		selector = `if(equals(EType, 34525), 'IPv6', if(equals(EType, 2048), 'IPv4', '???'))`
 		groupby = `EType`
 	case "src-port":
-		selector = `concat(dictGetOrDefault('protocols', 'name', Proto, '???'), '/', toString(SrcPort))`
+		selector = fmt.Sprintf(`concat(dictGetOrDefault('%s', 'name', Proto, '???'), '/', toString(SrcPort))`, schema.DictionaryProtocols)
 		groupby = `Proto, SrcPort`
 		mainTableRequired = true
 	case "dst-port":
-		selector = `concat(dictGetOrDefault('protocols', 'name', Proto, '???'), '/', toString(DstPort))`
+		selector = fmt.Sprintf(`concat(dictGetOrDefault('%s', 'name', Proto, '???'), '/', toString(DstPort))`, schema.DictionaryProtocols)
 		groupby = `Proto, DstPort`
 		mainTableRequired = true
 	}

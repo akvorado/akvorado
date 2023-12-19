@@ -1,6 +1,0 @@
----
-paths:
-  inlet.0.geoip:
-    asndatabase: /usr/share/GeoIP/GeoLite2-ASN.mmdb
-    geodatabase: /usr/share/GeoIP/GeoLite2-Country.mmdb
-    optional: false

@@ -51,6 +51,8 @@ type Column struct {
 	ClickHouseTransformFrom    []Column
 	ClickHouseTransformTo      string
 	ClickHouseMainOnly         bool
+	// ClickHouseSelfGenerated identifies a column as being formatted using itself as source
+	ClickHouseSelfGenerated bool
 
 	// ClickHouseMaterialized indicates that the column was materialized (and is not by default)
 	ClickHouseMaterialized bool

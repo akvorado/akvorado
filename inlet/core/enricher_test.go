@@ -19,7 +19,6 @@ import (
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 	"akvorado/inlet/flow"
-	"akvorado/inlet/geoip"
 	"akvorado/inlet/kafka"
 	"akvorado/inlet/metadata"
 	"akvorado/inlet/routing"
@@ -543,7 +542,6 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 			metadataComponent := metadata.NewMock(t, r, metadata.DefaultConfiguration(),
 				metadata.Dependencies{Daemon: daemonComponent})
 			flowComponent := flow.NewMock(t, r, flow.DefaultConfiguration())
-			geoipComponent := geoip.NewMock(t, r)
 			kafkaComponent, kafkaProducer := kafka.NewMock(t, r, kafka.DefaultConfiguration())
 			httpComponent := httpserver.NewMock(t, r)
 			routingComponent := routing.NewMock(t, r)
@@ -564,7 +562,6 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				Daemon:   daemonComponent,
 				Flow:     flowComponent,
 				Metadata: metadataComponent,
-				GeoIP:    geoipComponent,
 				Kafka:    kafkaComponent,
 				HTTP:     httpComponent,
 				Routing:  routingComponent,
@@ -638,18 +635,11 @@ func TestGetASNumber(t *testing.T) {
 		{"1.0.0.1", 4_200_000_121, 0, []ASNProvider{ASNProviderFlowExceptPrivate}, 0},
 		{"1.0.0.1", 65536, 0, []ASNProvider{ASNProviderFlowExceptPrivate, ASNProviderFlow}, 65536},
 		{"1.0.0.1", 12322, 0, []ASNProvider{ASNProviderFlowExceptPrivate}, 12322},
-		{"1.0.0.1", 12322, 0, []ASNProvider{ASNProviderGeoIP}, 15169},
-		{"2.0.0.1", 12322, 0, []ASNProvider{ASNProviderGeoIP}, 0},
-		{"1.0.0.1", 12322, 0, []ASNProvider{ASNProviderGeoIP, ASNProviderFlow}, 15169},
 		// 10
-		{"1.0.0.1", 12322, 0, []ASNProvider{ASNProviderFlow, ASNProviderGeoIP}, 12322},
-		{"2.0.0.1", 12322, 0, []ASNProvider{ASNProviderFlow, ASNProviderGeoIP}, 12322},
-		{"2.0.0.1", 12322, 0, []ASNProvider{ASNProviderGeoIP, ASNProviderFlow}, 12322},
 		{"192.0.2.2", 12322, 174, []ASNProvider{ASNProviderRouting}, 174},
 		{"192.0.2.129", 12322, 1299, []ASNProvider{ASNProviderRouting}, 1299},
 		{"192.0.2.254", 12322, 0, []ASNProvider{ASNProviderRouting}, 0},
 		{"1.0.0.1", 12322, 65300, []ASNProvider{ASNProviderRouting}, 65300},
-		{"1.0.0.1", 12322, 15169, []ASNProvider{ASNProviderRoutingExceptPrivate, ASNProviderGeoIP}, 15169},
 	}
 	for i, tc := range cases {
 		i++
@@ -664,14 +654,13 @@ func TestGetASNumber(t *testing.T) {
 
 			c, err := New(r, configuration, Dependencies{
 				Daemon:  daemon.NewMock(t),
-				GeoIP:   geoip.NewMock(t, r),
 				Routing: routingComponent,
 				Schema:  schema.NewMock(t),
 			})
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
 			}
-			got := c.getASNumber(netip.MustParseAddr(tc.Addr), tc.FlowAS, tc.BMPAS)
+			got := c.getASNumber(tc.FlowAS, tc.BMPAS)
 			if diff := helpers.Diff(got, tc.Expected); diff != "" {
 				t.Fatalf("getASNumber() (-got, +want):\n%s", diff)
 			}
@@ -722,7 +711,6 @@ func TestGetNetMask(t *testing.T) {
 
 			c, err := New(r, configuration, Dependencies{
 				Daemon:  daemon.NewMock(t),
-				GeoIP:   geoip.NewMock(t, r),
 				Routing: routingComponent,
 				Schema:  schema.NewMock(t),
 			})
@@ -780,7 +768,6 @@ func TestGetNextHop(t *testing.T) {
 
 			c, err := New(r, configuration, Dependencies{
 				Daemon:  daemon.NewMock(t),
-				GeoIP:   geoip.NewMock(t, r),
 				Routing: routingComponent,
 				Schema:  schema.NewMock(t),
 			})

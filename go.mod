@@ -176,3 +176,5 @@ require (
 	modernc.org/memory v1.5.0 // indirect
 	modernc.org/sqlite v1.23.1 // indirect
 )
+
+replace github.com/kentik/patricia => github.com/netixx/patricia v0.0.0-20240221115530-83194fdd3ab9

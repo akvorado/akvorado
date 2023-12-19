@@ -72,6 +72,10 @@ services:
     command: orchestrator /etc/akvorado/akvorado.yaml
     volumes:
       - ../config:/etc/akvorado:ro
+      - akvorado-geoip:/usr/share/GeoIP:ro
+      # If you prefer to use geo IP databases from host, comment the
+      # above line and uncomment this one:
+      # - /usr/share/GeoIP:/usr/share/GeoIP:ro
     labels:
       - traefik.enable=true
       - traefik.http.routers.akvorado-orchestrator.entrypoints=private # it exposes configuration files with passwords
@@ -103,10 +107,6 @@ services:
     restart: unless-stopped
     command: inlet http://akvorado-orchestrator:8080
     volumes:
-      - akvorado-geoip:/usr/share/GeoIP:ro
-      # If you prefer to use geo IP databases from host, comment the
-      # above line and uncomment this one:
-      # - /usr/share/GeoIP:/usr/share/GeoIP:ro
       - akvorado-run:/run/akvorado
     labels:
       - traefik.enable=true

@@ -28,12 +28,12 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Initial:     func() interface{} { return Configuration{} },
 			Configuration: func() interface{} {
 				return gin.H{
-					"asn-database": "something",
+					"asn-database": []string{"something"},
 					"optional":     true,
 				}
 			},
 			Expected: Configuration{
-				ASNDatabase: "something",
+				ASNDatabase: []string{"something"},
 				Optional:    true,
 			},
 		}, {
@@ -41,35 +41,35 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Initial:     func() interface{} { return Configuration{} },
 			Configuration: func() interface{} {
 				return gin.H{
-					"asn-database":     "something",
-					"country-database": "something else",
+					"asn-database":     []string{"something"},
+					"country-database": []string{"something else"},
 				}
 			},
 			Expected: Configuration{
-				ASNDatabase: "something",
-				GeoDatabase: "something else",
+				ASNDatabase: []string{"something"},
+				GeoDatabase: []string{"something else"},
 			},
 		}, {
 			Description: "no country-database, geoip-database",
 			Initial:     func() interface{} { return Configuration{} },
 			Configuration: func() interface{} {
 				return gin.H{
-					"asn-database": "something",
-					"geo-database": "something else",
+					"asn-database": []string{"something"},
+					"geo-database": []string{"something else"},
 				}
 			},
 			Expected: Configuration{
-				ASNDatabase: "something",
-				GeoDatabase: "something else",
+				ASNDatabase: []string{"something"},
+				GeoDatabase: []string{"something else"},
 			},
 		}, {
 			Description: "both country-database, geoip-database",
 			Initial:     func() interface{} { return Configuration{} },
 			Configuration: func() interface{} {
 				return gin.H{
-					"asn-database":     "something",
-					"geo-database":     "something else",
-					"country-database": "another value",
+					"asn-database":     []string{"something"},
+					"geo-database":     []string{"something else"},
+					"country-database": []string{"another value"},
 				}
 			},
 			Error: true,

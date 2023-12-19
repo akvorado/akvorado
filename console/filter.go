@@ -249,7 +249,7 @@ LIMIT 20`
 			}
 			sqlQuery := fmt.Sprintf(`
 SELECT label, detail FROM (
- SELECT concat('AS', toString(%s)) AS label, dictGet('asns', 'name', %s) AS detail, 1 AS rank
+ SELECT concat('AS', toString(%s)) AS label, dictGet('%s', 'name', %s) AS detail, 1 AS rank
  FROM flows
  WHERE TimeReceived > date_sub(minute, 1, now())
  AND detail != ''
@@ -264,7 +264,7 @@ UNION DISTINCT
  ORDER BY positionCaseInsensitive(name, $1) ASC, asn ASC
  LIMIT 20
 ) GROUP BY label, detail ORDER BY MIN(rank) ASC, MIN(rowNumberInBlock()) ASC LIMIT 20`,
-				columnName, columnName, columnName)
+				columnName, schema.DictionaryASNs, columnName, columnName)
 			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
 				c.r.Err(err).Msg("unable to query database")
 				break

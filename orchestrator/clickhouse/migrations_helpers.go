@@ -65,7 +65,7 @@ func (c *Component) tableAlreadyExists(ctx context.Context, table, column, targe
 		table, c.config.Database)
 	var existing string
 	if err := row.Scan(&existing); err != nil && err != sql.ErrNoRows {
-		return false, fmt.Errorf("cannot check if table %s already exists", table)
+		return false, fmt.Errorf("cannot check if table %s already exists: %w", table, err)
 	}
 	existing = strings.ReplaceAll(existing,
 		fmt.Sprintf(`dictGetOrDefault('%s.`, c.config.Database),

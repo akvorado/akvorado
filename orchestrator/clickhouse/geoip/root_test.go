@@ -36,13 +36,16 @@ func copyFile(src string, dst string) {
 func TestDatabaseRefresh(t *testing.T) {
 	dir := t.TempDir()
 	config := DefaultConfiguration()
-	config.GeoDatabase = filepath.Join(dir, "country.mmdb")
-	config.ASNDatabase = filepath.Join(dir, "asn.mmdb")
+
+	countryFile := filepath.Join(dir, "country.mmdb")
+	asnFile := filepath.Join(dir, "asn.mmdb")
+	config.GeoDatabase = []string{countryFile}
+	config.ASNDatabase = []string{asnFile}
 
 	copyFile(filepath.Join("testdata", "GeoLite2-Country-Test.mmdb"),
-		config.GeoDatabase)
+		countryFile)
 	copyFile(filepath.Join("testdata", "GeoLite2-ASN-Test.mmdb"),
-		config.ASNDatabase)
+		asnFile)
 
 	r := reporter.NewMock(t)
 	c, err := New(r, config, Dependencies{Daemon: daemon.NewMock(t)})
@@ -52,7 +55,7 @@ func TestDatabaseRefresh(t *testing.T) {
 	helpers.StartStop(t, c)
 
 	// Check we did load both databases
-	gotMetrics := r.GetMetrics("akvorado_inlet_geoip_db_")
+	gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_geoip_db_")
 	expectedMetrics := map[string]string{
 		`refresh_total{database="asn"}`: "1",
 		`refresh_total{database="geo"}`: "1",
@@ -64,9 +67,9 @@ func TestDatabaseRefresh(t *testing.T) {
 	// Check we can reload the database
 	copyFile(filepath.Join("testdata", "GeoLite2-Country-Test.mmdb"),
 		filepath.Join(dir, "tmp.mmdb"))
-	os.Rename(filepath.Join(dir, "tmp.mmdb"), config.GeoDatabase)
+	os.Rename(filepath.Join(dir, "tmp.mmdb"), countryFile)
 	time.Sleep(20 * time.Millisecond)
-	gotMetrics = r.GetMetrics("akvorado_inlet_geoip_db_")
+	gotMetrics = r.GetMetrics("akvorado_orchestrator_clickhouse_geoip_db_")
 	expectedMetrics = map[string]string{
 		`refresh_total{database="asn"}`: "1",
 		`refresh_total{database="geo"}`: "2",
@@ -87,9 +90,9 @@ func TestStartWithoutDatabase(t *testing.T) {
 
 func TestStartWithMissingDatabase(t *testing.T) {
 	geoConfiguration := DefaultConfiguration()
-	geoConfiguration.GeoDatabase = "/i/do/not/exist"
+	geoConfiguration.GeoDatabase = []string{"/i/do/not/exist"}
 	asnConfiguration := DefaultConfiguration()
-	asnConfiguration.ASNDatabase = "/i/do/not/exist"
+	asnConfiguration.ASNDatabase = []string{"/i/do/not/exist"}
 	cases := []struct {
 		Name   string
 		Config Configuration

@@ -15,9 +15,9 @@ import (
 // Configuration describes the configuration for the GeoIP component.
 type Configuration struct {
 	// ASNDatabase defines the path to the ASN database.
-	ASNDatabase string
+	ASNDatabase []string
 	// GeoDatabase defines the path to the geo database.
-	GeoDatabase string
+	GeoDatabase []string
 	// Optional tells if we need to error if not present on start.
 	Optional bool
 }

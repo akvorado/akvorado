@@ -22,6 +22,10 @@ var prettyC = pretty.Config{
 	IncludeUnexported: false,
 }
 
+func formatByte(v interface{}) string {
+	return fmt.Sprintf("0x%x", v)
+}
+
 func defaultPrettyFormatters() map[reflect.Type]interface{} {
 	result := map[reflect.Type]interface{}{
 		reflect.TypeOf(net.IP{}):            fmt.Sprint,
@@ -30,6 +34,7 @@ func defaultPrettyFormatters() map[reflect.Type]interface{} {
 		reflect.TypeOf(SubnetMap[string]{}): fmt.Sprint,
 		reflect.TypeOf(SubnetMap[uint]{}):   fmt.Sprint,
 		reflect.TypeOf(SubnetMap[uint16]{}): fmt.Sprint,
+		reflect.TypeOf(byte(0)):             formatByte,
 	}
 	for t, fn := range nonDefaultPrettyFormatters {
 		result[t] = fn

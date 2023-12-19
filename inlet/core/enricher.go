@@ -126,10 +126,8 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	flow.NextHop = c.getNextHop(flow.NextHop, destRouting.NextHop)
 
 	// set asns according to user config
-	flow.SrcAS = c.getASNumber(flow.SrcAddr, flow.SrcAS, sourceRouting.ASN)
-	flow.DstAS = c.getASNumber(flow.DstAddr, flow.DstAS, destRouting.ASN)
-	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnSrcCountry, []byte(c.d.GeoIP.LookupCountry(flow.SrcAddr)))
-	c.d.Schema.ProtobufAppendBytes(flow, schema.ColumnDstCountry, []byte(c.d.GeoIP.LookupCountry(flow.DstAddr)))
+	flow.SrcAS = c.getASNumber(flow.SrcAS, sourceRouting.ASN)
+	flow.DstAS = c.getASNumber(flow.DstAS, destRouting.ASN)
 	for _, comm := range destRouting.Communities {
 		c.d.Schema.ProtobufAppendVarint(flow, schema.ColumnDstCommunities, uint64(comm))
 	}
@@ -155,14 +153,12 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 }
 
 // getASNumber retrieves the AS number for a flow, depending on user preferences.
-func (c *Component) getASNumber(flowAddr netip.Addr, flowAS, bmpAS uint32) (asn uint32) {
+func (c *Component) getASNumber(flowAS, bmpAS uint32) (asn uint32) {
 	for _, provider := range c.config.ASNProviders {
 		if asn != 0 {
 			break
 		}
 		switch provider {
-		case ASNProviderGeoIP:
-			asn = c.d.GeoIP.LookupASN(flowAddr)
 		case ASNProviderFlow:
 			asn = flowAS
 		case ASNProviderFlowExceptPrivate:

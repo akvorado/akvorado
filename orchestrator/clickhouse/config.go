@@ -12,6 +12,7 @@ import (
 	"akvorado/common/clickhousedb"
 	"akvorado/common/helpers"
 	"akvorado/common/kafka"
+	"akvorado/orchestrator/clickhouse/geoip"
 
 	"github.com/mitchellh/mapstructure"
 )
@@ -51,6 +52,8 @@ type Configuration struct {
 	// OrchestratorURL allows one to override URL to reach
 	// orchestrator from ClickHouse
 	OrchestratorURL string `validate:"isdefault|url"`
+
+	GeoIP geoip.Configuration
 }
 
 // ResolutionConfiguration describes a consolidation interval.
@@ -97,18 +100,27 @@ func DefaultConfiguration() Configuration {
 	}
 }
 
-// NetworkAttributes is a set of attributes attached to a network
+// NetworkAttributes is a set of attributes attached to a network.
+// Don't forget to update orchestrator/clickhouse/migrations.go:78 when this changes.
 type NetworkAttributes struct {
 	// Name is a name attached to the network. May be unique or not.
 	Name string
 	// Role is a role attached to the network (server, customer).
 	Role string
-	// Site is the site of the network (paris, berlin).
+	// Site is the site of the network (ams5, pa3).
 	Site string
-	// Region is the region of the network (france, italy).
+	// Region is the region of the network (eu-west-1, us-east-3).
 	Region string
+	// City is the administrative city where the prefix is located (Paris, London).
+	City string
+	// State is the first administrative sub-division of the country (Ile-de-france, Alabama)
+	State string
+	// Country is the country of the network (france, italy)
+	Country string
 	// Tenant is a tenant for the network.
 	Tenant string
+	// ASN is the AS number associated to the network.
+	ASN uint32
 }
 
 // NetworkAttributesUnmarshallerHook decodes network attributes. It

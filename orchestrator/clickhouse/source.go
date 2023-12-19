@@ -25,5 +25,8 @@ func (c *Component) UpdateRemoteDataSource(ctx context.Context, name string, sou
 	c.networkSourcesLock.Lock()
 	c.networkSources[name] = results
 	c.networkSourcesLock.Unlock()
+	if err := c.refreshConvergedNetworks(); err != nil {
+		return len(results), err
+	}
 	return len(results), nil
 }
