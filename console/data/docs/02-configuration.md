@@ -441,7 +441,7 @@ An interface is a `name`, a `description` and a `speed`.
 For example:
 
 ```yaml
-metadata
+metadata:
   provider:
     type: static
     exporters:
