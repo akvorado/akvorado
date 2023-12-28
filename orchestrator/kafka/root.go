@@ -105,12 +105,14 @@ func (c *Component) Start() error {
 			l.Warn().Msgf("mismatch for replication factor: got %d, want %d",
 				topic.ReplicationFactor, c.config.TopicConfiguration.ReplicationFactor)
 		}
-		if err := admin.AlterConfig(sarama.TopicResource, c.kafkaTopic, c.config.TopicConfiguration.ConfigEntries, false); err != nil {
-			l.Err(err).Msg("unable to set topic configuration")
-			return fmt.Errorf("unable to set topic configuration for %q: %w",
-				c.kafkaTopic, err)
+		if ShouldAlterConfiguration(c.config.TopicConfiguration.ConfigEntries, topic.ConfigEntries, c.config.TopicConfiguration.ConfigEntriesStrictSync) {
+			if err := admin.AlterConfig(sarama.TopicResource, c.kafkaTopic, c.config.TopicConfiguration.ConfigEntries, false); err != nil {
+				l.Err(err).Msg("unable to set topic configuration")
+				return fmt.Errorf("unable to set topic configuration for %q: %w",
+					c.kafkaTopic, err)
+			}
+			l.Info().Msg("topic updated")
 		}
-		l.Info().Msg("topic updated")
 	}
 	return nil
 }
