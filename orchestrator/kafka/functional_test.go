@@ -46,6 +46,13 @@ func TestTopicCreation(t *testing.T) {
 				"cleanup.policy": &cleanupPolicy,
 			},
 		}, {
+			Name: "Do not alter equivalent config",
+			ConfigEntries: map[string]*string{
+				"retention.ms":   &retentionMs,
+				"segment.bytes":  &segmentBytes2,
+				"cleanup.policy": &cleanupPolicy,
+			},
+		}, {
 			Name: "Remove item",
 			ConfigEntries: map[string]*string{
 				"retention.ms":  &retentionMs,
@@ -59,9 +66,10 @@ func TestTopicCreation(t *testing.T) {
 			configuration := DefaultConfiguration()
 			configuration.Topic = topicName
 			configuration.TopicConfiguration = TopicConfiguration{
-				NumPartitions:     1,
-				ReplicationFactor: 1,
-				ConfigEntries:     tc.ConfigEntries,
+				NumPartitions:           1,
+				ReplicationFactor:       1,
+				ConfigEntries:           tc.ConfigEntries,
+				ConfigEntriesStrictSync: true,
 			}
 			configuration.Brokers = brokers
 			configuration.Version = kafka.Version(sarama.V2_8_1_0)

@@ -658,6 +658,7 @@ The following keys are accepted for the topic configuration:
 - `num-partitions` for the number of partitions
 - `replication-factor` for the replication factor
 - `config-entries` is a mapping from configuration names to their values
+- `config-entries-strict-sync` for the configuration in-sync policy
 
 For example:
 
@@ -671,6 +672,7 @@ kafka:
       segment.bytes: 1073741824
       retention.ms: 86400000
       cleanup.policy: delete
+    config-entries-strict-sync: true
 ```
 
 Another useful setting is `retention.bytes` to limit the size of a
@@ -678,8 +680,10 @@ partition in bytes too (divide it by the number of partitions to have
 a limit for the topic).
 
 Currently, the orchestrator service won't update the replication
-factor. The configuration entries are kept in sync with the content of
-the configuration file.
+factor. 
+By default, the configuration entries are kept in sync with the content of
+the configuration file, except if you disable the `config-entries-strict-sync`,
+the existing non-listed overrides won't be removed from topic configuration entries.
 
 ### ClickHouse
 
