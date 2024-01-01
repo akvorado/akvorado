@@ -85,7 +85,7 @@ jobs:
         run: make test-js
       - name: Run coverage tests
         run: make test-coverage
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: linux-coverage
           if-no-files-found: error
@@ -93,7 +93,7 @@ jobs:
             test/go/coverage.xml
             test/js/cobertura-coverage.xml
       - name: Upload binary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: binary
           path: bin/akvorado
@@ -118,7 +118,7 @@ jobs:
         run: make && ./bin/akvorado version
       - name: Tests
         run: make test-coverage-go
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: macos-coverage
           if-no-files-found: error
