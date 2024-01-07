@@ -81,6 +81,7 @@ func (c *Component) Start() error {
 	c.t.Go(func() error {
 		customBackoff := backoff.NewExponentialBackOff()
 		customBackoff.MaxElapsedTime = 0
+		customBackoff.MaxInterval = 5 * time.Minute
 		customBackoff.InitialInterval = time.Second
 		for {
 			if !c.config.SkipMigrations {
