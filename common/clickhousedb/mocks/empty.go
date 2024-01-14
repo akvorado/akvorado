@@ -6,5 +6,5 @@ package mocks
 
 import (
 	_ "github.com/ClickHouse/clickhouse-go/v2/lib/driver" // for mockgen in vendor mode
-	_ "github.com/golang/mock/mockgen/model"              // for mockgen in vendor mode
+	_ "go.uber.org/mock/mockgen/model"                    // for mockgen in vendor mode
 )

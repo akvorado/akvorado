@@ -5,5 +5,5 @@
 package mocks
 
 import (
-	_ "github.com/golang/mock/mockgen/model" // for mockgen in vendor mode
+	_ "go.uber.org/mock/mockgen/model" // for mockgen in vendor mode
 )

@@ -60,7 +60,7 @@ GOTESTSUM = $(BIN)/gotestsum
 $(BIN)/gotestsum: PACKAGE=gotest.tools/gotestsum@latest
 
 MOCKGEN = $(BIN)/mockgen
-$(BIN)/mockgen: PACKAGE=github.com/golang/mock/mockgen@v1.6.0
+$(BIN)/mockgen: PACKAGE=go.uber.org/mock/mockgen@v0.4.0
 
 PIGEON = $(BIN)/pigeon
 $(BIN)/pigeon: PACKAGE=github.com/mna/pigeon@v1.1.0

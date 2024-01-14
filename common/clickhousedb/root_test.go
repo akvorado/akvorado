@@ -8,7 +8,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 
 	"akvorado/common/clickhousedb/mocks"
 	"akvorado/common/helpers"

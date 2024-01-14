@@ -12,7 +12,7 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
 	"github.com/gin-gonic/gin"
-	"github.com/golang/mock/gomock"
+	"go.uber.org/mock/gomock"
 
 	"akvorado/common/clickhousedb/mocks"
 	"akvorado/common/helpers"

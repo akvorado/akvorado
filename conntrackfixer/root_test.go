@@ -14,8 +14,8 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/go-connections/nat"
-	"github.com/golang/mock/gomock"
 	"github.com/ti-mo/conntrack"
+	"go.uber.org/mock/gomock"
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
