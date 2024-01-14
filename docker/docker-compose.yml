@@ -40,6 +40,7 @@ services:
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
       - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
+      - JMX_PORT=5555
     restart: unless-stopped
     depends_on:
       - zookeeper
@@ -50,19 +51,6 @@ services:
       timeout: 10s
       retries: 3
       test: ["CMD", "kafka-topics.sh", "--list", "--bootstrap-server", "kafka:9092"]
-  kafka-ui:
-    image: provectuslabs/kafka-ui:v0.5.0
-    restart: unless-stopped
-    depends_on:
-      - kafka
-    environment:
-      - KAFKA_CLUSTERS_0_NAME=local
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
-      - SERVER_SERVLET_CONTEXT_PATH=/kafka-ui
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.kafka-ui.entrypoints=private
-      - traefik.http.routers.kafka-ui.rule=PathPrefix(`/kafka-ui`)
 
   redis:
     image: bitnami/redis:7.0
