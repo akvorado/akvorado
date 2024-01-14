@@ -23,7 +23,7 @@ identified with a specific icon:
 - 🌱 *docker*: update ClickHouse to 23.8 (this is not mandatory)
 - 🌱 *orchestrator*: add `orchestrator`→`clickhouse`→`prometheus-endpoint` to configure an endpoint to expose metrics to Prometheus
 
-[performance regression](https://github.com/akvorado/akvorado/discussions/988)
+[performance regression]: https://github.com/akvorado/akvorado/discussions/988
 
 ## 1.9.2 - 2023-11-28
 
