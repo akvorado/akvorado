@@ -17,7 +17,7 @@ identified with a specific icon:
 - ✨ *inlet*: add the following collected data (disabled by default):
   `MPLSLabels`, `MPLS1stLabel`, `MPLS2ndLabel`, `MPLS3rdLabel`, and `MPLS4thLabel`
 - 🩹 *inlet*: fix static metadata provider configuration validation
-- 🩹 *inlet*: fix a [performance regression]() when enriching flows
+- 🩹 *inlet*: fix a [performance regression][] when enriching flows
 - 🩹 *inlet*: do not decode L4 header if IP packet is fragmented
 - 🩹 *inlet*: handle exporters using several sampling rates
 - 🌱 *docker*: update ClickHouse to 23.8 (this is not mandatory)
