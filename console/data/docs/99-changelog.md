@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- ✨ *inlet*: static metadata provider can also fetch its configuration from an HTTP endpoint
+
 ## 1.9.3 - 2024-01-14
 
 - 💥 *inlet*: many metrics renamed to match [Prometheus best practices](https://prometheus.io/docs/practices/naming/)
