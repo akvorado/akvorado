@@ -10,6 +10,7 @@ import (
 	"akvorado/common/remotedatasourcefetcher"
 	"akvorado/common/reporter"
 	"akvorado/inlet/metadata/provider"
+
 	"context"
 	"fmt"
 	"sync"
@@ -22,7 +23,7 @@ type Provider struct {
 	exporterSourcesFetcher *remotedatasourcefetcher.Component[exporterInfo]
 	exportersMap           map[string][]exporterInfo
 	exporters              atomic.Pointer[helpers.SubnetMap[ExporterConfiguration]]
-	exportersLock          sync.RWMutex
+	exportersLock          sync.Mutex
 	put                    func(provider.Update)
 }
 
