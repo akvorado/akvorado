@@ -5,6 +5,8 @@ package clickhousedb
 
 import (
 	"time"
+
+	"akvorado/common/helpers"
 )
 
 // Configuration defines how we connect to a ClickHouse database
@@ -21,6 +23,8 @@ type Configuration struct {
 	MaxOpenConns int `validate:"min=1"`
 	// DialTimeout tells how much time to wait when connecting to ClickHouse
 	DialTimeout time.Duration `validate:"min=100ms"`
+	// TLS defines TLS connection parameters, if empty, plain TCP will be used.
+	TLS helpers.TLSConfiguration
 }
 
 // DefaultConfiguration represents the default configuration for connecting to ClickHouse
@@ -31,5 +35,9 @@ func DefaultConfiguration() Configuration {
 		Username:     "default",
 		MaxOpenConns: 10,
 		DialTimeout:  5 * time.Second,
+		TLS: helpers.TLSConfiguration{
+			Enable: false,
+			Verify: true,
+		},
 	}
 }

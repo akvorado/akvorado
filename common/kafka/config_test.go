@@ -30,8 +30,10 @@ func TestKafkaNewConfig(t *testing.T) {
 		}, {
 			description: "SASL plain",
 			config: Configuration{
-				TLS: TLSConfiguration{
-					Enable:       true,
+				TLS: TLSAndSASLConfiguration{
+					TLSConfiguration: helpers.TLSConfiguration{
+						Enable: true,
+					},
 					SASLUsername: "hello",
 					SASLPassword: "password",
 				},
@@ -39,8 +41,10 @@ func TestKafkaNewConfig(t *testing.T) {
 		}, {
 			description: "SASL SCRAM SHA256",
 			config: Configuration{
-				TLS: TLSConfiguration{
-					Enable:        true,
+				TLS: TLSAndSASLConfiguration{
+					TLSConfiguration: helpers.TLSConfiguration{
+						Enable: true,
+					},
 					SASLUsername:  "hello",
 					SASLPassword:  "password",
 					SASLMechanism: SASLSCRAMSHA256,
@@ -49,8 +53,10 @@ func TestKafkaNewConfig(t *testing.T) {
 		}, {
 			description: "SASL SCRAM SHA512",
 			config: Configuration{
-				TLS: TLSConfiguration{
-					Enable:        true,
+				TLS: TLSAndSASLConfiguration{
+					TLSConfiguration: helpers.TLSConfiguration{
+						Enable: true,
+					},
 					SASLUsername:  "hello",
 					SASLPassword:  "password",
 					SASLMechanism: SASLSCRAMSHA512,
@@ -92,9 +98,11 @@ func TestTLSConfiguration(t *testing.T) {
 				Topic:   "flows",
 				Brokers: []string{"127.0.0.1:9092"},
 				Version: Version(sarama.V2_8_1_0),
-				TLS: TLSConfiguration{
-					Enable: true,
-					Verify: true,
+				TLS: TLSAndSASLConfiguration{
+					TLSConfiguration: helpers.TLSConfiguration{
+						Enable: true,
+						Verify: true,
+					},
 				},
 			},
 		}, {
@@ -115,9 +123,11 @@ func TestTLSConfiguration(t *testing.T) {
 				Topic:   "flows",
 				Brokers: []string{"127.0.0.1:9092"},
 				Version: Version(sarama.V2_8_1_0),
-				TLS: TLSConfiguration{
-					Enable:        true,
-					Verify:        false,
+				TLS: TLSAndSASLConfiguration{
+					TLSConfiguration: helpers.TLSConfiguration{
+						Enable: true,
+						Verify: false,
+					},
 					SASLUsername:  "hello",
 					SASLPassword:  "bye",
 					SASLMechanism: SASLPlainText,
@@ -140,9 +150,12 @@ func TestTLSConfiguration(t *testing.T) {
 				Topic:   "flows",
 				Brokers: []string{"127.0.0.1:9092"},
 				Version: Version(sarama.V2_8_1_0),
-				TLS: TLSConfiguration{
-					Enable:        true,
-					Verify:        true,
+				TLS: TLSAndSASLConfiguration{
+					TLSConfiguration: helpers.TLSConfiguration{
+						Enable: true,
+						// Value from DefaultConfig is true
+						Verify: true,
+					},
 					SASLUsername:  "hello",
 					SASLPassword:  "bye",
 					SASLMechanism: SASLSCRAMSHA256,
