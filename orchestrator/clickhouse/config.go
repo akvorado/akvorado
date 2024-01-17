@@ -7,11 +7,12 @@ import (
 	"reflect"
 	"time"
 
+	"akvorado/common/remotedatasourcefetcher"
+
 	"akvorado/common/clickhousedb"
 	"akvorado/common/helpers"
 	"akvorado/common/kafka"
 
-	"github.com/itchyny/gojq"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -43,7 +44,7 @@ type Configuration struct {
 	// definitions to map IP networks to attributes. It is used to
 	// instantiate the SrcNet* and DstNet* columns. The results
 	// are overridden by the content of Networks.
-	NetworkSources map[string]NetworkSource `validate:"dive"`
+	NetworkSources map[string]remotedatasourcefetcher.RemoteDataSource `validate:"dive"`
 	// NetworkSourceTimeout tells how long to wait for network
 	// sources to be ready. 503 is returned when not.
 	NetworkSourcesTimeout time.Duration `validate:"min=0"`
@@ -127,65 +128,8 @@ func NetworkAttributesUnmarshallerHook() mapstructure.DecodeHookFunc {
 	}
 }
 
-// NetworkSource defines a remote network definition.
-type NetworkSource struct {
-	// URL is the URL to fetch to get remote network definition.
-	// It should provide a JSON file.
-	URL string `validate:"url"`
-	// Method defines which method to use (GET or POST)
-	Method string `validate:"oneof=GET POST"`
-	// Headers defines additional headers to send
-	Headers map[string]string
-	// Proxy is set to true if a proxy should be used.
-	Proxy bool
-	// Timeout tells the maximum time the remote request should take
-	Timeout time.Duration `validate:"min=1s"`
-	// Transform is a jq string to transform the received JSON
-	// data into a list of network attributes.
-	Transform TransformQuery
-	// Interval tells how much time to wait before updating the source.
-	Interval time.Duration `validate:"min=1m"`
-}
-
-// DefaultNetworkSourceConfiguration is the default configuration for a network source.
-func DefaultNetworkSourceConfiguration() NetworkSource {
-	return NetworkSource{
-		Method:  "GET",
-		Timeout: time.Minute,
-	}
-}
-
-// TransformQuery represents a jq query to transform data.
-type TransformQuery struct {
-	*gojq.Query
-}
-
-// UnmarshalText parses a jq query.
-func (jq *TransformQuery) UnmarshalText(text []byte) error {
-	q, err := gojq.Parse(string(text))
-	if err != nil {
-		return err
-	}
-	*jq = TransformQuery{q}
-	return nil
-}
-
-// String turns a jq query into a string.
-func (jq TransformQuery) String() string {
-	if jq.Query != nil {
-		return jq.Query.String()
-	}
-	return ".[]"
-}
-
-// MarshalText turns a jq query into a string.
-func (jq TransformQuery) MarshalText() ([]byte, error) {
-	return []byte(jq.String()), nil
-}
-
 func init() {
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[NetworkAttributes]())
 	helpers.RegisterMapstructureUnmarshallerHook(NetworkAttributesUnmarshallerHook())
-	helpers.RegisterMapstructureUnmarshallerHook(helpers.DefaultValuesUnmarshallerHook[NetworkSource](DefaultNetworkSourceConfiguration()))
 	helpers.RegisterSubnetMapValidation[NetworkAttributes]()
 }

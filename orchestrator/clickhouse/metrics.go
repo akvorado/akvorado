@@ -34,26 +34,4 @@ func (c *Component) initMetrics() {
 			Help: "Number of migration steps not applied",
 		},
 	)
-
-	c.metrics.networkSourceUpdates = c.r.CounterVec(
-		reporter.CounterOpts{
-			Name: "network_source_updates_total",
-			Help: "Number of successful updates for a network source",
-		},
-		[]string{"source"},
-	)
-	c.metrics.networkSourceErrors = c.r.CounterVec(
-		reporter.CounterOpts{
-			Name: "network_source_errors_total",
-			Help: "Number of failed updates for a network source",
-		},
-		[]string{"source", "error"},
-	)
-	c.metrics.networkSourceCount = c.r.GaugeVec(
-		reporter.GaugeOpts{
-			Name: "network_source_networks_total",
-			Help: "Number of networks imported from a given source",
-		},
-		[]string{"source"},
-	)
 }

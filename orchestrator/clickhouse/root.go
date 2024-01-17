@@ -5,13 +5,14 @@
 package clickhouse
 
 import (
-	"context"
+	"fmt"
 	"sort"
 	"sync"
 	"time"
 
+	"akvorado/common/remotedatasourcefetcher"
+
 	"github.com/cenkalti/backoff/v4"
-	"github.com/itchyny/gojq"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/clickhousedb"
@@ -29,11 +30,11 @@ type Component struct {
 	config  Configuration
 	metrics metrics
 
-	migrationsDone      chan bool // closed when migrations are done
-	migrationsOnce      chan bool // closed after first attempt to migrate
-	networkSourcesReady chan bool // closed when all network sources are ready
-	networkSourcesLock  sync.RWMutex
-	networkSources      map[string][]externalNetworkAttributes
+	migrationsDone        chan bool // closed when migrations are done
+	migrationsOnce        chan bool // closed after first attempt to migrate
+	networkSourcesFetcher *remotedatasourcefetcher.Component[externalNetworkAttributes]
+	networkSources        map[string][]externalNetworkAttributes
+	networkSourcesLock    sync.RWMutex
 }
 
 // Dependencies define the dependencies of the ClickHouse configurator.
@@ -46,14 +47,19 @@ type Dependencies struct {
 
 // New creates a new ClickHouse component.
 func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
+
 	c := Component{
-		r:                   r,
-		d:                   &dependencies,
-		config:              configuration,
-		migrationsDone:      make(chan bool),
-		migrationsOnce:      make(chan bool),
-		networkSourcesReady: make(chan bool),
-		networkSources:      make(map[string][]externalNetworkAttributes),
+		r:              r,
+		d:              &dependencies,
+		config:         configuration,
+		migrationsDone: make(chan bool),
+		migrationsOnce: make(chan bool),
+		networkSources: make(map[string][]externalNetworkAttributes),
+	}
+	var err error
+	c.networkSourcesFetcher, err = remotedatasourcefetcher.New[externalNetworkAttributes](r, c.UpdateRemoteDataSource, "network_source", configuration.NetworkSources)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize remote data source fetcher component: %w", err)
 	}
 	c.initMetrics()
 	if err := c.registerHTTPHandlers(); err != nil {
@@ -81,7 +87,6 @@ func (c *Component) Start() error {
 	c.t.Go(func() error {
 		customBackoff := backoff.NewExponentialBackOff()
 		customBackoff.MaxElapsedTime = 0
-		customBackoff.MaxInterval = 5 * time.Minute
 		customBackoff.InitialInterval = time.Second
 		for {
 			if !c.config.SkipMigrations {
@@ -107,86 +112,10 @@ func (c *Component) Start() error {
 	})
 
 	// Network sources update
-	var notReadySources sync.WaitGroup
-	notReadySources.Add(len(c.config.NetworkSources))
-	go func() {
-		notReadySources.Wait()
-		close(c.networkSourcesReady)
-	}()
-	for name, source := range c.config.NetworkSources {
-		if source.Transform.Query == nil {
-			source.Transform.Query, _ = gojq.Parse(".")
-		}
-		name := name
-		source := source
-		c.t.Go(func() error {
-			c.metrics.networkSourceCount.WithLabelValues(name).Set(0)
-			newRetryTicker := func() *backoff.Ticker {
-				customBackoff := backoff.NewExponentialBackOff()
-				customBackoff.MaxElapsedTime = 0
-				customBackoff.MaxInterval = source.Interval
-				customBackoff.InitialInterval = source.Interval / 10
-				if customBackoff.InitialInterval > time.Second {
-					customBackoff.InitialInterval = time.Second
-				}
-				return backoff.NewTicker(customBackoff)
-			}
-			newRegularTicker := func() *time.Ticker {
-				return time.NewTicker(source.Interval)
-			}
-			retryTicker := newRetryTicker()
-			regularTicker := newRegularTicker()
-			regularTicker.Stop()
-			success := false
-			ready := false
-			defer func() {
-				if !success {
-					retryTicker.Stop()
-				} else {
-					regularTicker.Stop()
-				}
-				if !ready {
-					notReadySources.Done()
-				}
-			}()
-			for {
-				ctx, cancel := context.WithTimeout(c.t.Context(nil), source.Timeout)
-				count, err := c.updateNetworkSource(ctx, name, source)
-				cancel()
-				if err == nil {
-					c.metrics.networkSourceUpdates.WithLabelValues(name).Inc()
-					c.metrics.networkSourceCount.WithLabelValues(name).Set(float64(count))
-				} else {
-					c.metrics.networkSourceErrors.WithLabelValues(name, err.Error()).Inc()
-				}
-				if err == nil && !ready {
-					ready = true
-					notReadySources.Done()
-					c.r.Debug().Str("name", name).Msg("source ready")
-				}
-				if err == nil && !success {
-					// On success, change the timer to a regular timer interval
-					retryTicker.Stop()
-					retryTicker.C = nil
-					regularTicker = newRegularTicker()
-					success = true
-					c.r.Debug().Str("name", name).Msg("switch to regular polling")
-				} else if err != nil && success {
-					// On failure, switch to the retry ticker
-					regularTicker.Stop()
-					retryTicker = newRetryTicker()
-					success = false
-					c.r.Debug().Str("name", name).Msg("switch to retry polling")
-				}
-				select {
-				case <-c.t.Dying():
-					return nil
-				case <-retryTicker.C:
-				case <-regularTicker.C:
-				}
-			}
-		})
+	if err := c.networkSourcesFetcher.Start(); err != nil {
+		return fmt.Errorf("unable to start network sources fetcher component: %w", err)
 	}
+
 	return nil
 }
 

@@ -5,8 +5,10 @@ package static
 
 import (
 	"testing"
+	"time"
 
 	"akvorado/common/helpers"
+	"akvorado/common/remotedatasourcefetcher"
 	"akvorado/inlet/metadata/provider"
 )
 
@@ -39,5 +41,28 @@ func TestValidation(t *testing.T) {
 		}),
 	}); err == nil {
 		t.Fatal("validate.Struct() did not error")
+	}
+
+	if err := helpers.Validate.Struct(Configuration{
+		Exporters: helpers.MustNewSubnetMap(map[string]ExporterConfiguration{
+			"::ffff:203.0.113.0/120": {
+				Name: "something",
+				Default: provider.Interface{
+					Name:        "iface1",
+					Description: "description 1",
+					Speed:       10000,
+				},
+			},
+		}),
+		ExporterSources: map[string]remotedatasourcefetcher.RemoteDataSource{
+			"http-endpoint": {
+				URL:      "https://foo.bar",
+				Method:   "GET",
+				Timeout:  time.Second * 10,
+				Interval: time.Minute,
+			},
+		},
+	}); err != nil {
+		t.Fatalf("validate.Struct() error:\n%+v", err)
 	}
 }

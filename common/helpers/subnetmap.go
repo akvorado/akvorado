@@ -126,36 +126,9 @@ func SubnetMapUnmarshallerHook[V any]() mapstructure.DecodeHookFunc {
 					return nil, fmt.Errorf("key %d is not a string (%s)", i, k.Kind())
 				}
 				// Parse key
-				var key string
-				if strings.Contains(k.String(), "/") {
-					// Subnet
-					_, ipNet, err := net.ParseCIDR(k.String())
-					if err != nil {
-						return nil, err
-					}
-					// Convert key to IPv6
-					ones, bits := ipNet.Mask.Size()
-					if bits != 32 && bits != 128 {
-						return nil, fmt.Errorf("key %d has an invalid netmask", i)
-					}
-					if bits == 32 {
-						key = fmt.Sprintf("::ffff:%s/%d", ipNet.IP.String(), ones+96)
-					} else if ipNet.IP.To4() != nil {
-						key = fmt.Sprintf("::ffff:%s/%d", ipNet.IP.String(), ones)
-					} else {
-						key = ipNet.String()
-					}
-				} else {
-					// IP
-					ip := net.ParseIP(k.String())
-					if ip == nil {
-						return nil, fmt.Errorf("key %d is not a valid subnet", i)
-					}
-					if ipv4 := ip.To4(); ipv4 != nil {
-						key = fmt.Sprintf("::ffff:%s/128", ipv4.String())
-					} else {
-						key = fmt.Sprintf("%s/128", ip.String())
-					}
+				key, err := SubnetMapParseKey(k.String())
+				if err != nil {
+					return nil, fmt.Errorf("failed to parse key %s: %w", key, err)
 				}
 				output[key] = v.Interface()
 			}
@@ -182,6 +155,42 @@ func SubnetMapUnmarshallerHook[V any]() mapstructure.DecodeHookFunc {
 
 		return trie, nil
 	}
+}
+
+// SubnetMapParseKey decodes and validates a key used in SubnetMap from a network string.
+func SubnetMapParseKey(k string) (string, error) {
+	var key string
+	if strings.Contains(k, "/") {
+		// Subnet
+		_, ipNet, err := net.ParseCIDR(k)
+		if err != nil {
+			return "", err
+		}
+		// Convert key to IPv6
+		ones, bits := ipNet.Mask.Size()
+		if bits != 32 && bits != 128 {
+			return "", fmt.Errorf("key %s has invalid netmask", k)
+		}
+		if bits == 32 {
+			key = fmt.Sprintf("::ffff:%s/%d", ipNet.IP.String(), ones+96)
+		} else if ipNet.IP.To4() != nil {
+			key = fmt.Sprintf("::ffff:%s/%d", ipNet.IP.String(), ones)
+		} else {
+			key = ipNet.String()
+		}
+	} else {
+		// IP
+		ip := net.ParseIP(k)
+		if ip == nil {
+			return "", fmt.Errorf("key %s is not a valid subnet", k)
+		}
+		if ipv4 := ip.To4(); ipv4 != nil {
+			key = fmt.Sprintf("::ffff:%s/128", ipv4.String())
+		} else {
+			key = fmt.Sprintf("%s/128", ip.String())
+		}
+	}
+	return key, nil
 }
 
 // MarshalYAML turns a subnet into a map that can be marshaled.
