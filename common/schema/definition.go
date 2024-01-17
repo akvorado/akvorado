@@ -13,6 +13,18 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+// InterfaceBoundary identifies wether the interface is facing inside or outside the network.
+type InterfaceBoundary uint
+
+const (
+	// InterfaceBoundaryUndefined means we don't know about the interface.
+	InterfaceBoundaryUndefined InterfaceBoundary = iota
+	// InterfaceBoundaryExternal means this interface is facing outside our network
+	InterfaceBoundaryExternal
+	// InterfaceBoundaryInternal means this interface is facing inside our network
+	InterfaceBoundaryInternal
+)
+
 // revive:disable
 const (
 	ColumnTimeReceived ColumnKey = iota + 1
@@ -294,14 +306,14 @@ END`,
 			{Key: ColumnInIfProvider, ParserType: "string", ClickHouseType: "LowCardinality(String)", ClickHouseNotSortingKey: true},
 			{
 				Key:                     ColumnInIfBoundary,
-				ClickHouseType:          "Enum8('undefined' = 0, 'external' = 1, 'internal' = 2)",
+				ClickHouseType:          fmt.Sprintf("Enum8('undefined' = %d, 'external' = %d, 'internal' = %d)", InterfaceBoundaryUndefined, InterfaceBoundaryExternal, InterfaceBoundaryInternal),
 				ClickHouseNotSortingKey: true,
 				ProtobufType:            protoreflect.EnumKind,
 				ProtobufEnumName:        "Boundary",
 				ProtobufEnum: map[int]string{
-					0: "UNDEFINED",
-					1: "EXTERNAL",
-					2: "INTERNAL",
+					int(InterfaceBoundaryUndefined): "UNDEFINED",
+					int(InterfaceBoundaryExternal):  "EXTERNAL",
+					int(InterfaceBoundaryInternal):  "INTERNAL",
 				},
 			},
 			{Key: ColumnEType, ClickHouseType: "UInt32"}, // TODO: UInt16 but hard to change, primary key

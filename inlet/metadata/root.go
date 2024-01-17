@@ -225,7 +225,7 @@ func (c *Component) Stop() error {
 // Lookup for interface information for the provided exporter and ifIndex.
 // If the information is not in the cache, it will be polled, but
 // won't be returned immediately.
-func (c *Component) Lookup(t time.Time, exporterIP netip.Addr, ifIndex uint) (string, Interface, bool) {
+func (c *Component) Lookup(t time.Time, exporterIP netip.Addr, ifIndex uint) (provider.Answer, bool) {
 	query := provider.Query{ExporterIP: exporterIP, IfIndex: ifIndex}
 	answer, ok := c.sc.Lookup(t, query)
 	if !ok {
@@ -235,7 +235,7 @@ func (c *Component) Lookup(t time.Time, exporterIP netip.Addr, ifIndex uint) (st
 			c.metrics.providerBusyCount.WithLabelValues(exporterIP.Unmap().String()).Inc()
 		}
 	}
-	return answer.ExporterName, answer.Interface, ok
+	return answer, ok
 }
 
 // dispatchIncomingRequest dispatches an incoming request to workers. It may
@@ -317,7 +317,7 @@ func (c *Component) expireCache() {
 		count := 0
 		toRefresh := c.sc.NeedUpdates(c.d.Clock.Now().Add(-c.config.CacheRefresh))
 		for exporter, ifaces := range toRefresh {
-			for ifIndex := range ifaces {
+			for _, ifIndex := range ifaces {
 				select {
 				case c.dispatcherChannel <- provider.Query{
 					ExporterIP: exporter,

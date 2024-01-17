@@ -9,13 +9,17 @@ import (
 	"net/netip"
 
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 )
 
 // Interface contains the information about an interface.
 type Interface struct {
-	Name        string `validate:"required"`
-	Description string `validate:"required"`
-	Speed       uint   `validate:"required"`
+	Name         string `validate:"required"`
+	Description  string `validate:"required"`
+	Speed        uint   `validate:"required"`
+	Provider     string
+	Connectivity string
+	Boundary     string
 }
 
 // Query is the query sent to a provider.
@@ -32,8 +36,18 @@ type BatchQuery struct {
 
 // Answer is the answer received from a provider.
 type Answer struct {
-	ExporterName string
-	Interface
+	ExporterName          string
+	ExporterRegion        string
+	ExporterRole          string
+	ExporterTenant        string
+	ExporterSite          string
+	ExporterGroup         string
+	InterfaceName         string
+	InterfaceDescription  string
+	InterfaceSpeed        uint
+	InterfaceProvider     string
+	InterfaceConnectivity string
+	InterfaceBoundary     schema.InterfaceBoundary
 }
 
 // Update is an update received from a provider.

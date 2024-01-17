@@ -152,14 +152,16 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 	}
 	var (
 		sysNameVal string
-		ifDescrVal string
-		ifAliasVal string
-		ifSpeedVal uint
 	)
 	if !processStr(0, "sysname", &sysNameVal) {
 		return errors.New("unable to get sysName")
 	}
 	for idx := 1; idx < len(requests)-2; idx += 3 {
+		var (
+			ifDescrVal string
+			ifAliasVal string
+			ifSpeedVal uint
+		)
 		ifIndex := ifIndexes[(idx-1)/3]
 		ok := true
 		// We do not process results when index is 0 (this can happen for local
@@ -174,13 +176,7 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 		if ifIndex > 0 && !processUint(idx+2, "ifspeed", &ifSpeedVal) {
 			ok = false
 		}
-		var iface provider.Interface
 		if ok {
-			iface = provider.Interface{
-				Name:        ifDescrVal,
-				Description: ifAliasVal,
-				Speed:       ifSpeedVal,
-			}
 			p.metrics.successes.WithLabelValues(exporterStr).Inc()
 		}
 		put(provider.Update{
@@ -189,8 +185,10 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 				IfIndex:    ifIndex,
 			},
 			Answer: provider.Answer{
-				ExporterName: sysNameVal,
-				Interface:    iface,
+				ExporterName:         sysNameVal,
+				InterfaceName:        ifDescrVal,
+				InterfaceDescription: ifAliasVal,
+				InterfaceSpeed:       ifSpeedVal,
 			},
 		})
 	}

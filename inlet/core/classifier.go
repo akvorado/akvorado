@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 
+	"akvorado/common/schema"
+
 	"github.com/antonmedv/expr"
 	"github.com/antonmedv/expr/ast"
 	"github.com/antonmedv/expr/vm"
@@ -143,20 +145,11 @@ type interfaceInfo struct {
 	VLAN        uint16
 }
 
-// interfaceBoundary tells if an interface is internal or external
-type interfaceBoundary uint
-
-const (
-	undefinedBoundary interfaceBoundary = iota
-	externalBoundary
-	internalBoundary
-)
-
 // interfaceClassification contains the information about an interface classification
 type interfaceClassification struct {
 	Connectivity string
 	Provider     string
-	Boundary     interfaceBoundary
+	Boundary     schema.InterfaceBoundary
 	Reject       bool
 	Name         string
 	Description  string
@@ -183,14 +176,14 @@ func (scr *InterfaceClassifierRule) exec(si exporterInfo, ii interfaceInfo, ic *
 	classifyConnectivity := classifyString(&ic.Connectivity)
 	classifyProvider := classifyString(&ic.Provider)
 	classifyExternal := func() bool {
-		if ic.Boundary == undefinedBoundary {
-			ic.Boundary = externalBoundary
+		if ic.Boundary == schema.InterfaceBoundaryUndefined {
+			ic.Boundary = schema.InterfaceBoundaryExternal
 		}
 		return true
 	}
 	classifyInternal := func() bool {
-		if ic.Boundary == undefinedBoundary {
-			ic.Boundary = internalBoundary
+		if ic.Boundary == schema.InterfaceBoundaryUndefined {
+			ic.Boundary = schema.InterfaceBoundaryInternal
 		}
 		return true
 	}

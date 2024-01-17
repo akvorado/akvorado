@@ -1,8 +1,6 @@
 package remotedatasourcefetcher
 
 import (
-	"akvorado/common/helpers"
-	"akvorado/common/reporter"
 	"context"
 	"fmt"
 	"net"
@@ -10,6 +8,9 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"akvorado/common/helpers"
+	"akvorado/common/reporter"
 )
 
 type remoteData struct {

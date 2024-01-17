@@ -210,7 +210,7 @@ func TestPoller(t *testing.T) {
 			put := func(update provider.Update) {
 				got = append(got, fmt.Sprintf("%s %s %d %s %s %d",
 					update.ExporterIP.Unmap().String(), update.ExporterName,
-					update.IfIndex, update.Name, update.Description, update.Speed))
+					update.IfIndex, update.InterfaceName, update.InterfaceDescription, update.InterfaceSpeed))
 			}
 			p, err := config.New(r, put)
 			if err != nil {
@@ -226,8 +226,8 @@ func TestPoller(t *testing.T) {
 			if diff := helpers.Diff(got, []string{
 				fmt.Sprintf(`%s exporter62 641 Gi0/0/0/0 Transit 10000`, exporterStr),
 				fmt.Sprintf(`%s exporter62 642 Gi0/0/0/1 Peering 20000`, exporterStr),
-				fmt.Sprintf(`%s exporter62 643   0`, exporterStr), // negative cache
-				fmt.Sprintf(`%s exporter62 644   0`, exporterStr), // negative cache
+				fmt.Sprintf(`%s exporter62 643 Gi0/0/0/2  10000`, exporterStr), // no ifAlias
+				fmt.Sprintf(`%s exporter62 644   0`, exporterStr),              // negative cache
 				fmt.Sprintf(`%s exporter62 0   0`, exporterStr),
 			}); diff != "" {
 				t.Fatalf("Poll() (-got, +want):\n%s", diff)

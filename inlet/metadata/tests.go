@@ -13,6 +13,7 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/inlet/metadata/provider"
 )
 
@@ -28,11 +29,29 @@ func (mp mockProvider) Query(_ context.Context, query provider.BatchQuery) error
 			ExporterName: strings.ReplaceAll(query.ExporterIP.Unmap().String(), ".", "_"),
 		}
 		if ifIndex != 999 {
-			answer.Interface = Interface{
-				Name:        fmt.Sprintf("Gi0/0/%d", ifIndex),
-				Description: fmt.Sprintf("Interface %d", ifIndex),
-				Speed:       1000,
-			}
+			answer.InterfaceName = fmt.Sprintf("Gi0/0/%d", ifIndex)
+			answer.InterfaceDescription = fmt.Sprintf("Interface %d", ifIndex)
+			answer.InterfaceSpeed = 1000
+		}
+		// in iface with  metadata (overriden by out iface)
+		if ifIndex == 1010 {
+			answer.ExporterGroup = "metadata group"
+			answer.ExporterRegion = "metadata region"
+			answer.ExporterRole = "metadata role"
+			answer.ExporterSite = "metadata site"
+			answer.ExporterTenant = "metadata tenant"
+		}
+
+		// out iface with metadata
+		if ifIndex == 2010 {
+			answer.InterfaceBoundary = schema.InterfaceBoundaryExternal
+			answer.InterfaceConnectivity = "metadata connectivity"
+			answer.InterfaceProvider = "metadata provider"
+			answer.ExporterGroup = "metadata group"
+			answer.ExporterRegion = "metadata region"
+			answer.ExporterRole = "metadata role"
+			answer.ExporterSite = "metadata site"
+			answer.ExporterTenant = "metadata tenant"
 		}
 		mp.put(provider.Update{Query: provider.Query{ExporterIP: query.ExporterIP, IfIndex: ifIndex}, Answer: answer})
 	}

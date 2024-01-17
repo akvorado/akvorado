@@ -9,6 +9,7 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/remotedatasourcefetcher"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/inlet/metadata/provider"
 
 	"context"
@@ -47,6 +48,16 @@ func (configuration Configuration) New(r *reporter.Reporter, put func(provider.U
 	return p, nil
 }
 
+func (p *Provider) convertBoundary(boundary string) schema.InterfaceBoundary {
+	switch boundary {
+	case "external":
+		return schema.InterfaceBoundaryExternal
+	case "internal":
+		return schema.InterfaceBoundaryInternal
+	}
+	return schema.InterfaceBoundaryUndefined
+}
+
 // Query queries static configuration.
 func (p *Provider) Query(_ context.Context, query provider.BatchQuery) error {
 	exporter, ok := p.exporters.Load().Lookup(query.ExporterIP)
@@ -64,8 +75,18 @@ func (p *Provider) Query(_ context.Context, query provider.BatchQuery) error {
 				IfIndex:    ifIndex,
 			},
 			Answer: provider.Answer{
-				ExporterName: exporter.Name,
-				Interface:    iface,
+				ExporterName:          exporter.Name,
+				ExporterRegion:        exporter.Region,
+				ExporterRole:          exporter.Role,
+				ExporterTenant:        exporter.Tenant,
+				ExporterSite:          exporter.Site,
+				ExporterGroup:         exporter.Group,
+				InterfaceName:         iface.Name,
+				InterfaceDescription:  iface.Description,
+				InterfaceSpeed:        iface.Speed,
+				InterfaceProvider:     iface.Provider,
+				InterfaceConnectivity: iface.Connectivity,
+				InterfaceBoundary:     p.convertBoundary(iface.Boundary),
 			},
 		})
 	}

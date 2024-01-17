@@ -232,12 +232,10 @@ func TestRemoteExporterSources(t *testing.T) {
 			IfIndex:    1,
 		},
 		Answer: provider.Answer{
-			ExporterName: "exporter1",
-			Interface: provider.Interface{
-				Name:        "iface1",
-				Description: "foo:desc1",
-				Speed:       1000,
-			},
+			ExporterName:         "exporter1",
+			InterfaceName:        "iface1",
+			InterfaceDescription: "foo:desc1",
+			InterfaceSpeed:       1000,
 		},
 	})
 
