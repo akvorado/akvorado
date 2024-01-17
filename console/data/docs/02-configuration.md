@@ -462,6 +462,33 @@ metadata:
             speed: 1000
 ```
 
+The `static` provider also accepts a key `exporter-sources`, which will fetch a remote source mapping subnets to
+attributes. This is similar to `exporters` but the definition is
+fetched through HTTP. It accepts a map from source names to sources.
+Each source accepts the following attributes:
+- `url` is the URL to fetch
+- `method` is the method to use (`GET` or `POST`)
+- `headers` is a map from header names to values to add to the request
+- `proxy` says if we should use a proxy (defined through environment variables like `http_proxy`)
+- `timeout` defines the timeout for fetching and parsing
+- `interval` is the interval at which the source should be refreshed
+- `transform` is a [jq](https://stedolan.github.io/jq/manual/)
+  expression to transform the received JSON into a set of network
+  attributes represented as objects.
+
+For example:
+
+```yaml
+metadata:
+  provider:
+    type: static
+    exporter-sources:
+      gostatic:
+        url: http://gostatic:8043/my-exporters.json
+        interval: 10m
+        transform: .exporters[]
+```
+
 ### HTTP
 
 The builtin HTTP server serves various pages. Its configuration

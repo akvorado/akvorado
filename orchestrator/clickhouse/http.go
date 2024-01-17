@@ -112,7 +112,7 @@ func (c *Component) registerHTTPHandlers() error {
 		v := dict
 		c.d.HTTP.AddHandler(fmt.Sprintf("/api/v0/orchestrator/clickhouse/custom_dict_%s.csv", k), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			select {
-			case <-c.networkSourcesReady:
+			case <-c.networkSourcesFetcher.DataSourcesReady:
 			case <-time.After(c.config.NetworkSourcesTimeout):
 				w.WriteHeader(http.StatusServiceUnavailable)
 				return
@@ -132,7 +132,7 @@ func (c *Component) registerHTTPHandlers() error {
 	c.d.HTTP.AddHandler("/api/v0/orchestrator/clickhouse/networks.csv",
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			select {
-			case <-c.networkSourcesReady:
+			case <-c.networkSourcesFetcher.DataSourcesReady:
 			case <-time.After(c.config.NetworkSourcesTimeout):
 				w.WriteHeader(http.StatusServiceUnavailable)
 				return

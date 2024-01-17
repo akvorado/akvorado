@@ -4,15 +4,10 @@
 package clickhouse
 
 import (
-	"bufio"
 	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"net/http"
 	"net/netip"
 
-	"github.com/mitchellh/mapstructure"
+	"akvorado/common/remotedatasourcefetcher"
 )
 
 type externalNetworkAttributes struct {
@@ -20,72 +15,11 @@ type externalNetworkAttributes struct {
 	NetworkAttributes `mapstructure:",squash"`
 }
 
-// updateNetworkSource updates a remote network source. It returns the
+// UpdateRemoteDataSource updates a remote network source. It returns the
 // number of networks retrieved.
-func (c *Component) updateNetworkSource(ctx context.Context, name string, source NetworkSource) (int, error) {
-	l := c.r.With().Str("name", name).Str("url", source.URL).Logger()
-	l.Info().Msg("update network source")
-
-	client := &http.Client{Transport: &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-	}}
-	req, err := http.NewRequestWithContext(ctx, source.Method, source.URL, nil)
-	for headerName, headerValue := range source.Headers {
-		req.Header.Set(headerName, headerValue)
-	}
-	req.Header.Set("accept", "application/json")
+func (c *Component) UpdateRemoteDataSource(ctx context.Context, name string, source remotedatasourcefetcher.RemoteDataSource) (int, error) {
+	results, err := c.networkSourcesFetcher.Fetch(ctx, name, source)
 	if err != nil {
-		l.Err(err).Msg("unable to build new request")
-		return 0, fmt.Errorf("unable to build new request: %w", err)
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		l.Err(err).Msg("unable to fetch network source")
-		return 0, fmt.Errorf("unable to fetch network source: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		err := fmt.Errorf("unexpected status code %d: %s", resp.StatusCode, resp.Status)
-		l.Error().Msg(err.Error())
-		return 0, err
-	}
-	reader := bufio.NewReader(resp.Body)
-	decoder := json.NewDecoder(reader)
-	var got interface{}
-	if err := decoder.Decode(&got); err != nil {
-		l.Err(err).Msg("cannot decode JSON output")
-		return 0, fmt.Errorf("cannot decode JSON output: %w", err)
-	}
-	results := []externalNetworkAttributes{}
-	iter := source.Transform.Query.RunWithContext(ctx, got)
-	for {
-		v, ok := iter.Next()
-		if !ok {
-			break
-		}
-		if err, ok := v.(error); ok {
-			l.Err(err).Msg("cannot execute jq filter")
-			return 0, fmt.Errorf("cannot execute jq filter: %w", err)
-		}
-		var result externalNetworkAttributes
-		config := &mapstructure.DecoderConfig{
-			Metadata:   nil,
-			Result:     &result,
-			DecodeHook: mapstructure.TextUnmarshallerHookFunc(),
-		}
-		decoder, err := mapstructure.NewDecoder(config)
-		if err != nil {
-			panic(err)
-		}
-		if err := decoder.Decode(v); err != nil {
-			l.Err(err).Msgf("cannot map returned value for %#v", v)
-			return 0, fmt.Errorf("cannot map returned value: %w", err)
-		}
-		results = append(results, result)
-	}
-	if len(results) == 0 {
-		err := errors.New("empty results")
-		l.Error().Msg(err.Error())
 		return 0, err
 	}
 	c.networkSourcesLock.Lock()

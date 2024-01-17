@@ -49,7 +49,7 @@ func TestStaticProvider(t *testing.T) {
 		}),
 	}
 
-	got := []provider.Update{}
+	var got []provider.Update
 	r := reporter.NewMock(t)
 	p, _ := config.New(r, func(update provider.Update) {
 		got = append(got, update)

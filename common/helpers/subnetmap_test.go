@@ -231,6 +231,64 @@ func TestSubnetMapUnmarshalHookWithMapValue(t *testing.T) {
 	}
 }
 
+func TestSubnetMapParseKey(t *testing.T) {
+	cases := []struct {
+		Description string
+		Input       string
+		Expected    string
+		Error       bool
+	}{
+		{
+			Description: "valid ipv4 address",
+			Input:       "10.0.0.1",
+			Expected:    "::ffff:10.0.0.1/128",
+		},
+		{
+			Description: "valid ipv4 subnet",
+			Input:       "10.0.0.0/28",
+			Expected:    "::ffff:10.0.0.0/124",
+		},
+		{
+			Description: "invalid ipv4 address",
+			Input:       "10.0.0",
+			Error:       true,
+		},
+		{
+			Description: "valid ipv6 address",
+			Input:       "2001:db8:2::a",
+			Expected:    "2001:db8:2::a/128",
+		},
+		{
+			Description: "valid ipv6 subnet",
+			Input:       "2001:db8:2::/48",
+			Expected:    "2001:db8:2::/48",
+		},
+		{
+			Description: "invalid ipv6 address",
+			Input:       "2001:",
+			Error:       true,
+		},
+		{
+			Description: "invalid string",
+			Input:       "foo-bar",
+			Error:       true,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.Description, func(t *testing.T) {
+			res, err := helpers.SubnetMapParseKey(tc.Input)
+			if err != nil && !tc.Error {
+				t.Fatalf("SubnetMapParseKey() error:\n%+v", err)
+			} else if err == nil && tc.Error {
+				t.Fatal("SubnetMapParseKey() did not return an error")
+			}
+			if diff := helpers.Diff(res, tc.Expected); diff != "" {
+				t.Fatalf("Decode() (-got, +want):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestToMap(t *testing.T) {
 	input := helpers.MustNewSubnetMap(map[string]string{
 		"2001:db8::/64":        "hello",

@@ -4,14 +4,24 @@
 package static
 
 import (
+	"time"
+
 	"akvorado/common/helpers"
+	"akvorado/common/remotedatasourcefetcher"
 	"akvorado/inlet/metadata/provider"
 )
 
 // Configuration describes the configuration for the static provider
 type Configuration struct {
-	// Exporters is a subnet map matching exporters to their configuration
+	// Exporters is a subnet map matching Exporters to their configuration
 	Exporters *helpers.SubnetMap[ExporterConfiguration] `validate:"omitempty,dive"`
+	// ExporterSources defines a set of remote Exporters
+	// definitions to map IP address to their configuration.
+	// The results are overridden by the content of Exporters.
+	ExporterSources map[string]remotedatasourcefetcher.RemoteDataSource `validate:"dive"`
+	// ExporterSourcesTimeout tells how long to wait for exporter
+	// sources to be ready. 503 is returned when not.
+	ExporterSourcesTimeout time.Duration `validate:"min=0"`
 }
 
 // ExporterConfiguration is the interface configuration for an exporter.
