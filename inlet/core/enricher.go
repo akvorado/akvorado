@@ -26,24 +26,35 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	var flowInIfVlan, flowOutIfVlan uint16
 
 	t := time.Now() // only call it once
+	expClassification := exporterClassification{}
+	inIfClassification := interfaceClassification{}
+	outIfClassification := interfaceClassification{}
 
 	if flow.InIf != 0 {
-		exporterName, iface, ok := c.d.Metadata.Lookup(t, exporterIP, uint(flow.InIf))
+		answer, ok := c.d.Metadata.Lookup(t, exporterIP, uint(flow.InIf))
 		if !ok {
 			c.metrics.flowsErrors.WithLabelValues(exporterStr, "SNMP cache miss").Inc()
 			skip = true
 		} else {
-			flowExporterName = exporterName
+			flowExporterName = answer.ExporterName
+			expClassification.Region = answer.ExporterRegion
+			expClassification.Role = answer.ExporterRole
+			expClassification.Tenant = answer.ExporterTenant
+			expClassification.Site = answer.ExporterSite
+			expClassification.Group = answer.ExporterGroup
 			flowInIfIndex = flow.InIf
-			flowInIfName = iface.Name
-			flowInIfDescription = iface.Description
-			flowInIfSpeed = uint32(iface.Speed)
+			flowInIfName = answer.InterfaceName
+			flowInIfDescription = answer.InterfaceDescription
+			flowInIfSpeed = uint32(answer.InterfaceSpeed)
+			inIfClassification.Provider = answer.InterfaceProvider
+			inIfClassification.Connectivity = answer.InterfaceConnectivity
+			inIfClassification.Boundary = answer.InterfaceBoundary
 			flowInIfVlan = flow.SrcVlan
 		}
 	}
 
 	if flow.OutIf != 0 {
-		exporterName, iface, ok := c.d.Metadata.Lookup(t, exporterIP, uint(flow.OutIf))
+		answer, ok := c.d.Metadata.Lookup(t, exporterIP, uint(flow.OutIf))
 		if !ok {
 			// Only register a cache miss if we don't have one.
 			// TODO: maybe we could do one SNMP query for both interfaces.
@@ -52,11 +63,19 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 				skip = true
 			}
 		} else {
-			flowExporterName = exporterName
+			flowExporterName = answer.ExporterName
+			expClassification.Region = answer.ExporterRegion
+			expClassification.Role = answer.ExporterRole
+			expClassification.Tenant = answer.ExporterTenant
+			expClassification.Site = answer.ExporterSite
+			expClassification.Group = answer.ExporterGroup
 			flowOutIfIndex = flow.OutIf
-			flowOutIfName = iface.Name
-			flowOutIfDescription = iface.Description
-			flowOutIfSpeed = uint32(iface.Speed)
+			flowOutIfName = answer.InterfaceName
+			flowOutIfDescription = answer.InterfaceDescription
+			flowOutIfSpeed = uint32(answer.InterfaceSpeed)
+			outIfClassification.Provider = answer.InterfaceProvider
+			outIfClassification.Connectivity = answer.InterfaceConnectivity
+			outIfClassification.Boundary = answer.InterfaceBoundary
 			flowOutIfVlan = flow.DstVlan
 		}
 	}
@@ -84,12 +103,12 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	}
 
 	// Classification
-	if !c.classifyExporter(t, exporterStr, flowExporterName, flow) ||
+	if !c.classifyExporter(t, exporterStr, flowExporterName, flow, expClassification) ||
 		!c.classifyInterface(t, exporterStr, flowExporterName, flow,
-			flowOutIfIndex, flowOutIfName, flowOutIfDescription, flowOutIfSpeed, flowOutIfVlan,
+			flowOutIfIndex, flowOutIfName, flowOutIfDescription, flowOutIfSpeed, flowOutIfVlan, outIfClassification,
 			false) ||
 		!c.classifyInterface(t, exporterStr, flowExporterName, flow,
-			flowInIfIndex, flowInIfName, flowInIfDescription, flowInIfSpeed, flowInIfVlan,
+			flowInIfIndex, flowInIfName, flowInIfDescription, flowInIfSpeed, flowInIfVlan, inIfClassification,
 			true) {
 		// Flow is rejected
 		return true
@@ -207,7 +226,11 @@ func (c *Component) writeExporter(flow *schema.FlowMessage, classification expor
 	return true
 }
 
-func (c *Component) classifyExporter(t time.Time, ip string, name string, flow *schema.FlowMessage) bool {
+func (c *Component) classifyExporter(t time.Time, ip string, name string, flow *schema.FlowMessage, classification exporterClassification) bool {
+	// we already have the info provided by the metadata component
+	if classification.Group != "" || classification.Role != "" || classification.Site != "" || classification.Region != "" || classification.Tenant != "" {
+		return c.writeExporter(flow, classification)
+	}
 	if len(c.config.ExporterClassifiers) == 0 {
 		return true
 	}
@@ -216,7 +239,6 @@ func (c *Component) classifyExporter(t time.Time, ip string, name string, flow *
 		return c.writeExporter(flow, classification)
 	}
 
-	var classification exporterClassification
 	for idx, rule := range c.config.ExporterClassifiers {
 		if err := rule.exec(si, &classification); err != nil {
 			c.classifierErrLogger.Err(err).
@@ -256,12 +278,29 @@ func (c *Component) writeInterface(flow *schema.FlowMessage, classification inte
 	return true
 }
 
-func (c *Component) classifyInterface(t time.Time, ip string, exporterName string, fl *schema.FlowMessage, ifIndex uint32, ifName, ifDescription string, ifSpeed uint32, ifVlan uint16, directionIn bool) bool {
+func (c *Component) classifyInterface(
+	t time.Time,
+	ip string,
+	exporterName string,
+	fl *schema.FlowMessage,
+	ifIndex uint32,
+	ifName,
+	ifDescription string,
+	ifSpeed uint32,
+	ifVlan uint16,
+	classification interfaceClassification,
+	directionIn bool,
+) bool {
+	// we already have the info provided by the metadata component
+	if classification.Provider != "" || classification.Connectivity != "" || classification.Boundary != schema.InterfaceBoundaryUndefined {
+		classification.Name = ifName
+		classification.Description = ifDescription
+		return c.writeInterface(fl, classification, directionIn)
+	}
 	if len(c.config.InterfaceClassifiers) == 0 {
-		c.writeInterface(fl, interfaceClassification{
-			Name:        ifName,
-			Description: ifDescription,
-		}, directionIn)
+		classification.Name = ifName
+		classification.Description = ifDescription
+		c.writeInterface(fl, classification, directionIn)
 		return true
 	}
 	si := exporterInfo{IP: ip, Name: exporterName}
@@ -280,7 +319,6 @@ func (c *Component) classifyInterface(t time.Time, ip string, exporterName strin
 		return c.writeInterface(fl, classification, directionIn)
 	}
 
-	var classification interfaceClassification
 	for idx, rule := range c.config.InterfaceClassifiers {
 		err := rule.exec(si, ii, &classification)
 		if err != nil {
@@ -296,7 +334,7 @@ func (c *Component) classifyInterface(t time.Time, ip string, exporterName strin
 		if classification.Connectivity == "" || classification.Provider == "" {
 			continue
 		}
-		if classification.Boundary == undefinedBoundary {
+		if classification.Boundary == schema.InterfaceBoundaryUndefined {
 			continue
 		}
 		break

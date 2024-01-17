@@ -350,8 +350,8 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 					schema.ColumnOutIfDescription: "Interface 200",
 					schema.ColumnInIfSpeed:        1000,
 					schema.ColumnOutIfSpeed:       1000,
-					schema.ColumnInIfBoundary:     internalBoundary,
-					schema.ColumnOutIfBoundary:    internalBoundary,
+					schema.ColumnInIfBoundary:     schema.InterfaceBoundaryInternal,
+					schema.ColumnOutIfBoundary:    schema.InterfaceBoundaryInternal,
 				},
 			},
 		}, {
@@ -452,7 +452,50 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 					schema.ColumnOutIfBoundary:     2, // internal
 				},
 			},
-		}, {
+		},
+		{
+			Name: "use metatada instead of classifier",
+			Configuration: gin.H{
+				"interfaceclassifiers": []string{
+					`ClassifyProvider("Othello")`,
+					`ClassifyConnectivityRegex(Interface.Description, " (1\\d+)$", "P$1") && ClassifyExternal()`,
+					`ClassifyInternal() && ClassifyConnectivity("core")`,
+				},
+			},
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
+					SamplingRate:    1000,
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+					InIf:            1010,
+					OutIf:           2010,
+				}
+			},
+			OutputFlow: &schema.FlowMessage{
+				SamplingRate:    1000,
+				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnExporterName:      "192_0_2_142",
+					schema.ColumnExporterGroup:     "metadata group",
+					schema.ColumnExporterRegion:    "metadata region",
+					schema.ColumnExporterRole:      "metadata role",
+					schema.ColumnExporterSite:      "metadata site",
+					schema.ColumnExporterTenant:    "metadata tenant",
+					schema.ColumnInIfName:          "Gi0/0/1010",
+					schema.ColumnOutIfName:         "Gi0/0/2010",
+					schema.ColumnInIfDescription:   "Interface 1010",
+					schema.ColumnOutIfDescription:  "Interface 2010",
+					schema.ColumnInIfSpeed:         1000,
+					schema.ColumnOutIfSpeed:        1000,
+					schema.ColumnInIfConnectivity:  "p1010",
+					schema.ColumnOutIfConnectivity: "metadata connectivity",
+					schema.ColumnInIfProvider:      "othello",
+					schema.ColumnOutIfProvider:     "metadata provider",
+					schema.ColumnInIfBoundary:      schema.InterfaceBoundaryExternal,
+					schema.ColumnOutIfBoundary:     schema.InterfaceBoundaryExternal,
+				},
+			},
+		},
+		{
 			Name:          "use data from routing",
 			Configuration: gin.H{},
 			InputFlow: func() *schema.FlowMessage {

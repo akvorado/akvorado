@@ -10,6 +10,7 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/inlet/metadata/provider"
 )
 
@@ -46,6 +47,29 @@ func TestStaticProvider(t *testing.T) {
 					},
 				},
 			},
+			"2001:db8:3::/48": {
+				Name:   "default with metadata",
+				Region: "eu",
+				Role:   "peering",
+				Tenant: "mine",
+				Site:   "par",
+				Group:  "blue",
+				Default: provider.Interface{
+					Name:        "Default0",
+					Description: "Default interface",
+					Speed:       1000,
+				},
+				IfIndexes: map[uint]provider.Interface{
+					10: {
+						Name:         "Gi10",
+						Description:  "10th interface",
+						Speed:        1000,
+						Provider:     "transit101",
+						Connectivity: "transit",
+						Boundary:     "external",
+					},
+				},
+			},
 		}),
 	}
 
@@ -62,6 +86,10 @@ func TestStaticProvider(t *testing.T) {
 	p.Query(context.Background(), provider.BatchQuery{
 		ExporterIP: netip.MustParseAddr("2001:db8:2::10"),
 		IfIndexes:  []uint{9, 10, 11},
+	})
+	p.Query(context.Background(), provider.BatchQuery{
+		ExporterIP: netip.MustParseAddr("2001:db8:3::10"),
+		IfIndexes:  []uint{10},
 	})
 
 	expected := []provider.Update{
@@ -80,12 +108,10 @@ func TestStaticProvider(t *testing.T) {
 				IfIndex:    10,
 			},
 			Answer: provider.Answer{
-				ExporterName: "nodefault",
-				Interface: provider.Interface{
-					Name:        "Gi10",
-					Description: "10th interface",
-					Speed:       1000,
-				},
+				ExporterName:         "nodefault",
+				InterfaceName:        "Gi10",
+				InterfaceDescription: "10th interface",
+				InterfaceSpeed:       1000,
 			},
 		},
 		{
@@ -94,12 +120,10 @@ func TestStaticProvider(t *testing.T) {
 				IfIndex:    11,
 			},
 			Answer: provider.Answer{
-				ExporterName: "nodefault",
-				Interface: provider.Interface{
-					Name:        "Gi11",
-					Description: "11th interface",
-					Speed:       1000,
-				},
+				ExporterName:         "nodefault",
+				InterfaceName:        "Gi11",
+				InterfaceDescription: "11th interface",
+				InterfaceSpeed:       1000,
 			},
 		},
 		{
@@ -108,12 +132,10 @@ func TestStaticProvider(t *testing.T) {
 				IfIndex:    9,
 			},
 			Answer: provider.Answer{
-				ExporterName: "default",
-				Interface: provider.Interface{
-					Name:        "Default0",
-					Description: "Default interface",
-					Speed:       1000,
-				},
+				ExporterName:         "default",
+				InterfaceName:        "Default0",
+				InterfaceDescription: "Default interface",
+				InterfaceSpeed:       1000,
 			},
 		},
 		{
@@ -122,12 +144,10 @@ func TestStaticProvider(t *testing.T) {
 				IfIndex:    10,
 			},
 			Answer: provider.Answer{
-				ExporterName: "default",
-				Interface: provider.Interface{
-					Name:        "Gi10",
-					Description: "10th interface",
-					Speed:       1000,
-				},
+				ExporterName:         "default",
+				InterfaceName:        "Gi10",
+				InterfaceDescription: "10th interface",
+				InterfaceSpeed:       1000,
 			},
 		},
 		{
@@ -136,12 +156,30 @@ func TestStaticProvider(t *testing.T) {
 				IfIndex:    11,
 			},
 			Answer: provider.Answer{
-				ExporterName: "default",
-				Interface: provider.Interface{
-					Name:        "Default0",
-					Description: "Default interface",
-					Speed:       1000,
-				},
+				ExporterName:         "default",
+				InterfaceName:        "Default0",
+				InterfaceDescription: "Default interface",
+				InterfaceSpeed:       1000,
+			},
+		},
+		{
+			Query: provider.Query{
+				ExporterIP: netip.MustParseAddr("2001:db8:3::10"),
+				IfIndex:    10,
+			},
+			Answer: provider.Answer{
+				ExporterName:          "default with metadata",
+				ExporterRegion:        "eu",
+				ExporterRole:          "peering",
+				ExporterTenant:        "mine",
+				ExporterSite:          "par",
+				ExporterGroup:         "blue",
+				InterfaceName:         "Gi10",
+				InterfaceDescription:  "10th interface",
+				InterfaceSpeed:        1000,
+				InterfaceProvider:     "transit101",
+				InterfaceConnectivity: "transit",
+				InterfaceBoundary:     schema.InterfaceBoundaryExternal,
 			},
 		},
 	}

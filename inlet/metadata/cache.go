@@ -84,15 +84,14 @@ func (sc *metadataCache) Expire(before time.Time) int {
 
 // NeedUpdates returns a map of interface entries that would need to
 // be updated. It relies on last update.
-func (sc *metadataCache) NeedUpdates(before time.Time) map[netip.Addr]map[uint]Interface {
-	result := map[netip.Addr]map[uint]Interface{}
-	for k, v := range sc.cache.ItemsLastUpdatedBefore(before) {
+func (sc *metadataCache) NeedUpdates(before time.Time) map[netip.Addr][]uint {
+	result := map[netip.Addr][]uint{}
+	for k := range sc.cache.ItemsLastUpdatedBefore(before) {
 		interfaces, ok := result[k.ExporterIP]
 		if !ok {
-			interfaces = map[uint]Interface{}
-			result[k.ExporterIP] = interfaces
+			interfaces = []uint{}
 		}
-		interfaces[k.IfIndex] = v.Interface
+		result[k.ExporterIP] = append(interfaces, k.IfIndex)
 	}
 	return result
 }

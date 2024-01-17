@@ -28,6 +28,16 @@ type Configuration struct {
 type ExporterConfiguration struct {
 	// Name is the name of the exporter
 	Name string `validate:"required"`
+	// Region is the general location of the exporter, used to set ExporterRegion.
+	Region string
+	// Role is the role of the exporter, used to set ExporterRole.
+	Role string
+	// Tenant is the owner of the exporter, used to set TenantRole.
+	Tenant string
+	// Site is the location os the exporter, used to set TenantSite.
+	Site string
+	// Group is a functional or organisational identifier for the exporter, used to set ExporterGroup.
+	Group string
 	// Default is used if not empty for any unknown ifindexes
 	Default provider.Interface `validate:"omitempty"`
 	// IfIndexes is a map from interface indexes to interfaces

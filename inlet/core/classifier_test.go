@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"akvorado/common/helpers"
+	"akvorado/common/schema"
 )
 
 func TestExporterClassifier(t *testing.T) {
@@ -156,11 +157,11 @@ func TestInterfaceClassifier(t *testing.T) {
 		}, {
 			Description:            "constant classifier for boundary external",
 			Program:                `ClassifyExternal()`,
-			ExpectedClassification: interfaceClassification{Boundary: externalBoundary},
+			ExpectedClassification: interfaceClassification{Boundary: schema.InterfaceBoundaryExternal},
 		}, {
 			Description:            "constant classifier for boundary internal",
 			Program:                `ClassifyInternal()`,
-			ExpectedClassification: interfaceClassification{Boundary: internalBoundary},
+			ExpectedClassification: interfaceClassification{Boundary: schema.InterfaceBoundaryInternal},
 		}, {
 			Description: "set name and description",
 			Program:     `SetName("newname") && SetDescription("newdescription")`,
@@ -203,7 +204,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")
 			ExpectedClassification: interfaceClassification{
 				Connectivity: "transit",
 				Provider:     "telia",
-				Boundary:     externalBoundary,
+				Boundary:     schema.InterfaceBoundaryExternal,
 			},
 		}, {
 			Description: "classify with VLANs",
@@ -215,7 +216,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")
 				VLAN:        100,
 			},
 			ExpectedClassification: interfaceClassification{
-				Boundary: externalBoundary,
+				Boundary: schema.InterfaceBoundaryExternal,
 			},
 		}, {
 			Description: "classify with another VLAN",
@@ -227,7 +228,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")
 				VLAN:        200,
 			},
 			ExpectedClassification: interfaceClassification{
-				Boundary: undefinedBoundary,
+				Boundary: schema.InterfaceBoundaryUndefined,
 			},
 		},
 	}

@@ -10,8 +10,18 @@ import (
 
 type exporterInfo struct {
 	ExporterSubnet string
-
+	// Name is the hostname of the exporter, used to set ExporterName.
 	Name string `validate:"required"`
+	// Region is the general location of the exporter, used to set ExporterRegion.
+	Region string
+	// Role is the role of the exporter, used to set ExporterRole.
+	Role string
+	// Tenant is the owner of the exporter, used to set TenantRole.
+	Tenant string
+	// Site is the location os the exporter, used to set TenantSite.
+	Site string
+	// Group is a functional or organisational identifier for the exporter, used to set ExporterGroup.
+	Group string
 	// Default is used if not empty for any unknown ifindexes
 	Default provider.Interface `validate:"omitempty"`
 	// IfIndexes is a map from interface indexes to interfaces
@@ -31,6 +41,11 @@ func (i exporterInfo) toExporterConfiguration() ExporterConfiguration {
 
 	return ExporterConfiguration{
 		Name:      i.Name,
+		Region:    i.Region,
+		Role:      i.Role,
+		Tenant:    i.Tenant,
+		Site:      i.Site,
+		Group:     i.Group,
 		Default:   i.Default,
 		IfIndexes: ifindexMap,
 	}
