@@ -14,6 +14,7 @@ identified with a specific icon:
 ## Unreleased
 
 - ✨ *inlet*: static metadata provider can also fetch its configuration from an HTTP endpoint
+- 🌱 *orchestrator*: add TLS support to connect to ClickHouse database
 
 ## 1.9.3 - 2024-01-14
 
