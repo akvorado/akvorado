@@ -36,6 +36,11 @@ type Dependencies struct {
 
 // New creates a new ClickHouse wrapper
 func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) (*Component, error) {
+	tlsConfig, err := config.TLS.MakeTLSConfig()
+
+	if err != nil {
+		return nil, err
+	}
 	conn, err := clickhouse.Open(&clickhouse.Options{
 		Addr: config.Servers,
 		Auth: clickhouse.Auth{
@@ -43,6 +48,8 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 			Username: config.Username,
 			Password: config.Password,
 		},
+		// nil TLS means no tls for clickhouse
+		TLS:             tlsConfig,
 		Compression:     &clickhouse.Compression{Method: clickhouse.CompressionLZ4},
 		DialTimeout:     config.DialTimeout,
 		MaxOpenConns:    config.MaxOpenConns,
