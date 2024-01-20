@@ -33,3 +33,12 @@ services:
     ports:
       - 127.0.0.1:8123:8123/tcp
       - 127.0.0.1:9000:9000/tcp
+
+  srlinux:
+    image: ghcr.io/nokia/srlinux:23.7.1
+    privileged: true
+    user: root
+    command: /opt/srlinux/bin/sr_linux
+    ports:
+      - 127.0.0.1:57400:57400/tcp
+      - 127.0.0.1:57401:22/tcp

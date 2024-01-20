@@ -13,6 +13,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- ✨ *inlet*: add gNMI metadata provider
 - ✨ *inlet*: static metadata provider can also fetch its configuration from an HTTP endpoint
 - 🌱 *orchestrator*: add TLS support to connect to ClickHouse database
 

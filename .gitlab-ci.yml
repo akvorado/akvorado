@@ -43,6 +43,9 @@ run tests:
       alias: redis
     - name: clickhouse/clickhouse-server:23.8
       alias: clickhouse
+    - name: ghcr.io/nokia/srlinux:23.7.1
+      alias: srlinux
+      command: [/opt/srlinux/bin/sr_linux]
   script:
     - time apk add --no-cache git make gcc musl-dev shared-mime-info npm curl
     - export GOMODCACHE=$PWD/.go-cache

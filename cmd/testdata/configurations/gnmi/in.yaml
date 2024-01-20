@@ -1,0 +1,16 @@
+---
+inlet:
+  metadata:
+    provider:
+      type: gnmi
+      models:
+        - name: custom
+          if-index-paths: /some/path
+          if-description-paths: /some/other/path
+          if-name-paths: /something
+          if-speed-paths:
+            - path: /path1
+              unit: mbps
+            - path: /path2
+              unit: ethernet
+          system-name-paths: /another/path
