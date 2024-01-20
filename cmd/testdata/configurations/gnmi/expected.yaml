@@ -1,0 +1,26 @@
+---
+paths:
+  inlet.0.metadata.provider:
+    type: gnmi
+    timeout: "1s"
+    minimalrefreshinterval: "1m0s"
+    ports:
+      ::/0: 9339
+    targets: {}
+    authenticationparameters: {}
+    models:
+      - name: custom
+        ifindexpaths:
+          - /some/path
+        ifdescriptionpaths:
+          - /some/other/path
+        ifnamekeys: []
+        ifnamepaths:
+          - /something
+        ifspeedpaths:
+          - path: /path1
+            unit: mbps
+          - path: /path2
+            unit: ethernet
+        systemnamepaths:
+          - /another/path

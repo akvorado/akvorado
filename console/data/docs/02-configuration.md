@@ -386,8 +386,11 @@ cache is useful to quickly be able to handle incoming flows. By
 default, no persistent cache is configured.
 
 The `provider` key contains the configuration of the provider. The provider type
-is defined by the `type` key. The `snmp` provider accepts the following
-configuration keys:
+is defined by the `type` key.
+
+#### SNMP provider
+
+The `snmp` provider accepts the following configuration keys:
 
 - `communities` is a map from exporter subnets to the SNMPv2 communities. Use
   `::/0` to set the default value. Alternatively, it also accepts a string to
@@ -421,13 +424,73 @@ metadata:
       ::/0: private
 ```
 
-*Akvorado* will use SNMPv3 if there is a match for the
-`security-parameters` configuration option. Otherwise, it will use
-SNMPv2.
+*Akvorado* will use SNMPv3 if there is a match for the `security-parameters`
+configuration option. Otherwise, it will use SNMPv2.
 
-The `gnmi` provider accepts the following keys:
+#### gNMI provider
 
+The `gnmi` provider polls an exporter using gNMI. It accepts the following keys:
 
+- `targets` is a map from exporter IPs to target IPs. When there is no match,
+  the exporter IP is used. Other options are still using the exporter IP as a
+  key, not the target IP.
+- `ports` is a map from exporter subnets to the gNMI port to use to poll
+  exporters in the provided subnet.
+- `authentication-parameters` is a map from exporter subnets to authentication
+  parameters for gNMI targets. Authentication parameters accept the following
+  keys: `username`, `password`, `insecure` (a boolean to use clear text),
+  `skip-verify` (a boolean to disable TLS verification), `tls-ca` (to check the
+  TLS certificate of the target), `tls-cert`, and `tls-key` (to authenticate to
+  a target).
+- `models` is the list of models to use to fetch information from a target. Each
+  model is tried and if a target supports all the paths, it is selected. The
+  models are tried in the order they are declared. If you want to keep the
+  builtin models, use the special string `defaults`.
+- `timeout` tells how much time we should wait for an answer from a target.
+- `minimal-refresh-interval` is the minimum time a collector will wait before
+  polling again a target.
+
+For example:
+
+```yaml
+metadata:
+ provider:
+  type: gnmi
+  authentication-parameters:
+   ::/0:
+    username: admin
+    password: NokiaSrl1!
+    skip-verify: true
+```
+
+The gNMI provider is using "subscribe once" to poll for information from the
+target. This should be compatible with most targets.
+
+A model accepts the following keys:
+
+- `name` for the model name (eg `Nokia SR Linux`)
+- `system-name-paths` is a list of paths where to fetch the system name (eg
+  `/system/name/host-name`)
+- `if-index-paths` is a list of paths to get interface indexes
+- `if-name-keys` is a list of keys where we can find the name of an interface in
+  the paths returned for interface indexes (eg `name` or `port-id`)
+- `if-name-paths` is a list of paths to get interface names (they take
+  precedence if found over the previous key)
+- `if-description-paths` is a list of paths to get interface descriptions
+- `if-speed-paths` is a list of paths to get interface speeds. Specifically for
+  this key a path is defined by two keys: `path` for the gNMI path and `unit`
+  for the unit on how to interpret the value. A unit can be `bps` for a value in
+  bits per second, `mbps` for a value in megabits per second, `ethernet` when
+  using OpenConfig `ETHERNET_SPEED` (they look like `SPEED_100GB`), and `human`
+  for value formatted for humans (`10G` or `100M`)
+
+The currently supported models are:
+- Nokia SR OS
+- Nokia SR Linux
+- OpenConfig
+- IETF
+
+#### Static provider
 
 The `static` provider accepts an `exporters` key which maps exporter subnets to
 an exporter configuration. An exporter configuration is map:
