@@ -118,7 +118,8 @@ func TestCacheByRequestBody(t *testing.T) {
 }
 
 func TestRedis(t *testing.T) {
-	server := helpers.CheckExternalService(t, "Redis", []string{"redis", "127.0.0.1"}, "6379")
+	server := helpers.CheckExternalService(t, "Redis",
+		[]string{"redis:6379", "127.0.0.1:6379"})
 	client := redis.NewClient(&redis.Options{
 		Addr: server,
 		DB:   10,

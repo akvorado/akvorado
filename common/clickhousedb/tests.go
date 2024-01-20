@@ -20,7 +20,8 @@ import (
 // SetupClickHouse configures a client to use for testing.
 func SetupClickHouse(t *testing.T, r *reporter.Reporter) *Component {
 	t.Helper()
-	chServer := helpers.CheckExternalService(t, "ClickHouse", []string{"clickhouse", "127.0.0.1"}, "9000")
+	chServer := helpers.CheckExternalService(t, "ClickHouse",
+		[]string{"clickhouse:9000", "127.0.0.1:9000"})
 	config := DefaultConfiguration()
 	config.Servers = []string{chServer}
 	config.DialTimeout = 100 * time.Millisecond

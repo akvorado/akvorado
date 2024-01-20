@@ -22,26 +22,29 @@ import (
 // but we suppose that either the services are run through
 // docker compose manually and ready, either through CI and they are
 // checked for readiness.
-func CheckExternalService(t *testing.T, name string, dnsCandidates []string, port string) string {
+func CheckExternalService(t *testing.T, name string, candidates []string) string {
 	t.Helper()
 	if testing.Short() {
 		t.Skipf("Skip test with real %s in short mode", name)
 	}
 	mandatory := os.Getenv("CI_AKVORADO_FUNCTIONAL_TESTS") != ""
-	var err error
 
-	found := ""
-	for _, dnsCandidate := range dnsCandidates {
+	server := ""
+	for _, candidate := range candidates {
 		resolv := net.Resolver{PreferGo: true}
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-		_, err = resolv.LookupHost(ctx, dnsCandidate)
+		hostname, _, err := net.SplitHostPort(candidate)
+		if err != nil {
+			t.Fatalf("%s is an invalid candidate", candidate)
+		}
+		_, err = resolv.LookupHost(ctx, hostname)
 		cancel()
 		if err == nil {
-			found = dnsCandidate
+			server = candidate
 			break
 		}
 	}
-	if found == "" {
+	if server == "" {
 		if mandatory {
 			t.Fatalf("%s cannot be resolved (CI_AKVORADO_FUNCTIONAL_TESTS is set)", name)
 		}
@@ -49,7 +52,6 @@ func CheckExternalService(t *testing.T, name string, dnsCandidates []string, por
 	}
 
 	var d net.Dialer
-	server := net.JoinHostPort(found, port)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	for {
 		_, err := d.DialContext(ctx, "tcp", server)

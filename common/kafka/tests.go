@@ -16,7 +16,8 @@ import (
 
 // SetupKafkaBroker configures a client to use for testing.
 func SetupKafkaBroker(t *testing.T) (sarama.Client, []string) {
-	broker := helpers.CheckExternalService(t, "Kafka", []string{"kafka", "127.0.0.1"}, "9092")
+	broker := helpers.CheckExternalService(t, "Kafka",
+		[]string{"kafka:9092", "127.0.0.1:9092"})
 
 	// Wait for broker to be ready
 	saramaConfig := sarama.NewConfig()
