@@ -603,13 +603,14 @@ schema:
           type: String
           default: DefaultRole
           label: IPRole
-      source: ips_annotation.csv
+      source: /etc/akvorado/ips_annotation.csv
       dimensions:
         - SrcAddr
         - DstAddr
 ```
 
-This example expects a CSV file named `ips_annotation.csv` with the following format:
+This example expects a CSV file named `ips_annotation.csv` (when using Docker,
+put it in the `config/` directory) with the following format:
 
 ```csv
 addr,role
@@ -649,7 +650,7 @@ schema:
       attributes:
         - name: information # this column is added as OutIfInformation/InIfInformation to the flow on matches
           type: String # no default: If no match of both agent and interface, the Information-Dimension is empty
-      source: interfaces.csv
+      source: /etc/akvorado/interfaces.csv
       dimensions:
         - OutIf
         - InIf
