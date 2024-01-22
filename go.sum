@@ -19,8 +19,6 @@ github.com/alecthomas/chroma v0.10.0 h1:7XDcGkCQopCNKjZHfYrNLraA+M7e0fMiJ/Mfikbf
 github.com/alecthomas/chroma v0.10.0/go.mod h1:jtJATyUxlIORhUOFNA9NZDWGAQ8wpxQQqNSB4rjA/1s=
 github.com/andybalholm/brotli v1.0.6 h1:Yf9fFpf49Zrxb9NlQaluyE92/+X7UVHlhMNJN2sxfOI=
 github.com/andybalholm/brotli v1.0.6/go.mod h1:fO7iG3H7G2nSZ7m0zPUDn85XEX2GTukHGRSepvi9Eig=
-github.com/antonmedv/expr v1.15.5 h1:y0Iz3cEwmpRz5/r3w4qQR0MfIqJGdGM1zbhD/v0G5Vg=
-github.com/antonmedv/expr v1.15.5/go.mod h1:0E/6TxnOlRNp81GMzX9QfDPAmHo2Phg00y4JUv1ihsE=
 github.com/benbjohnson/clock v1.3.5 h1:VvXlSJBzZpA/zum6Sj74hxwYI2DIxRWuNIoXAzHZz5o=
 github.com/benbjohnson/clock v1.3.5/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
@@ -78,6 +76,8 @@ github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3 h1:Oy0F4A
 github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3/go.mod h1:YvSRo5mw33fLEx1+DlK6L2VV43tJt5Eyel9n9XBcR+0=
 github.com/eapache/queue v1.1.0 h1:YOEu7KNc61ntiQlcEeUIoDTJ2o8mQznoNvUhiigpIqc=
 github.com/eapache/queue v1.1.0/go.mod h1:6eCeP0CKFpHLu8blIFXhExK/dRa7WDZfr6jVFPTqq+I=
+github.com/expr-lang/expr v1.15.8 h1:FL8+d3rSSP4tmK9o+vKfSMqqpGL8n15pEPiHcnBpxoI=
+github.com/expr-lang/expr v1.15.8/go.mod h1:uCkhfG+x7fcZ5A5sXHKuQ07jGZRl6J0FCAaf2k4PtVQ=
 github.com/fortytw2/leaktest v1.3.0 h1:u8491cBMTQ8ft8aeV+adlcytMZylmA5nnwwkRZjI8vw=
 github.com/fortytw2/leaktest v1.3.0/go.mod h1:jDsjWgpAGjm2CA7WthBh/CdZYEPF31XHquHwclZch5g=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
@@ -277,8 +277,6 @@ github.com/openconfig/gnmic/pkg/api v0.1.1 h1:9d7mhVdoz9k+73h9qoWvwcTpmWvLhjavHg
 github.com/openconfig/gnmic/pkg/api v0.1.1/go.mod h1:kX1bJnTRTuYyvceHLcs8JDkLL3QzTpaeYVfQGphYWE4=
 github.com/openconfig/gnmic/pkg/path v0.1.1 h1:C6vZTC0NsMOGyre7ueXRS8vmYvCW9sdHKQ5cqWYiNPw=
 github.com/openconfig/gnmic/pkg/path v0.1.1/go.mod h1:Z2Ejm3UIO7WDxlXsnJmzE7/lnWe/0neCuXW6QDwmYHQ=
-github.com/openconfig/gnmic/pkg/target v0.1.4-0.20240119211446-0c7b596145cc h1:1+RtVQNMOuYX6FbQBWKppDtxUh1YoyjOIN+Xbi5HFG0=
-github.com/openconfig/gnmic/pkg/target v0.1.4-0.20240119211446-0c7b596145cc/go.mod h1:hNmkYvuYFaUtbFWVm0PuvctJ70ku+fotxZxmkr5oeWM=
 github.com/openconfig/gnmic/pkg/target v0.1.4 h1:zO7gOke9RVnkockM2lZv5MqgNdfysUSqxyp91OnEjOQ=
 github.com/openconfig/gnmic/pkg/target v0.1.4/go.mod h1:hNmkYvuYFaUtbFWVm0PuvctJ70ku+fotxZxmkr5oeWM=
 github.com/openconfig/gnmic/pkg/testutils v0.1.0 h1:Mw6LKGqzXQnrI9fCtaCAp3pFDy2B0+rKQFtjCqQWJwM=

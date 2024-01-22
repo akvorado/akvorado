@@ -343,7 +343,7 @@ interface-classifiers:
   - ClassifyInternal()
 ```
 
-[expr]: https://expr.medv.io/docs/Language-Definition
+[expr]: https://expr-lang.org/docs/language-definition
 [from Go]: https://github.com/google/re2/wiki/Syntax
 
 ### GeoIP

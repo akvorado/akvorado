@@ -11,9 +11,9 @@ import (
 
 	"akvorado/common/schema"
 
-	"github.com/antonmedv/expr"
-	"github.com/antonmedv/expr/ast"
-	"github.com/antonmedv/expr/vm"
+	"github.com/expr-lang/expr"
+	"github.com/expr-lang/expr/ast"
+	"github.com/expr-lang/expr/vm"
 )
 
 // Global cache for regular expressions. No boundary.
@@ -123,7 +123,7 @@ func (scr *ExporterClassifierRule) UnmarshalText(text []byte) error {
 
 // String turns a exporter classifier rule into a string
 func (scr ExporterClassifierRule) String() string {
-	return scr.program.Source.Content()
+	return scr.program.Source().Content()
 }
 
 // MarshalText turns a exporter classifier rule into a string
@@ -241,7 +241,7 @@ func (scr *InterfaceClassifierRule) UnmarshalText(text []byte) error {
 
 // String turns a interface classifier rule into a string
 func (scr InterfaceClassifierRule) String() string {
-	return scr.program.Source.Content()
+	return scr.program.Source().Content()
 }
 
 // MarshalText turns a interface classifier rule into a string
