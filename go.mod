@@ -30,7 +30,7 @@ require (
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/netsampler/goflow2/v2 v2.1.2-0.20240106090313-c38607daf962
+	github.com/netsampler/goflow2/v2 v2.1.2
 	github.com/openconfig/gnmi v0.10.0
 	github.com/openconfig/gnmic/pkg/api v0.1.1
 	github.com/openconfig/gnmic/pkg/target v0.1.4
