@@ -107,20 +107,19 @@ func (c *Component) registerHTTPHandlers() error {
 
 	// Add handler for custom dicts
 	for name, dict := range c.d.Schema.GetCustomDictConfig() {
-		// we need to call this a func to avoid issues with the for loop
-		k := name
-		v := dict
-		c.d.HTTP.AddHandler(fmt.Sprintf("/api/v0/orchestrator/clickhouse/custom_dict_%s.csv", k), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		name := name
+		dict := dict
+		c.d.HTTP.AddHandler(fmt.Sprintf("/api/v0/orchestrator/clickhouse/custom_dict_%s.csv", name), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			select {
 			case <-c.networkSourcesFetcher.DataSourcesReady:
 			case <-time.After(c.config.NetworkSourcesTimeout):
 				w.WriteHeader(http.StatusServiceUnavailable)
 				return
 			}
-			file, err := os.ReadFile(v.Source)
+			file, err := os.ReadFile(dict.Source)
 			if err != nil {
 				c.r.Err(err).Msg("unable to deliver custom dict csv file")
-				http.Error(w, fmt.Sprintf("unable to deliver custom dict csv file %s", v.Source), http.StatusNotFound)
+				http.Error(w, fmt.Sprintf("unable to deliver custom dict csv file %s", dict.Source), http.StatusNotFound)
 			}
 			w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 			w.WriteHeader(http.StatusOK)
