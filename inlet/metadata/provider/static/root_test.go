@@ -18,7 +18,9 @@ func TestStaticProvider(t *testing.T) {
 	config := Configuration{
 		Exporters: helpers.MustNewSubnetMap(map[string]ExporterConfiguration{
 			"2001:db8:1::/48": {
-				Name: "nodefault",
+				Exporter: provider.Exporter{
+					Name: "nodefault",
+				},
 				IfIndexes: map[uint]provider.Interface{
 					10: {
 						Name:        "Gi10",
@@ -33,7 +35,9 @@ func TestStaticProvider(t *testing.T) {
 				},
 			},
 			"2001:db8:2::/48": {
-				Name: "default",
+				Exporter: provider.Exporter{
+					Name: "default",
+				},
 				Default: provider.Interface{
 					Name:        "Default0",
 					Description: "Default interface",
@@ -48,12 +52,14 @@ func TestStaticProvider(t *testing.T) {
 				},
 			},
 			"2001:db8:3::/48": {
-				Name:   "default with metadata",
-				Region: "eu",
-				Role:   "peering",
-				Tenant: "mine",
-				Site:   "par",
-				Group:  "blue",
+				Exporter: provider.Exporter{
+					Name:   "default with metadata",
+					Region: "eu",
+					Role:   "peering",
+					Tenant: "mine",
+					Site:   "par",
+					Group:  "blue",
+				},
 				Default: provider.Interface{
 					Name:        "Default0",
 					Description: "Default interface",
@@ -66,7 +72,7 @@ func TestStaticProvider(t *testing.T) {
 						Speed:        1000,
 						Provider:     "transit101",
 						Connectivity: "transit",
-						Boundary:     "external",
+						Boundary:     schema.InterfaceBoundaryExternal,
 					},
 				},
 			},
@@ -99,7 +105,9 @@ func TestStaticProvider(t *testing.T) {
 				IfIndex:    9,
 			},
 			Answer: provider.Answer{
-				ExporterName: "nodefault",
+				Exporter: provider.Exporter{
+					Name: "nodefault",
+				},
 			},
 		},
 		{
@@ -108,10 +116,14 @@ func TestStaticProvider(t *testing.T) {
 				IfIndex:    10,
 			},
 			Answer: provider.Answer{
-				ExporterName:         "nodefault",
-				InterfaceName:        "Gi10",
-				InterfaceDescription: "10th interface",
-				InterfaceSpeed:       1000,
+				Exporter: provider.Exporter{
+					Name: "nodefault",
+				},
+				Interface: provider.Interface{
+					Name:        "Gi10",
+					Description: "10th interface",
+					Speed:       1000,
+				},
 			},
 		},
 		{
@@ -120,10 +132,14 @@ func TestStaticProvider(t *testing.T) {
 				IfIndex:    11,
 			},
 			Answer: provider.Answer{
-				ExporterName:         "nodefault",
-				InterfaceName:        "Gi11",
-				InterfaceDescription: "11th interface",
-				InterfaceSpeed:       1000,
+				Exporter: provider.Exporter{
+					Name: "nodefault",
+				},
+				Interface: provider.Interface{
+					Name:        "Gi11",
+					Description: "11th interface",
+					Speed:       1000,
+				},
 			},
 		},
 		{
@@ -132,10 +148,14 @@ func TestStaticProvider(t *testing.T) {
 				IfIndex:    9,
 			},
 			Answer: provider.Answer{
-				ExporterName:         "default",
-				InterfaceName:        "Default0",
-				InterfaceDescription: "Default interface",
-				InterfaceSpeed:       1000,
+				Exporter: provider.Exporter{
+					Name: "default",
+				},
+				Interface: provider.Interface{
+					Name:        "Default0",
+					Description: "Default interface",
+					Speed:       1000,
+				},
 			},
 		},
 		{
@@ -144,10 +164,14 @@ func TestStaticProvider(t *testing.T) {
 				IfIndex:    10,
 			},
 			Answer: provider.Answer{
-				ExporterName:         "default",
-				InterfaceName:        "Gi10",
-				InterfaceDescription: "10th interface",
-				InterfaceSpeed:       1000,
+				Exporter: provider.Exporter{
+					Name: "default",
+				},
+				Interface: provider.Interface{
+					Name:        "Gi10",
+					Description: "10th interface",
+					Speed:       1000,
+				},
 			},
 		},
 		{
@@ -156,10 +180,14 @@ func TestStaticProvider(t *testing.T) {
 				IfIndex:    11,
 			},
 			Answer: provider.Answer{
-				ExporterName:         "default",
-				InterfaceName:        "Default0",
-				InterfaceDescription: "Default interface",
-				InterfaceSpeed:       1000,
+				Exporter: provider.Exporter{
+					Name: "default",
+				},
+				Interface: provider.Interface{
+					Name:        "Default0",
+					Description: "Default interface",
+					Speed:       1000,
+				},
 			},
 		},
 		{
@@ -168,18 +196,22 @@ func TestStaticProvider(t *testing.T) {
 				IfIndex:    10,
 			},
 			Answer: provider.Answer{
-				ExporterName:          "default with metadata",
-				ExporterRegion:        "eu",
-				ExporterRole:          "peering",
-				ExporterTenant:        "mine",
-				ExporterSite:          "par",
-				ExporterGroup:         "blue",
-				InterfaceName:         "Gi10",
-				InterfaceDescription:  "10th interface",
-				InterfaceSpeed:        1000,
-				InterfaceProvider:     "transit101",
-				InterfaceConnectivity: "transit",
-				InterfaceBoundary:     schema.InterfaceBoundaryExternal,
+				Exporter: provider.Exporter{
+					Name:   "default with metadata",
+					Region: "eu",
+					Role:   "peering",
+					Tenant: "mine",
+					Site:   "par",
+					Group:  "blue",
+				},
+				Interface: provider.Interface{
+					Name:         "Gi10",
+					Description:  "10th interface",
+					Speed:        1000,
+					Provider:     "transit101",
+					Connectivity: "transit",
+					Boundary:     schema.InterfaceBoundaryExternal,
+				},
 			},
 		},
 	}

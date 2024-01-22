@@ -19,7 +19,23 @@ type Interface struct {
 	Speed        uint   `validate:"required"`
 	Provider     string
 	Connectivity string
-	Boundary     string
+	Boundary     schema.InterfaceBoundary
+}
+
+// Exporter describes a router that exports netflow
+type Exporter struct {
+	// Name is the name of the exporter
+	Name string `validate:"required"`
+	// Region is the general location of the exporter, used to set ExporterRegion.
+	Region string
+	// Role is the role of the exporter, used to set ExporterRole.
+	Role string
+	// Tenant is the owner of the exporter, used to set TenantRole.
+	Tenant string
+	// Site is the location os the exporter, used to set TenantSite.
+	Site string
+	// Group is a functional or organisational identifier for the exporter, used to set ExporterGroup.
+	Group string
 }
 
 // Query is the query sent to a provider.
@@ -36,18 +52,8 @@ type BatchQuery struct {
 
 // Answer is the answer received from a provider.
 type Answer struct {
-	ExporterName          string
-	ExporterRegion        string
-	ExporterRole          string
-	ExporterTenant        string
-	ExporterSite          string
-	ExporterGroup         string
-	InterfaceName         string
-	InterfaceDescription  string
-	InterfaceSpeed        uint
-	InterfaceProvider     string
-	InterfaceConnectivity string
-	InterfaceBoundary     schema.InterfaceBoundary
+	Exporter  Exporter
+	Interface Interface
 }
 
 // Update is an update received from a provider.

@@ -185,10 +185,14 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 				IfIndex:    ifIndex,
 			},
 			Answer: provider.Answer{
-				ExporterName:         sysNameVal,
-				InterfaceName:        ifDescrVal,
-				InterfaceDescription: ifAliasVal,
-				InterfaceSpeed:       ifSpeedVal,
+				Exporter: provider.Exporter{
+					Name: sysNameVal,
+				},
+				Interface: provider.Interface{
+					Name:        ifDescrVal,
+					Description: ifAliasVal,
+					Speed:       ifSpeedVal,
+				},
 			},
 		})
 	}

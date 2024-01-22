@@ -26,32 +26,34 @@ type mockProvider struct {
 func (mp mockProvider) Query(_ context.Context, query provider.BatchQuery) error {
 	for _, ifIndex := range query.IfIndexes {
 		answer := provider.Answer{
-			ExporterName: strings.ReplaceAll(query.ExporterIP.Unmap().String(), ".", "_"),
+			Exporter: provider.Exporter{
+				Name: strings.ReplaceAll(query.ExporterIP.Unmap().String(), ".", "_"),
+			},
 		}
 		if ifIndex != 999 {
-			answer.InterfaceName = fmt.Sprintf("Gi0/0/%d", ifIndex)
-			answer.InterfaceDescription = fmt.Sprintf("Interface %d", ifIndex)
-			answer.InterfaceSpeed = 1000
+			answer.Interface.Name = fmt.Sprintf("Gi0/0/%d", ifIndex)
+			answer.Interface.Description = fmt.Sprintf("Interface %d", ifIndex)
+			answer.Interface.Speed = 1000
 		}
 		// in iface with  metadata (overriden by out iface)
 		if ifIndex == 1010 {
-			answer.ExporterGroup = "metadata group"
-			answer.ExporterRegion = "metadata region"
-			answer.ExporterRole = "metadata role"
-			answer.ExporterSite = "metadata site"
-			answer.ExporterTenant = "metadata tenant"
+			answer.Exporter.Group = "metadata group"
+			answer.Exporter.Region = "metadata region"
+			answer.Exporter.Role = "metadata role"
+			answer.Exporter.Site = "metadata site"
+			answer.Exporter.Tenant = "metadata tenant"
 		}
 
 		// out iface with metadata
 		if ifIndex == 2010 {
-			answer.InterfaceBoundary = schema.InterfaceBoundaryExternal
-			answer.InterfaceConnectivity = "metadata connectivity"
-			answer.InterfaceProvider = "metadata provider"
-			answer.ExporterGroup = "metadata group"
-			answer.ExporterRegion = "metadata region"
-			answer.ExporterRole = "metadata role"
-			answer.ExporterSite = "metadata site"
-			answer.ExporterTenant = "metadata tenant"
+			answer.Interface.Boundary = schema.InterfaceBoundaryExternal
+			answer.Interface.Connectivity = "metadata connectivity"
+			answer.Interface.Provider = "metadata provider"
+			answer.Exporter.Group = "metadata group"
+			answer.Exporter.Region = "metadata region"
+			answer.Exporter.Role = "metadata role"
+			answer.Exporter.Site = "metadata site"
+			answer.Exporter.Tenant = "metadata tenant"
 		}
 		mp.put(provider.Update{Query: provider.Query{ExporterIP: query.ExporterIP, IfIndex: ifIndex}, Answer: answer})
 	}

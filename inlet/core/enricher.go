@@ -36,19 +36,19 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 			c.metrics.flowsErrors.WithLabelValues(exporterStr, "SNMP cache miss").Inc()
 			skip = true
 		} else {
-			flowExporterName = answer.ExporterName
-			expClassification.Region = answer.ExporterRegion
-			expClassification.Role = answer.ExporterRole
-			expClassification.Tenant = answer.ExporterTenant
-			expClassification.Site = answer.ExporterSite
-			expClassification.Group = answer.ExporterGroup
+			flowExporterName = answer.Exporter.Name
+			expClassification.Region = answer.Exporter.Region
+			expClassification.Role = answer.Exporter.Role
+			expClassification.Tenant = answer.Exporter.Tenant
+			expClassification.Site = answer.Exporter.Site
+			expClassification.Group = answer.Exporter.Group
 			flowInIfIndex = flow.InIf
-			flowInIfName = answer.InterfaceName
-			flowInIfDescription = answer.InterfaceDescription
-			flowInIfSpeed = uint32(answer.InterfaceSpeed)
-			inIfClassification.Provider = answer.InterfaceProvider
-			inIfClassification.Connectivity = answer.InterfaceConnectivity
-			inIfClassification.Boundary = answer.InterfaceBoundary
+			flowInIfName = answer.Interface.Name
+			flowInIfDescription = answer.Interface.Description
+			flowInIfSpeed = uint32(answer.Interface.Speed)
+			inIfClassification.Provider = answer.Interface.Provider
+			inIfClassification.Connectivity = answer.Interface.Connectivity
+			inIfClassification.Boundary = answer.Interface.Boundary
 			flowInIfVlan = flow.SrcVlan
 		}
 	}
@@ -63,19 +63,19 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 				skip = true
 			}
 		} else {
-			flowExporterName = answer.ExporterName
-			expClassification.Region = answer.ExporterRegion
-			expClassification.Role = answer.ExporterRole
-			expClassification.Tenant = answer.ExporterTenant
-			expClassification.Site = answer.ExporterSite
-			expClassification.Group = answer.ExporterGroup
+			flowExporterName = answer.Exporter.Name
+			expClassification.Region = answer.Exporter.Region
+			expClassification.Role = answer.Exporter.Role
+			expClassification.Tenant = answer.Exporter.Tenant
+			expClassification.Site = answer.Exporter.Site
+			expClassification.Group = answer.Exporter.Group
 			flowOutIfIndex = flow.OutIf
-			flowOutIfName = answer.InterfaceName
-			flowOutIfDescription = answer.InterfaceDescription
-			flowOutIfSpeed = uint32(answer.InterfaceSpeed)
-			outIfClassification.Provider = answer.InterfaceProvider
-			outIfClassification.Connectivity = answer.InterfaceConnectivity
-			outIfClassification.Boundary = answer.InterfaceBoundary
+			flowOutIfName = answer.Interface.Name
+			flowOutIfDescription = answer.Interface.Description
+			flowOutIfSpeed = uint32(answer.Interface.Speed)
+			outIfClassification.Provider = answer.Interface.Provider
+			outIfClassification.Connectivity = answer.Interface.Connectivity
+			outIfClassification.Boundary = answer.Interface.Boundary
 			flowOutIfVlan = flow.DstVlan
 		}
 	}
@@ -228,7 +228,7 @@ func (c *Component) writeExporter(flow *schema.FlowMessage, classification expor
 
 func (c *Component) classifyExporter(t time.Time, ip string, name string, flow *schema.FlowMessage, classification exporterClassification) bool {
 	// we already have the info provided by the metadata component
-	if classification.Group != "" || classification.Role != "" || classification.Site != "" || classification.Region != "" || classification.Tenant != "" {
+	if (classification != exporterClassification{}) {
 		return c.writeExporter(flow, classification)
 	}
 	if len(c.config.ExporterClassifiers) == 0 {
@@ -292,7 +292,7 @@ func (c *Component) classifyInterface(
 	directionIn bool,
 ) bool {
 	// we already have the info provided by the metadata component
-	if classification.Provider != "" || classification.Connectivity != "" || classification.Boundary != schema.InterfaceBoundaryUndefined {
+	if (classification != interfaceClassification{}) {
 		classification.Name = ifName
 		classification.Description = ifDescription
 		return c.writeInterface(fl, classification, directionIn)

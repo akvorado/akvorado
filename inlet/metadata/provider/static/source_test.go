@@ -20,7 +20,9 @@ func TestInitStaticExporters(t *testing.T) {
 	conf := Configuration{
 		Exporters: helpers.MustNewSubnetMap(map[string]ExporterConfiguration{
 			"::ffff:203.0.113.0/120": {
-				Name: "something",
+				Exporter: provider.Exporter{
+					Name: "something",
+				},
 				Default: provider.Interface{
 					Name:        "iface1",
 					Description: "description 1",
@@ -46,7 +48,9 @@ func TestInitStaticExporters(t *testing.T) {
 	expected["static"] = []exporterInfo{
 		{
 			ExporterSubnet: "203.0.113.0/24",
-			Name:           "something",
+			Exporter: provider.Exporter{
+				Name: "something",
+			},
 			Default: provider.Interface{
 				Name:        "iface1",
 				Description: "description 1",
@@ -151,7 +155,9 @@ func TestRemoteExporterSources(t *testing.T) {
 	config := Configuration{
 		Exporters: helpers.MustNewSubnetMap(map[string]ExporterConfiguration{
 			"2001:db8:1::/48": {
-				Name: "nodefault",
+				Exporter: provider.Exporter{
+					Name: "nodefault",
+				},
 				IfIndexes: map[uint]provider.Interface{
 					10: {
 						Name:        "Gi10",
@@ -201,12 +207,14 @@ func TestRemoteExporterSources(t *testing.T) {
 			IfIndex:    9,
 		},
 		Answer: provider.Answer{
-			ExporterName: "nodefault",
+			Exporter: provider.Exporter{
+				Name: "nodefault",
+			},
 		},
 	})
 
 	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Fatalf("static provider (-got, +want):\n%s", diff)
+		t.Fatalf("static provider - before remote source load (-got, +want):\n%s", diff)
 	}
 
 	close(ready)
@@ -232,14 +240,18 @@ func TestRemoteExporterSources(t *testing.T) {
 			IfIndex:    1,
 		},
 		Answer: provider.Answer{
-			ExporterName:         "exporter1",
-			InterfaceName:        "iface1",
-			InterfaceDescription: "foo:desc1",
-			InterfaceSpeed:       1000,
+			Exporter: provider.Exporter{
+				Name: "exporter1",
+			},
+			Interface: provider.Interface{
+				Name:        "iface1",
+				Description: "foo:desc1",
+				Speed:       1000,
+			},
 		},
 	})
 
 	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Fatalf("static provider (-got, +want):\n%s", diff)
+		t.Fatalf("static provider  - after remote source load(-got, +want):\n%s", diff)
 	}
 }

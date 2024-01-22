@@ -4,8 +4,11 @@
 package schema
 
 import (
+	"errors"
 	"fmt"
 	"strings"
+
+	"akvorado/common/helpers/bimap"
 
 	"github.com/bits-and-blooms/bitset"
 	"golang.org/x/exp/slices"
@@ -24,6 +27,44 @@ const (
 	// InterfaceBoundaryInternal means this interface is facing inside our network
 	InterfaceBoundaryInternal
 )
+
+var (
+	interfaceBoundaryMap = bimap.New(map[InterfaceBoundary]string{
+		InterfaceBoundaryUndefined: "undefined",
+		InterfaceBoundaryExternal:  "external",
+		InterfaceBoundaryInternal:  "internal",
+	})
+	errUnknownInterfaceBoundary = errors.New("unknown interface boundary")
+)
+
+// MarshalText turns a SASL algorithm to text
+func (sa InterfaceBoundary) MarshalText() ([]byte, error) {
+	got, ok := interfaceBoundaryMap.LoadValue(sa)
+	if ok {
+		return []byte(got), nil
+	}
+	return nil, errUnknownInterfaceBoundary
+}
+
+// String turns a SASL algorithm to string
+func (sa InterfaceBoundary) String() string {
+	got, _ := interfaceBoundaryMap.LoadValue(sa)
+	return got
+}
+
+// UnmarshalText provides a SASL algorithm from text
+func (sa *InterfaceBoundary) UnmarshalText(input []byte) error {
+	if len(input) == 0 {
+		*sa = InterfaceBoundaryUndefined
+		return nil
+	}
+	got, ok := interfaceBoundaryMap.LoadKey(string(input))
+	if ok {
+		*sa = got
+		return nil
+	}
+	return errUnknownInterfaceBoundary
+}
 
 // revive:disable
 const (
