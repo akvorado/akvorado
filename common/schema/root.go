@@ -35,7 +35,7 @@ func New(config Configuration) (*Component, error) {
 				return nil, fmt.Errorf("no alias configured for %s that can be converted to generate", k)
 			}
 
-			// in case we have another data type for materialized columns, set it
+			// In case we have another data type for materialized columns, set it
 			if column.ClickHouseMaterializedType != "" {
 				column.ClickHouseType = column.ClickHouseMaterializedType
 			}
@@ -90,27 +90,28 @@ func New(config Configuration) (*Component, error) {
 	customDictColumns := []Column{}
 	for dname, v := range config.CustomDictionaries {
 		for _, d := range v.Dimensions {
-			// check if we can actually create the dictionary (we need to know what to match on)
+			// Check if we can actually create the dictionary (we need to know what to match on)
 			if len(v.Keys) == 0 {
 				return nil, fmt.Errorf("custom dictionary %s has no keys, this is not supported", dname)
 			}
 			if len(v.Keys) > 1 {
-				// if more than one key is present, every key needs either a MatchDimension or a MatchDimensionSuffix
+				// If more than one key is present, every key needs either a MatchDimension or a MatchDimensionSuffix
 				for _, kv := range v.Keys {
 					if kv.MatchDimension == "" && kv.MatchDimensionSuffix == "" {
 						return nil, fmt.Errorf("custom dictionary %s has more than one key, but key %s has neither MatchDimension nor MatchDimensionSuffix set", dname, kv.Name)
 					}
 				}
 			}
-			// first, we need to build the matching string for this
+			// First, we need to build the matching string for this
 			matchingList := []string{}
-			// prefer match dimension or match dimension suffix if available
+			// Prefer match dimension or match dimension suffix if available
 			for _, kv := range v.Keys {
 				if kv.MatchDimension != "" {
 					matchingList = append(matchingList, kv.MatchDimension)
 					continue
 				}
-				// match post is appended after the dimension name, and useful if we wanna match a subkey e.g. both in Src/Dst
+				// Match post is appended after the dimension name, and useful
+				// if we wanna match a subkey e.g. both in Src/Dst
 				if kv.MatchDimensionSuffix != "" {
 					matchingList = append(matchingList, fmt.Sprintf("%s%s", d, kv.MatchDimensionSuffix))
 				}
@@ -119,12 +120,13 @@ func New(config Configuration) (*Component, error) {
 			if len(matchingList) > 0 {
 				matchingString = fmt.Sprintf("(%s)", strings.Join(matchingList, ","))
 			} else {
-				// if match dimension and match dimension suffix are both not available, we use the dimension name (e.g. SrcAddr)
+				// If match dimension and match dimension suffix are both not
+				// available, we use the dimension name (e.g. SrcAddr)
 				matchingString = d
 			}
 
 			for _, a := range v.Attributes {
-				// add the dimension combined with capitalizing the name of the dimension field
+				// Add the dimension combined with capitalizing the name of the dimension field
 				l := a.Label
 				if l == "" {
 					l = cases.Title(language.Und).String(a.Name)

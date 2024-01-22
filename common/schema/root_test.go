@@ -89,7 +89,7 @@ func TestCustomDictionaries(t *testing.T) {
 	srcRoleFound := false
 	dstRoleFound := false
 
-	// check if srcAddrAttribute and dstAddrAttribute are in s.columns, and have the correct type/generatefrom
+	// Check if srcAddrAttribute and dstAddrAttribute are in s.columns, and have the correct type/generatefrom
 	for _, column := range s.Columns() {
 		if column.Name == "SrcAddrDimensionAttribute" {
 			srcFound = true
@@ -109,7 +109,7 @@ func TestCustomDictionaries(t *testing.T) {
 				t.Fatalf("DstAddrDimensionAttribute should be generated from `dictGet('custom_dict_test', 'csv_col_name', DstAddr)`, is %s", column.ClickHouseGenerateFrom)
 			}
 		}
-		// this part only tests default dimension name generation
+		// This part only tests default dimension name generation
 		if column.Name == "SrcAddrRole" {
 			srcRoleFound = true
 		}
@@ -159,7 +159,7 @@ func TestCustomDictionariesMatcher(t *testing.T) {
 	outFound := false
 	inFound := false
 
-	// check if srcAddrAttribute and dstAddrAttribute are in s.columns, and have the correct type/generatefrom
+	// Check if srcAddrAttribute and dstAddrAttribute are in s.columns, and have the correct type/generatefrom
 	for _, column := range s.Columns() {
 		if column.Name == "OutIfDimensionAttribute" {
 			outFound = true
@@ -189,7 +189,7 @@ func TestCustomDictionariesMatcher(t *testing.T) {
 	}
 }
 
-// we need MatchDimension or MatchDimensionSuffix for multiple keys
+// We need MatchDimension or MatchDimensionSuffix for multiple keys
 func TestCustomDictMultiKeyErr(t *testing.T) {
 	config := schema.DefaultConfiguration()
 	config.CustomDictionaries = make(map[string]schema.CustomDict)
@@ -216,7 +216,7 @@ func TestCustomDictMultiKeyErr(t *testing.T) {
 	}
 }
 
-// a dict without key makes no sense, catch this
+// A dict without key makes no sense, catch this
 func TestCustomDictNoKeyErr(t *testing.T) {
 	config := schema.DefaultConfiguration()
 	config.CustomDictionaries = make(map[string]schema.CustomDict)

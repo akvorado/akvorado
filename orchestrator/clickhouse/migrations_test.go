@@ -526,7 +526,7 @@ func TestCustomDictMigration(t *testing.T) {
 				t.Fatal("No migration applied when enabling a custom dictionary")
 			}
 
-			// check if the rows were created in the main flows table
+			// Check if the rows were created in the main flows table
 			row := ch.d.ClickHouse.QueryRow(context.Background(), `
 	SELECT toString(groupArray(tuple(name, type, default_expression)))
 	FROM system.columns
@@ -542,14 +542,14 @@ func TestCustomDictMigration(t *testing.T) {
 				t.Fatalf("Unexpected state:\n%s", diff)
 			}
 
-			// check if the rows were created in the consumer flows table
+			// Check if the rows were created in the consumer flows table
 			rowConsumer := ch.d.ClickHouse.QueryRow(context.Background(), `
 		SHOW CREATE flows_ZUYGDTE3EBIXX352XPM3YEEFV4_raw_consumer`)
 			var existingConsumer string
 			if err := rowConsumer.Scan(&existingConsumer); err != nil {
 				t.Fatalf("Scan() error:\n%+v", err)
 			}
-			// check if the definitions are part of the consumer
+			// Check if the definitions are part of the consumer
 			expectedStatements := []string{
 				"dictGet('default.custom_dict_test', 'csv_col_name', DstAddr) AS DstAddrDimensionAttribute",
 				"dictGet('default.custom_dict_test', 'csv_col_name', SrcAddr) AS SrcAddrDimensionAttribute",
@@ -562,7 +562,7 @@ func TestCustomDictMigration(t *testing.T) {
 				}
 			}
 
-			// check if the dictionary was created
+			// Check if the dictionary was created
 			dictCreate := ch.d.ClickHouse.QueryRow(context.Background(), `
 		SHOW CREATE custom_dict_test`)
 			var dictCreateString string
@@ -575,7 +575,7 @@ func TestCustomDictMigration(t *testing.T) {
 			}
 		})
 	}
-	// next test: with the custom dict removed again, the cols should still exist, but the consumer should be gone
+	// Next test: with the custom dict removed again, the cols should still exist, but the consumer should be gone
 	if !t.Failed() {
 		t.Run("remove custom dictionary", func(t *testing.T) {
 			r := reporter.NewMock(t)
@@ -605,7 +605,7 @@ func TestCustomDictMigration(t *testing.T) {
 				t.Fatal("No migration applied when disabling the custom dict")
 			}
 
-			// check if the rows were created in the main flows table
+			// Check if the rows were created in the main flows table
 			row := ch.d.ClickHouse.QueryRow(context.Background(), `
 	SELECT toString(groupArray(tuple(name, type, default_expression)))
 	FROM system.columns
@@ -621,14 +621,14 @@ func TestCustomDictMigration(t *testing.T) {
 				t.Fatalf("Unexpected state:\n%s", diff)
 			}
 
-			// check if the rows were removed in the consumer flows table
+			// Check if the rows were removed in the consumer flows table
 			rowConsumer := ch.d.ClickHouse.QueryRow(context.Background(), `
 		SHOW CREATE flows_ZUYGDTE3EBIXX352XPM3YEEFV4_raw_consumer`)
 			var existingConsumer string
 			if err := rowConsumer.Scan(&existingConsumer); err != nil {
 				t.Fatalf("Scan() error:\n%+v", err)
 			}
-			// check if the definitions are missing in the consumer
+			// Check if the definitions are missing in the consumer
 			expectedStatements := []string{
 				"dictGet('default.custom_dict_test', 'csv_col_name', DstAddr) AS DstAddrDimensionAttribute",
 				"dictGet('default.custom_dict_test', 'csv_col_name', SrcAddr) AS SrcAddrDimensionAttribute",

@@ -84,7 +84,7 @@ func (c *Component) migrateDatabase() error {
 		return err
 	}
 
-	// prepare custom dictionary migrations
+	// Prepare custom dictionary migrations
 	var dictMigrations []func() error
 	for k, v := range c.d.Schema.GetCustomDictConfig() {
 		var schemaStr []string
@@ -100,7 +100,7 @@ func (c *Component) migrateDatabase() error {
 			if a.Default != "" {
 				defaultValue = a.Default
 			}
-			// this is only an attribute. We only need it in the schema
+			// This is only an attribute. We only need it in the schema
 			schemaStr = append(schemaStr, fmt.Sprintf("`%s` %s DEFAULT '%s'", a.Name, a.Type, defaultValue))
 		}
 		// we need to do this as function, otherwise we get problems with the for.
@@ -111,7 +111,7 @@ func (c *Component) migrateDatabase() error {
 		}(k, v, schemaStr)
 		dictMigrations = append(dictMigrations, m)
 	}
-	// create custom dictionaries
+	// Create custom dictionaries
 	err = c.wrapMigrations(dictMigrations...)
 	if err != nil {
 		return err

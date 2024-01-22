@@ -105,7 +105,7 @@ func (c *Component) registerHTTPHandlers() error {
 			w.Write(result.Bytes())
 		}))
 
-	// add handler for custom dicts
+	// Add handler for custom dicts
 	for name, dict := range c.d.Schema.GetCustomDictConfig() {
 		// we need to call this a func to avoid issues with the for loop
 		k := name
