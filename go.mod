@@ -32,7 +32,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/netsampler/goflow2/v2 v2.1.2
 	github.com/openconfig/gnmi v0.10.0
-	github.com/openconfig/gnmic/pkg/api v0.1.1
+	github.com/openconfig/gnmic/pkg/api v0.1.2
 	github.com/openconfig/gnmic/pkg/target v0.1.4
 	github.com/oschwald/maxminddb-golang v1.12.0
 	github.com/osrg/gobgp/v3 v3.22.0
