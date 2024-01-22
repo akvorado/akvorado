@@ -431,11 +431,14 @@ configuration option. Otherwise, it will use SNMPv2.
 
 The `gnmi` provider polls an exporter using gNMI. It accepts the following keys:
 
-- `targets` is a map from exporter IPs to target IPs. When there is no match,
+- `targets` is a map from exporter subnets to target IPs. When there is no match,
   the exporter IP is used. Other options are still using the exporter IP as a
   key, not the target IP.
 - `ports` is a map from exporter subnets to the gNMI port to use to poll
   exporters in the provided subnet.
+- `set-target` is a map from exporter subnets to a boolean to specify if target
+  name should be set in gNMI path prefix. In this case, it is set to the
+  exporter IP address. This is useful if the selected target is a gNMI gateway.
 - `authentication-parameters` is a map from exporter subnets to authentication
   parameters for gNMI targets. Authentication parameters accept the following
   keys: `username`, `password`, `insecure` (a boolean to use clear text),

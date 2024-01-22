@@ -23,7 +23,9 @@ type Configuration struct {
 	// MinimalRefreshInterval tells how much time to wait at least between two refreshes
 	MinimalRefreshInterval time.Duration `validate:"min=1s"`
 	// Targets is a mapping from exporter IPs to gNMI target IP.
-	Targets map[netip.Addr]netip.Addr
+	Targets *helpers.SubnetMap[netip.Addr]
+	// SetTarget is a mpping from exporter IPs to whatever set target name in gNMI path prefix
+	SetTarget *helpers.SubnetMap[bool]
 	// Ports is a mapping from exporter IPs to gNMI port.
 	Ports *helpers.SubnetMap[uint16]
 	// AuthenticationParameters is a mapping from exporter IPs to authentication configuration.
@@ -112,12 +114,11 @@ func (sa *IfSpeedPathUnit) UnmarshalText(input []byte) error {
 // DefaultConfiguration represents the default configuration for the SNMP client.
 func DefaultConfiguration() provider.Configuration {
 	return Configuration{
-		Timeout:                time.Second,
-		MinimalRefreshInterval: time.Minute,
-		Targets:                map[netip.Addr]netip.Addr{},
-		Ports: helpers.MustNewSubnetMap(map[string]uint16{
-			"::/0": 9339,
-		}),
+		Timeout:                  time.Second,
+		MinimalRefreshInterval:   time.Minute,
+		Targets:                  helpers.MustNewSubnetMap(map[string]netip.Addr{}),
+		SetTarget:                helpers.MustNewSubnetMap(map[string]bool{}),
+		Ports:                    helpers.MustNewSubnetMap(map[string]uint16{"::/0": 9339}),
 		AuthenticationParameters: helpers.MustNewSubnetMap(map[string]AuthenticationParameter{}),
 		Models:                   DefaultModels(),
 	}
@@ -244,9 +245,11 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 }
 
 func init() {
+	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[bool]())
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[uint16]())
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[AuthenticationParameter]())
 	helpers.RegisterMapstructureUnmarshallerHook(ConfigurationUnmarshallerHook())
+	helpers.RegisterSubnetMapValidation[bool]()
 	helpers.RegisterSubnetMapValidation[uint16]()
 	helpers.RegisterSubnetMapValidation[AuthenticationParameter]()
 }

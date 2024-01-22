@@ -644,9 +644,9 @@ commit now
 				Insecure: true,
 			},
 		})
-		configP.Targets = map[netip.Addr]netip.Addr{
-			lo: netip.MustParseAddrPort(srLinuxGNMI).Addr(),
-		}
+		configP.Targets = helpers.MustNewSubnetMap(map[string]netip.Addr{
+			"::/0": netip.MustParseAddrPort(srLinuxGNMI).Addr(),
+		})
 		configP.Ports = helpers.MustNewSubnetMap(map[string]uint16{
 			"::/0": netip.MustParseAddrPort(srLinuxGNMI).Port(),
 		})

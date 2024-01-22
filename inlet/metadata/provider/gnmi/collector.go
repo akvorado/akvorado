@@ -144,7 +144,7 @@ func (p *Provider) startCollector(ctx context.Context, exporterIP netip.Addr, st
 	l.Info().Msg("starting gNMI collector")
 	defer l.Info().Msg("stopping gNMI collector")
 retryConnect:
-	targetIP, ok := p.config.Targets[exporterIP]
+	targetIP, ok := p.config.Targets.Lookup(exporterIP)
 	if !ok {
 		targetIP = exporterIP
 	}
@@ -224,7 +224,13 @@ retryDetect:
 	// - SubscribePoll: not widely implemented
 	//
 	// So, we use SubscribeOnce. This is not the most efficient way, but we ensure we get a coherent state.
-	subscribeRequestOptions := model.gnmiOptions(api.SubscriptionListModeONCE(), api.Encoding(encoding))
+	subscribeRequestOptions := model.gnmiOptions(
+		api.SubscriptionListModeONCE(),
+		api.Encoding(encoding),
+	)
+	if setTarget, ok := p.config.SetTarget.Lookup(exporterIP); ok && setTarget {
+		subscribeRequestOptions = append(subscribeRequestOptions, api.Target(exporterStr))
+	}
 	subscribeReq, err := api.NewSubscribeRequest(subscribeRequestOptions...)
 	if err != nil {
 		panic(fmt.Errorf("NewSubscribeRequest() error: %w", err))
