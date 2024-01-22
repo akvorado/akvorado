@@ -35,13 +35,19 @@ func TestLookup(t *testing.T) {
 	expectMockLookup(t, c, "127.0.0.1", 999, provider.Answer{})
 	time.Sleep(30 * time.Millisecond)
 	expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{
-		ExporterName:         "127_0_0_1",
-		InterfaceName:        "Gi0/0/765",
-		InterfaceDescription: "Interface 765",
-		InterfaceSpeed:       1000,
+		Exporter: provider.Exporter{
+			Name: "127_0_0_1",
+		},
+
+		Interface: provider.Interface{Name: "Gi0/0/765",
+			Description: "Interface 765",
+			Speed:       1000,
+		},
 	})
 	expectMockLookup(t, c, "127.0.0.1", 999, provider.Answer{
-		ExporterName: "127_0_0_1",
+		Exporter: provider.Exporter{
+			Name: "127_0_0_1",
+		},
 	})
 }
 
@@ -56,10 +62,14 @@ func TestComponentSaveLoad(t *testing.T) {
 		expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{})
 		time.Sleep(30 * time.Millisecond)
 		expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{
-			ExporterName:         "127_0_0_1",
-			InterfaceName:        "Gi0/0/765",
-			InterfaceDescription: "Interface 765",
-			InterfaceSpeed:       1000,
+			Exporter: provider.Exporter{
+				Name: "127_0_0_1",
+			},
+
+			Interface: provider.Interface{Name: "Gi0/0/765",
+				Description: "Interface 765",
+				Speed:       1000,
+			},
 		})
 	})
 
@@ -67,10 +77,14 @@ func TestComponentSaveLoad(t *testing.T) {
 		r := reporter.NewMock(t)
 		c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 		expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{
-			ExporterName:         "127_0_0_1",
-			InterfaceName:        "Gi0/0/765",
-			InterfaceDescription: "Interface 765",
-			InterfaceSpeed:       1000,
+			Exporter: provider.Exporter{
+				Name: "127_0_0_1",
+			},
+			Interface: provider.Interface{
+				Name:        "Gi0/0/765",
+				Description: "Interface 765",
+				Speed:       1000,
+			},
 		})
 	})
 }
@@ -85,10 +99,15 @@ func TestAutoRefresh(t *testing.T) {
 	expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{})
 	time.Sleep(30 * time.Millisecond)
 	expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{
-		ExporterName:         "127_0_0_1",
-		InterfaceName:        "Gi0/0/765",
-		InterfaceDescription: "Interface 765",
-		InterfaceSpeed:       1000,
+		Exporter: provider.Exporter{
+			Name: "127_0_0_1",
+		},
+
+		Interface: provider.Interface{
+			Name:        "Gi0/0/765",
+			Description: "Interface 765",
+			Speed:       1000,
+		},
 	})
 
 	// Keep it in the cache!
@@ -103,10 +122,14 @@ func TestAutoRefresh(t *testing.T) {
 	mockClock.Add(2 * time.Minute)
 	time.Sleep(30 * time.Millisecond)
 	expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{
-		ExporterName:         "127_0_0_1",
-		InterfaceName:        "Gi0/0/765",
-		InterfaceDescription: "Interface 765",
-		InterfaceSpeed:       1000,
+		Exporter: provider.Exporter{
+			Name: "127_0_0_1",
+		},
+
+		Interface: provider.Interface{Name: "Gi0/0/765",
+			Description: "Interface 765",
+			Speed:       1000,
+		},
 	})
 
 	gotMetrics := r.GetMetrics("akvorado_inlet_metadata_cache_")

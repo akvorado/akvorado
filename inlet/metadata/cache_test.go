@@ -78,16 +78,13 @@ func TestSimpleLookup(t *testing.T) {
 			IfIndex:    676,
 		},
 		provider.Answer{
-			ExporterName:         "localhost",
-			InterfaceName:        "Gi0/0/0/1",
-			InterfaceDescription: "Transit",
-			InterfaceSpeed:       1000,
+
+			Exporter:  provider.Exporter{Name: "localhost"},
+			Interface: provider.Interface{Name: "Gi0/0/0/1", Description: "Transit", Speed: 1000},
 		})
 	expectCacheLookup(t, sc, "127.0.0.1", 676, provider.Answer{
-		ExporterName:         "localhost",
-		InterfaceName:        "Gi0/0/0/1",
-		InterfaceDescription: "Transit",
-		InterfaceSpeed:       1000,
+		Exporter:  provider.Exporter{Name: "localhost"},
+		Interface: provider.Interface{Name: "Gi0/0/0/1", Description: "Transit", Speed: 1000},
 	})
 	expectCacheLookup(t, sc, "127.0.0.1", 787, provider.Answer{})
 	expectCacheLookup(t, sc, "127.0.0.2", 676, provider.Answer{})
@@ -113,10 +110,8 @@ func TestExpire(t *testing.T) {
 			IfIndex:    676,
 		},
 		provider.Answer{
-			ExporterName:         "localhost",
-			InterfaceName:        "Gi0/0/0/1",
-			InterfaceDescription: "Transit",
-		})
+			Exporter:  provider.Exporter{Name: "localhost"},
+			Interface: provider.Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
 	now = now.Add(10 * time.Minute)
 	sc.Put(now,
 		provider.Query{
@@ -124,10 +119,8 @@ func TestExpire(t *testing.T) {
 			IfIndex:    678,
 		},
 		provider.Answer{
-			ExporterName:         "localhost2",
-			InterfaceName:        "Gi0/0/0/2",
-			InterfaceDescription: "Peering",
-		})
+			Exporter:  provider.Exporter{Name: "localhost2"},
+			Interface: provider.Interface{Name: "Gi0/0/0/2", Description: "Peering"}})
 	now = now.Add(10 * time.Minute)
 	sc.Put(now,
 		provider.Query{
@@ -135,47 +128,33 @@ func TestExpire(t *testing.T) {
 			IfIndex:    678,
 		},
 		provider.Answer{
-			ExporterName:         "localhost3",
-			InterfaceName:        "Gi0/0/0/1",
-			InterfaceDescription: "IX",
-		})
+			Exporter:  provider.Exporter{Name: "localhost3"},
+			Interface: provider.Interface{Name: "Gi0/0/0/1", Description: "IX"}})
 	now = now.Add(10 * time.Minute)
 	sc.Expire(now.Add(-time.Hour))
 	expectCacheLookup(t, sc, "127.0.0.1", 676, provider.Answer{
-		ExporterName:         "localhost",
-		InterfaceName:        "Gi0/0/0/1",
-		InterfaceDescription: "Transit",
-	})
+		Exporter:  provider.Exporter{Name: "localhost"},
+		Interface: provider.Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
 	expectCacheLookup(t, sc, "127.0.0.1", 678, provider.Answer{
-		ExporterName:         "localhost2",
-		InterfaceName:        "Gi0/0/0/2",
-		InterfaceDescription: "Peering",
-	})
+		Exporter:  provider.Exporter{Name: "localhost2"},
+		Interface: provider.Interface{Name: "Gi0/0/0/2", Description: "Peering"}})
 	expectCacheLookup(t, sc, "127.0.0.2", 678, provider.Answer{
-		ExporterName:         "localhost3",
-		InterfaceName:        "Gi0/0/0/1",
-		InterfaceDescription: "IX",
-	})
+		Exporter:  provider.Exporter{Name: "localhost3"},
+		Interface: provider.Interface{Name: "Gi0/0/0/1", Description: "IX"}})
 	sc.Expire(now.Add(-29 * time.Minute))
 	expectCacheLookup(t, sc, "127.0.0.1", 676, provider.Answer{})
 	expectCacheLookup(t, sc, "127.0.0.1", 678, provider.Answer{
-		ExporterName:         "localhost2",
-		InterfaceName:        "Gi0/0/0/2",
-		InterfaceDescription: "Peering",
-	})
+		Exporter:  provider.Exporter{Name: "localhost2"},
+		Interface: provider.Interface{Name: "Gi0/0/0/2", Description: "Peering"}})
 	expectCacheLookup(t, sc, "127.0.0.2", 678, provider.Answer{
-		ExporterName:         "localhost3",
-		InterfaceName:        "Gi0/0/0/1",
-		InterfaceDescription: "IX",
-	})
+		Exporter:  provider.Exporter{Name: "localhost3"},
+		Interface: provider.Interface{Name: "Gi0/0/0/1", Description: "IX"}})
 	sc.Expire(now.Add(-19 * time.Minute))
 	expectCacheLookup(t, sc, "127.0.0.1", 676, provider.Answer{})
 	expectCacheLookup(t, sc, "127.0.0.1", 678, provider.Answer{})
 	expectCacheLookup(t, sc, "127.0.0.2", 678, provider.Answer{
-		ExporterName:         "localhost3",
-		InterfaceName:        "Gi0/0/0/1",
-		InterfaceDescription: "IX",
-	})
+		Exporter:  provider.Exporter{Name: "localhost3"},
+		Interface: provider.Interface{Name: "Gi0/0/0/1", Description: "IX"}})
 	sc.Expire(now.Add(-9 * time.Minute))
 	expectCacheLookup(t, sc, "127.0.0.1", 676, provider.Answer{})
 	expectCacheLookup(t, sc, "127.0.0.1", 678, provider.Answer{})
@@ -186,17 +165,13 @@ func TestExpire(t *testing.T) {
 			IfIndex:    676,
 		},
 		provider.Answer{
-			ExporterName:         "localhost",
-			InterfaceName:        "Gi0/0/0/1",
-			InterfaceDescription: "Transit",
-		})
+			Exporter:  provider.Exporter{Name: "localhost"},
+			Interface: provider.Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
 	now = now.Add(10 * time.Minute)
 	sc.Expire(now.Add(-19 * time.Minute))
 	expectCacheLookup(t, sc, "127.0.0.1", 676, provider.Answer{
-		ExporterName:         "localhost",
-		InterfaceName:        "Gi0/0/0/1",
-		InterfaceDescription: "Transit",
-	})
+		Exporter:  provider.Exporter{Name: "localhost"},
+		Interface: provider.Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
 
 	gotMetrics := r.GetMetrics("akvorado_inlet_metadata_cache_")
 	expectedMetrics := map[string]string{
@@ -219,10 +194,8 @@ func TestExpireRefresh(t *testing.T) {
 			IfIndex:    676,
 		},
 		provider.Answer{
-			ExporterName:         "localhost",
-			InterfaceName:        "Gi0/0/0/1",
-			InterfaceDescription: "Transit",
-		})
+			Exporter:  provider.Exporter{Name: "localhost"},
+			Interface: provider.Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
 	now = now.Add(10 * time.Minute)
 	sc.Put(now,
 		provider.Query{
@@ -230,10 +203,8 @@ func TestExpireRefresh(t *testing.T) {
 			IfIndex:    678,
 		},
 		provider.Answer{
-			ExporterName:         "localhost",
-			InterfaceName:        "Gi0/0/0/2",
-			InterfaceDescription: "Peering",
-		})
+			Exporter:  provider.Exporter{Name: "localhost"},
+			Interface: provider.Interface{Name: "Gi0/0/0/2", Description: "Peering"}})
 	now = now.Add(10 * time.Minute)
 	sc.Put(now,
 		provider.Query{
@@ -241,10 +212,8 @@ func TestExpireRefresh(t *testing.T) {
 			IfIndex:    678,
 		},
 		provider.Answer{
-			ExporterName:         "localhost2",
-			InterfaceName:        "Gi0/0/0/1",
-			InterfaceDescription: "IX",
-		})
+			Exporter:  provider.Exporter{Name: "localhost2"},
+			Interface: provider.Interface{Name: "Gi0/0/0/1", Description: "IX"}})
 	now = now.Add(10 * time.Minute)
 
 	// Refresh first entry
@@ -256,16 +225,12 @@ func TestExpireRefresh(t *testing.T) {
 
 	sc.Expire(now.Add(-29 * time.Minute))
 	expectCacheLookup(t, sc, "127.0.0.1", 676, provider.Answer{
-		ExporterName:         "localhost",
-		InterfaceName:        "Gi0/0/0/1",
-		InterfaceDescription: "Transit",
-	})
+		Exporter:  provider.Exporter{Name: "localhost"},
+		Interface: provider.Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
 	expectCacheLookup(t, sc, "127.0.0.1", 678, provider.Answer{})
 	expectCacheLookup(t, sc, "127.0.0.2", 678, provider.Answer{
-		ExporterName:         "localhost2",
-		InterfaceName:        "Gi0/0/0/1",
-		InterfaceDescription: "IX",
-	})
+		Exporter:  provider.Exporter{Name: "localhost2"},
+		Interface: provider.Interface{Name: "Gi0/0/0/1", Description: "IX"}})
 }
 
 func TestNeedUpdates(t *testing.T) {
@@ -277,10 +242,8 @@ func TestNeedUpdates(t *testing.T) {
 			IfIndex:    676,
 		},
 		provider.Answer{
-			ExporterName:         "localhost",
-			InterfaceName:        "Gi0/0/0/1",
-			InterfaceDescription: "Transit",
-		})
+			Exporter:  provider.Exporter{Name: "localhost"},
+			Interface: provider.Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
 	now = now.Add(10 * time.Minute)
 	sc.Put(now,
 		provider.Query{
@@ -288,10 +251,8 @@ func TestNeedUpdates(t *testing.T) {
 			IfIndex:    678,
 		},
 		provider.Answer{
-			ExporterName:         "localhost",
-			InterfaceName:        "Gi0/0/0/2",
-			InterfaceDescription: "Peering",
-		})
+			Exporter:  provider.Exporter{Name: "localhost"},
+			Interface: provider.Interface{Name: "Gi0/0/0/2", Description: "Peering"}})
 	now = now.Add(10 * time.Minute)
 	sc.Put(now,
 		provider.Query{
@@ -299,10 +260,8 @@ func TestNeedUpdates(t *testing.T) {
 			IfIndex:    678,
 		},
 		provider.Answer{
-			ExporterName:         "localhost2",
-			InterfaceName:        "Gi0/0/0/1",
-			InterfaceDescription: "IX",
-		})
+			Exporter:  provider.Exporter{Name: "localhost2"},
+			Interface: provider.Interface{Name: "Gi0/0/0/1", Description: "IX"}})
 	now = now.Add(10 * time.Minute)
 	// Refresh
 	sc.Put(now,
@@ -311,10 +270,8 @@ func TestNeedUpdates(t *testing.T) {
 			IfIndex:    676,
 		},
 		provider.Answer{
-			ExporterName:         "localhost1",
-			InterfaceName:        "Gi0/0/0/1",
-			InterfaceDescription: "Transit",
-		})
+			Exporter:  provider.Exporter{Name: "localhost1"},
+			Interface: provider.Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
 	now = now.Add(10 * time.Minute)
 
 	cases := []struct {
@@ -376,10 +333,8 @@ func TestSaveLoad(t *testing.T) {
 			IfIndex:    676,
 		},
 		provider.Answer{
-			ExporterName:         "localhost",
-			InterfaceName:        "Gi0/0/0/1",
-			InterfaceDescription: "Transit",
-		})
+			Exporter:  provider.Exporter{Name: "localhost"},
+			Interface: provider.Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
 	now = now.Add(10 * time.Minute)
 	sc.Put(now,
 		provider.Query{
@@ -387,10 +342,8 @@ func TestSaveLoad(t *testing.T) {
 			IfIndex:    678,
 		},
 		provider.Answer{
-			ExporterName:         "localhost",
-			InterfaceName:        "Gi0/0/0/2",
-			InterfaceDescription: "Peering",
-		})
+			Exporter:  provider.Exporter{Name: "localhost"},
+			Interface: provider.Interface{Name: "Gi0/0/0/2", Description: "Peering"}})
 	now = now.Add(10 * time.Minute)
 	sc.Put(now,
 		provider.Query{
@@ -398,10 +351,8 @@ func TestSaveLoad(t *testing.T) {
 			IfIndex:    678,
 		},
 		provider.Answer{
-			ExporterName:         "localhost2",
-			InterfaceName:        "Gi0/0/0/1",
-			InterfaceDescription: "IX",
-			InterfaceSpeed:       1000,
+			Exporter:  provider.Exporter{Name: "localhost2"},
+			Interface: provider.Interface{Name: "Gi0/0/0/1", Description: "IX", Speed: 1000},
 		})
 
 	target := filepath.Join(t.TempDir(), "cache")
@@ -418,15 +369,11 @@ func TestSaveLoad(t *testing.T) {
 	sc.Expire(now.Add(-29 * time.Minute))
 	expectCacheLookup(t, sc, "127.0.0.1", 676, provider.Answer{})
 	expectCacheLookup(t, sc, "127.0.0.1", 678, provider.Answer{
-		ExporterName:         "localhost",
-		InterfaceName:        "Gi0/0/0/2",
-		InterfaceDescription: "Peering",
-	})
+		Exporter:  provider.Exporter{Name: "localhost"},
+		Interface: provider.Interface{Name: "Gi0/0/0/2", Description: "Peering"}})
 	expectCacheLookup(t, sc, "127.0.0.2", 678, provider.Answer{
-		ExporterName:         "localhost2",
-		InterfaceName:        "Gi0/0/0/1",
-		InterfaceDescription: "IX",
-		InterfaceSpeed:       1000,
+		Exporter:  provider.Exporter{Name: "localhost2"},
+		Interface: provider.Interface{Name: "Gi0/0/0/1", Description: "IX", Speed: 1000},
 	})
 }
 
@@ -466,10 +413,8 @@ func TestConcurrentOperations(t *testing.T) {
 					ExporterIP: netip.MustParseAddr(fmt.Sprintf("::ffff:127.0.0.%d", ip)),
 					IfIndex:    uint(iface),
 				}, provider.Answer{
-					ExporterName:         fmt.Sprintf("localhost%d", ip),
-					InterfaceName:        "Gi0/0/0/1",
-					InterfaceDescription: "Transit",
-				})
+					Exporter:  provider.Exporter{Name: fmt.Sprintf("localhost%d", ip)},
+					Interface: provider.Interface{Name: "Gi0/0/0/1", Description: "Transit"}})
 				select {
 				case <-done:
 					return

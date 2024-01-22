@@ -209,8 +209,8 @@ func TestPoller(t *testing.T) {
 			})
 			put := func(update provider.Update) {
 				got = append(got, fmt.Sprintf("%s %s %d %s %s %d",
-					update.ExporterIP.Unmap().String(), update.ExporterName,
-					update.IfIndex, update.InterfaceName, update.InterfaceDescription, update.InterfaceSpeed))
+					update.ExporterIP.Unmap().String(), update.Exporter.Name,
+					update.IfIndex, update.Interface.Name, update.Interface.Description, update.Interface.Speed))
 			}
 			p, err := config.New(r, put)
 			if err != nil {

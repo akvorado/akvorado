@@ -16,7 +16,9 @@ func TestValidation(t *testing.T) {
 	if err := helpers.Validate.Struct(Configuration{
 		Exporters: helpers.MustNewSubnetMap(map[string]ExporterConfiguration{
 			"::ffff:203.0.113.0/120": {
-				Name: "something",
+				Exporter: provider.Exporter{
+					Name: "something",
+				},
 				Default: provider.Interface{
 					Name:        "iface1",
 					Description: "description 1",
@@ -31,7 +33,9 @@ func TestValidation(t *testing.T) {
 	if err := helpers.Validate.Struct(Configuration{
 		Exporters: helpers.MustNewSubnetMap(map[string]ExporterConfiguration{
 			"::ffff:203.0.113.0/120": {
-				Name: "something",
+				Exporter: provider.Exporter{
+					Name: "something",
+				},
 				Default: provider.Interface{
 					Name:        "",
 					Description: "description 1",
@@ -46,7 +50,9 @@ func TestValidation(t *testing.T) {
 	if err := helpers.Validate.Struct(Configuration{
 		Exporters: helpers.MustNewSubnetMap(map[string]ExporterConfiguration{
 			"::ffff:203.0.113.0/120": {
-				Name: "something",
+				Exporter: provider.Exporter{
+					Name: "something",
+				},
 				Default: provider.Interface{
 					Name:        "iface1",
 					Description: "description 1",
