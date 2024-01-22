@@ -3,7 +3,7 @@ module akvorado
 go 1.21.1
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.16.0
+	github.com/ClickHouse/clickhouse-go/v2 v2.17.1
 	github.com/IBM/sarama v1.42.1
 	github.com/alecthomas/chroma v0.10.0
 	github.com/benbjohnson/clock v1.3.5
@@ -94,7 +94,7 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
-	github.com/google/uuid v1.4.0 // indirect
+	github.com/google/uuid v1.5.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.0.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
