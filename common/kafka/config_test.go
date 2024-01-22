@@ -164,3 +164,7 @@ func TestTLSConfiguration(t *testing.T) {
 		},
 	})
 }
+
+func TestMarshalUnmarshal(t *testing.T) {
+	saslAlgorithmMap.TestMarshalUnmarshal(t)
+}

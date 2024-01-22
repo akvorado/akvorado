@@ -66,3 +66,8 @@ func TestDisabledGroup(t *testing.T) {
 		t.Error("ColumnGroupNAT is disabled while it should not")
 	}
 }
+
+func TestMarshalUnmarshal(t *testing.T) {
+	interfaceBoundaryMap.TestMarshalUnmarshal(t)
+	columnNameMap.TestMarshalUnmarshal(t)
+}

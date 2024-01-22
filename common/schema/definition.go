@@ -37,30 +37,30 @@ var (
 	errUnknownInterfaceBoundary = errors.New("unknown interface boundary")
 )
 
-// MarshalText turns a SASL algorithm to text
-func (sa InterfaceBoundary) MarshalText() ([]byte, error) {
-	got, ok := interfaceBoundaryMap.LoadValue(sa)
+// MarshalText turns an interface boundary to text
+func (ib InterfaceBoundary) MarshalText() ([]byte, error) {
+	got, ok := interfaceBoundaryMap.LoadValue(ib)
 	if ok {
 		return []byte(got), nil
 	}
 	return nil, errUnknownInterfaceBoundary
 }
 
-// String turns a SASL algorithm to string
-func (sa InterfaceBoundary) String() string {
-	got, _ := interfaceBoundaryMap.LoadValue(sa)
+// String turns an interface boundary to string
+func (ib InterfaceBoundary) String() string {
+	got, _ := interfaceBoundaryMap.LoadValue(ib)
 	return got
 }
 
-// UnmarshalText provides a SASL algorithm from text
-func (sa *InterfaceBoundary) UnmarshalText(input []byte) error {
+// UnmarshalText provides an interface boundary from text
+func (ib *InterfaceBoundary) UnmarshalText(input []byte) error {
 	if len(input) == 0 {
-		*sa = InterfaceBoundaryUndefined
+		*ib = InterfaceBoundaryUndefined
 		return nil
 	}
 	got, ok := interfaceBoundaryMap.LoadKey(string(input))
 	if ok {
-		*sa = got
+		*ib = got
 		return nil
 	}
 	return errUnknownInterfaceBoundary

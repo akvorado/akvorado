@@ -116,14 +116,14 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 // AuthProtocol represents a SNMPv3 authentication protocol
 type AuthProtocol gosnmp.SnmpV3AuthProtocol
 
-var authProtocolMap = bimap.New(map[gosnmp.SnmpV3AuthProtocol]string{
-	gosnmp.NoAuth: "",
-	gosnmp.MD5:    "MD5",
-	gosnmp.SHA:    "SHA",
-	gosnmp.SHA224: "SHA224",
-	gosnmp.SHA256: "SHA256",
-	gosnmp.SHA384: "SHA384",
-	gosnmp.SHA512: "SHA512",
+var authProtocolMap = bimap.New(map[AuthProtocol]string{
+	AuthProtocol(gosnmp.NoAuth): "",
+	AuthProtocol(gosnmp.MD5):    "MD5",
+	AuthProtocol(gosnmp.SHA):    "SHA",
+	AuthProtocol(gosnmp.SHA224): "SHA224",
+	AuthProtocol(gosnmp.SHA256): "SHA256",
+	AuthProtocol(gosnmp.SHA384): "SHA384",
+	AuthProtocol(gosnmp.SHA512): "SHA512",
 })
 
 // UnmarshalText parses a SNMPv3 authentication protocol
@@ -138,7 +138,7 @@ func (ap *AuthProtocol) UnmarshalText(text []byte) error {
 
 // String turns a SNMPv3 authentication protocol to a string
 func (ap AuthProtocol) String() string {
-	protocol, ok := authProtocolMap.LoadValue(gosnmp.SnmpV3AuthProtocol(ap))
+	protocol, ok := authProtocolMap.LoadValue(ap)
 	if !ok {
 		return ""
 	}
@@ -153,14 +153,14 @@ func (ap AuthProtocol) MarshalText() ([]byte, error) {
 // PrivProtocol represents a SNMPv3 privacy protocol
 type PrivProtocol gosnmp.SnmpV3PrivProtocol
 
-var privProtocolMap = bimap.New(map[gosnmp.SnmpV3PrivProtocol]string{
-	gosnmp.NoPriv:  "",
-	gosnmp.DES:     "DES",
-	gosnmp.AES:     "AES",
-	gosnmp.AES192:  "AES192",
-	gosnmp.AES256:  "AES256",
-	gosnmp.AES192C: "AES192C",
-	gosnmp.AES256C: "AES256C",
+var privProtocolMap = bimap.New(map[PrivProtocol]string{
+	PrivProtocol(gosnmp.NoPriv):  "",
+	PrivProtocol(gosnmp.DES):     "DES",
+	PrivProtocol(gosnmp.AES):     "AES",
+	PrivProtocol(gosnmp.AES192):  "AES192",
+	PrivProtocol(gosnmp.AES256):  "AES256",
+	PrivProtocol(gosnmp.AES192C): "AES192C",
+	PrivProtocol(gosnmp.AES256C): "AES256C",
 })
 
 // UnmarshalText parses a SNMPv3 privacy protocol
@@ -175,7 +175,7 @@ func (pp *PrivProtocol) UnmarshalText(text []byte) error {
 
 // String turns a SNMPv3 privacy protocol to a string
 func (pp PrivProtocol) String() string {
-	protocol, ok := privProtocolMap.LoadValue(gosnmp.SnmpV3PrivProtocol(pp))
+	protocol, ok := privProtocolMap.LoadValue(pp)
 	if !ok {
 		return ""
 	}

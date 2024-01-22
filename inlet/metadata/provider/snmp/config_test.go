@@ -257,3 +257,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 		},
 	})
 }
+
+func TestMarshalUnmarshal(t *testing.T) {
+	authProtocolMap.TestMarshalUnmarshal(t)
+	privProtocolMap.TestMarshalUnmarshal(t)
+}
