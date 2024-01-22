@@ -110,12 +110,6 @@ func (c *Component) registerHTTPHandlers() error {
 		name := name
 		dict := dict
 		c.d.HTTP.AddHandler(fmt.Sprintf("/api/v0/orchestrator/clickhouse/custom_dict_%s.csv", name), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			select {
-			case <-c.networkSourcesFetcher.DataSourcesReady:
-			case <-time.After(c.config.NetworkSourcesTimeout):
-				w.WriteHeader(http.StatusServiceUnavailable)
-				return
-			}
 			file, err := os.ReadFile(dict.Source)
 			if err != nil {
 				c.r.Err(err).Msg("unable to deliver custom dict csv file")
