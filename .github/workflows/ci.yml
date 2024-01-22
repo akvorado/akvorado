@@ -41,7 +41,7 @@ jobs:
         ports:
           - 2181:2181
       kafka:
-        image: bitnami/kafka:3.5
+        image: bitnami/kafka:3.5.2-debian-11-r1
         env:
           KAFKA_ZOOKEEPER_PROTOCOL: PLAINTEXT
           KAFKA_CFG_BROKER_ID: "1"
@@ -50,7 +50,6 @@ jobs:
           KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
           KAFKA_CFG_ADVERTISED_LISTENERS: CLIENT://kafka:9092,EXTERNAL://localhost:9092
           KAFKA_CFG_INTER_BROKER_LISTENER_NAME: CLIENT
-          KAFKA_CFG_MESSAGE_MAX_BYTES: 1048588
         ports:
           - 9092:9093
       redis:
