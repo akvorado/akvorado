@@ -34,9 +34,8 @@ require (
 	github.com/openconfig/gnmi v0.10.0
 	github.com/openconfig/gnmic/pkg/api v0.1.1
 	github.com/openconfig/gnmic/pkg/target v0.1.4
-	github.com/opencontainers/image-spec v1.1.0-rc5
 	github.com/oschwald/maxminddb-golang v1.12.0
-	github.com/osrg/gobgp/v3 v3.21.0
+	github.com/osrg/gobgp/v3 v3.22.0
 	github.com/prometheus/client_golang v1.18.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rs/zerolog v1.31.0
@@ -126,6 +125,7 @@ require (
 	github.com/openconfig/gnmic/pkg/utils v0.1.0 // indirect
 	github.com/openconfig/grpctunnel v0.1.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
+	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect
 	github.com/paulmach/orb v0.10.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect
