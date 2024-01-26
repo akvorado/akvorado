@@ -30,6 +30,10 @@ flow:
       workers: 6
       receive-buffer: 10485760
 core:
+  # In case you use Akvodado with e.g Arista devices and no full table support. 
+  # This avoids AS0 values for SrcAS and DstAS in case there are GEO IP information available. 
+  # asn-providers:
+  #  - geoip 
   workers: 6
   exporter-classifiers:
     # This is an example. This should be customized depending on how
