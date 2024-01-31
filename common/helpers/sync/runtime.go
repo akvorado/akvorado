@@ -7,9 +7,6 @@ import (
 	_ "unsafe" // use of go:linkname
 )
 
-//go:linkname semacquire sync.runtime_Semacquire
-func semacquire(addr *uint32)
-
 //go:linkname semacquireMutex sync.runtime_SemacquireMutex
 func semacquireMutex(s *uint32, lifo bool, skipframes int)
 
