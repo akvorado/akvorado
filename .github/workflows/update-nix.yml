@@ -20,7 +20,7 @@ jobs:
       - name: Update Nix lockfile
         run: nix flake update ${{ matrix.source }}
       - name: Create pull request
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v6
         with:
           add-paths: flake.lock
           branch: nix/flake-lock-update-${{ matrix.source }}
