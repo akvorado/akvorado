@@ -17,6 +17,7 @@ identified with a specific icon:
 - ✨ *inlet*: static metadata provider can provide exporter and interface metadata
 - ✨ *inlet*: static metadata provider can fetch its configuration from an HTTP endpoint
 - 🩹 *cmd*: fix parsing of `inlet`→`metadata`→`provider`→`ports`
+- 🩹 *console*: fix use of `InIfBoundary` and `OutIfBoundary` as dimensions
 - 🌱 *orchestrator*: add TLS support to connect to ClickHouse database
 
 ## 1.9.3 - 2024-01-14

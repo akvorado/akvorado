@@ -93,6 +93,9 @@ func TestQueryColumnSQLSelect(t *testing.T) {
 			Input:    schema.ColumnDstMAC,
 			Expected: `MACNumToString(DstMAC)`,
 		}, {
+			Input:    schema.ColumnInIfBoundary,
+			Expected: `toString(InIfBoundary)`,
+		}, {
 			Input:    schema.ColumnMPLSLabels,
 			Expected: `arrayStringConcat(MPLSLabels, ' ')`,
 		}, {
