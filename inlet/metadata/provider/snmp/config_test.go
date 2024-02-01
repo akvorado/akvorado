@@ -38,6 +38,46 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 			SkipValidation: true,
 		}, {
+			Description: "single port",
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"poller-timeout": "200ms",
+					"ports":          "1161",
+				}
+			},
+			Expected: Configuration{
+				PollerTimeout: 200 * time.Millisecond,
+				Ports: helpers.MustNewSubnetMap(map[string]uint16{
+					"::/0": 1161,
+				}),
+				Communities: helpers.MustNewSubnetMap(map[string]string{
+					"::/0": "public",
+				}),
+			},
+		}, {
+			Description: "per-prefix port",
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"poller-timeout": "200ms",
+					"ports": gin.H{
+						"2001:db8:1::/48": 1161,
+						"2001:db8:2::/48": 1162,
+					},
+				}
+			},
+			Expected: Configuration{
+				PollerTimeout: 200 * time.Millisecond,
+				Ports: helpers.MustNewSubnetMap(map[string]uint16{
+					"2001:db8:1::/48": 1161,
+					"2001:db8:2::/48": 1162,
+				}),
+				Communities: helpers.MustNewSubnetMap(map[string]string{
+					"::/0": "public",
+				}),
+			},
+		}, {
 			Description: "no communities, no default community",
 			Initial:     func() interface{} { return Configuration{} },
 			Configuration: func() interface{} {

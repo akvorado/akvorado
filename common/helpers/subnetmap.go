@@ -98,6 +98,9 @@ func SubnetMapUnmarshallerHook[V any]() mapstructure.DecodeHookFunc {
 		if to.Type() != reflect.TypeOf(SubnetMap[V]{}) {
 			return from.Interface(), nil
 		}
+		if from.Type() == reflect.TypeOf(&SubnetMap[V]{}) {
+			return from.Interface(), nil
+		}
 		output := gin.H{}
 		var zero V
 		var plausibleSubnetMap bool
