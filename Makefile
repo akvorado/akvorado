@@ -146,13 +146,13 @@ test-coverage-go: | $(GOTESTSUM) $(GOCOV) $(GOCOVXML) ; $(info $(M) running Go c
 	$Q GENERATED=$$(awk -F: '(NR > 1) {print $$1}' test/go/profile.out.tmp \
 			| sort | uniq | sed "s+^$(MODULE)/++" \
 			| xargs grep -l "^//.*DO NOT EDIT\.$$" \
-			| sed "s+\(.*\)+^$(MODULE)/\1:+" | paste -sd '|') ; \
+			| sed "s+\(.*\)+^$(MODULE)/\1:+" | paste -s -d '|') ; \
 	   if [ -n "$$GENERATED" ]; then grep -Ev "$$GENERATED" test/go/profile.out.tmp > test/go/profile.out ; \
 	   else cp test/go/profile.out.tmp test/go/profile.out ; \
 	   fi
 	$Q $(GO) tool cover -html=test/go/profile.out -o test/go/coverage.html
 	$Q $(GOCOV) convert test/go/profile.out | $(GOCOVXML) > test/go/coverage.xml
-	@echo -n "Code coverage: "; \
+	@printf "Code coverage: "; \
 		echo "scale=1;$$(sed -En 's/^<coverage line-rate="([0-9.]+)".*/\1/p' test/go/coverage.xml) * 100 / 1" | bc -q
 
 test-js: .fmt-js~ .lint-js~ $(GENERATED_JS)
