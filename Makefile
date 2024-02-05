@@ -146,7 +146,7 @@ test-coverage-go: | $(GOTESTSUM) $(GOCOV) $(GOCOVXML) ; $(info $(M) running Go c
 	$Q GENERATED=$$(awk -F: '(NR > 1) {print $$1}' test/go/profile.out.tmp \
 			| sort | uniq | sed "s+^$(MODULE)/++" \
 			| xargs grep -l "^//.*DO NOT EDIT\.$$" \
-			| sed "s+\(.*\)+^$(MODULE)/\1:+" | paste -s -d '|') ; \
+			| sed "s+\(.*\)+^$(MODULE)/\1:+" | paste -s -d '|' -) ; \
 	   if [ -n "$$GENERATED" ]; then grep -Ev "$$GENERATED" test/go/profile.out.tmp > test/go/profile.out ; \
 	   else cp test/go/profile.out.tmp test/go/profile.out ; \
 	   fi
