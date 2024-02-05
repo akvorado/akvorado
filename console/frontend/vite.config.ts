@@ -25,6 +25,7 @@ export default defineConfig({
     coverage: {
       reporter: ["text-summary", "html", "cobertura"],
       reportsDirectory: "../../test/js",
+      all: false,
     },
   },
   server: {
