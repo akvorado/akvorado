@@ -5,7 +5,7 @@ The orchestrator service is configured through YAML files (shipped in the
 services are expected to query the orchestrator through HTTP on start to
 retrieve their configuration.
 
-The default configuration can be obtained with `docker-compose exec
+The default configuration can be obtained with `docker compose exec
 akvorado-orchestrator akvorado orchestrator --dump --check /dev/null`. Note that
 some sections are generated from the configuration of another section. Notably,
 all Kafka configuration comes from upper-level `kafka` key. Durations must be
