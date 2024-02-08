@@ -863,6 +863,15 @@ resolutions:
     ttl: 8760h # 1 year
 ```
 
+If you want to tweak the values, start from the default configuration. Most of
+the disk space is taken by the main table (`interval: 0`) and you can reduce its
+TTL if it's too big for your usage. Check the [operational
+documentation](04-operations.md#space-usage) for information on how to check
+disk usage. If you remove an existing interval, it is not removed from the
+ClickHouse database and will continue to be populated.
+
+It is mandatory to specify a configuration for `interval: 0`.
+
 ## Console service
 
 The main components of the console service are `http`, `console`,

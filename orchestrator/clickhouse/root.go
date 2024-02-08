@@ -71,7 +71,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		return c.config.Resolutions[i].Interval < c.config.Resolutions[j].Interval
 	})
 	if len(c.config.Resolutions) == 0 || c.config.Resolutions[0].Interval != 0 {
-		c.config.Resolutions = append([]ResolutionConfiguration{}, c.config.Resolutions...)
+		return nil, fmt.Errorf("resolutions need to be configured, including interval: 0")
 	}
 
 	return &c, nil

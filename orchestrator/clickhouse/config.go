@@ -25,7 +25,7 @@ type Configuration struct {
 	Kafka KafkaConfiguration
 	// Resolutions describe the various resolutions to use to
 	// store data and the associated TTLs.
-	Resolutions []ResolutionConfiguration `validate:"dive"`
+	Resolutions []ResolutionConfiguration `validate:"min=1,dive"`
 	// MaxPartitions define the number of partitions to have for a
 	// consolidated flow tables when full.
 	MaxPartitions int `validate:"isdefault|min=1"`
