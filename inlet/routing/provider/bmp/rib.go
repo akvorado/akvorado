@@ -200,7 +200,7 @@ func (r *rib) flushPeerContext(ctx context.Context, peer uint32, steps int) (int
 	iter := r.tree.Iterate()
 	runtime.Gosched()
 	for iter.Next() {
-		removed += iter.DeleteWithBuffer(buf, func(payload route, val route) bool {
+		removed += iter.DeleteWithBuffer(buf, func(payload route, _ route) bool {
 			if payload.peer == peer {
 				r.nlris.Take(payload.nlri)
 				r.nextHops.Take(payload.nextHop)

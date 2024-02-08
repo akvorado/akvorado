@@ -17,7 +17,7 @@ var healthcheckCmd = &cobra.Command{
 	Use:   "healthcheck",
 	Short: "Check healthness",
 	Long:  `Check if Akvorado is alive using the builtin HTTP endpoint.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		resp, err := http.Get("http://localhost:8080/api/v0/healthcheck")
 		if err != nil {
 			return err

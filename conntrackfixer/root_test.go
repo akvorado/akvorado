@@ -130,7 +130,7 @@ func TestRoot(t *testing.T) {
 	})
 
 	// New container
-	t.Run("new container", func(t *testing.T) {
+	t.Run("new container", func(_ *testing.T) {
 		dockerClientMock.EXPECT().
 			ContainerList(gomock.Any(), gomock.Any()).
 			Return([]types.Container{{ID: "new one"}}, nil)

@@ -24,7 +24,7 @@ func TestNetworkSources(t *testing.T) {
 	// Mux to answer requests
 	ready := make(chan bool)
 	mux := http.NewServeMux()
-	mux.Handle("/amazon.json", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("/amazon.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		select {
 		case <-ready:
 		default:

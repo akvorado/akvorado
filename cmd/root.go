@@ -19,7 +19,7 @@ var debug bool
 var RootCmd = &cobra.Command{
 	Use:   "akvorado",
 	Short: "Flow collector, enricher and visualizer",
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+	PersistentPreRun: func(_ *cobra.Command, _ []string) {
 		if isatty.IsTerminal(os.Stdout.Fd()) {
 			log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 		} else {

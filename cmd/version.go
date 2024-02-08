@@ -30,7 +30,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version",
 	Long:  `Display version and build information about akvorado.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		cmd.Printf("akvorado %s\n", Version)
 		cmd.Printf("  Built with: %s\n", runtime.Version())
 		cmd.Println()

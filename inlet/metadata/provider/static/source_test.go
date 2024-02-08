@@ -38,7 +38,7 @@ func TestInitStaticExporters(t *testing.T) {
 	p := &Provider{
 		r:            r,
 		exportersMap: map[string][]exporterInfo{},
-		put:          func(update provider.Update) {},
+		put:          func(_ provider.Update) {},
 	}
 	p.exporters.Store(conf.Exporters)
 
@@ -73,7 +73,7 @@ func TestRemoteExporterSources(t *testing.T) {
 	// Mux to answer requests
 	ready := make(chan bool)
 	mux := http.NewServeMux()
-	mux.Handle("/exporters.json", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("/exporters.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		select {
 		case <-ready:
 		default:

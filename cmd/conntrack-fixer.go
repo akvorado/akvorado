@@ -22,7 +22,7 @@ var conntrackFixerCmd = &cobra.Command{
 	Long: `This helper cleans the conntrack entries for the UDP ports exposed by
 containers started with the label "akvorado.conntrack.fix=1".`,
 	Args: cobra.NoArgs,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		// This is a simplified service which is not configurable.
 		r, err := reporter.New(reporter.DefaultConfiguration())
 		if err != nil {

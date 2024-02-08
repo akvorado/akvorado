@@ -41,7 +41,7 @@ func TestProtectedDecodeHook(t *testing.T) {
 		A string
 		B string
 	}
-	panicHook := func(from, to reflect.Type, data interface{}) (interface{}, error) {
+	panicHook := func(from, _ reflect.Type, data interface{}) (interface{}, error) {
 		if from.Kind() == reflect.String {
 			panic(errors.New("noooo"))
 		}

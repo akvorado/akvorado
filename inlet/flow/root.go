@@ -110,7 +110,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	c.d.Daemon.Track(&c.t, "inlet/flow")
 
 	c.d.HTTP.AddHandler("/api/v0/inlet/flow/schema.proto",
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Set("Content-Type", "text/plain")
 			w.Write([]byte(c.d.Schema.ProtobufDefinition()))
 		}))

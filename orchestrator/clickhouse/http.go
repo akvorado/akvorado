@@ -81,7 +81,7 @@ func (c *Component) addHandlerEmbedded(url string, path string) {
 func (c *Component) registerHTTPHandlers() error {
 	// init.sh
 	c.d.HTTP.AddHandler("/api/v0/orchestrator/clickhouse/init.sh",
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			var result bytes.Buffer
 			if err := initShTemplate.Execute(&result, initShVariables{
 				FlowSchemaHash: c.d.Schema.ProtobufMessageHash(),
@@ -109,7 +109,7 @@ func (c *Component) registerHTTPHandlers() error {
 	for name, dict := range c.d.Schema.GetCustomDictConfig() {
 		name := name
 		dict := dict
-		c.d.HTTP.AddHandler(fmt.Sprintf("/api/v0/orchestrator/clickhouse/custom_dict_%s.csv", name), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c.d.HTTP.AddHandler(fmt.Sprintf("/api/v0/orchestrator/clickhouse/custom_dict_%s.csv", name), http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			file, err := os.ReadFile(dict.Source)
 			if err != nil {
 				c.r.Err(err).Msg("unable to deliver custom dict csv file")
@@ -123,7 +123,7 @@ func (c *Component) registerHTTPHandlers() error {
 
 	// networks.csv
 	c.d.HTTP.AddHandler("/api/v0/orchestrator/clickhouse/networks.csv",
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			select {
 			case <-c.networkSourcesFetcher.DataSourcesReady:
 			case <-time.After(c.config.NetworkSourcesTimeout):
@@ -155,7 +155,7 @@ func (c *Component) registerHTTPHandlers() error {
 	// asns.csv (when there are some custom-defined ASNs)
 	if len(c.config.ASNs) != 0 {
 		c.d.HTTP.AddHandler("/api/v0/orchestrator/clickhouse/asns.csv",
-			http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				f, err := data.Open("data/asns.csv")
 				if err != nil {
 					c.r.Err(err).Msg("unable to open data/asns.csv")

@@ -18,7 +18,7 @@ type oobMessage struct {
 
 // listenConfig configures a listening socket to reuse port and return overflows
 var listenConfig = net.ListenConfig{
-	Control: func(network, address string, c syscall.RawConn) error {
+	Control: func(_, _ string, c syscall.RawConn) error {
 		var err error
 		c.Control(func(fd uintptr) {
 			opts := udpSocketOptions
