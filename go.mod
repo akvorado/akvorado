@@ -11,7 +11,7 @@ require (
 	github.com/bits-and-blooms/bitset v1.13.0
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/chenyahui/gin-cache v1.9.0
-	github.com/docker/docker v25.0.1+incompatible
+	github.com/docker/docker v25.0.3+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/eapache/go-resiliency v1.5.0
 	github.com/expr-lang/expr v1.16.0
