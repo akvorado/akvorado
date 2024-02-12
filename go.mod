@@ -35,7 +35,7 @@ require (
 	github.com/openconfig/gnmic/pkg/api v0.1.2
 	github.com/openconfig/gnmic/pkg/target v0.1.4
 	github.com/oschwald/maxminddb-golang v1.12.0
-	github.com/osrg/gobgp/v3 v3.22.0
+	github.com/osrg/gobgp/v3 v3.23.0
 	github.com/prometheus/client_golang v1.18.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rs/zerolog v1.31.0
