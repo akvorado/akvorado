@@ -25,7 +25,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.0.0
 	github.com/hashicorp/go-version v1.6.0
 	github.com/itchyny/gojq v0.12.14
-	github.com/jhump/protoreflect v1.15.5
+	github.com/jhump/protoreflect v1.15.6
 	github.com/kentik/patricia v1.2.1
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-isatty v0.0.20
