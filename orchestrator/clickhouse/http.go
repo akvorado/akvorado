@@ -107,8 +107,6 @@ func (c *Component) registerHTTPHandlers() error {
 
 	// Add handler for custom dicts
 	for name, dict := range c.d.Schema.GetCustomDictConfig() {
-		name := name
-		dict := dict
 		c.d.HTTP.AddHandler(fmt.Sprintf("/api/v0/orchestrator/clickhouse/custom_dict_%s.csv", name), http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			file, err := os.ReadFile(dict.Source)
 			if err != nil {
