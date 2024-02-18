@@ -137,8 +137,6 @@ func (c *Component[T]) Start() error {
 		if source.Transform.Query == nil {
 			source.Transform.Query, _ = gojq.Parse(".")
 		}
-		name := name
-		source := source
 
 		c.t.Go(func() error {
 			c.metrics.remoteDataSourceCount.WithLabelValues(c.dataType, name).Set(0)

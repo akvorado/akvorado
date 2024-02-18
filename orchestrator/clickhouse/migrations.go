@@ -86,8 +86,6 @@ func (c *Component) migrateDatabase() error {
 	// Prepare custom dictionary migrations
 	var dictMigrations []func() error
 	for k, v := range c.d.Schema.GetCustomDictConfig() {
-		k := k
-		v := v
 		var schemaStr []string
 		var keys []string
 		for _, a := range v.Keys {
