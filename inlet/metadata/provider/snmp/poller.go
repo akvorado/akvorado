@@ -107,6 +107,15 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 	}
 	var results []gosnmp.SnmpPDU
 	success := false
+
+	logError := func(err error) error {
+		p.metrics.errors.WithLabelValues(exporterStr, "get").Inc()
+		p.errLogger.Err(err).
+			Str("exporter", exporterStr).
+			Msgf("unable to GET (%d OIDs)", len(requests))
+		return err
+	}
+
 	for idx, community := range communities {
 		// Fatal error if last community and no success
 		isLast := idx == len(communities)-1
@@ -118,25 +127,19 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 			return nil
 		}
 		if err != nil && canError {
-			p.metrics.errors.WithLabelValues(exporterStr, "get").Inc()
-			p.errLogger.Err(err).
-				Str("exporter", exporterStr).
-				Msgf("unable to GET (%d OIDs)", len(requests))
-			return err
+			return logError(err)
 		}
 		if currentResult.Error != gosnmp.NoError && currentResult.ErrorIndex == 0 && canError {
 			// There is some error affecting the whole request
-			p.metrics.errors.WithLabelValues(exporterStr, "get").Inc()
-			p.errLogger.Error().
-				Str("exporter", exporterStr).
-				Stringer("code", currentResult.Error).
-				Msgf("unable to GET (%d OIDs)", len(requests))
-			return fmt.Errorf("SNMP error %s(%d)", currentResult.Error, currentResult.Error)
+			return logError(fmt.Errorf("SNMP error %s(%d)", currentResult.Error, currentResult.Error))
 		}
 		success = true
 		if results == nil {
 			results = slices.Clone(currentResult.Variables)
 		} else {
+			if len(results) != len(currentResult.Variables) {
+				logError(fmt.Errorf("SNMP mismatch on variable lengths"))
+			}
 			for idx := range results {
 				switch results[idx].Type {
 				case gosnmp.NoSuchInstance, gosnmp.NoSuchObject, gosnmp.Null:
@@ -144,6 +147,9 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 				}
 			}
 		}
+	}
+	if len(results) != len(requests) {
+		logError(fmt.Errorf("SNMP mismatch on variable lengths"))
 	}
 	p.metrics.times.WithLabelValues(exporterStr).Observe(time.Now().Sub(start).Seconds())
 
