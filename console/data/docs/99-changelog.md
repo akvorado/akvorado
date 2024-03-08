@@ -16,6 +16,7 @@ identified with a specific icon:
 - ✨ *inlet*: add gNMI metadata provider
 - ✨ *inlet*: static metadata provider can provide exporter and interface metadata
 - ✨ *inlet*: static metadata provider can fetch its configuration from an HTTP endpoint
+- ✨ *inlet*: add support for several SNMPv2 communities
 - 🩹 *cmd*: fix parsing of `inlet`→`metadata`→`provider`→`ports`
 - 🩹 *console*: fix use of `InIfBoundary` and `OutIfBoundary` as dimensions
 - 🌱 *orchestrator*: add TLS support to connect to ClickHouse database

@@ -21,7 +21,7 @@ import (
 )
 
 func TestPoller(t *testing.T) {
-	lo := netip.MustParseAddr("::ffff:127.0.0.1")
+	lo := netip.MustParseAddr("::ffff:127.0.0.2")
 	cases := []struct {
 		Description string
 		Skip        string
@@ -33,8 +33,32 @@ func TestPoller(t *testing.T) {
 			Config: Configuration{
 				PollerRetries: 2,
 				PollerTimeout: 100 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string]string{
-					"::/0": "private",
+				Communities: helpers.MustNewSubnetMap(map[string][]string{
+					"::/0": {"private"},
+				}),
+				Agents: map[netip.Addr]netip.Addr{
+					netip.MustParseAddr("192.0.2.1"): lo,
+				},
+			},
+		}, {
+			Description: "SNMPv2 with several communities, first",
+			Config: Configuration{
+				PollerRetries: 2,
+				PollerTimeout: 100 * time.Millisecond,
+				Communities: helpers.MustNewSubnetMap(map[string][]string{
+					"::/0": {"private", "private1"},
+				}),
+				Agents: map[netip.Addr]netip.Addr{
+					netip.MustParseAddr("192.0.2.1"): lo,
+				},
+			},
+		}, {
+			Description: "SNMPv2 with several communities, last",
+			Config: Configuration{
+				PollerRetries: 2,
+				PollerTimeout: 100 * time.Millisecond,
+				Communities: helpers.MustNewSubnetMap(map[string][]string{
+					"::/0": {"private1", "private"},
 				}),
 				Agents: map[netip.Addr]netip.Addr{
 					netip.MustParseAddr("192.0.2.1"): lo,
@@ -45,8 +69,8 @@ func TestPoller(t *testing.T) {
 			Config: Configuration{
 				PollerRetries: 2,
 				PollerTimeout: 100 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string]string{
-					"::/0": "private",
+				Communities: helpers.MustNewSubnetMap(map[string][]string{
+					"::/0": {"private"},
 				}),
 				Agents: map[netip.Addr]netip.Addr{
 					netip.MustParseAddr("192.0.2.1"): lo,
@@ -58,8 +82,8 @@ func TestPoller(t *testing.T) {
 			Config: Configuration{
 				PollerRetries: 2,
 				PollerTimeout: 100 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string]string{
-					"::/0": "public",
+				Communities: helpers.MustNewSubnetMap(map[string][]string{
+					"::/0": {"public"},
 				}),
 				SecurityParameters: helpers.MustNewSubnetMap(map[string]SecurityParameters{
 					"::/0": {
@@ -78,8 +102,8 @@ func TestPoller(t *testing.T) {
 			Config: Configuration{
 				PollerRetries: 2,
 				PollerTimeout: 100 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string]string{
-					"::/0": "public",
+				Communities: helpers.MustNewSubnetMap(map[string][]string{
+					"::/0": {"public"},
 				}),
 				SecurityParameters: helpers.MustNewSubnetMap(map[string]SecurityParameters{
 					"::/0": {
@@ -187,7 +211,7 @@ func TestPoller(t *testing.T) {
 				},
 			}
 			server := GoSNMPServer.NewSNMPServer(master)
-			if err := server.ListenUDP("udp", "127.0.0.1:0"); err != nil {
+			if err := server.ListenUDP("udp", "127.0.0.2:0"); err != nil {
 				t.Fatalf("ListenUDP() err:\n%+v", err)
 			}
 			_, portStr, err := net.SplitHostPort(server.Address().String())

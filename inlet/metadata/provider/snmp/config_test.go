@@ -32,8 +32,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Initial:       func() interface{} { return Configuration{} },
 			Configuration: func() interface{} { return gin.H{} },
 			Expected: Configuration{
-				Communities: helpers.MustNewSubnetMap(map[string]string{
-					"::/0": "public",
+				Communities: helpers.MustNewSubnetMap(map[string][]string{
+					"::/0": {"public"},
 				}),
 			},
 			SkipValidation: true,
@@ -51,8 +51,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 				Ports: helpers.MustNewSubnetMap(map[string]uint16{
 					"::/0": 1161,
 				}),
-				Communities: helpers.MustNewSubnetMap(map[string]string{
-					"::/0": "public",
+				Communities: helpers.MustNewSubnetMap(map[string][]string{
+					"::/0": {"public"},
 				}),
 			},
 		}, {
@@ -73,8 +73,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 					"2001:db8:1::/48": 1161,
 					"2001:db8:2::/48": 1162,
 				}),
-				Communities: helpers.MustNewSubnetMap(map[string]string{
-					"::/0": "public",
+				Communities: helpers.MustNewSubnetMap(map[string][]string{
+					"::/0": {"public"},
 				}),
 			},
 		}, {
@@ -89,8 +89,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Expected: Configuration{
 				PollerRetries: 10,
 				PollerTimeout: 200 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string]string{
-					"::/0": "public",
+				Communities: helpers.MustNewSubnetMap(map[string][]string{
+					"::/0": {"public"},
 				}),
 			},
 		}, {
@@ -107,10 +107,10 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 			Expected: Configuration{
 				PollerTimeout: 200 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string]string{
-					"::/0":                     "public",
-					"::ffff:203.0.113.0/121":   "public",
-					"::ffff:203.0.113.128/121": "private",
+				Communities: helpers.MustNewSubnetMap(map[string][]string{
+					"::/0":                     {"public"},
+					"::ffff:203.0.113.0/121":   {"public"},
+					"::ffff:203.0.113.128/121": {"private"},
 				}),
 			},
 		}, {
@@ -124,8 +124,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 			Expected: Configuration{
 				PollerTimeout: 200 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string]string{
-					"::/0": "private",
+				Communities: helpers.MustNewSubnetMap(map[string][]string{
+					"::/0": {"private"},
 				}),
 			},
 		}, {
@@ -143,10 +143,10 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 			Expected: Configuration{
 				PollerTimeout: 200 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string]string{
-					"::/0":                     "private",
-					"::ffff:203.0.113.0/121":   "public",
-					"::ffff:203.0.113.128/121": "private",
+				Communities: helpers.MustNewSubnetMap(map[string][]string{
+					"::/0":                     {"private"},
+					"::ffff:203.0.113.0/121":   {"public"},
+					"::ffff:203.0.113.128/121": {"private"},
 				}),
 			},
 		}, {
@@ -160,8 +160,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 			Expected: Configuration{
 				PollerTimeout: 200 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string]string{
-					"::/0": "private",
+				Communities: helpers.MustNewSubnetMap(map[string][]string{
+					"::/0": {"private"},
 				}),
 			},
 		}, {
@@ -190,10 +190,10 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 			Expected: Configuration{
 				PollerTimeout: 200 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string]string{
-					"::/0":                     "public",
-					"::ffff:203.0.113.0/121":   "public",
-					"::ffff:203.0.113.128/121": "private",
+				Communities: helpers.MustNewSubnetMap(map[string][]string{
+					"::/0":                     {"public"},
+					"::ffff:203.0.113.0/121":   {"public"},
+					"::ffff:203.0.113.128/121": {"private"},
 				}),
 			},
 		}, {
@@ -213,8 +213,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 			Expected: Configuration{
 				PollerTimeout: 200 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string]string{
-					"::/0": "public",
+				Communities: helpers.MustNewSubnetMap(map[string][]string{
+					"::/0": {"public"},
 				}),
 				SecurityParameters: helpers.MustNewSubnetMap(map[string]SecurityParameters{
 					"::/0": {
@@ -241,8 +241,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 			Expected: Configuration{
 				PollerTimeout: 200 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string]string{
-					"::/0": "public",
+				Communities: helpers.MustNewSubnetMap(map[string][]string{
+					"::/0": {"public"},
 				}),
 				SecurityParameters: helpers.MustNewSubnetMap(map[string]SecurityParameters{
 					"::/0": {

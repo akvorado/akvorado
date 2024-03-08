@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/netip"
+	"slices"
 	"time"
 
 	"github.com/gosnmp/gosnmp"
@@ -58,6 +59,7 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 			p.metrics.retries.WithLabelValues(exporterStr).Inc()
 		},
 	}
+	communities := []string{""}
 	if securityParameters, ok := p.config.SecurityParameters.Lookup(exporter); ok {
 		g.Version = gosnmp.Version3
 		g.SecurityModel = gosnmp.UserSecurityModel
@@ -86,14 +88,14 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 		g.ContextName = securityParameters.ContextName
 	} else {
 		g.Version = gosnmp.Version2c
-		g.Community = p.config.Communities.LookupOrDefault(exporter, "public")
+		communities = p.config.Communities.LookupOrDefault(exporter, []string{"public"})
 	}
 
+	start := time.Now()
 	if err := g.Connect(); err != nil {
 		p.metrics.errors.WithLabelValues(exporterStr, "connect").Inc()
 		p.errLogger.Err(err).Str("exporter", exporterStr).Msg("unable to connect")
 	}
-	start := time.Now()
 	requests := []string{"1.3.6.1.2.1.1.5.0"}
 	for _, ifIndex := range ifIndexes {
 		moreRequests := []string{
@@ -103,32 +105,53 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 		}
 		requests = append(requests, moreRequests...)
 	}
-	result, err := g.Get(requests)
-	if errors.Is(err, context.Canceled) {
-		return nil
+	var results []gosnmp.SnmpPDU
+	success := false
+	for idx, community := range communities {
+		// Fatal error if last community and no success
+		isLast := idx == len(communities)-1
+		canError := isLast && !success
+
+		g.Community = community
+		currentResult, err := g.Get(requests)
+		if errors.Is(err, context.Canceled) {
+			return nil
+		}
+		if err != nil && canError {
+			p.metrics.errors.WithLabelValues(exporterStr, "get").Inc()
+			p.errLogger.Err(err).
+				Str("exporter", exporterStr).
+				Msgf("unable to GET (%d OIDs)", len(requests))
+			return err
+		}
+		if currentResult.Error != gosnmp.NoError && currentResult.ErrorIndex == 0 && canError {
+			// There is some error affecting the whole request
+			p.metrics.errors.WithLabelValues(exporterStr, "get").Inc()
+			p.errLogger.Error().
+				Str("exporter", exporterStr).
+				Stringer("code", currentResult.Error).
+				Msgf("unable to GET (%d OIDs)", len(requests))
+			return fmt.Errorf("SNMP error %s(%d)", currentResult.Error, currentResult.Error)
+		}
+		success = true
+		if results == nil {
+			results = slices.Clone(currentResult.Variables)
+		} else {
+			for idx := range results {
+				switch results[idx].Type {
+				case gosnmp.NoSuchInstance, gosnmp.NoSuchObject, gosnmp.Null:
+					results[idx] = currentResult.Variables[idx]
+				}
+			}
+		}
 	}
-	if err != nil {
-		p.metrics.errors.WithLabelValues(exporterStr, "get").Inc()
-		p.errLogger.Err(err).
-			Str("exporter", exporterStr).
-			Msgf("unable to GET (%d OIDs)", len(requests))
-		return err
-	}
-	if result.Error != gosnmp.NoError && result.ErrorIndex == 0 {
-		// There is some error affecting the whole request
-		p.metrics.errors.WithLabelValues(exporterStr, "get").Inc()
-		p.errLogger.Error().
-			Str("exporter", exporterStr).
-			Stringer("code", result.Error).
-			Msgf("unable to GET (%d OIDs)", len(requests))
-		return fmt.Errorf("SNMP error %s(%d)", result.Error, result.Error)
-	}
+	p.metrics.times.WithLabelValues(exporterStr).Observe(time.Now().Sub(start).Seconds())
 
 	processStr := func(idx int, what string, target *string) bool {
-		switch result.Variables[idx].Type {
+		switch results[idx].Type {
 		case gosnmp.OctetString:
-			*target = string(result.Variables[idx].Value.([]byte))
-		case gosnmp.NoSuchInstance, gosnmp.NoSuchObject:
+			*target = string(results[idx].Value.([]byte))
+		case gosnmp.NoSuchInstance, gosnmp.NoSuchObject, gosnmp.Null:
 			p.metrics.errors.WithLabelValues(exporterStr, fmt.Sprintf("%s missing", what)).Inc()
 			return false
 		default:
@@ -138,10 +161,10 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 		return true
 	}
 	processUint := func(idx int, what string, target *uint) bool {
-		switch result.Variables[idx].Type {
+		switch results[idx].Type {
 		case gosnmp.Gauge32:
-			*target = result.Variables[idx].Value.(uint)
-		case gosnmp.NoSuchInstance, gosnmp.NoSuchObject:
+			*target = results[idx].Value.(uint)
+		case gosnmp.NoSuchInstance, gosnmp.NoSuchObject, gosnmp.Null:
 			p.metrics.errors.WithLabelValues(exporterStr, fmt.Sprintf("%s missing", what)).Inc()
 			return false
 		default:
@@ -197,7 +220,6 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 		})
 	}
 
-	p.metrics.times.WithLabelValues(exporterStr).Observe(time.Now().Sub(start).Seconds())
 	return nil
 }
 

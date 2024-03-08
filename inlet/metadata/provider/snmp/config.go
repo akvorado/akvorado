@@ -26,7 +26,7 @@ type Configuration struct {
 	PollerTimeout time.Duration `validate:"min=100ms"`
 
 	// Communities is a mapping from exporter IPs to SNMPv2 communities
-	Communities *helpers.SubnetMap[string]
+	Communities *helpers.SubnetMap[[]string]
 	// SecurityParameters is a mapping from exporter IPs to SNMPv3 security parameters
 	SecurityParameters *helpers.SubnetMap[SecurityParameters] `validate:"omitempty,dive"`
 	// Agents is a mapping from exporter IPs to SNMP agent IP
@@ -51,8 +51,8 @@ func DefaultConfiguration() provider.Configuration {
 		PollerRetries: 1,
 		PollerTimeout: time.Second,
 
-		Communities: helpers.MustNewSubnetMap(map[string]string{
-			"::/0": "public",
+		Communities: helpers.MustNewSubnetMap(map[string][]string{
+			"::/0": {"public"},
 		}),
 		SecurityParameters: helpers.MustNewSubnetMap(map[string]SecurityParameters{}),
 		Ports: helpers.MustNewSubnetMap(map[string]uint16{
@@ -189,7 +189,7 @@ func (pp PrivProtocol) MarshalText() ([]byte, error) {
 
 func init() {
 	helpers.RegisterMapstructureUnmarshallerHook(ConfigurationUnmarshallerHook())
-	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[string]())
+	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[[]string]())
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[SecurityParameters]())
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[uint16]())
 	helpers.RegisterSubnetMapValidation[SecurityParameters]()
