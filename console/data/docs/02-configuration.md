@@ -393,8 +393,9 @@ is defined by the `type` key.
 The `snmp` provider accepts the following configuration keys:
 
 - `communities` is a map from exporter subnets to the SNMPv2 communities. Use
-  `::/0` to set the default value. Alternatively, it also accepts a string to
-  use for all exporters.
+  `::/0` to set the default value. It accepts a single community or a list of
+  communities. In the later case, each community is tried in order for all
+  requests. Alternatively, it also accepts a string to use for all exporters.
 - `security-parameters` is a map from exporter subnets to the SNMPv3 USM
   security parameters. Like for `communities`, `::/0` can be used to the set the
   default value. The security paramaters accepts the following keys:
@@ -421,7 +422,9 @@ metadata:
   provider:
     type: snmp
     communities:
-      ::/0: private
+      ::/0:
+        - private
+        - "@private"
 ```
 
 *Akvorado* will use SNMPv3 if there is a match for the `security-parameters`
