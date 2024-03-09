@@ -39,7 +39,7 @@ type Component struct {
 	providerBreakersLock   sync.Mutex
 	providerBreakerLoggers map[netip.Addr]reporter.Logger
 	providerBreakers       map[netip.Addr]*breaker.Breaker
-	provider               provider.Provider
+	providers              []provider.Provider
 
 	metrics struct {
 		cacheRefreshRuns         reporter.Counter
@@ -80,17 +80,20 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		dispatcherBChannel:     make(chan (<-chan bool)),
 		providerBreakers:       make(map[netip.Addr]*breaker.Breaker),
 		providerBreakerLoggers: make(map[netip.Addr]reporter.Logger),
+		providers:              make([]provider.Provider, 0, 1),
 	}
 	c.d.Daemon.Track(&c.t, "inlet/metadata")
 
-	// Initialize the provider
-	selectedProvider, err := c.config.Provider.Config.New(r, func(update provider.Update) {
-		c.sc.Put(c.d.Clock.Now(), update.Query, update.Answer)
-	})
-	if err != nil {
-		return nil, err
+	// Initialize providers
+	for _, p := range c.config.Providers {
+		selectedProvider, err := p.Config.New(r, func(update provider.Update) {
+			c.sc.Put(c.d.Clock.Now(), update.Query, update.Answer)
+		})
+		if err != nil {
+			return nil, err
+		}
+		c.providers = append(c.providers, selectedProvider)
 	}
-	c.provider = selectedProvider
 
 	c.metrics.cacheRefreshRuns = r.Counter(
 		reporter.CounterOpts{
@@ -291,7 +294,18 @@ func (c *Component) providerIncomingRequest(request provider.BatchQuery) {
 	c.providerBreakersLock.Unlock()
 
 	if err := providerBreaker.Run(func() error {
-		return c.provider.Query(c.t.Context(nil), request)
+		ctx := c.t.Context(nil)
+		for _, p := range c.providers {
+			// Query providers in the order they are defined and stop on the
+			// first provider accepting to handle the query.
+			if err := p.Query(ctx, request); err != nil && err != provider.ErrSkipProvider {
+				return err
+			} else if err == provider.ErrSkipProvider {
+				continue
+			}
+			return nil
+		}
+		return nil
 	}); err == breaker.ErrBreakerOpen {
 		c.metrics.providerBreakerOpenCount.WithLabelValues(request.ExporterIP.Unmap().String()).Inc()
 		c.providerBreakersLock.Lock()

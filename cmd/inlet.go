@@ -52,7 +52,7 @@ func (c *InletConfiguration) Reset() {
 		Core:      core.DefaultConfiguration(),
 		Schema:    schema.DefaultConfiguration(),
 	}
-	c.Metadata.Provider.Config = snmp.DefaultConfiguration()
+	c.Metadata.Providers = []metadata.ProviderConfiguration{{Config: snmp.DefaultConfiguration()}}
 	c.Routing.Provider.Config = bmp.DefaultConfiguration()
 }
 

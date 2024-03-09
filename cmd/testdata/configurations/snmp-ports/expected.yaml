@@ -1,4 +1,4 @@
 ---
 paths:
-  inlet.0.metadata.provider.ports:
+  inlet.0.metadata.providers.0.ports:
     ::/0: 1611

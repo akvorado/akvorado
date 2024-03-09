@@ -4,6 +4,8 @@
 package metadata
 
 import (
+	"fmt"
+	"reflect"
 	"time"
 
 	"akvorado/common/helpers"
@@ -11,6 +13,8 @@ import (
 	"akvorado/inlet/metadata/provider/gnmi"
 	"akvorado/inlet/metadata/provider/snmp"
 	"akvorado/inlet/metadata/provider/static"
+
+	"github.com/mitchellh/mapstructure"
 )
 
 // Configuration describes the configuration for the metadata client
@@ -24,8 +28,8 @@ type Configuration struct {
 	// CachePersist defines a file to store cache and survive restarts
 	CachePersistFile string
 
-	// Provider defines the configuration of the provider to sue
-	Provider ProviderConfiguration
+	// Provider defines the configuration of the providers to use
+	Providers []ProviderConfiguration
 
 	// Workers define the number of workers used to poll metadata
 	Workers int `validate:"min=1"`
@@ -42,6 +46,40 @@ func DefaultConfiguration() Configuration {
 		CachePersistFile:   "",
 		Workers:            1,
 		MaxBatchRequests:   10,
+	}
+}
+
+// ConfigurationUnmarshallerHook renames "provider" to "providers".
+func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
+	return func(from, to reflect.Value) (interface{}, error) {
+		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(Configuration{}) {
+			return from.Interface(), nil
+		}
+
+		// provider → providers
+		{
+			var providerKey, providersKey *reflect.Value
+			fromKeys := from.MapKeys()
+			for i, k := range fromKeys {
+				k = helpers.ElemOrIdentity(k)
+				if k.Kind() != reflect.String {
+					return from.Interface(), nil
+				}
+				if helpers.MapStructureMatchName(k.String(), "Provider") {
+					providerKey = &fromKeys[i]
+				} else if helpers.MapStructureMatchName(k.String(), "Providers") {
+					providersKey = &fromKeys[i]
+				}
+			}
+			if providersKey != nil && providerKey != nil {
+				return nil, fmt.Errorf("cannot have both %q and %q", providerKey.String(), providersKey.String())
+			}
+			if providerKey != nil {
+				from.SetMapIndex(reflect.ValueOf("providers"), from.MapIndex(*providerKey))
+				from.SetMapIndex(*providerKey, reflect.Value{})
+			}
+		}
+		return from.Interface(), nil
 	}
 }
 
@@ -68,6 +106,7 @@ var providers = map[string](func() provider.Configuration){
 }
 
 func init() {
+	helpers.RegisterMapstructureUnmarshallerHook(ConfigurationUnmarshallerHook())
 	helpers.RegisterMapstructureUnmarshallerHook(
 		helpers.ParametrizedConfigurationUnmarshallerHook(ProviderConfiguration{}, providers))
 }
