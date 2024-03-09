@@ -17,6 +17,7 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 	"akvorado/inlet/metadata/provider"
+	"akvorado/inlet/metadata/provider/static"
 )
 
 func expectMockLookup(t *testing.T, c *Component, exporter string, ifIndex uint, expected provider.Answer) {
@@ -156,7 +157,7 @@ func TestConfigCheck(t *testing.T) {
 		configuration.CacheDuration = 10 * time.Minute
 		configuration.CacheRefresh = 5 * time.Minute
 		configuration.CacheCheckInterval = time.Minute
-		configuration.Provider.Config = mockProviderConfiguration{}
+		configuration.Providers = []ProviderConfiguration{{Config: mockProviderConfiguration{}}}
 		if _, err := New(reporter.NewMock(t), configuration, Dependencies{Daemon: daemon.NewMock(t)}); err == nil {
 			t.Fatal("New() should trigger an error")
 		}
@@ -166,7 +167,7 @@ func TestConfigCheck(t *testing.T) {
 		configuration.CacheDuration = 10 * time.Minute
 		configuration.CacheRefresh = 15 * time.Minute
 		configuration.CacheCheckInterval = 12 * time.Minute
-		configuration.Provider.Config = mockProviderConfiguration{}
+		configuration.Providers = []ProviderConfiguration{{Config: mockProviderConfiguration{}}}
 		if _, err := New(reporter.NewMock(t), configuration, Dependencies{Daemon: daemon.NewMock(t)}); err == nil {
 			t.Fatal("New() should trigger an error")
 		}
@@ -176,7 +177,7 @@ func TestConfigCheck(t *testing.T) {
 		configuration.CacheDuration = 10 * time.Minute
 		configuration.CacheRefresh = 0
 		configuration.CacheCheckInterval = 2 * time.Minute
-		configuration.Provider.Config = mockProviderConfiguration{}
+		configuration.Providers = []ProviderConfiguration{{Config: mockProviderConfiguration{}}}
 		if _, err := New(reporter.NewMock(t), configuration, Dependencies{Daemon: daemon.NewMock(t)}); err != nil {
 			t.Fatalf("New() error:\n%+v", err)
 		}
@@ -216,7 +217,7 @@ func TestProviderBreaker(t *testing.T) {
 			r := reporter.NewMock(t)
 			configuration := DefaultConfiguration()
 			configuration.MaxBatchRequests = 0
-			configuration.Provider.Config = tc.ProviderConfiguration
+			configuration.Providers = []ProviderConfiguration{{Config: tc.ProviderConfiguration}}
 			c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 			c.metrics.providerBreakerOpenCount.WithLabelValues("127.0.0.1").Add(0)
 
@@ -263,7 +264,7 @@ func TestBatching(t *testing.T) {
 	r := reporter.NewMock(t)
 	t.Run("run", func(t *testing.T) {
 		configuration := DefaultConfiguration()
-		configuration.Provider.Config = &bcp
+		configuration.Providers = []ProviderConfiguration{{Config: &bcp}}
 		c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 
 		// Block dispatcher
@@ -284,21 +285,105 @@ func TestBatching(t *testing.T) {
 		c.Lookup(c.d.Clock.Now(), netip.MustParseAddr("::ffff:127.0.0.1"), 769)
 	})
 
-	gotMetrics := r.GetMetrics("akvorado_inlet_metadata_provider_", "batched_requests_total")
-	expectedMetrics := map[string]string{
-		`batched_requests_total`: "4",
-	}
-	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
-		t.Errorf("Metrics (-got, +want):\n%s", diff)
-	}
+	t.Run("check", func(t *testing.T) {
+		gotMetrics := r.GetMetrics("akvorado_inlet_metadata_provider_", "batched_requests_total")
+		expectedMetrics := map[string]string{
+			`batched_requests_total`: "4",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+			t.Errorf("Metrics (-got, +want):\n%s", diff)
+		}
 
-	expectedAccepted := []provider.BatchQuery{
+		expectedAccepted := []provider.BatchQuery{
+			{
+				ExporterIP: netip.MustParseAddr("::ffff:127.0.0.1"),
+				IfIndexes:  []uint{766, 767, 768, 769},
+			},
+		}
+		if diff := helpers.Diff(bcp.received, expectedAccepted); diff != "" {
+			t.Errorf("Accepted requests (-got, +want):\n%s", diff)
+		}
+	})
+}
+
+func TestMultipleProviders(t *testing.T) {
+	r := reporter.NewMock(t)
+	staticConfiguration1 := static.Configuration{
+		Exporters: helpers.MustNewSubnetMap(map[string]static.ExporterConfiguration{
+			"2001:db8:1::/48": {
+				Exporter: provider.Exporter{
+					Name: "static1",
+				},
+				IfIndexes: map[uint]provider.Interface{
+					10: {
+						Name:        "Gi10",
+						Description: "10th interface",
+						Speed:       1000,
+					},
+					11: {
+						Name:        "Gi11",
+						Description: "11th interface",
+						Speed:       1000,
+					},
+				},
+			},
+		}),
+	}
+	staticConfiguration2 := static.Configuration{
+		Exporters: helpers.MustNewSubnetMap(map[string]static.ExporterConfiguration{
+			"2001:db8:2::/48": {
+				Exporter: provider.Exporter{
+					Name: "static2",
+				},
+				IfIndexes: map[uint]provider.Interface{
+					12: {
+						Name:        "Gi12",
+						Description: "12th interface",
+						Speed:       1000,
+					},
+					13: {
+						Name:        "Gi13",
+						Description: "13th interface",
+						Speed:       1000,
+					},
+				},
+			},
+		}),
+	}
+	configuration := DefaultConfiguration()
+	configuration.Providers = []ProviderConfiguration{
+		{Config: staticConfiguration1},
+		{Config: staticConfiguration2},
+	}
+	c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
+	c.Lookup(time.Now(), netip.MustParseAddr("2001:db8:1::1"), 10)
+	c.Lookup(time.Now(), netip.MustParseAddr("2001:db8:2::2"), 12)
+	time.Sleep(30 * time.Millisecond)
+	got1, _ := c.Lookup(time.Now(), netip.MustParseAddr("2001:db8:1::1"), 10)
+	got2, _ := c.Lookup(time.Now(), netip.MustParseAddr("2001:db8:2::2"), 12)
+	got := []provider.Answer{got1, got2}
+	expected := []provider.Answer{
 		{
-			ExporterIP: netip.MustParseAddr("::ffff:127.0.0.1"),
-			IfIndexes:  []uint{766, 767, 768, 769},
+			Exporter: provider.Exporter{
+				Name: "static1",
+			},
+			Interface: provider.Interface{
+				Name:        "Gi10",
+				Description: "10th interface",
+				Speed:       1000,
+			},
+		}, {
+			Exporter: provider.Exporter{
+				Name: "static2",
+			},
+			Interface: provider.Interface{
+				Name:        "Gi12",
+				Description: "12th interface",
+				Speed:       1000,
+			},
 		},
 	}
-	if diff := helpers.Diff(bcp.received, expectedAccepted); diff != "" {
-		t.Errorf("Accepted requests (-got, +want):\n%s", diff)
+	if diff := helpers.Diff(got, expected); diff != "" {
+		t.Fatalf("Lookup() (-got, +want):\n%s", diff)
 	}
 }

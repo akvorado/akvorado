@@ -71,8 +71,8 @@ func (mpc mockProviderConfiguration) New(_ *reporter.Reporter, put func(provider
 // NewMock creates a new metadata component building synthetic values. It is already started.
 func NewMock(t *testing.T, reporter *reporter.Reporter, configuration Configuration, dependencies Dependencies) *Component {
 	t.Helper()
-	if configuration.Provider.Config == nil {
-		configuration.Provider.Config = mockProviderConfiguration{}
+	if configuration.Providers == nil {
+		configuration.Providers = []ProviderConfiguration{{Config: mockProviderConfiguration{}}}
 	}
 	c, err := New(reporter, configuration, dependencies)
 	if err != nil {

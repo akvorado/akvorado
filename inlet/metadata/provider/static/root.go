@@ -51,7 +51,7 @@ func (configuration Configuration) New(r *reporter.Reporter, put func(provider.U
 func (p *Provider) Query(_ context.Context, query provider.BatchQuery) error {
 	exporter, ok := p.exporters.Load().Lookup(query.ExporterIP)
 	if !ok {
-		return nil
+		return provider.ErrSkipProvider
 	}
 	for _, ifIndex := range query.IfIndexes {
 		iface, ok := exporter.IfIndexes[ifIndex]

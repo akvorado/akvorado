@@ -379,14 +379,17 @@ providers available to poll metadata. The following keys are accepted:
   read them back on startup
 - `workers` tell how many workers to spawn to fetch metadata.
 - `max-batch-requests` define how many requests can be batched together
-- `provider` defines the provider configuration
+- `providers` defines the provider configurations
 
 As flows missing interface information are discarded, persisting the
 cache is useful to quickly be able to handle incoming flows. By
 default, no persistent cache is configured.
 
-The `provider` key contains the configuration of the provider. The provider type
-is defined by the `type` key.
+The `providers` key contains the configuration of the providers. For each, the
+provider type is defined by the `type` key. When using several providers, they
+will be queried in order and the process stops on the first to accept to handle
+a query. Currently, only the `static` provider can skip a query. Therefore, you
+should put it first.
 
 #### SNMP provider
 
@@ -419,7 +422,7 @@ For example:
 ```yaml
 metadata:
   workers: 10
-  provider:
+  providers:
     type: snmp
     communities:
       ::/0:
@@ -460,7 +463,7 @@ For example:
 
 ```yaml
 metadata:
- provider:
+ providers:
   type: gnmi
   authentication-parameters:
    ::/0:
@@ -507,28 +510,32 @@ an exporter configuration. An exporter configuration is map:
 
 An interface is a `name`, a `description` and a `speed`.
 
-For example:
+For example, to add an exception for `2001:db8:1::1`, then use SNMP for
+other exporters:
 
 ```yaml
 metadata:
-  provider:
-    type: static
-    exporters:
-      2001:db8:1::1:
-        name: exporter1
-        default:
-          name: unknown
-          description: Unknown interface
-          speed: 100
-        ifindexes:
-          10:
-            name: Gi0/0/10
-            description: PNI Netflix
-            speed: 1000
-          11:
-            name: Gi0/0/15
-            description: PNI Google
-            speed: 1000
+  providers:
+    - type: static
+      exporters:
+        2001:db8:1::1:
+          name: exporter1
+          default:
+            name: unknown
+            description: Unknown interface
+            speed: 100
+          ifindexes:
+            10:
+              name: Gi0/0/10
+              description: PNI Netflix
+              speed: 1000
+            11:
+              name: Gi0/0/15
+              description: PNI Google
+              speed: 1000
+    - type: snmp
+      communities:
+        ::/0: private
 ```
 
 The `static` provider also accepts a key `exporter-sources`, which will fetch a
@@ -553,7 +560,7 @@ For example:
 
 ```yaml
 metadata:
-  provider:
+  providers:
     type: static
     exporter-sources:
       gostatic:

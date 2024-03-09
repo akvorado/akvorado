@@ -7,14 +7,14 @@ paths:
     cacherefresh: 30m0s
     cachecheckinterval: 2m0s
     cachepersistfile: ""
-    provider:
-      type: snmp
-      pollerretries: 3
-      pollertimeout: 1s
-      agents:
-        192.0.2.10: 192.0.2.11
-      communities:
-        ::/0: [private]
-      ports:
-        ::/0: 161
-      securityparameters: {}
+    providers:
+      - type: snmp
+        pollerretries: 3
+        pollertimeout: 1s
+        agents:
+          192.0.2.10: 192.0.2.11
+        communities:
+          ::/0: [private]
+        ports:
+          ::/0: 161
+        securityparameters: {}
