@@ -126,6 +126,7 @@ test-go: | $(GOTESTSUM) ; $(info $(M) running Go tests$(GOTEST_MORE)…) @ ## Ru
 	$Q env PATH=$(dir $(abspath $(shell command -v $(GO)))):$(PATH) $(GOTESTSUM) \
         --junitfile test/go/tests.xml -- \
 		-timeout $(TIMEOUT)s \
+		-fullpath \
 		$(GOTEST_ARGS) $(PKGS)
 test-race: CGO_ENABLED=1
 test-race: GOTEST_ARGS=-race
@@ -136,11 +137,12 @@ test-short: GOTEST_MORE=, only short tests
 test-short: test-go  ## Run only short Go tests
 test-bench: ; $(info $(M) running benchmarks…) @ ## Run Go benchmarks
 	$Q $(GO) test \
-		-timeout $(TIMEOUT)s -run=__absolutelynothing__ -bench=. -benchmem \
+		-fullpath -timeout $(TIMEOUT)s -run=__absolutelynothing__ -bench=. -benchmem \
 		$(PKGS) # -memprofile test/go/memprofile.out -cpuprofile test/go/cpuprofile.out
 test-coverage-go: | $(GOTESTSUM) $(GOCOV) $(GOCOVXML) ; $(info $(M) running Go coverage tests…) @ ## Run Go coverage tests
 	$Q mkdir -p test/go
 	$Q env PATH=$(dir $(abspath $(shell command -v $(GO)))):$(PATH) $(GOTESTSUM) -- \
+	    -fullpath \
 		-coverpkg=$(shell echo $(PKGS) | tr ' ' ',') \
 		-covermode=atomic \
 		-coverprofile=test/go/profile.out.tmp $(PKGS)
