@@ -9,10 +9,9 @@ import (
 
 // GeoInfo describes geographical data of a geo the database.
 type GeoInfo struct {
-	Country   string
-	Continent string
-	City      string
-	State     string
+	Country string
+	City    string
+	State   string
 }
 
 // ASNInfo describes ASN data of an asn database.

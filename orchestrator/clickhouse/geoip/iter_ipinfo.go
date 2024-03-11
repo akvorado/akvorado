@@ -15,8 +15,9 @@ type ipinfoDBASN struct {
 }
 
 type ipinfoDBCountry struct {
-	Country   string `maxminddb:"country"`
-	Continent string `maxminddb:"continent"`
+	Country string `maxminddb:"country"`
+	Region  string `maxminddb:"region"`
+	City    string `maxminddb:"city"`
 }
 
 type ipinfoDB struct {
@@ -59,6 +60,8 @@ func (mmdb *ipinfoDB) IterGeoDatabase(f GeoIterFunc) error {
 		}
 		if err := f(subnet, GeoInfo{
 			Country: geoInfo.Country,
+			State:   geoInfo.Region,
+			City:    geoInfo.City,
 		}); err != nil {
 			return err
 		}
