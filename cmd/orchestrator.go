@@ -4,12 +4,17 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"reflect"
 
+	"github.com/gin-gonic/gin"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 
 	"akvorado/common/clickhousedb"
 	"akvorado/common/daemon"
+	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
@@ -183,4 +188,106 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, c
 		kafkaComponent,
 	}
 	return StartStopComponents(r, daemonComponent, components)
+}
+
+// OrchestratorConfigurationUnmarshallerHook migrates GeoIP configuration from inlet
+// component to clickhouse component.
+func OrchestratorConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
+	return func(from, to reflect.Value) (interface{}, error) {
+		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(OrchestratorConfiguration{}) {
+			return from.Interface(), nil
+		}
+
+	inletgeoip:
+		// inlet/geoip → clickhouse
+		for {
+			var (
+				inletKey, clickhouseKey, inletGeoIPValue *reflect.Value
+			)
+
+			fromKeys := from.MapKeys()
+			for i, k := range fromKeys {
+				k = helpers.ElemOrIdentity(k)
+				if k.Kind() != reflect.String {
+					break inletgeoip
+				}
+				if helpers.MapStructureMatchName(k.String(), "Inlet") {
+					inletKey = &fromKeys[i]
+				} else if helpers.MapStructureMatchName(k.String(), "ClickHouse") {
+					clickhouseKey = &fromKeys[i]
+				}
+			}
+			if inletKey == nil {
+				break inletgeoip
+			}
+
+			// Take the first geoip configuration and delete the others
+			inletConfigs := helpers.ElemOrIdentity(from.MapIndex(*inletKey))
+			if inletConfigs.Kind() != reflect.Slice {
+				inletConfigs = reflect.ValueOf([]interface{}{inletConfigs.Interface()})
+			}
+			for i := 0; i < inletConfigs.Len(); i++ {
+				fromInlet := helpers.ElemOrIdentity(inletConfigs.Index(i))
+				if fromInlet.Kind() != reflect.Map {
+					break inletgeoip
+				}
+				fromInletKeys := fromInlet.MapKeys()
+				for _, k := range fromInletKeys {
+					k = helpers.ElemOrIdentity(k)
+					if k.Kind() != reflect.String {
+						break inletgeoip
+					}
+					if helpers.MapStructureMatchName(k.String(), "GeoIP") {
+						if inletGeoIPValue == nil {
+							v := fromInlet.MapIndex(k)
+							inletGeoIPValue = &v
+						}
+					}
+				}
+			}
+			if inletGeoIPValue == nil {
+				break inletgeoip
+			}
+
+			// Look at clickhouse configuration for geoip key
+			if clickhouseKey == nil {
+				k := reflect.ValueOf("clickhouse")
+				clickhouseKey = &k
+				from.SetMapIndex(k, reflect.ValueOf(gin.H{}))
+			}
+			fromClickHouse := helpers.ElemOrIdentity(from.MapIndex(*clickhouseKey))
+			if fromClickHouse.Kind() != reflect.Map {
+				break inletgeoip
+			}
+			fromClickHouseKeys := fromClickHouse.MapKeys()
+			for _, k := range fromClickHouseKeys {
+				k = helpers.ElemOrIdentity(k)
+				if k.Kind() != reflect.String {
+					break inletgeoip
+				}
+				if helpers.MapStructureMatchName(k.String(), "GeoIP") {
+					return nil, errors.New("cannot have both \"GeoIP\" in inlet and clickhouse configuration")
+				}
+			}
+
+			fromClickHouse.SetMapIndex(reflect.ValueOf("geoip"), *inletGeoIPValue)
+			for i := 0; i < inletConfigs.Len(); i++ {
+				fromInlet := helpers.ElemOrIdentity(inletConfigs.Index(i))
+				fromInletKeys := fromInlet.MapKeys()
+				for _, k := range fromInletKeys {
+					k = helpers.ElemOrIdentity(k)
+					if helpers.MapStructureMatchName(k.String(), "GeoIP") {
+						fromInlet.SetMapIndex(k, reflect.Value{})
+					}
+				}
+			}
+			break
+		}
+
+		return from.Interface(), nil
+	}
+}
+
+func init() {
+	helpers.RegisterMapstructureUnmarshallerHook(OrchestratorConfigurationUnmarshallerHook())
 }
