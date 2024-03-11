@@ -225,7 +225,7 @@ The topic name is suffixed by a hash of the schema.
 
 ### Core
 
-The core component queries the `geoip` and the `metadata` component to
+The core component queries the `metadata` component to
 enriches the flows with additional information. It also classifies
 exporters and interfaces into groups with a set of classification
 rules.
@@ -249,11 +249,10 @@ The following configuration keys are accepted:
   one received in the flows. This is useful if a device lie about its
   sampling rate. This is a map from subnets to sampling rates (but it
   would also accept a single value).
-- `asn-providers` defines the source list for AS numbers. The
-  available sources are `flow`, `flow-except-private` (use information
-  from flow except if the ASN is private), `geoip`, `routing`, and
-  `routing-except-private`. The default value is `flow`, `routing`, and
-  `geoip`.
+- `asn-providers` defines the source list for AS numbers. The available sources
+  are `flow`, `flow-except-private` (use information from flow except if the ASN
+  is private), `routing`, and `routing-except-private`. The default value is
+  `flow` and `routing`.
 - `net-providers` defines the sources for prefix lengths and nexthop. `flow` uses the value
   provided by the flow message (if any), while `routing` looks it up using the BMP
   component. If multiple sources are provided, the value of the first source
@@ -345,24 +344,6 @@ interface-classifiers:
 
 [expr]: https://expr-lang.org/docs/language-definition
 [from Go]: https://github.com/google/re2/wiki/Syntax
-
-### GeoIP
-
-The GeoIP component adds source and destination country, as well as
-the AS number of the source and destination IP if they are not present
-in the received flows. It needs two databases using the [MaxMind DB
-file format][], one for AS numbers, one for countries. If no database
-is provided, the component is inactive. It accepts the following keys:
-
-- `asn-database` tells the path to the ASN database
-- `geo-database` tells the path to the geo database (country or city)
-- `optional` makes the presence of the databases optional on start
-  (when not present on start, the component is just disabled)
-
-[MaxMind DB file format]: https://maxmind.github.io/MaxMind-DB/
-
-If the files are updated while *Akvorado* is running, they are
-automatically refreshed.
 
 ### Metadata
 
@@ -843,6 +824,8 @@ provided:
     `prefix` attribute and, optionally, `name`, `role`, `site`,
     `region`, and `tenant`. See the example provided in the shipped
     `akvorado.yaml` configuration file.
+- `geoip` configures GeoIP lookup for unresolved AS numbers, countries,
+  subdivisions, and cities.
 - `asns` maps AS number to names (overriding the builtin ones)
 - `orchestrator-url` defines the URL of the orchestrator to be used
   by ClickHouse (autodetection when not specified)
@@ -881,6 +864,20 @@ disk usage. If you remove an existing interval, it is not removed from the
 ClickHouse database and will continue to be populated.
 
 It is mandatory to specify a configuration for `interval: 0`.
+
+The `geoip` directive allows one to configure two databases using the [MaxMind
+DB file format][], one for AS numbers, one for countries/cities. It accepts the
+following keys:
+
+- `asn-database` tells the path to the ASN database
+- `geo-database` tells the path to the geo database (country or city)
+- `optional` makes the presence of the databases optional on start
+  (when not present on start, the component is just disabled)
+
+[MaxMind DB file format]: https://maxmind.github.io/MaxMind-DB/
+
+If the files are updated while *Akvorado* is running, they are
+automatically refreshed.
 
 ## Console service
 

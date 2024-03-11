@@ -13,6 +13,13 @@ identified with a specific icon:
 
 ## Unreleased
 
+On this release, geo IP is now performed in ClickHouse instead of inlet. When
+using the standard `docker-compose` setup, the configuration should be
+automatically migrated from the inlet component to the clickhouse component.
+This also changes how geo IP is used for AS numbers: geo IP is used as last
+resort when configured.
+
+- 💥 *inlet*: GeoIP data is moved from inlets to ClickHouse, add city and region
 - ✨ *inlet*: add gNMI metadata provider
 - ✨ *inlet*: static metadata provider can provide exporter and interface metadata
 - ✨ *inlet*: static metadata provider can fetch its configuration from an HTTP endpoint
