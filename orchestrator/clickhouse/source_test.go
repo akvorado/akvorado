@@ -23,6 +23,9 @@ import (
 )
 
 func TestNetworkSources(t *testing.T) {
+	r := reporter.NewMock(t)
+	clickHouseComponent := clickhousedb.SetupClickHouse(t, r)
+
 	// Mux to answer requests
 	ready := make(chan bool)
 	mux := http.NewServeMux()
@@ -78,7 +81,6 @@ func TestNetworkSources(t *testing.T) {
 	go server.Serve(listener)
 	defer server.Shutdown(context.Background())
 
-	r := reporter.NewMock(t)
 	config := DefaultConfiguration()
 	config.SkipMigrations = true
 	config.NetworkSourcesTimeout = 10 * time.Millisecond
@@ -102,7 +104,7 @@ func TestNetworkSources(t *testing.T) {
 		HTTP:       httpserver.NewMock(t, r),
 		Schema:     schema.NewMock(t),
 		GeoIP:      geoip.NewMock(t, r, false),
-		ClickHouse: clickhousedb.SetupClickHouse(t, r),
+		ClickHouse: clickHouseComponent,
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)

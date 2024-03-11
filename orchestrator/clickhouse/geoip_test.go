@@ -18,18 +18,17 @@ import (
 )
 
 func TestNetworkGeoip(t *testing.T) {
-	// Setup an HTTP server to serve the JSON
-
 	config := DefaultConfiguration()
 	config.SkipMigrations = true
 	r := reporter.NewMock(t)
+	clickHouseComponent := clickhousedb.SetupClickHouse(t, r)
 
 	c, err := New(r, config, Dependencies{
 		Daemon:     daemon.NewMock(t),
 		HTTP:       httpserver.NewMock(t, r),
 		Schema:     schema.NewMock(t),
 		GeoIP:      geoip.NewMock(t, r, true),
-		ClickHouse: clickhousedb.SetupClickHouse(t, r),
+		ClickHouse: clickHouseComponent,
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)

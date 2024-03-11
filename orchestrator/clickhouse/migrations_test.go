@@ -161,13 +161,14 @@ func waitMigrations(t *testing.T, ch *Component) {
 
 func TestGetHTTPBaseURL(t *testing.T) {
 	r := reporter.NewMock(t)
+	clickHouseComponent := clickhousedb.SetupClickHouse(t, r)
 	http := httpserver.NewMock(t, r)
 	c, err := New(r, DefaultConfiguration(), Dependencies{
 		Daemon:     daemon.NewMock(t),
 		HTTP:       http,
 		Schema:     schema.NewMock(t),
 		GeoIP:      geoip.NewMock(t, r, true),
-		ClickHouse: clickhousedb.SetupClickHouse(t, r),
+		ClickHouse: clickHouseComponent,
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
