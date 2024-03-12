@@ -209,5 +209,5 @@ version:
 	@echo $(VERSION)
 
 .PHONY: docker
-docker:
+docker: ; $(info $(M) build Docker image…) @ ## Build Docker image
 	docker build -f docker/Dockerfile -t ghcr.io/akvorado/akvorado:latest .
