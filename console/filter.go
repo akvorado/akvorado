@@ -63,6 +63,7 @@ type filterCompleteHandlerInput struct {
 	What   string `json:"what" binding:"required,oneof=column operator value"`
 	Column string `json:"column" binding:"required_unless=What column"`
 	Prefix string `json:"prefix"`
+	Limit  int    `json:"limit"`
 }
 
 // filterCompleteHandlerOutput describes the output of the /filter/complete endpoint.
@@ -77,7 +78,7 @@ type filterCompletion struct {
 
 func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
-	var input filterCompleteHandlerInput
+	input := filterCompleteHandlerInput{Limit: 20}
 	if err := gc.ShouldBindJSON(&input); err != nil {
 		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
 		return
@@ -180,7 +181,7 @@ WHERE TimeReceived > date_sub(minute, 1, now())
 AND positionCaseInsensitive(label, $1) >= 1
 GROUP BY %s
 ORDER BY COUNT(*) DESC
-LIMIT 20`, columnName, columnName)
+LIMIT %d`, columnName, columnName, input.Limit)
 			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
 				c.r.Err(err).Msg("unable to query database")
 				break
@@ -198,7 +199,7 @@ LIMIT 20`, columnName, columnName)
 				Label  string `ch:"label"`
 				Detail string `ch:"detail"`
 			}{}
-			sqlQuery := `
+			sqlQuery := fmt.Sprintf(`
 SELECT label, detail FROM (
  SELECT
   'community' AS detail,
@@ -225,7 +226,7 @@ SELECT label, detail FROM (
  )
 )
 WHERE startsWith(label, $1)
-LIMIT 20`
+LIMIT %d`, input.Limit)
 			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
 				c.r.Err(err).Msg("unable to query database")
 				break
@@ -256,15 +257,15 @@ SELECT label, detail FROM (
  AND positionCaseInsensitive(detail, $1) >= 1
  GROUP BY %s
  ORDER BY COUNT(*) DESC
- LIMIT 20
+ LIMIT %d
 UNION DISTINCT
  SELECT concat('AS', toString(asn)) AS label, name AS detail, 2 AS rank
  FROM asns
  WHERE positionCaseInsensitive(name, $1) >= 1
  ORDER BY positionCaseInsensitive(name, $1) ASC, asn ASC
- LIMIT 20
-) GROUP BY label, detail ORDER BY MIN(rank) ASC, MIN(rowNumberInBlock()) ASC LIMIT 20`,
-				columnName, schema.DictionaryASNs, columnName, columnName)
+ LIMIT %d
+) GROUP BY label, detail ORDER BY MIN(rank) ASC, MIN(rowNumberInBlock()) ASC LIMIT %d`,
+				columnName, schema.DictionaryASNs, columnName, columnName, input.Limit, input.Limit, input.Limit)
 			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
 				c.r.Err(err).Msg("unable to query database")
 				break
@@ -287,7 +288,7 @@ SELECT DISTINCT %s AS attribute
 FROM networks
 WHERE positionCaseInsensitive(%s, $1) >= 1
 ORDER BY %s
-LIMIT 20`, attributeName, attributeName, attributeName), input.Prefix); err != nil {
+LIMIT %d`, attributeName, attributeName, attributeName, input.Limit), input.Prefix); err != nil {
 				c.r.Err(err).Msg("unable to query database")
 				break
 			}
@@ -317,16 +318,16 @@ SELECT label FROM (
  AND positionCaseInsensitive(label, $1) >= 1
  GROUP BY %s
  ORDER BY COUNT(*) DESC
- LIMIT 20
+ LIMIT %d
 UNION DISTINCT
  SELECT name AS label, 2 AS rank
  FROM icmp
  WHERE positionCaseInsensitive(label, $1) >= 1
  AND proto = %d
  ORDER BY positionCaseInsensitive(label, $1) ASC, type ASC, code ASC
- LIMIT 20
-) GROUP BY label ORDER BY MIN(rank) ASC, MIN(rowNumberInBlock()) ASC LIMIT 20`,
-				columnName, proto, columnName, proto),
+ LIMIT %d
+) GROUP BY label ORDER BY MIN(rank) ASC, MIN(rowNumberInBlock()) ASC LIMIT %d`,
+				columnName, proto, columnName, input.Limit, proto, input.Limit, input.Limit),
 				input.Prefix)
 			if err != nil {
 				c.r.Err(err).Msg("unable to query database")
@@ -364,7 +365,7 @@ FROM exporters
 WHERE positionCaseInsensitive(%s, $1) >= 1
 GROUP BY %s
 ORDER BY positionCaseInsensitive(%s, $1) ASC, %s ASC
-LIMIT 20`, column, column, column, column, column)
+LIMIT %d`, column, column, column, column, column, input.Limit)
 			results := []struct {
 				Label string `ch:"label"`
 			}{}
@@ -397,7 +398,7 @@ SELECT DISTINCT %s AS attribute
 FROM flows
 WHERE TimeReceived > date_sub(minute, 10, now()) AND startsWith(attribute, $1)
 ORDER BY %s
-LIMIT 20`, col.Name, col.Name), input.Prefix); err != nil {
+LIMIT %d`, col.Name, col.Name, input.Limit), input.Prefix); err != nil {
 					c.r.Err(err).Msg("unable to query database")
 					break
 				}
