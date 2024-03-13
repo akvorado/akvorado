@@ -213,35 +213,39 @@ func (c *Component) Start() error {
 
 func overrideNetworkAttrs(newAttrs NetworkAttributes) func(existing NetworkAttributes) NetworkAttributes {
 	return func(existing NetworkAttributes) NetworkAttributes {
-		if newAttrs.ASN != 0 {
-			existing.ASN = newAttrs.ASN
-		}
-		if newAttrs.Name != "" {
-			existing.Name = newAttrs.Name
-		}
-		if newAttrs.Region != "" {
-			existing.Region = newAttrs.Region
-		}
-		if newAttrs.Site != "" {
-			existing.Site = newAttrs.Role
-		}
-		if newAttrs.Role != "" {
-			existing.Role = newAttrs.Role
-		}
-		if newAttrs.Tenant != "" {
-			existing.Tenant = newAttrs.Tenant
-		}
-		if newAttrs.Country != "" {
-			existing.Country = newAttrs.Country
-		}
-		if newAttrs.State != "" {
-			existing.State = newAttrs.State
-		}
-		if newAttrs.City != "" {
-			existing.City = newAttrs.City
-		}
-		return existing
+		return mergeNetworkAttrs(existing, newAttrs)
 	}
+}
+
+func mergeNetworkAttrs(existing, newAttrs NetworkAttributes) NetworkAttributes {
+	if newAttrs.ASN != 0 {
+		existing.ASN = newAttrs.ASN
+	}
+	if newAttrs.Name != "" {
+		existing.Name = newAttrs.Name
+	}
+	if newAttrs.Region != "" {
+		existing.Region = newAttrs.Region
+	}
+	if newAttrs.Site != "" {
+		existing.Site = newAttrs.Role
+	}
+	if newAttrs.Role != "" {
+		existing.Role = newAttrs.Role
+	}
+	if newAttrs.Tenant != "" {
+		existing.Tenant = newAttrs.Tenant
+	}
+	if newAttrs.Country != "" {
+		existing.Country = newAttrs.Country
+	}
+	if newAttrs.State != "" {
+		existing.State = newAttrs.State
+	}
+	if newAttrs.City != "" {
+		existing.City = newAttrs.City
+	}
+	return existing
 }
 
 func (c *Component) refreshConvergedNetworks() error {

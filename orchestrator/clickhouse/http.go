@@ -137,52 +137,29 @@ func (c *Component) registerHTTPHandlers() error {
 			c.convergedNetworksLock.RLock()
 			defer c.convergedNetworksLock.RUnlock()
 			// merge the upstream items to the downstream when they are missing
-			var currentASN uint32
 			c.convergedNetworks.Iter(func(address patricia.IPv6Address, tags [][]NetworkAttributes) error {
-				// make final network attributes, by merging tags of the leaf
-				var currentName, currentRegion, currentRole, currentTenant, currentSite, currentCountry, currentCity, currentState string
+				current := NetworkAttributes{}
 				for _, nodeTags := range tags {
 					for _, tag := range nodeTags {
-						if tag.Name != "" {
-							currentName = tag.Name
-						}
-						if tag.Region != "" {
-							currentRegion = tag.Region
-						}
-						if tag.Role != "" {
-							currentRole = tag.Role
-						}
-						if tag.Tenant != "" {
-							currentTenant = tag.Tenant
-						}
-						if tag.Site != "" {
-							currentSite = tag.Site
-						}
-						if tag.ASN != 0 {
-							currentASN = tag.ASN
-						}
-						if tag.Country != "" {
-							currentCountry = tag.Country
-						}
-						if tag.Country != "" {
-							currentCountry = tag.Country
-						}
-						if tag.State != "" {
-							currentState = tag.State
-						}
-						if tag.City != "" {
-							currentCity = tag.City
-						}
+						mergeNetworkAttrs(current, tag)
 					}
 				}
 
 				var asnVal string
-				if currentASN != 0 {
-					asnVal = strconv.Itoa(int(currentASN))
+				if current.ASN != 0 {
+					asnVal = strconv.Itoa(int(current.ASN))
 				}
 				wr.Write([]string{
 					address.String(),
-					currentName, currentRole, currentSite, currentRegion, currentCountry, currentState, currentCity, currentTenant, asnVal,
+					current.Name,
+					current.Role,
+					current.Site,
+					current.Region,
+					current.Country,
+					current.State,
+					current.City,
+					current.Tenant,
+					asnVal,
 				})
 				return nil
 			})
