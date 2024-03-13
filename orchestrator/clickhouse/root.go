@@ -135,13 +135,10 @@ func (c *Component) Start() error {
 
 	// refresh converged networks after migrations
 	// because it will trigger a RELOAD SYSTEM DICTIONARY
-
-	// not sure here if c.migrationsDone should be closed
-	// regardless of wether migrations are skipped or not
 	if !c.config.SkipMigrations {
 		<-c.migrationsDone
 	}
-	c.r.Log().Msg("refreshing converved networks")
+	c.r.Log().Msg("refreshing converged networks")
 	if err := c.refreshConvergedNetworks(); err != nil {
 		return err
 	}
@@ -248,7 +245,6 @@ func overrideNetworkAttrs(newAttrs NetworkAttributes) func(existing NetworkAttri
 }
 
 func (c *Component) refreshConvergedNetworks() error {
-
 	c.geoipSourcesLock.RLock()
 	// inject info from GeoIP first so that custom networks will override
 	networks := helpers.MustNewSubnetMap[NetworkAttributes](nil)
