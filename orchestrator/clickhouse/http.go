@@ -141,7 +141,7 @@ func (c *Component) registerHTTPHandlers() error {
 				current := NetworkAttributes{}
 				for _, nodeTags := range tags {
 					for _, tag := range nodeTags {
-						mergeNetworkAttrs(current, tag)
+						current = mergeNetworkAttrs(current, tag)
 					}
 				}
 
