@@ -1,6 +1,6 @@
 ---
 paths:
-  clickhouse.geoip:
+  geoip:
     asndatabase:
       - /usr/share/GeoIP/GeoLite2-ASN.mmdb
     geodatabase:

@@ -55,7 +55,7 @@ func TestDatabaseRefresh(t *testing.T) {
 	helpers.StartStop(t, c)
 
 	// Check we did load both databases
-	gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_geoip_db_")
+	gotMetrics := r.GetMetrics("akvorado_orchestrator_geoip_db_")
 	expectedMetrics := map[string]string{
 		`refresh_total{database="asn"}`: "1",
 		`refresh_total{database="geo"}`: "1",
@@ -69,7 +69,7 @@ func TestDatabaseRefresh(t *testing.T) {
 		filepath.Join(dir, "tmp.mmdb"))
 	os.Rename(filepath.Join(dir, "tmp.mmdb"), countryFile)
 	time.Sleep(20 * time.Millisecond)
-	gotMetrics = r.GetMetrics("akvorado_orchestrator_clickhouse_geoip_db_")
+	gotMetrics = r.GetMetrics("akvorado_orchestrator_geoip_db_")
 	expectedMetrics = map[string]string{
 		`refresh_total{database="asn"}`: "1",
 		`refresh_total{database="geo"}`: "2",

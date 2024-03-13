@@ -211,7 +211,9 @@ func (c *Component) Stop() error {
 	return c.t.Wait()
 }
 
-// Notify is what parent component should call to get notified when a database is updated.
+// Notify returns a notification channel to be used to receive notification on
+// updates. It also returns a channel that will be closed the first time we have
+// an update of both databases.
 func (c *Component) Notify() (chan DBNotification, chan struct{}) {
 	notifyChan := make(chan DBNotification)
 	c.notifyLock.Lock()

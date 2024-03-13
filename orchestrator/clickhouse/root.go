@@ -24,7 +24,7 @@ import (
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
-	"akvorado/orchestrator/clickhouse/geoip"
+	"akvorado/orchestrator/geoip"
 )
 
 // Component represents the ClickHouse configurator.

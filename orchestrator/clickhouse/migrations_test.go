@@ -23,7 +23,7 @@ import (
 	"akvorado/common/kafka"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
-	"akvorado/orchestrator/clickhouse/geoip"
+	"akvorado/orchestrator/geoip"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 )

@@ -20,24 +20,25 @@ kafka:
       cleanup.policy: delete
       compression.type: producer
 
+geoip:
+  optional: true
+  # When running on Docker, these paths are inside the container. By default,
+  # IPinfo databases are used. (https://ipinfo.io/)
+  asn-database:
+    - /usr/share/GeoIP/asn.mmdb
+  geo-database:
+    - /usr/share/GeoIP/country.mmdb
+  # If you want to use MaxmindDB, check `.env`, `docker-compose-maxmind.yml` and
+  # update these paths:
+  #asn-database:
+  # - /usr/share/GeoIP/GeoLite2-ASN.mmdb
+  #geo-database:
+  # - /usr/share/GeoIP/GeoLite2-Country.mmdb
+
 clickhouse:
   orchestrator-url: http://akvorado-orchestrator:8080
   kafka:
     consumers: 4
-  geoip:
-    optional: true
-    # When running on Docker, these paths are inside the container. By default,
-    # IPinfo databases are used. (https://ipinfo.io/)
-    asn-database:
-      - /usr/share/GeoIP/asn.mmdb
-    geo-database:
-      - /usr/share/GeoIP/country.mmdb
-    # If you want to use MaxmindDB, check `.env`, `docker-compose-maxmind.yml` and
-    # update these paths:
-    #asn-database: 
-    # - /usr/share/GeoIP/GeoLite2-ASN.mmdb
-    #geo-database:
-    # - /usr/share/GeoIP/GeoLite2-Country.mmdb
   servers:
     - clickhouse:9000
   prometheus-endpoint: /metrics

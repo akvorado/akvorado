@@ -13,7 +13,7 @@ import (
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
-	"akvorado/orchestrator/clickhouse/geoip"
+	"akvorado/orchestrator/geoip"
 )
 
 func TestHTTPEndpoints(t *testing.T) {

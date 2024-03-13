@@ -7,14 +7,13 @@ import (
 	"testing"
 	"time"
 
-	"akvorado/orchestrator/clickhouse/geoip"
-
 	"akvorado/common/clickhousedb"
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
+	"akvorado/orchestrator/geoip"
 )
 
 func TestNetworkGeoip(t *testing.T) {

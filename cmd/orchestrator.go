@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/gin-gonic/gin"
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 
@@ -20,7 +19,7 @@ import (
 	"akvorado/common/schema"
 	"akvorado/orchestrator"
 	"akvorado/orchestrator/clickhouse"
-	"akvorado/orchestrator/clickhouse/geoip"
+	"akvorado/orchestrator/geoip"
 	"akvorado/orchestrator/kafka"
 )
 
@@ -31,6 +30,7 @@ type OrchestratorConfiguration struct {
 	ClickHouseDB clickhousedb.Configuration `yaml:"-"`
 	ClickHouse   clickhouse.Configuration
 	Kafka        kafka.Configuration
+	GeoIP        geoip.Configuration
 	Orchestrator orchestrator.Configuration `mapstructure:",squash" yaml:",inline"`
 	Schema       schema.Configuration
 	// Other service configurations
@@ -137,7 +137,7 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, c
 		return fmt.Errorf("unable to initialize ClickHouse component: %w", err)
 	}
 
-	geoipComponent, err := geoip.New(r, config.ClickHouse.GeoIP, geoip.Dependencies{
+	geoipComponent, err := geoip.New(r, config.GeoIP, geoip.Dependencies{
 		Daemon: daemonComponent,
 	})
 	if err != nil {
@@ -199,10 +199,10 @@ func OrchestratorConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 		}
 
 	inletgeoip:
-		// inlet/geoip → clickhouse
+		// inlet/geoip → geoip
 		for {
 			var (
-				inletKey, clickhouseKey, inletGeoIPValue *reflect.Value
+				inletKey, geoIPKey, inletGeoIPValue *reflect.Value
 			)
 
 			fromKeys := from.MapKeys()
@@ -213,8 +213,8 @@ func OrchestratorConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 				}
 				if helpers.MapStructureMatchName(k.String(), "Inlet") {
 					inletKey = &fromKeys[i]
-				} else if helpers.MapStructureMatchName(k.String(), "ClickHouse") {
-					clickhouseKey = &fromKeys[i]
+				} else if helpers.MapStructureMatchName(k.String(), "GeoIP") {
+					geoIPKey = &fromKeys[i]
 				}
 			}
 			if inletKey == nil {
@@ -248,29 +248,11 @@ func OrchestratorConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 			if inletGeoIPValue == nil {
 				break inletgeoip
 			}
-
-			// Look at clickhouse configuration for geoip key
-			if clickhouseKey == nil {
-				k := reflect.ValueOf("clickhouse")
-				clickhouseKey = &k
-				from.SetMapIndex(k, reflect.ValueOf(gin.H{}))
-			}
-			fromClickHouse := helpers.ElemOrIdentity(from.MapIndex(*clickhouseKey))
-			if fromClickHouse.Kind() != reflect.Map {
-				break inletgeoip
-			}
-			fromClickHouseKeys := fromClickHouse.MapKeys()
-			for _, k := range fromClickHouseKeys {
-				k = helpers.ElemOrIdentity(k)
-				if k.Kind() != reflect.String {
-					break inletgeoip
-				}
-				if helpers.MapStructureMatchName(k.String(), "GeoIP") {
-					return nil, errors.New("cannot have both \"GeoIP\" in inlet and clickhouse configuration")
-				}
+			if geoIPKey != nil {
+				return nil, errors.New("cannot have both \"GeoIP\" in inlet and clickhouse configuration")
 			}
 
-			fromClickHouse.SetMapIndex(reflect.ValueOf("geoip"), *inletGeoIPValue)
+			from.SetMapIndex(reflect.ValueOf("geoip"), *inletGeoIPValue)
 			for i := 0; i < inletConfigs.Len(); i++ {
 				fromInlet := helpers.ElemOrIdentity(inletConfigs.Index(i))
 				fromInletKeys := fromInlet.MapKeys()

@@ -824,8 +824,6 @@ provided:
     `prefix` attribute and, optionally, `name`, `role`, `site`,
     `region`, and `tenant`. See the example provided in the shipped
     `akvorado.yaml` configuration file.
-- `geoip` configures GeoIP lookup for unresolved AS numbers, countries,
-  subdivisions, and cities.
 - `asns` maps AS number to names (overriding the builtin ones)
 - `orchestrator-url` defines the URL of the orchestrator to be used
   by ClickHouse (autodetection when not specified)
@@ -865,12 +863,14 @@ ClickHouse database and will continue to be populated.
 
 It is mandatory to specify a configuration for `interval: 0`.
 
+### GeoIP
+
 The `geoip` directive allows one to configure two databases using the [MaxMind
 DB file format][], one for AS numbers, one for countries/cities. It accepts the
 following keys:
 
-- `asn-database` tells the path to the ASN database
-- `geo-database` tells the path to the geo database (country or city)
+- `asn-database` tells the paths to the ASN database
+- `geo-database` tells the paths to the geo database (country or city)
 - `optional` makes the presence of the databases optional on start
   (when not present on start, the component is just disabled)
 

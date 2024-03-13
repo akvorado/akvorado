@@ -13,7 +13,7 @@ import (
 
 	"akvorado/common/clickhousedb"
 	"akvorado/common/remotedatasourcefetcher"
-	"akvorado/orchestrator/clickhouse/geoip"
+	"akvorado/orchestrator/geoip"
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"

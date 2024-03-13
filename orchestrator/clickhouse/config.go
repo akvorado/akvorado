@@ -12,7 +12,6 @@ import (
 	"akvorado/common/clickhousedb"
 	"akvorado/common/helpers"
 	"akvorado/common/kafka"
-	"akvorado/orchestrator/clickhouse/geoip"
 
 	"github.com/mitchellh/mapstructure"
 )
@@ -52,8 +51,6 @@ type Configuration struct {
 	// OrchestratorURL allows one to override URL to reach
 	// orchestrator from ClickHouse
 	OrchestratorURL string `validate:"isdefault|url"`
-
-	GeoIP geoip.Configuration
 }
 
 // ResolutionConfiguration describes a consolidation interval.
