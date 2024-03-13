@@ -70,6 +70,9 @@ func (c *Component) tableAlreadyExists(ctx context.Context, table, column, targe
 	existing = strings.ReplaceAll(existing,
 		fmt.Sprintf(`dictGetOrDefault('%s.`, c.config.Database),
 		"dictGetOrDefault('")
+	existing = strings.ReplaceAll(existing,
+		fmt.Sprintf(`dictGet('%s.`, c.config.Database),
+		"dictGet('")
 
 	// Compare!
 	if existing == target {
@@ -245,6 +248,8 @@ func (c *Component) createRawFlowsTable(ctx context.Context) error {
 	return nil
 }
 
+var dictionaryNetworksLookupRegex = regexp.MustCompile(`\bc_(Src|Dst)Networks\[([[:lower:]]+)\]\B`)
+
 func (c *Component) createRawFlowsConsumerView(ctx context.Context) error {
 	tableName := fmt.Sprintf("flows_%s_raw", c.d.Schema.ProtobufMessageHash())
 	viewName := fmt.Sprintf("%s_consumer", tableName)
@@ -258,16 +263,67 @@ func (c *Component) createRawFlowsConsumerView(ctx context.Context) error {
 		"Database": c.config.Database,
 		"Table":    tableName,
 	}
-	if column, ok := c.d.Schema.LookupColumnByKey(schema.ColumnDstASPath); ok && !column.Disabled {
-		args["With"] = "WITH arrayCompact(DstASPath) AS c_DstASPath "
-	} else {
-		args["With"] = ""
-	}
 	selectQuery, err := stemplate(
-		`{{ .With }}SELECT {{ .Columns }} FROM {{ .Database }}.{{ .Table }} WHERE length(_error) = 0`,
+		`SELECT {{ .Columns }} FROM {{ .Database }}.{{ .Table }} WHERE length(_error) = 0`,
 		args)
 	if err != nil {
 		return fmt.Errorf("cannot build select statement for raw flows consumer view: %w", err)
+	}
+	with := []string{}
+	// c_DstAsPath
+	if column, ok := c.d.Schema.LookupColumnByKey(schema.ColumnDstASPath); ok && !column.Disabled {
+		with = append(with, "arrayCompact(DstASPath) AS c_DstASPath")
+	}
+	// c_SrcNetworks and c_DstNetworks
+	lookups := dictionaryNetworksLookupRegex.FindAllStringSubmatch(selectQuery, -1)
+	if len(lookups) > 0 {
+		// Build the with clause
+		srcColumns := []string{}
+		dstColumns := []string{}
+		for _, lookup := range lookups {
+			if lookup[1] == "Src" {
+				srcColumns = append(srcColumns, lookup[2])
+			} else if lookup[1] == "Dst" {
+				dstColumns = append(dstColumns, lookup[2])
+			}
+		}
+		for _, columns := range []struct {
+			direction string
+			names     []string
+		}{
+			{direction: "Src", names: srcColumns},
+			{direction: "Dst", names: dstColumns},
+		} {
+			if len(columns.names) > 0 {
+				names := []string{}
+				for _, column := range columns.names {
+					names = append(names, fmt.Sprintf("'%s'", column))
+				}
+				with = append(with,
+					fmt.Sprintf("dictGet('%s', (%s), %sAddr) AS c_%sNetworks",
+						schema.DictionaryNetworks,
+						strings.Join(names, ", "),
+						columns.direction,
+						columns.direction,
+					))
+			}
+		}
+		// Replace in query to use the index
+		srcIdx := 0
+		dstIdx := 0
+		selectQuery = dictionaryNetworksLookupRegex.ReplaceAllStringFunc(selectQuery, func(match string) string {
+			if strings.Contains(match, "Src") {
+				srcIdx++
+				return fmt.Sprintf("c_SrcNetworks.%d", srcIdx)
+			} else if strings.Contains(match, "Dst") {
+				dstIdx++
+				return fmt.Sprintf("c_DstNetworks.%d", dstIdx)
+			}
+			return match
+		})
+	}
+	if len(with) > 0 {
+		selectQuery = fmt.Sprintf("WITH %s %s", strings.Join(with, ", "), selectQuery)
 	}
 
 	// Check the existing one
