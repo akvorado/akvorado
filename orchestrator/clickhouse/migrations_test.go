@@ -212,7 +212,7 @@ func TestMigration(t *testing.T) {
 			loadAllTables(t, chComponent, schema.NewMock(t), path.Join("testdata/states", f.Name()))
 			r := reporter.NewMock(t)
 			configuration := DefaultConfiguration()
-			configuration.OrchestratorURL = "http://something"
+			configuration.OrchestratorURL = "http://127.0.0.1:0"
 			configuration.Kafka.Configuration = kafka.DefaultConfiguration()
 			ch, err := New(r, configuration, Dependencies{
 				Daemon:     daemon.NewMock(t),
@@ -302,7 +302,7 @@ LIMIT 1`)
 		t.Run("idempotency", func(t *testing.T) {
 			r := reporter.NewMock(t)
 			configuration := DefaultConfiguration()
-			configuration.OrchestratorURL = "http://something"
+			configuration.OrchestratorURL = "http://127.0.0.1:0"
 			configuration.Kafka.Configuration = kafka.DefaultConfiguration()
 			ch, err := New(r, configuration, Dependencies{
 				Daemon:     daemon.NewMock(t),
@@ -339,7 +339,7 @@ LIMIT 1`)
 		t.Run("full schema", func(t *testing.T) {
 			r := reporter.NewMock(t)
 			configuration := DefaultConfiguration()
-			configuration.OrchestratorURL = "http://something"
+			configuration.OrchestratorURL = "http://127.0.0.1:0"
 			configuration.Kafka.Configuration = kafka.DefaultConfiguration()
 			ch, err := New(r, configuration, Dependencies{
 				Daemon:     daemon.NewMock(t),
@@ -381,7 +381,7 @@ LIMIT 1`)
 				t.Fatalf("schema.New() error:\n%+v", err)
 			}
 			configuration := DefaultConfiguration()
-			configuration.OrchestratorURL = "http://something"
+			configuration.OrchestratorURL = "http://127.0.0.1:0"
 			configuration.Kafka.Configuration = kafka.DefaultConfiguration()
 			ch, err := New(r, configuration, Dependencies{
 				Daemon:     daemon.NewMock(t),
@@ -417,7 +417,7 @@ LIMIT 1`)
 				t.Fatalf("schema.New() error:\n%+v", err)
 			}
 			configuration := DefaultConfiguration()
-			configuration.OrchestratorURL = "http://something"
+			configuration.OrchestratorURL = "http://127.0.0.1:0"
 			configuration.Kafka.Configuration = kafka.DefaultConfiguration()
 			ch, err := New(r, configuration, Dependencies{
 				Daemon:     daemon.NewMock(t),
@@ -472,7 +472,7 @@ func TestCustomDictMigration(t *testing.T) {
 			t.Fatalf("schema.New() error:\n%+v", err)
 		}
 		configuration := DefaultConfiguration()
-		configuration.OrchestratorURL = "http://something"
+		configuration.OrchestratorURL = "http://127.0.0.1:0"
 		configuration.Kafka.Configuration = kafka.DefaultConfiguration()
 		ch, err := New(r, configuration, Dependencies{
 			Daemon:     daemon.NewMock(t),
@@ -517,7 +517,7 @@ func TestCustomDictMigration(t *testing.T) {
 				t.Fatalf("schema.New() error:\n%+v", err)
 			}
 			configuration := DefaultConfiguration()
-			configuration.OrchestratorURL = "http://something"
+			configuration.OrchestratorURL = "http://127.0.0.1:0"
 			configuration.Kafka.Configuration = kafka.DefaultConfiguration()
 			ch, err := New(r, configuration, Dependencies{
 				Daemon:     daemon.NewMock(t),
@@ -582,7 +582,7 @@ func TestCustomDictMigration(t *testing.T) {
 				t.Fatalf("Scan() error:\n%+v", err)
 			}
 			if diff := helpers.Diff(dictCreateString,
-				"CREATE DICTIONARY default.custom_dict_test\n(\n    `SrcAddr` String,\n    `csv_col_name` String DEFAULT 'None',\n    `csv_col_default` String DEFAULT 'Hello World'\n)\nPRIMARY KEY SrcAddr\nSOURCE(HTTP(URL 'http://something/api/v0/orchestrator/clickhouse/custom_dict_test.csv' FORMAT 'CSVWithNames'))\nLIFETIME(MIN 0 MAX 3600)\nLAYOUT(COMPLEX_KEY_HASHED())\nSETTINGS(format_csv_allow_single_quotes = 0)"); diff != "" {
+				"CREATE DICTIONARY default.custom_dict_test\n(\n    `SrcAddr` String,\n    `csv_col_name` String DEFAULT 'None',\n    `csv_col_default` String DEFAULT 'Hello World'\n)\nPRIMARY KEY SrcAddr\nSOURCE(HTTP(URL 'http://127.0.0.1:0/api/v0/orchestrator/clickhouse/custom_dict_test.csv' FORMAT 'CSVWithNames'))\nLIFETIME(MIN 0 MAX 3600)\nLAYOUT(COMPLEX_KEY_HASHED())\nSETTINGS(format_csv_allow_single_quotes = 0)"); diff != "" {
 				t.Fatalf("Unexpected state:\n%s", diff)
 			}
 		})
@@ -597,7 +597,7 @@ func TestCustomDictMigration(t *testing.T) {
 				t.Fatalf("schema.New() error:\n%+v", err)
 			}
 			configuration := DefaultConfiguration()
-			configuration.OrchestratorURL = "http://something"
+			configuration.OrchestratorURL = "http://127.0.0.1:0"
 			configuration.Kafka.Configuration = kafka.DefaultConfiguration()
 			ch, err := New(r, configuration, Dependencies{
 				Daemon:     daemon.NewMock(t),
