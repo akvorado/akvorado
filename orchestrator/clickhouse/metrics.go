@@ -9,10 +9,6 @@ type metrics struct {
 	migrationsRunning    reporter.Gauge
 	migrationsApplied    reporter.Counter
 	migrationsNotApplied reporter.Counter
-
-	networkSourceUpdates *reporter.CounterVec
-	networkSourceErrors  *reporter.CounterVec
-	networkSourceCount   *reporter.GaugeVec
 }
 
 func (c *Component) initMetrics() {
