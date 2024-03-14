@@ -41,7 +41,7 @@ jobs:
         ports:
           - 2181:2181
       kafka:
-        image: bitnami/kafka:3.5.2-debian-11-r1
+        image: bitnami/kafka:3.5
         env:
           KAFKA_ZOOKEEPER_PROTOCOL: PLAINTEXT
           KAFKA_CFG_BROKER_ID: "1"
