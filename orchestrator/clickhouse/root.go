@@ -249,54 +249,66 @@ func mergeNetworkAttrs(existing, newAttrs NetworkAttributes) NetworkAttributes {
 }
 
 func (c *Component) refreshConvergedNetworks() error {
-	c.geoipSourcesLock.RLock()
-	// inject info from GeoIP first so that custom networks will override
 	networks := helpers.MustNewSubnetMap[NetworkAttributes](nil)
-	// do the iteration in the order of the configured database in the configuration
-	geoipDbs := make([]string, 0, len(c.geoipSources))
-	for k := range c.geoipOrder {
-		geoipDbs = append(geoipDbs, k)
-	}
-	sort.Slice(geoipDbs, func(i, j int) bool {
-		// sort in reverse order, so that the first item of the user list overrides the data (first=best)
-		return c.geoipOrder[geoipDbs[i]] > c.geoipOrder[geoipDbs[j]]
-	})
-
-	for _, dbName := range geoipDbs {
-		err := c.geoipSources[dbName].Iter(func(address patricia.IPv6Address, tags [][]NetworkAttributes) error {
-			return networks.Update(
-				address.String(),
-				tags[len(tags)-1][0],
-				// override existing network attributes
-				overrideNetworkAttrs(tags[len(tags)-1][0]),
-			)
-		})
-		if err != nil {
-			return err
+	if err := func() error {
+		// Inject info from GeoIP first so that custom networks will override
+		c.geoipSourcesLock.RLock()
+		defer c.geoipSourcesLock.RUnlock()
+		// Do the iteration in the order of the configured database in the configuration
+		geoipDbs := make([]string, 0, len(c.geoipSources))
+		for k := range c.geoipOrder {
+			geoipDbs = append(geoipDbs, k)
 		}
-	}
-	c.geoipSourcesLock.RUnlock()
+		sort.Slice(geoipDbs, func(i, j int) bool {
+			// Sort in reverse order, so that the first item of the user list
+			// overrides the data (first=best)
+			return c.geoipOrder[geoipDbs[i]] > c.geoipOrder[geoipDbs[j]]
+		})
 
-	c.networkSourcesLock.RLock()
-	for _, networkList := range c.networkSources {
-		for _, val := range networkList {
-			if err := networks.Update(
-				val.Prefix.String(),
-				val.NetworkAttributes,
-				// override existing network attributes
-				overrideNetworkAttrs(val.NetworkAttributes),
-			); err != nil {
+		for _, dbName := range geoipDbs {
+			err := c.geoipSources[dbName].Iter(func(address patricia.IPv6Address, tags [][]NetworkAttributes) error {
+				return networks.Update(
+					address.String(),
+					tags[len(tags)-1][0],
+					overrideNetworkAttrs(tags[len(tags)-1][0]),
+				)
+			})
+			if err != nil {
 				return err
 			}
 		}
+
+		return nil
+	}(); err != nil {
+		return err
 	}
-	c.networkSourcesLock.RUnlock()
+
+	if err := func() error {
+		// Update networks information with network sources
+		c.networkSourcesLock.RLock()
+		defer c.networkSourcesLock.RUnlock()
+		for _, networkList := range c.networkSources {
+			for _, val := range networkList {
+				if err := networks.Update(
+					val.Prefix.String(),
+					val.NetworkAttributes,
+					overrideNetworkAttrs(val.NetworkAttributes),
+				); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	}(); err != nil {
+		return err
+	}
+
 	if c.config.Networks != nil {
+		// Update networks with static network source
 		err := c.config.Networks.Iter(func(address patricia.IPv6Address, tags [][]NetworkAttributes) error {
 			return networks.Update(
 				address.String(),
 				tags[len(tags)-1][0],
-				// override existing network attributes
 				overrideNetworkAttrs(tags[len(tags)-1][0]),
 			)
 		})
