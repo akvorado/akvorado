@@ -177,4 +177,4 @@ require (
 	modernc.org/sqlite v1.23.1 // indirect
 )
 
-replace github.com/kentik/patricia => github.com/netixx/patricia v0.0.0-20240221115530-83194fdd3ab9
+replace github.com/kentik/patricia => github.com/netixx/patricia v0.0.0-20240221142110-a89b0dc418dd
