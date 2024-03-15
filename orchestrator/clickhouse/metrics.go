@@ -9,6 +9,8 @@ type metrics struct {
 	migrationsRunning    reporter.Gauge
 	migrationsApplied    reporter.Counter
 	migrationsNotApplied reporter.Counter
+
+	networksReload reporter.Counter
 }
 
 func (c *Component) initMetrics() {
@@ -28,6 +30,12 @@ func (c *Component) initMetrics() {
 		reporter.CounterOpts{
 			Name: "migrations_notapplied_steps_total",
 			Help: "Number of migration steps not applied",
+		},
+	)
+	c.metrics.networksReload = c.r.Counter(
+		reporter.CounterOpts{
+			Name: "networks_dictionary_reload_total",
+			Help: "number of reloads triggered for networks dictionary",
 		},
 	)
 }

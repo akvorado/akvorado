@@ -35,17 +35,10 @@ type Component struct {
 		databaseRefresh *reporter.CounterVec
 	}
 
-	onOpenChan        chan DBNotification
-	onOpenSubscribers []chan DBNotification
+	onOpenChan        chan struct{}
+	onOpenSubscribers []chan struct{}
 	notifyLock        sync.RWMutex
 	notifyDone        sync.WaitGroup
-}
-
-// DBNotification is sent to all listener when a databased is opened/refreshed.
-type DBNotification struct {
-	Path  string
-	Kind  string
-	Index int
 }
 
 // Dependencies define the dependencies of the GeoIP component.
@@ -59,8 +52,8 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		r:                 r,
 		d:                 &dependencies,
 		config:            configuration,
-		onOpenChan:        make(chan DBNotification),
-		onOpenSubscribers: []chan DBNotification{},
+		onOpenChan:        make(chan struct{}),
+		onOpenSubscribers: []chan struct{}{},
 	}
 	c.db.geo = make(map[string]geoDatabase)
 	c.db.asn = make(map[string]geoDatabase)
@@ -82,14 +75,14 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	return &c, nil
 }
 
-func (c *Component) fanout(notif DBNotification) {
+func (c *Component) fanout() {
 	c.notifyLock.RLock()
 	defer c.notifyLock.RUnlock()
 	for _, subChan := range c.onOpenSubscribers {
 		select {
 		case <-c.t.Dying():
 			return
-		case subChan <- notif:
+		case subChan <- struct{}{}:
 		default:
 		}
 	}
@@ -104,8 +97,8 @@ func (c *Component) Start() error {
 
 	c.t.Go(func() error {
 		// notifier fanout
-		for notif := range c.onOpenChan {
-			c.fanout(notif)
+		for range c.onOpenChan {
+			c.fanout()
 		}
 		for _, c := range c.onOpenSubscribers {
 			close(c)
@@ -113,13 +106,13 @@ func (c *Component) Start() error {
 		return nil
 	})
 
-	for i, path := range c.config.GeoDatabase {
-		if err := c.openDatabase("geo", i, path); err != nil && !c.config.Optional {
+	for _, path := range c.config.GeoDatabase {
+		if err := c.openDatabase("geo", path); err != nil && !c.config.Optional {
 			return err
 		}
 	}
-	for i, path := range c.config.ASNDatabase {
-		if err := c.openDatabase("asn", i, path); err != nil && !c.config.Optional {
+	for _, path := range c.config.ASNDatabase {
+		if err := c.openDatabase("asn", path); err != nil && !c.config.Optional {
 			return err
 		}
 	}
@@ -166,15 +159,15 @@ func (c *Component) Start() error {
 				if !event.Has(fsnotify.Write) && !event.Has(fsnotify.Create) {
 					continue
 				}
-				for i, path := range c.config.GeoDatabase {
+				for _, path := range c.config.GeoDatabase {
 					if filepath.Clean(event.Name) == path {
-						c.openDatabase("geo", i, path)
+						c.openDatabase("geo", path)
 						break
 					}
 				}
-				for i, path := range c.config.ASNDatabase {
+				for _, path := range c.config.ASNDatabase {
 					if filepath.Clean(event.Name) == path {
-						c.openDatabase("geo", i, path)
+						c.openDatabase("geo", path)
 						break
 					}
 				}
@@ -212,58 +205,23 @@ func (c *Component) Stop() error {
 }
 
 // Notify returns a notification channel to be used to receive notification on
-// updates. It also returns a channel that will be closed the first time we have
-// an update of both databases.
-func (c *Component) Notify() (chan DBNotification, chan struct{}) {
-	notifyChan := make(chan DBNotification)
+// updates.
+func (c *Component) Notify() chan struct{} {
+	notifyChan := make(chan struct{})
 	c.notifyLock.Lock()
 	c.onOpenSubscribers = append(c.onOpenSubscribers, notifyChan)
 	c.notifyLock.Unlock()
-	initDoneChan := make(chan struct{})
 	// send existing database when the client subscribes
 	c.t.Go(func() error {
-		c.db.lock.RLock()
-		defer c.db.lock.RUnlock()
-		for i, path := range c.config.GeoDatabase {
-			// not loaded yet
-			if _, has := c.db.geo[path]; !has {
-				continue
-			}
-			// prevent the fanout thread from closing the channel until everying is written
-			c.notifyDone.Add(1)
-			defer c.notifyDone.Done()
-			select {
-			case <-c.t.Dying():
-				return nil
-			case notifyChan <- DBNotification{
-				Path:  path,
-				Kind:  "geo",
-				Index: i,
-			}:
-				continue
-			}
+		// prevent the fanout thread from closing the channel until everything is written
+		c.notifyDone.Add(1)
+		defer c.notifyDone.Done()
+		select {
+		case <-c.t.Dying():
+			return nil
+		case notifyChan <- struct{}{}:
 		}
-		for i, path := range c.config.ASNDatabase {
-			// not loaded yet
-			if _, has := c.db.asn[path]; !has {
-				continue
-			}
-			// prevent the fanout thread from closing the channel until everying is written
-			c.notifyDone.Add(1)
-			defer c.notifyDone.Done()
-			select {
-			case <-c.t.Dying():
-				return nil
-			case notifyChan <- DBNotification{
-				Path:  path,
-				Kind:  "asn",
-				Index: i,
-			}:
-				continue
-			}
-		}
-		close(initDoneChan)
 		return nil
 	})
-	return notifyChan, initDoneChan
+	return notifyChan
 }

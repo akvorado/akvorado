@@ -34,7 +34,6 @@ func TestNetworkGeoip(t *testing.T) {
 	}
 	helpers.StartStop(t, c)
 
-	time.Sleep(1000 * time.Millisecond)
 	helpers.TestHTTPEndpoints(t, c.d.HTTP.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			Description: "try when ready",
@@ -44,8 +43,8 @@ func TestNetworkGeoip(t *testing.T) {
 				"network,name,role,site,region,country,state,city,tenant,asn",
 				"1.0.0.0/24,,,,,,,,Google Inc.,15169",
 				"1.128.0.0/11,,,,,,,,Telstra Pty Ltd,1221",
-				"2.19.4.136/30,,,,,,,,\"Akamai Technologies, Inc.\",32787",
-				"2.19.4.140/32,,,,,,,,\"Akamai Technologies, Inc.\",32787",
+				"2.19.4.136/30,,,,,SG,,,\"Akamai Technologies, Inc.\",32787",
+				"2.19.4.140/32,,,,,SG,,,\"Akamai Technologies, Inc.\",32787",
 				"2.125.160.216/29,,,,,GB,,,,",
 				"12.81.92.0/22,,,,,,,,AT&T Services,7018",
 				"12.81.96.0/19,,,,,,,,,7018",
