@@ -253,6 +253,13 @@ $ docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' ak
 240.0.4.8
 ```
 
+Then, use one of the two following commands:
+
+```console
+$ go tool pprof http://240.0.4.8:8080/debug/pprof/profile
+$ go tool pprof http://240.0.4.8:8080/debug/pprof/heap
+```
+
 If your Docker host is remote, you also need to use SSH forwarding to expose the
 HTTP port to your workstation:
 
