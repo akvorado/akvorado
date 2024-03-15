@@ -7,7 +7,6 @@ package clickhouse
 import (
 	"context"
 	"fmt"
-	"net"
 	"sort"
 	"sync"
 	"time"
@@ -15,12 +14,10 @@ import (
 	"akvorado/common/remotedatasourcefetcher"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/kentik/patricia"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/clickhousedb"
 	"akvorado/common/daemon"
-	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
@@ -40,11 +37,6 @@ type Component struct {
 	networkSourcesFetcher *remotedatasourcefetcher.Component[externalNetworkAttributes]
 	networkSources        map[string][]externalNetworkAttributes
 	networkSourcesLock    sync.RWMutex
-	geoipSources          map[string]*helpers.SubnetMap[NetworkAttributes]
-	geoipOrder            map[string]int
-	geoipSourcesLock      sync.RWMutex
-	convergedNetworksLock sync.RWMutex
-	convergedNetworks     *helpers.SubnetMap[NetworkAttributes]
 }
 
 // Dependencies define the dependencies of the ClickHouse configurator.
@@ -59,18 +51,16 @@ type Dependencies struct {
 // New creates a new ClickHouse component.
 func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
 	c := Component{
-		r:                 r,
-		d:                 &dependencies,
-		config:            configuration,
-		migrationsDone:    make(chan bool),
-		migrationsOnce:    make(chan bool),
-		networkSources:    make(map[string][]externalNetworkAttributes),
-		geoipSources:      make(map[string]*helpers.SubnetMap[NetworkAttributes]),
-		geoipOrder:        make(map[string]int),
-		convergedNetworks: helpers.MustNewSubnetMap[NetworkAttributes](nil),
+		r:              r,
+		d:              &dependencies,
+		config:         configuration,
+		migrationsDone: make(chan bool),
+		migrationsOnce: make(chan bool),
+		networkSources: make(map[string][]externalNetworkAttributes),
 	}
 	var err error
-	c.networkSourcesFetcher, err = remotedatasourcefetcher.New[externalNetworkAttributes](r, c.UpdateRemoteDataSource, "network_source", configuration.NetworkSources)
+	c.networkSourcesFetcher, err = remotedatasourcefetcher.New[externalNetworkAttributes](
+		r, c.UpdateRemoteDataSource, "network_source", configuration.NetworkSources)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize remote data source fetcher component: %w", err)
 	}
@@ -133,199 +123,45 @@ func (c *Component) Start() error {
 		}
 	})
 
-	// refresh converged networks after migrations
-	// because it will trigger a RELOAD SYSTEM DICTIONARY
-	if !c.config.SkipMigrations {
-		<-c.migrationsDone
-	}
-	c.r.Log().Msg("refreshing converged networks")
-	if err := c.refreshConvergedNetworks(); err != nil {
-		return err
-	}
-
 	// Network sources update
 	if err := c.networkSourcesFetcher.Start(); err != nil {
 		return fmt.Errorf("unable to start network sources fetcher component: %w", err)
 	}
-	notifyChan, initDoneChan := c.d.GeoIP.Notify()
 
 	// geoip process updates
+	notifyChan := c.d.GeoIP.Notify()
 	c.t.Go(func() error {
-		c.r.Log().Msg("Starting geoip refresher")
+		c.r.Log().Msg("starting GeoIP refresher")
+		// Wait for migrations to be done
+		if !c.config.SkipMigrations {
+			select {
+			case <-c.t.Dying():
+				return nil
+			case <-c.migrationsDone:
+			}
+		}
+		// Then wait for change notification to ask clickhouse to update its dictionary
 		for {
 			select {
 			case <-c.t.Dying():
 				return nil
-			case notif := <-notifyChan:
-				geoipData := helpers.MustNewSubnetMap[NetworkAttributes](nil)
-				switch notif.Kind {
-				case "asn":
-					err := c.d.GeoIP.IterASNDatabase(notif.Path, func(subnet *net.IPNet, data geoip.ASNInfo) error {
-						subV6Str, err := helpers.SubnetMapParseKey(subnet.String())
-						if err != nil {
-							return err
-						}
-						attrs := NetworkAttributes{
-							ASN:    data.ASNumber,
-							Tenant: data.ASName,
-						}
-						return geoipData.Update(subV6Str, attrs, overrideNetworkAttrs(attrs))
-					})
-					if err != nil {
-						return err
-					}
-				case "geo":
-					err := c.d.GeoIP.IterGeoDatabase(notif.Path, func(subnet *net.IPNet, data geoip.GeoInfo) error {
-						subV6Str, err := helpers.SubnetMapParseKey(subnet.String())
-						if err != nil {
-							return err
-						}
-						attrs := NetworkAttributes{
-							State:   data.State,
-							Country: data.Country,
-							City:    data.City,
-						}
-						return geoipData.Update(subV6Str, attrs, overrideNetworkAttrs(attrs))
-					})
-					if err != nil {
-						return err
-					}
-				}
-				c.geoipSourcesLock.Lock()
-				c.geoipSources[notif.Path] = geoipData
-				c.geoipOrder[notif.Path] = notif.Index
-				c.geoipSourcesLock.Unlock()
-			}
-			if err := c.refreshConvergedNetworks(); err != nil {
-				return err
+			case <-notifyChan:
+				c.refreshNetworkDictionary()
 			}
 		}
 	})
 
-	// wait for initial sync of geoip component
-	select {
-	case <-initDoneChan:
-	case <-c.t.Dying():
-	}
 	c.r.Info().Msg("ClickHouse component started")
 	return nil
 }
 
-func overrideNetworkAttrs(newAttrs NetworkAttributes) func(existing NetworkAttributes) NetworkAttributes {
-	return func(existing NetworkAttributes) NetworkAttributes {
-		return mergeNetworkAttrs(existing, newAttrs)
-	}
-}
-
-func mergeNetworkAttrs(existing, newAttrs NetworkAttributes) NetworkAttributes {
-	if newAttrs.ASN != 0 {
-		existing.ASN = newAttrs.ASN
-	}
-	if newAttrs.Name != "" {
-		existing.Name = newAttrs.Name
-	}
-	if newAttrs.Region != "" {
-		existing.Region = newAttrs.Region
-	}
-	if newAttrs.Site != "" {
-		existing.Site = newAttrs.Role
-	}
-	if newAttrs.Role != "" {
-		existing.Role = newAttrs.Role
-	}
-	if newAttrs.Tenant != "" {
-		existing.Tenant = newAttrs.Tenant
-	}
-	if newAttrs.Country != "" {
-		existing.Country = newAttrs.Country
-	}
-	if newAttrs.State != "" {
-		existing.State = newAttrs.State
-	}
-	if newAttrs.City != "" {
-		existing.City = newAttrs.City
-	}
-	return existing
-}
-
-func (c *Component) refreshConvergedNetworks() error {
-	networks := helpers.MustNewSubnetMap[NetworkAttributes](nil)
-	if err := func() error {
-		// Inject info from GeoIP first so that custom networks will override
-		c.geoipSourcesLock.RLock()
-		defer c.geoipSourcesLock.RUnlock()
-		// Do the iteration in the order of the configured database in the configuration
-		geoipDbs := make([]string, 0, len(c.geoipSources))
-		for k := range c.geoipOrder {
-			geoipDbs = append(geoipDbs, k)
-		}
-		sort.Slice(geoipDbs, func(i, j int) bool {
-			// Sort in reverse order, so that the first item of the user list
-			// overrides the data (first=best)
-			return c.geoipOrder[geoipDbs[i]] > c.geoipOrder[geoipDbs[j]]
-		})
-
-		for _, dbName := range geoipDbs {
-			err := c.geoipSources[dbName].Iter(func(address patricia.IPv6Address, tags [][]NetworkAttributes) error {
-				return networks.Update(
-					address.String(),
-					tags[len(tags)-1][0],
-					overrideNetworkAttrs(tags[len(tags)-1][0]),
-				)
-			})
-			if err != nil {
-				return err
-			}
-		}
-
-		return nil
-	}(); err != nil {
-		return err
-	}
-
-	if err := func() error {
-		// Update networks information with network sources
-		c.networkSourcesLock.RLock()
-		defer c.networkSourcesLock.RUnlock()
-		for _, networkList := range c.networkSources {
-			for _, val := range networkList {
-				if err := networks.Update(
-					val.Prefix.String(),
-					val.NetworkAttributes,
-					overrideNetworkAttrs(val.NetworkAttributes),
-				); err != nil {
-					return err
-				}
-			}
-		}
-		return nil
-	}(); err != nil {
-		return err
-	}
-
-	if c.config.Networks != nil {
-		// Update networks with static network source
-		err := c.config.Networks.Iter(func(address patricia.IPv6Address, tags [][]NetworkAttributes) error {
-			return networks.Update(
-				address.String(),
-				tags[len(tags)-1][0],
-				overrideNetworkAttrs(tags[len(tags)-1][0]),
-			)
-		})
-		if err != nil {
-			return err
-		}
-	}
-
-	c.convergedNetworksLock.Lock()
-	c.convergedNetworks = networks
-	c.convergedNetworksLock.Unlock()
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+func (c *Component) refreshNetworkDictionary() {
+	ctx, cancel := context.WithTimeout(c.t.Context(nil), time.Minute)
 	defer cancel()
+	c.metrics.networksReload.Inc()
 	if err := c.ReloadDictionary(ctx, schema.DictionaryNetworks); err != nil {
-		c.r.Err(err).Msg("failed to refresh networks dict")
+		c.r.Err(err).Msg("failed to refresh networks dictionary")
 	}
-	return nil
 }
 
 // Stop stops the ClickHouse component.

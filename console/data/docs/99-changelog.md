@@ -17,7 +17,7 @@ On this release, geo IP is now performed in ClickHouse instead of inlet. When
 using the standard `docker-compose` setup, the configuration should be
 automatically migrated from the inlet component to the clickhouse component.
 This also changes how geo IP is used for AS numbers: geo IP is used as last
-resort when configured.
+resort when configured. It also increases memory usage (1.3GB for ClickHouse).
 
 - 💥 *inlet*: GeoIP data is moved from inlets to ClickHouse, add city and region
 - ✨ *inlet*: add gNMI metadata provider

@@ -2,8 +2,11 @@ package geoip
 
 import (
 	"net"
+	"path/filepath"
 	"testing"
 
+	"akvorado/common/daemon"
+	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 )
 
@@ -49,42 +52,38 @@ func TestIterDatabase(t *testing.T) {
 		},
 	}
 
-	for _, asnDb := range c.config.ASNDatabase {
-		err := c.IterASNDatabase(asnDb, func(n *net.IPNet, a ASNInfo) error {
-			for i, h := range mustHave {
-				// found the IP
-				if n.Contains(net.ParseIP(h.IP)) {
-					if h.ExpectedASN != 0 && a.ASNumber != h.ExpectedASN {
-						t.Errorf("expected ASN %d, got %d", h.ExpectedASN, a.ASNumber)
-					}
-					mustHave[i].hasASN = true
-					break
+	err := c.IterASNDatabases(func(n *net.IPNet, a ASNInfo) error {
+		for i, h := range mustHave {
+			// found the IP
+			if n.Contains(net.ParseIP(h.IP)) {
+				if h.ExpectedASN != 0 && a.ASNumber != h.ExpectedASN {
+					t.Errorf("expected ASN %d, got %d", h.ExpectedASN, a.ASNumber)
 				}
+				mustHave[i].hasASN = true
+				break
 			}
-			return nil
-		})
-		if err != nil {
-			t.Fatal(err)
 		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("IterASNDatabases() error:\n%+v", err)
 	}
 
-	for _, geoDb := range c.config.GeoDatabase {
-		err := c.IterGeoDatabase(geoDb, func(n *net.IPNet, a GeoInfo) error {
-			for i, h := range mustHave {
-				// found the IP
-				if n.Contains(net.ParseIP(h.IP).To16()) {
-					if h.ExpectedCountry != "" && a.Country != h.ExpectedCountry {
-						t.Errorf("expected Country %s, got %s", h.ExpectedCountry, a.Country)
-					}
-					mustHave[i].hasCountry = true
-					break
+	err = c.IterGeoDatabases(func(n *net.IPNet, a GeoInfo) error {
+		for i, h := range mustHave {
+			// found the IP
+			if n.Contains(net.ParseIP(h.IP).To16()) {
+				if h.ExpectedCountry != "" && a.Country != h.ExpectedCountry {
+					t.Errorf("expected Country %s, got %s", h.ExpectedCountry, a.Country)
 				}
+				mustHave[i].hasCountry = true
+				break
 			}
-			return nil
-		})
-		if err != nil {
-			t.Fatal(err)
 		}
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("IterGeoDatabases() error:\n%+v", err)
 	}
 
 	for _, h := range mustHave {
@@ -94,5 +93,30 @@ func TestIterDatabase(t *testing.T) {
 		if !h.hasCountry && h.ExpectedCountry != "" {
 			t.Errorf("missing subnet %s in GEO database", h.IP)
 		}
+	}
+}
+
+func TestIterNonExistingDatabase(t *testing.T) {
+	dir := t.TempDir()
+	config := DefaultConfiguration()
+	config.GeoDatabase = append(config.GeoDatabase, filepath.Join(dir, "1.mmdb"))
+	config.ASNDatabase = append(config.ASNDatabase, filepath.Join(dir, "2.mmdb"))
+	config.Optional = true
+
+	r := reporter.NewMock(t)
+	c, err := New(r, config, Dependencies{Daemon: daemon.NewMock(t)})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	helpers.StartStop(t, c)
+	if err := c.IterASNDatabases(func(_ *net.IPNet, _ ASNInfo) error {
+		return nil
+	}); err != nil {
+		t.Fatalf("IterASNDatabases() error:\n%+v", err)
+	}
+	if err := c.IterGeoDatabases(func(_ *net.IPNet, _ GeoInfo) error {
+		return nil
+	}); err != nil {
+		t.Fatalf("IterGeoDatabases() error:\n%+v", err)
 	}
 }

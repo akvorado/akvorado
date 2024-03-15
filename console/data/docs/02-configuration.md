@@ -876,8 +876,8 @@ following keys:
 
 [MaxMind DB file format]: https://maxmind.github.io/MaxMind-DB/
 
-If the files are updated while *Akvorado* is running, they are
-automatically refreshed.
+If the files are updated while *Akvorado* is running, they are automatically
+refreshed. For a given database, the latest paths override the earlier ones.
 
 ## Console service
 

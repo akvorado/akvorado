@@ -20,26 +20,38 @@ type ASNInfo struct {
 	ASName   string
 }
 
-// IterGeoDatabase iter all entries in the given geo database path.
-func (c *Component) IterGeoDatabase(path string, f GeoIterFunc) error {
+// IterGeoDatabases iter all entries in all geo databases.
+func (c *Component) IterGeoDatabases(f GeoIterFunc) error {
 	c.db.lock.RLock()
 	defer c.db.lock.RUnlock()
-	geoDB := c.db.geo[path]
-	if geoDB != nil {
-		return geoDB.IterGeoDatabase(f)
+	for _, path := range c.config.GeoDatabase {
+		geoDB, ok := c.db.geo[path]
+		if !ok && c.config.Optional {
+			continue
+		} else if !ok {
+			return fmt.Errorf("database not found %s", path)
+		}
+		if err := geoDB.IterGeoDatabase(f); err != nil {
+			return err
+		}
 	}
-
-	return fmt.Errorf("database not found %s", path)
+	return nil
 }
 
-// IterASNDatabase iter all entries in the given asn database path.
-func (c *Component) IterASNDatabase(path string, f AsnIterFunc) error {
+// IterASNDatabases iter all entries in all ASN databases.
+func (c *Component) IterASNDatabases(f AsnIterFunc) error {
 	c.db.lock.RLock()
 	defer c.db.lock.RUnlock()
-	geoDB := c.db.asn[path]
-	if geoDB != nil {
-		return geoDB.IterASNDatabase(f)
+	for _, path := range c.config.ASNDatabase {
+		asnDB, ok := c.db.asn[path]
+		if !ok && c.config.Optional {
+			continue
+		} else if !ok {
+			return fmt.Errorf("database not found %s", path)
+		}
+		if err := asnDB.IterASNDatabase(f); err != nil {
+			return err
+		}
 	}
-
-	return fmt.Errorf("database not found %s", path)
+	return nil
 }
