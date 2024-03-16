@@ -44,12 +44,9 @@
               PIGEON=${pkgs.pigeon}/bin/pigeon \
               REVIVE=${pkgs.coreutils}/bin/true
           '';
-          # We do not use a wrapper to set SSL_CERT_FILE because, either a
-          # binary or a shell wrapper, it would pull the libc (~30M).
           installPhase = ''
-            mkdir -p $out/bin $out/share/ca-certificates
+            mkdir -p $out/bin
             cp bin/akvorado $out/bin/.
-            cp ${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt $out/share/ca-certificates/.
           '';
         };
       in
