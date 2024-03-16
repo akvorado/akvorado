@@ -23,19 +23,19 @@ func (c *Component) initMetrics() {
 	c.metrics.migrationsApplied = c.r.Counter(
 		reporter.CounterOpts{
 			Name: "migrations_applied_steps_total",
-			Help: "Number of migration steps applied",
+			Help: "Number of migration steps applied.",
 		},
 	)
 	c.metrics.migrationsNotApplied = c.r.Counter(
 		reporter.CounterOpts{
 			Name: "migrations_notapplied_steps_total",
-			Help: "Number of migration steps not applied",
+			Help: "Number of migration steps not applied.",
 		},
 	)
 	c.metrics.networksReload = c.r.Counter(
 		reporter.CounterOpts{
 			Name: "networks_dictionary_reload_total",
-			Help: "number of reloads triggered for networks dictionary",
+			Help: "Number of reloads triggered for networks dictionary.",
 		},
 	)
 }

@@ -5,7 +5,6 @@ package clickhouse
 
 import (
 	"testing"
-	"time"
 
 	"akvorado/common/clickhousedb"
 	"akvorado/common/daemon"
@@ -34,9 +33,10 @@ func TestNetworkGeoip(t *testing.T) {
 	}
 	helpers.StartStop(t, c)
 
+	// First use
 	helpers.TestHTTPEndpoints(t, c.d.HTTP.LocalAddr(), helpers.HTTPEndpointCases{
 		{
-			Description: "try when ready",
+			Description: "networks.csv",
 			URL:         "/api/v0/orchestrator/clickhouse/networks.csv",
 			ContentType: "text/csv; charset=utf-8",
 			FirstLines: []string{

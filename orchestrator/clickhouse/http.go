@@ -5,21 +5,18 @@ package clickhouse
 
 import (
 	"bytes"
+	"compress/gzip"
 	"embed"
 	"encoding/csv"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"os"
 	"strconv"
 	"text/template"
 	"time"
 
-	"akvorado/common/helpers"
-	"akvorado/orchestrator/geoip"
-
-	"github.com/kentik/patricia"
+	ctxio "github.com/jbenet/go-context/io"
 )
 
 var (
@@ -128,119 +125,43 @@ func (c *Component) registerHTTPHandlers() error {
 
 	// networks.csv
 	c.d.HTTP.AddHandler("/api/v0/orchestrator/clickhouse/networks.csv",
-		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+			// Wait for networks.csv
 			select {
-			case <-c.networkSourcesFetcher.DataSourcesReady:
+			case <-ctx.Done():
+				http.Error(w, "Request canceled", http.StatusInternalServerError)
+				return
+			case <-c.networksCSVReady:
 			case <-time.After(c.config.NetworkSourcesTimeout):
 				w.WriteHeader(http.StatusServiceUnavailable)
+			}
+
+			// We reopen the file to have an independant position
+			csvFile := func() *os.File {
+				c.networksCSVLock.Lock()
+				defer c.networksCSVLock.Unlock()
+				if c.networksCSVFile == nil {
+					// This can happen during shutdown
+					return nil
+				}
+				csvFile, _ := os.Open(c.networksCSVFile.Name())
+				return csvFile
+			}()
+			if csvFile == nil {
+				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			networks := helpers.MustNewSubnetMap[NetworkAttributes](nil)
-			// Add content of all geoip databases
-			err := c.d.GeoIP.IterASNDatabases(func(subnet *net.IPNet, data geoip.ASNInfo) error {
-				subV6Str, err := helpers.SubnetMapParseKey(subnet.String())
-				if err != nil {
-					return err
-				}
-				attrs := NetworkAttributes{
-					ASN:    data.ASNumber,
-					Tenant: data.ASName,
-				}
-				return networks.Update(subV6Str, attrs, overrideNetworkAttrs(attrs))
-			})
+			defer csvFile.Close()
+			gzipReader, err := gzip.NewReader(csvFile)
 			if err != nil {
-				c.r.Err(err).Msg("unable to iter over ASN databases")
 				w.WriteHeader(http.StatusInternalServerError)
-				return
 			}
-			err = c.d.GeoIP.IterGeoDatabases(func(subnet *net.IPNet, data geoip.GeoInfo) error {
-				subV6Str, err := helpers.SubnetMapParseKey(subnet.String())
-				if err != nil {
-					return err
-				}
-				attrs := NetworkAttributes{
-					State:   data.State,
-					Country: data.Country,
-					City:    data.City,
-				}
-				return networks.Update(subV6Str, attrs, overrideNetworkAttrs(attrs))
-			})
-			if err != nil {
-				c.r.Err(err).Msg("unable to iter over geo databases")
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			// Add network sources
-			if err := func() error {
-				c.networkSourcesLock.RLock()
-				defer c.networkSourcesLock.RUnlock()
-				for _, networkList := range c.networkSources {
-					for _, val := range networkList {
-						if err := networks.Update(
-							val.Prefix.String(),
-							val.NetworkAttributes,
-							overrideNetworkAttrs(val.NetworkAttributes),
-						); err != nil {
-							return err
-						}
-					}
-				}
-				return nil
-			}(); err != nil {
-				c.r.Err(err).Msg("unable to update with remote network sources")
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			// Add static network sources
-			if c.config.Networks != nil {
-				// Update networks with static network source
-				err := c.config.Networks.Iter(func(address patricia.IPv6Address, tags [][]NetworkAttributes) error {
-					return networks.Update(
-						address.String(),
-						tags[len(tags)-1][0],
-						overrideNetworkAttrs(tags[len(tags)-1][0]),
-					)
-				})
-				if err != nil {
-					c.r.Err(err).Msg("unable to update with static network sources")
-					w.WriteHeader(http.StatusInternalServerError)
-					return
-				}
-			}
+			defer gzipReader.Close()
 
 			w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 			w.WriteHeader(http.StatusOK)
-			wr := csv.NewWriter(w)
-			wr.Write([]string{"network", "name", "role", "site", "region", "country", "state", "city", "tenant", "asn"})
-
-			// merge the upstream items to the downstream when they are missing
-			networks.Iter(func(address patricia.IPv6Address, tags [][]NetworkAttributes) error {
-				current := NetworkAttributes{}
-				for _, nodeTags := range tags {
-					for _, tag := range nodeTags {
-						current = mergeNetworkAttrs(current, tag)
-					}
-				}
-
-				var asnVal string
-				if current.ASN != 0 {
-					asnVal = strconv.Itoa(int(current.ASN))
-				}
-				wr.Write([]string{
-					address.String(),
-					current.Name,
-					current.Role,
-					current.Site,
-					current.Region,
-					current.Country,
-					current.State,
-					current.City,
-					current.Tenant,
-					asnVal,
-				})
-				return nil
-			})
-			wr.Flush()
+			io.Copy(w, ctxio.NewReader(ctx, gzipReader))
 		}))
 
 	// asns.csv (when there are some custom-defined ASNs)

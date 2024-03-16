@@ -26,14 +26,6 @@ type geoDatabase interface {
 // openDatabase opens the provided database and closes the current
 // one. Do nothing if the path is empty.
 func (c *Component) openDatabase(which string, path string) error {
-	// notify open channel when a database is (re)loaded
-	defer func() {
-		// prevent the fanout thread from closing the channel until everying is written
-		c.notifyDone.Add(1)
-		c.onOpenChan <- struct{}{}
-		c.notifyDone.Done()
-	}()
-
 	if path == "" {
 		return nil
 	}
@@ -67,6 +59,9 @@ func (c *Component) openDatabase(which string, path string) error {
 			Msgf("closing previous %s database", which)
 		oldOne.Close()
 	}
+	c.notifyDone.Add(1)
+	c.onOpenChan <- struct{}{}
+	c.notifyDone.Done()
 	return nil
 }
 

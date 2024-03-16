@@ -5,8 +5,8 @@
 package clickhouse
 
 import (
-	"context"
 	"fmt"
+	"os"
 	"sort"
 	"sync"
 	"time"
@@ -37,6 +37,11 @@ type Component struct {
 	networkSourcesFetcher *remotedatasourcefetcher.Component[externalNetworkAttributes]
 	networkSources        map[string][]externalNetworkAttributes
 	networkSourcesLock    sync.RWMutex
+
+	networksCSVReady      chan bool // close when networks.csv was generated once
+	networksCSVUpdateChan chan bool // channel to write to to request updates
+	networksCSVFile       *os.File
+	networksCSVLock       sync.Mutex
 }
 
 // Dependencies define the dependencies of the ClickHouse configurator.
@@ -51,12 +56,14 @@ type Dependencies struct {
 // New creates a new ClickHouse component.
 func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
 	c := Component{
-		r:              r,
-		d:              &dependencies,
-		config:         configuration,
-		migrationsDone: make(chan bool),
-		migrationsOnce: make(chan bool),
-		networkSources: make(map[string][]externalNetworkAttributes),
+		r:                     r,
+		d:                     &dependencies,
+		config:                configuration,
+		migrationsDone:        make(chan bool),
+		migrationsOnce:        make(chan bool),
+		networkSources:        make(map[string][]externalNetworkAttributes),
+		networksCSVReady:      make(chan bool),
+		networksCSVUpdateChan: make(chan bool, 1),
 	}
 	var err error
 	c.networkSourcesFetcher, err = remotedatasourcefetcher.New[externalNetworkAttributes](
@@ -128,40 +135,34 @@ func (c *Component) Start() error {
 		return fmt.Errorf("unable to start network sources fetcher component: %w", err)
 	}
 
-	// geoip process updates
+	// GeoIP updates
 	notifyChan := c.d.GeoIP.Notify()
 	c.t.Go(func() error {
 		c.r.Log().Msg("starting GeoIP refresher")
-		// Wait for migrations to be done
-		if !c.config.SkipMigrations {
-			select {
-			case <-c.t.Dying():
-				return nil
-			case <-c.migrationsDone:
-			}
-		}
-		// Then wait for change notification to ask clickhouse to update its dictionary
 		for {
 			select {
 			case <-c.t.Dying():
 				return nil
 			case <-notifyChan:
-				c.refreshNetworkDictionary()
+				c.refreshNetworksCSV()
 			}
 		}
 	})
 
+	// networks.csv refresh
+	c.t.Go(func() error {
+		c.networksCSVRefresher()
+		c.networksCSVLock.Lock()
+		if c.networksCSVFile != nil {
+			c.networksCSVFile.Close()
+			os.Remove(c.networksCSVFile.Name())
+		}
+		c.networksCSVLock.Unlock()
+		return nil
+	})
+
 	c.r.Info().Msg("ClickHouse component started")
 	return nil
-}
-
-func (c *Component) refreshNetworkDictionary() {
-	ctx, cancel := context.WithTimeout(c.t.Context(nil), time.Minute)
-	defer cancel()
-	c.metrics.networksReload.Inc()
-	if err := c.ReloadDictionary(ctx, schema.DictionaryNetworks); err != nil {
-		c.r.Err(err).Msg("failed to refresh networks dictionary")
-	}
 }
 
 // Stop stops the ClickHouse component.

@@ -35,10 +35,10 @@ type Component struct {
 		databaseRefresh *reporter.CounterVec
 	}
 
-	onOpenChan        chan struct{}
-	onOpenSubscribers []chan struct{}
+	onOpenChan        chan struct{}   // input notification channel
+	onOpenSubscribers []chan struct{} // output notification channels
+	notifyDone        sync.WaitGroup  // do not close notification channel during fanout
 	notifyLock        sync.RWMutex
-	notifyDone        sync.WaitGroup
 }
 
 // Dependencies define the dependencies of the GeoIP component.
@@ -75,7 +75,8 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	return &c, nil
 }
 
-func (c *Component) fanout() {
+// notifySubscribers notify all subscribers.
+func (c *Component) notifySubscribers() {
 	c.notifyLock.RLock()
 	defer c.notifyLock.RUnlock()
 	for _, subChan := range c.onOpenSubscribers {
@@ -96,9 +97,8 @@ func (c *Component) Start() error {
 	c.r.Info().Msg("starting GeoIP component")
 
 	c.t.Go(func() error {
-		// notifier fanout
 		for range c.onOpenChan {
-			c.fanout()
+			c.notifySubscribers()
 		}
 		for _, c := range c.onOpenSubscribers {
 			close(c)
@@ -211,9 +211,8 @@ func (c *Component) Notify() chan struct{} {
 	c.notifyLock.Lock()
 	c.onOpenSubscribers = append(c.onOpenSubscribers, notifyChan)
 	c.notifyLock.Unlock()
-	// send existing database when the client subscribes
+	// Initial notification send on subscription
 	c.t.Go(func() error {
-		// prevent the fanout thread from closing the channel until everything is written
 		c.notifyDone.Add(1)
 		defer c.notifyDone.Done()
 		select {
