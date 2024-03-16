@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -15,21 +16,25 @@ import (
 	"akvorado/common/reporter"
 )
 
-func copyFile(src string, dst string) {
+func copyFile(t *testing.T, src string, dst string) {
+	t.Helper()
 	source, err := os.Open(src)
 	if err != nil {
-		panic(err)
+		t.Fatalf("os.Open() error:\n%+v", err)
 	}
 	defer source.Close()
 
-	destination, err := os.Create(dst)
+	destination, err := os.CreateTemp("", "tmp*.mmdb")
 	if err != nil {
-		panic(err)
+		t.Fatalf("os.CreateTemp() error:\n%+v", err)
 	}
 	defer destination.Close()
 	_, err = io.Copy(destination, source)
 	if err != nil {
-		panic(err)
+		t.Fatalf("io.Copy() error:\n%+v", err)
+	}
+	if err := os.Rename(destination.Name(), dst); err != nil {
+		t.Fatalf("os.Rename() error:\n%+v", err)
 	}
 }
 
@@ -42,9 +47,9 @@ func TestDatabaseRefresh(t *testing.T) {
 	config.GeoDatabase = []string{countryFile}
 	config.ASNDatabase = []string{asnFile}
 
-	copyFile(filepath.Join("testdata", "GeoLite2-Country-Test.mmdb"),
+	copyFile(t, filepath.Join("testdata", "GeoLite2-Country-Test.mmdb"),
 		countryFile)
-	copyFile(filepath.Join("testdata", "GeoLite2-ASN-Test.mmdb"),
+	copyFile(t, filepath.Join("testdata", "GeoLite2-ASN-Test.mmdb"),
 		asnFile)
 
 	r := reporter.NewMock(t)
@@ -53,6 +58,14 @@ func TestDatabaseRefresh(t *testing.T) {
 		t.Fatalf("New() error:\n%+v", err)
 	}
 	helpers.StartStop(t, c)
+
+	count := atomic.Uint32{}
+	notify := c.Notify()
+	go func() {
+		for range notify {
+			count.Add(1)
+		}
+	}()
 
 	// Check we did load both databases
 	gotMetrics := r.GetMetrics("akvorado_orchestrator_geoip_db_")
@@ -64,10 +77,13 @@ func TestDatabaseRefresh(t *testing.T) {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 
-	// Check we can reload the database
-	copyFile(filepath.Join("testdata", "GeoLite2-Country-Test.mmdb"),
-		filepath.Join(dir, "tmp.mmdb"))
-	os.Rename(filepath.Join(dir, "tmp.mmdb"), countryFile)
+	time.Sleep(10 * time.Millisecond)
+	if current := count.Load(); current != 1 {
+		t.Errorf("Notified %d times instead of %d", current, 1)
+	}
+
+	// Check we can reload country database
+	copyFile(t, filepath.Join("testdata", "GeoLite2-Country-Test.mmdb"), countryFile)
 	time.Sleep(20 * time.Millisecond)
 	gotMetrics = r.GetMetrics("akvorado_orchestrator_geoip_db_")
 	expectedMetrics = map[string]string{
@@ -78,10 +94,12 @@ func TestDatabaseRefresh(t *testing.T) {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 
-	// Check we can reload the database
-	copyFile(filepath.Join("testdata", "GeoLite2-ASN-Test.mmdb"),
-		filepath.Join(dir, "tmp.mmdb"))
-	os.Rename(filepath.Join(dir, "tmp.mmdb"), asnFile)
+	if current := count.Load(); current != 2 {
+		t.Errorf("Notified %d times instead of %d", current, 2)
+	}
+
+	// Check we can reload ASN database
+	copyFile(t, filepath.Join("testdata", "GeoLite2-ASN-Test.mmdb"), asnFile)
 	time.Sleep(20 * time.Millisecond)
 	gotMetrics = r.GetMetrics("akvorado_orchestrator_geoip_db_")
 	expectedMetrics = map[string]string{
@@ -90,6 +108,10 @@ func TestDatabaseRefresh(t *testing.T) {
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
+	}
+
+	if current := count.Load(); current != 3 {
+		t.Errorf("Notified %d times instead of %d", current, 3)
 	}
 }
 
@@ -100,6 +122,77 @@ func TestStartWithoutDatabase(t *testing.T) {
 		t.Fatalf("New() error:\n%+v", err)
 	}
 	helpers.StartStop(t, c)
+
+	count := atomic.Uint32{}
+	notify := c.Notify()
+	go func() {
+		for range notify {
+			count.Add(1)
+		}
+	}()
+
+	time.Sleep(10 * time.Millisecond)
+	if current := count.Load(); current != 1 {
+		t.Errorf("Notified %d times instead of %d", current, 1)
+	}
+}
+
+func TestStartDatabaseOptional(t *testing.T) {
+	dir := t.TempDir()
+	config := DefaultConfiguration()
+
+	countryFile := filepath.Join(dir, "country.mmdb")
+	asnFile := filepath.Join(dir, "asn.mmdb")
+	config.GeoDatabase = []string{countryFile}
+	config.ASNDatabase = []string{asnFile}
+	config.Optional = true
+
+	r := reporter.NewMock(t)
+	c, err := New(r, config, Dependencies{Daemon: daemon.NewMock(t)})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	helpers.StartStop(t, c)
+
+	count := atomic.Uint32{}
+	notify := c.Notify()
+	go func() {
+		for range notify {
+			count.Add(1)
+		}
+	}()
+
+	// Check we did not load anything
+	gotMetrics := r.GetMetrics("akvorado_orchestrator_geoip_db_")
+	expectedMetrics := map[string]string{}
+	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+		t.Fatalf("Metrics (-got, +want):\n%s", diff)
+	}
+
+	time.Sleep(10 * time.Millisecond)
+	if current := count.Load(); current != 1 {
+		t.Errorf("Notified %d times instead of %d", current, 1)
+	}
+
+	copyFile(t, filepath.Join("testdata", "GeoLite2-Country-Test.mmdb"),
+		countryFile)
+	copyFile(t, filepath.Join("testdata", "GeoLite2-ASN-Test.mmdb"),
+		asnFile)
+
+	// Check databases were loaded
+	time.Sleep(50 * time.Millisecond)
+	gotMetrics = r.GetMetrics("akvorado_orchestrator_geoip_db_")
+	expectedMetrics = map[string]string{
+		`refresh_total{database="asn"}`: "1",
+		`refresh_total{database="geo"}`: "1",
+	}
+	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+		t.Fatalf("Metrics (-got, +want):\n%s", diff)
+	}
+
+	if current := count.Load(); current != 3 {
+		t.Errorf("Notified %d times instead of %d", current, 3)
+	}
 }
 
 func TestStartWithMissingDatabase(t *testing.T) {

@@ -159,6 +159,7 @@ func (c *Component) Start() error {
 				if !event.Has(fsnotify.Write) && !event.Has(fsnotify.Create) {
 					continue
 				}
+				c.r.Debug().Msgf("event %s on file %s", event, event.Name)
 				for _, path := range c.config.GeoDatabase {
 					if filepath.Clean(event.Name) == path {
 						c.openDatabase("geo", path)
