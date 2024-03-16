@@ -75,6 +75,7 @@ func (c *Component) addHandlerEmbedded(url string, path string) {
 				return
 			}
 			http.ServeContent(w, r, path, time.Time{}, f)
+			f.Close()
 		}))
 }
 
