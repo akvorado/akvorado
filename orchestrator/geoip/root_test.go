@@ -77,6 +77,20 @@ func TestDatabaseRefresh(t *testing.T) {
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
+
+	// Check we can reload the database
+	copyFile(filepath.Join("testdata", "GeoLite2-ASN-Test.mmdb"),
+		filepath.Join(dir, "tmp.mmdb"))
+	os.Rename(filepath.Join(dir, "tmp.mmdb"), asnFile)
+	time.Sleep(20 * time.Millisecond)
+	gotMetrics = r.GetMetrics("akvorado_orchestrator_geoip_db_")
+	expectedMetrics = map[string]string{
+		`refresh_total{database="asn"}`: "2",
+		`refresh_total{database="geo"}`: "2",
+	}
+	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+		t.Fatalf("Metrics (-got, +want):\n%s", diff)
+	}
 }
 
 func TestStartWithoutDatabase(t *testing.T) {

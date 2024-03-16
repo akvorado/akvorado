@@ -167,7 +167,7 @@ func (c *Component) Start() error {
 				}
 				for _, path := range c.config.ASNDatabase {
 					if filepath.Clean(event.Name) == path {
-						c.openDatabase("geo", path)
+						c.openDatabase("asn", path)
 						break
 					}
 				}
