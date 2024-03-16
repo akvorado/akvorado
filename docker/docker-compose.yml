@@ -50,7 +50,7 @@ services:
       interval: 20s
       timeout: 10s
       retries: 3
-      test: ["CMD", "kafka-topics.sh", "--list", "--bootstrap-server", "kafka:9092"]
+      test: ["CMD", "env", "-u", "JMX_PORT", "kafka-topics.sh", "--list", "--bootstrap-server", "kafka:9092"]
 
   redis:
     image: bitnami/redis:7.0
