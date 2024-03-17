@@ -190,8 +190,8 @@ func TestStartDatabaseOptional(t *testing.T) {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 
-	if current := count.Load(); current != 3 {
-		t.Errorf("Notified %d times instead of %d", current, 3)
+	if current := count.Load(); current != 3 && current != 2 {
+		t.Errorf("Notified %d times instead of 2 or 3", current)
 	}
 }
 

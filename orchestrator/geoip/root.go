@@ -208,20 +208,18 @@ func (c *Component) Stop() error {
 // Notify returns a notification channel to be used to receive notification on
 // updates.
 func (c *Component) Notify() chan struct{} {
-	notifyChan := make(chan struct{})
+	notifyChan := make(chan struct{}, 1)
 	c.notifyLock.Lock()
 	c.onOpenSubscribers = append(c.onOpenSubscribers, notifyChan)
 	c.notifyLock.Unlock()
 	// Initial notification send on subscription
-	c.t.Go(func() error {
-		c.notifyDone.Add(1)
-		defer c.notifyDone.Done()
-		select {
-		case <-c.t.Dying():
-			return nil
-		case notifyChan <- struct{}{}:
-		}
+	c.notifyDone.Add(1)
+	defer c.notifyDone.Done()
+	select {
+	case <-c.t.Dying():
 		return nil
-	})
+	case notifyChan <- struct{}{}:
+	default:
+	}
 	return notifyChan
 }
