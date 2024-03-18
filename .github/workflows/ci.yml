@@ -281,7 +281,7 @@ jobs:
 
       # Publish release
       - name: Publish release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           body_path: changelog.md
           draft: true
