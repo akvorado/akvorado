@@ -26,13 +26,13 @@ runs:
   using: composite
   steps:
     # Setup
-    - uses: actions/setup-go@v4
+    - uses: actions/setup-go@v5
       if: ${{ inputs.setup-go == 'true' }}
       id: go-setup
       with:
         go-version: ${{ inputs.go-version }}
         check-latest: true
-    - uses: actions/setup-node@v3
+    - uses: actions/setup-node@v4
       if: ${{ inputs.setup-node == 'true' }}
       with:
         node-version: ${{ inputs.node-version }}
