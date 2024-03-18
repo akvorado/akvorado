@@ -11,7 +11,7 @@ require (
 	github.com/bits-and-blooms/bitset v1.13.0
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/chenyahui/gin-cache v1.9.0
-	github.com/docker/docker v25.0.3+incompatible
+	github.com/docker/docker v25.0.4+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/eapache/go-resiliency v1.5.0
 	github.com/expr-lang/expr v1.16.0
@@ -25,6 +25,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.0.0
 	github.com/hashicorp/go-version v1.6.0
 	github.com/itchyny/gojq v0.12.14
+	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99
 	github.com/jhump/protoreflect v1.15.6
 	github.com/kentik/patricia v1.2.1
 	github.com/kylelemons/godebug v1.1.0
@@ -104,7 +105,6 @@ require (
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/itchyny/timefmt-go v0.1.5 // indirect
-	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
 	github.com/jcmturner/gofork v1.7.6 // indirect
