@@ -16,7 +16,7 @@ jobs:
           - asn2org
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v25
+      - uses: cachix/install-nix-action@v26
       - name: Update Nix lockfile
         run: nix flake update ${{ matrix.source }}
       - name: Create pull request
