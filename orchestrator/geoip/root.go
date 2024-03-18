@@ -107,12 +107,12 @@ func (c *Component) Start() error {
 	})
 
 	for _, path := range c.config.GeoDatabase {
-		if err := c.openDatabase("geo", path); err != nil && !c.config.Optional {
+		if err := c.openDatabase("geo", path, false); err != nil && !c.config.Optional {
 			return err
 		}
 	}
 	for _, path := range c.config.ASNDatabase {
-		if err := c.openDatabase("asn", path); err != nil && !c.config.Optional {
+		if err := c.openDatabase("asn", path, false); err != nil && !c.config.Optional {
 			return err
 		}
 	}
@@ -162,13 +162,13 @@ func (c *Component) Start() error {
 				c.r.Debug().Msgf("event %s on file %s", event, event.Name)
 				for _, path := range c.config.GeoDatabase {
 					if filepath.Clean(event.Name) == path {
-						c.openDatabase("geo", path)
+						c.openDatabase("geo", path, true)
 						break
 					}
 				}
 				for _, path := range c.config.ASNDatabase {
 					if filepath.Clean(event.Name) == path {
-						c.openDatabase("asn", path)
+						c.openDatabase("asn", path, true)
 						break
 					}
 				}
