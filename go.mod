@@ -25,6 +25,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.0.0
 	github.com/hashicorp/go-version v1.6.0
 	github.com/itchyny/gojq v0.12.14
+	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99
 	github.com/jhump/protoreflect v1.15.6
 	github.com/kentik/patricia v1.2.1
 	github.com/kylelemons/godebug v1.1.0
@@ -38,7 +39,7 @@ require (
 	github.com/osrg/gobgp/v3 v3.24.0
 	github.com/prometheus/client_golang v1.18.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
-	github.com/rs/zerolog v1.31.0
+	github.com/rs/zerolog v1.32.0
 	github.com/scrapli/scrapligo v1.2.0
 	github.com/slayercat/GoSNMPServer v0.1.2
 	github.com/slayercat/gosnmp v1.24.1
@@ -104,7 +105,6 @@ require (
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/itchyny/timefmt-go v0.1.5 // indirect
-	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
 	github.com/jcmturner/gofork v1.7.6 // indirect
