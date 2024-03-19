@@ -129,6 +129,9 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 		if err != nil && canError {
 			return logError(err)
 		}
+		if err != nil {
+			continue
+		}
 		if currentResult.Error != gosnmp.NoError && currentResult.ErrorIndex == 0 && canError {
 			// There is some error affecting the whole request
 			return logError(fmt.Errorf("SNMP error %s(%d)", currentResult.Error, currentResult.Error))
