@@ -36,16 +36,20 @@ type Decoder struct {
 		setStatsSum        *reporter.CounterVec
 		templatesStats     *reporter.CounterVec
 	}
+	useTsFromNetflowsPacket bool
+	useTsFromFirstSwitched  bool
 }
 
 // New instantiates a new netflow decoder.
-func New(r *reporter.Reporter, dependencies decoder.Dependencies) decoder.Decoder {
+func New(r *reporter.Reporter, dependencies decoder.Dependencies, option decoder.Option) decoder.Decoder {
 	nd := &Decoder{
-		r:         r,
-		d:         dependencies,
-		errLogger: r.Sample(reporter.BurstSampler(30*time.Second, 3)),
-		templates: map[string]*templateSystem{},
-		sampling:  map[string]*samplingRateSystem{},
+		r:                       r,
+		d:                       dependencies,
+		errLogger:               r.Sample(reporter.BurstSampler(30*time.Second, 3)),
+		templates:               map[string]*templateSystem{},
+		sampling:                map[string]*samplingRateSystem{},
+		useTsFromNetflowsPacket: option.TimestampSource == decoder.TimestampSourceNetflowPacket,
+		useTsFromFirstSwitched:  option.TimestampSource == decoder.TimestampSourceNetflowFirstSwitched,
 	}
 
 	nd.metrics.errors = nd.r.CounterVec(
@@ -187,6 +191,7 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 		nd.systemsLock.Unlock()
 	}
 
+	var sysUptime uint64
 	ts := uint64(in.TimeReceived.UTC().Unix())
 	buf := bytes.NewBuffer(in.Payload)
 	var (
@@ -208,9 +213,17 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 	if packetNFv9.Version == 9 {
 		version = "9"
 		flowSets = packetNFv9.FlowSets
+		if nd.useTsFromNetflowsPacket || nd.useTsFromFirstSwitched {
+			ts = uint64(packetNFv9.UnixSeconds)
+			sysUptime = uint64(packetNFv9.SystemUptime)
+		}
 	} else if packetIPFIX.Version == 10 {
 		version = "10"
 		flowSets = packetIPFIX.FlowSets
+		if nd.useTsFromNetflowsPacket || nd.useTsFromFirstSwitched {
+			ts = uint64(packetIPFIX.ExportTime)
+			sysUptime = uint64(packetNFv9.SystemUptime)
+		}
 	} else {
 		nd.metrics.stats.WithLabelValues(key, "unknown").
 			Inc()
@@ -248,14 +261,20 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 	}
 
 	var flowMessageSet []*schema.FlowMessage
+	var tsOffset uint64
+	if nd.useTsFromFirstSwitched {
+		tsOffset = ts - sysUptime
+	}
 	if packetNFv9.Version == 9 {
-		flowMessageSet = nd.decodeNFv9(packetNFv9, sampling)
+		flowMessageSet = nd.decodeNFv9(packetNFv9, sampling, tsOffset)
 	} else if packetIPFIX.Version == 10 {
-		flowMessageSet = nd.decodeIPFIX(packetIPFIX, sampling)
+		flowMessageSet = nd.decodeIPFIX(packetIPFIX, sampling, tsOffset)
 	}
 	exporterAddress, _ := netip.AddrFromSlice(in.Source.To16())
 	for _, fmsg := range flowMessageSet {
-		fmsg.TimeReceived = ts
+		if !nd.useTsFromFirstSwitched {
+			fmsg.TimeReceived = ts
+		}
 		fmsg.ExporterAddress = exporterAddress
 	}
 

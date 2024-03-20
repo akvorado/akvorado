@@ -24,6 +24,12 @@ type Decoder interface {
 	Name() string
 }
 
+// Option specifies option to influence the behaviour of the decodr
+type Option struct {
+	// TimestampSource is a selector for how to set the TimeReceived.
+	TimestampSource TimestampSource
+}
+
 // Dependencies are the dependencies for the decoder
 type Dependencies struct {
 	Schema *schema.Component
@@ -37,4 +43,4 @@ type RawFlow struct {
 }
 
 // NewDecoderFunc is the signature of a function to instantiate a decoder.
-type NewDecoderFunc func(*reporter.Reporter, Dependencies) Decoder
+type NewDecoderFunc func(*reporter.Reporter, Dependencies, Option) Decoder
