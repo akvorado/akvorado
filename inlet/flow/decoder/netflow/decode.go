@@ -15,17 +15,17 @@ import (
 	"github.com/netsampler/goflow2/v2/decoders/netflow"
 )
 
-func (nd *Decoder) decodeIPFIX(packet netflow.IPFIXPacket, samplingRateSys *samplingRateSystem) []*schema.FlowMessage {
+func (nd *Decoder) decodeIPFIX(packet netflow.IPFIXPacket, samplingRateSys *samplingRateSystem, sysOffset uint64) []*schema.FlowMessage {
 	obsDomainID := packet.ObservationDomainId
-	return nd.decodeCommon(10, obsDomainID, packet.FlowSets, samplingRateSys)
+	return nd.decodeCommon(10, obsDomainID, packet.FlowSets, samplingRateSys, sysOffset)
 }
 
-func (nd *Decoder) decodeNFv9(packet netflow.NFv9Packet, samplingRateSys *samplingRateSystem) []*schema.FlowMessage {
+func (nd *Decoder) decodeNFv9(packet netflow.NFv9Packet, samplingRateSys *samplingRateSystem, sysOffset uint64) []*schema.FlowMessage {
 	obsDomainID := packet.SourceId
-	return nd.decodeCommon(9, obsDomainID, packet.FlowSets, samplingRateSys)
+	return nd.decodeCommon(9, obsDomainID, packet.FlowSets, samplingRateSys, sysOffset)
 }
 
-func (nd *Decoder) decodeCommon(version uint16, obsDomainID uint32, flowSets []interface{}, samplingRateSys *samplingRateSystem) []*schema.FlowMessage {
+func (nd *Decoder) decodeCommon(version uint16, obsDomainID uint32, flowSets []interface{}, samplingRateSys *samplingRateSystem, sysOffset uint64) []*schema.FlowMessage {
 	flowMessageSet := []*schema.FlowMessage{}
 
 	// Look for sampling rate in option data flowsets
@@ -58,7 +58,7 @@ func (nd *Decoder) decodeCommon(version uint16, obsDomainID uint32, flowSets []i
 			}
 		case netflow.DataFlowSet:
 			for _, record := range tFlowSet.Records {
-				flow := nd.decodeRecord(version, obsDomainID, samplingRateSys, record.Values)
+				flow := nd.decodeRecord(version, obsDomainID, samplingRateSys, record.Values, sysOffset)
 				if flow != nil {
 					flowMessageSet = append(flowMessageSet, flow)
 				}
@@ -69,7 +69,7 @@ func (nd *Decoder) decodeCommon(version uint16, obsDomainID uint32, flowSets []i
 	return flowMessageSet
 }
 
-func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRateSys *samplingRateSystem, fields []netflow.DataField) *schema.FlowMessage {
+func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRateSys *samplingRateSystem, fields []netflow.DataField, sysOffset uint64) *schema.FlowMessage {
 	var etype, dstPort, srcPort uint16
 	var proto, icmpType, icmpCode uint8
 	var foundIcmpTypeCode bool
@@ -151,6 +151,8 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 		// Remaining
 		case netflow.NFV9_FIELD_FORWARDING_STATUS:
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnForwardingStatus, decodeUNumber(v))
+		case netflow.NFV9_FIELD_FIRST_SWITCHED:
+			bf.TimeReceived = decodeUNumber(v) + sysOffset
 		default:
 
 			if !nd.d.Schema.IsDisabled(schema.ColumnGroupNAT) {

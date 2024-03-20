@@ -77,7 +77,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		if !ok {
 			return nil, fmt.Errorf("unknown decoder %q", input.Decoder)
 		}
-		dec = decoderfunc(r, decoder.Dependencies{Schema: c.d.Schema})
+		dec = decoderfunc(r, decoder.Dependencies{Schema: c.d.Schema}, decoder.Option{TimestampSource: input.TimestampSource})
 		alreadyInitialized[input.Decoder] = dec
 		decs[idx] = c.wrapDecoder(dec, input.UseSrcAddrForExporterAddr)
 	}

@@ -12,6 +12,7 @@ import (
 	"akvorado/common/helpers/yaml"
 
 	"akvorado/common/helpers"
+	"akvorado/inlet/flow/decoder"
 	"akvorado/inlet/flow/input/file"
 	"akvorado/inlet/flow/input/udp"
 )
@@ -190,6 +191,78 @@ func TestDecodeConfiguration(t *testing.T) {
 			},
 			Error: true,
 		},
+		{
+			Description: "netflow timestamp source netflow-packet",
+			Initial: func() interface{} {
+				return Configuration{
+					Inputs: []InputConfiguration{{
+						Decoder: "netflow",
+						Config: &udp.Configuration{
+							Workers:   2,
+							QueueSize: 100,
+							Listen:    "127.0.0.1:2055",
+						},
+					}},
+				}
+			},
+			Configuration: func() interface{} {
+				return gin.H{
+					"inputs": []gin.H{
+						{
+							"timestamp-source": "netflow-packet",
+							"listen": "192.0.2.1:2055",
+						},
+					},
+				}
+			},
+			Expected: Configuration{
+				Inputs: []InputConfiguration{{
+					Decoder: "netflow",
+					TimestampSource: decoder.TimestampSourceNetflowPacket,
+					Config: &udp.Configuration{
+						Workers:   2,
+						QueueSize: 100,
+						Listen:    "192.0.2.1:2055",
+					},
+				}},
+			},
+		},
+		{
+			Description: "netflow timestamp source netflow-first-switched",
+			Initial: func() interface{} {
+				return Configuration{
+					Inputs: []InputConfiguration{{
+						Decoder: "netflow",
+						Config: &udp.Configuration{
+							Workers:   2,
+							QueueSize: 100,
+							Listen:    "127.0.0.1:2055",
+						},
+					}},
+				}
+			},
+			Configuration: func() interface{} {
+				return gin.H{
+					"inputs": []gin.H{
+						{
+							"timestamp-source": "netflow-first-switched",
+							"listen": "192.0.2.1:2055",
+						},
+					},
+				}
+			},
+			Expected: Configuration{
+				Inputs: []InputConfiguration{{
+					Decoder: "netflow",
+					TimestampSource: decoder.TimestampSourceNetflowFirstSwitched,
+					Config: &udp.Configuration{
+						Workers:   2,
+						QueueSize: 100,
+						Listen:    "192.0.2.1:2055",
+					},
+				}},
+			},
+		},
 	})
 }
 
@@ -198,6 +271,7 @@ func TestMarshalYAML(t *testing.T) {
 		Inputs: []InputConfiguration{
 			{
 				Decoder: "netflow",
+				TimestampSource: decoder.TimestampSourceNetflowFirstSwitched,
 				Config: &udp.Configuration{
 					Listen:    "192.0.2.11:2055",
 					QueueSize: 1000,
@@ -223,6 +297,7 @@ func TestMarshalYAML(t *testing.T) {
       listen: 192.0.2.11:2055
       queuesize: 1000
       receivebuffer: 0
+      timestampsource: netflow-first-switched
       type: udp
       usesrcaddrforexporteraddr: false
       workers: 3
@@ -230,6 +305,7 @@ func TestMarshalYAML(t *testing.T) {
       listen: 192.0.2.11:6343
       queuesize: 1000
       receivebuffer: 0
+      timestampsource: udp
       type: udp
       usesrcaddrforexporteraddr: true
       workers: 3

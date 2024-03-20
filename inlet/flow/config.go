@@ -7,6 +7,7 @@ import (
 	"golang.org/x/time/rate"
 
 	"akvorado/common/helpers"
+	"akvorado/inlet/flow/decoder"
 	"akvorado/inlet/flow/input"
 	"akvorado/inlet/flow/input/file"
 	"akvorado/inlet/flow/input/udp"
@@ -25,11 +26,13 @@ type Configuration struct {
 func DefaultConfiguration() Configuration {
 	return Configuration{
 		Inputs: []InputConfiguration{{
-			Decoder: "netflow",
-			Config:  udp.DefaultConfiguration(),
+			TimestampSource: decoder.TimestampSourceUDP,
+			Decoder:         "netflow",
+			Config:          udp.DefaultConfiguration(),
 		}, {
-			Decoder: "sflow",
-			Config:  udp.DefaultConfiguration(),
+			TimestampSource: decoder.TimestampSourceUDP,
+			Decoder:         "sflow",
+			Config:          udp.DefaultConfiguration(),
 		}},
 	}
 }
@@ -41,6 +44,8 @@ type InputConfiguration struct {
 	// UseSrcAddrForExporterAddr replaces the exporter address by the transport
 	// source address.
 	UseSrcAddrForExporterAddr bool
+	// TimestampSource identify the source to use to timestamp the flows
+	TimestampSource decoder.TimestampSource
 	// Config is the actual configuration of the input.
 	Config input.Configuration
 }

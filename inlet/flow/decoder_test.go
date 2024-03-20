@@ -22,7 +22,7 @@ func BenchmarkDecodeEncodeNetflow(b *testing.B) {
 	schema.DisableDebug(b)
 	r := reporter.NewMock(b)
 	sch := schema.NewMock(b)
-	nfdecoder := netflow.New(r, decoder.Dependencies{Schema: sch})
+	nfdecoder := netflow.New(r, decoder.Dependencies{Schema: sch}, decoder.Option{TimestampSource: decoder.TimestampSourceUDP})
 
 	template := helpers.ReadPcapL4(b, filepath.Join("decoder", "netflow", "testdata", "options-template.pcap"))
 	got := nfdecoder.Decode(decoder.RawFlow{Payload: template, Source: net.ParseIP("127.0.0.1")})
@@ -66,7 +66,7 @@ func BenchmarkDecodeEncodeSflow(b *testing.B) {
 	schema.DisableDebug(b)
 	r := reporter.NewMock(b)
 	sch := schema.NewMock(b)
-	sdecoder := sflow.New(r, decoder.Dependencies{Schema: sch})
+	sdecoder := sflow.New(r, decoder.Dependencies{Schema: sch}, decoder.Option{TimestampSource: decoder.TimestampSourceUDP})
 	data := helpers.ReadPcapL4(b, filepath.Join("decoder", "sflow", "testdata", "data-1140.pcap"))
 
 	for _, withEncoding := range []bool{true, false} {
