@@ -28,6 +28,7 @@ resort when configured. It also increases memory usage (1.3GB for ClickHouse).
 - 🩹 *cmd*: fix parsing of `inlet`→`metadata`→`provider`→`ports`
 - 🩹 *console*: fix use of `InIfBoundary` and `OutIfBoundary` as dimensions
 - 🌱 *orchestrator*: add TLS support to connect to ClickHouse database
+- 🌱 *docker*: update to Redis 7.2 (not mandatory)
 
 ## 1.9.3 - 2024-01-14
 

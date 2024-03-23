@@ -53,7 +53,7 @@ services:
       test: ["CMD", "env", "-u", "JMX_PORT", "kafka-topics.sh", "--list", "--bootstrap-server", "kafka:9092"]
 
   redis:
-    image: bitnami/redis:7.0
+    image: bitnami/redis:7.2
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
     restart: unless-stopped

@@ -39,7 +39,7 @@ run tests:
       alias: zookeeper
     - name: bitnami/kafka:3.5
       alias: kafka
-    - name: bitnami/redis:7.0
+    - name: bitnami/redis:7.2
       alias: redis
     - name: clickhouse/clickhouse-server:23.8
       alias: clickhouse

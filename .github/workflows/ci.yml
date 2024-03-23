@@ -53,7 +53,7 @@ jobs:
         ports:
           - 9092:9093
       redis:
-        image: bitnami/redis:7.0
+        image: bitnami/redis:7.2
         env:
           ALLOW_EMPTY_PASSWORD: "yes"
         ports:
