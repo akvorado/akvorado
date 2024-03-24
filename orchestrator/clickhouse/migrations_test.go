@@ -29,28 +29,20 @@ import (
 )
 
 func dropAllTables(t *testing.T, ch *clickhousedb.Component) {
-	// TODO: find the right order. length(table) ordering works good enough here.
-	rows, err := ch.Query(context.Background(), `
-SELECT engine, table
-FROM system.tables
-WHERE database=currentDatabase() AND table NOT LIKE '.%'
-ORDER BY length(table) DESC`)
+	rows, err := ch.Query(context.Background(), `SELECT currentDatabase()`)
 	if err != nil {
 		t.Fatalf("Query() error:\n%+v", err)
 	}
 	for rows.Next() {
-		var engine, table, sql string
-		if err := rows.Scan(&engine, &table); err != nil {
+		var database string
+		if err := rows.Scan(&database); err != nil {
 			t.Fatalf("Scan() error:\n%+v", err)
 		}
-		t.Logf("(%s) Drop table %s", time.Now(), table)
-		switch engine {
-		case "Dictionary":
-			sql = "DROP DICTIONARY %s SYNC"
-		default:
-			sql = "DROP TABLE %s SYNC"
+		t.Logf("(%s) Drop database %s", time.Now(), database)
+		if err := ch.Exec(context.Background(), fmt.Sprintf("DROP DATABASE %s", database)); err != nil {
+			t.Fatalf("Exec() error:\n%+v", err)
 		}
-		if err := ch.Exec(context.Background(), fmt.Sprintf(sql, table)); err != nil {
+		if err := ch.Exec(context.Background(), fmt.Sprintf("CREATE DATABASE %s ENGINE = Atomic", database)); err != nil {
 			t.Fatalf("Exec() error:\n%+v", err)
 		}
 	}
@@ -197,9 +189,6 @@ func TestGetHTTPBaseURL(t *testing.T) {
 func TestMigration(t *testing.T) {
 	r := reporter.NewMock(t)
 	chComponent := clickhousedb.SetupClickHouse(t, r)
-	if err := chComponent.Exec(context.Background(), "DROP TABLE IF EXISTS system.metric_log"); err != nil {
-		t.Fatalf("Exec() error:\n%+v", err)
-	}
 
 	var lastRun map[string]string
 	var lastSteps int
@@ -459,10 +448,6 @@ AND name LIKE $3`, "flows", ch.config.Database, "%NetPrefix")
 func TestCustomDictMigration(t *testing.T) {
 	r := reporter.NewMock(t)
 	chComponent := clickhousedb.SetupClickHouse(t, r)
-	if err := chComponent.Exec(context.Background(), "DROP TABLE IF EXISTS system.metric_log"); err != nil {
-		t.Fatalf("Exec() error:\n%+v", err)
-	}
-	// start clean
 	dropAllTables(t, chComponent)
 	// First, setup a default configuration
 	t.Run("default schema", func(t *testing.T) {

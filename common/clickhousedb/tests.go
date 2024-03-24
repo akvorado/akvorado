@@ -6,6 +6,7 @@
 package clickhousedb
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -30,6 +31,9 @@ func SetupClickHouse(t *testing.T, r *reporter.Reporter) *Component {
 		t.Fatalf("New() error:\n%+v", err)
 	}
 	helpers.StartStop(t, c)
+	if err := c.Exec(context.Background(), "DROP TABLE IF EXISTS system.metric_log"); err != nil {
+		t.Fatalf("Exec() error:\n%+v", err)
+	}
 	return c
 }
 
