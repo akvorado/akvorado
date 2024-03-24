@@ -21,7 +21,9 @@ SELECT name
 FROM system.tables
 WHERE database=currentDatabase()
 AND table LIKE 'flows%'
-AND engine LIKE '%MergeTree'
+AND table NOT LIKE '%_local'
+AND table != 'flows_raw_errors'
+AND (engine LIKE '%MergeTree' OR engine = 'Distributed')
 `).
 		Return(nil).
 		SetArg(1, []struct {

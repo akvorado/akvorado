@@ -18,7 +18,7 @@ import (
 
 func TestHTTPEndpoints(t *testing.T) {
 	r := reporter.NewMock(t)
-	clickHouseComponent := clickhousedb.SetupClickHouse(t, r)
+	clickHouseComponent := clickhousedb.SetupClickHouse(t, r, false)
 	config := DefaultConfiguration()
 	config.SkipMigrations = true
 	config.Networks = helpers.MustNewSubnetMap(map[string]NetworkAttributes{
@@ -113,7 +113,7 @@ func TestHTTPEndpoints(t *testing.T) {
 
 func TestAdditionalASNs(t *testing.T) {
 	r := reporter.NewMock(t)
-	clickHouseComponent := clickhousedb.SetupClickHouse(t, r)
+	clickHouseComponent := clickhousedb.SetupClickHouse(t, r, false)
 	config := DefaultConfiguration()
 	config.ASNs = map[uint32]string{
 		1: "New network",

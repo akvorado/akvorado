@@ -13,6 +13,10 @@ import (
 type Configuration struct {
 	// Servers define the list of clickhouse servers to connect to (with ports)
 	Servers []string `validate:"min=1,dive,listen"`
+	// Cluster defines the cluster to operate on. This should not change
+	// anything from a client point of view, but this switch some mode of
+	// operations.
+	Cluster string
 	// Database defines the database to use
 	Database string `validate:"required"`
 	// Username defines the username to use for authentication
@@ -40,4 +44,9 @@ func DefaultConfiguration() Configuration {
 			Verify: true,
 		},
 	}
+}
+
+// IsInCluster returns true if the ClickHouse server runs on a cluster.
+func (c *Component) IsInCluster() bool {
+	return c.config.Cluster != ""
 }

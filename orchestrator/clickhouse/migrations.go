@@ -66,16 +66,17 @@ func (c *Component) migrateDatabase() error {
 
 	// Create dictionaries
 	err := c.wrapMigrations(
-		func() error {
+		ctx,
+		func(ctx context.Context) error {
 			return c.createDictionary(ctx, schema.DictionaryASNs, "hashed",
 				"`asn` UInt32 INJECTIVE, `name` String", "asn")
-		}, func() error {
+		}, func(ctx context.Context) error {
 			return c.createDictionary(ctx, schema.DictionaryProtocols, "hashed",
 				"`proto` UInt8 INJECTIVE, `name` String, `description` String", "proto")
-		}, func() error {
+		}, func(ctx context.Context) error {
 			return c.createDictionary(ctx, schema.DictionaryICMP, "complex_key_hashed",
 				"`proto` UInt8, `type` UInt8, `code` UInt8, `name` String", "proto, type, code")
-		}, func() error {
+		}, func(ctx context.Context) error {
 			return c.createDictionary(ctx, schema.DictionaryNetworks, "ip_trie",
 				"`network` String, `name` String, `role` String, `site` String, `region` String, `city` String, `state` String, `country` String, `tenant` String, `asn` UInt32",
 				"network")
@@ -85,7 +86,7 @@ func (c *Component) migrateDatabase() error {
 	}
 
 	// Prepare custom dictionary migrations
-	var dictMigrations []func() error
+	var dictMigrations []func(context.Context) error
 	for k, v := range c.d.Schema.GetCustomDictConfig() {
 		var schemaStr []string
 		var keys []string
@@ -103,7 +104,7 @@ func (c *Component) migrateDatabase() error {
 			// This is only an attribute. We only need it in the schema
 			schemaStr = append(schemaStr, fmt.Sprintf("`%s` %s DEFAULT '%s'", a.Name, a.Type, defaultValue))
 		}
-		dictMigrations = append(dictMigrations, func() error {
+		dictMigrations = append(dictMigrations, func(ctx context.Context) error {
 			return c.createDictionary(
 				ctx,
 				fmt.Sprintf("custom_dict_%s", k),
@@ -113,17 +114,22 @@ func (c *Component) migrateDatabase() error {
 		})
 	}
 	// Create custom dictionaries
-	err = c.wrapMigrations(dictMigrations...)
+	err = c.wrapMigrations(ctx, dictMigrations...)
 	if err != nil {
 		return err
 	}
 
 	// Create the various non-raw flow tables
 	for _, resolution := range c.config.Resolutions {
-		err := c.wrapMigrations(
-			func() error {
+		err := c.wrapMigrations(ctx,
+			func(ctx context.Context) error {
 				return c.createOrUpdateFlowsTable(ctx, resolution)
-			}, func() error {
+			}, func(ctx context.Context) error {
+				if resolution.Interval == 0 {
+					return c.createDistributedTable(ctx, "flows")
+				}
+				return c.createDistributedTable(ctx, fmt.Sprintf("flows_%s", resolution.Interval))
+			}, func(ctx context.Context) error {
 				return c.createFlowsConsumerView(ctx, resolution)
 			})
 		if err != nil {
@@ -132,22 +138,17 @@ func (c *Component) migrateDatabase() error {
 	}
 
 	// Remaining tables
-	err = c.wrapMigrations(
-		func() error {
-			return c.createExportersTable(ctx)
-		}, func() error {
-			return c.createExportersConsumerView(ctx)
-		}, func() error {
-			return c.createRawFlowsTable(ctx)
-		}, func() error {
-			return c.createRawFlowsConsumerView(ctx)
-		}, func() error {
-			return c.createRawFlowsErrors(ctx)
-		}, func() error {
-			return c.createRawFlowsErrorsConsumerView(ctx)
-		}, func() error {
-			return c.deleteOldRawFlowsErrorsView(ctx)
+	err = c.wrapMigrations(ctx,
+		c.createExportersTable,
+		c.createExportersConsumerView,
+		c.createRawFlowsTable,
+		c.createRawFlowsConsumerView,
+		c.createRawFlowsErrors,
+		func(ctx context.Context) error {
+			return c.createDistributedTable(ctx, "flows_raw_errors")
 		},
+		c.createRawFlowsErrorsConsumerView,
+		c.deleteOldRawFlowsErrorsView,
 	)
 	if err != nil {
 		return err
@@ -158,7 +159,7 @@ func (c *Component) migrateDatabase() error {
 	c.r.Info().Msg("database migration done")
 
 	// Reload dictionaries
-	if err := c.d.ClickHouse.Exec(ctx, "SYSTEM RELOAD DICTIONARIES"); err != nil {
+	if err := c.d.ClickHouse.ExecOnCluster(ctx, "SYSTEM RELOAD DICTIONARIES"); err != nil {
 		c.r.Err(err).Msg("unable to reload dictionaries after migration")
 	}
 
@@ -190,5 +191,5 @@ func (c *Component) getHTTPBaseURL(address string) (string, error) {
 
 // ReloadDictionary will reload the specified dictionnary.
 func (c *Component) ReloadDictionary(ctx context.Context, dictName string) error {
-	return c.d.ClickHouse.Exec(ctx, fmt.Sprintf("SYSTEM RELOAD DICTIONARY %s", dictName))
+	return c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf("SYSTEM RELOAD DICTIONARY %s", dictName))
 }

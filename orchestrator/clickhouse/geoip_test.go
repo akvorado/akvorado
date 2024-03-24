@@ -19,7 +19,7 @@ func TestNetworkGeoip(t *testing.T) {
 	config := DefaultConfiguration()
 	config.SkipMigrations = true
 	r := reporter.NewMock(t)
-	clickHouseComponent := clickhousedb.SetupClickHouse(t, r)
+	clickHouseComponent := clickhousedb.SetupClickHouse(t, r, false)
 
 	c, err := New(r, config, Dependencies{
 		Daemon:     daemon.NewMock(t),

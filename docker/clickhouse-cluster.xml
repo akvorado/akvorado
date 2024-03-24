@@ -1,0 +1,39 @@
+<clickhouse>
+  <remote_servers replace="true">
+    <akvorado>
+      <!-- Cluster with two shards, each having two replicas. On a real setup,
+           you should use more shards to balance the additional complexity
+           introduced by using a cluster. -->
+      <shard>
+        <internal_replication>true</internal_replication>
+        <replica>
+          <host>clickhouse</host>
+          <port>9000</port>
+        </replica>
+        <replica>
+          <host>clickhouse-2</host>
+          <port>9000</port>
+        </replica>
+      </shard>
+      <shard>
+        <internal_replication>true</internal_replication>
+        <replica>
+          <host>clickhouse-3</host>
+          <port>9000</port>
+        </replica>
+        <replica>
+          <host>clickhouse-4</host>
+          <port>9000</port>
+        </replica>
+      </shard>
+    </akvorado>
+  </remote_servers>
+  <zookeeper>
+    <node>
+      <host>zookeeper</host>
+      <port>2181</port>
+    </node>
+  </zookeeper>
+  <!-- For testing, ensure tables are dropped quickly -->
+  <database_atomic_delay_before_drop_table_sec>0</database_atomic_delay_before_drop_table_sec>
+</clickhouse>

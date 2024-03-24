@@ -24,7 +24,7 @@ import (
 
 func TestNetworkSources(t *testing.T) {
 	r := reporter.NewMock(t)
-	clickHouseComponent := clickhousedb.SetupClickHouse(t, r)
+	clickHouseComponent := clickhousedb.SetupClickHouse(t, r, false)
 
 	// Mux to answer requests
 	ready := make(chan bool)

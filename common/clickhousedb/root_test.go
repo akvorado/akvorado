@@ -116,7 +116,7 @@ func TestMock(t *testing.T) {
 
 func TestRealClickHouse(t *testing.T) {
 	r := reporter.NewMock(t)
-	chComponent := SetupClickHouse(t, r)
+	chComponent := SetupClickHouse(t, r, false)
 
 	// Check a select query
 	t.Run("select", func(t *testing.T) {
