@@ -25,9 +25,9 @@ var errSkipStep = errors.New("migration: skip this step")
 // wrapMigrations can be used to wrap migration functions. It will keep the
 // metrics up-to-date as long as the migration function returns `errSkipStep`
 // when a step is skipped.
-func (c *Component) wrapMigrations(fns ...func() error) error {
+func (c *Component) wrapMigrations(ctx context.Context, fns ...func(context.Context) error) error {
 	for _, fn := range fns {
-		if err := fn(); err == nil {
+		if err := fn(ctx); err == nil {
 			c.metrics.migrationsApplied.Inc()
 		} else if err == errSkipStep {
 			c.metrics.migrationsNotApplied.Inc()
@@ -82,8 +82,40 @@ func (c *Component) tableAlreadyExists(ctx context.Context, table, column, targe
 	}
 	c.r.Debug().
 		Str("target", target).Str("existing", existing).
-		Msgf("table %s is assumed to not exist in the expected state", table)
+		Msgf("table %s state difference detected", table)
 	return false, nil
+}
+
+// mergeTreeEngine returns a MergeTree engine definition, either plain or using
+// Replicated if we are on a cluster.
+func (c *Component) mergeTreeEngine(table string, variant string, args ...string) string {
+	if c.config.Cluster != "" {
+		return fmt.Sprintf(`Replicated%sMergeTree(%s)`, variant, strings.Join(
+			append([]string{
+				fmt.Sprintf("'/clickhouse/tables/shard-{shard}/%s'", table),
+				"'replica-{replica}'",
+			}, args...),
+			", "))
+	}
+	if len(args) == 0 {
+		return fmt.Sprintf("%sMergeTree", variant)
+	}
+	return fmt.Sprintf("%sMergeTree(%s)", variant, strings.Join(args, ", "))
+}
+
+// distributedTable turns a table name to the matching distributed table if we
+// are in a cluster.
+func (c *Component) distributedTable(table string) string {
+	return table
+}
+
+// localTable turns a table name to the matching local distributed table if we
+// are in a cluster.
+func (c *Component) localTable(table string) string {
+	if c.config.Cluster != "" {
+		return fmt.Sprintf("%s_local", table)
+	}
+	return table
 }
 
 // createDictionary creates the provided dictionary.
@@ -120,13 +152,13 @@ LAYOUT({{ .Layout }}())
 	}
 	c.r.Info().Msgf("create dictionary %s", name)
 	createOrReplaceQuery := strings.Replace(createQuery, "CREATE ", "CREATE OR REPLACE ", 1)
-	if err := c.d.ClickHouse.Exec(ctx, createOrReplaceQuery); err != nil {
+	if err := c.d.ClickHouse.ExecOnCluster(ctx, createOrReplaceQuery); err != nil {
 		return fmt.Errorf("cannot create dictionary %s: %w", name, err)
 	}
 	return nil
 }
 
-// createExportersConsumerView creates the exporters table.
+// createExportersTable creates the exporters table. This table is always local.
 func (c *Component) createExportersTable(ctx context.Context) error {
 	// Select the columns we need
 	cols := []string{}
@@ -142,22 +174,25 @@ func (c *Component) createExportersTable(ctx context.Context) error {
 	}
 
 	// Build CREATE TABLE
+	name := "exporters"
 	createQuery, err := stemplate(
-		`CREATE TABLE {{ .Database }}.exporters
+		`CREATE TABLE {{ .Database }}.{{ .Table }}
 ({{ .Schema }})
-ENGINE = ReplacingMergeTree(TimeReceived)
+ENGINE = {{ .Engine }}
 ORDER BY (ExporterAddress, IfName)
 TTL TimeReceived + toIntervalDay(1)`,
 		gin.H{
 			"Database": c.config.Database,
+			"Table":    name,
 			"Schema":   strings.Join(cols, ", "),
+			"Engine":   c.mergeTreeEngine(name, "Replacing", "TimeReceived"),
 		})
 	if err != nil {
 		return fmt.Errorf("cannot build query to create exporters view: %w", err)
 	}
 
 	// Check if the table already exists
-	if ok, err := c.tableAlreadyExists(ctx, "exporters", "create_table_query", createQuery); err != nil {
+	if ok, err := c.tableAlreadyExists(ctx, name, "create_table_query", createQuery); err != nil {
 		return err
 	} else if ok {
 		c.r.Info().Msg("exporters table already exists, skip migration")
@@ -166,13 +201,11 @@ TTL TimeReceived + toIntervalDay(1)`,
 
 	// Drop existing table and recreate
 	c.r.Info().Msg("create exporters table")
-	if err := c.d.ClickHouse.Exec(ctx, `DROP TABLE IF EXISTS exporters SYNC`); err != nil {
-		return fmt.Errorf("cannot drop existing exporters view: %w", err)
-	}
 	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
 		"allow_suspicious_low_cardinality_types": 1,
 	}))
-	if err := c.d.ClickHouse.Exec(ctx, createQuery); err != nil {
+	createOrReplaceQuery := strings.Replace(createQuery, "CREATE ", "CREATE OR REPLACE ", 1)
+	if err := c.d.ClickHouse.ExecOnCluster(ctx, createOrReplaceQuery); err != nil {
 		return fmt.Errorf("cannot create exporters table: %w", err)
 	}
 
@@ -196,8 +229,9 @@ func (c *Component) createExportersConsumerView(ctx context.Context) error {
 
 	// Build SELECT query
 	selectQuery, err := stemplate(
-		`SELECT DISTINCT {{ .Columns }} FROM {{ .Database }}.flows ARRAY JOIN arrayEnumerate([1, 2]) AS num`,
+		`SELECT DISTINCT {{ .Columns }} FROM {{ .Database }}.{{ .Table }} ARRAY JOIN arrayEnumerate([1, 2]) AS num`,
 		gin.H{
+			"Table":    c.distributedTable("flows"),
 			"Database": c.config.Database,
 			"Columns":  strings.Join(cols, ", "),
 		})
@@ -217,13 +251,12 @@ func (c *Component) createExportersConsumerView(ctx context.Context) error {
 
 	// Drop existing table and recreate
 	c.r.Info().Msg("create exporters view")
-	if err := c.d.ClickHouse.Exec(ctx, `DROP TABLE IF EXISTS exporters_consumer SYNC`); err != nil {
+	if err := c.d.ClickHouse.ExecOnCluster(ctx, `DROP TABLE IF EXISTS exporters_consumer SYNC`); err != nil {
 		return fmt.Errorf("cannot drop existing exporters view: %w", err)
 	}
-	if err := c.d.ClickHouse.Exec(ctx, fmt.Sprintf(`
-CREATE MATERIALIZED VIEW exporters_consumer TO exporters
-AS %s
-`, selectQuery)); err != nil {
+	if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(`
+CREATE MATERIALIZED VIEW exporters_consumer TO %s AS %s
+`, "exporters", selectQuery)); err != nil {
 		return fmt.Errorf("cannot create exporters view: %w", err)
 	}
 
@@ -282,14 +315,14 @@ func (c *Component) createRawFlowsTable(ctx context.Context) error {
 		fmt.Sprintf("%s_errors", tableName),
 		tableName,
 	} {
-		if err := c.d.ClickHouse.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s SYNC`, table)); err != nil {
+		if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s SYNC`, table)); err != nil {
 			return fmt.Errorf("cannot drop %s: %w", table, err)
 		}
 	}
 	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
 		"allow_suspicious_low_cardinality_types": 1,
 	}))
-	if err := c.d.ClickHouse.Exec(ctx, createQuery); err != nil {
+	if err := c.d.ClickHouse.ExecOnCluster(ctx, createQuery); err != nil {
 		return fmt.Errorf("cannot create raw flows table: %w", err)
 	}
 
@@ -384,12 +417,12 @@ func (c *Component) createRawFlowsConsumerView(ctx context.Context) error {
 
 	// Drop and create
 	c.r.Info().Msg("create raw flows consumer view")
-	if err := c.d.ClickHouse.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s SYNC`, viewName)); err != nil {
+	if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s SYNC`, viewName)); err != nil {
 		return fmt.Errorf("cannot drop table %s: %w", viewName, err)
 	}
-	if err := c.d.ClickHouse.Exec(ctx,
-		fmt.Sprintf("CREATE MATERIALIZED VIEW %s TO flows AS %s",
-			viewName, selectQuery)); err != nil {
+	if err := c.d.ClickHouse.ExecOnCluster(ctx,
+		fmt.Sprintf("CREATE MATERIALIZED VIEW %s TO %s AS %s",
+			viewName, c.distributedTable("flows"), selectQuery)); err != nil {
 		return fmt.Errorf("cannot create raw flows consumer view: %w", err)
 	}
 
@@ -397,39 +430,42 @@ func (c *Component) createRawFlowsConsumerView(ctx context.Context) error {
 }
 
 func (c *Component) createRawFlowsErrors(ctx context.Context) error {
-	createQuery, err := stemplate(`CREATE TABLE {{ .Database }}.flows_raw_errors
+	name := c.localTable("flows_raw_errors")
+	createQuery, err := stemplate(`CREATE TABLE {{ .Database }}.{{ .Table }}
 (`+"`timestamp`"+` DateTime,
  `+"`topic`"+` LowCardinality(String),
  `+"`partition`"+` UInt64,
  `+"`offset`"+` UInt64,
  `+"`raw`"+` String,
  `+"`error`"+` String)
-ENGINE = MergeTree
+ENGINE = {{ .Engine }}
 PARTITION BY toYYYYMMDDhhmmss(toStartOfHour(timestamp))
 ORDER BY (timestamp, topic, partition, offset)
 TTL timestamp + toIntervalDay(1)
 `, gin.H{
+		"Table":    name,
 		"Database": c.config.Database,
+		"Engine":   c.mergeTreeEngine(name, ""),
 	})
 	if err != nil {
 		return fmt.Errorf("cannot build query to create flow error table: %w", err)
 	}
-	if ok, err := c.tableAlreadyExists(ctx, "flows_raw_errors", "create_table_query", createQuery); err != nil {
+	if ok, err := c.tableAlreadyExists(ctx, name, "create_table_query", createQuery); err != nil {
 		return err
 	} else if ok {
-		c.r.Info().Msgf("table flows_raw_errors already exists, skip migration")
+		c.r.Info().Msgf("table %s already exists, skip migration", name)
 		return errSkipStep
 	}
-	c.r.Info().Msg("create table flows_raw_errors")
+	c.r.Info().Msgf("create table %s", name)
 	createOrReplaceQuery := strings.Replace(createQuery, "CREATE ", "CREATE OR REPLACE ", 1)
-	if err := c.d.ClickHouse.Exec(ctx, createOrReplaceQuery); err != nil {
-		return fmt.Errorf("cannot create table flows_raw_errors: %w", err)
+	if err := c.d.ClickHouse.ExecOnCluster(ctx, createOrReplaceQuery); err != nil {
+		return fmt.Errorf("cannot create table %s: %w", name, err)
 	}
 	return nil
 }
 
 func (c *Component) createRawFlowsErrorsConsumerView(ctx context.Context) error {
-	tableName := fmt.Sprintf("flows_%s_raw", c.d.Schema.ProtobufMessageHash())
+	source := fmt.Sprintf("flows_%s_raw", c.d.Schema.ProtobufMessageHash())
 	viewName := "flows_raw_errors_consumer"
 
 	// Build SELECT query
@@ -444,7 +480,7 @@ SELECT
 FROM {{ .Database }}.{{ .Table }}
 WHERE length(_error) > 0`, gin.H{
 		"Database": c.config.Database,
-		"Table":    tableName,
+		"Table":    source,
 	})
 	if err != nil {
 		return fmt.Errorf("cannot build select statement for raw flows error: %w", err)
@@ -460,12 +496,12 @@ WHERE length(_error) > 0`, gin.H{
 
 	// Drop and create
 	c.r.Info().Msg("create raw flows errors view")
-	if err := c.d.ClickHouse.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s SYNC`, viewName)); err != nil {
+	if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s SYNC`, viewName)); err != nil {
 		return fmt.Errorf("cannot drop table %s: %w", viewName, err)
 	}
-	if err := c.d.ClickHouse.Exec(ctx,
+	if err := c.d.ClickHouse.ExecOnCluster(ctx,
 		fmt.Sprintf(`CREATE MATERIALIZED VIEW %s TO %s AS %s`,
-			viewName, "flows_raw_errors", selectQuery)); err != nil {
+			viewName, c.distributedTable("flows_raw_errors"), selectQuery)); err != nil {
 		return fmt.Errorf("cannot create raw flows errors view: %w", err)
 	}
 
@@ -486,7 +522,7 @@ func (c *Component) deleteOldRawFlowsErrorsView(ctx context.Context) error {
 
 	// Drop
 	c.r.Info().Msg("delete old raw flows errors view")
-	if err := c.d.ClickHouse.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s SYNC`, viewName)); err != nil {
+	if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s SYNC`, viewName)); err != nil {
 		return fmt.Errorf("cannot drop table %s: %w", viewName, err)
 	}
 	return nil
@@ -502,6 +538,7 @@ func (c *Component) createOrUpdateFlowsTable(ctx context.Context, resolution Res
 	} else {
 		tableName = fmt.Sprintf("flows_%s", resolution.Interval)
 	}
+	tableName = c.localTable(tableName)
 	partitionInterval := uint64((resolution.TTL / time.Duration(c.config.MaxPartitions)).Seconds())
 	ttl := uint64(resolution.TTL.Seconds())
 
@@ -513,20 +550,22 @@ func (c *Component) createOrUpdateFlowsTable(ctx context.Context, resolution Res
 		var err error
 		if resolution.Interval == 0 {
 			createQuery, err = stemplate(`
-CREATE TABLE flows ({{ .Schema }})
-ENGINE = MergeTree
+CREATE TABLE {{ .Table }} ({{ .Schema }})
+ENGINE = {{ .Engine }}
 PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, INTERVAL {{ .PartitionInterval }} second))
 ORDER BY (TimeReceived, ExporterAddress, InIfName, OutIfName)
 TTL TimeReceived + toIntervalSecond({{ .TTL }})
 `, gin.H{
+				"Table":             tableName,
 				"Schema":            c.d.Schema.ClickHouseCreateTable(),
 				"PartitionInterval": partitionInterval,
 				"TTL":               ttl,
+				"Engine":            c.mergeTreeEngine(tableName, ""),
 			})
 		} else {
 			createQuery, err = stemplate(`
 CREATE TABLE {{ .Table }} ({{ .Schema }})
-ENGINE = SummingMergeTree((Bytes, Packets))
+ENGINE = {{ .Engine }}
 PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, INTERVAL {{ .PartitionInterval }} second))
 PRIMARY KEY ({{ .PrimaryKey }})
 ORDER BY ({{ .SortingKey }})
@@ -538,12 +577,13 @@ TTL TimeReceived + toIntervalSecond({{ .TTL }})
 				"PrimaryKey":        strings.Join(c.d.Schema.ClickHousePrimaryKeys(), ", "),
 				"SortingKey":        strings.Join(c.d.Schema.ClickHouseSortingKeys(), ", "),
 				"TTL":               ttl,
+				"Engine":            c.mergeTreeEngine(tableName, "Summing", "(Bytes, Packets)"),
 			})
 		}
 		if err != nil {
 			return fmt.Errorf("cannot build create table statement for %s: %w", tableName, err)
 		}
-		if err := c.d.ClickHouse.Exec(ctx, createQuery); err != nil {
+		if err := c.d.ClickHouse.ExecOnCluster(ctx, createQuery); err != nil {
 			return fmt.Errorf("cannot create %s: %w", tableName, err)
 		}
 		return nil
@@ -598,7 +638,7 @@ outer:
 				if (wantedColumn.ClickHouseAlias != "") != (existingColumn.DefaultKind == "ALIAS") {
 					// either the column was an alias and should be none, or the other way around. Either way, we need to recreate.
 					c.r.Logger.Debug().Msg(fmt.Sprintf("column %s alias content has changed, recreating. New ALIAS: %s", existingColumn.Name, wantedColumn.ClickHouseAlias))
-					err := c.d.ClickHouse.Exec(ctx,
+					err := c.d.ClickHouse.ExecOnCluster(ctx,
 						fmt.Sprintf("ALTER TABLE %s DROP COLUMN %s", tableName, existingColumn.Name))
 					if err != nil {
 						return fmt.Errorf("cannot drop %s from %s to cleanup aliasing: %w",
@@ -615,7 +655,7 @@ outer:
 				}
 				if resolution.Interval > 0 && !wantedColumn.ClickHouseNotSortingKey && existingColumn.IsSortingKey == 0 {
 					// That's something we can fix, but we need to drop it before recreating it
-					err := c.d.ClickHouse.Exec(ctx,
+					err := c.d.ClickHouse.ExecOnCluster(ctx,
 						fmt.Sprintf("ALTER TABLE %s DROP COLUMN %s", tableName, existingColumn.Name))
 					if err != nil {
 						return fmt.Errorf("cannot drop %s from %s to fix ordering: %w",
@@ -652,11 +692,11 @@ outer:
 		if resolution.Interval > 0 {
 			// Drop the view
 			viewName := fmt.Sprintf("%s_consumer", tableName)
-			if err := c.d.ClickHouse.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s SYNC`, viewName)); err != nil {
+			if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s SYNC`, viewName)); err != nil {
 				return fmt.Errorf("cannot drop %s: %w", viewName, err)
 			}
 		}
-		err := c.d.ClickHouse.Exec(ctx, fmt.Sprintf("ALTER TABLE %s %s", tableName, strings.Join(modifications, ", ")))
+		err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf("ALTER TABLE %s %s", tableName, strings.Join(modifications, ", ")))
 		if err != nil {
 			return fmt.Errorf("cannot update table %s: %w", tableName, err)
 		}
@@ -670,7 +710,7 @@ outer:
 	} else if !ok {
 		c.r.Warn().
 			Msgf("updating TTL of %s with interval %s, this can take a long time", tableName, resolution.Interval)
-		if err := c.d.ClickHouse.Exec(ctx, fmt.Sprintf("ALTER TABLE %s MODIFY %s", tableName, ttlClause)); err != nil {
+		if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf("ALTER TABLE %s MODIFY %s", tableName, ttlClause)); err != nil {
 			return fmt.Errorf("cannot modify TTL for table %s: %w", tableName, err)
 		}
 		return nil
@@ -693,8 +733,9 @@ func (c *Component) createFlowsConsumerView(ctx context.Context, resolution Reso
 SELECT
  toStartOfInterval(TimeReceived, toIntervalSecond({{ .Seconds }})) AS TimeReceived,
  {{ .Columns }}
-FROM {{ .Database }}.flows`, gin.H{
+FROM {{ .Database }}.{{ .Table }}`, gin.H{
 		"Database": c.config.Database,
+		"Table":    c.localTable("flows"),
 		"Seconds":  uint64(resolution.Interval.Seconds()),
 		"Columns": strings.Join(c.d.Schema.ClickHouseSelectColumns(
 			schema.ClickHouseSkipTimeReceived,
@@ -715,12 +756,84 @@ FROM {{ .Database }}.flows`, gin.H{
 
 	// Drop and create
 	c.r.Info().Msgf("create %s", viewName)
-	if err := c.d.ClickHouse.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s SYNC`, viewName)); err != nil {
+	if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s SYNC`, viewName)); err != nil {
 		return fmt.Errorf("cannot drop table %s: %w", viewName, err)
 	}
-	if err := c.d.ClickHouse.Exec(ctx,
-		fmt.Sprintf(`CREATE MATERIALIZED VIEW %s TO %s AS %s`, viewName, tableName, selectQuery)); err != nil {
+	if err := c.d.ClickHouse.ExecOnCluster(ctx,
+		fmt.Sprintf(`CREATE MATERIALIZED VIEW %s TO %s AS %s`, viewName,
+			c.localTable(tableName), selectQuery)); err != nil {
 		return fmt.Errorf("cannot create %s: %w", viewName, err)
+	}
+	return nil
+}
+
+// createDistributedTable creates the distributed version of an existing table.
+// If the table already exists and does not match the definition, it is
+// replaced.
+func (c *Component) createDistributedTable(ctx context.Context, source string) error {
+	if c.config.Cluster == "" {
+		return errSkipStep
+	}
+	// Get the schema of the source table
+	var existingColumns []struct {
+		Name              string `ch:"name"`
+		Type              string `ch:"type"`
+		CompressionCodec  string `ch:"compression_codec"`
+		DefaultKind       string `ch:"default_kind"`
+		DefaultExpression string `ch:"default_expression"`
+	}
+	if err := c.d.ClickHouse.Select(ctx, &existingColumns, `
+SELECT name, type, compression_codec, default_kind, default_expression
+FROM system.columns
+WHERE database = $1 AND table = $2
+ORDER BY position ASC
+`, c.config.Database, c.localTable(source)); err != nil {
+		return fmt.Errorf("cannot query columns table: %w", err)
+	}
+	cols := []string{}
+	for _, column := range existingColumns {
+		col := fmt.Sprintf("`%s` %s", column.Name, column.Type)
+		if column.CompressionCodec != "" {
+			col = fmt.Sprintf("%s %s", col, column.CompressionCodec)
+		}
+		if column.DefaultKind != "" {
+			col = fmt.Sprintf("%s %s %s", col, column.DefaultKind, column.DefaultExpression)
+		}
+		cols = append(cols, col)
+	}
+
+	// Build the CREATE TABLE
+	createQuery, err := stemplate(
+		`CREATE TABLE {{ .Database }}.{{ .Target }}
+({{ .Schema }})
+ENGINE = Distributed('{{ .Cluster }}', '{{ .Database}}', '{{ .Source }}', rand())`,
+		gin.H{
+			"Cluster":  c.config.Cluster,
+			"Database": c.config.Database,
+			"Source":   c.localTable(source),
+			"Target":   c.distributedTable(source),
+			"Schema":   strings.Join(cols, ", "),
+		})
+	if err != nil {
+		return fmt.Errorf("cannot build query to create exporters view: %w", err)
+	}
+
+	// Check if the table already exists
+	if ok, err := c.tableAlreadyExists(ctx, c.distributedTable(source), "create_table_query", createQuery); err != nil {
+		return err
+	} else if ok {
+		c.r.Info().Msgf("%s already exists, skip migration", c.distributedTable(source))
+		return errSkipStep
+	}
+
+	// Recreate the table
+	c.r.Info().Msgf("create %s", c.distributedTable(source))
+	createOrReplaceQuery := strings.Replace(createQuery, "CREATE ", "CREATE OR REPLACE ", 1)
+	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
+		"allow_suspicious_low_cardinality_types": 1,
+	}))
+	if err := c.d.ClickHouse.ExecOnCluster(ctx, createOrReplaceQuery); err != nil {
+		return fmt.Errorf("cannot create %s: %w", c.distributedTable(source), err)
 	}
 	return nil
 }

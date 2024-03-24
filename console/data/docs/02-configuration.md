@@ -790,6 +790,7 @@ provided:
 - `username` is the username to use for authentication
 - `password` is the password to use for authentication
 - `database` defines the database to use to create tables
+- `cluster` defines the cluster for replicated and distributed tables, see below for more information
 - `kafka` defines the configuration for the Kafka consumer. The accepted keys are:
   - `consumers` defines the number of consumers to use to consume messages from
     the Kafka topic. It is silently bound by the maximum number of threads
@@ -838,7 +839,7 @@ resolution has two keys: `interval` and `ttl`. The first one is the
 consolidation interval. The second is how long to keep the data in the
 database. If `ttl` is 0, then the data is kept forever. If `interval`
 is 0, it applies to the raw data (the one in the `flows` table). For
-each resolution, a materialized view `flows_XXXX` is created with the
+each resolution, a materialized view `flows_DDDD` is created with the
 specified interval. It should be noted that consolidated tables do not
 contain information about source/destination IP addresses and ports.
 That's why you may want to keep the interval-0 table data a bit
@@ -867,6 +868,20 @@ disk usage. If you remove an existing interval, it is not removed from the
 ClickHouse database and will continue to be populated.
 
 It is mandatory to specify a configuration for `interval: 0`.
+
+When specifying a cluster name with `cluster`, the orchestrator will manage a
+set of replicated and distributed tables. No migration is done between the
+cluster and the non-cluster modes, therefore, you shouldn't change this setting
+without also changing the database. If you already have an existing setup, this
+means you need to start from scratch and copy data. There is currently no
+instruction for that, but it's mostly a matter of copying `flows` table to
+`flows_local`, and `flows_DDDD` (where `DDDD` is an interval) tables to
+`flows_DDDD_local`.
+
+When using `docker compose`, the provided setup for ClickHouse is not
+cluster-ready. Have a look at `docker/docker-compose-dev.yml` to see how to
+setup a ClickHouse cluster (but it makes little sense to have a single-node
+`docker compose` setup with a ClickHouse cluster).
 
 ### GeoIP
 

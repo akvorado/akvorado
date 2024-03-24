@@ -19,6 +19,12 @@ automatically migrated from the inlet component to the clickhouse component.
 This also changes how geo IP is used for AS numbers: geo IP is used as last
 resort when configured. It also increases memory usage (1.3GB for ClickHouse).
 
+Another new feature is the ability to use a ClickHouse cluster deployment. This
+is enabled when specifying a cluster name in `clickhouse`→`cluster`. There is no
+automatic migration of an existing database. You should start from scratch and
+copy data from the previous setup. Do not try to enable the cluster mode on
+existing setup!
+
 Support for Docker Compose V1 (`docker-compose` command) has been removed in
 favor of Docker Compose V2 (`docker compose` command). On Ubuntu/Debian systems,
 this means you can no longer use the `docker-compose` package. On Ubuntu, you
@@ -28,6 +34,7 @@ can install the `docker-compose-v2` package. For other options, check the
 - 💥 *inlet*: GeoIP data is moved from inlets to ClickHouse, add city and region
 - 💥 *console*: persist console database on the default `docker compose` setup
 - 💥 *docker*: remove support for `docker-compose` V1
+- ✨ *orchestrator*: add support for ClickHouse clusters
 - ✨ *inlet*: add gNMI metadata provider
 - ✨ *inlet*: static metadata provider can provide exporter and interface metadata
 - ✨ *inlet*: static metadata provider can fetch its configuration from an HTTP endpoint

@@ -19,22 +19,28 @@ import (
 )
 
 // SetupClickHouse configures a client to use for testing.
-func SetupClickHouse(t *testing.T, r *reporter.Reporter) *Component {
+func SetupClickHouse(t *testing.T, r *reporter.Reporter, cluster bool) *Component {
 	t.Helper()
-	chServer := helpers.CheckExternalService(t, "ClickHouse",
-		[]string{"clickhouse:9000", "127.0.0.1:9000"})
 	config := DefaultConfiguration()
-	config.Servers = []string{chServer}
+	config.Servers = []string{
+		helpers.CheckExternalService(t, "ClickHouse",
+			[]string{"clickhouse:9000", "127.0.0.1:9000"})}
+	if cluster {
+		config.Cluster = "akvorado"
+	}
 	config.DialTimeout = 100 * time.Millisecond
 	c, err := New(r, config, Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
 	helpers.StartStop(t, c)
-	if err := c.Exec(context.Background(), "DROP TABLE IF EXISTS system.metric_log"); err != nil {
-		t.Fatalf("Exec() error:\n%+v", err)
-	}
+	c.ExecOnCluster(context.Background(), "DROP TABLE IF EXISTS system.metric_log")
 	return c
+}
+
+// ClusterName returns the name of the cluster (for testing only)
+func (c *Component) ClusterName() string {
+	return c.config.Cluster
 }
 
 // NewMock creates a new component using a mock driver. It returns

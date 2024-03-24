@@ -36,7 +36,9 @@ SELECT name
 FROM system.tables
 WHERE database=currentDatabase()
 AND table LIKE 'flows%'
-AND engine LIKE '%MergeTree'
+AND table NOT LIKE '%_local'
+AND table != 'flows_raw_errors'
+AND (engine LIKE '%MergeTree' OR engine = 'Distributed')
 `)
 	if err != nil {
 		return fmt.Errorf("cannot query flows table metadata: %w", err)

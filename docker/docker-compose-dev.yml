@@ -32,13 +32,39 @@ services:
     ports:
       - 127.0.0.1:6379:6379/tcp
 
-  clickhouse:
+  clickhouse: &clickhouse
     extends:
       file: versions.yml
       service: clickhouse
+    depends_on:
+      - zookeeper
+    volumes:
+      - ./clickhouse-cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
+      - ./clickhouse-cluster-1.xml:/etc/clickhouse-server/config.d/cluster-1.xml
     ports:
       - 127.0.0.1:8123:8123/tcp
       - 127.0.0.1:9000:9000/tcp
+  clickhouse-2:
+    <<: *clickhouse
+    volumes:
+      - ./clickhouse-cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
+      - ./clickhouse-cluster-2.xml:/etc/clickhouse-server/config.d/cluster-2.xml
+    ports:
+      - 127.0.0.1:9001:9000/tcp
+  clickhouse-3:
+    <<: *clickhouse
+    volumes:
+      - ./clickhouse-cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
+      - ./clickhouse-cluster-3.xml:/etc/clickhouse-server/config.d/cluster-3.xml
+    ports:
+      - 127.0.0.1:9002:9000/tcp
+  clickhouse-4:
+    <<: *clickhouse
+    volumes:
+      - ./clickhouse-cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
+      - ./clickhouse-cluster-4.xml:/etc/clickhouse-server/config.d/cluster-4.xml
+    ports:
+      - 127.0.0.1:9003:9000/tcp
 
   srlinux:
     extends:
