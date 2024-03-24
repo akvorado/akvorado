@@ -540,11 +540,11 @@ func TestCustomDictMigration(t *testing.T) {
 
 			// Check if the rows were created in the main flows table
 			row := ch.d.ClickHouse.QueryRow(context.Background(), `
-	SELECT toString(groupArray(tuple(name, type, default_expression)))
-	FROM system.columns
-	WHERE table = $1
-	AND database = $2
-	AND name LIKE $3`, "flows", ch.config.Database, "%DimensionAttribute")
+SELECT toString(groupArray(tuple(name, type, default_expression)))
+FROM system.columns
+WHERE table = $1
+AND database = $2
+AND name LIKE $3`, "flows", ch.config.Database, "%DimensionAttribute")
 			var existing string
 			if err := row.Scan(&existing); err != nil {
 				t.Fatalf("Scan() error:\n%+v", err)
@@ -577,12 +577,22 @@ func TestCustomDictMigration(t *testing.T) {
 			// Check if the dictionary was created
 			dictCreate := ch.d.ClickHouse.QueryRow(context.Background(), `
 		SHOW CREATE custom_dict_test`)
-			var dictCreateString string
-			if err := dictCreate.Scan(&dictCreateString); err != nil {
+			var got string
+			if err := dictCreate.Scan(&got); err != nil {
 				t.Fatalf("Scan() error:\n%+v", err)
 			}
-			if diff := helpers.Diff(dictCreateString,
-				"CREATE DICTIONARY default.custom_dict_test\n(\n    `SrcAddr` String,\n    `csv_col_name` String DEFAULT 'None',\n    `csv_col_default` String DEFAULT 'Hello World'\n)\nPRIMARY KEY SrcAddr\nSOURCE(HTTP(URL 'http://127.0.0.1:0/api/v0/orchestrator/clickhouse/custom_dict_test.csv' FORMAT 'CSVWithNames'))\nLIFETIME(MIN 0 MAX 3600)\nLAYOUT(COMPLEX_KEY_HASHED())\nSETTINGS(format_csv_allow_single_quotes = 0)"); diff != "" {
+			expected := `CREATE DICTIONARY default.custom_dict_test
+(
+    ` + "`SrcAddr`" + ` String,
+    ` + "`csv_col_name`" + ` String DEFAULT 'None',
+    ` + "`csv_col_default`" + ` String DEFAULT 'Hello World'
+)
+PRIMARY KEY SrcAddr
+SOURCE(HTTP(URL 'http://127.0.0.1:0/api/v0/orchestrator/clickhouse/custom_dict_test.csv' FORMAT 'CSVWithNames'))
+LIFETIME(MIN 0 MAX 3600)
+LAYOUT(COMPLEX_KEY_HASHED())
+SETTINGS(format_csv_allow_single_quotes = 0)`
+			if diff := helpers.Diff(got, expected); diff != "" {
 				t.Fatalf("Unexpected state:\n%s", diff)
 			}
 		})
@@ -620,11 +630,11 @@ func TestCustomDictMigration(t *testing.T) {
 
 			// Check if the rows were created in the main flows table
 			row := ch.d.ClickHouse.QueryRow(context.Background(), `
-	SELECT toString(groupArray(tuple(name, type, default_expression)))
-	FROM system.columns
-	WHERE table = $1
-	AND database = $2
-	AND name LIKE $3`, "flows", ch.config.Database, "%DimensionAttribute")
+SELECT toString(groupArray(tuple(name, type, default_expression)))
+FROM system.columns
+WHERE table = $1
+AND database = $2
+AND name LIKE $3`, "flows", ch.config.Database, "%DimensionAttribute")
 			var existing string
 			if err := row.Scan(&existing); err != nil {
 				t.Fatalf("Scan() error:\n%+v", err)
@@ -635,8 +645,8 @@ func TestCustomDictMigration(t *testing.T) {
 			}
 
 			// Check if the rows were removed in the consumer flows table
-			rowConsumer := ch.d.ClickHouse.QueryRow(context.Background(), `
-		SHOW CREATE flows_LAABIGYMRYZPTGOYIIFZNYDEQM_raw_consumer`)
+			rowConsumer := ch.d.ClickHouse.QueryRow(context.Background(),
+				`SHOW CREATE flows_LAABIGYMRYZPTGOYIIFZNYDEQM_raw_consumer`)
 			var existingConsumer string
 			if err := rowConsumer.Scan(&existingConsumer); err != nil {
 				t.Fatalf("Scan() error:\n%+v", err)
@@ -650,7 +660,7 @@ func TestCustomDictMigration(t *testing.T) {
 			}
 			for _, s := range expectedStatements {
 				if strings.Contains(existingConsumer, s) {
-					t.Fatalf("Unexpected Statement found in consumer:\n%s", s)
+					t.Fatalf("Unexpected statement found in consumer:\n%s", s)
 				}
 			}
 		})
