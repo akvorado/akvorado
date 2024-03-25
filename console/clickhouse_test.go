@@ -300,3 +300,81 @@ func TestFinalizeQuery(t *testing.T) {
 		})
 	}
 }
+
+func TestGetTableInterval(t *testing.T) {
+	cases := []struct {
+		Description string
+		Tables      []flowsTable
+		Context     inputContext
+		Expected    tableIntervalResult
+	}{
+		{
+			Description: "simple query without additional tables",
+			Context: inputContext{
+				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+				Points: 86400,
+			},
+			Expected: tableIntervalResult{Table: "flows", Interval: 1},
+		}, {
+			Description: "query with main table",
+			Context: inputContext{
+				Start:             time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:               time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+				MainTableRequired: true,
+				Points:            86400,
+			},
+			Expected: tableIntervalResult{Table: "flows", Interval: 1},
+		}, {
+			Description: "only flows table available",
+			Tables:      []flowsTable{{"flows", 0, time.Date(2022, 3, 10, 15, 45, 10, 0, time.UTC)}},
+			Context: inputContext{
+				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+				Points: 86400,
+			},
+			Expected: tableIntervalResult{Table: "flows", Interval: 1},
+		}, {
+			Description: "select flows table out of range",
+			Tables: []flowsTable{
+				{"flows", 0, time.Date(2022, 4, 10, 16, 45, 10, 0, time.UTC)},
+				{"flows_1m0s", time.Minute, time.Date(2022, 4, 10, 17, 45, 10, 0, time.UTC)},
+			},
+			Context: inputContext{
+				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+				Points: 720, // 2-minute resolution,
+			},
+			Expected: tableIntervalResult{Table: "flows", Interval: 1},
+		}, {
+			Description: "select consolidated table with better resolution",
+			Tables: []flowsTable{
+				{"flows", 0, time.Date(2022, 3, 10, 22, 45, 10, 0, time.UTC)},
+				{"flows_5m0s", 5 * time.Minute, time.Date(2022, 4, 2, 22, 45, 10, 0, time.UTC)},
+				{"flows_1m0s", time.Minute, time.Date(2022, 4, 2, 22, 45, 10, 0, time.UTC)},
+			},
+			Context: inputContext{
+				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+				Points: 720, // 2-minute resolution,
+			},
+			Expected: tableIntervalResult{Table: "flows_1m0s", Interval: 60},
+		},
+	}
+
+	c, _, _, _ := NewMock(t, DefaultConfiguration())
+	for _, tc := range cases {
+		t.Run(tc.Description, func(t *testing.T) {
+			c.flowsTables = tc.Tables
+			table, interval, _ := c.computeTableAndInterval(
+				tc.Context)
+			got := tableIntervalResult{
+				Table:    table,
+				Interval: uint64(interval.Seconds()),
+			}
+			if diff := helpers.Diff(got, tc.Expected); diff != "" {
+				t.Fatalf("ComputeBestTableAndInterval(): (-got, +want):\n%s", diff)
+			}
+		})
+	}
+}

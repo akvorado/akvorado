@@ -21,7 +21,7 @@ import (
 	"akvorado/console/database"
 )
 
-// NewMock instantiantes a new authentication component
+// NewMock instantiates a new authentication component
 func NewMock(t *testing.T, config Configuration) (*Component, *httpserver.Component, *mocks.MockConn, *clock.Mock) {
 	t.Helper()
 	r := reporter.NewMock(t)

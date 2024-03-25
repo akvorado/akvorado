@@ -94,6 +94,7 @@ func (c *Component) Start() error {
 	endpoint.GET("/widget/graph", c.d.HTTP.CacheByRequestPath(5*time.Minute), c.widgetGraphHandlerFunc)
 	endpoint.POST("/graph/line", c.d.HTTP.CacheByRequestBody(c.config.CacheTTL), c.graphLineHandlerFunc)
 	endpoint.POST("/graph/sankey", c.d.HTTP.CacheByRequestBody(c.config.CacheTTL), c.graphSankeyHandlerFunc)
+	endpoint.POST("/graph/table-interval", c.getTableAndIntervalHandlerFunc)
 	endpoint.POST("/filter/validate", c.filterValidateHandlerFunc)
 	endpoint.POST("/filter/complete", c.d.HTTP.CacheByRequestBody(time.Minute), c.filterCompleteHandlerFunc)
 	endpoint.GET("/filter/saved", c.filterSavedListHandlerFunc)
