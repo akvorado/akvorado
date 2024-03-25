@@ -13,14 +13,8 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"net/http"
-
-	"akvorado/common/helpers"
 	"akvorado/console/query"
 )
-
-const defaultPointsNumber = 200
 
 // flowsTable describe a consolidated or unconsolidated flows table.
 type flowsTable struct {
@@ -123,11 +117,6 @@ type context struct {
 	ToStartOfInterval func(string) string
 }
 
-type tableIntervalResult struct {
-	Table    string `json:"table"`
-	Interval uint64 `json:"interval"`
-}
-
 // templateEscape escapes `{{` and `}}` from a string. In fact, only
 // the opening tag needs to be escaped.
 func templateEscape(input string) string {
@@ -149,17 +138,6 @@ func templateContext(context inputContext) string {
 		panic(err)
 	}
 	return fmt.Sprintf("context `%s`", string(encoded))
-}
-
-func (c *Component) getTableAndIntervalHandlerFunc(gc *gin.Context) {
-	input := inputContext{Points: defaultPointsNumber}
-	if err := gc.ShouldBindJSON(&input); err != nil {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
-		return
-	}
-	table, interval, _ := c.computeTableAndInterval(input)
-
-	gc.JSON(http.StatusOK, tableIntervalResult{Table: table, Interval: uint64(interval.Seconds())})
 }
 
 func (c *Component) contextFunc(inputStr string) context {

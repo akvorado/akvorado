@@ -422,3 +422,29 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 	}
 	gc.JSON(http.StatusOK, output)
 }
+
+type tableIntervalInput struct {
+	Start  time.Time `json:"start" binding:"required"`
+	End    time.Time `json:"end" binding:"required,gtfield=Start"`
+	Points uint      `json:"points" binding:"required,min=5,max=2000"` // minimum number of points
+}
+
+type tableIntervalOutput struct {
+	Table    string `json:"table"`
+	Interval uint64 `json:"interval"`
+}
+
+func (c *Component) getTableAndIntervalHandlerFunc(gc *gin.Context) {
+	var input tableIntervalInput
+	if err := gc.ShouldBindJSON(&input); err != nil {
+		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
+		return
+	}
+	table, interval, _ := c.computeTableAndInterval(inputContext{
+		Points: input.Points,
+		Start:  input.Start,
+		End:    input.End,
+	})
+
+	gc.JSON(http.StatusOK, tableIntervalOutput{Table: table, Interval: uint64(interval.Seconds())})
+}

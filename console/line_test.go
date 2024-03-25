@@ -979,3 +979,35 @@ func TestGraphLineHandler(t *testing.T) {
 		},
 	})
 }
+
+func TestGetTableInterval(t *testing.T) {
+	_, h, _, mockClock := NewMock(t, DefaultConfiguration())
+	mockClock.Set(time.Date(2022, 4, 12, 15, 45, 10, 0, time.UTC))
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
+		{
+			Description: "simple query",
+			URL:         "/api/v0/console/graph/table-interval",
+			JSONInput: gin.H{
+				"start":  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				"end":    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+				"points": 300,
+			},
+			JSONOutput: gin.H{
+				"table":    "flows",
+				"interval": 1,
+			},
+		}, {
+			Description: "too many points",
+			URL:         "/api/v0/console/graph/table-interval",
+			JSONInput: gin.H{
+				"start":  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				"end":    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+				"points": 86400,
+			},
+			StatusCode: 400,
+			JSONOutput: gin.H{
+				"message": `Key: 'tableIntervalInput.Points' Error:Field validation for 'Points' failed on the 'max' tag`,
+			},
+		},
+	})
+}

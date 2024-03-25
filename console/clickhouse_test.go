@@ -301,12 +301,12 @@ func TestFinalizeQuery(t *testing.T) {
 	}
 }
 
-func TestGetTableInterval(t *testing.T) {
+func TestComputeBestTableAndInterval(t *testing.T) {
 	cases := []struct {
 		Description string
 		Tables      []flowsTable
 		Context     inputContext
-		Expected    tableIntervalResult
+		Expected    tableIntervalOutput
 	}{
 		{
 			Description: "simple query without additional tables",
@@ -315,7 +315,7 @@ func TestGetTableInterval(t *testing.T) {
 				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points: 86400,
 			},
-			Expected: tableIntervalResult{Table: "flows", Interval: 1},
+			Expected: tableIntervalOutput{Table: "flows", Interval: 1},
 		}, {
 			Description: "query with main table",
 			Context: inputContext{
@@ -324,7 +324,7 @@ func TestGetTableInterval(t *testing.T) {
 				MainTableRequired: true,
 				Points:            86400,
 			},
-			Expected: tableIntervalResult{Table: "flows", Interval: 1},
+			Expected: tableIntervalOutput{Table: "flows", Interval: 1},
 		}, {
 			Description: "only flows table available",
 			Tables:      []flowsTable{{"flows", 0, time.Date(2022, 3, 10, 15, 45, 10, 0, time.UTC)}},
@@ -333,7 +333,7 @@ func TestGetTableInterval(t *testing.T) {
 				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points: 86400,
 			},
-			Expected: tableIntervalResult{Table: "flows", Interval: 1},
+			Expected: tableIntervalOutput{Table: "flows", Interval: 1},
 		}, {
 			Description: "select flows table out of range",
 			Tables: []flowsTable{
@@ -345,7 +345,7 @@ func TestGetTableInterval(t *testing.T) {
 				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points: 720, // 2-minute resolution,
 			},
-			Expected: tableIntervalResult{Table: "flows", Interval: 1},
+			Expected: tableIntervalOutput{Table: "flows", Interval: 1},
 		}, {
 			Description: "select consolidated table with better resolution",
 			Tables: []flowsTable{
@@ -358,7 +358,7 @@ func TestGetTableInterval(t *testing.T) {
 				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				Points: 720, // 2-minute resolution,
 			},
-			Expected: tableIntervalResult{Table: "flows_1m0s", Interval: 60},
+			Expected: tableIntervalOutput{Table: "flows_1m0s", Interval: 60},
 		},
 	}
 
@@ -368,7 +368,7 @@ func TestGetTableInterval(t *testing.T) {
 			c.flowsTables = tc.Tables
 			table, interval, _ := c.computeTableAndInterval(
 				tc.Context)
-			got := tableIntervalResult{
+			got := tableIntervalOutput{
 				Table:    table,
 				Interval: uint64(interval.Seconds()),
 			}
