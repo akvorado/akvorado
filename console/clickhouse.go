@@ -13,8 +13,14 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/gin-gonic/gin"
+	"net/http"
+
+	"akvorado/common/helpers"
 	"akvorado/console/query"
 )
+
+const defaultPointsNumber = 200
 
 // flowsTable describe a consolidated or unconsolidated flows table.
 type flowsTable struct {
@@ -117,6 +123,11 @@ type context struct {
 	ToStartOfInterval func(string) string
 }
 
+type tableIntervalResult struct {
+	Table    string `json:"table"`
+	Interval uint64 `json:"interval"`
+}
+
 // templateEscape escapes `{{` and `}}` from a string. In fact, only
 // the opening tag needs to be escaped.
 func templateEscape(input string) string {
@@ -140,26 +151,24 @@ func templateContext(context inputContext) string {
 	return fmt.Sprintf("context `%s`", string(encoded))
 }
 
+func (c *Component) getTableAndIntervalHandlerFunc(gc *gin.Context) {
+	input := inputContext{Points: defaultPointsNumber}
+	if err := gc.ShouldBindJSON(&input); err != nil {
+		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
+		return
+	}
+	table, interval, _ := c.computeTableAndInterval(input)
+
+	gc.JSON(http.StatusOK, tableIntervalResult{Table: table, Interval: uint64(interval.Seconds())})
+}
+
 func (c *Component) contextFunc(inputStr string) context {
 	var input inputContext
 	if err := json.Unmarshal([]byte(inputStr), &input); err != nil {
 		panic(err)
 	}
 
-	targetInterval := time.Duration(uint64(input.End.Sub(input.Start)) / uint64(input.Points))
-	if targetInterval < time.Second {
-		targetInterval = time.Second
-	}
-
-	// Select table
-	targetIntervalForTableSelection := targetInterval
-	if input.MainTableRequired {
-		targetIntervalForTableSelection = time.Second
-	}
-	table, computedInterval := c.getBestTable(input.Start, targetIntervalForTableSelection)
-	if input.StartForInterval != nil {
-		_, computedInterval = c.getBestTable(*input.StartForInterval, targetIntervalForTableSelection)
-	}
+	table, computedInterval, targetInterval := c.computeTableAndInterval(input)
 
 	// Make start/end match the computed interval (currently equal to the table resolution)
 	start := input.Start.Truncate(computedInterval)
@@ -222,6 +231,24 @@ func (c *Component) contextFunc(inputStr string) context {
 				diffOffset)
 		},
 	}
+}
+
+func (c *Component) computeTableAndInterval(input inputContext) (string, time.Duration, time.Duration) {
+	targetInterval := time.Duration(uint64(input.End.Sub(input.Start)) / uint64(input.Points))
+	if targetInterval < time.Second {
+		targetInterval = time.Second
+	}
+
+	// Select table
+	targetIntervalForTableSelection := targetInterval
+	if input.MainTableRequired {
+		targetIntervalForTableSelection = time.Second
+	}
+	table, computedInterval := c.getBestTable(input.Start, targetIntervalForTableSelection)
+	if input.StartForInterval != nil {
+		_, computedInterval = c.getBestTable(*input.StartForInterval, targetIntervalForTableSelection)
+	}
+	return table, computedInterval, targetInterval
 }
 
 // Get the best table starting at the specified time.
