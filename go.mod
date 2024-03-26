@@ -4,7 +4,7 @@ go 1.21.1
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.22.2
-	github.com/IBM/sarama v1.42.1
+	github.com/IBM/sarama v1.43.0
 	github.com/alecthomas/chroma v0.10.0
 	github.com/benbjohnson/clock v1.3.5
 	github.com/bio-routing/bio-rd v0.1.10-0.20230730142204-f71bc383fe42
@@ -13,7 +13,7 @@ require (
 	github.com/chenyahui/gin-cache v1.9.0
 	github.com/docker/docker v25.0.4+incompatible
 	github.com/docker/go-connections v0.5.0
-	github.com/eapache/go-resiliency v1.5.0
+	github.com/eapache/go-resiliency v1.6.0
 	github.com/expr-lang/expr v1.16.0
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/gin-gonic/gin v1.9.1
