@@ -454,6 +454,7 @@ func TestConcurrentOperations(t *testing.T) {
 	time.Sleep(30 * time.Millisecond)
 	close(done)
 	wg.Wait()
+	time.Sleep(30 * time.Millisecond)
 
 	gotMetrics := r.GetMetrics("akvorado_inlet_metadata_cache_")
 	hits, _ := strconv.Atoi(gotMetrics["hits_total"])
