@@ -16,7 +16,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/openconfig/gnmic/pkg/api"
-	"github.com/openconfig/gnmic/pkg/target"
+	"github.com/openconfig/gnmic/pkg/api/target"
 )
 
 // exporterState is the state of an exporter.

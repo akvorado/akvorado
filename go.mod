@@ -32,7 +32,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/netsampler/goflow2/v2 v2.1.3
 	github.com/openconfig/gnmi v0.10.0
-	github.com/openconfig/gnmic/pkg/api v0.1.2
+	github.com/openconfig/gnmic/pkg/api v0.1.5
 	github.com/openconfig/gnmic/pkg/target v0.1.4
 	github.com/oschwald/maxminddb-golang v1.12.0
 	github.com/osrg/gobgp/v3 v3.24.0
@@ -122,7 +122,6 @@ require (
 	github.com/mdlayher/socket v0.4.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/openconfig/gnmic/pkg/path v0.1.1 // indirect
 	github.com/openconfig/gnmic/pkg/types v0.1.2 // indirect
 	github.com/openconfig/gnmic/pkg/utils v0.1.0 // indirect
 	github.com/openconfig/grpctunnel v0.1.0 // indirect
@@ -163,7 +162,7 @@ require (
 	golang.org/x/crypto v0.21.0 // indirect
 	golang.org/x/mod v0.13.0 // indirect
 	golang.org/x/net v0.22.0 // indirect
-	golang.org/x/oauth2 v0.16.0 // indirect
+	golang.org/x/oauth2 v0.17.0 // indirect
 	golang.org/x/sync v0.6.0 // indirect
 	golang.org/x/tools v0.14.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
