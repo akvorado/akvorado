@@ -9,6 +9,7 @@ package metrics
 import (
 	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 
@@ -34,8 +35,9 @@ type Metrics struct {
 func New(logger logger.Logger, configuration Configuration) (*Metrics, error) {
 	reg := prometheus.NewRegistry()
 	reg.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
-	reg.MustRegister(collectors.NewGoCollector(collectors.WithGoCollections(
-		collectors.GoRuntimeMemStatsCollection | collectors.GoRuntimeMetricsCollection)))
+	reg.MustRegister(collectors.NewGoCollector(
+		collectors.WithGoCollectorRuntimeMetrics(
+			collectors.GoRuntimeMetricsRule{Matcher: regexp.MustCompile("/.*")})))
 	m := Metrics{
 		logger:       logger,
 		config:       configuration,
