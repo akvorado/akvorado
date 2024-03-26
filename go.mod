@@ -25,7 +25,6 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.0.0
 	github.com/hashicorp/go-version v1.6.0
 	github.com/itchyny/gojq v0.12.14
-	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99
 	github.com/jhump/protoreflect v1.15.6
 	github.com/kentik/patricia v1.2.1
 	github.com/kylelemons/godebug v1.1.0
@@ -35,6 +34,7 @@ require (
 	github.com/openconfig/gnmi v0.10.0
 	github.com/openconfig/gnmic/pkg/api v0.1.2
 	github.com/openconfig/gnmic/pkg/target v0.1.4
+	github.com/opencontainers/image-spec v1.1.0-rc5
 	github.com/oschwald/maxminddb-golang v1.12.0
 	github.com/osrg/gobgp/v3 v3.24.0
 	github.com/prometheus/client_golang v1.18.0
@@ -129,7 +129,6 @@ require (
 	github.com/openconfig/gnmic/pkg/utils v0.1.0 // indirect
 	github.com/openconfig/grpctunnel v0.1.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect
 	github.com/paulmach/orb v0.11.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect

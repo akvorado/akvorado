@@ -15,8 +15,6 @@ import (
 	"strconv"
 	"text/template"
 	"time"
-
-	ctxio "github.com/jbenet/go-context/io"
 )
 
 var (
@@ -161,7 +159,25 @@ func (c *Component) registerHTTPHandlers() error {
 
 			w.Header().Set("Content-Type", "text/csv; charset=utf-8")
 			w.WriteHeader(http.StatusOK)
-			io.Copy(w, ctxio.NewReader(ctx, gzipReader))
+			// Implement io.Copy, but cancellable
+			buf := make([]byte, 32*1024) // 32 KB
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
+				nr, er := gzipReader.Read(buf)
+				if nr > 0 {
+					nw, ew := w.Write(buf[0:nr])
+					if nw < 0 || nr != nw || ew != nil {
+						return
+					}
+				}
+				if er != nil {
+					return
+				}
+			}
 		}))
 
 	// asns.csv (when there are some custom-defined ASNs)
