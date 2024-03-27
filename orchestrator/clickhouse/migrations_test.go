@@ -97,6 +97,9 @@ func oldTable(schema *schema.Component, table string) bool {
 	if strings.Contains(table, schema.ProtobufMessageHash()) {
 		return false
 	}
+	if table == "flows_raw_errors" {
+		return false
+	}
 	if strings.HasSuffix(table, "_raw") || strings.HasSuffix(table, "_raw_consumer") || strings.HasSuffix(table, "_raw_errors") {
 		return true
 	}
@@ -247,7 +250,8 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 				"flows_5m0s_consumer",
 				fmt.Sprintf("flows_%s_raw", hash),
 				fmt.Sprintf("flows_%s_raw_consumer", hash),
-				fmt.Sprintf("flows_%s_raw_errors", hash),
+				"flows_raw_errors",
+				"flows_raw_errors_consumer",
 				schema.DictionaryICMP,
 				schema.DictionaryNetworks,
 				schema.DictionaryProtocols,
@@ -318,7 +322,21 @@ LIMIT 1`)
 	if !t.Failed() {
 		t.Run("final state", func(t *testing.T) {
 			if lastSteps != 0 {
-				t.Fatalf("Last step was not idempotent. Record a new one with:\n%s FORMAT CSV", dumpAllTablesQuery)
+				f, err := os.CreateTemp("", "clickhouse-dump-*.csv")
+				if err != nil {
+					t.Fatalf("CreateTemp() error:\n%+v", err)
+				}
+				defer f.Close()
+				writer := csv.NewWriter(f)
+				defer writer.Flush()
+				allTables := dumpAllTables(t, chComponent, schema.NewMock(t))
+				for table, create := range allTables {
+					if table != "flows_raw_errors" {
+						writer.Write([]string{table, create})
+					}
+				}
+				writer.Write([]string{"flows_raw_errors", allTables["flows_raw_errors"]})
+				t.Fatalf("Last step was not idempotent. Check %s for the current dump", f.Name())
 			}
 		})
 	}

@@ -140,7 +140,11 @@ func (c *Component) migrateDatabase() error {
 		}, func() error {
 			return c.createRawFlowsConsumerView(ctx)
 		}, func() error {
-			return c.createRawFlowsErrorsView(ctx)
+			return c.createRawFlowsErrors(ctx)
+		}, func() error {
+			return c.createRawFlowsErrorsConsumerView(ctx)
+		}, func() error {
+			return c.deleteOldRawFlowsErrorsView(ctx)
 		},
 	)
 	if err != nil {

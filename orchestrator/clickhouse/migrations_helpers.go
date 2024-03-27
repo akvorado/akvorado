@@ -67,12 +67,14 @@ func (c *Component) tableAlreadyExists(ctx context.Context, table, column, targe
 	if err := row.Scan(&existing); err != nil && err != sql.ErrNoRows {
 		return false, fmt.Errorf("cannot check if table %s already exists: %w", table, err)
 	}
+	// Add a few tweaks
 	existing = strings.ReplaceAll(existing,
 		fmt.Sprintf(`dictGetOrDefault('%s.`, c.config.Database),
 		"dictGetOrDefault('")
 	existing = strings.ReplaceAll(existing,
 		fmt.Sprintf(`dictGet('%s.`, c.config.Database),
 		"dictGet('")
+	existing = regexp.MustCompile(` SETTINGS index_granularity = \d+$`).ReplaceAllString(existing, "")
 
 	// Compare!
 	if existing == target {
@@ -80,7 +82,7 @@ func (c *Component) tableAlreadyExists(ctx context.Context, table, column, targe
 	}
 	c.r.Debug().
 		Str("target", target).Str("existing", existing).
-		Msgf("table %s is not in the expected state", table)
+		Msgf("table %s is assumed to not exist in the expected state", table)
 	return false, nil
 }
 
@@ -348,9 +350,41 @@ func (c *Component) createRawFlowsConsumerView(ctx context.Context) error {
 	return nil
 }
 
-func (c *Component) createRawFlowsErrorsView(ctx context.Context) error {
+func (c *Component) createRawFlowsErrors(ctx context.Context) error {
+	createQuery, err := stemplate(`CREATE TABLE {{ .Database }}.flows_raw_errors
+(`+"`timestamp`"+` DateTime,
+ `+"`topic`"+` LowCardinality(String),
+ `+"`partition`"+` UInt64,
+ `+"`offset`"+` UInt64,
+ `+"`raw`"+` String,
+ `+"`error`"+` String)
+ENGINE = MergeTree
+PARTITION BY toYYYYMMDDhhmmss(toStartOfHour(timestamp))
+ORDER BY (timestamp, topic, partition, offset)
+TTL timestamp + toIntervalDay(1)
+`, gin.H{
+		"Database": c.config.Database,
+	})
+	if err != nil {
+		return fmt.Errorf("cannot build query to create flow error table: %w", err)
+	}
+	if ok, err := c.tableAlreadyExists(ctx, "flows_raw_errors", "create_table_query", createQuery); err != nil {
+		return err
+	} else if ok {
+		c.r.Info().Msgf("table flows_raw_errors already exists, skip migration")
+		return errSkipStep
+	}
+	c.r.Info().Msg("create table flows_raw_errors")
+	createOrReplaceQuery := strings.Replace(createQuery, "CREATE ", "CREATE OR REPLACE ", 1)
+	if err := c.d.ClickHouse.Exec(ctx, createOrReplaceQuery); err != nil {
+		return fmt.Errorf("cannot create table flows_raw_errors: %w", err)
+	}
+	return nil
+}
+
+func (c *Component) createRawFlowsErrorsConsumerView(ctx context.Context) error {
 	tableName := fmt.Sprintf("flows_%s_raw", c.d.Schema.ProtobufMessageHash())
-	viewName := fmt.Sprintf("%s_errors", tableName)
+	viewName := "flows_raw_errors_consumer"
 
 	// Build SELECT query
 	selectQuery, err := stemplate(`
@@ -384,17 +418,31 @@ WHERE length(_error) > 0`, gin.H{
 		return fmt.Errorf("cannot drop table %s: %w", viewName, err)
 	}
 	if err := c.d.ClickHouse.Exec(ctx,
-		fmt.Sprintf(`
-CREATE MATERIALIZED VIEW %s
-ENGINE = MergeTree
-ORDER BY (timestamp, topic, partition, offset)
-PARTITION BY toYYYYMMDDhhmmss(toStartOfHour(timestamp))
-TTL timestamp + INTERVAL 1 DAY
-AS %s`,
-			viewName, selectQuery)); err != nil {
+		fmt.Sprintf(`CREATE MATERIALIZED VIEW %s TO %s AS %s`,
+			viewName, "flows_raw_errors", selectQuery)); err != nil {
 		return fmt.Errorf("cannot create raw flows errors view: %w", err)
 	}
 
+	return nil
+}
+
+func (c *Component) deleteOldRawFlowsErrorsView(ctx context.Context) error {
+	tableName := fmt.Sprintf("flows_%s_raw", c.d.Schema.ProtobufMessageHash())
+	viewName := fmt.Sprintf("%s_errors", tableName)
+
+	// Check the existing one
+	if ok, err := c.tableAlreadyExists(ctx, viewName, "name", viewName); err != nil {
+		return err
+	} else if !ok {
+		c.r.Debug().Msg("old raw flows errors view does not exist, skip migration")
+		return errSkipStep
+	}
+
+	// Drop
+	c.r.Info().Msg("delete old raw flows errors view")
+	if err := c.d.ClickHouse.Exec(ctx, fmt.Sprintf(`DROP TABLE IF EXISTS %s SYNC`, viewName)); err != nil {
+		return fmt.Errorf("cannot drop table %s: %w", viewName, err)
+	}
 	return nil
 }
 
