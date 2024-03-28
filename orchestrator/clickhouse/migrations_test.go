@@ -48,34 +48,35 @@ func dropAllTables(t *testing.T, ch *clickhousedb.Component) {
 	}
 }
 
+type tableWithSchema struct {
+	table  string
+	schema string
+}
+
 const dumpAllTablesQuery = `
 SELECT table, create_table_query
 FROM system.tables
 WHERE database=currentDatabase() AND table NOT LIKE '.%'
-ORDER BY length(table) ASC`
+ORDER BY indexOf(['Dictionary'], engine) DESC, indexOf(['MaterializedView'], engine) ASC
+`
 
-func dumpAllTables(t *testing.T, ch *clickhousedb.Component, schemaComponent *schema.Component) map[string]string {
+func dumpAllTables(t *testing.T, ch *clickhousedb.Component, schemaComponent *schema.Component) []tableWithSchema {
 	// TODO: find the right ordering, this one does not totally work
 	rows, err := ch.Query(context.Background(), dumpAllTablesQuery)
 	if err != nil {
 		t.Fatalf("Query() error:\n%+v", err)
 	}
-	schemas := map[string]string{}
+	schemas := []tableWithSchema{}
 	for rows.Next() {
 		var schema, table string
 		if err := rows.Scan(&table, &schema); err != nil {
 			t.Fatalf("Scan() error:\n%+v", err)
 		}
 		if !oldTable(schemaComponent, table) {
-			schemas[table] = schema
+			schemas = append(schemas, tableWithSchema{table, schema})
 		}
 	}
 	return schemas
-}
-
-type tableWithSchema struct {
-	table  string
-	schema string
 }
 
 func loadTables(t *testing.T, ch *clickhousedb.Component, sch *schema.Component, schemas []tableWithSchema) {
@@ -193,7 +194,7 @@ func TestMigration(t *testing.T) {
 	r := reporter.NewMock(t)
 	chComponent := clickhousedb.SetupClickHouse(t, r)
 
-	var lastRun map[string]string
+	var lastRun []tableWithSchema
 	var lastSteps int
 	files, err := os.ReadDir("testdata/states")
 	if err != nil {
@@ -330,12 +331,9 @@ LIMIT 1`)
 				writer := csv.NewWriter(f)
 				defer writer.Flush()
 				allTables := dumpAllTables(t, chComponent, schema.NewMock(t))
-				for table, create := range allTables {
-					if table != "flows_raw_errors" {
-						writer.Write([]string{table, create})
-					}
+				for _, item := range allTables {
+					writer.Write([]string{item.table, item.schema})
 				}
-				writer.Write([]string{"flows_raw_errors", allTables["flows_raw_errors"]})
 				t.Fatalf("Last step was not idempotent. Check %s for the current dump", f.Name())
 			}
 		})
