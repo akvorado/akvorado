@@ -242,6 +242,7 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 			expected := []string{
 				schema.DictionaryASNs,
 				"exporters",
+				"exporters_consumer",
 				"flows",
 				"flows_1h0m0s",
 				"flows_1h0m0s_consumer",

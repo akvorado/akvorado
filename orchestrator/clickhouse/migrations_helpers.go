@@ -126,8 +126,61 @@ LAYOUT({{ .Layout }}())
 	return nil
 }
 
-// createExportersView creates the exporters table/view.
-func (c *Component) createExportersView(ctx context.Context) error {
+// createExportersConsumerView creates the exporters table.
+func (c *Component) createExportersTable(ctx context.Context) error {
+	// Select the columns we need
+	cols := []string{}
+	for _, column := range c.d.Schema.Columns() {
+		if column.Key == schema.ColumnTimeReceived || strings.HasPrefix(column.Name, "Exporter") {
+			cols = append(cols, fmt.Sprintf("`%s` %s", column.Name, column.ClickHouseType))
+		}
+		if strings.HasPrefix(column.Name, "InIf") {
+			cols = append(cols, fmt.Sprintf("`%s` %s",
+				column.Name[2:], column.ClickHouseType,
+			))
+		}
+	}
+
+	// Build CREATE TABLE
+	createQuery, err := stemplate(
+		`CREATE TABLE {{ .Database }}.exporters
+({{ .Schema }})
+ENGINE = ReplacingMergeTree(TimeReceived)
+ORDER BY (ExporterAddress, IfName)
+TTL TimeReceived + toIntervalDay(1)`,
+		gin.H{
+			"Database": c.config.Database,
+			"Schema":   strings.Join(cols, ", "),
+		})
+	if err != nil {
+		return fmt.Errorf("cannot build query to create exporters view: %w", err)
+	}
+
+	// Check if the table already exists
+	if ok, err := c.tableAlreadyExists(ctx, "exporters", "create_table_query", createQuery); err != nil {
+		return err
+	} else if ok {
+		c.r.Info().Msg("exporters table already exists, skip migration")
+		return errSkipStep
+	}
+
+	// Drop existing table and recreate
+	c.r.Info().Msg("create exporters table")
+	if err := c.d.ClickHouse.Exec(ctx, `DROP TABLE IF EXISTS exporters SYNC`); err != nil {
+		return fmt.Errorf("cannot drop existing exporters view: %w", err)
+	}
+	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
+		"allow_suspicious_low_cardinality_types": 1,
+	}))
+	if err := c.d.ClickHouse.Exec(ctx, createQuery); err != nil {
+		return fmt.Errorf("cannot create exporters table: %w", err)
+	}
+
+	return nil
+}
+
+// createExportersConsumerView creates the exporters view.
+func (c *Component) createExportersConsumerView(ctx context.Context) error {
 	// Select the columns we need
 	cols := []string{}
 	for _, column := range c.d.Schema.Columns() {
@@ -154,8 +207,7 @@ func (c *Component) createExportersView(ctx context.Context) error {
 
 	// Check if the table already exists with these columns and with a TTL.
 	if ok, err := c.tableAlreadyExists(ctx,
-		"exporters",
-		"IF(position(create_table_query, 'TTL TimeReceived ') > 0, as_select, 'NOTTL')",
+		"exporters_consumer", "as_select",
 		selectQuery); err != nil {
 		return err
 	} else if ok {
@@ -165,17 +217,11 @@ func (c *Component) createExportersView(ctx context.Context) error {
 
 	// Drop existing table and recreate
 	c.r.Info().Msg("create exporters view")
-	if err := c.d.ClickHouse.Exec(ctx, `DROP TABLE IF EXISTS exporters SYNC`); err != nil {
+	if err := c.d.ClickHouse.Exec(ctx, `DROP TABLE IF EXISTS exporters_consumer SYNC`); err != nil {
 		return fmt.Errorf("cannot drop existing exporters view: %w", err)
 	}
-	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
-		"allow_suspicious_low_cardinality_types": 1,
-	}))
 	if err := c.d.ClickHouse.Exec(ctx, fmt.Sprintf(`
-CREATE MATERIALIZED VIEW exporters
-ENGINE = ReplacingMergeTree(TimeReceived)
-ORDER BY (ExporterAddress, IfName)
-TTL TimeReceived + INTERVAL 1 DAY
+CREATE MATERIALIZED VIEW exporters_consumer TO exporters
 AS %s
 `, selectQuery)); err != nil {
 		return fmt.Errorf("cannot create exporters view: %w", err)

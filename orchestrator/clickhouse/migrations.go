@@ -134,7 +134,9 @@ func (c *Component) migrateDatabase() error {
 	// Remaining tables
 	err = c.wrapMigrations(
 		func() error {
-			return c.createExportersView(ctx)
+			return c.createExportersTable(ctx)
+		}, func() error {
+			return c.createExportersConsumerView(ctx)
 		}, func() error {
 			return c.createRawFlowsTable(ctx)
 		}, func() error {
