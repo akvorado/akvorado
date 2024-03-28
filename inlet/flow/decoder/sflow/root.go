@@ -43,7 +43,7 @@ type Decoder struct {
 }
 
 // New instantiates a new sFlow decoder.
-func New(r *reporter.Reporter, dependencies decoder.Dependencies) decoder.Decoder {
+func New(r *reporter.Reporter, dependencies decoder.Dependencies, _ decoder.Option) decoder.Decoder {
 	nd := &Decoder{
 		r:         r,
 		d:         dependencies,

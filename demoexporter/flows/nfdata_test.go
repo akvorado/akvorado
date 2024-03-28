@@ -19,7 +19,7 @@ import (
 
 func TestGetNetflowData(t *testing.T) {
 	r := reporter.NewMock(t)
-	nfdecoder := netflow.New(r, decoder.Dependencies{Schema: schema.NewMock(t)})
+	nfdecoder := netflow.New(r, decoder.Dependencies{Schema: schema.NewMock(t)}, decoder.Option{TimestampSource: decoder.TimestampSourceUDP})
 
 	ch := getNetflowTemplates(
 		context.Background(),

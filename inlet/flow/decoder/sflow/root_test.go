@@ -17,7 +17,7 @@ import (
 
 func TestDecode(t *testing.T) {
 	r := reporter.NewMock(t)
-	sdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()})
+	sdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()}, decoder.Option{})
 
 	// Send data
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-1140.pcap"))
@@ -176,7 +176,7 @@ func TestDecode(t *testing.T) {
 
 func TestDecodeInterface(t *testing.T) {
 	r := reporter.NewMock(t)
-	sdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t)})
+	sdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t)}, decoder.Option{})
 
 	t.Run("local interface", func(t *testing.T) {
 		// Send data
@@ -284,7 +284,7 @@ func TestDecodeInterface(t *testing.T) {
 
 func TestDecodeSamples(t *testing.T) {
 	r := reporter.NewMock(t)
-	sdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()})
+	sdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()}, decoder.Option{})
 
 	t.Run("expanded flow sample", func(t *testing.T) {
 		// Send data

@@ -17,7 +17,7 @@ import (
 
 func TestDecode(t *testing.T) {
 	r := reporter.NewMock(t)
-	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()})
+	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()}, decoder.Option{TimestampSource: decoder.TimestampSourceUDP})
 
 	// Send an option template
 	template := helpers.ReadPcapL4(t, filepath.Join("testdata", "options-template.pcap"))
@@ -214,7 +214,7 @@ func TestDecode(t *testing.T) {
 
 func TestTemplatesMixedWithData(t *testing.T) {
 	r := reporter.NewMock(t)
-	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t)})
+	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t)}, decoder.Option{TimestampSource: decoder.TimestampSourceUDP})
 
 	// Send packet with both data and templates
 	template := helpers.ReadPcapL4(t, filepath.Join("testdata", "data+templates.pcap"))
@@ -237,7 +237,7 @@ func TestTemplatesMixedWithData(t *testing.T) {
 
 func TestDecodeSamplingRate(t *testing.T) {
 	r := reporter.NewMock(t)
-	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()})
+	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()}, decoder.Option{TimestampSource: decoder.TimestampSourceUDP})
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "samplingrate-template.pcap"))
 	got := nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
@@ -275,7 +275,7 @@ func TestDecodeSamplingRate(t *testing.T) {
 
 func TestDecodeMultipleSamplingRates(t *testing.T) {
 	r := reporter.NewMock(t)
-	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()})
+	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()}, decoder.Option{TimestampSource: decoder.TimestampSourceUDP})
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "multiplesamplingrates-options-template.pcap"))
 	got := nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
@@ -347,7 +347,7 @@ func TestDecodeMultipleSamplingRates(t *testing.T) {
 
 func TestDecodeICMP(t *testing.T) {
 	r := reporter.NewMock(t)
-	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()})
+	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()}, decoder.Option{TimestampSource: decoder.TimestampSourceUDP})
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "icmp-template.pcap"))
 	got := nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
@@ -419,7 +419,7 @@ func TestDecodeICMP(t *testing.T) {
 
 func TestDecodeDataLink(t *testing.T) {
 	r := reporter.NewMock(t)
-	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()})
+	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()}, decoder.Option{TimestampSource: decoder.TimestampSourceUDP})
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "datalink-template.pcap"))
 	got := nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
@@ -460,7 +460,7 @@ func TestDecodeDataLink(t *testing.T) {
 
 func TestDecodeMPLS(t *testing.T) {
 	r := reporter.NewMock(t)
-	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()})
+	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()}, decoder.Option{TimestampSource: decoder.TimestampSourceUDP})
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "mpls.pcap"))
 	got := nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
@@ -512,4 +512,55 @@ func TestDecodeMPLS(t *testing.T) {
 		t.Fatalf("Decode() (-got, +want):\n%s", diff)
 	}
 
+}
+
+func TestDecodeTimestampFromNetflowPacket(t *testing.T) {
+	r := reporter.NewMock(t)
+	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()}, decoder.Option{TimestampSource: decoder.TimestampSourceNetflowPacket})
+
+	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "template.pcap"))
+	got := nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+	data = helpers.ReadPcapL4(t, filepath.Join("testdata", "data.pcap"))
+	got = append(got, nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})...)
+
+	// 4 flows in capture
+	// all share the same timestamp with TimestampSourceNetflowPacket
+	expectedTs := []uint64{
+		1647285928,
+		1647285928,
+		1647285928,
+		1647285928,
+	}
+
+	for i, flow := range got {
+		if flow.TimeReceived != expectedTs[i] {
+			t.Errorf("Decode() (-got, +want):\n-%d, +%d", flow.TimeReceived, expectedTs[i])
+		}
+	}
+}
+
+func TestDecodeTimestampFromFirstSwitched(t *testing.T) {
+	r := reporter.NewMock(t)
+	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()}, decoder.Option{TimestampSource: decoder.TimestampSourceNetflowFirstSwitched})
+
+	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "template.pcap"))
+	got := nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+	data = helpers.ReadPcapL4(t, filepath.Join("testdata", "data.pcap"))
+	got = append(got, nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})...)
+
+	// 4 flows in capture
+	var sysUptime uint64 = 944951609
+	var packetTs uint64 = 1647285928
+	expectedFirstSwitched := []uint64{
+		944948659,
+		944948659,
+		944948660,
+		944948661,
+	}
+
+	for i, flow := range got {
+		if val := packetTs - sysUptime + expectedFirstSwitched[i]; flow.TimeReceived != val {
+			t.Errorf("Decode() (-got, +want):\n-%d, +%d", flow.TimeReceived, val)
+		}
+	}
 }
