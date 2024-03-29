@@ -49,8 +49,8 @@ func dropAllTables(t *testing.T, ch *clickhousedb.Component) {
 }
 
 type tableWithSchema struct {
-	table  string
-	schema string
+	Table  string
+	Schema string
 }
 
 const dumpAllTablesQuery = `
@@ -84,12 +84,12 @@ func loadTables(t *testing.T, ch *clickhousedb.Component, sch *schema.Component,
 		"allow_suspicious_low_cardinality_types": 1,
 	}))
 	for _, tws := range schemas {
-		if oldTable(sch, tws.table) {
+		if oldTable(sch, tws.Table) {
 			continue
 		}
-		t.Logf("Load table %s", tws.table)
-		if err := ch.Exec(ctx, tws.schema); err != nil {
-			t.Fatalf("Exec(%q) error:\n%+v", tws.schema, err)
+		t.Logf("Load table %s", tws.Table)
+		if err := ch.Exec(ctx, tws.Schema); err != nil {
+			t.Fatalf("Exec(%q) error:\n%+v", tws.Schema, err)
 		}
 	}
 }
@@ -129,8 +129,8 @@ func loadAllTables(t *testing.T, ch *clickhousedb.Component, sch *schema.Compone
 			continue
 		}
 		schemas = append(schemas, tableWithSchema{
-			table:  record[0],
-			schema: record[1],
+			Table:  record[0],
+			Schema: record[1],
 		})
 	}
 	dropAllTables(t, ch)
@@ -333,7 +333,7 @@ LIMIT 1`)
 				defer writer.Flush()
 				allTables := dumpAllTables(t, chComponent, schema.NewMock(t))
 				for _, item := range allTables {
-					writer.Write([]string{item.table, item.schema})
+					writer.Write([]string{item.Table, item.Schema})
 				}
 				t.Fatalf("Last step was not idempotent. Check %s for the current dump", f.Name())
 			}
