@@ -288,6 +288,17 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 
 			currentRun := dumpAllTables(t, chComponent, ch.d.Schema)
 			if lastRun != nil {
+				// Update ORDER BY for flows table
+				for _, table := range [][]tableWithSchema{lastRun, currentRun} {
+					for idx := range table {
+						if table[idx].Table == ch.localTable("flows") {
+							table[idx].Schema = strings.Replace(
+								table[idx].Schema,
+								"ORDER BY (TimeReceived, ",
+								"ORDER BY (toStartOfFiveMinutes(TimeReceived), ", 1)
+						}
+					}
+				}
 				if diff := helpers.Diff(lastRun, currentRun); diff != "" {
 					t.Fatalf("Final state is different (-last, +current):\n%s", diff)
 				}
