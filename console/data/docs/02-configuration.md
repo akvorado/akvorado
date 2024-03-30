@@ -69,7 +69,12 @@ endpoint, `workers` to set the number of workers to listen to the socket,
 `receive-buffer` to set the size of the kernel's incoming buffer for each
 listening socket, and `queue-size` to define the number of messages to buffer
 inside each worker. With `use-src-addr-for-exporter-addr` set to true, the
-source ip of the received flow packet is used as exporter address.
+source ip of the received flow packet is used as exporter address. It is also
+possible to choose how to extract the timestamp for each packet with
+`timestamp-source`: `udp` to use the receive time of the UDP packet (the
+default), `netflow-packet` to extract the timestamp from the Netflow/IPFIX
+header, or `netflow-first-switched` to use the “first switched” field from
+Netflow/IPFIX.
 
 For example:
 

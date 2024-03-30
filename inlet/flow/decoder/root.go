@@ -24,7 +24,7 @@ type Decoder interface {
 	Name() string
 }
 
-// Option specifies option to influence the behaviour of the decodr
+// Option specifies option to influence the behaviour of the decoder
 type Option struct {
 	// TimestampSource is a selector for how to set the TimeReceived.
 	TimestampSource TimestampSource

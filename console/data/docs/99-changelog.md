@@ -25,6 +25,7 @@ resort when configured. It also increases memory usage (1.3GB for ClickHouse).
 - ✨ *inlet*: static metadata provider can fetch its configuration from an HTTP endpoint
 - ✨ *inlet*: metadata can be fetched from multiple providers (eg, static, then SNMP)
 - ✨ *inlet*: add support for several SNMPv2 communities
+- ✨ *inlet*: timestamps for Netflow/IPFIX can now be retrieved from packet content, see `inlet`→`flow`→`inputs`→`timestamp-source`
 - 🩹 *cmd*: fix parsing of `inlet`→`metadata`→`provider`→`ports`
 - 🩹 *console*: fix use of `InIfBoundary` and `OutIfBoundary` as dimensions
 - 🌱 *orchestrator*: add TLS support to connect to ClickHouse database
