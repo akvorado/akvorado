@@ -25,6 +25,10 @@ automatic migration of an existing database. You should start from scratch and
 copy data from the previous setup. Do not try to enable the cluster mode on
 existing setup!
 
+New installations should also get better compression and performance from the
+main table, due to a change to the primary key used for this table. Check this
+[Altinity article][] if you want to apply the change on your installation.
+
 Support for Docker Compose V1 (`docker-compose` command) has been removed in
 favor of Docker Compose V2 (`docker compose` command). On Ubuntu/Debian systems,
 this means you can no longer use the `docker-compose` package. On Ubuntu, you
@@ -45,7 +49,9 @@ can install the `docker-compose-v2` package. For other options, check the
 - 🩹 *console*: fix use of `InIfBoundary` and `OutIfBoundary` as dimensions
 - 🌱 *orchestrator*: add TLS support to connect to ClickHouse database
 - 🌱 *docker*: update to Redis 7.2, Kafka 3.7, Kafka UI 0.7.1, and Zookeeper 3.8 (not mandatory)
+- 🌱 *orchestrator*: increase performance of main flows table (only for new installations)
 
+[altinity article]: https://kb.altinity.com/altinity-kb-schema-design/change-order-by/
 [documentation for installing the compose plugin]: https://docs.docker.com/compose/install/linux/
 
 ## 1.9.3 - 2024-01-14

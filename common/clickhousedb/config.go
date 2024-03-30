@@ -45,8 +45,3 @@ func DefaultConfiguration() Configuration {
 		},
 	}
 }
-
-// IsInCluster returns true if the ClickHouse server runs on a cluster.
-func (c *Component) IsInCluster() bool {
-	return c.config.Cluster != ""
-}
