@@ -33,48 +33,14 @@ jobs:
       contents: read
       actions: write
 
-    services:
-      zookeeper:
-        image: bitnami/zookeeper:3.8
-        env:
-          ALLOW_ANONYMOUS_LOGIN: "yes"
-        ports:
-          - 2181:2181
-      kafka:
-        image: bitnami/kafka:3.5
-        env:
-          KAFKA_ZOOKEEPER_PROTOCOL: PLAINTEXT
-          KAFKA_CFG_BROKER_ID: "1"
-          KAFKA_CFG_ZOOKEEPER_CONNECT: "zookeeper:2181"
-          KAFKA_CFG_LISTENERS: CLIENT://:9092,EXTERNAL://:9093
-          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
-          KAFKA_CFG_ADVERTISED_LISTENERS: CLIENT://kafka:9092,EXTERNAL://localhost:9092
-          KAFKA_CFG_INTER_BROKER_LISTENER_NAME: CLIENT
-        ports:
-          - 9092:9093
-      redis:
-        image: bitnami/redis:7.2
-        env:
-          ALLOW_EMPTY_PASSWORD: "yes"
-        ports:
-          - 6379:6379
-      clickhouse:
-        image: clickhouse/clickhouse-server:23.8
-        ports:
-          - 9000:9000
-      srlinux:
-        image: ghcr.io/akvorado/srlinux:23.7.1-ci
-        ports:
-          - 57400:57400
-          - 57401:22
-        options: >-
-          --privileged
-          --user=root
     env:
       CI_AKVORADO_FUNCTIONAL_TESTS: "true"
     steps:
       # Setup
+      - uses: docker/setup-buildx-action@v3
       - uses: actions/checkout@v4
+      - name: Docker Compose up
+        run: docker compose -f docker/docker-compose-dev.yml up --wait --wait-timeout 60
       - name: Setup
         uses: ./.github/actions/setup
 
@@ -106,6 +72,9 @@ jobs:
           name: binary
           path: bin/akvorado
           if-no-files-found: error
+      - name: Docker Compose down
+        if: always()
+        run: docker compose -f docker/docker-compose-dev.yml down --remove-orphans --timeout 60
 
   build-macos:
     name: 🍏 Build and test on MacOS

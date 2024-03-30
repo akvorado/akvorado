@@ -1,3 +1,0 @@
-FROM ghcr.io/nokia/srlinux:23.7.1
-CMD /opt/srlinux/bin/sr_linux
-HEALTHCHECK --interval=5s CMD test -f /etc/opt/srlinux/devices/app_ephemeral.mgmt_server.ready_for_config
