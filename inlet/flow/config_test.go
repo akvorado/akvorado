@@ -210,14 +210,14 @@ func TestDecodeConfiguration(t *testing.T) {
 					"inputs": []gin.H{
 						{
 							"timestamp-source": "netflow-packet",
-							"listen": "192.0.2.1:2055",
+							"listen":           "192.0.2.1:2055",
 						},
 					},
 				}
 			},
 			Expected: Configuration{
 				Inputs: []InputConfiguration{{
-					Decoder: "netflow",
+					Decoder:         "netflow",
 					TimestampSource: decoder.TimestampSourceNetflowPacket,
 					Config: &udp.Configuration{
 						Workers:   2,
@@ -246,14 +246,14 @@ func TestDecodeConfiguration(t *testing.T) {
 					"inputs": []gin.H{
 						{
 							"timestamp-source": "netflow-first-switched",
-							"listen": "192.0.2.1:2055",
+							"listen":           "192.0.2.1:2055",
 						},
 					},
 				}
 			},
 			Expected: Configuration{
 				Inputs: []InputConfiguration{{
-					Decoder: "netflow",
+					Decoder:         "netflow",
 					TimestampSource: decoder.TimestampSourceNetflowFirstSwitched,
 					Config: &udp.Configuration{
 						Workers:   2,
@@ -270,7 +270,7 @@ func TestMarshalYAML(t *testing.T) {
 	cfg := Configuration{
 		Inputs: []InputConfiguration{
 			{
-				Decoder: "netflow",
+				Decoder:         "netflow",
 				TimestampSource: decoder.TimestampSourceNetflowFirstSwitched,
 				Config: &udp.Configuration{
 					Listen:    "192.0.2.11:2055",

@@ -1,8 +1,9 @@
 package decoder
 
 import (
-	"akvorado/common/helpers/bimap"
 	"errors"
+
+	"akvorado/common/helpers/bimap"
 )
 
 // TimestampSource defines the method to use to extract the TimeReceived for the flows
@@ -22,9 +23,9 @@ const (
 
 var (
 	timestampSourceMap = bimap.New(map[TimestampSource]string{
-		TimestampSourceUDP: "udp",
-		TimestampSourceNetflowPacket: "netflow-packet",
-		TimestampSourceNetflowFirstSwitched:  "netflow-first-switched",
+		TimestampSourceUDP:                  "udp",
+		TimestampSourceNetflowPacket:        "netflow-packet",
+		TimestampSourceNetflowFirstSwitched: "netflow-first-switched",
 	})
 	errUnknownTimestampSource = errors.New("unknown TimestampSource")
 )
