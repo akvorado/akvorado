@@ -3,7 +3,6 @@ stages:
   - tests
   - build
 
-
 run tests:
   stage: tests
   image: golang:1.21-alpine
@@ -19,34 +18,11 @@ run tests:
           - console/frontend/package-lock.json
       paths:
         - .npm-cache
-  variables:
-    FF_NETWORK_PER_BUILD: "true"
-    CI_AKVORADO_FUNCTIONAL_TESTS: "true"
-    # zookeeper
-    ALLOW_ANONYMOUS_LOGIN: "yes"
-    # kafka
-    KAFKA_ZOOKEEPER_PROTOCOL: PLAINTEXT
-    KAFKA_CFG_BROKER_ID: "1"
-    KAFKA_CFG_ZOOKEEPER_CONNECT: "zookeeper:2181"
-    KAFKA_CFG_LISTENERS: CLIENT://:9092,EXTERNAL://:9093
-    KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
-    KAFKA_CFG_ADVERTISED_LISTENERS: CLIENT://kafka:9092,EXTERNAL://localhost:9092
-    KAFKA_CFG_INTER_BROKER_LISTENER_NAME: CLIENT
-    # redis
-    ALLOW_EMPTY_PASSWORD: "yes"
-  services:
-    - name: bitnami/zookeeper:3.8
-      alias: zookeeper
-    - name: bitnami/kafka:3.5
-      alias: kafka
-    - name: bitnami/redis:7.2
-      alias: redis
-    - name: clickhouse/clickhouse-server:23.8
-      alias: clickhouse
-    - name: ghcr.io/nokia/srlinux:23.7.1
-      alias: srlinux
-      command: [/opt/srlinux/bin/sr_linux]
   script:
+    # Tests on GitLab do not include functional tests. This was the case in the
+    # past but this is a slight burden to maintain in addition to GitHub CI.
+    # Check commit ceaa6ebf8ef6 for the last version supporting functional
+    # tests.
     - time apk add --no-cache git make gcc musl-dev shared-mime-info npm curl
     - export GOMODCACHE=$PWD/.go-cache
     - npm config --user set cache $PWD/.npm-cache
