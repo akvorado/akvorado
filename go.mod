@@ -4,7 +4,7 @@ go 1.21.1
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.23.0
-	github.com/IBM/sarama v1.43.0
+	github.com/IBM/sarama v1.43.1
 	github.com/alecthomas/chroma v0.10.0
 	github.com/benbjohnson/clock v1.3.5
 	github.com/bio-routing/bio-rd v0.1.10-0.20230730142204-f71bc383fe42
