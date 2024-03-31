@@ -33,7 +33,6 @@ require (
 	github.com/netsampler/goflow2/v2 v2.1.3
 	github.com/openconfig/gnmi v0.10.0
 	github.com/openconfig/gnmic/pkg/api v0.1.5
-	github.com/opencontainers/image-spec v1.1.0-rc5
 	github.com/oschwald/maxminddb-golang v1.12.0
 	github.com/osrg/gobgp/v3 v3.24.0
 	github.com/prometheus/client_golang v1.19.0
@@ -55,7 +54,7 @@ require (
 	google.golang.org/protobuf v1.33.0
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 	gopkg.in/yaml.v3 v3.0.1
-	gorm.io/gorm v1.25.8
+	gorm.io/gorm v1.25.9
 )
 
 require (
@@ -124,6 +123,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/openconfig/grpctunnel v0.1.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
+	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect
 	github.com/paulmach/orb v0.11.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
