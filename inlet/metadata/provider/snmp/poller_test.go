@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/gosnmp/gosnmp"
 	"github.com/slayercat/GoSNMPServer"
-	"github.com/slayercat/gosnmp"
 
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
@@ -129,6 +129,7 @@ func TestPoller(t *testing.T) {
 
 			// Start a new SNMP server
 			master := GoSNMPServer.MasterAgent{
+				// Logger: GoSNMPServer.NewDefaultLogger(),
 				SecurityConfig: GoSNMPServer.SecurityConfig{
 					AuthoritativeEngineBoots: 10,
 					Users: []gosnmp.UsmSecurityParameters{

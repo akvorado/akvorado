@@ -9,8 +9,8 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/gosnmp/gosnmp"
 	"github.com/slayercat/GoSNMPServer"
-	"github.com/slayercat/gosnmp"
 )
 
 func (c *Component) newOID(oid string, t gosnmp.Asn1BER, onGet GoSNMPServer.FuncPDUControlGet) *GoSNMPServer.PDUValueControlItem {
