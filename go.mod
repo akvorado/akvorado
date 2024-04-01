@@ -9,7 +9,7 @@ require (
 	github.com/benbjohnson/clock v1.3.5
 	github.com/bio-routing/bio-rd v0.1.10-0.20230730142204-f71bc383fe42
 	github.com/bits-and-blooms/bitset v1.13.0
-	github.com/cenkalti/backoff/v4 v4.2.1
+	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/chenyahui/gin-cache v1.9.0
 	github.com/docker/docker v25.0.4+incompatible
 	github.com/docker/go-connections v0.5.0
