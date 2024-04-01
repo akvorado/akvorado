@@ -31,7 +31,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/netsampler/goflow2/v2 v2.1.3
-	github.com/openconfig/gnmi v0.10.0
+	github.com/openconfig/gnmi v0.11.0
 	github.com/openconfig/gnmic/pkg/api v0.1.5
 	github.com/oschwald/maxminddb-golang v1.12.0
 	github.com/osrg/gobgp/v3 v3.24.0
