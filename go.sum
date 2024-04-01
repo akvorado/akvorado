@@ -284,8 +284,8 @@ github.com/onsi/gomega v1.10.1/go.mod h1:iN09h71vgCQne3DLsj+A5owkum+a2tYe+TOCB1y
 github.com/onsi/gomega v1.17.0/go.mod h1:HnhC7FXeEQY45zxNK3PPoIUhzk/80Xly9PcubAlGdZY=
 github.com/onsi/gomega v1.18.1 h1:M1GfJqGRrBrrGGsbxzV5dqM2U2ApXefZCQpkukxYRLE=
 github.com/onsi/gomega v1.18.1/go.mod h1:0q+aL8jAiMXy9hbwj2mr5GziHiwhAIQpFmmtT5hitRs=
-github.com/openconfig/gnmi v0.10.0 h1:kQEZ/9ek3Vp2Y5IVuV2L/ba8/77TgjdXg505QXvYmg8=
-github.com/openconfig/gnmi v0.10.0/go.mod h1:Y9os75GmSkhHw2wX8sMsxfI7qRGAEcDh8NTa5a8vj6E=
+github.com/openconfig/gnmi v0.11.0 h1:H7pLIb/o3xObu3+x0Fv9DCK7TH3FUh7mNwbYe+34hFw=
+github.com/openconfig/gnmi v0.11.0/go.mod h1:9oJSQPPCpNvfMRj8e4ZoLVAw4wL8HyxXbiDlyuexCGU=
 github.com/openconfig/gnmic/pkg/api v0.1.5 h1:vnhB72kqMzJyjnIOOpIdLHFUDe01ySMd5+PZLKtYsjY=
 github.com/openconfig/gnmic/pkg/api v0.1.5/go.mod h1:/q9bvX5mSie8jCTo1kWnP0gJYtJB0OabDUqZ813/tjk=
 github.com/openconfig/grpctunnel v0.1.0 h1:EN99qtlExZczgQgp5ANnHRC/Rs62cAG+Tz2BQ5m/maM=
