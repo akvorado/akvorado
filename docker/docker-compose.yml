@@ -151,7 +151,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-      test: ["CMD", "wget", "-T", "1", "--spider", "--no-proxy", "http://clickhouse:8123"]
+      test: ["CMD", "wget", "-T", "1", "--spider", "--no-proxy", "http://127.0.0.1:8123"]
     labels:
       - traefik.enable=true
       - traefik.http.routers.clickhouse.entrypoints=private
