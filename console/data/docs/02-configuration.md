@@ -878,10 +878,10 @@ instruction for that, but it's mostly a matter of copying `flows` table to
 `flows_local`, and `flows_DDDD` (where `DDDD` is an interval) tables to
 `flows_DDDD_local`.
 
-When using `docker compose`, the provided setup for ClickHouse is not
-cluster-ready. Have a look at `docker/docker-compose-dev.yml` to see how to
-setup a ClickHouse cluster (but it makes little sense to have a single-node
-`docker compose` setup with a ClickHouse cluster).
+When using `docker compose`, you can enable
+`docker/docker-compose-clickhouse-cluster.yml` in `.env` to setup a ClickHouse
+cluster (but it makes little sense to have a single-node `docker compose` setup
+with a ClickHouse cluster).
 
 ### GeoIP
 
