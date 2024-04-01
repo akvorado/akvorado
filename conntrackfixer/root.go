@@ -18,6 +18,7 @@ import (
 	"akvorado/common/reporter"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/ti-mo/conntrack"
@@ -160,7 +161,7 @@ func (c *Component) Start() error {
 				}
 			case <-c.changes:
 				containers, err := c.dockerClient.ContainerList(c.t.Context(nil),
-					types.ContainerListOptions{
+					container.ListOptions{
 						Filters: filter,
 					})
 				if err != nil {
