@@ -49,7 +49,7 @@ can install the `docker-compose-v2` package. For other options, check the
 - 🩹 *console*: fix use of `InIfBoundary` and `OutIfBoundary` as dimensions
 - 🌱 *orchestrator*: add TLS support to connect to ClickHouse database
 - 🌱 *docker*: update to Redis 7.2, Kafka 3.7, Kafka UI 0.7.1, and Zookeeper 3.8 (not mandatory)
-- 🌱 *orchestrator*: increase performance of main flows table (only for new installations)
+- 🌱 *orchestrator*: improved ClickHouse schema to increase performance
 
 [altinity article]: https://kb.altinity.com/altinity-kb-schema-design/change-order-by/
 [documentation for installing the compose plugin]: https://docs.docker.com/compose/install/linux/

@@ -541,6 +541,7 @@ func (c *Component) createOrUpdateFlowsTable(ctx context.Context, resolution Res
 	tableName = c.localTable(tableName)
 	partitionInterval := uint64((resolution.TTL / time.Duration(c.config.MaxPartitions)).Seconds())
 	ttl := uint64(resolution.TTL.Seconds())
+	settings := `index_granularity = 8192, ttl_only_drop_parts = 1`
 
 	// Create table if it does not exist
 	if ok, err := c.tableAlreadyExists(ctx, tableName, "name", tableName); err != nil {
@@ -555,12 +556,14 @@ ENGINE = {{ .Engine }}
 PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, INTERVAL {{ .PartitionInterval }} second))
 ORDER BY (toStartOfFiveMinutes(TimeReceived), ExporterAddress, InIfName, OutIfName)
 TTL TimeReceived + toIntervalSecond({{ .TTL }})
+SETTINGS {{ .Settings }}
 `, gin.H{
 				"Table":             tableName,
 				"Schema":            c.d.Schema.ClickHouseCreateTable(),
 				"PartitionInterval": partitionInterval,
 				"TTL":               ttl,
 				"Engine":            c.mergeTreeEngine(tableName, ""),
+				"Settings":          settings,
 			})
 		} else {
 			createQuery, err = stemplate(`
@@ -570,6 +573,7 @@ PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, INTERVAL {{ .Parti
 PRIMARY KEY ({{ .PrimaryKey }})
 ORDER BY ({{ .SortingKey }})
 TTL TimeReceived + toIntervalSecond({{ .TTL }})
+SETTINGS {{ .Settings }}
 `, gin.H{
 				"Table":             tableName,
 				"Schema":            c.d.Schema.ClickHouseCreateTable(schema.ClickHouseSkipMainOnlyColumns),
@@ -578,6 +582,7 @@ TTL TimeReceived + toIntervalSecond({{ .TTL }})
 				"SortingKey":        strings.Join(c.d.Schema.ClickHouseSortingKeys(), ", "),
 				"TTL":               ttl,
 				"Engine":            c.mergeTreeEngine(tableName, "Summing", "(Bytes, Packets)"),
+				"Settings":          settings,
 			})
 		}
 		if err != nil {
@@ -682,6 +687,7 @@ outer:
 			fmt.Sprintf("ADD COLUMN %s AFTER %s", wantedColumn.ClickHouseDefinition(), previousColumn))
 		previousColumn = wantedColumn.Name
 	}
+	modified := false
 	if len(modifications) > 0 {
 		// Also update ORDER BY
 		if resolution.Interval > 0 {
@@ -700,6 +706,19 @@ outer:
 		if err != nil {
 			return fmt.Errorf("cannot update table %s: %w", tableName, err)
 		}
+		modified = true
+	}
+
+	// Check if we need to update the settings
+	settingsClauseLike := fmt.Sprintf("CAST(engine_full LIKE '%% SETTINGS %s', 'String')", settings)
+	if ok, err := c.tableAlreadyExists(ctx, tableName, settingsClauseLike, "1"); err != nil {
+		return err
+	} else if !ok {
+		c.r.Info().Msgf("updating settings of %s to %s", tableName, resolution.Interval)
+		if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf("ALTER TABLE %s MODIFY SETTING %s", tableName, settings)); err != nil {
+			return fmt.Errorf("cannot modify settings for table %s: %w", tableName, err)
+		}
+		modified = true
 	}
 
 	// Check if we need to update the TTL
@@ -713,8 +732,10 @@ outer:
 		if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf("ALTER TABLE %s MODIFY %s", tableName, ttlClause)); err != nil {
 			return fmt.Errorf("cannot modify TTL for table %s: %w", tableName, err)
 		}
-		return nil
-	} else if len(modifications) > 0 {
+		modified = true
+	}
+
+	if modified {
 		return nil
 	}
 	return errSkipStep
