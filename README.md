@@ -17,8 +17,8 @@ available on [demo.akvorado.net](https://demo.akvorado.net). It is the
 direct result of running `docker compose up` on a fresh checkout but
 port 2055 is not accessible (you cannot send you own flows). Please,
 be gentle with this resource. The demo site also enables you to browse
-the [documentation](https://demo.akvorado.net/docs) (which is also
-available in `docs/`).
+the [documentation](https://demo.akvorado.net/docs) for the current version
+(the one in `docs/` is for the next version).
 
 By default, *Akvorado* is using [IPinfo](https://ipinfo.io) databases for
 geolocation data.
