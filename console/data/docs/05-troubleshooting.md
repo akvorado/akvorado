@@ -110,6 +110,28 @@ You can check they are correctly forwarded to Kafka with:
 $ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet_kafka_sent_messages_total'
 ```
 
+### Reported traffic levels are incorrect
+
+Use `curl -s http://akvorado/api/v0/inlet/flows\?limit=1 | grep
+SamplingRate` to check if the reported sampling rate is correct. If
+not, you can override it with `inlet`→`core`→`override-sampling-rate`.
+
+Another cause possible cause is when your router is configured to send
+flows for both an interface and its parent. For example, if you have
+an LACP-enabled interface, you should collect flows only for the
+aggregated interface, not for the individual sub interfaces.
+
+### No traffic visible on the web interface
+
+You may see the last flow widget correctly populated, but nothing else. The
+various widgets on the home page are relying on interface classification to
+retrieve information. Notably, they expect `InIfBoundary` or `OutIfBoundary` to
+be set to external. You can check that classification is done correctly by
+removing any filter rule on the interface and by grouping on `InIfBoundary` (for
+example). If not, be sure that your rules are correct and that descriptions
+match what you expect. For example, on Juniper, if you enable JFlow on a
+sub-interface, be sure that the description is present on this sub-interface.
+
 ### 4-byte ASN 23456 in flow data
 
 If you are seeing flows with source or destination AS of 23456, your exporter 
@@ -217,27 +239,6 @@ to skip exporters with too many errors to avoid blocking SNMP requests
 for other exporters. However, ensuring the exporters accept to answer
 requests is the first fix. If not enough, you can increase the number
 of workers. Workers handle SNMP requests synchronously.
-
-### Reported traffic levels are incorrect
-
-Use `curl -s http://akvorado/api/v0/inlet/flows\?limit=1 | grep
-SamplingRate` to check if the reported sampling rate is correct. If
-not, you can override it with `inlet`→`core`→`override-sampling-rate`.
-
-Another cause possible cause is when your router is configured to send
-flows for both an interface and its parent. For example, if you have
-an LACP-enabled interface, you should collect flows only for the
-aggregated interface, not for the individual sub interfaces.
-
-### No traffic visible on the web interface despite receiving flows
-
-The various widgets on the home page are relying on interface classification to
-retrieve information. Notably, they expect f`InIfBoundary` or `OutIfBoundary` to
-be set to external. You can check that classification is done correctly by
-removing any filter rule on the interface and by grouping on `InIfBoundary` (for
-example). If not, be sure that your rules are correct and that descriptions
-match what you expect. For example, on Juniper, if you enable JFlow on a
-sub-interface, be sure that the description is present on this sub-interface.
 
 ### Profiling
 
