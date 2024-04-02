@@ -25,6 +25,10 @@ Go formatter takes care of most issues. For the remaining points:
 
 [prometheus conventions]: https://prometheus.io/docs/practices/naming/
 
+Git commits are prefixed with the component and sub-component of the feature:
+`orchestrator/clickhouse: add some feature`. Meta-component are also possible,
+like `docs`, `build`, or `docker`.
+
 # Testing
 
 We do not aim for 100% code coverage, however most code should be covered by
