@@ -64,7 +64,7 @@ services:
       test: ["CMD-SHELL", "timeout 3 redis-cli ping | grep -q PONG"]
 
   akvorado-service: &akvorado-image
-    image: ghcr.io/akvorado/akvorado:latest
+    image: ghcr.io/akvorado/akvorado:main
     command: version
   akvorado-orchestrator:
     <<: *akvorado-image

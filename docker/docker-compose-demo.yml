@@ -2,7 +2,9 @@
 version: "3"
 services:
   akvorado-exporter0: &exporter
-    image: ghcr.io/akvorado/akvorado:latest
+    extends:
+      file: docker-compose.yml
+      service: akvorado-service
     restart: unless-stopped
     command: demo-exporter http://akvorado-orchestrator:8080#0
     depends_on:
