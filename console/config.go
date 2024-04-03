@@ -59,7 +59,7 @@ func DefaultConfiguration() Configuration {
 		},
 		HomepageTopWidgets:  []string{"src-as", "src-port", "protocol", "src-country", "etype"},
 		DimensionsLimit:     50,
-		CacheTTL:            30 * time.Minute,
+		CacheTTL:            3 * time.Hour,
 		HomepageGraphFilter: "InIfBoundary = 'external'",
 	}
 }
