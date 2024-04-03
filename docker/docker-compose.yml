@@ -90,6 +90,8 @@ services:
     command: console http://akvorado-orchestrator:8080
     volumes:
       - akvorado-console-db:/run/akvorado
+    environment:
+      - AKVORADO_CFG_CONSOLE_DATABASE_DSN=/run/akvorado/console.sqlite
     labels:
       - traefik.enable=true
       - traefik.http.routers.akvorado-console.rule=PathPrefix(`/`)

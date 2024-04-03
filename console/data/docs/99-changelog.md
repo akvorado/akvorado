@@ -20,6 +20,7 @@ This also changes how geo IP is used for AS numbers: geo IP is used as last
 resort when configured. It also increases memory usage (1.3GB for ClickHouse).
 
 - 💥 *inlet*: GeoIP data is moved from inlets to ClickHouse, add city and region
+- 💥 *console*: persist console database on the default `docker-compose` setup
 - ✨ *inlet*: add gNMI metadata provider
 - ✨ *inlet*: static metadata provider can provide exporter and interface metadata
 - ✨ *inlet*: static metadata provider can fetch its configuration from an HTTP endpoint
