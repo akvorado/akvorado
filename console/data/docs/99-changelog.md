@@ -31,6 +31,8 @@ resort when configured. It also increases memory usage (1.3GB for ClickHouse).
 - 🩹 *console*: fix use of `InIfBoundary` and `OutIfBoundary` as dimensions
 - 🌱 *orchestrator*: add TLS support to connect to ClickHouse database
 - 🌱 *docker*: update to Redis 7.2 (not mandatory)
+- 🌱 *docker*: update to Kafka 3.7 (not mandatory)
+- 🌱 *docker*: update to Zookeeper 3.9 (not mandatory)
 
 ## 1.9.3 - 2024-01-14
 

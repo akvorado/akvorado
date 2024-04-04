@@ -11,7 +11,7 @@ volumes:
 
 services:
   zookeeper:
-    image: bitnami/zookeeper:3.8
+    image: bitnami/zookeeper:3.9
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
       - ZOO_ENABLE_PROMETHEUS_METRICS=yes
@@ -31,7 +31,7 @@ services:
       test: ["CMD-SHELL", "echo ruok | nc -w3 127.0.0.1 2181 | grep -xFq imok"]
 
   kafka:
-    image: bitnami/kafka:3.5
+    image: bitnami/kafka:3.7
     environment:
       - KAFKA_ZOOKEEPER_PROTOCOL=PLAINTEXT
       - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
