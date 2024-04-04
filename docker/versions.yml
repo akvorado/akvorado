@@ -16,7 +16,7 @@ services:
 
   # observability
   grafana:
-    image: grafana/grafana-oss:10.2.0
+    image: grafana/grafana-oss:10.2.6
   prometheus:
     image: prom/prometheus:v2.47.2
   node-exporter:
