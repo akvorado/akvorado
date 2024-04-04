@@ -11,7 +11,9 @@ volumes:
 
 services:
   zookeeper:
-    image: bitnami/zookeeper:3.9
+    extends:
+      file: versions.yml
+      service: zookeeper
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
       - ZOO_ENABLE_PROMETHEUS_METRICS=yes
@@ -31,7 +33,9 @@ services:
       test: ["CMD-SHELL", "echo ruok | nc -w3 127.0.0.1 2181 | grep -xFq imok"]
 
   kafka:
-    image: bitnami/kafka:3.7
+    extends:
+      file: versions.yml
+      service: kafka
     environment:
       - KAFKA_ZOOKEEPER_PROTOCOL=PLAINTEXT
       - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
@@ -53,7 +57,9 @@ services:
       test: ["CMD", "env", "-u", "JMX_PORT", "kafka-topics.sh", "--list", "--bootstrap-server", "kafka:9092"]
 
   redis:
-    image: bitnami/redis:7.2
+    extends:
+      file: versions.yml
+      service: redis
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
     restart: unless-stopped
@@ -63,11 +69,10 @@ services:
       retries: 3
       test: ["CMD-SHELL", "timeout 3 redis-cli ping | grep -q PONG"]
 
-  akvorado-service: &akvorado-image
-    image: ghcr.io/akvorado/akvorado:main
-    command: version
   akvorado-orchestrator:
-    <<: *akvorado-image
+    extends:
+      file: versions.yml
+      service: akvorado
     restart: unless-stopped
     command: orchestrator /etc/akvorado/akvorado.yaml
     volumes:
@@ -82,7 +87,9 @@ services:
       - traefik.http.routers.akvorado-orchestrator.rule=PathPrefix(`/api/v0/orchestrator`)
       - traefik.http.services.akvorado-orchestrator.loadbalancer.server.port=8080
   akvorado-console:
-    <<: *akvorado-image
+    extends:
+      file: versions.yml
+      service: akvorado
     restart: unless-stopped
     depends_on:
       - redis
@@ -101,7 +108,9 @@ services:
       - traefik.http.middlewares.console-auth-headers.headers.customrequestheaders.Remote-Email=alfred@example.com
       - traefik.http.services.akvorado-console.loadbalancer.server.port=8080
   akvorado-inlet:
-    <<: *akvorado-image
+    extends:
+      file: versions.yml
+      service: akvorado
     ports:
       - 2055:2055/udp
       - 6343:6343/udp
@@ -116,7 +125,9 @@ services:
       - traefik.http.services.akvorado-inlet.loadbalancer.server.port=8080
       - akvorado.conntrack.fix=true
   akvorado-conntrack-fixer:
-    <<: *akvorado-image
+    extends:
+      file: versions.yml
+      service: akvorado
     cap_add:
       - NET_ADMIN
     command: conntrack-fixer
@@ -128,7 +139,9 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
   clickhouse:
-    image: clickhouse/clickhouse-server:23.8
+    extends:
+      file: versions.yml
+      service: clickhouse
     volumes:
       - ../orchestrator/clickhouse/data/docker-entrypoint.sh:/entrypoint-override.sh:ro
       - akvorado-clickhouse:/var/lib/clickhouse
@@ -150,7 +163,9 @@ services:
       - traefik.http.services.clickhouse.loadbalancer.server.port=8123
 
   traefik:
-    image: traefik:2.6
+    extends:
+      file: versions.yml
+      service: traefik
     restart: unless-stopped
     command:
       - --api=true

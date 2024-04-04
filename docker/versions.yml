@@ -1,0 +1,33 @@
+---
+version: "3"
+
+services:
+  # main services
+  zookeeper:
+    image: bitnami/zookeeper:3.9
+  kafka:
+    image: bitnami/kafka:3.7
+  redis:
+    image: bitnami/redis:7.2
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.8
+  traefik:
+    image: traefik:2.6
+  akvorado:
+    image: ghcr.io/akvorado/akvorado:main
+
+  # observability
+  grafana:
+    image: grafana/grafana-oss:10.2.0
+  prometheus:
+    image: prom/prometheus:v2.47.2
+  node-exporter:
+    image: prom/node-exporter:v1.7.0
+  kafka-jmx-exporter:
+    image: bitnami/jmx-exporter:0
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.5.0
+
+  # for tests
+  srlinux:
+    image: ghcr.io/nokia/srlinux:23.7.1

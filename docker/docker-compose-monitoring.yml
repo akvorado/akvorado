@@ -4,7 +4,9 @@ volumes:
   akvorado-prometheus:
 services:
   prometheus:
-    image: prom/prometheus:v2.47.2
+    extends:
+      file: versions.yml
+      service: prometheus
     restart: unless-stopped
     user: root                  # for access to /var/run/docker.sock
     volumes:
@@ -26,7 +28,9 @@ services:
       - traefik.http.services.prometheus.loadbalancer.server.port=9090
 
   node-exporter:
-    image: prom/node-exporter:v1.7.0
+    extends:
+      file: versions.yml
+      service: node-exporter
     restart: unless-stopped
     volumes:
       - /proc:/host/proc:ro
@@ -37,7 +41,9 @@ services:
       - --no-collector.filesystem
 
   kafka-jmx-exporter:
-    image: bitnami/jmx-exporter:0
+    extends:
+      file: versions.yml
+      service: kafka-jmx-exporter
     restart: unless-stopped
     depends_on:
       - kafka
@@ -48,7 +54,9 @@ services:
       - /etc/jmx-kafka/config.yaml
 
   kafka-ui:
-    image: provectuslabs/kafka-ui:v0.5.0
+    extends:
+      file: versions.yml
+      service: kafka-ui
     restart: unless-stopped
     depends_on:
       - kafka

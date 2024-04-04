@@ -3,12 +3,16 @@ version: "3"
 
 services:
   zookeeper:
-    image: bitnami/zookeeper:3.9
+    extends:
+      file: versions.yml
+      service: zookeeper
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
 
   kafka:
-    image: bitnami/kafka:3.7
+    extends:
+      file: versions.yml
+      service: kafka
     environment:
      - KAFKA_CFG_BROKER_ID=1
      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
@@ -22,20 +26,26 @@ services:
       - 127.0.0.1:9092:9093/tcp
 
   redis:
-    image: bitnami/redis:7.2
+    extends:
+      file: versions.yml
+      service: redis
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
     ports:
       - 127.0.0.1:6379:6379/tcp
 
   clickhouse:
-    image: clickhouse/clickhouse-server:23.8
+    extends:
+      file: versions.yml
+      service: clickhouse
     ports:
       - 127.0.0.1:8123:8123/tcp
       - 127.0.0.1:9000:9000/tcp
 
   srlinux:
-    image: ghcr.io/nokia/srlinux:23.7.1
+    extends:
+      file: versions.yml
+      service: srlinux
     privileged: true
     user: root
     command: /opt/srlinux/bin/sr_linux
