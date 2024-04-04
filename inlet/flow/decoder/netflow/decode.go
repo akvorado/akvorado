@@ -86,7 +86,7 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 
 		switch field.Type {
 		// Statistics
-		case netflow.NFV9_FIELD_IN_BYTES, netflow.NFV9_FIELD_OUT_BYTES:
+		case netflow.NFV9_FIELD_IN_BYTES, netflow.NFV9_FIELD_OUT_BYTES, netflow.IPFIX_FIELD_initiatorOctets, netflow.IPFIX_FIELD_responderOctets:
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnBytes, decodeUNumber(v))
 		case netflow.NFV9_FIELD_IN_PKTS, netflow.NFV9_FIELD_OUT_PKTS:
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnPackets, decodeUNumber(v))
