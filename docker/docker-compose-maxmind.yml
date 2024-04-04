@@ -1,5 +1,4 @@
 ---
-version: "3"
 services:
   geoip:
     # Put GEOIPUPDATE_ACCOUNT_ID and GEOIPUPDATE_LICENSE_KEY values in `.env` file.

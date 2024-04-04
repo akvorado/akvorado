@@ -12,10 +12,10 @@ ClickHouse. It also exposes a web interface to browse the result.
 ## Quick start
 
 The easiest way to get started is with
-[Docker](https://docs.docker.com/get-docker) and [Docker
-Compose](https://docs.docker.com/compose/install/). Depending on your version of
-*Docker Compose*, you may need to use `docker-compose` instead of `docker
-compose`.
+[Docker](https://docs.docker.com/get-docker) and [Docker Compose
+V2](https://docs.docker.com/compose/install/). This is not possible to use the
+`docker-compose` command, you need to have a working `docker compose` command.
+On Ubuntu systems, you can install the `docker-compose-v2` package.
 
 ```console
 # mkdir akvorado

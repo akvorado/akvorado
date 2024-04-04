@@ -1,6 +1,4 @@
 ---
-version: "3"
-
 volumes:
   akvorado-zookeeper:
   akvorado-kafka:

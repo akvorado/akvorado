@@ -1,5 +1,4 @@
 ---
-version: "3"
 services:
   akvorado-exporter0: &exporter
     extends:

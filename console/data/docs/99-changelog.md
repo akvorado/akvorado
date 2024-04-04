@@ -14,13 +14,20 @@ identified with a specific icon:
 ## Unreleased
 
 On this release, geo IP is now performed in ClickHouse instead of inlet. When
-using the standard `docker-compose` setup, the configuration should be
+using the standard `docker compose` setup, the configuration should be
 automatically migrated from the inlet component to the clickhouse component.
 This also changes how geo IP is used for AS numbers: geo IP is used as last
 resort when configured. It also increases memory usage (1.3GB for ClickHouse).
 
+Support for Docker Compose V1 (`docker-compose` command) has been removed in
+favor of Docker Compose V2 (`docker compose` command). On Ubuntu/Debian systems,
+this means you can no longer use the `docker-compose` package. On Ubuntu, you
+can install the `docker-compose-v2` package. For other options, check the
+[documentation for installing the Compose plugin][].
+
 - 💥 *inlet*: GeoIP data is moved from inlets to ClickHouse, add city and region
-- 💥 *console*: persist console database on the default `docker-compose` setup
+- 💥 *console*: persist console database on the default `docker compose` setup
+- 💥 *docker*: remove support for `docker-compose` V1
 - ✨ *inlet*: add gNMI metadata provider
 - ✨ *inlet*: static metadata provider can provide exporter and interface metadata
 - ✨ *inlet*: static metadata provider can fetch its configuration from an HTTP endpoint
@@ -30,9 +37,9 @@ resort when configured. It also increases memory usage (1.3GB for ClickHouse).
 - 🩹 *cmd*: fix parsing of `inlet`→`metadata`→`provider`→`ports`
 - 🩹 *console*: fix use of `InIfBoundary` and `OutIfBoundary` as dimensions
 - 🌱 *orchestrator*: add TLS support to connect to ClickHouse database
-- 🌱 *docker*: update to Redis 7.2 (not mandatory)
-- 🌱 *docker*: update to Kafka 3.7 (not mandatory)
-- 🌱 *docker*: update to Zookeeper 3.9 (not mandatory)
+- 🌱 *docker*: update to Redis 7.2, Kafka 3.7, and Zookeeper 3.9 (not mandatory)
+
+[documentation for installing the compose plugin]: https://docs.docker.com/compose/install/linux/
 
 ## 1.9.3 - 2024-01-14
 
