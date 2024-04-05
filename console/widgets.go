@@ -84,13 +84,8 @@ func (c *Component) widgetFlowRateHandlerFunc(gc *gin.Context) {
 	query := `SELECT COUNT(*)/300 AS rate FROM flows WHERE TimeReceived > date_sub(minute, 5, now())`
 	gc.Header("X-SQL-Query", query)
 	// Do not increase counter for this one.
-	row := c.d.ClickHouseDB.Conn.QueryRow(ctx, query)
-	if err := row.Err(); err != nil {
-		c.r.Err(err).Msg("unable to query database")
-		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to query database."})
-		return
-	}
 	var result float64
+	row := c.d.ClickHouseDB.Conn.QueryRow(ctx, query)
 	if err := row.Scan(&result); err != nil {
 		c.r.Err(err).Msg("unable to parse result")
 		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to parse result."})

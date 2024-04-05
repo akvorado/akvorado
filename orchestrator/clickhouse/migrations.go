@@ -45,13 +45,9 @@ func (c *Component) migrateDatabase() error {
 	}
 
 	// Grab some information about the database
-	row := c.d.ClickHouse.QueryRow(ctx, `SELECT getSetting('max_threads'), version()`)
-	if err := row.Err(); err != nil {
-		c.r.Err(err).Msg("unable to query database")
-		return fmt.Errorf("unable to query database: %w", err)
-	}
 	var threads uint8
 	var version string
+	row := c.d.ClickHouse.QueryRow(ctx, `SELECT getSetting('max_threads'), version()`)
 	if err := row.Scan(&threads, &version); err != nil {
 		c.r.Err(err).Msg("unable to parse database settings")
 		return fmt.Errorf("unable to parse database settings: %w", err)
@@ -65,15 +61,11 @@ func (c *Component) migrateDatabase() error {
 	}
 
 	if c.config.Cluster != "" {
+		var shardNum uint64
 		row = c.d.ClickHouse.QueryRow(ctx,
 			`SELECT countDistinct(shard_num) AS num FROM system.clusters WHERE cluster = $1`,
 			c.config.Cluster,
 		)
-		if err := row.Err(); err != nil {
-			c.r.Err(err).Msg("unable to query database")
-			return fmt.Errorf("unable to query database: %w", err)
-		}
-		var shardNum uint64
 		if err := row.Scan(&shardNum); err != nil {
 			c.r.Err(err).Msg("unable to parse cluster settings")
 			return fmt.Errorf("unable to parse cluster settings: %w", err)

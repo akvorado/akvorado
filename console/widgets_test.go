@@ -106,7 +106,6 @@ func TestFlowRate(t *testing.T) {
 
 	ctrl := gomock.NewController(t)
 	mockRow := mocks.NewMockRow(ctrl)
-	mockRow.EXPECT().Err().Return(nil)
 	mockRow.EXPECT().Scan(gomock.Any()).SetArg(0, float64(100.1)).Return(nil)
 	mockConn.EXPECT().
 		QueryRow(gomock.Any(),
