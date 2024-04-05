@@ -1,3 +1,4 @@
+// SPDX-FileCopyrightText: 2024 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
 // Package bioris provides an interface to hydrate flow from biorouting ris
