@@ -32,6 +32,8 @@ type Component struct {
 	config  Configuration
 	metrics metrics
 
+	shards int // number of shards if in a cluster
+
 	migrationsDone        chan bool // closed when migrations are done
 	migrationsOnce        chan bool // closed after first attempt to migrate
 	networkSourcesFetcher *remotedatasourcefetcher.Component[externalNetworkAttributes]

@@ -112,7 +112,7 @@ func (c *Component) distributedTable(table string) string {
 // localTable turns a table name to the matching local distributed table if we
 // are in a cluster.
 func (c *Component) localTable(table string) string {
-	if c.config.Cluster != "" {
+	if c.config.Cluster != "" && c.shards > 1 {
 		return fmt.Sprintf("%s_local", table)
 	}
 	return table
@@ -792,7 +792,7 @@ FROM {{ .Database }}.{{ .Table }}`, gin.H{
 // If the table already exists and does not match the definition, it is
 // replaced.
 func (c *Component) createDistributedTable(ctx context.Context, source string) error {
-	if c.config.Cluster == "" {
+	if c.localTable(source) == c.distributedTable(source) {
 		return errSkipStep
 	}
 	// Get the schema of the source table

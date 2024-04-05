@@ -64,6 +64,26 @@ func (c *Component) migrateDatabase() error {
 		return fmt.Errorf("incorrect Clickhouse version: %w", err)
 	}
 
+	if c.config.Cluster != "" {
+		row = c.d.ClickHouse.QueryRow(ctx,
+			`SELECT countDistinct(shard_num) AS num FROM system.clusters WHERE cluster = $1`,
+			c.config.Cluster,
+		)
+		if err := row.Err(); err != nil {
+			c.r.Err(err).Msg("unable to query database")
+			return fmt.Errorf("unable to query database: %w", err)
+		}
+		var shardNum uint64
+		if err := row.Scan(&shardNum); err != nil {
+			c.r.Err(err).Msg("unable to parse cluster settings")
+			return fmt.Errorf("unable to parse cluster settings: %w", err)
+		}
+		if shardNum == 0 {
+			return fmt.Errorf("cannot get the number of shards for the cluster")
+		}
+		c.shards = int(shardNum)
+	}
+
 	// Create dictionaries
 	err := c.wrapMigrations(
 		ctx,
