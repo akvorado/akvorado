@@ -1,4 +1,5 @@
 ---
+# List of licenses compatible with AGPL-3.0-only
 allowlist:
   - Apache-2.0
   - BSD-3-Clause
@@ -7,3 +8,5 @@ allowlist:
   - MPL-2.0
   - MIT
   - ISC
+  - WTFPL
+  - 0BSD

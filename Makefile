@@ -190,7 +190,7 @@ licensecheck: console/frontend/node_modules | $(WWHRD) ; $(info $(M) check depen
 	$Q err=0 ; go mod vendor && $(WWHRD) --quiet check || err=$$? ; rm -rf vendor/ ; exit $$err
 	$Q cd console/frontend ; npm exec --no -- license-compliance \
 		--production \
-		--allow "MIT;ISC;Apache-2.0;BSD-3-Clause;WTFPL;0BSD" \
+		--allow "$$(sed -n 's/^  - //p' ../../.wwhrd.yml | paste -sd ";")" \
 		--report detailed
 
 .PHONY: clean mrproper
