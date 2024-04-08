@@ -1,4 +1,5 @@
 FROM nixpkgs/nix-flakes:latest AS build
+RUN echo filter-syscalls = false >> /etc/nix/nix.conf
 WORKDIR /app
 COPY . .
 RUN mkdir -p /output/store
