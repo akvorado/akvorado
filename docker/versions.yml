@@ -15,14 +15,6 @@ services:
     image: ghcr.io/akvorado/akvorado:main
 
   # observability
-  grafana:
-    image: grafana/grafana-oss:10.2.6
-  prometheus:
-    image: prom/prometheus:v2.47.2
-  node-exporter:
-    image: prom/node-exporter:v1.7.0
-  kafka-jmx-exporter:
-    image: bitnami/jmx-exporter:0
   kafka-ui:
     image: provectuslabs/kafka-ui:v0.7.1
 
