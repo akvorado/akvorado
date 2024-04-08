@@ -11,7 +11,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.10.0 - 2024-04-08
 
 On this release, geo IP is now performed in ClickHouse instead of inlet. When
 using the standard `docker compose` setup, the configuration should be
