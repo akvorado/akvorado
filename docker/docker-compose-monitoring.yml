@@ -1,0 +1,69 @@
+---
+volumes:
+  akvorado-prometheus:
+services:
+  prometheus:
+    extends:
+      file: versions.yml
+      service: prometheus
+    restart: unless-stopped
+    user: root                  # for access to /var/run/docker.sock
+    volumes:
+      - akvorado-prometheus:/prometheus
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      # Those are the defaults
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+      # Those are not the defaults
+      - --web.external-url=/prometheus
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.prometheus.entrypoints=public
+      - traefik.http.routers.prometheus.rule=PathPrefix(`/prometheus`)
+      - traefik.http.services.prometheus.loadbalancer.server.port=9090
+
+  node-exporter:
+    extends:
+      file: versions.yml
+      service: node-exporter
+    restart: unless-stopped
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+    command:
+      - --path.procfs=/host/proc
+      - --path.sysfs=/host/sys
+      - --no-collector.filesystem
+
+  kafka-jmx-exporter:
+    extends:
+      file: versions.yml
+      service: kafka-jmx-exporter
+    restart: unless-stopped
+    depends_on:
+      - kafka
+    volumes:
+      - ./kafka-jmx-exporter-config.yaml:/etc/jmx-kafka/config.yaml:ro
+    command:
+      - "5556"
+      - /etc/jmx-kafka/config.yaml
+
+  kafka-ui:
+    extends:
+      file: versions.yml
+      service: kafka-ui
+    restart: unless-stopped
+    depends_on:
+      - kafka
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - SERVER_SERVLET_CONTEXT_PATH=/kafka-ui
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.kafka-ui.entrypoints=private
+      - traefik.http.routers.kafka-ui.rule=PathPrefix(`/kafka-ui`)

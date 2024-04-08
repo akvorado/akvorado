@@ -1,0 +1,27 @@
+---
+volumes:
+  akvorado-grafana:
+services:
+  grafana:
+    extends:
+      file: versions.yml
+      service: grafana
+    environment:
+      - GF_INSTALL_PLUGINS=marcusolsson-json-datasource 1.3.8
+      - GF_SERVER_ROOT_URL=/grafana
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+    depends_on:
+      - prometheus
+      - akvorado-console
+    restart: unless-stopped
+    volumes:
+      - akvorado-grafana:/var/lib/grafana
+      - ./grafana:/etc/grafana
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.grafana.entrypoints=public
+      - traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)
+      - traefik.http.routers.grafana.middlewares=console-auth-headers,grafana-avatar
+      - traefik.http.middlewares.grafana-avatar.redirectRegex.regex=^(https?://.+)/grafana/avatar/.+
+      - traefik.http.middlewares.grafana-avatar.redirectRegex.replacement=$${1}/api/v0/console/user/avatar
+      - traefik.http.services.grafana.loadbalancer.server.port=3000
