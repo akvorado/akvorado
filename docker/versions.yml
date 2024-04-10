@@ -29,3 +29,5 @@ services:
   # for tests
   srlinux:
     image: ghcr.io/nokia/srlinux:23.7.1
+  postgres:
+    image: docker.io/postgres:16-alpine

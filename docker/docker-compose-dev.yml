@@ -32,6 +32,22 @@ services:
     ports:
       - 127.0.0.1:6379:6379/tcp
 
+  postgres:
+    extends:
+      file: versions.yml
+      service: postgres
+    environment:
+      POSTGRES_PASSWORD: akpass
+      POSTGRES_USER: akvorado
+      POSTGRES_DB: akvorado
+    ports:
+      - 127.0.0.1:5432:5432/tcp
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U akvorado -d akvorado"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   clickhouse: &clickhouse
     extends:
       file: versions.yml

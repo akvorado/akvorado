@@ -5,18 +5,14 @@ package database
 
 import (
 	"context"
-	"log"
+	"database/sql"
+	"fmt"
+	"net"
 	"testing"
-	"time"
 
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
-
-	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
-
 
 func testSavedFilter(t *testing.T, c *Component) {
 	// Create
@@ -105,54 +101,53 @@ func testSavedFilter(t *testing.T, c *Component) {
 func TestSavedFilterSqlite(t *testing.T) {
 	r := reporter.NewMock(t)
 
-	testSavedFilter(t,  NewMock(t, r, DefaultConfiguration()))
+	testSavedFilter(t, NewMock(t, r, DefaultConfiguration()))
 }
 
 func TestSavedFilterPostgres(t *testing.T) {
-	r := reporter.NewMock(t)
-	ctx := context.Background()
-
-	dbName := "akvorado"
-	dbUser := "akvorado"
-	dbPassword := "akpass"
-
-	postgresContainer, err := postgres.RunContainer(ctx,
-			testcontainers.WithImage("docker.io/postgres:16-alpine"),
-			postgres.WithDatabase(dbName),
-			postgres.WithUsername(dbUser),
-			postgres.WithPassword(dbPassword),
-			testcontainers.WithWaitStrategy(
-					wait.ForLog("database system is ready to accept connections").
-							WithOccurrence(2).
-							WithStartupTimeout(5*time.Second)),
-	)
+	server := helpers.CheckExternalService(t, "Postgresql", []string{"postgres:5432", "127.0.0.1:5432"})
+	server, serverPort, err := net.SplitHostPort(server)
 	if err != nil {
-			log.Fatalf("failed to start container: %s", err)
+		t.Fatalf("failed to parse server:\n%+v", err)
 	}
 
-	// Clean up the container
-	defer func() {
-			if err := postgresContainer.Terminate(ctx); err != nil {
-					log.Fatalf("failed to terminate container: %s", err)
-			}
-	}()
-
-	dsn, err := postgresContainer.ConnectionString(ctx)
-
-  if err != nil {
-		t.Fatalf("failed to get postgres connection string: %s", err)
-	}
-
+	r := reporter.NewMock(t)
+	dsn := fmt.Sprintf(
+		"host=%s port=%s user=akvorado password=akpass dbname=akvorado sslmode=disable",
+		server, serverPort)
 	c := NewMock(
 		t,
 		r,
 		Configuration{
 			Driver: "postgresql",
-			DSN: dsn,
+			DSN:    dsn,
 		},
 	)
 
-	testSavedFilter(t,  c)
+	// clean database for future tests
+	t.Cleanup(func() {
+		db, err := sql.Open("pgx", dsn)
+		if err != nil {
+			t.Fatalf("sql.Open() error:\n%+v", err)
+		}
+		defer db.Close()
+		if _, err := db.Exec(`
+	DO $$ DECLARE
+    r RECORD;
+BEGIN
+    -- if the schema you operate on is not "current", you will want to
+    -- replace current_schema() in query with 'schematodeletetablesfrom'
+    -- *and* update the generate 'DROP...' accordingly.
+    FOR r IN (SELECT tablename FROM pg_tables WHERE schemaname = current_schema()) LOOP
+        EXECUTE 'DROP TABLE IF EXISTS ' || quote_ident(r.tablename) || ' CASCADE';
+    END LOOP;
+END $$;
+`); err != nil {
+			t.Fatalf("db.Exec() error:\n%+v", err)
+		}
+	})
+
+	testSavedFilter(t, c)
 }
 
 func TestPopulateSavedFilters(t *testing.T) {
