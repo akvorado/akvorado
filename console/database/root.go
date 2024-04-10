@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/glebarez/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	"akvorado/common/reporter"
@@ -34,7 +35,15 @@ func New(r *reporter.Reporter, configuration Configuration) (*Component, error) 
 			Logger: &logger{r},
 		})
 		if err != nil {
-			return nil, fmt.Errorf("unable to open database: %w", err)
+			return nil, fmt.Errorf("unable to open sqlite database: %w", err)
+		}
+		c.db = db
+	case "postgresql":
+		db, err := gorm.Open(postgres.Open(c.config.DSN), &gorm.Config{
+			Logger: &logger{r},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("unable to open postgresql database: %w", err)
 		}
 		c.db = db
 	default:

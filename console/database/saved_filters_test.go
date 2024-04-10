@@ -5,16 +5,20 @@ package database
 
 import (
 	"context"
+	"log"
 	"testing"
+	"time"
 
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
+
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/postgres"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-func TestSavedFilter(t *testing.T) {
-	r := reporter.NewMock(t)
-	c := NewMock(t, r, DefaultConfiguration())
 
+func testSavedFilter(t *testing.T, c *Component) {
 	// Create
 	if err := c.CreateSavedFilter(context.Background(), SavedFilter{
 		ID:          17,
@@ -96,6 +100,59 @@ func TestSavedFilter(t *testing.T) {
 	if err := c.DeleteSavedFilter(context.Background(), SavedFilter{ID: 1}); err == nil {
 		t.Fatal("DeleteSavedFilter() no error")
 	}
+}
+
+func TestSavedFilterSqlite(t *testing.T) {
+	r := reporter.NewMock(t)
+
+	testSavedFilter(t,  NewMock(t, r, DefaultConfiguration()))
+}
+
+func TestSavedFilterPostgres(t *testing.T) {
+	r := reporter.NewMock(t)
+	ctx := context.Background()
+
+	dbName := "akvorado"
+	dbUser := "akvorado"
+	dbPassword := "akpass"
+
+	postgresContainer, err := postgres.RunContainer(ctx,
+			testcontainers.WithImage("docker.io/postgres:16-alpine"),
+			postgres.WithDatabase(dbName),
+			postgres.WithUsername(dbUser),
+			postgres.WithPassword(dbPassword),
+			testcontainers.WithWaitStrategy(
+					wait.ForLog("database system is ready to accept connections").
+							WithOccurrence(2).
+							WithStartupTimeout(5*time.Second)),
+	)
+	if err != nil {
+			log.Fatalf("failed to start container: %s", err)
+	}
+
+	// Clean up the container
+	defer func() {
+			if err := postgresContainer.Terminate(ctx); err != nil {
+					log.Fatalf("failed to terminate container: %s", err)
+			}
+	}()
+
+	dsn, err := postgresContainer.ConnectionString(ctx)
+
+  if err != nil {
+		t.Fatalf("failed to get postgres connection string: %s", err)
+	}
+
+	c := NewMock(
+		t,
+		r,
+		Configuration{
+			Driver: "postgresql",
+			DSN: dsn,
+		},
+	)
+
+	testSavedFilter(t,  c)
 }
 
 func TestPopulateSavedFilters(t *testing.T) {
