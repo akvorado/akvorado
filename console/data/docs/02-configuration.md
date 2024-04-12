@@ -625,7 +625,7 @@ increases the storage needs.
 You can get the list of columns you can enable or disable with `akvorado
 version`. Disabling a column won't delete existing data.
 
-It is also possible to make make some columns available on the main table only
+It is also possible to make some columns available on the main table only
 or on all tables with `main-table-only` and `not-main-table-only`. For example:
 
 ```yaml
