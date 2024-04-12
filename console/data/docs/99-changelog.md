@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## 1.10.1 - 2024-04-14
+
+- 🩹 *inlet*: fix versioning of metadata cache
+
 ## 1.10.0 - 2024-04-08
 
 On this release, geo IP is now performed in ClickHouse instead of inlet. When
