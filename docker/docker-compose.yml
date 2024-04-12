@@ -117,6 +117,8 @@ services:
     command: inlet http://akvorado-orchestrator:8080
     volumes:
       - akvorado-run:/run/akvorado
+    environment:
+      - AKVORADO_CFG_INLET_METADATA_CACHEPERSISTFILE=/run/akvorado/metadata.cache
     labels:
       - traefik.enable=true
       - traefik.http.routers.akvorado-inlet.rule=PathPrefix(`/api/v0/inlet`)
