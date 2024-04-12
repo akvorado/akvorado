@@ -1,3 +1,5 @@
+// SPDX-FileCopyrightText: 2024 Free Mobile
+// SPDX-License-Identifier: 0BSD
 /// <reference types="vite/client" />
 
 // Missing types for vue-resizer

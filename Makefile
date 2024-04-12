@@ -187,6 +187,8 @@ fmt: .fmt-go~ .fmt-js~ ## Format all source files
 
 .PHONY: licensecheck
 licensecheck: console/frontend/node_modules | $(WWHRD) ; $(info $(M) check dependency licenses…) @ ## Check licenses
+	$Q ! git grep -L SPDX-License-Identifier: "*.go" "*.ts" "*.js" || \
+		(>&2 echo "*** Missing license identifiers!"; false)
 	$Q err=0 ; go mod vendor && $(WWHRD) --quiet check || err=$$? ; rm -rf vendor/ ; exit $$err
 	$Q cd console/frontend ; npm exec --no -- license-compliance \
 		--production \
