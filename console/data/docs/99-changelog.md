@@ -14,6 +14,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 💥 *console*: persist metadata cache on the default `docker compose` setup
+- 🩹 *inlet*: fix versioning of metadata cache
 
 ## 1.10.0 - 2024-04-08
 

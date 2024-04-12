@@ -52,7 +52,7 @@ func (c *Cache[K, V]) Load(cacheFile string) error {
 
 // currentVersionNumber should be increased each time we change the way we
 // encode the cache.
-var currentVersionNumber = 10
+var currentVersionNumber = 11
 
 // GobEncode encodes the cache
 func (c *Cache[K, V]) GobEncode() ([]byte, error) {
@@ -63,13 +63,12 @@ func (c *Cache[K, V]) GobEncode() ([]byte, error) {
 	if err := encoder.Encode(&currentVersionNumber); err != nil {
 		return nil, err
 	}
-	// Encode a representation of K and V
+	// Encode a representation of K and V. Gob decoding is pretty forgiving, we
+	// encode a string representation instead.
 	var zeroK K
 	var zeroV V
-	if err := encoder.Encode(&zeroK); err != nil {
-		return nil, err
-	}
-	if err := encoder.Encode(&zeroV); err != nil {
+	zero := fmt.Sprintf("%+v\n%+v", zeroK, zeroV)
+	if err := encoder.Encode(&zero); err != nil {
 		return nil, err
 	}
 
@@ -98,10 +97,12 @@ func (c *Cache[K, V]) GobDecode(data []byte) error {
 	// Check correct encoding of K and V
 	var zeroK K
 	var zeroV V
-	if err := decoder.Decode(&zeroK); err != nil {
-		return ErrVersion
+	var zeroGot string
+	zeroExpected := fmt.Sprintf("%+v\n%+v", zeroK, zeroV)
+	if err := decoder.Decode(&zeroGot); err != nil {
+		return err
 	}
-	if err := decoder.Decode(&zeroV); err != nil {
+	if zeroGot != zeroExpected {
 		return ErrVersion
 	}
 	items := map[K]*item[V]{}
