@@ -171,6 +171,7 @@ func (c *Component) networksCSVRefresher() {
 
 		if once {
 			close(c.networksCSVReady)
+			once = false
 		}
 
 		ctx, cancel := context.WithTimeout(c.t.Context(nil), time.Minute)

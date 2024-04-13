@@ -15,6 +15,7 @@ identified with a specific icon:
 
 - 💥 *console*: persist metadata cache on the default `docker compose` setup
 - 🩹 *inlet*: fix versioning of metadata cache
+- 🩹 *orchestrator*: fix panic in networks CSV refresher
 
 ## 1.10.0 - 2024-04-08
 
