@@ -14,9 +14,13 @@ identified with a specific icon:
 ## Unreleased
 
 - 💥 *console*: persist metadata cache on the default `docker compose` setup
-- 🩹 *inlet*: fix versioning of metadata cache
 - 🩹 *orchestrator*: fix panic in networks CSV refresher
 - 🌱 *console*: add support for PostgreSQL and MySQL to store filters
+
+## 1.10.1 - 2024-04-14
+
+- 🩹 *inlet*: fix versioning of metadata cache
+- 🩹 *orchestrator*: fix panic in networks CSV refresher
 
 ## 1.10.0 - 2024-04-08
 
