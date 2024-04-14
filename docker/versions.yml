@@ -31,3 +31,5 @@ services:
     image: ghcr.io/nokia/srlinux:23.7.1
   postgres:
     image: bitnami/postgresql:16
+  mysql:
+    image: bitnami/mariadb:11.3

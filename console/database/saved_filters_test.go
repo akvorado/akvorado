@@ -150,6 +150,53 @@ END $$;
 	testSavedFilter(t, c)
 }
 
+func TestSavedFilterMySQL(t *testing.T) {
+	server := helpers.CheckExternalService(t, "MySQL", []string{"mysql:3306", "127.0.0.1:3306"})
+
+	r := reporter.NewMock(t)
+	dsn := fmt.Sprintf(
+		"akvorado:akpass@tcp(%s)/akvorado?charset=utf8mb4&parseTime=True&loc=Local",
+		server)
+	c := NewMock(
+		t,
+		r,
+		Configuration{
+			Driver: "mysql",
+			DSN:    dsn,
+		},
+	)
+
+	// clean database for future tests
+	t.Cleanup(func() {
+		db, err := sql.Open("mysql", dsn)
+		if err != nil {
+			t.Fatalf("sql.Open() error:\n%+v", err)
+		}
+		defer db.Close()
+
+		rows, err := db.Query("SHOW TABLES")
+		if err != nil {
+			t.Fatalf("db.Query() error\n%+v", err)
+		}
+		defer rows.Close()
+		var tables []string
+		for rows.Next() {
+			var tableName string
+			if err := rows.Scan(&tableName); err != nil {
+				t.Fatalf("rows.Scan() error:\n%+v", err)
+			}
+			tables = append(tables, tableName)
+		}
+		for _, table := range tables {
+			if _, err := db.Exec(fmt.Sprintf("DROP TABLE %s", table)); err != nil {
+				t.Fatalf("db.Exec() error:\n%+v", err)
+			}
+		}
+	})
+
+	testSavedFilter(t, c)
+}
+
 func TestPopulateSavedFilters(t *testing.T) {
 	config := DefaultConfiguration()
 	config.SavedFilters = []BuiltinSavedFilter{

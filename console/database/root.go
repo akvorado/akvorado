@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/glebarez/sqlite"
+	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -43,7 +44,15 @@ func New(r *reporter.Reporter, configuration Configuration) (*Component, error) 
 			Logger: &logger{r},
 		})
 		if err != nil {
-			return nil, fmt.Errorf("unable to open postgresql database: %w", err)
+			return nil, fmt.Errorf("unable to open PostgreSQL database: %w", err)
+		}
+		c.db = db
+	case "mysql":
+		db, err := gorm.Open(mysql.Open(c.config.DSN), &gorm.Config{
+			Logger: &logger{r},
+		})
+		if err != nil {
+			return nil, fmt.Errorf("unable to open MySQL database: %w", err)
 		}
 		c.db = db
 	default:

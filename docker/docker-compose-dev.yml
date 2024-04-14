@@ -48,6 +48,23 @@ services:
       timeout: 5s
       retries: 5
 
+  mysql:
+    extends:
+      file: versions.yml
+      service: mysql
+    environment:
+      ALLOW_EMPTY_PASSWORD: "yes"
+      MARIADB_USER: akvorado
+      MARIADB_PASSWORD: akpass
+      MARIADB_DATABASE: akvorado
+    ports:
+      - 127.0.0.1:3306:3306/tcp
+    healthcheck:
+      test: ['CMD', '/opt/bitnami/scripts/mariadb/healthcheck.sh']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   clickhouse: &clickhouse
     extends:
       file: versions.yml
