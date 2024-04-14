@@ -985,16 +985,24 @@ There also exist simpler solutions only providing authentication:
 
 ### Database
 
-The console stores some data, like per-user filters, into a relational
-database. When the database is not configured, data is only stored in
-memory and will be lost on restart. Currently, the only accepted
-driver is SQLite.
+The console stores some data, like per-user filters, into a relational database.
+When the database is not configured, data is only stored in memory and will be
+lost on restart. Supported drivers are `sqlite`, `mysql`, and `postgresql`.
 
 ```yaml
 database:
   driver: sqlite
   dsn: /var/lib/akvorado/console.sqlite
 ```
+
+The `dsn` field for `sqlite` should be the path to the database. For `mysql`,
+the format is `user:pass@tcp(hostname:3306)/dbname?charset=utf8mb4`. Check the
+[documentation of the SQL
+driver](https://github.com/go-sql-driver/mysql#dsn-data-source-name) for more
+details. For `postgresql`, the format is `host=hostname port=5432 user=user
+password=pass dbname=dbname sslmode=disable`. Check the [documentation of
+libpq](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING)
+for more details.
 
 The database configuration also accepts a `saved-filters` key to
 populate the database with the provided filters. Each filter should
