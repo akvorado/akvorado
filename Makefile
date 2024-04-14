@@ -18,11 +18,12 @@ export GOEXPERIMENT=loopvar
 GENERATED_JS = \
 	console/frontend/node_modules
 GENERATED_GO = \
-	common/clickhousedb/mocks/mock_driver.go \
 	common/schema/definition_gen.go \
-	conntrackfixer/mocks/mock_conntrackfixer.go \
 	orchestrator/clickhouse/data/asns.csv \
 	console/filter/parser.go
+GENERATED_TEST_GO = \
+	common/clickhousedb/mocks/mock_driver.go \
+	conntrackfixer/mocks/mock_conntrackfixer.go
 GENERATED = \
 	$(GENERATED_GO) \
 	$(GENERATED_JS) \
@@ -120,7 +121,7 @@ changelog.md: docs/99-changelog.md # To be used by GitHub actions only.
 check test tests: test-go test-js ## Run tests
 test-coverage: test-coverage-go test-coverage-js ## Run coverage tests
 
-test-go test-bench test-race test-coverage-go: .fmt-go~ .lint-go~ $(GENERATED)
+test-go test-bench test-race test-coverage-go: .fmt-go~ .lint-go~ $(GENERATED) $(GENERATED_TEST_GO)
 test-go: | $(GOTESTSUM) ; $(info $(M) running Go tests$(GOTEST_MORE)…) @ ## Run Go tests
 	$Q mkdir -p test/go
 	$Q env PATH=$(dir $(abspath $(shell command -v $(GO)))):$(PATH) $(GOTESTSUM) \
