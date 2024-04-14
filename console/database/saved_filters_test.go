@@ -105,7 +105,7 @@ func TestSavedFilterSqlite(t *testing.T) {
 }
 
 func TestSavedFilterPostgres(t *testing.T) {
-	server := helpers.CheckExternalService(t, "Postgresql", []string{"postgres:5432", "127.0.0.1:5432"})
+	server := helpers.CheckExternalService(t, "PostgreSQL", []string{"postgres:5432", "127.0.0.1:5432"})
 	server, serverPort, err := net.SplitHostPort(server)
 	if err != nil {
 		t.Fatalf("failed to parse server:\n%+v", err)

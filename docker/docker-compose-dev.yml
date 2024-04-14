@@ -37,9 +37,9 @@ services:
       file: versions.yml
       service: postgres
     environment:
-      POSTGRES_PASSWORD: akpass
-      POSTGRES_USER: akvorado
-      POSTGRES_DB: akvorado
+      POSTGRESQL_USERNAME: akvorado
+      POSTGRESQL_PASSWORD: akpass
+      POSTGRESQL_DATABASE: akvorado
     ports:
       - 127.0.0.1:5432:5432/tcp
     healthcheck:
