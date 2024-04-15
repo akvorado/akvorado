@@ -33,7 +33,6 @@ require (
 	github.com/netsampler/goflow2/v2 v2.1.3
 	github.com/openconfig/gnmi v0.11.0
 	github.com/openconfig/gnmic/pkg/api v0.1.5
-	github.com/opencontainers/image-spec v1.1.0
 	github.com/oschwald/maxminddb-golang v1.12.0
 	github.com/osrg/gobgp/v3 v3.24.0
 	github.com/prometheus/client_golang v1.19.0
@@ -48,7 +47,7 @@ require (
 	github.com/yuin/goldmark-highlighting v0.0.0-20220208100518-594be1970594
 	go.uber.org/mock v0.4.0
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
-	golang.org/x/sys v0.18.0
+	golang.org/x/sys v0.19.0
 	golang.org/x/text v0.14.0
 	golang.org/x/time v0.5.0
 	google.golang.org/grpc v1.62.1
@@ -132,6 +131,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/openconfig/grpctunnel v0.1.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
+	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/paulmach/orb v0.11.1 // indirect
 	github.com/pelletier/go-toml/v2 v2.1.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
