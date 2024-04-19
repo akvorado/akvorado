@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## 1.10.2 - 2024-04-27
+
+- 🩹 *inlet*: fix `inlet`→`metadata`→`providers`→`targets` for gNMI provider
+
 ## 1.10.1 - 2024-04-14
 
 - 🩹 *inlet*: fix versioning of metadata cache

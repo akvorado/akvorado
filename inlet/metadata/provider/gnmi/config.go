@@ -24,7 +24,7 @@ type Configuration struct {
 	MinimalRefreshInterval time.Duration `validate:"min=1s"`
 	// Targets is a mapping from exporter IPs to gNMI target IP.
 	Targets *helpers.SubnetMap[netip.Addr]
-	// SetTarget is a mpping from exporter IPs to whatever set target name in gNMI path prefix
+	// SetTarget is a mapping from exporter IPs to whatever set target name in gNMI path prefix
 	SetTarget *helpers.SubnetMap[bool]
 	// Ports is a mapping from exporter IPs to gNMI port.
 	Ports *helpers.SubnetMap[uint16]
@@ -248,8 +248,10 @@ func init() {
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[bool]())
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[uint16]())
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[AuthenticationParameter]())
+	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[netip.Addr]())
 	helpers.RegisterMapstructureUnmarshallerHook(ConfigurationUnmarshallerHook())
 	helpers.RegisterSubnetMapValidation[bool]()
 	helpers.RegisterSubnetMapValidation[uint16]()
 	helpers.RegisterSubnetMapValidation[AuthenticationParameter]()
+	helpers.RegisterSubnetMapValidation[netip.Addr]()
 }
