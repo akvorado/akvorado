@@ -15,6 +15,7 @@ identified with a specific icon:
 
 - 💥 *console*: persist metadata cache on the default `docker compose` setup
 - 🩹 *orchestrator*: fix panic in networks CSV refresher
+- 🩹 *inlet*: fix `inlet`→`metadata`→`providers`→`targets` for gNMI provider
 - 🌱 *console*: add support for PostgreSQL and MySQL to store filters
 
 ## 1.10.1 - 2024-04-14
