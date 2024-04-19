@@ -51,7 +51,7 @@ func DefaultConfiguration() Configuration {
 	return Configuration{
 		DefaultVisualizeOptions: VisualizeOptionsConfiguration{
 			GraphType:  "stacked",
-			Start:      "6 hours ago",
+			Start:      "24 hours ago",
 			End:        "now",
 			Filter:     "InIfBoundary = external",
 			Dimensions: []query.Column{query.NewColumn("SrcAS")},
