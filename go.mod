@@ -38,7 +38,7 @@ require (
 	github.com/prometheus/client_golang v1.19.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rs/zerolog v1.32.0
-	github.com/scrapli/scrapligo v1.2.0
+	github.com/scrapli/scrapligo v1.3.0
 	github.com/slayercat/GoSNMPServer v0.5.2
 	github.com/spf13/cobra v1.8.0
 	github.com/ti-mo/conntrack v0.5.0
@@ -72,7 +72,7 @@ require (
 	github.com/bytedance/sonic v1.9.1 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
-	github.com/creack/pty v1.1.18 // indirect
+	github.com/creack/pty v1.1.21 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/distribution/reference v0.5.0 // indirect
