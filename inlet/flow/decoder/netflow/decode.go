@@ -15,6 +15,11 @@ import (
 	"github.com/netsampler/goflow2/v2/decoders/netflow"
 )
 
+// When decoding, we use IPFIX information element identifiers. However, it
+// should be noted, as per RFC 5102, IPFIX "Information Element identifier
+// values in the sub-range of 1-127 are compatible with field types used by
+// NetFlow version 9 [RFC3954]."
+
 func (nd *Decoder) decodeIPFIX(packet netflow.IPFIXPacket, samplingRateSys *samplingRateSystem, sysOffset uint64) []*schema.FlowMessage {
 	obsDomainID := packet.ObservationDomainId
 	return nd.decodeCommon(10, obsDomainID, packet.FlowSets, samplingRateSys, sysOffset)
@@ -46,9 +51,9 @@ func (nd *Decoder) decodeCommon(version uint16, obsDomainID uint32, flowSets []i
 						continue
 					}
 					switch field.Type {
-					case netflow.NFV9_FIELD_SAMPLING_INTERVAL, netflow.NFV9_FIELD_FLOW_SAMPLER_RANDOM_INTERVAL, netflow.IPFIX_FIELD_samplingPacketInterval:
+					case netflow.IPFIX_FIELD_samplingInterval, netflow.IPFIX_FIELD_samplerRandomInterval, netflow.IPFIX_FIELD_samplingPacketInterval:
 						samplingRate = uint32(decodeUNumber(v))
-					case netflow.NFV9_FIELD_FLOW_SAMPLER_ID, netflow.IPFIX_FIELD_selectorId:
+					case netflow.IPFIX_FIELD_samplerId, netflow.IPFIX_FIELD_selectorId:
 						samplerID = uint64(decodeUNumber(v))
 					}
 				}
@@ -86,56 +91,56 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 
 		switch field.Type {
 		// Statistics
-		case netflow.NFV9_FIELD_IN_BYTES, netflow.NFV9_FIELD_OUT_BYTES, netflow.IPFIX_FIELD_initiatorOctets, netflow.IPFIX_FIELD_responderOctets:
+		case netflow.IPFIX_FIELD_octetDeltaCount, netflow.IPFIX_FIELD_postOctetDeltaCount, netflow.IPFIX_FIELD_initiatorOctets, netflow.IPFIX_FIELD_responderOctets:
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnBytes, decodeUNumber(v))
-		case netflow.NFV9_FIELD_IN_PKTS, netflow.NFV9_FIELD_OUT_PKTS:
+		case netflow.IPFIX_FIELD_packetDeltaCount, netflow.IPFIX_FIELD_postPacketDeltaCount:
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnPackets, decodeUNumber(v))
-		case netflow.NFV9_FIELD_SAMPLING_INTERVAL, netflow.NFV9_FIELD_FLOW_SAMPLER_RANDOM_INTERVAL, netflow.IPFIX_FIELD_samplingPacketInterval:
+		case netflow.IPFIX_FIELD_samplingInterval, netflow.IPFIX_FIELD_samplerRandomInterval, netflow.IPFIX_FIELD_samplingPacketInterval:
 			bf.SamplingRate = uint32(decodeUNumber(v))
-		case netflow.NFV9_FIELD_FLOW_SAMPLER_ID, netflow.IPFIX_FIELD_selectorId:
+		case netflow.IPFIX_FIELD_samplerId, netflow.IPFIX_FIELD_selectorId:
 			bf.SamplingRate = samplingRateSys.GetSamplingRate(version, obsDomainID, decodeUNumber(v))
 
 		// L3
-		case netflow.NFV9_FIELD_IPV4_SRC_ADDR:
+		case netflow.IPFIX_FIELD_sourceIPv4Address:
 			etype = helpers.ETypeIPv4
 			bf.SrcAddr = decodeIP(v)
-		case netflow.NFV9_FIELD_IPV4_DST_ADDR:
+		case netflow.IPFIX_FIELD_destinationIPv4Address:
 			etype = helpers.ETypeIPv4
 			bf.DstAddr = decodeIP(v)
-		case netflow.NFV9_FIELD_IPV6_SRC_ADDR:
+		case netflow.IPFIX_FIELD_sourceIPv6Address:
 			etype = helpers.ETypeIPv6
 			bf.SrcAddr = decodeIP(v)
-		case netflow.NFV9_FIELD_IPV6_DST_ADDR:
+		case netflow.IPFIX_FIELD_destinationIPv6Address:
 			etype = helpers.ETypeIPv6
 			bf.DstAddr = decodeIP(v)
-		case netflow.NFV9_FIELD_SRC_MASK, netflow.NFV9_FIELD_IPV6_SRC_MASK:
+		case netflow.IPFIX_FIELD_sourceIPv4PrefixLength, netflow.IPFIX_FIELD_sourceIPv6PrefixLength:
 			bf.SrcNetMask = uint8(decodeUNumber(v))
-		case netflow.NFV9_FIELD_DST_MASK, netflow.NFV9_FIELD_IPV6_DST_MASK:
+		case netflow.IPFIX_FIELD_destinationIPv4PrefixLength, netflow.IPFIX_FIELD_destinationIPv6PrefixLength:
 			bf.DstNetMask = uint8(decodeUNumber(v))
-		case netflow.NFV9_FIELD_IPV4_NEXT_HOP, netflow.NFV9_FIELD_BGP_IPV4_NEXT_HOP, netflow.NFV9_FIELD_IPV6_NEXT_HOP, netflow.NFV9_FIELD_BGP_IPV6_NEXT_HOP:
+		case netflow.IPFIX_FIELD_ipNextHopIPv4Address, netflow.IPFIX_FIELD_bgpNextHopIPv4Address, netflow.IPFIX_FIELD_ipNextHopIPv6Address, netflow.IPFIX_FIELD_bgpNextHopIPv6Address:
 			bf.NextHop = decodeIP(v)
 
 		// L4
-		case netflow.NFV9_FIELD_L4_SRC_PORT:
+		case netflow.IPFIX_FIELD_sourceTransportPort:
 			srcPort = uint16(decodeUNumber(v))
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPort, uint64(srcPort))
-		case netflow.NFV9_FIELD_L4_DST_PORT:
+		case netflow.IPFIX_FIELD_destinationTransportPort:
 			dstPort = uint16(decodeUNumber(v))
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPort, uint64(dstPort))
-		case netflow.NFV9_FIELD_PROTOCOL:
+		case netflow.IPFIX_FIELD_protocolIdentifier:
 			proto = uint8(decodeUNumber(v))
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(proto))
 
 		// Network
-		case netflow.NFV9_FIELD_SRC_AS:
+		case netflow.IPFIX_FIELD_bgpSourceAsNumber:
 			bf.SrcAS = uint32(decodeUNumber(v))
-		case netflow.NFV9_FIELD_DST_AS:
+		case netflow.IPFIX_FIELD_bgpDestinationAsNumber:
 			bf.DstAS = uint32(decodeUNumber(v))
 
 		// Interfaces
-		case netflow.NFV9_FIELD_INPUT_SNMP:
+		case netflow.IPFIX_FIELD_ingressInterface:
 			bf.InIf = uint32(decodeUNumber(v))
-		case netflow.NFV9_FIELD_OUTPUT_SNMP:
+		case netflow.IPFIX_FIELD_egressInterface:
 			bf.OutIf = uint32(decodeUNumber(v))
 
 		// RFC7133: process it later to not override other fields
@@ -145,13 +150,13 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 			dataLinkFrameSectionIdx = idx
 
 		// MPLS
-		case netflow.NFV9_FIELD_MPLS_LABEL_1, netflow.NFV9_FIELD_MPLS_LABEL_2, netflow.NFV9_FIELD_MPLS_LABEL_3, netflow.NFV9_FIELD_MPLS_LABEL_4, netflow.NFV9_FIELD_MPLS_LABEL_5, netflow.NFV9_FIELD_MPLS_LABEL_6, netflow.NFV9_FIELD_MPLS_LABEL_7, netflow.NFV9_FIELD_MPLS_LABEL_8, netflow.NFV9_FIELD_MPLS_LABEL_9, netflow.NFV9_FIELD_MPLS_LABEL_10:
+		case netflow.IPFIX_FIELD_mplsTopLabelStackSection, netflow.IPFIX_FIELD_mplsLabelStackSection2, netflow.IPFIX_FIELD_mplsLabelStackSection3, netflow.IPFIX_FIELD_mplsLabelStackSection4, netflow.IPFIX_FIELD_mplsLabelStackSection5, netflow.IPFIX_FIELD_mplsLabelStackSection6, netflow.IPFIX_FIELD_mplsLabelStackSection7, netflow.IPFIX_FIELD_mplsLabelStackSection8, netflow.IPFIX_FIELD_mplsLabelStackSection9, netflow.IPFIX_FIELD_mplsLabelStackSection10:
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnMPLSLabels, decodeUNumber(v)>>4)
 
 		// Remaining
-		case netflow.NFV9_FIELD_FORWARDING_STATUS:
+		case netflow.IPFIX_FIELD_forwardingStatus:
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnForwardingStatus, decodeUNumber(v))
-		case netflow.NFV9_FIELD_FIRST_SWITCHED:
+		case netflow.IPFIX_FIELD_flowStartSysUpTime:
 			bf.TimeReceived = decodeUNumber(v) + sysOffset
 		default:
 
@@ -172,17 +177,17 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 			if !nd.d.Schema.IsDisabled(schema.ColumnGroupL2) {
 				// L2
 				switch field.Type {
-				case netflow.NFV9_FIELD_SRC_VLAN:
+				case netflow.IPFIX_FIELD_vlanId:
 					bf.SrcVlan = uint16(decodeUNumber(v))
-				case netflow.NFV9_FIELD_DST_VLAN:
+				case netflow.IPFIX_FIELD_postVlanId:
 					bf.DstVlan = uint16(decodeUNumber(v))
-				case netflow.NFV9_FIELD_IN_SRC_MAC:
+				case netflow.IPFIX_FIELD_sourceMacAddress:
 					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcMAC, decodeUNumber(v))
-				case netflow.NFV9_FIELD_IN_DST_MAC:
+				case netflow.IPFIX_FIELD_destinationMacAddress:
 					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstMAC, decodeUNumber(v))
-				case netflow.NFV9_FIELD_OUT_SRC_MAC:
+				case netflow.IPFIX_FIELD_postSourceMacAddress:
 					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcMAC, decodeUNumber(v))
-				case netflow.NFV9_FIELD_OUT_DST_MAC:
+				case netflow.IPFIX_FIELD_postDestinationMacAddress:
 					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstMAC, decodeUNumber(v))
 				}
 			}
@@ -190,21 +195,21 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 			if !nd.d.Schema.IsDisabled(schema.ColumnGroupL3L4) {
 				// Misc L3/L4 fields
 				switch field.Type {
-				case netflow.NFV9_FIELD_MIN_TTL:
+				case netflow.IPFIX_FIELD_minimumTTL:
 					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPTTL, decodeUNumber(v))
-				case netflow.NFV9_FIELD_SRC_TOS:
+				case netflow.IPFIX_FIELD_ipClassOfService:
 					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPTos, decodeUNumber(v))
-				case netflow.NFV9_FIELD_IPV6_FLOW_LABEL:
+				case netflow.IPFIX_FIELD_flowLabelIPv6:
 					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPv6FlowLabel, decodeUNumber(v))
-				case netflow.NFV9_FIELD_TCP_FLAGS:
+				case netflow.IPFIX_FIELD_tcpControlBits:
 					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnTCPFlags, decodeUNumber(v))
-				case netflow.NFV9_FIELD_IPV4_IDENT:
+				case netflow.IPFIX_FIELD_fragmentIdentification:
 					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPFragmentID, decodeUNumber(v))
-				case netflow.NFV9_FIELD_FRAGMENT_OFFSET:
+				case netflow.IPFIX_FIELD_fragmentOffset:
 					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPFragmentOffset, decodeUNumber(v))
 
 				// ICMP
-				case netflow.NFV9_FIELD_ICMP_TYPE, netflow.IPFIX_FIELD_icmpTypeCodeIPv6:
+				case netflow.IPFIX_FIELD_icmpTypeCodeIPv4, netflow.IPFIX_FIELD_icmpTypeCodeIPv6:
 					icmpTypeCode := decodeUNumber(v)
 					icmpType = uint8(icmpTypeCode >> 8)
 					icmpCode = uint8(icmpTypeCode & 0xff)
