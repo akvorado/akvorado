@@ -22,7 +22,7 @@ func TestConfigHandler(t *testing.T) {
 				"version": "1.2.3",
 				"defaultVisualizeOptions": gin.H{
 					"graphType":  "stacked",
-					"start":      "6 hours ago",
+					"start":      "24 hours ago",
 					"end":        "now",
 					"filter":     "InIfBoundary = external",
 					"dimensions": []string{"SrcAS"},
