@@ -471,7 +471,7 @@ func TestDecodeMPLS(t *testing.T) {
 			SrcAddr:         netip.MustParseAddr("fd00::1:0:1:7:1"),
 			DstAddr:         netip.MustParseAddr("fd00::1:0:1:5:1"),
 			NextHop:         netip.MustParseAddr("::ffff:0.0.0.0"),
-			SamplingRate:    1,
+			SamplingRate:    10,
 			OutIf:           16,
 			ProtobufDebug: map[schema.ColumnKey]interface{}{
 				schema.ColumnBytes:            89,
@@ -489,7 +489,7 @@ func TestDecodeMPLS(t *testing.T) {
 			SrcAddr:         netip.MustParseAddr("fd00::1:0:1:7:1"),
 			DstAddr:         netip.MustParseAddr("fd00::1:0:1:6:1"),
 			NextHop:         netip.MustParseAddr("::ffff:0.0.0.0"),
-			SamplingRate:    1,
+			SamplingRate:    10,
 			OutIf:           17,
 			ProtobufDebug: map[schema.ColumnKey]interface{}{
 				schema.ColumnBytes:            890,

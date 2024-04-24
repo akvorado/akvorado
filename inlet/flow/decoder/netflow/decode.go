@@ -34,8 +34,9 @@ func (nd *Decoder) decodeCommon(version uint16, obsDomainID uint32, flowSets []i
 		case netflow.OptionsDataFlowSet:
 			for _, record := range tFlowSet.Records {
 				var (
-					samplingRate uint32
-					samplerID    uint64
+					samplingRate                uint32
+					samplerID                   uint64
+					packetInterval, packetSpace uint32
 				)
 				for _, field := range record.OptionsValues {
 					v, ok := field.Value.([]byte)
@@ -46,11 +47,18 @@ func (nd *Decoder) decodeCommon(version uint16, obsDomainID uint32, flowSets []i
 						continue
 					}
 					switch field.Type {
-					case netflow.NFV9_FIELD_SAMPLING_INTERVAL, netflow.NFV9_FIELD_FLOW_SAMPLER_RANDOM_INTERVAL, netflow.IPFIX_FIELD_samplingPacketInterval:
+					case netflow.NFV9_FIELD_SAMPLING_INTERVAL, netflow.NFV9_FIELD_FLOW_SAMPLER_RANDOM_INTERVAL:
 						samplingRate = uint32(decodeUNumber(v))
 					case netflow.NFV9_FIELD_FLOW_SAMPLER_ID, netflow.IPFIX_FIELD_selectorId:
 						samplerID = uint64(decodeUNumber(v))
+					case netflow.IPFIX_FIELD_samplingPacketInterval:
+						packetInterval = uint32(decodeUNumber(v))
+					case netflow.IPFIX_FIELD_samplingPacketSpace:
+						packetSpace = uint32(decodeUNumber(v))
 					}
+				}
+				if packetInterval > 0 {
+					samplingRate = packetInterval + packetSpace
 				}
 				if samplingRate > 0 {
 					samplingRateSys.SetSamplingRate(version, obsDomainID, samplerID, samplingRate)
@@ -90,7 +98,7 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnBytes, decodeUNumber(v))
 		case netflow.NFV9_FIELD_IN_PKTS, netflow.NFV9_FIELD_OUT_PKTS:
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnPackets, decodeUNumber(v))
-		case netflow.NFV9_FIELD_SAMPLING_INTERVAL, netflow.NFV9_FIELD_FLOW_SAMPLER_RANDOM_INTERVAL, netflow.IPFIX_FIELD_samplingPacketInterval:
+		case netflow.NFV9_FIELD_SAMPLING_INTERVAL, netflow.NFV9_FIELD_FLOW_SAMPLER_RANDOM_INTERVAL:
 			bf.SamplingRate = uint32(decodeUNumber(v))
 		case netflow.NFV9_FIELD_FLOW_SAMPLER_ID, netflow.IPFIX_FIELD_selectorId:
 			bf.SamplingRate = samplingRateSys.GetSamplingRate(version, obsDomainID, decodeUNumber(v))
