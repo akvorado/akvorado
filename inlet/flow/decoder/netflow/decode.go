@@ -63,7 +63,7 @@ func (nd *Decoder) decodeCommon(version uint16, obsDomainID uint32, flowSets []i
 					}
 				}
 				if packetInterval > 0 {
-					samplingRate = packetInterval + packetSpace
+					samplingRate = (packetInterval + packetSpace) / packetInterval
 				}
 				if samplingRate > 0 {
 					samplingRateSys.SetSamplingRate(version, obsDomainID, samplerID, samplingRate)
