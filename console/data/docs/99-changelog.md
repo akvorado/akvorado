@@ -15,6 +15,7 @@ identified with a specific icon:
 
 - 💥 *console*: persist metadata cache on the default `docker compose` setup
 - 🩹 *orchestrator*: fix panic in networks CSV refresher
+- 🩹 *inlet*: fix sampling rate parsing for IPFIX packets using "packet interval"
 - 🩹 *inlet*: fix `inlet`→`metadata`→`providers`→`targets` for gNMI provider
 - 🩹 *clickhouse*: disable experimental analyzer on recent versions of ClickHouse
 - 🌱 *console*: add support for PostgreSQL and MySQL to store filters
