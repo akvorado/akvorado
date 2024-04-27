@@ -14,11 +14,14 @@ identified with a specific icon:
 ## Unreleased
 
 - 💥 *console*: persist metadata cache on the default `docker compose` setup
+- 🩹 *clickhouse*: disable experimental analyzer on recent versions of ClickHouse
+- 🌱 *console*: add support for PostgreSQL and MySQL to store filters
+
+## 1.10.2 - 2024-04-27
+
 - 🩹 *orchestrator*: do not use AS names from GeoIP as tenant for networks
 - 🩹 *inlet*: fix sampling rate parsing for IPFIX packets using "packet interval"
 - 🩹 *inlet*: fix `inlet`→`metadata`→`providers`→`targets` for gNMI provider
-- 🩹 *clickhouse*: disable experimental analyzer on recent versions of ClickHouse
-- 🌱 *console*: add support for PostgreSQL and MySQL to store filters
 
 ## 1.10.1 - 2024-04-14
 
