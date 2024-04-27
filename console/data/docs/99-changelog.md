@@ -14,7 +14,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 💥 *console*: persist metadata cache on the default `docker compose` setup
-- 🩹 *orchestrator*: fix panic in networks CSV refresher
+- 🩹 *orchestrator*: do not use AS names from GeoIP as tenant for networks
 - 🩹 *inlet*: fix sampling rate parsing for IPFIX packets using "packet interval"
 - 🩹 *inlet*: fix `inlet`→`metadata`→`providers`→`targets` for gNMI provider
 - 🩹 *clickhouse*: disable experimental analyzer on recent versions of ClickHouse

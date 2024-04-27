@@ -60,8 +60,7 @@ func (c *Component) networksCSVRefresher() {
 				return err
 			}
 			attrs := NetworkAttributes{
-				ASN:    data.ASNumber,
-				Tenant: data.ASName,
+				ASN: data.ASNumber,
 			}
 			return networks.Update(subV6Str, attrs, overrideNetworkAttrs(attrs))
 		})
