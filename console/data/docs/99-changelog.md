@@ -13,6 +13,7 @@ identified with a specific icon:
 
 ## 1.10.2 - 2024-04-27
 
+- 🩹 *orchestrator*: do not use AS names from GeoIP as tenant for networks
 - 🩹 *inlet*: fix sampling rate parsing for IPFIX packets using "packet interval"
 - 🩹 *inlet*: fix `inlet`→`metadata`→`providers`→`targets` for gNMI provider
 
