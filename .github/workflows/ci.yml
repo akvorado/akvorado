@@ -19,7 +19,7 @@ jobs:
       - name: Fetch dependabot metadata
         if: ${{ github.actor == 'dependabot[bot]' && github.event_name == 'pull_request' }}
         id: metadata
-        uses: dependabot/fetch-metadata@v2.0.0
+        uses: dependabot/fetch-metadata@v2.1.0
     outputs:
       package-ecosystem: ${{ steps.metadata.outputs.package-ecosystem }}
 
