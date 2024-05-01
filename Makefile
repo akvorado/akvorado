@@ -1,3 +1,7 @@
+export CGO_ENABLED=0
+export GOEXPERIMENT=loopvar
+export GOTOOLCHAIN=local
+
 MODULE   = $(shell $(GO) list -m)
 DATE    ?= $(shell date +%FT%T%z)
 VERSION ?= $(shell git describe --tags --always --dirty --match=v* 2> /dev/null || \
@@ -11,10 +15,6 @@ LSFILES = git ls-files -cmo --exclude-standard --
 V = 0
 Q = $(if $(filter 1,$V),,@)
 M = $(shell if [ "$$(tput colors 2> /dev/null || echo 0)" -ge 8 ]; then printf "\033[34;1m▶\033[0m"; else printf "▶"; fi)
-
-export CGO_ENABLED=0
-export GOEXPERIMENT=loopvar
-export GOTOOLCHAIN=local
 
 GENERATED_JS = \
 	console/frontend/node_modules
@@ -191,7 +191,7 @@ fmt: .fmt-go~ .fmt-js~ ## Format all source files
 licensecheck: console/frontend/node_modules | $(WWHRD) ; $(info $(M) check dependency licenses…) @ ## Check licenses
 	$Q ! git grep -L SPDX-License-Identifier: "*.go" "*.ts" "*.js" || \
 		(>&2 echo "*** Missing license identifiers!"; false)
-	$Q err=0 ; go mod vendor && $(WWHRD) --quiet check || err=$$? ; rm -rf vendor/ ; exit $$err
+	$Q err=0 ; $(GO) mod vendor && $(WWHRD) --quiet check || err=$$? ; rm -rf vendor/ ; exit $$err
 	$Q cd console/frontend ; npm exec --no -- license-compliance \
 		--production \
 		--allow "$$(sed -n 's/^  - //p' ../../.wwhrd.yml | paste -sd ";")" \
