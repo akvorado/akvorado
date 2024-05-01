@@ -14,6 +14,7 @@ M = $(shell if [ "$$(tput colors 2> /dev/null || echo 0)" -ge 8 ]; then printf "
 
 export CGO_ENABLED=0
 export GOEXPERIMENT=loopvar
+export GOTOOLCHAIN=local
 
 GENERATED_JS = \
 	console/frontend/node_modules
