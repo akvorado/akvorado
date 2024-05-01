@@ -14,6 +14,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/go-connections/nat"
+	_ "github.com/opencontainers/image-spec/specs-go/v1" // used by mock
 	"github.com/ti-mo/conntrack"
 	"go.uber.org/mock/gomock"
 
