@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math/rand"
 	"testing"
-	"time"
 
 	"github.com/IBM/sarama"
 
@@ -20,7 +19,6 @@ import (
 func TestTopicCreation(t *testing.T) {
 	client, brokers := kafka.SetupKafkaBroker(t)
 
-	rand.Seed(time.Now().UnixMicro())
 	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
 	retentionMs := "76548"
 	segmentBytes := "107374184"
@@ -104,7 +102,6 @@ func TestTopicCreation(t *testing.T) {
 func TestTopicMorePartitions(t *testing.T) {
 	client, brokers := kafka.SetupKafkaBroker(t)
 
-	rand.Seed(time.Now().UnixMicro())
 	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
 	expectedTopicName := fmt.Sprintf("%s-%s", topicName, schema.NewMock(t).ProtobufMessageHash())
 

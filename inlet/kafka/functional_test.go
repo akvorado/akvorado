@@ -22,7 +22,6 @@ import (
 func TestRealKafka(t *testing.T) {
 	client, brokers := kafka.SetupKafkaBroker(t)
 
-	rand.Seed(time.Now().UnixMicro())
 	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
 	configuration := DefaultConfiguration()
 	configuration.Topic = topicName

@@ -7,7 +7,6 @@ package bmp
 
 import (
 	"math/rand"
-	"time"
 )
 
 const rtaHashMask = 0xffffffffffffffff
@@ -15,6 +14,5 @@ const rtaHashMask = 0xffffffffffffffff
 var rtaHashSeed uint64
 
 func init() {
-	rand.Seed(time.Now().UnixMicro())
 	rtaHashSeed = rand.Uint64()
 }
