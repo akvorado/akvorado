@@ -10,7 +10,7 @@ services:
   clickhouse:
     image: clickhouse/clickhouse-server:23.8
   traefik:
-    image: traefik:2.6
+    image: traefik:v3.0
   akvorado:
     image: ghcr.io/akvorado/akvorado:main
 
