@@ -35,7 +35,7 @@ require (
 	github.com/openconfig/gnmic/pkg/api v0.1.5
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/oschwald/maxminddb-golang v1.12.0
-	github.com/osrg/gobgp/v3 v3.25.0
+	github.com/osrg/gobgp/v3 v3.26.0
 	github.com/prometheus/client_golang v1.19.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rs/zerolog v1.32.0
