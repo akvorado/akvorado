@@ -1,7 +1,9 @@
 ---
 services:
   geoip:
-    image: ipinfo/ipinfo-db:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.ipinfo-geoipupdate
     environment:
       - IPINFO_TOKEN=a2632ea59736c7
       - IPINFO_DATABASES=country asn

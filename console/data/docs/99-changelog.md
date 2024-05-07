@@ -17,6 +17,7 @@ identified with a specific icon:
 - 🩹 *clickhouse*: disable experimental analyzer on recent versions of ClickHouse
 - 🌱 *console*: add support for PostgreSQL and MySQL to store filters
 - 🌱 *docker*: update to Traefik 3.0 (not mandatory)
+- 🌱 *docker*: build IPinfo update image to make it available for non-x86 architectures
 
 ## 1.10.2 - 2024-04-27
 

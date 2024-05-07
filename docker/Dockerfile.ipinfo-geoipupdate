@@ -1,0 +1,10 @@
+FROM alpine:latest
+
+RUN apk add --no-cache curl
+
+WORKDIR /data
+VOLUME /data
+
+COPY --chmod=555 ipinfo-geoipupdate.sh /usr/local/bin/ipinfo-geoipupdate.sh
+
+CMD ["/usr/local/bin/ipinfo-geoipupdate.sh"]
