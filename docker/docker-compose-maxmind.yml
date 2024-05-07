@@ -2,7 +2,9 @@
 services:
   geoip:
     # Put GEOIPUPDATE_ACCOUNT_ID and GEOIPUPDATE_LICENSE_KEY values in `.env` file.
-    image: maxmindinc/geoipupdate:v4
+    extends:
+      file: versions.yml
+      service: maxmind-geoipupdate
     environment:
       - GEOIPUPDATE_ACCOUNT_ID
       - GEOIPUPDATE_LICENSE_KEY

@@ -11,6 +11,8 @@ services:
     image: clickhouse/clickhouse-server:23.8
   traefik:
     image: traefik:v3.0
+  maxmind-geoipupdate:
+    image: ghcr.io/maxmind/geoipupdate:v7
   akvorado:
     image: ghcr.io/akvorado/akvorado:main
 
