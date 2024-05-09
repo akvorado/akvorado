@@ -916,10 +916,12 @@ The console itself accepts the following keys:
  - `homepage-top-widgets` to define the widgets to display on the home page
  - `dimensions-limit` to set the upper limit of the number of returned dimensions
  - `cache-ttl` sets the time costly requests are kept in cache
- - `homepage-graph-filter` sets the filter for the graph on the
-    homepage (default: `InIfBoundary = 'external'`). 
-    This is a SQL expression, passed into the clickhouse query directly. 
-    It can also be empty, in which case the sum of all flows captured will be displayed.
+ - `homepage-graph-filter` sets the filter for the graph on the homepage
+    (default: `InIfBoundary = 'external'`). This is a SQL expression, passed
+    into the clickhouse query directly. It can also be empty, in which case the
+    sum of all flows captured will be displayed.
+ - `homepage-graph-timerange` sets the time range to use for the graph on the
+   homepage. It defaults to 24 hours.
 
 Here is an example:
 

@@ -210,7 +210,6 @@ LIMIT 5
 }
 
 func (c *Component) widgetGraphHandlerFunc(gc *gin.Context) {
-	// first step: define which filter to use
 	filter := c.config.HomepageGraphFilter
 	if filter != "" {
 		filter = fmt.Sprintf("AND %s", filter)
@@ -232,7 +231,7 @@ ORDER BY Time WITH FILL
  STEP {{ .Interval }}
 {{ end }}`,
 		templateContext(inputContext{
-			Start:             now.Add(-24 * time.Hour),
+			Start:             now.Add(-c.config.HomepageGraphTimeRange),
 			End:               now,
 			MainTableRequired: false,
 			Points:            200,

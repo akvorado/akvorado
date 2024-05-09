@@ -24,6 +24,8 @@ type Configuration struct {
 	HomepageTopWidgets []string `validate:"dive,oneof=src-as dst-as src-country dst-country exporter protocol etype src-port dst-port"`
 	// HomepageGraphFilter defines the filtering string to use for the homepage graph
 	HomepageGraphFilter string
+	// HomepageGraphTimeRange defines the time range to use for the homepage graph
+	HomepageGraphTimeRange time.Duration `validate:"min=1m"`
 	// DimensionsLimit put an upper limit to the number of dimensions to return.
 	DimensionsLimit int `validate:"min=10"`
 	// CacheTTL tells how long to keep the most costly requests in cache.
@@ -57,10 +59,11 @@ func DefaultConfiguration() Configuration {
 			Dimensions: []query.Column{query.NewColumn("SrcAS")},
 			Limit:      10,
 		},
-		HomepageTopWidgets:  []string{"src-as", "src-port", "protocol", "src-country", "etype"},
-		DimensionsLimit:     50,
-		CacheTTL:            3 * time.Hour,
-		HomepageGraphFilter: "InIfBoundary = 'external'",
+		HomepageTopWidgets:     []string{"src-as", "src-port", "protocol", "src-country", "etype"},
+		DimensionsLimit:        50,
+		CacheTTL:               3 * time.Hour,
+		HomepageGraphFilter:    "InIfBoundary = 'external'",
+		HomepageGraphTimeRange: 24 * time.Hour,
 	}
 }
 
