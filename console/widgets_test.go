@@ -185,6 +185,12 @@ func TestWidgetTop(t *testing.T) {
 				{"36040: Youtube", float64(10)},
 				{"20940: Akamai", float64(9)},
 			}),
+		mockConn.EXPECT().
+			Select(gomock.Any(), gomock.Any(), gomock.Any()).Return(nil).
+			SetArg(1, []topResult{
+				{"TCP/443", float64(80)},
+				{"TCP/80", float64(18)},
+			}),
 	)
 
 	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
@@ -222,6 +228,14 @@ func TestWidgetTop(t *testing.T) {
 					{"name": "2906: Netflix", "percent": 12},
 					{"name": "36040: Youtube", "percent": 10},
 					{"name": "20940: Akamai", "percent": 9},
+				},
+			},
+		}, {
+			URL: "/api/v0/console/widget/top/dst-port",
+			JSONOutput: gin.H{
+				"top": []gin.H{
+					{"name": "TCP/443", "percent": 80},
+					{"name": "TCP/80", "percent": 18},
 				},
 			},
 		},

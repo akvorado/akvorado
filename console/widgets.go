@@ -142,17 +142,13 @@ func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 	case "src-as":
 		selector = fmt.Sprintf(`concat(toString(SrcAS), ': ', dictGetOrDefault('%s', 'name', SrcAS, '???'))`, schema.DictionaryASNs)
 		groupby = `SrcAS`
-		filter = "AND InIfBoundary = 'external'"
 	case "dst-as":
 		selector = fmt.Sprintf(`concat(toString(DstAS), ': ', dictGetOrDefault('%s', 'name', DstAS, '???'))`, schema.DictionaryASNs)
 		groupby = `DstAS`
-		filter = "AND OutIfBoundary = 'external'"
 	case "src-country":
 		selector = `SrcCountry`
-		filter = "AND InIfBoundary = 'external'"
 	case "dst-country":
 		selector = `DstCountry`
-		filter = "AND OutIfBoundary = 'external'"
 	case "exporter":
 		selector = "ExporterName"
 	case "protocol":
@@ -169,6 +165,11 @@ func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 		selector = fmt.Sprintf(`concat(dictGetOrDefault('%s', 'name', Proto, '???'), '/', toString(DstPort))`, schema.DictionaryProtocols)
 		groupby = `Proto, DstPort`
 		mainTableRequired = true
+	}
+	if strings.HasPrefix(gc.Param("name"), "src-") {
+		filter = "AND InIfBoundary = 'external'"
+	} else {
+		filter = "AND OutIfBoundary = 'external'"
 	}
 	if groupby == "" {
 		groupby = selector
