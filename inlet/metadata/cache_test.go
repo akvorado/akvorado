@@ -454,12 +454,16 @@ func TestConcurrentOperations(t *testing.T) {
 	time.Sleep(30 * time.Millisecond)
 	close(done)
 	wg.Wait()
-	time.Sleep(30 * time.Millisecond)
 
-	gotMetrics := r.GetMetrics("akvorado_inlet_metadata_cache_")
-	hits, _ := strconv.Atoi(gotMetrics["hits_total"])
-	misses, _ := strconv.Atoi(gotMetrics["misses_total"])
-	if int64(hits+misses) != atomic.LoadInt64(&lookups) {
-		t.Errorf("hit + miss = %d, expected %d", hits+misses, atomic.LoadInt64(&lookups))
+	for remaining := 5; remaining >= 0; remaining++ {
+		gotMetrics := r.GetMetrics("akvorado_inlet_metadata_cache_")
+		hits, _ := strconv.Atoi(gotMetrics["hits_total"])
+		misses, _ := strconv.Atoi(gotMetrics["misses_total"])
+		if int64(hits+misses) == atomic.LoadInt64(&lookups) {
+			break
+		} else if remaining == 0 {
+			t.Errorf("hit + miss = %d, expected %d", hits+misses, atomic.LoadInt64(&lookups))
+		}
+		time.Sleep(30 * time.Millisecond)
 	}
 }
