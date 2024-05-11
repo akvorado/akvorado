@@ -21,6 +21,8 @@ GENERATED_JS = \
 GENERATED_GO = \
 	common/schema/definition_gen.go \
 	orchestrator/clickhouse/data/asns.csv \
+	orchestrator/clickhouse/data/ports-tcp.csv \
+	orchestrator/clickhouse/data/ports-udp.csv \
 	console/filter/parser.go
 GENERATED_TEST_GO = \
 	common/clickhousedb/mocks/mock_driver.go \
@@ -106,6 +108,12 @@ orchestrator/clickhouse/data/asns.csv: ; $(info $(M) generate ASN map…)
 orchestrator/clickhouse/data/protocols.csv: # We keep this one in Git
 	$Q curl -sL http://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv \
 		| sed -nE -e "1 s/.*/proto,name,description/p" -e "2,$$ s/^([0-9]+,[^ ,]+,[^\",]+),.*/\1/p" \
+		> $@
+	$Q test -s $@
+
+orchestrator/clickhouse/data/ports-%.csv: ; $(info $(M) generate $* port numbers…)
+	$Q curl -sL https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv \
+		| sed -nE -e "1 s/.*/port,name,description/p" -e "2,$$ s/^([^,]+),([0-9]+),$*,([^,]+),.*/\2,\1,\3/p" \
 		> $@
 	$Q test -s $@
 
