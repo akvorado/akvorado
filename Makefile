@@ -105,7 +105,7 @@ orchestrator/clickhouse/data/asns.csv: ; $(info $(M) generate ASN map…)
 	$Q test -s $@
 orchestrator/clickhouse/data/protocols.csv: # We keep this one in Git
 	$Q curl -sL http://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv \
-		| sed -nE -e "1 s/.*/proto,name,description/p" -e "2,$ s/^([0-9]+,[^ ,]+,[^\",]+),.*/\1/p" \
+		| sed -nE -e "1 s/.*/proto,name,description/p" -e "2,$$ s/^([0-9]+,[^ ,]+,[^\",]+),.*/\1/p" \
 		> $@
 	$Q test -s $@
 
