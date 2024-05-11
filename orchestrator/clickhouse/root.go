@@ -154,12 +154,15 @@ func (c *Component) Start() error {
 	// networks.csv refresh
 	c.t.Go(func() error {
 		c.networksCSVRefresher()
+
+		c.r.Debug().Msg("remove networks.csv")
 		c.networksCSVLock.Lock()
 		if c.networksCSVFile != nil {
 			c.networksCSVFile.Close()
 			os.Remove(c.networksCSVFile.Name())
 		}
 		c.networksCSVLock.Unlock()
+
 		return nil
 	})
 
