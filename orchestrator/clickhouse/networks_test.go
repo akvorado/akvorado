@@ -4,6 +4,8 @@
 package clickhouse
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"akvorado/common/clickhousedb"
@@ -21,7 +23,7 @@ func TestNetworksCSVWithGeoip(t *testing.T) {
 	r := reporter.NewMock(t)
 	clickHouseComponent := clickhousedb.SetupClickHouse(t, r, false)
 
-	{
+	t.Run("only GeoIP", func(t *testing.T) {
 		// First use only GeoIP
 		c, err := New(r, config, Dependencies{
 			Daemon:     daemon.NewMock(t),
@@ -61,9 +63,9 @@ func TestNetworksCSVWithGeoip(t *testing.T) {
 				},
 			},
 		})
-	}
+	})
 
-	{
+	t.Run("custom networks", func(t *testing.T) {
 		// Second use: add custom networks
 		config.Networks = helpers.MustNewSubnetMap(map[string]NetworkAttributes{
 			"::ffff:12.80.0.0/112":  {Name: "infra"},    // not covered by GeoIP
@@ -112,6 +114,49 @@ func TestNetworksCSVWithGeoip(t *testing.T) {
 				},
 			},
 		})
-	}
+	})
+
+	t.Run("cleanup old files", func(t *testing.T) {
+		_, err := os.CreateTemp("", networksCSVPattern)
+		if err != nil {
+			t.Fatalf("os.CreateTemp() error:\n%+v", err)
+		}
+		c, err := New(r, config, Dependencies{
+			Daemon:     daemon.NewMock(t),
+			HTTP:       httpserver.NewMock(t, r),
+			Schema:     schema.NewMock(t),
+			GeoIP:      geoip.NewMock(t, r, true),
+			ClickHouse: clickHouseComponent,
+		})
+		if err != nil {
+			t.Fatalf("New() error:\n%+v", err)
+		}
+		helpers.StartStop(t, c)
+
+		// HTTP request to ensure we are ready
+		helpers.TestHTTPEndpoints(t, c.d.HTTP.LocalAddr(), helpers.HTTPEndpointCases{
+			{
+				Description: "networks.csv",
+				URL:         "/api/v0/orchestrator/clickhouse/networks.csv",
+				ContentType: "text/csv; charset=utf-8",
+				FirstLines: []string{
+					"network,name,role,site,region,country,state,city,tenant,asn",
+				},
+			},
+		})
+
+		// Clean up old files
+		got, err := filepath.Glob(filepath.Join(os.TempDir(), networksCSVPattern))
+		if err != nil {
+			t.Fatalf("filepath.Glob() error:\n%+v", err)
+		}
+		c.networksCSVLock.Lock()
+		expected := []string{c.networksCSVFile.Name()}
+		c.networksCSVLock.Unlock()
+
+		if diff := helpers.Diff(got, expected); diff != "" {
+			t.Fatalf("Temporary files (-got, +want):\n%s", diff)
+		}
+	})
 
 }

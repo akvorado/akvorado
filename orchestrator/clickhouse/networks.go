@@ -9,6 +9,7 @@ import (
 	"encoding/csv"
 	"net"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -18,6 +19,8 @@ import (
 	"akvorado/common/schema"
 	"akvorado/orchestrator/geoip"
 )
+
+const networksCSVPattern = "networks*.csv.gz"
 
 func (c *Component) refreshNetworksCSV() {
 	select {
@@ -120,8 +123,16 @@ func (c *Component) networksCSVRefresher() {
 			}
 		}
 
+		// Clean up old files
+		oldFiles, err := filepath.Glob(filepath.Join(os.TempDir(), networksCSVPattern))
+		if err == nil {
+			for _, oldFile := range oldFiles {
+				os.Remove(oldFile)
+			}
+		}
+
 		// Create a temporary file to hold results
-		tmpfile, err := os.CreateTemp("", "networks*.csv.gz")
+		tmpfile, err := os.CreateTemp("", networksCSVPattern)
 		if err != nil {
 			c.r.Err(err).Msg("cannot create temporary file for networks.csv")
 			return
