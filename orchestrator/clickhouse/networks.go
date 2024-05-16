@@ -210,7 +210,7 @@ func mergeNetworkAttrs(existing, newAttrs NetworkAttributes) NetworkAttributes {
 		existing.Region = newAttrs.Region
 	}
 	if newAttrs.Site != "" {
-		existing.Site = newAttrs.Role
+		existing.Site = newAttrs.Site
 	}
 	if newAttrs.Role != "" {
 		existing.Role = newAttrs.Role
