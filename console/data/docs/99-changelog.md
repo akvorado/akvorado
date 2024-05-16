@@ -15,6 +15,7 @@ identified with a specific icon:
 
 - 💥 *console*: persist metadata cache on the default `docker compose` setup
 - 🩹 *clickhouse*: disable experimental analyzer on recent versions of ClickHouse
+- 🩹 *orchestrator*: fix population of `DstNetSite` and `SrcNetSite`
 - 🩹 *orchestrator*: remove previous networks.csv temporary files on start
 - 🌱 *console*: add support for PostgreSQL and MySQL to store filters
 - 🌱 *console*: add `console`→`homepage-graph-timerange` to define the time range for the homepage graph
