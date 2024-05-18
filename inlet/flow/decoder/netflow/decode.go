@@ -20,17 +20,7 @@ import (
 // values in the sub-range of 1-127 are compatible with field types used by
 // NetFlow version 9 [RFC3954]."
 
-func (nd *Decoder) decodeIPFIX(packet netflow.IPFIXPacket, samplingRateSys *samplingRateSystem, sysOffset uint64) []*schema.FlowMessage {
-	obsDomainID := packet.ObservationDomainId
-	return nd.decodeCommon(10, obsDomainID, packet.FlowSets, samplingRateSys, sysOffset)
-}
-
-func (nd *Decoder) decodeNFv9(packet netflow.NFv9Packet, samplingRateSys *samplingRateSystem, sysOffset uint64) []*schema.FlowMessage {
-	obsDomainID := packet.SourceId
-	return nd.decodeCommon(9, obsDomainID, packet.FlowSets, samplingRateSys, sysOffset)
-}
-
-func (nd *Decoder) decodeCommon(version uint16, obsDomainID uint32, flowSets []interface{}, samplingRateSys *samplingRateSystem, sysOffset uint64) []*schema.FlowMessage {
+func (nd *Decoder) decodeCommon(version uint16, obsDomainID uint32, flowSets []interface{}, samplingRateSys *samplingRateSystem, ts, sysUptime uint64) []*schema.FlowMessage {
 	flowMessageSet := []*schema.FlowMessage{}
 
 	// Look for sampling rate in option data flowsets
@@ -71,7 +61,7 @@ func (nd *Decoder) decodeCommon(version uint16, obsDomainID uint32, flowSets []i
 			}
 		case netflow.DataFlowSet:
 			for _, record := range tFlowSet.Records {
-				flow := nd.decodeRecord(version, obsDomainID, samplingRateSys, record.Values, sysOffset)
+				flow := nd.decodeRecord(version, obsDomainID, samplingRateSys, record.Values, ts, sysUptime)
 				if flow != nil {
 					flowMessageSet = append(flowMessageSet, flow)
 				}
@@ -82,7 +72,7 @@ func (nd *Decoder) decodeCommon(version uint16, obsDomainID uint32, flowSets []i
 	return flowMessageSet
 }
 
-func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRateSys *samplingRateSystem, fields []netflow.DataField, sysOffset uint64) *schema.FlowMessage {
+func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRateSys *samplingRateSystem, fields []netflow.DataField, ts, sysUptime uint64) *schema.FlowMessage {
 	var etype, dstPort, srcPort uint16
 	var proto, icmpType, icmpCode uint8
 	var foundIcmpTypeCode bool
@@ -164,9 +154,21 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 		// Remaining
 		case netflow.IPFIX_FIELD_forwardingStatus:
 			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnForwardingStatus, decodeUNumber(v))
-		case netflow.IPFIX_FIELD_flowStartSysUpTime:
-			bf.TimeReceived = decodeUNumber(v) + sysOffset
 		default:
+			if nd.useTsFromFirstSwitched {
+				switch field.Type {
+				case netflow.NFV9_FIELD_FIRST_SWITCHED:
+					bf.TimeReceived = ts - sysUptime + decodeUNumber(v)
+				case netflow.IPFIX_FIELD_flowStartSeconds:
+					bf.TimeReceived = decodeUNumber(v)
+				case netflow.IPFIX_FIELD_flowStartMilliseconds:
+					bf.TimeReceived = decodeUNumber(v) / 1000
+				case netflow.IPFIX_FIELD_flowStartMicroseconds:
+					bf.TimeReceived = decodeUNumber(v) / 1_000_000
+				case netflow.IPFIX_FIELD_flowStartNanoseconds:
+					bf.TimeReceived = ts + decodeUNumber(v)/1_000_000_000
+				}
+			}
 
 			if !nd.d.Schema.IsDisabled(schema.ColumnGroupNAT) {
 				// NAT

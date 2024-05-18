@@ -6,6 +6,7 @@ package netflow
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"net/netip"
 	"strconv"
@@ -168,6 +169,9 @@ func (s *samplingRateSystem) SetSamplingRate(version uint16, obsDomainID uint32,
 
 // Decode decodes a Netflow payload.
 func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
+	if len(in.Payload) < 2 {
+		return nil
+	}
 	key := in.Source.String()
 	nd.systemsLock.RLock()
 	templates, tok := nd.templates[key]
@@ -192,92 +196,92 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 		nd.systemsLock.Unlock()
 	}
 
-	var sysUptime uint64
+	var (
+		sysUptime   uint64
+		versionStr  string
+		flowSets    []interface{}
+		obsDomainID uint32
+	)
+	version := binary.BigEndian.Uint16(in.Payload[:2])
+	buf := bytes.NewBuffer(in.Payload[2:])
 	ts := uint64(in.TimeReceived.UTC().Unix())
-	buf := bytes.NewBuffer(in.Payload)
-	var (
-		packetNFv9  netflow.NFv9Packet
-		packetIPFIX netflow.IPFIXPacket
-	)
-	if err := netflow.DecodeMessageVersion(buf, templates, &packetNFv9, &packetIPFIX); err != nil {
-		nd.metrics.errors.WithLabelValues(key, "NetFlow/IPFIX decoding error").Inc()
-		if !errors.Is(err, netflow.ErrorTemplateNotFound) {
-			nd.errLogger.Err(err).Str("exporter", key).Msg("error while decoding NetFlow/IPFIX")
-		} else {
-			nd.errLogger.Debug().Str("exporter", key).Msg("template not received yet")
+
+	switch version {
+	case 9:
+		var packetNFv9 netflow.NFv9Packet
+		if err := netflow.DecodeMessageNetFlow(buf, templates, &packetNFv9); err != nil {
+			nd.metrics.errors.WithLabelValues(key, "NetFlow decoding error").Inc()
+			if !errors.Is(err, netflow.ErrorTemplateNotFound) {
+				nd.errLogger.Err(err).Str("exporter", key).Msg("error while decoding NetFlow")
+			} else {
+				nd.errLogger.Debug().Str("exporter", key).Msg("template not received yet")
+			}
+			return nil
 		}
-		return nil
-	}
-
-	var (
-		version  string
-		flowSets []interface{}
-	)
-
-	// Update some stats
-	if packetNFv9.Version == 9 {
-		version = "9"
+		versionStr = "9"
 		flowSets = packetNFv9.FlowSets
+		obsDomainID = packetNFv9.SourceId
 		if nd.useTsFromNetflowsPacket || nd.useTsFromFirstSwitched {
 			ts = uint64(packetNFv9.UnixSeconds)
 			sysUptime = uint64(packetNFv9.SystemUptime)
 		}
-	} else if packetIPFIX.Version == 10 {
-		version = "10"
-		flowSets = packetIPFIX.FlowSets
-		if nd.useTsFromNetflowsPacket || nd.useTsFromFirstSwitched {
-			ts = uint64(packetIPFIX.ExportTime)
-			sysUptime = uint64(packetNFv9.SystemUptime)
+	case 10:
+		var packetIPFIX netflow.IPFIXPacket
+		if err := netflow.DecodeMessageIPFIX(buf, templates, &packetIPFIX); err != nil {
+			nd.metrics.errors.WithLabelValues(key, "IPFIX decoding error").Inc()
+			if !errors.Is(err, netflow.ErrorTemplateNotFound) {
+				nd.errLogger.Err(err).Str("exporter", key).Msg("error while decoding IPFIX")
+			} else {
+				nd.errLogger.Debug().Str("exporter", key).Msg("template not received yet")
+			}
+			return nil
 		}
-	} else {
+		versionStr = "10"
+		flowSets = packetIPFIX.FlowSets
+		obsDomainID = packetIPFIX.ObservationDomainId
+		if nd.useTsFromNetflowsPacket {
+			ts = uint64(packetIPFIX.ExportTime)
+		}
+	default:
 		nd.metrics.stats.WithLabelValues(key, "unknown").
 			Inc()
 		return nil
 	}
-	nd.metrics.stats.WithLabelValues(key, version).Inc()
+	nd.metrics.stats.WithLabelValues(key, versionStr).Inc()
 	for _, fs := range flowSets {
 		switch fsConv := fs.(type) {
 		case netflow.TemplateFlowSet:
-			nd.metrics.setStatsSum.WithLabelValues(key, version, "TemplateFlowSet").
+			nd.metrics.setStatsSum.WithLabelValues(key, versionStr, "TemplateFlowSet").
 				Inc()
-			nd.metrics.setRecordsStatsSum.WithLabelValues(key, version, "TemplateFlowSet").
+			nd.metrics.setRecordsStatsSum.WithLabelValues(key, versionStr, "TemplateFlowSet").
 				Add(float64(len(fsConv.Records)))
 		case netflow.IPFIXOptionsTemplateFlowSet:
-			nd.metrics.setStatsSum.WithLabelValues(key, version, "OptionsTemplateFlowSet").
+			nd.metrics.setStatsSum.WithLabelValues(key, versionStr, "OptionsTemplateFlowSet").
 				Inc()
-			nd.metrics.setRecordsStatsSum.WithLabelValues(key, version, "OptionsTemplateFlowSet").
+			nd.metrics.setRecordsStatsSum.WithLabelValues(key, versionStr, "OptionsTemplateFlowSet").
 				Add(float64(len(fsConv.Records)))
 		case netflow.NFv9OptionsTemplateFlowSet:
-			nd.metrics.setStatsSum.WithLabelValues(key, version, "OptionsTemplateFlowSet").
+			nd.metrics.setStatsSum.WithLabelValues(key, versionStr, "OptionsTemplateFlowSet").
 				Inc()
-			nd.metrics.setRecordsStatsSum.WithLabelValues(key, version, "OptionsTemplateFlowSet").
+			nd.metrics.setRecordsStatsSum.WithLabelValues(key, versionStr, "OptionsTemplateFlowSet").
 				Add(float64(len(fsConv.Records)))
 		case netflow.OptionsDataFlowSet:
-			nd.metrics.setStatsSum.WithLabelValues(key, version, "OptionsDataFlowSet").
+			nd.metrics.setStatsSum.WithLabelValues(key, versionStr, "OptionsDataFlowSet").
 				Inc()
-			nd.metrics.setRecordsStatsSum.WithLabelValues(key, version, "OptionsDataFlowSet").
+			nd.metrics.setRecordsStatsSum.WithLabelValues(key, versionStr, "OptionsDataFlowSet").
 				Add(float64(len(fsConv.Records)))
 		case netflow.DataFlowSet:
-			nd.metrics.setStatsSum.WithLabelValues(key, version, "DataFlowSet").
+			nd.metrics.setStatsSum.WithLabelValues(key, versionStr, "DataFlowSet").
 				Inc()
-			nd.metrics.setRecordsStatsSum.WithLabelValues(key, version, "DataFlowSet").
+			nd.metrics.setRecordsStatsSum.WithLabelValues(key, versionStr, "DataFlowSet").
 				Add(float64(len(fsConv.Records)))
 		}
 	}
 
-	var flowMessageSet []*schema.FlowMessage
-	var tsOffset uint64
-	if nd.useTsFromFirstSwitched {
-		tsOffset = ts - sysUptime
-	}
-	if packetNFv9.Version == 9 {
-		flowMessageSet = nd.decodeNFv9(packetNFv9, sampling, tsOffset)
-	} else if packetIPFIX.Version == 10 {
-		flowMessageSet = nd.decodeIPFIX(packetIPFIX, sampling, tsOffset)
-	}
+	flowMessageSet := nd.decodeCommon(version, obsDomainID, flowSets, sampling, ts, sysUptime)
 	exporterAddress, _ := netip.AddrFromSlice(in.Source.To16())
 	for _, fmsg := range flowMessageSet {
-		if !nd.useTsFromFirstSwitched {
+		if fmsg.TimeReceived == 0 {
 			fmsg.TimeReceived = ts
 		}
 		fmsg.ExporterAddress = exporterAddress
