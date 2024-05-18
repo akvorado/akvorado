@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/netsampler/goflow2/v2/decoders/netflow"
+	"github.com/netsampler/goflow2/v2/decoders/netflowlegacy"
 
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
@@ -197,22 +198,39 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 	}
 
 	var (
-		sysUptime   uint64
-		versionStr  string
-		flowSets    []interface{}
-		obsDomainID uint32
+		sysUptime      uint64
+		versionStr     string
+		flowSets       []interface{}
+		obsDomainID    uint32
+		flowMessageSet []*schema.FlowMessage
 	)
 	version := binary.BigEndian.Uint16(in.Payload[:2])
 	buf := bytes.NewBuffer(in.Payload[2:])
 	ts := uint64(in.TimeReceived.UTC().Unix())
 
 	switch version {
+	case 5:
+		var packetNFv5 netflowlegacy.PacketNetFlowV5
+		if err := netflowlegacy.DecodeMessage(buf, &packetNFv5); err != nil {
+			nd.metrics.errors.WithLabelValues(key, "NetFlow v5 decoding error").Inc()
+			nd.errLogger.Err(err).Str("exporter", key).Msg("error while decoding NetFlow v5")
+			return nil
+		}
+		versionStr = "5"
+		nd.metrics.setStatsSum.WithLabelValues(key, versionStr, "PDU").Inc()
+		nd.metrics.setRecordsStatsSum.WithLabelValues(key, versionStr, "PDU").
+			Add(float64(len(packetNFv5.Records)))
+		if nd.useTsFromNetflowsPacket || nd.useTsFromFirstSwitched {
+			ts = uint64(packetNFv5.UnixSecs)
+			sysUptime = uint64(packetNFv5.SysUptime)
+		}
+		flowMessageSet = nd.decodeNFv5(&packetNFv5, ts, sysUptime)
 	case 9:
 		var packetNFv9 netflow.NFv9Packet
 		if err := netflow.DecodeMessageNetFlow(buf, templates, &packetNFv9); err != nil {
-			nd.metrics.errors.WithLabelValues(key, "NetFlow decoding error").Inc()
+			nd.metrics.errors.WithLabelValues(key, "NetFlow v9 decoding error").Inc()
 			if !errors.Is(err, netflow.ErrorTemplateNotFound) {
-				nd.errLogger.Err(err).Str("exporter", key).Msg("error while decoding NetFlow")
+				nd.errLogger.Err(err).Str("exporter", key).Msg("error while decoding NetFlow v9")
 			} else {
 				nd.errLogger.Debug().Str("exporter", key).Msg("template not received yet")
 			}
@@ -225,6 +243,7 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 			ts = uint64(packetNFv9.UnixSeconds)
 			sysUptime = uint64(packetNFv9.SystemUptime)
 		}
+		flowMessageSet = nd.decodeNFv9IPFIX(version, obsDomainID, flowSets, sampling, ts, sysUptime)
 	case 10:
 		var packetIPFIX netflow.IPFIXPacket
 		if err := netflow.DecodeMessageIPFIX(buf, templates, &packetIPFIX); err != nil {
@@ -242,12 +261,14 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 		if nd.useTsFromNetflowsPacket {
 			ts = uint64(packetIPFIX.ExportTime)
 		}
+		flowMessageSet = nd.decodeNFv9IPFIX(version, obsDomainID, flowSets, sampling, ts, sysUptime)
 	default:
 		nd.metrics.stats.WithLabelValues(key, "unknown").
 			Inc()
 		return nil
 	}
 	nd.metrics.stats.WithLabelValues(key, versionStr).Inc()
+
 	for _, fs := range flowSets {
 		switch fsConv := fs.(type) {
 		case netflow.TemplateFlowSet:
@@ -278,7 +299,6 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 		}
 	}
 
-	flowMessageSet := nd.decodeCommon(version, obsDomainID, flowSets, sampling, ts, sysUptime)
 	exporterAddress, _ := netip.AddrFromSlice(in.Source.To16())
 	for _, fmsg := range flowMessageSet {
 		if fmsg.TimeReceived == 0 {

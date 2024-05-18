@@ -17,6 +17,7 @@ identified with a specific icon:
 - 🩹 *clickhouse*: disable experimental analyzer on recent versions of ClickHouse
 - 🩹 *orchestrator*: fix population of `DstNetSite` and `SrcNetSite`
 - 🩹 *orchestrator*: remove previous networks.csv temporary files on start
+- 🌱 *inlet*: add support Netflow V5
 - 🌱 *console*: add support for PostgreSQL and MySQL to store filters
 - 🌱 *console*: add `console`→`homepage-graph-timerange` to define the time range for the homepage graph
 - 🌱 *docker*: update to Traefik 3.0 (not mandatory)

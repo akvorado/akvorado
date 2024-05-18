@@ -13,6 +13,7 @@ import (
 	"akvorado/inlet/flow/decoder"
 
 	"github.com/netsampler/goflow2/v2/decoders/netflow"
+	"github.com/netsampler/goflow2/v2/decoders/netflowlegacy"
 )
 
 // When decoding, we use IPFIX information element identifiers. However, it
@@ -20,7 +21,44 @@ import (
 // values in the sub-range of 1-127 are compatible with field types used by
 // NetFlow version 9 [RFC3954]."
 
-func (nd *Decoder) decodeCommon(version uint16, obsDomainID uint32, flowSets []interface{}, samplingRateSys *samplingRateSystem, ts, sysUptime uint64) []*schema.FlowMessage {
+func (nd *Decoder) decodeNFv5(packet *netflowlegacy.PacketNetFlowV5, ts, sysUptime uint64) []*schema.FlowMessage {
+	flowMessageSet := []*schema.FlowMessage{}
+
+	for _, record := range packet.Records {
+		bf := &schema.FlowMessage{
+			SamplingRate: uint32(packet.SamplingInterval),
+			InIf:         uint32(record.Input),
+			OutIf:        uint32(record.Output),
+			SrcAddr:      decodeIPFromUint32(uint32(record.SrcAddr)),
+			DstAddr:      decodeIPFromUint32(uint32(record.DstAddr)),
+			NextHop:      decodeIPFromUint32(uint32(record.NextHop)),
+			SrcNetMask:   record.SrcMask,
+			DstNetMask:   record.DstMask,
+			SrcAS:        uint32(record.SrcAS),
+			DstAS:        uint32(record.DstAS),
+		}
+		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnBytes, uint64(record.DOctets))
+		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnPackets, uint64(record.DPkts))
+		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnEType, helpers.ETypeIPv4)
+		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnProto, uint64(record.Proto))
+		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPort, uint64(record.SrcPort))
+		nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnDstPort, uint64(record.DstPort))
+		if !nd.d.Schema.IsDisabled(schema.ColumnGroupL3L4) {
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnIPTos, uint64(record.Tos))
+			nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnTCPFlags, uint64(record.TCPFlags))
+		}
+		if nd.useTsFromFirstSwitched {
+			bf.TimeReceived = ts - sysUptime + uint64(record.First)
+		}
+		if bf.SamplingRate == 0 {
+			bf.SamplingRate = 1
+		}
+		flowMessageSet = append(flowMessageSet, bf)
+	}
+	return flowMessageSet
+}
+
+func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets []interface{}, samplingRateSys *samplingRateSystem, ts, sysUptime uint64) []*schema.FlowMessage {
 	flowMessageSet := []*schema.FlowMessage{}
 
 	// Look for sampling rate in option data flowsets
@@ -101,22 +139,22 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 		// L3
 		case netflow.IPFIX_FIELD_sourceIPv4Address:
 			etype = helpers.ETypeIPv4
-			bf.SrcAddr = decodeIP(v)
+			bf.SrcAddr = decodeIPFromBytes(v)
 		case netflow.IPFIX_FIELD_destinationIPv4Address:
 			etype = helpers.ETypeIPv4
-			bf.DstAddr = decodeIP(v)
+			bf.DstAddr = decodeIPFromBytes(v)
 		case netflow.IPFIX_FIELD_sourceIPv6Address:
 			etype = helpers.ETypeIPv6
-			bf.SrcAddr = decodeIP(v)
+			bf.SrcAddr = decodeIPFromBytes(v)
 		case netflow.IPFIX_FIELD_destinationIPv6Address:
 			etype = helpers.ETypeIPv6
-			bf.DstAddr = decodeIP(v)
+			bf.DstAddr = decodeIPFromBytes(v)
 		case netflow.IPFIX_FIELD_sourceIPv4PrefixLength, netflow.IPFIX_FIELD_sourceIPv6PrefixLength:
 			bf.SrcNetMask = uint8(decodeUNumber(v))
 		case netflow.IPFIX_FIELD_destinationIPv4PrefixLength, netflow.IPFIX_FIELD_destinationIPv6PrefixLength:
 			bf.DstNetMask = uint8(decodeUNumber(v))
 		case netflow.IPFIX_FIELD_ipNextHopIPv4Address, netflow.IPFIX_FIELD_bgpNextHopIPv4Address, netflow.IPFIX_FIELD_ipNextHopIPv6Address, netflow.IPFIX_FIELD_bgpNextHopIPv6Address:
-			bf.NextHop = decodeIP(v)
+			bf.NextHop = decodeIPFromBytes(v)
 
 		// L4
 		case netflow.IPFIX_FIELD_sourceTransportPort:
@@ -174,9 +212,9 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 				// NAT
 				switch field.Type {
 				case netflow.IPFIX_FIELD_postNATSourceIPv4Address:
-					nd.d.Schema.ProtobufAppendIP(bf, schema.ColumnSrcAddrNAT, decodeIP(v))
+					nd.d.Schema.ProtobufAppendIP(bf, schema.ColumnSrcAddrNAT, decodeIPFromBytes(v))
 				case netflow.IPFIX_FIELD_postNATDestinationIPv4Address:
-					nd.d.Schema.ProtobufAppendIP(bf, schema.ColumnDstAddrNAT, decodeIP(v))
+					nd.d.Schema.ProtobufAppendIP(bf, schema.ColumnDstAddrNAT, decodeIPFromBytes(v))
 				case netflow.IPFIX_FIELD_postNAPTSourceTransportPort:
 					nd.d.Schema.ProtobufAppendVarint(bf, schema.ColumnSrcPortNAT, decodeUNumber(v))
 				case netflow.IPFIX_FIELD_postNAPTDestinationTransportPort:
@@ -298,9 +336,15 @@ func decodeUNumber(b []byte) uint64 {
 	return o
 }
 
-func decodeIP(b []byte) netip.Addr {
+func decodeIPFromBytes(b []byte) netip.Addr {
 	if ip, ok := netip.AddrFromSlice(b); ok {
 		return netip.AddrFrom16(ip.As16())
 	}
 	return netip.Addr{}
+}
+
+func decodeIPFromUint32(ipv4 uint32) netip.Addr {
+	var ipBytes [4]byte
+	binary.BigEndian.PutUint32(ipBytes[:], ipv4)
+	return netip.AddrFrom16(netip.AddrFrom4(ipBytes).As16())
 }

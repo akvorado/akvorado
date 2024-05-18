@@ -4,6 +4,7 @@
 package netflow
 
 import (
+	"fmt"
 	"net"
 	"net/netip"
 	"path/filepath"
@@ -511,7 +512,58 @@ func TestDecodeMPLS(t *testing.T) {
 	if diff := helpers.Diff(got, expectedFlows); diff != "" {
 		t.Fatalf("Decode() (-got, +want):\n%s", diff)
 	}
+}
 
+func TestDecodeNFv5(t *testing.T) {
+	for _, tsSource := range []decoder.TimestampSource{
+		decoder.TimestampSourceNetflowPacket,
+		decoder.TimestampSourceNetflowFirstSwitched,
+	} {
+		t.Run(fmt.Sprintf("%s", tsSource), func(t *testing.T) {
+			r := reporter.NewMock(t)
+			nfdecoder := New(r,
+				decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()},
+				decoder.Option{TimestampSource: tsSource})
+
+			data := helpers.ReadPcapL4(t, filepath.Join("testdata", "nfv5.pcap"))
+			got := nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+
+			ts := uint64(1680626679)
+			if tsSource == decoder.TimestampSourceNetflowFirstSwitched {
+				ts = 1680611679
+			}
+
+			expectedFlows := []*schema.FlowMessage{
+				{
+					TimeReceived:    ts,
+					ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+					SrcAddr:         netip.MustParseAddr("::ffff:161.202.212.212"),
+					DstAddr:         netip.MustParseAddr("::ffff:202.152.70.24"),
+					NextHop:         netip.MustParseAddr("::ffff:61.6.255.150"),
+					SamplingRate:    1,
+					InIf:            117,
+					OutIf:           86,
+					SrcAS:           36351,
+					DstAS:           10101,
+					SrcNetMask:      19,
+					DstNetMask:      24,
+					ProtobufDebug: map[schema.ColumnKey]interface{}{
+						schema.ColumnBytes:    133,
+						schema.ColumnPackets:  1,
+						schema.ColumnEType:    helpers.ETypeIPv4,
+						schema.ColumnProto:    6,
+						schema.ColumnSrcPort:  30104,
+						schema.ColumnDstPort:  11963,
+						schema.ColumnTCPFlags: 0x18,
+					},
+				},
+			}
+
+			if diff := helpers.Diff(got[:1], expectedFlows); diff != "" {
+				t.Errorf("Decode() (-got, +want):\n%s", diff)
+			}
+		})
+	}
 }
 
 func TestDecodeTimestampFromNetflowPacket(t *testing.T) {
