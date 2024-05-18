@@ -6,6 +6,7 @@ package netflow
 
 import (
 	"bytes"
+	"errors"
 	"net/netip"
 	"strconv"
 	"sync"
@@ -200,7 +201,11 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 	)
 	if err := netflow.DecodeMessageVersion(buf, templates, &packetNFv9, &packetIPFIX); err != nil {
 		nd.metrics.errors.WithLabelValues(key, "NetFlow/IPFIX decoding error").Inc()
-		nd.errLogger.Err(err).Str("exporter", key).Msg("error while decoding NetFlow/IPFIX")
+		if !errors.Is(err, netflow.ErrorTemplateNotFound) {
+			nd.errLogger.Err(err).Str("exporter", key).Msg("error while decoding NetFlow/IPFIX")
+		} else {
+			nd.errLogger.Debug().Str("exporter", key).Msg("template not received yet")
+		}
 		return nil
 	}
 
