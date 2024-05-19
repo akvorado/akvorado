@@ -59,7 +59,7 @@ const options = computed(
       trigger: "item",
       confine: true,
       valueFormatter(value) {
-        return (value.valueOf() as number).toFixed(2) + "%";
+        return ((value?.valueOf() as number) ?? 0).toFixed(2) + "%";
       },
     },
     legend: {

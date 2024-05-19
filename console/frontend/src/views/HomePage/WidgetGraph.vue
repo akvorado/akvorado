@@ -67,7 +67,7 @@ const option = computed(
         type: "cross",
         label: { backgroundColor: "#6a7985" },
       },
-      valueFormatter: (value) => formatGbps(value.valueOf() as number),
+      valueFormatter: (value) => formatGbps((value?.valueOf() as number) ?? 0),
     },
     series: [
       {

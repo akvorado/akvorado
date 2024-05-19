@@ -34,8 +34,8 @@ import {
   TitleComponent,
   type TitleComponentOption,
 } from "echarts/components";
-import type { default as BrushModel } from "echarts/types/src/component/brush/BrushModel";
-import type { TooltipCallbackDataParams } from "echarts/types/src/component/tooltip/TooltipView";
+import type { default as BrushModel } from "echarts/types/src/component/brush/BrushModel.d.ts";
+import type { TooltipCallbackDataParams } from "echarts/types/src/component/tooltip/TooltipView.d.ts";
 import VChart from "vue-echarts";
 use([
   CanvasRenderer,
