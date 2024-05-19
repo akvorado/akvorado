@@ -456,7 +456,20 @@ func TestDecodeDataLink(t *testing.T) {
 	if diff := helpers.Diff(got, expectedFlows); diff != "" {
 		t.Fatalf("Decode() (-got, +want):\n%s", diff)
 	}
+}
 
+func TestDecodeWithoutTemplate(t *testing.T) {
+	r := reporter.NewMock(t)
+	nfdecoder := New(r,
+		decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()},
+		decoder.Option{TimestampSource: decoder.TimestampSourceUDP})
+	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "datalink-data.pcap"))
+	got := nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+
+	expectedFlows := []*schema.FlowMessage{}
+	if diff := helpers.Diff(got, expectedFlows); diff != "" {
+		t.Fatalf("Decode() (-got, +want):\n%s", diff)
+	}
 }
 
 func TestDecodeMPLS(t *testing.T) {

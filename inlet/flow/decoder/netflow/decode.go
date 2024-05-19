@@ -73,10 +73,7 @@ func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets 
 				)
 				for _, field := range record.OptionsValues {
 					v, ok := field.Value.([]byte)
-					if !ok {
-						continue
-					}
-					if field.PenProvided {
+					if !ok || field.PenProvided {
 						continue
 					}
 					switch field.Type {
@@ -118,10 +115,7 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 	dataLinkFrameSectionIdx := -1
 	for idx, field := range fields {
 		v, ok := field.Value.([]byte)
-		if !ok {
-			continue
-		}
-		if field.PenProvided {
+		if !ok || field.PenProvided {
 			continue
 		}
 
