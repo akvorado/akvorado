@@ -32,28 +32,28 @@ func TestConfigurationEndpoint(t *testing.T) {
 	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			URL:         "/api/v0/orchestrator/configuration/inlet",
-			ContentType: "application/x-yaml; charset=utf-8",
+			ContentType: "application/yaml; charset=utf-8",
 			FirstLines: []string{
 				`bye: Goodbye world!`,
 				`hello: Hello world!`,
 			},
 		}, {
 			URL:         "/api/v0/orchestrator/configuration/inlet/0",
-			ContentType: "application/x-yaml; charset=utf-8",
+			ContentType: "application/yaml; charset=utf-8",
 			FirstLines: []string{
 				`bye: Goodbye world!`,
 				`hello: Hello world!`,
 			},
 		}, {
 			URL:         "/api/v0/orchestrator/configuration/inlet/1",
-			ContentType: "application/x-yaml; charset=utf-8",
+			ContentType: "application/yaml; charset=utf-8",
 			FirstLines: []string{
 				`bye: Goodbye pal!`,
 				`hello: Hello pal!`,
 			},
 		}, {
 			URL:         "/api/v0/orchestrator/configuration/inlet/2",
-			ContentType: "application/x-yaml; charset=utf-8",
+			ContentType: "application/yaml; charset=utf-8",
 			FirstLines: []string{
 				`bye: Goodbye world!`,
 				`hello: Hello world!`,

@@ -56,7 +56,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 			defer resp.Body.Close()
 			contentType := resp.Header.Get("Content-Type")
 			mediaType, _, err := mime.ParseMediaType(contentType)
-			if mediaType != "application/x-yaml" || err != nil {
+			if (mediaType != "application/x-yaml" && mediaType != "application/yaml") || err != nil {
 				return fmt.Errorf("received configuration file is not YAML (%s)", contentType)
 			}
 			input, err := io.ReadAll(resp.Body)

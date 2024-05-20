@@ -257,7 +257,7 @@ module2:
 
 func TestHTTPConfiguration(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/x-yaml; charset=utf-8")
+		w.Header().Set("Content-Type", "application/yaml; charset=utf-8")
 		fmt.Fprint(w, `---
 module1:
  topic: flows
