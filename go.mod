@@ -42,7 +42,7 @@ require (
 	github.com/scrapli/scrapligo v1.3.1
 	github.com/slayercat/GoSNMPServer v0.5.2
 	github.com/spf13/cobra v1.8.0
-	github.com/ti-mo/conntrack v0.5.0
+	github.com/ti-mo/conntrack v0.5.1
 	github.com/xdg-go/scram v1.1.2
 	github.com/yuin/goldmark v1.7.1
 	github.com/yuin/goldmark-highlighting v0.0.0-20220208100518-594be1970594
@@ -127,7 +127,7 @@ require (
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mdlayher/netlink v1.7.2 // indirect
-	github.com/mdlayher/socket v0.4.1 // indirect
+	github.com/mdlayher/socket v0.5.1 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
@@ -151,7 +151,7 @@ require (
 	github.com/sirikothe/gotextfsm v1.0.1-0.20200816110946-6aa2cfd355e4 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/ti-mo/netfilter v0.5.0 // indirect
+	github.com/ti-mo/netfilter v0.5.2 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
