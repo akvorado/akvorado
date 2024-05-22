@@ -43,6 +43,7 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 	}
 	conn, err := clickhouse.Open(&clickhouse.Options{
 		Addr: config.Servers,
+		ConnOpenStrategy: clickhouse.ConnOpenRoundRobin,
 		Auth: clickhouse.Auth{
 			Database: config.Database,
 			Username: config.Username,
