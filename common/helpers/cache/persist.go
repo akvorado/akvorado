@@ -43,6 +43,7 @@ func (c *Cache[K, V]) Load(cacheFile string) error {
 	if err != nil {
 		return fmt.Errorf("unable to load cache %q: %w", cacheFile, err)
 	}
+	defer f.Close()
 	decoder := gob.NewDecoder(f)
 	if err := decoder.Decode(c); err != nil {
 		return fmt.Errorf("unable to decode cache: %w", err)
