@@ -24,9 +24,10 @@ func (p *Provider) peerRemovalWorker() error {
 					p.mu.Lock()
 					defer func() {
 						cancel()
-						p.mu.DowngradeLock()
+						p.mu.Unlock()
 						p.metrics.locked.WithLabelValues("peer-removal").Observe(
 							float64(p.d.Clock.Now().Sub(start).Nanoseconds()) / 1000 / 1000 / 1000)
+						p.mu.RLock()
 					}()
 					pinfo := p.peers[pkey]
 					if pinfo == nil {
