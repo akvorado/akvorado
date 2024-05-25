@@ -6,6 +6,9 @@ package bmp
 
 import "unsafe"
 
+// In Go 1.23, we may not be able to do that. Check here what they do:
+// https://github.com/dgraph-io/ristretto/blob/master/z/rtutil.go#L42-L44
+
 //go:linkname memhash runtime.memhash
 //go:noescape
 func memhash(p unsafe.Pointer, seed, s uintptr) uintptr
