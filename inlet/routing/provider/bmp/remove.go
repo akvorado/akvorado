@@ -27,7 +27,6 @@ func (p *Provider) peerRemovalWorker() error {
 						p.mu.Unlock()
 						p.metrics.locked.WithLabelValues("peer-removal").Observe(
 							float64(p.d.Clock.Now().Sub(start).Nanoseconds()) / 1000 / 1000 / 1000)
-						p.mu.RLock()
 					}()
 					pinfo := p.peers[pkey]
 					if pinfo == nil {
@@ -43,28 +42,22 @@ func (p *Provider) peerRemovalWorker() error {
 					return removed, done, false
 				}()
 
-				// Update stats and optionally sleep (read lock)
-				func() {
-					defer p.mu.RUnlock()
-					p.metrics.routes.WithLabelValues(exporterStr).Sub(float64(removed))
-					if done {
-						// Run was complete, update metrics
-						if !duplicate {
-							p.metrics.peers.WithLabelValues(exporterStr).Dec()
-							p.metrics.peerRemovalDone.WithLabelValues(exporterStr).Inc()
-						}
-						return
-					}
-					// Run is incomplete, update metrics and sleep a bit
-					p.metrics.peerRemovalPartial.WithLabelValues(exporterStr).Inc()
-					select {
-					case <-p.t.Dying():
-						done = true
-					case <-time.After(p.config.RIBPeerRemovalSleepInterval):
-					}
-				}()
+				// Update stats and optionally sleep
+				p.metrics.routes.WithLabelValues(exporterStr).Sub(float64(removed))
 				if done {
+					// Run was complete, update metrics
+					if !duplicate {
+						p.metrics.peers.WithLabelValues(exporterStr).Dec()
+						p.metrics.peerRemovalDone.WithLabelValues(exporterStr).Inc()
+					}
 					break
+				}
+				// Run is incomplete, update metrics and sleep a bit
+				p.metrics.peerRemovalPartial.WithLabelValues(exporterStr).Inc()
+				select {
+				case <-p.t.Dying():
+					return nil
+				case <-time.After(p.config.RIBPeerRemovalSleepInterval):
 				}
 			}
 		}
