@@ -100,9 +100,6 @@ func (p *Provider) LocalAddr() net.Addr {
 // be optimized out by the compiler)
 const rtaHashMask = 0xff
 
-// Use a predictable seed for tests.
-var rtaHashSeed = uint64(0)
-
 // MustParseRD parse a route distinguisher and panic on error.
 func MustParseRD(input string) RD {
 	var output RD

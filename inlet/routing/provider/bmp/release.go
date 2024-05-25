@@ -5,14 +5,4 @@
 
 package bmp
 
-import (
-	"math/rand"
-)
-
 const rtaHashMask = 0xffffffffffffffff
-
-var rtaHashSeed uint64
-
-func init() {
-	rtaHashSeed = rand.Uint64()
-}

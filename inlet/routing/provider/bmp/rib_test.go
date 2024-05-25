@@ -5,6 +5,7 @@ package bmp
 
 import (
 	"fmt"
+	"hash/maphash"
 	"math/rand"
 	"net/netip"
 	"testing"
@@ -159,7 +160,7 @@ outer:
 				if equal && !tc.equal {
 					if try > 0 {
 						// We may have a collision, change the seed and retry
-						rtaHashSeed = rand.Uint64()
+						rtaHashSeed = maphash.MakeSeed()
 						continue outer
 					}
 					t.Errorf("%+v.hash == %+v.hash", tc.rta1, tc.rta2)

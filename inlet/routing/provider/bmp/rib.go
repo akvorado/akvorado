@@ -45,11 +45,11 @@ type nlri struct {
 
 // Hash returns a hash for an NLRI
 func (n nlri) Hash() uint64 {
-	state := rtaHashSeed
-	state = rthash((*byte)(unsafe.Pointer(&n.family)), int(unsafe.Sizeof(n.family)), state)
-	state = rthash((*byte)(unsafe.Pointer(&n.path)), int(unsafe.Sizeof(n.path)), state)
-	state = rthash((*byte)(unsafe.Pointer(&n.rd)), int(unsafe.Sizeof(n.rd)), state)
-	return state
+	state := makeHash()
+	state.Add((*byte)(unsafe.Pointer(&n.family)), int(unsafe.Sizeof(n.family)))
+	state.Add((*byte)(unsafe.Pointer(&n.path)), int(unsafe.Sizeof(n.path)))
+	state.Add((*byte)(unsafe.Pointer(&n.rd)), int(unsafe.Sizeof(n.rd)))
+	return state.Sum()
 }
 
 // Equal tells if two NLRI are equal.
@@ -63,8 +63,9 @@ type nextHop netip.Addr
 // Hash returns a hash for the next hop.
 func (nh nextHop) Hash() uint64 {
 	ip := netip.Addr(nh).As16()
-	state := rtaHashSeed
-	return rthash((*byte)(unsafe.Pointer(&ip[0])), 16, state)
+	state := makeHash()
+	state.Add((*byte)(unsafe.Pointer(&ip[0])), 16)
+	return state.Sum()
 }
 
 // Equal tells if two next hops are equal.
@@ -85,21 +86,21 @@ type routeAttributes struct {
 // Hash returns a hash for route attributes. This may seem like black
 // magic, but this is important for performance.
 func (rta routeAttributes) Hash() uint64 {
-	state := rtaHashSeed
-	state = rthash((*byte)(unsafe.Pointer(&rta.asn)), int(unsafe.Sizeof(rta.asn)), state)
+	state := makeHash()
+	state.Add((*byte)(unsafe.Pointer(&rta.asn)), int(unsafe.Sizeof(rta.asn)))
 	if len(rta.asPath) > 0 {
-		state = rthash((*byte)(unsafe.Pointer(&rta.asPath[0])), len(rta.asPath)*int(unsafe.Sizeof(rta.asPath[0])), state)
+		state.Add((*byte)(unsafe.Pointer(&rta.asPath[0])), len(rta.asPath)*int(unsafe.Sizeof(rta.asPath[0])))
 	}
 	if len(rta.communities) > 0 {
-		state = rthash((*byte)(unsafe.Pointer(&rta.communities[0])), len(rta.communities)*int(unsafe.Sizeof(rta.communities[0])), state)
+		state.Add((*byte)(unsafe.Pointer(&rta.communities[0])), len(rta.communities)*int(unsafe.Sizeof(rta.communities[0])))
 	}
 	if len(rta.largeCommunities) > 0 {
 		// There is a test to check that this computation is
 		// correct (the struct is 12-byte aligned, not
 		// 16-byte).
-		state = rthash((*byte)(unsafe.Pointer(&rta.largeCommunities[0])), len(rta.largeCommunities)*int(unsafe.Sizeof(rta.largeCommunities[0])), state)
+		state.Add((*byte)(unsafe.Pointer(&rta.largeCommunities[0])), len(rta.largeCommunities)*int(unsafe.Sizeof(rta.largeCommunities[0])))
 	}
-	return state & rtaHashMask
+	return state.Sum() & rtaHashMask
 }
 
 // Equal tells if two route attributes are equal.
