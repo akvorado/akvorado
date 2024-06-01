@@ -23,7 +23,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v26
       - name: Update flake.nix
-        run: nix run .#passthru.update
+        run: nix run .#update
       - name: Push update
         run: |
           git config --local user.name "github-actions[bot]"

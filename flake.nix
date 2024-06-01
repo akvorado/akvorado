@@ -51,33 +51,31 @@
         };
       in
       rec {
-        apps = {
-          passthru = pkgs.lib.attrsets.mapAttrs
-            (name: value:
-              let
-                script = pkgs.writeShellScriptBin name value;
-              in
-              {
-                type = "app";
-                program = "${script}/bin/${name}";
-              })
-            rec {
-              update-vendorHash = ''
-                sha256=$(2>&1 nix build --no-link .#backend.goModules \
-                            | ${pkgs.gnused}/bin/sed -nE "s/\s+got:\s+(sha256-.*)/\1/p")
-                [[ -z "$sha256" ]] || echo $sha256 > nix/vendorHash.txt
-              '';
-              update-npmDepsHash = ''
-                sha256=$(2>&1 nix build --no-link .#frontend.npmDeps \
-                            | ${pkgs.gnused}/bin/sed -nE "s/\s+got:\s+(sha256-.*)/\1/p")
-                [[ -z "$sha256" ]] || echo $sha256 > nix/npmDepsHash.txt
-              '';
-              update = ''
-                ${update-vendorHash}
-                ${update-npmDepsHash}
-              '';
-            };
-        };
+        apps = pkgs.lib.attrsets.mapAttrs
+          (name: value:
+            let
+              script = pkgs.writeShellScriptBin name value;
+            in
+            {
+              type = "app";
+              program = "${script}/bin/${name}";
+            })
+          rec {
+            update-vendorHash = ''
+              sha256=$(2>&1 nix build --no-link .#backend.goModules \
+                          | ${pkgs.gnused}/bin/sed -nE "s/\s+got:\s+(sha256-.*)/\1/p")
+              [[ -z "$sha256" ]] || echo $sha256 > nix/vendorHash.txt
+            '';
+            update-npmDepsHash = ''
+              sha256=$(2>&1 nix build --no-link .#frontend.npmDeps \
+                          | ${pkgs.gnused}/bin/sed -nE "s/\s+got:\s+(sha256-.*)/\1/p")
+              [[ -z "$sha256" ]] || echo $sha256 > nix/npmDepsHash.txt
+            '';
+            update = ''
+              ${update-vendorHash}
+              ${update-npmDepsHash}
+            '';
+          };
 
         packages = {
           inherit backend frontend;

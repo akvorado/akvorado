@@ -4,7 +4,7 @@ WORKDIR /app
 COPY . .
 RUN mkdir -p /output/store
 RUN git describe --tags --always --dirty --match=v* > .version && git add -f .version
-RUN nix run ".#passthru.update" \
+RUN nix run ".#update" \
  && nix build -L \
  && cp -va $(nix-store -qR result) /output/store \
  && rm -rf /output/store/*-akvorado
