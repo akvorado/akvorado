@@ -79,7 +79,7 @@ jobs:
         run: docker compose -f docker/docker-compose-dev.yml down --remove-orphans --timeout 60
 
   build-macos:
-    name: 🍏 Build and test on MacOS
+    name: 🍏 Build and test on macOS
     runs-on: macos-14
     needs:
       - dependabot

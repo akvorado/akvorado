@@ -14,7 +14,7 @@ ClickHouse. It also exposes a web interface to browse the result.
 The easiest way to get started is with
 [Docker](https://docs.docker.com/get-docker) and [Docker Compose
 V2](https://docs.docker.com/compose/install/). On Ubuntu systems, you can
-install the `docker-compose-v2` package. On MacOS, you can use the
+install the `docker-compose-v2` package. On macOS, you can use the
 `docker-compose` formula from Homebrew.
 
 ```console
