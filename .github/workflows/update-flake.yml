@@ -21,7 +21,7 @@ jobs:
         run: sleep 120
         if: ${{ github.event_name == 'push' }}
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v26
+      - uses: cachix/install-nix-action@V27
       - name: Update flake.nix
         run: nix run .#update
       - name: Push update
