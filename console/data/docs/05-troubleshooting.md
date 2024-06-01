@@ -97,6 +97,8 @@ with your routers'. To avoid this, you can put that in
 }
 ```
 
+If the exporter address is incorrect, the above configuration will also help.
+
 Check that flow are correctly accepted with:
 
 ```console
