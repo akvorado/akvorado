@@ -13,13 +13,12 @@ import (
 
 func TestConfigHandler(t *testing.T) {
 	config := DefaultConfiguration()
-	config.Version = "1.2.3"
 	_, h, _, _ := NewMock(t, config)
 	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			URL: "/api/v0/console/configuration",
 			JSONOutput: gin.H{
-				"version": "1.2.3",
+				"version": "dev",
 				"defaultVisualizeOptions": gin.H{
 					"graphType":  "stacked",
 					"start":      "24 hours ago",

@@ -11,19 +11,13 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slices"
 
-	"akvorado/common/clickhousedb"
+	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 )
 
-var (
-	// Version contains the current version.
-	Version = "dev"
-)
-
 func init() {
 	RootCmd.AddCommand(versionCmd)
-	clickhousedb.AkvoradoVersion = Version
 }
 
 var versionCmd = &cobra.Command{
@@ -31,7 +25,7 @@ var versionCmd = &cobra.Command{
 	Short: "Print version",
 	Long:  `Display version and build information about akvorado.`,
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		cmd.Printf("akvorado %s\n", Version)
+		cmd.Printf("akvorado %s\n", helpers.AkvoradoVersion)
 		cmd.Printf("  Built with: %s\n", runtime.Version())
 		cmd.Println()
 
@@ -64,7 +58,7 @@ var versionCmd = &cobra.Command{
 
 func versionHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
-		"version":  Version,
+		"version":  helpers.AkvoradoVersion,
 		"compiler": runtime.Version(),
 	})
 }
@@ -74,5 +68,5 @@ func versionMetrics(r *reporter.Reporter) {
 		Name: "info",
 		Help: "Akvorado build information",
 	}, []string{"version", "compiler"}).
-		WithLabelValues(Version, runtime.Version()).Set(1)
+		WithLabelValues(helpers.AkvoradoVersion, runtime.Version()).Set(1)
 }

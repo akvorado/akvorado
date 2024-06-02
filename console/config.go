@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"akvorado/common/helpers"
 	"akvorado/console/query"
 
 	"github.com/gin-gonic/gin"
@@ -16,8 +17,6 @@ import (
 type Configuration struct {
 	// ServeLiveFS serve files from the filesystem instead of the embedded versions.
 	ServeLiveFS bool `yaml:"-"`
-	// Version is the version to display to the user.
-	Version string `yaml:"-"`
 	// DefaultVisualizeOptions define some defaults for the "visualize" tab.
 	DefaultVisualizeOptions VisualizeOptionsConfiguration
 	// HomepageTopWidgets defines the list of widgets to display on the home page.
@@ -80,7 +79,7 @@ func (c *Component) configHandlerFunc(gc *gin.Context) {
 		}
 	}
 	gc.JSON(http.StatusOK, gin.H{
-		"version":                 c.config.Version,
+		"version":                 helpers.AkvoradoVersion,
 		"defaultVisualizeOptions": c.config.DefaultVisualizeOptions,
 		"dimensionsLimit":         c.config.DimensionsLimit,
 		"dimensions":              dimensions,

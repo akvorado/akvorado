@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"akvorado/common/daemon"
+	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 )
 
@@ -33,7 +34,7 @@ func StartStopComponents(r *reporter.Reporter, daemonComponent daemon.Component,
 	}
 
 	r.Info().
-		Str("version", Version).
+		Str("version", helpers.AkvoradoVersion).
 		Msg("akvorado has started")
 
 	<-daemonComponent.Terminated()

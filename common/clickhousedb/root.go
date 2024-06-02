@@ -12,11 +12,9 @@ import (
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/daemon"
+	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 )
-
-// AkvoradoVersion is the current version for Akvorado.
-var AkvoradoVersion = "dev"
 
 // Component represents the ClickHouse wrapper
 type Component struct {
@@ -61,7 +59,7 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 				Name    string
 				Version string
 			}{
-				{Name: "akvorado", Version: AkvoradoVersion},
+				{Name: "akvorado", Version: helpers.AkvoradoVersion},
 			},
 		},
 	})

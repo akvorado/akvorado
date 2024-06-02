@@ -35,7 +35,7 @@ GENERATED = \
 all: fmt lint $(GENERATED) | $(BIN) ; $(info $(M) building executable…) @ ## Build program binary
 	$Q $(GO) build \
 		-tags release \
-		-ldflags '-X $(MODULE)/cmd.Version=$(VERSION)' \
+		-ldflags '-X $(MODULE)/helpers.AkvoradoVersion=$(VERSION)' \
 		-o $(BIN)/$(basename $(MODULE)) main.go
 
 .PHONY: all_js
