@@ -455,7 +455,7 @@ func TestConcurrentOperations(t *testing.T) {
 	close(done)
 	wg.Wait()
 
-	for remaining := 5; remaining >= 0; remaining++ {
+	for remaining := 5; remaining >= 0; remaining-- {
 		gotMetrics := r.GetMetrics("akvorado_inlet_metadata_cache_")
 		hits, _ := strconv.Atoi(gotMetrics["hits_total"])
 		misses, _ := strconv.Atoi(gotMetrics["misses_total"])
