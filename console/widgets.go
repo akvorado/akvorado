@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/gin-gonic/gin"
 
 	"akvorado/common/schema"
@@ -243,9 +242,6 @@ ORDER BY Time WITH FILL
 		Time time.Time `json:"t"`
 		Gbps float64   `json:"gbps"`
 	}{}
-	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
-		"allow_experimental_analyzer": 0,
-	}))
 	err := c.d.ClickHouseDB.Conn.Select(ctx, &results, strings.TrimSpace(query))
 	if err != nil {
 		c.r.Err(err).Msg("unable to query database")
