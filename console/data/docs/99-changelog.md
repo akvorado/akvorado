@@ -14,7 +14,6 @@ identified with a specific icon:
 ## Unreleased
 
 - 💥 *console*: persist metadata cache on the default `docker compose` setup
-- 🩹 *clickhouse*: disable experimental analyzer on recent versions of ClickHouse
 - 🩹 *orchestrator*: fix population of `DstNetSite` and `SrcNetSite`
 - 🩹 *orchestrator*: remove previous networks.csv temporary files on start
 - 🌱 *inlet*: add support Netflow V5
@@ -22,6 +21,7 @@ identified with a specific icon:
 - 🌱 *console*: add `console`→`homepage-graph-timerange` to define the time range for the homepage graph
 - 🌱 *console*: enable round-robin for ClickHouse connections
 - 🌱 *console*: display TCP and UDP port names if known
+- 🌱 *orchestrator*: add ClickHouse version check for INTERPOLATE bug
 - 🌱 *docker*: add monitoring stack with Prometheus and Grafana (work in progress)
 - 🌱 *docker*: update to Traefik 3.0 (not mandatory)
 - 🌱 *docker*: build IPinfo update image to make it available for non-x86
