@@ -10,6 +10,7 @@ PKGS     = $(or $(PKG),$(shell env GO111MODULE=on $(GO) list ./...))
 BIN      = bin
 
 GO      = go
+NPM     = npm
 TIMEOUT = 45
 LSFILES = git ls-files -cmo --exclude-standard --
 V = 0
@@ -94,11 +95,11 @@ console/filter/parser.go: console/filter/parser.peg | $(PIGEON) ; $(info $(M) ge
 
 console/frontend/node_modules: console/frontend/package.json console/frontend/package-lock.json
 console/frontend/node_modules: ; $(info $(M) fetching node modules…)
-	$Q (cd console/frontend ; npm ci --loglevel=error --no-audit --no-fund) && touch $@
+	$Q (cd console/frontend ; $(NPM) ci --loglevel=error --no-audit --no-fund) && touch $@
 console/data/frontend: $(GENERATED_JS)
 console/data/frontend: $(shell $(LSFILES) console/frontend 2> /dev/null)
 console/data/frontend: ; $(info $(M) building console frontend…)
-	$Q cd console/frontend && npm run --silent build
+	$Q cd console/frontend && $(NPM) run --silent build
 
 orchestrator/clickhouse/data/asns.csv: ; $(info $(M) generate ASN map…)
 	$Q curl -sL https://vincentbernat.github.io/asn2org/asns.csv | sed 's|,[^,]*$$||' > $@
@@ -161,9 +162,9 @@ test-coverage-go: | $(GOTESTSUM) $(GOCOV) $(GOCOVXML) ; $(info $(M) running Go c
 
 test-js: .fmt-js~ .lint-js~ $(GENERATED_JS)
 test-js: ; $(info $(M) running JS tests…) @ ## Run JS tests
-	$Q cd console/frontend && npm run --silent type-check && npm run --silent test
+	$Q cd console/frontend && $(NPM) run --silent type-check && $(NPM) run --silent test
 test-coverage-js: ; $(info $(M) running JS coverage tests…) @ ## Run JS coverage tests
-	$Q cd console/frontend && npm run --silent type-check && npm run --silent test -- --coverage
+	$Q cd console/frontend && $(NPM) run --silent type-check && $(NPM) run --silent test -- --coverage
 
 .PHONY: lint
 lint: .lint-go~ .lint-js~ ## Run linting
@@ -172,7 +173,7 @@ lint: .lint-go~ .lint-js~ ## Run linting
 	$Q touch $@
 .lint-js~: $(shell $(LSFILES) '*.js' '*.ts' '*.vue' '*.html' 2> /dev/null)
 .lint-js~: $(GENERATED_JS) ; $(info $(M) running jslint…)
-	$Q cd console/frontend && npm run --silent lint
+	$Q cd console/frontend && $(NPM) run --silent lint
 	$Q touch $@
 
 .PHONY: fmt
@@ -182,7 +183,7 @@ fmt: .fmt-go~ .fmt-js~ ## Format all source files
 	$Q touch $@
 .fmt-js~: $(shell $(LSFILES) '*.js' '*.ts' '*.vue' '*.html' 2> /dev/null)
 .fmt-js~: $(GENERATED_JS) ; $(info $(M) formatting JS code…)
-	$Q cd console/frontend && npm run --silent format
+	$Q cd console/frontend && $(NPM) run --silent format
 	$Q touch $@
 
 # Misc
@@ -192,7 +193,7 @@ licensecheck: console/frontend/node_modules | $(WWHRD) ; $(info $(M) check depen
 	$Q ! git grep -L SPDX-License-Identifier: "*.go" "*.ts" "*.js" || \
 		(>&2 echo "*** Missing license identifiers!"; false)
 	$Q err=0 ; $(GO) mod vendor && $(WWHRD) --quiet check || err=$$? ; rm -rf vendor/ ; exit $$err
-	$Q cd console/frontend ; npm exec --no -- license-compliance \
+	$Q cd console/frontend ; $(NPM) exec --no -- license-compliance \
 		--production \
 		--allow "$$(sed -n 's/^  - //p' ../../.wwhrd.yml | paste -sd ";")" \
 		--report detailed
