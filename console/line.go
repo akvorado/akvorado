@@ -250,6 +250,12 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 		Xps        float64   `ch:"xps"`
 		Dimensions []string  `ch:"dimensions"`
 	}{}
+	// Introduced by: https://github.com/ClickHouse/ClickHouse/pull/61652
+	// Fixed in: https://github.com/ClickHouse/ClickHouse/pull/64096
+	// Impacted versions:
+	//  - v24.3
+	//  - v24.4
+	//  - v24.5 until v24.5.1.1763-stable
 	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
 		"allow_experimental_analyzer": 0,
 	}))
