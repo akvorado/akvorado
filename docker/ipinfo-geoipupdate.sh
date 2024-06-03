@@ -3,7 +3,10 @@
 trap exit TERM
 
 while true; do
+    UPDATE_FREQUENCY_MINUTES="$(qalc -t -s 'max decimals 0' "${UPDATE_FREQUENCY} to minutes" \
+        | cut -f1 -d' ')"
     for DATABASE in ${IPINFO_DATABASES}; do
+        find "${DATABASE}.mmdb" -mmin +${UPDATE_FREQUENCY_MINUTES} -print | grep -q . || continue
         RESPONSE=$(curl \
             --silent \
             --write-out '%{http_code}' \
