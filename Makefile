@@ -213,6 +213,8 @@ help:
 version:
 	@echo $(VERSION)
 
-.PHONY: docker
+.PHONY: docker docker-dev
 docker: ; $(info $(M) build Docker image…) @ ## Build Docker image
 	$Q docker build -f docker/Dockerfile -t ghcr.io/akvorado/akvorado:main .
+docker-dev: all ; $(info $(M) build development Docker image…) @ ## Build development Docker image
+	$Q docker build -f docker/Dockerfile.dev -t ghcr.io/akvorado/akvorado:main .

@@ -1,2 +1,3 @@
 console/frontend/node_modules/
 bin/
+!bin/akvorado

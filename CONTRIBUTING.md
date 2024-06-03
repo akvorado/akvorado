@@ -39,3 +39,8 @@ If possible, tests should not rely on external components, but when it becomes
 hard to do so, it is possible to spawns services through Docker. Locally, one
 can spawns them through `docker compose -f docker/docker-compose-dev.yml`.
 GitHub actions are using services to spawn them.
+
+For manual tests, you can use `make docker-dev` to build a Docker container of
+Akvorado, then use `docker compose up` to run Docker compose. Beware to not
+destroy the volume for GeoIP at each tentative as there is a per-day limit on
+the number of times one IP can fetch the GeoIP database.
