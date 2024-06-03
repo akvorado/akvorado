@@ -18,7 +18,7 @@
         frontend = pkgs.buildNpmPackage.override { inherit nodejs; } {
           name = "akvorado-frontend";
           src = ./console/frontend;
-          npmDepsHash = builtins.readFile nix/npmDepsHash.txt;
+          npmDepsHash = builtins.readFile ./nix/npmDepsHash.txt;
           installPhase = ''
             mkdir $out
             cp -r node_modules $out/node_modules
@@ -29,7 +29,7 @@
           doCheck = false;
           name = "akvorado";
           src = ./.;
-          vendorHash = builtins.readFile nix/vendorHash.txt;
+          vendorHash = builtins.readFile ./nix/vendorHash.txt;
           buildPhase = ''
             sed 's|,[^,]*$||' ${asn2org}/asns.csv > orchestrator/clickhouse/data/asns.csv
             cp -r ${frontend}/node_modules console/frontend/node_modules
