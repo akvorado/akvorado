@@ -75,6 +75,10 @@ const (
 	DictionaryICMP string = "icmp"
 	// DictionaryNetworks is the name of the networks clickhouse dictionary.
 	DictionaryNetworks string = "networks"
+	// DictionaryTCP is the name of the TCP clickhouse dictionary
+	DictionaryTCP string = "tcp"
+	// DictionaryUDP is the name of the UDP clickhouse dictionary
+	DictionaryUDP string = "udp"
 )
 
 // revive:disable

@@ -92,6 +92,12 @@ func (c *Component) migrateDatabase() error {
 			return c.createDictionary(ctx, schema.DictionaryNetworks, "ip_trie",
 				"`network` String, `name` String, `role` String, `site` String, `region` String, `city` String, `state` String, `country` String, `tenant` String, `asn` UInt32",
 				"network")
+		}, func(ctx context.Context) error {
+			return c.createDictionary(ctx, schema.DictionaryTCP, "hashed",
+				"`port` UInt16 INJECTIVE, `name` String", "port")
+		}, func(ctx context.Context) error {
+			return c.createDictionary(ctx, schema.DictionaryUDP, "hashed",
+				"`port` UInt16 INJECTIVE, `name` String", "port")
 		})
 	if err != nil {
 		return err

@@ -136,6 +136,9 @@ func (qc Column) ToSQLSelect(sch *schema.Component) string {
 			array[bit] = fmt.Sprintf("if(bitTest(%s, %d) = 1, '%s', '')", qc, bit, v[:1])
 		}
 		strValue = fmt.Sprintf("arrayStringConcat([%s], '')", strings.Join(array, ", "))
+	case schema.ColumnDstPort, schema.ColumnSrcPort:
+		strValue = fmt.Sprintf(`multiIf(%s==6, concat(toString(%s), '/', dictGetOrDefault('%s', 'name', %s,'')), %s==17, concat(toString(%s), '/', dictGetOrDefault('%s', 'name', %s,'')), toString(%s))`,
+			schema.ColumnProto, qc, schema.DictionaryTCP, qc, schema.ColumnProto, qc, schema.DictionaryUDP, qc, qc)
 
 	// Generic cases
 	default:
