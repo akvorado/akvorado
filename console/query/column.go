@@ -137,7 +137,7 @@ func (qc Column) ToSQLSelect(sch *schema.Component) string {
 		}
 		strValue = fmt.Sprintf("arrayStringConcat([%s], '')", strings.Join(array, ", "))
 	case schema.ColumnDstPort, schema.ColumnSrcPort:
-		strValue = fmt.Sprintf(`multiIf(%s==6, concat(toString(%s), '/', dictGetOrDefault('%s', 'name', %s,'')), %s==17, concat(toString(%s), '/', dictGetOrDefault('%s', 'name', %s,'')), toString(%s))`,
+		strValue = fmt.Sprintf(`replaceRegexpOne(multiIf(%s==6, concat(toString(%s), '/', dictGetOrDefault('%s', 'name', %s,'')), %s==17, concat(toString(%s), '/', dictGetOrDefault('%s', 'name', %s,'')), toString(%s)), '/$', '')`,
 			schema.ColumnProto, qc, schema.DictionaryTCP, qc, schema.ColumnProto, qc, schema.DictionaryUDP, qc, qc)
 
 	// Generic cases
