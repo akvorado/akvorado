@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"math"
 	"math/rand"
 	"net/netip"
 	"path/filepath"
@@ -438,7 +439,15 @@ func TestConcurrentOperations(t *testing.T) {
 					ExporterIP: netip.MustParseAddr(fmt.Sprintf("::ffff:127.0.0.%d", ip)),
 					IfIndex:    uint(iface),
 				})
-				atomic.AddInt64(&lookups, 1)
+				for {
+					current := atomic.LoadInt64(&lookups)
+					if current == math.MaxInt64 {
+						return
+					}
+					if atomic.CompareAndSwapInt64(&lookups, current, current+1) {
+						break
+					}
+				}
 				select {
 				case <-done:
 					return
@@ -457,9 +466,9 @@ func TestConcurrentOperations(t *testing.T) {
 
 	for remaining := 5; remaining >= 0; remaining-- {
 		gotMetrics := r.GetMetrics("akvorado_inlet_metadata_cache_")
-		hits, _ := strconv.Atoi(gotMetrics["hits_total"])
-		misses, _ := strconv.Atoi(gotMetrics["misses_total"])
-		if int64(hits+misses) == atomic.LoadInt64(&lookups) {
+		hits, _ := strconv.ParseInt(gotMetrics["hits_total"], 10, 64)
+		misses, _ := strconv.ParseInt(gotMetrics["misses_total"], 10, 64)
+		if hits+misses == atomic.LoadInt64(&lookups) {
 			break
 		} else if remaining == 0 {
 			t.Errorf("hit + miss = %d, expected %d", hits+misses, atomic.LoadInt64(&lookups))
