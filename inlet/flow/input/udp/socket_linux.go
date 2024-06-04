@@ -22,7 +22,7 @@ var (
 		// Get the number of dropped packets
 		unix.SO_RXQ_OVFL,
 		// Ask the kernel to timestamp incoming packets
-		unix.SO_TIMESTAMP | unix.SOF_TIMESTAMPING_RX_HARDWARE | unix.SOF_TIMESTAMPING_RX_SOFTWARE,
+		unix.SO_TIMESTAMP | unix.SOF_TIMESTAMPING_RX_SOFTWARE,
 	}
 )
 
