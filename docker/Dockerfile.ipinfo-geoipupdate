@@ -1,6 +1,6 @@
 FROM alpine:latest
 
-RUN apk add --no-cache curl qalc
+RUN apk add --no-cache curl
 
 WORKDIR /data
 VOLUME /data
