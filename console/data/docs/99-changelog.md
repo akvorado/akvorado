@@ -21,6 +21,7 @@ identified with a specific icon:
 - 🌱 *console*: add support for PostgreSQL and MySQL to store filters
 - 🌱 *console*: add `console`→`homepage-graph-timerange` to define the time range for the homepage graph
 - 🌱 *console*: enable round-robin for ClickHouse connections
+- 🌱 *docker*: add monitoring stack with Prometheus and Grafana (work in progress)
 - 🌱 *docker*: update to Traefik 3.0 (not mandatory)
 - 🌱 *docker*: build IPinfo update image to make it available for non-x86
   architectures and ensure the databases are downloaded only when an update is
