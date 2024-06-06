@@ -56,7 +56,7 @@ alternative address with `inlet`→`snmp`→`agents`.
 check the metrics to find the cause:
 
 ```console
-$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet' | grep _errors
+$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet' | grep _error
 ```
 
 Here is a list of generic errors you may find:
