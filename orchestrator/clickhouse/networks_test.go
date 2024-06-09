@@ -21,7 +21,7 @@ func TestNetworksCSVWithGeoip(t *testing.T) {
 	config := DefaultConfiguration()
 	config.SkipMigrations = true
 	r := reporter.NewMock(t)
-	clickHouseComponent := clickhousedb.SetupClickHouse(t, r, false)
+	clickhouseComponent := clickhousedb.SetupClickHouse(t, r, false)
 
 	t.Run("only GeoIP", func(t *testing.T) {
 		// First use only GeoIP
@@ -30,7 +30,7 @@ func TestNetworksCSVWithGeoip(t *testing.T) {
 			HTTP:       httpserver.NewMock(t, r),
 			Schema:     schema.NewMock(t),
 			GeoIP:      geoip.NewMock(t, r, true),
-			ClickHouse: clickHouseComponent,
+			ClickHouse: clickhouseComponent,
 		})
 		if err != nil {
 			t.Fatalf("New() error:\n%+v", err)
@@ -79,7 +79,7 @@ func TestNetworksCSVWithGeoip(t *testing.T) {
 			HTTP:       httpserver.NewMock(t, r),
 			Schema:     schema.NewMock(t),
 			GeoIP:      geoip.NewMock(t, r, true),
-			ClickHouse: clickHouseComponent,
+			ClickHouse: clickhouseComponent,
 		})
 		if err != nil {
 			t.Fatalf("New() error:\n%+v", err)
@@ -126,7 +126,7 @@ func TestNetworksCSVWithGeoip(t *testing.T) {
 			HTTP:       httpserver.NewMock(t, r),
 			Schema:     schema.NewMock(t),
 			GeoIP:      geoip.NewMock(t, r, true),
-			ClickHouse: clickHouseComponent,
+			ClickHouse: clickhouseComponent,
 		})
 		if err != nil {
 			t.Fatalf("New() error:\n%+v", err)

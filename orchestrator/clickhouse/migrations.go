@@ -57,7 +57,7 @@ func (c *Component) migrateDatabase() error {
 		c.config.Kafka.Consumers = int(threads)
 	}
 	if err := validateVersion(version); err != nil {
-		return fmt.Errorf("incorrect Clickhouse version: %w", err)
+		return fmt.Errorf("incorrect ClickHouse version: %w", err)
 	}
 
 	if c.config.Cluster != "" {

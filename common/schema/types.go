@@ -21,7 +21,7 @@ type Schema struct {
 	dynamicColumns ColumnKey
 	// For ClickHouse. This is the set of primary keys (order is important and
 	// may not follow column order) for the aggregated tables.
-	clickHousePrimaryKeys []ColumnKey
+	clickhousePrimaryKeys []ColumnKey
 }
 
 // Column represents a column of data.

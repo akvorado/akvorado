@@ -189,7 +189,7 @@ const (
 // in `PrimaryKeys'.
 func flows() Schema {
 	return Schema{
-		clickHousePrimaryKeys: []ColumnKey{
+		clickhousePrimaryKeys: []ColumnKey{
 			ColumnTimeReceived,
 			ColumnExporterAddress,
 			ColumnEType,

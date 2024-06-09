@@ -11,7 +11,7 @@ import (
 
 func TestFlowsClickHouse(t *testing.T) {
 	c := NewMock(t)
-	for _, key := range c.clickHousePrimaryKeys {
+	for _, key := range c.clickhousePrimaryKeys {
 		if column := c.columnIndex[key]; column.Key == 0 {
 			t.Errorf("primary key %q not a column", key)
 		} else {

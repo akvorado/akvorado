@@ -51,7 +51,7 @@ func New(config Configuration) (*Component, error) {
 			if column.NoDisable {
 				return nil, fmt.Errorf("column %q cannot be disabled", k)
 			}
-			if slices.Contains(schema.clickHousePrimaryKeys, k) {
+			if slices.Contains(schema.clickhousePrimaryKeys, k) {
 				return nil, fmt.Errorf("column %q cannot be disabled (primary key)", k)
 			}
 			column.Disabled = true
@@ -76,7 +76,7 @@ func New(config Configuration) (*Component, error) {
 			if column.NoDisable {
 				return nil, fmt.Errorf("column %q cannot be present on main table only", k)
 			}
-			if slices.Contains(schema.clickHousePrimaryKeys, k) {
+			if slices.Contains(schema.clickhousePrimaryKeys, k) {
 				// Primary keys are part of the sorting key.
 				return nil, fmt.Errorf("column %q cannot be present on main table only (primary key)", k)
 			}

@@ -115,7 +115,7 @@ func (schema Schema) ClickHouseSortingKeys() []string {
 // ClickHousePrimaryKeys returns the list of primary keys.
 func (schema Schema) ClickHousePrimaryKeys() []string {
 	cols := []string{}
-	for _, key := range schema.clickHousePrimaryKeys {
+	for _, key := range schema.clickhousePrimaryKeys {
 		cols = append(cols, key.String())
 	}
 	return cols
