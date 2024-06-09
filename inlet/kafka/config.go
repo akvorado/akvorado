@@ -15,24 +15,24 @@ import (
 type Configuration struct {
 	kafka.Configuration `mapstructure:",squash" yaml:"-,inline"`
 	// FlushInterval tells how often to flush pending data to Kafka.
-	FlushInterval time.Duration `validate:"min=1s"`
+	FlushInterval time.Duration `validate:"min=100ms"`
 	// FlushBytes tells to flush when there are many bytes to write
 	FlushBytes int `validate:"min=1000"`
 	// MaxMessageBytes is the maximum permitted size of a message.
 	// Should be set equal or smaller than broker's
 	// `message.max.bytes`.
-	MaxMessageBytes int
+	MaxMessageBytes int `validate:"min=1"`
 	// CompressionCodec defines the compression to use.
 	CompressionCodec CompressionCodec
 	// QueueSize defines the size of the channel used to send to Kafka.
-	QueueSize int `validate:"min=0"`
+	QueueSize int `validate:"min=1"`
 }
 
 // DefaultConfiguration represents the default configuration for the Kafka exporter.
 func DefaultConfiguration() Configuration {
 	return Configuration{
 		Configuration:    kafka.DefaultConfiguration(),
-		FlushInterval:    10 * time.Second,
+		FlushInterval:    time.Second,
 		FlushBytes:       int(sarama.MaxRequestSize) - 1,
 		MaxMessageBytes:  1000000,
 		CompressionCodec: CompressionCodec(sarama.CompressionNone),

@@ -55,7 +55,7 @@ func New(reporter *reporter.Reporter, configuration Configuration, dependencies 
 	kafkaConfig.Producer.Flush.Bytes = configuration.FlushBytes
 	kafkaConfig.Producer.Flush.Frequency = configuration.FlushInterval
 	kafkaConfig.Producer.Partitioner = sarama.NewHashPartitioner
-	kafkaConfig.ChannelBufferSize = configuration.QueueSize / 2
+	kafkaConfig.ChannelBufferSize = configuration.QueueSize
 	if err := kafkaConfig.Validate(); err != nil {
 		return nil, fmt.Errorf("cannot validate Kafka configuration: %w", err)
 	}
