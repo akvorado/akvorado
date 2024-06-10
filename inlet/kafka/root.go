@@ -40,7 +40,7 @@ type Dependencies struct {
 	Schema *schema.Component
 }
 
-// New creates a new HTTP component.
+// New creates a new Kafka exporter component.
 func New(reporter *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
 	// Build Kafka configuration
 	kafkaConfig, err := kafka.NewConfig(configuration.Configuration)

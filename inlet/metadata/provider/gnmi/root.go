@@ -13,7 +13,7 @@ import (
 	"akvorado/inlet/metadata/provider"
 )
 
-// Provider represents the SNMP provider.
+// Provider represents the gNMI provider.
 type Provider struct {
 	r       *reporter.Reporter
 	config  *Configuration
@@ -26,7 +26,7 @@ type Provider struct {
 	stateLock sync.Mutex
 }
 
-// New creates a new SNMP provider from configuration
+// New creates a new gNMI provider from configuration
 func (configuration Configuration) New(r *reporter.Reporter, put func(provider.Update)) (provider.Provider, error) {
 	p := Provider{
 		r:       r,
