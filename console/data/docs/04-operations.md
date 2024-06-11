@@ -1,5 +1,10 @@
 # Operations
 
+While Akvorado itself does not require much memory and disk space, both Kafka
+and ClickHouse have heavier needs. To get started, do not try to run the
+complete setup with less than 16 GB of RAM (32 GB or more is advised) and with
+less than 50 GB of disk (100 GB or more is advised). Use at least 8 vCPU.
+
 ## Router configuration
 
 Each router should be configured to send flows to Akvorado inlet
@@ -420,6 +425,15 @@ ORDER BY total_bytes DESC
 If you see tables suffixed by `_0` or `_1`, they can be deleted: they are
 created when ClickHouse is updated with the data from the tables before the
 upgrade.
+
+### Memory usage
+
+The `networks` dictionary can take a bit of memory. You can check with the following queries:
+
+```sql
+SELECT name, status, type, formatReadableSize(bytes_allocated)
+FROM system.dictionaries
+```
 
 ### Space usage
 
