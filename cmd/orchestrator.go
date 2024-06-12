@@ -27,7 +27,6 @@ import (
 type OrchestratorConfiguration struct {
 	Reporting    reporter.Configuration
 	HTTP         httpserver.Configuration
-	ClickHouseDB clickhousedb.Configuration `yaml:"-"`
 	ClickHouse   clickhouse.Configuration
 	Kafka        kafka.Configuration
 	GeoIP        geoip.Configuration
@@ -48,7 +47,6 @@ func (c *OrchestratorConfiguration) Reset() {
 	*c = OrchestratorConfiguration{
 		Reporting:    reporter.DefaultConfiguration(),
 		HTTP:         httpserver.DefaultConfiguration(),
-		ClickHouseDB: clickhousedb.DefaultConfiguration(),
 		ClickHouse:   clickhouse.DefaultConfiguration(),
 		Kafka:        kafka.DefaultConfiguration(),
 		Orchestrator: orchestrator.DefaultConfiguration(),
@@ -80,7 +78,6 @@ components and centralizes configuration of the various other components.`,
 		OrchestratorOptions.Path = args[0]
 		OrchestratorOptions.BeforeDump = func() {
 			// Override some parts of the configuration
-			config.ClickHouseDB = config.ClickHouse.Configuration
 			config.ClickHouse.Kafka.Configuration = config.Kafka.Configuration
 			for idx := range config.Inlet {
 				config.Inlet[idx].Kafka.Configuration = config.Kafka.Configuration
@@ -130,7 +127,7 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, c
 	if err != nil {
 		return fmt.Errorf("unable to initialize kafka component: %w", err)
 	}
-	clickhouseDBComponent, err := clickhousedb.New(r, config.ClickHouseDB, clickhousedb.Dependencies{
+	clickhouseDBComponent, err := clickhousedb.New(r, config.ClickHouse.Configuration, clickhousedb.Dependencies{
 		Daemon: daemonComponent,
 	})
 	if err != nil {
