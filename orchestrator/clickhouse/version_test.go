@@ -20,6 +20,7 @@ func TestValidateVersionOK(t *testing.T) {
 
 		// Experimental analyzer and INTERPOLATE
 		"24.5.1.1763", // fixed version
+		"24.4.2.141",  // fixed version
 		"24.2.3.70",   // no experimental analyzer
 	}
 	for _, v := range ok {
