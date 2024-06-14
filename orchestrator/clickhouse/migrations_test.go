@@ -272,6 +272,8 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 				schema.DictionaryICMP,
 				schema.DictionaryNetworks,
 				schema.DictionaryProtocols,
+				schema.DictionaryTCP,
+				schema.DictionaryUDP,
 			}
 			if !cluster {
 				filteredExpected := []string{}
