@@ -22,6 +22,7 @@ GENERATED_JS = \
 GENERATED_GO = \
 	common/schema/definition_gen.go \
 	orchestrator/clickhouse/data/asns.csv \
+	orchestrator/clickhouse/data/protocols.csv \
 	orchestrator/clickhouse/data/tcp.csv \
 	orchestrator/clickhouse/data/udp.csv \
 	console/filter/parser.go
@@ -113,7 +114,7 @@ endef
 orchestrator/clickhouse/data/asns.csv: ; $(info $(M) generate ASN map…)
 	$Q $(call caturl,$(ASNS_URL)) | sed 's|,[^,]*$$||' > $@
 	$Q test -s $@
-orchestrator/clickhouse/data/protocols.csv: # We keep this one in Git
+orchestrator/clickhouse/data/protocols.csv: ; $(info $(M) generate protocol map…)
 	$Q $(call caturl,$(PROTOCOLS_URL)) \
 		| sed -nE -e "1 s/.*/proto,name,description/p" -e "2,$$ s/^([0-9]+,[^ ,]+,[^\",]+),.*/\1/p" \
 		> $@

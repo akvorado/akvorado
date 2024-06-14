@@ -5,7 +5,7 @@ proto,name,description
 3,GGP,Gateway-to-Gateway
 4,IPv4,IPv4 encapsulation
 5,ST,Stream
-6,TCP,Transmission Control Protocol
+6,TCP,Transmission Control
 7,CBT,CBT
 8,EGP,Exterior Gateway Protocol
 10,BBN-RCC-MON,BBN RCC Monitoring
@@ -14,7 +14,7 @@ proto,name,description
 14,EMCON,EMCON
 15,XNET,Cross Net Debugger
 16,CHAOS,Chaos
-17,UDP,User Datagram Protocol
+17,UDP,User Datagram
 18,MUX,Multiplexing
 19,DCN-MEAS,DCN Measurement Subsystems
 20,HMP,Host Monitoring
@@ -51,7 +51,7 @@ proto,name,description
 51,AH,Authentication Header
 52,I-NLSP,Integrated Net Layer Security  TUBA
 54,NARP,NBMA Address Resolution Protocol
-55,MOBILE,IP Mobility
+55,Min-IPv4,Minimal IPv4 Encapsulation
 57,SKIP,SKIP
 58,IPv6-ICMP,ICMP for IPv6
 59,IPv6-NoNxt,No Next Header for IPv6
@@ -76,7 +76,6 @@ proto,name,description
 81,VMTP,VMTP
 82,SECURE-VMTP,SECURE-VMTP
 83,VINES,VINES
-84,TTP,Transaction Transport Protocol
 84,IPTM,Internet Protocol Traffic Manager
 85,NSFNET-IGP,NSFNET-IGP
 86,DGP,Dissimilar Gateway Protocol
@@ -125,3 +124,5 @@ proto,name,description
 141,WESP,Wrapped Encapsulating Security Payload
 142,ROHC,Robust Header Compression
 143,Ethernet,Ethernet
+144,AGGFRAG,AGGFRAG encapsulation payload for ESP
+145,NSH,Network Service Header
