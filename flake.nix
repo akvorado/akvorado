@@ -31,7 +31,6 @@
           src = ./.;
           vendorHash = builtins.readFile ./nix/vendorHash.txt;
           buildPhase = ''
-            sed 's|,[^,]*$||' ${asn2org}/asns.csv > orchestrator/clickhouse/data/asns.csv
             cp -r ${frontend}/node_modules console/frontend/node_modules
             cp -r ${frontend}/data console/data/frontend
 
@@ -42,7 +41,8 @@
               MOCKGEN=${pkgs.mockgen}/bin/mockgen \
               GOIMPORTS=${pkgs.gotools}/bin/goimports \
               PIGEON=${pkgs.pigeon}/bin/pigeon \
-              REVIVE=${pkgs.coreutils}/bin/true
+              REVIVE=${pkgs.coreutils}/bin/true \
+              ASNS_URL=${asn2org}/asns.csv
           '';
           installPhase = ''
             mkdir -p $out/bin

@@ -103,17 +103,23 @@ console/data/frontend: $(shell $(LSFILES) console/frontend 2> /dev/null)
 console/data/frontend: ; $(info $(M) building console frontend…)
 	$Q cd console/frontend && $(NPM) run --silent build
 
+ASNS_URL = https://vincentbernat.github.io/asn2org/asns.csv
+PROTOCOLS_URL = http://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv
+SERVICES_URL = https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv
+define caturl
+$(if $(filter http://% https://%, $(1)),curl -sL $(1),cat $(1))
+endef
+
 orchestrator/clickhouse/data/asns.csv: ; $(info $(M) generate ASN map…)
-	$Q curl -sL https://vincentbernat.github.io/asn2org/asns.csv | sed 's|,[^,]*$$||' > $@
+	$Q $(call caturl,$(ASNS_URL)) | sed 's|,[^,]*$$||' > $@
 	$Q test -s $@
 orchestrator/clickhouse/data/protocols.csv: # We keep this one in Git
-	$Q curl -sL http://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv \
+	$Q $(call caturl,$(PROTOCOLS_URL)) \
 		| sed -nE -e "1 s/.*/proto,name,description/p" -e "2,$$ s/^([0-9]+,[^ ,]+,[^\",]+),.*/\1/p" \
 		> $@
 	$Q test -s $@
-
 orchestrator/clickhouse/data/udp.csv orchestrator/clickhouse/data/tcp.csv: orchestrator/clickhouse/data/%.csv: ; $(info $(M) generate $* port numbers…)
-	$Q curl -sL https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv \
+	$Q $(call caturl,$(SERVICES_URL)) \
 		| sed -nE -e "1 s/.*/port,name/p" -e "2,$$ s/^([^,]+),([0-9]+),$*,.*/\2,\1/p" \
 		| awk -F',' '!seen[$$1]++' \
 		> $@
