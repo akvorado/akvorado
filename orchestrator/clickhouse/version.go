@@ -62,7 +62,8 @@ func validateVersion(v string) error {
 		// Introduced by: https://github.com/ClickHouse/ClickHouse/pull/61652
 		// Fixed in: https://github.com/ClickHouse/ClickHouse/pull/64096
 		nok := []versionRange{
-			{"24.3", "24.4.2.141"},
+			{"24.3", "24.3.4.147"},
+			{"24.4", "24.4.2.141"},
 			{"24.5", "24.5.1.1763"},
 		}
 		if err := validateVersionRanges(current, "experimental analyzer bug with INTERPOLATE", nok); err != nil {
