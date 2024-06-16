@@ -1,6 +1,8 @@
 /bin/
 /test/
 /orchestrator/clickhouse/data/asns.csv
+/orchestrator/clickhouse/data/tcp.csv
+/orchestrator/clickhouse/data/udp.csv
 /console/filter/parser.go
 /common/schema/definition_gen.go
 mock_*.go

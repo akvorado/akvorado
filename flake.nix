@@ -25,6 +25,10 @@
             cp -r ../data/frontend $out/data
           '';
         };
+        ianaServiceNames = pkgs.fetchurl {
+          url = "https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv";
+          hash = builtins.readFile ./nix/ianaServiceNamesHash.txt;
+        };
         backend = pkgs.buildGoModule.override { inherit go; } {
           doCheck = false;
           name = "akvorado";
@@ -42,7 +46,8 @@
               GOIMPORTS=${pkgs.gotools}/bin/goimports \
               PIGEON=${pkgs.pigeon}/bin/pigeon \
               REVIVE=${pkgs.coreutils}/bin/true \
-              ASNS_URL=${asn2org}/asns.csv
+              ASNS_URL=${asn2org}/asns.csv \
+              SERVICES_URL=${ianaServiceNames}
           '';
           installPhase = ''
             mkdir -p $out/bin
@@ -71,14 +76,20 @@
                           | ${pkgs.gnused}/bin/sed -nE "s/\s+got:\s+(sha256-.*)/\1/p")
               [[ -z "$sha256" ]] || echo $sha256 > nix/npmDepsHash.txt
             '';
+            update-ianaServiceNamesHash = ''
+              sha256=$(2>&1 nix build --no-link .#ianaServiceNames \
+                          | ${pkgs.gnused}/bin/sed -nE "s/\s+got:\s+(sha256-.*)/\1/p")
+              [[ -z "$sha256" ]] || echo $sha256 > nix/ianaServiceNamesHash.txt
+            '';
             update = ''
               ${update-vendorHash}
               ${update-npmDepsHash}
+              ${update-ianaServiceNamesHash}
             '';
           };
 
         packages = {
-          inherit backend frontend;
+          inherit backend frontend ianaServiceNames;
           default = backend;
         };
 
