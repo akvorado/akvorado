@@ -121,7 +121,7 @@ func consoleStart(r *reporter.Reporter, config ConsoleConfiguration, checkOnly b
 		return fmt.Errorf("unable to initialize console component: %w", err)
 	}
 
-	// Expose some informations and metrics
+	// Expose some information and metrics
 	addCommonHTTPHandlers(r, "console", httpComponent)
 	versionMetrics(r)
 

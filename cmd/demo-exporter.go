@@ -114,7 +114,7 @@ func demoExporterStart(r *reporter.Reporter, config DemoExporterConfiguration, c
 		return fmt.Errorf("unable to initialize exporter component: %w", err)
 	}
 
-	// Expose some informations and metrics
+	// Expose some information and metrics
 	addCommonHTTPHandlers(r, "demo-exporter", httpComponent)
 	versionMetrics(r)
 
