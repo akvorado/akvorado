@@ -1,13 +1,24 @@
 ---
-name: Update nixpkgs and asn2org
+name: Update Nix dependencies
 on:
+  # Manually when needed
   workflow_dispatch:
+  # When language-specific dependencies changes
+  push:
+    branches:
+      - main
+    paths:
+      - go.mod
+      - go.sum
+      - console/frontend/package-lock.json
+  # On a schedule for other dependencies
   schedule:
     - cron: "10 4 * * 1"
 
 jobs:
   lockfile:
     name: Update Nix lockfile
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -28,3 +39,23 @@ jobs:
           commit-message: "build: flake.lock automated update for ${{ matrix.source }}"
           title: "build: ${{ matrix.source }} update"
           body: ""
+  hashes:
+    name: Update dependency hashes
+    runs-on: ubuntu-latest
+    concurrency:
+      group: update-nix-hashes
+      cancel-in-progress: true
+    steps:
+      - name: Sleep a bit
+        run: sleep 120
+        if: ${{ github.event_name == 'push' }}
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@V27
+      - name: Update dependency hashes
+        run: nix run .#update
+      - name: Push update
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add flake.lock nix
+          ! git commit -m "build: update Nix dependency hashes" || git push
