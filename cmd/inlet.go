@@ -147,7 +147,7 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 		return fmt.Errorf("unable to initialize core component: %w", err)
 	}
 
-	// Expose some informations and metrics
+	// Expose some information and metrics
 	addCommonHTTPHandlers(r, "inlet", httpComponent)
 	versionMetrics(r)
 

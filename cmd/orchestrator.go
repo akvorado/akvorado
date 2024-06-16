@@ -167,7 +167,7 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, c
 		orchestratorComponent.RegisterConfiguration(orchestrator.DemoExporterService, config.DemoExporter[idx])
 	}
 
-	// Expose some informations and metrics
+	// Expose some information and metrics
 	addCommonHTTPHandlers(r, "orchestrator", httpComponent)
 	versionMetrics(r)
 

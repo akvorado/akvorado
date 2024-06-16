@@ -231,7 +231,7 @@ The topic name is suffixed by a hash of the schema.
 ### Core
 
 The core component queries the `metadata` component to
-enriches the flows with additional information. It also classifies
+enrich the flows with additional information. It also classifies
 exporters and interfaces into groups with a set of classification
 rules.
 
@@ -269,7 +269,7 @@ Exporter classifiers gets the classifier IP address and its hostname.
 If they can make a decision, they should invoke one of the
 `Classify()` functions with the target element as an argument. Once
 classification is done for an element, it cannot be changed by a
-subsequent rule. All strings are normalized (down case, special chars
+subsequent rule. All strings are normalized (lower case, special chars
 removed).
 
 - `Exporter.IP` for the exporter IP address
@@ -317,7 +317,7 @@ decision:
 Once an interface is classified for a given criteria, it cannot be
 changed by later rule. Once an interface is classified for all
 criteria, remaining rules are skipped. Connectivity and provider are
-normalized (down case, special chars removed).
+normalized (lower case, special chars removed).
 
 Each `Classify()` function, with the exception of `ClassifyExternal()`
 and `ClassifyInternal()` have a variant ending with `Regex` which
@@ -648,7 +648,7 @@ console (like `echo-reply` or `frag-needed`).
 #### Custom dictionaries
 
 You can add custom dimensions to be looked up via a dictionary. This is useful
-to enrich your flow with additional informations not possible to get in the
+to enrich your flow with additional information not possible to get in the
 classifier. This works by providing the database with a CSV files containing the
 values.
 
