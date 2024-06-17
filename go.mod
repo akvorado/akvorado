@@ -41,7 +41,7 @@ require (
 	github.com/rs/zerolog v1.33.0
 	github.com/scrapli/scrapligo v1.3.1
 	github.com/slayercat/GoSNMPServer v0.5.2
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	github.com/ti-mo/conntrack v0.5.1
 	github.com/xdg-go/scram v1.1.2
 	github.com/yuin/goldmark v1.7.1
