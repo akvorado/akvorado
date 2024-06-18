@@ -27,11 +27,6 @@ type Configuration struct {
 	// MaxPartitions define the number of partitions to have for a
 	// consolidated flow tables when full.
 	MaxPartitions int `validate:"isdefault|min=1"`
-	// SystemLogTTL is the TTL to set for system log tables.
-	SystemLogTTL time.Duration `validate:"isdefault|min=1m"`
-	// PrometheusEndpoint defines the endpoint ClickHouse can use to expose
-	// metrics to Prometheus. If not defined, this is not configured.
-	PrometheusEndpoint string
 	// ASNs is a mapping from AS numbers to names. It replaces or
 	// extends the builtin list of AS numbers.
 	ASNs map[uint32]string
@@ -52,6 +47,11 @@ type Configuration struct {
 	// OrchestratorBasicAuth holds optional basic auth credentials to reach
 	// orchestrator from ClickHouse
 	OrchestratorBasicAuth *ConfigurationBasicAuth
+
+	// SystemLogTTL is unused now.
+	SystemLogTTL time.Duration `yaml:"-"`
+	// PrometheusEndpoint is unused now.
+	PrometheusEndpoint string `yaml:"-"`
 }
 
 // ConfigurationBasicAuth holds Username and Password subfields
@@ -100,7 +100,6 @@ func DefaultConfiguration() Configuration {
 		},
 		MaxPartitions:         50,
 		NetworkSourcesTimeout: 10 * time.Second,
-		SystemLogTTL:          30 * 24 * time.Hour, // 30 days
 	}
 }
 

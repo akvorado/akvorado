@@ -167,9 +167,8 @@ services:
       file: versions.yml
       service: clickhouse
     volumes:
-      - ../orchestrator/clickhouse/data/docker-entrypoint.sh:/entrypoint-override.sh:ro
       - akvorado-clickhouse:/var/lib/clickhouse
-    entrypoint: /entrypoint-override.sh
+      - ./clickhouse/akvorado.xml:/etc/clickhouse-server/config.d/akvorado.xml
     environment:
       - CLICKHOUSE_INIT_TIMEOUT=60
       - CLICKHOUSE_SKIP_USER_SETUP=1

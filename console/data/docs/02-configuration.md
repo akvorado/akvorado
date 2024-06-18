@@ -820,11 +820,6 @@ provided inside `clickhouse`:
 - `resolutions` defines the various resolutions to keep data
 - `max-partitions` defines the number of partitions to use when
   creating consolidated tables
-- `system-log-ttl` defines the TTL for system log tables. Set to 0 to disable.
-  As these tables are partitioned by month, it's useless to use a too low value.
-  The default value is 30 days. This requires a restart of ClickHouse.
-- `prometheus-endpoint` defines the endpoint to configure to expose ClickHouse
-  metrics to Prometheus. When not defined, this is left unconfigured.
 - `networks` maps subnets to attributes. Attributes are `name`, `role`, `site`,
   `region`, and `tenant`. They are exposed as `SrcNetName`, `DstNetName`,
   `SrcNetRole`, `DstNetRole`, etc. It is also possible to override GeoIP
