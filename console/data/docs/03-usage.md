@@ -67,9 +67,6 @@ services:
 
 The following endpoints are exposed for use by ClickHouse:
 
-- `/api/v0/orchestrator/clickhouse/init.sh` contains the schemas in the form of a
-  script to execute during initialization to get them installed at the
-  proper location
 - `/api/v0/orchestrator/clickhouse/protocols.csv` contains a CSV with the mapping
   between protocol numbers and names
 - `/api/v0/orchestrator/clickhouse/asns.csv` contains a CSV with the mapping

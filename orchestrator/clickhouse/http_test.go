@@ -4,7 +4,6 @@
 package clickhouse
 
 import (
-	"fmt"
 	"testing"
 
 	"akvorado/common/clickhousedb"
@@ -75,30 +74,13 @@ func TestHTTPEndpoints(t *testing.T) {
 				`192.0.2.0/24,infra,,,,,,,,`,
 			},
 		}, {
-			URL:         "/api/v0/orchestrator/clickhouse/init.sh",
-			ContentType: "text/x-shellscript",
-			FirstLines: []string{
-				`#!/bin/sh`,
-				``,
-				`# Install Protobuf schema`,
-				`mkdir -p /var/lib/clickhouse/format_schemas`,
-				fmt.Sprintf(`echo "Install flow schema flow-%s.proto"`,
-					c.d.Schema.ProtobufMessageHash()),
-				fmt.Sprintf(`cat > /var/lib/clickhouse/format_schemas/flow-%s.proto <<'EOPROTO'`,
-					c.d.Schema.ProtobufMessageHash()),
-				"",
-				`syntax = "proto3";`,
-			},
-		},
-		{
 			URL:         "/api/v0/orchestrator/clickhouse/custom_dict_none.csv",
 			ContentType: "text/plain; charset=utf-8",
 			StatusCode:  404,
 			FirstLines: []string{
 				"unable to deliver custom dict csv file none.csv",
 			},
-		},
-		{
+		}, {
 			URL:         "/api/v0/orchestrator/clickhouse/custom_dict_test.csv",
 			ContentType: "text/csv; charset=utf-8",
 			FirstLines: []string{
