@@ -372,14 +372,3 @@ FROM system.errors
 ORDER BY last_error_time LIMIT 10
 FORMAT Vertical
 ```
-
-Notably, it may complain about a missing schema for a received
-message. In this case, you need to ensure the schemas used by
-*Akvorado* are available. When using `docker compose`, you can restart
-the orchestrator and ClickHouse to ensure it downloads the latest
-schemas. Otherwise, you can manually execute the script installing the
-schemas on your ClickHouse server and restart:
-
-```sh
-curl http://akvorado/api/v0/orchestrator/clickhouse/init.sh | sh
-```

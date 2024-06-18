@@ -12,8 +12,8 @@ services:
     depends_on:
       - zookeeper
     volumes:
-      - ./clickhouse-cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
-      - ./clickhouse-cluster-1.xml:/etc/clickhouse-server/config.d/cluster-1.xml
+      - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
+      - ./clickhouse/cluster-1.xml:/etc/clickhouse-server/config.d/cluster-1.xml
   clickhouse-2:
     extends:
       file: docker-compose.yml
@@ -21,8 +21,8 @@ services:
     depends_on:
       - zookeeper
     volumes:
-      - ./clickhouse-cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
-      - ./clickhouse-cluster-2.xml:/etc/clickhouse-server/config.d/cluster-2.xml
+      - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
+      - ./clickhouse/cluster-2.xml:/etc/clickhouse-server/config.d/cluster-2.xml
       - akvorado-clickhouse-2:/var/lib/clickhouse
   clickhouse-3:
     extends:
@@ -31,8 +31,8 @@ services:
     depends_on:
       - zookeeper
     volumes:
-      - ./clickhouse-cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
-      - ./clickhouse-cluster-3.xml:/etc/clickhouse-server/config.d/cluster-3.xml
+      - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
+      - ./clickhouse/cluster-3.xml:/etc/clickhouse-server/config.d/cluster-3.xml
       - akvorado-clickhouse-3:/var/lib/clickhouse
   clickhouse-4:
     extends:
@@ -41,6 +41,6 @@ services:
     depends_on:
       - zookeeper
     volumes:
-      - ./clickhouse-cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
-      - ./clickhouse-cluster-4.xml:/etc/clickhouse-server/config.d/cluster-4.xml
+      - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
+      - ./clickhouse/cluster-4.xml:/etc/clickhouse-server/config.d/cluster-4.xml
       - akvorado-clickhouse-4:/var/lib/clickhouse
