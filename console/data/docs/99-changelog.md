@@ -25,6 +25,7 @@ identified with a specific icon:
 - 🌱 *docker*: add monitoring stack with Prometheus and Grafana (work in progress)
 - 🌱 *docker*: update to Traefik 3.0 (not mandatory)
 - 🌱 *docker*: update ClickHouse to 24.3 (not mandatory)
+- 🌱 *docker*: switch from Redis to Valkey (not mandatory)
 - 🌱 *docker*: build IPinfo update image to make it available for non-x86
   architectures and ensure the databases are downloaded only when an update is
   available
