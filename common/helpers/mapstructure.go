@@ -21,6 +21,39 @@ func RegisterMapstructureUnmarshallerHook(hook mapstructure.DecodeHookFunc) {
 	mapstructureUnmarshallerHookFuncs = append(mapstructureUnmarshallerHookFuncs, hook)
 }
 
+// RegisterMapstructureDeprecatedFields registers a decoder hook removing
+// deprecated fields. This should only be done during init.
+func RegisterMapstructureDeprecatedFields[V any](fieldNames ...string) {
+	RegisterMapstructureUnmarshallerHook(func(from, to reflect.Value) (interface{}, error) {
+		var zeroV V
+		from = ElemOrIdentity(from)
+		to = ElemOrIdentity(to)
+		if to.Type() != reflect.TypeOf(zeroV) {
+			return from.Interface(), nil
+		}
+		if from.Kind() != reflect.Map {
+			return from.Interface(), nil
+		}
+
+		mapKeys := from.MapKeys()
+		for _, key := range mapKeys {
+			var keyStr string
+			if ElemOrIdentity(key).Kind() == reflect.String {
+				keyStr = ElemOrIdentity(key).String()
+			} else {
+				continue
+			}
+			for _, fieldName := range fieldNames {
+				if MapStructureMatchName(keyStr, fieldName) {
+					from.SetMapIndex(key, reflect.Value{})
+				}
+			}
+		}
+
+		return from.Interface(), nil
+	})
+}
+
 // GetMapStructureDecoderConfig returns a decoder config for
 // mapstructure with all registered hooks as well as appropriate
 // default configuration.
