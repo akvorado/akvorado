@@ -47,11 +47,6 @@ type Configuration struct {
 	// OrchestratorBasicAuth holds optional basic auth credentials to reach
 	// orchestrator from ClickHouse
 	OrchestratorBasicAuth *ConfigurationBasicAuth
-
-	// SystemLogTTL is unused now.
-	SystemLogTTL time.Duration `yaml:"-"`
-	// PrometheusEndpoint is unused now.
-	PrometheusEndpoint string `yaml:"-"`
 }
 
 // ConfigurationBasicAuth holds Username and Password subfields
@@ -146,5 +141,6 @@ func NetworkAttributesUnmarshallerHook() mapstructure.DecodeHookFunc {
 func init() {
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[NetworkAttributes]())
 	helpers.RegisterMapstructureUnmarshallerHook(NetworkAttributesUnmarshallerHook())
+	helpers.RegisterMapstructureDeprecatedFields[Configuration]("SystemLogTTL", "PrometheusEndpoint")
 	helpers.RegisterSubnetMapValidation[NetworkAttributes]()
 }
