@@ -1,0 +1,5 @@
+---
+absent-paths:
+  - clickhouse.systemlogttl
+  - clickhouse.prometheusendpoint
+  - clickhouse.nothing
