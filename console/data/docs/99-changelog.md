@@ -11,7 +11,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.11.0 - 2024-06-26
 
 - 💥 *console*: persist metadata cache on the default `docker compose` setup
 - 🩹 *orchestrator*: fix population of `DstNetSite` and `SrcNetSite`
