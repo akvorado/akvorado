@@ -22,7 +22,7 @@ identified with a specific icon:
 - 🌱 *console*: enable round-robin for ClickHouse connections
 - 🌱 *console*: display TCP and UDP port names if known
 - 🌱 *orchestrator*: add ClickHouse version check for INTERPOLATE bug
-- 🌱 *docker*: add monitoring stack with Prometheus and Grafana (work in progress)
+- 🌱 *docker*: add monitoring stack with Prometheus and Grafana (work in progress, not enabled by default, check `.env`)
 - 🌱 *docker*: update to Traefik 3.0 (not mandatory)
 - 🌱 *docker*: update ClickHouse to 24.3 (not mandatory)
 - 🌱 *docker*: switch from Redis to Valkey (not mandatory)
