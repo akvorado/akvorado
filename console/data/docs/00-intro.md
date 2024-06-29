@@ -21,6 +21,7 @@ install the `docker-compose-v2` package. On macOS, you can use the
 # mkdir akvorado
 # cd akvorado
 # curl -sL https://github.com/akvorado/akvorado/releases/latest/download/docker-compose-quickstart.tar.gz | tar zxvf -
+# docker compose build
 # docker compose up -d
 ```
 

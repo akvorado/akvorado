@@ -17,10 +17,10 @@ You can get *Akvorado* as a
 # docker run --rm ghcr.io/akvorado/akvorado:latest help
 ```
 
-Check the `docker-compose.yml` file for an example on how to deploy *Akvorado*
-using containers. If you want to use `docker compose`, have a look at the [quick
-start procedure](00-intro.md#quick-start). This documentation assumes you are
-running the `docker compose` setup.
+Check the `docker/docker-compose.yml` file for an example on how to deploy
+*Akvorado* using containers. If you want to use `docker compose`, have a look at
+the [quick start procedure](00-intro.md#quick-start). This documentation assumes
+you are running the `docker compose` setup.
 
 If you want to compile the Docker image yourself, you can use `make docker`.
 
@@ -102,6 +102,7 @@ When using `docker compose`, use the following commands to fetch an updated
 # curl -sL https://github.com/akvorado/akvorado/releases/latest/download/docker-compose-quickstart.tar.gz | tar zxvf - docker-compose.yml
 # docker compose pull
 # docker compose stop akvorado-orchestrator
+# docker compose build
 # docker compose up -d
 ```
 
