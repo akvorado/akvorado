@@ -7,4 +7,7 @@ VOLUME /data
 
 COPY --chmod=555 ipinfo-geoipupdate.sh /usr/local/bin/ipinfo-geoipupdate.sh
 
+LABEL org.opencontainers.image.source=https://github.com/akvorado/akvorado
+LABEL org.opencontainers.image.description="IPinfo database updater"
+LABEL org.opencontainers.image.licenses=AGPL-3.0-only
 CMD ["/usr/local/bin/ipinfo-geoipupdate.sh"]
