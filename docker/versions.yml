@@ -15,6 +15,9 @@ services:
     image: ghcr.io/maxmind/geoipupdate:v7
   ipinfo-geoipupdate:
     image: ghcr.io/akvorado/ipinfo-geoipupdate:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.ipinfo-geoipupdate
   akvorado:
     image: ghcr.io/akvorado/akvorado:main
 
