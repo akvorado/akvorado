@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Next version
+
+- 🌱 *docker*: build IPinfo updater image from CI
+
 ## 1.11.0 - 2024-06-26
 
 - 💥 *console*: persist metadata cache on the default `docker compose` setup
@@ -26,7 +30,7 @@ identified with a specific icon:
 - 🌱 *docker*: update to Traefik 3.0 (not mandatory)
 - 🌱 *docker*: update ClickHouse to 24.3 (not mandatory)
 - 🌱 *docker*: switch from Redis to Valkey (not mandatory)
-- 🌱 *docker*: build IPinfo update image to make it available for non-x86
+- 🌱 *docker*: build IPinfo updater image to make it available for non-x86
   architectures and ensure the databases are downloaded only when an update is
   available
 

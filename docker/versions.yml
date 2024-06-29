@@ -13,6 +13,8 @@ services:
     image: traefik:v3.0
   maxmind-geoipupdate:
     image: ghcr.io/maxmind/geoipupdate:v7
+  ipinfo-geoipupdate:
+    image: ghcr.io/akvorado/ipinfo-geoipupdate:latest
   akvorado:
     image: ghcr.io/akvorado/akvorado:main
 
