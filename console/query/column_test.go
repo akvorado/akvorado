@@ -26,7 +26,7 @@ func TestUnmarshalQueryColumn(t *testing.T) {
 	for _, tc := range cases {
 		var qc query.Column
 		if err := qc.UnmarshalText([]byte(tc.Input)); err != nil {
-			t.Fatalf("UnmarshalText() error:\n%+v", err)
+			t.Fatalf("UnmarshalText(%q) error:\n%+v", tc.Input, err)
 		}
 		err := qc.Validate(schema.NewMock(t))
 		if err != nil && !tc.Error {

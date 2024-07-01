@@ -168,12 +168,12 @@ func TestSubnetMapUnmarshalHookWithMapValue(t *testing.T) {
 		Blop string
 	}
 	cases := []struct {
-		Description string
-		Input       gin.H
-		Expected    gin.H
+		Pos      helpers.Pos
+		Input    gin.H
+		Expected gin.H
 	}{
 		{
-			Description: "single value",
+			Pos: helpers.Mark(),
 			Input: gin.H{
 				"blip": "some",
 				"blop": "thing",
@@ -185,7 +185,7 @@ func TestSubnetMapUnmarshalHookWithMapValue(t *testing.T) {
 				},
 			},
 		}, {
-			Description: "proper map",
+			Pos: helpers.Mark(),
 			Input: gin.H{
 				"::/0": gin.H{
 					"blip": "some",
@@ -209,7 +209,7 @@ func TestSubnetMapUnmarshalHookWithMapValue(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
-		t.Run(tc.Description, func(t *testing.T) {
+		t.Run("sub", func(t *testing.T) {
 			var tree helpers.SubnetMap[SomeStruct]
 			decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
 				Result:      &tree,
@@ -218,14 +218,14 @@ func TestSubnetMapUnmarshalHookWithMapValue(t *testing.T) {
 				DecodeHook:  helpers.SubnetMapUnmarshallerHook[SomeStruct](),
 			})
 			if err != nil {
-				t.Fatalf("NewDecoder() error:\n%+v", err)
+				t.Fatalf("%sNewDecoder() error:\n%+v", tc.Pos, err)
 			}
 			err = decoder.Decode(tc.Input)
 			if err != nil {
-				t.Fatalf("Decode() error:\n%+v", err)
+				t.Fatalf("%sDecode() error:\n%+v", tc.Pos, err)
 			}
 			if diff := helpers.Diff(tree.ToMap(), tc.Expected); diff != "" {
-				t.Fatalf("Decode() (-got, +want):\n%s", diff)
+				t.Fatalf("%sDecode() (-got, +want):\n%s", tc.Pos, diff)
 			}
 		})
 	}

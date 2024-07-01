@@ -19,6 +19,7 @@ import (
 // may mutate the configuration.
 type ConfigurationDecodeCases []struct {
 	Description    string
+	Pos            Pos
 	Initial        func() interface{} // initial value for configuration
 	Configuration  func() interface{} // configuration to decode
 	Expected       interface{}
@@ -45,10 +46,10 @@ func TestConfigurationDecode(t *testing.T, cases ConfigurationDecodeCases, optio
 					// Encode and decode with YAML
 					out, err := yaml.Marshal(tc.Configuration())
 					if err != nil {
-						t.Fatalf("yaml.Marshal() error:\n%+v", err)
+						t.Fatalf("%syaml.Marshal() error:\n%+v", tc.Pos, err)
 					}
 					if err := yaml.Unmarshal(out, &configuration); err != nil {
-						t.Fatalf("yaml.Unmarshal() error:\n%+v", err)
+						t.Fatalf("%syaml.Unmarshal() error:\n%+v", tc.Pos, err)
 					}
 				} else {
 					// Just use as is
@@ -58,11 +59,11 @@ func TestConfigurationDecode(t *testing.T, cases ConfigurationDecodeCases, optio
 
 				decoder, err := mapstructure.NewDecoder(GetMapStructureDecoderConfig(&got))
 				if err != nil {
-					t.Fatalf("NewDecoder() error:\n%+v", err)
+					t.Fatalf("%sNewDecoder() error:\n%+v", tc.Pos, err)
 				}
 				err = decoder.Decode(configuration)
 				if err != nil && !tc.Error {
-					t.Fatalf("Decode() error:\n%+v", err)
+					t.Fatalf("%sDecode() error:\n%+v", tc.Pos, err)
 				} else if tc.Error && err != nil {
 					return
 				}
@@ -70,21 +71,21 @@ func TestConfigurationDecode(t *testing.T, cases ConfigurationDecodeCases, optio
 				if !tc.SkipValidation {
 					err = Validate.Struct(got)
 					if err != nil && !tc.Error {
-						t.Fatalf("Validate() error:\n%+v", err)
+						t.Fatalf("%sValidate() error:\n%+v", tc.Pos, err)
 					} else if tc.Error && err != nil {
 						return
 					}
 					if tc.Error {
-						t.Errorf("Decode() and Validate() did not error")
+						t.Errorf("%sDecode() and Validate() did not error", tc.Pos)
 					}
 				} else {
 					if tc.Error {
-						t.Errorf("Decode() did not error")
+						t.Errorf("%sDecode() did not error", tc.Pos)
 					}
 				}
 
 				if diff := Diff(got, tc.Expected, options...); diff != "" && err == nil {
-					t.Fatalf("Decode() (-got, +want):\n%s", diff)
+					t.Fatalf("%sDecode() (-got, +want):\n%s", tc.Pos, diff)
 				}
 			})
 		}

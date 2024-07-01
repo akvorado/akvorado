@@ -10,8 +10,11 @@ package helpers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
 	"time"
 )
@@ -97,4 +100,24 @@ type starter interface {
 }
 type stopper interface {
 	Stop() error
+}
+
+// Pos is a file:line recording a test data position.
+type Pos struct {
+	file string
+	line int
+}
+
+// Mark reports the file:line position of the source file in which it appears.
+func Mark() Pos {
+	_, file, line, _ := runtime.Caller(1)
+	return Pos{filepath.Base(file), line}
+}
+
+// String returns a textual representation of a Pos.
+func (p Pos) String() string {
+	if p.file != "" {
+		return fmt.Sprintf("%s:%d", p.file, p.line)
+	}
+	return ""
 }

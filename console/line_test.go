@@ -61,42 +61,54 @@ func TestGraphLineInputReverseDirection(t *testing.T) {
 func TestGraphPreviousPeriod(t *testing.T) {
 	const longForm = "Jan 2, 2006 at 15:04"
 	cases := []struct {
+		Pos           helpers.Pos
 		Start         string
 		End           string
 		ExpectedStart string
 		ExpectedEnd   string
 	}{
 		{
+			helpers.Mark(),
 			"Jan 2, 2020 at 15:04", "Jan 2, 2020 at 16:04",
 			"Jan 2, 2020 at 14:04", "Jan 2, 2020 at 15:04",
 		}, {
+			helpers.Mark(),
 			"Jan 2, 2020 at 15:04", "Jan 2, 2020 at 16:34",
 			"Jan 2, 2020 at 14:04", "Jan 2, 2020 at 15:34",
 		}, {
+			helpers.Mark(),
 			"Jan 2, 2020 at 15:04", "Jan 2, 2020 at 17:34",
 			"Jan 1, 2020 at 15:04", "Jan 1, 2020 at 17:34",
 		}, {
+			helpers.Mark(),
 			"Jan 2, 2020 at 15:04", "Jan 3, 2020 at 17:34",
 			"Jan 1, 2020 at 15:04", "Jan 2, 2020 at 17:34",
 		}, {
+			helpers.Mark(),
 			"Jan 10, 2020 at 15:04", "Jan 13, 2020 at 17:34",
 			"Jan 3, 2020 at 15:04", "Jan 6, 2020 at 17:34",
 		}, {
+			helpers.Mark(),
 			"Jan 10, 2020 at 15:04", "Jan 15, 2020 at 17:34",
 			"Jan 3, 2020 at 15:04", "Jan 8, 2020 at 17:34",
 		}, {
+			helpers.Mark(),
 			"Jan 10, 2020 at 15:04", "Jan 20, 2020 at 17:34",
 			"Jan 3, 2020 at 15:04", "Jan 13, 2020 at 17:34",
 		}, {
+			helpers.Mark(),
 			"Feb 10, 2020 at 15:04", "Feb 25, 2020 at 17:34",
 			"Jan 13, 2020 at 15:04", "Jan 28, 2020 at 17:34",
 		}, {
+			helpers.Mark(),
 			"Feb 10, 2020 at 15:04", "Mar 25, 2020 at 17:34",
 			"Jan 13, 2020 at 15:04", "Feb 26, 2020 at 17:34",
 		}, {
+			helpers.Mark(),
 			"Feb 10, 2020 at 15:04", "Jul 25, 2020 at 17:34",
 			"Feb 10, 2019 at 15:04", "Jul 25, 2019 at 17:34",
 		}, {
+			helpers.Mark(),
 			"Feb 10, 2019 at 15:04", "Jul 25, 2020 at 17:34",
 			"Feb 10, 2018 at 15:04", "Jul 25, 2019 at 17:34",
 		},
@@ -105,19 +117,19 @@ func TestGraphPreviousPeriod(t *testing.T) {
 		t.Run(fmt.Sprintf("%s to %s", tc.Start, tc.End), func(t *testing.T) {
 			start, err := time.Parse(longForm, tc.Start)
 			if err != nil {
-				t.Fatalf("time.Parse(%q) error:\n%+v", tc.Start, err)
+				t.Fatalf("%stime.Parse(%q) error:\n%+v", tc.Pos, tc.Start, err)
 			}
 			end, err := time.Parse(longForm, tc.End)
 			if err != nil {
-				t.Fatalf("time.Parse(%q) error:\n%+v", tc.End, err)
+				t.Fatalf("%stime.Parse(%q) error:\n%+v", tc.Pos, tc.End, err)
 			}
 			expectedStart, err := time.Parse(longForm, tc.ExpectedStart)
 			if err != nil {
-				t.Fatalf("time.Parse(%q) error:\n%+v", tc.ExpectedStart, err)
+				t.Fatalf("%stime.Parse(%q) error:\n%+v", tc.Pos, tc.ExpectedStart, err)
 			}
 			expectedEnd, err := time.Parse(longForm, tc.ExpectedEnd)
 			if err != nil {
-				t.Fatalf("time.Parse(%q) error:\n%+v", tc.ExpectedEnd, err)
+				t.Fatalf("%stime.Parse(%q) error:\n%+v", tc.Pos, tc.ExpectedEnd, err)
 			}
 			input := graphLineHandlerInput{
 				graphCommonHandlerInput: graphCommonHandlerInput{
@@ -140,7 +152,7 @@ func TestGraphPreviousPeriod(t *testing.T) {
 				},
 			}
 			if diff := helpers.Diff(got, expected); diff != "" {
-				t.Fatalf("previousPeriod() (-got, +want):\n%s", diff)
+				t.Fatalf("%spreviousPeriod() (-got, +want):\n%s", tc.Pos, diff)
 			}
 		})
 	}
@@ -149,11 +161,13 @@ func TestGraphPreviousPeriod(t *testing.T) {
 func TestGraphQuerySQL(t *testing.T) {
 	cases := []struct {
 		Description string
+		Pos         helpers.Pos
 		Input       graphLineHandlerInput
 		Expected    string
 	}{
 		{
 			Description: "no dimensions, no filters, bps",
+			Pos:         helpers.Mark(),
 			Input: graphLineHandlerInput{
 				graphCommonHandlerInput: graphCommonHandlerInput{
 					Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
@@ -184,6 +198,7 @@ ORDER BY time WITH FILL
 {{ end }}`,
 		}, {
 			Description: "no dimensions, no filters, l2 bps",
+			Pos:         helpers.Mark(),
 			Input: graphLineHandlerInput{
 				graphCommonHandlerInput: graphCommonHandlerInput{
 					Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
@@ -215,6 +230,7 @@ ORDER BY time WITH FILL
 `,
 		}, {
 			Description: "no dimensions, no filters, pps",
+			Pos:         helpers.Mark(),
 			Input: graphLineHandlerInput{
 				graphCommonHandlerInput: graphCommonHandlerInput{
 					Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
@@ -245,6 +261,7 @@ ORDER BY time WITH FILL
 {{ end }}`,
 		}, {
 			Description: "truncated source address",
+			Pos:         helpers.Mark(),
 			Input: graphLineHandlerInput{
 				graphCommonHandlerInput: graphCommonHandlerInput{
 					Start:          time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
@@ -278,6 +295,7 @@ ORDER BY time WITH FILL
 {{ end }}`,
 		}, {
 			Description: "no dimensions",
+			Pos:         helpers.Mark(),
 			Input: graphLineHandlerInput{
 				graphCommonHandlerInput: graphCommonHandlerInput{
 					Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
@@ -308,6 +326,7 @@ ORDER BY time WITH FILL
 {{ end }}`,
 		}, {
 			Description: "no dimensions, escaped filter",
+			Pos:         helpers.Mark(),
 			Input: graphLineHandlerInput{
 				graphCommonHandlerInput: graphCommonHandlerInput{
 					Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
@@ -338,6 +357,7 @@ ORDER BY time WITH FILL
 {{ end }}`,
 		}, {
 			Description: "no dimensions, reverse direction",
+			Pos:         helpers.Mark(),
 			Input: graphLineHandlerInput{
 				graphCommonHandlerInput: graphCommonHandlerInput{
 					Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
@@ -385,6 +405,7 @@ ORDER BY time WITH FILL
 {{ end }}`,
 		}, {
 			Description: "no dimensions, reverse direction, inl2%",
+			Pos:         helpers.Mark(),
 			Input: graphLineHandlerInput{
 				graphCommonHandlerInput: graphCommonHandlerInput{
 					Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
@@ -432,6 +453,7 @@ ORDER BY time WITH FILL
 {{ end }}`,
 		}, {
 			Description: "no filters",
+			Pos:         helpers.Mark(),
 			Input: graphLineHandlerInput{
 				graphCommonHandlerInput: graphCommonHandlerInput{
 					Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
@@ -467,6 +489,7 @@ ORDER BY time WITH FILL
 {{ end }}`,
 		}, {
 			Description: "no filters, reverse",
+			Pos:         helpers.Mark(),
 			Input: graphLineHandlerInput{
 				graphCommonHandlerInput: graphCommonHandlerInput{
 					Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
@@ -519,6 +542,7 @@ ORDER BY time WITH FILL
 {{ end }}`,
 		}, {
 			Description: "no filters, previous period",
+			Pos:         helpers.Mark(),
 			Input: graphLineHandlerInput{
 				graphCommonHandlerInput: graphCommonHandlerInput{
 					Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
@@ -574,17 +598,17 @@ ORDER BY time WITH FILL
 	for _, tc := range cases {
 		tc.Input.schema = schema.NewMock(t)
 		if err := query.Columns(tc.Input.Dimensions).Validate(tc.Input.schema); err != nil {
-			t.Fatalf("Validate() error:\n%+v", err)
+			t.Fatalf("%sValidate() error:\n%+v", tc.Pos, err)
 		}
 		if err := tc.Input.Filter.Validate(tc.Input.schema); err != nil {
-			t.Fatalf("Validate() error:\n%+v", err)
+			t.Fatalf("%sValidate() error:\n%+v", tc.Pos, err)
 		}
 		tc.Expected = strings.ReplaceAll(tc.Expected, "@@", "`")
 		t.Run(tc.Description, func(t *testing.T) {
 			got := tc.Input.toSQL()
 			if diff := helpers.Diff(strings.Split(strings.TrimSpace(got), "\n"),
 				strings.Split(strings.TrimSpace(tc.Expected), "\n")); diff != "" {
-				t.Errorf("toSQL (-got, +want):\n%s", diff)
+				t.Errorf("%stoSQL (-got, +want):\n%s", tc.Pos, diff)
 			}
 		})
 	}

@@ -204,8 +204,8 @@ func TestStartWithMissingDatabase(t *testing.T) {
 		Name   string
 		Config Configuration
 	}{
-		{"Inexisting geo database", geoConfiguration},
-		{"Inexisting ASN database", asnConfiguration},
+		{"inexisting geo database", geoConfiguration},
+		{"inexisting ASN database", asnConfiguration},
 	}
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {

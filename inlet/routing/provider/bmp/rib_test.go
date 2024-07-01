@@ -11,6 +11,8 @@ import (
 	"testing"
 	"unsafe"
 
+	"akvorado/common/helpers"
+
 	"github.com/kentik/patricia"
 	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
 )
@@ -37,108 +39,129 @@ func TestLargeCommunitiesAlign(t *testing.T) {
 
 func TestRTAEqual(t *testing.T) {
 	cases := []struct {
+		pos   helpers.Pos
 		rta1  routeAttributes
 		rta2  routeAttributes
 		equal bool
 	}{
-		{routeAttributes{asn: 2038}, routeAttributes{asn: 2038}, true},
-		{routeAttributes{asn: 2038}, routeAttributes{asn: 2039}, false},
+		{helpers.Mark(), routeAttributes{asn: 2038}, routeAttributes{asn: 2038}, true},
+		{helpers.Mark(), routeAttributes{asn: 2038}, routeAttributes{asn: 2039}, false},
 		{
+			helpers.Mark(),
 			routeAttributes{asn: 2038, asPath: []uint32{}},
 			routeAttributes{asn: 2038},
 			true,
 		},
 		{
+			helpers.Mark(),
 			routeAttributes{asn: 2038, asPath: []uint32{}},
 			routeAttributes{asn: 2039},
 			false,
 		},
 		{
+			helpers.Mark(),
 			routeAttributes{asn: 2038, communities: []uint32{}},
 			routeAttributes{asn: 2038},
 			true,
 		},
 		{
+			helpers.Mark(),
 			routeAttributes{asn: 2038, communities: []uint32{}},
 			routeAttributes{asn: 2039},
 			false,
 		},
 		{
+			helpers.Mark(),
 			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{}},
 			routeAttributes{asn: 2038},
 			true,
 		},
 		{
+			helpers.Mark(),
 			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{}},
 			routeAttributes{asn: 2039},
 			false,
 		},
 		{
+			helpers.Mark(),
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3}},
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3}},
 			true,
 		},
 		{
+			helpers.Mark(),
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3}},
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 4}},
 			false,
 		},
 		{
+			helpers.Mark(),
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3}},
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 0}},
 			false,
 		},
 		{
+			helpers.Mark(),
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3}},
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 4}},
 			false,
 		},
 		{
+			helpers.Mark(),
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 4}},
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 4}},
 			true,
 		},
 		{
+			helpers.Mark(),
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34}},
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34}},
 			true,
 		},
 		{
+			helpers.Mark(),
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34}},
 			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 35}},
 			false,
 		},
 		{
+			helpers.Mark(),
 			routeAttributes{asn: 2038, communities: []uint32{100, 200, 300, 400}},
 			routeAttributes{asn: 2038, communities: []uint32{100, 200, 300, 400}},
 			true,
 		},
 		{
+			helpers.Mark(),
 			routeAttributes{asn: 2038, communities: []uint32{100, 200, 300, 400}},
 			routeAttributes{asn: 2038, communities: []uint32{100, 200, 300, 402}},
 			false,
 		},
 		{
+			helpers.Mark(),
 			routeAttributes{asn: 2038, communities: []uint32{100, 200, 300}},
 			routeAttributes{asn: 2038, communities: []uint32{100, 200, 300, 400}},
 			false,
 		},
 		{
+			helpers.Mark(),
 			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}, {ASN: 3, LocalData1: 4, LocalData2: 5}, {ASN: 5, LocalData1: 6, LocalData2: 7}}},
 			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}, {ASN: 3, LocalData1: 4, LocalData2: 5}, {ASN: 5, LocalData1: 6, LocalData2: 7}}},
 			true,
 		},
 		{
+			helpers.Mark(),
 			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}, {ASN: 3, LocalData1: 4, LocalData2: 5}, {ASN: 5, LocalData1: 6, LocalData2: 7}}},
 			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}, {ASN: 3, LocalData1: 4, LocalData2: 5}, {ASN: 5, LocalData1: 6, LocalData2: 8}}},
 			false,
 		},
 		{
+			helpers.Mark(),
 			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}, {ASN: 3, LocalData1: 4, LocalData2: 5}, {ASN: 5, LocalData1: 6, LocalData2: 7}}},
 			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 4}, {ASN: 3, LocalData1: 4, LocalData2: 5}, {ASN: 5, LocalData1: 6, LocalData2: 7}}},
 			false,
 		},
 		{
+			helpers.Mark(),
 			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}, {ASN: 3, LocalData1: 4, LocalData2: 5}}},
 			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}, {ASN: 3, LocalData1: 4, LocalData2: 5}, {ASN: 5, LocalData1: 6, LocalData2: 7}}},
 			false,
@@ -152,9 +175,9 @@ outer:
 		for _, tc := range cases {
 			equal := tc.rta1.Equal(tc.rta2)
 			if equal && !tc.equal {
-				t.Errorf("%+v == %+v", tc.rta1, tc.rta2)
+				t.Errorf("%s%+v == %+v", tc.pos, tc.rta1, tc.rta2)
 			} else if !equal && tc.equal {
-				t.Errorf("%+v != %+v", tc.rta1, tc.rta2)
+				t.Errorf("%s%+v != %+v", tc.pos, tc.rta1, tc.rta2)
 			} else {
 				equal := tc.rta1.Hash() == tc.rta2.Hash()
 				if equal && !tc.equal {
@@ -163,9 +186,9 @@ outer:
 						rtaHashSeed = maphash.MakeSeed()
 						continue outer
 					}
-					t.Errorf("%+v.hash == %+v.hash", tc.rta1, tc.rta2)
+					t.Errorf("%s%+v.hash == %+v.hash", tc.pos, tc.rta1, tc.rta2)
 				} else if !equal && tc.equal {
-					t.Errorf("%+v.hash != %+v.hash", tc.rta1, tc.rta2)
+					t.Errorf("%s%+v.hash != %+v.hash", tc.pos, tc.rta1, tc.rta2)
 				}
 			}
 		}

@@ -19,11 +19,13 @@ import (
 func TestSankeyQuerySQL(t *testing.T) {
 	cases := []struct {
 		Description string
+		Pos         helpers.Pos
 		Input       graphSankeyHandlerInput
 		Expected    string
 	}{
 		{
 			Description: "two dimensions, no filters, l3 bps",
+			Pos:         helpers.Mark(),
 			Input: graphSankeyHandlerInput{
 				graphCommonHandlerInput{
 					Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
@@ -54,6 +56,7 @@ ORDER BY xps DESC
 {{ end }}`,
 		}, {
 			Description: "two dimensions, no filters, l2 bps",
+			Pos:         helpers.Mark(),
 			Input: graphSankeyHandlerInput{
 				graphCommonHandlerInput{
 					Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
@@ -85,6 +88,7 @@ ORDER BY xps DESC
 `,
 		}, {
 			Description: "two dimensions, no filters, pps",
+			Pos:         helpers.Mark(),
 			Input: graphSankeyHandlerInput{
 				graphCommonHandlerInput{
 					Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
@@ -115,6 +119,7 @@ ORDER BY xps DESC
 {{ end }}`,
 		}, {
 			Description: "two dimensions, with filter",
+			Pos:         helpers.Mark(),
 			Input: graphSankeyHandlerInput{
 				graphCommonHandlerInput{
 					Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
@@ -148,17 +153,17 @@ ORDER BY xps DESC
 	for _, tc := range cases {
 		tc.Input.schema = schema.NewMock(t)
 		if err := query.Columns(tc.Input.Dimensions).Validate(tc.Input.schema); err != nil {
-			t.Fatalf("Validate() error:\n%+v", err)
+			t.Fatalf("%sValidate() error:\n%+v", tc.Pos, err)
 		}
 		if err := tc.Input.Filter.Validate(tc.Input.schema); err != nil {
-			t.Fatalf("Validate() error:\n%+v", err)
+			t.Fatalf("%sValidate() error:\n%+v", tc.Pos, err)
 		}
 		tc.Expected = strings.ReplaceAll(tc.Expected, "@@", "`")
 		t.Run(tc.Description, func(t *testing.T) {
 			got, _ := tc.Input.toSQL()
 			if diff := helpers.Diff(strings.Split(strings.TrimSpace(got), "\n"),
 				strings.Split(strings.TrimSpace(tc.Expected), "\n")); diff != "" {
-				t.Errorf("toSQL (-got, +want):\n%s", diff)
+				t.Errorf("%stoSQL (-got, +want):\n%s", tc.Pos, diff)
 			}
 		})
 	}

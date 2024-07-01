@@ -15,23 +15,24 @@ import (
 
 func TestMapStructureMatchName(t *testing.T) {
 	cases := []struct {
+		pos       Pos
 		mapKey    string
 		fieldName string
 		expected  bool
 	}{
-		{"one", "one", true},
-		{"one", "One", true},
-		{"one-two", "OneTwo", true},
-		{"onetwo", "OneTwo", true},
-		{"One-Two", "OneTwo", true},
-		{"two", "one", false},
+		{Mark(), "one", "one", true},
+		{Mark(), "one", "One", true},
+		{Mark(), "one-two", "OneTwo", true},
+		{Mark(), "onetwo", "OneTwo", true},
+		{Mark(), "One-Two", "OneTwo", true},
+		{Mark(), "two", "one", false},
 	}
 	for _, tc := range cases {
 		got := MapStructureMatchName(tc.mapKey, tc.fieldName)
 		if got && !tc.expected {
-			t.Errorf("%q == %q but expected !=", tc.mapKey, tc.fieldName)
+			t.Errorf("%s%q == %q but expected !=", tc.pos, tc.mapKey, tc.fieldName)
 		} else if !got && tc.expected {
-			t.Errorf("%q != %q but expected ==", tc.mapKey, tc.fieldName)
+			t.Errorf("%s%q != %q but expected ==", tc.pos, tc.mapKey, tc.fieldName)
 		}
 	}
 }

@@ -621,6 +621,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 
 func TestGetASNumber(t *testing.T) {
 	cases := []struct {
+		Pos       helpers.Pos
 		Addr      string
 		FlowAS    uint32
 		BMPAS     uint32
@@ -628,22 +629,21 @@ func TestGetASNumber(t *testing.T) {
 		Expected  uint32
 	}{
 		// 1
-		{"1.0.0.1", 12322, 0, []ASNProvider{ASNProviderFlow}, 12322},
-		{"::ffff:1.0.0.1", 12322, 0, []ASNProvider{ASNProviderFlow}, 12322},
-		{"1.0.0.1", 65536, 0, []ASNProvider{ASNProviderFlow}, 65536},
-		{"1.0.0.1", 65536, 0, []ASNProvider{ASNProviderFlowExceptPrivate}, 0},
-		{"1.0.0.1", 4_200_000_121, 0, []ASNProvider{ASNProviderFlowExceptPrivate}, 0},
-		{"1.0.0.1", 65536, 0, []ASNProvider{ASNProviderFlowExceptPrivate, ASNProviderFlow}, 65536},
-		{"1.0.0.1", 12322, 0, []ASNProvider{ASNProviderFlowExceptPrivate}, 12322},
+		{helpers.Mark(), "1.0.0.1", 12322, 0, []ASNProvider{ASNProviderFlow}, 12322},
+		{helpers.Mark(), "::ffff:1.0.0.1", 12322, 0, []ASNProvider{ASNProviderFlow}, 12322},
+		{helpers.Mark(), "1.0.0.1", 65536, 0, []ASNProvider{ASNProviderFlow}, 65536},
+		{helpers.Mark(), "1.0.0.1", 65536, 0, []ASNProvider{ASNProviderFlowExceptPrivate}, 0},
+		{helpers.Mark(), "1.0.0.1", 4_200_000_121, 0, []ASNProvider{ASNProviderFlowExceptPrivate}, 0},
+		{helpers.Mark(), "1.0.0.1", 65536, 0, []ASNProvider{ASNProviderFlowExceptPrivate, ASNProviderFlow}, 65536},
+		{helpers.Mark(), "1.0.0.1", 12322, 0, []ASNProvider{ASNProviderFlowExceptPrivate}, 12322},
 		// 10
-		{"192.0.2.2", 12322, 174, []ASNProvider{ASNProviderRouting}, 174},
-		{"192.0.2.129", 12322, 1299, []ASNProvider{ASNProviderRouting}, 1299},
-		{"192.0.2.254", 12322, 0, []ASNProvider{ASNProviderRouting}, 0},
-		{"1.0.0.1", 12322, 65300, []ASNProvider{ASNProviderRouting}, 65300},
+		{helpers.Mark(), "192.0.2.2", 12322, 174, []ASNProvider{ASNProviderRouting}, 174},
+		{helpers.Mark(), "192.0.2.129", 12322, 1299, []ASNProvider{ASNProviderRouting}, 1299},
+		{helpers.Mark(), "192.0.2.254", 12322, 0, []ASNProvider{ASNProviderRouting}, 0},
+		{helpers.Mark(), "1.0.0.1", 12322, 65300, []ASNProvider{ASNProviderRouting}, 65300},
 	}
-	for i, tc := range cases {
-		i++
-		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
+	for _, tc := range cases {
+		t.Run(fmt.Sprintf("case %s", tc.Pos), func(t *testing.T) {
 			r := reporter.NewMock(t)
 
 			// We don't need all components as we won't start the component.
@@ -658,11 +658,11 @@ func TestGetASNumber(t *testing.T) {
 				Schema:  schema.NewMock(t),
 			})
 			if err != nil {
-				t.Fatalf("New() error:\n%+v", err)
+				t.Fatalf("%sNew() error:\n%+v", tc.Pos, err)
 			}
 			got := c.getASNumber(tc.FlowAS, tc.BMPAS)
 			if diff := helpers.Diff(got, tc.Expected); diff != "" {
-				t.Fatalf("getASNumber() (-got, +want):\n%s", diff)
+				t.Fatalf("%sgetASNumber() (-got, +want):\n%s", tc.Pos, diff)
 			}
 		})
 	}
@@ -670,37 +670,36 @@ func TestGetASNumber(t *testing.T) {
 
 func TestGetNetMask(t *testing.T) {
 	cases := []struct {
-		//		Addr        string
+		Pos         helpers.Pos
 		FlowNetMask uint8
 		BMPNetMask  uint8
 		Providers   []NetProvider
 		Expected    uint8
 	}{
 		// Flow
-		{0, 0, []NetProvider{NetProviderFlow}, 0},
-		{32, 0, []NetProvider{NetProviderFlow}, 32},
-		{0, 16, []NetProvider{NetProviderFlow}, 0},
+		{helpers.Mark(), 0, 0, []NetProvider{NetProviderFlow}, 0},
+		{helpers.Mark(), 32, 0, []NetProvider{NetProviderFlow}, 32},
+		{helpers.Mark(), 0, 16, []NetProvider{NetProviderFlow}, 0},
 		// BMP
-		{0, 0, []NetProvider{NetProviderRouting}, 0},
-		{32, 12, []NetProvider{NetProviderRouting}, 12},
-		{0, 16, []NetProvider{NetProviderRouting}, 16},
-		{24, 0, []NetProvider{NetProviderRouting}, 0},
+		{helpers.Mark(), 0, 0, []NetProvider{NetProviderRouting}, 0},
+		{helpers.Mark(), 32, 12, []NetProvider{NetProviderRouting}, 12},
+		{helpers.Mark(), 0, 16, []NetProvider{NetProviderRouting}, 16},
+		{helpers.Mark(), 24, 0, []NetProvider{NetProviderRouting}, 0},
 		// Both, the first provider with a non-default route is taken
-		{0, 0, []NetProvider{NetProviderRouting, NetProviderFlow}, 0},
-		{12, 0, []NetProvider{NetProviderRouting, NetProviderFlow}, 12},
-		{0, 13, []NetProvider{NetProviderRouting, NetProviderFlow}, 13},
-		{12, 0, []NetProvider{NetProviderRouting, NetProviderFlow}, 12},
-		{12, 24, []NetProvider{NetProviderRouting, NetProviderFlow}, 24},
+		{helpers.Mark(), 0, 0, []NetProvider{NetProviderRouting, NetProviderFlow}, 0},
+		{helpers.Mark(), 12, 0, []NetProvider{NetProviderRouting, NetProviderFlow}, 12},
+		{helpers.Mark(), 0, 13, []NetProvider{NetProviderRouting, NetProviderFlow}, 13},
+		{helpers.Mark(), 12, 0, []NetProvider{NetProviderRouting, NetProviderFlow}, 12},
+		{helpers.Mark(), 12, 24, []NetProvider{NetProviderRouting, NetProviderFlow}, 24},
 
-		{0, 0, []NetProvider{NetProviderFlow, NetProviderRouting}, 0},
-		{12, 0, []NetProvider{NetProviderFlow, NetProviderRouting}, 12},
-		{0, 13, []NetProvider{NetProviderFlow, NetProviderRouting}, 13},
-		{12, 0, []NetProvider{NetProviderFlow, NetProviderRouting}, 12},
-		{12, 24, []NetProvider{NetProviderFlow, NetProviderRouting}, 12},
+		{helpers.Mark(), 0, 0, []NetProvider{NetProviderFlow, NetProviderRouting}, 0},
+		{helpers.Mark(), 12, 0, []NetProvider{NetProviderFlow, NetProviderRouting}, 12},
+		{helpers.Mark(), 0, 13, []NetProvider{NetProviderFlow, NetProviderRouting}, 13},
+		{helpers.Mark(), 12, 0, []NetProvider{NetProviderFlow, NetProviderRouting}, 12},
+		{helpers.Mark(), 12, 24, []NetProvider{NetProviderFlow, NetProviderRouting}, 12},
 	}
-	for i, tc := range cases {
-		i++
-		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
+	for _, tc := range cases {
+		t.Run(fmt.Sprintf("case %s", tc.Pos), func(t *testing.T) {
 			r := reporter.NewMock(t)
 
 			// We don't need all components as we won't start the component.
@@ -729,35 +728,35 @@ func TestGetNextHop(t *testing.T) {
 	nh1 := netip.MustParseAddr("2001:db8::1")
 	nh2 := netip.MustParseAddr("2001:db8::2")
 	cases := []struct {
+		Pos            helpers.Pos
 		FlowNextHop    netip.Addr
 		RoutingNextHop netip.Addr
 		Providers      []NetProvider
 		Expected       netip.Addr
 	}{
 		// Flow
-		{netip.IPv6Unspecified(), netip.IPv6Unspecified(), []NetProvider{NetProviderFlow}, netip.IPv6Unspecified()},
-		{nh1, netip.IPv6Unspecified(), []NetProvider{NetProviderFlow}, nh1},
-		{netip.IPv6Unspecified(), nh1, []NetProvider{NetProviderFlow}, netip.IPv6Unspecified()},
+		{helpers.Mark(), netip.IPv6Unspecified(), netip.IPv6Unspecified(), []NetProvider{NetProviderFlow}, netip.IPv6Unspecified()},
+		{helpers.Mark(), nh1, netip.IPv6Unspecified(), []NetProvider{NetProviderFlow}, nh1},
+		{helpers.Mark(), netip.IPv6Unspecified(), nh1, []NetProvider{NetProviderFlow}, netip.IPv6Unspecified()},
 		// Routing
-		{netip.IPv6Unspecified(), netip.IPv6Unspecified(), []NetProvider{NetProviderRouting}, netip.IPv6Unspecified()},
-		{nh1, netip.IPv6Unspecified(), []NetProvider{NetProviderRouting}, netip.IPv6Unspecified()},
-		{netip.IPv6Unspecified(), nh1, []NetProvider{NetProviderRouting}, nh1},
+		{helpers.Mark(), netip.IPv6Unspecified(), netip.IPv6Unspecified(), []NetProvider{NetProviderRouting}, netip.IPv6Unspecified()},
+		{helpers.Mark(), nh1, netip.IPv6Unspecified(), []NetProvider{NetProviderRouting}, netip.IPv6Unspecified()},
+		{helpers.Mark(), netip.IPv6Unspecified(), nh1, []NetProvider{NetProviderRouting}, nh1},
 		// Both
-		{netip.IPv6Unspecified(), netip.IPv6Unspecified(), []NetProvider{NetProviderRouting, NetProviderFlow}, netip.IPv6Unspecified()},
-		{nh1, netip.IPv6Unspecified(), []NetProvider{NetProviderRouting, NetProviderFlow}, nh1},
-		{netip.IPv6Unspecified(), nh2, []NetProvider{NetProviderRouting, NetProviderFlow}, nh2},
-		{nh1, netip.IPv6Unspecified(), []NetProvider{NetProviderRouting, NetProviderFlow}, nh1},
-		{nh1, nh2, []NetProvider{NetProviderRouting, NetProviderFlow}, nh2},
+		{helpers.Mark(), netip.IPv6Unspecified(), netip.IPv6Unspecified(), []NetProvider{NetProviderRouting, NetProviderFlow}, netip.IPv6Unspecified()},
+		{helpers.Mark(), nh1, netip.IPv6Unspecified(), []NetProvider{NetProviderRouting, NetProviderFlow}, nh1},
+		{helpers.Mark(), netip.IPv6Unspecified(), nh2, []NetProvider{NetProviderRouting, NetProviderFlow}, nh2},
+		{helpers.Mark(), nh1, netip.IPv6Unspecified(), []NetProvider{NetProviderRouting, NetProviderFlow}, nh1},
+		{helpers.Mark(), nh1, nh2, []NetProvider{NetProviderRouting, NetProviderFlow}, nh2},
 
-		{netip.IPv6Unspecified(), netip.IPv6Unspecified(), []NetProvider{NetProviderFlow, NetProviderRouting}, netip.IPv6Unspecified()},
-		{nh1, netip.IPv6Unspecified(), []NetProvider{NetProviderFlow, NetProviderRouting}, nh1},
-		{netip.IPv6Unspecified(), nh2, []NetProvider{NetProviderFlow, NetProviderRouting}, nh2},
-		{nh1, netip.IPv6Unspecified(), []NetProvider{NetProviderFlow, NetProviderRouting}, nh1},
-		{nh1, nh2, []NetProvider{NetProviderFlow, NetProviderRouting}, nh1},
+		{helpers.Mark(), netip.IPv6Unspecified(), netip.IPv6Unspecified(), []NetProvider{NetProviderFlow, NetProviderRouting}, netip.IPv6Unspecified()},
+		{helpers.Mark(), nh1, netip.IPv6Unspecified(), []NetProvider{NetProviderFlow, NetProviderRouting}, nh1},
+		{helpers.Mark(), netip.IPv6Unspecified(), nh2, []NetProvider{NetProviderFlow, NetProviderRouting}, nh2},
+		{helpers.Mark(), nh1, netip.IPv6Unspecified(), []NetProvider{NetProviderFlow, NetProviderRouting}, nh1},
+		{helpers.Mark(), nh1, nh2, []NetProvider{NetProviderFlow, NetProviderRouting}, nh1},
 	}
-	for i, tc := range cases {
-		i++
-		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
+	for _, tc := range cases {
+		t.Run(fmt.Sprintf("case %s", tc.Pos), func(t *testing.T) {
 			r := reporter.NewMock(t)
 
 			// We don't need all components as we won't start the component.

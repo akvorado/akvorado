@@ -15,28 +15,29 @@ func TestListenValidator(t *testing.T) {
 		Listen string `validate:"listen"`
 	}{}
 	cases := []struct {
+		Pos    helpers.Pos
 		Listen string
 		Err    bool
 	}{
-		{"127.0.0.1:161", false},
-		{"localhost:161", false},
-		{"0.0.0.0:161", false},
-		{"0.0.0.0:0", false},
-		{":161", false},
-		{":0", false},
-		{"127.0.0.1:0", false},
-		{"localhost", true},
-		{"127.0.0.1", true},
-		{"127.0.0.1:what", true},
-		{"127.0.0.1:100000", true},
+		{helpers.Mark(), "127.0.0.1:161", false},
+		{helpers.Mark(), "localhost:161", false},
+		{helpers.Mark(), "0.0.0.0:161", false},
+		{helpers.Mark(), "0.0.0.0:0", false},
+		{helpers.Mark(), ":161", false},
+		{helpers.Mark(), ":0", false},
+		{helpers.Mark(), "127.0.0.1:0", false},
+		{helpers.Mark(), "localhost", true},
+		{helpers.Mark(), "127.0.0.1", true},
+		{helpers.Mark(), "127.0.0.1:what", true},
+		{helpers.Mark(), "127.0.0.1:100000", true},
 	}
 	for _, tc := range cases {
 		s.Listen = tc.Listen
 		err := helpers.Validate.Struct(s)
 		if err == nil && tc.Err {
-			t.Errorf("Validate.Struct(%q) expected an error", tc.Listen)
+			t.Errorf("%sValidate.Struct(%q) expected an error", tc.Pos, tc.Listen)
 		} else if err != nil && !tc.Err {
-			t.Errorf("Validate.Struct(%q) error:\n%+v", tc.Listen, err)
+			t.Errorf("%sValidate.Struct(%q) error:\n%+v", tc.Pos, tc.Listen, err)
 		}
 	}
 }
@@ -47,21 +48,22 @@ func TestNoIntersectWithValidator(t *testing.T) {
 		Set2 []string `validate:"ninterfield=Set1"`
 	}{}
 	cases := []struct {
+		Pos  helpers.Pos
 		Set1 []string
 		Set2 []string
 		Err  bool
 	}{
-		{nil, nil, false},
-		{nil, []string{"aaa"}, false},
-		{[]string{}, []string{"bbb"}, false},
-		{[]string{}, []string{"bbb"}, false},
-		{[]string{"bbb"}, nil, false},
-		{[]string{"aaa"}, []string{"bbb"}, false},
-		{[]string{"aaa", "ccc"}, []string{"bbb"}, false},
-		{[]string{"aaa"}, []string{"aaa"}, true},
-		{[]string{"aaa", "ccc"}, []string{"bbb", "ddd"}, false},
-		{[]string{"aaa", "ccc"}, []string{"bbb", "ccc"}, true},
-		{[]string{"aaa", "ccc"}, []string{"ccc", "bbb"}, true},
+		{helpers.Mark(), nil, nil, false},
+		{helpers.Mark(), nil, []string{"aaa"}, false},
+		{helpers.Mark(), []string{}, []string{"bbb"}, false},
+		{helpers.Mark(), []string{}, []string{"bbb"}, false},
+		{helpers.Mark(), []string{"bbb"}, nil, false},
+		{helpers.Mark(), []string{"aaa"}, []string{"bbb"}, false},
+		{helpers.Mark(), []string{"aaa", "ccc"}, []string{"bbb"}, false},
+		{helpers.Mark(), []string{"aaa"}, []string{"aaa"}, true},
+		{helpers.Mark(), []string{"aaa", "ccc"}, []string{"bbb", "ddd"}, false},
+		{helpers.Mark(), []string{"aaa", "ccc"}, []string{"bbb", "ccc"}, true},
+		{helpers.Mark(), []string{"aaa", "ccc"}, []string{"ccc", "bbb"}, true},
 	}
 	for _, tc := range cases {
 		s.Set1 = tc.Set1

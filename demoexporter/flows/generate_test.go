@@ -62,27 +62,28 @@ func TestRandomIP(t *testing.T) {
 
 func TestPeakHourDistance(t *testing.T) {
 	cases := []struct {
+		Pos      helpers.Pos
 		Peak     time.Duration
 		Now      time.Duration
 		Expected float64
 	}{
-		{6 * time.Hour, 6 * time.Hour, 1},
-		{6 * time.Hour, 0, 0.5},
-		{6 * time.Hour, 18 * time.Hour, 0},
-		{12 * time.Hour, 13 * time.Hour, 11. / 12},
-		{12 * time.Hour, 11 * time.Hour, 11. / 12},
-		{12 * time.Hour, 14 * time.Hour, 10. / 12},
-		{12 * time.Hour, 15 * time.Hour, 9. / 12},
-		{12 * time.Hour, 16 * time.Hour, 8. / 12},
-		{12 * time.Hour, 17 * time.Hour, 7. / 12},
-		{12 * time.Hour, 18 * time.Hour, 6. / 12},
-		{12 * time.Hour, 19 * time.Hour, 5. / 12},
+		{helpers.Mark(), 6 * time.Hour, 6 * time.Hour, 1},
+		{helpers.Mark(), 6 * time.Hour, 0, 0.5},
+		{helpers.Mark(), 6 * time.Hour, 18 * time.Hour, 0},
+		{helpers.Mark(), 12 * time.Hour, 13 * time.Hour, 11. / 12},
+		{helpers.Mark(), 12 * time.Hour, 11 * time.Hour, 11. / 12},
+		{helpers.Mark(), 12 * time.Hour, 14 * time.Hour, 10. / 12},
+		{helpers.Mark(), 12 * time.Hour, 15 * time.Hour, 9. / 12},
+		{helpers.Mark(), 12 * time.Hour, 16 * time.Hour, 8. / 12},
+		{helpers.Mark(), 12 * time.Hour, 17 * time.Hour, 7. / 12},
+		{helpers.Mark(), 12 * time.Hour, 18 * time.Hour, 6. / 12},
+		{helpers.Mark(), 12 * time.Hour, 19 * time.Hour, 5. / 12},
 	}
 	for _, tc := range cases {
 		got := peakHourDistance(tc.Now, tc.Peak)
 		if math.Abs(got-tc.Expected) > tc.Expected*0.01 {
-			t.Errorf("peakHourDistance(%s, %s) == %f, expected %f",
-				tc.Peak, tc.Now, got, tc.Expected)
+			t.Errorf("%speakHourDistance(%s, %s) == %f, expected %f",
+				tc.Pos, tc.Peak, tc.Now, got, tc.Expected)
 		}
 	}
 }
@@ -129,10 +130,12 @@ func TestChooseRandom(t *testing.T) {
 
 func TestGenerateFlows(t *testing.T) {
 	cases := []struct {
+		Pos helpers.Pos
 		FlowConfiguration
 		Expected []generatedFlow
 	}{
 		{
+			Pos: helpers.Mark(),
 			FlowConfiguration: FlowConfiguration{
 				PerSecond:  1,
 				InIfIndex:  []int{10},
@@ -187,6 +190,7 @@ func TestGenerateFlows(t *testing.T) {
 				},
 			},
 		}, {
+			Pos: helpers.Mark(),
 			FlowConfiguration: FlowConfiguration{
 				PerSecond:  1,
 				InIfIndex:  []int{20},
@@ -223,6 +227,7 @@ func TestGenerateFlows(t *testing.T) {
 				},
 			},
 		}, {
+			Pos: helpers.Mark(),
 			FlowConfiguration: FlowConfiguration{
 				PerSecond:             1,
 				InIfIndex:             []int{20},
@@ -280,11 +285,11 @@ func TestGenerateFlows(t *testing.T) {
 		},
 	}
 	now := time.Date(2022, 3, 18, 15, 0, 0, 0, time.UTC)
-	for i, tc := range cases {
-		t.Run(fmt.Sprintf("case %d", i+1), func(t *testing.T) {
+	for _, tc := range cases {
+		t.Run(fmt.Sprintf("case %s", tc.Pos), func(t *testing.T) {
 			got := generateFlows([]FlowConfiguration{tc.FlowConfiguration}, 0, now)
 			if diff := helpers.Diff(got, tc.Expected); diff != "" {
-				t.Fatalf("generatedFlows() (-got, +want):\n%s", diff)
+				t.Fatalf("%sgeneratedFlows() (-got, +want):\n%s", tc.Pos, diff)
 			}
 		})
 	}
