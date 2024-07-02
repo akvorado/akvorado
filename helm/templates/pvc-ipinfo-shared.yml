@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  namespace: {{ .Values.environment }}-{{ .Values.namespace }}
+  name: ipinfo-geoip-shared-pvc
+spec:
+  storageClassName: "standard"
+  volumeName: ipinfo-geoip-shared-pv
+  accessModes:
+    - ReadOnlyMany
+  resources:
+    requests:
+      {{- if and (.Values.volumes) (.Values.volumes.ipinfo_geoip_data_shared) (.Values.volumes.ipinfo_geoip_data_shared.storageSize)}}
+      storage: {{ .Values.volumes.ipinfo_geoip_data_shared.storageSize }}
+      {{- else }}
+      storage: 100Mi
+      {{- end }}
