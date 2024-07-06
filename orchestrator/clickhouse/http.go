@@ -128,12 +128,14 @@ func (c *Component) registerHTTPHandlers() error {
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			ctx := r.Context()
 			// Wait for networks.csv
+			t := time.NewTimer(c.config.NetworkSourcesTimeout)
+			defer t.Stop()
 			select {
 			case <-ctx.Done():
 				http.Error(w, "Request canceled", http.StatusInternalServerError)
 				return
 			case <-c.networksCSVReady:
-			case <-time.After(c.config.NetworkSourcesTimeout):
+			case <-t.C:
 				w.WriteHeader(http.StatusServiceUnavailable)
 			}
 

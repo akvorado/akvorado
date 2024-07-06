@@ -122,6 +122,7 @@ func (c *Component) Start() error {
 		msgs, errs := c.dockerClient.Events(c.t.Context(nil), types.EventsOptions{Filters: filter})
 		close(ready)
 		for {
+			t := time.NewTimer(5 * time.Minute)
 			select {
 			case <-c.t.Dying():
 				return nil
@@ -134,10 +135,11 @@ func (c *Component) Start() error {
 					Msg("new container started")
 				c.metrics.runs.WithLabelValues("new container").Inc()
 				trigger()
-			case <-time.After(5 * time.Minute):
+			case <-t.C:
 				c.metrics.runs.WithLabelValues("schedule").Inc()
 				trigger()
 			}
+			t.Stop()
 		}
 	})
 
