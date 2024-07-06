@@ -32,7 +32,6 @@ jobs:
     permissions:
       contents: read
       actions: write
-
     env:
       CI_AKVORADO_FUNCTIONAL_TESTS: "true"
     steps:
@@ -138,7 +137,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: [ '1.21', 'stable' ]
+        go-version: [ '1.21', '1.22' ]
     needs:
       - dependabot
     if: needs.dependabot.outputs.package-ecosystem != 'npm_and_yarn'

@@ -37,7 +37,9 @@ You need a proper installation of [Go](https://go.dev/doc/install) (1.21+), and
 Debian:
 
 ```console
-# apt install golang-1.21 nodejs npm
+# apt install golang nodejs npm
+# go version
+go version go1.22.5 linux/amd64
 # node --version
 v16.15.1
 # npm --version

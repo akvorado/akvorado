@@ -21,7 +21,7 @@ inputs:
     description: Go version to install
     type: string
     required: false
-    default: 'stable'
+    default: '1.22'
 runs:
   using: composite
   steps:
