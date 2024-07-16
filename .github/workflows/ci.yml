@@ -156,7 +156,7 @@ jobs:
           path: |
             orchestrator/clickhouse/data/udp.csv
             orchestrator/clickhouse/data/tcp.csv
-          key: ${{ steps.cache-iana-restore.outputs.cache-primary-key }}
+          key: cache-iana-${{ hashFiles('Makefile', 'nix/ianaServiceNamesHash.txt') }}
       - name: Tests
         run: make test
 
