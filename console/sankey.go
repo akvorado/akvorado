@@ -59,10 +59,11 @@ func (input graphSankeyHandlerInput) toSQL() (string, error) {
 		fmt.Sprintf("source AS (%s)", input.sourceSelect()),
 		fmt.Sprintf(`(SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE %s) AS range`, where),
 		fmt.Sprintf(
-			"rows AS (SELECT %s FROM source WHERE %s GROUP BY %s ORDER BY SUM(Bytes) DESC LIMIT %d)",
+			"rows AS (SELECT %s FROM source WHERE %s GROUP BY %s ORDER BY SUM(%s) DESC LIMIT %d)",
 			strings.Join(dimensions, ", "),
 			where,
 			strings.Join(dimensions, ", "),
+			metricForTopSort(input.Units),
 			input.Limit),
 	}
 

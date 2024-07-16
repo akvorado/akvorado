@@ -134,16 +134,18 @@ func (input graphLineHandlerInput) toSQL1(axis int, options toSQL1Options) strin
 		dimensionsInterpolate = "emptyArrayString()"
 	}
 
+	
 	// With
 	withStr := ""
 	if !options.skipWithClause {
 		with := []string{fmt.Sprintf("source AS (%s)", input.sourceSelect())}
 		if len(dimensions) > 0 {
 			with = append(with, fmt.Sprintf(
-				"rows AS (SELECT %s FROM source WHERE %s GROUP BY %s ORDER BY SUM(Bytes) DESC LIMIT %d)",
+				"rows AS (SELECT %s FROM source WHERE %s GROUP BY %s ORDER BY SUM(%s) DESC LIMIT %d)",
 				strings.Join(dimensions, ", "),
 				where,
 				strings.Join(dimensions, ", "),
+				metricForTopSort(input.Units),
 				input.Limit))
 		}
 		if len(with) > 0 {
