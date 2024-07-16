@@ -13,6 +13,7 @@ identified with a specific icon:
 
 ## Next version
 
+- 🩹 *console*: sort results by number of packets when unit is packets per second
 - 🌱 *docker*: build IPinfo updater image from CI
 
 ## 1.11.0 - 2024-06-26
