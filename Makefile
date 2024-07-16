@@ -108,7 +108,7 @@ ASNS_URL = https://vincentbernat.github.io/asn2org/asns.csv
 PROTOCOLS_URL = http://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv
 SERVICES_URL = https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv
 define caturl
-$(if $(filter http://% https://%, $(1)),curl --no-progress-meter --location --fail $(1),cat $(1))
+$(if $(filter http://% https://%, $(1)),curl --retry 3 --no-progress-meter --location --fail $(1),cat $(1))
 endef
 
 orchestrator/clickhouse/data/asns.csv: ; $(info $(M) generate ASN map…)
