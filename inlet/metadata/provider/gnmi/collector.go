@@ -106,13 +106,13 @@ outer2:
 		iface := state.Interfaces[index]
 		// Set name
 		if iface.Name == "" && len(model.IfNameKeys) > 0 {
-			// We assume we only have one key
-			if !strings.Contains(keys, ",") {
+inner3:
+			for _, key := range strings.Split(keys, ",") {
 				for _, name := range model.IfNameKeys {
 					pfx := fmt.Sprintf("%s=", name)
-					if strings.HasPrefix(keys, pfx) {
-						iface.Name = keys[len(pfx):]
-						break
+					if strings.HasPrefix(key, pfx) {
+						iface.Name = key[len(pfx):]
+						break inner3
 					}
 				}
 			}
