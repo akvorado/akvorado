@@ -70,9 +70,9 @@ func TestNoIntersectWithValidator(t *testing.T) {
 		s.Set2 = tc.Set2
 		err := helpers.Validate.Struct(s)
 		if err == nil && tc.Err {
-			t.Errorf("Validate.Struct(%+v) expected an error", s)
+			t.Errorf("%sValidate.Struct(%+v) expected an error", tc.Pos, s)
 		} else if err != nil && !tc.Err {
-			t.Errorf("Validate.Struct(%+v) error:\n%+v", s, err)
+			t.Errorf("%sValidate.Struct(%+v) error:\n%+v", tc.Pos, s, err)
 		}
 	}
 }
