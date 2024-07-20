@@ -1,6 +1,5 @@
 ---
 volumes:
-  akvorado-zookeeper:
   akvorado-kafka:
   akvorado-geoip:
   akvorado-clickhouse:
@@ -8,26 +7,6 @@ volumes:
   akvorado-console-db:
 
 services:
-  zookeeper:
-    extends:
-      file: versions.yml
-      service: zookeeper
-    environment:
-      - ALLOW_ANONYMOUS_LOGIN=yes
-      - ZOO_ENABLE_PROMETHEUS_METRICS=yes
-      - ZOO_4LW_COMMANDS_WHITELIST=srvr,mntr,ruok
-    restart: unless-stopped
-    expose:
-      - 2181/tcp
-      - 2888/tcp
-      - 3888/tcp
-      - 7000/tcp                # Prometheus metrics
-    volumes:
-      - akvorado-zookeeper:/bitnami/zookeeper
-    healthcheck:
-      interval: 20s
-      test: ["CMD-SHELL", "echo ruok | nc -w3 127.0.0.1 2181 | grep -xFq imok"]
-
   kafka:
     extends:
       file: versions.yml
