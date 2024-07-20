@@ -13,6 +13,19 @@ identified with a specific icon:
 
 ## Unreleased
 
+As it seems a good time as any, Zookeeper is removed from the `docker compose`
+setup (except when using ClickHouse cluster mode). Kafka is now using the KRaft
+mode. You can follow the [migration documentation][], but is easier to loose a
+bit of data and reset the Kafka container:
+
+```console
+# docker compose down --remove-orphans
+# docker compose rm -v kafka
+# docker compose pull
+# docker compose up -d
+```
+
+- 💥 *docker*: switch Kafka to KRaft mode
 - 🩹 *console*: fix deletion of saved filters
 - 🩹 *console*: fix intermittent failure when requesting previous period
 - 🩹 *docker*: move healthcheck for IPinfo updater into Dockerfile to avoid
@@ -21,6 +34,8 @@ identified with a specific icon:
 - 🌱 *docker*: update Traefik to 3.4 (not mandatory)
 - 🌱 *orchestrator*: move ClickHouse database settings from `clickhouse` to `clickhousedb`
 - 🌱 *inlet*: improve performance of classifiers
+
+[migration documentation]: https://github.com/bitnami/containers/blob/main/bitnami/kafka/README.md#migrating-from-zookeeper-mode-to-kraft-mode
 
 ## 1.11.5 - 2025-05-11
 
