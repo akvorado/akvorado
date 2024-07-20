@@ -4,7 +4,6 @@
 package helpers
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"reflect"
@@ -233,13 +232,4 @@ func ParametrizedConfigurationMarshalYAML[OuterConfiguration any, InnerConfigura
 		result[strings.ToLower(field.Name)] = innerConfigStruct.Field(i).Interface()
 	}
 	return result, nil
-}
-
-// ParametrizedConfigurationMarshalJSON undoes ParametrizedConfigurationUnmarshallerHook().
-func ParametrizedConfigurationMarshalJSON[OuterConfiguration any, InnerConfiguration any](oc OuterConfiguration, innerConfigurationMap map[string](func() InnerConfiguration)) ([]byte, error) {
-	result, err := ParametrizedConfigurationMarshalYAML(oc, innerConfigurationMap)
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(result)
 }

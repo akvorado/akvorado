@@ -33,7 +33,6 @@ func (c *Component) fixQueryColumnName(name string) string {
 	return ""
 }
 
-
 func metricForTopSort(inputUnit string) string {
 	switch inputUnit {
 	case "pps":

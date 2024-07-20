@@ -134,7 +134,6 @@ func (input graphLineHandlerInput) toSQL1(axis int, options toSQL1Options) strin
 		dimensionsInterpolate = "emptyArrayString()"
 	}
 
-	
 	// With
 	withStr := ""
 	if !options.skipWithClause {

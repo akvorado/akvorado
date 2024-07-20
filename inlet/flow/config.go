@@ -55,11 +55,6 @@ func (ic InputConfiguration) MarshalYAML() (interface{}, error) {
 	return helpers.ParametrizedConfigurationMarshalYAML(ic, inputs)
 }
 
-// MarshalJSON undoes ConfigurationUnmarshallerHook().
-func (ic InputConfiguration) MarshalJSON() ([]byte, error) {
-	return helpers.ParametrizedConfigurationMarshalJSON(ic, inputs)
-}
-
 var inputs = map[string](func() input.Configuration){
 	"udp":  udp.DefaultConfiguration,
 	"file": file.DefaultConfiguration,

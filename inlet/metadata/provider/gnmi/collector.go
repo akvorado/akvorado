@@ -106,7 +106,7 @@ outer2:
 		iface := state.Interfaces[index]
 		// Set name
 		if iface.Name == "" && len(model.IfNameKeys) > 0 {
-inner3:
+		inner3:
 			for _, key := range strings.Split(keys, ",") {
 				for _, name := range model.IfNameKeys {
 					pfx := fmt.Sprintf("%s=", name)

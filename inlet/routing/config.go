@@ -32,11 +32,6 @@ func (pc ProviderConfiguration) MarshalYAML() (interface{}, error) {
 	return helpers.ParametrizedConfigurationMarshalYAML(pc, providers)
 }
 
-// MarshalJSON undoes ConfigurationUnmarshallerHook().
-func (pc ProviderConfiguration) MarshalJSON() ([]byte, error) {
-	return helpers.ParametrizedConfigurationMarshalJSON(pc, providers)
-}
-
 var providers = map[string](func() provider.Configuration){
 	"bmp":    bmp.DefaultConfiguration,
 	"bioris": bioris.DefaultConfiguration,
