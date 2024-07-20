@@ -17,6 +17,7 @@ import (
 
 // readPcap reads and parse a PCAP file.
 func readPcap(t testing.TB, pcapfile string) *gopacket.PacketSource {
+	t.Helper()
 	f, err := os.Open(pcapfile)
 	if err != nil {
 		t.Fatalf("Open(%q) error:\n%+v", pcapfile, err)
