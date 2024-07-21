@@ -36,13 +36,22 @@ func TestRealKafka(t *testing.T) {
 	}
 	helpers.StartStop(t, c)
 
-	c.Send("127.0.0.1", []byte("hello world!"))
-	c.Send("127.0.0.1", []byte("goodbye world!"))
+	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	msg1 := make([]byte, 50)
+	msg2 := make([]byte, 50)
+	for i := range msg1 {
+		msg1[i] = letters[rand.Intn(len(letters))]
+	}
+	for i := range msg2 {
+		msg1[i] = letters[rand.Intn(len(letters))]
+	}
+	c.Send("127.0.0.1", msg1)
+	c.Send("127.0.0.1", msg2)
 
 	time.Sleep(10 * time.Millisecond)
 	gotMetrics := r.GetMetrics("akvorado_inlet_kafka_", "sent_")
 	expectedMetrics := map[string]string{
-		`sent_bytes_total{exporter="127.0.0.1"}`:    "26",
+		`sent_bytes_total{exporter="127.0.0.1"}`:    "100",
 		`sent_messages_total{exporter="127.0.0.1"}`: "2",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
@@ -73,10 +82,7 @@ func TestRealKafka(t *testing.T) {
 	}
 
 	got := []string{}
-	expected := []string{
-		"hello world!",
-		"goodbye world!",
-	}
+	expected := []string{string(msg1), string(msg2)}
 	timeout := time.After(15 * time.Second)
 	for i := 0; i < len(expected); i++ {
 		select {
