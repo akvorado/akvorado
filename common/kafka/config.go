@@ -9,6 +9,7 @@ import (
 	"crypto/sha256"
 	"crypto/sha512"
 	"errors"
+	"fmt"
 
 	"akvorado/common/helpers"
 	"akvorado/common/helpers/bimap"
@@ -127,6 +128,7 @@ func (sa *SASLMechanism) UnmarshalText(input []byte) error {
 func NewConfig(config Configuration) (*sarama.Config, error) {
 	kafkaConfig := sarama.NewConfig()
 	kafkaConfig.Version = sarama.KafkaVersion(config.Version)
+	kafkaConfig.ClientID = fmt.Sprintf("akvorado-%s", helpers.AkvoradoVersion)
 	tlsConfig, err := config.TLS.TLSConfiguration.MakeTLSConfig()
 	if err != nil {
 		return nil, err
