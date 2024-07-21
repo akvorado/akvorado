@@ -203,6 +203,7 @@ jobs:
     permissions:
       contents: read
       packages: write
+      attestations: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -234,6 +235,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
+          provenance: mode=max
           cache-from: type=registry,ref=ghcr.io/${{ github.repository }}:main
           cache-to: type=inline
 
