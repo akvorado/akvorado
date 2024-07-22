@@ -39,7 +39,6 @@ runs:
         cache: npm
         cache-dependency-path: console/frontend/package-lock.json
     - uses: actions/cache/restore@v4
-      id: cache-iana-restore
       with:
         path: |
           orchestrator/clickhouse/data/udp.csv
