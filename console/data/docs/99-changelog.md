@@ -15,6 +15,7 @@ identified with a specific icon:
 
 - 🩹 *console*: sort results by number of packets when unit is packets per second
 - 🌱 *docker*: build IPinfo updater image from CI
+- 🌱 *docker*: update Kafka UI to 0.7.2
 
 ## 1.11.0 - 2024-06-26
 
