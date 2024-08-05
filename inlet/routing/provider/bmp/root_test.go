@@ -1100,7 +1100,7 @@ func TestBMP(t *testing.T) {
 		// Add another prefix
 		p.rib.addPrefix(netip.MustParseAddr("2001:db8:1::"), 64, route{
 			peer:       1,
-			nlri:       p.rib.nlris.Put(nlri{family: bgp.RF_FS_IPv4_UC}),
+			nlri:       p.rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
 			nextHop:    p.rib.nextHops.Put(nextHop(netip.MustParseAddr("2001:db8::a"))),
 			attributes: p.rib.rtas.Put(routeAttributes{asn: 176}),
 		})
