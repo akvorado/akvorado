@@ -15,6 +15,7 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
+	"akvorado/inlet/routing/provider"
 
 	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
 )
@@ -1137,6 +1138,30 @@ func TestBMP(t *testing.T) {
 			netip.MustParseAddr("::ffff:198.51.100.200"), netip.Addr{})
 		if lookup.ASN != 0 {
 			t.Errorf("Lookup() == %d, expected 0", lookup.ASN)
+		}
+	})
+
+	t.Run("LPM test", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		config := DefaultConfiguration()
+		p, _ := NewMock(t, r, config)
+		helpers.StartStop(t, p)
+		p.PopulateRIB(t)
+
+		// Despite having the "wrong" nexthop, we select the more specific one.
+		// This is not optimal, but performance is better this way and on a
+		// proper network, all routers should know the more specific.
+		lookup, _ := p.Lookup(context.Background(),
+			netip.MustParseAddr("::ffff:192.168.145.10"),
+			netip.MustParseAddr("::ffff:203.0.113.14"), netip.Addr{})
+		expected := provider.LookupResult{
+			ASN:     1234,
+			ASPath:  []uint32{1234},
+			NetMask: 22,
+			NextHop: netip.MustParseAddr("::ffff:203.0.113.15"),
+		}
+		if diff := helpers.Diff(lookup, expected); diff != "" {
+			t.Errorf("Lookup() (-got, +want):\n%s", diff)
 		}
 	})
 }
