@@ -234,3 +234,17 @@ docker: ; $(info $(M) build Docker image…) @ ## Build Docker image
 	$Q docker build -f docker/Dockerfile -t ghcr.io/akvorado/akvorado:main .
 docker-dev: all ; $(info $(M) build development Docker image…) @ ## Build development Docker image
 	$Q docker build -f docker/Dockerfile.dev -t ghcr.io/akvorado/akvorado:main .
+
+# This requires "skopeo". I fetch it from nix.
+.PHONY: docker-upgrade-versions
+docker-upgrade-versions: ; $(info $(M) check for Docker image updates…) @ ## Check for Docker image updates
+	$Q sed -En 's/^\s*image:\s+(.+):(.+)\s+#\s+(.+)$$/\1 \2 \3/p' docker/versions.yml \
+		| while read -r image version regex; do \
+			latest=$$(nix run nixpkgs\#skopeo -- list-tags docker://"$$image" \
+				| sed -En 's/\s+"(.*)",/\1/p' \
+				| grep -xP "$$regex" \
+				| sort -Vr | head -1); \
+			[ "$$version" = "$$latest" ] || { \
+				>&2 echo "$$image $$version→$$latest"; \
+				sed -i "s,$$image:$$version,$$image:$$latest," docker/versions.yml; }; \
+		done

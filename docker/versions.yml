@@ -2,15 +2,15 @@
 services:
   # main services
   zookeeper:
-    image: bitnami/zookeeper:3.8
+    image: bitnami/zookeeper:3.8 # \d+\.\d+
   kafka:
-    image: bitnami/kafka:3.7
+    image: bitnami/kafka:3.7 # \d+\.\d+
   redis:
-    image: bitnami/valkey:7.2
+    image: bitnami/valkey:7.2 # \d+\.\d+
   clickhouse:
-    image: clickhouse/clickhouse-server:24.3
+    image: clickhouse/clickhouse-server:24.3 # \d+\.[38]
   traefik:
-    image: traefik:v3.0
+    image: traefik:v3.0 # v\d+\.\d+
   maxmind-geoipupdate:
     image: ghcr.io/maxmind/geoipupdate:v7
   ipinfo-geoipupdate:
@@ -23,20 +23,20 @@ services:
 
   # observability
   grafana:
-    image: grafana/grafana-oss:10.2.6
+    image: grafana/grafana-oss:10.2.6 # \d+\.\d+\.\d+
   prometheus:
-    image: prom/prometheus:v2.47.2
+    image: prom/prometheus:v2.47.2 # v\d+\.\d+\.\d+
   node-exporter:
-    image: prom/node-exporter:v1.7.0
+    image: prom/node-exporter:v1.7.0 # v\d+\.\d+\.\d+
   kafka-jmx-exporter:
     image: bitnami/jmx-exporter:0
   kafka-ui:
-    image: provectuslabs/kafka-ui:v0.7.2
+    image: provectuslabs/kafka-ui:v0.7.2 # v\d+\.\d+\.\d+
 
   # for tests
   srlinux:
     image: ghcr.io/nokia/srlinux:23.7.1
   postgres:
-    image: bitnami/postgresql:16
+    image: bitnami/postgresql:16.3.0 # \d+\.\d+\.0
   mysql:
-    image: bitnami/mariadb:11.3
+    image: bitnami/mariadb:11.3 # \d+\.\d+
