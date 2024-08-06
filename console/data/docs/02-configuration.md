@@ -908,12 +908,14 @@ as for the inlet service.
 
 The console itself accepts the following keys:
 
- - `default-visualize-options` to define default options for the
-   "visualize" tab and the second one defines the widgets to display
-   on the home page (among `src-as`, `dst-as`, `src-country`,
-   `dst-country`, `exporter`, `protocol`, `etype`, `src-port`, and
-   `dst-port`)
+ - `default-visualize-options` to define default options for the "visualize"
+   tab. It takes the following keys: `graph-type` (one of `stacked`,
+   `stacked100`, `lines`, `grid`, or `sankey`), `start`, `end`, `filter`,
+   `dimensions` (a list), `limit`, `bidirectional` (a bool), `previous-period`
+   (a bool)
  - `homepage-top-widgets` to define the widgets to display on the home page
+   (among `src-as`, `dst-as`, `src-country`, `dst-country`, `exporter`,
+   `protocol`, `etype`, `src-port`, and `dst-port`)
  - `dimensions-limit` to set the upper limit of the number of returned dimensions
  - `cache-ttl` sets the time costly requests are kept in cache
  - `homepage-graph-filter` sets the filter for the graph on the homepage

@@ -45,6 +45,10 @@ type VisualizeOptionsConfiguration struct {
 	Dimensions []query.Column `json:"dimensions"`
 	// Limit is the default limit to use
 	Limit int `json:"limit" validate:"min=5"`
+	// Bidirectional tells if a graph should be bidirectional (all except sankey)
+	Bidirectional bool `json:"bidirectional"`
+	// PreviousPeriod tells if a graph should display the previous period (for stacked)
+	PreviousPeriod bool `json:"previousPeriod"`
 }
 
 // DefaultConfiguration represents the default configuration for the console component.

@@ -247,8 +247,8 @@ watch(
       "truncate-v6": 128,
       filter: defaultOptions.filter,
       units: "l3bps",
-      bidirectional: false,
-      previousPeriod: false,
+      bidirectional: defaultOptions.bidirectional,
+      previousPeriod: defaultOptions.previousPeriod,
     };
 
     // Dispatch values in refs
