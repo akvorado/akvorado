@@ -642,7 +642,7 @@ outer:
 				// change alias existence has changed. ALIAS expression changes are not yet checked here.
 				if (wantedColumn.ClickHouseAlias != "") != (existingColumn.DefaultKind == "ALIAS") {
 					// either the column was an alias and should be none, or the other way around. Either way, we need to recreate.
-					c.r.Logger.Debug().Msg(fmt.Sprintf("column %s alias content has changed, recreating. New ALIAS: %s", existingColumn.Name, wantedColumn.ClickHouseAlias))
+					c.r.Debug().Msg(fmt.Sprintf("column %s alias content has changed, recreating. New ALIAS: %s", existingColumn.Name, wantedColumn.ClickHouseAlias))
 					err := c.d.ClickHouse.ExecOnCluster(ctx,
 						fmt.Sprintf("ALTER TABLE %s DROP COLUMN %s", tableName, existingColumn.Name))
 					if err != nil {
