@@ -53,7 +53,7 @@ func (b customHeaderBinding) Bind(req *http.Request, obj interface{}) error {
 	if value.Kind() != reflect.Struct {
 		panic("should be a struct")
 	}
-	for i := 0; i < tValue.NumField(); i++ {
+	for i := range tValue.NumField() {
 		sf := tValue.Field(i)
 		if sf.PkgPath != "" && !sf.Anonymous { // unexported
 			continue

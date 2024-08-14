@@ -221,10 +221,10 @@ func TestProviderBreaker(t *testing.T) {
 			c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 			c.metrics.providerBreakerOpenCount.WithLabelValues("127.0.0.1").Add(0)
 
-			for i := 0; i < 30; i++ {
+			for range 30 {
 				c.Lookup(c.d.Clock.Now(), netip.MustParseAddr("::ffff:127.0.0.1"), 765)
 			}
-			for i := 0; i < 5; i++ {
+			for range 5 {
 				c.Lookup(c.d.Clock.Now(), netip.MustParseAddr("::ffff:127.0.0.2"), 765)
 			}
 			time.Sleep(50 * time.Millisecond)

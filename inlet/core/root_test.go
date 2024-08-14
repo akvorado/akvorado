@@ -234,7 +234,7 @@ func TestCore(t *testing.T) {
 		}
 
 		// Produce some flows
-		for i := 0; i < 12; i++ {
+		for range 12 {
 			kafkaProducer.ExpectInputAndSucceed()
 			flowComponent.Inject(flowMessage("192.0.2.142", 434, 677))
 		}
@@ -242,7 +242,7 @@ func TestCore(t *testing.T) {
 		// Decode some of them
 		reader := bufio.NewReader(resp.Body)
 		decoder := json.NewDecoder(reader)
-		for i := 0; i < 10; i++ {
+		for range 10 {
 			var got gin.H
 			if err := decoder.Decode(&got); err != nil {
 				t.Fatalf("GET /api/v0/inlet/flows error while reading body:\n%+v", err)
@@ -293,7 +293,7 @@ func TestCore(t *testing.T) {
 		}
 
 		// Produce some flows
-		for i := 0; i < 12; i++ {
+		for range 12 {
 			kafkaProducer.ExpectInputAndSucceed()
 			flowComponent.Inject(flowMessage("192.0.2.142", 434, 677))
 		}
@@ -338,7 +338,7 @@ func TestCore(t *testing.T) {
 		}
 
 		// Produce some flows
-		for i := 0; i < 12; i++ {
+		for range 12 {
 			kafkaProducer.ExpectInputAndSucceed()
 			flowComponent.Inject(flowMessage("192.0.2.142", 434, 677))
 		}

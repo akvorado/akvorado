@@ -185,7 +185,7 @@ func (c *Component) Start() error {
 	// Goroutines to poll exporters
 	c.healthyWorkers = make(chan reporter.ChannelHealthcheckFunc)
 	c.r.RegisterHealthcheck("metadata/worker", reporter.ChannelHealthcheck(c.t.Context(nil), c.healthyWorkers))
-	for i := 0; i < c.config.Workers; i++ {
+	for i := range c.config.Workers {
 		workerIDStr := strconv.Itoa(i)
 		c.t.Go(func() error {
 			c.r.Debug().Str("worker", workerIDStr).Msg("starting metadata provider")

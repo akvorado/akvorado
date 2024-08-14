@@ -80,7 +80,7 @@ func TestMetrics(t *testing.T) {
 		Help:       "Some summary",
 		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 	})
-	for i := 0; i < 1000; i++ {
+	for i := range 1000 {
 		summary1.Observe(30 + math.Floor(120*math.Sin(float64(i)*0.1))/10)
 	}
 
@@ -89,7 +89,7 @@ func TestMetrics(t *testing.T) {
 		Help:       "Another summary",
 		Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 	}, []string{"label"})
-	for i := 0; i < 1000; i++ {
+	for i := range 1000 {
 		summary2.WithLabelValues("value1").Observe(10 + math.Floor(120*math.Sin(float64(i)*0.1))/10)
 		summary2.WithLabelValues("value2").Observe(15)
 	}

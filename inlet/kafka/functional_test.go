@@ -84,7 +84,7 @@ func TestRealKafka(t *testing.T) {
 	got := []string{}
 	expected := []string{string(msg1), string(msg2)}
 	timeout := time.After(15 * time.Second)
-	for i := 0; i < len(expected); i++ {
+	for range len(expected) {
 		select {
 		case msg := <-partitionConsumer.Messages():
 			got = append(got, string(msg.Value))

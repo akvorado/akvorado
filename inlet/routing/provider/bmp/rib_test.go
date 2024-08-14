@@ -196,7 +196,7 @@ outer:
 }
 
 func TestRIB(t *testing.T) {
-	for i := 0; i < 5; i++ {
+	for i := range 5 {
 		t.Logf("Run %d", i+1)
 		r := newRIB()
 		random := rand.New(rand.NewSource(100 * int64(i)))
@@ -232,6 +232,7 @@ func TestRIB(t *testing.T) {
 			for j := 0; j < int(random.Uint32()%14); j++ {
 				peer := uint32((i << 16) + j)
 				peers = append(peers, peer)
+				// TODO: it fails if we replace with for range ... This is suspicious!
 				for k := 0; k < int(random.Uint32()%10000); k++ {
 					lookup := lookup{
 						peer: peer,
@@ -358,7 +359,7 @@ func BenchmarkRTAHash(b *testing.B) {
 		asn:    2038,
 		asPath: []uint32{1, 2, 3, 4, 5, 6, 7},
 	}
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		rta.Hash()
 	}
 }
@@ -368,7 +369,7 @@ func BenchmarkRTAEqual(b *testing.B) {
 		asn:    2038,
 		asPath: []uint32{1, 2, 3, 4, 5, 6, 7},
 	}
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		rta.Equal(rta)
 	}
 }

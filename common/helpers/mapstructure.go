@@ -78,7 +78,7 @@ func DefaultValuesUnmarshallerHook[Configuration any](defaultConfiguration Confi
 		// Which field is not to the default value in the default configuration?
 		found := map[string]bool{}
 		defaultV := reflect.ValueOf(defaultConfiguration)
-		for i := 0; i < defaultV.NumField(); i++ {
+		for i := range defaultV.NumField() {
 			if !defaultV.Field(i).IsZero() {
 				found[defaultV.Type().Field(i).Name] = false
 			}
@@ -148,7 +148,7 @@ func ParametrizedConfigurationUnmarshallerHook[OuterConfiguration any, InnerConf
 				return nil, errors.New("configuration should not have a `config' key")
 			default:
 				t := to.Type()
-				for i := 0; i < t.NumField(); i++ {
+				for i := range t.NumField() {
 					if MapStructureMatchName(keyStr, t.Field(i).Name) {
 						// Don't touch
 						continue outer

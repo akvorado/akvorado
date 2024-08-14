@@ -388,7 +388,7 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 			sort.Ints(points)
 
 			// Min (but not 0)
-			for j := 0; j < nbPoints; j++ {
+			for j := range nbPoints {
 				output.Min[i] = points[j]
 				if points[j] > 0 {
 					break

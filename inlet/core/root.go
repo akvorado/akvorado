@@ -76,7 +76,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 // Start starts the core component.
 func (c *Component) Start() error {
 	c.r.Info().Msg("starting core component")
-	for i := 0; i < c.config.Workers; i++ {
+	for i := range c.config.Workers {
 		workerID := i
 		c.t.Go(func() error {
 			return c.runWorker(workerID)

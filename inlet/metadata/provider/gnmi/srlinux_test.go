@@ -582,7 +582,7 @@ commit now
 
 			// Get a few batches
 			time.Sleep(100 * time.Millisecond)
-			for i := 0; i < 3; i++ {
+			for i := range 3 {
 				if err := tg.SubscribePoll(ctx, subscriptionName); err != nil {
 					t.Fatalf("SubscribePoll() error:\n%+v", err)
 				}

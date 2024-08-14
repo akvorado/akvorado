@@ -20,7 +20,7 @@ func TestRateToCount(t *testing.T) {
 	now := time.Now().Truncate(time.Second)
 	for _, rate := range rates {
 		result := 0
-		for i := 0; i < 1000; i++ {
+		for range 1000 {
 			result += rateToCount(rate, now)
 			now = now.Add(time.Second)
 		}
@@ -45,7 +45,7 @@ func TestRandomIP(t *testing.T) {
 	r := rand.New(rand.NewSource(0))
 	for _, p := range prefixes {
 		prefix := netip.MustParsePrefix(p)
-		for i := 0; i < 1000; i++ {
+		for range 1000 {
 			ip := randomIP(prefix, r)
 			addr, ok := netip.AddrFromSlice(ip)
 			if !ok {
@@ -99,7 +99,7 @@ func TestChooseRandom(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("%v", tc), func(t *testing.T) {
 			results := map[int]bool{}
-			for i := 0; i < 100; i++ {
+			for range 100 {
 				result := chooseRandom(r, tc)
 				results[result] = true
 				if len(tc) == 0 {

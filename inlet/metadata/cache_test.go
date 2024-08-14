@@ -400,7 +400,7 @@ func TestConcurrentOperations(t *testing.T) {
 			}
 		}
 	}()
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -425,7 +425,7 @@ func TestConcurrentOperations(t *testing.T) {
 		}()
 	}
 	var lookups int64
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
