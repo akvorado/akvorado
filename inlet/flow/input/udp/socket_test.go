@@ -32,14 +32,14 @@ func TestParseSocketControlMessage(t *testing.T) {
 outer:
 	for _, size := range []int{100, 1000, 10000, 100000, 1000000} {
 		// Write a lot of messages to have some overflow.
-		for i := 0; i < size; i++ {
+		for range size {
 			client.Write([]byte("hello"))
 		}
 
 		// Empty the queue
 		payload := make([]byte, 1000)
 		server.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
-		for i := 0; i < size; i++ {
+		for range size {
 			_, _, err := server.ReadFrom(payload)
 			if errors.Is(err, os.ErrDeadlineExceeded) {
 				overflow = true

@@ -121,7 +121,7 @@ func TestOverflow(t *testing.T) {
 	}
 
 	// Send data
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		if _, err := conn.Write([]byte("hello world!")); err != nil {
 			t.Fatalf("Write() error:\n%+v", err)
 		}

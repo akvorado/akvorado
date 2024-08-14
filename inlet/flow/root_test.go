@@ -58,7 +58,7 @@ func TestFlow(t *testing.T) {
 
 			// Receive flows
 			now := time.Now()
-			for i := 0; i < 1000; i++ {
+			for range 1000 {
 				select {
 				case <-c.Flows():
 				case <-time.After(100 * time.Millisecond):

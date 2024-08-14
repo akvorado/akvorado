@@ -223,7 +223,7 @@ func OrchestratorConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 			if inletConfigs.Kind() != reflect.Slice {
 				inletConfigs = reflect.ValueOf([]interface{}{inletConfigs.Interface()})
 			}
-			for i := 0; i < inletConfigs.Len(); i++ {
+			for i := range inletConfigs.Len() {
 				fromInlet := helpers.ElemOrIdentity(inletConfigs.Index(i))
 				if fromInlet.Kind() != reflect.Map {
 					break inletgeoip
@@ -250,7 +250,7 @@ func OrchestratorConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 			}
 
 			from.SetMapIndex(reflect.ValueOf("geoip"), *inletGeoIPValue)
-			for i := 0; i < inletConfigs.Len(); i++ {
+			for i := range inletConfigs.Len() {
 				fromInlet := helpers.ElemOrIdentity(inletConfigs.Index(i))
 				fromInletKeys := fromInlet.MapKeys()
 				for _, k := range fromInletKeys {

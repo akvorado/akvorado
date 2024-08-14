@@ -79,9 +79,9 @@ func noIntersectField(fl validator.FieldLevel) bool {
 	if field.Kind() != reflect.Slice || currentField.Kind() != reflect.Slice {
 		return false
 	}
-	for i := 0; i < field.Len(); i++ {
+	for i := range field.Len() {
 		el1 := field.Index(i).Interface()
-		for j := 0; j < currentField.Len(); j++ {
+		for j := range currentField.Len() {
 			el2 := currentField.Index(j).Interface()
 			if el1 == el2 {
 				return false

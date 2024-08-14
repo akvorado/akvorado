@@ -39,7 +39,7 @@ func TestFileInput(t *testing.T) {
 	expected := []string{"hello world!\n", "bye bye\n", "hello world!\n"}
 	got := []string{}
 out:
-	for i := 0; i < len(expected); i++ {
+	for range len(expected) {
 		select {
 		case got1 := <-ch:
 			for _, fl := range got1 {

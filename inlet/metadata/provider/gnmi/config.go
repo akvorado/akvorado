@@ -218,17 +218,17 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 		if modelsKey != nil {
 			modelsValue := helpers.ElemOrIdentity(from.MapIndex(*modelsKey))
 			if modelsValue.Kind() == reflect.Array || modelsValue.Kind() == reflect.Slice {
-				for i := 0; i < modelsValue.Len(); i++ {
+				for i := range modelsValue.Len() {
 					val := helpers.ElemOrIdentity(modelsValue.Index(i))
 					if val.Kind() == reflect.String && val.String() == "defaults" {
 						// We need to replace this item with the default values.
 						newValue := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(new(interface{})).Elem()), 0, 0)
-						for j := 0; j < modelsValue.Len(); j++ {
+						for j := range modelsValue.Len() {
 							if i != j {
 								newValue = reflect.Append(newValue, modelsValue.Index(j))
 							} else {
 								defaults := DefaultModels()
-								for k := 0; k < len(defaults); k++ {
+								for k := range len(defaults) {
 									newValue = reflect.Append(newValue, reflect.ValueOf(defaults[k]))
 								}
 							}

@@ -112,7 +112,7 @@ func (in *Input) Start() (<-chan []*schema.FlowMessage, error) {
 
 	// Listen to UDP port
 	conns := []*net.UDPConn{}
-	for i := 0; i < in.config.Workers; i++ {
+	for i := range in.config.Workers {
 		var listenAddr net.Addr
 		if in.address != nil {
 			// We already are listening on one address, let's
@@ -146,7 +146,7 @@ func (in *Input) Start() (<-chan []*schema.FlowMessage, error) {
 		conns = append(conns, udpConn)
 	}
 
-	for i := 0; i < in.config.Workers; i++ {
+	for i := range in.config.Workers {
 		workerID := i
 		worker := strconv.Itoa(i)
 		in.t.Go(func() error {

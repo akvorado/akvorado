@@ -213,7 +213,7 @@ func InletConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 						continue
 					}
 					metadataConfig := reflect.TypeOf(metadata.Configuration{})
-					for j := 0; j < metadataConfig.NumField(); j++ {
+					for j := range metadataConfig.NumField() {
 						if helpers.MapStructureMatchName(k.String(), metadataConfig.Field(j).Name) {
 							metadataValue[k.String()] = snmpMap.MapIndex(snmpKeys[i]).Interface()
 							continue outerSNMP
@@ -262,7 +262,7 @@ func InletConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 						continue
 					}
 					routingConfig := reflect.TypeOf(routing.Configuration{})
-					for j := 0; j < routingConfig.NumField(); j++ {
+					for j := range routingConfig.NumField() {
 						if helpers.MapStructureMatchName(k.String(), routingConfig.Field(j).Name) {
 							routingValue[k.String()] = bmpMap.MapIndex(bmpKeys[i]).Interface()
 							continue outerBMP
