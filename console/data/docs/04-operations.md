@@ -12,6 +12,10 @@ service and accepts SNMP requests. For routers not listed below, have
 a look at the [configuration
 snippets](https://github.com/kentik/config-snippets/) from Kentik.
 
+It is better to **sample on ingress only**. This requires to sample on both
+external and internal interfaces, but this prevents flow to be accounted twice
+when they enter and exit through external ports.
+
 ### Exporter Address
 
 The exporter address is set from the field inside the flow message by default,
