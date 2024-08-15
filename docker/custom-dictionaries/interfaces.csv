@@ -1,0 +1,3 @@
+exportername,interface,remoteinterface
+th2-edge1.example.com,Gi0/0/0/10,RMT-IF-1
+dc3-edge1.example.com,Gi0/0/0/10,RMT-IF-2

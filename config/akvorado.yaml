@@ -78,3 +78,7 @@ console: !include "console.yaml"
 
 # Remove the following line if you don't want to get demo data
 demo-exporter: !include "demo.yaml"
+
+# Remove the following lines if you don't want to get S3 dictionaries
+s3: !include "s3.yaml"
+schema: !include "schema.yaml"

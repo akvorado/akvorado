@@ -1,0 +1,8 @@
+s3-config:
+  dicts:
+    endpoint-url: http://minio:9000
+    bucket: akvorado-config
+    path-style: true
+    prefix: custom-dictionaries
+    credentials:
+      region: eu-central-1
