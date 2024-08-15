@@ -13,7 +13,7 @@
         pkgs = import nixpkgs {
           inherit system;
         };
-        nodejs = pkgs.nodejs-18_x;
+        nodejs = pkgs.nodejs_20;
         go = pkgs.go_1_23;
         frontend = pkgs.buildNpmPackage.override { inherit nodejs; } {
           name = "akvorado-frontend";
