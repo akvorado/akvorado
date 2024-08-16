@@ -44,3 +44,16 @@ For manual tests, you can use `make docker-dev` to build a Docker container of
 Akvorado, then use `docker compose up` to run Docker compose. Beware to not
 destroy the volume for GeoIP at each tentative as there is a per-day limit on
 the number of times one IP can fetch the GeoIP database.
+
+# Licensing
+
+The code is licensed under AGPL-3.0-only. When creating new files, be sure to
+add the appropriate SPDX header, like for existing files. Feel free to assign
+the copyright to yourself or your organization: we do not do copyright
+assignment as GitHub terms and conditions already [include][] this:
+
+> Whenever you add Content to a repository containing notice of a license, you
+> license that Content under the same terms, and you agree that you have the
+> right to license that Content under those terms.
+
+[include]: https://docs.github.com/en/site-policy/github-terms/github-terms-of-service#6-contributions-under-repository-license
