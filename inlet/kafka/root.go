@@ -94,7 +94,6 @@ func (c *Component) Start() error {
 	// Main loop
 	c.t.Go(func() error {
 		defer kafkaProducer.Close()
-		defer c.kafkaConfig.MetricRegistry.UnregisterAll()
 		errLogger := c.r.Sample(reporter.BurstSampler(10*time.Second, 3))
 		for {
 			select {
@@ -119,6 +118,7 @@ func (c *Component) Start() error {
 // Stop stops the Kafka component
 func (c *Component) Stop() error {
 	defer func() {
+		c.kafkaConfig.MetricRegistry.UnregisterAll()
 		kafka.GlobalKafkaLogger.Unregister()
 		c.r.Info().Msg("Kafka component stopped")
 	}()

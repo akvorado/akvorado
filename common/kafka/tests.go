@@ -25,6 +25,7 @@ func SetupKafkaBroker(t *testing.T) (sarama.Client, []string) {
 	saramaConfig.Net.DialTimeout = 1 * time.Second
 	saramaConfig.Net.ReadTimeout = 1 * time.Second
 	saramaConfig.Net.WriteTimeout = 1 * time.Second
+	saramaConfig.Producer.Return.Successes = true
 	ready := false
 	var (
 		client sarama.Client
