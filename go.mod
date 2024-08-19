@@ -39,7 +39,7 @@ require (
 	github.com/prometheus/client_golang v1.20.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rs/zerolog v1.33.0
-	github.com/scrapli/scrapligo v1.3.1
+	github.com/scrapli/scrapligo v1.3.2
 	github.com/slayercat/GoSNMPServer v0.5.2
 	github.com/spf13/cobra v1.8.1
 	github.com/ti-mo/conntrack v0.5.1
