@@ -119,6 +119,54 @@ func TestDefaultValuesConfig(t *testing.T) {
 	})
 }
 
+func TestRenameConfig(t *testing.T) {
+	type Configuration struct {
+		UnchangedLabel string
+		NewLabel       string
+	}
+	RegisterMapstructureUnmarshallerHook(RenameKeyUnmarshallerHook(Configuration{}, "OldLabel", "NewLabel"))
+	TestConfigurationDecode(t, ConfigurationDecodeCases{
+		{
+			Description: "no rename needed",
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"unchanged-label": "hello",
+					"new-label":       "bye",
+				}
+			},
+			Expected: Configuration{
+				UnchangedLabel: "hello",
+				NewLabel:       "bye",
+			},
+		}, {
+			Description: "rename needed",
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"unchanged-label": "hello",
+					"old-label":       "bye",
+				}
+			},
+			Expected: Configuration{
+				UnchangedLabel: "hello",
+				NewLabel:       "bye",
+			},
+		}, {
+			Description: "conflicts",
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"unchanged-label": "hello",
+					"old-label":       "bye",
+					"new-label":       "whatt?",
+				}
+			},
+			Error: true,
+		},
+	})
+}
+
 func TestParametrizedConfig(t *testing.T) {
 	type InnerConfigurationType1 struct {
 		CC string

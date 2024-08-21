@@ -106,6 +106,39 @@ func DefaultValuesUnmarshallerHook[Configuration any](defaultConfiguration Confi
 	}
 }
 
+// RenameKeyUnmarshallerHook move a configuration setting from one place to another.
+func RenameKeyUnmarshallerHook[Configuration any](zeroConfiguration Configuration, fromLabel, toLabel string) mapstructure.DecodeHookFunc {
+	return func(from, to reflect.Value) (interface{}, error) {
+		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(zeroConfiguration) {
+			return from.Interface(), nil
+		}
+
+		// country-database → geo-database
+		var fromKey, toKey *reflect.Value
+		fromMap := from.MapKeys()
+		for i, k := range fromMap {
+			k = ElemOrIdentity(k)
+			if k.Kind() != reflect.String {
+				return from.Interface(), nil
+			}
+			if MapStructureMatchName(k.String(), fromLabel) {
+				fromKey = &fromMap[i]
+			} else if MapStructureMatchName(k.String(), toLabel) {
+				toKey = &fromMap[i]
+			}
+		}
+		if fromKey != nil && toKey != nil {
+			return nil, fmt.Errorf("cannot have both %q and %q", fromKey.String(), toKey.String())
+		}
+		if fromKey != nil {
+			from.SetMapIndex(reflect.ValueOf(toLabel), from.MapIndex(*fromKey))
+			from.SetMapIndex(*fromKey, reflect.Value{})
+		}
+
+		return from.Interface(), nil
+	}
+}
+
 // ParametrizedConfigurationUnmarshallerHook will help decode a configuration
 // structure parametrized by a type by selecting the appropriate concrete type
 // depending on the type contained in the source. We have two configuration
