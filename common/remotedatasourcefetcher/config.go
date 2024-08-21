@@ -70,5 +70,6 @@ func DefaultRemoteDataSourceConfiguration() RemoteDataSource {
 }
 
 func init() {
-	helpers.RegisterMapstructureUnmarshallerHook(helpers.DefaultValuesUnmarshallerHook[RemoteDataSource](DefaultRemoteDataSourceConfiguration()))
+	helpers.RegisterMapstructureUnmarshallerHook(
+		helpers.DefaultValuesUnmarshallerHook(DefaultRemoteDataSourceConfiguration()))
 }

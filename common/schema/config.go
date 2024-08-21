@@ -106,7 +106,10 @@ func DefaultCustomDictAttributeConfiguration() CustomDictAttribute {
 }
 
 func init() {
-	helpers.RegisterMapstructureUnmarshallerHook(helpers.DefaultValuesUnmarshallerHook[CustomDict](DefaultCustomDictConfiguration()))
-	helpers.RegisterMapstructureUnmarshallerHook(helpers.DefaultValuesUnmarshallerHook[CustomDictKey](DefaultCustomDictKeyConfiguration()))
-	helpers.RegisterMapstructureUnmarshallerHook(helpers.DefaultValuesUnmarshallerHook[CustomDictAttribute](DefaultCustomDictAttributeConfiguration()))
+	helpers.RegisterMapstructureUnmarshallerHook(
+		helpers.DefaultValuesUnmarshallerHook(DefaultCustomDictConfiguration()))
+	helpers.RegisterMapstructureUnmarshallerHook(
+		helpers.DefaultValuesUnmarshallerHook(DefaultCustomDictKeyConfiguration()))
+	helpers.RegisterMapstructureUnmarshallerHook(
+		helpers.DefaultValuesUnmarshallerHook(DefaultCustomDictAttributeConfiguration()))
 }
