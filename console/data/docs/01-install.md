@@ -101,12 +101,14 @@ When using `docker compose`, use the following commands to fetch an updated
 
 ```console
 # cd akvorado
-# curl -sL https://github.com/akvorado/akvorado/releases/latest/download/docker-compose-quickstart.tar.gz | tar zxvf - docker-compose.yml
+# curl -sL https://github.com/akvorado/akvorado/releases/latest/download/docker-compose-upgrade.tar.gz | tar zxvf - docker-compose.yml
 # docker compose pull
 # docker compose stop akvorado-orchestrator
 # docker compose up -d
 ```
 
-Note that if Zookeeper or Kakfa gets upgraded in the process, this can be
-disruptive. Feel free to only use `docker compose pull akvorado-orchestrator` to
-only update Akvorado image.
+The `docker-compose-upgrade.tar.gz` tarball ships `.env.dist` instead of `.env`.
+You may want to check the differences with your setup (most of the time, there
+shouldn't have any). Note that if Zookeeper or Kakfa gets upgraded in the
+process, this can be disruptive. You may want to review the changes in
+`docker/versions.yml`.

@@ -272,6 +272,12 @@ jobs:
             .env docker/* \
             orchestrator/clickhouse/data/docker-entrypoint.sh \
             config/*.yaml
+      - name: Build Docker Compose "upgrade"
+        run: |
+          mv .env .env.dist
+          tar zcvf docker-compose-upgrade.tar.gz \
+            .env.dist docker/* \
+            orchestrator/clickhouse/data/docker-entrypoint.sh
 
       # Publish release
       - name: Publish release
@@ -283,3 +289,4 @@ jobs:
           files: |
             akvorado
             docker-compose-quickstart.tar.gz
+            docker-compose-upgrade.tar.gz
