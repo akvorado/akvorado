@@ -101,7 +101,7 @@ When using `docker compose`, use the following commands to fetch an updated
 
 ```console
 # cd akvorado
-# curl -sL https://github.com/akvorado/akvorado/releases/latest/download/docker-compose-upgrade.tar.gz | tar zxvf - docker-compose.yml
+# curl -sL https://github.com/akvorado/akvorado/releases/latest/download/docker-compose-upgrade.tar.gz | tar zxvf -
 # docker compose pull
 # docker compose stop akvorado-orchestrator
 # docker compose up -d
