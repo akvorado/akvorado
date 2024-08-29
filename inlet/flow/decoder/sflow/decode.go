@@ -137,8 +137,8 @@ func (nd *Decoder) decode(packet sflow.Packet) []*schema.FlowMessage {
 							column.ProtobufAppendVarint(bf, uint64(asn))
 						}
 					}
+					bf.GotASPath = true
 				}
-				bf.GotASPath = true
 			}
 		}
 

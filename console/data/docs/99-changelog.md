@@ -14,6 +14,7 @@ identified with a specific icon:
 ## Next version
 
 - 🩹 *console*: sort results by number of packets when unit is packets per second
+- 🌱 *inlet*: use AS path from routing component if sFlow received an empty one
 - 🌱 *console*: add `bidirectional` and `previous-period` as configurable values for default visualize options
 - 🌱 *docker*: build IPinfo updater image from CI
 - 🌱 *docker*: update Kafka UI to 0.7.2
