@@ -1,0 +1,48 @@
+---
+services:
+  akvorado-orchestrator:
+    environment:
+      AWS_ACCESS_KEY_ID: minio
+      AWS_SECRET_ACCESS_KEY: minio123
+
+  minio:
+    extends:
+      file: versions.yml
+      service: minio
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: minio123
+      MINIO_BROWSER_REDIRECT_URL: http://127.0.0.1:8080/minio
+    command: server /data --console-address ":9001"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.minio.entrypoints=private
+      - traefik.http.routers.minio.rule=PathPrefix(`/minio`)
+      - traefik.http.routers.minio.middlewares=minio-strip
+      - traefik.http.middlewares.minio-strip.stripprefix.prefixes=/minio
+      - traefik.http.services.minio.loadbalancer.server.port=9001
+    healthcheck:
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      test: timeout 5 bash -c "until mc config host add myminio http://127.0.0.1:9000 minio minio123; do sleep 1; done" && mc admin info myminio
+    ports:
+      - 127.0.0.1:9000:9000/tcp
+      - 9001:9001/tcp
+
+  minio-content:
+    image: minio/mc
+    depends_on:
+      minio:
+        condition: service_healthy
+        restart: true
+    volumes:
+      - ./custom-dictionaries:/custom-dictionaries:ro
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc config host add myminio http://minio:9000 minio minio123;
+      /usr/bin/mc rm -r --force myminio/akvorado-config;
+      /usr/bin/mc mb myminio/akvorado-config;
+      /usr/bin/mc cp --recursive /custom-dictionaries myminio/akvorado-config;
+      exit 0;
+      "

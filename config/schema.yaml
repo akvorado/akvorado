@@ -1,0 +1,19 @@
+custom-dictionaries:
+  interfaces:
+    layout: complex_key_hashed
+    keys:
+      - name: exportername
+        type: String
+        match-dimension: ExporterName
+      - name: interface
+        type: String
+        match-dimension-suffix: Name
+    attributes:
+      - name: remoteinterface
+        type: String
+    dimensions:
+      - OutIf
+      - InIf
+    source: interfaces.csv
+    source-type: s3
+    s3-config: dicts

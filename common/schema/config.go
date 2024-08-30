@@ -7,6 +7,7 @@ import (
 	"errors"
 
 	"akvorado/common/helpers"
+	"akvorado/common/helpers/bimap"
 )
 
 // Configuration describes the configuration for the schema component.
@@ -32,6 +33,8 @@ type CustomDict struct {
 	Source     string                `validate:"required"`
 	Layout     string                `validate:"required,oneof=hashed iptrie complex_key_hashed"`
 	Dimensions []string              `validate:"required"`
+	SourceType CustomDictSourceType
+	S3Config   string
 }
 
 // CustomDictKey represents a single key (matching) column of a custom dictionary
@@ -48,6 +51,51 @@ type CustomDictAttribute struct {
 	Type    string `validate:"required,oneof=String UInt8 UInt16 UInt32 UInt64 IPv6"`
 	Label   string `validate:"omitempty,alphanum"` // empty label is acceptable, in this case fallback to name
 	Default string `validate:"omitempty,alphanum"`
+}
+
+type (
+	// CustomDictSourceType decides how to fetch a custom dictionary
+	CustomDictSourceType int
+)
+
+const (
+	// SourceFile means the custom dict is served from a local file
+	SourceFile CustomDictSourceType = iota
+	// SourceHTTP means the custom dict is served from an HTTP endpoint
+	SourceHTTP
+	// SourceS3 means the custom dict is served from an S3 bucket
+	SourceS3
+)
+
+var customDictSourceTypeMap = bimap.New(map[CustomDictSourceType]string{
+	SourceFile: "file",
+	SourceHTTP: "http",
+	SourceS3:   "s3",
+})
+
+// MarshalText turns an CustomDictSourceType to Text
+func (st CustomDictSourceType) MarshalText() ([]byte, error) {
+	got, ok := customDictSourceTypeMap.LoadValue(st)
+	if ok {
+		return []byte(got), nil
+	}
+	return nil, errors.New("unknown field")
+}
+
+// String turns an CustomDictSourceType to string.
+func (st CustomDictSourceType) String() string {
+	got, _ := customDictSourceTypeMap.LoadValue(st)
+	return got
+}
+
+// UnmarshalText provides an custom dict source from a string.
+func (st *CustomDictSourceType) UnmarshalText(input []byte) error {
+	got, ok := customDictSourceTypeMap.LoadKey(string(input))
+	if ok {
+		*st = got
+		return nil
+	}
+	return errors.New("unknown provider")
 }
 
 // DefaultConfiguration returns the default configuration for the schema component.
@@ -87,7 +135,8 @@ func (c *Component) GetCustomDictConfig() map[string]CustomDict {
 // DefaultCustomDictConfiguration is the default config for a CustomDict
 func DefaultCustomDictConfiguration() CustomDict {
 	return CustomDict{
-		Layout: "hashed",
+		Layout:     "hashed",
+		SourceType: SourceFile,
 	}
 }
 

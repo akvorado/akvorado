@@ -16,6 +16,7 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
+	"akvorado/common/s3"
 	"akvorado/common/schema"
 	"akvorado/orchestrator"
 	"akvorado/orchestrator/clickhouse"
@@ -32,6 +33,7 @@ type OrchestratorConfiguration struct {
 	GeoIP        geoip.Configuration
 	Orchestrator orchestrator.Configuration `mapstructure:",squash" yaml:",inline"`
 	Schema       schema.Configuration
+	S3           s3.Configuration
 	// Other service configurations
 	Inlet        []InletConfiguration        `validate:"dive"`
 	Console      []ConsoleConfiguration      `validate:"dive"`
@@ -141,12 +143,18 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, c
 		return fmt.Errorf("unable to initialize GeoIP component: %w", err)
 	}
 
+	s3Component, err := s3.New(r, config.S3, s3.Dependencies{Daemon: daemonComponent})
+	if err != nil {
+		return fmt.Errorf("unable to initialize s3 component: %w", err)
+	}
+
 	clickhouseComponent, err := clickhouse.New(r, config.ClickHouse, clickhouse.Dependencies{
 		Daemon:     daemonComponent,
 		HTTP:       httpComponent,
 		ClickHouse: clickhouseDBComponent,
 		Schema:     schemaComponent,
 		GeoIP:      geoipComponent,
+		S3:         s3Component,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to initialize clickhouse component: %w", err)

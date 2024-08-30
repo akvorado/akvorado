@@ -5,6 +5,8 @@ paths:
       test:
         source: test.csv
         layout: hashed
+        s3config: ""
+        sourcetype: "file"
         keys:
           - name: addr
             type: String
@@ -28,6 +30,8 @@ paths:
       test:
         source: test.csv
         layout: hashed
+        s3config: ""
+        sourcetype: "file"
         keys:
           - name: addr
             type: String
