@@ -62,7 +62,7 @@ func TestDecode(t *testing.T) {
 			DstAS:           39421,
 			SrcNetMask:      20,
 			DstNetMask:      27,
-			GotASPath:       true,
+			GotASPath:       false,
 			ProtobufDebug: map[schema.ColumnKey]interface{}{
 				schema.ColumnBytes:        421,
 				schema.ColumnPackets:      1,
