@@ -22,7 +22,6 @@ tarball". This new tarball does not upgrade the configuration files, nor the
 - 🌱 *console*: add `bidirectional` and `previous-period` as configurable values for default visualize options
 - 🌱 *docker*: build IPinfo updater image from CI
 - 🌱 *docker*: update Kafka UI to 0.7.2
-- 🌱 *docker*: update ClickHouse to 24.8 (not mandatory)
 - 🌱 *docker*: provide an upgrade tarball in addition to the quickstart tarball
 - 🌱 *build*: minimal Go version to build is now 1.22
 
