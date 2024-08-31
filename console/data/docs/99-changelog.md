@@ -13,6 +13,10 @@ identified with a specific icon:
 
 ## Next version
 
+For upgrading, you should use the "upgrade tarball" instead of the "quickstart
+tarball". This new tarball does not upgrade the configuration files, nor the
+`.env` file.
+
 - 🩹 *console*: sort results by number of packets when unit is packets per second
 - 🌱 *inlet*: use AS path from routing component if sFlow received an empty one
 - 🌱 *console*: add `bidirectional` and `previous-period` as configurable values for default visualize options
