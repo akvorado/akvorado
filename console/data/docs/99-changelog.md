@@ -11,7 +11,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Next version
+## 1.11.1 - 2024-09-01
 
 For upgrading, you should use the "upgrade tarball" instead of the "quickstart
 tarball". This new tarball does not upgrade the configuration files, nor the
