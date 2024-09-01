@@ -71,6 +71,8 @@ services:
       service: clickhouse
     depends_on:
       - zookeeper
+    cap_add:
+      - SYS_NICE
     volumes:
       - ./clickhouse-cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
       - ./clickhouse-cluster-1.xml:/etc/clickhouse-server/config.d/cluster-1.xml

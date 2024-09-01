@@ -148,6 +148,8 @@ services:
     entrypoint: /entrypoint-override.sh
     environment:
       - CLICKHOUSE_INIT_TIMEOUT=60
+    cap_add:
+      - SYS_NICE
     restart: unless-stopped
     healthcheck:
       interval: 30s

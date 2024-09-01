@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Next release
+
+- 🌱 *docker*: update ClickHouse to 24.8 (not mandatory)
+
 ## 1.11.1 - 2024-09-01
 
 For upgrading, you should use the "upgrade tarball" instead of the "quickstart
