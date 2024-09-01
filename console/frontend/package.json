@@ -32,7 +32,7 @@
     "sugar-date": "^2.0.6",
     "uuid": "^10.0.0",
     "vue": "^3.3.4",
-    "vue-echarts": "^6.0.3",
+    "vue-echarts": "^7.0.3",
     "vue-resizer": "^1.1.9",
     "vue-router": "^4.0.16",
     "vuedraggable": "^4.1.0"
