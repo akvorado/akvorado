@@ -14,6 +14,7 @@ identified with a specific icon:
 ## Next release
 
 - 🌱 *docker*: update ClickHouse to 24.8 (not mandatory)
+- 🌱 *docker*: update to Traefik 3.1 (not mandatory)
 
 ## 1.11.1 - 2024-09-01
 

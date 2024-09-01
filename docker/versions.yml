@@ -10,7 +10,7 @@ services:
   clickhouse:
     image: clickhouse/clickhouse-server:24.8 # \d+\.[38]
   traefik:
-    image: traefik:v3.0 # v\d+\.\d+
+    image: traefik:v3.1 # v\d+\.\d+
   maxmind-geoipupdate:
     image: ghcr.io/maxmind/geoipupdate:v7
   ipinfo-geoipupdate:
