@@ -76,9 +76,6 @@ services:
     volumes:
       - ../config:/etc/akvorado:ro
       - akvorado-geoip:/usr/share/GeoIP:ro
-      # If you prefer to use geo IP databases from host, comment the
-      # above line and uncomment this one:
-      # - /usr/share/GeoIP:/usr/share/GeoIP:ro
     labels:
       - traefik.enable=true
       - traefik.http.routers.akvorado-orchestrator.entrypoints=private # it exposes configuration files with passwords

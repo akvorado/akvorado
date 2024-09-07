@@ -15,6 +15,7 @@ identified with a specific icon:
 
 - 🌱 *docker*: update ClickHouse to 24.8 (not mandatory)
 - 🌱 *docker*: update to Traefik 3.1 (not mandatory)
+- 🌱 *docker*: add docker/docker-compose-local.yml for local overrides
 
 ## 1.11.1 - 2024-09-01
 

@@ -275,6 +275,7 @@ jobs:
       - name: Build Docker Compose "upgrade"
         run: |
           mv .env .env.dist
+          mv docker/docker-compose-local.yml docker/docker-compose-local.yml.dist
           tar zcvf docker-compose-upgrade.tar.gz \
             .env.dist docker/* \
             orchestrator/clickhouse/data/docker-entrypoint.sh
