@@ -29,6 +29,7 @@ bit of data and reset the Kafka container:
 - 🩹 *console*: fix deletion of saved filters
 - 🩹 *docker*: move healthcheck for IPinfo updater into Dockerfile to avoid
   "unhealthy" state on non-updated installation
+- 🌱 *docker*: update Kafka to 4.0
 - 🌱 *docker*: enable access log for Traefik
 - 🌱 *docker*: update Traefik to 3.4 (not mandatory)
 - 🌱 *orchestrator*: move ClickHouse database settings from `clickhouse` to `clickhousedb`
