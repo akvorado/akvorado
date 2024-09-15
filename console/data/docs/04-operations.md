@@ -394,6 +394,14 @@ snmp-server community <community> ro
 snmp-server vrf VRF-MANAGEMENT
 ```
 
+### Nokia
+
+Nokia routers running SROS use a different interface index in their flow records
+as the SNMP interface index usually used by other devices. To fix this issue,
+you need to use `cflowd use-vrtr-if-index`. More information can be found in
+[Nokia's
+documentation](https://infocenter.nokia.com/public/7750SR140R4/topic/com.sr.router.config/html/cflowd_cli.html#tgardner5iexrn6muno)
+
 ## Kafka
 
 When using `docker compose`, there is a Kafka UI running at
