@@ -25,7 +25,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.0.1
 	github.com/hashicorp/go-version v1.7.0
 	github.com/itchyny/gojq v0.12.16
-	github.com/jhump/protoreflect v1.16.0
+	github.com/jhump/protoreflect v1.17.0
 	github.com/kentik/patricia v1.2.1
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-isatty v0.0.20
@@ -68,7 +68,7 @@ require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bio-routing/tflow2 v0.0.0-20181230153523-2e308a4a3c3a // indirect
-	github.com/bufbuild/protocompile v0.13.0 // indirect
+	github.com/bufbuild/protocompile v0.14.1 // indirect
 	github.com/bytedance/sonic v1.11.6 // indirect
 	github.com/bytedance/sonic/loader v0.1.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
