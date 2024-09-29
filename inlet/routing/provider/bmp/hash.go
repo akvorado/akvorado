@@ -27,6 +27,6 @@ func (h hash) Sum() uint64 {
 	return h.h.Sum64()
 }
 
-func (h hash) Add(ptr *byte, len int) {
-	h.h.Write(unsafe.Slice(ptr, len))
+func (h hash) Add(ptr *byte, length int) {
+	h.h.Write(unsafe.Slice(ptr, length))
 }

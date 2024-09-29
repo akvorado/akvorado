@@ -136,16 +136,16 @@ func (rta routeAttributes) Equal(orta routeAttributes) bool {
 }
 
 // addPrefix add a new route to the RIB. It returns the number of routes really added.
-func (r *rib) addPrefix(ip netip.Addr, bits int, new route) int {
+func (r *rib) addPrefix(ip netip.Addr, bits int, newRoute route) int {
 	v6 := patricia.NewIPv6Address(ip.AsSlice(), uint(bits))
-	added, _ := r.tree.AddOrUpdate(v6, new,
+	added, _ := r.tree.AddOrUpdate(v6, newRoute,
 		func(r1, r2 route) bool {
 			return r1.peer == r2.peer && r1.nlri == r2.nlri
 		}, func(old route) route {
 			r.nlris.Take(old.nlri)
 			r.nextHops.Take(old.nextHop)
 			r.rtas.Take(old.attributes)
-			return new
+			return newRoute
 		})
 	if !added {
 		return 0
@@ -154,7 +154,7 @@ func (r *rib) addPrefix(ip netip.Addr, bits int, new route) int {
 }
 
 // removePrefix removes a route from the RIB. It returns the number of routes really removed.
-func (r *rib) removePrefix(ip netip.Addr, bits int, old route) int {
+func (r *rib) removePrefix(ip netip.Addr, bits int, oldRoute route) int {
 	v6 := patricia.NewIPv6Address(ip.AsSlice(), uint(bits))
 	removed := r.tree.Delete(v6, func(r1, r2 route) bool {
 		// This is not enforced/documented, but the route in the tree is the first one.
@@ -165,7 +165,7 @@ func (r *rib) removePrefix(ip netip.Addr, bits int, old route) int {
 			return true
 		}
 		return false
-	}, old)
+	}, oldRoute)
 	return removed
 }
 
