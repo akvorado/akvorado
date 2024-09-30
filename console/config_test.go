@@ -26,6 +26,7 @@ func TestConfigHandler(t *testing.T) {
 					"filter":         "InIfBoundary = external",
 					"dimensions":     []string{"SrcAS"},
 					"limit":          10,
+					"limitType":      "Avg",
 					"bidirectional":  false,
 					"previousPeriod": false,
 				},

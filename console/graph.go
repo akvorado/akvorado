@@ -18,8 +18,9 @@ type graphCommonHandlerInput struct {
 	schema         *schema.Component
 	Start          time.Time      `json:"start" binding:"required"`
 	End            time.Time      `json:"end" binding:"required,gtfield=Start"`
-	Dimensions     []query.Column `json:"dimensions"`                          // group by ...
-	Limit          int            `json:"limit" binding:"min=1"`               // limit product of dimensions
+	Dimensions     []query.Column `json:"dimensions"`            // group by ...
+	Limit          int            `json:"limit" binding:"min=1"` // limit product of dimensions
+	LimitType      string         `json:"limitType"`
 	Filter         query.Filter   `json:"filter"`                              // where ...
 	TruncateAddrV4 int            `json:"truncate-v4" binding:"min=0,max=32"`  // 0 or 32 = no truncation
 	TruncateAddrV6 int            `json:"truncate-v6" binding:"min=0,max=128"` // 0 or 128 = no truncation

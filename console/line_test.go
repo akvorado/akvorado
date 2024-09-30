@@ -488,6 +488,43 @@ ORDER BY time WITH FILL
  INTERPOLATE (dimensions AS ['Other', 'Other']))
 {{ end }}`,
 		}, {
+			Description: "no filters, limitType by max",
+			Pos:         helpers.Mark(),
+			Input: graphLineHandlerInput{
+				graphCommonHandlerInput: graphCommonHandlerInput{
+					Start:     time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					End:       time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					Limit:     20,
+					LimitType: "Max",
+					Dimensions: []query.Column{
+						query.NewColumn("ExporterName"),
+						query.NewColumn("InIfProvider"),
+					},
+					Filter: query.Filter{},
+					Units:  "l3bps",
+				},
+				Points: 100,
+			},
+			Expected: `
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
+WITH
+ source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
+ rows AS (SELECT ExporterName, InIfProvider FROM ( SELECT ExporterName, InIfProvider, MAX(Bytes) AS max_bytes_at_time FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider, {{ .Timefilter }} ) GROUP BY ExporterName, InIfProvider ORDER BY MAX(max_bytes_at_time) DESC LIMIT 20)
+SELECT 1 AS axis, * FROM (
+SELECT
+ {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .Units }}/{{ .Interval }} AS xps,
+ if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
+FROM source
+WHERE {{ .Timefilter }}
+GROUP BY time, dimensions
+ORDER BY time WITH FILL
+ FROM {{ .TimefilterStart }}
+ TO {{ .TimefilterEnd }} + INTERVAL 1 second
+ STEP {{ .Interval }}
+ INTERPOLATE (dimensions AS ['Other', 'Other']))
+{{ end }}`,
+		}, {
 			Description: "no filters, reverse",
 			Pos:         helpers.Mark(),
 			Input: graphLineHandlerInput{

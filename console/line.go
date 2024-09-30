@@ -139,12 +139,24 @@ func (input graphLineHandlerInput) toSQL1(axis int, options toSQL1Options) strin
 	if !options.skipWithClause {
 		with := []string{fmt.Sprintf("source AS (%s)", input.sourceSelect())}
 		if len(dimensions) > 0 {
-			with = append(with, fmt.Sprintf(
-				"rows AS (SELECT %s FROM source WHERE %s GROUP BY %s ORDER BY {{ .Units }} DESC LIMIT %d)",
-				strings.Join(dimensions, ", "),
-				where,
-				strings.Join(dimensions, ", "),
-				input.Limit))
+			if input.LimitType == "Max" {
+				with = append(with, fmt.Sprintf(
+					"rows AS (SELECT %s FROM ( SELECT %s AS max_bytes_at_time FROM source WHERE %s GROUP BY %s ) GROUP BY %s ORDER BY MAX(%s) DESC LIMIT %d)",
+					strings.Join(dimensions, ", "),
+					strings.Join(append(dimensions, fmt.Sprintf("MAX(%s)", metricForTopSort(input.Units))), ", "),
+					where,
+					strings.Join(append(dimensions, "{{ .Timefilter }}"), ", "),
+					strings.Join(dimensions, ", "),
+					"max_bytes_at_time",
+					input.Limit))
+			} else {
+				with = append(with, fmt.Sprintf(
+					"rows AS (SELECT %s FROM source WHERE %s GROUP BY %s ORDER BY {{ .Units }} DESC LIMIT %d)",
+					strings.Join(dimensions, ", "),
+					where,
+					strings.Join(dimensions, ", "),
+					input.Limit))
+			}
 		}
 		if len(with) > 0 {
 			withStr = fmt.Sprintf("\nWITH\n %s", strings.Join(with, ",\n "))
