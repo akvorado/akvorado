@@ -29,6 +29,7 @@ type ServerConfig = {
     filter: string;
     dimensions: string[];
     limit: number;
+    limitType: string;
     bidirectional: boolean;
     previousPeriod: boolean;
   };
