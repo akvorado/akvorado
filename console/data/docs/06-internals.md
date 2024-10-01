@@ -88,7 +88,7 @@ often abstracted, this is not the case for metrics. Moreover, the
 design to scale is a bit different as *Akvorado* will create a socket
 for each worker instead of distributing incoming flows using a channel.
 
-Netflow v9, IPFIX, and sFlow are currently supported.
+Netflow v5, Netflow v9, IPFIX, and sFlow are currently supported.
 
 The design of this component is modular. It is possible to "plug"
 new decoders and new inputs easily. It is expected that most buffering
