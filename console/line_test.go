@@ -179,7 +179,7 @@ func TestGraphQuerySQL(t *testing.T) {
 				Points: 100,
 			},
 			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps","aggregator":"SUM"}@@ }}
 WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
@@ -210,7 +210,7 @@ ORDER BY time WITH FILL
 				Points: 100,
 			},
 			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l2bps"}@@ }}
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l2bps","aggregator":"SUM"}@@ }}
 WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
@@ -242,7 +242,7 @@ ORDER BY time WITH FILL
 				Points: 100,
 			},
 			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"pps"}@@ }}
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"pps","aggregator":"SUM"}@@ }}
 WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
@@ -275,7 +275,7 @@ ORDER BY time WITH FILL
 				Points: 100,
 			},
 			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","main-table-required":true,"points":100,"units":"l3bps"}@@ }}
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","main-table-required":true,"points":100,"units":"l3bps","aggregator":"SUM"}@@ }}
 WITH
  source AS (SELECT * REPLACE (tupleElement(IPv6CIDRToRange(SrcAddr, if(tupleElement(IPv6CIDRToRange(SrcAddr, 96), 1) = toIPv6('::ffff:0.0.0.0'), 120, 48)), 1) AS SrcAddr) FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  rows AS (SELECT SrcAddr FROM source WHERE {{ .Timefilter }} AND (SrcAddr BETWEEN toIPv6('::ffff:1.0.0.0') AND toIPv6('::ffff:1.255.255.255')) GROUP BY SrcAddr ORDER BY {{ .Units }} DESC LIMIT 0)
@@ -307,7 +307,7 @@ ORDER BY time WITH FILL
 				Points: 100,
 			},
 			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps","aggregator":"SUM"}@@ }}
 WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
@@ -338,7 +338,7 @@ ORDER BY time WITH FILL
 				Points: 100,
 			},
 			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps","aggregator":"SUM"}@@ }}
 WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
@@ -370,7 +370,7 @@ ORDER BY time WITH FILL
 				Bidirectional: true,
 			},
 			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps","aggregator":"SUM"}@@ }}
 WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
@@ -388,7 +388,7 @@ ORDER BY time WITH FILL
  INTERPOLATE (dimensions AS emptyArrayString()))
 {{ end }}
 UNION ALL
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps","aggregator":"SUM"}@@ }}
 SELECT 2 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
@@ -418,7 +418,7 @@ ORDER BY time WITH FILL
 				Bidirectional: true,
 			},
 			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"inl2%"}@@ }}
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"inl2%","aggregator":"SUM"}@@ }}
 WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
@@ -436,7 +436,7 @@ ORDER BY time WITH FILL
  INTERPOLATE (dimensions AS emptyArrayString()))
 {{ end }}
 UNION ALL
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"outl2%"}@@ }}
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"outl2%","aggregator":"SUM"}@@ }}
 SELECT 2 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
@@ -469,7 +469,7 @@ ORDER BY time WITH FILL
 				Points: 100,
 			},
 			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps","aggregator":"SUM"}@@ }}
 WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY {{ .Units }} DESC LIMIT 20)
@@ -506,10 +506,10 @@ ORDER BY time WITH FILL
 				Points: 100,
 			},
 			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps","aggregator":"MAX"}@@ }}
 WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
- rows AS (SELECT ExporterName, InIfProvider FROM ( SELECT ExporterName, InIfProvider, MAX(Bytes) AS max_bytes_at_time FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider, {{ .Timefilter }} ) GROUP BY ExporterName, InIfProvider ORDER BY MAX(max_bytes_at_time) DESC LIMIT 20)
+ rows AS (SELECT ExporterName, InIfProvider FROM ( SELECT ExporterName, InIfProvider, {{ .Units }} AS max_at_time FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider, {{ .Timefilter }} ) GROUP BY ExporterName, InIfProvider ORDER BY MAX(max_at_time) DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
@@ -543,7 +543,7 @@ ORDER BY time WITH FILL
 				Bidirectional: true,
 			},
 			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps","aggregator":"SUM"}@@ }}
 WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY {{ .Units }} DESC LIMIT 20)
@@ -562,7 +562,7 @@ ORDER BY time WITH FILL
  INTERPOLATE (dimensions AS ['Other', 'Other']))
 {{ end }}
 UNION ALL
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps","aggregator":"SUM"}@@ }}
 SELECT 2 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
@@ -596,7 +596,7 @@ ORDER BY time WITH FILL
 				PreviousPeriod: true,
 			},
 			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps","aggregator":"SUM"}@@ }}
 WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY {{ .Units }} DESC LIMIT 20)
@@ -615,7 +615,7 @@ ORDER BY time WITH FILL
  INTERPOLATE (dimensions AS ['Other', 'Other']))
 {{ end }}
 UNION ALL
-{{ with context @@{"start":"2022-04-09T15:45:10Z","end":"2022-04-10T15:45:10Z","start-for-interval":"2022-04-10T15:45:10Z","points":100,"units":"l3bps"}@@ }}
+{{ with context @@{"start":"2022-04-09T15:45:10Z","end":"2022-04-10T15:45:10Z","start-for-interval":"2022-04-10T15:45:10Z","points":100,"units":"l3bps","aggregator":"SUM"}@@ }}
 SELECT 3 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} + INTERVAL 86400 second AS time,

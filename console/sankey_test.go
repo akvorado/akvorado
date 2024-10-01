@@ -40,7 +40,7 @@ func TestSankeyQuerySQL(t *testing.T) {
 				},
 			},
 			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l3bps"}@@ }}
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l3bps","aggregator":"SUM"}@@ }}
 WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }}) AS range,
@@ -72,11 +72,11 @@ ORDER BY xps DESC
 				},
 			},
 			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l3bps"}@@ }}
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l3bps","aggregator":"MAX"}@@ }}
 WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }}) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM ( SELECT SrcAS, ExporterName, MAX(Bytes) AS max_bytes_at_time FROM source WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName, {{ .Timefilter }} ) GROUP BY SrcAS, ExporterName ORDER BY MAX(max_bytes_at_time) DESC LIMIT 5)
+ rows AS (SELECT SrcAS, ExporterName FROM ( SELECT SrcAS, ExporterName, {{ .Units }} AS max_at_time FROM source WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName, {{ .Timefilter }} ) GROUP BY SrcAS, ExporterName ORDER BY MAX(max_at_time) DESC LIMIT 5)
 SELECT
  {{ .Units }}/range AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
@@ -103,7 +103,7 @@ ORDER BY xps DESC
 				},
 			},
 			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l2bps"}@@ }}
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l2bps","aggregator":"SUM"}@@ }}
 WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }}) AS range,
@@ -135,7 +135,7 @@ ORDER BY xps DESC
 				},
 			},
 			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"pps"}@@ }}
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"pps","aggregator":"SUM"}@@ }}
 WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }}) AS range,
@@ -166,7 +166,7 @@ ORDER BY xps DESC
 				},
 			},
 			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l3bps"}@@ }}
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l3bps","aggregator":"SUM"}@@ }}
 WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }} AND (DstCountry = 'FR')) AS range,

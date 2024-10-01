@@ -4,6 +4,7 @@
 package console
 
 import (
+	"fmt"
 	"strings"
 
 	"akvorado/common/schema"
@@ -31,4 +32,35 @@ func (c *Component) fixQueryColumnName(name string) string {
 		}
 	}
 	return ""
+}
+
+func selectSankeyRowsByLimitType(input graphSankeyHandlerInput, dimensions []string, where string) string {
+	return selectRowsByLimitType(input.graphCommonHandlerInput, dimensions, where)
+}
+
+func selectLineRowsByLimitType(input graphLineHandlerInput, dimensions []string, where string) string {
+	return selectRowsByLimitType(input.graphCommonHandlerInput, dimensions, where)
+}
+
+func selectRowsByLimitType(input graphCommonHandlerInput, dimensions []string, where string) string {
+	var rowsType string
+	if input.LimitType == "Max" {
+		rowsType = fmt.Sprintf(
+			"rows AS (SELECT %s FROM ( SELECT %s AS max_at_time FROM source WHERE %s GROUP BY %s ) GROUP BY %s ORDER BY MAX(%s) DESC LIMIT %d)",
+			strings.Join(dimensions, ", "),
+			strings.Join(append(dimensions, "{{ .Units }}"), ", "),
+			where,
+			strings.Join(append(dimensions, "{{ .Timefilter }}"), ", "),
+			strings.Join(dimensions, ", "),
+			"max_at_time",
+			input.Limit)
+	} else {
+		rowsType = fmt.Sprintf(
+			"rows AS (SELECT %s FROM source WHERE %s GROUP BY %s ORDER BY {{ .Units }} DESC LIMIT %d)",
+			strings.Join(dimensions, ", "),
+			where,
+			strings.Join(dimensions, ", "),
+			input.Limit)
+	}
+	return rowsType
 }
