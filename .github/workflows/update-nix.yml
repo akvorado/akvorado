@@ -27,7 +27,7 @@ jobs:
           - asn2org
     steps:
       - uses: actions/checkout@v4
-      - uses: cachix/install-nix-action@v27
+      - uses: cachix/install-nix-action@v29
       - name: Update Nix lockfile
         run: nix flake update ${{ matrix.source }}
       - name: Create pull request
@@ -49,7 +49,7 @@ jobs:
       - name: Sleep a bit
         run: sleep 300
         if: ${{ github.event_name == 'push' }}
-      - uses: cachix/install-nix-action@v27
+      - uses: cachix/install-nix-action@v29
       - uses: actions/checkout@v4
       - name: Update dependency hashes
         run: nix run .#update
