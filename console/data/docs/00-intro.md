@@ -37,15 +37,18 @@ settings in `akvorado.yaml`. They are described in details in the
 [“configuration” section](02-configuration.md) section of the
 documentation.
 
-- `clickhouse` → `asns` to give names to your internal AS numbers
-- `clickhouse` → `networks` to attach attributes to your networks
+- `clickhouse` → `asns` to give names to your internal AS numbers (optional)
+- `clickhouse` → `networks` to attach attributes to your networks (optional)
 - `inlet` → `metadata` → `provider` → `communities` to set the communities to
-  use for SNMP queries
+  use for SNMP queries (mandatory)
 - `inlet` → `core` → `exporter-classifiers` to define rules to attach
-  attributes to your exporters
+  attributes to your exporters (optional)
 - `inlet` → `core` → `interface-classifiers` to define rules to attach
-  attributes to your interfaces (including the "boundary" attribute
-  which is used by default by the web interface)
+  attributes to your interfaces, including the "boundary" attribute
+  which is used by default by the web interface (mandatory)
+
+The last point is very important: without classification, the homepage widgets
+won't work and nothing will be displayed by default in the “Visualize” tab.
 
 You can get all the expanded configuration (with default values) with
 `docker compose exec akvorado-orchestrator akvorado orchestrator
