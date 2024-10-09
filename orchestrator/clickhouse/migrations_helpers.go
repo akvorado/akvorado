@@ -121,7 +121,11 @@ func (c *Component) localTable(table string) string {
 // createDictionary creates the provided dictionary.
 func (c *Component) createDictionary(ctx context.Context, name, layout, schema, primary string) error {
 	url := fmt.Sprintf("%s/api/v0/orchestrator/clickhouse/%s.csv", c.config.OrchestratorURL, name)
-	source := fmt.Sprintf(`SOURCE(HTTP(URL '%s' FORMAT 'CSVWithNames'))`, url)
+	basicAuth := ""
+	if c.config.OrchestratorBasicAuth != nil {
+		basicAuth = fmt.Sprintf(" CREDENTIALS(user '%s' password '%s')", c.config.OrchestratorBasicAuth.Username, c.config.OrchestratorBasicAuth.Password)
+	}
+	source := fmt.Sprintf(`SOURCE(HTTP(URL '%s' FORMAT 'CSVWithNames'%s))`, url, basicAuth)
 	settings := `SETTINGS(format_csv_allow_single_quotes = 0)`
 	createQuery, err := stemplate(`
 CREATE DICTIONARY {{ .Database }}.{{ .Name }} ({{ .Schema }})

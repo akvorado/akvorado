@@ -51,6 +51,16 @@ type Configuration struct {
 	// OrchestratorURL allows one to override URL to reach
 	// orchestrator from ClickHouse
 	OrchestratorURL string `validate:"isdefault|url"`
+	// OrchestratorBasicAuth holds optional basic auth credentials to reach
+	// orchestrator from ClickHouse
+	OrchestratorBasicAuth *ConfigurationBasicAuth
+}
+
+// ConfigurationBasicAuth holds Username and Password subfields 
+// for basicauth purposes
+type ConfigurationBasicAuth struct {
+	Username string `validate:"min=1"`
+	Password string `validate:"min=1"`
 }
 
 // ResolutionConfiguration describes a consolidation interval.
