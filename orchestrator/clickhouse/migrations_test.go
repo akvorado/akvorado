@@ -537,3 +537,21 @@ AND name LIKE $3`, "flows", ch.config.Database, "%DimensionAttribute")
 		}
 	})
 }
+
+func TestQuoteString(t *testing.T) {
+	cases := []struct {
+		s        string
+		expected string
+	}{
+		{"nothing", "'nothing'"},
+		{`"hello world"`, `'\"hello world\"'`},
+		{`he's happy`, `'he\'s happy'`},
+		{`mix "everything' \"`, `'mix \"everything\' \\\"'`},
+	}
+	for _, tc := range cases {
+		got := quoteString(tc.s)
+		if diff := helpers.Diff(got, tc.expected); diff != "" {
+			t.Errorf("quoteString(%q) (-got, +want):\n%s", tc.s, diff)
+		}
+	}
+}

@@ -56,7 +56,7 @@ type Configuration struct {
 	OrchestratorBasicAuth *ConfigurationBasicAuth
 }
 
-// ConfigurationBasicAuth holds Username and Password subfields 
+// ConfigurationBasicAuth holds Username and Password subfields
 // for basicauth purposes
 type ConfigurationBasicAuth struct {
 	Username string `validate:"min=1"`

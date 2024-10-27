@@ -51,6 +51,12 @@ func stemplate(t string, data any) (string, error) {
 	return result.String(), nil
 }
 
+// quoteString quotes a string to be used in ClickHouse. This is to be used on user-provided strings.
+func quoteString(s string) string {
+	quoteEscaper := strings.NewReplacer(`'`, `\'`, `"`, `\"`, `\`, `\\`)
+	return fmt.Sprintf("'%s'", quoteEscaper.Replace(s))
+}
+
 // tableAlreadyExists compare the provided table with the one in database.
 // `column` can either be "create_table_query" or "as_select". target is the
 // expected value.
@@ -121,11 +127,17 @@ func (c *Component) localTable(table string) string {
 // createDictionary creates the provided dictionary.
 func (c *Component) createDictionary(ctx context.Context, name, layout, schema, primary string) error {
 	url := fmt.Sprintf("%s/api/v0/orchestrator/clickhouse/%s.csv", c.config.OrchestratorURL, name)
-	basicAuth := ""
-	if c.config.OrchestratorBasicAuth != nil {
-		basicAuth = fmt.Sprintf(" CREDENTIALS(user '%s' password '%s')", c.config.OrchestratorBasicAuth.Username, c.config.OrchestratorBasicAuth.Password)
+	sourceParams := []string{
+		fmt.Sprintf("URL %s", quoteString(url)),
+		"FORMAT 'CSVWithNames'",
 	}
-	source := fmt.Sprintf(`SOURCE(HTTP(URL '%s' FORMAT 'CSVWithNames'%s))`, url, basicAuth)
+	if c.config.OrchestratorBasicAuth != nil {
+		sourceParams = append(sourceParams,
+			fmt.Sprintf("CREDENTIALS(user %s password %s)",
+				quoteString(c.config.OrchestratorBasicAuth.Username),
+				quoteString(c.config.OrchestratorBasicAuth.Password)))
+	}
+	source := fmt.Sprintf(`SOURCE(HTTP(%s))`, strings.Join(sourceParams, " "))
 	settings := `SETTINGS(format_csv_allow_single_quotes = 0)`
 	createQuery, err := stemplate(`
 CREATE DICTIONARY {{ .Database }}.{{ .Name }} ({{ .Schema }})
@@ -272,11 +284,11 @@ func (c *Component) createRawFlowsTable(ctx context.Context) error {
 	hash := c.d.Schema.ProtobufMessageHash()
 	tableName := fmt.Sprintf("flows_%s_raw", hash)
 	kafkaSettings := []string{
-		fmt.Sprintf(`kafka_broker_list = '%s'`,
-			strings.Join(c.config.Kafka.Brokers, ",")),
-		fmt.Sprintf(`kafka_topic_list = '%s-%s'`,
-			c.config.Kafka.Topic, hash),
-		fmt.Sprintf(`kafka_group_name = '%s'`, c.config.Kafka.GroupName),
+		fmt.Sprintf(`kafka_broker_list = %s`,
+			quoteString(strings.Join(c.config.Kafka.Brokers, ","))),
+		fmt.Sprintf(`kafka_topic_list = %s`,
+			quoteString(fmt.Sprintf("%s-%s", c.config.Kafka.Topic, hash))),
+		fmt.Sprintf(`kafka_group_name = %s`, quoteString(c.config.Kafka.GroupName)),
 		`kafka_format = 'Protobuf'`,
 		fmt.Sprintf(`kafka_schema = 'flow-%s.proto:FlowMessagev%s'`, hash, hash),
 		fmt.Sprintf(`kafka_num_consumers = %d`, c.config.Kafka.Consumers),
@@ -382,7 +394,7 @@ func (c *Component) createRawFlowsConsumerView(ctx context.Context) error {
 			if len(columns.names) > 0 {
 				names := []string{}
 				for _, column := range columns.names {
-					names = append(names, fmt.Sprintf("'%s'", column))
+					names = append(names, quoteString(column))
 				}
 				with = append(with,
 					fmt.Sprintf("dictGet('%s', (%s), %sAddr) AS c_%sNetworks",

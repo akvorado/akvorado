@@ -120,7 +120,8 @@ func (c *Component) migrateDatabase() error {
 				defaultValue = a.Default
 			}
 			// This is only an attribute. We only need it in the schema
-			schemaStr = append(schemaStr, fmt.Sprintf("`%s` %s DEFAULT '%s'", a.Name, a.Type, defaultValue))
+			schemaStr = append(schemaStr, fmt.Sprintf("`%s` %s DEFAULT %s",
+				a.Name, a.Type, quoteString(defaultValue)))
 		}
 		dictMigrations = append(dictMigrations, func(ctx context.Context) error {
 			return c.createDictionary(
