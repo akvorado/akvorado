@@ -833,6 +833,8 @@ provided:
 - `asns` maps AS number to names (overriding the builtin ones)
 - `orchestrator-url` defines the URL of the orchestrator to be used
   by ClickHouse (autodetection when not specified)
+- `orchestrator-basic-auth` enables basic authentication to access the
+  orchestrator URL. It takes two attributes: `username` and `password`.
 
 The `resolutions` setting contains a list of resolutions. Each
 resolution has two keys: `interval` and `ttl`. The first one is the
