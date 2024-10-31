@@ -123,7 +123,7 @@ func ParseEthernet(sch *schema.Component, bf *schema.FlowMessage, data []byte) u
 	}
 	etherType := data[12:14]
 	data = data[14:]
-	if etherType[0] == 0x81 && etherType[1] == 0x00 {
+	for etherType[0] == 0x81 && etherType[1] == 0x00 {
 		// 802.1q
 		if len(data) < 4 {
 			return 0

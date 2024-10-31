@@ -13,6 +13,7 @@ identified with a specific icon:
 
 ## Next release
 
+- 🩹 *inlet*: fix decoding of QinQ in Ethernet packets
 - 🩹 *console*: fix ordering of top rows when multiple sampling rates are used
 - 🌱 *docker*: update ClickHouse to 24.8 (not mandatory)
 - 🌱 *docker*: update to Traefik 3.1 (not mandatory)

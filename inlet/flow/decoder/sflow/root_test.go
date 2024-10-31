@@ -496,4 +496,44 @@ func TestDecodeSamples(t *testing.T) {
 			t.Fatalf("Decode() (-got, +want):\n%s", diff)
 		}
 	})
+
+	t.Run("flow sample with QinQ", func(t *testing.T) {
+		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-qinq.pcap"))
+		got := sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+		if got == nil {
+			t.Fatalf("Decode() error on data")
+		}
+		expectedFlows := []*schema.FlowMessage{
+			{
+				SamplingRate:    4096,
+				InIf:            369098852,
+				OutIf:           369098851,
+				SrcVlan:         1493,
+				SrcAddr:         netip.MustParseAddr("::ffff:49.49.49.2"),
+				DstAddr:         netip.MustParseAddr("::ffff:49.49.49.109"),
+				ExporterAddress: netip.MustParseAddr("::ffff:172.17.128.58"),
+				GotASPath:       false,
+				ProtobufDebug: map[schema.ColumnKey]interface{}{
+					schema.ColumnBytes:        80,
+					schema.ColumnPackets:      1,
+					schema.ColumnEType:        helpers.ETypeIPv4,
+					schema.ColumnProto:        6,
+					schema.ColumnSrcMAC:       0x4caea3520ff6,
+					schema.ColumnDstMAC:       0x000110621493,
+					schema.ColumnIPTTL:        62,
+					schema.ColumnIPFragmentID: 56159,
+					schema.ColumnTCPFlags:     16,
+					schema.ColumnSrcPort:      32017,
+					schema.ColumnDstPort:      443,
+				},
+			},
+		}
+		for _, f := range got {
+			f.TimeReceived = 0
+		}
+
+		if diff := helpers.Diff(got, expectedFlows); diff != "" {
+			t.Fatalf("Decode() (-got, +want):\n%s", diff)
+		}
+	})
 }
