@@ -44,7 +44,7 @@ func TestSankeyQuerySQL(t *testing.T) {
 WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }}) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 5)
+ rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ORDER BY {{ .Units }} DESC LIMIT 5)
 SELECT
  {{ .Units }}/range AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
@@ -75,7 +75,7 @@ ORDER BY xps DESC
 WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }}) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 5)
+ rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ORDER BY {{ .Units }} DESC LIMIT 5)
 SELECT
  {{ .Units }}/range AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
@@ -107,7 +107,7 @@ ORDER BY xps DESC
 WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }}) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ORDER BY SUM(Packets) DESC LIMIT 5)
+ rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ORDER BY {{ .Units }} DESC LIMIT 5)
 SELECT
  {{ .Units }}/range AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
@@ -138,7 +138,7 @@ ORDER BY xps DESC
 WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }} AND (DstCountry = 'FR')) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{ .Timefilter }} AND (DstCountry = 'FR') GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes) DESC LIMIT 10)
+ rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{ .Timefilter }} AND (DstCountry = 'FR') GROUP BY SrcAS, ExporterName ORDER BY {{ .Units }} DESC LIMIT 10)
 SELECT
  {{ .Units }}/range AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
