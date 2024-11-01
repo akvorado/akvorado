@@ -10,6 +10,18 @@ on:
   schedule:
     - cron: 0 7 1 * *
 jobs:
+  licenses:
+    name: ⚖️ Check licenses
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: License check
+        run: make licensecheck
+
   dependabot:
     name: 🤖 Check dependabot status
     runs-on: ubuntu-latest
@@ -183,18 +195,6 @@ jobs:
       - name: Build and test JS frontend
         run: make console/data/frontend test-js
 
-  licenses:
-    name: ⚖️ Check licenses
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup
-        uses: ./.github/actions/setup
-      - name: License check
-        run: make licensecheck
-
   docker:
     name: 🐋 Build Docker images
     needs:
@@ -244,8 +244,6 @@ jobs:
   release:
     name: 🚀 Publish release
     needs:
-      - build-linux
-      - build-macos
       - build-go
       - build-js
       - docker
