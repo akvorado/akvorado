@@ -30,7 +30,7 @@
     "lodash-es": "^4.17.21",
     "lz-string": "^1.4.4",
     "sugar-date": "^2.0.6",
-    "uuid": "^10.0.0",
+    "uuid": "^11.0.2",
     "vue": "^3.3.4",
     "vue-echarts": "^7.0.3",
     "vue-resizer": "^1.1.9",
