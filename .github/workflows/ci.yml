@@ -14,7 +14,9 @@ jobs:
     name: 🤖 Check dependabot status
     runs-on: ubuntu-latest
     permissions: {}
-    if: "!startsWith(github.event.head_commit.message, 'build: update Nix dependency hashes')"
+    if: |
+      !startsWith(github.event.head_commit.message, 'build: update Nix dependency hashes') ||
+       startsWith(github.ref, 'refs/tags/')
     steps:
       - name: Fetch dependabot metadata
         if: ${{ github.actor == 'dependabot[bot]' && github.event_name == 'pull_request' }}
