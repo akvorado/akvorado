@@ -67,7 +67,7 @@ tarball". This new tarball does not upgrade the configuration files, nor the
 
 On this release, geo IP is now performed in ClickHouse instead of inlet. When
 using the standard `docker compose` setup, the configuration should be
-automatically migrated from the inlet component to the clickhouse component.
+automatically migrated from the inlet component to the orchestrator component.
 This also changes how geo IP is used for AS numbers: geo IP is used as last
 resort when configured. It also increases memory usage (1.3GB for ClickHouse).
 
