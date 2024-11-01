@@ -11,7 +11,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Next release
+## 1.11.2 - 2024-11-01
 
 - 🩹 *inlet*: fix decoding of QinQ in Ethernet packets
 - 🩹 *console*: fix ordering of top rows when multiple sampling rates are used
