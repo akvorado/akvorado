@@ -332,17 +332,33 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 		for k := range rows[axis] {
 			sortedRowKeys[axis] = append(sortedRowKeys[axis], k)
 		}
-		sort.Slice(sortedRowKeys[axis], func(i, j int) bool {
-			iKey := sortedRowKeys[axis][i]
-			jKey := sortedRowKeys[axis][j]
-			if rows[axis][iKey][0] == "Other" {
-				return false
-			}
-			if rows[axis][jKey][0] == "Other" {
-				return true
-			}
-			return sums[axis][iKey] > sums[axis][jKey]
-		})
+		if input.LimitType == "Max" {
+			sort.Slice(sortedRowKeys[axis], func(i, j int) bool {
+				iKey := sortedRowKeys[axis][i]
+				jKey := sortedRowKeys[axis][j]
+				if rows[axis][iKey][0] == "Other" {
+					return false
+				}
+				if rows[axis][jKey][0] == "Other" {
+					return true
+				}
+				maxI := getMax(points[axis][iKey])
+				maxJ := getMax(points[axis][jKey])
+				return maxI > maxJ
+			})
+		} else {
+			sort.Slice(sortedRowKeys[axis], func(i, j int) bool {
+				iKey := sortedRowKeys[axis][i]
+				jKey := sortedRowKeys[axis][j]
+				if rows[axis][iKey][0] == "Other" {
+					return false
+				}
+				if rows[axis][jKey][0] == "Other" {
+					return true
+				}
+				return sums[axis][iKey] > sums[axis][jKey]
+			})
+		}
 	}
 
 	// Now, we can complete the `output' structure!
@@ -423,6 +439,16 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 		}
 	}
 	gc.JSON(http.StatusOK, output)
+}
+
+func getMax(values []int) int {
+	valMax := values[0]
+	for _, v := range values {
+		if v > valMax {
+			valMax = v
+		}
+	}
+	return valMax
 }
 
 type tableIntervalInput struct {
