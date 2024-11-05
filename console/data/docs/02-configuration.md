@@ -649,7 +649,7 @@ console (like `echo-reply` or `frag-needed`).
 
 You can add custom dimensions to be looked up via a dictionary. This is useful
 to enrich your flow with additional information not possible to get in the
-classifier. This works by providing the database with a CSV files containing the
+classifier. This works by providing the database with a CSV file containing the
 values.
 
 ```yaml
@@ -688,7 +688,7 @@ Independently, if `DstAddr` has the value `2001:db8::1`, the dimension
 All other IPs will get "DefaultRole" in their `SrcAddrIPRole`/`DstAddrIPRole`
 dimension.
 
-The `label`and `default` keys are optional.
+The `label` and `default` keys are optional.
 
 It is possible to add the same dictionary to multiple dimensions, usually for
 the "Input" and "Output"-direction.
