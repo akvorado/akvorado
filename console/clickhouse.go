@@ -107,7 +107,6 @@ type inputContext struct {
 	MainTableRequired bool       `json:"main-table-required,omitempty"`
 	Points            uint       `json:"points"`
 	Units             string     `json:"units,omitempty"`
-	Aggregator        string     `json:"aggregator"`
 }
 
 type context struct {
@@ -174,26 +173,25 @@ func (c *Component) contextFunc(inputStr string) context {
 	timefilterEnd := fmt.Sprintf(`toDateTime('%s', 'UTC')`, end.UTC().Format("2006-01-02 15:04:05"))
 	timefilter := fmt.Sprintf(`TimeReceived BETWEEN %s AND %s`, timefilterStart, timefilterEnd)
 	var units string
-	aggregator := input.Aggregator
 	switch input.Units {
 	case "pps":
-		units = fmt.Sprintf("%s(Packets*SamplingRate)", aggregator)
+		units = `SUM(Packets*SamplingRate)`
 	case "l3bps":
-		units = fmt.Sprintf("%s(Bytes*SamplingRate*8)", aggregator)
+		units = `SUM(Bytes*SamplingRate*8)`
 	case "l2bps":
 		// For each packet, we add the Ethernet header (14 bytes), the FCS (4
 		// bytes), the preamble and start frame delimiter (8 bytes) and the IPG
 		// (~ 12 bytes). We don't include the VLAN header (4 bytes) as it is
 		// often not used with external entities. Both sFlow and IPFIX may have
 		// a better view of that, but we don't collect it yet.
-		units = fmt.Sprintf("%s((Bytes+38*Packets)*SamplingRate*8)", aggregator)
+		units = `SUM((Bytes+38*Packets)*SamplingRate*8)`
 	case "inl2%":
 		// That's like l2bps, but this time we use the interface speed to get a
 		// percent value
-		units = fmt.Sprintf("ifNotFinite(%s((Bytes+38*Packets)*SamplingRate*8*100/(InIfSpeed*1000000))/COUNT(DISTINCT ExporterAddress, InIfName),0)", aggregator)
+		units = `ifNotFinite(SUM((Bytes+38*Packets)*SamplingRate*8*100/(InIfSpeed*1000000))/COUNT(DISTINCT ExporterAddress, InIfName),0)`
 	case "outl2%":
 		// Same but using output interface as reference
-		units = fmt.Sprintf("ifNotFinite(%s((Bytes+38*Packets)*SamplingRate*8*100/(OutIfSpeed*1000000))/COUNT(DISTINCT ExporterAddress, OutIfName),0)", aggregator)
+		units = `ifNotFinite(SUM((Bytes+38*Packets)*SamplingRate*8*100/(OutIfSpeed*1000000))/COUNT(DISTINCT ExporterAddress, OutIfName),0)`
 	}
 
 	c.metrics.clickhouseQueries.WithLabelValues(table).Inc()

@@ -157,12 +157,6 @@ func (input graphLineHandlerInput) toSQL1(axis int, options toSQL1Options) strin
 		}
 	}
 
-	//Aggregator
-	aggregator := "SUM"
-	if input.LimitType == "Max" {
-		aggregator = "MAX"
-	}
-
 	sqlQuery := fmt.Sprintf(`
 {{ with %s }}%s
 SELECT %d AS axis, * FROM (
@@ -184,7 +178,6 @@ ORDER BY time WITH FILL
 			MainTableRequired: requireMainTable(input.schema, input.Dimensions, input.Filter),
 			Points:            input.Points,
 			Units:             units,
-			Aggregator:        aggregator,
 		}),
 		withStr, axis, strings.Join(fields, ",\n "), where, offsetShift, offsetShift,
 		dimensionsInterpolate,
@@ -332,33 +325,21 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 		for k := range rows[axis] {
 			sortedRowKeys[axis] = append(sortedRowKeys[axis], k)
 		}
-		if input.LimitType == "Max" {
-			sort.Slice(sortedRowKeys[axis], func(i, j int) bool {
-				iKey := sortedRowKeys[axis][i]
-				jKey := sortedRowKeys[axis][j]
-				if rows[axis][iKey][0] == "Other" {
-					return false
-				}
-				if rows[axis][jKey][0] == "Other" {
-					return true
-				}
-				maxI := getMax(points[axis][iKey])
-				maxJ := getMax(points[axis][jKey])
-				return maxI > maxJ
-			})
-		} else {
-			sort.Slice(sortedRowKeys[axis], func(i, j int) bool {
-				iKey := sortedRowKeys[axis][i]
-				jKey := sortedRowKeys[axis][j]
-				if rows[axis][iKey][0] == "Other" {
-					return false
-				}
-				if rows[axis][jKey][0] == "Other" {
-					return true
-				}
+		sort.Slice(sortedRowKeys[axis], func(i, j int) bool {
+			iKey := sortedRowKeys[axis][i]
+			jKey := sortedRowKeys[axis][j]
+			if rows[axis][iKey][0] == "Other" {
+				return false
+			}
+			if rows[axis][jKey][0] == "Other" {
+				return true
+			}
+			if input.LimitType == "Max" {
+				return getMax(points[axis][iKey]) > getMax(points[axis][jKey])
+			} else {
 				return sums[axis][iKey] > sums[axis][jKey]
-			})
-		}
+			}
+		})
 	}
 
 	// Now, we can complete the `output' structure!

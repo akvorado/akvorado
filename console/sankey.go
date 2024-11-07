@@ -60,12 +60,6 @@ func (input graphSankeyHandlerInput) toSQL() (string, error) {
 		fmt.Sprintf(`(SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE %s) AS range`, where)}
 	with = append(with, selectSankeyRowsByLimitType(input, dimensions, where))
 
-	//Aggregator
-	aggregator := "SUM"
-	if input.LimitType == "Max" {
-		aggregator = "MAX"
-	}
-
 	sqlQuery := fmt.Sprintf(`
 {{ with %s }}
 WITH
@@ -83,7 +77,6 @@ ORDER BY xps DESC
 			MainTableRequired: requireMainTable(input.schema, input.Dimensions, input.Filter),
 			Points:            20,
 			Units:             input.Units,
-			Aggregator:        aggregator,
 		}),
 		strings.Join(with, ",\n "), strings.Join(fields, ",\n "), where)
 	return strings.TrimSpace(sqlQuery), nil
