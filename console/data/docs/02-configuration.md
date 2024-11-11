@@ -811,9 +811,10 @@ provided:
   The default value is 30 days. This requires a restart of ClickHouse.
 - `prometheus-endpoint` defines the endpoint to configure to expose ClickHouse
   metrics to Prometheus. When not defined, this is left unconfigured.
-- `networks` maps subnets to attributes. Attributes are `name`,
-  `role`, `site`, `region`, and `tenant`. They are exposed as
-  `SrcNetName`, `DstNetName`, `SrcNetRole`, `DstNetRole`, etc.
+- `networks` maps subnets to attributes. Attributes are `name`, `role`, `site`,
+  `region`, and `tenant`. They are exposed as `SrcNetName`, `DstNetName`,
+  `SrcNetRole`, `DstNetRole`, etc. It is also possible to override GeoIP
+  attributes `city`, `state`, `country`, and `ASN`.
 - `network-sources` fetch a remote source mapping subnets to
   attributes. This is similar to `networks` but the definition is
   fetched through HTTP. It accepts a map from source names to sources.
@@ -824,12 +825,11 @@ provided:
   - `proxy` says if we should use a proxy (defined through environment variables like `http_proxy`)
   - `timeout` defines the timeout for fetching and parsing
   - `interval` is the interval at which the source should be refreshed
-  - `transform` is a [jq](https://stedolan.github.io/jq/manual/)
-    expression to transform the received JSON into a set of network
-    attributes represented as objects. Each object must have a
-    `prefix` attribute and, optionally, `name`, `role`, `site`,
-    `region`, and `tenant`. See the example provided in the shipped
-    `akvorado.yaml` configuration file.
+  - `transform` is a [jq](https://stedolan.github.io/jq/manual/) expression to
+    transform the received JSON into a set of network attributes represented as
+    objects. Each object must have a `prefix` attribute and, optionally, `name`,
+    `role`, `site`, `region`, `tenant`, `city`, `state`, `country`, and `asn`.
+    See the example provided in the shipped `akvorado.yaml` configuration file.
 - `asns` maps AS number to names (overriding the builtin ones)
 - `orchestrator-url` defines the URL of the orchestrator to be used
   by ClickHouse (autodetection when not specified)
