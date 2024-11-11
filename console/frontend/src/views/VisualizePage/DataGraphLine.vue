@@ -19,7 +19,7 @@ import type { GraphLineHandlerResult } from ".";
 import { uniqWith, isEqual, findIndex } from "lodash-es";
 import { use, graphic, type ComposeOption } from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
-import { LineChart, type LineSeriesOption } from "echarts/charts";
+import { LineChart, HeatmapChart, type LineSeriesOption, type HeatmapSeriesOption } from "echarts/charts";
 import {
   TooltipComponent,
   type TooltipComponentOption,
@@ -33,6 +33,8 @@ import {
   type DatasetComponentOption,
   TitleComponent,
   type TitleComponentOption,
+  VisualMapComponent,
+  type VisualMapComponentOption,
 } from "echarts/components";
 import type { default as BrushModel } from "echarts/types/src/component/brush/BrushModel.d.ts";
 import type { TooltipCallbackDataParams } from "echarts/types/src/component/tooltip/TooltipView.d.ts";
@@ -40,15 +42,18 @@ import VChart from "vue-echarts";
 use([
   CanvasRenderer,
   LineChart,
+  HeatmapChart,
   TooltipComponent,
   GridComponent,
   ToolboxComponent,
   BrushComponent,
   DatasetComponent,
   TitleComponent,
+  VisualMapComponent,
 ]);
 type ECOption = ComposeOption<
   | LineSeriesOption
+  | HeatmapSeriesOption
   | TooltipComponentOption
   | GridComponentOption
   | BrushComponentOption
@@ -84,7 +89,20 @@ const graph = computed((): ECOption => {
   const data = props.data;
   if (!data) return {};
   const rowName = (row: string[]) => row.join(" — ") || "Total";
-  const source: [string, ...number[]][] = [
+  const source: [number, number, number][] | [string, ...number[]][] = data.graphType === "heatmap" ?
+    data.t
+      .flatMap((t, timeIdx) => [
+        ...data.points.filter((row, rowIdx) =>
+          data.rows[rowIdx].some((name) => name !== "Other")
+        ).map(
+          (row, rowIdx) => {
+            let value = row[timeIdx] * (data.axis[rowIdx] % 2 ? 1 : -1);
+            const dataPoint: [number, number, number] = [timeIdx, rowIdx, value];
+            return dataPoint;
+          }
+        )
+      ])
+  : [
     ...data.t
       .map((t, timeIdx) => {
         let result: [string, ...number[]] = [
@@ -96,7 +114,7 @@ const graph = computed((): ECOption => {
             (row, rowIdx) => row[timeIdx] * (data.axis[rowIdx] % 2 ? 1 : -1),
           ),
         ];
-        if (data.graphType === "stacked100") {
+        if (data.graphType === "stacked100" || data.graphType === "heatmap") {
           // Normalize values between 0 and 1 (or -1 and 0)
           const [, ...values] = result;
           const positiveSum = values.reduce(
@@ -127,12 +145,18 @@ const graph = computed((): ECOption => {
       dimensions: ["time", ...data.rows.map(rowName)],
       source,
     },
-    xAxis: ECOption["xAxis"] = {
+    xAxis: ECOption["xAxis"] = data.graphType === "heatmap" ? {
+      type: "category",
+      data: data.t.map((row, idx) => row),
+    } : {
       type: "time",
       min: data.start,
       max: data.end,
     },
-    yAxis: ECOption["yAxis"] = {
+    yAxis: ECOption["yAxis"] = data.graphType === "heatmap" ? {
+      type: "category",
+      data: data.rows.filter(names => !names.some(name => name === "Other")).map(rowName),
+    } : {
       type: "value",
       min: data.bidirectional
         ? data.graphType === "stacked100"
@@ -159,7 +183,19 @@ const graph = computed((): ECOption => {
         },
       },
     },
-    tooltip: ECOption["tooltip"] = {
+    visualMap: ECOption["visualMap"] = data.graphType === "heatmap" ? {
+      min: 0,
+      max: Math.max.apply(Math, data["max"].filter((_, rowIdx) => data.rows[rowIdx].some((name) => name !== "Other"))),
+      calculable: true,
+      orient: 'horizontal',
+      right: '5%',
+      bottom: 0,
+      inRange: {
+        color: ["#000000", "#5500ff", "#ff4444", "#ff3333", "#ffffff"],
+      },
+      formatter: formatXps,
+    } : undefined,
+    tooltip: ECOption["tooltip"] = data.graphType === "heatmap" ? undefined : {
       confine: true,
       trigger: "axis",
       axisPointer: {
@@ -229,7 +265,8 @@ const graph = computed((): ECOption => {
   if (
     data.graphType === "stacked" ||
     data.graphType === "stacked100" ||
-    data.graphType === "lines"
+    data.graphType === "lines" ||
+    data.graphType === "heatmap"
   ) {
     const uniqRows = uniqWith(data.rows, isEqual),
       uniqRowIndex = (row: string[]) =>
@@ -237,16 +274,22 @@ const graph = computed((): ECOption => {
 
     return {
       grid: {
-        left: 60,
+        left: data.graphType === "heatmap" ? 150 : 60,
         top: 20,
         right: "1%",
-        bottom: 20,
+        bottom: data.graphType === "heatmap" ? 80 : 20,
       },
       xAxis,
       yAxis,
+      visualMap,
       dataset,
       tooltip,
-      series: data.rows
+      series: data.graphType === "heatmap" ? [
+        {
+          type: 'heatmap',
+          data: source,
+        }
+      ] : data.rows
         .map((row, idx) => {
           const isOther = row.some((name) => name === "Other"),
             color = isOther ? dataColorGrey : dataColor;

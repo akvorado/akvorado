@@ -7,5 +7,6 @@ export const graphTypes = {
   lines: "Lines",
   grid: "Grid",
   sankey: "Sankey",
+  heatmap: "Heatmap",
 } as const;
 export type GraphType = keyof typeof graphTypes;

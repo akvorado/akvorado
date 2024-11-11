@@ -154,7 +154,8 @@ const table = computed(
       data.graphType === "stacked" ||
       data.graphType === "stacked100" ||
       data.graphType === "lines" ||
-      data.graphType === "grid"
+      data.graphType === "grid" ||
+      data.graphType === "heatmap"
     ) {
       const uniqRows = uniqWith(data.rows, isEqual),
         uniqRowIndex = (row: string[]) =>
