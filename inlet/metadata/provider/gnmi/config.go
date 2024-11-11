@@ -73,10 +73,14 @@ type IfSpeedPath struct {
 type IfSpeedPathUnit int
 
 const (
-	SpeedBits     IfSpeedPathUnit = iota + 1 // SpeedBits means the speed is in bps
-	SpeedMegabits                            // SpeedMegabits means the speed is in Mbps
-	SpeedEthernet                            // SpeedEthernet means the speed is in OC ETHERNET_SPEED
-	SpeedHuman                               // SpeedHuman means the speed is human-formatted (10G)
+	// SpeedBits means the speed is in bps
+	SpeedBits IfSpeedPathUnit = iota + 1
+	// SpeedMegabits means the speed is in Mbps
+	SpeedMegabits
+	// SpeedEthernet means the speed is in OC ETHERNET_SPEED
+	SpeedEthernet
+	// SpeedHuman means the speed is human-formatted (10G)
+	SpeedHuman
 )
 
 var ifSpeedPathUnitMap = bimap.New(map[IfSpeedPathUnit]string{

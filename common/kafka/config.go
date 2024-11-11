@@ -82,10 +82,14 @@ func (v Version) MarshalText() ([]byte, error) {
 type SASLMechanism int
 
 const (
-	SASLNone        SASLMechanism = iota // SASLNone means no user authentication
-	SASLPlainText                        // SASLPlainText means user/password in plain text
-	SASLSCRAMSHA256                      // SASLSCRAMSHA256 enables SCRAM challenge with SHA256
-	SASLSCRAMSHA512                      // SASLSCRAMSHA512 enables SCRAM challenge with SHA512
+	// SASLNone means no user authentication
+	SASLNone SASLMechanism = iota
+	// SASLPlainText means user/password in plain text
+	SASLPlainText
+	// SASLSCRAMSHA256 enables SCRAM challenge with SHA256
+	SASLSCRAMSHA256
+	// SASLSCRAMSHA512 enables SCRAM challenge with SHA512
+	SASLSCRAMSHA512
 )
 
 var saslAlgorithmMap = bimap.New(map[SASLMechanism]string{
