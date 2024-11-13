@@ -90,13 +90,21 @@ const graph = computed((): ECOption => {
   if (!data) return {};
   const rowName = (row: string[]) => row.join(" — ") || "Total";
   const source: [number, number, number][] | [string, ...number[]][] = data.graphType === "heatmap" ?
-    data.t
-      .flatMap((t, timeIdx) => [
-        ...data.points.filter((row, rowIdx) =>
-          data.rows[rowIdx].some((name) => name !== "Other")
-        ).map(
-          (row, rowIdx) => {
-            let value = row[timeIdx] * (data.axis[rowIdx] % 2 ? 1 : -1);
+    data.points
+      .map((row, rowIdx) => {
+        const ret: [number, number[]] = [rowIdx, row];
+	return ret;
+      })
+      .filter(([origRowIdx, row]) =>
+        data.rows[origRowIdx].some((name) => name !== "Other")
+      )
+      .toSorted(([origRowIdx1, row1], [origRowIdx2, row2]) => {
+        return rowName(data.rows[origRowIdx1]).localeCompare(rowName(data.rows[origRowIdx2]), "en", { numeric: true });
+      })
+      .flatMap(([origRowIdx, row], rowIdx) => [
+        ...data.t
+          .map((t, timeIdx) => {
+            let value = row[timeIdx] * (data.axis[origRowIdx] % 2 ? 1 : -1);
             const dataPoint: [number, number, number] = [timeIdx, rowIdx, value];
             return dataPoint;
           }
@@ -114,7 +122,7 @@ const graph = computed((): ECOption => {
             (row, rowIdx) => row[timeIdx] * (data.axis[rowIdx] % 2 ? 1 : -1),
           ),
         ];
-        if (data.graphType === "stacked100" || data.graphType === "heatmap") {
+        if (data.graphType === "stacked100") {
           // Normalize values between 0 and 1 (or -1 and 0)
           const [, ...values] = result;
           const positiveSum = values.reduce(
@@ -155,7 +163,9 @@ const graph = computed((): ECOption => {
     },
     yAxis: ECOption["yAxis"] = data.graphType === "heatmap" ? {
       type: "category",
-      data: data.rows.filter(names => !names.some(name => name === "Other")).map(rowName),
+      data: data.rows
+        .toSorted((names1, names2) => rowName(names1).localeCompare(rowName(names2), "en", { numeric: true }))
+        .filter(names => !names.some(name => name === "Other")).map(rowName),
     } : {
       type: "value",
       min: data.bidirectional
