@@ -228,9 +228,9 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 	case 9:
 		var packetNFv9 netflow.NFv9Packet
 		if err := netflow.DecodeMessageNetFlow(buf, templates, &packetNFv9); err != nil {
-			nd.metrics.errors.WithLabelValues(key, "NetFlow v9 decoding error").Inc()
 			if !errors.Is(err, netflow.ErrorTemplateNotFound) {
 				nd.errLogger.Err(err).Str("exporter", key).Msg("error while decoding NetFlow v9")
+				nd.metrics.errors.WithLabelValues(key, "NetFlow v9 decoding error").Inc()
 			} else {
 				nd.errLogger.Debug().Str("exporter", key).Msg("template not received yet")
 			}
@@ -247,9 +247,9 @@ func (nd *Decoder) Decode(in decoder.RawFlow) []*schema.FlowMessage {
 	case 10:
 		var packetIPFIX netflow.IPFIXPacket
 		if err := netflow.DecodeMessageIPFIX(buf, templates, &packetIPFIX); err != nil {
-			nd.metrics.errors.WithLabelValues(key, "IPFIX decoding error").Inc()
 			if !errors.Is(err, netflow.ErrorTemplateNotFound) {
 				nd.errLogger.Err(err).Str("exporter", key).Msg("error while decoding IPFIX")
+				nd.metrics.errors.WithLabelValues(key, "IPFIX decoding error").Inc()
 			} else {
 				nd.errLogger.Debug().Str("exporter", key).Msg("template not received yet")
 			}
