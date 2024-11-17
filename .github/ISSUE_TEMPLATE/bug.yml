@@ -1,40 +1,46 @@
 ---
 name: Bug report
-about: Create a bug report
-labels: "bug"
----
+description: Create a bug report
+labels:
+  - bug
+body:
+  - type: checkboxes
+    attributes:
+      label: Disclaimer
+      description: |
+        For support questions, please use the [discussions][] instead. Before
+        opening a bug report, ensure you have read the [documentation][],
+        notably the [troubleshooting section][]. Only use bug reports for actual
+        bugs.
 
-For support questions, please use the [discussions][] instead. Before
-opening a bug report, ensure you have read the [documentation][],
-notably the [troubleshooting section][]. Only use bug reports for
-actual bugs.
+        [documentation]: https://demo.akvorado.net/docs/intro
+        [troubleshooting section]: https://demo.akvorado.net/docs/troubleshooting
+        [discussions]: https://github.com/akvorado/akvorado/discussions
+      options:
+        - label: I have read and understood the above paragraph.
+          required: true
+  - type: input
+    attributes:
+      label: Akvorado version
+      description: |
+        Provide the Akvorado version (first line of `akvorado version` or
+        `docker compose run --rm akvorado-inlet version`)
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Bug description
+      description: |
+        Provide a description of the problem: steps to reproduce it, what you
+        are expecting and what you got. When using code snippets (logs,
+        commands), put them between triple backticks:
 
-[documentation]: https://demo.akvorado.net/docs/intro
-[troubleshooting section]: https://demo.akvorado.net/docs/troubleshooting
-[discussions]: https://github.com/akvorado/akvorado/discussions
-
-When putting code snippets (logs, commands), put them between triple
-backticks:
-
-```
-# akvorado version
-akvorado v1.5.1-19-g1d828a6cb23d-dirty
-  Built with: go1.18.4
-```
-
-# Bug description
-
-## Steps to reproduce the problem
-
-**Akvorado version**: (first line of `akvorado version`)
-
-<!-- Include steps to reproduce the problem -->
-
-## Expected outcome
-
-<!-- What is the expected result -->
-
-## Current outcome
-
-<!-- What did you get instead -->
-
+        ````
+        ```
+        # akvorado version | head -2
+        akvorado v1.11.2
+          Built with: go1.23.2 X:loopvar
+        ```
+        ````
+    validations:
+      required: true
