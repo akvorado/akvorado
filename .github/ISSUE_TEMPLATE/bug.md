@@ -9,8 +9,8 @@ opening a bug report, ensure you have read the [documentation][],
 notably the [troubleshooting section][]. Only use bug reports for
 actual bugs.
 
-[documenation]: https://demo.akvorado.net/docs/intro
-[troublehooting section]: https://demo.akvorado.net/docs/troubleshooting
+[documentation]: https://demo.akvorado.net/docs/intro
+[troubleshooting section]: https://demo.akvorado.net/docs/troubleshooting
 [discussions]: https://github.com/akvorado/akvorado/discussions
 
 When putting code snippets (logs, commands), put them between triple
@@ -37,3 +37,4 @@ akvorado v1.5.1-19-g1d828a6cb23d-dirty
 ## Current outcome
 
 <!-- What did you get instead -->
+
