@@ -1,24 +1,24 @@
 ---
-name: Bug report
-description: Create a bug report
+name: Feature request
+description: Request a new feature
 labels:
-  - bug
+  - enhancement
 body:
   - type: checkboxes
     attributes:
       label: Disclaimer
       description: |
         For support questions, please use the [discussions][] instead. Before
-        opening a bug report, ensure you have read the [documentation][],
-        notably the [troubleshooting section][]. Only use bug reports for actual
-        bugs.
+        requesting a feature, check it does not already exist in the
+        [documentation][]. You are quite welcome opening a feature request
+        before spending time to implement it yourself.
 
         [documentation]: https://demo.akvorado.net/docs/intro
-        [troubleshooting section]: https://demo.akvorado.net/docs/troubleshooting
         [discussions]: https://github.com/akvorado/akvorado/discussions
       options:
         - label: I have read and understood the above paragraph.
           required: true
+        - label: I plan to implement the feature myself.
   - type: input
     attributes:
       label: Akvorado version
@@ -29,11 +29,10 @@ body:
       required: true
   - type: textarea
     attributes:
-      label: Bug description
+      label: Feature description
       description: |
-        Provide a description of the problem: steps to reproduce it, what you
-        are expecting and what you got. When using code snippets (logs,
-        commands), put them between triple backticks:
+        Provide a description of the feature you request. When using code
+        snippets (logs, commands), put them between triple backticks:
 
         ````
         ```
