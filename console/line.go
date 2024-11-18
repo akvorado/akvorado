@@ -284,6 +284,7 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 	rows := map[int]map[string][]string{} // for each axis, a map from row to list of dimensions
 	points := map[int]map[string][]int{}  // for each axis, a map from row to list of points (one point per ts)
 	sums := map[int]map[string]uint64{}   // for each axis, a map from row to sum (for sorting purpose)
+	maxes := map[int]map[string]uint64{}  // for each axis, a map from row to max (for sorting purpose)
 	lastTimeForAxis := map[int]time.Time{}
 	timeIndexForAxis := map[int]int{}
 	for _, result := range results {
@@ -298,6 +299,7 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 			rows[axis] = map[string][]string{}
 			points[axis] = map[string][]int{}
 			sums[axis] = map[string]uint64{}
+			maxes[axis] = map[string]uint64{}
 		}
 		if result.Time != lastTime {
 			// New timestamp, increment time index
@@ -312,9 +314,13 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 			row := make([]int, len(output.Time))
 			points[axis][rowKey] = row
 			sums[axis][rowKey] = 0
+			maxes[axis][rowKey] = 0
 		}
 		points[axis][rowKey][timeIndexForAxis[axis]] = int(result.Xps)
 		sums[axis][rowKey] += uint64(result.Xps)
+		if uint64(result.Xps) > maxes[axis][rowKey] {
+			maxes[axis][rowKey] = uint64(result.Xps)
+		}
 	}
 	// Sort axes
 	sort.Ints(axes)
@@ -335,10 +341,10 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 				return true
 			}
 			if input.LimitType == "Max" {
-				return getMax(points[axis][iKey]) > getMax(points[axis][jKey])
-			} else {
-				return sums[axis][iKey] > sums[axis][jKey]
+				return maxes[axis][iKey] > maxes[axis][jKey]
 			}
+
+			return sums[axis][iKey] > sums[axis][jKey]
 		})
 	}
 
@@ -420,16 +426,6 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 		}
 	}
 	gc.JSON(http.StatusOK, output)
-}
-
-func getMax(values []int) int {
-	valMax := values[0]
-	for _, v := range values {
-		if v > valMax {
-			valMax = v
-		}
-	}
-	return valMax
 }
 
 type tableIntervalInput struct {
