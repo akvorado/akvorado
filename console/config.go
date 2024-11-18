@@ -46,7 +46,7 @@ type VisualizeOptionsConfiguration struct {
 	// Limit is the default limit to use
 	Limit int `json:"limit" validate:"min=5"`
 	// LimitType is the default limitType to use
-	LimitType string `json:"limitType"`
+	LimitType string `json:"limitType" validate:"oneof=Avg Max"`
 	// Bidirectional tells if a graph should be bidirectional (all except sankey)
 	Bidirectional bool `json:"bidirectional"`
 	// PreviousPeriod tells if a graph should display the previous period (for stacked)
