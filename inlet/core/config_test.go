@@ -115,8 +115,3 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 		},
 	})
 }
-
-func TestMarshalUnmarshal(t *testing.T) {
-	asnProviderMap.TestMarshalUnmarshal(t)
-	netProviderMap.TestMarshalUnmarshal(t)
-}

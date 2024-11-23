@@ -4,14 +4,12 @@
 package core
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	"akvorado/common/helpers"
-	"akvorado/common/helpers/bimap"
 
 	"github.com/mitchellh/mapstructure"
 )
@@ -68,43 +66,6 @@ const (
 	ASNProviderRoutingExceptPrivate
 )
 
-var asnProviderMap = bimap.New(map[ASNProvider]string{
-	ASNProviderFlow:                 "flow",
-	ASNProviderFlowExceptPrivate:    "flow-except-private",
-	ASNProviderRouting:              "routing",
-	ASNProviderRoutingExceptPrivate: "routing-except-private",
-})
-
-// MarshalText turns an AS provider to text.
-func (ap ASNProvider) MarshalText() ([]byte, error) {
-	got, ok := asnProviderMap.LoadValue(ap)
-	if ok {
-		return []byte(got), nil
-	}
-	return nil, errors.New("unknown field")
-}
-
-// String turns an AS provider to string.
-func (ap ASNProvider) String() string {
-	got, _ := asnProviderMap.LoadValue(ap)
-	return got
-}
-
-// UnmarshalText provides an AS provider from a string.
-func (ap *ASNProvider) UnmarshalText(input []byte) error {
-	if bytes.Equal(input, []byte("bmp")) {
-		input = []byte("routing")
-	} else if bytes.Equal(input, []byte("bmp-except-private")) {
-		input = []byte("routing-except-private")
-	}
-	got, ok := asnProviderMap.LoadKey(string(input))
-	if ok {
-		*ap = got
-		return nil
-	}
-	return errors.New("unknown provider")
-}
-
 const (
 	// NetProviderFlow uses the network mask embedded in flows, if any
 	NetProviderFlow NetProvider = iota
@@ -112,38 +73,35 @@ const (
 	NetProviderRouting
 )
 
-var netProviderMap = bimap.New(map[NetProvider]string{
-	NetProviderFlow:    "flow",
-	NetProviderRouting: "routing",
-})
-
-// MarshalText turns an AS provider to text.
-func (np NetProvider) MarshalText() ([]byte, error) {
-	got, ok := netProviderMap.LoadValue(np)
-	if ok {
-		return []byte(got), nil
+// ASNProviderUnmarshallerHook normalize a net provider configuration:
+//   - map bmp to routing
+func ASNProviderUnmarshallerHook() mapstructure.DecodeHookFunc {
+	return func(from, to reflect.Value) (interface{}, error) {
+		if from.Kind() != reflect.String || to.Type() != reflect.TypeOf(ASNProvider(0)) {
+			return from.Interface(), nil
+		}
+		if strings.ToLower(from.String()) == "bmp" {
+			return "routing", nil
+		}
+		if strings.ToLower(from.String()) == "bmp-except-private" {
+			return "routing-except-private", nil
+		}
+		return from.Interface(), nil
 	}
-	return nil, errors.New("unknown field")
 }
 
-// String turns an AS provider to string.
-func (np NetProvider) String() string {
-	got, _ := netProviderMap.LoadValue(np)
-	return got
-}
-
-// UnmarshalText provides an AS provider from a string.
-func (np *NetProvider) UnmarshalText(input []byte) error {
-	// "bmp" becomes "routing"
-	if bytes.Equal(input, []byte("bmp")) {
-		input = []byte("routing")
+// NetProviderUnmarshallerHook normalize a net provider configuration:
+//   - map bmp to routing
+func NetProviderUnmarshallerHook() mapstructure.DecodeHookFunc {
+	return func(from, to reflect.Value) (interface{}, error) {
+		if from.Kind() != reflect.String || to.Type() != reflect.TypeOf(NetProvider(0)) {
+			return from.Interface(), nil
+		}
+		if strings.ToLower(from.String()) == "bmp" {
+			return "routing", nil
+		}
+		return from.Interface(), nil
 	}
-	got, ok := netProviderMap.LoadKey(string(input))
-	if ok {
-		*np = got
-		return nil
-	}
-	return errors.New("unknown provider")
 }
 
 // ConfigurationUnmarshallerHook normalize core configuration:
@@ -186,5 +144,7 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 
 func init() {
 	helpers.RegisterMapstructureUnmarshallerHook(ConfigurationUnmarshallerHook())
+	helpers.RegisterMapstructureUnmarshallerHook(ASNProviderUnmarshallerHook())
+	helpers.RegisterMapstructureUnmarshallerHook(NetProviderUnmarshallerHook())
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[uint]())
 }

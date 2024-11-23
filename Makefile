@@ -25,7 +25,9 @@ GENERATED_GO = \
 	orchestrator/clickhouse/data/protocols.csv \
 	orchestrator/clickhouse/data/tcp.csv \
 	orchestrator/clickhouse/data/udp.csv \
-	console/filter/parser.go
+	console/filter/parser.go \
+	inlet/core/asnprovider_enumer.go \
+	inlet/core/netprovider_enumer.go
 GENERATED_TEST_GO = \
 	common/clickhousedb/mocks/mock_driver.go \
 	conntrackfixer/mocks/mock_conntrackfixer.go
@@ -53,13 +55,14 @@ $(BIN)/%: go.mod go.sum | $(BIN) ; $(info $(M) building tool $*…)
 	@[ -n "$(PACKAGE)" ] || (>&2 echo "*** Unknown tool $*!"; false)
 	$Q env GOBIN=$(abspath $(BIN)) $(GO) install $(PACKAGE)
 
-GOIMPORTS = $(BIN)/goimports
-REVIVE = $(BIN)/revive
+ENUMER = $(BIN)/enumer
 GOCOV = $(BIN)/gocov
 GOCOVXML = $(BIN)/gocov-xml
+GOIMPORTS = $(BIN)/goimports
 GOTESTSUM = $(BIN)/gotestsum
 MOCKGEN = $(BIN)/mockgen
 PIGEON = $(BIN)/pigeon
+REVIVE = $(BIN)/revive
 WWHRD = $(BIN)/wwhrd
 
 # Generated files
@@ -75,6 +78,11 @@ conntrackfixer/mocks/mock_conntrackfixer.go: go.mod | $(MOCKGEN) ; $(info $(M) g
 	   echo '//go:build !release' > $@ ; \
 	   $(MOCKGEN) -package mocks akvorado/conntrackfixer ConntrackConn,DockerClient >> $@ ; \
 	fi
+
+inlet/core/asnprovider_enumer.go: go.mod | $(ENUMER) ; $(info $(M) generate enums for ASNProvider…)
+	$Q $(ENUMER) -type=ASNProvider -text -transform=kebab -trimprefix=ASNProvider inlet/core/config.go
+inlet/core/netprovider_enumer.go: go.mod | $(ENUMER) ; $(info $(M) generate enums for NetProvider…)
+	$Q $(ENUMER) -type=NetProvider -text -transform=kebab -trimprefix=NetProvider inlet/core/config.go
 
 common/schema/definition_gen.go: common/schema/definition.go common/schema/definition_gen.sh ; $(info $(M) generate column definitions…)
 	$Q ./common/schema/definition_gen.sh > $@
