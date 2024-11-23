@@ -47,7 +47,7 @@ func TestKafkaNewConfig(t *testing.T) {
 					},
 					SASLUsername:  "hello",
 					SASLPassword:  "password",
-					SASLMechanism: SASLSCRAMSHA256,
+					SASLMechanism: SASLScramSHA256,
 				},
 			},
 		}, {
@@ -59,7 +59,7 @@ func TestKafkaNewConfig(t *testing.T) {
 					},
 					SASLUsername:  "hello",
 					SASLPassword:  "password",
-					SASLMechanism: SASLSCRAMSHA512,
+					SASLMechanism: SASLScramSHA512,
 				},
 			},
 		},
@@ -130,7 +130,7 @@ func TestTLSConfiguration(t *testing.T) {
 					},
 					SASLUsername:  "hello",
 					SASLPassword:  "bye",
-					SASLMechanism: SASLPlainText,
+					SASLMechanism: SASLPlain,
 				},
 			},
 		}, {
@@ -158,13 +158,9 @@ func TestTLSConfiguration(t *testing.T) {
 					},
 					SASLUsername:  "hello",
 					SASLPassword:  "bye",
-					SASLMechanism: SASLSCRAMSHA256,
+					SASLMechanism: SASLScramSHA256,
 				},
 			},
 		},
 	})
-}
-
-func TestMarshalUnmarshal(t *testing.T) {
-	saslAlgorithmMap.TestMarshalUnmarshal(t)
 }
