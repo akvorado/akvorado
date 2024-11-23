@@ -66,7 +66,7 @@ ORDER BY xps DESC
 						query.NewColumn("ExporterName"),
 					},
 					Limit:     5,
-					LimitType: "Max",
+					LimitType: "max",
 					Filter:    query.Filter{},
 					Units:     "l3bps",
 				},

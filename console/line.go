@@ -340,7 +340,7 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 			if rows[axis][jKey][0] == "Other" {
 				return true
 			}
-			if input.LimitType == "Max" {
+			if input.LimitType == "max" {
 				return maxes[axis][iKey] > maxes[axis][jKey]
 			}
 
