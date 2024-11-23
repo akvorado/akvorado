@@ -224,7 +224,7 @@ licensecheck: console/frontend/node_modules | $(WWHRD) ; $(info $(M) check depen
 	$Q err=0 ; $(GO) mod vendor && $(WWHRD) --quiet check || err=$$? ; rm -rf vendor/ ; exit $$err
 	$Q cd console/frontend ; $(NPM) exec --no -- license-compliance \
 		--production \
-		--allow "$$(sed -n 's/^  - //p' ../../.wwhrd.yml | paste -sd ";")" \
+		--allow "$$(sed -n '/^allowlist:/,/^[a-z]/p' ../../.wwhrd.yml | sed -n 's/^  - //p' | paste -sd ";")" \
 		--report detailed
 
 .PHONY: clean

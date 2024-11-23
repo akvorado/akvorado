@@ -10,3 +10,6 @@ allowlist:
   - ISC
   - WTFPL
   - 0BSD
+
+exceptions:
+  - github.com/pascaldekloe/name # CC0, not detected
