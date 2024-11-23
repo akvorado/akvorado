@@ -201,7 +201,7 @@ watch(
     if (value) {
       limit.value = value.limit.toString();
       limitType.value =
-        computationModeList.find((mode) => mode.name === value.limitType) ||
+        computationModeList.find((mode) => mode.type === value.limitType) ||
         computationModeList[0];
       truncate4.value = value.truncate4.toString();
       truncate6.value = value.truncate6.toString();
@@ -226,7 +226,7 @@ watch(
     const updated = {
       selected: selected.map((d) => d.name),
       limit: parseInt(limit),
-      limitType: limitType.name,
+      limitType: limitType.type,
       truncate4: parseInt(truncate4),
       truncate6: parseInt(truncate6),
       errors: hasErrors,
