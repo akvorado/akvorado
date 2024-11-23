@@ -18,35 +18,35 @@ func TestConvertSpeed(t *testing.T) {
 	}{
 		{
 			Value:    "1000",
-			Unit:     SpeedBits,
+			Unit:     SpeedBps,
 			Expected: 0,
 		}, {
 			Value:    "1000000",
-			Unit:     SpeedBits,
+			Unit:     SpeedBps,
 			Expected: 1,
 		}, {
 			Value:    "100000000",
-			Unit:     SpeedBits,
+			Unit:     SpeedBps,
 			Expected: 100,
 		}, {
 			Value: "-43874",
-			Unit:  SpeedBits,
+			Unit:  SpeedBps,
 			Error: true,
 		}, {
 			Value: "nope",
-			Unit:  SpeedBits,
+			Unit:  SpeedBps,
 			Error: true,
 		}, {
 			Value:    "1",
-			Unit:     SpeedMegabits,
+			Unit:     SpeedMbps,
 			Expected: 1,
 		}, {
 			Value: "-1",
-			Unit:  SpeedMegabits,
+			Unit:  SpeedMbps,
 			Error: true,
 		}, {
 			Value:    "2500",
-			Unit:     SpeedMegabits,
+			Unit:     SpeedMbps,
 			Expected: 2500,
 		}, {
 			Value:    "10G",

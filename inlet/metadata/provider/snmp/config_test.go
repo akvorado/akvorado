@@ -10,7 +10,6 @@ import (
 	"akvorado/common/helpers"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gosnmp/gosnmp"
 )
 
 func TestDefaultConfiguration(t *testing.T) {
@@ -219,9 +218,9 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 				SecurityParameters: helpers.MustNewSubnetMap(map[string]SecurityParameters{
 					"::/0": {
 						UserName:                 "alfred",
-						AuthenticationProtocol:   AuthProtocol(gosnmp.SHA),
+						AuthenticationProtocol:   AuthProtocolSHA,
 						AuthenticationPassphrase: "hello",
-						PrivacyProtocol:          PrivProtocol(gosnmp.AES),
+						PrivacyProtocol:          PrivProtocolAES,
 						PrivacyPassphrase:        "bye",
 					},
 				}),
@@ -247,7 +246,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 				SecurityParameters: helpers.MustNewSubnetMap(map[string]SecurityParameters{
 					"::/0": {
 						UserName:                 "alfred",
-						AuthenticationProtocol:   AuthProtocol(gosnmp.SHA),
+						AuthenticationProtocol:   AuthProtocolSHA,
 						AuthenticationPassphrase: "hello",
 					},
 				}),
@@ -296,9 +295,4 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Error: true,
 		},
 	})
-}
-
-func TestMarshalUnmarshal(t *testing.T) {
-	authProtocolMap.TestMarshalUnmarshal(t)
-	privProtocolMap.TestMarshalUnmarshal(t)
 }
