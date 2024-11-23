@@ -32,6 +32,7 @@ GENERATED_GO = \
 	inlet/metadata/provider/snmp/authprotocol_enumer.go \
 	inlet/metadata/provider/snmp/privprotocol_enumer.go \
 	inlet/metadata/provider/gnmi/ifspeedpathunit_enumer.go \
+	console/homepagetopwidget_enumer.go \
 	common/kafka/saslmechanism_enumer.go
 GENERATED_TEST_GO = \
 	common/clickhousedb/mocks/mock_driver.go \
@@ -96,6 +97,8 @@ inlet/metadata/provider/snmp/privprotocol_enumer.go: go.mod inlet/metadata/provi
 	$Q $(ENUMER) -type=PrivProtocol -text -transform=kebab -trimprefix=PrivProtocol inlet/metadata/provider/snmp/config.go
 inlet/metadata/provider/gnmi/ifspeedpathunit_enumer.go: go.mod inlet/metadata/provider/gnmi/config.go | $(ENUMER) ; $(info $(M) generate enums for IfSpeedPathUnit…)
 	$Q $(ENUMER) -type=IfSpeedPathUnit -text -transform=kebab -trimprefix=Speed inlet/metadata/provider/gnmi/config.go
+console/homepagetopwidget_enumer.go: go.mod console/config.go | $(ENUMER) ; $(info $(M) generate enums for HomepageTopWidget…)
+	$Q $(ENUMER) -type=HomepageTopWidget -text -json -transform=kebab -trimprefix=HomepageTopWidget console/config.go
 common/kafka/saslmechanism_enumer.go: go.mod common/kafka/config.go | $(ENUMER) ; $(info $(M) generate enums for SASLMechanism…)
 	$Q $(ENUMER) -type=SASLMechanism -text -transform=kebab -trimprefix=SASL common/kafka/config.go
 
