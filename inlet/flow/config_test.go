@@ -139,7 +139,8 @@ func TestDecodeConfiguration(t *testing.T) {
 			Initial: func() interface{} {
 				return Configuration{
 					Inputs: []InputConfiguration{{
-						Decoder: "netflow",
+						Decoder:         "netflow",
+						TimestampSource: decoder.TimestampSourceUDP,
 						Config: &udp.Configuration{
 							Workers:   2,
 							QueueSize: 100,
