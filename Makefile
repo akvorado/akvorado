@@ -29,6 +29,9 @@ GENERATED_GO = \
 	inlet/core/asnprovider_enumer.go \
 	inlet/core/netprovider_enumer.go \
 	inlet/flow/decoder/timestampsource_enumer.go \
+	inlet/metadata/provider/snmp/authprotocol_enumer.go \
+	inlet/metadata/provider/snmp/privprotocol_enumer.go \
+	inlet/metadata/provider/gnmi/ifspeedpathunit_enumer.go \
 	common/kafka/saslmechanism_enumer.go
 GENERATED_TEST_GO = \
 	common/clickhousedb/mocks/mock_driver.go \
@@ -87,6 +90,12 @@ inlet/core/netprovider_enumer.go: go.mod inlet/core/config.go | $(ENUMER) ; $(in
 	$Q $(ENUMER) -type=NetProvider -text -transform=kebab -trimprefix=NetProvider inlet/core/config.go
 inlet/flow/decoder/timestampsource_enumer.go: go.mod inlet/flow/decoder/config.go | $(ENUMER) ; $(info $(M) generate enums for TimestampSource…)
 	$Q $(ENUMER) -type=TimestampSource -text -transform=kebab -trimprefix=TimestampSource inlet/flow/decoder/config.go
+inlet/metadata/provider/snmp/authprotocol_enumer.go: go.mod inlet/metadata/provider/snmp/config.go | $(ENUMER) ; $(info $(M) generate enums for AuthProtocol…)
+	$Q $(ENUMER) -type=AuthProtocol -text -transform=kebab -trimprefix=AuthProtocol inlet/metadata/provider/snmp/config.go
+inlet/metadata/provider/snmp/privprotocol_enumer.go: go.mod inlet/metadata/provider/snmp/config.go | $(ENUMER) ; $(info $(M) generate enums for PrivProtocol…)
+	$Q $(ENUMER) -type=PrivProtocol -text -transform=kebab -trimprefix=PrivProtocol inlet/metadata/provider/snmp/config.go
+inlet/metadata/provider/gnmi/ifspeedpathunit_enumer.go: go.mod inlet/metadata/provider/gnmi/config.go | $(ENUMER) ; $(info $(M) generate enums for IfSpeedPathUnit…)
+	$Q $(ENUMER) -type=IfSpeedPathUnit -text -transform=kebab -trimprefix=Speed inlet/metadata/provider/gnmi/config.go
 common/kafka/saslmechanism_enumer.go: go.mod common/kafka/config.go | $(ENUMER) ; $(info $(M) generate enums for SASLMechanism…)
 	$Q $(ENUMER) -type=SASLMechanism -text -transform=kebab -trimprefix=SASL common/kafka/config.go
 

@@ -388,11 +388,10 @@ The `snmp` provider accepts the following configuration keys:
 - `security-parameters` is a map from exporter subnets to the SNMPv3 USM
   security parameters. Like for `communities`, `::/0` can be used to the set the
   default value. The security paramaters accepts the following keys:
-  `user-name`, `authentication-protocol` (can be omitted, otherwise `MD5`,
-  `SHA`, `SHA224`, `SHA256`, `SHA384`, and `SHA512` are accepted),
-  `authentication-passphrase` (if the previous value was set),
-  `privacy-protocol` (can be omitted, otherwise `DES`, `AES`, `AES192`,
-  `AES256`, `AES192C`, and `AES256C` are accepted, the later being
+  `user-name`, `authentication-protocol` (`none`, `MD5`, `SHA`, `SHA224`,
+  `SHA256`, `SHA384`, and `SHA512` are accepted), `authentication-passphrase`
+  (if the previous value was set), `privacy-protocol` (`none`, `DES`, `AES`,
+  `AES192`, `AES256`, `AES192C`, and `AES256C` are accepted, the later being
   Cisco-variant), `privacy-passphrase` (if the previous value was set), and
   `context-name`.
 - `ports` is a map from exporter subnets to the SNMP port to use to poll

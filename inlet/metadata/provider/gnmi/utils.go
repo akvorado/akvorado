@@ -31,13 +31,13 @@ func (m Model) gnmiOptions(options ...api.GNMIOption) []api.GNMIOption {
 // convertSpeed converts a speed to an integer value in Mbps.
 func convertSpeed(strValue string, unit IfSpeedPathUnit) (uint, error) {
 	switch unit {
-	case SpeedBits:
+	case SpeedBps:
 		val, err := strconv.ParseUint(strValue, 10, 32)
 		if err != nil {
 			return 0, err
 		}
 		return uint(val / 1_000_000), nil
-	case SpeedMegabits:
+	case SpeedMbps:
 		val, err := strconv.ParseUint(strValue, 10, 32)
 		if err != nil {
 			return 0, err

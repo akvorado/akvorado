@@ -7,14 +7,12 @@ import (
 	"errors"
 	"net/netip"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/gosnmp/gosnmp"
 	"github.com/mitchellh/mapstructure"
 
 	"akvorado/common/helpers"
-	"akvorado/common/helpers/bimap"
 	"akvorado/inlet/metadata/provider"
 )
 
@@ -116,76 +114,42 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 // AuthProtocol represents a SNMPv3 authentication protocol
 type AuthProtocol gosnmp.SnmpV3AuthProtocol
 
-var authProtocolMap = bimap.New(map[AuthProtocol]string{
-	AuthProtocol(gosnmp.NoAuth): "",
-	AuthProtocol(gosnmp.MD5):    "MD5",
-	AuthProtocol(gosnmp.SHA):    "SHA",
-	AuthProtocol(gosnmp.SHA224): "SHA224",
-	AuthProtocol(gosnmp.SHA256): "SHA256",
-	AuthProtocol(gosnmp.SHA384): "SHA384",
-	AuthProtocol(gosnmp.SHA512): "SHA512",
-})
-
-// UnmarshalText parses a SNMPv3 authentication protocol
-func (ap *AuthProtocol) UnmarshalText(text []byte) error {
-	protocol, ok := authProtocolMap.LoadKey(strings.ToUpper(string(text)))
-	if !ok {
-		return errors.New("unknown auth protocol")
-	}
-	*ap = AuthProtocol(protocol)
-	return nil
-}
-
-// String turns a SNMPv3 authentication protocol to a string
-func (ap AuthProtocol) String() string {
-	protocol, ok := authProtocolMap.LoadValue(ap)
-	if !ok {
-		return ""
-	}
-	return protocol
-}
-
-// MarshalText turns a SNMPv3 authentication protocol to a string
-func (ap AuthProtocol) MarshalText() ([]byte, error) {
-	return []byte(ap.String()), nil
-}
+const (
+	// AuthProtocolNone disables any authentication
+	AuthProtocolNone AuthProtocol = AuthProtocol(gosnmp.NoAuth)
+	// AuthProtocolMD5 uses MD5 authentication
+	AuthProtocolMD5 AuthProtocol = AuthProtocol(gosnmp.MD5)
+	// AuthProtocolSHA uses SHA authentication
+	AuthProtocolSHA AuthProtocol = AuthProtocol(gosnmp.SHA)
+	// AuthProtocolSHA224 uses SHA224 authentication
+	AuthProtocolSHA224 AuthProtocol = AuthProtocol(gosnmp.SHA224)
+	// AuthProtocolSHA256 uses SHA256 authentication
+	AuthProtocolSHA256 AuthProtocol = AuthProtocol(gosnmp.SHA256)
+	// AuthProtocolSHA384 uses SHA384 authentication
+	AuthProtocolSHA384 AuthProtocol = AuthProtocol(gosnmp.SHA384)
+	// AuthProtocolSHA512 uses SHA512 authentication
+	AuthProtocolSHA512 AuthProtocol = AuthProtocol(gosnmp.SHA512)
+)
 
 // PrivProtocol represents a SNMPv3 privacy protocol
 type PrivProtocol gosnmp.SnmpV3PrivProtocol
 
-var privProtocolMap = bimap.New(map[PrivProtocol]string{
-	PrivProtocol(gosnmp.NoPriv):  "",
-	PrivProtocol(gosnmp.DES):     "DES",
-	PrivProtocol(gosnmp.AES):     "AES",
-	PrivProtocol(gosnmp.AES192):  "AES192",
-	PrivProtocol(gosnmp.AES256):  "AES256",
-	PrivProtocol(gosnmp.AES192C): "AES192C",
-	PrivProtocol(gosnmp.AES256C): "AES256C",
-})
-
-// UnmarshalText parses a SNMPv3 privacy protocol
-func (pp *PrivProtocol) UnmarshalText(text []byte) error {
-	protocol, ok := privProtocolMap.LoadKey(strings.ToUpper(string(text)))
-	if !ok {
-		return errors.New("unknown privacy protocol")
-	}
-	*pp = PrivProtocol(protocol)
-	return nil
-}
-
-// String turns a SNMPv3 privacy protocol to a string
-func (pp PrivProtocol) String() string {
-	protocol, ok := privProtocolMap.LoadValue(pp)
-	if !ok {
-		return ""
-	}
-	return protocol
-}
-
-// MarshalText turns a SNMPv3 privacy protocol to a string
-func (pp PrivProtocol) MarshalText() ([]byte, error) {
-	return []byte(pp.String()), nil
-}
+const (
+	// PrivProtocolNone disables any encryption
+	PrivProtocolNone PrivProtocol = PrivProtocol(gosnmp.NoPriv)
+	// PrivProtocolDES uses DES for encryption
+	PrivProtocolDES PrivProtocol = PrivProtocol(gosnmp.DES)
+	// PrivProtocolAES uses AES for encryption
+	PrivProtocolAES PrivProtocol = PrivProtocol(gosnmp.AES)
+	// PrivProtocolAES192 uses AES192 for encryption
+	PrivProtocolAES192 PrivProtocol = PrivProtocol(gosnmp.AES192)
+	// PrivProtocolAES256 uses AES256 for encryption
+	PrivProtocolAES256 PrivProtocol = PrivProtocol(gosnmp.AES256)
+	// PrivProtocolAES192C uses AES192C for encryption
+	PrivProtocolAES192C PrivProtocol = PrivProtocol(gosnmp.AES192C)
+	// PrivProtocolAES256C uses AES256C for encryption
+	PrivProtocolAES256C PrivProtocol = PrivProtocol(gosnmp.AES256C)
+)
 
 func init() {
 	helpers.RegisterMapstructureUnmarshallerHook(ConfigurationUnmarshallerHook())

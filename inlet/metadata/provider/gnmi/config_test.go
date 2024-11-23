@@ -64,7 +64,7 @@ func TestDefaults(t *testing.T) {
 						IfDescriptionPaths: []string{"/some/other/path"},
 						IfNamePaths:        []string{"/something"},
 						IfSpeedPaths: []IfSpeedPath{
-							{"/path1", SpeedMegabits},
+							{"/path1", SpeedMbps},
 							{"/path2", SpeedEthernet},
 						},
 						SystemNamePaths: []string{"/another/path"},
@@ -118,7 +118,7 @@ func TestDefaults(t *testing.T) {
 					IfDescriptionPaths: []string{"/some/other/path"},
 					IfNamePaths:        []string{"/something"},
 					IfSpeedPaths: []IfSpeedPath{
-						{"/path1", SpeedMegabits},
+						{"/path1", SpeedMbps},
 						{"/path2", SpeedEthernet},
 					},
 					SystemNamePaths: []string{"/another/path"},
@@ -157,7 +157,7 @@ func TestDefaults(t *testing.T) {
 						IfDescriptionPaths: []string{"/some/other/path"},
 						IfNamePaths:        []string{"/something"},
 						IfSpeedPaths: []IfSpeedPath{
-							{"/path1", SpeedMegabits},
+							{"/path1", SpeedMbps},
 							{"/path2", SpeedEthernet},
 						},
 						SystemNamePaths: []string{"/another/path"},
@@ -208,7 +208,7 @@ func TestDefaults(t *testing.T) {
 						IfDescriptionPaths: []string{"/some/other/path"},
 						IfNamePaths:        []string{"/something"},
 						IfSpeedPaths: []IfSpeedPath{
-							{"/path1", SpeedMegabits},
+							{"/path1", SpeedMbps},
 							{"/path2", SpeedEthernet},
 						},
 						SystemNamePaths: []string{"/another/path"},
@@ -219,7 +219,7 @@ func TestDefaults(t *testing.T) {
 					IfDescriptionPaths: []string{"/some/other/path"},
 					IfNamePaths:        []string{"/something"},
 					IfSpeedPaths: []IfSpeedPath{
-						{"/path1", SpeedMegabits},
+						{"/path1", SpeedMbps},
 						{"/path2", SpeedEthernet},
 					},
 					SystemNamePaths: []string{"/another/path"},
