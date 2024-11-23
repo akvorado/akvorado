@@ -42,10 +42,6 @@
             find . -print0 | xargs -0 touch -d @0
 
             make all \
-              MOCKGEN=${pkgs.mockgen}/bin/mockgen \
-              GOIMPORTS=${pkgs.gotools}/bin/goimports \
-              PIGEON=${pkgs.pigeon}/bin/pigeon \
-              REVIVE=${pkgs.coreutils}/bin/true \
               ASNS_URL=${asn2org}/asns.csv \
               SERVICES_URL=${ianaServiceNames}
           '';

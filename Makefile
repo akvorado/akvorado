@@ -48,32 +48,19 @@ all_js: .fmt-js~ .lint-js~ $(GENERATED_JS) console/data/frontend
 
 $(BIN):
 	@mkdir -p $@
-$(BIN)/%: | $(BIN) ; $(info $(M) building $(PACKAGE)…)
+$(BIN)/%: PACKAGE=$(shell $(GO) list -e -f '{{ range .Imports }}{{ printf "%s\n" . }}{{ end }}' tools.go | grep "/$*$$")
+$(BIN)/%: go.mod go.sum | $(BIN) ; $(info $(M) building tool $*…)
+	@[ -n "$(PACKAGE)" ] || (>&2 echo "*** Unknown tool $*!"; false)
 	$Q env GOBIN=$(abspath $(BIN)) $(GO) install $(PACKAGE)
 
 GOIMPORTS = $(BIN)/goimports
-$(BIN)/goimports: PACKAGE=golang.org/x/tools/cmd/goimports@latest
-
 REVIVE = $(BIN)/revive
-$(BIN)/revive: PACKAGE=github.com/mgechev/revive@latest
-
 GOCOV = $(BIN)/gocov
-$(BIN)/gocov: PACKAGE=github.com/axw/gocov/gocov@v1.1.0
-
 GOCOVXML = $(BIN)/gocov-xml
-$(BIN)/gocov-xml: PACKAGE=github.com/AlekSi/gocov-xml@latest
-
 GOTESTSUM = $(BIN)/gotestsum
-$(BIN)/gotestsum: PACKAGE=gotest.tools/gotestsum@latest
-
 MOCKGEN = $(BIN)/mockgen
-$(BIN)/mockgen: PACKAGE=go.uber.org/mock/mockgen@v0.4.0
-
 PIGEON = $(BIN)/pigeon
-$(BIN)/pigeon: PACKAGE=github.com/mna/pigeon@v1.1.0
-
 WWHRD = $(BIN)/wwhrd
-$(BIN)/wwhrd: PACKAGE=github.com/frapposelli/wwhrd@latest
 
 # Generated files
 
@@ -214,11 +201,9 @@ licensecheck: console/frontend/node_modules | $(WWHRD) ; $(info $(M) check depen
 		--allow "$$(sed -n 's/^  - //p' ../../.wwhrd.yml | paste -sd ";")" \
 		--report detailed
 
-.PHONY: clean mrproper
-clean: ; $(info $(M) cleaning…)	@ ## Cleanup almost everything
-	@rm -rf test $(GENERATED) inlet/flow/decoder/flow-*.pb.go *~
-mrproper: clean
-	@rm -rf bin
+.PHONY: clean
+clean: ; $(info $(M) cleaning…)	@ ## Cleanup everything
+	@rm -rf test $(GENERATED) inlet/flow/decoder/flow-*.pb.go *~ bin
 
 .PHONY: help
 help:
