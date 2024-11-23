@@ -9,6 +9,7 @@ package tools
 import (
 	_ "github.com/AlekSi/gocov-xml"
 	_ "github.com/axw/gocov/gocov"
+	_ "github.com/dmarkham/enumer"
 	_ "github.com/frapposelli/wwhrd"
 	_ "github.com/mgechev/revive"
 	_ "github.com/mna/pigeon"
