@@ -27,7 +27,8 @@ GENERATED_GO = \
 	orchestrator/clickhouse/data/udp.csv \
 	console/filter/parser.go \
 	inlet/core/asnprovider_enumer.go \
-	inlet/core/netprovider_enumer.go
+	inlet/core/netprovider_enumer.go \
+	inlet/flow/decoder/timestampsource_enumer.go
 GENERATED_TEST_GO = \
 	common/clickhousedb/mocks/mock_driver.go \
 	conntrackfixer/mocks/mock_conntrackfixer.go
@@ -79,10 +80,12 @@ conntrackfixer/mocks/mock_conntrackfixer.go: go.mod | $(MOCKGEN) ; $(info $(M) g
 	   $(MOCKGEN) -package mocks akvorado/conntrackfixer ConntrackConn,DockerClient >> $@ ; \
 	fi
 
-inlet/core/asnprovider_enumer.go: go.mod | $(ENUMER) ; $(info $(M) generate enums for ASNProvider…)
+inlet/core/asnprovider_enumer.go: go.mod inlet/core/config.go | $(ENUMER) ; $(info $(M) generate enums for ASNProvider…)
 	$Q $(ENUMER) -type=ASNProvider -text -transform=kebab -trimprefix=ASNProvider inlet/core/config.go
-inlet/core/netprovider_enumer.go: go.mod | $(ENUMER) ; $(info $(M) generate enums for NetProvider…)
+inlet/core/netprovider_enumer.go: go.mod inlet/core/config.go | $(ENUMER) ; $(info $(M) generate enums for NetProvider…)
 	$Q $(ENUMER) -type=NetProvider -text -transform=kebab -trimprefix=NetProvider inlet/core/config.go
+inlet/flow/decoder/timestampsource_enumer.go: go.mod inlet/flow/decoder/config.go | $(ENUMER) ; $(info $(M) generate enums for TimestampSource…)
+	$Q $(ENUMER) -type=TimestampSource -text -transform=kebab -trimprefix=TimestampSource inlet/flow/decoder/config.go
 
 common/schema/definition_gen.go: common/schema/definition.go common/schema/definition_gen.sh ; $(info $(M) generate column definitions…)
 	$Q ./common/schema/definition_gen.sh > $@
