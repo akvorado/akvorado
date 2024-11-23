@@ -20,7 +20,7 @@ type Configuration struct {
 	// DefaultVisualizeOptions define some defaults for the "visualize" tab.
 	DefaultVisualizeOptions VisualizeOptionsConfiguration
 	// HomepageTopWidgets defines the list of widgets to display on the home page.
-	HomepageTopWidgets []string `validate:"dive,oneof=src-as dst-as src-country dst-country exporter protocol etype src-port dst-port"`
+	HomepageTopWidgets []HomepageTopWidget
 	// HomepageGraphFilter defines the filtering string to use for the homepage graph
 	HomepageGraphFilter string
 	// HomepageGraphTimeRange defines the time range to use for the homepage graph
@@ -30,6 +30,30 @@ type Configuration struct {
 	// CacheTTL tells how long to keep the most costly requests in cache.
 	CacheTTL time.Duration `validate:"min=5s"`
 }
+
+// HomepageTopWidget represents a top widget on the homepage.
+type HomepageTopWidget int
+
+const (
+	// HomepageTopWidgetSrcAS shows the top source AS
+	HomepageTopWidgetSrcAS HomepageTopWidget = iota + 1
+	// HomepageTopWidgetDstAS shows the top destination AS
+	HomepageTopWidgetDstAS
+	// HomepageTopWidgetSrcCountry shows the top source countries
+	HomepageTopWidgetSrcCountry
+	// HomepageTopWidgetDstCountry shows the top destination countries
+	HomepageTopWidgetDstCountry
+	// HomepageTopWidgetSrcPort shows the top source ports
+	HomepageTopWidgetSrcPort
+	// HomepageTopWidgetDstPort shows the top destination ports
+	HomepageTopWidgetDstPort
+	// HomepageTopWidgetExporter shows the top exporters
+	HomepageTopWidgetExporter
+	// HomepageTopWidgetProtocol shows the top IP protocols
+	HomepageTopWidgetProtocol
+	// HomepageTopWidgetEtype shows the top ethernet types
+	HomepageTopWidgetEtype
+)
 
 // VisualizeOptionsConfiguration defines options for the "visualize" tab.
 type VisualizeOptionsConfiguration struct {
@@ -65,7 +89,13 @@ func DefaultConfiguration() Configuration {
 			Limit:      10,
 			LimitType:  "Avg",
 		},
-		HomepageTopWidgets:     []string{"src-as", "src-port", "protocol", "src-country", "etype"},
+		HomepageTopWidgets: []HomepageTopWidget{
+			HomepageTopWidgetSrcAS,
+			HomepageTopWidgetSrcPort,
+			HomepageTopWidgetProtocol,
+			HomepageTopWidgetSrcCountry,
+			HomepageTopWidgetEtype,
+		},
 		DimensionsLimit:        50,
 		CacheTTL:               3 * time.Hour,
 		HomepageGraphFilter:    "InIfBoundary = 'external'",
