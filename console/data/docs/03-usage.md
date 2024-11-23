@@ -151,6 +151,10 @@ aspect of the graph.
   "limit" parameter tells how many. The remaining values are
   categorized as "Other".
 
+- Associated with the `limit` parameter, the `limitType` parameter help find traffic surges according to 2 modes:
+  - Avg: default mode, the query focuses on getting the highest cumulative traffics over the time selection.
+  - Max: the query focuses on getting the traffic bursts over the time selection.
+
 - The filter box contains an SQL-like expression to limit the data to be
   graphed. It features an auto-completion system that can be triggered manually
   with `Ctrl-Space`. `Ctrl-Enter` executes the request. Filters can be saved by

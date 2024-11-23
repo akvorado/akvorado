@@ -57,14 +57,8 @@ func (input graphSankeyHandlerInput) toSQL() (string, error) {
 	// With
 	with := []string{
 		fmt.Sprintf("source AS (%s)", input.sourceSelect()),
-		fmt.Sprintf(`(SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE %s) AS range`, where),
-		fmt.Sprintf(
-			"rows AS (SELECT %s FROM source WHERE %s GROUP BY %s ORDER BY {{ .Units }} DESC LIMIT %d)",
-			strings.Join(dimensions, ", "),
-			where,
-			strings.Join(dimensions, ", "),
-			input.Limit),
-	}
+		fmt.Sprintf(`(SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE %s) AS range`, where)}
+	with = append(with, selectSankeyRowsByLimitType(input, dimensions, where))
 
 	sqlQuery := fmt.Sprintf(`
 {{ with %s }}

@@ -61,12 +61,27 @@
         label="IPv6 /x"
         :error="truncate6Error"
       />
+    </div>
+    <div class="flex flex-row flex-nowrap gap-2">
       <InputString
         v-model="limit"
         class="grow"
         label="Limit"
         :error="limitError"
       />
+      <InputListBox
+        v-model="limitType"
+        :items="computationModeList"
+        class="order-3 grow basis-full sm:max-lg:order-3 sm:max-lg:basis-0"
+        label="Top by"
+      >
+        <template #selected>{{ limitType.name }}</template>
+        <template #item="{ name }">
+          <div class="flex w-full items-center justify-between">
+            <span>{{ name }}</span>
+          </div>
+        </template>
+      </InputListBox>
     </div>
   </div>
 </template>
@@ -117,6 +132,21 @@ const limitError = computed(() => {
   }
   return "";
 });
+
+const computationModes = {
+  avg: "Avg",
+  max: "Max",
+} as const;
+
+const computationModeList = Object.entries(computationModes).map(
+  ([k, v], idx) => ({
+    id: idx + 1,
+    type: k as keyof typeof computationModes, // why isn't it infered?
+    name: v,
+  }),
+);
+const limitType = ref(computationModeList[0]);
+
 const canAggregate = computed(
   () =>
     intersection(
@@ -147,7 +177,6 @@ const hasErrors = computed(
     !!truncate4Error.value ||
     !!truncate6Error.value,
 );
-
 const dimensions = computed(
   () =>
     serverConfiguration.value?.dimensions.map((v, idx) => ({
@@ -166,12 +195,14 @@ const removeDimension = (dimension: (typeof dimensions.value)[0]) => {
     (d) => d !== dimension,
   );
 };
-
 watch(
   () => [props.modelValue, dimensions.value] as const,
   ([value, dimensions]) => {
     if (value) {
       limit.value = value.limit.toString();
+      limitType.value =
+        computationModeList.find((mode) => mode.name === value.limitType) ||
+        computationModeList[0];
       truncate4.value = value.truncate4.toString();
       truncate6.value = value.truncate6.toString();
     }
@@ -183,11 +214,19 @@ watch(
   { immediate: true, deep: true },
 );
 watch(
-  [selectedDimensions, limit, truncate4, truncate6, hasErrors] as const,
-  ([selected, limit, truncate4, truncate6, hasErrors]) => {
+  [
+    selectedDimensions,
+    limit,
+    limitType,
+    truncate4,
+    truncate6,
+    hasErrors,
+  ] as const,
+  ([selected, limit, limitType, truncate4, truncate6, hasErrors]) => {
     const updated = {
       selected: selected.map((d) => d.name),
       limit: parseInt(limit),
+      limitType: limitType.name,
       truncate4: parseInt(truncate4),
       truncate6: parseInt(truncate6),
       errors: hasErrors,
@@ -208,6 +247,7 @@ watch(
 export type ModelType = {
   selected: string[];
   limit: number;
+  limitType: string;
   truncate4: number;
   truncate6: number;
   errors?: boolean;

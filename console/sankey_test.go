@@ -55,6 +55,38 @@ GROUP BY dimensions
 ORDER BY xps DESC
 {{ end }}`,
 		}, {
+			Description: "two dimensions, no filters, l3 bps, limitType by max",
+			Pos:         helpers.Mark(),
+			Input: graphSankeyHandlerInput{
+				graphCommonHandlerInput{
+					Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					Dimensions: []query.Column{
+						query.NewColumn("SrcAS"),
+						query.NewColumn("ExporterName"),
+					},
+					Limit:     5,
+					LimitType: "Max",
+					Filter:    query.Filter{},
+					Units:     "l3bps",
+				},
+			},
+			Expected: `
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l3bps"}@@ }}
+WITH
+ source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
+ (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }}) AS range,
+ rows AS (SELECT SrcAS, ExporterName FROM ( SELECT SrcAS, ExporterName, {{ .Units }} AS sum_at_time FROM source WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ) GROUP BY SrcAS, ExporterName ORDER BY MAX(sum_at_time) DESC LIMIT 5)
+SELECT
+ {{ .Units }}/range AS xps,
+ [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
+  if(ExporterName IN (SELECT ExporterName FROM rows), ExporterName, 'Other')] AS dimensions
+FROM source
+WHERE {{ .Timefilter }}
+GROUP BY dimensions
+ORDER BY xps DESC
+{{ end }}`,
+		}, {
 			Description: "two dimensions, no filters, l2 bps",
 			Pos:         helpers.Mark(),
 			Input: graphSankeyHandlerInput{

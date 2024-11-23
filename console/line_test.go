@@ -488,6 +488,43 @@ ORDER BY time WITH FILL
  INTERPOLATE (dimensions AS ['Other', 'Other']))
 {{ end }}`,
 		}, {
+			Description: "no filters, limitType by max",
+			Pos:         helpers.Mark(),
+			Input: graphLineHandlerInput{
+				graphCommonHandlerInput: graphCommonHandlerInput{
+					Start:     time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					End:       time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					Limit:     20,
+					LimitType: "Max",
+					Dimensions: []query.Column{
+						query.NewColumn("ExporterName"),
+						query.NewColumn("InIfProvider"),
+					},
+					Filter: query.Filter{},
+					Units:  "l3bps",
+				},
+				Points: 100,
+			},
+			Expected: `
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
+WITH
+ source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
+ rows AS (SELECT ExporterName, InIfProvider FROM ( SELECT ExporterName, InIfProvider, {{ .Units }} AS sum_at_time FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ) GROUP BY ExporterName, InIfProvider ORDER BY MAX(sum_at_time) DESC LIMIT 20)
+SELECT 1 AS axis, * FROM (
+SELECT
+ {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .Units }}/{{ .Interval }} AS xps,
+ if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
+FROM source
+WHERE {{ .Timefilter }}
+GROUP BY time, dimensions
+ORDER BY time WITH FILL
+ FROM {{ .TimefilterStart }}
+ TO {{ .TimefilterEnd }} + INTERVAL 1 second
+ STEP {{ .Interval }}
+ INTERPOLATE (dimensions AS ['Other', 'Other']))
+{{ end }}`,
+		}, {
 			Description: "no filters, reverse",
 			Pos:         helpers.Mark(),
 			Input: graphLineHandlerInput{
@@ -618,389 +655,784 @@ func TestGraphLineHandler(t *testing.T) {
 	_, h, mockConn, _ := NewMock(t, DefaultConfiguration())
 	base := time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
 
-	// Single direction
-	expectedSQL := []struct {
-		Axis       uint8     `ch:"axis"`
-		Time       time.Time `ch:"time"`
-		Xps        float64   `ch:"xps"`
-		Dimensions []string  `ch:"dimensions"`
-	}{
-		{1, base, 1000, []string{"router1", "provider1"}},
-		{1, base, 2000, []string{"router1", "provider2"}},
-		{1, base, 1200, []string{"router2", "provider2"}},
-		{1, base, 1100, []string{"router2", "provider3"}},
-		{1, base, 1900, []string{"Other", "Other"}},
-		{1, base.Add(time.Minute), 500, []string{"router1", "provider1"}},
-		{1, base.Add(time.Minute), 5000, []string{"router1", "provider2"}},
-		{1, base.Add(time.Minute), 900, []string{"router2", "provider4"}},
-		{1, base.Add(time.Minute), 100, []string{"Other", "Other"}},
-		{1, base.Add(2 * time.Minute), 100, []string{"router1", "provider1"}},
-		{1, base.Add(2 * time.Minute), 3000, []string{"router1", "provider2"}},
-		{1, base.Add(2 * time.Minute), 100, []string{"router2", "provider4"}},
-		{1, base.Add(2 * time.Minute), 100, []string{"Other", "Other"}},
-	}
-	mockConn.EXPECT().
-		Select(gomock.Any(), gomock.Any(), gomock.Any()).
-		SetArg(1, expectedSQL).
-		Return(nil)
+	t.Run("sort by avg", func(t *testing.T) {
+		// Single direction
+		expectedSQL := []struct {
+			Axis       uint8     `ch:"axis"`
+			Time       time.Time `ch:"time"`
+			Xps        float64   `ch:"xps"`
+			Dimensions []string  `ch:"dimensions"`
+		}{
+			{1, base, 1000, []string{"router1", "provider1"}},
+			{1, base, 2000, []string{"router1", "provider2"}},
+			{1, base, 1200, []string{"router2", "provider2"}},
+			{1, base, 1100, []string{"router2", "provider3"}},
+			{1, base, 1900, []string{"Other", "Other"}},
+			{1, base.Add(time.Minute), 500, []string{"router1", "provider1"}},
+			{1, base.Add(time.Minute), 5000, []string{"router1", "provider2"}},
+			{1, base.Add(time.Minute), 900, []string{"router2", "provider4"}},
+			{1, base.Add(time.Minute), 100, []string{"Other", "Other"}},
+			{1, base.Add(2 * time.Minute), 100, []string{"router1", "provider1"}},
+			{1, base.Add(2 * time.Minute), 3000, []string{"router1", "provider2"}},
+			{1, base.Add(2 * time.Minute), 100, []string{"router2", "provider4"}},
+			{1, base.Add(2 * time.Minute), 100, []string{"Other", "Other"}},
+		}
+		mockConn.EXPECT().
+			Select(gomock.Any(), gomock.Any(), gomock.Any()).
+			SetArg(1, expectedSQL).
+			Return(nil)
 
-	// Bidirectional
-	expectedSQL = []struct {
-		Axis       uint8     `ch:"axis"`
-		Time       time.Time `ch:"time"`
-		Xps        float64   `ch:"xps"`
-		Dimensions []string  `ch:"dimensions"`
-	}{
-		{1, base, 1000, []string{"router1", "provider1"}},
-		{1, base, 2000, []string{"router1", "provider2"}},
-		{1, base, 1200, []string{"router2", "provider2"}},
-		{1, base, 1100, []string{"router2", "provider3"}},
-		{1, base, 1900, []string{"Other", "Other"}},
-		{1, base.Add(time.Minute), 500, []string{"router1", "provider1"}},
-		{1, base.Add(time.Minute), 5000, []string{"router1", "provider2"}},
-		{1, base.Add(time.Minute), 900, []string{"router2", "provider4"}},
+		// Bidirectional
+		expectedSQL = []struct {
+			Axis       uint8     `ch:"axis"`
+			Time       time.Time `ch:"time"`
+			Xps        float64   `ch:"xps"`
+			Dimensions []string  `ch:"dimensions"`
+		}{
+			{1, base, 1000, []string{"router1", "provider1"}},
+			{1, base, 2000, []string{"router1", "provider2"}},
+			{1, base, 1200, []string{"router2", "provider2"}},
+			{1, base, 1100, []string{"router2", "provider3"}},
+			{1, base, 1900, []string{"Other", "Other"}},
+			{1, base.Add(time.Minute), 500, []string{"router1", "provider1"}},
+			{1, base.Add(time.Minute), 5000, []string{"router1", "provider2"}},
+			{1, base.Add(time.Minute), 900, []string{"router2", "provider4"}},
 
-		// Axes can be mixed. In reality, it seems they cannot
-		// be interleaved, but ClickHouse documentation does
-		// not say it is not possible.
-		{2, base, 100, []string{"router1", "provider1"}},
-		{2, base, 200, []string{"router1", "provider2"}},
-		{2, base, 120, []string{"router2", "provider2"}},
+			// Axes can be mixed. In reality, it seems they cannot
+			// be interleaved, but ClickHouse documentation does
+			// not say it is not possible.
+			{2, base, 100, []string{"router1", "provider1"}},
+			{2, base, 200, []string{"router1", "provider2"}},
+			{2, base, 120, []string{"router2", "provider2"}},
 
-		{1, base.Add(time.Minute), 100, []string{"Other", "Other"}},
-		{1, base.Add(2 * time.Minute), 100, []string{"router1", "provider1"}},
+			{1, base.Add(time.Minute), 100, []string{"Other", "Other"}},
+			{1, base.Add(2 * time.Minute), 100, []string{"router1", "provider1"}},
 
-		{2, base, 110, []string{"router2", "provider3"}},
-		{2, base, 190, []string{"Other", "Other"}},
-		{2, base.Add(time.Minute), 50, []string{"router1", "provider1"}},
-		{2, base.Add(time.Minute), 500, []string{"router1", "provider2"}},
+			{2, base, 110, []string{"router2", "provider3"}},
+			{2, base, 190, []string{"Other", "Other"}},
+			{2, base.Add(time.Minute), 50, []string{"router1", "provider1"}},
+			{2, base.Add(time.Minute), 500, []string{"router1", "provider2"}},
 
-		{1, base.Add(2 * time.Minute), 3000, []string{"router1", "provider2"}},
-		{1, base.Add(2 * time.Minute), 100, []string{"router2", "provider4"}},
-		{1, base.Add(2 * time.Minute), 100, []string{"Other", "Other"}},
+			{1, base.Add(2 * time.Minute), 3000, []string{"router1", "provider2"}},
+			{1, base.Add(2 * time.Minute), 100, []string{"router2", "provider4"}},
+			{1, base.Add(2 * time.Minute), 100, []string{"Other", "Other"}},
 
-		{2, base.Add(time.Minute), 90, []string{"router2", "provider4"}},
-		{2, base.Add(time.Minute), 10, []string{"Other", "Other"}},
-		{2, base.Add(2 * time.Minute), 10, []string{"router1", "provider1"}},
-		{2, base.Add(2 * time.Minute), 300, []string{"router1", "provider2"}},
-		{2, base.Add(2 * time.Minute), 10, []string{"router2", "provider4"}},
-		{2, base.Add(2 * time.Minute), 10, []string{"Other", "Other"}},
-	}
-	mockConn.EXPECT().
-		Select(gomock.Any(), gomock.Any(), gomock.Any()).
-		SetArg(1, expectedSQL).
-		Return(nil)
+			{2, base.Add(time.Minute), 90, []string{"router2", "provider4"}},
+			{2, base.Add(time.Minute), 10, []string{"Other", "Other"}},
+			{2, base.Add(2 * time.Minute), 10, []string{"router1", "provider1"}},
+			{2, base.Add(2 * time.Minute), 300, []string{"router1", "provider2"}},
+			{2, base.Add(2 * time.Minute), 10, []string{"router2", "provider4"}},
+			{2, base.Add(2 * time.Minute), 10, []string{"Other", "Other"}},
+		}
+		mockConn.EXPECT().
+			Select(gomock.Any(), gomock.Any(), gomock.Any()).
+			SetArg(1, expectedSQL).
+			Return(nil)
 
-	// Previous period
-	expectedSQL = []struct {
-		Axis       uint8     `ch:"axis"`
-		Time       time.Time `ch:"time"`
-		Xps        float64   `ch:"xps"`
-		Dimensions []string  `ch:"dimensions"`
-	}{
-		{1, base, 1000, []string{"router1", "provider1"}},
-		{1, base, 2000, []string{"router1", "provider2"}},
-		{1, base, 1200, []string{"router2", "provider2"}},
-		{1, base, 1100, []string{"router2", "provider3"}},
-		{1, base, 1900, []string{"Other", "Other"}},
-		{1, base.Add(time.Minute), 500, []string{"router1", "provider1"}},
-		{1, base.Add(time.Minute), 5000, []string{"router1", "provider2"}},
-		{1, base.Add(time.Minute), 900, []string{"router2", "provider4"}},
-		{1, base.Add(time.Minute), 100, []string{"Other", "Other"}},
-		{1, base.Add(2 * time.Minute), 100, []string{"router1", "provider1"}},
-		{1, base.Add(2 * time.Minute), 3000, []string{"router1", "provider2"}},
-		{1, base.Add(2 * time.Minute), 100, []string{"router2", "provider4"}},
-		{1, base.Add(2 * time.Minute), 100, []string{"Other", "Other"}},
+		// Previous period
+		expectedSQL = []struct {
+			Axis       uint8     `ch:"axis"`
+			Time       time.Time `ch:"time"`
+			Xps        float64   `ch:"xps"`
+			Dimensions []string  `ch:"dimensions"`
+		}{
+			{1, base, 1000, []string{"router1", "provider1"}},
+			{1, base, 2000, []string{"router1", "provider2"}},
+			{1, base, 1200, []string{"router2", "provider2"}},
+			{1, base, 1100, []string{"router2", "provider3"}},
+			{1, base, 1900, []string{"Other", "Other"}},
+			{1, base.Add(time.Minute), 500, []string{"router1", "provider1"}},
+			{1, base.Add(time.Minute), 5000, []string{"router1", "provider2"}},
+			{1, base.Add(time.Minute), 900, []string{"router2", "provider4"}},
+			{1, base.Add(time.Minute), 100, []string{"Other", "Other"}},
+			{1, base.Add(2 * time.Minute), 100, []string{"router1", "provider1"}},
+			{1, base.Add(2 * time.Minute), 3000, []string{"router1", "provider2"}},
+			{1, base.Add(2 * time.Minute), 100, []string{"router2", "provider4"}},
+			{1, base.Add(2 * time.Minute), 100, []string{"Other", "Other"}},
 
-		{3, base, 8000, []string{}},
-		{3, base.Add(time.Minute), 6000, []string{}},
-		{3, base.Add(2 * time.Minute), 4500, []string{}},
-	}
-	mockConn.EXPECT().
-		Select(gomock.Any(), gomock.Any(), gomock.Any()).
-		SetArg(1, expectedSQL).
-		Return(nil)
+			{3, base, 8000, []string{}},
+			{3, base.Add(time.Minute), 6000, []string{}},
+			{3, base.Add(2 * time.Minute), 4500, []string{}},
+		}
+		mockConn.EXPECT().
+			Select(gomock.Any(), gomock.Any(), gomock.Any()).
+			SetArg(1, expectedSQL).
+			Return(nil)
 
-	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
-		{
-			Description: "single direction",
-			URL:         "/api/v0/console/graph/line",
-			JSONInput: gin.H{
-				"start":         time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-				"end":           time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-				"points":        100,
-				"limit":         20,
-				"dimensions":    []string{"ExporterName", "InIfProvider"},
-				"filter":        "DstCountry = 'FR' AND SrcCountry = 'US'",
-				"units":         "l3bps",
-				"bidirectional": false,
+		helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
+			{
+				Description: "single direction",
+				URL:         "/api/v0/console/graph/line",
+				JSONInput: gin.H{
+					"start":         time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					"end":           time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					"points":        100,
+					"limit":         20,
+					"limitType":     "Avg",
+					"dimensions":    []string{"ExporterName", "InIfProvider"},
+					"filter":        "DstCountry = 'FR' AND SrcCountry = 'US'",
+					"units":         "l3bps",
+					"bidirectional": false,
+				},
+				JSONOutput: gin.H{
+					// Sorted by sum of bps
+					"rows": [][]string{
+						{"router1", "provider2"}, // 10000
+						{"router1", "provider1"}, // 1600
+						{"router2", "provider2"}, // 1200
+						{"router2", "provider3"}, // 1100
+						{"router2", "provider4"}, // 1000
+						{"Other", "Other"},       // 2100
+					},
+					"t": []string{
+						"2009-11-10T23:00:00Z",
+						"2009-11-10T23:01:00Z",
+						"2009-11-10T23:02:00Z",
+					},
+					"points": [][]int{
+						{2000, 5000, 3000},
+						{1000, 500, 100},
+						{1200, 0, 0},
+						{1100, 0, 0},
+						{0, 900, 100},
+						{1900, 100, 100},
+					},
+					"min": []int{
+						2000,
+						100,
+						1200,
+						1100,
+						100,
+						100,
+					},
+					"max": []int{
+						5000,
+						1000,
+						1200,
+						1100,
+						900,
+						1900,
+					},
+					"average": []int{
+						3333,
+						533,
+						400,
+						366,
+						333,
+						700,
+					},
+					"95th": []int{
+						4000,
+						750,
+						600,
+						550,
+						500,
+						1000,
+					},
+					"axis": []int{
+						1, 1, 1, 1, 1, 1,
+					},
+					"axis-names": map[int]string{
+						1: "Direct",
+					},
+				},
+			}, {
+				Description: "bidirectional",
+				URL:         "/api/v0/console/graph/line",
+				JSONInput: gin.H{
+					"start":         time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					"end":           time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					"points":        100,
+					"limit":         20,
+					"limitType":     "Avg",
+					"dimensions":    []string{"ExporterName", "InIfProvider"},
+					"filter":        "DstCountry = 'FR' AND SrcCountry = 'US'",
+					"units":         "l3bps",
+					"bidirectional": true,
+				},
+				JSONOutput: gin.H{
+					// Sorted by sum of bps
+					"rows": [][]string{
+						{"router1", "provider2"}, // 10000
+						{"router1", "provider1"}, // 1600
+						{"router2", "provider2"}, // 1200
+						{"router2", "provider3"}, // 1100
+						{"router2", "provider4"}, // 1000
+						{"Other", "Other"},       // 2100
+
+						{"router1", "provider2"}, // 1000
+						{"router1", "provider1"}, // 160
+						{"router2", "provider2"}, // 120
+						{"router2", "provider3"}, // 110
+						{"router2", "provider4"}, // 100
+						{"Other", "Other"},       // 210
+					},
+					"t": []string{
+						"2009-11-10T23:00:00Z",
+						"2009-11-10T23:01:00Z",
+						"2009-11-10T23:02:00Z",
+					},
+					"points": [][]int{
+						{2000, 5000, 3000},
+						{1000, 500, 100},
+						{1200, 0, 0},
+						{1100, 0, 0},
+						{0, 900, 100},
+						{1900, 100, 100},
+
+						{200, 500, 300},
+						{100, 50, 10},
+						{120, 0, 0},
+						{110, 0, 0},
+						{0, 90, 10},
+						{190, 10, 10},
+					},
+					"min": []int{
+						2000,
+						100,
+						1200,
+						1100,
+						100,
+						100,
+
+						200,
+						10,
+						120,
+						110,
+						10,
+						10,
+					},
+					"max": []int{
+						5000,
+						1000,
+						1200,
+						1100,
+						900,
+						1900,
+
+						500,
+						100,
+						120,
+						110,
+						90,
+						190,
+					},
+					"average": []int{
+						3333,
+						533,
+						400,
+						366,
+						333,
+						700,
+
+						333,
+						53,
+						40,
+						36,
+						33,
+						70,
+					},
+					"95th": []int{
+						4000,
+						750,
+						600,
+						550,
+						500,
+						1000,
+
+						400,
+						75,
+						60,
+						55,
+						50,
+						100,
+					},
+					"axis": []int{
+						1, 1, 1, 1, 1, 1,
+						2, 2, 2, 2, 2, 2,
+					},
+					"axis-names": map[int]string{
+						1: "Direct",
+						2: "Reverse",
+					},
+				},
+			}, {
+				Description: "previous period",
+				URL:         "/api/v0/console/graph/line",
+				JSONInput: gin.H{
+					"start":           time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					"end":             time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					"points":          100,
+					"limit":           20,
+					"limitType":       "Avg",
+					"dimensions":      []string{"ExporterName", "InIfProvider"},
+					"filter":          "DstCountry = 'FR' AND SrcCountry = 'US'",
+					"units":           "l3bps",
+					"bidirectional":   false,
+					"previous-period": true,
+				},
+				JSONOutput: gin.H{
+					// Sorted by sum of bps
+					"rows": [][]string{
+						{"router1", "provider2"}, // 10000
+						{"router1", "provider1"}, // 1600
+						{"router2", "provider2"}, // 1200
+						{"router2", "provider3"}, // 1100
+						{"router2", "provider4"}, // 1000
+						{"Other", "Other"},       // 2100
+						{"Other", "Other"},       // Previous day
+					},
+					"t": []string{
+						"2009-11-10T23:00:00Z",
+						"2009-11-10T23:01:00Z",
+						"2009-11-10T23:02:00Z",
+					},
+					"points": [][]int{
+						{2000, 5000, 3000},
+						{1000, 500, 100},
+						{1200, 0, 0},
+						{1100, 0, 0},
+						{0, 900, 100},
+						{1900, 100, 100},
+						{8000, 6000, 4500},
+					},
+					"min": []int{
+						2000,
+						100,
+						1200,
+						1100,
+						100,
+						100,
+						4500,
+					},
+					"max": []int{
+						5000,
+						1000,
+						1200,
+						1100,
+						900,
+						1900,
+						8000,
+					},
+					"average": []int{
+						3333,
+						533,
+						400,
+						366,
+						333,
+						700,
+						6166,
+					},
+					"95th": []int{
+						4000,
+						750,
+						600,
+						550,
+						500,
+						1000,
+						7000,
+					},
+					"axis": []int{
+						1, 1, 1, 1, 1, 1,
+						3,
+					},
+					"axis-names": map[int]string{
+						1: "Direct",
+						3: "Previous day",
+					},
+				},
 			},
-			JSONOutput: gin.H{
-				// Sorted by sum of bps
-				"rows": [][]string{
-					{"router1", "provider2"}, // 10000
-					{"router1", "provider1"}, // 1600
-					{"router2", "provider2"}, // 1200
-					{"router2", "provider3"}, // 1100
-					{"router2", "provider4"}, // 1000
-					{"Other", "Other"},       // 2100
+		})
+	})
+
+	t.Run("sort by max", func(t *testing.T) {
+		// Single direction
+		expectedSQL := []struct {
+			Axis       uint8     `ch:"axis"`
+			Time       time.Time `ch:"time"`
+			Xps        float64   `ch:"xps"`
+			Dimensions []string  `ch:"dimensions"`
+		}{
+			{1, base, 1000, []string{"router1", "provider1"}},
+			{1, base, 2000, []string{"router1", "provider2"}},
+			{1, base, 1200, []string{"router2", "provider2"}},
+			{1, base, 1100, []string{"router2", "provider3"}},
+			{1, base, 1900, []string{"Other", "Other"}},
+			{1, base.Add(time.Minute), 500, []string{"router1", "provider1"}},
+			{1, base.Add(time.Minute), 5000, []string{"router1", "provider2"}},
+			{1, base.Add(time.Minute), 900, []string{"router2", "provider4"}},
+			{1, base.Add(time.Minute), 100, []string{"Other", "Other"}},
+			{1, base.Add(2 * time.Minute), 100, []string{"router1", "provider1"}},
+			{1, base.Add(2 * time.Minute), 3000, []string{"router1", "provider2"}},
+			{1, base.Add(2 * time.Minute), 100, []string{"router2", "provider4"}},
+			{1, base.Add(2 * time.Minute), 100, []string{"Other", "Other"}},
+		}
+		mockConn.EXPECT().
+			Select(gomock.Any(), gomock.Any(), gomock.Any()).
+			SetArg(1, expectedSQL).
+			Return(nil)
+
+		// Bidirectional
+		expectedSQL = []struct {
+			Axis       uint8     `ch:"axis"`
+			Time       time.Time `ch:"time"`
+			Xps        float64   `ch:"xps"`
+			Dimensions []string  `ch:"dimensions"`
+		}{
+			{1, base, 1000, []string{"router1", "provider1"}},
+			{1, base, 2000, []string{"router1", "provider2"}},
+			{1, base, 1200, []string{"router2", "provider2"}},
+			{1, base, 1100, []string{"router2", "provider3"}},
+			{1, base, 1900, []string{"Other", "Other"}},
+			{1, base.Add(time.Minute), 500, []string{"router1", "provider1"}},
+			{1, base.Add(time.Minute), 5000, []string{"router1", "provider2"}},
+			{1, base.Add(time.Minute), 900, []string{"router2", "provider4"}},
+
+			// Axes can be mixed. In reality, it seems they cannot
+			// be interleaved, but ClickHouse documentation does
+			// not say it is not possible.
+			{2, base, 100, []string{"router1", "provider1"}},
+			{2, base, 200, []string{"router1", "provider2"}},
+			{2, base, 120, []string{"router2", "provider2"}},
+
+			{1, base.Add(time.Minute), 100, []string{"Other", "Other"}},
+			{1, base.Add(2 * time.Minute), 100, []string{"router1", "provider1"}},
+
+			{2, base, 110, []string{"router2", "provider3"}},
+			{2, base, 190, []string{"Other", "Other"}},
+			{2, base.Add(time.Minute), 50, []string{"router1", "provider1"}},
+			{2, base.Add(time.Minute), 500, []string{"router1", "provider2"}},
+
+			{1, base.Add(2 * time.Minute), 3000, []string{"router1", "provider2"}},
+			{1, base.Add(2 * time.Minute), 100, []string{"router2", "provider4"}},
+			{1, base.Add(2 * time.Minute), 100, []string{"Other", "Other"}},
+
+			{2, base.Add(time.Minute), 90, []string{"router2", "provider4"}},
+			{2, base.Add(time.Minute), 10, []string{"Other", "Other"}},
+			{2, base.Add(2 * time.Minute), 10, []string{"router1", "provider1"}},
+			{2, base.Add(2 * time.Minute), 300, []string{"router1", "provider2"}},
+			{2, base.Add(2 * time.Minute), 10, []string{"router2", "provider4"}},
+			{2, base.Add(2 * time.Minute), 10, []string{"Other", "Other"}},
+		}
+		mockConn.EXPECT().
+			Select(gomock.Any(), gomock.Any(), gomock.Any()).
+			SetArg(1, expectedSQL).
+			Return(nil)
+
+		// Previous period
+		expectedSQL = []struct {
+			Axis       uint8     `ch:"axis"`
+			Time       time.Time `ch:"time"`
+			Xps        float64   `ch:"xps"`
+			Dimensions []string  `ch:"dimensions"`
+		}{
+			{1, base, 1000, []string{"router1", "provider1"}},
+			{1, base, 2000, []string{"router1", "provider2"}},
+			{1, base, 1200, []string{"router2", "provider2"}},
+			{1, base, 1100, []string{"router2", "provider3"}},
+			{1, base, 1900, []string{"Other", "Other"}},
+			{1, base.Add(time.Minute), 500, []string{"router1", "provider1"}},
+			{1, base.Add(time.Minute), 5000, []string{"router1", "provider2"}},
+			{1, base.Add(time.Minute), 900, []string{"router2", "provider4"}},
+			{1, base.Add(time.Minute), 100, []string{"Other", "Other"}},
+			{1, base.Add(2 * time.Minute), 100, []string{"router1", "provider1"}},
+			{1, base.Add(2 * time.Minute), 3000, []string{"router1", "provider2"}},
+			{1, base.Add(2 * time.Minute), 100, []string{"router2", "provider4"}},
+			{1, base.Add(2 * time.Minute), 100, []string{"Other", "Other"}},
+
+			{3, base, 8000, []string{}},
+			{3, base.Add(time.Minute), 6000, []string{}},
+			{3, base.Add(2 * time.Minute), 4500, []string{}},
+		}
+		mockConn.EXPECT().
+			Select(gomock.Any(), gomock.Any(), gomock.Any()).
+			SetArg(1, expectedSQL).
+			Return(nil)
+
+		helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
+			{
+				Description: "single direction",
+				URL:         "/api/v0/console/graph/line",
+				JSONInput: gin.H{
+					"start":         time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					"end":           time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					"points":        100,
+					"limit":         20,
+					"limitType":     "Max",
+					"dimensions":    []string{"ExporterName", "InIfProvider"},
+					"filter":        "DstCountry = 'FR' AND SrcCountry = 'US'",
+					"units":         "l3bps",
+					"bidirectional": false,
 				},
-				"t": []string{
-					"2009-11-10T23:00:00Z",
-					"2009-11-10T23:01:00Z",
-					"2009-11-10T23:02:00Z",
+				JSONOutput: gin.H{
+					// Sorted by max of bps
+					"rows": [][]string{
+						{"router1", "provider2"},
+						{"router2", "provider2"},
+						{"router2", "provider3"},
+						{"router1", "provider1"},
+						{"router2", "provider4"},
+						{"Other", "Other"},
+					},
+					"t": []string{
+						"2009-11-10T23:00:00Z",
+						"2009-11-10T23:01:00Z",
+						"2009-11-10T23:02:00Z",
+					},
+					"points": [][]int{
+						{2000, 5000, 3000},
+						{1200, 0, 0},
+						{1100, 0, 0},
+						{1000, 500, 100},
+						{0, 900, 100},
+						{1900, 100, 100},
+					},
+					"min": []int{
+						2000,
+						1200,
+						1100,
+						100,
+						100,
+						100,
+					},
+					"max": []int{
+						5000,
+						1200,
+						1100,
+						1000,
+						900,
+						1900,
+					},
+					"average": []int{
+						3333,
+						400,
+						366,
+						533,
+						333,
+						700,
+					},
+					"95th": []int{
+						4000,
+						600,
+						550,
+						750,
+						500,
+						1000,
+					},
+					"axis": []int{
+						1, 1, 1, 1, 1, 1,
+					},
+					"axis-names": map[int]string{
+						1: "Direct",
+					},
 				},
-				"points": [][]int{
-					{2000, 5000, 3000},
-					{1000, 500, 100},
-					{1200, 0, 0},
-					{1100, 0, 0},
-					{0, 900, 100},
-					{1900, 100, 100},
+			}, {
+				Description: "bidirectional",
+				URL:         "/api/v0/console/graph/line",
+				JSONInput: gin.H{
+					"start":         time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					"end":           time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					"points":        100,
+					"limit":         20,
+					"limitType":     "Max",
+					"dimensions":    []string{"ExporterName", "InIfProvider"},
+					"filter":        "DstCountry = 'FR' AND SrcCountry = 'US'",
+					"units":         "l3bps",
+					"bidirectional": true,
 				},
-				"min": []int{
-					2000,
-					100,
-					1200,
-					1100,
-					100,
-					100,
+				JSONOutput: gin.H{
+					// Sorted by sum of bps
+					"rows": [][]string{
+						{"router1", "provider2"}, // 10000
+						{"router2", "provider2"}, // 1200
+						{"router2", "provider3"}, // 1100
+						{"router1", "provider1"}, // 1600
+						{"router2", "provider4"}, // 1000
+						{"Other", "Other"},       // 2100
+
+						{"router1", "provider2"}, // 1000
+						{"router2", "provider2"}, // 120
+						{"router2", "provider3"}, // 110
+						{"router1", "provider1"}, // 160
+						{"router2", "provider4"}, // 100
+						{"Other", "Other"},       // 210
+					},
+					"t": []string{
+						"2009-11-10T23:00:00Z",
+						"2009-11-10T23:01:00Z",
+						"2009-11-10T23:02:00Z",
+					},
+					"points": [][]int{
+						{2000, 5000, 3000},
+						{1200, 0, 0},
+						{1100, 0, 0},
+						{1000, 500, 100},
+						{0, 900, 100},
+						{1900, 100, 100},
+
+						{200, 500, 300},
+						{120, 0, 0},
+						{110, 0, 0},
+						{100, 50, 10},
+						{0, 90, 10},
+						{190, 10, 10},
+					},
+					"min": []int{
+						2000,
+						1200,
+						1100,
+						100,
+						100,
+						100,
+
+						200,
+						120,
+						110,
+						10,
+						10,
+						10,
+					},
+					"max": []int{
+						5000,
+						1200,
+						1100,
+						1000,
+						900,
+						1900,
+
+						500,
+						120,
+						110,
+						100,
+						90,
+						190,
+					},
+					"average": []int{
+						3333,
+						400,
+						366,
+						533,
+						333,
+						700,
+
+						333,
+						40,
+						36,
+						53,
+						33,
+						70,
+					},
+					"95th": []int{
+						4000,
+						600,
+						550,
+						750,
+						500,
+						1000,
+
+						400,
+						60,
+						55,
+						75,
+						50,
+						100,
+					},
+					"axis": []int{
+						1, 1, 1, 1, 1, 1,
+						2, 2, 2, 2, 2, 2,
+					},
+					"axis-names": map[int]string{
+						1: "Direct",
+						2: "Reverse",
+					},
 				},
-				"max": []int{
-					5000,
-					1000,
-					1200,
-					1100,
-					900,
-					1900,
+			}, {
+				Description: "previous period",
+				URL:         "/api/v0/console/graph/line",
+				JSONInput: gin.H{
+					"start":           time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					"end":             time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					"points":          100,
+					"limit":           20,
+					"limitType":       "Max",
+					"dimensions":      []string{"ExporterName", "InIfProvider"},
+					"filter":          "DstCountry = 'FR' AND SrcCountry = 'US'",
+					"units":           "l3bps",
+					"bidirectional":   false,
+					"previous-period": true,
 				},
-				"average": []int{
-					3333,
-					533,
-					400,
-					366,
-					333,
-					700,
-				},
-				"95th": []int{
-					4000,
-					750,
-					600,
-					550,
-					500,
-					1000,
-				},
-				"axis": []int{
-					1, 1, 1, 1, 1, 1,
-				},
-				"axis-names": map[int]string{
-					1: "Direct",
+				JSONOutput: gin.H{
+					// Sorted by sum of bps
+					"rows": [][]string{
+						{"router1", "provider2"}, // 10000
+						{"router2", "provider2"}, // 1200
+						{"router2", "provider3"}, // 1100
+						{"router1", "provider1"}, // 1600
+						{"router2", "provider4"}, // 1000
+						{"Other", "Other"},       // 2100
+						{"Other", "Other"},       // Previous day
+					},
+					"t": []string{
+						"2009-11-10T23:00:00Z",
+						"2009-11-10T23:01:00Z",
+						"2009-11-10T23:02:00Z",
+					},
+					"points": [][]int{
+						{2000, 5000, 3000},
+						{1200, 0, 0},
+						{1100, 0, 0},
+						{1000, 500, 100},
+						{0, 900, 100},
+						{1900, 100, 100},
+						{8000, 6000, 4500},
+					},
+					"min": []int{
+						2000,
+						1200,
+						1100,
+						100,
+						100,
+						100,
+						4500,
+					},
+					"max": []int{
+						5000,
+						1200,
+						1100,
+						1000,
+						900,
+						1900,
+						8000,
+					},
+					"average": []int{
+						3333,
+						400,
+						366,
+						533,
+						333,
+						700,
+						6166,
+					},
+					"95th": []int{
+						4000,
+						600,
+						550,
+						750,
+						500,
+						1000,
+						7000,
+					},
+					"axis": []int{
+						1, 1, 1, 1, 1, 1,
+						3,
+					},
+					"axis-names": map[int]string{
+						1: "Direct",
+						3: "Previous day",
+					},
 				},
 			},
-		}, {
-			Description: "bidirectional",
-			URL:         "/api/v0/console/graph/line",
-			JSONInput: gin.H{
-				"start":         time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-				"end":           time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-				"points":        100,
-				"limit":         20,
-				"dimensions":    []string{"ExporterName", "InIfProvider"},
-				"filter":        "DstCountry = 'FR' AND SrcCountry = 'US'",
-				"units":         "l3bps",
-				"bidirectional": true,
-			},
-			JSONOutput: gin.H{
-				// Sorted by sum of bps
-				"rows": [][]string{
-					{"router1", "provider2"}, // 10000
-					{"router1", "provider1"}, // 1600
-					{"router2", "provider2"}, // 1200
-					{"router2", "provider3"}, // 1100
-					{"router2", "provider4"}, // 1000
-					{"Other", "Other"},       // 2100
-
-					{"router1", "provider2"}, // 1000
-					{"router1", "provider1"}, // 160
-					{"router2", "provider2"}, // 120
-					{"router2", "provider3"}, // 110
-					{"router2", "provider4"}, // 100
-					{"Other", "Other"},       // 210
-				},
-				"t": []string{
-					"2009-11-10T23:00:00Z",
-					"2009-11-10T23:01:00Z",
-					"2009-11-10T23:02:00Z",
-				},
-				"points": [][]int{
-					{2000, 5000, 3000},
-					{1000, 500, 100},
-					{1200, 0, 0},
-					{1100, 0, 0},
-					{0, 900, 100},
-					{1900, 100, 100},
-
-					{200, 500, 300},
-					{100, 50, 10},
-					{120, 0, 0},
-					{110, 0, 0},
-					{0, 90, 10},
-					{190, 10, 10},
-				},
-				"min": []int{
-					2000,
-					100,
-					1200,
-					1100,
-					100,
-					100,
-
-					200,
-					10,
-					120,
-					110,
-					10,
-					10,
-				},
-				"max": []int{
-					5000,
-					1000,
-					1200,
-					1100,
-					900,
-					1900,
-
-					500,
-					100,
-					120,
-					110,
-					90,
-					190,
-				},
-				"average": []int{
-					3333,
-					533,
-					400,
-					366,
-					333,
-					700,
-
-					333,
-					53,
-					40,
-					36,
-					33,
-					70,
-				},
-				"95th": []int{
-					4000,
-					750,
-					600,
-					550,
-					500,
-					1000,
-
-					400,
-					75,
-					60,
-					55,
-					50,
-					100,
-				},
-				"axis": []int{
-					1, 1, 1, 1, 1, 1,
-					2, 2, 2, 2, 2, 2,
-				},
-				"axis-names": map[int]string{
-					1: "Direct",
-					2: "Reverse",
-				},
-			},
-		}, {
-			Description: "previous period",
-			URL:         "/api/v0/console/graph/line",
-			JSONInput: gin.H{
-				"start":           time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-				"end":             time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-				"points":          100,
-				"limit":           20,
-				"dimensions":      []string{"ExporterName", "InIfProvider"},
-				"filter":          "DstCountry = 'FR' AND SrcCountry = 'US'",
-				"units":           "l3bps",
-				"bidirectional":   false,
-				"previous-period": true,
-			},
-			JSONOutput: gin.H{
-				// Sorted by sum of bps
-				"rows": [][]string{
-					{"router1", "provider2"}, // 10000
-					{"router1", "provider1"}, // 1600
-					{"router2", "provider2"}, // 1200
-					{"router2", "provider3"}, // 1100
-					{"router2", "provider4"}, // 1000
-					{"Other", "Other"},       // 2100
-					{"Other", "Other"},       // Previous day
-				},
-				"t": []string{
-					"2009-11-10T23:00:00Z",
-					"2009-11-10T23:01:00Z",
-					"2009-11-10T23:02:00Z",
-				},
-				"points": [][]int{
-					{2000, 5000, 3000},
-					{1000, 500, 100},
-					{1200, 0, 0},
-					{1100, 0, 0},
-					{0, 900, 100},
-					{1900, 100, 100},
-					{8000, 6000, 4500},
-				},
-				"min": []int{
-					2000,
-					100,
-					1200,
-					1100,
-					100,
-					100,
-					4500,
-				},
-				"max": []int{
-					5000,
-					1000,
-					1200,
-					1100,
-					900,
-					1900,
-					8000,
-				},
-				"average": []int{
-					3333,
-					533,
-					400,
-					366,
-					333,
-					700,
-					6166,
-				},
-				"95th": []int{
-					4000,
-					750,
-					600,
-					550,
-					500,
-					1000,
-					7000,
-				},
-				"axis": []int{
-					1, 1, 1, 1, 1, 1,
-					3,
-				},
-				"axis-names": map[int]string{
-					1: "Direct",
-					3: "Previous day",
-				},
-			},
-		},
+		})
 	})
 }
 

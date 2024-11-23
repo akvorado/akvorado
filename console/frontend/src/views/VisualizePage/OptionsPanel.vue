@@ -192,6 +192,7 @@ const options = computed((): InternalModelType => {
     humanEnd: timeRange.value?.end,
     dimensions: dimensions.value?.selected,
     limit: dimensions.value?.limit,
+    limitType: dimensions.value?.limitType,
     "truncate-v4": dimensions.value?.truncate4,
     "truncate-v6": dimensions.value?.truncate6,
     filter: filter.value?.expression,
@@ -243,6 +244,7 @@ watch(
       humanEnd: defaultOptions.end,
       dimensions: toRaw(defaultOptions.dimensions),
       limit: defaultOptions.limit,
+      limitType: defaultOptions.limitType,
       "truncate-v4": 32,
       "truncate-v6": 128,
       filter: defaultOptions.filter,
@@ -262,6 +264,7 @@ watch(
     dimensions.value = {
       selected: [...currentValue.dimensions],
       limit: currentValue.limit,
+      limitType: currentValue.limitType,
       truncate4: currentValue["truncate-v4"] || 32,
       truncate6: currentValue["truncate-v6"] || 128,
     };
@@ -296,6 +299,7 @@ export type ModelType = {
   humanEnd: string;
   dimensions: string[];
   limit: number;
+  limitType: string;
   "truncate-v4": number;
   "truncate-v6": number;
   filter: string;

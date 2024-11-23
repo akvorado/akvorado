@@ -913,7 +913,7 @@ The console itself accepts the following keys:
  - `default-visualize-options` to define default options for the "visualize"
    tab. It takes the following keys: `graph-type` (one of `stacked`,
    `stacked100`, `lines`, `grid`, or `sankey`), `start`, `end`, `filter`,
-   `dimensions` (a list), `limit`, `bidirectional` (a bool), `previous-period`
+   `dimensions` (a list), `limit`, `limitType`, `bidirectional` (a bool), `previous-period`
    (a bool)
  - `homepage-top-widgets` to define the widgets to display on the home page
    (among `src-as`, `dst-as`, `src-country`, `dst-country`, `exporter`,
