@@ -35,7 +35,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mgechev/revive v1.5.1
 	github.com/mitchellh/mapstructure v1.5.0
-	github.com/mna/pigeon v1.1.0
+	github.com/mna/pigeon v1.3.0
 	github.com/netsampler/goflow2/v2 v2.2.1
 	github.com/openconfig/gnmi v0.11.0
 	github.com/openconfig/gnmic/pkg/api v0.1.8
