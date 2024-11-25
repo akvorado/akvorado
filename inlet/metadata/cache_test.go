@@ -466,15 +466,15 @@ func TestConcurrentOperations(t *testing.T) {
 
 	for remaining := 20; remaining >= 0; remaining-- {
 		gotMetrics := r.GetMetrics("akvorado_inlet_metadata_cache_")
-		hits, err := strconv.ParseInt(gotMetrics["hits_total"], 10, 64)
+		hits, err := strconv.ParseFloat(gotMetrics["hits_total"], 64)
 		if err != nil {
-			t.Fatalf("strconv.ParseInt() error:\n%+v", err)
+			t.Fatalf("strconv.ParseFloat() error:\n%+v", err)
 		}
-		misses, err := strconv.ParseInt(gotMetrics["misses_total"], 10, 64)
+		misses, err := strconv.ParseFloat(gotMetrics["misses_total"], 64)
 		if err != nil {
-			t.Fatalf("strconv.ParseInt() error:\n%+v", err)
+			t.Fatalf("strconv.ParseFloat() error:\n%+v", err)
 		}
-		got := hits + misses
+		got := int64(hits + misses)
 		expected := atomic.LoadInt64(&lookups)
 		if got == expected {
 			break
