@@ -17,7 +17,7 @@ body:
         [troubleshooting section]: https://demo.akvorado.net/docs/troubleshooting
         [discussions]: https://github.com/akvorado/akvorado/discussions
       options:
-        - label: I have read and understood the above paragraph.
+        - label: I have read and understood the disclaimer.
           required: true
   - type: input
     attributes:

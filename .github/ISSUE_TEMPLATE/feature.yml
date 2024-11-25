@@ -16,7 +16,7 @@ body:
         [documentation]: https://demo.akvorado.net/docs/intro
         [discussions]: https://github.com/akvorado/akvorado/discussions
       options:
-        - label: I have read and understood the above paragraph.
+        - label: I have read and understood the disclaimer.
           required: true
         - label: I plan to implement the feature myself.
   - type: input
