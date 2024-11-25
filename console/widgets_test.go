@@ -238,6 +238,12 @@ func TestWidgetTop(t *testing.T) {
 					{"name": "TCP/80", "percent": 18},
 				},
 			},
+		}, {
+			URL:        "/api/v0/console/widget/top/notexist",
+			StatusCode: 400,
+			JSONOutput: gin.H{
+				"message": "Notexist does not belong to HomepageTopWidget values",
+			},
 		},
 	})
 }

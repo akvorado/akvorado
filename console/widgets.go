@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"akvorado/common/helpers"
 	"akvorado/common/schema"
 )
 
@@ -120,6 +121,13 @@ func (c *Component) widgetExportersHandlerFunc(gc *gin.Context) {
 	gc.IndentedJSON(http.StatusOK, gin.H{"exporters": exporterList})
 }
 
+// UnmarshalParam is similar to UnmarshalText but for Gin.
+func (i *HomepageTopWidget) UnmarshalParam(param string) error {
+	var err error
+	*i, err = HomepageTopWidgetString(param)
+	return err
+}
+
 type topResult struct {
 	Name    string  `json:"name"`
 	Percent float64 `json:"percent"`
@@ -134,33 +142,42 @@ func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 		mainTableRequired bool
 	)
 
-	switch gc.Param("name") {
+	type URIParams struct {
+		WidgetName HomepageTopWidget `uri:"name" binding:"required"`
+	}
+	var uriParams URIParams
+	if err := gc.ShouldBindUri(&uriParams); err != nil {
+		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
+		return
+	}
+
+	switch uriParams.WidgetName {
 	default:
 		gc.JSON(http.StatusNotFound, gin.H{"message": "Unknown top request."})
 		return
-	case "src-as":
+	case HomepageTopWidgetSrcAS:
 		selector = fmt.Sprintf(`concat(toString(SrcAS), ': ', dictGetOrDefault('%s', 'name', SrcAS, '???'))`, schema.DictionaryASNs)
 		groupby = `SrcAS`
-	case "dst-as":
+	case HomepageTopWidgetDstAS:
 		selector = fmt.Sprintf(`concat(toString(DstAS), ': ', dictGetOrDefault('%s', 'name', DstAS, '???'))`, schema.DictionaryASNs)
 		groupby = `DstAS`
-	case "src-country":
+	case HomepageTopWidgetSrcCountry:
 		selector = `SrcCountry`
-	case "dst-country":
+	case HomepageTopWidgetDstCountry:
 		selector = `DstCountry`
-	case "exporter":
+	case HomepageTopWidgetExporter:
 		selector = "ExporterName"
-	case "protocol":
+	case HomepageTopWidgetProtocol:
 		selector = fmt.Sprintf(`dictGetOrDefault('%s', 'name', Proto, '???')`, schema.DictionaryProtocols)
 		groupby = `Proto`
-	case "etype":
+	case HomepageTopWidgetEtype:
 		selector = `if(equals(EType, 34525), 'IPv6', if(equals(EType, 2048), 'IPv4', '???'))`
 		groupby = `EType`
-	case "src-port":
+	case HomepageTopWidgetSrcPort:
 		selector = fmt.Sprintf(`concat(dictGetOrDefault('%s', 'name', Proto, '???'), '/', toString(SrcPort))`, schema.DictionaryProtocols)
 		groupby = `Proto, SrcPort`
 		mainTableRequired = true
-	case "dst-port":
+	case HomepageTopWidgetDstPort:
 		selector = fmt.Sprintf(`concat(dictGetOrDefault('%s', 'name', Proto, '???'), '/', toString(DstPort))`, schema.DictionaryProtocols)
 		groupby = `Proto, DstPort`
 		mainTableRequired = true
