@@ -56,7 +56,7 @@ require (
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	golang.org/x/sys v0.27.0
 	golang.org/x/text v0.20.0
-	golang.org/x/time v0.7.0
+	golang.org/x/time v0.8.0
 	golang.org/x/tools v0.27.0
 	google.golang.org/grpc v1.68.0
 	google.golang.org/protobuf v1.35.2
