@@ -111,9 +111,11 @@ import InputBase from "@/components/InputBase.vue";
 
 const props = withDefaults(
   defineProps<{
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     modelValue: any; // vue is not smart enough to use any | any[]
     multiple?: boolean;
     filter?: string | null; // should be keyof items
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     items: Array<{ id: number; [n: string]: any }>;
     error?: string;
   }>(),
@@ -157,7 +159,6 @@ const filteredItems = computed(() => {
   );
 });
 const otherAttrs = computed(() => {
-  // eslint-disable-next-line no-unused-vars
   const { class: _, ...others } = attrs;
   return others;
 });

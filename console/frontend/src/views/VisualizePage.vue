@@ -128,11 +128,13 @@ const encodedState = computed(() => encodeState(state.value));
 const fetchedData = ref<
   GraphLineHandlerResult | GraphSankeyHandlerResult | null
 >(null);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const orderedJSONPayload = <T extends Record<string, any>>(input: T): T => {
   return Object.keys(input)
     .sort()
     .reduce(
       (o, k) => ((o[k] = input[k]), o),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       {} as { [key: string]: any },
     ) as T;
 };

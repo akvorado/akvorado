@@ -172,7 +172,7 @@ const graph = computed((): ECOption => {
         // We will use a custom formatter, notably to handle bidirectional tooltips.
         if (!Array.isArray(params) || params.length === 0) return "";
 
-        let table: {
+        const table: {
           key: string;
           seriesName: string;
           marker: (typeof params)[0]["marker"];
@@ -332,20 +332,18 @@ const graph = computed((): ECOption => {
         .map((row, idx) => (row.some((name) => name === "Other") ? idx : -1))
         .filter((idx) => idx >= 0),
       somethingY = (fn: (...n: number[]) => number) =>
-        fn.apply(
-          null,
-          dataset.source.map((row) => {
+        fn(
+          ...dataset.source.map((row) => {
             const [, ...cdr] = row;
-            return fn.apply(
-              null,
-              cdr.filter((_, idx) => !otherIndexes.includes(idx + 1)),
+            return fn(
+              ...cdr.filter((_, idx) => !otherIndexes.includes(idx + 1)),
             );
           }),
         ),
       maxY = somethingY(Math.max),
       minY = somethingY(Math.min);
-    let rowNumber = Math.ceil(Math.sqrt(uniqRows.length)),
-      colNumber = rowNumber;
+    let rowNumber = Math.ceil(Math.sqrt(uniqRows.length));
+    const colNumber = rowNumber;
     if ((rowNumber - 1) * colNumber >= uniqRows.length) {
       rowNumber--;
     }
@@ -391,7 +389,7 @@ const graph = computed((): ECOption => {
       dataset,
       series: data.rows
         .map((row, idx) => {
-          let serie: LineSeriesOption = {
+          const serie: LineSeriesOption = {
             type: "line",
             symbol: "none",
             xAxisIndex: uniqRowIndex(row),
