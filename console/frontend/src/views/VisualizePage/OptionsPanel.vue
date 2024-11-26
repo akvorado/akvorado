@@ -17,7 +17,7 @@
       <button
         class="flex h-4 w-4 cursor-pointer items-center justify-center rounded-full bg-white shadow transition-transform duration-100 hover:bg-gray-300 dark:bg-gray-900 dark:shadow-white/10 dark:hover:bg-black lg:translate-x-1/2 lg:translate-y-0"
         :class="open ? 'translate-y-1/2' : '-translate-y-1/2'"
-        @click="open = !open"
+        @click="(open = !open)"
       >
         <ChevronRightIcon class="hidden lg:inline" />
         <ChevronDownIcon class="lg:hidden" />

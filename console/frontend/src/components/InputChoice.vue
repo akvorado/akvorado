@@ -21,7 +21,7 @@
           class="peer sr-only"
           @change="
             ($event.target as HTMLInputElement).checked &&
-              $emit('update:modelValue', choice.name)
+            $emit('update:modelValue', choice.name)
           "
         />
         <div
