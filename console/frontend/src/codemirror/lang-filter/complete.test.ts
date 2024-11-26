@@ -169,12 +169,12 @@ describe("filter completion", () => {
       column: "SrcAS",
     });
     expect({ from, to, options }).toEqual({
-      from: 5,
-      to: 5,
+      from: 6,
+      to: 6,
       options: [
-        { apply: " = ", detail: "operator", label: "=" },
-        { apply: " != ", detail: "operator", label: "!=" },
-        { apply: " IN ", detail: "operator", label: "IN" },
+        { apply: "= ", detail: "operator", label: "=" },
+        { apply: "!= ", detail: "operator", label: "!=" },
+        { apply: "IN ", detail: "operator", label: "IN" },
       ],
     });
   });
@@ -306,16 +306,16 @@ describe("filter completion", () => {
       what: "column",
     });
     expect({ from, to, options }).toEqual({
-      from: 15,
-      to: 15,
+      from: 16,
+      to: 16,
       options: [
-        { apply: " NOT ", detail: "logic operator", label: "NOT" },
-        { apply: " SrcAS ", detail: "column name", label: "SrcAS" },
-        { apply: " SrcAddr ", detail: "column name", label: "SrcAddr" },
-        { apply: " SrcCountry ", detail: "column name", label: "SrcCountry" },
-        { apply: " DstAS ", detail: "column name", label: "DstAS" },
-        { apply: " DstAddr ", detail: "column name", label: "DstAddr" },
-        { apply: " DstCountry ", detail: "column name", label: "DstCountry" },
+        { apply: "NOT ", detail: "logic operator", label: "NOT" },
+        { apply: "SrcAS ", detail: "column name", label: "SrcAS" },
+        { apply: "SrcAddr ", detail: "column name", label: "SrcAddr" },
+        { apply: "SrcCountry ", detail: "column name", label: "SrcCountry" },
+        { apply: "DstAS ", detail: "column name", label: "DstAS" },
+        { apply: "DstAddr ", detail: "column name", label: "DstAddr" },
+        { apply: "DstCountry ", detail: "column name", label: "DstCountry" },
       ],
     });
   });
