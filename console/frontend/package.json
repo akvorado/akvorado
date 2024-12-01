@@ -54,7 +54,7 @@
     "@volar/vue-language-server": "^1.0.9",
     "@vue/eslint-config-prettier": "^10.0.0",
     "@vue/eslint-config-typescript": "^14.0.0",
-    "@vue/tsconfig": "^0.6.0",
+    "@vue/tsconfig": "^0.7.0",
     "autoprefixer": "^10.4.7",
     "eslint": "^9.10.0",
     "eslint-plugin-prettier": "^5.0.0",
