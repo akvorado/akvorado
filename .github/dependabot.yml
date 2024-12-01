@@ -43,6 +43,7 @@ updates:
           - "@volar/*"
           - "@vue/eslint-*"
           - "autoprefixer"
+          - "@eslint/*"
           - "eslint*"
           - "patch-package"
           - "postcss"
