@@ -127,7 +127,7 @@ jobs:
           name: macos-coverage
           path: test/macos
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           token: bab8d6d9-e90c-4e37-b156-38a9a4c2108e # not ideal, but limited risk
           files: ./test/linux/go/coverage.xml,./test/linux/js/cobertura-coverage.xml, ./test/macos/go/coverage.xml,./test/macos/js/cobertura-coverage.xml
