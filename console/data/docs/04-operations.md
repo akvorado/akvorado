@@ -394,13 +394,92 @@ snmp-server community <community> ro
 snmp-server vrf VRF-MANAGEMENT
 ```
 
-### Nokia
+### Nokia SROS
+Model-driven command line interface (MD-CLI) syntax is used below. The full-context is provided as this is probably easier to adapt to classic CLI.
 
+#### Flows
+sFlow is currently merely supported on devices running SROS, one mostly has to stick to IPFIX
+
+```
+/configure cflowd admin-state enable
+/configure cflowd cache-size 250000
+/configure cflowd template-retransmit 60
+/configure cflowd active-flow-timeout 15
+/configure cflowd inactive-flow-timeout 15
+/configure cflowd sample-profile 1 sample-rate 2000
+/configure cflowd collector 192.0.2.1 port 2055 admin-state enable
+/configure cflowd collector 192.0.2.1 port 2055 description "akvorado.example.net"
+/configure cflowd collector 192.0.2.1 port 2055 router-instance "Base"
+/configure cflowd collector 192.0.2.1 port 2055 version 10
+```
+
+Either configure sampling on the individual interfaces
+```
+/configure service ies "internet" interface "if1/1/c1/1:0" cflowd-parameters sampling unicast type interface
+/configure service ies "internet" interface "if1/1/c1/1:0" cflowd-parameters sampling unicast direction ingress-only
+/configure service ies "internet" interface "if1/1/c1/1:0" cflowd-parameters sampling unicast sample-profile 1
+```
+or add it to apply groups which are probably already in place
+
+```
+/configure groups group "peering" service ies "internet" interface "<i.*>" cflowd-parameters sampling unicast type interface
+/configure groups group "peering" service ies "internet" interface "<i.*>" cflowd-parameters sampling unicast direction ingress-only
+/configure groups group "peering" service ies "internet" interface "<i.*>" cflowd-parameters sampling unicast sample-profile 1
+
+/configure service ies "internet" interface "if1/1/c1/1:0" apply-groups ["peering"]
+```
+
+#### SNMP
 Nokia routers running SROS use a different interface index in their flow records
 as the SNMP interface index usually used by other devices. To fix this issue,
 you need to use `cflowd use-vrtr-if-index`. More information can be found in
 [Nokia's
 documentation](https://infocenter.nokia.com/public/7750SR140R4/topic/com.sr.router.config/html/cflowd_cli.html#tgardner5iexrn6muno)
+
+#### GNMI
+Instead of SNMP GNMI can be used. The interface index challenge (see `SNMP` above) also applies. See this [discussion](https://github.com/akvorado/akvorado/discussions/1275) for further details and possible workarounds.
+
+Unencrypted connections are used in this example (TLS encyption is out of scope here), do not use in production (or at least ensure the user has RO only permissions)
+```
+/configure system grpc admin-state enable
+/configure system grpc allow-unsecure-connection
+```
+Akvorado only needs Read-Only access
+```
+/configure system security user-params local-user user "akvorado" access grpc true
+/configure system security user-params local-user user "akvorado" console member ["grpc_ro"]
+```
+```
+/configure system security aaa local-profiles profile "grpc_ro" grpc rpc-authorization gnmi-get permit
+/configure system security aaa local-profiles profile "grpc_ro" grpc rpc-authorization gnmi-set deny
+/configure system security aaa local-profiles profile "grpc_ro" grpc rpc-authorization gnmi-subscribe permit
+/configure system security aaa local-profiles profile "grpc_ro" grpc rpc-authorization gnoi-file-get deny
+/configure system security aaa local-profiles profile "grpc_ro" grpc rpc-authorization gnoi-file-transfertoremote deny
+/configure system security aaa local-profiles profile "grpc_ro" grpc rpc-authorization gnoi-file-put deny
+/configure system security aaa local-profiles profile "grpc_ro" grpc rpc-authorization gnoi-file-stat deny
+/configure system security aaa local-profiles profile "grpc_ro" grpc rpc-authorization gnoi-file-remove deny
+/configure system security aaa local-profiles profile "grpc_ro" grpc rpc-authorization md-cli-session deny
+```
+
+#### BMP
+
+```
+/configure bmp admin-state enable
+/configure bmp station "akvorado" admin-state enable
+/configure bmp station "akvorado" description "akvorado.example.net"
+/configure bmp station "akvorado" stats-report-interval 300
+/configure bmp station "akvorado" connection local-address 192.0.2.42
+/configure bmp station "akvorado" connection station-address ip-address 192.0.2.1
+/configure bmp station "akvorado" connection station-address port 10179
+/configure bmp station "akvorado" family ipv4 true
+/configure bmp station "akvorado" family ipv6 true
+```
+
+```
+/configure router "Base" bgp monitor admin-state enable
+/configure router "Base" bgp monitor route-monitoring post-policy true
+/configure router "Base" bgp monitor station "akvorado" { }
+```
 
 ### GNU/Linux
 
