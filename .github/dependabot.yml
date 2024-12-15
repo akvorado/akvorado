@@ -67,6 +67,7 @@ updates:
       interval: weekly
     labels:
       - dependencies
+    open-pull-requests-limit: 10
     groups:
       golang-org-x:
         patterns:
