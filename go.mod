@@ -37,7 +37,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/mna/pigeon v1.3.0
 	github.com/netsampler/goflow2/v2 v2.2.1
-	github.com/openconfig/gnmi v0.11.0
+	github.com/openconfig/gnmi v0.12.0
 	github.com/openconfig/gnmic/pkg/api v0.1.8
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/oschwald/maxminddb-golang v1.13.1
@@ -53,7 +53,7 @@ require (
 	github.com/yuin/goldmark v1.7.8
 	github.com/yuin/goldmark-highlighting v0.0.0-20220208100518-594be1970594
 	go.uber.org/mock v0.5.1-0.20241028185017-eb6764164a8d
-	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
+	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
 	golang.org/x/sys v0.27.0
 	golang.org/x/text v0.20.0
 	golang.org/x/time v0.8.0
