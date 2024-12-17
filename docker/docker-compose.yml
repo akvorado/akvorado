@@ -78,7 +78,7 @@ services:
       - akvorado-geoip:/usr/share/GeoIP:ro
     labels:
       - traefik.enable=true
-      - traefik.http.routers.akvorado-orchestrator.entrypoints=private # it exposes configuration files with passwords
+      - traefik.http.routers.akvorado-orchestrator.entrypoints=private
       - traefik.http.routers.akvorado-orchestrator.rule=PathPrefix(`/api/v0/orchestrator`)
       - traefik.http.services.akvorado-orchestrator.loadbalancer.server.port=8080
   akvorado-console:
@@ -96,12 +96,17 @@ services:
       - AKVORADO_CFG_CONSOLE_DATABASE_DSN=/run/akvorado/console.sqlite
     labels:
       - traefik.enable=true
-      - traefik.http.routers.akvorado-console.rule=PathPrefix(`/`)
+      # Only expose /debug endpoint on the private entrypoint.
+      - traefik.http.routers.akvorado-console-debug.rule=PathPrefix(`/debug`)
+      - traefik.http.routers.akvorado-console-debug.entrypoints=private
+      - traefik.http.routers.akvorado-console-debug.service=akvorado-console
+      # For anything else...
+      - "traefik.http.routers.akvorado-console.rule=!PathPrefix(`/debug`)"
       - traefik.http.routers.akvorado-console.middlewares=console-auth-headers
+      - traefik.http.services.akvorado-console.loadbalancer.server.port=8080
       - traefik.http.middlewares.console-auth-headers.headers.customrequestheaders.Remote-User=alfred
       - traefik.http.middlewares.console-auth-headers.headers.customrequestheaders.Remote-Name=Alfred Pennyworth
       - traefik.http.middlewares.console-auth-headers.headers.customrequestheaders.Remote-Email=alfred@example.com
-      - traefik.http.services.akvorado-console.loadbalancer.server.port=8080
   akvorado-inlet:
     extends:
       file: versions.yml
@@ -118,6 +123,7 @@ services:
       - AKVORADO_CFG_INLET_METADATA_CACHEPERSISTFILE=/run/akvorado/metadata.cache
     labels:
       - traefik.enable=true
+      - traefik.http.routers.akvorado-inlet.entrypoints=private
       - traefik.http.routers.akvorado-inlet.rule=PathPrefix(`/api/v0/inlet`)
       - traefik.http.services.akvorado-inlet.loadbalancer.server.port=8080
       - akvorado.conntrack.fix=true
