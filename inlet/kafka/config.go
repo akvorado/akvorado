@@ -34,7 +34,7 @@ func DefaultConfiguration() Configuration {
 		Configuration:    kafka.DefaultConfiguration(),
 		FlushInterval:    time.Second,
 		FlushBytes:       int(sarama.MaxRequestSize) - 1,
-		MaxMessageBytes:  1000000,
+		MaxMessageBytes:  1_000_000,
 		CompressionCodec: CompressionCodec(sarama.CompressionNone),
 		QueueSize:        32,
 	}

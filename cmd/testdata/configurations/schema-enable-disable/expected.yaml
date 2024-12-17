@@ -1,6 +1,6 @@
 ---
 paths:
-  inlet.0.schema:
+  outlet.0.schema:
     customdictionaries: {}
     disabled:
       - SrcCountry

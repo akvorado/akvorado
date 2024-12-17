@@ -9,6 +9,8 @@ services:
     depends_on:
       akvorado-inlet:
         condition: service_healthy
+      akvorado-outlet:
+        condition: service_healthy
   akvorado-exporter1:
     <<: *exporter
     command: demo-exporter http://akvorado-orchestrator:8080#1

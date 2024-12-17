@@ -12,6 +12,7 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/kafka"
+	"akvorado/common/pb"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 )
@@ -24,7 +25,7 @@ func TestTopicCreation(t *testing.T) {
 	segmentBytes := "107374184"
 	segmentBytes2 := "10737184"
 	cleanupPolicy := "delete"
-	expectedTopicName := fmt.Sprintf("%s-%s", topicName, schema.NewMock(t).ProtobufMessageHash())
+	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, pb.Version)
 
 	cases := []struct {
 		Name          string
@@ -103,7 +104,7 @@ func TestTopicMorePartitions(t *testing.T) {
 	client, brokers := kafka.SetupKafkaBroker(t)
 
 	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
-	expectedTopicName := fmt.Sprintf("%s-%s", topicName, schema.NewMock(t).ProtobufMessageHash())
+	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, pb.Version)
 
 	configuration := DefaultConfiguration()
 	configuration.Topic = topicName

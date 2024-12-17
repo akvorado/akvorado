@@ -1,6 +1,6 @@
 ---
 paths:
-  inlet.0.routing:
+  outlet.0.routing:
     provider:
       type: bmp
       listen: 127.0.0.1:1179
@@ -13,8 +13,8 @@ paths:
       ribpeerremovalmaxqueue: 10000
       ribpeerremovalmaxtime: 100ms
       ribpeerremovalsleepinterval: 500ms
-  inlet.0.core.asnproviders:
+  outlet.0.core.asnproviders:
     - flow
     - routing
-  inlet.0.core.netproviders:
+  outlet.0.core.netproviders:
     - routing
