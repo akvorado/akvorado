@@ -1,4 +1,4 @@
-/bin/
+/bin/akvorado
 /test/
 /orchestrator/clickhouse/data/asns.csv
 /orchestrator/clickhouse/data/tcp.csv
@@ -7,6 +7,7 @@
 /common/schema/definition_gen.go
 mock_*.go
 *_enumer.go
+*.pb.go
 
 /console/data/frontend/
 

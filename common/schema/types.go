@@ -4,11 +4,8 @@
 package schema
 
 import (
-	"net/netip"
-
+	"github.com/ClickHouse/ch-go/proto"
 	"github.com/bits-and-blooms/bitset"
-	"google.golang.org/protobuf/encoding/protowire"
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 // Schema is the data schema.
@@ -42,18 +39,18 @@ type Column struct {
 	// instead of being retrieved from the protobuf. `TransformFrom' and
 	// `TransformTo' work in pairs. The first one is the set of column in the
 	// raw table while the second one is how to transform it for the main table.
-	ClickHouseType             string
-	ClickHouseMaterializedType string
-	ClickHouseCodec            string
-	ClickHouseAlias            string
-	ClickHouseNotSortingKey    bool
-	ClickHouseGenerateFrom     string
-	ClickHouseTransformFrom    []Column
-	ClickHouseTransformTo      string
-	ClickHouseMainOnly         bool
-	// ClickHouseSelfGenerated identifies a column as being formatted using itself as source
-	ClickHouseSelfGenerated bool
-
+	ClickHouseType             string // ClickHouse type for the column
+	ClickHouseMaterializedType string // ClickHouse type when we request materialization
+	ClickHouseCodec            string // Compression codec
+	ClickHouseAlias            string // Alias expression
+	// ClickHouseNotSortingKey is to be used for columns whose content is
+	// derived from another column. Like Exporter* all derive from
+	// ExporterAddress.
+	ClickHouseNotSortingKey bool
+	// ClickHouseGenerateFrom computes the content of the column using another column
+	ClickHouseGenerateFrom  string
+	ClickHouseMainOnly      bool // Only include this column in the main table
+	ClickHouseSelfGenerated bool // Generated (partly) from its own value
 	// ClickHouseMaterialized indicates that the column was materialized (and is not by default)
 	ClickHouseMaterialized bool
 
@@ -61,55 +58,13 @@ type Column struct {
 	// truncatable when used as a dimension.
 	ConsoleNotDimension bool
 	ConsoleTruncateIP   bool
-
-	// For protobuf. The index is automatically derived from the position,
-	// unless specified. Use -1 to not include the column into the protobuf
-	// schema.
-	ProtobufIndex    protowire.Number
-	ProtobufType     protoreflect.Kind // Uint64Kind, Uint32Kind, BytesKind, StringKind, EnumKind
-	ProtobufEnum     map[int]string
-	ProtobufEnumName string
-	ProtobufRepeated bool
 }
 
 // ColumnKey is the name of a column
-type ColumnKey int
+type ColumnKey uint
 
 // ColumnGroup represents a group of columns
 type ColumnGroup uint
 
-// FlowMessage is the abstract representation of a flow through various subsystems.
-type FlowMessage struct {
-	TimeReceived uint64
-	SamplingRate uint32
-
-	// For exporter classifier
-	ExporterAddress netip.Addr
-
-	// For interface classifier
-	InIf    uint32
-	OutIf   uint32
-	SrcVlan uint16
-	DstVlan uint16
-
-	// For geolocation or BMP
-	SrcAddr netip.Addr
-	DstAddr netip.Addr
-	NextHop netip.Addr
-
-	// Core component may override them
-	SrcAS          uint32
-	DstAS          uint32
-	GotASPath      bool
-	GotCommunities bool
-
-	SrcNetMask uint8
-	DstNetMask uint8
-
-	// protobuf is the protobuf representation for the information not contained above.
-	protobuf      []byte
-	protobufSet   bitset.BitSet
-	ProtobufDebug map[ColumnKey]interface{} `json:"-"` // for testing purpose
-}
-
-const maxSizeVarint = 10 // protowire.SizeVarint(^uint64(0))
+// UInt128 is an unsigned 128-bit number
+type UInt128 = proto.UInt128

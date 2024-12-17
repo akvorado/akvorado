@@ -22,17 +22,6 @@ func TestFlowsClickHouse(t *testing.T) {
 	}
 }
 
-func TestFlowsProtobuf(t *testing.T) {
-	c := NewMock(t)
-	for _, column := range c.Columns() {
-		if column.ProtobufIndex >= 0 {
-			if column.ProtobufType == 0 {
-				t.Errorf("column %s has not protobuf type", column.Name)
-			}
-		}
-	}
-}
-
 func TestColumnIndex(t *testing.T) {
 	c := NewMock(t)
 	for i := ColumnTimeReceived; i < ColumnLast; i++ {
