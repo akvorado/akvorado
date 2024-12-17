@@ -4,10 +4,8 @@
 package flow
 
 import (
-	"golang.org/x/time/rate"
-
 	"akvorado/common/helpers"
-	"akvorado/inlet/flow/decoder"
+	"akvorado/common/pb"
 	"akvorado/inlet/flow/input"
 	"akvorado/inlet/flow/input/file"
 	"akvorado/inlet/flow/input/udp"
@@ -17,21 +15,18 @@ import (
 type Configuration struct {
 	// Inputs define a list of input modules to enable
 	Inputs []InputConfiguration `validate:"dive"`
-	// RateLimit defines a rate limit on the number of flows per
-	// second. The limit is per-exporter.
-	RateLimit rate.Limit `validate:"isdefault|min=100"`
 }
 
 // DefaultConfiguration represents the default configuration for the flow component
 func DefaultConfiguration() Configuration {
 	return Configuration{
 		Inputs: []InputConfiguration{{
-			TimestampSource: decoder.TimestampSourceUDP,
-			Decoder:         "netflow",
+			TimestampSource: pb.RawFlow_TS_INPUT,
+			Decoder:         pb.RawFlow_DECODER_NETFLOW,
 			Config:          udp.DefaultConfiguration(),
 		}, {
-			TimestampSource: decoder.TimestampSourceUDP,
-			Decoder:         "sflow",
+			TimestampSource: pb.RawFlow_TS_INPUT,
+			Decoder:         pb.RawFlow_DECODER_SFLOW,
 			Config:          udp.DefaultConfiguration(),
 		}},
 	}
@@ -40,12 +35,12 @@ func DefaultConfiguration() Configuration {
 // InputConfiguration represents the configuration for an input.
 type InputConfiguration struct {
 	// Decoder is the decoder to associate to the input.
-	Decoder string
+	Decoder pb.RawFlow_Decoder `validate:"required"`
 	// UseSrcAddrForExporterAddr replaces the exporter address by the transport
 	// source address.
 	UseSrcAddrForExporterAddr bool
 	// TimestampSource identify the source to use to timestamp the flows
-	TimestampSource decoder.TimestampSource
+	TimestampSource pb.RawFlow_TimestampSource
 	// Config is the actual configuration of the input.
 	Config input.Configuration
 }
@@ -61,6 +56,7 @@ var inputs = map[string](func() input.Configuration){
 }
 
 func init() {
+	helpers.RegisterMapstructureDeprecatedFields[Configuration]("RateLimit")
 	helpers.RegisterMapstructureUnmarshallerHook(
 		helpers.ParametrizedConfigurationUnmarshallerHook(InputConfiguration{}, inputs))
 }

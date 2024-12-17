@@ -218,6 +218,7 @@ tool (
 	github.com/mna/pigeon
 	go.uber.org/mock/mockgen
 	golang.org/x/tools/cmd/goimports
+	google.golang.org/protobuf/cmd/protoc-gen-go
 	gotest.tools/gotestsum
 )
 

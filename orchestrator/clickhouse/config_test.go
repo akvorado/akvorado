@@ -88,7 +88,6 @@ func TestNetworkNamesUnmarshalHook(t *testing.T) {
 
 func TestDefaultConfiguration(t *testing.T) {
 	config := DefaultConfiguration()
-	config.Kafka.Topic = "flow"
 	if err := helpers.Validate.Struct(config); err != nil {
 		t.Fatalf("validate.Struct() error:\n%+v", err)
 	}
