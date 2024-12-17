@@ -55,6 +55,7 @@
             find . -print0 | xargs -0 touch -d @0
 
             make all \
+              PROTOC=${pkgs.protobuf}/bin/protoc \
               ASNS_URL=${asn2org}/asns.csv \
               SERVICES_URL=${ianaServiceNames}
           '';
@@ -110,6 +111,7 @@
             nodejs
             pkgs.git
             pkgs.curl
+            pkgs.protobuf
           ];
         };
       });

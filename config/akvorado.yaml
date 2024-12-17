@@ -76,6 +76,7 @@ clickhouse:
     #     { prefix: (.ipv4Prefix // .ipv6Prefix), tenant: "google-cloud", region: .scope }
 
 inlet: !include "inlet.yaml"
+outlet: !include "outlet.yaml"
 console: !include "console.yaml"
 
 # Remove the following line if you don't want to get demo data

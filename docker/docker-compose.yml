@@ -105,7 +105,6 @@ services:
     ports:
       - 2055:2055/udp
       - 6343:6343/udp
-      - 10179:10179/tcp
     restart: unless-stopped
     depends_on:
       akvorado-orchestrator:
@@ -115,8 +114,6 @@ services:
     command: inlet http://akvorado-orchestrator:8080
     volumes:
       - akvorado-run:/run/akvorado
-    environment:
-      - AKVORADO_CFG_INLET_METADATA_CACHEPERSISTFILE=/run/akvorado/metadata.cache
     labels:
       - traefik.enable=true
       # Disable access logging of /api/v0/inlet/metrics
@@ -129,6 +126,36 @@ services:
       - traefik.http.routers.akvorado-inlet.rule=PathPrefix(`/api/v0/inlet`)
       - traefik.http.services.akvorado-inlet.loadbalancer.server.port=8080
       - akvorado.conntrack.fix=true
+  akvorado-outlet:
+    extends:
+      file: versions.yml
+      service: akvorado
+    ports:
+      - 10179:10179/tcp
+    restart: unless-stopped
+    depends_on:
+      akvorado-orchestrator:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    command: outlet http://akvorado-orchestrator:8080
+    volumes:
+      - akvorado-run:/run/akvorado
+    environment:
+      - AKVORADO_CFG_OUTLET_METADATA_CACHEPERSISTFILE=/run/akvorado/metadata.cache
+    labels:
+      - traefik.enable=true
+      # Disable access logging of /api/v0/outlet/metrics
+      - traefik.http.routers.akvorado-outlet-metrics.entrypoints=private
+      - traefik.http.routers.akvorado-outlet-metrics.rule=PathPrefix(`/api/v0/outlet/metrics`)
+      - traefik.http.routers.akvorado-outlet-metrics.service=akvorado-outlet
+      - traefik.http.routers.akvorado-outlet-metrics.observability.accesslogs=false
+      # Everything else is exposed to private entrypoing in /api/v0/outlet
+      - traefik.http.routers.akvorado-outlet.entrypoints=private
+      - traefik.http.routers.akvorado-outlet.rule=PathPrefix(`/api/v0/outlet`)
+      - traefik.http.services.akvorado-outlet.loadbalancer.server.port=8080
   akvorado-conntrack-fixer:
     extends:
       file: versions.yml

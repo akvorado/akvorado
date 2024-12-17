@@ -11,15 +11,18 @@ import (
 	"time"
 
 	"akvorado/common/helpers"
+	"akvorado/common/pb"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
-	"akvorado/inlet/flow/decoder"
-	"akvorado/inlet/flow/decoder/netflow"
+	"akvorado/outlet/flow/decoder"
+	"akvorado/outlet/flow/decoder/netflow"
 )
 
 func TestGetNetflowData(t *testing.T) {
 	r := reporter.NewMock(t)
-	nfdecoder := netflow.New(r, decoder.Dependencies{Schema: schema.NewMock(t)}, decoder.Option{TimestampSource: decoder.TimestampSourceUDP})
+	sch := schema.NewMock(t)
+	bf := sch.NewFlowMessage()
+	nfdecoder := netflow.New(r, decoder.Dependencies{Schema: sch})
 
 	ch := getNetflowTemplates(
 		context.Background(),
@@ -27,11 +30,22 @@ func TestGetNetflowData(t *testing.T) {
 		30000,
 		time.Date(2022, 3, 15, 14, 33, 0, 0, time.UTC),
 		time.Date(2022, 3, 15, 15, 33, 0, 0, time.UTC))
-	got := []interface{}{}
+	got := []*schema.FlowMessage{}
+	finalize := func() {
+		bf.TimeReceived = 0
+		// Keep a copy of the current flow message
+		clone := *bf
+		got = append(got, &clone)
+		// And clear the flow message
+		bf.Clear()
+	}
+
 	for payload := range ch {
-		got = append(got, nfdecoder.Decode(decoder.RawFlow{
-			Payload: payload, Source: net.ParseIP("127.0.0.1"),
-		}))
+		if _, err := nfdecoder.Decode(decoder.RawFlow{
+			Payload: payload, Source: netip.MustParseAddr("::ffff:127.0.0.1"),
+		}, decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}, bf, finalize); err != nil {
+			t.Fatalf("Decode() error:\n%+v", err)
+		}
 	}
 
 	ch = getNetflowData(
@@ -97,90 +111,76 @@ func TestGetNetflowData(t *testing.T) {
 		time.Date(2022, 3, 15, 14, 33, 0, 0, time.UTC),
 		time.Date(2022, 3, 15, 16, 33, 0, 0, time.UTC))
 	for payload := range ch {
-		got = append(got, nfdecoder.Decode(decoder.RawFlow{
-			Payload: payload, Source: net.ParseIP("127.0.0.1"),
-		}))
+		if _, err := nfdecoder.Decode(decoder.RawFlow{
+			Payload: payload, Source: netip.MustParseAddr("::ffff:127.0.0.1"),
+		}, decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}, bf, finalize); err != nil {
+			t.Fatalf("Decode() error:\n%+v", err)
+		}
 	}
-	expected := []interface{}{
-		[]interface{}{}, // templates
-		[]interface{}{
-			&schema.FlowMessage{
-				SamplingRate:    30000,
-				ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
-				SrcAddr:         netip.MustParseAddr("::ffff:192.0.2.206"),
-				DstAddr:         netip.MustParseAddr("::ffff:203.0.113.165"),
-				InIf:            10,
-				OutIf:           20,
-				SrcAS:           65201,
-				DstAS:           65202,
-				SrcNetMask:      24,
-				DstNetMask:      23,
-				ProtobufDebug: map[schema.ColumnKey]interface{}{
-					schema.ColumnBytes:            1500,
-					schema.ColumnPackets:          1,
-					schema.ColumnEType:            helpers.ETypeIPv4,
-					schema.ColumnProto:            6,
-					schema.ColumnSrcPort:          443,
-					schema.ColumnDstPort:          34974,
-					schema.ColumnForwardingStatus: 64,
-				},
-			},
-			&schema.FlowMessage{
-				SamplingRate:    30000,
-				ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
-				SrcAddr:         netip.MustParseAddr("::ffff:192.0.2.236"),
-				DstAddr:         netip.MustParseAddr("::ffff:203.0.113.67"),
-				InIf:            10,
-				OutIf:           20,
-				SrcAS:           65201,
-				DstAS:           65202,
-				SrcNetMask:      24,
-				DstNetMask:      24,
-				ProtobufDebug: map[schema.ColumnKey]interface{}{
-					schema.ColumnBytes:            1339,
-					schema.ColumnPackets:          1,
-					schema.ColumnEType:            helpers.ETypeIPv4,
-					schema.ColumnProto:            6,
-					schema.ColumnSrcPort:          443,
-					schema.ColumnDstPort:          33199,
-					schema.ColumnForwardingStatus: 64,
-				},
+	expected := []*schema.FlowMessage{
+		{
+			SamplingRate:    30000,
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("::ffff:192.0.2.206"),
+			DstAddr:         netip.MustParseAddr("::ffff:203.0.113.165"),
+			InIf:            10,
+			OutIf:           20,
+			SrcAS:           65201,
+			DstAS:           65202,
+			SrcNetMask:      24,
+			DstNetMask:      23,
+			OtherColumns: map[schema.ColumnKey]any{
+				schema.ColumnBytes:            1500,
+				schema.ColumnPackets:          1,
+				schema.ColumnEType:            helpers.ETypeIPv4,
+				schema.ColumnProto:            6,
+				schema.ColumnSrcPort:          443,
+				schema.ColumnDstPort:          34974,
+				schema.ColumnForwardingStatus: 64,
 			},
 		},
-		[]interface{}{
-			&schema.FlowMessage{
-				SamplingRate:    30000,
-				ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
-				SrcAddr:         netip.MustParseAddr("2001:db8::1"),
-				DstAddr:         netip.MustParseAddr("2001:db8:2:0:cea5:d643:ec43:3772"),
-				InIf:            20,
-				OutIf:           10,
-				SrcAS:           65201,
-				DstAS:           65202,
-				SrcNetMask:      48,
-				DstNetMask:      48,
-				ProtobufDebug: map[schema.ColumnKey]interface{}{
-					schema.ColumnBytes:            1300,
-					schema.ColumnPackets:          1,
-					schema.ColumnEType:            helpers.ETypeIPv6,
-					schema.ColumnProto:            6,
-					schema.ColumnSrcPort:          33179,
-					schema.ColumnDstPort:          443,
-					schema.ColumnForwardingStatus: 64,
-				},
+		{
+			SamplingRate:    30000,
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("::ffff:192.0.2.236"),
+			DstAddr:         netip.MustParseAddr("::ffff:203.0.113.67"),
+			InIf:            10,
+			OutIf:           20,
+			SrcAS:           65201,
+			DstAS:           65202,
+			SrcNetMask:      24,
+			DstNetMask:      24,
+			OtherColumns: map[schema.ColumnKey]any{
+				schema.ColumnBytes:            1339,
+				schema.ColumnPackets:          1,
+				schema.ColumnEType:            helpers.ETypeIPv4,
+				schema.ColumnProto:            6,
+				schema.ColumnSrcPort:          443,
+				schema.ColumnDstPort:          33199,
+				schema.ColumnForwardingStatus: 64,
 			},
 		},
-	}
-	for idx1 := range got {
-		if got[idx1] == nil {
-			continue
-		}
-		switch g := got[idx1].(type) {
-		case []*schema.FlowMessage:
-			for idx2 := range g {
-				g[idx2].TimeReceived = 0
-			}
-		}
+		{
+			SamplingRate:    30000,
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("2001:db8::1"),
+			DstAddr:         netip.MustParseAddr("2001:db8:2:0:cea5:d643:ec43:3772"),
+			InIf:            20,
+			OutIf:           10,
+			SrcAS:           65201,
+			DstAS:           65202,
+			SrcNetMask:      48,
+			DstNetMask:      48,
+			OtherColumns: map[schema.ColumnKey]any{
+				schema.ColumnBytes:            1300,
+				schema.ColumnPackets:          1,
+				schema.ColumnEType:            helpers.ETypeIPv6,
+				schema.ColumnProto:            6,
+				schema.ColumnSrcPort:          33179,
+				schema.ColumnDstPort:          443,
+				schema.ColumnForwardingStatus: 64,
+			},
+		},
 	}
 
 	if diff := helpers.Diff(got, expected); diff != "" {

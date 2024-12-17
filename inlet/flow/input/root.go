@@ -6,21 +6,23 @@ package input
 
 import (
 	"akvorado/common/daemon"
+	"akvorado/common/pb"
 	"akvorado/common/reporter"
-	"akvorado/common/schema"
-	"akvorado/inlet/flow/decoder"
 )
 
 // Input is the interface any input should meet
 type Input interface {
-	// Start instructs an input to start producing flows on the returned channel.
-	Start() (<-chan []*schema.FlowMessage, error)
+	// Start instructs an input to start producing flows to be sent to Kafka component.
+	Start() error
 	// Stop instructs the input to stop producing flows.
 	Stop() error
 }
 
+// SendFunc is a function to send a flow to Kafka
+type SendFunc func(exporter string, flow *pb.RawFlow)
+
 // Configuration defines the interface to instantiate an input module from its configuration.
 type Configuration interface {
 	// New instantiates a new input from its configuration.
-	New(r *reporter.Reporter, daemon daemon.Component, dec decoder.Decoder) (Input, error)
+	New(r *reporter.Reporter, daemon daemon.Component, send SendFunc) (Input, error)
 }

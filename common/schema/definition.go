@@ -12,8 +12,6 @@ import (
 	"akvorado/common/helpers/bimap"
 
 	"github.com/bits-and-blooms/bitset"
-	"google.golang.org/protobuf/encoding/protowire"
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 // InterfaceBoundary identifies wether the interface is facing inside or outside the network.
@@ -133,9 +131,6 @@ const (
 	ColumnDst3rdAS
 	ColumnDstCommunities
 	ColumnDstLargeCommunities
-	ColumnDstLargeCommunitiesASN
-	ColumnDstLargeCommunitiesLocalData1
-	ColumnDstLargeCommunitiesLocalData2
 	ColumnInIfName
 	ColumnOutIfName
 	ColumnInIfDescription
@@ -212,7 +207,6 @@ func flows() Schema {
 				ClickHouseType:      "DateTime",
 				ClickHouseCodec:     "DoubleDelta, LZ4",
 				ConsoleNotDimension: true,
-				ProtobufType:        protoreflect.Uint64Kind,
 			},
 			{Key: ColumnSamplingRate, NoDisable: true, ClickHouseType: "UInt64", ConsoleNotDimension: true},
 			{Key: ColumnExporterAddress, ParserType: "ip", ClickHouseType: "LowCardinality(IPv6)"},
@@ -385,25 +379,10 @@ END`,
 				ClickHouseType:     "Array(UInt32)",
 			},
 			{
-				Key:                ColumnDstLargeCommunities,
-				ClickHouseMainOnly: true,
-				ClickHouseType:     "Array(UInt128)",
-				ClickHouseTransformFrom: []Column{
-					{
-						Key:            ColumnDstLargeCommunitiesASN,
-						ClickHouseType: "Array(UInt32)",
-					},
-					{
-						Key:            ColumnDstLargeCommunitiesLocalData1,
-						ClickHouseType: "Array(UInt32)",
-					},
-					{
-						Key:            ColumnDstLargeCommunitiesLocalData2,
-						ClickHouseType: "Array(UInt32)",
-					},
-				},
-				ClickHouseTransformTo: "arrayMap((asn, l1, l2) -> ((bitShiftLeft(CAST(asn, 'UInt128'), 64) + bitShiftLeft(CAST(l1, 'UInt128'), 32)) + CAST(l2, 'UInt128')), DstLargeCommunitiesASN, DstLargeCommunitiesLocalData1, DstLargeCommunitiesLocalData2)",
-				ConsoleNotDimension:   true,
+				Key:                 ColumnDstLargeCommunities,
+				ClickHouseMainOnly:  true,
+				ClickHouseType:      "Array(UInt128)",
+				ConsoleNotDimension: true,
 			},
 			{Key: ColumnInIfName, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
 			{Key: ColumnInIfDescription, ParserType: "string", ClickHouseType: "LowCardinality(String)", ClickHouseNotSortingKey: true},
@@ -414,13 +393,6 @@ END`,
 				Key:                     ColumnInIfBoundary,
 				ClickHouseType:          fmt.Sprintf("Enum8('undefined' = %d, 'external' = %d, 'internal' = %d)", InterfaceBoundaryUndefined, InterfaceBoundaryExternal, InterfaceBoundaryInternal),
 				ClickHouseNotSortingKey: true,
-				ProtobufType:            protoreflect.EnumKind,
-				ProtobufEnumName:        "Boundary",
-				ProtobufEnum: map[int]string{
-					int(InterfaceBoundaryUndefined): "UNDEFINED",
-					int(InterfaceBoundaryExternal):  "EXTERNAL",
-					int(InterfaceBoundaryInternal):  "INTERNAL",
-				},
 			},
 			{Key: ColumnEType, ClickHouseType: "UInt32"}, // TODO: UInt16 but hard to change, primary key
 			{Key: ColumnProto, ClickHouseType: "UInt32"}, // TODO: UInt8 but hard to change, primary key
@@ -574,9 +546,9 @@ END`,
 	}.finalize()
 }
 
-func (column *Column) shouldBeProto() bool {
-	return column.ClickHouseTransformFrom == nil &&
-		(column.ClickHouseGenerateFrom == "" || column.ClickHouseSelfGenerated) &&
+// shouldProvideValue tells if we should send a value for this column to ClickHouse.
+func (column *Column) shouldProvideValue() bool {
+	return (column.ClickHouseGenerateFrom == "" || column.ClickHouseSelfGenerated) &&
 		column.ClickHouseAlias == ""
 }
 
@@ -592,30 +564,12 @@ func (schema Schema) finalize() Schema {
 			column.Name = name
 		}
 
-		// Also true name for columns in ClickHouseTransformFrom
-		for idx, ecolumn := range column.ClickHouseTransformFrom {
-			if ecolumn.Name == "" {
-				name, ok := columnNameMap.LoadValue(ecolumn.Key)
-				if !ok {
-					panic(fmt.Sprintf("missing name mapping for %d", ecolumn.Key))
-				}
-				column.ClickHouseTransformFrom[idx].Name = name
-			}
-		}
-
 		// Non-main columns with an alias are NotSortingKey
 		if !column.ClickHouseMainOnly && column.ClickHouseAlias != "" {
 			column.ClickHouseNotSortingKey = true
 		}
 
-		// Transform implicit dependencies
-		for idx := range column.ClickHouseTransformFrom {
-			deps := column.ClickHouseTransformFrom[idx].Depends
-			deps = append(deps, column.Key)
-			slices.Sort(deps)
-			column.ClickHouseTransformFrom[idx].Depends = slices.Compact(deps)
-			column.Depends = append(column.Depends, column.ClickHouseTransformFrom[idx].Key)
-		}
+		// Deduplicate dependencies
 		slices.Sort(column.Depends)
 		column.Depends = slices.Compact(column.Depends)
 
@@ -639,7 +593,6 @@ func (schema Schema) finalize() Schema {
 					panic(fmt.Sprintf("missing name mapping for %q", column.Name))
 				}
 				column.ClickHouseAlias = strings.ReplaceAll(column.ClickHouseAlias, "Src", "Dst")
-				column.ClickHouseTransformFrom = slices.Clone(column.ClickHouseTransformFrom)
 				ncolumns = append(ncolumns, column)
 			}
 		} else if strings.HasPrefix(column.Name, "InIf") {
@@ -650,50 +603,9 @@ func (schema Schema) finalize() Schema {
 					panic(fmt.Sprintf("missing name mapping for %q", column.Name))
 				}
 				column.ClickHouseAlias = strings.ReplaceAll(column.ClickHouseAlias, "InIf", "OutIf")
-				column.ClickHouseTransformFrom = slices.Clone(column.ClickHouseTransformFrom)
 				ncolumns = append(ncolumns, column)
 			}
 		}
-	}
-	schema.columns = ncolumns
-
-	// Set Protobuf index and type
-	protobufIndex := 1
-	ncolumns = []Column{}
-	for _, column := range schema.columns {
-		pcolumns := []*Column{&column}
-		for idx := range column.ClickHouseTransformFrom {
-			pcolumns = append(pcolumns, &column.ClickHouseTransformFrom[idx])
-		}
-		for _, column := range pcolumns {
-			if column.ProtobufIndex == 0 {
-				if !column.shouldBeProto() {
-					column.ProtobufIndex = -1
-					continue
-				}
-
-				column.ProtobufIndex = protowire.Number(protobufIndex)
-				protobufIndex++
-			}
-
-			if column.ProtobufType == 0 &&
-				column.shouldBeProto() {
-				switch column.ClickHouseType {
-				case "String", "LowCardinality(String)", "FixedString(2)":
-					column.ProtobufType = protoreflect.StringKind
-				case "UInt64":
-					column.ProtobufType = protoreflect.Uint64Kind
-				case "UInt32", "UInt16", "UInt8":
-					column.ProtobufType = protoreflect.Uint32Kind
-				case "IPv6", "LowCardinality(IPv6)":
-					column.ProtobufType = protoreflect.BytesKind
-				case "Array(UInt32)":
-					column.ProtobufType = protoreflect.Uint32Kind
-					column.ProtobufRepeated = true
-				}
-			}
-		}
-		ncolumns = append(ncolumns, column)
 	}
 	schema.columns = ncolumns
 
@@ -707,9 +619,6 @@ func (schema Schema) finalize() Schema {
 	schema.columnIndex = make([]*Column, maxKey+1)
 	for i, column := range schema.columns {
 		schema.columnIndex[column.Key] = &schema.columns[i]
-		for j, column := range column.ClickHouseTransformFrom {
-			schema.columnIndex[column.Key] = &schema.columns[i].ClickHouseTransformFrom[j]
-		}
 	}
 
 	// Update disabledGroups

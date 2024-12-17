@@ -47,10 +47,8 @@ jobs:
         run: docker compose -f docker/docker-compose-dev.yml up --wait --wait-timeout 60 --quiet-pull
       - name: Setup
         uses: ./.github/actions/setup
-
-      # Install dependencies
       - name: Install dependencies
-        run: sudo apt-get install -qqy shared-mime-info curl
+        run: sudo apt-get install -qqy shared-mime-info curl protobuf-compiler
 
       # Build and test
       - name: Build
@@ -95,6 +93,8 @@ jobs:
           persist-credentials: false
       - name: Setup
         uses: ./.github/actions/setup
+      - name: Install dependencies
+        run: brew install protobuf
 
       # Build and test
       - name: Build
@@ -157,6 +157,8 @@ jobs:
         uses: ./.github/actions/setup
         with:
           go-version: ${{ matrix.go-version }}
+      - name: Install dependencies
+        run: sudo apt-get install -qqy protobuf-compiler
       - name: Build
         run: make && ./bin/akvorado version
       - uses: actions/cache/save@v4

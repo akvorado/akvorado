@@ -15,22 +15,22 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/kafka"
+	"akvorado/common/pb"
 	"akvorado/common/reporter"
-	"akvorado/common/schema"
 )
 
 func TestRealKafka(t *testing.T) {
 	client, brokers := kafka.SetupKafkaBroker(t)
 
 	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
+	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, pb.Version)
 	configuration := DefaultConfiguration()
 	configuration.Topic = topicName
 	configuration.Brokers = brokers
 	configuration.Version = kafka.Version(sarama.V2_8_1_0)
 	configuration.FlushInterval = 100 * time.Millisecond
-	expectedTopicName := fmt.Sprintf("%s-%s", topicName, schema.NewMock(t).ProtobufMessageHash())
 	r := reporter.NewMock(t)
-	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t), Schema: schema.NewMock(t)})
+	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}

@@ -16,8 +16,8 @@ import (
 
 	"akvorado/common/daemon"
 	"akvorado/common/kafka"
+	"akvorado/common/pb"
 	"akvorado/common/reporter"
-	"akvorado/common/schema"
 )
 
 // Component represents the Kafka exporter.
@@ -27,8 +27,8 @@ type Component struct {
 	t      tomb.Tomb
 	config Configuration
 
-	kafkaTopic          string
 	kafkaConfig         *sarama.Config
+	kafkaTopic          string
 	kafkaProducer       sarama.AsyncProducer
 	createKafkaProducer func() (sarama.AsyncProducer, error)
 	metrics             metrics
@@ -37,7 +37,6 @@ type Component struct {
 // Dependencies define the dependencies of the Kafka exporter.
 type Dependencies struct {
 	Daemon daemon.Component
-	Schema *schema.Component
 }
 
 // New creates a new Kafka exporter component.
@@ -66,7 +65,7 @@ func New(reporter *reporter.Reporter, configuration Configuration, dependencies 
 		config: configuration,
 
 		kafkaConfig: kafkaConfig,
-		kafkaTopic:  fmt.Sprintf("%s-%s", configuration.Topic, dependencies.Schema.ProtobufMessageHash()),
+		kafkaTopic:  fmt.Sprintf("%s-v%d", configuration.Topic, pb.Version),
 	}
 	c.initMetrics()
 	c.createKafkaProducer = func() (sarama.AsyncProducer, error) {
@@ -95,9 +94,10 @@ func (c *Component) Start() error {
 	c.t.Go(func() error {
 		defer kafkaProducer.Close()
 		errLogger := c.r.Sample(reporter.BurstSampler(10*time.Second, 3))
+		dying := c.t.Dying()
 		for {
 			select {
-			case <-c.t.Dying():
+			case <-dying:
 				c.r.Debug().Msg("stop error logger")
 				return nil
 			case msg := <-kafkaProducer.Errors():

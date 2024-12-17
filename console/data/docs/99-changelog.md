@@ -13,6 +13,15 @@ identified with a specific icon:
 
 ## Unreleased
 
+This release introduce a new component: the outlet. Previously, ClickHouse was
+fetching data directly from Kafka. However, this required to push the protobuf
+schema using an out-of-band method. This makes cloud deployments more complex.
+The inlet now pushes incoming raw flows to Kafka without decoding them. The
+outlet takes them, decode them, enriches them, and push them to ClickHouse. This
+also reduces the likeliness to lose packets. This change should be transparent
+on most setups but you are encouraged to review the new proposed configuration
+in the [quickstart tarball][] and update your own configuration.
+
 As it seems a good time as any, Zookeeper is removed from the `docker compose`
 setup (except when using ClickHouse cluster mode). Kafka is now using the KRaft
 mode. You can follow the [migration documentation][], but is easier to loose a
@@ -25,6 +34,8 @@ bit of data and reset the Kafka container:
 # docker compose up -d
 ```
 
+- 💥 *outlet*: new service
+- 💥 *inlet*: flow rate limiting feature has been removed
 - 💥 *docker*: switch Kafka to KRaft mode
 - 🩹 *console*: fix deletion of saved filters
 - 🩹 *console*: fix intermittent failure when requesting previous period
@@ -37,6 +48,7 @@ bit of data and reset the Kafka container:
 - 🌱 *inlet*: improve performance of classifiers
 
 [migration documentation]: https://github.com/bitnami/containers/blob/main/bitnami/kafka/README.md#migrating-from-zookeeper-mode-to-kraft-mode
+[quickstart tarball]: https://github.com/akvorado/akvorado/releases/latest/download/docker-compose-quickstart.tar.gz
 
 ## 1.11.5 - 2025-05-11
 

@@ -14,7 +14,6 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
-	"akvorado/common/schema"
 )
 
 // NewMock creates a new Kafka component with a mocked Kafka. It will
@@ -23,7 +22,6 @@ func NewMock(t *testing.T, reporter *reporter.Reporter, configuration Configurat
 	t.Helper()
 	c, err := New(reporter, configuration, Dependencies{
 		Daemon: daemon.NewMock(t),
-		Schema: schema.NewMock(t),
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)

@@ -1,0 +1,26 @@
+syntax = "proto3";
+package input;
+option go_package = "akvorado/common/pb";
+
+// RawFlow is an undecoded flow with some options.
+message RawFlow {
+    uint64 time_received = 1;    // when the flow was received
+    bytes payload = 2;           // payload of the flow
+    bytes source_address = 3;    // source IPv6 address
+    bool use_source_address = 4; // use source address as exporter address
+
+    // Decoding options
+    enum Decoder {
+        DECODER_UNSPECIFIED = 0;
+        DECODER_NETFLOW = 1;
+        DECODER_SFLOW = 2;
+        DECODER_GOB = 3;
+    }
+    enum TimestampSource {
+        TS_INPUT = 0;
+        TS_NETFLOW_PACKET = 1;
+        TS_NETFLOW_FIRST_SWITCHED = 2;
+    }
+    Decoder decoder = 5;
+    TimestampSource timestamp_source = 6;
+}

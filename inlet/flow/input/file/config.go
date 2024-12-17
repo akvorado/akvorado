@@ -9,6 +9,9 @@ import "akvorado/inlet/flow/input"
 type Configuration struct {
 	// Paths to use as input
 	Paths []string `validate:"min=1,dive,required"`
+	// MaxFlows tell how many flows will be read before stopping production. 0
+	// means to not stop.
+	MaxFlows uint
 }
 
 // DefaultConfiguration descrives the default configuration for file input.

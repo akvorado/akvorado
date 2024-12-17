@@ -1,0 +1,28 @@
+---
+metadata:
+  workers: 10
+  provider:
+    type: snmp
+    credentials:
+      ::/0:
+        communities: public
+kafka:
+  workers: 6
+core:
+  exporter-classifiers:
+    # This is an example. This should be customized depending on how
+    # your exporters are named.
+    - ClassifySiteRegex(Exporter.Name, "^([^-]+)-", "$1")
+    - ClassifyRegion("europe")
+    - ClassifyTenant("acme")
+    - ClassifyRole("edge")
+  interface-classifiers:
+    # This is an example. This must be customized depending on the
+    # descriptions of your interfaces. In the following, we assume
+    # external interfaces are named "Transit: Cogent" Or "IX:
+    # FranceIX".
+    - |
+      ClassifyConnectivityRegex(Interface.Description, "^(?i)(transit|pni|ppni|ix):? ", "$1") &&
+      ClassifyProviderRegex(Interface.Description, "^\\S+?\\s(\\S+)", "$1") &&
+      ClassifyExternal()
+    - ClassifyInternal()

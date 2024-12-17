@@ -13,9 +13,8 @@ import (
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/daemon"
+	"akvorado/common/pb"
 	"akvorado/common/reporter"
-	"akvorado/common/schema"
-	"akvorado/inlet/flow/decoder"
 	"akvorado/inlet/flow/input"
 )
 
@@ -24,62 +23,66 @@ type Input struct {
 	r      *reporter.Reporter
 	t      tomb.Tomb
 	config *Configuration
-
-	ch      chan []*schema.FlowMessage // channel to send flows to
-	decoder decoder.Decoder
+	send   input.SendFunc
 }
 
 // New instantiate a new UDP listener from the provided configuration.
-func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Component, dec decoder.Decoder) (input.Input, error) {
+func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Component, send input.SendFunc) (input.Input, error) {
 	if len(configuration.Paths) == 0 {
 		return nil, errors.New("no paths provided for file input")
 	}
 	input := &Input{
-		r:       r,
-		config:  configuration,
-		ch:      make(chan []*schema.FlowMessage),
-		decoder: dec,
+		r:      r,
+		config: configuration,
+		send:   send,
 	}
 	daemon.Track(&input.t, "inlet/flow/input/file")
 	return input, nil
 }
 
-// Start starts reading the provided files to produce fake flows in a loop.
-func (in *Input) Start() (<-chan []*schema.FlowMessage, error) {
+// Start starts streaming files to produce flake flows in a loop.
+func (in *Input) Start() error {
 	in.r.Info().Msg("file input starting")
 	in.t.Go(func() error {
+		count := uint(0)
+		payload := make([]byte, 9000)
+		flow := pb.RawFlow{}
 		for idx := 0; true; idx++ {
+			if in.config.MaxFlows > 0 && count >= in.config.MaxFlows {
+				<-in.t.Dying()
+				return nil
+			}
+
 			path := in.config.Paths[idx%len(in.config.Paths)]
 			data, err := os.ReadFile(path)
 			if err != nil {
 				in.r.Err(err).Str("path", path).Msg("unable to read path")
 				return err
 			}
-			flows := in.decoder.Decode(decoder.RawFlow{
-				TimeReceived: time.Now(),
-				Payload:      data,
-				Source:       net.ParseIP("127.0.0.1"),
-			})
-			if len(flows) == 0 {
-				continue
-			}
+
+			// Mimic the way it works with UDP
+			n := copy(payload, data)
+			flow.Reset()
+			flow.TimeReceived = uint64(time.Now().Unix())
+			flow.Payload = payload[:n]
+			flow.SourceAddress = net.ParseIP("127.0.0.1").To16()
+
+			in.send("127.0.0.1", &flow)
+			count++
 			select {
 			case <-in.t.Dying():
 				return nil
-			case in.ch <- flows:
+			default:
 			}
 		}
 		return nil
 	})
-	return in.ch, nil
+	return nil
 }
 
 // Stop stops the UDP listeners
 func (in *Input) Stop() error {
-	defer func() {
-		close(in.ch)
-		in.r.Info().Msg("file input stopped")
-	}()
+	defer in.r.Info().Msg("file input stopped")
 	in.t.Kill(nil)
 	return in.t.Wait()
 }
