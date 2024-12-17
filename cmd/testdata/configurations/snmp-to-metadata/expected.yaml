@@ -1,6 +1,6 @@
 ---
 paths:
-  inlet.0.metadata:
+  outlet.0.metadata:
     workers: 10
     maxbatchrequests: 20
     cacheduration: 30m0s

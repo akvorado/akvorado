@@ -50,7 +50,6 @@ process flows. The following endpoints are exposed by the HTTP
 component embedded into the service:
 
 - `/api/v0/inlet/flows`: stream the received flows
-- `/api/v0/inlet/schemas.proto`: protobuf schema
 
 ## Orchestrator service
 

@@ -11,6 +11,7 @@ import (
 	"github.com/IBM/sarama"
 
 	"akvorado/common/kafka"
+	"akvorado/common/pb"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 )
@@ -40,14 +41,15 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 		return nil, fmt.Errorf("cannot validate Kafka configuration: %w", err)
 	}
 
-	return &Component{
+	c := Component{
 		r:      r,
 		d:      dependencies,
 		config: config,
 
 		kafkaConfig: kafkaConfig,
-		kafkaTopic:  fmt.Sprintf("%s-%s", config.Topic, dependencies.Schema.ProtobufMessageHash()),
-	}, nil
+		kafkaTopic:  fmt.Sprintf("%s-v%d", config.Topic, pb.Version),
+	}
+	return &c, nil
 }
 
 // Start starts Kafka configuration.

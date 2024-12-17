@@ -20,7 +20,6 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
-	"akvorado/common/kafka"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 	"akvorado/orchestrator/geoip"
@@ -116,14 +115,22 @@ func loadAllTables(t *testing.T, ch *clickhousedb.Component, sch *schema.Compone
 }
 
 func isOldTable(schema *schema.Component, table string) bool {
-	if strings.Contains(table, schema.ProtobufMessageHash()) {
+	if strings.Contains(table, schema.ClickHouseHash()) {
 		return false
 	}
-	if table == "flows_raw_errors" {
-		return false
-	}
-	if strings.HasSuffix(table, "_raw") || strings.HasSuffix(table, "_raw_consumer") || strings.HasSuffix(table, "_raw_errors") {
+	if strings.HasPrefix(table, "test_") {
 		return true
+	}
+	oldSuffixes := []string{
+		"_raw",
+		"_raw_consumer",
+		"_raw_errors", "_raw_errors_local",
+		"_raw_errors_consumer",
+	}
+	for _, suffix := range oldSuffixes {
+		if strings.HasSuffix(table, suffix) {
+			return true
+		}
 	}
 	return false
 }
@@ -136,7 +143,6 @@ func startTestComponent(t *testing.T, r *reporter.Reporter, chComponent *clickho
 	}
 	configuration := DefaultConfiguration()
 	configuration.OrchestratorURL = "http://127.0.0.1:0"
-	configuration.Kafka.Configuration = kafka.DefaultConfiguration()
 	ch, err := New(r, configuration, Dependencies{
 		Daemon:     daemon.NewMock(t),
 		HTTP:       httpserver.NewMock(t, r),
@@ -234,7 +240,7 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 			if err != nil {
 				t.Fatalf("Query() error:\n%+v", err)
 			}
-			hash := ch.d.Schema.ProtobufMessageHash()
+			hash := ch.d.Schema.ClickHouseHash()
 			got := []string{}
 			for rows.Next() {
 				var table string
@@ -263,9 +269,6 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 				fmt.Sprintf("flows_%s_raw", hash),
 				fmt.Sprintf("flows_%s_raw_consumer", hash),
 				"flows_local",
-				"flows_raw_errors",
-				"flows_raw_errors_consumer",
-				"flows_raw_errors_local",
 				schema.DictionaryICMP,
 				schema.DictionaryNetworks,
 				schema.DictionaryProtocols,
@@ -360,9 +363,6 @@ func TestMigrationFromPreviousStates(t *testing.T) {
 			schema.ColumnDstASPath,
 			schema.ColumnDstCommunities,
 			schema.ColumnDstLargeCommunities,
-			schema.ColumnDstLargeCommunitiesASN,
-			schema.ColumnDstLargeCommunitiesLocalData1,
-			schema.ColumnDstLargeCommunitiesLocalData2,
 		}
 		sch, err := schema.New(schConfig)
 		if err != nil {
@@ -442,7 +442,7 @@ AND name LIKE $3`, "flows", ch.d.ClickHouse.DatabaseName(), "%DimensionAttribute
 		// Check if the rows were created in the consumer flows table
 		rowConsumer := ch.d.ClickHouse.QueryRow(
 			context.Background(),
-			fmt.Sprintf(`SHOW CREATE flows_%s_raw_consumer`, ch.d.Schema.ProtobufMessageHash()))
+			fmt.Sprintf(`SHOW CREATE flows_%s_raw_consumer`, ch.d.Schema.ClickHouseHash()))
 		var existingConsumer string
 		if err := rowConsumer.Scan(&existingConsumer); err != nil {
 			t.Fatalf("Scan() error:\n%+v", err)
@@ -517,7 +517,7 @@ AND name LIKE $3`, "flows", ch.d.ClickHouse.DatabaseName(), "%DimensionAttribute
 		// Check if the rows were removed in the consumer flows table
 		rowConsumer := ch.d.ClickHouse.QueryRow(
 			context.Background(),
-			fmt.Sprintf(`SHOW CREATE flows_%s_raw_consumer`, ch.d.Schema.ProtobufMessageHash()))
+			fmt.Sprintf(`SHOW CREATE flows_%s_raw_consumer`, ch.d.Schema.ClickHouseHash()))
 		var existingConsumer string
 		if err := rowConsumer.Scan(&existingConsumer); err != nil {
 			t.Fatalf("Scan() error:\n%+v", err)

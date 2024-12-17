@@ -10,7 +10,6 @@ import (
 	"akvorado/common/remotedatasourcefetcher"
 
 	"akvorado/common/helpers"
-	"akvorado/common/kafka"
 
 	"github.com/go-viper/mapstructure/v2"
 )
@@ -19,8 +18,6 @@ import (
 type Configuration struct {
 	// SkipMigrations tell if we should skip migrations.
 	SkipMigrations bool
-	// Kafka describes Kafka-specific configuration
-	Kafka KafkaConfiguration
 	// Resolutions describe the various resolutions to use to
 	// store data and the associated TTLs.
 	Resolutions []ResolutionConfiguration `validate:"min=1,dive"`
@@ -67,26 +64,9 @@ type ResolutionConfiguration struct {
 	TTL time.Duration `validate:"isdefault|min=1h"`
 }
 
-// KafkaConfiguration describes Kafka-specific configuration
-type KafkaConfiguration struct {
-	kafka.Configuration `mapstructure:",squash" yaml:"-,inline"`
-	// Consumers tell how many consumers to use to poll data from Kafka
-	Consumers int `validate:"min=1"`
-	// GroupName defines the Kafka consumers group used to poll data from topic,
-	// shared between all Consumers.
-	GroupName string
-	// EngineSettings allows one to set arbitrary settings for Kafka engine in
-	// ClickHouse.
-	EngineSettings []string
-}
-
 // DefaultConfiguration represents the default configuration for the ClickHouse configurator.
 func DefaultConfiguration() Configuration {
 	return Configuration{
-		Kafka: KafkaConfiguration{
-			Consumers: 1,
-			GroupName: "clickhouse",
-		},
 		Resolutions: []ResolutionConfiguration{
 			{0, 15 * 24 * time.Hour},                   // 15 days
 			{time.Minute, 7 * 24 * time.Hour},          // 7 days
@@ -141,6 +121,9 @@ func NetworkAttributesUnmarshallerHook() mapstructure.DecodeHookFunc {
 func init() {
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[NetworkAttributes]())
 	helpers.RegisterMapstructureUnmarshallerHook(NetworkAttributesUnmarshallerHook())
-	helpers.RegisterMapstructureDeprecatedFields[Configuration]("SystemLogTTL", "PrometheusEndpoint")
+	helpers.RegisterMapstructureDeprecatedFields[Configuration](
+		"SystemLogTTL",
+		"PrometheusEndpoint",
+		"Kafka")
 	helpers.RegisterSubnetMapValidation[NetworkAttributes]()
 }

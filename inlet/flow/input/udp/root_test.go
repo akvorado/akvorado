@@ -5,27 +5,61 @@ package udp
 
 import (
 	"net"
-	"net/netip"
 	"testing"
 	"time"
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
+	"akvorado/common/pb"
 	"akvorado/common/reporter"
-	"akvorado/common/schema"
-	"akvorado/inlet/flow/decoder"
 )
 
 func TestUDPInput(t *testing.T) {
 	r := reporter.NewMock(t)
 	configuration := DefaultConfiguration().(*Configuration)
 	configuration.Listen = "127.0.0.1:0"
-	in, err := configuration.New(r, daemon.NewMock(t), &decoder.DummyDecoder{Schema: schema.NewMock(t)})
+
+	done := make(chan bool)
+	expected := &pb.RawFlow{
+		SourceAddress: net.ParseIP("127.0.0.1").To16(),
+		Payload:       []byte("hello world!"),
+	}
+	send := func(_ string, got *pb.RawFlow) {
+		expected.TimeReceived = got.TimeReceived
+
+		delta := uint64(time.Now().UTC().Unix()) - got.TimeReceived
+		if delta > 1 {
+			t.Errorf("TimeReceived out of range: %d (now: %d)", got.TimeReceived, time.Now().UTC().Unix())
+		}
+		if diff := helpers.Diff(got, expected); diff != "" {
+			t.Fatalf("Input data (-got, +want):\n%s", diff)
+		}
+
+		// Check metrics
+		gotMetrics := r.GetMetrics("akvorado_inlet_flow_input_udp_")
+		expectedMetrics := map[string]string{
+			`bytes_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                        "12",
+			`packets_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                      "1",
+			`in_dropped_packets_total{listener="127.0.0.1:0",worker="0"}`:                                "0",
+			`summary_size_bytes_count{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:           "1",
+			`summary_size_bytes_sum{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:             "12",
+			`summary_size_bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0",quantile="0.5"}`:  "12",
+			`summary_size_bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0",quantile="0.9"}`:  "12",
+			`summary_size_bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0",quantile="0.99"}`: "12",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+			t.Fatalf("Input metrics (-got, +want):\n%s", diff)
+		}
+
+		close(done)
+
+	}
+
+	in, err := configuration.New(r, daemon.NewMock(t), send)
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
-	ch, err := in.Start()
-	if err != nil {
+	if err := in.Start(); err != nil {
 		t.Fatalf("Start() error:\n%+v", err)
 	}
 	defer func() {
@@ -46,103 +80,9 @@ func TestUDPInput(t *testing.T) {
 	}
 
 	// Get it back
-	var got []*schema.FlowMessage
 	select {
-	case got = <-ch:
-		if len(got) == 0 {
-			t.Fatalf("empty decoded flows received")
-		}
 	case <-time.After(20 * time.Millisecond):
 		t.Fatal("no decoded flows received")
-	}
-
-	delta := uint64(time.Now().UTC().Unix()) - got[0].TimeReceived
-	if delta > 1 {
-		t.Errorf("TimeReceived out of range: %d (now: %d)", got[0].TimeReceived, time.Now().UTC().Unix())
-	}
-	expected := []*schema.FlowMessage{
-		{
-			TimeReceived:    got[0].TimeReceived,
-			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
-			ProtobufDebug: map[schema.ColumnKey]interface{}{
-				schema.ColumnBytes:           12,
-				schema.ColumnPackets:         1,
-				schema.ColumnInIfDescription: []byte("hello world!"),
-			},
-		},
-	}
-	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Fatalf("Input data (-got, +want):\n%s", diff)
-	}
-
-	// Check metrics
-	gotMetrics := r.GetMetrics("akvorado_inlet_flow_input_udp_")
-	expectedMetrics := map[string]string{
-		`bytes_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                        "12",
-		`decoded_flows_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                "1",
-		`packets_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                      "1",
-		`in_dropped_packets_total{listener="127.0.0.1:0",worker="0"}`:                                "0",
-		`summary_size_bytes_count{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:           "1",
-		`summary_size_bytes_sum{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:             "12",
-		`summary_size_bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0",quantile="0.5"}`:  "12",
-		`summary_size_bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0",quantile="0.9"}`:  "12",
-		`summary_size_bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0",quantile="0.99"}`: "12",
-	}
-	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
-		t.Fatalf("Input metrics (-got, +want):\n%s", diff)
-	}
-}
-
-func TestOverflow(t *testing.T) {
-	r := reporter.NewMock(t)
-	configuration := DefaultConfiguration().(*Configuration)
-	configuration.Listen = "127.0.0.1:0"
-	configuration.QueueSize = 1
-	in, err := configuration.New(r, daemon.NewMock(t), &decoder.DummyDecoder{
-		Schema: schema.NewMock(t),
-	})
-	if err != nil {
-		t.Fatalf("New() error:\n%+v", err)
-	}
-	_, err = in.Start()
-	if err != nil {
-		t.Fatalf("Start() error:\n%+v", err)
-	}
-	defer func() {
-		if err := in.Stop(); err != nil {
-			t.Fatalf("Stop() error:\n%+v", err)
-		}
-	}()
-
-	// Connect
-	conn, err := net.Dial("udp", in.(*Input).address.String())
-	if err != nil {
-		t.Fatalf("Dial() error:\n%+v", err)
-	}
-
-	// Send data
-	for range 10 {
-		if _, err := conn.Write([]byte("hello world!")); err != nil {
-			t.Fatalf("Write() error:\n%+v", err)
-		}
-	}
-	time.Sleep(20 * time.Millisecond)
-
-	// Check metrics
-	gotMetrics := r.GetMetrics("akvorado_inlet_flow_input_udp_")
-	expectedMetrics := map[string]string{
-		`bytes_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                        "120",
-		`decoded_flows_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                "1",
-		`in_dropped_packets_total{listener="127.0.0.1:0",worker="0"}`:                                "0",
-		`out_dropped_packets_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:          "9",
-		`packets_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                      "10",
-		`summary_size_bytes_count{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:           "10",
-		`summary_size_bytes_sum{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:             "120",
-		`summary_size_bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0",quantile="0.5"}`:  "12",
-		`summary_size_bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0",quantile="0.9"}`:  "12",
-		`summary_size_bytes{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0",quantile="0.99"}`: "12",
-	}
-	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
-		t.Fatalf("Input metrics (-got, +want):\n%s", diff)
+	case <-done:
 	}
 }

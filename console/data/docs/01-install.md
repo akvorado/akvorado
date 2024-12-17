@@ -32,12 +32,12 @@ Currently, only a pre-built binary for Linux x86-64 is provided.
 
 ## Compilation from source
 
-You need a proper installation of [Go](https://go.dev/doc/install) (1.24+), and
-[NodeJS](https://nodejs.org/en/download/) (20+) with NPM (6+). For example, on
-Debian:
+You need a proper installation of [Go](https://go.dev/doc/install) (1.24+),
+[NodeJS](https://nodejs.org/en/download/) (20+) with NPM (6+), and
+[protoc](https://protobuf.dev/installation/). For example, on Debian:
 
 ```console
-# apt install golang nodejs npm
+# apt install golang nodejs npm protobuf-compiler
 # go version
 go version go1.24.1 linux/amd64
 # node --version
