@@ -230,16 +230,16 @@ func TestPopulateSavedFilters(t *testing.T) {
 		t.Fatalf("ListSavedFilters() (-got, +want):\n%s", diff)
 	}
 
-	c.config.SavedFilters = c.config.SavedFilters[1:]
+	c.config.SavedFilters = c.config.SavedFilters[:1]
 	c.populate()
 	got, _ = c.ListSavedFilters(context.Background(), "marty")
 	if diff := helpers.Diff(got, []SavedFilter{
 		{
-			ID:          2,
+			ID:          1,
 			User:        "__system",
 			Shared:      true,
-			Description: "second filter",
-			Content:     "content of second filter",
+			Description: "first filter",
+			Content:     "content of first filter",
 		},
 	}); diff != "" {
 		t.Fatalf("ListSavedFilters() (-got, +want):\n%s", diff)

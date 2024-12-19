@@ -14,6 +14,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🔒 *docker*: do not expose the /debug endpoint on the public entrypoint
+- 🩹 *console*: fix synchronization of saved filters from configuration file
 
 ## 1.11.2 - 2024-11-01
 

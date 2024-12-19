@@ -86,7 +86,7 @@ outer:
 	for _, result := range results {
 		for _, filter := range c.config.SavedFilters {
 			if filter.Description == result.Description && filter.Content == result.Content {
-				break outer
+				continue outer
 			}
 		}
 		c.r.Info().Msgf("remove old builtin filter %q", result.Description)
