@@ -15,7 +15,7 @@ identified with a specific icon:
 
 - 🔒 *docker*: do not expose the /debug endpoint on the public entrypoint
 - 🩹 *console*: fix synchronization of saved filters from configuration file
-- 🌱 *orchestrator*: also sets TTL for ClickHouse `system.text_log` table
+- 🌱 *orchestrator*: sets TTL for more ClickHouse log tables (including `text_log`)
 
 ## 1.11.2 - 2024-11-01
 
