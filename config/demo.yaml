@@ -151,7 +151,7 @@
           multiplier: 5
           reverse-direction-ratio: 0.1
           <<: [*from-v4-google, *to-v4-customers, *quic-src]
-        - per-second: 1.7
+        - per-second: 0.7
           in-if-index: 10
           out-if-index: [20, 21]
           peak-hour: 21h
