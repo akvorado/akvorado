@@ -97,6 +97,7 @@ func (c *Component) registerHTTPHandlers() error {
 					"part_log",
 					"query_log",
 					"query_thread_log",
+					"text_log",
 					"trace_log",
 				},
 				PrometheusEndpoint: c.config.PrometheusEndpoint,
