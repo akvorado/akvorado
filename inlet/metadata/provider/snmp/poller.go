@@ -100,6 +100,7 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 	for _, ifIndex := range ifIndexes {
 		moreRequests := []string{
 			fmt.Sprintf("1.3.6.1.2.1.2.2.1.2.%d", ifIndex),     // ifDescr
+			fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.1.%d", ifIndex),  // ifName
 			fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.18.%d", ifIndex), // ifAlias
 			fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.15.%d", ifIndex), // ifSpeed
 		}
@@ -156,60 +157,80 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 	}
 	p.metrics.times.WithLabelValues(exporterStr).Observe(time.Now().Sub(start).Seconds())
 
-	processStr := func(idx int, what string, target *string) bool {
+	processStr := func(idx int, what string) (string, bool) {
 		switch results[idx].Type {
 		case gosnmp.OctetString:
-			*target = string(results[idx].Value.([]byte))
+			return string(results[idx].Value.([]byte)), true
 		case gosnmp.NoSuchInstance, gosnmp.NoSuchObject, gosnmp.Null:
 			p.metrics.errors.WithLabelValues(exporterStr, fmt.Sprintf("%s missing", what)).Inc()
-			return false
+			return "", false
 		default:
 			p.metrics.errors.WithLabelValues(exporterStr, fmt.Sprintf("%s unknown type", what)).Inc()
-			return false
+			return "", false
 		}
-		return true
 	}
-	processUint := func(idx int, what string, target *uint) bool {
+	processUint := func(idx int, what string) (uint, bool) {
 		switch results[idx].Type {
 		case gosnmp.Gauge32:
-			*target = results[idx].Value.(uint)
+			return results[idx].Value.(uint), true
 		case gosnmp.NoSuchInstance, gosnmp.NoSuchObject, gosnmp.Null:
 			p.metrics.errors.WithLabelValues(exporterStr, fmt.Sprintf("%s missing", what)).Inc()
-			return false
+			return 0, false
 		default:
 			p.metrics.errors.WithLabelValues(exporterStr, fmt.Sprintf("%s unknown type", what)).Inc()
-			return false
+			return 0, false
 		}
-		return true
 	}
-	var (
-		sysNameVal string
-	)
-	if !processStr(0, "sysname", &sysNameVal) {
+	sysNameVal, ok := processStr(0, "sysname")
+	if !ok {
 		return errors.New("unable to get sysName")
 	}
-	for idx := 1; idx < len(requests)-2; idx += 3 {
+	for idx := 1; idx < len(requests)-3; idx += 4 {
 		var (
-			ifDescrVal string
-			ifAliasVal string
-			ifSpeedVal uint
+			name, description string
+			speed             uint
 		)
-		ifIndex := ifIndexes[(idx-1)/3]
+		ifIndex := ifIndexes[(idx-1)/4]
 		ok := true
 		// We do not process results when index is 0 (this can happen for local
 		// traffic, we only care for exporter name).
 		if ifIndex > 0 {
-			// ifDescr is not mandatory.
-			processStr(idx, "ifdescr", &ifDescrVal)
-		}
-		if ifIndex > 0 && !processStr(idx+1, "ifalias", &ifAliasVal) {
-			ok = false
-		}
-		if ifIndex > 0 && !processUint(idx+2, "ifspeed", &ifSpeedVal) {
-			ok = false
+			ifDescrVal, okDescr := processStr(idx, "ifdescr")
+			ifNameVal, okName := processStr(idx+1, "ifname")
+			ifAliasVal, okAlias := processStr(idx+2, "ifalias")
+			ifSpeedVal, okSpeed := processUint(idx+3, "ifspeed")
+
+			// Many equipments are using ifDescr for the interface name and
+			// ifAlias for the description, which is counter-intuitive. We want
+			// both the name and the description.
+
+			if okName {
+				// If we have ifName, use ifDescr if it is different and ifAlias is not.
+				name = ifNameVal
+				if okDescr && ifDescrVal != ifNameVal {
+					description = ifDescrVal
+				} else if okAlias {
+					description = ifAliasVal
+				} else {
+					ok = false
+				}
+			} else {
+				// Don't handle the other case yet. It would be unexpected to
+				// have ifAlias and not ifName. And if we have only ifDescr, we
+				// can't really know what this is.
+				ok = false
+			}
+
+			// Speed is mandatory
+			ok = ok && okSpeed
+			speed = ifSpeedVal
 		}
 		if ok {
 			p.metrics.successes.WithLabelValues(exporterStr).Inc()
+		} else {
+			name = ""
+			description = ""
+			speed = 0
 		}
 		put(provider.Update{
 			Query: provider.Query{
@@ -221,9 +242,9 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 					Name: sysNameVal,
 				},
 				Interface: provider.Interface{
-					Name:        ifDescrVal,
-					Description: ifAliasVal,
-					Speed:       ifSpeedVal,
+					Name:        name,
+					Description: description,
+					Speed:       speed,
 				},
 			},
 		})
