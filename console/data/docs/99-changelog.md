@@ -13,9 +13,11 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 💥 *inlet*: in SNMP metadata provider, use ifName for interface names and
+  ifDescr or ifAlias for descriptions and make description mandatory (most
+  setups should be unaffected by this)
 - 🔒 *docker*: do not expose the /debug endpoint on the public entrypoint
 - 🩹 *console*: fix synchronization of saved filters from configuration file
-- 🌱 *inlet*: in SNMP metadata provider, use ifName for interface names and ifDescr or ifAlias for descriptions
 - 🌱 *orchestrator*: sets TTL for more ClickHouse log tables (including `text_log`)
 
 ## 1.11.2 - 2024-11-01
