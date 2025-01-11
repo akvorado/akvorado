@@ -78,11 +78,13 @@ WWHRD = $(BIN)/wwhrd
 common/clickhousedb/mocks/mock_driver.go: go.mod | $(MOCKGEN) ; $(info $(M) generate mocks for ClickHouse driver…)
 	$Q $(MOCKGEN) -package mocks -build_constraint "!release" -destination $@ \
 		github.com/ClickHouse/clickhouse-go/v2/lib/driver Conn,Row,Rows,ColumnType
+	$Q touch $@
 conntrackfixer/mocks/mock_conntrackfixer.go: go.mod | $(MOCKGEN) ; $(info $(M) generate mocks for conntrack-fixer…)
 	$Q if [ `$(GO) env GOOS` = "linux" ]; then \
 	   $(MOCKGEN) -package mocks -build_constraint "!release" -destination $@ \
 		akvorado/conntrackfixer ConntrackConn,DockerClient ; \
 	fi
+	$Q touch $@
 
 inlet/core/asnprovider_enumer.go: go.mod inlet/core/config.go | $(ENUMER) ; $(info $(M) generate enums for ASNProvider…)
 	$Q $(ENUMER) -type=ASNProvider -text -transform=kebab -trimprefix=ASNProvider inlet/core/config.go
