@@ -294,7 +294,7 @@ func TestPoller(t *testing.T) {
 			if diff := helpers.Diff(got, []string{
 				fmt.Sprintf(`%s exporter62 641 Gi0/0/0/0 Transit 10000`, exporterStr),
 				fmt.Sprintf(`%s exporter62 642 Gi0/0/0/1 Peering 20000`, exporterStr),
-				fmt.Sprintf(`%s exporter62 643   0`, exporterStr),                                // no ifAlias
+				fmt.Sprintf(`%s exporter62 643 Gi0/0/0/2  10000`, exporterStr),                   // no ifAlias
 				fmt.Sprintf(`%s exporter62 644   0`, exporterStr),                                // negative cache
 				fmt.Sprintf(`%s exporter62 645 Gi0/0/0/5 Correct description 1000`, exporterStr), // negative cache
 				fmt.Sprintf(`%s exporter62 0   0`, exporterStr),
@@ -309,7 +309,7 @@ func TestPoller(t *testing.T) {
 				fmt.Sprintf(`error_requests_total{error="ifname missing",exporter="%s"}`, exporterStr):  "1", // 644
 				fmt.Sprintf(`error_requests_total{error="ifspeed missing",exporter="%s"}`, exporterStr): "1", // 644
 				`pending_requests`: "0",
-				fmt.Sprintf(`success_requests_total{exporter="%s"}`, exporterStr): "4", // 641+642+643+645
+				fmt.Sprintf(`success_requests_total{exporter="%s"}`, exporterStr): "5", // 641+642+643+645+0
 			}
 			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 				t.Fatalf("Metrics (-got, +want):\n%s", diff)

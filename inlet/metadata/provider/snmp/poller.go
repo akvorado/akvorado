@@ -205,14 +205,13 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 			// both the name and the description.
 
 			if okName {
-				// If we have ifName, use ifDescr if it is different and ifAlias is not.
+				// If we have ifName, use ifDescr if it is different and ifAlias
+				// is not. Otherwise, keep description empty.
 				name = ifNameVal
 				if okDescr && ifDescrVal != ifNameVal {
 					description = ifDescrVal
 				} else if okAlias {
 					description = ifAliasVal
-				} else {
-					ok = false
 				}
 			} else {
 				// Don't handle the other case yet. It would be unexpected to
