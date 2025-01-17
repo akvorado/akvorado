@@ -60,7 +60,7 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 		},
 	}
 	communities := []string{""}
-	if securityParameters, ok := p.config.SecurityParameters.Lookup(exporter); ok {
+	if securityParameters, _ := p.config.SecurityParameters.Lookup(exporter); securityParameters.UserName != "" {
 		g.Version = gosnmp.Version3
 		g.SecurityModel = gosnmp.UserSecurityModel
 		usmSecurityParameters := gosnmp.UsmSecurityParameters{

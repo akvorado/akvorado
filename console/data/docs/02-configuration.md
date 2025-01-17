@@ -393,7 +393,7 @@ The `snmp` provider accepts the following configuration keys:
   (if the previous value was set), `privacy-protocol` (`none`, `DES`, `AES`,
   `AES192`, `AES256`, `AES192C`, and `AES256C` are accepted, the later being
   Cisco-variant), `privacy-passphrase` (if the previous value was set), and
-  `context-name`.
+  `context-name`. If `user-name` is empty, it falls back to SNMPv2.
 - `ports` is a map from exporter subnets to the SNMP port to use to poll
   exporters in the provided subnet.
 - `agents` is a map from exporter IPs to agent IPs. When there is no match, the

@@ -35,7 +35,7 @@ type Configuration struct {
 
 // SecurityParameters describes SNMPv3 USM security parameters.
 type SecurityParameters struct {
-	UserName                 string       `validate:"required"`
+	UserName                 string
 	AuthenticationProtocol   AuthProtocol `validate:"required_with=PrivacyProtocol"`
 	AuthenticationPassphrase string       `validate:"required_with=AuthenticationProtocol"`
 	PrivacyProtocol          PrivProtocol
