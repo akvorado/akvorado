@@ -139,6 +139,14 @@ func (nd *Decoder) decode(packet sflow.Packet) []*schema.FlowMessage {
 					}
 					bf.GotASPath = true
 				}
+				if len(recordData.Communities) > 0 {
+					if column, _ := nd.d.Schema.LookupColumnByKey(schema.ColumnDstCommunities); !column.Disabled {
+						for _, comm := range recordData.Communities {
+							column.ProtobufAppendVarint(bf, uint64(comm))
+						}
+					}
+					bf.GotCommunities = true
+				}
 			}
 		}
 

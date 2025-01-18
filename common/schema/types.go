@@ -98,9 +98,10 @@ type FlowMessage struct {
 	NextHop netip.Addr
 
 	// Core component may override them
-	SrcAS     uint32
-	DstAS     uint32
-	GotASPath bool
+	SrcAS          uint32
+	DstAS          uint32
+	GotASPath      bool
+	GotCommunities bool
 
 	SrcNetMask uint8
 	DstNetMask uint8

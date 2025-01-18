@@ -18,6 +18,7 @@ identified with a specific icon:
 - 🔒 *docker*: do not expose the /debug endpoint on the public entrypoint
 - 🩹 *console*: fix synchronization of saved filters from configuration file
 - 🌱 *orchestrator*: sets TTL for more ClickHouse log tables (including `text_log`)
+- 🌱 *inlet*: decode destination BGP communities in sFlow packets
 - 🌱 *inlet*: for SNMP configuration, unify SNMPv2 and SNMPv3 credentials into a
   single `credentials` structure.
 
