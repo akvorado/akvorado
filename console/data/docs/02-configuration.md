@@ -454,6 +454,8 @@ metadata:
     skip-verify: true
 ```
 
+Contrary to SNMP for GNMI a single metadata worker is sufficient.
+
 The gNMI provider is using "subscribe once" to poll for information from the
 target. This should be compatible with most targets.
 
