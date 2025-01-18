@@ -58,37 +58,40 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 		OnRetry: func(*gosnmp.GoSNMP) {
 			p.metrics.retries.WithLabelValues(exporterStr).Inc()
 		},
+		Version: gosnmp.Version2c,
 	}
-	communities := []string{""}
-	if securityParameters, _ := p.config.SecurityParameters.Lookup(exporter); securityParameters.UserName != "" {
-		g.Version = gosnmp.Version3
-		g.SecurityModel = gosnmp.UserSecurityModel
-		usmSecurityParameters := gosnmp.UsmSecurityParameters{
-			UserName:                 securityParameters.UserName,
-			AuthenticationProtocol:   gosnmp.SnmpV3AuthProtocol(securityParameters.AuthenticationProtocol),
-			AuthenticationPassphrase: securityParameters.AuthenticationPassphrase,
-			PrivacyProtocol:          gosnmp.SnmpV3PrivProtocol(securityParameters.PrivacyProtocol),
-			PrivacyPassphrase:        securityParameters.PrivacyPassphrase,
-		}
-		g.SecurityParameters = &usmSecurityParameters
-		if usmSecurityParameters.AuthenticationProtocol == gosnmp.NoAuth {
-			if usmSecurityParameters.PrivacyProtocol == gosnmp.NoPriv {
-				g.MsgFlags = gosnmp.NoAuthNoPriv
-			} else {
-				// Not possible
-				g.MsgFlags = gosnmp.NoAuthNoPriv
+	communities := []string{"public"}
+	if credentials, ok := p.config.Credentials.Lookup(exporter); ok {
+		if credentials.UserName != "" {
+			g.Version = gosnmp.Version3
+			g.SecurityModel = gosnmp.UserSecurityModel
+			usmSecurityParameters := gosnmp.UsmSecurityParameters{
+				UserName:                 credentials.UserName,
+				AuthenticationProtocol:   gosnmp.SnmpV3AuthProtocol(credentials.AuthenticationProtocol),
+				AuthenticationPassphrase: credentials.AuthenticationPassphrase,
+				PrivacyProtocol:          gosnmp.SnmpV3PrivProtocol(credentials.PrivacyProtocol),
+				PrivacyPassphrase:        credentials.PrivacyPassphrase,
 			}
+			g.SecurityParameters = &usmSecurityParameters
+			if usmSecurityParameters.AuthenticationProtocol == gosnmp.NoAuth {
+				if usmSecurityParameters.PrivacyProtocol == gosnmp.NoPriv {
+					g.MsgFlags = gosnmp.NoAuthNoPriv
+				} else {
+					// Not possible
+					g.MsgFlags = gosnmp.NoAuthNoPriv
+				}
+			} else {
+				if usmSecurityParameters.PrivacyProtocol == gosnmp.NoPriv {
+					g.MsgFlags = gosnmp.AuthNoPriv
+				} else {
+					g.MsgFlags = gosnmp.AuthPriv
+				}
+			}
+			g.ContextName = credentials.ContextName
 		} else {
-			if usmSecurityParameters.PrivacyProtocol == gosnmp.NoPriv {
-				g.MsgFlags = gosnmp.AuthNoPriv
-			} else {
-				g.MsgFlags = gosnmp.AuthPriv
-			}
+			g.Version = gosnmp.Version2c
+			communities = credentials.Communities
 		}
-		g.ContextName = securityParameters.ContextName
-	} else {
-		g.Version = gosnmp.Version2c
-		communities = p.config.Communities.LookupOrDefault(exporter, []string{"public"})
 	}
 
 	start := time.Now()

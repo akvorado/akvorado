@@ -4,11 +4,11 @@
 package snmp
 
 import (
-	"errors"
 	"net/netip"
 	"reflect"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/gosnmp/gosnmp"
 	"github.com/mitchellh/mapstructure"
 
@@ -23,24 +23,26 @@ type Configuration struct {
 	// PollerTimeout tell how much time a poller should wait for an answer
 	PollerTimeout time.Duration `validate:"min=100ms"`
 
-	// Communities is a mapping from exporter IPs to SNMPv2 communities
-	Communities *helpers.SubnetMap[[]string]
-	// SecurityParameters is a mapping from exporter IPs to SNMPv3 security parameters
-	SecurityParameters *helpers.SubnetMap[SecurityParameters] `validate:"omitempty,dive"`
+	// Credentials is a mapping from exporter IPs to credentials
+	Credentials *helpers.SubnetMap[Credentials] `validate:"omitempty,dive"`
 	// Agents is a mapping from exporter IPs to SNMP agent IP
 	Agents map[netip.Addr]netip.Addr
 	// Ports is a mapping from exporter IPs to SNMP port
 	Ports *helpers.SubnetMap[uint16]
 }
 
-// SecurityParameters describes SNMPv3 USM security parameters.
-type SecurityParameters struct {
-	UserName                 string
-	AuthenticationProtocol   AuthProtocol `validate:"required_with=PrivacyProtocol"`
-	AuthenticationPassphrase string       `validate:"required_with=AuthenticationProtocol"`
-	PrivacyProtocol          PrivProtocol
-	PrivacyPassphrase        string `validate:"required_with=PrivacyProtocol"`
-	ContextName              string
+// Credentials describes credentials for SNMP (both SNMPv2 and SNMPv3 USM security parameters).
+type Credentials struct {
+	// SNMPv2
+	Communities []string `yaml:",omitempty" validate:"excluded_with=UserName,required_without=UserName,omitempty,dive,required"`
+
+	// SNMPv3
+	UserName                 string       `yaml:",omitempty" validate:"excluded_with=Communities,required_without=Communities"`
+	AuthenticationProtocol   AuthProtocol `yaml:",omitempty" validate:"excluded_with=Communities,required_with=PrivacyProtocol"`
+	AuthenticationPassphrase string       `yaml:",omitempty" validate:"excluded_with=Communities,required_with=AuthenticationProtocol"`
+	PrivacyProtocol          PrivProtocol `yaml:",omitempty" validate:"excluded_with=Communities"`
+	PrivacyPassphrase        string       `yaml:",omitempty" validate:"excluded_with=Communities,required_with=PrivacyProtocol"`
+	ContextName              string       `yaml:",omitempty" validate:"excluded_with=Communities"`
 }
 
 // DefaultConfiguration represents the default configuration for the SNMP client.
@@ -49,10 +51,11 @@ func DefaultConfiguration() provider.Configuration {
 		PollerRetries: 1,
 		PollerTimeout: time.Second,
 
-		Communities: helpers.MustNewSubnetMap(map[string][]string{
-			"::/0": {"public"},
+		Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
+			"::/0": {
+				Communities: []string{"public"},
+			},
 		}),
-		SecurityParameters: helpers.MustNewSubnetMap(map[string]SecurityParameters{}),
 		Ports: helpers.MustNewSubnetMap(map[string]uint16{
 			"::/0": 161,
 		}),
@@ -60,16 +63,16 @@ func DefaultConfiguration() provider.Configuration {
 }
 
 // ConfigurationUnmarshallerHook normalize SNMP configuration:
-//   - append default-community to communities (as ::/0)
-//   - ensure we have a default value for communities
+//   - convert default-community to credentials (as ::/0)
+//   - merge security parameters and communities into credentials
 func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (interface{}, error) {
 		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(Configuration{}) {
 			return from.Interface(), nil
 		}
 
-		// default-community → communities
-		var defaultKey, mapKey *reflect.Value
+		// default-community + security-parameters + communities → credentials
+		var defaultCommunityKey, communitiesKey, securityParametersKey, credentialsKey *reflect.Value
 		fromMap := from.MapKeys()
 		for i, k := range fromMap {
 			k = helpers.ElemOrIdentity(k)
@@ -77,36 +80,78 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 				return from.Interface(), nil
 			}
 			if helpers.MapStructureMatchName(k.String(), "DefaultCommunity") {
-				defaultKey = &fromMap[i]
+				defaultCommunityKey = &fromMap[i]
 			} else if helpers.MapStructureMatchName(k.String(), "Communities") {
-				mapKey = &fromMap[i]
+				communitiesKey = &fromMap[i]
+			} else if helpers.MapStructureMatchName(k.String(), "SecurityParameters") {
+				securityParametersKey = &fromMap[i]
+			} else if helpers.MapStructureMatchName(k.String(), "Credentials") {
+				credentialsKey = &fromMap[i]
 			}
 		}
-		var communities reflect.Value
-		if mapKey != nil {
-			communities = helpers.ElemOrIdentity(from.MapIndex(*mapKey))
-		}
-		if defaultKey != nil && !helpers.ElemOrIdentity(from.MapIndex(*defaultKey)).IsZero() {
-			if mapKey == nil {
-				// Use the fact we can set the default value directly.
-				from.SetMapIndex(reflect.ValueOf("communities"), from.MapIndex(*defaultKey))
-			} else if communities.Kind() == reflect.String {
-				return nil, errors.New("do not provide default-community when using communities")
-			} else {
-				communities.SetMapIndex(reflect.ValueOf("::/0"), from.MapIndex(*defaultKey))
-			}
+		var credentials reflect.Value
+		if credentialsKey != nil {
+			credentials = helpers.ElemOrIdentity(from.MapIndex(*credentialsKey))
 		} else {
-			// communities should contain ::/0
-			if mapKey == nil {
-				from.SetMapIndex(reflect.ValueOf("communities"), reflect.ValueOf("public"))
-			} else if communities.Kind() != reflect.String && !communities.MapIndex(reflect.ValueOf("::/0")).IsValid() {
-				communities.SetMapIndex(reflect.ValueOf("::/0"), reflect.ValueOf("public"))
+			credentials = reflect.ValueOf(gin.H{
+				"::/0": gin.H{"communities": "public"},
+			})
+			from.SetMapIndex(reflect.ValueOf("credentials"), credentials)
+		}
+		if !helpers.LooksLikeSubnetMap(credentials) {
+			credentials = reflect.ValueOf(gin.H{
+				"::/0": credentials.Interface(),
+			})
+			from.SetMapIndex(reflect.ValueOf("credentials"), credentials)
+		}
+		// Convert default-community
+		if defaultCommunityKey != nil && !helpers.ElemOrIdentity(from.MapIndex(*defaultCommunityKey)).IsZero() {
+			credentials.SetMapIndex(reflect.ValueOf("::/0"), from.MapIndex(*defaultCommunityKey))
+		}
+		// Merge security-parameters and communities into credentials.
+		if communitiesKey != nil {
+			communitiesValue := helpers.ElemOrIdentity(from.MapIndex(*communitiesKey))
+			if !communitiesValue.IsZero() {
+				if !helpers.LooksLikeSubnetMap(communitiesValue) {
+					credentials.SetMapIndex(reflect.ValueOf("::/0"), communitiesValue)
+				} else {
+					for _, key := range communitiesValue.MapKeys() {
+						credentials.SetMapIndex(key, communitiesValue.MapIndex(key))
+					}
+				}
 			}
 		}
-		if defaultKey != nil {
-			from.SetMapIndex(*defaultKey, reflect.Value{})
+		if securityParametersKey != nil {
+			securityParametersValue := helpers.ElemOrIdentity(from.MapIndex(*securityParametersKey))
+			if !securityParametersValue.IsZero() {
+				if !helpers.LooksLikeSubnetMap(securityParametersValue) {
+					credentials.SetMapIndex(reflect.ValueOf("::/0"), securityParametersValue)
+				} else {
+					for _, key := range securityParametersValue.MapKeys() {
+						credentials.SetMapIndex(key, securityParametersValue.MapIndex(key))
+					}
+				}
+			}
+		}
+		// If any credential value is a string, assume this is a community
+		for _, key := range credentials.MapKeys() {
+			value := helpers.ElemOrIdentity(credentials.MapIndex(key))
+			if value.Kind() == reflect.String || value.Kind() == reflect.Slice {
+				credentials.SetMapIndex(key, reflect.ValueOf(gin.H{
+					"communities": value.Interface(),
+				}))
+			}
 		}
 
+		if defaultCommunityKey != nil {
+			from.SetMapIndex(*defaultCommunityKey, reflect.Value{})
+		}
+		if communitiesKey != nil {
+			from.SetMapIndex(*communitiesKey, reflect.Value{})
+		}
+		if securityParametersKey != nil {
+			from.SetMapIndex(*securityParametersKey, reflect.Value{})
+		}
 		return from.Interface(), nil
 	}
 }
@@ -154,8 +199,8 @@ const (
 func init() {
 	helpers.RegisterMapstructureUnmarshallerHook(ConfigurationUnmarshallerHook())
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[[]string]())
-	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[SecurityParameters]())
+	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[Credentials]())
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[uint16]())
-	helpers.RegisterSubnetMapValidation[SecurityParameters]()
+	helpers.RegisterSubnetMapValidation[Credentials]()
 	helpers.RegisterSubnetMapValidation[uint16]()
 }

@@ -33,8 +33,8 @@ func TestPoller(t *testing.T) {
 			Config: Configuration{
 				PollerRetries: 2,
 				PollerTimeout: 100 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string][]string{
-					"::/0": {"private"},
+				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
+					"::/0": {Communities: []string{"private"}},
 				}),
 				Agents: map[netip.Addr]netip.Addr{
 					netip.MustParseAddr("192.0.2.1"): lo,
@@ -45,8 +45,8 @@ func TestPoller(t *testing.T) {
 			Config: Configuration{
 				PollerRetries: 2,
 				PollerTimeout: 100 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string][]string{
-					"::/0": {"private", "private1"},
+				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
+					"::/0": {Communities: []string{"private", "private1"}},
 				}),
 				Agents: map[netip.Addr]netip.Addr{
 					netip.MustParseAddr("192.0.2.1"): lo,
@@ -57,8 +57,8 @@ func TestPoller(t *testing.T) {
 			Config: Configuration{
 				PollerRetries: 2,
 				PollerTimeout: 100 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string][]string{
-					"::/0": {"private1", "private"},
+				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
+					"::/0": {Communities: []string{"private1", "private"}},
 				}),
 				Agents: map[netip.Addr]netip.Addr{
 					netip.MustParseAddr("192.0.2.1"): lo,
@@ -69,8 +69,8 @@ func TestPoller(t *testing.T) {
 			Config: Configuration{
 				PollerRetries: 2,
 				PollerTimeout: 100 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string][]string{
-					"::/0": {"private"},
+				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
+					"::/0": {Communities: []string{"private"}},
 				}),
 				Agents: map[netip.Addr]netip.Addr{
 					netip.MustParseAddr("192.0.2.1"): lo,
@@ -82,10 +82,7 @@ func TestPoller(t *testing.T) {
 			Config: Configuration{
 				PollerRetries: 2,
 				PollerTimeout: 100 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string][]string{
-					"::/0": {"public"},
-				}),
-				SecurityParameters: helpers.MustNewSubnetMap(map[string]SecurityParameters{
+				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
 					"::/0": {
 						UserName:                 "alfred",
 						AuthenticationProtocol:   AuthProtocol(gosnmp.MD5),
@@ -102,10 +99,7 @@ func TestPoller(t *testing.T) {
 			Config: Configuration{
 				PollerRetries: 2,
 				PollerTimeout: 100 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string][]string{
-					"::/0": {"public"},
-				}),
-				SecurityParameters: helpers.MustNewSubnetMap(map[string]SecurityParameters{
+				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
 					"::/0": {
 						UserName:                 "alfred-nopriv",
 						AuthenticationProtocol:   AuthProtocol(gosnmp.MD5),

@@ -381,19 +381,16 @@ should put it first.
 
 The `snmp` provider accepts the following configuration keys:
 
-- `communities` is a map from exporter subnets to the SNMPv2 communities. Use
-  `::/0` to set the default value. It accepts a single community or a list of
-  communities. In the later case, each community is tried in order for all
-  requests. Alternatively, it also accepts a string to use for all exporters.
-- `security-parameters` is a map from exporter subnets to the SNMPv3 USM
-  security parameters. Like for `communities`, `::/0` can be used to the set the
-  default value. The security paramaters accepts the following keys:
+- `credentials` is a map from exporter subnets to credentials. Use `::/0` to set
+  the default value. For SNMPv2, it accepts the `communities` key. It is either
+  a single community or a list of communities. In the later case, each community
+  is tried in order for all requests. For SNMPv3, it accepts the following keys:
   `user-name`, `authentication-protocol` (`none`, `MD5`, `SHA`, `SHA224`,
   `SHA256`, `SHA384`, and `SHA512` are accepted), `authentication-passphrase`
   (if the previous value was set), `privacy-protocol` (`none`, `DES`, `AES`,
   `AES192`, `AES256`, `AES192C`, and `AES256C` are accepted, the later being
   Cisco-variant), `privacy-passphrase` (if the previous value was set), and
-  `context-name`. If `user-name` is empty, it falls back to SNMPv2.
+  `context-name`.
 - `ports` is a map from exporter subnets to the SNMP port to use to poll
   exporters in the provided subnet.
 - `agents` is a map from exporter IPs to agent IPs. When there is no match, the

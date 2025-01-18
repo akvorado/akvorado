@@ -31,8 +31,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Initial:       func() interface{} { return Configuration{} },
 			Configuration: func() interface{} { return gin.H{} },
 			Expected: Configuration{
-				Communities: helpers.MustNewSubnetMap(map[string][]string{
-					"::/0": {"public"},
+				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
+					"::/0": {Communities: []string{"public"}},
 				}),
 			},
 			SkipValidation: true,
@@ -50,8 +50,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 				Ports: helpers.MustNewSubnetMap(map[string]uint16{
 					"::/0": 1161,
 				}),
-				Communities: helpers.MustNewSubnetMap(map[string][]string{
-					"::/0": {"public"},
+				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
+					"::/0": {Communities: []string{"public"}},
 				}),
 			},
 		}, {
@@ -72,8 +72,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 					"2001:db8:1::/48": 1161,
 					"2001:db8:2::/48": 1162,
 				}),
-				Communities: helpers.MustNewSubnetMap(map[string][]string{
-					"::/0": {"public"},
+				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
+					"::/0": {Communities: []string{"public"}},
 				}),
 			},
 		}, {
@@ -88,8 +88,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Expected: Configuration{
 				PollerRetries: 10,
 				PollerTimeout: 200 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string][]string{
-					"::/0": {"public"},
+				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
+					"::/0": {Communities: []string{"public"}},
 				}),
 			},
 		}, {
@@ -106,25 +106,10 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 			Expected: Configuration{
 				PollerTimeout: 200 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string][]string{
-					"::/0":                     {"public"},
-					"::ffff:203.0.113.0/121":   {"public"},
-					"::ffff:203.0.113.128/121": {"private"},
-				}),
-			},
-		}, {
-			Description: "no communities, default community",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
-				return gin.H{
-					"poller-timeout":    "200ms",
-					"default-community": "private",
-				}
-			},
-			Expected: Configuration{
-				PollerTimeout: 200 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string][]string{
-					"::/0": {"private"},
+				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
+					"::/0":                     {Communities: []string{"public"}},
+					"::ffff:203.0.113.0/121":   {Communities: []string{"public"}},
+					"::ffff:203.0.113.128/121": {Communities: []string{"private"}},
 				}),
 			},
 		}, {
@@ -142,10 +127,10 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 			Expected: Configuration{
 				PollerTimeout: 200 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string][]string{
-					"::/0":                     {"private"},
-					"::ffff:203.0.113.0/121":   {"public"},
-					"::ffff:203.0.113.128/121": {"private"},
+				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
+					"::/0":                     {Communities: []string{"private"}},
+					"::ffff:203.0.113.0/121":   {Communities: []string{"public"}},
+					"::ffff:203.0.113.128/121": {Communities: []string{"private"}},
 				}),
 			},
 		}, {
@@ -159,21 +144,10 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 			Expected: Configuration{
 				PollerTimeout: 200 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string][]string{
-					"::/0": {"private"},
+				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
+					"::/0": {Communities: []string{"private"}},
 				}),
 			},
-		}, {
-			Description: "communities as a string, default-community",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
-				return gin.H{
-					"poller-timeout":    "200ms",
-					"default-community": "nothing",
-					"communities":       "private",
-				}
-			},
-			Error: true,
 		}, {
 			Description: "communities, default-community empty",
 			Initial:     func() interface{} { return Configuration{} },
@@ -189,10 +163,10 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 			Expected: Configuration{
 				PollerTimeout: 200 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string][]string{
-					"::/0":                     {"public"},
-					"::ffff:203.0.113.0/121":   {"public"},
-					"::ffff:203.0.113.128/121": {"private"},
+				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
+					"::/0":                     {Communities: []string{"public"}},
+					"::ffff:203.0.113.0/121":   {Communities: []string{"public"}},
+					"::ffff:203.0.113.128/121": {Communities: []string{"private"}},
 				}),
 			},
 		}, {
@@ -212,10 +186,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 			Expected: Configuration{
 				PollerTimeout: 200 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string][]string{
-					"::/0": {"public"},
-				}),
-				SecurityParameters: helpers.MustNewSubnetMap(map[string]SecurityParameters{
+				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
 					"::/0": {
 						UserName:                 "alfred",
 						AuthenticationProtocol:   AuthProtocolSHA,
@@ -240,10 +211,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 			Expected: Configuration{
 				PollerTimeout: 200 * time.Millisecond,
-				Communities: helpers.MustNewSubnetMap(map[string][]string{
-					"::/0": {"public"},
-				}),
-				SecurityParameters: helpers.MustNewSubnetMap(map[string]SecurityParameters{
+				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
 					"::/0": {
 						UserName:                 "alfred",
 						AuthenticationProtocol:   AuthProtocolSHA,
@@ -284,8 +252,128 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Configuration: func() interface{} {
 				return gin.H{
 					"poller-timeout": "200ms",
+					"credentials": gin.H{
+						"::/0": gin.H{
+							"authentication-protocol":   "sha",
+							"authentication-passphrase": "hello",
+						},
+					},
+				}
+			},
+			Error: true,
+		}, {
+			Description: "merge communities and security-parameters",
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"poller-timeout": "200ms",
+					"communities": gin.H{
+						"203.0.113.0/25":   "public",
+						"203.0.113.128/25": "private",
+					},
 					"security-parameters": gin.H{
 						"::/0": gin.H{
+							"user-name":                 "alfred",
+							"authentication-protocol":   "sha",
+							"authentication-passphrase": "hello",
+						},
+					},
+				}
+			},
+			Expected: Configuration{
+				PollerTimeout: 200 * time.Millisecond,
+				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
+					"::/0": {
+						UserName:                 "alfred",
+						AuthenticationProtocol:   AuthProtocolSHA,
+						AuthenticationPassphrase: "hello",
+					},
+					"::ffff:203.0.113.0/121":   {Communities: []string{"public"}},
+					"::ffff:203.0.113.128/121": {Communities: []string{"private"}},
+				}),
+			},
+		}, {
+			Description: "merge communities, security-parameters and credentials",
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"poller-timeout": "200ms",
+					"communities": gin.H{
+						"203.0.113.0/25":   "public",
+						"203.0.113.128/25": "private",
+					},
+					"security-parameters": gin.H{
+						"::/0": gin.H{
+							"user-name":                 "alfred",
+							"authentication-protocol":   "sha",
+							"authentication-passphrase": "hello",
+						},
+					},
+					"credentials": gin.H{
+						"203.0.113.0/29": gin.H{
+							"communities": "something",
+						},
+					},
+				}
+			},
+			Expected: Configuration{
+				PollerTimeout: 200 * time.Millisecond,
+				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
+					"::/0": {
+						UserName:                 "alfred",
+						AuthenticationProtocol:   AuthProtocolSHA,
+						AuthenticationPassphrase: "hello",
+					},
+					"::ffff:203.0.113.0/125":   {Communities: []string{"something"}},
+					"::ffff:203.0.113.0/121":   {Communities: []string{"public"}},
+					"::ffff:203.0.113.128/121": {Communities: []string{"private"}},
+				}),
+			},
+		}, {
+			Description: "merge communities, security-parameters and default credentials",
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"poller-timeout": "200ms",
+					"communities": gin.H{
+						"203.0.113.0/25":   "public",
+						"203.0.113.128/25": "private",
+					},
+					"security-parameters": gin.H{
+						"203.0.113.2": gin.H{
+							"user-name":                 "alfred",
+							"authentication-protocol":   "sha",
+							"authentication-passphrase": "hello",
+						},
+					},
+					"credentials": gin.H{
+						"communities": "something",
+					},
+				}
+			},
+			Expected: Configuration{
+				PollerTimeout: 200 * time.Millisecond,
+				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
+					"::/0": {Communities: []string{"something"}},
+					"203.0.113.2": {
+						UserName:                 "alfred",
+						AuthenticationProtocol:   AuthProtocolSHA,
+						AuthenticationPassphrase: "hello",
+					},
+					"::ffff:203.0.113.0/121":   {Communities: []string{"public"}},
+					"::ffff:203.0.113.128/121": {Communities: []string{"private"}},
+				}),
+			},
+		}, {
+			Description: "conflicting SNMP version",
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"poller-timeout": "200ms",
+					"credentials": gin.H{
+						"203.0.113.0/25": gin.H{
+							"communities":               "private",
+							"user-name":                 "alfred",
 							"authentication-protocol":   "sha",
 							"authentication-passphrase": "hello",
 						},

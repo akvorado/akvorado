@@ -13,5 +13,5 @@ import (
 )
 
 func init() {
-	helpers.AddPrettyFormatter(reflect.TypeOf(helpers.SubnetMap[SecurityParameters]{}), fmt.Sprint)
+	helpers.AddPrettyFormatter(reflect.TypeOf(helpers.SubnetMap[Credentials]{}), fmt.Sprint)
 }

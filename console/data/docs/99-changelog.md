@@ -18,7 +18,8 @@ identified with a specific icon:
 - 🔒 *docker*: do not expose the /debug endpoint on the public entrypoint
 - 🩹 *console*: fix synchronization of saved filters from configuration file
 - 🌱 *orchestrator*: sets TTL for more ClickHouse log tables (including `text_log`)
-- 🌱 *inlet*: when `user-name` is empty in SNMPv3 security parameters, fallback to SNMPv2
+- 🌱 *inlet*: for SNMP configuration, unify SNMPv2 and SNMPv3 credentials into a
+  single `credentials` structure.
 
 ## 1.11.2 - 2024-11-01
 

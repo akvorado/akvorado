@@ -13,8 +13,8 @@ paths:
         pollertimeout: 1s
         agents:
           192.0.2.10: 192.0.2.11
-        communities:
-          ::/0: [private]
+        credentials:
+          ::/0:
+            communities: [private]
         ports:
           ::/0: 161
-        securityparameters: {}

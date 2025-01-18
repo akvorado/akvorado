@@ -1,0 +1,15 @@
+---
+inlet:
+  metadata:
+    provider:
+      type: snmp
+      default-community: yopla
+      communities:
+        203.0.113.0/24: yopli
+      security-parameters:
+        203.0.113.0/29:
+          username: something
+          authentication-protocol:   "sha"
+          authentication-passphrase: "hello"
+          privacy-protocol:          "aes"
+          privacy-passphrase:        "bye"
