@@ -132,7 +132,9 @@ func MustNewSubnetMap[V any](from map[string]V) *SubnetMap[V] {
 	return trie
 }
 
-var subnetLookAlikeRegex = regexp.MustCompile("^([a-fA-F:.0-9]+)(/([0-9]+))?$")
+// subnetLookAlikeRegex is a regex that matches string looking like a subnet,
+// allowing better error messages if there is a typo.
+var subnetLookAlikeRegex = regexp.MustCompile("^([a-fA-F:.0-9]*[:.][a-fA-F:.0-9]*)(/([0-9]+))?$")
 
 // SubnetMapUnmarshallerHook decodes SubnetMap and notably check that
 // valid networks are provided as key. It also accepts a single value
