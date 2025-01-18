@@ -35,7 +35,7 @@ services:
 
   # for tests
   srlinux:
-    image: ghcr.io/nokia/srlinux:23.7.1
+    image: ghcr.io/nokia/srlinux:23.10.6
   postgres:
     image: bitnami/postgresql:16.3.0 # \d+\.\d+\.0
   mysql:
