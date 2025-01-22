@@ -51,21 +51,21 @@ flow record Akvorado
     collect timestamp sys-uptime last
 !
 flow record Akvorado-IPV6
- match ipv6 protocol
- match ipv6 source address
- match ipv6 destination address
- match transport source-port
- match transport destination-port
- collect routing source as 4-octet
- collect routing destination as 4-octet
- collect routing next-hop address ipv4
- collect transport tcp flags
- collect interface output
- collect interface input
- collect counter bytes
- collect counter packets
- collect timestamp sys-uptime first
- collect timestamp sys-uptime last
+    match ipv6 protocol
+    match ipv6 source address
+    match ipv6 destination address
+    match transport source-port
+    match transport destination-port
+    collect routing source as 4-octet
+    collect routing destination as 4-octet
+    collect routing next-hop address ipv4
+    collect transport tcp flags
+    collect interface output
+    collect interface input
+    collect counter bytes
+    collect counter packets
+    collect timestamp sys-uptime first
+    collect timestamp sys-uptime last
 !
 sampler random1in100
     mode random 1 out-of 100
@@ -84,10 +84,10 @@ flow monitor AkvoradoMonitor
     record Akvorado
 ! 
 flow monitor AkvoradoMonitor-IPV6
- exporter AkvoradoExport
- cache timeout inactive 10
- cache timeout active 60
- record Akvorado-IPV6
+    exporter AkvoradoExport
+    cache timeout inactive 10
+    cache timeout active 60
+    record Akvorado-IPV6
 !
 ```
 
@@ -95,10 +95,10 @@ To enable Netflow on an interface, use the following snippet:
 
 ```cisco
 interface GigabitEthernet0/0/3
- ip flow monitor AkvoradoMonitor sampler random1in100 input
- ip flow monitor AkvoradoMonitor sampler random1in100 output
- ipv6 flow monitor AkvoradoMonitor-IPV6 sampler random1in100 input
- ipv6 flow monitor AkvoradoMonitor-IPV6 sampler random1in100 output
+    ip flow monitor AkvoradoMonitor sampler random1in100 input
+    ip flow monitor AkvoradoMonitor sampler random1in100 output
+    ipv6 flow monitor AkvoradoMonitor-IPV6 sampler random1in100 input
+    ipv6 flow monitor AkvoradoMonitor-IPV6 sampler random1in100 output
 !
 ```
 
