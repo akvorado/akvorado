@@ -21,8 +21,8 @@
               v-if="component.Input"
               class="w-10 grow border-none bg-transparent p-0 focus:outline-none"
               placeholder="Search..."
-              @change="(query = $event.target.value)"
-              @focus="(query = '')"
+              @change="query = $event.target.value"
+              @focus="query = ''"
             >
             </component>
           </div>

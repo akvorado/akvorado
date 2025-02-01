@@ -17,7 +17,7 @@
                 displayedAxis === axis,
             }"
             :aria-current="displayedAxis === axis ? 'page' : undefined"
-            @click="(selectedAxis = axis)"
+            @click="selectedAxis = axis"
           >
             {{ name }}
           </button>
