@@ -1,6 +1,7 @@
 export CGO_ENABLED=0
 export GOEXPERIMENT=loopvar
 export GOTOOLCHAIN=local
+export GOAMD64=v3 # Check https://go.dev/wiki/MinimumRequirements#amd64
 
 MODULE   = $(shell $(GO) list -m)
 DATE    ?= $(shell date +%FT%T%z)
