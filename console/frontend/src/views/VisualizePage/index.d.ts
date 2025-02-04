@@ -36,6 +36,7 @@ export type GraphLineHandlerOutput = {
   average: number[];
   min: number[];
   max: number[];
+  last: number[];
   "95th": number[];
 };
 export type GraphSankeyHandlerResult = GraphSankeyHandlerOutput & {

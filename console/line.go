@@ -38,6 +38,7 @@ type graphLineHandlerOutput struct {
 	Average              []int          `json:"average"` // row → average xps
 	Min                  []int          `json:"min"`     // row → min xps
 	Max                  []int          `json:"max"`     // row → max xps
+	Last                 []int          `json:"last"`    // row → last xps
 	NinetyFivePercentile []int          `json:"95th"`    // row → 95th xps
 }
 
@@ -360,6 +361,7 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 	output.Average = make([]int, totalRows)
 	output.Min = make([]int, totalRows)
 	output.Max = make([]int, totalRows)
+	output.Last = make([]int, totalRows)
 	output.NinetyFivePercentile = make([]int, totalRows)
 
 	i := -1
@@ -370,6 +372,11 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 			output.Axis[i] = axis
 			output.Points[i] = points[axis][k]
 			output.Average[i] = int(sums[axis][k] / uint64(len(output.Time)))
+
+			// Last
+			// We use the second last value (-2) because
+			// the last value is not show in the graph.
+			output.Last[i] = points[axis][k][len(output.Time)-2]
 
 			// For remaining, we will sort the values. It
 			// is needed for 95th percentile but it helps
@@ -383,6 +390,7 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 				v := output.Points[i][0]
 				output.Min[i] = v
 				output.Max[i] = v
+				output.Last[i] = v
 				output.NinetyFivePercentile[i] = v
 				continue
 			}
