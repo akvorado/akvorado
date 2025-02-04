@@ -15,6 +15,7 @@ identified with a specific icon:
 
 - 💥 *inlet*: in SNMP metadata provider, use ifName for interface names and
   ifDescr or ifAlias for descriptions and make description optional.
+- ✨ *console*: add a "Last" column in the data table
 - 🔒 *docker*: do not expose the /debug endpoint on the public entrypoint
 - 🩹 *docker*: configure ClickHouse to not alter default user for new installs
 - 🩹 *console*: fix synchronization of saved filters from configuration file
