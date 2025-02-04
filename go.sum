@@ -13,8 +13,8 @@ github.com/ClickHouse/ch-go v0.64.0 h1:+MByORSlUvgPwmitmQi7OH/zuC/9Pk87Mulbq1eKa
 github.com/ClickHouse/ch-go v0.64.0/go.mod h1:RBUynvczWwVzhS6Up9lPKlH1mrk4UAmle6uzCiW4Pkc=
 github.com/ClickHouse/clickhouse-go/v2 v2.30.2 h1:WsG2k1uiDh+0z/YNubK6aAc27sHzmVISlVpK2uGTrBw=
 github.com/ClickHouse/clickhouse-go/v2 v2.30.2/go.mod h1:F7dAGn2PQzY7FkzZrY+04rSBodstSjaNg/DIuQHa3uA=
-github.com/IBM/sarama v1.43.3 h1:Yj6L2IaNvb2mRBop39N7mmJAHBVY3dTPncr3qGVkxPA=
-github.com/IBM/sarama v1.43.3/go.mod h1:FVIRaLrhK3Cla/9FfRF5X9Zua2KpS3SYIXxhac1H+FQ=
+github.com/IBM/sarama v1.45.0 h1:IzeBevTn809IJ/dhNKhP5mpxEXTmELuezO2tgHD9G5E=
+github.com/IBM/sarama v1.45.0/go.mod h1:EEay63m8EZkeumco9TDXf2JT3uDnZsZqFgV46n4yZdY=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
 github.com/Microsoft/go-winio v0.6.2/go.mod h1:yd8OoFMLzJbo9gZq8j5qaps8bJ9aShtEA8Ipt1oGCvU=
 github.com/alecthomas/chroma v0.10.0 h1:7XDcGkCQopCNKjZHfYrNLraA+M7e0fMiJ/Mfikbfjek=
