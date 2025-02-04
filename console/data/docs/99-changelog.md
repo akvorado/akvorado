@@ -11,7 +11,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 1.11.3 - 2025-02-04
 
 - 💥 *inlet*: in SNMP metadata provider, use ifName for interface names and
   ifDescr or ifAlias for descriptions and make description optional.
