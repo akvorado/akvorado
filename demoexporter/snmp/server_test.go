@@ -61,6 +61,14 @@ func TestSNMPServer(t *testing.T) {
 			Value: []byte("Gi0/0/0/2"),
 			Type:  gosnmp.OctetString,
 		}, {
+			Name:  ".1.3.6.1.2.1.31.1.1.1.1.1",
+			Value: []byte("Gi0/0/0/1"),
+			Type:  gosnmp.OctetString,
+		}, {
+			Name:  ".1.3.6.1.2.1.31.1.1.1.1.2",
+			Value: []byte("Gi0/0/0/2"),
+			Type:  gosnmp.OctetString,
+		}, {
 			Name:  ".1.3.6.1.2.1.31.1.1.1.15.1",
 			Value: 10000,
 			Type:  gosnmp.Gauge32,
@@ -87,6 +95,8 @@ func TestSNMPServer(t *testing.T) {
 		`snmp_requests_total{oid="1.3.6.1.2.1.1.5.0"}`:         "1",
 		`snmp_requests_total{oid="1.3.6.1.2.1.2.2.1.2.1"}`:     "1",
 		`snmp_requests_total{oid="1.3.6.1.2.1.2.2.1.2.2"}`:     "1",
+		`snmp_requests_total{oid="1.3.6.1.2.1.31.1.1.1.1.1"}`:  "1",
+		`snmp_requests_total{oid="1.3.6.1.2.1.31.1.1.1.1.2"}`:  "1",
 		`snmp_requests_total{oid="1.3.6.1.2.1.31.1.1.1.15.1"}`: "1",
 		`snmp_requests_total{oid="1.3.6.1.2.1.31.1.1.1.15.2"}`: "1",
 		`snmp_requests_total{oid="1.3.6.1.2.1.31.1.1.1.18.1"}`: "1",
