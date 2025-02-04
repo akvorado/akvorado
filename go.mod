@@ -58,7 +58,7 @@ require (
 	golang.org/x/text v0.21.0
 	golang.org/x/time v0.9.0
 	golang.org/x/tools v0.29.0
-	google.golang.org/grpc v1.69.0
+	google.golang.org/grpc v1.70.0
 	google.golang.org/protobuf v1.36.4
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 	gopkg.in/yaml.v3 v3.0.1
