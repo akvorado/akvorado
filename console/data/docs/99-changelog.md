@@ -23,7 +23,6 @@ identified with a specific icon:
 - 🌱 *inlet*: decode destination BGP communities in sFlow packets
 - 🌱 *inlet*: for SNMP configuration, unify SNMPv2 and SNMPv3 credentials into a
   single `credentials` structure.
-- 🌱 *build*: enable more optimizations for AMD64 build (`GOAMD64=v3`)
 
 ## 1.11.2 - 2024-11-01
 
