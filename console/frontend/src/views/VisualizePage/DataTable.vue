@@ -168,6 +168,7 @@ const table = computed(
           // Stats
           { name: "Min", classNames: "text-right" },
           { name: "Max", classNames: "text-right" },
+          { name: "Last", classNames: "text-right" },
           { name: "Average", classNames: "text-right" },
           { name: "~95th", classNames: "text-right" },
         ],
@@ -185,6 +186,7 @@ const table = computed(
                   ...[
                     data.min[idx],
                     data.max[idx],
+                    data.last[idx],
                     data.average[idx],
                     data["95th"][idx],
                   ].map((d) => ({
