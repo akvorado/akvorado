@@ -5,7 +5,7 @@ go 1.22.7
 require (
 	github.com/AlekSi/gocov-xml v1.1.0
 	github.com/ClickHouse/clickhouse-go/v2 v2.30.2
-	github.com/IBM/sarama v1.43.3
+	github.com/IBM/sarama v1.45.0
 	github.com/alecthomas/chroma v0.10.0
 	github.com/axw/gocov v1.2.1
 	github.com/benbjohnson/clock v1.3.5
