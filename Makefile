@@ -46,7 +46,6 @@ GENERATED = \
 
 .PHONY: all
 all: fmt lint $(GENERATED) | $(BIN) ; $(info $(M) building executable…) @ ## Build program binary
-	echo "@${GOAMD64}@"
 	$Q $(GO) build \
 		-tags release \
 		-ldflags '-X $(MODULE)/common/helpers.AkvoradoVersion=$(VERSION)' \
