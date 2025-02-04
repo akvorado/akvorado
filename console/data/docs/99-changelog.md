@@ -16,6 +16,7 @@ identified with a specific icon:
 - 💥 *inlet*: in SNMP metadata provider, use ifName for interface names and
   ifDescr or ifAlias for descriptions and make description optional.
 - 🔒 *docker*: do not expose the /debug endpoint on the public entrypoint
+- 🩹 *docker*: configure ClickHouse to not alter default user for new installs
 - 🩹 *console*: fix synchronization of saved filters from configuration file
 - 🌱 *orchestrator*: sets TTL for more ClickHouse log tables (including `text_log`)
 - 🌱 *inlet*: decode destination BGP communities in sFlow packets

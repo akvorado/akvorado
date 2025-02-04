@@ -71,6 +71,8 @@ services:
       service: clickhouse
     depends_on:
       - zookeeper
+    environment:
+      - CLICKHOUSE_SKIP_USER_SETUP=1
     cap_add:
       - SYS_NICE
     volumes:
