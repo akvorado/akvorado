@@ -84,7 +84,25 @@ components and centralizes configuration of the various other components.`,
 				config.Inlet[idx].Schema = config.Schema
 			}
 			for idx := range config.Console {
+				specificCHConfig := config.Console[idx].ClickHouse
 				config.Console[idx].ClickHouse = config.ClickHouse.Configuration
+				// In case of specific ClickHouse configuration in console, we want to use some fields instead of overwriting with orchestrator CH config
+				if specificCHConfig.Username != clickhouse.DefaultConfiguration().Username && specificCHConfig.Password != clickhouse.DefaultConfiguration().Password {
+					config.Console[idx].ClickHouse.Username = specificCHConfig.Username
+					config.Console[idx].ClickHouse.Password = specificCHConfig.Password
+				}
+				if specificCHConfig.Database != clickhouse.DefaultConfiguration().Database {
+					config.Console[idx].ClickHouse.Database = specificCHConfig.Database
+				}
+				if specificCHConfig.MaxOpenConns != clickhouse.DefaultConfiguration().MaxOpenConns {
+					config.Console[idx].ClickHouse.MaxOpenConns = specificCHConfig.MaxOpenConns
+				}
+				if specificCHConfig.DialTimeout != clickhouse.DefaultConfiguration().DialTimeout {
+					config.Console[idx].ClickHouse.DialTimeout = specificCHConfig.DialTimeout
+				}
+				if specificCHConfig.TLS != clickhouse.DefaultConfiguration().TLS {
+					config.Console[idx].ClickHouse.TLS = specificCHConfig.TLS
+				}
 				config.Console[idx].Schema = config.Schema
 			}
 		}
