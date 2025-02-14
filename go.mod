@@ -1,6 +1,6 @@
 module akvorado
 
-go 1.22.7
+go 1.23
 
 require (
 	github.com/AlekSi/gocov-xml v1.1.0

@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🌱 *build*: minimal Go version to build is now 1.23
+
 ## 1.11.3 - 2025-02-04
 
 - 💥 *inlet*: in SNMP metadata provider, use ifName for interface names and
