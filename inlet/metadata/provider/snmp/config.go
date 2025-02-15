@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/gosnmp/gosnmp"
-	"github.com/mitchellh/mapstructure"
 
 	"akvorado/common/helpers"
 	"akvorado/inlet/metadata/provider"

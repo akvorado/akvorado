@@ -14,8 +14,8 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/itchyny/gojq"
-	"github.com/mitchellh/mapstructure"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/reporter"

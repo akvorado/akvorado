@@ -12,9 +12,9 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/kentik/patricia"
 	tree "github.com/kentik/patricia/generics_tree"
-	"github.com/mitchellh/mapstructure"
 )
 
 // SubnetMap maps subnets to values and allow to lookup by IP address.

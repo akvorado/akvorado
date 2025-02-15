@@ -11,7 +11,7 @@ import (
 
 	"akvorado/common/helpers"
 
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 )
 
 // Configuration describes the configuration for the core component.

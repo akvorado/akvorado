@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 
 	"akvorado/common/helpers/yaml"
 )

@@ -24,6 +24,7 @@ require (
 	github.com/glebarez/sqlite v1.11.0
 	github.com/go-playground/validator/v10 v10.20.0
 	github.com/go-redis/redis/v8 v8.11.5
+	github.com/go-viper/mapstructure/v2 v2.2.1
 	github.com/google/gopacket v1.1.19
 	github.com/gosnmp/gosnmp v1.38.0
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.0.1
@@ -34,7 +35,6 @@ require (
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mgechev/revive v1.6.0
-	github.com/mitchellh/mapstructure v1.5.0
 	github.com/mna/pigeon v1.3.0
 	github.com/netsampler/goflow2/v2 v2.2.1
 	github.com/openconfig/gnmi v0.12.0
