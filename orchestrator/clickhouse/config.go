@@ -13,7 +13,7 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/kafka"
 
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 )
 
 // Configuration describes the configuration for the ClickHouse configurator.

@@ -11,7 +11,7 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/inlet/metadata/provider"
 
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 )
 
 // Configuration describes the configuration for the gNMI client
