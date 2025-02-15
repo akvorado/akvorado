@@ -1,0 +1,11 @@
+---
+clickhouse:
+  servers:
+    - 127.0.0.1:9000
+  maxopenconns: 20
+console:
+  clickhouse:
+    servers:
+      - 127.0.0.2:9000
+    username: something
+    password: else

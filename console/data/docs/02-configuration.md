@@ -213,7 +213,8 @@ The following keys are accepted:
 
 - `topic`, `brokers`, `tls`, and `version` keys are described in the
   configuration for the [orchestrator service](#kafka-1) (the values of these
-  keys come from the orchestrator configuration)
+  keys are copied from the orchestrator configuration, unless `brokers` is
+  explicitely set)
 - `flush-interval` defines the maximum flush interval to send received
   flows to Kafka
 - `flush-bytes` defines the maximum number of bytes to store before
@@ -904,7 +905,7 @@ refreshed. For a given database, the latest paths override the earlier ones.
 
 The main components of the console service are `http`, `console`,
 `authentication` and `database`. `http` accepts the [same configuration](#http)
-as for the inlet service.
+as the inlet service.
 
 The console itself accepts the following keys:
 
@@ -924,6 +925,10 @@ The console itself accepts the following keys:
     sum of all flows captured will be displayed.
  - `homepage-graph-timerange` sets the time range to use for the graph on the
    homepage. It defaults to 24 hours.
+
+It also takes a `clickhouse` key, accepting the [same
+configuration](#clickhouse) as the orchestrator service. These keys are copied
+from the orchestrator, unless `servers` is set explicitely.
 
 Here is an example:
 

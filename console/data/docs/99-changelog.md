@@ -14,11 +14,12 @@ identified with a specific icon:
 ## Unreleased
 
 - 🌱 *build*: minimal Go version to build is now 1.23
+- 🌱 *orchestrator*: ability to override ClickHouse or Kafka configuration in some components
 
 ## 1.11.3 - 2025-02-04
 
 - 💥 *inlet*: in SNMP metadata provider, use ifName for interface names and
-  ifDescr or ifAlias for descriptions and make description optional.
+  ifDescr or ifAlias for descriptions and make description optional
 - ✨ *console*: add a "Last" column in the data table
 - 🔒 *docker*: do not expose the /debug endpoint on the public entrypoint
 - 🩹 *docker*: configure ClickHouse to not alter default user for new installs
@@ -26,7 +27,7 @@ identified with a specific icon:
 - 🌱 *orchestrator*: sets TTL for more ClickHouse log tables (including `text_log`)
 - 🌱 *inlet*: decode destination BGP communities in sFlow packets
 - 🌱 *inlet*: for SNMP configuration, unify SNMPv2 and SNMPv3 credentials into a
-  single `credentials` structure.
+  single `credentials` structure
 
 ## 1.11.2 - 2024-11-01
 
