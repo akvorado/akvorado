@@ -37,6 +37,28 @@ func TestMapStructureMatchName(t *testing.T) {
 	}
 }
 
+func TestStringToSliceHookFunc(t *testing.T) {
+	type Configuration struct {
+		A []string
+		B []int
+	}
+	TestConfigurationDecode(t, ConfigurationDecodeCases{
+		{
+			Initial: func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"a": "blip,blop",
+					"b": "1,2,3,4",
+				}
+			},
+			Expected: Configuration{
+				A: []string{"blip", "blop"},
+				B: []int{1, 2, 3, 4},
+			},
+		},
+	})
+}
+
 func TestProtectedDecodeHook(t *testing.T) {
 	var configuration struct {
 		A string
