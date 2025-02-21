@@ -241,7 +241,7 @@ func TestPoller(t *testing.T) {
 								OID:  "1.3.6.1.2.1.31.1.1.1.18.645",
 								Type: gosnmp.OctetString,
 								OnGet: func() (interface{}, error) {
-									return "GigabitEthernet-something", nil
+									return "Gi0/0/0/5", nil
 								},
 							},
 						},
