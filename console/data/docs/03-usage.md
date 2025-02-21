@@ -157,6 +157,8 @@ aspect of the graph.
     traffics over the time selection.
   - `max`: the query focuses on getting the traffic bursts over the time
     selection.
+  - `last`: the query focuses on getting the most recent (last) traffic over
+    the time selection.
 
 - The filter box contains an SQL-like expression to limit the data to be
   graphed. It features an auto-completion system that can be triggered manually
