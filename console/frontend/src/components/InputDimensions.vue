@@ -136,6 +136,7 @@ const limitError = computed(() => {
 const computationModes = {
   avg: "Avg",
   max: "Max",
+  last: "Last",
 } as const;
 
 const computationModeList = Object.entries(computationModes).map(

@@ -286,6 +286,7 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 	points := map[int]map[string][]int{}  // for each axis, a map from row to list of points (one point per ts)
 	sums := map[int]map[string]uint64{}   // for each axis, a map from row to sum (for sorting purpose)
 	maxes := map[int]map[string]uint64{}  // for each axis, a map from row to max (for sorting purpose)
+	lasts := map[int]map[string]int{}     // for each axis, a map from row to last(for sorting purpose)
 	lastTimeForAxis := map[int]time.Time{}
 	timeIndexForAxis := map[int]int{}
 	for _, result := range results {
@@ -301,6 +302,7 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 			points[axis] = map[string][]int{}
 			sums[axis] = map[string]uint64{}
 			maxes[axis] = map[string]uint64{}
+			lasts[axis] = map[string]int{}
 		}
 		if result.Time != lastTime {
 			// New timestamp, increment time index
@@ -316,12 +318,14 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 			points[axis][rowKey] = row
 			sums[axis][rowKey] = 0
 			maxes[axis][rowKey] = 0
+			lasts[axis][rowKey] = 0
 		}
 		points[axis][rowKey][timeIndexForAxis[axis]] = int(result.Xps)
 		sums[axis][rowKey] += uint64(result.Xps)
 		if uint64(result.Xps) > maxes[axis][rowKey] {
 			maxes[axis][rowKey] = uint64(result.Xps)
 		}
+		lasts[axis][rowKey] = int(result.Xps)
 	}
 	// Sort axes
 	sort.Ints(axes)
@@ -343,6 +347,9 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 			}
 			if input.LimitType == "max" {
 				return maxes[axis][iKey] > maxes[axis][jKey]
+			}
+			if input.LimitType == "last" {
+				return lasts[axis][iKey] > lasts[axis][jKey]
 			}
 
 			return sums[axis][iKey] > sums[axis][jKey]
