@@ -9,10 +9,10 @@ github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1/go.mod h1:xomTg6
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/toml v1.4.0 h1:kuoIxZQy2WRRk1pttg9asf+WVv6tWQuBNVmK8+nqPr0=
 github.com/BurntSushi/toml v1.4.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
-github.com/ClickHouse/ch-go v0.64.0 h1:+MByORSlUvgPwmitmQi7OH/zuC/9Pk87Mulbq1eKa2s=
-github.com/ClickHouse/ch-go v0.64.0/go.mod h1:RBUynvczWwVzhS6Up9lPKlH1mrk4UAmle6uzCiW4Pkc=
-github.com/ClickHouse/clickhouse-go/v2 v2.30.2 h1:WsG2k1uiDh+0z/YNubK6aAc27sHzmVISlVpK2uGTrBw=
-github.com/ClickHouse/clickhouse-go/v2 v2.30.2/go.mod h1:F7dAGn2PQzY7FkzZrY+04rSBodstSjaNg/DIuQHa3uA=
+github.com/ClickHouse/ch-go v0.65.1 h1:SLuxmLl5Mjj44/XbINsK2HFvzqup0s6rwKLFH347ZhU=
+github.com/ClickHouse/ch-go v0.65.1/go.mod h1:bsodgURwmrkvkBe5jw1qnGDgyITsYErfONKAHn05nv4=
+github.com/ClickHouse/clickhouse-go/v2 v2.32.2 h1:Y8fAXt0CpLhqNXMLlSddg+cMfAr7zHBWqXLpih6ozCY=
+github.com/ClickHouse/clickhouse-go/v2 v2.32.2/go.mod h1:/vE8N/+9pozLkIiTMWbNUGviccDv/czEGS1KACvpXIk=
 github.com/IBM/sarama v1.45.0 h1:IzeBevTn809IJ/dhNKhP5mpxEXTmELuezO2tgHD9G5E=
 github.com/IBM/sarama v1.45.0/go.mod h1:EEay63m8EZkeumco9TDXf2JT3uDnZsZqFgV46n4yZdY=
 github.com/Microsoft/go-winio v0.6.2 h1:F2VQgta7ecxGYO8k3ZZz3RS8fVIXVxONVUPlNERoyfY=
