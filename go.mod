@@ -38,7 +38,7 @@ require (
 	github.com/mna/pigeon v1.3.0
 	github.com/netsampler/goflow2/v2 v2.2.1
 	github.com/openconfig/gnmi v0.14.0
-	github.com/openconfig/gnmic/pkg/api v0.1.8
+	github.com/openconfig/gnmic/pkg/api v0.1.9
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/oschwald/maxminddb-golang v1.13.1
 	github.com/osrg/gobgp/v3 v3.34.0
