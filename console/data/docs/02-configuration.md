@@ -389,7 +389,7 @@ The `snmp` provider accepts the following configuration keys:
   `user-name`, `authentication-protocol` (`none`, `MD5`, `SHA`, `SHA224`,
   `SHA256`, `SHA384`, and `SHA512` are accepted), `authentication-passphrase`
   (if the previous value was set), `privacy-protocol` (`none`, `DES`, `AES`,
-  `AES192`, `AES256`, `AES192C`, and `AES256C` are accepted, the later being
+  `AES192`, `AES256`, `AES192-C`, and `AES256-C` are accepted, the later being
   Cisco-variant), `privacy-passphrase` (if the previous value was set), and
   `context-name`.
 - `ports` is a map from exporter subnets to the SNMP port to use to poll

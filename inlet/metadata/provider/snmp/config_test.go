@@ -197,6 +197,33 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 				}),
 			},
 		}, {
+			Description: "SNMP security parameters with AES256C",
+			Initial:     func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"poller-timeout": "200ms",
+					"security-parameters": gin.H{
+						"user-name":                 "alfred",
+						"authentication-protocol":   "sha",
+						"authentication-passphrase": "hello",
+						"privacy-protocol":          "aes256-c",
+						"privacy-passphrase":        "bye",
+					},
+				}
+			},
+			Expected: Configuration{
+				PollerTimeout: 200 * time.Millisecond,
+				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
+					"::/0": {
+						UserName:                 "alfred",
+						AuthenticationProtocol:   AuthProtocolSHA,
+						AuthenticationPassphrase: "hello",
+						PrivacyProtocol:          PrivProtocolAES256C,
+						PrivacyPassphrase:        "bye",
+					},
+				}),
+			},
+		}, {
 			Description: "SNMP security parameters without privacy protocol",
 			Initial:     func() interface{} { return Configuration{} },
 			Configuration: func() interface{} {
