@@ -1,5 +1,4 @@
 export CGO_ENABLED=0
-export GOEXPERIMENT=loopvar
 export GOTOOLCHAIN=local
 
 MODULE   = $(shell $(GO) list -m)
