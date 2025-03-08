@@ -14,7 +14,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 💥 *inlet*: in SNMP metadata provider, prefer ifAlias over ifDescr for interface description
-- 🌱 *build*: minimal Go version to build is now 1.23
+- 🌱 *build*: minimal Go version to build is now 1.24
 - 🌱 *build*: use PGO for better performance of the inlet
 - 🌱 *orchestrator*: ability to override ClickHouse or Kafka configuration in some components
 

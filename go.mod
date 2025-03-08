@@ -1,24 +1,20 @@
 module akvorado
 
-go 1.23
+go 1.24
 
 require (
-	github.com/AlekSi/gocov-xml v1.1.0
 	github.com/ClickHouse/clickhouse-go/v2 v2.32.2
 	github.com/IBM/sarama v1.45.1
 	github.com/alecthomas/chroma v0.10.0
-	github.com/axw/gocov v1.2.1
 	github.com/benbjohnson/clock v1.3.5
 	github.com/bio-routing/bio-rd v0.1.10-0.20230730142204-f71bc383fe42
 	github.com/bits-and-blooms/bitset v1.20.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/chenyahui/gin-cache v1.9.0
-	github.com/dmarkham/enumer v1.5.11
 	github.com/docker/docker v27.5.1+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/eapache/go-resiliency v1.7.0
 	github.com/expr-lang/expr v1.16.9
-	github.com/frapposelli/wwhrd v0.4.0
 	github.com/fsnotify/fsnotify v1.8.0
 	github.com/gin-gonic/gin v1.10.0
 	github.com/glebarez/sqlite v1.11.0
@@ -34,8 +30,6 @@ require (
 	github.com/kentik/patricia v1.2.1
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-isatty v0.0.20
-	github.com/mgechev/revive v1.7.0
-	github.com/mna/pigeon v1.3.0
 	github.com/netsampler/goflow2/v2 v2.2.1
 	github.com/openconfig/gnmi v0.14.0
 	github.com/openconfig/gnmic/pkg/api v0.1.9
@@ -57,7 +51,6 @@ require (
 	golang.org/x/sys v0.30.0
 	golang.org/x/text v0.22.0
 	golang.org/x/time v0.10.0
-	golang.org/x/tools v0.30.0
 	google.golang.org/grpc v1.70.0
 	google.golang.org/protobuf v1.36.5
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
@@ -65,16 +58,17 @@ require (
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/driver/postgres v1.5.11
 	gorm.io/gorm v1.25.12
-	gotest.tools/gotestsum v1.12.0
 )
 
 require (
 	cloud.google.com/go/compute/metadata v0.6.0 // indirect
+	github.com/AlekSi/gocov-xml v1.1.0 // indirect
 	github.com/AlekSi/pointer v1.2.0 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/ClickHouse/ch-go v0.65.1 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/andybalholm/brotli v1.1.1 // indirect
+	github.com/axw/gocov v1.2.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bio-routing/tflow2 v0.0.0-20181230153523-2e308a4a3c3a // indirect
 	github.com/bitfield/gotestdox v0.2.2 // indirect
@@ -90,6 +84,7 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/dlclark/regexp2 v1.4.0 // indirect
+	github.com/dmarkham/enumer v1.5.11 // indirect
 	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -99,6 +94,7 @@ require (
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/frapposelli/wwhrd v0.4.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/glebarez/go-sqlite v1.21.2 // indirect
@@ -148,6 +144,8 @@ require (
 	github.com/mdlayher/netlink v1.7.2 // indirect
 	github.com/mdlayher/socket v0.5.1 // indirect
 	github.com/mgechev/dots v0.0.0-20210922191527-e955255bf517 // indirect
+	github.com/mgechev/revive v1.7.0 // indirect
+	github.com/mna/pigeon v1.3.0 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
@@ -199,12 +197,26 @@ require (
 	golang.org/x/oauth2 v0.25.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/term v0.29.0 // indirect
+	golang.org/x/tools v0.30.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250106144421-5f5ef82da422 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gotest.tools/gotestsum v1.12.0 // indirect
 	modernc.org/libc v1.22.5 // indirect
 	modernc.org/mathutil v1.5.0 // indirect
 	modernc.org/memory v1.5.0 // indirect
 	modernc.org/sqlite v1.23.1 // indirect
+)
+
+tool (
+	github.com/AlekSi/gocov-xml
+	github.com/axw/gocov/gocov
+	github.com/dmarkham/enumer
+	github.com/frapposelli/wwhrd
+	github.com/mgechev/revive
+	github.com/mna/pigeon
+	go.uber.org/mock/mockgen
+	golang.org/x/tools/cmd/goimports
+	gotest.tools/gotestsum
 )
 
 replace github.com/kentik/patricia => github.com/netixx/patricia v0.0.0-20240221142110-a89b0dc418dd

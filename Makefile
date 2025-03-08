@@ -56,58 +56,54 @@ all_js: .fmt-js~ .lint-js~ $(GENERATED_JS) console/data/frontend
 
 $(BIN):
 	@mkdir -p $@
-$(BIN)/%: PACKAGE=$(shell $(GO) list -e -f '{{ range .Imports }}{{ printf "%s\n" . }}{{ end }}' tools.go | grep "/$*$$")
-$(BIN)/%: go.mod go.sum | $(BIN) ; $(info $(M) building tool $*…)
-	@[ -n "$(PACKAGE)" ] || (>&2 echo "*** Unknown tool $*!"; false)
-	$Q env GOBIN=$(abspath $(BIN)) $(GO) install $(PACKAGE)
 
-ENUMER = $(BIN)/enumer
-GOCOV = $(BIN)/gocov
-GOCOVXML = $(BIN)/gocov-xml
-GOIMPORTS = $(BIN)/goimports
-GOTESTSUM = $(BIN)/gotestsum
-MOCKGEN = $(BIN)/mockgen
-PIGEON = $(BIN)/pigeon
-REVIVE = $(BIN)/revive
-WWHRD = $(BIN)/wwhrd
+ENUMER = go tool enumer
+GOCOV = go tool gocov
+GOCOVXML = go tool gocov-xml
+GOIMPORTS = go tool goimports
+GOTESTSUM = go tool gotestsum
+MOCKGEN = go tool mockgen
+PIGEON = go tool pigeon
+REVIVE = go tool revive
+WWHRD = go tool wwhrd
 
 # Generated files
 
 .DELETE_ON_ERROR:
 
-common/clickhousedb/mocks/mock_driver.go: go.mod | $(MOCKGEN) ; $(info $(M) generate mocks for ClickHouse driver…)
+common/clickhousedb/mocks/mock_driver.go: go.mod ; $(info $(M) generate mocks for ClickHouse driver…)
 	$Q $(MOCKGEN) -package mocks -build_constraint "!release" -destination $@ \
 		github.com/ClickHouse/clickhouse-go/v2/lib/driver Conn,Row,Rows,ColumnType
 	$Q touch $@
-conntrackfixer/mocks/mock_conntrackfixer.go: go.mod | $(MOCKGEN) ; $(info $(M) generate mocks for conntrack-fixer…)
+conntrackfixer/mocks/mock_conntrackfixer.go: go.mod ; $(info $(M) generate mocks for conntrack-fixer…)
 	$Q if [ `$(GO) env GOOS` = "linux" ]; then \
 	   $(MOCKGEN) -package mocks -build_constraint "!release" -destination $@ \
 		akvorado/conntrackfixer ConntrackConn,DockerClient ; \
 	fi
 	$Q touch $@
 
-inlet/core/asnprovider_enumer.go: go.mod inlet/core/config.go | $(ENUMER) ; $(info $(M) generate enums for ASNProvider…)
+inlet/core/asnprovider_enumer.go: go.mod inlet/core/config.go ; $(info $(M) generate enums for ASNProvider…)
 	$Q $(ENUMER) -type=ASNProvider -text -transform=kebab -trimprefix=ASNProvider inlet/core/config.go
-inlet/core/netprovider_enumer.go: go.mod inlet/core/config.go | $(ENUMER) ; $(info $(M) generate enums for NetProvider…)
+inlet/core/netprovider_enumer.go: go.mod inlet/core/config.go ; $(info $(M) generate enums for NetProvider…)
 	$Q $(ENUMER) -type=NetProvider -text -transform=kebab -trimprefix=NetProvider inlet/core/config.go
-inlet/flow/decoder/timestampsource_enumer.go: go.mod inlet/flow/decoder/config.go | $(ENUMER) ; $(info $(M) generate enums for TimestampSource…)
+inlet/flow/decoder/timestampsource_enumer.go: go.mod inlet/flow/decoder/config.go ; $(info $(M) generate enums for TimestampSource…)
 	$Q $(ENUMER) -type=TimestampSource -text -transform=kebab -trimprefix=TimestampSource inlet/flow/decoder/config.go
-inlet/metadata/provider/snmp/authprotocol_enumer.go: go.mod inlet/metadata/provider/snmp/config.go | $(ENUMER) ; $(info $(M) generate enums for AuthProtocol…)
+inlet/metadata/provider/snmp/authprotocol_enumer.go: go.mod inlet/metadata/provider/snmp/config.go ; $(info $(M) generate enums for AuthProtocol…)
 	$Q $(ENUMER) -type=AuthProtocol -text -transform=kebab -trimprefix=AuthProtocol inlet/metadata/provider/snmp/config.go
-inlet/metadata/provider/snmp/privprotocol_enumer.go: go.mod inlet/metadata/provider/snmp/config.go | $(ENUMER) ; $(info $(M) generate enums for PrivProtocol…)
+inlet/metadata/provider/snmp/privprotocol_enumer.go: go.mod inlet/metadata/provider/snmp/config.go ; $(info $(M) generate enums for PrivProtocol…)
 	$Q $(ENUMER) -type=PrivProtocol -text -transform=kebab -trimprefix=PrivProtocol inlet/metadata/provider/snmp/config.go
-inlet/metadata/provider/gnmi/ifspeedpathunit_enumer.go: go.mod inlet/metadata/provider/gnmi/config.go | $(ENUMER) ; $(info $(M) generate enums for IfSpeedPathUnit…)
+inlet/metadata/provider/gnmi/ifspeedpathunit_enumer.go: go.mod inlet/metadata/provider/gnmi/config.go ; $(info $(M) generate enums for IfSpeedPathUnit…)
 	$Q $(ENUMER) -type=IfSpeedPathUnit -text -transform=kebab -trimprefix=Speed inlet/metadata/provider/gnmi/config.go
-console/homepagetopwidget_enumer.go: go.mod console/config.go | $(ENUMER) ; $(info $(M) generate enums for HomepageTopWidget…)
+console/homepagetopwidget_enumer.go: go.mod console/config.go ; $(info $(M) generate enums for HomepageTopWidget…)
 	$Q $(ENUMER) -type=HomepageTopWidget -text -json -transform=kebab -trimprefix=HomepageTopWidget console/config.go
-common/kafka/saslmechanism_enumer.go: go.mod common/kafka/config.go | $(ENUMER) ; $(info $(M) generate enums for SASLMechanism…)
+common/kafka/saslmechanism_enumer.go: go.mod common/kafka/config.go ; $(info $(M) generate enums for SASLMechanism…)
 	$Q $(ENUMER) -type=SASLMechanism -text -transform=kebab -trimprefix=SASL common/kafka/config.go
 
 common/schema/definition_gen.go: common/schema/definition.go common/schema/definition_gen.sh ; $(info $(M) generate column definitions…)
 	$Q ./common/schema/definition_gen.sh > $@
 	$Q $(GOIMPORTS) -w $@
 
-console/filter/parser.go: console/filter/parser.peg | $(PIGEON) ; $(info $(M) generate PEG parser for filters…)
+console/filter/parser.go: console/filter/parser.peg ; $(info $(M) generate PEG parser for filters…)
 	$Q $(PIGEON) -optimize-basic-latin $< > $@
 
 console/frontend/node_modules: console/frontend/package.json console/frontend/package-lock.json
@@ -154,7 +150,7 @@ check test tests: test-go test-js ## Run tests
 test-coverage: test-coverage-go test-coverage-js ## Run coverage tests
 
 test-go test-bench test-race test-coverage-go: .fmt-go~ .lint-go~ $(GENERATED) $(GENERATED_TEST_GO)
-test-go: | $(GOTESTSUM) ; $(info $(M) running Go tests$(GOTEST_MORE)…) @ ## Run Go tests
+test-go: ; $(info $(M) running Go tests$(GOTEST_MORE)…) @ ## Run Go tests
 	$Q mkdir -p test/go
 	$Q env PATH=$(dir $(abspath $(shell command -v $(GO)))):$(PATH) $(GOTESTSUM) \
         --junitfile test/go/tests.xml -- \
@@ -171,7 +167,7 @@ test-bench: ; $(info $(M) running benchmarks…) @ ## Run Go benchmarks
 	$Q $(GO) test \
 		-fullpath -timeout $(TIMEOUT)s -run=__absolutelynothing__ -bench=. -benchmem \
 		$(PKGS) # -memprofile test/go/memprofile.out -cpuprofile test/go/cpuprofile.out
-test-coverage-go: | $(GOTESTSUM) $(GOCOV) $(GOCOVXML) ; $(info $(M) running Go coverage tests…) @ ## Run Go coverage tests
+test-coverage-go: ; $(info $(M) running Go coverage tests…) @ ## Run Go coverage tests
 	$Q mkdir -p test/go
 	$Q env PATH=$(dir $(abspath $(shell command -v $(GO)))):$(PATH) $(GOTESTSUM) -- \
 	    -fullpath \
@@ -198,7 +194,7 @@ test-coverage-js: ; $(info $(M) running JS coverage tests…) @ ## Run JS covera
 
 .PHONY: lint
 lint: .lint-go~ .lint-js~ ## Run linting
-.lint-go~: $(shell $(LSFILES) '*.go' 2> /dev/null) | $(REVIVE) ; $(info $(M) running golint…)
+.lint-go~: $(shell $(LSFILES) '*.go' 2> /dev/null) ; $(info $(M) running golint…)
 	$Q $(REVIVE) -formatter friendly -set_exit_status ./...
 	$Q touch $@
 .lint-js~: $(shell $(LSFILES) '*.js' '*.ts' '*.vue' '*.html' 2> /dev/null)
@@ -208,7 +204,7 @@ lint: .lint-go~ .lint-js~ ## Run linting
 
 .PHONY: fmt
 fmt: .fmt-go~ .fmt-js~ ## Format all source files
-.fmt-go~: $(shell $(LSFILES) '*.go' 2> /dev/null) | $(GOIMPORTS) ; $(info $(M) formatting Go code…)
+.fmt-go~: $(shell $(LSFILES) '*.go' 2> /dev/null) ; $(info $(M) formatting Go code…)
 	$Q $(GOIMPORTS) -local $(MODULE) -w $? < /dev/null
 	$Q touch $@
 .fmt-js~: $(shell $(LSFILES) '*.js' '*.ts' '*.vue' '*.html' 2> /dev/null)
@@ -219,7 +215,7 @@ fmt: .fmt-go~ .fmt-js~ ## Format all source files
 # Misc
 
 .PHONY: licensecheck
-licensecheck: console/frontend/node_modules | $(WWHRD) ; $(info $(M) check dependency licenses…) @ ## Check licenses
+licensecheck: console/frontend/node_modules ; $(info $(M) check dependency licenses…) @ ## Check licenses
 	$Q ! git grep -L SPDX-License-Identifier: "*.go" "*.ts" "*.js" || \
 		(>&2 echo "*** Missing license identifiers!"; false)
 	$Q err=0 ; $(GO) mod vendor && $(WWHRD) --quiet check || err=$$? ; rm -rf vendor/ ; exit $$err
