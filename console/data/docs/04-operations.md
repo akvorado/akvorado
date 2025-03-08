@@ -404,6 +404,8 @@ For Arista devices, you can use sFlow.
 
 ```eos
 sflow sample 1024
+sflow sample output subinterface
+sflow sample input subinterface
 sflow vrf VRF-MANAGEMENT destination 192.0.2.1
 sflow vrf VRF-MANAGEMENT source-interface Management1
 sflow interface egress enable default
