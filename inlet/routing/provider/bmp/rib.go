@@ -94,6 +94,7 @@ func (rta routeAttributes) Hash() uint64 {
 	if len(rta.communities) > 0 {
 		state.Add((*byte)(unsafe.Pointer(&rta.communities[0])), len(rta.communities)*int(unsafe.Sizeof(rta.communities[0])))
 	}
+	state.Add((*byte)(unsafe.Pointer(&rta.plen)), 1)
 	if len(rta.largeCommunities) > 0 {
 		// There is a test to check that this computation is
 		// correct (the struct is 12-byte aligned, not
@@ -112,6 +113,9 @@ func (rta routeAttributes) Equal(orta routeAttributes) bool {
 		return false
 	}
 	if len(rta.communities) != len(orta.communities) {
+		return false
+	}
+	if rta.plen != orta.plen {
 		return false
 	}
 	if len(rta.largeCommunities) != len(orta.largeCommunities) {
