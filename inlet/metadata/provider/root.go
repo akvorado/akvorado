@@ -70,7 +70,7 @@ type Update struct {
 // Provider is the interface a provider should implement.
 type Provider interface {
 	// Query asks the provider to query metadata for several requests.
-	Query(ctx context.Context, query BatchQuery) error
+	Query(ctx context.Context, query *BatchQuery) error
 }
 
 // Configuration defines an interface to configure a provider.
