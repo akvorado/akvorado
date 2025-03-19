@@ -57,7 +57,7 @@ func (p *Provider) Query(_ context.Context, query *provider.BatchQuery) error {
 	for _, ifIndex := range query.IfIndexes {
 		iface, ok := exporter.IfIndexes[ifIndex]
 		if !ok {
-			if exporter.Default.Name == "" {
+			if exporter.SkipMissingInterfaces {
 				query.IfIndexes[skippedIfIndexes] = ifIndex
 				skippedIfIndexes++
 				continue

@@ -492,6 +492,9 @@ an exporter configuration. An exporter configuration is map:
 - `name` is the name of the exporter
 - `default` is the default interface when no match is found
 - `ifindexes` is a map from interface indexes to interface
+- `skip_missing_interfaces` defines whether the exporter should process only
+  interfaces defined in the configuration and leave the remainder to the next
+  provider.
 
 An interface is a `name`, a `description` and a `speed`.
 

@@ -31,6 +31,8 @@ type ExporterConfiguration struct {
 	Default provider.Interface `validate:"omitempty"`
 	// IfIndexes is a map from interface indexes to interfaces
 	IfIndexes map[uint]provider.Interface `validate:"omitempty,dive"`
+	// Use next provider for interfaces without static config
+	SkipMissingInterfaces bool `mapstructure:"skip_missing_interfaces" validate:"omitempty"`
 }
 
 // DefaultConfiguration represents the default configuration for the static provider

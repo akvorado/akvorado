@@ -713,7 +713,7 @@ commit now
 			t.Fatalf("New() error:\n%+v", err)
 		}
 		// Let's trigger a request now
-		p.Query(context.Background(), provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{641}})
+		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{641}})
 
 		// We need the indexes
 		subscribeReq, err := api.NewSubscribeRequest(
@@ -741,12 +741,12 @@ commit now
 
 		// Wait a bit
 		time.Sleep(500 * time.Millisecond)
-		p.Query(context.Background(), provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{indexes["name=ethernet-1/1"]}})
-		p.Query(context.Background(), provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{indexes["name=ethernet-1/2"]}})
-		p.Query(context.Background(), provider.BatchQuery{ExporterIP: lo,
+		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{indexes["name=ethernet-1/1"]}})
+		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{indexes["name=ethernet-1/2"]}})
+		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo,
 			IfIndexes: []uint{indexes["name=lag1"], indexes["name=ethernet-1/3"]}})
-		p.Query(context.Background(), provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{5}})
-		p.Query(context.Background(), provider.BatchQuery{ExporterIP: lo,
+		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{5}})
+		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo,
 			IfIndexes: []uint{indexes["name=ethernet-1/4,index=1"]}})
 
 		time.Sleep(50 * time.Millisecond)
@@ -793,10 +793,10 @@ commit now
 			t.Fatalf("SendConfig() error:\n%+v", resp.Failed)
 		}
 		time.Sleep(500 * time.Millisecond) // We should exceed the second now and next request will trigger a refresh
-		p.Query(context.Background(), provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{indexes["name=ethernet-1/1"]}})
+		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{indexes["name=ethernet-1/1"]}})
 		time.Sleep(300 * time.Millisecond) // Do it again to get the fresh value
-		p.Query(context.Background(), provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{indexes["name=ethernet-1/1"]}})
-		p.Query(context.Background(), provider.BatchQuery{ExporterIP: lo,
+		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{indexes["name=ethernet-1/1"]}})
+		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo,
 			IfIndexes: []uint{indexes["name=ethernet-1/4,index=1"]}})
 		time.Sleep(50 * time.Millisecond)
 		if diff := helpers.Diff(got, []string{
