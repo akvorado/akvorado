@@ -119,6 +119,16 @@ func (p *Provider) PopulateRIB(t *testing.T) {
 			plen:   96 + 22,
 		}),
 	})
+	p.rib.addPrefix(netip.MustParseAddr("::ffff:192.168.148.1"), 96+32, route{
+		peer:    pinfo.reference,
+		nlri:    p.rib.nlris.Put(nlri{rd: 10, family: bgp.RF_IPv4_UC, path: 0}),
+		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:203.0.113.14"))),
+		attributes: p.rib.rtas.Put(routeAttributes{
+			asn:    1234,
+			asPath: []uint32{1234},
+			plen:   96 + 32,
+		}),
+	})
 }
 
 // LocalAddr returns the address the BMP collector is listening to.
