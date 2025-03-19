@@ -30,4 +30,11 @@ func TestRoutingComponent(t *testing.T) {
 	if lookup.ASN != 0 {
 		t.Errorf("Lookup() == %d, expected 0", lookup.ASN)
 	}
+
+	lookup = c.Lookup(context.Background(),
+		netip.MustParseAddr("::ffff:192.168.148.1"),
+		netip.MustParseAddr("::ffff:203.0.113.14"), netip.Addr{})
+	if lookup.NetMask != 32 {
+		t.Errorf("Lookup() == NetMask %d, expected 32", lookup.NetMask)
+	}
 }
