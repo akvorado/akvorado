@@ -43,7 +43,7 @@ func DefaultConfiguration() Configuration {
 		ExporterClassifiers:     []ExporterClassifierRule{},
 		InterfaceClassifiers:    []InterfaceClassifierRule{},
 		ClassifierCacheDuration: 5 * time.Minute,
-		ASNProviders:            []ASNProvider{ASNProviderFlow, ASNProviderRouting},
+		ASNProviders:            []ASNProvider{ASNProviderFlow, ASNProviderRouting, ASNProviderGeoIP},
 		NetProviders:            []NetProvider{NetProviderFlow, NetProviderRouting},
 	}
 }
@@ -60,6 +60,8 @@ const (
 	ASNProviderFlow ASNProvider = iota
 	// ASNProviderFlowExceptPrivate uses the AS number embedded in flows, except if this is a private AS.
 	ASNProviderFlowExceptPrivate
+	// ASNProviderGeoIP pulls the AS number from a GeoIP database.
+	ASNProviderGeoIP
 	// ASNProviderRouting uses the AS number from BMP
 	ASNProviderRouting
 	// ASNProviderRoutingExceptPrivate uses the AS number from BMP, except if this is a private AS.

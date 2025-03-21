@@ -641,6 +641,7 @@ func TestGetASNumber(t *testing.T) {
 		{helpers.Mark(), "192.0.2.129", 12322, 1299, []ASNProvider{ASNProviderRouting}, 1299},
 		{helpers.Mark(), "192.0.2.254", 12322, 0, []ASNProvider{ASNProviderRouting}, 0},
 		{helpers.Mark(), "1.0.0.1", 12322, 65300, []ASNProvider{ASNProviderRouting}, 65300},
+		{helpers.Mark(), "1.0.0.1", 12322, 65300, []ASNProvider{ASNProviderGeoIP, ASNProviderRouting}, 0},
 	}
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("case %s", tc.Pos), func(t *testing.T) {

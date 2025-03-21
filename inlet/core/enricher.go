@@ -161,6 +161,9 @@ func (c *Component) getASNumber(flowAS, bmpAS uint32) (asn uint32) {
 			break
 		}
 		switch provider {
+		case ASNProviderGeoIP:
+			// This is a shortcut
+			return 0
 		case ASNProviderFlow:
 			asn = flowAS
 		case ASNProviderFlowExceptPrivate:
