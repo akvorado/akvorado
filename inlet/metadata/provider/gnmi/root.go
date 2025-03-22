@@ -40,7 +40,7 @@ func (configuration Configuration) New(r *reporter.Reporter, put func(provider.U
 }
 
 // Query queries exporter to get information through gNMI.
-func (p *Provider) Query(ctx context.Context, q provider.BatchQuery) error {
+func (p *Provider) Query(ctx context.Context, q *provider.BatchQuery) error {
 	p.stateLock.Lock()
 	defer p.stateLock.Unlock()
 	state, ok := p.state[q.ExporterIP]

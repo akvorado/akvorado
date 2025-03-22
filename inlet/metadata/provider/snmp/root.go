@@ -91,7 +91,7 @@ func (configuration Configuration) New(r *reporter.Reporter, put func(provider.U
 }
 
 // Query queries exporter to get information through SNMP.
-func (p *Provider) Query(ctx context.Context, query provider.BatchQuery) error {
+func (p *Provider) Query(ctx context.Context, query *provider.BatchQuery) error {
 	// Avoid querying too much exporters with errors
 	agentIP, ok := p.config.Agents[query.ExporterIP]
 	if !ok {
