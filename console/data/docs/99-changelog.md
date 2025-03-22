@@ -15,6 +15,9 @@ identified with a specific icon:
 
 - 💥 *inlet*: in SNMP metadata provider, prefer ifAlias over ifDescr for interface description
 - 🌱 *inlet*: add back `geoip` as an option for `inlet`→`core`→`asn-providers`
+- 🌱 *inlet*: allow the static provider to fallback to the next provider if some
+  interfaces are missing, when setting the `skip-missing-interfaces` option to
+  true.
 - 🌱 *build*: minimal Go version to build is now 1.24
 - 🌱 *build*: use PGO for better performance of the inlet
 - 🌱 *orchestrator*: ability to override ClickHouse or Kafka configuration in some components
