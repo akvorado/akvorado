@@ -324,8 +324,8 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/netixx/patricia v0.0.0-20240221142110-a89b0dc418dd h1:9d/fcRKG/qQk8EYMix2r+zxWE7pEr7Zh+j/xTov4ZWI=
 github.com/netixx/patricia v0.0.0-20240221142110-a89b0dc418dd/go.mod h1:6jY40ESetsbfi04/S12iJlsiS6DYL2B2W+WAcqoDHtw=
-github.com/netsampler/goflow2/v2 v2.2.1 h1:QzrtWS/meXsqCLv68hdouL+09NfuLKrCoVDJ1xfmuoE=
-github.com/netsampler/goflow2/v2 v2.2.1/go.mod h1:057wOc/Xp7c+hUwRDB7wRqrx55m0r3vc7J0k4NrlFbM=
+github.com/netsampler/goflow2/v2 v2.2.2 h1:td6BxWc13xC7thXzcHyRJCQTLEY5MRzm7KuBb1E55VM=
+github.com/netsampler/goflow2/v2 v2.2.2/go.mod h1:+FYeHV5uv5u0BEza9smuw6hSkwFWqHcimXpfJEJH9Aw=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
 github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
