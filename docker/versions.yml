@@ -4,7 +4,7 @@ services:
   zookeeper:
     image: bitnami/zookeeper:3.8 # \d+\.\d+
   kafka:
-    image: bitnami/kafka:3.7 # \d+\.\d+
+    image: bitnami/kafka:3.8 # \d+\.\d+
   redis:
     image: valkey/valkey:7.2 # \d+\.\d+
   clickhouse:
