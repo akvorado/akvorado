@@ -39,4 +39,4 @@ services:
   postgres:
     image: postgres:16 # \d+
   mysql:
-    image: bitnami/mariadb:11.3 # \d+\.\d+
+    image: mariadb:11.4 # \d+\.\d+
