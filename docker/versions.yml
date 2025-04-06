@@ -37,6 +37,6 @@ services:
   srlinux:
     image: ghcr.io/nokia/srlinux:23.10.6
   postgres:
-    image: bitnami/postgresql:16.3.0 # \d+\.\d+\.0
+    image: postgres:16 # \d+
   mysql:
     image: bitnami/mariadb:11.3 # \d+\.\d+
