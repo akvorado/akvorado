@@ -6,7 +6,7 @@ services:
   kafka:
     image: bitnami/kafka:3.7 # \d+\.\d+
   redis:
-    image: bitnami/valkey:7.2 # \d+\.\d+
+    image: valkey/valkey:7.2 # \d+\.\d+
   clickhouse:
     image: clickhouse/clickhouse-server:24.8 # \d+\.[38]
   traefik:

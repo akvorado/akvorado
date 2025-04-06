@@ -58,8 +58,6 @@ services:
     extends:
       file: versions.yml
       service: redis
-    environment:
-      - ALLOW_EMPTY_PASSWORD=yes
     restart: unless-stopped
     healthcheck:
       interval: 20s
