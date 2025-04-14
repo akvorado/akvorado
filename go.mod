@@ -48,9 +48,9 @@ require (
 	github.com/yuin/goldmark-highlighting v0.0.0-20220208100518-594be1970594
 	go.uber.org/mock v0.5.1-0.20241028185017-eb6764164a8d
 	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
-	golang.org/x/sys v0.30.0
-	golang.org/x/text v0.22.0
-	golang.org/x/time v0.10.0
+	golang.org/x/sys v0.32.0
+	golang.org/x/text v0.24.0
+	golang.org/x/time v0.11.0
 	google.golang.org/grpc v1.70.0
 	google.golang.org/protobuf v1.36.5
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
@@ -195,7 +195,7 @@ require (
 	golang.org/x/mod v0.23.0 // indirect
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/oauth2 v0.25.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
+	golang.org/x/sync v0.13.0 // indirect
 	golang.org/x/term v0.29.0 // indirect
 	golang.org/x/tools v0.30.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250106144421-5f5ef82da422 // indirect
