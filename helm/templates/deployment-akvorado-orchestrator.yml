@@ -1,0 +1,144 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orchestrator
+  namespace: {{ .Values.environment }}-{{ .Values.namespace }}
+  labels:
+    app: orchestrator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orchestrator
+  template:
+    metadata:
+      labels:
+        app: orchestrator
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/api/v0/metrics"
+    spec:
+      containers:
+        - name: orchestrator
+          image: {{ .Values.akvorado.image }}:{{ .Values.akvorado.tag }}
+          imagePullPolicy: Always
+          {{- if .Values.service }}
+          {{- if .Values.service.akvorado_orchestrator.ports }}
+          ports:
+          {{- range .Values.service.akvorado_orchestrator.ports }}
+          - name: {{ .name }}
+            containerPort: {{ .port }}
+            protocol: {{ .protocol }}
+          {{- end}}
+          {{- end}}
+          {{- else }}
+          ports:
+          - name: http
+            containerPort: 8080
+            protocol: TCP
+          {{- end}}
+          {{- if and (.Values.deployment) (.Values.deployment.akvorado_orchestrator) (.Values.deployment.akvorado_orchestrator.liveness) }}
+          livenessProbe:
+              httpGet:
+                path: {{ .Values.deployment.akvorado_orchestrator.liveness.path }}
+                port: {{ .Values.deployment.akvorado_orchestrator.liveness.port }}
+              initialDelaySeconds: {{ .Values.deployment.akvorado_orchestrator.liveness.initialDelay }}
+              periodSeconds: {{ .Values.deployment.akvorado_orchestrator.liveness.period }}
+              failureThreshold: {{ .Values.deployment.akvorado_orchestrator.liveness.failures }}
+          {{- end }}
+          {{- if and (.Values.deployment) (.Values.deployment.akvorado_orchestrator) (.Values.deployment.akvorado_orchestrator.args) }}
+          args:
+          {{- range .Values.deployment.akvorado_orchestrator.args }}
+            - {{ . }}
+          {{- end }}
+          {{- else}}
+          args:
+            - orchestrator
+            - /etc/akvorado/akvorado.yaml
+          {{- end }}
+          {{- if $.Values.extraEnvs }}
+          {{- if or ($.Values.extraEnvs.akvorado_orchestrator) ($.Values.secrets.akvorado_orchestrator) }}
+          env:
+          {{- range $key, $value := $.Values.extraEnvs.akvorado_orchestrator }}
+          - name: {{ $key }}
+            value: {{ $value | quote }}
+          {{- end}}
+          {{- end}}
+          {{- if $.Values.secrets.akvorado_orchestrator }}
+          {{- range $key, $value := $.Values.secrets.akvorado_orchestrator }}
+          - name: {{ $key }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ $.Values.environment }}-{{ $.Values.namespace }}
+                key: {{ $key }}
+          {{- end}}
+          {{- end}}
+          {{- end}}
+          {{- if and (.Values.deployment) (.Values.deployment.akvorado_orchestrator) (.Values.deployment.akvorado_orchestrator.volumeMounts) }}
+          volumeMounts:
+            {{- range .Values.deployment.akvorado_orchestrator.volumeMounts }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+              {{- if .readOnly }}
+              readOnly: {{ .readOnly }}
+              {{- end }}
+            {{- end }}
+          {{- else }}
+          volumeMounts:
+            - name: akvorado-orchestrator-config
+              mountPath: /etc/akvorado
+              readOnly: true
+          {{- end}}
+          resources:
+            {{- if and (.Values.deployment) (.Values.deployment.akvorado_orchestrator) (.Values.deployment.akvorado_orchestrator.resources)}}
+            {{- if .Values.deployment.akvorado_orchestrator.resources.requests }}
+            requests:
+              memory: {{ .Values.deployment.akvorado_orchestrator.resources.requests.memory | quote }}
+              cpu: {{ .Values.deployment.akvorado_orchestrator.resources.requests.cpu | quote }}
+            {{- else}}
+            requests:
+              memory: "128Mi"
+              cpu: "0.1"
+            {{- end }}
+            {{- if .Values.deployment.akvorado_orchestrator.resources.limits }}
+            limits:
+              memory: {{ .Values.deployment.akvorado_orchestrator.resources.limits.memory | quote }}
+              cpu: {{ .Values.deployment.akvorado_orchestrator.resources.limits.cpu | quote }}
+            {{- else}}
+            limits:
+              memory: "256Mi"
+              cpu: "0.5"
+            {{- end }}
+            {{- else}}
+            requests:
+              memory: "128Mi"
+              cpu: "0.1"
+            limits:
+              memory: "256Mi"
+              cpu: "0.2"
+          {{- end}}
+      {{- if and (.Values.deployment) (.Values.deployment.akvorado_orchestrator) (.Values.deployment.akvorado_orchestrator.volumeMounts) }}
+      volumes:
+        {{- range .Values.deployment.akvorado_orchestrator.volumeMounts }}
+         - name: {{ .name }}
+           configMap:
+            name: {{ .configName }}
+            itens:
+            {{- range .Values.deployment.akvorado_orchestrator.volumeMounts.configmapitens }}
+            - {{ .}}
+            {{- end }}
+        {{- end }}
+      {{- else}}
+      volumes:
+         - name: akvorado-orchestrator-config
+           configMap:
+              name: akvorado-configmap
+              items:
+                - key: akvorado.yaml
+                  path: akvorado.yaml
+                - key: inlet.yaml
+                  path: inlet.yaml
+                - key: console.yaml
+                  path: console.yaml
+      {{- end }}
