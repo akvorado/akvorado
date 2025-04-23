@@ -22,6 +22,7 @@ identified with a specific icon:
 - 🌱 *build*: use PGO for better performance of the inlet
 - 🌱 *orchestrator*: ability to override ClickHouse or Kafka configuration in some components
 - 🌱 *docker*: update Kafka to 3.8 (not mandatory)
+- 🔒 *docker*: update Traefik to 3.3 (security issue)
 - 🌱 *docker*: switch from `bitnami/valkey` to `valkey/valkey`
 
 ## 1.11.3 - 2025-02-04
