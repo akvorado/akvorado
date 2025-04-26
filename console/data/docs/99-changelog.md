@@ -21,6 +21,7 @@ identified with a specific icon:
 - 🌱 *build*: minimal Go version to build is now 1.24
 - 🌱 *build*: use PGO for better performance of the inlet
 - 🌱 *orchestrator*: ability to override ClickHouse or Kafka configuration in some components
+- 🌱 *docker*: make most containers wait for their dependencies to be healthy
 - 🌱 *docker*: switch from `bitnami/valkey` to `valkey/valkey`
 - 🌱 *docker*: update Kafka to 3.8 (not mandatory)
 - 🔒 *docker*: update Traefik to 3.3 (security issue)

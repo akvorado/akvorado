@@ -45,7 +45,8 @@ services:
       - JMX_PORT=5555
     restart: unless-stopped
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
     volumes:
       - akvorado-kafka:/bitnami/kafka
     healthcheck:
@@ -85,8 +86,12 @@ services:
       service: akvorado
     restart: unless-stopped
     depends_on:
-      - redis
-      - clickhouse
+      akvorado-orchestrator:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
     command: console http://akvorado-orchestrator:8080
     volumes:
       - akvorado-console-db:/run/akvorado
@@ -114,6 +119,11 @@ services:
       - 6343:6343/udp
       - 10179:10179/tcp
     restart: unless-stopped
+    depends_on:
+      akvorado-orchestrator:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     command: inlet http://akvorado-orchestrator:8080
     volumes:
       - akvorado-run:/run/akvorado
