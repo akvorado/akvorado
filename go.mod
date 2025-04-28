@@ -46,7 +46,7 @@ require (
 	github.com/xdg-go/scram v1.1.2
 	github.com/yuin/goldmark v1.7.8
 	github.com/yuin/goldmark-highlighting v0.0.0-20220208100518-594be1970594
-	go.uber.org/mock v0.5.1-0.20241028185017-eb6764164a8d
+	go.uber.org/mock v0.5.2
 	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
 	golang.org/x/sys v0.32.0
 	golang.org/x/text v0.24.0
