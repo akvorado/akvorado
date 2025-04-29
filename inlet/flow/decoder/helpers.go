@@ -123,16 +123,20 @@ func ParseEthernet(sch *schema.Component, bf *schema.FlowMessage, data []byte) u
 	}
 	etherType := data[12:14]
 	data = data[14:]
+	var vlan uint16
 	for etherType[0] == 0x81 && etherType[1] == 0x00 {
 		// 802.1q
 		if len(data) < 4 {
 			return 0
 		}
-		if !sch.IsDisabled(schema.ColumnGroupL2) && bf.SrcVlan == 0 {
-			bf.SrcVlan = (uint16(data[0]&0xf) << 8) + uint16(data[1])
+		if !sch.IsDisabled(schema.ColumnGroupL2) {
+			vlan = (uint16(data[0]&0xf) << 8) + uint16(data[1])
 		}
 		etherType = data[2:4]
 		data = data[4:]
+	}
+	if vlan != 0 && bf.SrcVlan == 0 {
+		bf.SrcVlan = vlan
 	}
 	if etherType[0] == 0x88 && etherType[1] == 0x47 {
 		// MPLS
