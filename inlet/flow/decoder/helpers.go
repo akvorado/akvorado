@@ -128,7 +128,7 @@ func ParseEthernet(sch *schema.Component, bf *schema.FlowMessage, data []byte) u
 		if len(data) < 4 {
 			return 0
 		}
-		if !sch.IsDisabled(schema.ColumnGroupL2) {
+		if !sch.IsDisabled(schema.ColumnGroupL2) && bf.SrcVlan == 0 {
 			bf.SrcVlan = (uint16(data[0]&0xf) << 8) + uint16(data[1])
 		}
 		etherType = data[2:4]

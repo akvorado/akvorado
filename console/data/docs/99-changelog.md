@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🩹 *inlet*: don't override flow-provided VLANs with VLAN from Ethernet header
+
 ## 1.11.4 - 2025-04-26
 
 - 💥 *inlet*: in SNMP metadata provider, prefer ifAlias over ifDescr for interface description
