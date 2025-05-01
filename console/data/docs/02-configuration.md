@@ -726,6 +726,7 @@ flows. It accepts the following keys:
 - `brokers` specifies the list of brokers to use to bootstrap the
   connection to the Kafka cluster
 - `tls` defines the TLS configuration to connect to the cluster
+- `sasl` defines the SASL configuration to connect to the cluster
 - `version` tells which minimal version of Kafka to expect
 - `topic` defines the base topic name
 - `topic-configuration` describes how the topic should be configured
@@ -741,9 +742,12 @@ The following keys are accepted for the TLS configuration:
   in PEM format to authenticate to the broker. If the first one is empty, no
   client certificate is used. If the second one is empty, the key is expected to
   be in the certificate file.
-- `sasl-username` and `sasl-password` enables SASL authentication with the
+
+The following keys are accepted for SASL configuration:
+
+- `username` and `password` enables SASL authentication with the
   provided user and password.
-- `sasl-algorithm` tells which SASL mechanism to use for authentication. This
+- `algorithm` tells which SASL mechanism to use for authentication. This
   can be `none`, `plain`, `scram-sha256`, or `scram-sha512`. This should not be
   set to none when SASL is used.
 

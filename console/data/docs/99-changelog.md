@@ -14,6 +14,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🩹 *inlet*: don't override flow-provided VLANs with VLAN from Ethernet header
+- 🌱 *orchestrator*: put SASL parameters in their own section in Kafka configuration
 
 ## 1.11.4 - 2025-04-26
 
