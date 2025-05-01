@@ -62,6 +62,19 @@ func TestKafkaNewConfig(t *testing.T) {
 					Mechanism: SASLScramSHA512,
 				},
 			},
+		}, {
+			description: "SASL OAuth2",
+			config: Configuration{
+				TLS: helpers.TLSConfiguration{
+					Enable: true,
+				},
+				SASL: SASLConfiguration{
+					Username:      "hello",
+					Password:      "password",
+					Mechanism:     SASLOauth,
+					OAuthTokenURL: "http://example.com/token",
+				},
+			},
 		},
 	}
 	for _, tc := range cases {
@@ -187,6 +200,65 @@ func TestTLSConfiguration(t *testing.T) {
 					Mechanism: SASLScramSHA256,
 				},
 			},
+		}, {
+			Description: "TLS SASL OAuth",
+			Initial:     func() interface{} { return DefaultConfiguration() },
+			Configuration: func() interface{} {
+				return gin.H{
+					"tls": gin.H{
+						"enable": true,
+					},
+					"sasl": gin.H{
+						"username":        "hello",
+						"password":        "bye",
+						"mechanism":       "oauth",
+						"oauth-token-url": "http://example.com/token",
+					},
+				}
+			},
+			Expected: Configuration{
+				Topic:   "flows",
+				Brokers: []string{"127.0.0.1:9092"},
+				Version: Version(sarama.V2_8_1_0),
+				TLS: helpers.TLSConfiguration{
+					Enable: true,
+					// Value from DefaultConfig is true
+					Verify: true,
+				},
+				SASL: SASLConfiguration{
+					Username:      "hello",
+					Password:      "bye",
+					Mechanism:     SASLOauth,
+					OAuthTokenURL: "http://example.com/token",
+				},
+			},
+		}, {
+			Description: "OAuth requires a token URL",
+			Initial:     func() interface{} { return DefaultConfiguration() },
+			Configuration: func() interface{} {
+				return gin.H{
+					"sasl": gin.H{
+						"username":  "hello",
+						"password":  "bye",
+						"mechanism": "oauth",
+					},
+				}
+			},
+			Error: true,
+		}, {
+			Description: "OAuth token URL only with OAuth",
+			Initial:     func() interface{} { return DefaultConfiguration() },
+			Configuration: func() interface{} {
+				return gin.H{
+					"sasl": gin.H{
+						"username":        "hello",
+						"password":        "bye",
+						"mechanism":       "plain",
+						"oauth-token-url": "http://example.com/token",
+					},
+				}
+			},
+			Error: true,
 		},
 	})
 }

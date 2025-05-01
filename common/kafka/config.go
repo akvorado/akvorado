@@ -6,6 +6,7 @@
 package kafka
 
 import (
+	"context"
 	"crypto/sha256"
 	"crypto/sha512"
 	"fmt"
@@ -40,6 +41,8 @@ type SASLConfiguration struct {
 	Password string `validate:"required_with=SASLAlgorithm SASLUsername"`
 	// Mechanism tells the SASL algorithm
 	Mechanism SASLMechanism `validate:"required_with=SASLUsername"`
+	// OAuthTokenURL tells which URL to use to get an OAuthToken
+	OAuthTokenURL string `validate:"required_if=Mechanism 4,excluded_unless=Mechanism 4,omitempty,url"`
 }
 
 // DefaultConfiguration represents the default configuration for connecting to Kafka.
@@ -90,6 +93,8 @@ const (
 	SASLScramSHA256
 	// SASLScramSHA512 enables SCRAM challenge with SHA512
 	SASLScramSHA512
+	// SASLOauth enables OAuth authentication
+	SASLOauth
 )
 
 // NewConfig returns a Sarama Kafka configuration ready to use.
@@ -110,20 +115,28 @@ func NewConfig(config Configuration) (*sarama.Config, error) {
 		kafkaConfig.Net.SASL.Enable = true
 		kafkaConfig.Net.SASL.User = config.SASL.Username
 		kafkaConfig.Net.SASL.Password = config.SASL.Password
-		kafkaConfig.Net.SASL.Mechanism = sarama.SASLTypePlaintext
-		if config.SASL.Mechanism == SASLScramSHA256 {
+		switch config.SASL.Mechanism {
+		case SASLPlain:
+			kafkaConfig.Net.SASL.Mechanism = sarama.SASLTypePlaintext
+		case SASLScramSHA256:
 			kafkaConfig.Net.SASL.Handshake = true
 			kafkaConfig.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA256
 			kafkaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
 				return &xdgSCRAMClient{HashGeneratorFcn: sha256.New}
 			}
-		}
-		if config.SASL.Mechanism == SASLScramSHA512 {
+		case SASLScramSHA512:
 			kafkaConfig.Net.SASL.Handshake = true
 			kafkaConfig.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA512
 			kafkaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
 				return &xdgSCRAMClient{HashGeneratorFcn: sha512.New}
 			}
+		case SASLOauth:
+			kafkaConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
+			kafkaConfig.Net.SASL.TokenProvider = newOAuthTokenProvider(
+				context.Background(), // TODO should be bound to the component lifecycle, but no component here
+				tlsConfig,
+				config.SASL.Username, config.SASL.Password,
+				config.SASL.OAuthTokenURL)
 		}
 	}
 	return kafkaConfig, nil
