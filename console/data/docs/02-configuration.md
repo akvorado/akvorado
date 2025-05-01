@@ -748,8 +748,10 @@ The following keys are accepted for SASL configuration:
 - `username` and `password` enables SASL authentication with the
   provided user and password.
 - `algorithm` tells which SASL mechanism to use for authentication. This
-  can be `none`, `plain`, `scram-sha256`, or `scram-sha512`. This should not be
+  can be `none`, `plain`, `scram-sha256`, `scram-sha512`, or `oauth`. This should not be
   set to none when SASL is used.
+- `oauth-token-url` defines the URL to query to get a valid OAuth token (in this
+  case, `username` and `password` are used as client credentials).
 
 The following keys are accepted for the topic configuration:
 
