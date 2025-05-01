@@ -44,10 +44,11 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/ti-mo/conntrack v0.5.1
 	github.com/xdg-go/scram v1.1.2
-	github.com/yuin/goldmark v1.7.8
+	github.com/yuin/goldmark v1.7.11
 	github.com/yuin/goldmark-highlighting v0.0.0-20220208100518-594be1970594
 	go.uber.org/mock v0.5.2
 	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
+	golang.org/x/oauth2 v0.26.0
 	golang.org/x/sys v0.32.0
 	golang.org/x/text v0.24.0
 	golang.org/x/time v0.11.0
@@ -195,7 +196,6 @@ require (
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/mod v0.23.0 // indirect
 	golang.org/x/net v0.37.0 // indirect
-	golang.org/x/oauth2 v0.26.0 // indirect
 	golang.org/x/sync v0.13.0 // indirect
 	golang.org/x/term v0.30.0 // indirect
 	golang.org/x/tools v0.30.0 // indirect
