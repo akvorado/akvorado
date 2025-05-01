@@ -34,8 +34,9 @@ func TestKafkaNewConfig(t *testing.T) {
 					Enable: true,
 				},
 				SASL: SASLConfiguration{
-					Username: "hello",
-					Password: "password",
+					Username:  "hello",
+					Password:  "password",
+					Mechanism: SASLPlain,
 				},
 			},
 		}, {
