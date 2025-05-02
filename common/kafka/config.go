@@ -17,6 +17,7 @@ import (
 	"github.com/IBM/sarama"
 	"github.com/gin-gonic/gin"
 	"github.com/go-viper/mapstructure/v2"
+	"golang.org/x/oauth2/clientcredentials"
 )
 
 // Configuration defines how we connect to a Kafka cluster.
@@ -43,6 +44,8 @@ type SASLConfiguration struct {
 	Mechanism SASLMechanism `validate:"required_with=SASLUsername"`
 	// OAuthTokenURL tells which URL to use to get an OAuthToken
 	OAuthTokenURL string `validate:"required_if=Mechanism 4,excluded_unless=Mechanism 4,omitempty,url"`
+	// OAuthScopes defines the scopes to send for OAuth mechanism
+	OAuthScopes []string
 }
 
 // DefaultConfiguration represents the default configuration for connecting to Kafka.
@@ -135,8 +138,12 @@ func NewConfig(config Configuration) (*sarama.Config, error) {
 			kafkaConfig.Net.SASL.TokenProvider = newOAuthTokenProvider(
 				context.Background(), // TODO should be bound to the component lifecycle, but no component here
 				tlsConfig,
-				config.SASL.Username, config.SASL.Password,
-				config.SASL.OAuthTokenURL)
+				clientcredentials.Config{
+					ClientID:     config.SASL.Username,
+					ClientSecret: config.SASL.Password,
+					TokenURL:     config.SASL.OAuthTokenURL,
+					Scopes:       config.SASL.OAuthScopes,
+				})
 		default:
 			return nil, fmt.Errorf("unknown SASL mechanism: %s", config.SASL.Mechanism)
 		}

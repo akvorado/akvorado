@@ -752,6 +752,7 @@ The following keys are accepted for SASL configuration:
   set to none when SASL is used.
 - `oauth-token-url` defines the URL to query to get a valid OAuth token (in this
   case, `username` and `password` are used as client credentials).
+- `oauth-scopes` defines the list of scopes to request for the OAuth token.
 
 The following keys are accepted for the topic configuration:
 

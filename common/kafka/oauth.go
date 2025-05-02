@@ -19,12 +19,7 @@ type tokenProvider struct {
 }
 
 // newOAuthTokenProvider returns a sarama.AccessTokenProvider using OAuth credentials.
-func newOAuthTokenProvider(ctx context.Context, tlsConfig *tls.Config, clientID, clientSecret, tokenURL string) sarama.AccessTokenProvider {
-	cfg := clientcredentials.Config{
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
-		TokenURL:     tokenURL,
-	}
+func newOAuthTokenProvider(ctx context.Context, tlsConfig *tls.Config, oauthConfig clientcredentials.Config) sarama.AccessTokenProvider {
 	httpClient := &http.Client{Transport: &http.Transport{
 		Proxy:           http.ProxyFromEnvironment,
 		TLSClientConfig: tlsConfig,
@@ -32,7 +27,7 @@ func newOAuthTokenProvider(ctx context.Context, tlsConfig *tls.Config, clientID,
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, httpClient)
 
 	return &tokenProvider{
-		tokenSource: cfg.TokenSource(context.Background()),
+		tokenSource: oauthConfig.TokenSource(context.Background()),
 	}
 }
 

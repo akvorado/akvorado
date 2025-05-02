@@ -214,6 +214,7 @@ func TestTLSConfiguration(t *testing.T) {
 						"password":        "bye",
 						"mechanism":       "oauth",
 						"oauth-token-url": "http://example.com/token",
+						"oauth-scopes":    "one,two",
 					},
 				}
 			},
@@ -231,6 +232,7 @@ func TestTLSConfiguration(t *testing.T) {
 					Password:      "bye",
 					Mechanism:     SASLOauth,
 					OAuthTokenURL: "http://example.com/token",
+					OAuthScopes:   []string{"one", "two"},
 				},
 			},
 		}, {
