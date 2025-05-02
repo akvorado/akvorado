@@ -1,10 +1,9 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 /* For CodeMirror */
 #app {
   .cm-editor {
+    @reference "tailwindcss/theme.css";
     .cm-line {
       @apply px-0;
     }
