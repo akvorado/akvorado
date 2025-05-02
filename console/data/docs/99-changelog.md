@@ -13,6 +13,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 💥 *console*: Firefox 128+, Safari 16.4+, or Chrome 111+ are now required
 - 🩹 *inlet*: don't override flow-provided VLANs with VLAN from Ethernet header
 - 🌱 *orchestrator*: put SASL parameters in their own section in Kafka configuration
 - 🌱 *orchestrator*: add OAuth support to Kafka client
