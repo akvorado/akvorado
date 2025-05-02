@@ -46,7 +46,6 @@ updates:
           - "@eslint/*"
           - "eslint*"
           - "patch-package"
-          - "postcss"
           - "prettier*"
           - "typescript-language-server"
           - "vite"
