@@ -71,6 +71,9 @@ services:
       file: versions.yml
       service: akvorado
     restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
     command: orchestrator /etc/akvorado/akvorado.yaml
     volumes:
       - ../config:/etc/akvorado:ro
