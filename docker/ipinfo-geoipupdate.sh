@@ -3,6 +3,7 @@
 trap exit TERM
 
 while true; do
+    ok=1
     for DATABASE in ${IPINFO_DATABASES}; do
         if [ -f ${DATABASE}.mmdb ]; then
             # Is it up-to-date?
@@ -29,10 +30,12 @@ while true; do
             *)
                 echo "Failed to download ${DATABASE}.mmdb database (HTTP error $RESPONSE)."
                 rm "${DATABASE}.mmdb.new" 2> /dev/null
+                ok=0
                 ;;
         esac
     done
 
+    [ $ok -eq 1 ] && touch /tmp/healthy
     sleep "$UPDATE_FREQUENCY" &
     wait $!
 done
