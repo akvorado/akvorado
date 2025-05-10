@@ -16,5 +16,5 @@ LABEL org.opencontainers.image.licenses=AGPL-3.0-only
 COPY --from=build /output/store /nix/store
 COPY --from=build /app/result/  /usr/local/
 EXPOSE 8080
-HEALTHCHECK CMD [ "/usr/local/bin/akvorado", "healthcheck" ]
+HEALTHCHECK --interval=20s CMD [ "/usr/local/bin/akvorado", "healthcheck" ]
 ENTRYPOINT [ "/usr/local/bin/akvorado" ]

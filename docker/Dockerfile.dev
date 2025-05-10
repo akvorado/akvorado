@@ -4,5 +4,5 @@ LABEL org.opencontainers.image.description="Akvorado: flow collector, enricher a
 LABEL org.opencontainers.image.licenses=AGPL-3.0-only
 COPY bin/akvorado /usr/local/bin/
 EXPOSE 8080
-HEALTHCHECK CMD [ "/usr/local/bin/akvorado", "healthcheck" ]
+HEALTHCHECK --interval=20s CMD [ "/usr/local/bin/akvorado", "healthcheck" ]
 ENTRYPOINT [ "/usr/local/bin/akvorado" ]
