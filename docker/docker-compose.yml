@@ -162,7 +162,7 @@ services:
     restart: unless-stopped
     healthcheck:
       interval: 20s
-      test: ["CMD", "wget", "-T", "1", "--spider", "--no-proxy", "http://127.0.0.1:8123"]
+      test: ["CMD", "wget", "-T", "1", "--spider", "--no-proxy", "http://127.0.0.1:8123/ping"]
     labels:
       - traefik.enable=true
       - traefik.http.routers.clickhouse.entrypoints=private
