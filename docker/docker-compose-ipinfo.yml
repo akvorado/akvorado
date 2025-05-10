@@ -11,7 +11,5 @@ services:
     volumes:
       - akvorado-geoip:/data
     healthcheck:
-      interval: 10s
-      timeout: 10s
-      retries: 0
+      interval: 20s
       test: ["CMD", "test", "-f", "/tmp/healthy"]

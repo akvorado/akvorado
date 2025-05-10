@@ -26,8 +26,6 @@ services:
       - akvorado-zookeeper:/bitnami/zookeeper
     healthcheck:
       interval: 20s
-      timeout: 10s
-      retries: 3
       test: ["CMD-SHELL", "echo ruok | nc -w3 127.0.0.1 2181 | grep -xFq imok"]
 
   kafka:
@@ -51,8 +49,6 @@ services:
       - akvorado-kafka:/bitnami/kafka
     healthcheck:
       interval: 20s
-      timeout: 10s
-      retries: 3
       test: ["CMD", "env", "-u", "JMX_PORT", "kafka-topics.sh", "--list", "--bootstrap-server", "kafka:9092"]
 
   redis:
@@ -62,8 +58,6 @@ services:
     restart: unless-stopped
     healthcheck:
       interval: 20s
-      timeout: 10s
-      retries: 3
       test: ["CMD-SHELL", "timeout 3 redis-cli ping | grep -q PONG"]
 
   akvorado-orchestrator:
@@ -167,9 +161,7 @@ services:
       - SYS_NICE
     restart: unless-stopped
     healthcheck:
-      interval: 30s
-      timeout: 10s
-      retries: 3
+      interval: 20s
       test: ["CMD", "wget", "-T", "1", "--spider", "--no-proxy", "http://127.0.0.1:8123"]
     labels:
       - traefik.enable=true
