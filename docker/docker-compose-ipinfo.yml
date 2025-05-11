@@ -10,6 +10,3 @@ services:
       - UPDATE_FREQUENCY=48h
     volumes:
       - akvorado-geoip:/data
-    healthcheck:
-      interval: 20s
-      test: ["CMD", "test", "-f", "/tmp/healthy"]

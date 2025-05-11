@@ -11,6 +11,11 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🩹 *docker*: move healthcheck for IPinfo updater into Dockerfile to avoid
+  "unhealthy" state on non-updated installation
+
 ## 1.11.5 - 2025-05-11
 
 - 💥 *console*: Firefox 128+, Safari 16.4+, or Chrome 111+ are now required
