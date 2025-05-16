@@ -44,7 +44,7 @@ func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Comp
 	return input, nil
 }
 
-// Start starts reading the provided PCAP files to produce flows in a loop.
+// Start starts reading the provided files to produce fake flows in a loop.
 func (in *Input) Start() (<-chan []*schema.FlowMessage, error) {
 	in.r.Info().Msg("file input starting")
 	in.t.Go(func() error {
