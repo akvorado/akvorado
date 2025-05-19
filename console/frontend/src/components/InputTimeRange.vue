@@ -1,14 +1,23 @@
 <!-- SPDX-FileCopyrightText: 2022 Free Mobile -->
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
 
+<!--
+ Default, 2 columns:
+ - Presets (2 columns)
+ - Start, End
+ Medium (md:), 3 columns:
+ - Presets, Start, End
+ Large (lg:), 1 column
+-->
+
 <template>
-  <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-1">
+  <div class="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-1">
     <InputListBox
       v-model="selectedPreset"
       :items="presets"
       filter="name"
       label="Presets"
-      class="col-span-2 sm:col-span-1"
+      class="col-span-full md:col-span-1"
     >
       <template #selected>{{ selectedPreset.name }}</template>
       <template #item="{ name }">{{ name }}</template>

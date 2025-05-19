@@ -1,8 +1,18 @@
 <!-- SPDX-FileCopyrightText: 2022 Free Mobile -->
 <!-- SPDX-License-Identifier: AGPL-3.0-only -->
 
+<!--
+ Default, 4 columns:
+ - Dimensions list box (4 columns)
+ - IPv4 /x (optional), IPv6 /x (optional), Limit, Top by
+ Large (lg:), 2 columns:
+ - Dimensions list box (2 columns)
+ - IPv4 /x (optional), IPv6 /x (optional)
+ - Limit, Top By
+-->
+
 <template>
-  <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-1">
+  <div class="grid grid-cols-4 gap-2 lg:grid-cols-2">
     <InputListBox
       v-model="selectedDimensions"
       :items="dimensions"
@@ -10,7 +20,7 @@
       multiple
       label="Dimensions"
       filter="name"
-      class="col-span-2 lg:col-span-1"
+      class="col-span-full"
     >
       <template #selected>
         <span v-if="selectedDimensions.length === 0">No dimensions</span>
@@ -46,43 +56,39 @@
         {{ name }}
       </template>
     </InputListBox>
-    <div class="flex flex-row flex-nowrap gap-2">
-      <InputString
-        v-if="canAggregate"
-        v-model="truncate4"
-        class="grow"
-        label="IPv4 /x"
-        :error="truncate4Error"
-      />
-      <InputString
-        v-if="canAggregate"
-        v-model="truncate6"
-        class="grow"
-        label="IPv6 /x"
-        :error="truncate6Error"
-      />
-    </div>
-    <div class="flex flex-row flex-nowrap gap-2">
-      <InputString
-        v-model="limit"
-        class="grow"
-        label="Limit"
-        :error="limitError"
-      />
-      <InputListBox
-        v-model="limitType"
-        :items="computationModeList"
-        class="order-3 grow basis-full sm:max-lg:order-3 sm:max-lg:basis-0"
-        label="Top by"
-      >
-        <template #selected>{{ limitType.name }}</template>
-        <template #item="{ name }">
-          <div class="flex w-full items-center justify-between">
-            <span>{{ name }}</span>
-          </div>
-        </template>
-      </InputListBox>
-    </div>
+    <InputString
+      v-if="canAggregate"
+      v-model="truncate4"
+      class="grow"
+      label="IPv4 /x"
+      :error="truncate4Error"
+    />
+    <InputString
+      v-if="canAggregate"
+      v-model="truncate6"
+      class="grow"
+      label="IPv6 /x"
+      :error="truncate6Error"
+    />
+    <InputString
+      v-model="limit"
+      class="grow"
+      label="Limit"
+      :error="limitError"
+    />
+    <InputListBox
+      v-model="limitType"
+      :items="computationModeList"
+      class="grow"
+      label="Top by"
+    >
+      <template #selected>{{ limitType.name }}</template>
+      <template #item="{ name }">
+        <div class="flex w-full items-center justify-between">
+          <span>{{ name }}</span>
+        </div>
+      </template>
+    </InputListBox>
   </div>
 </template>
 
@@ -178,6 +184,7 @@ const hasErrors = computed(
     !!truncate4Error.value ||
     !!truncate6Error.value,
 );
+
 const dimensions = computed(
   () =>
     serverConfiguration.value?.dimensions.map((v, idx) => ({
