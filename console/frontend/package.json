@@ -7,7 +7,6 @@
     "dev": "vite",
     "build": "run-p type-check build-only",
     "build-only": "vite build",
-    "preview": "vite preview",
     "type-check": "vue-tsc --noEmit -p tsconfig.vitest.json --composite false",
     "lint": "eslint '{src/**/,}*.{js,ts,vue}'",
     "format": "prettier --log-level warn --write '{src/**/,}*.{ts,js,vue,html}'",
