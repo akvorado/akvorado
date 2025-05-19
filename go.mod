@@ -44,7 +44,7 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/ti-mo/conntrack v0.5.1
 	github.com/xdg-go/scram v1.1.2
-	github.com/yuin/goldmark v1.7.11
+	github.com/yuin/goldmark v1.7.12
 	github.com/yuin/goldmark-highlighting v0.0.0-20220208100518-594be1970594
 	go.uber.org/mock v0.5.2
 	golang.org/x/exp v0.0.0-20241009180824-f66d83c29e7c
