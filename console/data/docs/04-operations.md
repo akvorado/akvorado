@@ -285,6 +285,7 @@ services {
   flow-monitoring {
     version9 {
       template ipv4 {
+        nexthop-learning enable;
         flow-active-timeout 10;
         flow-inactive-timeout 10;
         template-refresh-rate {
@@ -298,6 +299,7 @@ services {
         ipv4-template;
       }
       template ipv6 {
+        nexthop-learning enable;
         flow-active-timeout 10;
         flow-inactive-timeout 10;
         template-refresh-rate {
