@@ -50,7 +50,9 @@ documentation.
   which is used by default by the web interface (mandatory)
 
 The last point is very important: without classification, the homepage widgets
-won't work and nothing will be displayed by default in the “Visualize” tab.
+won't work and nothing will be displayed by default in the “Visualize” tab. The
+provided configuration expects your interface to be named `Transit: Cogent`,
+`PNI: Akamai`, `PPNI: Fastly`, or `IX: DECIX`.
 
 You can get all the expanded configuration (with default values) with
 `docker compose exec akvorado-orchestrator akvorado orchestrator
