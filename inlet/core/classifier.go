@@ -4,8 +4,8 @@
 package core
 
 import (
-	"context"
 	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
 	"sync"
@@ -46,22 +46,17 @@ type exporterClassification struct {
 	Reject bool
 }
 
-type (
-	classifyStringFunc      = func(context.Context, string) bool
-	classifyStringRegexFunc = func(context.Context, string, string, string) (bool, error)
-)
-
 // exporterClassifierEnvironment defines the environment used by the exporter classifier
 type exporterClassifierEnvironment struct {
-	Context  context.Context
-	Exporter exporterInfo
+	Exporter              exporterInfo
+	CurrentClassification *exporterClassification
 }
 
 // exec executes the exporter classifier with the provided exporter.
 func (scr *ExporterClassifierRule) exec(si exporterInfo, ec *exporterClassification) error {
 	env := exporterClassifierEnvironment{
-		Context:  context.WithValue(context.Background(), classifierContextKey("ec"), ec),
-		Exporter: si,
+		Exporter:              si,
+		CurrentClassification: ec,
 	}
 	if _, err := expr.Run(scr.program, env); err != nil {
 		return fmt.Errorf("unable to execute classifier %q: %w", scr, err)
@@ -72,10 +67,12 @@ func (scr *ExporterClassifierRule) exec(si exporterInfo, ec *exporterClassificat
 // UnmarshalText compiles a classification rule for a exporter.
 func (scr *ExporterClassifierRule) UnmarshalText(text []byte) error {
 	regexValidator := regexValidator{}
+	addCurrentClassification := addCurrentClassification{}
 	options := []expr.Option{
 		expr.Env(exporterClassifierEnvironment{}),
 		expr.WithContext("Context"),
 		expr.AsBool(),
+		expr.Patch(&addCurrentClassification),
 		expr.Patch(&regexValidator),
 		expr.Function(
 			"Format",
@@ -87,12 +84,11 @@ func (scr *ExporterClassifierRule) UnmarshalText(text []byte) error {
 		expr.Function(
 			"Reject",
 			func(params ...any) (any, error) {
-				ctx := params[0].(context.Context)
-				ec := ctx.Value(classifierContextKey("ec")).(*exporterClassification)
+				ec := params[0].(*exporterClassification)
 				ec.Reject = true
 				return false, nil
 			},
-			new(func(context.Context) bool),
+			new(func(*exporterClassification) bool),
 		),
 	}
 	options = addExporterClassifyStringFunction(options,
@@ -155,17 +151,17 @@ type interfaceClassification struct {
 
 // interfaceClassifierEnvironment defines the environment used by the interface classifier
 type interfaceClassifierEnvironment struct {
-	Context   context.Context
-	Exporter  exporterInfo
-	Interface interfaceInfo
+	Exporter              exporterInfo
+	Interface             interfaceInfo
+	CurrentClassification *interfaceClassification
 }
 
 // exec executes the exporter classifier with the provided interface.
 func (scr *InterfaceClassifierRule) exec(si exporterInfo, ii interfaceInfo, ic *interfaceClassification) error {
 	env := interfaceClassifierEnvironment{
-		Context:   context.WithValue(context.Background(), classifierContextKey("ic"), ic),
-		Exporter:  si,
-		Interface: ii,
+		Exporter:              si,
+		Interface:             ii,
+		CurrentClassification: ic,
 	}
 	if _, err := expr.Run(scr.program, env); err != nil {
 		return fmt.Errorf("unable to execute classifier %q: %w", scr, err)
@@ -176,10 +172,12 @@ func (scr *InterfaceClassifierRule) exec(si exporterInfo, ii interfaceInfo, ic *
 // UnmarshalText compiles a classification rule for an interface.
 func (scr *InterfaceClassifierRule) UnmarshalText(text []byte) error {
 	regexValidator := regexValidator{}
+	addCurrentClassification := addCurrentClassification{}
 	options := []expr.Option{
 		expr.Env(interfaceClassifierEnvironment{}),
 		expr.WithContext("Context"),
 		expr.AsBool(),
+		expr.Patch(&addCurrentClassification),
 		expr.Patch(&regexValidator),
 		expr.Function(
 			"Format",
@@ -191,60 +189,55 @@ func (scr *InterfaceClassifierRule) UnmarshalText(text []byte) error {
 		expr.Function(
 			"Reject",
 			func(params ...any) (any, error) {
-				ctx := params[0].(context.Context)
-				ic := ctx.Value(classifierContextKey("ic")).(*interfaceClassification)
+				ic := params[0].(*interfaceClassification)
 				ic.Reject = true
 				return false, nil
 			},
-			new(func(context.Context) bool),
+			new(func(*interfaceClassification) bool),
 		),
 		expr.Function(
 			"ClassifyExternal",
 			func(params ...any) (any, error) {
-				ctx := params[0].(context.Context)
-				ic := ctx.Value(classifierContextKey("ic")).(*interfaceClassification)
+				ic := params[0].(*interfaceClassification)
 				if ic.Boundary == schema.InterfaceBoundaryUndefined {
 					ic.Boundary = schema.InterfaceBoundaryExternal
 				}
 				return true, nil
 			},
-			new(func(context.Context) bool),
+			new(func(*interfaceClassification) bool),
 		),
 		expr.Function(
 			"ClassifyInternal",
 			func(params ...any) (any, error) {
-				ctx := params[0].(context.Context)
-				ic := ctx.Value(classifierContextKey("ic")).(*interfaceClassification)
+				ic := params[0].(*interfaceClassification)
 				if ic.Boundary == schema.InterfaceBoundaryUndefined {
 					ic.Boundary = schema.InterfaceBoundaryInternal
 				}
 				return true, nil
 			},
-			new(func(context.Context) bool),
+			new(func(*interfaceClassification) bool),
 		),
 		expr.Function(
 			"SetName",
 			func(params ...any) (any, error) {
-				ctx := params[0].(context.Context)
-				ic := ctx.Value(classifierContextKey("ic")).(*interfaceClassification)
+				ic := params[0].(*interfaceClassification)
 				if ic.Name == "" {
 					ic.Name = params[1].(string)
 				}
 				return true, nil
 			},
-			new(func(context.Context, string) bool),
+			new(func(*interfaceClassification, string) bool),
 		),
 		expr.Function(
 			"SetDescription",
 			func(params ...any) (any, error) {
-				ctx := params[0].(context.Context)
-				ic := ctx.Value(classifierContextKey("ic")).(*interfaceClassification)
+				ic := params[0].(*interfaceClassification)
 				if ic.Description == "" {
 					ic.Description = params[1].(string)
 				}
 				return true, nil
 			},
-			new(func(context.Context, string) bool),
+			new(func(*interfaceClassification, string) bool),
 		),
 	}
 	options = addInterfaceClassifyStringFunction(options,
@@ -324,20 +317,18 @@ func addExporterClassifyStringFunction(options []expr.Option, name string, fn fu
 		expr.Function(
 			name,
 			func(params ...any) (any, error) {
-				ctx := params[0].(context.Context)
-				ec := ctx.Value(classifierContextKey("ec")).(*exporterClassification)
+				ec := params[0].(*exporterClassification)
 				return classifyString(params[1].(string), fn(ec))
 			},
-			new(classifyStringFunc),
+			new(func(*exporterClassification, string) bool),
 		),
 		expr.Function(
 			fmt.Sprintf("%sRegex", name),
 			func(params ...any) (any, error) {
-				ctx := params[0].(context.Context)
-				ec := ctx.Value(classifierContextKey("ec")).(*exporterClassification)
+				ec := params[0].(*exporterClassification)
 				return classifyStringWithRegex(params[1].(string), params[2].(string), params[3].(string), fn(ec))
 			},
-			new(classifyStringRegexFunc),
+			new(func(*exporterClassification, string, string, string) (bool, error)),
 		),
 	)
 	return options
@@ -350,25 +341,24 @@ func addInterfaceClassifyStringFunction(options []expr.Option, name string, fn f
 		expr.Function(
 			name,
 			func(params ...any) (any, error) {
-				ctx := params[0].(context.Context)
-				ic := ctx.Value(classifierContextKey("ic")).(*interfaceClassification)
+				ic := params[0].(*interfaceClassification)
 				return classifyString(params[1].(string), fn(ic))
 			},
-			new(classifyStringFunc),
+			new(func(*interfaceClassification, string) bool),
 		),
 		expr.Function(
 			fmt.Sprintf("%sRegex", name),
 			func(params ...any) (any, error) {
-				ctx := params[0].(context.Context)
-				ic := ctx.Value(classifierContextKey("ic")).(*interfaceClassification)
+				ic := params[0].(*interfaceClassification)
 				return classifyStringWithRegex(params[1].(string), params[2].(string), params[3].(string), fn(ic))
 			},
-			new(classifyStringRegexFunc),
+			new(func(*interfaceClassification, string, string, string) (bool, error)),
 		),
 	)
 	return options
 }
 
+// regexValidator is a patch validate regular expressions at compile-time
 type regexValidator struct {
 	invalidRegexes []string
 }
@@ -391,5 +381,27 @@ func (r *regexValidator) Visit(node *ast.Node) {
 	}
 	if _, err := regexp.Compile(str.Value); err != nil {
 		r.invalidRegexes = append(r.invalidRegexes, str.Value)
+	}
+}
+
+// addCurrentClassification is a patch to add the current classification as the
+// first argument when the function called expects one.
+type addCurrentClassification struct{}
+
+func (a *addCurrentClassification) Visit(node *ast.Node) {
+	switch call := (*node).(type) {
+	case *ast.CallNode:
+		fn := call.Callee.Type()
+		if fn == nil || fn.Kind() != reflect.Func || fn.NumIn() < 1 {
+			return
+		}
+		if fn.In(0).String() == "*core.exporterClassification" || fn.In(0).String() == "*core.interfaceClassification" {
+			ast.Patch(node, &ast.CallNode{
+				Callee: call.Callee,
+				Arguments: append([]ast.Node{
+					&ast.IdentifierNode{Value: "CurrentClassification"},
+				}, call.Arguments...),
+			})
+		}
 	}
 }
