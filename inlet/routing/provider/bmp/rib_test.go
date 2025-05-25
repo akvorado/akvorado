@@ -371,7 +371,7 @@ func BenchmarkRTAHash(b *testing.B) {
 		asn:    2038,
 		asPath: []uint32{1, 2, 3, 4, 5, 6, 7},
 	}
-	for range b.N {
+	for b.Loop() {
 		rta.Hash()
 	}
 }
@@ -381,7 +381,7 @@ func BenchmarkRTAEqual(b *testing.B) {
 		asn:    2038,
 		asPath: []uint32{1, 2, 3, 4, 5, 6, 7},
 	}
-	for range b.N {
+	for b.Loop() {
 		rta.Equal(rta)
 	}
 }

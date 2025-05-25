@@ -298,7 +298,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")
 	}
 	var err error
 	var gotClassification interfaceClassification
-	for range b.N {
+	for b.Loop() {
 		err = scr.exec(ei, ii, &gotClassification)
 	}
 	if err != nil {
