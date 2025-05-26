@@ -28,6 +28,7 @@
           v-if="user == currentUser?.login"
           class="inline h-4 w-4 shrink cursor-pointer hover:text-blue-700 dark:hover:text-white"
           @click.stop.prevent="deleteFilter(id)"
+          @mousedown.stop.prevent=""
         />
       </div>
     </template>
