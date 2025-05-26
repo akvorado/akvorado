@@ -67,12 +67,12 @@ func (scr *ExporterClassifierRule) exec(si exporterInfo, ec *exporterClassificat
 // UnmarshalText compiles a classification rule for a exporter.
 func (scr *ExporterClassifierRule) UnmarshalText(text []byte) error {
 	regexValidator := regexValidator{}
-	addCurrentClassification := addCurrentClassification{}
+	withClassificationPatcher := withClassificationPatcher{}
 	options := []expr.Option{
 		expr.Env(exporterClassifierEnvironment{}),
 		expr.WithContext("Context"),
 		expr.AsBool(),
-		expr.Patch(&addCurrentClassification),
+		expr.Patch(&withClassificationPatcher),
 		expr.Patch(&regexValidator),
 		expr.Function(
 			"Format",
@@ -172,12 +172,12 @@ func (scr *InterfaceClassifierRule) exec(si exporterInfo, ii interfaceInfo, ic *
 // UnmarshalText compiles a classification rule for an interface.
 func (scr *InterfaceClassifierRule) UnmarshalText(text []byte) error {
 	regexValidator := regexValidator{}
-	addCurrentClassification := addCurrentClassification{}
+	withClassificationPatcher := withClassificationPatcher{}
 	options := []expr.Option{
 		expr.Env(interfaceClassifierEnvironment{}),
 		expr.WithContext("Context"),
 		expr.AsBool(),
-		expr.Patch(&addCurrentClassification),
+		expr.Patch(&withClassificationPatcher),
 		expr.Patch(&regexValidator),
 		expr.Function(
 			"Format",
@@ -384,11 +384,11 @@ func (r *regexValidator) Visit(node *ast.Node) {
 	}
 }
 
-// addCurrentClassification is a patch to add the current classification as the
+// withClassificationPatcher is a patch to add the current classification as the
 // first argument when the function called expects one.
-type addCurrentClassification struct{}
+type withClassificationPatcher struct{}
 
-func (a *addCurrentClassification) Visit(node *ast.Node) {
+func (a *withClassificationPatcher) Visit(node *ast.Node) {
 	switch call := (*node).(type) {
 	case *ast.CallNode:
 		fn := call.Callee.Type()
