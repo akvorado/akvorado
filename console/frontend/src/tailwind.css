@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
-@plugin "@headlessui/tailwindcss";
 @source "../index.html";
 @source "**/*.{vue,js,ts,jsx,tsx}";
 @custom-variant dark (&:where(.dark, .dark *));

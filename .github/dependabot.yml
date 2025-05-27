@@ -54,7 +54,6 @@ updates:
         patterns:
           - "tailwindcss"
           - "@tailwindcss/*"
-          - "@headlessui/tailwindcss"
       typing:
         patterns:
           - "@types/*"
