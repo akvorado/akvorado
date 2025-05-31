@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"gorm.io/gorm"
 )
 
 // SavedFilter represents a saved filter in database.
@@ -25,9 +27,10 @@ type SavedFilter struct {
 
 // CreateSavedFilter creates a new saved filter in database.
 func (c *Component) CreateSavedFilter(ctx context.Context, f SavedFilter) error {
-	result := c.db.WithContext(ctx).Omit("ID").Create(&f)
-	if result.Error != nil {
-		return fmt.Errorf("unable to create new saved filter: %w", result.Error)
+	f.ID = 0
+	err := gorm.G[SavedFilter](c.db).Create(ctx, &f)
+	if err != nil {
+		return fmt.Errorf("unable to create new saved filter: %w", err)
 	}
 	return nil
 }
@@ -35,23 +38,23 @@ func (c *Component) CreateSavedFilter(ctx context.Context, f SavedFilter) error 
 // ListSavedFilters list all saved filters for the provided user
 func (c *Component) ListSavedFilters(ctx context.Context, user string) ([]SavedFilter, error) {
 	var results []SavedFilter
-	result := c.db.WithContext(ctx).
-		Where(&SavedFilter{User: user}).
-		Or(&SavedFilter{Shared: true}).
-		Find(&results)
-	if result.Error != nil {
-		return nil, fmt.Errorf("unable to retrieve saved filters: %w", result.Error)
+	results, err := gorm.G[SavedFilter](c.db).
+		Where(SavedFilter{User: user}).
+		Or(SavedFilter{Shared: true}).
+		Find(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve saved filters: %w", err)
 	}
 	return results, nil
 }
 
 // DeleteSavedFilter deletes the provided saved filter
 func (c *Component) DeleteSavedFilter(ctx context.Context, f SavedFilter) error {
-	result := c.db.WithContext(ctx).Where(&SavedFilter{User: f.User}).Delete(&f)
-	if result.Error != nil {
-		return fmt.Errorf("cannot delete saved filter: %w", result.Error)
+	rows, err := gorm.G[SavedFilter](c.db).Where(f).Delete(ctx)
+	if err != nil {
+		return fmt.Errorf("cannot delete saved filter: %w", err)
 	}
-	if result.RowsAffected == 0 {
+	if rows == 0 {
 		return errors.New("no matching saved filter to delete")
 	}
 	return nil
@@ -62,6 +65,8 @@ const systemUser = "__system"
 // Populate populates the database with the builtin filters.
 func (c *Component) populate() error {
 	// Add new filters
+	ctx := context.Background()
+	db := gorm.G[SavedFilter](c.db)
 	for _, filter := range c.config.SavedFilters {
 		c.r.Debug().Msgf("add builtin filter %q", filter.Description)
 		savedFilter := SavedFilter{
@@ -70,17 +75,18 @@ func (c *Component) populate() error {
 			Description: filter.Description,
 			Content:     filter.Content,
 		}
-		result := c.db.Where(savedFilter).FirstOrCreate(&savedFilter)
-		if result.Error != nil {
-			return fmt.Errorf("unable add builtin filter: %w", result.Error)
+		if _, err := db.Where(savedFilter).First(ctx); err == gorm.ErrRecordNotFound {
+			err := db.Create(ctx, &savedFilter)
+			if err != nil {
+				return fmt.Errorf("unable add builtin filter: %w", err)
+			}
 		}
 	}
 
 	// Remove old filters
-	var results []SavedFilter
-	result := c.db.Where(SavedFilter{User: systemUser, Shared: true}).Find(&results)
-	if result.Error != nil {
-		return fmt.Errorf("cannot get existing builtin filters: %w", result.Error)
+	results, err := db.Where(SavedFilter{User: systemUser, Shared: true}).Find(ctx)
+	if err != nil {
+		return fmt.Errorf("cannot get existing builtin filters: %w", err)
 	}
 outer:
 	for _, result := range results {
@@ -90,8 +96,8 @@ outer:
 			}
 		}
 		c.r.Info().Msgf("remove old builtin filter %q", result.Description)
-		if result := c.db.Delete(&result); result.Error != nil {
-			return fmt.Errorf("cannot delete old builtin filter: %w", result.Error)
+		if _, err := db.Where(result).Delete(ctx); err != nil {
+			return fmt.Errorf("cannot delete old builtin filter: %w", err)
 		}
 	}
 
