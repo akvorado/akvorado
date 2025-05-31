@@ -35,7 +35,7 @@ require (
 	github.com/openconfig/gnmic/pkg/api v0.1.9
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/oschwald/maxminddb-golang v1.13.1
-	github.com/osrg/gobgp/v3 v3.36.0
+	github.com/osrg/gobgp/v3 v3.37.0
 	github.com/prometheus/client_golang v1.22.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rs/zerolog v1.34.0
@@ -195,7 +195,7 @@ require (
 	golang.org/x/arch v0.8.0 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/mod v0.23.0 // indirect
-	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sync v0.14.0 // indirect
 	golang.org/x/term v0.30.0 // indirect
 	golang.org/x/tools v0.30.0 // indirect
