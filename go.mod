@@ -11,7 +11,7 @@ require (
 	github.com/bits-and-blooms/bitset v1.22.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/chenyahui/gin-cache v1.9.0
-	github.com/docker/docker v28.1.1+incompatible
+	github.com/docker/docker v28.2.2+incompatible
 	github.com/docker/go-connections v0.5.0
 	github.com/eapache/go-resiliency v1.7.0
 	github.com/expr-lang/expr v1.17.3
@@ -80,6 +80,8 @@ require (
 	github.com/chavacava/garif v0.1.0 // indirect
 	github.com/cloudwego/base64x v0.1.4 // indirect
 	github.com/cloudwego/iasm v0.2.0 // indirect
+	github.com/containerd/errdefs v1.0.0 // indirect
+	github.com/containerd/errdefs/pkg v0.3.0 // indirect
 	github.com/creack/pty v1.1.23 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
