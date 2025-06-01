@@ -5,6 +5,7 @@ allowlist:
   - BSD-3-Clause
   - BSD-2-Clause
   - BSD-2-Clause-Views
+  - BlueOak-1.0.0
   - MPL-2.0
   - MIT
   - ISC
