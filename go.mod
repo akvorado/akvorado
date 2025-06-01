@@ -7,7 +7,7 @@ require (
 	github.com/IBM/sarama v1.45.1
 	github.com/alecthomas/chroma v0.10.0
 	github.com/benbjohnson/clock v1.3.5
-	github.com/bio-routing/bio-rd v0.1.10-0.20230730142204-f71bc383fe42
+	github.com/bio-routing/bio-rd v0.1.10
 	github.com/bits-and-blooms/bitset v1.22.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/chenyahui/gin-cache v1.9.0
@@ -195,7 +195,7 @@ require (
 	golang.org/x/arch v0.8.0 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/mod v0.23.0 // indirect
-	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sync v0.14.0 // indirect
 	golang.org/x/term v0.30.0 // indirect
 	golang.org/x/tools v0.30.0 // indirect
