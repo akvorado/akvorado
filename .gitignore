@@ -4,7 +4,6 @@
 /orchestrator/clickhouse/data/tcp.csv
 /orchestrator/clickhouse/data/udp.csv
 /console/filter/parser.go
-/common/schema/definition_gen.go
 mock_*.go
 *_enumer.go
 

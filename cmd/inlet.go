@@ -17,6 +17,7 @@ import (
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 	"akvorado/inlet/core"
+	"akvorado/inlet/ddos"
 	"akvorado/inlet/flow"
 	"akvorado/inlet/kafka"
 	"akvorado/inlet/metadata"
@@ -33,6 +34,7 @@ type InletConfiguration struct {
 	Metadata  metadata.Configuration
 	Routing   routing.Configuration
 	Kafka     kafka.Configuration
+	DDOS      ddos.Configuration
 	Core      core.Configuration
 	Schema    schema.Configuration
 }
@@ -46,6 +48,7 @@ func (c *InletConfiguration) Reset() {
 		Metadata:  metadata.DefaultConfiguration(),
 		Routing:   routing.DefaultConfiguration(),
 		Kafka:     kafka.DefaultConfiguration(),
+		DDOS:      ddos.DefaultConfiguration(),
 		Core:      core.DefaultConfiguration(),
 		Schema:    schema.DefaultConfiguration(),
 	}
@@ -127,6 +130,12 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 	if err != nil {
 		return fmt.Errorf("unable to initialize routing component: %w", err)
 	}
+	ddosComponent, err := ddos.New(r, config.DDOS, ddos.Dependencies{
+		Daemon: daemonComponent,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to initialize ddos component: %w", err)
+	}
 	kafkaComponent, err := kafka.New(r, config.Kafka, kafka.Dependencies{
 		Daemon: daemonComponent,
 		Schema: schemaComponent,
@@ -140,6 +149,7 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 		Metadata: metadataComponent,
 		Routing:  routingComponent,
 		Kafka:    kafkaComponent,
+		DDOS:     ddosComponent,
 		HTTP:     httpComponent,
 		Schema:   schemaComponent,
 	})
@@ -162,6 +172,7 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 		metadataComponent,
 		routingComponent,
 		kafkaComponent,
+		ddosComponent,
 		coreComponent,
 		flowComponent,
 	}

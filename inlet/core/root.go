@@ -16,6 +16,7 @@ import (
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
+	"akvorado/inlet/ddos"
 	"akvorado/inlet/flow"
 	"akvorado/inlet/kafka"
 	"akvorado/inlet/metadata"
@@ -48,6 +49,7 @@ type Dependencies struct {
 	Metadata *metadata.Component
 	Routing  *routing.Component
 	Kafka    *kafka.Component
+	DDOS     *ddos.Component
 	HTTP     *httpserver.Component
 	Schema   *schema.Component
 }
@@ -137,6 +139,10 @@ func (c *Component) runWorker(workerID int) error {
 			// Kafka subsystem!
 			c.metrics.flowsForwarded.WithLabelValues(exporter).Inc()
 			c.d.Kafka.Send(exporter, buf)
+
+			if c.d.DDOS != nil {
+				c.d.DDOS.Process(flow)
+			}
 
 			// If we have HTTP clients, send to them too
 			if atomic.LoadUint32(&c.httpFlowClients) > 0 {
