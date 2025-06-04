@@ -485,6 +485,26 @@ The currently supported models are:
 - OpenConfig
 - IETF
 
+#### OVS provider
+
+The `ovs` provider queries an Open vSwitch instance using OVSDB. It
+accepts the following keys:
+
+- `socket` defines the path to the OVSDB UNIX socket (default
+  `/var/run/openvswitch/db.sock`).
+- `address` sets the IP address of the OVSDB server when using TCP
+  (default `127.0.0.1`).
+- `port` selects the TCP port when using TCP (default `6640`).
+
+When both `socket` and `address` are provided, the socket path is used.
+
+```yaml
+metadata:
+  providers:
+    - type: ovs
+      socket: /var/run/openvswitch/db.sock
+```
+
 #### Static provider
 
 The `static` provider accepts an `exporters` key which maps exporter subnets to

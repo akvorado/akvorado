@@ -55,10 +55,11 @@ require (
 	google.golang.org/grpc v1.72.2
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
-	gopkg.in/yaml.v3 v3.0.1
-	gorm.io/driver/mysql v1.5.7
-	gorm.io/driver/postgres v1.6.0
-	gorm.io/gorm v1.30.0
+        gopkg.in/yaml.v3 v3.0.1
+        gorm.io/driver/mysql v1.5.7
+        gorm.io/driver/postgres v1.6.0
+        gorm.io/gorm v1.30.0
+       github.com/ovn-org/libovsdb v1.12.0
 )
 
 require (
@@ -222,3 +223,6 @@ tool (
 )
 
 replace github.com/kentik/patricia => github.com/netixx/patricia v0.0.0-20240221142110-a89b0dc418dd
+
+replace github.com/ovn-org/libovsdb => ./libovsdbstub
+

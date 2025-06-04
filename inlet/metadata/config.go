@@ -9,6 +9,7 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/inlet/metadata/provider"
 	"akvorado/inlet/metadata/provider/gnmi"
+	"akvorado/inlet/metadata/provider/ovs"
 	"akvorado/inlet/metadata/provider/snmp"
 	"akvorado/inlet/metadata/provider/static"
 )
@@ -59,6 +60,7 @@ func (pc ProviderConfiguration) MarshalYAML() (interface{}, error) {
 var providers = map[string](func() provider.Configuration){
 	"snmp":   snmp.DefaultConfiguration,
 	"gnmi":   gnmi.DefaultConfiguration,
+	"ovs":    ovs.DefaultConfiguration,
 	"static": static.DefaultConfiguration,
 }
 
