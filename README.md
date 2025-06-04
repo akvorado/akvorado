@@ -3,7 +3,8 @@
 This program receives flows (currently Netflow/IPFIX and sFlow), enriches them
 with interface names (using SNMP), geo information (using IPinfo.io),
 and exports them to Kafka, then ClickHouse. It also exposes a web
-interface to browse the collected data.
+interface to browse the collected data. A lightweight DDoS detector can log
+Flowspec-ready events for mitigation.
 
 ![Timeseries graph](console/data/docs/timeseries.png)
 

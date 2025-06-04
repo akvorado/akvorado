@@ -352,6 +352,17 @@ interface-classifiers:
 [expr]: https://expr-lang.org/docs/language-definition
 [from Go]: https://github.com/google/re2/wiki/Syntax
 
+### DDoS detection
+
+The optional DDoS component monitors flows for sudden spikes of traffic.
+It accepts the following keys:
+
+- `enabled` turns the detection on or off
+- `detection-window` sets the length of the sliding window to aggregate flows
+- `min-flows` defines the minimum number of flows per destination within the window to trigger an event
+
+When an attack is detected, a JSON event is logged with a minimal Flowspec rule to mitigate the target prefix.
+
 ### Metadata
 
 Flows only include interface indexes. To associate them with an interface name

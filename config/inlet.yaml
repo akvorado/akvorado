@@ -8,6 +8,10 @@ metadata:
     credentials:
       ::/0:
         communities: public
+ddos:
+  enabled: false
+  detection-window: 10s
+  min-flows: 1000
 flow:
   inputs:
     - type: udp
