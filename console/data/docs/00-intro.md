@@ -69,8 +69,7 @@ Once you are ready, you can run everything in the background with
 
 - The **inlet service** receives flows from exporters. It poll each
   exporter using SNMP to get the *system name*, the *interface names*,
-  *descriptions* and *speeds*. It query GeoIP databases to get the
-  *country* and the *AS number*. It applies rules to add attributes to
+  *descriptions* and *speeds*. It applies rules to add attributes to
   exporters. Interface rules attach to each interface a *boundary*
   (external or internal), a *network provider* and a *connectivity
   type* (PNI, IX, transit). Optionally, it may also receive BGP routes
@@ -78,10 +77,10 @@ Once you are ready, you can run everything in the background with
   the communities. The flow is exported to *Kafka*, serialized using
   *Protobuf*.
 
-- The **orchestrator service** configures the internal and external
-  components. It creates the *Kafka topic* and configures *ClickHouse*
-  to receive the flows from Kafka. It exposes configuration settings
-  for the other services to use.
+- The **orchestrator service** configures the internal and external components.
+  It creates the *Kafka topic* and configures *ClickHouse* to receive the flows
+  from Kafka. It exposes configuration settings for the other services to use.
+  It provides to ClickHouse additional data, notably *GeoIP* data.
 
 - The **console service** exposes a web interface to look and
   manipulate the flows stored inside the ClickHouse database.

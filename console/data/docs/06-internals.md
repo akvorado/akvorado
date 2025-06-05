@@ -98,11 +98,6 @@ network, this does not really matter as we cannot really block without
 losing messages. However, with file-backed modules, it may be more reliable
 to reduce buffers as data can be lost during shutdown.
 
-## GeoIP
-
-The component is straightforward. It watches for the modification
-of the databases in order to update a local cached copy.
-
 ## Kafka
 
 The Kafka component relies on
