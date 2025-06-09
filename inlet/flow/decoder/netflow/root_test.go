@@ -629,3 +629,38 @@ func TestDecodeTimestampFromFirstSwitched(t *testing.T) {
 		}
 	}
 }
+
+func TestDecodeNAT(t *testing.T) {
+	r := reporter.NewMock(t)
+	nfdecoder := New(r, decoder.Dependencies{Schema: schema.NewMock(t).EnableAllColumns()}, decoder.Option{TimestampSource: decoder.TimestampSourceUDP})
+
+	// The following PCAP is a NAT event, there is no sampling rate, no bytes,
+	// no packets. We can't do much with it.
+	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "nat.pcap"))
+	got := nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
+
+	expectedFlows := []*schema.FlowMessage{
+		{
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("::ffff:172.16.100.198"),
+			DstAddr:         netip.MustParseAddr("::ffff:10.89.87.1"),
+			ProtobufDebug: map[schema.ColumnKey]any{
+				schema.ColumnSrcPort:    35303,
+				schema.ColumnDstPort:    53,
+				schema.ColumnSrcAddrNAT: netip.MustParseAddr("::ffff:10.143.52.29"),
+				schema.ColumnDstAddrNAT: netip.MustParseAddr("::ffff:10.89.87.1"),
+				schema.ColumnSrcPortNAT: 35303,
+				schema.ColumnDstPortNAT: 53,
+				schema.ColumnEType:      helpers.ETypeIPv4,
+				schema.ColumnProto:      17,
+			},
+		},
+	}
+	for _, f := range got {
+		f.TimeReceived = 0
+	}
+
+	if diff := helpers.Diff(got[:1], expectedFlows); diff != "" {
+		t.Fatalf("Decode() (-got, +want):\n%s", diff)
+	}
+}
