@@ -6,10 +6,10 @@ package cmd
 import (
 	"net/http"
 	"runtime"
+	"slices"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slices"
 
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"

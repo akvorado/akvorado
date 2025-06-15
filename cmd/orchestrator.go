@@ -7,10 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/spf13/cobra"
-	"golang.org/x/exp/slices"
 
 	"akvorado/common/clickhousedb"
 	"akvorado/common/daemon"

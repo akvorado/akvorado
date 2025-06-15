@@ -9,13 +9,13 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"text/template"
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/exp/slices"
 
 	"akvorado/common/schema"
 )

@@ -5,9 +5,8 @@ package schema
 
 import (
 	"fmt"
+	"slices"
 	"strings"
-
-	"golang.org/x/exp/slices"
 )
 
 // ClickHouseDefinition turns a column into a declaration for ClickHouse

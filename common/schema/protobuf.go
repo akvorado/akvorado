@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"hash/fnv"
 	"net/netip"
+	"slices"
 	"strings"
 
 	"github.com/bits-and-blooms/bitset"
-	"golang.org/x/exp/slices"
 	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )

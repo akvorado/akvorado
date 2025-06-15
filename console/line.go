@@ -6,12 +6,12 @@ package console
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/exp/slices"
 
 	"akvorado/common/helpers"
 	"akvorado/console/query"
