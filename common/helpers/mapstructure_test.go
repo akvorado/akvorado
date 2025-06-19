@@ -82,8 +82,8 @@ func TestProtectedDecodeHook(t *testing.T) {
 		expected := []string{
 			`decoding failed due to the following error(s):`,
 			``,
-			`error decoding 'A': internal error while parsing: noooo`,
-			`error decoding 'B': internal error while parsing: noooo`,
+			`'A' internal error while parsing: noooo`,
+			`'B' internal error while parsing: noooo`,
 		}
 		if diff := Diff(got, expected); diff != "" {
 			t.Fatalf("Decode() error:\n%s", diff)
