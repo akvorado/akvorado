@@ -608,8 +608,7 @@ commit now
 			return
 		}
 		t.Run(fmt.Sprintf("subscribe polling %s", encoding), func(t *testing.T) {
-			// This does not work as expected.
-			t.Skip()
+			t.Skip("subscribe with polling does not work on SR Linux")
 			subscribeReq, err := api.NewSubscribeRequest(
 				api.Subscription(api.Path("/system/name/host-name")),
 				api.Subscription(api.Path("/interface/description")),
