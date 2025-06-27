@@ -257,8 +257,8 @@ The following configuration keys are accepted:
   would also accept a single value).
 - `asn-providers` defines the source list for AS numbers. The available sources
   are `flow`, `flow-except-private` (use information from flow except if the ASN
-  is private), `routing`, `routing-except-private`, and `geoip`. The default
-  value is `flow`, `routing`, `geoip`. `geoip` should only be used at the end as
+  is private), `routing`, `routing-except-private`, and `geo-ip`. The default
+  value is `flow`, `routing`, `geo-ip`. `geo-ip` should only be used at the end as
   there is no fallback possible.
 - `net-providers` defines the sources for prefix lengths and nexthop. `flow` uses the value
   provided by the flow message (if any), while `routing` looks it up using the BMP
