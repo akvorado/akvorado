@@ -134,8 +134,13 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 		if oldKey != nil {
 			oldValue := helpers.ElemOrIdentity(from.MapIndex(*oldKey))
 			if oldValue.Kind() == reflect.Bool && oldValue.Bool() == true {
-				from.SetMapIndex(reflect.ValueOf("asn-providers"),
-					reflect.ValueOf([]ASNProvider{ASNProviderRouting}))
+				newASNProviders := []ASNProvider{}
+				for _, p := range DefaultConfiguration().ASNProviders {
+					if p != ASNProviderFlow && p != ASNProviderFlowExceptPrivate {
+						newASNProviders = append(newASNProviders, p)
+					}
+				}
+				from.SetMapIndex(reflect.ValueOf("asn-providers"), reflect.ValueOf(newASNProviders))
 			}
 			from.SetMapIndex(*oldKey, reflect.Value{})
 		}
