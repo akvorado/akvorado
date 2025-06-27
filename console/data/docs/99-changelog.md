@@ -17,6 +17,7 @@ identified with a specific icon:
 - 🩹 *docker*: move healthcheck for IPinfo updater into Dockerfile to avoid
   "unhealthy" state on non-updated installation
 - 🌱 *docker*: enable access log for Traefik
+- 🌱 *docker*: update Traefik to 3.4 (not mandatory)
 - 🌱 *inlet*: improve performance of classifiers
 
 ## 1.11.5 - 2025-05-11
