@@ -2,3 +2,4 @@
 paths:
   inlet.0.core.asnproviders:
     - routing
+    - geo-ip
