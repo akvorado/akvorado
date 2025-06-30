@@ -30,36 +30,50 @@ func TestKafkaNewConfig(t *testing.T) {
 		}, {
 			description: "SASL plain",
 			config: Configuration{
-				TLS: TLSAndSASLConfiguration{
-					TLSConfiguration: helpers.TLSConfiguration{
-						Enable: true,
-					},
-					SASLUsername: "hello",
-					SASLPassword: "password",
+				TLS: helpers.TLSConfiguration{
+					Enable: true,
+				},
+				SASL: SASLConfiguration{
+					Username:  "hello",
+					Password:  "password",
+					Mechanism: SASLPlain,
 				},
 			},
 		}, {
 			description: "SASL SCRAM SHA256",
 			config: Configuration{
-				TLS: TLSAndSASLConfiguration{
-					TLSConfiguration: helpers.TLSConfiguration{
-						Enable: true,
-					},
-					SASLUsername:  "hello",
-					SASLPassword:  "password",
-					SASLMechanism: SASLScramSHA256,
+				TLS: helpers.TLSConfiguration{
+					Enable: true,
+				},
+				SASL: SASLConfiguration{
+					Username:  "hello",
+					Password:  "password",
+					Mechanism: SASLScramSHA256,
 				},
 			},
 		}, {
 			description: "SASL SCRAM SHA512",
 			config: Configuration{
-				TLS: TLSAndSASLConfiguration{
-					TLSConfiguration: helpers.TLSConfiguration{
-						Enable: true,
-					},
-					SASLUsername:  "hello",
-					SASLPassword:  "password",
-					SASLMechanism: SASLScramSHA512,
+				TLS: helpers.TLSConfiguration{
+					Enable: true,
+				},
+				SASL: SASLConfiguration{
+					Username:  "hello",
+					Password:  "password",
+					Mechanism: SASLScramSHA512,
+				},
+			},
+		}, {
+			description: "SASL OAuth2",
+			config: Configuration{
+				TLS: helpers.TLSConfiguration{
+					Enable: true,
+				},
+				SASL: SASLConfiguration{
+					Username:      "hello",
+					Password:      "password",
+					Mechanism:     SASLOauth,
+					OAuthTokenURL: "http://example.com/token",
 				},
 			},
 		},
@@ -98,15 +112,13 @@ func TestTLSConfiguration(t *testing.T) {
 				Topic:   "flows",
 				Brokers: []string{"127.0.0.1:9092"},
 				Version: Version(sarama.V2_8_1_0),
-				TLS: TLSAndSASLConfiguration{
-					TLSConfiguration: helpers.TLSConfiguration{
-						Enable: true,
-						Verify: true,
-					},
+				TLS: helpers.TLSConfiguration{
+					Enable: true,
+					Verify: true,
 				},
 			},
 		}, {
-			Description: "TLS SASL plain, skip cert verification",
+			Description: "TLS SASL plain, skip cert verification (old style)",
 			Initial:     func() interface{} { return DefaultConfiguration() },
 			Configuration: func() interface{} {
 				return gin.H{
@@ -123,14 +135,40 @@ func TestTLSConfiguration(t *testing.T) {
 				Topic:   "flows",
 				Brokers: []string{"127.0.0.1:9092"},
 				Version: Version(sarama.V2_8_1_0),
-				TLS: TLSAndSASLConfiguration{
-					TLSConfiguration: helpers.TLSConfiguration{
-						Enable: true,
-						Verify: false,
+				TLS: helpers.TLSConfiguration{
+					Enable: true,
+					Verify: false,
+				},
+				SASL: SASLConfiguration{
+					Username:  "hello",
+					Password:  "bye",
+					Mechanism: SASLPlain,
+				},
+			},
+		}, {
+			Description: "TLS SASL plain, skip cert verification",
+			Initial:     func() interface{} { return DefaultConfiguration() },
+			Configuration: func() interface{} {
+				return gin.H{
+					"sasl": gin.H{
+						"username":  "hello",
+						"password":  "bye",
+						"mechanism": "plain",
 					},
-					SASLUsername:  "hello",
-					SASLPassword:  "bye",
-					SASLMechanism: SASLPlain,
+				}
+			},
+			Expected: Configuration{
+				Topic:   "flows",
+				Brokers: []string{"127.0.0.1:9092"},
+				Version: Version(sarama.V2_8_1_0),
+				TLS: helpers.TLSConfiguration{
+					Enable: false,
+					Verify: true,
+				},
+				SASL: SASLConfiguration{
+					Username:  "hello",
+					Password:  "bye",
+					Mechanism: SASLPlain,
 				},
 			},
 		}, {
@@ -139,10 +177,12 @@ func TestTLSConfiguration(t *testing.T) {
 			Configuration: func() interface{} {
 				return gin.H{
 					"tls": gin.H{
-						"enable":         true,
-						"sasl-username":  "hello",
-						"sasl-password":  "bye",
-						"sasl-mechanism": "scram-sha256",
+						"enable": true,
+					},
+					"sasl": gin.H{
+						"username":  "hello",
+						"password":  "bye",
+						"mechanism": "scram-sha256",
 					},
 				}
 			},
@@ -150,17 +190,78 @@ func TestTLSConfiguration(t *testing.T) {
 				Topic:   "flows",
 				Brokers: []string{"127.0.0.1:9092"},
 				Version: Version(sarama.V2_8_1_0),
-				TLS: TLSAndSASLConfiguration{
-					TLSConfiguration: helpers.TLSConfiguration{
-						Enable: true,
-						// Value from DefaultConfig is true
-						Verify: true,
-					},
-					SASLUsername:  "hello",
-					SASLPassword:  "bye",
-					SASLMechanism: SASLScramSHA256,
+				TLS: helpers.TLSConfiguration{
+					Enable: true,
+					// Value from DefaultConfig is true
+					Verify: true,
+				},
+				SASL: SASLConfiguration{
+					Username:  "hello",
+					Password:  "bye",
+					Mechanism: SASLScramSHA256,
 				},
 			},
+		}, {
+			Description: "TLS SASL OAuth",
+			Initial:     func() interface{} { return DefaultConfiguration() },
+			Configuration: func() interface{} {
+				return gin.H{
+					"tls": gin.H{
+						"enable": true,
+					},
+					"sasl": gin.H{
+						"username":        "hello",
+						"password":        "bye",
+						"mechanism":       "oauth",
+						"oauth-token-url": "http://example.com/token",
+						"oauth-scopes":    "one,two",
+					},
+				}
+			},
+			Expected: Configuration{
+				Topic:   "flows",
+				Brokers: []string{"127.0.0.1:9092"},
+				Version: Version(sarama.V2_8_1_0),
+				TLS: helpers.TLSConfiguration{
+					Enable: true,
+					// Value from DefaultConfig is true
+					Verify: true,
+				},
+				SASL: SASLConfiguration{
+					Username:      "hello",
+					Password:      "bye",
+					Mechanism:     SASLOauth,
+					OAuthTokenURL: "http://example.com/token",
+					OAuthScopes:   []string{"one", "two"},
+				},
+			},
+		}, {
+			Description: "OAuth requires a token URL",
+			Initial:     func() interface{} { return DefaultConfiguration() },
+			Configuration: func() interface{} {
+				return gin.H{
+					"sasl": gin.H{
+						"username":  "hello",
+						"password":  "bye",
+						"mechanism": "oauth",
+					},
+				}
+			},
+			Error: true,
+		}, {
+			Description: "OAuth token URL only with OAuth",
+			Initial:     func() interface{} { return DefaultConfiguration() },
+			Configuration: func() interface{} {
+				return gin.H{
+					"sasl": gin.H{
+						"username":        "hello",
+						"password":        "bye",
+						"mechanism":       "plain",
+						"oauth-token-url": "http://example.com/token",
+					},
+				}
+			},
+			Error: true,
 		},
 	})
 }

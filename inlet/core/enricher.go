@@ -128,8 +128,10 @@ func (c *Component) enrichFlow(exporterIP netip.Addr, exporterStr string, flow *
 	// set asns according to user config
 	flow.SrcAS = c.getASNumber(flow.SrcAS, sourceRouting.ASN)
 	flow.DstAS = c.getASNumber(flow.DstAS, destRouting.ASN)
-	for _, comm := range destRouting.Communities {
-		c.d.Schema.ProtobufAppendVarint(flow, schema.ColumnDstCommunities, uint64(comm))
+	if !flow.GotCommunities {
+		for _, comm := range destRouting.Communities {
+			c.d.Schema.ProtobufAppendVarint(flow, schema.ColumnDstCommunities, uint64(comm))
+		}
 	}
 	if !flow.GotASPath {
 		for _, asn := range destRouting.ASPath {
@@ -159,6 +161,9 @@ func (c *Component) getASNumber(flowAS, bmpAS uint32) (asn uint32) {
 			break
 		}
 		switch provider {
+		case ASNProviderGeoIP:
+			// This is a shortcut
+			return 0
 		case ASNProviderFlow:
 			asn = flowAS
 		case ASNProviderFlowExceptPrivate:

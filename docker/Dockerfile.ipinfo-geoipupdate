@@ -8,4 +8,5 @@ VOLUME /data
 COPY --chmod=555 ipinfo-geoipupdate.sh /usr/local/bin/ipinfo-geoipupdate.sh
 
 LABEL org.opencontainers.image.description="IPinfo database updater"
+HEALTHCHECK --interval=20s CMD test -f /tmp/healthy
 CMD ["/usr/local/bin/ipinfo-geoipupdate.sh"]

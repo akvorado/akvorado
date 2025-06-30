@@ -71,4 +71,17 @@ func TestValidation(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("validate.Struct() error:\n%+v", err)
 	}
+
+	if err := helpers.Validate.Struct(Configuration{
+		Exporters: helpers.MustNewSubnetMap(map[string]ExporterConfiguration{
+			"::ffff:203.0.113.0/120": {
+				Exporter: provider.Exporter{
+					Name: "something",
+				},
+				SkipMissingInterfaces: true,
+			},
+		}),
+	}); err != nil {
+		t.Fatalf("validate.Struct() error:\n%+v", err)
+	}
 }

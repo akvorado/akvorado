@@ -47,3 +47,5 @@ paths:
     - kafka:9092
   clickhouse.kafka.brokers:
     - kafka:9092
+  console.0.clickhouse.servers:
+    - clickhouse:9000

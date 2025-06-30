@@ -23,17 +23,17 @@ rules:
     name: kafka_controller_$1_$2_$3
   - pattern: kafka.controller<type=(ControllerStats), name=(.+)><>(Count)
     name: kafka_controller_$1_$2_$3
-  - pattern : kafka.network<type=(Processor), name=(IdlePercent), networkProcessor=(.+)><>(Value)
+  - pattern: kafka.network<type=(Processor), name=(IdlePercent), networkProcessor=(.+)><>(Value)
     name: kafka_network_$1_$2_$4
     labels:
       network_processor: $3
-  - pattern : kafka.network<type=(RequestMetrics), name=(.+), request=(.+)><>(Count|Value)
+  - pattern: kafka.network<type=(RequestMetrics), name=(.+), request=(.+)><>(Count|Value)
     name: kafka_network_$1_$2_$4
     labels:
       request: $3
-  - pattern : kafka.network<type=(SocketServer), name=(.+)><>(Count|Value)
+  - pattern: kafka.network<type=(SocketServer), name=(.+)><>(Count|Value)
     name: kafka_network_$1_$2_$3
-  - pattern : kafka.network<type=(RequestChannel), name=(.+)><>(Count|Value)
+  - pattern: kafka.network<type=(RequestChannel), name=(.+)><>(Count|Value)
     name: kafka_network_$1_$2_$3
   - pattern: kafka.server<type=(.+), name=(.+), topic=(.+)><>(Count|OneMinuteRate)
     name: kafka_server_$1_$2_$4
@@ -53,7 +53,7 @@ rules:
     name: java_lang_$1_$4_$3_$2
   - pattern: java.lang<type=(.+), name=(.+)><>(\w+)
     name: java_lang_$1_$3_$2
-  - pattern : java.lang<type=(.*)>
+  - pattern: java.lang<type=(.*)>
   - pattern: kafka.log<type=(.+), name=(.+), topic=(.+), partition=(.+)><>Value
     name: kafka_log_$1_$2
     labels:

@@ -257,13 +257,14 @@ func TestCore(t *testing.T) {
 				"InIf":            434,
 				"OutIf":           677,
 
-				"NextHop":    "",
-				"SrcNetMask": 0,
-				"DstNetMask": 0,
-				"SrcVlan":    0,
-				"DstVlan":    0,
-				"GotASPath":  false,
-				"DstAS":      0,
+				"NextHop":        "",
+				"SrcNetMask":     0,
+				"DstNetMask":     0,
+				"SrcVlan":        0,
+				"DstVlan":        0,
+				"GotASPath":      false,
+				"GotCommunities": false,
+				"DstAS":          0,
 			}
 			if diff := helpers.Diff(got, expected); diff != "" {
 				t.Fatalf("GET /api/v0/inlet/flows (-got, +want):\n%s", diff)

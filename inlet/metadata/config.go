@@ -22,7 +22,7 @@ type Configuration struct {
 	// CacheRefreshInterval defines the interval to check for expiration/refresh
 	CacheCheckInterval time.Duration `validate:"ltefield=CacheRefresh,min=1s"`
 	// CachePersist defines a file to store cache and survive restarts
-	CachePersistFile string
+	CachePersistFile string `validate:"isdefault|filepath"`
 
 	// Provider defines the configuration of the providers to use
 	Providers []ProviderConfiguration

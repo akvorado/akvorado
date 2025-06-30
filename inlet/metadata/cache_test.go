@@ -11,14 +11,13 @@ import (
 	"math/rand"
 	"net/netip"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
-
-	"golang.org/x/exp/slices"
 
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"

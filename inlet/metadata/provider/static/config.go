@@ -28,9 +28,11 @@ type Configuration struct {
 type ExporterConfiguration struct {
 	provider.Exporter `mapstructure:",squash" yaml:",inline"`
 	// Default is used if not empty for any unknown ifindexes
-	Default provider.Interface `validate:"omitempty"`
+	Default provider.Interface `validate:"omitempty,excluded_with=SkipMissingInterfaces"`
 	// IfIndexes is a map from interface indexes to interfaces
 	IfIndexes map[uint]provider.Interface `validate:"omitempty,dive"`
+	// Use next provider for interfaces without static config
+	SkipMissingInterfaces bool `validate:"omitempty"`
 }
 
 // DefaultConfiguration represents the default configuration for the static provider

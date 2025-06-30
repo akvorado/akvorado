@@ -17,8 +17,8 @@ import (
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/events"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/ti-mo/conntrack"
@@ -119,7 +119,7 @@ func (c *Component) Start() error {
 		filter := filters.NewArgs()
 		filter.Add("event", "start")
 		filter.Add("label", "akvorado.conntrack.fix=true")
-		msgs, errs := c.dockerClient.Events(c.t.Context(nil), types.EventsOptions{Filters: filter})
+		msgs, errs := c.dockerClient.Events(c.t.Context(nil), events.ListOptions{Filters: filter})
 		close(ready)
 		for {
 			t := time.NewTimer(5 * time.Minute)

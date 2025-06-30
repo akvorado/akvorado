@@ -46,7 +46,6 @@ updates:
           - "@eslint/*"
           - "eslint*"
           - "patch-package"
-          - "postcss"
           - "prettier*"
           - "typescript-language-server"
           - "vite"
@@ -55,7 +54,6 @@ updates:
         patterns:
           - "tailwindcss"
           - "@tailwindcss/*"
-          - "@headlessui/tailwindcss"
       typing:
         patterns:
           - "@types/*"

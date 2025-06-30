@@ -298,7 +298,7 @@ func (c *Component) providerIncomingRequest(request provider.BatchQuery) {
 		for _, p := range c.providers {
 			// Query providers in the order they are defined and stop on the
 			// first provider accepting to handle the query.
-			if err := p.Query(ctx, request); err != nil && err != provider.ErrSkipProvider {
+			if err := p.Query(ctx, &request); err != nil && err != provider.ErrSkipProvider {
 				return err
 			} else if err == provider.ErrSkipProvider {
 				continue

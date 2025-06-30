@@ -226,7 +226,7 @@ func BenchmarkProtobufMarshal(b *testing.B) {
 	c := NewMock(b)
 	exporterAddress := netip.MustParseAddr("::ffff:203.0.113.14")
 	DisableDebug(b)
-	for range b.N {
+	for b.Loop() {
 		bf := &FlowMessage{
 			TimeReceived:    1000,
 			SamplingRate:    20000,

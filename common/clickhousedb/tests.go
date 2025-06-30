@@ -23,9 +23,10 @@ func SetupClickHouse(t *testing.T, r *reporter.Reporter, cluster bool) *Componen
 	t.Helper()
 	config := DefaultConfiguration()
 	config.Servers = []string{
-		helpers.CheckExternalService(t, "ClickHouse",
-			[]string{"clickhouse:9000", "127.0.0.1:9000"})}
+		helpers.CheckExternalService(t, "ClickHouse", []string{"clickhouse:9000", "127.0.0.1:9000"}),
+	}
 	if cluster {
+		helpers.CheckExternalService(t, "ClickHouse cluster", []string{"clickhouse-2:9000", "127.0.0.1:9001"})
 		config.Cluster = "akvorado"
 	}
 	config.DialTimeout = 100 * time.Millisecond

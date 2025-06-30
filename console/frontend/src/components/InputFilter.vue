@@ -20,13 +20,15 @@
             v-if="shared && user != currentUser?.login"
             class="ml-0 block text-xs italic text-gray-500 dark:text-gray-400 sm:max-lg:ml-1 sm:max-lg:inline"
           >
-            Shared by {{ user }}
+            <span v-if="user == '__system'">Shared by {{ user }}</span>
+            <span v-else>System filter</span>
           </span>
         </div>
         <TrashIcon
           v-if="user == currentUser?.login"
           class="inline h-4 w-4 shrink cursor-pointer hover:text-blue-700 dark:hover:text-white"
           @click.stop.prevent="deleteFilter(id)"
+          @mousedown.stop.prevent=""
         />
       </div>
     </template>

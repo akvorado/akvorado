@@ -26,8 +26,6 @@ services:
       - akvorado-zookeeper:/bitnami/zookeeper
     healthcheck:
       interval: 20s
-      timeout: 10s
-      retries: 3
       test: ["CMD-SHELL", "echo ruok | nc -w3 127.0.0.1 2181 | grep -xFq imok"]
 
   kafka:
@@ -45,26 +43,21 @@ services:
       - JMX_PORT=5555
     restart: unless-stopped
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
     volumes:
       - akvorado-kafka:/bitnami/kafka
     healthcheck:
       interval: 20s
-      timeout: 10s
-      retries: 3
       test: ["CMD", "env", "-u", "JMX_PORT", "kafka-topics.sh", "--list", "--bootstrap-server", "kafka:9092"]
 
   redis:
     extends:
       file: versions.yml
       service: redis
-    environment:
-      - ALLOW_EMPTY_PASSWORD=yes
     restart: unless-stopped
     healthcheck:
       interval: 20s
-      timeout: 10s
-      retries: 3
       test: ["CMD-SHELL", "timeout 3 redis-cli ping | grep -q PONG"]
 
   akvorado-orchestrator:
@@ -72,12 +65,21 @@ services:
       file: versions.yml
       service: akvorado
     restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
     command: orchestrator /etc/akvorado/akvorado.yaml
     volumes:
       - ../config:/etc/akvorado:ro
       - akvorado-geoip:/usr/share/GeoIP:ro
     labels:
       - traefik.enable=true
+      # Disable access logging of /api/v0/orchestrator/metrics
+      - traefik.http.routers.akvorado-orchestrator-metrics.entrypoints=private
+      - traefik.http.routers.akvorado-orchestrator-metrics.rule=PathPrefix(`/api/v0/orchestrator/metrics`)
+      - traefik.http.routers.akvorado-orchestrator-metrics.service=akvorado-orchestrator
+      - traefik.http.routers.akvorado-orchestrator-metrics.observability.accesslogs=false
+      # Everything else is exposed to private entrypoing in /api/v0/orchestrator
       - traefik.http.routers.akvorado-orchestrator.entrypoints=private
       - traefik.http.routers.akvorado-orchestrator.rule=PathPrefix(`/api/v0/orchestrator`)
       - traefik.http.services.akvorado-orchestrator.loadbalancer.server.port=8080
@@ -87,8 +89,12 @@ services:
       service: akvorado
     restart: unless-stopped
     depends_on:
-      - redis
-      - clickhouse
+      akvorado-orchestrator:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
     command: console http://akvorado-orchestrator:8080
     volumes:
       - akvorado-console-db:/run/akvorado
@@ -100,6 +106,10 @@ services:
       - traefik.http.routers.akvorado-console-debug.rule=PathPrefix(`/debug`)
       - traefik.http.routers.akvorado-console-debug.entrypoints=private
       - traefik.http.routers.akvorado-console-debug.service=akvorado-console
+      # Disable access logging of /api/v0/console/metrics
+      - traefik.http.routers.akvorado-console-metrics.rule=PathPrefix(`/api/v0/console/metrics`)
+      - traefik.http.routers.akvorado-console-metrics.service=akvorado-console
+      - traefik.http.routers.akvorado-console-metrics.observability.accesslogs=false
       # For anything else...
       - "traefik.http.routers.akvorado-console.rule=!PathPrefix(`/debug`)"
       - traefik.http.routers.akvorado-console.middlewares=console-auth-headers
@@ -116,6 +126,11 @@ services:
       - 6343:6343/udp
       - 10179:10179/tcp
     restart: unless-stopped
+    depends_on:
+      akvorado-orchestrator:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     command: inlet http://akvorado-orchestrator:8080
     volumes:
       - akvorado-run:/run/akvorado
@@ -123,6 +138,12 @@ services:
       - AKVORADO_CFG_INLET_METADATA_CACHEPERSISTFILE=/run/akvorado/metadata.cache
     labels:
       - traefik.enable=true
+      # Disable access logging of /api/v0/inlet/metrics
+      - traefik.http.routers.akvorado-inlet-metrics.entrypoints=private
+      - traefik.http.routers.akvorado-inlet-metrics.rule=PathPrefix(`/api/v0/inlet/metrics`)
+      - traefik.http.routers.akvorado-inlet-metrics.service=akvorado-inlet
+      - traefik.http.routers.akvorado-inlet-metrics.observability.accesslogs=false
+      # Everything else is exposed to private entrypoing in /api/v0/inlet
       - traefik.http.routers.akvorado-inlet.entrypoints=private
       - traefik.http.routers.akvorado-inlet.rule=PathPrefix(`/api/v0/inlet`)
       - traefik.http.services.akvorado-inlet.loadbalancer.server.port=8080
@@ -151,14 +172,13 @@ services:
     entrypoint: /entrypoint-override.sh
     environment:
       - CLICKHOUSE_INIT_TIMEOUT=60
+      - CLICKHOUSE_SKIP_USER_SETUP=1
     cap_add:
       - SYS_NICE
     restart: unless-stopped
     healthcheck:
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      test: ["CMD", "wget", "-T", "1", "--spider", "--no-proxy", "http://127.0.0.1:8123"]
+      interval: 20s
+      test: ["CMD", "wget", "-T", "1", "--spider", "--no-proxy", "http://127.0.0.1:8123/ping"]
     labels:
       - traefik.enable=true
       - traefik.http.routers.clickhouse.entrypoints=private
@@ -178,6 +198,7 @@ services:
       - --providers.docker.exposedbydefault=false
       - --entrypoints.private.address=:8080
       - --entrypoints.public.address=:8081
+      - --accesslog=true
     ports:
       # Port 8080 is considered private as it exposes sensible unauthenticated
       # services (ClickHouse, configuration, ...). Therefore, it is only exposed

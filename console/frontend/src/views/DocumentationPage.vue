@@ -65,7 +65,7 @@
         </InfoBox>
         <!-- eslint-disable vue/no-v-html -->
         <div
-          class="prose-img:center prose prose-sm mx-auto dark:prose-invert md:prose-base prose-h1:border-b-2 prose-pre:whitespace-pre-wrap prose-pre:break-all prose-pre:rounded dark:prose-h1:border-gray-700"
+          class="prose-img:center prose prose-sm mx-auto dark:prose-invert md:prose-base prose-h1:border-b-2 prose-h1:border-gray-200 prose-pre:whitespace-pre-wrap prose-pre:break-all prose-pre:rounded dark:prose-h1:border-gray-700"
           v-html="markdown"
         ></div>
         <!-- eslint-enable -->

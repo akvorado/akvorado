@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -20,11 +21,56 @@ import (
 
 	"github.com/openconfig/gnmi/proto/gnmi"
 	"github.com/openconfig/gnmic/pkg/api"
+	"github.com/scrapli/scrapligo/driver/network"
 	"github.com/scrapli/scrapligo/driver/options"
 	"github.com/scrapli/scrapligo/logging"
 	"github.com/scrapli/scrapligo/platform"
 	"github.com/scrapli/scrapligo/transport"
 )
+
+func waitSRLManagementServerReady(t *testing.T, d *network.Driver) {
+	const (
+		mgmtServerRdyCmd  = "info from state system app-management application mgmt_server state | grep running"
+		readyForConfigCmd = "file cat /etc/opt/srlinux/devices/app_ephemeral.mgmt_server.ready_for_config"
+	)
+	retryTimer := time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	for {
+		select {
+		case <-ctx.Done():
+			t.Fatal("SR Linux management server not ready in time")
+			return
+		default:
+			resp, err := d.SendCommand(mgmtServerRdyCmd)
+			if err != nil || resp.Failed != nil {
+				time.Sleep(retryTimer)
+				continue
+			}
+
+			if !strings.Contains(resp.Result, "running") {
+				t.Log("SR Linux did not start management server yet")
+				time.Sleep(retryTimer)
+				continue
+			}
+
+			resp, err = d.SendCommand(readyForConfigCmd)
+			if err != nil || resp.Failed != nil {
+				time.Sleep(retryTimer)
+				continue
+			}
+
+			if !strings.Contains(resp.Result, "loaded initial configuration") {
+				t.Log("SR Linux did not load configuration yet")
+				time.Sleep(retryTimer)
+				continue
+			}
+
+			t.Log("SR Linux ready")
+			return
+		}
+	}
+}
 
 func TestSRLinux(t *testing.T) {
 	const (
@@ -72,18 +118,19 @@ func TestSRLinux(t *testing.T) {
 		break
 	}
 	defer driver.Close()
+	waitSRLManagementServerReady(t, driver)
 	resp, err := driver.SendCommand("show version")
 	if err != nil {
 		t.Fatalf("SendCommand(show version) error:\n%+v", err)
-	}
-	if resp.Failed != nil {
-		t.Fatalf("SendCommand(show version) error:\n%+v", resp.Failed)
 	}
 	t.Logf(
 		"sent command '%s', output received (SendCommand):\n %s",
 		resp.Input,
 		resp.Result,
 	)
+	if resp.Failed != nil {
+		t.Fatalf("SendCommand(show version) error:\n%+v", resp.Failed)
+	}
 
 	// Initial configuration
 	resp, err = driver.SendConfig(`
@@ -97,6 +144,11 @@ commit now
 	if err != nil {
 		t.Fatalf("SendConfig() error:\n%+v", err)
 	}
+	t.Logf(
+		"sent command '%s', output received (SendCommand):\n %s",
+		resp.Input,
+		resp.Result,
+	)
 	if resp.Failed != nil {
 		t.Fatalf("SendConfig() error:\n%+v", resp.Failed)
 	}
@@ -434,7 +486,7 @@ commit now
 					t.Fatalf("Subscribe() after disconnect (-got, +want):\n%s", diff)
 				}
 				expectedErrors := []string{
-					"rpc error: code = Internal desc = stream terminated by RST_STREAM with error code: INTERNAL_ERROR",
+					"rpc error: code = Unavailable desc = Cancelling all calls",
 					"retrying in 10ms",
 				}
 				if diff := helpers.Diff(errors, expectedErrors); diff != "" {
@@ -556,8 +608,7 @@ commit now
 			return
 		}
 		t.Run(fmt.Sprintf("subscribe polling %s", encoding), func(t *testing.T) {
-			// This does not work as expected.
-			t.Skip()
+			t.Skip("subscribe with polling does not work on SR Linux")
 			subscribeReq, err := api.NewSubscribeRequest(
 				api.Subscription(api.Path("/system/name/host-name")),
 				api.Subscription(api.Path("/interface/description")),
@@ -661,7 +712,7 @@ commit now
 			t.Fatalf("New() error:\n%+v", err)
 		}
 		// Let's trigger a request now
-		p.Query(context.Background(), provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{641}})
+		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{641}})
 
 		// We need the indexes
 		subscribeReq, err := api.NewSubscribeRequest(
@@ -689,12 +740,12 @@ commit now
 
 		// Wait a bit
 		time.Sleep(500 * time.Millisecond)
-		p.Query(context.Background(), provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{indexes["name=ethernet-1/1"]}})
-		p.Query(context.Background(), provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{indexes["name=ethernet-1/2"]}})
-		p.Query(context.Background(), provider.BatchQuery{ExporterIP: lo,
+		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{indexes["name=ethernet-1/1"]}})
+		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{indexes["name=ethernet-1/2"]}})
+		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo,
 			IfIndexes: []uint{indexes["name=lag1"], indexes["name=ethernet-1/3"]}})
-		p.Query(context.Background(), provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{5}})
-		p.Query(context.Background(), provider.BatchQuery{ExporterIP: lo,
+		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{5}})
+		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo,
 			IfIndexes: []uint{indexes["name=ethernet-1/4,index=1"]}})
 
 		time.Sleep(50 * time.Millisecond)
@@ -741,10 +792,10 @@ commit now
 			t.Fatalf("SendConfig() error:\n%+v", resp.Failed)
 		}
 		time.Sleep(500 * time.Millisecond) // We should exceed the second now and next request will trigger a refresh
-		p.Query(context.Background(), provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{indexes["name=ethernet-1/1"]}})
+		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{indexes["name=ethernet-1/1"]}})
 		time.Sleep(300 * time.Millisecond) // Do it again to get the fresh value
-		p.Query(context.Background(), provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{indexes["name=ethernet-1/1"]}})
-		p.Query(context.Background(), provider.BatchQuery{ExporterIP: lo,
+		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{indexes["name=ethernet-1/1"]}})
+		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo,
 			IfIndexes: []uint{indexes["name=ethernet-1/4,index=1"]}})
 		time.Sleep(50 * time.Millisecond)
 		if diff := helpers.Diff(got, []string{

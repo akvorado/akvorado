@@ -6,12 +6,12 @@ package console
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"sort"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/exp/slices"
 
 	"akvorado/common/helpers"
 	"akvorado/console/query"
@@ -38,6 +38,7 @@ type graphLineHandlerOutput struct {
 	Average              []int          `json:"average"` // row → average xps
 	Min                  []int          `json:"min"`     // row → min xps
 	Max                  []int          `json:"max"`     // row → max xps
+	Last                 []int          `json:"last"`    // row → last xps
 	NinetyFivePercentile []int          `json:"95th"`    // row → 95th xps
 }
 
@@ -285,6 +286,7 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 	points := map[int]map[string][]int{}  // for each axis, a map from row to list of points (one point per ts)
 	sums := map[int]map[string]uint64{}   // for each axis, a map from row to sum (for sorting purpose)
 	maxes := map[int]map[string]uint64{}  // for each axis, a map from row to max (for sorting purpose)
+	lasts := map[int]map[string]int{}     // for each axis, a map from row to last(for sorting purpose)
 	lastTimeForAxis := map[int]time.Time{}
 	timeIndexForAxis := map[int]int{}
 	for _, result := range results {
@@ -300,6 +302,7 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 			points[axis] = map[string][]int{}
 			sums[axis] = map[string]uint64{}
 			maxes[axis] = map[string]uint64{}
+			lasts[axis] = map[string]int{}
 		}
 		if result.Time != lastTime {
 			// New timestamp, increment time index
@@ -315,12 +318,14 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 			points[axis][rowKey] = row
 			sums[axis][rowKey] = 0
 			maxes[axis][rowKey] = 0
+			lasts[axis][rowKey] = 0
 		}
 		points[axis][rowKey][timeIndexForAxis[axis]] = int(result.Xps)
 		sums[axis][rowKey] += uint64(result.Xps)
 		if uint64(result.Xps) > maxes[axis][rowKey] {
 			maxes[axis][rowKey] = uint64(result.Xps)
 		}
+		lasts[axis][rowKey] = int(result.Xps)
 	}
 	// Sort axes
 	sort.Ints(axes)
@@ -343,6 +348,9 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 			if input.LimitType == "max" {
 				return maxes[axis][iKey] > maxes[axis][jKey]
 			}
+			if input.LimitType == "last" {
+				return lasts[axis][iKey] > lasts[axis][jKey]
+			}
 
 			return sums[axis][iKey] > sums[axis][jKey]
 		})
@@ -360,6 +368,7 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 	output.Average = make([]int, totalRows)
 	output.Min = make([]int, totalRows)
 	output.Max = make([]int, totalRows)
+	output.Last = make([]int, totalRows)
 	output.NinetyFivePercentile = make([]int, totalRows)
 
 	i := -1
@@ -370,6 +379,11 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 			output.Axis[i] = axis
 			output.Points[i] = points[axis][k]
 			output.Average[i] = int(sums[axis][k] / uint64(len(output.Time)))
+
+			// Last
+			// We use the second last value (-2) because
+			// the last value is not show in the graph.
+			output.Last[i] = points[axis][k][len(output.Time)-2]
 
 			// For remaining, we will sort the values. It
 			// is needed for 95th percentile but it helps
@@ -383,6 +397,7 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 				v := output.Points[i][0]
 				output.Min[i] = v
 				output.Max[i] = v
+				output.Last[i] = v
 				output.NinetyFivePercentile[i] = v
 				continue
 			}

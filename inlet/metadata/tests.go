@@ -23,7 +23,7 @@ type mockProvider struct {
 }
 
 // Query query the mock provider for a value.
-func (mp mockProvider) Query(_ context.Context, query provider.BatchQuery) error {
+func (mp mockProvider) Query(_ context.Context, query *provider.BatchQuery) error {
 	for _, ifIndex := range query.IfIndexes {
 		answer := provider.Answer{
 			Exporter: provider.Exporter{

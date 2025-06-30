@@ -7,8 +7,9 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"slices"
 
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/spf13/cobra"
 
 	"akvorado/common/clickhousedb"
@@ -76,15 +77,21 @@ components and centralizes configuration of the various other components.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		config := OrchestratorConfiguration{}
 		OrchestratorOptions.Path = args[0]
-		OrchestratorOptions.BeforeDump = func() {
+		OrchestratorOptions.BeforeDump = func(metadata mapstructure.Metadata) {
 			// Override some parts of the configuration
-			config.ClickHouse.Kafka.Configuration = config.Kafka.Configuration
+			if !slices.Contains(metadata.Keys, "ClickHouse.Kafka.Brokers[0]") {
+				config.ClickHouse.Kafka.Configuration = config.Kafka.Configuration
+			}
 			for idx := range config.Inlet {
-				config.Inlet[idx].Kafka.Configuration = config.Kafka.Configuration
+				if !slices.Contains(metadata.Keys, fmt.Sprintf("Inlet[%d].Kafka.Brokers[0]", idx)) {
+					config.Inlet[idx].Kafka.Configuration = config.Kafka.Configuration
+				}
 				config.Inlet[idx].Schema = config.Schema
 			}
 			for idx := range config.Console {
-				config.Console[idx].ClickHouse = config.ClickHouse.Configuration
+				if !slices.Contains(metadata.Keys, fmt.Sprintf("Console[%d].ClickHouse.Servers[0]", idx)) {
+					config.Console[idx].ClickHouse = config.ClickHouse.Configuration
+				}
 				config.Console[idx].Schema = config.Schema
 			}
 		}

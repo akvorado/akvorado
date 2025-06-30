@@ -7,28 +7,73 @@ services:
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
 
+  mock-oauth2-server:
+    extends:
+      file: versions.yml
+      service: mock-oauth2-server
+    ports:
+      - 127.0.0.1:5556:8080/tcp
+    environment:
+      LOG_LEVEL: debug
+
   kafka:
     extends:
       file: versions.yml
       service: kafka
     environment:
-     - KAFKA_CFG_BROKER_ID=1
-     - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
-     - KAFKA_CFG_LISTENERS=CLIENT://:9092,EXTERNAL://:9093
-     - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
-     - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092,EXTERNAL://localhost:9092
-     - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
+      KAFKA_CFG_BROKER_ID: 1
+      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+      # We have two sets of listeners: INTERNAL that is used from inside the docker
+      # compose network and listens on "kafka" and EXTERNAL that is mapped to
+      # the host network and listens on "localhost".
+      #
+      # Then, in each set, we have a plain text one and an OAuth-enabled one.
+      KAFKA_CFG_LISTENERS: >-
+        INTERNAL://:9092,
+        OINTERNAL://:9093,
+        EXTERNAL://:9094,
+        OEXTERNAL://:9095
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: >-
+        INTERNAL:PLAINTEXT,
+        OINTERNAL:SASL_PLAINTEXT,
+        EXTERNAL:PLAINTEXT,
+        OEXTERNAL:SASL_PLAINTEXT
+      KAFKA_CFG_ADVERTISED_LISTENERS: >-
+        INTERNAL://kafka:9092,
+        OINTERNAL://kafka:9093,
+        EXTERNAL://localhost:9092,
+        OEXTERNAL://localhost:9093
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: INTERNAL
+      # OAuth2 configuration
+      KAFKA_CFG_LISTENER_NAME_OEXTERNAL_SASL_ENABLED_MECHANISMS: OAUTHBEARER
+      KAFKA_CFG_LISTENER_NAME_OEXTERNAL_SASL_OAUTHBEARER_JWKS_ENDPOINT_URL: http://mock-oauth2-server:8080/default/jwks
+      KAFKA_CFG_LISTENER_NAME_OEXTERNAL_SASL_OAUTHBEARER_EXPECTED_AUDIENCE: default
+      KAFKA_CFG_LISTENER_NAME_OEXTERNAL_OAUTHBEARER_SASL_JAAS_CONFIG: >-
+        org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required
+        clientId=kafka-client
+        clientSecret=kafka-client-secret
+        unsecuredLoginStringClaim_sub="sub";
+      KAFKA_CFG_LISTENER_NAME_OEXTERNAL_OAUTHBEARER_SASL_SERVER_CALLBACK_HANDLER_CLASS: org.apache.kafka.common.security.oauthbearer.secured.OAuthBearerValidatorCallbackHandler
+      KAFKA_CFG_LISTENER_NAME_OINTERNAL_SASL_ENABLED_MECHANISMS: OAUTHBEARER
+      KAFKA_CFG_LISTENER_NAME_OINTERNAL_SASL_OAUTHBEARER_JWKS_ENDPOINT_URL: http://mock-oauth2-server:8080/default/jwks
+      KAFKA_CFG_LISTENER_NAME_OINTERNAL_SASL_OAUTHBEARER_EXPECTED_AUDIENCE: default
+      KAFKA_CFG_LISTENER_NAME_OINTERNAL_OAUTHBEARER_SASL_JAAS_CONFIG: >-
+        org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required
+        clientId=kafka-client
+        clientSecret=kafka-client-secret
+        unsecuredLoginStringClaim_sub="sub";
+      KAFKA_CFG_LISTENER_NAME_OINTERNAL_OAUTHBEARER_SASL_SERVER_CALLBACK_HANDLER_CLASS: org.apache.kafka.common.security.oauthbearer.secured.OAuthBearerValidatorCallbackHandler
     depends_on:
       - zookeeper
+      - mock-oauth2-server
     ports:
-      - 127.0.0.1:9092:9093/tcp
+      - 127.0.0.1:9092:9094/tcp
+      - 127.0.0.1:9093:9095/tcp
 
   redis:
     extends:
       file: versions.yml
       service: redis
-    environment:
-      - ALLOW_EMPTY_PASSWORD=yes
     ports:
       - 127.0.0.1:6379:6379/tcp
 
@@ -37,9 +82,9 @@ services:
       file: versions.yml
       service: postgres
     environment:
-      POSTGRESQL_USERNAME: akvorado
-      POSTGRESQL_PASSWORD: akpass
-      POSTGRESQL_DATABASE: akvorado
+      POSTGRES_USER: akvorado
+      POSTGRES_PASSWORD: akpass
+      POSTGRES_DB: akvorado
     ports:
       - 127.0.0.1:5432:5432/tcp
     healthcheck:
@@ -53,14 +98,14 @@ services:
       file: versions.yml
       service: mysql
     environment:
-      ALLOW_EMPTY_PASSWORD: "yes"
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "yes"
       MARIADB_USER: akvorado
       MARIADB_PASSWORD: akpass
       MARIADB_DATABASE: akvorado
     ports:
       - 127.0.0.1:3306:3306/tcp
     healthcheck:
-      test: ['CMD', '/opt/bitnami/scripts/mariadb/healthcheck.sh']
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -71,6 +116,8 @@ services:
       service: clickhouse
     depends_on:
       - zookeeper
+    environment:
+      - CLICKHOUSE_SKIP_USER_SETUP=1
     cap_add:
       - SYS_NICE
     volumes:

@@ -11,7 +11,7 @@ import (
 
 	"akvorado/common/helpers"
 
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 )
 
 // Configuration describes the configuration for the core component.
@@ -43,7 +43,7 @@ func DefaultConfiguration() Configuration {
 		ExporterClassifiers:     []ExporterClassifierRule{},
 		InterfaceClassifiers:    []InterfaceClassifierRule{},
 		ClassifierCacheDuration: 5 * time.Minute,
-		ASNProviders:            []ASNProvider{ASNProviderFlow, ASNProviderRouting},
+		ASNProviders:            []ASNProvider{ASNProviderFlow, ASNProviderRouting, ASNProviderGeoIP},
 		NetProviders:            []NetProvider{NetProviderFlow, NetProviderRouting},
 	}
 }
@@ -60,6 +60,8 @@ const (
 	ASNProviderFlow ASNProvider = iota
 	// ASNProviderFlowExceptPrivate uses the AS number embedded in flows, except if this is a private AS.
 	ASNProviderFlowExceptPrivate
+	// ASNProviderGeoIP pulls the AS number from a GeoIP database.
+	ASNProviderGeoIP
 	// ASNProviderRouting uses the AS number from BMP
 	ASNProviderRouting
 	// ASNProviderRoutingExceptPrivate uses the AS number from BMP, except if this is a private AS.
@@ -132,8 +134,13 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 		if oldKey != nil {
 			oldValue := helpers.ElemOrIdentity(from.MapIndex(*oldKey))
 			if oldValue.Kind() == reflect.Bool && oldValue.Bool() == true {
-				from.SetMapIndex(reflect.ValueOf("asn-providers"),
-					reflect.ValueOf([]ASNProvider{ASNProviderRouting}))
+				newASNProviders := []ASNProvider{}
+				for _, p := range DefaultConfiguration().ASNProviders {
+					if p != ASNProviderFlow && p != ASNProviderFlowExceptPrivate {
+						newASNProviders = append(newASNProviders, p)
+					}
+				}
+				from.SetMapIndex(reflect.ValueOf("asn-providers"), reflect.ValueOf(newASNProviders))
 			}
 			from.SetMapIndex(*oldKey, reflect.Value{})
 		}

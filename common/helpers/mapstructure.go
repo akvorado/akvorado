@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 )
 
 var mapstructureUnmarshallerHookFuncs = []mapstructure.DecodeHookFunc{}
@@ -36,9 +36,30 @@ func GetMapStructureDecoderConfig(config interface{}, hooks ...mapstructure.Deco
 				mapstructure.ComposeDecodeHookFunc(mapstructureUnmarshallerHookFuncs...),
 				mapstructure.TextUnmarshallerHookFunc(),
 				mapstructure.StringToTimeDurationHookFunc(),
-				mapstructure.StringToSliceHookFunc(","),
+				StringToSliceHookFunc(","),
 			),
 		),
+	}
+}
+
+// StringToSliceHookFunc returns a DecodeHookFunc that converts
+// string to []string by splitting on the given sep.
+func StringToSliceHookFunc(sep string) mapstructure.DecodeHookFunc {
+	return func(
+		f reflect.Kind,
+		t reflect.Kind,
+		data interface{},
+	) (interface{}, error) {
+		if f != reflect.String || t != reflect.Slice {
+			return data, nil
+		}
+
+		raw := data.(string)
+		if raw == "" {
+			return []string{}, nil
+		}
+
+		return strings.Split(raw, sep), nil
 	}
 }
 

@@ -46,6 +46,11 @@ func TestExporterClassifier(t *testing.T) {
 			Program:                `ClassifyTenant("mobile")`,
 			ExpectedClassification: exporterClassification{Tenant: "mobile"},
 		}, {
+			Description:            "use format in classifier",
+			Program:                `ClassifyTenant(Format("tenant-%s", Exporter.Name))`,
+			ExporterInfo:           exporterInfo{"127.0.0.1", "roger"},
+			ExpectedClassification: exporterClassification{Tenant: "tenant-roger"},
+		}, {
 			Description:            "access to exporter name",
 			Program:                `Exporter.Name startsWith "expo" && Classify("europe")`,
 			ExporterInfo:           exporterInfo{"127.0.0.1", "exporter"},
@@ -207,6 +212,15 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")
 				Boundary:     schema.InterfaceBoundaryExternal,
 			},
 		}, {
+			Description: "faulty regex",
+			Program:     `ClassifyProviderRegex(Interface.Description, "^(ebp+.r", "europe-$1")`,
+			InterfaceInfo: interfaceInfo{
+				Name:        "Gi0/0/0",
+				Description: "Transit: Telia (GWDM something something)",
+				Speed:       1000,
+			},
+			ExpectedErr: true,
+		}, {
 			Description: "classify with VLANs",
 			Program:     `Interface.VLAN == 100 && ClassifyExternal()`,
 			InterfaceInfo: interfaceInfo{
@@ -298,7 +312,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")
 	}
 	var err error
 	var gotClassification interfaceClassification
-	for range b.N {
+	for b.Loop() {
 		err = scr.exec(ei, ii, &gotClassification)
 	}
 	if err != nil {

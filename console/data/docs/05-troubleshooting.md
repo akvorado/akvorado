@@ -72,8 +72,8 @@ Here is a list of generic errors you may find:
   configure your exporter to send them (look for `sampler-table` in the
   documentation). Alternatively, you can configure
   `inlet`→`core`→`default-sampling-rate` to workaround this issue.
-- `input interface missing` means the flow does not contain the input
-  interface index. This is something to fix on the exporter.
+- `input and output interfaces missing` means the flow does not contain the
+  input and output interface indexes. This is something to fix on the exporter.
 
 When using NetFlow, you also have the `template not found` error. This
 is expected on start, but then it should not increase anymore.

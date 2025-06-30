@@ -5,8 +5,9 @@ metadata:
   workers: 10
   provider:
     type: snmp
-    communities:
-      ::/0: public
+    credentials:
+      ::/0:
+        communities: public
 flow:
   inputs:
     - type: udp

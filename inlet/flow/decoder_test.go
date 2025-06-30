@@ -47,7 +47,7 @@ func BenchmarkDecodeEncodeNetflow(b *testing.B) {
 			false: "without encoding",
 		}[withEncoding]
 		b.Run(title, func(b *testing.B) {
-			for range b.N {
+			for b.Loop() {
 				got = nfdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 				if withEncoding {
 					for _, flow := range got {
@@ -76,7 +76,7 @@ func BenchmarkDecodeEncodeSflow(b *testing.B) {
 		}[withEncoding]
 		var got []*schema.FlowMessage
 		b.Run(title, func(b *testing.B) {
-			for range b.N {
+			for b.Loop() {
 				got = sdecoder.Decode(decoder.RawFlow{Payload: data, Source: net.ParseIP("127.0.0.1")})
 				if withEncoding {
 					for _, flow := range got {

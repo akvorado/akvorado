@@ -10,7 +10,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 )
 
 func TestMapStructureMatchName(t *testing.T) {
@@ -37,6 +37,28 @@ func TestMapStructureMatchName(t *testing.T) {
 	}
 }
 
+func TestStringToSliceHookFunc(t *testing.T) {
+	type Configuration struct {
+		A []string
+		B []int
+	}
+	TestConfigurationDecode(t, ConfigurationDecodeCases{
+		{
+			Initial: func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"a": "blip,blop",
+					"b": "1,2,3,4",
+				}
+			},
+			Expected: Configuration{
+				A: []string{"blip", "blop"},
+				B: []int{1, 2, 3, 4},
+			},
+		},
+	})
+}
+
 func TestProtectedDecodeHook(t *testing.T) {
 	var configuration struct {
 		A string
@@ -58,10 +80,10 @@ func TestProtectedDecodeHook(t *testing.T) {
 	} else {
 		got := strings.Split(err.Error(), "\n")
 		expected := []string{
-			`2 error(s) decoding:`,
+			`decoding failed due to the following error(s):`,
 			``,
-			`* error decoding 'A': internal error while parsing: noooo`,
-			`* error decoding 'B': internal error while parsing: noooo`,
+			`'A' internal error while parsing: noooo`,
+			`'B' internal error while parsing: noooo`,
 		}
 		if diff := Diff(got, expected); diff != "" {
 			t.Fatalf("Decode() error:\n%s", diff)

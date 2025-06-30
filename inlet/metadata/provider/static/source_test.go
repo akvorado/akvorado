@@ -193,13 +193,13 @@ func TestRemoteExporterSources(t *testing.T) {
 	})
 
 	// Query when json is not ready yet, only static configured data available
-	p.Query(context.Background(), provider.BatchQuery{
+	p.Query(context.Background(), &provider.BatchQuery{
 		ExporterIP: netip.MustParseAddr("2001:db8:1::10"),
 		IfIndexes:  []uint{9},
 	})
 
 	// Unknown Exporter at this moment
-	p.Query(context.Background(), provider.BatchQuery{
+	p.Query(context.Background(), &provider.BatchQuery{
 		ExporterIP: netip.MustParseAddr("2001:db8:2::10"),
 		IfIndexes:  []uint{1},
 	})
@@ -232,7 +232,7 @@ func TestRemoteExporterSources(t *testing.T) {
 	}
 
 	// We now should be able to resolve our new exporter from remote source
-	p.Query(context.Background(), provider.BatchQuery{
+	p.Query(context.Background(), &provider.BatchQuery{
 		ExporterIP: netip.MustParseAddr("2001:db8:2::10"),
 		IfIndexes:  []uint{1},
 	})

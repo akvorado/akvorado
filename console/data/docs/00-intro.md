@@ -24,8 +24,10 @@ install the `docker-compose-v2` package. On macOS, you can use the
 # docker compose up -d
 ```
 
-Once running, *Akvorado* web interface should be running on port 8081. A few
-synthetic flows are generated in the background. To disable them:
+Monitor the output of `docker compose ps`. Once `akvorado-console` service is
+"healthy", *Akvorado* web interface should be running on port 8081.
+
+A few synthetic flows are generated in the background. To disable them:
 
 1. Remove the reference for `docker-compose-demo.yml` from `.env`,
 2. Comment the last line of `akvorado.yaml`, and
@@ -48,7 +50,9 @@ documentation.
   which is used by default by the web interface (mandatory)
 
 The last point is very important: without classification, the homepage widgets
-won't work and nothing will be displayed by default in the “Visualize” tab.
+won't work and nothing will be displayed by default in the “Visualize” tab. The
+provided configuration expects your interface to be named `Transit: Cogent`,
+`PNI: Akamai`, `PPNI: Fastly`, or `IX: DECIX`.
 
 You can get all the expanded configuration (with default values) with
 `docker compose exec akvorado-orchestrator akvorado orchestrator
@@ -65,8 +69,7 @@ Once you are ready, you can run everything in the background with
 
 - The **inlet service** receives flows from exporters. It poll each
   exporter using SNMP to get the *system name*, the *interface names*,
-  *descriptions* and *speeds*. It query GeoIP databases to get the
-  *country* and the *AS number*. It applies rules to add attributes to
+  *descriptions* and *speeds*. It applies rules to add attributes to
   exporters. Interface rules attach to each interface a *boundary*
   (external or internal), a *network provider* and a *connectivity
   type* (PNI, IX, transit). Optionally, it may also receive BGP routes
@@ -74,10 +77,10 @@ Once you are ready, you can run everything in the background with
   the communities. The flow is exported to *Kafka*, serialized using
   *Protobuf*.
 
-- The **orchestrator service** configures the internal and external
-  components. It creates the *Kafka topic* and configures *ClickHouse*
-  to receive the flows from Kafka. It exposes configuration settings
-  for the other services to use.
+- The **orchestrator service** configures the internal and external components.
+  It creates the *Kafka topic* and configures *ClickHouse* to receive the flows
+  from Kafka. It exposes configuration settings for the other services to use.
+  It provides to ClickHouse additional data, notably *GeoIP* data.
 
 - The **console service** exposes a web interface to look and
   manipulate the flows stored inside the ClickHouse database.

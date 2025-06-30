@@ -76,6 +76,22 @@ func TestStaticProvider(t *testing.T) {
 					},
 				},
 			},
+			"2001:db8:4::/48": {
+				Exporter: provider.Exporter{
+					Name: "nodefault skip",
+				},
+				IfIndexes: map[uint]provider.Interface{
+					10: {
+						Name:         "Gi10",
+						Description:  "10th interface",
+						Speed:        1000,
+						Provider:     "transit101",
+						Connectivity: "transit",
+						Boundary:     schema.InterfaceBoundaryExternal,
+					},
+				},
+				SkipMissingInterfaces: true,
+			},
 		}),
 	}
 
@@ -85,18 +101,23 @@ func TestStaticProvider(t *testing.T) {
 		got = append(got, update)
 	})
 
-	p.Query(context.Background(), provider.BatchQuery{
+	p.Query(context.Background(), &provider.BatchQuery{
 		ExporterIP: netip.MustParseAddr("2001:db8:1::10"),
 		IfIndexes:  []uint{9, 10, 11},
 	})
-	p.Query(context.Background(), provider.BatchQuery{
+	p.Query(context.Background(), &provider.BatchQuery{
 		ExporterIP: netip.MustParseAddr("2001:db8:2::10"),
 		IfIndexes:  []uint{9, 10, 11},
 	})
-	p.Query(context.Background(), provider.BatchQuery{
+	p.Query(context.Background(), &provider.BatchQuery{
 		ExporterIP: netip.MustParseAddr("2001:db8:3::10"),
 		IfIndexes:  []uint{10},
 	})
+	query := provider.BatchQuery{
+		ExporterIP: netip.MustParseAddr("2001:db8:4::10"),
+		IfIndexes:  []uint{9, 10, 11},
+	}
+	err := p.Query(context.Background(), &query)
 
 	expected := []provider.Update{
 		{
@@ -214,9 +235,34 @@ func TestStaticProvider(t *testing.T) {
 				},
 			},
 		},
+		{
+			Query: provider.Query{
+				ExporterIP: netip.MustParseAddr("2001:db8:4::10"),
+				IfIndex:    10,
+			},
+			Answer: provider.Answer{
+				Exporter: provider.Exporter{
+					Name: "nodefault skip",
+				},
+				Interface: provider.Interface{
+					Name:         "Gi10",
+					Description:  "10th interface",
+					Speed:        1000,
+					Provider:     "transit101",
+					Connectivity: "transit",
+					Boundary:     schema.InterfaceBoundaryExternal,
+				},
+			},
+		},
 	}
 
 	if diff := helpers.Diff(got, expected); diff != "" {
+		t.Fatalf("static provider (-got, +want):\n%s", diff)
+	}
+	if diff := helpers.Diff(query.IfIndexes, []uint{9, 11}); diff != "" {
+		t.Fatalf("static provider (-got, +want):\n%s", diff)
+	}
+	if diff := helpers.Diff(err, provider.ErrSkipProvider); diff != "" {
 		t.Fatalf("static provider (-got, +want):\n%s", diff)
 	}
 }

@@ -12,9 +12,9 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-viper/mapstructure/v2"
 	"github.com/kentik/patricia"
 	tree "github.com/kentik/patricia/generics_tree"
-	"github.com/mitchellh/mapstructure"
 )
 
 // SubnetMap maps subnets to values and allow to lookup by IP address.
@@ -132,7 +132,30 @@ func MustNewSubnetMap[V any](from map[string]V) *SubnetMap[V] {
 	return trie
 }
 
-var subnetLookAlikeRegex = regexp.MustCompile("^([a-fA-F:.0-9]+)(/([0-9]+))?$")
+// subnetLookAlikeRegex is a regex that matches string looking like a subnet,
+// allowing better error messages if there is a typo.
+var subnetLookAlikeRegex = regexp.MustCompile("^([a-fA-F:.0-9]*[:.][a-fA-F:.0-9]*)(/([0-9]+))?$")
+
+// LooksLikeSubnetMap returns true iff the provided value could be a SubnetMap
+// (but not 100% sure).
+func LooksLikeSubnetMap(v reflect.Value) (result bool) {
+	if v.Kind() == reflect.Map {
+		// When we have a map, we check if all keys look like a subnet.
+		result = true
+		for _, key := range v.MapKeys() {
+			key = ElemOrIdentity(key)
+			if key.Kind() != reflect.String {
+				result = false
+				break
+			}
+			if !subnetLookAlikeRegex.MatchString(key.String()) {
+				result = false
+				break
+			}
+		}
+	}
+	return
+}
 
 // SubnetMapUnmarshallerHook decodes SubnetMap and notably check that
 // valid networks are provided as key. It also accepts a single value
@@ -147,23 +170,7 @@ func SubnetMapUnmarshallerHook[V any]() mapstructure.DecodeHookFunc {
 		}
 		output := gin.H{}
 		var zero V
-		var plausibleSubnetMap bool
-		if from.Kind() == reflect.Map {
-			// When we have a map, we check if all keys look like a subnet.
-			plausibleSubnetMap = true
-			for _, key := range from.MapKeys() {
-				key = ElemOrIdentity(key)
-				if key.Kind() != reflect.String {
-					plausibleSubnetMap = false
-					break
-				}
-				if !subnetLookAlikeRegex.MatchString(key.String()) {
-					plausibleSubnetMap = false
-					break
-				}
-			}
-		}
-		if plausibleSubnetMap {
+		if LooksLikeSubnetMap(from) {
 			// First case, we have a map
 			iter := from.MapRange()
 			for i := 0; iter.Next(); i++ {

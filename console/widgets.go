@@ -184,7 +184,7 @@ func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 	}
 	if strings.HasPrefix(gc.Param("name"), "src-") {
 		filter = "AND InIfBoundary = 'external'"
-	} else {
+	} else if strings.HasPrefix(gc.Param("name"), "dst-") {
 		filter = "AND OutIfBoundary = 'external'"
 	}
 	if groupby == "" {

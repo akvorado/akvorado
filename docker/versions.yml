@@ -4,13 +4,13 @@ services:
   zookeeper:
     image: bitnami/zookeeper:3.8 # \d+\.\d+
   kafka:
-    image: bitnami/kafka:3.7 # \d+\.\d+
+    image: bitnami/kafka:3.8 # \d+\.\d+
   redis:
-    image: bitnami/valkey:7.2 # \d+\.\d+
+    image: valkey/valkey:7.2 # \d+\.\d+
   clickhouse:
     image: clickhouse/clickhouse-server:24.8 # \d+\.[38]
   traefik:
-    image: traefik:v3.1 # v\d+\.\d+
+    image: traefik:v3.4 # v\d+\.\d+
   maxmind-geoipupdate:
     image: ghcr.io/maxmind/geoipupdate:v7
   ipinfo-geoipupdate:
@@ -35,8 +35,10 @@ services:
 
   # for tests
   srlinux:
-    image: ghcr.io/nokia/srlinux:23.7.1
+    image: ghcr.io/nokia/srlinux:23.10.6
   postgres:
-    image: bitnami/postgresql:16.3.0 # \d+\.\d+\.0
+    image: postgres:16 # \d+
   mysql:
-    image: bitnami/mariadb:11.3 # \d+\.\d+
+    image: mariadb:11.4 # \d+\.\d+
+  mock-oauth2-server:
+    image: ghcr.io/navikt/mock-oauth2-server:2.1.10 # \d+\.\d+\.\d+

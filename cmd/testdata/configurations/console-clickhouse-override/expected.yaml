@@ -1,0 +1,7 @@
+---
+paths:
+  console.0.clickhouse.servers:
+    - 127.0.0.2:9000
+  console.0.clickhouse.username: something
+  console.0.clickhouse.password: else
+  console.0.clickhouse.maxopenconns: 10

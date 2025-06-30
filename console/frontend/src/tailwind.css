@@ -1,10 +1,13 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@source "../index.html";
+@source "**/*.{vue,js,ts,jsx,tsx}";
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* For CodeMirror */
 #app {
   .cm-editor {
+    @reference "tailwindcss/theme.css";
     .cm-line {
       @apply px-0;
     }

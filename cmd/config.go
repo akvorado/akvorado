@@ -18,7 +18,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"github.com/mitchellh/mapstructure"
+	"github.com/go-viper/mapstructure/v2"
 
 	"akvorado/common/helpers/yaml"
 
@@ -30,7 +30,7 @@ import (
 type ConfigRelatedOptions struct {
 	Path       string
 	Dump       bool
-	BeforeDump func()
+	BeforeDump func(mapstructure.Metadata)
 }
 
 // Parse parses the configuration file (if present) and the
@@ -144,7 +144,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 
 	// Validate and dump configuration if requested
 	if c.BeforeDump != nil {
-		c.BeforeDump()
+		c.BeforeDump(metadata)
 	}
 	if err := helpers.Validate.Struct(config); err != nil {
 		switch verr := err.(type) {

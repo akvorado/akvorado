@@ -32,14 +32,14 @@ Currently, only a pre-built binary for Linux x86-64 is provided.
 
 ## Compilation from source
 
-You need a proper installation of [Go](https://go.dev/doc/install) (1.22+), and
+You need a proper installation of [Go](https://go.dev/doc/install) (1.24+), and
 [NodeJS](https://nodejs.org/en/download/) (18+) with NPM (6+). For example, on
 Debian:
 
 ```console
 # apt install golang nodejs npm
 # go version
-go version go1.23.3 linux/amd64
+go version go1.24.1 linux/amd64
 # node --version
 v20.18.1
 # npm --version

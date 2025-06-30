@@ -4,10 +4,11 @@ paths:
     - type: snmp
       pollerretries: 1
       pollertimeout: 1s
-      communities:
-        ::/0: [yopla]
-        203.0.113.0/24: [yopli]
-      securityparameters: {}
+      credentials:
+        ::/0:
+          communities: [yopla]
+        203.0.113.0/24:
+          communities: [yopli]
       agents: {}
       ports:
         ::/0: 161

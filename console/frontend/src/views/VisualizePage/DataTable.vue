@@ -17,7 +17,7 @@
                 displayedAxis === axis,
             }"
             :aria-current="displayedAxis === axis ? 'page' : undefined"
-            @click="(selectedAxis = axis)"
+            @click="selectedAxis = axis"
           >
             {{ name }}
           </button>
@@ -53,7 +53,7 @@
           <tr
             v-for="(row, index) in table.rows"
             :key="index"
-            class="border-b odd:bg-white even:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 odd:dark:bg-gray-800 even:dark:bg-gray-700"
+            class="border-b border-gray-200 odd:bg-white even:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 odd:dark:bg-gray-800 even:dark:bg-gray-700"
             @pointerenter="highlight(index)"
             @pointerleave="highlight(null)"
           >
@@ -169,6 +169,7 @@ const table = computed(
           // Stats
           { name: "Min", classNames: "text-right" },
           { name: "Max", classNames: "text-right" },
+          { name: "Last", classNames: "text-right" },
           { name: "Average", classNames: "text-right" },
           { name: "~95th", classNames: "text-right" },
         ],
@@ -186,6 +187,7 @@ const table = computed(
                   ...[
                     data.min[idx],
                     data.max[idx],
+                    data.last[idx],
                     data.average[idx],
                     data["95th"][idx],
                   ].map((d) => ({

@@ -5,7 +5,7 @@
   <div class="inline-flex items-center gap-1">
     <span class="text-sm lg:hidden">{{ label }}</span>
     <div
-      class="inline-flex rounded-md shadow-sm dark:shadow-white/10"
+      class="inline-flex rounded-md shadow-xs dark:shadow-white/10"
       role="group"
     >
       <label

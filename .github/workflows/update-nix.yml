@@ -29,7 +29,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - uses: cachix/install-nix-action@v30
+      - uses: cachix/install-nix-action@v31
       - name: Update Nix lockfile
         run: nix flake update ${{ matrix.source }}
       - name: Create pull request
@@ -51,7 +51,7 @@ jobs:
       - name: Sleep a bit
         run: sleep 300
         if: ${{ github.event_name == 'push' }}
-      - uses: cachix/install-nix-action@v30
+      - uses: cachix/install-nix-action@v31
       - uses: actions/checkout@v4
         with:
           persist-credentials: true
