@@ -62,7 +62,7 @@
     "vue-echarts": "^7.0.3",
     "vue-resizer": "^1.1.9",
     "vue-router": "^4.0.16",
-    "vue-tsc": "^2.0.16",
+    "vue-tsc": "^3.0.1",
     "vuedraggable": "^4.1.0"
   },
   "optionalDependencies": {
