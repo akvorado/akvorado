@@ -78,8 +78,8 @@ conntrackfixer/mocks/mock_conntrackfixer.go: go.mod ; $(info $(M) generate mocks
 	$Q if [ `$(GO) env GOOS` = "linux" ]; then \
 	   $(MOCKGEN) -package mocks -build_constraint "!release" -destination $@ \
 		akvorado/conntrackfixer ConntrackConn,DockerClient ; \
+		touch $@ ; \
 	fi
-	$Q touch $@
 
 inlet/core/asnprovider_enumer.go: go.mod inlet/core/config.go ; $(info $(M) generate enums for ASNProvider…)
 	$Q $(ENUMER) -type=ASNProvider -text -transform=kebab -trimprefix=ASNProvider inlet/core/config.go
