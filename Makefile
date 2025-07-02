@@ -183,7 +183,8 @@ test-coverage-go: ; $(info $(M) running Go coverage tests…) @ ## Run Go covera
 	$Q $(GO) tool cover -html=test/go/profile.out -o test/go/coverage.html
 	$Q $(GOCOV) convert test/go/profile.out | $(GOCOVXML) > test/go/coverage.xml
 	@printf "Code coverage: "; \
-		echo "scale=1;$$(sed -En 's/^<coverage line-rate="([0-9.]+)".*/\1/p' test/go/coverage.xml) * 100 / 1" | bc -q
+		c=$$(echo "scale=1;$$(sed -En 's/^<coverage line-rate="([0-9.]+)".*/\1/p' test/go/coverage.xml) * 100 / 1" | bc -q) ; \
+	    echo $$c ; [ $$c != 0 ]
 
 test-js: .fmt-js~ .lint-js~ $(GENERATED_JS)
 test-js: ; $(info $(M) running JS tests…) @ ## Run JS tests
