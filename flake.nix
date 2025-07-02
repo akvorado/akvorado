@@ -19,6 +19,12 @@
           name = "akvorado-frontend";
           src = ./console/frontend;
           npmDepsHash = builtins.readFile ./nix/npmDepsHash.txt;
+          # Filter out optional dependencies
+          prePatch = ''
+            ${pkgs.jq}/bin/jq 'del(.packages[] | select(.optional == true and .dev == null))' \
+              < package-lock.json > package-lock.json.tmp
+            mv package-lock.json.tmp package-lock.json
+          '';
           installPhase = ''
             mkdir $out
             cp -r node_modules $out/node_modules
