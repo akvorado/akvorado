@@ -443,8 +443,9 @@ AND name LIKE $3`, "flows", ch.config.Database, "%DimensionAttribute")
 		}
 
 		// Check if the rows were created in the consumer flows table
-		rowConsumer := ch.d.ClickHouse.QueryRow(context.Background(), `
-		SHOW CREATE flows_LAABIGYMRYZPTGOYIIFZNYDEQM_raw_consumer`)
+		rowConsumer := ch.d.ClickHouse.QueryRow(
+			context.Background(),
+			fmt.Sprintf(`SHOW CREATE flows_%s_raw_consumer`, ch.d.Schema.ProtobufMessageHash()))
 		var existingConsumer string
 		if err := rowConsumer.Scan(&existingConsumer); err != nil {
 			t.Fatalf("Scan() error:\n%+v", err)
@@ -517,8 +518,9 @@ AND name LIKE $3`, "flows", ch.config.Database, "%DimensionAttribute")
 		}
 
 		// Check if the rows were removed in the consumer flows table
-		rowConsumer := ch.d.ClickHouse.QueryRow(context.Background(),
-			`SHOW CREATE flows_LAABIGYMRYZPTGOYIIFZNYDEQM_raw_consumer`)
+		rowConsumer := ch.d.ClickHouse.QueryRow(
+			context.Background(),
+			fmt.Sprintf(`SHOW CREATE flows_%s_raw_consumer`, ch.d.Schema.ProtobufMessageHash()))
 		var existingConsumer string
 		if err := rowConsumer.Scan(&existingConsumer); err != nil {
 			t.Fatalf("Scan() error:\n%+v", err)
