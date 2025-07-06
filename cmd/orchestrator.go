@@ -50,6 +50,7 @@ func (c *OrchestratorConfiguration) Reset() {
 		HTTP:         httpserver.DefaultConfiguration(),
 		ClickHouse:   clickhouse.DefaultConfiguration(),
 		Kafka:        kafka.DefaultConfiguration(),
+		GeoIP:        geoip.DefaultConfiguration(),
 		Orchestrator: orchestrator.DefaultConfiguration(),
 		Schema:       schema.DefaultConfiguration(),
 		// Other service configurations
