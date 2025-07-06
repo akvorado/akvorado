@@ -41,9 +41,7 @@ func (qf Filter) MarshalText() ([]byte, error) {
 
 // UnmarshalText parses a filter. Validate() should be called before use.
 func (qf *Filter) UnmarshalText(input []byte) error {
-	*qf = Filter{
-		filter: strings.TrimSpace(string(input)),
-	}
+	*qf = NewFilter(strings.TrimSpace(string(input)))
 	return nil
 }
 
