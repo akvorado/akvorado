@@ -786,18 +786,25 @@ By default, the configuration entries are kept in sync with the content of
 the configuration file, except if you disable the `config-entries-strict-sync`,
 the existing non-listed overrides won't be removed from topic configuration entries.
 
-### ClickHouse
+### ClickHouse database
 
-The ClickHouse component exposes some useful HTTP endpoints to
-configure a ClickHouse database. It also provisions and keep
-up-to-date a ClickHouse database. The following keys should be
-provided:
+The ClickHouse database component contains the settings to connect to the
+ClickHouse database. The following keys should be provided inside
+`clickhousedb`:
 
 - `servers` defines the list of ClickHouse servers to connect to
 - `username` is the username to use for authentication
 - `password` is the password to use for authentication
 - `database` defines the database to use to create tables
-- `cluster` defines the cluster for replicated and distributed tables, see below for more information
+- `cluster` defines the cluster for replicated and distributed tables, see the next section for more information
+
+### ClickHouse
+
+The ClickHouse component exposes some useful HTTP endpoints to
+configure a ClickHouse database. It also provisions and keep
+up-to-date a ClickHouse database. The following keys can be
+provided inside `clickhouse`:
+
 - `kafka` defines the configuration for the Kafka consumer. The accepted keys are:
   - `consumers` defines the number of consumers to use to consume messages from
     the Kafka topic. It is silently bound by the maximum number of threads

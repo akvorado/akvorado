@@ -68,17 +68,17 @@ func (c *Component) tableAlreadyExists(ctx context.Context, table, column, targe
 	// Fetch the existing one
 	row := c.d.ClickHouse.QueryRow(ctx,
 		fmt.Sprintf("SELECT %s FROM system.tables WHERE name = $1 AND database = $2", column),
-		table, c.config.Database)
+		table, c.d.ClickHouse.DatabaseName())
 	var existing string
 	if err := row.Scan(&existing); err != nil && err != sql.ErrNoRows {
 		return false, fmt.Errorf("cannot check if table %s already exists: %w", table, err)
 	}
 	// Add a few tweaks
 	existing = strings.ReplaceAll(existing,
-		fmt.Sprintf(`dictGetOrDefault('%s.`, c.config.Database),
+		fmt.Sprintf(`dictGetOrDefault('%s.`, c.d.ClickHouse.DatabaseName()),
 		"dictGetOrDefault('")
 	existing = strings.ReplaceAll(existing,
-		fmt.Sprintf(`dictGet('%s.`, c.config.Database),
+		fmt.Sprintf(`dictGet('%s.`, c.d.ClickHouse.DatabaseName()),
 		"dictGet('")
 	existing = regexp.MustCompile(` SETTINGS index_granularity = \d+$`).ReplaceAllString(existing, "")
 
@@ -95,7 +95,7 @@ func (c *Component) tableAlreadyExists(ctx context.Context, table, column, targe
 // mergeTreeEngine returns a MergeTree engine definition, either plain or using
 // Replicated if we are on a cluster.
 func (c *Component) mergeTreeEngine(table string, variant string, args ...string) string {
-	if c.config.Cluster != "" {
+	if c.d.ClickHouse.ClusterName() != "" {
 		return fmt.Sprintf(`Replicated%sMergeTree(%s)`, variant, strings.Join(
 			append([]string{
 				fmt.Sprintf("'/clickhouse/tables/shard-{shard}/%s'", table),
@@ -118,7 +118,7 @@ func (c *Component) distributedTable(table string) string {
 // localTable turns a table name to the matching local distributed table if we
 // are in a cluster.
 func (c *Component) localTable(table string) string {
-	if c.config.Cluster != "" && c.shards > 1 {
+	if c.d.ClickHouse.ClusterName() != "" && c.shards > 1 {
 		return fmt.Sprintf("%s_local", table)
 	}
 	return table
@@ -147,7 +147,7 @@ LIFETIME(MIN 0 MAX 3600)
 LAYOUT({{ .Layout }}())
 {{ .Settings }}
 `, gin.H{
-		"Database":   c.config.Database,
+		"Database":   c.d.ClickHouse.DatabaseName(),
 		"Name":       name,
 		"Schema":     schema,
 		"PrimaryKey": primary,
@@ -198,7 +198,7 @@ ENGINE = {{ .Engine }}
 ORDER BY (ExporterAddress, IfName)
 TTL TimeReceived + toIntervalDay(1)`,
 		gin.H{
-			"Database": c.config.Database,
+			"Database": c.d.ClickHouse.DatabaseName(),
 			"Table":    name,
 			"Schema":   strings.Join(cols, ", "),
 			"Engine":   c.mergeTreeEngine(name, "Replacing", "TimeReceived"),
@@ -248,7 +248,7 @@ func (c *Component) createExportersConsumerView(ctx context.Context) error {
 		`SELECT DISTINCT {{ .Columns }} FROM {{ .Database }}.{{ .Table }} ARRAY JOIN arrayEnumerate([1, 2]) AS num`,
 		gin.H{
 			"Table":    c.distributedTable("flows"),
-			"Database": c.config.Database,
+			"Database": c.d.ClickHouse.DatabaseName(),
 			"Columns":  strings.Join(cols, ", "),
 		})
 	if err != nil {
@@ -304,7 +304,7 @@ func (c *Component) createRawFlowsTable(ctx context.Context) error {
 	createQuery, err := stemplate(
 		`CREATE TABLE {{ .Database }}.{{ .Table }} ({{ .Schema }}) ENGINE = {{ .Engine }}`,
 		gin.H{
-			"Database": c.config.Database,
+			"Database": c.d.ClickHouse.DatabaseName(),
 			"Table":    tableName,
 			"Schema": c.d.Schema.ClickHouseCreateTable(
 				schema.ClickHouseSkipGeneratedColumns,
@@ -357,7 +357,7 @@ func (c *Component) createRawFlowsConsumerView(ctx context.Context) error {
 			schema.ClickHouseSubstituteGenerates,
 			schema.ClickHouseSubstituteTransforms,
 			schema.ClickHouseSkipAliasedColumns), ", "),
-		"Database": c.config.Database,
+		"Database": c.d.ClickHouse.DatabaseName(),
 		"Table":    tableName,
 	}
 	selectQuery, err := stemplate(
@@ -460,7 +460,7 @@ ORDER BY (timestamp, topic, partition, offset)
 TTL timestamp + toIntervalDay(1)
 `, gin.H{
 		"Table":    name,
-		"Database": c.config.Database,
+		"Database": c.d.ClickHouse.DatabaseName(),
 		"Engine":   c.mergeTreeEngine(name, ""),
 	})
 	if err != nil {
@@ -495,7 +495,7 @@ SELECT
  _error AS error
 FROM {{ .Database }}.{{ .Table }}
 WHERE length(_error) > 0`, gin.H{
-		"Database": c.config.Database,
+		"Database": c.d.ClickHouse.DatabaseName(),
 		"Table":    source,
 	})
 	if err != nil {
@@ -625,7 +625,7 @@ FROM system.columns
 WHERE database = $1
 AND table = $2
 ORDER BY position ASC
-`, c.config.Database, tableName); err != nil {
+`, c.d.ClickHouse.DatabaseName(), tableName); err != nil {
 		return fmt.Errorf("cannot query columns table: %w", err)
 	}
 
@@ -771,7 +771,7 @@ SELECT
  toStartOfInterval(TimeReceived, toIntervalSecond({{ .Seconds }})) AS TimeReceived,
  {{ .Columns }}
 FROM {{ .Database }}.{{ .Table }}`, gin.H{
-		"Database": c.config.Database,
+		"Database": c.d.ClickHouse.DatabaseName(),
 		"Table":    c.localTable("flows"),
 		"Seconds":  uint64(resolution.Interval.Seconds()),
 		"Columns": strings.Join(c.d.Schema.ClickHouseSelectColumns(
@@ -824,7 +824,7 @@ SELECT name, type, compression_codec, default_kind, default_expression
 FROM system.columns
 WHERE database = $1 AND table = $2
 ORDER BY position ASC
-`, c.config.Database, c.localTable(source)); err != nil {
+`, c.d.ClickHouse.DatabaseName(), c.localTable(source)); err != nil {
 		return fmt.Errorf("cannot query columns table: %w", err)
 	}
 	cols := []string{}
@@ -845,8 +845,8 @@ ORDER BY position ASC
 ({{ .Schema }})
 ENGINE = Distributed('{{ .Cluster }}', '{{ .Database}}', '{{ .Source }}', rand())`,
 		gin.H{
-			"Cluster":  c.config.Cluster,
-			"Database": c.config.Database,
+			"Cluster":  c.d.ClickHouse.ClusterName(),
+			"Database": c.d.ClickHouse.DatabaseName(),
 			"Source":   c.localTable(source),
 			"Target":   c.distributedTable(source),
 			"Schema":   strings.Join(cols, ", "),

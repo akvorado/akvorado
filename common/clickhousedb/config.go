@@ -45,3 +45,13 @@ func DefaultConfiguration() Configuration {
 		},
 	}
 }
+
+// ClusterName returns the cluster we operate on.
+func (c *Component) ClusterName() string {
+	return c.config.Cluster
+}
+
+// DatabaseName returns the database we operate on.
+func (c *Component) DatabaseName() string {
+	return c.config.Database
+}

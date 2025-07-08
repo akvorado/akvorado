@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"slices"
 
+	"github.com/gin-gonic/gin"
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/spf13/cobra"
 
@@ -29,6 +30,7 @@ type OrchestratorConfiguration struct {
 	Reporting    reporter.Configuration
 	HTTP         httpserver.Configuration
 	ClickHouse   clickhouse.Configuration
+	ClickHouseDB clickhousedb.Configuration
 	Kafka        kafka.Configuration
 	GeoIP        geoip.Configuration
 	Orchestrator orchestrator.Configuration `mapstructure:",squash" yaml:",inline"`
@@ -49,6 +51,7 @@ func (c *OrchestratorConfiguration) Reset() {
 		Reporting:    reporter.DefaultConfiguration(),
 		HTTP:         httpserver.DefaultConfiguration(),
 		ClickHouse:   clickhouse.DefaultConfiguration(),
+		ClickHouseDB: clickhousedb.DefaultConfiguration(),
 		Kafka:        kafka.DefaultConfiguration(),
 		GeoIP:        geoip.DefaultConfiguration(),
 		Orchestrator: orchestrator.DefaultConfiguration(),
@@ -91,7 +94,7 @@ components and centralizes configuration of the various other components.`,
 			}
 			for idx := range config.Console {
 				if !slices.Contains(metadata.Keys, fmt.Sprintf("Console[%d].ClickHouse.Servers[0]", idx)) {
-					config.Console[idx].ClickHouse = config.ClickHouse.Configuration
+					config.Console[idx].ClickHouse = config.ClickHouseDB
 				}
 				config.Console[idx].Schema = config.Schema
 			}
@@ -135,7 +138,7 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, c
 	if err != nil {
 		return fmt.Errorf("unable to initialize kafka component: %w", err)
 	}
-	clickhouseDBComponent, err := clickhousedb.New(r, config.ClickHouse.Configuration, clickhousedb.Dependencies{
+	clickhouseDBComponent, err := clickhousedb.New(r, config.ClickHouseDB, clickhousedb.Dependencies{
 		Daemon: daemonComponent,
 	})
 	if err != nil {
@@ -196,7 +199,8 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, c
 }
 
 // OrchestratorConfigurationUnmarshallerHook migrates GeoIP configuration from inlet
-// component to clickhouse component.
+// component to clickhouse component and ClickHouse database configuration from
+// clickhouse component to clickhousedb component.
 func OrchestratorConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (interface{}, error) {
 		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(OrchestratorConfiguration{}) {
@@ -269,6 +273,63 @@ func OrchestratorConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 				}
 			}
 			break
+		}
+
+		{
+			// clickhouse database fields → clickhousedb
+			var clickhouseKey, clickhouseDBKey *reflect.Value
+			fromKeys := from.MapKeys()
+			for i, k := range fromKeys {
+				k = helpers.ElemOrIdentity(k)
+				if k.Kind() != reflect.String {
+					continue
+				}
+				if helpers.MapStructureMatchName(k.String(), "ClickHouse") {
+					clickhouseKey = &fromKeys[i]
+				} else if helpers.MapStructureMatchName(k.String(), "ClickHouseDB") {
+					clickhouseDBKey = &fromKeys[i]
+				}
+			}
+
+			if clickhouseKey != nil {
+				var clickhouseDB reflect.Value
+				if clickhouseDBKey != nil {
+					clickhouseDB = helpers.ElemOrIdentity(from.MapIndex(*clickhouseDBKey))
+				} else {
+					clickhouseDB = reflect.ValueOf(gin.H{})
+				}
+
+				clickhouse := helpers.ElemOrIdentity(from.MapIndex(*clickhouseKey))
+				if clickhouse.Kind() == reflect.Map {
+					clickhouseKeys := clickhouse.MapKeys()
+					// Fields to migrate from clickhouse to clickhousedb
+					fieldsToMigrate := []string{
+						"Servers", "Cluster", "Database", "Username", "Password",
+						"MaxOpenConns", "DialTimeout", "TLS",
+					}
+					found := false
+					for _, k := range clickhouseKeys {
+						k = helpers.ElemOrIdentity(k)
+						if k.Kind() != reflect.String {
+							continue
+						}
+						for _, field := range fieldsToMigrate {
+							if helpers.MapStructureMatchName(k.String(), field) {
+								if clickhouseDBKey != nil {
+									return nil, errors.New("cannot have both \"ClickHouseDB\" and ClickHouse database settings in \"ClickHouse\"")
+								}
+								clickhouseDB.SetMapIndex(k, helpers.ElemOrIdentity(clickhouse.MapIndex(k)))
+								clickhouse.SetMapIndex(k, reflect.Value{})
+								found = true
+								break
+							}
+						}
+					}
+					if clickhouseDBKey == nil && found {
+						from.SetMapIndex(reflect.ValueOf("clickhousedb"), clickhouseDB)
+					}
+				}
+			}
 		}
 
 		return from.Interface(), nil

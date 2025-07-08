@@ -60,11 +60,11 @@ func (c *Component) migrateDatabase() error {
 		return fmt.Errorf("incorrect ClickHouse version: %w", err)
 	}
 
-	if c.config.Cluster != "" {
+	if c.d.ClickHouse.ClusterName() != "" {
 		var shardNum uint64
 		row = c.d.ClickHouse.QueryRow(ctx,
 			`SELECT countDistinct(shard_num) AS num FROM system.clusters WHERE cluster = $1`,
-			c.config.Cluster,
+			c.d.ClickHouse.ClusterName(),
 		)
 		if err := row.Scan(&shardNum); err != nil {
 			c.r.Err(err).Msg("unable to parse cluster settings")
@@ -210,5 +210,5 @@ func (c *Component) getHTTPBaseURL(address string) (string, error) {
 
 // ReloadDictionary will reload the specified dictionnary.
 func (c *Component) ReloadDictionary(ctx context.Context, dictName string) error {
-	return c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf("SYSTEM RELOAD DICTIONARY %s.%s", c.config.Database, dictName))
+	return c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf("SYSTEM RELOAD DICTIONARY %s.%s", c.d.ClickHouse.DatabaseName(), dictName))
 }
