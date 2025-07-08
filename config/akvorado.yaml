@@ -35,12 +35,14 @@ geoip:
   #geo-database:
   # - /usr/share/GeoIP/GeoLite2-Country.mmdb
 
+clickhousedb:
+  servers:
+    - clickhouse:9000
+
 clickhouse:
   orchestrator-url: http://akvorado-orchestrator:8080
   kafka:
     consumers: 4
-  servers:
-    - clickhouse:9000
   prometheus-endpoint: /metrics
   asns:
     64501: ACME Corporation

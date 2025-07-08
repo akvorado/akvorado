@@ -1,0 +1,18 @@
+---
+paths:
+  clickhouse.orchestratorurl: http://akvorado-orchestrator:8080
+  clickhousedb:
+    servers:
+      - clickhouse:9000
+    cluster: ""
+    username: alfred
+    password: "IsBaT!Man"
+    database: default
+    maxopenconns: 10
+    dialtimeout: 5s
+    tls:
+      enable: true
+      verify: true
+      cafile: ""
+      certfile: ""
+      keyfile: ""

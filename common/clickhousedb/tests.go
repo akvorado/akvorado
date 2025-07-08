@@ -39,11 +39,6 @@ func SetupClickHouse(t *testing.T, r *reporter.Reporter, cluster bool) *Componen
 	return c
 }
 
-// ClusterName returns the name of the cluster (for testing only)
-func (c *Component) ClusterName() string {
-	return c.config.Cluster
-}
-
 // NewMock creates a new component using a mock driver. It returns
 // both the component and the mock driver.
 func NewMock(t *testing.T, r *reporter.Reporter) (*Component, *mocks.MockConn) {

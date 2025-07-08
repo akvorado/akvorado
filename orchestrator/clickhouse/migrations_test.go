@@ -137,9 +137,6 @@ func startTestComponent(t *testing.T, r *reporter.Reporter, chComponent *clickho
 	configuration := DefaultConfiguration()
 	configuration.OrchestratorURL = "http://127.0.0.1:0"
 	configuration.Kafka.Configuration = kafka.DefaultConfiguration()
-	// This is a bit hacky, in real setup, the same configuration block is
-	// used for both clickhousedb.Component and clickhouse.Component.
-	configuration.Cluster = chComponent.ClusterName()
 	ch, err := New(r, configuration, Dependencies{
 		Daemon:     daemon.NewMock(t),
 		HTTP:       httpserver.NewMock(t, r),
@@ -432,7 +429,7 @@ SELECT toString(groupArray(tuple(name, type, default_expression)))
 FROM system.columns
 WHERE table = $1
 AND database = $2
-AND name LIKE $3`, "flows", ch.config.Database, "%DimensionAttribute")
+AND name LIKE $3`, "flows", ch.d.ClickHouse.DatabaseName(), "%DimensionAttribute")
 		var existing string
 		if err := row.Scan(&existing); err != nil {
 			t.Fatalf("Scan() error:\n%+v", err)
@@ -507,7 +504,7 @@ SELECT toString(groupArray(tuple(name, type, default_expression)))
 FROM system.columns
 WHERE table = $1
 AND database = $2
-AND name LIKE $3`, "flows", ch.config.Database, "%DimensionAttribute")
+AND name LIKE $3`, "flows", ch.d.ClickHouse.DatabaseName(), "%DimensionAttribute")
 		var existing string
 		if err := row.Scan(&existing); err != nil {
 			t.Fatalf("Scan() error:\n%+v", err)

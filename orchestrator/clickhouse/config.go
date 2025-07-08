@@ -9,7 +9,6 @@ import (
 
 	"akvorado/common/remotedatasourcefetcher"
 
-	"akvorado/common/clickhousedb"
 	"akvorado/common/helpers"
 	"akvorado/common/kafka"
 
@@ -18,7 +17,6 @@ import (
 
 // Configuration describes the configuration for the ClickHouse configurator.
 type Configuration struct {
-	clickhousedb.Configuration `mapstructure:",squash" yaml:"-,inline"`
 	// SkipMigrations tell if we should skip migrations.
 	SkipMigrations bool
 	// Kafka describes Kafka-specific configuration
@@ -90,7 +88,6 @@ type KafkaConfiguration struct {
 // DefaultConfiguration represents the default configuration for the ClickHouse configurator.
 func DefaultConfiguration() Configuration {
 	return Configuration{
-		Configuration: clickhousedb.DefaultConfiguration(),
 		Kafka: KafkaConfiguration{
 			Consumers: 1,
 			GroupName: "clickhouse",

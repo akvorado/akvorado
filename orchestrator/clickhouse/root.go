@@ -46,7 +46,7 @@ type Component struct {
 	networksCSVLock       sync.Mutex
 }
 
-// Dependencies define the dependencies of the ClickHouse configurator.
+// Dependencies define the dependencies of the orchestrator.
 type Dependencies struct {
 	Daemon     daemon.Component
 	HTTP       *httpserver.Component

@@ -1,0 +1,14 @@
+---
+clickhouse:
+  orchestrator-url: http://akvorado-orchestrator:8080
+  kafka:
+    consumers: 4
+  servers:
+    - clickhouse:9000
+  username: alfred
+  password: "IsBaT!Man"
+  tls:
+    enable: true
+  prometheus-endpoint: /metrics
+  asns:
+    64501: ACME Corporation
