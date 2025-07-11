@@ -192,7 +192,7 @@ func InletConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 				}
 			}
 			if snmpKey != nil {
-				if snmpKey != nil && metadataKey != nil {
+				if metadataKey != nil {
 					return nil, fmt.Errorf("cannot have both %q and %q", snmpKey.String(), metadataKey.String())
 				}
 
@@ -245,7 +245,7 @@ func InletConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 				}
 			}
 			if bmpKey != nil {
-				if bmpKey != nil && routingKey != nil {
+				if routingKey != nil {
 					return nil, fmt.Errorf("cannot have both %q and %q", bmpKey.String(), routingKey.String())
 				}
 
