@@ -1,11 +1,10 @@
 # Installation
 
-*Akvorado* is written in Go. It provides its 3 components into a
-single binary or Docker image. It also requires an installation of
+*Akvorado* is written in Go. It provides its 4 components in a single binary or
+Docker image. It also requires an installation of
 [Kafka](https://kafka.apache.org/quickstart) and
-[ClickHouse](https://clickhouse.com/docs/en/getting-started/install/).
-They have to be installed separately. For ClickHouse, the minimal
-version is 22.4 (due to the use of the `INTERPOLATE` directive).
+[ClickHouse](https://clickhouse.com/docs/en/getting-started/install/). These
+must be installed separately. For ClickHouse, the minimum version is 22.4.
 
 ## Docker image
 
@@ -22,7 +21,7 @@ Check the `docker/docker-compose.yml` file for an example on how to deploy
 the [quick start procedure](00-intro.md#quick-start). This documentation assumes
 you are running the `docker compose` setup.
 
-If you want to compile the Docker image yourself, you can use `make docker`.
+If you want to compile the Docker image yourself, use `make docker`.
 
 ## Pre-built binary
 
@@ -32,9 +31,9 @@ Currently, only a pre-built binary for Linux x86-64 is provided.
 
 ## Compilation from source
 
-You need a proper installation of [Go](https://go.dev/doc/install) (1.24+),
-[NodeJS](https://nodejs.org/en/download/) (20+) with NPM (6+), and
-[protoc](https://protobuf.dev/installation/). For example, on Debian:
+You need a proper installation of [Go](https://go.dev/doc/install) (1.24+) and
+[NodeJS](https://nodejs.org/en/download/) (20+) with NPM (6+). For example, on
+Debian:
 
 ```console
 # apt install golang nodejs npm protobuf-compiler
@@ -94,7 +93,7 @@ The following `make` targets are available:
 
 Be sure to read the [changelog](99-changelog.md) before attempting an upgrade.
 Upgrade the orchestrator first. This will update the ClickHouse database if
-needed. Then, upgrade all inlets. Then the console.
+needed. Then, upgrade all inlets and outlets. Then the console.
 
 When using `docker compose`, use the following commands to fetch an updated
 `docker-compose.yml` file and update your installation.
@@ -109,6 +108,5 @@ When using `docker compose`, use the following commands to fetch an updated
 
 The `docker-compose-upgrade.tar.gz` tarball ships `.env.dist` instead of `.env`.
 You may want to check the differences with your setup (most of the time, there
-shouldn't have any). Note that if Zookeeper or Kakfa gets upgraded in the
-process, this can be disruptive. You may want to review the changes in
-`docker/versions.yml`.
+shouldn't be any). Note that if Kafka gets upgraded in the process, this can
+be disruptive. You may want to review the changes in `docker/versions.yml`.
