@@ -8,13 +8,13 @@ retrieve their configuration.
 The default configuration can be obtained with `docker compose exec
 akvorado-orchestrator akvorado orchestrator --dump --check /dev/null`. Note that
 some sections are generated from the configuration of another section. Notably,
-all Kafka configuration comes from upper-level `kafka` key. Durations must be
+all Kafka configuration comes from the upper-level `kafka` key. Durations must be
 written using strings like `10h20m` or `5s`. Valid time units are `ms`, `s`,
 `m`, and `h`.
 
 It is also possible to override configuration settings using
 environment variables. You need to remove any `-` from key names and
-use `_` to handle nesting. Then, put `AKVORADO_CFG_ORCHESTRATOR_` as a
+use `_` to handle nesting. Then, add `AKVORADO_CFG_ORCHESTRATOR_` as a
 prefix. For example, let's consider the following configuration file:
 
 ```yaml
@@ -37,8 +37,8 @@ AKVORADO_CFG_ORCHESTRATOR_KAFKA_BROKERS=192.0.2.1:9092,192.0.2.2:9092
 
 The orchestrator service has its own configuration, as well as the
 configuration for the other services under the key matching the
-service name (`inlet` and `console`). For each service, it is possible
-to provide a list of configuration. A service can query the
+service name (`inlet`, `outlet`, and `console`). For each service, it is possible
+to provide a list of configurations. A service can query the
 configuration it wants by appending an index to the configuration URL.
 If the index does not match a provided configuration, the first
 configuration is provided.
@@ -48,17 +48,15 @@ gets a section of the configuration file matching its name.
 
 ## Inlet service
 
-This service is configured under the `inlet` key. The main components
-of the inlet services are `flow`, `kafka`, and `core`.
+This service is configured under the `inlet` key. The inlet service receives
+Netflow/IPFIX/sFlow packets and forwards them to Kafka. The main components are
+`flow` and `kafka`.
 
 ### Flow
 
 The flow component handles incoming flows. It accepts the `inputs` key
-to define the list of inputs to receive incoming flows and the
-`rate-limit` key to have an hard-limit on the number of flows/second
-accepted per exporter. When set, the provided rate limit will be
-enforced for each exporter and the sampling rate of the surviving
-flows will be adapted.
+to define the list of inputs to receive incoming flows. The flows are
+encapsulated into protobuf messages and sent to Kafka without parsing.
 
 Each input has a `type` and a `decoder`. For `decoder`, both
 `netflow` or `sflow` are supported. As for the `type`, both `udp`
@@ -90,7 +88,6 @@ flow:
       decoder: sflow
       listen: :6343
       workers: 3
-  workers: 2
 ```
 
 The `file` input should only be used for testing. It supports a
@@ -110,12 +107,65 @@ flow:
       paths:
        - /tmp/flow1.raw
        - /tmp/flow2.raw
-  workers: 2
 ```
 
 Without configuration, *Akvorado* will listen for incoming
 Netflow/IPFIX and sFlow flows on a random port (check the logs to know
 which one).
+
+### Kafka
+
+The inlet service exports received flows to a Kafka topic using the [protocol
+buffers format][].
+
+[protocol buffers format]: https://developers.google.com/protocol-buffers
+
+The following keys are accepted:
+
+- `topic`, `brokers`, `tls`, and `version` keys are described in the
+  configuration for the [orchestrator service](#kafka-2) (the values of these
+  keys are copied from the orchestrator configuration, unless `brokers` is
+  explicitely set)
+- `flush-interval` defines the maximum flush interval to send received
+  flows to Kafka
+- `flush-bytes` defines the maximum number of bytes to store before
+  flushing flows to Kafka
+- `max-message-bytes` defines the maximum size of a message (it should
+  be equal or smaller to the same setting in the broker configuration)
+- `compression-codec` defines the compression codec to use to compress
+  messages (`none`, `gzip`, `snappy`, `lz4` and `zstd`)
+- `queue-size` defines the size of the internal queues to send
+  messages to Kafka. Increasing this value will improve performance,
+  at the cost of losing messages in case of problems.
+
+The topic name is automatically suffixed by a version number, in case the
+protobuf schema changes in a backward-incompatible way.
+
+## Outlet service
+
+This service is configured under the `outlet` key. The outlet service
+consumes flows from Kafka, parses them, enriches them with metadata
+and routing information, and exports them to ClickHouse. The main
+components are `kafka`, `metadata`, `routing`, and `core`.
+
+### Kafka
+
+The outlet's Kafka component consumes flows from the Kafka topic. The following
+keys are accepted:
+
+- `topic`, `brokers`, `tls`, and `version` keys are described in the
+  configuration for the [orchestrator service](#kafka-2) (the values of these
+  keys are copied from the orchestrator configuration, unless `brokers` is
+  explicitly set)
+- `workers` defines the number of Kafka workers to use
+- `consumer-group` defines the consumer group ID for Kafka consumption
+- `max-message-bytes` defines the maximum size of a message (it should
+  be equal or smaller to the same setting in the broker configuration)
+- `fetch-min-bytes` defines the minimum number of bytes to fetch from Kafka
+- `fetch-max-wait-time` defines how much maximum time to wait for the minimum
+  number of bytes to become available
+- `queue-size` defines the size of the internal queues to receive messages to
+  Kafka.
 
 ### Routing
 
@@ -201,162 +251,12 @@ RIS instances known holding the RIB.
 BioRIS currently supports setting prefix, AS, AS Path and communities for the
 given flow.
 
-### Kafka
-
-Received flows are exported to a Kafka topic using the [protocol buffers
-format][]. Each flow is written in the [length-delimited format][].
-
-[protocol buffers format]: https://developers.google.com/protocol-buffers
-[length-delimited format]: https://cwiki.apache.org/confluence/display/GEODE/Delimiting+Protobuf+Messages
-
-The following keys are accepted:
-
-- `topic`, `brokers`, `tls`, and `version` keys are described in the
-  configuration for the [orchestrator service](#kafka-1) (the values of these
-  keys are copied from the orchestrator configuration, unless `brokers` is
-  explicitely set)
-- `flush-interval` defines the maximum flush interval to send received
-  flows to Kafka
-- `flush-bytes` defines the maximum number of bytes to store before
-  flushing flows to Kafka
-- `max-message-bytes` defines the maximum size of a message (it should
-  be equal or smaller to the same setting in the broker configuration)
-- `compression-codec` defines the compression codec to use to compress
-  messages (`none`, `gzip`, `snappy`, `lz4` and `zstd`)
-- `queue-size` defines the size of the internal queues to send
-  messages to Kafka. Increasing this value will improve performance,
-  at the cost of losing messages in case of problems.
-
-The topic name is suffixed by a hash of the schema.
-
-### Core
-
-The core component queries the `metadata` component to
-enrich the flows with additional information. It also classifies
-exporters and interfaces into groups with a set of classification
-rules.
-
-The following configuration keys are accepted:
-
-- `workers` key define how many workers should be spawned to process
-  incoming flows
-- `exporter-classifiers` is a list of classifier rules to define a group
-  for exporters
-- `interface-classifiers` is a list of classifier rules to define
-  connectivity type, network boundary and provider for an interface
-- `classifier-cache-duration` defines how long to keep the result of a previous
-  classification in memory to reduce CPU usage.
-- `default-sampling-rate` defines the default sampling rate to use
-  when the information is missing. If not defined, flows without a
-  sampling rate will be rejected. Use this option only if your
-  hardware is unable to advertise a sampling rate. This can either be
-  a single value or a map from subnets to sampling rates.
-- `override-sampling-rate` defines the sampling rate instead of the
-  one received in the flows. This is useful if a device lie about its
-  sampling rate. This is a map from subnets to sampling rates (but it
-  would also accept a single value).
-- `asn-providers` defines the source list for AS numbers. The available sources
-  are `flow`, `flow-except-private` (use information from flow except if the ASN
-  is private), `routing`, `routing-except-private`, and `geo-ip`. The default
-  value is `flow`, `routing`, `geo-ip`. `geo-ip` should only be used at the end as
-  there is no fallback possible.
-- `net-providers` defines the sources for prefix lengths and nexthop. `flow` uses the value
-  provided by the flow message (if any), while `routing` looks it up using the BMP
-  component. If multiple sources are provided, the value of the first source
-  providing a non-default route is taken. The default value is `flow` and `routing`.
-
-Classifier rules are written using [Expr][].
-
-Exporter classifiers gets the classifier IP address and its hostname.
-If they can make a decision, they should invoke one of the
-`Classify()` functions with the target element as an argument. Once
-classification is done for an element, it cannot be changed by a
-subsequent rule. All strings are normalized (lower case, special chars
-removed).
-
-- `Exporter.IP` for the exporter IP address
-- `Exporter.Name` for the exporter name
-- `ClassifyGroup()` to classify the exporter to a group
-- `ClassifyRole()` to classify the exporter for a role (`edge`, `core`)
-- `ClassifySite()` to classify the exporter to a site (`paris`, `berlin`, `newyork`)
-- `ClassifyRegion()` to classify the exporter to a region (`france`, `italy`, `caraibes`)
-- `ClassifyTenant()` to classify the exporter to a tenant (`team-a`, `team-b`)
-- `Reject()` to reject the flow
-- `Format()` to format a string: `Format("name: %s", Exporter.Name)`
-
-As a compatibility `Classify()` is an alias for `ClassifyGroup()`.
-Here is an example, assuming routers are named
-`th2-ncs55a1-1.example.fr` or `milan-ncs5k8-2.example.it`:
-
-```yaml
-exporter-classifiers:
-  - ClassifySiteRegex(Exporter.Name, "^([^-]+)-", "$1")
-  - Exporter.Name endsWith ".it" && ClassifyRegion("italy")
-  - Exporter.Name matches "^(washington|newyork).*" && ClassifyRegion("usa")
-  - Exporter.Name endsWith ".fr" && ClassifyRegion("france")
-```
-
-Interface classifiers gets the following information and, like exporter
-classifiers, should invoke one of the `Classify()` functions to make a
-decision:
-
-- `Exporter.IP` for the exporter IP address
-- `Exporter.Name` for the exporter name
-- `Interface.Index` for the interface index
-- `Interface.Name` for the interface name
-- `Interface.Description` for the interface description
-- `Interface.Speed` for the interface speed
-- `Interface.VLAN` for VLAN number (you need to enable `SrcVlan` and `DstVlan` in schema)
-- `ClassifyConnectivity()` to classify for a connectivity type (transit, PNI, PPNI, IX, customer, core, ...)
-- `ClassifyProvider()` to classify for a provider (Cogent, Telia, ...)
-- `ClassifyExternal()` to classify the interface as external
-- `ClassifyInternal()` to classify the interface as internal
-- `SetName()` to change the interface name
-- `SetDescription()` to change the interface description
-- `Reject()` to reject the flow
-- `Format()` to format a string: `Format("name: %s", Interface.Name)`
-
-Once an interface is classified for a given criteria, it cannot be
-changed by later rule. Once an interface is classified for all
-criteria, remaining rules are skipped. Connectivity and provider are
-normalized (lower case, special chars removed).
-
-Each `Classify()` function, with the exception of `ClassifyExternal()`
-and `ClassifyInternal()` have a variant ending with `Regex` which
-takes a string and a regex before the original string and do a regex
-match. The original string is expanded using the matching parts of the
-regex. The syntax is the one [from Go][]. If you want to use Perl
-character classes, such as `\d` or `\w`, you need to escape the
-backslash character: `\\d` and `\\w`. To test your regex, you can use
-a site like [regular expressions 101][]. Be sure to use the "Golang"
-flavor. You can use the substition function. In this case, append `.*`
-to your regex to get the [expected result][] (you can keep it in the
-final regex if you prefer).
-
-[regular expressions 101]: https://regex101.com/
-[expected result]: https://regex101.com/r/eg6drf/1
-
-Here is an example, assuming interface descriptions for external
-facing interfaces look like `Transit: Cogent 1-3834938493` or `PNI:
-Netflix (WL6-1190)`.
-
-```yaml
-interface-classifiers:
-  - |
-    ClassifyConnectivityRegex(Interface.Description, "^(?i)(transit|pni|ppni|ix):? ", "$1") &&
-    ClassifyProviderRegex(Interface.Description, "^[^ ]+? ([^ ]+)", "$1") &&
-    ClassifyExternal()
-  - ClassifyInternal()
-```
-
-[expr]: https://expr-lang.org/docs/language-definition
-[from Go]: https://github.com/google/re2/wiki/Syntax
-
 ### Metadata
 
 Flows only include interface indexes. To associate them with an interface name
-and description, metadata are polled. A cache is maintained. There are several
-providers available to poll metadata. The following keys are accepted:
+and description, metadata are retrieved from the exporting routers. A cache is
+maintained. There are several providers available to poll metadata. The
+following keys are accepted:
 
 - `cache-duration` tells how much time to keep data in the cache
 - `cache-refresh` tells how much time to wait before updating an entry
@@ -369,9 +269,8 @@ providers available to poll metadata. The following keys are accepted:
 - `max-batch-requests` define how many requests can be batched together
 - `providers` defines the provider configurations
 
-As flows missing interface information are discarded, persisting the
-cache is useful to quickly be able to handle incoming flows. By
-default, no persistent cache is configured.
+As flows missing any interface information are discarded, persisting the cache
+is useful to quickly be able to handle incoming flows.
 
 The `providers` key contains the configuration of the providers. For each, the
 provider type is defined by the `type` key. When using several providers, they
@@ -555,48 +454,131 @@ metadata:
         transform: .exporters[]
 ```
 
-### HTTP
+### Core
 
-The builtin HTTP server serves various pages. Its configuration
-supports the following keys:
+The core component processes flows from Kafka, queries the `metadata` component to
+enrich the flows with additional information, and classifies
+exporters and interfaces into groups with a set of classification
+rules. It also handles flow rate limiting.
 
-- `listen` defines the address and port to listen to.
-- `profiler` enables [Go profiler HTTP
-  interface](https://pkg.go.dev/net/http/pprof). Check the [troubleshooting
-  section](05-troubleshooting.html#profiling) for details. It is enabled by
-  default.
-- `cache` defines the cache backend to use for some HTTP requests. It accepts a
-  `type` key which can be either `memory` (the default value) or `redis`. When
-  using the Redis backend, the following additional keys are also accepted:
-  `protocol` (`tcp` or `unix`), `server` (host and port), `username`,
-  `password`, and `db` (an integer to specify which database to use).
+The following configuration keys are accepted:
+
+- `exporter-classifiers` is a list of classifier rules to define a group
+  for exporters
+- `interface-classifiers` is a list of classifier rules to define
+  connectivity type, network boundary and provider for an interface
+- `classifier-cache-duration` defines how long to keep the result of a previous
+  classification in memory to reduce CPU usage.
+- `default-sampling-rate` defines the default sampling rate to use
+  when the information is missing. If not defined, flows without a
+  sampling rate will be rejected. Use this option only if your
+  hardware is unable to advertise a sampling rate. This can either be
+  a single value or a map from subnets to sampling rates.
+- `override-sampling-rate` defines the sampling rate instead of the
+  one received in the flows. This is useful if a device lie about its
+  sampling rate. This is a map from subnets to sampling rates (but it
+  would also accept a single value).
+- `asn-providers` defines the source list for AS numbers. The available sources
+  are `flow`, `flow-except-private` (use information from flow except if the ASN
+  is private), `routing`, `routing-except-private`, and `geo-ip`. The default
+  value is `flow`, `routing`, `geo-ip`. `geo-ip` should only be used at the end as
+  there is no fallback possible.
+- `net-providers` defines the sources for prefix lengths and nexthop. `flow` uses the value
+  provided by the flow message (if any), while `routing` looks it up using the BMP
+  component. If multiple sources are provided, the value of the first source
+  providing a non-default route is taken. The default value is `flow` and `routing`.
+
+Classifier rules are written using [Expr][].
+
+Exporter classifiers gets the classifier IP address and its hostname.
+If they can make a decision, they should invoke one of the
+`Classify()` functions with the target element as an argument. Once
+classification is done for an element, it cannot be changed by a
+subsequent rule. All strings are normalized (lower case, special chars
+removed).
+
+- `Exporter.IP` for the exporter IP address
+- `Exporter.Name` for the exporter name
+- `ClassifyGroup()` to classify the exporter to a group
+- `ClassifyRole()` to classify the exporter for a role (`edge`, `core`)
+- `ClassifySite()` to classify the exporter to a site (`paris`, `berlin`, `newyork`)
+- `ClassifyRegion()` to classify the exporter to a region (`france`, `italy`, `caraibes`)
+- `ClassifyTenant()` to classify the exporter to a tenant (`team-a`, `team-b`)
+- `Reject()` to reject the flow
+- `Format()` to format a string: `Format("name: %s", Exporter.Name)`
+
+As a compatibility `Classify()` is an alias for `ClassifyGroup()`.
+Here is an example, assuming routers are named
+`th2-ncs55a1-1.example.fr` or `milan-ncs5k8-2.example.it`:
 
 ```yaml
-http:
-  listen: :8000
-  cache:
-    type: redis
-    username: akvorado
-    password: akvorado
+exporter-classifiers:
+  - ClassifySiteRegex(Exporter.Name, "^([^-]+)-", "$1")
+  - Exporter.Name endsWith ".it" && ClassifyRegion("italy")
+  - Exporter.Name matches "^(washington|newyork).*" && ClassifyRegion("usa")
+  - Exporter.Name endsWith ".fr" && ClassifyRegion("france")
 ```
 
-Note that the cache backend is currently only useful with the console. You need
-to define the cache in the `http` key of the `console` section for it to be
-useful (not in the `inlet` section).
+Interface classifiers gets the following information and, like exporter
+classifiers, should invoke one of the `Classify()` functions to make a
+decision:
 
-### Reporting
+- `Exporter.IP` for the exporter IP address
+- `Exporter.Name` for the exporter name
+- `Interface.Index` for the interface index
+- `Interface.Name` for the interface name
+- `Interface.Description` for the interface description
+- `Interface.Speed` for the interface speed
+- `Interface.VLAN` for VLAN number (you need to enable `SrcVlan` and `DstVlan` in schema)
+- `ClassifyConnectivity()` to classify for a connectivity type (transit, PNI, PPNI, IX, customer, core, ...)
+- `ClassifyProvider()` to classify for a provider (Cogent, Telia, ...)
+- `ClassifyExternal()` to classify the interface as external
+- `ClassifyInternal()` to classify the interface as internal
+- `SetName()` to change the interface name
+- `SetDescription()` to change the interface description
+- `Reject()` to reject the flow
+- `Format()` to format a string: `Format("name: %s", Interface.Name)`
 
-Reporting encompasses logging and metrics. Currently, as *Akvorado* is
-expected to be run inside Docker, logging is done on the standard
-output and is not configurable. As for metrics, they are reported by
-the HTTP component on the `/api/v0/inlet/metrics` endpoint and there is
-nothing to configure either.
+Once an interface is classified for a given criteria, it cannot be
+changed by later rule. Once an interface is classified for all
+criteria, remaining rules are skipped. Connectivity and provider are
+normalized (lower case, special chars removed).
+
+Each `Classify()` function, with the exception of `ClassifyExternal()`
+and `ClassifyInternal()` have a variant ending with `Regex` which
+takes a string and a regex before the original string and do a regex
+match. The original string is expanded using the matching parts of the
+regex. The syntax is the one [from Go][]. If you want to use Perl
+character classes, such as `\d` or `\w`, you need to escape the
+backslash character: `\\d` and `\\w`. To test your regex, you can use
+a site like [regular expressions 101][]. Be sure to use the "Golang"
+flavor. You can use the substition function. In this case, append `.*`
+to your regex to get the [expected result][] (you can keep it in the
+final regex if you prefer).
+
+[regular expressions 101]: https://regex101.com/
+[expected result]: https://regex101.com/r/eg6drf/1
+
+Here is an example, assuming interface descriptions for external
+facing interfaces look like `Transit: Cogent 1-3834938493` or `PNI:
+Netflix (WL6-1190)`.
+
+```yaml
+interface-classifiers:
+  - |
+    ClassifyConnectivityRegex(Interface.Description, "^(?i)(transit|pni|ppni|ix):? ", "$1") &&
+    ClassifyProviderRegex(Interface.Description, "^[^ ]+? ([^ ]+)", "$1") &&
+    ClassifyExternal()
+  - ClassifyInternal()
+```
+
+[expr]: https://expr-lang.org/docs/language-definition
+[from Go]: https://github.com/google/re2/wiki/Syntax
 
 ## Orchestrator service
 
-The two main components of the orchestrator service are `clickhouse` and
-`kafka`. It also uses the [HTTP](#http), and [reporting](#reporting) from the
-inlet service and accepts the same configuration settings.
+The three main components of the orchestrator service are `schema`,
+`clickhouse`, and `kafka`.
 
 ### Schema
 
@@ -805,18 +787,6 @@ configure a ClickHouse database. It also provisions and keep
 up-to-date a ClickHouse database. The following keys can be
 provided inside `clickhouse`:
 
-- `kafka` defines the configuration for the Kafka consumer. The accepted keys are:
-  - `consumers` defines the number of consumers to use to consume messages from
-    the Kafka topic. It is silently bound by the maximum number of threads
-    ClickHouse will use (by default, the number of CPUs). It should also be less
-    than the number of partitions: the additional consumers will stay idle.
-  - `group-name` defines the group name consumers will use to consume messages from the
-    Kafka topic.
-    The default value is "clickhouse".
-  - `engine-settings` defines a list of additional settings for the Kafka engine
-    in ClickHouse. Check [ClickHouse documentation][] for possible values. You
-    can notably tune `kafka_max_block_size`, `kafka_poll_timeout_ms`,
-    `kafka_poll_max_batch_size`, and `kafka_flush_interval_ms`.
 - `resolutions` defines the various resolutions to keep data
 - `max-partitions` defines the number of partitions to use when
   creating consolidated tables
@@ -913,9 +883,8 @@ refreshed. For a given database, the latest paths override the earlier ones.
 
 ## Console service
 
-The main components of the console service are `http`, `console`,
-`authentication` and `database`. `http` accepts the [same configuration](#http)
-as the inlet service.
+The main components of the console service are `console`, `authentication` and
+`database`.
 
 The console itself accepts the following keys:
 
@@ -937,8 +906,8 @@ The console itself accepts the following keys:
    homepage. It defaults to 24 hours.
 
 It also takes a `clickhouse` key, accepting the [same
-configuration](#clickhouse) as the orchestrator service. These keys are copied
-from the orchestrator, unless `servers` is set explicitely.
+configuration](#clickhouse-database) as the orchestrator service. These keys are
+copied from the orchestrator, unless `servers` is set explicitely.
 
 Here is an example:
 
@@ -1085,3 +1054,44 @@ repeating a lot of stuff.
 
 [YAML anchors]: https://www.linode.com/docs/guides/yaml-anchors-aliases-overrides-extensions/
 [clickhouse documentation]: https://clickhouse.com/docs/en/engines/table-engines/integrations/kafka/#table_engine-kafka-creating-a-table
+
+## Common configuration settings
+
+All services also embeds an HTTP and a reporting component.
+
+### HTTP
+
+The builtin HTTP server serves various pages. Its configuration
+supports the following keys:
+
+- `listen` defines the address and port to listen to.
+- `profiler` enables [Go profiler HTTP
+  interface](https://pkg.go.dev/net/http/pprof). Check the [troubleshooting
+  section](05-troubleshooting.html#profiling) for details. It is enabled by
+  default.
+- `cache` defines the cache backend to use for some HTTP requests. It accepts a
+  `type` key which can be either `memory` (the default value) or `redis`. When
+  using the Redis backend, the following additional keys are also accepted:
+  `protocol` (`tcp` or `unix`), `server` (host and port), `username`,
+  `password`, and `db` (an integer to specify which database to use).
+
+```yaml
+http:
+  listen: :8000
+  cache:
+    type: redis
+    username: akvorado
+    password: akvorado
+```
+
+Note that the cache backend is currently only useful with the console. You need
+to define the cache in the `http` key of the `console` section for it to be
+useful.
+
+### Reporting
+
+Reporting encompasses logging and metrics. Currently, as *Akvorado* is expected
+to be run inside Docker, logging is done on the standard output and is not
+configurable. As for metrics, they are reported by the HTTP component on the
+`/api/v0/XXX/metrics` endpoint (where `XXX` is the service name) and there is
+nothing to configure either.

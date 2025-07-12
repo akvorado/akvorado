@@ -2,7 +2,7 @@
 
 *Akvorado* uses a subcommand system. Each subcommand comes with its
 own set of options. It is possible to get help using `akvorado
---help`. Each service is started using the matchin subcommand. When
+--help`. Each service is started using the matching subcommand. When
 started from a TTY, a service displays logs in a fancy way. Without a
 TTY, logs are output formatted as JSON.
 
@@ -11,7 +11,7 @@ TTY, logs are output formatted as JSON.
 Each service accepts a set of common options as flags.
 
 The `--check` option will check if the provided configuration is
-correct and stops here. The `--dump` option will dump the parsed
+correct and stops there. The `--dump` option will dump the parsed
 configuration, along with the default values. It should be combined
 with `--check` if you don't want the service to start.
 
@@ -26,6 +26,7 @@ file and the other services should point to it.
 ```console
 $ akvorado orchestrator /etc/akvorado/config.yaml
 $ akvorado inlet http://orchestrator:8080
+$ akvorado outlet http://orchestrator:8080
 $ akvorado console http://orchestrator:8080
 $ akvorado console http://orchestrator:8080#2
 ```
@@ -41,15 +42,24 @@ service-specific endpoints:
 Each endpoint is also exposed under the service namespace. The idea is
 to be able to expose an unified API for all services under a single
 endpoint using an HTTP proxy. For example, the `inlet` service also
-exposes its metrics under `/api/v0/inlet/metrics`.
+exposes its metrics under `/api/v0/inlet/metrics` and the `outlet`
+service exposes its metrics under `/api/v0/outlet/metrics`.
 
 ## Inlet service
 
-`akvorado inlet` starts the inlet service, allowing it to receive and
-process flows. The following endpoints are exposed by the HTTP
-component embedded into the service:
+`akvorado inlet` starts the inlet service, allowing it to receive
+Netflow/IPFIX/sFlow packets and forward them to Kafka. The inlet service
+does not expose any service-specific HTTP endpoints.
 
-- `/api/v0/inlet/flows`: stream the received flows
+## Outlet service
+
+`akvorado outlet` starts the outlet service, allowing it to consume
+flows from Kafka, parse them, enrich them with metadata and routing
+information, and export them to ClickHouse. The following endpoints
+are exposed by the HTTP component embedded into the service:
+
+- `/api/v0/outlet/flows`: stream the received flows (only for debug as there is
+  a performance impact)
 
 ## Orchestrator service
 
@@ -62,6 +72,7 @@ The following endpoints are exposed to configure other internal
 services:
 
 - `/api/v0/orchestrator/configuration/inlet`
+- `/api/v0/orchestrator/configuration/outlet`
 - `/api/v0/orchestrator/configuration/console`
 
 The following endpoints are exposed for use by ClickHouse:
@@ -128,7 +139,7 @@ aspect of the graph.
   the current period, the previous period can be the previous hour,
   day, week, month, or year.
 
-- The time range can be set from a list of preset or directly using
+- The time range can be set from a list of presets or directly using
   natural language. The parsing is done by
   [SugarJS](https://sugarjs.com/dates/#/Parsing) which provides
   examples of what can be done. Another alternative is to look at the
@@ -147,7 +158,7 @@ aspect of the graph.
   "limit" parameter tells how many. The remaining values are
   categorized as "Other".
 
-- Associated with the `limit` parameter, the `limitType` parameter help find
+- Associated with the `limit` parameter, the `limitType` parameter helps find
   traffic surges according to 2 modes:
   - `avg`: default mode, the query focuses on getting the highest cumulative
     traffics over the time selection.
@@ -162,8 +173,8 @@ aspect of the graph.
   providing a description. A filter can be shared with other users or not.
 
 The URL contains the encoded parameters and can be used to share with
-others. However, currently, no stability of the options are
-guaranteed, so an URL may stop working after a few upgrades.
+others. However, currently, no stability of the options is
+guaranteed, so a URL may stop working after a few upgrades.
 
 ![Sankey graph](sankey.png)
 
@@ -193,8 +204,8 @@ a few examples:
 Field names are case-insensitive. Comments can also be added by using
 `--` for single-line comments or enclosing them in `/*` and `*/`.
 
-The final SQL query sent to ClickHouse is logged inside the console
-after a successful request. It should be noted than using the
+The final SQL query sent to ClickHouse is logged in the console
+after a successful request. It should be noted that using the
 following fields will prevent use of aggregated data and therefore
 will be slower:
 

@@ -2,29 +2,17 @@
 
 ## Inlet service
 
-The inlet service outputs some logs and exposes some counters to help
-troubleshoot most issues. The first step to check if everything works
-as expected is to request a flow:
+The inlet service receives Netflow/IPFIX/sFlow packets and forwards them to
+Kafka. It outputs some logs and exposes some counters to help troubleshoot
+packet reception issues. The metrics can be queried with `curl`:
 
 ```console
-$ curl -s http://akvorado/api/v0/inlet/flows\?limit=1
-{
- "TimeReceived": 1648305235,
- "SamplingRate": 30000,
-[...]
+$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet'
 ```
 
 Be sure to replace `http://akvorado` with the URL to your *Akvorado*
 setup. If you are running `docker compose` locally, this is
 `http://127.0.0.1:8080`.
-
-This returns the next flow. The same information is exported to Kafka. If this
-does return a flow, be sure to check the logs and the metrics. The later can be
-queried with `curl`:
-
-```console
-$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet'
-```
 
 ### No packets received
 
@@ -45,18 +33,67 @@ To check that you are receiving packets, check the metrics:
 $ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet_flow_input_udp_packets'
 ```
 
-Also check that the source IP for your exporters is correct. This is
-needed for Akvorado to query them using SNMP. If your exporter cannot
-answer SNMP requests on the source IP address, you can specify an
-alternative address with `inlet`→`snmp`→`agents`.
+The inlet service only receives and forwards packets - it doesn't perform
+SNMP queries or flow enrichment. These are handled by the outlet service.
 
-### No packets exported
+### No packets forwarded to Kafka
 
-*Akvorado* only exports packets with complete information. You can
+The inlet service receives packets and forwards them to Kafka. Check that 
+flows are correctly forwarded to Kafka with:
+
+```console
+$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet_kafka_sent_messages_total'
+```
+
+## Outlet service
+
+The outlet service consumes flows from Kafka, parses them, enriches them 
+with metadata and routing information, and exports them to ClickHouse.
+To check if the outlet is working correctly, request a processed flow:
+
+```console
+$ curl -s http://akvorado/api/v0/outlet/flows\?limit=1
+{
+ "TimeReceived": 1648305235,
+ "SamplingRate": 30000,
+[...]
+```
+
+This returns the next processed flow with all enrichment applied. If this
+doesn't return flows, check the outlet metrics:
+
+```console
+$ curl -s http://akvorado/api/v0/outlet/metrics | grep '^akvorado_outlet'
+```
+
+### No flows received
+
+First, check if there are flows received from Kafka.
+
+```console
+$ curl -s http://akvorado/api/v0/outlet/metrics | grep '^akvorado_outlet_kafka' | grep received
+```
+
+Another way to achieve the same thing is to look at the consumer group
+from Kafka's point of view:
+
+```console
+$ kafka-consumer-groups.sh --bootstrap-server kafka:9092 --describe --group akvorado-outlet
+
+GROUP           TOPIC           PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG             CONSUMER-ID                                                      HOST            CLIENT-ID
+akvorado-outlet flows-v5        0          5650351527      5650374314      22787           akvorado-outlet-flows-v5-0-77740d0a-79b7-4bef-a501-25a819c3cee4  /240.0.4.8      akvorado-oulet-flows-v5
+akvorado-outlet flows-v5        3          3035602619      3035628290      25671           akvorado-outlet-flows-v5-3-1e4629b0-69a3-48dd-899a-20f4b16be0a2  /240.0.4.8      akvorado-oulet-flows-v5
+akvorado-outlet flows-v5        2          1645914467      1645930257      15790           akvorado-outlet-flows-v5-2-79c9bafe-fd36-42fe-921f-a802d46db684  /240.0.4.8      akvorado-oulet-flows-v5
+akvorado-outlet flows-v5        1          889117276       889129896       12620           akvorado-outlet-flows-v5-1-f0421bbe-ba13-49df-998f-83e49045be00  /240.0.4.8      akvorado-oulet-flows-v5
+```
+
+### No flows processed
+
+The outlet service only exports flows with complete information. You can
 check the metrics to find the cause:
 
 ```console
-$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet' | grep _error
+$ curl -s http://akvorado/api/v0/outlet/metrics | grep '^akvorado_outlet' | grep _error
 ```
 
 Here is a list of generic errors you may find:
@@ -71,20 +108,17 @@ Here is a list of generic errors you may find:
   NetFlow, the sampling rate is sent in an options data packet. Be sure to
   configure your exporter to send them (look for `sampler-table` in the
   documentation). Alternatively, you can configure
-  `inlet`→`core`→`default-sampling-rate` to workaround this issue.
+  `outlet`→`core`→`default-sampling-rate` to workaround this issue.
 - `input and output interfaces missing` means the flow does not contain the
   input and output interface indexes. This is something to fix on the exporter.
 
-When using NetFlow, you also have the `template not found` error. This
-is expected on start, but then it should not increase anymore.
-
-If *Akvorado* is unable to poll a exporter, no flows about it will be
+If the outlet service is unable to poll an exporter, no flows about it will be
 exported. In this case, the logs contain information such as:
 
 - `exporter:172.19.162.244 poller breaker open`
 - `exporter:172.19.162.244 unable to GET`
 
-The `akvorado_inlet_metadata_provider_snmp_error_requests_total` metric would also
+The `akvorado_outlet_metadata_provider_snmp_error_requests_total` metric would also
 increase for the affected exporter. If your routers are in
 `172.16.0.0/12` and you are using Docker, Docker subnets may overlap
 with your routers'. To avoid this, you can put that in
@@ -99,24 +133,18 @@ with your routers'. To avoid this, you can put that in
 
 If the exporter address is incorrect, the above configuration will also help.
 
-Check that flow are correctly accepted with:
+Check that flows are correctly processed with:
 
 ```console
-$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet_core_forwarded_flows_total'
-$ curl -s http://akvorado/api/v0/inlet/flows\?limit=1
-```
-
-You can check they are correctly forwarded to Kafka with:
-
-```console
-$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet_kafka_sent_messages_total'
+$ curl -s http://akvorado/api/v0/outlet/metrics | grep '^akvorado_outlet_core_forwarded_flows_total'
+$ curl -s http://akvorado/api/v0/outlet/flows\?limit=1
 ```
 
 ### Reported traffic levels are incorrect
 
-Use `curl -s http://akvorado/api/v0/inlet/flows\?limit=1 | grep
+Use `curl -s http://akvorado/api/v0/outlet/flows\?limit=1 | grep
 SamplingRate` to check if the reported sampling rate is correct. If
-not, you can override it with `inlet`→`core`→`override-sampling-rate`.
+not, you can override it with `outlet`→`core`→`override-sampling-rate`.
 
 Another cause possible cause is when your router is configured to send
 flows for both an interface and its parent. For example, if you have
@@ -151,6 +179,9 @@ flow record Akvorado
 There are various bottlenecks leading to dropped packets. This is bad
 as the reported sampling rate is incorrect and we cannot reliably
 infer the number of bytes and packets.
+
+Most packet drops occur at the inlet service (packet reception) while
+processing bottlenecks occur at the outlet service (flow enrichment).
 
 #### Bottlenecks on the exporter
 
@@ -218,25 +249,32 @@ increasing the value of `net.core.rmem_max` sysctl and increasing the
 
 #### Internal queues
 
-Inside the inlet service, parsed packets are transmitted to one module
-to another using channels. When there is a bottleneck at this level,
-the `akvorado_inlet_flow_input_udp_out_drops` counter will increase.
+Inside the inlet service, received packets are transmitted from the input 
+module to the Kafka module using channels. When there is a bottleneck at 
+this level, the `akvorado_inlet_flow_input_udp_out_drops` counter will increase.
 There are several ways to fix that:
 
-- increasing the channel between the input module and the flow module,
+- increasing the channel between the input module and the Kafka module,
   with the `queue-size` setting attached to the input,
-- increasing the number of workers for the `core` module,
 - increasing the number of partitions used by the target Kafka topic,
 - increasing the `queue-size` setting for the Kafka module (this can
   only be used to handle spikes).
 
+Inside the outlet service, flows are transmitted between the Kafka consumer,
+core processing, and ClickHouse modules. When there are bottlenecks,
+the `akvorado_outlet_*_drops` counters will increase. These can be fixed by:
+
+- increasing the number of workers for the `core` module,
+- increasing the number of Kafka consumers,
+- tuning ClickHouse insertion parameters.
+
 #### SNMP poller
 
-To process a flow, the inlet service needs the interface name and
-description. This information is provided by the `snmp` submodule.
+To process a flow, the outlet service needs the interface name and
+description. This information is provided by the `metadata` submodule.
 When all workers of the SNMP pollers are busy, new requests are
-dropped. In this case, the `akvorado_inlet_metadata_provider_busy_count`
-counter is increased. To mitigate this issue, the inlet service tries
+dropped. In this case, the `akvorado_outlet_metadata_provider_busy_count`
+counter is increased. To mitigate this issue, the outlet service tries
 to skip exporters with too many errors to avoid blocking SNMP requests
 for other exporters. However, ensuring the exporters accept to answer
 requests is the first fix. If not enough, you can increase the number
@@ -249,11 +287,14 @@ much CPU or memory. This can be achieved with `pprof`, the [Go
 profiler](https://go.dev/blog/pprof). You need a working [installation of
 Go](https://go.dev/doc/install) on your workstation.
 
-When running on Docker, use `docker inspect` to get the IP address of the inlet:
+When running on Docker, use `docker inspect` to get the IP address of the service 
+you want to profile (inlet or outlet):
 
 ```console
 $ docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' akvorado_akvorado-inlet_1
 240.0.4.8
+$ docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' akvorado_akvorado-outlet_1
+240.0.4.9
 ```
 
 Then, use one of the two following commands:
@@ -289,17 +330,17 @@ topic. However, the metadata can be read using
 alive with:
 
 ```console
-$ kcat -b kafka:9092 -C -t flows-ZUYGDTE3EBIXX352XPM3YEEFV4 -L
-Metadata for flows-ZUYGDTE3EBIXX352XPM3YEEFV4 (from broker -1: kafka:9092/bootstrap):
+$ kcat -b kafka:9092 -C -t flows-v5 -L
+Metadata for flows-v5 (from broker -1: kafka:9092/bootstrap):
  1 brokers:
   broker 1001 at eb6c7781b875:9092 (controller)
  1 topics:
-  topic "flows-ZUYGDTE3EBIXX352XPM3YEEFV4" with 4 partitions:
+  topic "flows-v5" with 4 partitions:
     partition 0, leader 1001, replicas: 1001, isrs: 1001
     partition 1, leader 1001, replicas: 1001, isrs: 1001
     partition 2, leader 1001, replicas: 1001, isrs: 1001
     partition 3, leader 1001, replicas: 1001, isrs: 1001
-$ kcat -b kafka:9092 -C -t flows-ZUYGDTE3EBIXX352XPM3YEEFV4 -f 'Topic %t [%p] at offset %o: key %k: %T\n' -o -1
+$ kcat -b kafka:9092 -C -t flows-v5 -f 'Topic %t [%p] at offset %o: key %k: %T\n' -o -1
 ```
 
 Alternatively, when using `docker compose`, there is a Kafka UI
@@ -307,8 +348,8 @@ running at `http://127.0.0.1:8080/kafka-ui/`. You can do the following
 checks:
 
 - are the brokers alive?
-- is the `flows-ZUYGDTE3EBIXX352XPM3YEEFV4` topic present and receiving messages?
-- is ClickHouse registered as a consumer?
+- is the `flows-v5` topic present and receiving messages?
+- is Akvorado registered as a consumer?
 
 ## ClickHouse
 
@@ -320,9 +361,9 @@ you can use `docker compose exec clickhouse clickhouse-client`) :
 SHOW tables
 ```
 
-You should have a few tables, including `flows`, `flows_1m0s` (and
-others), and `flows_3_raw`. If one is missing, look at the log in the
-orchestrator. This is the component creating the tables.
+You should have a few tables, including `flows`, `flows_1m0s`, and others. If
+one is missing, look at the log in the orchestrator This is the component
+creating the tables.
 
 To check if ClickHouse is late, use the following SQL query through
 `clickhouse client` to get the lag in seconds.
@@ -331,37 +372,6 @@ To check if ClickHouse is late, use the following SQL query through
 SELECT (now()-max(TimeReceived))/60
 FROM flows
 ```
-
-If the lag is too big, you need to increase the number of consumers. See
-[ClickHouse configuration](02-configuration.md#clickhouse) for details. If
-ClickHouse ingestion stalls from time to time, it may be because ClickHouse
-consumer group is being rebalanced. In
-`/var/log/clickhouse-server/clickhouse-server.err.log`, you may see something
-about `Application maximum poll interval exceeded: leaving group`. In this case,
-you may want to lower the flush interval:
-
-```yaml
-clickhouse:
-  kafka:
-    engine-settings:
-      - kafka_flush_interval_ms = 1000
-```
-
-Another way to achieve the same thing is to look at the consumer group
-from Kafka's point of view:
-
-```console
-$ kafka-consumer-groups.sh --bootstrap-server kafka:9092 --describe --group clickhouse
-
-GROUP           TOPIC           PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG             CONSUMER-ID                                                                        HOST            CLIENT-ID
-clickhouse      flows-ZUYG…     0          5650351527      5650374314      22787           ClickHouse-ee97b7e7e5e0-default-flows_3_raw-0-77740d0a-79b7-4bef-a501-25a819c3cee4 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_3_raw-0
-clickhouse      flows-ZUYG…     3          3035602619      3035628290      25671           ClickHouse-ee97b7e7e5e0-default-flows_3_raw-3-1e4629b0-69a3-48dd-899a-20f4b16be0a2 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_3_raw-3
-clickhouse      flows-ZUYG…     2          1645914467      1645930257      15790           ClickHouse-ee97b7e7e5e0-default-flows_3_raw-2-79c9bafe-fd36-42fe-921f-a802d46db684 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_3_raw-2
-clickhouse      flows-ZUYG…     1          889117276       889129896       12620           ClickHouse-ee97b7e7e5e0-default-flows_3_raw-1-f0421bbe-ba13-49df-998f-83e49045be00 /240.0.4.8      ClickHouse-ee97b7e7e5e0-default-flows_3_raw-1
-```
-
-Errors related to Kafka ingestion are kept in the `flows_3_raw_errors`
-table. It should be empty.
 
 If you still have an issue, be sure to check the errors reported by
 ClickHouse:
