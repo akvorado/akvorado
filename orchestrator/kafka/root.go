@@ -101,6 +101,7 @@ func (c *Component) Start() error {
 				return fmt.Errorf("unable to add more partitions to topic %q: %w",
 					c.kafkaTopic, err)
 			}
+			l.Info().Msg("number of partitions increased")
 		}
 		if c.config.TopicConfiguration.ReplicationFactor != topic.ReplicationFactor {
 			// TODO: https://github.com/deviceinsight/kafkactl/blob/main/internal/topic/topic-operation.go
