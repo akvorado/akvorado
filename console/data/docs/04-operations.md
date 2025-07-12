@@ -12,15 +12,15 @@ service and accepts SNMP requests. For routers not listed below, have
 a look at the [configuration
 snippets](https://github.com/kentik/config-snippets/) from Kentik.
 
-It is better to **sample on ingress only**. This requires to sample on both
-external and internal interfaces, but this prevents flow to be accounted twice
+It is better to **sample on ingress only**. This requires sampling on both
+external and internal interfaces, but this prevents flows from being accounted twice
 when they enter and exit through external ports.
 
 ### Exporter Address
 
 The exporter address is set from the field inside the flow message by default,
-and used e.g. for SNMP requests. However, if for some reasons the set flow
-address (also called agent id) is wrong, you can use the source IP of the flow
+and used e.g. for SNMP requests. However, if for some reason the set flow
+address (also called agent ID) is wrong, you can use the source IP of the flow
 packet instead by setting `use-src-addr-for-exporter-addr: true` for the flow
 configuration.
 
@@ -102,9 +102,9 @@ interface GigabitEthernet0/0/3
 !
 ```
 
-As per [issue #89](https://github.com/akvorado/akvorado/issues/89), the sample
+As per [issue #89](https://github.com/akvorado/akvorado/issues/89), the sampling
 rate is not reported correctly on this platform. The solution is to set a
-default sample rate in `akvorado.yaml`. Check the
+default sampling rate in `akvorado.yaml`. Check the
 [documentation](02-configuration.html#core) for more details.
 
 ```yaml
@@ -150,7 +150,7 @@ flow monitor-map monitor2
 ```
 
 Optionally, AS path can be pushed to the forwarding database and the
-source and destination AS will be present in Netflow packets:
+source and destination AS will be present in NetFlow packets:
 
 ```cisco
 router bgp <asn>
@@ -427,7 +427,7 @@ snmp-server vrf VRF-MANAGEMENT
 Model-driven command line interface (MD-CLI) syntax is used below. The full-context is provided as this is probably easier to adapt to classic CLI.
 
 #### Flows
-sFlow is currently merely supported on devices running SROS, one mostly has to stick to IPFIX
+sFlow is currently barely supported on devices running SROS, one mostly has to stick to IPFIX
 
 ```
 /configure cflowd admin-state enable
@@ -536,9 +536,9 @@ Configure pmacctd with sFlow receiver:
   ifindex=4 ifname=eth1 direction=out
 ```
 
-Here we `set` the interface indexes manually entirely based on the interface
+Here we set the interface indexes manually entirely based on the interface
 names and completely ignoring the kernel ifIndex for the flows. pmacctd can
-be run inside containers where SNMPd does not return description for the
+be run inside containers where SNMPd does not return descriptions for the
 interfaces, which is a required field for the flow. With this setup, you can
 make use of the static metadata provider to match the exporter and accept the
 flow for further classification.
@@ -551,7 +551,7 @@ metrics you can check, notably the space used by each topic.
 
 ## ClickHouse
 
-While ClickHouse works pretty good out-of-the-box, it is still
+While ClickHouse works pretty well out-of-the-box, it is still
 encouraged to read [its documentation](https://clickhouse.com/docs/).
 Altinity also provides a [knowledge base](https://kb.altinity.com/)
 with various other tips.
@@ -561,7 +561,7 @@ with various other tips.
 ClickHouse is configured to log various events into MergeTree tables. By
 default, these tables are unbounded. Unless configured otherwise, the
 orchestrator sets a TTL of 30 days. These tables can also be customized in the
-configuration files or disabled completly. See [ClickHouse
+configuration files or disabled completely. See [ClickHouse
 documentation](https://clickhouse.com/docs/en/operations/system-tables/) for
 more details.
 
@@ -600,7 +600,7 @@ WHERE table LIKE 'flow%'
 GROUP by table
 ```
 
-The following query shows how much space is eaten by each column for the `flows`
+The following query shows how much space is used by each column for the `flows`
 table and how much they are compressed. This can be helpful if you find too much
 space is used by this table.
 
