@@ -124,11 +124,13 @@ services:
       - zookeeper
     environment:
       - CLICKHOUSE_SKIP_USER_SETUP=1
+      - CLICKHOUSE_ALWAYS_RUN_INITDB_SCRIPTS=1
     cap_add:
       - SYS_NICE
     volumes:
       - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
       - ./clickhouse/cluster-1.xml:/etc/clickhouse-server/config.d/cluster-1.xml
+      - ./clickhouse/test-db.sql:/docker-entrypoint-initdb.d/test-db.sql
     ports:
       - 127.0.0.1:8123:8123/tcp
       - 127.0.0.1:9000:9000/tcp
