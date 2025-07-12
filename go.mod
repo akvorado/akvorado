@@ -36,6 +36,7 @@ require (
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/oschwald/maxminddb-golang v1.13.1
 	github.com/osrg/gobgp/v3 v3.37.0
+	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10
 	github.com/prometheus/client_golang v1.22.0
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rs/zerolog v1.34.0
@@ -216,6 +217,7 @@ tool (
 	github.com/frapposelli/wwhrd
 	github.com/mgechev/revive
 	github.com/mna/pigeon
+	github.com/planetscale/vtprotobuf/cmd/protoc-gen-go-vtproto
 	go.uber.org/mock/mockgen
 	golang.org/x/tools/cmd/goimports
 	google.golang.org/protobuf/cmd/protoc-gen-go

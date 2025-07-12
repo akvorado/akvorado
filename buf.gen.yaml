@@ -5,3 +5,8 @@ plugins:
     out: .
     opt:
       - paths=source_relative
+  - local: [ "go", "tool", "protoc-gen-go-vtproto" ]
+    out: .
+    opt:
+      - paths=source_relative
+      - features=marshal+unmarshal+size
