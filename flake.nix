@@ -47,6 +47,7 @@
           name = "akvorado";
           src = ./.;
           vendorHash = builtins.readFile ./nix/vendorHash.txt;
+          proxyVendor = true;   # generated code may contain additional dependencies
           buildPhase = ''
             cp -r ${frontend}/node_modules console/frontend/node_modules
             cp -r ${frontend}/data console/data/frontend
