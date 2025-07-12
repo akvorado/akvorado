@@ -9,8 +9,6 @@ import (
 )
 
 type metrics struct {
-	c *realComponent
-
 	messagesReceived *reporter.CounterVec
 	claimsReceived   *reporter.CounterVec
 	bytesReceived    *reporter.CounterVec
@@ -20,8 +18,6 @@ type metrics struct {
 }
 
 func (c *realComponent) initMetrics() {
-	c.metrics.c = c
-
 	c.metrics.messagesReceived = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "received_messages_total",
