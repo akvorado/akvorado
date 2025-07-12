@@ -249,7 +249,7 @@ docker-upgrade-versions: ; $(info $(M) check for Docker image updates…) @ ## C
 	$Q sed -En 's/^\s*image:\s+(.+):(.+)\s+#\s+(.+)$$/\1 \2 \3/p' docker/versions.yml \
 		| while read -r image version regex; do \
 			latest=$$(nix run nixpkgs\#skopeo -- list-tags docker://"$$image" \
-				| sed -En 's/\s+"(.*)",/\1/p' \
+				| sed -En 's/\s+"(.*)",?/\1/p' \
 				| grep -xP "$$regex" \
 				| sort -Vr | head -1); \
 			[ "$$version" = "$$latest" ] || { \
