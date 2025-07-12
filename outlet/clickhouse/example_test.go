@@ -22,6 +22,7 @@ func TestInsertMemory(t *testing.T) {
 
 	conn, err := ch.Dial(ctx, ch.Options{
 		Address:     server,
+		Database:    "test",
 		DialTimeout: 100 * time.Millisecond,
 	})
 	if err != nil {
@@ -29,7 +30,7 @@ func TestInsertMemory(t *testing.T) {
 	}
 
 	if err := conn.Do(ctx, ch.Query{
-		Body: `CREATE OR REPLACE TABLE test_table_insert
+		Body: `CREATE OR REPLACE TABLE test_example_insert
 (
     ts                DateTime64(9),
     severity_text     Enum8('INFO'=1, 'DEBUG'=2),
@@ -81,7 +82,7 @@ func TestInsertMemory(t *testing.T) {
 
 		// Insert single data block.
 		if err := conn.Do(ctx, ch.Query{
-			Body:  "INSERT INTO test_table_insert VALUES",
+			Body:  "INSERT INTO test_example_insert VALUES",
 			Input: input,
 		}); err != nil {
 			t.Fatalf("Do() error:\n%+v", err)
@@ -92,7 +93,7 @@ func TestInsertMemory(t *testing.T) {
 		// Stream data to ClickHouse server in multiple data blocks.
 		var blocks int
 		if err := conn.Do(ctx, ch.Query{
-			Body:  input.Into("test_table_insert"), // helper that generates INSERT INTO query with all columns
+			Body:  input.Into("test_example_insert"), // helper that generates INSERT INTO query with all columns
 			Input: input,
 
 			// OnInput is called to prepare Input data before encoding and sending
