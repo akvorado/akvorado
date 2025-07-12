@@ -25,6 +25,7 @@ services:
       KAFKA_CFG_NODE_ID: 0
       KAFKA_CFG_PROCESS_ROLES: controller,broker
       KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 0@kafka:9096
+      KAFKA_CFG_GROUP_INITIAL_REBALANCE_DELAY_MS: 500
       # We have two sets of listeners: INTERNAL that is used from inside the docker
       # compose network and listens on "kafka" and EXTERNAL that is mapped to
       # the host network and listens on "localhost".
