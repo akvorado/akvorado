@@ -59,17 +59,16 @@ GOIMPORTS = go tool goimports
 GOTESTSUM = go tool gotestsum
 MOCKGEN = go tool mockgen
 PIGEON = go tool pigeon
-PROTOC = protoc
-PROTOC_GEN_GO = bin/protoc-gen-go
 REVIVE = go tool revive
 WWHRD = go tool wwhrd
+BUF = go run github.com/bufbuild/buf/cmd/buf@v1.55.1
 
 # Generated files
 
 .DELETE_ON_ERROR:
 
-common/pb/rawflow.pb.go: common/pb/rawflow.proto ; $(info $(M) compiling protocol buffers definition…)
-	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --go_out=. --go_opt=module=$(MODULE) $<
+common/pb/rawflow.pb.go: %.pb.go: buf.gen.yaml %.proto ; $(info $(M) compiling protocol buffers definition…)
+	$Q $(BUF) generate --path $(@:.pb.go=.proto)
 
 common/clickhousedb/mocks/mock_driver.go: go.mod ; $(info $(M) generate mocks for ClickHouse driver…)
 	$Q $(MOCKGEN) -package mocks -build_constraint "!release" -destination $@ \
