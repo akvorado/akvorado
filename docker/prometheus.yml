@@ -60,7 +60,7 @@ scrape_configs:
               - com.docker.compose.project=akvorado
     relabel_configs:
       - source_labels: [__meta_docker_container_label_com_docker_compose_service]
-        regex: akvorado-(inlet|orchestrator|console)
+        regex: akvorado-(inlet|outlet|orchestrator|console)
         action: keep
       - source_labels: [__meta_docker_port_private]
         regex: 8080

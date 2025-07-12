@@ -6,7 +6,6 @@ DATE    ?= $(shell date +%FT%T%z)
 VERSION ?= $(shell git describe --tags --always --dirty --match=v* 2> /dev/null || \
 			cat .version 2> /dev/null || echo v0)
 PKGS     = $(or $(PKG),$(shell env GO111MODULE=on $(GO) list ./...))
-BIN      = bin
 
 GO      = go
 NPM     = npm
@@ -19,18 +18,18 @@ M = $(shell if [ "$$(tput colors 2> /dev/null || echo 0)" -ge 8 ]; then printf "
 GENERATED_JS = \
 	console/frontend/node_modules
 GENERATED_GO = \
+	common/pb/rawflow.pb.go \
 	common/schema/definition_gen.go \
 	orchestrator/clickhouse/data/asns.csv \
 	orchestrator/clickhouse/data/protocols.csv \
 	orchestrator/clickhouse/data/tcp.csv \
 	orchestrator/clickhouse/data/udp.csv \
 	console/filter/parser.go \
-	inlet/core/asnprovider_enumer.go \
-	inlet/core/netprovider_enumer.go \
-	inlet/flow/decoder/timestampsource_enumer.go \
-	inlet/metadata/provider/snmp/authprotocol_enumer.go \
-	inlet/metadata/provider/snmp/privprotocol_enumer.go \
-	inlet/metadata/provider/gnmi/ifspeedpathunit_enumer.go \
+	outlet/core/asnprovider_enumer.go \
+	outlet/core/netprovider_enumer.go \
+	outlet/metadata/provider/snmp/authprotocol_enumer.go \
+	outlet/metadata/provider/snmp/privprotocol_enumer.go \
+	outlet/metadata/provider/gnmi/ifspeedpathunit_enumer.go \
 	console/homepagetopwidget_enumer.go \
 	common/kafka/saslmechanism_enumer.go
 GENERATED_TEST_GO = \
@@ -42,19 +41,16 @@ GENERATED = \
 	console/data/frontend
 
 .PHONY: all
-all: fmt lint $(GENERATED) | $(BIN) ; $(info $(M) building executable…) @ ## Build program binary
+all: fmt lint $(GENERATED) ; $(info $(M) building executable…) @ ## Build program binary
 	$Q $(GO) build \
 		-tags release \
 		-ldflags '-X $(MODULE)/common/helpers.AkvoradoVersion=$(VERSION)' \
-		-o $(BIN)/$(basename $(MODULE)) main.go
+		-o bin/$(basename $(MODULE)) main.go
 
 .PHONY: all_js
 all_js: .fmt-js~ .lint-js~ $(GENERATED_JS) console/data/frontend
 
 # Tools
-
-$(BIN):
-	@mkdir -p $@
 
 ENUMER = go tool enumer
 GOCOV = go tool gocov
@@ -63,12 +59,17 @@ GOIMPORTS = go tool goimports
 GOTESTSUM = go tool gotestsum
 MOCKGEN = go tool mockgen
 PIGEON = go tool pigeon
+PROTOC = protoc
+PROTOC_GEN_GO = bin/protoc-gen-go
 REVIVE = go tool revive
 WWHRD = go tool wwhrd
 
 # Generated files
 
 .DELETE_ON_ERROR:
+
+common/pb/rawflow.pb.go: common/pb/rawflow.proto ; $(info $(M) compiling protocol buffers definition…)
+	$Q $(PROTOC) -I=. --plugin=$(PROTOC_GEN_GO) --go_out=. --go_opt=module=$(MODULE) $<
 
 common/clickhousedb/mocks/mock_driver.go: go.mod ; $(info $(M) generate mocks for ClickHouse driver…)
 	$Q $(MOCKGEN) -package mocks -build_constraint "!release" -destination $@ \
@@ -81,18 +82,16 @@ conntrackfixer/mocks/mock_conntrackfixer.go: go.mod ; $(info $(M) generate mocks
 		touch $@ ; \
 	fi
 
-inlet/core/asnprovider_enumer.go: go.mod inlet/core/config.go ; $(info $(M) generate enums for ASNProvider…)
-	$Q $(ENUMER) -type=ASNProvider -text -transform=kebab -trimprefix=ASNProvider inlet/core/config.go
-inlet/core/netprovider_enumer.go: go.mod inlet/core/config.go ; $(info $(M) generate enums for NetProvider…)
-	$Q $(ENUMER) -type=NetProvider -text -transform=kebab -trimprefix=NetProvider inlet/core/config.go
-inlet/flow/decoder/timestampsource_enumer.go: go.mod inlet/flow/decoder/config.go ; $(info $(M) generate enums for TimestampSource…)
-	$Q $(ENUMER) -type=TimestampSource -text -transform=kebab -trimprefix=TimestampSource inlet/flow/decoder/config.go
-inlet/metadata/provider/snmp/authprotocol_enumer.go: go.mod inlet/metadata/provider/snmp/config.go ; $(info $(M) generate enums for AuthProtocol…)
-	$Q $(ENUMER) -type=AuthProtocol -text -transform=kebab -trimprefix=AuthProtocol inlet/metadata/provider/snmp/config.go
-inlet/metadata/provider/snmp/privprotocol_enumer.go: go.mod inlet/metadata/provider/snmp/config.go ; $(info $(M) generate enums for PrivProtocol…)
-	$Q $(ENUMER) -type=PrivProtocol -text -transform=kebab -trimprefix=PrivProtocol inlet/metadata/provider/snmp/config.go
-inlet/metadata/provider/gnmi/ifspeedpathunit_enumer.go: go.mod inlet/metadata/provider/gnmi/config.go ; $(info $(M) generate enums for IfSpeedPathUnit…)
-	$Q $(ENUMER) -type=IfSpeedPathUnit -text -transform=kebab -trimprefix=Speed inlet/metadata/provider/gnmi/config.go
+outlet/core/asnprovider_enumer.go: go.mod outlet/core/config.go ; $(info $(M) generate enums for ASNProvider…)
+	$Q $(ENUMER) -type=ASNProvider -text -transform=kebab -trimprefix=ASNProvider outlet/core/config.go
+outlet/core/netprovider_enumer.go: go.mod outlet/core/config.go ; $(info $(M) generate enums for NetProvider…)
+	$Q $(ENUMER) -type=NetProvider -text -transform=kebab -trimprefix=NetProvider outlet/core/config.go
+outlet/metadata/provider/snmp/authprotocol_enumer.go: go.mod outlet/metadata/provider/snmp/config.go ; $(info $(M) generate enums for AuthProtocol…)
+	$Q $(ENUMER) -type=AuthProtocol -text -transform=kebab -trimprefix=AuthProtocol outlet/metadata/provider/snmp/config.go
+outlet/metadata/provider/snmp/privprotocol_enumer.go: go.mod outlet/metadata/provider/snmp/config.go ; $(info $(M) generate enums for PrivProtocol…)
+	$Q $(ENUMER) -type=PrivProtocol -text -transform=kebab -trimprefix=PrivProtocol outlet/metadata/provider/snmp/config.go
+outlet/metadata/provider/gnmi/ifspeedpathunit_enumer.go: go.mod outlet/metadata/provider/gnmi/config.go ; $(info $(M) generate enums for IfSpeedPathUnit…)
+	$Q $(ENUMER) -type=IfSpeedPathUnit -text -transform=kebab -trimprefix=Speed outlet/metadata/provider/gnmi/config.go
 console/homepagetopwidget_enumer.go: go.mod console/config.go ; $(info $(M) generate enums for HomepageTopWidget…)
 	$Q $(ENUMER) -type=HomepageTopWidget -text -json -transform=kebab -trimprefix=HomepageTopWidget console/config.go
 common/kafka/saslmechanism_enumer.go: go.mod common/kafka/config.go ; $(info $(M) generate enums for SASLMechanism…)
@@ -226,7 +225,7 @@ licensecheck: console/frontend/node_modules ; $(info $(M) check dependency licen
 
 .PHONY: clean
 clean: ; $(info $(M) cleaning…)	@ ## Cleanup everything
-	@rm -rf test $(GENERATED) inlet/flow/decoder/flow-*.pb.go *~ bin
+	@rm -rf test $(GENERATED) inlet/flow/decoder/flow-*.pb.go *~ bin/akvorado
 
 .PHONY: help
 help:

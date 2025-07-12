@@ -32,6 +32,8 @@ type ServiceType string
 var (
 	// InletService represents the inlet service type
 	InletService ServiceType = "inlet"
+	// OutletService represents the outlet service type
+	OutletService ServiceType = "outlet"
 	// OrchestratorService represents the orchestrator service type
 	OrchestratorService ServiceType = "orchestrator"
 	// ConsoleService represents the console service type

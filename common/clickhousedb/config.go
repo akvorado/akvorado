@@ -6,6 +6,8 @@ package clickhousedb
 import (
 	"time"
 
+	"github.com/ClickHouse/ch-go"
+
 	"akvorado/common/helpers"
 )
 
@@ -54,4 +56,20 @@ func (c *Component) ClusterName() string {
 // DatabaseName returns the database we operate on.
 func (c *Component) DatabaseName() string {
 	return c.config.Database
+}
+
+// ChGoOptions returns options suitable to use with ch-go and the list of
+// available servers.
+func (c *Component) ChGoOptions() (ch.Options, []string) {
+	tlsConfig, _ := c.config.TLS.MakeTLSConfig()
+	return ch.Options{
+		Address:     c.config.Servers[0],
+		Database:    c.config.Database,
+		User:        c.config.Username,
+		Password:    c.config.Password,
+		Compression: ch.CompressionLZ4,
+		ClientName:  "akvorado",
+		DialTimeout: c.config.DialTimeout,
+		TLS:         tlsConfig,
+	}, c.config.Servers
 }

@@ -12,6 +12,7 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/kafka"
+	"akvorado/common/pb"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 )
@@ -24,7 +25,7 @@ func TestTopicCreation(t *testing.T) {
 	segmentBytes := "107374184"
 	segmentBytes2 := "10737184"
 	cleanupPolicy := "delete"
-	expectedTopicName := fmt.Sprintf("%s-%s", topicName, schema.NewMock(t).ProtobufMessageHash())
+	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, pb.Version)
 
 	cases := []struct {
 		Name          string
@@ -101,9 +102,13 @@ func TestTopicCreation(t *testing.T) {
 
 func TestTopicMorePartitions(t *testing.T) {
 	client, brokers := kafka.SetupKafkaBroker(t)
+	adminClient, err := sarama.NewClusterAdminFromClient(client)
+	if err != nil {
+		t.Fatalf("NewClusterAdmin() error:\n%+v", err)
+	}
 
 	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
-	expectedTopicName := fmt.Sprintf("%s-%s", topicName, schema.NewMock(t).ProtobufMessageHash())
+	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, pb.Version)
 
 	configuration := DefaultConfiguration()
 	configuration.Topic = topicName
@@ -123,10 +128,6 @@ func TestTopicMorePartitions(t *testing.T) {
 
 	if err := client.RefreshMetadata(); err != nil {
 		t.Fatalf("RefreshMetadata() error:\n%+v", err)
-	}
-	adminClient, err := sarama.NewClusterAdminFromClient(client)
-	if err != nil {
-		t.Fatalf("NewClusterAdmin() error:\n%+v", err)
 	}
 	topics, err := adminClient.ListTopics()
 	if err != nil {

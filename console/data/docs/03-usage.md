@@ -26,6 +26,7 @@ file and the other services should point to it.
 ```console
 $ akvorado orchestrator /etc/akvorado/config.yaml
 $ akvorado inlet http://orchestrator:8080
+$ akvorado outlet http://orchestrator:8080
 $ akvorado console http://orchestrator:8080
 $ akvorado console http://orchestrator:8080#2
 ```
@@ -41,16 +42,23 @@ service-specific endpoints:
 Each endpoint is also exposed under the service namespace. The idea is
 to be able to expose an unified API for all services under a single
 endpoint using an HTTP proxy. For example, the `inlet` service also
-exposes its metrics under `/api/v0/inlet/metrics`.
+exposes its metrics under `/api/v0/inlet/metrics` and the `outlet`
+service exposes its metrics under `/api/v0/outlet/metrics`.
 
 ## Inlet service
 
-`akvorado inlet` starts the inlet service, allowing it to receive and
-process flows. The following endpoints are exposed by the HTTP
-component embedded into the service:
+`akvorado inlet` starts the inlet service, allowing it to receive
+Netflow/IPFIX/sFlow packets and forward them to Kafka. The inlet service
+does not expose any service-specific HTTP endpoints.
 
-- `/api/v0/inlet/flows`: stream the received flows
-- `/api/v0/inlet/schemas.proto`: protobuf schema
+## Outlet service
+
+`akvorado outlet` starts the outlet service, allowing it to consume
+flows from Kafka, parse them, enrich them with metadata and routing
+information, and export them to ClickHouse. The following endpoints
+are exposed by the HTTP component embedded into the service:
+
+- `/api/v0/outlet/flows`: stream the received flows (only for debug)
 
 ## Orchestrator service
 
@@ -63,13 +71,11 @@ The following endpoints are exposed to configure other internal
 services:
 
 - `/api/v0/orchestrator/configuration/inlet`
+- `/api/v0/orchestrator/configuration/outlet`
 - `/api/v0/orchestrator/configuration/console`
 
 The following endpoints are exposed for use by ClickHouse:
 
-- `/api/v0/orchestrator/clickhouse/init.sh` contains the schemas in the form of a
-  script to execute during initialization to get them installed at the
-  proper location
 - `/api/v0/orchestrator/clickhouse/protocols.csv` contains a CSV with the mapping
   between protocol numbers and names
 - `/api/v0/orchestrator/clickhouse/asns.csv` contains a CSV with the mapping

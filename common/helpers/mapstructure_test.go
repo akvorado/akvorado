@@ -336,3 +336,38 @@ func TestParametrizedConfig(t *testing.T) {
 		}
 	})
 }
+
+func TestDeprecatedFields(t *testing.T) {
+	type Configuration struct {
+		A string
+		B string
+	}
+	RegisterMapstructureDeprecatedFields[Configuration]("C", "D")
+	TestConfigurationDecode(t, ConfigurationDecodeCases{
+		{
+			Initial: func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"a": "hello",
+					"b": "bye",
+					"c": "nooo",
+					"d": "yes",
+				}
+			},
+			Expected: Configuration{
+				A: "hello",
+				B: "bye",
+			},
+		}, {
+			Initial: func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"a": "hello",
+					"b": "bye",
+					"e": "nooo",
+				}
+			},
+			Error: true,
+		},
+	})
+}

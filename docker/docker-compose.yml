@@ -1,6 +1,5 @@
 ---
 volumes:
-  akvorado-zookeeper:
   akvorado-kafka:
   akvorado-geoip:
   akvorado-clickhouse:
@@ -8,43 +7,25 @@ volumes:
   akvorado-console-db:
 
 services:
-  zookeeper:
-    extends:
-      file: versions.yml
-      service: zookeeper
-    environment:
-      - ALLOW_ANONYMOUS_LOGIN=yes
-      - ZOO_ENABLE_PROMETHEUS_METRICS=yes
-      - ZOO_4LW_COMMANDS_WHITELIST=srvr,mntr,ruok
-    restart: unless-stopped
-    expose:
-      - 2181/tcp
-      - 2888/tcp
-      - 3888/tcp
-      - 7000/tcp                # Prometheus metrics
-    volumes:
-      - akvorado-zookeeper:/bitnami/zookeeper
-    healthcheck:
-      interval: 20s
-      test: ["CMD-SHELL", "echo ruok | nc -w3 127.0.0.1 2181 | grep -xFq imok"]
-
   kafka:
     extends:
       file: versions.yml
       service: kafka
     environment:
-      - KAFKA_ZOOKEEPER_PROTOCOL=PLAINTEXT
-      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      # KRaft settings
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      # Listeners
+      - KAFKA_CFG_LISTENERS=CLIENT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9092
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
+      # Misc
       - KAFKA_CFG_DELETE_TOPIC_ENABLE=true
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
-      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
       - JMX_PORT=5555
     restart: unless-stopped
-    depends_on:
-      zookeeper:
-        condition: service_healthy
     volumes:
       - akvorado-kafka:/bitnami/kafka
     healthcheck:
@@ -124,7 +105,6 @@ services:
     ports:
       - 2055:2055/udp
       - 6343:6343/udp
-      - 10179:10179/tcp
     restart: unless-stopped
     depends_on:
       akvorado-orchestrator:
@@ -134,8 +114,6 @@ services:
     command: inlet http://akvorado-orchestrator:8080
     volumes:
       - akvorado-run:/run/akvorado
-    environment:
-      - AKVORADO_CFG_INLET_METADATA_CACHEPERSISTFILE=/run/akvorado/metadata.cache
     labels:
       - traefik.enable=true
       # Disable access logging of /api/v0/inlet/metrics
@@ -148,6 +126,36 @@ services:
       - traefik.http.routers.akvorado-inlet.rule=PathPrefix(`/api/v0/inlet`)
       - traefik.http.services.akvorado-inlet.loadbalancer.server.port=8080
       - akvorado.conntrack.fix=true
+  akvorado-outlet:
+    extends:
+      file: versions.yml
+      service: akvorado
+    ports:
+      - 10179:10179/tcp
+    restart: unless-stopped
+    depends_on:
+      akvorado-orchestrator:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+    command: outlet http://akvorado-orchestrator:8080
+    volumes:
+      - akvorado-run:/run/akvorado
+    environment:
+      - AKVORADO_CFG_OUTLET_METADATA_CACHEPERSISTFILE=/run/akvorado/metadata.cache
+    labels:
+      - traefik.enable=true
+      # Disable access logging of /api/v0/outlet/metrics
+      - traefik.http.routers.akvorado-outlet-metrics.entrypoints=private
+      - traefik.http.routers.akvorado-outlet-metrics.rule=PathPrefix(`/api/v0/outlet/metrics`)
+      - traefik.http.routers.akvorado-outlet-metrics.service=akvorado-outlet
+      - traefik.http.routers.akvorado-outlet-metrics.observability.accesslogs=false
+      # Everything else is exposed to private entrypoing in /api/v0/outlet
+      - traefik.http.routers.akvorado-outlet.entrypoints=private
+      - traefik.http.routers.akvorado-outlet.rule=PathPrefix(`/api/v0/outlet`)
+      - traefik.http.services.akvorado-outlet.loadbalancer.server.port=8080
   akvorado-conntrack-fixer:
     extends:
       file: versions.yml
@@ -167,9 +175,8 @@ services:
       file: versions.yml
       service: clickhouse
     volumes:
-      - ../orchestrator/clickhouse/data/docker-entrypoint.sh:/entrypoint-override.sh:ro
       - akvorado-clickhouse:/var/lib/clickhouse
-    entrypoint: /entrypoint-override.sh
+      - ./clickhouse/akvorado.xml:/etc/clickhouse-server/config.d/akvorado.xml
     environment:
       - CLICKHOUSE_INIT_TIMEOUT=60
       - CLICKHOUSE_SKIP_USER_SETUP=1
