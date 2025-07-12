@@ -1,6 +1,6 @@
 # Installation
 
-*Akvorado* is written in Go. It provides its 3 components into a
+*Akvorado* is written in Go. It provides its 4 components into a
 single binary or Docker image. It also requires an installation of
 [Kafka](https://kafka.apache.org/quickstart) and
 [ClickHouse](https://clickhouse.com/docs/en/getting-started/install/).
@@ -94,7 +94,7 @@ The following `make` targets are available:
 
 Be sure to read the [changelog](99-changelog.md) before attempting an upgrade.
 Upgrade the orchestrator first. This will update the ClickHouse database if
-needed. Then, upgrade all inlets. Then the console.
+needed. Then, upgrade all inlets and outlets. Then the console.
 
 When using `docker compose`, use the following commands to fetch an updated
 `docker-compose.yml` file and update your installation.

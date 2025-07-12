@@ -1,7 +1,7 @@
 # Internal design
 
 *Akvorado* is written in Go. Each service has its code in a distinct
-directory (`inlet/`, `orchestrator/` and `console/`). The `common/`
+directory (`inlet/`, `outlet/`, `orchestrator/` and `console/`). The `common/`
 directory contains components common to several services. The `cmd/`
 directory contains the main entry points.
 
@@ -79,33 +79,37 @@ handled by [mapstructure](https://github.com/mitchellh/mapstructure).
 Handling backward compatibility is done by registering hooks to
 transform the configuration.
 
-## Flow decoding
+## Flow processing
 
-Decoding is handled by
-[GoFlow2](https://github.com/NetSampler/GoFlow2). The network code to
-receive flows is heavily inspired by it but not reused. While logging is
-often abstracted, this is not the case for metrics. Moreover, the
-design to scale is a bit different as *Akvorado* will create a socket
-for each worker instead of distributing incoming flows using a channel.
+Flow processing is split between inlet and outlet services:
 
-Netflow v5, Netflow v9, IPFIX, and sFlow are currently supported.
+### Inlet flow reception
 
-The design of this component is modular. It is possible to "plug"
-new decoders and new inputs easily. It is expected that most buffering
-is implemented at this level by input modules that require them.
-Additionnal buffering happens in the Kafka module. When the input is the
-network, this does not really matter as we cannot really block without
-losing messages. However, with file-backed modules, it may be more reliable
-to reduce buffers as data can be lost during shutdown.
+The inlet service receives flows. The design prioritizes speed and minimal
+processing: flows are encapsulated into protobuf messages and sent to Kafka
+without parsing. The design scales by creating a socket for each worker instead
+of distributing incoming flows using a channel.
+
+Netflow v5, Netflow v9, IPFIX, and sFlow are currently supported for reception.
+
+The design of this component is modular. It is possible to "plug" new inputs
+easily. Most buffering is implemented at this level by input modules that
+require them. Additional buffering happens in the Kafka module.
+
+### Outlet flow decoding
+
+The outlet service consumes flows from Kafka and performs the actual decoding
+using [GoFlow2](https://github.com/NetSampler/GoFlow2). This is where flow 
+parsing, enrichment with metadata and routing information, and classification 
+happens before writing to ClickHouse.
 
 ## Kafka
 
-The Kafka component relies on
-[Sarama](https://github.com/IBM/sarama). It is tested using the
-mock interface provided by this package. *Sarama* uses `go-metrics` to
-store metrics. We convert them to Prometheus to keep them. The logger
-is global and there is a hack to be plug it into the reporter design
-we have.
+The Kafka component relies on [Sarama](https://github.com/IBM/sarama). It is
+tested using the mock interface provided by this package. *Sarama* uses
+`go-metrics` to store metrics. We convert them to Prometheus to keep them. The
+logger is global and there is a hack to be plug it into the reporter design we
+have.
 
 If a real broker is available under the DNS name `kafka` or at
 `localhost` on port 9092, it will be used for a quick functional test.
@@ -120,6 +124,10 @@ table schemas depend on user configuration, it is preferred
 to use code to check if the existing tables are up-to-date
 and to update them. For example, we may want to check if the Kafka
 settings of a table or the source URL of a dictionary are current.
+
+When inserting into ClickHouse, we rely on the low-level
+[ch-go](https://github.com/ClickHouse/ch-go/) library. Decoded flows are batched
+directly into the wire format used by ClickHouse.
 
 Functional tests are run when a ClickHouse server is available under
 the name `clickhouse` or on `localhost`.
@@ -229,8 +237,9 @@ JS, it is just a matter of copy/pasting and customizing.
 
 ## Other components
 
-The core component is the main one. It takes the other as dependencies
-but there is nothing exciting about it.
+The core component is the main processing component in the outlet service. 
+It takes metadata, routing, and other components as dependencies and 
+orchestrates the flow enrichment and classification process.
 
 The HTTP component exposes a web server. Its main role is to manage
 the lifecycle of the HTTP server and to provide a method to add

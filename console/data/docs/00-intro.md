@@ -2,8 +2,8 @@
 
 *Akvorado*[^name] receives flows (currently Netflow/IPFIX and sFlow), enriches
 them with interface names (using SNMP), geo information (using
-[IPinfo](https://ipinfo.io/) or MaxMind), and exports them to Kafka, then
-ClickHouse. It also exposes a web interface to browse the result.
+[IPinfo](https://ipinfo.io/) or MaxMind), and exports them to ClickHouse via
+Kafka. It also exposes a web interface to browse the result.
 
 [^name]: [Akvorado][] means "water wheel" in Esperanto.
 
@@ -41,11 +41,11 @@ documentation.
 
 - `clickhouse` → `asns` to give names to your internal AS numbers (optional)
 - `clickhouse` → `networks` to attach attributes to your networks (optional)
-- `inlet` → `metadata` → `provider` → `communities` to set the communities to
+- `outlet` → `metadata` → `provider` → `communities` to set the communities to
   use for SNMP queries (mandatory)
-- `inlet` → `core` → `exporter-classifiers` to define rules to attach
+- `outlet` → `core` → `exporter-classifiers` to define rules to attach
   attributes to your exporters (optional)
-- `inlet` → `core` → `interface-classifiers` to define rules to attach
+- `outlet` → `core` → `interface-classifiers` to define rules to attach
   attributes to your interfaces, including the "boundary" attribute
   which is used by default by the web interface (mandatory)
 
@@ -65,33 +65,29 @@ Once you are ready, you can run everything in the background with
 
 ![General design](design.svg)
 
-*Akvorado* is split into three components:
+*Akvorado* is split into four components:
 
-- The **inlet service** receives flows from exporters. It poll each
-  exporter using SNMP to get the *system name*, the *interface names*,
-  *descriptions* and *speeds*. It applies rules to add attributes to
-  exporters. Interface rules attach to each interface a *boundary*
-  (external or internal), a *network provider* and a *connectivity
-  type* (PNI, IX, transit). Optionally, it may also receive BGP routes
-  through the BMP protocol to get the *AS number*, the *AS path*, and
-  the communities. The flow is exported to *Kafka*, serialized using
-  *Protobuf*.
+- The **inlet service** receives flows from exporters and forwards them
+  to Kafka without parsing. This lightweight design ensures minimal 
+  processing overhead and fast packet handling to avoid packet loss.
+
+- The **outlet service** consumes flows from Kafka, parses them, and
+  enriches them with metadata. It polls each exporter using SNMP to get
+  the *system name*, the *interface names*, *descriptions* and *speeds*. 
+  It applies rules to add attributes to exporters. Interface rules attach 
+  to each interface a *boundary* (external or internal), a *network provider* 
+  and a *connectivity type* (PNI, IX, transit). Optionally, it may also 
+  receive BGP routes through the BMP protocol to get the *AS number*, the 
+  *AS path*, and the communities. The enriched flows are then exported to 
+  ClickHouse.
 
 - The **orchestrator service** configures the internal and external components.
   It creates the *Kafka topic* and configures *ClickHouse* to receive the flows
-  from Kafka. It exposes configuration settings for the other services to use.
-  It provides to ClickHouse additional data, notably *GeoIP* data.
+  from the outlet service. It exposes configuration settings for the other 
+  services to use. It provides to ClickHouse additional data, notably *GeoIP* data.
 
 - The **console service** exposes a web interface to look and
   manipulate the flows stored inside the ClickHouse database.
-
-## Serialized flow schemas
-
-Flows sent to Kafka are encoded with a versioned schema. When the schema
-changes, a different Kafka topic is used. For example, the
-`flows-ZUYGDTE3EBIXX352XPM3YEEFV4` topic receive serialized flows using a
-specific version of the schema. The inlet service exports the schema with its
-HTTP service, via the `/api/v0/inlet/flow.proto` endpoint.
 
 ## ClickHouse database schemas
 

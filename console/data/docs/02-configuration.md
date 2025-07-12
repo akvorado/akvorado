@@ -37,7 +37,7 @@ AKVORADO_CFG_ORCHESTRATOR_KAFKA_BROKERS=192.0.2.1:9092,192.0.2.2:9092
 
 The orchestrator service has its own configuration, as well as the
 configuration for the other services under the key matching the
-service name (`inlet` and `console`). For each service, it is possible
+service name (`inlet`, `outlet`, and `console`). For each service, it is possible
 to provide a list of configuration. A service can query the
 configuration it wants by appending an index to the configuration URL.
 If the index does not match a provided configuration, the first
@@ -48,17 +48,15 @@ gets a section of the configuration file matching its name.
 
 ## Inlet service
 
-This service is configured under the `inlet` key. The main components
-of the inlet services are `flow`, `kafka`, and `core`.
+This service is configured under the `inlet` key. The inlet service receives
+Netflow/IPFIX/sFlow packets and forwards them to Kafka. The main components are
+`flow` and `kafka`.
 
 ### Flow
 
 The flow component handles incoming flows. It accepts the `inputs` key
-to define the list of inputs to receive incoming flows and the
-`rate-limit` key to have an hard-limit on the number of flows/second
-accepted per exporter. When set, the provided rate limit will be
-enforced for each exporter and the sampling rate of the surviving
-flows will be adapted.
+to define the list of inputs to receive incoming flows. The flows are
+encapsulated into protobuf messages and sent to Kafka without parsing.
 
 Each input has a `type` and a `decoder`. For `decoder`, both
 `netflow` or `sflow` are supported. As for the `type`, both `udp`
@@ -90,7 +88,6 @@ flow:
       decoder: sflow
       listen: :6343
       workers: 3
-  workers: 2
 ```
 
 The `file` input should only be used for testing. It supports a
@@ -110,12 +107,58 @@ flow:
       paths:
        - /tmp/flow1.raw
        - /tmp/flow2.raw
-  workers: 2
 ```
 
 Without configuration, *Akvorado* will listen for incoming
 Netflow/IPFIX and sFlow flows on a random port (check the logs to know
 which one).
+
+### Kafka
+
+The inlet service exports received flows to a Kafka topic using the [protocol
+buffers format][]. Each flow is written in the [length-delimited format][].
+
+[protocol buffers format]: https://developers.google.com/protocol-buffers
+[length-delimited format]: https://cwiki.apache.org/confluence/display/GEODE/Delimiting+Protobuf+Messages
+
+The following keys are accepted:
+
+- `topic`, `brokers`, `tls`, and `version` keys are described in the
+  configuration for the [orchestrator service](#kafka-2) (the values of these
+  keys are copied from the orchestrator configuration, unless `brokers` is
+  explicitely set)
+- `flush-interval` defines the maximum flush interval to send received
+  flows to Kafka
+- `flush-bytes` defines the maximum number of bytes to store before
+  flushing flows to Kafka
+- `max-message-bytes` defines the maximum size of a message (it should
+  be equal or smaller to the same setting in the broker configuration)
+- `compression-codec` defines the compression codec to use to compress
+  messages (`none`, `gzip`, `snappy`, `lz4` and `zstd`)
+- `queue-size` defines the size of the internal queues to send
+  messages to Kafka. Increasing this value will improve performance,
+  at the cost of losing messages in case of problems.
+
+The topic name is automatically suffixed by a version number.
+
+## Outlet service
+
+This service is configured under the `outlet` key. The outlet service
+consumes flows from Kafka, parses them, enriches them with metadata
+and routing information, and exports them to ClickHouse. The main
+components are `kafka`, `metadata`, `routing`, and `core`.
+
+### Kafka
+
+The outlet's Kafka component consumes flows from the Kafka topic. The following
+keys are accepted:
+
+- `topic`, `brokers`, `tls`, and `version` keys are described in the
+  configuration for the [orchestrator service](#kafka-2) (the values of these
+  keys are copied from the orchestrator configuration, unless `brokers` is
+  explicitly set)
+- `consumers` defines the number of Kafka consumers to use
+- `group-id` defines the consumer group ID for Kafka consumption
 
 ### Routing
 
@@ -201,45 +244,21 @@ RIS instances known holding the RIB.
 BioRIS currently supports setting prefix, AS, AS Path and communities for the
 given flow.
 
-### Kafka
-
-Received flows are exported to a Kafka topic using the [protocol buffers
-format][]. Each flow is written in the [length-delimited format][].
-
-[protocol buffers format]: https://developers.google.com/protocol-buffers
-[length-delimited format]: https://cwiki.apache.org/confluence/display/GEODE/Delimiting+Protobuf+Messages
-
-The following keys are accepted:
-
-- `topic`, `brokers`, `tls`, and `version` keys are described in the
-  configuration for the [orchestrator service](#kafka-1) (the values of these
-  keys are copied from the orchestrator configuration, unless `brokers` is
-  explicitely set)
-- `flush-interval` defines the maximum flush interval to send received
-  flows to Kafka
-- `flush-bytes` defines the maximum number of bytes to store before
-  flushing flows to Kafka
-- `max-message-bytes` defines the maximum size of a message (it should
-  be equal or smaller to the same setting in the broker configuration)
-- `compression-codec` defines the compression codec to use to compress
-  messages (`none`, `gzip`, `snappy`, `lz4` and `zstd`)
-- `queue-size` defines the size of the internal queues to send
-  messages to Kafka. Increasing this value will improve performance,
-  at the cost of losing messages in case of problems.
-
-The topic name is suffixed by a hash of the schema.
-
 ### Core
 
-The core component queries the `metadata` component to
-enrich the flows with additional information. It also classifies
+The core component processes flows from Kafka, queries the `metadata` component to
+enrich the flows with additional information, and classifies
 exporters and interfaces into groups with a set of classification
-rules.
+rules. It also handles flow rate limiting.
 
 The following configuration keys are accepted:
 
 - `workers` key define how many workers should be spawned to process
   incoming flows
+- `rate-limit` key to have an hard-limit on the number of flows/second
+  accepted per exporter. When set, the provided rate limit will be
+  enforced for each exporter and the sampling rate of the surviving
+  flows will be adapted.
 - `exporter-classifiers` is a list of classifier rules to define a group
   for exporters
 - `interface-classifiers` is a list of classifier rules to define
@@ -554,43 +573,6 @@ metadata:
         interval: 10m
         transform: .exporters[]
 ```
-
-### HTTP
-
-The builtin HTTP server serves various pages. Its configuration
-supports the following keys:
-
-- `listen` defines the address and port to listen to.
-- `profiler` enables [Go profiler HTTP
-  interface](https://pkg.go.dev/net/http/pprof). Check the [troubleshooting
-  section](05-troubleshooting.html#profiling) for details. It is enabled by
-  default.
-- `cache` defines the cache backend to use for some HTTP requests. It accepts a
-  `type` key which can be either `memory` (the default value) or `redis`. When
-  using the Redis backend, the following additional keys are also accepted:
-  `protocol` (`tcp` or `unix`), `server` (host and port), `username`,
-  `password`, and `db` (an integer to specify which database to use).
-
-```yaml
-http:
-  listen: :8000
-  cache:
-    type: redis
-    username: akvorado
-    password: akvorado
-```
-
-Note that the cache backend is currently only useful with the console. You need
-to define the cache in the `http` key of the `console` section for it to be
-useful (not in the `inlet` section).
-
-### Reporting
-
-Reporting encompasses logging and metrics. Currently, as *Akvorado* is
-expected to be run inside Docker, logging is done on the standard
-output and is not configurable. As for metrics, they are reported by
-the HTTP component on the `/api/v0/inlet/metrics` endpoint and there is
-nothing to configure either.
 
 ## Orchestrator service
 
@@ -1085,3 +1067,44 @@ repeating a lot of stuff.
 
 [YAML anchors]: https://www.linode.com/docs/guides/yaml-anchors-aliases-overrides-extensions/
 [clickhouse documentation]: https://clickhouse.com/docs/en/engines/table-engines/integrations/kafka/#table_engine-kafka-creating-a-table
+
+## Common configuration settings
+
+All services also embeds an HTTP and a reporting component.
+
+### HTTP
+
+The builtin HTTP server serves various pages. Its configuration
+supports the following keys:
+
+- `listen` defines the address and port to listen to.
+- `profiler` enables [Go profiler HTTP
+  interface](https://pkg.go.dev/net/http/pprof). Check the [troubleshooting
+  section](05-troubleshooting.html#profiling) for details. It is enabled by
+  default.
+- `cache` defines the cache backend to use for some HTTP requests. It accepts a
+  `type` key which can be either `memory` (the default value) or `redis`. When
+  using the Redis backend, the following additional keys are also accepted:
+  `protocol` (`tcp` or `unix`), `server` (host and port), `username`,
+  `password`, and `db` (an integer to specify which database to use).
+
+```yaml
+http:
+  listen: :8000
+  cache:
+    type: redis
+    username: akvorado
+    password: akvorado
+```
+
+Note that the cache backend is currently only useful with the console. You need
+to define the cache in the `http` key of the `console` section for it to be
+useful.
+
+### Reporting
+
+Reporting encompasses logging and metrics. Currently, as *Akvorado* is expected
+to be run inside Docker, logging is done on the standard output and is not
+configurable. As for metrics, they are reported by the HTTP component on the
+`/api/v0/XXX/metrics` endpoint (where `XXX` is the service name) and there is
+nothing to configure either.
