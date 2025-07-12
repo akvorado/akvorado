@@ -15,8 +15,6 @@ import (
 	"akvorado/common/schema"
 	"akvorado/outlet/clickhouse"
 	"akvorado/outlet/kafka"
-
-	"google.golang.org/protobuf/proto"
 )
 
 // worker represents a worker processing incoming flows.
@@ -57,7 +55,7 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 	// Raw flaw decoding: fatal
 	w.c.metrics.rawFlowsReceived.Inc()
 	var rawflow pb.RawFlow
-	if err := proto.Unmarshal(data, &rawflow); err != nil {
+	if err := rawflow.UnmarshalVT(data); err != nil {
 		w.c.metrics.rawFlowsErrors.WithLabelValues("cannot decode protobuf")
 		return fmt.Errorf("cannot decode raw flow: %w", err)
 	}
