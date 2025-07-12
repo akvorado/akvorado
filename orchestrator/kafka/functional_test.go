@@ -102,6 +102,10 @@ func TestTopicCreation(t *testing.T) {
 
 func TestTopicMorePartitions(t *testing.T) {
 	client, brokers := kafka.SetupKafkaBroker(t)
+	adminClient, err := sarama.NewClusterAdminFromClient(client)
+	if err != nil {
+		t.Fatalf("NewClusterAdmin() error:\n%+v", err)
+	}
 
 	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
 	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, pb.Version)
@@ -124,10 +128,6 @@ func TestTopicMorePartitions(t *testing.T) {
 
 	if err := client.RefreshMetadata(); err != nil {
 		t.Fatalf("RefreshMetadata() error:\n%+v", err)
-	}
-	adminClient, err := sarama.NewClusterAdminFromClient(client)
-	if err != nil {
-		t.Fatalf("NewClusterAdmin() error:\n%+v", err)
 	}
 	topics, err := adminClient.ListTopics()
 	if err != nil {
