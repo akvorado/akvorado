@@ -33,6 +33,7 @@ func TestInsert(t *testing.T) {
 	// Create components
 	dbConf := clickhousedb.DefaultConfiguration()
 	dbConf.Servers = []string{server}
+	dbConf.Database = "test"
 	dbConf.DialTimeout = 100 * time.Millisecond
 	chdb, err := clickhousedb.New(r, dbConf, clickhousedb.Dependencies{
 		Daemon: daemon.NewMock(t),
