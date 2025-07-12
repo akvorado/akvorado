@@ -67,6 +67,7 @@ func TestInsertMemory(t *testing.T) {
 
 	conn, err := ch.Dial(ctx, ch.Options{
 		Address:     server,
+		Database:    "test",
 		DialTimeout: 100 * time.Millisecond,
 		Settings: []ch.Setting{
 			{Key: "allow_suspicious_low_cardinality_types", Value: "1"},
@@ -78,7 +79,7 @@ func TestInsertMemory(t *testing.T) {
 
 	// Create the table
 	q := fmt.Sprintf(
-		`CREATE OR REPLACE TABLE test_table_insert (%s) ENGINE = Memory`,
+		`CREATE OR REPLACE TABLE test_schema_insert (%s) ENGINE = Memory`,
 		c.ClickHouseCreateTable(schema.ClickHouseSkipAliasedColumns, schema.ClickHouseSkipGeneratedColumns),
 	)
 	t.Logf("Query: %s", q)
@@ -91,7 +92,7 @@ func TestInsertMemory(t *testing.T) {
 	// Insert
 	input := bf.ClickHouseProtoInput()
 	if err := conn.Do(ctx, ch.Query{
-		Body:  input.Into("test_table_insert"),
+		Body:  input.Into("test_schema_insert"),
 		Input: input,
 		OnInput: func(ctx context.Context) error {
 			bf.Clear()
@@ -105,14 +106,17 @@ func TestInsertMemory(t *testing.T) {
 	// Check the result (with the full-featured client)
 	{
 		conn, err := clickhouse.Open(&clickhouse.Options{
-			Addr:        []string{server},
+			Addr: []string{server},
+			Auth: clickhouse.Auth{
+				Database: "test",
+			},
 			DialTimeout: 100 * time.Millisecond,
 		})
 		if err != nil {
 			t.Fatalf("clickhouse.Open() error:\n%+v", err)
 		}
 		// Use formatRow to get JSON representation
-		rows, err := conn.Query(ctx, "SELECT formatRow('JSONEachRow', *) FROM test_table_insert ORDER BY TimeReceived")
+		rows, err := conn.Query(ctx, "SELECT formatRow('JSONEachRow', *) FROM test_schema_insert ORDER BY TimeReceived")
 		if err != nil {
 			t.Fatalf("clickhouse.Query() error:\n%+v", err)
 		}
