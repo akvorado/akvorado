@@ -118,9 +118,6 @@ func isOldTable(schema *schema.Component, table string) bool {
 	if strings.Contains(table, schema.ClickHouseHash()) {
 		return false
 	}
-	if strings.HasPrefix(table, "test_") {
-		return true
-	}
 	oldSuffixes := []string{
 		"_raw",
 		"_raw_consumer",
