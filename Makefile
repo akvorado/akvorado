@@ -19,6 +19,7 @@ GENERATED_JS = \
 	console/frontend/node_modules
 GENERATED_GO = \
 	common/pb/rawflow.pb.go \
+	common/pb/rawflow_vtproto.pb.go \
 	common/schema/definition_gen.go \
 	orchestrator/clickhouse/data/asns.csv \
 	orchestrator/clickhouse/data/protocols.csv \
@@ -67,7 +68,8 @@ BUF = go run github.com/bufbuild/buf/cmd/buf@v1.55.1
 
 .DELETE_ON_ERROR:
 
-common/pb/rawflow.pb.go: %.pb.go: buf.gen.yaml %.proto ; $(info $(M) compiling protocol buffers definition…)
+common/pb/rawflow_vtproto.pb.go: common/pb/rawflow.pb.go
+%.pb.go: buf.gen.yaml %.proto ; $(info $(M) compiling protocol buffers $@…)
 	$Q $(BUF) generate --path $(@:.pb.go=.proto)
 
 common/clickhousedb/mocks/mock_driver.go: go.mod ; $(info $(M) generate mocks for ClickHouse driver…)
@@ -224,7 +226,7 @@ licensecheck: console/frontend/node_modules ; $(info $(M) check dependency licen
 
 .PHONY: clean
 clean: ; $(info $(M) cleaning…)	@ ## Cleanup everything
-	@rm -rf test $(GENERATED) inlet/flow/decoder/flow-*.pb.go *~ bin/akvorado
+	@rm -rf test $(GENERATED) *~ bin/akvorado
 
 .PHONY: help
 help:

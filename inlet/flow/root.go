@@ -7,7 +7,6 @@ package flow
 import (
 	"errors"
 
-	"google.golang.org/protobuf/proto"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/daemon"
@@ -69,7 +68,7 @@ func (c *Component) Send(config InputConfiguration) input.SendFunc {
 		flow.TimestampSource = config.TimestampSource
 		flow.Decoder = config.Decoder
 		flow.UseSourceAddress = config.UseSrcAddrForExporterAddr
-		if bytes, err := proto.Marshal(flow); err == nil {
+		if bytes, err := flow.MarshalVT(); err == nil {
 			c.d.Kafka.Send(exporter, bytes)
 		}
 	}
