@@ -141,6 +141,17 @@ changelog.md: docs/99-changelog.md # To be used by GitHub actions only.
 	$Q >> $@ echo "**Docker image**: \`docker pull ghcr.io/$${GITHUB_REPOSITORY}:$${GITHUB_REF##*/v}\`"
 	$Q >> $@ echo "**Full changelog**: https://github.com/$${GITHUB_REPOSITORY}/compare/v$$(< docs/99-changelog.md sed -n '/^## '$${GITHUB_REF##*/v}' -/,/^## /{s/^## \([0-9.]*\) -.*/\1/p}' | tail -1)...v$${GITHUB_REF##*/v}"
 
+# Update default.pgo with the locally running "docker compose" instance.
+# Use: "make -j default.pgo".
+default.pgo: default-inlet.pgo default-outlet.pgo default-console.pgo
+	$Q go tool pprof -proto $^ > $@
+	$Q rm $^
+default-%.pgo:
+	$Q container=akvorado-akvorado-$*-1 ; \
+	   ip=$$(docker container inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $$container) ; \
+	   [ -n $$ip ] ; \
+	   curl -so $@ "http://$$ip:8080/debug/pprof/profile?seconds=30"
+
 # Tests
 
 .PHONY: check test tests test-race test-short test-bench test-coverage
