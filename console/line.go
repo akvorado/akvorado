@@ -251,9 +251,8 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 		return
 	}
 
-	// When filling 0 value, we may get an empty dimensions.
-	// From ClickHouse 22.4, it is possible to do interpolation database-side
-	// (INTERPOLATE (['Other', 'Other'] AS Dimensions))
+	// When requesting the previous period, we get an empty dimension in
+	// results. Put it back.
 	if len(input.Dimensions) > 0 {
 		zeroDimensions := make([]string, len(input.Dimensions))
 		for idx := range zeroDimensions {
