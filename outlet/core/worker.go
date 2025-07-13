@@ -19,10 +19,11 @@ import (
 
 // worker represents a worker processing incoming flows.
 type worker struct {
-	c  *Component
-	l  reporter.Logger
-	cw clickhouse.Worker
-	bf *schema.FlowMessage
+	c       *Component
+	l       reporter.Logger
+	cw      clickhouse.Worker
+	bf      *schema.FlowMessage
+	rawFlow pb.RawFlow
 }
 
 // newWorker instantiates a new worker and returns a callback function to
@@ -54,8 +55,8 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 
 	// Raw flaw decoding: fatal
 	w.c.metrics.rawFlowsReceived.Inc()
-	var rawflow pb.RawFlow
-	if err := rawflow.UnmarshalVT(data); err != nil {
+	w.rawFlow.ResetVT()
+	if err := w.rawFlow.UnmarshalVT(data); err != nil {
 		w.c.metrics.rawFlowsErrors.WithLabelValues("cannot decode protobuf")
 		return fmt.Errorf("cannot decode raw flow: %w", err)
 	}
@@ -89,7 +90,7 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 	}
 
 	// Flow decoding: not fatal
-	err := w.c.d.Flow.Decode(&rawflow, w.bf, finalize)
+	err := w.c.d.Flow.Decode(&w.rawFlow, w.bf, finalize)
 	if err != nil {
 		w.c.metrics.rawFlowsErrors.WithLabelValues("cannot decode payload")
 		return nil
