@@ -9,4 +9,5 @@ plugins:
     out: .
     opt:
       - paths=source_relative
-      - features=marshal+unmarshal+size
+      - features=size+marshal+unmarshal+pool
+      - pool=akvorado/common/pb.RawFlow
