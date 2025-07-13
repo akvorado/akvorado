@@ -126,3 +126,5 @@ proto,name,description
 143,Ethernet,Ethernet
 144,AGGFRAG,AGGFRAG encapsulation payload for ESP
 145,NSH,Network Service Header
+146,Homa,Homa
+147,BIT-EMU,Bit-stream Emulation
