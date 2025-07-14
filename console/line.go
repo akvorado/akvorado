@@ -271,7 +271,7 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 	}
 	lastTime := time.Time{}
 	for _, result := range results {
-		if result.Axis == 1 && result.Time != lastTime {
+		if result.Axis == 1 && !result.Time.Equal(lastTime) {
 			output.Time = append(output.Time, result.Time)
 			lastTime = result.Time
 		}
@@ -303,7 +303,7 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 			maxes[axis] = map[string]uint64{}
 			lasts[axis] = map[string]int{}
 		}
-		if result.Time != lastTime {
+		if !result.Time.Equal(lastTime) {
 			// New timestamp, increment time index
 			timeIndexForAxis[axis]++
 			lastTimeForAxis[axis] = result.Time
