@@ -1,4 +1,5 @@
 ---
+name: akvorado-dev
 services:
   zookeeper:
     extends:
