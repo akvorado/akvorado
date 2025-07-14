@@ -110,6 +110,7 @@ func (c *Component) docsHandlerFunc(gc *gin.Context) {
 			highlighting.NewHighlighting(
 				highlighting.WithCustomStyle(draculaStyle),
 			),
+			&admonitionExtension{},
 		),
 		goldmark.WithParserOptions(
 			parser.WithAutoHeadingID(),

@@ -34,3 +34,43 @@
     }
   }
 }
+
+/* Admonitions */
+.prose .admonition {
+  @apply my-4 rounded-md border-l-4 p-4;
+
+  .admonition-title {
+    @apply mt-0 flex items-center font-bold;
+
+    svg {
+      @apply mr-2 h-4 w-4;
+    }
+  }
+
+  p:last-child {
+    @apply mb-0;
+  }
+}
+
+.prose .admonition-important {
+  @apply border-purple-500 bg-purple-50 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200;
+}
+
+.prose .admonition-note {
+  @apply border-blue-500 bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200;
+}
+
+.prose .admonition-tip {
+  @apply border-green-500 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-200;
+}
+
+.prose .admonition-warning {
+  @apply border-yellow-500 bg-yellow-50 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200;
+  svg {
+    transform: translateY(2px);
+  }
+}
+
+.prose .admonition-caution {
+  @apply border-red-500 bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-200;
+}
