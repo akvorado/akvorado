@@ -33,23 +33,23 @@ explore the features.
 
 To connect your own network devices:
 
-1. **Disable demo data**:
+1. Disable demo data:
    - Remove the reference to `docker-compose-demo.yml` from `.env`
    - Comment out the last line in `akvorado.yaml`
 
-1. **Customize the configuration** in `akvorado.yaml`:
+1. Customize the configuration in `akvorado.yaml`:
    - Set SNMP communities for your devices in `outlet` → `metadata` → `provider` → `communities`
    - Configure interface classification rules in `outlet` → `core` → `interface-classifiers`
 
-1. **Configure your routers/switches** to send flows to *Akvorado*:
+1. Configure your routers/switches to send flows to *Akvorado*:
    - NetFlow/IPFIX: port 2055
    - sFlow: port 6343
    
-1. **Restart all containers**
+1. Restart all containers:
    - `docker compose down --volumes`
    - `docker compose up -d`
 
-> [!IMPORTANT]
+> [!WARNING]
 > Interface classification is essential for the web interface to work properly.
 > Without it, you won't see data in the dashboard widgets or visualization tab.
 > See the [configuration guide](02-configuration.md) for details.
