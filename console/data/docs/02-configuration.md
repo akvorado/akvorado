@@ -488,40 +488,15 @@ The following configuration keys are accepted:
   component. If multiple sources are provided, the value of the first source
   providing a non-default route is taken. The default value is `flow` and `routing`.
 
-Classifier rules are written using [Expr][].
+#### Classification
 
-Exporter classifiers gets the classifier IP address and its hostname.
-If they can make a decision, they should invoke one of the
-`Classify()` functions with the target element as an argument. Once
-classification is done for an element, it cannot be changed by a
-subsequent rule. All strings are normalized (lower case, special chars
-removed).
+Classifier rules are written in a language called [Expr][].
 
-- `Exporter.IP` for the exporter IP address
-- `Exporter.Name` for the exporter name
-- `ClassifyGroup()` to classify the exporter to a group
-- `ClassifyRole()` to classify the exporter for a role (`edge`, `core`)
-- `ClassifySite()` to classify the exporter to a site (`paris`, `berlin`, `newyork`)
-- `ClassifyRegion()` to classify the exporter to a region (`france`, `italy`, `caraibes`)
-- `ClassifyTenant()` to classify the exporter to a tenant (`team-a`, `team-b`)
-- `Reject()` to reject the flow
-- `Format()` to format a string: `Format("name: %s", Exporter.Name)`
-
-As a compatibility `Classify()` is an alias for `ClassifyGroup()`.
-Here is an example, assuming routers are named
-`th2-ncs55a1-1.example.fr` or `milan-ncs5k8-2.example.it`:
-
-```yaml
-exporter-classifiers:
-  - ClassifySiteRegex(Exporter.Name, "^([^-]+)-", "$1")
-  - Exporter.Name endsWith ".it" && ClassifyRegion("italy")
-  - Exporter.Name matches "^(washington|newyork).*" && ClassifyRegion("usa")
-  - Exporter.Name endsWith ".fr" && ClassifyRegion("france")
-```
-
-Interface classifiers gets the following information and, like exporter
-classifiers, should invoke one of the `Classify()` functions to make a
-decision:
+Interface classifiers gets exporter and interface-related information as input.
+If they can make a decision, they should invoke one of the `Classify()`
+functions with the target element as an argument. Once classification is done
+for an element, it cannot be changed by a subsequent rule. All strings are
+normalized (lower case, special chars removed).
 
 - `Exporter.IP` for the exporter IP address
 - `Exporter.Name` for the exporter name
@@ -570,6 +545,38 @@ interface-classifiers:
     ClassifyProviderRegex(Interface.Description, "^[^ ]+? ([^ ]+)", "$1") &&
     ClassifyExternal()
   - ClassifyInternal()
+```
+
+The first rule says “extract the connectivity (transit, pni, ppni or ix) from
+the interface description, and if successful, use the second part of the
+description as the provider, and if successful, considers the interface as an
+external one”. The second rule says “if an interface was not classified as
+external or internal, consider it as an internal one.”
+
+Exporter classifiers gets the classifier IP address and its hostname. Like the
+interface classifiers, they should invoke one of the `Classify()` functions to
+make a decision:
+
+- `Exporter.IP` for the exporter IP address
+- `Exporter.Name` for the exporter name
+- `ClassifyGroup()` to classify the exporter to a group
+- `ClassifyRole()` to classify the exporter for a role (`edge`, `core`)
+- `ClassifySite()` to classify the exporter to a site (`paris`, `berlin`, `newyork`)
+- `ClassifyRegion()` to classify the exporter to a region (`france`, `italy`, `caraibes`)
+- `ClassifyTenant()` to classify the exporter to a tenant (`team-a`, `team-b`)
+- `Reject()` to reject the flow
+- `Format()` to format a string: `Format("name: %s", Exporter.Name)`
+
+As a compatibility `Classify()` is an alias for `ClassifyGroup()`.
+Here is an example, assuming routers are named
+`th2-ncs55a1-1.example.fr` or `milan-ncs5k8-2.example.it`:
+
+```yaml
+exporter-classifiers:
+  - ClassifySiteRegex(Exporter.Name, "^([^-]+)-", "$1")
+  - Exporter.Name endsWith ".it" && ClassifyRegion("italy")
+  - Exporter.Name matches "^(washington|newyork).*" && ClassifyRegion("usa")
+  - Exporter.Name endsWith ".fr" && ClassifyRegion("france")
 ```
 
 [expr]: https://expr-lang.org/docs/language-definition
