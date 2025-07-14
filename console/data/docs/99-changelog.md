@@ -24,8 +24,7 @@ in the [quickstart tarball][] and update your own configuration.
 
 As it seems a good time as any, Zookeeper is removed from the `docker compose`
 setup (except when using ClickHouse cluster mode). Kafka is now using the KRaft
-mode. You can follow the [migration documentation][], but is easier to loose a
-bit of data and reset the Kafka container:
+mode. While migration is possible, it is easier to start from scratch:
 
 ```console
 # docker compose down --remove-orphans
@@ -36,18 +35,17 @@ bit of data and reset the Kafka container:
 
 - 💥 *outlet*: new service
 - 💥 *inlet*: flow rate limiting feature has been removed
+- 💥 *docker*: switch to Apache Kafka 4.0
 - 💥 *docker*: switch Kafka to KRaft mode
 - 🩹 *console*: fix deletion of saved filters
 - 🩹 *console*: fix intermittent failure when requesting previous period
 - 🩹 *docker*: move healthcheck for IPinfo updater into Dockerfile to avoid
   "unhealthy" state on non-updated installation
-- 🌱 *docker*: update Kafka to 4.0
 - 🌱 *docker*: enable access log for Traefik
 - 🌱 *docker*: update Traefik to 3.4 (not mandatory)
 - 🌱 *orchestrator*: move ClickHouse database settings from `clickhouse` to `clickhousedb`
 - 🌱 *inlet*: improve performance of classifiers
 
-[migration documentation]: https://github.com/bitnami/containers/blob/main/bitnami/kafka/README.md#migrating-from-zookeeper-mode-to-kraft-mode
 [quickstart tarball]: https://github.com/akvorado/akvorado/releases/latest/download/docker-compose-quickstart.tar.gz
 
 ## 1.11.5 - 2025-05-11
