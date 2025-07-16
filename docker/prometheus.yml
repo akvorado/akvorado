@@ -18,7 +18,7 @@ scrape_configs:
             values:
               - com.docker.compose.project=akvorado
               - com.docker.compose.service=grafana
-  - job_name: zookeeper
+  - job_name: clickhouse
     docker_sd_configs:
       - host: unix:///var/run/docker.sock
         refresh_interval: 30s
@@ -26,10 +26,27 @@ scrape_configs:
           - name: label
             values:
               - com.docker.compose.project=akvorado
-              - com.docker.compose.service=zookeeper
     relabel_configs:
+      - source_labels: [__meta_docker_container_label_com_docker_compose_service]
+        regex: (clickhouse|clickhouse-\\d+)
+        action: keep
       - source_labels: [__meta_docker_port_private]
-        regex: 7000
+        regex: 8123
+        action: keep
+  - job_name: clickhouse-keeper
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 30s
+        filters:
+          - name: label
+            values:
+              - com.docker.compose.project=akvorado
+    relabel_configs:
+      - source_labels: [__meta_docker_container_label_com_docker_compose_service]
+        regex: clickhouse-keeper-\\d+
+        action: keep
+      - source_labels: [__meta_docker_port_private]
+        regex: 9100
         action: keep
   - job_name: kafka
     docker_sd_configs:

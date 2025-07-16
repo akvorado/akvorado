@@ -1,0 +1,21 @@
+<clickhouse>
+  <keeper_server>
+    <raft_configuration>
+      <server>
+        <id>1</id>
+        <hostname>clickhouse-keeper-1</hostname>
+        <port>9234</port>
+      </server>
+      <server>
+        <id>2</id>
+        <hostname>clickhouse-keeper-2</hostname>
+        <port>9234</port>
+      </server>
+      <server>
+        <id>3</id>
+        <hostname>clickhouse-keeper-3</hostname>
+        <port>9234</port>
+      </server>
+    </raft_configuration>
+  </keeper_server>
+</clickhouse>
