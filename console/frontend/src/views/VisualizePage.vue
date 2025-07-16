@@ -192,6 +192,15 @@ const { data, execute, isFetching, aborted, abort, canAbort, error } = useFetch(
         url: `/api/v0/console/graph/${url}`,
       };
     },
+    onFetchError(ctx) {
+      const query = ctx.response?.headers.get("x-sql-query");
+      if (query) {
+        console.groupCollapsed("SQL query (with error)");
+        console.info(query.replace(/ {2}( )*/g, "\n$1"));
+        console.groupEnd();
+      }
+      return ctx;
+    },
     async afterFetch(
       ctx: AfterFetchContext<GraphLineHandlerOutput | GraphSankeyHandlerOutput>,
     ) {
