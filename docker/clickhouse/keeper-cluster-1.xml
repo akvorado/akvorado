@@ -1,0 +1,5 @@
+<clickhouse>
+  <keeper_server>
+    <server_id>1</server_id>
+  </keeper_server>
+</clickhouse>

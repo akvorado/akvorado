@@ -1,6 +1,11 @@
 ---
 volumes:
-  akvorado-zookeeper:
+  akvorado-clickhouse-keeper-db-1:
+  akvorado-clickhouse-keeper-db-2:
+  akvorado-clickhouse-keeper-db-3:
+  akvorado-clickhouse-keeper-1:
+  akvorado-clickhouse-keeper-2:
+  akvorado-clickhouse-keeper-3:
   akvorado-clickhouse-2:
   akvorado-clickhouse-3:
   akvorado-clickhouse-4:
@@ -10,29 +15,45 @@ services:
     environment:
       - AKVORADO_CFG_ORCHESTRATOR_CLICKHOUSE_CLUSTER=akvorado
 
-  zookeeper:
+  clickhouse-keeper-1: &clickhouse-keeper
     extends:
       file: versions.yml
-      service: zookeeper
-    environment:
-      - ALLOW_ANONYMOUS_LOGIN=yes
-      - ZOO_ENABLE_PROMETHEUS_METRICS=yes
-      - ZOO_4LW_COMMANDS_WHITELIST=srvr,mntr,ruok
+      service: clickhouse-keeper
     restart: unless-stopped
     expose:
-      - 2181/tcp
-      - 2888/tcp
-      - 3888/tcp
-      - 7000/tcp                # Prometheus metrics
+      - 2181 # zookeeper
+      - 9100 # metrics
     volumes:
-      - akvorado-zookeeper:/bitnami/zookeeper
+      - akvorado-clickhouse-keeper-db-1:/var/lib/clickhouse-keeper
+      - akvorado-clickhouse-keeper-1:/var/lib/clickhouse
+      - ./clickhouse/keeper.xml:/etc/clickhouse-keeper/keeper_config.d/keeper.xml
+      - ./clickhouse/keeper-cluster.xml:/etc/clickhouse-keeper/keeper_config.d/keeper-cluster.xml
+      - ./clickhouse/keeper-cluster.xml:/etc/clickhouse-keeper/keeper_config.d/keeper-cluster-1.xml
     healthcheck:
       interval: 20s
-      test: ["CMD-SHELL", "echo ruok | nc -w3 127.0.0.1 2181 | grep -xFq imok"]
+      test: ["CMD", "wget", "-T", "1", "--spider", "--no-proxy", "http://127.0.0.1:9100/metrics"]
+  clickhouse-keeper-2:
+    <<: *clickhouse-keeper
+    volumes:
+      - akvorado-clickhouse-keeper-db-2:/var/lib/clickhouse-keeper
+      - akvorado-clickhouse-keeper-2:/var/lib/clickhouse
+      - ./clickhouse/keeper.xml:/etc/clickhouse-keeper/keeper_config.d/keeper.xml
+      - ./clickhouse/keeper-cluster.xml:/etc/clickhouse-keeper/keeper_config.d/keeper-cluster.xml
+      - ./clickhouse/keeper-cluster.xml:/etc/clickhouse-keeper/keeper_config.d/keeper-cluster-2.xml
+  clickhouse-keeper-3:
+    <<: *clickhouse-keeper
+    volumes:
+      - akvorado-clickhouse-keeper-db-3:/var/lib/clickhouse-keeper
+      - akvorado-clickhouse-keeper-3:/var/lib/clickhouse
+      - ./clickhouse/keeper.xml:/etc/clickhouse-keeper/keeper_config.d/keeper.xml
+      - ./clickhouse/keeper-cluster.xml:/etc/clickhouse-keeper/keeper_config.d/keeper-cluster.xml
+      - ./clickhouse/keeper-cluster.xml:/etc/clickhouse-keeper/keeper_config.d/keeper-cluster-3.xml
 
   clickhouse:
     depends_on:
-      - zookeeper
+      - clickhouse-keeper-1
+      - clickhouse-keeper-2
+      - clickhouse-keeper-3
     volumes:
       - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
       - ./clickhouse/cluster-1.xml:/etc/clickhouse-server/config.d/cluster-1.xml
@@ -41,7 +62,9 @@ services:
       file: docker-compose.yml
       service: clickhouse
     depends_on:
-      - zookeeper
+      - clickhouse-keeper-1
+      - clickhouse-keeper-2
+      - clickhouse-keeper-3
     volumes:
       - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
       - ./clickhouse/cluster-2.xml:/etc/clickhouse-server/config.d/cluster-2.xml
@@ -51,7 +74,9 @@ services:
       file: docker-compose.yml
       service: clickhouse
     depends_on:
-      - zookeeper
+      - clickhouse-keeper-1
+      - clickhouse-keeper-2
+      - clickhouse-keeper-3
     volumes:
       - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
       - ./clickhouse/cluster-3.xml:/etc/clickhouse-server/config.d/cluster-3.xml
@@ -61,7 +86,9 @@ services:
       file: docker-compose.yml
       service: clickhouse
     depends_on:
-      - zookeeper
+      - clickhouse-keeper-1
+      - clickhouse-keeper-2
+      - clickhouse-keeper-3
     volumes:
       - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
       - ./clickhouse/cluster-4.xml:/etc/clickhouse-server/config.d/cluster-4.xml

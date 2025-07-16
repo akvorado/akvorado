@@ -1,13 +1,6 @@
 ---
 name: akvorado-dev
 services:
-  zookeeper:
-    extends:
-      file: versions.yml
-      service: zookeeper
-    environment:
-      - ALLOW_ANONYMOUS_LOGIN=yes
-
   mock-oauth2-server:
     extends:
       file: versions.yml
@@ -129,7 +122,7 @@ services:
       file: versions.yml
       service: clickhouse
     depends_on:
-      - zookeeper
+      - clickhouse-keeper-1
     environment:
       - CLICKHOUSE_SKIP_USER_SETUP=1
       - CLICKHOUSE_ALWAYS_RUN_INITDB_SCRIPTS=1
@@ -163,6 +156,12 @@ services:
       - ./clickhouse/cluster-4.xml:/etc/clickhouse-server/config.d/cluster-4.xml
     ports:
       - 127.0.0.1:9003:9000/tcp
+  clickhouse-keeper-1:
+    extends:
+      file: versions.yml
+      service: clickhouse-keeper
+    volumes:
+      - ./clickhouse/keeper.xml:/etc/clickhouse-keeper/keeper_config.d/keeper.xml
 
   srlinux:
     extends:
