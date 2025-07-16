@@ -14,6 +14,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🩹 *console*: fix deletion of saved filters
+- 🩹 *console*: fix intermittent failure when requesting previous period
 - 🩹 *docker*: move healthcheck for IPinfo updater into Dockerfile to avoid
   "unhealthy" state on non-updated installation
 - 🌱 *docker*: enable access log for Traefik

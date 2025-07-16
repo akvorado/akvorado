@@ -183,7 +183,7 @@ func TestFinalizeQuery(t *testing.T) {
 			},
 			Expected: "SELECT 1 FROM flows WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:10', 'UTC') AND toDateTime('2022-04-11 15:45:10', 'UTC') // 30",
 		}, {
-			Description: "use flows table for resolution (but flows_1m0s for data)",
+			Description: "use flows table for resolution and for data",
 			Tables: []flowsTable{
 				{"flows", 0, time.Date(2022, 4, 10, 10, 45, 10, 0, time.UTC)},
 				{"flows_1m0s", time.Minute, time.Date(2022, 3, 10, 10, 45, 10, 0, time.UTC)},
@@ -198,7 +198,7 @@ func TestFinalizeQuery(t *testing.T) {
 				}(),
 				Points: 2880, // 30-second resolution
 			},
-			Expected: "SELECT 1 FROM flows_1m0s WHERE TimeReceived BETWEEN toDateTime('2022-03-10 15:45:10', 'UTC') AND toDateTime('2022-03-11 15:45:10', 'UTC') // 30",
+			Expected: "SELECT 1 FROM flows WHERE TimeReceived BETWEEN toDateTime('2022-03-10 15:45:10', 'UTC') AND toDateTime('2022-03-11 15:45:10', 'UTC') // 30",
 		}, {
 			Description: "select flows table with better resolution",
 			Tables: []flowsTable{

@@ -215,19 +215,18 @@ func (c *Component) contextFunc(inputStr string) context {
 
 func (c *Component) computeTableAndInterval(input inputContext) (string, time.Duration, time.Duration) {
 	targetInterval := time.Duration(uint64(input.End.Sub(input.Start)) / uint64(input.Points))
-	if targetInterval < time.Second {
-		targetInterval = time.Second
-	}
+	targetInterval = max(targetInterval, time.Second)
 
 	// Select table
 	targetIntervalForTableSelection := targetInterval
 	if input.MainTableRequired {
 		targetIntervalForTableSelection = time.Second
 	}
-	table, computedInterval := c.getBestTable(input.Start, targetIntervalForTableSelection)
+	startForTableSelection := input.Start
 	if input.StartForInterval != nil {
-		_, computedInterval = c.getBestTable(*input.StartForInterval, targetIntervalForTableSelection)
+		startForTableSelection = *input.StartForInterval
 	}
+	table, computedInterval := c.getBestTable(startForTableSelection, targetIntervalForTableSelection)
 	return table, computedInterval, targetInterval
 }
 

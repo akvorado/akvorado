@@ -630,6 +630,58 @@ ORDER BY time WITH FILL
  STEP {{ .Interval }}
  INTERPOLATE (dimensions AS emptyArrayString()))
 {{ end }}`,
+		}, {
+			Description: "previous period while main table is required",
+			Pos:         helpers.Mark(),
+			Input: graphLineHandlerInput{
+				graphCommonHandlerInput: graphCommonHandlerInput{
+					Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					End:   time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					Dimensions: []query.Column{
+						query.NewColumn("SrcAddr"),
+						query.NewColumn("DstAddr"),
+					},
+					Filter: query.NewFilter("InIfBoundary = external"),
+					Units:  "l3bps",
+				},
+				Points:         100,
+				PreviousPeriod: true,
+			},
+			Expected: `
+{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","main-table-required":true,"points":100,"units":"l3bps"}@@ }}
+WITH
+ source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
+ rows AS (SELECT SrcAddr, DstAddr FROM source WHERE {{ .Timefilter }} AND (InIfBoundary = 'external') GROUP BY SrcAddr, DstAddr ORDER BY {{ .Units }} DESC LIMIT 0)
+SELECT 1 AS axis, * FROM (
+SELECT
+ {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .Units }}/{{ .Interval }} AS xps,
+ if((SrcAddr, DstAddr) IN rows, [replaceRegexpOne(IPv6NumToString(SrcAddr), '^::ffff:', ''), replaceRegexpOne(IPv6NumToString(DstAddr), '^::ffff:', '')], ['Other', 'Other']) AS dimensions
+FROM source
+WHERE {{ .Timefilter }} AND (InIfBoundary = 'external')
+GROUP BY time, dimensions
+ORDER BY time WITH FILL
+ FROM {{ .TimefilterStart }}
+ TO {{ .TimefilterEnd }} + INTERVAL 1 second
+ STEP {{ .Interval }}
+ INTERPOLATE (dimensions AS ['Other', 'Other']))
+{{ end }}
+UNION ALL
+{{ with context @@{"start":"2022-04-09T15:45:10Z","end":"2022-04-10T15:45:10Z","start-for-interval":"2022-04-10T15:45:10Z","main-table-required":true,"points":100,"units":"l3bps"}@@ }}
+SELECT 3 AS axis, * FROM (
+SELECT
+ {{ call .ToStartOfInterval "TimeReceived" }} + INTERVAL 86400 second AS time,
+ {{ .Units }}/{{ .Interval }} AS xps,
+ emptyArrayString() AS dimensions
+FROM source
+WHERE {{ .Timefilter }} AND (InIfBoundary = 'external')
+GROUP BY time, dimensions
+ORDER BY time WITH FILL
+ FROM {{ .TimefilterStart }} + INTERVAL 86400 second
+ TO {{ .TimefilterEnd }} + INTERVAL 1 second + INTERVAL 86400 second
+ STEP {{ .Interval }}
+ INTERPOLATE (dimensions AS emptyArrayString()))
+{{ end }}`,
 		},
 	}
 	for _, tc := range cases {
