@@ -23,8 +23,9 @@ on most setups but you are encouraged to review the new proposed configuration
 in the [quickstart tarball][] and update your own configuration.
 
 As it seems a good time as any, Zookeeper is removed from the `docker compose`
-setup (except when using ClickHouse cluster mode). Kafka is now using the KRaft
-mode. While migration is possible, it is easier to start from scratch:
+setup. ClickHouse Keeper is used instead when setting up a cluster. Kafka is now
+using the KRaft mode. While migration is possible, it is easier to start from
+scratch:
 
 ```console
 # docker compose down --remove-orphans

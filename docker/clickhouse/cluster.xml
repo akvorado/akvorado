@@ -30,7 +30,15 @@
   </remote_servers>
   <zookeeper>
     <node>
-      <host>zookeeper</host>
+      <host>clickhouse-keeper-1</host>
+      <port>2181</port>
+    </node>
+    <node>
+      <host>clickhouse-keeper-2</host>
+      <port>2181</port>
+    </node>
+    <node>
+      <host>clickhouse-keeper-3</host>
       <port>2181</port>
     </node>
   </zookeeper>

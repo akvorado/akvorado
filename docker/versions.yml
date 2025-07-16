@@ -1,14 +1,14 @@
 ---
 services:
   # main services
-  zookeeper:
-    image: bitnami/zookeeper:3.8 # \d+\.\d+
   kafka:
     image: apache/kafka:4.0.0 # \d+\.\d+\.\d+
   redis:
     image: valkey/valkey:7.2 # \d+\.\d+
   clickhouse:
     image: clickhouse/clickhouse-server:24.8 # \d+\.[38]
+  clickhouse-keeper:
+    image: clickhouse/clickhouse-keeper:24.8 # \d+\.[38]
   traefik:
     image: traefik:v3.4 # v\d+\.\d+
   maxmind-geoipupdate:
