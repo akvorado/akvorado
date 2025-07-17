@@ -11,6 +11,8 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
@@ -67,11 +69,42 @@ func dropAllTables(t *testing.T, ch *clickhousedb.Component) {
 	}
 }
 
-func loadTables(t *testing.T, ch *clickhousedb.Component, sch *schema.Component, schemas []tableWithSchema) {
+func loadTables(t *testing.T, ch *clickhousedb.Component, sch *schema.Component, tables []tableWithSchema) {
 	ctx := clickhouse.Context(context.Background(), clickhouse.WithSettings(clickhouse.Settings{
 		"allow_suspicious_low_cardinality_types": 1,
 	}))
-	for _, tws := range schemas {
+
+	// Sort in a way we respect the dependencies.
+	fromPattern := regexp.MustCompile(`.*FROM (default\.\w+)`)
+	toPattern := regexp.MustCompile(`.*TO (default\.\w+)`)
+	createPattern := regexp.MustCompile(`CREATE (?:TABLE|MATERIALIZED VIEW) (default\.\w+)`)
+	slices.SortFunc(tables, func(t1, t2 tableWithSchema) int {
+		t1From := fromPattern.FindStringSubmatch(t1.Schema)
+		t1To := toPattern.FindStringSubmatch(t1.Schema)
+		t1Create := createPattern.FindStringSubmatch(t1.Schema)
+		t2From := fromPattern.FindStringSubmatch(t2.Schema)
+		t2To := toPattern.FindStringSubmatch(t2.Schema)
+		t2Create := createPattern.FindStringSubmatch(t2.Schema)
+		if t1From != nil && t2Create != nil && t1From[1] == t2Create[1] {
+			// t2 creates the table that is used by t1 and t1 should be ordered after
+			return 1
+		}
+		if t1To != nil && t2Create != nil && t1To[1] == t2Create[1] {
+			// t2 creates the table that is used by t1 and t1 should be ordered after
+			return 1
+		}
+		if t2From != nil && t1Create != nil && t2From[1] == t1Create[1] {
+			// t1 creates the table that is used by t2 and t2 should be ordered after
+			return -1
+		}
+		if t2To != nil && t1Create != nil && t2To[1] == t1Create[1] {
+			// t1 creates the table that is used by t2 and t2 should be ordered after
+			return -1
+		}
+		return 0
+	})
+
+	for _, tws := range tables {
 		if isOldTable(sch, tws.Table) {
 			continue
 		}
