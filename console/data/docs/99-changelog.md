@@ -43,6 +43,7 @@ scratch:
 - 🩹 *docker*: move healthcheck for IPinfo updater into Dockerfile to avoid
   "unhealthy" state on non-updated installation
 - 🌱 *docker*: enable access log for Traefik
+- 🌱 *docker*: update ClickHouse to 25.3 (not mandatory)
 - 🌱 *docker*: update Traefik to 3.4 (not mandatory)
 - 🌱 *orchestrator*: move ClickHouse database settings from `clickhouse` to `clickhousedb`
 - 🌱 *inlet*: improve performance of classifiers
