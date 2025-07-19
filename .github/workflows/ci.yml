@@ -47,8 +47,6 @@ jobs:
         run: docker compose -f docker/docker-compose-dev.yml up --wait --wait-timeout 60 --quiet-pull
       - name: Setup
         uses: ./.github/actions/setup
-
-      # Install dependencies
       - name: Install dependencies
         run: sudo apt-get install -qqy shared-mime-info curl
 

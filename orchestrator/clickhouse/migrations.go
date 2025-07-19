@@ -45,16 +45,11 @@ func (c *Component) migrateDatabase() error {
 	}
 
 	// Grab some information about the database
-	var threads uint8
 	var version string
-	row := c.d.ClickHouse.QueryRow(ctx, `SELECT getSetting('max_threads'), version()`)
-	if err := row.Scan(&threads, &version); err != nil {
+	row := c.d.ClickHouse.QueryRow(ctx, `SELECT version()`)
+	if err := row.Scan(&version); err != nil {
 		c.r.Err(err).Msg("unable to parse database settings")
 		return fmt.Errorf("unable to parse database settings: %w", err)
-	}
-	if c.config.Kafka.Consumers > int(threads) {
-		c.r.Warn().Msgf("too many consumers requested, capping to %d", threads)
-		c.config.Kafka.Consumers = int(threads)
 	}
 	if err := validateVersion(version); err != nil {
 		return fmt.Errorf("incorrect ClickHouse version: %w", err)
@@ -162,12 +157,6 @@ func (c *Component) migrateDatabase() error {
 		c.createExportersConsumerView,
 		c.createRawFlowsTable,
 		c.createRawFlowsConsumerView,
-		c.createRawFlowsErrors,
-		func(ctx context.Context) error {
-			return c.createDistributedTable(ctx, "flows_raw_errors")
-		},
-		c.createRawFlowsErrorsConsumerView,
-		c.deleteOldRawFlowsErrorsView,
 	)
 	if err != nil {
 		return err

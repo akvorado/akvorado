@@ -96,7 +96,7 @@
         21: "core"
       listen: :161
     bmp: &bmp
-      target: akvorado-inlet:10179
+      target: akvorado-outlet:10179
       routes:
         - prefixes: 192.0.2.0/24,2a01:db8:cafe:1::/64
           aspath: 64501

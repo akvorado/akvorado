@@ -1,0 +1,13 @@
+---
+version: v2
+plugins:
+  - local: [ "go", "tool", "protoc-gen-go" ]
+    out: .
+    opt:
+      - paths=source_relative
+  - local: [ "go", "tool", "protoc-gen-go-vtproto" ]
+    out: .
+    opt:
+      - paths=source_relative
+      - features=size+marshal+unmarshal+pool
+      - pool=akvorado/common/pb.RawFlow

@@ -38,29 +38,6 @@ func TestDisableForbiddenColumns(t *testing.T) {
 	if _, err := schema.New(config); err == nil {
 		t.Fatal("New() did not error")
 	}
-
-	config = schema.DefaultConfiguration()
-	config.Disabled = []schema.ColumnKey{schema.ColumnDstLargeCommunitiesASN}
-	if _, err := schema.New(config); err == nil {
-		t.Fatal("New() did not error")
-	}
-
-	config = schema.DefaultConfiguration()
-	config.Disabled = []schema.ColumnKey{schema.ColumnDstLargeCommunities}
-	if _, err := schema.New(config); err == nil {
-		t.Fatal("New() did not error")
-	}
-
-	config = schema.DefaultConfiguration()
-	config.Disabled = []schema.ColumnKey{
-		schema.ColumnDstLargeCommunities,
-		schema.ColumnDstLargeCommunitiesASN,
-		schema.ColumnDstLargeCommunitiesLocalData1,
-		schema.ColumnDstLargeCommunitiesLocalData2,
-	}
-	if _, err := schema.New(config); err != nil {
-		t.Fatalf("New() error:\n%+v", err)
-	}
 }
 
 func TestCustomDictionaries(t *testing.T) {

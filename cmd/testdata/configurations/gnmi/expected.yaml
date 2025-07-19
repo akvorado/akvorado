@@ -1,6 +1,6 @@
 ---
 paths:
-  inlet.0.metadata.providers:
+  outlet.0.metadata.providers:
     - type: gnmi
       timeout: "1s"
       minimalrefreshinterval: "1m0s"

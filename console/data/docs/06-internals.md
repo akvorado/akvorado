@@ -1,11 +1,11 @@
 # Internal design
 
-*Akvorado* is written in Go. Each service has its code in a distinct
-directory (`inlet/`, `orchestrator/` and `console/`). The `common/`
-directory contains components common to several services. The `cmd/`
-directory contains the main entry points.
+*Akvorado* is written in Go. Each service has its code in a distinct directory
+(`inlet/`, `outlet/`, `orchestrator/` and `console/`). The `common/` directory
+contains components common to several services. The `cmd/` directory contains
+the main entry points.
 
-Each service is splitted into several components. This is heavily
+Each service is split into several components. This is heavily
 inspired by the [Component framework in Clojure][]. A component is a
 piece of software with its configuration, its state and its
 dependencies on other components.
@@ -22,7 +22,7 @@ Each component features the following piece of code:
   configuration.
 - A `New()` function instantiating the component. This method takes
   the configuration and the dependencies. It is inert.
-- Optionally, a `Start()` method to start the routines associated to
+- Optionally, a `Start()` method to start the routines associated with
   the component.
 - Optionally, a `Stop()` method to stop the component.
 
@@ -50,7 +50,7 @@ For logs, it is mostly a façade to
 code to append the module name to the logs.
 
 For metrics, it is a façade to the [Prometheus instrumentation
-library][]. It provides a registry which automatically append metric
+library][]. It provides a registry which automatically appends metric
 names with the module name.
 
 It also exposes a simple way to report healthchecks from various
@@ -79,33 +79,37 @@ handled by [mapstructure](https://github.com/mitchellh/mapstructure).
 Handling backward compatibility is done by registering hooks to
 transform the configuration.
 
-## Flow decoding
+## Flow processing
 
-Decoding is handled by
-[GoFlow2](https://github.com/NetSampler/GoFlow2). The network code to
-receive flows is heavily inspired by it but not reused. While logging is
-often abstracted, this is not the case for metrics. Moreover, the
-design to scale is a bit different as *Akvorado* will create a socket
-for each worker instead of distributing incoming flows using a channel.
+Flow processing is split between inlet and outlet services:
 
-Netflow v5, Netflow v9, IPFIX, and sFlow are currently supported.
+### Inlet flow reception
 
-The design of this component is modular. It is possible to "plug"
-new decoders and new inputs easily. It is expected that most buffering
-is implemented at this level by input modules that require them.
-Additionnal buffering happens in the Kafka module. When the input is the
-network, this does not really matter as we cannot really block without
-losing messages. However, with file-backed modules, it may be more reliable
-to reduce buffers as data can be lost during shutdown.
+The inlet service receives flows. The design prioritizes speed and minimal
+processing: flows are encapsulated into protobuf messages and sent to Kafka
+without parsing. The design scales by creating a socket for each worker instead
+of distributing incoming flows using a channel.
+
+NetFlow v5, NetFlow v9, IPFIX, and sFlow are currently supported for reception.
+
+The design of this component is modular. It is possible to "plug" new inputs
+easily. Most buffering is implemented at this level by input modules that
+require them. Additional buffering happens in the Kafka module.
+
+### Outlet flow decoding
+
+The outlet service consumes flows from Kafka and performs the actual decoding
+using [GoFlow2](https://github.com/NetSampler/GoFlow2). This is where flow 
+parsing, enrichment with metadata and routing information, and classification 
+happen before writing to ClickHouse.
 
 ## Kafka
 
-The Kafka component relies on
-[Sarama](https://github.com/IBM/sarama). It is tested using the
-mock interface provided by this package. *Sarama* uses `go-metrics` to
-store metrics. We convert them to Prometheus to keep them. The logger
-is global and there is a hack to be plug it into the reporter design
-we have.
+The Kafka component relies on [Sarama](https://github.com/IBM/sarama). It is
+tested using the mock interface provided by this package. *Sarama* uses
+`go-metrics` to store metrics. We convert them to Prometheus to keep them. The
+logger is global and there is a hack to plug it into the reporter design we
+have.
 
 If a real broker is available under the DNS name `kafka` or at
 `localhost` on port 9092, it will be used for a quick functional test.
@@ -121,6 +125,10 @@ to use code to check if the existing tables are up-to-date
 and to update them. For example, we may want to check if the Kafka
 settings of a table or the source URL of a dictionary are current.
 
+When inserting into ClickHouse, we rely on the low-level
+[ch-go](https://github.com/ClickHouse/ch-go/) library. Decoded flows are batched
+directly into the wire format used by ClickHouse.
+
 Functional tests are run when a ClickHouse server is available under
 the name `clickhouse` or on `localhost`.
 
@@ -129,9 +137,9 @@ the name `clickhouse` or on `localhost`.
 SNMP polling is accomplished with [GoSNMP](https://github.com/gosnmp/gosnmp).
 The cache layer is tailored specifically for our needs. Cached information
 can expire if not accessed or refreshed periodically.
-Some coaelescing of the requests are done when they are queued.
+Some coalescing of the requests is done when they are queued.
 This adds some code complexity, maybe it was not worth it.
-If a exporter fails to answer too frequently, a backoff will be triggered
+If an exporter fails to answer too frequently, a backoff will be triggered
 for a minute to ensure it does not eat up all the workers' resources.
 
 Testing is done by another implementation of an [SNMP
@@ -163,7 +171,7 @@ needs to follow these steps:
 
 1. Add its symbol to `common/schema/definition.go`.
 2. Add it to the `flow()` function in `common/schema/definition.go`. Be sure to
-   specify the right/smaller ClickHouse type. If the columns is prefixed with
+   specify the right/smallest ClickHouse type. If the column is prefixed with
    `Src` or `InIf`, don't add the opposite direction, this is done
    automatically. Use `ClickHouseMainOnly` if the column is expected to take a
    lot of space. Add the column to the end and set `Disabled` field to `true`.
@@ -229,8 +237,9 @@ JS, it is just a matter of copy/pasting and customizing.
 
 ## Other components
 
-The core component is the main one. It takes the other as dependencies
-but there is nothing exciting about it.
+The core component is the main processing component in the outlet service. 
+It takes metadata, routing, and other components as dependencies and 
+orchestrates the flow enrichment and classification process.
 
 The HTTP component exposes a web server. Its main role is to manage
 the lifecycle of the HTTP server and to provide a method to add
@@ -241,7 +250,7 @@ section](03-usage.md).
 
 The daemon component handles the lifecycle of the whole application.
 It watches for the various goroutines (through tombs, see below)
-spawned by the other components and wait for signals to terminate. If
+spawned by the other components and waits for signals to terminate. If
 *Akvorado* had a systemd integration, it would take place here too.
 
 ## Other interesting dependencies
@@ -261,7 +270,7 @@ spawned by the other components and wait for signals to terminate. If
   implements several resiliency patterns, including the breaker
   pattern.
 - [github.com/go-playground/validator](https://github.com/go-playground/validator)
-  implements struct validation using tags. We use it to had better
+  implements struct validation using tags. We use it to have better
   validation on configuration structures.
 
 [go-archaius]: https://github.com/go-chassis/go-archaius
