@@ -1,6 +1,8 @@
 ---
 volumes:
   akvorado-prometheus:
+  akvorado-jmx-agent:
+
 services:
   prometheus:
     extends:
@@ -39,19 +41,26 @@ services:
       - --path.sysfs=/host/sys
       - --no-collector.filesystem
 
-  kafka-jmx-exporter:
-    extends:
-      file: versions.yml
-      service: kafka-jmx-exporter
-    restart: unless-stopped
-    depends_on:
-      - kafka
+  # Kafka monitoring
+  jmx-exporter-downloader:
+    image: alpine:latest
+    command: /usr/local/bin/jmx-exporter-download.sh
     volumes:
-      - ./kafka-jmx-exporter-config.yaml:/etc/jmx-kafka/config.yaml:ro
-    command:
-      - "5556"
-      - /etc/jmx-kafka/config.yaml
-
+      - akvorado-jmx-agent:/opt/jmx-exporter
+      - ./jmx-exporter-download.sh:/usr/local/bin/jmx-exporter-download.sh
+  kafka:
+    expose:
+      - 9092 # kafka
+      - 9100 # metrics
+    depends_on:
+      jmx-exporter-downloader:
+        condition: service_completed_successfully
+    environment:
+      KAFKA_OPTS: >-
+        -javaagent:/opt/jmx-exporter/jmx_prometheus_javaagent.jar=9100:/etc/kafka/jmx-exporter.yaml
+    volumes:
+      - akvorado-jmx-agent:/opt/jmx-exporter
+      - ./kafka-jmx-exporter-config.yaml:/etc/kafka/jmx-exporter.yaml
   kafka-ui:
     extends:
       file: versions.yml

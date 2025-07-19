@@ -30,14 +30,15 @@ services:
       KAFKA_SHARE_COORDINATOR_STATE_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_SHARE_COORDINATOR_STATE_TOPIC_MIN_ISR: 1
       KAFKA_LOG_DIRS: /var/lib/kafka/data
-      JMX_PORT: 5555
 
     restart: unless-stopped
     volumes:
       - akvorado-kafka:/var/lib/kafka
     healthcheck:
       interval: 20s
-      test: ["CMD", "env", "-u", "JMX_PORT", "/opt/kafka/bin/kafka-topics.sh", "--list", "--bootstrap-server", "kafka:9092"]
+      test: ["CMD",
+             "env", "-u", "KAFKA_OPTS",
+             "/opt/kafka/bin/kafka-topics.sh", "--list", "--bootstrap-server", "kafka:9092"]
 
   redis:
     extends:
@@ -46,7 +47,9 @@ services:
     restart: unless-stopped
     healthcheck:
       interval: 20s
-      test: ["CMD-SHELL", "timeout 3 redis-cli ping | grep -q PONG"]
+      test:
+        - CMD-SHELL
+        - "timeout 3 redis-cli ping | grep -q PONG"
 
   akvorado-orchestrator:
     extends:
