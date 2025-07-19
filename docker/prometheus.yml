@@ -56,7 +56,11 @@ scrape_configs:
           - name: label
             values:
               - com.docker.compose.project=akvorado
-              - com.docker.compose.service=kafka-jmx-exporter
+              - com.docker.compose.service=kafka
+    relabel_configs:
+      - source_labels: [__meta_docker_port_private]
+        regex: 9100
+        action: keep
   - job_name: node-exporter
     docker_sd_configs:
       - host: unix:///var/run/docker.sock

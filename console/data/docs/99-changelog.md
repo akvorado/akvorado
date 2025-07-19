@@ -45,6 +45,7 @@ scratch:
 - 🌱 *docker*: enable access log for Traefik
 - 🌱 *docker*: update ClickHouse to 25.3 (not mandatory)
 - 🌱 *docker*: update Traefik to 3.4 (not mandatory)
+- 🌱 *docker*: switch to Prometheus Java Agent exporter for Kafka
 - 🌱 *orchestrator*: move ClickHouse database settings from `clickhouse` to `clickhousedb`
 - 🌱 *inlet*: improve performance of classifiers
 
