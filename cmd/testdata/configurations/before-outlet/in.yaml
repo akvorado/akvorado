@@ -1,0 +1,100 @@
+---
+# This is the default configuration before the introduction of the outlet.
+
+kafka:
+  topic: flows
+  version: 3.3.1
+  brokers:
+    - kafka:9092
+  topic-configuration:
+    num-partitions: 8
+    replication-factor: 1
+    config-entries:
+      segment.bytes: 1073741824
+      retention.ms: 86400000 # 1 day
+      cleanup.policy: delete
+      compression.type: producer
+
+geoip:
+  optional: true
+  asn-database:
+    - /usr/share/GeoIP/asn.mmdb
+  geo-database:
+    - /usr/share/GeoIP/country.mmdb
+
+clickhousedb:
+  servers:
+    - clickhouse:9000
+
+clickhouse:
+  orchestrator-url: http://akvorado-orchestrator:8080
+  kafka:
+    consumers: 4
+  prometheus-endpoint: /metrics
+  asns:
+    64501: ACME Corporation
+  networks:
+    192.0.2.0/24:
+      name: ipv4-customers
+      role: customers
+    203.0.113.0/24:
+      name: ipv4-servers
+      role: servers
+    2a01:db8:cafe:1::/64:
+      name: ipv6-customers
+      role: customers
+    2a01:db8:cafe:2::/64:
+      name: ipv6-servers
+      role: servers
+  network-sources: []
+
+inlet:
+  kafka:
+    compression-codec: zstd
+  metadata:
+    workers: 10
+    provider:
+      type: snmp
+      credentials:
+        ::/0:
+          communities: public
+  flow:
+    inputs:
+      - type: udp
+        decoder: netflow
+        listen: :2055
+        workers: 6
+        receive-buffer: 10485760
+      - type: udp
+        decoder: sflow
+        listen: :6343
+        workers: 6
+        receive-buffer: 10485760
+  core:
+    workers: 6
+    exporter-classifiers:
+      - ClassifySiteRegex(Exporter.Name, "^([^-]+)-", "$1")
+      - ClassifyRegion("europe")
+      - ClassifyTenant("acme")
+      - ClassifyRole("edge")
+    interface-classifiers:
+      - |
+        ClassifyConnectivityRegex(Interface.Description, "^(?i)(transit|pni|ppni|ix):? ", "$1") &&
+        ClassifyProviderRegex(Interface.Description, "^\\S+?\\s(\\S+)", "$1") &&
+        ClassifyExternal()
+      - ClassifyInternal()
+
+console:
+  http:
+    cache:
+      type: redis
+      server: redis:6379
+  database:
+    saved-filters:
+      - description: "From Netflix"
+        content: >-
+          InIfBoundary = external AND SrcAS = AS2906
+      - description: "From GAFAM"
+        content: >-
+          InIfBoundary = external AND
+          SrcAS IN (AS15169, AS16509, AS32934, AS6185, AS8075)
