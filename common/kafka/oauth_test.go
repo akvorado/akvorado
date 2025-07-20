@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/IBM/sarama"
+	"github.com/twmb/franz-go/pkg/kgo"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )
@@ -77,8 +77,6 @@ func TestOAuth2ServerClientCredentials(t *testing.T) {
 
 func TestOAuth2Broker(t *testing.T) {
 	r := reporter.NewMock(t)
-	GlobalKafkaLogger.Register(r)
-	defer GlobalKafkaLogger.Unregister()
 
 	// Ensure broker is ready.
 	SetupKafkaBroker(t)
@@ -90,25 +88,27 @@ func TestOAuth2Broker(t *testing.T) {
 		[]string{"kafka:9093", "127.0.0.1:9093"})
 
 	config := DefaultConfiguration()
+	config.Brokers = []string{broker}
 	config.SASL = SASLConfiguration{
 		Username:      "kafka-client",
 		Password:      "kafka-client-secret",
 		Mechanism:     SASLOauth,
 		OAuthTokenURL: fmt.Sprintf("http://%s/default/token", oauthServer),
 	}
-	kafkaConfig, err := NewConfig(config)
+	opts, err := NewConfig(r, config)
 	if err != nil {
 		t.Fatalf("NewConfig() error:\n%+v", err)
 	}
-	if err := kafkaConfig.Validate(); err != nil {
-		t.Fatalf("Validate() error:\n%+v", err)
-	}
 
-	client, err := sarama.NewClient([]string{broker}, kafkaConfig)
+	client, err := kgo.NewClient(opts...)
 	if err != nil {
-		t.Fatalf("sarama.NewClient() error:\n%+v", err)
+		t.Fatalf("kgo.NewClient() error:\n%+v", err)
 	}
-	if err := client.RefreshMetadata(); err != nil {
-		t.Fatalf("client.RefreshMetadata() error:\n%+v", err)
+	defer client.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := client.Ping(ctx); err != nil {
+		t.Fatalf("client.Ping() error:\n%+v", err)
 	}
 }

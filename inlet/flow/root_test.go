@@ -8,18 +8,20 @@ import (
 	"fmt"
 	"path"
 	"runtime"
+	"sync"
 	"testing"
 	"time"
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
+	kafkaCommon "akvorado/common/kafka"
 	"akvorado/common/pb"
 	"akvorado/common/reporter"
 	"akvorado/inlet/flow/input/file"
 	"akvorado/inlet/kafka"
 
-	"github.com/IBM/sarama"
+	"github.com/twmb/franz-go/pkg/kgo"
 )
 
 func TestFlow(t *testing.T) {
@@ -43,35 +45,39 @@ func TestFlow(t *testing.T) {
 	config := DefaultConfiguration()
 	config.Inputs = inputs
 
-	producer, mockProducer := kafka.NewMock(t, r, kafka.DefaultConfiguration())
+	producer, cluster := kafka.NewMock(t, r, kafka.DefaultConfiguration())
+	defer cluster.Close()
+
+	// Use the new helper to intercept messages
+	var mu sync.Mutex
+	helloCount := 0
+	byeCount := 0
+	totalCount := 0
 	done := make(chan bool)
-	for i := range 100 {
-		mockProducer.ExpectInputWithMessageCheckerFunctionAndSucceed(func(got *sarama.ProducerMessage) error {
-			if i == 99 {
-				defer close(done)
-			}
-			expected := sarama.ProducerMessage{
-				Topic:     fmt.Sprintf("flows-v%d", pb.Version),
-				Key:       got.Key,
-				Value:     got.Value,
-				Partition: got.Partition,
-			}
-			if diff := helpers.Diff(got, expected); diff != "" {
-				t.Fatalf("Send() (-got, +want):\n%s", diff)
-			}
-			val, _ := got.Value.Encode()
-			if i%2 == 0 {
-				if !bytes.Contains(val, []byte("hello world!")) {
-					t.Fatalf("Send() did not return %q", "hello world!")
-				}
-			} else {
-				if !bytes.Contains(val, []byte("bye bye")) {
-					t.Fatalf("Send() did not return %q", "bye bye")
-				}
-			}
-			return nil
-		})
-	}
+
+	kafkaCommon.InterceptMessages(t, cluster, func(record *kgo.Record) {
+		mu.Lock()
+		defer mu.Unlock()
+
+		// Check topic
+		expectedTopic := fmt.Sprintf("flows-v%d", pb.Version)
+		if record.Topic != expectedTopic {
+			t.Errorf("Expected topic %s, got %s", expectedTopic, record.Topic)
+			return
+		}
+
+		// Count messages based on content
+		if bytes.Contains(record.Value, []byte("hello world!")) {
+			helloCount++
+		} else if bytes.Contains(record.Value, []byte("bye bye")) {
+			byeCount++
+		}
+
+		totalCount++
+		if totalCount >= 100 {
+			close(done)
+		}
+	})
 
 	c, err := New(r, config, Dependencies{
 		Daemon: daemon.NewMock(t),
@@ -86,6 +92,15 @@ func TestFlow(t *testing.T) {
 	// Wait for flows
 	select {
 	case <-done:
+		// Check that we got the expected number of each message type
+		mu.Lock()
+		if helloCount != 50 {
+			t.Errorf("Expected 50 'hello world!' messages, got %d", helloCount)
+		}
+		if byeCount != 50 {
+			t.Errorf("Expected 50 'bye bye' messages, got %d", byeCount)
+		}
+		mu.Unlock()
 	case <-time.After(time.Second):
 		t.Fatalf("flows not received")
 	}

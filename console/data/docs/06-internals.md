@@ -105,14 +105,15 @@ happen before writing to ClickHouse.
 
 ## Kafka
 
-The Kafka component relies on [Sarama](https://github.com/IBM/sarama). It is
-tested using the mock interface provided by this package. *Sarama* uses
-`go-metrics` to store metrics. We convert them to Prometheus to keep them. The
-logger is global and there is a hack to plug it into the reporter design we
-have.
+The Kafka component relies on [franz-go](https://github.com/twmb/franz-go). If a
+real broker is available under the DNS name `kafka` or at `localhost` on port
+9092, it will be used for a quick functional test.
 
-If a real broker is available under the DNS name `kafka` or at
-`localhost` on port 9092, it will be used for a quick functional test.
+This library did not get benchmarked. Previously, we were using
+[Sarama](https://github.com/IBM/sarama). However, the documentation is quite
+poor, it relies heavily on pointers (pressure on the garbage collector) and the
+concurrency model is difficult to understand. Another contender could be
+[kafka-go](https://github.com/segmentio/kafka-go).
 
 ## ClickHouse
 

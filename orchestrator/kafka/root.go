@@ -5,10 +5,13 @@
 package kafka
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
-	"github.com/IBM/sarama"
+	"github.com/twmb/franz-go/pkg/kadm"
+	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
 
 	"akvorado/common/kafka"
 	"akvorado/common/pb"
@@ -22,8 +25,8 @@ type Component struct {
 	d      Dependencies
 	config Configuration
 
-	kafkaConfig *sarama.Config
-	kafkaTopic  string
+	kafkaOpts  []kgo.Opt
+	kafkaTopic string
 }
 
 // Dependencies are the dependencies for the Kafka component
@@ -33,12 +36,9 @@ type Dependencies struct {
 
 // New creates a new Kafka configurator.
 func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) (*Component, error) {
-	kafkaConfig, err := kafka.NewConfig(config.Configuration)
+	kafkaOpts, err := kafka.NewConfig(r, config.Configuration)
 	if err != nil {
 		return nil, err
-	}
-	if err := kafkaConfig.Validate(); err != nil {
-		return nil, fmt.Errorf("cannot validate Kafka configuration: %w", err)
 	}
 
 	c := Component{
@@ -46,8 +46,8 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 		d:      dependencies,
 		config: config,
 
-		kafkaConfig: kafkaConfig,
-		kafkaTopic:  fmt.Sprintf("%s-v%d", config.Topic, pb.Version),
+		kafkaOpts:  kafkaOpts,
+		kafkaTopic: fmt.Sprintf("%s-v%d", config.Topic, pb.Version),
 	}
 	return &c, nil
 }
@@ -55,61 +55,82 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 // Start starts Kafka configuration.
 func (c *Component) Start() error {
 	c.r.Info().Msg("starting Kafka component")
-	kafka.GlobalKafkaLogger.Register(c.r)
-	defer func() {
-		kafka.GlobalKafkaLogger.Unregister()
-		c.r.Info().Msg("Kafka component stopped")
-	}()
+	defer c.r.Info().Msg("Kafka component stopped")
 
-	// Create topic
-	admin, err := sarama.NewClusterAdmin(c.config.Brokers, c.kafkaConfig)
+	// Create kafka client and admin
+	client, err := kgo.NewClient(c.kafkaOpts...)
 	if err != nil {
 		c.r.Err(err).
 			Str("brokers", strings.Join(c.config.Brokers, ",")).
-			Msg("unable to get admin client for topic creation")
-		return fmt.Errorf("unable to get admin client for topic creation: %w", err)
+			Msg("unable to create Kafka client for topic creation")
+		return fmt.Errorf("unable to create Kafka client for topic creation: %w", err)
 	}
-	defer admin.Close()
+	defer client.Close()
+	admin := kadm.NewClient(client)
 	l := c.r.With().
 		Str("brokers", strings.Join(c.config.Brokers, ",")).
 		Str("topic", c.kafkaTopic).
 		Logger()
-	topics, err := admin.ListTopics()
+	topics, err := admin.ListTopics(context.Background())
 	if err != nil {
 		l.Err(err).Msg("unable to get metadata for topics")
 		return fmt.Errorf("unable to get metadata for topics: %w", err)
 	}
 	if topic, ok := topics[c.kafkaTopic]; !ok {
-		if err := admin.CreateTopic(c.kafkaTopic,
-			&sarama.TopicDetail{
-				NumPartitions:     c.config.TopicConfiguration.NumPartitions,
-				ReplicationFactor: c.config.TopicConfiguration.ReplicationFactor,
-				ConfigEntries:     c.config.TopicConfiguration.ConfigEntries,
-			}, false); err != nil {
+		if _, err := admin.CreateTopics(context.Background(), c.config.TopicConfiguration.NumPartitions, c.config.TopicConfiguration.ReplicationFactor, c.config.TopicConfiguration.ConfigEntries, c.kafkaTopic); err != nil {
 			l.Err(err).Msg("unable to create topic")
 			return fmt.Errorf("unable to create topic %q: %w", c.kafkaTopic, err)
 		}
 		l.Info().Msg("topic created")
 	} else {
-		if topic.NumPartitions > c.config.TopicConfiguration.NumPartitions {
+		nbPartitions := len(topic.Partitions)
+		if nbPartitions > int(c.config.TopicConfiguration.NumPartitions) {
 			l.Warn().Msgf("cannot decrease the number of partitions (from %d to %d)",
-				topic.NumPartitions, c.config.TopicConfiguration.NumPartitions)
-		} else if topic.NumPartitions < c.config.TopicConfiguration.NumPartitions {
-			nb := c.config.TopicConfiguration.NumPartitions
-			if err := admin.CreatePartitions(c.kafkaTopic, nb, nil, false); err != nil {
+				nbPartitions, c.config.TopicConfiguration.NumPartitions)
+		} else if nbPartitions < int(c.config.TopicConfiguration.NumPartitions) {
+			add := int(c.config.TopicConfiguration.NumPartitions) - nbPartitions
+			if _, err := admin.CreatePartitions(context.Background(), add, c.kafkaTopic); err != nil {
 				l.Err(err).Msg("unable to add more partitions")
 				return fmt.Errorf("unable to add more partitions to topic %q: %w",
 					c.kafkaTopic, err)
 			}
 			l.Info().Msg("number of partitions increased")
 		}
-		if c.config.TopicConfiguration.ReplicationFactor != topic.ReplicationFactor {
+		if int(c.config.TopicConfiguration.ReplicationFactor) != topic.Partitions.NumReplicas() {
 			// TODO: https://github.com/deviceinsight/kafkactl/blob/main/internal/topic/topic-operation.go
 			l.Warn().Msgf("mismatch for replication factor: got %d, want %d",
-				topic.ReplicationFactor, c.config.TopicConfiguration.ReplicationFactor)
+				topic.Partitions.NumReplicas(), c.config.TopicConfiguration.ReplicationFactor)
 		}
-		if ShouldAlterConfiguration(c.config.TopicConfiguration.ConfigEntries, topic.ConfigEntries, c.config.TopicConfiguration.ConfigEntriesStrictSync) {
-			if err := admin.AlterConfig(sarama.TopicResource, c.kafkaTopic, c.config.TopicConfiguration.ConfigEntries, false); err != nil {
+		configs, err := admin.DescribeTopicConfigs(context.Background(), c.kafkaTopic)
+		if err != nil || len(configs) != 1 {
+			l.Err(err).Msg("unable to get topic configuration")
+			return fmt.Errorf("unable to get topic %q configuration: %w", c.kafkaTopic, err)
+		}
+		got := map[string]*string{}
+		for _, config := range configs[0].Configs {
+			if config.Source == kmsg.ConfigSourceDynamicTopicConfig {
+				got[config.Key] = config.Value
+			}
+		}
+		if ShouldAlterConfiguration(c.config.TopicConfiguration.ConfigEntries, got, c.config.TopicConfiguration.ConfigEntriesStrictSync) {
+			alterConfigs := []kadm.AlterConfig{}
+			for k, v := range c.config.TopicConfiguration.ConfigEntries {
+				alterConfigs = append(alterConfigs, kadm.AlterConfig{
+					Op:    kadm.SetConfig,
+					Name:  k,
+					Value: v,
+				})
+			}
+			for k, v := range got {
+				if _, ok := c.config.TopicConfiguration.ConfigEntries[k]; !ok {
+					alterConfigs = append(alterConfigs, kadm.AlterConfig{
+						Op:    kadm.DeleteConfig,
+						Name:  k,
+						Value: v,
+					})
+				}
+			}
+			if _, err := admin.AlterTopicConfigs(context.Background(), alterConfigs, c.kafkaTopic); err != nil {
 				l.Err(err).Msg("unable to set topic configuration")
 				return fmt.Errorf("unable to set topic configuration for %q: %w",
 					c.kafkaTopic, err)

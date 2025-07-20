@@ -5,13 +5,16 @@
 package kafka
 
 import (
+	"context"
 	"encoding/binary"
 	"fmt"
 	"math/rand"
 	"strings"
 	"time"
 
-	"github.com/IBM/sarama"
+	"github.com/twmb/franz-go/pkg/kerr"
+	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/plugin/kprom"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/daemon"
@@ -27,11 +30,11 @@ type Component struct {
 	t      tomb.Tomb
 	config Configuration
 
-	kafkaConfig         *sarama.Config
-	kafkaTopic          string
-	kafkaProducer       sarama.AsyncProducer
-	createKafkaProducer func() (sarama.AsyncProducer, error)
-	metrics             metrics
+	kafkaOpts   []kgo.Opt
+	kafkaTopic  string
+	kafkaClient *kgo.Client
+	errLogger   reporter.Logger
+	metrics     metrics
 }
 
 // Dependencies define the dependencies of the Kafka exporter.
@@ -40,37 +43,37 @@ type Dependencies struct {
 }
 
 // New creates a new Kafka exporter component.
-func New(reporter *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
+func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
 	// Build Kafka configuration
-	kafkaConfig, err := kafka.NewConfig(configuration.Configuration)
+	kafkaOpts, err := kafka.NewConfig(r, configuration.Configuration)
 	if err != nil {
 		return nil, err
 	}
-	kafkaConfig.Metadata.AllowAutoTopicCreation = true
-	kafkaConfig.Producer.MaxMessageBytes = configuration.MaxMessageBytes
-	kafkaConfig.Producer.Compression = sarama.CompressionCodec(configuration.CompressionCodec)
-	kafkaConfig.Producer.Return.Successes = false
-	kafkaConfig.Producer.Return.Errors = true
-	kafkaConfig.Producer.Flush.Bytes = configuration.FlushBytes
-	kafkaConfig.Producer.Flush.Frequency = configuration.FlushInterval
-	kafkaConfig.Producer.Partitioner = sarama.NewHashPartitioner
-	kafkaConfig.ChannelBufferSize = configuration.QueueSize
-	if err := kafkaConfig.Validate(); err != nil {
-		return nil, fmt.Errorf("cannot validate Kafka configuration: %w", err)
-	}
 
 	c := Component{
-		r:      reporter,
-		d:      &dependencies,
-		config: configuration,
-
-		kafkaConfig: kafkaConfig,
-		kafkaTopic:  fmt.Sprintf("%s-v%d", configuration.Topic, pb.Version),
+		r:          r,
+		d:          &dependencies,
+		config:     configuration,
+		kafkaTopic: fmt.Sprintf("%s-v%d", configuration.Topic, pb.Version),
+		errLogger:  r.Sample(reporter.BurstSampler(10*time.Second, 3)),
 	}
 	c.initMetrics()
-	c.createKafkaProducer = func() (sarama.AsyncProducer, error) {
-		return sarama.NewAsyncProducer(c.config.Brokers, c.kafkaConfig)
+	kafkaMetrics := kprom.NewMetrics("")
+	r.MetricCollectorForCurrentModule(kafkaMetrics)
+
+	// Initialize options error to be able to validate them.
+	kafkaOpts = append(kafkaOpts,
+		kgo.AllowAutoTopicCreation(),
+		kgo.MaxBufferedRecords(configuration.QueueSize),
+		kgo.ProducerBatchCompression(kgo.CompressionCodec(configuration.CompressionCodec)),
+		kgo.RecordPartitioner(kgo.UniformBytesPartitioner(64<<20, true, true, nil)),
+		kgo.WithHooks(kafkaMetrics),
+	)
+
+	if err := kgo.ValidateOpts(kafkaOpts...); err != nil {
+		return nil, fmt.Errorf("invalid Kafka configuration: %w", err)
 	}
+	c.kafkaOpts = kafkaOpts
 	c.d.Daemon.Track(&c.t, "inlet/kafka")
 	return &c, nil
 }
@@ -78,64 +81,58 @@ func New(reporter *reporter.Reporter, configuration Configuration, dependencies 
 // Start starts the Kafka component.
 func (c *Component) Start() error {
 	c.r.Info().Msg("starting Kafka component")
-	kafka.GlobalKafkaLogger.Register(c.r)
 
-	// Create producer
-	kafkaProducer, err := c.createKafkaProducer()
+	kafkaClient, err := kgo.NewClient(c.kafkaOpts...)
 	if err != nil {
 		c.r.Err(err).
 			Str("brokers", strings.Join(c.config.Brokers, ",")).
-			Msg("unable to create async producer")
-		return fmt.Errorf("unable to create Kafka async producer: %w", err)
+			Msg("unable to create Kafka client")
+		return fmt.Errorf("unable to create Kafka client: %w", err)
 	}
-	c.kafkaProducer = kafkaProducer
+	c.kafkaClient = kafkaClient
 
-	// Main loop
+	// When dying, close the client
 	c.t.Go(func() error {
-		defer kafkaProducer.Close()
-		errLogger := c.r.Sample(reporter.BurstSampler(10*time.Second, 3))
-		dying := c.t.Dying()
-		for {
-			select {
-			case <-dying:
-				c.r.Debug().Msg("stop error logger")
-				return nil
-			case msg := <-kafkaProducer.Errors():
-				if msg != nil {
-					c.metrics.errors.WithLabelValues(msg.Error()).Inc()
-					errLogger.Err(msg.Err).
-						Str("topic", msg.Msg.Topic).
-						Int64("offset", msg.Msg.Offset).
-						Int32("partition", msg.Msg.Partition).
-						Msg("Kafka producer error")
-				}
-			}
-		}
+		<-c.t.Dying()
+		kafkaClient.Close()
+		return nil
 	})
 	return nil
 }
 
 // Stop stops the Kafka component
 func (c *Component) Stop() error {
-	defer func() {
-		c.kafkaConfig.MetricRegistry.UnregisterAll()
-		kafka.GlobalKafkaLogger.Unregister()
-		c.r.Info().Msg("Kafka component stopped")
-	}()
+	defer c.r.Info().Msg("Kafka component stopped")
 	c.r.Info().Msg("stopping Kafka component")
 	c.t.Kill(nil)
 	return c.t.Wait()
 }
 
 // Send a message to Kafka.
-func (c *Component) Send(exporter string, payload []byte) {
-	c.metrics.bytesSent.WithLabelValues(exporter).Add(float64(len(payload)))
-	c.metrics.messagesSent.WithLabelValues(exporter).Inc()
+func (c *Component) Send(exporter string, payload []byte, finalizer func()) {
 	key := make([]byte, 4)
 	binary.BigEndian.PutUint32(key, rand.Uint32())
-	c.kafkaProducer.Input() <- &sarama.ProducerMessage{
+	record := &kgo.Record{
 		Topic: c.kafkaTopic,
-		Key:   sarama.ByteEncoder(key),
-		Value: sarama.ByteEncoder(payload),
+		Key:   key,
+		Value: payload,
 	}
+	c.kafkaClient.Produce(context.Background(), record, func(r *kgo.Record, err error) {
+		if err == nil {
+			c.metrics.bytesSent.WithLabelValues(exporter).Add(float64(len(payload)))
+			c.metrics.messagesSent.WithLabelValues(exporter).Inc()
+		} else {
+			if ke, ok := err.(*kerr.Error); ok {
+				c.metrics.errors.WithLabelValues(ke.Message).Inc()
+			} else {
+				c.metrics.errors.WithLabelValues("unknown").Inc()
+			}
+			c.errLogger.Err(err).
+				Str("topic", c.kafkaTopic).
+				Int64("offset", r.Offset).
+				Int32("partition", r.Partition).
+				Msg("Kafka producer error")
+		}
+		finalizer()
+	})
 }

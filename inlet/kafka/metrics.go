@@ -4,7 +4,6 @@
 package kafka
 
 import (
-	"akvorado/common/kafka"
 	"akvorado/common/reporter"
 )
 
@@ -12,8 +11,6 @@ type metrics struct {
 	messagesSent *reporter.CounterVec
 	bytesSent    *reporter.CounterVec
 	errors       *reporter.CounterVec
-
-	kafkaMetrics kafka.Metrics
 }
 
 func (c *Component) initMetrics() {
@@ -38,6 +35,4 @@ func (c *Component) initMetrics() {
 		},
 		[]string{"error"},
 	)
-
-	c.metrics.kafkaMetrics.Init(c.r, c.kafkaConfig.MetricRegistry)
 }
