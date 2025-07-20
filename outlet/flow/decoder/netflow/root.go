@@ -34,11 +34,11 @@ type Decoder struct {
 	sampling    map[string]*samplingRateSystem
 
 	metrics struct {
-		errors             *reporter.CounterVec
-		stats              *reporter.CounterVec
-		setRecordsStatsSum *reporter.CounterVec
-		setStatsSum        *reporter.CounterVec
-		templatesStats     *reporter.CounterVec
+		errors    *reporter.CounterVec
+		packets   *reporter.CounterVec
+		records   *reporter.CounterVec
+		sets      *reporter.CounterVec
+		templates *reporter.CounterVec
 	}
 }
 
@@ -55,35 +55,35 @@ func New(r *reporter.Reporter, dependencies decoder.Dependencies) decoder.Decode
 	nd.metrics.errors = nd.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "errors_total",
-			Help: "Netflows processed errors.",
+			Help: "Number of NetFlow errors processed.",
 		},
 		[]string{"exporter", "error"},
 	)
-	nd.metrics.stats = nd.r.CounterVec(
+	nd.metrics.packets = nd.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "flows_total",
-			Help: "Netflows processed.",
+			Name: "packets_total",
+			Help: "Number of NetFlow packets received.",
 		},
 		[]string{"exporter", "version"},
 	)
-	nd.metrics.setRecordsStatsSum = nd.r.CounterVec(
+	nd.metrics.sets = nd.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "flowset_records_sum",
-			Help: "Netflows FlowSets sum of records.",
+			Name: "sets_total",
+			Help: "Number of NetFlow flowsets received.",
 		},
 		[]string{"exporter", "version", "type"},
 	)
-	nd.metrics.setStatsSum = nd.r.CounterVec(
+	nd.metrics.records = nd.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "flowset_sum",
-			Help: "Netflows FlowSets sum.",
+			Name: "records_total",
+			Help: "Number of NetFlow records received.",
 		},
 		[]string{"exporter", "version", "type"},
 	)
-	nd.metrics.templatesStats = nd.r.CounterVec(
+	nd.metrics.templates = nd.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "templates_total",
-			Help: "Netflows Template count.",
+			Help: "Number of NetFlow templates received.",
 		},
 		[]string{"exporter", "version", "obs_domain_id", "template_id", "type"},
 	)
@@ -115,7 +115,7 @@ func (s *templateSystem) AddTemplate(version uint16, obsDomainID uint32, templat
 		typeStr = "template"
 	}
 
-	s.nd.metrics.templatesStats.WithLabelValues(
+	s.nd.metrics.templates.WithLabelValues(
 		s.key,
 		strconv.Itoa(int(version)),
 		strconv.Itoa(int(obsDomainID)),
@@ -220,8 +220,8 @@ func (nd *Decoder) Decode(in decoder.RawFlow, options decoder.Option, bf *schema
 			return 0, fmt.Errorf("NetFlow v5 decoding error: %w", err)
 		}
 		versionStr = "5"
-		nd.metrics.setStatsSum.WithLabelValues(key, versionStr, "PDU").Inc()
-		nd.metrics.setRecordsStatsSum.WithLabelValues(key, versionStr, "PDU").
+		nd.metrics.sets.WithLabelValues(key, versionStr, "PDU").Inc()
+		nd.metrics.records.WithLabelValues(key, versionStr, "PDU").
 			Add(float64(len(packetNFv5.Records)))
 		if options.TimestampSource == pb.RawFlow_TS_NETFLOW_PACKET || options.TimestampSource == pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED {
 			ts = uint64(packetNFv5.UnixSecs)
@@ -267,39 +267,39 @@ func (nd *Decoder) Decode(in decoder.RawFlow, options decoder.Option, bf *schema
 		nd.decodeNFv9IPFIX(version, obsDomainID, flowSets, sampling, ts, sysUptime, options, bf, finalize2)
 	default:
 		nd.errLogger.Warn().Str("exporter", key).Msg("unknown NetFlow version")
-		nd.metrics.stats.WithLabelValues(key, "unknown").
+		nd.metrics.packets.WithLabelValues(key, "unknown").
 			Inc()
 		return 0, errors.New("unkown NetFlow version")
 	}
-	nd.metrics.stats.WithLabelValues(key, versionStr).Inc()
+	nd.metrics.packets.WithLabelValues(key, versionStr).Inc()
 
 	nb := 0
 	for _, fs := range flowSets {
 		switch fsConv := fs.(type) {
 		case netflow.TemplateFlowSet:
-			nd.metrics.setStatsSum.WithLabelValues(key, versionStr, "TemplateFlowSet").
+			nd.metrics.sets.WithLabelValues(key, versionStr, "TemplateFlowSet").
 				Inc()
-			nd.metrics.setRecordsStatsSum.WithLabelValues(key, versionStr, "TemplateFlowSet").
+			nd.metrics.records.WithLabelValues(key, versionStr, "TemplateFlowSet").
 				Add(float64(len(fsConv.Records)))
 		case netflow.IPFIXOptionsTemplateFlowSet:
-			nd.metrics.setStatsSum.WithLabelValues(key, versionStr, "OptionsTemplateFlowSet").
+			nd.metrics.sets.WithLabelValues(key, versionStr, "OptionsTemplateFlowSet").
 				Inc()
-			nd.metrics.setRecordsStatsSum.WithLabelValues(key, versionStr, "OptionsTemplateFlowSet").
+			nd.metrics.records.WithLabelValues(key, versionStr, "OptionsTemplateFlowSet").
 				Add(float64(len(fsConv.Records)))
 		case netflow.NFv9OptionsTemplateFlowSet:
-			nd.metrics.setStatsSum.WithLabelValues(key, versionStr, "OptionsTemplateFlowSet").
+			nd.metrics.sets.WithLabelValues(key, versionStr, "OptionsTemplateFlowSet").
 				Inc()
-			nd.metrics.setRecordsStatsSum.WithLabelValues(key, versionStr, "OptionsTemplateFlowSet").
+			nd.metrics.records.WithLabelValues(key, versionStr, "OptionsTemplateFlowSet").
 				Add(float64(len(fsConv.Records)))
 		case netflow.OptionsDataFlowSet:
-			nd.metrics.setStatsSum.WithLabelValues(key, versionStr, "OptionsDataFlowSet").
+			nd.metrics.sets.WithLabelValues(key, versionStr, "OptionsDataFlowSet").
 				Inc()
-			nd.metrics.setRecordsStatsSum.WithLabelValues(key, versionStr, "OptionsDataFlowSet").
+			nd.metrics.records.WithLabelValues(key, versionStr, "OptionsDataFlowSet").
 				Add(float64(len(fsConv.Records)))
 		case netflow.DataFlowSet:
-			nd.metrics.setStatsSum.WithLabelValues(key, versionStr, "DataFlowSet").
+			nd.metrics.sets.WithLabelValues(key, versionStr, "DataFlowSet").
 				Inc()
-			nd.metrics.setRecordsStatsSum.WithLabelValues(key, versionStr, "DataFlowSet").
+			nd.metrics.records.WithLabelValues(key, versionStr, "DataFlowSet").
 				Add(float64(len(fsConv.Records)))
 			nb += len(fsConv.Records)
 		}

@@ -87,7 +87,7 @@ func (c *Component) Start() error {
 			for payload := range payloads {
 				sequenceNumber++
 				if _, err := conn.Write(payload); err != nil {
-					c.metrics.errors.WithLabelValues(err.Error()).Inc()
+					c.metrics.errors.WithLabelValues("cannot write").Inc()
 					errLogger.Err(err).Msg("unable to send UDP payload")
 				} else {
 					c.metrics.sent.WithLabelValues(kind).Inc()

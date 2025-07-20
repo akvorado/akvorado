@@ -141,7 +141,7 @@ func TestAutoRefresh(t *testing.T) {
 			`misses_total`:          "1",
 			`size_entries`:          "1",
 			`refresh_runs_total`:    runs,
-			`refreshs`:              "1",
+			`refreshs_total`:        "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" && runs == "31" {
 			t.Fatalf("Metrics (-got, +want):\n%s", diff)
