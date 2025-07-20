@@ -1,0 +1,10 @@
+---
+kafka:
+  brokers: something:9092
+  tls:
+    enable: true
+    verify: false
+  sasl:
+    username: hello
+    password: bye
+    mechanism: plain
