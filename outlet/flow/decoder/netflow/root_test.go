@@ -55,9 +55,9 @@ func TestDecode(t *testing.T) {
 	// Check metrics
 	gotMetrics := r.GetMetrics("akvorado_outlet_flow_decoder_netflow_")
 	expectedMetrics := map[string]string{
-		`flows_total{exporter="::ffff:127.0.0.1",version="9"}`:                                                                 "1",
-		`flowset_records_sum{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                           "1",
-		`flowset_sum{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                   "1",
+		`packets_total{exporter="::ffff:127.0.0.1",version="9"}`:                                                               "1",
+		`records_total{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                 "1",
+		`sets_total{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                    "1",
 		`templates_total{exporter="::ffff:127.0.0.1",obs_domain_id="0",template_id="257",type="options_template",version="9"}`: "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
@@ -79,11 +79,11 @@ func TestDecode(t *testing.T) {
 	// Check metrics
 	gotMetrics = r.GetMetrics("akvorado_outlet_flow_decoder_netflow_")
 	expectedMetrics = map[string]string{
-		`flows_total{exporter="::ffff:127.0.0.1",version="9"}`:                                                                 "2",
-		`flowset_records_sum{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                           "1",
-		`flowset_records_sum{exporter="::ffff:127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                               "4",
-		`flowset_sum{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                   "1",
-		`flowset_sum{exporter="::ffff:127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                                       "1",
+		`packets_total{exporter="::ffff:127.0.0.1",version="9"}`:                                                               "2",
+		`records_total{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                 "1",
+		`records_total{exporter="::ffff:127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                                     "4",
+		`sets_total{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                    "1",
+		`sets_total{exporter="::ffff:127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                                        "1",
 		`templates_total{exporter="::ffff:127.0.0.1",obs_domain_id="0",template_id="257",type="options_template",version="9"}`: "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
@@ -105,13 +105,13 @@ func TestDecode(t *testing.T) {
 	// Check metrics
 	gotMetrics = r.GetMetrics("akvorado_outlet_flow_decoder_netflow_")
 	expectedMetrics = map[string]string{
-		`flows_total{exporter="::ffff:127.0.0.1",version="9"}`:                                                                 "3",
-		`flowset_records_sum{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                           "1",
-		`flowset_records_sum{exporter="::ffff:127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                               "4",
-		`flowset_records_sum{exporter="::ffff:127.0.0.1",type="TemplateFlowSet",version="9"}`:                                  "1",
-		`flowset_sum{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                   "1",
-		`flowset_sum{exporter="::ffff:127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                                       "1",
-		`flowset_sum{exporter="::ffff:127.0.0.1",type="TemplateFlowSet",version="9"}`:                                          "1",
+		`packets_total{exporter="::ffff:127.0.0.1",version="9"}`:                                                               "3",
+		`records_total{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                 "1",
+		`records_total{exporter="::ffff:127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                                     "4",
+		`records_total{exporter="::ffff:127.0.0.1",type="TemplateFlowSet",version="9"}`:                                        "1",
+		`sets_total{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                    "1",
+		`sets_total{exporter="::ffff:127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                                        "1",
+		`sets_total{exporter="::ffff:127.0.0.1",type="TemplateFlowSet",version="9"}`:                                           "1",
 		`templates_total{exporter="::ffff:127.0.0.1",obs_domain_id="0",template_id="257",type="options_template",version="9"}`: "1",
 		`templates_total{exporter="::ffff:127.0.0.1",obs_domain_id="0",template_id="260",type="template",version="9"}`:         "1",
 	}
@@ -216,20 +216,21 @@ func TestDecode(t *testing.T) {
 	}
 	gotMetrics = r.GetMetrics(
 		"akvorado_outlet_flow_decoder_netflow_",
-		"flows_total",
-		"flowset_",
+		"packets_",
+		"sets_",
+		"records_",
 		"templates_",
 	)
 	expectedMetrics = map[string]string{
-		`flows_total{exporter="::ffff:127.0.0.1",version="9"}`:                                                                 "4",
-		`flowset_records_sum{exporter="::ffff:127.0.0.1",type="DataFlowSet",version="9"}`:                                      "4",
-		`flowset_records_sum{exporter="::ffff:127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                               "4",
-		`flowset_records_sum{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                           "1",
-		`flowset_records_sum{exporter="::ffff:127.0.0.1",type="TemplateFlowSet",version="9"}`:                                  "1",
-		`flowset_sum{exporter="::ffff:127.0.0.1",type="DataFlowSet",version="9"}`:                                              "1",
-		`flowset_sum{exporter="::ffff:127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                                       "1",
-		`flowset_sum{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                   "1",
-		`flowset_sum{exporter="::ffff:127.0.0.1",type="TemplateFlowSet",version="9"}`:                                          "1",
+		`packets_total{exporter="::ffff:127.0.0.1",version="9"}`:                                                               "4",
+		`records_total{exporter="::ffff:127.0.0.1",type="DataFlowSet",version="9"}`:                                            "4",
+		`records_total{exporter="::ffff:127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                                     "4",
+		`records_total{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                 "1",
+		`records_total{exporter="::ffff:127.0.0.1",type="TemplateFlowSet",version="9"}`:                                        "1",
+		`sets_total{exporter="::ffff:127.0.0.1",type="DataFlowSet",version="9"}`:                                               "1",
+		`sets_total{exporter="::ffff:127.0.0.1",type="OptionsDataFlowSet",version="9"}`:                                        "1",
+		`sets_total{exporter="::ffff:127.0.0.1",type="OptionsTemplateFlowSet",version="9"}`:                                    "1",
+		`sets_total{exporter="::ffff:127.0.0.1",type="TemplateFlowSet",version="9"}`:                                           "1",
 		`templates_total{exporter="::ffff:127.0.0.1",obs_domain_id="0",template_id="257",type="options_template",version="9"}`: "1",
 		`templates_total{exporter="::ffff:127.0.0.1",obs_domain_id="0",template_id="260",type="template",version="9"}`:         "1",
 	}

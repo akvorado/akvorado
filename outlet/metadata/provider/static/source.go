@@ -5,6 +5,7 @@ package static
 
 import (
 	"context"
+	"errors"
 
 	"akvorado/common/helpers"
 	"akvorado/common/remotedatasourcefetcher"
@@ -102,7 +103,7 @@ func (p *Provider) UpdateRemoteDataSource(ctx context.Context, name string, sour
 	p.exportersLock.Unlock()
 	exporters, err := helpers.NewSubnetMap[ExporterConfiguration](finalMap)
 	if err != nil {
-		return 0, err
+		return 0, errors.New("cannot create subnetmap")
 	}
 	p.exporters.Swap(exporters)
 	return len(results), nil

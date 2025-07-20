@@ -22,7 +22,7 @@ func (c *Component) startBMPClient(ctx context.Context) {
 	conn, err := d.DialContext(ctx, "tcp", c.config.Target)
 	if err != nil {
 		c.r.Err(err).Msg("cannot connect to target")
-		c.metrics.errors.WithLabelValues(err.Error()).Inc()
+		c.metrics.errors.WithLabelValues("cannot connect").Inc()
 		return
 	}
 	c.metrics.connections.Inc()
@@ -116,7 +116,7 @@ func (c *Component) startBMPClient(ctx context.Context) {
 	// Send the packets on the wire
 	if _, err := conn.Write(buf.Bytes()); err != nil {
 		c.r.Err(err).Msg("cannot write BMP message to target")
-		c.metrics.errors.WithLabelValues(err.Error()).Inc()
+		c.metrics.errors.WithLabelValues("cannot write").Inc()
 		return
 	}
 
@@ -135,7 +135,7 @@ func (c *Component) startBMPClient(ctx context.Context) {
 			buf.Write(pkt)
 			if _, err := conn.Write(buf.Bytes()); err != nil && err != io.EOF && !errors.Is(err, syscall.ECONNRESET) && !errors.Is(err, syscall.EPIPE) {
 				c.r.Err(err).Msg("cannot write to remote")
-				c.metrics.errors.WithLabelValues(err.Error()).Inc()
+				c.metrics.errors.WithLabelValues("cannot write").Inc()
 				close(done)
 				return
 			} else if err != nil {

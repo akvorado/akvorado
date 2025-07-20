@@ -31,7 +31,7 @@ type Input struct {
 		packets       *reporter.CounterVec
 		packetSizeSum *reporter.SummaryVec
 		errors        *reporter.CounterVec
-		inDrops       *reporter.GaugeVec
+		inDrops       *reporter.CounterVec
 	}
 
 	address net.Addr       // listening address, for testing purpoese
@@ -62,7 +62,7 @@ func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Comp
 	)
 	input.metrics.packetSizeSum = r.SummaryVec(
 		reporter.SummaryOpts{
-			Name:       "summary_size_bytes",
+			Name:       "size_bytes",
 			Help:       "Summary of packet size.",
 			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		},
@@ -75,8 +75,8 @@ func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Comp
 		},
 		[]string{"listener", "worker"},
 	)
-	input.metrics.inDrops = r.GaugeVec(
-		reporter.GaugeOpts{
+	input.metrics.inDrops = r.CounterVec(
+		reporter.CounterOpts{
 			Name: "in_dropped_packets_total",
 			Help: "Dropped packets due to listen queue full.",
 		},
@@ -156,10 +156,8 @@ func (in *Input) Start() error {
 				if err != nil {
 					errLogger.Err(err).Msg("unable to decode UDP control message")
 				} else {
-					if count < 100 || count%100 == 0 {
-						in.metrics.inDrops.WithLabelValues(listen, worker).Set(
-							float64(oobMsg.Drops))
-					}
+					in.metrics.inDrops.WithLabelValues(listen, worker).Add(
+						float64(oobMsg.Drops))
 				}
 				if oobMsg.Received.IsZero() {
 					oobMsg.Received = time.Now()

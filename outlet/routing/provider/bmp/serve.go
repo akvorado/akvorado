@@ -149,22 +149,22 @@ func (p *Provider) serveConnection(conn *net.TCPConn) error {
 			if ok {
 				switch msgError.ErrorHandling {
 				case bgp.ERROR_HANDLING_SESSION_RESET:
-					p.metrics.ignored.WithLabelValues(exporterStr, "session-reset", err.Error()).Inc()
+					p.metrics.ignored.WithLabelValues(exporterStr, "session-reset").Inc()
 					continue
 				case bgp.ERROR_HANDLING_AFISAFI_DISABLE:
-					p.metrics.ignored.WithLabelValues(exporterStr, "afi-safi", err.Error()).Inc()
+					p.metrics.ignored.WithLabelValues(exporterStr, "afi-safi").Inc()
 					continue
 				case bgp.ERROR_HANDLING_TREAT_AS_WITHDRAW:
 					// This is a pickle. This can be an essential attribute (eg.
 					// AS path) that's malformed or something quite minor for
 					// our own usage (eg. a non-optional attribute), let's skip for now.
-					p.metrics.ignored.WithLabelValues(exporterStr, "treat-as-withdraw", err.Error()).Inc()
+					p.metrics.ignored.WithLabelValues(exporterStr, "treat-as-withdraw").Inc()
 					continue
 				case bgp.ERROR_HANDLING_ATTRIBUTE_DISCARD:
 					// Optional attribute, let's handle it
 				case bgp.ERROR_HANDLING_NONE:
 					// Odd?
-					p.metrics.ignored.WithLabelValues(exporterStr, "none", err.Error()).Inc()
+					p.metrics.ignored.WithLabelValues(exporterStr, "none").Inc()
 					continue
 				}
 			} else {

@@ -39,14 +39,14 @@ func (p *Provider) initMetrics() {
 	)
 	p.metrics.peers = p.r.GaugeVec(
 		reporter.GaugeOpts{
-			Name: "peers_total",
+			Name: "peers",
 			Help: "Number of peers up.",
 		},
 		[]string{"exporter"},
 	)
 	p.metrics.routes = p.r.GaugeVec(
 		reporter.GaugeOpts{
-			Name: "routes_total",
+			Name: "routes",
 			Help: "Number of routes up.",
 		},
 		[]string{"exporter"},
@@ -77,7 +77,7 @@ func (p *Provider) initMetrics() {
 			Name: "ignored_updates_total",
 			Help: "Number of ignored BGP updates.",
 		},
-		[]string{"exporter", "reason", "error"},
+		[]string{"exporter", "error"},
 	)
 	p.metrics.panics = p.r.CounterVec(
 		reporter.CounterOpts{
