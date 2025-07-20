@@ -149,8 +149,8 @@ func TestCore(t *testing.T) {
 
 		gotMetrics := r.GetMetrics("akvorado_outlet_core_", "-flows_processing_")
 		expectedMetrics := map[string]string{
-			`classifier_exporter_cache_size_items`:                               "0",
-			`classifier_interface_cache_size_items`:                              "0",
+			`classifier_exporter_cache_items_total`:                              "0",
+			`classifier_interface_cache_items_total`:                             "0",
 			`flows_errors_total{error="SNMP cache miss",exporter="192.0.2.142"}`: "1",
 			`flows_errors_total{error="SNMP cache miss",exporter="192.0.2.143"}`: "3",
 			`received_flows_total{exporter="192.0.2.142"}`:                       "1",
@@ -178,8 +178,8 @@ func TestCore(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 		gotMetrics = r.GetMetrics("akvorado_outlet_core_", "classifier_", "-flows_processing_", "flows_", "received_", "forwarded_")
 		expectedMetrics = map[string]string{
-			`classifier_exporter_cache_size_items`:                               "0",
-			`classifier_interface_cache_size_items`:                              "0",
+			`classifier_exporter_cache_items_total`:                              "0",
+			`classifier_interface_cache_items_total`:                             "0",
 			`flows_errors_total{error="SNMP cache miss",exporter="192.0.2.142"}`: "1",
 			`flows_errors_total{error="SNMP cache miss",exporter="192.0.2.143"}`: "3",
 			`received_flows_total{exporter="192.0.2.142"}`:                       "2",
@@ -219,8 +219,8 @@ func TestCore(t *testing.T) {
 
 		gotMetrics = r.GetMetrics("akvorado_outlet_core_", "classifier_", "-flows_processing_", "flows_", "forwarded_", "received_")
 		expectedMetrics = map[string]string{
-			`classifier_exporter_cache_size_items`:                                     "0",
-			`classifier_interface_cache_size_items`:                                    "0",
+			`classifier_exporter_cache_items_total`:                                    "0",
+			`classifier_interface_cache_items_total`:                                   "0",
 			`flows_errors_total{error="SNMP cache miss",exporter="192.0.2.142"}`:       "1",
 			`flows_errors_total{error="SNMP cache miss",exporter="192.0.2.143"}`:       "3",
 			`flows_errors_total{error="sampling rate missing",exporter="192.0.2.142"}`: "1",

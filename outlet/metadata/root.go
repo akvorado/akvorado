@@ -102,7 +102,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		})
 	c.metrics.cacheRefresh = r.Counter(
 		reporter.CounterOpts{
-			Name: "cache_refreshs",
+			Name: "cache_refreshs_total",
 			Help: "Number of entries refreshed in cache.",
 		})
 	c.metrics.providerBusyCount = r.CounterVec(
