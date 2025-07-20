@@ -24,11 +24,11 @@ func RegisterMapstructureUnmarshallerHook(hook mapstructure.DecodeHookFunc) {
 // RegisterMapstructureDeprecatedFields registers a decoder hook removing
 // deprecated fields. This should only be done during init.
 func RegisterMapstructureDeprecatedFields[V any](fieldNames ...string) {
-	RegisterMapstructureUnmarshallerHook(func(from, to reflect.Value) (interface{}, error) {
+	RegisterMapstructureUnmarshallerHook(func(from, to reflect.Value) (any, error) {
 		var zeroV V
 		from = ElemOrIdentity(from)
 		to = ElemOrIdentity(to)
-		if to.Type() != reflect.TypeOf(zeroV) {
+		if !SameTypeOrSuperset(to.Type(), reflect.TypeOf(zeroV)) {
 			return from.Interface(), nil
 		}
 		if from.Kind() != reflect.Map {
@@ -52,6 +52,24 @@ func RegisterMapstructureDeprecatedFields[V any](fieldNames ...string) {
 
 		return from.Interface(), nil
 	})
+}
+
+// SameTypeOrSuperset returns true if "input" and "ref" type are the same or
+// when "input" has "ref" as a squashed field.
+func SameTypeOrSuperset(input, ref reflect.Type) bool {
+	if input == ref {
+		return true
+	}
+	if input.Kind() != reflect.Struct {
+		return false
+	}
+	for i := 0; i < input.NumField(); i++ {
+		field := input.Field(i)
+		if tag := field.Tag.Get("mapstructure"); tag == ",squash" && field.Type == ref {
+			return true
+		}
+	}
+	return false
 }
 
 // GetMapStructureDecoderConfig returns a decoder config for

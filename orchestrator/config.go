@@ -3,10 +3,10 @@
 
 package orchestrator
 
-// Configuration describes the configuration for the broker.
+// Configuration describes the configuration for the orchestrator.
 type Configuration struct{}
 
-// DefaultConfiguration represents the default configuration for the broker.
+// DefaultConfiguration represents the default configuration for the orchestrator.
 func DefaultConfiguration() Configuration {
 	return Configuration{}
 }

@@ -371,3 +371,46 @@ func TestDeprecatedFields(t *testing.T) {
 		},
 	})
 }
+
+func TestDeprecatedFieldsInSquashedStructure(t *testing.T) {
+	type SubConfiguration struct {
+		A string
+		B string
+	}
+	type Configuration struct {
+		Sub SubConfiguration `mapstructure:",squash"`
+		E   string
+	}
+	RegisterMapstructureDeprecatedFields[SubConfiguration]("C", "D")
+	TestConfigurationDecode(t, ConfigurationDecodeCases{
+		{
+			Initial: func() any { return Configuration{} },
+			Configuration: func() any {
+				return gin.H{
+					"a": "hello",
+					"b": "bye",
+					"c": "nooo",
+					"d": "yes",
+					"e": "maybe",
+				}
+			},
+			Expected: Configuration{
+				Sub: SubConfiguration{
+					A: "hello",
+					B: "bye",
+				},
+				E: "maybe",
+			},
+		}, {
+			Initial: func() any { return Configuration{} },
+			Configuration: func() any {
+				return gin.H{
+					"a": "hello",
+					"b": "bye",
+					"f": "nooo",
+				}
+			},
+			Error: true,
+		},
+	})
+}
