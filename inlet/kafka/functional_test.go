@@ -4,13 +4,14 @@
 package kafka
 
 import (
-	"errors"
+	"context"
 	"fmt"
 	"math/rand"
+	"sync"
 	"testing"
 	"time"
 
-	"github.com/IBM/sarama"
+	"github.com/twmb/franz-go/pkg/kgo"
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
@@ -21,14 +22,13 @@ import (
 
 func TestRealKafka(t *testing.T) {
 	client, brokers := kafka.SetupKafkaBroker(t)
+	defer client.Close()
 
 	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
 	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, pb.Version)
 	configuration := DefaultConfiguration()
 	configuration.Topic = topicName
 	configuration.Brokers = brokers
-	configuration.Version = kafka.Version(sarama.V2_8_1_0)
-	configuration.FlushInterval = 100 * time.Millisecond
 	r := reporter.NewMock(t)
 	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
@@ -43,54 +43,70 @@ func TestRealKafka(t *testing.T) {
 		msg1[i] = letters[rand.Intn(len(letters))]
 	}
 	for i := range msg2 {
-		msg1[i] = letters[rand.Intn(len(letters))]
+		msg2[i] = letters[rand.Intn(len(letters))]
 	}
-	c.Send("127.0.0.1", msg1)
-	c.Send("127.0.0.1", msg2)
+	var wg sync.WaitGroup
+	wg.Add(2)
+	c.Send("127.0.0.1", msg1, func() { wg.Done() })
+	c.Send("127.0.0.1", msg2, func() { wg.Done() })
+	c.Flush(t)
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("Send() timeout")
+	}
 
-	time.Sleep(10 * time.Millisecond)
-	gotMetrics := r.GetMetrics("akvorado_inlet_kafka_", "sent_")
+	gotMetrics := r.GetMetrics("akvorado_inlet_kafka_", "sent_", "connects_")
 	expectedMetrics := map[string]string{
+		// Our own metrics
 		`sent_bytes_total{exporter="127.0.0.1"}`:    "100",
 		`sent_messages_total{exporter="127.0.0.1"}`: "2",
+		// From franz-go
+		`connects_total{node_id="1"}`:      "2",
+		`connects_total{node_id="seed_0"}`: "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 
-	// Try to consume the two messages
-	consumer, err := sarama.NewConsumerFromClient(client)
+	// Try to consume the two messages using franz-go
+	consumer, err := kgo.NewClient(
+		kgo.SeedBrokers(brokers...),
+		kgo.ConsumeTopics(expectedTopicName),
+		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
+		kgo.FetchMaxWait(10*time.Millisecond),
+	)
 	if err != nil {
-		t.Fatalf("NewConsumerGroup() error:\n%+v", err)
+		t.Fatalf("NewClient() error:\n%+v", err)
 	}
 	defer consumer.Close()
-	var partitions []int32
-	for {
-		partitions, err = consumer.Partitions(expectedTopicName)
-		if err != nil {
-			if errors.Is(err, sarama.ErrUnknownTopicOrPartition) {
-				// Wait for topic to be available
-				continue
-			}
-			t.Fatalf("Partitions() error:\n%+v", err)
-		}
-		break
-	}
-	partitionConsumer, err := consumer.ConsumePartition(expectedTopicName, partitions[0], sarama.OffsetOldest)
-	if err != nil {
-		t.Fatalf("ConsumePartitions() error:\n%+v", err)
-	}
 
 	got := []string{}
 	expected := []string{string(msg1), string(msg2)}
 	timeout := time.After(15 * time.Second)
-	for range len(expected) {
+	for len(got) < len(expected) {
 		select {
-		case msg := <-partitionConsumer.Messages():
-			got = append(got, string(msg.Value))
-		case err := <-partitionConsumer.Errors():
-			t.Fatalf("consumer.Errors():\n%+v", err)
 		case <-timeout:
+			t.Fatalf("Timeout waiting for messages. Got %d of %d messages", len(got), len(expected))
+		default:
+			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			fetches := consumer.PollFetches(ctx)
+			cancel()
+			if errs := fetches.Errors(); len(errs) > 0 {
+				t.Logf("PollFetches() error: %+v", err)
+				time.Sleep(100 * time.Millisecond)
+				continue
+			}
+			fetches.EachPartition(func(p kgo.FetchTopicPartition) {
+				for _, record := range p.Records {
+					got = append(got, string(record.Value))
+				}
+			})
 		}
 	}
 

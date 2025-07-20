@@ -4,15 +4,18 @@
 package kafka
 
 import (
-	"errors"
+	"context"
 	"fmt"
+	"slices"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/IBM/sarama"
-	gometrics "github.com/rcrowley/go-metrics"
+	"github.com/twmb/franz-go/pkg/kerr"
+	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
 
-	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/pb"
 	"akvorado/common/reporter"
@@ -20,85 +23,100 @@ import (
 
 func TestKafka(t *testing.T) {
 	r := reporter.NewMock(t)
-	c, mockProducer := NewMock(t, r, DefaultConfiguration())
+	topic := fmt.Sprintf("flows-v%d", pb.Version)
+	config := DefaultConfiguration()
+	config.QueueSize = 1
+	c, mock := NewMock(t, r, config)
+	defer mock.Close()
 
-	// Send one message
-	received := make(chan bool)
-	mockProducer.ExpectInputWithMessageCheckerFunctionAndSucceed(func(got *sarama.ProducerMessage) error {
-		defer close(received)
-		topic := fmt.Sprintf("flows-v%d", pb.Version)
-		expected := sarama.ProducerMessage{
-			Topic:     topic,
-			Key:       got.Key,
-			Value:     sarama.ByteEncoder("hello world!"),
-			Partition: got.Partition,
+	// Inject an error on third message.
+	var count atomic.Uint32
+	mock.ControlKey(0, func(kreq kmsg.Request) (kmsg.Response, error, bool) {
+		mock.KeepControl()
+		current := count.Add(1)
+		if current != 3 {
+			t.Logf("message %d: ok", current)
+			return nil, nil, false
 		}
-		if diff := helpers.Diff(got, expected); diff != "" {
-			t.Fatalf("Send() (-got, +want):\n%s", diff)
+		t.Logf("mesage %d: error", current)
+		req := kreq.(*kmsg.ProduceRequest)
+		resp := kreq.ResponseKind().(*kmsg.ProduceResponse)
+		for _, rt := range req.Topics {
+			st := kmsg.NewProduceResponseTopic()
+			st.Topic = rt.Topic
+			for _, rp := range rt.Partitions {
+				sp := kmsg.NewProduceResponseTopicPartition()
+				sp.Partition = rp.Partition
+				sp.ErrorCode = kerr.CorruptMessage.Code
+				st.Partitions = append(st.Partitions, sp)
+			}
+			resp.Topics = append(resp.Topics, st)
 		}
-		return nil
+		return resp, nil, true
 	})
-	c.Send("127.0.0.1", []byte("hello world!"))
+
+	// Send messages
+	var wg sync.WaitGroup
+	wg.Add(4)
+	c.Send("127.0.0.1", []byte("hello world!"), func() { wg.Done() })
+	c.Send("127.0.0.1", []byte("goodbye world!"), func() { wg.Done() })
+	c.Send("127.0.0.1", []byte("nooooo!"), func() { wg.Done() })
+	c.Send("127.0.0.1", []byte("all good"), func() { wg.Done() })
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
 	select {
-	case <-received:
-	case <-time.After(1 * time.Second):
-		t.Fatal("Kafka message not received")
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("Send() timeout")
 	}
 
-	// Another but with a fail
-	mockProducer.ExpectInputAndFail(errors.New("noooo"))
-	c.Send("127.0.0.1", []byte("goodbye world!"))
+	expectedMessages := []string{"hello world!", "goodbye world!", "all good"}
 
-	time.Sleep(10 * time.Millisecond)
-	gotMetrics := r.GetMetrics("akvorado_inlet_kafka_")
-	expectedMetrics := map[string]string{
-		`sent_bytes_total{exporter="127.0.0.1"}`:                                          "26",
-		`errors_total{error="kafka: Failed to produce message to topic flows-v5: noooo"}`: "1",
-		`sent_messages_total{exporter="127.0.0.1"}`:                                       "2",
-	}
-	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
-		t.Fatalf("Metrics (-got, +want):\n%s", diff)
-	}
-}
-
-func TestKafkaMetrics(t *testing.T) {
-	r := reporter.NewMock(t)
-	c, err := New(r, DefaultConfiguration(), Dependencies{Daemon: daemon.NewMock(t)})
+	// Create consumer to check messages
+	consumer, err := kgo.NewClient(
+		kgo.SeedBrokers(mock.ListenAddrs()...),
+		kgo.ConsumeTopics(topic),
+		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
+	)
 	if err != nil {
-		t.Fatalf("New() error:\n%+v", err)
+		t.Fatalf("NewClient() error:\n%+v", err)
+	}
+	defer consumer.Close()
+
+	// Consume messages
+	messages := make([]string, 0)
+	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+	defer cancel()
+	for {
+		if len(messages) >= len(expectedMessages) {
+			break
+		}
+		fetches := consumer.PollFetches(ctx)
+		if errs := fetches.Errors(); len(errs) > 0 {
+			t.Fatalf("PollFetches() error:\n%+v", errs)
+		}
+
+		fetches.EachPartition(func(p kgo.FetchTopicPartition) {
+			for _, record := range p.Records {
+				messages = append(messages, string(record.Value))
+			}
+		})
 	}
 
-	// Manually put some metrics
-	gometrics.GetOrRegisterMeter("incoming-byte-rate-for-broker-1111", c.kafkaConfig.MetricRegistry).
-		Mark(100)
-	gometrics.GetOrRegisterMeter("incoming-byte-rate-for-broker-1112", c.kafkaConfig.MetricRegistry).
-		Mark(200)
-	gometrics.GetOrRegisterMeter("outgoing-byte-rate-for-broker-1111", c.kafkaConfig.MetricRegistry).
-		Mark(199)
-	gometrics.GetOrRegisterMeter("outgoing-byte-rate-for-broker-1112", c.kafkaConfig.MetricRegistry).
-		Mark(20)
-	gometrics.GetOrRegisterHistogram("request-size-for-broker-1111", c.kafkaConfig.MetricRegistry,
-		gometrics.NewExpDecaySample(10, 1)).
-		Update(100)
-	gometrics.GetOrRegisterCounter("requests-in-flight-for-broker-1111", c.kafkaConfig.MetricRegistry).
-		Inc(20)
-	gometrics.GetOrRegisterCounter("requests-in-flight-for-broker-1112", c.kafkaConfig.MetricRegistry).
-		Inc(20)
+	slices.Sort(expectedMessages)
+	slices.Sort(messages)
+	if diff := helpers.Diff(messages, expectedMessages); diff != "" {
+		t.Fatalf("Send() (-got, +want):\n%s", diff)
+	}
 
-	gotMetrics := r.GetMetrics("akvorado_inlet_kafka_")
+	gotMetrics := r.GetMetrics("akvorado_inlet_kafka_", "sent_", "errors")
 	expectedMetrics := map[string]string{
-		`brokers_incoming_byte_rate{broker="1111"}`:            "0",
-		`brokers_incoming_byte_rate{broker="1112"}`:            "0",
-		`brokers_outgoing_byte_rate{broker="1111"}`:            "0",
-		`brokers_outgoing_byte_rate{broker="1112"}`:            "0",
-		`brokers_request_size_bucket{broker="1111",le="+Inf"}`: "1",
-		`brokers_request_size_bucket{broker="1111",le="0.5"}`:  "100",
-		`brokers_request_size_bucket{broker="1111",le="0.9"}`:  "100",
-		`brokers_request_size_bucket{broker="1111",le="0.99"}`: "100",
-		`brokers_request_size_count{broker="1111"}`:            "1",
-		`brokers_request_size_sum{broker="1111"}`:              "100",
-		`brokers_inflight_requests{broker="1111"}`:             "20",
-		`brokers_inflight_requests{broker="1112"}`:             "20",
+		`sent_bytes_total{exporter="127.0.0.1"}`:    "34",
+		`sent_messages_total{exporter="127.0.0.1"}`: "3",
+		`errors_total{error="CORRUPT_MESSAGE"}`:     "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)

@@ -6,7 +6,6 @@
 
 kafka:
   topic: flows
-  version: 3.3.1
   brokers:
     - kafka:9092
   topic-configuration:

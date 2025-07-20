@@ -6,10 +6,12 @@ package flow
 
 import (
 	"errors"
+	"sync"
 
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/daemon"
+	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
 	"akvorado/common/pb"
 	"akvorado/common/reporter"
@@ -24,8 +26,8 @@ type Component struct {
 	t      tomb.Tomb
 	config Configuration
 
-	// Inputs
-	inputs []input.Input
+	inputs      []input.Input
+	payloadPool sync.Pool
 }
 
 // Dependencies are the dependencies of the flow component.
@@ -46,6 +48,17 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		d:      &dependencies,
 		config: configuration,
 		inputs: make([]input.Input, len(configuration.Inputs)),
+		payloadPool: sync.Pool{
+			New: func() any {
+				minPayload := 2000
+				if helpers.Testing() {
+					// Ensure we test the extension case.
+					minPayload = 5
+				}
+				s := make([]byte, minPayload)
+				return &s
+			},
+		},
 	}
 
 	// Initialize inputs
@@ -68,8 +81,26 @@ func (c *Component) Send(config InputConfiguration) input.SendFunc {
 		flow.TimestampSource = config.TimestampSource
 		flow.Decoder = config.Decoder
 		flow.UseSourceAddress = config.UseSrcAddrForExporterAddr
-		if bytes, err := flow.MarshalVT(); err == nil {
-			c.d.Kafka.Send(exporter, bytes)
+
+		// Get a payload from the pool and extend it if needed. We use a pool of
+		// pointers to slice as we may have to extend the capacity of the slice.
+		// We keep the original pointer to avoid an extra allocation on the heap
+		// when returning the slice to the pool.
+		ptr := c.payloadPool.Get().(*[]byte)
+		bytes := *ptr
+		n := flow.SizeVT()
+		if cap(bytes) < n {
+			bytes = make([]byte, n+100)
+			*ptr = bytes
+		}
+
+		// Marshal to it, send it to Kafka and return it when done
+		if n, err := flow.MarshalToSizedBufferVT(bytes[:n]); err == nil {
+			c.d.Kafka.Send(exporter, bytes[:n], func() {
+				c.payloadPool.Put(ptr)
+			})
+		} else {
+			c.payloadPool.Put(ptr)
 		}
 	}
 }

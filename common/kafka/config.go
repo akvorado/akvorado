@@ -6,17 +6,19 @@
 package kafka
 
 import (
-	"context"
-	"crypto/sha256"
-	"crypto/sha512"
 	"fmt"
 	"reflect"
 
 	"akvorado/common/helpers"
+	"akvorado/common/reporter"
 
-	"github.com/IBM/sarama"
 	"github.com/gin-gonic/gin"
 	"github.com/go-viper/mapstructure/v2"
+	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/sasl"
+	"github.com/twmb/franz-go/pkg/sasl/oauth"
+	"github.com/twmb/franz-go/pkg/sasl/plain"
+	"github.com/twmb/franz-go/pkg/sasl/scram"
 	"golang.org/x/oauth2/clientcredentials"
 )
 
@@ -26,8 +28,6 @@ type Configuration struct {
 	Topic string `validate:"required"`
 	// Brokers is the list of brokers to connect to.
 	Brokers []string `min=1,dive,validate:"listen"`
-	// Version is the version of Kafka we assume to work
-	Version Version
 	// TLS defines TLS configuration
 	TLS helpers.TLSConfiguration
 	// SASL defines SASL configuration
@@ -53,35 +53,11 @@ func DefaultConfiguration() Configuration {
 	return Configuration{
 		Topic:   "flows",
 		Brokers: []string{"127.0.0.1:9092"},
-		Version: Version(sarama.V2_8_1_0),
 		TLS: helpers.TLSConfiguration{
 			Enable: false,
 			Verify: true,
 		},
 	}
-}
-
-// Version represents a supported version of Kafka
-type Version sarama.KafkaVersion
-
-// UnmarshalText parses a version of Kafka
-func (v *Version) UnmarshalText(text []byte) error {
-	version, err := sarama.ParseKafkaVersion(string(text))
-	if err != nil {
-		return err
-	}
-	*v = Version(version)
-	return nil
-}
-
-// String turns a Kafka version into a string
-func (v Version) String() string {
-	return sarama.KafkaVersion(v).String()
-}
-
-// MarshalText turns a Kafka version into a string
-func (v Version) MarshalText() ([]byte, error) {
-	return []byte(v.String()), nil
 }
 
 // SASLMechanism defines an SASL algorithm
@@ -100,55 +76,60 @@ const (
 	SASLOauth
 )
 
-// NewConfig returns a Sarama Kafka configuration ready to use.
-func NewConfig(config Configuration) (*sarama.Config, error) {
-	kafkaConfig := sarama.NewConfig()
-	kafkaConfig.Version = sarama.KafkaVersion(config.Version)
-	kafkaConfig.ClientID = fmt.Sprintf("akvorado-%s", helpers.AkvoradoVersion)
+// NewConfig returns a slice of kgo.Opt configurations ready to use.
+func NewConfig(r *reporter.Reporter, config Configuration) ([]kgo.Opt, error) {
+	opts := []kgo.Opt{
+		kgo.SeedBrokers(config.Brokers...),
+		kgo.ClientID(fmt.Sprintf("akvorado-%s", helpers.AkvoradoVersion)),
+		kgo.WithLogger(NewLogger(r)),
+	}
+
+	// TLS configuration
 	tlsConfig, err := config.TLS.MakeTLSConfig()
 	if err != nil {
 		return nil, err
 	}
 	if tlsConfig != nil {
-		kafkaConfig.Net.TLS.Enable = true
-		kafkaConfig.Net.TLS.Config = tlsConfig
+		opts = append(opts, kgo.DialTLSConfig(tlsConfig))
 	}
-	// SASL
+
+	// SASL configuration
 	if config.SASL.Mechanism != SASLNone {
-		kafkaConfig.Net.SASL.Enable = true
-		kafkaConfig.Net.SASL.User = config.SASL.Username
-		kafkaConfig.Net.SASL.Password = config.SASL.Password
+		var mechanism sasl.Mechanism
 		switch config.SASL.Mechanism {
 		case SASLPlain:
-			kafkaConfig.Net.SASL.Mechanism = sarama.SASLTypePlaintext
+			mechanism = plain.Auth{
+				User: config.SASL.Username,
+				Pass: config.SASL.Password,
+			}.AsMechanism()
 		case SASLScramSHA256:
-			kafkaConfig.Net.SASL.Handshake = true
-			kafkaConfig.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA256
-			kafkaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
-				return &xdgSCRAMClient{HashGeneratorFcn: sha256.New}
-			}
+			mechanism = scram.Auth{
+				User: config.SASL.Username,
+				Pass: config.SASL.Password,
+			}.AsSha256Mechanism()
 		case SASLScramSHA512:
-			kafkaConfig.Net.SASL.Handshake = true
-			kafkaConfig.Net.SASL.Mechanism = sarama.SASLTypeSCRAMSHA512
-			kafkaConfig.Net.SASL.SCRAMClientGeneratorFunc = func() sarama.SCRAMClient {
-				return &xdgSCRAMClient{HashGeneratorFcn: sha512.New}
-			}
+			mechanism = scram.Auth{
+				User: config.SASL.Username,
+				Pass: config.SASL.Password,
+			}.AsSha512Mechanism()
 		case SASLOauth:
-			kafkaConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
-			kafkaConfig.Net.SASL.TokenProvider = newOAuthTokenProvider(
-				context.Background(), // TODO should be bound to the component lifecycle, but no component here
-				tlsConfig,
-				clientcredentials.Config{
-					ClientID:     config.SASL.Username,
-					ClientSecret: config.SASL.Password,
-					TokenURL:     config.SASL.OAuthTokenURL,
-					Scopes:       config.SASL.OAuthScopes,
-				})
+			mechanism = oauth.Oauth(
+				newOAuthTokenProvider(
+					tlsConfig,
+					clientcredentials.Config{
+						ClientID:     config.SASL.Username,
+						ClientSecret: config.SASL.Password,
+						TokenURL:     config.SASL.OAuthTokenURL,
+						Scopes:       config.SASL.OAuthScopes,
+					}),
+			)
 		default:
 			return nil, fmt.Errorf("unknown SASL mechanism: %s", config.SASL.Mechanism)
 		}
+		opts = append(opts, kgo.SASL(mechanism))
 	}
-	return kafkaConfig, nil
+
+	return opts, nil
 }
 
 // ConfigurationUnmarshallerHook normalize Kafka configuration:
@@ -204,6 +185,6 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 }
 
 func init() {
+	helpers.RegisterMapstructureDeprecatedFields[Configuration]("Version")
 	helpers.RegisterMapstructureUnmarshallerHook(ConfigurationUnmarshallerHook())
-
 }

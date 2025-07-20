@@ -8,19 +8,21 @@ import (
 
 	"akvorado/common/helpers"
 
-	"github.com/IBM/sarama"
+	"github.com/twmb/franz-go/pkg/kgo"
 )
 
 func TestCompressionCodecUnmarshal(t *testing.T) {
 	cases := []struct {
 		Input         string
-		Expected      sarama.CompressionCodec
+		Expected      kgo.CompressionCodec
 		ExpectedError bool
 	}{
-		{"none", sarama.CompressionNone, false},
-		{"zstd", sarama.CompressionZSTD, false},
-		{"gzip", sarama.CompressionGZIP, false},
-		{"unknown", sarama.CompressionNone, true},
+		{"none", kgo.NoCompression(), false},
+		{"zstd", kgo.ZstdCompression(), false},
+		{"gzip", kgo.GzipCompression(), false},
+		{"snappy", kgo.SnappyCompression(), false},
+		{"lz4", kgo.Lz4Compression(), false},
+		{"unknown", kgo.NoCompression(), true},
 	}
 	for _, tc := range cases {
 		var cmp CompressionCodec
@@ -33,9 +35,12 @@ func TestCompressionCodecUnmarshal(t *testing.T) {
 			t.Errorf("UnmarshalText(%q) got %v but expected error", tc.Input, cmp)
 			continue
 		}
-		if cmp != CompressionCodec(tc.Expected) {
+		if !tc.ExpectedError && cmp != CompressionCodec(tc.Expected) {
 			t.Errorf("UnmarshalText(%q) got %v but expected %v", tc.Input, cmp, tc.Expected)
 			continue
+		}
+		if !tc.ExpectedError && cmp.String() != tc.Input {
+			t.Errorf("String() got %q but expected %q", cmp.String(), tc.Input)
 		}
 	}
 }

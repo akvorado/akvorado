@@ -7,10 +7,13 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/IBM/sarama"
+	"github.com/twmb/franz-go/pkg/kfake"
+	"github.com/twmb/franz-go/pkg/kgo"
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
@@ -19,36 +22,35 @@ import (
 	"akvorado/common/reporter"
 )
 
-func TestRealKafka(t *testing.T) {
-	client, brokers := kafka.SetupKafkaBroker(t)
-
-	// Create the topic
+func TestFakeKafka(t *testing.T) {
 	topicName := fmt.Sprintf("test-topic2-%d", rand.Int())
 	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, pb.Version)
-	admin, err := sarama.NewClusterAdminFromClient(client)
-	if err != nil {
-		t.Fatalf("NewClusterAdminFromClient() error:\n%+v", err)
-	}
-	defer admin.Close()
-	topicDetail := &sarama.TopicDetail{
-		NumPartitions:     1,
-		ReplicationFactor: 1,
-	}
-	err = admin.CreateTopic(expectedTopicName, topicDetail, false)
-	if err != nil {
-		t.Fatalf("CreateTopic() error:\n%+v", err)
-	}
 
-	// Create a producer
-	producer, err := sarama.NewSyncProducerFromClient(client)
+	cluster, err := kfake.NewCluster(
+		kfake.NumBrokers(1),
+		kfake.SeedTopics(16, expectedTopicName),
+	)
 	if err != nil {
-		t.Fatalf("NewSyncProducerFromClient() error:\n%+v", err)
+		t.Fatalf("NewCluster() error: %v", err)
+	}
+	defer cluster.Close()
+
+	// Create a producer client
+	producerConfiguration := kafka.DefaultConfiguration()
+	producerConfiguration.Brokers = cluster.ListenAddrs()
+	producerOpts, err := kafka.NewConfig(reporter.NewMock(t), producerConfiguration)
+	if err != nil {
+		t.Fatalf("NewConfig() error:\n%+v", err)
+	}
+	producer, err := kgo.NewClient(producerOpts...)
+	if err != nil {
+		t.Fatalf("NewClient() error:\n%+v", err)
 	}
 	defer producer.Close()
 
 	// Callback
 	got := []string{}
-	expected := []string{"hello", "hello 2", "hello 3"}
+	expected := []string{"hello 1", "hello 2", "hello 3"}
 	gotAll := make(chan bool)
 	callback := func(_ context.Context, message []byte) error {
 		got = append(got, string(message))
@@ -61,9 +63,9 @@ func TestRealKafka(t *testing.T) {
 	// Start the component
 	configuration := DefaultConfiguration()
 	configuration.Topic = topicName
-	configuration.Brokers = brokers
-	configuration.Version = kafka.Version(sarama.V2_8_1_0)
+	configuration.Brokers = cluster.ListenAddrs()
 	configuration.FetchMaxWaitTime = 100 * time.Millisecond
+	configuration.ConsumerGroup = fmt.Sprintf("outlet-%d", rand.Int())
 	r := reporter.NewMock(t)
 	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
@@ -75,34 +77,24 @@ func TestRealKafka(t *testing.T) {
 	shutdownCalled := false
 	c.StartWorkers(func(_ int) (ReceiveFunc, ShutdownFunc) { return callback, func() { shutdownCalled = true } })
 
-	// Wait for a claim to be processed. Due to rebalance, it could take more than 3 seconds.
-	timeout := time.After(10 * time.Second)
-	for {
-		gotMetrics := r.GetMetrics("akvorado_outlet_kafka_")
-		if gotMetrics[`received_claims_total{worker="0"}`] == "1" {
-			break
-		}
-		select {
-		case <-timeout:
-			t.Fatal("No claim received")
-		case <-time.After(20 * time.Millisecond):
-		}
-	}
-
 	// Send messages
+	time.Sleep(100 * time.Millisecond)
+	t.Log("producing values")
 	for _, value := range expected {
-		msg := &sarama.ProducerMessage{
+		record := &kgo.Record{
 			Topic: expectedTopicName,
-			Value: sarama.StringEncoder(value),
+			Value: []byte(value),
 		}
-		if _, _, err := producer.SendMessage(msg); err != nil {
-			t.Fatalf("SendMessage() error:\n%+v", err)
+		results := producer.ProduceSync(context.Background(), record)
+		if err := results.FirstErr(); err != nil {
+			t.Fatalf("ProduceSync() error:\n%+v", err)
 		}
 	}
+	t.Log("values produced")
 
 	// Wait for them
 	select {
-	case <-time.After(5 * time.Second):
+	case <-time.After(time.Second):
 		t.Fatal("Too long to get messages")
 	case <-gotAll:
 	}
@@ -112,24 +104,14 @@ func TestRealKafka(t *testing.T) {
 	}
 
 	gotMetrics := r.GetMetrics("akvorado_outlet_kafka_", "received_")
+	fetches, _ := strconv.Atoi(gotMetrics[`received_fetches_total{worker="0"}`])
 	expectedMetrics := map[string]string{
-		`received_bytes_total{worker="0"}`:    "19",
-		`received_claims_total{worker="0"}`:   "1",
+		`received_bytes_total{worker="0"}`:    "21",
+		`received_fetches_total{worker="0"}`:  strconv.Itoa(max(fetches, 1)),
 		`received_messages_total{worker="0"}`: "3",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Errorf("Metrics (-got, +want):\n%s", diff)
-	}
-
-	{
-		// Test the healthcheck function
-		got := r.RunHealthchecks(context.Background())
-		if diff := helpers.Diff(got.Details["kafka"], reporter.HealthcheckResult{
-			Status: reporter.HealthcheckOK,
-			Reason: "worker 0 ok",
-		}); diff != "" {
-			t.Fatalf("runHealthcheck() (-got, +want):\n%s", diff)
-		}
 	}
 
 	if err := c.Stop(); err != nil {
@@ -137,5 +119,72 @@ func TestRealKafka(t *testing.T) {
 	}
 	if !shutdownCalled {
 		t.Fatal("Stop() didn't call shutdown function")
+	}
+}
+
+func TestStartSeveralWorkers(t *testing.T) {
+	topicName := fmt.Sprintf("test-topic2-%d", rand.Int())
+	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, pb.Version)
+
+	cluster, err := kfake.NewCluster(
+		kfake.NumBrokers(1),
+		kfake.SeedTopics(16, expectedTopicName),
+	)
+	if err != nil {
+		t.Fatalf("NewCluster() error: %v", err)
+	}
+	defer cluster.Close()
+
+	// Start the component
+	configuration := DefaultConfiguration()
+	configuration.Topic = topicName
+	configuration.Brokers = cluster.ListenAddrs()
+	configuration.FetchMaxWaitTime = 100 * time.Millisecond
+	configuration.ConsumerGroup = fmt.Sprintf("outlet-%d", rand.Int())
+	configuration.Workers = 5
+	r := reporter.NewMock(t)
+	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	if err := c.(*realComponent).Start(); err != nil {
+		t.Fatalf("Start() error:\n%+v", err)
+	}
+	c.StartWorkers(func(int) (ReceiveFunc, ShutdownFunc) {
+		return func(context.Context, []byte) error { return nil }, func() {}
+	})
+	time.Sleep(20 * time.Millisecond)
+	if err := c.Stop(); err != nil {
+		t.Fatalf("Stop() error:\n%+v", err)
+	}
+
+	gotMetrics := r.GetMetrics("akvorado_outlet_kafka_")
+	connectsTotal := 0
+	writeBytesTotal := 0
+	readBytesTotal := 0
+	for k := range gotMetrics {
+		if strings.HasPrefix(k, "write_bytes_total") {
+			writeBytesTotal++
+		}
+		if strings.HasPrefix(k, "read_bytes_total") {
+			readBytesTotal++
+		}
+		if strings.HasPrefix(k, "connects_total") {
+			connectsTotal++
+		}
+	}
+	got := map[string]int{
+		"write_bytes_total": writeBytesTotal,
+		"read_bytes_total":  readBytesTotal,
+		"connects_total":    connectsTotal,
+	}
+	expected := map[string]int{
+		// For some reason, we have each metric in double, with one seed_0.
+		"write_bytes_total": 10,
+		"read_bytes_total":  10,
+		"connects_total":    10,
+	}
+	if diff := helpers.Diff(got, expected); diff != "" {
+		t.Errorf("Metrics (-got, +want):\n%s", diff)
 	}
 }

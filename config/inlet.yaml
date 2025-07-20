@@ -1,6 +1,4 @@
 ---
-kafka:
-  compression-codec: zstd
 flow:
   inputs:
     - type: udp

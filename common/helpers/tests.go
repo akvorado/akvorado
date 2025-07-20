@@ -121,3 +121,8 @@ func (p Pos) String() string {
 	}
 	return ""
 }
+
+// Testing reports whether the current code is being run in a test.
+func Testing() bool {
+	return testing.Testing()
+}
