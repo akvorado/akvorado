@@ -126,17 +126,9 @@ The following keys are accepted:
   configuration for the [orchestrator service](#kafka-2) (the values of these
   keys are copied from the orchestrator configuration, unless `brokers` is
   explicitely set)
-- `flush-interval` defines the maximum flush interval to send received
-  flows to Kafka
-- `flush-bytes` defines the maximum number of bytes to store before
-  flushing flows to Kafka
-- `max-message-bytes` defines the maximum size of a message (it should
-  be equal or smaller to the same setting in the broker configuration)
 - `compression-codec` defines the compression codec to use to compress
-  messages (`none`, `gzip`, `snappy`, `lz4` and `zstd`)
-- `queue-size` defines the size of the internal queues to send
-  messages to Kafka. Increasing this value will improve performance,
-  at the cost of losing messages in case of problems.
+  messages: `none`, `gzip`, `snappy`, `lz4` (the default)*, or `zstd`.
+- `queue-size` defines the maximum number of messages to buffer to Kafka.
 
 The topic name is automatically suffixed by a version number, in case the
 protobuf schema changes in a backward-incompatible way.
@@ -159,13 +151,9 @@ keys are accepted:
   explicitly set)
 - `workers` defines the number of Kafka workers to use
 - `consumer-group` defines the consumer group ID for Kafka consumption
-- `max-message-bytes` defines the maximum size of a message (it should
-  be equal or smaller to the same setting in the broker configuration)
 - `fetch-min-bytes` defines the minimum number of bytes to fetch from Kafka
 - `fetch-max-wait-time` defines how much maximum time to wait for the minimum
   number of bytes to become available
-- `queue-size` defines the size of the internal queues to receive messages to
-  Kafka.
 
 ### Routing
 

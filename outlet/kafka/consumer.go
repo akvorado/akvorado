@@ -6,12 +6,11 @@ package kafka
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
 	"sync"
 
-	"github.com/IBM/sarama"
 	"github.com/rs/zerolog"
+	"github.com/twmb/franz-go/pkg/kgo"
 
 	"akvorado/common/reporter"
 )
@@ -19,13 +18,11 @@ import (
 // ErrStopProcessing should be returned as an error when we need to stop processing more flows.
 var ErrStopProcessing = errors.New("stop processing further flows")
 
-// Consumer is a Sarama consumer group consumer and should process flow
-// messages.
+// Consumer is a franz-go consumer and should process flow messages.
 type Consumer struct {
 	r *reporter.Reporter
 	l zerolog.Logger
 
-	healthy  chan reporter.ChannelHealthcheckFunc
 	metrics  metrics
 	worker   int
 	callback ReceiveFunc
@@ -48,68 +45,42 @@ func (c *realComponent) NewConsumer(worker int, callback ReceiveFunc) *Consumer 
 		r: c.r,
 		l: c.r.With().Int("worker", worker).Logger(),
 
-		healthy:  c.healthy,
 		worker:   worker,
 		metrics:  c.metrics,
 		callback: callback,
 	}
 }
 
-// Setup is called at the beginning of a new consumer session, before
-// ConsumeClaim.
-func (c *Consumer) Setup(sarama.ConsumerGroupSession) error {
-	c.l.Debug().Msg("start consumer group")
-	return nil
-}
-
-// Cleanup is called once all ConsumeClaim goroutines have exited
-func (c *Consumer) Cleanup(sarama.ConsumerGroupSession) error {
-	c.l.Debug().Msg("stop consumer group")
-	return nil
-}
-
-// ConsumeClaim should process the incoming claims.
-func (c *Consumer) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
-	l := c.l.With().
-		Str("topic", claim.Topic()).
-		Int32("partition", claim.Partition()).
-		Int64("offset", claim.InitialOffset()).Logger()
-	l.Debug().Msg("process new consumer group claim")
+// ProcessFetches processes the fetched records.
+func (c *Consumer) ProcessFetches(ctx context.Context, fetches kgo.Fetches) error {
 	worker := strconv.Itoa(c.worker)
-	c.metrics.claimsReceived.WithLabelValues(worker).Inc()
+	c.metrics.fetchesReceived.WithLabelValues(worker).Inc()
+
+	if errs := fetches.Errors(); len(errs) > 0 {
+		for _, err := range errs {
+			if errors.Is(err.Err, context.Canceled) {
+				return nil
+			}
+			c.metrics.errorsReceived.WithLabelValues(worker).Inc()
+			c.l.Err(err.Err).
+				Str("topic", err.Topic).
+				Int32("partition", err.Partition).
+				Msg("fetch error")
+		}
+		// Assume the error is fatal.
+		return ErrStopProcessing
+	}
+
 	messagesReceived := c.metrics.messagesReceived.WithLabelValues(worker)
 	bytesReceived := c.metrics.bytesReceived.WithLabelValues(worker)
-	ctx := session.Context()
-
-	for {
-		select {
-		case cb, ok := <-c.healthy:
-			if ok {
-				cb(reporter.HealthcheckOK, fmt.Sprintf("worker %d ok", c.worker))
-			}
-		case message, ok := <-claim.Messages():
-			if !ok {
-				return nil
-			}
-			messagesReceived.Inc()
-			bytesReceived.Add(float64(len(message.Value)))
-
-			// ConsumeClaim can be called from multiple goroutines. We want each
-			// worker/consumer to not invoke callbacks concurrently.
-			c.mu.Lock()
-			if err := c.callback(ctx, message.Value); err == ErrStopProcessing {
-				c.mu.Unlock()
-				return nil
-			} else if err != nil {
-				c.mu.Unlock()
-				c.metrics.errorsReceived.WithLabelValues(worker).Inc()
-				l.Err(err).Msg("unable to handle incoming message")
-				return fmt.Errorf("unable to handle incoming message: %w", err)
-			}
-			c.mu.Unlock()
-			session.MarkMessage(message, "")
-		case <-ctx.Done():
-			return nil
+	for iter := fetches.RecordIter(); !iter.Done(); {
+		record := iter.Next()
+		messagesReceived.Inc()
+		bytesReceived.Add(float64(len(record.Value)))
+		if err := c.callback(ctx, record.Value); err != nil {
+			return err
 		}
 	}
+
+	return nil
 }

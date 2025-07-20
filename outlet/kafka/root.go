@@ -8,10 +8,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
-	"time"
 
-	"github.com/IBM/sarama"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/plugin/kprom"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/daemon"
@@ -33,11 +35,9 @@ type realComponent struct {
 	t      tomb.Tomb
 	config Configuration
 
-	kafkaConfig *sarama.Config
-	kafkaTopic  string
+	kafkaOpts []kgo.Opt
 
-	healthy chan reporter.ChannelHealthcheckFunc
-	clients []sarama.Client
+	clients []*kgo.Client
 	metrics metrics
 }
 
@@ -49,36 +49,32 @@ type Dependencies struct {
 // New creates a new Kafka exporter component.
 func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (Component, error) {
 	// Build Kafka configuration
-	kafkaConfig, err := kafka.NewConfig(configuration.Configuration)
+	kafkaOpts, err := kafka.NewConfig(r, configuration.Configuration)
 	if err != nil {
 		return nil, err
-	}
-	kafkaConfig.Consumer.Fetch.Max = configuration.MaxMessageBytes
-	kafkaConfig.Consumer.Fetch.Min = configuration.FetchMinBytes
-	kafkaConfig.Consumer.MaxWaitTime = configuration.FetchMaxWaitTime
-	kafkaConfig.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{
-		sarama.NewBalanceStrategyRoundRobin(),
-	}
-	// kafkaConfig.Consumer.Offsets.AutoCommit.Enable = false
-	kafkaConfig.Consumer.Offsets.Initial = sarama.OffsetNewest
-	kafkaConfig.Metadata.RefreshFrequency = time.Minute
-	kafkaConfig.Metadata.AllowAutoTopicCreation = false
-	kafkaConfig.ChannelBufferSize = configuration.QueueSize
-	if err := kafkaConfig.Validate(); err != nil {
-		return nil, fmt.Errorf("cannot validate Kafka configuration: %w", err)
 	}
 
 	c := realComponent{
 		r:      r,
 		d:      &dependencies,
 		config: configuration,
-
-		healthy:     make(chan reporter.ChannelHealthcheckFunc),
-		kafkaConfig: kafkaConfig,
-		kafkaTopic:  fmt.Sprintf("%s-v%d", configuration.Topic, pb.Version),
 	}
 	c.initMetrics()
-	c.r.RegisterHealthcheck("kafka", c.channelHealthcheck())
+
+	kafkaOpts = append(kafkaOpts,
+		kgo.FetchMinBytes(configuration.FetchMinBytes),
+		kgo.FetchMaxWait(configuration.FetchMaxWaitTime),
+		kgo.ConsumerGroup(configuration.ConsumerGroup),
+		kgo.ConsumeStartOffset(kgo.NewOffset().AtEnd()),
+		kgo.ConsumeTopics(fmt.Sprintf("%s-v%d", configuration.Topic, pb.Version)),
+		// Do not use kgo.BlockRebalanceOnPoll(). It needs more code to ensure
+		// we are not blocked while polling.
+	)
+
+	if err := kgo.ValidateOpts(kafkaOpts...); err != nil {
+		return nil, fmt.Errorf("invalid Kafka configuration: %w", err)
+	}
+	c.kafkaOpts = kafkaOpts
 	c.d.Daemon.Track(&c.t, "outlet/kafka")
 	return &c, nil
 }
@@ -86,12 +82,15 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 // Start starts the Kafka component.
 func (c *realComponent) Start() error {
 	c.r.Info().Msg("starting Kafka component")
-	kafka.GlobalKafkaLogger.Register(c.r)
 	// Start the clients
 	for i := range c.config.Workers {
 		logger := c.r.With().Int("worker", i).Logger()
 		logger.Debug().Msg("starting")
-		client, err := sarama.NewClient(c.config.Brokers, c.kafkaConfig)
+
+		kafkaMetrics := kprom.NewMetrics("", kprom.WithStaticLabel(prometheus.Labels{"worker": strconv.Itoa(i)}))
+		kafkaOpts := append(c.kafkaOpts, kgo.WithHooks(kafkaMetrics))
+		c.r.MetricCollectorForCurrentModule(kafkaMetrics)
+		client, err := kgo.NewClient(kafkaOpts...)
 		if err != nil {
 			logger.Err(err).
 				Int("worker", i).
@@ -107,36 +106,31 @@ func (c *realComponent) Start() error {
 // StartWorkers will start the workers. This should only be called once.
 func (c *realComponent) StartWorkers(workerBuilder WorkerBuilderFunc) error {
 	ctx := c.t.Context(context.Background())
-	topics := []string{c.kafkaTopic}
 	for i := range c.config.Workers {
 		callback, shutdown := workerBuilder(i)
+		consumer := c.NewConsumer(i, callback)
+		client := c.clients[i]
 		c.t.Go(func() error {
 			logger := c.r.With().
 				Int("worker", i).
 				Logger()
-			client, err := sarama.NewConsumerGroupFromClient(c.config.ConsumerGroup, c.clients[i])
-			if err != nil {
-				logger.Err(err).
-					Int("worker", i).
-					Str("brokers", strings.Join(c.config.Brokers, ",")).
-					Msg("unable to create group consumer")
-				return fmt.Errorf("unable to create Kafka group consumer: %w", err)
-			}
-			defer client.Close()
-			consumer := c.NewConsumer(i, callback)
 			defer shutdown()
+
 			for {
-				if err := client.Consume(ctx, topics, consumer); err != nil {
-					if errors.Is(err, sarama.ErrClosedConsumerGroup) {
-						return nil
+				select {
+				case <-ctx.Done():
+					return nil
+				default:
+					fetches := client.PollFetches(ctx)
+					if err := consumer.ProcessFetches(ctx, fetches); err != nil {
+						if errors.Is(err, context.Canceled) || errors.Is(err, ErrStopProcessing) {
+							return nil
+						}
+						logger.Err(err).
+							Int("worker", i).
+							Msg("cannot process fetched messages")
+						return fmt.Errorf("cannot process fetched messages: %w", err)
 					}
-					if errors.Is(err, context.Canceled) {
-						return nil
-					}
-					logger.Err(err).
-						Int("worker", i).
-						Msg("cannot get message from consumer")
-					return fmt.Errorf("cannot get message from consumer: %w", err)
 				}
 			}
 		})
@@ -147,19 +141,12 @@ func (c *realComponent) StartWorkers(workerBuilder WorkerBuilderFunc) error {
 // Stop stops the Kafka component
 func (c *realComponent) Stop() error {
 	defer func() {
-		c.kafkaConfig.MetricRegistry.UnregisterAll()
-		kafka.GlobalKafkaLogger.Unregister()
-		close(c.healthy)
 		for _, client := range c.clients {
-			client.Close()
+			client.CloseAllowingRebalance()
 		}
 		c.r.Info().Msg("Kafka component stopped")
 	}()
 	c.r.Info().Msg("stopping Kafka component")
 	c.t.Kill(nil)
 	return c.t.Wait()
-}
-
-func (c *realComponent) channelHealthcheck() reporter.HealthcheckFunc {
-	return reporter.ChannelHealthcheck(c.t.Context(nil), c.healthy)
 }

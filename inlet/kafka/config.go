@@ -4,27 +4,20 @@
 package kafka
 
 import (
-	"time"
+	"fmt"
 
-	"github.com/IBM/sarama"
+	"github.com/twmb/franz-go/pkg/kgo"
 
+	"akvorado/common/helpers"
 	"akvorado/common/kafka"
 )
 
 // Configuration describes the configuration for the Kafka exporter.
 type Configuration struct {
 	kafka.Configuration `mapstructure:",squash" yaml:"-,inline"`
-	// FlushInterval tells how often to flush pending data to Kafka.
-	FlushInterval time.Duration `validate:"min=100ms"`
-	// FlushBytes tells to flush when there are many bytes to write
-	FlushBytes int `validate:"min=1000"`
-	// MaxMessageBytes is the maximum permitted size of a message.
-	// Should be set equal or smaller than broker's
-	// `message.max.bytes`.
-	MaxMessageBytes int `validate:"min=1"`
 	// CompressionCodec defines the compression to use.
 	CompressionCodec CompressionCodec
-	// QueueSize defines the size of the channel used to send to Kafka.
+	// QueueSize defines the maximum number of messages to buffer.
 	QueueSize int `validate:"min=1"`
 }
 
@@ -32,28 +25,62 @@ type Configuration struct {
 func DefaultConfiguration() Configuration {
 	return Configuration{
 		Configuration:    kafka.DefaultConfiguration(),
-		FlushInterval:    time.Second,
-		FlushBytes:       int(sarama.MaxRequestSize) - 1,
-		MaxMessageBytes:  1_000_000,
-		CompressionCodec: CompressionCodec(sarama.CompressionNone),
+		CompressionCodec: CompressionCodec(kgo.Lz4Compression()),
 		QueueSize:        32,
 	}
 }
 
 // CompressionCodec represents a compression codec.
-type CompressionCodec sarama.CompressionCodec
+type CompressionCodec kgo.CompressionCodec
 
 // UnmarshalText produces a compression codec
 func (cc *CompressionCodec) UnmarshalText(text []byte) error {
-	return (*sarama.CompressionCodec)(cc).UnmarshalText(text)
+	codec := kgo.CompressionCodec{}
+	switch string(text) {
+	case "none":
+		codec = kgo.NoCompression()
+	case "gzip":
+		codec = kgo.GzipCompression()
+	case "snappy":
+		codec = kgo.SnappyCompression()
+	case "lz4":
+		codec = kgo.Lz4Compression()
+	case "zstd":
+		codec = kgo.ZstdCompression()
+	default:
+		return fmt.Errorf("unknown compression codec: %s", text)
+	}
+	*cc = CompressionCodec(codec)
+	return nil
 }
 
 // String turns a compression codec into a string
 func (cc CompressionCodec) String() string {
-	return sarama.CompressionCodec(cc).String()
+	switch kgo.CompressionCodec(cc) {
+	case kgo.NoCompression():
+		return "none"
+	case kgo.GzipCompression():
+		return "gzip"
+	case kgo.SnappyCompression():
+		return "snappy"
+	case kgo.Lz4Compression():
+		return "lz4"
+	case kgo.ZstdCompression():
+		return "zstd"
+	default:
+		return "unknown"
+	}
 }
 
 // MarshalText turns a compression codec into a string
 func (cc CompressionCodec) MarshalText() ([]byte, error) {
 	return []byte(cc.String()), nil
+}
+
+func init() {
+	helpers.RegisterMapstructureDeprecatedFields[Configuration](
+		"FlushInterval",   // bad for performance
+		"FlushBytes",      //  duplicate with QueueSize
+		"MaxMessageBytes", //  just tune QueueSize instead
+	)
 }

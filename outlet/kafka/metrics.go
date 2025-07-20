@@ -4,17 +4,14 @@
 package kafka
 
 import (
-	"akvorado/common/kafka"
 	"akvorado/common/reporter"
 )
 
 type metrics struct {
 	messagesReceived *reporter.CounterVec
-	claimsReceived   *reporter.CounterVec
+	fetchesReceived  *reporter.CounterVec
 	bytesReceived    *reporter.CounterVec
 	errorsReceived   *reporter.CounterVec
-
-	kafkaMetrics kafka.Metrics
 }
 
 func (c *realComponent) initMetrics() {
@@ -25,10 +22,10 @@ func (c *realComponent) initMetrics() {
 		},
 		[]string{"worker"},
 	)
-	c.metrics.claimsReceived = c.r.CounterVec(
+	c.metrics.fetchesReceived = c.r.CounterVec(
 		reporter.CounterOpts{
-			Name: "received_claims_total",
-			Help: "Number of claims received for a given worker.",
+			Name: "received_fetches_total",
+			Help: "Number of fetches received for a given worker.",
 		},
 		[]string{"worker"},
 	)
@@ -46,6 +43,4 @@ func (c *realComponent) initMetrics() {
 		},
 		[]string{"worker"},
 	)
-
-	c.metrics.kafkaMetrics.Init(c.r, c.kafkaConfig.MetricRegistry)
 }
