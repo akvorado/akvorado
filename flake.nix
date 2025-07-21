@@ -34,6 +34,13 @@
         ianaServiceNames = pkgs.fetchurl {
           url = "https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv";
           hash = builtins.readFile ./nix/ianaServiceNamesHash.txt;
+          # There are many bogus changes in this file. To avoid updating the
+          # hash too often, filter the lines with a service name and a port.
+          downloadToTemp = true;
+          postFetch = ''
+            < $downloadedFile > $out \
+            awk -F, '(NR == 1) {print} ($0 !~ "^ " && $1 != "" && $2 != "" && ($3 == "tcp" || $3 == "udp")) {print}'
+          '';
         };
         backend = pkgs.buildGoModule.override { inherit go; } {
           doCheck = false;
