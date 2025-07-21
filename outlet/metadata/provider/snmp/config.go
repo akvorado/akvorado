@@ -20,7 +20,7 @@ import (
 type Configuration struct {
 	// PollerRetries tell how many time a poller should retry before giving up
 	PollerRetries int `validate:"min=0"`
-	// PollerTimeout tell how much time a poller should wait for an answer
+	// PollerTimeout tell how much time a poller should wait for an answer before retrying
 	PollerTimeout time.Duration `validate:"min=100ms"`
 
 	// Credentials is a mapping from exporter IPs to credentials

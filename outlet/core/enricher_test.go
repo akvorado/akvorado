@@ -645,9 +645,6 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				t.Fatalf("proto.Marshal() error: %v", err)
 			}
 
-			// Test twice to check cache behavior
-			incoming <- data
-			time.Sleep(100 * time.Millisecond)
 			incoming <- data
 			time.Sleep(100 * time.Millisecond)
 
@@ -666,10 +663,9 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 			}
 			gotMetrics := r.GetMetrics("akvorado_outlet_core_", "-processing_", "flows_", "received_", "forwarded_")
 			expectedMetrics := map[string]string{
-				`flows_errors_total{error="SNMP cache miss",exporter="192.0.2.142"}`: "1",
 				`flows_http_clients`:                           "0",
-				`received_flows_total{exporter="192.0.2.142"}`: "2",
-				`received_raw_flows_total`:                     "2",
+				`received_flows_total{exporter="192.0.2.142"}`: "1",
+				`received_raw_flows_total`:                     "1",
 			}
 			if tc.OutputFlow != nil {
 				expectedMetrics[`forwarded_flows_total{exporter="192.0.2.142"}`] = "1"

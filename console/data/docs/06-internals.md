@@ -136,12 +136,10 @@ the name `clickhouse` or on `localhost`.
 ## SNMP
 
 SNMP polling is accomplished with [GoSNMP](https://github.com/gosnmp/gosnmp).
-The cache layer is tailored specifically for our needs. Cached information
-can expire if not accessed or refreshed periodically.
-Some coalescing of the requests is done when they are queued.
-This adds some code complexity, maybe it was not worth it.
-If an exporter fails to answer too frequently, a backoff will be triggered
-for a minute to ensure it does not eat up all the workers' resources.
+The cache layer is tailored specifically for our needs. Cached information can
+expire if not accessed or refreshed periodically. If an exporter fails to answer
+too frequently, a backoff will be triggered for a minute to ensure it does not
+eat up all the workers' resources.
 
 Testing is done by another implementation of an [SNMP
 agent](https://github.com/slayercat/GoSNMPServer).

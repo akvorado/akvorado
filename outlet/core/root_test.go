@@ -140,32 +140,25 @@ func TestCore(t *testing.T) {
 		clickhouseMessages = clickhouseMessages[:0]
 		clickhouseMessagesMutex.Unlock()
 
-		// Inject several messages with a cache miss from the SNMP component.
+		// Inject several messages
 		injectFlow(flowMessage("192.0.2.142", 434, 677))
-		injectFlow(flowMessage("192.0.2.143", 434, 677))
-		injectFlow(flowMessage("192.0.2.143", 437, 677))
-		injectFlow(flowMessage("192.0.2.143", 434, 679))
+		injectFlow(flowMessage("192.0.2.143", 437, 679))
 		time.Sleep(20 * time.Millisecond)
 
 		gotMetrics := r.GetMetrics("akvorado_outlet_core_", "-flows_processing_")
 		expectedMetrics := map[string]string{
-			`classifier_exporter_cache_items_total`:                              "0",
-			`classifier_interface_cache_items_total`:                             "0",
-			`flows_errors_total{error="SNMP cache miss",exporter="192.0.2.142"}`: "1",
-			`flows_errors_total{error="SNMP cache miss",exporter="192.0.2.143"}`: "3",
-			`received_flows_total{exporter="192.0.2.142"}`:                       "1",
-			`received_flows_total{exporter="192.0.2.143"}`:                       "3",
-			`received_raw_flows_total`:                                           "4",
-			`flows_http_clients`:                                                 "0",
+			`classifier_exporter_cache_items_total`:         "0",
+			`classifier_interface_cache_items_total`:        "0",
+			`received_flows_total{exporter="192.0.2.142"}`:  "1",
+			`received_flows_total{exporter="192.0.2.143"}`:  "1",
+			`forwarded_flows_total{exporter="192.0.2.142"}`: "1",
+			`forwarded_flows_total{exporter="192.0.2.143"}`: "1",
+			`received_raw_flows_total`:                      "2",
+			`flows_http_clients`:                            "0",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Fatalf("Metrics (-got, +want):\n%s", diff)
 		}
-
-		// Inject again the messages, this time, we will get a cache hit!
-		injectFlow(flowMessage("192.0.2.142", 434, 677))
-		injectFlow(flowMessage("192.0.2.143", 437, 679))
-		time.Sleep(20 * time.Millisecond)
 
 		// Should have 2 more flows in clickhouseMessages now
 		clickhouseMessagesMutex.Lock()
@@ -173,24 +166,6 @@ func TestCore(t *testing.T) {
 		clickhouseMessagesMutex.Unlock()
 		if clickhouseMessagesLen < 2 {
 			t.Fatalf("Expected at least 2 flows in clickhouseMessages, got %d", clickhouseMessagesLen)
-		}
-
-		time.Sleep(20 * time.Millisecond)
-		gotMetrics = r.GetMetrics("akvorado_outlet_core_", "classifier_", "-flows_processing_", "flows_", "received_", "forwarded_")
-		expectedMetrics = map[string]string{
-			`classifier_exporter_cache_items_total`:                              "0",
-			`classifier_interface_cache_items_total`:                             "0",
-			`flows_errors_total{error="SNMP cache miss",exporter="192.0.2.142"}`: "1",
-			`flows_errors_total{error="SNMP cache miss",exporter="192.0.2.143"}`: "3",
-			`received_flows_total{exporter="192.0.2.142"}`:                       "2",
-			`received_flows_total{exporter="192.0.2.143"}`:                       "4",
-			`received_raw_flows_total`:                                           "6",
-			`forwarded_flows_total{exporter="192.0.2.142"}`:                      "1",
-			`forwarded_flows_total{exporter="192.0.2.143"}`:                      "1",
-			`flows_http_clients`:                                                 "0",
-		}
-		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
-			t.Fatalf("Metrics (-got, +want):\n%s", diff)
 		}
 
 		// Now, check we get the message we expect
@@ -221,15 +196,13 @@ func TestCore(t *testing.T) {
 		expectedMetrics = map[string]string{
 			`classifier_exporter_cache_items_total`:                                    "0",
 			`classifier_interface_cache_items_total`:                                   "0",
-			`flows_errors_total{error="SNMP cache miss",exporter="192.0.2.142"}`:       "1",
-			`flows_errors_total{error="SNMP cache miss",exporter="192.0.2.143"}`:       "3",
 			`flows_errors_total{error="sampling rate missing",exporter="192.0.2.142"}`: "1",
-			`received_flows_total{exporter="192.0.2.142"}`:                             "4",
-			`received_flows_total{exporter="192.0.2.143"}`:                             "4",
+			`received_flows_total{exporter="192.0.2.142"}`:                             "3",
+			`received_flows_total{exporter="192.0.2.143"}`:                             "1",
 			`forwarded_flows_total{exporter="192.0.2.142"}`:                            "2",
 			`forwarded_flows_total{exporter="192.0.2.143"}`:                            "1",
-			`flows_http_clients`:       "0",
-			`received_raw_flows_total`: "8",
+			`flows_http_clients`:                                                       "0",
+			`received_raw_flows_total`:                                                 "4",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Fatalf("Metrics (-got, +want):\n%s", diff)

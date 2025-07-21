@@ -4,7 +4,7 @@ paths:
     - kafka:9092
   inlet.0.flow.inputs.0.decoder: netflow
   inlet.0.flow.inputs.1.decoder: sflow
-  outlet.0.metadata.workers: 10
+  outlet.0.metadata.providers.0.type: snmp
   inlet.0.kafka.brokers:
     - kafka:9092
   outlet.0.kafka.brokers:

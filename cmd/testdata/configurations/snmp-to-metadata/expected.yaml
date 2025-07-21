@@ -1,12 +1,12 @@
 ---
 paths:
   outlet.0.metadata:
-    workers: 10
-    maxbatchrequests: 20
     cacheduration: 30m0s
     cacherefresh: 30m0s
     cachecheckinterval: 2m0s
     cachepersistfile: ""
+    initialdelay: 1m0s
+    querytimeout: 5s
     providers:
       - type: snmp
         pollerretries: 3
