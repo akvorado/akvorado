@@ -5,6 +5,7 @@ package static
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -38,7 +39,6 @@ func TestInitStaticExporters(t *testing.T) {
 	p := &Provider{
 		r:            r,
 		exportersMap: map[string][]exporterInfo{},
-		put:          func(_ provider.Update) {},
 	}
 	p.exporters.Store(conf.Exporters)
 
@@ -70,6 +70,7 @@ func TestInitStaticExporters(t *testing.T) {
 }
 
 func TestRemoteExporterSources(t *testing.T) {
+
 	// Mux to answer requests
 	ready := make(chan bool)
 	mux := http.NewServeMux()
@@ -186,42 +187,24 @@ func TestRemoteExporterSources(t *testing.T) {
 			},
 		},
 	}
-	var got []provider.Update
-	var expected []provider.Update
-	p, _ := config.New(r, func(update provider.Update) {
-		got = append(got, update)
-	})
+	p, _ := config.New(r)
 
-	// Query when json is not ready yet, only static configured data available
-	p.Query(context.Background(), &provider.BatchQuery{
+	// Query when json is not ready yet, we should get a timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	defer cancel()
+	answer1, err := p.Query(ctx, provider.Query{
 		ExporterIP: netip.MustParseAddr("2001:db8:1::10"),
-		IfIndexes:  []uint{9},
+		IfIndex:    9,
 	})
-
-	// Unknown Exporter at this moment
-	p.Query(context.Background(), &provider.BatchQuery{
-		ExporterIP: netip.MustParseAddr("2001:db8:2::10"),
-		IfIndexes:  []uint{1},
-	})
-
-	expected = append(expected, provider.Update{
-		Query: provider.Query{
-			ExporterIP: netip.MustParseAddr("2001:db8:1::10"),
-			IfIndex:    9,
-		},
-		Answer: provider.Answer{
-			Exporter: provider.Exporter{
-				Name: "nodefault",
-			},
-		},
-	})
-
-	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Fatalf("static provider - before remote source load (-got, +want):\n%s", diff)
+	if err == nil {
+		t.Fatalf("Query() should have been in error:\n%+v", answer1)
+	}
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("Query() error:\n%+v", err)
 	}
 
 	close(ready)
-	time.Sleep(50 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 
 	gotMetrics := r.GetMetrics("akvorado_common_remotedatasourcefetcher_data_")
 	expectedMetrics := map[string]string{
@@ -232,29 +215,24 @@ func TestRemoteExporterSources(t *testing.T) {
 	}
 
 	// We now should be able to resolve our new exporter from remote source
-	p.Query(context.Background(), &provider.BatchQuery{
+	got, _ := p.Query(context.Background(), provider.Query{
 		ExporterIP: netip.MustParseAddr("2001:db8:2::10"),
-		IfIndexes:  []uint{1},
+		IfIndex:    1,
 	})
 
-	expected = append(expected, provider.Update{
-		Query: provider.Query{
-			ExporterIP: netip.MustParseAddr("2001:db8:2::10"),
-			IfIndex:    1,
+	expected := provider.Answer{
+		Found: true,
+		Exporter: provider.Exporter{
+			Name: "exporter1",
 		},
-		Answer: provider.Answer{
-			Exporter: provider.Exporter{
-				Name: "exporter1",
-			},
-			Interface: provider.Interface{
-				Name:        "iface1",
-				Description: "foo:desc1",
-				Speed:       1000,
-			},
+		Interface: provider.Interface{
+			Name:        "iface1",
+			Description: "foo:desc1",
+			Speed:       1000,
 		},
-	})
+	}
 
 	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Fatalf("static provider  - after remote source load(-got, +want):\n%s", diff)
+		t.Fatalf("static provider (-got, +want):\n%s", diff)
 	}
 }

@@ -16,6 +16,7 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
+	"akvorado/common/schema"
 	"akvorado/outlet/metadata/provider"
 	"akvorado/outlet/metadata/provider/static"
 )
@@ -23,7 +24,7 @@ import (
 func expectMockLookup(t *testing.T, c *Component, exporter string, ifIndex uint, expected provider.Answer) {
 	t.Helper()
 	ip := netip.AddrFrom16(netip.MustParseAddr(exporter).As16())
-	got, _ := c.Lookup(time.Now(), ip, ifIndex)
+	got := c.Lookup(time.Now(), ip, ifIndex)
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Fatalf("Lookup() (-got, +want):\n%s", diff)
 	}
@@ -32,24 +33,53 @@ func expectMockLookup(t *testing.T, c *Component, exporter string, ifIndex uint,
 func TestLookup(t *testing.T) {
 	r := reporter.NewMock(t)
 	c := NewMock(t, r, DefaultConfiguration(), Dependencies{Daemon: daemon.NewMock(t)})
-	expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{})
-	expectMockLookup(t, c, "127.0.0.1", 999, provider.Answer{})
-	time.Sleep(30 * time.Millisecond)
 	expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{
+		Found: true,
 		Exporter: provider.Exporter{
 			Name: "127_0_0_1",
 		},
-
 		Interface: provider.Interface{Name: "Gi0/0/765",
 			Description: "Interface 765",
 			Speed:       1000,
 		},
 	})
-	expectMockLookup(t, c, "127.0.0.1", 999, provider.Answer{
+	expectMockLookup(t, c, "127.0.0.1", 1010, provider.Answer{
+		Found: true,
 		Exporter: provider.Exporter{
-			Name: "127_0_0_1",
+			Name:   "127_0_0_1",
+			Group:  "metadata group",
+			Region: "metadata region",
+			Role:   "metadata role",
+			Site:   "metadata site",
+			Tenant: "metadata tenant",
+		},
+		Interface: provider.Interface{Name: "Gi0/0/1010",
+			Description: "Interface 1010",
+			Speed:       1000,
 		},
 	})
+	expectMockLookup(t, c, "127.0.0.1", 2010, provider.Answer{
+		Found: true,
+		Exporter: provider.Exporter{
+			Name:   "127_0_0_1",
+			Group:  "metadata group",
+			Region: "metadata region",
+			Role:   "metadata role",
+			Site:   "metadata site",
+			Tenant: "metadata tenant",
+		},
+		Interface: provider.Interface{Name: "Gi0/0/2010",
+			Description:  "Interface 2010",
+			Speed:        1000,
+			Boundary:     schema.InterfaceBoundaryExternal,
+			Connectivity: "metadata connectivity",
+			Provider:     "metadata provider",
+		},
+	})
+	// With a simple lookup, this is not possible to distinguish between a
+	// transient error or a fatal error. Only the caching subsystem knows.
+	expectMockLookup(t, c, "127.0.0.1", 999, provider.Answer{})
+	expectMockLookup(t, c, "127.0.0.1", 998, provider.Answer{})
 }
 
 func TestComponentSaveLoad(t *testing.T) {
@@ -59,10 +89,8 @@ func TestComponentSaveLoad(t *testing.T) {
 	t.Run("save", func(t *testing.T) {
 		r := reporter.NewMock(t)
 		c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
-
-		expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{})
-		time.Sleep(30 * time.Millisecond)
 		expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{
+			Found: true,
 			Exporter: provider.Exporter{
 				Name: "127_0_0_1",
 			},
@@ -76,8 +104,11 @@ func TestComponentSaveLoad(t *testing.T) {
 
 	t.Run("load", func(t *testing.T) {
 		r := reporter.NewMock(t)
+		// Switch to the empty provider to check if we get answers from the cache.
+		configuration.Providers = []ProviderConfiguration{{Config: emptyProviderConfiguration{}}}
 		c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 		expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{
+			Found: true,
 			Exporter: provider.Exporter{
 				Name: "127_0_0_1",
 			},
@@ -96,14 +127,11 @@ func TestAutoRefresh(t *testing.T) {
 	mockClock := clock.NewMock()
 	c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t), Clock: mockClock})
 
-	// Fetch a value
-	expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{})
-	time.Sleep(30 * time.Millisecond)
 	expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{
+		Found: true,
 		Exporter: provider.Exporter{
 			Name: "127_0_0_1",
 		},
-
 		Interface: provider.Interface{
 			Name:        "Gi0/0/765",
 			Description: "Interface 765",
@@ -119,10 +147,9 @@ func TestAutoRefresh(t *testing.T) {
 
 	// Go forward, we expect the entry to have been refreshed and be still present
 	mockClock.Add(11 * time.Minute)
-	time.Sleep(30 * time.Millisecond)
 	mockClock.Add(2 * time.Minute)
-	time.Sleep(30 * time.Millisecond)
 	expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{
+		Found: true,
 		Exporter: provider.Exporter{
 			Name: "127_0_0_1",
 		},
@@ -137,13 +164,13 @@ func TestAutoRefresh(t *testing.T) {
 	for _, runs := range []string{"29", "30", "31"} { // 63/2
 		expectedMetrics := map[string]string{
 			`expired_entries_total`: "0",
-			`hits_total`:            "4",
-			`misses_total`:          "1",
+			`misses_total`:          "1", // First lookup misses
+			`hits_total`:            "3", // Subsequent ones hits
 			`size_entries`:          "1",
 			`refresh_runs_total`:    runs,
-			`refreshs_total`:        "1",
+			`refreshes_total`:       "1", // One refresh (after 1 hour)
 		}
-		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" && runs == "31" {
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" && runs == "19" {
 			t.Fatalf("Metrics (-got, +want):\n%s", diff)
 		} else if diff == "" {
 			break
@@ -184,22 +211,21 @@ func TestConfigCheck(t *testing.T) {
 	})
 }
 
-func TestStartStopWithMultipleWorkers(t *testing.T) {
+func TestStartStopSimple(t *testing.T) {
 	r := reporter.NewMock(t)
 	configuration := DefaultConfiguration()
-	configuration.Workers = 5
 	NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 }
 
 type errorProvider struct{}
 
-func (ep errorProvider) Query(_ context.Context, _ *provider.BatchQuery) error {
-	return errors.New("noooo")
+func (ep errorProvider) Query(_ context.Context, _ provider.Query) (provider.Answer, error) {
+	return provider.Answer{}, errors.New("noooo")
 }
 
 type errorProviderConfiguration struct{}
 
-func (epc errorProviderConfiguration) New(_ *reporter.Reporter, _ func(provider.Update)) (provider.Provider, error) {
+func (epc errorProviderConfiguration) New(_ *reporter.Reporter) (provider.Provider, error) {
 	return errorProvider{}, nil
 }
 
@@ -216,7 +242,6 @@ func TestProviderBreaker(t *testing.T) {
 		t.Run(tc.Name, func(t *testing.T) {
 			r := reporter.NewMock(t)
 			configuration := DefaultConfiguration()
-			configuration.MaxBatchRequests = 0
 			configuration.Providers = []ProviderConfiguration{{Config: tc.ProviderConfiguration}}
 			c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 			c.metrics.providerBreakerOpenCount.WithLabelValues("127.0.0.1").Add(0)
@@ -238,72 +263,6 @@ func TestProviderBreaker(t *testing.T) {
 			}
 		})
 	}
-}
-
-type batchProvider struct {
-	config *batchProviderConfiguration
-}
-
-func (bp *batchProvider) Query(_ context.Context, query *provider.BatchQuery) error {
-	bp.config.received = append(bp.config.received, *query)
-	return nil
-}
-
-type batchProviderConfiguration struct {
-	received []provider.BatchQuery
-}
-
-func (bpc *batchProviderConfiguration) New(_ *reporter.Reporter, _ func(provider.Update)) (provider.Provider, error) {
-	return &batchProvider{config: bpc}, nil
-}
-
-func TestBatching(t *testing.T) {
-	bcp := batchProviderConfiguration{
-		received: []provider.BatchQuery{},
-	}
-	r := reporter.NewMock(t)
-	t.Run("run", func(t *testing.T) {
-		configuration := DefaultConfiguration()
-		configuration.Providers = []ProviderConfiguration{{Config: &bcp}}
-		c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
-
-		// Block dispatcher
-		blocker := make(chan bool)
-		c.dispatcherBChannel <- blocker
-
-		defer func() {
-			// Unblock
-			time.Sleep(20 * time.Millisecond)
-			close(blocker)
-			time.Sleep(20 * time.Millisecond)
-		}()
-
-		// Queue requests
-		c.Lookup(c.d.Clock.Now(), netip.MustParseAddr("::ffff:127.0.0.1"), 766)
-		c.Lookup(c.d.Clock.Now(), netip.MustParseAddr("::ffff:127.0.0.1"), 767)
-		c.Lookup(c.d.Clock.Now(), netip.MustParseAddr("::ffff:127.0.0.1"), 768)
-		c.Lookup(c.d.Clock.Now(), netip.MustParseAddr("::ffff:127.0.0.1"), 769)
-	})
-
-	t.Run("check", func(t *testing.T) {
-		gotMetrics := r.GetMetrics("akvorado_outlet_metadata_provider_", "batched_requests_total")
-		expectedMetrics := map[string]string{
-			`batched_requests_total`: "4",
-		}
-		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
-			t.Errorf("Metrics (-got, +want):\n%s", diff)
-		}
-
-		expectedAccepted := []provider.BatchQuery{
-			{
-				ExporterIP: netip.MustParseAddr("::ffff:127.0.0.1"),
-				IfIndexes:  []uint{766, 767, 768, 769},
-			},
-		}
-		if diff := helpers.Diff(bcp.received, expectedAccepted); diff != "" {
-			t.Errorf("Accepted requests (-got, +want):\n%s", diff)
-		}
-	})
 }
 
 func TestMultipleProviders(t *testing.T) {
@@ -359,11 +318,12 @@ func TestMultipleProviders(t *testing.T) {
 	c.Lookup(time.Now(), netip.MustParseAddr("2001:db8:1::1"), 10)
 	c.Lookup(time.Now(), netip.MustParseAddr("2001:db8:2::2"), 12)
 	time.Sleep(30 * time.Millisecond)
-	got1, _ := c.Lookup(time.Now(), netip.MustParseAddr("2001:db8:1::1"), 10)
-	got2, _ := c.Lookup(time.Now(), netip.MustParseAddr("2001:db8:2::2"), 12)
+	got1 := c.Lookup(time.Now(), netip.MustParseAddr("2001:db8:1::1"), 10)
+	got2 := c.Lookup(time.Now(), netip.MustParseAddr("2001:db8:2::2"), 12)
 	got := []provider.Answer{got1, got2}
 	expected := []provider.Answer{
 		{
+			Found: true,
 			Exporter: provider.Exporter{
 				Name: "static1",
 			},
@@ -373,6 +333,7 @@ func TestMultipleProviders(t *testing.T) {
 				Speed:       1000,
 			},
 		}, {
+			Found: true,
 			Exporter: provider.Exporter{
 				Name: "static2",
 			},

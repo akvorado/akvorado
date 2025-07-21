@@ -13,9 +13,11 @@ import (
 	"akvorado/common/schema"
 )
 
-// ErrSkipProvider is the error returned on lookup for providers unwilling to
-// handle a request.
-var ErrSkipProvider = errors.New("provider skips query")
+var (
+	// ErrSkipProvider is the error returned on lookup for providers unwilling to
+	// handle a request.
+	ErrSkipProvider = errors.New("provider skips query")
+)
 
 // Interface contains the information about an interface.
 type Interface struct {
@@ -49,32 +51,24 @@ type Query struct {
 	IfIndex    uint
 }
 
-// BatchQuery is a batched query.
-type BatchQuery struct {
-	ExporterIP netip.Addr
-	IfIndexes  []uint
-}
-
 // Answer is the answer received from a provider.
 type Answer struct {
+	Found     bool
 	Exporter  Exporter
 	Interface Interface
 }
 
-// Update is an update received from a provider.
-type Update struct {
-	Query
-	Answer
-}
-
 // Provider is the interface a provider should implement.
 type Provider interface {
-	// Query asks the provider to query metadata for several requests.
-	Query(ctx context.Context, query *BatchQuery) error
+	// Query asks the provider to query metadata and return the result. The
+	// error can be ErrSkipProvider to skip to the next provider or another
+	// transient error. If the result is not found, Answer.Found is set to
+	// False.
+	Query(ctx context.Context, query Query) (Answer, error)
 }
 
 // Configuration defines an interface to configure a provider.
 type Configuration interface {
 	// New instantiates a new provider from its configuration.
-	New(r *reporter.Reporter, put func(Update)) (Provider, error)
+	New(r *reporter.Reporter) (Provider, error)
 }

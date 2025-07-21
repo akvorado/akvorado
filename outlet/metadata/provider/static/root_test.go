@@ -95,171 +95,155 @@ func TestStaticProvider(t *testing.T) {
 		}),
 	}
 
-	var got []provider.Update
+	var got []provider.Answer
 	r := reporter.NewMock(t)
-	p, _ := config.New(r, func(update provider.Update) {
-		got = append(got, update)
-	})
+	p, _ := config.New(r)
 
-	p.Query(context.Background(), &provider.BatchQuery{
+	answer, _ := p.Query(context.Background(), provider.Query{
 		ExporterIP: netip.MustParseAddr("2001:db8:1::10"),
-		IfIndexes:  []uint{9, 10, 11},
+		IfIndex:    9,
 	})
-	p.Query(context.Background(), &provider.BatchQuery{
-		ExporterIP: netip.MustParseAddr("2001:db8:2::10"),
-		IfIndexes:  []uint{9, 10, 11},
+	got = append(got, answer)
+	answer, _ = p.Query(context.Background(), provider.Query{
+		ExporterIP: netip.MustParseAddr("2001:db8:1::10"),
+		IfIndex:    10,
 	})
-	p.Query(context.Background(), &provider.BatchQuery{
-		ExporterIP: netip.MustParseAddr("2001:db8:3::10"),
-		IfIndexes:  []uint{10},
+	got = append(got, answer)
+	answer, _ = p.Query(context.Background(), provider.Query{
+		ExporterIP: netip.MustParseAddr("2001:db8:1::10"),
+		IfIndex:    11,
 	})
-	query := provider.BatchQuery{
-		ExporterIP: netip.MustParseAddr("2001:db8:4::10"),
-		IfIndexes:  []uint{9, 10, 11},
-	}
-	err := p.Query(context.Background(), &query)
+	got = append(got, answer)
 
-	expected := []provider.Update{
+	answer, _ = p.Query(context.Background(), provider.Query{
+		ExporterIP: netip.MustParseAddr("2001:db8:2::10"),
+		IfIndex:    9,
+	})
+	got = append(got, answer)
+	answer, _ = p.Query(context.Background(), provider.Query{
+		ExporterIP: netip.MustParseAddr("2001:db8:2::10"),
+		IfIndex:    10,
+	})
+	got = append(got, answer)
+	answer, _ = p.Query(context.Background(), provider.Query{
+		ExporterIP: netip.MustParseAddr("2001:db8:2::10"),
+		IfIndex:    11,
+	})
+	got = append(got, answer)
+
+	answer, _ = p.Query(context.Background(), provider.Query{
+		ExporterIP: netip.MustParseAddr("2001:db8:3::10"),
+		IfIndex:    10,
+	})
+	got = append(got, answer)
+
+	var err error
+	answer, _ = p.Query(context.Background(), provider.Query{
+		ExporterIP: netip.MustParseAddr("2001:db8:4::10"),
+		IfIndex:    10,
+	})
+	got = append(got, answer)
+	answer, err = p.Query(context.Background(), provider.Query{
+		ExporterIP: netip.MustParseAddr("2001:db8:4::10"),
+		IfIndex:    11,
+	})
+	got = append(got, answer)
+
+	expected := []provider.Answer{
 		{
-			Query: provider.Query{
-				ExporterIP: netip.MustParseAddr("2001:db8:1::10"),
-				IfIndex:    9,
-			},
-			Answer: provider.Answer{
-				Exporter: provider.Exporter{
-					Name: "nodefault",
-				},
+			Found: true,
+			Exporter: provider.Exporter{
+				Name: "nodefault",
 			},
 		},
 		{
-			Query: provider.Query{
-				ExporterIP: netip.MustParseAddr("2001:db8:1::10"),
-				IfIndex:    10,
+			Found: true,
+			Exporter: provider.Exporter{
+				Name: "nodefault",
 			},
-			Answer: provider.Answer{
-				Exporter: provider.Exporter{
-					Name: "nodefault",
-				},
-				Interface: provider.Interface{
-					Name:        "Gi10",
-					Description: "10th interface",
-					Speed:       1000,
-				},
+			Interface: provider.Interface{
+				Name:        "Gi10",
+				Description: "10th interface",
+				Speed:       1000,
 			},
 		},
 		{
-			Query: provider.Query{
-				ExporterIP: netip.MustParseAddr("2001:db8:1::10"),
-				IfIndex:    11,
+			Found: true,
+			Exporter: provider.Exporter{
+				Name: "nodefault",
 			},
-			Answer: provider.Answer{
-				Exporter: provider.Exporter{
-					Name: "nodefault",
-				},
-				Interface: provider.Interface{
-					Name:        "Gi11",
-					Description: "11th interface",
-					Speed:       1000,
-				},
+			Interface: provider.Interface{
+				Name:        "Gi11",
+				Description: "11th interface",
+				Speed:       1000,
 			},
 		},
 		{
-			Query: provider.Query{
-				ExporterIP: netip.MustParseAddr("2001:db8:2::10"),
-				IfIndex:    9,
+			Found: true,
+			Exporter: provider.Exporter{
+				Name: "default",
 			},
-			Answer: provider.Answer{
-				Exporter: provider.Exporter{
-					Name: "default",
-				},
-				Interface: provider.Interface{
-					Name:        "Default0",
-					Description: "Default interface",
-					Speed:       1000,
-				},
+			Interface: provider.Interface{
+				Name:        "Default0",
+				Description: "Default interface",
+				Speed:       1000,
 			},
-		},
-		{
-			Query: provider.Query{
-				ExporterIP: netip.MustParseAddr("2001:db8:2::10"),
-				IfIndex:    10,
+		}, {
+			Found: true,
+			Exporter: provider.Exporter{
+				Name: "default",
 			},
-			Answer: provider.Answer{
-				Exporter: provider.Exporter{
-					Name: "default",
-				},
-				Interface: provider.Interface{
-					Name:        "Gi10",
-					Description: "10th interface",
-					Speed:       1000,
-				},
+			Interface: provider.Interface{
+				Name:        "Gi10",
+				Description: "10th interface",
+				Speed:       1000,
 			},
-		},
-		{
-			Query: provider.Query{
-				ExporterIP: netip.MustParseAddr("2001:db8:2::10"),
-				IfIndex:    11,
+		}, {
+			Found: true,
+			Exporter: provider.Exporter{
+				Name: "default",
 			},
-			Answer: provider.Answer{
-				Exporter: provider.Exporter{
-					Name: "default",
-				},
-				Interface: provider.Interface{
-					Name:        "Default0",
-					Description: "Default interface",
-					Speed:       1000,
-				},
+			Interface: provider.Interface{
+				Name:        "Default0",
+				Description: "Default interface",
+				Speed:       1000,
 			},
-		},
-		{
-			Query: provider.Query{
-				ExporterIP: netip.MustParseAddr("2001:db8:3::10"),
-				IfIndex:    10,
+		}, {
+			Found: true,
+			Exporter: provider.Exporter{
+				Name:   "default with metadata",
+				Region: "eu",
+				Role:   "peering",
+				Tenant: "mine",
+				Site:   "par",
+				Group:  "blue",
 			},
-			Answer: provider.Answer{
-				Exporter: provider.Exporter{
-					Name:   "default with metadata",
-					Region: "eu",
-					Role:   "peering",
-					Tenant: "mine",
-					Site:   "par",
-					Group:  "blue",
-				},
-				Interface: provider.Interface{
-					Name:         "Gi10",
-					Description:  "10th interface",
-					Speed:        1000,
-					Provider:     "transit101",
-					Connectivity: "transit",
-					Boundary:     schema.InterfaceBoundaryExternal,
-				},
+			Interface: provider.Interface{
+				Name:         "Gi10",
+				Description:  "10th interface",
+				Speed:        1000,
+				Provider:     "transit101",
+				Connectivity: "transit",
+				Boundary:     schema.InterfaceBoundaryExternal,
+			},
+		}, {
+			Found: true,
+			Exporter: provider.Exporter{
+				Name: "nodefault skip",
+			},
+			Interface: provider.Interface{
+				Name:         "Gi10",
+				Description:  "10th interface",
+				Speed:        1000,
+				Provider:     "transit101",
+				Connectivity: "transit",
+				Boundary:     schema.InterfaceBoundaryExternal,
 			},
 		},
-		{
-			Query: provider.Query{
-				ExporterIP: netip.MustParseAddr("2001:db8:4::10"),
-				IfIndex:    10,
-			},
-			Answer: provider.Answer{
-				Exporter: provider.Exporter{
-					Name: "nodefault skip",
-				},
-				Interface: provider.Interface{
-					Name:         "Gi10",
-					Description:  "10th interface",
-					Speed:        1000,
-					Provider:     "transit101",
-					Connectivity: "transit",
-					Boundary:     schema.InterfaceBoundaryExternal,
-				},
-			},
-		},
+		{}, // Skip
 	}
 
 	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Fatalf("static provider (-got, +want):\n%s", diff)
-	}
-	if diff := helpers.Diff(query.IfIndexes, []uint{9, 11}); diff != "" {
 		t.Fatalf("static provider (-got, +want):\n%s", diff)
 	}
 	if diff := helpers.Diff(err, provider.ErrSkipProvider); diff != "" {

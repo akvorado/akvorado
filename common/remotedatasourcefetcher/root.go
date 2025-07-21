@@ -161,10 +161,7 @@ func (c *Component[T]) Start() error {
 				customBackoff := backoff.NewExponentialBackOff()
 				customBackoff.MaxElapsedTime = 0
 				customBackoff.MaxInterval = source.Interval
-				customBackoff.InitialInterval = source.Interval / 10
-				if customBackoff.InitialInterval > time.Second {
-					customBackoff.InitialInterval = time.Second
-				}
+				customBackoff.InitialInterval = min(time.Second, source.Interval/10)
 				return backoff.NewTicker(customBackoff)
 			}
 			newRegularTicker := func() *time.Ticker {
