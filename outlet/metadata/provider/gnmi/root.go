@@ -19,19 +19,16 @@ type Provider struct {
 	config  *Configuration
 	metrics metrics
 
-	put     func(provider.Update)
-	refresh chan bool
-
 	state     map[netip.Addr]*exporterState
 	stateLock sync.Mutex
+	refresh   chan bool
 }
 
 // New creates a new gNMI provider from configuration
-func (configuration Configuration) New(r *reporter.Reporter, put func(provider.Update)) (provider.Provider, error) {
+func (configuration Configuration) New(r *reporter.Reporter) (provider.Provider, error) {
 	p := Provider{
 		r:       r,
 		config:  &configuration,
-		put:     put,
 		state:   map[netip.Addr]*exporterState{},
 		refresh: make(chan bool),
 	}
@@ -40,42 +37,51 @@ func (configuration Configuration) New(r *reporter.Reporter, put func(provider.U
 }
 
 // Query queries exporter to get information through gNMI.
-func (p *Provider) Query(ctx context.Context, q *provider.BatchQuery) error {
+func (p *Provider) Query(ctx context.Context, q provider.Query) (provider.Answer, error) {
 	p.stateLock.Lock()
-	defer p.stateLock.Unlock()
 	state, ok := p.state[q.ExporterIP]
-	// If we don't have a collector for the provided IP, starts one. We should
-	// be sure we don't have several collectors for the same exporter, hence the
-	// write lock for everything.
 	if !ok {
-		state := exporterState{}
-		p.state[q.ExporterIP] = &state
-		go p.startCollector(ctx, q.ExporterIP, &state)
+		state = &exporterState{
+			Ready: make(chan bool),
+		}
+		p.state[q.ExporterIP] = state
 		p.metrics.collectorCount.Inc()
-		return nil
+		go p.startCollector(ctx, q.ExporterIP, state)
 	}
-	// If the collector exists and already provided some data, populate the
-	// cache.
-	if state.Ready {
-		for _, ifindex := range q.IfIndexes {
-			p.put(provider.Update{
-				Query: provider.Query{
-					ExporterIP: q.ExporterIP,
-					IfIndex:    ifindex,
-				},
-				Answer: provider.Answer{
-					Exporter: provider.Exporter{
-						Name: state.Name,
-					},
-					Interface: state.Interfaces[ifindex],
-				},
-			})
-		}
-		// Also trigger a refresh
+
+	// Trigger a refresh
+	select {
+	case p.refresh <- true:
+	default:
+	}
+
+	// Wait for the collector to be ready.
+	select {
+	case <-state.Ready:
+		// Most common case, keep the lock
+	default:
+		// Not ready, release the lock until ready
+		p.stateLock.Unlock()
 		select {
-		case p.refresh <- true:
-		default:
+		case <-state.Ready:
+			p.stateLock.Lock()
+		case <-ctx.Done():
+			p.metrics.errors.WithLabelValues(q.ExporterIP.Unmap().String(), "not ready").Inc()
+			return provider.Answer{}, ctx.Err()
 		}
 	}
-	return nil
+	defer p.stateLock.Unlock()
+
+	// Return the result from the state
+	iface, ok := state.Interfaces[q.IfIndex]
+	if !ok {
+		return provider.Answer{}, nil
+	}
+	return provider.Answer{
+		Found: true,
+		Exporter: provider.Exporter{
+			Name: state.Name,
+		},
+		Interface: iface,
+	}, nil
 }

@@ -6,6 +6,8 @@
 package static
 
 import (
+	"time"
+
 	"akvorado/common/helpers"
 	"akvorado/common/remotedatasourcefetcher"
 	"akvorado/common/reporter"
@@ -19,65 +21,74 @@ import (
 
 // Provider represents the static provider.
 type Provider struct {
-	r                      *reporter.Reporter
+	r *reporter.Reporter
+
 	exporterSourcesFetcher *remotedatasourcefetcher.Component[exporterInfo]
 	exportersMap           map[string][]exporterInfo
 	exporters              atomic.Pointer[helpers.SubnetMap[ExporterConfiguration]]
 	exportersLock          sync.Mutex
-	put                    func(provider.Update)
+
+	errLogger reporter.Logger
+
+	metrics struct {
+		notReady reporter.Counter
+	}
 }
 
 // New creates a new static provider from configuration
-func (configuration Configuration) New(r *reporter.Reporter, put func(provider.Update)) (provider.Provider, error) {
+func (configuration Configuration) New(r *reporter.Reporter) (provider.Provider, error) {
 	p := &Provider{
 		r:            r,
 		exportersMap: map[string][]exporterInfo{},
-		put:          put,
+		errLogger:    r.Sample(reporter.BurstSampler(time.Minute, 3)),
 	}
 	p.exporters.Store(configuration.Exporters)
 	p.initStaticExporters()
+
 	var err error
-	p.exporterSourcesFetcher, err = remotedatasourcefetcher.New[exporterInfo](r, p.UpdateRemoteDataSource, "metadata", configuration.ExporterSources)
+	p.exporterSourcesFetcher, err = remotedatasourcefetcher.New[exporterInfo](r,
+		p.UpdateRemoteDataSource, "metadata", configuration.ExporterSources)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize remote data source fetcher component: %w", err)
 	}
 	if err := p.exporterSourcesFetcher.Start(); err != nil {
 		return nil, fmt.Errorf("unable to start network sources fetcher component: %w", err)
 	}
+
+	p.metrics.notReady = r.Counter(
+		reporter.CounterOpts{
+			Name: "not_ready_total",
+			Help: "Number of queries failing because the remote data sources are not ready",
+		})
+
 	return p, nil
 }
 
 // Query queries static configuration.
-func (p *Provider) Query(_ context.Context, query *provider.BatchQuery) error {
+func (p *Provider) Query(ctx context.Context, query provider.Query) (provider.Answer, error) {
+	// We wait for all data sources to be ready
+	select {
+	case <-ctx.Done():
+		p.metrics.notReady.Inc()
+		p.errLogger.Warn().Msg("remote datasources are not ready")
+		return provider.Answer{}, ctx.Err()
+	case <-p.exporterSourcesFetcher.DataSourcesReady:
+	}
 	exporter, ok := p.exporters.Load().Lookup(query.ExporterIP)
 	if !ok {
-		return provider.ErrSkipProvider
+		return provider.Answer{}, provider.ErrSkipProvider
 	}
-	var skippedIfIndexes uint
-	for _, ifIndex := range query.IfIndexes {
-		iface, ok := exporter.IfIndexes[ifIndex]
-		if !ok {
-			if exporter.SkipMissingInterfaces {
-				query.IfIndexes[skippedIfIndexes] = ifIndex
-				skippedIfIndexes++
-				continue
-			}
-			iface = exporter.Default
+
+	iface, ok := exporter.IfIndexes[query.IfIndex]
+	if !ok {
+		if exporter.SkipMissingInterfaces {
+			return provider.Answer{}, provider.ErrSkipProvider
 		}
-		p.put(provider.Update{
-			Query: provider.Query{
-				ExporterIP: query.ExporterIP,
-				IfIndex:    ifIndex,
-			},
-			Answer: provider.Answer{
-				Exporter:  exporter.Exporter,
-				Interface: iface,
-			},
-		})
+		iface = exporter.Default
 	}
-	if skippedIfIndexes > 0 {
-		query.IfIndexes = query.IfIndexes[:skippedIfIndexes]
-		return provider.ErrSkipProvider
-	}
-	return nil
+	return provider.Answer{
+		Found:     true,
+		Exporter:  exporter.Exporter,
+		Interface: iface,
+	}, nil
 }

@@ -253,8 +253,9 @@ following keys are accepted:
   about to expire or need an update
 - `cache-persist-file` tells where to store cached data on shutdown and
   read them back on startup
-- `workers` tell how many workers to spawn to fetch metadata.
-- `max-batch-requests` define how many requests can be batched together
+- `query-timeout` tells how long to wait for a provider to answer a query
+- `initial-delay` tells how long to wait after starting before applying the
+  standard query timeout
 - `providers` defines the provider configurations
 
 As flows missing any interface information are discarded, persisting the cache

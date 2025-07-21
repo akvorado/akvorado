@@ -22,7 +22,8 @@ import (
 // exporterState is the state of an exporter.
 type exporterState struct {
 	Name       string
-	Ready      bool
+	ready      bool      // ready for the first time
+	Ready      chan bool // not polling, data ready
 	Interfaces map[uint]provider.Interface
 }
 
@@ -243,49 +244,70 @@ retryDetect:
 		l.Debug().Msg("polling")
 		start := time.Now()
 		subscribeResp, err := tg.SubscribeOnce(ctx, subscribeReq)
-		p.metrics.times.WithLabelValues(exporterStr).Observe(time.Now().Sub(start).Seconds())
+		p.metrics.times.WithLabelValues(exporterStr).Observe(time.Since(start).Seconds())
 		if err == nil {
 			events := subscribeResponsesToEvents(subscribeResp)
 			p.metrics.paths.WithLabelValues(exporterStr).Set(float64(len(events)))
 			p.stateLock.Lock()
 			state.update(events, model)
-			state.Ready = true
+			state.ready = true
 			p.stateLock.Unlock()
 			l.Debug().Msg("state updated")
 			p.metrics.ready.WithLabelValues(exporterStr).Set(1)
 			p.metrics.updates.WithLabelValues(exporterStr).Inc()
 
-			// On success, wait a bit before next refresh interval
+			// In the following window, we consider ourselves ready and unlock
+			// waiting clients to check for data.
+
+			// On success, wait a bit before next refresh interval and ignore
+			// any refresh requests.
 			next := time.NewTimer(p.config.MinimalRefreshInterval)
-			select {
-			case <-ctx.Done():
-				next.Stop()
-				return
-			case <-next.C:
-			}
-			// Drain any message in refresh queue (we ignore them)
-			select {
-			case <-p.refresh:
-			default:
+		outerWaitRefreshTimer:
+			for {
+				select {
+				case state.Ready <- true:
+				case <-ctx.Done():
+					next.Stop()
+					return
+				case <-p.refresh:
+				case <-next.C:
+					break outerWaitRefreshTimer
+				}
 			}
 			// Wait for a new message in refresh queue
-			select {
-			case <-ctx.Done():
-				return
-			case <-p.refresh:
+			l.Debug().Msg("wait for refresh request")
+		outerWaitRefresh:
+			for {
+				select {
+				case state.Ready <- true:
+				case <-ctx.Done():
+					return
+				case <-p.refresh:
+					break outerWaitRefresh
+				}
 			}
 			// Reset retry timer and do the next fresh
 			retryFetchBackoff.Reset()
 		} else {
-			// On error, retry a bit later
+			// On error, retry a bit later. While retrying, if we have an
+			// initial state, consider ourselves ready.
 			l.Err(err).Msg("cannot poll")
 			p.metrics.errors.WithLabelValues(exporterStr, "cannot poll").Inc()
 			next := time.NewTimer(retryFetchBackoff.NextBackOff())
-			select {
-			case <-ctx.Done():
-				next.Stop()
-				return
-			case <-next.C:
+			var readyChan chan bool
+			if state.ready {
+				readyChan = state.Ready
+			}
+		outerWaitRetryTimer:
+			for {
+				select {
+				case readyChan <- true:
+				case <-ctx.Done():
+					next.Stop()
+					return
+				case <-next.C:
+					break outerWaitRetryTimer
+				}
 			}
 		}
 	}

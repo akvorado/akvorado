@@ -722,18 +722,16 @@ commit now
 		configP.Ports = helpers.MustNewSubnetMap(map[string]uint16{
 			"::/0": netip.MustParseAddrPort(srLinuxGNMI).Port(),
 		})
-		put := func(update provider.Update) {
-			got = append(got, fmt.Sprintf("%s %s %d %s %s %d",
-				update.ExporterIP.Unmap().String(), update.Exporter.Name,
-				update.IfIndex, update.Interface.Name, update.Interface.Description, update.Interface.Speed))
+		formatUpdate := func(exporter netip.Addr, iface string, answer provider.Answer) string {
+			return fmt.Sprintf("%s %v %s %s %s %s %d",
+				exporter.Unmap().String(), answer.Found, answer.Exporter.Name,
+				iface, answer.Interface.Name, answer.Interface.Description, answer.Interface.Speed)
 		}
 		r := reporter.NewMock(t)
-		p, err := configP.New(r, put)
+		p, err := configP.New(r)
 		if err != nil {
 			t.Fatalf("New() error:\n%+v", err)
 		}
-		// Let's trigger a request now
-		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{641}})
 
 		// We need the indexes
 		subscribeReq, err := api.NewSubscribeRequest(
@@ -760,23 +758,27 @@ commit now
 		t.Logf("indexes: %v", indexes)
 
 		// Wait a bit
-		time.Sleep(500 * time.Millisecond)
-		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{indexes["name=ethernet-1/1"]}})
-		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{indexes["name=ethernet-1/2"]}})
-		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo,
-			IfIndexes: []uint{indexes["name=lag1"], indexes["name=ethernet-1/3"]}})
-		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{5}})
-		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo,
-			IfIndexes: []uint{indexes["name=ethernet-1/4,index=1"]}})
+		answer, _ := p.Query(context.Background(), provider.Query{ExporterIP: lo, IfIndex: indexes["name=ethernet-1/1"]})
+		got = append(got, formatUpdate(lo, "ethernet-1/1", answer))
+		answer, _ = p.Query(context.Background(), provider.Query{ExporterIP: lo, IfIndex: indexes["name=ethernet-1/2"]})
+		got = append(got, formatUpdate(lo, "ethernet-1/2", answer))
+		answer, _ = p.Query(context.Background(), provider.Query{ExporterIP: lo, IfIndex: indexes["name=lag1"]})
+		got = append(got, formatUpdate(lo, "lag1", answer))
+		answer, _ = p.Query(context.Background(), provider.Query{ExporterIP: lo, IfIndex: indexes["name=ethernet-1/3"]})
+		got = append(got, formatUpdate(lo, "ethernet-1/3", answer))
+		answer, _ = p.Query(context.Background(), provider.Query{ExporterIP: lo, IfIndex: 5})
+		got = append(got, formatUpdate(lo, "idx5", answer))
+		answer, _ = p.Query(context.Background(), provider.Query{ExporterIP: lo,
+			IfIndex: indexes["name=ethernet-1/4,index=1"]})
+		got = append(got, formatUpdate(lo, "ethernet-1/4,index=1", answer))
 
-		time.Sleep(50 * time.Millisecond)
 		if diff := helpers.Diff(got, []string{
-			fmt.Sprintf("127.0.0.1 srlinux %d ethernet-1/1 1st interface 100000", indexes["name=ethernet-1/1"]),
-			fmt.Sprintf("127.0.0.1 srlinux %d ethernet-1/2 2nd interface 100000", indexes["name=ethernet-1/2"]),
-			fmt.Sprintf("127.0.0.1 srlinux %d lag1 lag interface 0", indexes["name=lag1"]),
-			fmt.Sprintf("127.0.0.1 srlinux %d ethernet-1/3 3rd interface 100000", indexes["name=ethernet-1/3"]),
-			"127.0.0.1 srlinux 5   0",
-			fmt.Sprintf("127.0.0.1 srlinux %d ethernet-1/4.1 4th interface 100000", indexes["name=ethernet-1/4,index=1"]),
+			"127.0.0.1 true srlinux ethernet-1/1 ethernet-1/1 1st interface 100000",
+			"127.0.0.1 true srlinux ethernet-1/2 ethernet-1/2 2nd interface 100000",
+			"127.0.0.1 true srlinux lag1 lag1 lag interface 0",
+			"127.0.0.1 true srlinux ethernet-1/3 ethernet-1/3 3rd interface 100000",
+			"127.0.0.1 false  idx5   0",
+			"127.0.0.1 true srlinux ethernet-1/4,index=1 ethernet-1/4.1 4th interface 100000",
 		}); diff != "" {
 			t.Fatalf("Query() (-got, +want):\n%s", diff)
 		}
@@ -812,20 +814,19 @@ commit now
 		if resp.Failed != nil {
 			t.Fatalf("SendConfig() error:\n%+v", resp.Failed)
 		}
-		time.Sleep(500 * time.Millisecond) // We should exceed the second now and next request will trigger a refresh
-		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{indexes["name=ethernet-1/1"]}})
-		time.Sleep(300 * time.Millisecond) // Do it again to get the fresh value
-		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo, IfIndexes: []uint{indexes["name=ethernet-1/1"]}})
-		p.Query(context.Background(), &provider.BatchQuery{ExporterIP: lo,
-			IfIndexes: []uint{indexes["name=ethernet-1/4,index=1"]}})
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(time.Second) // We should exceed the second now and next request will trigger a refresh
+		t.Log("start queries")
+		answer, _ = p.Query(context.Background(),
+			provider.Query{ExporterIP: lo, IfIndex: indexes["name=ethernet-1/1"]})
+		got = append(got, formatUpdate(lo, "ethernet-1/1", answer))
+		answer, _ = p.Query(context.Background(),
+			provider.Query{ExporterIP: lo, IfIndex: indexes["name=ethernet-1/4,index=1"]})
+		got = append(got, formatUpdate(lo, "ethernet-1/4,index=1", answer))
 		if diff := helpers.Diff(got, []string{
-			// Previous value
-			fmt.Sprintf("127.0.0.1 srlinux %d ethernet-1/1 1st interface 100000", indexes["name=ethernet-1/1"]),
 			// Fresh value
-			fmt.Sprintf("127.0.0.1 srlinux %d ethernet-1/1 1st interface new 100000", indexes["name=ethernet-1/1"]),
+			"127.0.0.1 true srlinux ethernet-1/1 ethernet-1/1 1st interface new 100000",
 			// Removed value
-			fmt.Sprintf("127.0.0.1 srlinux %d   0", indexes["name=ethernet-1/4,index=1"]),
+			"127.0.0.1 false  ethernet-1/4,index=1   0",
 		}); diff != "" {
 			t.Fatalf("Query() (-got, +want):\n%s", diff)
 		}

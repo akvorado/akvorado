@@ -17,34 +17,9 @@ import (
 	"akvorado/outlet/metadata/provider"
 )
 
-// Poll polls the SNMP provider for the requested interface indexes.
-func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port uint16, ifIndexes []uint, put func(provider.Update)) error {
-	// Check if already have a request running
+// Poll polls the SNMP provider for the requested interface index.
+func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port uint16, ifIndex uint) (provider.Answer, error) {
 	exporterStr := exporter.Unmap().String()
-	filteredIfIndexes := make([]uint, 0, len(ifIndexes))
-	keys := make([]string, 0, len(ifIndexes))
-	p.pendingRequestsLock.Lock()
-	for _, ifIndex := range ifIndexes {
-		key := fmt.Sprintf("%s@%d", exporterStr, ifIndex)
-		_, ok := p.pendingRequests[key]
-		if !ok {
-			p.pendingRequests[key] = struct{}{}
-			filteredIfIndexes = append(filteredIfIndexes, ifIndex)
-			keys = append(keys, key)
-		}
-	}
-	p.pendingRequestsLock.Unlock()
-	if len(filteredIfIndexes) == 0 {
-		return nil
-	}
-	ifIndexes = filteredIfIndexes
-	defer func() {
-		p.pendingRequestsLock.Lock()
-		for _, key := range keys {
-			delete(p.pendingRequests, key)
-		}
-		p.pendingRequestsLock.Unlock()
-	}()
 
 	// Instantiate an SNMP state
 	g := &gosnmp.GoSNMP{
@@ -99,15 +74,12 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 		p.metrics.errors.WithLabelValues(exporterStr, "connect").Inc()
 		p.errLogger.Err(err).Str("exporter", exporterStr).Msg("unable to connect")
 	}
-	requests := []string{"1.3.6.1.2.1.1.5.0"}
-	for _, ifIndex := range ifIndexes {
-		moreRequests := []string{
-			fmt.Sprintf("1.3.6.1.2.1.2.2.1.2.%d", ifIndex),     // ifDescr
-			fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.1.%d", ifIndex),  // ifName
-			fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.18.%d", ifIndex), // ifAlias
-			fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.15.%d", ifIndex), // ifSpeed
-		}
-		requests = append(requests, moreRequests...)
+	requests := []string{
+		"1.3.6.1.2.1.1.5.0",
+		fmt.Sprintf("1.3.6.1.2.1.2.2.1.2.%d", ifIndex),     // ifDescr
+		fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.1.%d", ifIndex),  // ifName
+		fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.18.%d", ifIndex), // ifAlias
+		fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.15.%d", ifIndex), // ifSpeed
 	}
 	var results []gosnmp.SnmpPDU
 	success := false
@@ -128,17 +100,17 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 		g.Community = community
 		currentResult, err := g.Get(requests)
 		if errors.Is(err, context.Canceled) {
-			return nil
+			return provider.Answer{}, err
 		}
 		if err != nil && canError {
-			return logError(err)
+			return provider.Answer{}, logError(err)
 		}
 		if err != nil {
 			continue
 		}
 		if currentResult.Error != gosnmp.NoError && currentResult.ErrorIndex == 0 && canError {
 			// There is some error affecting the whole request
-			return logError(fmt.Errorf("SNMP error %s(%d)", currentResult.Error, currentResult.Error))
+			return provider.Answer{}, logError(fmt.Errorf("SNMP error %s(%d)", currentResult.Error, currentResult.Error))
 		}
 		success = true
 		if results == nil {
@@ -158,7 +130,7 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 	if len(results) != len(requests) {
 		logError(fmt.Errorf("SNMP mismatch on variable lengths"))
 	}
-	p.metrics.times.WithLabelValues(exporterStr).Observe(time.Now().Sub(start).Seconds())
+	p.metrics.times.WithLabelValues(exporterStr).Observe(time.Since(start).Seconds())
 
 	processStr := func(idx int, what string) (string, bool) {
 		switch results[idx].Type {
@@ -186,73 +158,57 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 	}
 	sysNameVal, ok := processStr(0, "sysname")
 	if !ok {
-		return errors.New("unable to get sysName")
-	}
-	for idx := 1; idx < len(requests)-3; idx += 4 {
-		var (
-			name, description string
-			speed             uint
-		)
-		ifIndex := ifIndexes[(idx-1)/4]
-		ok := true
-		// We do not process results when index is 0 (this can happen for local
-		// traffic, we only care for exporter name).
-		if ifIndex > 0 {
-			ifDescrVal, okDescr := processStr(idx, "ifdescr")
-			ifNameVal, okName := processStr(idx+1, "ifname")
-			ifAliasVal, okAlias := processStr(idx+2, "ifalias")
-			ifSpeedVal, okSpeed := processUint(idx+3, "ifspeed")
-
-			// Many equipments are using ifDescr for the interface name and
-			// ifAlias for the description, which is counter-intuitive. We want
-			// both the name and the description.
-
-			if okName {
-				// If we have ifName, use ifDescr if it is different and ifAlias
-				// is not. Otherwise, keep description empty.
-				name = ifNameVal
-				if okAlias && ifAliasVal != ifNameVal {
-					description = ifAliasVal
-				} else if okDescr && ifDescrVal != ifNameVal {
-					description = ifDescrVal
-				}
-			} else {
-				// Don't handle the other case yet. It would be unexpected to
-				// have ifAlias and not ifName. And if we have only ifDescr, we
-				// can't really know what this is.
-				ok = false
-			}
-
-			// Speed is mandatory
-			ok = ok && okSpeed
-			speed = ifSpeedVal
-		}
-		if ok {
-			p.metrics.successes.WithLabelValues(exporterStr).Inc()
-		} else {
-			name = ""
-			description = ""
-			speed = 0
-		}
-		put(provider.Update{
-			Query: provider.Query{
-				ExporterIP: exporter,
-				IfIndex:    ifIndex,
-			},
-			Answer: provider.Answer{
-				Exporter: provider.Exporter{
-					Name: sysNameVal,
-				},
-				Interface: provider.Interface{
-					Name:        name,
-					Description: description,
-					Speed:       speed,
-				},
-			},
-		})
+		return provider.Answer{}, errors.New("unable to get sysName")
 	}
 
-	return nil
+	var (
+		name, description string
+		speed             uint
+	)
+	ok = true
+	ifDescrVal, okDescr := processStr(1, "ifdescr")
+	ifNameVal, okName := processStr(2, "ifname")
+	ifAliasVal, okAlias := processStr(3, "ifalias")
+	ifSpeedVal, okSpeed := processUint(4, "ifspeed")
+
+	// Many equipments are using ifDescr for the interface name and
+	// ifAlias for the description, which is counter-intuitive. We want
+	// both the name and the description.
+
+	if okName {
+		// If we have ifName, use ifDescr if it is different and ifAlias
+		// is not. Otherwise, keep description empty.
+		name = ifNameVal
+		if okAlias && ifAliasVal != ifNameVal {
+			description = ifAliasVal
+		} else if okDescr && ifDescrVal != ifNameVal {
+			description = ifDescrVal
+		}
+	} else {
+		// Don't handle the other case yet. It would be unexpected to
+		// have ifAlias and not ifName. And if we have only ifDescr, we
+		// can't really know what this is.
+		ok = false
+	}
+
+	// Speed is mandatory
+	ok = ok && okSpeed
+	speed = ifSpeedVal
+	if ok {
+		p.metrics.successes.WithLabelValues(exporterStr).Inc()
+		return provider.Answer{
+			Found: true,
+			Exporter: provider.Exporter{
+				Name: sysNameVal,
+			},
+			Interface: provider.Interface{
+				Name:        name,
+				Description: description,
+				Speed:       speed,
+			},
+		}, nil
+	}
+	return provider.Answer{}, nil
 }
 
 type goSNMPLogger struct {

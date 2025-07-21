@@ -264,41 +264,52 @@ func TestPoller(t *testing.T) {
 			config.Ports = helpers.MustNewSubnetMap(map[string]uint16{
 				"::/0": uint16(port),
 			})
-			put := func(update provider.Update) {
-				got = append(got, fmt.Sprintf("%s %s %d %s %s %d",
-					update.ExporterIP.Unmap().String(), update.Exporter.Name,
-					update.IfIndex, update.Interface.Name, update.Interface.Description, update.Interface.Speed))
-			}
-			p, err := config.New(r, put)
+			p, err := config.New(r)
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
 			}
 
-			p.Query(context.Background(), &provider.BatchQuery{ExporterIP: tc.ExporterIP, IfIndexes: []uint{641}})
-			p.Query(context.Background(), &provider.BatchQuery{ExporterIP: tc.ExporterIP, IfIndexes: []uint{642}})
-			p.Query(context.Background(), &provider.BatchQuery{ExporterIP: tc.ExporterIP, IfIndexes: []uint{643, 644, 645}})
-			p.Query(context.Background(), &provider.BatchQuery{ExporterIP: tc.ExporterIP, IfIndexes: []uint{0}})
+			// Collect results from all queries
+			answer, _ := p.Query(context.Background(), provider.Query{ExporterIP: tc.ExporterIP, IfIndex: 641})
+			got = append(got, fmt.Sprintf("%v %s %s %d %s %s %d",
+				answer.Found, tc.ExporterIP.Unmap().String(), answer.Exporter.Name,
+				641, answer.Interface.Name, answer.Interface.Description, answer.Interface.Speed))
+			answer, _ = p.Query(context.Background(), provider.Query{ExporterIP: tc.ExporterIP, IfIndex: 642})
+			got = append(got, fmt.Sprintf("%v %s %s %d %s %s %d",
+				answer.Found, tc.ExporterIP.Unmap().String(), answer.Exporter.Name,
+				642, answer.Interface.Name, answer.Interface.Description, answer.Interface.Speed))
+			answer, _ = p.Query(context.Background(), provider.Query{ExporterIP: tc.ExporterIP, IfIndex: 643})
+			got = append(got, fmt.Sprintf("%v %s %s %d %s %s %d",
+				answer.Found, tc.ExporterIP.Unmap().String(), answer.Exporter.Name,
+				643, answer.Interface.Name, answer.Interface.Description, answer.Interface.Speed))
+			answer, _ = p.Query(context.Background(), provider.Query{ExporterIP: tc.ExporterIP, IfIndex: 644})
+			got = append(got, fmt.Sprintf("%v %s %s %d %s %s %d",
+				answer.Found, tc.ExporterIP.Unmap().String(), answer.Exporter.Name,
+				644, answer.Interface.Name, answer.Interface.Description, answer.Interface.Speed))
+			answer, _ = p.Query(context.Background(), provider.Query{ExporterIP: tc.ExporterIP, IfIndex: 645})
+			got = append(got, fmt.Sprintf("%v %s %s %d %s %s %d",
+				answer.Found, tc.ExporterIP.Unmap().String(), answer.Exporter.Name,
+				645, answer.Interface.Name, answer.Interface.Description, answer.Interface.Speed))
+
 			exporterStr := tc.ExporterIP.Unmap().String()
 			time.Sleep(50 * time.Millisecond)
 			if diff := helpers.Diff(got, []string{
-				fmt.Sprintf(`%s exporter62 641 Gi0/0/0/0 Transit 10000`, exporterStr),
-				fmt.Sprintf(`%s exporter62 642 Gi0/0/0/1 Peering 20000`, exporterStr),
-				fmt.Sprintf(`%s exporter62 643 Gi0/0/0/2  10000`, exporterStr),                   // no ifAlias
-				fmt.Sprintf(`%s exporter62 644   0`, exporterStr),                                // negative cache
-				fmt.Sprintf(`%s exporter62 645 Gi0/0/0/5 Correct description 1000`, exporterStr), // negative cache
-				fmt.Sprintf(`%s exporter62 0   0`, exporterStr),
+				fmt.Sprintf(`true %s exporter62 641 Gi0/0/0/0 Transit 10000`, exporterStr),
+				fmt.Sprintf(`true %s exporter62 642 Gi0/0/0/1 Peering 20000`, exporterStr),
+				fmt.Sprintf(`true %s exporter62 643 Gi0/0/0/2  10000`, exporterStr), // no ifAlias
+				fmt.Sprintf(`false %s  644   0`, exporterStr),
+				fmt.Sprintf(`true %s exporter62 645 Gi0/0/0/5 Correct description 1000`, exporterStr),
 			}); diff != "" {
 				t.Fatalf("Poll() (-got, +want):\n%s", diff)
 			}
 
-			gotMetrics := r.GetMetrics("akvorado_outlet_metadata_provider_snmp_poller_", "error_", "pending_", "success_")
+			gotMetrics := r.GetMetrics("akvorado_outlet_metadata_provider_snmp_poller_", "error_", "success_")
 			expectedMetrics := map[string]string{
 				fmt.Sprintf(`error_requests_total{error="ifalias missing",exporter="%s"}`, exporterStr): "2", // 643+644
 				fmt.Sprintf(`error_requests_total{error="ifdescr missing",exporter="%s"}`, exporterStr): "1", // 644
 				fmt.Sprintf(`error_requests_total{error="ifname missing",exporter="%s"}`, exporterStr):  "1", // 644
 				fmt.Sprintf(`error_requests_total{error="ifspeed missing",exporter="%s"}`, exporterStr): "1", // 644
-				`pending_requests`: "0",
-				fmt.Sprintf(`success_requests_total{exporter="%s"}`, exporterStr): "5", // 641+642+643+645+0
+				fmt.Sprintf(`success_requests_total{exporter="%s"}`, exporterStr):                       "4", // 641+642+643+645
 			}
 			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 				t.Fatalf("Metrics (-got, +want):\n%s", diff)

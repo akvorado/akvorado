@@ -164,6 +164,9 @@ services:
       - ./clickhouse/keeper.xml:/etc/clickhouse-keeper/keeper_config.d/keeper.xml
 
   srlinux:
+    # The SR Linux container does not like to be restarted. If you get:
+    #  Error: Peer netns reference is invalid.
+    # Be sure to put it down before starting it.
     extends:
       file: versions.yml
       service: srlinux

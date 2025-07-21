@@ -27,10 +27,11 @@ type Configuration struct {
 	// Provider defines the configuration of the providers to use
 	Providers []ProviderConfiguration
 
-	// Workers define the number of workers used to poll metadata
-	Workers int `validate:"min=1"`
-	// MaxBatchRequests define how many requests to pass to a worker at once if possible
-	MaxBatchRequests int `validate:"min=0"`
+	// QueryTimeout defines how long to wait for a provider to answer.
+	QueryTimeout time.Duration `validate:"min=100ms,max=1m"`
+	// InitialDelay defines how long to wait at start (when receiving the first
+	// packets) before applying the query timeout
+	InitialDelay time.Duration `validate:"min=1s,max=1h"`
 }
 
 // DefaultConfiguration represents the default configuration for the metadata provider.
@@ -39,9 +40,8 @@ func DefaultConfiguration() Configuration {
 		CacheDuration:      30 * time.Minute,
 		CacheRefresh:       time.Hour,
 		CacheCheckInterval: 2 * time.Minute,
-		CachePersistFile:   "",
-		Workers:            1,
-		MaxBatchRequests:   10,
+		QueryTimeout:       5 * time.Second,
+		InitialDelay:       time.Minute,
 	}
 }
 
@@ -52,7 +52,7 @@ type ProviderConfiguration struct {
 }
 
 // MarshalYAML undoes ConfigurationUnmarshallerHook().
-func (pc ProviderConfiguration) MarshalYAML() (interface{}, error) {
+func (pc ProviderConfiguration) MarshalYAML() (any, error) {
 	return helpers.ParametrizedConfigurationMarshalYAML(pc, providers)
 }
 
@@ -67,4 +67,5 @@ func init() {
 		helpers.RenameKeyUnmarshallerHook(Configuration{}, "Provider", "Providers"))
 	helpers.RegisterMapstructureUnmarshallerHook(
 		helpers.ParametrizedConfigurationUnmarshallerHook(ProviderConfiguration{}, providers))
+	helpers.RegisterMapstructureDeprecatedFields[Configuration]("Workers", "MaxBatchRequests")
 }

@@ -7,6 +7,7 @@ package metadata
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -18,54 +19,62 @@ import (
 )
 
 // mockProvider represents a mock provider.
-type mockProvider struct {
-	put func(provider.Update)
-}
+type mockProvider struct{}
 
 // Query query the mock provider for a value.
-func (mp mockProvider) Query(_ context.Context, query *provider.BatchQuery) error {
-	for _, ifIndex := range query.IfIndexes {
-		answer := provider.Answer{
-			Exporter: provider.Exporter{
-				Name: strings.ReplaceAll(query.ExporterIP.Unmap().String(), ".", "_"),
-			},
-		}
-		if ifIndex != 999 {
-			answer.Interface.Name = fmt.Sprintf("Gi0/0/%d", ifIndex)
-			answer.Interface.Description = fmt.Sprintf("Interface %d", ifIndex)
-			answer.Interface.Speed = 1000
-		}
-		// in iface with  metadata (overriden by out iface)
-		if ifIndex == 1010 {
-			answer.Exporter.Group = "metadata group"
-			answer.Exporter.Region = "metadata region"
-			answer.Exporter.Role = "metadata role"
-			answer.Exporter.Site = "metadata site"
-			answer.Exporter.Tenant = "metadata tenant"
-		}
-
-		// out iface with metadata
-		if ifIndex == 2010 {
-			answer.Interface.Boundary = schema.InterfaceBoundaryExternal
-			answer.Interface.Connectivity = "metadata connectivity"
-			answer.Interface.Provider = "metadata provider"
-			answer.Exporter.Group = "metadata group"
-			answer.Exporter.Region = "metadata region"
-			answer.Exporter.Role = "metadata role"
-			answer.Exporter.Site = "metadata site"
-			answer.Exporter.Tenant = "metadata tenant"
-		}
-		mp.put(provider.Update{Query: provider.Query{ExporterIP: query.ExporterIP, IfIndex: ifIndex}, Answer: answer})
+//   - ifIndex = 999 → not found
+//   - ifIndex = 998 → transient error
+//   - ifIndex = 1010 → with metadata for exporter
+//   - ifIndex = 2010 → with metadata for exporter and interface
+func (mp mockProvider) Query(_ context.Context, query provider.Query) (provider.Answer, error) {
+	ifIndex := query.IfIndex
+	if ifIndex == 999 {
+		return provider.Answer{}, nil
 	}
-	return nil
+	if ifIndex == 998 {
+		return provider.Answer{}, errors.New("noooo")
+	}
+
+	answer := provider.Answer{
+		Exporter: provider.Exporter{
+			Name: strings.ReplaceAll(query.ExporterIP.Unmap().String(), ".", "_"),
+		},
+	}
+	answer.Interface.Name = fmt.Sprintf("Gi0/0/%d", ifIndex)
+	answer.Interface.Description = fmt.Sprintf("Interface %d", ifIndex)
+	answer.Interface.Speed = 1000
+
+	// in iface with  metadata (overriden by out iface)
+	if ifIndex == 1010 {
+		answer.Exporter.Group = "metadata group"
+		answer.Exporter.Region = "metadata region"
+		answer.Exporter.Role = "metadata role"
+		answer.Exporter.Site = "metadata site"
+		answer.Exporter.Tenant = "metadata tenant"
+	}
+
+	// out iface with metadata
+	if ifIndex == 2010 {
+		answer.Interface.Boundary = schema.InterfaceBoundaryExternal
+		answer.Interface.Connectivity = "metadata connectivity"
+		answer.Interface.Provider = "metadata provider"
+		answer.Exporter.Group = "metadata group"
+		answer.Exporter.Region = "metadata region"
+		answer.Exporter.Role = "metadata role"
+		answer.Exporter.Site = "metadata site"
+		answer.Exporter.Tenant = "metadata tenant"
+	}
+
+	answer.Found = true
+	return answer, nil
 }
 
 // mockProviderConfiguration is the configuration for the mock provider.
 type mockProviderConfiguration struct{}
 
 // New returns a new mock provider.
-func (mpc mockProviderConfiguration) New(_ *reporter.Reporter, put func(provider.Update)) (provider.Provider, error) {
-	return mockProvider{put: put}, nil
+func (mpc mockProviderConfiguration) New(_ *reporter.Reporter) (provider.Provider, error) {
+	return mockProvider{}, nil
 }
 
 // NewMock creates a new metadata component building synthetic values. It is already started.
@@ -80,4 +89,20 @@ func NewMock(t *testing.T, reporter *reporter.Reporter, configuration Configurat
 	}
 	helpers.StartStop(t, c)
 	return c
+}
+
+// emptyProvider represents an empty mock provider.
+type emptyProvider struct{}
+
+// Query returns always a not found status for the empty mock provider
+func (mp emptyProvider) Query(_ context.Context, _ provider.Query) (provider.Answer, error) {
+	return provider.Answer{}, nil
+}
+
+// emptyProviderConfiguration is the configuration for the empty provider.
+type emptyProviderConfiguration struct{}
+
+// New returns a new empty provider.
+func (mpc emptyProviderConfiguration) New(_ *reporter.Reporter) (provider.Provider, error) {
+	return emptyProvider{}, nil
 }

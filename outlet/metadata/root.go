@@ -7,15 +7,16 @@
 package metadata
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/netip"
-	"strconv"
 	"sync"
 	"time"
 
 	"github.com/benbjohnson/clock"
 	"github.com/eapache/go-resiliency/breaker"
+	"golang.org/x/sync/singleflight"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/daemon"
@@ -31,22 +32,20 @@ type Component struct {
 	config Configuration
 
 	sc *metadataCache
+	sf singleflight.Group
 
-	healthyWorkers         chan reporter.ChannelHealthcheckFunc
-	providerChannel        chan provider.BatchQuery
-	dispatcherChannel      chan provider.Query
-	dispatcherBChannel     chan (<-chan bool) // block channel for testing
 	providerBreakersLock   sync.Mutex
 	providerBreakerLoggers map[netip.Addr]reporter.Logger
 	providerBreakers       map[netip.Addr]*breaker.Breaker
 	providers              []provider.Provider
+	initialDeadline        time.Time
 
 	metrics struct {
 		cacheRefreshRuns         reporter.Counter
 		cacheRefresh             reporter.Counter
-		providerBusyCount        *reporter.CounterVec
 		providerBreakerOpenCount *reporter.CounterVec
-		providerBatchedCount     reporter.Counter
+		providerRequests         reporter.Counter
+		providerErrors           reporter.Counter
 	}
 }
 
@@ -55,6 +54,11 @@ type Dependencies struct {
 	Daemon daemon.Component
 	Clock  clock.Clock
 }
+
+var (
+	// ErrQueryTimeout is the error returned when a query timeout.
+	ErrQueryTimeout = errors.New("provider query timeout")
+)
 
 // New creates a new metadata component.
 func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
@@ -75,9 +79,6 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		config: configuration,
 		sc:     sc,
 
-		providerChannel:        make(chan provider.BatchQuery),
-		dispatcherChannel:      make(chan provider.Query, 100*configuration.Workers),
-		dispatcherBChannel:     make(chan (<-chan bool)),
 		providerBreakers:       make(map[netip.Addr]*breaker.Breaker),
 		providerBreakerLoggers: make(map[netip.Addr]reporter.Logger),
 		providers:              make([]provider.Provider, 0, 1),
@@ -86,9 +87,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 
 	// Initialize providers
 	for _, p := range c.config.Providers {
-		selectedProvider, err := p.Config.New(r, func(update provider.Update) {
-			c.sc.Put(c.d.Clock.Now(), update.Query, update.Answer)
-		})
+		selectedProvider, err := p.Config.New(r)
 		if err != nil {
 			return nil, err
 		}
@@ -102,33 +101,32 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		})
 	c.metrics.cacheRefresh = r.Counter(
 		reporter.CounterOpts{
-			Name: "cache_refreshs_total",
+			Name: "cache_refreshes_total",
 			Help: "Number of entries refreshed in cache.",
 		})
-	c.metrics.providerBusyCount = r.CounterVec(
-		reporter.CounterOpts{
-			Name: "provider_dropped_requests_total",
-			Help: "Providers where too busy and dropped requests.",
-		},
-		[]string{"exporter"})
 	c.metrics.providerBreakerOpenCount = r.CounterVec(
 		reporter.CounterOpts{
 			Name: "provider_breaker_opens_total",
 			Help: "Provider breaker was opened due to too many errors.",
 		},
 		[]string{"exporter"})
-	c.metrics.providerBatchedCount = r.Counter(
+	c.metrics.providerRequests = r.Counter(
 		reporter.CounterOpts{
-			Name: "provider_batched_requests_total",
-			Help: "Several requests were batched into one.",
-		},
-	)
+			Name: "provider_requests_total",
+			Help: "Number of provider requests.",
+		})
+	c.metrics.providerErrors = r.Counter(
+		reporter.CounterOpts{
+			Name: "provider_errors_total",
+			Help: "Number of provider errors.",
+		})
 	return &c, nil
 }
 
 // Start starts the metadata component.
 func (c *Component) Start() error {
 	c.r.Info().Msg("starting metadata component")
+	c.initialDeadline = time.Now().Add(c.config.InitialDelay)
 
 	// Load cache
 	if c.config.CachePersistFile != "" {
@@ -160,61 +158,12 @@ func (c *Component) Start() error {
 		}
 	})
 
-	// Goroutine to fetch incoming requests and dispatch them to workers
-	healthyDispatcher := make(chan reporter.ChannelHealthcheckFunc)
-	c.r.RegisterHealthcheck("metadata/dispatcher", reporter.ChannelHealthcheck(c.t.Context(nil), healthyDispatcher))
-	c.t.Go(func() error {
-		dying := c.t.Dying()
-		for {
-			select {
-			case <-dying:
-				c.r.Debug().Msg("stopping metadata dispatcher")
-				return nil
-			case cb, ok := <-healthyDispatcher:
-				if ok {
-					cb(reporter.HealthcheckOK, "ok")
-				}
-			case ch := <-c.dispatcherBChannel:
-				// This is to test batching
-				<-ch
-			case request := <-c.dispatcherChannel:
-				c.dispatchIncomingRequest(request)
-			}
-		}
-	})
-
-	// Goroutines to poll exporters
-	c.healthyWorkers = make(chan reporter.ChannelHealthcheckFunc)
-	c.r.RegisterHealthcheck("metadata/worker", reporter.ChannelHealthcheck(c.t.Context(nil), c.healthyWorkers))
-	for i := range c.config.Workers {
-		workerIDStr := strconv.Itoa(i)
-		c.t.Go(func() error {
-			c.r.Debug().Str("worker", workerIDStr).Msg("starting metadata provider")
-			dying := c.t.Dying()
-			for {
-				select {
-				case <-dying:
-					c.r.Debug().Str("worker", workerIDStr).Msg("stopping metadata provider")
-					return nil
-				case cb, ok := <-c.healthyWorkers:
-					if ok {
-						cb(reporter.HealthcheckOK, fmt.Sprintf("worker %s ok", workerIDStr))
-					}
-				case request := <-c.providerChannel:
-					c.providerIncomingRequest(request)
-				}
-			}
-		})
-	}
 	return nil
 }
 
 // Stop stops the metadata component
 func (c *Component) Stop() error {
 	defer func() {
-		close(c.dispatcherChannel)
-		close(c.providerChannel)
-		close(c.healthyWorkers)
 		if c.config.CachePersistFile != "" {
 			if err := c.sc.Save(c.config.CachePersistFile); err != nil {
 				c.r.Err(err).Msg("cannot save cache")
@@ -227,102 +176,102 @@ func (c *Component) Stop() error {
 	return c.t.Wait()
 }
 
-// Lookup for interface information for the provided exporter and ifIndex.
-// If the information is not in the cache, it will be polled, but
-// won't be returned immediately.
-func (c *Component) Lookup(t time.Time, exporterIP netip.Addr, ifIndex uint) (provider.Answer, bool) {
+// Lookup for interface information for the provided exporter and ifIndex. If
+// the information is not in the cache, it will be polled from the provider. The
+// returned result has a field Found to tell if the lookup is successful or not.
+func (c *Component) Lookup(t time.Time, exporterIP netip.Addr, ifIndex uint) provider.Answer {
 	query := provider.Query{ExporterIP: exporterIP, IfIndex: ifIndex}
-	answer, ok := c.sc.Lookup(t, query)
-	if !ok {
-		select {
-		case c.dispatcherChannel <- query:
-		default:
-			c.metrics.providerBusyCount.WithLabelValues(exporterIP.Unmap().String()).Inc()
-		}
+
+	// Check cache first
+	if answer, ok := c.sc.Lookup(t, query); ok {
+		return answer
 	}
-	return answer, ok
+
+	// Use singleflight to prevent duplicate queries
+	key := fmt.Sprintf("%s-%d", exporterIP, ifIndex)
+	result, err, _ := c.sf.Do(key, func() (any, error) {
+		return c.queryProviders(query)
+	})
+
+	if err != nil {
+		return provider.Answer{}
+	}
+
+	return result.(provider.Answer)
 }
 
-// dispatchIncomingRequest dispatches an incoming request to workers. It may
-// handle more than the provided request if it can.
-func (c *Component) dispatchIncomingRequest(request provider.Query) {
-	requestsMap := map[netip.Addr][]uint{
-		request.ExporterIP: {request.IfIndex},
-	}
-	dying := c.t.Dying()
-	for c.config.MaxBatchRequests > 0 {
-		select {
-		case request := <-c.dispatcherChannel:
-			indexes, ok := requestsMap[request.ExporterIP]
-			if !ok {
-				indexes = []uint{request.IfIndex}
-			} else {
-				indexes = append(indexes, request.IfIndex)
-			}
-			requestsMap[request.ExporterIP] = indexes
-			// We don't want to exceed the configured limit but also there is no
-			// point of batching requests of too many exporters.
-			if len(indexes) < c.config.MaxBatchRequests && len(requestsMap) < 4 {
-				continue
-			}
-		case <-dying:
-			return
-		default:
-			// No more requests in queue
-		}
-		break
-	}
-	for exporterIP, ifIndexes := range requestsMap {
-		if len(ifIndexes) > 1 {
-			c.metrics.providerBatchedCount.Add(float64(len(ifIndexes)))
-		}
-		select {
-		case <-dying:
-			return
-		case c.providerChannel <- provider.BatchQuery{ExporterIP: exporterIP, IfIndexes: ifIndexes}:
-		}
-	}
-}
+// queryProviders queries all providers. It returns the answer for the specific
+// query and cache it.
+func (c *Component) queryProviders(query provider.Query) (provider.Answer, error) {
+	c.metrics.providerRequests.Inc()
 
-// providerIncomingRequest handles an incoming request to the provider. It
-// uses a breaker to avoid pushing working on non-responsive exporters.
-func (c *Component) providerIncomingRequest(request provider.BatchQuery) {
-	// Avoid querying too much exporters with errors
+	// Check if provider breaker is open
 	c.providerBreakersLock.Lock()
-	providerBreaker, ok := c.providerBreakers[request.ExporterIP]
+	providerBreaker, ok := c.providerBreakers[query.ExporterIP]
 	if !ok {
 		providerBreaker = breaker.New(20, 1, time.Minute)
-		c.providerBreakers[request.ExporterIP] = providerBreaker
+		c.providerBreakers[query.ExporterIP] = providerBreaker
 	}
 	c.providerBreakersLock.Unlock()
 
-	if err := providerBreaker.Run(func() error {
-		ctx := c.t.Context(nil)
+	var result provider.Answer
+	err := providerBreaker.Run(func() error {
+		deadline := time.Now().Add(c.config.QueryTimeout)
+		if deadline.Before(c.initialDeadline) {
+			deadline = c.initialDeadline
+		}
+		ctx, cancel := context.WithDeadlineCause(
+			c.t.Context(nil),
+			deadline,
+			ErrQueryTimeout)
+		defer cancel()
+
+		now := c.d.Clock.Now()
 		for _, p := range c.providers {
-			// Query providers in the order they are defined and stop on the
-			// first provider accepting to handle the query.
-			if err := p.Query(ctx, &request); err != nil && err != provider.ErrSkipProvider {
-				return err
-			} else if err == provider.ErrSkipProvider {
+			answer, err := p.Query(ctx, query)
+			if err == provider.ErrSkipProvider {
+				// Next provider
 				continue
 			}
+			if err != nil {
+				return err
+			}
+			c.sc.Put(now, query, answer)
+			result = answer
 			return nil
 		}
 		return nil
-	}); err == breaker.ErrBreakerOpen {
-		c.metrics.providerBreakerOpenCount.WithLabelValues(request.ExporterIP.Unmap().String()).Inc()
-		c.providerBreakersLock.Lock()
-		l, ok := c.providerBreakerLoggers[request.ExporterIP]
-		if !ok {
-			l = c.r.Sample(reporter.BurstSampler(time.Minute, 1)).
-				With().
-				Str("exporter", request.ExporterIP.Unmap().String()).
-				Logger()
-			c.providerBreakerLoggers[request.ExporterIP] = l
+	})
+
+	if err != nil {
+		c.metrics.providerErrors.Inc()
+		if err == breaker.ErrBreakerOpen {
+			c.metrics.providerBreakerOpenCount.WithLabelValues(query.ExporterIP.Unmap().String()).Inc()
+			c.providerBreakersLock.Lock()
+			l, ok := c.providerBreakerLoggers[query.ExporterIP]
+			if !ok {
+				l = c.r.Sample(reporter.BurstSampler(time.Minute, 1)).
+					With().
+					Str("exporter", query.ExporterIP.Unmap().String()).
+					Logger()
+				c.providerBreakerLoggers[query.ExporterIP] = l
+			}
+			l.Warn().Msg("provider breaker open")
+			c.providerBreakersLock.Unlock()
 		}
-		l.Warn().Msg("provider breaker open")
-		c.providerBreakersLock.Unlock()
+		return provider.Answer{}, err
 	}
+
+	return result, nil
+}
+
+// refreshCacheEntry refreshes a single cache entry.
+func (c *Component) refreshCacheEntry(exporterIP netip.Addr, ifIndex uint) {
+	query := provider.Query{
+		ExporterIP: exporterIP,
+		IfIndex:    ifIndex,
+	}
+	c.queryProviders(query)
 }
 
 // expireCache handles cache expiration and refresh.
@@ -335,15 +284,8 @@ func (c *Component) expireCache() {
 		toRefresh := c.sc.NeedUpdates(c.d.Clock.Now().Add(-c.config.CacheRefresh))
 		for exporter, ifaces := range toRefresh {
 			for _, ifIndex := range ifaces {
-				select {
-				case c.dispatcherChannel <- provider.Query{
-					ExporterIP: exporter,
-					IfIndex:    ifIndex,
-				}:
-					count++
-				default:
-					c.metrics.providerBusyCount.WithLabelValues(exporter.Unmap().String()).Inc()
-				}
+				go c.refreshCacheEntry(exporter, ifIndex)
+				count++
 			}
 		}
 		c.r.Debug().Int("count", count).Msg("refreshed metadata cache")

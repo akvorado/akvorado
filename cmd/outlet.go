@@ -226,7 +226,9 @@ func OutletConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 						continue
 					}
 					if helpers.MapStructureMatchName(k.String(), "PollerCoalesce") {
-						metadataValue["MaxBatchRequests"] = snmpMap.MapIndex(snmpKeys[i]).Interface()
+						continue
+					}
+					if helpers.MapStructureMatchName(k.String(), "Workers") {
 						continue
 					}
 					metadataConfig := reflect.TypeOf(metadata.Configuration{})
