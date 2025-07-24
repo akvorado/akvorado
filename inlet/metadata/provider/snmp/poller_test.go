@@ -24,7 +24,6 @@ func TestPoller(t *testing.T) {
 	lo := netip.MustParseAddr("::ffff:127.0.0.1")
 	cases := []struct {
 		Description string
-		Skip        string
 		Config      Configuration
 		ExporterIP  netip.Addr
 	}{
@@ -95,7 +94,6 @@ func TestPoller(t *testing.T) {
 			},
 		}, {
 			Description: "SNMPv3 no priv",
-			Skip:        "GoSNMPServer is broken with this configuration",
 			Config: Configuration{
 				PollerRetries: 2,
 				PollerTimeout: 100 * time.Millisecond,
@@ -113,9 +111,6 @@ func TestPoller(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.Description, func(t *testing.T) {
-			if tc.Skip != "" {
-				t.Skip(tc.Skip)
-			}
 			if !tc.ExporterIP.IsValid() {
 				tc.ExporterIP = lo
 			}
