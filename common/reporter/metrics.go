@@ -125,3 +125,8 @@ func (r *Reporter) MetricCollectorForCurrentModule(c prometheus.Collector) {
 func (r *Reporter) MetricDesc(name, help string, variableLabels []string) *MetricDesc {
 	return r.metrics.Desc(1, name, help, variableLabels)
 }
+
+// MetricDesc2 defines a new metric description. It skips one callstack.
+func (r *Reporter) MetricDesc2(name, help string, variableLabels []string) *MetricDesc {
+	return r.metrics.Desc(2, name, help, variableLabels)
+}

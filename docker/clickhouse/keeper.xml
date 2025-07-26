@@ -1,0 +1,14 @@
+<clickhouse>
+  <listen_host>0.0.0.0</listen_host>
+  <keeper_server>
+    <tcp_port>2181</tcp_port>
+  </keeper_server>
+  <!-- Enable Prometheus endpoint -->
+  <prometheus>
+   <endpoint>/metrics</endpoint>
+   <port>9100</port>
+   <metrics>true</metrics>
+   <events>true</events>
+   <asynchronous_metrics>true</asynchronous_metrics>
+  </prometheus>
+</clickhouse>

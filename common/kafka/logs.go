@@ -4,60 +4,40 @@
 package kafka
 
 import (
-	"fmt"
-	"sync/atomic"
+	"github.com/twmb/franz-go/pkg/kgo"
 
-	"github.com/IBM/sarama"
-
+	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 )
 
-func init() {
-	// The logger in Sarama is global. Do the same.
-	sarama.Logger = &GlobalKafkaLogger
-}
-
-// GlobalKafkaLogger is the logger instance registered to sarama.
-var GlobalKafkaLogger kafkaLogger
-
+// kafkaLogger implements kgo.Logger interface.
 type kafkaLogger struct {
-	r atomic.Pointer[reporter.Reporter]
+	r *reporter.Reporter
 }
 
-// Register register the provided reporter to be used for logging with sarama.
-func (l *kafkaLogger) Register(r *reporter.Reporter) {
-	l.r.Store(r)
+// NewLogger creates a new kafka logger using the provided reporter.
+func NewLogger(r *reporter.Reporter) kgo.Logger {
+	return &kafkaLogger{r: r}
 }
 
-// Unregister removes the currently registered reporter.
-func (l *kafkaLogger) Unregister() {
-	var noreporter *reporter.Reporter
-	l.r.Store(noreporter)
-}
-
-func (l *kafkaLogger) Print(v ...interface{}) {
-	r := l.r.Load()
-	if r != nil {
-		if e := r.Debug(); e.Enabled() {
-			e.Msg(fmt.Sprint(v...))
-		}
+// Level returns the current log level.
+func (l *kafkaLogger) Level() kgo.LogLevel {
+	if !helpers.Testing() {
+		return kgo.LogLevelInfo
 	}
+	return kgo.LogLevelDebug
 }
 
-func (l *kafkaLogger) Println(v ...interface{}) {
-	r := l.r.Load()
-	if r != nil {
-		if e := r.Debug(); e.Enabled() {
-			e.Msg(fmt.Sprint(v...))
-		}
-	}
-}
-
-func (l *kafkaLogger) Printf(format string, v ...interface{}) {
-	r := l.r.Load()
-	if r != nil {
-		if e := r.Debug(); e.Enabled() {
-			e.Msg(fmt.Sprintf(format, v...))
-		}
+// Log logs a message at the specified level.
+func (l *kafkaLogger) Log(level kgo.LogLevel, msg string, keyvals ...any) {
+	switch level {
+	case kgo.LogLevelError:
+		l.r.Error().Fields(keyvals).Msg(msg)
+	case kgo.LogLevelWarn:
+		l.r.Warn().Fields(keyvals).Msg(msg)
+	case kgo.LogLevelInfo:
+		l.r.Info().Fields(keyvals).Msg(msg)
+	case kgo.LogLevelDebug:
+		l.r.Debug().Fields(keyvals).Msg(msg)
 	}
 }

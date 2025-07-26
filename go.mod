@@ -3,8 +3,8 @@ module akvorado
 go 1.24
 
 require (
+	github.com/ClickHouse/ch-go v0.66.1
 	github.com/ClickHouse/clickhouse-go/v2 v2.37.2
-	github.com/IBM/sarama v1.45.2
 	github.com/alecthomas/chroma v0.10.0
 	github.com/benbjohnson/clock v1.3.5
 	github.com/bio-routing/bio-rd v0.1.10
@@ -26,7 +26,6 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.0.1
 	github.com/hashicorp/go-version v1.7.0
 	github.com/itchyny/gojq v0.12.17
-	github.com/jhump/protoreflect v1.17.0
 	github.com/kentik/patricia v1.2.1
 	github.com/kylelemons/godebug v1.1.0
 	github.com/mattn/go-isatty v0.0.20
@@ -36,21 +35,24 @@ require (
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/oschwald/maxminddb-golang v1.13.1
 	github.com/osrg/gobgp/v3 v3.37.0
+	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10
 	github.com/prometheus/client_golang v1.22.0
-	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/rs/zerolog v1.34.0
 	github.com/scrapli/scrapligo v1.3.3
 	github.com/slayercat/GoSNMPServer v0.5.2
 	github.com/spf13/cobra v1.9.1
 	github.com/ti-mo/conntrack v0.5.2
-	github.com/xdg-go/scram v1.1.2
+	github.com/twmb/franz-go v1.19.5
+	github.com/twmb/franz-go/pkg/kadm v1.16.0
+	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250711145744-a849b8be17b7
+	github.com/twmb/franz-go/pkg/kmsg v1.11.2
+	github.com/twmb/franz-go/plugin/kprom v1.2.1
 	github.com/yuin/goldmark v1.7.12
 	github.com/yuin/goldmark-highlighting v0.0.0-20220208100518-594be1970594
 	go.uber.org/mock v0.5.2
 	golang.org/x/oauth2 v0.30.0
 	golang.org/x/sys v0.33.0
 	golang.org/x/text v0.26.0
-	golang.org/x/time v0.12.0
 	google.golang.org/grpc v1.72.2
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
@@ -66,7 +68,6 @@ require (
 	github.com/AlekSi/gocov-xml v1.1.0 // indirect
 	github.com/AlekSi/pointer v1.2.0 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
-	github.com/ClickHouse/ch-go v0.66.1 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/andybalholm/brotli v1.1.1 // indirect
 	github.com/axw/gocov v1.2.1 // indirect
@@ -91,8 +92,6 @@ require (
 	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3 // indirect
-	github.com/eapache/queue v1.1.0 // indirect
 	github.com/emicklei/dot v0.15.0 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/fatih/structtag v1.2.0 // indirect
@@ -112,28 +111,20 @@ require (
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
-	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/licensecheck v0.3.1 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0 // indirect
-	github.com/hashicorp/errwrap v1.1.0 // indirect
-	github.com/hashicorp/go-multierror v1.1.1 // indirect
-	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/itchyny/timefmt-go v0.1.6 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/pgx/v5 v5.6.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
-	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
-	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
-	github.com/jcmturner/gofork v1.7.6 // indirect
-	github.com/jcmturner/gokrb5/v8 v8.4.4 // indirect
-	github.com/jcmturner/rpc/v2 v2.0.3 // indirect
 	github.com/jellydator/ttlcache/v2 v2.11.1 // indirect
 	github.com/jessevdk/go-flags v1.5.0 // indirect
+	github.com/jhump/protoreflect v1.17.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/josharian/native v1.1.0 // indirect
@@ -182,8 +173,6 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
-	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
-	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.54.0 // indirect
@@ -199,6 +188,7 @@ require (
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/sync v0.15.0 // indirect
 	golang.org/x/term v0.32.0 // indirect
+	golang.org/x/time v0.12.0 // indirect
 	golang.org/x/tools v0.33.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
@@ -216,8 +206,10 @@ tool (
 	github.com/frapposelli/wwhrd
 	github.com/mgechev/revive
 	github.com/mna/pigeon
+	github.com/planetscale/vtprotobuf/cmd/protoc-gen-go-vtproto
 	go.uber.org/mock/mockgen
 	golang.org/x/tools/cmd/goimports
+	google.golang.org/protobuf/cmd/protoc-gen-go
 	gotest.tools/gotestsum
 )
 

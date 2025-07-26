@@ -4,122 +4,104 @@
 package flow
 
 import (
+	"bytes"
 	"fmt"
-	"os"
 	"path"
 	"runtime"
+	"sync"
 	"testing"
 	"time"
 
+	"akvorado/common/daemon"
 	"akvorado/common/helpers"
+	"akvorado/common/httpserver"
+	kafkaCommon "akvorado/common/kafka"
+	"akvorado/common/pb"
 	"akvorado/common/reporter"
 	"akvorado/inlet/flow/input/file"
+	"akvorado/inlet/kafka"
+
+	"github.com/twmb/franz-go/pkg/kgo"
 )
 
 func TestFlow(t *testing.T) {
-	var nominalRate int
 	_, src, _, _ := runtime.Caller(0)
-	base := path.Join(path.Dir(src), "decoder", "netflow", "testdata")
-	outDir := t.TempDir()
-	outFiles := []string{}
-	for idx, f := range []string{
-		"options-template.pcap",
-		"options-data.pcap",
-		"template.pcap",
-		"data.pcap", "data.pcap", "data.pcap", "data.pcap",
-		"data.pcap", "data.pcap", "data.pcap", "data.pcap",
-		"data.pcap", "data.pcap", "data.pcap", "data.pcap",
-		"data.pcap", "data.pcap", "data.pcap", "data.pcap",
-	} {
-		outFile := path.Join(outDir, fmt.Sprintf("data-%d", idx))
-		err := os.WriteFile(outFile, helpers.ReadPcapL4(t, path.Join(base, f)), 0o666)
-		if err != nil {
-			t.Fatalf("WriteFile(%q) error:\n%+v", outFile, err)
-		}
-		outFiles = append(outFiles, outFile)
+	base := path.Join(path.Dir(src), "input", "file", "testdata")
+	paths := []string{
+		path.Join(base, "file1.txt"),
+		path.Join(base, "file2.txt"),
 	}
 
 	inputs := []InputConfiguration{
 		{
-			Decoder: "netflow",
 			Config: &file.Configuration{
-				Paths: outFiles,
+				Paths:    paths,
+				MaxFlows: 100,
 			},
 		},
 	}
 
-	for retry := 2; retry >= 0; retry-- {
-		// Without rate limiting
-		{
-			r := reporter.NewMock(t)
-			config := DefaultConfiguration()
-			config.Inputs = inputs
-			c := NewMock(t, r, config)
+	r := reporter.NewMock(t)
+	config := DefaultConfiguration()
+	config.Inputs = inputs
 
-			// Receive flows
-			now := time.Now()
-			for range 1000 {
-				select {
-				case <-c.Flows():
-				case <-time.After(100 * time.Millisecond):
-					t.Fatalf("no flow received")
-				}
-			}
-			elapsed := time.Now().Sub(now)
-			t.Logf("Elapsed time for 1000 messages is %s", elapsed)
-			nominalRate = int(1000 * (time.Second / elapsed))
+	producer, cluster := kafka.NewMock(t, r, kafka.DefaultConfiguration())
+	defer cluster.Close()
+
+	// Use the new helper to intercept messages
+	var mu sync.Mutex
+	helloCount := 0
+	byeCount := 0
+	totalCount := 0
+	done := make(chan bool)
+
+	kafkaCommon.InterceptMessages(t, cluster, func(record *kgo.Record) {
+		mu.Lock()
+		defer mu.Unlock()
+
+		// Check topic
+		expectedTopic := fmt.Sprintf("flows-v%d", pb.Version)
+		if record.Topic != expectedTopic {
+			t.Errorf("Expected topic %s, got %s", expectedTopic, record.Topic)
+			return
 		}
 
-		// With rate limiting
-		if runtime.GOOS == "Linux" {
-			r := reporter.NewMock(t)
-			config := DefaultConfiguration()
-			config.RateLimit = 1000
-			config.Inputs = inputs
-			c := NewMock(t, r, config)
-
-			// Receive flows
-			twoSeconds := time.After(2 * time.Second)
-			count := 0
-		outer1:
-			for {
-				select {
-				case <-c.Flows():
-					count++
-				case <-twoSeconds:
-					break outer1
-				}
-			}
-			t.Logf("During the first two seconds, got %d flows", count)
-
-			if count > 2200 || count < 2000 {
-				t.Fatalf("Got %d flows instead of 2100 (burst included)", count)
-			}
-
-			if nominalRate == 0 {
-				return
-			}
-			select {
-			case flow := <-c.Flows():
-				// This is hard to estimate the number of
-				// flows we should have got. We use the
-				// nominal rate but it was done with rate
-				// limiting disabled (so less code).
-				// Therefore, we are super conservative on the
-				// upper limit of the sampling rate. However,
-				// the lower limit should be OK.
-				t.Logf("Nominal rate was %d/second", nominalRate)
-				expectedRate := uint64(30000 / 1000 * nominalRate)
-				if flow.SamplingRate > uint32(1000*expectedRate/100) || flow.SamplingRate < uint32(70*expectedRate/100) {
-					if retry > 0 {
-						continue
-					}
-					t.Fatalf("Sampling rate is %d, expected %d", flow.SamplingRate, expectedRate)
-				}
-			case <-time.After(100 * time.Millisecond):
-				t.Fatalf("no flow received")
-			}
-			break
+		// Count messages based on content
+		if bytes.Contains(record.Value, []byte("hello world!")) {
+			helloCount++
+		} else if bytes.Contains(record.Value, []byte("bye bye")) {
+			byeCount++
 		}
+
+		totalCount++
+		if totalCount >= 100 {
+			close(done)
+		}
+	})
+
+	c, err := New(r, config, Dependencies{
+		Daemon: daemon.NewMock(t),
+		HTTP:   httpserver.NewMock(t, r),
+		Kafka:  producer,
+	})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	helpers.StartStop(t, c)
+
+	// Wait for flows
+	select {
+	case <-done:
+		// Check that we got the expected number of each message type
+		mu.Lock()
+		if helloCount != 50 {
+			t.Errorf("Expected 50 'hello world!' messages, got %d", helloCount)
+		}
+		if byeCount != 50 {
+			t.Errorf("Expected 50 'bye bye' messages, got %d", byeCount)
+		}
+		mu.Unlock()
+	case <-time.After(time.Second):
+		t.Fatalf("flows not received")
 	}
 }

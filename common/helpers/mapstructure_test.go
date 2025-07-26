@@ -336,3 +336,81 @@ func TestParametrizedConfig(t *testing.T) {
 		}
 	})
 }
+
+func TestDeprecatedFields(t *testing.T) {
+	type Configuration struct {
+		A string
+		B string
+	}
+	RegisterMapstructureDeprecatedFields[Configuration]("C", "D")
+	TestConfigurationDecode(t, ConfigurationDecodeCases{
+		{
+			Initial: func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"a": "hello",
+					"b": "bye",
+					"c": "nooo",
+					"d": "yes",
+				}
+			},
+			Expected: Configuration{
+				A: "hello",
+				B: "bye",
+			},
+		}, {
+			Initial: func() interface{} { return Configuration{} },
+			Configuration: func() interface{} {
+				return gin.H{
+					"a": "hello",
+					"b": "bye",
+					"e": "nooo",
+				}
+			},
+			Error: true,
+		},
+	})
+}
+
+func TestDeprecatedFieldsInSquashedStructure(t *testing.T) {
+	type SubConfiguration struct {
+		A string
+		B string
+	}
+	type Configuration struct {
+		Sub SubConfiguration `mapstructure:",squash"`
+		E   string
+	}
+	RegisterMapstructureDeprecatedFields[SubConfiguration]("C", "D")
+	TestConfigurationDecode(t, ConfigurationDecodeCases{
+		{
+			Initial: func() any { return Configuration{} },
+			Configuration: func() any {
+				return gin.H{
+					"a": "hello",
+					"b": "bye",
+					"c": "nooo",
+					"d": "yes",
+					"e": "maybe",
+				}
+			},
+			Expected: Configuration{
+				Sub: SubConfiguration{
+					A: "hello",
+					B: "bye",
+				},
+				E: "maybe",
+			},
+		}, {
+			Initial: func() any { return Configuration{} },
+			Configuration: func() any {
+				return gin.H{
+					"a": "hello",
+					"b": "bye",
+					"f": "nooo",
+				}
+			},
+			Error: true,
+		},
+	})
+}

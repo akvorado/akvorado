@@ -4,27 +4,32 @@
 package kafka
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"testing"
+	"time"
 
-	"github.com/IBM/sarama"
+	"github.com/twmb/franz-go/pkg/kadm"
+	"github.com/twmb/franz-go/pkg/kmsg"
 
 	"akvorado/common/helpers"
 	"akvorado/common/kafka"
+	"akvorado/common/pb"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 )
 
 func TestTopicCreation(t *testing.T) {
 	client, brokers := kafka.SetupKafkaBroker(t)
+	adminClient := kadm.NewClient(client)
 
 	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
 	retentionMs := "76548"
 	segmentBytes := "107374184"
 	segmentBytes2 := "10737184"
 	cleanupPolicy := "delete"
-	expectedTopicName := fmt.Sprintf("%s-%s", topicName, schema.NewMock(t).ProtobufMessageHash())
+	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, pb.Version)
 
 	cases := []struct {
 		Name          string
@@ -70,30 +75,45 @@ func TestTopicCreation(t *testing.T) {
 				ConfigEntriesStrictSync: true,
 			}
 			configuration.Brokers = brokers
-			configuration.Version = kafka.Version(sarama.V2_8_1_0)
+			// No version configuration needed for franz-go
 			c, err := New(reporter.NewMock(t), configuration, Dependencies{Schema: schema.NewMock(t)})
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
 			}
 			helpers.StartStop(t, c)
 
-			if err := client.RefreshMetadata(); err != nil {
-				t.Fatalf("RefreshMetadata() error:\n%+v", err)
-			}
-			adminClient, err := sarama.NewClusterAdminFromClient(client)
-			if err != nil {
-				t.Fatalf("NewClusterAdmin() error:\n%+v", err)
-			}
-			topics, err := adminClient.ListTopics()
-			if err != nil {
-				t.Fatalf("ListTopics() error:\n%+v", err)
-			}
-			topic, ok := topics[expectedTopicName]
-			if !ok {
-				t.Fatal("ListTopics() did not find the topic")
-			}
-			if diff := helpers.Diff(topic.ConfigEntries, tc.ConfigEntries); diff != "" {
-				t.Fatalf("ListTopics() (-got, +want):\n%s", diff)
+			deadline := time.Now().Add(1 * time.Second)
+			for {
+				topics, err := adminClient.ListTopics(t.Context())
+				if err != nil {
+					t.Fatalf("ListTopics() error:\n%+v", err)
+				}
+				_, ok := topics[expectedTopicName]
+				if !ok {
+					if time.Now().Before(deadline) {
+						time.Sleep(100 * time.Millisecond)
+						continue
+					}
+					t.Fatal("ListTopics() did not find the topic")
+				}
+				configs, err := adminClient.DescribeTopicConfigs(context.Background(), c.kafkaTopic)
+				if err != nil {
+					t.Fatalf("DescribeTopicConfigs() error:\n%+v", err)
+				}
+				got := map[string]*string{}
+				for _, config := range configs[0].Configs {
+					if config.Source != kmsg.ConfigSourceDefaultConfig {
+						got[config.Key] = config.Value
+					}
+				}
+				if diff := helpers.Diff(got, tc.ConfigEntries); diff != "" {
+					if time.Now().Before(deadline) {
+						time.Sleep(100 * time.Millisecond)
+						continue
+					}
+					t.Fatalf("ListTopics() (-got, +want):\n%s", diff)
+				}
+				break
 			}
 		})
 	}
@@ -101,9 +121,10 @@ func TestTopicCreation(t *testing.T) {
 
 func TestTopicMorePartitions(t *testing.T) {
 	client, brokers := kafka.SetupKafkaBroker(t)
+	adminClient := kadm.NewClient(client)
 
 	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
-	expectedTopicName := fmt.Sprintf("%s-%s", topicName, schema.NewMock(t).ProtobufMessageHash())
+	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, pb.Version)
 
 	configuration := DefaultConfiguration()
 	configuration.Topic = topicName
@@ -114,31 +135,36 @@ func TestTopicMorePartitions(t *testing.T) {
 	}
 
 	configuration.Brokers = brokers
-	configuration.Version = kafka.Version(sarama.V2_8_1_0)
+	// No version configuration needed for franz-go
 	c, err := New(reporter.NewMock(t), configuration, Dependencies{Schema: schema.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
 	helpers.StartStop(t, c)
 
-	if err := client.RefreshMetadata(); err != nil {
-		t.Fatalf("RefreshMetadata() error:\n%+v", err)
-	}
-	adminClient, err := sarama.NewClusterAdminFromClient(client)
-	if err != nil {
-		t.Fatalf("NewClusterAdmin() error:\n%+v", err)
-	}
-	topics, err := adminClient.ListTopics()
-	if err != nil {
-		t.Fatalf("ListTopics() error:\n%+v", err)
-	}
-	topic, ok := topics[expectedTopicName]
-	if !ok {
-		t.Fatal("ListTopics() did not find the topic")
-	}
-	if topic.NumPartitions != 1 || topic.ReplicationFactor != 1 {
-		t.Fatalf("Topic does not have 1/1 for partitions/replication but %d/%d",
-			topic.NumPartitions, topic.ReplicationFactor)
+	deadline := time.Now().Add(1 * time.Second)
+	for {
+		topics, err := adminClient.ListTopics(t.Context())
+		if err != nil {
+			t.Fatalf("ListTopics() error:\n%+v", err)
+		}
+		topic, ok := topics[expectedTopicName]
+		if !ok {
+			if time.Now().Before(deadline) {
+				time.Sleep(100 * time.Millisecond)
+				continue
+			}
+			t.Fatal("ListTopics() did not find the topic")
+		}
+		if len(topic.Partitions) != 1 || topic.Partitions.NumReplicas() != 1 {
+			if time.Now().Before(deadline) {
+				time.Sleep(100 * time.Millisecond)
+				continue
+			}
+			t.Fatalf("Topic does not have 1/1 for partitions/replication but %d/%d",
+				len(topic.Partitions), topic.Partitions.NumReplicas())
+		}
+		break
 	}
 
 	// Increase number of partitions
@@ -149,17 +175,22 @@ func TestTopicMorePartitions(t *testing.T) {
 	}
 	helpers.StartStop(t, c)
 
-	if err := client.RefreshMetadata(); err != nil {
-		t.Fatalf("RefreshMetadata() error:\n%+v", err)
-	}
-	topics, err = adminClient.ListTopics()
-	if err != nil {
-		t.Fatalf("ListTopics() error:\n%+v", err)
-	}
-	topic = topics[expectedTopicName]
-	t.Logf("Topic configuration:\n%+v", topic)
-	if topic.NumPartitions != 4 || topic.ReplicationFactor != 1 {
-		t.Fatalf("Topic does not have 4/1 for partitions/replication but %d/%d",
-			topic.NumPartitions, topic.ReplicationFactor)
+	deadline = time.Now().Add(1 * time.Second)
+	for {
+		topics, err := adminClient.ListTopics(t.Context())
+		if err != nil {
+			t.Fatalf("ListTopics() error:\n%+v", err)
+		}
+		topic := topics[expectedTopicName]
+		t.Logf("Topic configuration:\n%+v", topic)
+		if len(topic.Partitions) != 4 || topic.Partitions.NumReplicas() != 1 {
+			if time.Now().Before(deadline) {
+				time.Sleep(100 * time.Millisecond)
+				continue
+			}
+			t.Fatalf("Topic does not have 4/1 for partitions/replication but %d/%d",
+				len(topic.Partitions), topic.Partitions.NumReplicas())
+		}
+		break
 	}
 }

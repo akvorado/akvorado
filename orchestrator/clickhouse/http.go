@@ -4,7 +4,6 @@
 package clickhouse
 
 import (
-	"bytes"
 	"compress/gzip"
 	"embed"
 	"encoding/csv"
@@ -13,7 +12,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"text/template"
 	"time"
 )
 
@@ -23,48 +21,8 @@ var (
 	//go:embed data/asns.csv
 	//go:embed data/tcp.csv
 	//go:embed data/udp.csv
-	data           embed.FS
-	initShTemplate = template.Must(template.New("initsh").Parse(`#!/bin/sh
-
-# Install Protobuf schema
-mkdir -p /var/lib/clickhouse/format_schemas
-echo "Install flow schema flow-{{ .FlowSchemaHash }}.proto"
-cat > /var/lib/clickhouse/format_schemas/flow-{{ .FlowSchemaHash }}.proto <<'EOPROTO'
-{{ .FlowSchema }}
-EOPROTO
-
-# Alter ClickHouse configuration
-mkdir -p /etc/clickhouse-server/config.d
-echo "Add Akvorado-specific configuration to ClickHouse"
-cat > /etc/clickhouse-server/config.d/akvorado.xml <<'EOCONFIG'
-<clickhouse>
-{{- if gt .SystemLogTTL 0 }}
-{{- range $table := .SystemLogTables }}
- <{{ $table }}>
-  <ttl>event_date + INTERVAL {{ $.SystemLogTTL }} SECOND DELETE</ttl>
- </{{ $table }}>
-{{- end }}
-{{- end }}
-{{- if ne .PrometheusEndpoint "" }}
- <prometheus>
-  <endpoint>{{ .PrometheusEndpoint }}</endpoint>
-  <metrics>true</metrics>
-  <events>true</events>
-  <asynchronous_metrics>true</asynchronous_metrics>
- </prometheus>
-{{- end }}
-</clickhouse>
-EOCONFIG
-`))
+	data embed.FS
 )
-
-type initShVariables struct {
-	FlowSchemaHash     string
-	FlowSchema         string
-	SystemLogTTL       int
-	SystemLogTables    []string
-	PrometheusEndpoint string
-}
 
 func (c *Component) addHandlerEmbedded(url string, path string) {
 	c.d.HTTP.AddHandler(url,
@@ -83,37 +41,6 @@ func (c *Component) addHandlerEmbedded(url string, path string) {
 // registerHTTPHandler register some handlers that will be useful for
 // ClickHouse
 func (c *Component) registerHTTPHandlers() error {
-	// init.sh
-	c.d.HTTP.AddHandler("/api/v0/orchestrator/clickhouse/init.sh",
-		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			var result bytes.Buffer
-			if err := initShTemplate.Execute(&result, initShVariables{
-				FlowSchemaHash: c.d.Schema.ProtobufMessageHash(),
-				FlowSchema:     c.d.Schema.ProtobufDefinition(),
-				SystemLogTTL:   int(c.config.SystemLogTTL.Seconds()),
-				SystemLogTables: []string{
-					"asynchronous_metric_log",
-					"error_log",
-					"metric_log",
-					"part_log",
-					"processors_profile_log",
-					"query_log",
-					"query_thread_log",
-					"query_views_log",
-					"session_log",
-					"text_log",
-					"trace_log",
-				},
-				PrometheusEndpoint: c.config.PrometheusEndpoint,
-			}); err != nil {
-				c.r.Err(err).Msg("unable to serialize init.sh")
-				http.Error(w, fmt.Sprintf("Unable to serialize init.sh"), http.StatusInternalServerError)
-				return
-			}
-			w.Header().Set("Content-Type", "text/x-shellscript")
-			w.Write(result.Bytes())
-		}))
-
 	// Add handler for custom dicts
 	for name, dict := range c.d.Schema.GetCustomDictConfig() {
 		c.d.HTTP.AddHandler(fmt.Sprintf("/api/v0/orchestrator/clickhouse/custom_dict_%s.csv", name), http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

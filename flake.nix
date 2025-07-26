@@ -47,6 +47,7 @@
           name = "akvorado";
           src = ./.;
           vendorHash = builtins.readFile ./nix/vendorHash.txt;
+          proxyVendor = true;   # generated code may contain additional dependencies
           buildPhase = ''
             cp -r ${frontend}/node_modules console/frontend/node_modules
             cp -r ${frontend}/data console/data/frontend
@@ -55,6 +56,7 @@
             find . -print0 | xargs -0 touch -d @0
 
             make all \
+              BUF=${pkgs.buf}/bin/buf \
               ASNS_URL=${asn2org}/asns.csv \
               SERVICES_URL=${ianaServiceNames}
           '';

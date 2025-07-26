@@ -1,12 +1,6 @@
 ---
+name: akvorado-dev
 services:
-  zookeeper:
-    extends:
-      file: versions.yml
-      service: zookeeper
-    environment:
-      - ALLOW_ANONYMOUS_LOGIN=yes
-
   mock-oauth2-server:
     extends:
       file: versions.yml
@@ -21,50 +15,63 @@ services:
       file: versions.yml
       service: kafka
     environment:
-      KAFKA_CFG_BROKER_ID: 1
-      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+      # KRaft settings
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: controller,broker
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9096
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 500
       # We have two sets of listeners: INTERNAL that is used from inside the docker
       # compose network and listens on "kafka" and EXTERNAL that is mapped to
       # the host network and listens on "localhost".
       #
       # Then, in each set, we have a plain text one and an OAuth-enabled one.
-      KAFKA_CFG_LISTENERS: >-
+      KAFKA_LISTENERS: >-
         INTERNAL://:9092,
         OINTERNAL://:9093,
         EXTERNAL://:9094,
-        OEXTERNAL://:9095
-      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: >-
+        OEXTERNAL://:9095,
+        CONTROLLER://:9096
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: >-
         INTERNAL:PLAINTEXT,
         OINTERNAL:SASL_PLAINTEXT,
         EXTERNAL:PLAINTEXT,
-        OEXTERNAL:SASL_PLAINTEXT
-      KAFKA_CFG_ADVERTISED_LISTENERS: >-
+        OEXTERNAL:SASL_PLAINTEXT,
+        CONTROLLER:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: >-
         INTERNAL://kafka:9092,
         OINTERNAL://kafka:9093,
         EXTERNAL://localhost:9092,
         OEXTERNAL://localhost:9093
-      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       # OAuth2 configuration
-      KAFKA_CFG_LISTENER_NAME_OEXTERNAL_SASL_ENABLED_MECHANISMS: OAUTHBEARER
-      KAFKA_CFG_LISTENER_NAME_OEXTERNAL_SASL_OAUTHBEARER_JWKS_ENDPOINT_URL: http://mock-oauth2-server:8080/default/jwks
-      KAFKA_CFG_LISTENER_NAME_OEXTERNAL_SASL_OAUTHBEARER_EXPECTED_AUDIENCE: default
-      KAFKA_CFG_LISTENER_NAME_OEXTERNAL_OAUTHBEARER_SASL_JAAS_CONFIG: >-
+      KAFKA_LISTENER_NAME_OEXTERNAL_SASL_ENABLED_MECHANISMS: OAUTHBEARER
+      KAFKA_LISTENER_NAME_OEXTERNAL_SASL_OAUTHBEARER_JWKS_ENDPOINT_URL: http://mock-oauth2-server:8080/default/jwks
+      KAFKA_LISTENER_NAME_OEXTERNAL_SASL_OAUTHBEARER_EXPECTED_AUDIENCE: default
+      KAFKA_LISTENER_NAME_OEXTERNAL_OAUTHBEARER_SASL_JAAS_CONFIG: >-
         org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required
         clientId=kafka-client
         clientSecret=kafka-client-secret
         unsecuredLoginStringClaim_sub="sub";
-      KAFKA_CFG_LISTENER_NAME_OEXTERNAL_OAUTHBEARER_SASL_SERVER_CALLBACK_HANDLER_CLASS: org.apache.kafka.common.security.oauthbearer.secured.OAuthBearerValidatorCallbackHandler
-      KAFKA_CFG_LISTENER_NAME_OINTERNAL_SASL_ENABLED_MECHANISMS: OAUTHBEARER
-      KAFKA_CFG_LISTENER_NAME_OINTERNAL_SASL_OAUTHBEARER_JWKS_ENDPOINT_URL: http://mock-oauth2-server:8080/default/jwks
-      KAFKA_CFG_LISTENER_NAME_OINTERNAL_SASL_OAUTHBEARER_EXPECTED_AUDIENCE: default
-      KAFKA_CFG_LISTENER_NAME_OINTERNAL_OAUTHBEARER_SASL_JAAS_CONFIG: >-
+      KAFKA_LISTENER_NAME_OEXTERNAL_OAUTHBEARER_SASL_SERVER_CALLBACK_HANDLER_CLASS: org.apache.kafka.common.security.oauthbearer.OAuthBearerValidatorCallbackHandler
+      KAFKA_LISTENER_NAME_OINTERNAL_SASL_ENABLED_MECHANISMS: OAUTHBEARER
+      KAFKA_LISTENER_NAME_OINTERNAL_SASL_OAUTHBEARER_JWKS_ENDPOINT_URL: http://mock-oauth2-server:8080/default/jwks
+      KAFKA_LISTENER_NAME_OINTERNAL_SASL_OAUTHBEARER_EXPECTED_AUDIENCE: default
+      KAFKA_LISTENER_NAME_OINTERNAL_OAUTHBEARER_SASL_JAAS_CONFIG: >-
         org.apache.kafka.common.security.oauthbearer.OAuthBearerLoginModule required
         clientId=kafka-client
         clientSecret=kafka-client-secret
         unsecuredLoginStringClaim_sub="sub";
-      KAFKA_CFG_LISTENER_NAME_OINTERNAL_OAUTHBEARER_SASL_SERVER_CALLBACK_HANDLER_CLASS: org.apache.kafka.common.security.oauthbearer.secured.OAuthBearerValidatorCallbackHandler
+      KAFKA_LISTENER_NAME_OINTERNAL_OAUTHBEARER_SASL_SERVER_CALLBACK_HANDLER_CLASS: org.apache.kafka.common.security.oauthbearer.OAuthBearerValidatorCallbackHandler
+      KAFKA_OPTS: >-
+        -Dorg.apache.kafka.sasl.oauthbearer.allowed.urls=http://mock-oauth2-server:8080/default/jwks
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_MIN_ISR: 1
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
     depends_on:
-      - zookeeper
       - mock-oauth2-server
     ports:
       - 127.0.0.1:9092:9094/tcp
@@ -115,40 +122,51 @@ services:
       file: versions.yml
       service: clickhouse
     depends_on:
-      - zookeeper
+      - clickhouse-keeper-1
     environment:
       - CLICKHOUSE_SKIP_USER_SETUP=1
+      - CLICKHOUSE_ALWAYS_RUN_INITDB_SCRIPTS=1
     cap_add:
       - SYS_NICE
     volumes:
-      - ./clickhouse-cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
-      - ./clickhouse-cluster-1.xml:/etc/clickhouse-server/config.d/cluster-1.xml
+      - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
+      - ./clickhouse/cluster-1.xml:/etc/clickhouse-server/config.d/cluster-1.xml
+      - ./clickhouse/test-db.sql:/docker-entrypoint-initdb.d/test-db.sql
     ports:
       - 127.0.0.1:8123:8123/tcp
       - 127.0.0.1:9000:9000/tcp
   clickhouse-2:
     <<: *clickhouse
     volumes:
-      - ./clickhouse-cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
-      - ./clickhouse-cluster-2.xml:/etc/clickhouse-server/config.d/cluster-2.xml
+      - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
+      - ./clickhouse/cluster-2.xml:/etc/clickhouse-server/config.d/cluster-2.xml
     ports:
       - 127.0.0.1:9001:9000/tcp
   clickhouse-3:
     <<: *clickhouse
     volumes:
-      - ./clickhouse-cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
-      - ./clickhouse-cluster-3.xml:/etc/clickhouse-server/config.d/cluster-3.xml
+      - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
+      - ./clickhouse/cluster-3.xml:/etc/clickhouse-server/config.d/cluster-3.xml
     ports:
       - 127.0.0.1:9002:9000/tcp
   clickhouse-4:
     <<: *clickhouse
     volumes:
-      - ./clickhouse-cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
-      - ./clickhouse-cluster-4.xml:/etc/clickhouse-server/config.d/cluster-4.xml
+      - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
+      - ./clickhouse/cluster-4.xml:/etc/clickhouse-server/config.d/cluster-4.xml
     ports:
       - 127.0.0.1:9003:9000/tcp
+  clickhouse-keeper-1:
+    extends:
+      file: versions.yml
+      service: clickhouse-keeper
+    volumes:
+      - ./clickhouse/keeper.xml:/etc/clickhouse-keeper/keeper_config.d/keeper.xml
 
   srlinux:
+    # The SR Linux container does not like to be restarted. If you get:
+    #  Error: Peer netns reference is invalid.
+    # Be sure to put it down before starting it.
     extends:
       file: versions.yml
       service: srlinux

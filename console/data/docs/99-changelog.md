@@ -13,14 +13,43 @@ identified with a specific icon:
 
 ## Unreleased
 
+This release introduce a new component: the outlet. Previously, ClickHouse was
+fetching data directly from Kafka. However, this required to push the protobuf
+schema using an out-of-band method. This makes cloud deployments more complex.
+The inlet now pushes incoming raw flows to Kafka without decoding them. The
+outlet takes them, decode them, enriches them, and push them to ClickHouse. This
+also reduces the likeliness to lose packets. This change should be transparent
+on most setups but you are encouraged to review the new proposed configuration
+in the [quickstart tarball][] and update your own configuration.
+
+As it seems a good time as any, Zookeeper is removed from the `docker compose`
+setup. ClickHouse Keeper is used instead when setting up a cluster. Kafka is now
+using the KRaft mode. While migration is possible, it is easier to start from
+scratch:
+
+```console
+# docker compose down --remove-orphans
+# docker compose rm -v kafka
+# docker compose pull
+# docker compose up -d
+```
+
+- 💥 *outlet*: new service
+- 💥 *inlet*: flow rate limiting feature has been removed
+- 💥 *docker*: switch to Apache Kafka 4.0
+- 💥 *docker*: switch Kafka to KRaft mode
 - 🩹 *console*: fix deletion of saved filters
 - 🩹 *console*: fix intermittent failure when requesting previous period
 - 🩹 *docker*: move healthcheck for IPinfo updater into Dockerfile to avoid
   "unhealthy" state on non-updated installation
 - 🌱 *docker*: enable access log for Traefik
+- 🌱 *docker*: update ClickHouse to 25.3 (not mandatory)
 - 🌱 *docker*: update Traefik to 3.4 (not mandatory)
+- 🌱 *docker*: switch to Prometheus Java Agent exporter for Kafka
 - 🌱 *orchestrator*: move ClickHouse database settings from `clickhouse` to `clickhousedb`
 - 🌱 *inlet*: improve performance of classifiers
+
+[quickstart tarball]: https://github.com/akvorado/akvorado/releases/latest/download/docker-compose-quickstart.tar.gz
 
 ## 1.11.5 - 2025-05-11
 

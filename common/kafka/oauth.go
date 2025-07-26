@@ -8,34 +8,29 @@ import (
 	"crypto/tls"
 	"net/http"
 
-	"github.com/IBM/sarama"
+	"github.com/twmb/franz-go/pkg/sasl/oauth"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )
 
-// tokenProvider implements sarama.AccessTokenProvider.
+// tokenProvider implements OAuth token provider for franz-go.
 type tokenProvider struct {
 	tokenSource oauth2.TokenSource
 }
 
-// newOAuthTokenProvider returns a sarama.AccessTokenProvider using OAuth credentials.
-func newOAuthTokenProvider(ctx context.Context, tlsConfig *tls.Config, oauthConfig clientcredentials.Config) sarama.AccessTokenProvider {
-	httpClient := &http.Client{Transport: &http.Transport{
-		Proxy:           http.ProxyFromEnvironment,
-		TLSClientConfig: tlsConfig,
-	}}
-	ctx = context.WithValue(ctx, oauth2.HTTPClient, httpClient)
-
-	return &tokenProvider{
-		tokenSource: oauthConfig.TokenSource(context.Background()),
+// newOAuthTokenProvider returns a token provider function using OAuth credentials.
+func newOAuthTokenProvider(tlsConfig *tls.Config, oauthConfig clientcredentials.Config) func(context.Context) (oauth.Auth, error) {
+	return func(ctx context.Context) (oauth.Auth, error) {
+		httpClient := &http.Client{Transport: &http.Transport{
+			Proxy:           http.ProxyFromEnvironment,
+			TLSClientConfig: tlsConfig,
+		}}
+		ctx = context.WithValue(ctx, oauth2.HTTPClient, httpClient)
+		tokenSource := oauthConfig.TokenSource(ctx)
+		token, err := tokenSource.Token()
+		if err != nil {
+			return oauth.Auth{}, err
+		}
+		return oauth.Auth{Token: token.AccessToken}, nil
 	}
-}
-
-// Token returns a new *sarama.AccessToken or an error as appropriate.
-func (t *tokenProvider) Token() (*sarama.AccessToken, error) {
-	token, err := t.tokenSource.Token()
-	if err != nil {
-		return nil, err
-	}
-	return &sarama.AccessToken{Token: token.AccessToken}, nil
 }
