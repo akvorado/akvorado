@@ -36,6 +36,9 @@ scratch:
 
 - 💥 *outlet*: new service
 - 💥 *inlet*: flow rate limiting feature has been removed
+- 💥 *docker*: rename `docker-compose-monitoring.yml` to
+  `docker-compose-prometheus.yml` (you need to update your `.env` if you were
+  using it)
 - 💥 *docker*: switch to Apache Kafka 4.0
 - 💥 *docker*: switch Kafka to KRaft mode
 - 🩹 *console*: fix deletion of saved filters
