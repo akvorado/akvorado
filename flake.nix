@@ -55,6 +55,7 @@
             touch .fmt-js~ .fmt.go~ .lint-js~ .lint-go~
             find . -print0 | xargs -0 touch -d @0
 
+            export XDG_CACHE_HOME=$TMPDIR
             make all \
               BUF=${pkgs.buf}/bin/buf \
               ASNS_URL=${asn2org}/asns.csv \
