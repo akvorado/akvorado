@@ -1,128 +1,214 @@
 # Troubleshooting
 
-## Inlet service
+> [!WARNING]
+> Please read this page carefully before opening an issue or starting a discussion.
 
-The inlet service receives Netflow/IPFIX/sFlow packets and forwards them to
-Kafka. It outputs some logs and exposes some counters to help troubleshoot
-packet reception issues. The metrics can be queried with `curl`:
+> [!TIP]
+> This guide assumes you use the *Docker Compose* setup. If you use a different setup, adapt the commands as needed.
+
+As explained in the [introduction](00-intro#big-picture), Akvorado has several
+components. To troubleshoot an issue, inspect each component.
+
+![Functional view](troubleshoot.svg)
+
+Your routers send flows to the *inlet*, which forwards them to *Kafka*. The
+*outlet* pulls flows from Kafka, decodes and processes them, then sends them to
+*ClickHouse*. The *orchestrator* configures *Kafka* and *ClickHouse* and
+provides configuration for the *inlet* and *outlet*. The *console* (not shown
+here) queries *ClickHouse* to display flows to users.
+
+## Basic checks
+
+First, check that all components are running and healthy:
 
 ```console
-$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet'
+$ docker compose ps --format "table {{.Service}}\t{{.Status}}"
+SERVICE                    STATUS
+akvorado-conntrack-fixer   Up 28 minutes
+akvorado-console           Up 27 minutes (healthy)
+akvorado-inlet             Up 27 minutes (healthy)
+akvorado-orchestrator      Up 27 minutes (healthy)
+akvorado-outlet            Up 27 minutes (healthy)
+clickhouse                 Up 28 minutes (healthy)
+geoip                      Up 28 minutes (healthy)
+kafka                      Up 28 minutes (healthy)
+kafka-ui                   Up 28 minutes
+redis                      Up 28 minutes (healthy)
+traefik                    Up 28 minutes
 ```
 
-Be sure to replace `http://akvorado` with the URL to your *Akvorado*
-setup. If you are running `docker compose` locally, this is
-`http://127.0.0.1:8080`.
-
-### No packets received
-
-When running inside Docker, *Akvorado* may be unable to receive
-packets because the kernel redirects these packets to Docker internal
-proxy. This can be fixed by flushing the conntrack table:
+Make sure all components are present. If a component is missing, restarting,
+unhealthy, or not working properly, check its logs:
 
 ```console
-$ conntrack -D -p udp --orig-port-dst 2055
+$ docker compose logs akvorado-inlet
 ```
 
-The shipped `docker-compose.yml` file contains an additional service
-to do that automatically.
-
-To check that you are receiving packets, check the metrics:
+The *inlet*, *outlet*, *orchestrator*, and *console* expose metrics. Get them with this command:
 
 ```console
-$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet_flow_input_udp_packets'
-```
-
-The inlet service only receives and forwards packets - it doesn't perform
-SNMP queries or flow enrichment. These are handled by the outlet service.
-
-### No packets forwarded to Kafka
-
-The inlet service receives packets and forwards them to Kafka. Check that 
-flows are correctly forwarded to Kafka with:
-
-```console
-$ curl -s http://akvorado/api/v0/inlet/metrics | grep '^akvorado_inlet_kafka_sent_messages_total'
-```
-
-## Outlet service
-
-The outlet service consumes flows from Kafka, parses them, enriches them 
-with metadata and routing information, and exports them to ClickHouse.
-To check if the outlet is working correctly, request a processed flow:
-
-```console
-$ curl -s http://akvorado/api/v0/outlet/flows\?limit=1
-{
- "TimeReceived": 1648305235,
- "SamplingRate": 30000,
+$ curl -s http://127.0.0.1:8080/api/v0/inlet/metrics
+​# HELP akvorado_cmd_info Akvorado build information
+​# TYPE akvorado_cmd_info gauge
+akvorado_cmd_info{compiler="go1.24.4",version="v1.11.5-134-gaf3869cd701c"} 1
 [...]
 ```
 
-This returns the next processed flow with all enrichment applied. If this
-doesn't return flows, check the outlet metrics:
+> [!CAUTION]
+> Run the `curl` command on the same host that runs Akvorado, and change `inlet`
+> with the component name you are interested in.
+
+To see only error metrics, filter them:
 
 ```console
-$ curl -s http://akvorado/api/v0/outlet/metrics | grep '^akvorado_outlet'
+$ curl -s http://127.0.0.1:8080/api/v0/inlet/metrics | grep 'akvorado_.*_error'
 ```
 
-### No flows received
+> [!TIP]
+> To follow this guide on a working system, replace `http://127.0.0.1:8080` with `https://demo.akvorado.net`.
 
-First, check if there are flows received from Kafka.
+### Inlet service
+
+The inlet service receives Netflow/IPFIX/sFlow packets and forwards them to
+Kafka. First, check if you receive packets from exporters (your routers):
 
 ```console
-$ curl -s http://akvorado/api/v0/outlet/metrics | grep '^akvorado_outlet_kafka' | grep received
+$ curl -s http://127.0.0.1:8080/api/v0/inlet/metrics | grep 'akvorado_inlet_flow_input_udp_packets'
+​# HELP akvorado_inlet_flow_input_udp_packets_total Packets received by the application.
+​# TYPE akvorado_inlet_flow_input_udp_packets_total counter
+akvorado_inlet_flow_input_udp_packets_total{exporter="241.107.1.12",listener=":2055",worker="2"} 6769
+akvorado_inlet_flow_input_udp_packets_total{exporter="241.107.1.13",listener=":2055",worker="1"} 6794
+akvorado_inlet_flow_input_udp_packets_total{exporter="241.107.1.14",listener=":2055",worker="2"} 6765
+akvorado_inlet_flow_input_udp_packets_total{exporter="241.107.1.15",listener=":2055",worker="0"} 6782
 ```
 
-Another way to achieve the same thing is to look at the consumer group
-from Kafka's point of view:
+If your exporters are not listed, check their configuration.
+
+Next, check if flows are sent to Kafka correctly:
 
 ```console
-$ kafka-consumer-groups.sh --bootstrap-server kafka:9092 --describe --group akvorado-outlet
-
-GROUP           TOPIC           PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG             CONSUMER-ID                                                      HOST            CLIENT-ID
-akvorado-outlet flows-v5        0          5650351527      5650374314      22787           akvorado-outlet-flows-v5-0-77740d0a-79b7-4bef-a501-25a819c3cee4  /240.0.4.8      akvorado-oulet-flows-v5
-akvorado-outlet flows-v5        3          3035602619      3035628290      25671           akvorado-outlet-flows-v5-3-1e4629b0-69a3-48dd-899a-20f4b16be0a2  /240.0.4.8      akvorado-oulet-flows-v5
-akvorado-outlet flows-v5        2          1645914467      1645930257      15790           akvorado-outlet-flows-v5-2-79c9bafe-fd36-42fe-921f-a802d46db684  /240.0.4.8      akvorado-oulet-flows-v5
-akvorado-outlet flows-v5        1          889117276       889129896       12620           akvorado-outlet-flows-v5-1-f0421bbe-ba13-49df-998f-83e49045be00  /240.0.4.8      akvorado-oulet-flows-v5
+$ curl -s http://127.0.0.1:8080/api/v0/inlet/metrics | grep 'akvorado_inlet_kafka_sent_messages'
+​# HELP akvorado_inlet_kafka_sent_messages_total Number of messages sent from a given exporter.
+​# TYPE akvorado_inlet_kafka_sent_messages_total counter
+akvorado_inlet_kafka_sent_messages_total{exporter="241.107.1.12"} 8108
+akvorado_inlet_kafka_sent_messages_total{exporter="241.107.1.13"} 8117
+akvorado_inlet_kafka_sent_messages_total{exporter="241.107.1.14"} 8090
+akvorado_inlet_kafka_sent_messages_total{exporter="241.107.1.15"} 8123
 ```
 
-### No flows processed
+If no messages appear here, there may be a Kafka problem.
 
-The outlet service only exports flows with complete information. You can
-check the metrics to find the cause:
+### Kafka
+
+The *inlet* is sending messages to Kafka and the *outlet* is pulling them from
+Kafka. The Docker Compose setup is shipped with [UI for Apache
+Kafka](https://github.com/provectus/kafka-ui). You can reach it through
+`http://127.0.0.1:8080/kafka-ui`.
+
+> [!TIP]
+> For security reasons, this UI is not exposed on anything else than the host
+> running Akvorado. If you need to access it remotely, the easiest way would be
+> to use [SSH port
+> forwarding](https://www.digitalocean.com/community/tutorials/ssh-port-forwarding):
+> `ssh -L 8080:127.0.0.1:8080 akvorado`. Then, you can use
+> `http://127.0.0.1:8080/kafka-ui` directly from your workstation.
+
+Check the various tabs (brokers, topics, and consumers) to check everything is
+green. In “brokers”, you should see one broker. In “topics”, you should see
+`flows-v5` with an increasing number of messages. This means the *inlet* is
+pushing messages. In “consumers”, you should have `akvorado-outlet`, with at
+least one member. The consumer lag should be stable (and low): this is the
+number of messages that have not been processed by the *outlet* yet.
+
+### Outlet
+
+The *outlet* is the most complex component. Check if it works correctly with
+this command (should show one processed flow):
 
 ```console
-$ curl -s http://akvorado/api/v0/outlet/metrics | grep '^akvorado_outlet' | grep _error
+$ curl -s http://127.0.0.1:8080/api/v0/outlet/flows\?limit\=1
+{"TimeReceived":1753631373,"SamplingRate":100000,"ExporterAddress":"::ffff:241.107.1.15","InIf":10,"OutIf":21,"SrcVlan":0,"DstVlan":0,"SrcAddr":"::ffff:216.58.206.244","DstAddr":"::ffff:192.0.2.144","NextHop":"","SrcAS":15169,"DstAS":64501,"SrcNetMask":24,"DstNetMask":24,"OtherColumns":null}
 ```
 
-Here is a list of generic errors you may find:
+Check these important metrics. First, the outlet should receive flows from
+Kafka:
 
-- `SNMP cache miss` means the information about an interface is not
-  found in the SNMP cache. This is expected when Akvorado starts but
-  it should not increase. If this is the case, it is likely because
-  the exporter is not configured to accept SNMP requests or the
-  community configured for SNMP is incorrect.
-- `sampling rate missing` means the sampling rate information is not present.
-  This is also expected when Akvorado starts but it should not increase. With
-  NetFlow, the sampling rate is sent in an options data packet. Be sure to
-  configure your exporter to send them (look for `sampler-table` in the
-  documentation). Alternatively, you can configure
-  `outlet`→`core`→`default-sampling-rate` to workaround this issue.
-- `input and output interfaces missing` means the flow does not contain the
-  input and output interface indexes. This is something to fix on the exporter.
+```console
+$ curl -s http://127.0.0.1:8080/api/v0/outlet/metrics | grep 'akvorado_outlet_kafka_received_messages'
+​# HELP akvorado_outlet_kafka_received_messages_total Number of messages received for a given worker.
+​# TYPE akvorado_outlet_kafka_received_messages_total counter
+akvorado_outlet_kafka_received_messages_total{worker="0"} 5561
+akvorado_outlet_kafka_received_messages_total{worker="1"} 5456
+akvorado_outlet_kafka_received_messages_total{worker="2"} 5583
+akvorado_outlet_kafka_received_messages_total{worker="3"} 11068
+akvorado_outlet_kafka_received_messages_total{worker="4"} 11151
+akvorado_outlet_kafka_received_messages_total{worker="5"} 5588
+```
 
-If the outlet service is unable to poll an exporter, no flows about it will be
-exported. In this case, the logs contain information such as:
+If these numbers are not increasing, there is a problem receiving from Kafka. If
+everything is OK, check if the flow processing pipeline works correctly:
 
-- `exporter:172.19.162.244 poller breaker open`
-- `exporter:172.19.162.244 unable to GET`
+```console
+$ curl -s http://127.0.0.1:8080/api/v0/outlet/metrics | grep -P 'akvorado_outlet_core_(received|forwarded)'
+​# HELP akvorado_outlet_core_forwarded_flows_total Number of flows forwarded to Kafka.
+​# TYPE akvorado_outlet_core_forwarded_flows_total counter
+akvorado_outlet_core_forwarded_flows_total{exporter="241.107.1.12"} 182512
+akvorado_outlet_core_forwarded_flows_total{exporter="241.107.1.13"} 182366
+akvorado_outlet_core_forwarded_flows_total{exporter="241.107.1.14"} 182278
+akvorado_outlet_core_forwarded_flows_total{exporter="241.107.1.15"} 182900
+​# HELP akvorado_outlet_core_received_flows_total Number of incoming flows.
+​# TYPE akvorado_outlet_core_received_flows_total counter
+akvorado_outlet_core_received_flows_total{exporter="241.107.1.12"} 182512
+akvorado_outlet_core_received_flows_total{exporter="241.107.1.13"} 182366
+akvorado_outlet_core_received_flows_total{exporter="241.107.1.14"} 182278
+akvorado_outlet_core_received_flows_total{exporter="241.107.1.15"} 182900
+​# HELP akvorado_outlet_core_received_raw_flows_total Number of incoming raw flows (proto).
+​# TYPE akvorado_outlet_core_received_raw_flows_total counter
+akvorado_outlet_core_received_raw_flows_total 45812
+```
 
-The `akvorado_outlet_metadata_provider_snmp_error_requests_total` metric would also
-increase for the affected exporter. If your routers are in
-`172.16.0.0/12` and you are using Docker, Docker subnets may overlap
-with your routers'. To avoid this, you can put that in
-`/etc/docker/daemon.json` and restart Docker:
+Notably, `akvorado_outlet_core_received_raw_flows_total` is incremented by one
+for each message received from Kafka. The message is then decoded and the flows
+are extracted. For each extracted flow,
+`akvorado_outlet_core_received_flows_total` is incremented by one. The flows are
+then enriched and before forwarding them to ClickHouse,
+`akvorado_outlet_core_forwarded_flows_total` is incremented.
+
+If `akvorado_outlet_core_received_raw_flows_total` increases but
+`akvorado_outlet_core_received_flows_total` does not, there is an error
+**decoding the flows**. If `akvorado_outlet_core_received_flows_total` increases
+but `akvorado_outlet_core_forwarded_flows_total` does not, there is an error
+**enriching the flows**.
+
+For the first case, use this command to find clues:
+
+```console
+$ curl -s http://127.0.0.1:8080/api/v0/outlet/metrics | grep 'akvorado_outlet_flow.*errors'
+```
+
+For the second case, use this one:
+
+```console
+$ curl -s http://127.0.0.1:8080/api/v0/outlet/metrics | grep 'akvorado_outlet_core.*errors'
+```
+
+
+Here is a list of errors you may find:
+
+- `metadata cache miss` means interface information is missing from the metadata
+  cache. The most likely cause is that the exporter does not accept SNMP
+  requests or the SNMP community is configured incorrectly.
+- `sampling rate missing` means sampling rate information is not present. This
+  is normal when Akvorado starts but should not keep increasing. With NetFlow,
+  the sampling rate is sent in an options data packet. Make sure your exporter
+  sends them (look for `sampler-table` in the documentation). Alternatively,
+  configure `outlet`→`core`→`default-sampling-rate` to work around this issue.
+- `input and output interfaces missing` means the flow does not contain input
+  and output interface indexes. Fix this on the exporter.
+
+Another cause for metadata cache misses is that Docker cannot reach the
+exporters because Docker subnets may overlap with your router networks. To fix
+this, add this to `/etc/docker/daemon.json` and restart Docker:
 
 ```json
 {
@@ -131,74 +217,121 @@ with your routers'. To avoid this, you can put that in
 }
 ```
 
-If the exporter address is incorrect, the above configuration will also help.
+Finally, check if flows are sent to ClickHouse successfully. Use this command:
 
-Check that flows are correctly processed with:
+```
+$ curl -s http://127.0.0.1:8080/api/v0/outlet/metrics | grep -P 'akvorado_outlet_clickhouse_(batches|flows|errors)'
+​# HELP akvorado_outlet_clickhouse_batches_total Number of batches of flows sent to ClickHouse
+​# TYPE akvorado_outlet_clickhouse_batches_total counter
+akvorado_outlet_clickhouse_batches_total 3412
+​# HELP akvorado_outlet_clickhouse_flows_total Number of flows sent to ClickHouse
+​# TYPE akvorado_outlet_clickhouse_flows_total counter
+akvorado_outlet_clickhouse_flows_total 161852
+```
+
+If the numbers are increasing, everything works correctly. Otherwise, you likely
+have an error counter that shows the reason.
+
+### ClickHouse
+
+The last component to check is ClickHouse. Connect to it with this command:
 
 ```console
-$ curl -s http://akvorado/api/v0/outlet/metrics | grep '^akvorado_outlet_core_forwarded_flows_total'
-$ curl -s http://akvorado/api/v0/outlet/flows\?limit=1
+$ docker compose exec clickhouse clickhouse-client
 ```
 
-### Reported traffic levels are incorrect
+First, check if all the tables are present:
 
-Use `curl -s http://akvorado/api/v0/outlet/flows\?limit=1 | grep
-SamplingRate` to check if the reported sampling rate is correct. If
-not, you can override it with `outlet`→`core`→`override-sampling-rate`.
-
-Another cause possible cause is when your router is configured to send
-flows for both an interface and its parent. For example, if you have
-an LACP-enabled interface, you should collect flows only for the
-aggregated interface, not for the individual sub interfaces.
-
-### No traffic visible on the web interface
-
-You may see the last flow widget correctly populated, but nothing else. The
-various widgets on the home page are relying on interface classification to
-retrieve information. Notably, they expect `InIfBoundary` or `OutIfBoundary` to
-be set to external. You can check that classification is done correctly by
-removing any filter rule on the interface and by grouping on `InIfBoundary` (for
-example). If not, be sure that your rules are correct and that descriptions
-match what you expect. For example, on Juniper, if you enable JFlow on a
-sub-interface, be sure that the description is present on this sub-interface.
-
-### 4-byte ASN 23456 in flow data
-
-If you are seeing flows with source or destination AS of 23456, your exporter 
-needs to be configured with 4-byte ASN support. For example, on Cisco IOS-XE:
-
-```cisco
-flow record Akvorado
-    collect routing source as 4-octet
-    collect routing destination as 4-octet
-!
+```console
+$ SHOW TABLES
+    ┌─name────────────────────────────────────────────┐
+ 1. │ asns                                            │
+ 2. │ exporters                                       │
+ 3. │ exporters_consumer                              │
+ 4. │ flows                                           │
+ 5. │ flows_1h0m0s                                    │
+ 6. │ flows_1h0m0s_consumer                           │
+ 7. │ flows_1m0s                                      │
+ 8. │ flows_1m0s_consumer                             │
+ 9. │ flows_5m0s                                      │
+10. │ flows_5m0s_consumer                             │
+11. │ flows_I6D3KDQCRUBCNCGF4BSOWTRMVIv5_raw          │
+12. │ flows_I6D3KDQCRUBCNCGF4BSOWTRMVIv5_raw_consumer │
+13. │ icmp                                            │
+14. │ networks                                        │
+15. │ protocols                                       │
+16. │ tcp                                             │
+17. │ udp                                             │
+    └─────────────────────────────────────────────────┘
 ```
 
-### Dropped packets under load
+Check if the various dictionaries are populated:
 
-There are various bottlenecks leading to dropped packets. This is bad
-as the reported sampling rate is incorrect and we cannot reliably
-infer the number of bytes and packets.
+```console
+$ SELECT name, element_count FROM system.dictionaries
+   ┌─name──────┬─element_count─┐
+1. │ networks  │       5963224 │
+2. │ udp       │          5495 │
+3. │ icmp      │            58 │
+4. │ protocols │           129 │
+5. │ asns      │         99598 │
+6. │ tcp       │          5883 │
+   └───────────┴───────────────┘
+```
 
-Most packet drops occur at the inlet service (packet reception) while
-processing bottlenecks occur at the outlet service (flow enrichment).
+If you have not used the console yet, some dictionaries may be empty.
 
-#### Bottlenecks on the exporter
+To check if ClickHouse is behind, use this SQL query with `clickhouse client` to
+get the lag in seconds:
 
-The first problem may come from the exporter dropping some of the
-flows. Most of the time, there are counters to detect this situation
-and it can be solved by lowering the exporter rate.
+```sql
+SELECT (now()-max(TimeReceived))/60
+FROM flows
+```
 
-##### NCS5500 routers
+If you still have problems, check the errors reported by ClickHouse:
 
-[Netflow, Sampling-Interval and the Mythical Internet Packet Size][1]
-contains many information about the limit of this platform. The first
-bottleneck is a 133 Mbps shaper between an NPU and the LC CPU for the
-sampled packets (144 bytes each). For example, on a NC55-36X100G line
-card, there are 6 NPU, each one managing 6 ports. If we consider an
-average packet size of 1000, the maximum sampling rate when all ports
-are full is 1:700 (formula is `Total-BW / ( Avg-Pkt-Size x 133Mbps ) x
-( 144 x 8 )`).
+```sql
+SELECT last_error_time, last_error_message
+FROM system.errors
+ORDER BY last_error_time LIMIT 10
+FORMAT Vertical
+```
+
+### Console
+
+The most common console problems are empty widgets or no flows shown in the
+“visualize” tab. Both problems indicate that interface classification is not
+working correctly.
+
+Interface classification marks interfaces as either “internal” or “external”. If
+you have not configured interface classification, see the [configuration
+guide](02-configuration.md#classification). This step is required.
+
+## Scaling
+
+Various bottlenecks can cause dropped packets. This is problematic because the
+reported sampling rate becomes incorrect and you cannot reliably calculate the
+number of bytes and packets. Both the exporters and the inlet need to be tuned
+for this kind of problem.
+
+The outlet can also be a bottleneck. In this case, the flows may appear on the
+console with a delay.
+
+### Exporters
+
+The first problem may come from the exporter dropping flows. Usually, counters
+can detect this situation, and you can solve it by reducing the exporter rate.
+
+#### NCS5500 routers
+
+[Netflow, Sampling-Interval and the Mythical Internet Packet Size][1] contains
+many information about the limit of this platform. The first bottleneck is a 133
+Mbps shaper between an NPU and the LC CPU for the sampled packets (144 bytes
+each). For example, on a NC55-36X100G line card, there are 6 NPU, each one
+managing 6 ports. If we consider an average packet size of 1000, the maximum
+sampling rate when all ports are full is 1:700 (formula is `Total-BW / (
+Avg-Pkt-Size x 133Mbps ) x ( 144 x 8 )`).
 
 [1]: https://xrdocs.io/ncs5500/tutorials/2018-02-19-netflow-sampling-interval-and-the-mythical-internet-packet-size/
 
@@ -206,8 +339,8 @@ It is possible to check if there are drops with `sh controllers npu
 stats voq base 24 instance 0 location 0/0/CPU0` and looking at the
 `COS2` line.
 
-The second bottleneck is the size of the flow cache. If too small, it
-may overflow. For example:
+The second bottleneck is the size of the flow cache. If too small, it may
+overflow. For example:
 
 ```console
 # show flow monitor monitor1 cache internal location 0/1/CPU0 | i Cache
@@ -219,21 +352,27 @@ Cache Overflows:                         2166590
 Cache above hi water:                       1704
 ```
 
-When this happens, either the `cache timeout rate-limit` should be
-increased or the `cache entries` directive should be increased. The
-later value can be increased to 1 million par monitor-map.
+When this happens, either the `cache timeout rate-limit` should be increased or
+the `cache entries` directive should be increased. The latter value can be
+increased to 1 million per monitor-map.
 
-#### Kernel receive buffers
+#### Other routers
 
-The second source of drops are the kernel receive buffers. Each
-listening queue has a fixed amount of receive buffers (212992 bytes by
-default) to keep packets before handling them to the application. When
-this buffer is full, packets are dropped.
+Other routers are likely to share the same limitations. It should be noted that
+sFlow and IPFIX 3215 do not have a flow cache and therefore are less likely to
+have scaling problems.
 
-*Akvorado* reports the number of drops for each listening socket with
-the `akvorado_inlet_flow_input_udp_in_drops` counter. This should be
-compared to `akvorado_inlet_flow_input_udp_packets`. Another way to get the same
-information is by using `ss -lunepm` and look at the drop counter:
+### Inlet
+
+When the inlet has scaling issues, the kernel receive buffers may drop packets.
+Each listening queue has a fixed amount of receive buffers (212992 bytes by
+default) to keep packets before handling them to the application. When this
+buffer is full, packets are dropped.
+
+*Akvorado* reports the number of drops for each listening socket with the
+`akvorado_inlet_flow_input_udp_in_dropped_packets_total` counter. This should be
+compared to `akvorado_inlet_flow_input_udp_packets_total`. Another way to get
+the same information is by using `ss -lunepm` and look at the drop counter:
 
 ```console
 $ nsenter -t $(pidof akvorado) -n ss -lunepm
@@ -242,43 +381,20 @@ UNCONN           0                0                                        *:205
          skmem:(r0,rb212992,t0,tb212992,f4096,w0,o0,bl0,d486525)
 ```
 
-In the example above, there were 486525 drops. This can be solved
-either by increasing the number of workers for the UDP input or by
-increasing the value of `net.core.rmem_max` sysctl and increasing the
-`receive-buffer` setting attached to the input.
+In the example above, there were 486525 drops. This can be solved in three ways:
 
-#### Internal queues
+- increase the number of workers for the UDP input,
+- increase the value of `net.core.rmem_max` sysctl and increase the
+  `receive-buffer` setting attached to the input,
+- add more inlet instances and shard the exporters among the configured ones.
 
-Inside the inlet service, received packets are transmitted from the input 
-module to the Kafka module using channels. When there is a bottleneck at 
-this level, the `akvorado_inlet_flow_input_udp_out_drops` counter will increase.
-There are several ways to fix that:
+### Outlet
 
-- increasing the channel between the input module and the Kafka module,
-  with the `queue-size` setting attached to the input,
-- increasing the number of partitions used by the target Kafka topic,
-- increasing the `queue-size` setting for the Kafka module (this can
-  only be used to handle spikes).
+When the outlet has scaling issues, the data is delivered late at ClickHouse.
+There are two ways to fix that:
 
-Inside the outlet service, flows are transmitted between the Kafka consumer,
-core processing, and ClickHouse modules. When there are bottlenecks,
-the `akvorado_outlet_*_drops` counters will increase. These can be fixed by:
-
-- increasing the number of workers for the `core` module,
-- increasing the number of Kafka consumers,
-- tuning ClickHouse insertion parameters.
-
-#### SNMP poller
-
-To process a flow, the outlet service needs the interface name and
-description. This information is provided by the `metadata` submodule.
-When all workers of the SNMP pollers are busy, new requests are
-dropped. In this case, the `akvorado_outlet_metadata_provider_busy_count`
-counter is increased. To mitigate this issue, the outlet service tries
-to skip exporters with too many errors to avoid blocking SNMP requests
-for other exporters. However, ensuring the exporters accept to answer
-requests is the first fix. If not enough, you can increase the number
-of workers. Workers handle SNMP requests synchronously.
+- increase the number of Kafka workers,
+- add more outlet instances.
 
 ### Profiling
 
@@ -321,64 +437,3 @@ $ go tool pprof http://127.0.0.1:6060/debug/pprof/heap
 The first one provides a CPU profile. The second one a memory profile. On the
 command-line, you can type `web` to visualize the result in the browser or `svg`
 to get a SVG file you can attach to a bug report if needed.
-
-## Kafka
-
-There is no easy way to look at the content of the flows in a Kafka
-topic. However, the metadata can be read using
-[kcat](https://github.com/edenhill/kcat/). You can check a topic is
-alive with:
-
-```console
-$ kcat -b kafka:9092 -C -t flows-v5 -L
-Metadata for flows-v5 (from broker -1: kafka:9092/bootstrap):
- 1 brokers:
-  broker 1001 at eb6c7781b875:9092 (controller)
- 1 topics:
-  topic "flows-v5" with 4 partitions:
-    partition 0, leader 1001, replicas: 1001, isrs: 1001
-    partition 1, leader 1001, replicas: 1001, isrs: 1001
-    partition 2, leader 1001, replicas: 1001, isrs: 1001
-    partition 3, leader 1001, replicas: 1001, isrs: 1001
-$ kcat -b kafka:9092 -C -t flows-v5 -f 'Topic %t [%p] at offset %o: key %k: %T\n' -o -1
-```
-
-Alternatively, when using `docker compose`, there is a Kafka UI
-running at `http://127.0.0.1:8080/kafka-ui/`. You can do the following
-checks:
-
-- are the brokers alive?
-- is the `flows-v5` topic present and receiving messages?
-- is Akvorado registered as a consumer?
-
-## ClickHouse
-
-First, check that all the tables are present using the following SQL
-query through `clickhouse client` (when running with `docker compose`,
-you can use `docker compose exec clickhouse clickhouse-client`) :
-
-```sql
-SHOW tables
-```
-
-You should have a few tables, including `flows`, `flows_1m0s`, and others. If
-one is missing, look at the log in the orchestrator This is the component
-creating the tables.
-
-To check if ClickHouse is late, use the following SQL query through
-`clickhouse client` to get the lag in seconds.
-
-```sql
-SELECT (now()-max(TimeReceived))/60
-FROM flows
-```
-
-If you still have an issue, be sure to check the errors reported by
-ClickHouse:
-
-```sql
-SELECT last_error_time, last_error_message
-FROM system.errors
-ORDER BY last_error_time LIMIT 10
-FORMAT Vertical
-```

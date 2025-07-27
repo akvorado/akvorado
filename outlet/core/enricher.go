@@ -36,7 +36,7 @@ func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) (skip boo
 	if flow.InIf != 0 {
 		answer := c.d.Metadata.Lookup(t, exporterIP, uint(flow.InIf))
 		if !answer.Found {
-			c.metrics.flowsErrors.WithLabelValues(exporterStr, "SNMP cache miss").Inc()
+			c.metrics.flowsErrors.WithLabelValues(exporterStr, "metadata cache miss").Inc()
 			skip = true
 		} else {
 			flowExporterName = answer.Exporter.Name
@@ -62,7 +62,7 @@ func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) (skip boo
 			// Only register a cache miss if we don't have one.
 			// TODO: maybe we could do one SNMP query for both interfaces.
 			if !skip {
-				c.metrics.flowsErrors.WithLabelValues(exporterStr, "SNMP cache miss").Inc()
+				c.metrics.flowsErrors.WithLabelValues(exporterStr, "metadata cache miss").Inc()
 				skip = true
 			}
 		} else {
