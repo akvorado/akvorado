@@ -61,7 +61,7 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 		return fmt.Errorf("cannot decode raw flow: %w", err)
 	}
 
-	// Porcess each decoded flow
+	// Process each decoded flow
 	finalize := func() {
 		// Accounting
 		exporter := w.bf.ExporterAddress.Unmap().String()
