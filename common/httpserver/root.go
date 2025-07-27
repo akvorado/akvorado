@@ -16,6 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/hlog"
 	"gopkg.in/tomb.v2"
 
@@ -77,7 +78,11 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 func (c *Component) AddHandler(location string, handler http.Handler) {
 	l := c.r.With().Str("handler", location).Logger()
 	handler = hlog.AccessHandler(func(r *http.Request, status, size int, duration time.Duration) {
-		hlog.FromRequest(r).Info().
+		level := zerolog.InfoLevel
+		if r.URL.Path == "/api/v0/metrics" || r.URL.Path == "/api/v0/healthcheck" {
+			level = zerolog.DebugLevel
+		}
+		hlog.FromRequest(r).WithLevel(level).
 			Str("method", r.Method).
 			Stringer("url", r.URL).
 			Str("ip", r.RemoteAddr).
