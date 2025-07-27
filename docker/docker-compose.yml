@@ -39,6 +39,21 @@ services:
       test: ["CMD",
              "env", "-u", "KAFKA_OPTS",
              "/opt/kafka/bin/kafka-topics.sh", "--list", "--bootstrap-server", "kafka:9092"]
+  kafka-ui:
+    extends:
+      file: versions.yml
+      service: kafka-ui
+    restart: unless-stopped
+    depends_on:
+      - kafka
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - SERVER_SERVLET_CONTEXT_PATH=/kafka-ui
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.kafka-ui.entrypoints=private
+      - traefik.http.routers.kafka-ui.rule=PathPrefix(`/kafka-ui`)
 
   redis:
     extends:
