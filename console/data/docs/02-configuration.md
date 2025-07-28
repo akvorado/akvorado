@@ -680,20 +680,23 @@ schema:
   custom-dictionaries:
     interfaces:
       layout: complex_key_hashed
-      keys:
-        - name: agent
-          type: String
-          match-dimension: ExporterAddress # csv col agent matches ExporterAddress dimension
-        - name: interface
-          type: String
-          match-dimension-suffix: Name # csv col interface matches either OutIfName or InIfName, match name is added as suffix to dimension
-      attributes:
-        - name: information # this column is added as OutIfInformation/InIfInformation to the flow on matches
-          type: String # no default: If no match of both agent and interface, the Information-Dimension is empty
-      source: /etc/akvorado/interfaces.csv
       dimensions:
         - OutIf
         - InIf
+      keys:
+        - name: agent
+          type: String
+          # CSV column “agent” matches the ExporterAddress dimension
+          match-dimension: ExporterAddress
+        - name: interface
+          type: String
+          # CSV column “interface” matches matches either OUtIfName or InIfName
+          match-dimension-suffix: Name
+      attributes:
+        - name: information # OutIfInformation/InIfInformation
+          type: String
+          # No default. If no match of both agent and interface, the dimension is empty
+      source: /etc/akvorado/interfaces.csv
 ```
 
 ### Kafka
