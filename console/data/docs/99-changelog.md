@@ -11,7 +11,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## 2.0.0-beta.1
+## 2.0.0-beta.1 - 2025-07-28
 
 > [!CAUTION]
 > This is a beta release!
