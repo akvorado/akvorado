@@ -281,15 +281,13 @@ jobs:
           sed -i s,akvorado:main,akvorado:${GITHUB_REF_NAME#v}, docker/versions.yml
           tar zcvf docker-compose-quickstart.tar.gz \
             .env docker/* \
-            orchestrator/clickhouse/data/docker-entrypoint.sh \
             config/*.yaml
       - name: Build Docker Compose "upgrade"
         run: |
           mv .env .env.dist
           mv docker/docker-compose-local.yml docker/docker-compose-local.yml.dist
           tar zcvf docker-compose-upgrade.tar.gz \
-            .env.dist docker/* \
-            orchestrator/clickhouse/data/docker-entrypoint.sh
+            .env.dist docker/*
 
       # Publish release
       - name: Publish release
