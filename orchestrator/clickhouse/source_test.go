@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"akvorado/common/clickhousedb"
-	"akvorado/common/remotedatasourcefetcher"
+	"akvorado/common/remotedatasource"
 	"akvorado/orchestrator/geoip"
 
 	"akvorado/common/daemon"
@@ -84,7 +84,7 @@ func TestNetworkSources(t *testing.T) {
 	config := DefaultConfiguration()
 	config.SkipMigrations = true
 	config.NetworkSourcesTimeout = 10 * time.Millisecond
-	config.NetworkSources = map[string]remotedatasourcefetcher.RemoteDataSource{
+	config.NetworkSources = map[string]remotedatasource.Source{
 		"amazon": {
 			URL:    fmt.Sprintf("http://%s/amazon.json", address),
 			Method: "GET",
@@ -93,7 +93,7 @@ func TestNetworkSources(t *testing.T) {
 			},
 			Timeout:  20 * time.Millisecond,
 			Interval: 100 * time.Millisecond,
-			Transform: remotedatasourcefetcher.MustParseTransformQuery(`
+			Transform: remotedatasource.MustParseTransformQuery(`
 (.prefixes + .ipv6_prefixes)[] |
 { prefix: (.ip_prefix // .ipv6_prefix), tenant: "amazon", region: .region, role: .service|ascii_downcase }
 `),
@@ -135,7 +135,7 @@ func TestNetworkSources(t *testing.T) {
 		},
 	})
 
-	gotMetrics := r.GetMetrics("akvorado_common_remotedatasourcefetcher_data_")
+	gotMetrics := r.GetMetrics("akvorado_common_remotedatasource_data_")
 	expectedMetrics := map[string]string{
 		`total{source="amazon",type="network_source"}`: "3",
 	}

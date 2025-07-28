@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"akvorado/common/helpers"
-	"akvorado/common/remotedatasourcefetcher"
+	"akvorado/common/remotedatasource"
 	"akvorado/common/reporter"
 	"akvorado/outlet/metadata/provider"
 )
@@ -172,7 +172,7 @@ func TestRemoteExporterSources(t *testing.T) {
 			},
 		}),
 		ExporterSourcesTimeout: 10 * time.Millisecond,
-		ExporterSources: map[string]remotedatasourcefetcher.RemoteDataSource{
+		ExporterSources: map[string]remotedatasource.Source{
 			"local": {
 				URL:    fmt.Sprintf("http://%s/exporters.json", address),
 				Method: "GET",
@@ -181,7 +181,7 @@ func TestRemoteExporterSources(t *testing.T) {
 				},
 				Timeout:  20 * time.Millisecond,
 				Interval: 100 * time.Millisecond,
-				Transform: remotedatasourcefetcher.MustParseTransformQuery(`
+				Transform: remotedatasource.MustParseTransformQuery(`
 .exporters[]
 `),
 			},
@@ -206,7 +206,7 @@ func TestRemoteExporterSources(t *testing.T) {
 	close(ready)
 	time.Sleep(100 * time.Millisecond)
 
-	gotMetrics := r.GetMetrics("akvorado_common_remotedatasourcefetcher_data_")
+	gotMetrics := r.GetMetrics("akvorado_common_remotedatasource_data_")
 	expectedMetrics := map[string]string{
 		`total{source="local",type="metadata"}`: "3",
 	}

@@ -7,7 +7,7 @@ import (
 	"context"
 	"net/netip"
 
-	"akvorado/common/remotedatasourcefetcher"
+	"akvorado/common/remotedatasource"
 )
 
 type externalNetworkAttributes struct {
@@ -15,9 +15,9 @@ type externalNetworkAttributes struct {
 	NetworkAttributes `mapstructure:",squash"`
 }
 
-// UpdateRemoteDataSource updates a remote network source. It returns the
+// UpdateSource updates a remote network source. It returns the
 // number of networks retrieved.
-func (c *Component) UpdateRemoteDataSource(ctx context.Context, name string, source remotedatasourcefetcher.RemoteDataSource) (int, error) {
+func (c *Component) UpdateSource(ctx context.Context, name string, source remotedatasource.Source) (int, error) {
 	results, err := c.networkSourcesFetcher.Fetch(ctx, name, source)
 	if err != nil {
 		return 0, err

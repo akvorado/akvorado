@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2024 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-// Package remotedatasourcefetcher offers a component to refresh internal data periodically
-// from a set of remote HTTP sources in JSON format.
-package remotedatasourcefetcher
+// Package remotedatasource offers a component to refresh internal data
+// periodically from a set of remote HTTP sources in JSON format.
+package remotedatasource
 
 import (
 	"time"
@@ -13,8 +13,8 @@ import (
 	"akvorado/common/helpers"
 )
 
-// RemoteDataSource defines a remote network definition.
-type RemoteDataSource struct {
+// Source defines a remote data source.
+type Source struct {
 	// URL is the URL to fetch to get remote network definition.
 	// It should provide a JSON file.
 	URL string `validate:"url"`
@@ -61,9 +61,9 @@ func (jq TransformQuery) MarshalText() ([]byte, error) {
 	return []byte(jq.String()), nil
 }
 
-// DefaultRemoteDataSourceConfiguration is the default configuration for a network source.
-func DefaultRemoteDataSourceConfiguration() RemoteDataSource {
-	return RemoteDataSource{
+// DefaultSourceConfiguration is the default configuration for a network source.
+func DefaultSourceConfiguration() Source {
+	return Source{
 		Method:  "GET",
 		Timeout: time.Minute,
 	}
@@ -71,5 +71,5 @@ func DefaultRemoteDataSourceConfiguration() RemoteDataSource {
 
 func init() {
 	helpers.RegisterMapstructureUnmarshallerHook(
-		helpers.DefaultValuesUnmarshallerHook(DefaultRemoteDataSourceConfiguration()))
+		helpers.DefaultValuesUnmarshallerHook(DefaultSourceConfiguration()))
 }

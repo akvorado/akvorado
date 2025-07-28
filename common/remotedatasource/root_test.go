@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2024 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package remotedatasourcefetcher
+package remotedatasource
 
 import (
 	"context"
@@ -27,7 +27,7 @@ type remoteDataHandler struct {
 	dataLock sync.RWMutex
 }
 
-func (h *remoteDataHandler) UpdateData(ctx context.Context, name string, source RemoteDataSource) (int, error) {
+func (h *remoteDataHandler) UpdateData(ctx context.Context, name string, source Source) (int, error) {
 	results, err := h.fetcher.Fetch(ctx, name, source)
 	if err != nil {
 		return 0, err
@@ -38,7 +38,7 @@ func (h *remoteDataHandler) UpdateData(ctx context.Context, name string, source 
 	return len(results), nil
 }
 
-func TestRemoteDataSourceFetcher(t *testing.T) {
+func TestSource(t *testing.T) {
 	// Mux to answer requests
 	ready := make(chan bool)
 	mux := http.NewServeMux()
@@ -74,7 +74,7 @@ func TestRemoteDataSourceFetcher(t *testing.T) {
 	defer server.Shutdown(context.Background())
 
 	r := reporter.NewMock(t)
-	config := map[string]RemoteDataSource{
+	config := map[string]Source{
 		"local": {
 			URL:    fmt.Sprintf("http://%s/data.json", address),
 			Method: "GET",
@@ -120,7 +120,7 @@ func TestRemoteDataSourceFetcher(t *testing.T) {
 	}
 	handler.dataLock.RUnlock()
 
-	gotMetrics := r.GetMetrics("akvorado_common_remotedatasourcefetcher_data_")
+	gotMetrics := r.GetMetrics("akvorado_common_remotedatasource_data_")
 	expectedMetrics := map[string]string{
 		`total{source="local",type="test"}`: "1",
 	}

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"akvorado/common/helpers"
-	"akvorado/common/remotedatasourcefetcher"
+	"akvorado/common/remotedatasource"
 	"akvorado/outlet/metadata/provider"
 )
 
@@ -18,7 +18,7 @@ type Configuration struct {
 	// ExporterSources defines a set of remote Exporters
 	// definitions to map IP address to their configuration.
 	// The results are overridden by the content of Exporters.
-	ExporterSources map[string]remotedatasourcefetcher.RemoteDataSource `validate:"dive"`
+	ExporterSources map[string]remotedatasource.Source `validate:"dive"`
 	// ExporterSourcesTimeout tells how long to wait for exporter
 	// sources to be ready. 503 is returned when not.
 	ExporterSourcesTimeout time.Duration `validate:"min=0"`

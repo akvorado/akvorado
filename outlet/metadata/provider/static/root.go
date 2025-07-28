@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"akvorado/common/helpers"
-	"akvorado/common/remotedatasourcefetcher"
+	"akvorado/common/remotedatasource"
 	"akvorado/common/reporter"
 	"akvorado/outlet/metadata/provider"
 
@@ -23,7 +23,7 @@ import (
 type Provider struct {
 	r *reporter.Reporter
 
-	exporterSourcesFetcher *remotedatasourcefetcher.Component[exporterInfo]
+	exporterSourcesFetcher *remotedatasource.Component[exporterInfo]
 	exportersMap           map[string][]exporterInfo
 	exporters              atomic.Pointer[helpers.SubnetMap[ExporterConfiguration]]
 	exportersLock          sync.Mutex
@@ -46,8 +46,8 @@ func (configuration Configuration) New(r *reporter.Reporter) (provider.Provider,
 	p.initStaticExporters()
 
 	var err error
-	p.exporterSourcesFetcher, err = remotedatasourcefetcher.New[exporterInfo](r,
-		p.UpdateRemoteDataSource, "metadata", configuration.ExporterSources)
+	p.exporterSourcesFetcher, err = remotedatasource.New[exporterInfo](r,
+		p.UpdateSource, "metadata", configuration.ExporterSources)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize remote data source fetcher component: %w", err)
 	}

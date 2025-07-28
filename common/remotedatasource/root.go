@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2024 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package remotedatasourcefetcher
+package remotedatasource
 
 import (
 	"bufio"
@@ -23,7 +23,7 @@ import (
 // ProviderFunc is the callback function to call when a datasource is refreshed.
 // The error returned is used for metrics. One should avoid having too many
 // different errors.
-type ProviderFunc func(ctx context.Context, name string, source RemoteDataSource) (int, error)
+type ProviderFunc func(ctx context.Context, name string, source Source) (int, error)
 
 // Component represents a remote data source fetcher.
 type Component[T interface{}] struct {
@@ -31,14 +31,14 @@ type Component[T interface{}] struct {
 	t           tomb.Tomb
 	provider    ProviderFunc
 	dataType    string
-	dataSources map[string]RemoteDataSource
+	dataSources map[string]Source
 	metrics     metrics
 
 	DataSourcesReady chan bool // closed when all data sources are ready
 }
 
 // New creates a new remote data source fetcher component.
-func New[T interface{}](r *reporter.Reporter, provider ProviderFunc, dataType string, dataSources map[string]RemoteDataSource) (*Component[T], error) {
+func New[T interface{}](r *reporter.Reporter, provider ProviderFunc, dataType string, dataSources map[string]Source) (*Component[T], error) {
 	c := Component[T]{
 		r:                r,
 		provider:         provider,
@@ -67,11 +67,11 @@ var (
 	ErrEmpty = errors.New("empty result")
 )
 
-// Fetch retrieves data from a configured RemoteDataSource, and returns a list
+// Fetch retrieves data from a configured Source, and returns a list
 // of results decoded from JSON to generic type. Fetch should be used in
-// UpdateRemoteDataSource implementations to update internal data from results.
+// UpdateSource implementations to update internal data from results.
 // It outputs errors without details because they are used for metrics.
-func (c *Component[T]) Fetch(ctx context.Context, name string, source RemoteDataSource) ([]T, error) {
+func (c *Component[T]) Fetch(ctx context.Context, name string, source Source) ([]T, error) {
 	var results []T
 	l := c.r.With().Str("name", name).Str("url", source.URL).Logger()
 	l.Info().Msg("update data source")

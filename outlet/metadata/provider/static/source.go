@@ -8,7 +8,7 @@ import (
 	"errors"
 
 	"akvorado/common/helpers"
-	"akvorado/common/remotedatasourcefetcher"
+	"akvorado/common/remotedatasource"
 	"akvorado/outlet/metadata/provider"
 )
 
@@ -67,9 +67,9 @@ func (p *Provider) initStaticExporters() {
 	p.exportersMap["static"] = staticExporters
 }
 
-// UpdateRemoteDataSource updates a remote metadata exporters source. It returns the
+// UpdateSource updates a remote metadata exporters source. It returns the
 // number of exporters retrieved.
-func (p *Provider) UpdateRemoteDataSource(ctx context.Context, name string, source remotedatasourcefetcher.RemoteDataSource) (int, error) {
+func (p *Provider) UpdateSource(ctx context.Context, name string, source remotedatasource.Source) (int, error) {
 	results, err := p.exporterSourcesFetcher.Fetch(ctx, name, source)
 	if err != nil {
 		return 0, err

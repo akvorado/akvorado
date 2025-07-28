@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"time"
 
-	"akvorado/common/remotedatasourcefetcher"
+	"akvorado/common/remotedatasource"
 
 	"akvorado/common/helpers"
 
@@ -34,7 +34,7 @@ type Configuration struct {
 	// definitions to map IP networks to attributes. It is used to
 	// instantiate the SrcNet* and DstNet* columns. The results
 	// are overridden by the content of Networks.
-	NetworkSources map[string]remotedatasourcefetcher.RemoteDataSource `validate:"dive"`
+	NetworkSources map[string]remotedatasource.Source `validate:"dive"`
 	// NetworkSourceTimeout tells how long to wait for network
 	// sources to be ready. 503 is returned when not.
 	NetworkSourcesTimeout time.Duration `validate:"min=0"`

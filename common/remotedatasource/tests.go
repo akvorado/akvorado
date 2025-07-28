@@ -3,7 +3,7 @@
 
 //go:build !release
 
-package remotedatasourcefetcher
+package remotedatasource
 
 import "github.com/itchyny/gojq"
 

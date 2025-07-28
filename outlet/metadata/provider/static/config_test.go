@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"akvorado/common/helpers"
-	"akvorado/common/remotedatasourcefetcher"
+	"akvorado/common/remotedatasource"
 	"akvorado/outlet/metadata/provider"
 )
 
@@ -60,7 +60,7 @@ func TestValidation(t *testing.T) {
 				},
 			},
 		}),
-		ExporterSources: map[string]remotedatasourcefetcher.RemoteDataSource{
+		ExporterSources: map[string]remotedatasource.Source{
 			"http-endpoint": {
 				URL:      "https://foo.bar",
 				Method:   "GET",

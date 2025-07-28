@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"akvorado/common/remotedatasourcefetcher"
+	"akvorado/common/remotedatasource"
 
 	"github.com/cenkalti/backoff/v4"
 	"gopkg.in/tomb.v2"
@@ -36,7 +36,7 @@ type Component struct {
 
 	migrationsDone        chan bool // closed when migrations are done
 	migrationsOnce        chan bool // closed after first attempt to migrate
-	networkSourcesFetcher *remotedatasourcefetcher.Component[externalNetworkAttributes]
+	networkSourcesFetcher *remotedatasource.Component[externalNetworkAttributes]
 	networkSources        map[string][]externalNetworkAttributes
 	networkSourcesLock    sync.RWMutex
 
@@ -68,8 +68,8 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		networksCSVUpdateChan: make(chan bool, 1),
 	}
 	var err error
-	c.networkSourcesFetcher, err = remotedatasourcefetcher.New[externalNetworkAttributes](
-		r, c.UpdateRemoteDataSource, "network_source", configuration.NetworkSources)
+	c.networkSourcesFetcher, err = remotedatasource.New[externalNetworkAttributes](
+		r, c.UpdateSource, "network_source", configuration.NetworkSources)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize remote data source fetcher component: %w", err)
 	}

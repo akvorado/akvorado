@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2024 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package remotedatasourcefetcher
+package remotedatasource
 
 import (
 	"fmt"
@@ -14,18 +14,18 @@ import (
 	"akvorado/common/helpers"
 )
 
-func TestRemoteDataSourceDecode(t *testing.T) {
+func TestSourceDecode(t *testing.T) {
 	helpers.TestConfigurationDecode(t, helpers.ConfigurationDecodeCases{
 		{
 			Description: "Empty",
-			Initial:     func() interface{} { return RemoteDataSource{} },
+			Initial:     func() interface{} { return Source{} },
 			Configuration: func() interface{} {
 				return gin.H{
 					"url":      "https://example.net",
 					"interval": "10m",
 				}
 			},
-			Expected: RemoteDataSource{
+			Expected: Source{
 				URL:      "https://example.net",
 				Method:   "GET",
 				Timeout:  time.Minute,
@@ -33,7 +33,7 @@ func TestRemoteDataSourceDecode(t *testing.T) {
 			},
 		}, {
 			Description: "Simple transform",
-			Initial:     func() interface{} { return RemoteDataSource{} },
+			Initial:     func() interface{} { return Source{} },
 			Configuration: func() interface{} {
 				return gin.H{
 					"url":       "https://example.net",
@@ -41,7 +41,7 @@ func TestRemoteDataSourceDecode(t *testing.T) {
 					"transform": ".[]",
 				}
 			},
-			Expected: RemoteDataSource{
+			Expected: Source{
 				URL:       "https://example.net",
 				Method:    "GET",
 				Timeout:   time.Minute,
@@ -50,7 +50,7 @@ func TestRemoteDataSourceDecode(t *testing.T) {
 			},
 		}, {
 			Description: "Use POST",
-			Initial:     func() interface{} { return RemoteDataSource{} },
+			Initial:     func() interface{} { return Source{} },
 			Configuration: func() interface{} {
 				return gin.H{
 					"url":       "https://example.net",
@@ -60,7 +60,7 @@ func TestRemoteDataSourceDecode(t *testing.T) {
 					"transform": ".[]",
 				}
 			},
-			Expected: RemoteDataSource{
+			Expected: Source{
 				URL:       "https://example.net",
 				Method:    "POST",
 				Timeout:   2 * time.Minute,
@@ -69,7 +69,7 @@ func TestRemoteDataSourceDecode(t *testing.T) {
 			},
 		}, {
 			Description: "Complex transform",
-			Initial:     func() interface{} { return RemoteDataSource{} },
+			Initial:     func() interface{} { return Source{} },
 			Configuration: func() interface{} {
 				return gin.H{
 					"url":      "https://example.net",
@@ -79,7 +79,7 @@ func TestRemoteDataSourceDecode(t *testing.T) {
 `,
 				}
 			},
-			Expected: RemoteDataSource{
+			Expected: Source{
 				URL:      "https://example.net",
 				Method:   "GET",
 				Timeout:  time.Minute,
@@ -90,7 +90,7 @@ func TestRemoteDataSourceDecode(t *testing.T) {
 			},
 		}, {
 			Description: "Incorrect transform",
-			Initial:     func() interface{} { return RemoteDataSource{} },
+			Initial:     func() interface{} { return Source{} },
 			Configuration: func() interface{} {
 				return gin.H{
 					"url":       "https://example.net",
