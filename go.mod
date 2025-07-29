@@ -53,7 +53,7 @@ require (
 	golang.org/x/sync v0.15.0
 	golang.org/x/sys v0.33.0
 	golang.org/x/text v0.26.0
-	google.golang.org/grpc v1.72.2
+	google.golang.org/grpc v1.74.2
 	google.golang.org/protobuf v1.36.6
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 	gopkg.in/yaml.v3 v3.0.1
@@ -63,7 +63,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute/metadata v0.6.0 // indirect
+	cloud.google.com/go/compute/metadata v0.7.0 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/AlekSi/gocov-xml v1.1.0 // indirect
 	github.com/AlekSi/pointer v1.2.0 // indirect
@@ -102,7 +102,7 @@ require (
 	github.com/glebarez/go-sqlite v1.21.2 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.7.1 // indirect
-	github.com/go-logr/logr v1.4.2 // indirect
+	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
@@ -190,7 +190,7 @@ require (
 	golang.org/x/term v0.32.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
 	golang.org/x/tools v0.33.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250528174236-200df99c418a // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gotest.tools/gotestsum v1.12.1 // indirect
 	modernc.org/libc v1.22.5 // indirect
