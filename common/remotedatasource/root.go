@@ -13,10 +13,12 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/go-playground/validator/v10"
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/itchyny/gojq"
 	"gopkg.in/tomb.v2"
 
+	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 )
 
@@ -61,6 +63,8 @@ var (
 	ErrJSONDecode = errors.New("cannot decode JSON")
 	// ErrMapResult is triggered when we cannot map the JSON result to the expected structure
 	ErrMapResult = errors.New("cannot map JSON")
+	// ErrValidate is triggered when there is a check failure
+	ErrValidate = errors.New("cannot validate checks")
 	// ErrJQExecute is triggered when we cannot execute the jq filter
 	ErrJQExecute = errors.New("cannot execute jq filter")
 	// ErrEmpty is triggered if the results are empty
@@ -82,7 +86,7 @@ func (c *Component[T]) Fetch(ctx context.Context, name string, source Source) ([
 	req, err := http.NewRequestWithContext(ctx, source.Method, source.URL, nil)
 	if err != nil {
 		l.Err(err).Msg("unable to build new request")
-		return results, ErrBuildRequest
+		return nil, ErrBuildRequest
 	}
 	for headerName, headerValue := range source.Headers {
 		req.Header.Set(headerName, headerValue)
@@ -91,50 +95,60 @@ func (c *Component[T]) Fetch(ctx context.Context, name string, source Source) ([
 	resp, err := client.Do(req)
 	if err != nil {
 		l.Err(err).Msg("unable to fetch data source")
-		return results, ErrFetchDataSource
+		return nil, ErrFetchDataSource
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		l.Error().Int("status", resp.StatusCode).Msg("unexpected status code")
-		return results, ErrStatusCode
+		return nil, ErrStatusCode
 	}
 	reader := bufio.NewReader(resp.Body)
 	decoder := json.NewDecoder(reader)
 	var got interface{}
 	if err := decoder.Decode(&got); err != nil {
 		l.Err(err).Msg("cannot decode JSON output")
-		return results, ErrJSONDecode
+		return nil, ErrJSONDecode
 	}
 
 	iter := source.Transform.Query.RunWithContext(ctx, got)
-	for {
+	for idx := 0; ; idx++ {
 		v, ok := iter.Next()
 		if !ok {
 			break
 		}
 		if err, ok := v.(error); ok {
 			l.Err(err).Msg("cannot execute jq filter")
-			return results, ErrJQExecute
+			return nil, ErrJQExecute
 		}
 		var result T
 		config := &mapstructure.DecoderConfig{
 			Metadata:   nil,
 			Result:     &result,
-			DecodeHook: mapstructure.TextUnmarshallerHookFunc(),
+			DecodeHook: helpers.ProtectedDecodeHookFunc(mapstructure.TextUnmarshallerHookFunc()),
 		}
 		decoder, err := mapstructure.NewDecoder(config)
 		if err != nil {
 			panic(err)
 		}
 		if err := decoder.Decode(v); err != nil {
-			l.Err(err).Msgf("cannot map returned value for %#v", v)
-			return results, ErrMapResult
+			l.Err(err).Msg("cannot map returned value")
+			return nil, ErrMapResult
+		}
+		if err := helpers.Validate.StructCtx(ctx, result); err != nil {
+			switch err := err.(type) {
+			case validator.ValidationErrors:
+				l.Err(err).Int("index", idx).Msgf("validation errors on %#v", result)
+				return nil, ErrValidate
+			default:
+				l.Err(err).Int("index", idx).Msgf("unable to validate on %#v", result)
+				return nil, ErrValidate
+			}
 		}
 		results = append(results, result)
 	}
 	if len(results) == 0 {
 		l.Error().Msg("empty result")
-		return results, ErrEmpty
+		return nil, ErrEmpty
 	}
 	return results, nil
 }
@@ -161,7 +175,7 @@ func (c *Component[T]) Start() error {
 				customBackoff := backoff.NewExponentialBackOff()
 				customBackoff.MaxElapsedTime = 0
 				customBackoff.MaxInterval = source.Interval
-				customBackoff.InitialInterval = min(time.Second, source.Interval/10)
+				customBackoff.InitialInterval = source.Interval / 10
 				return backoff.NewTicker(customBackoff)
 			}
 			newRegularTicker := func() *time.Ticker {

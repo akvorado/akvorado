@@ -11,6 +11,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 💥 *common*: be more strict on results returned from remote sources
+
 ## 2.0.0-beta.1 - 2025-07-28
 
 > [!CAUTION]
