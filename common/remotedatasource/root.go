@@ -224,6 +224,7 @@ func (c *Component[T]) Start() error {
 				} else if err != nil && success {
 					// On failure, switch to the retry ticker
 					regularTicker.Stop()
+					regularTicker.C = nil
 					retryTicker = newRetryTicker()
 					success = false
 					c.r.Debug().Str("name", name).Msg("switch to retry polling")
