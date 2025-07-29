@@ -4,7 +4,7 @@
 package daemon
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 	"time"
 
@@ -87,7 +87,7 @@ func TestTombTracking(t *testing.T) {
 		case <-tomb.Dying():
 			t.Fatalf("Dying() should not happen inside the tomb")
 		case <-ch:
-			return fmt.Errorf("crashing")
+			return errors.New("crashing")
 		}
 		return nil
 	})

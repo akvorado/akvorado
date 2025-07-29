@@ -5,6 +5,7 @@ package gnmi
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/netip"
@@ -333,5 +334,5 @@ func (p *Provider) detectModelAndEncoding(ctx context.Context, tg *target.Target
 			return model, encoding, nil
 		}
 	}
-	return Model{}, "", fmt.Errorf("no compatible model found")
+	return Model{}, "", errors.New("no compatible model found")
 }

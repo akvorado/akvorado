@@ -117,7 +117,7 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 			results = slices.Clone(currentResult.Variables)
 		} else {
 			if len(results) != len(currentResult.Variables) {
-				logError(fmt.Errorf("SNMP mismatch on variable lengths"))
+				logError(errors.New("SNMP mismatch on variable lengths"))
 			}
 			for idx := range results {
 				switch results[idx].Type {
@@ -128,7 +128,7 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 		}
 	}
 	if len(results) != len(requests) {
-		logError(fmt.Errorf("SNMP mismatch on variable lengths"))
+		logError(errors.New("SNMP mismatch on variable lengths"))
 	}
 	p.metrics.times.WithLabelValues(exporterStr).Observe(time.Since(start).Seconds())
 

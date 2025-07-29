@@ -5,6 +5,7 @@ package clickhouse
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"strings"
@@ -66,7 +67,7 @@ func (c *Component) migrateDatabase() error {
 			return fmt.Errorf("unable to parse cluster settings: %w", err)
 		}
 		if shardNum == 0 {
-			return fmt.Errorf("cannot get the number of shards for the cluster")
+			return errors.New("cannot get the number of shards for the cluster")
 		}
 		c.shards = int(shardNum)
 	}
