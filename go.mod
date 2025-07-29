@@ -46,7 +46,7 @@ require (
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250711145744-a849b8be17b7
 	github.com/twmb/franz-go/pkg/kmsg v1.11.2
 	github.com/twmb/franz-go/plugin/kprom v1.2.1
-	github.com/yuin/goldmark v1.7.12
+	github.com/yuin/goldmark v1.7.13
 	github.com/yuin/goldmark-highlighting v0.0.0-20220208100518-594be1970594
 	go.uber.org/mock v0.5.2
 	golang.org/x/oauth2 v0.30.0
