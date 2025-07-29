@@ -239,3 +239,9 @@ func (c *Component[T]) Start() error {
 	}
 	return nil
 }
+
+// Stop the remote data source fetcher component.
+func (c *Component[T]) Stop() error {
+	c.t.Kill(nil)
+	return c.t.Wait()
+}

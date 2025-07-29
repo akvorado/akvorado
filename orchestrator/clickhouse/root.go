@@ -176,5 +176,6 @@ func (c *Component) Stop() error {
 	c.r.Info().Msg("stopping ClickHouse component")
 	defer c.r.Info().Msg("ClickHouse component stopped")
 	c.t.Kill(nil)
+	c.networkSourcesFetcher.Stop()
 	return c.t.Wait()
 }

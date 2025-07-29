@@ -140,6 +140,7 @@ func TestSource(t *testing.T) {
 	handler.fetcher, _ = New[remoteData](r, handler.UpdateData, "test", config)
 
 	handler.fetcher.Start()
+	defer handler.fetcher.Stop()
 
 	// When not ready
 	handler.dataLock.RLock()
