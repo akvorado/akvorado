@@ -19,10 +19,10 @@ func TestSubnetMapUnmarshalHook(t *testing.T) {
 	var nilMap map[string]string
 	cases := []struct {
 		Description string
-		Input       interface{}
+		Input       any
 		Tests       map[string]string
 		Error       bool
-		YAML        interface{}
+		YAML        any
 	}{
 		{
 			Description: "nil",

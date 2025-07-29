@@ -15,7 +15,7 @@ import (
 
 func TestUnmarshalWithIn(t *testing.T) {
 	fsys := os.DirFS("testdata")
-	var got interface{}
+	var got any
 	if err := yaml.UnmarshalWithInclude(fsys, "base.yaml", &got); err != nil {
 		t.Fatalf("UnmarshalWithInclude() error:\n%+v", err)
 	}
@@ -26,7 +26,7 @@ func TestUnmarshalWithIn(t *testing.T) {
 			"file1": gin.H{"name": "1.yaml"},
 		},
 		"list1": []string{"el1", "el2", "el3"},
-		"list2": []interface{}{gin.H{
+		"list2": []any{gin.H{
 			"protocol": "tcp",
 			"size":     1300,
 		}, "el2", "el3"},

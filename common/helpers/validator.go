@@ -20,7 +20,7 @@ var Validate *validator.Validate
 // register all subnetmaps.
 func RegisterSubnetMapValidation[V any]() {
 	var zero SubnetMap[V]
-	validatorFunc := func(field reflect.Value) interface{} {
+	validatorFunc := func(field reflect.Value) any {
 		switch subnetMap := field.Interface().(type) {
 		case SubnetMap[V]:
 			return subnetMap.ToMap()
@@ -33,7 +33,7 @@ func RegisterSubnetMapValidation[V any]() {
 }
 
 // netipValidation validates netip.Addr and netip.Prefix by turning them into a string.
-func netipValidation(fl reflect.Value) interface{} {
+func netipValidation(fl reflect.Value) any {
 	switch netipSomething := fl.Interface().(type) {
 	case netip.Addr:
 		if (netipSomething == netip.Addr{}) {

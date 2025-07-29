@@ -169,7 +169,7 @@ func DefaultModels() []Model {
 // ConfigurationUnmarshallerHook normalize gnmi configuration:
 //   - replace an occurrence of "default" in the list of models with the list of default models.
 func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
-	return func(from, to reflect.Value) (interface{}, error) {
+	return func(from, to reflect.Value) (any, error) {
 		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(Configuration{}) {
 			return from.Interface(), nil
 		}
@@ -192,7 +192,7 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 					val := helpers.ElemOrIdentity(modelsValue.Index(i))
 					if val.Kind() == reflect.String && val.String() == "defaults" {
 						// We need to replace this item with the default values.
-						newValue := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(new(interface{})).Elem()), 0, 0)
+						newValue := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(new(any)).Elem()), 0, 0)
 						for j := range modelsValue.Len() {
 							if i != j {
 								newValue = reflect.Append(newValue, modelsValue.Index(j))

@@ -28,7 +28,7 @@ import (
 type ProviderFunc func(ctx context.Context, name string, source Source) (int, error)
 
 // Component represents a remote data source fetcher.
-type Component[T interface{}] struct {
+type Component[T any] struct {
 	r           *reporter.Reporter
 	t           tomb.Tomb
 	provider    ProviderFunc
@@ -40,7 +40,7 @@ type Component[T interface{}] struct {
 }
 
 // New creates a new remote data source fetcher component.
-func New[T interface{}](r *reporter.Reporter, provider ProviderFunc, dataType string, dataSources map[string]Source) (*Component[T], error) {
+func New[T any](r *reporter.Reporter, provider ProviderFunc, dataType string, dataSources map[string]Source) (*Component[T], error) {
 	c := Component[T]{
 		r:                r,
 		provider:         provider,
@@ -104,7 +104,7 @@ func (c *Component[T]) Fetch(ctx context.Context, name string, source Source) ([
 	}
 	reader := bufio.NewReader(resp.Body)
 	decoder := json.NewDecoder(reader)
-	var got interface{}
+	var got any
 	if err := decoder.Decode(&got); err != nil {
 		l.Err(err).Msg("cannot decode JSON output")
 		return nil, ErrJSONDecode

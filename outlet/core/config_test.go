@@ -21,20 +21,20 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 	helpers.TestConfigurationDecode(t, helpers.ConfigurationDecodeCases{
 		{
 			Description:    "nil",
-			Initial:        func() interface{} { return Configuration{} },
-			Configuration:  func() interface{} { return nil },
+			Initial:        func() any { return Configuration{} },
+			Configuration:  func() any { return nil },
 			Expected:       Configuration{},
 			SkipValidation: true,
 		}, {
 			Description:    "empty",
-			Initial:        func() interface{} { return Configuration{} },
-			Configuration:  func() interface{} { return gin.H{} },
+			Initial:        func() any { return Configuration{} },
+			Configuration:  func() any { return gin.H{} },
 			Expected:       Configuration{},
 			SkipValidation: true,
 		}, {
 			Description: "ignore-asn-from-flow = false",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"ignore-asn-from-flow": false,
 				}
@@ -43,8 +43,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			SkipValidation: true,
 		}, {
 			Description: "ignore-asn-from-flow = true",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"ignore-asn-from-flow": true,
 				}
@@ -55,8 +55,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			SkipValidation: true,
 		}, {
 			Description: "ignore-asn-from-flow and asn-providers",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"ignore-asn-from-flow": true,
 					"asn-providers":        []string{"routing", "flow"},
@@ -66,8 +66,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			SkipValidation: true,
 		}, {
 			Description: "asn-providers only",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"asn-providers": []string{"flow-except-private", "routing", "flow"},
 				}
@@ -78,8 +78,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			SkipValidation: true,
 		}, {
 			Description: "net-providers with bmp",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"net-providers": []string{"flow", "bmp"},
 				}
@@ -90,8 +90,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			SkipValidation: true,
 		}, {
 			Description: "asn-providers with bmp",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"asn-providers": []string{"flow", "bmp", "bmp-except-private"},
 				}
@@ -102,8 +102,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			SkipValidation: true,
 		}, {
 			Description: "net-providers",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"net-providers": []string{"flow", "routing"},
 				}

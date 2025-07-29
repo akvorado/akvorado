@@ -135,7 +135,7 @@ func NewConfig(r *reporter.Reporter, config Configuration) ([]kgo.Opt, error) {
 // ConfigurationUnmarshallerHook normalize Kafka configuration:
 //   - move SASL related parameters from TLS section to SASL section
 func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
-	return func(from, to reflect.Value) (interface{}, error) {
+	return func(from, to reflect.Value) (any, error) {
 		if from.Kind() != reflect.Map || from.IsNil() || !helpers.SameTypeOrSuperset(to.Type(), reflect.TypeOf(Configuration{})) {
 			return from.Interface(), nil
 		}

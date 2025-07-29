@@ -97,7 +97,7 @@ type templateSystem struct {
 	templates netflow.NetFlowTemplateSystem
 }
 
-func (s *templateSystem) AddTemplate(version uint16, obsDomainID uint32, templateID uint16, template interface{}) error {
+func (s *templateSystem) AddTemplate(version uint16, obsDomainID uint32, templateID uint16, template any) error {
 	if err := s.templates.AddTemplate(version, obsDomainID, templateID, template); err != nil {
 		return nil
 	}
@@ -125,11 +125,11 @@ func (s *templateSystem) AddTemplate(version uint16, obsDomainID uint32, templat
 	return nil
 }
 
-func (s *templateSystem) GetTemplate(version uint16, obsDomainID uint32, templateID uint16) (interface{}, error) {
+func (s *templateSystem) GetTemplate(version uint16, obsDomainID uint32, templateID uint16) (any, error) {
 	return s.templates.GetTemplate(version, obsDomainID, templateID)
 }
 
-func (s *templateSystem) RemoveTemplate(version uint16, obsDomainID uint32, templateID uint16) (interface{}, error) {
+func (s *templateSystem) RemoveTemplate(version uint16, obsDomainID uint32, templateID uint16) (any, error) {
 	return s.templates.RemoveTemplate(version, obsDomainID, templateID)
 }
 

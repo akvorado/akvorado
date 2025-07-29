@@ -23,7 +23,7 @@ func TestDecodeMPLSAndIPv4(t *testing.T) {
 	expected := schema.FlowMessage{
 		SrcAddr: netip.MustParseAddr("::ffff:10.31.0.1"),
 		DstAddr: netip.MustParseAddr("::ffff:10.34.0.1"),
-		OtherColumns: map[schema.ColumnKey]interface{}{
+		OtherColumns: map[schema.ColumnKey]any{
 			schema.ColumnEType:        helpers.ETypeIPv4,
 			schema.ColumnProto:        6,
 			schema.ColumnSrcPort:      11001,
@@ -54,7 +54,7 @@ func TestDecodeVLANAndIPv6(t *testing.T) {
 		SrcVlan: 100,
 		SrcAddr: netip.MustParseAddr("2402:f000:1:8e01::5555"),
 		DstAddr: netip.MustParseAddr("2607:fcd0:100:2300::b108:2a6b"),
-		OtherColumns: map[schema.ColumnKey]interface{}{
+		OtherColumns: map[schema.ColumnKey]any{
 			schema.ColumnEType:  helpers.ETypeIPv6,
 			schema.ColumnProto:  4,
 			schema.ColumnIPTTL:  246,

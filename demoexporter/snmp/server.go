@@ -17,7 +17,7 @@ func (c *Component) newOID(oid string, t gosnmp.Asn1BER, onGet GoSNMPServer.Func
 	return &GoSNMPServer.PDUValueControlItem{
 		OID:  oid,
 		Type: t,
-		OnGet: func() (interface{}, error) {
+		OnGet: func() (any, error) {
 			c.metrics.requests.WithLabelValues(oid).Inc()
 			return onGet()
 		},
@@ -28,7 +28,7 @@ func (c *Component) startSNMPServer() error {
 	oids := make([]*GoSNMPServer.PDUValueControlItem, 1+4*len(c.config.Interfaces))
 	oids[0] = c.newOID("1.3.6.1.2.1.1.5.0",
 		gosnmp.OctetString,
-		func() (interface{}, error) {
+		func() (any, error) {
 			return c.config.Name, nil
 		},
 	)
@@ -38,25 +38,25 @@ func (c *Component) startSNMPServer() error {
 		d := description
 		oids[4*count+1] = c.newOID(fmt.Sprintf("1.3.6.1.2.1.2.2.1.2.%d", i),
 			gosnmp.OctetString,
-			func() (interface{}, error) {
+			func() (any, error) {
 				return fmt.Sprintf("Gi0/0/0/%d", i), nil
 			},
 		)
 		oids[4*count+2] = c.newOID(fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.1.%d", i),
 			gosnmp.OctetString,
-			func() (interface{}, error) {
+			func() (any, error) {
 				return fmt.Sprintf("Gi0/0/0/%d", i), nil
 			},
 		)
 		oids[4*count+3] = c.newOID(fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.15.%d", i),
 			gosnmp.Gauge32,
-			func() (interface{}, error) {
+			func() (any, error) {
 				return uint(10000), nil
 			},
 		)
 		oids[4*count+4] = c.newOID(fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.18.%d", i),
 			gosnmp.OctetString,
-			func() (interface{}, error) {
+			func() (any, error) {
 				return d, nil
 			},
 		)

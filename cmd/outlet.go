@@ -188,7 +188,7 @@ func outletStart(r *reporter.Reporter, config OutletConfiguration, checkOnly boo
 // OutletConfigurationUnmarshallerHook renames SNMP configuration to metadata and
 // BMP configuration to routing.
 func OutletConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
-	return func(from, to reflect.Value) (interface{}, error) {
+	return func(from, to reflect.Value) (any, error) {
 		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(OutletConfiguration{}) {
 			return from.Interface(), nil
 		}

@@ -20,7 +20,7 @@ func (c *Component) configurationHandlerFunc(gc *gin.Context) {
 	}
 
 	c.serviceLock.Lock()
-	var configuration interface{}
+	var configuration any
 	serviceConfigurations, ok := c.serviceConfigurations[ServiceType(service)]
 	if ok {
 		l := len(serviceConfigurations)

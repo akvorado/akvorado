@@ -15,7 +15,7 @@ type promHTTPLogger struct {
 }
 
 // Println outputs
-func (m promHTTPLogger) Println(v ...interface{}) {
+func (m promHTTPLogger) Println(v ...any) {
 	if e := m.l.Debug(); e.Enabled() {
 		e.Msg(fmt.Sprint(v...))
 	}

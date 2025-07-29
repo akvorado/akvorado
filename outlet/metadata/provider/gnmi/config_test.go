@@ -22,22 +22,22 @@ func TestDefaults(t *testing.T) {
 	helpers.TestConfigurationDecode(t, helpers.ConfigurationDecodeCases{
 		{
 			Description:    "nil",
-			Initial:        func() interface{} { return Configuration{} },
-			Configuration:  func() interface{} { return nil },
+			Initial:        func() any { return Configuration{} },
+			Configuration:  func() any { return nil },
 			Expected:       Configuration{},
 			SkipValidation: true,
 		}, {
 			Description:    "empty",
-			Initial:        func() interface{} { return Configuration{} },
-			Configuration:  func() interface{} { return gin.H{} },
+			Initial:        func() any { return Configuration{} },
+			Configuration:  func() any { return gin.H{} },
 			Expected:       Configuration{},
 			SkipValidation: true,
 		}, {
 			Description: "override models",
-			Initial: func() interface{} {
+			Initial: func() any {
 				return Configuration{Timeout: time.Second, MinimalRefreshInterval: time.Minute}
 			},
-			Configuration: func() interface{} {
+			Configuration: func() any {
 				return gin.H{
 					"models": []gin.H{
 						{
@@ -73,10 +73,10 @@ func TestDefaults(t *testing.T) {
 			},
 		}, {
 			Description: "defaults only",
-			Initial: func() interface{} {
+			Initial: func() any {
 				return Configuration{Timeout: time.Second, MinimalRefreshInterval: time.Minute}
 			},
-			Configuration: func() interface{} {
+			Configuration: func() any {
 				return gin.H{
 					"models": []string{"defaults"},
 				}
@@ -88,12 +88,12 @@ func TestDefaults(t *testing.T) {
 			},
 		}, {
 			Description: "defaults first",
-			Initial: func() interface{} {
+			Initial: func() any {
 				return Configuration{Timeout: time.Second, MinimalRefreshInterval: time.Minute}
 			},
-			Configuration: func() interface{} {
+			Configuration: func() any {
 				return gin.H{
-					"models": []interface{}{
+					"models": []any{
 						"defaults",
 						gin.H{
 							"name":                 "custom",
@@ -126,12 +126,12 @@ func TestDefaults(t *testing.T) {
 			},
 		}, {
 			Description: "defaults last",
-			Initial: func() interface{} {
+			Initial: func() any {
 				return Configuration{Timeout: time.Second, MinimalRefreshInterval: time.Minute}
 			},
-			Configuration: func() interface{} {
+			Configuration: func() any {
 				return gin.H{
-					"models": []interface{}{
+					"models": []any{
 						gin.H{
 							"name":                 "custom",
 							"if-index-paths":       "/some/path",
@@ -166,12 +166,12 @@ func TestDefaults(t *testing.T) {
 			},
 		}, {
 			Description: "defaults in the middle",
-			Initial: func() interface{} {
+			Initial: func() any {
 				return Configuration{Timeout: time.Second, MinimalRefreshInterval: time.Minute}
 			},
-			Configuration: func() interface{} {
+			Configuration: func() any {
 				return gin.H{
-					"models": []interface{}{
+					"models": []any{
 						gin.H{
 							"name":                 "custom1",
 							"if-index-paths":       "/some/path",

@@ -67,7 +67,7 @@ LIMIT 1`).
 	}).AnyTimes()
 
 	mockRows.EXPECT().Scan(gomock.Any()).
-		DoAndReturn(func(args ...interface{}) interface{} {
+		DoAndReturn(func(args ...any) any {
 			arg0 := args[0].(*time.Time)
 			*arg0 = time.Date(2022, 4, 4, 8, 36, 11, 10, time.UTC)
 			arg1 := args[1].(*uint64)

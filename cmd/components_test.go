@@ -55,7 +55,7 @@ func (c ComponentStartError) Start() error {
 func TestStartStopError(t *testing.T) {
 	r := reporter.NewMock(t)
 	daemonComponent := daemon.NewMock(t)
-	otherComponents := []interface{}{
+	otherComponents := []any{
 		&ComponentStartStop{},
 		&ComponentStop{},
 		&ComponentStart{},
@@ -67,7 +67,7 @@ func TestStartStopError(t *testing.T) {
 		t.Error("StartStopComponents() did not trigger an error")
 	}
 
-	expected := []interface{}{
+	expected := []any{
 		&ComponentStartStop{
 			Startable: Startable{Started: true},
 			Stopable:  Stopable{Stopped: true},
@@ -90,7 +90,7 @@ func TestStartStopError(t *testing.T) {
 func TestStartStop(t *testing.T) {
 	r := reporter.NewMock(t)
 	daemonComponent := daemon.NewMock(t)
-	otherComponents := []interface{}{
+	otherComponents := []any{
 		&ComponentStartStop{},
 		&ComponentStop{},
 		&ComponentStart{},
@@ -104,7 +104,7 @@ func TestStartStop(t *testing.T) {
 		t.Errorf("StartStopComponents() error:\n%+v", err)
 	}
 
-	expected := []interface{}{
+	expected := []any{
 		&ComponentStartStop{
 			Startable: Startable{Started: true},
 			Stopable:  Stopable{Stopped: true},

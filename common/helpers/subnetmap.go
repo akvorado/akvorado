@@ -161,7 +161,7 @@ func LooksLikeSubnetMap(v reflect.Value) (result bool) {
 // valid networks are provided as key. It also accepts a single value
 // instead of a map for backward compatibility.
 func SubnetMapUnmarshallerHook[V any]() mapstructure.DecodeHookFunc {
-	return func(from, to reflect.Value) (interface{}, error) {
+	return func(from, to reflect.Value) (any, error) {
 		if to.Type() != reflect.TypeOf(SubnetMap[V]{}) {
 			return from.Interface(), nil
 		}
@@ -248,7 +248,7 @@ func SubnetMapParseKey(k string) (string, error) {
 }
 
 // MarshalYAML turns a subnet into a map that can be marshaled.
-func (sm SubnetMap[V]) MarshalYAML() (interface{}, error) {
+func (sm SubnetMap[V]) MarshalYAML() (any, error) {
 	return sm.ToMap(), nil
 }
 

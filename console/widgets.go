@@ -64,7 +64,7 @@ LIMIT 1`, strings.Join(selectClause, ",\n "))
 	var (
 		response    = gin.H{}
 		columnTypes = rows.ColumnTypes()
-		vars        = make([]interface{}, len(columnTypes))
+		vars        = make([]any, len(columnTypes))
 	)
 	for i := range columnTypes {
 		vars[i] = reflect.New(columnTypes[i].ScanType()).Interface()

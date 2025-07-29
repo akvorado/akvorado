@@ -21,7 +21,7 @@ type Call uintptr
 type Trace []Call
 
 var pcStackPool = sync.Pool{
-	New: func() interface{} { return make([]uintptr, 1000) },
+	New: func() any { return make([]uintptr, 1000) },
 }
 
 func poolBuf() []uintptr {

@@ -21,8 +21,8 @@ func TestDecodeConfiguration(t *testing.T) {
 	helpers.TestConfigurationDecode(t, helpers.ConfigurationDecodeCases{
 		{
 			Description: "from empty configuration",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"inputs": []gin.H{
 						{
@@ -61,7 +61,7 @@ func TestDecodeConfiguration(t *testing.T) {
 			},
 		}, {
 			Description: "from existing configuration",
-			Initial: func() interface{} {
+			Initial: func() any {
 				return Configuration{
 					Inputs: []InputConfiguration{{
 						Decoder: pb.RawFlow_DECODER_NETFLOW,
@@ -72,7 +72,7 @@ func TestDecodeConfiguration(t *testing.T) {
 					}},
 				}
 			},
-			Configuration: func() interface{} {
+			Configuration: func() any {
 				return gin.H{
 					"inputs": []gin.H{
 						{
@@ -108,7 +108,7 @@ func TestDecodeConfiguration(t *testing.T) {
 			},
 		}, {
 			Description: "change type",
-			Initial: func() interface{} {
+			Initial: func() any {
 				return Configuration{
 					Inputs: []InputConfiguration{{
 						Decoder: pb.RawFlow_DECODER_NETFLOW,
@@ -116,7 +116,7 @@ func TestDecodeConfiguration(t *testing.T) {
 					}},
 				}
 			},
-			Configuration: func() interface{} {
+			Configuration: func() any {
 				return gin.H{
 					"inputs": []gin.H{
 						{
@@ -136,7 +136,7 @@ func TestDecodeConfiguration(t *testing.T) {
 			},
 		}, {
 			Description: "only set one item",
-			Initial: func() interface{} {
+			Initial: func() any {
 				return Configuration{
 					Inputs: []InputConfiguration{{
 						Decoder:         pb.RawFlow_DECODER_NETFLOW,
@@ -149,7 +149,7 @@ func TestDecodeConfiguration(t *testing.T) {
 					}},
 				}
 			},
-			Configuration: func() interface{} {
+			Configuration: func() any {
 				return gin.H{
 					"inputs": []gin.H{
 						{
@@ -170,10 +170,10 @@ func TestDecodeConfiguration(t *testing.T) {
 			},
 		}, {
 			Description: "incorrect decoder",
-			Initial: func() interface{} {
+			Initial: func() any {
 				return Configuration{}
 			},
-			Configuration: func() interface{} {
+			Configuration: func() any {
 				return gin.H{
 					"inputs": []gin.H{
 						{
@@ -194,7 +194,7 @@ func TestDecodeConfiguration(t *testing.T) {
 		},
 		{
 			Description: "netflow timestamp source netflow-packet",
-			Initial: func() interface{} {
+			Initial: func() any {
 				return Configuration{
 					Inputs: []InputConfiguration{{
 						Decoder: pb.RawFlow_DECODER_NETFLOW,
@@ -206,7 +206,7 @@ func TestDecodeConfiguration(t *testing.T) {
 					}},
 				}
 			},
-			Configuration: func() interface{} {
+			Configuration: func() any {
 				return gin.H{
 					"inputs": []gin.H{
 						{
@@ -230,7 +230,7 @@ func TestDecodeConfiguration(t *testing.T) {
 		},
 		{
 			Description: "netflow timestamp source netflow-first-switched",
-			Initial: func() interface{} {
+			Initial: func() any {
 				return Configuration{
 					Inputs: []InputConfiguration{{
 						Decoder: pb.RawFlow_DECODER_NETFLOW,
@@ -242,7 +242,7 @@ func TestDecodeConfiguration(t *testing.T) {
 					}},
 				}
 			},
-			Configuration: func() interface{} {
+			Configuration: func() any {
 				return gin.H{
 					"inputs": []gin.H{
 						{

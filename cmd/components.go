@@ -12,9 +12,9 @@ import (
 )
 
 // StartStopComponents activate/deactivate components in order.
-func StartStopComponents(r *reporter.Reporter, daemonComponent daemon.Component, otherComponents []interface{}) error {
-	components := append([]interface{}{r, daemonComponent}, otherComponents...)
-	startedComponents := []interface{}{}
+func StartStopComponents(r *reporter.Reporter, daemonComponent daemon.Component, otherComponents []any) error {
+	components := append([]any{r, daemonComponent}, otherComponents...)
+	startedComponents := []any{}
 	defer func() {
 		for _, cmp := range startedComponents {
 			if stopperC, ok := cmp.(stopper); ok {
@@ -30,7 +30,7 @@ func StartStopComponents(r *reporter.Reporter, daemonComponent daemon.Component,
 				return fmt.Errorf("unable to start component: %w", err)
 			}
 		}
-		startedComponents = append([]interface{}{cmp}, startedComponents...)
+		startedComponents = append([]any{cmp}, startedComponents...)
 	}
 
 	r.Info().

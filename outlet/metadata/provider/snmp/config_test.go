@@ -22,14 +22,14 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 	helpers.TestConfigurationDecode(t, helpers.ConfigurationDecodeCases{
 		{
 			Description:    "nil",
-			Initial:        func() interface{} { return Configuration{} },
-			Configuration:  func() interface{} { return nil },
+			Initial:        func() any { return Configuration{} },
+			Configuration:  func() any { return nil },
 			Expected:       Configuration{},
 			SkipValidation: true,
 		}, {
 			Description:   "empty",
-			Initial:       func() interface{} { return Configuration{} },
-			Configuration: func() interface{} { return gin.H{} },
+			Initial:       func() any { return Configuration{} },
+			Configuration: func() any { return gin.H{} },
 			Expected: Configuration{
 				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
 					"::/0": {Communities: []string{"public"}},
@@ -38,8 +38,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			SkipValidation: true,
 		}, {
 			Description: "single port",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"poller-timeout": "200ms",
 					"ports":          "1161",
@@ -56,8 +56,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 		}, {
 			Description: "per-prefix port",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"poller-timeout": "200ms",
 					"ports": gin.H{
@@ -78,8 +78,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 		}, {
 			Description: "no communities, no default community",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"poller-retries": 10,
 					"poller-timeout": "200ms",
@@ -94,8 +94,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 		}, {
 			Description: "communities, no default community",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"poller-timeout": "200ms",
 					"communities": gin.H{
@@ -114,8 +114,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 		}, {
 			Description: "communities, default community",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"poller-timeout":    "200ms",
 					"default-community": "private",
@@ -135,8 +135,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 		}, {
 			Description: "communities as a string",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"poller-timeout": "200ms",
 					"communities":    "private",
@@ -150,8 +150,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 		}, {
 			Description: "communities, default-community empty",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"poller-timeout":    "200ms",
 					"default-community": "",
@@ -171,8 +171,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 		}, {
 			Description: "SNMP security parameters",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"poller-timeout": "200ms",
 					"security-parameters": gin.H{
@@ -198,8 +198,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 		}, {
 			Description: "SNMP security parameters with AES256C",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"poller-timeout": "200ms",
 					"security-parameters": gin.H{
@@ -225,8 +225,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 		}, {
 			Description: "SNMP security parameters without privacy protocol",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"poller-timeout": "200ms",
 					"security-parameters": gin.H{
@@ -248,8 +248,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 		}, {
 			Description: "SNMP security parameters without authentication protocol",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"poller-timeout": "200ms",
 					"security-parameters": gin.H{
@@ -262,8 +262,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Error: true,
 		}, {
 			Description: "SNMP security parameters without authentication passphrase",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"poller-timeout": "200ms",
 					"security-parameters": gin.H{
@@ -275,8 +275,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Error: true,
 		}, {
 			Description: "SNMP security parameters without username",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"poller-timeout": "200ms",
 					"credentials": gin.H{
@@ -290,8 +290,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Error: true,
 		}, {
 			Description: "merge communities and security-parameters",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"poller-timeout": "200ms",
 					"communities": gin.H{
@@ -321,8 +321,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 		}, {
 			Description: "merge communities, security-parameters and credentials",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"poller-timeout": "200ms",
 					"communities": gin.H{
@@ -358,8 +358,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 		}, {
 			Description: "merge communities, security-parameters and default credentials",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"poller-timeout": "200ms",
 					"communities": gin.H{
@@ -393,8 +393,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 		}, {
 			Description: "conflicting SNMP version",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"poller-timeout": "200ms",
 					"credentials": gin.H{

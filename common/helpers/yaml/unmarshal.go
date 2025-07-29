@@ -15,14 +15,14 @@ import (
 
 // Unmarshal decodes the first document found within the in byte slice and
 // assigns decoded values into the out value.
-func Unmarshal(in []byte, out interface{}) (err error) {
+func Unmarshal(in []byte, out any) (err error) {
 	return yaml.Unmarshal(in, out)
 }
 
 // UnmarshalWithInclude decodes the first document found within the in byte
 // slice and assigns decoded values into the out value. It also accepts the
 // "!include" tag to include additional files contained in the provided fs.
-func UnmarshalWithInclude(fsys fs.FS, input string, out interface{}) (err error) {
+func UnmarshalWithInclude(fsys fs.FS, input string, out any) (err error) {
 	var outNode yaml.Node
 	in, err := fs.ReadFile(fsys, input)
 	if err != nil {

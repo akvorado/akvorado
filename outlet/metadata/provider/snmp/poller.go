@@ -215,13 +215,13 @@ type goSNMPLogger struct {
 	r *reporter.Reporter
 }
 
-func (l *goSNMPLogger) Print(v ...interface{}) {
+func (l *goSNMPLogger) Print(v ...any) {
 	if e := l.r.Debug(); e.Enabled() {
 		e.Msg(fmt.Sprint(v...))
 	}
 }
 
-func (l *goSNMPLogger) Printf(format string, v ...interface{}) {
+func (l *goSNMPLogger) Printf(format string, v ...any) {
 	if e := l.r.Debug(); e.Enabled() {
 		e.Msg(fmt.Sprintf(format, v...))
 	}

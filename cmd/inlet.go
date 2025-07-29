@@ -108,7 +108,7 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 	}
 
 	// Start all the components.
-	components := []interface{}{
+	components := []any{
 		httpComponent,
 		kafkaComponent,
 		flowComponent,

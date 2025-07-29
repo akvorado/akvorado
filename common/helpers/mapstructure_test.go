@@ -44,8 +44,8 @@ func TestStringToSliceHookFunc(t *testing.T) {
 	}
 	TestConfigurationDecode(t, ConfigurationDecodeCases{
 		{
-			Initial: func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial: func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"a": "blip,blop",
 					"b": "1,2,3,4",
@@ -64,7 +64,7 @@ func TestProtectedDecodeHook(t *testing.T) {
 		A string
 		B string
 	}
-	panicHook := func(from, _ reflect.Type, data interface{}) (interface{}, error) {
+	panicHook := func(from, _ reflect.Type, data any) (any, error) {
 		if from.Kind() == reflect.String {
 			panic(errors.New("noooo"))
 		}
@@ -106,8 +106,8 @@ func TestDefaultValuesConfig(t *testing.T) {
 	}))
 	TestConfigurationDecode(t, ConfigurationDecodeCases{
 		{
-			Initial: func() interface{} { return OuterConfiguration{} },
-			Configuration: func() interface{} {
+			Initial: func() any { return OuterConfiguration{} },
+			Configuration: func() any {
 				return gin.H{
 					"dd": []gin.H{
 						{
@@ -150,8 +150,8 @@ func TestRenameConfig(t *testing.T) {
 	TestConfigurationDecode(t, ConfigurationDecodeCases{
 		{
 			Description: "no rename needed",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"unchanged-label": "hello",
 					"new-label":       "bye",
@@ -163,8 +163,8 @@ func TestRenameConfig(t *testing.T) {
 			},
 		}, {
 			Description: "rename needed",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"unchanged-label": "hello",
 					"old-label":       "bye",
@@ -176,8 +176,8 @@ func TestRenameConfig(t *testing.T) {
 			},
 		}, {
 			Description: "conflicts",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"unchanged-label": "hello",
 					"old-label":       "bye",
@@ -201,16 +201,16 @@ func TestParametrizedConfig(t *testing.T) {
 	type OuterConfiguration struct {
 		AA     string
 		BB     string
-		Config interface{}
+		Config any
 	}
-	available := map[string](func() interface{}){
-		"type1": func() interface{} {
+	available := map[string](func() any){
+		"type1": func() any {
 			return InnerConfigurationType1{
 				CC: "cc1",
 				DD: "dd1",
 			}
 		},
-		"type2": func() interface{} {
+		"type2": func() any {
 			return InnerConfigurationType2{
 				CC: "cc2",
 				EE: "ee2",
@@ -223,8 +223,8 @@ func TestParametrizedConfig(t *testing.T) {
 		TestConfigurationDecode(t, ConfigurationDecodeCases{
 			{
 				Description: "type1",
-				Initial:     func() interface{} { return OuterConfiguration{} },
-				Configuration: func() interface{} {
+				Initial:     func() any { return OuterConfiguration{} },
+				Configuration: func() any {
 					return gin.H{
 						"type": "type1",
 						"aa":   "a1",
@@ -243,8 +243,8 @@ func TestParametrizedConfig(t *testing.T) {
 				},
 			}, {
 				Description: "type2",
-				Initial:     func() interface{} { return OuterConfiguration{} },
-				Configuration: func() interface{} {
+				Initial:     func() any { return OuterConfiguration{} },
+				Configuration: func() any {
 					return gin.H{
 						"type": "type2",
 						"aa":   "a2",
@@ -263,8 +263,8 @@ func TestParametrizedConfig(t *testing.T) {
 				},
 			}, {
 				Description: "unknown type",
-				Initial:     func() interface{} { return OuterConfiguration{} },
-				Configuration: func() interface{} {
+				Initial:     func() any { return OuterConfiguration{} },
+				Configuration: func() any {
 					return gin.H{
 						"type": "type3",
 						"aa":   "a2",
@@ -345,8 +345,8 @@ func TestDeprecatedFields(t *testing.T) {
 	RegisterMapstructureDeprecatedFields[Configuration]("C", "D")
 	TestConfigurationDecode(t, ConfigurationDecodeCases{
 		{
-			Initial: func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial: func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"a": "hello",
 					"b": "bye",
@@ -359,8 +359,8 @@ func TestDeprecatedFields(t *testing.T) {
 				B: "bye",
 			},
 		}, {
-			Initial: func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial: func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"a": "hello",
 					"b": "bye",

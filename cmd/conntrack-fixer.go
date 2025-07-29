@@ -51,7 +51,7 @@ containers started with the label "akvorado.conntrack.fix=1".`,
 		addCommonHTTPHandlers(r, "conntrack-fixer", httpComponent)
 		versionMetrics(r)
 
-		components := []interface{}{
+		components := []any{
 			httpComponent,
 			conntrackFixerComponent,
 		}

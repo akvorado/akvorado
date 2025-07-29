@@ -20,9 +20,9 @@ import (
 type ConfigurationDecodeCases []struct {
 	Description    string
 	Pos            Pos
-	Initial        func() interface{} // initial value for configuration
-	Configuration  func() interface{} // configuration to decode
-	Expected       interface{}
+	Initial        func() any // initial value for configuration
+	Configuration  func() any // configuration to decode
+	Expected       any
 	Error          bool
 	SkipValidation bool
 }
@@ -41,7 +41,7 @@ func TestConfigurationDecode(t *testing.T, cases ConfigurationDecodeCases, optio
 			}
 			t.Run(title, func(t *testing.T) {
 				t.Helper()
-				var configuration interface{}
+				var configuration any
 				if fromYAML {
 					// Encode and decode with YAML
 					out, err := yaml.Marshal(tc.Configuration())

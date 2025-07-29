@@ -28,7 +28,7 @@ type ProviderConfiguration struct {
 }
 
 // MarshalYAML undoes ConfigurationUnmarshallerHook().
-func (pc ProviderConfiguration) MarshalYAML() (interface{}, error) {
+func (pc ProviderConfiguration) MarshalYAML() (any, error) {
 	return helpers.ParametrizedConfigurationMarshalYAML(pc, providers)
 }
 

@@ -93,13 +93,13 @@ func TestTLSConfiguration(t *testing.T) {
 	helpers.TestConfigurationDecode(t, helpers.ConfigurationDecodeCases{
 		{
 			Description:   "no TLS",
-			Initial:       func() interface{} { return DefaultConfiguration() },
-			Configuration: func() interface{} { return nil },
+			Initial:       func() any { return DefaultConfiguration() },
+			Configuration: func() any { return nil },
 			Expected:      DefaultConfiguration(),
 		}, {
 			Description: "TLS without auth",
-			Initial:     func() interface{} { return DefaultConfiguration() },
-			Configuration: func() interface{} {
+			Initial:     func() any { return DefaultConfiguration() },
+			Configuration: func() any {
 				return gin.H{
 					"tls": gin.H{
 						"enable": true,
@@ -116,8 +116,8 @@ func TestTLSConfiguration(t *testing.T) {
 			},
 		}, {
 			Description: "TLS SASL plain, skip cert verification (old style)",
-			Initial:     func() interface{} { return DefaultConfiguration() },
-			Configuration: func() interface{} {
+			Initial:     func() any { return DefaultConfiguration() },
+			Configuration: func() any {
 				return gin.H{
 					"tls": gin.H{
 						"enable":         true,
@@ -143,8 +143,8 @@ func TestTLSConfiguration(t *testing.T) {
 			},
 		}, {
 			Description: "TLS SASL plain, skip cert verification",
-			Initial:     func() interface{} { return DefaultConfiguration() },
-			Configuration: func() interface{} {
+			Initial:     func() any { return DefaultConfiguration() },
+			Configuration: func() any {
 				return gin.H{
 					"sasl": gin.H{
 						"username":  "hello",
@@ -168,8 +168,8 @@ func TestTLSConfiguration(t *testing.T) {
 			},
 		}, {
 			Description: "TLS SASL SCRAM 256",
-			Initial:     func() interface{} { return DefaultConfiguration() },
-			Configuration: func() interface{} {
+			Initial:     func() any { return DefaultConfiguration() },
+			Configuration: func() any {
 				return gin.H{
 					"tls": gin.H{
 						"enable": true,
@@ -197,8 +197,8 @@ func TestTLSConfiguration(t *testing.T) {
 			},
 		}, {
 			Description: "TLS SASL OAuth",
-			Initial:     func() interface{} { return DefaultConfiguration() },
-			Configuration: func() interface{} {
+			Initial:     func() any { return DefaultConfiguration() },
+			Configuration: func() any {
 				return gin.H{
 					"tls": gin.H{
 						"enable": true,
@@ -230,8 +230,8 @@ func TestTLSConfiguration(t *testing.T) {
 			},
 		}, {
 			Description: "OAuth requires a token URL",
-			Initial:     func() interface{} { return DefaultConfiguration() },
-			Configuration: func() interface{} {
+			Initial:     func() any { return DefaultConfiguration() },
+			Configuration: func() any {
 				return gin.H{
 					"sasl": gin.H{
 						"username":  "hello",
@@ -243,8 +243,8 @@ func TestTLSConfiguration(t *testing.T) {
 			Error: true,
 		}, {
 			Description: "OAuth token URL only with OAuth",
-			Initial:     func() interface{} { return DefaultConfiguration() },
-			Configuration: func() interface{} {
+			Initial:     func() any { return DefaultConfiguration() },
+			Configuration: func() any {
 				return gin.H{
 					"sasl": gin.H{
 						"username":        "hello",

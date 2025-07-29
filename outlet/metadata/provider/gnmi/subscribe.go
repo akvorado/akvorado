@@ -66,7 +66,7 @@ func subscribeResponseToEvents(response *gnmi.SubscribeResponse) []event {
 			}
 			// For JSON, we need to walk the structure to create events. We
 			// assume that we only get simple cases: no keys, no slice.
-			var value interface{}
+			var value any
 			if err := json.Unmarshal(jsondata, &value); err != nil {
 				continue
 			}
@@ -91,13 +91,13 @@ func subscribeResponsesToEvents(responses []*gnmi.SubscribeResponse) []event {
 
 // jsonAppendToEvents appends the events derived from the provided event plus
 // the JSON-decoded value.
-func jsonAppendToEvents(events []event, ev event, value interface{}) []event {
+func jsonAppendToEvents(events []event, ev event, value any) []event {
 	switch value := value.(type) {
 	default:
 		return events
 	// Slices: not handled
 	// Maps
-	case map[string]interface{}:
+	case map[string]any:
 		for k, v := range value {
 			currentEvent := ev
 			currentEvent.Path = path.Join(currentEvent.Path, k)

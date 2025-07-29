@@ -18,8 +18,8 @@ func TestSourceDecode(t *testing.T) {
 	helpers.TestConfigurationDecode(t, helpers.ConfigurationDecodeCases{
 		{
 			Description: "Empty",
-			Initial:     func() interface{} { return Source{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Source{} },
+			Configuration: func() any {
 				return gin.H{
 					"url":      "https://example.net",
 					"interval": "10m",
@@ -33,8 +33,8 @@ func TestSourceDecode(t *testing.T) {
 			},
 		}, {
 			Description: "Simple transform",
-			Initial:     func() interface{} { return Source{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Source{} },
+			Configuration: func() any {
 				return gin.H{
 					"url":       "https://example.net",
 					"interval":  "10m",
@@ -50,8 +50,8 @@ func TestSourceDecode(t *testing.T) {
 			},
 		}, {
 			Description: "Use POST",
-			Initial:     func() interface{} { return Source{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Source{} },
+			Configuration: func() any {
 				return gin.H{
 					"url":       "https://example.net",
 					"method":    "POST",
@@ -69,8 +69,8 @@ func TestSourceDecode(t *testing.T) {
 			},
 		}, {
 			Description: "Complex transform",
-			Initial:     func() interface{} { return Source{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Source{} },
+			Configuration: func() any {
 				return gin.H{
 					"url":      "https://example.net",
 					"interval": "10m",
@@ -90,8 +90,8 @@ func TestSourceDecode(t *testing.T) {
 			},
 		}, {
 			Description: "Incorrect transform",
-			Initial:     func() interface{} { return Source{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Source{} },
+			Configuration: func() any {
 				return gin.H{
 					"url":       "https://example.net",
 					"interval":  "10m",

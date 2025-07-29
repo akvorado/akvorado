@@ -24,12 +24,12 @@ type HTTPEndpointCases []struct {
 	Method      string
 	URL         string
 	Header      http.Header
-	JSONInput   interface{}
+	JSONInput   any
 
 	ContentType string
 	StatusCode  int
 	FirstLines  []string
-	JSONOutput  interface{}
+	JSONOutput  any
 }
 
 // TestHTTPEndpoints test a few HTTP endpoints

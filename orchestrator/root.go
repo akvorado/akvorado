@@ -18,7 +18,7 @@ type Component struct {
 	config Configuration
 
 	serviceLock           sync.Mutex
-	serviceConfigurations map[ServiceType][]interface{}
+	serviceConfigurations map[ServiceType][]any
 }
 
 // Dependencies define the dependencies of the broker.
@@ -49,7 +49,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		d:      &dependencies,
 		config: configuration,
 
-		serviceConfigurations: map[ServiceType][]interface{}{},
+		serviceConfigurations: map[ServiceType][]any{},
 	}
 
 	c.d.HTTP.GinRouter.GET("/api/v0/orchestrator/configuration/:service", c.configurationHandlerFunc)
@@ -59,10 +59,10 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 }
 
 // RegisterConfiguration registers the configuration for a service.
-func (c *Component) RegisterConfiguration(service ServiceType, configuration interface{}) {
+func (c *Component) RegisterConfiguration(service ServiceType, configuration any) {
 	c.serviceLock.Lock()
 	if _, ok := c.serviceConfigurations[service]; !ok {
-		c.serviceConfigurations[service] = []interface{}{}
+		c.serviceConfigurations[service] = []any{}
 	}
 	c.serviceConfigurations[service] = append(c.serviceConfigurations[service], configuration)
 	c.serviceLock.Unlock()

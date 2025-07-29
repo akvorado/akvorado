@@ -52,7 +52,7 @@ func TestEnrich(t *testing.T) {
 				InIf:            100,
 				OutIf:           200,
 				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
-				OtherColumns: map[schema.ColumnKey]interface{}{
+				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnExporterName:     "192_0_2_142",
 					schema.ColumnInIfName:         "Gi0/0/100",
 					schema.ColumnOutIfName:        "Gi0/0/200",
@@ -82,7 +82,7 @@ func TestEnrich(t *testing.T) {
 				InIf:            100,
 				OutIf:           200,
 				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
-				OtherColumns: map[schema.ColumnKey]interface{}{
+				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnExporterName:     "192_0_2_142",
 					schema.ColumnInIfName:         "Gi0/0/100",
 					schema.ColumnOutIfName:        "Gi0/0/200",
@@ -107,7 +107,7 @@ func TestEnrich(t *testing.T) {
 				InIf:            100,
 				OutIf:           200,
 				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
-				OtherColumns: map[schema.ColumnKey]interface{}{
+				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnExporterName:     "192_0_2_142",
 					schema.ColumnInIfName:         "Gi0/0/100",
 					schema.ColumnOutIfName:        "Gi0/0/200",
@@ -136,7 +136,7 @@ func TestEnrich(t *testing.T) {
 				InIf:            100,
 				OutIf:           200,
 				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
-				OtherColumns: map[schema.ColumnKey]interface{}{
+				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnExporterName:     "192_0_2_142",
 					schema.ColumnInIfName:         "Gi0/0/100",
 					schema.ColumnOutIfName:        "Gi0/0/200",
@@ -168,7 +168,7 @@ func TestEnrich(t *testing.T) {
 				InIf:            100,
 				OutIf:           200,
 				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
-				OtherColumns: map[schema.ColumnKey]interface{}{
+				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnExporterName:     "192_0_2_142",
 					schema.ColumnExporterRegion:   "asia",
 					schema.ColumnExporterTenant:   "alfred",
@@ -202,7 +202,7 @@ func TestEnrich(t *testing.T) {
 				InIf:            100,
 				OutIf:           200,
 				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
-				OtherColumns: map[schema.ColumnKey]interface{}{
+				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnExporterName:     "192_0_2_142",
 					schema.ColumnExporterTenant:   "alfred",
 					schema.ColumnInIfName:         "Gi0/0/100",
@@ -266,7 +266,7 @@ func TestEnrich(t *testing.T) {
 				InIf:            100,
 				OutIf:           200,
 				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
-				OtherColumns: map[schema.ColumnKey]interface{}{
+				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnExporterName:     "192_0_2_142",
 					schema.ColumnInIfProvider:     "index1",
 					schema.ColumnOutIfProvider:    "index2",
@@ -299,7 +299,7 @@ func TestEnrich(t *testing.T) {
 				InIf:            100,
 				OutIf:           200,
 				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
-				OtherColumns: map[schema.ColumnKey]interface{}{
+				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnExporterName:     "192_0_2_142",
 					schema.ColumnInIfName:         "eth100",
 					schema.ColumnOutIfName:        "Gi0/0/200",
@@ -333,7 +333,7 @@ func TestEnrich(t *testing.T) {
 				SrcVlan:         10,
 				DstVlan:         300,
 				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
-				OtherColumns: map[schema.ColumnKey]interface{}{
+				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnExporterName:     "192_0_2_142",
 					schema.ColumnInIfName:         "Gi0/0/100",
 					schema.ColumnOutIfName:        "Gi0/0/200.300",
@@ -368,7 +368,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				InIf:            100,
 				OutIf:           200,
 				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
-				OtherColumns: map[schema.ColumnKey]interface{}{
+				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnExporterName:     "192_0_2_142",
 					schema.ColumnInIfName:         "Gi0/0/100",
 					schema.ColumnOutIfName:        "Gi0/0/200",
@@ -401,7 +401,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				InIf:            100,
 				OutIf:           200,
 				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
-				OtherColumns: map[schema.ColumnKey]interface{}{
+				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnExporterName:     "192_0_2_142",
 					schema.ColumnInIfName:         "Gi0/0/100",
 					schema.ColumnOutIfName:        "Gi0/0/200",
@@ -434,7 +434,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				InIf:            100,
 				OutIf:           200,
 				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
-				OtherColumns: map[schema.ColumnKey]interface{}{
+				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnExporterName:     "192_0_2_142",
 					schema.ColumnInIfName:         "Gi0/0/100",
 					schema.ColumnOutIfName:        "Gi0/0/200",
@@ -468,7 +468,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				InIf:            100,
 				OutIf:           200,
 				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
-				OtherColumns: map[schema.ColumnKey]interface{}{
+				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnExporterName:      "192_0_2_142",
 					schema.ColumnInIfName:          "Gi0/0/100",
 					schema.ColumnOutIfName:         "Gi0/0/200",
@@ -507,7 +507,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				InIf:            1010,
 				OutIf:           2010,
 				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
-				OtherColumns: map[schema.ColumnKey]interface{}{
+				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnExporterName:      "192_0_2_142",
 					schema.ColumnExporterGroup:     "metadata group",
 					schema.ColumnExporterRegion:    "metadata region",
@@ -553,7 +553,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				DstAS:           174,
 				SrcNetMask:      27,
 				DstNetMask:      27,
-				OtherColumns: map[schema.ColumnKey]interface{}{
+				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnExporterName:     "192_0_2_142",
 					schema.ColumnInIfName:         "Gi0/0/100",
 					schema.ColumnOutIfName:        "Gi0/0/200",

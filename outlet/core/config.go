@@ -75,7 +75,7 @@ const (
 // ASNProviderUnmarshallerHook normalize a net provider configuration:
 //   - map bmp to routing
 func ASNProviderUnmarshallerHook() mapstructure.DecodeHookFunc {
-	return func(from, to reflect.Value) (interface{}, error) {
+	return func(from, to reflect.Value) (any, error) {
 		if from.Kind() != reflect.String || to.Type() != reflect.TypeOf(ASNProvider(0)) {
 			return from.Interface(), nil
 		}
@@ -92,7 +92,7 @@ func ASNProviderUnmarshallerHook() mapstructure.DecodeHookFunc {
 // NetProviderUnmarshallerHook normalize a net provider configuration:
 //   - map bmp to routing
 func NetProviderUnmarshallerHook() mapstructure.DecodeHookFunc {
-	return func(from, to reflect.Value) (interface{}, error) {
+	return func(from, to reflect.Value) (any, error) {
 		if from.Kind() != reflect.String || to.Type() != reflect.TypeOf(NetProvider(0)) {
 			return from.Interface(), nil
 		}
@@ -106,7 +106,7 @@ func NetProviderUnmarshallerHook() mapstructure.DecodeHookFunc {
 // ConfigurationUnmarshallerHook normalize core configuration:
 //   - replace ignore-asn-from-flow by asn-providers
 func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
-	return func(from, to reflect.Value) (interface{}, error) {
+	return func(from, to reflect.Value) (any, error) {
 		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(Configuration{}) {
 			return from.Interface(), nil
 		}

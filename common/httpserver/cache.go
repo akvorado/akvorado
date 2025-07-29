@@ -61,6 +61,6 @@ type cacheLogger struct {
 	r *reporter.Reporter
 }
 
-func (cl cacheLogger) Errorf(msg string, args ...interface{}) {
+func (cl cacheLogger) Errorf(msg string, args ...any) {
 	cl.r.Error().Msgf(msg, args...)
 }

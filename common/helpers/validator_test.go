@@ -93,7 +93,7 @@ func TestSubnetMapValidator(t *testing.T) {
 
 	cases := []struct {
 		Description string
-		Value       interface{}
+		Value       any
 		Error       bool
 	}{
 		{
@@ -179,7 +179,7 @@ func TestNetIPValidation(t *testing.T) {
 	}
 	cases := []struct {
 		Description string
-		Value       interface{}
+		Value       any
 		Error       bool
 	}{
 		{

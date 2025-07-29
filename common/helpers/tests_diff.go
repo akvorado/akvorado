@@ -22,12 +22,12 @@ var prettyC = pretty.Config{
 	IncludeUnexported: false,
 }
 
-func formatByte(v interface{}) string {
+func formatByte(v any) string {
 	return fmt.Sprintf("0x%x", v)
 }
 
-func defaultPrettyFormatters() map[reflect.Type]interface{} {
-	result := map[reflect.Type]interface{}{
+func defaultPrettyFormatters() map[reflect.Type]any {
+	result := map[reflect.Type]any{
 		reflect.TypeOf(net.IP{}):            fmt.Sprint,
 		reflect.TypeOf(netip.Addr{}):        fmt.Sprint,
 		reflect.TypeOf(time.Time{}):         fmt.Sprint,
@@ -42,11 +42,11 @@ func defaultPrettyFormatters() map[reflect.Type]interface{} {
 	return result
 }
 
-var nonDefaultPrettyFormatters = map[reflect.Type]interface{}{}
+var nonDefaultPrettyFormatters = map[reflect.Type]any{}
 
 // AddPrettyFormatter add a global pretty formatter. We cannot put everything in
 // the default map due to cycles.
-func AddPrettyFormatter(t reflect.Type, fn interface{}) {
+func AddPrettyFormatter(t reflect.Type, fn any) {
 	nonDefaultPrettyFormatters[t] = fn
 }
 
@@ -55,12 +55,12 @@ type DiffOption struct {
 	kind int
 	// When this is a formatter
 	t  reflect.Type
-	fn interface{}
+	fn any
 }
 
 // Diff return a diff of two objects. If no diff, an empty string is
 // returned.
-func Diff(a, b interface{}, options ...DiffOption) string {
+func Diff(a, b any, options ...DiffOption) string {
 	prettyC := prettyC
 	prettyC.Formatter = defaultPrettyFormatters()
 	for _, option := range options {
@@ -84,6 +84,6 @@ var (
 )
 
 // DiffFormatter adds a new formatter
-func DiffFormatter(t reflect.Type, fn interface{}) DiffOption {
+func DiffFormatter(t reflect.Type, fn any) DiffOption {
 	return DiffOption{kind: 3, t: t, fn: fn}
 }

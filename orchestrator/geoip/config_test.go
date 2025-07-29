@@ -15,18 +15,18 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 	helpers.TestConfigurationDecode(t, helpers.ConfigurationDecodeCases{
 		{
 			Description:   "nil",
-			Initial:       func() interface{} { return Configuration{} },
-			Configuration: func() interface{} { return nil },
+			Initial:       func() any { return Configuration{} },
+			Configuration: func() any { return nil },
 			Expected:      Configuration{},
 		}, {
 			Description:   "empty",
-			Initial:       func() interface{} { return Configuration{} },
-			Configuration: func() interface{} { return gin.H{} },
+			Initial:       func() any { return Configuration{} },
+			Configuration: func() any { return gin.H{} },
 			Expected:      Configuration{},
 		}, {
 			Description: "no country-database, no geoip-database",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"asn-database": []string{"something"},
 					"optional":     true,
@@ -38,8 +38,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 		}, {
 			Description: "country-database, no geoip-database",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"asn-database":     []string{"something"},
 					"country-database": []string{"something else"},
@@ -51,8 +51,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 		}, {
 			Description: "no country-database, geoip-database",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"asn-database": []string{"something"},
 					"geo-database": []string{"something else"},
@@ -64,8 +64,8 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			},
 		}, {
 			Description: "both country-database, geoip-database",
-			Initial:     func() interface{} { return Configuration{} },
-			Configuration: func() interface{} {
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
 				return gin.H{
 					"asn-database":     []string{"something"},
 					"geo-database":     []string{"something else"},

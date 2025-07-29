@@ -82,7 +82,7 @@ func TestCore(t *testing.T) {
 			OutIf:           out,
 			SrcAddr:         netip.MustParseAddr("::ffff:67.43.156.77"),
 			DstAddr:         netip.MustParseAddr("::ffff:2.125.160.216"),
-			OtherColumns: map[schema.ColumnKey]interface{}{
+			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnBytes:   6765,
 				schema.ColumnPackets: 4,
 				schema.ColumnEType:   0x800,

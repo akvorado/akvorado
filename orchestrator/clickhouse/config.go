@@ -105,7 +105,7 @@ type NetworkAttributes struct {
 // also accepts a string instead of attributes for backward
 // compatibility.
 func NetworkAttributesUnmarshallerHook() mapstructure.DecodeHookFunc {
-	return func(from, to reflect.Value) (interface{}, error) {
+	return func(from, to reflect.Value) (any, error) {
 		from = helpers.ElemOrIdentity(from)
 		to = helpers.ElemOrIdentity(to)
 		if to.Type() != reflect.TypeOf(NetworkAttributes{}) {

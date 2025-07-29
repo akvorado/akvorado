@@ -35,7 +35,7 @@ type ConfigRelatedOptions struct {
 
 // Parse parses the configuration file (if present) and the
 // environment variables into the provided configuration.
-func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config interface{}) error {
+func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config any) error {
 	var rawConfig gin.H
 	if cfgFile := c.Path; cfgFile != "" {
 		if strings.HasPrefix(cfgFile, "http://") || strings.HasPrefix(cfgFile, "https://") {
@@ -112,11 +112,11 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 		// build a map "squid -> purple -> quirk ->
 		// 47". From AKVORADO_CFG_CMP_SQUID_3_PURPLE=47, we
 		// build "squid[3] -> purple -> 47"
-		var rawConfig interface{}
+		var rawConfig any
 		rawConfig = kv[1]
 		for i := len(kk) - 1; i > 2; i-- {
 			if index, err := strconv.Atoi(kk[i]); err == nil {
-				newRawConfig := make([]interface{}, index+1)
+				newRawConfig := make([]any, index+1)
 				newRawConfig[index] = rawConfig
 				rawConfig = newRawConfig
 			} else {
@@ -171,7 +171,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config inte
 // the Reset() method if present.
 func DefaultHook() (mapstructure.DecodeHookFunc, func()) {
 	disabled := false
-	hook := func(from, to reflect.Value) (interface{}, error) {
+	hook := func(from, to reflect.Value) (any, error) {
 		if disabled {
 			return from.Interface(), nil
 		}
@@ -217,7 +217,7 @@ func DefaultHook() (mapstructure.DecodeHookFunc, func()) {
 // non-nil slice. Like DefaultHook, it can be disabled.
 func ZeroSliceHook() (mapstructure.DecodeHookFunc, func()) {
 	disabled := false
-	hook := func(from, to reflect.Value) (interface{}, error) {
+	hook := func(from, to reflect.Value) (any, error) {
 		if disabled {
 			return from.Interface(), nil
 		}

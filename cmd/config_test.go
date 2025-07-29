@@ -170,7 +170,7 @@ module2:
 				"workers":       5,
 				"intervalvalue": "20m0s",
 			},
-			"elements": []interface{}{
+			"elements": []any{
 				gin.H{
 					"name":  "first",
 					"gauge": 67,
@@ -356,7 +356,7 @@ invalid key "unused"`); diff != "" {
 }
 
 func TestDefaultInSlice(t *testing.T) {
-	try := func(t *testing.T, parse func(cmd.ConfigRelatedOptions, *bytes.Buffer) interface{}) {
+	try := func(t *testing.T, parse func(cmd.ConfigRelatedOptions, *bytes.Buffer) any) {
 		// Configuration file
 		config := `---
 modules:
@@ -434,7 +434,7 @@ modules:
 		}
 	}
 	t.Run("without pointer", func(t *testing.T) {
-		try(t, func(c cmd.ConfigRelatedOptions, out *bytes.Buffer) interface{} {
+		try(t, func(c cmd.ConfigRelatedOptions, out *bytes.Buffer) any {
 			parsed := struct {
 				Modules []dummyConfiguration
 			}{}
@@ -445,7 +445,7 @@ modules:
 		})
 	})
 	t.Run("with pointer", func(t *testing.T) {
-		try(t, func(c cmd.ConfigRelatedOptions, out *bytes.Buffer) interface{} {
+		try(t, func(c cmd.ConfigRelatedOptions, out *bytes.Buffer) any {
 			parsed := struct {
 				Modules []*dummyConfiguration
 			}{}

@@ -46,7 +46,7 @@ type InputConfiguration struct {
 }
 
 // MarshalYAML undoes ConfigurationUnmarshallerHook().
-func (ic InputConfiguration) MarshalYAML() (interface{}, error) {
+func (ic InputConfiguration) MarshalYAML() (any, error) {
 	return helpers.ParametrizedConfigurationMarshalYAML(ic, inputs)
 }
 

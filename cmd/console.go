@@ -131,7 +131,7 @@ func consoleStart(r *reporter.Reporter, config ConsoleConfiguration, checkOnly b
 	}
 
 	// Start all the components.
-	components := []interface{}{
+	components := []any{
 		httpComponent,
 		clickhouseComponent,
 		authenticationComponent,

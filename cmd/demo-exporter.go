@@ -124,7 +124,7 @@ func demoExporterStart(r *reporter.Reporter, config DemoExporterConfiguration, c
 	}
 
 	// Start all the components.
-	components := []interface{}{
+	components := []any{
 		httpComponent,
 		snmpComponent,
 		bmpComponent,

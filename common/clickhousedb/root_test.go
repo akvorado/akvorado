@@ -58,7 +58,7 @@ func TestMock(t *testing.T) {
 			Return(mockRows, nil)
 		mockRows.EXPECT().Next().Return(true)
 		mockRows.EXPECT().Close()
-		mockRows.EXPECT().Scan(gomock.Any()).DoAndReturn(func(args ...interface{}) interface{} {
+		mockRows.EXPECT().Scan(gomock.Any()).DoAndReturn(func(args ...any) any {
 			arg0 := args[0].(*uint64)
 			*arg0 = uint64(10)
 			arg1 := args[1].(*uint64)

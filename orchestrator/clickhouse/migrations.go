@@ -19,7 +19,7 @@ type migrationStep struct {
 	// CheckQuery to execute to check if the step is needed.
 	CheckQuery string
 	// Arguments to use for the query
-	Args []interface{}
+	Args []any
 	// Function to execute if the query returns no row or returns `0'.
 	Do func() error
 }

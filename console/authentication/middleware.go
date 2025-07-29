@@ -47,7 +47,7 @@ func (customHeaderBinding) Name() string {
 }
 
 // Bind will bind struct fields to HTTP headers using the configured mapping.
-func (b customHeaderBinding) Bind(req *http.Request, obj interface{}) error {
+func (b customHeaderBinding) Bind(req *http.Request, obj any) error {
 	value := reflect.ValueOf(obj).Elem()
 	tValue := reflect.TypeOf(obj).Elem()
 	if value.Kind() != reflect.Struct {

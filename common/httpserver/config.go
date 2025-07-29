@@ -104,7 +104,7 @@ func DefaultConfiguration() Configuration {
 }
 
 // MarshalYAML undoes ConfigurationUnmarshallerHook().
-func (cc CacheConfiguration) MarshalYAML() (interface{}, error) {
+func (cc CacheConfiguration) MarshalYAML() (any, error) {
 	return helpers.ParametrizedConfigurationMarshalYAML(cc, cacheConfigurationMap)
 }
 

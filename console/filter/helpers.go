@@ -188,18 +188,18 @@ func lastIP(subnet netip.Prefix) netip.Addr {
 	return netip.AddrFrom16(a16)
 }
 
-func quote(v interface{}) string {
+func quote(v any) string {
 	return "'" + strings.NewReplacer(`\`, `\\`, `'`, `\'`).Replace(toString(v)) + "'"
 }
 
-func toSlice(v interface{}) []interface{} {
+func toSlice(v any) []any {
 	if v == nil {
 		return nil
 	}
-	return v.([]interface{})
+	return v.([]any)
 }
 
-func toString(v interface{}) string {
+func toString(v any) string {
 	switch s := v.(type) {
 	case string:
 		return s

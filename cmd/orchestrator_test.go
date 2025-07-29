@@ -42,7 +42,7 @@ func TestOrchestratorConfig(t *testing.T) {
 				t.Fatalf("ReadFile() error:\n%+v", err)
 			}
 			var expectedYAML struct {
-				Paths map[string]interface{} `yaml:"paths"`
+				Paths map[string]any `yaml:"paths"`
 			}
 			if err := yaml.Unmarshal(expected, &expectedYAML); err != nil {
 				t.Fatalf("yaml.Unmarshal(expected) error:\n%+v", err)
@@ -57,30 +57,30 @@ func TestOrchestratorConfig(t *testing.T) {
 			if err := root.Execute(); err != nil {
 				t.Fatalf("`orchestrator` command error:\n%+v", err)
 			}
-			var gotYAML map[string]interface{}
+			var gotYAML map[string]any
 			if err := yaml.Unmarshal(buf.Bytes(), &gotYAML); err != nil {
 				t.Fatalf("yaml.Unmarshal(output) error:\n%+v", err)
 			}
 			for path, expected := range expectedYAML.Paths {
-				var got interface{}
+				var got any
 				got = gotYAML
 				i := 0
 				for _, component := range strings.Split(path, ".") {
 					var ok bool
 					i++
 					switch gotConcrete := got.(type) {
-					case []interface{}:
+					case []any:
 						index, err := strconv.Atoi(component)
 						if err != nil {
 							t.Fatalf("key %q at level %d should be an int", path, i)
 						}
 						got = gotConcrete[index]
-					case map[interface{}]interface{}:
+					case map[any]any:
 						got, ok = gotConcrete[component]
 						if !ok {
 							t.Fatalf("key %q does not exist in result", path)
 						}
-					case map[string]interface{}:
+					case map[string]any:
 						got, ok = gotConcrete[component]
 						if !ok {
 							t.Fatalf("key %q does not exist in result", path)

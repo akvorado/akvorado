@@ -54,7 +54,7 @@ func (nd *Decoder) decodeNFv5(packet *netflowlegacy.PacketNetFlowV5, ts, sysUpti
 	}
 }
 
-func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets []interface{}, samplingRateSys *samplingRateSystem, ts, sysUptime uint64, options decoder.Option, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
+func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets []any, samplingRateSys *samplingRateSystem, ts, sysUptime uint64, options decoder.Option, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
 	// Look for sampling rate in option data flowsets
 	for _, flowSet := range flowSets {
 		switch tFlowSet := flowSet.(type) {
