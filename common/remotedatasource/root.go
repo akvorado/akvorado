@@ -39,6 +39,25 @@ type Component[T any] struct {
 	DataSourcesReady chan bool // closed when all data sources are ready
 }
 
+var (
+	// ErrBuildRequest is triggered when we cannot build an HTTP request
+	ErrBuildRequest = errors.New("cannot build HTTP request")
+	// ErrFetchDataSource is triggered when we cannot fetch the data source
+	ErrFetchDataSource = errors.New("cannot fetch data source")
+	// ErrStatusCode is triggered if status code is not 200
+	ErrStatusCode = errors.New("unexpected HTTP status code")
+	// ErrJSONDecode is triggered for any decoding issue
+	ErrJSONDecode = errors.New("cannot decode JSON")
+	// ErrMapResult is triggered when we cannot map the JSON result to the expected structure
+	ErrMapResult = errors.New("cannot map JSON")
+	// ErrValidate is triggered when there is a check failure
+	ErrValidate = errors.New("cannot validate checks")
+	// ErrJQExecute is triggered when we cannot execute the jq filter
+	ErrJQExecute = errors.New("cannot execute jq filter")
+	// ErrEmpty is triggered if the results are empty
+	ErrEmpty = errors.New("empty result")
+)
+
 // New creates a new remote data source fetcher component.
 func New[T any](r *reporter.Reporter, provider ProviderFunc, dataType string, dataSources map[string]Source) (*Component[T], error) {
 	c := Component[T]{
@@ -58,25 +77,6 @@ func New[T any](r *reporter.Reporter, provider ProviderFunc, dataType string, da
 	c.initMetrics()
 	return &c, nil
 }
-
-var (
-	// ErrBuildRequest is triggered when we cannot build an HTTP request
-	ErrBuildRequest = errors.New("cannot build HTTP request")
-	// ErrFetchDataSource is triggered when we cannot fetch the data source
-	ErrFetchDataSource = errors.New("cannot fetch data source")
-	// ErrStatusCode is triggered if status code is not 200
-	ErrStatusCode = errors.New("unexpected HTTP status code")
-	// ErrJSONDecode is triggered for any decoding issue
-	ErrJSONDecode = errors.New("cannot decode JSON")
-	// ErrMapResult is triggered when we cannot map the JSON result to the expected structure
-	ErrMapResult = errors.New("cannot map JSON")
-	// ErrValidate is triggered when there is a check failure
-	ErrValidate = errors.New("cannot validate checks")
-	// ErrJQExecute is triggered when we cannot execute the jq filter
-	ErrJQExecute = errors.New("cannot execute jq filter")
-	// ErrEmpty is triggered if the results are empty
-	ErrEmpty = errors.New("empty result")
-)
 
 // Fetch retrieves data from a configured Source, and returns a list
 // of results decoded from JSON to generic type. Fetch should be used in
