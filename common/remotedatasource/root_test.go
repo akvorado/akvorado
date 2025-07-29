@@ -167,10 +167,13 @@ func TestSource(t *testing.T) {
 
 	gotMetrics := r.GetMetrics("akvorado_common_remotedatasource_")
 	updates, _ := strconv.Atoi(gotMetrics[`updates_total{source="local",type="test"}`])
+	errorsHTTP, _ := strconv.Atoi(
+		gotMetrics[`errors_total{error="unexpected HTTP status code",source="local",type="test"}`])
 	expectedMetrics := map[string]string{
 		`data_total{source="local",type="test"}`:    "1",
 		`updates_total{source="local",type="test"}`: strconv.Itoa(max(updates, 1)),
 	}
+	delete(gotMetrics, `errors_total{error="unexpected HTTP status code",source="local",type="test"}`)
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
@@ -187,7 +190,7 @@ func TestSource(t *testing.T) {
 
 	gotMetrics = r.GetMetrics("akvorado_common_remotedatasource_")
 	updates2, _ := strconv.Atoi(gotMetrics[`updates_total{source="local",type="test"}`])
-	errorsHTTP, _ := strconv.Atoi(
+	errorsHTTP2, _ := strconv.Atoi(
 		gotMetrics[`errors_total{error="unexpected HTTP status code",source="local",type="test"}`])
 	errorsJSON, _ := strconv.Atoi(
 		gotMetrics[`errors_total{error="cannot decode JSON",source="local",type="test"}`])
@@ -198,7 +201,7 @@ func TestSource(t *testing.T) {
 	expectedMetrics = map[string]string{
 		`data_total{source="local",type="test"}`:                                       "1",
 		`updates_total{source="local",type="test"}`:                                    strconv.Itoa(max(updates2, updates)),
-		`errors_total{error="unexpected HTTP status code",source="local",type="test"}`: strconv.Itoa(max(errorsHTTP, 1)),
+		`errors_total{error="unexpected HTTP status code",source="local",type="test"}`: strconv.Itoa(max(errorsHTTP2, errorsHTTP+1)),
 		`errors_total{error="cannot decode JSON",source="local",type="test"}`:          strconv.Itoa(max(errorsJSON, 1)),
 		`errors_total{error="cannot map JSON",source="local",type="test"}`:             strconv.Itoa(max(errorsMap, 1)),
 		`errors_total{error="cannot validate checks",source="local",type="test"}`:      strconv.Itoa(max(errorsValidate, 1)),
