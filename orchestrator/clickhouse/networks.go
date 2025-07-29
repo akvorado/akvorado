@@ -184,12 +184,14 @@ func (c *Component) networksCSVRefresher() {
 			once = false
 		}
 
-		ctx, cancel := context.WithTimeout(c.t.Context(nil), time.Minute)
-		defer cancel()
-		c.metrics.networksReload.Inc()
-		if err := c.ReloadDictionary(ctx, schema.DictionaryNetworks); err != nil {
-			c.r.Err(err).Msg("failed to refresh networks dictionary")
-		}
+		func() {
+			ctx, cancel := context.WithTimeout(c.t.Context(nil), time.Minute)
+			defer cancel()
+			c.metrics.networksReload.Inc()
+			if err := c.ReloadDictionary(ctx, schema.DictionaryNetworks); err != nil {
+				c.r.Err(err).Msg("failed to refresh networks dictionary")
+			}
+		}()
 	}
 }
 
