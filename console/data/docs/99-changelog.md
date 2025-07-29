@@ -14,6 +14,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 💥 *common*: be more strict on results returned from remote sources
+- 🌱 *outlet*: commit records from Kafka after queuing them to ClickHouse
 
 ## 2.0.0-beta.1 - 2025-07-28
 

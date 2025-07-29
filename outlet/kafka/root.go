@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -67,8 +68,10 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		kgo.ConsumerGroup(configuration.ConsumerGroup),
 		kgo.ConsumeStartOffset(kgo.NewOffset().AtEnd()),
 		kgo.ConsumeTopics(fmt.Sprintf("%s-v%d", configuration.Topic, pb.Version)),
-		// Do not use kgo.BlockRebalanceOnPoll(). It needs more code to ensure
-		// we are not blocked while polling.
+		kgo.AutoCommitMarks(),
+		kgo.AutoCommitInterval(time.Second),
+		kgo.OnPartitionsRevoked(c.onPartitionsRevoked),
+		kgo.BlockRebalanceOnPoll(),
 	)
 
 	if err := kgo.ValidateOpts(kafkaOpts...); err != nil {
@@ -115,6 +118,14 @@ func (c *realComponent) StartWorkers(workerBuilder WorkerBuilderFunc) error {
 				Int("worker", i).
 				Logger()
 			defer shutdown()
+			defer func() {
+				// Allow a small grace time to commit uncommited work.
+				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+				defer cancel()
+				if err := client.CommitMarkedOffsets(ctx); err != nil {
+					logger.Err(err).Msg("cannot commit marked partition offsets")
+				}
+			}()
 
 			for {
 				select {
@@ -122,15 +133,18 @@ func (c *realComponent) StartWorkers(workerBuilder WorkerBuilderFunc) error {
 					return nil
 				default:
 					fetches := client.PollFetches(ctx)
-					if err := consumer.ProcessFetches(ctx, fetches); err != nil {
+					if fetches.IsClientClosed() {
+						logger.Error().Msg("client is closed")
+						return errors.New("client is closed")
+					}
+					if err := consumer.ProcessFetches(ctx, client, fetches); err != nil {
 						if errors.Is(err, context.Canceled) || errors.Is(err, ErrStopProcessing) {
 							return nil
 						}
-						logger.Err(err).
-							Int("worker", i).
-							Msg("cannot process fetched messages")
+						logger.Err(err).Msg("cannot process fetched messages")
 						return fmt.Errorf("cannot process fetched messages: %w", err)
 					}
+					client.AllowRebalance()
 				}
 			}
 		})
@@ -149,4 +163,11 @@ func (c *realComponent) Stop() error {
 	c.r.Info().Msg("stopping Kafka component")
 	c.t.Kill(nil)
 	return c.t.Wait()
+}
+
+// onPartitionsRevoked is called when partitions are revoked. We need to commit.
+func (c *realComponent) onPartitionsRevoked(ctx context.Context, client *kgo.Client, _ map[string][]int32) {
+	if err := client.CommitMarkedOffsets(ctx); err != nil {
+		c.r.Err(err).Msg("cannot commit marked offsets on partition revoked")
+	}
 }

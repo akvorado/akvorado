@@ -52,7 +52,11 @@ func (c *realComponent) NewConsumer(worker int, callback ReceiveFunc) *Consumer 
 }
 
 // ProcessFetches processes the fetched records.
-func (c *Consumer) ProcessFetches(ctx context.Context, fetches kgo.Fetches) error {
+func (c *Consumer) ProcessFetches(ctx context.Context, client *kgo.Client, fetches kgo.Fetches) error {
+	if fetches.Empty() {
+		return nil
+	}
+
 	worker := strconv.Itoa(c.worker)
 	c.metrics.fetchesReceived.WithLabelValues(worker).Inc()
 
@@ -73,14 +77,32 @@ func (c *Consumer) ProcessFetches(ctx context.Context, fetches kgo.Fetches) erro
 
 	messagesReceived := c.metrics.messagesReceived.WithLabelValues(worker)
 	bytesReceived := c.metrics.bytesReceived.WithLabelValues(worker)
-	for iter := fetches.RecordIter(); !iter.Done(); {
-		record := iter.Next()
-		messagesReceived.Inc()
-		bytesReceived.Add(float64(len(record.Value)))
-		if err := c.callback(ctx, record.Value); err != nil {
-			return err
+	for _, fetch := range fetches {
+		for _, topic := range fetch.Topics {
+			for _, partition := range topic.Partitions {
+				err := func() error {
+					var epoch int32
+					var offset int64
+					defer client.MarkCommitOffsets(map[string]map[int32]kgo.EpochOffset{
+						topic.Topic: {
+							partition.Partition: kgo.EpochOffset{Epoch: epoch, Offset: offset},
+						}})
+					for _, record := range partition.Records {
+						epoch = record.LeaderEpoch
+						offset = record.Offset + 1
+						messagesReceived.Inc()
+						bytesReceived.Add(float64(len(record.Value)))
+						if err := c.callback(ctx, record.Value); err != nil {
+							return err
+						}
+					}
+					return nil
+				}()
+				if err != nil {
+					return err
+				}
+			}
 		}
 	}
-
 	return nil
 }
