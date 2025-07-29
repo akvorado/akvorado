@@ -48,6 +48,13 @@ func New[T any](r *reporter.Reporter, provider ProviderFunc, dataType string, da
 		dataSources:      dataSources,
 		DataSourcesReady: make(chan bool),
 	}
+
+	for _, source := range c.dataSources {
+		if source.Transform.Query == nil {
+			source.Transform.Query, _ = gojq.Parse(".")
+		}
+	}
+
 	c.initMetrics()
 	return &c, nil
 }
@@ -165,10 +172,6 @@ func (c *Component[T]) Start() error {
 	}()
 
 	for name, source := range c.dataSources {
-		if source.Transform.Query == nil {
-			source.Transform.Query, _ = gojq.Parse(".")
-		}
-
 		c.t.Go(func() error {
 			c.metrics.remoteDataSourceCount.WithLabelValues(c.dataType, name).Set(0)
 			newRetryTicker := func() *backoff.Ticker {

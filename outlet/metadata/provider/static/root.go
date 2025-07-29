@@ -28,6 +28,7 @@ type Provider struct {
 	exporters              atomic.Pointer[helpers.SubnetMap[ExporterConfiguration]]
 	exportersLock          sync.Mutex
 
+	startOnce sync.Once
 	errLogger reporter.Logger
 
 	metrics struct {
@@ -51,9 +52,6 @@ func (configuration Configuration) New(r *reporter.Reporter) (provider.Provider,
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize remote data source fetcher component: %w", err)
 	}
-	if err := p.exporterSourcesFetcher.Start(); err != nil {
-		return nil, fmt.Errorf("unable to start network sources fetcher component: %w", err)
-	}
 
 	p.metrics.notReady = r.Counter(
 		reporter.CounterOpts{
@@ -66,6 +64,11 @@ func (configuration Configuration) New(r *reporter.Reporter) (provider.Provider,
 
 // Query queries static configuration.
 func (p *Provider) Query(ctx context.Context, query provider.Query) (provider.Answer, error) {
+	// Start datasource if not started. It cannot really return an error.
+	p.startOnce.Do(func() {
+		p.exporterSourcesFetcher.Start()
+	})
+
 	// We wait for all data sources to be ready
 	select {
 	case <-ctx.Done():
