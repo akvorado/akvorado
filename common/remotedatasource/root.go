@@ -170,6 +170,11 @@ func (c *Component[T]) Start() error {
 		notReadySources.Wait()
 		close(c.DataSourcesReady)
 	}()
+	c.t.Go(func() error {
+		// Ensure we have at least one goroutine.
+		<-c.t.Dying()
+		return nil
+	})
 
 	for name, source := range c.dataSources {
 		c.t.Go(func() error {
