@@ -180,7 +180,7 @@ func (c *Component) migrateDatabase() error {
 // UDP socket.
 func (c *Component) guessHTTPBaseURL(ip string) (string, error) {
 	// Get IP address
-	address := net.JoinHostPort(ip, "0")
+	address := net.JoinHostPort(ip, "80")
 	conn, err := net.Dial("udp", address)
 	if err != nil {
 		return "", fmt.Errorf("cannot get our IP address: %w", err)
