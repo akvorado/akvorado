@@ -8,6 +8,8 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -206,20 +208,23 @@ func waitMigrations(t *testing.T, ch *Component) {
 
 func TestGetHTTPBaseURL(t *testing.T) {
 	r := reporter.NewMock(t)
-	clickhouseComponent := clickhousedb.SetupClickHouse(t, r, false)
-	http := httpserver.NewMock(t, r)
+	h := httpserver.NewMock(t, r)
+	h.AddHandler("/test",
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			fmt.Fprintf(w, "Hello !")
+		}))
 	c, err := New(r, DefaultConfiguration(), Dependencies{
 		Daemon:     daemon.NewMock(t),
-		HTTP:       http,
+		HTTP:       h,
 		Schema:     schema.NewMock(t),
 		GeoIP:      geoip.NewMock(t, r, true),
-		ClickHouse: clickhouseComponent,
+		ClickHouse: nil, // We don't really need it
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
 
-	rawURL, err := c.getHTTPBaseURL("8.8.8.8:9000")
+	rawURL, err := c.guessHTTPBaseURL("8.8.8.8")
 	if err != nil {
 		t.Fatalf("getHTTPBaseURL() error:\n%+v", err)
 	}
@@ -227,16 +232,17 @@ func TestGetHTTPBaseURL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Parse(%q) error:\n%+v", rawURL, err)
 	}
-	expectedURL := &url.URL{
-		Scheme: "http",
-		Host:   http.LocalAddr().String(),
+	addr, err := net.ResolveTCPAddr("tcp", parsedURL.Host)
+	if err != nil {
+		t.Fatalf("ResolveTCPAddr(%q) error:\n%+v", parsedURL.Host, err)
 	}
-	parsedURL.Host = parsedURL.Host[strings.LastIndex(parsedURL.Host, ":"):]
-	expectedURL.Host = expectedURL.Host[strings.LastIndex(expectedURL.Host, ":"):]
-	// We can't really know our IP
-	if diff := helpers.Diff(parsedURL, expectedURL); diff != "" {
-		t.Fatalf("getHTTPBaseURL() (-got, +want):\n%s", diff)
-	}
+	helpers.TestHTTPEndpoints(t, addr, helpers.HTTPEndpointCases{
+		{
+			URL:         "/test",
+			ContentType: "text/plain; charset=utf-8",
+			FirstLines:  []string{"Hello !"},
+		},
+	})
 }
 
 func testMigrationFromPreviousStates(t *testing.T, cluster bool) {

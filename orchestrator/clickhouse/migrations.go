@@ -38,7 +38,7 @@ func (c *Component) migrateDatabase() error {
 
 	// Set orchestrator URL
 	if c.config.OrchestratorURL == "" {
-		baseURL, err := c.getHTTPBaseURL("1.1.1.1:80")
+		baseURL, err := c.guessHTTPBaseURL("1.1.1.1")
 		if err != nil {
 			return err
 		}
@@ -175,11 +175,12 @@ func (c *Component) migrateDatabase() error {
 	return nil
 }
 
-// getHTTPBaseURL tries to guess the appropriate URL to access our
+// guessHTTPBaseURL tries to guess the appropriate URL to access our
 // HTTP daemon. It tries to get our IP address using an unconnected
 // UDP socket.
-func (c *Component) getHTTPBaseURL(address string) (string, error) {
+func (c *Component) guessHTTPBaseURL(ip string) (string, error) {
 	// Get IP address
+	address := net.JoinHostPort(ip, "0")
 	conn, err := net.Dial("udp", address)
 	if err != nil {
 		return "", fmt.Errorf("cannot get our IP address: %w", err)
@@ -187,13 +188,15 @@ func (c *Component) getHTTPBaseURL(address string) (string, error) {
 	defer conn.Close()
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
 
-	// Combine with HTTP port
-	_, port, err := net.SplitHostPort(c.d.HTTP.LocalAddr().String())
+	// Get HTTP port
+	_, httpPort, err := net.SplitHostPort(c.d.HTTP.LocalAddr().String())
 	if err != nil {
 		return "", fmt.Errorf("cannot get HTTP port: %w", err)
 	}
+
+	// Build final URL
 	base := fmt.Sprintf("http://%s",
-		net.JoinHostPort(localAddr.IP.String(), port))
+		net.JoinHostPort(localAddr.IP.String(), httpPort))
 	c.r.Debug().Msgf("detected base URL is %s", base)
 	return base, nil
 }
