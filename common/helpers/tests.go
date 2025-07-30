@@ -15,8 +15,14 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"testing"
 	"time"
+)
+
+var (
+	externalServiceSkipped = make(map[string]bool)
+	externalServiceMu      sync.RWMutex
 )
 
 // CheckExternalService checks an external service, available either
@@ -30,7 +36,19 @@ func CheckExternalService(t *testing.T, name string, candidates []string) string
 	if testing.Short() {
 		t.Skipf("Skip test with real %s in short mode", name)
 	}
+
 	mandatory := os.Getenv("CI_AKVORADO_FUNCTIONAL_TESTS") != ""
+
+	externalServiceMu.RLock()
+	if skipped, cached := externalServiceSkipped[name]; cached && skipped {
+		externalServiceMu.RUnlock()
+		if mandatory {
+			t.Fatalf("%s is not running (CI_AKVORADO_FUNCTIONAL_TESTS is set)", name)
+		} else {
+			t.Skipf("%s is not running (CI_AKVORADO_FUNCTIONAL_TESTS is not set)", name)
+		}
+	}
+	externalServiceMu.RUnlock()
 
 	server := ""
 	for _, candidate := range candidates {
@@ -48,6 +66,9 @@ func CheckExternalService(t *testing.T, name string, candidates []string) string
 		}
 	}
 	if server == "" {
+		externalServiceMu.Lock()
+		externalServiceSkipped[name] = true
+		externalServiceMu.Unlock()
 		if mandatory {
 			t.Fatalf("%s cannot be resolved (CI_AKVORADO_FUNCTIONAL_TESTS is set)", name)
 		}
@@ -65,6 +86,9 @@ func CheckExternalService(t *testing.T, name string, candidates []string) string
 			t.Logf("DialContext() error:\n%+v", err)
 		}
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			externalServiceMu.Lock()
+			externalServiceSkipped[name] = true
+			externalServiceMu.Unlock()
 			if mandatory {
 				t.Fatalf("%s is not running (CI_AKVORADO_FUNCTIONAL_TESTS is set)", name)
 			} else {
