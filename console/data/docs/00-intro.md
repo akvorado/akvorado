@@ -1,6 +1,6 @@
 # Introduction
 
-*Akvorado*[^name] receives network flows (currently Netflow/IPFIX and sFlow), enriches
+*Akvorado*[^name] receives network flows (currently NetFlow/IPFIX and sFlow), enriches
 them with interface names (using SNMP), geographic information (using
 [IPinfo](https://ipinfo.io/) or MaxMind), and exports them to ClickHouse via
 Kafka. It also provides a web interface to browse the results.

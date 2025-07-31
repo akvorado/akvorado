@@ -49,7 +49,7 @@ gets a section of the configuration file matching its name.
 ## Inlet service
 
 This service is configured under the `inlet` key. The inlet service receives
-Netflow/IPFIX/sFlow packets and forwards them to Kafka. The main components are
+NetFlow/IPFIX/sFlow packets and forwards them to Kafka. The main components are
 `flow` and `kafka`.
 
 ### Flow
@@ -70,9 +70,9 @@ inside each worker. With `use-src-addr-for-exporter-addr` set to true, the
 source ip of the received flow packet is used as exporter address. It is also
 possible to choose how to extract the timestamp for each packet with
 `timestamp-source`: `udp` to use the receive time of the UDP packet (the
-default), `netflow-packet` to extract the timestamp from the Netflow/IPFIX
+default), `netflow-packet` to extract the timestamp from the NetFlow/IPFIX
 header, or `netflow-first-switched` to use the “first switched” field from
-Netflow/IPFIX.
+NetFlow/IPFIX.
 
 For example:
 
@@ -110,7 +110,7 @@ flow:
 ```
 
 Without configuration, *Akvorado* will listen for incoming
-Netflow/IPFIX and sFlow flows on a random port (check the logs to know
+NetFlow/IPFIX and sFlow flows on a random port (check the logs to know
 which one).
 
 ### Kafka

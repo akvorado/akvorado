@@ -79,7 +79,7 @@ var OrchestratorOptions orchestratorOptions
 var orchestratorCmd = &cobra.Command{
 	Use:   "orchestrator",
 	Short: "Start Akvorado's orchestrator service",
-	Long: `Akvorado is a Netflow/IPFIX collector. The orchestrator service configures external
+	Long: `Akvorado is a NetFlow/IPFIX collector. The orchestrator service configures external
 components and centralizes configuration of the various other components.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {

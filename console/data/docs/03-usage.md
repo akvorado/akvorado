@@ -48,7 +48,7 @@ service exposes its metrics under `/api/v0/outlet/metrics`.
 ## Inlet service
 
 `akvorado inlet` starts the inlet service, allowing it to receive
-Netflow/IPFIX/sFlow packets and forward them to Kafka. The inlet service
+NetFlow/IPFIX/sFlow packets and forward them to Kafka. The inlet service
 does not expose any service-specific HTTP endpoints.
 
 ## Outlet service

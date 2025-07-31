@@ -54,7 +54,7 @@ var ConsoleOptions consoleOptions
 var consoleCmd = &cobra.Command{
 	Use:   "console",
 	Short: "Start Akvorado's console service",
-	Long: `Akvorado is a Netflow/IPFIX collector. The console service exposes a web interface to
+	Long: `Akvorado is a NetFlow/IPFIX collector. The console service exposes a web interface to
 manage collected flows.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {

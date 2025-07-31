@@ -29,7 +29,7 @@ source IP! This might occur with Docker or Kubernetes networking.
 
 ### Cisco IOS-XE
 
-Netflow can be enabled with the following configuration:
+NetFlow can be enabled with the following configuration:
 
 ```cisco
 flow record Akvorado
@@ -91,7 +91,7 @@ flow monitor AkvoradoMonitor-IPV6
 !
 ```
 
-To enable Netflow on an interface, use the following snippet:
+To enable NetFlow on an interface, use the following snippet:
 
 ```cisco
 interface GigabitEthernet0/0/3
@@ -115,7 +115,7 @@ inlet:
 
 ### NCS 5500 and ASR 9000
 
-On each router, Netflow can be enabled with the following configuration. It is
+On each router, NetFlow can be enabled with the following configuration. It is
 important to use a power of two for the sampling rate (at least on NCS).
 
 ```cisco
@@ -161,7 +161,7 @@ router bgp <asn>
   bgp attribute-download
 ```
 
-To enable Netflow on an interface, use the following snippet:
+To enable NetFlow on an interface, use the following snippet:
 
 ```cisco
 interface Bundle-Ether4000
@@ -171,7 +171,7 @@ interface Bundle-Ether4000
 ```
 
 Also check the [troubleshooting section](05-troubleshooting.md) on how
-to scale Netflow on the NCS 5500.
+to scale NetFlow on the NCS 5500.
 
 Then, SNMP needs to be enabled:
 
@@ -202,9 +202,9 @@ router bgp 65400
 
 ### Juniper
 
-#### Netflow
+#### NetFlow
 
-For MX and SRX devices, you can use Netflow v9 to export flows.
+For MX and SRX devices, you can use NetFlow v9 to export flows.
 
 ```junos
 groups {

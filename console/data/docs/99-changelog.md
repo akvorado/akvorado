@@ -125,7 +125,7 @@ tarball". This new tarball does not upgrade the configuration files, nor the
 - 💥 *console*: persist metadata cache on the default `docker compose` setup
 - 🩹 *orchestrator*: fix population of `DstNetSite` and `SrcNetSite`
 - 🩹 *orchestrator*: remove previous networks.csv temporary files on start
-- 🌱 *inlet*: add support Netflow V5
+- 🌱 *inlet*: add support NetFlow V5
 - 🌱 *console*: add support for PostgreSQL and MySQL to store filters
 - 🌱 *console*: add `console`→`homepage-graph-timerange` to define the time range for the homepage graph
 - 🌱 *console*: enable round-robin for ClickHouse connections
@@ -183,7 +183,7 @@ can install the `docker-compose-v2` package. For other options, check the
 - ✨ *inlet*: static metadata provider can fetch its configuration from an HTTP endpoint
 - ✨ *inlet*: metadata can be fetched from multiple providers (eg, static, then SNMP)
 - ✨ *inlet*: add support for several SNMPv2 communities
-- ✨ *inlet*: timestamps for Netflow/IPFIX can now be retrieved from packet content, see `inlet`→`flow`→`inputs`→`timestamp-source`
+- ✨ *inlet*: timestamps for NetFlow/IPFIX can now be retrieved from packet content, see `inlet`→`flow`→`inputs`→`timestamp-source`
 - 🩹 *cmd*: fix parsing of `inlet`→`metadata`→`provider`→`ports`
 - 🩹 *console*: fix use of `InIfBoundary` and `OutIfBoundary` as dimensions
 - 🌱 *orchestrator*: add TLS support to connect to ClickHouse database
@@ -247,8 +247,8 @@ can install the `docker-compose-v2` package. For other options, check the
 - ✨ *orchestrator*: add custom dictionaries for additional flow hydration. See
   `orchestrator`→`schema`→`custom-dictionaries`. Currently, filtering on the
   generated data is not available.
-- 🩹 *inlet*: fix Netflow processing when template is received with data
-- 🩹 *inlet*: use sampling rate in Netflow data packet if available
+- 🩹 *inlet*: fix NetFlow processing when template is received with data
+- 🩹 *inlet*: use sampling rate in NetFlow data packet if available
 - 🩹 *console*: fix display when using “%” units and interface speed is 0
 - 🩹 *orchestrator*: create flows table with
   `allow_suspicious_low_cardinality_types` to ensure we can use

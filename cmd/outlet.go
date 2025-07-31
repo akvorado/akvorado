@@ -69,7 +69,7 @@ var OutletOptions outletOptions
 var outletCmd = &cobra.Command{
 	Use:   "outlet",
 	Short: "Start Akvorado's outlet service",
-	Long: `Akvorado is a Netflow/IPFIX collector. The outlet service handles flow ingestion,
+	Long: `Akvorado is a NetFlow/IPFIX collector. The outlet service handles flow ingestion,
 enrichment and export to Kafka.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {

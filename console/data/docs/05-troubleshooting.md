@@ -69,7 +69,7 @@ $ curl -s http://127.0.0.1:8080/api/v0/inlet/metrics | grep 'akvorado_.*_error'
 
 ### Inlet service
 
-The inlet service receives Netflow/IPFIX/sFlow packets and forwards them to
+The inlet service receives NetFlow/IPFIX/sFlow packets and forwards them to
 Kafka. First, check if you receive packets from exporters (your routers):
 
 ```console
@@ -338,7 +338,7 @@ can detect this situation, and you can solve it by reducing the exporter rate.
 
 #### NCS5500 routers
 
-[Netflow, Sampling-Interval and the Mythical Internet Packet Size][1] contains
+[NetFlow, Sampling-Interval and the Mythical Internet Packet Size][1] contains
 many information about the limit of this platform. The first bottleneck is a 133
 Mbps shaper between an NPU and the LC CPU for the sampled packets (144 bytes
 each). For example, on a NC55-36X100G line card, there are 6 NPU, each one
