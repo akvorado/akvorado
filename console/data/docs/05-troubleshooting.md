@@ -82,7 +82,20 @@ akvorado_inlet_flow_input_udp_packets_total{exporter="241.107.1.14",listener=":2
 akvorado_inlet_flow_input_udp_packets_total{exporter="241.107.1.15",listener=":2055",worker="0"} 6782
 ```
 
-If your exporters are not listed, check their configuration.
+If your exporters are not listed, check their configuration. You can also use
+`tcpdump` to verify they are sending packets. Replace the IP by the IP address
+of the exporter and the port by the right port (2055 for NetFlow and 6343 for
+sFlow).
+
+```console
+# tcpdump -c3 -pni any host 241.107.1.12 and port 2055
+09:11:08.729738 IP 241.107.1.12.44026 > 240.0.2.9.2055: UDP, length 624
+09:11:08.729787 IP 241.107.1.12.44026 > 240.0.2.9.2055: UDP, length 1060
+09:11:08.729799 IP 241.107.1.12.44026 > 240.0.2.9.2055: UDP, length 1060
+3 packets captured
+3 packets received by filter
+0 packets dropped by kernel
+```
 
 Next, check if flows are sent to Kafka correctly:
 
