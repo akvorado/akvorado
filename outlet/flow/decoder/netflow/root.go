@@ -22,7 +22,7 @@ import (
 	"akvorado/outlet/flow/decoder"
 )
 
-// Decoder contains the state for the Netflow v9 decoder.
+// Decoder contains the state for the NetFlow v9 decoder.
 type Decoder struct {
 	r         *reporter.Reporter
 	d         decoder.Dependencies
@@ -165,7 +165,7 @@ func (s *samplingRateSystem) SetSamplingRate(version uint16, obsDomainID uint32,
 	}] = samplingRate
 }
 
-// Decode decodes a Netflow payload.
+// Decode decodes a NetFlow payload.
 func (nd *Decoder) Decode(in decoder.RawFlow, options decoder.Option, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) (int, error) {
 	if len(in.Payload) < 2 {
 		return 0, errors.New("payload too small")

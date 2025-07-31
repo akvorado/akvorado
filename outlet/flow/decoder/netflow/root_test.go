@@ -653,7 +653,7 @@ func TestDecodeNFv5(t *testing.T) {
 	}
 }
 
-func TestDecodeTimestampFromNetflowPacket(t *testing.T) {
+func TestDecodeTimestampFromNetFlowPacket(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, false)
 	options := decoder.Option{TimestampSource: pb.RawFlow_TS_NETFLOW_PACKET}
 
@@ -673,7 +673,7 @@ func TestDecodeTimestampFromNetflowPacket(t *testing.T) {
 	}
 
 	// 4 flows in capture
-	// all share the same timestamp with TimestampSourceNetflowPacket
+	// all share the same timestamp with TimestampSourceNetFlowPacket
 	expectedTs := []uint32{
 		1647285928,
 		1647285928,

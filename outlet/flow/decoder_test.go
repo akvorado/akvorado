@@ -42,7 +42,7 @@ func TestFlowDecode(t *testing.T) {
 	_, src, _, _ := runtime.Caller(0)
 	base := path.Join(path.Dir(src), "decoder", "netflow", "testdata")
 
-	// Test Netflow decoding
+	// Test NetFlow decoding
 	t.Run("netflow", func(t *testing.T) {
 		// Load template first
 		templateData := helpers.ReadPcapL4(t, path.Join(base, "options-template.pcap"))
@@ -228,7 +228,7 @@ func TestFlowDecode(t *testing.T) {
 			t.Fatal("Expected error for missing source address")
 		}
 
-		// Invalid payload for Netflow
+		// Invalid payload for NetFlow
 		rawFlow.Decoder = pb.RawFlow_DECODER_NETFLOW
 		rawFlow.SourceAddress = net.ParseIP("127.0.0.1").To16()
 		rawFlow.Payload = []byte("invalid")
@@ -236,13 +236,13 @@ func TestFlowDecode(t *testing.T) {
 		if err == nil {
 			t.Fatal("Expected error for invalid payload")
 		}
-		// Invalid payload for Netflow v5
+		// Invalid payload for NetFlow v5
 		rawFlow.Payload = []byte{0, 5, 11, 12, 13, 14}
 		err = c.Decode(rawFlow, bf, finalize)
 		if err == nil {
 			t.Fatal("Expected error for invalid payload")
 		}
-		// Invalid payload for Netflow v9
+		// Invalid payload for NetFlow v9
 		rawFlow.Payload = []byte{0, 9, 11, 12, 13, 14}
 		err = c.Decode(rawFlow, bf, finalize)
 		if err == nil {
@@ -277,7 +277,7 @@ func TestFlowDecode(t *testing.T) {
 	})
 }
 
-func BenchmarkDecodeNetflow(b *testing.B) {
+func BenchmarkDecodeNetFlow(b *testing.B) {
 	schema.DisableDebug(b)
 	r := reporter.NewMock(b)
 	sch := schema.NewMock(b)

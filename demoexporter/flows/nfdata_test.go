@@ -18,13 +18,13 @@ import (
 	"akvorado/outlet/flow/decoder/netflow"
 )
 
-func TestGetNetflowData(t *testing.T) {
+func TestGetNetFlowData(t *testing.T) {
 	r := reporter.NewMock(t)
 	sch := schema.NewMock(t)
 	bf := sch.NewFlowMessage()
 	nfdecoder := netflow.New(r, decoder.Dependencies{Schema: sch})
 
-	ch := getNetflowTemplates(
+	ch := getNetFlowTemplates(
 		context.Background(),
 		50,
 		30000,
@@ -48,7 +48,7 @@ func TestGetNetflowData(t *testing.T) {
 		}
 	}
 
-	ch = getNetflowData(
+	ch = getNetFlowData(
 		context.Background(),
 		[]generatedFlow{
 			{
@@ -184,6 +184,6 @@ func TestGetNetflowData(t *testing.T) {
 	}
 
 	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Fatalf("getNetflowData() (-got, +want):\n%s", diff)
+		t.Fatalf("getNetFlowData() (-got, +want):\n%s", diff)
 	}
 }

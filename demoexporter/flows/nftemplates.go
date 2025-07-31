@@ -98,10 +98,10 @@ func init() {
 	ipv6Settings.MaxFlowsPerPacket = 1400 / ipv6Settings.FlowLength
 }
 
-// getNetflowTemplates returns the payload to define netflow
+// getNetFlowTemplates returns the payload to define netflow
 // templates. UDP payloads are sent on the returned channel. All
 // messages should be read to avoid leaking the channel.
-func getNetflowTemplates(ctx context.Context, sequenceNumber uint32, sampling int, start, now time.Time) <-chan []byte {
+func getNetFlowTemplates(ctx context.Context, sequenceNumber uint32, sampling int, start, now time.Time) <-chan []byte {
 	output := make(chan []byte, 16)
 	uptime := uint32(now.Sub(start).Seconds())
 	go func() {

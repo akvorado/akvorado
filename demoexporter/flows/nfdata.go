@@ -12,10 +12,10 @@ import (
 	"akvorado/common/helpers"
 )
 
-// getNetflowData will transform the generated flows into UDP payloads
+// getNetFlowData will transform the generated flows into UDP payloads
 // to be sent on the wire. It returns the payloads on a channel. All
 // messages should be read to avoid leaking the channel.
-func getNetflowData(ctx context.Context, flows []generatedFlow, sequenceNumber uint32, start, now time.Time) <-chan []byte {
+func getNetFlowData(ctx context.Context, flows []generatedFlow, sequenceNumber uint32, start, now time.Time) <-chan []byte {
 	output := make(chan []byte, 16)
 	uptime := uint32(now.Sub(start).Seconds())
 
