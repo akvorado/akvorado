@@ -23,11 +23,11 @@ the [documentation](https://demo.akvorado.net/docs) for the current version
 By default, *Akvorado* is using [IPinfo](https://ipinfo.io) databases for
 geolocation data.
 
-Be aware that *Akvorado* is still young and should be considered as beta
-quality. Be sure to always read the
-[changelog](console/data/docs/99-changelog.md) before upgrading.
-
 A [Grafana plugin](https://github.com/ovh/grafana-akvorado) is available.
+
+> [!CAUTION]
+> Be sure to always read the [changelog](console/data/docs/99-changelog.md)
+> before upgrading.
 
 ## Getting help
 
