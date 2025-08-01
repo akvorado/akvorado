@@ -179,7 +179,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 						"user-name":                 "alfred",
 						"authentication-protocol":   "sha",
 						"authentication-passphrase": "hello",
-						"privacy-protocol":          "aes",
+						"privacy-protocol":          "AES",
 						"privacy-passphrase":        "bye",
 					},
 				}

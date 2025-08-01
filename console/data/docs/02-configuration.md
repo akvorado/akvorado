@@ -289,21 +289,40 @@ The `snmp` provider accepts the following configuration keys:
 - `poller-retries` is the number of retries on unsuccessful SNMP requests.
 - `poller-timeout` tells how much time should the poller wait for an answer.
 
-For example:
+*Akvorado* will use SNMPv3 if there is a match for the `security-parameters`
+configuration option. Otherwise, it will use SNMPv2.
+
+For example, with SNMPv2 and trying both `private` and `@private` SNMPv2
+communities:
 
 ```yaml
 metadata:
   workers: 10
   providers:
     type: snmp
-    communities:
+    credentials:
       ::/0:
-        - private
-        - "@private"
+        communities:
+          - private
+          - "@private"
 ```
 
-*Akvorado* will use SNMPv3 if there is a match for the `security-parameters`
-configuration option. Otherwise, it will use SNMPv2.
+And with SNMPv3:
+
+```yaml
+metadata:
+  workers: 10
+  providers:
+    type: snmp
+    credentials:
+      ::/0:
+        security-parameters:
+          user-name: monitoring
+          authentication-protocol: SHA
+          authentication-passphrase: "d$rkSec"
+          privacy-protocol: AES192
+          privacy-passphrase: "Cl0se"
+```
 
 #### gNMI provider
 

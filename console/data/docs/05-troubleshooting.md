@@ -205,7 +205,6 @@ For the second case, use this one:
 $ curl -s http://127.0.0.1:8080/api/v0/outlet/metrics | grep 'akvorado_outlet_core.*errors'
 ```
 
-
 Here is a list of errors you may find:
 
 - `metadata cache miss` means interface information is missing from the metadata
@@ -218,6 +217,20 @@ Here is a list of errors you may find:
   configure `outlet`→`core`→`default-sampling-rate` to work around this issue.
 - `input and output interfaces missing` means the flow does not contain input
   and output interface indexes. Fix this on the exporter.
+
+To check the SNMP configuration is correct, an convenient way is to use
+`tcpdump`. Notably, you can check the credentials are correct. If you don't get
+a `GetResponse` message, likely there is a misconfiguration on the exporter.
+
+```console
+# tcpdump -c3 -pni any port 161
+20:46:44.812243 IP 240.0.2.11.34554 > 240.0.2.13.161: C="private" GetRequest(95) .1.3.6.1.2.1.1.5.0 .1.3.6.1.2.1.2.2.1.2.11 .1.3.6.1.2.1.31.1.1.1.1.11 .1.3.6.1.2.1.31.1.1.1.18.11 .1.3.6.1.2.1.31.1.1.1.15.11
+20:46:45.144567 IP 240.0.2.13.161 > 240.0.2.11.34554: C="private" GetResponse(153) .1.3.6.1.2.1.1.5.0="dc3-edge1.example.com" .1.3.6.1.2.1.2.2.1.2.11="Gi0/0/0/11" .1.3.6.1.2.1.31.1.1.1.1.11="Gi0/0/0/11" .1.3.6.1.2.1.31.1.1.1.18.11="Transit: Lumen" .1.3.6.1.2.1.31.1.1.1.15.11=10000
+^C
+2 packets captured
+2 packets received by filter
+0 packets dropped by kernel
+```
 
 Another cause for metadata cache misses is that Docker cannot reach the
 exporters because Docker subnets may overlap with your router networks. To fix
