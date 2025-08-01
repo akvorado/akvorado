@@ -28,3 +28,24 @@ quality. Be sure to always read the
 [changelog](console/data/docs/99-changelog.md) before upgrading.
 
 A [Grafana plugin](https://github.com/ovh/grafana-akvorado) is available.
+
+## Getting help
+
+The first step is to read the [documentation](https://demo.akvorado.net/docs):
+
+- the [introduction](https://demo.akvorado.net/docs/intro)
+- the [configuration guide](https://demo.akvorado.net/docs/configuration)
+- the [troubleshooting guide](https://demo.akvorado.net/docs/troubleshooting)
+
+If you still need help, you can use the
+[discussions](https://github.com/akvorado/akvorado/discussions/categories/q-a).
+Be sure to explain what you tried to solve your problem. Enclose code using
+triple backticks:
+
+````
+```
+# akvorado version | head -2
+akvorado v1.11.2
+ Built with: go1.23.2 X:loopvar
+```
+````
