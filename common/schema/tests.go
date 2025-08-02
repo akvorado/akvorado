@@ -35,12 +35,12 @@ func NewMock(t testing.TB) *Component {
 }
 
 // EnableAllColumns enable all columns and returns itself.
-func (schema *Component) EnableAllColumns() *Component {
-	for i := range schema.columns {
-		schema.columns[i].Disabled = false
+func (c *Component) EnableAllColumns() *Component {
+	for i := range c.columns {
+		c.columns[i].Disabled = false
 	}
-	schema.Schema = schema.finalize()
-	return schema
+	c.Schema = c.finalize()
+	return c
 }
 
 func init() {

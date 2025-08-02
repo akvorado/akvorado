@@ -15,7 +15,7 @@ import (
 	"akvorado/outlet/flow/decoder"
 )
 
-func setup(t *testing.T, clearTs bool) (*reporter.Reporter, decoder.Decoder, *schema.FlowMessage, *[]*schema.FlowMessage, decoder.FinalizeFlowFunc) {
+func setup(t *testing.T, clearTS bool) (*reporter.Reporter, decoder.Decoder, *schema.FlowMessage, *[]*schema.FlowMessage, decoder.FinalizeFlowFunc) {
 	t.Helper()
 	r := reporter.NewMock(t)
 	sch := schema.NewMock(t).EnableAllColumns()
@@ -23,7 +23,7 @@ func setup(t *testing.T, clearTs bool) (*reporter.Reporter, decoder.Decoder, *sc
 	bf := sch.NewFlowMessage()
 	got := []*schema.FlowMessage{}
 	finalize := func() {
-		if clearTs {
+		if clearTS {
 			bf.TimeReceived = 0
 		}
 		// Keep a copy of the current flow message
@@ -673,7 +673,7 @@ func TestDecodeTimestampFromNetFlowPacket(t *testing.T) {
 
 	// 4 flows in capture
 	// all share the same timestamp with TimestampSourceNetFlowPacket
-	expectedTs := []uint32{
+	expectedTS := []uint32{
 		1647285928,
 		1647285928,
 		1647285928,
@@ -681,8 +681,8 @@ func TestDecodeTimestampFromNetFlowPacket(t *testing.T) {
 	}
 
 	for i, flow := range *got {
-		if flow.TimeReceived != expectedTs[i] {
-			t.Errorf("Decode() (-got, +want):\n-%d, +%d", flow.TimeReceived, expectedTs[i])
+		if flow.TimeReceived != expectedTS[i] {
+			t.Errorf("Decode() (-got, +want):\n-%d, +%d", flow.TimeReceived, expectedTS[i])
 		}
 	}
 }
@@ -708,7 +708,7 @@ func TestDecodeTimestampFromFirstSwitched(t *testing.T) {
 
 	// 4 flows in capture
 	var sysUptime uint32 = 944951609
-	var packetTs uint32 = 1647285928
+	var packetTS uint32 = 1647285928
 	expectedFirstSwitched := []uint32{
 		944948659,
 		944948659,
@@ -717,7 +717,7 @@ func TestDecodeTimestampFromFirstSwitched(t *testing.T) {
 	}
 
 	for i, flow := range *got {
-		if val := packetTs - sysUptime + expectedFirstSwitched[i]; flow.TimeReceived != val {
+		if val := packetTS - sysUptime + expectedFirstSwitched[i]; flow.TimeReceived != val {
 			t.Errorf("Decode() (-got, +want):\n-%d, +%d", flow.TimeReceived, val)
 		}
 	}
