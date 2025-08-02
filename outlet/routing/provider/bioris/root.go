@@ -125,7 +125,7 @@ func (p *Provider) Dial(config RISInstance) (*RISInstanceRuntime, error) {
 		securityOption = grpc.WithTransportCredentials(credentials.NewTLS(config))
 	}
 	backoff := backoff.DefaultConfig
-	conn, err := grpc.Dial(config.GRPCAddr, securityOption,
+	conn, err := grpc.NewClient(config.GRPCAddr, securityOption,
 		grpc.WithUnaryInterceptor(p.clientMetrics.UnaryClientInterceptor()),
 		grpc.WithStreamInterceptor(p.clientMetrics.StreamClientInterceptor()),
 		grpc.WithConnectParams(grpc.ConnectParams{Backoff: backoff}),

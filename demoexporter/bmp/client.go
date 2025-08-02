@@ -155,5 +155,4 @@ func (c *Component) startBMPClient(ctx context.Context) {
 	case <-done:
 	case <-ctx.Done():
 	}
-	return
 }

@@ -20,7 +20,7 @@ func (c *Component) ExecOnCluster(ctx context.Context, query string, args ...any
 }
 
 var (
-	spacesRegexp                   = regexp.MustCompile("\\s+")
+	spacesRegexp                   = regexp.MustCompile(`\s+`)
 	statementBeforeOnClusterRegexp = regexp.MustCompile(fmt.Sprintf("^((?i)%s)", strings.Join([]string{
 		`ALTER TABLE \S+`,
 		`ATTACH DICTIONARY \S+`,

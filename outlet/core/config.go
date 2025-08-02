@@ -30,8 +30,6 @@ type Configuration struct {
 	ASNProviders []ASNProvider `validate:"dive"`
 	// NetProviders defines the source used to get Prefix/Network Information
 	NetProviders []NetProvider `validate:"dive"`
-	// Old configuration settings
-	classifierCacheSize uint
 }
 
 // DefaultConfiguration represents the default configuration for the core component.
@@ -130,7 +128,7 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 		}
 		if oldKey != nil {
 			oldValue := helpers.ElemOrIdentity(from.MapIndex(*oldKey))
-			if oldValue.Kind() == reflect.Bool && oldValue.Bool() == true {
+			if oldValue.Kind() == reflect.Bool && oldValue.Bool() {
 				newASNProviders := []ASNProvider{}
 				for _, p := range DefaultConfiguration().ASNProviders {
 					if p != ASNProviderFlow && p != ASNProviderFlowExceptPrivate {
@@ -151,5 +149,5 @@ func init() {
 	helpers.RegisterMapstructureUnmarshallerHook(ASNProviderUnmarshallerHook())
 	helpers.RegisterMapstructureUnmarshallerHook(NetProviderUnmarshallerHook())
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[uint]())
-	helpers.RegisterMapstructureDeprecatedFields[Configuration]("Workers")
+	helpers.RegisterMapstructureDeprecatedFields[Configuration]("Workers", "ClassifierCacheSize")
 }

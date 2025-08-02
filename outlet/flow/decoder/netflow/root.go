@@ -147,7 +147,7 @@ type samplingRateSystem struct {
 func (s *samplingRateSystem) GetSamplingRate(version uint16, obsDomainID uint32, samplerID uint64) uint32 {
 	s.lock.RLock()
 	defer s.lock.RUnlock()
-	rate, _ := s.rates[samplingRateKey{
+	rate := s.rates[samplingRateKey{
 		version:     version,
 		obsDomainID: obsDomainID,
 		samplerID:   samplerID,

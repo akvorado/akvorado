@@ -12,7 +12,6 @@ import (
 	"net/netip"
 	"path/filepath"
 	"slices"
-	"sort"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -47,11 +46,6 @@ func expectCacheLookup(t *testing.T, sc *metadataCache, exporterIP string, ifInd
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Errorf("Lookup() (-got, +want):\n%s", diff)
 	}
-}
-
-func sortResults(t *testing.T, ifindexes []uint) {
-	t.Helper()
-	sort.Slice(ifindexes, func(i, j int) bool { return ifindexes[i] < ifindexes[j] })
 }
 
 func TestGetEmpty(t *testing.T) {

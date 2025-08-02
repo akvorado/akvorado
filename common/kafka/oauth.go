@@ -13,11 +13,6 @@ import (
 	"golang.org/x/oauth2/clientcredentials"
 )
 
-// tokenProvider implements OAuth token provider for franz-go.
-type tokenProvider struct {
-	tokenSource oauth2.TokenSource
-}
-
 // newOAuthTokenProvider returns a token provider function using OAuth credentials.
 func newOAuthTokenProvider(tlsConfig *tls.Config, oauthConfig clientcredentials.Config) func(context.Context) (oauth.Auth, error) {
 	return func(ctx context.Context) (oauth.Auth, error) {

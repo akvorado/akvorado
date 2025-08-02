@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/events"
 	"github.com/docker/go-connections/nat"
 	_ "github.com/opencontainers/image-spec/specs-go/v1" // used by mock
@@ -59,12 +60,12 @@ func TestRoot(t *testing.T) {
 	// Initial trigger
 	dockerClientMock.EXPECT().
 		ContainerList(gomock.Any(), gomock.Any()).
-		Return([]types.Container{{ID: "initial"}}, nil)
+		Return([]container.Summary{{ID: "initial"}}, nil)
 	dockerClientMock.EXPECT().
 		ContainerInspect(gomock.Any(), "initial").
-		Return(types.ContainerJSON{
-			NetworkSettings: &types.NetworkSettings{
-				NetworkSettingsBase: types.NetworkSettingsBase{
+		Return(container.InspectResponse{
+			NetworkSettings: &container.NetworkSettings{
+				NetworkSettingsBase: container.NetworkSettingsBase{
 					Ports: map[nat.Port][]nat.PortBinding{
 						"2055/udp": {
 							nat.PortBinding{
@@ -134,12 +135,12 @@ func TestRoot(t *testing.T) {
 	t.Run("new container", func(_ *testing.T) {
 		dockerClientMock.EXPECT().
 			ContainerList(gomock.Any(), gomock.Any()).
-			Return([]types.Container{{ID: "new one"}}, nil)
+			Return([]container.Summary{{ID: "new one"}}, nil)
 		dockerClientMock.EXPECT().
 			ContainerInspect(gomock.Any(), "new one").
-			Return(types.ContainerJSON{
-				NetworkSettings: &types.NetworkSettings{
-					NetworkSettingsBase: types.NetworkSettingsBase{
+			Return(container.InspectResponse{
+				NetworkSettings: &container.NetworkSettings{
+					NetworkSettingsBase: container.NetworkSettingsBase{
 						Ports: map[nat.Port][]nat.PortBinding{
 							"2055/udp": {
 								nat.PortBinding{

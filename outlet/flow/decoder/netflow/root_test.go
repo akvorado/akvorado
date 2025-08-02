@@ -4,7 +4,6 @@
 package netflow
 
 import (
-	"fmt"
 	"net/netip"
 	"path/filepath"
 	"testing"
@@ -603,7 +602,7 @@ func TestDecodeNFv5(t *testing.T) {
 		pb.RawFlow_TS_NETFLOW_PACKET,
 		pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED,
 	} {
-		t.Run(fmt.Sprintf("%s", tsSource), func(t *testing.T) {
+		t.Run(tsSource.String(), func(t *testing.T) {
 			_, nfdecoder, bf, got, finalize := setup(t, false)
 			options := decoder.Option{TimestampSource: tsSource}
 

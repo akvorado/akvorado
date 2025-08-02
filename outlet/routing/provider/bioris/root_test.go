@@ -392,7 +392,7 @@ func TestBioRIS(t *testing.T) {
 
 	// Check BioRIS server
 	{
-		risConn, err := grpc.Dial(rpcListener.Addr().String(),
+		risConn, err := grpc.NewClient(rpcListener.Addr().String(),
 			grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			t.Fatalf("Dial() error:\n%+v", err)

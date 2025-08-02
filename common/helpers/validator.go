@@ -72,7 +72,7 @@ func isListen(fl validator.FieldLevel) bool {
 // (both fields should be a slice)
 func noIntersectField(fl validator.FieldLevel) bool {
 	field := fl.Field()
-	currentField, _, ok := fl.GetStructFieldOK()
+	currentField, _, _, ok := fl.GetStructFieldOK2()
 	if !ok {
 		return false
 	}

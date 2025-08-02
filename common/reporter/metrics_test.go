@@ -164,8 +164,6 @@ func TestMetrics(t *testing.T) {
 type customMetrics struct {
 	metric1 *reporter.MetricDesc
 	metric2 *reporter.MetricDesc
-
-	count int
 }
 
 func (m customMetrics) Describe(ch chan<- *prometheus.Desc) {
@@ -174,7 +172,6 @@ func (m customMetrics) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (m customMetrics) Collect(ch chan<- prometheus.Metric) {
-	m.count++
 	ch <- prometheus.MustNewConstMetric(m.metric1, prometheus.GaugeValue, 18)
 	ch <- prometheus.MustNewConstMetric(m.metric2, prometheus.GaugeValue, 30)
 }

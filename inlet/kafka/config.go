@@ -35,7 +35,7 @@ type CompressionCodec kgo.CompressionCodec
 
 // UnmarshalText produces a compression codec
 func (cc *CompressionCodec) UnmarshalText(text []byte) error {
-	codec := kgo.CompressionCodec{}
+	var codec kgo.CompressionCodec
 	switch string(text) {
 	case "none":
 		codec = kgo.NoCompression()

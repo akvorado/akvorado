@@ -130,8 +130,8 @@ func (c *Component) Start() error {
 				return fmt.Errorf("error while watching for Docker events: %w", err)
 			case msg := <-msgs:
 				c.r.Info().
-					Str("id", msg.ID).
-					Str("from", msg.From).
+					Str("id", msg.Actor.ID).
+					Str("from", msg.Actor.Attributes["image"]).
 					Msg("new container started")
 				c.metrics.runs.WithLabelValues("new container").Inc()
 				trigger()

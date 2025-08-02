@@ -63,7 +63,7 @@ func quoteString(s string) string {
 func (c *Component) tableAlreadyExists(ctx context.Context, table, column, target string) (bool, error) {
 	// Normalize a bit the target. This is far from perfect, but we test that
 	// and we hope this does not differ between ClickHouse versions!
-	target = strings.TrimSpace(regexp.MustCompile("\\s+").ReplaceAllString(target, " "))
+	target = strings.TrimSpace(regexp.MustCompile(`\s+`).ReplaceAllString(target, " "))
 
 	// Fetch the existing one
 	row := c.d.ClickHouse.QueryRow(ctx,

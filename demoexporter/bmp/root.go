@@ -20,7 +20,6 @@ type Component struct {
 	t      tomb.Tomb
 	config Configuration
 
-	bmpPort int
 	metrics struct {
 		connections reporter.Counter
 		errors      *reporter.CounterVec

@@ -10,27 +10,8 @@ import (
 	"net"
 	"strings"
 
-	"github.com/ClickHouse/clickhouse-go/v2"
-
-	"akvorado/common/reporter"
 	"akvorado/common/schema"
 )
-
-type migrationStep struct {
-	// CheckQuery to execute to check if the step is needed.
-	CheckQuery string
-	// Arguments to use for the query
-	Args []any
-	// Function to execute if the query returns no row or returns `0'.
-	Do func() error
-}
-
-type migrationStepFunc func(context.Context, reporter.Logger, clickhouse.Conn) migrationStep
-
-type migrationStepWithDescription struct {
-	Description string
-	Step        migrationStepFunc
-}
 
 // migrateDatabase execute database migration
 func (c *Component) migrateDatabase() error {

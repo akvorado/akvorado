@@ -62,6 +62,9 @@ func TestClient(t *testing.T) {
 
 	// Test we get a reconnect
 	conn, err := listener.Accept()
+	if err != nil {
+		t.Fatalf("Accept() error:\n%+v", err)
+	}
 	time.Sleep(20 * time.Millisecond)
 	conn.Close()
 	conn, err = listener.Accept()
@@ -96,6 +99,7 @@ func TestClient(t *testing.T) {
 	}
 
 	// Assume we got what we want.
+	_ = msgs
 
 	time.Sleep(20 * time.Millisecond)
 	gotMetrics := r.GetMetrics("akvorado_demoexporter_")

@@ -23,8 +23,6 @@ var (
 	regexCache     = make(map[string]*regexp.Regexp)
 )
 
-type classifierContextKey string
-
 // ExporterClassifierRule defines a classification rule for a exporter.
 type ExporterClassifierRule struct {
 	program *vm.Program

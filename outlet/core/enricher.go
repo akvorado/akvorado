@@ -352,7 +352,7 @@ func isPrivateAS(as uint32) bool {
 	if as == 0 || as == 23456 {
 		return true
 	}
-	if 64496 <= as && as <= 65551 || 4_200_000_000 <= as && as <= 4_294_967_295 {
+	if 64496 <= as && as <= 65551 || 4_200_000_000 <= as {
 		return true
 	}
 	return false
