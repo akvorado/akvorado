@@ -277,10 +277,9 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 				// today with NFv9 and IPFIX).
 				icmpType = uint8(dstPort >> 8)
 				icmpCode = uint8(dstPort & 0xff)
-			} else {
-				icmpType = uint8(srcPort)
-				icmpType = uint8(dstPort)
 			}
+			// Unsure how to do the mapping when using source and destination
+			// port. Let's ignore.
 		}
 		if proto == 1 {
 			bf.AppendUint(schema.ColumnICMPv4Type, uint64(icmpType))
