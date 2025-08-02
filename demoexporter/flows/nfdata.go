@@ -63,14 +63,14 @@ func getNetFlowData(ctx context.Context, flows []generatedFlow, sequenceNumber u
 					if etype == helpers.ETypeIPv4 {
 						err = binary.Write(buf, binary.BigEndian, ipv4Flow{
 							IPFlow:  flow.IPFlow,
-							SrcAddr: *(*[4]byte)(flow.SrcAddr.To4()),
-							DstAddr: *(*[4]byte)(flow.DstAddr.To4()),
+							SrcAddr: flow.SrcAddr.As4(),
+							DstAddr: flow.DstAddr.As4(),
 						})
 					} else {
 						err = binary.Write(buf, binary.BigEndian, ipv6Flow{
 							IPFlow:  flow.IPFlow,
-							SrcAddr: *(*[16]byte)(flow.SrcAddr.To16()),
-							DstAddr: *(*[16]byte)(flow.DstAddr.To16()),
+							SrcAddr: flow.SrcAddr.As16(),
+							DstAddr: flow.DstAddr.As16(),
 						})
 					}
 					if err != nil {

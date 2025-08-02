@@ -5,7 +5,6 @@ package flows
 
 import (
 	"context"
-	"net"
 	"net/netip"
 	"testing"
 	"time"
@@ -52,8 +51,8 @@ func TestGetNetFlowData(t *testing.T) {
 		context.Background(),
 		[]generatedFlow{
 			{
-				SrcAddr: net.ParseIP("192.0.2.206"),
-				DstAddr: net.ParseIP("203.0.113.165"),
+				SrcAddr: netip.MustParseAddr("192.0.2.206"),
+				DstAddr: netip.MustParseAddr("203.0.113.165"),
 				EType:   0x800,
 				IPFlow: IPFlow{
 					Octets:        1500,
@@ -70,8 +69,8 @@ func TestGetNetFlowData(t *testing.T) {
 					DstMask:       23,
 				},
 			}, {
-				SrcAddr: net.ParseIP("2001:db8::1"),
-				DstAddr: net.ParseIP("2001:db8:2:0:cea5:d643:ec43:3772"),
+				SrcAddr: netip.MustParseAddr("2001:db8::1"),
+				DstAddr: netip.MustParseAddr("2001:db8:2:0:cea5:d643:ec43:3772"),
 				EType:   0x86dd,
 				IPFlow: IPFlow{
 					Octets:        1300,
@@ -88,8 +87,8 @@ func TestGetNetFlowData(t *testing.T) {
 					DstMask:       48,
 				},
 			}, {
-				SrcAddr: net.ParseIP("192.0.2.236"),
-				DstAddr: net.ParseIP("203.0.113.67"),
+				SrcAddr: netip.MustParseAddr("192.0.2.236"),
+				DstAddr: netip.MustParseAddr("203.0.113.67"),
 				EType:   0x800,
 				IPFlow: IPFlow{
 					Octets:        1339,

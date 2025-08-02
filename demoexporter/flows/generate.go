@@ -9,7 +9,6 @@ import (
 	"math"
 	"math/bits"
 	"math/rand"
-	"net"
 	"net/netip"
 	"time"
 
@@ -20,8 +19,8 @@ import (
 type generatedFlow struct {
 	IPFlow
 	EType   uint16
-	SrcAddr net.IP
-	DstAddr net.IP
+	SrcAddr netip.Addr
+	DstAddr netip.Addr
 }
 
 // rateToCount converts a per-second rate to the number of items to
@@ -33,7 +32,7 @@ func rateToCount(rate float64, now time.Time) int {
 }
 
 // randomIP returns a random IP in the provided prefix.
-func randomIP(prefix netip.Prefix, r *rand.Rand) net.IP {
+func randomIP(prefix netip.Prefix, r *rand.Rand) netip.Addr {
 	result := make([]byte, prefix.Addr().BitLen()/8)
 	for i := range result {
 		if prefix.Bits() >= (i+1)*8 {
@@ -48,7 +47,8 @@ func randomIP(prefix netip.Prefix, r *rand.Rand) net.IP {
 		randomByte = randomByte & ^bits.Reverse8(byte((1<<shiftMask)-1))
 		result[i] = randomByte | prefix.Addr().AsSlice()[i]
 	}
-	return net.IP(result)
+	addr, _ := netip.AddrFromSlice(result)
+	return addr
 }
 
 // peakHourDistance returns distance from peak hour (0 to 1)
@@ -130,7 +130,7 @@ func generateFlows(flowConfigs []FlowConfiguration, seed int64, now time.Time) [
 					flow.DstPort = uint16(r.Int31n(2000) + 33000)
 				}
 			}
-			if flow.SrcAddr.To4() != nil {
+			if flow.SrcAddr.Is4() {
 				flow.EType = helpers.ETypeIPv4
 			} else {
 				flow.EType = helpers.ETypeIPv6

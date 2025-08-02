@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
-	"net"
 	"net/netip"
 	"testing"
 	"time"
@@ -47,13 +46,8 @@ func TestRandomIP(t *testing.T) {
 		prefix := netip.MustParsePrefix(p)
 		for range 1000 {
 			ip := randomIP(prefix, r)
-			addr, ok := netip.AddrFromSlice(ip)
-			if !ok {
-				t.Errorf("randomIP(%q) returned invalid IP", p)
-				continue
-			}
-			if !prefix.Contains(addr) {
-				t.Errorf("randomIP(%q) == %q not in prefix", p, addr)
+			if !prefix.Contains(ip) {
+				t.Errorf("randomIP(%q) == %q not in prefix", p, ip)
 				break
 			}
 		}
@@ -152,8 +146,8 @@ func TestGenerateFlows(t *testing.T) {
 			},
 			Expected: []generatedFlow{
 				{
-					SrcAddr: net.ParseIP("192.0.2.36"),
-					DstAddr: net.ParseIP("203.0.113.91"),
+					SrcAddr: netip.MustParseAddr("192.0.2.36"),
+					DstAddr: netip.MustParseAddr("203.0.113.91"),
 					EType:   0x800,
 					IPFlow: IPFlow{
 						Octets:        1365,
@@ -170,8 +164,8 @@ func TestGenerateFlows(t *testing.T) {
 						DstMask:       24,
 					},
 				}, {
-					SrcAddr: net.ParseIP("192.0.2.30"),
-					DstAddr: net.ParseIP("203.0.113.220"),
+					SrcAddr: netip.MustParseAddr("192.0.2.30"),
+					DstAddr: netip.MustParseAddr("203.0.113.220"),
 					EType:   0x800,
 					IPFlow: IPFlow{
 						Octets:        1500,
@@ -207,8 +201,8 @@ func TestGenerateFlows(t *testing.T) {
 			},
 			Expected: []generatedFlow{
 				{
-					SrcAddr: net.ParseIP("2001:db8::1"),
-					DstAddr: net.ParseIP("2001:db8:2:0:245b:11f7:351e:dc1a"),
+					SrcAddr: netip.MustParseAddr("2001:db8::1"),
+					DstAddr: netip.MustParseAddr("2001:db8:2:0:245b:11f7:351e:dc1a"),
 					EType:   0x86dd,
 					IPFlow: IPFlow{
 						Octets:        1170,
@@ -245,8 +239,8 @@ func TestGenerateFlows(t *testing.T) {
 			},
 			Expected: []generatedFlow{
 				{
-					SrcAddr: net.ParseIP("2001:db8::1"),
-					DstAddr: net.ParseIP("2001:db8:2:0:245b:11f7:351e:dc1a"),
+					SrcAddr: netip.MustParseAddr("2001:db8::1"),
+					DstAddr: netip.MustParseAddr("2001:db8:2:0:245b:11f7:351e:dc1a"),
 					EType:   0x86dd,
 					IPFlow: IPFlow{
 						Octets:        1170,
@@ -263,8 +257,8 @@ func TestGenerateFlows(t *testing.T) {
 						DstMask:       64,
 					},
 				}, {
-					DstAddr: net.ParseIP("2001:db8::1"),
-					SrcAddr: net.ParseIP("2001:db8:2:0:245b:11f7:351e:dc1a"),
+					DstAddr: netip.MustParseAddr("2001:db8::1"),
+					SrcAddr: netip.MustParseAddr("2001:db8:2:0:245b:11f7:351e:dc1a"),
 					EType:   0x86dd,
 					IPFlow: IPFlow{
 						Octets:        1170 / 10,
