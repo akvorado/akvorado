@@ -68,7 +68,7 @@ require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/AlekSi/gocov-xml v1.1.0 // indirect
 	github.com/AlekSi/pointer v1.2.0 // indirect
-	github.com/BurntSushi/toml v1.4.0 // indirect
+	github.com/BurntSushi/toml v1.4.1-0.20240526193622-a339e1f7089c // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/andybalholm/brotli v1.1.1 // indirect
 	github.com/axw/gocov v1.2.1 // indirect
@@ -185,6 +185,7 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/arch v0.8.0 // indirect
 	golang.org/x/crypto v0.40.0 // indirect
+	golang.org/x/exp/typeparams v0.0.0-20231108232855-2478ac86f678 // indirect
 	golang.org/x/mod v0.25.0 // indirect
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/term v0.33.0 // indirect
@@ -193,6 +194,7 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250528174236-200df99c418a // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gotest.tools/gotestsum v1.12.1 // indirect
+	honnef.co/go/tools v0.6.1 // indirect
 	modernc.org/libc v1.22.5 // indirect
 	modernc.org/mathutil v1.5.0 // indirect
 	modernc.org/memory v1.5.0 // indirect
@@ -211,6 +213,7 @@ tool (
 	golang.org/x/tools/cmd/goimports
 	google.golang.org/protobuf/cmd/protoc-gen-go
 	gotest.tools/gotestsum
+	honnef.co/go/tools/cmd/staticcheck
 )
 
 replace github.com/kentik/patricia => github.com/netixx/patricia v0.0.0-20240221142110-a89b0dc418dd

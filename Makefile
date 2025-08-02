@@ -61,6 +61,7 @@ GOTESTSUM = go tool gotestsum
 MOCKGEN = go tool mockgen
 PIGEON = go tool pigeon
 REVIVE = go tool revive
+STATICCHECK = go tool staticcheck
 WWHRD = go tool wwhrd
 BUF = go run github.com/bufbuild/buf/cmd/buf@v1.55.1
 
@@ -166,6 +167,7 @@ test-go: ; $(info $(M) running Go tests$(GOTEST_MORE)…) @ ## Run Go tests
         --junitfile test/go/tests.xml -- \
 		-timeout $(TIMEOUT)s \
 		$(GOTEST_ARGS) $(PKGS)
+	$Q $(STATICCHECK) -f stylish -checks inherit,-SA1012 $(PKGS)
 test-race: CGO_ENABLED=1
 test-race: GOTEST_ARGS=-race
 test-race: GOTEST_MORE=, with race detector
@@ -206,7 +208,7 @@ test-coverage-js: ; $(info $(M) running JS coverage tests…) @ ## Run JS covera
 .PHONY: lint
 lint: .lint-go~ .lint-js~ ## Run linting
 .lint-go~: $(shell $(LSFILES) '*.go' 2> /dev/null) ; $(info $(M) running golint…)
-	$Q $(REVIVE) -formatter friendly -set_exit_status ./...
+	$Q $(REVIVE) -formatter stylish -set_exit_status ./...
 	$Q touch $@
 .lint-js~: $(shell $(LSFILES) '*.js' '*.ts' '*.vue' '*.html' 2> /dev/null)
 .lint-js~: $(GENERATED_JS) ; $(info $(M) running jslint…)
