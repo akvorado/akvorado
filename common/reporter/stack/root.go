@@ -21,27 +21,22 @@ type Call uintptr
 type Trace []Call
 
 var pcStackPool = sync.Pool{
-	New: func() any { return make([]uintptr, 1000) },
-}
-
-func poolBuf() []uintptr {
-	return pcStackPool.Get().([]uintptr)
-}
-
-func putPoolBuf(p []uintptr) {
-	pcStackPool.Put(p)
+	New: func() any {
+		pcs := make([]uintptr, 1000)
+		return &pcs
+	},
 }
 
 // Callers return the list of callers from the current stack.
 func Callers() Trace {
-	pcs := poolBuf()
-	pcs = pcs[:cap(pcs)]
+	ptr := pcStackPool.Get().(*[]uintptr)
+	pcs := *ptr
 	n := runtime.Callers(2, pcs)
 	cs := make([]Call, n)
 	for i, pc := range pcs[:n] {
 		cs[i] = Call(pc)
 	}
-	putPoolBuf(pcs)
+	pcStackPool.Put(ptr)
 	return cs
 }
 
