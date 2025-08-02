@@ -35,15 +35,19 @@ We do not aim for 100% code coverage, however most code should be covered by
 tests. This is a big task, but it pays when adding new features or refactoring.
 The test suite should run quick enough to not become a burden.
 
+Use `make test-go` to run Go tests. You can restrict it to a specific package
+with `make test-go PKG=akvorado/orchestrator/clickhouse`. Using just `go test`
+would work, but `make test-go` also runs linting and formatting automatically.
+
 If possible, tests should not rely on external components, but when it becomes
 hard to do so, it is possible to spawns services through Docker. Locally, one
 can spawns them through `docker compose -f docker/docker-compose-dev.yml`.
 GitHub actions are using services to spawn them.
 
-For manual tests, you can use `make docker-dev` to build a Docker container of
-Akvorado, then use `docker compose up` to run Docker compose. Beware to not
-destroy the volume for GeoIP at each tentative as there is a per-day limit on
-the number of times one IP can fetch the GeoIP database.
+For manual end-to-end tests, you can use `make docker-dev` to build a Docker
+container of Akvorado, then use `docker compose up` to run Docker compose.
+Beware to not destroy the volume for GeoIP at each tentative as there is a
+per-day limit on the number of times one IP can fetch the GeoIP database.
 
 If you need to work on the frontend part, you can spawn the Docker compose
 setup, then in `console/frontend`, use `npm run dev` and point your browser to
