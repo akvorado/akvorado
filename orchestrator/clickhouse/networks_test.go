@@ -44,22 +44,22 @@ func TestNetworksCSVWithGeoip(t *testing.T) {
 				ContentType: "text/csv; charset=utf-8",
 				FirstLines: []string{
 					"network,name,role,site,region,country,state,city,tenant,asn",
-					"1.0.0.0/24,,,,,,,,,15169",
-					"1.128.0.0/11,,,,,,,,,1221",
-					"2.19.4.136/30,,,,,SG,,,,32787",
-					"2.19.4.140/32,,,,,SG,,,,32787",
-					"2.125.160.216/29,,,,,GB,,,,",
-					"12.81.92.0/22,,,,,,,,,7018",
-					"12.81.96.0/19,,,,,,,,,7018",
-					"12.81.128.0/17,,,,,,,,,7018",
-					"12.82.0.0/15,,,,,,,,,7018",
-					"12.84.0.0/14,,,,,,,,,7018",
-					"12.88.0.0/13,,,,,,,,,7018",
-					"12.96.0.0/20,,,,,,,,,7018",
-					"12.96.16.0/24,,,,,,,,,7018",
-					"15.0.0.0/8,,,,,,,,,71",
-					"16.0.0.0/8,,,,,,,,,71",
-					"18.0.0.0/8,,,,,,,,,3",
+					"1.0.0.0/24,,,,,AU,Queensland,Brisbane,,15169",
+					"1.0.1.0/24,,,,,CN,Fujian,Xiamen,,",
+					"1.0.2.0/23,,,,,CN,Fujian,Xiamen,,",
+					"1.0.4.0/22,,,,,AU,Victoria,Melbourne,,",
+					"1.0.8.0/21,,,,,CN,Guangdong,Shenzhen,,",
+					"1.0.16.0/29,,,,,JP,Tokyo,Tokyo,,",
+					"1.0.16.8/30,,,,,JP,Tokyo,Tokyo,,",
+					"1.0.16.12/31,,,,,JP,Tokyo,Tokyo,,",
+					"1.0.16.14/32,,,,,JP,Tokyo,Asagaya-minami,,",
+					"1.0.16.15/32,,,,,JP,Tokyo,Tokyo,,",
+					"1.0.16.16/28,,,,,JP,Tokyo,Tokyo,,",
+					"1.0.16.32/27,,,,,JP,Tokyo,Tokyo,,",
+					"1.0.16.64/26,,,,,JP,Tokyo,Tokyo,,",
+					"1.0.16.128/25,,,,,JP,Tokyo,Tokyo,,",
+					"1.0.17.0/24,,,,,JP,Tokyo,Asagaya-minami,,",
+					"1.0.18.0/23,,,,,JP,Tokyo,Asagaya-minami,,",
 				},
 			},
 		})
@@ -68,10 +68,10 @@ func TestNetworksCSVWithGeoip(t *testing.T) {
 	t.Run("custom networks", func(t *testing.T) {
 		// Second use: add custom networks
 		config.Networks = helpers.MustNewSubnetMap(map[string]NetworkAttributes{
-			"::ffff:12.80.0.0/112":  {Name: "infra"},    // not covered by GeoIP
-			"::ffff:12.81.96.0/115": {Name: "infra"},    // matching a GeoIP entry
-			"::ffff:12.81.96.0/120": {Tenant: "Alfred"}, // nested in previous one
-			"::ffff:14.0.0.0/103":   {Tenant: "Alfred"}, // not covered by GeoIP but covers GeoIP entries
+			"::ffff:0.80.0.0/112":  {Tenant: "Alfred"}, // not covered by GeoIP
+			"::ffff:1.0.0.0/116":   {Name: "infra"},    // not covered by GeoIP but covers GeoIP entries
+			"::ffff:1.0.16.64/122": {Name: "infra"},    // matching a GeoIP entry
+			"::ffff:1.0.16.66/128": {Tenant: "Alfred"}, // nested in previous one
 		})
 
 		c, err := New(r, config, Dependencies{
@@ -92,25 +92,29 @@ func TestNetworksCSVWithGeoip(t *testing.T) {
 				ContentType: "text/csv; charset=utf-8",
 				FirstLines: []string{
 					"network,name,role,site,region,country,state,city,tenant,asn",
-					"1.0.0.0/24,,,,,,,,,15169",
-					"1.128.0.0/11,,,,,,,,,1221",
-					"2.19.4.136/30,,,,,SG,,,,32787",
-					"2.19.4.140/32,,,,,SG,,,,32787",
-					"2.125.160.216/29,,,,,GB,,,,",
-					"12.80.0.0/16,infra,,,,,,,,", // not covered by GeoIP
-					"12.81.92.0/22,,,,,,,,,7018",
-					"12.81.96.0/19,infra,,,,,,,,7018",       // matching a GeoIP entry
-					"12.81.96.0/24,infra,,,,,,,Alfred,7018", // nested in previous one
-					"12.81.128.0/17,,,,,,,,,7018",
-					"12.82.0.0/15,,,,,,,,,7018",
-					"12.84.0.0/14,,,,,,,,,7018",
-					"12.88.0.0/13,,,,,,,,,7018",
-					"12.96.0.0/20,,,,,,,,,7018",
-					"12.96.16.0/24,,,,,,,,,7018",
-					"14.0.0.0/7,,,,,,,,Alfred,",   // not covered by GeoIP
-					"15.0.0.0/8,,,,,,,,Alfred,71", // but covers GeoIP entries
-					"16.0.0.0/8,,,,,,,,,71",
-					"18.0.0.0/8,,,,,,,,,3",
+					"0.80.0.0/16,,,,,,,,Alfred,",                        // not covered by GeoIP
+					"1.0.0.0/20,infra,,,,,,,,",                          // not covered by GeoIP...
+					"1.0.0.0/24,infra,,,,AU,Queensland,Brisbane,,15169", // but covers GeoIP entries
+					"1.0.1.0/24,infra,,,,CN,Fujian,Xiamen,,",            // but covers GeoIP entries
+					"1.0.2.0/23,infra,,,,CN,Fujian,Xiamen,,",            // but covers GeoIP entries
+					"1.0.4.0/22,infra,,,,AU,Victoria,Melbourne,,",       // but covers GeoIP entries
+					"1.0.8.0/21,infra,,,,CN,Guangdong,Shenzhen,,",       // but covers GeoIP entries
+					"1.0.16.0/29,,,,,JP,Tokyo,Tokyo,,",
+					"1.0.16.8/30,,,,,JP,Tokyo,Tokyo,,",
+					"1.0.16.12/31,,,,,JP,Tokyo,Tokyo,,",
+					"1.0.16.14/32,,,,,JP,Tokyo,Asagaya-minami,,",
+					"1.0.16.15/32,,,,,JP,Tokyo,Tokyo,,",
+					"1.0.16.16/28,,,,,JP,Tokyo,Tokyo,,",
+					"1.0.16.32/27,,,,,JP,Tokyo,Tokyo,,",
+					"1.0.16.64/26,infra,,,,JP,Tokyo,Tokyo,,",       // matching a GeoIP entry
+					"1.0.16.66/32,infra,,,,JP,Tokyo,Tokyo,Alfred,", // nested in previous one
+					"1.0.16.128/25,,,,,JP,Tokyo,Tokyo,,",
+					"1.0.17.0/24,,,,,JP,Tokyo,Asagaya-minami,,",
+					"1.0.18.0/23,,,,,JP,Tokyo,Asagaya-minami,,",
+					"1.0.20.0/22,,,,,JP,Tokyo,Asagaya-minami,,",
+					"1.0.24.0/21,,,,,JP,Tokyo,Asagaya-minami,,",
+					"1.0.32.0/19,,,,,CN,Guangdong,Shenzhen,,",
+					"1.0.64.0/20,,,,,JP,Hiroshima,Hiroshima,,",
 				},
 			},
 		})
