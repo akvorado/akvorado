@@ -6,41 +6,30 @@ package geoip
 import (
 	"strconv"
 
-	"github.com/oschwald/maxminddb-golang"
+	"github.com/oschwald/maxminddb-golang/v2"
 )
-
-type ipinfoDBASN struct {
-	ASN    string `maxminddb:"asn"`
-	ASName string `maxminddb:"as_name"`
-}
-
-type ipinfoDBCountry struct {
-	Country string `maxminddb:"country"`
-	Region  string `maxminddb:"region"`
-	City    string `maxminddb:"city"`
-}
 
 type ipinfoDB struct {
 	db *maxminddb.Reader
 }
 
 func (mmdb *ipinfoDB) IterASNDatabase(f AsnIterFunc) error {
-	it := mmdb.db.Networks()
-	maxminddb.SkipAliasedNetworks(it)
-	for it.Next() {
-		asnInfo := &ipinfoDBASN{}
-		subnet, err := it.Network(asnInfo)
+	for result := range mmdb.db.Networks() {
+		var asnStr string // They are stored as ASxxxx
 
-		if err != nil {
-			return err
+		// Get AS number, skip if not found
+		result.DecodePath(&asnStr, "asn")
+		if asnStr == "" {
+			continue
 		}
-		n, err := strconv.ParseUint(asnInfo.ASN[2:], 10, 32)
+		asn, err := strconv.ParseUint(asnStr[2:], 10, 32)
 		if err != nil {
-			return err
+			continue
 		}
-		if err := f(subnet, ASNInfo{
-			ASNumber: uint32(n),
-			ASName:   asnInfo.ASName,
+
+		prefix := result.Prefix()
+		if err := f(prefix, ASNInfo{
+			ASNumber: uint32(asn),
 		}); err != nil {
 			return err
 		}
@@ -49,19 +38,19 @@ func (mmdb *ipinfoDB) IterASNDatabase(f AsnIterFunc) error {
 }
 
 func (mmdb *ipinfoDB) IterGeoDatabase(f GeoIterFunc) error {
-	it := mmdb.db.Networks()
-	maxminddb.SkipAliasedNetworks(it)
-	for it.Next() {
-		geoInfo := &ipinfoDBCountry{}
-		subnet, err := it.Network(geoInfo)
+	for result := range mmdb.db.Networks() {
+		var country, region, city string
 
-		if err != nil {
-			return err
-		}
-		if err := f(subnet, GeoInfo{
-			Country: geoInfo.Country,
-			State:   geoInfo.Region,
-			City:    geoInfo.City,
+		// Get country, region, and city
+		result.DecodePath(&country, "country")
+		result.DecodePath(&region, "region")
+		result.DecodePath(&city, "city")
+
+		prefix := result.Prefix()
+		if err := f(prefix, GeoInfo{
+			Country: country,
+			State:   region,
+			City:    city,
 		}); err != nil {
 			return err
 		}

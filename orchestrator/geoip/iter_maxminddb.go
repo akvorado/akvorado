@@ -4,45 +4,27 @@
 package geoip
 
 import (
-	"github.com/oschwald/maxminddb-golang"
+	"github.com/oschwald/maxminddb-golang/v2"
 )
 
-type maxmindDBASN struct {
-	AutonomousSystemNumber       uint   `maxminddb:"autonomous_system_number"`
-	AutonomousSystemOrganization string `maxminddb:"autonomous_system_organization"`
-}
-
 // for a list fields available, see: https://github.com/oschwald/geoip2-golang/blob/main/reader.go
-type maxmindDBCountry struct {
-	Country struct {
-		IsoCode string `maxminddb:"iso_code"`
-	} `maxminddb:"country"`
-	City struct {
-		Names map[string]string `maxminddb:"names"`
-	} `maxminddb:"city"`
-	Subdivisions []struct {
-		IsoCode string `maxminddb:"iso_code"`
-	} `maxminddb:"subdivisions"`
-}
 
 type maxmindDB struct {
 	db *maxminddb.Reader
 }
 
 func (mmdb *maxmindDB) IterASNDatabase(f AsnIterFunc) error {
-	it := mmdb.db.Networks()
-	maxminddb.SkipAliasedNetworks(it)
+	for result := range mmdb.db.Networks() {
+		var asn uint32
 
-	for it.Next() {
-		asnInfo := &maxmindDBASN{}
-		subnet, err := it.Network(asnInfo)
-
-		if err != nil {
-			return err
+		// Get AS number, skip if not found
+		result.DecodePath(&asn, "autonomous_system_number")
+		if asn == 0 {
+			continue
 		}
-		if err := f(subnet, ASNInfo{
-			ASNumber: uint32(asnInfo.AutonomousSystemNumber),
-			ASName:   asnInfo.AutonomousSystemOrganization,
+		prefix := result.Prefix()
+		if err := f(prefix, ASNInfo{
+			ASNumber: asn,
 		}); err != nil {
 			return err
 		}
@@ -51,25 +33,24 @@ func (mmdb *maxmindDB) IterASNDatabase(f AsnIterFunc) error {
 }
 
 func (mmdb *maxmindDB) IterGeoDatabase(f GeoIterFunc) error {
-	it := mmdb.db.Networks()
-	maxminddb.SkipAliasedNetworks(it)
-
-	for it.Next() {
-		geoInfo := &maxmindDBCountry{}
-		subnet, err := it.Network(geoInfo)
-
-		if err != nil {
-			return err
-		}
+	for result := range mmdb.db.Networks() {
+		var country string
+		var city string
 		var state string
-		if len(geoInfo.Subdivisions) > 0 {
-			state = geoInfo.Subdivisions[0].IsoCode
-		}
 
-		if err := f(subnet, GeoInfo{
-			Country: geoInfo.Country.IsoCode,
+		// Get country, city, and state. Skip if no country
+		result.DecodePath(&country, "country", "iso_code")
+		if country == "" {
+			continue
+		}
+		result.DecodePath(&city, "city", "names", "en")
+		result.DecodePath(&state, "subdivisions", "0", "iso_code")
+
+		prefix := result.Prefix()
+		if err := f(prefix, GeoInfo{
+			Country: country,
 			State:   state,
-			City:    geoInfo.City.Names["en"],
+			City:    city,
 		}); err != nil {
 			return err
 		}

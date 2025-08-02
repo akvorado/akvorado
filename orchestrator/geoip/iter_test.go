@@ -4,7 +4,7 @@
 package geoip
 
 import (
-	"net"
+	"net/netip"
 	"path/filepath"
 	"testing"
 
@@ -55,10 +55,10 @@ func TestIterDatabase(t *testing.T) {
 		},
 	}
 
-	err := c.IterASNDatabases(func(n *net.IPNet, a ASNInfo) error {
+	err := c.IterASNDatabases(func(prefix netip.Prefix, a ASNInfo) error {
 		for i, h := range mustHave {
 			// found the IP
-			if n.Contains(net.ParseIP(h.IP)) {
+			if ip, err := netip.ParseAddr(h.IP); err == nil && prefix.Contains(ip) {
 				if h.ExpectedASN != 0 && a.ASNumber != h.ExpectedASN {
 					t.Errorf("expected ASN %d, got %d", h.ExpectedASN, a.ASNumber)
 				}
@@ -72,10 +72,10 @@ func TestIterDatabase(t *testing.T) {
 		t.Fatalf("IterASNDatabases() error:\n%+v", err)
 	}
 
-	err = c.IterGeoDatabases(func(n *net.IPNet, a GeoInfo) error {
+	err = c.IterGeoDatabases(func(prefix netip.Prefix, a GeoInfo) error {
 		for i, h := range mustHave {
 			// found the IP
-			if n.Contains(net.ParseIP(h.IP).To16()) {
+			if ip, err := netip.ParseAddr(h.IP); err == nil && prefix.Contains(ip) {
 				if h.ExpectedCountry != "" && a.Country != h.ExpectedCountry {
 					t.Errorf("expected Country %s, got %s", h.ExpectedCountry, a.Country)
 				}
@@ -112,12 +112,12 @@ func TestIterNonExistingDatabase(t *testing.T) {
 		t.Fatalf("New() error:\n%+v", err)
 	}
 	helpers.StartStop(t, c)
-	if err := c.IterASNDatabases(func(_ *net.IPNet, _ ASNInfo) error {
+	if err := c.IterASNDatabases(func(_ netip.Prefix, _ ASNInfo) error {
 		return nil
 	}); err != nil {
 		t.Fatalf("IterASNDatabases() error:\n%+v", err)
 	}
-	if err := c.IterGeoDatabases(func(_ *net.IPNet, _ GeoInfo) error {
+	if err := c.IterGeoDatabases(func(_ netip.Prefix, _ GeoInfo) error {
 		return nil
 	}); err != nil {
 		t.Fatalf("IterGeoDatabases() error:\n%+v", err)

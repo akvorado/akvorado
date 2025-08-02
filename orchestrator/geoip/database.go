@@ -5,17 +5,17 @@ package geoip
 
 import (
 	"fmt"
-	"net"
+	"net/netip"
 	"strings"
 
-	"github.com/oschwald/maxminddb-golang"
+	"github.com/oschwald/maxminddb-golang/v2"
 )
 
 // GeoIterFunc is the required signature to iter a geo database.
-type GeoIterFunc func(*net.IPNet, GeoInfo) error
+type GeoIterFunc func(netip.Prefix, GeoInfo) error
 
 // AsnIterFunc is the required signature to iter an asn database;
-type AsnIterFunc func(*net.IPNet, ASNInfo) error
+type AsnIterFunc func(netip.Prefix, ASNInfo) error
 
 type geoDatabase interface {
 	Close()

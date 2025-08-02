@@ -14,10 +14,9 @@ type GeoInfo struct {
 	State   string
 }
 
-// ASNInfo describes ASN data of an asn database.
+// ASNInfo describes ASN data of an ASN database.
 type ASNInfo struct {
 	ASNumber uint32
-	ASName   string
 }
 
 // IterGeoDatabases iter all entries in all geo databases.
