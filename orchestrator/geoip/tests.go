@@ -27,8 +27,9 @@ func NewMock(t *testing.T, r *reporter.Reporter, withData bool) *Component {
 	_, src, _, _ := runtime.Caller(0)
 	if withData {
 		config.GeoDatabase = []string{
-			filepath.Join(path.Dir(src), "testdata", "GeoLite2-Country-Test.mmdb"),
+			filepath.Join(path.Dir(src), "testdata", "GeoLite2-City-Test.mmdb"),
 			filepath.Join(path.Dir(src), "testdata", "ip_country_asn_sample.mmdb"),
+			filepath.Join(path.Dir(src), "testdata", "ip_geolocation_sample.mmdb"),
 		}
 		config.ASNDatabase = []string{
 			filepath.Join(path.Dir(src), "testdata", "GeoLite2-ASN-Test.mmdb"),
