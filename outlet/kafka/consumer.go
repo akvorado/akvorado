@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"strconv"
-	"sync"
 
 	"github.com/rs/zerolog"
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -26,7 +25,6 @@ type Consumer struct {
 	metrics  metrics
 	worker   int
 	callback ReceiveFunc
-	mu       sync.Mutex
 }
 
 // ReceiveFunc is a function that will be called with each received messages.
@@ -83,10 +81,12 @@ func (c *Consumer) ProcessFetches(ctx context.Context, client *kgo.Client, fetch
 				err := func() error {
 					var epoch int32
 					var offset int64
-					defer client.MarkCommitOffsets(map[string]map[int32]kgo.EpochOffset{
-						topic.Topic: {
-							partition.Partition: kgo.EpochOffset{Epoch: epoch, Offset: offset},
-						}})
+					defer func() {
+						client.MarkCommitOffsets(map[string]map[int32]kgo.EpochOffset{
+							topic.Topic: {
+								partition.Partition: kgo.EpochOffset{Epoch: epoch, Offset: offset},
+							}})
+					}()
 					for _, record := range partition.Records {
 						epoch = record.LeaderEpoch
 						offset = record.Offset + 1
