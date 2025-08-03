@@ -104,8 +104,6 @@
               target="packages.${system}.backend"
               case $TARGETPLATFORM in
                 linux/amd64/v3) target=packages.x86_64-linux.backend-amd64v3 ;;
-                linux/amd64/*)  target=packages.x86_64-linux.backend ;;
-                linux/amd64)    target=packages.x86_64-linux.backend ;;
               esac
               nix build --print-build-logs ".#$target"
             '';
