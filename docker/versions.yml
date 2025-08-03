@@ -29,7 +29,7 @@ services:
   node-exporter:
     image: prom/node-exporter:v1.7.0 # v\d+\.\d+\.\d+
   kafka-ui:
-    image: provectuslabs/kafka-ui:v0.7.2 # v\d+\.\d+\.\d+
+    image: ghcr.io/kafbat/kafka-ui:v1.3.0 # v\d+\.\d+\.\d+
 
   # for tests
   srlinux:

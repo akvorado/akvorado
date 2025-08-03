@@ -17,6 +17,7 @@ identified with a specific icon:
 - 🌱 *outlet*: commit records from Kafka after queuing them to ClickHouse
 - 🌱 *docker*: build a linux/amd64/v3 image to enable some optimizations
 - 🌱 *docker*: change default log level for ClickHouse from trace to information
+- 🌱 *docker*: switch from Provectus Kafka UI to Kafbat UI
 
 ## 2.0.0-beta.1 - 2025-07-28
 
