@@ -423,11 +423,15 @@ snmp-server community <community> ro
 snmp-server vrf VRF-MANAGEMENT
 ```
 
-### Nokia SROS
-Model-driven command line interface (MD-CLI) syntax is used below. The full-context is provided as this is probably easier to adapt to classic CLI.
+### Nokia SR OS
+
+Model-driven command line interface (MD-CLI) syntax is used below. The
+full-context is provided as this is probably easier to adapt to classic CLI.
 
 #### Flows
-sFlow is currently barely supported on devices running SROS, one mostly has to stick to IPFIX
+
+Flow is currently barely supported on devices running SR OS, one mostly has to
+stick to IPFIX.
 
 ```
 /configure cflowd admin-state enable
@@ -442,13 +446,15 @@ sFlow is currently barely supported on devices running SROS, one mostly has to s
 /configure cflowd collector 192.0.2.1 port 2055 version 10
 ```
 
-Either configure sampling on the individual interfaces
+Either configure sampling on the individual interfaces:
+
 ```
 /configure service ies "internet" interface "if1/1/c1/1:0" cflowd-parameters sampling unicast type interface
 /configure service ies "internet" interface "if1/1/c1/1:0" cflowd-parameters sampling unicast direction ingress-only
 /configure service ies "internet" interface "if1/1/c1/1:0" cflowd-parameters sampling unicast sample-profile 1
 ```
-or add it to apply groups which are probably already in place
+
+Or add it to apply groups which are probably already in place:
 
 ```
 /configure groups group "peering" service ies "internet" interface "<i.*>" cflowd-parameters sampling unicast type interface
@@ -459,26 +465,28 @@ or add it to apply groups which are probably already in place
 ```
 
 #### SNMP
-Nokia routers running SROS use a different interface index in their flow records
-as the SNMP interface index usually used by other devices. To fix this issue,
-you need to use `cflowd use-vrtr-if-index`. More information can be found in
-[Nokia's
-documentation](https://infocenter.nokia.com/public/7750SR140R4/topic/com.sr.router.config/html/cflowd_cli.html#tgardner5iexrn6muno)
+
+Nokia routers running SR OS use a different interface index in their flow
+records as the SNMP interface index usually used by other devices. To fix this
+issue, you need to use `cflowd use-vrtr-if-index`. More information can be found
+in [Nokia's
+documentation](https://infocenter.nokia.com/public/7750SR140R4/topic/com.sr.router.config/html/cflowd_cli.html#tgardner5iexrn6muno).
 
 #### GNMI
-Instead of SNMP GNMI can be used. The interface index challenge (see `SNMP` above) also applies. See this [discussion](https://github.com/akvorado/akvorado/discussions/1275) for further details and possible workarounds.
 
-Unencrypted connections are used in this example (TLS encyption is out of scope here), do not use in production (or at least ensure the user has RO only permissions)
+Instead of SNMP GNMI can be used. The interface index challenge (see `SNMP`
+above) also applies. See this
+[discussion](https://github.com/akvorado/akvorado/discussions/1275) for further
+details and possible workarounds.
+
+In the below example, unencrupted connections are used. Check the documentation
+if you want to enable TLS for a more secure setup.
+
 ```
 /configure system grpc admin-state enable
 /configure system grpc allow-unsecure-connection
-```
-Akvorado only needs Read-Only access
-```
 /configure system security user-params local-user user "akvorado" access grpc true
 /configure system security user-params local-user user "akvorado" console member ["grpc_ro"]
-```
-```
 /configure system security aaa local-profiles profile "grpc_ro" grpc rpc-authorization gnmi-get permit
 /configure system security aaa local-profiles profile "grpc_ro" grpc rpc-authorization gnmi-set deny
 /configure system security aaa local-profiles profile "grpc_ro" grpc rpc-authorization gnmi-subscribe permit
@@ -685,6 +693,6 @@ drop the following tables:
 - `flows_raw_errors_consumer`
 - any `flows_XXXXXXX_raw_errors`
 - any `flows_XXXXXXX_raw` and `flows_XXXXXXX_raw_consumer` when `XXXXXXX` does not end with `vN` where `N` is a number
-- any `flows_XXXXXvN_raw` and `flows_XXXXXvN_raw_consumer` when another table exist with a higher `N` value
+- any `flows_XXXXXvN_raw` and `flows_XXXXXvN_raw_consumer` when another table exists with a higher `N` value
 
 These tables do not contain data. If you make a mistake, you can restart the orchestrator to recreate them.

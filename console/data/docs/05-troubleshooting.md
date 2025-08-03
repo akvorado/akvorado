@@ -38,7 +38,7 @@ ClickHouse.
 > [!CAUTION]
 > To recover even more space, you can use `docker system prune -a`. It is
 > important to understand that this command removes anything not currently used.
-> Only use it if all the containers are up and runnning and you don't use Docker
+> Only use it if all the containers are up and running and you don't use Docker
 > for something else.
 
 Check that all components are running and healthy:
@@ -240,7 +240,7 @@ Here is a list of errors you may find:
 - `input and output interfaces missing` means the flow does not contain input
   and output interface indexes. Fix this on the exporter.
 
-To check the SNMP configuration is correct, an convenient way is to use
+To check the SNMP configuration is correct, a convenient way is to use
 `tcpdump`. Notably, you can check the credentials are correct. If you don't get
 a `GetResponse` message, likely there is a misconfiguration on the exporter.
 
