@@ -49,6 +49,7 @@ services:
     environment:
       - KAFKA_CLUSTERS_0_NAME=local
       - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+      - KAFKA_CLUSTERS_0_READONLY=true
       - SERVER_SERVLET_CONTEXT_PATH=/kafka-ui
     labels:
       - traefik.enable=true
@@ -81,11 +82,10 @@ services:
     labels:
       - traefik.enable=true
       # Disable access logging of /api/v0/orchestrator/metrics
-      - traefik.http.routers.akvorado-orchestrator-metrics.entrypoints=private
       - traefik.http.routers.akvorado-orchestrator-metrics.rule=PathPrefix(`/api/v0/orchestrator/metrics`)
       - traefik.http.routers.akvorado-orchestrator-metrics.service=akvorado-orchestrator
       - traefik.http.routers.akvorado-orchestrator-metrics.observability.accesslogs=false
-      # Everything else is exposed to private entrypoing in /api/v0/orchestrator
+      # Everything else is exposed to private entrypoint in /api/v0/orchestrator
       - traefik.http.routers.akvorado-orchestrator.entrypoints=private
       - traefik.http.routers.akvorado-orchestrator.rule=PathPrefix(`/api/v0/orchestrator`)
       - traefik.http.services.akvorado-orchestrator.loadbalancer.server.port=8080
@@ -142,11 +142,10 @@ services:
     labels:
       - traefik.enable=true
       # Disable access logging of /api/v0/inlet/metrics
-      - traefik.http.routers.akvorado-inlet-metrics.entrypoints=private
       - traefik.http.routers.akvorado-inlet-metrics.rule=PathPrefix(`/api/v0/inlet/metrics`)
       - traefik.http.routers.akvorado-inlet-metrics.service=akvorado-inlet
       - traefik.http.routers.akvorado-inlet-metrics.observability.accesslogs=false
-      # Everything else is exposed to private entrypoing in /api/v0/inlet
+      # Everything else is exposed to private entrypoint in /api/v0/inlet
       - traefik.http.routers.akvorado-inlet.entrypoints=private
       - traefik.http.routers.akvorado-inlet.rule=PathPrefix(`/api/v0/inlet`)
       - traefik.http.services.akvorado-inlet.loadbalancer.server.port=8080
@@ -173,11 +172,10 @@ services:
     labels:
       - traefik.enable=true
       # Disable access logging of /api/v0/outlet/metrics
-      - traefik.http.routers.akvorado-outlet-metrics.entrypoints=private
       - traefik.http.routers.akvorado-outlet-metrics.rule=PathPrefix(`/api/v0/outlet/metrics`)
       - traefik.http.routers.akvorado-outlet-metrics.service=akvorado-outlet
       - traefik.http.routers.akvorado-outlet-metrics.observability.accesslogs=false
-      # Everything else is exposed to private entrypoing in /api/v0/outlet
+      # Everything else is exposed to private entrypoint in /api/v0/outlet
       - traefik.http.routers.akvorado-outlet.entrypoints=private
       - traefik.http.routers.akvorado-outlet.rule=PathPrefix(`/api/v0/outlet`)
       - traefik.http.services.akvorado-outlet.loadbalancer.server.port=8080
