@@ -16,6 +16,7 @@ identified with a specific icon:
 - 💥 *common*: be stricter on results returned from remote sources
 - 🌱 *outlet*: commit records from Kafka after queuing them to ClickHouse
 - 🌱 *docker*: build a linux/amd64/v3 image to enable some optimizations
+- 🌱 *docker*: change default log level for ClickHouse from trace to information
 
 ## 2.0.0-beta.1 - 2025-07-28
 

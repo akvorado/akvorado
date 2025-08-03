@@ -25,4 +25,7 @@
   <events>true</events>
   <asynchronous_metrics>true</asynchronous_metrics>
  </prometheus>
+ <logger>
+   <level>information</level>
+ </logger>
 </clickhouse>
