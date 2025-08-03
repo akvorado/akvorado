@@ -6,7 +6,6 @@ identified with a specific icon:
 
 - 💥: breaking change
 - ✨: new feature
-- 🗑: removed feature
 - 🔒: security fix
 - 🩹: bug fix
 - 🌱: miscellaneous change
