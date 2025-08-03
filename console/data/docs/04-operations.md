@@ -590,6 +590,13 @@ FROM system.dictionaries
 
 ### Space usage
 
+To get the space used by ClickHouse, use the following query:
+
+```sql
+SELECT formatReadableSize(sum(bytes_on_disk)) AS size
+FROM system.parts
+```
+
 You can get an idea on how much space is used by each table with the
 following query:
 
@@ -630,6 +637,28 @@ ORDER BY
     sum(column_data_compressed_bytes) DESC
 ```
 
+You can also have a look at the system tables:
+
+```sql
+SELECT * EXCEPT size, formatReadableSize(size) AS size FROM (
+ SELECT database, table, sum(bytes_on_disk) AS size, MIN(partition_id) AS oldest
+ FROM system.parts
+ GROUP by database, table
+ ORDER by size DESC
+)
+```
+
+All the system tables with suffix `_0`, `_1` are tables from an older version of
+ClickHouse. You can drop them by using this SQL query and copy-pasting the
+result:
+
+```sql
+SELECT concat('DROP TABLE IF EXISTS system.', name, ';')
+FROM system.tables
+WHERE (database = 'system') AND match(name, '_[0-9]+$')
+FORMAT TSVRaw
+```
+
 ### Slow queries
 
 You can extract slow queries with:
@@ -646,3 +675,16 @@ FORMAT Vertical
 [Altinity's knowledge
 base](https://kb.altinity.com/altinity-kb-useful-queries/query_log/)
 contains some other useful queries.
+
+### Old tables
+
+Tables not used anymore may still be around check with `SHOW TABLES`. You can
+drop the following tables:
+
+- `flows_raw_errors`
+- `flows_raw_errors_consumer`
+- any `flows_XXXXXXX_raw_errors`
+- any `flows_XXXXXXX_raw` and `flows_XXXXXXX_raw_consumer` when `XXXXXXX` does not end with `vN` where `N` is a number
+- any `flows_XXXXXvN_raw` and `flows_XXXXXvN_raw_consumer` when another table exist with a higher `N` value
+
+These tables do not contain data. If you make a mistake, you can restart the orchestrator to recreate them.

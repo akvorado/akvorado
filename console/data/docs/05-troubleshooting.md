@@ -19,7 +19,29 @@ here) queries *ClickHouse* to display flows to users.
 
 ## Basic checks
 
-First, check that all components are running and healthy:
+First, check you have enough space. This is a common cause of failure:
+
+```console
+$ docker system df
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          7         7         1.819GB   7.834MB (0%)
+Containers      15        15        2.752GB   0B (0%)
+Local Volumes   16        9         69.24GB   8.594GB (12%)
+Build Cache     4         0         5.291MB   5.291MB
+```
+
+You can recover space with `docker system prune` or get more details with
+`docker system df -v`. Have a look at the documentation about
+[operations](04-operations.md#clickhouse) on how to check space usage for
+ClickHouse.
+
+> [!CAUTION]
+> To recover even more space, you can use `docker system prune -a`. It is
+> important to understand that this command removes anything not currently used.
+> Only use it if all the containers are up and runnning and you don't use Docker
+> for something else.
+
+Check that all components are running and healthy:
 
 ```console
 $ docker compose ps --format "table {{.Service}}\t{{.Status}}"
