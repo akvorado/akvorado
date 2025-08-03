@@ -78,6 +78,7 @@
               program = "${script}/bin/${name}";
             })
           rec {
+            # Update various hashes
             update-vendorHash = ''
               sha256=$(2>&1 nix build --no-link .#backend.goModules \
                           | ${pkgs.gnused}/bin/sed -nE "s/\s+got:\s+(sha256-.*)/\1/p")
@@ -98,10 +99,21 @@
               ${update-npmDepsHash}
               ${update-ianaServiceNamesHash}
             '';
+            # Run nix build depending on TARGETPLATFORM value (for Docker)
+            build = ''
+              target="packages.${system}.backend"
+              case $TARGETPLATFORM in
+                linux/amd64/v3) target=packages.x86_64-linux.backend-amd64v3 ;;
+                linux/amd64/*)  target=packages.x86_64-linux.backend ;;
+                linux/amd64)    target=packages.x86_64-linux.backend ;;
+              esac
+              nix build --print-build-logs ".#$target"
+            '';
           };
 
         packages = {
           inherit backend frontend ianaServiceNames;
+          backend-amd64v3 = backend.overrideAttrs (old: { env.GOAMD64 = "v3"; });
           default = backend;
         };
 

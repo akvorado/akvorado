@@ -1,11 +1,12 @@
 FROM nixpkgs/nix-flakes:latest AS build
+ARG TARGETPLATFORM
 RUN echo filter-syscalls = false >> /etc/nix/nix.conf
 WORKDIR /app
 COPY . .
 RUN mkdir -p /output/store
 RUN git describe --tags --always --dirty --match=v* > .version && git add -f .version
 RUN nix run ".#update" \
- && nix build -L \
+ && nix run ".#build" \
  && cp -va $(nix-store -qR result) /output/store \
  && rm -rf /output/store/*-akvorado
 
