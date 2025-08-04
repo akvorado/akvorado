@@ -41,8 +41,8 @@ GENERATED = \
 	$(GENERATED_JS) \
 	console/data/frontend
 
-.PHONY: all
-all: fmt lint $(GENERATED) ; $(info $(M) building executable…) @ ## Build program binary
+.PHONY: all all_indep
+all: fmt lint all_indep ; $(info $(M) building executable…) @ ## Build program binary
 	$Q env GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) \
          $(if $(filter amd64,$(TARGETARCH)),GOAMD64=$(TARGETVARIANT),\
          $(if $(filter arm64,$(TARGETARCH)),GOARM64=$(TARGETVARIANT).0,\
@@ -51,9 +51,7 @@ all: fmt lint $(GENERATED) ; $(info $(M) building executable…) @ ## Build prog
 		-tags release \
 		-ldflags '-X $(MODULE)/common/helpers.AkvoradoVersion=$(VERSION)' \
 		-o bin/$(basename $(MODULE)) main.go
-
-.PHONY: all_js
-all_js: .fmt-js~ .lint-js~ $(GENERATED_JS) console/data/frontend
+all_indep: $(GENERATED)
 
 # Tools
 

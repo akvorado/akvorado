@@ -14,7 +14,9 @@ RUN go mod download
 # Build
 COPY . .
 COPY --from=build-js /build/console/data/frontend console/data/frontend
-RUN touch console/frontend/node_modules console/data/frontend .fmt-js~ .fmt.go~ .lint-js~ .lint-go~
+RUN touch console/frontend/node_modules .fmt-js~ .fmt.go~ .lint-js~ .lint-go~ \
+ && find . -print0 | xargs -0 touch -d @0
+RUN make all_indep
 ARG TARGETOS
 ARG TARGETARCH
 ARG TARGETVARIANT
