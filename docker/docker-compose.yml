@@ -53,7 +53,6 @@ services:
       - SERVER_SERVLET_CONTEXT_PATH=/kafka-ui
     labels:
       - traefik.enable=true
-      - traefik.http.routers.kafka-ui.entrypoints=private
       - traefik.http.routers.kafka-ui.rule=PathPrefix(`/kafka-ui`)
 
   redis:

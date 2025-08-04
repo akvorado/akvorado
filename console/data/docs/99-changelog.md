@@ -10,6 +10,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🌱 *docker*: expose Kafka UI (read-only) to the public endpoint
+
 ## 2.0.0-beta.2 - 2025-08-04
 
 > [!CAUTION]
@@ -21,7 +25,7 @@ identified with a specific icon:
 - 🌱 *docker*: build a linux/arm/v7 image
 - 🌱 *docker*: change default log level for ClickHouse from trace to information
 - 🌱 *docker*: switch from Provectus Kafka UI (unmaintained) to Kafbat UI
-- 🌱 *docker*: expose metrics and Kafka UI (read-only) to the public endpoint
+- 🌱 *docker*: expose metrics to the public endpoint
 
 ## 2.0.0-beta.1 - 2025-07-28
 
