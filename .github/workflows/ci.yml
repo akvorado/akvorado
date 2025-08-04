@@ -263,6 +263,7 @@ jobs:
       - name: Build image
         uses: docker/build-push-action@v6
         with:
+          context: .
           file: docker/Dockerfile
           platforms: |
             linux/amd64

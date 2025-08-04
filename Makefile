@@ -256,9 +256,9 @@ version:
 
 .PHONY: docker docker-dev
 docker: ; $(info $(M) build Docker image…) @ ## Build Docker image
-	$Q docker build -f docker/Dockerfile -t ghcr.io/akvorado/akvorado:main .
+	$Q docker build -f docker/Dockerfile --build-arg VERSION=$(VERSION) -t ghcr.io/akvorado/akvorado:main .
 docker-dev: all ; $(info $(M) build development Docker image…) @ ## Build development Docker image
-	$Q docker build -f docker/Dockerfile.dev -t ghcr.io/akvorado/akvorado:main .
+	$Q docker build -f docker/Dockerfile.dev --build-arg VERSION=$(VERSION) -t ghcr.io/akvorado/akvorado:main .
 
 # This requires "skopeo". I fetch it from nix.
 .PHONY: docker-upgrade-versions
