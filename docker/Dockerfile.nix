@@ -4,7 +4,7 @@ RUN echo filter-syscalls = false >> /etc/nix/nix.conf
 WORKDIR /app
 COPY . .
 RUN mkdir -p /output/store
-RUN git describe --tags --always --dirty --match=v* > .version && git add -f .version
+RUN make version > .version && git add -f .version
 RUN nix run ".#update" \
  && nix run ".#build" \
  && cp -va $(nix-store -qR result) /output/store \
