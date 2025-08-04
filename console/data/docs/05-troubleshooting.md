@@ -407,7 +407,7 @@ increased to 1 million per monitor-map.
 #### Other routers
 
 Other routers are likely to share the same limitations. It should be noted that
-sFlow and IPFIX 3215 do not have a flow cache and therefore are less likely to
+sFlow and IPFIX 315 do not have a flow cache and therefore are less likely to
 have scaling problems.
 
 ### Inlet
