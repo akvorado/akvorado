@@ -45,7 +45,7 @@ GENERATED = \
 all: fmt lint all_indep ; $(info $(M) building executable…) @ ## Build program binary
 	$Q env GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) \
          $(if $(filter amd64,$(TARGETARCH)),GOAMD64=$(TARGETVARIANT),\
-         $(if $(filter arm64,$(TARGETARCH)),GOARM64=$(TARGETVARIANT).0,\
+         $(if $(filter arm64,$(TARGETARCH)),GOARM64=$(TARGETVARIANT:%=%.0),\
          $(if $(filter arm,$(TARGETARCH)),GOARM=$(TARGETVARIANT:v%=%)))) \
 	   $(GO) build \
 		-tags release \
