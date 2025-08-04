@@ -6,7 +6,9 @@ package cmd
 import (
 	"net/http"
 	"runtime"
+	runtimedebug "runtime/debug"
 	"slices"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
@@ -27,6 +29,13 @@ var versionCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		cmd.Printf("akvorado %s\n", helpers.AkvoradoVersion)
 		cmd.Printf("  Built with: %s\n", runtime.Version())
+		if info, ok := runtimedebug.ReadBuildInfo(); ok {
+			for _, setting := range info.Settings {
+				if strings.HasPrefix(setting.Key, "GO") {
+					cmd.Printf("  Build setting %s=%s\n", setting.Key, setting.Value)
+				}
+			}
+		}
 		cmd.Println()
 
 		sch, err := schema.New(schema.DefaultConfiguration())

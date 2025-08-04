@@ -1,21 +1,31 @@
-FROM nixpkgs/nix-flakes:latest AS build
-ARG TARGETPLATFORM
-RUN echo filter-syscalls = false >> /etc/nix/nix.conf
-WORKDIR /app
+FROM --platform=$BUILDPLATFORM node:20-alpine AS build-js
+RUN apk add --no-cache make
+WORKDIR /build
+COPY console/frontend console/frontend
+COPY Makefile .
+RUN make console/data/frontend
+
+FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS build-go
+RUN apk add --no-cache make mailcap
+WORKDIR /build
+# Cache for modules
+COPY go.mod go.sum .
+RUN go mod download
+# Build
 COPY . .
-RUN mkdir -p /output/store
-RUN git describe --tags --always --dirty --match=v* > .version && git add -f .version
-RUN nix run ".#update" \
- && nix run ".#build" \
- && cp -va $(nix-store -qR result) /output/store \
- && rm -rf /output/store/*-akvorado
+COPY --from=build-js /build/console/data/frontend console/data/frontend
+RUN touch console/frontend/node_modules console/data/frontend .fmt-js~ .fmt.go~ .lint-js~ .lint-go~
+ARG TARGETOS
+ARG TARGETARCH
+ARG TARGETVARIANT
+RUN make
 
 FROM gcr.io/distroless/static:latest
 LABEL org.opencontainers.image.source=https://github.com/akvorado/akvorado
 LABEL org.opencontainers.image.description="Akvorado: flow collector, enricher and visualizer"
 LABEL org.opencontainers.image.licenses=AGPL-3.0-only
-COPY --from=build /output/store /nix/store
-COPY --from=build /app/result/  /usr/local/
+COPY --from=build-go /etc/mime.types /etc/mime.types
+COPY --from=build-go /build/bin/akvorado /usr/local/bin/akvorado
 EXPOSE 8080
 HEALTHCHECK --interval=20s CMD [ "/usr/local/bin/akvorado", "healthcheck" ]
 ENTRYPOINT [ "/usr/local/bin/akvorado" ]
