@@ -18,6 +18,7 @@ RUN touch console/frontend/node_modules console/data/frontend .fmt-js~ .fmt.go~ 
 ARG TARGETOS
 ARG TARGETARCH
 ARG TARGETVARIANT
+ARG VERSION
 RUN make
 
 FROM gcr.io/distroless/static:latest
