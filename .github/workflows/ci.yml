@@ -78,6 +78,25 @@ jobs:
         if: always()
         run: docker compose -f docker/docker-compose-dev.yml down --remove-orphans --timeout 60
 
+  build-nix:
+    name: ❄️ Build on Nix
+    runs-on: ubuntu-latest
+    needs:
+      - dependabot
+    if: needs.dependabot.outputs.package-ecosystem != 'npm_and_yarn'
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: cachix/install-nix-action@v31
+      - name: Update dependency hashes
+        run: nix run .#update
+      - name: Build
+        run: nix build && ./result/bin/akvorado version
+
   build-macos:
     name: 🍏 Build and test on macOS
     runs-on: macos-14
@@ -241,12 +260,11 @@ jobs:
         with:
           context: .
           file: docker/Dockerfile
-          platforms: >-
-            ${{
-              github.ref_type == 'tag' &&
-              'linux/amd64,linux/amd64/v3,linux/arm64' ||
-              'linux/amd64,linux/amd64/v3'
-            }}
+          platforms: |
+            linux/amd64
+            linux/amd64/v3
+            linux/arm64
+            linux/arm/v7
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -260,6 +278,8 @@ jobs:
     needs:
       - build-go
       - build-js
+      - build-nix
+      - build-macos
       - docker
     runs-on: ubuntu-latest
     if: github.ref_type == 'tag'

@@ -43,7 +43,11 @@ GENERATED = \
 
 .PHONY: all
 all: fmt lint $(GENERATED) ; $(info $(M) building executable…) @ ## Build program binary
-	$Q $(GO) build \
+	$Q env GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) \
+         $(if $(filter amd64,$(TARGETARCH)),GOAMD64=$(TARGETVARIANT),\
+         $(if $(filter arm64,$(TARGETARCH)),GOARM64=$(TARGETVARIANT).0,\
+         $(if $(filter arm,$(TARGETARCH)),GOARM=$(TARGETVARIANT:v%=%)))) \
+	   $(GO) build \
 		-tags release \
 		-ldflags '-X $(MODULE)/common/helpers.AkvoradoVersion=$(VERSION)' \
 		-o bin/$(basename $(MODULE)) main.go
