@@ -87,7 +87,7 @@ func (w *realWorker) Flush(ctx context.Context) {
 			Body:  w.bf.ClickHouseProtoInput().Into(fmt.Sprintf("flows_%s_raw", w.c.d.Schema.ClickHouseHash())),
 			Input: w.bf.ClickHouseProtoInput(),
 		}); err != nil {
-			w.logger.Err(err).Msg("cannot send batch to ClickHouse")
+			w.logger.Err(err).Int("flows", w.bf.FlowCount()).Msg("cannot send batch to ClickHouse")
 			w.c.metrics.errors.WithLabelValues("send").Inc()
 			return err
 		}
