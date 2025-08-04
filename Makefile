@@ -156,12 +156,15 @@ default-%.pgo:
 # Tests
 
 .PHONY: check test tests test-race test-short test-bench test-coverage
-.PHONY: test-go test-js test-coverage-go test-coverage-js
+.PHONY: test-go test-go-units test-go-staticcheck test-js test-coverage-go test-coverage-js
 check test tests: test-go test-js ## Run tests
 test-coverage: test-coverage-go test-coverage-js ## Run coverage tests
 
-test-go test-bench test-race test-coverage-go: .fmt-go~ .lint-go~ $(GENERATED) $(GENERATED_TEST_GO)
-test-go: ; $(info $(M) running Go tests$(GOTEST_MORE)…) @ ## Run Go tests
+test-go-units test-go-checks test-bench test-race test-coverage-go: .fmt-go~ .lint-go~ $(GENERATED) $(GENERATED_TEST_GO)
+test-go: test-go-units test-go-checks ## Run Go tests
+test-go-checks: ; $(info $(M) running Go static checks…)
+	$Q $(STATICCHECK) -f stylish -checks inherit,-SA1012 $(PKGS)
+test-go-units: ; $(info $(M) running Go tests$(GOTEST_MORE)…)
 	$Q mkdir -p test/go
 	$Q env PATH=$(dir $(abspath $(shell command -v $(GO)))):$(PATH) $(GOTESTSUM) \
         --junitfile test/go/tests.xml -- \
@@ -207,8 +210,7 @@ test-coverage-js: ; $(info $(M) running JS coverage tests…) @ ## Run JS covera
 .PHONY: lint
 lint: .lint-go~ .lint-js~ ## Run linting
 .lint-go~: $(shell $(LSFILES) '*.go' 2> /dev/null) ; $(info $(M) running golint…)
-	$Q $(REVIVE) -formatter stylish -set_exit_status $(PKGS)
-	$Q $(STATICCHECK) -f stylish -checks inherit,-SA1012 $(PKGS)
+	$Q $(REVIVE) -formatter stylish -set_exit_status ./...
 	$Q touch $@
 .lint-js~: $(shell $(LSFILES) '*.js' '*.ts' '*.vue' '*.html' 2> /dev/null)
 .lint-js~: $(GENERATED_JS) ; $(info $(M) running jslint…)
