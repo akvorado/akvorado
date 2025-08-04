@@ -13,12 +13,13 @@
         pkgs = import nixpkgs {
           inherit system;
         };
+        l = builtins // pkgs.lib;
         nodejs = pkgs.nodejs_20;
         go = pkgs.go_1_24;
         frontend = pkgs.buildNpmPackage.override { inherit nodejs; } {
           name = "akvorado-frontend";
           src = ./console/frontend;
-          npmDepsHash = builtins.readFile ./nix/npmDepsHash.txt;
+          npmDepsHash = l.readFile ./nix/npmDepsHash.txt;
           # Filter out optional dependencies
           prePatch = ''
             ${pkgs.jq}/bin/jq 'del(.packages[] | select(.optional == true and .dev == null))' \
@@ -33,7 +34,7 @@
         };
         ianaServiceNames = pkgs.fetchurl {
           url = "https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv";
-          hash = builtins.readFile ./nix/ianaServiceNamesHash.txt;
+          hash = l.readFile ./nix/ianaServiceNamesHash.txt;
           # There are many bogus changes in this file. To avoid updating the
           # hash too often, filter the lines with a service name and a port.
           downloadToTemp = true;
@@ -46,8 +47,8 @@
           doCheck = false;
           name = "akvorado";
           src = ./.;
-          vendorHash = builtins.readFile ./nix/vendorHash.txt;
-          proxyVendor = true;   # generated code may contain additional dependencies
+          vendorHash = l.readFile ./nix/vendorHash.txt;
+          proxyVendor = true; # generated code may contain additional dependencies
           buildPhase = ''
             cp -r ${frontend}/node_modules console/frontend/node_modules
             cp -r ${frontend}/data console/data/frontend
@@ -68,7 +69,7 @@
         };
       in
       rec {
-        apps = pkgs.lib.attrsets.mapAttrs
+        apps = l.attrsets.mapAttrs
           (name: value:
             let
               script = pkgs.writeShellScriptBin name value;
@@ -99,11 +100,17 @@
               ${update-npmDepsHash}
               ${update-ianaServiceNamesHash}
             '';
-            # Run nix build depending on TARGETPLATFORM value (for Docker)
+            # Run nix build depending on TARGETPLATFORM value (for Docker).
             build = ''
-              target="packages.${system}.backend"
               case $TARGETPLATFORM in
-                linux/amd64/v3) target=packages.x86_64-linux.backend-amd64v3 ;;
+                linux/amd64/v*) target=packages.x86_64-linux.backend-amd64v''${TARGETPLATFORM##*/v} ;;
+                linux/amd64*) target=packages.x86_64-linux.backend ;;
+                linux/arm64/v*) target=packages.aarch64-linux.backend-arm64v''${TARGETPLATFORM##*/v}_0 ;;
+                linux/arm64*) target=packages.aarch64-linux.backend ;;
+                *)
+                  >&2 echo "Unknown target platform $TARGETPLATFORM"
+                  exit 1
+                  ;;
               esac
               nix build --print-build-logs ".#$target"
             '';
@@ -111,9 +118,24 @@
 
         packages = {
           inherit backend frontend ianaServiceNames;
-          backend-amd64v3 = backend.overrideAttrs (old: { env.GOAMD64 = "v3"; });
           default = backend;
-        };
+        } // (l.optionalAttrs (system == "x86_64-linux")
+          (l.attrsets.listToAttrs (l.lists.map
+            (v: {
+              name = "backend-amd64${v}";
+              value = backend.overrideAttrs (old: { env.GOAMD64 = v; });
+            })
+            # See https://go.dev/wiki/MinimumRequirements#amd64
+            [ "v1" "v2" "v3" "v4" ])))
+        // (l.optionalAttrs (system == "aarch64-linux")
+          (l.attrsets.listToAttrs (l.lists.map
+            (v: {
+              name = "backend-arm64${l.strings.replaceStrings ["."] ["_"] v}";
+              value = backend.overrideAttrs (old: { env.GOARM64 = v; });
+            })
+            # See https://go.dev/wiki/MinimumRequirements#arm64
+            ((l.lists.map (m: "v8.${l.toString m}") (l.lists.range 0 9)) ++
+              (l.lists.map (m: "v9.${l.toString m}") (l.lists.range 0 5))))));
 
         # Activate with "nix develop"
         devShells.default = pkgs.mkShell {
