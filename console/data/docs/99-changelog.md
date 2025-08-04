@@ -10,7 +10,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 2.0.0-beta.2 - 2025-08-04
+
+> [!CAUTION]
+> This is a beta release! Be sure to read the section about 2.0.0-beta.1 as well.
 
 - 💥 *common*: be stricter on results returned from remote sources
 - 🌱 *outlet*: commit records from Kafka after queuing them to ClickHouse
