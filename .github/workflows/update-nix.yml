@@ -49,7 +49,7 @@ jobs:
       cancel-in-progress: true
     steps:
       - name: Sleep a bit
-        run: sleep 300
+        run: sleep 600
         if: ${{ github.event_name == 'push' }}
       - uses: cachix/install-nix-action@v31
       - uses: actions/checkout@v4
