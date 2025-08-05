@@ -667,9 +667,9 @@ WHERE (database = 'system') AND match(name, '_[0-9]+$')
 FORMAT TSVRaw
 ```
 
-### Slow queries
+### CPU usage
 
-You can extract slow queries with:
+If ClickHouse has a high CPU usage, you can extract slow queries with:
 
 ```sql
 SELECT formatReadableTimeDelta(query_duration_ms/1000) AS duration, query
@@ -680,9 +680,35 @@ LIMIT 10
 FORMAT Vertical
 ```
 
+Also check slow inserts:
+
+```sql
+SELECT formatReadableTimeDelta(query_duration_ms/1000) AS duration, query
+FROM system.query_log
+WHERE query_kind = 'Insert'
+ORDER BY query_duration_ms DESC
+LIMIT 10
+FORMAT Vertical
+```
+
+
 [Altinity's knowledge
 base](https://kb.altinity.com/altinity-kb-useful-queries/query_log/)
 contains some other useful queries.
+
+One cause of slowness, is that there are too many active parts:
+
+```sql
+SELECT table, count() AS parts
+FROM system.parts
+WHERE active AND (database = currentDatabase())
+GROUP BY table
+```
+
+If some tables are over 300, it may mean the inserts are too small. In this
+case, you should reduce the number of Kafka workers for the outlet until the
+number of flows per batch is around 100 000 (check the
+`akvorado_outlet_clickhouse_flow_per_batch` metric).
 
 ### Old tables
 
