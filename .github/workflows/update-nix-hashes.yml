@@ -1,23 +1,39 @@
 ---
-name: Update Nix dependencies
+name: Update Nix external hashes
 on:
   workflow_dispatch:
   schedule:
-    - cron: "30 3 * * *"
+    - cron: "30 * * * *"
 
 jobs:
   hashes:
     name: Update dependency hashes
     runs-on: ubuntu-latest
-    concurrency:
-      group: update-nix-hashes
-      cancel-in-progress: true
     steps:
-      - uses: cachix/install-nix-action@v31
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # All history needed
+      - name: Check for changes
+        id: check-changes
+        run: |
+          LOCKFILES="go.sum console/frontend/package-lock.json"
+          LAST_CHANGE=$(git log -1 --format=%ct -- $LOCKFILES)
+          CURRENT_TIME=$(date +%s)
+          ONE_HOUR_AGO=$((CURRENT_TIME - 3600))
+          LONG_TIME_AGO=$((CURRENT_TIME - 14400))
+          echo "Last change was $(( (CURRENT_TIME - LAST_CHANGE) / 60 )) minutes ago"
+          if [ "$LAST_CHANGE" -gt $LONG_TIME_AGO" ] && [ "$LAST_CHANGE" -le "$ONE_HOUR_AGO" ]; then
+            echo "should_run=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_run=false" >> $GITHUB_OUTPUT
+          fi
+      - uses: cachix/install-nix-action@v31
+        if: steps.check-changes.outputs.should_run == 'true'
       - name: Update dependency hashes
+        if: steps.check-changes.outputs.should_run == 'true'
         run: nix run .#update
       - name: Push update
+        if: steps.check-changes.outputs.should_run == 'true'
         run: |
           git config --local user.name "github-actions[bot]"
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
