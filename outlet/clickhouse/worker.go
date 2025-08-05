@@ -60,7 +60,7 @@ func (w *realWorker) FinalizeAndSend(ctx context.Context) {
 			w.c.metrics.waitTime.Observe(waitTime.Seconds())
 		}
 		w.Flush(ctx)
-		w.last = now
+		w.last = time.Now()
 	}
 }
 
