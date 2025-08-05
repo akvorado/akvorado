@@ -93,8 +93,7 @@ func (w *realWorker) Flush(ctx context.Context) {
 		}
 		pushDuration := time.Since(start)
 		w.c.metrics.insertTime.Observe(pushDuration.Seconds())
-		w.c.metrics.batches.Inc()
-		w.c.metrics.flows.Add(float64(w.bf.FlowCount()))
+		w.c.metrics.flows.Observe(float64(w.bf.FlowCount()))
 
 		// Clear batch
 		w.bf.Clear()

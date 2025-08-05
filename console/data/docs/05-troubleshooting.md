@@ -268,17 +268,21 @@ this, add this to `/etc/docker/daemon.json` and restart Docker:
 Finally, check if flows are sent to ClickHouse successfully. Use this command:
 
 ```
-$ curl -s http://127.0.0.1:8080/api/v0/outlet/metrics | grep -P 'akvorado_outlet_clickhouse_(batches|flows|errors)'
-​# HELP akvorado_outlet_clickhouse_batches_total Number of batches of flows sent to ClickHouse
-​# TYPE akvorado_outlet_clickhouse_batches_total counter
-akvorado_outlet_clickhouse_batches_total 3412
-​# HELP akvorado_outlet_clickhouse_flows_total Number of flows sent to ClickHouse
-​# TYPE akvorado_outlet_clickhouse_flows_total counter
-akvorado_outlet_clickhouse_flows_total 161852
+$ curl -s http://127.0.0.1:8080/api/v0/outlet/metrics | grep -P 'akvorado_outlet_clickhouse_(errors|flow)'
+# HELP akvorado_outlet_clickhouse_errors_total Errors while inserting into ClickHouse
+# TYPE akvorado_outlet_clickhouse_errors_total counter
+akvorado_outlet_clickhouse_errors_total{error="send"} 7
+​# HELP akvorado_outlet_clickhouse_flow_per_batch Number of flow per batch sent to ClickHouse
+​# TYPE akvorado_outlet_clickhouse_flow_per_batch summary
+akvorado_outlet_clickhouse_flow_per_batch{quantile="0.5"} 250
+akvorado_outlet_clickhouse_flow_per_batch{quantile="0.9"} 480
+akvorado_outlet_clickhouse_flow_per_batch{quantile="0.99"} 950
+akvorado_outlet_clickhouse_flow_per_batch_sum 45892
+akvorado_outlet_clickhouse_flow_per_batch_count 163
 ```
 
-If the numbers are increasing, everything works correctly. Otherwise, you likely
-have an error counter that shows the reason.
+If the errors are not increasing and the `flow_per_batch_sum` is increasing,
+everything works correctly.
 
 ### ClickHouse
 

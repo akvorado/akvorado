@@ -65,6 +65,7 @@ func (configuration Configuration) New(r *reporter.Reporter) (provider.Provider,
 			Name:       "poller_seconds",
 			Help:       "Time to successfully poll for values.",
 			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
+			MaxAge:     time.Hour,
 		}, []string{"exporter"})
 
 	return &p, nil

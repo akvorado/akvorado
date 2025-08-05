@@ -6,24 +6,18 @@ package clickhouse
 import "akvorado/common/reporter"
 
 type metrics struct {
-	batches    reporter.Counter
-	flows      reporter.Counter
+	flows      reporter.Summary
 	waitTime   reporter.Histogram
 	insertTime reporter.Histogram
 	errors     *reporter.CounterVec
 }
 
 func (c *realComponent) initMetrics() {
-	c.metrics.batches = c.r.Counter(
-		reporter.CounterOpts{
-			Name: "batches_total",
-			Help: "Number of batches of flows sent to ClickHouse",
-		},
-	)
-	c.metrics.flows = c.r.Counter(
-		reporter.CounterOpts{
-			Name: "flows_total",
-			Help: "Number of flows sent to ClickHouse",
+	c.metrics.flows = c.r.Summary(
+		reporter.SummaryOpts{
+			Name:       "flows_per_batch",
+			Help:       "Number of flow per batch sent to ClickHouse",
+			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		},
 	)
 	c.metrics.waitTime = c.r.Histogram(

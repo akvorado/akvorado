@@ -114,23 +114,35 @@ func TestInsert(t *testing.T) {
 		var expectedMetrics map[string]string
 		if i < 11 {
 			expectedMetrics = map[string]string{
-				"batches_total": "1",
-				"flows_total":   "1",
+				`flows_per_batch_count`:            "1",
+				`flows_per_batch_sum`:              "1",
+				`flows_per_batch{quantile="0.5"}`:  "1",
+				`flows_per_batch{quantile="0.9"}`:  "1",
+				`flows_per_batch{quantile="0.99"}`: "1",
 			}
 		} else if i < 15 {
 			expectedMetrics = map[string]string{
-				"batches_total": "2",
-				"flows_total":   "11",
+				`flows_per_batch_count`:            "2",
+				`flows_per_batch_sum`:              "11",
+				`flows_per_batch{quantile="0.5"}`:  "1",
+				`flows_per_batch{quantile="0.9"}`:  "10",
+				`flows_per_batch{quantile="0.99"}`: "10",
 			}
 		} else if i < 23 {
 			expectedMetrics = map[string]string{
-				"batches_total": "3",
-				"flows_total":   "15",
+				`flows_per_batch_count`:            "3",
+				`flows_per_batch_sum`:              "15",
+				`flows_per_batch{quantile="0.5"}`:  "4",
+				`flows_per_batch{quantile="0.9"}`:  "10",
+				`flows_per_batch{quantile="0.99"}`: "10",
 			}
 		} else {
 			expectedMetrics = map[string]string{
-				"batches_total": "4",
-				"flows_total":   "23",
+				`flows_per_batch_count`:            "4",
+				`flows_per_batch_sum`:              "23",
+				`flows_per_batch{quantile="0.5"}`:  "4",
+				`flows_per_batch{quantile="0.9"}`:  "10",
+				`flows_per_batch{quantile="0.99"}`: "10",
 			}
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
