@@ -1,5 +1,5 @@
 ---
-name: Update Nix external hashes
+name: Update Nix dependency hashes
 on:
   workflow_dispatch:
   schedule:
@@ -22,7 +22,7 @@ jobs:
           ONE_HOUR_AGO=$((CURRENT_TIME - 3600))
           LONG_TIME_AGO=$((CURRENT_TIME - 14400))
           echo "Last change was $(( (CURRENT_TIME - LAST_CHANGE) / 60 )) minutes ago"
-          if [ "$LAST_CHANGE" -gt $LONG_TIME_AGO" ] && [ "$LAST_CHANGE" -le "$ONE_HOUR_AGO" ]; then
+          if [ "$LAST_CHANGE" -gt "$LONG_TIME_AGO" ] && [ "$LAST_CHANGE" -le "$ONE_HOUR_AGO" ]; then
             echo "should_run=true" >> $GITHUB_OUTPUT
           else
             echo "should_run=false" >> $GITHUB_OUTPUT
