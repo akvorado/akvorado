@@ -15,7 +15,7 @@ type metrics struct {
 func (c *realComponent) initMetrics() {
 	c.metrics.flows = c.r.Summary(
 		reporter.SummaryOpts{
-			Name:       "flows_per_batch",
+			Name:       "flow_per_batch",
 			Help:       "Number of flow per batch sent to ClickHouse",
 			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		},
