@@ -47,16 +47,18 @@ updates:
           - "eslint*"
           - "patch-package"
           - "prettier*"
-          - "typescript-language-server"
           - "vite"
           - "vitest"
       tailwindcss:
         patterns:
           - "tailwindcss"
           - "@tailwindcss/*"
-      typing:
+      typescript:
         patterns:
           - "@types/*"
+          - "@typescript-eslint/eslint-plugin"
+          - "typescript-language-server"
+          - "typescript"
   - package-ecosystem: gomod
     directory: /
     commit-message:
