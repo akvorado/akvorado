@@ -41,7 +41,7 @@ jobs:
       - uses: docker/setup-buildx-action@v3
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0        # We need the version for bin/akvorado
           persist-credentials: false
       - name: Docker Compose up
         run: docker compose -f docker/docker-compose-dev.yml up --wait --wait-timeout 60 --quiet-pull
@@ -89,7 +89,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           persist-credentials: false
       - uses: cachix/install-nix-action@v31
       - name: Update dependency hashes
@@ -137,7 +136,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           persist-credentials: false
       - uses: actions/download-artifact@v4
         with:
@@ -236,7 +234,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0        # We need the version
           persist-credentials: false
       - name: Get version
         id: version
