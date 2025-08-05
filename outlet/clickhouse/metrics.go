@@ -24,12 +24,23 @@ func (c *realComponent) initMetrics() {
 		reporter.HistogramOpts{
 			Name: "wait_time_seconds",
 			Help: "Time spent waiting before sending a batch to ClickHouse",
+			Buckets: []float64{
+				c.config.MaximumWaitTime.Seconds() * .1,
+				c.config.MaximumWaitTime.Seconds() * .25,
+				c.config.MaximumWaitTime.Seconds() * .5,
+				c.config.MaximumWaitTime.Seconds() * .9,
+				c.config.MaximumWaitTime.Seconds() * 1.1,
+				c.config.MaximumWaitTime.Seconds() * 2.5,
+				c.config.MaximumWaitTime.Seconds() * 5,
+				c.config.MaximumWaitTime.Seconds() * 10,
+			},
 		},
 	)
 	c.metrics.insertTime = c.r.Histogram(
 		reporter.HistogramOpts{
-			Name: "insert_time_seconds",
-			Help: "Time spent inserting data to ClickHouse",
+			Name:    "insert_time_seconds",
+			Help:    "Time spent inserting data to ClickHouse",
+			Buckets: []float64{.01, .025, .05, .1, .5, 1, 5, 10, 20, 60},
 		},
 	)
 	c.metrics.errors = c.r.CounterVec(
