@@ -590,6 +590,20 @@ exporter-classifiers:
 [expr]: https://expr-lang.org/docs/language-definition
 [from Go]: https://github.com/google/re2/wiki/Syntax
 
+### ClickHouse
+
+The ClickHouse component pushes data to ClickHouse. There are two settings that
+are configurable:
+
+- `maximum-batch-size` defines how many flows to send to ClickHouse in a single batch at most
+- `minimum-wait-time` defines how long to wait before sending an incomplete batch
+
+These numbers are per-worker (as defined in the Kafka component). A worker will
+send a batch of size at most `maximum-batch-size` at least every
+`maximum-wait-time`. ClickHouse is more efficient when the batch size is large.
+The default value is 100 000 and allows ClickHouse to handle incoming flows
+efficiently.
+
 ## Orchestrator service
 
 The three main components of the orchestrator service are `schema`,
