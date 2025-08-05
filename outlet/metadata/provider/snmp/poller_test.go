@@ -146,85 +146,99 @@ func TestPoller(t *testing.T) {
 								OnGet: func() (any, error) {
 									return "exporter62", nil
 								},
-							}, {
+							},
+							{
 								OID:  "1.3.6.1.2.1.2.2.1.2.641",
 								Type: gosnmp.OctetString,
 								OnGet: func() (any, error) {
 									return "Gi0/0/0/0", nil
 								},
-							}, {
+							},
+							{
 								OID:  "1.3.6.1.2.1.2.2.1.2.642",
 								Type: gosnmp.OctetString,
 								OnGet: func() (any, error) {
 									return "Gi0/0/0/1", nil
 								},
-							}, {
+							},
+							{
 								OID:  "1.3.6.1.2.1.2.2.1.2.643",
 								Type: gosnmp.OctetString,
 								OnGet: func() (any, error) {
 									return "Gi0/0/0/2", nil
 								},
-							}, {
+							},
+							{
 								OID:  "1.3.6.1.2.1.2.2.1.2.645",
 								Type: gosnmp.OctetString,
 								OnGet: func() (any, error) {
 									return "Correct description", nil
 								},
-							}, {
+							},
+							{
 								OID:  "1.3.6.1.2.1.31.1.1.1.1.641",
 								Type: gosnmp.OctetString,
 								OnGet: func() (any, error) {
 									return "Gi0/0/0/0", nil
 								},
-							}, {
+							},
+							{
 								OID:  "1.3.6.1.2.1.31.1.1.1.1.642",
 								Type: gosnmp.OctetString,
 								OnGet: func() (any, error) {
 									return "Gi0/0/0/1", nil
 								},
-							}, {
+							},
+							{
 								OID:  "1.3.6.1.2.1.31.1.1.1.1.643",
 								Type: gosnmp.OctetString,
 								OnGet: func() (any, error) {
 									return "Gi0/0/0/2", nil
 								},
-							}, {
+							},
+							{
 								OID:  "1.3.6.1.2.1.31.1.1.1.1.645",
 								Type: gosnmp.OctetString,
 								OnGet: func() (any, error) {
 									return "Gi0/0/0/5", nil
 								},
-							}, {
+							},
+							{
 								OID:  "1.3.6.1.2.1.31.1.1.1.15.641",
 								Type: gosnmp.Gauge32,
 								OnGet: func() (any, error) {
 									return uint(10000), nil
 								},
-							}, {
+							},
+							{
 								OID:  "1.3.6.1.2.1.31.1.1.1.15.642",
 								Type: gosnmp.Gauge32,
 								OnGet: func() (any, error) {
 									return uint(20000), nil
 								},
-							}, {
+							},
+							{
 								OID:  "1.3.6.1.2.1.31.1.1.1.15.643",
 								Type: gosnmp.Gauge32,
 								OnGet: func() (any, error) {
 									return uint(10000), nil
 								},
-							}, {
+							},
+							{
 								OID:  "1.3.6.1.2.1.31.1.1.1.15.645",
 								Type: gosnmp.Gauge32,
 								OnGet: func() (any, error) {
 									return uint(1000), nil
 								},
-							}, {
+							},
+							{
 								OID:  "1.3.6.1.2.1.31.1.1.1.18.641",
 								Type: gosnmp.OctetString,
 								OnGet: func() (any, error) {
 									return "Transit", nil
 								},
-							}, {
+							},
+							{
 								OID:  "1.3.6.1.2.1.31.1.1.1.18.642",
 								Type: gosnmp.OctetString,
 								OnGet: func() (any, error) {

@@ -13,11 +13,9 @@ import (
 	"akvorado/common/schema"
 )
 
-var (
-	// ErrSkipProvider is the error returned on lookup for providers unwilling to
-	// handle a request.
-	ErrSkipProvider = errors.New("provider skips query")
-)
+// ErrSkipProvider is the error returned on lookup for providers unwilling to
+// handle a request.
+var ErrSkipProvider = errors.New("provider skips query")
 
 // Interface contains the information about an interface.
 type Interface struct {

@@ -97,5 +97,4 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 	}
 
 	return nil
-
 }

@@ -6,17 +6,16 @@
 package static
 
 import (
+	"context"
+	"fmt"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"akvorado/common/helpers"
 	"akvorado/common/remotedatasource"
 	"akvorado/common/reporter"
 	"akvorado/outlet/metadata/provider"
-
-	"context"
-	"fmt"
-	"sync"
-	"sync/atomic"
 )
 
 // Provider represents the static provider.

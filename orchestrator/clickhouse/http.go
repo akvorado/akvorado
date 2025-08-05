@@ -15,14 +15,12 @@ import (
 	"time"
 )
 
-var (
-	//go:embed data/protocols.csv
-	//go:embed data/icmp.csv
-	//go:embed data/asns.csv
-	//go:embed data/tcp.csv
-	//go:embed data/udp.csv
-	data embed.FS
-)
+//go:embed data/protocols.csv
+//go:embed data/icmp.csv
+//go:embed data/asns.csv
+//go:embed data/tcp.csv
+//go:embed data/udp.csv
+var data embed.FS
 
 func (c *Component) addHandlerEmbedded(url string, path string) {
 	c.d.HTTP.AddHandler(url,

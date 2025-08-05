@@ -59,7 +59,8 @@ func TestDecodeConfiguration(t *testing.T) {
 					UseSrcAddrForExporterAddr: false,
 				}},
 			},
-		}, {
+		},
+		{
 			Description: "from existing configuration",
 			Initial: func() any {
 				return Configuration{
@@ -106,7 +107,8 @@ func TestDecodeConfiguration(t *testing.T) {
 					},
 				}},
 			},
-		}, {
+		},
+		{
 			Description: "change type",
 			Initial: func() any {
 				return Configuration{
@@ -134,7 +136,8 @@ func TestDecodeConfiguration(t *testing.T) {
 					},
 				}},
 			},
-		}, {
+		},
+		{
 			Description: "only set one item",
 			Initial: func() any {
 				return Configuration{
@@ -168,7 +171,8 @@ func TestDecodeConfiguration(t *testing.T) {
 					},
 				}},
 			},
-		}, {
+		},
+		{
 			Description: "incorrect decoder",
 			Initial: func() any {
 				return Configuration{}

@@ -38,7 +38,8 @@ func TestLookup(t *testing.T) {
 		Exporter: provider.Exporter{
 			Name: "127_0_0_1",
 		},
-		Interface: provider.Interface{Name: "Gi0/0/765",
+		Interface: provider.Interface{
+			Name:        "Gi0/0/765",
 			Description: "Interface 765",
 			Speed:       1000,
 		},
@@ -53,7 +54,8 @@ func TestLookup(t *testing.T) {
 			Site:   "metadata site",
 			Tenant: "metadata tenant",
 		},
-		Interface: provider.Interface{Name: "Gi0/0/1010",
+		Interface: provider.Interface{
+			Name:        "Gi0/0/1010",
 			Description: "Interface 1010",
 			Speed:       1000,
 		},
@@ -68,7 +70,8 @@ func TestLookup(t *testing.T) {
 			Site:   "metadata site",
 			Tenant: "metadata tenant",
 		},
-		Interface: provider.Interface{Name: "Gi0/0/2010",
+		Interface: provider.Interface{
+			Name:         "Gi0/0/2010",
 			Description:  "Interface 2010",
 			Speed:        1000,
 			Boundary:     schema.InterfaceBoundaryExternal,
@@ -95,7 +98,8 @@ func TestComponentSaveLoad(t *testing.T) {
 				Name: "127_0_0_1",
 			},
 
-			Interface: provider.Interface{Name: "Gi0/0/765",
+			Interface: provider.Interface{
+				Name:        "Gi0/0/765",
 				Description: "Interface 765",
 				Speed:       1000,
 			},
@@ -154,7 +158,8 @@ func TestAutoRefresh(t *testing.T) {
 			Name: "127_0_0_1",
 		},
 
-		Interface: provider.Interface{Name: "Gi0/0/765",
+		Interface: provider.Interface{
+			Name:        "Gi0/0/765",
 			Description: "Interface 765",
 			Speed:       1000,
 		},

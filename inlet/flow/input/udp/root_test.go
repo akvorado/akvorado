@@ -52,7 +52,6 @@ func TestUDPInput(t *testing.T) {
 		}
 
 		close(done)
-
 	}
 
 	in, err := configuration.New(r, daemon.NewMock(t), send)

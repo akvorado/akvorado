@@ -42,5 +42,4 @@ func TestDemoExporter(t *testing.T) {
 	if diff := helpers.Diff(got, want); diff != "" {
 		t.Fatalf("`demo-exporter` (-got, +want):\n%s", diff)
 	}
-
 }

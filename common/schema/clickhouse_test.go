@@ -471,7 +471,6 @@ func TestUndoArrayUInt32(t *testing.T) {
 			t.Errorf("DstASPath column after undo (-got, +want):\n%s", diff)
 		}
 	})
-
 }
 
 func TestUndoArrayUInt128(t *testing.T) {

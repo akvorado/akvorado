@@ -188,7 +188,8 @@ func TestStaticProvider(t *testing.T) {
 				Description: "Default interface",
 				Speed:       1000,
 			},
-		}, {
+		},
+		{
 			Found: true,
 			Exporter: provider.Exporter{
 				Name: "default",
@@ -198,7 +199,8 @@ func TestStaticProvider(t *testing.T) {
 				Description: "10th interface",
 				Speed:       1000,
 			},
-		}, {
+		},
+		{
 			Found: true,
 			Exporter: provider.Exporter{
 				Name: "default",
@@ -208,7 +210,8 @@ func TestStaticProvider(t *testing.T) {
 				Description: "Default interface",
 				Speed:       1000,
 			},
-		}, {
+		},
+		{
 			Found: true,
 			Exporter: provider.Exporter{
 				Name:   "default with metadata",
@@ -226,7 +229,8 @@ func TestStaticProvider(t *testing.T) {
 				Connectivity: "transit",
 				Boundary:     schema.InterfaceBoundaryExternal,
 			},
-		}, {
+		},
+		{
 			Found: true,
 			Exporter: provider.Exporter{
 				Name: "nodefault skip",

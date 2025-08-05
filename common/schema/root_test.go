@@ -108,7 +108,6 @@ func TestCustomDictionaries(t *testing.T) {
 	if !dstRoleFound {
 		t.Fatal("DstAddrRole not found")
 	}
-
 }
 
 func TestCustomDictionariesMatcher(t *testing.T) {

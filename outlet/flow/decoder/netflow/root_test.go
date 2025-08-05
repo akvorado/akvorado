@@ -472,7 +472,6 @@ func TestDecodeICMP(t *testing.T) {
 	if diff := helpers.Diff(got, expectedFlows); diff != "" {
 		t.Fatalf("Decode() (-got, +want):\n%s", diff)
 	}
-
 }
 
 func TestDecodeDataLink(t *testing.T) {

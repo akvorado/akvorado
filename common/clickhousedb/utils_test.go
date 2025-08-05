@@ -35,7 +35,8 @@ func TestTransformQueryOnCluster(t *testing.T) {
 			"ALTER TABLE 02577_keepermap_delete_update ON CLUSTER akvorado UPDATE value2 = value2 * 10 + 2 WHERE value2 < 100",
 		},
 		{
-			helpers.Mark(), "ATTACH DICTIONARY db_01018.dict1", "ATTACH DICTIONARY db_01018.dict1 ON CLUSTER akvorado"},
+			helpers.Mark(), "ATTACH DICTIONARY db_01018.dict1", "ATTACH DICTIONARY db_01018.dict1 ON CLUSTER akvorado",
+		},
 		{
 			helpers.Mark(),
 			`CREATE DICTIONARY default.asns

@@ -70,7 +70,6 @@ func TestInitStaticExporters(t *testing.T) {
 }
 
 func TestRemoteExporterSources(t *testing.T) {
-
 	// Mux to answer requests
 	ready := make(chan bool)
 	mux := http.NewServeMux()

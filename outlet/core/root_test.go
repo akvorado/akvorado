@@ -356,5 +356,4 @@ func TestCore(t *testing.T) {
 			t.Fatalf("GET /api/v0/outlet/flows got less than 4 flows (%d)", count)
 		}
 	})
-
 }

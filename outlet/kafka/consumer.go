@@ -85,7 +85,8 @@ func (c *Consumer) ProcessFetches(ctx context.Context, client *kgo.Client, fetch
 						client.MarkCommitOffsets(map[string]map[int32]kgo.EpochOffset{
 							topic.Topic: {
 								partition.Partition: kgo.EpochOffset{Epoch: epoch, Offset: offset},
-							}})
+							},
+						})
 					}()
 					for _, record := range partition.Records {
 						epoch = record.LeaderEpoch

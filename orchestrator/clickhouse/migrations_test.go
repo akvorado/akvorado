@@ -447,7 +447,6 @@ func TestCustomDictMigration(t *testing.T) {
 			Layout:     "complex_key_hashed",
 		}
 		sch, err := schema.New(schConfig)
-
 		if err != nil {
 			t.Fatalf("schema.New() error:\n%+v", err)
 		}
@@ -521,7 +520,6 @@ SETTINGS(format_csv_allow_single_quotes = 0)`
 		// Next test: with the custom dict removed again, the cols should still exist, but the consumer should be gone
 		r := reporter.NewMock(t)
 		sch, err := schema.New(schema.DefaultConfiguration())
-
 		if err != nil {
 			t.Fatalf("schema.New() error:\n%+v", err)
 		}

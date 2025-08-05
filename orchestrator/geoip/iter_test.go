@@ -32,15 +32,18 @@ func TestIterDatabase(t *testing.T) {
 			ExpectedCountry: "JP",
 			ExpectedState:   "Shimane",
 			ExpectedCity:    "Matsue",
-		}, {
+		},
+		{
 			IP:              "2.19.4.138",
 			ExpectedASN:     32787,
 			ExpectedCountry: "SG",
-		}, {
+		},
+		{
 			IP:              "2a09:bac1:14a0:fd0::a:1",
 			ExpectedASN:     13335,
 			ExpectedCountry: "CA",
-		}, {
+		},
+		{
 			IP:              "213.248.218.137",
 			ExpectedASN:     43519,
 			ExpectedCountry: "HK",
@@ -49,15 +52,18 @@ func TestIterDatabase(t *testing.T) {
 		{
 			IP:          "1.0.0.0",
 			ExpectedASN: 15169,
-		}, {
+		},
+		{
 			IP:              "2.125.160.216",
 			ExpectedCountry: "GB",
 			ExpectedState:   "ENG",
 			ExpectedCity:    "Boxford",
-		}, {
+		},
+		{
 			IP:              "2a02:ff00::1:1",
 			ExpectedCountry: "IT",
-		}, {
+		},
+		{
 			IP:              "67.43.156.77",
 			ExpectedASN:     35908,
 			ExpectedCountry: "BT",

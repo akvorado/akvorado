@@ -193,5 +193,4 @@ func TestInsertMemory(t *testing.T) {
 			t.Errorf("Insert (-got, +want):\n%s", diff)
 		}
 	}
-
 }

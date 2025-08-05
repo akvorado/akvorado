@@ -768,8 +768,10 @@ commit now
 		got = append(got, formatUpdate(lo, "ethernet-1/3", answer))
 		answer, _ = p.Query(context.Background(), provider.Query{ExporterIP: lo, IfIndex: 5})
 		got = append(got, formatUpdate(lo, "idx5", answer))
-		answer, _ = p.Query(context.Background(), provider.Query{ExporterIP: lo,
-			IfIndex: indexes["name=ethernet-1/4,index=1"]})
+		answer, _ = p.Query(context.Background(), provider.Query{
+			ExporterIP: lo,
+			IfIndex:    indexes["name=ethernet-1/4,index=1"],
+		})
 		got = append(got, formatUpdate(lo, "ethernet-1/4,index=1", answer))
 
 		if diff := helpers.Diff(got, []string{
@@ -843,6 +845,5 @@ commit now
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
 		}
-
 	})
 }

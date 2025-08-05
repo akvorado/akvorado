@@ -116,5 +116,4 @@ func TestConvertSpeed(t *testing.T) {
 			t.Errorf("convertSpeed(%q, %s) (-got, +want):\n%s", tc.Value, tc.Unit, diff)
 		}
 	}
-
 }

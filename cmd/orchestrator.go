@@ -216,9 +216,7 @@ func orchestratorGeoIPMigrationHook() mapstructure.DecodeHookFunc {
 			return from.Interface(), nil
 		}
 
-		var (
-			inletKey, geoIPKey, inletGeoIPValue *reflect.Value
-		)
+		var inletKey, geoIPKey, inletGeoIPValue *reflect.Value
 
 		fromKeys := from.MapKeys()
 		for i, k := range fromKeys {

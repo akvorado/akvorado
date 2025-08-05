@@ -154,7 +154,8 @@ func (c *current) parsePrefix(direction string) ([]any, error) {
 	if col.ClickHouseMaterialized {
 		return []any{
 			fmt.Sprintf("%sNetPrefix", direction), "=",
-			fmt.Sprintf("'%s'", net.String())}, nil
+			fmt.Sprintf("'%s'", net.String()),
+		}, nil
 	}
 	// If the prefix is not materialized, we use the "between" operator
 	c.globalStore["meta"].(*Meta).MainTableRequired = true

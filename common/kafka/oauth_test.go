@@ -4,13 +4,13 @@
 package kafka
 
 import (
-	"akvorado/common/helpers"
-	"akvorado/common/reporter"
-
 	"context"
 	"fmt"
 	"testing"
 	"time"
+
+	"akvorado/common/helpers"
+	"akvorado/common/reporter"
 
 	"github.com/twmb/franz-go/pkg/kgo"
 	"golang.org/x/oauth2"

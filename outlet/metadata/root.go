@@ -55,10 +55,8 @@ type Dependencies struct {
 	Clock  clock.Clock
 }
 
-var (
-	// ErrQueryTimeout is the error returned when a query timeout.
-	ErrQueryTimeout = errors.New("provider query timeout")
-)
+// ErrQueryTimeout is the error returned when a query timeout.
+var ErrQueryTimeout = errors.New("provider query timeout")
 
 // New creates a new metadata component.
 func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
@@ -242,7 +240,6 @@ func (c *Component) queryProviders(query provider.Query) (provider.Answer, error
 		}
 		return nil
 	})
-
 	if err != nil {
 		c.metrics.providerErrors.Inc()
 		if err == breaker.ErrBreakerOpen {

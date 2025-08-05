@@ -162,5 +162,4 @@ func TestNetworksCSVWithGeoip(t *testing.T) {
 			t.Fatalf("Temporary files (-got, +want):\n%s", diff)
 		}
 	})
-
 }

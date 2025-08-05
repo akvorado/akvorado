@@ -35,7 +35,6 @@ type Dependencies struct {
 // New creates a new ClickHouse wrapper
 func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) (*Component, error) {
 	tlsConfig, err := config.TLS.MakeTLSConfig()
-
 	if err != nil {
 		return nil, err
 	}
