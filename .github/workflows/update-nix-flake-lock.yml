@@ -1,0 +1,33 @@
+---
+name: Update Nix flake.lock
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "10 4 * * 1"
+
+jobs:
+  lockfile:
+    name: Update Nix lockfile
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        source:
+          - nixpkgs
+          - asn2org
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: cachix/install-nix-action@v31
+      - name: Update Nix lockfile
+        run: nix flake update ${{ matrix.source }}
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          add-paths: flake.lock
+          branch: nix/flake-lock-update-${{ matrix.source }}
+          labels: dependencies
+          commit-message: "build: flake.lock automated update for ${{ matrix.source }}"
+          title: "build: ${{ matrix.source }} update"
+          body: ""

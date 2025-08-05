@@ -1,0 +1,25 @@
+---
+name: Update Nix dependencies
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 3 * * *"
+
+jobs:
+  hashes:
+    name: Update dependency hashes
+    runs-on: ubuntu-latest
+    concurrency:
+      group: update-nix-hashes
+      cancel-in-progress: true
+    steps:
+      - uses: cachix/install-nix-action@v31
+      - uses: actions/checkout@v4
+      - name: Update dependency hashes
+        run: nix run .#update
+      - name: Push update
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add flake.lock nix
+          ! git commit -m "build: update Nix dependency hashes" || git push
