@@ -68,6 +68,9 @@ func (w *realWorker) FinalizeAndSend(ctx context.Context) {
 // should be called before shutting down to flush remaining data. Otherwise,
 // FinalizeAndSend() should be used instead.
 func (w *realWorker) Flush(ctx context.Context) {
+	if w.bf.FlowCount() == 0 {
+		return
+	}
 	// We try to send as long as possible. The only exit condition is an
 	// expiration of the context.
 	b := backoff.NewExponentialBackOff()
