@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strconv"
 	"time"
 
 	"github.com/ClickHouse/ch-go"
@@ -30,9 +31,10 @@ type realWorker struct {
 	last   time.Time
 	logger reporter.Logger
 
-	conn    *ch.Client
-	servers []string
-	options ch.Options
+	conn          *ch.Client
+	servers       []string
+	options       ch.Options
+	asyncSettings []ch.Setting
 }
 
 // NewWorker creates a new worker to push data to ClickHouse.
@@ -45,6 +47,22 @@ func (c *realComponent) NewWorker(i int, bf *schema.FlowMessage) Worker {
 
 		servers: servers,
 		options: opts,
+		asyncSettings: []ch.Setting{
+			{
+				Key:       "async_insert",
+				Value:     "1",
+				Important: true,
+			},
+			{
+				Key:       "wait_for_async_insert",
+				Value:     "1",
+				Important: true,
+			},
+			{
+				Key:   "async_insert_busy_timeout_max_ms",
+				Value: strconv.FormatUint(uint64(c.config.MaximumWaitTime.Milliseconds()), 10),
+			},
+		},
 	}
 	return &w
 }
@@ -71,6 +89,13 @@ func (w *realWorker) Flush(ctx context.Context) {
 	if w.bf.FlowCount() == 0 {
 		return
 	}
+	// Async mode if have not a big batch size
+	var settings []ch.Setting
+	if w.bf.FlowCount() <= int(w.c.config.MaximumBatchSize/10) {
+		settings = w.asyncSettings
+		w.c.metrics.insertAsyncs.Inc()
+	}
+
 	// We try to send as long as possible. The only exit condition is an
 	// expiration of the context.
 	b := backoff.NewExponentialBackOff()
@@ -87,8 +112,9 @@ func (w *realWorker) Flush(ctx context.Context) {
 		// Send to ClickHouse in flows_XXXXX_raw.
 		start := time.Now()
 		if err := w.conn.Do(ctx, ch.Query{
-			Body:  w.bf.ClickHouseProtoInput().Into(fmt.Sprintf("flows_%s_raw", w.c.d.Schema.ClickHouseHash())),
-			Input: w.bf.ClickHouseProtoInput(),
+			Body:     w.bf.ClickHouseProtoInput().Into(fmt.Sprintf("flows_%s_raw", w.c.d.Schema.ClickHouseHash())),
+			Input:    w.bf.ClickHouseProtoInput(),
+			Settings: settings,
 		}); err != nil {
 			w.logger.Err(err).Int("flows", w.bf.FlowCount()).Msg("cannot send batch to ClickHouse")
 			w.c.metrics.errors.WithLabelValues("send").Inc()

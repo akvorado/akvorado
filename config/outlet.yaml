@@ -6,7 +6,7 @@ metadata:
       ::/0:
         communities: public
 kafka:
-  workers: 1
+  workers: 6
 core:
   exporter-classifiers:
     # This is an example. This should be customized depending on how

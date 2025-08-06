@@ -119,6 +119,7 @@ func TestInsert(t *testing.T) {
 				`flow_per_batch{quantile="0.5"}`:  "1",
 				`flow_per_batch{quantile="0.9"}`:  "1",
 				`flow_per_batch{quantile="0.99"}`: "1",
+				`insert_async_total`:              "1", // only the first one is asynchronous
 			}
 		} else if i < 15 {
 			expectedMetrics = map[string]string{
@@ -127,6 +128,7 @@ func TestInsert(t *testing.T) {
 				`flow_per_batch{quantile="0.5"}`:  "1",
 				`flow_per_batch{quantile="0.9"}`:  "10",
 				`flow_per_batch{quantile="0.99"}`: "10",
+				`insert_async_total`:              "1", // only the first one is asynchronous
 			}
 		} else if i < 23 {
 			expectedMetrics = map[string]string{
@@ -135,6 +137,7 @@ func TestInsert(t *testing.T) {
 				`flow_per_batch{quantile="0.5"}`:  "4",
 				`flow_per_batch{quantile="0.9"}`:  "10",
 				`flow_per_batch{quantile="0.99"}`: "10",
+				`insert_async_total`:              "1", // only the first one is asynchronous
 			}
 		} else {
 			expectedMetrics = map[string]string{
@@ -143,6 +146,7 @@ func TestInsert(t *testing.T) {
 				`flow_per_batch{quantile="0.5"}`:  "4",
 				`flow_per_batch{quantile="0.9"}`:  "10",
 				`flow_per_batch{quantile="0.99"}`: "10",
+				`insert_async_total`:              "1", // only the first one is asynchronous
 			}
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {

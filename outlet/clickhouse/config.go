@@ -18,7 +18,7 @@ type Configuration struct {
 // DefaultConfiguration represents the default configuration for the ClickHouse exporter.
 func DefaultConfiguration() Configuration {
 	return Configuration{
-		MaximumBatchSize: 5000,
+		MaximumBatchSize: 50_000,
 		MaximumWaitTime:  time.Second,
 	}
 }
