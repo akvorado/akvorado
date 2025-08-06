@@ -691,26 +691,9 @@ LIMIT 10
 FORMAT Vertical
 ```
 
-
 [Altinity's knowledge
 base](https://kb.altinity.com/altinity-kb-useful-queries/query_log/)
 contains some other useful queries.
-
-One cause of slowness, is that there are too many active parts:
-
-```sql
-SELECT table, count() AS parts
-FROM system.parts
-WHERE active AND (database = currentDatabase())
-GROUP BY table
-```
-
-If some tables are over 300, it may mean the inserts are too small. In this
-case, you should reduce the number of Kafka workers for the outlet until the
-number of flows per batch is around 50 000 (check the
-`akvorado_outlet_clickhouse_flow_per_batch` metric). If not possible, you can
-increase `maximum-wait-time` from 1 second to 10 seconds to create bigger
-batches.
 
 ### Old tables
 

@@ -67,7 +67,11 @@ func (c *realComponent) NewWorker(i int, bf *schema.FlowMessage) Worker {
 	return &w
 }
 
-// FinalizeAndSend sends data to ClickHouse after finalizing if we have a full batch or exceeded the maximum wait time.
+// FinalizeAndSend sends data to ClickHouse after finalizing if we have a full
+// batch or exceeded the maximum wait time. See
+// https://clickhouse.com/docs/best-practices/selecting-an-insert-strategy for
+// tips on the insert strategy. Notably, we switch to async insert when the
+// batch size is too small.
 func (w *realWorker) FinalizeAndSend(ctx context.Context) {
 	w.bf.Finalize()
 	now := time.Now()
