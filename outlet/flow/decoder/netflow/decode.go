@@ -299,29 +299,26 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 }
 
 func decodeUNumber(b []byte) uint64 {
-	var o uint64
 	l := len(b)
 	switch l {
 	case 1:
-		o = uint64(b[0])
+		return uint64(b[0])
 	case 2:
-		o = uint64(binary.BigEndian.Uint16(b))
+		return uint64(b[1]) | uint64(b[0])<<8
+	case 3:
+		return uint64(b[2]) | uint64(b[1])<<8 | uint64(b[0])<<16
 	case 4:
-		o = uint64(binary.BigEndian.Uint32(b))
+		return uint64(b[3]) | uint64(b[2])<<8 | uint64(b[1])<<16 | uint64(b[0])<<24
+	case 5:
+		return uint64(b[4]) | uint64(b[3])<<8 | uint64(b[2])<<16 | uint64(b[1])<<24 | uint64(b[0])<<32
+	case 6:
+		return uint64(b[5]) | uint64(b[4])<<8 | uint64(b[3])<<16 | uint64(b[2])<<24 | uint64(b[1])<<32 | uint64(b[0])<<40
+	case 7:
+		return uint64(b[6]) | uint64(b[5])<<8 | uint64(b[4])<<16 | uint64(b[3])<<24 | uint64(b[2])<<32 | uint64(b[1])<<40 | uint64(b[0])<<48
 	case 8:
-		o = binary.BigEndian.Uint64(b)
-	default:
-		if l < 8 {
-			var iter uint
-			for i := range b {
-				o |= uint64(b[i]) << uint(8*(uint(l)-iter-1))
-				iter++
-			}
-		} else {
-			return 0
-		}
+		return binary.BigEndian.Uint64(b)
 	}
-	return o
+	return 0
 }
 
 func decodeIPFromBytes(b []byte) netip.Addr {
