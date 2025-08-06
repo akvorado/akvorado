@@ -707,8 +707,10 @@ GROUP BY table
 
 If some tables are over 300, it may mean the inserts are too small. In this
 case, you should reduce the number of Kafka workers for the outlet until the
-number of flows per batch is around 100 000 (check the
-`akvorado_outlet_clickhouse_flow_per_batch` metric).
+number of flows per batch is around 50 000 (check the
+`akvorado_outlet_clickhouse_flow_per_batch` metric). If not possible, you can
+increase `maximum-wait-time` from 1 second to 10 seconds to create bigger
+batches.
 
 ### Old tables
 
