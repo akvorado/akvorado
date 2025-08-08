@@ -707,3 +707,62 @@ drop the following tables:
 - any `flows_XXXXXvN_raw` and `flows_XXXXXvN_raw_consumer` when another table exists with a higher `N` value
 
 These tables do not contain data. If you make a mistake, you can restart the orchestrator to recreate them.
+
+## Docker
+
+The default Docker Compose setup is meant to get started quickly. However, you
+can keep it for production setup as well.
+
+### Composability
+
+The `.env` file selects the Docker Compose files that are assembled to have a
+complete setup. Look at the comments for some guidance. You should avoid to
+modify any existing files, except `docker/docker-compose-local.yml`, which
+should contain your local setup.
+
+This file can override parts of the configuration. You can check the final
+configuration with `docker compose config`. Scalars and lists are replaced,
+while dictionaries are merged. This makes removing values from a dictionary
+difficult.
+
+You can disable some services by using profiles:
+
+```yaml
+services:
+  akvorado-inlet:
+    profiles: ["disabled"]
+```
+
+### Networking
+
+The default setup comes with both IPv4 and IPv6 enabled, using the NAT setup.
+For IPv6 to work correctly, you either need Docker Engine v27 or more recent, or
+you need to set `ip6tables` to `true` in `/etc/docker/daemon.json`.
+
+If you prefer to keep Docker default configuration, you can add this snippet to
+`docker/docker-compose-local.yml`:
+
+```yaml
+networks:
+  default:
+    ipv6_enable: false
+    ipam:
+      config: []
+```
+
+If you can route an IPv6 network to the Docker host, you can use the following
+snippet after putting the right subnet and gateway. This requires Docker Engine
+v27 or more recent.
+
+```yaml
+networks:
+  default:
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.gateway_mode_ipv6: routed
+    ipam:
+      driver: default
+      config:
+        - subnet: 2001:db8::/64
+          gateway: 2001:db8::1
+```

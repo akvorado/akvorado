@@ -1,4 +1,13 @@
 ---
+networks:
+  default:
+    enable_ipv4: true
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: 247.16.12.0/24
+        - subnet: fd1c:8ce2:6fb:1::/64
+
 volumes:
   akvorado-kafka:
   akvorado-geoip:

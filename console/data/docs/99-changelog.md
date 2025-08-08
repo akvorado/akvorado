@@ -12,6 +12,8 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 💥 *docker*: enforce a specific IPv4 subnet (in the reserved class E)
+- 🌱 *docker*: add IPv6 configuration
 - 🌱 *outlet*: insert asynchronously when flow count is low
 - 🌱 *docker*: expose Kafka UI (read-only) to the public endpoint
 
