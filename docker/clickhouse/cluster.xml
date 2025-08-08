@@ -7,7 +7,7 @@
       <shard>
         <internal_replication>true</internal_replication>
         <replica>
-          <host>clickhouse</host>
+          <host>clickhouse-1</host>
           <port>9000</port>
         </replica>
         <replica>

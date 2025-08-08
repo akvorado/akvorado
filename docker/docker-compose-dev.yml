@@ -121,41 +121,47 @@ services:
     extends:
       file: versions.yml
       service: clickhouse
-    depends_on:
-      - clickhouse-keeper-1
     environment:
       - CLICKHOUSE_SKIP_USER_SETUP=1
       - CLICKHOUSE_ALWAYS_RUN_INITDB_SCRIPTS=1
     cap_add:
       - SYS_NICE
     volumes:
-      - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
-      - ./clickhouse/cluster-1.xml:/etc/clickhouse-server/config.d/cluster-1.xml
+      - ./clickhouse/standalone.xml:/etc/clickhouse-server/config.d/standalone.xml
       - ./clickhouse/test-db.sql:/docker-entrypoint-initdb.d/test-db.sql
     ports:
       - 127.0.0.1:8123:8123/tcp
       - 127.0.0.1:9000:9000/tcp
-  clickhouse-2:
+  clickhouse-1: &clickhouse-cluster
     <<: *clickhouse
+    depends_on:
+      - clickhouse-keeper-1
+    volumes:
+      - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
+      - ./clickhouse/cluster-1.xml:/etc/clickhouse-server/config.d/cluster-1.xml
+    ports:
+      - 127.0.0.1:9001:9000/tcp
+  clickhouse-2:
+    <<: *clickhouse-cluster
     volumes:
       - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
       - ./clickhouse/cluster-2.xml:/etc/clickhouse-server/config.d/cluster-2.xml
     ports:
-      - 127.0.0.1:9001:9000/tcp
+      - 127.0.0.1:9002:9000/tcp
   clickhouse-3:
-    <<: *clickhouse
+    <<: *clickhouse-cluster
     volumes:
       - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
       - ./clickhouse/cluster-3.xml:/etc/clickhouse-server/config.d/cluster-3.xml
     ports:
-      - 127.0.0.1:9002:9000/tcp
+      - 127.0.0.1:9003:9000/tcp
   clickhouse-4:
-    <<: *clickhouse
+    <<: *clickhouse-cluster
     volumes:
       - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
       - ./clickhouse/cluster-4.xml:/etc/clickhouse-server/config.d/cluster-4.xml
     ports:
-      - 127.0.0.1:9003:9000/tcp
+      - 127.0.0.1:9004:9000/tcp
   clickhouse-keeper-1:
     extends:
       file: versions.yml

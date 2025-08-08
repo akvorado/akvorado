@@ -22,11 +22,14 @@ import (
 func SetupClickHouse(t *testing.T, r *reporter.Reporter, cluster bool) *Component {
 	t.Helper()
 	config := DefaultConfiguration()
-	config.Servers = []string{
-		helpers.CheckExternalService(t, "ClickHouse", []string{"clickhouse:9000", "127.0.0.1:9000"}),
-	}
-	if cluster {
-		helpers.CheckExternalService(t, "ClickHouse cluster", []string{"clickhouse-2:9000", "127.0.0.1:9001"})
+	if !cluster {
+		config.Servers = []string{
+			helpers.CheckExternalService(t, "ClickHouse", []string{"clickhouse:9000", "127.0.0.1:9000"}),
+		}
+	} else {
+		config.Servers = []string{
+			helpers.CheckExternalService(t, "ClickHouse cluster", []string{"clickhouse-2:9000", "127.0.0.1:9002"}),
+		}
 		config.Cluster = "akvorado"
 	}
 	config.DialTimeout = 100 * time.Millisecond

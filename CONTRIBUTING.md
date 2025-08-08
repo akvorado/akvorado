@@ -40,9 +40,12 @@ with `make test-go PKG=akvorado/orchestrator/clickhouse`. Using just `go test`
 would work, but `make test-go` also runs linting and formatting automatically.
 
 If possible, tests should not rely on external components, but when it becomes
-hard to do so, it is possible to spawns services through Docker. Locally, one
-can spawns them through `docker compose -f docker/docker-compose-dev.yml`.
-GitHub actions are using services to spawn them.
+hard to do so, it is possible to spawn services through Docker. Locally, one
+can spawn them through `docker compose -f docker/docker-compose-dev.yml`:
+
+- `... up clickhouse` to spawn a single ClickHouse
+- `... up clickhouse-\*` to spawn a ClickHouse cluster
+- `... up kafka` to spawn a Kafka broker
 
 For manual end-to-end tests, you can use `make docker-dev` to build a Docker
 container of Akvorado, then use `docker compose up` to run Docker compose.
