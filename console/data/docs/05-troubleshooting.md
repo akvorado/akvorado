@@ -241,8 +241,7 @@ Here is a list of errors you may find:
   and output interface indexes. Fix this on the exporter.
 
 To check the SNMP configuration is correct, a convenient way is to use
-`tcpdump`. Notably, you can check the credentials are correct. If you don't get
-a `GetResponse` message, likely there is a misconfiguration on the exporter.
+`tcpdump`.
 
 ```console
 # tcpdump -c3 -pni any port 161
@@ -254,9 +253,19 @@ a `GetResponse` message, likely there is a misconfiguration on the exporter.
 0 packets dropped by kernel
 ```
 
-Another cause for metadata cache misses is that Docker cannot reach the
-exporters because Docker subnets may overlap with your router networks. To fix
-this, add this to `/etc/docker/daemon.json` and restart Docker:
+If you don't get an answer, there may be several causes:
+
+- the community is incorrect and you need to fix it
+- the exporter is not configured to answer to SNMP requests
+- the exporter IP address is incorrect and you may have to clear the conntrack
+  entries with `conntrack -D -p udp --orig-port-dst 2055` (this should be done
+  automatically by the `conntracker-fixer` process, but it does not hurt to try)
+  or disable Docker userland proxy (see below snippet)
+- the Docker subnet (`docker network inspect akvorado_default --format '{{range
+  .IPAM.Config}}{{.Subnet}}{{end}}'`) overlaps your exporter IPs
+
+For both last issues, you can add this to `/etc/docker/daemon.json` and restart
+Docker:
 
 ```json
 {
