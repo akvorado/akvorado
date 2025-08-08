@@ -20,9 +20,21 @@ import (
 // Worker represents a worker sending to ClickHouse. It is synchronous (no
 // goroutines) and most functions are bound to a context.
 type Worker interface {
-	FinalizeAndSend(context.Context)
+	FinalizeAndSend(context.Context) WorkerStatus
 	Flush(context.Context)
 }
+
+// WorkerStatus tells if a worker is overloaded or not.
+type WorkerStatus int
+
+const (
+	// WorkerStatusOK tells the worker is operating in the correct range of efficiency.
+	WorkerStatusOK WorkerStatus = iota
+	// WorkerStatusOverloaded tells the worker has too much work and more worker would help.
+	WorkerStatusOverloaded
+	// WorkerStatusUnderloaded tells the worker do not have enough work.
+	WorkerStatusUnderloaded
+)
 
 // realWorker is a working implementation of Worker.
 type realWorker struct {
@@ -72,10 +84,12 @@ func (c *realComponent) NewWorker(i int, bf *schema.FlowMessage) Worker {
 // https://clickhouse.com/docs/best-practices/selecting-an-insert-strategy for
 // tips on the insert strategy. Notably, we switch to async insert when the
 // batch size is too small.
-func (w *realWorker) FinalizeAndSend(ctx context.Context) {
+func (w *realWorker) FinalizeAndSend(ctx context.Context) WorkerStatus {
 	w.bf.Finalize()
 	now := time.Now()
-	if w.bf.FlowCount() >= int(w.c.config.MaximumBatchSize) || w.last.Add(w.c.config.MaximumWaitTime).Before(now) {
+	batchSize := w.bf.FlowCount()
+	waitTime := now.Sub(w.last)
+	if batchSize >= int(w.c.config.MaximumBatchSize) || waitTime >= w.c.config.MaximumWaitTime {
 		// Record wait time since last send
 		if !w.last.IsZero() {
 			waitTime := now.Sub(w.last)
@@ -83,7 +97,15 @@ func (w *realWorker) FinalizeAndSend(ctx context.Context) {
 		}
 		w.Flush(ctx)
 		w.last = time.Now()
+		if uint(batchSize) >= w.c.config.MaximumBatchSize {
+			w.c.metrics.overloaded.Inc()
+			return WorkerStatusOverloaded
+		} else if uint(batchSize) <= w.c.config.MaximumBatchSize/minimumBatchSizeDivider {
+			w.c.metrics.underloaded.Inc()
+			return WorkerStatusUnderloaded
+		}
 	}
+	return WorkerStatusOK
 }
 
 // Flush sends remaining data to ClickHouse without an additional condition. It
@@ -95,9 +117,8 @@ func (w *realWorker) Flush(ctx context.Context) {
 	}
 	// Async mode if have not a big batch size
 	var settings []ch.Setting
-	if w.bf.FlowCount() <= int(w.c.config.MaximumBatchSize/10) {
+	if uint(w.bf.FlowCount()) <= w.c.config.MaximumBatchSize/minimumBatchSizeDivider {
 		settings = w.asyncSettings
-		w.c.metrics.insertAsyncs.Inc()
 	}
 
 	// We try to send as long as possible. The only exit condition is an

@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -75,7 +76,9 @@ func TestFakeKafka(t *testing.T) {
 		t.Fatalf("Start() error:\n%+v", err)
 	}
 	shutdownCalled := false
-	c.StartWorkers(func(_ int) (ReceiveFunc, ShutdownFunc) { return callback, func() { shutdownCalled = true } })
+	c.StartWorkers(func(int, chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
+		return callback, func() { shutdownCalled = true }
+	})
 
 	// Send messages
 	time.Sleep(100 * time.Millisecond)
@@ -141,7 +144,7 @@ func TestStartSeveralWorkers(t *testing.T) {
 	configuration.Brokers = cluster.ListenAddrs()
 	configuration.FetchMaxWaitTime = 100 * time.Millisecond
 	configuration.ConsumerGroup = fmt.Sprintf("outlet-%d", rand.Int())
-	configuration.Workers = 5
+	configuration.MinWorkers = 5
 	r := reporter.NewMock(t)
 	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
@@ -150,7 +153,7 @@ func TestStartSeveralWorkers(t *testing.T) {
 	if err := c.(*realComponent).Start(); err != nil {
 		t.Fatalf("Start() error:\n%+v", err)
 	}
-	c.StartWorkers(func(int) (ReceiveFunc, ShutdownFunc) {
+	c.StartWorkers(func(int, chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
 		return func(context.Context, []byte) error { return nil }, func() {}
 	})
 	time.Sleep(20 * time.Millisecond)
@@ -186,5 +189,135 @@ func TestStartSeveralWorkers(t *testing.T) {
 	}
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Errorf("Metrics (-got, +want):\n%s", diff)
+	}
+}
+
+func TestStartScaling(t *testing.T) {
+	topicName := fmt.Sprintf("test-topic2-%d", rand.Int())
+	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, pb.Version)
+
+	cluster, err := kfake.NewCluster(
+		kfake.NumBrokers(1),
+		kfake.SeedTopics(16, expectedTopicName),
+	)
+	if err != nil {
+		t.Fatalf("NewCluster() error: %v", err)
+	}
+	defer cluster.Close()
+
+	// Create a producer client
+	producerConfiguration := kafka.DefaultConfiguration()
+	producerConfiguration.Brokers = cluster.ListenAddrs()
+	producerOpts, err := kafka.NewConfig(reporter.NewMock(t), producerConfiguration)
+	if err != nil {
+		t.Fatalf("NewConfig() error:\n%+v", err)
+	}
+	producer, err := kgo.NewClient(producerOpts...)
+	if err != nil {
+		t.Fatalf("NewClient() error:\n%+v", err)
+	}
+	defer producer.Close()
+
+	// Start the component
+	configuration := DefaultConfiguration()
+	configuration.Topic = topicName
+	configuration.Brokers = cluster.ListenAddrs()
+	configuration.FetchMaxWaitTime = 100 * time.Millisecond
+	configuration.ConsumerGroup = fmt.Sprintf("outlet-%d", rand.Int())
+	configuration.WorkerIncreaseRateLimit = 20 * time.Millisecond
+	configuration.WorkerDecreaseRateLimit = 20 * time.Millisecond
+	r := reporter.NewMock(t)
+	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	helpers.StartStop(t, c)
+	msg := atomic.Uint32{}
+	c.StartWorkers(func(_ int, ch chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
+		return func(context.Context, []byte) error {
+			c := msg.Add(1)
+			t.Logf("received message %d", c)
+			if c <= 5 {
+				ch <- ScaleIncrease
+			} else {
+				ch <- ScaleDecrease
+			}
+			return nil
+		}, func() {}
+	})
+
+	// 1 worker
+	time.Sleep(10 * time.Millisecond)
+	gotMetrics := r.GetMetrics("akvorado_outlet_kafka_", "worker")
+	expected := map[string]string{
+		"worker_decrease_total": "0",
+		"worker_increase_total": "1",
+		"workers":               "1",
+	}
+	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
+		t.Fatalf("Metrics (-got, +want):\n%s", diff)
+	}
+
+	// Send 5 messages in a row, expect a second worker
+	for range 5 {
+		record := &kgo.Record{
+			Topic: expectedTopicName,
+			Value: []byte("hello"),
+		}
+		if results := producer.ProduceSync(context.Background(), record); results.FirstErr() != nil {
+			t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
+		}
+	}
+	time.Sleep(100 * time.Millisecond)
+	gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "worker")
+	expected = map[string]string{
+		"worker_decrease_total": "0",
+		"worker_increase_total": "2",
+		"workers":               "2",
+	}
+	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
+		t.Fatalf("Metrics (-got, +want):\n%s", diff)
+	}
+
+	// Send 5 other messages, expect one less worker
+	for range 5 {
+		record := &kgo.Record{
+			Topic: expectedTopicName,
+			Value: []byte("hello"),
+		}
+		if results := producer.ProduceSync(context.Background(), record); results.FirstErr() != nil {
+			t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
+		}
+	}
+	time.Sleep(100 * time.Millisecond)
+	gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "worker")
+	expected = map[string]string{
+		"worker_decrease_total": "1",
+		"worker_increase_total": "2",
+		"workers":               "1",
+	}
+	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
+		t.Fatalf("Metrics (-got, +want):\n%s", diff)
+	}
+
+	// Send 5 other messages, expect nothing change (already at minimum)
+	for range 5 {
+		record := &kgo.Record{
+			Topic: expectedTopicName,
+			Value: []byte("hello"),
+		}
+		if results := producer.ProduceSync(context.Background(), record); results.FirstErr() != nil {
+			t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
+		}
+	}
+	time.Sleep(100 * time.Millisecond)
+	gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "worker")
+	expected = map[string]string{
+		"worker_decrease_total": "1",
+		"worker_increase_total": "2",
+		"workers":               "1",
+	}
+	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
+		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 }

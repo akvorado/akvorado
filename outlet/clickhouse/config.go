@@ -15,10 +15,12 @@ type Configuration struct {
 	MaximumWaitTime time.Duration `validate:"min=100ms"`
 }
 
+const minimumBatchSizeDivider = 10
+
 // DefaultConfiguration represents the default configuration for the ClickHouse exporter.
 func DefaultConfiguration() Configuration {
 	return Configuration{
 		MaximumBatchSize: 50_000,
-		MaximumWaitTime:  time.Second,
+		MaximumWaitTime:  5 * time.Second,
 	}
 }

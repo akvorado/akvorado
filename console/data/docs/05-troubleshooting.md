@@ -434,11 +434,10 @@ In the example above, there were 486525 drops. This can be solved in three ways:
 
 ### Outlet
 
-When the outlet has scaling issues, the data is delivered late at ClickHouse.
-There are two ways to fix that:
-
-- increase the number of Kafka workers,
-- add more outlet instances.
+The outlet is expects to automatically scale the number of workers to ensure the
+data is delivered efficiently to ClickHouse. Increasing the maximum number of
+Kafka workers (`max-workers`) past the default value of 8 may put more pressure
+on ClickHouse. You can however increase `maximum-batch-size`.
 
 ### Profiling
 

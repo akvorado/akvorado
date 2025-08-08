@@ -27,8 +27,15 @@ func NewMock(_ *testing.T, config Configuration) (Component, chan<- []byte) {
 
 // StartWorkers start a set of workers to produce received messages.
 func (c *mockComponent) StartWorkers(workerBuilder WorkerBuilderFunc) error {
-	for i := range c.config.Workers {
-		callback, shutdown := workerBuilder(i)
+	ch := make(chan ScaleRequest, 10)
+	go func() {
+		for {
+			// Ignore all incoming scaling requests
+			<-ch
+		}
+	}()
+	for i := range c.config.MinWorkers {
+		callback, shutdown := workerBuilder(i, ch)
 		defer shutdown()
 		go func() {
 			for {

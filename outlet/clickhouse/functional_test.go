@@ -119,7 +119,8 @@ func TestInsert(t *testing.T) {
 				`flow_per_batch{quantile="0.5"}`:  "1",
 				`flow_per_batch{quantile="0.9"}`:  "1",
 				`flow_per_batch{quantile="0.99"}`: "1",
-				`insert_async_total`:              "1", // only the first one is asynchronous
+				`worker_overloaded_total`:         "0",
+				`worker_underloaded_total`:        "1", // only the first one is "underloaded"
 			}
 		} else if i < 15 {
 			expectedMetrics = map[string]string{
@@ -128,7 +129,8 @@ func TestInsert(t *testing.T) {
 				`flow_per_batch{quantile="0.5"}`:  "1",
 				`flow_per_batch{quantile="0.9"}`:  "10",
 				`flow_per_batch{quantile="0.99"}`: "10",
-				`insert_async_total`:              "1", // only the first one is asynchronous
+				`worker_overloaded_total`:         "1", // full batch size
+				`worker_underloaded_total`:        "1",
 			}
 		} else if i < 23 {
 			expectedMetrics = map[string]string{
@@ -137,7 +139,8 @@ func TestInsert(t *testing.T) {
 				`flow_per_batch{quantile="0.5"}`:  "4",
 				`flow_per_batch{quantile="0.9"}`:  "10",
 				`flow_per_batch{quantile="0.99"}`: "10",
-				`insert_async_total`:              "1", // only the first one is asynchronous
+				`worker_overloaded_total`:         "1",
+				`worker_underloaded_total`:        "1",
 			}
 		} else {
 			expectedMetrics = map[string]string{
@@ -146,7 +149,8 @@ func TestInsert(t *testing.T) {
 				`flow_per_batch{quantile="0.5"}`:  "4",
 				`flow_per_batch{quantile="0.9"}`:  "10",
 				`flow_per_batch{quantile="0.99"}`: "10",
-				`insert_async_total`:              "1", // only the first one is asynchronous
+				`worker_overloaded_total`:         "1",
+				`worker_underloaded_total`:        "1",
 			}
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {

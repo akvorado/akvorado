@@ -5,16 +5,11 @@
 package kafka
 
 import (
-	"context"
-	"errors"
 	"fmt"
-	"strconv"
-	"strings"
+	"sync"
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/twmb/franz-go/pkg/kgo"
-	"github.com/twmb/franz-go/plugin/kprom"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/daemon"
@@ -38,8 +33,11 @@ type realComponent struct {
 
 	kafkaOpts []kgo.Opt
 
-	clients []*kgo.Client
-	metrics metrics
+	workerMu          sync.Mutex
+	workers           []worker
+	workerBuilder     WorkerBuilderFunc
+	workerRequestChan chan<- ScaleRequest
+	metrics           metrics
 }
 
 // Dependencies define the dependencies of the Kafka exporter.
@@ -85,69 +83,17 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 // Start starts the Kafka component.
 func (c *realComponent) Start() error {
 	c.r.Info().Msg("starting Kafka component")
-	// Start the clients
-	for i := range c.config.Workers {
-		logger := c.r.With().Int("worker", i).Logger()
-		logger.Debug().Msg("starting")
-
-		kafkaMetrics := kprom.NewMetrics("", kprom.WithStaticLabel(prometheus.Labels{"worker": strconv.Itoa(i)}))
-		kafkaOpts := append(c.kafkaOpts, kgo.WithHooks(kafkaMetrics))
-		c.r.MetricCollectorForCurrentModule(kafkaMetrics)
-		client, err := kgo.NewClient(kafkaOpts...)
-		if err != nil {
-			logger.Err(err).
-				Int("worker", i).
-				Str("brokers", strings.Join(c.config.Brokers, ",")).
-				Msg("unable to create new client")
-			return fmt.Errorf("unable to create Kafka client: %w", err)
-		}
-		c.clients = append(c.clients, client)
-	}
 	return nil
 }
 
-// StartWorkers will start the workers. This should only be called once.
+// StartWorkers will start the initial workers. This should only be called once.
 func (c *realComponent) StartWorkers(workerBuilder WorkerBuilderFunc) error {
-	ctx := c.t.Context(context.Background())
-	for i := range c.config.Workers {
-		callback, shutdown := workerBuilder(i)
-		consumer := c.NewConsumer(i, callback)
-		client := c.clients[i]
-		c.t.Go(func() error {
-			logger := c.r.With().
-				Int("worker", i).
-				Logger()
-			defer shutdown()
-			defer func() {
-				// Allow a small grace time to commit uncommited work.
-				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-				defer cancel()
-				if err := client.CommitMarkedOffsets(ctx); err != nil {
-					logger.Err(err).Msg("cannot commit marked partition offsets")
-				}
-			}()
-
-			for {
-				select {
-				case <-ctx.Done():
-					return nil
-				default:
-					fetches := client.PollFetches(ctx)
-					if fetches.IsClientClosed() {
-						logger.Error().Msg("client is closed")
-						return errors.New("client is closed")
-					}
-					if err := consumer.ProcessFetches(ctx, client, fetches); err != nil {
-						if errors.Is(err, context.Canceled) || errors.Is(err, ErrStopProcessing) {
-							return nil
-						}
-						logger.Err(err).Msg("cannot process fetched messages")
-						return fmt.Errorf("cannot process fetched messages: %w", err)
-					}
-					client.AllowRebalance()
-				}
-			}
-		})
+	c.workerRequestChan = c.startScaler()
+	c.workerBuilder = workerBuilder
+	for range c.config.MinWorkers {
+		if err := c.startOneWorker(); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -155,19 +101,10 @@ func (c *realComponent) StartWorkers(workerBuilder WorkerBuilderFunc) error {
 // Stop stops the Kafka component
 func (c *realComponent) Stop() error {
 	defer func() {
-		for _, client := range c.clients {
-			client.CloseAllowingRebalance()
-		}
+		c.stopAllWorkers()
 		c.r.Info().Msg("Kafka component stopped")
 	}()
 	c.r.Info().Msg("stopping Kafka component")
 	c.t.Kill(nil)
 	return c.t.Wait()
-}
-
-// onPartitionsRevoked is called when partitions are revoked. We need to commit.
-func (c *realComponent) onPartitionsRevoked(ctx context.Context, client *kgo.Client, _ map[string][]int32) {
-	if err := client.CommitMarkedOffsets(ctx); err != nil {
-		c.r.Err(err).Msg("cannot commit marked offsets on partition revoked")
-	}
 }

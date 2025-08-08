@@ -14,6 +14,7 @@ identified with a specific icon:
 
 - 💥 *docker*: enforce a specific IPv4 subnet (in the reserved class E)
 - 🌱 *docker*: add IPv6 configuration
+- 🌱 *outlet*: dynamically adjust the number of Kafka workers to ensure better performance from ClickHouse
 - 🌱 *outlet*: insert asynchronously when flow count is low
 - 🌱 *docker*: expose Kafka UI (read-only) to the public endpoint
 
