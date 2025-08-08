@@ -6,11 +6,12 @@ package clickhouse
 import "akvorado/common/reporter"
 
 type metrics struct {
-	flows        reporter.Summary
-	waitTime     reporter.Histogram
-	insertTime   reporter.Histogram
-	insertAsyncs reporter.Counter
-	errors       *reporter.CounterVec
+	flows       reporter.Summary
+	waitTime    reporter.Histogram
+	insertTime  reporter.Histogram
+	overloaded  reporter.Counter
+	underloaded reporter.Counter
+	errors      *reporter.CounterVec
 }
 
 func (c *realComponent) initMetrics() {
@@ -44,10 +45,16 @@ func (c *realComponent) initMetrics() {
 			Buckets: []float64{.01, .025, .05, .1, .5, 1, 5, 10, 20, 60},
 		},
 	)
-	c.metrics.insertAsyncs = c.r.Counter(
+	c.metrics.overloaded = c.r.Counter(
 		reporter.CounterOpts{
-			Name: "insert_async_total",
-			Help: "Number of times an insertion was done asynchronously",
+			Name: "worker_overloaded_total",
+			Help: "Number of times a worker was overloaded",
+		},
+	)
+	c.metrics.underloaded = c.r.Counter(
+		reporter.CounterOpts{
+			Name: "worker_underloaded_total",
+			Help: "Number of times a worker was underloaded",
 		},
 	)
 	c.metrics.errors = c.r.CounterVec(

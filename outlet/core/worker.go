@@ -24,17 +24,20 @@ type worker struct {
 	cw      clickhouse.Worker
 	bf      *schema.FlowMessage
 	rawFlow pb.RawFlow
+
+	scaleRequestChan chan<- kafka.ScaleRequest
 }
 
 // newWorker instantiates a new worker and returns a callback function to
 // process an incoming flow and a function to call on shutdown.
-func (c *Component) newWorker(i int) (kafka.ReceiveFunc, kafka.ShutdownFunc) {
+func (c *Component) newWorker(i int, scaleRequestChan chan<- kafka.ScaleRequest) (kafka.ReceiveFunc, kafka.ShutdownFunc) {
 	bf := c.d.Schema.NewFlowMessage()
 	w := worker{
-		c:  c,
-		l:  c.r.With().Int("worker", i).Logger(),
-		bf: bf,
-		cw: c.d.ClickHouse.NewWorker(i, bf),
+		c:                c,
+		l:                c.r.With().Int("worker", i).Logger(),
+		bf:               bf,
+		cw:               c.d.ClickHouse.NewWorker(i, bf),
+		scaleRequestChan: scaleRequestChan,
 	}
 	return w.processIncomingFlow, w.shutdown
 }
@@ -86,7 +89,13 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 
 		// Finalize and forward to ClickHouse
 		w.c.metrics.flowsForwarded.WithLabelValues(exporter).Inc()
-		w.cw.FinalizeAndSend(ctx)
+		status := w.cw.FinalizeAndSend(ctx)
+		switch status {
+		case clickhouse.WorkerStatusOverloaded:
+			w.scaleRequestChan <- kafka.ScaleIncrease
+		case clickhouse.WorkerStatusUnderloaded:
+			w.scaleRequestChan <- kafka.ScaleDecrease
+		}
 	}
 
 	// Flow decoding: not fatal

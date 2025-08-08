@@ -12,6 +12,9 @@ type metrics struct {
 	fetchesReceived  *reporter.CounterVec
 	bytesReceived    *reporter.CounterVec
 	errorsReceived   *reporter.CounterVec
+	workers          reporter.GaugeFunc
+	workerIncrease   reporter.Counter
+	workerDecrease   reporter.Counter
 }
 
 func (c *realComponent) initMetrics() {
@@ -42,5 +45,28 @@ func (c *realComponent) initMetrics() {
 			Help: "Number of errors while handling received messages for a given worker.",
 		},
 		[]string{"worker"},
+	)
+	c.metrics.workers = c.r.GaugeFunc(
+		reporter.GaugeOpts{
+			Name: "workers",
+			Help: "Number of running workers",
+		},
+		func() float64 {
+			c.workerMu.Lock()
+			defer c.workerMu.Unlock()
+			return float64(len(c.workers))
+		},
+	)
+	c.metrics.workerIncrease = c.r.Counter(
+		reporter.CounterOpts{
+			Name: "worker_increase_total",
+			Help: "Number of times a new worker was spawned.",
+		},
+	)
+	c.metrics.workerDecrease = c.r.Counter(
+		reporter.CounterOpts{
+			Name: "worker_decrease_total",
+			Help: "Number of times a new worker was stopped.",
+		},
 	)
 }

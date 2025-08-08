@@ -149,11 +149,19 @@ keys are accepted:
   configuration for the [orchestrator service](#kafka-2) (the values of these
   keys are copied from the orchestrator configuration, unless `brokers` is
   explicitly set)
-- `workers` defines the number of Kafka workers to use
 - `consumer-group` defines the consumer group ID for Kafka consumption
 - `fetch-min-bytes` defines the minimum number of bytes to fetch from Kafka
 - `fetch-max-wait-time` defines how much maximum time to wait for the minimum
   number of bytes to become available
+- `min-workers` defines the minimum number of Kafka workers to use
+- `max-workers` defines the maximum number of Kafka workers to use
+- `worker-increase-rate-limit` defines the duration before increasing the number of workers
+- `worker-decrease-rate-limit` defines the duration before decreasing the number of workers
+
+The exact number of workers currently running depend on the load ClickHouse
+component. The number of workers will be adjusted to keep it below
+`maximum-batch-size`. Don't crank up too much the `max-workers` setting as it
+can put pressure on ClickHouse (the default of 8 should be OK).
 
 ### Routing
 

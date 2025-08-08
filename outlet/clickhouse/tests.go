@@ -39,8 +39,9 @@ type mockWorker struct {
 }
 
 // FinalizeAndSend always "send" the current flows.
-func (w *mockWorker) FinalizeAndSend(ctx context.Context) {
+func (w *mockWorker) FinalizeAndSend(ctx context.Context) WorkerStatus {
 	w.Flush(ctx)
+	return WorkerStatusOK
 }
 
 // Send will record the sent flows for testing purpose.

@@ -26,7 +26,7 @@ func TestMock(t *testing.T) {
 		return nil
 	}
 	c.StartWorkers(
-		func(_ int) (ReceiveFunc, ShutdownFunc) {
+		func(int, chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
 			return callback, func() { shutdownCalled = true }
 		},
 	)

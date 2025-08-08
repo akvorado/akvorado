@@ -33,9 +33,11 @@ type ReceiveFunc func(context.Context, []byte) error
 // ShutdownFunc is a function that will be called on shutdown of the consumer.
 type ShutdownFunc func()
 
-// WorkerBuilderFunc returns a function to be called with each received messages and
-// a function to be called when shutting down.
-type WorkerBuilderFunc func(int) (ReceiveFunc, ShutdownFunc)
+// WorkerBuilderFunc returns a function to be called with each received messages
+// and a function to be called when shutting down. It is provided the worker
+// number (for logging purpose) as well as a chan for the worker to request more
+// or less workers.
+type WorkerBuilderFunc func(int, chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc)
 
 // NewConsumer creates a new consumer.
 func (c *realComponent) NewConsumer(worker int, callback ReceiveFunc) *Consumer {
@@ -60,7 +62,7 @@ func (c *Consumer) ProcessFetches(ctx context.Context, client *kgo.Client, fetch
 
 	if errs := fetches.Errors(); len(errs) > 0 {
 		for _, err := range errs {
-			if errors.Is(err.Err, context.Canceled) {
+			if errors.Is(err.Err, context.Canceled) || errors.Is(err.Err, ErrStopProcessing) {
 				return nil
 			}
 			c.metrics.errorsReceived.WithLabelValues(worker).Inc()
@@ -69,7 +71,7 @@ func (c *Consumer) ProcessFetches(ctx context.Context, client *kgo.Client, fetch
 				Int32("partition", err.Partition).
 				Msg("fetch error")
 		}
-		// Assume the error is fatal.
+		// Assume the error is fatal. The data is uncommitted, so it should be OK.
 		return ErrStopProcessing
 	}
 
