@@ -7,8 +7,6 @@ on:
     tags:
       - v*
   pull_request:
-  schedule:
-    - cron: 0 7 1 * *
 jobs:
   dependabot:
     name: 🤖 Check dependabot status
