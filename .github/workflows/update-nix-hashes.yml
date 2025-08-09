@@ -3,7 +3,7 @@ name: Update Nix dependency hashes
 on:
   workflow_dispatch:
   schedule:
-    - cron: "46 3 * *"
+    - cron: "46 3 * * *"
 
 jobs:
   hashes:
