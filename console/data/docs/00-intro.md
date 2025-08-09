@@ -9,6 +9,14 @@ Kafka. It also provides a web interface to browse the results.
 
 [Akvorado]: https://eo.wikipedia.org/wiki/Akvorado
 
+## Requirements
+
+The recommended configuration is the following:
+
+- 8 vCPUs (AMD64 or ARM64)
+- 100 GB of disk
+- 16 GB of RAM
+
 ## Quick start
 
 The easiest way to get started is with

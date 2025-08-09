@@ -3,7 +3,10 @@
 While Akvorado itself does not require much memory and disk space, both Kafka
 and ClickHouse have heavier needs. To get started, do not try to run the
 complete setup with less than 16 GB of RAM (32 GB or more is advised) and with
-less than 50 GB of disk (100 GB or more is advised). Use at least 8 vCPU.
+less than 50 GB of disk (100 GB or more is advised). Use at least 8 vCPUs.
+
+`demo.akvorado.net` is currently running in a VM with 4 vCPUs, 100 GB of disk
+and 8 GB of RAM, but it uses a 4 GB of swap.
 
 ## Router configuration
 
