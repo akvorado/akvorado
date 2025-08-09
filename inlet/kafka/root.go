@@ -58,8 +58,6 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		errLogger:  r.Sample(reporter.BurstSampler(10*time.Second, 3)),
 	}
 	c.initMetrics()
-	kafkaMetrics := kprom.NewMetrics("")
-	r.MetricCollectorForCurrentModule(kafkaMetrics)
 
 	// Initialize options error to be able to validate them.
 	kafkaOpts = append(kafkaOpts,
@@ -67,7 +65,6 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		kgo.MaxBufferedRecords(configuration.QueueSize),
 		kgo.ProducerBatchCompression(kgo.CompressionCodec(configuration.CompressionCodec)),
 		kgo.RecordPartitioner(kgo.UniformBytesPartitioner(64<<20, true, true, nil)),
-		kgo.WithHooks(kafkaMetrics),
 	)
 
 	if err := kgo.ValidateOpts(kafkaOpts...); err != nil {
@@ -82,13 +79,15 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 func (c *Component) Start() error {
 	c.r.Info().Msg("starting Kafka component")
 
-	kafkaClient, err := kgo.NewClient(c.kafkaOpts...)
+	kafkaMetrics := kprom.NewMetrics("")
+	kafkaClient, err := kgo.NewClient(append(c.kafkaOpts, kgo.WithHooks(kafkaMetrics))...)
 	if err != nil {
 		c.r.Err(err).
 			Str("brokers", strings.Join(c.config.Brokers, ",")).
 			Msg("unable to create Kafka client")
 		return fmt.Errorf("unable to create Kafka client: %w", err)
 	}
+	c.r.MetricCollectorForCurrentModule(kafkaMetrics)
 	c.kafkaClient = kafkaClient
 
 	// When dying, close the client
