@@ -9,6 +9,7 @@ jobs:
   hashes:
     name: Update dependency hashes
     runs-on: ubuntu-latest
+    if: github.repository_owner == 'akvorado'
     steps:
       - uses: actions/checkout@v4
         with:

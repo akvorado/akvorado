@@ -8,7 +8,7 @@ on:
 jobs:
   lockfile:
     name: Update Nix lockfile
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    if: github.repository_owner == 'akvorado'
     runs-on: ubuntu-latest
     strategy:
       matrix:
