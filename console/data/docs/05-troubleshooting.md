@@ -36,10 +36,9 @@ You can recover space with `docker system prune` or get more details with
 ClickHouse.
 
 > [!CAUTION]
-> To recover even more space, you can use `docker system prune -a`. It is
-> important to understand that this command removes anything not currently used.
-> Only use it if all the containers are up and running and you don't use Docker
-> for something else.
+> Do **not** use `docker system prune -a` unless you are pretty sure that all your
+> containers are up and running. It is important to understand that this command
+> removes anything not currently used.
 
 Check that all components are running and healthy:
 
