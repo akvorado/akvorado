@@ -91,6 +91,9 @@ jobs:
       - uses: cachix/install-nix-action@v31
       - name: Update dependency hashes
         run: nix run .#update
+      - name: Abort on release if not up-to-date
+        if: github.ref_type == 'tag'
+        run: git diff --stat --exit-code HEAD
       - name: Build
         run: nix build && ./result/bin/akvorado version
 
@@ -222,6 +225,10 @@ jobs:
     name: 🐋 Build Docker images
     needs:
       - build-linux
+      - build-macos
+      - build-nix
+      - build-go
+      - build-js
       - licenses
     runs-on: ubuntu-22.04
     if: github.ref == 'refs/heads/main' || github.ref_type == 'tag'
@@ -278,10 +285,6 @@ jobs:
   release:
     name: 🚀 Publish release
     needs:
-      - build-go
-      - build-js
-      - build-nix
-      - build-macos
       - docker
     runs-on: ubuntu-latest
     if: github.ref_type == 'tag'
