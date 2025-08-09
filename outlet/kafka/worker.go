@@ -27,7 +27,6 @@ func (c *realComponent) newClient(i int) (*kgo.Client, error) {
 	logger.Info().Msg("starting new client")
 	kafkaMetrics := kprom.NewMetrics("", kprom.WithStaticLabel(prometheus.Labels{"worker": strconv.Itoa(i)}))
 	kafkaOpts := append(c.kafkaOpts, kgo.WithHooks(kafkaMetrics))
-	c.r.MetricCollectorForCurrentModule(kafkaMetrics)
 	client, err := kgo.NewClient(kafkaOpts...)
 	if err != nil {
 		logger.Err(err).
@@ -36,6 +35,7 @@ func (c *realComponent) newClient(i int) (*kgo.Client, error) {
 			Msg("unable to create new client")
 		return nil, fmt.Errorf("unable to create Kafka client: %w", err)
 	}
+	c.r.MetricCollectorForCurrentModule(kafkaMetrics)
 	return client, nil
 }
 
