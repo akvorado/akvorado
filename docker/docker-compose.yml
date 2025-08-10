@@ -231,11 +231,16 @@ services:
     restart: unless-stopped
     command:
       - --api=true
+      - --api.basepath=/traefik
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --entrypoints.private.address=:8080
       - --entrypoints.public.address=:8081
       - --accesslog=true
+    labels:
+      - traefik.enable=true
+      - "traefik.http.routers.traefik.rule=PathPrefix(`/traefik`) && !PathPrefix(`/traefik/debug`)"
+      - traefik.http.routers.traefik.service=api@internal
     ports:
       # Port 8080 is considered private as it exposes sensible unauthenticated
       # services (ClickHouse, configuration, ...). Therefore, it is only exposed

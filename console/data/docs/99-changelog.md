@@ -18,6 +18,7 @@ identified with a specific icon:
 - 🌱 *outlet*: insert asynchronously when flow count is low
 - 🌱 *outlet*: decode IPFIX ingressPhysicalInterface and egressPhysicalInterface
 - 🌱 *docker*: expose Kafka UI (read-only) to the public endpoint
+- 🌱 *docker*: expose Traefik Dashboard (read-only) to the public endpoint
 
 ## 2.0.0-beta.2 - 2025-08-04
 
