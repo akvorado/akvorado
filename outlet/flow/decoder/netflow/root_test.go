@@ -758,3 +758,47 @@ func TestDecodeNAT(t *testing.T) {
 		t.Fatalf("Decode() (-got, +want):\n%s", diff)
 	}
 }
+
+func TestDecodePhysicalInterfaces(t *testing.T) {
+	_, nfdecoder, bf, got, finalize := setup(t, true)
+	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+
+	// The following PCAP is a NAT event, there is no sampling rate, no bytes,
+	// no packets. We can't do much with it.
+	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "physicalinterfaces.pcap"))
+	_, err := nfdecoder.Decode(
+		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+		options, bf, finalize)
+	if err != nil {
+		t.Fatalf("Decode() error:\n%+v", err)
+	}
+
+	expectedFlows := []*schema.FlowMessage{
+		{
+			SamplingRate:    1000,
+			InIf:            1342177291,
+			OutIf:           0,
+			SrcVlan:         4,
+			DstVlan:         0,
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("::ffff:147.53.240.75"),
+			DstAddr:         netip.MustParseAddr("::ffff:212.82.101.24"),
+			NextHop:         netip.MustParseAddr("::"),
+			OtherColumns: map[schema.ColumnKey]any{
+				schema.ColumnSrcMAC:   0xc014fef6c365,
+				schema.ColumnDstMAC:   0xe8b6c24ae34c,
+				schema.ColumnPackets:  3,
+				schema.ColumnBytes:    4506,
+				schema.ColumnSrcPort:  55629,
+				schema.ColumnDstPort:  993,
+				schema.ColumnTCPFlags: 0x10,
+				schema.ColumnEType:    helpers.ETypeIPv4,
+				schema.ColumnProto:    6,
+			},
+		},
+	}
+
+	if diff := helpers.Diff((*got)[:1], expectedFlows); diff != "" {
+		t.Fatalf("Decode() (-got, +want):\n%s", diff)
+	}
+}

@@ -16,6 +16,7 @@ identified with a specific icon:
 - 🌱 *docker*: add IPv6 configuration
 - 🌱 *outlet*: dynamically adjust the number of Kafka workers to ensure better performance from ClickHouse
 - 🌱 *outlet*: insert asynchronously when flow count is low
+- 🌱 *outlet*: decode IPFIX ingressPhysicalInterface and egressPhysicalInterface
 - 🌱 *docker*: expose Kafka UI (read-only) to the public endpoint
 
 ## 2.0.0-beta.2 - 2025-08-04
