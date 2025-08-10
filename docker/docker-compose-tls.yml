@@ -1,0 +1,23 @@
+volumes:
+  akvorado-traefik:
+services:
+  traefik:
+    environment:
+      TRAEFIK_ENTRYPOINTS_public_ADDRESS: ":80"
+      TRAEFIK_ENTRYPOINTS_public_HTTP_REDIRECTIONS_ENTRYPOINT_SCHEME: https
+      TRAEFIK_ENTRYPOINTS_public_HTTP_REDIRECTIONS_ENTRYPOINT_TO: publicsecure
+      TRAEFIK_ENTRYPOINTS_publicsecure_ADDRESS: ":443"
+      TRAEFIK_ENTRYPOINTS_publicsecure_HTTP_TLS: "true"
+      TRAEFIK_ENTRYPOINTS_publicsecure_HTTP_TLS_CERTRESOLVER: le
+      TRAEFIK_ENTRYPOINTS_publicsecure_HTTP_TLS_DOMAINS_0_MAIN: ${TLS_DOMAIN}
+      TRAEFIK_CERTIFICATESRESOLVERS_le: "true"
+      TRAEFIK_CERTIFICATESRESOLVERS_le_ACME_EMAIL: ${TLS_EMAIL}
+      TRAEFIK_CERTIFICATESRESOLVERS_le_ACME_STORAGE: /etc/traefik/acme.json
+      TRAEFIK_CERTIFICATESRESOLVERS_le_ACME_HTTPCHALLENGE: "true"
+      TRAEFIK_CERTIFICATESRESOLVERS_le_ACME_HTTPCHALLENGE_ENTRYPOINT: public
+    volumes:
+      - akvorado-traefik:/etc/traefik
+    ports: !override
+      - 127.0.0.1:8080:8080/tcp
+      - 80:80/tcp
+      - 443:443/tcp

@@ -759,35 +759,18 @@ services:
 ```
 
 The `docker/docker-compose-local.yml` file contains more examples you can adapt
-for your needs, notably to add a basic authentication mechanism or to enable TLS
-with Let's Encrypt.
+for your needs. You can also enable TLS by uncommenting the appropriate section
+in `.env`.
 
 ### Networking
 
 The default setup comes with both IPv4 and IPv6 enabled, using the NAT setup.
-For IPv6 to work correctly, you either need Docker Engine v27 or more recent, or
-you need to set `ip6tables` to `true` in `/etc/docker/daemon.json`.
+For IPv6 to work correctly, you either need Docker Engine v27, or you need to
+set `ip6tables` to `true` in `/etc/docker/daemon.json`.
 
 If you prefer to keep Docker default configuration, you can add this snippet to
 `docker/docker-compose-local.yml`:
 
 ```yaml
 networks: !reset {}
-```
-
-If you can route an IPv6 network to the Docker host, you can use the following
-snippet after putting the right subnet and gateway. This requires Docker Engine
-v27 or more recent.
-
-```yaml
-networks:
-  default:
-    driver: bridge
-    driver_opts:
-      com.docker.network.bridge.gateway_mode_ipv6: routed
-    ipam:
-      driver: default
-      config:
-        - subnet: 2001:db8::/64
-          gateway: 2001:db8::1
 ```

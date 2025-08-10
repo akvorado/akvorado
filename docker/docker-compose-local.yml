@@ -14,8 +14,9 @@
 #     ports:
 #       - 80:8081/tcp
 
-# To add use HTTP basic auth to protect the service, uncomment this block. You
-# can generate your own user/password with "htpasswd -nB akvorado".
+# To add use HTTP basic auth to protect the service, uncomment the snippet
+# below. You can generate your own user/password with "htpasswd -nB akvorado".
+# If you enable TLS, replace "public" by "publicsecure".
 
 # services:
 #   traefik:
@@ -23,32 +24,6 @@
 #       TRAEFIK_ENTRYPOINTS_public_HTTP_MIDDLEWARES: auth@docker
 #     labels:
 #       - traefik.http.middlewares.auth.basicauth.users=akvorado:$$2y$$05$$Ud.JjfZWtKlSOoXKkv48leXze3u4cSNC5G4lG9nkfv5OFOkVcgRrm
-
-# To add TLS with Let's Encrypt, uncomment this block.
-
-# volumes:
-#   akvorado-traefik:
-# services:
-#   traefik:
-#     environment:
-#       TRAEFIK_ENTRYPOINTS_public_ADDRESS: ":80"
-#       TRAEFIK_ENTRYPOINTS_public_HTTP_REDIRECTIONS_ENTRYPOINT_SCHEME: https
-#       TRAEFIK_ENTRYPOINTS_public_HTTP_REDIRECTIONS_ENTRYPOINT_TO: publicsecure
-#       TRAEFIK_ENTRYPOINTS_publicsecure_ADDRESS: ":443"
-#       TRAEFIK_ENTRYPOINTS_publicsecure_HTTP_TLS: "true"
-#       TRAEFIK_ENTRYPOINTS_publicsecure_HTTP_TLS_CERTRESOLVER: le
-#       TRAEFIK_ENTRYPOINTS_publicsecure_HTTP_TLS_DOMAINS_0_MAIN: demo.akvorado.net
-#       TRAEFIK_CERTIFICATESRESOLVERS_le: "true"
-#       TRAEFIK_CERTIFICATESRESOLVERS_le_ACME_EMAIL: admin@demo.akvorado.net
-#       TRAEFIK_CERTIFICATESRESOLVERS_le_ACME_STORAGE: /etc/traefik/acme.json
-#       TRAEFIK_CERTIFICATESRESOLVERS_le_ACME_HTTPCHALLENGE: "true"
-#       TRAEFIK_CERTIFICATESRESOLVERS_le_ACME_HTTPCHALLENGE_ENTRYPOINT: public
-#     volumes:
-#       - akvorado-traefik:/etc/traefik
-#     ports: !override
-#       - 127.0.0.1:8080:8080/tcp
-#       - 80:80/tcp
-#       - 443:443/tcp
 
 # If you don't want to expose Kafka-UI and Traefik on the public endpoints, uncomment this block.
 
@@ -59,3 +34,17 @@
 #   traefik:
 #     labels:
 #       - traefik.http.routers.traefik.entrypoints=private
+
+# To enable IPv6 routing, uncomment the following block. This requires Docker
+# Engine v27.
+
+# networks:
+#   default:
+#     driver: bridge
+#     driver_opts:
+#       com.docker.network.bridge.gateway_mode_ipv6: routed
+#     ipam:
+#       driver: default
+#       config:
+#         - subnet: 2001:db8::/64
+#           gateway: 2001:db8::1
