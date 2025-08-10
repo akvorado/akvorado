@@ -759,7 +759,8 @@ services:
 ```
 
 The `docker/docker-compose-local.yml` file contains more examples you can adapt
-for your needs.
+for your needs, notably to add a basic authentication mechanism or to enable TLS
+with Let's Encrypt.
 
 ### Networking
 

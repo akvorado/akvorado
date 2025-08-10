@@ -229,14 +229,14 @@ services:
       file: versions.yml
       service: traefik
     restart: unless-stopped
-    command:
-      - --api=true
-      - --api.basepath=/traefik
-      - --providers.docker=true
-      - --providers.docker.exposedbydefault=false
-      - --entrypoints.private.address=:8080
-      - --entrypoints.public.address=:8081
-      - --accesslog=true
+    environment:
+      TRAEFIK_API: "true"
+      TRAEFIK_API_BASEPATH: "/traefik"
+      TRAEFIK_PROVIDERS_DOCKER: "true"
+      TRAEFIK_PROVIDERS_DOCKER_EXPOSEDBYDEFAULT: "false"
+      TRAEFIK_ENTRYPOINTS_private_ADDRESS: ":8080" # all services
+      TRAEFIK_ENTRYPOINTS_public_ADDRESS: ":8081"  # public services only
+      TRAEFIK_ACCESSLOG: "true"
     labels:
       - traefik.enable=true
       - "traefik.http.routers.traefik.rule=PathPrefix(`/traefik`) && !PathPrefix(`/traefik/debug`)"

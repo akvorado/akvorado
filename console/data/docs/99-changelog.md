@@ -19,6 +19,7 @@ identified with a specific icon:
 - 🌱 *outlet*: decode IPFIX ingressPhysicalInterface and egressPhysicalInterface
 - 🌱 *docker*: expose Kafka UI (read-only) to the public endpoint
 - 🌱 *docker*: expose Traefik Dashboard (read-only) to the public endpoint
+- 🌱 *docker*: add examples to enable authentication and TLS
 
 ## 2.0.0-beta.2 - 2025-08-04
 
