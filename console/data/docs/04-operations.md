@@ -723,10 +723,13 @@ complete setup. Look at the comments for some guidance. You should avoid to
 modify any existing files, except `docker/docker-compose-local.yml`, which
 should contain your local setup.
 
-This file can override parts of the configuration. You can check the final
-configuration with `docker compose config`. Scalars and lists are replaced,
-while dictionaries are merged. This makes removing values from a dictionary
-difficult.
+This file can override parts of the configuration. The [merge
+rules](https://docs.docker.com/reference/compose-file/merge/) are a bit complex:
+the general rule of thumb is that scalars are replaced, while lists and mappings
+are merged. However, exceptions exist.
+
+> [!TIP]
+> Always check if the final configuration matches your expectations with `docker compose config`.
 
 You can disable some services by using profiles:
 
@@ -734,6 +737,25 @@ You can disable some services by using profiles:
 services:
   akvorado-inlet:
     profiles: ["disabled"]
+```
+
+It is possible to remove a value with the `!reset` tag:
+
+```yaml
+services:
+  akvorado-outlet:
+    environment:
+      AKVORADO_CFG_OUTLET_METADATA_CACHEPERSISTFILE: !reset null
+```
+
+With Docker Compose v2.24.4 or later, it is possible to override a value:
+
+```yaml
+services:
+  traefik:
+    ports: !override
+      - 127.0.0.1:8080:8080/tcp
+      - 80:8081/tcp
 ```
 
 ### Networking
@@ -746,11 +768,7 @@ If you prefer to keep Docker default configuration, you can add this snippet to
 `docker/docker-compose-local.yml`:
 
 ```yaml
-networks:
-  default:
-    ipv6_enable: false
-    ipam:
-      config: []
+networks: !reset {}
 ```
 
 If you can route an IPv6 network to the Docker host, you can use the following

@@ -1,3 +1,4 @@
+---
 # If possible, overrides should go there!
 
 # If you prefer to use geo IP databases from host, uncomment this block.
@@ -6,3 +7,11 @@
 #   akvorado-orchestrator:
 #     volumes:
 #       - /usr/share/GeoIP:/usr/share/GeoIP:ro
+
+# If you want to expose the service directly on port 80, uncomment this block.
+
+# services:
+#   traefik:
+#     ports: !override
+#       - 127.0.0.1:8080:8080/tcp
+#       - 80:8081/tcp

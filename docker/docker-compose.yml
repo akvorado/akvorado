@@ -239,9 +239,8 @@ services:
     ports:
       # Port 8080 is considered private as it exposes sensible unauthenticated
       # services (ClickHouse, configuration, ...). Therefore, it is only exposed
-      # on the loopback. Port 8081 is the one you can expose to users. If you
-      # want to change these ports, leave "8080/tcp" and "8081/tcp" unchanged:
-      # you can modify the IP/port on the left.
+      # on the loopback. Port 8081 is the one you can expose to users. Check
+      # docker-compose-local.yml if you want to expose directly on port 80.
       - 127.0.0.1:8080:8080/tcp
       - 8081:8081/tcp
     volumes:
