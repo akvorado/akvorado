@@ -14,3 +14,13 @@
 #     ports: !override
 #       - 127.0.0.1:8080:8080/tcp
 #       - 80:8081/tcp
+
+# If you don't want to expose Kafka-UI and Traefik on the public endpoints, uncomment this block.
+
+# services:
+#   kafka-ui:
+#     labels:
+#       - traefik.http.routers.kafka-ui.entrypoints=private
+#   traefik:
+#     labels:
+#       - traefik.http.routers.traefik.entrypoints=private

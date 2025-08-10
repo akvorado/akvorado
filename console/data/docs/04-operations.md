@@ -758,6 +758,9 @@ services:
       - 80:8081/tcp
 ```
 
+The `docker/docker-compose-local.yml` file contains more examples you can adapt
+for your needs.
+
 ### Networking
 
 The default setup comes with both IPv4 and IPv6 enabled, using the NAT setup.
