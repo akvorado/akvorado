@@ -13,7 +13,7 @@ volumes:
 services:
   akvorado-orchestrator:
     environment:
-      - AKVORADO_CFG_ORCHESTRATOR_CLICKHOUSE_CLUSTER=akvorado
+      AKVORADO_CFG_ORCHESTRATOR_CLICKHOUSE_CLUSTER: akvorado
 
   clickhouse-keeper-1: &clickhouse-keeper
     extends:

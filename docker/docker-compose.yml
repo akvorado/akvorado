@@ -55,10 +55,10 @@ services:
     depends_on:
       - kafka
     environment:
-      - KAFKA_CLUSTERS_0_NAME=local
-      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
-      - KAFKA_CLUSTERS_0_READONLY=true
-      - SERVER_SERVLET_CONTEXT_PATH=/kafka-ui
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_READONLY: true
+      SERVER_SERVLET_CONTEXT_PATH: /kafka-ui
     labels:
       - traefik.enable=true
       - traefik.http.routers.kafka-ui.rule=PathPrefix(`/kafka-ui`)
@@ -112,7 +112,7 @@ services:
     volumes:
       - akvorado-console-db:/run/akvorado
     environment:
-      - AKVORADO_CFG_CONSOLE_DATABASE_DSN=/run/akvorado/console.sqlite
+      AKVORADO_CFG_CONSOLE_DATABASE_DSN: /run/akvorado/console.sqlite
     labels:
       - traefik.enable=true
       # Only expose /debug endpoint on the private entrypoint.
@@ -175,7 +175,7 @@ services:
     volumes:
       - akvorado-run:/run/akvorado
     environment:
-      - AKVORADO_CFG_OUTLET_METADATA_CACHEPERSISTFILE=/run/akvorado/metadata.cache
+      AKVORADO_CFG_OUTLET_METADATA_CACHEPERSISTFILE: /run/akvorado/metadata.cache
     labels:
       - traefik.enable=true
       # Disable access logging of /api/v0/outlet/metrics
@@ -208,8 +208,8 @@ services:
       - akvorado-clickhouse:/var/lib/clickhouse
       - ./clickhouse/akvorado.xml:/etc/clickhouse-server/config.d/akvorado.xml
     environment:
-      - CLICKHOUSE_INIT_TIMEOUT=60
-      - CLICKHOUSE_SKIP_USER_SETUP=1
+      CLICKHOUSE_INIT_TIMEOUT: 60
+      CLICKHOUSE_SKIP_USER_SETUP: 1
     cap_add:
       - SYS_NICE
     restart: unless-stopped
