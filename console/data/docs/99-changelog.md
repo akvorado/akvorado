@@ -10,7 +10,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 2.0.0-beta.3 - 2025-08-11
+
+> [!CAUTION]
+> This is a beta release! Be sure to read the section about 2.0.0-beta.1 as well.
 
 - 💥 *docker*: enforce a specific IPv4 subnet (in the reserved class E)
 - 🌱 *docker*: add IPv6 configuration
