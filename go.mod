@@ -16,6 +16,7 @@ require (
 	github.com/eapache/go-resiliency v1.7.0
 	github.com/expr-lang/expr v1.17.5
 	github.com/fsnotify/fsnotify v1.9.0
+	github.com/gaissmai/bart v0.23.0
 	github.com/gin-gonic/gin v1.10.1
 	github.com/glebarez/sqlite v1.11.0
 	github.com/go-playground/validator/v10 v10.20.0

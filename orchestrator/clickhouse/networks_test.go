@@ -44,22 +44,22 @@ func TestNetworksCSVWithGeoip(t *testing.T) {
 				ContentType: "text/csv; charset=utf-8",
 				FirstLines: []string{
 					"network,name,role,site,region,country,state,city,tenant,asn",
-					"1.0.0.0/24,,,,,AU,Queensland,Brisbane,,15169",
-					"1.0.1.0/24,,,,,CN,Fujian,Xiamen,,",
-					"1.0.2.0/23,,,,,CN,Fujian,Xiamen,,",
-					"1.0.4.0/22,,,,,AU,Victoria,Melbourne,,",
-					"1.0.8.0/21,,,,,CN,Guangdong,Shenzhen,,",
-					"1.0.16.0/29,,,,,JP,Tokyo,Tokyo,,",
-					"1.0.16.8/30,,,,,JP,Tokyo,Tokyo,,",
-					"1.0.16.12/31,,,,,JP,Tokyo,Tokyo,,",
-					"1.0.16.14/32,,,,,JP,Tokyo,Asagaya-minami,,",
-					"1.0.16.15/32,,,,,JP,Tokyo,Tokyo,,",
-					"1.0.16.16/28,,,,,JP,Tokyo,Tokyo,,",
-					"1.0.16.32/27,,,,,JP,Tokyo,Tokyo,,",
-					"1.0.16.64/26,,,,,JP,Tokyo,Tokyo,,",
-					"1.0.16.128/25,,,,,JP,Tokyo,Tokyo,,",
-					"1.0.17.0/24,,,,,JP,Tokyo,Asagaya-minami,,",
-					"1.0.18.0/23,,,,,JP,Tokyo,Asagaya-minami,,",
+					"::ffff:1.0.0.0/120,,,,,AU,Queensland,Brisbane,,15169",
+					"::ffff:1.0.1.0/120,,,,,CN,Fujian,Xiamen,,",
+					"::ffff:1.0.2.0/119,,,,,CN,Fujian,Xiamen,,",
+					"::ffff:1.0.4.0/118,,,,,AU,Victoria,Melbourne,,",
+					"::ffff:1.0.8.0/117,,,,,CN,Guangdong,Shenzhen,,",
+					"::ffff:1.0.16.0/125,,,,,JP,Tokyo,Tokyo,,",
+					"::ffff:1.0.16.8/126,,,,,JP,Tokyo,Tokyo,,",
+					"::ffff:1.0.16.12/127,,,,,JP,Tokyo,Tokyo,,",
+					"::ffff:1.0.16.14/128,,,,,JP,Tokyo,Asagaya-minami,,",
+					"::ffff:1.0.16.15/128,,,,,JP,Tokyo,Tokyo,,",
+					"::ffff:1.0.16.16/124,,,,,JP,Tokyo,Tokyo,,",
+					"::ffff:1.0.16.32/123,,,,,JP,Tokyo,Tokyo,,",
+					"::ffff:1.0.16.64/122,,,,,JP,Tokyo,Tokyo,,",
+					"::ffff:1.0.16.128/121,,,,,JP,Tokyo,Tokyo,,",
+					"::ffff:1.0.17.0/120,,,,,JP,Tokyo,Asagaya-minami,,",
+					"::ffff:1.0.18.0/119,,,,,JP,Tokyo,Asagaya-minami,,",
 				},
 			},
 		})
@@ -92,29 +92,29 @@ func TestNetworksCSVWithGeoip(t *testing.T) {
 				ContentType: "text/csv; charset=utf-8",
 				FirstLines: []string{
 					"network,name,role,site,region,country,state,city,tenant,asn",
-					"0.80.0.0/16,,,,,,,,Alfred,",                        // not covered by GeoIP
-					"1.0.0.0/20,infra,,,,,,,,",                          // not covered by GeoIP...
-					"1.0.0.0/24,infra,,,,AU,Queensland,Brisbane,,15169", // but covers GeoIP entries
-					"1.0.1.0/24,infra,,,,CN,Fujian,Xiamen,,",            // but covers GeoIP entries
-					"1.0.2.0/23,infra,,,,CN,Fujian,Xiamen,,",            // but covers GeoIP entries
-					"1.0.4.0/22,infra,,,,AU,Victoria,Melbourne,,",       // but covers GeoIP entries
-					"1.0.8.0/21,infra,,,,CN,Guangdong,Shenzhen,,",       // but covers GeoIP entries
-					"1.0.16.0/29,,,,,JP,Tokyo,Tokyo,,",
-					"1.0.16.8/30,,,,,JP,Tokyo,Tokyo,,",
-					"1.0.16.12/31,,,,,JP,Tokyo,Tokyo,,",
-					"1.0.16.14/32,,,,,JP,Tokyo,Asagaya-minami,,",
-					"1.0.16.15/32,,,,,JP,Tokyo,Tokyo,,",
-					"1.0.16.16/28,,,,,JP,Tokyo,Tokyo,,",
-					"1.0.16.32/27,,,,,JP,Tokyo,Tokyo,,",
-					"1.0.16.64/26,infra,,,,JP,Tokyo,Tokyo,,",       // matching a GeoIP entry
-					"1.0.16.66/32,infra,,,,JP,Tokyo,Tokyo,Alfred,", // nested in previous one
-					"1.0.16.128/25,,,,,JP,Tokyo,Tokyo,,",
-					"1.0.17.0/24,,,,,JP,Tokyo,Asagaya-minami,,",
-					"1.0.18.0/23,,,,,JP,Tokyo,Asagaya-minami,,",
-					"1.0.20.0/22,,,,,JP,Tokyo,Asagaya-minami,,",
-					"1.0.24.0/21,,,,,JP,Tokyo,Asagaya-minami,,",
-					"1.0.32.0/19,,,,,CN,Guangdong,Shenzhen,,",
-					"1.0.64.0/20,,,,,JP,Hiroshima,Hiroshima,,",
+					"::ffff:0.80.0.0/112,,,,,,,,Alfred,",                        // not covered by GeoIP
+					"::ffff:1.0.0.0/116,infra,,,,,,,,",                          // not covered by GeoIP...
+					"::ffff:1.0.0.0/120,infra,,,,AU,Queensland,Brisbane,,15169", // but covers GeoIP entries
+					"::ffff:1.0.1.0/120,infra,,,,CN,Fujian,Xiamen,,",            // but covers GeoIP entries
+					"::ffff:1.0.2.0/119,infra,,,,CN,Fujian,Xiamen,,",            // but covers GeoIP entries
+					"::ffff:1.0.4.0/118,infra,,,,AU,Victoria,Melbourne,,",       // but covers GeoIP entries
+					"::ffff:1.0.8.0/117,infra,,,,CN,Guangdong,Shenzhen,,",       // but covers GeoIP entries
+					"::ffff:1.0.16.0/125,,,,,JP,Tokyo,Tokyo,,",
+					"::ffff:1.0.16.8/126,,,,,JP,Tokyo,Tokyo,,",
+					"::ffff:1.0.16.12/127,,,,,JP,Tokyo,Tokyo,,",
+					"::ffff:1.0.16.14/128,,,,,JP,Tokyo,Asagaya-minami,,",
+					"::ffff:1.0.16.15/128,,,,,JP,Tokyo,Tokyo,,",
+					"::ffff:1.0.16.16/124,,,,,JP,Tokyo,Tokyo,,",
+					"::ffff:1.0.16.32/123,,,,,JP,Tokyo,Tokyo,,",
+					"::ffff:1.0.16.64/122,infra,,,,JP,Tokyo,Tokyo,,",       // matching a GeoIP entry
+					"::ffff:1.0.16.66/128,infra,,,,JP,Tokyo,Tokyo,Alfred,", // nested in previous one
+					"::ffff:1.0.16.128/121,,,,,JP,Tokyo,Tokyo,,",
+					"::ffff:1.0.17.0/120,,,,,JP,Tokyo,Asagaya-minami,,",
+					"::ffff:1.0.18.0/119,,,,,JP,Tokyo,Asagaya-minami,,",
+					"::ffff:1.0.20.0/118,,,,,JP,Tokyo,Asagaya-minami,,",
+					"::ffff:1.0.24.0/117,,,,,JP,Tokyo,Asagaya-minami,,",
+					"::ffff:1.0.32.0/115,,,,,CN,Guangdong,Shenzhen,,",
+					"::ffff:1.0.64.0/116,,,,,JP,Hiroshima,Hiroshima,,",
 				},
 			},
 		})

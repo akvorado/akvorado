@@ -50,7 +50,7 @@ func TestInitStaticExporters(t *testing.T) {
 
 	expected["static"] = []exporterInfo{
 		{
-			ExporterSubnet: "203.0.113.0/24",
+			ExporterSubnet: "::ffff:203.0.113.0/120",
 			Exporter: provider.Exporter{
 				Name: "something",
 			},

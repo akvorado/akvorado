@@ -128,7 +128,7 @@ func TestNetworkSources(t *testing.T) {
 			ContentType: "text/csv; charset=utf-8",
 			FirstLines: []string{
 				`network,name,role,site,region,country,state,city,tenant,asn`,
-				`3.2.34.0/26,,amazon,,af-south-1,,,,amazon,`,
+				`::ffff:3.2.34.0/122,,amazon,,af-south-1,,,,amazon,`,
 				`2600:1f14:fff:f800::/56,,route53_healthchecks,,us-west-2,,,,amazon,`,
 				`2600:1ff2:4000::/40,,amazon,,us-west-2,,,,amazon,`,
 			},

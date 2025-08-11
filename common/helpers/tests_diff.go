@@ -30,6 +30,7 @@ func defaultPrettyFormatters() map[reflect.Type]any {
 	result := map[reflect.Type]any{
 		reflect.TypeOf(net.IP{}):            fmt.Sprint,
 		reflect.TypeOf(netip.Addr{}):        fmt.Sprint,
+		reflect.TypeOf(netip.Prefix{}):      fmt.Sprint,
 		reflect.TypeOf(time.Time{}):         fmt.Sprint,
 		reflect.TypeOf(SubnetMap[string]{}): fmt.Sprint,
 		reflect.TypeOf(SubnetMap[uint]{}):   fmt.Sprint,
