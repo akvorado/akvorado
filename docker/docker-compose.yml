@@ -213,6 +213,7 @@ services:
     cap_add:
       - SYS_NICE
     restart: unless-stopped
+    stop_grace_period: 30s
     healthcheck:
       interval: 20s
       test: ["CMD", "wget", "-T", "1", "--spider", "--no-proxy", "http://127.0.0.1:8123/ping"]
