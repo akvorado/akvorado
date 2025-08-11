@@ -108,5 +108,4 @@ When using `docker compose`, use the following commands to fetch an updated
 
 The `docker-compose-upgrade.tar.gz` tarball ships `.env.dist` instead of `.env`.
 You may want to check the differences with your setup (most of the time, there
-shouldn't be any). Note that if Kafka gets upgraded in the process, this can
-be disruptive. You may want to review the changes in `docker/versions.yml`.
+shouldn't be any).
