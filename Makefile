@@ -2,7 +2,6 @@ export CGO_ENABLED=0
 export GOTOOLCHAIN=local
 
 MODULE   = $(shell $(GO) list -m)
-DATE    ?= $(shell date +%FT%T%z)
 VERSION ?= $(shell git describe --tags --always --dirty --match=v* 2> /dev/null || \
 			cat .version 2> /dev/null || echo v0)
 PKGS     = $(or $(PKG),$(shell env GO111MODULE=on $(GO) list ./...))
