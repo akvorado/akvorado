@@ -90,3 +90,16 @@ scrape_configs:
         target_label: service
         regex: akvorado-(.*)
         replacement: $1
+  - job_name: traefik
+    metrics_path: /traefik/metrics
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 30s
+        filters:
+          - name: label
+            values:
+              - com.docker.compose.project=akvorado
+              - com.docker.compose.service=traefik
+      - source_labels: [__meta_docker_port_private]
+        regex: 80
+        replacement: 8080
