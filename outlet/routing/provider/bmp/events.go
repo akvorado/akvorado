@@ -100,18 +100,18 @@ func (p *Provider) removePeer(pkey peerKey, reason string) {
 	exporterStr := pkey.exporter.Addr().Unmap().String()
 	peerStr := pkey.ip.Unmap().String()
 	p.r.Info().Msgf("remove peer %s for exporter %s (reason: %s)", peerStr, exporterStr, reason)
-	select {
-	case p.peerRemovalChan <- pkey:
+	start := p.d.Clock.Now()
+	defer p.metrics.locked.WithLabelValues("peer-removal").Observe(
+		float64(p.d.Clock.Now().Sub(start).Nanoseconds()) / 1000 / 1000 / 1000)
+	pinfo, ok := p.peers[pkey]
+	if !ok {
 		return
-	default:
 	}
-	p.metrics.peerRemovalQueueFull.WithLabelValues(exporterStr).Inc()
-	p.mu.Unlock()
-	select {
-	case p.peerRemovalChan <- pkey:
-	case <-p.t.Dying():
-	}
-	p.mu.Lock()
+	removed := p.rib.flushPeer(pinfo.reference)
+	delete(p.peers, pkey)
+	p.metrics.routes.WithLabelValues(exporterStr).Sub(float64(removed))
+	p.metrics.peers.WithLabelValues(exporterStr).Dec()
+	p.metrics.peerRemovalDone.WithLabelValues(exporterStr).Inc()
 }
 
 // markExporterAsStale marks all peers from an exporter as stale.

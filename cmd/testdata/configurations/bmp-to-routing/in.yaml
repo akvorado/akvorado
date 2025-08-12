@@ -5,6 +5,7 @@ inlet:
     collect-asns: true
     collect-aspaths: false
     keep: 1h
+    rib-peer-removal-batch-routes: 5000
   core:
     asn-providers:
       - flow

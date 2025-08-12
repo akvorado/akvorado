@@ -9,7 +9,6 @@ import (
 	"net"
 	"net/netip"
 	"path"
-	"strconv"
 	"testing"
 	"time"
 
@@ -1016,65 +1015,6 @@ func TestBMP(t *testing.T) {
 		gotRIB = dumpRIB(t, p)
 		if diff := helpers.Diff(gotRIB, expectedRIB); diff != "" {
 			t.Errorf("RIB (-got, +want):\n%s", diff)
-		}
-	})
-
-	t.Run("init, peers up, eor, reach NLRI, conn down, immediate timeout", func(t *testing.T) {
-		r := reporter.NewMock(t)
-		config := DefaultConfiguration()
-		configP := config.(Configuration)
-		configP.RIBPeerRemovalMaxTime = 1
-		configP.RIBPeerRemovalSleepInterval = 1
-		configP.RIBPeerRemovalBatchRoutes = 1
-		p, mockClock := NewMock(t, r, configP)
-		helpers.StartStop(t, p)
-		conn := dial(t, p)
-
-		send(t, conn, "bmp-init.pcap")
-		send(t, conn, "bmp-peers-up.pcap")
-		send(t, conn, "bmp-eor.pcap")
-		send(t, conn, "bmp-reach.pcap")
-		conn.Close()
-		time.Sleep(20 * time.Millisecond)
-		mockClock.Add(2 * time.Hour)
-		for tries := 20; tries >= 0; tries-- {
-			time.Sleep(5 * time.Millisecond)
-			gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
-			// For removed_partial_peers_total, we have 18 routes, but only 14 routes
-			// can be removed while keeping 1 route on each peer. 14 is the max, but
-			// we rely on good-willing from the scheduler to get this number.
-			peerRemovalPartial, _ := strconv.Atoi(gotMetrics[`removed_partial_peers_total{exporter="127.0.0.1"}`])
-			if peerRemovalPartial > 14 {
-				if tries > 0 {
-					continue
-				}
-				t.Errorf("Metrics: removed_partial_peers_total %d > 14", peerRemovalPartial)
-			}
-			if peerRemovalPartial < 5 {
-				if tries > 0 {
-					continue
-				}
-				t.Errorf("Metrics: removed_partial_peers_total %d < 5", peerRemovalPartial)
-			}
-			expectedMetrics := map[string]string{
-				`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
-				`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
-				`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:     "25",
-				`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
-				`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
-				`closed_connections_total{exporter="127.0.0.1"}`:                            "1",
-				`peers{exporter="127.0.0.1"}`:                                               "0",
-				`routes{exporter="127.0.0.1"}`:                                              "0",
-				`removed_peers_total{exporter="127.0.0.1"}`:                                 "4",
-				`removed_partial_peers_total{exporter="127.0.0.1"}`:                         fmt.Sprintf("%d", peerRemovalPartial),
-			}
-			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
-				if tries > 0 {
-					continue
-				}
-				t.Errorf("Metrics (-got, +want):\n%s", diff)
-			}
-			break
 		}
 	})
 

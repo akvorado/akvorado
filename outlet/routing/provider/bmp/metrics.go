@@ -6,19 +6,17 @@ package bmp
 import "akvorado/common/reporter"
 
 type metrics struct {
-	openedConnections    *reporter.CounterVec
-	closedConnections    *reporter.CounterVec
-	peers                *reporter.GaugeVec
-	routes               *reporter.GaugeVec
-	ignoredNlri          *reporter.CounterVec
-	messages             *reporter.CounterVec
-	errors               *reporter.CounterVec
-	ignored              *reporter.CounterVec
-	panics               *reporter.CounterVec
-	locked               *reporter.SummaryVec
-	peerRemovalDone      *reporter.CounterVec
-	peerRemovalPartial   *reporter.CounterVec
-	peerRemovalQueueFull *reporter.CounterVec
+	openedConnections *reporter.CounterVec
+	closedConnections *reporter.CounterVec
+	peers             *reporter.GaugeVec
+	routes            *reporter.GaugeVec
+	ignoredNlri       *reporter.CounterVec
+	messages          *reporter.CounterVec
+	errors            *reporter.CounterVec
+	ignored           *reporter.CounterVec
+	panics            *reporter.CounterVec
+	locked            *reporter.SummaryVec
+	peerRemovalDone   *reporter.CounterVec
 }
 
 // initMetrics initialize the metrics for the BMP component.
@@ -98,20 +96,6 @@ func (p *Provider) initMetrics() {
 		reporter.CounterOpts{
 			Name: "removed_peers_total",
 			Help: "Number of peers removed from the RIB.",
-		},
-		[]string{"exporter"},
-	)
-	p.metrics.peerRemovalPartial = p.r.CounterVec(
-		reporter.CounterOpts{
-			Name: "removed_partial_peers_total",
-			Help: "Number of peers partially removed from the RIB.",
-		},
-		[]string{"exporter"},
-	)
-	p.metrics.peerRemovalQueueFull = p.r.CounterVec(
-		reporter.CounterOpts{
-			Name: "removal_queue_full_total",
-			Help: "Number of time the removal queue was full.",
 		},
 		[]string{"exporter"},
 	)
