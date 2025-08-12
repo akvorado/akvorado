@@ -12,7 +12,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/chenyahui/gin-cache v1.10.0
 	github.com/docker/docker v28.3.3+incompatible
-	github.com/docker/go-connections v0.5.0
+	github.com/docker/go-connections v0.6.0
 	github.com/eapache/go-resiliency v1.7.0
 	github.com/expr-lang/expr v1.17.5
 	github.com/fsnotify/fsnotify v1.9.0
