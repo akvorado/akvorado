@@ -8,8 +8,6 @@ import (
 	"errors"
 	"net/netip"
 
-	"github.com/kentik/patricia"
-
 	"akvorado/outlet/routing/provider"
 )
 
@@ -30,43 +28,44 @@ func (p *Provider) Lookup(_ context.Context, ip netip.Addr, nh netip.Addr, _ net
 	if !p.active.Load() {
 		return LookupResult{}, nil
 	}
-	v6 := patricia.NewIPv6Address(ip.AsSlice(), 128)
-
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
-	bestFound := false
-	found := false
-	_, routes := p.rib.tree.FindDeepestTagsWithFilter(v6, func(route route) bool {
-		if bestFound {
-			// We already have the best route, skip remaining routes
-			return false
-		}
-		if p.rib.nextHops.Get(route.nextHop) == nextHop(nh) {
-			// Exact match found, use it and don't search further
-			bestFound = true
-			return true
-		}
-		// If we don't have a match already, use this one.
-		if !found {
-			found = true
-			return true
-		}
-		// Otherwise, skip it
-		return false
-	})
-	if len(routes) == 0 {
+	// Find the most specific prefix for this IP
+	prefixIdx, found := p.rib.tree.Lookup(ip)
+	if !found {
 		return LookupResult{}, errNoRouteFound
 	}
-	route := routes[len(routes)-1]
-	attributes := p.rib.rtas.Get(route.attributes)
+
+	// Find the best route, preferring exact next hop match
+	var selectedRoute route
+	routeFound := false
+
+	for route := range p.rib.iterateRoutesForPrefixIndex(prefixIdx) {
+		if p.rib.nextHops.Get(route.nextHop) == nextHop(nh) {
+			// Exact match found, use it and don't search further
+			selectedRoute = route
+			break
+		}
+		// If we don't have a match already, use this one.
+		if !routeFound {
+			selectedRoute = route
+			routeFound = true
+		}
+	}
+
+	if !routeFound {
+		return LookupResult{}, errNoRouteFound
+	}
+
+	attributes := p.rib.rtas.Get(selectedRoute.attributes)
 	// The next hop is updated from the rib in every case, because the user
 	// "opted in" for bmp as source if the lookup result is evaluated
-	nh = netip.Addr(p.rib.nextHops.Get(route.nextHop))
+	nh = netip.Addr(p.rib.nextHops.Get(selectedRoute.nextHop))
 
 	// Prefix len is v6 coded in the bmp rib. We need to substract 96 if it's a v4 prefix
 	plen := attributes.plen
-	if ip.Is4() || ip.Is4In6() {
+	if ip.Is4In6() {
 		plen = plen - 96
 	}
 	return LookupResult{
