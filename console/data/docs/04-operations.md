@@ -599,6 +599,10 @@ SELECT name, status, type, formatReadableSize(bytes_allocated)
 FROM system.dictionaries
 ```
 
+Moreover, ClickHouse is tuned for 32 GB of RAM or more. ClickHouse documentation
+has some tips to [run with 16 GB or
+less](https://clickhouse.com/docs/operations/tips#using-less-than-16gb-of-ram).
+
 ### Space usage
 
 To get the space used by ClickHouse, use the following query:
