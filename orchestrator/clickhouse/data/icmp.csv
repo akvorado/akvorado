@@ -1,5 +1,5 @@
 proto,type,code,name
-1,0,0,echo-request
+1,0,0,echo-reply
 1,3,0,net-unreachable
 1,3,1,host-unreachable
 1,3,2,proto-unreachable
