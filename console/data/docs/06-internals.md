@@ -149,17 +149,18 @@ agent](https://github.com/slayercat/GoSNMPServer).
 The BMP server uses [GoBGP](http://github.com/osrg/gobgp)'s
 implementation. GoBGP does not have a BMP collector, but it's just a
 simple TCP connection receiving BMP messages and we use GoBGP to parse
-them. The data we need is stored in a Patricia tree.
+them.
 
-[github.com/kentik/patricia](https://github.com/kentik/patricia)
-implements a fast Patricia tree for IP lookup in a tree of subnets. It
-leverages Go generics to make the code safe. It is used both for
-configuring subnet-dependent settings (eg SNMP communities) and for
-storing data received using BMP.
+[github.com/gaissmai/bart](https://github.com/gaissmai/bart) implements a fast
+trie for IP lookup using an adaptation of Knuth's ART algoritjm. It is used both
+for configuring subnet-dependent settings and for storing data received using
+BMP. In case of BMP, we store the routes in a map indexed by a prefix index
+(dynamically allocated, with a free list) and a route index (contiguously
+allocated from 0). Only the prefix index is stored inside the tree.
 
 To save memory, *Akvorado* "interns" next-hops, origin AS, AS paths
 and communities. Each unique combination is associated to a
-reference-counter 32-bit integer, which is used in the RIB in place of
+reference-counted 32-bit integer, which is used in the RIB in place of
 the original information.
 
 ## Schema

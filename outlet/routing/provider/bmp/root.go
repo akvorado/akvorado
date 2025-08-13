@@ -25,7 +25,7 @@ type Provider struct {
 	d           *Dependencies
 	t           tomb.Tomb
 	config      Configuration
-	acceptedRDs map[uint64]struct{}
+	acceptedRDs map[RD]struct{}
 	active      atomic.Bool
 
 	address net.Addr
@@ -56,9 +56,9 @@ func (configuration Configuration) New(r *reporter.Reporter, dependencies Depend
 		peers: make(map[peerKey]*peerInfo),
 	}
 	if len(p.config.RDs) > 0 {
-		p.acceptedRDs = make(map[uint64]struct{})
+		p.acceptedRDs = make(map[RD]struct{})
 		for _, rd := range p.config.RDs {
-			p.acceptedRDs[uint64(rd)] = struct{}{}
+			p.acceptedRDs[rd] = struct{}{}
 		}
 	}
 	p.staleTimer = p.d.Clock.AfterFunc(time.Hour, p.removeStalePeers)

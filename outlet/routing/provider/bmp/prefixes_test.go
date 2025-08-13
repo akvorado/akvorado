@@ -14,7 +14,6 @@ import (
 
 	"akvorado/common/helpers"
 
-	"github.com/kentik/patricia"
 	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
 )
 
@@ -246,7 +245,7 @@ func BenchmarkRIBInsertion(b *testing.B) {
 							}
 							pfx := netip.PrefixFrom(netip.AddrFrom16(r.Prefix.Addr().As16()), r.Prefix.Bits()+96)
 							tentative++
-							inserted += rib.addPrefix(pfx.Addr(), pfx.Bits(), route{
+							inserted += rib.addPrefix(pfx, route{
 								peer:    uint32(p),
 								nlri:    rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
 								nextHop: rib.nextHops.Put(nextHop(nh)),
@@ -265,11 +264,11 @@ func BenchmarkRIBInsertion(b *testing.B) {
 				runtime.ReadMemStats(&endMem)
 				b.ReportMetric(0, "ns/op")
 				b.ReportMetric(float64(b.Elapsed())/float64(inserted), "ns/route")
-				b.ReportMetric(float64(endMem.HeapAlloc-startMem.HeapAlloc)/float64(rib.tree.CountTags()), "bytes/route")
+				b.ReportMetric(float64(endMem.HeapAlloc-startMem.HeapAlloc)/float64(rib.tree.Size()), "bytes/route")
 				b.ReportMetric(float64(inserted)/float64(tentative)*100, "%ins")
 
 				// Avoid elimination of the RIB
-				rib.tree.FindDeepestTags(patricia.NewIPv6Address(netip.MustParseAddr("::ffff:192.168.1.1").AsSlice(), 128))
+				rib.tree.Lookup(netip.MustParseAddr("::ffff:192.168.1.1"))
 			})
 		}
 	}
@@ -295,7 +294,7 @@ func BenchmarkRIBLookup(b *testing.B) {
 							continue
 						}
 						pfx := netip.PrefixFrom(netip.AddrFrom16(r.Prefix.Addr().As16()), r.Prefix.Bits()+96)
-						rib.addPrefix(pfx.Addr(), pfx.Bits(), route{
+						rib.addPrefix(pfx, route{
 							peer:    uint32(p),
 							nlri:    rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
 							nextHop: rib.nextHops.Put(nextHop(nh)),
@@ -314,8 +313,7 @@ func BenchmarkRIBLookup(b *testing.B) {
 				lookups := 0
 				for b.Loop() {
 					for r := range randomRealWorldRoutes4(prng1, prng2[0], routes/10) {
-						addr := r.Prefix.Addr().As16()
-						_, _ = rib.tree.FindDeepestTags(patricia.NewIPv6Address(addr[:], 128))
+						_, _ = rib.tree.Lookup(netip.AddrFrom16(r.Prefix.Addr().As16()))
 						lookups++
 					}
 				}
@@ -347,7 +345,7 @@ func BenchmarkRIBFlush(b *testing.B) {
 								continue
 							}
 							pfx := netip.PrefixFrom(netip.AddrFrom16(r.Prefix.Addr().As16()), r.Prefix.Bits()+96)
-							rib.addPrefix(pfx.Addr(), pfx.Bits(), route{
+							rib.addPrefix(pfx, route{
 								peer:    uint32(p),
 								nlri:    rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
 								nextHop: rib.nextHops.Put(nextHop(nh)),
