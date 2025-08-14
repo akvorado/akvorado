@@ -5,7 +5,7 @@ COPY console/frontend console/frontend
 COPY Makefile .
 RUN make console/data/frontend
 
-FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS build-go
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS build-go
 RUN apk add --no-cache make mailcap curl
 WORKDIR /build
 # Cache for modules

@@ -20,6 +20,7 @@ identified with a specific icon:
 - 🌱 *docker*: update Prometheus to 3.5.0
 - 🌱 *docker*: update node-exporter to 1.9.1
 - 🌱 *docker*: stop spawning demo exporters by default
+- 🌱 *build*: build with Go 1.25
 
 ## 2.0.0-beta.4 - 2025-08-18
 
