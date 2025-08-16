@@ -115,7 +115,7 @@ func (c *realComponent) stopOneWorker() {
 	defer c.workerMu.Unlock()
 	i := len(c.workers) - 1
 	if i < c.config.MinWorkers {
-		c.r.Info().Int("Workers", c.config.MinWorkers).Msg("minimum number of worker reached")
+		c.r.Info().Int("Workers", c.config.MinWorkers).Msg("minimum number of workers reached")
 		return
 	}
 	worker := c.workers[i]
