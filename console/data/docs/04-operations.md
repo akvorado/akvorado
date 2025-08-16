@@ -792,6 +792,12 @@ RENAME TABLE flows TO flows_old
 
 #### Create the new table
 
+Allow suspicious low cardinality types:
+
+```sql
+SET allow_suspicious_low_cardinality_types = true
+```
+
 Create the new `flows` table with the updated `ORDER BY` directive. After
 `ENGINE = `, copy/paste the engine definition you prepared earlier:
 
