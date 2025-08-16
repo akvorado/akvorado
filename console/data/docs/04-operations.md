@@ -567,6 +567,10 @@ encouraged to read [its documentation](https://clickhouse.com/docs/).
 Altinity also provides a [knowledge base](https://kb.altinity.com/)
 with various other tips.
 
+> [!TIP]
+> To connect to the ClickHouse database in the Docker Compose setup, use `docker
+> compose exec clickhouse clickhouse-client`.
+
 ### System tables
 
 ClickHouse is configured to log various events into MergeTree tables. By
@@ -714,6 +718,144 @@ drop the following tables:
 - any `flows_XXXXXvN_raw` and `flows_XXXXXvN_raw_consumer` when another table exists with a higher `N` value
 
 These tables do not contain data. If you make a mistake, you can restart the orchestrator to recreate them.
+
+### Update the database schema
+
+In 1.10.0, the primary key of the `flows` table was changed to improve
+performance. This update is not automatically applied on existing installations
+as it requires copying data around. You can check if your schema needs to be
+updated with the following SQL command:
+
+```sql
+SELECT primary_key
+FROM system.tables
+WHERE (name = 'flows') AND (database = currentDatabase())
+```
+
+If the primary key starts with `TimeReceived` instead of
+`toStartOfFiveMinutes(TimeReceived)`, you are using the old schema and you may
+get better performance by switching to the new one.
+
+The idea is to create a new table and transfer the data from the old table,
+partition by partition. Execute the following request and ensure you have
+enough room to store the largest partition:
+
+```sql
+SELECT
+    partition,
+    formatReadableSize(sum(bytes_on_disk)) AS size,
+    count() AS count
+FROM system.parts
+WHERE (database = currentDatabase()) AND (`table` = 'flows') AND active
+GROUP BY partition
+ORDER BY partition ASC
+```
+
+> [!IMPORTANT]
+> There is a risk of data loss if something goes wrong. Backup your data if you
+> care about them. This guide only covers the non-clustered scenario.
+
+#### Preparation
+
+You need to stop the **outlet** service to ensure nothing is writing to
+ClickHouse while the migration is in progress. Get the current parameters for
+the `flows` table:
+
+```sql
+SELECT engine_full
+FROM system.tables
+WHERE (database = currentDatabase()) AND (`table` = 'flows')
+FORMAT TSVRaw
+```
+
+You need to change the `ORDER BY` directive to replace `TimeReceived` by
+`toStartOfFiveMinutes(TimeReceived)`. You should get something like that:
+
+```
+MergeTree PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, toIntervalSecond(25920))) ORDER BY (toStartOfFiveMinutes(TimeReceived), ExporterAddress, InIfName, OutIfName) TTL TimeReceived + toIntervalSecond(1296000) SETTINGS index_granularity = 8192, ttl_only_drop_parts = 1
+```
+
+Also, check the current number of flows stored in ClickHouse:
+
+```sql
+SELECT count(*)
+FROM flows
+```
+
+#### Rename the old table
+
+Rename the current `flows` table to `flows_old`:
+
+```sql
+RENAME TABLE flows TO flows_old
+```
+
+#### Create the new table
+
+Create the new `flows` table with the updated `ORDER BY` directive. After
+`ENGINE = `, copy/paste the engine definition you prepared earlier:
+
+```sql
+CREATE TABLE flows AS flows_old
+ENGINE =
+```
+
+#### Create an intermediate table
+
+Create an intermediate table to copy data to. This is needed to not duplicate
+data in the aggregated tables. Use the same engine definition as previously:
+
+```sql
+CREATE TABLE flows_temp AS flows_old
+ENGINE =
+```
+
+#### Generate the migration statements
+
+Use the following SQL query to create the migration
+
+```sql
+SELECT
+ concat('insert into flows_temp select * from flows_old where _partition_id = \'', partition_id, '\';\n',
+        'alter table flows_old drop partition \'', partition_id, '\';\n', 
+        'alter table flows attach partition id \'', partition, '\' from flows_temp;') AS cmd
+FROM system.parts
+WHERE (database = currentDatabase()) AND (`table` = 'flows_old')
+GROUP BY
+    database,
+    `table`,
+    partition_id,
+    partition
+ORDER BY partition_id ASC
+FORMAT TSVRaw
+```
+
+#### Execute the migration statements
+
+You can execute them one by one. You can check that you still have all the flows
+after each `attach partition` directive:
+
+```sql
+SELECT (
+        SELECT count(*)
+        FROM flows
+    ) + (
+        SELECT count(*)
+        FROM flows_old
+    )
+```
+
+#### Drop the old table
+
+The last step is to remove the empty `flows_old` table, as well as the
+intermediate table:
+
+```sql
+DROP TABLE flows_old;
+DROP TABLE flows_temp;
+```
+
+Then, you can restart the **outlet** service.
 
 ## Docker
 
