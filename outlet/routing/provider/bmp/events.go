@@ -300,7 +300,6 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 				plen += 96
 			}
 			pf, _ := netip.AddrFromSlice(prefix)
-			rta.plen = uint8(plen)
 			added += p.rib.addPrefix(netip.PrefixFrom(pf, plen), route{
 				peer: pinfo.reference,
 				nlri: p.rib.nlris.Put(nlri{
@@ -310,6 +309,7 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 				}),
 				nextHop:    p.rib.nextHops.Put(nextHop(nh)),
 				attributes: p.rib.rtas.Put(rta),
+				prefixLen:  uint8(plen),
 			})
 		}
 		for _, ipprefix := range update.WithdrawnRoutes {
@@ -394,7 +394,6 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 			}
 			switch attr.(type) {
 			case *bgp.PathAttributeMpReachNLRI:
-				rta.plen = uint8(plen)
 				added += p.rib.addPrefix(netip.PrefixFrom(pf, plen), route{
 					peer: pinfo.reference,
 					nlri: p.rib.nlris.Put(nlri{
@@ -404,6 +403,7 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 					}),
 					nextHop:    p.rib.nextHops.Put(nextHop(nh)),
 					attributes: p.rib.rtas.Put(rta),
+					prefixLen:  uint8(plen),
 				})
 			case *bgp.PathAttributeMpUnreachNLRI:
 				if nlriRef, ok := p.rib.nlris.Ref(nlri{

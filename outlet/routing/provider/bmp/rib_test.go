@@ -165,18 +165,6 @@ func TestRTAEqual(t *testing.T) {
 			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}, {ASN: 3, LocalData1: 4, LocalData2: 5}, {ASN: 5, LocalData1: 6, LocalData2: 7}}},
 			false,
 		},
-		{
-			helpers.Mark(),
-			routeAttributes{plen: 48},
-			routeAttributes{plen: 48},
-			true,
-		},
-		{
-			helpers.Mark(),
-			routeAttributes{plen: 48},
-			routeAttributes{plen: 49},
-			false,
-		},
 	}
 outer:
 	for try := 3; try >= 0; try-- {
@@ -213,9 +201,9 @@ func TestRemoveRoutes(t *testing.T) {
 			nlri:    r.nlris.Put(nlri{family: bgp.RF_IPv4_UC, path: 1}),
 			nextHop: r.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
 			attributes: r.rtas.Put(routeAttributes{
-				asn:  65300,
-				plen: 96 + 24,
+				asn: 65300,
 			}),
+			prefixLen: 96 + 24,
 		}
 	}
 	t.Run("only route", func(t *testing.T) {

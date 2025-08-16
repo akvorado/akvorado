@@ -254,8 +254,8 @@ func BenchmarkRIBInsertion(b *testing.B) {
 									asPath:           r.ASPath,
 									communities:      r.Communities,
 									largeCommunities: r.LargeCommunities,
-									plen:             uint8(pfx.Bits()),
 								}),
+								prefixLen: uint8(pfx.Bits()),
 							})
 						}
 					}
@@ -303,8 +303,8 @@ func BenchmarkRIBLookup(b *testing.B) {
 								asPath:           r.ASPath,
 								communities:      r.Communities,
 								largeCommunities: r.LargeCommunities,
-								plen:             uint8(pfx.Bits()),
 							}),
+							prefixLen: uint8(pfx.Bits()),
 						})
 					}
 				}
@@ -354,8 +354,8 @@ func BenchmarkRIBFlush(b *testing.B) {
 									asPath:           r.ASPath,
 									communities:      r.Communities,
 									largeCommunities: r.LargeCommunities,
-									plen:             uint8(pfx.Bits()),
 								}),
+								prefixLen: uint8(pfx.Bits()),
 							})
 						}
 					}
