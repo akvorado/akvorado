@@ -211,6 +211,11 @@ routing:
     collect-communities: false
 ```
 
+> [!NOTE]
+> With many routes, BMP may have some performance issues when a peer disappear.
+> If you are not interested by full accuracy, limit the number of BMP peers and
+> export the LocRIB. These issues will eventually be sorted out.
+
 #### BioRIS provider
 
 As alternative to the internal BMP, an connection to an existing [bio-rd
