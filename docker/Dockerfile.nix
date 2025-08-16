@@ -11,8 +11,9 @@ RUN nix run ".#update" \
  && rm -rf /output/store/*-akvorado
 
 FROM gcr.io/distroless/static:latest
+LABEL org.opencontainers.image.title="Akvorado"
+LABEL org.opencontainers.image.description="Flow collector, enricher and visualizer (nix)"
 LABEL org.opencontainers.image.source=https://github.com/akvorado/akvorado
-LABEL org.opencontainers.image.description="Akvorado: flow collector, enricher and visualizer"
 LABEL org.opencontainers.image.licenses=AGPL-3.0-only
 COPY --from=build /output/store /nix/store
 COPY --from=build /app/result/  /usr/local/
