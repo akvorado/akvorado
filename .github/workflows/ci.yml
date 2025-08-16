@@ -53,8 +53,6 @@ jobs:
         run: make && ./bin/akvorado version
       - name: Go race tests
         run: make test-race
-      - name: Run benchmark tests
-        run: make test-bench
       - name: JS tests
         run: make test-js
       - name: Run coverage tests
@@ -266,10 +264,8 @@ jobs:
             org.opencontainers.image.title=Akvorado
             org.opencontainers.image.licenses=AGPL-3.0-only
           annotations: |
-            manifest:org.opencontainers.image.title=Akvorado
-            manifest:org.opencontainers.image.licenses=AGPL-3.0-only
-            index:org.opencontainers.image.title=Akvorado
-            index:org.opencontainers.image.licenses=AGPL-3.0-only
+            org.opencontainers.image.title=Akvorado
+            org.opencontainers.image.licenses=AGPL-3.0-only
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
