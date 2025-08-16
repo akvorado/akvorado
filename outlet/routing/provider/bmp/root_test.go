@@ -12,7 +12,6 @@ import (
 	"slices"
 	"testing"
 	"time"
-	"unique"
 
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
@@ -47,8 +46,8 @@ func TestBMP(t *testing.T) {
 		result := map[netip.Addr][]string{}
 		for prefix, prefixIdx := range c.rib.tree.All6() {
 			for route := range c.rib.iterateRoutesForPrefixIndex(prefixIdx) {
-				nlriRef := route.nlri.Value()
-				nh := route.nextHop.Value()
+				nlriRef := c.rib.nlris.Get(route.nlri)
+				nh := c.rib.nextHops.Get(route.nextHop)
 				attrs := c.rib.rtas.Get(route.attributes)
 				var peer netip.Addr
 				for pkey, pinfo := range c.peers {
@@ -1049,8 +1048,8 @@ func TestBMP(t *testing.T) {
 		// Add another prefix
 		p.rib.addPrefix(netip.MustParsePrefix("2001:db8:1::/64"), route{
 			peer:       1,
-			nlri:       unique.Make(nlri{family: bgp.RF_IPv4_UC}),
-			nextHop:    unique.Make(nextHop(netip.MustParseAddr("2001:db8::a"))),
+			nlri:       p.rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
+			nextHop:    p.rib.nextHops.Put(nextHop(netip.MustParseAddr("2001:db8::a"))),
 			attributes: p.rib.rtas.Put(routeAttributes{asn: 176}),
 		})
 

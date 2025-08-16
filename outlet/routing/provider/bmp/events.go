@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/netip"
 	"time"
-	"unique"
 
 	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
 	"github.com/osrg/gobgp/v3/pkg/packet/bmp"
@@ -304,12 +303,12 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 			rta.plen = uint8(plen)
 			added += p.rib.addPrefix(netip.PrefixFrom(pf, plen), route{
 				peer: pinfo.reference,
-				nlri: unique.Make(nlri{
+				nlri: p.rib.nlris.Put(nlri{
 					family: bgp.RF_IPv4_UC,
 					path:   ipprefix.PathIdentifier(),
 					rd:     pkey.distinguisher,
 				}),
-				nextHop:    unique.Make(nextHop(nh)),
+				nextHop:    p.rib.nextHops.Put(nextHop(nh)),
 				attributes: p.rib.rtas.Put(rta),
 			})
 		}
@@ -321,14 +320,16 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 				plen += 96
 			}
 			pf, _ := netip.AddrFromSlice(prefix)
-			removed += p.rib.removePrefix(netip.PrefixFrom(pf, plen), route{
-				peer: pinfo.reference,
-				nlri: unique.Make(nlri{
-					family: bgp.RF_IPv4_UC,
-					path:   ipprefix.PathIdentifier(),
-					rd:     pkey.distinguisher,
-				}),
-			})
+			if nlriRef, ok := p.rib.nlris.Ref(nlri{
+				family: bgp.RF_IPv4_UC,
+				path:   ipprefix.PathIdentifier(),
+				rd:     pkey.distinguisher,
+			}); ok {
+				removed += p.rib.removePrefix(netip.PrefixFrom(pf, plen), route{
+					peer: pinfo.reference,
+					nlri: nlriRef,
+				})
+			}
 		}
 	}
 
@@ -396,23 +397,25 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 				rta.plen = uint8(plen)
 				added += p.rib.addPrefix(netip.PrefixFrom(pf, plen), route{
 					peer: pinfo.reference,
-					nlri: unique.Make(nlri{
+					nlri: p.rib.nlris.Put(nlri{
 						family: bgp.AfiSafiToRouteFamily(ipprefix.AFI(), ipprefix.SAFI()),
 						rd:     rd,
 						path:   ipprefix.PathIdentifier(),
 					}),
-					nextHop:    unique.Make(nextHop(nh)),
+					nextHop:    p.rib.nextHops.Put(nextHop(nh)),
 					attributes: p.rib.rtas.Put(rta),
 				})
 			case *bgp.PathAttributeMpUnreachNLRI:
-				removed += p.rib.removePrefix(netip.PrefixFrom(pf, plen), route{
-					peer: pinfo.reference,
-					nlri: unique.Make(nlri{
-						family: bgp.AfiSafiToRouteFamily(ipprefix.AFI(), ipprefix.SAFI()),
-						rd:     rd,
-						path:   ipprefix.PathIdentifier(),
-					}),
-				})
+				if nlriRef, ok := p.rib.nlris.Ref(nlri{
+					family: bgp.AfiSafiToRouteFamily(ipprefix.AFI(), ipprefix.SAFI()),
+					rd:     rd,
+					path:   ipprefix.PathIdentifier(),
+				}); ok {
+					removed += p.rib.removePrefix(netip.PrefixFrom(pf, plen), route{
+						peer: pinfo.reference,
+						nlri: nlriRef,
+					})
+				}
 			}
 		}
 	}

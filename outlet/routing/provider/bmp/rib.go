@@ -6,7 +6,6 @@ package bmp
 import (
 	"iter"
 	"net/netip"
-	"unique"
 	"unsafe"
 
 	"akvorado/common/helpers/intern"
@@ -28,6 +27,8 @@ type routeKey uint64
 type rib struct {
 	tree          *bart.Table[prefixIndex] // stores prefix indices
 	routes        map[routeKey]route       // map[routeKey]route where routeKey = (prefixIdx << 32) | routeIdx
+	nlris         *intern.Pool[nlri]
+	nextHops      *intern.Pool[nextHop]
 	rtas          *intern.Pool[routeAttributes]
 	nextPrefixID  prefixIndex   // counter for next prefix index
 	freePrefixIDs []prefixIndex // free list for reused prefix indices
@@ -38,8 +39,8 @@ type rib struct {
 // and nlri.
 type route struct {
 	peer       uint32
-	nlri       unique.Handle[nlri]
-	nextHop    unique.Handle[nextHop]
+	nlri       intern.Reference[nlri]
+	nextHop    intern.Reference[nextHop]
 	attributes intern.Reference[routeAttributes]
 }
 
@@ -51,8 +52,35 @@ type nlri struct {
 	rd     RD
 }
 
+// Hash returns a hash for an NLRI
+func (n nlri) Hash() uint64 {
+	state := makeHash()
+	state.Add((*byte)(unsafe.Pointer(&n.family)), int(unsafe.Sizeof(n.family)))
+	state.Add((*byte)(unsafe.Pointer(&n.path)), int(unsafe.Sizeof(n.path)))
+	state.Add((*byte)(unsafe.Pointer(&n.rd)), int(unsafe.Sizeof(n.rd)))
+	return state.Sum()
+}
+
+// Equal tells if two NLRI are equal.
+func (n nlri) Equal(n2 nlri) bool {
+	return n == n2
+}
+
 // nextHop is just an IP address.
 type nextHop netip.Addr
+
+// Hash returns a hash for the next hop.
+func (nh nextHop) Hash() uint64 {
+	ip := netip.Addr(nh).As16()
+	state := makeHash()
+	state.Add((*byte)(unsafe.Pointer(&ip[0])), 16)
+	return state.Sum()
+}
+
+// Equal tells if two next hops are equal.
+func (nh nextHop) Equal(nh2 nextHop) bool {
+	return nh == nh2
+}
 
 // routeAttributes is a set of route attributes.
 type routeAttributes struct {
@@ -178,6 +206,8 @@ func (r *rib) removeRoutes(prefixIdx prefixIndex, shouldRemove func(route) bool,
 
 		if !skip && shouldRemove(existingRoute) {
 			// Remove this route
+			r.nlris.Take(existingRoute.nlri)
+			r.nextHops.Take(existingRoute.nextHop)
 			r.rtas.Take(existingRoute.attributes)
 			delete(r.routes, checkKey)
 			removed++
@@ -221,6 +251,8 @@ func (r *rib) addPrefix(prefix netip.Prefix, newRoute route) int {
 		}
 		if existingRoute.peer == newRoute.peer && existingRoute.nlri == newRoute.nlri {
 			// Found existing route, update it
+			r.nlris.Take(existingRoute.nlri)
+			r.nextHops.Take(existingRoute.nextHop)
 			r.rtas.Take(existingRoute.attributes)
 			r.routes[key] = newRoute
 			return 0 // Not really added, just updated
@@ -295,6 +327,8 @@ func newRIB() *rib {
 	return &rib{
 		tree:          &bart.Table[prefixIndex]{},
 		routes:        make(map[routeKey]route),
+		nlris:         intern.NewPool[nlri](),
+		nextHops:      intern.NewPool[nextHop](),
 		rtas:          intern.NewPool[routeAttributes](),
 		nextPrefixID:  1, // Start from 1, 0 means to be removed
 		freePrefixIDs: make([]prefixIndex, 0),
