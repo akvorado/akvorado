@@ -6,6 +6,7 @@ package bmp
 import (
 	"time"
 
+	"akvorado/common/helpers"
 	"akvorado/outlet/routing/provider"
 )
 
@@ -24,29 +25,24 @@ type Configuration struct {
 	CollectCommunities bool
 	// Keep tells how long to keep routes from a BMP client when it goes down
 	Keep time.Duration `validate:"min=1s"`
-	// RIBPeerRemovalMaxTime tells the maximum time the removal worker should run to remove a peer
-	RIBPeerRemovalMaxTime time.Duration `validate:"min=10ms"`
-	// RIBPeerRemovalSleepInterval tells how much time to sleep between two runs of the removal worker
-	RIBPeerRemovalSleepInterval time.Duration `validate:"min=10ms"`
-	// RIBPeerRemovalMaxQueue tells how many pending removal requests to keep
-	RIBPeerRemovalMaxQueue int `validate:"min=1"`
-	// RIBPeerRemovalBatchRoutes tells how many routes to remove before checking
-	// if we have a higher priority request. This is only if RIB is in memory
-	// mode.
-	RIBPeerRemovalBatchRoutes int `validate:"min=1"`
 }
 
 // DefaultConfiguration represents the default configuration for the BMP server
 func DefaultConfiguration() provider.Configuration {
 	return Configuration{
-		Listen:                      ":10179",
-		CollectASNs:                 true,
-		CollectASPaths:              true,
-		CollectCommunities:          true,
-		Keep:                        5 * time.Minute,
-		RIBPeerRemovalMaxTime:       100 * time.Millisecond,
-		RIBPeerRemovalSleepInterval: 500 * time.Millisecond,
-		RIBPeerRemovalMaxQueue:      10000,
-		RIBPeerRemovalBatchRoutes:   5000,
+		Listen:             ":10179",
+		CollectASNs:        true,
+		CollectASPaths:     true,
+		CollectCommunities: true,
+		Keep:               5 * time.Minute,
 	}
+}
+
+func init() {
+	helpers.RegisterMapstructureDeprecatedFields[Configuration](
+		"RIBPeerRemovalMaxTime",
+		"RIBPeerRemovalSleepInterval",
+		"RIBPeerRemovalMaxQueue",
+		"RIBPeerRemovalBatchRoutes",
+	)
 }

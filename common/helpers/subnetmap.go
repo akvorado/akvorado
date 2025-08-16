@@ -5,34 +5,30 @@ package helpers
 
 import (
 	"fmt"
-	"net"
+	"iter"
 	"net/netip"
 	"reflect"
 	"regexp"
 	"strings"
 
+	"github.com/gaissmai/bart"
 	"github.com/gin-gonic/gin"
 	"github.com/go-viper/mapstructure/v2"
-	"github.com/kentik/patricia"
-	tree "github.com/kentik/patricia/generics_tree"
 )
 
 // SubnetMap maps subnets to values and allow to lookup by IP address.
-// Internally, everything is stored as an IPv6 (using v6-mapped IPv4
-// addresses).
 type SubnetMap[V any] struct {
-	tree *tree.TreeV6[V]
+	table *bart.Table[V]
 }
 
 // Lookup will search for the most specific subnet matching the
 // provided IP address and return the value associated with it.
 func (sm *SubnetMap[V]) Lookup(ip netip.Addr) (V, bool) {
-	if sm == nil || sm.tree == nil {
+	if sm == nil || sm.table == nil {
 		var value V
 		return value, false
 	}
-	ok, value := sm.tree.FindDeepestTag(patricia.NewIPv6Address(ip.AsSlice(), 128))
-	return value, ok
+	return sm.table.Lookup(ip)
 }
 
 // LookupOrDefault calls lookup and if not found, will return the
@@ -44,82 +40,98 @@ func (sm *SubnetMap[V]) LookupOrDefault(ip netip.Addr, fallback V) V {
 	return fallback
 }
 
-// ToMap return a map of the tree.
+// ToMap return a map of the tree. This should be used only when handling user
+// configuration or for debugging. Otherwise, it is better to use Iter().
 func (sm *SubnetMap[V]) ToMap() map[string]V {
 	output := map[string]V{}
-	if sm == nil || sm.tree == nil {
-		return output
-	}
-	iter := sm.tree.Iterate()
-	for iter.Next() {
-		output[iter.Address().String()] = iter.Tags()[0]
+	for prefix, value := range sm.All() {
+		if prefix.Addr().Is4In6() {
+			ipv4Addr := prefix.Addr().Unmap()
+			ipv4Prefix := netip.PrefixFrom(ipv4Addr, prefix.Bits()-96)
+			output[ipv4Prefix.String()] = value
+			continue
+		}
+		output[prefix.String()] = value
 	}
 	return output
 }
 
-// Set inserts the given key k into the SubnetMap, replacing any existing value if it exists.
-func (sm *SubnetMap[V]) Set(k string, v V) error {
-	subnetK, err := SubnetMapParseKey(k)
-	if err != nil {
-		return err
+// Set inserts the given key k into the SubnetMap, replacing any existing value
+// if it exists. It requires an IPv6 prefix or it will panic.
+func (sm *SubnetMap[V]) Set(prefix netip.Prefix, v V) {
+	if !prefix.Addr().Is6() {
+		panic(fmt.Errorf("%q is not an IPv6 subnet", prefix))
 	}
-	_, ipNet, err := net.ParseCIDR(subnetK)
-	if err != nil {
-		// Should not happen
-		return err
+	if sm.table == nil {
+		sm.table = &bart.Table[V]{}
 	}
-	_, bits := ipNet.Mask.Size()
-	if bits != 128 {
-		return fmt.Errorf("%q is not an IPv6 subnet", ipNet)
-	}
-	plen, _ := ipNet.Mask.Size()
-	sm.tree.Set(patricia.NewIPv6Address(ipNet.IP.To16(), uint(plen)), v)
-	return nil
+	sm.table.Insert(prefix, v)
 }
 
-// Update inserts the given key k into the SubnetMap, calling updateFunc with the existing value.
-func (sm *SubnetMap[V]) Update(k string, v V, updateFunc tree.UpdatesFunc[V]) error {
-	subnetK, err := SubnetMapParseKey(k)
-	if err != nil {
-		return err
+// Update inserts the given key k into the SubnetMap, calling cb with the
+// existing value. It requires an IPv6 prefix or it will panic.
+func (sm *SubnetMap[V]) Update(prefix netip.Prefix, cb func(V, bool) V) {
+	if !prefix.Addr().Is6() {
+		panic(fmt.Errorf("%q is not an IPv6 subnet", prefix))
 	}
-	_, ipNet, err := net.ParseCIDR(subnetK)
-	if err != nil {
-		// Should not happen
-		return err
+	if sm.table == nil {
+		sm.table = &bart.Table[V]{}
 	}
-	_, bits := ipNet.Mask.Size()
-	if bits != 128 {
-		return fmt.Errorf("%q is not an IPv6 subnet", ipNet)
-	}
-	plen, _ := ipNet.Mask.Size()
-	sm.tree.SetOrUpdate(patricia.NewIPv6Address(ipNet.IP.To16(), uint(plen)), v, updateFunc)
-	return nil
+	sm.table.Update(prefix, cb)
 }
 
-// Iter enables iteration of the SubnetMap, calling f for every entry. If f returns an error, the iteration is aborted.
-func (sm *SubnetMap[V]) Iter(f func(address patricia.IPv6Address, tags [][]V) error) error {
-	iter := sm.tree.Iterate()
-	for iter.Next() {
-		if err := f(iter.Address(), iter.TagsFromRoot()); err != nil {
-			return err
+// All walks the whole subnet map.
+func (sm *SubnetMap[V]) All() iter.Seq2[netip.Prefix, V] {
+	return func(yield func(netip.Prefix, V) bool) {
+		if sm == nil || sm.table == nil {
+			return
+		}
+		sm.table.All6()(yield)
+	}
+}
+
+// AllMaybeSorted walks the whole subnet map in sorted order during tests but
+// not when running tests.
+func (sm *SubnetMap[V]) AllMaybeSorted() iter.Seq2[netip.Prefix, V] {
+	return func(yield func(netip.Prefix, V) bool) {
+		if sm == nil || sm.table == nil {
+			return
+		}
+		if Testing() {
+			sm.table.AllSorted6()(yield)
+		} else {
+			sm.table.All6()(yield)
 		}
 	}
-	return nil
 }
 
-// NewSubnetMap creates a subnetmap from a map. Unlike user-provided
-// configuration, this function is stricter and require everything to
-// be IPv6 subnets.
+// Supernets returns an iterator over all supernet routes that cover the given
+// prefix. The iteration order is reverse-CIDR: from longest prefix match (LPM)
+// towards least-specific routes.
+func (sm *SubnetMap[V]) Supernets(prefix netip.Prefix) iter.Seq2[netip.Prefix, V] {
+	return func(yield func(netip.Prefix, V) bool) {
+		if sm == nil || sm.table == nil {
+			return
+		}
+		sm.table.Supernets(prefix)(yield)
+	}
+}
+
+// NewSubnetMap creates a subnetmap from a map. It should not be used in a hot
+// path as it builds the subnet from a map keyed by strings.
 func NewSubnetMap[V any](from map[string]V) (*SubnetMap[V], error) {
-	trie := &SubnetMap[V]{tree.NewTreeV6[V]()}
+	sm := &SubnetMap[V]{table: &bart.Table[V]{}}
 	if from == nil {
-		return trie, nil
+		return sm, nil
 	}
 	for k, v := range from {
-		trie.Set(k, v)
+		key, err := SubnetMapParseKey(k)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse key %s: %w", k, err)
+		}
+		sm.Set(key, v)
 	}
-	return trie, nil
+	return sm, nil
 }
 
 // MustNewSubnetMap creates a subnet from a map and panic in case of a
@@ -157,9 +169,10 @@ func LooksLikeSubnetMap(v reflect.Value) (result bool) {
 	return
 }
 
-// SubnetMapUnmarshallerHook decodes SubnetMap and notably check that
-// valid networks are provided as key. It also accepts a single value
-// instead of a map for backward compatibility.
+// SubnetMapUnmarshallerHook decodes SubnetMap and notably check that valid
+// networks are provided as key. It also accepts a single value instead of a map
+// for backward compatibility. It should not be used in hot paths as it builds
+// an intermediate map.
 func SubnetMapUnmarshallerHook[V any]() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (any, error) {
 		if to.Type() != reflect.TypeOf(SubnetMap[V]{}) {
@@ -184,7 +197,7 @@ func SubnetMapUnmarshallerHook[V any]() mapstructure.DecodeHookFunc {
 				if err != nil {
 					return nil, fmt.Errorf("failed to parse key %s: %w", key, err)
 				}
-				output[key] = v.Interface()
+				output[key.String()] = v.Interface()
 			}
 		} else {
 			// Second case, we have a single value and we let mapstructure handles it
@@ -211,40 +224,36 @@ func SubnetMapUnmarshallerHook[V any]() mapstructure.DecodeHookFunc {
 	}
 }
 
-// SubnetMapParseKey decodes and validates a key used in SubnetMap from a network string.
-func SubnetMapParseKey(k string) (string, error) {
-	var key string
-	if strings.Contains(k, "/") {
-		// Subnet
-		_, ipNet, err := net.ParseCIDR(k)
-		if err != nil {
-			return "", err
-		}
-		// Convert key to IPv6
-		ones, bits := ipNet.Mask.Size()
-		if bits != 32 && bits != 128 {
-			return "", fmt.Errorf("key %s has invalid netmask", k)
-		}
-		if bits == 32 {
-			key = fmt.Sprintf("::ffff:%s/%d", ipNet.IP.String(), ones+96)
-		} else if ipNet.IP.To4() != nil {
-			key = fmt.Sprintf("::ffff:%s/%d", ipNet.IP.String(), ones)
-		} else {
-			key = ipNet.String()
-		}
-	} else {
-		// IP
-		ip := net.ParseIP(k)
-		if ip == nil {
-			return "", fmt.Errorf("key %s is not a valid subnet", k)
-		}
-		if ipv4 := ip.To4(); ipv4 != nil {
-			key = fmt.Sprintf("::ffff:%s/128", ipv4.String())
-		} else {
-			key = fmt.Sprintf("%s/128", ip.String())
-		}
+// PrefixTo16 converts an IPv4 prefix to an IPv4-mapped IPv6 prefix.
+// IPv6 prefixes are returned as-is.
+func PrefixTo16(prefix netip.Prefix) netip.Prefix {
+	if prefix.Addr().Is6() {
+		return prefix
 	}
-	return key, nil
+	// Convert IPv4 to IPv4-mapped IPv6
+	return netip.PrefixFrom(netip.AddrFrom16(prefix.Addr().As16()), prefix.Bits()+96)
+}
+
+// SubnetMapParseKey parses a prefix or an IP address into a netip.Prefix that
+// can be used in a map.
+func SubnetMapParseKey(k string) (netip.Prefix, error) {
+	// Subnet
+	if strings.Contains(k, "/") {
+		key, err := netip.ParsePrefix(k)
+		if err != nil {
+			return netip.Prefix{}, err
+		}
+		return PrefixTo16(key), nil
+	}
+	// IP address
+	key, err := netip.ParseAddr(k)
+	if err != nil {
+		return netip.Prefix{}, err
+	}
+	if key.Is4() {
+		return PrefixTo16(netip.PrefixFrom(key, 32)), nil
+	}
+	return netip.PrefixFrom(key, 128), nil
 }
 
 // MarshalYAML turns a subnet into a map that can be marshaled.

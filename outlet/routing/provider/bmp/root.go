@@ -25,7 +25,7 @@ type Provider struct {
 	d           *Dependencies
 	t           tomb.Tomb
 	config      Configuration
-	acceptedRDs map[uint64]struct{}
+	acceptedRDs map[RD]struct{}
 	active      atomic.Bool
 
 	address net.Addr
@@ -34,7 +34,6 @@ type Provider struct {
 	// RIB management with peers
 	rib               *rib
 	peers             map[peerKey]*peerInfo
-	peerRemovalChan   chan peerKey
 	lastPeerReference uint32
 	staleTimer        *clock.Timer
 	mu                sync.RWMutex
@@ -53,14 +52,13 @@ func (configuration Configuration) New(r *reporter.Reporter, dependencies Depend
 		d:      &dependencies,
 		config: configuration,
 
-		rib:             newRIB(),
-		peers:           make(map[peerKey]*peerInfo),
-		peerRemovalChan: make(chan peerKey, configuration.RIBPeerRemovalMaxQueue),
+		rib:   newRIB(),
+		peers: make(map[peerKey]*peerInfo),
 	}
 	if len(p.config.RDs) > 0 {
-		p.acceptedRDs = make(map[uint64]struct{})
+		p.acceptedRDs = make(map[RD]struct{})
 		for _, rd := range p.config.RDs {
-			p.acceptedRDs[uint64(rd)] = struct{}{}
+			p.acceptedRDs[rd] = struct{}{}
 		}
 	}
 	p.staleTimer = p.d.Clock.AfterFunc(time.Hour, p.removeStalePeers)
@@ -78,9 +76,6 @@ func (p *Provider) Start() error {
 		return fmt.Errorf("unable to listen to %v: %w", p.config.Listen, err)
 	}
 	p.address = listener.Addr()
-
-	// Peer removal
-	p.t.Go(p.peerRemovalWorker)
 
 	// Listener
 	p.t.Go(func() error {
@@ -108,10 +103,7 @@ func (p *Provider) Start() error {
 
 // Stop stops the BMP provider.
 func (p *Provider) Stop() error {
-	defer func() {
-		close(p.peerRemovalChan)
-		p.r.Info().Msg("BMP component stopped")
-	}()
+	defer p.r.Info().Msg("BMP component stopped")
 	p.r.Info().Msg("stopping BMP component")
 	p.t.Kill(nil)
 	return p.t.Wait()

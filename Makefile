@@ -8,7 +8,7 @@ PKGS     = $(or $(PKG),$(shell env GO111MODULE=on $(GO) list ./...))
 
 GO      = go
 NPM     = npm
-TIMEOUT = 45
+TIMEOUT = 45s
 LSFILES = git ls-files -cmo --exclude-standard --
 V = 0
 Q = $(if $(filter 1,$V),,@)
@@ -169,7 +169,7 @@ test-go-units: ; $(info $(M) running Go tests$(GOTEST_MORE)…)
 	$Q mkdir -p test/go
 	$Q env PATH=$(dir $(abspath $(shell command -v $(GO)))):$(PATH) $(GOTESTSUM) \
         --junitfile test/go/tests.xml -- \
-		-timeout $(TIMEOUT)s \
+		-timeout $(TIMEOUT) \
 		$(GOTEST_ARGS) $(PKGS)
 test-race: CGO_ENABLED=1
 test-race: GOTEST_ARGS=-race
@@ -180,8 +180,8 @@ test-short: GOTEST_MORE=, only short tests
 test-short: test-go  ## Run only short Go tests
 test-bench: ; $(info $(M) running benchmarks…) @ ## Run Go benchmarks
 	$Q $(GO) test \
-		-fullpath -timeout $(TIMEOUT)s -run=__absolutelynothing__ -bench=. -benchmem \
-		$(PKGS) # -memprofile test/go/memprofile.out -cpuprofile test/go/cpuprofile.out
+		-fullpath -run=__absolutelynothing__ -bench=. \
+		$(PKGS) # -benchmem -memprofile test/go/memprofile.out -cpuprofile test/go/cpuprofile.out
 test-coverage-go: ; $(info $(M) running Go coverage tests…) @ ## Run Go coverage tests
 	$Q mkdir -p test/go
 	$Q env PATH=$(dir $(abspath $(shell command -v $(GO)))):$(PATH) $(GOTESTSUM) -- \

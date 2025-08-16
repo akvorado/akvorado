@@ -2,7 +2,7 @@
 
 New features should be discussed. Open an issue before trying anything major.
 New features are not free to maintain and put a burden on the maintainers of the
-project, notably when it comes to fix bugs and when they interfer in future
+project, notably when it comes to fixing bugs and when they interfere with future
 evolutions.
 
 # User friendliness
@@ -19,7 +19,7 @@ users:
 
 Go formatter takes care of most issues. For the remaining points:
 
-- comments are sentence and should be capitalized
+- comments are sentences and should be capitalized
 - on the other hand, log messages are not and should *not* be capitalized
 - metrics should be named using [Prometheus conventions][]
 
@@ -49,7 +49,7 @@ can spawn them through `docker compose -f docker/docker-compose-dev.yml`:
 
 For manual end-to-end tests, you can use `make docker-dev` to build a Docker
 container of Akvorado, then use `docker compose up` to run Docker compose.
-Beware to not destroy the volume for GeoIP at each tentative as there is a
+Beware not to destroy the volume for GeoIP at each attempt as there is a
 per-day limit on the number of times one IP can fetch the GeoIP database.
 
 If you need to work on the frontend part, you can spawn the Docker compose

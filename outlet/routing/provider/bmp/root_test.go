@@ -9,7 +9,7 @@ import (
 	"net"
 	"net/netip"
 	"path"
-	"strconv"
+	"slices"
 	"testing"
 	"time"
 
@@ -44,10 +44,8 @@ func TestBMP(t *testing.T) {
 		c.mu.RLock()
 		defer c.mu.RUnlock()
 		result := map[netip.Addr][]string{}
-		iter := c.rib.tree.Iterate()
-		for iter.Next() {
-			addr := iter.Address()
-			for _, route := range iter.Tags() {
+		for prefix, prefixIdx := range c.rib.tree.All6() {
+			for route := range c.rib.iterateRoutesForPrefixIndex(prefixIdx) {
 				nlriRef := c.rib.nlris.Get(route.nlri)
 				nh := c.rib.nextHops.Get(route.nextHop)
 				attrs := c.rib.rtas.Get(route.attributes)
@@ -61,14 +59,22 @@ func TestBMP(t *testing.T) {
 				if _, ok := result[peer.Unmap()]; !ok {
 					result[peer.Unmap()] = []string{}
 				}
-				result[peer.Unmap()] = append(result[peer.Unmap()],
-					fmt.Sprintf("[%s] %s via %s %s/%d %d %v %v %v",
+				addr := prefix.Addr()
+				plen := prefix.Bits()
+				if prefix.Addr().Is4In6() {
+					addr = addr.Unmap()
+					plen -= 96
+				}
+				peer = peer.Unmap()
+				result[peer] = append(result[peer],
+					fmt.Sprintf("[%s] %s/%d via %s %s/%d %d %v %v %v",
 						nlriRef.family,
-						addr, netip.Addr(nh).Unmap(),
+						addr, plen, netip.Addr(nh).Unmap(),
 						nlriRef.rd,
 						nlriRef.path,
 						attrs.asn, attrs.asPath,
 						attrs.communities, attrs.largeCommunities))
+				slices.Sort(result[peer])
 			}
 		}
 		return result
@@ -197,21 +203,21 @@ func TestBMP(t *testing.T) {
 
 		expectedRIB := map[netip.Addr][]string{
 			netip.MustParseAddr("2001:db8::3"): {
-				"[ipv6-unicast] 2001:db8::2/127 via 2001:db8::3 0:0/0 65013 [65013] [] []",
 				"[ipv6-unicast] 2001:db8:1::/64 via 2001:db8::3 0:0/0 174 [65013 65013 174 174 174] [4260691978 4260691988] []",
 				"[ipv6-unicast] 2001:db8:2::/64 via 2001:db8::3 0:0/0 12322 [65013 65013 1299 1299 1299 12322] [4260691998] []",
+				"[ipv6-unicast] 2001:db8::2/127 via 2001:db8::3 0:0/0 65013 [65013] [] []",
 			},
 			netip.MustParseAddr("2001:db8::7"): {
 				"[ipv4-unicast] 192.0.2.6/31 via 192.0.2.7 0:0/0 65017 [65017] [] []",
-				"[l3vpn-ipv4-unicast] 198.51.100.0/25 via 192.0.2.7 65017:102/0 64476 [65017 65017 174 3356 3356 3356 64476] [4260954122 4260954132] []",
-				"[l3vpn-ipv4-unicast] 198.51.100.0/25 via 192.0.2.7 65017:101/0 64476 [65017 65017 174 1299 64476] [4260954122 4260954132] []",
-				"[l2vpn-evpn] 198.51.100.0/26 via 2001:db8::7 65017:104/0 64476 [65017 65017 3356 64476] [4260955215] []",
-				"[l3vpn-ipv4-unicast] 198.51.100.0/26 via 192.0.2.7 65017:103/0 64476 [65017 65017 3356 64476] [4260955215] []",
-				"[l3vpn-ipv4-unicast] 198.51.100.128/25 via 192.0.2.7 65017:102/0 396919 [65017 65017 6453 396919] [4260954131] []",
-				"[l3vpn-ipv4-unicast] 198.51.100.128/25 via 192.0.2.7 65017:101/0 396919 [65017 65017 174 29447 396919] [4260954124] []",
-				"[ipv6-unicast] 2001:db8::6/127 via 2001:db8::7 0:0/0 65017 [65017] [] []",
 				"[ipv6-unicast] 2001:db8:1::/64 via 2001:db8::7 0:0/0 174 [65017 65013 174 174 174] [4260954122 4260954132] [{65017 300 4}]",
 				"[ipv6-unicast] 2001:db8:2::/64 via 2001:db8::7 0:0/0 12322 [65017 65017 1299 1299 1299 12322] [4260954142] [{65017 400 2}]",
+				"[ipv6-unicast] 2001:db8::6/127 via 2001:db8::7 0:0/0 65017 [65017] [] []",
+				"[l2vpn-evpn] 198.51.100.0/26 via 2001:db8::7 65017:104/0 64476 [65017 65017 3356 64476] [4260955215] []",
+				"[l3vpn-ipv4-unicast] 198.51.100.0/25 via 192.0.2.7 65017:101/0 64476 [65017 65017 174 1299 64476] [4260954122 4260954132] []",
+				"[l3vpn-ipv4-unicast] 198.51.100.0/25 via 192.0.2.7 65017:102/0 64476 [65017 65017 174 3356 3356 3356 64476] [4260954122 4260954132] []",
+				"[l3vpn-ipv4-unicast] 198.51.100.0/26 via 192.0.2.7 65017:103/0 64476 [65017 65017 3356 64476] [4260955215] []",
+				"[l3vpn-ipv4-unicast] 198.51.100.128/25 via 192.0.2.7 65017:101/0 396919 [65017 65017 174 29447 396919] [4260954124] []",
+				"[l3vpn-ipv4-unicast] 198.51.100.128/25 via 192.0.2.7 65017:102/0 396919 [65017 65017 6453 396919] [4260954131] []",
 				"[l3vpn-ipv6-unicast] 2001:db8:4::/64 via 2001:db8::7 65017:101/0 29447 [65017 65017 1299 1299 1299 29447] [4260954412] []",
 			},
 			netip.MustParseAddr("192.0.2.1"): {
@@ -311,21 +317,21 @@ func TestBMP(t *testing.T) {
 
 		expectedRIB := map[netip.Addr][]string{
 			netip.MustParseAddr("2001:db8::3"): {
-				"[ipv6-unicast] 2001:db8::2/127 via 2001:db8::3 0:0/0 65013 [65013] [] []",
 				"[ipv6-unicast] 2001:db8:1::/64 via 2001:db8::3 0:0/0 174 [65013 65013 174 174 174] [4260691978 4260691988] []",
 				"[ipv6-unicast] 2001:db8:2::/64 via 2001:db8::3 0:0/0 12322 [65013 65013 1299 1299 1299 12322] [4260691998] []",
+				"[ipv6-unicast] 2001:db8::2/127 via 2001:db8::3 0:0/0 65013 [65013] [] []",
 			},
 			netip.MustParseAddr("2001:db8::7"): {
 				"[ipv4-unicast] 192.0.2.6/31 via 192.0.2.7 0:0/0 65017 [65017] [] []",
-				"[l3vpn-ipv4-unicast] 198.51.100.0/25 via 192.0.2.7 65017:102/0 64476 [65017 65017 174 3356 3356 3356 64476] [4260954122 4260954132] []",
-				"[l3vpn-ipv4-unicast] 198.51.100.0/25 via 192.0.2.7 65017:101/0 64476 [65017 65017 174 1299 64476] [4260954122 4260954132] []",
-				"[l2vpn-evpn] 198.51.100.0/26 via 2001:db8::7 65017:104/0 64476 [65017 65017 3356 64476] [4260955215] []",
-				"[l3vpn-ipv4-unicast] 198.51.100.0/26 via 192.0.2.7 65017:103/0 64476 [65017 65017 3356 64476] [4260955215] []",
-				"[l3vpn-ipv4-unicast] 198.51.100.128/25 via 192.0.2.7 65017:102/0 396919 [65017 65017 6453 396919] [4260954131] []",
-				"[l3vpn-ipv4-unicast] 198.51.100.128/25 via 192.0.2.7 65017:101/0 396919 [65017 65017 174 29447 396919] [4260954124] []",
-				"[ipv6-unicast] 2001:db8::6/127 via 2001:db8::7 0:0/0 65017 [65017] [] []",
 				"[ipv6-unicast] 2001:db8:1::/64 via 2001:db8::7 0:0/0 174 [65017 65013 174 174 174] [4260954122 4260954132] [{65017 300 4}]",
 				"[ipv6-unicast] 2001:db8:2::/64 via 2001:db8::7 0:0/0 12322 [65017 65017 1299 1299 1299 12322] [4260954142] [{65017 400 2}]",
+				"[ipv6-unicast] 2001:db8::6/127 via 2001:db8::7 0:0/0 65017 [65017] [] []",
+				"[l2vpn-evpn] 198.51.100.0/26 via 2001:db8::7 65017:104/0 64476 [65017 65017 3356 64476] [4260955215] []",
+				"[l3vpn-ipv4-unicast] 198.51.100.0/25 via 192.0.2.7 65017:101/0 64476 [65017 65017 174 1299 64476] [4260954122 4260954132] []",
+				"[l3vpn-ipv4-unicast] 198.51.100.0/25 via 192.0.2.7 65017:102/0 64476 [65017 65017 174 3356 3356 3356 64476] [4260954122 4260954132] []",
+				"[l3vpn-ipv4-unicast] 198.51.100.0/26 via 192.0.2.7 65017:103/0 64476 [65017 65017 3356 64476] [4260955215] []",
+				"[l3vpn-ipv4-unicast] 198.51.100.128/25 via 192.0.2.7 65017:101/0 396919 [65017 65017 174 29447 396919] [4260954124] []",
+				"[l3vpn-ipv4-unicast] 198.51.100.128/25 via 192.0.2.7 65017:102/0 396919 [65017 65017 6453 396919] [4260954131] []",
 				"[l3vpn-ipv6-unicast] 2001:db8:4::/64 via 2001:db8::7 65017:101/0 29447 [65017 65017 1299 1299 1299 29447] [4260954412] []",
 			},
 		}
@@ -404,15 +410,15 @@ func TestBMP(t *testing.T) {
 
 		expectedRIB := map[netip.Addr][]string{
 			netip.MustParseAddr("2001:db8::3"): {
-				"[ipv6-unicast] 2001:db8::2/127 via 2001:db8::3 0:0/0 65013 [65013] [] []",
 				"[ipv6-unicast] 2001:db8:1::/64 via 2001:db8::3 0:0/0 174 [65013 65013 174 174 174] [4260691978 4260691988] []",
 				"[ipv6-unicast] 2001:db8:2::/64 via 2001:db8::3 0:0/0 12322 [65013 65013 1299 1299 1299 12322] [4260691998] []",
+				"[ipv6-unicast] 2001:db8::2/127 via 2001:db8::3 0:0/0 65013 [65013] [] []",
 			},
 			netip.MustParseAddr("2001:db8::7"): {
 				"[ipv4-unicast] 192.0.2.6/31 via 192.0.2.7 0:0/0 65017 [65017] [] []",
-				"[ipv6-unicast] 2001:db8::6/127 via 2001:db8::7 0:0/0 65017 [65017] [] []",
 				"[ipv6-unicast] 2001:db8:1::/64 via 2001:db8::7 0:0/0 174 [65017 65013 174 174 174] [4260954122 4260954132] [{65017 300 4}]",
 				"[ipv6-unicast] 2001:db8:2::/64 via 2001:db8::7 0:0/0 12322 [65017 65017 1299 1299 1299 12322] [4260954142] [{65017 400 2}]",
+				"[ipv6-unicast] 2001:db8::6/127 via 2001:db8::7 0:0/0 65017 [65017] [] []",
 			},
 			netip.MustParseAddr("192.0.2.1"): {
 				"[ipv4-unicast] 192.0.2.0/31 via 192.0.2.1 0:0/0 65011 [65011] [] []",
@@ -737,21 +743,21 @@ func TestBMP(t *testing.T) {
 
 		expectedRIB := map[netip.Addr][]string{
 			netip.MustParseAddr("2001:db8::3"): {
-				"[ipv6-unicast] 2001:db8::2/127 via 2001:db8::3 0:0/0 65013 [] [] []",
 				"[ipv6-unicast] 2001:db8:1::/64 via 2001:db8::3 0:0/0 174 [] [] []",
 				"[ipv6-unicast] 2001:db8:2::/64 via 2001:db8::3 0:0/0 12322 [] [] []",
+				"[ipv6-unicast] 2001:db8::2/127 via 2001:db8::3 0:0/0 65013 [] [] []",
 			},
 			netip.MustParseAddr("2001:db8::7"): {
 				"[ipv4-unicast] 192.0.2.6/31 via 192.0.2.7 0:0/0 65017 [] [] []",
-				"[l3vpn-ipv4-unicast] 198.51.100.0/25 via 192.0.2.7 65017:102/0 64476 [] [] []",
-				"[l3vpn-ipv4-unicast] 198.51.100.0/25 via 192.0.2.7 65017:101/0 64476 [] [] []",
-				"[l2vpn-evpn] 198.51.100.0/26 via 2001:db8::7 65017:104/0 64476 [] [] []",
-				"[l3vpn-ipv4-unicast] 198.51.100.0/26 via 192.0.2.7 65017:103/0 64476 [] [] []",
-				"[l3vpn-ipv4-unicast] 198.51.100.128/25 via 192.0.2.7 65017:102/0 396919 [] [] []",
-				"[l3vpn-ipv4-unicast] 198.51.100.128/25 via 192.0.2.7 65017:101/0 396919 [] [] []",
-				"[ipv6-unicast] 2001:db8::6/127 via 2001:db8::7 0:0/0 65017 [] [] []",
 				"[ipv6-unicast] 2001:db8:1::/64 via 2001:db8::7 0:0/0 174 [] [] []",
 				"[ipv6-unicast] 2001:db8:2::/64 via 2001:db8::7 0:0/0 12322 [] [] []",
+				"[ipv6-unicast] 2001:db8::6/127 via 2001:db8::7 0:0/0 65017 [] [] []",
+				"[l2vpn-evpn] 198.51.100.0/26 via 2001:db8::7 65017:104/0 64476 [] [] []",
+				"[l3vpn-ipv4-unicast] 198.51.100.0/25 via 192.0.2.7 65017:101/0 64476 [] [] []",
+				"[l3vpn-ipv4-unicast] 198.51.100.0/25 via 192.0.2.7 65017:102/0 64476 [] [] []",
+				"[l3vpn-ipv4-unicast] 198.51.100.0/26 via 192.0.2.7 65017:103/0 64476 [] [] []",
+				"[l3vpn-ipv4-unicast] 198.51.100.128/25 via 192.0.2.7 65017:101/0 396919 [] [] []",
+				"[l3vpn-ipv4-unicast] 198.51.100.128/25 via 192.0.2.7 65017:102/0 396919 [] [] []",
 				"[l3vpn-ipv6-unicast] 2001:db8:4::/64 via 2001:db8::7 65017:101/0 29447 [] [] []",
 			},
 			netip.MustParseAddr("192.0.2.1"): {
@@ -1019,65 +1025,6 @@ func TestBMP(t *testing.T) {
 		}
 	})
 
-	t.Run("init, peers up, eor, reach NLRI, conn down, immediate timeout", func(t *testing.T) {
-		r := reporter.NewMock(t)
-		config := DefaultConfiguration()
-		configP := config.(Configuration)
-		configP.RIBPeerRemovalMaxTime = 1
-		configP.RIBPeerRemovalSleepInterval = 1
-		configP.RIBPeerRemovalBatchRoutes = 1
-		p, mockClock := NewMock(t, r, configP)
-		helpers.StartStop(t, p)
-		conn := dial(t, p)
-
-		send(t, conn, "bmp-init.pcap")
-		send(t, conn, "bmp-peers-up.pcap")
-		send(t, conn, "bmp-eor.pcap")
-		send(t, conn, "bmp-reach.pcap")
-		conn.Close()
-		time.Sleep(20 * time.Millisecond)
-		mockClock.Add(2 * time.Hour)
-		for tries := 20; tries >= 0; tries-- {
-			time.Sleep(5 * time.Millisecond)
-			gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
-			// For removed_partial_peers_total, we have 18 routes, but only 14 routes
-			// can be removed while keeping 1 route on each peer. 14 is the max, but
-			// we rely on good-willing from the scheduler to get this number.
-			peerRemovalPartial, _ := strconv.Atoi(gotMetrics[`removed_partial_peers_total{exporter="127.0.0.1"}`])
-			if peerRemovalPartial > 14 {
-				if tries > 0 {
-					continue
-				}
-				t.Errorf("Metrics: removed_partial_peers_total %d > 14", peerRemovalPartial)
-			}
-			if peerRemovalPartial < 5 {
-				if tries > 0 {
-					continue
-				}
-				t.Errorf("Metrics: removed_partial_peers_total %d < 5", peerRemovalPartial)
-			}
-			expectedMetrics := map[string]string{
-				`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
-				`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
-				`received_messages_total{exporter="127.0.0.1",type="route-monitoring"}`:     "25",
-				`received_messages_total{exporter="127.0.0.1",type="statistics-report"}`:    "4",
-				`opened_connections_total{exporter="127.0.0.1"}`:                            "1",
-				`closed_connections_total{exporter="127.0.0.1"}`:                            "1",
-				`peers{exporter="127.0.0.1"}`:                                               "0",
-				`routes{exporter="127.0.0.1"}`:                                              "0",
-				`removed_peers_total{exporter="127.0.0.1"}`:                                 "4",
-				`removed_partial_peers_total{exporter="127.0.0.1"}`:                         fmt.Sprintf("%d", peerRemovalPartial),
-			}
-			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
-				if tries > 0 {
-					continue
-				}
-				t.Errorf("Metrics (-got, +want):\n%s", diff)
-			}
-			break
-		}
-	})
-
 	t.Run("lookup", func(t *testing.T) {
 		r := reporter.NewMock(t)
 		config := DefaultConfiguration()
@@ -1099,7 +1046,7 @@ func TestBMP(t *testing.T) {
 		}
 
 		// Add another prefix
-		p.rib.addPrefix(netip.MustParseAddr("2001:db8:1::"), 64, route{
+		p.rib.addPrefix(netip.MustParsePrefix("2001:db8:1::/64"), route{
 			peer:       1,
 			nlri:       p.rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
 			nextHop:    p.rib.nextHops.Put(nextHop(netip.MustParseAddr("2001:db8::a"))),

@@ -6,11 +6,14 @@
 package bmp
 
 import (
+	"fmt"
 	"net"
 	"net/netip"
+	"reflect"
 	"testing"
 
 	"akvorado/common/daemon"
+	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 	"akvorado/outlet/routing/provider"
 
@@ -46,7 +49,7 @@ func (p *Provider) PopulateRIB(t *testing.T) {
 		ptype:    bmp.BMP_PEER_TYPE_GLOBAL,
 		asn:      64500,
 	})
-	p.rib.addPrefix(netip.MustParseAddr("::ffff:192.0.2.0"), 96+27, route{
+	p.rib.addPrefix(netip.MustParsePrefix("::ffff:192.0.2.0/123"), route{
 		peer:    pinfo.reference,
 		nlri:    p.rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC, path: 1}),
 		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.4"))),
@@ -55,10 +58,10 @@ func (p *Provider) PopulateRIB(t *testing.T) {
 			asPath:           []uint32{64200, 1299, 174},
 			communities:      []uint32{100, 200, 400},
 			largeCommunities: []bgp.LargeCommunity{{ASN: 64200, LocalData1: 2, LocalData2: 3}},
-			plen:             96 + 27,
 		}),
+		prefixLen: 96 + 27,
 	})
-	p.rib.addPrefix(netip.MustParseAddr("::ffff:192.0.2.0"), 96+27, route{
+	p.rib.addPrefix(netip.MustParsePrefix("::ffff:192.0.2.0/123"), route{
 		peer:    pinfo.reference,
 		nlri:    p.rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC, path: 2}),
 		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
@@ -66,10 +69,10 @@ func (p *Provider) PopulateRIB(t *testing.T) {
 			asn:         174,
 			asPath:      []uint32{64200, 174, 174, 174},
 			communities: []uint32{100},
-			plen:        96 + 27,
 		}),
+		prefixLen: 96 + 27,
 	})
-	p.rib.addPrefix(netip.MustParseAddr("::ffff:192.0.2.128"), 96+27, route{
+	p.rib.addPrefix(netip.MustParsePrefix("::ffff:192.0.2.128/123"), route{
 		peer:    pinfo.reference,
 		nlri:    p.rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
 		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
@@ -77,57 +80,57 @@ func (p *Provider) PopulateRIB(t *testing.T) {
 			asn:         1299,
 			asPath:      []uint32{64200, 1299},
 			communities: []uint32{500},
-			plen:        96 + 27,
 		}),
+		prefixLen: 96 + 27,
 	})
-	p.rib.addPrefix(netip.MustParseAddr("::ffff:1.0.0.0"), 96+24, route{
+	p.rib.addPrefix(netip.MustParsePrefix("::ffff:1.0.0.0/120"), route{
 		peer:    pinfo.reference,
 		nlri:    p.rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
 		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
 		attributes: p.rib.rtas.Put(routeAttributes{
-			asn:  65300,
-			plen: 96 + 24,
+			asn: 65300,
 		}),
+		prefixLen: 96 + 24,
 	})
-	p.rib.addPrefix(netip.MustParseAddr("::ffff:192.168.144.0"), 96+21, route{
+	p.rib.addPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/117"), route{
 		peer:    pinfo.reference,
 		nlri:    p.rib.nlris.Put(nlri{rd: 10, family: bgp.RF_IPv4_UC, path: 0}),
 		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:203.0.113.14"))),
 		attributes: p.rib.rtas.Put(routeAttributes{
 			asn:    1234,
 			asPath: []uint32{54321, 1234},
-			plen:   96 + 21,
 		}),
+		prefixLen: 96 + 21,
 	})
-	p.rib.addPrefix(netip.MustParseAddr("::ffff:192.168.144.0"), 96+22, route{
+	p.rib.addPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/118"), route{
 		peer:    pinfo.reference,
 		nlri:    p.rib.nlris.Put(nlri{rd: 10, family: bgp.RF_IPv4_UC, path: 0}),
 		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:203.0.113.15"))),
 		attributes: p.rib.rtas.Put(routeAttributes{
 			asn:    1234,
 			asPath: []uint32{1234},
-			plen:   96 + 22,
 		}),
+		prefixLen: 96 + 22,
 	})
-	p.rib.addPrefix(netip.MustParseAddr("::ffff:192.168.148.0"), 96+22, route{
+	p.rib.addPrefix(netip.MustParsePrefix("::ffff:192.168.148.0/118"), route{
 		peer:    pinfo.reference,
 		nlri:    p.rib.nlris.Put(nlri{rd: 10, family: bgp.RF_IPv4_UC, path: 0}),
 		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:203.0.113.15"))),
 		attributes: p.rib.rtas.Put(routeAttributes{
 			asn:    1234,
 			asPath: []uint32{1234},
-			plen:   96 + 22,
 		}),
+		prefixLen: 96 + 22,
 	})
-	p.rib.addPrefix(netip.MustParseAddr("::ffff:192.168.148.1"), 96+32, route{
+	p.rib.addPrefix(netip.MustParsePrefix("::ffff:192.168.148.1/128"), route{
 		peer:    pinfo.reference,
 		nlri:    p.rib.nlris.Put(nlri{rd: 10, family: bgp.RF_IPv4_UC, path: 0}),
 		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:203.0.113.14"))),
 		attributes: p.rib.rtas.Put(routeAttributes{
 			asn:    1234,
 			asPath: []uint32{1234},
-			plen:   96 + 32,
 		}),
+		prefixLen: 96 + 32,
 	})
 }
 
@@ -136,10 +139,6 @@ func (p *Provider) LocalAddr() net.Addr {
 	return p.address
 }
 
-// Reduce hash mask to generate collisions during tests (this should
-// be optimized out by the compiler)
-const rtaHashMask = 0xff
-
 // MustParseRD parse a route distinguisher and panic on error.
 func MustParseRD(input string) RD {
 	var output RD
@@ -147,4 +146,8 @@ func MustParseRD(input string) RD {
 		panic(err)
 	}
 	return output
+}
+
+func init() {
+	helpers.AddPrettyFormatter(reflect.TypeOf(route{}), fmt.Sprint)
 }

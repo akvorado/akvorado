@@ -100,18 +100,18 @@ func (p *Provider) removePeer(pkey peerKey, reason string) {
 	exporterStr := pkey.exporter.Addr().Unmap().String()
 	peerStr := pkey.ip.Unmap().String()
 	p.r.Info().Msgf("remove peer %s for exporter %s (reason: %s)", peerStr, exporterStr, reason)
-	select {
-	case p.peerRemovalChan <- pkey:
+	start := p.d.Clock.Now()
+	defer p.metrics.locked.WithLabelValues("peer-removal").Observe(
+		float64(p.d.Clock.Now().Sub(start).Nanoseconds()) / 1000 / 1000 / 1000)
+	pinfo, ok := p.peers[pkey]
+	if !ok {
 		return
-	default:
 	}
-	p.metrics.peerRemovalQueueFull.WithLabelValues(exporterStr).Inc()
-	p.mu.Unlock()
-	select {
-	case p.peerRemovalChan <- pkey:
-	case <-p.t.Dying():
-	}
-	p.mu.Lock()
+	removed := p.rib.flushPeer(pinfo.reference)
+	delete(p.peers, pkey)
+	p.metrics.routes.WithLabelValues(exporterStr).Sub(float64(removed))
+	p.metrics.peers.WithLabelValues(exporterStr).Dec()
+	p.metrics.peerRemovalDone.WithLabelValues(exporterStr).Inc()
 }
 
 // markExporterAsStale marks all peers from an exporter as stale.
@@ -300,8 +300,7 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 				plen += 96
 			}
 			pf, _ := netip.AddrFromSlice(prefix)
-			rta.plen = uint8(plen)
-			added += p.rib.addPrefix(pf, plen, route{
+			added += p.rib.addPrefix(netip.PrefixFrom(pf, plen), route{
 				peer: pinfo.reference,
 				nlri: p.rib.nlris.Put(nlri{
 					family: bgp.RF_IPv4_UC,
@@ -310,6 +309,7 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 				}),
 				nextHop:    p.rib.nextHops.Put(nextHop(nh)),
 				attributes: p.rib.rtas.Put(rta),
+				prefixLen:  uint8(plen),
 			})
 		}
 		for _, ipprefix := range update.WithdrawnRoutes {
@@ -325,7 +325,7 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 				path:   ipprefix.PathIdentifier(),
 				rd:     pkey.distinguisher,
 			}); ok {
-				removed += p.rib.removePrefix(pf, plen, route{
+				removed += p.rib.removePrefix(netip.PrefixFrom(pf, plen), route{
 					peer: pinfo.reference,
 					nlri: nlriRef,
 				})
@@ -394,8 +394,7 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 			}
 			switch attr.(type) {
 			case *bgp.PathAttributeMpReachNLRI:
-				rta.plen = uint8(plen)
-				added += p.rib.addPrefix(pf, plen, route{
+				added += p.rib.addPrefix(netip.PrefixFrom(pf, plen), route{
 					peer: pinfo.reference,
 					nlri: p.rib.nlris.Put(nlri{
 						family: bgp.AfiSafiToRouteFamily(ipprefix.AFI(), ipprefix.SAFI()),
@@ -404,6 +403,7 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 					}),
 					nextHop:    p.rib.nextHops.Put(nextHop(nh)),
 					attributes: p.rib.rtas.Put(rta),
+					prefixLen:  uint8(plen),
 				})
 			case *bgp.PathAttributeMpUnreachNLRI:
 				if nlriRef, ok := p.rib.nlris.Ref(nlri{
@@ -411,7 +411,7 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 					rd:     rd,
 					path:   ipprefix.PathIdentifier(),
 				}); ok {
-					removed += p.rib.removePrefix(pf, plen, route{
+					removed += p.rib.removePrefix(netip.PrefixFrom(pf, plen), route{
 						peer: pinfo.reference,
 						nlri: nlriRef,
 					})
@@ -427,6 +427,6 @@ func (p *Provider) isAcceptedRD(rd RD) bool {
 	if len(p.acceptedRDs) == 0 {
 		return true
 	}
-	_, ok := p.acceptedRDs[uint64(rd)]
+	_, ok := p.acceptedRDs[rd]
 	return ok
 }

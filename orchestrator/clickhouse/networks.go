@@ -13,8 +13,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/kentik/patricia"
-
 	"akvorado/common/helpers"
 	"akvorado/common/schema"
 	"akvorado/orchestrator/geoip"
@@ -58,30 +56,30 @@ func (c *Component) networksCSVRefresher() {
 
 		// Add content of all geoip databases
 		err := c.d.GeoIP.IterASNDatabases(func(prefix netip.Prefix, data geoip.ASNInfo) error {
-			subV6Str, err := helpers.SubnetMapParseKey(prefix.String())
-			if err != nil {
-				return err
-			}
+			subV6Prefix := helpers.PrefixTo16(prefix)
 			attrs := NetworkAttributes{
 				ASN: data.ASNumber,
 			}
-			return networks.Update(subV6Str, attrs, overrideNetworkAttrs(attrs))
+			networks.Update(subV6Prefix, func(existing NetworkAttributes, _ bool) NetworkAttributes {
+				return mergeNetworkAttrs(existing, attrs)
+			})
+			return nil
 		})
 		if err != nil {
 			c.r.Err(err).Msg("unable to iter over ASN databases")
 			return
 		}
 		err = c.d.GeoIP.IterGeoDatabases(func(prefix netip.Prefix, data geoip.GeoInfo) error {
-			subV6Str, err := helpers.SubnetMapParseKey(prefix.String())
-			if err != nil {
-				return err
-			}
+			subV6Prefix := helpers.PrefixTo16(prefix)
 			attrs := NetworkAttributes{
 				State:   data.State,
 				Country: data.Country,
 				City:    data.City,
 			}
-			return networks.Update(subV6Str, attrs, overrideNetworkAttrs(attrs))
+			networks.Update(subV6Prefix, func(existing NetworkAttributes, _ bool) NetworkAttributes {
+				return mergeNetworkAttrs(existing, attrs)
+			})
+			return nil
 		})
 		if err != nil {
 			c.r.Err(err).Msg("unable to iter over geo databases")
@@ -93,13 +91,10 @@ func (c *Component) networksCSVRefresher() {
 			defer c.networkSourcesLock.RUnlock()
 			for _, networkList := range c.networkSources {
 				for _, val := range networkList {
-					if err := networks.Update(
-						val.Prefix.String(),
-						val.NetworkAttributes,
-						overrideNetworkAttrs(val.NetworkAttributes),
-					); err != nil {
-						return err
-					}
+					subV6Prefix := helpers.PrefixTo16(val.Prefix)
+					networks.Update(subV6Prefix, func(existing NetworkAttributes, _ bool) NetworkAttributes {
+						return mergeNetworkAttrs(existing, val.NetworkAttributes)
+					})
 				}
 			}
 			return nil
@@ -110,16 +105,10 @@ func (c *Component) networksCSVRefresher() {
 		// Add static network sources
 		if c.config.Networks != nil {
 			// Update networks with static network source
-			err := c.config.Networks.Iter(func(address patricia.IPv6Address, tags [][]NetworkAttributes) error {
-				return networks.Update(
-					address.String(),
-					tags[len(tags)-1][0],
-					overrideNetworkAttrs(tags[len(tags)-1][0]),
-				)
-			})
-			if err != nil {
-				c.r.Err(err).Msg("unable to update with static network sources")
-				return
+			for prefix, attrs := range c.config.Networks.All() {
+				networks.Update(prefix, func(existing NetworkAttributes, _ bool) NetworkAttributes {
+					return mergeNetworkAttrs(existing, attrs)
+				})
 			}
 		}
 
@@ -142,12 +131,13 @@ func (c *Component) networksCSVRefresher() {
 		gzipWriter := gzip.NewWriter(tmpfile)
 		csvWriter := csv.NewWriter(gzipWriter)
 		csvWriter.Write([]string{"network", "name", "role", "site", "region", "country", "state", "city", "tenant", "asn"})
-		networks.Iter(func(address patricia.IPv6Address, tags [][]NetworkAttributes) error {
-			current := NetworkAttributes{}
-			for _, nodeTags := range tags {
-				for _, tag := range nodeTags {
-					current = mergeNetworkAttrs(current, tag)
-				}
+		for prefix, leafAttrs := range networks.AllMaybeSorted() {
+			// Merge attributes from root to leaf for hierarchical inheritance.
+			// Supernets() returns in reverse-CIDR order (LPM to root), so we
+			// merge in that order.
+			current := leafAttrs
+			for _, attrs := range networks.Supernets(prefix) {
+				current = mergeNetworkAttrs(attrs, current)
 			}
 
 			var asnVal string
@@ -155,7 +145,7 @@ func (c *Component) networksCSVRefresher() {
 				asnVal = strconv.Itoa(int(current.ASN))
 			}
 			csvWriter.Write([]string{
-				address.String(),
+				prefix.String(),
 				current.Name,
 				current.Role,
 				current.Site,
@@ -166,8 +156,7 @@ func (c *Component) networksCSVRefresher() {
 				current.Tenant,
 				asnVal,
 			})
-			return nil
-		})
+		}
 		csvWriter.Flush()
 		gzipWriter.Close()
 
@@ -192,12 +181,6 @@ func (c *Component) networksCSVRefresher() {
 				c.r.Err(err).Msg("failed to refresh networks dictionary")
 			}
 		}()
-	}
-}
-
-func overrideNetworkAttrs(newAttrs NetworkAttributes) func(existing NetworkAttributes) NetworkAttributes {
-	return func(existing NetworkAttributes) NetworkAttributes {
-		return mergeNetworkAttrs(existing, newAttrs)
 	}
 }
 

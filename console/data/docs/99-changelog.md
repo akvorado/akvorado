@@ -10,6 +10,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🌱 *outlet*: improve performance of the BMP routing provider
+
 ## 2.0.0-beta.3 - 2025-08-11
 
 > [!CAUTION]

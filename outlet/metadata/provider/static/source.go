@@ -42,9 +42,9 @@ func (i exporterInfo) toExporterConfiguration() ExporterConfiguration {
 // initStaticExporters initializes the reconciliation map for exporter configurations
 // with the static prioritized data from exporters' Configuration.
 func (p *Provider) initStaticExporters() {
-	staticExportersMap := p.exporters.Load().ToMap()
-	staticExporters := make([]exporterInfo, 0, len(staticExportersMap))
-	for subnet, config := range staticExportersMap {
+	staticExporters := make([]exporterInfo, 0)
+	staticExportersMap := p.exporters.Load()
+	for subnet, config := range staticExportersMap.All() {
 		interfaces := make([]exporterInterface, 0, len(config.IfIndexes))
 		for ifindex, iface := range config.IfIndexes {
 			interfaces = append(interfaces, exporterInterface{
@@ -58,7 +58,7 @@ func (p *Provider) initStaticExporters() {
 				Exporter: provider.Exporter{
 					Name: config.Name,
 				},
-				ExporterSubnet: subnet,
+				ExporterSubnet: subnet.String(),
 				Default:        config.Default,
 				Interfaces:     interfaces,
 			},
@@ -88,7 +88,7 @@ func (p *Provider) UpdateSource(ctx context.Context, name string, source remoted
 				continue
 			}
 			// Concurrency for same Exporter config across multiple remote data sources is not handled
-			finalMap[exporterSubnet] = exporterData.toExporterConfiguration()
+			finalMap[exporterSubnet.String()] = exporterData.toExporterConfiguration()
 		}
 	}
 	for _, exporterData := range p.exportersMap["static"] {
@@ -98,10 +98,10 @@ func (p *Provider) UpdateSource(ctx context.Context, name string, source remoted
 			continue
 		}
 		// This overrides duplicates config for an Exporter if it's also defined as static
-		finalMap[exporterSubnet] = exporterData.toExporterConfiguration()
+		finalMap[exporterSubnet.String()] = exporterData.toExporterConfiguration()
 	}
 	p.exportersLock.Unlock()
-	exporters, err := helpers.NewSubnetMap[ExporterConfiguration](finalMap)
+	exporters, err := helpers.NewSubnetMap(finalMap)
 	if err != nil {
 		return 0, errors.New("cannot create subnetmap")
 	}

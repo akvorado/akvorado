@@ -9,10 +9,6 @@ paths:
       collectcommunities: true
       keep: 1h0m0s
       rds: []
-      ribpeerremovalbatchroutes: 5000
-      ribpeerremovalmaxqueue: 10000
-      ribpeerremovalmaxtime: 100ms
-      ribpeerremovalsleepinterval: 500ms
   outlet.0.core.asnproviders:
     - flow
     - routing
