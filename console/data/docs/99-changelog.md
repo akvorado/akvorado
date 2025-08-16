@@ -13,7 +13,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🌱 *outlet*: improve performance of the BMP routing provider
-- 🌱 *doc*: document how to update the database schema for installations before 1.10.0
+- 🌱 *documentation*: document how to update the database schema for installations before 1.10.0
 
 ## 2.0.0-beta.3 - 2025-08-11
 
@@ -308,7 +308,7 @@ can install the `docker-compose-v2` package. For other options, check the
 
 ## 1.8.0 - 2023-02-25
 
-- 💥 *docker-compose*: the configuration files are now shipped in a `config/`
+- 💥 *docker*: the configuration files are now shipped in a `config/`
   directory: you need to move your `akvorado.yaml` in `config/` as well
 - 💥 *inlet*: unknown interfaces are not skipped anymore
 - ✨ *console*: add subnet aggregation for `SrcAddr` and `DstAddr`
@@ -408,7 +408,7 @@ explicitely by adding `console`→`http`→`cache` in your configuration.
 
 - ✨ *orchestrator*: add `orchestrator`→`network-sources` to fetch network attributes with HTTP
 - ✨ *console*: add `console`→`database`→`saved-filters` to populate filters from the configuration file
-- 🩹 *doc*: durations must be written using a suffix (like `5s`)
+- 🩹 *documentation*: durations must be written using a suffix (like `5s`)
 - 🌱 *docker*: provider a tarball with essential files to install or upgrade a `docker-compose` setup
 - 🌱 *inlet*: skip unknown AFI/SAFI in BMP route monitoring messages
 
@@ -472,7 +472,7 @@ own organisation and the code is hosted at
 - ✨ *console*: add an option to also display the previous period (day, week, month, year) on stacked graphs
 - 🌱 *inlet*: Kafka key is now a 4-byte random value making scaling less dependent on the number of exporters
 - 🌱 *demo-exporter*: add a setting to automatically generate a reverse flow
-- 🌱 *docker-compose*: loosen required privileges for `conntrack-fixer`
+- 🌱 *docker*: loosen required privileges for `conntrack-fixer`
 
 ## 1.5.4 - 2022-08-01
 
@@ -487,7 +487,7 @@ details.
 - 🌱 *inlet*: `inlet`→`geoip`→`country-database` has been renamed to `inlet`→`geoip`→`geo-database`
 - 🌱 *inlet*: add counters for GeoIP database hit/miss
 - 🌱 *inlet*: `inlet`→`snmp`→`communities` accepts subnets as keys
-- 🌱 *docker-compose*: disable healthcheck for the conntrack-fixer container
+- 🌱 *docker*: disable healthcheck for the conntrack-fixer container
 
 [PR #61]: https://github.com/akvorado/akvorado/pull/61
 
@@ -507,7 +507,7 @@ details.
 ## 1.5.1 - 2022-07-22
 
 - 🩹 *cmd*: do not merge user-provided lists with defaults when parsing configuration
-- 🩹 *docker-compose*: make `docker-compose.yml` work with Docker Compose v2/v3
+- 🩹 *docker*: make `docker-compose.yml` work with Docker Compose v2/v3
 - 🩹 *inlet*: update UDP packet counters when receiving packets, not after decoding
 - 🌱 *console*: add configuration for default options of the visualize
   tab and the top widgets to display on the home page.
@@ -521,13 +521,13 @@ the orchestrator to load this new schema.
 - ✨ *inlet*: add sflow support [PR #23][]
 - ✨ *inlet*: classify exporters to group, role, site, region, and tenant [PR #14][]
 - ✨ *orchestrator*: add role, site, region, and tenant attributes to networks [PR #15][]
-- ✨ *docker-compose*: clean conntrack entries when inlet container starts
+- ✨ *docker*: clean conntrack entries when inlet container starts
 - 🩹 *console*: fix use of `InIfBoundary` and `OutIfBoundary` as dimensions [PR #11][]
 - 🩹 *build*: make *Akvorado* compile on macOS
 - 🌱 *inlet*: ask the kernel to timestamp incoming packets
 - 🌱 *orchestrator*: limit number of Kafka consumers in ClickHouse to the number of CPUs
-- 🌱 *doc*: add configuration for Juniper devices
-- 🌱 *docker-compose*: add [UI for Apache Kafka][] to help debug starter issues
+- 🌱 *documentation*: add configuration for Juniper devices
+- 🌱 *docker*: add [UI for Apache Kafka][] to help debug starter issues
 
 [PR #11]: https://github.com/akvorado/akvorado/pull/11
 [PR #14]: https://github.com/akvorado/akvorado/pull/14
@@ -545,16 +545,16 @@ the orchestrator to load this new schema.
 - 🌱 *inlet*: add `default-sampling-rate` as an option
 - 🌱 *inlet*: only require either input or output interface for a valid flow
 - 🌱 *build*: switch from Yarn to npm as a Javascript package manager [PR #4][]
-- 🌱 *docker-compose*: pull image from GitHub instead of building it
-- 🌱 *doc*: add more tips to the troubleshooting section
+- 🌱 *docker*: pull image from GitHub instead of building it
+- 🌱 *documentation*: add more tips to the troubleshooting section
 
 [PR #4]: https://github.com/akvorado/akvorado/pull/4
 [PR #7]: https://github.com/akvorado/akvorado/pull/7
 
 ## 1.4.1 - 2022-07-12
 
-- 🔒 *docker-compose*: expose two HTTP endpoints, one public (8081) and one private (8080)
-- 🌱 *docker-compose*: restart ClickHouse container on failure
+- 🔒 *docker*: expose two HTTP endpoints, one public (8081) and one private (8080)
+- 🌱 *docker*: restart ClickHouse container on failure
 
 ## 1.4.0 - 2022-07-09
 
