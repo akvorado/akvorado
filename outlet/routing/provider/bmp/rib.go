@@ -292,24 +292,18 @@ func (r *rib) removePrefix(prefix netip.Prefix, oldRoute route) int {
 // of removed routes.
 func (r *rib) flushPeer(peer uint32) int {
 	removedTotal := 0
-	emptyNodes := make([]netip.Prefix, 0, 1000)
+	anyEmpty := false
 
 	// Iterate through all prefixes and remove peer routes.
-	for pfx, prefixIdx := range r.tree.All6() {
+	for _, prefixIdx := range r.tree.All6() {
 		removed, empty := r.removeRoutes(prefixIdx, func(route route) bool {
 			return route.peer == peer
 		}, false)
 		removedTotal += removed
-		if empty && len(emptyNodes) < cap(emptyNodes) {
-			emptyNodes = append(emptyNodes, pfx)
-		}
+		anyEmpty = anyEmpty || empty
 	}
 
-	if len(emptyNodes) < cap(emptyNodes) {
-		for _, pfx := range emptyNodes {
-			r.tree.Delete(pfx)
-		}
-	} else {
+	if anyEmpty {
 		// We need to rebuild the tree. A typical tree is 1M routes, this should
 		// be pretty fast. Moreover, loosing a peer is not a condition happening
 		// often.
