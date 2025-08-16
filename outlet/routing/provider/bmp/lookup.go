@@ -42,15 +42,15 @@ func (p *Provider) Lookup(_ context.Context, ip netip.Addr, nh netip.Addr, _ net
 	routeFound := false
 
 	for route := range p.rib.iterateRoutesForPrefixIndex(prefixIdx) {
-		if p.rib.nextHops.Get(route.nextHop) == nextHop(nh) {
-			// Exact match found, use it and don't search further
-			selectedRoute = route
-			break
-		}
 		// If we don't have a match already, use this one.
 		if !routeFound {
 			selectedRoute = route
 			routeFound = true
+		}
+		if p.rib.nextHops.Get(route.nextHop) == nextHop(nh) {
+			// Exact match found, use it and don't search further
+			selectedRoute = route
+			break
 		}
 	}
 
