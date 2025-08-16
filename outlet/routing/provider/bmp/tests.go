@@ -139,10 +139,6 @@ func (p *Provider) LocalAddr() net.Addr {
 	return p.address
 }
 
-// Reduce hash mask to generate collisions during tests (this should
-// be optimized out by the compiler)
-const rtaHashMask = 0xff
-
 // MustParseRD parse a route distinguisher and panic on error.
 func MustParseRD(input string) RD {
 	var output RD

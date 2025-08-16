@@ -5,7 +5,6 @@ package bmp
 
 import (
 	"fmt"
-	"hash/maphash"
 	"math/rand"
 	"net/netip"
 	"testing"
@@ -166,29 +165,19 @@ func TestRTAEqual(t *testing.T) {
 			false,
 		},
 	}
-outer:
-	for try := 3; try >= 0; try-- {
-		// We may have to try a few times because of
-		// collisions due to reduced hash efficiency during
-		// tests.
-		for _, tc := range cases {
-			equal := tc.rta1.Equal(tc.rta2)
+
+	for _, tc := range cases {
+		equal := tc.rta1.Equal(tc.rta2)
+		if equal && !tc.equal {
+			t.Errorf("%s%+v == %+v", tc.pos, tc.rta1, tc.rta2)
+		} else if !equal && tc.equal {
+			t.Errorf("%s%+v != %+v", tc.pos, tc.rta1, tc.rta2)
+		} else {
+			equal := tc.rta1.Hash() == tc.rta2.Hash()
 			if equal && !tc.equal {
-				t.Errorf("%s%+v == %+v", tc.pos, tc.rta1, tc.rta2)
+				t.Errorf("%s%+v.hash == %+v.hash", tc.pos, tc.rta1, tc.rta2)
 			} else if !equal && tc.equal {
-				t.Errorf("%s%+v != %+v", tc.pos, tc.rta1, tc.rta2)
-			} else {
-				equal := tc.rta1.Hash() == tc.rta2.Hash()
-				if equal && !tc.equal {
-					if try > 0 {
-						// We may have a collision, change the seed and retry
-						rtaHashSeed = maphash.MakeSeed()
-						continue outer
-					}
-					t.Errorf("%s%+v.hash == %+v.hash", tc.pos, tc.rta1, tc.rta2)
-				} else if !equal && tc.equal {
-					t.Errorf("%s%+v.hash != %+v.hash", tc.pos, tc.rta1, tc.rta2)
-				}
+				t.Errorf("%s%+v.hash != %+v.hash", tc.pos, tc.rta1, tc.rta2)
 			}
 		}
 	}

@@ -109,7 +109,7 @@ func (rta routeAttributes) Hash() uint64 {
 		// 16-byte).
 		state.Add((*byte)(unsafe.Pointer(&rta.largeCommunities[0])), len(rta.largeCommunities)*int(unsafe.Sizeof(rta.largeCommunities[0])))
 	}
-	return state.Sum() & rtaHashMask
+	return state.Sum()
 }
 
 // Equal tells if two route attributes are equal.
