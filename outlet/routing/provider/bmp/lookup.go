@@ -42,7 +42,7 @@ func (p *Provider) Lookup(_ context.Context, ip netip.Addr, nh netip.Addr, _ net
 	routeFound := false
 
 	for route := range p.rib.iterateRoutesForPrefixIndex(prefixIdx) {
-		if p.rib.nextHops.Get(route.nextHop) == nextHop(nh) {
+		if route.nextHop.Value() == nextHop(nh) {
 			// Exact match found, use it and don't search further
 			selectedRoute = route
 			break
@@ -61,7 +61,7 @@ func (p *Provider) Lookup(_ context.Context, ip netip.Addr, nh netip.Addr, _ net
 	attributes := p.rib.rtas.Get(selectedRoute.attributes)
 	// The next hop is updated from the rib in every case, because the user
 	// "opted in" for bmp as source if the lookup result is evaluated
-	nh = netip.Addr(p.rib.nextHops.Get(selectedRoute.nextHop))
+	nh = netip.Addr(selectedRoute.nextHop.Value())
 
 	// Prefix len is v6 coded in the bmp rib. We need to substract 96 if it's a v4 prefix
 	plen := attributes.plen

@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"slices"
 	"testing"
+	"unique"
 
 	"akvorado/common/helpers"
 
@@ -247,8 +248,8 @@ func BenchmarkRIBInsertion(b *testing.B) {
 							tentative++
 							inserted += rib.addPrefix(pfx, route{
 								peer:    uint32(p),
-								nlri:    rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
-								nextHop: rib.nextHops.Put(nextHop(nh)),
+								nlri:    unique.Make(nlri{family: bgp.RF_IPv4_UC}),
+								nextHop: unique.Make(nextHop(nh)),
 								attributes: rib.rtas.Put(routeAttributes{
 									asn:              r.ASPath[len(r.ASPath)-1],
 									asPath:           r.ASPath,
@@ -296,8 +297,8 @@ func BenchmarkRIBLookup(b *testing.B) {
 						pfx := netip.PrefixFrom(netip.AddrFrom16(r.Prefix.Addr().As16()), r.Prefix.Bits()+96)
 						rib.addPrefix(pfx, route{
 							peer:    uint32(p),
-							nlri:    rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
-							nextHop: rib.nextHops.Put(nextHop(nh)),
+							nlri:    unique.Make(nlri{family: bgp.RF_IPv4_UC}),
+							nextHop: unique.Make(nextHop(nh)),
 							attributes: rib.rtas.Put(routeAttributes{
 								asn:              r.ASPath[len(r.ASPath)-1],
 								asPath:           r.ASPath,
@@ -347,8 +348,8 @@ func BenchmarkRIBFlush(b *testing.B) {
 							pfx := netip.PrefixFrom(netip.AddrFrom16(r.Prefix.Addr().As16()), r.Prefix.Bits()+96)
 							rib.addPrefix(pfx, route{
 								peer:    uint32(p),
-								nlri:    rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
-								nextHop: rib.nextHops.Put(nextHop(nh)),
+								nlri:    unique.Make(nlri{family: bgp.RF_IPv4_UC}),
+								nextHop: unique.Make(nextHop(nh)),
 								attributes: rib.rtas.Put(routeAttributes{
 									asn:              r.ASPath[len(r.ASPath)-1],
 									asPath:           r.ASPath,

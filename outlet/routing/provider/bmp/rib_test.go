@@ -9,6 +9,7 @@ import (
 	"math/rand"
 	"net/netip"
 	"testing"
+	"unique"
 	"unsafe"
 
 	"akvorado/common/helpers"
@@ -210,8 +211,8 @@ func TestRemoveRoutes(t *testing.T) {
 	nr := func(r *rib, peer uint32) route {
 		return route{
 			peer:    peer,
-			nlri:    r.nlris.Put(nlri{family: bgp.RF_IPv4_UC, path: 1}),
-			nextHop: r.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
+			nlri:    unique.Make(nlri{family: bgp.RF_IPv4_UC, path: 1}),
+			nextHop: unique.Make(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
 			attributes: r.rtas.Put(routeAttributes{
 				asn:  65300,
 				plen: 96 + 24,
@@ -414,8 +415,8 @@ func TestRIBHarness(t *testing.T) {
 					added += r.addPrefix(netip.PrefixFrom(lookup.addr, 64),
 						route{
 							peer:    peer,
-							nlri:    r.nlris.Put(nlri{rd: lookup.rd}),
-							nextHop: r.nextHops.Put(nextHop(lookup.nextHop)),
+							nlri:    unique.Make(nlri{rd: lookup.rd}),
+							nextHop: unique.Make(nextHop(lookup.nextHop)),
 							attributes: r.rtas.Put(routeAttributes{
 								asn: lookup.asn,
 							}),
@@ -431,20 +432,18 @@ func TestRIBHarness(t *testing.T) {
 					prefix := netip.MustParseAddr(fmt.Sprintf("2001:db8:f:%x::",
 						random.Intn(300)))
 					rd := RD(random.Intn(4))
-					if nlriRef, ok := r.nlris.Ref(nlri{
-						rd: rd,
-					}); ok {
-						removed += r.removePrefix(netip.PrefixFrom(prefix, 64),
-							route{
-								peer: peer,
-								nlri: nlriRef,
-							})
-						removeLookup(lookup{
+					removed += r.removePrefix(netip.PrefixFrom(prefix, 64),
+						route{
 							peer: peer,
-							addr: prefix,
-							rd:   rd,
+							nlri: unique.Make(nlri{
+								rd: rd,
+							}),
 						})
-					}
+					removeLookup(lookup{
+						peer: peer,
+						addr: prefix,
+						rd:   rd,
+					})
 				}
 				t.Logf("Run %d: removed = %d/%d", run, removed, toRemove)
 
@@ -462,8 +461,8 @@ func TestRIBHarness(t *testing.T) {
 					added += r.addPrefix(netip.PrefixFrom(lookup.addr, 64),
 						route{
 							peer:    peer,
-							nlri:    r.nlris.Put(nlri{}),
-							nextHop: r.nextHops.Put(nextHop(lookup.nextHop)),
+							nlri:    unique.Make(nlri{}),
+							nextHop: unique.Make(nextHop(lookup.nextHop)),
 							attributes: r.rtas.Put(routeAttributes{
 								asn: lookup.asn,
 							}),
@@ -495,7 +494,7 @@ func TestRIBHarness(t *testing.T) {
 
 			for route := range r.iterateRoutesForPrefixIndex(prefixIdx) {
 				routeFound = true // At least one route exists
-				if r.nextHops.Get(route.nextHop) != nextHop(lookup.nextHop) || r.nlris.Get(route.nlri).rd != lookup.rd {
+				if route.nextHop.Value() != nextHop(lookup.nextHop) || route.nlri.Value().rd != lookup.rd {
 					continue
 				}
 				if r.rtas.Get(route.attributes).asn != lookup.asn {
@@ -516,8 +515,8 @@ func TestRIBHarness(t *testing.T) {
 				for route := range r.iterateRoutesForPrefixIndex(prefixIdx) {
 					t.Logf("peer %d, NH: %s, RD: %s, ASN: %d",
 						route.peer,
-						netip.Addr(r.nextHops.Get(route.nextHop)),
-						r.nlris.Get(route.nlri).rd, r.rtas.Get(route.attributes).asn)
+						netip.Addr(route.nextHop.Value()),
+						route.nlri.Value().rd, r.rtas.Get(route.attributes).asn)
 				}
 				t.Errorf("cannot find %s for peer %d; NH: %s, RD: %s, ASN: %d",
 					lookup.addr, lookup.peer,
@@ -534,12 +533,6 @@ func TestRIBHarness(t *testing.T) {
 		}
 
 		// Check for leak of interned values
-		if r.nlris.Len() > 0 {
-			t.Errorf("%d NLRIs have leaked", r.nlris.Len())
-		}
-		if r.nextHops.Len() > 0 {
-			t.Errorf("%d next hops have leaked", r.nextHops.Len())
-		}
 		if r.rtas.Len() > 0 {
 			t.Errorf("%d route attributes have leaked", r.rtas.Len())
 		}
