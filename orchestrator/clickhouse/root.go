@@ -143,7 +143,7 @@ func (c *Component) Start() error {
 	// GeoIP updates
 	notifyChan := c.d.GeoIP.Notify()
 	c.t.Go(func() error {
-		c.r.Log().Msg("starting GeoIP refresher")
+		c.r.Info().Msg("starting GeoIP refresher")
 		for {
 			select {
 			case <-c.t.Dying():

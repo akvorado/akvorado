@@ -9,14 +9,21 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/rs/zerolog"
 )
 
-// NewMock creates a new reporter for tests. Currently, this is the same as a production reporter.
+// NewMock creates a new reporter for tests. Currently, this is the same as a
+// production reporter, except when running benchmarks.
 func NewMock(t testing.TB) *Reporter {
 	t.Helper()
-	r, err := New(Configuration{})
+	config := DefaultConfiguration()
+	r, err := New(config)
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
+	}
+	if _, ok := t.(*testing.B); ok {
+		r.Logger.Logger = r.Logger.Level(zerolog.WarnLevel)
 	}
 	return r
 }
