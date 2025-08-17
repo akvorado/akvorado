@@ -7,30 +7,58 @@
       class="flex-none overflow-y-auto bg-gray-50 px-4 py-4 dark:bg-gray-900 dark:text-gray-200 print:hidden sm:px-6 md:mx-0 md:max-w-[30%] md:pl-0 md:pr-8"
     >
       <nav class="mx-auto text-sm md:mx-0">
-        <ul class="space-y-1 pl-6 md:space-y-8">
-          <li v-for="document in toc" :key="document.name" class="md:space-y-2">
-            <router-link
-              :to="{ path: document.name, hash: `#${document.headers[0].id}` }"
-              class="block font-semibold"
-              :class="{
-                'text-blue-600': activeDocument === document.name,
-                'dark:text-blue-300': activeDocument === document.name,
-                'text-gray-900': activeDocument !== document.name,
-                'dark:text-gray-300': activeDocument !== document.name,
-              }"
-            >
-              {{ document.headers[0].title }}
-            </router-link>
+        <ul class="space-y-1 pl-4">
+          <li
+            v-for="document in toc"
+            :key="document.name"
+            :class="{ 'mb-4': shouldShowTOCItem(document.name) }"
+          >
+            <div class="flex items-stretch items-center">
+              <button
+                type="button"
+                class="mr-2 flex-none text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 flex items-center justify-center w-4 h-4"
+                @click.stop="toggleTOCItem(document.name)"
+              >
+                <span
+                  class="transform transition-transform duration-200"
+                  :class="{ 'rotate-90': shouldShowTOCItem(document.name) }"
+                  >❯</span
+                >
+              </button>
+              <router-link
+                :to="{
+                  path: document.name,
+                  hash: `#${document.headers[0].id}`,
+                }"
+                class="block font-semibold flex-1"
+                :class="{
+                  'text-blue-600': activeDocument === document.name,
+                  'dark:text-blue-300': activeDocument === document.name,
+                  'text-gray-900': activeDocument !== document.name,
+                  'dark:text-gray-300': activeDocument !== document.name,
+                }"
+              >
+                {{ document.headers[0].title }}
+              </router-link>
+            </div>
             <ul
-              class="space-y-1 md:block md:space-y-2"
-              :class="{ hidden: activeDocument !== document.name }"
+              class="space-y-1 mt-2"
+              :style="{
+                height: shouldShowTOCItem(document.name) ? 'auto' : '0',
+                overflow: shouldShowTOCItem(document.name)
+                  ? 'visible'
+                  : 'hidden',
+                visibility: shouldShowTOCItem(document.name)
+                  ? 'visible'
+                  : 'hidden',
+              }"
             >
               <template v-for="header in document.headers" :key="header.id">
                 <li
                   v-if="header.level >= 2 && header.level <= 3"
                   :class="{
-                    'ml-2': header.level == 2,
-                    'ml-4': header.level == 3,
+                    'ml-6': header.level == 2,
+                    'ml-8': header.level == 3,
                   }"
                 >
                   <router-link
@@ -118,6 +146,29 @@ const toc = computed(
 );
 const activeDocument = computed(() => props.id || null);
 const activeSlug = useRouteHash();
+
+// Expand TOC on user interaction or when switching document.
+const expandedTOCItems = ref<Set<string>>(new Set());
+watch(
+  activeDocument,
+  (newActiveDoc) => {
+    if (newActiveDoc) {
+      // Only keep the new active document expanded
+      expandedTOCItems.value = new Set([newActiveDoc]);
+    }
+  },
+  { immediate: true },
+);
+const toggleTOCItem = (documentName: string) => {
+  if (expandedTOCItems.value.has(documentName)) {
+    expandedTOCItems.value.delete(documentName);
+  } else {
+    expandedTOCItems.value.add(documentName);
+  }
+};
+const shouldShowTOCItem = (documentName: string) => {
+  return expandedTOCItems.value.has(documentName);
+};
 
 // Scroll to the right anchor after loading markdown
 const contentEl = ref<HTMLElement | null>(null);
