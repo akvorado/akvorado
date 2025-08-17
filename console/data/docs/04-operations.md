@@ -525,7 +525,8 @@ if you want to enable TLS for a more secure setup.
 
 #### pmacctd
 
-Configure pmacctd with sFlow receiver:
+Configure `pmacctd` with the sFlow exporter:
+
 ```yaml
 /etc/pmacctd/config.conf: |
   daemonize: false
@@ -547,12 +548,27 @@ Configure pmacctd with sFlow receiver:
   ifindex=4 ifname=eth1 direction=out
 ```
 
-Here we set the interface indexes manually entirely based on the interface
-names and completely ignoring the kernel ifIndex for the flows. pmacctd can
-be run inside containers where SNMPd does not return descriptions for the
-interfaces, which is a required field for the flow. With this setup, you can
-make use of the static metadata provider to match the exporter and accept the
-flow for further classification.
+We set the interface indexes manually entirely based on the interface names to
+avoid running an SNMP daemon. Use the static metadata provider to match the
+exporter and provide interface names and descriptions to Akvorado:
+
+```yaml
+inlet:
+  providers:
+    - type: static
+      exporters:
+        2001:db8:1::1:
+          name: exporter1
+          ifindexes:
+            3:
+              name: eth0
+              description: PNI Google
+              speed: 10000
+            4:
+              name: eth1
+              description: PNI Netflix
+              speed: 10000
+```
 
 ## Kafka
 
