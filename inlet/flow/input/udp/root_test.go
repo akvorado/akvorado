@@ -5,6 +5,7 @@ package udp
 
 import (
 	"net"
+	"strconv"
 	"testing"
 	"time"
 
@@ -36,7 +37,7 @@ func TestUDPInput(t *testing.T) {
 		}
 
 		// Check metrics
-		gotMetrics := r.GetMetrics("akvorado_inlet_flow_input_udp_")
+		gotMetrics := r.GetMetrics("akvorado_inlet_flow_input_udp_", "-buffer_size")
 		expectedMetrics := map[string]string{
 			`bytes_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                "12",
 			`packets_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:              "1",
@@ -80,16 +81,34 @@ func TestUDPInput(t *testing.T) {
 }
 
 func TestUDPReceiveBuffer(t *testing.T) {
+	// Without setting receive buffer
 	r := reporter.NewMock(t)
 	configuration := DefaultConfiguration().(*Configuration)
 	configuration.Listen = "127.0.0.1:0"
-	configuration.ReceiveBuffer = 100_000_000
 	in, err := configuration.New(r, daemon.NewMock(t), func(string, *pb.RawFlow) {})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
 	helpers.StartStop(t, in)
+	gotMetrics := r.GetMetrics("akvorado_inlet_flow_input_udp_", "buffer_size")
+	bufferSize := gotMetrics[`buffer_size_bytes{listener="127.0.0.1:0",worker="0"}`]
+	bufferSize1, _ := strconv.ParseFloat(bufferSize, 32)
 
-	// Useless, but we observe no error, despite the requested buffer being too
-	// big. That's expected.
+	// While setting receive buffer
+	r = reporter.NewMock(t)
+	configuration = DefaultConfiguration().(*Configuration)
+	configuration.Listen = "127.0.0.1:0"
+	configuration.ReceiveBuffer = 100_000_000
+	in, err = configuration.New(r, daemon.NewMock(t), func(string, *pb.RawFlow) {})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	helpers.StartStop(t, in)
+	gotMetrics = r.GetMetrics("akvorado_inlet_flow_input_udp_", "buffer_size")
+	bufferSize = gotMetrics[`buffer_size_bytes{listener="127.0.0.1:0",worker="0"}`]
+	bufferSize2, _ := strconv.ParseFloat(bufferSize, 32)
+
+	if bufferSize2 < bufferSize1 {
+		t.Fatalf("Buffer size was unchanged (%f <= %f)", bufferSize1, bufferSize2)
+	}
 }

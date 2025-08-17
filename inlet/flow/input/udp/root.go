@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"syscall"
 	"time"
 
 	"gopkg.in/tomb.v2"
@@ -30,6 +31,7 @@ type Input struct {
 		bytes         *reporter.CounterVec
 		packets       *reporter.CounterVec
 		packetSizeSum *reporter.SummaryVec
+		bufferSize    *reporter.GaugeVec
 		errors        *reporter.CounterVec
 		inDrops       *reporter.CounterVec
 	}
@@ -67,6 +69,13 @@ func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Comp
 			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 		},
 		[]string{"listener", "worker", "exporter"},
+	)
+	input.metrics.bufferSize = r.GaugeVec(
+		reporter.GaugeOpts{
+			Name: "buffer_size_bytes",
+			Help: "In-kernel buffer size",
+		},
+		[]string{"listener", "worker"},
 	)
 	input.metrics.errors = r.CounterVec(
 		reporter.CounterOpts{
@@ -115,6 +124,8 @@ func (in *Input) Start() error {
 		if i == 0 {
 			in.r.Info().Str("listen", in.address.String()).Msg("UDP input listening")
 		}
+
+		// Set/get buffer size
 		if in.config.ReceiveBuffer > 0 {
 			if err := udpConn.SetReadBuffer(int(in.config.ReceiveBuffer)); err != nil {
 				// On Linux, this does not trigger an error when we are above net.core.rmem_max.
@@ -122,6 +133,22 @@ func (in *Input) Start() error {
 					Str("error", err.Error()).
 					Str("listen", in.config.Listen).
 					Msgf("unable to set requested buffer size (%d bytes)", in.config.ReceiveBuffer)
+			}
+		}
+		if syscallConn, err := udpConn.SyscallConn(); err == nil {
+			var actualSize int
+			syscallConn.Control(func(fd uintptr) {
+				if val, err := syscall.GetsockoptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_RCVBUF); err == nil {
+					actualSize = val
+				}
+			})
+			in.metrics.bufferSize.WithLabelValues(in.config.Listen, strconv.Itoa(i)).Set(float64(actualSize))
+			if in.config.ReceiveBuffer > 0 && actualSize < int(in.config.ReceiveBuffer) {
+				in.r.Warn().
+					Str("listen", in.config.Listen).
+					Int("requested", int(in.config.ReceiveBuffer)).
+					Int("actual", actualSize).
+					Msg("UDP receive buffer size was capped by system limits (check net.core.rmem_max)")
 			}
 		}
 
