@@ -10,6 +10,7 @@ import (
 	"net/netip"
 	"path"
 	"slices"
+	"strconv"
 	"testing"
 	"time"
 
@@ -92,7 +93,7 @@ func TestBMP(t *testing.T) {
 		// Init+EOR
 		send(t, conn, "bmp-init.pcap")
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_")
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-buffer_size")
 		expectedMetrics := map[string]string{
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`: "1",
 			`opened_connections_total{exporter="127.0.0.1"}`:                  "1",
@@ -105,7 +106,7 @@ func TestBMP(t *testing.T) {
 
 		send(t, conn, "bmp-terminate.pcap")
 		time.Sleep(30 * time.Millisecond)
-		gotMetrics = r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+		gotMetrics = r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 		expectedMetrics = map[string]string{
 			`closed_connections_total{exporter="127.0.0.1"}`:                   "1",
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:  "1",
@@ -130,7 +131,7 @@ func TestBMP(t *testing.T) {
 		mockClock.Add(2 * time.Hour)
 		for tries := 20; tries >= 0; tries-- {
 			time.Sleep(5 * time.Millisecond)
-			gotMetrics = r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+			gotMetrics = r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 			expectedMetrics = map[string]string{
 				`closed_connections_total{exporter="127.0.0.1"}`:                   "1",
 				`received_messages_total{exporter="127.0.0.1",type="initiation"}`:  "1",
@@ -159,7 +160,7 @@ func TestBMP(t *testing.T) {
 		send(t, conn, "bmp-peers-up.pcap")
 		send(t, conn, "bmp-eor.pcap")
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 		expectedMetrics := map[string]string{
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
 			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
@@ -187,7 +188,7 @@ func TestBMP(t *testing.T) {
 		send(t, conn, "bmp-reach.pcap")
 		send(t, conn, "bmp-reach-addpath.pcap")
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 		expectedMetrics := map[string]string{
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
 			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
@@ -245,7 +246,7 @@ func TestBMP(t *testing.T) {
 		send(t, conn, "bmp-init.pcap")
 		send(t, conn, "bmp-reach.pcap")
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 		expectedMetrics := map[string]string{
 			// Same metrics as previously, except the AddPath peer.
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:       "1",
@@ -271,7 +272,7 @@ func TestBMP(t *testing.T) {
 		send(t, conn, "bmp-peers-up.pcap")
 		send(t, conn, "bmp-eor.pcap")
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 		expectedMetrics := map[string]string{
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
 			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
@@ -299,7 +300,7 @@ func TestBMP(t *testing.T) {
 		send(t, conn, "bmp-reach.pcap")
 		send(t, conn, "bmp-peer-down.pcap")
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 		expectedMetrics := map[string]string{
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:             "1",
 			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`:   "4",
@@ -355,7 +356,7 @@ func TestBMP(t *testing.T) {
 		send(t, conn, "bmp-eor.pcap")
 		send(t, conn, "bmp-reach.pcap")
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 		expectedMetrics := map[string]string{
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
 			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
@@ -394,7 +395,7 @@ func TestBMP(t *testing.T) {
 		send(t, conn, "bmp-eor.pcap")
 		send(t, conn, "bmp-reach.pcap")
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 		expectedMetrics := map[string]string{
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
 			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
@@ -447,7 +448,7 @@ func TestBMP(t *testing.T) {
 		send(t, conn, "bmp-reach.pcap")
 		send(t, conn, "bmp-unreach.pcap")
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 		expectedMetrics := map[string]string{
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
 			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
@@ -478,7 +479,7 @@ func TestBMP(t *testing.T) {
 		send(t, conn, "bmp-init.pcap")
 		send(t, conn, "bmp-l3vpn.pcap")
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 		expectedMetrics := map[string]string{
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
 			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "1",
@@ -624,7 +625,7 @@ func TestBMP(t *testing.T) {
 		send(t, conn, "bmp-eor.pcap")
 		send(t, conn, "bmp-unreach.pcap")
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 		expectedMetrics := map[string]string{
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
 			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
@@ -657,7 +658,7 @@ func TestBMP(t *testing.T) {
 		send(t, conn, "bmp-unreach.pcap")
 		send(t, conn, "bmp-unreach.pcap")
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 		expectedMetrics := map[string]string{
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
 			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
@@ -697,7 +698,7 @@ func TestBMP(t *testing.T) {
 		send(t, conn, "bmp-unreach.pcap")
 		send(t, conn, "bmp-unreach.pcap")
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 		expectedMetrics := map[string]string{
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
 			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
@@ -727,7 +728,7 @@ func TestBMP(t *testing.T) {
 		send(t, conn, "bmp-reach.pcap")
 		send(t, conn, "bmp-eor.pcap")
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 		expectedMetrics := map[string]string{
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
 			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "4",
@@ -786,7 +787,7 @@ func TestBMP(t *testing.T) {
 		send(t, conn, "bmp-l3vpn.pcap")
 		conn.Close()
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 		expectedMetrics := map[string]string{
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
 			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "1",
@@ -814,7 +815,7 @@ func TestBMP(t *testing.T) {
 
 		mockClock.Add(2 * time.Hour)
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics = r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+		gotMetrics = r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 		expectedMetrics = map[string]string{
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
 			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "1",
@@ -848,7 +849,7 @@ func TestBMP(t *testing.T) {
 		send(t, conn, "bmp-l3vpn.pcap")
 		send(t, conn, "bmp-reach-unknown-family.pcap")
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 		ignoredMetric := `ignored_updates_total{error="afi-safi",exporter="127.0.0.1"}`
 		expectedMetrics := map[string]string{
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
@@ -887,7 +888,7 @@ func TestBMP(t *testing.T) {
 		send(t, conn, "bmp-l3vpn.pcap")
 		send(t, conn, "bmp-reach-vpls.pcap")
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 		expectedMetrics := map[string]string{
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "1",
 			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "1",
@@ -920,7 +921,7 @@ func TestBMP(t *testing.T) {
 		send(t, conn2, "bmp-l3vpn.pcap")
 		conn1.Close()
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 		expectedMetrics := map[string]string{
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "2",
 			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "2",
@@ -950,7 +951,7 @@ func TestBMP(t *testing.T) {
 
 		mockClock.Add(2 * time.Hour)
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics = r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+		gotMetrics = r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 		expectedMetrics = map[string]string{
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "2",
 			`received_messages_total{exporter="127.0.0.1",type="peer-up-notification"}`: "2",
@@ -979,7 +980,7 @@ func TestBMP(t *testing.T) {
 
 		send(t, conn2, "bmp-terminate.pcap")
 		time.Sleep(30 * time.Millisecond)
-		gotMetrics = r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+		gotMetrics = r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 		expectedMetrics = map[string]string{
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "2",
 			`received_messages_total{exporter="127.0.0.1",type="termination"}`:          "1",
@@ -1002,7 +1003,7 @@ func TestBMP(t *testing.T) {
 
 		mockClock.Add(2 * time.Hour)
 		time.Sleep(20 * time.Millisecond)
-		gotMetrics = r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration")
+		gotMetrics = r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "-locked_duration", "-buffer_size")
 		expectedMetrics = map[string]string{
 			`received_messages_total{exporter="127.0.0.1",type="initiation"}`:           "2",
 			`received_messages_total{exporter="127.0.0.1",type="termination"}`:          "1",
@@ -1109,6 +1110,37 @@ func TestBMP(t *testing.T) {
 		}
 		if diff := helpers.Diff(lookup, expected); diff != "" {
 			t.Errorf("Lookup() (-got, +want):\n%s", diff)
+		}
+	})
+
+	t.Run("check buffer size", func(t *testing.T) {
+		// Without
+		r := reporter.NewMock(t)
+		config := DefaultConfiguration().(Configuration)
+		p, _ := NewMock(t, r, config)
+		helpers.StartStop(t, p)
+		conn := dial(t, p)
+
+		send(t, conn, "bmp-init.pcap")
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "buffer_size")
+		bufferSize := gotMetrics[`buffer_size_bytes{exporter="127.0.0.1"}`]
+		bufferSize1, _ := strconv.ParseFloat(bufferSize, 32)
+
+		// With
+		r = reporter.NewMock(t)
+		config = DefaultConfiguration().(Configuration)
+		config.ReceiveBuffer = 100_000_000
+		p, _ = NewMock(t, r, config)
+		helpers.StartStop(t, p)
+		conn = dial(t, p)
+
+		send(t, conn, "bmp-init.pcap")
+		gotMetrics = r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "buffer_size")
+		bufferSize = gotMetrics[`buffer_size_bytes{exporter="127.0.0.1"}`]
+		bufferSize2, _ := strconv.ParseFloat(bufferSize, 32)
+
+		if bufferSize2 < bufferSize1 {
+			t.Fatalf("Buffer size was unchanged (%f <= %f)", bufferSize1, bufferSize2)
 		}
 	})
 }

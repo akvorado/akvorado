@@ -8,8 +8,10 @@ package bmp
 import (
 	"fmt"
 	"net"
+	"net/netip"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/benbjohnson/clock"
@@ -88,12 +90,38 @@ func (p *Provider) Start() error {
 				return nil
 			}
 			tcpConn := conn.(*net.TCPConn)
+			remote := conn.RemoteAddr().(*net.TCPAddr)
+			exporterIP, _ := netip.AddrFromSlice(remote.IP)
+			exporter := netip.AddrPortFrom(exporterIP, uint16(remote.Port))
+			exporterStr := exporter.Addr().Unmap().String()
 			if p.config.ReceiveBuffer > 0 {
-				tcpConn.SetReadBuffer(int(p.config.ReceiveBuffer))
+				if err := tcpConn.SetReadBuffer(int(p.config.ReceiveBuffer)); err != nil {
+					p.r.Warn().
+						Str("error", err.Error()).
+						Str("listen", p.config.Listen).
+						Msgf("unable to set requested TCP receive buffer size (%d bytes)", p.config.ReceiveBuffer)
+				}
+			}
+			// Verify the buffer size was actually set correctly
+			if syscallConn, err := tcpConn.SyscallConn(); err == nil {
+				var actualSize int
+				syscallConn.Control(func(fd uintptr) {
+					if val, err := syscall.GetsockoptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_RCVBUF); err == nil {
+						actualSize = val
+					}
+				})
+				p.metrics.bufferSize.WithLabelValues(exporterStr).Set(float64(actualSize))
+				if p.config.ReceiveBuffer > 0 && actualSize < int(p.config.ReceiveBuffer) {
+					p.r.Warn().
+						Str("listen", p.config.Listen).
+						Int("requested", int(p.config.ReceiveBuffer)).
+						Int("actual", actualSize).
+						Msg("TCP receive buffer size was capped by system limits (check net.core.rmem_max)")
+				}
 			}
 			p.active.Store(true)
 			p.t.Go(func() error {
-				return p.serveConnection(tcpConn)
+				return p.serveConnection(tcpConn, exporter, exporterStr)
 			})
 		}
 	})

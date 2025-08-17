@@ -15,11 +15,7 @@ import (
 )
 
 // serveConnection handle the connection from an exporter.
-func (p *Provider) serveConnection(conn *net.TCPConn) error {
-	remote := conn.RemoteAddr().(*net.TCPAddr)
-	exporterIP, _ := netip.AddrFromSlice(remote.IP)
-	exporter := netip.AddrPortFrom(exporterIP, uint16(remote.Port))
-	exporterStr := exporter.Addr().Unmap().String()
+func (p *Provider) serveConnection(conn *net.TCPConn, exporter netip.AddrPort, exporterStr string) error {
 	p.metrics.openedConnections.WithLabelValues(exporterStr).Inc()
 	logger := p.r.With().Str("exporter", exporterStr).Logger()
 	conn.SetLinger(0)

@@ -10,6 +10,7 @@ type metrics struct {
 	closedConnections *reporter.CounterVec
 	peers             *reporter.GaugeVec
 	routes            *reporter.GaugeVec
+	bufferSize        *reporter.GaugeVec
 	ignoredNlri       *reporter.CounterVec
 	messages          *reporter.CounterVec
 	errors            *reporter.CounterVec
@@ -46,6 +47,13 @@ func (p *Provider) initMetrics() {
 		reporter.GaugeOpts{
 			Name: "routes",
 			Help: "Number of routes up.",
+		},
+		[]string{"exporter"},
+	)
+	p.metrics.bufferSize = p.r.GaugeVec(
+		reporter.GaugeOpts{
+			Name: "buffer_size_bytes",
+			Help: "Size of the in-kernel buffer for this connection.",
 		},
 		[]string{"exporter"},
 	)
