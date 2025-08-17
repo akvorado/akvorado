@@ -9,6 +9,7 @@ paths:
       collectcommunities: true
       keep: 1h0m0s
       rds: []
+      receivebuffer: 0
   outlet.0.core.asnproviders:
     - flow
     - routing

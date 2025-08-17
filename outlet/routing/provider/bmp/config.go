@@ -25,6 +25,11 @@ type Configuration struct {
 	CollectCommunities bool
 	// Keep tells how long to keep routes from a BMP client when it goes down
 	Keep time.Duration `validate:"min=1s"`
+	// ReceiveBuffer is the value of the requested buffer size for each
+	// receiving buffer in the kernel. When 0, the value is left to the default
+	// value set by the kernel (net.ipv4.tcp_rmem[1]). The value cannot exceed
+	// the kernel max value (net.core.rmem_max, net.ipv4.tcp_rmem[2]).
+	ReceiveBuffer uint
 }
 
 // DefaultConfiguration represents the default configuration for the BMP server

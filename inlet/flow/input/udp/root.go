@@ -117,6 +117,7 @@ func (in *Input) Start() error {
 		}
 		if in.config.ReceiveBuffer > 0 {
 			if err := udpConn.SetReadBuffer(int(in.config.ReceiveBuffer)); err != nil {
+				// On Linux, this does not trigger an error when we are above net.core.rmem_max.
 				in.r.Warn().
 					Str("error", err.Error()).
 					Str("listen", in.config.Listen).

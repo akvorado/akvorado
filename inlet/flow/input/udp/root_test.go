@@ -58,14 +58,7 @@ func TestUDPInput(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
-	if err := in.Start(); err != nil {
-		t.Fatalf("Start() error:\n%+v", err)
-	}
-	defer func() {
-		if err := in.Stop(); err != nil {
-			t.Fatalf("Stop() error:\n%+v", err)
-		}
-	}()
+	helpers.StartStop(t, in)
 
 	// Connect
 	conn, err := net.Dial("udp", in.(*Input).address.String())
@@ -84,4 +77,19 @@ func TestUDPInput(t *testing.T) {
 		t.Fatal("no decoded flows received")
 	case <-done:
 	}
+}
+
+func TestUDPReceiveBuffer(t *testing.T) {
+	r := reporter.NewMock(t)
+	configuration := DefaultConfiguration().(*Configuration)
+	configuration.Listen = "127.0.0.1:0"
+	configuration.ReceiveBuffer = 100_000_000
+	in, err := configuration.New(r, daemon.NewMock(t), func(string, *pb.RawFlow) {})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	helpers.StartStop(t, in)
+
+	// Useless, but we observe no error, despite the requested buffer being too
+	// big. That's expected.
 }

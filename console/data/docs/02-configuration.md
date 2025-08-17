@@ -191,6 +191,8 @@ For the BMP provider, the following keys are accepted:
   not supported)
 - `keep` tells how much time the routes sent from a terminated BMP
   connection should be kept
+- `receive-buffer` is the size of the kernel receive buffer in bytes for each
+  established BMP connection
 
 If you are not interested in AS paths and communities, disabling them
 will decrease the memory usage of *Akvorado*, as well as the disk

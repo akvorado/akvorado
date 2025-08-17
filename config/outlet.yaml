@@ -5,6 +5,12 @@ metadata:
     credentials:
       ::/0:
         communities: public
+routing:
+  provider:
+    type: bmp
+    # Before increasing this value, look for it in the troubleshooting section
+    # of the documentation.
+    receive-buffer: 212992
 core:
   exporter-classifiers:
     # This is an example. This should be customized depending on how

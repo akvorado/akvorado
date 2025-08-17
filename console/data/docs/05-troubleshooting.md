@@ -419,7 +419,7 @@ compared to `akvorado_inlet_flow_input_udp_packets_total`. Another way to get
 the same information is by using `ss -lunepm` and look at the drop counter:
 
 ```console
-$ nsenter -t $(pidof akvorado) -n ss -lunepm
+$ nsenter -t $(pgrep -fo "akvorado inlet") -n ss -lunepm
 State            Recv-Q           Send-Q                       Local Address:Port                        Peer Address:Port           Process
 UNCONN           0                0                                        *:2055                                   *:*               users:(("akvorado",pid=2710961,fd=16)) ino:67643151 sk:89c v6only:0 <->
          skmem:(r0,rb212992,t0,tb212992,f4096,w0,o0,bl0,d486525)
@@ -428,8 +428,8 @@ UNCONN           0                0                                        *:205
 In the example above, there were 486525 drops. This can be solved in three ways:
 
 - increase the number of workers for the UDP input,
-- increase the value of `net.core.rmem_max` sysctl and increase the
-  `receive-buffer` setting attached to the input,
+- increase the value of `net.core.rmem_max` sysctl (on the host) and increase
+  the `receive-buffer` setting attached to the input to the same value,
 - add more inlet instances and shard the exporters among the configured ones.
 
 ### Outlet
@@ -438,6 +438,46 @@ The outlet is expects to automatically scale the number of workers to ensure the
 data is delivered efficiently to ClickHouse. Increasing the maximum number of
 Kafka workers (`max-workers`) past the default value of 8 may put more pressure
 on ClickHouse. You can however increase `maximum-batch-size`.
+
+The BMP routing component may have some challenge to scale, notably when peers
+disappear as it requires to cleanup a lot of entries in the routing tables. BMP
+is a one-way protocol and the sender may declare the receiver station “stuck” if
+it does not accept more data. To avoid this situation, you may need to tune the
+TCP receive buffer. First, check the current situation:
+
+```console
+$ nsenter -t $(pgrep -fo "akvorado outlet") -n ss -tnepm sport = :10179
+State         Recv-Q          Send-Q                         Local Address:Port                           Peer Address:Port          Process
+ESTAB         0               0                        [::ffff:240.0.2.10]:10179                   [::ffff:240.0.2.15]:46656          users:(("akvorado",pid=1117049,fd=13)) timer:(keepalive,55sec,0) ino:40752297 sk:11 <->
+         skmem:(r0,rb131072,t0,tb87040,f0,w0,o0,bl0,d2976)
+ESTAB         0               0                        [::ffff:240.0.2.10]:10179                   [::ffff:240.0.2.14]:44318          users:(("akvorado",pid=1117049,fd=12)) timer:(keepalive,55sec,0) ino:40751196 sk:12 <->
+         skmem:(r0,rb131072,t0,tb87040,f0,w0,o0,bl0,d2976)
+ESTAB         0               0                        [::ffff:240.0.2.10]:10179                   [::ffff:240.0.2.13]:47586          users:(("akvorado",pid=1117049,fd=11)) timer:(keepalive,55sec,0) ino:40751097 sk:13 <->
+         skmem:(r0,rb131072,t0,tb87040,f0,w0,o0,bl0,d2976)
+ESTAB         0               0                        [::ffff:240.0.2.10]:10179                   [::ffff:240.0.2.12]:51352          users:(("akvorado",pid=1117049,fd=14)) timer:(keepalive,55sec,0) ino:40752299 sk:14 <->
+         skmem:(r0,rb131072,t0,tb87040,f0,w0,o0,bl0,d2976)
+```
+
+Here, the receive buffer for each process is 131 072 bytes. Linux exposes
+`net.ipv4.tcp_rmem` to tune this value:
+
+```console
+$ sysctl net.ipv4.tcp_rmem
+net.ipv4.tcp_rmem = 4096        131072  6291456
+```
+
+The middle value is the default one and the last value is the maximum one. When,
+`net.ipv4.tcp_moderate_rcvbuf` is set to 1 (the default), Linux auto tunes the
+size of the buffer for the application, to maximize the throughtoutput depending
+on the latency. This mechanism won't help there. To increase receive buffer
+size, you need to:
+
+- set the `receive-buffer` value in the BMP provider configuration (for example to 33554432 for 32 MiB)
+- increase the last value of `net.ipv4.tcp_rmem` to the same value
+- increase the value of `net.core.rmem_max` to the same value
+- optionally, increase the last value of `net.ipv4.tcp_mem` by the value of `tcp_rmem[2]`
+  multiplied by the maximum number of BMP peers you expect divided by 4096 bytes
+  per page (check with `getconf PAGESIZE`)
 
 ### Profiling
 

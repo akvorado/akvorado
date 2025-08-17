@@ -87,9 +87,13 @@ func (p *Provider) Start() error {
 				}
 				return nil
 			}
+			tcpConn := conn.(*net.TCPConn)
+			if p.config.ReceiveBuffer > 0 {
+				tcpConn.SetReadBuffer(int(p.config.ReceiveBuffer))
+			}
 			p.active.Store(true)
 			p.t.Go(func() error {
-				return p.serveConnection(conn.(*net.TCPConn))
+				return p.serveConnection(tcpConn)
 			})
 		}
 	})
