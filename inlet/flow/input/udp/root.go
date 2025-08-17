@@ -73,7 +73,7 @@ func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Comp
 	input.metrics.bufferSize = r.GaugeVec(
 		reporter.GaugeOpts{
 			Name: "buffer_size_bytes",
-			Help: "In-kernel buffer size",
+			Help: "Size of the in-kernel buffer for this worker.",
 		},
 		[]string{"listener", "worker"},
 	)

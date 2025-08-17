@@ -432,6 +432,15 @@ In the example above, there were 486525 drops. This can be solved in three ways:
   the `receive-buffer` setting attached to the input to the same value,
 - add more inlet instances and shard the exporters among the configured ones.
 
+The value of the receive buffer is also available as a metric:
+
+```console
+$ curl -s http://127.0.0.1:8080/api/v0/inlet/metrics | grep -P 'akvorado_inlet_flow_input_udp_buffer'
+​# HELP akvorado_inlet_flow_input_udp_buffer_size_bytes Size of the in-kernel buffer for this worker.
+​# TYPE akvorado_inlet_flow_input_udp_buffer_size_bytes gauge
+akvorado_inlet_flow_input_udp_buffer_size_bytes{listener=":2055",worker="2"} 212992
+```
+
 ### Outlet
 
 The outlet is expects to automatically scale the number of workers to ensure the
@@ -478,6 +487,16 @@ size, you need to:
 - optionally, increase the last value of `net.ipv4.tcp_mem` by the value of `tcp_rmem[2]`
   multiplied by the maximum number of BMP peers you expect divided by 4096 bytes
   per page (check with `getconf PAGESIZE`)
+
+The value of the receive buffer is also available as a metric:
+
+```console
+$ curl -s http://127.0.0.1:8080/api/v0/inlet/metrics | grep -P 'akvorado_outlet_routing_provider_bmp_buffer'
+​# HELP akvorado_outlet_flow_input_udp_buffer_size_bytes Size of the in-kernel buffer for this connection.
+​# TYPE akvorado_outlet_flow_input_udp_buffer_size_bytes gauge
+akvorado_outlet_flow_input_udp_buffer_size_bytes{exporter="241.107.1.12"} 425984
+```
+
 
 ### Profiling
 

@@ -13,6 +13,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🌱 *outlet*: improve performance of the BMP routing provider
+- 🌱 *documentation*: document how to tune TCP receive buffer for BMP routing provider
 - 🌱 *documentation*: document how to update the database schema for installations before 1.10.0
 
 ## 2.0.0-beta.3 - 2025-08-11
