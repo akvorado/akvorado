@@ -523,29 +523,36 @@ if you want to enable TLS for a more secure setup.
 
 ### GNU/Linux
 
-#### pmacctd
+#### pmacct
 
-Configure `pmacctd` with the sFlow exporter:
+[pmacct](http://www.pmacct.net/) is a set of multi-purpose passive network
+monitoring tools, including an sFlow exporter.
+
+Put the following configuration in `/etc/pmacctd/config.conf`. Replace
+`akvorado-inlet-receiver` with the appropriate IP:
 
 ```yaml
-/etc/pmacctd/config.conf: |
-  daemonize: false
-  plugins: sfprobe[any]
-  sfprobe_receiver: akvorado-inlet-receiver-replace-me:6343
-  aggregate: src_host,dst_host,in_iface,out_iface,src_port,dst_port,proto
-  pcap_ifindex: map
-  pcap_interfaces_map: /etc/pmacctd/interfaces.map
-  pcap_interface_wait: true
-  sfprobe_agentsubid: 1402
-  sampling_rate: 1000
-  snaplen: 128
-/etc/pmacctd/interfaces.map: |
-  ifindex=1 ifname=lo direction=in
-  ifindex=1 ifname=lo direction=out
-  ifindex=3 ifname=eth0 direction=in
-  ifindex=3 ifname=eth0 direction=out
-  ifindex=4 ifname=eth1 direction=in
-  ifindex=4 ifname=eth1 direction=out
+daemonize: false
+plugins: sfprobe[any]
+sfprobe_receiver: akvorado-inlet-receiver:6343
+aggregate: src_host,dst_host,in_iface,out_iface,src_port,dst_port,proto
+pcap_ifindex: map
+pcap_interfaces_map: /etc/pmacctd/interfaces.map
+pcap_interface_wait: true
+sfprobe_agentsubid: 1402
+sampling_rate: 1000
+snaplen: 128
+```
+
+In `/etc/pmacctd/interfaces.map`, adapt the following snippet to your setup:
+
+```ini
+ifindex=1 ifname=lo direction=in
+ifindex=1 ifname=lo direction=out
+ifindex=3 ifname=eth0 direction=in
+ifindex=3 ifname=eth0 direction=out
+ifindex=4 ifname=eth1 direction=in
+ifindex=4 ifname=eth1 direction=out
 ```
 
 We set the interface indexes manually entirely based on the interface names to
@@ -569,6 +576,31 @@ inlet:
               description: PNI Netflix
               speed: 10000
 ```
+
+#### ipfixprobe
+
+[ipfixprobe](https://ipfixprobe.cesnet.cz/) is a modular IPFIX flow exporter. I
+supports both a `pcap` plugin for low bandwidth use (less than 1 Gbps) and a
+`dpdk` plugin to support 100 Gbps or more.
+
+Here is an invocation example for the `pcap` plugin:
+
+```sh
+ipfixprobe \
+  -i "pcap;ifc=eth0;snaplen=128" \
+  -s "cache;active=5;inactive=5" \
+  -o "ipfix;host=akvorado-inlet-receiver;port=2055;udp;id=1;dir=1"
+```
+
+You need to run one `ipfixprobe` instance for each interface. Each interface
+should have its own `id` and `dir`. As for *pmacct*, use the static metadata
+provider to provide interface names and descriptions to Akvorado.
+
+> [!WARNING]
+> Until Akvorado supports bidirectional flows (RFC 5103), only incoming flows
+> are correctly accounted for. The `split` option for the cache plugin would
+> help to account for both directions, but the input interface would be
+> incorrect for outgoing flows.
 
 ## Kafka
 
