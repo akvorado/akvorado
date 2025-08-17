@@ -104,34 +104,36 @@ func (c *Component) Start() error {
 	})
 
 	// Database migration
-	migrationsOnce := false
-	c.metrics.migrationsRunning.Set(1)
-	c.t.Go(func() error {
-		customBackoff := backoff.NewExponentialBackOff()
-		customBackoff.MaxElapsedTime = 0
-		customBackoff.InitialInterval = time.Second
-		for {
-			if !c.config.SkipMigrations {
-				c.r.Info().Msg("attempting database migration")
-				if err := c.migrateDatabase(); err != nil {
-					c.r.Err(err).Msg("database migration error")
-				} else {
+	if c.d.ClickHouse != nil {
+		migrationsOnce := false
+		c.metrics.migrationsRunning.Set(1)
+		c.t.Go(func() error {
+			customBackoff := backoff.NewExponentialBackOff()
+			customBackoff.MaxElapsedTime = 0
+			customBackoff.InitialInterval = time.Second
+			for {
+				if !c.config.SkipMigrations {
+					c.r.Info().Msg("attempting database migration")
+					if err := c.migrateDatabase(); err != nil {
+						c.r.Err(err).Msg("database migration error")
+					} else {
+						return nil
+					}
+					if !migrationsOnce {
+						close(c.migrationsOnce)
+						migrationsOnce = true
+						customBackoff.Reset()
+					}
+				}
+				next := customBackoff.NextBackOff()
+				select {
+				case <-c.t.Dying():
 					return nil
-				}
-				if !migrationsOnce {
-					close(c.migrationsOnce)
-					migrationsOnce = true
-					customBackoff.Reset()
+				case <-time.Tick(next):
 				}
 			}
-			next := customBackoff.NextBackOff()
-			select {
-			case <-c.t.Dying():
-				return nil
-			case <-time.Tick(next):
-			}
-		}
-	})
+		})
+	}
 
 	// Network sources update
 	if err := c.networkSourcesFetcher.Start(); err != nil {

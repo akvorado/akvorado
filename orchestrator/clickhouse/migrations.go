@@ -184,5 +184,8 @@ func (c *Component) guessHTTPBaseURL(ip string) (string, error) {
 
 // ReloadDictionary will reload the specified dictionnary.
 func (c *Component) ReloadDictionary(ctx context.Context, dictName string) error {
-	return c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf("SYSTEM RELOAD DICTIONARY %s.%s", c.d.ClickHouse.DatabaseName(), dictName))
+	if c.d.ClickHouse != nil {
+		return c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf("SYSTEM RELOAD DICTIONARY %s.%s", c.d.ClickHouse.DatabaseName(), dictName))
+	}
+	return nil
 }

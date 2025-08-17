@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"akvorado/common/clickhousedb"
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
@@ -21,7 +20,6 @@ func TestNetworksCSVWithGeoip(t *testing.T) {
 	config := DefaultConfiguration()
 	config.SkipMigrations = true
 	r := reporter.NewMock(t)
-	clickhouseComponent := clickhousedb.SetupClickHouse(t, r, false)
 
 	t.Run("only GeoIP", func(t *testing.T) {
 		// First use only GeoIP
@@ -30,7 +28,7 @@ func TestNetworksCSVWithGeoip(t *testing.T) {
 			HTTP:       httpserver.NewMock(t, r),
 			Schema:     schema.NewMock(t),
 			GeoIP:      geoip.NewMock(t, r, true),
-			ClickHouse: clickhouseComponent,
+			ClickHouse: nil,
 		})
 		if err != nil {
 			t.Fatalf("New() error:\n%+v", err)
@@ -79,7 +77,7 @@ func TestNetworksCSVWithGeoip(t *testing.T) {
 			HTTP:       httpserver.NewMock(t, r),
 			Schema:     schema.NewMock(t),
 			GeoIP:      geoip.NewMock(t, r, true),
-			ClickHouse: clickhouseComponent,
+			ClickHouse: nil,
 		})
 		if err != nil {
 			t.Fatalf("New() error:\n%+v", err)
@@ -130,7 +128,7 @@ func TestNetworksCSVWithGeoip(t *testing.T) {
 			HTTP:       httpserver.NewMock(t, r),
 			Schema:     schema.NewMock(t),
 			GeoIP:      geoip.NewMock(t, r, true),
-			ClickHouse: clickhouseComponent,
+			ClickHouse: nil,
 		})
 		if err != nil {
 			t.Fatalf("New() error:\n%+v", err)
