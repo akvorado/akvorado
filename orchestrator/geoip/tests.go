@@ -21,7 +21,7 @@ import (
 // available here:
 //   - https://github.com/maxmind/MaxMind-DB/blob/main/source-data/GeoLite2-ASN-Test.json
 //   - https://github.com/maxmind/MaxMind-DB/blob/main/source-data/GeoLite2-Country-Test.json
-func NewMock(t *testing.T, r *reporter.Reporter, withData bool) *Component {
+func NewMock(t testing.TB, r *reporter.Reporter, withData bool) *Component {
 	t.Helper()
 	config := DefaultConfiguration()
 	_, src, _, _ := runtime.Caller(0)

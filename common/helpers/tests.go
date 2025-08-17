@@ -103,7 +103,7 @@ func CheckExternalService(t *testing.T, name string, candidates []string) string
 }
 
 // StartStop starts a component and stops it on cleanup.
-func StartStop(t *testing.T, component any) {
+func StartStop(t testing.TB, component any) {
 	t.Helper()
 	if starterC, ok := component.(starter); ok {
 		if err := starterC.Start(); err != nil {

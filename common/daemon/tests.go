@@ -18,7 +18,7 @@ type MockComponent struct {
 }
 
 // NewMock will create a daemon component that does nothing.
-func NewMock(t *testing.T) Component {
+func NewMock(t testing.TB) Component {
 	t.Helper()
 	return &MockComponent{
 		lifecycleComponent: lifecycleComponent{

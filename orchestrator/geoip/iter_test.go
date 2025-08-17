@@ -13,6 +13,35 @@ import (
 	"akvorado/common/reporter"
 )
 
+func BenchmarkIterDatabase(b *testing.B) {
+	r := reporter.NewMock(b)
+	c := NewMock(b, r, true)
+
+	b.Run("ASN", func(b *testing.B) {
+		entries := 0
+		for b.Loop() {
+			c.IterASNDatabases(func(netip.Prefix, ASNInfo) error {
+				entries++
+				return nil
+			})
+		}
+		b.ReportMetric(0, "ns/op")
+		b.ReportMetric(float64(b.Elapsed())/float64(entries), "ns/entry")
+	})
+
+	b.Run("GeoIP", func(b *testing.B) {
+		entries := 0
+		for b.Loop() {
+			c.IterGeoDatabases(func(netip.Prefix, GeoInfo) error {
+				entries++
+				return nil
+			})
+		}
+		b.ReportMetric(0, "ns/op")
+		b.ReportMetric(float64(b.Elapsed())/float64(entries), "ns/entry")
+	})
+}
+
 func TestIterDatabase(t *testing.T) {
 	r := reporter.NewMock(t)
 	c := NewMock(t, r, true)
