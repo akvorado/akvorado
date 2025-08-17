@@ -7,6 +7,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/csv"
+	"fmt"
 	"net/netip"
 	"os"
 	"path/filepath"
@@ -20,11 +21,128 @@ import (
 
 const networksCSVPattern = "networks*.csv.gz"
 
-func (c *Component) refreshNetworksCSV() {
+func (c *Component) triggerNetworksCSVRefresh() {
 	select {
 	case c.networksCSVUpdateChan <- true:
 	default:
 	}
+}
+
+func (c *Component) networksCSVRefresh() error {
+	c.r.Debug().Msg("build networks.csv")
+	networks := helpers.MustNewSubnetMap[NetworkAttributes](nil)
+
+	// Add content of all geoip databases
+	err := c.d.GeoIP.IterASNDatabases(func(prefix netip.Prefix, data geoip.ASNInfo) error {
+		subV6Prefix := helpers.PrefixTo16(prefix)
+		attrs := NetworkAttributes{
+			ASN: data.ASNumber,
+		}
+		networks.Update(subV6Prefix, func(existing NetworkAttributes, _ bool) NetworkAttributes {
+			return mergeNetworkAttrs(existing, attrs)
+		})
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("unable to iter over ASN databases: %w", err)
+	}
+	err = c.d.GeoIP.IterGeoDatabases(func(prefix netip.Prefix, data geoip.GeoInfo) error {
+		subV6Prefix := helpers.PrefixTo16(prefix)
+		attrs := NetworkAttributes{
+			State:   data.State,
+			Country: data.Country,
+			City:    data.City,
+		}
+		networks.Update(subV6Prefix, func(existing NetworkAttributes, _ bool) NetworkAttributes {
+			return mergeNetworkAttrs(existing, attrs)
+		})
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("unable to iter over geo databases: %w", err)
+	}
+	// Add network sources
+	if err := func() error {
+		c.networkSourcesLock.RLock()
+		defer c.networkSourcesLock.RUnlock()
+		for _, networkList := range c.networkSources {
+			for _, val := range networkList {
+				subV6Prefix := helpers.PrefixTo16(val.Prefix)
+				networks.Update(subV6Prefix, func(existing NetworkAttributes, _ bool) NetworkAttributes {
+					return mergeNetworkAttrs(existing, val.NetworkAttributes)
+				})
+			}
+		}
+		return nil
+	}(); err != nil {
+		return fmt.Errorf("unable to update with remote network sources: %w", err)
+	}
+	// Add static network sources
+	if c.config.Networks != nil {
+		// Update networks with static network source
+		for prefix, attrs := range c.config.Networks.All() {
+			networks.Update(prefix, func(existing NetworkAttributes, _ bool) NetworkAttributes {
+				return mergeNetworkAttrs(existing, attrs)
+			})
+		}
+	}
+
+	// Clean up old files
+	oldFiles, err := filepath.Glob(filepath.Join(os.TempDir(), networksCSVPattern))
+	if err == nil {
+		for _, oldFile := range oldFiles {
+			os.Remove(oldFile)
+		}
+	}
+
+	// Create a temporary file to hold results
+	tmpfile, err := os.CreateTemp("", networksCSVPattern)
+	if err != nil {
+		return fmt.Errorf("cannot create temporary file for networks.csv: %w", err)
+	}
+
+	// Write a gzip dump to the disk
+	gzipWriter := gzip.NewWriter(tmpfile)
+	csvWriter := csv.NewWriter(gzipWriter)
+	csvWriter.Write([]string{"network", "name", "role", "site", "region", "country", "state", "city", "tenant", "asn"})
+	for prefix, leafAttrs := range networks.AllMaybeSorted() {
+		// Merge attributes from root to leaf for hierarchical inheritance.
+		// Supernets() returns in reverse-CIDR order (LPM to root), so we
+		// merge in that order.
+		current := leafAttrs
+		for _, attrs := range networks.Supernets(prefix) {
+			current = mergeNetworkAttrs(attrs, current)
+		}
+
+		var asnVal string
+		if current.ASN != 0 {
+			asnVal = strconv.Itoa(int(current.ASN))
+		}
+		csvWriter.Write([]string{
+			prefix.String(),
+			current.Name,
+			current.Role,
+			current.Site,
+			current.Region,
+			current.Country,
+			current.State,
+			current.City,
+			current.Tenant,
+			asnVal,
+		})
+	}
+	csvWriter.Flush()
+	gzipWriter.Close()
+
+	c.networksCSVLock.Lock()
+	if c.networksCSVFile != nil {
+		c.networksCSVFile.Close()
+		os.Remove(c.networksCSVFile.Name())
+	}
+	c.networksCSVFile = tmpfile
+	c.networksCSVLock.Unlock()
+
+	return nil
 }
 
 func (c *Component) networksCSVRefresher() {
@@ -51,122 +169,10 @@ func (c *Component) networksCSVRefresher() {
 		case <-c.networksCSVUpdateChan:
 		}
 
-		c.r.Debug().Msg("build networks.csv")
-		networks := helpers.MustNewSubnetMap[NetworkAttributes](nil)
-
-		// Add content of all geoip databases
-		err := c.d.GeoIP.IterASNDatabases(func(prefix netip.Prefix, data geoip.ASNInfo) error {
-			subV6Prefix := helpers.PrefixTo16(prefix)
-			attrs := NetworkAttributes{
-				ASN: data.ASNumber,
-			}
-			networks.Update(subV6Prefix, func(existing NetworkAttributes, _ bool) NetworkAttributes {
-				return mergeNetworkAttrs(existing, attrs)
-			})
-			return nil
-		})
-		if err != nil {
-			c.r.Err(err).Msg("unable to iter over ASN databases")
+		if err := c.networksCSVRefresh(); err != nil {
+			c.r.Err(err).Msg("cannot refresh networks.csv")
 			return
 		}
-		err = c.d.GeoIP.IterGeoDatabases(func(prefix netip.Prefix, data geoip.GeoInfo) error {
-			subV6Prefix := helpers.PrefixTo16(prefix)
-			attrs := NetworkAttributes{
-				State:   data.State,
-				Country: data.Country,
-				City:    data.City,
-			}
-			networks.Update(subV6Prefix, func(existing NetworkAttributes, _ bool) NetworkAttributes {
-				return mergeNetworkAttrs(existing, attrs)
-			})
-			return nil
-		})
-		if err != nil {
-			c.r.Err(err).Msg("unable to iter over geo databases")
-			return
-		}
-		// Add network sources
-		if err := func() error {
-			c.networkSourcesLock.RLock()
-			defer c.networkSourcesLock.RUnlock()
-			for _, networkList := range c.networkSources {
-				for _, val := range networkList {
-					subV6Prefix := helpers.PrefixTo16(val.Prefix)
-					networks.Update(subV6Prefix, func(existing NetworkAttributes, _ bool) NetworkAttributes {
-						return mergeNetworkAttrs(existing, val.NetworkAttributes)
-					})
-				}
-			}
-			return nil
-		}(); err != nil {
-			c.r.Err(err).Msg("unable to update with remote network sources")
-			return
-		}
-		// Add static network sources
-		if c.config.Networks != nil {
-			// Update networks with static network source
-			for prefix, attrs := range c.config.Networks.All() {
-				networks.Update(prefix, func(existing NetworkAttributes, _ bool) NetworkAttributes {
-					return mergeNetworkAttrs(existing, attrs)
-				})
-			}
-		}
-
-		// Clean up old files
-		oldFiles, err := filepath.Glob(filepath.Join(os.TempDir(), networksCSVPattern))
-		if err == nil {
-			for _, oldFile := range oldFiles {
-				os.Remove(oldFile)
-			}
-		}
-
-		// Create a temporary file to hold results
-		tmpfile, err := os.CreateTemp("", networksCSVPattern)
-		if err != nil {
-			c.r.Err(err).Msg("cannot create temporary file for networks.csv")
-			return
-		}
-
-		// Write a gzip dump to the disk
-		gzipWriter := gzip.NewWriter(tmpfile)
-		csvWriter := csv.NewWriter(gzipWriter)
-		csvWriter.Write([]string{"network", "name", "role", "site", "region", "country", "state", "city", "tenant", "asn"})
-		for prefix, leafAttrs := range networks.AllMaybeSorted() {
-			// Merge attributes from root to leaf for hierarchical inheritance.
-			// Supernets() returns in reverse-CIDR order (LPM to root), so we
-			// merge in that order.
-			current := leafAttrs
-			for _, attrs := range networks.Supernets(prefix) {
-				current = mergeNetworkAttrs(attrs, current)
-			}
-
-			var asnVal string
-			if current.ASN != 0 {
-				asnVal = strconv.Itoa(int(current.ASN))
-			}
-			csvWriter.Write([]string{
-				prefix.String(),
-				current.Name,
-				current.Role,
-				current.Site,
-				current.Region,
-				current.Country,
-				current.State,
-				current.City,
-				current.Tenant,
-				asnVal,
-			})
-		}
-		csvWriter.Flush()
-		gzipWriter.Close()
-
-		c.networksCSVLock.Lock()
-		if c.networksCSVFile != nil {
-			c.networksCSVFile.Close()
-			os.Remove(c.networksCSVFile.Name())
-		}
-		c.networksCSVFile = tmpfile
-		c.networksCSVLock.Unlock()
 
 		if once {
 			close(c.networksCSVReady)

@@ -161,3 +161,36 @@ func TestNetworksCSVWithGeoip(t *testing.T) {
 		}
 	})
 }
+
+func BenchmarkNetworks(b *testing.B) {
+	config := DefaultConfiguration()
+	config.SkipMigrations = true
+	r := reporter.NewMock(b)
+	config.Networks = helpers.MustNewSubnetMap(map[string]NetworkAttributes{
+		"::ffff:0.80.0.0/112":  {Tenant: "Alfred"}, // not covered by GeoIP
+		"::ffff:1.0.0.0/116":   {Name: "infra"},    // not covered by GeoIP but covers GeoIP entries
+		"::ffff:1.0.16.64/122": {Name: "infra"},    // matching a GeoIP entry
+		"::ffff:1.0.16.66/128": {Tenant: "Alfred"}, // nested in previous one
+	})
+
+	c, err := New(r, config, Dependencies{
+		Daemon:     daemon.NewMock(b),
+		HTTP:       httpserver.NewMock(b, r),
+		Schema:     schema.NewMock(b),
+		GeoIP:      geoip.NewMock(b, r, true),
+		ClickHouse: nil,
+	})
+	if err != nil {
+		b.Fatalf("New() error:\n%+v", err)
+	}
+	helpers.StartStop(b, c)
+	<-c.networksCSVReady
+
+	for b.Loop() {
+		if err := c.networksCSVRefresh(); err != nil {
+			b.Fatalf("networksCSVRefresh() error:\n%+v", err)
+		}
+	}
+	b.ReportMetric(0, "ns/op")
+	b.ReportMetric(float64(b.Elapsed())/float64(b.N)/1_000_000, "ms/op")
+}

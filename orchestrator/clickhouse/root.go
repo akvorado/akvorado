@@ -149,7 +149,7 @@ func (c *Component) Start() error {
 			case <-c.t.Dying():
 				return nil
 			case <-notifyChan:
-				c.refreshNetworksCSV()
+				c.triggerNetworksCSVRefresh()
 			}
 		}
 	})

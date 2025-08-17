@@ -14,7 +14,7 @@ import (
 )
 
 // NewMock create a new HTTP component listening on a random free port.
-func NewMock(t *testing.T, r *reporter.Reporter) *Component {
+func NewMock(t testing.TB, r *reporter.Reporter) *Component {
 	t.Helper()
 	config := DefaultConfiguration()
 	config.Listen = "0.0.0.0:0"

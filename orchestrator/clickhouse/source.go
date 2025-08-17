@@ -25,6 +25,6 @@ func (c *Component) UpdateSource(ctx context.Context, name string, source remote
 	c.networkSourcesLock.Lock()
 	c.networkSources[name] = results
 	c.networkSourcesLock.Unlock()
-	c.refreshNetworksCSV()
+	c.triggerNetworksCSVRefresh()
 	return len(results), nil
 }
