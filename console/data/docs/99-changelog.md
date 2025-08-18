@@ -10,6 +10,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 💥 *docker*: update kafka data volume mount path
+
 ## 2.0.0-beta.4 - 2025-08-18
 
 > [!CAUTION]
