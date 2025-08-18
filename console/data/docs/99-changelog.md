@@ -10,7 +10,12 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 2.0.0-beta.4 - 2025-08-18
+
+> [!CAUTION]
+> This is a beta release! Be sure to read the section about 2.0.0-beta.1 as well.
+
+This is likely the last beta before releasing 2.0.0.
 
 - 🌱 *outlet*: improve performance of the BMP routing provider
 - 🌱 *documentation*: document how to tune TCP receive buffer for BMP routing provider
