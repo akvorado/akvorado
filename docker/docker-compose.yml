@@ -41,7 +41,7 @@ services:
 
     restart: unless-stopped
     volumes:
-      - akvorado-kafka:/var/lib/kafka
+      - akvorado-kafka:/var/lib/kafka/data
     healthcheck:
       interval: 20s
       test: ["CMD",
