@@ -28,6 +28,8 @@ services:
     image: prom/prometheus:v2.47.2 # v\d+\.\d+\.\d+
   node-exporter:
     image: prom/node-exporter:v1.7.0 # v\d+\.\d+\.\d+
+  cadvisor:
+    image: ghcr.io/google/cadvisor:v0.53.0 # v\d+\.\d+\.\d+
   kafka-ui:
     image: ghcr.io/kafbat/kafka-ui:v1.3.0 # v\d+\.\d+\.\d+
 

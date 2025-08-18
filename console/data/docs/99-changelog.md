@@ -15,6 +15,7 @@ identified with a specific icon:
 - 💥 *docker*: update Kafka data volume mount path (check [PR
   #1900](https://github.com/akvorado/akvorado/pull/1900) for the consequences if
   you upgrade from a previous beta)
+- 🌱 *docker*: add cAdvisor to the monitoring stack
 
 ## 2.0.0-beta.4 - 2025-08-18
 

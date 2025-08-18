@@ -28,6 +28,7 @@ services:
       - traefik.http.routers.prometheus.rule=PathPrefix(`/prometheus`)
       - traefik.http.services.prometheus.loadbalancer.server.port=9090
 
+  # Node exporter for host metrics
   node-exporter:
     extends:
       file: versions.yml
@@ -40,6 +41,28 @@ services:
       - --path.procfs=/host/proc
       - --path.sysfs=/host/sys
       - --no-collector.filesystem
+
+  # cAdvisor for container metrics
+  cadvisor:
+    extends:
+      file: versions.yml
+      service: cadvisor
+    restart: unless-stopped
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /sys:/sys:ro
+      - /dev/disk/:/dev/disk:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    command:
+      # Minimize the amount of metrics reported, notably don't report anything from host
+      - --docker_only
+      - --store_container_labels=false
+      - --disable_root_cgroup_stats
+      - --enable_metrics=cpu,cpuLoad,diskIO,memory,network,oom_event,process,tcp,udp
 
   # Kafka monitoring
   jmx-exporter-downloader:
