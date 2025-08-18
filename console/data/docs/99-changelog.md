@@ -12,7 +12,9 @@ identified with a specific icon:
 
 ## Unreleased
 
-- 💥 *docker*: update kafka data volume mount path
+- 💥 *docker*: update Kafka data volume mount path (check [PR
+  #1900](https://github.com/akvorado/akvorado/pull/1900) for the consequences if
+  you upgrade from a previous beta)
 
 ## 2.0.0-beta.4 - 2025-08-18
 
