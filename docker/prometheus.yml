@@ -106,9 +106,5 @@ scrape_configs:
               - com.docker.compose.service=traefik
     relabel_configs:
       - source_labels: [__meta_docker_port_private]
-        regex: 80
+        regex: 8080
         action: keep
-      - source_labels: [__meta_docker_network_ip, __meta_docker_port_private]
-        target_label: __address__
-        regex: (.*);80
-        replacement: $1:8080

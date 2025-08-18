@@ -248,6 +248,8 @@ services:
       - traefik.http.routers.traefik-metrics.rule=PathPrefix(`/traefik/metrics`)
       - traefik.http.routers.traefik-metrics.priority=200
       - traefik.http.routers.traefik-metrics.service=prometheus@internal
+    expose:
+      - 8080/tcp
     ports:
       # Port 8080 is considered private as it exposes sensible unauthenticated
       # services (ClickHouse, configuration, ...). Therefore, it is only exposed

@@ -73,8 +73,7 @@ services:
       - ./jmx-exporter-download.sh:/usr/local/bin/jmx-exporter-download.sh
   kafka:
     expose:
-      - 9092 # kafka
-      - 9100 # metrics
+      - 9100/tcp # metrics
     depends_on:
       jmx-exporter-downloader:
         condition: service_completed_successfully
