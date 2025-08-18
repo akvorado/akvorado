@@ -25,9 +25,9 @@ services:
   grafana:
     image: grafana/grafana-oss:10.2.6 # \d+\.\d+\.\d+
   prometheus:
-    image: prom/prometheus:v2.47.2 # v\d+\.\d+\.\d+
+    image: prom/prometheus:v3.5.0 # v\d+\.\d+\.\d+
   node-exporter:
-    image: prom/node-exporter:v1.7.0 # v\d+\.\d+\.\d+
+    image: prom/node-exporter:v1.9.1 # v\d+\.\d+\.\d+
   cadvisor:
     image: ghcr.io/google/cadvisor:v0.53.0 # v\d+\.\d+\.\d+
   kafka-ui:

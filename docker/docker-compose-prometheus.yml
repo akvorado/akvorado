@@ -14,6 +14,8 @@ services:
       - akvorado-prometheus:/prometheus
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     command:
       # Those are the defaults
       - --config.file=/etc/prometheus/prometheus.yml
@@ -24,7 +26,6 @@ services:
       - --web.external-url=/prometheus
     labels:
       - traefik.enable=true
-      - traefik.http.routers.prometheus.entrypoints=public
       - traefik.http.routers.prometheus.rule=PathPrefix(`/prometheus`)
       - traefik.http.services.prometheus.loadbalancer.server.port=9090
 
@@ -35,12 +36,11 @@ services:
       service: node-exporter
     restart: unless-stopped
     volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
+      - /:/host:ro,rslave
+    network_mode: host
+    pid: host
     command:
-      - --path.procfs=/host/proc
-      - --path.sysfs=/host/sys
-      - --no-collector.filesystem
+      - --path.rootfs=/host
 
   # cAdvisor for container metrics
   cadvisor:

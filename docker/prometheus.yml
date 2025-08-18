@@ -9,6 +9,10 @@ scrape_configs:
     static_configs:
       - targets:
           - 127.0.0.1:9090
+  - job_name: node-exporter
+    static_configs:
+      - targets:
+          - host.docker.internal:9100
   - job_name: grafana
     docker_sd_configs:
       - host: unix:///var/run/docker.sock
@@ -61,17 +65,7 @@ scrape_configs:
       - source_labels: [__meta_docker_port_private]
         regex: 9100
         action: keep
-  - job_name: node-exporter
-    docker_sd_configs:
-      - host: unix:///var/run/docker.sock
-        refresh_interval: 30s
-        filters:
-          - name: label
-            values:
-              - com.docker.compose.project=akvorado
-              - com.docker.compose.service=node-exporter
   - job_name: cadvisor
-    metrics_path: /cadvisor/metrics
     docker_sd_configs:
       - host: unix:///var/run/docker.sock
         refresh_interval: 30s
@@ -110,6 +104,11 @@ scrape_configs:
             values:
               - com.docker.compose.project=akvorado
               - com.docker.compose.service=traefik
+    relabel_configs:
       - source_labels: [__meta_docker_port_private]
         regex: 80
-        replacement: 8080
+        action: keep
+      - source_labels: [__meta_docker_network_ip, __meta_docker_port_private]
+        target_label: __address__
+        regex: (.*);80
+        replacement: $1:8080

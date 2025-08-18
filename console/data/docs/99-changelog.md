@@ -16,6 +16,8 @@ identified with a specific icon:
   #1900](https://github.com/akvorado/akvorado/pull/1900) for the consequences if
   you upgrade from a previous beta)
 - 🌱 *docker*: add cAdvisor to the monitoring stack
+- 🌱 *docker*: update Prometheus to 3.5.0
+- 🌱 *docker*: update node-exporter to 1.9.1
 
 ## 2.0.0-beta.4 - 2025-08-18
 
