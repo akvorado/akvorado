@@ -16,6 +16,7 @@ jobs:
           fetch-depth: 0        # All history needed
       - name: Check for changes
         id: check-changes
+        if: github.event_name == 'schedule'
         run: |
           LOCKFILES="go.sum console/frontend/package-lock.json"
           LAST_CHANGE=$(git log -1 --format=%ct -- $LOCKFILES)
@@ -29,12 +30,12 @@ jobs:
             echo "should_run=false" >> $GITHUB_OUTPUT
           fi
       - uses: cachix/install-nix-action@v31
-        if: steps.check-changes.outputs.should_run == 'true'
+        if: github.event_name != 'schedule' || steps.check-changes.outputs.should_run == 'true'
       - name: Update dependency hashes
-        if: steps.check-changes.outputs.should_run == 'true'
+        if: github.event_name != 'schedule' || steps.check-changes.outputs.should_run == 'true'
         run: nix run .#update
       - name: Push update
-        if: steps.check-changes.outputs.should_run == 'true'
+        if: github.event_name != 'schedule' || steps.check-changes.outputs.should_run == 'true'
         run: |
           git config --local user.name "github-actions[bot]"
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
