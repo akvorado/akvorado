@@ -251,7 +251,7 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 			if !nd.d.Schema.IsDisabled(schema.ColumnGroupL3L4) {
 				// Misc L3/L4 fields
 				switch field.Type {
-				case netflow.IPFIX_FIELD_minimumTTL:
+				case netflow.IPFIX_FIELD_ipTTL, netflow.IPFIX_FIELD_minimumTTL:
 					bf.AppendUint(schema.ColumnIPTTL, decodeUNumber(v))
 				case netflow.IPFIX_FIELD_ipClassOfService:
 					bf.AppendUint(schema.ColumnIPTos, decodeUNumber(v))
