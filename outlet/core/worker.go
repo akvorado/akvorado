@@ -56,7 +56,7 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 		return kafka.ErrStopProcessing
 	}
 
-	// Raw flaw decoding: fatal
+	// Raw flow decoding: fatal
 	w.c.metrics.rawFlowsReceived.Inc()
 	w.rawFlow.ResetVT()
 	if err := w.rawFlow.UnmarshalVT(data); err != nil {
