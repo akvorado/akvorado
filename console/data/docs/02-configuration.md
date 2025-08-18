@@ -1,9 +1,13 @@
 # Configuration
 
 The orchestrator service is configured through YAML files (shipped in the
-`config/` directory) and includes the configuration of the other services. Other
-services are expected to query the orchestrator through HTTP on start to
-retrieve their configuration.
+`config/` directory) and includes the configuration of the other services.
+
+> [!TIP]
+> Other services query the orchestrator through HTTP on start to retrieve their
+> configuration. This means that if you change the configuration for one
+> service, you always need to restart the orchestrator first, then the service
+> whose configuration has changed.
 
 The default configuration can be obtained with `docker compose exec
 akvorado-orchestrator akvorado orchestrator --dump --check /dev/null`. Note that
