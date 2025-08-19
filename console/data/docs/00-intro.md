@@ -34,16 +34,11 @@ install the `docker-compose-v2` package. On macOS, you can use the
 
 Monitor the output of `docker compose ps`. Once `akvorado-console` service is
 present "healthy", *Akvorado* web interface should be running on port 8081. It
-can take a few minutes. The demo includes synthetic flow data to help you
-explore the features.
+can take a few minutes.
 
 ### Next steps
 
 To connect your own network devices:
-
-1. Disable demo data:
-   - Remove the reference to `docker-compose-demo.yml` from `.env`
-   - Comment out the last line in `akvorado.yaml`
 
 1. Customize the configuration in `akvorado.yaml`:
    - Set SNMP communities for your devices in `outlet` → `metadata` → `provider` → `communities`
@@ -54,8 +49,8 @@ To connect your own network devices:
    - sFlow: port 6343
    
 1. Restart all containers:
-   - `docker compose down --volumes`
-   - `docker compose up -d`
+   - `docker compose down`
+   - `docker compose up --wait`
 
 > [!TIP]
 > Interface classification is essential for the web interface to work properly.
