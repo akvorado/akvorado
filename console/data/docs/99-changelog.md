@@ -15,6 +15,7 @@ identified with a specific icon:
 - 💥 *docker*: update Kafka data volume mount path (check [PR
   #1900](https://github.com/akvorado/akvorado/pull/1900) for the consequences if
   you upgrade from a previous beta)
+- 🌱 *docker*: enforce bridge name
 - 🌱 *docker*: add cAdvisor to the monitoring stack
 - 🌱 *docker*: update Prometheus to 3.5.0
 - 🌱 *docker*: update node-exporter to 1.9.1

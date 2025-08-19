@@ -4,8 +4,11 @@ networks:
     enable_ipv6: true
     ipam:
       config:
-        - subnet: 247.16.12.0/24
-        - subnet: fd1c:8ce2:6fb:1::/64
+        - subnet: 247.16.14.0/24
+        - subnet: fd1c:8ce3:6fb:1::/64
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: br-akvorado
 
 volumes:
   akvorado-kafka:
