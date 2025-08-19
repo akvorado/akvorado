@@ -55,7 +55,12 @@ per-day limit on the number of times one IP can fetch the GeoIP database.
 If you need to work on the frontend part, you can spawn the Docker compose
 setup, then in `console/frontend`, use `npm run dev` and point your browser to
 `http://localhost:5173` instead of `http://localhost:8080`. Any change of
-frontend-related files should be applied immediately.
+frontend-related files should be applied immediately. You still need to run a
+local version of the console service:
+
+```console
+$ make && AKVORADO_CFG_CONSOLE_SERVELIVEFS=true ./bin/akvorado console /dev/null
+```
 
 # Licensing
 
