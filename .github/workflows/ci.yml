@@ -150,7 +150,7 @@ jobs:
         run: |
           ./.github/e2e.sh compose-setup
           docker compose up --detach --quiet-pull
-      - name: Wait and validate for the first flow
+      - name: Run tests
         timeout-minutes: 3
         run: |
           ./.github/e2e.sh tests

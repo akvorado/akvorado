@@ -46,17 +46,17 @@ EOF
         mkdir -p screenshots
         while read path target args; do
           [ -n $path ] || continue
-          google-chrome --headless --disable-gpu --screenshot=screenshots/$target.png http://127.0.0.1:8080$path
+          google-chrome --headless --disable-gpu $args --screenshot=screenshots/$target.png http://127.0.0.1:8080$path
         done <<EOF
-/          home
+/          home             --window-size=1280,720
 /          home-small       --window-size=360,800
-/visualize visualize
+/visualize visualize        --window-size=1280,720
 /visualize visualize-small  --window-size=360,800
-/docs      docs
+/docs      docs             --window-size=1280,720
 /docs      docs-small       --window-size=360,800
 
-/kafka-ui/ui/clusters/local/consumer-groups  kafka-ui
-/traefik/dashboard/                          traefik
+/kafka-ui/ui/clusters/local/consumer-groups  kafka-ui  --window-size=1280,720
+/traefik/dashboard/                          traefik   --window-size=1280,720
 EOF
         ;;
 
