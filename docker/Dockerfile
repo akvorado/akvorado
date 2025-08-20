@@ -16,7 +16,7 @@ COPY . .
 COPY --from=build-js /build/console/data/frontend console/data/frontend
 RUN touch console/frontend/node_modules .fmt-js~ .fmt.go~ .lint-js~ .lint-go~ \
  && find . -print0 | xargs -0 touch -d @0
-RUN make all_indep
+RUN make all-indep
 ARG TARGETOS
 ARG TARGETARCH
 ARG TARGETVARIANT
