@@ -43,6 +43,6 @@ runs:
         path: |
           orchestrator/clickhouse/data/udp.csv
           orchestrator/clickhouse/data/tcp.csv
-        key: cache-iana-${{ hashFiles('Makefile', 'nix/ianaServiceNamesHash.txt') }}
+        key: cache-iana-${{ hashFiles('Makefile', 'nix/ianaServiceNamesHash.txt') }}-${{ github.run_id }}
         restore-keys: |
           cache-iana-${{ hashFiles('Makefile', 'nix/ianaServiceNamesHash.txt') }}-

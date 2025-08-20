@@ -236,7 +236,7 @@ jobs:
           path: |
             orchestrator/clickhouse/data/udp.csv
             orchestrator/clickhouse/data/tcp.csv
-          key: cache-iana-${{ hashFiles('Makefile', 'nix/ianaServiceNamesHash.txt') }}-${{ matrix.go-version }}
+          key: cache-iana-${{ hashFiles('Makefile', 'nix/ianaServiceNamesHash.txt') }}-${{ github.run_id }}-${{ matrix.go-version }}
       - name: Tests
         run: make test
 
