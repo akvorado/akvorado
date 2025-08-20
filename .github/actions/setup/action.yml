@@ -44,3 +44,5 @@ runs:
           orchestrator/clickhouse/data/udp.csv
           orchestrator/clickhouse/data/tcp.csv
         key: cache-iana-${{ hashFiles('Makefile', 'nix/ianaServiceNamesHash.txt') }}
+        restore-keys: |
+          cache-iana-${{ hashFiles('Makefile', 'nix/ianaServiceNamesHash.txt') }}-
