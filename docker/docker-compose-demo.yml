@@ -1,6 +1,6 @@
 ---
 services:
-  akvorado-exporter0: &exporter
+  akvorado-exporter-1: &exporter
     extends:
       file: versions.yml
       service: akvorado
@@ -11,12 +11,12 @@ services:
         condition: service_healthy
       akvorado-outlet:
         condition: service_healthy
-  akvorado-exporter1:
+  akvorado-exporter-2:
     <<: *exporter
     command: demo-exporter http://akvorado-orchestrator:8080#1
-  akvorado-exporter2:
+  akvorado-exporter-3:
     <<: *exporter
     command: demo-exporter http://akvorado-orchestrator:8080#2
-  akvorado-exporter3:
+  akvorado-exporter-4:
     <<: *exporter
     command: demo-exporter http://akvorado-orchestrator:8080#3

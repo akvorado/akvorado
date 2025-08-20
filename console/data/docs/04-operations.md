@@ -936,7 +936,7 @@ You can disable some services by using profiles:
 ```yaml
 services:
   akvorado-inlet:
-    profiles: ["disabled"]
+    profiles: [ disabled ]
 ```
 
 It is possible to remove a value with the `!reset` tag:

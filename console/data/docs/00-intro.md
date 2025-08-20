@@ -50,7 +50,7 @@ To connect your own network devices:
    
 1. Restart all containers:
    - `docker compose down`
-   - `docker compose up --wait`
+   - `docker compose up -d`
 
 > [!TIP]
 > Interface classification is essential for the web interface to work properly.
