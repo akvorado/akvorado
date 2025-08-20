@@ -165,13 +165,6 @@ jobs:
           if-no-files-found: error
           path: |
             e2e-coverage.out
-      - name: Upload screenshots
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-screenshots
-          if-no-files-found: error
-          path: |
-            screenshots/*.png
 
   coverage:
     name: 🔍 Upload code coverage
