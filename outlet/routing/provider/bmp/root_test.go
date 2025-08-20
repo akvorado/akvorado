@@ -1122,6 +1122,7 @@ func TestBMP(t *testing.T) {
 		conn := dial(t, p)
 
 		send(t, conn, "bmp-init.pcap")
+		time.Sleep(10 * time.Millisecond)
 		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "buffer_size")
 		bufferSize := gotMetrics[`buffer_size_bytes{exporter="127.0.0.1"}`]
 		bufferSize1, _ := strconv.ParseFloat(bufferSize, 32)
@@ -1135,6 +1136,7 @@ func TestBMP(t *testing.T) {
 		conn = dial(t, p)
 
 		send(t, conn, "bmp-init.pcap")
+		time.Sleep(10 * time.Millisecond)
 		gotMetrics = r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "buffer_size")
 		bufferSize = gotMetrics[`buffer_size_bytes{exporter="127.0.0.1"}`]
 		bufferSize2, _ := strconv.ParseFloat(bufferSize, 32)
