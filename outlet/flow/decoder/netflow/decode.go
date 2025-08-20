@@ -91,33 +91,48 @@ func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets 
 			}
 		case netflow.DataFlowSet:
 			for _, record := range tFlowSet.Records {
-				nd.decodeRecord(version, obsDomainID, samplingRateSys, record.Values, ts, sysUptime, options, bf)
-				finalize()
+				nd.decodeRecord(version, obsDomainID, samplingRateSys, record.Values, ts, sysUptime, options, bf, finalize)
 			}
 		}
 	}
 }
 
-func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRateSys *samplingRateSystem, fields []netflow.DataField, ts, sysUptime uint64, options decoder.Option, bf *schema.FlowMessage) {
+func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRateSys *samplingRateSystem, fields []netflow.DataField, ts, sysUptime uint64, options decoder.Option, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
 	var etype, dstPort, srcPort uint16
 	var proto, icmpType, icmpCode uint8
 	var foundIcmpTypeCode bool
+	var foundReverseElement bool
+
+	var bfNonKey *schema.FlowMessage
+
+	bfRev := nd.d.Schema.NewFlowMessage()
+
 	mplsLabels := make([]uint32, 0, 5)
 	dataLinkFrameSectionIdx := -1
 	for idx, field := range fields {
 		v, ok := field.Value.([]byte)
-		if !ok || field.PenProvided {
+
+		// Skip processing when field is not an IPFIX Reverse Information Element
+		if !ok || (field.PenProvided && field.Pen != 29305) {
 			continue
+		}
+		if field.PenProvided {
+			foundReverseElement = true
+			bfNonKey = bfRev
+		} else {
+			bfNonKey = bf
 		}
 
 		switch field.Type {
 		// Statistics
 		case netflow.IPFIX_FIELD_octetDeltaCount, netflow.IPFIX_FIELD_postOctetDeltaCount, netflow.IPFIX_FIELD_initiatorOctets, netflow.IPFIX_FIELD_responderOctets:
-			bf.AppendUint(schema.ColumnBytes, decodeUNumber(v))
+			bfNonKey.AppendUint(schema.ColumnBytes, decodeUNumber(v))
 		case netflow.IPFIX_FIELD_packetDeltaCount, netflow.IPFIX_FIELD_postPacketDeltaCount:
-			bf.AppendUint(schema.ColumnPackets, decodeUNumber(v))
+			bfNonKey.AppendUint(schema.ColumnPackets, decodeUNumber(v))
+		// TODO
 		case netflow.IPFIX_FIELD_samplingInterval, netflow.IPFIX_FIELD_samplerRandomInterval:
 			bf.SamplingRate = decodeUNumber(v)
+		// TODO
 		case netflow.IPFIX_FIELD_samplerId, netflow.IPFIX_FIELD_selectorId:
 			bf.SamplingRate = uint64(samplingRateSys.GetSamplingRate(version, obsDomainID, decodeUNumber(v)))
 
@@ -126,26 +141,32 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 			if !isAllZeroIP(v) {
 				etype = helpers.ETypeIPv4
 				bf.SrcAddr = decodeIPFromBytes(v)
+				bfRev.DstAddr = decodeIPFromBytes(v)
 			}
 		case netflow.IPFIX_FIELD_destinationIPv4Address:
 			if !isAllZeroIP(v) {
 				etype = helpers.ETypeIPv4
 				bf.DstAddr = decodeIPFromBytes(v)
+				bfRev.SrcAddr = decodeIPFromBytes(v)
 			}
 		case netflow.IPFIX_FIELD_sourceIPv6Address:
 			if !isAllZeroIP(v) {
 				etype = helpers.ETypeIPv6
 				bf.SrcAddr = decodeIPFromBytes(v)
+				bfRev.DstAddr = decodeIPFromBytes(v)
 			}
 		case netflow.IPFIX_FIELD_destinationIPv6Address:
 			if !isAllZeroIP(v) {
 				etype = helpers.ETypeIPv6
 				bf.DstAddr = decodeIPFromBytes(v)
+				bfRev.SrcAddr = decodeIPFromBytes(v)
 			}
 		case netflow.IPFIX_FIELD_sourceIPv4PrefixLength, netflow.IPFIX_FIELD_sourceIPv6PrefixLength:
 			bf.SrcNetMask = uint8(decodeUNumber(v))
+			bfRev.DstNetMask = uint8(decodeUNumber(v))
 		case netflow.IPFIX_FIELD_destinationIPv4PrefixLength, netflow.IPFIX_FIELD_destinationIPv6PrefixLength:
 			bf.DstNetMask = uint8(decodeUNumber(v))
+			bfRev.SrcNetMask = uint8(decodeUNumber(v))
 		case netflow.IPFIX_FIELD_ipNextHopIPv4Address, netflow.IPFIX_FIELD_bgpNextHopIPv4Address, netflow.IPFIX_FIELD_ipNextHopIPv6Address, netflow.IPFIX_FIELD_bgpNextHopIPv6Address:
 			bf.NextHop = decodeIPFromBytes(v)
 
@@ -153,20 +174,26 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 		case netflow.IPFIX_FIELD_sourceTransportPort:
 			srcPort = uint16(decodeUNumber(v))
 			bf.AppendUint(schema.ColumnSrcPort, uint64(srcPort))
+			bfRev.AppendUint(schema.ColumnDstPort, uint64(srcPort))
 		case netflow.IPFIX_FIELD_destinationTransportPort:
 			dstPort = uint16(decodeUNumber(v))
 			bf.AppendUint(schema.ColumnDstPort, uint64(dstPort))
+			bfRev.AppendUint(schema.ColumnSrcPort, uint64(dstPort))
 		case netflow.IPFIX_FIELD_protocolIdentifier:
 			proto = uint8(decodeUNumber(v))
 			bf.AppendUint(schema.ColumnProto, uint64(proto))
+			bfRev.AppendUint(schema.ColumnProto, uint64(proto))
 
 		// Network
 		case netflow.IPFIX_FIELD_bgpSourceAsNumber:
 			bf.SrcAS = uint32(decodeUNumber(v))
+			bfRev.DstAS = uint32(decodeUNumber(v))
 		case netflow.IPFIX_FIELD_bgpDestinationAsNumber:
 			bf.DstAS = uint32(decodeUNumber(v))
+			bfRev.SrcAS = uint32(decodeUNumber(v))
 
 		// Interfaces
+		// TODO
 		case netflow.IPFIX_FIELD_ingressInterface:
 			bf.InIf = uint32(decodeUNumber(v))
 		case netflow.IPFIX_FIELD_egressInterface:
@@ -196,6 +223,7 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 		// Remaining
 		case netflow.IPFIX_FIELD_forwardingStatus:
 			bf.AppendUint(schema.ColumnForwardingStatus, decodeUNumber(v))
+			bfRev.AppendUint(schema.ColumnForwardingStatus, decodeUNumber(v))
 		default:
 			if options.TimestampSource == pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED {
 				switch field.Type {
@@ -217,12 +245,16 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 				switch field.Type {
 				case netflow.IPFIX_FIELD_postNATSourceIPv4Address:
 					bf.AppendIPv6(schema.ColumnSrcAddrNAT, decodeIPFromBytes(v))
+					bfRev.AppendIPv6(schema.ColumnDstAddrNAT, decodeIPFromBytes(v))
 				case netflow.IPFIX_FIELD_postNATDestinationIPv4Address:
 					bf.AppendIPv6(schema.ColumnDstAddrNAT, decodeIPFromBytes(v))
+					bfRev.AppendIPv6(schema.ColumnSrcAddrNAT, decodeIPFromBytes(v))
 				case netflow.IPFIX_FIELD_postNAPTSourceTransportPort:
 					bf.AppendUint(schema.ColumnSrcPortNAT, decodeUNumber(v))
+					bfRev.AppendUint(schema.ColumnDstPortNAT, decodeUNumber(v))
 				case netflow.IPFIX_FIELD_postNAPTDestinationTransportPort:
 					bf.AppendUint(schema.ColumnDstPortNAT, decodeUNumber(v))
+					bfRev.AppendUint(schema.ColumnSrcPortNAT, decodeUNumber(v))
 				}
 			}
 
@@ -232,19 +264,25 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 				case netflow.IPFIX_FIELD_vlanId, netflow.IPFIX_FIELD_dot1qVlanId:
 					if bf.SrcVlan == 0 {
 						bf.SrcVlan = uint16(decodeUNumber(v))
+						bfRev.DstVlan = uint16(decodeUNumber(v))
 					}
 				case netflow.IPFIX_FIELD_postVlanId, netflow.IPFIX_FIELD_postDot1qVlanId:
 					if bf.DstVlan == 0 {
 						bf.DstVlan = uint16(decodeUNumber(v))
+						bfRev.SrcVlan = uint16(decodeUNumber(v))
 					}
 				case netflow.IPFIX_FIELD_sourceMacAddress:
 					bf.AppendUint(schema.ColumnSrcMAC, decodeUNumber(v))
+					bfRev.AppendUint(schema.ColumnDstMAC, decodeUNumber(v))
 				case netflow.IPFIX_FIELD_destinationMacAddress:
 					bf.AppendUint(schema.ColumnDstMAC, decodeUNumber(v))
+					bfRev.AppendUint(schema.ColumnSrcMAC, decodeUNumber(v))
 				case netflow.IPFIX_FIELD_postSourceMacAddress:
 					bf.AppendUint(schema.ColumnSrcMAC, decodeUNumber(v))
+					bfRev.AppendUint(schema.ColumnDstMAC, decodeUNumber(v))
 				case netflow.IPFIX_FIELD_postDestinationMacAddress:
 					bf.AppendUint(schema.ColumnDstMAC, decodeUNumber(v))
+					bfRev.AppendUint(schema.ColumnSrcMAC, decodeUNumber(v))
 				}
 			}
 
@@ -252,13 +290,13 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 				// Misc L3/L4 fields
 				switch field.Type {
 				case netflow.IPFIX_FIELD_ipTTL, netflow.IPFIX_FIELD_minimumTTL:
-					bf.AppendUint(schema.ColumnIPTTL, decodeUNumber(v))
+					bfNonKey.AppendUint(schema.ColumnIPTTL, decodeUNumber(v))
 				case netflow.IPFIX_FIELD_ipClassOfService:
 					bf.AppendUint(schema.ColumnIPTos, decodeUNumber(v))
 				case netflow.IPFIX_FIELD_flowLabelIPv6:
 					bf.AppendUint(schema.ColumnIPv6FlowLabel, decodeUNumber(v))
 				case netflow.IPFIX_FIELD_tcpControlBits:
-					bf.AppendUint(schema.ColumnTCPFlags, decodeUNumber(v))
+					bfNonKey.AppendUint(schema.ColumnTCPFlags, decodeUNumber(v))
 				case netflow.IPFIX_FIELD_fragmentIdentification:
 					bf.AppendUint(schema.ColumnIPFragmentID, decodeUNumber(v))
 				case netflow.IPFIX_FIELD_fragmentOffset:
@@ -311,11 +349,19 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 		}
 	}
 	bf.AppendUint(schema.ColumnEType, uint64(etype))
+	bfRev.AppendUint(schema.ColumnEType, uint64(etype))
 	if len(mplsLabels) > 0 {
 		bf.AppendArrayUInt32(schema.ColumnMPLSLabels, mplsLabels)
 	}
 	if bf.SamplingRate == 0 {
 		bf.SamplingRate = uint64(samplingRateSys.GetSamplingRate(version, obsDomainID, 0))
+	}
+
+	finalize()
+
+	if foundReverseElement {
+		bf.AppendFrom(bfRev)
+		finalize()
 	}
 }
 

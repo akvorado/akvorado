@@ -388,3 +388,80 @@ func (bf *FlowMessage) Finalize() {
 	bf.reset()
 	bf.check()
 }
+
+// AppendFrom appends all values from last row of the other FlowMessage to the current FlowMessage
+func (bf *FlowMessage) AppendFrom(bf2 *FlowMessage) {
+	for idx, col2 := range bf2.batch.columns {
+		// Skip unpopulated columns
+		if col2 == nil {
+			continue
+		}
+		// Or unset columns
+		if !bf2.batch.columnSet.Test(uint(idx)) {
+			continue
+		}
+
+		bf.batch.columnSet.Set(uint(idx))
+
+		// Append the value based on the type
+		switch col2 := col2.(type) {
+		case *proto.ColUInt64:
+			col := bf.batch.columns[idx].(*proto.ColUInt64)
+			value := col2.Row(len(*col2) - 1)
+			col.Append(value)
+			bf.appendDebug(ColumnKey(idx), value)
+		case *proto.ColUInt32:
+			col := bf.batch.columns[idx].(*proto.ColUInt32)
+			value := col2.Row(len(*col2) - 1)
+			col.Append(value)
+			bf.appendDebug(ColumnKey(idx), value)
+		case *proto.ColUInt16:
+			col := bf.batch.columns[idx].(*proto.ColUInt16)
+			value := col2.Row(len(*col2) - 1)
+			col.Append(value)
+			bf.appendDebug(ColumnKey(idx), value)
+		case *proto.ColUInt8:
+			col := bf.batch.columns[idx].(*proto.ColUInt8)
+			value := col2.Row(len(*col2) - 1)
+			col.Append(value)
+			bf.appendDebug(ColumnKey(idx), value)
+		case *proto.ColIPv6:
+			col := bf.batch.columns[idx].(*proto.ColIPv6)
+			value := col2.Row(len(*col2) - 1)
+			col.Append(value)
+			bf.appendDebug(ColumnKey(idx), value)
+		case *proto.ColDateTime:
+			col := bf.batch.columns[idx].(*proto.ColDateTime)
+			value := col2.Data[len(col2.Data)-1]
+			col.AppendRaw(value)
+			bf.appendDebug(ColumnKey(idx), value)
+		case *proto.ColEnum8:
+			col := bf.batch.columns[idx].(*proto.ColEnum8)
+			value := col2.Row(len(*col2) - 1)
+			col.Append(value)
+			bf.appendDebug(ColumnKey(idx), value)
+		case *proto.ColLowCardinality[string]:
+			col := bf.batch.columns[idx].(*proto.ColLowCardinality[string])
+			value := col2.Values[len(col2.Values)-1]
+			col.Append(value)
+			bf.appendDebug(ColumnKey(idx), value)
+		case *proto.ColLowCardinality[proto.IPv6]:
+			col := bf.batch.columns[idx].(*proto.ColLowCardinality[proto.IPv6])
+			value := col2.Values[len(col2.Values)-1]
+			col.Append(value)
+			bf.appendDebug(ColumnKey(idx), value)
+		case *proto.ColArr[uint32]:
+			col := bf.batch.columns[idx].(*proto.ColArr[uint32])
+			value := col2.Row(col2.Rows() - 1)
+			col.Append(value)
+			bf.appendDebug(ColumnKey(idx), value)
+		case *proto.ColArr[proto.UInt128]:
+			col := bf.batch.columns[idx].(*proto.ColArr[proto.UInt128])
+			value := col2.Row(col2.Rows() - 1)
+			col.Append(value)
+			bf.appendDebug(ColumnKey(idx), value)
+		default:
+			panic(fmt.Sprintf("unhandled ClickHouse type %q", col2.Type()))
+		}
+	}
+}
