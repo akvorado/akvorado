@@ -55,8 +55,6 @@ all_indep: $(GENERATED)
 # Tools
 
 ENUMER = go tool enumer
-GOCOV = go tool gocov
-GOCOVXML = go tool gocov-xml
 GOIMPORTS = go tool goimports
 GOTESTSUM = go tool gotestsum
 MOCKGEN = go tool mockgen
@@ -197,7 +195,6 @@ test-coverage-go: ; $(info $(M) running Go coverage tests…) @ ## Run Go covera
 	   else cp test/go/profile.out.tmp test/go/profile.out ; \
 	   fi
 	$Q $(GO) tool cover -html=test/go/profile.out -o test/go/coverage.html
-	$Q $(GOCOV) convert test/go/profile.out | $(GOCOVXML) > test/go/coverage.xml
 	@printf "Code coverage: "; \
 		go tool cover -func test/go/profile.out | awk '($$1 == "total:") { print $$NF}'
 

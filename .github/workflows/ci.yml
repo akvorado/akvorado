@@ -62,7 +62,7 @@ jobs:
           name: linux-coverage
           if-no-files-found: error
           path: |
-            test/go/coverage.xml
+            test/go/profile.out
             test/js/cobertura-coverage.xml
       - name: Upload binary
         uses: actions/upload-artifact@v4
@@ -121,7 +121,7 @@ jobs:
           name: macos-coverage
           if-no-files-found: error
           path: |
-            test/go/coverage.xml
+            test/go/profile.out
             test/js/cobertura-coverage.xml
 
   coverage:
@@ -148,7 +148,11 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: bab8d6d9-e90c-4e37-b156-38a9a4c2108e # not ideal, but limited risk
-          files: ./test/linux/go/coverage.xml,./test/linux/js/cobertura-coverage.xml, ./test/macos/go/coverage.xml,./test/macos/js/cobertura-coverage.xml
+          files: >-
+            ./test/linux/go/profile.out,
+            ./test/linux/js/cobertura-coverage.xml,
+            ./test/macos/go/profile.out,
+            ./test/macos/js/cobertura-coverage.xml
           flags: unittests
           fail_ci_if_error: true
 

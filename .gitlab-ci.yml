@@ -32,14 +32,7 @@ run tests:
     - time make test-js
     - time make test-coverage
   coverage: '/Code coverage: [0-9.]+/'
-  artifacts:
-    reports:
-      junit:
-        - test/go/tests.xml
-        - test/js/tests.xml
-      coverage_report:
-        coverage_format: cobertura
-        path: test/go/coverage.xml
+  # Coverage reports were removed
 
 # To execute manually:
 #  gitlab-runner exec docker "run tests"
