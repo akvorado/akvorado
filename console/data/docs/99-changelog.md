@@ -14,6 +14,7 @@ identified with a specific icon:
 
 - 🩹 *inlet*: disable kernel timestamping on Linux kernel older than 5.1
 - 🩹 *doc*: fix documentation for SNMPv3 configuration
+- 🌱 *inlet*: add support for RFC 5103 (bidirectional flows)
 
 ## 2.0.0 - 2025-09-22
 

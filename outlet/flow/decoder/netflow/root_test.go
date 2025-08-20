@@ -4,8 +4,10 @@
 package netflow
 
 import (
+	"fmt"
 	"net/netip"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"akvorado/common/helpers"
@@ -13,6 +15,8 @@ import (
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 	"akvorado/outlet/flow/decoder"
+
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func setup(t *testing.T, clearTS bool) (*reporter.Reporter, decoder.Decoder, *schema.FlowMessage, *[]*schema.FlowMessage, decoder.FinalizeFlowFunc) {
@@ -763,8 +767,6 @@ func TestDecodePhysicalInterfaces(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
 	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
 
-	// The following PCAP is a NAT event, there is no sampling rate, no bytes,
-	// no packets. We can't do much with it.
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "physicalinterfaces.pcap"))
 	_, err := nfdecoder.Decode(
 		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
@@ -801,4 +803,143 @@ func TestDecodePhysicalInterfaces(t *testing.T) {
 	if diff := helpers.Diff((*got)[:1], expectedFlows); diff != "" {
 		t.Fatalf("Decode() (-got, +want):\n%s", diff)
 	}
+}
+
+func TestDecodeRFC5103(t *testing.T) {
+	_, nfdecoder, bf, got, finalize := setup(t, true)
+	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+
+	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "ipfixprobe-templates.pcap"))
+	_, err := nfdecoder.Decode(
+		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+		options, bf, finalize)
+	if err != nil {
+		t.Fatalf("Decode() error:\n%+v", err)
+	}
+	data = helpers.ReadPcapL4(t, filepath.Join("testdata", "ipfixprobe-data.pcap"))
+	_, err = nfdecoder.Decode(
+		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+		options, bf, finalize)
+	if err != nil {
+		t.Fatalf("Decode() error:\n%+v", err)
+	}
+
+	expectedFlows := []*schema.FlowMessage{
+		{
+			// First biflow, direct
+			SamplingRate:    0,
+			InIf:            10,
+			OutIf:           0,
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("::ffff:10.10.1.4"),
+			DstAddr:         netip.MustParseAddr("::ffff:10.10.1.1"),
+			OtherColumns: map[schema.ColumnKey]any{
+				schema.ColumnSrcMAC:  uint64(0x00e01c3c17c2),
+				schema.ColumnDstMAC:  uint64(0x001f33d98160),
+				schema.ColumnPackets: uint64(1),
+				schema.ColumnBytes:   uint64(62),
+				schema.ColumnSrcPort: uint16(56166),
+				schema.ColumnDstPort: uint16(53),
+				schema.ColumnEType:   uint32(helpers.ETypeIPv4),
+				schema.ColumnProto:   uint32(17),
+			},
+		}, {
+			// First biflow, reverse
+			SamplingRate:    0,
+			InIf:            0,
+			OutIf:           10,
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("::ffff:10.10.1.1"),
+			DstAddr:         netip.MustParseAddr("::ffff:10.10.1.4"),
+			OtherColumns: map[schema.ColumnKey]any{
+				schema.ColumnDstMAC:  uint64(0x00e01c3c17c2),
+				schema.ColumnSrcMAC:  uint64(0x001f33d98160),
+				schema.ColumnPackets: uint64(1),
+				schema.ColumnBytes:   uint64(128),
+				schema.ColumnDstPort: uint16(56166),
+				schema.ColumnSrcPort: uint16(53),
+				schema.ColumnEType:   uint32(helpers.ETypeIPv4),
+				schema.ColumnProto:   uint32(17),
+			},
+		}, {
+			// Second biflow, direct, no reverse
+			SamplingRate:    0,
+			InIf:            10,
+			OutIf:           0,
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("::ffff:10.10.1.20"),
+			DstAddr:         netip.MustParseAddr("::ffff:10.10.1.255"),
+			OtherColumns: map[schema.ColumnKey]any{
+				schema.ColumnSrcMAC:  uint64(0x00023fec6111),
+				schema.ColumnDstMAC:  uint64(0xffffffffffff),
+				schema.ColumnPackets: uint64(1),
+				schema.ColumnBytes:   uint64(229),
+				schema.ColumnSrcPort: uint16(138),
+				schema.ColumnDstPort: uint16(138),
+				schema.ColumnEType:   uint32(helpers.ETypeIPv4),
+				schema.ColumnProto:   uint32(17),
+			},
+		}, {
+			// Third biflow, direct
+			SamplingRate:    0,
+			InIf:            10,
+			OutIf:           0,
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("::ffff:10.10.1.4"),
+			DstAddr:         netip.MustParseAddr("::ffff:74.53.140.153"),
+			OtherColumns: map[schema.ColumnKey]any{
+				schema.ColumnSrcMAC:   uint64(0x00e01c3c17c2),
+				schema.ColumnDstMAC:   uint64(0x001f33d98160),
+				schema.ColumnPackets:  uint64(28),
+				schema.ColumnBytes:    uint64(21673),
+				schema.ColumnSrcPort:  uint16(1470),
+				schema.ColumnDstPort:  uint16(25),
+				schema.ColumnEType:    uint32(helpers.ETypeIPv4),
+				schema.ColumnProto:    uint32(6),
+				schema.ColumnTCPFlags: uint16(0x1b),
+			},
+		}, {
+			// Third biflow, reverse
+			SamplingRate:    0,
+			InIf:            0,
+			OutIf:           10,
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("::ffff:74.53.140.153"),
+			DstAddr:         netip.MustParseAddr("::ffff:10.10.1.4"),
+			OtherColumns: map[schema.ColumnKey]any{
+				schema.ColumnSrcMAC:   uint64(0x001f33d98160),
+				schema.ColumnDstMAC:   uint64(0x00e01c3c17c2),
+				schema.ColumnPackets:  uint64(25),
+				schema.ColumnBytes:    uint64(1546),
+				schema.ColumnSrcPort:  uint16(25),
+				schema.ColumnDstPort:  uint16(1470),
+				schema.ColumnEType:    uint32(helpers.ETypeIPv4),
+				schema.ColumnProto:    uint32(6),
+				schema.ColumnTCPFlags: uint16(0x1b),
+			},
+		}, {
+			// Last biflow, direct, no reverse
+			SamplingRate:    0,
+			InIf:            10,
+			OutIf:           0,
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("::ffff:192.168.1.1"),
+			DstAddr:         netip.MustParseAddr("::ffff:10.10.1.4"),
+			OtherColumns: map[schema.ColumnKey]any{
+				schema.ColumnSrcMAC:  uint64(0x001f33d98160),
+				schema.ColumnDstMAC:  uint64(0x00e01c3c17c2),
+				schema.ColumnPackets: uint64(4),
+				schema.ColumnBytes:   uint64(2304),
+				schema.ColumnEType:   uint32(helpers.ETypeIPv4),
+				schema.ColumnProto:   uint32(1),
+			},
+		},
+	}
+
+	if diff := helpers.Diff((*got), expectedFlows, cmpopts.SortSlices(func(a, b *schema.FlowMessage) int {
+		return strings.Compare(fmt.Sprintf("%+v", a), fmt.Sprintf("%+v", b))
+	})); diff != "" {
+		t.Fatalf("Decode() (-got, +want):\n%s", diff)
+	}
+
 }
