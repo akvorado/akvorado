@@ -12,17 +12,17 @@ package schema
 import "akvorado/common/helpers/bimap"
 
 var columnNameMap = bimap.New(map[ColumnKey]string{
-$(sed -En '/.*ColumnKey = iota/,/^\s+ColumnLast/p' common/schema/definition.go \
-    | head -n-1 \
-    | sed -En 's/^\s+Column//p' \
+$(sed -En '/.*ColumnKey = iota/,/^[[:space:]]+ColumnLast/p' common/schema/definition.go \
+    | sed \$d \
+    | sed -En 's/^[[:space:]]+Column//p' \
     | awk '{ print "Column"$1": \""$1"\","}')
 })
 
 
 var columnReverseTable = [...]ColumnKey{
-$(sed -En '/.*ColumnKey = iota/,/^\s+ColumnLast/p' common/schema/definition.go \
-    | head -n-1 \
-    | sed -En 's/^\s+(Column\w+).*/\1/p' \
+$(sed -En '/.*ColumnKey = iota/,/^[[:space:]]ColumnLast/p' common/schema/definition.go \
+    | sed \$d \
+    | sed -En 's/^[[:space:]]+(Column[^ ]+).*/\1/p' \
     | sed -E \
              -e 's/(ColumnDst(ASPath|Communities|LargeCommunities|[123]..AS))/\1: 0,/;t' \
              -e 's/(ColumnIn)([A-Z0-9].*)/ColumnOut\2: \1\2,/;t' \
