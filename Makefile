@@ -40,8 +40,8 @@ GENERATED = \
 	$(GENERATED_JS) \
 	console/data/frontend
 
-.PHONY: all all_indep
-all: fmt lint all_indep ; $(info $(M) building executable…) @ ## Build program binary
+.PHONY: all all-indep
+all: fmt lint all-indep ; $(info $(M) building executable…) @ ## Build program binary
 	$Q env GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) \
          $(if $(filter amd64,$(TARGETARCH)),GOAMD64=$(TARGETVARIANT),\
          $(if $(filter arm64,$(TARGETARCH)),GOARM64=$(TARGETVARIANT:%=%.0),\
@@ -49,8 +49,9 @@ all: fmt lint all_indep ; $(info $(M) building executable…) @ ## Build program
 	   $(GO) build \
 		-tags release \
 		-ldflags '-X $(MODULE)/common/helpers.AkvoradoVersion=$(VERSION)' \
-		-o bin/$(basename $(MODULE)) main.go
-all_indep: $(GENERATED)
+		$(BUILDARGS) \
+		-o bin/$(basename $(MODULE)) .
+all-indep: $(GENERATED)
 
 # Tools
 
@@ -257,6 +258,12 @@ docker: ; $(info $(M) build Docker image…) @ ## Build Docker image
 docker-dev: all ; $(info $(M) build development Docker image…) @ ## Build development Docker image
 	$Q docker build -f docker/Dockerfile.dev $(DOCKER_BUILD_OPTIONS) \
 		--build-arg VERSION=$(VERSION) -t ghcr.io/akvorado/akvorado:main .
+
+.PHONY: all-coverage docker-dev-coverage
+all-coverage: BUILDARGS=-cover -covermode=atomic
+all-coverage: all
+docker-dev-coverage: BUILDARGS=-cover -covermode=atomic
+docker-dev-coverage: docker-dev
 
 # This requires "skopeo". I fetch it from nix.
 .PHONY: docker-upgrade-versions
