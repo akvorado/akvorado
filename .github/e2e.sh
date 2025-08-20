@@ -41,6 +41,23 @@ EOF
         done
         < last-flow.json \
             jq -e '(.InIfName | test("^Gi0/.*")) and (.OutIfName | test("^Gi0/.*")) and .ExporterRole == "edge"'
+
+        # Do a screenshot
+        mkdir -p screenshots
+        while read path target args; do
+          [ -n $path ] || continue
+          google-chrome --headless --disable-gpu --screenshot=screenshots/$target.png http://127.0.0.1:8080$path
+        done <<EOF
+/          home
+/          home-small       --window-size=360,800
+/visualize visualize
+/visualize visualize-small  --window-size=360,800
+/docs      docs
+/docs      docs-small       --window-size=360,800
+
+/kafka-ui/ui/clusters/local/consumer-groups  kafka-ui
+/traefik/dashboard/                          traefik
+EOF
         ;;
 
     coverage)
