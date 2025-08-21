@@ -49,7 +49,7 @@ all: fmt lint all-indep ; $(info $(M) building executable…) @ ## Build program
 	   $(GO) build \
 		-tags release \
 		-ldflags '-X $(MODULE)/common/helpers.AkvoradoVersion=$(VERSION)' \
-		$(BUILDARGS) \
+		$(BUILD_ARGS) \
 		-o bin/$(basename $(MODULE)) .
 all-indep: $(GENERATED)
 
@@ -251,18 +251,18 @@ version:
 	@echo $(VERSION)
 
 .PHONY: docker docker-dev
-DOCKER_BUILD_OPTIONS =
+DOCKER_BUILD_ARGS =
 docker: ; $(info $(M) build Docker image…) @ ## Build Docker image
-	$Q docker build -f docker/Dockerfile $(DOCKER_BUILD_OPTIONS) \
+	$Q docker build -f docker/Dockerfile $(DOCKER_BUILD_ARGS) \
 		--build-arg VERSION=$(VERSION) -t ghcr.io/akvorado/akvorado:main .
 docker-dev: all ; $(info $(M) build development Docker image…) @ ## Build development Docker image
-	$Q docker build -f docker/Dockerfile.dev $(DOCKER_BUILD_OPTIONS) \
+	$Q docker build -f docker/Dockerfile.dev $(DOCKER_BUILD_ARGS) \
 		--build-arg VERSION=$(VERSION) -t ghcr.io/akvorado/akvorado:main .
 
 .PHONY: all-coverage docker-dev-coverage
-all-coverage: BUILDARGS=-cover -covermode=atomic
+all-coverage: BUILD_ARGS=-cover -covermode=atomic
 all-coverage: all
-docker-dev-coverage: BUILDARGS=-cover -covermode=atomic
+docker-dev-coverage: BUILD_ARGS=-cover -covermode=atomic
 docker-dev-coverage: docker-dev
 
 # This requires "skopeo". I fetch it from nix.
