@@ -226,17 +226,20 @@ jobs:
         with:
           persist-credentials: false
       - name: Setup
+        id: setup
         uses: ./.github/actions/setup
         with:
           go-version: ${{ matrix.go-version }}
       - name: Build
         run: make && ./bin/akvorado version
-      - uses: actions/cache/save@v4
+      - name: Save IANA files to cache
+        if: steps.setup.outputs.iana-cache-hit != 'true'
+        uses: actions/cache/save@v4
         with:
           path: |
             orchestrator/clickhouse/data/udp.csv
             orchestrator/clickhouse/data/tcp.csv
-          key: cache-iana-${{ hashFiles('Makefile', 'nix/ianaServiceNamesHash.txt') }}-${{ github.run_id }}-${{ matrix.go-version }}
+          key: ${{ steps.step.outputs.iana-cache-key }}-${{ matrix.go-version }}
       - name: Tests
         run: make test
 

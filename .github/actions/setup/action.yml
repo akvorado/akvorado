@@ -18,10 +18,16 @@ inputs:
     description: Go version to install
     required: false
     default: "1.24"
+outputs:
+  iana-cache-hit:
+    description: Was cache hit for IANA files?
+    value: ${{ steps.iana-cache.outputs.cache-hit }}
+  iana-cache-key:
+    description: Cache key to be used for IANA files
+    value: ${{ steps.iana-cache.inputs.key }}
 runs:
   using: composite
   steps:
-    # Setup
     - uses: actions/setup-go@v5
       if: ${{ inputs.setup-go == 'true' }}
       id: go-setup
@@ -34,11 +40,13 @@ runs:
         node-version: ${{ inputs.node-version }}
         cache: npm
         cache-dependency-path: console/frontend/package-lock.json
-    - uses: actions/cache/restore@v4
+    - name: Restore IANA files from cache
+      uses: actions/cache/restore@v4
+      id: iana-cache
       with:
         path: |
           orchestrator/clickhouse/data/udp.csv
           orchestrator/clickhouse/data/tcp.csv
-        key: cache-iana-${{ hashFiles('Makefile', 'nix/ianaServiceNamesHash.txt') }}-${{ github.run_id }}
+        key: iana-cache-${{ hashFiles('Makefile', 'nix/ianaServiceNamesHash.txt') }}-${{ github.run_id }}
         restore-keys: |
-          cache-iana-${{ hashFiles('Makefile', 'nix/ianaServiceNamesHash.txt') }}-
+          iana-cache-${{ hashFiles('Makefile', 'nix/ianaServiceNamesHash.txt') }}-
