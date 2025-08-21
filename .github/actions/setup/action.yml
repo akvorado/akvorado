@@ -4,24 +4,20 @@ description: Setup the OS-independent build environment
 inputs:
   setup-go:
     description: Enable Go setup
-    type: boolean
     required: false
-    default: true
+    default: "true"
   setup-node:
     description: Enable Node setup
-    type: boolean
     required: false
-    default: true
+    default: "true"
   node-version:
     description: Node version to install
-    type: number
     required: false
-    default: 20
+    default: "20"
   go-version:
     description: Go version to install
-    type: string
     required: false
-    default: '1.24'
+    default: "1.24"
 runs:
   using: composite
   steps:
