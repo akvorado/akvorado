@@ -41,7 +41,7 @@ GENERATED = \
 	console/data/frontend
 
 .PHONY: all all-indep
-BUILD_ARGS=
+BUILD_ARGS =
 all: fmt lint all-indep ; $(info $(M) building executable…) @ ## Build program binary
 	$Q env GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) \
          $(if $(filter amd64,$(TARGETARCH)),GOAMD64=$(TARGETVARIANT),\
@@ -64,13 +64,13 @@ PIGEON = go tool pigeon
 REVIVE = go tool revive
 STATICCHECK = go tool staticcheck
 WWHRD = go tool wwhrd
-BUF = go run github.com/bufbuild/buf/cmd/buf@v1.55.1
+BUF = ./bin/external-tool buf
 
 # Generated files
 
 .DELETE_ON_ERROR:
 
-common/pb/rawflow_vtproto.pb.go: common/pb/rawflow.pb.go
+common/pb/rawflow_vtproto.pb.go: | common/pb/rawflow.pb.go
 %.pb.go: buf.gen.yaml %.proto ; $(info $(M) compiling protocol buffers $@…)
 	$Q $(BUF) generate --path $(@:.pb.go=.proto)
 

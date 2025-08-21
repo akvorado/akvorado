@@ -1,0 +1,12 @@
+#!/bin/sh
+
+# Wrapper to execute an external tool. This is used a bit like "go tool", but in
+# a case we don't want to put the dependency in go.mod (which may be considered
+# by an anti-pattern for some tools).
+
+cmd="$1"
+shift
+
+case "$cmd" in
+    buf) exec go run github.com/bufbuild/buf/cmd/buf@v1.55.1 "$@" ;;
+esac

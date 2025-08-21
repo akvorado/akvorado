@@ -34,6 +34,9 @@ runs:
       with:
         go-version: ${{ inputs.go-version }}
         check-latest: true
+        cache-dependency-path: |
+          go.sum
+          bin/external-tool
     - uses: actions/setup-node@v4
       if: ${{ inputs.setup-node == 'true' }}
       with:
