@@ -41,6 +41,7 @@ GENERATED = \
 	console/data/frontend
 
 .PHONY: all all-indep
+BUILD_ARGS=
 all: fmt lint all-indep ; $(info $(M) building executable…) @ ## Build program binary
 	$Q env GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) \
          $(if $(filter amd64,$(TARGETARCH)),GOAMD64=$(TARGETVARIANT),\
