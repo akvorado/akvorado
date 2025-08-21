@@ -239,7 +239,7 @@ jobs:
           path: |
             orchestrator/clickhouse/data/udp.csv
             orchestrator/clickhouse/data/tcp.csv
-          key: ${{ steps.step.outputs.iana-cache-key }}-${{ matrix.go-version }}
+          key: ${{ steps.setup.outputs.iana-cache-key }}-${{ matrix.go-version }}
       - name: Tests
         run: make test
 
