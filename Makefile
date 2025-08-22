@@ -70,8 +70,7 @@ BUF = ./bin/external-tool buf
 
 .DELETE_ON_ERROR:
 
-common/pb/rawflow_vtproto.pb.go: | common/pb/rawflow.pb.go
-%.pb.go: buf.gen.yaml %.proto ; $(info $(M) compiling protocol buffers $@…)
+common/pb/rawflow.pb.go common/pb/rawflow_vtproto.pb.go &: buf.gen.yaml common/pb/rawflow.proto ; $(info $(M) compiling protocol buffers $@…)
 	$Q $(BUF) generate --path $(@:.pb.go=.proto)
 
 common/clickhousedb/mocks/mock_driver.go: go.mod ; $(info $(M) generate mocks for ClickHouse driver…)
