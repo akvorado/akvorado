@@ -39,6 +39,11 @@ func (qc Column) String() string {
 	return qc.name
 }
 
+// Equal returns true iff two columns have the same name.
+func (qc Column) Equal(oqc Column) bool {
+	return qc.name == oqc.name
+}
+
 // MarshalText turns a column into a string.
 func (qc Column) MarshalText() ([]byte, error) {
 	return []byte(qc.name), nil

@@ -158,13 +158,13 @@ module2:
 	if err := yaml.Unmarshal(out.Bytes(), &gotRaw); err != nil {
 		t.Fatalf("Unmarshal() error:\n%+v", err)
 	}
-	expectedRaw := gin.H{
-		"module1": gin.H{
+	expectedRaw := map[string]gin.H{
+		"module1": {
 			"listen":  "127.0.0.1:8080",
 			"topic":   "flows",
 			"workers": 100,
 		},
-		"module2": gin.H{
+		"module2": {
 			"stuff": "bye",
 			"details": gin.H{
 				"workers":       5,
@@ -356,7 +356,7 @@ invalid key "unused"`); diff != "" {
 }
 
 func TestDefaultInSlice(t *testing.T) {
-	try := func(t *testing.T, parse func(cmd.ConfigRelatedOptions, *bytes.Buffer) any) {
+	try := func(t *testing.T, parse func(cmd.ConfigRelatedOptions, *bytes.Buffer) any, expected any) {
 		// Configuration file
 		config := `---
 modules:
@@ -375,60 +375,6 @@ modules:
 
 		out := bytes.NewBuffer([]byte{})
 		parsed := parse(c, out)
-		// Expected configuration
-		expected := map[string][]dummyConfiguration{
-			"Modules": {
-				{
-					Module1: dummyModule1Configuration{
-						Listen:  "127.0.0.1:8080",
-						Topic:   "flows1",
-						Workers: 100,
-					},
-					Module2: dummyModule2Configuration{
-						MoreDetails: MoreDetails{
-							Stuff: "hello",
-						},
-						Details: dummyModule2DetailsConfiguration{
-							Workers:       1,
-							IntervalValue: time.Minute,
-						},
-						Elements: []dummyModule2ElementsConfiguration{
-							{
-								Name:  "el1",
-								Gauge: 10,
-							}, {
-								Name:  "el2",
-								Gauge: 11,
-							},
-						},
-					},
-				}, {
-					Module1: dummyModule1Configuration{
-						Listen:  "127.0.0.1:8080",
-						Topic:   "flows2",
-						Workers: 100,
-					},
-					Module2: dummyModule2Configuration{
-						MoreDetails: MoreDetails{
-							Stuff: "hello",
-						},
-						Details: dummyModule2DetailsConfiguration{
-							Workers:       1,
-							IntervalValue: time.Minute,
-						},
-						Elements: []dummyModule2ElementsConfiguration{
-							{
-								Name:  "el1",
-								Gauge: 10,
-							}, {
-								Name:  "el2",
-								Gauge: 11,
-							},
-						},
-					},
-				},
-			},
-		}
 		if diff := helpers.Diff(parsed, expected); diff != "" {
 			t.Errorf("Parse() (-got, +want):\n%s", diff)
 		}
@@ -442,7 +388,64 @@ modules:
 				t.Fatalf("Parse() error:\n%+v", err)
 			}
 			return parsed
-		})
+		},
+			// Expected configuration
+			struct {
+				Modules []dummyConfiguration
+			}{
+				Modules: []dummyConfiguration{
+					{
+						Module1: dummyModule1Configuration{
+							Listen:  "127.0.0.1:8080",
+							Topic:   "flows1",
+							Workers: 100,
+						},
+						Module2: dummyModule2Configuration{
+							MoreDetails: MoreDetails{
+								Stuff: "hello",
+							},
+							Details: dummyModule2DetailsConfiguration{
+								Workers:       1,
+								IntervalValue: time.Minute,
+							},
+							Elements: []dummyModule2ElementsConfiguration{
+								{
+									Name:  "el1",
+									Gauge: 10,
+								}, {
+									Name:  "el2",
+									Gauge: 11,
+								},
+							},
+						},
+					},
+					{
+						Module1: dummyModule1Configuration{
+							Listen:  "127.0.0.1:8080",
+							Topic:   "flows2",
+							Workers: 100,
+						},
+						Module2: dummyModule2Configuration{
+							MoreDetails: MoreDetails{
+								Stuff: "hello",
+							},
+							Details: dummyModule2DetailsConfiguration{
+								Workers:       1,
+								IntervalValue: time.Minute,
+							},
+							Elements: []dummyModule2ElementsConfiguration{
+								{
+									Name:  "el1",
+									Gauge: 10,
+								}, {
+									Name:  "el2",
+									Gauge: 11,
+								},
+							},
+						},
+					},
+				},
+			})
 	})
 	t.Run("with pointer", func(t *testing.T) {
 		try(t, func(c cmd.ConfigRelatedOptions, out *bytes.Buffer) any {
@@ -453,7 +456,63 @@ modules:
 				t.Fatalf("Parse() error:\n%+v", err)
 			}
 			return parsed
-		})
+		},
+			struct {
+				Modules []*dummyConfiguration
+			}{
+				Modules: []*dummyConfiguration{
+					{
+						Module1: dummyModule1Configuration{
+							Listen:  "127.0.0.1:8080",
+							Topic:   "flows1",
+							Workers: 100,
+						},
+						Module2: dummyModule2Configuration{
+							MoreDetails: MoreDetails{
+								Stuff: "hello",
+							},
+							Details: dummyModule2DetailsConfiguration{
+								Workers:       1,
+								IntervalValue: time.Minute,
+							},
+							Elements: []dummyModule2ElementsConfiguration{
+								{
+									Name:  "el1",
+									Gauge: 10,
+								}, {
+									Name:  "el2",
+									Gauge: 11,
+								},
+							},
+						},
+					},
+					{
+						Module1: dummyModule1Configuration{
+							Listen:  "127.0.0.1:8080",
+							Topic:   "flows2",
+							Workers: 100,
+						},
+						Module2: dummyModule2Configuration{
+							MoreDetails: MoreDetails{
+								Stuff: "hello",
+							},
+							Details: dummyModule2DetailsConfiguration{
+								Workers:       1,
+								IntervalValue: time.Minute,
+							},
+							Elements: []dummyModule2ElementsConfiguration{
+								{
+									Name:  "el1",
+									Gauge: 10,
+								}, {
+									Name:  "el2",
+									Gauge: 11,
+								},
+							},
+						},
+					},
+				},
+			})
 	})
 }
 

@@ -23,9 +23,9 @@ type Configuration struct {
 	// ClassifierCacheDuration defines the default TTL for classifier cache
 	ClassifierCacheDuration time.Duration `validate:"min=1s"`
 	// DefaultSamplingRate defines the default sampling rate to use when the information is missing
-	DefaultSamplingRate helpers.SubnetMap[uint]
+	DefaultSamplingRate *helpers.SubnetMap[uint]
 	// OverrideSamplingRate defines a sampling rate to use instead of the received on
-	OverrideSamplingRate helpers.SubnetMap[uint]
+	OverrideSamplingRate *helpers.SubnetMap[uint]
 	// ASNProviders defines the source used to get AS numbers
 	ASNProviders []ASNProvider `validate:"dive"`
 	// NetProviders defines the source used to get Prefix/Network Information

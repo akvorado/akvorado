@@ -130,8 +130,8 @@ func TestRealClickHouse(t *testing.T) {
 		}
 
 		expected := []struct {
-			N uint64
-			M uint64
+			N uint64 `ch:"n"`
+			M uint64 `ch:"m"`
 		}{
 			{0, 1},
 			{1, 2},

@@ -70,11 +70,11 @@ func TestSNMPServer(t *testing.T) {
 			Type:  gosnmp.OctetString,
 		}, {
 			Name:  ".1.3.6.1.2.1.31.1.1.1.15.1",
-			Value: 10000,
+			Value: uint(10000),
 			Type:  gosnmp.Gauge32,
 		}, {
 			Name:  ".1.3.6.1.2.1.31.1.1.1.15.2",
-			Value: 10000,
+			Value: uint(10000),
 			Type:  gosnmp.Gauge32,
 		}, {
 			Name:  ".1.3.6.1.2.1.31.1.1.1.18.1",

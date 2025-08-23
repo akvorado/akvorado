@@ -46,6 +46,8 @@ func TestGraphLineInputReverseDirection(t *testing.T) {
 		},
 		Points: 100,
 	}
+	input.Filter.Validate(input.schema)
+	expected.Filter.Validate(input.schema)
 	query.Columns(input.Dimensions).Validate(input.schema)
 	query.Columns(expected.Dimensions).Validate(input.schema)
 	got := input.reverseDirection()

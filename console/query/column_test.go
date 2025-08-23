@@ -4,8 +4,6 @@
 package query_test
 
 import (
-	"fmt"
-	"reflect"
 	"testing"
 
 	"akvorado/common/helpers"
@@ -38,7 +36,7 @@ func TestUnmarshalQueryColumn(t *testing.T) {
 		if err != nil {
 			continue
 		}
-		if diff := helpers.Diff(qc.Key(), tc.Expected, helpers.DiffFormatter(reflect.TypeOf(schema.ColumnBytes), fmt.Sprint)); diff != "" {
+		if diff := helpers.Diff(qc.Key(), tc.Expected); diff != "" {
 			t.Fatalf("UnmarshalText(%q) (-got, +want):\n%s", tc.Input, diff)
 		}
 	}
@@ -145,7 +143,7 @@ func TestReverseDirection(t *testing.T) {
 		query.NewColumn("ExporterName"),
 		query.NewColumn("OutIfProvider"),
 	}
-	if diff := helpers.Diff(columns, expected, helpers.DiffFormatter(reflect.TypeOf(query.Column{}), fmt.Sprint)); diff != "" {
+	if diff := helpers.Diff(columns, expected); diff != "" {
 		t.Fatalf("Reverse() (-got, +want):\n%s", diff)
 	}
 }

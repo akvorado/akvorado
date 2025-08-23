@@ -161,19 +161,23 @@ func (bf *FlowMessage) AppendUint(columnKey ColumnKey, value uint64) {
 	switch col := col.(type) {
 	case *proto.ColUInt64:
 		col.Append(value)
+		bf.appendDebug(columnKey, value)
 	case *proto.ColUInt32:
 		col.Append(uint32(value))
+		bf.appendDebug(columnKey, uint32(value))
 	case *proto.ColUInt16:
 		col.Append(uint16(value))
+		bf.appendDebug(columnKey, uint16(value))
 	case *proto.ColUInt8:
 		col.Append(uint8(value))
+		bf.appendDebug(columnKey, uint8(value))
 	case *proto.ColEnum8:
 		col.Append(proto.Enum8(value))
+		bf.appendDebug(columnKey, uint8(value))
 	default:
 		panic(fmt.Sprintf("unhandled uint type %q", col.Type()))
 	}
 	bf.batch.columnSet.Set(uint(columnKey))
-	bf.appendDebug(columnKey, value)
 }
 
 // AppendString adds a String value to the provided column

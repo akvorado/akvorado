@@ -34,6 +34,11 @@ func (qf Filter) String() string {
 	return qf.filter
 }
 
+// Equal tells if two filters are equal.
+func (qf Filter) Equal(oqf Filter) bool {
+	return qf.filter == oqf.filter
+}
+
 // MarshalText turns a filter into a string.
 func (qf Filter) MarshalText() ([]byte, error) {
 	return []byte(qf.filter), nil

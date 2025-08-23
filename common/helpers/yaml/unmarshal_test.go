@@ -9,8 +9,6 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/helpers/yaml"
-
-	"github.com/gin-gonic/gin"
 )
 
 func TestUnmarshalWithIn(t *testing.T) {
@@ -19,14 +17,14 @@ func TestUnmarshalWithIn(t *testing.T) {
 	if err := yaml.UnmarshalWithInclude(fsys, "base.yaml", &got); err != nil {
 		t.Fatalf("UnmarshalWithInclude() error:\n%+v", err)
 	}
-	expected := gin.H{
-		"file1": gin.H{"name": "1.yaml"},
-		"file2": gin.H{"name": "2.yaml"},
-		"nested": gin.H{
-			"file1": gin.H{"name": "1.yaml"},
+	expected := map[string]any{
+		"file1": map[string]any{"name": "1.yaml"},
+		"file2": map[string]any{"name": "2.yaml"},
+		"nested": map[string]any{
+			"file1": map[string]any{"name": "1.yaml"},
 		},
-		"list1": []string{"el1", "el2", "el3"},
-		"list2": []any{gin.H{
+		"list1": []any{"el1", "el2", "el3"},
+		"list2": []any{map[string]any{
 			"protocol": "tcp",
 			"size":     1300,
 		}, "el2", "el3"},

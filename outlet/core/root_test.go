@@ -83,12 +83,12 @@ func TestCore(t *testing.T) {
 			SrcAddr:         netip.MustParseAddr("::ffff:67.43.156.77"),
 			DstAddr:         netip.MustParseAddr("::ffff:2.125.160.216"),
 			OtherColumns: map[schema.ColumnKey]any{
-				schema.ColumnBytes:   6765,
-				schema.ColumnPackets: 4,
-				schema.ColumnEType:   0x800,
-				schema.ColumnProto:   6,
-				schema.ColumnSrcPort: 8534,
-				schema.ColumnDstPort: 80,
+				schema.ColumnBytes:   uint64(6765),
+				schema.ColumnPackets: uint64(4),
+				schema.ColumnEType:   uint32(0x800),
+				schema.ColumnProto:   uint32(6),
+				schema.ColumnSrcPort: uint16(8534),
+				schema.ColumnDstPort: uint16(80),
 			},
 		}
 		return msg
@@ -102,8 +102,8 @@ func TestCore(t *testing.T) {
 		expected.OtherColumns[schema.ColumnOutIfName] = fmt.Sprintf("Gi0/0/%d", out)
 		expected.OtherColumns[schema.ColumnInIfDescription] = fmt.Sprintf("Interface %d", in)
 		expected.OtherColumns[schema.ColumnOutIfDescription] = fmt.Sprintf("Interface %d", out)
-		expected.OtherColumns[schema.ColumnInIfSpeed] = 1000
-		expected.OtherColumns[schema.ColumnOutIfSpeed] = 1000
+		expected.OtherColumns[schema.ColumnInIfSpeed] = uint32(1000)
+		expected.OtherColumns[schema.ColumnOutIfSpeed] = uint32(1000)
 		expected.OtherColumns[schema.ColumnExporterName] = strings.ReplaceAll(exporter, ".", "_")
 		return expected
 	}
@@ -259,34 +259,34 @@ func TestCore(t *testing.T) {
 				t.Fatalf("GET /api/v0/outlet/flows error while reading body:\n%+v", err)
 			}
 			expected := gin.H{
-				"TimeReceived":    200,
-				"SamplingRate":    1000,
+				"TimeReceived":    float64(200),
+				"SamplingRate":    float64(1000),
 				"ExporterAddress": "::ffff:192.0.2.142",
 				"SrcAddr":         "::ffff:67.43.156.77",
 				"DstAddr":         "::ffff:2.125.160.216",
-				"SrcAS":           0, // no geoip enrich anymore
-				"InIf":            434,
-				"OutIf":           677,
+				"SrcAS":           float64(0), // no geoip enrich anymore
+				"InIf":            float64(434),
+				"OutIf":           float64(677),
 				"NextHop":         "",
-				"SrcNetMask":      0,
-				"DstNetMask":      0,
-				"SrcVlan":         0,
-				"DstVlan":         0,
-				"DstAS":           0,
-				"OtherColumns": gin.H{
+				"SrcNetMask":      float64(0),
+				"DstNetMask":      float64(0),
+				"SrcVlan":         float64(0),
+				"DstVlan":         float64(0),
+				"DstAS":           float64(0),
+				"OtherColumns": map[string]any{
 					"ExporterName":     "192_0_2_142",
 					"InIfName":         "Gi0/0/434",
 					"OutIfName":        "Gi0/0/677",
 					"InIfDescription":  "Interface 434",
 					"OutIfDescription": "Interface 677",
-					"InIfSpeed":        1000,
-					"OutIfSpeed":       1000,
-					"Bytes":            6765,
-					"Packets":          4,
-					"SrcPort":          8534,
-					"DstPort":          80,
-					"EType":            2048,
-					"Proto":            6,
+					"InIfSpeed":        float64(1000),
+					"OutIfSpeed":       float64(1000),
+					"Bytes":            float64(6765),
+					"Packets":          float64(4),
+					"SrcPort":          float64(8534),
+					"DstPort":          float64(80),
+					"EType":            float64(2048),
+					"Proto":            float64(6),
 				},
 			}
 			if diff := helpers.Diff(got, expected); diff != "" {

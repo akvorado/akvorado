@@ -6,12 +6,9 @@
 package static
 
 import (
-	"fmt"
-	"reflect"
-
 	"akvorado/common/helpers"
 )
 
 func init() {
-	helpers.AddPrettyFormatter(reflect.TypeOf(helpers.SubnetMap[ExporterConfiguration]{}), fmt.Sprint)
+	helpers.RegisterSubnetMapCmp[ExporterConfiguration]()
 }

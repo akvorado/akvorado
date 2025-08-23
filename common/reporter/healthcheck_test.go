@@ -139,12 +139,12 @@ func TestHealthcheckHTTPHandler(t *testing.T) {
 	}
 	expected := gin.H{
 		"status": "error",
-		"details": gin.H{
-			"hc1": map[string]string{
+		"details": map[string]any{
+			"hc1": map[string]any{
 				"status": "ok",
 				"reason": "all well",
 			},
-			"hc2": map[string]string{
+			"hc2": map[string]any{
 				"status": "error",
 				"reason": "trying to be better",
 			},

@@ -236,7 +236,7 @@ func TestParametrizedConfig(t *testing.T) {
 				Expected: OuterConfiguration{
 					AA: "a1",
 					BB: "b1",
-					Config: InnerConfigurationType1{
+					Config: &InnerConfigurationType1{
 						CC: "c1",
 						DD: "d1",
 					},
@@ -256,7 +256,7 @@ func TestParametrizedConfig(t *testing.T) {
 				Expected: OuterConfiguration{
 					AA: "a2",
 					BB: "b2",
-					Config: InnerConfigurationType2{
+					Config: &InnerConfigurationType2{
 						CC: "c2",
 						EE: "e2",
 					},

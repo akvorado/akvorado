@@ -43,10 +43,10 @@ func TestGobDecoder(t *testing.T) {
 		DstAddr:         netip.MustParseAddr("::ffff:192.0.2.200"),
 		OtherColumns: map[schema.ColumnKey]any{
 			schema.ColumnBytes:        uint64(1024),
-			schema.ColumnPackets:      10,
-			schema.ColumnInIfBoundary: schema.InterfaceBoundaryExternal,
+			schema.ColumnPackets:      uint64(10),
+			schema.ColumnInIfBoundary: uint8(schema.InterfaceBoundaryExternal),
 			schema.ColumnExporterName: "hello",
-			schema.ColumnDstNetMask:   uint32(8),
+			schema.ColumnDstNetMask:   uint8(8),
 			schema.ColumnDstPort:      uint16(80),
 			schema.ColumnDstASPath:    []uint32{65000, 65001, 65002},
 		},

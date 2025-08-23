@@ -6,12 +6,9 @@
 package snmp
 
 import (
-	"fmt"
-	"reflect"
-
 	"akvorado/common/helpers"
 )
 
 func init() {
-	helpers.AddPrettyFormatter(reflect.TypeOf(helpers.SubnetMap[Credentials]{}), fmt.Sprint)
+	helpers.RegisterSubnetMapCmp[Credentials]()
 }

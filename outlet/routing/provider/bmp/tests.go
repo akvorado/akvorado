@@ -6,10 +6,8 @@
 package bmp
 
 import (
-	"fmt"
 	"net"
 	"net/netip"
-	"reflect"
 	"testing"
 
 	"akvorado/common/daemon"
@@ -18,6 +16,7 @@ import (
 	"akvorado/outlet/routing/provider"
 
 	"github.com/benbjohnson/clock"
+	"github.com/google/go-cmp/cmp"
 	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
 	"github.com/osrg/gobgp/v3/pkg/packet/bmp"
 )
@@ -149,5 +148,5 @@ func MustParseRD(input string) RD {
 }
 
 func init() {
-	helpers.AddPrettyFormatter(reflect.TypeOf(route{}), fmt.Sprint)
+	helpers.RegisterCmpOption(cmp.AllowUnexported(route{}))
 }

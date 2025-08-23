@@ -8,6 +8,8 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/outlet/metadata/provider"
+
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestStateUpdate(t *testing.T) {
@@ -28,7 +30,7 @@ func TestStateUpdate(t *testing.T) {
 		Name:       "",
 		Interfaces: map[uint]provider.Interface{},
 	}
-	if diff := helpers.Diff(state, expected); diff != "" {
+	if diff := helpers.Diff(state, expected, cmpopts.IgnoreUnexported(state)); diff != "" {
 		t.Fatalf("udpate() (-got, +want):\n%s", diff)
 	}
 
@@ -90,7 +92,7 @@ func TestStateUpdate(t *testing.T) {
 			},
 		},
 	}
-	if diff := helpers.Diff(state, expected); diff != "" {
+	if diff := helpers.Diff(state, expected, cmpopts.IgnoreUnexported(state)); diff != "" {
 		t.Fatalf("udpate() (-got, +want):\n%s", diff)
 	}
 }

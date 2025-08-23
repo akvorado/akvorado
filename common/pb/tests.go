@@ -3,15 +3,14 @@
 
 //go:build !release
 
-package clickhouse
+package pb
 
 import (
-	"fmt"
-	"reflect"
-
 	"akvorado/common/helpers"
+
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func init() {
-	helpers.AddPrettyFormatter(reflect.TypeOf(helpers.SubnetMap[NetworkAttributes]{}), fmt.Sprint)
+	helpers.RegisterCmpOption(cmpopts.IgnoreUnexported(RawFlow{}))
 }

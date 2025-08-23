@@ -136,7 +136,7 @@ func TestSource(t *testing.T) {
 	handler := remoteDataHandler{
 		data: []remoteData{},
 	}
-	var expected []remoteData
+	expected := []remoteData{}
 	handler.fetcher, _ = New[remoteData](r, handler.UpdateData, "test", config)
 
 	handler.fetcher.Start()

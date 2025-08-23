@@ -9,6 +9,8 @@ import (
 	"testing"
 
 	"github.com/benbjohnson/clock"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"akvorado/common/clickhousedb"
 	"akvorado/common/clickhousedb/mocks"
@@ -42,4 +44,9 @@ func NewMock(t *testing.T, config Configuration) (*Component, *httpserver.Compon
 	}
 	helpers.StartStop(t, c)
 	return c, h, mockConn, mockClock
+}
+
+func init() {
+	helpers.RegisterCmpOption(cmpopts.IgnoreUnexported(graphCommonHandlerInput{}))
+	helpers.RegisterCmpOption(cmp.AllowUnexported(graphLineHandlerInput{}))
 }
