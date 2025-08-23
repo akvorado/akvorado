@@ -289,31 +289,31 @@ func TestNeedUpdates(t *testing.T) {
 
 	cases := []struct {
 		Minutes  time.Duration
-		Expected map[string][]uint
+		Expected map[netip.Addr][]uint
 	}{
-		{9, map[string][]uint{
-			"::ffff:127.0.0.1": {
+		{9, map[netip.Addr][]uint{
+			netip.MustParseAddr("::ffff:127.0.0.1"): {
 				676,
 				678,
 			},
-			"::ffff:127.0.0.2": {
+			netip.MustParseAddr("::ffff:127.0.0.2"): {
 				678,
 			},
 		}},
-		{19, map[string][]uint{
-			"::ffff:127.0.0.1": {
+		{19, map[netip.Addr][]uint{
+			netip.MustParseAddr("::ffff:127.0.0.1"): {
 				678,
 			},
-			"::ffff:127.0.0.2": {
-				678,
-			},
-		}},
-		{29, map[string][]uint{
-			"::ffff:127.0.0.1": {
+			netip.MustParseAddr("::ffff:127.0.0.2"): {
 				678,
 			},
 		}},
-		{39, map[string][]uint{}},
+		{29, map[netip.Addr][]uint{
+			netip.MustParseAddr("::ffff:127.0.0.1"): {
+				678,
+			},
+		}},
+		{39, map[netip.Addr][]uint{}},
 	}
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("%d minutes", tc.Minutes), func(t *testing.T) {

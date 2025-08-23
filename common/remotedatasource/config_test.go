@@ -4,8 +4,6 @@
 package remotedatasource
 
 import (
-	"fmt"
-	"reflect"
 	"testing"
 	"time"
 
@@ -100,5 +98,5 @@ func TestSourceDecode(t *testing.T) {
 			},
 			Error: true,
 		},
-	}, helpers.DiffFormatter(reflect.TypeOf(TransformQuery{}), fmt.Sprint), helpers.DiffZero)
+	})
 }

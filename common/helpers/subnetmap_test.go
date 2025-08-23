@@ -6,6 +6,7 @@ package helpers_test
 import (
 	"net/netip"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -19,6 +20,7 @@ import (
 func TestSubnetMapUnmarshalHook(t *testing.T) {
 	var nilMap map[string]string
 	cases := []struct {
+		Pos         helpers.Pos
 		Description string
 		Input       any
 		Tests       map[string]string
@@ -26,20 +28,24 @@ func TestSubnetMapUnmarshalHook(t *testing.T) {
 		YAML        any
 	}{
 		{
+			Pos:         helpers.Mark(),
 			Description: "nil",
 			Input:       nilMap,
 			Tests: map[string]string{
 				"::ffff:203.0.113.1": "",
 			},
+			YAML: map[string]string{},
 		}, {
+			Pos:         helpers.Mark(),
 			Description: "empty",
-			Input:       gin.H{},
+			Input:       map[string]string{},
 			Tests: map[string]string{
 				"::ffff:203.0.113.1": "",
 			},
 		}, {
+			Pos:         helpers.Mark(),
 			Description: "IPv4 subnet",
-			Input:       gin.H{"203.0.113.0/24": "customer1"},
+			Input:       map[string]string{"203.0.113.0/24": "customer1"},
 			Tests: map[string]string{
 				"::ffff:203.0.113.18": "customer1",
 				"::ffff:203.0.113.16": "customer1",
@@ -49,59 +55,69 @@ func TestSubnetMapUnmarshalHook(t *testing.T) {
 				"2001:db8:1::12":      "",
 			},
 		}, {
+			Pos:         helpers.Mark(),
 			Description: "IPv4 IP",
-			Input:       gin.H{"203.0.113.1": "customer1"},
+			Input:       map[string]string{"203.0.113.1": "customer1"},
 			Tests: map[string]string{
 				"::ffff:203.0.113.1": "customer1",
 				"2001:db8:1::12":     "",
 			},
-			YAML: gin.H{"203.0.113.1/32": "customer1"},
+			YAML: map[string]string{"203.0.113.1/32": "customer1"},
 		}, {
+			Pos:         helpers.Mark(),
 			Description: "IPv6 subnet",
-			Input:       gin.H{"2001:db8:1::/64": "customer2"},
+			Input:       map[string]string{"2001:db8:1::/64": "customer2"},
 			Tests: map[string]string{
 				"2001:db8:1::1": "customer2",
 				"2001:db8:1::2": "customer2",
 				"2001:db8:2::2": "",
 			},
 		}, {
+			Pos:         helpers.Mark(),
 			Description: "IPv6-mapped-IPv4 subnet",
-			Input:       gin.H{"::ffff:203.0.113.0/120": "customer2"},
+			Input:       map[string]string{"::ffff:203.0.113.0/120": "customer2"},
 			Tests: map[string]string{
 				"::ffff:203.0.113.10": "customer2",
 				"::ffff:203.0.112.10": "",
 			},
-			YAML: gin.H{"203.0.113.0/24": "customer2"},
+			YAML: map[string]string{"203.0.113.0/24": "customer2"},
 		}, {
+			Pos:         helpers.Mark(),
 			Description: "IPv6 IP",
-			Input:       gin.H{"2001:db8:1::1": "customer2"},
+			Input:       map[string]string{"2001:db8:1::1": "customer2"},
 			Tests: map[string]string{
 				"2001:db8:1::1": "customer2",
 				"2001:db8:1::2": "",
 				"2001:db8:2::2": "",
 			},
-			YAML: gin.H{"2001:db8:1::1/128": "customer2"},
+			YAML: map[string]string{"2001:db8:1::1/128": "customer2"},
 		}, {
+			Pos:         helpers.Mark(),
 			Description: "Invalid subnet (1)",
-			Input:       gin.H{"192.0.2.1/38": "customer"},
+			Input:       map[string]string{"192.0.2.1/38": "customer"},
 			Error:       true,
 		}, {
+			Pos:         helpers.Mark(),
 			Description: "Invalid subnet (2)",
-			Input:       gin.H{"192.0.2.1/255.0.255.0": "customer"},
+			Input:       map[string]string{"192.0.2.1/255.0.255.0": "customer"},
 			Error:       true,
 		}, {
+			Pos:         helpers.Mark(),
 			Description: "Invalid subnet (3)",
-			Input:       gin.H{"2001:db8::/1000": "customer"},
+			Input:       map[string]string{"2001:db8::/1000": "customer"},
 			Error:       true,
 		}, {
+			Pos:         helpers.Mark(),
 			Description: "Invalid IP",
-			Input:       gin.H{"200.33.300.1": "customer"},
+			Input:       map[string]string{"200.33.300.1": "customer"},
 			Error:       true,
 		}, {
+			Pos:         helpers.Mark(),
 			Description: "Random key",
-			Input:       gin.H{"kfgdjgkfj": "customer"},
+			Input:       map[string]string{"kfgdjgkfj": "customer"},
 			Error:       true,
 		}, {
+			Pos:         helpers.Mark(),
 			Description: "Single value",
 			Input:       "customer",
 			Tests: map[string]string{
@@ -115,11 +131,10 @@ func TestSubnetMapUnmarshalHook(t *testing.T) {
 	}
 	for _, tc := range cases {
 		if tc.YAML == nil {
-			if tc.Error {
-				tc.YAML = map[string]string{}
-			} else {
-				tc.YAML = tc.Input
-			}
+			tc.YAML = tc.Input
+		}
+		if tc.Tests == nil {
+			tc.Tests = map[string]string{}
 		}
 		t.Run(tc.Description, func(t *testing.T) {
 			var tree helpers.SubnetMap[string]
@@ -134,9 +149,11 @@ func TestSubnetMapUnmarshalHook(t *testing.T) {
 			}
 			err = decoder.Decode(tc.Input)
 			if err != nil && !tc.Error {
-				t.Fatalf("Decode() error:\n%+v", err)
+				t.Fatalf("%sDecode() error:\n%+v", tc.Pos, err)
 			} else if err == nil && tc.Error {
-				t.Fatal("Decode() did not return an error")
+				t.Fatalf("%sDecode() did not return an error", tc.Pos)
+			} else if tc.Error {
+				return
 			}
 			got := map[string]string{}
 			for k := range tc.Tests {
@@ -144,20 +161,20 @@ func TestSubnetMapUnmarshalHook(t *testing.T) {
 				got[k] = v
 			}
 			if diff := helpers.Diff(got, tc.Tests); diff != "" {
-				t.Fatalf("Decode() (-got, +want):\n%s", diff)
+				t.Fatalf("%sDecode() (-got, +want):\n%s", tc.Pos, diff)
 			}
 
 			// Try to unmarshal with YAML
 			buf, err := yaml.Marshal(tree)
 			if err != nil {
-				t.Fatalf("yaml.Marshal() error:\n%+v", err)
+				t.Fatalf("%syaml.Marshal() error:\n%+v", tc.Pos, err)
 			}
 			got = map[string]string{}
 			if err := yaml.Unmarshal(buf, &got); err != nil {
-				t.Fatalf("yaml.Unmarshal() error:\n%+v", err)
+				t.Fatalf("%syaml.Unmarshal() error:\n%+v", tc.Pos, err)
 			}
 			if diff := helpers.Diff(got, tc.YAML); diff != "" {
-				t.Fatalf("MarshalYAML() (-got, +want):\n%s", diff)
+				t.Fatalf("%sMarshalYAML() (-got, +want):\n%s", tc.Pos, diff)
 			}
 		})
 	}
@@ -171,7 +188,7 @@ func TestSubnetMapUnmarshalHookWithMapValue(t *testing.T) {
 	cases := []struct {
 		Pos      helpers.Pos
 		Input    gin.H
-		Expected gin.H
+		Expected any
 	}{
 		{
 			Pos: helpers.Mark(),
@@ -179,10 +196,10 @@ func TestSubnetMapUnmarshalHookWithMapValue(t *testing.T) {
 				"blip": "some",
 				"blop": "thing",
 			},
-			Expected: gin.H{
-				"::/0": gin.H{
-					"Blip": "some",
-					"Blop": "thing",
+			Expected: map[string]SomeStruct{
+				"::/0": {
+					Blip: "some",
+					Blop: "thing",
 				},
 			},
 		}, {
@@ -197,14 +214,14 @@ func TestSubnetMapUnmarshalHookWithMapValue(t *testing.T) {
 					"blop": "stuff",
 				},
 			},
-			Expected: gin.H{
-				"::/0": gin.H{
-					"Blip": "some",
-					"Blop": "thing",
+			Expected: map[string]SomeStruct{
+				"::/0": {
+					Blip: "some",
+					Blop: "thing",
 				},
-				"203.0.113.14/32": gin.H{
-					"Blip": "other",
-					"Blop": "stuff",
+				"203.0.113.14/32": {
+					Blip: "other",
+					Blop: "stuff",
 				},
 			},
 		},
@@ -716,4 +733,32 @@ func TestSubnetMapAllMaybeSorted(t *testing.T) {
 			t.Skip("All() and AllMaybeSorted() returned identical order")
 		}
 	})
+}
+
+func TestSubnetmapDiff(t *testing.T) {
+	got := helpers.MustNewSubnetMap(map[string]string{
+		"2001:db8::/64":        "hello",
+		"::ffff:192.0.2.0/120": "bye",
+	})
+	expected := helpers.MustNewSubnetMap(map[string]string{
+		"2001:db8::/64":        "hello",
+		"::ffff:192.0.2.0/120": "bye",
+	})
+
+	if diff := helpers.Diff(got, expected); diff != "" {
+		t.Fatalf("Diff():\n%+v", diff)
+	}
+
+	got.Set(netip.MustParsePrefix("2001:db8:1::/64"), "bye")
+	diffGot := helpers.Diff(got, expected)
+	diffGot = strings.ReplaceAll(diffGot, "\u00a0", " ")
+	diffExpected := `  (*helpers.SubnetMap[string])(Inverse(subnetmap.Transform, map[string]string{
+  	"192.0.2.0/24":    "bye",
+- 	"2001:db8:1::/64": "bye",
+  	"2001:db8::/64":   "hello",
+  }))
+`
+	if diff := helpers.Diff(diffGot, diffExpected); diff != "" {
+		t.Fatalf("Diff() (-got, +want):\n%+v", diff)
+	}
 }

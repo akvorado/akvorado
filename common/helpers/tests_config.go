@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/go-viper/mapstructure/v2"
+	"github.com/google/go-cmp/cmp"
 
 	"akvorado/common/helpers/yaml"
 )
@@ -28,7 +29,7 @@ type ConfigurationDecodeCases []struct {
 }
 
 // TestConfigurationDecode helps decoding configuration. It also test decoding from YAML.
-func TestConfigurationDecode(t *testing.T, cases ConfigurationDecodeCases, options ...DiffOption) {
+func TestConfigurationDecode(t *testing.T, cases ConfigurationDecodeCases, options ...cmp.Option) {
 	t.Helper()
 	for _, tc := range cases {
 		for _, fromYAML := range []bool{false, true} {

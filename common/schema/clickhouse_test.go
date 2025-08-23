@@ -6,11 +6,13 @@ package schema
 import (
 	"net/netip"
 	"slices"
+	"strings"
 	"testing"
 
 	"akvorado/common/helpers"
 
 	"github.com/ClickHouse/ch-go/proto"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestAppendDefault(t *testing.T) {
@@ -50,10 +52,10 @@ func TestAppendBasics(t *testing.T) {
 	bf.AppendUint(ColumnPackets, 200)
 
 	expected := map[ColumnKey]any{
-		ColumnTimeReceived: 1000,
-		ColumnSamplingRate: 20000,
-		ColumnDstAS:        65000,
-		ColumnPackets:      100,
+		ColumnTimeReceived: uint32(1000),
+		ColumnSamplingRate: uint64(20000),
+		ColumnDstAS:        uint32(65000),
+		ColumnPackets:      uint64(100),
 	}
 	got := bf.OtherColumns
 	if diff := helpers.Diff(got, expected); diff != "" {
@@ -94,7 +96,7 @@ func TestAppendArrayUInt32Columns(t *testing.T) {
 		Offsets: proto.ColUInt64{3, 6},
 		Data:    &proto.ColUInt32{65400, 65500, 65001, 65403, 65503, 65003},
 	}
-	if diff := helpers.Diff(got, expected); diff != "" {
+	if diff := helpers.Diff(got, &expected); diff != "" {
 		t.Errorf("AppendArrayUInt32 (-got, +want):\n%s", diff)
 	}
 }
@@ -122,7 +124,7 @@ func TestAppendArrayUInt128Columns(t *testing.T) {
 			{High: (65401 << 32) + 100, Low: 201},
 		},
 	}
-	if diff := helpers.Diff(got, expected); diff != "" {
+	if diff := helpers.Diff(got, &expected); diff != "" {
 		t.Errorf("AppendArrayUInt128 (-got, +want):\n%s", diff)
 	}
 }
@@ -142,10 +144,10 @@ func TestUndoUInt64(t *testing.T) {
 	expectedBytes := proto.ColUInt64{100}
 	expectedPackets := proto.ColUInt64{200}
 
-	if diff := helpers.Diff(bytesCol, expectedBytes); diff != "" {
+	if diff := helpers.Diff(bytesCol, &expectedBytes); diff != "" {
 		t.Errorf("Initial bytes column state (-got, +want):\n%s", diff)
 	}
-	if diff := helpers.Diff(packetsCol, expectedPackets); diff != "" {
+	if diff := helpers.Diff(packetsCol, &expectedPackets); diff != "" {
 		t.Errorf("Initial packets column state (-got, +want):\n%s", diff)
 	}
 
@@ -155,10 +157,10 @@ func TestUndoUInt64(t *testing.T) {
 	expectedBytesAfter := proto.ColUInt64{}
 	expectedPacketsAfter := proto.ColUInt64{}
 
-	if diff := helpers.Diff(bytesCol, expectedBytesAfter); diff != "" {
+	if diff := helpers.Diff(bytesCol, &expectedBytesAfter); diff != "" {
 		t.Errorf("Bytes column after undo (-got, +want):\n%s", diff)
 	}
-	if diff := helpers.Diff(packetsCol, expectedPacketsAfter); diff != "" {
+	if diff := helpers.Diff(packetsCol, &expectedPacketsAfter); diff != "" {
 		t.Errorf("Packets column after undo (-got, +want):\n%s", diff)
 	}
 }
@@ -178,10 +180,10 @@ func TestUndoUInt32(t *testing.T) {
 	expectedSrc := proto.ColUInt32{65001}
 	expectedDst := proto.ColUInt32{65002}
 
-	if diff := helpers.Diff(srcCol, expectedSrc); diff != "" {
+	if diff := helpers.Diff(srcCol, &expectedSrc); diff != "" {
 		t.Errorf("Initial SrcAS column state (-got, +want):\n%s", diff)
 	}
-	if diff := helpers.Diff(dstCol, expectedDst); diff != "" {
+	if diff := helpers.Diff(dstCol, &expectedDst); diff != "" {
 		t.Errorf("Initial DstAS column state (-got, +want):\n%s", diff)
 	}
 
@@ -191,10 +193,10 @@ func TestUndoUInt32(t *testing.T) {
 	expectedSrcAfter := proto.ColUInt32{}
 	expectedDstAfter := proto.ColUInt32{}
 
-	if diff := helpers.Diff(srcCol, expectedSrcAfter); diff != "" {
+	if diff := helpers.Diff(srcCol, &expectedSrcAfter); diff != "" {
 		t.Errorf("SrcAS column after undo (-got, +want):\n%s", diff)
 	}
-	if diff := helpers.Diff(dstCol, expectedDstAfter); diff != "" {
+	if diff := helpers.Diff(dstCol, &expectedDstAfter); diff != "" {
 		t.Errorf("DstAS column after undo (-got, +want):\n%s", diff)
 	}
 }
@@ -214,10 +216,10 @@ func TestUndoUInt16(t *testing.T) {
 	expectedSrc := proto.ColUInt16{80}
 	expectedDst := proto.ColUInt16{443}
 
-	if diff := helpers.Diff(srcCol, expectedSrc); diff != "" {
+	if diff := helpers.Diff(srcCol, &expectedSrc); diff != "" {
 		t.Errorf("Initial SrcPort column state (-got, +want):\n%s", diff)
 	}
-	if diff := helpers.Diff(dstCol, expectedDst); diff != "" {
+	if diff := helpers.Diff(dstCol, &expectedDst); diff != "" {
 		t.Errorf("Initial DstPort column state (-got, +want):\n%s", diff)
 	}
 
@@ -227,10 +229,10 @@ func TestUndoUInt16(t *testing.T) {
 	expectedSrcAfter := proto.ColUInt16{}
 	expectedDstAfter := proto.ColUInt16{}
 
-	if diff := helpers.Diff(srcCol, expectedSrcAfter); diff != "" {
+	if diff := helpers.Diff(srcCol, &expectedSrcAfter); diff != "" {
 		t.Errorf("SrcPort column after undo (-got, +want):\n%s", diff)
 	}
-	if diff := helpers.Diff(dstCol, expectedDstAfter); diff != "" {
+	if diff := helpers.Diff(dstCol, &expectedDstAfter); diff != "" {
 		t.Errorf("DstPort column after undo (-got, +want):\n%s", diff)
 	}
 }
@@ -246,7 +248,7 @@ func TestUndoUInt8(t *testing.T) {
 	col := bf.batch.columns[ColumnSrcNetMask].(*proto.ColUInt8)
 	expected := proto.ColUInt8{6}
 
-	if diff := helpers.Diff(col, expected); diff != "" {
+	if diff := helpers.Diff(col, &expected); diff != "" {
 		t.Errorf("Initial Proto column state (-got, +want):\n%s", diff)
 	}
 
@@ -255,7 +257,7 @@ func TestUndoUInt8(t *testing.T) {
 
 	expectedAfter := proto.ColUInt8{}
 
-	if diff := helpers.Diff(col, expectedAfter); diff != "" {
+	if diff := helpers.Diff(col, &expectedAfter); diff != "" {
 		t.Errorf("Proto column after undo (-got, +want):\n%s", diff)
 	}
 }
@@ -278,10 +280,10 @@ func TestUndoIPv6(t *testing.T) {
 	expectedSrc := proto.ColIPv6{srcAddr.As16()}
 	expectedDst := proto.ColIPv6{dstAddr.As16()}
 
-	if diff := helpers.Diff(srcCol, expectedSrc); diff != "" {
+	if diff := helpers.Diff(srcCol, &expectedSrc); diff != "" {
 		t.Errorf("Initial SrcAddr column state (-got, +want):\n%s", diff)
 	}
-	if diff := helpers.Diff(dstCol, expectedDst); diff != "" {
+	if diff := helpers.Diff(dstCol, &expectedDst); diff != "" {
 		t.Errorf("Initial DstAddr column state (-got, +want):\n%s", diff)
 	}
 
@@ -291,10 +293,10 @@ func TestUndoIPv6(t *testing.T) {
 	expectedSrcAfter := proto.ColIPv6{}
 	expectedDstAfter := proto.ColIPv6{}
 
-	if diff := helpers.Diff(srcCol, expectedSrcAfter); diff != "" {
+	if diff := helpers.Diff(srcCol, &expectedSrcAfter); diff != "" {
 		t.Errorf("SrcAddr column after undo (-got, +want):\n%s", diff)
 	}
-	if diff := helpers.Diff(dstCol, expectedDstAfter); diff != "" {
+	if diff := helpers.Diff(dstCol, &expectedDstAfter); diff != "" {
 		t.Errorf("DstAddr column after undo (-got, +want):\n%s", diff)
 	}
 }
@@ -310,7 +312,7 @@ func TestUndoDateTime(t *testing.T) {
 	col := bf.batch.columns[ColumnTimeReceived].(*proto.ColDateTime)
 	expected := proto.ColDateTime{Data: []proto.DateTime{1000}}
 
-	if diff := helpers.Diff(col, expected); diff != "" {
+	if diff := helpers.Diff(col, &expected); diff != "" {
 		t.Errorf("Initial TimeReceived column state (-got, +want):\n%s", diff)
 	}
 
@@ -319,7 +321,7 @@ func TestUndoDateTime(t *testing.T) {
 
 	expectedAfter := proto.ColDateTime{Data: []proto.DateTime{}}
 
-	if diff := helpers.Diff(col, expectedAfter); diff != "" {
+	if diff := helpers.Diff(col, &expectedAfter); diff != "" {
 		t.Errorf("TimeReceived column after undo (-got, +want):\n%s", diff)
 	}
 }
@@ -335,7 +337,7 @@ func TestUndoEnum8(t *testing.T) {
 	col := bf.batch.columns[ColumnInIfBoundary].(*proto.ColEnum8)
 	expected := proto.ColEnum8{proto.Enum8(InterfaceBoundaryExternal)}
 
-	if diff := helpers.Diff(col, expected); diff != "" {
+	if diff := helpers.Diff(col, &expected); diff != "" {
 		t.Errorf("Initial InIfBoundary column state (-got, +want):\n%s", diff)
 	}
 
@@ -344,7 +346,7 @@ func TestUndoEnum8(t *testing.T) {
 
 	expectedAfter := proto.ColEnum8{}
 
-	if diff := helpers.Diff(col, expectedAfter); diff != "" {
+	if diff := helpers.Diff(col, &expectedAfter); diff != "" {
 		t.Errorf("InIfBoundary column after undo (-got, +want):\n%s", diff)
 	}
 }
@@ -364,10 +366,14 @@ func TestUndoLowCardinalityString(t *testing.T) {
 	expectedName := proto.ColLowCardinality[string]{Values: []string{"router1"}}
 	expectedRole := proto.ColLowCardinality[string]{Values: []string{"edge"}}
 
-	if diff := helpers.Diff(nameCol, expectedName); diff != "" {
+	diffOpt := cmp.Comparer(func(x, y proto.ColLowCardinality[string]) bool {
+		return slices.Compare(x.Values, y.Values) == 0
+	})
+
+	if diff := helpers.Diff(nameCol, &expectedName, diffOpt); diff != "" {
 		t.Errorf("Initial ExporterName column state (-got, +want):\n%s", diff)
 	}
-	if diff := helpers.Diff(roleCol, expectedRole); diff != "" {
+	if diff := helpers.Diff(roleCol, &expectedRole, diffOpt); diff != "" {
 		t.Errorf("Initial ExporterRole column state (-got, +want):\n%s", diff)
 	}
 
@@ -377,10 +383,10 @@ func TestUndoLowCardinalityString(t *testing.T) {
 	expectedNameAfter := proto.ColLowCardinality[string]{Values: []string{}}
 	expectedRoleAfter := proto.ColLowCardinality[string]{Values: []string{}}
 
-	if diff := helpers.Diff(nameCol, expectedNameAfter); diff != "" {
+	if diff := helpers.Diff(nameCol, &expectedNameAfter, diffOpt); diff != "" {
 		t.Errorf("ExporterName column after undo (-got, +want):\n%s", diff)
 	}
-	if diff := helpers.Diff(roleCol, expectedRoleAfter); diff != "" {
+	if diff := helpers.Diff(roleCol, &expectedRoleAfter, diffOpt); diff != "" {
 		t.Errorf("ExporterRole column after undo (-got, +want):\n%s", diff)
 	}
 }
@@ -393,11 +399,17 @@ func TestUndoLowCardinalityIPv6(t *testing.T) {
 	addr := netip.MustParseAddr("2001:db8::1")
 	bf.AppendIPv6(ColumnExporterAddress, addr)
 
+	diffOpt := cmp.Comparer(func(x, y proto.ColLowCardinality[proto.IPv6]) bool {
+		return slices.CompareFunc(x.Values, y.Values, func(a, b proto.IPv6) int {
+			return strings.Compare(a.String(), b.String())
+		}) == 0
+	})
+
 	// Check we have the expected initial state
 	col := bf.batch.columns[ColumnExporterAddress].(*proto.ColLowCardinality[proto.IPv6])
 	expected := proto.ColLowCardinality[proto.IPv6]{Values: []proto.IPv6{addr.As16()}}
 
-	if diff := helpers.Diff(col, expected); diff != "" {
+	if diff := helpers.Diff(col, &expected, diffOpt); diff != "" {
 		t.Errorf("Initial ExporterAddress column state (-got, +want):\n%s", diff)
 	}
 
@@ -406,7 +418,7 @@ func TestUndoLowCardinalityIPv6(t *testing.T) {
 
 	expectedAfter := proto.ColLowCardinality[proto.IPv6]{Values: []proto.IPv6{}}
 
-	if diff := helpers.Diff(col, expectedAfter); diff != "" {
+	if diff := helpers.Diff(col, &expectedAfter, diffOpt); diff != "" {
 		t.Errorf("ExporterAddress column after undo (-got, +want):\n%s", diff)
 	}
 }
@@ -593,11 +605,11 @@ func TestBuildProtoInput(t *testing.T) {
 
 	// Let's compare a subset
 	expected := proto.Input{
-		{Name: "TimeReceived", Data: proto.ColDateTime{Data: []proto.DateTime{1002, 1003}}},
-		{Name: "SrcAS", Data: proto.ColUInt32{65000, 65001}},
-		{Name: "DstAS", Data: proto.ColUInt32{0, 0}},
-		{Name: "Bytes", Data: proto.ColUInt64{2000, 202}},
-		{Name: "Packets", Data: proto.ColUInt64{30, 3}},
+		{Name: "TimeReceived", Data: &proto.ColDateTime{Data: []proto.DateTime{1002, 1003}}},
+		{Name: "SrcAS", Data: &proto.ColUInt32{65000, 65001}},
+		{Name: "DstAS", Data: &proto.ColUInt32{0, 0}},
+		{Name: "Bytes", Data: &proto.ColUInt64{2000, 202}},
+		{Name: "Packets", Data: &proto.ColUInt64{30, 3}},
 	}
 	got = slices.DeleteFunc(got, func(col proto.InputColumn) bool {
 		return !slices.Contains([]string{"TimeReceived", "SrcAS", "DstAS", "Packets", "Bytes"}, col.Name)

@@ -351,7 +351,6 @@ output provider */ = 'telia'`,
 	s = s.EnableAllColumns()
 	for _, tc := range cases {
 		tc.MetaIn.Schema = s
-		tc.MetaOut.Schema = tc.MetaIn.Schema
 		got, err := Parse("", []byte(tc.Input), GlobalStore("meta", &tc.MetaIn))
 		if err != nil {
 			t.Errorf("Parse(%q) error:\n%+v", tc.Input, err)
@@ -397,7 +396,6 @@ func TestValidMaterializedFilter(t *testing.T) {
 		cs.ClickHouseMaterialized = true
 
 		tc.MetaIn.Schema = s
-		tc.MetaOut.Schema = tc.MetaIn.Schema
 		got, err := Parse("", []byte(tc.Input), GlobalStore("meta", &tc.MetaIn))
 		if err != nil {
 			t.Errorf("Parse(%q) error:\n%+v", tc.Input, err)

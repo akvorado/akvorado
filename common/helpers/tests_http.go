@@ -24,12 +24,12 @@ type HTTPEndpointCases []struct {
 	Method      string
 	URL         string
 	Header      http.Header
-	JSONInput   any
+	JSONInput   gin.H
 
 	ContentType string
 	StatusCode  int
 	FirstLines  []string
-	JSONOutput  any
+	JSONOutput  gin.H
 }
 
 // TestHTTPEndpoints test a few HTTP endpoints
@@ -108,6 +108,9 @@ func TestHTTPEndpoints(t *testing.T, serverAddr net.Addr, cases HTTPEndpointCase
 				for reader.Scan() && len(got) < len(tc.FirstLines) {
 					got = append(got, reader.Text())
 				}
+				if tc.FirstLines == nil {
+					tc.FirstLines = []string{}
+				}
 				if diff := Diff(got, tc.FirstLines); diff != "" {
 					t.Errorf("%s%s %s (-got, +want):\n%s", tc.Pos, tc.Method, tc.URL, diff)
 				}
@@ -117,7 +120,18 @@ func TestHTTPEndpoints(t *testing.T, serverAddr net.Addr, cases HTTPEndpointCase
 				if err := decoder.Decode(&got); err != nil {
 					t.Fatalf("%s%s %s:\n%+v", tc.Pos, tc.Method, tc.URL, err)
 				}
-				if diff := Diff(got, tc.JSONOutput); diff != "" {
+
+				// Encode/decode expected to compare JSON stuff
+				var expected gin.H
+				expectedBytes, err := json.Marshal(tc.JSONOutput)
+				if err != nil {
+					t.Fatalf("json.Marshal() error:\n%+v", err)
+				}
+				if err := json.Unmarshal(expectedBytes, &expected); err != nil {
+					t.Fatalf("json.Unmarshal() error:\n%+v", err)
+				}
+
+				if diff := Diff(got, expected); diff != "" {
 					t.Fatalf("%s%s %s (-got, +want):\n%s", tc.Pos, tc.Method, tc.URL, diff)
 				}
 			}

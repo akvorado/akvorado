@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"akvorado/common/helpers"
+
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 type likeInt int
@@ -72,6 +74,7 @@ func TestPutCollision(t *testing.T) {
 
 func TestTake(t *testing.T) {
 	p := NewPool[likeInt]()
+	diffOpt := cmpopts.EquateComparable(internValue[likeInt]{})
 
 	val1 := likeInt(10)
 	ref1 := p.Put(val1)
@@ -91,7 +94,7 @@ func TestTake(t *testing.T) {
 		{value: 22, refCount: 1, previous: 2, next: 4},
 		{value: 32, refCount: 1, previous: 3},
 	}
-	if diff := helpers.Diff(p.values, expectedValues, helpers.DiffUnexported); diff != "" {
+	if diff := helpers.Diff(p.values, expectedValues, diffOpt); diff != "" {
 		t.Fatalf("p.values (-got, +want):\n%s", diff)
 	}
 
@@ -104,7 +107,7 @@ func TestTake(t *testing.T) {
 		{value: 22, refCount: 0, previous: 2, next: 4}, // free
 		{value: 32, refCount: 1, previous: 2},
 	}
-	if diff := helpers.Diff(p.values, expectedValues, helpers.DiffUnexported); diff != "" {
+	if diff := helpers.Diff(p.values, expectedValues, diffOpt); diff != "" {
 		t.Fatalf("p.values (-got, +want):\n%s", diff)
 	}
 
@@ -120,7 +123,7 @@ func TestTake(t *testing.T) {
 		{value: 42, refCount: 1, previous: 4},
 		{value: 32, refCount: 1, previous: 2, next: 3},
 	}
-	if diff := helpers.Diff(p.values, expectedValues, helpers.DiffUnexported); diff != "" {
+	if diff := helpers.Diff(p.values, expectedValues, diffOpt); diff != "" {
 		t.Fatalf("p.values (-got, +want):\n%s", diff)
 	}
 
@@ -133,7 +136,7 @@ func TestTake(t *testing.T) {
 		{value: 42, refCount: 1, previous: 4},
 		{value: 32, refCount: 1, next: 3},
 	}
-	if diff := helpers.Diff(p.values, expectedValues, helpers.DiffUnexported); diff != "" {
+	if diff := helpers.Diff(p.values, expectedValues, diffOpt); diff != "" {
 		t.Fatalf("p.values (-got, +want):\n%s", diff)
 	}
 
@@ -146,7 +149,7 @@ func TestTake(t *testing.T) {
 		{value: 42, refCount: 1},
 		{value: 32, refCount: 0, next: 3}, // free
 	}
-	if diff := helpers.Diff(p.values, expectedValues, helpers.DiffUnexported); diff != "" {
+	if diff := helpers.Diff(p.values, expectedValues, diffOpt); diff != "" {
 		t.Fatalf("p.values (-got, +want):\n%s", diff)
 	}
 
@@ -159,7 +162,7 @@ func TestTake(t *testing.T) {
 		{value: 42, refCount: 0},          // free
 		{value: 32, refCount: 0, next: 3}, // free
 	}
-	if diff := helpers.Diff(p.values, expectedValues, helpers.DiffUnexported); diff != "" {
+	if diff := helpers.Diff(p.values, expectedValues, diffOpt); diff != "" {
 		t.Fatalf("p.values (-got, +want):\n%s", diff)
 	}
 

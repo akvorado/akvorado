@@ -7,6 +7,9 @@ import (
 	"testing"
 
 	"akvorado/common/helpers"
+
+	"github.com/bits-and-blooms/bitset"
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestFlowsClickHouse(t *testing.T) {
@@ -35,7 +38,11 @@ func TestFinalizeTwice(t *testing.T) {
 	c := NewMock(t)
 	oldSchema := c.Schema
 	newSchema := c.finalize()
-	if diff := helpers.Diff(oldSchema, newSchema, helpers.DiffUnexported); diff != "" {
+	if diff := helpers.Diff(oldSchema, newSchema,
+		cmp.AllowUnexported(Schema{}),
+		cmp.Comparer(func(x, y bitset.BitSet) bool {
+			return x.Equal(&y)
+		})); diff != "" {
 		t.Fatalf("finalize() (-old, +new):\n%s", diff)
 	}
 }

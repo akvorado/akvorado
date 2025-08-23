@@ -22,7 +22,7 @@ func TestFileInput(t *testing.T) {
 	configuration.Paths = []string{path.Join("testdata", "file1.txt"), path.Join("testdata", "file2.txt")}
 
 	done := make(chan bool)
-	expected := []pb.RawFlow{
+	expected := []*pb.RawFlow{
 		{
 			Payload:       []byte("hello world!\n"),
 			SourceAddress: net.ParseIP("127.0.0.1").To16(),

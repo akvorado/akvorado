@@ -141,7 +141,7 @@ func Mark() Pos {
 // String returns a textual representation of a Pos.
 func (p Pos) String() string {
 	if p.file != "" {
-		return fmt.Sprintf("%s:%d", p.file, p.line)
+		return fmt.Sprintf("%s:%d: ", p.file, p.line)
 	}
 	return ""
 }

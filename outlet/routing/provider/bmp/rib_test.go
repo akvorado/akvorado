@@ -206,7 +206,7 @@ func TestRemoveRoutes(t *testing.T) {
 		if count != 1 {
 			t.Error("removeRoutes() should have removed 1 route")
 		}
-		if diff := helpers.Diff(r.routes, map[prefixIndex]route{}); diff != "" {
+		if diff := helpers.Diff(r.routes, map[routeKey]route{}); diff != "" {
 			t.Errorf("removeRoutes() (-got, +want):\n%s", diff)
 		}
 	})

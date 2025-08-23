@@ -6,11 +6,11 @@
 package schema
 
 import (
-	"fmt"
-	"reflect"
 	"testing"
 
 	"akvorado/common/helpers"
+
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 var debug = true
@@ -44,5 +44,5 @@ func (c *Component) EnableAllColumns() *Component {
 }
 
 func init() {
-	helpers.AddPrettyFormatter(reflect.TypeOf(ColumnBytes), fmt.Sprint)
+	helpers.RegisterCmpOption(cmpopts.IgnoreUnexported(FlowMessage{}))
 }
