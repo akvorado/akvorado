@@ -247,7 +247,7 @@ func TestStartScaling(t *testing.T) {
 	})
 
 	// 1 worker
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(100 * time.Millisecond)
 	gotMetrics := r.GetMetrics("akvorado_outlet_kafka_", "worker")
 	expected := map[string]string{
 		"worker_decrease_total": "0",
