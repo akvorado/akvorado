@@ -222,7 +222,7 @@ func TestStartScaling(t *testing.T) {
 	configuration := DefaultConfiguration()
 	configuration.Topic = topicName
 	configuration.Brokers = cluster.ListenAddrs()
-	configuration.FetchMaxWaitTime = 100 * time.Millisecond
+	configuration.FetchMaxWaitTime = 80 * time.Millisecond
 	configuration.ConsumerGroup = fmt.Sprintf("outlet-%d", rand.Int())
 	configuration.WorkerIncreaseRateLimit = 20 * time.Millisecond
 	configuration.WorkerDecreaseRateLimit = 20 * time.Millisecond
@@ -247,7 +247,7 @@ func TestStartScaling(t *testing.T) {
 	})
 
 	// 1 worker
-	time.Sleep(100 * time.Millisecond)
+	time.Sleep(10 * time.Millisecond)
 	gotMetrics := r.GetMetrics("akvorado_outlet_kafka_", "worker")
 	expected := map[string]string{
 		"worker_decrease_total": "0",
