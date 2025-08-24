@@ -12,7 +12,6 @@ run tests:
           - go.sum
       paths:
         - .go-cache/
-        - bin/
     - key:
         files:
           - console/frontend/package-lock.json
