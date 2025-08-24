@@ -209,7 +209,7 @@ jobs:
           fail_ci_if_error: true
 
   build-go:
-    name: 🔭 Build Go backend
+    name: 🔬 Test only Go
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -244,7 +244,7 @@ jobs:
         run: make test
 
   build-js:
-    name: 🔭 Build JS frontend
+    name: 🔬 Test only JS
     runs-on: ubuntu-latest
     needs:
       - dependabot
