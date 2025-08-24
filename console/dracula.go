@@ -23,7 +23,7 @@ var draculaStyle = chroma.MustNewStyle("dracula", chroma.StyleEntries{
 	chroma.GenericError:         "#ff5555",
 	chroma.GenericHeading:       "#bd93f9 bold",
 	chroma.GenericInserted:      "#50fa7b bold",
-	chroma.GenericOutput:        "#6272a4",
+	chroma.GenericOutput:        "#a3b3e4", // Not Dracula, but increased readability
 	chroma.GenericPrompt:        "#50fa7b",
 	chroma.GenericStrong:        "#ffb86c",
 	chroma.GenericSubheading:    "#bd93f9 bold",
