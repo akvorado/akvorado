@@ -24,7 +24,7 @@ outputs:
     value: ${{ steps.iana-cache.outputs.cache-hit }}
   iana-cache-key:
     description: Cache key to be used for IANA files
-    value: ${{ steps.iana-cache.inputs.key }}
+    value: ${{ steps.iana-cache.outputs.cache-primary-key }}
 runs:
   using: composite
   steps:
