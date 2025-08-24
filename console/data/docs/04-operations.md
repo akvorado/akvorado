@@ -426,6 +426,21 @@ snmp-server community <community> ro
 snmp-server vrf VRF-MANAGEMENT
 ```
 
+#### BMP
+
+If needed, you can configure BMP as well.
+
+```eos
+router bgp 65001
+   bgp monitoring
+   monitoring station COLLECTOR
+      update-source Management1
+      connection address 10.122.4.51
+      connection mode active port 10179
+      export-policy received routes post-policy
+      export-policy bgp rib bestpaths
+```
+
 ### Nokia SR OS
 
 Model-driven command line interface (MD-CLI) syntax is used below. The
