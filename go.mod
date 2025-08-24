@@ -33,7 +33,7 @@ require (
 	github.com/openconfig/gnmi v0.14.0
 	github.com/openconfig/gnmic/pkg/api v0.1.9
 	github.com/opencontainers/image-spec v1.1.1
-	github.com/oschwald/maxminddb-golang/v2 v2.0.0-beta.8
+	github.com/oschwald/maxminddb-golang/v2 v2.0.0-beta.10
 	github.com/osrg/gobgp/v3 v3.37.0
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10
 	github.com/prometheus/client_golang v1.23.0

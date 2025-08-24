@@ -329,6 +329,8 @@ github.com/opencontainers/image-spec v1.1.1 h1:y0fUlFfIZhPF1W537XOLg0/fcx6zcHCJw
 github.com/opencontainers/image-spec v1.1.1/go.mod h1:qpqAh3Dmcf36wStyyWU+kCeDgrGnAve2nCC8+7h8Q0M=
 github.com/oschwald/maxminddb-golang/v2 v2.0.0-beta.8 h1:aM1/rO6p+XV+l+seD7UCtFZgsOefDTrFVLvPoZWjXZs=
 github.com/oschwald/maxminddb-golang/v2 v2.0.0-beta.8/go.mod h1:Jts8ztuE0PkUwY7VCJyp6B68ujQfr6G9P5Dn3Yx9u6w=
+github.com/oschwald/maxminddb-golang/v2 v2.0.0-beta.10 h1:d9tiCD1ueYjGStkagZmLYMbItMnJPpmn27jBctlyRg8=
+github.com/oschwald/maxminddb-golang/v2 v2.0.0-beta.10/go.mod h1:EkyB0XWibbE1/+tXyR+ZehlGg66bRtMzxQSPotYH2EA=
 github.com/osrg/gobgp/v3 v3.37.0 h1:+ObuOdvj7G7nxrT0fKFta+EAupdWf/q1WzbXydr8IOY=
 github.com/osrg/gobgp/v3 v3.37.0/go.mod h1:kVHVFy1/fyZHJ8P32+ctvPeJogn9qKwa1YCeMRXXrP0=
 github.com/pascaldekloe/name v1.0.1 h1:9lnXOHeqeHHnWLbKfH6X98+4+ETVqFqxN09UXSjcMb0=
