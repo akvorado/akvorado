@@ -12,59 +12,6 @@ identified with a specific icon:
 
 ## Unreleased
 
-- 💥 *docker*: update Kafka data volume mount path (check [PR
-  #1900](https://github.com/akvorado/akvorado/pull/1900) for the consequences if
-  you upgrade from a previous beta)
-- 🌱 *docker*: enforce bridge name
-- 🌱 *docker*: add cAdvisor to the monitoring stack
-- 🌱 *docker*: update Prometheus to 3.5.0
-- 🌱 *docker*: update node-exporter to 1.9.1
-- 🌱 *docker*: stop spawning demo exporters by default
-- 🌱 *build*: build with Go 1.25
-
-## 2.0.0-beta.4 - 2025-08-18
-
-> [!CAUTION]
-> This is a beta release! Be sure to read the section about 2.0.0-beta.1 as well.
-
-This is likely the last beta before releasing 2.0.0.
-
-- 🌱 *outlet*: improve performance of the BMP routing provider
-- 🌱 *documentation*: document how to tune TCP receive buffer for BMP routing provider
-- 🌱 *documentation*: document how to update the database schema for installations before 1.10.0
-
-## 2.0.0-beta.3 - 2025-08-11
-
-> [!CAUTION]
-> This is a beta release! Be sure to read the section about 2.0.0-beta.1 as well.
-
-- 💥 *docker*: enforce a specific IPv4 subnet (in the reserved class E)
-- 🌱 *docker*: add IPv6 configuration
-- 🌱 *outlet*: dynamically adjust the number of Kafka workers to ensure better performance from ClickHouse
-- 🌱 *outlet*: insert asynchronously when flow count is low
-- 🌱 *outlet*: decode IPFIX ingressPhysicalInterface and egressPhysicalInterface
-- 🌱 *docker*: expose Kafka UI (read-only) to the public endpoint
-- 🌱 *docker*: expose Traefik Dashboard (read-only) to the public endpoint
-- 🌱 *docker*: add examples to enable authentication and TLS
-
-## 2.0.0-beta.2 - 2025-08-04
-
-> [!CAUTION]
-> This is a beta release! Be sure to read the section about 2.0.0-beta.1 as well.
-
-- 💥 *common*: be stricter on results returned from remote sources
-- 🌱 *outlet*: commit records from Kafka after queuing them to ClickHouse
-- 🌱 *docker*: build a linux/amd64/v3 image to enable some optimizations
-- 🌱 *docker*: build a linux/arm/v7 image
-- 🌱 *docker*: change default log level for ClickHouse from trace to information
-- 🌱 *docker*: switch from Provectus Kafka UI (unmaintained) to Kafbat UI
-- 🌱 *docker*: expose metrics to the public endpoint
-
-## 2.0.0-beta.1 - 2025-07-28
-
-> [!CAUTION]
-> This is a beta release!
-
 This release introduce a new component: the outlet. Previously, ClickHouse was
 fetching data directly from Kafka. However, this required to push the protobuf
 schema using an out-of-band method. This makes cloud deployments more complex.
@@ -86,23 +33,50 @@ scratch:
 # docker compose up -d
 ```
 
+This procedure is also required even if you did run one of the previous beta
+version, due to a path change.
+
+The documentation has been updated, notably the troubleshooting section.
+
 - 💥 *outlet*: new service
 - 💥 *inlet*: flow rate limiting feature has been removed
+- 💥 *common*: be stricter on results returned from remote sources
 - 💥 *docker*: rename `docker-compose-monitoring.yml` to
   `docker-compose-prometheus.yml` (you need to update your `.env` if you were
   using it)
 - 💥 *docker*: switch to Apache Kafka 4.0
 - 💥 *docker*: switch Kafka to KRaft mode
+- 💥 *docker*: update Kafka data volume mount path
+- 💥 *docker*: enforce a specific IPv4 subnet (in the reserved class E)
 - 🩹 *console*: fix deletion of saved filters
 - 🩹 *console*: fix intermittent failure when requesting previous period
-- 🩹 *docker*: move healthcheck for IPinfo updater into Dockerfile to avoid
-  "unhealthy" state on non-updated installation
-- 🌱 *docker*: enable access log for Traefik
+- 🩹 *docker*: move healthcheck for IPinfo updater into Dockerfile to avoid "unhealthy" state on non-updated installation
+- 🌱 *build*: build with Go 1.25
 - 🌱 *docker*: update ClickHouse to 25.3 (not mandatory)
+- 🌱 *docker*: update Prometheus to 3.5.0
 - 🌱 *docker*: update Traefik to 3.4 (not mandatory)
+- 🌱 *docker*: update node-exporter to 1.9.1
+- 🌱 *docker*: build a linux/amd64/v3 image to enable some optimizations
+- 🌱 *docker*: build a linux/arm/v7 image
+- 🌱 *docker*: add examples to enable authentication and TLS
+- 🌱 *docker*: add IPv6 configuration
+- 🌱 *docker*: add cAdvisor to the monitoring stack
+- 🌱 *docker*: change default log level for ClickHouse from trace to information
+- 🌱 *docker*: enable access log for Traefik
+- 🌱 *docker*: stop spawning demo exporters by default
+- 🌱 *docker*: switch from Provectus Kafka UI (unmaintained) to Kafbat UI
 - 🌱 *docker*: switch to Prometheus Java Agent exporter for Kafka
-- 🌱 *orchestrator*: move ClickHouse database settings from `clickhouse` to `clickhousedb`
+- 🌱 *docker*: expose Kafka UI (read-only) to the public endpoint
+- 🌱 *docker*: expose Traefik Dashboard (read-only) to the public endpoint
+- 🌱 *docker*: expose metrics to the public endpoint
+- 🌱 *documentation*: document how to tune TCP receive buffer for BMP routing provider
+- 🌱 *documentation*: document how to update the database schema for installations before 1.10.0
 - 🌱 *inlet*: improve performance of classifiers
+- 🌱 *orchestrator*: move ClickHouse database settings from `clickhouse` to `clickhousedb`
+- 🌱 *outlet*: decode IPFIX ingressPhysicalInterface and egressPhysicalInterface
+- 🌱 *outlet*: insert asynchronously when flow count is low
+- 🌱 *outlet*: dynamically adjust the number of Kafka workers to ensure better performance from ClickHouse
+- 🌱 *outlet*: improve performance of the BMP routing provider
 
 [quickstart tarball]: https://github.com/akvorado/akvorado/releases/latest/download/docker-compose-quickstart.tar.gz
 
