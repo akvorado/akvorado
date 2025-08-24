@@ -192,7 +192,7 @@ func TestStartSeveralWorkers(t *testing.T) {
 	}
 }
 
-func TestStartScaling(t *testing.T) {
+func TestWorkerScaling(t *testing.T) {
 	topicName := fmt.Sprintf("test-topic2-%d", rand.Int())
 	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, pb.Version)
 
@@ -222,7 +222,7 @@ func TestStartScaling(t *testing.T) {
 	configuration := DefaultConfiguration()
 	configuration.Topic = topicName
 	configuration.Brokers = cluster.ListenAddrs()
-	configuration.FetchMaxWaitTime = 80 * time.Millisecond
+	configuration.FetchMaxWaitTime = 10 * time.Millisecond
 	configuration.ConsumerGroup = fmt.Sprintf("outlet-%d", rand.Int())
 	configuration.WorkerIncreaseRateLimit = 20 * time.Millisecond
 	configuration.WorkerDecreaseRateLimit = 20 * time.Millisecond
@@ -236,10 +236,11 @@ func TestStartScaling(t *testing.T) {
 	c.StartWorkers(func(_ int, ch chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
 		return func(context.Context, []byte) error {
 			c := msg.Add(1)
-			t.Logf("received message %d", c)
 			if c <= 5 {
+				t.Logf("received message %d, request a scale increase", c)
 				ch <- ScaleIncrease
 			} else {
+				t.Logf("received message %d, request a scale decrease", c)
 				ch <- ScaleDecrease
 			}
 			return nil
@@ -259,6 +260,7 @@ func TestStartScaling(t *testing.T) {
 	}
 
 	// Send 5 messages in a row, expect a second worker
+	t.Log("Send 5 messages")
 	for range 5 {
 		record := &kgo.Record{
 			Topic: expectedTopicName,
@@ -269,6 +271,7 @@ func TestStartScaling(t *testing.T) {
 		}
 	}
 	time.Sleep(100 * time.Millisecond)
+	t.Log("Check if workers increased to 2")
 	gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "worker")
 	expected = map[string]string{
 		"worker_decrease_total": "0",
@@ -280,6 +283,7 @@ func TestStartScaling(t *testing.T) {
 	}
 
 	// Send 5 other messages, expect one less worker
+	t.Log("Send 5 other messages")
 	for range 5 {
 		record := &kgo.Record{
 			Topic: expectedTopicName,
@@ -290,6 +294,7 @@ func TestStartScaling(t *testing.T) {
 		}
 	}
 	time.Sleep(100 * time.Millisecond)
+	t.Log("Check if workers decreased to 1")
 	gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "worker")
 	expected = map[string]string{
 		"worker_decrease_total": "1",
@@ -301,6 +306,7 @@ func TestStartScaling(t *testing.T) {
 	}
 
 	// Send 5 other messages, expect nothing change (already at minimum)
+	t.Log("Send 5 last messages")
 	for range 5 {
 		record := &kgo.Record{
 			Topic: expectedTopicName,
@@ -311,6 +317,7 @@ func TestStartScaling(t *testing.T) {
 		}
 	}
 	time.Sleep(100 * time.Millisecond)
+	t.Log("Check there is no change in number of workers")
 	gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "worker")
 	expected = map[string]string{
 		"worker_decrease_total": "1",
