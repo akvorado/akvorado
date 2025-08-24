@@ -5,7 +5,7 @@
 
 package console
 
-import "github.com/alecthomas/chroma"
+import "github.com/alecthomas/chroma/v2"
 
 // Converted from https://github.com/dracula/pygments/pull/11
 var draculaStyle = chroma.MustNewStyle("dracula", chroma.StyleEntries{
