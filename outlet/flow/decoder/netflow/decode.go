@@ -129,12 +129,12 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 			bfNonKey.AppendUint(schema.ColumnBytes, decodeUNumber(v))
 		case netflow.IPFIX_FIELD_packetDeltaCount, netflow.IPFIX_FIELD_postPacketDeltaCount:
 			bfNonKey.AppendUint(schema.ColumnPackets, decodeUNumber(v))
-		// TODO
 		case netflow.IPFIX_FIELD_samplingInterval, netflow.IPFIX_FIELD_samplerRandomInterval:
 			bf.SamplingRate = decodeUNumber(v)
-		// TODO
+			bfRev.SamplingRate = decodeUNumber(v)
 		case netflow.IPFIX_FIELD_samplerId, netflow.IPFIX_FIELD_selectorId:
 			bf.SamplingRate = uint64(samplingRateSys.GetSamplingRate(version, obsDomainID, decodeUNumber(v)))
+			bfRev.SamplingRate = uint64(samplingRateSys.GetSamplingRate(version, obsDomainID, decodeUNumber(v)))
 
 		// L3
 		case netflow.IPFIX_FIELD_sourceIPv4Address:
@@ -168,7 +168,7 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 			bf.DstNetMask = uint8(decodeUNumber(v))
 			bfRev.SrcNetMask = uint8(decodeUNumber(v))
 		case netflow.IPFIX_FIELD_ipNextHopIPv4Address, netflow.IPFIX_FIELD_bgpNextHopIPv4Address, netflow.IPFIX_FIELD_ipNextHopIPv6Address, netflow.IPFIX_FIELD_bgpNextHopIPv6Address:
-			bf.NextHop = decodeIPFromBytes(v)
+			bfNonKey.NextHop = decodeIPFromBytes(v)
 
 		// L4
 		case netflow.IPFIX_FIELD_sourceTransportPort:
@@ -193,7 +193,7 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 			bfRev.SrcAS = uint32(decodeUNumber(v))
 
 		// Interfaces
-		// TODO
+		// TODO append forward value to reverse flow if not present as reverse
 		case netflow.IPFIX_FIELD_ingressInterface:
 			bf.InIf = uint32(decodeUNumber(v))
 		case netflow.IPFIX_FIELD_egressInterface:
@@ -229,17 +229,23 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 				switch field.Type {
 				case netflow.NFV9_FIELD_FIRST_SWITCHED:
 					bf.TimeReceived = uint32(ts - sysUptime + decodeUNumber(v))
+					bfRev.TimeReceived = uint32(ts - sysUptime + decodeUNumber(v))
 				case netflow.IPFIX_FIELD_flowStartSeconds:
 					bf.TimeReceived = uint32(decodeUNumber(v))
+					bfRev.TimeReceived = uint32(decodeUNumber(v))
 				case netflow.IPFIX_FIELD_flowStartMilliseconds:
 					bf.TimeReceived = uint32(decodeUNumber(v) / 1000)
+					bfRev.TimeReceived = uint32(decodeUNumber(v) / 1000)
 				case netflow.IPFIX_FIELD_flowStartMicroseconds:
 					bf.TimeReceived = uint32(decodeUNumber(v) / 1_000_000)
+					bfRev.TimeReceived = uint32(decodeUNumber(v) / 1_000_000)
 				case netflow.IPFIX_FIELD_flowStartNanoseconds:
 					bf.TimeReceived = uint32(ts + decodeUNumber(v)/1_000_000_000)
+					bfRev.TimeReceived = uint32(ts + decodeUNumber(v)/1_000_000_000)
 				}
 			}
 
+			// TODO look at real world data
 			if !nd.d.Schema.IsDisabled(schema.ColumnGroupNAT) {
 				// NAT
 				switch field.Type {
@@ -262,14 +268,14 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 				// L2
 				switch field.Type {
 				case netflow.IPFIX_FIELD_vlanId, netflow.IPFIX_FIELD_dot1qVlanId:
-					if bf.SrcVlan == 0 {
-						bf.SrcVlan = uint16(decodeUNumber(v))
-						bfRev.DstVlan = uint16(decodeUNumber(v))
+					// TODO append forward value to reverse flow if not present as reverse
+					if bfNonKey.SrcVlan == 0 {
+						bfNonKey.SrcVlan = uint16(decodeUNumber(v))
 					}
 				case netflow.IPFIX_FIELD_postVlanId, netflow.IPFIX_FIELD_postDot1qVlanId:
-					if bf.DstVlan == 0 {
-						bf.DstVlan = uint16(decodeUNumber(v))
-						bfRev.SrcVlan = uint16(decodeUNumber(v))
+					// TODO append forward value to reverse flow if not present as reverse
+					if bfNonKey.DstVlan == 0 {
+						bfNonKey.DstVlan = uint16(decodeUNumber(v))
 					}
 				case netflow.IPFIX_FIELD_sourceMacAddress:
 					bf.AppendUint(schema.ColumnSrcMAC, decodeUNumber(v))
@@ -292,9 +298,11 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 				case netflow.IPFIX_FIELD_ipTTL, netflow.IPFIX_FIELD_minimumTTL:
 					bfNonKey.AppendUint(schema.ColumnIPTTL, decodeUNumber(v))
 				case netflow.IPFIX_FIELD_ipClassOfService:
-					bf.AppendUint(schema.ColumnIPTos, decodeUNumber(v))
+					// TODO append forward value to reverse flow if not present as reverse
+					bfNonKey.AppendUint(schema.ColumnIPTos, decodeUNumber(v))
 				case netflow.IPFIX_FIELD_flowLabelIPv6:
-					bf.AppendUint(schema.ColumnIPv6FlowLabel, decodeUNumber(v))
+					// TODO append forward value to reverse flow if not present as reverse
+					bfNonKey.AppendUint(schema.ColumnIPv6FlowLabel, decodeUNumber(v))
 				case netflow.IPFIX_FIELD_tcpControlBits:
 					bfNonKey.AppendUint(schema.ColumnTCPFlags, decodeUNumber(v))
 				case netflow.IPFIX_FIELD_fragmentIdentification:
