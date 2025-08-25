@@ -38,7 +38,7 @@ version, due to a path change.
 
 The documentation has been updated, notably the troubleshooting section.
 
-- 💥 *outlet*: new service
+- ✨ *outlet*: new service
 - 💥 *inlet*: flow rate limiting feature has been removed
 - 💥 *common*: be stricter on results returned from remote sources
 - 💥 *docker*: rename `docker-compose-monitoring.yml` to
