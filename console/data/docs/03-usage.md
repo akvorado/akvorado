@@ -14,8 +14,8 @@ stops. The `--dump` option dumps the parsed configuration with the default
 values. Combine it with `--check` if you do not want the service to start.
 
 Each service requires either a configuration file (in YAML format) or a URL to
-fetch its configuration (in JSON format) as an argument. See the [configuration
-section](02-configuration.md) for more information.
+fetch its configuration (in JSON format) as an argument.
+See the [configuration section](02-configuration.md) for more information.
 
 Only the orchestrator service should get a configuration file. The other
 services should point to it.
