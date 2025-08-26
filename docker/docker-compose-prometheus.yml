@@ -46,6 +46,8 @@ services:
       - --storage.path=/var/lib/alloy/data
       - --server.http.listen-addr=0.0.0.0:12345
       - --server.http.ui-path-prefix=/alloy
+    depends_on:
+      - prometheus
     labels:
       - traefik.enable=true
       - traefik.http.routers.alloy.rule=PathPrefix(`/alloy`)

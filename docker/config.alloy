@@ -7,145 +7,161 @@ prometheus.remote_write "default" {
 discovery.docker "grafana" {
   host             = "unix:///var/run/docker.sock"
   refresh_interval = "30s"
-
   filter {
     name   = "label"
     values = ["com.docker.compose.project=akvorado", "com.docker.compose.service=grafana"]
   }
 }
+prometheus.scrape "grafana" {
+  targets    = discovery.docker.grafana.targets
+  forward_to = [prometheus.remote_write.default.receiver]
+  job_name   = "grafana"
+}
 
 discovery.docker "clickhouse" {
   host             = "unix:///var/run/docker.sock"
   refresh_interval = "30s"
-
   filter {
     name   = "label"
     values = ["com.docker.compose.project=akvorado"]
   }
 }
-
-discovery.docker "clickhouse_keeper" {
-  host             = "unix:///var/run/docker.sock"
-  refresh_interval = "30s"
-
-  filter {
-    name   = "label"
-    values = ["com.docker.compose.project=akvorado"]
-  }
-}
-
-discovery.docker "kafka" {
-  host             = "unix:///var/run/docker.sock"
-  refresh_interval = "30s"
-
-  filter {
-    name   = "label"
-    values = ["com.docker.compose.project=akvorado", "com.docker.compose.service=kafka"]
-  }
-}
-
-discovery.docker "cadvisor" {
-  host             = "unix:///var/run/docker.sock"
-  refresh_interval = "30s"
-
-  filter {
-    name   = "label"
-    values = ["com.docker.compose.project=akvorado", "com.docker.compose.service=cadvisor"]
-  }
-}
-
-discovery.docker "akvorado" {
-  host             = "unix:///var/run/docker.sock"
-  refresh_interval = "30s"
-
-  filter {
-    name   = "label"
-    values = ["com.docker.compose.project=akvorado"]
-  }
-}
-
-discovery.docker "traefik" {
-  host             = "unix:///var/run/docker.sock"
-  refresh_interval = "30s"
-
-  filter {
-    name   = "label"
-    values = ["com.docker.compose.project=akvorado", "com.docker.compose.service=traefik"]
-  }
-}
-
 discovery.relabel "clickhouse" {
   targets = discovery.docker.clickhouse.targets
-
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
     regex         = "(clickhouse|clickhouse-\\\\d+)"
     action        = "keep"
   }
-
   rule {
     source_labels = ["__meta_docker_port_private"]
     regex         = "8123"
     action        = "keep"
   }
 }
+prometheus.scrape "clickhouse" {
+  targets    = discovery.relabel.clickhouse.output
+  forward_to = [prometheus.remote_write.default.receiver]
+  job_name   = "clickhouse"
+}
 
+discovery.docker "clickhouse_keeper" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "30s"
+  filter {
+    name   = "label"
+    values = ["com.docker.compose.project=akvorado"]
+  }
+}
 discovery.relabel "clickhouse_keeper" {
   targets = discovery.docker.clickhouse_keeper.targets
-
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
     regex         = "clickhouse-keeper-\\\\d+"
     action        = "keep"
   }
-
   rule {
     source_labels = ["__meta_docker_port_private"]
     regex         = "9100"
     action        = "keep"
   }
 }
+prometheus.scrape "clickhouse_keeper" {
+  targets    = discovery.relabel.clickhouse_keeper.output
+  forward_to = [prometheus.remote_write.default.receiver]
+  job_name   = "clickhouse-keeper"
+}
 
+discovery.docker "kafka" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "30s"
+  filter {
+    name   = "label"
+    values = ["com.docker.compose.project=akvorado", "com.docker.compose.service=kafka"]
+  }
+}
 discovery.relabel "kafka" {
   targets = discovery.docker.kafka.targets
-
   rule {
     source_labels = ["__meta_docker_port_private"]
     regex         = "9100"
     action        = "keep"
   }
 }
+prometheus.scrape "kafka" {
+  targets    = discovery.relabel.kafka.output
+  forward_to = [prometheus.remote_write.default.receiver]
+  job_name   = "kafka"
+}
 
+discovery.docker "cadvisor" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "30s"
+  filter {
+    name   = "label"
+    values = ["com.docker.compose.project=akvorado", "com.docker.compose.service=cadvisor"]
+  }
+}
+prometheus.scrape "cadvisor" {
+  targets    = discovery.docker.cadvisor.targets
+  forward_to = [prometheus.remote_write.default.receiver]
+  job_name   = "cadvisor"
+}
+
+discovery.docker "akvorado" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "30s"
+  filter {
+    name   = "label"
+    values = ["com.docker.compose.project=akvorado"]
+  }
+}
 discovery.relabel "akvorado" {
   targets = discovery.docker.akvorado.targets
-
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
     regex         = "akvorado-(inlet|outlet|orchestrator|console)"
     action        = "keep"
   }
-
   rule {
     source_labels = ["__meta_docker_port_private"]
     regex         = "8080"
     action        = "keep"
   }
-
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
     regex         = "akvorado-(.*)"
     target_label  = "service"
   }
 }
+prometheus.scrape "akvorado" {
+  targets      = discovery.relabel.akvorado.output
+  forward_to   = [prometheus.remote_write.default.receiver]
+  job_name     = "akvorado"
+  metrics_path = "/api/v0/metrics"
+}
 
+discovery.docker "traefik" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "30s"
+  filter {
+    name   = "label"
+    values = ["com.docker.compose.project=akvorado", "com.docker.compose.service=traefik"]
+  }
+}
 discovery.relabel "traefik" {
   targets = discovery.docker.traefik.targets
-
   rule {
     source_labels = ["__meta_docker_port_private"]
     regex         = "8080"
     action        = "keep"
   }
+}
+prometheus.scrape "traefik" {
+  targets      = discovery.relabel.traefik.output
+  forward_to   = [prometheus.remote_write.default.receiver]
+  job_name     = "traefik"
+  metrics_path = "/traefik/metrics"
 }
 
 prometheus.scrape "prometheus" {
@@ -163,48 +179,4 @@ prometheus.scrape "node_exporter" {
   }]
   forward_to = [prometheus.remote_write.default.receiver]
   job_name   = "node-exporter"
-}
-
-prometheus.scrape "grafana" {
-  targets    = discovery.docker.grafana.targets
-  forward_to = [prometheus.remote_write.default.receiver]
-  job_name   = "grafana"
-}
-
-prometheus.scrape "clickhouse" {
-  targets    = discovery.relabel.clickhouse.output
-  forward_to = [prometheus.remote_write.default.receiver]
-  job_name   = "clickhouse"
-}
-
-prometheus.scrape "clickhouse_keeper" {
-  targets    = discovery.relabel.clickhouse_keeper.output
-  forward_to = [prometheus.remote_write.default.receiver]
-  job_name   = "clickhouse-keeper"
-}
-
-prometheus.scrape "kafka" {
-  targets    = discovery.relabel.kafka.output
-  forward_to = [prometheus.remote_write.default.receiver]
-  job_name   = "kafka"
-}
-
-prometheus.scrape "cadvisor" {
-  targets    = discovery.docker.cadvisor.targets
-  forward_to = [prometheus.remote_write.default.receiver]
-  job_name   = "cadvisor"
-}
-
-prometheus.scrape "akvorado" {
-  targets      = discovery.relabel.akvorado.output
-  forward_to   = [prometheus.remote_write.default.receiver]
-  job_name     = "akvorado"
-  metrics_path = "/api/v0/metrics"
-}
-
-prometheus.scrape "traefik" {
-  targets      = discovery.relabel.traefik.output
-  forward_to   = [prometheus.remote_write.default.receiver]
-  job_name     = "traefik"
-  metrics_path = "/traefik/metrics"
 }
