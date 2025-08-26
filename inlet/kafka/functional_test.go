@@ -11,24 +11,31 @@ import (
 	"testing"
 	"time"
 
+	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
-	"akvorado/common/kafka"
 	"akvorado/common/pb"
 	"akvorado/common/reporter"
 )
 
-func TestRealKafka(t *testing.T) {
-	client, brokers := kafka.SetupKafkaBroker(t)
-	defer client.Close()
-
+func TestFakeKafka(t *testing.T) {
 	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
 	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, pb.Version)
+
+	cluster, err := kfake.NewCluster(
+		kfake.NumBrokers(1),
+		kfake.SeedTopics(1, expectedTopicName),
+	)
+	if err != nil {
+		t.Fatalf("NewCluster() error: %v", err)
+	}
+	defer cluster.Close()
+
 	configuration := DefaultConfiguration()
 	configuration.Topic = topicName
-	configuration.Brokers = brokers
+	configuration.Brokers = cluster.ListenAddrs()
 	r := reporter.NewMock(t)
 	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
@@ -67,7 +74,7 @@ func TestRealKafka(t *testing.T) {
 		`sent_bytes_total{exporter="127.0.0.1"}`:    "100",
 		`sent_messages_total{exporter="127.0.0.1"}`: "2",
 		// From franz-go
-		`connects_total{node_id="1"}`:      "2",
+		`connects_total{node_id="0"}`:      "2",
 		`connects_total{node_id="seed_0"}`: "1",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
@@ -76,7 +83,7 @@ func TestRealKafka(t *testing.T) {
 
 	// Try to consume the two messages using franz-go
 	consumer, err := kgo.NewClient(
-		kgo.SeedBrokers(brokers...),
+		kgo.SeedBrokers(cluster.ListenAddrs()...),
 		kgo.ConsumeTopics(expectedTopicName),
 		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
 		kgo.FetchMaxWait(10*time.Millisecond),
