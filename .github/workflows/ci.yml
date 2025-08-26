@@ -179,15 +179,15 @@ jobs:
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: linux-coverage
           path: test/linux
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: macos-coverage
           path: test/macos
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v5
         with:
           name: e2e-coverage
           path: test/e2e
@@ -369,7 +369,7 @@ jobs:
 
       # Get binary from build step
       - name: Download binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: binary
 
