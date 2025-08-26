@@ -75,6 +75,7 @@ the ownership of the Prometheus volume:
 - 🌱 *docker*: enable access log for Traefik
 - 🌱 *docker*: stop spawning demo exporters by default
 - 🌱 *docker*: switch from Provectus Kafka UI (unmaintained) to Kafbat UI
+- 🌱 *docker*: use Docker labels to dynamically configure Grafana Alloy
 - 🌱 *docker*: switch to Prometheus Java Agent exporter for Kafka
 - 🌱 *docker*: expose Kafka UI (read-only) to the public endpoint
 - 🌱 *docker*: expose Traefik Dashboard (read-only) to the public endpoint

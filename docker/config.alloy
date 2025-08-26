@@ -4,21 +4,10 @@ prometheus.remote_write "default" {
   }
 }
 
-discovery.docker "grafana" {
-  host             = "unix:///var/run/docker.sock"
-  refresh_interval = "30s"
-  filter {
-    name   = "label"
-    values = ["com.docker.compose.project=akvorado", "com.docker.compose.service=grafana"]
-  }
-}
-prometheus.scrape "grafana" {
-  targets    = discovery.docker.grafana.targets
-  forward_to = [prometheus.remote_write.default.receiver]
-  job_name   = "grafana"
-}
-
-discovery.docker "clickhouse" {
+// Docker discovery. We match entries with metrics.port as the port (it needs to
+// be exposed) and use metrics.path if defined. The job name is the service name
+// minus the numbered suffix.
+discovery.docker "docker" {
   host             = "unix:///var/run/docker.sock"
   refresh_interval = "30s"
   filter {
@@ -26,157 +15,61 @@ discovery.docker "clickhouse" {
     values = ["com.docker.compose.project=akvorado"]
   }
 }
-discovery.relabel "clickhouse" {
-  targets = discovery.docker.clickhouse.targets
+discovery.relabel "docker" {
+  targets = discovery.docker.docker.targets
+
+  // Normalize the case where network is host.
+  rule {
+    source_labels = ["__meta_docker_container_label_metrics_port", "__meta_docker_network_name"]
+    regex         = `^(.+);host$`
+    target_label  = "__address__"
+    replacement   = "host.docker.internal:$1"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_label_metrics_port", "__meta_docker_network_name"]
+    regex         = `^(.+);host$`
+    target_label  = "__meta_docker_port_private"
+    replacement   = "$1"
+  }
+  // Then keep if we metrics.port matches private port
+  rule {
+    source_labels = ["__meta_docker_container_label_metrics_port"]
+    regex         = `^.+`
+    action        = "keep"
+  }
+  rule {
+    source_labels = ["__meta_docker_container_label_metrics_port"]
+    target_label  = "__meta_docker_port_private"
+    action        = "keepequal"
+  }
+
+  // Set job and instance name
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
-    regex         = "(clickhouse|clickhouse-\\\\d+)"
-    action        = "keep"
+    regex         = `^(.+)(?:-\d+)?$`
+    target_label  = "job"
   }
   rule {
-    source_labels = ["__meta_docker_port_private"]
-    regex         = "8123"
-    action        = "keep"
+    source_labels = ["__address__"]
+    regex         = `^(.+):\d+$`
+    target_label  = "instance"
   }
-}
-prometheus.scrape "clickhouse" {
-  targets    = discovery.relabel.clickhouse.output
-  forward_to = [prometheus.remote_write.default.receiver]
-  job_name   = "clickhouse"
-}
 
-discovery.docker "clickhouse_keeper" {
-  host             = "unix:///var/run/docker.sock"
-  refresh_interval = "30s"
-  filter {
-    name   = "label"
-    values = ["com.docker.compose.project=akvorado"]
-  }
-}
-discovery.relabel "clickhouse_keeper" {
-  targets = discovery.docker.clickhouse_keeper.targets
+  // Set metrics path from metrics.path label, default to /metrics
   rule {
-    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
-    regex         = "clickhouse-keeper-\\\\d+"
-    action        = "keep"
+    source_labels = ["__meta_docker_container_label_metrics_path"]
+    regex         = `(.+)`
+    target_label  = "__metrics_path__"
   }
   rule {
-    source_labels = ["__meta_docker_port_private"]
-    regex         = "9100"
-    action        = "keep"
+    source_labels = ["__metrics_path__"]
+    regex         = ""
+    target_label  = "__metrics_path__"
+    replacement   = "/metrics"
   }
 }
-prometheus.scrape "clickhouse_keeper" {
-  targets    = discovery.relabel.clickhouse_keeper.output
-  forward_to = [prometheus.remote_write.default.receiver]
-  job_name   = "clickhouse-keeper"
-}
-
-discovery.docker "kafka" {
-  host             = "unix:///var/run/docker.sock"
-  refresh_interval = "30s"
-  filter {
-    name   = "label"
-    values = ["com.docker.compose.project=akvorado", "com.docker.compose.service=kafka"]
-  }
-}
-discovery.relabel "kafka" {
-  targets = discovery.docker.kafka.targets
-  rule {
-    source_labels = ["__meta_docker_port_private"]
-    regex         = "9100"
-    action        = "keep"
-  }
-}
-prometheus.scrape "kafka" {
-  targets    = discovery.relabel.kafka.output
-  forward_to = [prometheus.remote_write.default.receiver]
-  job_name   = "kafka"
-}
-
-discovery.docker "cadvisor" {
-  host             = "unix:///var/run/docker.sock"
-  refresh_interval = "30s"
-  filter {
-    name   = "label"
-    values = ["com.docker.compose.project=akvorado", "com.docker.compose.service=cadvisor"]
-  }
-}
-prometheus.scrape "cadvisor" {
-  targets    = discovery.docker.cadvisor.targets
-  forward_to = [prometheus.remote_write.default.receiver]
-  job_name   = "cadvisor"
-}
-
-discovery.docker "akvorado" {
-  host             = "unix:///var/run/docker.sock"
-  refresh_interval = "30s"
-  filter {
-    name   = "label"
-    values = ["com.docker.compose.project=akvorado"]
-  }
-}
-discovery.relabel "akvorado" {
-  targets = discovery.docker.akvorado.targets
-  rule {
-    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
-    regex         = "akvorado-(inlet|outlet|orchestrator|console)"
-    action        = "keep"
-  }
-  rule {
-    source_labels = ["__meta_docker_port_private"]
-    regex         = "8080"
-    action        = "keep"
-  }
-  rule {
-    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
-    regex         = "akvorado-(.*)"
-    target_label  = "service"
-  }
-}
-prometheus.scrape "akvorado" {
-  targets      = discovery.relabel.akvorado.output
-  forward_to   = [prometheus.remote_write.default.receiver]
-  job_name     = "akvorado"
-  metrics_path = "/api/v0/metrics"
-}
-
-discovery.docker "traefik" {
-  host             = "unix:///var/run/docker.sock"
-  refresh_interval = "30s"
-  filter {
-    name   = "label"
-    values = ["com.docker.compose.project=akvorado", "com.docker.compose.service=traefik"]
-  }
-}
-discovery.relabel "traefik" {
-  targets = discovery.docker.traefik.targets
-  rule {
-    source_labels = ["__meta_docker_port_private"]
-    regex         = "8080"
-    action        = "keep"
-  }
-}
-prometheus.scrape "traefik" {
-  targets      = discovery.relabel.traefik.output
-  forward_to   = [prometheus.remote_write.default.receiver]
-  job_name     = "traefik"
-  metrics_path = "/traefik/metrics"
-}
-
-prometheus.scrape "prometheus" {
-  targets = [{
-    __address__ = "127.0.0.1:9090",
-  }]
-  forward_to   = [prometheus.remote_write.default.receiver]
-  job_name     = "prometheus"
-  metrics_path = "/prometheus/metrics"
-}
-
-prometheus.scrape "node_exporter" {
-  targets = [{
-    __address__ = "host.docker.internal:9100",
-  }]
-  forward_to = [prometheus.remote_write.default.receiver]
-  job_name   = "node-exporter"
+prometheus.scrape "docker" {
+  targets         = discovery.relabel.docker.output
+  forward_to      = [prometheus.remote_write.default.receiver]
+  scrape_interval = "30s"
 }

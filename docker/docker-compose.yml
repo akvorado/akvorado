@@ -41,7 +41,6 @@ services:
       KAFKA_SHARE_COORDINATOR_STATE_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_SHARE_COORDINATOR_STATE_TOPIC_MIN_ISR: 1
       KAFKA_LOG_DIRS: /var/lib/kafka/data
-
     restart: unless-stopped
     volumes:
       - akvorado-kafka:/var/lib/kafka/data
@@ -50,6 +49,9 @@ services:
       test: ["CMD",
              "env", "-u", "KAFKA_OPTS",
              "/opt/kafka/bin/kafka-topics.sh", "--list", "--bootstrap-server", "kafka:9092"]
+    labels:
+      - metrics.port=9100
+
   kafka-ui:
     extends:
       file: versions.yml
@@ -93,12 +95,13 @@ services:
       - traefik.enable=true
       # Disable access logging of /api/v0/orchestrator/metrics
       - traefik.http.routers.akvorado-orchestrator-metrics.rule=PathPrefix(`/api/v0/orchestrator/metrics`)
-      - traefik.http.routers.akvorado-orchestrator-metrics.service=akvorado-orchestrator
+      - traefik.http.routers.akvorado-orchestrator-metrics.service=akvorado-orchestrator-akvorado
       - traefik.http.routers.akvorado-orchestrator-metrics.observability.accesslogs=false
       # Everything else is exposed to private entrypoint in /api/v0/orchestrator
       - traefik.http.routers.akvorado-orchestrator.entrypoints=private
       - traefik.http.routers.akvorado-orchestrator.rule=PathPrefix(`/api/v0/orchestrator`)
-      - traefik.http.services.akvorado-orchestrator.loadbalancer.server.port=8080
+      - metrics.port=8080
+      - metrics.path=/api/v0/metrics
   akvorado-console:
     extends:
       file: versions.yml
@@ -121,18 +124,19 @@ services:
       # Only expose /debug endpoint on the private entrypoint.
       - traefik.http.routers.akvorado-console-debug.rule=PathPrefix(`/debug`)
       - traefik.http.routers.akvorado-console-debug.entrypoints=private
-      - traefik.http.routers.akvorado-console-debug.service=akvorado-console
+      - traefik.http.routers.akvorado-console-debug.service=akvorado-console-akvorado
       # Disable access logging of /api/v0/console/metrics
       - traefik.http.routers.akvorado-console-metrics.rule=PathPrefix(`/api/v0/console/metrics`)
-      - traefik.http.routers.akvorado-console-metrics.service=akvorado-console
+      - traefik.http.routers.akvorado-console-metrics.service=akvorado-console-akvorado
       - traefik.http.routers.akvorado-console-metrics.observability.accesslogs=false
       # For anything else...
       - "traefik.http.routers.akvorado-console.rule=!PathPrefix(`/debug`)"
       - traefik.http.routers.akvorado-console.middlewares=console-auth-headers
-      - traefik.http.services.akvorado-console.loadbalancer.server.port=8080
       - traefik.http.middlewares.console-auth-headers.headers.customrequestheaders.Remote-User=alfred
       - traefik.http.middlewares.console-auth-headers.headers.customrequestheaders.Remote-Name=Alfred Pennyworth
       - traefik.http.middlewares.console-auth-headers.headers.customrequestheaders.Remote-Email=alfred@example.com
+      - metrics.port=8080
+      - metrics.path=/api/v0/metrics
   akvorado-inlet:
     extends:
       file: versions.yml
@@ -153,13 +157,14 @@ services:
       - traefik.enable=true
       # Disable access logging of /api/v0/inlet/metrics
       - traefik.http.routers.akvorado-inlet-metrics.rule=PathPrefix(`/api/v0/inlet/metrics`)
-      - traefik.http.routers.akvorado-inlet-metrics.service=akvorado-inlet
+      - traefik.http.routers.akvorado-inlet-metrics.service=akvorado-inlet-akvorado
       - traefik.http.routers.akvorado-inlet-metrics.observability.accesslogs=false
       # Everything else is exposed to private entrypoint in /api/v0/inlet
       - traefik.http.routers.akvorado-inlet.entrypoints=private
       - traefik.http.routers.akvorado-inlet.rule=PathPrefix(`/api/v0/inlet`)
-      - traefik.http.services.akvorado-inlet.loadbalancer.server.port=8080
       - akvorado.conntrack.fix=true
+      - metrics.port=8080
+      - metrics.path=/api/v0/metrics
   akvorado-outlet:
     extends:
       file: versions.yml
@@ -183,12 +188,13 @@ services:
       - traefik.enable=true
       # Disable access logging of /api/v0/outlet/metrics
       - traefik.http.routers.akvorado-outlet-metrics.rule=PathPrefix(`/api/v0/outlet/metrics`)
-      - traefik.http.routers.akvorado-outlet-metrics.service=akvorado-outlet
+      - traefik.http.routers.akvorado-outlet-metrics.service=akvorado-outlet-akvorado
       - traefik.http.routers.akvorado-outlet-metrics.observability.accesslogs=false
       # Everything else is exposed to private entrypoint in /api/v0/outlet
       - traefik.http.routers.akvorado-outlet.entrypoints=private
       - traefik.http.routers.akvorado-outlet.rule=PathPrefix(`/api/v0/outlet`)
-      - traefik.http.services.akvorado-outlet.loadbalancer.server.port=8080
+      - metrics.port=8080
+      - metrics.path=/api/v0/metrics
   akvorado-conntrack-fixer:
     extends:
       file: versions.yml
@@ -226,7 +232,7 @@ services:
       - traefik.http.routers.clickhouse.rule=PathPrefix(`/clickhouse`)
       - traefik.http.routers.clickhouse.middlewares=clickhouse-strip
       - traefik.http.middlewares.clickhouse-strip.stripprefix.prefixes=/clickhouse
-      - traefik.http.services.clickhouse.loadbalancer.server.port=8123
+      - metrics.port=8123
 
   traefik:
     extends:
@@ -251,6 +257,8 @@ services:
       - traefik.http.routers.traefik-metrics.rule=PathPrefix(`/traefik/metrics`)
       - traefik.http.routers.traefik-metrics.priority=200
       - traefik.http.routers.traefik-metrics.service=prometheus@internal
+      - metrics.port=8080
+      - metrics.path=/traefik/metrics
     expose:
       - 8080/tcp
     ports:

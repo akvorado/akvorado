@@ -17,10 +17,12 @@ services:
     volumes:
       - akvorado-grafana:/var/lib/grafana
       - ./grafana:/etc/grafana
+    expose:
+      - 3000/tcp
     labels:
       - traefik.enable=true
       - traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)
       - traefik.http.routers.grafana.middlewares=console-auth-headers,grafana-avatar
       - traefik.http.middlewares.grafana-avatar.redirectRegex.regex=^(https?://.+)/grafana/avatar/.+
       - traefik.http.middlewares.grafana-avatar.redirectRegex.replacement=$${1}/api/v0/console/user/avatar
-      - traefik.http.services.grafana.loadbalancer.server.port=3000
+      - metrics.port=3000

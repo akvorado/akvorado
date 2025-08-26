@@ -11,6 +11,8 @@ services:
         condition: service_healthy
       akvorado-outlet:
         condition: service_healthy
+    labels:
+      - metrics.port=8080
   akvorado-exporter-2:
     <<: *exporter
     command: demo-exporter http://akvorado-orchestrator:8080#1
