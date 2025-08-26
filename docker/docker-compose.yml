@@ -131,6 +131,7 @@ services:
       - traefik.http.routers.akvorado-console-metrics.observability.accesslogs=false
       # For anything else...
       - "traefik.http.routers.akvorado-console.rule=!PathPrefix(`/debug`)"
+      - traefik.http.routers.akvorado-console.priority=1
       - traefik.http.routers.akvorado-console.middlewares=console-auth-headers
       - traefik.http.middlewares.console-auth-headers.headers.customrequestheaders.Remote-User=alfred
       - traefik.http.middlewares.console-auth-headers.headers.customrequestheaders.Remote-Name=Alfred Pennyworth
