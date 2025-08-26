@@ -38,12 +38,22 @@ version, due to a path change.
 
 The documentation has been updated, notably the troubleshooting section.
 
+If you use the monitoring stack, note the Docker Compose file was renamed to
+`docker-compose-monitoring.yml` and you need to update your `.env`. Also, metric
+scrapping is now done by Grafana Alloy instead of Prometheus, so you need to fix
+the ownership of the Prometheus volume:
+
+```console
+# docker compose run --user root --entrypoint="/bin/sh -c" prometheus "chown -R nobody:nobody /prometheus"
+```
+
 - ✨ *outlet*: new service
 - 💥 *inlet*: flow rate limiting feature has been removed
 - 💥 *common*: be stricter on results returned from remote sources
 - 💥 *docker*: rename `docker-compose-monitoring.yml` to
   `docker-compose-prometheus.yml` (you need to update your `.env` if you were
   using it)
+- 💥 *docker*: switch from Prometheus to Grafana Alloy for scrapping metrics
 - 💥 *docker*: switch to Apache Kafka 4.0
 - 💥 *docker*: switch Kafka to KRaft mode
 - 💥 *docker*: update Kafka data volume mount path

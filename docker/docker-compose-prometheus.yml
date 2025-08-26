@@ -4,30 +4,52 @@ volumes:
   akvorado-jmx-agent:
 
 services:
+  # Store metrics
   prometheus:
     extends:
       file: versions.yml
       service: prometheus
     restart: unless-stopped
-    user: root                  # for access to /var/run/docker.sock
     volumes:
       - akvorado-prometheus:/prometheus
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     command:
       # Those are the defaults
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
-      - --web.console.libraries=/usr/share/prometheus/console_libraries
-      - --web.console.templates=/usr/share/prometheus/consoles
       # Those are not the defaults
+      - --web.enable-remote-write-receiver
       - --web.external-url=/prometheus
     labels:
       - traefik.enable=true
       - traefik.http.routers.prometheus.rule=PathPrefix(`/prometheus`)
+      - traefik.http.routers.prometheus.entrypoints=private
       - traefik.http.services.prometheus.loadbalancer.server.port=9090
+
+  # Fetch metrics
+  alloy:
+    extends:
+      file: versions.yml
+      service: alloy
+    restart: unless-stopped
+    user: root                  # for access to /var/run/docker.sock
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config.alloy:/etc/alloy/config.alloy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    expose:
+      - 12345
+    command:
+      - run
+      - /etc/alloy
+      - --storage.path=/var/lib/alloy/data
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --server.http.ui-path-prefix=/alloy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.alloy.rule=PathPrefix(`/alloy`)
+      - traefik.http.routers.alloy.entrypoints=private
 
   # Node exporter for host metrics
   node-exporter:

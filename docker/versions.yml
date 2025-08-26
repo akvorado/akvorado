@@ -24,6 +24,8 @@ services:
   # observability
   grafana:
     image: grafana/grafana-oss:10.2.6 # \d+\.\d+\.\d+
+  alloy:
+    image: grafana/alloy:v1.10.2 # v\d+\.\d+\.\d+
   prometheus:
     image: prom/prometheus:v3.5.0 # v\d+\.\d+\.\d+
   node-exporter:
