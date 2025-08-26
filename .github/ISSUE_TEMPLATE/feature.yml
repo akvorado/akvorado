@@ -2,7 +2,7 @@
 name: Feature request
 description: Request a new feature
 labels:
-  - enhancement
+  - kind::feature
 body:
   - type: checkboxes
     attributes:

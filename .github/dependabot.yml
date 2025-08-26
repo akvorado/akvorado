@@ -18,6 +18,7 @@ updates:
       interval: monthly
     labels:
       - dependencies
+      - service::console
     open-pull-requests-limit: 10
     groups:
       vueuse:
