@@ -3,7 +3,7 @@ module akvorado
 go 1.24
 
 require (
-	github.com/ClickHouse/ch-go v0.67.0
+	github.com/ClickHouse/ch-go v0.68.0
 	github.com/ClickHouse/clickhouse-go/v2 v2.40.1
 	github.com/alecthomas/chroma/v2 v2.20.0
 	github.com/benbjohnson/clock v1.3.5
@@ -35,7 +35,6 @@ require (
 	github.com/opencontainers/image-spec v1.1.1
 	github.com/oschwald/maxminddb-golang/v2 v2.0.0-beta.10
 	github.com/osrg/gobgp/v3 v3.37.0
-	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10
 	github.com/prometheus/client_golang v1.23.0
 	github.com/rs/zerolog v1.34.0
 	github.com/scrapli/scrapligo v1.3.3
@@ -88,7 +87,7 @@ require (
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
-	github.com/dmarkham/enumer v1.5.11 // indirect
+	github.com/dmarkham/enumer v1.6.1 // indirect
 	github.com/dnephin/pflag v1.0.7 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
@@ -152,6 +151,7 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
@@ -183,11 +183,11 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/arch v0.8.0 // indirect
-	golang.org/x/crypto v0.40.0 // indirect
+	golang.org/x/crypto v0.41.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20231108232855-2478ac86f678 // indirect
 	golang.org/x/mod v0.26.0 // indirect
 	golang.org/x/net v0.42.0 // indirect
-	golang.org/x/term v0.33.0 // indirect
+	golang.org/x/term v0.34.0 // indirect
 	golang.org/x/tools v0.35.0 // indirect
 	golang.org/x/tools/go/expect v0.1.1-deprecated // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250528174236-200df99c418a // indirect
