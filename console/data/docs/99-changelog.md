@@ -12,12 +12,12 @@ identified with a specific icon:
 
 ## Unreleased
 
-This release introduce a new component: the outlet. Previously, ClickHouse was
-fetching data directly from Kafka. However, this required to push the protobuf
+This release introduces a new component: the outlet. Previously, ClickHouse was
+fetching data directly from Kafka. However, this required pushing the protobuf
 schema using an out-of-band method. This makes cloud deployments more complex.
 The inlet now pushes incoming raw flows to Kafka without decoding them. The
-outlet takes them, decode them, enriches them, and push them to ClickHouse. This
-also reduces the likeliness to lose packets. This change should be transparent
+outlet takes them, decodes them, enriches them, and pushes them to ClickHouse. This
+also reduces the likelihood of losing packets. This change should be transparent
 on most setups but you are encouraged to review the new proposed configuration
 in the [quickstart tarball][] and update your own configuration.
 
@@ -33,14 +33,14 @@ scratch:
 # docker compose up -d
 ```
 
-This procedure is also required even if you did run one of the previous beta
-version, due to a path change.
+This procedure is also required even if you ran one of the previous beta
+versions, due to a path change.
 
 The documentation has been updated, notably the troubleshooting section.
 
-If you use the monitoring stack, note the Docker Compose file was renamed to
+If you use the monitoring stack, note that the Docker Compose file was renamed to
 `docker-compose-monitoring.yml` and you need to update your `.env`. Also, metric
-scrapping is now done by Grafana Alloy instead of Prometheus, so you need to fix
+scraping is now done by Grafana Alloy instead of Prometheus, so you need to fix
 the ownership of the Prometheus volume:
 
 ```console
@@ -53,20 +53,20 @@ the ownership of the Prometheus volume:
 - 💥 *docker*: rename `docker-compose-monitoring.yml` to
   `docker-compose-prometheus.yml` (you need to update your `.env` if you were
   using it)
-- 💥 *docker*: switch from Prometheus to Grafana Alloy for scrapping metrics
+- 💥 *docker*: switch from Prometheus to Grafana Alloy for scraping metrics
 - 💥 *docker*: switch to Apache Kafka 4.0
 - 💥 *docker*: switch Kafka to KRaft mode
 - 💥 *docker*: update Kafka data volume mount path
 - 💥 *docker*: enforce a specific IPv4 subnet (in the reserved class E)
 - 🩹 *console*: fix deletion of saved filters
 - 🩹 *console*: fix intermittent failure when requesting previous period
-- 🩹 *docker*: move healthcheck for IPinfo updater into Dockerfile to avoid "unhealthy" state on non-updated installation
+- 🩹 *docker*: move healthcheck for IPinfo updater into Dockerfile to avoid "unhealthy" state on non-updated installations
 - 🌱 *build*: build with Go 1.25
 - 🌱 *docker*: update ClickHouse to 25.3 (not mandatory)
 - 🌱 *docker*: update Prometheus to 3.5.0
 - 🌱 *docker*: update Traefik to 3.4 (not mandatory)
 - 🌱 *docker*: update node-exporter to 1.9.1
-- 🌱 *docker*: build a linux/amd64/v3 image to enable some optimizations
+- 🌱 *docker*: build a linux/amd64/v3 image to enable optimizations
 - 🌱 *docker*: build a linux/arm/v7 image
 - 🌱 *docker*: add examples to enable authentication and TLS
 - 🌱 *docker*: add IPv6 configuration
@@ -85,7 +85,7 @@ the ownership of the Prometheus volume:
 - 🌱 *orchestrator*: move ClickHouse database settings from `clickhouse` to `clickhousedb`
 - 🌱 *outlet*: decode IPFIX ingressPhysicalInterface and egressPhysicalInterface
 - 🌱 *outlet*: insert asynchronously when flow count is low
-- 🌱 *outlet*: dynamically adjust the number of Kafka workers to ensure better performance from ClickHouse
+- 🌱 *outlet*: dynamically adjust the number of Kafka workers to improve ClickHouse performance
 - 🌱 *outlet*: improve performance of the BMP routing provider
 
 [quickstart tarball]: https://github.com/akvorado/akvorado/releases/latest/download/docker-compose-quickstart.tar.gz
@@ -94,7 +94,7 @@ the ownership of the Prometheus volume:
 
 - 💥 *console*: Firefox 128+, Safari 16.4+, or Chrome 111+ are now required
 - 🩹 *inlet*: don't override flow-provided VLANs with VLAN from Ethernet header
-- 🩹 *docker*: fix console not always starting because orchestrator didn't wait for Kafka to be ready
+- 🩹 *docker*: fix console not always starting because the orchestrator didn't wait for Kafka to be ready
 - 🌱 *orchestrator*: put SASL parameters in their own section in Kafka configuration
 - 🌱 *orchestrator*: add OAuth support to Kafka client
 
@@ -102,12 +102,12 @@ the ownership of the Prometheus volume:
 
 - 💥 *inlet*: in SNMP metadata provider, prefer ifAlias over ifDescr for interface description
 - 🌱 *inlet*: add back `geoip` as an option for `inlet`→`core`→`asn-providers`
-- 🌱 *inlet*: allow the static provider to fallback to the next provider if some
+- 🌱 *inlet*: allow the static provider to fall back to the next provider if some
   interfaces are missing, when setting the `skip-missing-interfaces` option to
   true.
-- 🌱 *build*: minimal Go version to build is now 1.24
+- 🌱 *build*: minimum Go version to build is now 1.24
 - 🌱 *build*: use PGO for better performance of the inlet
-- 🌱 *orchestrator*: ability to override ClickHouse or Kafka configuration in some components
+- 🌱 *orchestrator*: add ability to override ClickHouse or Kafka configuration in some components
 - 🌱 *docker*: make most containers wait for their dependencies to be healthy
 - 🌱 *docker*: switch from `bitnami/valkey` to `valkey/valkey`
 - 🌱 *docker*: update Kafka to 3.8 (not mandatory)
@@ -137,23 +137,23 @@ the ownership of the Prometheus volume:
 ## 1.11.1 - 2024-09-01
 
 For upgrading, you should use the "upgrade tarball" instead of the "quickstart
-tarball". This new tarball does not upgrade the configuration files, nor the
+tarball". This new tarball does not update the configuration files or the
 `.env` file.
 
 - 🩹 *console*: sort results by number of packets when unit is packets per second
-- 🌱 *inlet*: use AS path from routing component if sFlow received an empty one
+- 🌱 *inlet*: use AS path from routing component when sFlow receives an empty one
 - 🌱 *console*: add `bidirectional` and `previous-period` as configurable values for default visualize options
 - 🌱 *docker*: build IPinfo updater image from CI
 - 🌱 *docker*: update Kafka UI to 0.7.2
 - 🌱 *docker*: provide an upgrade tarball in addition to the quickstart tarball
-- 🌱 *build*: minimal Go version to build is now 1.22
+- 🌱 *build*: minimum Go version to build is now 1.22
 
 ## 1.11.0 - 2024-06-26
 
 - 💥 *console*: persist metadata cache on the default `docker compose` setup
 - 🩹 *orchestrator*: fix population of `DstNetSite` and `SrcNetSite`
 - 🩹 *orchestrator*: remove previous networks.csv temporary files on start
-- 🌱 *inlet*: add support NetFlow V5
+- 🌱 *inlet*: add NetFlow V5 support
 - 🌱 *console*: add support for PostgreSQL and MySQL to store filters
 - 🌱 *console*: add `console`→`homepage-graph-timerange` to define the time range for the homepage graph
 - 🌱 *console*: enable round-robin for ClickHouse connections
@@ -164,7 +164,7 @@ tarball". This new tarball does not upgrade the configuration files, nor the
 - 🌱 *docker*: update ClickHouse to 24.3 (not mandatory)
 - 🌱 *docker*: switch from Redis to Valkey (not mandatory)
 - 🌱 *docker*: build IPinfo updater image to make it available for non-x86
-  architectures and ensure the databases are downloaded only when an update is
+  architectures and ensure databases are downloaded only when an update is
   available
 
 ## 1.10.2 - 2024-04-27
@@ -180,21 +180,21 @@ tarball". This new tarball does not upgrade the configuration files, nor the
 
 ## 1.10.0 - 2024-04-08
 
-On this release, geo IP is now performed in ClickHouse instead of inlet. When
+In this release, geo IP is now performed in ClickHouse instead of the inlet. When
 using the standard `docker compose` setup, the configuration should be
 automatically migrated from the inlet component to the orchestrator component.
-This also changes how geo IP is used for AS numbers: geo IP is used as last
+This also changes how geo IP is used for AS numbers: geo IP is used as a last
 resort when configured. It also increases memory usage (1.3GB for ClickHouse).
 
 Another new feature is the ability to use a ClickHouse cluster deployment. This
 is enabled when specifying a cluster name in `clickhouse`→`cluster`. There is no
 automatic migration of an existing database. You should start from scratch and
-copy data from the previous setup. Do not try to enable the cluster mode on
+copy data from the previous setup. Do not try to enable cluster mode on an
 existing setup!
 
 New installations should also get better compression and performance from the
-main table, due to a change to the primary key used for this table. Check this
-[Altinity article][] if you want to apply the change on your installation.
+main table, due to a change in the primary key used for this table. Check this
+[Altinity article][] if you want to apply the change to your installation.
 
 Support for Docker Compose V1 (`docker-compose` command) has been removed in
 favor of Docker Compose V2 (`docker compose` command). On Ubuntu/Debian systems,
@@ -227,25 +227,25 @@ can install the `docker-compose-v2` package. For other options, check the
 - ✨ *inlet*: add the following collected data (disabled by default):
   `MPLSLabels`, `MPLS1stLabel`, `MPLS2ndLabel`, `MPLS3rdLabel`, and `MPLS4thLabel`
 - 🩹 *inlet*: fix static metadata provider configuration validation
-- 🩹 *inlet*: fix a [performance regression][] when enriching flows
+- 🩹 *inlet*: fix a [performance regression][] while enriching flows
 - 🩹 *inlet*: do not decode L4 header if IP packet is fragmented
 - 🩹 *inlet*: handle exporters using several sampling rates
-- 🌱 *docker*: update ClickHouse to 23.8 (this is not mandatory)
+- 🌱 *docker*: update ClickHouse to 23.8 (not mandatory)
 - 🌱 *orchestrator*: add `orchestrator`→`clickhouse`→`prometheus-endpoint` to configure an endpoint to expose metrics to Prometheus
 
 [performance regression]: https://github.com/akvorado/akvorado/discussions/988
 
 ## 1.9.2 - 2023-11-28
 
-- 🩹 *docker*: ensure ClickHouse init script is executed even when database already exists
+- 🩹 *docker*: ensure ClickHouse init script is executed even when the database already exists
 
 ## 1.9.1 - 2023-10-06
 
 - 🌱 *console*: add filtering support for custom columns
 - 🌱 *inlet*: update [Expr](https://expr.medv.io/), the language behind the
   classifiers: support for variables
-- 🌱 *inlet*: support for RFC 7133 for IPFIX (data link frame)
-- 🌱 *orchestrator*: improve performance when looking up for `SrcNetPrefix` and
+- 🌱 *inlet*: add RFC 7133 support for IPFIX (data link frame)
+- 🌱 *orchestrator*: improve performance when looking up `SrcNetPrefix` and
   `DstNetPrefix` when these columns are materialized
 
 ## 1.9.0 - 2023-08-26
@@ -256,7 +256,7 @@ can install the `docker-compose-v2` package. For other options, check the
 - 💥 *inlet*: `inlet`→`metadata`→`provider(snmp)`→`ports` is now a map from
   exporter subnets to ports, instead of a map from agent subnets to ports. This
   is aligned with how `communities` and `security-parameters` options behave.
-- ✨ *inlet*: support for [IPinfo](https://ipinfo.io/) geo IP database and use
+- ✨ *inlet*: add [IPinfo](https://ipinfo.io/) geo IP database support and use
   it by default
 - ✨ *inlet*: metadata retrieval is now pluggable. In addition to SNMP, it is
   now possible to set exporter names, interface names and descriptions directly
@@ -279,11 +279,10 @@ can install the `docker-compose-v2` package. For other options, check the
 - 🩹 *inlet*: use sampling rate in NetFlow data packet if available
 - 🩹 *console*: fix display when using “%” units and interface speed is 0
 - 🩹 *orchestrator*: create flows table with
-  `allow_suspicious_low_cardinality_types` to ensure we can use
-  `LowCardinality(IPv6)`.
+  `allow_suspicious_low_cardinality_types` to ensure `LowCardinality(IPv6)` can be used.
 - 🌱 *inlet*: update [Expr](https://expr.medv.io/), the language behind the
   classifiers: new builtins are available
-- 🌱 *build*: minimum supported Node version is now 16
+- 🌱 *build*: minimum supported Node.js version is now 16
 - 🌱 *docker*: move Docker-related files to `docker/`
 - 🌱 *docker*: update ClickHouse to 23.3 (not mandatory)
 - 🌱 *docker*: update to Zookeeper 3.8 (not mandatory)
@@ -293,7 +292,7 @@ can install the `docker-compose-v2` package. For other options, check the
 
 ## 1.8.3 - 2023-04-28
 
-- 🩹 *docker*: ensure Kafka is not using KRaft by default
+- 🩹 *docker*: ensure Kafka does not use KRaft by default
 - 🩹 *console*: fix `SrcVlan` and `DstVlan` as a dimension
 - 🌱 *orchestrator*: add `method` and `headers` to specify HTTP method and
   additional headers to use when requesting a network source
@@ -311,7 +310,7 @@ can install the `docker-compose-v2` package. For other options, check the
 ## 1.8.0 - 2023-02-25
 
 - 💥 *docker*: the configuration files are now shipped in a `config/`
-  directory: you need to move your `akvorado.yaml` in `config/` as well
+  directory: you need to move your `akvorado.yaml` to `config/` as well
 - 💥 *inlet*: unknown interfaces are not skipped anymore
 - ✨ *console*: add subnet aggregation for `SrcAddr` and `DstAddr`
 - ✨ *inlet*: expose `Interface.Index` and `Interface.VLAN` to interface classification
@@ -339,7 +338,7 @@ for a few columns.
 
 ## 1.7.1 - 2023-01-27
 
-This is an important bugfix release. `DstNet*` values were classified using the
+This is an important bug fix release. `DstNet*` values were classified using the
 source address instead of the destination address.
 
 - 🩹 *orchestrator*: fix `DstNet*` values
@@ -349,13 +348,13 @@ source address instead of the destination address.
 ## 1.7.0 - 2023-01-26
 
 This version introduces the ability to customize the data schema used by
-*Akvorado*. This change is quite invasive and you should be cautious when
-deploying it. It requires a restart of ClickHouse after upgrading the
+*Akvorado*. This change is quite invasive and you should be careful when
+deploying it. It requires a ClickHouse restart after upgrading the
 orchestrator. It also takes some time to reduce the storage size for `SrcPort`
 and `DstPort`.
 
 The orchestrator automatically defines the TTL for the system log tables (like
-`system.query_log`). The default TTL is 30 days. You can disable that by setting
+`system.query_log`). The default TTL is 30 days. You can disable this by setting
 `orchestrator`→`clickhouse`→`system-log-ttl` to 0.
 
 - ✨ *inlet*: add `schema`→`enabled`, `schema`→`disabled`,
@@ -371,27 +370,27 @@ The orchestrator automatically defines the TTL for the system log tables (like
 - 🌱 *inlet*: improve decoding/encoding performance (twice faster!)
 - 🌱 *orchestrator*: set TTL for ClickHouse system log tables and `exporters` table
 - 🌱 *orchestrator*: reduce storage size for `SrcPort` and `DstPort`
-- 🌱 *orchestrator*: add `clickhouse`→`kafka`→`engine-settings` to configure additional settings for the Kafka engine
+- 🌱 *orchestrator*: add `clickhouse`→`kafka`→`engine-settings` to configure additional Kafka engine settings
 - 🌱 *common*: Go profiler endpoints are enabled by default
 
 ## 1.6.4 - 2022-12-22
 
 There is a schema update in this version: you also have to restart ClickHouse
-after upgrading for it to pick the new schema.
+after upgrading for it to pick up the new schema.
 
 This version also introduces a cache for some HTTP requests, notably those to
 plot the graphs in the “Visualize” tab. The default backend is in-memory,
 however the shipped `akvorado.yaml` configuration file is using Redis instead.
 The `docker-compose` setup has also been updated to start a Redis container for
-this usage. Use of Redis is preferred but on upgrade, you need to enable it
-explicitely by adding `console`→`http`→`cache` in your configuration.
+this usage. Using Redis is preferred but on upgrade, you need to enable it
+explicitly by adding `console`→`http`→`cache` in your configuration.
 
 - ✨ *console*: cache some costly requests to the backend
 - ✨ *console*: add `SrcNetPrefix` and `DstNetPrefix` (as a dimension and a filter attribute)
 - ✨ *inlet*: add `inlet`→`flow`→`inputs`→`use-src-addr-for-exporter-addr` to override exporter address
 - 🌱 *console*: add `limit` and `graph-type` to `console`→`default-visualize-options` 
-- 🌱 *docker*: published `docker-compose.yml` file pins Akvorado image to the associated release
-- 🌱 *docker*: update Zookeeper and Kafka images (this upgrade is optional)
+- 🌱 *docker*: published `docker-compose.yml` file pins the Akvorado image to the associated release
+- 🌱 *docker*: update Zookeeper and Kafka images (upgrade is optional)
 
 ## 1.6.3 - 2022-11-26
 
@@ -411,23 +410,23 @@ explicitely by adding `console`→`http`→`cache` in your configuration.
 - ✨ *orchestrator*: add `orchestrator`→`network-sources` to fetch network attributes with HTTP
 - ✨ *console*: add `console`→`database`→`saved-filters` to populate filters from the configuration file
 - 🩹 *documentation*: durations must be written using a suffix (like `5s`)
-- 🌱 *docker*: provider a tarball with essential files to install or upgrade a `docker-compose` setup
+- 🌱 *docker*: provide a tarball with essential files to install or upgrade a `docker-compose` setup
 - 🌱 *inlet*: skip unknown AFI/SAFI in BMP route monitoring messages
 
 ## 1.6.1 - 2022-10-11
 
 - 🩹 *inlet*: fix SrcAS when receiving flows with sFlow
-- 🩹 *inlet*: do not half-close BMP connection (a remote IOS XR closes its own end)
+- 🩹 *inlet*: do not half-close BMP connection (remote IOS XR closes its own end)
 - 🌱 *docker*: split demo exporters out of `docker-compose.yml`
 - 🌱 *console*: make the upper limit for dimensions configurable
   (`console`→`dimensions-limit`)
 
 ## 1.6.0 - 2022-09-30
 
-This release features a BMP collector to grab BGP routes from one or
+This release features a BMP collector to retrieve BGP routes from one or
 several routers. The routes can be used to determine source and
-destination AS (instead of using GeoIP or information from the flows)
-but also the AS paths and the communities. Check `inlet`→`bmp` and
+destination AS (instead of using GeoIP or information from the flows),
+as well as the AS paths and communities. Check `inlet`→`bmp` and
 `inlet`→`core` configuration settings for more information.
 
 - ✨ *inlet*: BMP collector to get AS numbers, AS paths, and communities from BGP [PR #155][]
@@ -441,10 +440,10 @@ but also the AS paths and the communities. Check `inlet`→`bmp` and
 
 ## 1.5.8 - 2022-09-18
 
-This release bumps the minimal required version for ClickHouse to
+This release bumps the minimum required version for ClickHouse to
 22.4. The `docker-compose` file has been updated to use ClickHouse
-22.8 (which is a long term version). Moreover, *Akvorado* now has its
-own organisation and the code is hosted at
+22.8 (which is a long-term version). Moreover, *Akvorado* now has its
+own organization and the code is hosted at
 [akvorado/akvorado](https://github.com/akvorado/akvorado).
 
 - 💥 *console*: make ClickHouse interpolate missing values (ClickHouse 22.4+ is required)
@@ -457,13 +456,13 @@ own organisation and the code is hosted at
 
 - ✨ *inlet*: add support for flow rate-limiting with `inlet`→`flow`→`rate-limit`
 - 🌱 *inlet*: improve performance of GeoIP lookup
-- 🌱 *inlet*: add `inlet`→`core`→`asn-providers` to specify how to get AS
+- 🌱 *inlet*: add `inlet`→`core`→`asn-providers` to specify how to retrieve AS
   numbers. `inlet`→`core`→`ignore-asn-from-flow` is deprecated and mapped
   to `geoip`.
 
 ## 1.5.6 - 2022-08-16
 
-- ✨ *inlet*: add support for SNMPv3 protocol
+- ✨ *inlet*: add SNMPv3 protocol support
 - 🌱 *inlet*: `inlet`→`snmp`→`default-community` is now deprecated
 - 🌱 *console*: make “previous period” line more visible
 - 🩹 *geoip*: fix `inlet`→`geoip`→`country-database` rename to `inlet`→`geoip`→`geo-database`
@@ -479,7 +478,7 @@ own organisation and the code is hosted at
 ## 1.5.4 - 2022-08-01
 
 `SrcCountry`/`DstCountry` were incorrectly filled in aggregated
-tables. This is fixed with this release, but this implies dropping the
+tables. This is fixed with this release, but this requires dropping the
 existing data (only the country information). See [PR #61][] for more
 details.
 
@@ -495,7 +494,7 @@ details.
 
 ## 1.5.3 - 2022-07-26
 
-- 💥 *cmd*: replace the `fake-exporter` subcommand by `demo-exporter` to make easier to understand its purpose
+- 💥 *cmd*: replace the `fake-exporter` subcommand with `demo-exporter` to make its purpose easier to understand
 - 🌱 *console*: make `<<` and `!<<` operators more efficient
 
 ## 1.5.2 - 2022-07-26
@@ -516,20 +515,20 @@ details.
 
 ## 1.5.0 - 2022-07-20
 
-This release introduce a new protobuf schema. When using
-`docker-compose`, a restart of ClickHouse is needed after upgrading
+This release introduces a new protobuf schema. When using
+`docker-compose`, a ClickHouse restart is needed after upgrading
 the orchestrator to load this new schema.
 
-- ✨ *inlet*: add sflow support [PR #23][]
+- ✨ *inlet*: add sFlow support [PR #23][]
 - ✨ *inlet*: classify exporters to group, role, site, region, and tenant [PR #14][]
 - ✨ *orchestrator*: add role, site, region, and tenant attributes to networks [PR #15][]
 - ✨ *docker*: clean conntrack entries when inlet container starts
 - 🩹 *console*: fix use of `InIfBoundary` and `OutIfBoundary` as dimensions [PR #11][]
 - 🩹 *build*: make *Akvorado* compile on macOS
 - 🌱 *inlet*: ask the kernel to timestamp incoming packets
-- 🌱 *orchestrator*: limit number of Kafka consumers in ClickHouse to the number of CPUs
+- 🌱 *orchestrator*: limit the number of Kafka consumers in ClickHouse to the number of CPUs
 - 🌱 *documentation*: add configuration for Juniper devices
-- 🌱 *docker*: add [UI for Apache Kafka][] to help debug starter issues
+- 🌱 *docker*: add [UI for Apache Kafka][] to help debug startup issues
 
 [PR #11]: https://github.com/akvorado/akvorado/pull/11
 [PR #14]: https://github.com/akvorado/akvorado/pull/14
@@ -542,11 +541,11 @@ the orchestrator to load this new schema.
 - ✨ *inlet*: add an option to ignore ASN received from flows [PR #7][]
 - 🩹 *console*: fix maximum value for the grid view
 - 🌱 *orchestrator*: adapt partition key for each consolidated flow
-  tables in ClickHouse to limit the number of partitions (this change
-  won't be applied on an existing installation)
+  table in ClickHouse to limit the number of partitions (this change
+  will not be applied to existing installations)
 - 🌱 *inlet*: add `default-sampling-rate` as an option
 - 🌱 *inlet*: only require either input or output interface for a valid flow
-- 🌱 *build*: switch from Yarn to npm as a Javascript package manager [PR #4][]
+- 🌱 *build*: switch from Yarn to npm as a JavaScript package manager [PR #4][]
 - 🌱 *docker*: pull image from GitHub instead of building it
 - 🌱 *documentation*: add more tips to the troubleshooting section
 

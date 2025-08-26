@@ -1,37 +1,35 @@
 # Installation
 
 *Akvorado* is written in Go. It provides its 4 components in a single binary or
-Docker image. It also requires an installation of
-[Kafka](https://kafka.apache.org/quickstart) and
-[ClickHouse](https://clickhouse.com/docs/en/getting-started/install/). These
-must be installed separately. For ClickHouse, the minimum version is 22.4.
+Docker image. It also requires [Kafka](https://kafka.apache.org/quickstart) and
+[ClickHouse](https://clickhouse.com/docs/en/getting-started/install/), which
+must be installed separately. The minimum version for ClickHouse is 22.4.
 
 ## Docker image
 
-You can get *Akvorado* as a
-[Docker](https://docs.docker.com/get-docker) image.
+You can use the *Akvorado* [Docker](https://docs.docker.com/get-docker) image.
 
 ```console
 # docker pull ghcr.io/akvorado/akvorado:latest
 # docker run --rm ghcr.io/akvorado/akvorado:latest help
 ```
 
-Check the `docker/docker-compose.yml` file for an example on how to deploy
-*Akvorado* using containers. If you want to use `docker compose`, have a look at
+Check the `docker/docker-compose.yml` file for an example of how to deploy
+*Akvorado* using containers. If you want to use `docker compose`, see
 the [quick start procedure](00-intro.md#quick-start). This documentation assumes
-you are running the `docker compose` setup.
+you are using the `docker compose` setup.
 
 If you want to compile the Docker image yourself, use `make docker`.
 
 ## Pre-built binary
 
-The second option is to get a pre-built binary from the [release page
+The second option is to download a pre-built binary from the [release page
 on GitHub](https://github.com/akvorado/akvorado/releases).
 Currently, only a pre-built binary for Linux x86-64 is provided.
 
 ## Compilation from source
 
-You need a proper installation of [Go](https://go.dev/doc/install) (1.24+), and
+You need to install [Go](https://go.dev/doc/install) (1.24+), and
 [NodeJS](https://nodejs.org/en/download/) (20+) with NPM (6+). For example, on
 Debian:
 
@@ -91,11 +89,11 @@ The following `make` targets are available:
 
 ## Upgrade
 
-Be sure to read the [changelog](99-changelog.md) before attempting an upgrade.
+Read the [changelog](99-changelog.md) before you upgrade.
 Upgrade the orchestrator first. This will update the ClickHouse database if
 needed. Then, upgrade all inlets and outlets. Then the console.
 
-When using `docker compose`, use the following commands to fetch an updated
+When using `docker compose`, use the following commands to get an updated
 `docker-compose.yml` file and update your installation.
 
 ```console
@@ -106,6 +104,5 @@ When using `docker compose`, use the following commands to fetch an updated
 # docker compose up -d
 ```
 
-The `docker-compose-upgrade.tar.gz` tarball ships `.env.dist` instead of `.env`.
-You may want to check the differences with your setup (most of the time, there
-shouldn't be any).
+The `docker-compose-upgrade.tar.gz` tarball contains `.env.dist` instead of `.env`.
+You may want to check for differences with your setup. Usually, there are no differences.

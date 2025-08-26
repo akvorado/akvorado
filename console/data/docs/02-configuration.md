@@ -1,25 +1,24 @@
 # Configuration
 
-The orchestrator service is configured through YAML files (shipped in the
+The orchestrator service is configured through YAML files (provided in the
 `config/` directory) and includes the configuration of the other services.
 
 > [!TIP]
-> Other services query the orchestrator through HTTP on start to retrieve their
+> Other services query the orchestrator through HTTP on startup to get their
 > configuration. This means that if you change the configuration for one
 > service, you always need to restart the orchestrator first, then the service
 > whose configuration has changed.
 
-The default configuration can be obtained with `docker compose exec
+You can get the default configuration with `docker compose exec
 akvorado-orchestrator akvorado orchestrator --dump --check /dev/null`. Note that
 some sections are generated from the configuration of another section. Notably,
-all Kafka configuration comes from the upper-level `kafka` key. Durations must be
-written using strings like `10h20m` or `5s`. Valid time units are `ms`, `s`,
+all Kafka configuration comes from the upper-level `kafka` key. Write durations
+as strings, like `10h20m` or `5s`. Valid time units are `ms`, `s`,
 `m`, and `h`.
 
-It is also possible to override configuration settings using
-environment variables. You need to remove any `-` from key names and
-use `_` to handle nesting. Then, add `AKVORADO_CFG_ORCHESTRATOR_` as a
-prefix. For example, let's consider the following configuration file:
+You can also override configuration settings with environment variables. Remove
+any `-` from key names and use `_` for nesting. Then, add the prefix
+`AKVORADO_CFG_ORCHESTRATOR_`. Let's consider this configuration file:
 
 ```yaml
 http:
@@ -39,44 +38,45 @@ AKVORADO_CFG_ORCHESTRATOR_KAFKA_TOPIC=test-topic
 AKVORADO_CFG_ORCHESTRATOR_KAFKA_BROKERS=192.0.2.1:9092,192.0.2.2:9092
 ```
 
-The orchestrator service has its own configuration, as well as the
-configuration for the other services under the key matching the
-service name (`inlet`, `outlet`, and `console`). For each service, it is possible
-to provide a list of configurations. A service can query the
-configuration it wants by appending an index to the configuration URL.
-If the index does not match a provided configuration, the first
-configuration is provided.
+The orchestrator service has its own configuration and the configuration for the
+other services. The configuration for each service is under a key with the same
+name as the service (`inlet`, `outlet`, and `console`). For each service, you
+can provide a list of configurations. A service can request a specific
+configuration by adding an index to the configuration URL. If the index does not
+match a configuration, the first configuration is used.
 
-Each service is split into several functional components. Each of them
-gets a section of the configuration file matching its name.
+Each service has several functional components. Each component has a section in
+the configuration file with the same name.
 
 ## Inlet service
 
-This service is configured under the `inlet` key. The inlet service receives
-NetFlow/IPFIX/sFlow packets and forwards them to Kafka. The main components are
+Configure this service under the `inlet` key. The inlet service receives
+NetFlow/IPFIX/sFlow packets and sends them to Kafka. Its main components are
 `flow` and `kafka`.
 
 ### Flow
 
-The flow component handles incoming flows. It accepts the `inputs` key
-to define the list of inputs to receive incoming flows. The flows are
-encapsulated into protobuf messages and sent to Kafka without parsing.
+The `flow` component handles incoming flows. Use the `inputs` key to define a
+list of inputs for incoming flows. The flows are put into protobuf messages and
+sent to Kafka without being parsed.
 
-Each input has a `type` and a `decoder`. For `decoder`, both
-`netflow` or `sflow` are supported. As for the `type`, both `udp`
-and `file` are supported.
+Each input has a `type` and a `decoder`. For `decoder`, `netflow` and `sflow`
+are supported. For `type`, `udp` and `file` are supported.
 
-For the UDP input, the supported keys are `listen` to set the listening
-endpoint, `workers` to set the number of workers to listen to the socket,
-`receive-buffer` to set the size of the kernel's incoming buffer for each
-listening socket, and `queue-size` to define the number of messages to buffer
-inside each worker. With `use-src-addr-for-exporter-addr` set to true, the
-source ip of the received flow packet is used as exporter address. It is also
-possible to choose how to extract the timestamp for each packet with
-`timestamp-source`: `udp` to use the receive time of the UDP packet (the
-default), `netflow-packet` to extract the timestamp from the NetFlow/IPFIX
-header, or `netflow-first-switched` to use the “first switched” field from
-NetFlow/IPFIX.
+For the UDP input, you can use the following keys:
+
+- `listen`: set the listening endpoint.
+- `workers`: set the number of workers to listen to the socket.
+- `receive-buffer`: set the size of the kernel's incoming buffer for each listening socket.
+- `queue-size`: define the number of messages to buffer inside each worker.
+
+If you set `use-src-addr-for-exporter-addr` to true, the source IP of the
+received flow packet is used as the exporter address. You can also choose how to
+extract the timestamp for each packet with `timestamp-source`:
+
+- `udp`: use the receive time of the UDP packet (the default).
+- `netflow-packet`: extract the timestamp from the NetFlow/IPFIX header.
+- `netflow-first-switched`: use the “first switched” field from NetFlow/IPFIX.
 
 For example:
 
@@ -94,9 +94,9 @@ flow:
       workers: 3
 ```
 
-The `file` input should only be used for testing. It supports a
-`paths` key to define the files to read from. These files are injected
-continuously in the pipeline. For example:
+Use the `file` input for testing only. It has a `paths` key to define the files
+to read. These files are continuously added to the processing pipeline. For
+example:
 
 ```yaml
 flow:
@@ -113,71 +113,71 @@ flow:
        - /tmp/flow2.raw
 ```
 
-Without configuration, *Akvorado* will listen for incoming
-NetFlow/IPFIX and sFlow flows on a random port (check the logs to know
-which one).
+Without configuration, *Akvorado* listens for incoming NetFlow/IPFIX and sFlow
+flows on a random port. Check the logs to see which port is used.
 
 ### Kafka
 
-The inlet service exports received flows to a Kafka topic using the [protocol
+The inlet service sends received flows to a Kafka topic using the [protocol
 buffers format][].
 
 [protocol buffers format]: https://developers.google.com/protocol-buffers
 
 The following keys are accepted:
 
-- `topic`, `brokers`, `tls`, and `version` keys are described in the
-  configuration for the [orchestrator service](#kafka-2) (the values of these
-  keys are copied from the orchestrator configuration, unless `brokers` is
-  explicitely set)
-- `compression-codec` defines the compression codec to use to compress
-  messages: `none`, `gzip`, `snappy`, `lz4` (the default)*, or `zstd`.
-- `queue-size` defines the maximum number of messages to buffer to Kafka.
+- `topic`, `brokers`, `tls`, and `version` are described in the
+  configuration for the [orchestrator service](#kafka-2). Their values are
+  copied from the orchestrator configuration, unless you set `brokers`
+  explicitly.
+- `compression-codec` defines the compression codec for messages: `none`,
+  `gzip`, `snappy`, `lz4` (default), or `zstd`.
+- `queue-size` defines the maximum number of messages to buffer for Kafka.
 
-The topic name is automatically suffixed by a version number, in case the
-protobuf schema changes in a backward-incompatible way.
+A version number is automatically added to the topic name. This is to prevent
+problems if the protobuf schema changes in a way that is not
+backward-compatible.
 
 ## Outlet service
 
-This service is configured under the `outlet` key. The outlet service
-consumes flows from Kafka, parses them, enriches them with metadata
-and routing information, and exports them to ClickHouse. The main
-components are `kafka`, `metadata`, `routing`, and `core`.
+Configure this service under the `outlet` key. The outlet service takes flows
+from Kafka, parses them, adds metadata and routing information, and sends them
+to ClickHouse. Its main components are `kafka`, `metadata`, `routing`, and `core`.
 
 ### Kafka
 
-The outlet's Kafka component consumes flows from the Kafka topic. The following
+The outlet's Kafka component takes flows from the Kafka topic. The following
 keys are accepted:
 
-- `topic`, `brokers`, `tls`, and `version` keys are described in the
-  configuration for the [orchestrator service](#kafka-2) (the values of these
-  keys are copied from the orchestrator configuration, unless `brokers` is
-  explicitly set)
-- `consumer-group` defines the consumer group ID for Kafka consumption
-- `fetch-min-bytes` defines the minimum number of bytes to fetch from Kafka
-- `fetch-max-wait-time` defines how much maximum time to wait for the minimum
-  number of bytes to become available
-- `min-workers` defines the minimum number of Kafka workers to use
-- `max-workers` defines the maximum number of Kafka workers to use
-- `worker-increase-rate-limit` defines the duration before increasing the number of workers
-- `worker-decrease-rate-limit` defines the duration before decreasing the number of workers
+- `topic`, `brokers`, `tls`, and `version` are described in the
+  configuration for the [orchestrator service](#kafka-2). Their values are
+  copied from the orchestrator configuration, unless you set `brokers`
+  explicitly.
+- `consumer-group` defines the consumer group ID for Kafka consumption.
+- `fetch-min-bytes` defines the minimum number of bytes to fetch from Kafka.
+- `fetch-max-wait-time` defines the maximum time to wait for the minimum
+  number of bytes to become available.
+- `min-workers` defines the minimum number of Kafka workers to use.
+- `max-workers` defines the maximum number of Kafka workers to use.
+- `worker-increase-rate-limit` defines the duration before increasing the
+  number of workers.
+- `worker-decrease-rate-limit` defines the duration before decreasing the
+  number of workers.
 
-The exact number of workers currently running depend on the load ClickHouse
-component. The number of workers will be adjusted to keep it below
-`maximum-batch-size`. Don't crank up too much the `max-workers` setting as it
-can put pressure on ClickHouse (the default of 8 should be OK).
+The number of running workers depends on the load of the ClickHouse
+component. The number of workers is adjusted to stay below
+`maximum-batch-size`. Do not set `max-workers` too high, as it can
+increase the load on ClickHouse. The default value of 8 is usually fine.
 
 ### Routing
 
-The routing component optionally fetches source and destination AS numbers, as
-well as the AS paths and communities. Not all exporters need to provide this
-information. Currently, the default provider is BMP. *Akvorado* will try
-to select the best route using the next hop advertised in the flow and fallback
-to any next hop if not found.
+The routing component can get the source and destination AS numbers, AS paths,
+and communities. Not all exporters provide this information. Currently, the
+default provider is BMP. *Akvorado* tries to select the best route using the
+next hop from the flow. If it is not found, it will use any other next hop.
 
-The component accepts only a `provider` key, which defines the provider
-configuration. Inside the provider configuration, the provider type is defined
-by the `type` key (`bmp` and `bioris` are currently supported). The remaining
+The component has a `provider` key that defines the provider
+configuration. Inside the provider configuration, the `type` key defines the
+provider type. `bmp` and `bioris` are currently supported. The remaining
 keys are specific to the provider.
 
 #### BMP provider
@@ -185,25 +185,23 @@ keys are specific to the provider.
 For the BMP provider, the following keys are accepted:
 
 - `listen` specifies the IP address and port to listen for incoming connections
-  (default port is 10179)
-- `rds` specifies a list of route distinguisher to accept (0 is meant
-  to accept routes without an associated route distinguisher)
-- `collect-asns` tells if origin AS numbers should be collected
-- `collect-aspaths` tells if AS paths should be collected
-- `collect-communities` tells if communities should be collected (both
-  regular communities and large communities; extended communities are
-  not supported)
-- `keep` tells how much time the routes sent from a terminated BMP
-  connection should be kept
+  (default port is 10179).
+- `rds` is a list of route distinguishers to accept. Use 0 to accept routes
+  without a route distinguisher.
+- `collect-asns` defines if origin AS numbers should be collected.
+- `collect-aspaths` defines if AS paths should be collected.
+- `collect-communities` defines if communities should be collected. It supports
+  regular and large communities, but not extended communities.
+- `keep` defines how long to keep routes from a terminated BMP
+  connection.
 - `receive-buffer` is the size of the kernel receive buffer in bytes for each
-  established BMP connection
+  established BMP connection.
 
-If you are not interested in AS paths and communities, disabling them
-will decrease the memory usage of *Akvorado*, as well as the disk
-space used in ClickHouse.
+If you do not need AS paths and communities, you can disable them to save memory
+and disk space in ClickHouse.
 
-*Akvorado* supports receiving the AdjRIB-in, with or without
-filtering. It may also work with a LocRIB.
+*Akvorado* supports receiving AdjRIB-in, with or without
+filtering. It can also work with a LocRIB.
 
 For example:
 
@@ -218,25 +216,25 @@ routing:
 ```
 
 > [!NOTE]
-> With many routes, BMP may have some performance issues when a peer disappear.
-> If you are not interested by full accuracy, limit the number of BMP peers and
-> export the LocRIB. These issues will eventually be sorted out.
+> With many routes, BMP can have performance issues when a peer disconnects.
+> If you do not need full accuracy, limit the number of BMP peers and
+> export the LocRIB. These issues will be fixed in a future release.
 
 #### BioRIS provider
 
-As alternative to the internal BMP, an connection to an existing [bio-rd
-RIS](https://github.com/bio-routing/bio-rd/tree/master/cmd/ris) instance may be
-used. It accepts the following keys:
+As an alternative to the internal BMP, you can connect to an existing [bio-rd
+RIS](https://github.com/bio-routing/bio-rd/tree/master/cmd/ris) instance. It
+accepts the following keys:
 
-- `ris-instances` is a list of instances
-- `timeout` tells how much time to wait to get an answer from a RIS instance
-- `refresh` tells how much time to wait between two refresh of the list of routers
+- `ris-instances` is a list of instances.
+- `timeout` defines how long to wait for an answer from a RIS instance.
+- `refresh` defines how long to wait between refreshing the list of routers.
 
 Each instance accepts the following keys:
 
-- `grpc-addr` is the address and port of a RIS instance
-- `grpc-secure` tells if a connection should be set using TLS
-- `vrf` (as a string) or `vrf-id` (as an ID) tell which VRF we should look up
+- `grpc-addr` is the address and port of a RIS instance.
+- `grpc-secure` tells if a connection should be set using TLS.
+- `vrf` (as a string) or `vrf-id` (as an ID) defines which VRF to look up.
 
 This is configured as follows:
 
@@ -250,68 +248,67 @@ routing:
         vrf: 0:0
 ```
 
-BioRIS tries to query the RIB of the router that sent the flow. If this router's
-RIB is not available in all known RIS instances, an other router is implictly
-used as fallback. After the router id is determined, BioRIS queries one of the
-RIS instances known holding the RIB.
+BioRIS queries the RIB of the router that sent the flow. If this router's
+RIB is not available in any of the known RIS instances, another router is used
+as a fallback. After the router ID is determined, BioRIS queries one of the
+RIS instances that has the RIB.
 
-BioRIS currently supports setting prefix, AS, AS Path and communities for the
-given flow.
+BioRIS can set the prefix, AS, AS Path, and communities for the flow.
 
 ### Metadata
 
 Flows only include interface indexes. To associate them with an interface name
-and description, metadata are retrieved from the exporting routers. A cache is
-maintained. There are several providers available to poll metadata. The
+and description, metadata is retrieved from the exporting routers. A cache is
+used. Several providers are available to poll metadata. The
 following keys are accepted:
 
-- `cache-duration` tells how much time to keep data in the cache
-- `cache-refresh` tells how much time to wait before updating an entry
-  by polling it
-- `cache-check-interval` tells how often to check if cached data is
-  about to expire or need an update
-- `cache-persist-file` tells where to store cached data on shutdown and
-  read them back on startup
-- `query-timeout` tells how long to wait for a provider to answer a query
-- `initial-delay` tells how long to wait after starting before applying the
-  standard query timeout
-- `providers` defines the provider configurations
+- `cache-duration` defines how long to keep data in the cache.
+- `cache-refresh` defines how long to wait before updating an entry
+  by polling it.
+- `cache-check-interval` defines how often to check if cached data is
+  about to expire or needs an update.
+- `cache-persist-file` defines where to store cached data on shutdown and
+  read it back on startup.
+- `query-timeout` defines how long to wait for a provider to answer a query.
+- `initial-delay` defines how long to wait after starting before applying the
+  standard query timeout.
+- `providers` defines the provider configurations.
 
-As flows missing any interface information are discarded, persisting the cache
-is useful to quickly be able to handle incoming flows.
+Because flows missing any interface information are discarded, persisting the cache
+is useful to quickly handle incoming flows.
 
-The `providers` key contains the configuration of the providers. For each, the
+The `providers` key contains the provider configurations. For each, the
 provider type is defined by the `type` key. When using several providers, they
-will be queried in order and the process stops on the first to accept to handle
-a query. Currently, only the `static` provider can skip a query. Therefore, you
+are queried in order and the process stops on the first one that accepts the query.
+Currently, only the `static` provider can skip a query. Therefore, you
 should put it first.
 
 #### SNMP provider
 
-The `snmp` provider accepts the following configuration keys:
+The `snmp` provider accepts these configuration keys:
 
 - `credentials` is a map from exporter subnets to credentials. Use `::/0` to set
-  the default value. For SNMPv2, it accepts the `communities` key. It is either
-  a single community or a list of communities. In the later case, each community
+  the default value. For SNMPv2, it accepts the `communities` key. It is a single
+  community or a list of communities. In the latter case, each community
   is tried in order for all requests. For SNMPv3, it accepts the following keys:
   `user-name`, `authentication-protocol` (`none`, `MD5`, `SHA`, `SHA224`,
   `SHA256`, `SHA384`, and `SHA512` are accepted), `authentication-passphrase`
   (if the previous value was set), `privacy-protocol` (`none`, `DES`, `AES`,
-  `AES192`, `AES256`, `AES192-C`, and `AES256-C` are accepted, the later being
+  `AES192`, `AES256`, `AES192-C`, and `AES256-C` are accepted, the latter being
   Cisco-variant), `privacy-passphrase` (if the previous value was set), and
   `context-name`.
-- `ports` is a map from exporter subnets to the SNMP port to use to poll
+- `ports` is a map from exporter subnets to the SNMP port to use for polling
   exporters in the provided subnet.
 - `agents` is a map from exporter IPs to agent IPs. When there is no match, the
-  exporter IP is used. Other options are still using the exporter IP as a key,
+  exporter IP is used. Other options still use the exporter IP as a key,
   not the agent IP.
-- `poller-retries` is the number of retries on unsuccessful SNMP requests.
-- `poller-timeout` tells how much time should the poller wait for an answer.
+- `poller-retries` is the number of retries for unsuccessful SNMP requests.
+- `poller-timeout` defines how long the poller should wait for an answer.
 
-*Akvorado* will use SNMPv3 if there is a match for the `security-parameters`
-configuration option. Otherwise, it will use SNMPv2.
+*Akvorado* uses SNMPv3 if there is a match for the `security-parameters`
+configuration option. Otherwise, it uses SNMPv2.
 
-For example, with SNMPv2 and trying both `private` and `@private` SNMPv2
+For example, with SNMPv2, you can try both `private` and `@private` SNMPv2
 communities:
 
 ```yaml
@@ -345,29 +342,29 @@ metadata:
 
 #### gNMI provider
 
-The `gnmi` provider polls an exporter using gNMI. It accepts the following keys:
+The `gnmi` provider polls an exporter using gNMI. It accepts these keys:
 
 - `targets` is a map from exporter subnets to target IPs. When there is no match,
-  the exporter IP is used. Other options are still using the exporter IP as a
+  the exporter IP is used. Other options still use the exporter IP as a
   key, not the target IP.
-- `ports` is a map from exporter subnets to the gNMI port to use to poll
+- `ports` is a map from exporter subnets to the gNMI port to use for polling
   exporters in the provided subnet.
-- `set-target` is a map from exporter subnets to a boolean to specify if target
-  name should be set in gNMI path prefix. In this case, it is set to the
+- `set-target` is a map from exporter subnets to a boolean that specifies if the target
+  name should be set in the gNMI path prefix. In this case, it is set to the
   exporter IP address. This is useful if the selected target is a gNMI gateway.
 - `authentication-parameters` is a map from exporter subnets to authentication
-  parameters for gNMI targets. Authentication parameters accept the following
+  parameters for gNMI targets. Authentication parameters accept these
   keys: `username`, `password`, `insecure` (a boolean to use clear text),
   `skip-verify` (a boolean to disable TLS verification), `tls-ca` (to check the
   TLS certificate of the target), `tls-cert`, and `tls-key` (to authenticate to
   a target).
-- `models` is the list of models to use to fetch information from a target. Each
-  model is tried and if a target supports all the paths, it is selected. The
+- `models` is the list of models to use to get information from a target. Each
+  model is tried, and if a target supports all the paths, it is selected. The
   models are tried in the order they are declared. If you want to keep the
-  builtin models, use the special string `defaults`.
-- `timeout` tells how much time we should wait for an answer from a target.
+  built-in models, use the special string `defaults`.
+- `timeout` defines how long to wait for an answer from a target.
 - `minimal-refresh-interval` is the minimum time a collector will wait before
-  polling again a target.
+  polling a target again.
 
 For example:
 
@@ -382,28 +379,27 @@ metadata:
     skip-verify: true
 ```
 
-Contrary to SNMP for GNMI a single metadata worker is sufficient.
+Unlike SNMP, a single metadata worker is sufficient for gNMI.
 
-The gNMI provider is using "subscribe once" to poll for information from the
+The gNMI provider uses "subscribe once" to poll for information from the
 target. This should be compatible with most targets.
 
-A model accepts the following keys:
+A model accepts these keys:
 
-- `name` for the model name (eg `Nokia SR Linux`)
-- `system-name-paths` is a list of paths where to fetch the system name (eg
-  `/system/name/host-name`)
-- `if-index-paths` is a list of paths to get interface indexes
-- `if-name-keys` is a list of keys where we can find the name of an interface in
-  the paths returned for interface indexes (eg `name` or `port-id`)
-- `if-name-paths` is a list of paths to get interface names (they take
-  precedence if found over the previous key)
-- `if-description-paths` is a list of paths to get interface descriptions
-- `if-speed-paths` is a list of paths to get interface speeds. Specifically for
-  this key a path is defined by two keys: `path` for the gNMI path and `unit`
-  for the unit on how to interpret the value. A unit can be `bps` for a value in
-  bits per second, `mbps` for a value in megabits per second, `ethernet` when
-  using OpenConfig `ETHERNET_SPEED` (they look like `SPEED_100GB`), and `human`
-  for value formatted for humans (`10G` or `100M`)
+- `name` for the model name (e.g., `Nokia SR Linux`).
+- `system-name-paths` is a list of paths to get the system name (e.g.,
+  `/system/name/host-name`).
+- `if-index-paths` is a list of paths to get interface indexes.
+- `if-name-keys` is a list of keys where you can find the name of an interface in
+  the paths returned for interface indexes (e.g., `name` or `port-id`).
+- `if-name-paths` is a list of paths to get interface names. These paths take
+  precedence over the previous key if found.
+- `if-description-paths` is a list of paths to get interface descriptions.
+- `if-speed-paths` is a list of paths to get interface speeds. For
+  this key, a path is defined by two keys: `path` for the gNMI path and `unit`
+  for the unit on how to interpret the value. A unit can be `bps` (bits per
+  second), `mbps` (megabits per second), `ethernet` (OpenConfig `ETHERNET_SPEED`
+  like `SPEED_100GB`), or `human` (human-readable format like `10G` or `100M`).
 
 The currently supported models are:
 - Nokia SR OS
@@ -413,19 +409,19 @@ The currently supported models are:
 
 #### Static provider
 
-The `static` provider accepts an `exporters` key which maps exporter subnets to
-an exporter configuration. An exporter configuration is map:
+The `static` provider accepts an `exporters` key that maps exporter subnets to
+an exporter configuration. An exporter configuration is a map:
 
-- `name` is the name of the exporter
-- `default` is the default interface when no match is found
-- `ifindexes` is a map from interface indexes to interface
+- `name` is the name of the exporter.
+- `default` is the default interface when no match is found.
+- `ifindexes` is a map from interface indexes to an interface.
 - `skip-missing-interfaces` defines whether the exporter should process only
-  interfaces defined in the configuration and leave the remainder to the next
+  the interfaces defined in the configuration and leave the rest to the next
   provider. This conflicts with the `default` setting.
 
-An interface is a `name`, a `description` and a `speed`.
+An interface has a `name`, a `description`, and a `speed`.
 
-For example, to add an exception for `2001:db8:1::1`, then use SNMP for
+For example, to add an exception for `2001:db8:1::1` and then use SNMP for
 other exporters:
 
 ```yaml
@@ -450,22 +446,23 @@ metadata:
         ::/0: private
 ```
 
-The `static` provider also accepts a key `exporter-sources`, which will fetch a
-remote source mapping subnets to attributes. This is similar to `exporters` but
-the definition is fetched through HTTP. It accepts a map from source names to
-sources. Each source accepts the following attributes:
+The `static` provider also accepts an `exporter-sources` key, which fetches a
+remote source that maps subnets to attributes. This is similar to `exporters`,
+but the definition is fetched through HTTP. It accepts a map from source names to
+sources. Each source accepts these attributes:
 
-- `url` is the URL to fetch
-- `method` is the method to use (`GET` or `POST`)
-- `headers` is a map from header names to values to add to the request
-- `proxy` says if we should use a proxy (defined through environment variables like `http_proxy`)
-- `timeout` defines the timeout for fetching and parsing
-- `interval` is the interval at which the source should be refreshed
-- `transform` is a [jq](https://stedolan.github.io/jq/manual/) expression to
-  transform the received JSON into a set of attributes represented as objects.
-  Each object should have the following keys: `exporter-subnet`, `default` (with
-  the same structure as for a static configuration), and `interfaces`. The later
-  is a list of interfaces, an interface having an `ifindex`, a `name`, a
+- `url` is the URL to fetch.
+- `method` is the method to use (`GET` or `POST`).
+- `headers` is a map of header names to values to add to the request.
+- `proxy` defines if a proxy should be used (defined with environment variables
+  like `http_proxy`).
+- `timeout` defines the timeout for fetching and parsing.
+- `interval` is the interval at which the source should be refreshed.
+- `transform` is a [jq](https://stedolan.github.io/jq/manual/) expression that
+  transforms the received JSON into a set of attributes represented as objects.
+  Each object should have these keys: `exporter-subnet`, `default` (with the
+  same structure as a static configuration), and `interfaces`. The latter is a
+  list of interfaces, where each interface has an `ifindex`, a `name`, a
   `description`, and a `speed`.
 
 For example:
@@ -594,9 +591,9 @@ make a decision:
 - `Reject()` to reject the flow
 - `Format()` to format a string: `Format("name: %s", Exporter.Name)`
 
-As a compatibility `Classify()` is an alias for `ClassifyGroup()`.
-Here is an example, assuming routers are named
-`th2-ncs55a1-1.example.fr` or `milan-ncs5k8-2.example.it`:
+As a compatibility `Classify()` is an alias for `ClassifyGroup()`. Here is an
+example, assuming routers are named `th2-ncs55a1-1.example.fr` or
+`milan-ncs5k8-2.example.it`:
 
 ```yaml
 exporter-classifiers:
@@ -845,10 +842,10 @@ provided inside `clickhouse`:
   `region`, and `tenant`. They are exposed as `SrcNetName`, `DstNetName`,
   `SrcNetRole`, `DstNetRole`, etc. It is also possible to override GeoIP
   attributes `city`, `state`, `country`, and `ASN`.
-- `network-sources` fetch a remote source mapping subnets to
-  attributes. This is similar to `networks` but the definition is
-  fetched through HTTP. It accepts a map from source names to sources.
-  Each source accepts the following attributes:
+- `network-sources` fetch a remote source mapping subnets to attributes. This is
+  similar to `networks` but the definition is fetched through HTTP. It accepts a
+  map from source names to sources. Each source accepts the following
+  attributes:
   - `url` is the URL to fetch
   - `method` is the method to use (`GET` or `POST`)
   - `headers` is a map from header names to values to add to the request

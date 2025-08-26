@@ -1,9 +1,9 @@
 # Introduction
 
-*Akvorado*[^name] receives network flows (currently NetFlow/IPFIX and sFlow), enriches
-them with interface names (using SNMP), geographic information (using
-[IPinfo](https://ipinfo.io/) or MaxMind), and exports them to ClickHouse via
-Kafka. It also provides a web interface to browse the results.
+*Akvorado*[^name] receives network flows, such as NetFlow/IPFIX and sFlow. It enriches
+them with interface names (using SNMP), and geographic information (using
+[IPinfo](https://ipinfo.io/) or MaxMind). Then, it exports them to ClickHouse via
+Kafka. It also provides a web interface to explore the data.
 
 [^name]: [Akvorado][] means "water wheel" in Esperanto.
 
@@ -11,7 +11,7 @@ Kafka. It also provides a web interface to browse the results.
 
 ## Requirements
 
-The recommended configuration is the following:
+The recommended configuration is:
 
 - 8 vCPUs (AMD64 or ARM64)
 - 100 GB of disk
@@ -21,7 +21,7 @@ The recommended configuration is the following:
 
 The easiest way to get started is with
 [Docker](https://docs.docker.com/get-docker) and [Docker Compose
-V2](https://docs.docker.com/compose/install/). On Ubuntu systems, you can
+V2](https://docs.docker.com/compose/install/). On Ubuntu, you can
 install the `docker-compose-v2` package. On macOS, you can use the
 `docker-compose` formula from Homebrew.
 
@@ -32,9 +32,9 @@ install the `docker-compose-v2` package. On macOS, you can use the
 # docker compose up
 ```
 
-Monitor the output of `docker compose ps`. Once `akvorado-console` service is
-present "healthy", *Akvorado* web interface should be running on port 8081. It
-can take a few minutes.
+Monitor the output of `docker compose ps` to see the status of the services.
+Once the `akvorado-console` service is "healthy", the *Akvorado* web interface
+should be running on port 8081. This can take a few minutes.
 
 ### Next steps
 
@@ -64,7 +64,7 @@ To connect your own network devices:
 - Review the [operations guide](04-operations.md) for router configuration examples
 - Check the [troubleshooting guide](05-troubleshooting.md) if you run into an issue
 
-You can get all the expanded configuration (with default values) with
+You can see the full configuration (with default values) with:
 `docker compose exec akvorado-orchestrator akvorado orchestrator
 --check --dump /etc/akvorado/akvorado.yaml`.
 
@@ -79,26 +79,25 @@ You can get all the expanded configuration (with default values) with
 
 *Akvorado* is split into four components:
 
-- The **inlet service** receives flows from exporters and forwards them unparsed
-  to Kafka.
+- The **inlet service** receives flows from exporters and sends them to Kafka
+  without parsing them.
 
-- The **outlet service** consumes flows from Kafka, parses them, and enriches
-  them with metadata. It polls each exporter using SNMP to get the *system
-  name*, the *interface names*, *descriptions* and *speeds*. It applies rules to
-  add attributes to exporters. Interface rules attach to each interface a
-  *boundary* (external or internal), a *network provider* and a *connectivity
-  type* (PNI, IX, transit). Optionally, it may also receive BGP routes through
-  the BMP protocol to get the *AS number*, the *AS path*, and the communities.
-  The enriched flows are then exported to ClickHouse.
+- The **outlet service** takes flows from Kafka, parses them, and enriches them
+  with metadata. It uses SNMP to poll each exporter to get the *system name*,
+  *interface names*, *descriptions* and *speeds*. It applies rules to add
+  attributes to exporters. Interface rules add a *boundary* (external or
+  internal), a *network provider* and a *connectivity type* (PNI, IX, transit)
+  to each interface. Optionally, it may also receive BGP routes through the BMP
+  protocol to get the *AS number*, the *AS path*, and the communities. The
+  enriched flows are then exported to ClickHouse.
 
-- The **orchestrator service** configures the internal and external components.
-  It creates the *Kafka topic* and configures *ClickHouse* to receive the flows
-  from the outlet service. It exposes configuration settings for the other
-  services to use. It provides to ClickHouse additional data, notably *GeoIP*
-  data.
+- The **orchestrator service** configures the other components. It creates the
+  *Kafka topic* and configures *ClickHouse* to receive the flows from the outlet
+  service. It provides configuration settings for the other services. It
+  provides additional data to ClickHouse, such as *GeoIP* data.
 
-- The **console service** provides a web interface to view and manipulate the
-  flows stored in the ClickHouse database.
+- The **console service** provides a web interface to view and analyze the flows
+  in the ClickHouse database.
 
 ## ClickHouse database schemas
 
