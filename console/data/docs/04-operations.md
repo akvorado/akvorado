@@ -611,6 +611,10 @@ provider to provide interface names and descriptions to Akvorado.
 By default, ipfixprobe utilises bidirectional flows (RFC 5103) which are
 supported by Akvorado.
 
+> [!WARNING]
+> The `split` option for the cache plugin results to incorrect input interfaces
+> for outgoing flows.
+
 ## Kafka
 
 When you use `docker compose`, a Kafka UI runs at
