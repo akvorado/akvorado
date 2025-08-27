@@ -400,7 +400,7 @@ func (bf *FlowMessage) AppendAllFrom(bf2 *FlowMessage) {
 // AppendFrom appends the last value from the provided column of the other FlowMessage to the current FlowMessage
 func (bf *FlowMessage) AppendFrom(bf2 *FlowMessage, columnKey ColumnKey) {
 	col := bf.batch.columns[columnKey]
-	col2 := bf.batch.columns[columnKey]
+	col2 := bf2.batch.columns[columnKey]
 
 	// Abort when any column is not populated
 	if col == nil || col2 == nil {
