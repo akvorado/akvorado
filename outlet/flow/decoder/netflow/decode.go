@@ -361,10 +361,10 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 	}
 
 	// Copy some values from forward FlowMessage if they are not present in the reverse one
-	bfRev.AppendFromIfNotPresent(bf, schema.ColumnIPTTL)
-	bfRev.AppendFromIfNotPresent(bf, schema.ColumnIPTos)
-	bfRev.AppendFromIfNotPresent(bf, schema.ColumnIPv6FlowLabel)
-	bfRev.AppendFromIfNotPresent(bf, schema.ColumnTCPFlags)
+	bfRev.AppendFrom(bf, schema.ColumnIPTTL)
+	bfRev.AppendFrom(bf, schema.ColumnIPTos)
+	bfRev.AppendFrom(bf, schema.ColumnIPv6FlowLabel)
+	bfRev.AppendFrom(bf, schema.ColumnTCPFlags)
 
 	if foundReverseElement {
 		if bfRev.InIf == 0 {
@@ -387,7 +387,7 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 	finalize()
 
 	if foundReverseElement {
-		bf.AppendFrom(bfRev)
+		bf.AppendAllFrom(bfRev)
 		finalize()
 	}
 }

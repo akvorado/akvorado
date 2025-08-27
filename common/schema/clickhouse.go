@@ -389,75 +389,16 @@ func (bf *FlowMessage) Finalize() {
 	bf.check()
 }
 
-// AppendFrom appends all values from last row of the other FlowMessage to the current FlowMessage
-func (bf *FlowMessage) AppendFrom(bf2 *FlowMessage) {
-	for idx, col2 := range bf2.batch.columns {
-		// Skip unpopulated columns
-		if col2 == nil {
-			continue
-		}
-		// Or unset columns
-		if !bf2.batch.columnSet.Test(uint(idx)) {
-			continue
-		}
-
-		bf.batch.columnSet.Set(uint(idx))
-		col := bf.batch.columns[idx]
-
-		// Append the value based on the type
-		switch col2 := col2.(type) {
-		case *proto.ColUInt64:
-			value := col2.Row(len(*col2) - 1)
-			col.(*proto.ColUInt64).Append(value)
-			bf.appendDebug(ColumnKey(idx), value)
-		case *proto.ColUInt32:
-			value := col2.Row(len(*col2) - 1)
-			col.(*proto.ColUInt32).Append(value)
-			bf.appendDebug(ColumnKey(idx), value)
-		case *proto.ColUInt16:
-			value := col2.Row(len(*col2) - 1)
-			col.(*proto.ColUInt16).Append(value)
-			bf.appendDebug(ColumnKey(idx), value)
-		case *proto.ColUInt8:
-			value := col2.Row(len(*col2) - 1)
-			col.(*proto.ColUInt8).Append(value)
-			bf.appendDebug(ColumnKey(idx), value)
-		case *proto.ColIPv6:
-			value := col2.Row(len(*col2) - 1)
-			col.(*proto.ColIPv6).Append(value)
-			bf.appendDebug(ColumnKey(idx), value)
-		case *proto.ColDateTime:
-			value := col2.Data[len(col2.Data)-1]
-			col.(*proto.ColDateTime).AppendRaw(value)
-			bf.appendDebug(ColumnKey(idx), value)
-		case *proto.ColEnum8:
-			value := col2.Row(len(*col2) - 1)
-			col.(*proto.ColEnum8).Append(value)
-			bf.appendDebug(ColumnKey(idx), value)
-		case *proto.ColLowCardinality[string]:
-			value := col2.Values[len(col2.Values)-1]
-			col.(*proto.ColLowCardinality[string]).Append(value)
-			bf.appendDebug(ColumnKey(idx), value)
-		case *proto.ColLowCardinality[proto.IPv6]:
-			value := col2.Values[len(col2.Values)-1]
-			col.(*proto.ColLowCardinality[proto.IPv6]).Append(value)
-			bf.appendDebug(ColumnKey(idx), value)
-		case *proto.ColArr[uint32]:
-			value := col2.Row(col2.Rows() - 1)
-			col.(*proto.ColArr[uint32]).Append(value)
-			bf.appendDebug(ColumnKey(idx), value)
-		case *proto.ColArr[proto.UInt128]:
-			value := col2.Row(col2.Rows() - 1)
-			col.(*proto.ColArr[proto.UInt128]).Append(value)
-			bf.appendDebug(ColumnKey(idx), value)
-		default:
-			panic(fmt.Sprintf("unhandled ClickHouse type %q", col2.Type()))
-		}
+// AppendAllFrom appends all values from last row of the other FlowMessage to the current FlowMessage
+func (bf *FlowMessage) AppendAllFrom(bf2 *FlowMessage) {
+	for idx := range bf2.batch.columns {
+		columnKey := ColumnKey(idx)
+		bf.AppendFrom(bf2, columnKey)
 	}
 }
 
-// AppendFromIfNotPresent appends the last value from the provided column of the other FlowMessage to the current FlowMessage
-func (bf *FlowMessage) AppendFromIfNotPresent(bf2 *FlowMessage, columnKey ColumnKey) {
+// AppendFrom appends the last value from the provided column of the other FlowMessage to the current FlowMessage
+func (bf *FlowMessage) AppendFrom(bf2 *FlowMessage, columnKey ColumnKey) {
 	col := bf.batch.columns[columnKey]
 	col2 := bf.batch.columns[columnKey]
 
