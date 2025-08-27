@@ -193,7 +193,6 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 			bfRev.SrcAS = uint32(decodeUNumber(v))
 
 		// Interfaces
-		// TODO append forward value to reverse flow if not present as reverse
 		case netflow.IPFIX_FIELD_ingressInterface:
 			bf.InIf = uint32(decodeUNumber(v))
 		case netflow.IPFIX_FIELD_egressInterface:
@@ -268,12 +267,10 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 				// L2
 				switch field.Type {
 				case netflow.IPFIX_FIELD_vlanId, netflow.IPFIX_FIELD_dot1qVlanId:
-					// TODO append forward value to reverse flow if not present as reverse
 					if bfNonKey.SrcVlan == 0 {
 						bfNonKey.SrcVlan = uint16(decodeUNumber(v))
 					}
 				case netflow.IPFIX_FIELD_postVlanId, netflow.IPFIX_FIELD_postDot1qVlanId:
-					// TODO append forward value to reverse flow if not present as reverse
 					if bfNonKey.DstVlan == 0 {
 						bfNonKey.DstVlan = uint16(decodeUNumber(v))
 					}
@@ -298,10 +295,8 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 				case netflow.IPFIX_FIELD_ipTTL, netflow.IPFIX_FIELD_minimumTTL:
 					bfNonKey.AppendUint(schema.ColumnIPTTL, decodeUNumber(v))
 				case netflow.IPFIX_FIELD_ipClassOfService:
-					// TODO append forward value to reverse flow if not present as reverse
 					bfNonKey.AppendUint(schema.ColumnIPTos, decodeUNumber(v))
 				case netflow.IPFIX_FIELD_flowLabelIPv6:
-					// TODO append forward value to reverse flow if not present as reverse
 					bfNonKey.AppendUint(schema.ColumnIPv6FlowLabel, decodeUNumber(v))
 				case netflow.IPFIX_FIELD_tcpControlBits:
 					bfNonKey.AppendUint(schema.ColumnTCPFlags, decodeUNumber(v))
@@ -363,6 +358,30 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 	}
 	if bf.SamplingRate == 0 {
 		bf.SamplingRate = uint64(samplingRateSys.GetSamplingRate(version, obsDomainID, 0))
+	}
+
+	// Copy some values from forward FlowMessage if they are not present in the reverse one
+	bfRev.AppendFromIfNotPresent(bf, schema.ColumnIPTTL)
+	bfRev.AppendFromIfNotPresent(bf, schema.ColumnIPTos)
+	bfRev.AppendFromIfNotPresent(bf, schema.ColumnIPv6FlowLabel)
+	bfRev.AppendFromIfNotPresent(bf, schema.ColumnTCPFlags)
+
+	if foundReverseElement {
+		if bfRev.InIf == 0 {
+			bfRev.InIf = bf.OutIf
+		}
+		if bfRev.OutIf == 0 {
+			bfRev.OutIf = bf.InIf
+		}
+
+		if !nd.d.Schema.IsDisabled(schema.ColumnGroupL2) {
+			if bfRev.SrcVlan == 0 {
+				bfRev.SrcVlan = bf.DstVlan
+			}
+			if bfRev.DstVlan == 0 {
+				bfRev.DstVlan = bf.SrcVlan
+			}
+		}
 	}
 
 	finalize()
