@@ -25,6 +25,7 @@ the ownership of the Prometheus volume:
   #1900](https://github.com/akvorado/akvorado/pull/1900) for the consequences if
   you upgrade from a previous beta)
 - 💥 *docker*: switch from Prometheus to Grafana Alloy for scraping metrics
+- 🩹 *outlet*: move gRPC metrics for BioRIS provider in the routing namespace
 - 🌱 *docker*: enforce bridge name
 - 🌱 *docker*: add cAdvisor to the monitoring stack
 - 🌱 *docker*: update Prometheus to 3.5.0

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http/httptest"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 
@@ -51,14 +52,7 @@ func TestNew(t *testing.T) {
 		expecteds = append(expecteds, "process_open_fds")
 	}
 	for _, expected := range expecteds {
-		found := false
-		for _, line := range got {
-			if line == fmt.Sprintf("# TYPE %s gauge", expected) {
-				found = true
-				break
-			}
-		}
-		if !found {
+		if !slices.Contains(got, fmt.Sprintf("# TYPE %s gauge", expected)) {
 			t.Errorf("GET /api/v0/metrics missing: %s", expected)
 		}
 	}

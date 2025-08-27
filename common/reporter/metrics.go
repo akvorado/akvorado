@@ -111,22 +111,7 @@ func (r *Reporter) MetricsHTTPHandler() http.Handler {
 	return r.metrics.HTTPHandler()
 }
 
-// MetricCollector register a custom collector.
-func (r *Reporter) MetricCollector(c prometheus.Collector) {
-	r.metrics.Collector(c)
-}
-
-// MetricCollectorForCurrentModule register a custom collector prefixed by the current module name.
-func (r *Reporter) MetricCollectorForCurrentModule(c prometheus.Collector) {
-	r.metrics.CollectorForCurrentModule(1, c)
-}
-
-// MetricDesc defines a new metric description.
-func (r *Reporter) MetricDesc(name, help string, variableLabels []string) *MetricDesc {
-	return r.metrics.Desc(1, name, help, variableLabels)
-}
-
-// MetricDesc2 defines a new metric description. It skips one callstack.
-func (r *Reporter) MetricDesc2(name, help string, variableLabels []string) *MetricDesc {
-	return r.metrics.Desc(2, name, help, variableLabels)
+// RegisterMetricCollector register a custom collector prefixed by the current module name.
+func (r *Reporter) RegisterMetricCollector(c prometheus.Collector) {
+	r.metrics.RegisterCollector(1, c)
 }

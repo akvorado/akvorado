@@ -180,9 +180,9 @@ func TestMetricCollector(t *testing.T) {
 	r := reporter.NewMock(t)
 
 	m := customMetrics{}
-	m.metric1 = r.MetricDesc("metric1", "Custom metric 1", nil)
-	m.metric2 = r.MetricDesc("metric2", "Custom metric 2", nil)
-	r.MetricCollector(m)
+	m.metric1 = prometheus.NewDesc("metric1", "Custom metric 1", nil, nil)
+	m.metric2 = prometheus.NewDesc("metric2", "Custom metric 2", nil, nil)
+	r.RegisterMetricCollector(m)
 
 	got := r.GetMetrics("akvorado_common_reporter_test_")
 	expected := map[string]string{

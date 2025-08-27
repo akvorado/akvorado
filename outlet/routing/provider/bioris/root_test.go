@@ -462,7 +462,7 @@ func TestBioRIS(t *testing.T) {
 	}
 
 	for try := 2; try >= 0; try-- {
-		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bioris_")
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bioris_", "-grpc_client")
 		expectedMetrics := map[string]string{
 			// connection_up may take a bit of time
 			fmt.Sprintf(`connection_up{ris="%s"}`, addr):                                     "1",
@@ -506,6 +506,10 @@ func TestNonWorkingBioRIS(t *testing.T) {
 	expectedMetrics := map[string]string{
 		`connection_up{ris="ris.invalid:1000"}`: "0",
 		`connection_up{ris="192.0.2.10:1000"}`:  "0",
+		`grpc_client_handled_total{grpc_code="Unavailable",grpc_method="GetRouters",grpc_service="bio.ris.RoutingInformationService",grpc_type="unary"}`: "2",
+		`grpc_client_msg_received_total{grpc_method="GetRouters",grpc_service="bio.ris.RoutingInformationService",grpc_type="unary"}`:                    "2",
+		`grpc_client_msg_sent_total{grpc_method="GetRouters",grpc_service="bio.ris.RoutingInformationService",grpc_type="unary"}`:                        "2",
+		`grpc_client_started_total{grpc_method="GetRouters",grpc_service="bio.ris.RoutingInformationService",grpc_type="unary"}`:                         "2",
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Errorf("Metrics (-got, +want):\n%s", diff)

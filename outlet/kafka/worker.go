@@ -35,7 +35,7 @@ func (c *realComponent) newClient(i int) (*kgo.Client, error) {
 			Msg("unable to create new client")
 		return nil, fmt.Errorf("unable to create Kafka client: %w", err)
 	}
-	c.r.MetricCollectorForCurrentModule(kafkaMetrics)
+	c.r.RegisterMetricCollector(kafkaMetrics)
 	return client, nil
 }
 

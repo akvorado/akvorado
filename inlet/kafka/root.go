@@ -87,7 +87,7 @@ func (c *Component) Start() error {
 			Msg("unable to create Kafka client")
 		return fmt.Errorf("unable to create Kafka client: %w", err)
 	}
-	c.r.MetricCollectorForCurrentModule(kafkaMetrics)
+	c.r.RegisterMetricCollector(kafkaMetrics)
 	c.kafkaClient = kafkaClient
 
 	// When dying, close the client

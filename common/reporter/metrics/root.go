@@ -100,25 +100,9 @@ func (m *Metrics) Factory(skipCallstack int) *Factory {
 	return &factory
 }
 
-// Desc allocates and initializes and new metric description. Like for
-// factory, names are prefixed with the module name. Unlike factory,
-// there is no cache.
-func (m *Metrics) Desc(skipCallstack int, name, help string, variableLabels []string) *prometheus.Desc {
-	callStack := stack.Callers()
-	call := callStack[1+skipCallstack] // Trial and error, there is a test to check it works
-	prefix := getPrefix(call.FunctionName())
-	name = fmt.Sprintf("%s%s", prefix, name)
-	return prometheus.NewDesc(name, help, variableLabels, nil)
-}
-
-// Collector register a custom collector.
-func (m *Metrics) Collector(c prometheus.Collector) {
-	m.registry.MustRegister(c)
-}
-
-// CollectorForCurrentModule register a custom collector and prefix
+// RegisterCollector register a custom collector and prefix
 // everything with the module name.
-func (m *Metrics) CollectorForCurrentModule(skipCallStack int, c prometheus.Collector) {
+func (m *Metrics) RegisterCollector(skipCallStack int, c prometheus.Collector) {
 	callStack := stack.Callers()
 	call := callStack[1+skipCallStack] // Should be the same as above !
 	prefix := getPrefix(call.FunctionName())

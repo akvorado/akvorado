@@ -18,7 +18,7 @@ type metrics struct {
 
 // initMetrics initialize the metrics for the BMP component.
 func (p *Provider) initMetrics() {
-	p.r.MetricCollector(p.clientMetrics)
+	p.r.RegisterMetricCollector(p.clientMetrics)
 	p.metrics.risUp = p.r.GaugeVec(
 		reporter.GaugeOpts{
 			Name: "connection_up",
