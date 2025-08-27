@@ -111,7 +111,12 @@ func (r *Reporter) MetricsHTTPHandler() http.Handler {
 	return r.metrics.HTTPHandler()
 }
 
-// RegisterMetricCollector register a custom collector prefixed by the current module name.
+// RegisterMetricCollector registers a custom collector prefixed by the current module name.
 func (r *Reporter) RegisterMetricCollector(c prometheus.Collector) {
 	r.metrics.RegisterCollector(1, c)
+}
+
+// UnregisterMetricCollector unregisters a custom collector prefixed by the current module name.
+func (r *Reporter) UnregisterMetricCollector(c prometheus.Collector) {
+	r.metrics.UnregisterCollector(1, c)
 }

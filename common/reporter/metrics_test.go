@@ -190,6 +190,18 @@ func TestMetricCollector(t *testing.T) {
 		`metric2`: "30",
 	}
 	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Fatalf("subsetted metrics (-got, +want):\n%s", diff)
+		t.Fatalf("collected metrics (-got, +want):\n%s", diff)
+	}
+
+	r.UnregisterMetricCollector(m)
+	got = r.GetMetrics("akvorado_common_reporter_test_")
+	if diff := helpers.Diff(got, map[string]string{}); diff != "" {
+		t.Fatalf("collected metrics (-got, +want):\n%s", diff)
+	}
+
+	r.RegisterMetricCollector(m)
+	got = r.GetMetrics("akvorado_common_reporter_test_")
+	if diff := helpers.Diff(got, expected); diff != "" {
+		t.Fatalf("collected metrics (-got, +want):\n%s", diff)
 	}
 }

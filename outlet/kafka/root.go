@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/plugin/kprom"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/daemon"
@@ -31,7 +32,8 @@ type realComponent struct {
 	t      tomb.Tomb
 	config Configuration
 
-	kafkaOpts []kgo.Opt
+	kafkaOpts    []kgo.Opt
+	kafkaMetrics []*kprom.Metrics
 
 	workerMu          sync.Mutex
 	workers           []worker
@@ -57,6 +59,8 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		r:      r,
 		d:      &dependencies,
 		config: configuration,
+
+		kafkaMetrics: []*kprom.Metrics{},
 	}
 	c.initMetrics()
 

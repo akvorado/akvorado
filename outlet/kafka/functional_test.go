@@ -236,7 +236,7 @@ func TestWorkerScaling(t *testing.T) {
 	c.StartWorkers(func(_ int, ch chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
 		return func(context.Context, []byte) error {
 			c := msg.Add(1)
-			if c <= 5 {
+			if c <= 5 || c > 15 {
 				t.Logf("received message %d, request a scale increase", c)
 				ch <- ScaleIncrease
 			} else {
@@ -306,7 +306,7 @@ func TestWorkerScaling(t *testing.T) {
 	}
 
 	// Send 5 other messages, expect nothing change (already at minimum)
-	t.Log("Send 5 last messages")
+	t.Log("Send 5 more messages")
 	for range 5 {
 		record := &kgo.Record{
 			Topic: expectedTopicName,
@@ -323,6 +323,29 @@ func TestWorkerScaling(t *testing.T) {
 		"worker_decrease_total": "1",
 		"worker_increase_total": "2",
 		"workers":               "1",
+	}
+	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
+		t.Fatalf("Metrics (-got, +want):\n%s", diff)
+	}
+
+	// Send 5 more and expect a scale increase
+	t.Log("Send 5 last messages")
+	for range 5 {
+		record := &kgo.Record{
+			Topic: expectedTopicName,
+			Value: []byte("hello"),
+		}
+		if results := producer.ProduceSync(context.Background(), record); results.FirstErr() != nil {
+			t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
+		}
+	}
+	time.Sleep(100 * time.Millisecond)
+	t.Log("Check there are one new worker")
+	gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "worker")
+	expected = map[string]string{
+		"worker_decrease_total": "1",
+		"worker_increase_total": "3",
+		"workers":               "2",
 	}
 	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)

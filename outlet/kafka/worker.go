@@ -25,8 +25,10 @@ type worker struct {
 func (c *realComponent) newClient(i int) (*kgo.Client, error) {
 	logger := c.r.With().Int("worker", i).Logger()
 	logger.Info().Msg("starting new client")
-	kafkaMetrics := kprom.NewMetrics("", kprom.WithStaticLabel(prometheus.Labels{"worker": strconv.Itoa(i)}))
-	kafkaOpts := append(c.kafkaOpts, kgo.WithHooks(kafkaMetrics))
+
+	kmetrics := kprom.NewMetrics("", kprom.WithStaticLabel(prometheus.Labels{"worker": strconv.Itoa(i)}))
+	kafkaOpts := append(c.kafkaOpts, kgo.WithHooks(kmetrics))
+
 	client, err := kgo.NewClient(kafkaOpts...)
 	if err != nil {
 		logger.Err(err).
@@ -35,7 +37,9 @@ func (c *realComponent) newClient(i int) (*kgo.Client, error) {
 			Msg("unable to create new client")
 		return nil, fmt.Errorf("unable to create Kafka client: %w", err)
 	}
-	c.r.RegisterMetricCollector(kafkaMetrics)
+
+	c.kafkaMetrics = append(c.kafkaMetrics, kmetrics)
+	c.r.RegisterMetricCollector(kmetrics)
 	return client, nil
 }
 
@@ -118,9 +122,15 @@ func (c *realComponent) stopOneWorker() {
 		c.r.Info().Int("Workers", c.config.MinWorkers).Msg("minimum number of workers reached")
 		return
 	}
+
 	worker := c.workers[i]
 	worker.stop()
 	c.workers = c.workers[:i]
+
+	kmetrics := c.kafkaMetrics[i]
+	c.r.UnregisterMetricCollector(kmetrics)
+	c.kafkaMetrics = c.kafkaMetrics[:i]
+
 	c.metrics.workerDecrease.Inc()
 }
 

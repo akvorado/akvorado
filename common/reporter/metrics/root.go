@@ -108,3 +108,11 @@ func (m *Metrics) RegisterCollector(skipCallStack int, c prometheus.Collector) {
 	prefix := getPrefix(call.FunctionName())
 	prometheus.WrapRegistererWithPrefix(prefix, m.registry).MustRegister(c)
 }
+
+// UnregisterCollector unregister a previously registered custom collector. It should be called from the same module!
+func (m *Metrics) UnregisterCollector(skipCallStack int, c prometheus.Collector) {
+	callStack := stack.Callers()
+	call := callStack[1+skipCallStack] // Should be the same as above !
+	prefix := getPrefix(call.FunctionName())
+	prometheus.WrapRegistererWithPrefix(prefix, m.registry).Unregister(c)
+}
