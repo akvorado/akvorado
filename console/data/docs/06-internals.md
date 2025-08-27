@@ -103,9 +103,10 @@ happen before writing to ClickHouse.
 
 ## Kafka
 
-The Kafka component relies on [franz-go](https://github.com/twmb/franz-go). If a
-real broker is available under the DNS name `kafka` or at `localhost` on port
-9092, it is used for a quick functional test.
+The Kafka component relies on [franz-go](https://github.com/twmb/franz-go). It
+provides a `kfake` module that is used for most functional tests. Otherwise, if
+a broker is available under the DNS name `kafka` or at `localhost` on port 9092,
+it is used for a quick functional test.
 
 This library has not been benchmarked. Previously, we used
 [Sarama](https://github.com/IBM/sarama). However, the documentation is quite
@@ -274,3 +275,18 @@ that are spawned by the other components and waits for signals to terminate. If
 [go-archaius]: https://github.com/go-chassis/go-archaius
 [Harvester]: https://github.com/beatlabs/harvester
 [Flowhouse]: https://github.com/bio-routing/flowhouse
+
+## Dependency versions
+
+As a rule of thumb:
+
+- Go dependencies are updated weekly by Dependabot.
+- JavaScript dependencies are updated monthly by Dependabot.
+- External Docker images, like ClickHouse and Kafka, are updated to LTS versions
+  when available (like for ClickHouse) or to track a supported version (like
+  Kafka). There is `make docker-upgrade-versions` that updates `docker/versions.yml`.
+- Go is updated to the version present in Debian unstable (but sometimes a bit sooner)
+- NodeJS is updated to the version present in Debian unstable
+
+A good site to check if a version is still supported is
+[endoflife.date](https://endoflife.date).
