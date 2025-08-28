@@ -60,9 +60,40 @@ discovery.relabel "prometheus" {
     replacement   = "/metrics"
   }
 }
-
 prometheus.scrape "docker" {
   targets         = discovery.relabel.prometheus.output
+  forward_to      = [prometheus.remote_write.default.receiver]
+  scrape_interval = "30s"
+}
+
+prometheus.exporter.redis "docker" {
+  redis_addr = "redis:6379"
+}
+discovery.relabel "redis" {
+  targets = prometheus.exporter.redis.docker.targets
+  rule {
+    target_label = "job"
+    replacement  = "redis"
+  }
+}
+prometheus.scrape "redis" {
+  targets         = discovery.relabel.redis.output
+  forward_to      = [prometheus.remote_write.default.receiver]
+  scrape_interval = "30s"
+}
+
+prometheus.exporter.kafka "docker" {
+  kafka_uris = ["kafka:9092"]
+}
+discovery.relabel "kafka" {
+  targets = prometheus.exporter.kafka.docker.targets
+  rule {
+    target_label = "job"
+    replacement  = "kafka"
+  }
+}
+prometheus.scrape "kafka" {
+  targets         = discovery.relabel.kafka.output
   forward_to      = [prometheus.remote_write.default.receiver]
   scrape_interval = "30s"
 }

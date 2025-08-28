@@ -47,10 +47,7 @@ services:
     healthcheck:
       interval: 20s
       test: ["CMD",
-             "env", "-u", "KAFKA_OPTS",
              "/opt/kafka/bin/kafka-topics.sh", "--list", "--bootstrap-server", "kafka:9092"]
-    labels:
-      - metrics.port=9100
 
   kafka-ui:
     extends:

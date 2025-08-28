@@ -1,7 +1,6 @@
 ---
 volumes:
   akvorado-prometheus:
-  akvorado-jmx-agent:
 
 services:
   # Store metrics
@@ -20,6 +19,10 @@ services:
       # Those are not the defaults
       - --web.enable-remote-write-receiver
       - --web.external-url=/prometheus
+    healthcheck:
+      interval: 20s
+      test: ["CMD",
+             "promtool", "check", "healthy", "--url=http://127.0.0.1:9090/prometheus"]
     expose:
       - 9090/tcp
     labels:
@@ -37,7 +40,10 @@ services:
     volumes:
       - ./alloy/prometheus.alloy:/etc/alloy/prometheus.alloy
     depends_on:
-      - prometheus
+      prometheus:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
 
   # Node exporter for host metrics
   node-exporter:
@@ -81,21 +87,3 @@ services:
       - 8080/tcp
     labels:
       - metrics.port=8080
-
-  # Kafka monitoring
-  jmx-exporter-downloader:
-    image: alpine:latest
-    command: /usr/local/bin/jmx-exporter-download.sh
-    volumes:
-      - akvorado-jmx-agent:/opt/jmx-exporter
-      - ./jmx-exporter-download.sh:/usr/local/bin/jmx-exporter-download.sh
-  kafka:
-    depends_on:
-      jmx-exporter-downloader:
-        condition: service_completed_successfully
-    environment:
-      KAFKA_OPTS: >-
-        -javaagent:/opt/jmx-exporter/jmx_prometheus_javaagent.jar=9100:/etc/kafka/jmx-exporter.yaml
-    volumes:
-      - akvorado-jmx-agent:/opt/jmx-exporter
-      - ./kafka-jmx-exporter-config.yaml:/etc/kafka/jmx-exporter.yaml
