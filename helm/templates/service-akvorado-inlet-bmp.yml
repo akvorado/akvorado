@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: inlet-bmp
+  namespace: {{ .Values.environment }}-{{ .Values.namespace }}
+  labels:
+    app: inlet-bmp
+spec:
+  externalTrafficPolicy: Local
+  type: LoadBalancer
+  ports:
+    - name: bmp
+      protocol: TCP
+      port: 10179
+      targetPort: 10179
+  selector:
+    app: inlet
+  {{- if .Values.routers }}
+  loadBalancerSourceRanges:
+  {{- range .Values.routers }}
+  - {{ . | title }}
+  {{- end }}
+  {{- end }}
