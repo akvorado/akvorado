@@ -1,0 +1,29 @@
+---
+volumes:
+  akvorado-loki:
+
+services:
+  loki:
+    extends:
+      file: versions.yml
+      service: loki
+    restart: unless-stopped
+    volumes:
+      - akvorado-loki:/loki
+      - ./loki.yaml:/etc/loki/local-config.yaml
+    expose:
+      - 3100/tcp
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.loki.rule=PathPrefix(`/loki`)
+      - traefik.http.routers.loki.entrypoints=private
+      - metrics.port=3100
+
+  alloy:
+    extends:
+      file: docker-compose-alloy.yml
+      service: alloy
+    volumes:
+      - ./alloy/loki.alloy:/etc/alloy/loki.alloy
+    depends_on:
+      - loki

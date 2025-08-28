@@ -1,0 +1,8 @@
+discovery.docker "docker" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "30s"
+  filter {
+    name   = "label"
+    values = ["com.docker.compose.project=akvorado"]
+  }
+}

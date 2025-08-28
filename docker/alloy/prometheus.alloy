@@ -4,37 +4,29 @@ prometheus.remote_write "default" {
   }
 }
 
-// Docker discovery. We match entries with metrics.port as the port (it needs to
+// Docker relabeling. We match entries with metrics.port as the port (it needs to
 // be exposed) and use metrics.path if defined. The job name is the service name
 // minus the numbered suffix.
-discovery.docker "docker" {
-  host             = "unix:///var/run/docker.sock"
-  refresh_interval = "30s"
-  filter {
-    name   = "label"
-    values = ["com.docker.compose.project=akvorado"]
-  }
-}
-discovery.relabel "docker" {
+discovery.relabel "prometheus" {
   targets = discovery.docker.docker.targets
 
   // Normalize the case where network is host.
   rule {
     source_labels = ["__meta_docker_container_label_metrics_port", "__meta_docker_network_name"]
-    regex         = `^(.+);host$`
+    regex         = `(.+);host`
     target_label  = "__address__"
     replacement   = "host.docker.internal:$1"
   }
   rule {
     source_labels = ["__meta_docker_container_label_metrics_port", "__meta_docker_network_name"]
-    regex         = `^(.+);host$`
+    regex         = `(.+);host`
     target_label  = "__meta_docker_port_private"
     replacement   = "$1"
   }
   // Then keep if we metrics.port matches private port
   rule {
     source_labels = ["__meta_docker_container_label_metrics_port"]
-    regex         = `^.+`
+    regex         = `.+`
     action        = "keep"
   }
   rule {
@@ -46,12 +38,12 @@ discovery.relabel "docker" {
   // Set job and instance name
   rule {
     source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
-    regex         = `^(.+)(?:-\d+)?$`
+    regex         = `(.+)(?:-\d+)?`
     target_label  = "job"
   }
   rule {
     source_labels = ["__address__"]
-    regex         = `^(.+):\d+$`
+    regex         = `(.+):\d+`
     target_label  = "instance"
   }
 
@@ -68,8 +60,9 @@ discovery.relabel "docker" {
     replacement   = "/metrics"
   }
 }
+
 prometheus.scrape "docker" {
-  targets         = discovery.relabel.docker.output
+  targets         = discovery.relabel.prometheus.output
   forward_to      = [prometheus.remote_write.default.receiver]
   scrape_interval = "30s"
 }

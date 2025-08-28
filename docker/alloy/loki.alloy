@@ -1,0 +1,65 @@
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/loki/api/v1/push"
+  }
+}
+
+discovery.relabel "loki" {
+  targets = discovery.docker.docker.targets
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    regex         = `(.+)(?:-\d+)?`
+    target_label  = "service_name"
+  }
+  rule {
+    source_labels = ["__address__"]
+    regex         = `(.+):\d+`
+    target_label  = "instance"
+  }
+}
+
+discovery.relabel "akvorado" {
+  targets = discovery.relabel.loki.output
+  rule {
+    source_labels = ["service_name"]
+    regex         = "akvorado-.*"
+    action        = "keep"
+  }
+}
+loki.source.docker "akvorado" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.relabel.akvorado.output
+  forward_to    = [loki.process.akvorado.receiver]
+}
+loki.process "akvorado" {
+  forward_to = [loki.write.default.receiver]
+  stage.json {
+    expressions = {
+      level   = "level",
+      time    = "time",
+      caller  = "caller",
+      error   = "error",
+      module  = "module",
+      message = "message",
+    }
+  }
+  stage.labels {
+    values = {
+      level  = "",
+      module = "",
+    }
+  }
+  stage.structured_metadata {
+    values = {
+      caller = "",
+      error  = "",
+    }
+  }
+  stage.timestamp {
+    source = "time"
+    format = "RFC3339"
+  }
+  stage.output {
+    source = "message"
+  }
+}

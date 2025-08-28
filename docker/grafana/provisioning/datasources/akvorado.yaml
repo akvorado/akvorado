@@ -6,3 +6,8 @@ datasources:
     access: proxy
     url: http://prometheus:9090/prometheus
     uid: PBFA97CFB590B2093
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100/loki
+    uid: QUU1WAEQUO0NAF6YZ

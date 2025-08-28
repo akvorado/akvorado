@@ -28,7 +28,8 @@ the ownership of the Prometheus volume:
 - 🩹 *outlet*: fix crash when scaling down and up the Kafka workers
 - 🩹 *outlet*: move gRPC metrics for BioRIS provider in the routing namespace
 - 🌱 *docker*: enforce bridge name
-- 🌱 *docker*: add cAdvisor to the monitoring stack
+- 🌱 *docker*: add Loki to the observability stack
+- 🌱 *docker*: add cAdvisor to the observability stack
 - 🌱 *docker*: update Prometheus to 3.5.0
 - 🌱 *docker*: update node-exporter to 1.9.1
 - 🌱 *docker*: stop spawning demo exporters by default

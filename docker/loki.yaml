@@ -1,0 +1,36 @@
+---
+auth_enabled: false
+
+server:
+  http_path_prefix: /loki
+  http_listen_address: 0.0.0.0
+  http_listen_port: 3100
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+  - from: 2020-10-24
+    store: tsdb
+    object_store: filesystem
+    schema: v13
+    index:
+      prefix: index_
+      period: 24h
+
+limits_config:
+  discover_log_levels: false
+  allow_structured_metadata: true
+
+analytics:
+  reporting_enabled: false
