@@ -15,6 +15,7 @@ import (
 
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"github.com/twmb/franz-go/pkg/kmsg"
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
@@ -346,6 +347,144 @@ func TestWorkerScaling(t *testing.T) {
 		"worker_decrease_total": "1",
 		"worker_increase_total": "3",
 		"workers":               "2",
+	}
+	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
+		t.Fatalf("Metrics (-got, +want):\n%s", diff)
+	}
+}
+
+func TestKafkaLagMetric(t *testing.T) {
+	topicName := fmt.Sprintf("test-topic2-%d", rand.Int())
+	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, pb.Version)
+
+	cluster, err := kfake.NewCluster(
+		kfake.NumBrokers(1),
+		kfake.SeedTopics(16, expectedTopicName),
+	)
+	if err != nil {
+		t.Fatalf("NewCluster() error: %v", err)
+	}
+	defer cluster.Close()
+
+	// Watch for autocommits to avoid relying on time
+	clusterCommitNotification := make(chan interface{})
+	cluster.Control(func(request kmsg.Request) (kmsg.Response, error, bool) {
+		switch k := kmsg.Key(request.Key()); k {
+		case kmsg.OffsetCommit:
+			clusterCommitNotification <- nil
+		}
+		cluster.KeepControl()
+		return nil, nil, false
+	})
+
+	// Create a producer client
+	producerConfiguration := kafka.DefaultConfiguration()
+	producerConfiguration.Brokers = cluster.ListenAddrs()
+	producerOpts, err := kafka.NewConfig(reporter.NewMock(t), producerConfiguration)
+	if err != nil {
+		t.Fatalf("NewConfig() error:\n%+v", err)
+	}
+	producer, err := kgo.NewClient(producerOpts...)
+	if err != nil {
+		t.Fatalf("NewClient() error:\n%+v", err)
+	}
+	defer producer.Close()
+
+	// Start the component
+	configuration := DefaultConfiguration()
+	configuration.Topic = topicName
+	configuration.Brokers = cluster.ListenAddrs()
+	configuration.FetchMaxWaitTime = 10 * time.Millisecond
+	configuration.ConsumerGroup = fmt.Sprintf("outlet-%d", rand.Int())
+	r := reporter.NewMock(t)
+	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	helpers.StartStop(t, c)
+
+	// Start a worker with a callback that blocks on a channel after receiving a message
+	workerBlockReceive := make(chan interface{})
+	defer close(workerBlockReceive)
+	c.StartWorkers(func(_ int, _ chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
+		return func(context.Context, []byte) error {
+			<-workerBlockReceive
+			return nil
+		}, func() {}
+	})
+
+	// No messages yet, no lag
+	time.Sleep(10 * time.Millisecond)
+	gotMetrics := r.GetMetrics("akvorado_outlet_kafka_", "consumergroup", "workers")
+	expected := map[string]string{
+		"consumergroup_lag_messages": "0",
+		"workers":                    "1",
+	}
+	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
+		t.Fatalf("Metrics (-got, +want):\n%s", diff)
+	}
+
+	// Send a single message, allow it to be processed
+	record := &kgo.Record{
+		Topic: expectedTopicName,
+		Value: []byte("hello"),
+	}
+	if results := producer.ProduceSync(context.Background(), record); results.FirstErr() != nil {
+		t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
+	}
+	workerBlockReceive <- nil
+
+	// Wait for autocommit
+	select {
+	case <-time.After(2 * time.Second):
+		t.Fatal("Timed out waiting for autocommit")
+	case <-clusterCommitNotification:
+	}
+
+	// The message was processed, there's no lag
+	gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "consumergroup", "received_messages_total")
+	expected = map[string]string{
+		"consumergroup_lag_messages":          "0",
+		`received_messages_total{worker="0"}`: "1",
+	}
+	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
+		t.Fatalf("Metrics (-got, +want):\n%s", diff)
+	}
+
+	// Send a few more messages without allowing the worker to process them, expect the consumer lag to rise
+	for range 5 {
+		record := &kgo.Record{
+			Topic: expectedTopicName,
+			Value: []byte("hello"),
+		}
+		if results := producer.ProduceSync(context.Background(), record); results.FirstErr() != nil {
+			t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
+		}
+	}
+
+	time.Sleep(20 * time.Millisecond)
+	gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "consumergroup", "received_messages_total")
+	expected = map[string]string{
+		"consumergroup_lag_messages":          "5",
+		`received_messages_total{worker="0"}`: "2", // The consumer only blocks after incrementing the message counter
+	}
+	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
+		t.Fatalf("Metrics (-got, +want):\n%s", diff)
+	}
+
+	// Let the worker process all 5 messages (and wait for autocommit), expect the lag to drop back to zero
+	for range 5 {
+		workerBlockReceive <- nil
+	}
+	select {
+	case <-time.After(2 * time.Second):
+		t.Fatal("Timed out waiting for autocommit")
+	case <-clusterCommitNotification:
+	}
+	gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "consumergroup", "received_messages_total")
+	expected = map[string]string{
+		"consumergroup_lag_messages":          "0",
+		`received_messages_total{worker="0"}`: "6",
 	}
 	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
