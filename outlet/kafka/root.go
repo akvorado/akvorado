@@ -6,9 +6,11 @@ package kafka
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/twmb/franz-go/pkg/kadm"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/plugin/kprom"
 	"gopkg.in/tomb.v2"
@@ -33,6 +35,8 @@ type realComponent struct {
 	config Configuration
 
 	kafkaOpts    []kgo.Opt
+	kadmClient   *kadm.Client
+	kadmClientMu sync.Mutex
 	kafkaMetrics []*kprom.Metrics
 
 	workerMu          sync.Mutex
@@ -87,6 +91,24 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 // Start starts the Kafka component.
 func (c *realComponent) Start() error {
 	c.r.Info().Msg("starting Kafka component")
+
+	// Create an admin Kafka client
+	kafkaOpts, err := kafka.NewConfig(c.r, c.config.Configuration)
+	if err != nil {
+		return err
+	}
+
+	kadmClient, err := kadm.NewOptClient(kafkaOpts...)
+	if err != nil {
+		c.r.Err(err).
+			Str("brokers", strings.Join(c.config.Brokers, ",")).
+			Msg("unable to create Kafka admin client")
+		return fmt.Errorf("unable to create Kafka admin client: %w", err)
+	}
+	c.kadmClientMu.Lock()
+	defer c.kadmClientMu.Unlock()
+	c.kadmClient = kadmClient
+
 	return nil
 }
 
@@ -106,6 +128,12 @@ func (c *realComponent) StartWorkers(workerBuilder WorkerBuilderFunc) error {
 func (c *realComponent) Stop() error {
 	defer func() {
 		c.stopAllWorkers()
+		c.kadmClientMu.Lock()
+		defer c.kadmClientMu.Unlock()
+		if c.kadmClient != nil {
+			c.kadmClient.Close()
+			c.kadmClient = nil
+		}
 		c.r.Info().Msg("Kafka component stopped")
 	}()
 	c.r.Info().Msg("stopping Kafka component")
