@@ -63,3 +63,82 @@ loki.process "akvorado" {
     source = "message"
   }
 }
+
+discovery.relabel "kafka" {
+  targets = discovery.relabel.loki.output
+  rule {
+    source_labels = ["service_name"]
+    regex         = "kafka"
+    action        = "keep"
+  }
+}
+loki.source.docker "kafka" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.relabel.kafka.output
+  forward_to    = [loki.process.kafka.receiver]
+}
+loki.process "kafka" {
+  forward_to = [loki.write.default.receiver]
+  stage.multiline {
+    firstline     = `^\[\d{4}-\d{2}-\d{2} `
+    max_wait_time = "3s"
+    max_lines     = 1000
+  }
+  stage.regex {
+    expression = `^\[(?P<timestamp>[^\]]+)\]\s+(?P<level>\w+)\s+(?P<message>(?s:.*))$`
+  }
+  stage.timestamp {
+    source = "timestamp"
+    format = "2006-01-02 15:04:05,000"
+  }
+  stage.labels {
+    values = {
+      level = "",
+    }
+  }
+  stage.output {
+    source = "message"
+  }
+}
+
+discovery.relabel "redis" {
+  targets = discovery.relabel.loki.output
+  rule {
+    source_labels = ["service_name"]
+    regex         = "redis"
+    action        = "keep"
+  }
+}
+loki.source.docker "redis" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.relabel.redis.output
+  forward_to    = [loki.process.redis.receiver]
+}
+loki.process "redis" {
+  forward_to = [loki.write.default.receiver]
+  // 1:C 28 Aug 2025 04:08:22.843 # Warning: no config file specified
+  stage.regex {
+    expression = `^(?P<pid>\d+):(?P<role>[XCSM])\s+(?P<timestamp>\d+\s+\w+\s+\d{4}\s+\d{2}:\d{2}:\d{2}\.\d{3})\s+(?P<level>[*#.-])\s+(?P<message>.*)$`
+  }
+  stage.template {
+    source   = "role_name"
+    template = `{{ if eq .role "X" }}sentinel{{ else if eq .role "C" }}RDB{{ else if eq .role "S" }}slave{{ else if eq .role "M" }}master{{ end }}`
+  }
+  stage.template {
+    source   = "level_name"
+    template = `{{ if eq .level "." }}debug{{ else if eq .level "-" }}info{{ else if eq .level "*" }}notice{{ else if eq .level "#" }}warning{{ end }}`
+  }
+  stage.labels {
+    values = {
+      level = "level_name",
+      role  = "role_name",
+    }
+  }
+  stage.timestamp {
+    source = "timestamp"
+    format = "2 Jan 2006 15:04:05.000"
+  }
+  stage.output {
+    source = "message"
+  }
+}
