@@ -1,0 +1,393 @@
+---
+# docker compose -f docker/docker-compose-dev.yml run --quiet --rm vector test
+tests:
+  - name: "unknown application"
+    inputs:
+      - insert_at: base
+        type: log
+        log_fields:
+          container_id: b8ee56469
+          container_name: akvorado-something-unknown-1
+          label."com.docker.compose.service": something-unknown
+          message: >-
+            Hello world!
+    outputs:
+      - extract_from: combine
+        conditions:
+          - type: vrl
+            source: |-
+              assert_eq!(.message, "Hello world!")
+              assert!(is_timestamp(.timestamp))
+              assert_eq!(._labels,
+                {"service_name": "something-unknown",
+                 "instance": "akvorado-something-unknown-1"})
+              assert_eq!(._metadata, null)
+
+  - name: "akvorado logs"
+    inputs:
+      - insert_at: base
+        type: log
+        log_fields:
+          container_id: b8ee56469
+          container_name: akvorado-akvorado-conntrack-fixer-1
+          label."com.docker.compose.service": akvorado-conntrack-fixer-1
+          message: >-
+            {"level":"info",
+             "version":"v2.0.0-beta.4-66-g0ad0128fc6cd-dirty",
+             "time":"2025-08-29T15:01:02Z",
+             "caller":"akvorado/cmd/components.go:38",
+             "module":"akvorado/cmd",
+             "message":"akvorado has started"}
+    outputs:
+      - extract_from: combine
+        conditions:
+          - type: vrl
+            source: |-
+              assert_eq!(.message, "akvorado has started")
+              assert_eq!(.timestamp, t'2025-08-29T15:01:02Z')
+              assert_eq!(._labels,
+                {"service_name": "akvorado-conntrack-fixer",
+                 "instance": "akvorado-akvorado-conntrack-fixer-1",
+                 "level": "info",
+                 "module": "akvorado/cmd"})
+              assert_eq!(._metadata,
+                {"caller": "akvorado/cmd/components.go:38",
+                 "version": "v2.0.0-beta.4-66-g0ad0128fc6cd-dirty"})
+
+  - name: "kafka logs"
+    inputs:
+      - insert_at: base
+        type: log
+        log_fields:
+          container_id: b8ee56469
+          container_name: akvorado-kafka-1
+          label."com.docker.compose.service": kafka
+          message: |-
+            [2025-08-29 15:15:48,641] INFO [BrokerServer id=1] Waiting for all of the authorizer futures to be completed (kafka.server.BrokerServer)
+    outputs:
+      - extract_from: combine
+        conditions:
+          - type: vrl
+            source: |-
+              assert_eq!(.message, "[BrokerServer id=1] Waiting for all of the authorizer futures to be completed (kafka.server.BrokerServer)")
+              assert_eq!(.timestamp, t'2025-08-29T15:15:48.641Z')
+              assert_eq!(._labels,
+                {"service_name": "kafka",
+                 "instance": "akvorado-kafka-1",
+                 "level": "info"})
+              assert_eq!(._metadata, null)
+  - name: "kafka logs multiline"
+    inputs:
+      - insert_at: base
+        type: log
+        log_fields:
+          container_id: b8ee56469
+          container_name: akvorado-kafka-1
+          label."com.docker.compose.service": kafka
+          message: |-
+            [2025-08-29 15:15:48,605] INFO KafkaConfig values:
+      - insert_at: base
+        type: log
+        log_fields:
+          container_id: b8ee56469
+          container_name: akvorado-kafka-1
+          label."com.docker.compose.service": kafka
+          message: |-
+            add.partitions.to.txn.retry.backoff.max.ms = 100
+      - insert_at: base
+        type: log
+        log_fields:
+          container_id: b8ee56469
+          container_name: akvorado-kafka-1
+          label."com.docker.compose.service": kafka
+          message: |-
+            add.partitions.to.txn.retry.backoff.ms = 20
+    outputs:
+      - extract_from: combine
+        conditions:
+          - type: vrl
+            source: |-
+              assert_eq!(.message, "KafkaConfig values:\n\
+                add.partitions.to.txn.retry.backoff.max.ms = 100\n\
+                add.partitions.to.txn.retry.backoff.ms = 20")
+              assert_eq!(.timestamp, t'2025-08-29T15:15:48.605Z')
+              assert_eq!(._labels,
+                {"service_name": "kafka",
+                 "instance": "akvorado-kafka-1",
+                 "level": "info"})
+              assert_eq!(._metadata, null)
+
+  - name: "redis logs"
+    inputs:
+      - insert_at: base
+        type: log
+        log_fields:
+          container_id: b8ee56469
+          container_name: akvorado-redis-1
+          label."com.docker.compose.service": redis
+          message: |-
+            1:C 28 Aug 2025 04:08:22.843 # Warning: no config file specified
+    outputs:
+      - extract_from: combine
+        conditions:
+          - type: vrl
+            source: |-
+              assert_eq!(.message, "Warning: no config file specified")
+              assert_eq!(.timestamp, t'2025-08-28T04:08:22.843Z')
+              assert_eq!(._labels,
+                {"service_name": "redis",
+                 "instance": "akvorado-redis-1",
+                 "level": "warning",
+                 "role": "RDB"})
+              assert_eq!(._metadata, {"pid": 1})
+
+  - name: "alloy logs"
+    inputs:
+      - insert_at: base
+        type: log
+        log_fields:
+          container_id: b8ee56469
+          container_name: akvorado-alloy-1
+          label."com.docker.compose.service": alloy
+          message: >-
+            ts=2025-08-28T09:30:45.497277819Z
+            level=info
+            msg="Scraped metadata watcher stopped"
+            component_path=/
+            component_id=prometheus.remote_write.default
+            subcomponent=rw
+            remote_name=0ffafb
+            url=http://prometheus:9090/prometheus/api/v1/write
+    outputs:
+      - extract_from: combine
+        conditions:
+          - type: vrl
+            source: |-
+              assert_eq!(.message, "Scraped metadata watcher stopped")
+              assert_eq!(.timestamp, t'2025-08-28T09:30:45.497277819Z')
+              assert_eq!(._labels,
+                {"service_name": "alloy",
+                 "instance": "akvorado-alloy-1",
+                 "level": "info"})
+              assert_eq!(._metadata,
+                {"component_path": "/",
+                 "component_id": "prometheus.remote_write.default",
+                 "subcomponent": "rw",
+                 "remote_name": "0ffafb",
+                 "url": "http://prometheus:9090/prometheus/api/v1/write"})
+
+  - name: "loki logs"
+    inputs:
+      - insert_at: base
+        type: log
+        log_fields:
+          container_id: b8ee56469
+          container_name: akvorado-loki-1
+          label."com.docker.compose.service": loki
+          message: >-
+            ts=2025-08-29T05:07:45.543770684Z
+            caller=spanlogger.go:116
+            middleware=QueryShard.astMapperware
+            org_id=fake
+            traceID=0dd74c5aaeb81d32
+            user=fake
+            level=warn
+            msg="failed mapping AST"
+            err="context canceled"
+            query="{service_name=\"alloy\"}"
+    outputs:
+      - extract_from: combine
+        conditions:
+          - type: vrl
+            source: |-
+              assert_eq!(.message, "failed mapping AST: context canceled")
+              assert_eq!(.timestamp, t'2025-08-29T05:07:45.543770684Z')
+              assert_eq!(._labels,
+                {"service_name": "loki",
+                 "instance": "akvorado-loki-1",
+                 "level": "warning"})
+              assert_eq!(._metadata,
+                {"caller": "spanlogger.go:116",
+                 "middleware": "QueryShard.astMapperware",
+                 "org_id": "fake",
+                 "traceID": "0dd74c5aaeb81d32",
+                 "user": "fake",
+                 "query": "{service_name=\"alloy\"}"})
+
+  - name: "grafana logs"
+    inputs:
+      - insert_at: base
+        type: log
+        log_fields:
+          container_id: b8ee56469
+          container_name: akvorado-grafana-1
+          label."com.docker.compose.service": grafana
+          message: >-
+            logger=provisioning.alerting
+            t=2025-08-29T21:05:35.215005098Z
+            level=error
+            msg="can't read alerting provisioning files from directory"
+            path=/etc/grafana/provisioning/alerting
+            error="open /etc/grafana/provisioning/alerting: no such file or directory"
+    outputs:
+      - extract_from: combine
+        conditions:
+          - type: vrl
+            source: |-
+              assert_eq!(.message, "can't read alerting provisioning files from directory: \
+                open /etc/grafana/provisioning/alerting: no such file or directory")
+              assert_eq!(.timestamp, t'2025-08-29T21:05:35.215005098Z')
+              assert_eq!(._labels,
+                {"service_name": "grafana",
+                 "instance": "akvorado-grafana-1",
+                 "level": "error"})
+              assert_eq!(._metadata,
+                {"logger": "provisioning.alerting",
+                 "path": "/etc/grafana/provisioning/alerting"})
+
+  - name: "prometheus logs"
+    inputs:
+      - insert_at: base
+        type: log
+        log_fields:
+          container_id: b8ee56469
+          container_name: akvorado-prometheus-1
+          label."com.docker.compose.service": prometheus
+          message: >-
+            time=2025-08-29T21:34:41.191Z
+            level=INFO
+            source=manager.go:540
+            msg="Stopping notification manager..."
+            component=notifier
+    outputs:
+      - extract_from: combine
+        conditions:
+          - type: vrl
+            source: |-
+              assert_eq!(.message, "Stopping notification manager...")
+              assert_eq!(.timestamp, t'2025-08-29T21:34:41.191Z')
+              assert_eq!(._labels,
+                {"service_name": "prometheus",
+                 "instance": "akvorado-prometheus-1",
+                 "level": "info"})
+              assert_eq!(._metadata,
+                {"source": "manager.go:540",
+                 "component": "notifier"})
+
+  - name: "node-exporter logs"
+    inputs:
+      - insert_at: base
+        type: log
+        log_fields:
+          container_id: b8ee56469
+          container_name: akvorado-node-exporter-1
+          label."com.docker.compose.service": node-exporter
+          message: >-
+            time=2025-08-29T21:37:28.398Z
+            level=ERROR
+            source=diskstats_linux.go:264
+            msg="Failed to open directory, disabling udev device properties"
+            collector=diskstats
+            path=/run/udev/data
+    outputs:
+      - extract_from: combine
+        conditions:
+          - type: vrl
+            source: |-
+              assert_eq!(.message, "Failed to open directory, disabling udev device properties")
+              assert_eq!(.timestamp, t'2025-08-29T21:37:28.398Z')
+              assert_eq!(._labels,
+                {"service_name": "node-exporter",
+                 "instance": "akvorado-node-exporter-1",
+                 "level": "error"})
+              assert_eq!(._metadata,
+                {"source": "diskstats_linux.go:264",
+                 "collector": "diskstats",
+                 "path": "/run/udev/data"})
+
+  - name: cadvidsor logs"
+    inputs:
+      - insert_at: base
+        type: log
+        log_fields:
+          container_id: b8ee56469
+          container_name: akvorado-cadvisor-1
+          label."com.docker.compose.service": cadvisor
+          message: >-
+            I0829 21:38:18.192196       1 factory.go:352] Registering Docker factory
+    outputs:
+      - extract_from: combine
+        conditions:
+          - type: vrl
+            source: |-
+              assert_eq!(.message, "Registering Docker factory")
+              assert!(is_timestamp(.timestamp))
+              assert_eq!(._labels,
+                {"service_name": "cadvisor",
+                 "instance": "akvorado-cadvisor-1",
+                 "level": "info"})
+              assert_eq!(._metadata, {"pid": 1, "caller": "factory.go:352"})
+
+  - name: "traefik access logs"
+    inputs:
+      - insert_at: base
+        type: log
+        log_fields:
+          container_id: b8ee56469
+          container_name: akvorado-traefik-1
+          label."com.docker.compose.service": traefik
+          message: >-
+            240.0.2.1
+            -
+            -
+            [29/Aug/2025:20:40:35 +0000]
+            "GET /api/v0/console/widget/flow-rate?11334 HTTP/1.0"
+            200
+            46
+            "-"
+            "-"
+            1596365
+            "akvorado-console@docker"
+            "http://240.0.2.10:8080"
+            3ms
+    outputs:
+      - extract_from: combine
+        conditions:
+          - type: vrl
+            source: |-
+              assert_eq!(.message, "GET /api/v0/console/widget/flow-rate?11334 HTTP/1.0")
+              assert_eq!(.timestamp, t'2025-08-29T20:40:35Z')
+              assert_eq!(._labels,
+                {"service_name": "traefik",
+                 "instance": "akvorado-traefik-1",
+                 "status": 200})
+              assert_eq!(._metadata,
+                {"backend_url": "http://240.0.2.10:8080",
+                 "body_bytes_sent": 46,
+                 "duration_ms": 3,
+                 "frontend_name": "akvorado-console@docker",
+                 "remote_addr": "240.0.2.1",
+                 "request_count": 1596365})
+  - name: "traefik logs"
+    inputs:
+      - insert_at: base
+        type: log
+        log_fields:
+          container_id: b8ee56469
+          container_name: akvorado-traefik-1
+          label."com.docker.compose.service": traefik
+          message: >-
+            2025-08-29T19:17:05Z ERR error="accept tcp [::]:8081: use of closed network connection" entryPointName=public
+    outputs:
+      - extract_from: combine
+        conditions:
+          - type: vrl
+            source: |-
+              assert_eq!(.message, "accept tcp [::]:8081: use of closed network connection")
+              assert_eq!(.timestamp, t'2025-08-29T19:17:05Z')
+              assert_eq!(._labels,
+                {"service_name": "traefik",
+                 "instance": "akvorado-traefik-1",
+                 "level": "error"})
+              assert_eq!(._metadata,
+                {"entryPointName": "public"})

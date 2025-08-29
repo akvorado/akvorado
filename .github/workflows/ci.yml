@@ -56,6 +56,8 @@ jobs:
         run: make test-race
       - name: JS tests
         run: make test-js
+      - name: Vector tests
+        run: docker compose -f docker/docker-compose-dev.yml run --quiet --rm vector test
       - name: Run coverage tests
         run: make test-coverage
       - name: Upload coverage results

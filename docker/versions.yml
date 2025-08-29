@@ -36,6 +36,8 @@ services:
     image: ghcr.io/google/cadvisor:v0.53.0 # v\d+\.\d+\.\d+
   kafka-ui:
     image: ghcr.io/kafbat/kafka-ui:v1.3.0 # v\d+\.\d+\.\d+
+  vector:
+    image: timberio/vector:0.49.0-alpine # \d+\.\d+\.\d+-alpine
 
   # for tests
   srlinux:

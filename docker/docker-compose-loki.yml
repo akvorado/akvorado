@@ -10,7 +10,7 @@ services:
     restart: unless-stopped
     volumes:
       - akvorado-loki:/loki
-      - ./loki.yaml:/etc/loki/local-config.yaml
+      - ./loki.yaml:/etc/loki/local-config.yaml:ro
     expose:
       - 3100/tcp
     labels:
@@ -19,11 +19,24 @@ services:
       - traefik.http.routers.loki.entrypoints=private
       - metrics.port=3100
 
-  alloy:
+  vector:
     extends:
-      file: docker-compose-alloy.yml
-      service: alloy
+      file: versions.yml
+      service: vector
+    restart: unless-stopped
+    user: root                  # for access to /var/run/docker.sock
     volumes:
-      - ./alloy/loki.alloy:/etc/alloy/loki.alloy
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./vector.yaml:/etc/vector/vector.yaml:ro
     depends_on:
       - loki
+    healthcheck:
+      interval: 20s
+      test: ["CMD",
+             "wget", "-T", "1", "--spider", "--url=http://127.0.0.1:8686/health"]
+    expose:
+      - 9598 # metrics
+    environment:
+      VECTOR_CONFIG_DIR: /etc/vector
+    labels:
+      - metrics.port=9598

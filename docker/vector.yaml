@@ -1,0 +1,256 @@
+---
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
+sources:
+  internal_metrics:
+    type: internal_metrics
+    scrape_interval_secs: 10
+  internal_logs:
+    type: internal_logs
+  docker:
+    type: docker_logs
+    include_labels:
+      - "com.docker.compose.project=akvorado"
+
+transforms:
+  base:
+    type: remap
+    inputs:
+      - docker
+    source: |
+      .service_name = replace(string!(.label."com.docker.compose.service"), r'(.+?)(?:-\d+)?', "$$1")
+      ._labels.service_name = .service_name
+      ._labels.instance = .container_name
+  routes:
+    type: route
+    inputs:
+      - base
+    route:
+      akvorado: 'starts_with(string!(.service_name), "akvorado-")'
+      kafka: '.service_name == "kafka"'
+      redis: '.service_name == "redis"'
+      alloy: '.service_name == "alloy"'
+      loki: '.service_name == "loki"'
+      grafana: '.service_name == "grafana"'
+      prometheus: '.service_name == "prometheus"'
+      nodeexporter: '.service_name == "node-exporter"'
+      cadvisor: '.service_name == "cadvisor"'
+      traefik: '.service_name == "traefik"'
+
+  from_akvorado:
+    type: remap
+    inputs:
+      - routes.akvorado
+    source: |
+      parsed = parse_json!(.message)
+      .timestamp = parse_timestamp!(parsed.time, format: "%+")
+      .message = parsed.message
+      ._labels.level = parsed.level
+      ._labels.module = parsed.module
+      ._metadata = parsed
+      del(._metadata.message)
+      del(._metadata.time)
+      del(._metadata.level)
+      del(._metadata.module)
+
+  from_kafka_multiline:
+    type: reduce
+    inputs:
+      - routes.kafka
+    group_by:
+      - .container_id
+    starts_when: |
+      match(string!(.message), r'^\[\d{4}-\d{2}-\d{2} ')
+    expire_after_ms: 1000
+    merge_strategies:
+      message: concat_newline
+  from_kafka:
+    type: remap
+    inputs:
+      - from_kafka_multiline
+    source: |
+      parsed = parse_regex!(string!(.message),
+        r'^\[(?P<timestamp>[^\]]+)\]\s+(?P<level>\w+)\s+(?P<message>(?s:.*))$$')
+      .timestamp = parse_timestamp!(parsed.timestamp, format: "%Y-%m-%d %H:%M:%S,%3f")
+      .message = parsed.message
+      ._labels.level = parsed.level
+
+  from_redis:
+    type: remap
+    inputs:
+      - routes.redis
+    source: |
+      parsed = parse_regex!(string!(.message), r'(?x)
+        ^(?P<pid>\d+):
+         (?P<role>[XCSM])\s+
+         (?P<timestamp>\d+\s+\w+\s+\d{4}\s+\d{2}:\d{2}:\d{2}\.\d{3})\s+
+         (?P<level>[*\#.-])\s+
+         (?P<message>.*)$$')
+      .timestamp = parse_timestamp!(parsed.timestamp, format: "%e %b %Y %H:%M:%S%.3f")
+      .message = parsed.message
+      ._labels.role = if parsed.role == "X" { "sentinel" } else if parsed.role == "C" { "RDB" } else if parsed.role == "S" { "slave" } else { "master" }
+      ._labels.level = if parsed.level == "." { "debug" } else if parsed.level == "-" { "info" } else if parsed.level == "*" { "notice" } else { "warning" }
+      ._metadata.pid = to_int!(parsed.pid)
+
+  from_logfmt:
+    type: remap
+    inputs:
+      - routes.alloy
+      - routes.loki
+      - routes.grafana
+      - routes.prometheus
+      - routes.nodeexporter
+    source: |
+      parsed = parse_logfmt!(.message)
+      .timestamp = parse_timestamp!(parsed.ts || parsed.t || parsed.time, format: "%+")
+      .message = join!(unique(compact(
+        [parsed.msg || parsed.message || parsed.error || parsed.err,
+         parsed.err || parsed.error], recursive: false)), separator: ": ")
+      ._labels.level = parsed.level
+      ._metadata = parsed
+      del(._metadata.ts)
+      del(._metadata.t)
+      del(._metadata.time)
+      del(._metadata.msg)
+      del(._metadata.message)
+      del(._metadata.level)
+      del(._metadata.err)
+      del(._metadata.error)
+
+  from_vector:
+    type: remap
+    inputs:
+      - internal_logs
+    source: |
+      ._labels.service_name = "vector"
+      ._labels.instance = .host
+      ._metadata = .metadata
+      ._metadata.pid = .pid
+
+  from_cadvisor:
+    type: remap
+    inputs:
+      - routes.cadvisor
+    source: |
+      parsed = parse_regex!(string!(.message), r'(?x)
+        ^(?P<level>[IWEF])
+         (?P<timestamp>\d{4}\s\d{2}:\d{2}:\d{2}\.\d+)\s+
+         (?P<pid>\d+)\s+
+         (?P<caller>[^]]+)\]\s+
+         (?P<message>.*)$$')
+      # Timestamp is missing the year
+      # .timestamp = parse_timestamp!(parsed.timestamp, format: "%m%d %H:%M:%S%.6f")
+      .message = parsed.message
+      ._labels.level = if parsed.level == "I" { "info" } else if parsed.level == "W" { "warning" } else if parsed.level == "E" { "error" } else { "fatal" }
+      ._metadata.pid = to_int!(parsed.pid)
+      ._metadata.caller = parsed.caller
+
+  from_traefik:
+    type: remap
+    inputs:
+      - routes.traefik
+    source: |
+      parsed, err = parse_regex(.message, r'(?x)
+        ^(?P<remote_addr>\S+)\s
+        -\s
+        (?P<remote_user>\S+)\s
+        \[(?P<timestamp>[^\]]+)\]\s
+        "(?P<method>\S+)\s(?P<path>\S+)\s(?P<protocol>[^"]+)"\s
+        (?P<status>\d+)\s
+        (?P<body_bytes_sent>\d+)\s
+        "(?P<http_referer>[^"]*)"\s
+        "(?P<http_user_agent>[^"]*)"\s
+        (?P<request_count>\d+)\s
+        "(?P<frontend_name>[^"]*)"\s
+        "(?P<backend_url>[^"]*)"\s
+        (?P<duration_ms>\d+)ms$$')
+      if err == null {
+        .timestamp = parse_timestamp!(parsed.timestamp, "%d/%b/%Y:%H:%M:%S %z")
+        .message = join!([parsed.method, parsed.path, parsed.protocol], " ")
+        ._labels.status = to_int!(parsed.status)
+        del(parsed.timestamp)
+        del(parsed.method)
+        del(parsed.path)
+        del(parsed.protocol)
+        del(parsed.status)
+        parsed.body_bytes_sent = to_int!(parsed.body_bytes_sent)
+        parsed.request_count = to_int!(parsed.request_count)
+        parsed.duration_ms = to_int!(parsed.duration_ms)
+        parsed = filter(parsed) -> |key, val| {
+          val != "-"
+        }
+        ._metadata = parsed
+      } else {
+        parsed, err = parse_regex(.message, r'(?x)
+          ^(?P<timestamp>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\S+)\s
+          (?P<level>\S+)\s
+          (?P<remaining>.*)$$')
+        if err == null {
+          .timestamp = parse_timestamp!(parsed.timestamp, "%+")
+          ._labels.level = parsed.level
+          parsed = parse_logfmt!(parsed.remaining)
+          .message = parsed.msg || parsed.message || parsed.error
+          ._metadata = parsed
+          del(._metadata.msg)
+          del(._metadata.message)
+          del(._metadata.error)
+        }
+      }
+
+  combine:
+    type: remap
+    inputs:
+      - from_akvorado
+      - from_kafka
+      - from_redis
+      - from_logfmt
+      - from_grafana
+      - from_vector
+      - from_cadvisor
+      - from_traefik
+      - routes._unmatched
+    source: |
+      if exists(._labels.level) {
+        level = downcase!(._labels.level)
+        if starts_with(level, "em") {
+          level = "critical"
+        } else if starts_with(level, "al") {
+          level = "critical"
+        } else if starts_with(level, "cr") {
+          level = "critical"
+        } else if starts_with(level, "er") {
+          level = "error"
+        } else if starts_with(level, "wa") {
+          level = "warning"
+        } else if starts_with(level, "in") {
+          level = "info"
+        } else if starts_with(level, "no") {
+          level = "info"
+        } else if starts_with(level, "de") {
+          level = "debug"
+        } else if starts_with(level, "db") {
+          level = "debug"
+        } else if starts_with(level, "tr") {
+          level = "trace"
+        }
+        ._labels.level = level
+      }
+
+sinks:
+  prometheus:
+    type: prometheus_exporter
+    inputs:
+      - internal_metrics
+  loki:
+    type: loki
+    inputs:
+      - combine
+    endpoint: http://loki:3100/loki
+    encoding:
+      codec: "text"
+    labels:
+      "*": "{{ ._labels }}"
+    structured_metadata:
+      "*": "{{ ._metadata }}"

@@ -182,3 +182,16 @@ services:
     ports:
       - 127.0.0.1:57400:57400/tcp
       - 127.0.0.1:57401:22/tcp
+
+  vector:
+    extends:
+      file: versions.yml
+      service: vector
+    restart: "no"
+    profiles: [manual]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./vector.yaml:/etc/vector/vector.yaml:ro
+      - ./vector.tests.yaml:/etc/vector/vector.tests.yaml:ro
+    environment:
+      VECTOR_CONFIG_DIR: /etc/vector

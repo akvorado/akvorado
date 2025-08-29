@@ -1,3 +1,12 @@
+discovery.docker "docker" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "30s"
+  filter {
+    name   = "label"
+    values = ["com.docker.compose.project=akvorado"]
+  }
+}
+
 prometheus.remote_write "default" {
   endpoint {
     url = "http://prometheus:9090/prometheus/api/v1/write"
