@@ -104,9 +104,9 @@ akvorado_inlet_flow_input_udp_packets_total{exporter="241.107.1.15",listener=":2
 ```
 
 If your exporters are not listed, check their configuration. You can also use
-`tcpdump` to verify that they are sending packets. Replace the IP with the IP address
-of the exporter and the port with the correct port (2055 for NetFlow and 6343 for
-sFlow).
+`tcpdump` to verify that they are sending packets. Replace the IP with the IP
+address of the exporter and the port with the correct port (2055 for NetFlow,
+4739 for IPFIX and 6343 for sFlow).
 
 ```console
 # tcpdump -c3 -pni any host 241.107.1.12 and port 2055

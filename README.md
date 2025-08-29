@@ -15,7 +15,7 @@ and is licensed under the [AGPLv3 license](LICENSE.txt).
 A demo site using fake data and running the latest stable version is
 available on [demo.akvorado.net](https://demo.akvorado.net). It is the
 direct result of running `docker compose up` on a fresh checkout but
-port 2055 is not accessible (you cannot send your own flows). Please,
+flow ports are not accessible (you cannot send your own flows). Please,
 be gentle with this resource. The demo site also enables you to browse
 the [documentation](https://demo.akvorado.net/docs) for the current version
 (the one in `docs/` is for the next version).

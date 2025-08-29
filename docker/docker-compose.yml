@@ -141,6 +141,7 @@ services:
       service: akvorado
     ports:
       - 2055:2055/udp
+      - 4739:4739/udp
       - 6343:6343/udp
     restart: unless-stopped
     depends_on:

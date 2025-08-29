@@ -27,6 +27,7 @@ the ownership of the Prometheus volume:
 - 💥 *docker*: switch from Prometheus to Grafana Alloy for scraping metrics
 - 🩹 *outlet*: fix crash when scaling down and up the Kafka workers
 - 🩹 *outlet*: move gRPC metrics for BioRIS provider in the routing namespace
+- 🌱 *config*: listen to 4739 for IPFIX on inlet service
 - 🌱 *docker*: enforce bridge name
 - 🌱 *docker*: add Loki to the observability stack
 - 🌱 *docker*: add cAdvisor to the observability stack

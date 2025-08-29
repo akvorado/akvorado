@@ -1,6 +1,7 @@
 ---
 flow:
   inputs:
+    # NetFlow port
     - type: udp
       decoder: netflow
       listen: :2055
@@ -8,6 +9,13 @@ flow:
       # Before increasing this value, look for it in the troubleshooting section
       # of the documentation.
       receive-buffer: 212992
+    # IPFIX port
+    - type: udp
+      decoder: netflow
+      listen: :4739
+      workers: 6
+      receive-buffer: 212992
+    # sFlow port
     - type: udp
       decoder: sflow
       listen: :6343

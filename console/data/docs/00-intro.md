@@ -45,7 +45,8 @@ To connect your own network devices:
    - Configure interface classification rules in `outlet` → `core` → `interface-classifiers`
 
 1. Configure your routers/switches to send flows to *Akvorado*:
-   - NetFlow/IPFIX: port 2055
+   - NetFlow: port 2055
+   - IPFIX: port 4739
    - sFlow: port 6343
    
 1. Restart all containers:
