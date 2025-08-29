@@ -142,3 +142,111 @@ loki.process "redis" {
     source = "message"
   }
 }
+
+discovery.relabel "alloy" {
+  targets = discovery.relabel.loki.output
+  rule {
+    source_labels = ["service_name"]
+    regex         = "alloy"
+    action        = "keep"
+  }
+}
+loki.source.docker "alloy" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.relabel.alloy.output
+  forward_to    = [loki.process.alloy.receiver]
+}
+loki.process "alloy" {
+  forward_to = [loki.write.default.receiver]
+  // ts=2025-08-28T09:30:45.497277819Z level=info msg="Scraped metadata watcher stopped" component_path=/ component_id=prometheus.remote_write.default subcomponent=rw remote_name=0ffafb url=http://prometheus:9090/prometheus/api/v1/write
+  stage.logfmt {
+    mapping = {
+      ts             = "",
+      level          = "",
+      msg            = "",
+      err            = "",
+      node           = "",
+      component_path = "",
+      component_id   = "",
+    }
+  }
+  stage.labels {
+    values = {
+      level = "",
+    }
+  }
+  stage.structured_metadata {
+    values = {
+      node           = "",
+      component_path = "",
+      component_id   = "",
+    }
+  }
+  stage.template {
+    source   = "message"
+    template = `{{ .msg }}{{ if .err }}: {{ .err }}{{ end }}`
+  }
+  stage.timestamp {
+    source = "ts"
+    format = "RFC3339"
+  }
+  stage.output {
+    source = "message"
+  }
+}
+
+discovery.relabel "lokilogs" {
+  targets = discovery.relabel.loki.output
+  rule {
+    source_labels = ["service_name"]
+    regex         = "loki"
+    action        = "keep"
+  }
+}
+loki.source.docker "lokilogs" {
+  host          = "unix:///var/run/docker.sock"
+  targets       = discovery.relabel.lokilogs.output
+  forward_to    = [loki.process.lokilogs.receiver]
+}
+loki.process "lokilogs" {
+  forward_to = [loki.write.default.receiver]
+  // ts=2025-08-29T05:07:45.543770684Z caller=spanlogger.go:116 middleware=QueryShard.astMapperware org_id=fake traceID=0dd74c5aaeb81d32 user=fake level=warn msg="failed mapping AST" err="context canceled" query="{service_name=\"alloy\"}"
+  stage.logfmt {
+    mapping = {
+      ts       = "",
+      level    = "",
+      msg      = "",
+      err      = "",
+      query    = "",
+      caller   = "",
+      org_id   = "",
+      trace_id = "",
+      user     = "",
+    }
+  }
+  stage.labels {
+    values = {
+      level = "",
+    }
+  }
+  stage.structured_metadata {
+    values = {
+      query    = "",
+      caller   = "",
+      org_id   = "",
+      trace_id = "",
+      user     = "",
+    }
+  }
+  stage.template {
+    source   = "message"
+    template = `{{ .msg }}{{ if .err }}: {{ .err }}{{ end }}`
+  }
+  stage.timestamp {
+    source = "ts"
+    format = "RFC3339"
+  }
+  stage.output {
+    source = "message"
+  }
+}
