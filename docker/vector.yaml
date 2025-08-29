@@ -214,25 +214,17 @@ transforms:
     source: |
       if exists(._labels.level) {
         level = downcase!(._labels.level)
-        if starts_with(level, "em") {
-          level = "critical"
-        } else if starts_with(level, "al") {
-          level = "critical"
-        } else if starts_with(level, "cr") {
-          level = "critical"
+        if starts_with(level, "i") || starts_with(level, "n") {
+          level = "info"
+        } else if starts_with(level, "d") {
+          level = "debug"
+        } else if starts_with(level, "w") {
+          level = "warning"
         } else if starts_with(level, "er") {
           level = "error"
-        } else if starts_with(level, "wa") {
-          level = "warning"
-        } else if starts_with(level, "in") {
-          level = "info"
-        } else if starts_with(level, "no") {
-          level = "info"
-        } else if starts_with(level, "de") {
-          level = "debug"
-        } else if starts_with(level, "db") {
-          level = "debug"
-        } else if starts_with(level, "tr") {
+        } else if starts_with(level, "c") || starts_with(level, "a") || starts_with(level, "f") || starts_with(level, "e") {
+          level = "critical"
+        } else if starts_with(level, "t") {
           level = "trace"
         }
         ._labels.level = level
