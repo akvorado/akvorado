@@ -249,6 +249,8 @@ services:
       TRAEFIK_ENTRYPOINTS_private_ADDRESS: ":8080" # all services
       TRAEFIK_ENTRYPOINTS_public_ADDRESS: ":8081"  # public services only
       TRAEFIK_ACCESSLOG: "true"
+      TRAEFIK_PING: "true"
+      TRAEFIK_PING_ENTRYPOINT: "private"
     labels:
       - traefik.enable=true
       - "traefik.http.routers.traefik.rule=PathPrefix(`/traefik`) && !PathPrefix(`/traefik/debug`)"
@@ -258,6 +260,9 @@ services:
       - traefik.http.routers.traefik-metrics.service=prometheus@internal
       - metrics.port=8080
       - metrics.path=/traefik/metrics
+    healthcheck:
+      interval: 20s
+      test: ["CMD", "traefik", "healthcheck"]
     expose:
       - 8080/tcp
     ports:
