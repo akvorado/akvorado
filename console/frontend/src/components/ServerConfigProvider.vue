@@ -37,6 +37,7 @@ type ServerConfig = {
   dimensionsLimit: number;
   truncatable: string[];
   homepageTopWidgets: string[];
+  branding: boolean;
 };
 
 export const ServerConfigKey: InjectionKey<Readonly<Ref<ServerConfig | null>>> =

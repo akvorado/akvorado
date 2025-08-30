@@ -116,6 +116,7 @@ services:
       - akvorado-console-db:/run/akvorado
     environment:
       AKVORADO_CFG_CONSOLE_DATABASE_DSN: /run/akvorado/console.sqlite
+      AKVORADO_CFG_CONSOLE_BRANDING: ${BRANDING-false}
     labels:
       - traefik.enable=true
       # Only expose /debug endpoint on the private entrypoint.

@@ -27,6 +27,8 @@ type Configuration struct {
 	HomepageGraphTimeRange time.Duration `validate:"min=1m"`
 	// DimensionsLimit put an upper limit to the number of dimensions to return.
 	DimensionsLimit int `validate:"min=10"`
+	// Branding enables some branding on the console
+	Branding bool
 	// CacheTTL tells how long to keep the most costly requests in cache.
 	CacheTTL time.Duration `validate:"min=5s"`
 }
@@ -122,5 +124,6 @@ func (c *Component) configHandlerFunc(gc *gin.Context) {
 		"dimensions":              dimensions,
 		"truncatable":             truncatable,
 		"homepageTopWidgets":      c.config.HomepageTopWidgets,
+		"branding":                c.config.Branding,
 	})
 }

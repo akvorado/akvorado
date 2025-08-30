@@ -4,10 +4,26 @@
 <template>
   <div class="w-full md:flex md:flex-row">
     <div
-      class="flex-none overflow-y-auto bg-gray-50 px-4 py-4 dark:bg-gray-900 dark:text-gray-200 print:hidden sm:px-6 md:mx-0 md:max-w-[30%] md:pl-0 md:pr-8"
+      class="flex-none overflow-y-auto bg-gray-50 px-4 py-4 dark:bg-gray-900 dark:text-gray-200 print:hidden md:max-w-[30%]"
     >
-      <nav class="mx-auto text-sm md:mx-0">
-        <ul class="space-y-1 pl-4">
+      <div
+        v-if="serverConfiguration?.branding"
+        class="pb-4 pl-4 text-sm border-b border-gray-200 dark:border-gray-700 mb-4 -mx-4"
+      >
+        <a
+          href="https://github.com/akvorado/akvorado"
+          class="group flex items-center text-gray-800 dark:text-gray-300"
+        >
+          <img
+            src="@/assets/images/github.svg"
+            alt="GitHub"
+            class="w-5 h-5 mr-2 dark:invert group-hover:scale-120 transition-transform duration-500"
+          />
+          <span>akvorado/akvorado</span>
+        </a>
+      </div>
+      <nav class="text-sm">
+        <ul class="space-y-1">
           <li
             v-for="document in toc"
             :key="document.name"
@@ -108,7 +124,9 @@ import { useFetch } from "@vueuse/core";
 import { useRouteHash } from "@vueuse/router";
 import InfoBox from "@/components/InfoBox.vue";
 import { TitleKey } from "@/components/TitleProvider.vue";
+import { ServerConfigKey } from "@/components/ServerConfigProvider.vue";
 
+const serverConfiguration = inject(ServerConfigKey);
 const props = defineProps<{ id: string }>();
 const title = inject(TitleKey)!;
 
