@@ -35,7 +35,6 @@ the ownership of the Prometheus volume:
 - 🌱 *docker*: update node-exporter to 1.9.1
 - 🌱 *docker*: stop spawning demo exporters by default
 - 🌱 *build*: build with Go 1.25
-- 🌱 *docker*: use Docker labels to dynamically configure Grafana Alloy
 
 ## 2.0.0-beta.4 - 2025-08-18
 
