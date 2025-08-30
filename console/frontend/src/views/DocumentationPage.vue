@@ -15,7 +15,7 @@
           class="group flex items-center text-gray-800 dark:text-gray-300"
         >
           <img
-            src="@/assets/images/github.svg"
+            src="@/assets/images/git.svg"
             alt="GitHub"
             class="w-5 h-5 mr-2 dark:invert group-hover:scale-120 transition-transform duration-500"
           />
