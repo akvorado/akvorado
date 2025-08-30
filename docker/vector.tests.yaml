@@ -305,7 +305,7 @@ tests:
                  "collector": "diskstats",
                  "path": "/run/udev/data"})
 
-  - name: cadvidsor logs"
+  - name: "cadvidsor logs"
     inputs:
       - insert_at: base
         type: log
