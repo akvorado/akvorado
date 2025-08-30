@@ -401,9 +401,7 @@ func TestConcurrentOperations(t *testing.T) {
 	var nowLock sync.RWMutex
 
 	// Make the clock go forward
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for {
 			nowLock.Lock()
 			now = now.Add(1 * time.Minute)
@@ -414,11 +412,9 @@ func TestConcurrentOperations(t *testing.T) {
 			case <-time.After(1 * time.Millisecond):
 			}
 		}
-	}()
+	})
 	for range 5 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for {
 				nowLock.RLock()
 				now := now
@@ -438,13 +434,11 @@ func TestConcurrentOperations(t *testing.T) {
 				default:
 				}
 			}
-		}()
+		})
 	}
 	var lookups int64
 	for range 20 {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			for {
 				nowLock.RLock()
 				now := now
@@ -470,7 +464,7 @@ func TestConcurrentOperations(t *testing.T) {
 				default:
 				}
 			}
-		}()
+		})
 	}
 	time.Sleep(30 * time.Millisecond)
 	nowLock.RLock()

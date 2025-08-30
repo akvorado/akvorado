@@ -1,6 +1,6 @@
 module akvorado
 
-go 1.24
+go 1.25
 
 require (
 	github.com/ClickHouse/ch-go v0.67.0

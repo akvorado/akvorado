@@ -88,9 +88,7 @@ func (r *Reporter) RunHealthchecks(ctx context.Context) MultipleHealthcheckResul
 		result HealthcheckResult
 	}
 	resultChan := make(chan oneResult)
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for {
 			select {
 			case <-ctx.Done():
@@ -103,13 +101,11 @@ func (r *Reporter) RunHealthchecks(ctx context.Context) MultipleHealthcheckResul
 				}
 			}
 		}
-	}()
+	})
 
 	// One goroutine for each healthcheck
 	for name, healthcheckFunc := range r.healthchecks {
-		wg.Add(1)
-		go func(name string, healthcheckFunc HealthcheckFunc) {
-			defer wg.Done()
+		wg.Go(func() {
 			result := healthcheckFunc(ctx)
 			oneResult := oneResult{
 				name:   name,
@@ -119,7 +115,7 @@ func (r *Reporter) RunHealthchecks(ctx context.Context) MultipleHealthcheckResul
 			case <-ctx.Done():
 			case resultChan <- oneResult:
 			}
-		}(name, healthcheckFunc)
+		})
 	}
 
 	wg.Wait() // keep lock, we don't want something to change
