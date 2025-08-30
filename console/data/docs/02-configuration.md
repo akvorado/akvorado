@@ -11,10 +11,10 @@ The orchestrator service is configured through YAML files (provided in the
 
 You can get the default configuration with `docker compose exec
 akvorado-orchestrator akvorado orchestrator --dump --check /dev/null`. Note that
-some sections are generated from the configuration of another section. Notably,
-all Kafka configuration comes from the upper-level `kafka` key. Write durations
-as strings, like `10h20m` or `5s`. Valid time units are `ms`, `s`,
-`m`, and `h`.
+some sections are generated from the configuration of other sections. It is
+better to not use the generated configuration as a base for your configuration.
+Write durations as strings, like `10h20m` or `5s`. Valid time units are `ms`,
+`s`, `m`, and `h`.
 
 You can also override configuration settings with environment variables. Remove
 any `-` from key names and use `_` for nesting. Then, add the prefix
