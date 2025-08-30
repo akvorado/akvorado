@@ -78,7 +78,7 @@ func (c *realComponent) initMetrics() {
 	c.metrics.consumerLag = c.r.GaugeFunc(
 		reporter.GaugeOpts{
 			Name: "consumergroup_lag_messages",
-			Help: "Current consumer lag across all partitions. A value of -1 indicates an issue with Kafka and/or consumers",
+			Help: "Current consumer lag across all partitions (or -1 on errors).",
 		},
 		func() float64 {
 			ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
@@ -92,7 +92,7 @@ func (c *realComponent) initMetrics() {
 
 			lag, err := c.computeLagMetric(ctx)
 			if err != nil {
-				c.r.Err(err).Msg("lag metric refresh failed, setting to -1")
+				c.r.Err(err).Msg("lag metric refresh failed")
 				return -1
 			}
 			return lag
