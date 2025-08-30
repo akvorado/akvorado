@@ -6,7 +6,7 @@ package daemon
 import (
 	"errors"
 	"testing"
-	"time"
+	"testing/synctest"
 
 	"gopkg.in/tomb.v2"
 
@@ -71,46 +71,48 @@ func TestStop(t *testing.T) {
 }
 
 func TestTombTracking(t *testing.T) {
-	var tomb tomb.Tomb
-	r := reporter.NewMock(t)
-	c, err := New(r)
-	if err != nil {
-		t.Fatalf("New() error:\n%+v", err)
-	}
+	synctest.Test(t, func(t *testing.T) {
+		var tomb tomb.Tomb
+		r := reporter.NewMock(t)
+		c, err := New(r)
+		if err != nil {
+			t.Fatalf("New() error:\n%+v", err)
+		}
 
-	c.Track(&tomb, "tomb")
-	helpers.StartStop(t, c)
+		c.Track(&tomb, "tomb")
+		helpers.StartStop(t, c)
 
-	ch := make(chan bool)
-	tomb.Go(func() error {
+		ch := make(chan bool)
+		tomb.Go(func() error {
+			select {
+			case <-tomb.Dying():
+				t.Fatalf("Dying() should not happen inside the tomb")
+			case <-ch:
+				return errors.New("crashing")
+			}
+			return nil
+		})
+		synctest.Wait()
+
 		select {
 		case <-tomb.Dying():
-			t.Fatalf("Dying() should not happen inside the tomb")
-		case <-ch:
-			return errors.New("crashing")
+			t.Fatalf("Dying() was closed while the tomb is not dead")
+		case <-c.Terminated():
+			t.Fatalf("Terminated() was closed while we didn't request termination")
+		default:
+			// OK
 		}
-		return nil
+
+		close(ch)
+		tomb.Wait()
+		synctest.Wait()
+		select {
+		case <-c.Terminated():
+			// OK
+		default:
+			t.Fatalf("Terminated() was not closed while tomb is dead")
+		}
+
+		c.Stop()
 	})
-	time.Sleep(10 * time.Millisecond) // should be runtime.Gosched()
-
-	select {
-	case <-tomb.Dying():
-		t.Fatalf("Dying() was closed while the tomb is not dead")
-	case <-c.Terminated():
-		t.Fatalf("Terminated() was closed while we didn't request termination")
-	default:
-		// OK
-	}
-
-	close(ch)
-	tomb.Wait()
-	time.Sleep(10 * time.Millisecond) // should be runtime.Gosched(), but this is not enough
-	select {
-	case <-c.Terminated():
-		// OK
-	default:
-		t.Fatalf("Terminated() was not closed while tomb is dead")
-	}
-
-	c.Stop()
 }
