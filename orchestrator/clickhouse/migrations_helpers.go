@@ -81,6 +81,9 @@ func (c *Component) tableAlreadyExists(ctx context.Context, table, column, targe
 		fmt.Sprintf(`dictGet('%s.`, c.d.ClickHouse.DatabaseName()),
 		"dictGet('")
 	existing = regexp.MustCompile(` SETTINGS index_granularity = \d+$`).ReplaceAllString(existing, "")
+	existing = strings.ReplaceAll(existing,
+		"ENGINE = Null",
+		"ENGINE = `Null`") // from ClickHouse 25.8
 
 	// Compare!
 	if existing == target {
@@ -286,7 +289,7 @@ func (c *Component) createRawFlowsTable(ctx context.Context) error {
 
 	// Build CREATE query
 	createQuery, err := stemplate(
-		`CREATE TABLE {{ .Database }}.{{ .Table }} ({{ .Schema }}) ENGINE = Null`,
+		"CREATE TABLE {{ .Database }}.{{ .Table }} ({{ .Schema }}) ENGINE = `Null`",
 		gin.H{
 			"Database": c.d.ClickHouse.DatabaseName(),
 			"Table":    tableName,

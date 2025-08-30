@@ -71,6 +71,7 @@ func TestInsertMemory(t *testing.T) {
 		DialTimeout: 100 * time.Millisecond,
 		Settings: []ch.Setting{
 			{Key: "allow_suspicious_low_cardinality_types", Value: "1"},
+			{Key: "output_format_json_quote_64bit_integers", Value: "0", Important: true},
 		},
 	})
 	if err != nil {
@@ -157,34 +158,34 @@ func TestInsertMemory(t *testing.T) {
 		expected := []map[string]any{
 			{
 				"TimeReceived":    "1970-01-01 00:16:40",
-				"SamplingRate":    "20000",
+				"SamplingRate":    float64(20000),
 				"ExporterAddress": "::ffff:203.0.113.14",
 				"ExporterName":    "router1.example.net",
 				"SrcAS":           float64(65000),
 				"DstAS":           float64(12322),
-				"Bytes":           "20",
-				"Packets":         "3",
+				"Bytes":           float64(20),
+				"Packets":         float64(3),
 				"InIfBoundary":    "internal",
 				"OutIfBoundary":   "external",
 				"InIfSpeed":       float64(10000),
 				"EType":           float64(helpers.ETypeIPv4),
 			}, {
 				"TimeReceived":    "1970-01-01 00:16:41",
-				"SamplingRate":    "20000",
+				"SamplingRate":    float64(20000),
 				"ExporterAddress": "::ffff:203.0.113.14",
 				"ExporterName":    "router1.example.net",
 				"SrcAS":           float64(12322),
 				"DstAS":           float64(65000),
-				"Bytes":           "200",
-				"Packets":         "3",
+				"Bytes":           float64(200),
+				"Packets":         float64(3),
 				"InIfBoundary":    "external",
 				"OutIfBoundary":   "undefined",
 				"OutIfSpeed":      float64(10000),
 				"EType":           float64(helpers.ETypeIPv4),
 				"DstASPath":       []any{float64(65400), float64(65500), float64(65001)},
 				"DstLargeCommunities": []any{
-					"1206435509165107881967816", // 65401:100:200
-					"1206435509165107881967817", // 65401:100:201
+					float64(1206435509165107881967816), // 65401:100:200
+					float64(1206435509165107881967817), // 65401:100:201
 				},
 			},
 		}

@@ -13,6 +13,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🌱 *build*: accept building with a not up-to-date toolchain
+- 🌱 *docker*: update ClickHouse to 25.8 (not mandatory)
 
 ## 2.0.0-beta.5 - 2025-08-30
 
