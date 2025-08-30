@@ -10,12 +10,16 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 2.0.0-beta.5 - 2025-08-30
 
-If you use the monitoring stack, note that the Docker Compose file was renamed to
-`docker-compose-monitoring.yml` and you need to update your `.env`. Also, metric
-scraping is now done by Grafana Alloy instead of Prometheus, so you need to fix
-the ownership of the Prometheus volume:
+> [!CAUTION]
+> This is a beta release! Be sure to read the section about 2.0.0-beta.1 as well.
+
+If you use the monitoring stack, note that the Docker Compose file was split
+into `docker-compose-prometheus.yml` for metrics, and `docker-compose-loki.yml`
+for logs. You need to update your `.env`. Also, metric scraping is now done by
+Grafana Alloy instead of Prometheus andx you need to fix the ownership of the
+Prometheus volume:
 
 ```console
 # docker compose run --user root --entrypoint="/bin/sh -c" prometheus "chown -R nobody:nobody /prometheus"
