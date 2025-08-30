@@ -17,7 +17,7 @@ inputs:
 outputs:
   iana-cache-hit:
     description: Was cache hit for IANA files?
-    value: ${{ steps.iana-cache.outputs.cache-hit }}
+    value: ${{ steps.iana-cache.outputs.cache-matched-key != "" && "true" || "false" }}
   iana-cache-key:
     description: Cache key to be used for IANA files
     value: ${{ steps.iana-cache.outputs.cache-primary-key }}
