@@ -25,9 +25,18 @@ Prometheus volume:
 # docker compose run --user root --entrypoint="/bin/sh -c" prometheus "chown -R nobody:nobody /prometheus"
 ```
 
-- 💥 *docker*: update Kafka data volume mount path (check [PR
-  #1900](https://github.com/akvorado/akvorado/pull/1900) for the consequences if
-  you upgrade from a previous beta)
+If you upgrade from a previous 2.0.0-beta version, you need again to recreate
+the Kafka container:
+
+```console
+# docker compose down --remove-orphans
+# docker compose rm --volumes kafka
+# docker volume rm akvorado_akvorado-kafka
+# docker compose pull
+# docker compose up -d
+```
+
+- 💥 *docker*: update Kafka data volume mount path
 - 💥 *docker*: switch from Prometheus to Grafana Alloy for scraping metrics
 - 🩹 *outlet*: fix crash when scaling down and up the Kafka workers
 - 🩹 *outlet*: move gRPC metrics for BioRIS provider in the routing namespace
@@ -94,18 +103,7 @@ in the [quickstart tarball][] and update your own configuration.
 
 As it seems a good time as any, Zookeeper is removed from the `docker compose`
 setup. ClickHouse Keeper is used instead when setting up a cluster. Kafka is now
-using the KRaft mode. While migration is possible, it is easier to start from
-scratch:
-
-```console
-# docker compose down --remove-orphans
-# docker compose rm -v kafka
-# docker compose pull
-# docker compose up -d
-```
-
-This procedure is also required even if you ran one of the previous beta
-versions, due to a path change.
+using the KRaft mode.
 
 The documentation has been updated, notably the troubleshooting section.
 
