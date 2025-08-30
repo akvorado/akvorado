@@ -19,6 +19,7 @@ services:
       # Those are not the defaults
       - --web.enable-remote-write-receiver
       - --web.external-url=/prometheus
+      - --storage.tsdb.retention.time=30d
     healthcheck:
       interval: 20s
       test: ["CMD",
