@@ -41,9 +41,6 @@ runs:
         cache-dependency-path: |
           console/frontend/package-lock.json
           bin/external-tool
-    - name: Preload caches
-      shell: bash
-      run: ./bin/external-tool preload-cache
     - name: Restore IANA files from cache
       uses: actions/cache/restore@v4
       id: iana-cache

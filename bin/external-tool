@@ -8,12 +8,7 @@ cmd="$1"
 shift
 
 case "$cmd" in
-    buf) exec go run github.com/bufbuild/buf/cmd/buf@v1.55.1 "$@" ;;
-    preload-cache)
-        # Go
-        go mod download
-        "$0" buf --help > /dev/null
-        # JS
-        make console/frontend/node_modules
+    buf)
+        exec go run github.com/bufbuild/buf/cmd/buf@v1.55.1 "$@"
         ;;
 esac

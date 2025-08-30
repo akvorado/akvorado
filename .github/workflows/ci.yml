@@ -266,6 +266,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    needs:
+      - build-go
+      - build-js
     steps:
       - uses: actions/checkout@v5
         with:
