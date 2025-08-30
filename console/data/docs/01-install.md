@@ -29,7 +29,7 @@ Currently, only a pre-built binary for Linux x86-64 is provided.
 
 ## Compilation from source
 
-You need to install [Go](https://go.dev/doc/install) (1.24+), and
+You need to install [Go](https://go.dev/doc/install) (1.21+), and
 [NodeJS](https://nodejs.org/en/download/) (20+) with NPM (6+). For example, on
 Debian:
 

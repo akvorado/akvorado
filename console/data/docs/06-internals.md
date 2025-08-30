@@ -285,7 +285,7 @@ As a rule of thumb:
 - External Docker images, like ClickHouse and Kafka, are updated to LTS versions
   when available (like for ClickHouse) or to track a supported version (like
   Kafka). There is `make docker-upgrade-versions` that updates `docker/versions.yml`.
-- Go is updated to the version present in Debian unstable (but sometimes a bit sooner)
+- Go is updated when it makes sense to use some of the new features
 - NodeJS is updated to the version present in Debian unstable
 
 A good site to check if a version is still supported is

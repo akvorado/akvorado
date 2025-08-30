@@ -213,11 +213,6 @@ jobs:
   build-go:
     name: 🔬 Test only Go
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go-version:
-          - '1.24'
-          - '1.25'
     needs:
       - dependabot
     if: needs.dependabot.outputs.package-ecosystem != 'npm_and_yarn'
@@ -230,8 +225,6 @@ jobs:
       - name: Setup
         id: setup
         uses: ./.github/actions/setup
-        with:
-          go-version: ${{ matrix.go-version }}
       - name: Build
         run: make && ./bin/akvorado version
       - name: Save IANA files to cache
@@ -241,7 +234,7 @@ jobs:
           path: |
             orchestrator/clickhouse/data/udp.csv
             orchestrator/clickhouse/data/tcp.csv
-          key: ${{ steps.setup.outputs.iana-cache-key }}-${{ matrix.go-version }}
+          key: ${{ steps.setup.outputs.iana-cache-key }}
       - name: Tests
         run: make test
 

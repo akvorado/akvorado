@@ -15,7 +15,7 @@
         };
         l = builtins // pkgs.lib;
         nodejs = pkgs.nodejs_20;
-        go = pkgs.go_1_25;
+        go = pkgs.go_latest;
         frontend = pkgs.buildNpmPackage.override { inherit nodejs; } {
           name = "akvorado-frontend";
           src = ./console/frontend;

@@ -10,6 +10,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🌱 *build*: accept building with a not up-to-date toolchain
+
 ## 2.0.0-beta.5 - 2025-08-30
 
 > [!CAUTION]
