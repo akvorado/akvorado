@@ -87,6 +87,7 @@ func TestConfigHandler(t *testing.T) {
 					"ForwardingStatus",
 				},
 				"truncatable": []string{"SrcAddr", "DstAddr"},
+				"branding":    false,
 			},
 		},
 	})
