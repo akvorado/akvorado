@@ -51,17 +51,10 @@ can spawn them through `docker compose -f docker/docker-compose-dev.yml`:
 
 For manual tests, you can use `make docker-dev` to build a Docker container,
 then use `docker compose --profile demo up` to run Docker Compose. Each time you
-modify the code, repeat these two steps. Beware not to destroy the volume for
-GeoIP at each attempt as there is a per-day limit on the number of times one IP
-can fetch the GeoIP database.
-
-When using this method, it can take a little bit of time until the console is
-declared healthy. In the meantime, you get a 404 error. If you want to avoid
-that, you can the console locally instead:
+modify the code, repeat these two steps:
 
 ```console
-$ docker compose stop akvorado-console
-$ make && AKVORADO_CFG_CONSOLE_CLICKHOUSE_SERVERS=$(docker container inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' akvorado-clickhouse-1):9000 AKVORADO_CFG_CONSOLE_SERVELIVEFS=true ./bin/akvorado console /dev/null
+$ make docker-dev && CONSOLE_HEALTHCHECK_DISABLED=true docker compose --profile demo up -d
 ```
 
 If you need to work on the frontend part, you can spawn the Docker compose
