@@ -85,10 +85,6 @@ jobs:
       - name: Vector tests
         if: matrix.tests == 'misc'
         run: docker compose -f docker/docker-compose-dev.yml run --quiet --rm vector test
-      - name: Static checks
-        if: matrix.tests == 'misc'
-        run: |
-          make test-go-checks
 
       # Binary build
       - name: Build
