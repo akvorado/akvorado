@@ -10,7 +10,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/daemon"
@@ -33,14 +32,10 @@ type Component struct {
 // Dependencies define the dependencies of the flows component.
 type Dependencies struct {
 	Daemon daemon.Component
-	Clock  clock.Clock
 }
 
 // New creates a new flows component.
 func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) (*Component, error) {
-	if dependencies.Clock == nil {
-		dependencies.Clock = clock.New()
-	}
 	c := Component{
 		r:      r,
 		d:      &dependencies,
@@ -75,8 +70,8 @@ func (c *Component) Start() error {
 	}
 
 	sequenceNumber := uint32(1)
-	start := c.d.Clock.Now()
-	ticker := c.d.Clock.Ticker(time.Second)
+	start := time.Now()
+	ticker := time.NewTicker(time.Second)
 	errLogger := c.r.Sample(reporter.BurstSampler(time.Minute, 10))
 
 	c.t.Go(func() error {
