@@ -328,7 +328,7 @@ jobs:
           images: |
             ghcr.io/${{ github.repository }}
           tags: |
-            type=raw,value=unreleased-${{ github.run_id }}
+            type=raw,value=unreleased
           labels: |
             org.opencontainers.image.title=Akvorado
             org.opencontainers.image.licenses=AGPL-3.0-only
@@ -360,7 +360,7 @@ jobs:
           annotations: ${{ steps.meta.outputs.annotations }}
           provenance: mode=max
     outputs:
-      digest: ${{ steps.build.outputs.digest }}
+      package: ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}
 
   tag-docker:
     name: 🐋 Tag Docker images
@@ -396,7 +396,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Tag image
         run: |
-          source=ghcr.io/${{ github.repository }}@${{ needs.build-docker.outputs.digest }}
+          source=${{ needs.build-docker.outputs.package }}
           for tag in ${{ steps.meta.outputs.tags }}; do
             docker buildx imagetools create ${source} --tag ${tag}
           done
