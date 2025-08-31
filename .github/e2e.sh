@@ -26,10 +26,6 @@ EOF
       GOCOVERDIR: /tmp/coverage
 EOF
         done
-        # Enable demo exporters
-        cat >> .env <<"EOF"
-COMPOSE_FILE=${COMPOSE_FILE}:docker/docker-compose-demo.yml
-EOF
         ;;
 
     tests)
