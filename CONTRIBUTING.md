@@ -29,7 +29,7 @@ Git commits are prefixed with the component and sub-component of the feature:
 `orchestrator/clickhouse: add some feature`. Meta-component are also possible,
 like `docs`, `build`, or `docker`.
 
-# Testing
+# Unit testing
 
 We do not aim for 100% code coverage, however most code should be covered by
 tests. This is a big task, but it pays when adding new features or refactoring.
@@ -56,6 +56,8 @@ modify the code, repeat these two steps:
 ```console
 $ make docker-dev && CONSOLE_HEALTHCHECK_DISABLED=true docker compose --profile demo up -d
 ```
+
+Once done, run `docker compose --profile demo down` to stop all the containers.
 
 If you need to work on the frontend part, you can spawn the Docker compose
 setup, then in `console/frontend`, use `npm run dev` and point your browser to
