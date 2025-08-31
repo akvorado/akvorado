@@ -167,7 +167,8 @@ services:
       file: versions.yml
       service: clickhouse-keeper
     volumes:
-      - ./clickhouse/keeper.xml:/etc/clickhouse-keeper/keeper_config.d/keeper.xml
+      - ./clickhouse/observability:/etc/clickhouse-keeper/keeper_config.d/observability.xml
+      - ./clickhouse/keeper.xml:/etc/clickhouse-keeper/keeper_config.d/akvorado.xml
 
   srlinux:
     # The SR Linux container does not like to be restarted. If you get:

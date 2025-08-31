@@ -215,7 +215,8 @@ services:
       service: clickhouse
     volumes:
       - akvorado-clickhouse:/var/lib/clickhouse
-      - ./clickhouse/akvorado.xml:/etc/clickhouse-server/config.d/akvorado.xml
+      - ./clickhouse/observability.xml:/etc/clickhouse-server/config.d/observability.xml
+      - ./clickhouse/server.xml:/etc/clickhouse-server/config.d/akvorado.xml
     environment:
       CLICKHOUSE_INIT_TIMEOUT: 60
       CLICKHOUSE_SKIP_USER_SETUP: 1

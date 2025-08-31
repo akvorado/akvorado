@@ -38,6 +38,7 @@ transforms:
       nodeexporter: '.service_name == "node-exporter"'
       cadvisor: '.service_name == "cadvisor"'
       traefik: '.service_name == "traefik"'
+      clickhouse: '.service_name == "clickhouse" || .service_name == "clickhouse-keeper"'
 
   from_akvorado:
     type: remap
@@ -199,6 +200,26 @@ transforms:
         }
       }
 
+  from_clickhouse:
+    type: remap
+    inputs:
+      - routes.clickhouse
+    source: |
+      parsed, err = parse_json(.message)
+      if err == null {
+        parsed = filter(object!(parsed)) -> |key, val| {
+          val != ""
+        }
+        .timestamp = parse_timestamp!(parsed.date_time_utc, format: "%+")
+        .message = parsed.message
+        ._labels.level = parsed.level
+        ._metadata = parsed
+        del(._metadata.message)
+        del(._metadata.date_time_utc)
+        del(._metadata.date_time)
+        del(._metadata.level)
+      }
+
   combine:
     type: remap
     inputs:
@@ -210,6 +231,7 @@ transforms:
       - from_vector
       - from_cadvisor
       - from_traefik
+      - from_clickhouse
       - routes._unmatched
     source: |
       if exists(._labels.level) {

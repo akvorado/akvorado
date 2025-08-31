@@ -25,7 +25,8 @@ services:
     volumes:
       - akvorado-clickhouse-keeper-db-1:/var/lib/clickhouse-keeper
       - akvorado-clickhouse-keeper-1:/var/lib/clickhouse
-      - ./clickhouse/keeper.xml:/etc/clickhouse-keeper/keeper_config.d/keeper.xml
+      - ./clickhouse/observability:/etc/clickhouse-keeper/keeper_config.d/observability.xml
+      - ./clickhouse/keeper.xml:/etc/clickhouse-keeper/keeper_config.d/akvorado.xml
       - ./clickhouse/keeper-cluster.xml:/etc/clickhouse-keeper/keeper_config.d/keeper-cluster.xml
       - ./clickhouse/keeper-cluster.xml:/etc/clickhouse-keeper/keeper_config.d/keeper-cluster-1.xml
     healthcheck:
@@ -38,7 +39,8 @@ services:
     volumes:
       - akvorado-clickhouse-keeper-db-2:/var/lib/clickhouse-keeper
       - akvorado-clickhouse-keeper-2:/var/lib/clickhouse
-      - ./clickhouse/keeper.xml:/etc/clickhouse-keeper/keeper_config.d/keeper.xml
+      - ./clickhouse/observability:/etc/clickhouse-keeper/keeper_config.d/observability.xml
+      - ./clickhouse/keeper.xml:/etc/clickhouse-keeper/keeper_config.d/akvorado.xml
       - ./clickhouse/keeper-cluster.xml:/etc/clickhouse-keeper/keeper_config.d/keeper-cluster.xml
       - ./clickhouse/keeper-cluster.xml:/etc/clickhouse-keeper/keeper_config.d/keeper-cluster-2.xml
   clickhouse-keeper-3:
@@ -46,7 +48,8 @@ services:
     volumes:
       - akvorado-clickhouse-keeper-db-3:/var/lib/clickhouse-keeper
       - akvorado-clickhouse-keeper-3:/var/lib/clickhouse
-      - ./clickhouse/keeper.xml:/etc/clickhouse-keeper/keeper_config.d/keeper.xml
+      - ./clickhouse/observability:/etc/clickhouse-keeper/keeper_config.d/observability.xml
+      - ./clickhouse/keeper.xml:/etc/clickhouse-keeper/keeper_config.d/akvorado.xml
       - ./clickhouse/keeper-cluster.xml:/etc/clickhouse-keeper/keeper_config.d/keeper-cluster.xml
       - ./clickhouse/keeper-cluster.xml:/etc/clickhouse-keeper/keeper_config.d/keeper-cluster-3.xml
 

@@ -1,0 +1,31 @@
+<clickhouse>
+ <!-- Enable Prometheus endpoint -->
+ <prometheus>
+  <endpoint>/metrics</endpoint>
+  <metrics>true</metrics>
+  <events>true</events>
+  <asynchronous_metrics>true</asynchronous_metrics>
+ </prometheus>
+ <!-- JSON logging to console -->
+ <logger>
+   <level>fatal</level>
+   <errorlog remove="1"></errorlog>
+   <console>1</console>
+   <console_log_level>information</console_log_level>
+   <formatting>
+     <type>json</type>
+     <names>
+       <date_time>date_time</date_time>
+       <date_time_utc>date_time_utc</date_time_utc>
+       <thread_name>thread_name</thread_name>
+       <thread_id>thread_id</thread_id>
+       <level>level</level>
+       <query_id>query_id</query_id>
+       <logger_name>logger_name</logger_name>
+       <message>message</message>
+       <source_file>source_file</source_file>
+       <source_line>source_line</source_line>
+     </names>
+   </formatting>
+ </logger>
+</clickhouse>

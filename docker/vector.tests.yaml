@@ -391,3 +391,60 @@ tests:
                  "level": "error"})
               assert_eq!(._metadata,
                 {"entryPointName": "public"})
+
+  - name: "clickhouse raw logs"
+    inputs:
+      - insert_at: base
+        type: log
+        log_fields:
+          container_id: b8ee56469
+          container_name: akvorado-clickhouse-1
+          label."com.docker.compose.service": clickhouse
+          message: >-
+            Merging configuration file '/etc/clickhouse-server/config.d/akvorado.xml'.
+    outputs:
+      - extract_from: combine
+        conditions:
+          - type: vrl
+            source: |-
+              assert_eq!(.message, "Merging configuration file '/etc/clickhouse-server/config.d/akvorado.xml'.")
+              assert!(is_timestamp(.timestamp))
+              assert_eq!(._labels,
+                {"service_name": "clickhouse",
+                 "instance": "akvorado-clickhouse-1"})
+              assert_eq!(._metadata, null)
+  - name: "clickhouse logs"
+    inputs:
+      - insert_at: base
+        type: log
+        log_fields:
+          container_id: b8ee56469
+          container_name: akvorado-clickhouse-1
+          label."com.docker.compose.service": clickhouse
+          message: >-
+            {"date_time_utc":"2025-08-31T07:27:15Z",
+             "date_time":"1756625235.240594",
+             "thread_name":"",
+             "thread_id":"747",
+             "level":"Warning",
+             "query_id":"",
+             "logger_name":"Application",
+             "message":"Listen [0.0.0.0]:9009 failed: Poco::Exception. Code: 1000, e.code() = 98",
+             "source_file":"programs\/server\/Server.cpp; void DB::Server::createServer(Poco::Util::AbstractConfiguration &, const std::string &, const char *, bool, bool, std::vector<ProtocolServerAdapter> &, CreateServerFunc &&) const",
+             "source_line":"564"}
+    outputs:
+      - extract_from: combine
+        conditions:
+          - type: vrl
+            source: |-
+              assert_eq!(.message, "Listen [0.0.0.0]:9009 failed: Poco::Exception. Code: 1000, e.code() = 98")
+              assert_eq!(.timestamp, t'2025-08-31T07:27:15Z')
+              assert_eq!(._labels,
+                {"service_name": "clickhouse",
+                 "instance": "akvorado-clickhouse-1",
+                 "level": "warning"})
+              assert_eq!(._metadata,
+                {"thread_id": "747",
+                 "logger_name": "Application",
+                 "source_file": "programs/server/Server.cpp; void DB::Server::createServer(Poco::Util::AbstractConfiguration &, const std::string &, const char *, bool, bool, std::vector<ProtocolServerAdapter> &, CreateServerFunc &&) const",
+                 "source_line": "564"})
