@@ -27,10 +27,8 @@ jobs:
     name: 🐧 Test on Linux
     runs-on: ubuntu-latest
     needs:
-      - dependabot
       - build-go
       - build-js
-    if: needs.dependabot.outputs.package-ecosystem != 'npm_and_yarn'
     permissions:
       contents: read
       actions: write
@@ -85,10 +83,8 @@ jobs:
     name: ❄️ Build on Nix
     runs-on: ubuntu-latest
     needs:
-      - dependabot
       - build-go
       - build-js
-    if: needs.dependabot.outputs.package-ecosystem != 'npm_and_yarn'
     permissions:
       contents: read
     steps:
@@ -108,10 +104,8 @@ jobs:
     name: 🍏 Build and test on macOS
     runs-on: macos-14
     needs:
-      - dependabot
       - build-go
       - build-js
-    if: needs.dependabot.outputs.package-ecosystem != 'npm_and_yarn'
     permissions:
       contents: read
     steps:
@@ -139,10 +133,8 @@ jobs:
     name: 🧪 End-to-end testing
     runs-on: ubuntu-latest
     needs:
-      - dependabot
       - build-go
       - build-js
-    if: needs.dependabot.outputs.package-ecosystem != 'npm_and_yarn'
     permissions:
       contents: read
     steps:
@@ -257,6 +249,11 @@ jobs:
     strategy:
       matrix:
         node-version: [20, 22, 24]
+        dependabot: ${{ [ needs.dependabot.outputs.package-ecosystem ] }}
+        exclude:
+          - dependabot: go_modules
+        include:
+          - node-version: 20
     steps:
       - uses: actions/checkout@v5
         with:
