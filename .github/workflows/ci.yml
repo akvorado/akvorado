@@ -327,6 +327,8 @@ jobs:
         with:
           images: |
             ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=unreleased-${{ github.run_id }}
           labels: |
             org.opencontainers.image.title=Akvorado
             org.opencontainers.image.licenses=AGPL-3.0-only
@@ -353,6 +355,7 @@ jobs:
           push: true
           build-args: |
             VERSION=${{ steps.version.outputs.version }}
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
           provenance: mode=max
@@ -360,7 +363,7 @@ jobs:
       digest: ${{ steps.build.outputs.digest }}
 
   tag-docker:
-    name: 🏷️ Tag Docker images
+    name: 🐋 Tag Docker images
     needs:
       - build-docker
       - build-linux
