@@ -173,7 +173,7 @@ test-go-units: ; $(info $(M) running Go tests$(GOTEST_MORE)…)
 test-race: CGO_ENABLED=1
 test-race: GOTEST_ARGS=-race
 test-race: GOTEST_MORE=, with race detector
-test-race: test-go  ## Run Go tests with race detector
+test-race: test-go-units  ## Run Go tests with race detector
 test-short: GOTEST_ARGS=-short
 test-short: GOTEST_MORE=, only short tests
 test-short: test-go  ## Run only short Go tests

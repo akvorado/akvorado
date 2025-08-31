@@ -37,8 +37,9 @@ jobs:
         tests:
           - regular
           - coverage
+          - misc
         include:
-          - tests: regular
+          - tests: misc
             binary: ${{ github.ref_type == 'tag' }}
     env:
       CI_AKVORADO_FUNCTIONAL_TESTS: "true"
@@ -49,7 +50,9 @@ jobs:
           fetch-depth: ${{ matrix.binary && 0 || 1 }}
           persist-credentials: false
       - uses: docker/setup-buildx-action@v3
+        if: matrix.tests != 'misc'
       - name: Docker Compose up
+        if: matrix.tests != 'misc'
         run: docker compose -f docker/docker-compose-dev.yml up --wait --wait-timeout 60 --quiet-pull
       - name: Setup
         uses: ./.github/actions/setup
@@ -63,12 +66,9 @@ jobs:
       - name: JS tests
         if: matrix.tests == 'regular'
         run: make test-js
-      - name: Vector tests
-        if: matrix.tests == 'regular'
-        run: docker compose -f docker/docker-compose-dev.yml run --quiet --rm vector test
 
       # Coverage tests
-      - name: Run coverage tests
+      - name: Coverage tests
         if: matrix.tests == 'coverage'
         run: make test-coverage
       - name: Upload coverage results
@@ -80,6 +80,15 @@ jobs:
           path: |
             test/go/profile.out
             test/js/cobertura-coverage.xml
+
+      # Misc tests
+      - name: Vector tests
+        if: matrix.tests == 'misc'
+        run: docker compose -f docker/docker-compose-dev.yml run --quiet --rm vector test
+      - name: Static checks
+        if: matrix.tests == 'misc'
+        run: |
+          make test-go-checks
 
       # Binary build
       - name: Build
