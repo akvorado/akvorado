@@ -249,7 +249,8 @@ jobs:
     strategy:
       matrix:
         node-version: [20, 22, 24]
-        dependabot: ${{ [ needs.dependabot.outputs.package-ecosystem ] }}
+        dependabot:
+          - ${{ needs.dependabot.outputs.package-ecosystem }}
         exclude:
           - dependabot: go_modules
         include:
