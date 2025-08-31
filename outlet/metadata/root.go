@@ -14,7 +14,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/eapache/go-resiliency/breaker"
 	"golang.org/x/sync/singleflight"
 	"gopkg.in/tomb.v2"
@@ -52,7 +51,6 @@ type Component struct {
 // Dependencies define the dependencies of the metadata component.
 type Dependencies struct {
 	Daemon daemon.Component
-	Clock  clock.Clock
 }
 
 // ErrQueryTimeout is the error returned when a query timeout.
@@ -67,9 +65,6 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		return nil, errors.New("cache duration must be greater than cache check interval")
 	}
 
-	if dependencies.Clock == nil {
-		dependencies.Clock = clock.New()
-	}
 	sc := newMetadataCache(r)
 	c := Component{
 		r:      r,
@@ -138,7 +133,7 @@ func (c *Component) Start() error {
 	c.r.RegisterHealthcheck("metadata/ticker", reporter.ChannelHealthcheck(c.t.Context(nil), healthyTicker))
 	c.t.Go(func() error {
 		c.r.Debug().Msg("starting metadata ticker")
-		ticker := c.d.Clock.Ticker(c.config.CacheCheckInterval)
+		ticker := time.NewTicker(c.config.CacheCheckInterval)
 		defer ticker.Stop()
 		defer close(healthyTicker)
 		for {
@@ -224,7 +219,7 @@ func (c *Component) queryProviders(query provider.Query) (provider.Answer, error
 			ErrQueryTimeout)
 		defer cancel()
 
-		now := c.d.Clock.Now()
+		now := time.Now()
 		for _, p := range c.providers {
 			answer, err := p.Query(ctx, query)
 			if err == provider.ErrSkipProvider {
@@ -273,12 +268,12 @@ func (c *Component) refreshCacheEntry(exporterIP netip.Addr, ifIndex uint) {
 
 // expireCache handles cache expiration and refresh.
 func (c *Component) expireCache() {
-	c.sc.Expire(c.d.Clock.Now().Add(-c.config.CacheDuration))
+	c.sc.Expire(time.Now().Add(-c.config.CacheDuration))
 	if c.config.CacheRefresh > 0 {
 		c.r.Debug().Msg("refresh metadata cache")
 		c.metrics.cacheRefreshRuns.Inc()
 		count := 0
-		toRefresh := c.sc.NeedUpdates(c.d.Clock.Now().Add(-c.config.CacheRefresh))
+		toRefresh := c.sc.NeedUpdates(time.Now().Add(-c.config.CacheRefresh))
 		for exporter, ifaces := range toRefresh {
 			for _, ifIndex := range ifaces {
 				go c.refreshCacheEntry(exporter, ifIndex)

@@ -9,9 +9,8 @@ import (
 	"net/netip"
 	"path/filepath"
 	"testing"
+	"testing/synctest"
 	"time"
-
-	"github.com/benbjohnson/clock"
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
@@ -126,61 +125,62 @@ func TestComponentSaveLoad(t *testing.T) {
 }
 
 func TestAutoRefresh(t *testing.T) {
-	r := reporter.NewMock(t)
-	configuration := DefaultConfiguration()
-	mockClock := clock.NewMock()
-	c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t), Clock: mockClock})
+	synctest.Test(t, func(t *testing.T) {
+		r := reporter.NewMock(t)
+		configuration := DefaultConfiguration()
+		c := NewMock(t, r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 
-	expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{
-		Found: true,
-		Exporter: provider.Exporter{
-			Name: "127_0_0_1",
-		},
-		Interface: provider.Interface{
-			Name:        "Gi0/0/765",
-			Description: "Interface 765",
-			Speed:       1000,
-		},
-	})
+		expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{
+			Found: true,
+			Exporter: provider.Exporter{
+				Name: "127_0_0_1",
+			},
+			Interface: provider.Interface{
+				Name:        "Gi0/0/765",
+				Description: "Interface 765",
+				Speed:       1000,
+			},
+		})
 
-	// Keep it in the cache!
-	mockClock.Add(25 * time.Minute)
-	c.Lookup(mockClock.Now(), netip.MustParseAddr("::ffff:127.0.0.1"), 765)
-	mockClock.Add(25 * time.Minute)
-	c.Lookup(mockClock.Now(), netip.MustParseAddr("::ffff:127.0.0.1"), 765)
+		// Keep it in the cache!
+		time.Sleep(25 * time.Minute)
+		c.Lookup(time.Now(), netip.MustParseAddr("::ffff:127.0.0.1"), 765)
+		time.Sleep(25 * time.Minute)
+		c.Lookup(time.Now(), netip.MustParseAddr("::ffff:127.0.0.1"), 765)
 
-	// Go forward, we expect the entry to have been refreshed and be still present
-	mockClock.Add(11 * time.Minute)
-	mockClock.Add(2 * time.Minute)
-	expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{
-		Found: true,
-		Exporter: provider.Exporter{
-			Name: "127_0_0_1",
-		},
+		// Go forward, we expect the entry to have been refreshed and be still present
+		time.Sleep(11 * time.Minute)
+		time.Sleep(2 * time.Minute)
+		expectMockLookup(t, c, "127.0.0.1", 765, provider.Answer{
+			Found: true,
+			Exporter: provider.Exporter{
+				Name: "127_0_0_1",
+			},
 
-		Interface: provider.Interface{
-			Name:        "Gi0/0/765",
-			Description: "Interface 765",
-			Speed:       1000,
-		},
-	})
+			Interface: provider.Interface{
+				Name:        "Gi0/0/765",
+				Description: "Interface 765",
+				Speed:       1000,
+			},
+		})
 
-	gotMetrics := r.GetMetrics("akvorado_outlet_metadata_cache_")
-	for _, runs := range []string{"29", "30", "31"} { // 63/2
-		expectedMetrics := map[string]string{
-			`expired_entries_total`: "0",
-			`misses_total`:          "1", // First lookup misses
-			`hits_total`:            "3", // Subsequent ones hits
-			`size_entries`:          "1",
-			`refresh_runs_total`:    runs,
-			`refreshes_total`:       "1", // One refresh (after 1 hour)
+		gotMetrics := r.GetMetrics("akvorado_outlet_metadata_cache_")
+		for _, runs := range []string{"29", "30", "31"} { // 63/2
+			expectedMetrics := map[string]string{
+				`expired_entries_total`: "0",
+				`misses_total`:          "1", // First lookup misses
+				`hits_total`:            "3", // Subsequent ones hits
+				`size_entries`:          "1",
+				`refresh_runs_total`:    runs,
+				`refreshes_total`:       "1", // One refresh (after 1 hour)
+			}
+			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" && runs == "19" {
+				t.Fatalf("Metrics (-got, +want):\n%s", diff)
+			} else if diff == "" {
+				break
+			}
 		}
-		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" && runs == "19" {
-			t.Fatalf("Metrics (-got, +want):\n%s", diff)
-		} else if diff == "" {
-			break
-		}
-	}
+	})
 }
 
 func TestConfigCheck(t *testing.T) {
@@ -252,10 +252,10 @@ func TestProviderBreaker(t *testing.T) {
 			c.metrics.providerBreakerOpenCount.WithLabelValues("127.0.0.1").Add(0)
 
 			for range 30 {
-				c.Lookup(c.d.Clock.Now(), netip.MustParseAddr("::ffff:127.0.0.1"), 765)
+				c.Lookup(time.Now(), netip.MustParseAddr("::ffff:127.0.0.1"), 765)
 			}
 			for range 5 {
-				c.Lookup(c.d.Clock.Now(), netip.MustParseAddr("::ffff:127.0.0.2"), 765)
+				c.Lookup(time.Now(), netip.MustParseAddr("::ffff:127.0.0.2"), 765)
 			}
 			time.Sleep(50 * time.Millisecond)
 
