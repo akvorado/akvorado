@@ -32,15 +32,23 @@ jobs:
     permissions:
       contents: read
       actions: write
+    strategy:
+      matrix:
+        tests:
+          - regular
+          - coverage
+        include:
+          - tests: regular
+            binary: ${{ github.ref_type == 'tag' }}
     env:
       CI_AKVORADO_FUNCTIONAL_TESTS: "true"
     steps:
       # Setup
-      - uses: docker/setup-buildx-action@v3
       - uses: actions/checkout@v5
         with:
-          fetch-depth: 0        # We need the version for bin/akvorado
+          fetch-depth: ${{ matrix.binary && 0 || 1 }}
           persist-credentials: false
+      - uses: docker/setup-buildx-action@v3
       - name: Docker Compose up
         run: docker compose -f docker/docker-compose-dev.yml up --wait --wait-timeout 60 --quiet-pull
       - name: Setup
@@ -48,19 +56,23 @@ jobs:
       - name: Install dependencies
         run: sudo apt-get install -qqy shared-mime-info curl
 
-      # Build and test
-      - name: Build
-        if: github.ref_type == 'tag'
-        run: make && ./bin/akvorado version
+      # Regular tests
       - name: Go race tests
+        if: matrix.tests == 'regular'
         run: make test-race
       - name: JS tests
+        if: matrix.tests == 'regular'
         run: make test-js
       - name: Vector tests
+        if: matrix.tests == 'regular'
         run: docker compose -f docker/docker-compose-dev.yml run --quiet --rm vector test
+
+      # Coverage tests
       - name: Run coverage tests
+        if: matrix.tests == 'coverage'
         run: make test-coverage
       - name: Upload coverage results
+        if: matrix.tests == 'coverage'
         uses: actions/upload-artifact@v4
         with:
           name: linux-coverage
@@ -68,16 +80,18 @@ jobs:
           path: |
             test/go/profile.out
             test/js/cobertura-coverage.xml
+
+      # Binary build
+      - name: Build
+        if: matrix.binary
+        run: make && ./bin/akvorado version
       - name: Upload binary
-        if: github.ref_type == 'tag'
+        if: matrix.binary
         uses: actions/upload-artifact@v4
         with:
           name: binary
           path: bin/akvorado
           if-no-files-found: error
-      - name: Docker Compose down
-        if: always()
-        run: docker compose -f docker/docker-compose-dev.yml down --remove-orphans --volumes --timeout 60
 
   build-nix:
     name: ❄️ Build on Nix
