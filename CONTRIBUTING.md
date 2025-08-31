@@ -47,20 +47,27 @@ can spawn them through `docker compose -f docker/docker-compose-dev.yml`:
 - `... up clickhouse-\*` to spawn a ClickHouse cluster
 - `... up kafka` to spawn a Kafka broker
 
-For manual end-to-end tests, you can use `make docker-dev` to build a Docker
-container of Akvorado, then use `docker compose up` to run Docker compose.
-Beware not to destroy the volume for GeoIP at each attempt as there is a
-per-day limit on the number of times one IP can fetch the GeoIP database.
+# Hacking
+
+For manual tests, you can use `make docker-dev` to build a Docker container,
+then use `docker compose --profile demo up` to run Docker Compose. Each time you
+modify the code, repeat these two steps. Beware not to destroy the volume for
+GeoIP at each attempt as there is a per-day limit on the number of times one IP
+can fetch the GeoIP database.
+
+When using this method, it can take a little bit of time until the console is
+declared healthy. In the meantime, you get a 404 error. If you want to avoid
+that, you can the console locally instead:
+
+```console
+$ docker compose stop akvorado-console
+$ make && AKVORADO_CFG_CONSOLE_CLICKHOUSE_SERVERS=$(docker container inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' akvorado-clickhouse-1):9000 AKVORADO_CFG_CONSOLE_SERVELIVEFS=true ./bin/akvorado console /dev/null
+```
 
 If you need to work on the frontend part, you can spawn the Docker compose
 setup, then in `console/frontend`, use `npm run dev` and point your browser to
 `http://localhost:5173` instead of `http://localhost:8080`. Any change of
-frontend-related files should be applied immediately. You still need to run a
-local version of the console service:
-
-```console
-$ make && AKVORADO_CFG_CONSOLE_SERVELIVEFS=true ./bin/akvorado console /dev/null
-```
+frontend-related files should be applied immediately.
 
 # Licensing
 
