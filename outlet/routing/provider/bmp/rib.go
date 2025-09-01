@@ -159,6 +159,11 @@ func (r *rib) newPrefixIndex() prefixIndex {
 
 // freePrefixIndex returns a prefix ID to the free list
 func (r *rib) freePrefixIndex(id prefixIndex) {
+	if helpers.Testing() {
+		if id == 0 {
+			panic("cannot free index 0")
+		}
+	}
 	r.freePrefixIDs = append(r.freePrefixIDs, id)
 }
 
