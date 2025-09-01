@@ -352,10 +352,11 @@ func TestRIBHarness(t *testing.T) {
 			rd      RD
 			asn     uint32
 			removed bool
+			comment string
 		}
 		// We store all lookups that should succeed
 		lookups := []lookup{}
-		removeLookup := func(lookup lookup) {
+		removeLookup := func(lookup lookup, comment string) {
 			for idx := range lookups {
 				if lookups[idx].peer != lookup.peer {
 					continue
@@ -367,6 +368,7 @@ func TestRIBHarness(t *testing.T) {
 					continue
 				}
 				lookups[idx].removed = true
+				lookups[idx].comment = fmt.Sprintf("%s; %s", lookups[idx].comment, comment)
 				break
 			}
 		}
@@ -385,8 +387,9 @@ func TestRIBHarness(t *testing.T) {
 							random.Intn(300))),
 						nextHop: netip.MustParseAddr(
 							fmt.Sprintf("2001:db8:c::%x", random.Intn(500))),
-						rd:  RD(random.Intn(3)),
-						asn: uint32(random.Intn(1000)),
+						rd:      RD(random.Intn(3)),
+						asn:     uint32(random.Intn(1000)),
+						comment: "added during first pass",
 					}
 					added += r.AddPrefix(netip.PrefixFrom(lookup.addr, 64),
 						route{
@@ -397,7 +400,7 @@ func TestRIBHarness(t *testing.T) {
 								asn: lookup.asn,
 							}),
 						})
-					removeLookup(lookup)
+					removeLookup(lookup, fmt.Sprintf("erased by NH: %s, ASN: %d", lookup.nextHop, lookup.asn))
 					lookups = append(lookups, lookup)
 				}
 				t.Logf("Run %d: added = %d/%d", run, added, toAdd)
@@ -420,7 +423,7 @@ func TestRIBHarness(t *testing.T) {
 							peer: peer,
 							addr: prefix,
 							rd:   rd,
-						})
+						}, "removed during second pass")
 					}
 				}
 				t.Logf("Run %d: removed = %d/%d", run, removed, toRemove)
@@ -434,7 +437,8 @@ func TestRIBHarness(t *testing.T) {
 							random.Intn(300))),
 						nextHop: netip.MustParseAddr(
 							fmt.Sprintf("2001:db8:c::%x", random.Uint32()%500)),
-						asn: uint32(random.Intn(1010)),
+						asn:     uint32(random.Intn(1010)),
+						comment: "added during third pass",
 					}
 					added += r.AddPrefix(netip.PrefixFrom(lookup.addr, 64),
 						route{
@@ -445,7 +449,7 @@ func TestRIBHarness(t *testing.T) {
 								asn: lookup.asn,
 							}),
 						})
-					removeLookup(lookup)
+					removeLookup(lookup, fmt.Sprintf("erased by NH: %s, ASN: %d", lookup.nextHop, lookup.asn))
 					lookups = append(lookups, lookup)
 				}
 				t.Logf("Run %d: readedd = %d/%d", run, added, toAdd)
@@ -489,16 +493,36 @@ func TestRIBHarness(t *testing.T) {
 			}
 
 			if !found {
-				t.Logf("Available routes for %s:", lookup.addr)
+				t.Errorf("cannot find %s for peer %d; NH: %s, RD: %s, ASN: %d, comment: %s",
+					lookup.addr, lookup.peer,
+					lookup.nextHop, lookup.rd, lookup.asn, lookup.comment)
+				t.Logf("> available routes in tree for %s:", lookup.addr)
 				for route := range r.iterateRoutesForPrefixIndex(prefixIdx) {
-					t.Logf("peer %d, NH: %s, RD: %s, ASN: %d",
+					t.Logf("  peer %d, NH: %s, RD: %s, ASN: %d",
 						route.peer,
 						netip.Addr(r.nextHops.Get(route.nextHop)),
 						r.nlris.Get(route.nlri).rd, r.rtas.Get(route.attributes).asn)
 				}
-				t.Errorf("cannot find %s for peer %d; NH: %s, RD: %s, ASN: %d",
-					lookup.addr, lookup.peer,
-					lookup.nextHop, lookup.rd, lookup.asn)
+				t.Logf("> route history for prefix %s:", lookup.addr)
+				for _, olookup := range lookups {
+					if lookup.addr != olookup.addr {
+						continue
+					}
+					t.Logf("  peer: %d, NH: %s, RD: %s, ASN: %d, comment: %s",
+						olookup.peer, olookup.nextHop, olookup.rd, olookup.asn, olookup.comment)
+				}
+				if run == 1 {
+					if testing.Verbose() {
+						t.Log("> complete history:")
+						for _, olookup := range lookups {
+							t.Logf("  prefix: %s, peer: %d, NH: %s, RD: %s, ASN: %d comment: %s",
+								olookup.addr,
+								olookup.peer, olookup.nextHop, olookup.rd, olookup.asn, olookup.comment)
+						}
+					} else {
+						t.Log("> complete history available in verbose mode")
+					}
+				}
 			}
 		}
 		if removed < 5 {
