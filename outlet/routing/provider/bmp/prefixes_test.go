@@ -239,7 +239,15 @@ func BenchmarkRIBInsertion(b *testing.B) {
 					}
 					for p := range peers {
 						nh = nh.Next()
+
+						b.StopTimer()
+						randomPrefixes := []randomRoute{}
 						for r := range randomRealWorldRoutes4(prng1, prng2[p], routes) {
+							randomPrefixes = append(randomPrefixes, r)
+						}
+						b.StartTimer()
+
+						for _, r := range randomPrefixes {
 							if prng2[p].Intn(10) == 0 {
 								continue
 							}
@@ -311,8 +319,12 @@ func BenchmarkRIBLookup(b *testing.B) {
 
 				prng1 = rand.New(rand.NewSource(10))
 				lookups := 0
+				randomPrefixes := []randomRoute{}
+				for r := range randomRealWorldRoutes4(prng1, prng2[0], routes/10) {
+					randomPrefixes = append(randomPrefixes, r)
+				}
 				for b.Loop() {
-					for r := range randomRealWorldRoutes4(prng1, prng2[0], routes/10) {
+					for _, r := range randomPrefixes {
 						_, _ = rib.tree.Lookup(netip.AddrFrom16(r.Prefix.Addr().As16()))
 						lookups++
 					}
