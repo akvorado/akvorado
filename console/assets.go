@@ -24,7 +24,6 @@ func (c *Component) assetsHandlerFunc(w http.ResponseWriter, req *http.Request) 
 	if strings.HasPrefix(upath, "/docs/images/") {
 		docs := c.embedOrLiveFS(embeddedDocs, "data/docs")
 		http.ServeFileFS(w, req, docs, req.URL.Path[len("/docs/images/"):])
-		http.FileServer(http.FS(docs)).ServeHTTP(w, req)
 	}
 
 	// Serve /assets
@@ -38,6 +37,7 @@ func (c *Component) assetsHandlerFunc(w http.ResponseWriter, req *http.Request) 
 	f, err := http.FS(assets).Open("index.html")
 	if err != nil {
 		http.Error(w, "Application not found.", http.StatusInternalServerError)
+		return
 	}
 	http.ServeContent(w, req, "index.html", time.Time{}, f)
 	f.Close()
