@@ -164,7 +164,7 @@ func (r *imageLinkTransformer) Transform(node *ast.Document, _ text.Reader, _ pa
 		case *ast.Image:
 			path := string(node.Destination)
 			if !strings.Contains(path, "/") {
-				node.Destination = []byte(fmt.Sprintf("images/%s", path))
+				node.Destination = []byte(fmt.Sprintf("../assets/docs/%s", path))
 			}
 		}
 		return ast.WalkContinue, nil

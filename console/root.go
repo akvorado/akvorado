@@ -83,7 +83,11 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 func (c *Component) Start() error {
 	c.r.Info().Msg("starting console component")
 
-	c.d.HTTP.AddHandler("/", http.HandlerFunc(c.assetsHandlerFunc))
+	// Static assets
+	c.d.HTTP.AddHandler("/", http.HandlerFunc(c.defaultHandlerFunc))
+	c.d.HTTP.AddHandler("/assets/", http.StripPrefix("/assets/", http.HandlerFunc(c.staticAssetsHandlerFunc)))
+	c.d.HTTP.AddHandler("/assets/docs/", http.StripPrefix("/assets/docs/", http.HandlerFunc(c.docAssetsHandlerFunc)))
+	// Dynamic assets
 	endpoint := c.d.HTTP.GinRouter.Group("/api/v0/console", c.d.Auth.UserAuthentication())
 	endpoint.GET("/configuration", c.configHandlerFunc)
 	endpoint.GET("/docs/:name", c.docsHandlerFunc)
