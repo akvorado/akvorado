@@ -5,6 +5,7 @@
 /orchestrator/clickhouse/data/udp.csv
 /console/filter/parser.go
 /common/schema/definition_gen.go
+/common/embed/data/embed.zip
 mock_*.go
 *_enumer.go
 *.pb.go

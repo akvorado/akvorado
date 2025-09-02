@@ -5,40 +5,31 @@ package clickhouse
 
 import (
 	"compress/gzip"
-	"embed"
 	"encoding/csv"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
+
+	"akvorado/common/embed"
 )
 
-//go:embed data/protocols.csv
-//go:embed data/icmp.csv
-//go:embed data/asns.csv
-//go:embed data/tcp.csv
-//go:embed data/udp.csv
-var data embed.FS
-
 func (c *Component) addHandlerEmbedded(url string, path string) {
+	data, _ := fs.Sub(embed.Data(), "orchestrator/clickhouse")
 	c.d.HTTP.AddHandler(url,
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			f, err := http.FS(data).Open(path)
-			if err != nil {
-				c.r.Err(err).Msgf("unable to open %s", path)
-				http.Error(w, fmt.Sprintf("Unable to open %q.", path), http.StatusInternalServerError)
-				return
-			}
-			http.ServeContent(w, r, path, time.Time{}, f)
-			f.Close()
+			http.ServeFileFS(w, r, data, path)
 		}))
 }
 
 // registerHTTPHandler register some handlers that will be useful for
 // ClickHouse
 func (c *Component) registerHTTPHandlers() error {
+	data, _ := fs.Sub(embed.Data(), "orchestrator/clickhouse")
+
 	// Add handler for custom dicts
 	for name, dict := range c.d.Schema.GetCustomDictConfig() {
 		c.d.HTTP.AddHandler(fmt.Sprintf("/api/v0/orchestrator/clickhouse/custom_dict_%s.csv", name), http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -163,7 +154,7 @@ func (c *Component) registerHTTPHandlers() error {
 	}
 
 	// Static CSV files
-	entries, err := data.ReadDir("data")
+	entries, err := data.(fs.ReadDirFS).ReadDir("data")
 	if err != nil {
 		return fmt.Errorf("unable to read data directory: %w", err)
 	}

@@ -38,7 +38,8 @@ GENERATED_TEST_GO = \
 GENERATED = \
 	$(GENERATED_GO) \
 	$(GENERATED_JS) \
-	console/data/frontend
+	console/data/frontend \
+	common/embed/data/embed.zip
 
 .PHONY: all all-indep
 BUILD_ARGS =
@@ -152,6 +153,11 @@ default-%.pgo:
 	   ip=$$(docker container inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $$container) ; \
 	   [ -n $$ip ] ; \
 	   curl -so $@ "http://$$ip:8080/debug/pprof/profile?seconds=30"
+
+common/embed/data/embed.zip: console/data/frontend console/authentication/data/avatars console/data/docs
+common/embed/data/embed.zip: orchestrator/clickhouse/data/protocols.csv orchestrator/clickhouse/data/icmp.csv orchestrator/clickhouse/data/asns.csv orchestrator/clickhouse/data/tcp.csv orchestrator/clickhouse/data/udp.csv
+common/embed/data/embed.zip: ; $(info $(M) generate embed.zip…)
+	$Q mkdir -p common/embed/data && zip --quiet --recurse-paths --filesync $@ $^
 
 # Tests
 
