@@ -2,9 +2,9 @@
 # This configuration file is documented in docs/02-configuration.md.
 #
 # You can get all default values with `akvorado orchestrator /dev/null --dump
-# --check` or `docker compose run akvorado-orchestrator orchestrator /dev/null
-# --dump --check`. Do not use the output of the command as your configuration
-# file, it should only help you get the default values.
+# --check` or `docker compose run --rm --no-deps akvorado-orchestrator
+# orchestrator /dev/null --dump --check`. Do not use the output of the command
+# as your configuration file, it should only help you get the default values.
 
 kafka:
   topic: flows

@@ -9,8 +9,8 @@ The orchestrator service is configured through YAML files (provided in the
 > service, you always need to restart the orchestrator first, then the service
 > whose configuration has changed.
 
-You can get the default configuration with `docker compose exec
-akvorado-orchestrator akvorado orchestrator --dump --check /dev/null`. Note that
+You can get the default configuration with `docker compose run --rm --no-deps
+akvorado-orchestrator orchestrator --dump --check /dev/null`. Note that
 some sections are generated from the configuration of other sections. It is
 better to not use the generated configuration as a base for your configuration.
 Write durations as strings, like `10h20m` or `5s`. Valid time units are `ms`,

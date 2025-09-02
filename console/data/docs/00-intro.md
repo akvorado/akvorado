@@ -65,9 +65,10 @@ To connect your own network devices:
 - Review the [operations guide](04-operations.md) for router configuration examples
 - Check the [troubleshooting guide](05-troubleshooting.md) if you run into an issue
 
-You can see the full configuration (with default values) with:
-`docker compose exec akvorado-orchestrator akvorado orchestrator
---check --dump /etc/akvorado/akvorado.yaml`.
+You can see the full configuration (with default values) with: `docker compose
+run --rm --no-deps akvorado-orchestrator orchestrator --check --dump
+/etc/akvorado/akvorado.yaml`. This is also useful to validate your
+configuration.
 
 > [!IMPORTANT]
 > Please, do not open an issue or start a discussion unless you have read the

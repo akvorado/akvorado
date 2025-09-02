@@ -24,7 +24,7 @@ body:
       label: Akvorado version
       description: |
         Provide the Akvorado version (first line of `akvorado version` or
-        `docker compose run --rm akvorado-inlet version`)
+        `docker compose run --rm --no-deps akvorado-inlet version`)
     validations:
       required: true
   - type: textarea
