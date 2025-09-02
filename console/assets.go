@@ -14,13 +14,21 @@ import (
 var embeddedAssets embed.FS
 
 func (c *Component) assetsHandlerFunc(w http.ResponseWriter, req *http.Request) {
-	assets := c.embedOrLiveFS(embeddedAssets, "data/frontend")
 	upath := req.URL.Path
 	if !strings.HasPrefix(upath, "/") {
 		upath = "/" + upath
 		req.URL.Path = upath
 	}
-	// Serve assets using a file server
+
+	// Serve /doc/images
+	if strings.HasPrefix(upath, "/docs/images/") {
+		docs := c.embedOrLiveFS(embeddedDocs, "data/docs")
+		http.ServeFileFS(w, req, docs, req.URL.Path[len("/docs/images/"):])
+		http.FileServer(http.FS(docs)).ServeHTTP(w, req)
+	}
+
+	// Serve /assets
+	assets := c.embedOrLiveFS(embeddedAssets, "data/frontend")
 	if strings.HasPrefix(upath, "/assets/") {
 		http.FileServer(http.FS(assets)).ServeHTTP(w, req)
 		return

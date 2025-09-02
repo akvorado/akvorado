@@ -6,7 +6,6 @@ package console
 import (
 	"bytes"
 	"embed"
-	"encoding/base64"
 	"fmt"
 	"io"
 	"io/fs"
@@ -116,7 +115,7 @@ func (c *Component) docsHandlerFunc(gc *gin.Context) {
 			parser.WithAutoHeadingID(),
 			parser.WithASTTransformers(
 				util.Prioritized(&internalLinkTransformer{}, 500),
-				util.Prioritized(&imageEmbedder{docs}, 500),
+				util.Prioritized(&imageLinkTransformer{docs}, 500),
 			),
 		),
 	)
@@ -152,11 +151,11 @@ func (r *internalLinkTransformer) Transform(node *ast.Document, _ text.Reader, _
 	ast.Walk(node, replaceLinks)
 }
 
-type imageEmbedder struct {
+type imageLinkTransformer struct {
 	root fs.FS
 }
 
-func (r *imageEmbedder) Transform(node *ast.Document, _ text.Reader, _ parser.Context) {
+func (r *imageLinkTransformer) Transform(node *ast.Document, _ text.Reader, _ parser.Context) {
 	replaceLinks := func(n ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
 			return ast.WalkContinue, nil
@@ -164,19 +163,9 @@ func (r *imageEmbedder) Transform(node *ast.Document, _ text.Reader, _ parser.Co
 		switch node := n.(type) {
 		case *ast.Image:
 			path := string(node.Destination)
-			if strings.Contains(path, "/") || !strings.HasSuffix(path, ".svg") {
-				break
+			if !strings.Contains(path, "/") {
+				node.Destination = []byte(fmt.Sprintf("images/%s", path))
 			}
-			f, err := r.root.Open(path)
-			if err != nil {
-				break
-			}
-			content, err := io.ReadAll(f)
-			if err != nil {
-				break
-			}
-			encoded := fmt.Sprintf("data:image/svg+xml;base64,%s", base64.StdEncoding.EncodeToString(content))
-			node.Destination = []byte(encoded)
 		}
 		return ast.WalkContinue, nil
 	}

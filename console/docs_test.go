@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+
+	"akvorado/common/helpers"
 )
 
 func TestServeDocs(t *testing.T) {
@@ -22,7 +24,7 @@ func TestServeDocs(t *testing.T) {
 			Expect string
 		}{
 			{"usage", `<a href=\"configuration\">configuration section</a>`},
-			{"intro", `data:image/svg`},
+			{"intro", `images/design.svg`},
 		}
 		for _, tc := range cases {
 			t.Run(fmt.Sprintf("%s-%s", name, tc.Path), func(t *testing.T) {
@@ -48,5 +50,40 @@ func TestServeDocs(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestServeImages(t *testing.T) {
+	for _, live := range []bool{false, true} {
+		name := "livefs"
+		if !live {
+			name = "embeddedfs"
+		}
+
+		t.Run(name, func(t *testing.T) {
+			conf := DefaultConfiguration()
+			conf.ServeLiveFS = live
+			_, h, _, _ := NewMock(t, conf)
+
+			resp, err := http.Get(fmt.Sprintf("http://%s/docs/images/design.svg",
+				h.LocalAddr()))
+			if err != nil {
+				t.Fatalf("GET /docs/images/design.svg:\n%+v", err)
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode != 200 {
+				t.Errorf("GET /docs/images/design.svg: got status code %d, not 200",
+					resp.StatusCode)
+			}
+			expected := `<?xml version="1.0" encoding="UTF-8"?>`
+			got := make([]byte, len(expected))
+			if _, err := io.ReadFull(resp.Body, got); err != nil {
+				t.Fatalf("GET /docs/images/design.svg ReadFull() error:\n%+v", err)
+			}
+			if diff := helpers.Diff(string(got), expected); diff != "" {
+				t.Errorf("GET /docs/images/design.svg:\n%s",
+					diff)
+			}
+		})
 	}
 }

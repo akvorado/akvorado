@@ -12,6 +12,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 🩹 *console*: display missing images in documentation
 - 🌱 *build*: accept building with a not up-to-date toolchain
 - 🌱 *docker*: update ClickHouse to 25.8 (not mandatory)
 
