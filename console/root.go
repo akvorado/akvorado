@@ -19,6 +19,7 @@ import (
 
 	"akvorado/common/clickhousedb"
 	"akvorado/common/daemon"
+	"akvorado/common/embed"
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
@@ -138,14 +139,14 @@ func (c *Component) Stop() error {
 // embedOrLiveFS returns a subset of the provided embedded filesystem,
 // except if the component is configured to use the live filesystem.
 // Then, it returns the provided tree.
-func (c *Component) embedOrLiveFS(embed fs.FS, p string) fs.FS {
+func (c *Component) embedOrLiveFS(prefix string) fs.FS {
 	var fileSystem fs.FS
 	if c.config.ServeLiveFS {
 		_, src, _, _ := runtime.Caller(0)
-		fileSystem = os.DirFS(filepath.Join(path.Dir(src), p))
+		fileSystem = os.DirFS(filepath.Join(path.Dir(src), prefix))
 	} else {
 		var err error
-		fileSystem, err = fs.Sub(embed, p)
+		fileSystem, err = fs.Sub(embed.Data(), path.Join("console", prefix))
 		if err != nil {
 			panic(err)
 		}

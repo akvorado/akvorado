@@ -5,7 +5,6 @@ package console
 
 import (
 	"bytes"
-	"embed"
 	"fmt"
 	"io"
 	"io/fs"
@@ -24,8 +23,6 @@ import (
 )
 
 var (
-	//go:embed data/docs
-	embeddedDocs       embed.FS
 	internalLinkRegexp = regexp.MustCompile("^(([0-9]+)-([a-z]+).md)(#.*|$)")
 )
 
@@ -43,7 +40,7 @@ type DocumentTOC struct {
 }
 
 func (c *Component) docsHandlerFunc(gc *gin.Context) {
-	docs := c.embedOrLiveFS(embeddedDocs, "data/docs")
+	docs := c.embedOrLiveFS("data/docs")
 	requestedDocument := gc.Param("name")
 
 	var markdown []byte

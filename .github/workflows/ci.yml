@@ -57,7 +57,7 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
       - name: Install dependencies
-        run: sudo apt-get install -qqy shared-mime-info curl
+        run: sudo apt-get install -qqy shared-mime-info curl zip
 
       # Regular tests
       - name: Go race tests

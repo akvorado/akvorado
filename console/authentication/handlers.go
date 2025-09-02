@@ -5,7 +5,6 @@ package authentication
 
 import (
 	"bufio"
-	"embed"
 	"fmt"
 	"hash/fnv"
 	"image"
@@ -15,11 +14,10 @@ import (
 	"math/rand"
 	"net/http"
 
+	"akvorado/common/embed"
+
 	"github.com/gin-gonic/gin"
 )
-
-//go:embed data/avatars
-var avatarParts embed.FS
 
 // UserInfoHandlerFunc returns the information about the currently logged user.
 func (c *Component) UserInfoHandlerFunc(gc *gin.Context) {
@@ -44,6 +42,12 @@ func (c *Component) UserAvatarHandlerFunc(gc *gin.Context) {
 	}
 
 	// Grab list of parts
+	avatarParts, err := fs.Sub(embed.Data(), "console/authentication")
+	if err != nil {
+		c.r.Err(err).Msg("cannot open embedded archive")
+		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Cannot build avatar."})
+		return
+	}
 	parts := []string{}
 	partList, err := avatarParts.Open("data/avatars/partlist.txt")
 	if err != nil {

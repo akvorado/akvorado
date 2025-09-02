@@ -22,7 +22,7 @@ run tests:
     # past but this is a slight burden to maintain in addition to GitHub CI.
     # Check commit ceaa6ebf8ef6 for the last version supporting functional
     # tests.
-    - time apk add --no-cache git make gcc musl-dev shared-mime-info npm curl
+    - time apk add --no-cache git make gcc musl-dev shared-mime-info npm curl zip
     - export GOMODCACHE=$PWD/.go-cache
     - npm config --user set cache $PWD/.npm-cache
     - time go mod download
