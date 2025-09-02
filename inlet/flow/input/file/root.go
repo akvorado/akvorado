@@ -22,12 +22,17 @@ import (
 type Input struct {
 	r      *reporter.Reporter
 	t      tomb.Tomb
-	config *Configuration
+	config Configuration
 	send   input.SendFunc
 }
 
+var (
+	_ input.Input         = &Input{}
+	_ input.Configuration = Configuration{}
+)
+
 // New instantiate a new UDP listener from the provided configuration.
-func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Component, send input.SendFunc) (input.Input, error) {
+func (configuration Configuration) New(r *reporter.Reporter, daemon daemon.Component, send input.SendFunc) (input.Input, error) {
 	if len(configuration.Paths) == 0 {
 		return nil, errors.New("no paths provided for file input")
 	}

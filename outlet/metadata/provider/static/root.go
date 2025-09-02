@@ -35,6 +35,11 @@ type Provider struct {
 	}
 }
 
+var (
+	_ provider.Provider      = &Provider{}
+	_ provider.Configuration = Configuration{}
+)
+
 // New creates a new static provider from configuration
 func (configuration Configuration) New(r *reporter.Reporter) (provider.Provider, error) {
 	p := &Provider{

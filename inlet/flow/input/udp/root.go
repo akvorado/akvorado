@@ -25,7 +25,7 @@ import (
 type Input struct {
 	r      *reporter.Reporter
 	t      tomb.Tomb
-	config *Configuration
+	config Configuration
 
 	metrics struct {
 		bytes         *reporter.CounterVec
@@ -40,8 +40,13 @@ type Input struct {
 	send    input.SendFunc // function to send to kafka
 }
 
+var (
+	_ input.Input         = &Input{}
+	_ input.Configuration = Configuration{}
+)
+
 // New instantiate a new UDP listener from the provided configuration.
-func (configuration *Configuration) New(r *reporter.Reporter, daemon daemon.Component, send input.SendFunc) (input.Input, error) {
+func (configuration Configuration) New(r *reporter.Reporter, daemon daemon.Component, send input.SendFunc) (input.Input, error) {
 	input := &Input{
 		r:      r,
 		config: configuration,

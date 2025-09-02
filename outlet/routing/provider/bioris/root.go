@@ -63,6 +63,11 @@ type Provider struct {
 // Dependencies define the dependencies of the BioRIS Provider.
 type Dependencies = provider.Dependencies
 
+var (
+	_ provider.Provider      = &Provider{}
+	_ provider.Configuration = Configuration{}
+)
+
 // New creates a new BioRIS provider.
 func (configuration Configuration) New(r *reporter.Reporter, dependencies Dependencies) (provider.Provider, error) {
 	p := Provider{

@@ -44,6 +44,11 @@ type Provider struct {
 // Dependencies define the dependencies of the BMP component.
 type Dependencies = provider.Dependencies
 
+var (
+	_ provider.Provider      = &Provider{}
+	_ provider.Configuration = Configuration{}
+)
+
 // New creates a new BMP component from its configuration.
 func (configuration Configuration) New(r *reporter.Reporter, dependencies Dependencies) (provider.Provider, error) {
 	if dependencies.Clock == nil {

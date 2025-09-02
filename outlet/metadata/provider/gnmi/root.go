@@ -24,6 +24,11 @@ type Provider struct {
 	refresh   chan bool
 }
 
+var (
+	_ provider.Provider      = &Provider{}
+	_ provider.Configuration = Configuration{}
+)
+
 // New creates a new gNMI provider from configuration
 func (configuration Configuration) New(r *reporter.Reporter) (provider.Provider, error) {
 	p := Provider{
