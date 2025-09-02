@@ -251,10 +251,10 @@ services:
       TRAEFIK_PROVIDERS_DOCKER: "true"
       TRAEFIK_PROVIDERS_DOCKER_EXPOSEDBYDEFAULT: "false"
       TRAEFIK_ENTRYPOINTS_private_ADDRESS: ":8080" # all services
+      TRAEFIK_ENTRYPOINTS_private_HTTP_MIDDLEWARES: compress@docker
       TRAEFIK_ENTRYPOINTS_public_ADDRESS: ":8081"  # public services only
+      TRAEFIK_ENTRYPOINTS_public_HTTP_MIDDLEWARES: compress@docker
       TRAEFIK_ACCESSLOG: "true"
-      TRAEFIK_PING: "true"
-      TRAEFIK_PING_ENTRYPOINT: "private"
     labels:
       - traefik.enable=true
       - "traefik.http.routers.traefik.rule=PathPrefix(`/traefik`) && !PathPrefix(`/traefik/debug`)"
@@ -262,11 +262,20 @@ services:
       - traefik.http.routers.traefik-metrics.rule=PathPrefix(`/traefik/metrics`)
       - traefik.http.routers.traefik-metrics.priority=200
       - traefik.http.routers.traefik-metrics.service=prometheus@internal
+      - traefik.http.middlewares.compress.compress=true
+      - "traefik.http.middlewares.compress.compress.includedcontenttypes=\
+        application/javascript,\
+        application/json,\
+        application/xml,\
+        image/svg+xml,\
+        text/css,\
+        text/csv,\
+        text/javascript,\
+        text/markdown,\
+        text/plain,\
+        text/xml"
       - metrics.port=8080
       - metrics.path=/traefik/metrics
-    healthcheck:
-      interval: 20s
-      test: ["CMD", "traefik", "healthcheck"]
     expose:
       - 8080/tcp
     ports:

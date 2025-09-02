@@ -10,6 +10,7 @@ services:
       TRAEFIK_ENTRYPOINTS_publicsecure_HTTP_TLS: "true"
       TRAEFIK_ENTRYPOINTS_publicsecure_HTTP_TLS_CERTRESOLVER: le
       TRAEFIK_ENTRYPOINTS_publicsecure_HTTP_TLS_DOMAINS_0_SANS: ${TLS_DOMAIN:?TLS_DOMAIN is mandatory to setup TLS}
+      TRAEFIK_ENTRYPOINTS_publicsecure_HTTP_MIDDLEWARES: compress@docker
       TRAEFIK_CERTIFICATESRESOLVERS_le: "true"
       TRAEFIK_CERTIFICATESRESOLVERS_le_ACME_EMAIL: ${TLS_EMAIL:?TLS_EMAIL is mandatory to setup TLS}
       TRAEFIK_CERTIFICATESRESOLVERS_le_ACME_STORAGE: /etc/traefik/acme.json
