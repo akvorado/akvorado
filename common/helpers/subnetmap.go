@@ -71,7 +71,10 @@ func (sm *SubnetMap[V]) Update(prefix netip.Prefix, cb func(V, bool) V) {
 	if sm.table == nil {
 		sm.table = &bart.Table[V]{}
 	}
-	sm.table.Update(prefix, cb)
+	sm.table.Modify(prefix, func(oldValue V, found bool) (V, bool) {
+		newValue := cb(oldValue, found)
+		return newValue, false
+	})
 }
 
 // All walks the whole subnet map.
