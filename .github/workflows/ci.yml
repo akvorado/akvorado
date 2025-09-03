@@ -308,7 +308,7 @@ jobs:
     needs:
       - build-go
       - build-js
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref_type == 'tag'
     permissions:
       contents: read
@@ -376,7 +376,7 @@ jobs:
       - build-nix
       - e2e
       - licenses
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
