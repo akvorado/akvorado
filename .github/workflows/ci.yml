@@ -156,6 +156,8 @@ jobs:
       - build-js
     permissions:
       contents: read
+    env:
+      AKVORADO_COVERAGE_DIRECTORY: /tmp/akvorado-coverage
     steps:
       # Setup
       - uses: docker/setup-buildx-action@v3
@@ -185,7 +187,7 @@ jobs:
           name: e2e-coverage
           if-no-files-found: error
           path: |
-            e2e-coverage.out
+            ${{ env.AKVORADO_COVERAGE_DIRECTORY }}/e2e-coverage.out
 
   coverage:
     name: 🔍 Upload code coverage

@@ -4,8 +4,9 @@
 
 set -e
 
-coverage_directory=/tmp/akvorado-coverage
-mkdir -p ${coverage_directory}
+[ -n $AKVORADO_COVERAGE_DIRECTORY ]
+
+mkdir -p ${AKVORADO_COVERAGE_DIRECTORY}
 
 case $1 in
     compose-setup)
@@ -21,7 +22,7 @@ EOF
             cat >> docker/docker-compose-local.yml <<EOF
   akvorado-${service}:
     volumes:
-      - ${coverage_directory}/${service}:/tmp/coverage
+      - ${AKVORADO_COVERAGE_DIRECTORY}/${service}:/tmp/coverage
     environment:
       GOCOVERDIR: /tmp/coverage
 EOF
@@ -46,14 +47,14 @@ EOF
 
     coverage)
         # Merge coverage files
-        mkdir -p ${coverage_directory}/all
-        inputs=$(cd ${coverage_directory} ; ls | xargs readlink -f | grep -v /all$ | paste -sd ,)
+        mkdir -p ${AKVORADO_COVERAGE_DIRECTORY}/all
+        inputs=$(cd ${AKVORADO_COVERAGE_DIRECTORY} ; ls | xargs readlink -f | grep -v /all$ | paste -sd ,)
         go tool covdata merge \
             -i=${inputs} \
-            -o=${coverage_directory}/all
+            -o=${AKVORADO_COVERAGE_DIRECTORY}/all
         go tool covdata textfmt \
-            -i=${coverage_directory}/all \
-            -o=e2e-coverage.out
+            -i=${AKVORADO_COVERAGE_DIRECTORY}/all \
+            -o=${AKVORADO_COVERAGE_DIRECTORY}/e2e-coverage.out
         ;;
 
 esac
