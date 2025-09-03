@@ -32,6 +32,7 @@ updates:
           - "@vue/*"
         exclude-patterns:
           - "@vue/eslint-*"
+          - "@vue/tsconfig"
       codemirror:
         patterns:
           - "@codemirror/*"
@@ -58,6 +59,7 @@ updates:
         patterns:
           - "@types/*"
           - "@typescript-eslint/eslint-plugin"
+          - "@vue/tsconfig"
           - "typescript-language-server"
           - "typescript"
   - package-ecosystem: gomod
