@@ -30,19 +30,14 @@ EOF
         ;;
 
     tests)
-        # Validate the first incoming flow
+        # Wait first flow
         while true; do
             sleep 1
-            ! curl -o last-flow.json --write-out "%{url}: %{response_code}\n" -sf \
+            ! curl -o /dev/null --write-out "%{url}: %{response_code}\n" -sf \
                 http://127.0.0.1:8080/api/v0/console/widget/flow-last || break
         done
-        < last-flow.json \
-            jq -e '(.InIfName | test("^Gi0/.*")) and (.OutIfName | test("^Gi0/.*")) and .ExporterRole == "edge"'
-        # Validate the various metrics endpoints
-        for component in inlet outlet console orchestrator; do
-            curl -o /dev/null --write-out "%{url}: %{response_code}\n" -sf \
-                http://127.0.0.1:8080/api/v0/${component}/metrics || break
-        done
+        # Run Hurl tests
+        nix run nixpkgs#hurl -- --test .github/e2e.hurl
         ;;
 
     coverage)

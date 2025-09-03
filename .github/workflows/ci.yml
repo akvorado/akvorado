@@ -161,6 +161,7 @@ jobs:
     steps:
       # Setup
       - uses: docker/setup-buildx-action@v3
+      - uses: cachix/install-nix-action@v31
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
