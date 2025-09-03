@@ -13,6 +13,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🩹 *console*: display missing images in documentation
+- 🩹 *docker*: fix broken `/metrics` endpoint for inlet
 - 🌱 *build*: accept building with a not up-to-date toolchain
 - 🌱 *docker*: update ClickHouse to 25.8 (not mandatory)
 - 🌱 *docker*: enable HTTP compression for Traefik

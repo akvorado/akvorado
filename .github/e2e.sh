@@ -37,6 +37,11 @@ EOF
         done
         < last-flow.json \
             jq -e '(.InIfName | test("^Gi0/.*")) and (.OutIfName | test("^Gi0/.*")) and .ExporterRole == "edge"'
+        # Validate the various metrics endpoints
+        for component in inlet outlet console orchestrator; do
+            curl -o /dev/null --write-out "%{url}: %{response_code}\n" -sf \
+                http://127.0.0.1:8080/api/v0/${component}/metrics || break
+        done
         ;;
 
     coverage)

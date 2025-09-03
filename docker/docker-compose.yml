@@ -92,11 +92,12 @@ services:
       - traefik.enable=true
       # Disable access logging of /api/v0/orchestrator/metrics
       - traefik.http.routers.akvorado-orchestrator-metrics.rule=PathPrefix(`/api/v0/orchestrator/metrics`)
-      - traefik.http.routers.akvorado-orchestrator-metrics.service=akvorado-orchestrator-akvorado
+      - traefik.http.routers.akvorado-orchestrator-metrics.service=akvorado-orchestrator
       - traefik.http.routers.akvorado-orchestrator-metrics.observability.accesslogs=false
       # Everything else is exposed to private entrypoint in /api/v0/orchestrator
       - traefik.http.routers.akvorado-orchestrator.entrypoints=private
       - traefik.http.routers.akvorado-orchestrator.rule=PathPrefix(`/api/v0/orchestrator`)
+      - traefik.http.services.akvorado-orchestrator.loadbalancer.server.port=8080
       - metrics.port=8080
       - metrics.path=/api/v0/metrics
   akvorado-console:
@@ -124,15 +125,16 @@ services:
       # Only expose /debug endpoint on the private entrypoint.
       - traefik.http.routers.akvorado-console-debug.rule=PathPrefix(`/debug`)
       - traefik.http.routers.akvorado-console-debug.entrypoints=private
-      - traefik.http.routers.akvorado-console-debug.service=akvorado-console-akvorado
+      - traefik.http.routers.akvorado-console-debug.service=akvorado-console
       # Disable access logging of /api/v0/console/metrics
       - traefik.http.routers.akvorado-console-metrics.rule=PathPrefix(`/api/v0/console/metrics`)
-      - traefik.http.routers.akvorado-console-metrics.service=akvorado-console-akvorado
+      - traefik.http.routers.akvorado-console-metrics.service=akvorado-console
       - traefik.http.routers.akvorado-console-metrics.observability.accesslogs=false
       # For anything else...
       - "traefik.http.routers.akvorado-console.rule=!PathPrefix(`/debug`)"
       - traefik.http.routers.akvorado-console.priority=1
       - traefik.http.routers.akvorado-console.middlewares=console-auth-headers
+      - traefik.http.services.akvorado-console.loadbalancer.server.port=8080
       - traefik.http.middlewares.console-auth-headers.headers.customrequestheaders.Remote-User=alfred
       - traefik.http.middlewares.console-auth-headers.headers.customrequestheaders.Remote-Name=Alfred Pennyworth
       - traefik.http.middlewares.console-auth-headers.headers.customrequestheaders.Remote-Email=alfred@example.com
@@ -159,11 +161,12 @@ services:
       - traefik.enable=true
       # Disable access logging of /api/v0/inlet/metrics
       - traefik.http.routers.akvorado-inlet-metrics.rule=PathPrefix(`/api/v0/inlet/metrics`)
-      - traefik.http.routers.akvorado-inlet-metrics.service=akvorado-inlet-akvorado
+      - traefik.http.routers.akvorado-inlet-metrics.service=akvorado-inlet
       - traefik.http.routers.akvorado-inlet-metrics.observability.accesslogs=false
       # Everything else is exposed to private entrypoint in /api/v0/inlet
       - traefik.http.routers.akvorado-inlet.entrypoints=private
       - traefik.http.routers.akvorado-inlet.rule=PathPrefix(`/api/v0/inlet`)
+      - traefik.http.services.akvorado-inlet.loadbalancer.server.port=8080
       - akvorado.conntrack.fix=true
       - metrics.port=8080
       - metrics.path=/api/v0/metrics
@@ -190,11 +193,12 @@ services:
       - traefik.enable=true
       # Disable access logging of /api/v0/outlet/metrics
       - traefik.http.routers.akvorado-outlet-metrics.rule=PathPrefix(`/api/v0/outlet/metrics`)
-      - traefik.http.routers.akvorado-outlet-metrics.service=akvorado-outlet-akvorado
+      - traefik.http.routers.akvorado-outlet-metrics.service=akvorado-outlet
       - traefik.http.routers.akvorado-outlet-metrics.observability.accesslogs=false
       # Everything else is exposed to private entrypoint in /api/v0/outlet
       - traefik.http.routers.akvorado-outlet.entrypoints=private
       - traefik.http.routers.akvorado-outlet.rule=PathPrefix(`/api/v0/outlet`)
+      - traefik.http.services.akvorado-outlet.loadbalancer.server.port=8080
       - metrics.port=8080
       - metrics.path=/api/v0/metrics
   akvorado-conntrack-fixer:
