@@ -278,6 +278,61 @@ UNION DISTINCT
 				})
 			}
 			input.Prefix = "" // We have handled this internally
+		case "srcport", "dstport":
+			results := []struct {
+				Label  string `ch:"label"`
+				Detail string `ch:"detail"`
+			}{}
+			columnName := c.fixQueryColumnName(input.Column)
+			c.r.Debug().Msg(columnName)
+			sqlQuery := fmt.Sprintf(`
+SELECT label, detail FROM (
+ SELECT toString(%s) AS label, dictGet('%s', 'name', %s) AS detail, 1 AS rank, count(*) AS c
+ FROM flows
+ WHERE TimeReceived > date_sub(minute, 1, now())
+ AND detail != ''
+ AND positionCaseInsensitive(detail, $1) >= 1
+ AND Proto = 6
+ GROUP BY %s
+ ORDER BY COUNT(*) DESC
+ LIMIT %d
+UNION DISTINCT
+ SELECT toString(%s) AS label, dictGet(%s, 'name', %s) AS detail, 1 AS rank, count(*) AS c
+ FROM flows
+ WHERE TimeReceived > date_sub(minute, 1, now())
+ AND detail != ''
+ AND positionCaseInsensitive(detail, $1) >= 1
+ AND Proto = 17
+ GROUP BY %s
+ ORDER BY COUNT(*) DESC
+ LIMIT %d
+UNION DISTINCT
+ SELECT toString(port) AS label, name AS detail, 2 AS rank, 0 AS c
+ FROM tcp
+ WHERE positionCaseInsensitive(name, $1) >= 1
+ ORDER BY positionCaseInsensitive(name, $1) ASC, port ASC
+ LIMIT %d
+UNION DISTINCT
+ SELECT toString(port) AS label, name AS detail, 2 AS rank, 0 AS c
+ FROM udp
+ WHERE positionCaseInsensitive(name, $1) >= 1
+ ORDER BY positionCaseInsensitive(name, $1) ASC, port ASC
+ LIMIT %d
+) GROUP BY rank, label, detail ORDER BY rank ASC, MAX(c) DESC, MIN(rowNumberInBlock()) ASC LIMIT %d`,
+				columnName, schema.DictionaryTCP, columnName, columnName, input.Limit, columnName, schema.DictionaryUDP, columnName, columnName, input.Limit, input.Limit, input.Limit, input.Limit,
+			)
+			if err := c.d.ClickHouseDB.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
+				c.r.Err(err).Msg("unable to query database")
+				break
+			}
+			for _, result := range results {
+				completions = append(completions, filterCompletion{
+					Label:  result.Label,
+					Detail: result.Detail,
+					Quoted: false,
+				})
+			}
+			input.Prefix = ""
 		case "srcnetname", "dstnetname", "srcnetrole", "dstnetrole", "srcnetsite", "dstnetsite", "srcnetregion", "dstnetregion", "srcnettenant", "dstnettenant":
 			attributeName := inputColumn[6:]
 			results := []struct {
