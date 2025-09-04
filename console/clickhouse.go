@@ -218,7 +218,7 @@ func (c *Component) computeTableAndInterval(input inputContext) (string, time.Du
 	// Select table
 	targetIntervalForTableSelection := targetInterval
 	if input.MainTableRequired {
-		targetIntervalForTableSelection = time.Second
+		return "flows", time.Second, targetInterval
 	}
 	startForTableSelection := input.Start
 	if input.StartForTableSelection != nil {
@@ -269,7 +269,7 @@ func (c *Component) getBestTable(start time.Time, targetInterval time.Duration) 
 		})
 		// If possible, use the first resolution before the target interval
 		for len(candidates) > 1 {
-			if c.flowsTables[candidates[1]].Resolution < targetInterval {
+			if c.flowsTables[candidates[1]].Resolution <= targetInterval {
 				candidates = candidates[1:]
 			} else {
 				break

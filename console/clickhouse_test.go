@@ -312,7 +312,7 @@ func TestComputeBestTableAndInterval(t *testing.T) {
 		Expected    tableIntervalOutput
 	}{
 		{
-			Description: "simple query without additional tables",
+			Description: "only flows table",
 			Context: inputContext{
 				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
@@ -320,7 +320,7 @@ func TestComputeBestTableAndInterval(t *testing.T) {
 			},
 			Expected: tableIntervalOutput{Table: "flows", Interval: 1},
 		}, {
-			Description: "query with main table",
+			Description: "only flows table, require main",
 			Context: inputContext{
 				Start:             time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:               time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
@@ -329,28 +329,16 @@ func TestComputeBestTableAndInterval(t *testing.T) {
 			},
 			Expected: tableIntervalOutput{Table: "flows", Interval: 1},
 		}, {
-			Description: "only flows table available",
-			Tables:      []flowsTable{{"flows", 0, time.Date(2022, 3, 10, 15, 45, 10, 0, time.UTC)}},
+			Description: "only flows table available, out of range",
+			Tables:      []flowsTable{{"flows", 0, time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC)}},
 			Context: inputContext{
-				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+				Start:  time.Date(2022, 4, 8, 15, 45, 10, 0, time.UTC),
+				End:    time.Date(2022, 4, 9, 15, 45, 10, 0, time.UTC),
 				Points: 86400,
 			},
 			Expected: tableIntervalOutput{Table: "flows", Interval: 1},
 		}, {
-			Description: "select flows table out of range",
-			Tables: []flowsTable{
-				{"flows", 0, time.Date(2022, 4, 10, 16, 45, 10, 0, time.UTC)},
-				{"flows_1m0s", time.Minute, time.Date(2022, 4, 10, 17, 45, 10, 0, time.UTC)},
-			},
-			Context: inputContext{
-				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
-				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
-				Points: 720, // 2-minute resolution,
-			},
-			Expected: tableIntervalOutput{Table: "flows", Interval: 1},
-		}, {
-			Description: "select consolidated table with better resolution",
+			Description: "consolidated table with better resolution",
 			Tables: []flowsTable{
 				{"flows", 0, time.Date(2022, 3, 10, 22, 45, 10, 0, time.UTC)},
 				{"flows_5m0s", 5 * time.Minute, time.Date(2022, 4, 2, 22, 45, 10, 0, time.UTC)},
@@ -362,6 +350,131 @@ func TestComputeBestTableAndInterval(t *testing.T) {
 				Points: 720, // 2-minute resolution,
 			},
 			Expected: tableIntervalOutput{Table: "flows_1m0s", Interval: 60},
+		}, {
+			Description: "consolidated table available, but main required",
+			Tables: []flowsTable{
+				{"flows", 0, time.Date(2022, 3, 10, 22, 45, 10, 0, time.UTC)},
+				{"flows_5m0s", 5 * time.Minute, time.Date(2022, 4, 2, 22, 45, 10, 0, time.UTC)},
+				{"flows_1m0s", time.Minute, time.Date(2022, 4, 2, 22, 45, 10, 0, time.UTC)},
+			},
+			Context: inputContext{
+				Start:             time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:               time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+				Points:            720, // 2-minute resolution,
+				MainTableRequired: true,
+			},
+			Expected: tableIntervalOutput{Table: "flows", Interval: 1},
+		}, {
+			Description: "consolidated table available, but out of range",
+			Tables: []flowsTable{
+				{"flows", 0, time.Date(2022, 3, 10, 22, 45, 10, 0, time.UTC)},
+				{"flows_5m0s", 5 * time.Minute, time.Date(2022, 4, 20, 22, 45, 10, 0, time.UTC)},
+				{"flows_1m0s", time.Minute, time.Date(2022, 4, 20, 22, 45, 10, 0, time.UTC)},
+			},
+			Context: inputContext{
+				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+				Points: 720, // 2-minute resolution,
+			},
+			Expected: tableIntervalOutput{Table: "flows", Interval: 1},
+		}, {
+			Description: "consolidated table available, main table required, out of range",
+			Tables: []flowsTable{
+				{"flows", 0, time.Date(2022, 4, 20, 22, 45, 10, 0, time.UTC)},
+				{"flows_5m0s", 5 * time.Minute, time.Date(2022, 4, 2, 22, 45, 10, 0, time.UTC)},
+				{"flows_1m0s", time.Minute, time.Date(2022, 4, 2, 22, 45, 10, 0, time.UTC)},
+			},
+			Context: inputContext{
+				Start:             time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:               time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+				Points:            720, // 2-minute resolution,
+				MainTableRequired: true,
+			},
+			Expected: tableIntervalOutput{Table: "flows", Interval: 1},
+		}, {
+			Description: "empty flows tables list",
+			Tables:      []flowsTable{},
+			Context: inputContext{
+				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+				Points: 86400,
+			},
+			Expected: tableIntervalOutput{Table: "flows", Interval: 1},
+		}, {
+			Description: "target interval smaller than 1 second",
+			Tables: []flowsTable{
+				{"flows", 0, time.Date(2022, 4, 10, 12, 45, 10, 0, time.UTC)},
+			},
+			Context: inputContext{
+				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:    time.Date(2022, 4, 10, 15, 45, 20, 0, time.UTC), // 10 seconds with many points
+				Points: 100000,
+			},
+			Expected: tableIntervalOutput{Table: "flows", Interval: 1},
+		}, {
+			Description: "multiple tables with same resolution, choose oldest data",
+			Tables: []flowsTable{
+				{"flows", 0, time.Date(2022, 4, 10, 12, 45, 10, 0, time.UTC)},
+				{"flows_1m0s_a", time.Minute, time.Date(2022, 4, 9, 12, 45, 10, 0, time.UTC)},
+				{"flows_1m0s_b", time.Minute, time.Date(2022, 4, 8, 12, 45, 10, 0, time.UTC)},
+			},
+			Context: inputContext{
+				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+				Points: 720, // 2-minute resolution
+			},
+			Expected: tableIntervalOutput{Table: "flows_1m0s_b", Interval: 60},
+		}, {
+			Description: "choose best resolution below target interval",
+			Tables: []flowsTable{
+				{"flows", 0, time.Date(2022, 4, 8, 12, 45, 10, 0, time.UTC)},
+				{"flows_10s", 10 * time.Second, time.Date(2022, 4, 9, 12, 45, 10, 0, time.UTC)},
+				{"flows_30s", 30 * time.Second, time.Date(2022, 4, 9, 12, 45, 10, 0, time.UTC)},
+				{"flows_2m0s", 2 * time.Minute, time.Date(2022, 4, 9, 12, 45, 10, 0, time.UTC)},
+			},
+			Context: inputContext{
+				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+				Points: 1440, // 1-minute target interval
+			},
+			Expected: tableIntervalOutput{Table: "flows_30s", Interval: 30},
+		}, {
+			Description: "all tables out of range, choose table with oldest data",
+			Tables: []flowsTable{
+				{"flows", 0, time.Date(2022, 4, 15, 12, 45, 10, 0, time.UTC)},
+				{"flows_1m0s", time.Minute, time.Date(2022, 4, 14, 12, 45, 10, 0, time.UTC)},
+				{"flows_5m0s", 5 * time.Minute, time.Date(2022, 4, 12, 12, 45, 10, 0, time.UTC)},
+			},
+			Context: inputContext{
+				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+				Points: 720,
+			},
+			Expected: tableIntervalOutput{Table: "flows_5m0s", Interval: 300},
+		}, {
+			Description: "resolution exactly matches target interval",
+			Tables: []flowsTable{
+				{"flows", 0, time.Date(2022, 4, 8, 12, 45, 10, 0, time.UTC)},
+				{"flows_2m0s", 2 * time.Minute, time.Date(2022, 4, 9, 12, 45, 10, 0, time.UTC)},
+			},
+			Context: inputContext{
+				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+				Points: 720, // Exactly 2-minute interval
+			},
+			Expected: tableIntervalOutput{Table: "flows_2m0s", Interval: 120},
+		}, {
+			Description: "sub-second resolution gets clamped to 1 second",
+			Tables: []flowsTable{
+				{"flows", 0, time.Date(2022, 4, 8, 12, 45, 10, 0, time.UTC)},
+				{"flows_100ms", 100 * time.Millisecond, time.Date(2022, 4, 9, 12, 45, 10, 0, time.UTC)},
+			},
+			Context: inputContext{
+				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+				Points: 8640000, // Very high resolution request
+			},
+			Expected: tableIntervalOutput{Table: "flows_100ms", Interval: 1}, // Clamped to 1 second
 		},
 	}
 
