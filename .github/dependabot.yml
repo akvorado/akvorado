@@ -58,10 +58,11 @@ updates:
       typescript:
         patterns:
           - "@types/*"
-          - "@typescript-eslint/eslint-plugin"
+          - "@typescript-eslint/*"
           - "@vue/tsconfig"
           - "typescript-language-server"
           - "typescript"
+          - "typescript-eslint"
   - package-ecosystem: gomod
     directory: /
     commit-message:
