@@ -192,8 +192,7 @@ func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 	}
 
 	now := c.d.Clock.Now()
-	query := c.finalizeQuery(fmt.Sprintf(`
-{{ with %s }}
+	template := fmt.Sprintf(`
 WITH
  (SELECT SUM(Bytes*SamplingRate) FROM {{ .Table }} WHERE {{ .Timefilter }} %s) AS Total
 SELECT
@@ -204,15 +203,18 @@ WHERE {{ .Timefilter }}
 %s
 GROUP BY %s
 ORDER BY Percent DESC
-LIMIT 5
-{{ end }}`,
-		templateContext(inputContext{
+LIMIT 5`,
+		filter, selector, selector, filter, groupby)
+
+	query := c.finalizeTemplateQuery(templateQuery{
+		Template: template,
+		Context: inputContext{
 			Start:             now.Add(-5 * time.Minute),
 			End:               now,
 			MainTableRequired: mainTableRequired,
 			Points:            5,
-		}),
-		filter, selector, selector, filter, groupby))
+		},
+	})
 	gc.Header("X-SQL-Query", query)
 
 	results := []topResult{}
@@ -232,8 +234,7 @@ func (c *Component) widgetGraphHandlerFunc(gc *gin.Context) {
 	}
 	ctx := c.t.Context(gc.Request.Context())
 	now := c.d.Clock.Now()
-	query := c.finalizeQuery(fmt.Sprintf(`
-{{ with %s }}
+	template := fmt.Sprintf(`
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS Time,
  SUM(Bytes*SamplingRate*8/{{ .Interval }})/1000/1000/1000 AS Gbps
@@ -244,15 +245,18 @@ GROUP BY Time
 ORDER BY Time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
-{{ end }}`,
-		templateContext(inputContext{
+ STEP {{ .Interval }}`,
+		filter)
+
+	query := c.finalizeTemplateQuery(templateQuery{
+		Template: template,
+		Context: inputContext{
 			Start:             now.Add(-c.config.HomepageGraphTimeRange),
 			End:               now,
 			MainTableRequired: false,
 			Points:            200,
-		}),
-		filter))
+		},
+	})
 	gc.Header("X-SQL-Query", query)
 
 	results := []struct {

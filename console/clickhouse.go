@@ -5,7 +5,6 @@ package console
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
@@ -82,33 +81,17 @@ AND (engine LIKE '%MergeTree' OR engine = 'Distributed')
 	return nil
 }
 
-// finalizeQuery builds the finalized query. A single "context"
-// function is provided to return a `Context` struct with all the
-// information needed.
-func (c *Component) finalizeQuery(query string) string {
-	t := template.Must(template.New("query").
-		Funcs(template.FuncMap{
-			"context": c.contextFunc,
-		}).
-		Option("missingkey=error").
-		Parse(strings.TrimSpace(query)))
-	buf := bytes.NewBufferString("")
-	if err := t.Execute(buf, nil); err != nil {
-		c.r.Err(err).Str("query", query).Msg("invalid query")
-		panic(err)
-	}
-	return buf.String()
-}
-
+// inputContext is the intermeidate context provided by the input handler.
 type inputContext struct {
-	Start             time.Time  `json:"start"`
-	End               time.Time  `json:"end"`
-	StartForInterval  *time.Time `json:"start-for-interval,omitempty"`
-	MainTableRequired bool       `json:"main-table-required,omitempty"`
-	Points            uint       `json:"points"`
-	Units             string     `json:"units,omitempty"`
+	Start                  time.Time
+	End                    time.Time
+	StartForTableSelection *time.Time
+	MainTableRequired      bool
+	Points                 uint
+	Units                  string
 }
 
+// context is the context to finalize the template.
 type context struct {
 	Table             string
 	Timefilter        string
@@ -117,6 +100,12 @@ type context struct {
 	Units             string
 	Interval          uint64
 	ToStartOfInterval func(string) string
+}
+
+// templateQuery holds a template string and its associated input context.
+type templateQuery struct {
+	Template string
+	Context  inputContext
 }
 
 // templateEscape escapes `{{` and `}}` from a string. In fact, only
@@ -133,22 +122,20 @@ func templateWhere(qf query.Filter) string {
 	return fmt.Sprintf(`{{ .Timefilter }} AND (%s)`, templateEscape(qf.Direct()))
 }
 
-// templateTable builds a template directive to select the right table
-func templateContext(context inputContext) string {
-	encoded, err := json.Marshal(context)
-	if err != nil {
-		panic(err)
+// finalizeTemplateQueries builds the finalized queries from a list of templateQuery.
+// Each template is processed with its associated context and combined with UNION ALL.
+func (c *Component) finalizeTemplateQueries(queries []templateQuery) string {
+	parts := make([]string, len(queries))
+	for i, q := range queries {
+		parts[i] = c.finalizeTemplateQuery(q)
 	}
-	return fmt.Sprintf("context `%s`", string(encoded))
+	return strings.Join(parts, "\nUNION ALL\n")
 }
 
-func (c *Component) contextFunc(inputStr string) context {
-	var input inputContext
-	if err := json.Unmarshal([]byte(inputStr), &input); err != nil {
-		panic(err)
-	}
-
-	table, computedInterval, targetInterval := c.computeTableAndInterval(input)
+// finalizeTemplateQuery builds the finalized query for a single templateQuery
+func (c *Component) finalizeTemplateQuery(query templateQuery) string {
+	input := query.Context
+	table, computedInterval, targetInterval := c.computeTableAndInterval(query.Context)
 
 	// Make start/end match the computed interval (currently equal to the table resolution)
 	start := input.Start.Truncate(computedInterval)
@@ -195,7 +182,8 @@ func (c *Component) contextFunc(inputStr string) context {
 	}
 
 	c.metrics.clickhouseQueries.WithLabelValues(table).Inc()
-	return context{
+
+	context := context{
 		Table:           table,
 		Timefilter:      timefilter,
 		TimefilterStart: timefilterStart,
@@ -211,6 +199,16 @@ func (c *Component) contextFunc(inputStr string) context {
 				diffOffset)
 		},
 	}
+
+	t := template.Must(template.New("query").
+		Option("missingkey=error").
+		Parse(strings.TrimSpace(query.Template)))
+	buf := bytes.NewBufferString("")
+	if err := t.Execute(buf, context); err != nil {
+		c.r.Err(err).Str("query", query.Template).Msg("invalid query")
+		panic(err)
+	}
+	return buf.String()
 }
 
 func (c *Component) computeTableAndInterval(input inputContext) (string, time.Duration, time.Duration) {
@@ -223,8 +221,8 @@ func (c *Component) computeTableAndInterval(input inputContext) (string, time.Du
 		targetIntervalForTableSelection = time.Second
 	}
 	startForTableSelection := input.Start
-	if input.StartForInterval != nil {
-		startForTableSelection = *input.StartForInterval
+	if input.StartForTableSelection != nil {
+		startForTableSelection = *input.StartForTableSelection
 	}
 	table, computedInterval := c.getBestTable(startForTableSelection, targetIntervalForTableSelection)
 	return table, computedInterval, targetInterval

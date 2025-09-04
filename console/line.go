@@ -100,7 +100,7 @@ type toSQL1Options struct {
 	mainTableRequired bool
 }
 
-func (input graphLineHandlerInput) toSQL1(axis int, options toSQL1Options) string {
+func (input graphLineHandlerInput) toSQL1(axis int, options toSQL1Options) templateQuery {
 	var startForInterval *time.Time
 	var offsetShift string
 	if !options.offsetedStart.IsZero() {
@@ -159,8 +159,7 @@ func (input graphLineHandlerInput) toSQL1(axis int, options toSQL1Options) strin
 		}
 	}
 
-	sqlQuery := fmt.Sprintf(`
-{{ with %s }}%s
+	template := fmt.Sprintf(`%s
 SELECT %d AS axis, * FROM (
 SELECT
  %s
@@ -171,54 +170,58 @@ ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}%s
  TO {{ .TimefilterEnd }} + INTERVAL 1 second%s
  STEP {{ .Interval }}
- INTERPOLATE (dimensions AS %s))
-{{ end }}`,
-		templateContext(inputContext{
-			Start:             input.Start,
-			End:               input.End,
-			StartForInterval:  startForInterval,
-			MainTableRequired: options.mainTableRequired,
-			Points:            input.Points,
-			Units:             units,
-		}),
+ INTERPOLATE (dimensions AS %s))`,
 		withStr, axis, strings.Join(fields, ",\n "), where, offsetShift, offsetShift,
 		dimensionsInterpolate,
 	)
-	return strings.TrimSpace(sqlQuery)
+
+	context := inputContext{
+		Start:                  input.Start,
+		End:                    input.End,
+		StartForTableSelection: startForInterval,
+		MainTableRequired:      options.mainTableRequired,
+		Points:                 input.Points,
+		Units:                  units,
+	}
+
+	return templateQuery{
+		Template: strings.TrimSpace(template),
+		Context:  context,
+	}
 }
 
 // toSQL converts a graph input to an SQL request
-func (input graphLineHandlerInput) toSQL() string {
+func (input graphLineHandlerInput) toSQL() []templateQuery {
 	// Calculate mainTableRequired once and use it for all axes to ensure
 	// consistency. This is useful as previous period will remove the
 	// dimensions.
 	mainTableRequired := requireMainTable(input.schema, input.Dimensions, input.Filter)
-	parts := []string{input.toSQL1(1, toSQL1Options{
+	queries := []templateQuery{input.toSQL1(1, toSQL1Options{
 		mainTableRequired: mainTableRequired,
 	})}
 	if input.Bidirectional {
-		parts = append(parts, input.reverseDirection().toSQL1(2, toSQL1Options{
+		queries = append(queries, input.reverseDirection().toSQL1(2, toSQL1Options{
 			skipWithClause:    true,
 			reverseDirection:  true,
 			mainTableRequired: mainTableRequired,
 		}))
 	}
 	if input.PreviousPeriod {
-		parts = append(parts, input.previousPeriod().toSQL1(3, toSQL1Options{
+		queries = append(queries, input.previousPeriod().toSQL1(3, toSQL1Options{
 			skipWithClause:    true,
 			offsetedStart:     input.Start,
 			mainTableRequired: mainTableRequired,
 		}))
 	}
 	if input.Bidirectional && input.PreviousPeriod {
-		parts = append(parts, input.reverseDirection().previousPeriod().toSQL1(4, toSQL1Options{
+		queries = append(queries, input.reverseDirection().previousPeriod().toSQL1(4, toSQL1Options{
 			skipWithClause:    true,
 			reverseDirection:  true,
 			offsetedStart:     input.Start,
 			mainTableRequired: mainTableRequired,
 		}))
 	}
-	return strings.Join(parts, "\nUNION ALL\n")
+	return queries
 }
 
 func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
@@ -243,8 +246,8 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 		return
 	}
 
-	sqlQuery := input.toSQL()
-	sqlQuery = c.finalizeQuery(sqlQuery)
+	queries := input.toSQL()
+	sqlQuery := c.finalizeTemplateQueries(queries)
 	gc.Header("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
 
 	results := []struct {

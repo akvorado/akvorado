@@ -36,7 +36,7 @@ type sankeyLink struct {
 }
 
 // sankeyHandlerInputToSQL converts a sankey query to an SQL request
-func (input graphSankeyHandlerInput) toSQL() (string, error) {
+func (input graphSankeyHandlerInput) toSQL() ([]templateQuery, error) {
 	where := templateWhere(input.Filter)
 
 	// Select
@@ -61,8 +61,7 @@ func (input graphSankeyHandlerInput) toSQL() (string, error) {
 	}
 	with = append(with, selectSankeyRowsByLimitType(input, dimensions, where))
 
-	sqlQuery := fmt.Sprintf(`
-{{ with %s }}
+	template := fmt.Sprintf(`
 WITH
  %s
 SELECT
@@ -70,17 +69,21 @@ SELECT
 FROM source
 WHERE %s
 GROUP BY dimensions
-ORDER BY xps DESC
-{{ end }}`,
-		templateContext(inputContext{
-			Start:             input.Start,
-			End:               input.End,
-			MainTableRequired: requireMainTable(input.schema, input.Dimensions, input.Filter),
-			Points:            20,
-			Units:             input.Units,
-		}),
+ORDER BY xps DESC`,
 		strings.Join(with, ",\n "), strings.Join(fields, ",\n "), where)
-	return strings.TrimSpace(sqlQuery), nil
+
+	context := inputContext{
+		Start:             input.Start,
+		End:               input.End,
+		MainTableRequired: requireMainTable(input.schema, input.Dimensions, input.Filter),
+		Points:            20,
+		Units:             input.Units,
+	}
+
+	return []templateQuery{{
+		Template: strings.TrimSpace(template),
+		Context:  context,
+	}}, nil
 }
 
 func (c *Component) graphSankeyHandlerFunc(gc *gin.Context) {
@@ -105,14 +108,14 @@ func (c *Component) graphSankeyHandlerFunc(gc *gin.Context) {
 		return
 	}
 
-	sqlQuery, err := input.toSQL()
+	queries, err := input.toSQL()
 	if err != nil {
 		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 
 	// Prepare and execute query
-	sqlQuery = c.finalizeQuery(sqlQuery)
+	sqlQuery := c.finalizeTemplateQueries(queries)
 	gc.Header("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
 	results := []struct {
 		Xps        float64  `ch:"xps"`

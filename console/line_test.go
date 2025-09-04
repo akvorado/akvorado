@@ -5,7 +5,6 @@ package console
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 
@@ -165,7 +164,7 @@ func TestGraphQuerySQL(t *testing.T) {
 		Description string
 		Pos         helpers.Pos
 		Input       graphLineHandlerInput
-		Expected    string
+		Expected    []templateQuery
 	}{
 		{
 			Description: "no dimensions, no filters, bps",
@@ -180,9 +179,15 @@ func TestGraphQuerySQL(t *testing.T) {
 				},
 				Points: 100,
 			},
-			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
-WITH
+			Expected: []templateQuery{
+				{
+					Context: inputContext{
+						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+						Points: 100,
+						Units:  "l3bps",
+					},
+					Template: `WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
@@ -196,8 +201,9 @@ ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }}
- INTERPOLATE (dimensions AS emptyArrayString()))
-{{ end }}`,
+ INTERPOLATE (dimensions AS emptyArrayString()))`,
+				},
+			},
 		}, {
 			Description: "no dimensions, no filters, l2 bps",
 			Pos:         helpers.Mark(),
@@ -211,9 +217,15 @@ ORDER BY time WITH FILL
 				},
 				Points: 100,
 			},
-			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l2bps"}@@ }}
-WITH
+			Expected: []templateQuery{
+				{
+					Context: inputContext{
+						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+						Points: 100,
+						Units:  "l2bps",
+					},
+					Template: `WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
@@ -227,9 +239,9 @@ ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }}
- INTERPOLATE (dimensions AS emptyArrayString()))
-{{ end }}
-`,
+ INTERPOLATE (dimensions AS emptyArrayString()))`,
+				},
+			},
 		}, {
 			Description: "no dimensions, no filters, pps",
 			Pos:         helpers.Mark(),
@@ -243,9 +255,15 @@ ORDER BY time WITH FILL
 				},
 				Points: 100,
 			},
-			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"pps"}@@ }}
-WITH
+			Expected: []templateQuery{
+				{
+					Context: inputContext{
+						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+						Points: 100,
+						Units:  "pps",
+					},
+					Template: `WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
@@ -259,8 +277,9 @@ ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }}
- INTERPOLATE (dimensions AS emptyArrayString()))
-{{ end }}`,
+ INTERPOLATE (dimensions AS emptyArrayString()))`,
+				},
+			},
 		}, {
 			Description: "truncated source address",
 			Pos:         helpers.Mark(),
@@ -276,9 +295,16 @@ ORDER BY time WITH FILL
 				},
 				Points: 100,
 			},
-			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","main-table-required":true,"points":100,"units":"l3bps"}@@ }}
-WITH
+			Expected: []templateQuery{
+				{
+					Context: inputContext{
+						Start:             time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						End:               time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+						Points:            100,
+						Units:             "l3bps",
+						MainTableRequired: true,
+					},
+					Template: `WITH
  source AS (SELECT * REPLACE (tupleElement(IPv6CIDRToRange(SrcAddr, if(tupleElement(IPv6CIDRToRange(SrcAddr, 96), 1) = toIPv6('::ffff:0.0.0.0'), 120, 48)), 1) AS SrcAddr) FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  rows AS (SELECT SrcAddr FROM source WHERE {{ .Timefilter }} AND (SrcAddr BETWEEN toIPv6('::ffff:1.0.0.0') AND toIPv6('::ffff:1.255.255.255')) GROUP BY SrcAddr ORDER BY {{ .Units }} DESC LIMIT 0)
 SELECT 1 AS axis, * FROM (
@@ -293,8 +319,9 @@ ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }}
- INTERPOLATE (dimensions AS ['Other']))
-{{ end }}`,
+ INTERPOLATE (dimensions AS ['Other']))`,
+				},
+			},
 		}, {
 			Description: "no dimensions",
 			Pos:         helpers.Mark(),
@@ -308,9 +335,15 @@ ORDER BY time WITH FILL
 				},
 				Points: 100,
 			},
-			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
-WITH
+			Expected: []templateQuery{
+				{
+					Context: inputContext{
+						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+						Points: 100,
+						Units:  "l3bps",
+					},
+					Template: `WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
@@ -324,8 +357,9 @@ ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }}
- INTERPOLATE (dimensions AS emptyArrayString()))
-{{ end }}`,
+ INTERPOLATE (dimensions AS emptyArrayString()))`,
+				},
+			},
 		}, {
 			Description: "no dimensions, escaped filter",
 			Pos:         helpers.Mark(),
@@ -339,9 +373,15 @@ ORDER BY time WITH FILL
 				},
 				Points: 100,
 			},
-			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
-WITH
+			Expected: []templateQuery{
+				{
+					Context: inputContext{
+						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+						Points: 100,
+						Units:  "l3bps",
+					},
+					Template: `WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
@@ -355,8 +395,9 @@ ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }}
- INTERPOLATE (dimensions AS emptyArrayString()))
-{{ end }}`,
+ INTERPOLATE (dimensions AS emptyArrayString()))`,
+				},
+			},
 		}, {
 			Description: "no dimensions, reverse direction",
 			Pos:         helpers.Mark(),
@@ -371,9 +412,15 @@ ORDER BY time WITH FILL
 				Points:        100,
 				Bidirectional: true,
 			},
-			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
-WITH
+			Expected: []templateQuery{
+				{
+					Context: inputContext{
+						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+						Points: 100,
+						Units:  "l3bps",
+					},
+					Template: `WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
@@ -387,11 +434,15 @@ ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }}
- INTERPOLATE (dimensions AS emptyArrayString()))
-{{ end }}
-UNION ALL
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
-SELECT 2 AS axis, * FROM (
+ INTERPOLATE (dimensions AS emptyArrayString()))`,
+				}, {
+					Context: inputContext{
+						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+						Points: 100,
+						Units:  "l3bps",
+					},
+					Template: `SELECT 2 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
@@ -403,8 +454,9 @@ ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }}
- INTERPOLATE (dimensions AS emptyArrayString()))
-{{ end }}`,
+ INTERPOLATE (dimensions AS emptyArrayString()))`,
+				},
+			},
 		}, {
 			Description: "no dimensions, reverse direction, inl2%",
 			Pos:         helpers.Mark(),
@@ -419,9 +471,15 @@ ORDER BY time WITH FILL
 				Points:        100,
 				Bidirectional: true,
 			},
-			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"inl2%"}@@ }}
-WITH
+			Expected: []templateQuery{
+				{
+					Context: inputContext{
+						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+						Points: 100,
+						Units:  "inl2%",
+					},
+					Template: `WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
@@ -435,11 +493,15 @@ ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }}
- INTERPOLATE (dimensions AS emptyArrayString()))
-{{ end }}
-UNION ALL
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"outl2%"}@@ }}
-SELECT 2 AS axis, * FROM (
+ INTERPOLATE (dimensions AS emptyArrayString()))`,
+				}, {
+					Context: inputContext{
+						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+						Points: 100,
+						Units:  "outl2%",
+					},
+					Template: `SELECT 2 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
@@ -451,8 +513,9 @@ ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }}
- INTERPOLATE (dimensions AS emptyArrayString()))
-{{ end }}`,
+ INTERPOLATE (dimensions AS emptyArrayString()))`,
+				},
+			},
 		}, {
 			Description: "no filters",
 			Pos:         helpers.Mark(),
@@ -470,9 +533,15 @@ ORDER BY time WITH FILL
 				},
 				Points: 100,
 			},
-			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
-WITH
+			Expected: []templateQuery{
+				{
+					Context: inputContext{
+						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+						Points: 100,
+						Units:  "l3bps",
+					},
+					Template: `WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY {{ .Units }} DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
@@ -487,8 +556,9 @@ ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }}
- INTERPOLATE (dimensions AS ['Other', 'Other']))
-{{ end }}`,
+ INTERPOLATE (dimensions AS ['Other', 'Other']))`,
+				},
+			},
 		}, {
 			Description: "no filters, limitType by max",
 			Pos:         helpers.Mark(),
@@ -507,9 +577,15 @@ ORDER BY time WITH FILL
 				},
 				Points: 100,
 			},
-			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
-WITH
+			Expected: []templateQuery{
+				{
+					Context: inputContext{
+						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+						Points: 100,
+						Units:  "l3bps",
+					},
+					Template: `WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  rows AS (SELECT ExporterName, InIfProvider FROM ( SELECT ExporterName, InIfProvider, {{ .Units }} AS sum_at_time FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ) GROUP BY ExporterName, InIfProvider ORDER BY MAX(sum_at_time) DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
@@ -524,8 +600,9 @@ ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }}
- INTERPOLATE (dimensions AS ['Other', 'Other']))
-{{ end }}`,
+ INTERPOLATE (dimensions AS ['Other', 'Other']))`,
+				},
+			},
 		}, {
 			Description: "no filters, reverse",
 			Pos:         helpers.Mark(),
@@ -544,9 +621,15 @@ ORDER BY time WITH FILL
 				Points:        100,
 				Bidirectional: true,
 			},
-			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
-WITH
+			Expected: []templateQuery{
+				{
+					Context: inputContext{
+						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+						Points: 100,
+						Units:  "l3bps",
+					},
+					Template: `WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY {{ .Units }} DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
@@ -561,11 +644,15 @@ ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }}
- INTERPOLATE (dimensions AS ['Other', 'Other']))
-{{ end }}
-UNION ALL
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
-SELECT 2 AS axis, * FROM (
+ INTERPOLATE (dimensions AS ['Other', 'Other']))`,
+				}, {
+					Context: inputContext{
+						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+						Points: 100,
+						Units:  "l3bps",
+					},
+					Template: `SELECT 2 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
@@ -577,8 +664,9 @@ ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }}
- INTERPOLATE (dimensions AS ['Other', 'Other']))
-{{ end }}`,
+ INTERPOLATE (dimensions AS ['Other', 'Other']))`,
+				},
+			},
 		}, {
 			Description: "no filters, previous period",
 			Pos:         helpers.Mark(),
@@ -597,9 +685,15 @@ ORDER BY time WITH FILL
 				Points:         100,
 				PreviousPeriod: true,
 			},
-			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":100,"units":"l3bps"}@@ }}
-WITH
+			Expected: []templateQuery{
+				{
+					Context: inputContext{
+						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+						Points: 100,
+						Units:  "l3bps",
+					},
+					Template: `WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY {{ .Units }} DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
@@ -614,11 +708,19 @@ ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }}
- INTERPOLATE (dimensions AS ['Other', 'Other']))
-{{ end }}
-UNION ALL
-{{ with context @@{"start":"2022-04-09T15:45:10Z","end":"2022-04-10T15:45:10Z","start-for-interval":"2022-04-10T15:45:10Z","points":100,"units":"l3bps"}@@ }}
-SELECT 3 AS axis, * FROM (
+ INTERPOLATE (dimensions AS ['Other', 'Other']))`,
+				}, {
+					Context: inputContext{
+						Start: time.Date(2022, 4, 9, 15, 45, 10, 0, time.UTC),
+						End:   time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						StartForTableSelection: func() *time.Time {
+							t := time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC)
+							return &t
+						}(),
+						Points: 100,
+						Units:  "l3bps",
+					},
+					Template: `SELECT 3 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} + INTERVAL 86400 second AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
@@ -630,8 +732,9 @@ ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }} + INTERVAL 86400 second
  TO {{ .TimefilterEnd }} + INTERVAL 1 second + INTERVAL 86400 second
  STEP {{ .Interval }}
- INTERPOLATE (dimensions AS emptyArrayString()))
-{{ end }}`,
+ INTERPOLATE (dimensions AS emptyArrayString()))`,
+				},
+			},
 		}, {
 			Description: "previous period while main table is required",
 			Pos:         helpers.Mark(),
@@ -649,9 +752,16 @@ ORDER BY time WITH FILL
 				Points:         100,
 				PreviousPeriod: true,
 			},
-			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","main-table-required":true,"points":100,"units":"l3bps"}@@ }}
-WITH
+			Expected: []templateQuery{
+				{
+					Context: inputContext{
+						Start:             time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						End:               time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+						MainTableRequired: true,
+						Points:            100,
+						Units:             "l3bps",
+					},
+					Template: `WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  rows AS (SELECT SrcAddr, DstAddr FROM source WHERE {{ .Timefilter }} AND (InIfBoundary = 'external') GROUP BY SrcAddr, DstAddr ORDER BY {{ .Units }} DESC LIMIT 0)
 SELECT 1 AS axis, * FROM (
@@ -666,11 +776,20 @@ ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }}
  TO {{ .TimefilterEnd }} + INTERVAL 1 second
  STEP {{ .Interval }}
- INTERPOLATE (dimensions AS ['Other', 'Other']))
-{{ end }}
-UNION ALL
-{{ with context @@{"start":"2022-04-09T15:45:10Z","end":"2022-04-10T15:45:10Z","start-for-interval":"2022-04-10T15:45:10Z","main-table-required":true,"points":100,"units":"l3bps"}@@ }}
-SELECT 3 AS axis, * FROM (
+ INTERPOLATE (dimensions AS ['Other', 'Other']))`,
+				}, {
+					Context: inputContext{
+						Start: time.Date(2022, 4, 9, 15, 45, 10, 0, time.UTC),
+						End:   time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						StartForTableSelection: func() *time.Time {
+							t := time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC)
+							return &t
+						}(),
+						MainTableRequired: true,
+						Points:            100,
+						Units:             "l3bps",
+					},
+					Template: `SELECT 3 AS axis, * FROM (
 SELECT
  {{ call .ToStartOfInterval "TimeReceived" }} + INTERVAL 86400 second AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
@@ -682,8 +801,9 @@ ORDER BY time WITH FILL
  FROM {{ .TimefilterStart }} + INTERVAL 86400 second
  TO {{ .TimefilterEnd }} + INTERVAL 1 second + INTERVAL 86400 second
  STEP {{ .Interval }}
- INTERPOLATE (dimensions AS emptyArrayString()))
-{{ end }}`,
+ INTERPOLATE (dimensions AS emptyArrayString()))`,
+				},
+			},
 		},
 	}
 	for _, tc := range cases {
@@ -694,11 +814,9 @@ ORDER BY time WITH FILL
 		if err := tc.Input.Filter.Validate(tc.Input.schema); err != nil {
 			t.Fatalf("%sValidate() error:\n%+v", tc.Pos, err)
 		}
-		tc.Expected = strings.ReplaceAll(tc.Expected, "@@", "`")
 		t.Run(tc.Description, func(t *testing.T) {
 			got := tc.Input.toSQL()
-			if diff := helpers.Diff(strings.Split(strings.TrimSpace(got), "\n"),
-				strings.Split(strings.TrimSpace(tc.Expected), "\n")); diff != "" {
+			if diff := helpers.Diff(got, tc.Expected); diff != "" {
 				t.Errorf("%stoSQL (-got, +want):\n%s", tc.Pos, diff)
 			}
 		})

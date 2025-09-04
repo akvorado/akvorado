@@ -4,7 +4,6 @@
 package console
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -192,7 +191,7 @@ func TestFinalizeQuery(t *testing.T) {
 			Context: inputContext{
 				Start: time.Date(2022, 3, 10, 15, 45, 10, 0, time.UTC),
 				End:   time.Date(2022, 3, 11, 15, 45, 10, 0, time.UTC),
-				StartForInterval: func() *time.Time {
+				StartForTableSelection: func() *time.Time {
 					t := time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC)
 					return &t
 				}(),
@@ -294,10 +293,12 @@ func TestFinalizeQuery(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.Description, func(t *testing.T) {
 			c.flowsTables = tc.Tables
-			got := c.finalizeQuery(
-				fmt.Sprintf(`{{ with %s }}%s{{ end }}`, templateContext(tc.Context), tc.Query))
+			got := c.finalizeTemplateQuery(templateQuery{
+				Template: tc.Query,
+				Context:  tc.Context,
+			})
 			if diff := helpers.Diff(got, tc.Expected); diff != "" {
-				t.Fatalf("finalizeQuery(): (-got, +want):\n%s", diff)
+				t.Fatalf("finalizeTemplateQuery(): (-got, +want):\n%s", diff)
 			}
 		})
 	}

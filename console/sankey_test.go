@@ -4,7 +4,6 @@
 package console
 
 import (
-	"strings"
 	"testing"
 	"time"
 
@@ -21,7 +20,7 @@ func TestSankeyQuerySQL(t *testing.T) {
 		Description string
 		Pos         helpers.Pos
 		Input       graphSankeyHandlerInput
-		Expected    string
+		Expected    []templateQuery
 	}{
 		{
 			Description: "two dimensions, no filters, l3 bps",
@@ -39,9 +38,15 @@ func TestSankeyQuerySQL(t *testing.T) {
 					Units:  "l3bps",
 				},
 			},
-			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l3bps"}@@ }}
-WITH
+			Expected: []templateQuery{
+				{
+					Context: inputContext{
+						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+						Points: 20,
+						Units:  "l3bps",
+					},
+					Template: `WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }}) AS range,
  rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ORDER BY {{ .Units }} DESC LIMIT 5)
@@ -52,8 +57,9 @@ SELECT
 FROM source
 WHERE {{ .Timefilter }}
 GROUP BY dimensions
-ORDER BY xps DESC
-{{ end }}`,
+ORDER BY xps DESC`,
+				},
+			},
 		}, {
 			Description: "two dimensions, no filters, l3 bps, limitType by max",
 			Pos:         helpers.Mark(),
@@ -71,9 +77,15 @@ ORDER BY xps DESC
 					Units:     "l3bps",
 				},
 			},
-			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l3bps"}@@ }}
-WITH
+			Expected: []templateQuery{
+				{
+					Context: inputContext{
+						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+						Points: 20,
+						Units:  "l3bps",
+					},
+					Template: `WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }}) AS range,
  rows AS (SELECT SrcAS, ExporterName FROM ( SELECT SrcAS, ExporterName, {{ .Units }} AS sum_at_time FROM source WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ) GROUP BY SrcAS, ExporterName ORDER BY MAX(sum_at_time) DESC LIMIT 5)
@@ -84,8 +96,9 @@ SELECT
 FROM source
 WHERE {{ .Timefilter }}
 GROUP BY dimensions
-ORDER BY xps DESC
-{{ end }}`,
+ORDER BY xps DESC`,
+				},
+			},
 		}, {
 			Description: "two dimensions, no filters, l2 bps",
 			Pos:         helpers.Mark(),
@@ -102,9 +115,15 @@ ORDER BY xps DESC
 					Units:  "l2bps",
 				},
 			},
-			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l2bps"}@@ }}
-WITH
+			Expected: []templateQuery{
+				{
+					Context: inputContext{
+						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+						Points: 20,
+						Units:  "l2bps",
+					},
+					Template: `WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }}) AS range,
  rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ORDER BY {{ .Units }} DESC LIMIT 5)
@@ -115,9 +134,9 @@ SELECT
 FROM source
 WHERE {{ .Timefilter }}
 GROUP BY dimensions
-ORDER BY xps DESC
-{{ end }}
-`,
+ORDER BY xps DESC`,
+				},
+			},
 		}, {
 			Description: "two dimensions, no filters, pps",
 			Pos:         helpers.Mark(),
@@ -134,9 +153,15 @@ ORDER BY xps DESC
 					Units:  "pps",
 				},
 			},
-			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"pps"}@@ }}
-WITH
+			Expected: []templateQuery{
+				{
+					Context: inputContext{
+						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+						Points: 20,
+						Units:  "pps",
+					},
+					Template: `WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }}) AS range,
  rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ORDER BY {{ .Units }} DESC LIMIT 5)
@@ -147,8 +172,9 @@ SELECT
 FROM source
 WHERE {{ .Timefilter }}
 GROUP BY dimensions
-ORDER BY xps DESC
-{{ end }}`,
+ORDER BY xps DESC`,
+				},
+			},
 		}, {
 			Description: "two dimensions, with filter",
 			Pos:         helpers.Mark(),
@@ -165,9 +191,15 @@ ORDER BY xps DESC
 					Units:  "l3bps",
 				},
 			},
-			Expected: `
-{{ with context @@{"start":"2022-04-10T15:45:10Z","end":"2022-04-11T15:45:10Z","points":20,"units":"l3bps"}@@ }}
-WITH
+			Expected: []templateQuery{
+				{
+					Context: inputContext{
+						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+						Points: 20,
+						Units:  "l3bps",
+					},
+					Template: `WITH
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
  (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }} AND (DstCountry = 'FR')) AS range,
  rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{ .Timefilter }} AND (DstCountry = 'FR') GROUP BY SrcAS, ExporterName ORDER BY {{ .Units }} DESC LIMIT 10)
@@ -178,8 +210,9 @@ SELECT
 FROM source
 WHERE {{ .Timefilter }} AND (DstCountry = 'FR')
 GROUP BY dimensions
-ORDER BY xps DESC
-{{ end }}`,
+ORDER BY xps DESC`,
+				},
+			},
 		},
 	}
 	for _, tc := range cases {
@@ -190,11 +223,9 @@ ORDER BY xps DESC
 		if err := tc.Input.Filter.Validate(tc.Input.schema); err != nil {
 			t.Fatalf("%sValidate() error:\n%+v", tc.Pos, err)
 		}
-		tc.Expected = strings.ReplaceAll(tc.Expected, "@@", "`")
 		t.Run(tc.Description, func(t *testing.T) {
 			got, _ := tc.Input.toSQL()
-			if diff := helpers.Diff(strings.Split(strings.TrimSpace(got), "\n"),
-				strings.Split(strings.TrimSpace(tc.Expected), "\n")); diff != "" {
+			if diff := helpers.Diff(got, tc.Expected); diff != "" {
 				t.Errorf("%stoSQL (-got, +want):\n%s", tc.Pos, diff)
 			}
 		})
