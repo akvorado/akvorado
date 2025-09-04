@@ -157,7 +157,12 @@ default-%.pgo:
 common/embed/data/embed.zip: console/data/frontend console/authentication/data/avatars console/data/docs
 common/embed/data/embed.zip: orchestrator/clickhouse/data/protocols.csv orchestrator/clickhouse/data/icmp.csv orchestrator/clickhouse/data/asns.csv orchestrator/clickhouse/data/tcp.csv orchestrator/clickhouse/data/udp.csv
 common/embed/data/embed.zip: ; $(info $(M) generate embed.zip…)
-	$Q mkdir -p common/embed/data && zip --quiet --recurse-paths --filesync $@ $^
+	$Q mkdir -p common/embed/data
+	$Q TMPDIR=$$(mktemp -d) \
+	&& trap 'rm -rf "$$TMPDIR"' EXIT \
+	&& cp -r $^ "$$TMPDIR"/ \
+	&& find "$$TMPDIR"/docs -name "*.svg" -type f -print0 | xargs -0 sed -i.bak 's/ content="[^"]*"//g' \
+	&& ( cd "$$TMPDIR" && zip --quiet --recurse-paths --exclude "*.svg.bak" - .) > $@
 
 # Tests
 
