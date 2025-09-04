@@ -160,8 +160,8 @@ common/embed/data/embed.zip: ; $(info $(M) generate embed.zip…)
 	$Q mkdir -p common/embed/data
 	$Q TMPDIR=$$(mktemp -d) \
 	&& trap 'rm -rf "$$TMPDIR"' EXIT \
-	&& cp -r $^ "$$TMPDIR"/ \
-	&& find "$$TMPDIR"/docs -name "*.svg" -type f -print0 | xargs -0 sed -i.bak 's/ content="[^"]*"//g' \
+	&& tar -cf - $^ | tar -C "$$TMPDIR" -xf - \
+	&& find "$$TMPDIR"/console/data/docs -name "*.svg" -type f -print0 | xargs -0 sed -i.bak 's/ content="[^"]*"//g' \
 	&& ( cd "$$TMPDIR" && zip --quiet --recurse-paths --exclude "*.svg.bak" - .) > $@
 
 # Tests
