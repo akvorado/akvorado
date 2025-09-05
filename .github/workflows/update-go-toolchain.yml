@@ -12,8 +12,10 @@ jobs:
     if: github.repository_owner == 'akvorado'
     steps:
       - uses: actions/checkout@v5
-      - name: Setup
-        uses: ./.github/actions/setup
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: false
       - name: Upgrade Go toolchain
         run: go get toolchain@patch
       - name: Push update
