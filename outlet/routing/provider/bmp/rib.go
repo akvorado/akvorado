@@ -224,8 +224,18 @@ func (r *rib) removeRoutes(prefixIdx prefixIndex, shouldRemove func(route) bool,
 	return removed, nextKey == makeRouteKey(prefixIdx, 0)
 }
 
-// addPrefix add a new route to the RIB. It returns the number of routes really added.
-func (r *rib) addPrefix(prefix netip.Prefix, newRoute route) int {
+// IterateRoutes will iterate on all the routes matching the provided IP address.
+func (r *rib) IterateRoutes(ip netip.Addr) iter.Seq[route] {
+	return func(yield func(route) bool) {
+		prefixIdx, found := r.tree.Lookup(ip)
+		if found {
+			r.iterateRoutesForPrefixIndex(prefixIdx)(yield)
+		}
+	}
+}
+
+// AddPrefix add a new route to the RIB. It returns the number of routes really added.
+func (r *rib) AddPrefix(prefix netip.Prefix, newRoute route) int {
 	var prefixIdx prefixIndex
 	r.tree.Update(prefix, func(existing prefixIndex, found bool) prefixIndex {
 		if found {
@@ -257,8 +267,8 @@ func (r *rib) addPrefix(prefix netip.Prefix, newRoute route) int {
 	}
 }
 
-// removePrefix removes a route from the RIB. It returns the number of routes really removed.
-func (r *rib) removePrefix(prefix netip.Prefix, oldRoute route) int {
+// RemovePrefix removes a route from the RIB. It returns the number of routes really removed.
+func (r *rib) RemovePrefix(prefix netip.Prefix, oldRoute route) int {
 	removedCount := 0
 	empty := false
 
@@ -288,9 +298,9 @@ func (r *rib) removePrefix(prefix netip.Prefix, oldRoute route) int {
 	return removedCount
 }
 
-// flushPeer removes a whole peer from the RIB, returning the number
+// FlushPeer removes a whole peer from the RIB, returning the number
 // of removed routes.
-func (r *rib) flushPeer(peer uint32) int {
+func (r *rib) FlushPeer(peer uint32) int {
 	removedTotal := 0
 	anyEmpty := false
 

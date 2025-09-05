@@ -107,7 +107,7 @@ func (p *Provider) removePeer(pkey peerKey, reason string) {
 	if !ok {
 		return
 	}
-	removed := p.rib.flushPeer(pinfo.reference)
+	removed := p.rib.FlushPeer(pinfo.reference)
 	delete(p.peers, pkey)
 	p.metrics.routes.WithLabelValues(exporterStr).Sub(float64(removed))
 	p.metrics.peers.WithLabelValues(exporterStr).Dec()
@@ -300,7 +300,7 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 				plen += 96
 			}
 			pf, _ := netip.AddrFromSlice(prefix)
-			added += p.rib.addPrefix(netip.PrefixFrom(pf, plen), route{
+			added += p.rib.AddPrefix(netip.PrefixFrom(pf, plen), route{
 				peer: pinfo.reference,
 				nlri: p.rib.nlris.Put(nlri{
 					family: bgp.RF_IPv4_UC,
@@ -325,7 +325,7 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 				path:   ipprefix.PathIdentifier(),
 				rd:     pkey.distinguisher,
 			}); ok {
-				removed += p.rib.removePrefix(netip.PrefixFrom(pf, plen), route{
+				removed += p.rib.RemovePrefix(netip.PrefixFrom(pf, plen), route{
 					peer: pinfo.reference,
 					nlri: nlriRef,
 				})
@@ -394,7 +394,7 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 			}
 			switch attr.(type) {
 			case *bgp.PathAttributeMpReachNLRI:
-				added += p.rib.addPrefix(netip.PrefixFrom(pf, plen), route{
+				added += p.rib.AddPrefix(netip.PrefixFrom(pf, plen), route{
 					peer: pinfo.reference,
 					nlri: p.rib.nlris.Put(nlri{
 						family: bgp.AfiSafiToRouteFamily(ipprefix.AFI(), ipprefix.SAFI()),
@@ -411,7 +411,7 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 					rd:     rd,
 					path:   ipprefix.PathIdentifier(),
 				}); ok {
-					removed += p.rib.removePrefix(netip.PrefixFrom(pf, plen), route{
+					removed += p.rib.RemovePrefix(netip.PrefixFrom(pf, plen), route{
 						peer: pinfo.reference,
 						nlri: nlriRef,
 					})

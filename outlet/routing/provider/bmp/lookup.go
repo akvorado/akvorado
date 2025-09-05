@@ -31,18 +31,10 @@ func (p *Provider) Lookup(_ context.Context, ip netip.Addr, nh netip.Addr, _ net
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
-	// Find the most specific prefix for this IP
-	prefixIdx, found := p.rib.tree.Lookup(ip)
-	if !found {
-		return LookupResult{}, errNoRouteFound
-	}
-
 	// Find the best route, preferring exact next hop match
 	var selectedRoute route
 	routeFound := false
-
-	for route := range p.rib.iterateRoutesForPrefixIndex(prefixIdx) {
-		// If we don't have a match already, use this one.
+	for route := range p.rib.IterateRoutes(ip) {
 		if !routeFound {
 			selectedRoute = route
 			routeFound = true

@@ -48,7 +48,7 @@ func (p *Provider) PopulateRIB(t *testing.T) {
 		ptype:    bmp.BMP_PEER_TYPE_GLOBAL,
 		asn:      64500,
 	})
-	p.rib.addPrefix(netip.MustParsePrefix("::ffff:192.0.2.0/123"), route{
+	p.rib.AddPrefix(netip.MustParsePrefix("::ffff:192.0.2.0/123"), route{
 		peer:    pinfo.reference,
 		nlri:    p.rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC, path: 1}),
 		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.4"))),
@@ -60,7 +60,7 @@ func (p *Provider) PopulateRIB(t *testing.T) {
 		}),
 		prefixLen: 96 + 27,
 	})
-	p.rib.addPrefix(netip.MustParsePrefix("::ffff:192.0.2.0/123"), route{
+	p.rib.AddPrefix(netip.MustParsePrefix("::ffff:192.0.2.0/123"), route{
 		peer:    pinfo.reference,
 		nlri:    p.rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC, path: 2}),
 		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
@@ -71,7 +71,7 @@ func (p *Provider) PopulateRIB(t *testing.T) {
 		}),
 		prefixLen: 96 + 27,
 	})
-	p.rib.addPrefix(netip.MustParsePrefix("::ffff:192.0.2.128/123"), route{
+	p.rib.AddPrefix(netip.MustParsePrefix("::ffff:192.0.2.128/123"), route{
 		peer:    pinfo.reference,
 		nlri:    p.rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
 		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
@@ -82,7 +82,7 @@ func (p *Provider) PopulateRIB(t *testing.T) {
 		}),
 		prefixLen: 96 + 27,
 	})
-	p.rib.addPrefix(netip.MustParsePrefix("::ffff:1.0.0.0/120"), route{
+	p.rib.AddPrefix(netip.MustParsePrefix("::ffff:1.0.0.0/120"), route{
 		peer:    pinfo.reference,
 		nlri:    p.rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
 		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
@@ -91,7 +91,7 @@ func (p *Provider) PopulateRIB(t *testing.T) {
 		}),
 		prefixLen: 96 + 24,
 	})
-	p.rib.addPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/117"), route{
+	p.rib.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/117"), route{
 		peer:    pinfo.reference,
 		nlri:    p.rib.nlris.Put(nlri{rd: 10, family: bgp.RF_IPv4_UC, path: 0}),
 		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:203.0.113.14"))),
@@ -101,7 +101,7 @@ func (p *Provider) PopulateRIB(t *testing.T) {
 		}),
 		prefixLen: 96 + 21,
 	})
-	p.rib.addPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/118"), route{
+	p.rib.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/118"), route{
 		peer:    pinfo.reference,
 		nlri:    p.rib.nlris.Put(nlri{rd: 10, family: bgp.RF_IPv4_UC, path: 0}),
 		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:203.0.113.15"))),
@@ -111,7 +111,7 @@ func (p *Provider) PopulateRIB(t *testing.T) {
 		}),
 		prefixLen: 96 + 22,
 	})
-	p.rib.addPrefix(netip.MustParsePrefix("::ffff:192.168.148.0/118"), route{
+	p.rib.AddPrefix(netip.MustParsePrefix("::ffff:192.168.148.0/118"), route{
 		peer:    pinfo.reference,
 		nlri:    p.rib.nlris.Put(nlri{rd: 10, family: bgp.RF_IPv4_UC, path: 0}),
 		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:203.0.113.15"))),
@@ -121,7 +121,7 @@ func (p *Provider) PopulateRIB(t *testing.T) {
 		}),
 		prefixLen: 96 + 22,
 	})
-	p.rib.addPrefix(netip.MustParsePrefix("::ffff:192.168.148.1/128"), route{
+	p.rib.AddPrefix(netip.MustParsePrefix("::ffff:192.168.148.1/128"), route{
 		peer:    pinfo.reference,
 		nlri:    p.rib.nlris.Put(nlri{rd: 10, family: bgp.RF_IPv4_UC, path: 0}),
 		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:203.0.113.14"))),

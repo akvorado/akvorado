@@ -253,7 +253,7 @@ func BenchmarkRIBInsertion(b *testing.B) {
 							}
 							pfx := netip.PrefixFrom(netip.AddrFrom16(r.Prefix.Addr().As16()), r.Prefix.Bits()+96)
 							tentative++
-							inserted += rib.addPrefix(pfx, route{
+							inserted += rib.AddPrefix(pfx, route{
 								peer:    uint32(p),
 								nlri:    rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
 								nextHop: rib.nextHops.Put(nextHop(nh)),
@@ -302,7 +302,7 @@ func BenchmarkRIBLookup(b *testing.B) {
 							continue
 						}
 						pfx := netip.PrefixFrom(netip.AddrFrom16(r.Prefix.Addr().As16()), r.Prefix.Bits()+96)
-						rib.addPrefix(pfx, route{
+						rib.AddPrefix(pfx, route{
 							peer:    uint32(p),
 							nlri:    rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
 							nextHop: rib.nextHops.Put(nextHop(nh)),
@@ -357,7 +357,7 @@ func BenchmarkRIBFlush(b *testing.B) {
 								continue
 							}
 							pfx := netip.PrefixFrom(netip.AddrFrom16(r.Prefix.Addr().As16()), r.Prefix.Bits()+96)
-							rib.addPrefix(pfx, route{
+							rib.AddPrefix(pfx, route{
 								peer:    uint32(p),
 								nlri:    rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
 								nextHop: rib.nextHops.Put(nextHop(nh)),
@@ -373,7 +373,7 @@ func BenchmarkRIBFlush(b *testing.B) {
 					}
 
 					b.StartTimer()
-					rib.flushPeer(0)
+					rib.FlushPeer(0)
 				}
 				b.ReportMetric(0, "ns/op")
 				b.ReportMetric(float64(b.Elapsed())/float64(b.N)/1_000_000, "ms/op")
