@@ -15,6 +15,7 @@ identified with a specific icon:
 - 🩹 *console*: display missing images in documentation
 - 🩹 *console*: ensure main table is used when required even when there is no data
 - 🩹 *docker*: fix broken `/metrics` endpoint for inlet
+- 🌱 *outlet*: improve performance of the RIB for the BMP routing provider
 - 🌱 *build*: accept building with a not up-to-date toolchain
 - 🌱 *docker*: update ClickHouse to 25.8 (not mandatory)
 - 🌱 *docker*: enable HTTP compression for Traefik

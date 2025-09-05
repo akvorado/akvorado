@@ -45,13 +45,7 @@ func (sm *SubnetMap[V]) LookupOrDefault(ip netip.Addr, fallback V) V {
 func (sm *SubnetMap[V]) ToMap() map[string]V {
 	output := map[string]V{}
 	for prefix, value := range sm.All() {
-		if prefix.Addr().Is4In6() {
-			ipv4Addr := prefix.Addr().Unmap()
-			ipv4Prefix := netip.PrefixFrom(ipv4Addr, prefix.Bits()-96)
-			output[ipv4Prefix.String()] = value
-			continue
-		}
-		output[prefix.String()] = value
+		output[UnmapPrefix(prefix).String()] = value
 	}
 	return output
 }

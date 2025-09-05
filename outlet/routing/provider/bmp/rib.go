@@ -8,6 +8,7 @@ import (
 	"net/netip"
 	"unsafe"
 
+	"akvorado/common/helpers"
 	"akvorado/common/helpers/intern"
 
 	"github.com/gaissmai/bart"
@@ -227,7 +228,7 @@ func (r *rib) removeRoutes(prefixIdx prefixIndex, shouldRemove func(route) bool,
 // IterateRoutes will iterate on all the routes matching the provided IP address.
 func (r *rib) IterateRoutes(ip netip.Addr) iter.Seq[route] {
 	return func(yield func(route) bool) {
-		prefixIdx, found := r.tree.Lookup(ip)
+		prefixIdx, found := r.tree.Lookup(ip.Unmap())
 		if found {
 			r.iterateRoutesForPrefixIndex(prefixIdx)(yield)
 		}
@@ -237,6 +238,7 @@ func (r *rib) IterateRoutes(ip netip.Addr) iter.Seq[route] {
 // AddPrefix add a new route to the RIB. It returns the number of routes really added.
 func (r *rib) AddPrefix(prefix netip.Prefix, newRoute route) int {
 	var prefixIdx prefixIndex
+	prefix = helpers.UnmapPrefix(prefix)
 	r.tree.Update(prefix, func(existing prefixIndex, found bool) prefixIndex {
 		if found {
 			prefixIdx = existing
@@ -271,6 +273,7 @@ func (r *rib) AddPrefix(prefix netip.Prefix, newRoute route) int {
 func (r *rib) RemovePrefix(prefix netip.Prefix, oldRoute route) int {
 	removedCount := 0
 	empty := false
+	prefix = helpers.UnmapPrefix(prefix)
 
 	// Use Update to access prefix and remove route
 	r.tree.Update(prefix, func(existing prefixIndex, found bool) prefixIndex {
@@ -305,7 +308,7 @@ func (r *rib) FlushPeer(peer uint32) int {
 	anyEmpty := false
 
 	// Iterate through all prefixes and remove peer routes.
-	for _, prefixIdx := range r.tree.All6() {
+	for _, prefixIdx := range r.tree.All() {
 		removed, empty := r.removeRoutes(prefixIdx, func(route route) bool {
 			return route.peer == peer
 		}, false)
@@ -318,7 +321,7 @@ func (r *rib) FlushPeer(peer uint32) int {
 		// be pretty fast. Moreover, loosing a peer is not a condition happening
 		// often.
 		newTree := &bart.Table[prefixIndex]{}
-		for prefix, prefixIdx := range r.tree.All6() {
+		for prefix, prefixIdx := range r.tree.All() {
 			if prefixIdx != 0 {
 				newTree.Insert(prefix, prefixIdx)
 			}

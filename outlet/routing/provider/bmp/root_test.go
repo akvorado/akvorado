@@ -45,7 +45,7 @@ func TestBMP(t *testing.T) {
 		c.mu.RLock()
 		defer c.mu.RUnlock()
 		result := map[netip.Addr][]string{}
-		for prefix, prefixIdx := range c.rib.tree.All6() {
+		for prefix, prefixIdx := range c.rib.tree.All() {
 			for route := range c.rib.iterateRoutesForPrefixIndex(prefixIdx) {
 				nlriRef := c.rib.nlris.Get(route.nlri)
 				nh := c.rib.nextHops.Get(route.nextHop)
