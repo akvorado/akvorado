@@ -1,0 +1,24 @@
+---
+name: Update Go toolchain
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "21 3 * * *"
+
+jobs:
+  hashes:
+    name: Update Go toolchain
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'akvorado'
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup
+        uses: ./.github/actions/setup
+      - name: Upgrade Go toolchain
+        run: go get toolchain@patch
+      - name: Push update
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add go.mod
+          ! git commit -m "build: update Go toolchain" || git push

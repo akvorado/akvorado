@@ -248,6 +248,12 @@ jobs:
       - name: Setup
         id: setup
         uses: ./.github/actions/setup
+      - name: Check go.mod was not modified
+        run: |
+          ! go mod edit -json | jq -r .Go | grep -vPx '1.\d+' || {
+            echo "^^^^ Incorrect go directive in go.mod: use only \`minor.major'."
+            exit 1
+          }
       - name: Build
         run: make && ./bin/akvorado version
       - name: Save IANA files to cache
