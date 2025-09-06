@@ -10,7 +10,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 2.0.0-beta.6 - 2025-09-06
+
+> [!CAUTION]
+> This is a beta release! Be sure to read the sections about the previous betas as well.
 
 - 💥 *docker*: use profiles to optionally enable Prometheus, Loki, and Grafana
   (if you were already using them, you also need to enable the profile)
