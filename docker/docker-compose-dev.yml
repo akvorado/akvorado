@@ -189,7 +189,7 @@ services:
       file: versions.yml
       service: vector
     restart: "no"
-    profiles: [manual]
+    profiles: [ manual ]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./vector.yaml:/etc/vector/vector.yaml:ro

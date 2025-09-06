@@ -8,6 +8,7 @@ services:
     extends:
       file: versions.yml
       service: prometheus
+    profiles: [ prometheus ]
     restart: unless-stopped
     volumes:
       - akvorado-prometheus:/prometheus
@@ -38,6 +39,7 @@ services:
     extends:
       file: versions.yml
       service: alloy
+    profiles: [ prometheus ]
     restart: unless-stopped
     user: root                  # for access to /var/run/docker.sock
     volumes:
@@ -69,6 +71,7 @@ services:
     extends:
       file: versions.yml
       service: node-exporter
+    profiles: [ prometheus ]
     restart: unless-stopped
     volumes:
       - /:/host:ro,rslave
@@ -86,6 +89,7 @@ services:
     extends:
       file: versions.yml
       service: cadvisor
+    profiles: [ prometheus ]
     restart: unless-stopped
     privileged: true
     volumes:

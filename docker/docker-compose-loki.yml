@@ -7,6 +7,7 @@ services:
     extends:
       file: versions.yml
       service: loki
+    profiles: [ loki ]
     restart: unless-stopped
     volumes:
       - akvorado-loki:/loki
@@ -23,6 +24,7 @@ services:
     extends:
       file: versions.yml
       service: vector
+    profiles: [ loki ]
     restart: unless-stopped
     user: root                  # for access to /var/run/docker.sock
     volumes:

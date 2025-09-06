@@ -928,13 +928,20 @@ Then, you can restart the **outlet** service.
 The default Docker Compose setup is meant to help you get started quickly. However,
 you can also use it for a production setup.
 
-The `.env` file selects the Docker Compose files that are assembled for a
-complete setup. Look at the comments for guidance. You should avoid modifying
-any existing files, except for `docker/docker-compose-local.yml`, which should
-contain your local setup.
+You are allowed to modify `.env` and `docker/docker-compose-local.yml`, as well
+as anything in `config/`. Everything else will be erased during upgrades.
 
-This file can override parts of the configuration. The [merge
-rules](https://docs.docker.com/reference/compose-file/merge/) are a bit complex. 
+The `.env` file tailors the complete Docker Compose setup. Some parts are
+enabled using [Docker Compose
+profiles](https://docs.docker.com/compose/how-tos/profiles/). You can
+temporarily enable them with `--profile` flag to `docker compose`. In this case,
+any profile set with `COMPOSE_PROFILES` are overridden. Some other parts require
+you to uncomment additional Docker Compose configuration files directly in
+`.env`.
+
+This `docker/docker-compose-local.yml` file can override parts of the
+configuration. The [merge
+rules](https://docs.docker.com/reference/compose-file/merge/) are a bit complex.
 The general rule is that scalars are replaced, while lists and mappings are
 merged. However, there are exceptions.
 

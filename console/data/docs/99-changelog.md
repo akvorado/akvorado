@@ -12,6 +12,8 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 💥 *docker*: use profiles to optionally enable Prometheus, Loki, and Grafana
+  (if you were already using them, you also need to enable the profile)
 - 🩹 *console*: display missing images in documentation
 - 🩹 *console*: ensure main table is used when required even when there is no data
 - 🩹 *docker*: fix broken `/metrics` endpoint for inlet

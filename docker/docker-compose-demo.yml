@@ -4,8 +4,7 @@ services:
     extends:
       file: versions.yml
       service: akvorado
-    profiles:
-      - demo
+    profiles: [ demo ]
     restart: unless-stopped
     command: demo-exporter http://akvorado-orchestrator:8080#0
     depends_on:
