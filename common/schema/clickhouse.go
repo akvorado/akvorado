@@ -388,3 +388,79 @@ func (bf *FlowMessage) Finalize() {
 	bf.reset()
 	bf.check()
 }
+
+// AppendAllFrom appends all values from last row of the other FlowMessage to the current FlowMessage
+func (bf *FlowMessage) AppendAllFrom(bf2 *FlowMessage) {
+	for idx := range bf2.batch.columns {
+		columnKey := ColumnKey(idx)
+		bf.AppendFrom(bf2, columnKey)
+	}
+}
+
+// AppendFrom appends the last value from the provided column of the other FlowMessage to the current FlowMessage
+func (bf *FlowMessage) AppendFrom(bf2 *FlowMessage, columnKey ColumnKey) {
+	col := bf.batch.columns[columnKey]
+	col2 := bf2.batch.columns[columnKey]
+
+	// Abort when any column is not populated
+	if col == nil || col2 == nil {
+		return
+	}
+
+	// Abort when a value is already present or there is no value to copy
+	if bf.batch.columnSet.Test(uint(columnKey)) || !bf2.batch.columnSet.Test(uint(columnKey)) {
+		return
+	}
+
+	bf.batch.columnSet.Set(uint(columnKey))
+
+	// Append the value based on the type
+	switch col2 := col2.(type) {
+	case *proto.ColUInt64:
+		value := col2.Row(len(*col2) - 1)
+		col.(*proto.ColUInt64).Append(value)
+		bf.appendDebug(columnKey, value)
+	case *proto.ColUInt32:
+		value := col2.Row(len(*col2) - 1)
+		col.(*proto.ColUInt32).Append(value)
+		bf.appendDebug(columnKey, value)
+	case *proto.ColUInt16:
+		value := col2.Row(len(*col2) - 1)
+		col.(*proto.ColUInt16).Append(value)
+		bf.appendDebug(columnKey, value)
+	case *proto.ColUInt8:
+		value := col2.Row(len(*col2) - 1)
+		col.(*proto.ColUInt8).Append(value)
+		bf.appendDebug(columnKey, value)
+	case *proto.ColIPv6:
+		value := col2.Row(len(*col2) - 1)
+		col.(*proto.ColIPv6).Append(value)
+		bf.appendDebug(columnKey, value)
+	case *proto.ColDateTime:
+		value := col2.Data[len(col2.Data)-1]
+		col.(*proto.ColDateTime).AppendRaw(value)
+		bf.appendDebug(columnKey, value)
+	case *proto.ColEnum8:
+		value := col2.Row(len(*col2) - 1)
+		col.(*proto.ColEnum8).Append(value)
+		bf.appendDebug(columnKey, value)
+	case *proto.ColLowCardinality[string]:
+		value := col2.Values[len(col2.Values)-1]
+		col.(*proto.ColLowCardinality[string]).Append(value)
+		bf.appendDebug(columnKey, value)
+	case *proto.ColLowCardinality[proto.IPv6]:
+		value := col2.Values[len(col2.Values)-1]
+		col.(*proto.ColLowCardinality[proto.IPv6]).Append(value)
+		bf.appendDebug(columnKey, value)
+	case *proto.ColArr[uint32]:
+		value := col2.Row(col2.Rows() - 1)
+		col.(*proto.ColArr[uint32]).Append(value)
+		bf.appendDebug(columnKey, value)
+	case *proto.ColArr[proto.UInt128]:
+		value := col2.Row(col2.Rows() - 1)
+		col.(*proto.ColArr[proto.UInt128]).Append(value)
+		bf.appendDebug(columnKey, value)
+	default:
+		panic(fmt.Sprintf("unhandled ClickHouse type %q", col2.Type()))
+	}
+}
