@@ -4,10 +4,6 @@
 
 set -e
 
-[ -n $AKVORADO_COVERAGE_DIRECTORY ]
-
-mkdir -p ${AKVORADO_COVERAGE_DIRECTORY}
-
 case $1 in
     compose-setup)
         # Setup docker compose for E2E testing.
@@ -18,6 +14,8 @@ services:
     profiles: [ disabled ]
 EOF
         # For each service, collect coverage files
+        [ -n "$AKVORADO_COVERAGE_DIRECTORY" ]
+        mkdir -p ${AKVORADO_COVERAGE_DIRECTORY}
         for service in orchestrator inlet outlet console exporter-1 conntrack-fixer; do
             cat >> docker/docker-compose-local.yml <<EOF
   akvorado-${service}:
@@ -30,8 +28,6 @@ EOF
         ;;
 
     tests)
-        shopt -s expand_aliases
-
         # Wait first flow
         echo ::group::Wait first flow
         while true; do
@@ -43,27 +39,33 @@ EOF
 
         # Check Prometheus status
         echo ::group::Wait Prometheus to be ready
-        alias promtool="docker compose exec prometheus promtool"
-        alias promtool-query="promtool query instant http://localhost:9090/prometheus"
+        promtool() {
+            docker compose exec prometheus promtool "$@"
+        }
+        promtool_query() {
+            promtool query instant http://localhost:9090/prometheus "$@"
+        }
         promtool check healthy --url=http://localhost:9090/prometheus
         while true; do
-            promtool-query up
+            promtool_query up
             dcount=$(docker container ps --filter "label=metrics.port" --format "{{.Names}}" | wc -l)
-            pcount=$(promtool-query up | wc -l)
+            pcount=$(promtool_query up | wc -l)
             # We have two non-Docker sources: Kafka and Redis
             [ $pcount -ne $((dcount + 2)) ] || break
             sleep 1
         done
-        promtool-query 'akvorado_cmd_info{job=~"akvorado-.+"}'
+        promtool_query 'akvorado_cmd_info{job=~"akvorado-.+"}'
         promtool query labels http://localhost:9090/prometheus job
         echo ::endgroup::
 
         # Check Loki status
         # This is difficult to include tests for Loki as Vector do not read logs
         # before it started. See https://github.com/vectordotdev/vector/issues/7358
-        echo ::group::Wait Loki to be ready
+        echo ::group::Check Loki status
         export LOKI_ADDR=http://localhost:8080/loki
-        alias logcli="nix shell nixpkgs#grafana-loki --command logcli"
+        logcli() {
+            nix shell nixpkgs#grafana-loki --command logcli "$@"
+        }
         logcli -q labels service_name
         logcli -q series '{service_name=~".+"}' --analyze-labels
         echo ::endgroup::
@@ -76,6 +78,7 @@ EOF
 
     coverage)
         # Merge coverage files
+        [ -n "$AKVORADO_COVERAGE_DIRECTORY" ]
         mkdir -p ${AKVORADO_COVERAGE_DIRECTORY}/all
         inputs=$(cd ${AKVORADO_COVERAGE_DIRECTORY} ; ls | xargs readlink -f | grep -v /all$ | paste -sd ,)
         go tool covdata merge \

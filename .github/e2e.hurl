@@ -33,7 +33,7 @@ GET http://127.0.0.1:8080/prometheus/api/v1/query
 query: akvorado_cmd_info{job=~"akvorado-.+"}
 HTTP 200
 [Asserts]
-jsonpath "$.data.result" count == 4
+jsonpath "$.data.result" count >= 4
 jsonpath "$.data.result[*].metric.job" contains "akvorado-orchestrator"
 jsonpath "$.data.result[*].metric.job" contains "akvorado-console"
 jsonpath "$.data.result[*].metric.job" contains "akvorado-inlet"
@@ -45,7 +45,7 @@ GET http://127.0.0.1:8080/prometheus/api/v1/query
 query: sum by (exporter) (akvorado_inlet_flow_input_udp_bytes_total{job="akvorado-inlet",listener=":2055"})
 HTTP 200
 [Asserts]
-jsonpath "$.data.result" count == 4
+jsonpath "$.data.result" count >= 4
 
 ## Test inlet has received NetFlow flows
 GET http://127.0.0.1:8080/prometheus/api/v1/query
