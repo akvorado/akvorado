@@ -39,13 +39,22 @@ EOF
         done
         echo ::endgroup::
 
-        # Check Prometheus metrics
-        echo ::group::Prometheus tests
+        # Check Prometheus status
+        echo ::group::Wait Prometheus to be ready
         alias promtool="docker compose exec prometheus promtool"
-        alias promtool-query="promtool query instant http://localhost:9090/prometheus"
+        alias promtool-query="docker compose exec prometheus promtool query instant http://localhost:9090/prometheus"
         promtool check healthy --url=http://localhost:9090/prometheus
-        promtool query labels http://localhost:9090/prometheus job
+        while true; do
+            promtool-query up
+            dcount=$(docker container ps --filter "label=metrics.port" --format "{{.Names}}" | wc -l)
+            pcount=$(promtool-query up | wc -l)
+            # We have two non-Docker sources: Kafka and Redis
+            [ $pcount -ne $((dcount + 2)) ] || break
+            sleep 1
+        done
+        promtool-query 'up'
         promtool-query 'akvorado_cmd_info{job=~"akvorado-.+"}'
+        promtool query labels http://localhost:9090/prometheus job
         echo ::endgroup::
 
         # Run Hurl tests
