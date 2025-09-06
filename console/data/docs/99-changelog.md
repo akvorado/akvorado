@@ -20,6 +20,8 @@ identified with a specific icon:
 - 🌱 *outlet*: improve performance of the RIB for the BMP routing provider
 - 🌱 *build*: accept building with a not up-to-date toolchain
 - 🌱 *docker*: update ClickHouse to 25.8 (not mandatory)
+- 🌱 *docker*: update Kafka to 4.1.0 (not mandatory)
+- 🌱 *docker*: update Loki to 3.5.4 (not mandatory)
 - 🌱 *docker*: enable HTTP compression for Traefik
 
 ## 2.0.0-beta.5 - 2025-08-30

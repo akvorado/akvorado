@@ -102,7 +102,7 @@ func TestTopicCreation(t *testing.T) {
 				}
 				got := map[string]*string{}
 				for _, config := range configs[0].Configs {
-					if config.Source != kmsg.ConfigSourceDefaultConfig {
+					if config.Source != kmsg.ConfigSourceDefaultConfig && config.Key != "min.insync.replicas" {
 						got[config.Key] = config.Value
 					}
 				}

@@ -2,7 +2,7 @@
 services:
   # main services
   kafka:
-    image: apache/kafka:4.0.0 # \d+\.\d+\.\d+
+    image: apache/kafka:4.1.0 # \d+\.\d+\.\d+
   redis:
     image: valkey/valkey:7.2 # \d+\.\d+
   clickhouse:
@@ -27,7 +27,7 @@ services:
   alloy:
     image: grafana/alloy:v1.10.2 # v\d+\.\d+\.\d+
   loki:
-    image: grafana/loki:3.5.3 # \d+\.\d+\.\d+
+    image: grafana/loki:3.5.4 # \d+\.\d+\.\d+
   prometheus:
     image: prom/prometheus:v3.5.0 # v\d+\.\d+\.\d+
   node-exporter:
