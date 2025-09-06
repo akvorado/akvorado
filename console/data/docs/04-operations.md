@@ -631,29 +631,6 @@ with other tips.
 > To connect to the ClickHouse database in the Docker Compose setup, use `docker
 > compose exec clickhouse clickhouse-client`.
 
-### System tables
-
-ClickHouse is configured to log various events in MergeTree tables. By
-default, these tables are unbounded. Unless you configure it otherwise, the
-orchestrator sets a TTL of 30 days. You can also customize these tables in the
-configuration files or disable them completely. See the [ClickHouse
-documentation](https://clickhouse.com/docs/en/operations/system-tables/) for
-more details.
-
-This request is useful to see how much space is used for each
-table:
-
-```sql
-SELECT database, name, formatReadableSize(total_bytes)
-FROM system.tables
-WHERE total_bytes > 0
-ORDER BY total_bytes DESC
-```
-
-If you see tables with the suffix `_0` or `_1`, you can delete them. They are
-created when ClickHouse is updated with the data from the tables before the
-upgrade.
-
 ### Memory usage
 
 The `networks` dictionary can use a lot of memory. You can check with these queries:
@@ -684,6 +661,7 @@ SELECT table, formatReadableSize(sum(bytes_on_disk)) AS size, MIN(partition_id) 
 FROM system.parts
 WHERE table LIKE 'flow%'
 GROUP by table
+ORDER by sum(bytes_on_disk) DESC
 ```
 
 This query shows how much space is used by each column for the `flows`
@@ -716,16 +694,21 @@ ORDER BY
     sum(column_data_compressed_bytes) DESC
 ```
 
-You can also look at the system tables:
+You can also include the system tables:
 
 ```sql
-SELECT * EXCEPT size, formatReadableSize(size) AS size FROM (
- SELECT database, table, sum(bytes_on_disk) AS size, MIN(partition_id) AS oldest
- FROM system.parts
- GROUP by database, table
- ORDER by size DESC
-)
+SELECT database, table, formatReadableSize(sum(bytes_on_disk)) AS size, MIN(partition_id) AS oldest
+FROM system.parts
+GROUP by database, table
+ORDER by sum(bytes_on_disk) DESC
 ```
+
+ClickHouse is configured to log various events in MergeTree tables. By
+default, these tables are unbounded. Unless you configure it otherwise, the
+orchestrator sets a TTL of 30 days. You can also customize these tables in the
+configuration files or disable them completely. See the [ClickHouse
+documentation](https://clickhouse.com/docs/en/operations/system-tables/) for
+more details.
 
 All the system tables with the suffix `_0` or `_1` are tables from an older version of
 ClickHouse. You can drop them by using this SQL query and copying and pasting the
