@@ -244,13 +244,13 @@ func (r *rib) IterateRoutes(ip netip.Addr) iter.Seq[route] {
 func (r *rib) AddPrefix(prefix netip.Prefix, newRoute route) int {
 	var prefixIdx prefixIndex
 	prefix = helpers.UnmapPrefix(prefix)
-	r.tree.Update(prefix, func(existing prefixIndex, found bool) prefixIndex {
+	r.tree.Modify(prefix, func(existing prefixIndex, found bool) (prefixIndex, bool) {
 		if found {
 			prefixIdx = existing
 		} else {
 			prefixIdx = r.newPrefixIndex()
 		}
-		return prefixIdx
+		return prefixIdx, false
 	})
 
 	// Check if route already exists (same peer and nlri)
@@ -277,32 +277,23 @@ func (r *rib) AddPrefix(prefix netip.Prefix, newRoute route) int {
 // RemovePrefix removes a route from the RIB. It returns the number of routes really removed.
 func (r *rib) RemovePrefix(prefix netip.Prefix, oldRoute route) int {
 	removedCount := 0
-	empty := false
 	prefix = helpers.UnmapPrefix(prefix)
 
-	// Use Update to access prefix and remove route
-	r.tree.Update(prefix, func(existing prefixIndex, found bool) prefixIndex {
+	r.tree.Modify(prefix, func(existing prefixIndex, found bool) (prefixIndex, bool) {
 		if found {
+			var empty bool
 			removedCount, empty = r.removeRoutes(existing, func(route route) bool {
 				return route.peer == oldRoute.peer && route.nlri == oldRoute.nlri
 			}, true)
 			if empty {
 				r.freePrefixIndex(existing)
-				return 0
+				return 0, true
 			}
-			return existing
+			return existing, false
 		}
-		// We use Update() to avoid to do a double lookup because in most cases,
-		// we will remove prefix that exists. However, it is also valid to
-		// remove a prefix that does not exist. In this case, Update() created a
-		// node while we don't need it. We remove it, making this operation costly.
-		empty = true
-		return 0
+		return 0, true
 	})
 
-	if empty {
-		r.tree.Delete(prefix)
-	}
 	return removedCount
 }
 
