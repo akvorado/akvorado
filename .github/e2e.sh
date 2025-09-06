@@ -28,6 +28,11 @@ EOF
         ;;
 
     tests)
+        # Fetch Hurl from nixpkgs
+        echo ::group::Get Hurl
+        nix run nixpkgs#hurl -- --version
+        echo ::endgroup::
+
         # Wait first flow
         echo ::group::Wait first flow
         while true; do
