@@ -19,6 +19,7 @@ services:
       - traefik.http.routers.loki.rule=PathPrefix(`/loki`)
       - traefik.http.routers.loki.entrypoints=private
       - metrics.port=3100
+      - metrics.path=/loki/metrics
 
   vector:
     extends:
