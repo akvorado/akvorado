@@ -35,7 +35,7 @@ services:
     healthcheck:
       interval: 20s
       test: ["CMD",
-             "wget", "-T", "1", "--spider", "--url=http://127.0.0.1:8686/health"]
+             "wget", "-T", "1", "--spider", "http://127.0.0.1:8686/health"]
     expose:
       - 9598 # metrics
     environment:
