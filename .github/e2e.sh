@@ -30,6 +30,8 @@ EOF
         ;;
 
     tests)
+        shopt -s expand_aliases
+
         # Wait first flow
         echo ::group::Wait first flow
         while true; do
@@ -42,7 +44,7 @@ EOF
         # Check Prometheus status
         echo ::group::Wait Prometheus to be ready
         alias promtool="docker compose exec prometheus promtool"
-        alias promtool-query="docker compose exec prometheus promtool query instant http://localhost:9090/prometheus"
+        alias promtool-query="promtool query instant http://localhost:9090/prometheus"
         promtool check healthy --url=http://localhost:9090/prometheus
         while true; do
             promtool-query up
@@ -52,9 +54,18 @@ EOF
             [ $pcount -ne $((dcount + 2)) ] || break
             sleep 1
         done
-        promtool-query 'up'
         promtool-query 'akvorado_cmd_info{job=~"akvorado-.+"}'
         promtool query labels http://localhost:9090/prometheus job
+        echo ::endgroup::
+
+        # Check Loki status
+        # This is difficult to include tests for Loki as Vector do not read logs
+        # before it started. See https://github.com/vectordotdev/vector/issues/7358
+        echo ::group::Wait Loki to be ready
+        export LOKI_ADDR=http://localhost:8080/loki
+        alias logcli="nix shell nixpkgs#grafana-loki --command logcli"
+        logcli -q labels service_name
+        logcli -q series '{service_name=~".+"}' --analyze-labels
         echo ::endgroup::
 
         # Run Hurl tests

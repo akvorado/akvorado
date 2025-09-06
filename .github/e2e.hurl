@@ -112,3 +112,14 @@ query: up==0
 HTTP 200
 [Asserts]
 jsonpath "$.data.result" count == 0
+
+# Test some Loki queries
+
+## Check we have logs about akvorado starting
+GET http://127.0.0.1:8080/loki/loki/api/v1/query_range
+[Query]
+since: 1h
+query: {service_name=~"akvorado.+"} |= "akvorado has started"
+HTTP 200
+[Asserts]
+jsonpath "$.data.result" count > 0
