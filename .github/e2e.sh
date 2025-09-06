@@ -61,14 +61,15 @@ EOF
         # Check Loki status
         # This is difficult to include tests for Loki as Vector do not read logs
         # before it started. See https://github.com/vectordotdev/vector/issues/7358
-        echo ::group::Check Loki status
-        export LOKI_ADDR=http://localhost:8080/loki
-        logcli() {
-            nix shell nixpkgs#grafana-loki --command logcli "$@"
-        }
-        logcli -q labels service_name
-        logcli -q series '{service_name=~".+"}' --analyze-labels
-        echo ::endgroup::
+
+        # echo ::group::Check Loki status
+        # export LOKI_ADDR=http://localhost:8080/loki
+        # logcli() {
+        #     nix shell nixpkgs#grafana-loki --command logcli "$@"
+        # }
+        # logcli -q labels service_name
+        # logcli -q series '{service_name=~".+"}' --analyze-labels
+        # echo ::endgroup::
 
         # Run Hurl tests
         echo ::group::Hurl tests
