@@ -31,13 +31,27 @@ EOF
 
     tests)
         # Wait first flow
+        echo ::group::Wait first flow
         while true; do
             sleep 1
             ! curl -o /dev/null --write-out "%{url}: %{response_code}\n" -sf \
                 http://127.0.0.1:8080/api/v0/console/widget/flow-last || break
         done
+        echo ::endgroup::
+
+        # Check Prometheus metrics
+        echo ::group::Prometheus tests
+        alias promtool="docker compose exec prometheus promtool"
+        alias promtool-query="promtool query instant http://localhost:9090/prometheus"
+        promtool check healthy --url=http://localhost:9090/prometheus
+        promtool query labels http://localhost:9090/prometheus job
+        promtool-query 'akvorado_cmd_info{job=~"akvorado-.+"}'
+        echo ::endgroup::
+
         # Run Hurl tests
-        nix run nixpkgs#hurl -- --test .github/e2e.hurl
+        echo ::group::Hurl tests
+        nix run nixpkgs#hurl -- --test --error-format=long .github/e2e.hurl
+        echo ::endgroup::
         ;;
 
     coverage)

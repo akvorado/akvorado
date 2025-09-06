@@ -173,7 +173,7 @@ jobs:
         timeout-minutes: 3
         run: |
           ./.github/e2e.sh compose-setup
-          docker compose --profile demo up --detach --quiet-pull
+          COMPOSE_PROFILES=demo,prometheus,loki docker compose up --detach --quiet-pull
       - name: Run tests
         timeout-minutes: 3
         run: |
