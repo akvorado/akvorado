@@ -287,39 +287,25 @@ UNION DISTINCT
 			c.r.Debug().Msg(columnName)
 			sqlQuery := fmt.Sprintf(`
 SELECT label, detail FROM (
- SELECT toString(%s) AS label, dictGet('%s', 'name', %s) AS detail, 1 AS rank, count(*) AS c
+ SELECT toString(%s) AS label, if(Proto = 6, dictGet('%s', 'name', %s), dictGet('%s', 'name', %s) ) AS detail, 1 AS rank, count(*) AS c
  FROM flows
- WHERE TimeReceived > date_sub(minute, 1, now())
+ WHERE Proto IN (6, 17)
+ AND TimeReceived > date_sub(minute, 1, now())
  AND detail != ''
  AND positionCaseInsensitive(detail, $1) >= 1
- AND Proto = 6
- GROUP BY %s
- ORDER BY COUNT(*) DESC
- LIMIT %d
-UNION DISTINCT
- SELECT toString(%s) AS label, dictGet(%s, 'name', %s) AS detail, 1 AS rank, count(*) AS c
- FROM flows
- WHERE TimeReceived > date_sub(minute, 1, now())
- AND detail != ''
- AND positionCaseInsensitive(detail, $1) >= 1
- AND Proto = 17
- GROUP BY %s
+ GROUP BY %s, Proto
  ORDER BY COUNT(*) DESC
  LIMIT %d
 UNION DISTINCT
  SELECT toString(port) AS label, name AS detail, 2 AS rank, 0 AS c
- FROM tcp
- WHERE positionCaseInsensitive(name, $1) >= 1
- ORDER BY positionCaseInsensitive(name, $1) ASC, port ASC
- LIMIT %d
-UNION DISTINCT
- SELECT toString(port) AS label, name AS detail, 2 AS rank, 0 AS c
- FROM udp
+ FROM (
+  SELECT port, name FROM tcp UNION DISTINCT SELECT port, name FROM tcp
+ )
  WHERE positionCaseInsensitive(name, $1) >= 1
  ORDER BY positionCaseInsensitive(name, $1) ASC, port ASC
  LIMIT %d
 ) GROUP BY rank, label, detail ORDER BY rank ASC, MAX(c) DESC, MIN(rowNumberInBlock()) ASC LIMIT %d`,
-				columnName, schema.DictionaryTCP, columnName, columnName, input.Limit, columnName, schema.DictionaryUDP, columnName, columnName, input.Limit, input.Limit, input.Limit, input.Limit,
+				columnName, schema.DictionaryTCP, columnName, schema.DictionaryUDP, columnName, columnName, input.Limit, input.Limit, input.Limit,
 			)
 			if err := c.d.ClickHouseDB.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
 				c.r.Err(err).Msg("unable to query database")
