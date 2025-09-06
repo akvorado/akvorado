@@ -135,34 +135,20 @@ LIMIT 20`, "6540").
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), `
 SELECT label, detail FROM (
- SELECT toString(SrcPort) AS label, dictGet('tcp', 'name', SrcPort) AS detail, 1 AS rank, count(*) AS c
+ SELECT toString(SrcPort) AS label, if(Proto = 6, dictGet('tcp', 'name', SrcPort), dictGet('udp', 'name', SrcPort) ) AS detail, 1 AS rank, count(*) AS c
  FROM flows
- WHERE TimeReceived > date_sub(minute, 1, now())
+ WHERE Proto IN (6, 17)
+ AND TimeReceived > date_sub(minute, 1, now())
  AND detail != ''
  AND positionCaseInsensitive(detail, $1) >= 1
- AND Proto = 6
- GROUP BY SrcPort
- ORDER BY COUNT(*) DESC
- LIMIT 20
-UNION DISTINCT
- SELECT toString(SrcPort) AS label, dictGet(udp, 'name', SrcPort) AS detail, 1 AS rank, count(*) AS c
- FROM flows
- WHERE TimeReceived > date_sub(minute, 1, now())
- AND detail != ''
- AND positionCaseInsensitive(detail, $1) >= 1
- AND Proto = 17
- GROUP BY SrcPort
+ GROUP BY SrcPort, Proto
  ORDER BY COUNT(*) DESC
  LIMIT 20
 UNION DISTINCT
  SELECT toString(port) AS label, name AS detail, 2 AS rank, 0 AS c
- FROM tcp
- WHERE positionCaseInsensitive(name, $1) >= 1
- ORDER BY positionCaseInsensitive(name, $1) ASC, port ASC
- LIMIT 20
-UNION DISTINCT
- SELECT toString(port) AS label, name AS detail, 2 AS rank, 0 AS c
- FROM udp
+ FROM (
+  SELECT port, name FROM tcp UNION DISTINCT SELECT port, name FROM tcp
+ )
  WHERE positionCaseInsensitive(name, $1) >= 1
  ORDER BY positionCaseInsensitive(name, $1) ASC, port ASC
  LIMIT 20
