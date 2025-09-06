@@ -227,7 +227,6 @@ transforms:
       - from_kafka
       - from_redis
       - from_logfmt
-      - from_grafana
       - from_vector
       - from_cadvisor
       - from_traefik
