@@ -907,12 +907,6 @@ instruction for that, but it's mostly a matter of copying `flows` table to
 `flows_local`, and `flows_DDDD` (where `DDDD` is an interval) tables to
 `flows_DDDD_local`.
 
-When using `docker compose`, you can enable
-`docker/docker-compose-clickhouse-cluster.yml` in `.env` to setup a ClickHouse
-cluster (but it makes little sense to have a single-node `docker compose` setup
-with a ClickHouse cluster). It is possible to only use replication by defining
-only one shard.
-
 ### GeoIP
 
 The `geoip` directive allows one to configure two databases using the [MaxMind
