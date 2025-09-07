@@ -141,28 +141,28 @@
           in-if-index: 10
           out-if-index: [20, 21]
           peak-hour: 16h
-          multiplier: 3
+          multiplier: 3.3
           reverse-direction-ratio: 0.1
           <<: [*from-v4-google, *to-v4-customers, *http-src]
         - per-second: 0.25
           in-if-index: 10
           out-if-index: [20, 21]
           peak-hour: 16h
-          multiplier: 5
+          multiplier: 5.5
           reverse-direction-ratio: 0.1
           <<: [*from-v4-google, *to-v4-customers, *quic-src]
         - per-second: 0.7
           in-if-index: 10
           out-if-index: [20, 21]
           peak-hour: 21h
-          multiplier: 3
+          multiplier: 3.3
           reverse-direction-ratio: 0.1
           <<: [*from-v6-google, *to-v6-customers, *http-src]
         - per-second: 0.4
           in-if-index: 10
           out-if-index: [20, 21]
           peak-hour: 21h
-          multiplier: 5
+          multiplier: 5.5
           reverse-direction-ratio: 0.1
           <<: [*from-v6-google, *to-v6-customers, *quic-src]
         # Facebook
@@ -170,28 +170,28 @@
           in-if-index: [10, 11]
           out-if-index: [20, 21]
           peak-hour: 16h
-          multiplier: 3
+          multiplier: 3.3
           reverse-direction-ratio: 0.2
           <<: [*from-v4-facebook, *to-v4-customers, *http-src]
         - per-second: 0.1
           in-if-index: [10, 11]
           out-if-index: [20, 21]
           peak-hour: 16h
-          multiplier: 3
+          multiplier: 3.3
           reverse-direction-ratio: 0.2
           <<: [*from-v4-facebook, *to-v4-customers, *quic-src]
         - per-second: 0.9
           in-if-index: [10, 11]
           out-if-index: [20, 21]
           peak-hour: 18h
-          multiplier: 3
+          multiplier: 3.3
           reverse-direction-ratio: 0.2
           <<: [*from-v6-facebook, *to-v6-customers, *http-src]
         - per-second: 0.1
           in-if-index: [10, 11]
           out-if-index: [20, 21]
           peak-hour: 20h
-          multiplier: 3
+          multiplier: 3.3
           reverse-direction-ratio: 0.2
           <<: [*from-v6-facebook, *to-v6-customers, *quic-src]
         # Netflix
@@ -199,14 +199,14 @@
           in-if-index: 10
           out-if-index: [20, 21]
           peak-hour: 22h
-          multiplier: 20
+          multiplier: 22
           reverse-direction-ratio: 0.1
           <<: [*from-v4-netflix, *to-v4-customers, *http-src]
         - per-second: 0.35
           in-if-index: 10
           out-if-index: [20, 21]
           peak-hour: 22h
-          multiplier: 20
+          multiplier: 22
           reverse-direction-ratio: 0.1
           <<: [*from-v6-netflix, *to-v6-customers, *http-src]
         # Twitch
@@ -214,7 +214,7 @@
           in-if-index: 10
           out-if-index: [20, 21]
           peak-hour: 21h
-          multiplier: 17
+          multiplier: 20
           reverse-direction-ratio: 0.4
           <<: [*from-v4-twitch, *to-v4-customers, *http-src]
         # Akamai
@@ -222,14 +222,14 @@
           in-if-index: [10, 11]
           out-if-index: [20, 21]
           peak-hour: 18h
-          multiplier: 1.3
+          multiplier: 1.5
           reverse-direction-ratio: 0.1
           <<: [*from-v4-akamai, *to-v4-customers, *http-src]
         - per-second: 0.4
           in-if-index: [10, 11]
           out-if-index: [20, 21]
           peak-hour: 18h
-          multiplier: 1.3
+          multiplier: 1.5
           reverse-direction-ratio: 0.1
           <<: [*from-v6-akamai, *to-v6-customers, *http-src]
         # Fastly
@@ -237,14 +237,14 @@
           in-if-index: [10, 11]
           out-if-index: [20, 21]
           peak-hour: 15h
-          multiplier: 1.3
+          multiplier: 1.5
           reverse-direction-ratio: 0.1
           <<: [*from-v4-fastly, *to-v4-customers, *http-src]
         - per-second: 0.35
           in-if-index: [10, 11]
           out-if-index: [20, 21]
           peak-hour: 14h
-          multiplier: 1.3
+          multiplier: 1.5
           reverse-direction-ratio: 0.1
           <<: [*from-v6-fastly, *to-v6-customers, *http-src]
         # Amazon
@@ -252,14 +252,14 @@
           in-if-index: [10, 11]
           out-if-index: [20, 21]
           peak-hour: 18h
-          multiplier: 1.3
+          multiplier: 1.5
           reverse-direction-ratio: 0.15
           <<: [*from-v4-amazon, *to-v4-customers, *http-src]
         - per-second: 0.05
           in-if-index: 10
           out-if-index: [20, 21]
           peak-hour: 18h
-          multiplier: 1.3
+          multiplier: 1.5
           reverse-direction-ratio: 0.15
           <<: [*from-v6-amazon, *to-v6-customers, *http-src]
 
@@ -268,7 +268,7 @@
           in-if-index: 10
           out-if-index: [20, 21]
           peak-hour: 15h
-          multiplier: 1.2
+          multiplier: 1.4
           reverse-direction-ratio: 0.5
           <<: [*from-v4-renater, *to-v4-customers, *ssh-src]
         # Servers
@@ -276,21 +276,21 @@
           in-if-index: 10
           out-if-index: [20, 21]
           peak-hour: 15h
-          multiplier: 1.2
+          multiplier: 1.4
           reverse-direction-ratio: 0.2
           <<: [*from-v4-renater, *to-v4-servers, *ssh-dst]
         - per-second: 0.1
           in-if-index: 10
           out-if-index: [20, 21]
           peak-hour: 15h
-          multiplier: 1.2
+          multiplier: 1.4
           reverse-direction-ratio: 0.15
           <<: [*from-v4-random, *to-v4-servers, *http-dst]
         - per-second: 0.1
           in-if-index: 10
           out-if-index: [20, 21]
           peak-hour: 15h
-          multiplier: 1.2
+          multiplier: 1.4
           reverse-direction-ratio: 0.1
           <<: [*from-v6-random, *to-v6-servers, *http-dst]
 
@@ -300,7 +300,7 @@
           in-if-index: 10
           out-if-index: [20, 21]
           peak-hour: 20h
-          multiplier: 1
+          multiplier: 1.1
           protocol: [tcp, udp]
           srcport: [80, 443, 22, 25461, 8080, 4500, 993, 8801]
           reverse-direction-ratio: 0.25
