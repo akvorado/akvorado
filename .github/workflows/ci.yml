@@ -363,8 +363,8 @@ jobs:
           platforms: >-
             ${{
               github.ref_type == 'tag' &&
-              'linux/amd64,linux/amd64/v3,linux/arm64,linux/arm/v7' ||
-              'linux/amd64/v3,linux/arm64'
+              'linux/amd64,linux/amd64/v3,linux/arm64,linux/arm64/v8.2,linux/arm/v7' ||
+              'linux/amd64/v3,linux/arm64,linux/arm64/v8.2'
             }}
           push: true
           build-args: |
