@@ -53,8 +53,6 @@ BUILD_ARGS =
 # - https://en.wikipedia.org/wiki/Comparison_of_ARM_processors
 # - https://docs.docker.com/build/building/variables/#pre-defined-build-arguments
 # - https://github.com/containerd/platforms/pull/8
-# Currently, Docker has no support outside of ARM64 v8 and no granularity, but the
-# support for that has been introduced in containerd/platforms.
 all: fmt lint all-indep ; $(info $(M) building executable…) @ ## Build program binary
 	$Q env GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) \
          $(if $(filter amd64,$(TARGETARCH)),GOAMD64=$(TARGETVARIANT),\
