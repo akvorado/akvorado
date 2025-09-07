@@ -43,6 +43,16 @@ GENERATED = \
 
 .PHONY: all all-indep
 BUILD_ARGS =
+# For architecture variants, see:
+# - https://go.dev/wiki/MinimumRequirements#amd64
+# - https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels
+# - https://clang.llvm.org/docs/UsersManual.html#x86
+# - https://go.dev/wiki/MinimumRequirements#arm64
+# - https://github.com/golang/go/issues/60905
+# - https://github.com/llvm/llvm-project/blob/main/llvm/unittests/TargetParser/TargetParserTest.cpp#L1077
+# - https://en.wikipedia.org/wiki/Comparison_of_ARM_processors
+# - https://docs.docker.com/build/building/variables/#pre-defined-build-arguments
+# For ARM64, Docker has no support outside of v8 and no granularity.
 all: fmt lint all-indep ; $(info $(M) building executable…) @ ## Build program binary
 	$Q env GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) \
          $(if $(filter amd64,$(TARGETARCH)),GOAMD64=$(TARGETVARIANT),\
