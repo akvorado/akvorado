@@ -21,7 +21,7 @@ var (
 		// Get the number of dropped packets
 		unix.SO_RXQ_OVFL,
 		// Ask the kernel to timestamp incoming packets
-		unix.SO_TIMESTAMP | unix.SOF_TIMESTAMPING_RX_SOFTWARE,
+		unix.SO_TIMESTAMP_NEW | unix.SOF_TIMESTAMPING_RX_SOFTWARE,
 	}
 )
 
@@ -38,11 +38,9 @@ func parseSocketControlMessage(b []byte) (oobMessage, error) {
 	for _, cmsg := range cmsgs {
 		if cmsg.Header.Level == unix.SOL_SOCKET && cmsg.Header.Type == unix.SO_RXQ_OVFL {
 			result.Drops = binary.NativeEndian.Uint32(cmsg.Data)
-		} else if cmsg.Header.Level == unix.SOL_SOCKET && cmsg.Header.Type == unix.SO_TIMESTAMP {
+		} else if cmsg.Header.Level == unix.SOL_SOCKET && cmsg.Header.Type == unix.SO_TIMESTAMP_NEW {
 			// We only are interested in the current second.
-			result.Received = time.Unix(
-				int64(binary.NativeEndian.Uint64(cmsg.Data)),
-				int64(binary.NativeEndian.Uint64(cmsg.Data[8:]))*1000)
+			result.Received = time.Unix(int64(binary.NativeEndian.Uint64(cmsg.Data)), 0)
 		}
 	}
 	return result, nil
