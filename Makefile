@@ -52,11 +52,13 @@ BUILD_ARGS =
 # - https://github.com/llvm/llvm-project/blob/main/llvm/unittests/TargetParser/TargetParserTest.cpp#L1077
 # - https://en.wikipedia.org/wiki/Comparison_of_ARM_processors
 # - https://docs.docker.com/build/building/variables/#pre-defined-build-arguments
-# For ARM64, Docker has no support outside of v8 and no granularity.
+# - https://github.com/containerd/platforms/pull/8
+# Currently, Docker has no support outside of ARM64 v8 and no granularity, but the
+# support for that has been introduced in containerd/platforms.
 all: fmt lint all-indep ; $(info $(M) building executable…) @ ## Build program binary
 	$Q env GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) \
          $(if $(filter amd64,$(TARGETARCH)),GOAMD64=$(TARGETVARIANT),\
-         $(if $(filter arm64,$(TARGETARCH)),GOARM64=$(TARGETVARIANT:%=%.0),\
+         $(if $(filter arm64,$(TARGETARCH)),GOARM64=$(if $(findstring .,$(TARGETVARIANT)),$(TARGETVARIANT),$(TARGETVARIANT:%=%.0)),\
          $(if $(filter arm,$(TARGETARCH)),GOARM=$(TARGETVARIANT:v%=%)))) \
 	   $(GO) build \
 		-tags release \
