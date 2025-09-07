@@ -6,10 +6,9 @@
 package udp
 
 import (
+	"encoding/binary"
 	"syscall"
 	"time"
-
-	"akvorado/common/helpers"
 
 	"golang.org/x/sys/unix"
 )
@@ -38,12 +37,12 @@ func parseSocketControlMessage(b []byte) (oobMessage, error) {
 
 	for _, cmsg := range cmsgs {
 		if cmsg.Header.Level == unix.SOL_SOCKET && cmsg.Header.Type == unix.SO_RXQ_OVFL {
-			result.Drops = helpers.NativeEndian.Uint32(cmsg.Data)
+			result.Drops = binary.NativeEndian.Uint32(cmsg.Data)
 		} else if cmsg.Header.Level == unix.SOL_SOCKET && cmsg.Header.Type == unix.SO_TIMESTAMP {
 			// We only are interested in the current second.
 			result.Received = time.Unix(
-				int64(helpers.NativeEndian.Uint64(cmsg.Data)),
-				int64(helpers.NativeEndian.Uint64(cmsg.Data[8:]))*1000)
+				int64(binary.NativeEndian.Uint64(cmsg.Data)),
+				int64(binary.NativeEndian.Uint64(cmsg.Data[8:]))*1000)
 		}
 	}
 	return result, nil
