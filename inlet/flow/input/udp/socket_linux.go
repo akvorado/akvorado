@@ -6,9 +6,9 @@
 package udp
 
 import (
-	"encoding/binary"
 	"syscall"
 	"time"
+	"unsafe"
 
 	"golang.org/x/sys/unix"
 )
@@ -36,11 +36,12 @@ func parseSocketControlMessage(b []byte) (oobMessage, error) {
 	}
 
 	for _, cmsg := range cmsgs {
+		// We know that cmsg.Data is correctly aligned for the data it contains, so we can cast it.
 		if cmsg.Header.Level == unix.SOL_SOCKET && cmsg.Header.Type == unix.SO_RXQ_OVFL {
-			result.Drops = binary.NativeEndian.Uint32(cmsg.Data)
+			result.Drops = *(*uint32)(unsafe.Pointer(&cmsg.Data[0]))
 		} else if cmsg.Header.Level == unix.SOL_SOCKET && cmsg.Header.Type == unix.SO_TIMESTAMP_NEW {
 			// We only are interested in the current second.
-			result.Received = time.Unix(int64(binary.NativeEndian.Uint64(cmsg.Data)), 0)
+			result.Received = time.Unix(*(*int64)(unsafe.Pointer(&cmsg.Data[0])), 0)
 		}
 	}
 	return result, nil

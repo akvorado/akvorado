@@ -30,16 +30,16 @@ func TestParseSocketControlMessage(t *testing.T) {
 
 	overflow := false
 outer:
-	for _, size := range []int{100, 1000, 10000, 100000, 1000000} {
+	for _, count := range []int{100, 1000, 10_000, 100_000, 1_000_000} {
 		// Write a lot of messages to have some overflow.
-		for range size {
+		for range count {
 			client.Write([]byte("hello"))
 		}
 
 		// Empty the queue
 		payload := make([]byte, 1000)
 		server.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
-		for range size {
+		for range count {
 			_, _, err := server.ReadFrom(payload)
 			if errors.Is(err, os.ErrDeadlineExceeded) {
 				overflow = true
@@ -70,7 +70,11 @@ outer:
 	if err != nil {
 		t.Fatalf("parseSocketControlMessage() error:\n%+v", err)
 	}
+	t.Logf("Drops: %d", oobMsg.Drops)
 	if oobMsg.Drops == 0 {
 		t.Fatal("no drops detected")
+	}
+	if oobMsg.Drops > 1_000_000 {
+		t.Fatal("too many drops detected")
 	}
 }
