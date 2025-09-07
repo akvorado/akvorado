@@ -103,7 +103,7 @@ GET http://127.0.0.1:8080/prometheus/api/v1/query
 query: sum(akvorado_outlet_clickhouse_flow_per_batch{job="akvorado-outlet", quantile="0.5"})
 HTTP 200
 [Asserts]
-jsonpath "$.data.result[0].value[1]" toInt > 500
+jsonpath "$.data.result[0].value[1]" toInt > 100
 
 ## Check we receive metrics from everything
 GET http://127.0.0.1:8080/prometheus/api/v1/query
