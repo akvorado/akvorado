@@ -3,7 +3,7 @@ name: Update Go toolchain
 on:
   workflow_dispatch:
   schedule:
-    - cron: "21 3 * * *"
+    - cron: "21 3 * * 1"
 
 jobs:
   hashes:
