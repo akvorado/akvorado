@@ -10,7 +10,7 @@ import (
 	"io/fs"
 	"strings"
 
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 // Unmarshal decodes the first document found within the in byte slice and
