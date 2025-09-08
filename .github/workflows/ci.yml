@@ -4,27 +4,17 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - "nix/*Hash.txt"
-      - ".github/ISSUE_TEMPLATE/*.yml"
-      - ".github/dependabot.yml"
-      - ".github/workflows/*.yml"
-      - "!.github/workflows/ci.yml"
-      - ".gitlab-ci.yml"
-      - "default.pgo"
-    if: "!startsWith(github.ref, 'refs/tags/')"
-  push:
-    branches:
-      - main
     tags:
       - v*
-    if: "startsWith(github.ref, 'refs/tags/')"
   pull_request:
 jobs:
   dependabot:
     name: 🤖 Check dependabot status
     runs-on: ubuntu-latest
     permissions: {}
+    if: |
+      !startsWith(github.event.head_commit.message, 'build: update Nix dependency hashes') ||
+       github.ref_type == 'tag'
     steps:
       - name: Fetch dependabot metadata
         if: ${{ github.actor == 'dependabot[bot]' && github.event_name == 'pull_request' }}
