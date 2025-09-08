@@ -190,6 +190,7 @@ test-go-units: ; $(info $(M) running Go tests$(GOTEST_MORE)…)
 	$Q env PATH=$(dir $(abspath $(shell command -v $(GO)))):$(PATH) $(GOTESTSUM) \
         --junitfile test/go/tests.xml -- \
 		-timeout $(TIMEOUT) \
+	    -fullpath \
 		$(GOTEST_ARGS) $(PKGS)
 test-race: CGO_ENABLED=1
 test-race: GOTEST_ARGS=-race
