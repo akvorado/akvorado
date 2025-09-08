@@ -51,11 +51,11 @@ require (
 	github.com/yuin/goldmark v1.7.12
 	github.com/yuin/goldmark-highlighting/v2 v2.0.0-20230729083705-37449abec8cc
 	go.uber.org/mock v0.6.0
-	golang.org/x/oauth2 v0.30.0
-	golang.org/x/sync v0.16.0
-	golang.org/x/sys v0.35.0
-	golang.org/x/text v0.28.0
-	golang.org/x/time v0.12.0
+	golang.org/x/oauth2 v0.31.0
+	golang.org/x/sync v0.17.0
+	golang.org/x/sys v0.36.0
+	golang.org/x/text v0.29.0
+	golang.org/x/time v0.13.0
 	google.golang.org/grpc v1.75.0
 	google.golang.org/protobuf v1.36.8
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
