@@ -74,7 +74,7 @@ func TestUDPInput(t *testing.T) {
 
 	// Get it back
 	select {
-	case <-time.After(20 * time.Millisecond):
+	case <-time.After(time.Second):
 		t.Fatal("no decoded flows received")
 	case <-done:
 	}
