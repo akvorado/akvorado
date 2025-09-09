@@ -873,14 +873,14 @@ func TestGraphLineHandler(t *testing.T) {
 			// Axes can be mixed. In reality, it seems they cannot
 			// be interleaved, but ClickHouse documentation does
 			// not say it is not possible.
-			{2, base, 100, []string{"router1", "provider1"}},
+			{2, base, 101, []string{"router1", "provider1"}},
 			{2, base, 200, []string{"router1", "provider2"}},
 			{2, base, 120, []string{"router2", "provider2"}},
 
 			{1, base.Add(time.Minute), 100, []string{"Other", "Other"}},
 			{1, base.Add(2 * time.Minute), 100, []string{"router1", "provider1"}},
 
-			{2, base, 110, []string{"router2", "provider3"}},
+			{2, base, 111, []string{"router2", "provider3"}},
 			{2, base, 190, []string{"Other", "Other"}},
 			{2, base.Add(time.Minute), 50, []string{"router1", "provider1"}},
 			{2, base.Add(time.Minute), 500, []string{"router1", "provider2"}},
@@ -1061,9 +1061,9 @@ func TestGraphLineHandler(t *testing.T) {
 						{1900, 100, 100},
 
 						{200, 500, 300},
-						{100, 50, 10},
+						{101, 50, 10},
 						{120, 0, 0},
-						{110, 0, 0},
+						{111, 0, 0},
 						{0, 90, 10},
 						{190, 10, 10},
 					},
@@ -1078,7 +1078,7 @@ func TestGraphLineHandler(t *testing.T) {
 						200,
 						10,
 						120,
-						110,
+						111,
 						10,
 						10,
 					},
@@ -1091,9 +1091,9 @@ func TestGraphLineHandler(t *testing.T) {
 						1900,
 
 						500,
-						100,
+						101,
 						120,
-						110,
+						111,
 						90,
 						190,
 					},
@@ -1104,6 +1104,7 @@ func TestGraphLineHandler(t *testing.T) {
 						0,
 						900,
 						100,
+
 						500,
 						50,
 						0,
@@ -1122,7 +1123,7 @@ func TestGraphLineHandler(t *testing.T) {
 						333,
 						53,
 						40,
-						36,
+						37,
 						33,
 						70,
 					},
@@ -1135,9 +1136,9 @@ func TestGraphLineHandler(t *testing.T) {
 						1630,
 
 						470,
-						92,
-						102,
 						93,
+						102,
+						94,
 						78,
 						163,
 					},
@@ -1294,14 +1295,14 @@ func TestGraphLineHandler(t *testing.T) {
 			// Axes can be mixed. In reality, it seems they cannot
 			// be interleaved, but ClickHouse documentation does
 			// not say it is not possible.
-			{2, base, 100, []string{"router1", "provider1"}},
+			{2, base, 101, []string{"router1", "provider1"}},
 			{2, base, 200, []string{"router1", "provider2"}},
 			{2, base, 120, []string{"router2", "provider2"}},
 
 			{1, base.Add(time.Minute), 100, []string{"Other", "Other"}},
 			{1, base.Add(2 * time.Minute), 100, []string{"router1", "provider1"}},
 
-			{2, base, 110, []string{"router2", "provider3"}},
+			{2, base, 111, []string{"router2", "provider3"}},
 			{2, base, 190, []string{"Other", "Other"}},
 			{2, base.Add(time.Minute), 50, []string{"router1", "provider1"}},
 			{2, base.Add(time.Minute), 500, []string{"router1", "provider2"}},
@@ -1483,8 +1484,8 @@ func TestGraphLineHandler(t *testing.T) {
 
 						{200, 500, 300},
 						{120, 0, 0},
-						{110, 0, 0},
-						{100, 50, 10},
+						{111, 0, 0},
+						{101, 50, 10},
 						{0, 90, 10},
 						{190, 10, 10},
 					},
@@ -1498,7 +1499,7 @@ func TestGraphLineHandler(t *testing.T) {
 
 						200,
 						120,
-						110,
+						111,
 						10,
 						10,
 						10,
@@ -1513,8 +1514,8 @@ func TestGraphLineHandler(t *testing.T) {
 
 						500,
 						120,
-						110,
-						100,
+						111,
+						101,
 						90,
 						190,
 					},
@@ -1525,6 +1526,7 @@ func TestGraphLineHandler(t *testing.T) {
 						500,
 						900,
 						100,
+
 						500,
 						0,
 						0,
@@ -1542,7 +1544,7 @@ func TestGraphLineHandler(t *testing.T) {
 
 						333,
 						40,
-						36,
+						37,
 						53,
 						33,
 						70,
@@ -1557,8 +1559,8 @@ func TestGraphLineHandler(t *testing.T) {
 
 						470,
 						102,
+						94,
 						93,
-						92,
 						78,
 						163,
 					},
