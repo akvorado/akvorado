@@ -98,7 +98,7 @@ func TestInsertMemory(t *testing.T) {
 
 			// OnInput is called to prepare Input data before encoding and sending
 			// to ClickHouse server.
-			OnInput: func(ctx context.Context) error {
+			OnInput: func(context.Context) error {
 				// On OnInput call, you should fill the input data.
 				//
 				// NB: You should reset the input columns, they are

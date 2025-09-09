@@ -95,7 +95,7 @@ func TestInsertMemory(t *testing.T) {
 	if err := conn.Do(ctx, ch.Query{
 		Body:  input.Into("test_schema_insert"),
 		Input: input,
-		OnInput: func(ctx context.Context) error {
+		OnInput: func(context.Context) error {
 			bf.Clear()
 			// No more data to send!
 			return io.EOF

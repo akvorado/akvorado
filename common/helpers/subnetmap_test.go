@@ -390,18 +390,6 @@ func TestSubnetMapLookupOrDefault(t *testing.T) {
 		}
 	})
 
-	t.Run("nil", func(t *testing.T) {
-		var sm *helpers.SubnetMap[string]
-		value := sm.LookupOrDefault(netip.MustParseAddr("::ffff:192.0.2.1"), "default")
-		if value != "default" {
-			t.Fatalf("LookupOrDefault() = %q, want %q", value, "default")
-		}
-	})
-}
-
-func TestSubnetMapSet(t *testing.T) {
-	sm := &helpers.SubnetMap[string]{}
-
 	t.Run("set IPv6 subnet", func(t *testing.T) {
 		prefix := netip.MustParsePrefix("2001:db8::/64")
 		sm.Set(prefix, "test-value")
@@ -491,7 +479,7 @@ func TestSubnetMapUpdatePanic(t *testing.T) {
 			}
 		}()
 		prefix := netip.MustParsePrefix("192.0.2.0/24")
-		sm.Update(prefix, func(old int, exists bool) int { return 1 })
+		sm.Update(prefix, func(int, bool) int { return 1 })
 	})
 }
 

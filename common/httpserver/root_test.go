@@ -20,7 +20,7 @@ func TestHandler(t *testing.T) {
 	h := httpserver.NewMock(t, r)
 
 	h.AddHandler("/test",
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			fmt.Fprintf(w, "Hello !")
 		}))
 
@@ -78,7 +78,7 @@ func TestGinRouterPanic(t *testing.T) {
 	r := reporter.NewMock(t)
 	h := httpserver.NewMock(t, r)
 
-	h.GinRouter.GET("/api/v0/test", func(c *gin.Context) {
+	h.GinRouter.GET("/api/v0/test", func(*gin.Context) {
 		panic("heeeelp")
 	})
 

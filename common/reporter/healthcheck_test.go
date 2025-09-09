@@ -37,7 +37,7 @@ func TestEmptyHealthcheck(t *testing.T) {
 
 func TestOneHealthcheck(t *testing.T) {
 	r := reporter.NewMock(t)
-	r.RegisterHealthcheck("hc1", func(ctx context.Context) reporter.HealthcheckResult {
+	r.RegisterHealthcheck("hc1", func(context.Context) reporter.HealthcheckResult {
 		return reporter.HealthcheckResult{reporter.HealthcheckOK, "all well"}
 	})
 	testHealthchecks(context.Background(), t, r,
@@ -51,10 +51,10 @@ func TestOneHealthcheck(t *testing.T) {
 
 func TestFailingHealthcheck(t *testing.T) {
 	r := reporter.NewMock(t)
-	r.RegisterHealthcheck("hc1", func(ctx context.Context) reporter.HealthcheckResult {
+	r.RegisterHealthcheck("hc1", func(context.Context) reporter.HealthcheckResult {
 		return reporter.HealthcheckResult{reporter.HealthcheckOK, "all well"}
 	})
-	r.RegisterHealthcheck("hc2", func(ctx context.Context) reporter.HealthcheckResult {
+	r.RegisterHealthcheck("hc2", func(context.Context) reporter.HealthcheckResult {
 		return reporter.HealthcheckResult{reporter.HealthcheckError, "not so good"}
 	})
 	testHealthchecks(context.Background(), t, r,
@@ -69,7 +69,7 @@ func TestFailingHealthcheck(t *testing.T) {
 
 func TestHealthcheckCancelContext(t *testing.T) {
 	r := reporter.NewMock(t)
-	r.RegisterHealthcheck("hc1", func(ctx context.Context) reporter.HealthcheckResult {
+	r.RegisterHealthcheck("hc1", func(context.Context) reporter.HealthcheckResult {
 		return reporter.HealthcheckResult{reporter.HealthcheckOK, "all well"}
 	})
 	r.RegisterHealthcheck("hc2", func(ctx context.Context) reporter.HealthcheckResult {
@@ -114,10 +114,10 @@ func TestChannelHealthcheck(t *testing.T) {
 
 func TestHealthcheckHTTPHandler(t *testing.T) {
 	r := reporter.NewMock(t)
-	r.RegisterHealthcheck("hc1", func(ctx context.Context) reporter.HealthcheckResult {
+	r.RegisterHealthcheck("hc1", func(context.Context) reporter.HealthcheckResult {
 		return reporter.HealthcheckResult{reporter.HealthcheckOK, "all well"}
 	})
-	r.RegisterHealthcheck("hc2", func(ctx context.Context) reporter.HealthcheckResult {
+	r.RegisterHealthcheck("hc2", func(context.Context) reporter.HealthcheckResult {
 		return reporter.HealthcheckResult{reporter.HealthcheckError, "trying to be better"}
 	})
 
