@@ -3,9 +3,9 @@
 
 export function formatXps(value: number) {
   value = Math.abs(value);
-  const suffixes = ["", "K", "M", "G", "T"];
+  const suffixes = ["", "K", "M", "G", "T", "P"];
   let idx = 0;
-  while (value >= 1000 && idx < suffixes.length) {
+  while (value >= 1000 && idx < suffixes.length - 1) {
     value /= 1000;
     idx++;
   }
