@@ -5,6 +5,7 @@ package console
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"slices"
 	"sort"
@@ -425,15 +426,14 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 			}
 			// Max
 			output.Max[i] = points[nbPoints-1]
-			// 95th percentile
-			index := 0.95 * float64(nbPoints)
+			// 95th percentile with linear interpolation
+			index := 0.95*float64(nbPoints) - 1
 			j := int(index)
-			if index == float64(j) {
-				output.NinetyFivePercentile[i] = points[j-1]
-			} else if index > 1 {
-				// We use the average of the two values. This
-				// is good enough for bps/pps
-				output.NinetyFivePercentile[i] = (points[j-1] + points[j]) / 2
+			fraction := index - float64(j)
+			output.NinetyFivePercentile[i] = points[nbPoints-1]
+			if j >= 0 && j < nbPoints-1 {
+				output.NinetyFivePercentile[i] = int(
+					math.Round(float64(points[j])*(1-fraction) + float64(points[j+1])*fraction))
 			}
 		}
 	}
