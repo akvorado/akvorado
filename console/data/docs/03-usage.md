@@ -21,7 +21,7 @@ Only the orchestrator service should get a configuration file. The other
 services should point to it.
 
 ```console
-$ akvorado orchestrator /etc/akvorado/config.yaml
+$ akvorado orchestrator /etc/akvorado/akvorado.yaml
 $ akvorado inlet http://orchestrator:8080
 $ akvorado outlet http://orchestrator:8080
 $ akvorado console http://orchestrator:8080
