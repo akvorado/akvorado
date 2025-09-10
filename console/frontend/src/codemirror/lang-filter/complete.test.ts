@@ -64,9 +64,21 @@ describe("filter completion", () => {
                   case "SrcAS":
                     return {
                       completions: [
-                        { label: "=", detail: "operator", quoted: false },
-                        { label: "!=", detail: "operator", quoted: false },
-                        { label: "IN", detail: "operator", quoted: false },
+                        {
+                          label: "=",
+                          detail: "comparison operator",
+                          quoted: false,
+                        },
+                        {
+                          label: "!=",
+                          detail: "comparison operator",
+                          quoted: false,
+                        },
+                        {
+                          label: "IN",
+                          detail: "comparison operator",
+                          quoted: false,
+                        },
                       ].filter(({ label }) =>
                         label.startsWith(body.prefix ?? ""),
                       ),
@@ -172,14 +184,14 @@ describe("filter completion", () => {
       from: 6,
       to: 6,
       options: [
-        { apply: "= ", detail: "operator", label: "=" },
-        { apply: "!= ", detail: "operator", label: "!=" },
-        { apply: "IN ", detail: "operator", label: "IN" },
+        { apply: "= ", detail: "comparison operator", label: "=" },
+        { apply: "!= ", detail: "comparison operator", label: "!=" },
+        { apply: "IN ", detail: "comparison operator", label: "IN" },
       ],
     });
   });
 
-  it("completes values", async () => {
+  it("completes partial values", async () => {
     const { from, to, options } = await get("SrcAS = fac|");
     expect(JSON.parse(fetchOptions.body!.toString())).toEqual({
       what: "value",
@@ -189,6 +201,23 @@ describe("filter completion", () => {
     expect({ from, to, options }).toEqual({
       from: 8,
       to: 11,
+      options: [
+        { apply: "AS65403 ", detail: "AS number", label: "AS65403" },
+        { apply: "AS65404 ", detail: "AS number", label: "AS65404" },
+        { apply: "AS65405 ", detail: "AS number", label: "AS65405" },
+      ],
+    });
+  });
+
+  it("completes complete values", async () => {
+    const { from, to, options } = await get("SrcAS = |");
+    expect(JSON.parse(fetchOptions.body!.toString())).toEqual({
+      what: "value",
+      column: "SrcAS",
+    });
+    expect({ from, to, options }).toEqual({
+      from: 8,
+      to: 8,
       options: [
         { apply: "AS65403 ", detail: "AS number", label: "AS65403" },
         { apply: "AS65404 ", detail: "AS number", label: "AS65404" },
@@ -264,7 +293,7 @@ describe("filter completion", () => {
     expect({ from, to, options }).toEqual({
       from: 6,
       to: 7,
-      options: [{ apply: "IN ", detail: "operator", label: "IN" }],
+      options: [{ apply: "IN ", detail: "comparison operator", label: "IN" }],
     });
   });
 
