@@ -533,6 +533,25 @@ to enable TLS for a more secure setup.
 /configure router "Base" bgp monitor station "akvorado" { }
 ```
 
+### MikroTik
+
+For MikroTik, if you use RouterOS v6, the sampling rate is incorrectly reported
+and you need to override the sampling rate in the outlet configuration:
+
+```yaml
+core:
+  override-sampling-rate:
+    192.168.10.10: 10000 # mikrotik1
+    192.168.10.11: 2000  # mikrotik2
+```
+
+This should not be needed for RouterOS v7 (at least from version 7.10).
+
+Here are a few resources from MikroTik help site to configure a Mikrotik device:
+
+- [Traffic Flow](https://help.mikrotik.com/docs/spaces/ROS/pages/21102653/Traffic+Flow)
+- [SNMP](https://help.mikrotik.com/docs/spaces/ROS/pages/8978519/SNMP)
+
 ### GNU/Linux
 
 #### pmacct
