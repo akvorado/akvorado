@@ -116,7 +116,7 @@ func demoExporterStart(r *reporter.Reporter, config DemoExporterConfiguration, c
 
 	// Expose some information and metrics
 	addCommonHTTPHandlers(r, "demo-exporter", httpComponent)
-	versionMetrics(r)
+	moreMetrics(r)
 
 	// If we only asked for a check, stop here.
 	if checkOnly {

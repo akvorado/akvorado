@@ -100,7 +100,7 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 
 	// Expose some information and metrics
 	addCommonHTTPHandlers(r, "inlet", httpComponent)
-	versionMetrics(r)
+	moreMetrics(r)
 
 	// If we only asked for a check, stop here.
 	if checkOnly {

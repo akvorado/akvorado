@@ -164,7 +164,7 @@ func outletStart(r *reporter.Reporter, config OutletConfiguration, checkOnly boo
 
 	// Expose some information and metrics
 	addCommonHTTPHandlers(r, "outlet", httpComponent)
-	versionMetrics(r)
+	moreMetrics(r)
 
 	// If we only asked for a check, stop here.
 	if checkOnly {

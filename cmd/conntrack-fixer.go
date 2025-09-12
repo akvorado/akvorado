@@ -49,7 +49,7 @@ containers started with the label "akvorado.conntrack.fix=1".`,
 			return fmt.Errorf("unable to initialize conntrack fixer component: %w", err)
 		}
 		addCommonHTTPHandlers(r, "conntrack-fixer", httpComponent)
-		versionMetrics(r)
+		moreMetrics(r)
 
 		components := []any{
 			httpComponent,

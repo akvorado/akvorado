@@ -123,7 +123,7 @@ func consoleStart(r *reporter.Reporter, config ConsoleConfiguration, checkOnly b
 
 	// Expose some information and metrics
 	addCommonHTTPHandlers(r, "console", httpComponent)
-	versionMetrics(r)
+	moreMetrics(r)
 
 	// If we only asked for a check, stop here.
 	if checkOnly {

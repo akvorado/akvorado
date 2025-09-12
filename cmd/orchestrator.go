@@ -190,7 +190,7 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, c
 
 	// Expose some information and metrics
 	addCommonHTTPHandlers(r, "orchestrator", httpComponent)
-	versionMetrics(r)
+	moreMetrics(r)
 
 	// If we only asked for a check, stop here.
 	if checkOnly {
