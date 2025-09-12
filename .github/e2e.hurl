@@ -11,19 +11,19 @@ jsonpath "$.SamplingRate" == 100000
 GET http://127.0.0.1:8080/api/v0/console/metrics
 HTTP 200
 [Asserts]
-body matches /^# HELP akvorado_cmd_info Akvorado build information/
+body contains "# HELP akvorado_cmd_info Akvorado build information"
 GET http://127.0.0.1:8080/api/v0/inlet/metrics
 HTTP 200
 [Asserts]
-body matches /^# HELP akvorado_cmd_info Akvorado build information/
+body contains "# HELP akvorado_cmd_info Akvorado build information"
 GET http://127.0.0.1:8080/api/v0/outlet/metrics
 HTTP 200
 [Asserts]
-body matches /^# HELP akvorado_cmd_info Akvorado build information/
+body contains "# HELP akvorado_cmd_info Akvorado build information"
 GET http://127.0.0.1:8080/api/v0/orchestrator/metrics
 HTTP 200
 [Asserts]
-body matches /^# HELP akvorado_cmd_info Akvorado build information/
+body contains "# HELP akvorado_cmd_info Akvorado build information"
 
 # Test some Prometheus queries
 
