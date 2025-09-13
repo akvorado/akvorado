@@ -15,3 +15,9 @@ declare module "vue-resizer" {
     sliderBgHoverColor?: string;
   }>;
 }
+
+// Missing ES module exports for sugar-date
+declare module "sugar-date" {
+  const Sugar: sugarjs.Sugar;
+  export = Sugar;
+}
