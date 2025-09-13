@@ -54,7 +54,7 @@ type Column struct {
 	// ClickHouseMaterialized indicates that the column was materialized (and is not by default)
 	ClickHouseMaterialized bool
 
-	// For the console. `ClickHouseTruncateIP' makes the specified column
+	// For the console. `ConsoleTruncateIP' makes the specified column
 	// truncatable when used as a dimension.
 	ConsoleNotDimension bool
 	ConsoleTruncateIP   bool
