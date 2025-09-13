@@ -21,3 +21,8 @@ declare module "sugar-date" {
   const Sugar: sugarjs.Sugar;
   export = Sugar;
 }
+
+// Export TooltipCallbackDataParams from echarts
+declare module "echarts/types/src/component/tooltip/TooltipView.d.ts" {
+  export { TooltipCallbackDataParams };
+}
