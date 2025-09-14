@@ -133,11 +133,11 @@ services:
       # For anything else...
       - "traefik.http.routers.akvorado-console.rule=!PathPrefix(`/debug`)"
       - traefik.http.routers.akvorado-console.priority=1
-      - traefik.http.routers.akvorado-console.middlewares=console-auth-headers
+      - traefik.http.routers.akvorado-console.middlewares=console-auth
       - traefik.http.services.akvorado-console.loadbalancer.server.port=8080
-      - traefik.http.middlewares.console-auth-headers.headers.customrequestheaders.Remote-User=alfred
-      - traefik.http.middlewares.console-auth-headers.headers.customrequestheaders.Remote-Name=Alfred Pennyworth
-      - traefik.http.middlewares.console-auth-headers.headers.customrequestheaders.Remote-Email=alfred@example.com
+      - traefik.http.middlewares.console-auth.headers.customrequestheaders.Remote-User=alfred
+      - traefik.http.middlewares.console-auth.headers.customrequestheaders.Remote-Name=Alfred Pennyworth
+      - traefik.http.middlewares.console-auth.headers.customrequestheaders.Remote-Email=alfred@example.com
       - metrics.port=8080
       - metrics.path=/api/v0/metrics
   akvorado-inlet:

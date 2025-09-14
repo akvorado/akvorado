@@ -21,7 +21,7 @@ services:
     labels:
       - traefik.enable=true
       - traefik.http.routers.grafana.rule=PathPrefix(`/grafana`)
-      - traefik.http.routers.grafana.middlewares=console-auth-headers,grafana-avatar
+      - traefik.http.routers.grafana.middlewares=console-auth,grafana-avatar
       - traefik.http.middlewares.grafana-avatar.redirectRegex.regex=^(https?://.+)/grafana/avatar/.+
       - traefik.http.middlewares.grafana-avatar.redirectRegex.replacement=$${1}/api/v0/console/user/avatar
       - metrics.port=3000
