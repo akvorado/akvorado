@@ -96,6 +96,7 @@
         <InputDimensions
           v-model="dimensions"
           :min-dimensions="graphType.name === graphTypes.sankey ? 2 : 0"
+          @submit="submitOptions()"
         />
         <SectionLabel>
           <template #default>Filter</template>

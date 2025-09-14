@@ -12,7 +12,10 @@
 -->
 
 <template>
-  <div class="grid grid-cols-4 gap-2 lg:grid-cols-2">
+  <div
+    class="grid grid-cols-4 gap-2 lg:grid-cols-2"
+    @keydown.capture="handleKeydown"
+  >
     <InputListBox
       v-model="selectedDimensions"
       :items="dimensions"
@@ -113,6 +116,7 @@ const props = withDefaults(
 );
 const emit = defineEmits<{
   "update:modelValue": [value: typeof props.modelValue];
+  submit: [];
 }>();
 
 const serverConfiguration = inject(ServerConfigKey)!;
@@ -203,6 +207,17 @@ const removeDimension = (dimension: (typeof dimensions.value)[0]) => {
     (d) => d !== dimension,
   );
 };
+
+const handleKeydown = (event: KeyboardEvent) => {
+  if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!hasErrors.value) {
+      emit("submit");
+    }
+  }
+};
+
 watch(
   () => [props.modelValue, dimensions.value] as const,
   ([value, dimensions]) => {

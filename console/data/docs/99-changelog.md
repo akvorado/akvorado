@@ -10,6 +10,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🌱 *console*: submit form on Ctrl-Enter or Cmd-Enter while selecting dimensions
+
 ## 2.0.0-beta.6 - 2025-09-06
 
 > [!CAUTION]
