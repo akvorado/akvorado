@@ -35,7 +35,7 @@ describe("filter completion", () => {
           what: "column" | "operator" | "value";
           column?: string;
           prefix?: string;
-        } = JSON.parse(options.body!.toString());
+        } = JSON.parse(options.body as string);
         return {
           ok: true,
           async json() {
@@ -130,7 +130,7 @@ describe("filter completion", () => {
                     throw new Error(`unhandled column name: ${body.column}`);
                 }
               default:
-                throw new Error(`unhandled what: ${body.what}`);
+                throw new Error(`unhandled what (cannot happen)`);
             }
           },
         };
@@ -141,7 +141,7 @@ describe("filter completion", () => {
   it("completes column names", async () => {
     const { from, to, options } = await get("S|");
     expect(fetchOptions.method).toEqual("POST");
-    expect(JSON.parse(fetchOptions.body!.toString())).toEqual({
+    expect(JSON.parse(fetchOptions.body as string)).toEqual({
       what: "column",
       prefix: "S",
     });
@@ -159,7 +159,7 @@ describe("filter completion", () => {
   it("completes inside column names", async () => {
     const { from, to, options } = await get("S|rc =");
     expect(fetchOptions.method).toEqual("POST");
-    expect(JSON.parse(fetchOptions.body!.toString())).toEqual({
+    expect(JSON.parse(fetchOptions.body as string)).toEqual({
       what: "column",
       prefix: "Src",
     });
@@ -176,7 +176,7 @@ describe("filter completion", () => {
 
   it("completes operator names", async () => {
     const { from, to, options } = await get("SrcAS |");
-    expect(JSON.parse(fetchOptions.body!.toString())).toEqual({
+    expect(JSON.parse(fetchOptions.body as string)).toEqual({
       what: "operator",
       column: "SrcAS",
     });
@@ -193,7 +193,7 @@ describe("filter completion", () => {
 
   it("completes partial values", async () => {
     const { from, to, options } = await get("SrcAS = fac|");
-    expect(JSON.parse(fetchOptions.body!.toString())).toEqual({
+    expect(JSON.parse(fetchOptions.body as string)).toEqual({
       what: "value",
       column: "SrcAS",
       prefix: "fac",
@@ -211,7 +211,7 @@ describe("filter completion", () => {
 
   it("completes complete values", async () => {
     const { from, to, options } = await get("SrcAS = |");
-    expect(JSON.parse(fetchOptions.body!.toString())).toEqual({
+    expect(JSON.parse(fetchOptions.body as string)).toEqual({
       what: "value",
       column: "SrcAS",
     });
@@ -228,7 +228,7 @@ describe("filter completion", () => {
 
   it("completes quoted values", async () => {
     const { from, to, options } = await get('DstNetName = "so|');
-    expect(JSON.parse(fetchOptions.body!.toString())).toEqual({
+    expect(JSON.parse(fetchOptions.body as string)).toEqual({
       what: "value",
       column: "DstNetName",
       prefix: "so",
@@ -244,7 +244,7 @@ describe("filter completion", () => {
 
   it("completes quoted values even when not quoted", async () => {
     const { from, to, options } = await get("DstNetName = so|");
-    expect(JSON.parse(fetchOptions.body!.toString())).toEqual({
+    expect(JSON.parse(fetchOptions.body as string)).toEqual({
       what: "value",
       column: "DstNetName",
       prefix: "so",
@@ -285,7 +285,7 @@ describe("filter completion", () => {
 
   it("completes inside operator", async () => {
     const { from, to, options } = await get("SrcAS I|");
-    expect(JSON.parse(fetchOptions.body!.toString())).toEqual({
+    expect(JSON.parse(fetchOptions.body as string)).toEqual({
       what: "operator",
       prefix: "I",
       column: "SrcAS",
@@ -299,7 +299,7 @@ describe("filter completion", () => {
 
   it("completes empty list of values", async () => {
     const { from, to, options } = await get("SrcAS IN (|");
-    expect(JSON.parse(fetchOptions.body!.toString())).toEqual({
+    expect(JSON.parse(fetchOptions.body as string)).toEqual({
       what: "value",
       column: "SrcAS",
     });
@@ -315,7 +315,7 @@ describe("filter completion", () => {
 
   it("completes non-empty list of values", async () => {
     const { from, to, options } = await get("SrcAS IN (100,|");
-    expect(JSON.parse(fetchOptions.body!.toString())).toEqual({
+    expect(JSON.parse(fetchOptions.body as string)).toEqual({
       what: "value",
       column: "SrcAS",
     });
@@ -331,7 +331,7 @@ describe("filter completion", () => {
 
   it("completes NOT", async () => {
     const { from, to, options } = await get("SrcAS = 100 AND |");
-    expect(JSON.parse(fetchOptions.body!.toString())).toEqual({
+    expect(JSON.parse(fetchOptions.body as string)).toEqual({
       what: "column",
     });
     expect({ from, to, options }).toEqual({
@@ -351,7 +351,7 @@ describe("filter completion", () => {
 
   it("completes column after logic operator", async () => {
     const { from, to, options } = await get("SrcAS = 100 AND S|");
-    expect(JSON.parse(fetchOptions.body!.toString())).toEqual({
+    expect(JSON.parse(fetchOptions.body as string)).toEqual({
       what: "column",
       prefix: "S",
     });
