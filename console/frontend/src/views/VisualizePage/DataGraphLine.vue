@@ -84,44 +84,42 @@ const graph = computed((): ECOption => {
   const data = props.data;
   if (!data) return {};
   const rowName = (row: string[]) => row.join(" — ") || "Total";
-  const source: [string, ...number[]][] = [
-    ...data.t
-      .map((t, timeIdx) => {
-        let result: [string, ...number[]] = [
+  const source: [string, ...number[]][] = data.t
+    .map((t, timeIdx) => {
+      let result: [string, ...number[]] = [
+        t,
+        ...data.points.map(
+          // Unfortunately, eCharts does not seem to make it easy
+          // to inverse an axis and put the result below. Therefore,
+          // we use negative values for the second axis.
+          (row, rowIdx) => row[timeIdx] * (data.axis[rowIdx] % 2 ? 1 : -1),
+        ),
+      ];
+      if (data.graphType === "stacked100") {
+        // Normalize values between 0 and 1 (or -1 and 0)
+        const [, ...values] = result;
+        const positiveSum = values.reduce(
+          (prev, cur) => (cur > 0 ? prev + cur : prev),
+          0,
+        );
+        const negativeSum = values.reduce(
+          (prev, cur) => (cur < 0 ? prev + cur : prev),
+          0,
+        );
+        result = [
           t,
-          ...data.points.map(
-            // Unfortunately, eCharts does not seem to make it easy
-            // to inverse an axis and put the result below. Therefore,
-            // we use negative values for the second axis.
-            (row, rowIdx) => row[timeIdx] * (data.axis[rowIdx] % 2 ? 1 : -1),
+          ...values.map((v) =>
+            v > 0 && positiveSum > 0
+              ? v / positiveSum
+              : v < 0 && negativeSum < 0
+                ? -v / negativeSum
+                : v,
           ),
         ];
-        if (data.graphType === "stacked100") {
-          // Normalize values between 0 and 1 (or -1 and 0)
-          const [, ...values] = result;
-          const positiveSum = values.reduce(
-            (prev, cur) => (cur > 0 ? prev + cur : prev),
-            0,
-          );
-          const negativeSum = values.reduce(
-            (prev, cur) => (cur < 0 ? prev + cur : prev),
-            0,
-          );
-          result = [
-            t,
-            ...values.map((v) =>
-              v > 0 && positiveSum > 0
-                ? v / positiveSum
-                : v < 0 && negativeSum < 0
-                  ? -v / negativeSum
-                  : v,
-            ),
-          ];
-        }
-        return result;
-      })
-      .slice(0, -1), // trim last point
-  ];
+      }
+      return result;
+    })
+    .slice(0, -1); // trim last point
   const dataset = {
       sourceHeader: false,
       dimensions: ["time", ...data.rows.map(rowName)],
