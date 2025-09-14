@@ -58,24 +58,22 @@ func TestRoot(t *testing.T) {
 		Return(dockerEvents, dockerErrors)
 
 	// Initial trigger
+	networkSettings := &container.NetworkSettings{}
+	networkSettings.Ports = map[nat.Port][]nat.PortBinding{
+		"2055/udp": {
+			nat.PortBinding{
+				HostIP:   "127.0.0.1",
+				HostPort: "6776",
+			},
+		},
+	}
 	dockerClientMock.EXPECT().
 		ContainerList(gomock.Any(), gomock.Any()).
 		Return([]container.Summary{{ID: "initial"}}, nil)
 	dockerClientMock.EXPECT().
 		ContainerInspect(gomock.Any(), "initial").
 		Return(container.InspectResponse{
-			NetworkSettings: &container.NetworkSettings{
-				NetworkSettingsBase: container.NetworkSettingsBase{
-					Ports: map[nat.Port][]nat.PortBinding{
-						"2055/udp": {
-							nat.PortBinding{
-								HostIP:   "127.0.0.1",
-								HostPort: "6776",
-							},
-						},
-					},
-				},
-			},
+			NetworkSettings: networkSettings,
 		}, nil)
 	conntrackConnMock.EXPECT().
 		Dump(nil).
@@ -133,24 +131,22 @@ func TestRoot(t *testing.T) {
 
 	// New container
 	t.Run("new container", func(_ *testing.T) {
+		networkSettings := &container.NetworkSettings{}
+		networkSettings.Ports = map[nat.Port][]nat.PortBinding{
+			"2055/udp": {
+				nat.PortBinding{
+					HostIP:   "127.0.0.1",
+					HostPort: "6777",
+				},
+			},
+		}
 		dockerClientMock.EXPECT().
 			ContainerList(gomock.Any(), gomock.Any()).
 			Return([]container.Summary{{ID: "new one"}}, nil)
 		dockerClientMock.EXPECT().
 			ContainerInspect(gomock.Any(), "new one").
 			Return(container.InspectResponse{
-				NetworkSettings: &container.NetworkSettings{
-					NetworkSettingsBase: container.NetworkSettingsBase{
-						Ports: map[nat.Port][]nat.PortBinding{
-							"2055/udp": {
-								nat.PortBinding{
-									HostIP:   "127.0.0.1",
-									HostPort: "6777",
-								},
-							},
-						},
-					},
-				},
+				NetworkSettings: networkSettings,
 			}, nil)
 		conntrackConnMock.EXPECT().
 			Dump(nil).
