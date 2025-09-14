@@ -13,6 +13,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🌱 *console*: submit form on Ctrl-Enter or Cmd-Enter while selecting dimensions
+- 🌱 *build*: modernize JavaScript build with Oxlint and Rolldown-Vite
 
 ## 2.0.0-beta.6 - 2025-09-06
 
