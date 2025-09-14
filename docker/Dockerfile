@@ -6,7 +6,7 @@ COPY Makefile .
 RUN make console/data/frontend
 
 FROM --platform=$BUILDPLATFORM golang:alpine AS build-go
-RUN apk add --no-cache make mailcap curl zip
+RUN apk add --no-cache make curl zip
 WORKDIR /build
 # Cache for modules
 COPY go.mod go.sum .
@@ -28,7 +28,6 @@ LABEL org.opencontainers.image.title="Akvorado"
 LABEL org.opencontainers.image.description="Flow collector, enricher and visualizer"
 LABEL org.opencontainers.image.source=https://github.com/akvorado/akvorado
 LABEL org.opencontainers.image.licenses=AGPL-3.0-only
-COPY --from=build-go /etc/mime.types /etc/mime.types
 COPY --from=build-go /build/bin/akvorado /usr/local/bin/akvorado
 EXPOSE 8080
 HEALTHCHECK --interval=20s CMD [ "/usr/local/bin/akvorado", "healthcheck" ]
