@@ -31,7 +31,6 @@ updates:
           - "vue-tsc"
           - "@vue/*"
         exclude-patterns:
-          - "@vue/eslint-*"
           - "@vue/tsconfig"
       codemirror:
         patterns:
@@ -42,11 +41,8 @@ updates:
           - "@vitejs/*"
           - "@vitest/*"
           - "@volar/*"
-          - "@vue/eslint-*"
           - "autoprefixer"
-          - "@eslint/*"
-          - "eslint*"
-          - "patch-package"
+          - "oxlint*"
           - "prettier*"
           - "vite"
           - "vitest"
@@ -58,11 +54,9 @@ updates:
         patterns:
           - "@tsconfig/*"
           - "@types/*"
-          - "@typescript-eslint/*"
           - "@vue/tsconfig"
           - "typescript-language-server"
           - "typescript"
-          - "typescript-eslint"
   - package-ecosystem: gomod
     directory: /
     commit-message:

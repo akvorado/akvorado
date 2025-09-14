@@ -26,7 +26,7 @@ describe("linter", () => {
       vi.fn((_: string, options: RequestInit) => {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve(JSON.parse(options.body!.toString())),
+          json: () => Promise.resolve(JSON.parse(options.body as string)),
         });
       }),
     );

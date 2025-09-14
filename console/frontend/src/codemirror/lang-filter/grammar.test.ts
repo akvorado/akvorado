@@ -14,9 +14,9 @@ const caseFile = path.join(
 );
 
 describe("filter parsing", () => {
-  for (const { name, run } of fileTests(
+  for (const test of fileTests(
     fs.readFileSync(caseFile, "utf8"),
     "grammar.test.txt",
   ))
-    it(name, () => run(parser));
+    it(test.name, () => test.run(parser));
 });
