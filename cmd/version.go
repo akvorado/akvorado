@@ -36,6 +36,9 @@ var versionCmd = &cobra.Command{
 				}
 			}
 		}
+		if !debug {
+			return nil
+		}
 		cmd.Println()
 
 		sch, err := schema.New(schema.DefaultConfiguration())

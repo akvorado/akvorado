@@ -41,4 +41,21 @@ func TestVersion(t *testing.T) {
 	if diff := helpers.Diff(got[:len(want)], want); diff != "" {
 		t.Errorf("`version` (-got, +want):\n%s", diff)
 	}
+	if strings.Contains(buf.String(), "\n- SrcNetName\n") {
+		t.Errorf("`version` contains %q", "SrcNetName")
+	}
+}
+
+func TestVersionDebug(t *testing.T) {
+	root := cmd.RootCmd
+	buf := new(bytes.Buffer)
+	root.SetOut(buf)
+	root.SetArgs([]string{"version", "-d"})
+	err := root.Execute()
+	if err != nil {
+		t.Errorf("`version` error:\n%+v", err)
+	}
+	if !strings.Contains(buf.String(), "\n- SrcNetName\n") {
+		t.Errorf("`version` does NOT contain %q", "SrcNetName")
+	}
 }
