@@ -125,10 +125,9 @@ buffers format][].
 
 The following keys are accepted:
 
-- `topic`, `brokers`, `tls`, and `version` are described in the
-  configuration for the [orchestrator service](#kafka-2). Their values are
-  copied from the orchestrator configuration, unless you set `brokers`
-  explicitly.
+- `topic`, `brokers`, and `tls` are described in the configuration for the
+  [orchestrator service](#kafka-2). Their values are copied from the
+  orchestrator configuration, unless you set `brokers` explicitly.
 - `compression-codec` defines the compression codec for messages: `none`,
   `gzip`, `snappy`, `lz4` (default), or `zstd`.
 - `queue-size` defines the maximum number of messages to buffer for Kafka.
@@ -148,10 +147,9 @@ to ClickHouse. Its main components are `kafka`, `metadata`, `routing`, and `core
 The outlet's Kafka component takes flows from the Kafka topic. The following
 keys are accepted:
 
-- `topic`, `brokers`, `tls`, and `version` are described in the
-  configuration for the [orchestrator service](#kafka-2). Their values are
-  copied from the orchestrator configuration, unless you set `brokers`
-  explicitly.
+- `topic`, `brokers`, and `tls` are described in the configuration for the
+  [orchestrator service](#kafka-2). Their values are copied from the
+  orchestrator configuration, unless you set `brokers` explicitly.
 - `consumer-group` defines the consumer group ID for Kafka consumption.
 - `fetch-min-bytes` defines the minimum number of bytes to fetch from Kafka.
 - `fetch-max-wait-time` defines the maximum time to wait for the minimum
@@ -650,7 +648,7 @@ dimensions (e.g. `SrcNetPrefix` and `DstNetPrefix`) is computed at query time
 increases the storage needs.
 
 You can get the list of columns you can enable or disable with `akvorado
-version`. Disabling a column won't delete existing data.
+version -d`. Disabling a column won't delete existing data.
 
 It is also possible to make some columns available on the main table only
 or on all tables with `main-table-only` and `not-main-table-only`. For example:
@@ -757,7 +755,6 @@ flows. It accepts the following keys:
   connection to the Kafka cluster
 - `tls` defines the TLS configuration to connect to the cluster
 - `sasl` defines the SASL configuration to connect to the cluster
-- `version` tells which minimal version of Kafka to expect
 - `topic` defines the base topic name
 - `topic-configuration` describes how the topic should be configured
 
