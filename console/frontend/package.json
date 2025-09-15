@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "packageManager": "npm@11.6.0",
   "scripts": {
     "dev": "vite",
     "build": "npm run type-check && npm run build-only",
