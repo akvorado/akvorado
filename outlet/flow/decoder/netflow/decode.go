@@ -576,6 +576,6 @@ func decodeIPFromUint32(ipv4 uint32) netip.Addr {
 type direction uint
 
 const (
-	directionForward = iota
+	directionForward direction = iota
 	directionReverse
 )
