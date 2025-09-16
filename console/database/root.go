@@ -30,40 +30,40 @@ func New(r *reporter.Reporter, configuration Configuration) (*Component, error) 
 		r:      r,
 		config: configuration,
 	}
-	switch c.config.Driver {
-	case "sqlite":
-		db, err := gorm.Open(sqlite.Open(c.config.DSN), &gorm.Config{
-			Logger: &logger{r},
-		})
-		if err != nil {
-			return nil, fmt.Errorf("unable to open sqlite database: %w", err)
-		}
-		c.db = db
-	case "postgresql":
-		db, err := gorm.Open(postgres.Open(c.config.DSN), &gorm.Config{
-			Logger: &logger{r},
-		})
-		if err != nil {
-			return nil, fmt.Errorf("unable to open PostgreSQL database: %w", err)
-		}
-		c.db = db
-	case "mysql":
-		db, err := gorm.Open(mysql.Open(c.config.DSN), &gorm.Config{
-			Logger: &logger{r},
-		})
-		if err != nil {
-			return nil, fmt.Errorf("unable to open MySQL database: %w", err)
-		}
-		c.db = db
-	default:
-		return nil, fmt.Errorf("%q is not a supporter driver", c.config.Driver)
-	}
 	return &c, nil
 }
 
 // Start starts the database component
 func (c *Component) Start() error {
 	c.r.Info().Msg("starting database component")
+	switch c.config.Driver {
+	case "sqlite":
+		db, err := gorm.Open(sqlite.Open(c.config.DSN), &gorm.Config{
+			Logger: &logger{c.r},
+		})
+		if err != nil {
+			return fmt.Errorf("unable to open sqlite database: %w", err)
+		}
+		c.db = db
+	case "postgresql":
+		db, err := gorm.Open(postgres.Open(c.config.DSN), &gorm.Config{
+			Logger: &logger{c.r},
+		})
+		if err != nil {
+			return fmt.Errorf("unable to open PostgreSQL database: %w", err)
+		}
+		c.db = db
+	case "mysql":
+		db, err := gorm.Open(mysql.Open(c.config.DSN), &gorm.Config{
+			Logger: &logger{c.r},
+		})
+		if err != nil {
+			return fmt.Errorf("unable to open MySQL database: %w", err)
+		}
+		c.db = db
+	default:
+		return fmt.Errorf("%q is not a supporter driver", c.config.Driver)
+	}
 	if err := c.db.AutoMigrate(&SavedFilter{}); err != nil {
 		return fmt.Errorf("cannot migrate database: %w", err)
 	}
