@@ -119,7 +119,7 @@ console/filter/parser.go: console/filter/parser.peg ; $(info $(M) generate PEG p
 
 console/frontend/node_modules: console/frontend/package.json console/frontend/package-lock.json
 console/frontend/node_modules: ; $(info $(M) fetching node modules…)
-	$Q (cd console/frontend ; $(NPM) ci --loglevel=error --no-audit --no-fund) && touch $@
+	$Q (cd console/frontend ; $(NPM) ci --loglevel=error --ignore-scripts --no-audit --no-fund) && touch $@
 console/data/frontend: $(GENERATED_JS)
 console/data/frontend: $(shell $(LSFILES) console/frontend 2> /dev/null)
 console/data/frontend: ; $(info $(M) building console frontend…)
