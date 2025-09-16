@@ -47,7 +47,6 @@ type Dependencies struct {
 
 // New creates a new HTTP component.
 func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
-	var err error
 	c := Component{
 		r:      r,
 		d:      &dependencies,
@@ -58,10 +57,6 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	}
 	c.initMetrics()
 	c.d.Daemon.Track(&c.t, "common/http")
-	c.cacheStore, err = configuration.Cache.Config.New()
-	if err != nil {
-		return nil, err
-	}
 	c.GinRouter.Use(gin.Recovery())
 	c.AddHandler("/api/", c.GinRouter)
 	if configuration.Profiler {
@@ -108,6 +103,13 @@ func (c *Component) AddHandler(location string, handler http.Handler) {
 func (c *Component) Start() error {
 	if c.config.Listen == "" {
 		return nil
+	}
+
+	c.r.Info().Msg("starting HTTP component")
+	var err error
+	c.cacheStore, err = c.config.Cache.Config.New()
+	if err != nil {
+		return err
 	}
 	server := &http.Server{Handler: c.mux}
 
