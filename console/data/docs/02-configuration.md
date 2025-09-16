@@ -1031,6 +1031,12 @@ password=pass dbname=dbname sslmode=disable`. Check the [documentation of
 libpq](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING)
 for more details.
 
+> [!IMPORTANT]
+> With the Docker Compose setup, SQLite is configured by default with DSN
+> `/run/akvorado/console.sqlite` using environment variable. To override this,
+> uncomment the appropriate configuration snippet in
+> `docker/docker-compose-local.yml`.
+
 The database configuration also accepts a `saved-filters` key to
 populate the database with the provided filters. Each filter should
 have a `description` and a `content`:

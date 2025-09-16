@@ -962,9 +962,9 @@ It is possible to remove a value with the `!reset` tag:
 
 ```yaml
 services:
-  akvorado-outlet:
+  akvorado-console:
     environment:
-      AKVORADO_CFG_OUTLET_METADATA_CACHEPERSISTFILE: !reset null
+      AKVORADO_CFG_CONSOLE_DATABASE_DSN: !reset null
 ```
 
 With Docker Compose v2.24.4 or later, you can override a value:

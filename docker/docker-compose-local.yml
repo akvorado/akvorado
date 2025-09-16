@@ -14,6 +14,14 @@
 #     ports:
 #       - 80:8081/tcp
 
+# To not use SQLite for the console database, you need to unset a specific
+# environment variable:
+
+# services:
+#   akvorado-console:
+#     environment:
+#       AKVORADO_CFG_CONSOLE_DATABASE_DSN: !reset null
+
 # To add use HTTP basic auth to protect the service, uncomment the snippet
 # below. You can generate your own user/password with "htpasswd -nB akvorado".
 # If you enable TLS, replace "public" by "publicsecure".
