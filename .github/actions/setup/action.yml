@@ -33,13 +33,17 @@ runs:
         cache-dependency-path: |
           go.sum
           bin/external-tool
+    - uses: pnpm/action-setup@v4
+      if: ${{ inputs.setup-node == 'true' }}
+      with:
+        package_json_file: console/frontend/package.json
     - uses: actions/setup-node@v4
       if: ${{ inputs.setup-node == 'true' }}
       with:
         node-version: ${{ inputs.node-version }}
-        cache: npm
+        cache: pnpm
         cache-dependency-path: |
-          console/frontend/package-lock.json
+          console/frontend/pnpm-lock.yaml
           bin/external-tool
     - name: Restore IANA files from cache
       uses: actions/cache/restore@v4

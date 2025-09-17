@@ -15,16 +15,26 @@
         };
         l = builtins // pkgs.lib;
         nodejs = pkgs.nodejs_20;
+        pnpm = pkgs.pnpm_10;
         go = pkgs.go_latest;
-        frontend = pkgs.buildNpmPackage.override { inherit nodejs; } {
+        frontend = pkgs.stdenvNoCC.mkDerivation rec {
           name = "akvorado-frontend";
           src = ./console/frontend;
-          npmDepsHash = l.readFile ./nix/npmDepsHash.txt;
-          # Filter out optional dependencies
-          prePatch = ''
-            ${pkgs.jq}/bin/jq 'del(.packages[] | select(.optional == true and .dev == null))' \
-              < package-lock.json > package-lock.json.tmp
-            mv package-lock.json.tmp package-lock.json
+          nativeBuildInputs = [
+            nodejs
+            pnpm.configHook
+          ];
+
+          pnpmDeps = pnpm.fetchDeps {
+            inherit src;
+            pname = name;
+            buildInputs = [ nodejs ];
+            fetcherVersion = 2;
+            hash = l.readFile ./nix/npmDepsHash.txt;
+          };
+
+          buildPhase = ''
+            pnpm run build
           '';
           installPhase = ''
             mkdir $out

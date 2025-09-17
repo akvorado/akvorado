@@ -30,8 +30,8 @@ Currently, only a pre-built binary for Linux x86-64 is provided.
 ## Compilation from source
 
 You need to install [Go](https://go.dev/doc/install) (1.21+), and
-[NodeJS](https://nodejs.org/en/download/) (20+) with NPM (6+). For example, on
-Debian:
+[NodeJS](https://nodejs.org/en/download/) (20+) with PNPM (also accessible
+through [Corepack](https://github.com/nodejs/corepack)). For example, on Debian:
 
 ```console
 # apt install golang nodejs npm
@@ -39,8 +39,8 @@ Debian:
 go version go1.24.1 linux/amd64
 # node --version
 v20.19.2
-# npm --version
-9.2.0
+# corepack pnpm --version
+10.16.1
 ```
 
 Then, type:
