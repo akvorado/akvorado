@@ -14,17 +14,17 @@ run tests:
         - .go-cache/
     - key:
         files:
-          - console/frontend/package-lock.json
+          - console/frontend/pnpm-lock.yaml
       paths:
-        - .npm-cache
+        - .pnpm-store
   script:
     # Tests on GitLab do not include functional tests. This was the case in the
     # past but this is a slight burden to maintain in addition to GitHub CI.
     # Check commit ceaa6ebf8ef6 for the last version supporting functional
     # tests.
-    - time apk add --no-cache git make gcc musl-dev shared-mime-info npm curl zip
+    - time apk add --no-cache git make gcc musl-dev shared-mime-info pnpm curl zip
     - export GOMODCACHE=$PWD/.go-cache
-    - npm config --user set cache $PWD/.npm-cache
+    - pnpm config set store-dir .pnpm-store
     - time go mod download
     - time make && ./bin/akvorado version
     - time make test-race

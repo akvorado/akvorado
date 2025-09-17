@@ -60,7 +60,7 @@ $ make docker-dev && CONSOLE_HEALTHCHECK_DISABLED=true docker compose --profile 
 Once done, run `docker compose --profile demo down` to stop all the containers.
 
 If you need to work on the frontend part, you can spawn the Docker compose
-setup, then in `console/frontend`, use `npm run dev` and point your browser to
+setup, then in `console/frontend`, use `pnpm run dev` and point your browser to
 `http://localhost:5173` instead of `http://localhost:8080`. Any change of
 frontend-related files should be applied immediately.
 

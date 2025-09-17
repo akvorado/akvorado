@@ -7,7 +7,9 @@ VERSION ?= $(shell git describe --tags --always --dirty --match=v* 2> /dev/null 
 PKGS     = $(or $(PKG),$(shell $(GO) list ./...))
 
 GO      = go
-NPM     = npm
+PNPM    = $(or $(shell command -v pnpm 2>/dev/null),\
+			$(shell command -v corepack 2>/dev/null | sed 's/$$/ pnpm/'),\
+			$(error No pnpm command found))
 TIMEOUT = 45s
 LSFILES = git ls-files -cmo --exclude-standard --
 V = 0
@@ -117,13 +119,13 @@ common/schema/definition_gen.go: common/schema/definition.go common/schema/defin
 console/filter/parser.go: console/filter/parser.peg ; $(info $(M) generate PEG parser for filters…)
 	$Q $(PIGEON) -optimize-basic-latin $< > $@
 
-console/frontend/node_modules: console/frontend/package.json console/frontend/package-lock.json
+console/frontend/node_modules: console/frontend/package.json console/frontend/pnpm-lock.yaml
 console/frontend/node_modules: ; $(info $(M) fetching node modules…)
-	$Q (cd console/frontend ; $(NPM) ci --loglevel=error --ignore-scripts --no-audit --no-fund) && touch $@
+	$Q (cd console/frontend ; $(PNPM) install --loglevel=error --frozen-lockfile) && touch $@
 console/data/frontend: $(GENERATED_JS)
 console/data/frontend: $(shell $(LSFILES) console/frontend 2> /dev/null)
 console/data/frontend: ; $(info $(M) building console frontend…)
-	$Q cd console/frontend && $(NPM) run --silent build
+	$Q cd console/frontend && $(PNPM) run --silent build
 
 ASNS_URL = https://vincentbernat.github.io/asn2org/asns.csv
 PROTOCOLS_URL = http://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv
@@ -223,9 +225,9 @@ test-coverage-go: ; $(info $(M) running Go coverage tests…) @ ## Run Go covera
 
 test-js: .fmt-js~ .lint-js~ $(GENERATED_JS)
 test-js: ; $(info $(M) running JS tests…) @ ## Run JS tests
-	$Q cd console/frontend && $(NPM) run --silent type-check && $(NPM) run --silent test
+	$Q cd console/frontend && $(PNPM) run --silent type-check && $(PNPM) run --silent test
 test-coverage-js: ; $(info $(M) running JS coverage tests…) @ ## Run JS coverage tests
-	$Q cd console/frontend && $(NPM) run --silent type-check && $(NPM) run --silent test -- --coverage
+	$Q cd console/frontend && $(PNPM) run --silent type-check && $(PNPM) run --silent test -- --coverage
 
 .PHONY: lint
 lint: .lint-go~ .lint-js~ ## Run linting
@@ -234,7 +236,7 @@ lint: .lint-go~ .lint-js~ ## Run linting
 	$Q touch $@
 .lint-js~: $(shell $(LSFILES) '*.js' '*.ts' '*.vue' '*.html' 2> /dev/null)
 .lint-js~: $(GENERATED_JS) ; $(info $(M) running jslint…)
-	$Q cd console/frontend && $(NPM) run --silent lint
+	$Q cd console/frontend && $(PNPM) run --silent lint
 	$Q touch $@
 
 .PHONY: fmt
@@ -244,7 +246,7 @@ fmt: .fmt-go~ .fmt-js~ ## Format all source files
 	$Q touch $@
 .fmt-js~: $(shell $(LSFILES) '*.js' '*.ts' '*.vue' '*.html' 2> /dev/null)
 .fmt-js~: $(GENERATED_JS) ; $(info $(M) formatting JS code…)
-	$Q cd console/frontend && $(NPM) run --silent format
+	$Q cd console/frontend && $(PNPM) run --silent format
 	$Q touch $@
 
 # Misc
@@ -254,7 +256,7 @@ licensecheck: console/frontend/node_modules ; $(info $(M) check dependency licen
 	$Q ! git grep -L SPDX-License-Identifier: "*.go" "*.ts" "*.js" || \
 		(>&2 echo "*** Missing license identifiers!"; false)
 	$Q err=0 ; $(GO) mod vendor && $(WWHRD) --quiet check || err=$$? ; rm -rf vendor/ ; exit $$err
-	$Q cd console/frontend ; $(NPM) exec --no -- license-compliance \
+	$Q cd console/frontend ; $(PNPM) exec -- license-compliance \
 		--production \
 		--allow "$$(sed -n '/^allowlist:/,/^[a-z]/p' ../../.wwhrd.yml | sed -n 's/^  - //p' | paste -sd ";")" \
 		--report detailed

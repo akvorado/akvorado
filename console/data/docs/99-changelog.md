@@ -14,6 +14,7 @@ identified with a specific icon:
 
 - 🌱 *console*: submit form on Ctrl-Enter or Cmd-Enter while selecting dimensions
 - 🌱 *cmd*: make `akvorado version` shorter (use `-d` for full output)
+- 🌱 *build*: switch from NPM to PNPM for JavaScript build
 - 🌱 *build*: modernize JavaScript build with Oxlint and Rolldown-Vite
 
 ## 2.0.0-beta.6 - 2025-09-06

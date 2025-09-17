@@ -3,26 +3,29 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "packageManager": "npm@11.6.0",
+  "packageManager": "pnpm@10.16.1",
   "scripts": {
     "dev": "vite",
-    "build": "npm run type-check && npm run build-only",
+    "build": "$npm_execpath run type-check && $npm_execpath run build-only",
     "build-only": "vite build",
     "type-check": "vue-tsc --noEmit -p tsconfig.vitest.json --composite false",
-    "lint": "oxlint --type-aware",
+    "lint": "oxlint --type-aware --vue-plugin",
     "format": "prettier --log-level warn --write '{src/**/,}*.{ts,js,vue,html}'",
     "test": "vitest run"
   },
   "devDependencies": {
     "@codemirror/autocomplete": "^6.0.1",
     "@codemirror/commands": "^6.0.0",
+    "@codemirror/language": "^6.11.3",
     "@codemirror/lint": "^6.0.0",
     "@codemirror/state": "^6.0.0",
     "@codemirror/view": "^6.0.0",
     "@headlessui/vue": "^1.6.1",
     "@heroicons/vue": "^1.0.6",
+    "@lezer/common": "^1.2.3",
     "@lezer/generator": "^1.0.0",
     "@lezer/highlight": "^1.1.6",
+    "@lezer/lr": "^1.4.2",
     "@tailwindcss/typography": "^0.5.2",
     "@tailwindcss/vite": "^4.1.5",
     "@tsconfig/node20": "^20.1.6",
@@ -32,6 +35,7 @@
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-vue": "^6.0.0",
     "@vitest/coverage-v8": "^3.0.4",
+    "@vue/language-server": "^3.0.0",
     "@vue/tsconfig": "^0.8.1",
     "@vueuse/core": "^13.1.0",
     "@vueuse/router": "^13.1.0",
@@ -46,6 +50,7 @@
     "sugar-date": "^2.0.6",
     "tailwindcss": "^4.1.5",
     "typescript": "^5.6.3",
+    "typescript-language-server": "^4.4.0",
     "uuid": "^13.0.0",
     "vite": "npm:rolldown-vite@^7.1.9",
     "vitest": "^3.0.4",
@@ -55,9 +60,5 @@
     "vue-router": "^4.0.16",
     "vue-tsc": "^3.0.1",
     "vuedraggable": "^4.1.0"
-  },
-  "optionalDependencies": {
-    "@vue/language-server": "^3.0.0",
-    "typescript-language-server": "^4.4.0"
   }
 }
