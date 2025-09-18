@@ -256,10 +256,10 @@ licensecheck: console/frontend/node_modules ; $(info $(M) check dependency licen
 	$Q ! git grep -L SPDX-License-Identifier: "*.go" "*.ts" "*.js" || \
 		(>&2 echo "*** Missing license identifiers!"; false)
 	$Q err=0 ; $(GO) mod vendor && $(WWHRD) --quiet check || err=$$? ; rm -rf vendor/ ; exit $$err
-	$Q cd console/frontend ; $(PNPM) exec -- license-compliance \
-		--production \
-		--allow "$$(sed -n '/^allowlist:/,/^[a-z]/p' ../../.wwhrd.yml | sed -n 's/^  - //p' | paste -sd ";")" \
-		--report detailed
+	$Q cd console/frontend ; \
+		allowed="$$(sed -n '/^allowlist:/,/^[a-z]/p' ../../.wwhrd.yml | sed -n 's/^  - //p' | paste -sd "|")" ; \
+		! $(PNPM) licenses ls --json | jq -r --exit-status --arg allowed "$$allowed" \
+			'to_entries[] | select(.key | test("^('"$$allowed"')$$") | not) | "Unallowed license: " + .key + " (" + (.value | map(.name) | join(", ")) + ")"'
 
 .PHONY: clean
 clean: ; $(info $(M) cleaning…)	@ ## Cleanup everything

@@ -40,7 +40,6 @@
     "@vueuse/core": "^13.1.0",
     "@vueuse/router": "^13.1.0",
     "echarts": "^5.3.3",
-    "license-compliance": "^3.0.0",
     "lodash-es": "^4.17.21",
     "lz-string": "^1.4.4",
     "oxlint": "^1.15.0",
