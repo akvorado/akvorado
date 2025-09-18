@@ -9,6 +9,7 @@ package daemon
 import (
 	"os"
 	"os/signal"
+	"sync/atomic"
 	"syscall"
 
 	"gopkg.in/tomb.v2"
@@ -20,6 +21,8 @@ import (
 type Component interface {
 	Start() error
 	Stop() error
+	Reexec()
+	FinishReexec()
 	Track(t *tomb.Tomb, who string)
 
 	// Lifecycle
@@ -30,8 +33,9 @@ type Component interface {
 // realComponent is a non-mock implementation of the Component
 // interface.
 type realComponent struct {
-	r     *reporter.Reporter
-	tombs []tombWithOrigin
+	r            *reporter.Reporter
+	tombs        []tombWithOrigin
+	shouldReexec atomic.Bool
 
 	lifecycleComponent
 }
@@ -70,11 +74,12 @@ func (c *realComponent) Start() error {
 			c.Terminate()
 		}(t)
 	}
-	// On signal, terminate
+	// On signal, terminate or reexec
 	go func() {
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals,
-			syscall.SIGINT, syscall.SIGTERM)
+			syscall.SIGINT,
+			syscall.SIGTERM)
 		select {
 		case s := <-signals:
 			c.r.Debug().Stringer("signal", s).Msg("signal received")
@@ -95,6 +100,30 @@ func (c *realComponent) Start() error {
 func (c *realComponent) Stop() error {
 	c.Terminate()
 	return nil
+}
+
+// Reexec will reexecute the current process with the same arguments.
+func (c *realComponent) Reexec() {
+	c.shouldReexec.Store(true)
+	c.Terminate()
+}
+
+// FinishReexec should be called just before exiting to trigger the real reexec.
+func (c *realComponent) FinishReexec() {
+	if c.shouldReexec.Load() {
+		executable, err := os.Executable()
+		if err != nil {
+			c.r.Err(err).Msg("cannot get executable name")
+			return
+		}
+
+		env := os.Environ()
+		args := append([]string{executable}, os.Args[1:]...)
+		c.r.Info().Strs("args", args).Msg("reexec in progress")
+		if err := syscall.Exec(executable, args, env); err != nil {
+			c.r.Err(err).Msg("cannot reexec")
+		}
+	}
 }
 
 // Add a new tomb to be tracked. This is only used before Start().

@@ -39,6 +39,7 @@ func StartStopComponents(r *reporter.Reporter, daemonComponent daemon.Component,
 
 	<-daemonComponent.Terminated()
 	r.Info().Msg("stopping all components")
+	daemonComponent.FinishReexec()
 	return nil
 }
 
