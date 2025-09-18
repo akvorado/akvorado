@@ -265,7 +265,7 @@ jobs:
             orchestrator/clickhouse/data/tcp.csv
           key: ${{ steps.setup.outputs.iana-cache-key }}
       - name: Tests
-        run: make test
+        run: make test-go
 
   build-js:
     name: 🔬 Test only JS
