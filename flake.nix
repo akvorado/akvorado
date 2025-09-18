@@ -97,9 +97,11 @@
               [[ -z "$sha256" ]] || echo $sha256 > nix/vendorHash.txt
             '';
             update-npmDepsHash = ''
-              sha256=$(2>&1 nix build --no-link .#frontend.npmDeps \
+              oldSha256=$(cat nix/npmDepsHash.txt)
+              echo sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA= > nix/npmDepsHash.txt
+              sha256=$(2>&1 nix build --no-link .#frontend.pnpmDeps \
                           | ${pkgs.gnused}/bin/sed -nE "s/\s+got:\s+(sha256-.*)/\1/p")
-              [[ -z "$sha256" ]] || echo $sha256 > nix/npmDepsHash.txt
+              [[ -z "$sha256" ]] && echo $oldSha256 || echo $sha256 > nix/npmDepsHash.txt
             '';
             update-ianaServiceNamesHash = ''
               sha256=$(2>&1 nix build --no-link .#ianaServiceNames \
