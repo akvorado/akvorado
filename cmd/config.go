@@ -75,7 +75,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config any)
 			if dirname == "" {
 				dirname = "."
 			}
-			if err := yaml.UnmarshalWithInclude(os.DirFS(dirname), filename, &rawConfig); err != nil {
+			if _, err := yaml.UnmarshalWithInclude(os.DirFS(dirname), filename, &rawConfig); err != nil {
 				return fmt.Errorf("unable to parse YAML configuration file: %w", err)
 			}
 		}

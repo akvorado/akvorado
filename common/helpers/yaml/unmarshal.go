@@ -8,6 +8,7 @@ package yaml
 import (
 	"fmt"
 	"io/fs"
+	"slices"
 	"strings"
 
 	"go.yaml.in/yaml/v3"
@@ -22,14 +23,15 @@ func Unmarshal(in []byte, out any) (err error) {
 // UnmarshalWithInclude decodes the first document found within the in byte
 // slice and assigns decoded values into the out value. It also accepts the
 // "!include" tag to include additional files contained in the provided fs.
-func UnmarshalWithInclude(fsys fs.FS, input string, out any) (err error) {
+func UnmarshalWithInclude(fsys fs.FS, input string, out any) ([]string, error) {
 	var outNode yaml.Node
+	paths := []string{input}
 	in, err := fs.ReadFile(fsys, input)
 	if err != nil {
-		return fmt.Errorf("cannot read %s: %w", input, err)
+		return nil, fmt.Errorf("cannot read %s: %w", input, err)
 	}
 	if err := Unmarshal(in, &outNode); err != nil {
-		return fmt.Errorf("in %s: %w", input, err)
+		return nil, fmt.Errorf("in %s: %w", input, err)
 	}
 
 	if outNode.Kind == yaml.DocumentNode {
@@ -64,17 +66,21 @@ func UnmarshalWithInclude(fsys fs.FS, input string, out any) (err error) {
 			continue
 		}
 		if current.Alias != nil {
-			return fmt.Errorf("at line %d of %s, no alias is allowed for !include", current.Line, input)
+			return nil, fmt.Errorf("at line %d of %s, no alias is allowed for !include", current.Line, input)
 		}
 		if len(current.Content) > 0 {
-			return fmt.Errorf("at line %d of %s, no content is allowed for !include", current.Line, input)
+			return nil, fmt.Errorf("at line %d of %s, no content is allowed for !include", current.Line, input)
 		}
 		var outNode yaml.Node
-		if err := UnmarshalWithInclude(fsys, current.Value, &outNode); err != nil {
-			return fmt.Errorf("at line %d of %s: %w", current.Line, input, err)
+		morepaths, err := UnmarshalWithInclude(fsys, current.Value, &outNode)
+		if err != nil {
+			return nil, fmt.Errorf("at line %d of %s: %w", current.Line, input, err)
 		}
+		paths = append(paths, morepaths...)
 		*current = outNode
 	}
 
-	return outNode.Decode(out)
+	slices.Sort(paths)
+	paths = slices.Compact(paths)
+	return paths, outNode.Decode(out)
 }
