@@ -627,11 +627,12 @@ You need to run one `ipfixprobe` instance for each interface. Each interface
 should have its own `id` and `dir`. As with *pmacct*, use the static metadata
 provider to provide interface names and descriptions to Akvorado.
 
+By default, ipfixprobe utilises bidirectional flows (RFC 5103) which are
+supported by Akvorado.
+
 > [!WARNING]
-> Until Akvorado supports bidirectional flows (RFC 5103), only incoming flows
-> are correctly counted. The `split` option for the cache plugin would
-> help to count both directions, but the input interface would be
-> incorrect for outgoing flows.
+> The `split` option for the cache plugin results to incorrect input interfaces
+> for outgoing flows.
 
 ## Kafka
 
