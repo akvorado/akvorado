@@ -5,7 +5,6 @@ package daemon
 
 import (
 	"errors"
-	"os"
 	"syscall"
 	"testing"
 	"testing/synctest"
@@ -61,28 +60,6 @@ func TestTerminateWithSignal(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatalf("Terminated() wasn't closed while we requested it to be")
 	}
-}
-
-func TestReexecWithSignal(t *testing.T) {
-
-	r := reporter.NewMock(t)
-	c, err := New(r)
-	if err != nil {
-		t.Fatalf("New() error:\n%+v", err)
-	}
-	helpers.StartStop(t, c)
-
-	c.Reexec()
-	if os.Getenv("TEST_DAEMON_REEXEC") == "1" {
-		// This is a way to increase a bit coverage
-		executable, _ := os.Executable()
-		os.Remove(executable)
-		c.FinishReexec()
-		return
-	}
-	os.Setenv("TEST_DAEMON_REEXEC", "1")
-	c.FinishReexec()
-	t.Fatalf("No reexec done!")
 }
 
 func TestStop(t *testing.T) {

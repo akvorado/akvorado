@@ -17,8 +17,6 @@ type MockComponent struct {
 	lifecycleComponent
 }
 
-var _ Component = &MockComponent{}
-
 // NewMock will create a daemon component that does nothing.
 func NewMock(t testing.TB) Component {
 	t.Helper()
@@ -38,14 +36,6 @@ func (c *MockComponent) Start() error {
 func (c *MockComponent) Stop() error {
 	c.Terminate()
 	return nil
-}
-
-// Reexec does nothing for the mock implementation
-func (c *MockComponent) Reexec() {
-}
-
-// FinishReexec does nothing for the mock implementation
-func (c *MockComponent) FinishReexec() {
 }
 
 // Track does nothing
