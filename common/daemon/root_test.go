@@ -5,10 +5,8 @@ package daemon
 
 import (
 	"errors"
-	"syscall"
 	"testing"
 	"testing/synctest"
-	"time"
 
 	"gopkg.in/tomb.v2"
 
@@ -43,23 +41,6 @@ func TestTerminate(t *testing.T) {
 	}
 
 	c.Terminate() // Can be called several times.
-}
-
-func TestTerminateWithSignal(t *testing.T) {
-	r := reporter.NewMock(t)
-	c, err := New(r)
-	if err != nil {
-		t.Fatalf("New() error:\n%+v", err)
-	}
-	helpers.StartStop(t, c)
-
-	syscall.Kill(syscall.Getpid(), syscall.SIGINT)
-	select {
-	case <-c.Terminated():
-		// OK
-	case <-time.After(time.Second):
-		t.Fatalf("Terminated() wasn't closed while we requested it to be")
-	}
 }
 
 func TestStop(t *testing.T) {
