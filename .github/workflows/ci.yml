@@ -89,13 +89,15 @@ jobs:
       # Binary build
       - name: Build
         if: matrix.binary
-        run: make && ./bin/akvorado version
+        run: |
+          make TARGETARCH=amd64 && mv bin/akvorado bin/akvorado-amd64
+          make TARGETARCH=arm64 && mv bin/akvorado bin/akvorado-arm64
       - name: Upload binary
         if: matrix.binary
         uses: actions/upload-artifact@v4
         with:
           name: binary
-          path: bin/akvorado
+          path: bin/akvorado-*
           if-no-files-found: error
 
   build-nix:
@@ -461,6 +463,6 @@ jobs:
           prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
           fail_on_unmatched_files: true
           files: |
-            akvorado
+            akvorado-*
             docker-compose-quickstart.tar.gz
             docker-compose-upgrade.tar.gz
