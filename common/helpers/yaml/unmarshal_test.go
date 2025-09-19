@@ -5,6 +5,7 @@ package yaml_test
 
 import (
 	"os"
+	"slices"
 	"testing"
 
 	"akvorado/common/helpers"
@@ -14,7 +15,8 @@ import (
 func TestUnmarshalWithIn(t *testing.T) {
 	fsys := os.DirFS("testdata")
 	var got any
-	if err := yaml.UnmarshalWithInclude(fsys, "base.yaml", &got); err != nil {
+	gotPaths, err := yaml.UnmarshalWithInclude(fsys, "base.yaml", &got)
+	if err != nil {
 		t.Fatalf("UnmarshalWithInclude() error:\n%+v", err)
 	}
 	expected := map[string]any{
@@ -30,6 +32,19 @@ func TestUnmarshalWithIn(t *testing.T) {
 		}, "el2", "el3"},
 	}
 	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Fatalf("UnmarshalWithInclude() (-got, +want):\n%s", diff)
+		t.Errorf("UnmarshalWithInclude() (-got, +want):\n%s", diff)
+	}
+	expectedPaths := []string{
+		"base.yaml",
+		"1.yaml",
+		"2.yaml",
+		"nested.yaml",
+		"list1.yaml",
+		"list2.yaml",
+	}
+	slices.Sort(expectedPaths)
+	slices.Sort(gotPaths)
+	if diff := helpers.Diff(gotPaths, expectedPaths); diff != "" {
+		t.Errorf("UnmarshalWithInclude() paths (-got, +want):\n%s", diff)
 	}
 }
