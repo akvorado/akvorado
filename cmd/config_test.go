@@ -92,7 +92,7 @@ module1:
 
 	parsed := dummyConfiguration{}
 	out := bytes.NewBuffer([]byte{})
-	if err := c.Parse(out, "dummy", &parsed); err == nil {
+	if _, err := c.Parse(out, "dummy", &parsed); err == nil {
 		t.Fatal("Parse() didn't error")
 	} else if diff := helpers.Diff(err.Error(), `invalid configuration:
 Key: 'dummyConfiguration.Module1.Topic' Error:Field validation for 'Topic' failed on the 'gte' tag
@@ -126,7 +126,7 @@ module2:
 
 	parsed := dummyConfiguration{}
 	out := bytes.NewBuffer([]byte{})
-	if err := c.Parse(out, "dummy", &parsed); err != nil {
+	if _, err := c.Parse(out, "dummy", &parsed); err != nil {
 		t.Fatalf("Parse() error:\n%+v", err)
 	}
 	// Expected configuration
@@ -226,7 +226,7 @@ module2:
 
 	parsed := dummyConfiguration{}
 	out := bytes.NewBuffer([]byte{})
-	if err := c.Parse(out, "dummy", &parsed); err != nil {
+	if _, err := c.Parse(out, "dummy", &parsed); err != nil {
 		t.Fatalf("Parse() error:\n%+v", err)
 	}
 	// Expected configuration
@@ -280,7 +280,7 @@ module2:
 
 	parsed := dummyConfiguration{}
 	out := bytes.NewBuffer([]byte{})
-	if err := c.Parse(out, "dummy", &parsed); err != nil {
+	if _, err := c.Parse(out, "dummy", &parsed); err != nil {
 		t.Fatalf("Parse() error:\n%+v", err)
 	}
 	// Expected configuration
@@ -325,7 +325,7 @@ module1:
 
 		parsed := dummyConfiguration{}
 		out := bytes.NewBuffer([]byte{})
-		if err := c.Parse(out, "dummy", &parsed); err != nil {
+		if _, err := c.Parse(out, "dummy", &parsed); err != nil {
 			t.Fatalf("Parse() error:\n%+v", err)
 		}
 	})
@@ -345,7 +345,7 @@ module1:
 
 		parsed := dummyConfiguration{}
 		out := bytes.NewBuffer([]byte{})
-		if err := c.Parse(out, "dummy", &parsed); err == nil {
+		if _, err := c.Parse(out, "dummy", &parsed); err == nil {
 			t.Fatal("Parse() didn't error")
 		} else if diff := helpers.Diff(err.Error(), `invalid configuration:
 invalid key "Module1.extra"
@@ -384,7 +384,7 @@ modules:
 			parsed := struct {
 				Modules []dummyConfiguration
 			}{}
-			if err := c.Parse(out, "dummy", &parsed); err != nil {
+			if _, err := c.Parse(out, "dummy", &parsed); err != nil {
 				t.Fatalf("Parse() error:\n%+v", err)
 			}
 			return parsed
@@ -452,7 +452,7 @@ modules:
 			parsed := struct {
 				Modules []*dummyConfiguration
 			}{}
-			if err := c.Parse(out, "dummy", &parsed); err != nil {
+			if _, err := c.Parse(out, "dummy", &parsed); err != nil {
 				t.Fatalf("Parse() error:\n%+v", err)
 			}
 			return parsed
@@ -524,7 +524,7 @@ func TestDevNullDefault(t *testing.T) {
 
 	var parsed dummyConfiguration
 	out := bytes.NewBuffer([]byte{})
-	if err := c.Parse(out, "dummy", &parsed); err != nil {
+	if _, err := c.Parse(out, "dummy", &parsed); err != nil {
 		t.Fatalf("Parse() error:\n%+v", err)
 	}
 	// Expected configuration
@@ -603,7 +603,7 @@ module2:
 		},
 	}
 	out := bytes.NewBuffer([]byte{})
-	if err := c.Parse(out, "dummy", &parsed); err != nil {
+	if _, err := c.Parse(out, "dummy", &parsed); err != nil {
 		t.Fatalf("Parse() error:\n%+v", err)
 	}
 	if diff := helpers.Diff(parsed, expected); diff != "" {

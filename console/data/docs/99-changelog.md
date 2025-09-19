@@ -12,6 +12,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- ✨ *orchestrator*: automatic restart of the orchestrator service on configuration change
 - 🌱 *console*: submit form on Ctrl-Enter or Cmd-Enter while selecting dimensions
 - 🌱 *cmd*: make `akvorado version` shorter (use `-d` for full output)
 - 🌱 *build*: switch from NPM to PNPM for JavaScript build

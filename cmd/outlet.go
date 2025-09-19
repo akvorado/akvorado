@@ -75,7 +75,7 @@ enrichment and export to Kafka.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		config := OutletConfiguration{}
 		OutletOptions.Path = args[0]
-		if err := OutletOptions.Parse(cmd.OutOrStdout(), "outlet", &config); err != nil {
+		if _, err := OutletOptions.Parse(cmd.OutOrStdout(), "outlet", &config); err != nil {
 			return err
 		}
 

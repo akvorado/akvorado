@@ -33,15 +33,17 @@ type ConfigRelatedOptions struct {
 	BeforeDump func(mapstructure.Metadata)
 }
 
-// Parse parses the configuration file (if present) and the
-// environment variables into the provided configuration.
-func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config any) error {
+// Parse parses the configuration file (if present) and the environment
+// variables into the provided configuration. It returns the paths to watch if
+// we want to detect configuration changes.
+func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config any) ([]string, error) {
 	var rawConfig gin.H
+	var paths []string
 	if cfgFile := c.Path; cfgFile != "" {
 		if strings.HasPrefix(cfgFile, "http://") || strings.HasPrefix(cfgFile, "https://") {
 			u, err := url.Parse(cfgFile)
 			if err != nil {
-				return fmt.Errorf("cannot parse configuration URL: %w", err)
+				return nil, fmt.Errorf("cannot parse configuration URL: %w", err)
 			}
 			if u.Path == "" {
 				u.Path = fmt.Sprintf("/api/v0/orchestrator/configuration/%s", component)
@@ -51,32 +53,36 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config any)
 			}
 			resp, err := http.Get(u.String())
 			if err != nil {
-				return fmt.Errorf("unable to fetch configuration file: %w", err)
+				return nil, fmt.Errorf("unable to fetch configuration file: %w", err)
 			}
 			defer resp.Body.Close()
 			contentType := resp.Header.Get("Content-Type")
 			mediaType, _, err := mime.ParseMediaType(contentType)
 			if (mediaType != "application/x-yaml" && mediaType != "application/yaml") || err != nil {
-				return fmt.Errorf("received configuration file is not YAML (%s)", contentType)
+				return nil, fmt.Errorf("received configuration file is not YAML (%s)", contentType)
 			}
 			input, err := io.ReadAll(resp.Body)
 			if err != nil {
-				return fmt.Errorf("unable to read configuration file: %w", err)
+				return nil, fmt.Errorf("unable to read configuration file: %w", err)
 			}
 			if err := yaml.Unmarshal(input, &rawConfig); err != nil {
-				return fmt.Errorf("unable to parse YAML configuration file: %w", err)
+				return nil, fmt.Errorf("unable to parse YAML configuration file: %w", err)
 			}
 		} else {
 			cfgFile, err := filepath.EvalSymlinks(cfgFile)
 			if err != nil {
-				return fmt.Errorf("cannot follow symlink: %w", err)
+				return nil, fmt.Errorf("cannot follow symlink: %w", err)
 			}
 			dirname, filename := filepath.Split(cfgFile)
 			if dirname == "" {
 				dirname = "."
 			}
-			if _, err := yaml.UnmarshalWithInclude(os.DirFS(dirname), filename, &rawConfig); err != nil {
-				return fmt.Errorf("unable to parse YAML configuration file: %w", err)
+			paths, err = yaml.UnmarshalWithInclude(os.DirFS(dirname), filename, &rawConfig)
+			for i := range paths {
+				paths[i] = filepath.Clean(filepath.Join(dirname, paths[i]))
+			}
+			if err != nil {
+				return nil, fmt.Errorf("unable to parse YAML configuration file: %w", err)
 			}
 		}
 	}
@@ -90,10 +96,10 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config any)
 	decoderConfig.Metadata = &metadata
 	decoder, err := mapstructure.NewDecoder(decoderConfig)
 	if err != nil {
-		return fmt.Errorf("unable to create configuration decoder: %w", err)
+		return nil, fmt.Errorf("unable to create configuration decoder: %w", err)
 	}
 	if err := decoder.Decode(rawConfig); err != nil {
-		return fmt.Errorf("unable to parse configuration: %w", err)
+		return nil, fmt.Errorf("unable to parse configuration: %w", err)
 	}
 	disableDefaultHook()
 	disableZeroSliceHook()
@@ -126,7 +132,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config any)
 			}
 		}
 		if err := decoder.Decode(rawConfig); err != nil {
-			return fmt.Errorf("unable to parse override %q: %w", kv[0], err)
+			return nil, fmt.Errorf("unable to parse override %q: %w", kv[0], err)
 		}
 	}
 
@@ -139,7 +145,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config any)
 	}
 	sort.Strings(invalidKeys)
 	if len(invalidKeys) > 0 {
-		return fmt.Errorf("invalid configuration:\n%s", strings.Join(invalidKeys, "\n"))
+		return nil, fmt.Errorf("invalid configuration:\n%s", strings.Join(invalidKeys, "\n"))
 	}
 
 	// Validate and dump configuration if requested
@@ -149,22 +155,22 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config any)
 	if err := helpers.Validate.Struct(config); err != nil {
 		switch verr := err.(type) {
 		case validator.ValidationErrors:
-			return fmt.Errorf("invalid configuration:\n%w", verr)
+			return nil, fmt.Errorf("invalid configuration:\n%w", verr)
 		default:
-			return fmt.Errorf("unexpected internal error: %w", verr)
+			return nil, fmt.Errorf("unexpected internal error: %w", verr)
 		}
 	}
 	if c.Dump {
 		output, err := yaml.Marshal(config)
 		if err != nil {
-			return fmt.Errorf("unable to dump configuration: %w", err)
+			return nil, fmt.Errorf("unable to dump configuration: %w", err)
 		}
 		out.Write([]byte("---\n"))
 		out.Write(output)
 		out.Write([]byte("\n"))
 	}
 
-	return nil
+	return paths, nil
 }
 
 // DefaultHook will reset the destination value to its default using

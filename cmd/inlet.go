@@ -51,7 +51,7 @@ and export to Kafka.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		config := InletConfiguration{}
 		InletOptions.Path = args[0]
-		if err := InletOptions.Parse(cmd.OutOrStdout(), "inlet", &config); err != nil {
+		if _, err := InletOptions.Parse(cmd.OutOrStdout(), "inlet", &config); err != nil {
 			return err
 		}
 

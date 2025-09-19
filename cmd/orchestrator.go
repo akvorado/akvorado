@@ -6,9 +6,13 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"io"
+	"path/filepath"
 	"reflect"
 	"slices"
+	"sync/atomic"
 
+	"github.com/fsnotify/fsnotify"
 	"github.com/gin-gonic/gin"
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/spf13/cobra"
@@ -27,14 +31,15 @@ import (
 
 // OrchestratorConfiguration represents the configuration file for the orchestrator command.
 type OrchestratorConfiguration struct {
-	Reporting    reporter.Configuration
-	HTTP         httpserver.Configuration
-	ClickHouse   clickhouse.Configuration
-	ClickHouseDB clickhousedb.Configuration
-	Kafka        kafka.Configuration
-	GeoIP        geoip.Configuration
-	Orchestrator orchestrator.Configuration `mapstructure:",squash" yaml:",inline"`
-	Schema       schema.Configuration
+	AutomaticRestart bool
+	Reporting        reporter.Configuration
+	HTTP             httpserver.Configuration
+	ClickHouse       clickhouse.Configuration
+	ClickHouseDB     clickhousedb.Configuration
+	Kafka            kafka.Configuration
+	GeoIP            geoip.Configuration
+	Orchestrator     orchestrator.Configuration `mapstructure:",squash" yaml:",inline"`
+	Schema           schema.Configuration
 	// Other service configurations
 	Inlet        []InletConfiguration        `validate:"dive"`
 	Outlet       []OutletConfiguration       `validate:"dive"`
@@ -51,14 +56,15 @@ func (c *OrchestratorConfiguration) Reset() {
 	consoleConfiguration := ConsoleConfiguration{}
 	consoleConfiguration.Reset()
 	*c = OrchestratorConfiguration{
-		Reporting:    reporter.DefaultConfiguration(),
-		HTTP:         httpserver.DefaultConfiguration(),
-		ClickHouse:   clickhouse.DefaultConfiguration(),
-		ClickHouseDB: clickhousedb.DefaultConfiguration(),
-		Kafka:        kafka.DefaultConfiguration(),
-		GeoIP:        geoip.DefaultConfiguration(),
-		Orchestrator: orchestrator.DefaultConfiguration(),
-		Schema:       schema.DefaultConfiguration(),
+		AutomaticRestart: true,
+		Reporting:        reporter.DefaultConfiguration(),
+		HTTP:             httpserver.DefaultConfiguration(),
+		ClickHouse:       clickhouse.DefaultConfiguration(),
+		ClickHouseDB:     clickhousedb.DefaultConfiguration(),
+		Kafka:            kafka.DefaultConfiguration(),
+		GeoIP:            geoip.DefaultConfiguration(),
+		Orchestrator:     orchestrator.DefaultConfiguration(),
+		Schema:           schema.DefaultConfiguration(),
 		// Other service configurations
 		Inlet:        []InletConfiguration{inletConfiguration},
 		Outlet:       []OutletConfiguration{outletConfiguration},
@@ -83,6 +89,7 @@ var orchestratorCmd = &cobra.Command{
 components and centralizes configuration of the various other components.`,
 	Args: cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
+	restart:
 		config := OrchestratorConfiguration{}
 		OrchestratorOptions.Path = args[0]
 		OrchestratorOptions.BeforeDump = func(metadata mapstructure.Metadata) {
@@ -108,15 +115,42 @@ components and centralizes configuration of the various other components.`,
 				config.Console[idx].Schema = config.Schema
 			}
 		}
-		if err := OrchestratorOptions.Parse(cmd.OutOrStdout(), "orchestrator", &config); err != nil {
+		// Parse and check the configuration a first time to start monitoring
+		// file changes if automatic restart is enabled.
+		paths, err := OrchestratorOptions.Parse(cmd.OutOrStdout(), "orchestrator", &config)
+		if err != nil {
 			return err
 		}
+		OrchestratorOptions.Dump = false
 
+		// Start a few of the components we need for automatic restart
 		r, err := reporter.New(config.Reporting)
 		if err != nil {
 			return fmt.Errorf("unable to initialize reporter: %w", err)
 		}
-		return orchestratorStart(r, config, OrchestratorOptions.CheckMode)
+		daemonComponent, err := daemon.New(r)
+		if err != nil {
+			return fmt.Errorf("unable to initialize daemon component: %w", err)
+		}
+
+		configurationModified := atomic.Bool{}
+		if config.AutomaticRestart && !OrchestratorOptions.CheckMode {
+			orchestratorWatch(r, daemonComponent, paths, &configurationModified)
+		}
+
+		// Then, a second time for the remaining of the configuration.
+		config = OrchestratorConfiguration{}
+		if _, err := OrchestratorOptions.Parse(cmd.OutOrStdout(), "orchestrator", &config); err != nil {
+			return err
+		}
+
+		if err := orchestratorStart(r, config, daemonComponent, OrchestratorOptions.CheckMode); err != nil {
+			return err
+		}
+		if configurationModified.Load() {
+			goto restart
+		}
+		return nil
 	},
 }
 
@@ -128,11 +162,7 @@ func init() {
 		"Check configuration, but does not start")
 }
 
-func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, checkOnly bool) error {
-	daemonComponent, err := daemon.New(r)
-	if err != nil {
-		return fmt.Errorf("unable to initialize daemon component: %w", err)
-	}
+func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, daemonComponent daemon.Component, checkOnly bool) error {
 	httpComponent, err := httpserver.New(r, config.HTTP, httpserver.Dependencies{
 		Daemon: daemonComponent,
 	})
@@ -206,6 +236,73 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, c
 		kafkaComponent,
 	}
 	return StartStopComponents(r, daemonComponent, components)
+}
+
+// orchestratorWatch will listen to changes to the given path and trigger a
+// restart of the orchestrator if any. When a modification is detected, the
+// modified chan is closed. The internal goroutine is also stopped if there the
+// modified chan is closed.
+func orchestratorWatch(r *reporter.Reporter, daemonComponent daemon.Component, paths []string, modified *atomic.Bool) {
+	r.Info().Strs("paths", paths).Msg("watching loaded configuration files for changes")
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		r.Err(err).Msg("cannot setup watcher for configuration changes")
+		return
+	}
+	for _, path := range paths {
+		if err := watcher.Add(filepath.Dir(path)); err != nil {
+			r.Err(err).Msg("cannot watch configuration file")
+			watcher.Close()
+			return
+		}
+	}
+	go func() {
+		defer watcher.Close()
+		for {
+			select {
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					r.Error().Msg("configuration file watcher died")
+				}
+				r.Err(err).Msg("error from configuration file watcher")
+				return
+			case event, ok := <-watcher.Events:
+				if !ok {
+					r.Error().Msg("configuration file watcher died")
+					return
+				}
+				if event.Has(fsnotify.Create) || event.Has(fsnotify.Write) {
+					// Check if we have one of the monitored path matching
+					r.Debug().Str("name", event.Name).Msg("detected potential configuration change")
+					found := false
+					for _, path := range paths {
+						if filepath.Clean(event.Name) == path {
+							found = true
+							break
+						}
+					}
+					if !found {
+						continue
+					}
+
+					// Check if the configuration is correct
+					_, err = OrchestratorOptions.Parse(io.Discard, "orchestrator", &OrchestratorConfiguration{})
+					if err != nil {
+						r.Err(err).Msg("cannot validate new configuration, not reloading")
+						continue
+					}
+
+					// Request termination to reexec
+					r.Debug().Msg("request a restart on configuration change")
+					modified.Store(true)
+					daemonComponent.Terminate()
+					return
+				}
+			case <-daemonComponent.Terminated():
+				return
+			}
+		}
+	}()
 }
 
 // orchestratorGeoIPMigrationHook migrates GeoIP configuration from inlet
