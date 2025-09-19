@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime"
 	"sync/atomic"
+	"time"
 
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
@@ -22,6 +23,7 @@ import (
 var (
 	debug      bool
 	missedLogs atomic.Uint64
+	startTime  time.Time
 )
 
 // RootCmd is the root for all commands
@@ -59,9 +61,16 @@ func moreMetrics(r *reporter.Reporter) {
 		Help: "Akvorado build information",
 	}, []string{"version", "compiler"}).
 		WithLabelValues(helpers.AkvoradoVersion, runtime.Version()).Set(1)
+	r.GaugeFunc(reporter.GaugeOpts{
+		Name: "uptime_seconds",
+		Help: "number of seconds the application is running",
+	}, func() float64 {
+		return time.Since(startTime).Seconds()
+	})
 }
 
 func init() {
+	startTime = time.Now()
 	RootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false,
 		"Enable debug logs")
 }
