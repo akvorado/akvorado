@@ -60,7 +60,7 @@ manage collected flows.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		config := ConsoleConfiguration{}
 		ConsoleOptions.Path = args[0]
-		if err := ConsoleOptions.Parse(cmd.OutOrStdout(), "console", &config); err != nil {
+		if _, err := ConsoleOptions.Parse(cmd.OutOrStdout(), "console", &config); err != nil {
 			return err
 		}
 

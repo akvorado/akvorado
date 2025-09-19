@@ -40,7 +40,7 @@ var RootCmd = &cobra.Command{
 			log.Logger = zerolog.New(w).With().Timestamp().Logger()
 		}
 		zerolog.SetGlobalLevel(zerolog.InfoLevel)
-		if debug {
+		if debug || helpers.Testing() {
 			zerolog.SetGlobalLevel(zerolog.DebugLevel)
 		}
 	},

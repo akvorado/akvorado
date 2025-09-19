@@ -4,10 +4,12 @@ The orchestrator service is configured through YAML files (provided in the
 `config/` directory) and includes the configuration of the other services.
 
 > [!TIP]
+
 > Other services query the orchestrator through HTTP on startup to get their
-> configuration. This means that if you change the configuration for one
-> service, you always need to restart the orchestrator first, then the service
-> whose configuration has changed.
+> configuration. By default, the orchestrator restarts automatically if it
+> detects a configuration change, but this may fail if there is a configuration
+> error. Look at the logs of the orchestrator service or restart it if you think
+> a configuration change is not applied.
 
 You can get the default configuration with `docker compose run --rm --no-deps
 akvorado-orchestrator orchestrator --dump --check /dev/null`. Note that
@@ -621,7 +623,9 @@ efficiently.
 ## Orchestrator service
 
 The three main components of the orchestrator service are `schema`,
-`clickhouse`, and `kafka`.
+`clickhouse`, and `kafka`. The `automatic-restart` directive tells the
+orchestrator to watch for configuration changes and restart if there are any. It
+is enable by default.
 
 ### Schema
 

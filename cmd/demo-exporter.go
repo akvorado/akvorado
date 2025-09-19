@@ -57,7 +57,7 @@ and answers SNMP requests.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		config := DemoExporterConfiguration{}
 		DemoExporterOptions.Path = args[0]
-		if err := DemoExporterOptions.Parse(cmd.OutOrStdout(), "demo-exporter", &config); err != nil {
+		if _, err := DemoExporterOptions.Parse(cmd.OutOrStdout(), "demo-exporter", &config); err != nil {
 			return err
 		}
 

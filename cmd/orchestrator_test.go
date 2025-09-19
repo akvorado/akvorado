@@ -5,13 +5,17 @@ package cmd
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
+	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/helpers/yaml"
 	"akvorado/common/reporter"
@@ -21,7 +25,7 @@ func TestOrchestratorStart(t *testing.T) {
 	r := reporter.NewMock(t)
 	config := OrchestratorConfiguration{}
 	config.Reset()
-	if err := orchestratorStart(r, config, true); err != nil {
+	if err := orchestratorStart(r, config, daemon.NewMock(t), true); err != nil {
 		t.Fatalf("orchestratorStart() error:\n%+v", err)
 	}
 }
@@ -106,5 +110,72 @@ func TestOrchestrator(t *testing.T) {
 	err := root.Execute()
 	if err != nil {
 		t.Errorf("`orchestrator` error:\n%+v", err)
+	}
+}
+
+func TestOrchestratorWatch(t *testing.T) {
+	tmp := t.TempDir()
+	if err := os.CopyFS(tmp, os.DirFS("../config")); err != nil {
+		t.Fatalf("CopyFS() error:\n%+v", err)
+	}
+	OrchestratorOptions.Path = filepath.Join(tmp, "akvorado.yaml")
+	config := OrchestratorConfiguration{}
+	paths, err := OrchestratorOptions.Parse(io.Discard, "orchestrator", &config)
+	if err != nil {
+		t.Fatalf("Parse() error:\n%+v", err)
+	}
+	modified := atomic.Bool{}
+	r := reporter.NewMock(t)
+	daemonComponent, err := daemon.New(r)
+	if err != nil {
+		t.Fatalf("daemon.New() error:\n%+v", err)
+	}
+	orchestratorWatch(r, daemonComponent, paths, &modified)
+	daemonComponent.Start()
+
+	// Add a file: no change
+	if err := os.WriteFile(filepath.Join(tmp, "titi.yaml"), []byte("---\n"), 0o666); err != nil {
+		t.Fatalf("WriteFile() error:\n%+v", err)
+	}
+	time.Sleep(20 * time.Millisecond)
+	if modified.Load() {
+		t.Fatal("orchestratorWatch() detected a change that should not be")
+	}
+
+	// Make a configuration error: no change
+	if err := os.Rename(filepath.Join(tmp, "inlet.yaml"), filepath.Join(tmp, "inlet-old.yaml")); err != nil {
+		t.Fatalf("Rename() error:\n%+v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmp, "inlet-new.yaml"), []byte("---\nflows: 767643\n"), 0o666); err != nil {
+		t.Fatalf("WriteFile() error:\n%+v", err)
+	}
+	if err := os.Rename(filepath.Join(tmp, "inlet-new.yaml"), filepath.Join(tmp, "inlet.yaml")); err != nil {
+		t.Fatalf("Rename() error:\n%+v", err)
+	}
+	time.Sleep(20 * time.Millisecond)
+	if modified.Load() {
+		t.Fatal("orchestratorWatch() detected a change that should be rejected")
+	}
+
+	// Modify a file: change
+	f, err := os.OpenFile(filepath.Join(tmp, "outlet.yaml"), os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		t.Fatalf("OpenFile() error:\n%+v", err)
+	}
+	f.WriteString("\n")
+	f.Close()
+	if err := os.Rename(filepath.Join(tmp, "inlet-old.yaml"), filepath.Join(tmp, "inlet.yaml")); err != nil {
+		t.Fatalf("Rename() error:\n%+v", err)
+	}
+
+	// Check there is a restart attempted
+	select {
+	case <-daemonComponent.Terminated():
+	case <-time.After(time.Second):
+		t.Fatalf("orchestratorWatch() did not restart the service")
+	}
+	daemonComponent.Stop()
+	if !modified.Load() {
+		t.Fatal("orchestratorWatch() did not register a change")
 	}
 }
