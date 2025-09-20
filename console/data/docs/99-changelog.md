@@ -17,6 +17,7 @@ identified with a specific icon:
 - 🌱 *cmd*: make `akvorado version` shorter (use `-d` for full output)
 - 🌱 *build*: switch from NPM to PNPM for JavaScript build
 - 🌱 *build*: modernize JavaScript build with Oxlint and Rolldown-Vite
+- 🌱 *docker*: update Loki to 3.5.5 (not mandatory)
 
 ## 2.0.0-beta.6 - 2025-09-06
 
