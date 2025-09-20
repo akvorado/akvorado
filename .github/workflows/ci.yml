@@ -180,6 +180,10 @@ jobs:
         timeout-minutes: 3
         run: |
           ./.github/e2e.sh tests
+      - name: Docker Compose logs
+        if: failure()
+        run: |
+          docker compose logs
       - name: Retrieve coverage files
         run: |
           docker compose stop

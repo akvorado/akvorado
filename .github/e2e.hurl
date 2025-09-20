@@ -100,7 +100,7 @@ variable "outlet_forwardedflows" >= {{ outlet_receivedflows }}
 ## Check outlet forwarded flows to ClickHouse
 GET http://127.0.0.1:8080/prometheus/api/v1/query
 [Query]
-query: sum(akvorado_outlet_clickhouse_flow_per_batch{job="akvorado-outlet", quantile="0.5"})
+query: akvorado_outlet_clickhouse_flow_per_batch{job="akvorado-outlet", quantile="0.5"}
 HTTP 200
 [Asserts]
 jsonpath "$.data.result[0].value[1]" toInt > 100
