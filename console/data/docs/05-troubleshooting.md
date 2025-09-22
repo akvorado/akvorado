@@ -259,7 +259,7 @@ If you do not get an answer, there may be several causes:
 
 Finally, check if flows are sent to ClickHouse successfully. Use this command:
 
-```
+```console
 $ curl -s http://127.0.0.1:8080/api/v0/outlet/metrics | grep -P 'akvorado_outlet_clickhouse_(errors|flow)'
 # HELP akvorado_outlet_clickhouse_errors_total Errors while inserting into ClickHouse
 # TYPE akvorado_outlet_clickhouse_errors_total counter
