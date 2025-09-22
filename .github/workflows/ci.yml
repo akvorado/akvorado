@@ -416,7 +416,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Tag image
         run: |
-          echo "${{ steps.meta.outputs.tags }}" | while IFS= read tag; do
+          echo "${{ steps.meta.outputs.tags }}" | xargs -n1 | while read tag; do
             docker buildx imagetools create ${{ needs.build-docker.outputs.package }} --tag ${tag}
           done
 
