@@ -120,7 +120,8 @@ func (in *Input) Start() error {
 				return fmt.Errorf("unable to resolve %v: %w", in.config.Listen, err)
 			}
 		}
-		pconn, err := listenConfig.ListenPacket(in.t.Context(context.Background()), "udp", listenAddr.String())
+		pconn, err := listenConfig(in.r, udpSocketOptions).
+			ListenPacket(in.t.Context(context.Background()), "udp", listenAddr.String())
 		if err != nil {
 			return fmt.Errorf("unable to listen to %v: %w", listenAddr, err)
 		}

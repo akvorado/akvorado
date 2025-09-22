@@ -11,13 +11,19 @@ import (
 	"runtime"
 	"testing"
 	"time"
+
+	"akvorado/common/reporter"
+
+	"golang.org/x/sys/unix"
 )
 
 func TestParseSocketControlMessage(t *testing.T) {
 	if runtime.GOOS != "linux" {
 		t.Skip("Skip Linux-only test")
 	}
-	server, err := listenConfig.ListenPacket(context.Background(), "udp", "127.0.0.1:0")
+	r := reporter.NewMock(t)
+	server, err := listenConfig(r, udpSocketOptions).
+		ListenPacket(context.Background(), "udp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("ListenPacket() error:\n%+v", err)
 	}
@@ -77,4 +83,49 @@ outer:
 	if oobMsg.Drops > 1_000_000 {
 		t.Fatal("too many drops detected")
 	}
+}
+
+func TestListenConfig(t *testing.T) {
+	r := reporter.NewMock(t)
+
+	t.Run("one mandatory option", func(t *testing.T) {
+		_, err := listenConfig(r, []socketOption{
+			{
+				Name:      "SO_REUSEADDR",
+				Level:     unix.SOL_SOCKET,
+				Option:    unix.SO_REUSEADDR,
+				Mandatory: true,
+			},
+		}).ListenPacket(t.Context(), "udp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatalf("ListenPacket() error:\n%+v", err)
+		}
+	})
+
+	t.Run("one mandatory not implemented option", func(t *testing.T) {
+		_, err := listenConfig(r, []socketOption{
+			{
+				Name:      "SO_UNKNOWN",
+				Level:     unix.SOL_SOCKET,
+				Option:    9999,
+				Mandatory: true,
+			},
+		}).ListenPacket(t.Context(), "udp", "127.0.0.1:0")
+		if err == nil {
+			t.Fatal("ListenPacket() did not error error")
+		}
+	})
+
+	t.Run("one optional not implemented option", func(t *testing.T) {
+		_, err := listenConfig(r, []socketOption{
+			{
+				Name:   "SO_UNKNOWN",
+				Level:  unix.SOL_SOCKET,
+				Option: 9999,
+			},
+		}).ListenPacket(t.Context(), "udp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatalf("ListenPacket() error:\n%+v", err)
+		}
+	})
 }

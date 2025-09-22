@@ -10,6 +10,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🩹 *inlet*: disable kernel timestamping on Linux kernel older than 5.1
+
 ## 2.0.0 - 2025-09-22
 
 This release introduces a new component: the outlet. Previously, ClickHouse was
