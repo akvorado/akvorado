@@ -30,9 +30,24 @@ runs:
       with:
         go-version-file: go.mod
         check-latest: true
-        cache-dependency-path: |
-          go.sum
-          bin/external-tool
+        cache: false
+    - name: Get Go environment
+      if: ${{ inputs.setup-go == 'true' }}
+      shell: bash
+      run: |
+        echo "gocache=$(go env GOCACHE)" >> $GITHUB_ENV
+        echo "gomodcache=$(go env GOMODCACHE)" >> $GITHUB_ENV
+        echo "today=$(date +%Y%m%d)" >> $GITHUB_ENV
+    - uses: actions/cache@v4
+      if: ${{ inputs.setup-go == 'true' }}
+      with:
+        path: |
+          ${{ env.gocache }}
+          ${{ env.gomodcache }}
+        key: ${{ runner.os }}-go-${{ hashFiles('go.sum', 'bin/external-tool') }}-${{ env.today }}
+        restore-keys: |
+          ${{ runner.os }}-go-${{ hashFiles('go.sum', 'bin/external-tool') }}-
+          ${{ runner.os }}-go-
     - uses: pnpm/action-setup@v4
       if: ${{ inputs.setup-node == 'true' }}
       with:
