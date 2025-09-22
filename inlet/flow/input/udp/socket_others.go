@@ -9,7 +9,21 @@ import "golang.org/x/sys/unix"
 
 var (
 	oobLength        = 0
-	udpSocketOptions = []int{unix.SO_REUSEADDR, unix.SO_REUSEPORT}
+	udpSocketOptions = []socketOption{
+		{
+			// Allow multiple listeners to bind to the same IP
+			Name:      "SO_REUSEADDR",
+			Level:     unix.SOL_SOCKET,
+			Option:    unix.SO_REUSEADDR,
+			Mandatory: true,
+		}, {
+			// Allow multiple listeners to bind to the same port
+			Name:      "SO_REUSEPORT",
+			Level:     unix.SOL_SOCKET,
+			Option:    unix.SO_REUSEPORT,
+			Mandatory: true,
+		},
+	}
 )
 
 // parseSocketControlMessage always returns 0.

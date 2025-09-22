@@ -15,13 +15,30 @@ import (
 
 var (
 	oobLength        = syscall.CmsgLen(4) + syscall.CmsgLen(16) // uint32 + 2*int64
-	udpSocketOptions = []int{
-		// Allow multiple listeners to bind to the same IP/port
-		unix.SO_REUSEADDR, unix.SO_REUSEPORT,
-		// Get the number of dropped packets
-		unix.SO_RXQ_OVFL,
-		// Ask the kernel to timestamp incoming packets
-		unix.SO_TIMESTAMP_NEW | unix.SOF_TIMESTAMPING_RX_SOFTWARE,
+	udpSocketOptions = []socketOption{
+		{
+			// Allow multiple listeners to bind to the same IP
+			Name:      "SO_REUSEADDR",
+			Level:     unix.SOL_SOCKET,
+			Option:    unix.SO_REUSEADDR,
+			Mandatory: true,
+		}, {
+			// Allow multiple listeners to bind to the same port
+			Name:      "SO_REUSEPORT",
+			Level:     unix.SOL_SOCKET,
+			Option:    unix.SO_REUSEPORT,
+			Mandatory: true,
+		}, {
+			// Get the number of dropped packets
+			Name:   "SO_RXQ_OVFL",
+			Level:  unix.SOL_SOCKET,
+			Option: unix.SO_RXQ_OVFL,
+		}, {
+			// Ask the kernel to timestamp incoming packets
+			Name:   "SO_TIMESTAMP_NEW",
+			Level:  unix.SOL_SOCKET,
+			Option: unix.SO_TIMESTAMP_NEW | unix.SOF_TIMESTAMPING_RX_SOFTWARE,
+		},
 	}
 )
 
