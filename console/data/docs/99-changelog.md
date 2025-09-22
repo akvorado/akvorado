@@ -10,7 +10,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 2.0.0 - 2025-09-22
 
 This release introduces a new component: the outlet. Previously, ClickHouse was
 fetching data directly from Kafka. However, this required pushing the protobuf
