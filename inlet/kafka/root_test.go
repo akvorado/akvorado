@@ -17,6 +17,7 @@ import (
 	"github.com/twmb/franz-go/pkg/kmsg"
 
 	"akvorado/common/helpers"
+	"akvorado/common/kafka"
 	"akvorado/common/pb"
 	"akvorado/common/reporter"
 )
@@ -35,10 +36,10 @@ func TestKafka(t *testing.T) {
 		mock.KeepControl()
 		current := count.Add(1)
 		if current != 3 {
-			t.Logf("message %d: ok", current)
+			t.Logf("ControlKey() message %d: ok", current)
 			return nil, nil, false
 		}
-		t.Logf("mesage %d: error", current)
+		t.Logf("ControlKey() mesage %d: error", current)
 		req := kreq.(*kmsg.ProduceRequest)
 		resp := kreq.ResponseKind().(*kmsg.ProduceResponse)
 		for _, rt := range req.Topics {
@@ -80,6 +81,7 @@ func TestKafka(t *testing.T) {
 		kgo.SeedBrokers(mock.ListenAddrs()...),
 		kgo.ConsumeTopics(topic),
 		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
+		kgo.WithLogger(kafka.NewLogger(r)),
 	)
 	if err != nil {
 		t.Fatalf("NewClient() error:\n%+v", err)
@@ -100,8 +102,10 @@ func TestKafka(t *testing.T) {
 		}
 
 		fetches.EachPartition(func(p kgo.FetchTopicPartition) {
+			t.Logf("EachPartition() partition %d", p.Partition)
 			for _, record := range p.Records {
 				messages = append(messages, string(record.Value))
+				t.Logf("EachPartition() messages: %v", messages)
 			}
 		})
 	}

@@ -17,7 +17,7 @@ import (
 
 // NewMock creates a new Kafka component with a mocked Kafka. It will
 // panic if it cannot be started.
-func NewMock(t *testing.T, reporter *reporter.Reporter, configuration Configuration) (*Component, *kfake.Cluster) {
+func NewMock(t *testing.T, r *reporter.Reporter, configuration Configuration) (*Component, *kfake.Cluster) {
 	t.Helper()
 	// Use a fake Kafka cluster for testing
 	cluster, err := kfake.NewCluster(
@@ -32,7 +32,7 @@ func NewMock(t *testing.T, reporter *reporter.Reporter, configuration Configurat
 	})
 	configuration.Brokers = cluster.ListenAddrs()
 
-	c, err := New(reporter, configuration, Dependencies{
+	c, err := New(r, configuration, Dependencies{
 		Daemon: daemon.NewMock(t),
 	})
 	if err != nil {
