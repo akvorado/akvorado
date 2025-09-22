@@ -14,28 +14,18 @@ import (
 	"sync"
 )
 
-var (
-	//go:embed data/embed.zip
-	embeddedZip []byte
-	data        fs.FS
-	dataOnce    sync.Once
-	dataReady   chan struct{}
-)
+//go:embed data/embed.zip
+var embeddedZip []byte
+
+var dataOnce = sync.OnceValue(func() *zip.Reader {
+	r, err := zip.NewReader(bytes.NewReader(embeddedZip), int64(len(embeddedZip)))
+	if err != nil {
+		panic(fmt.Sprintf("cannot read embedded archive: %s", err))
+	}
+	return r
+})
 
 // Data returns a filesystem with the files contained in the embedded archive.
 func Data() fs.FS {
-	dataOnce.Do(func() {
-		r, err := zip.NewReader(bytes.NewReader(embeddedZip), int64(len(embeddedZip)))
-		if err != nil {
-			panic(fmt.Sprintf("cannot read embedded archive: %s", err))
-		}
-		data = r
-		close(dataReady)
-	})
-	<-dataReady
-	return data
-}
-
-func init() {
-	dataReady = make(chan struct{})
+	return dataOnce()
 }
