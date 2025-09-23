@@ -10,8 +10,9 @@ body:
       description: |
         For support questions, please use the [discussions][] instead. Before
         opening a bug report, ensure you have read the [documentation][],
-        notably the [troubleshooting section][]. Only use bug reports for actual
-        bugs.
+        notably the [troubleshooting section][]. Only use bug reports for
+        confirmed bugs. If you are unsure, it is better to [start with a
+        discussion][discussions], notably if you are a new user.
 
         [documentation]: https://demo.akvorado.net/docs/intro
         [troubleshooting section]: https://demo.akvorado.net/docs/troubleshooting
@@ -19,6 +20,7 @@ body:
       options:
         - label: I have read and understood the disclaimer.
           required: true
+        - label: I am a new user.
   - type: input
     attributes:
       label: Akvorado version
