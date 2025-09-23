@@ -12,6 +12,7 @@ import (
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
+	"akvorado/common/kafka"
 	"akvorado/common/reporter"
 )
 
@@ -23,6 +24,7 @@ func NewMock(t *testing.T, r *reporter.Reporter, configuration Configuration) (*
 	cluster, err := kfake.NewCluster(
 		kfake.NumBrokers(1),
 		kfake.AllowAutoTopicCreation(),
+		kfake.WithLogger(kafka.NewLogger(r)),
 	)
 	if err != nil {
 		t.Fatalf("NewCluster() error: %v", err)

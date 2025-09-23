@@ -16,17 +16,20 @@ import (
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
+	"akvorado/common/kafka"
 	"akvorado/common/pb"
 	"akvorado/common/reporter"
 )
 
 func TestFakeKafka(t *testing.T) {
+	r := reporter.NewMock(t)
 	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
 	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, pb.Version)
 
 	cluster, err := kfake.NewCluster(
 		kfake.NumBrokers(1),
 		kfake.SeedTopics(1, expectedTopicName),
+		kfake.WithLogger(kafka.NewLogger(r)),
 	)
 	if err != nil {
 		t.Fatalf("NewCluster() error: %v", err)
@@ -36,7 +39,6 @@ func TestFakeKafka(t *testing.T) {
 	configuration := DefaultConfiguration()
 	configuration.Topic = topicName
 	configuration.Brokers = cluster.ListenAddrs()
-	r := reporter.NewMock(t)
 	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)

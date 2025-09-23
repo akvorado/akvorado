@@ -10,18 +10,20 @@ import (
 	"akvorado/common/reporter"
 )
 
-// kafkaLogger implements kgo.Logger interface.
-type kafkaLogger struct {
+// Logger implements kgo.Logger interface (and in tests kfake.Logger).
+type Logger struct {
 	r *reporter.Reporter
 }
 
+var _ kgo.Logger = &Logger{}
+
 // NewLogger creates a new kafka logger using the provided reporter.
-func NewLogger(r *reporter.Reporter) kgo.Logger {
-	return &kafkaLogger{r: r}
+func NewLogger(r *reporter.Reporter) *Logger {
+	return &Logger{r: r}
 }
 
 // Level returns the current log level.
-func (l *kafkaLogger) Level() kgo.LogLevel {
+func (l *Logger) Level() kgo.LogLevel {
 	if !helpers.Testing() {
 		return kgo.LogLevelInfo
 	}
@@ -29,7 +31,7 @@ func (l *kafkaLogger) Level() kgo.LogLevel {
 }
 
 // Log logs a message at the specified level.
-func (l *kafkaLogger) Log(level kgo.LogLevel, msg string, keyvals ...any) {
+func (l *Logger) Log(level kgo.LogLevel, msg string, keyvals ...any) {
 	switch level {
 	case kgo.LogLevelError:
 		l.r.Error().Fields(keyvals).Msg(msg)
