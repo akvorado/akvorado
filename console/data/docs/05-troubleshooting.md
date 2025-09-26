@@ -164,8 +164,8 @@ $ curl -s http://127.0.0.1:8080/api/v0/outlet/flows\?limit\=1
 {"TimeReceived":1753631373,"SamplingRate":100000,"ExporterAddress":"::ffff:241.107.1.15","InIf":10,"OutIf":21,"SrcVlan":0,"DstVlan":0,"SrcAddr":"::ffff:216.58.206.244","DstAddr":"::ffff:192.0.2.144","NextHop":"","SrcAS":15169,"DstAS":64501,"SrcNetMask":24,"DstNetMask":24,"OtherColumns":null}
 ```
 
-Check these important metrics. First, the outlet should receive flows from
-Kafka:
+If you get a flow, you can skip this section. Otherwise, we need to check some
+metrics. First, the outlet should receive flows from Kafka:
 
 ```console
 $ curl -s http://127.0.0.1:8080/api/v0/outlet/metrics | grep 'akvorado_outlet_kafka_received_messages'
