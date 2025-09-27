@@ -1,10 +1,10 @@
 ---
 metadata:
-  provider:
-    type: snmp
-    credentials:
-      ::/0:
-        communities: public
+  providers:
+    - type: snmp
+      credentials:
+        ::/0:
+          communities: public
 routing:
   provider:
     type: bmp
