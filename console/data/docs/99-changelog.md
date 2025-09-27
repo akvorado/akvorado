@@ -13,6 +13,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🩹 *inlet*: disable kernel timestamping on Linux kernel older than 5.1
+- 🩹 *doc*: fix documentation for SNMPv3 configuration
 
 ## 2.0.0 - 2025-09-22
 

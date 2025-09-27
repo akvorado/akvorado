@@ -315,12 +315,12 @@ communities:
 metadata:
   workers: 10
   providers:
-    type: snmp
-    credentials:
-      ::/0:
-        communities:
-          - private
-          - "@private"
+    - type: snmp
+      credentials:
+        ::/0:
+          communities:
+            - private
+            - "@private"
 ```
 
 And with SNMPv3:
@@ -329,14 +329,14 @@ And with SNMPv3:
 metadata:
   workers: 10
   providers:
-    type: snmp
-    credentials:
-      ::/0:
-        user-name: monitoring
-        authentication-protocol: SHA
-        authentication-passphrase: "d$rkSec"
-        privacy-protocol: AES192
-        privacy-passphrase: "Cl0se"
+    - type: snmp
+      credentials:
+        ::/0:
+          user-name: monitoring
+          authentication-protocol: SHA
+          authentication-passphrase: "d$rkSec"
+          privacy-protocol: AES192
+          privacy-passphrase: "Cl0se"
 ```
 
 #### gNMI provider
