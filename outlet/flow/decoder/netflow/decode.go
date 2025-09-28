@@ -108,8 +108,7 @@ func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets 
 }
 
 func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRateSys *samplingRateSystem, fields []netflow.DataField, ts, sysUptime uint64, options decoder.Option, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
-	var foundReverseElement bool
-	reversePresent := bitset.New(65535)
+	var reversePresent *bitset.BitSet
 	for _, dir := range []direction{directionForward, directionReverse} {
 		var etype, dstPort, srcPort uint16
 		var proto, icmpType, icmpCode uint8
@@ -129,7 +128,9 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 				}
 				if dir == directionForward {
 					// Reverse PEN and current direction is forward. Record we saw it and skip it.
-					foundReverseElement = true
+					if reversePresent == nil {
+						reversePresent = bitset.New(uint(field.Type))
+					}
 					reversePresent.Set(uint(field.Type))
 					continue
 				}
@@ -351,7 +352,7 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 		if bf.SamplingRate == 0 {
 			bf.SamplingRate = uint64(samplingRateSys.GetSamplingRate(version, obsDomainID, 0))
 		}
-		if dir == directionForward && !foundReverseElement {
+		if dir == directionForward && reversePresent == nil {
 			finalize()
 			break
 		} else if dir == directionForward {
