@@ -143,6 +143,7 @@ func (schema Schema) ClickHouseHash() string {
 
 // AppendDateTime adds a DateTime value to the provided column
 func (bf *FlowMessage) AppendDateTime(columnKey ColumnKey, value uint32) {
+	columnKey = reverse(bf, columnKey)
 	col := bf.batch.columns[columnKey]
 	if value == 0 || col == nil || bf.batch.columnSet.Test(uint(columnKey)) {
 		return
@@ -154,6 +155,7 @@ func (bf *FlowMessage) AppendDateTime(columnKey ColumnKey, value uint32) {
 
 // AppendUint adds an UInt64/32/16/8 or Enum8 value to the provided column
 func (bf *FlowMessage) AppendUint(columnKey ColumnKey, value uint64) {
+	columnKey = reverse(bf, columnKey)
 	col := bf.batch.columns[columnKey]
 	if value == 0 || col == nil || bf.batch.columnSet.Test(uint(columnKey)) {
 		return
@@ -182,6 +184,7 @@ func (bf *FlowMessage) AppendUint(columnKey ColumnKey, value uint64) {
 
 // AppendString adds a String value to the provided column
 func (bf *FlowMessage) AppendString(columnKey ColumnKey, value string) {
+	columnKey = reverse(bf, columnKey)
 	col := bf.batch.columns[columnKey]
 	if value == "" || col == nil || bf.batch.columnSet.Test(uint(columnKey)) {
 		return
@@ -198,6 +201,7 @@ func (bf *FlowMessage) AppendString(columnKey ColumnKey, value string) {
 
 // AppendIPv6 adds an IPv6 value to the provided column
 func (bf *FlowMessage) AppendIPv6(columnKey ColumnKey, value netip.Addr) {
+	columnKey = reverse(bf, columnKey)
 	col := bf.batch.columns[columnKey]
 	if !value.IsValid() || col == nil || bf.batch.columnSet.Test(uint(columnKey)) {
 		return
@@ -216,6 +220,7 @@ func (bf *FlowMessage) AppendIPv6(columnKey ColumnKey, value netip.Addr) {
 
 // AppendArrayUInt32 adds an Array(UInt32) value to the provided column
 func (bf *FlowMessage) AppendArrayUInt32(columnKey ColumnKey, value []uint32) {
+	columnKey = reverse(bf, columnKey)
 	col := bf.batch.columns[columnKey]
 	if len(value) == 0 || col == nil || bf.batch.columnSet.Test(uint(columnKey)) {
 		return
@@ -227,6 +232,7 @@ func (bf *FlowMessage) AppendArrayUInt32(columnKey ColumnKey, value []uint32) {
 
 // AppendArrayUInt128 adds an Array(UInt128) value to the provided column
 func (bf *FlowMessage) AppendArrayUInt128(columnKey ColumnKey, value []UInt128) {
+	columnKey = reverse(bf, columnKey)
 	col := bf.batch.columns[columnKey]
 	if len(value) == 0 || col == nil || bf.batch.columnSet.Test(uint(columnKey)) {
 		return
@@ -387,4 +393,11 @@ func (bf *FlowMessage) Finalize() {
 	bf.appendDefaultValues()
 	bf.reset()
 	bf.check()
+}
+
+func reverse(bf *FlowMessage, columnKey ColumnKey) ColumnKey {
+	if !bf.reversed {
+		return columnKey
+	}
+	return columnReverseTable[columnKey]
 }
