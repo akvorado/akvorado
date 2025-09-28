@@ -618,3 +618,36 @@ func TestBuildProtoInput(t *testing.T) {
 		t.Fatalf("ClickHouseProtoInput() (-got, +want):\n%s", diff)
 	}
 }
+
+func TestReverse(t *testing.T) {
+	c := NewMock(t)
+	bf := c.NewFlowMessage()
+	bf.Reverse()
+
+	bf.AppendDateTime(ColumnTimeReceived, 1000)
+	bf.AppendUint(ColumnSamplingRate, 20000)
+	bf.AppendString(ColumnInIfName, "input")
+	bf.AppendString(ColumnOutIfName, "output")
+	bf.AppendArrayUInt32(ColumnDstCommunities, []uint32{10, 11, 12})
+	bf.SrcAS = 65000
+	bf.DstAS = 65002
+	bf.Reverse()
+
+	expected := map[ColumnKey]any{
+		ColumnTimeReceived: uint32(1000),
+		ColumnSamplingRate: uint64(20000),
+		ColumnInIfName:     "output",
+		ColumnOutIfName:    "input",
+	}
+	got := bf.OtherColumns
+	if diff := helpers.Diff(got, expected); diff != "" {
+		t.Errorf("Append() (-got, +want):\n%s", diff)
+	}
+
+	if bf.SrcAS != 65002 {
+		t.Errorf("SrcAS == %d, should be %d", bf.SrcAS, 65002)
+	}
+	if bf.DstAS != 65000 {
+		t.Errorf("DstAS == %d, should be %d", bf.DstAS, 65000)
+	}
+}

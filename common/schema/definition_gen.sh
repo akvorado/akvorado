@@ -12,12 +12,23 @@ package schema
 import "akvorado/common/helpers/bimap"
 
 var columnNameMap = bimap.New(map[ColumnKey]string{
-$(grep -oEw 'Column[a-zA-Z0-9]+' common/schema/definition.go \
-    | sed 's/^Column//' \
-    | grep -vFx Last \
-    | grep -vFx Key \
-    | grep -v '^Group' \
-    | sort | uniq \
+$(sed -En '/.*ColumnKey = iota/,/^\s+ColumnLast/p' common/schema/definition.go \
+    | head -n-1 \
+    | sed -En 's/^\s+Column//p' \
     | awk '{ print "Column"$1": \""$1"\","}')
 })
+
+
+var columnReverseTable = [...]ColumnKey{
+$(sed -En '/.*ColumnKey = iota/,/^\s+ColumnLast/p' common/schema/definition.go \
+    | head -n-1 \
+    | sed -En 's/^\s+(Column\w+).*/\1/p' \
+    | sed -E \
+             -e 's/(ColumnDst(ASPath|Communities|LargeCommunities|[123]..AS))/\1: 0,/;t' \
+             -e 's/(ColumnIn)([A-Z0-9].*)/ColumnOut\2: \1\2,/;t' \
+             -e 's/(ColumnOut)([A-Z0-9].*)/ColumnIn\2: \1\2,/;t' \
+             -e 's/(ColumnSrc)([A-Z0-9].*)/ColumnDst\2: \1\2,/;t' \
+             -e 's/(ColumnDst)([A-Z0-9].*)/ColumnSrc\2: \1\2,/;t' \
+             -e 's/(.*)/\1: \1,/')
+}
 EOF

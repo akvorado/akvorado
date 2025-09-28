@@ -38,8 +38,9 @@ type FlowMessage struct {
 	// Only for tests
 	OtherColumns map[ColumnKey]any
 
-	batch  clickhouseBatch
-	schema *Schema
+	reversed bool
+	batch    clickhouseBatch
+	schema   *Schema
 }
 
 // clickhouseBatch stores columns for efficient streaming. It is embedded
@@ -107,4 +108,14 @@ func (schema *Schema) NewFlowMessage() *FlowMessage {
 // FlowCount return the number of flows batched
 func (bf *FlowMessage) FlowCount() int {
 	return bf.batch.rowCount
+}
+
+// Reverse reverses the direction of the next calls to Append*().
+func (bf *FlowMessage) Reverse() {
+	bf.reversed = !bf.reversed
+	bf.InIf, bf.OutIf = bf.OutIf, bf.InIf
+	bf.SrcVlan, bf.DstVlan = bf.DstVlan, bf.SrcVlan
+	bf.SrcAddr, bf.DstAddr = bf.DstAddr, bf.SrcAddr
+	bf.SrcAS, bf.DstAS = bf.DstAS, bf.SrcAS
+	bf.SrcNetMask, bf.DstNetMask = bf.DstNetMask, bf.SrcNetMask
 }
