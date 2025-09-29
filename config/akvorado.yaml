@@ -80,5 +80,6 @@ inlet: !include "inlet.yaml"
 outlet: !include "outlet.yaml"
 console: !include "console.yaml"
 
-# Remove the following line if you don't want to get demo data
+# This line can be removed unless you have enabled the demo exporters with the
+# "demo" profile.
 demo-exporter: !include "demo.yaml"
