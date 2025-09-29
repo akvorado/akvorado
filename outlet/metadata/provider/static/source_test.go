@@ -186,7 +186,7 @@ func TestRemoteExporterSources(t *testing.T) {
 			},
 		},
 	}
-	p, _ := config.New(r)
+	p, _ := config.New(t.Context(), r)
 
 	// Query when json is not ready yet, we should get a timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)

@@ -13,6 +13,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🩹 *inlet*: disable kernel timestamping on Linux kernel older than 5.1
+- 🩹 *outlet*: fix gNMI metadata provider exiting too early
 - 🩹 *doc*: fix documentation for SNMPv3 configuration
 - 🌱 *inlet*: add support for RFC 5103 (bidirectional flows)
 

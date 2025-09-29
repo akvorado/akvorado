@@ -80,7 +80,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 
 	// Initialize providers
 	for _, p := range c.config.Providers {
-		selectedProvider, err := p.Config.New(r)
+		selectedProvider, err := p.Config.New(c.t.Context(nil), r)
 		if err != nil {
 			return nil, err
 		}

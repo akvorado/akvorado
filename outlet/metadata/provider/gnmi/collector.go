@@ -135,7 +135,7 @@ outer2:
 }
 
 // startCollector starts a new gNMI collector with the given state. It should not be used with taking the lock.
-func (p *Provider) startCollector(ctx context.Context, exporterIP netip.Addr, state *exporterState) {
+func (p *Provider) startCollector(exporterIP netip.Addr, state *exporterState) {
 	exporterStr := exporterIP.Unmap().String()
 	l := p.r.With().Str("exporter", exporterStr).Logger()
 	p.metrics.ready.WithLabelValues(exporterStr).Set(0)
@@ -173,7 +173,7 @@ retryConnect:
 	waitBeforeRetry := func() bool {
 		next := time.NewTimer(retryInitBackoff.NextBackOff())
 		select {
-		case <-ctx.Done():
+		case <-p.ctx.Done():
 			next.Stop()
 			return false
 		case <-next.C:
@@ -193,7 +193,7 @@ retryConnect:
 		goto retryConnect
 	}
 
-	err = tg.CreateGNMIClient(ctx)
+	err = tg.CreateGNMIClient(p.ctx)
 	if err != nil {
 		l.Err(err).Msg("unable to create client")
 		p.metrics.errors.WithLabelValues(exporterStr, "cannot create client").Inc()
@@ -206,7 +206,7 @@ retryConnect:
 
 retryDetect:
 	// We need to detect the model
-	model, encoding, err := p.detectModelAndEncoding(ctx, tg)
+	model, encoding, err := p.detectModelAndEncoding(p.ctx, tg)
 	if err != nil {
 		l.Err(err).Msg("unable to detect model")
 		p.metrics.errors.WithLabelValues(exporterStr, "cannot detect model").Inc()
@@ -244,7 +244,7 @@ retryDetect:
 	for {
 		l.Debug().Msg("polling")
 		start := time.Now()
-		subscribeResp, err := tg.SubscribeOnce(ctx, subscribeReq)
+		subscribeResp, err := tg.SubscribeOnce(p.ctx, subscribeReq)
 		p.metrics.times.WithLabelValues(exporterStr).Observe(time.Since(start).Seconds())
 		if err == nil {
 			events := subscribeResponsesToEvents(subscribeResp)
@@ -267,7 +267,7 @@ retryDetect:
 			for {
 				select {
 				case state.Ready <- true:
-				case <-ctx.Done():
+				case <-p.ctx.Done():
 					next.Stop()
 					return
 				case <-p.refresh:
@@ -281,7 +281,7 @@ retryDetect:
 			for {
 				select {
 				case state.Ready <- true:
-				case <-ctx.Done():
+				case <-p.ctx.Done():
 					return
 				case <-p.refresh:
 					break outerWaitRefresh
@@ -303,7 +303,7 @@ retryDetect:
 			for {
 				select {
 				case readyChan <- true:
-				case <-ctx.Done():
+				case <-p.ctx.Done():
 					next.Stop()
 					return
 				case <-next.C:

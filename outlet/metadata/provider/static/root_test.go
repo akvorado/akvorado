@@ -97,7 +97,7 @@ func TestStaticProvider(t *testing.T) {
 
 	var got []provider.Answer
 	r := reporter.NewMock(t)
-	p, _ := config.New(r)
+	p, _ := config.New(t.Context(), r)
 
 	answer, _ := p.Query(context.Background(), provider.Query{
 		ExporterIP: netip.MustParseAddr("2001:db8:1::10"),

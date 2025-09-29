@@ -41,7 +41,7 @@ var (
 )
 
 // New creates a new static provider from configuration
-func (configuration Configuration) New(r *reporter.Reporter) (provider.Provider, error) {
+func (configuration Configuration) New(_ context.Context, r *reporter.Reporter) (provider.Provider, error) {
 	p := &Provider{
 		r:            r,
 		exportersMap: map[string][]exporterInfo{},

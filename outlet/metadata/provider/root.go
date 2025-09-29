@@ -67,6 +67,7 @@ type Provider interface {
 
 // Configuration defines an interface to configure a provider.
 type Configuration interface {
-	// New instantiates a new provider from its configuration.
-	New(r *reporter.Reporter) (Provider, error)
+	// New instantiates a new provider from its configuration. The provided
+	// context is to stop any long-running goroutine.
+	New(context.Context, *reporter.Reporter) (Provider, error)
 }

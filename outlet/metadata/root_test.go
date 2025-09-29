@@ -230,7 +230,7 @@ func (ep errorProvider) Query(_ context.Context, _ provider.Query) (provider.Ans
 
 type errorProviderConfiguration struct{}
 
-func (epc errorProviderConfiguration) New(_ *reporter.Reporter) (provider.Provider, error) {
+func (epc errorProviderConfiguration) New(context.Context, *reporter.Reporter) (provider.Provider, error) {
 	return errorProvider{}, nil
 }
 
