@@ -272,13 +272,9 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 						if bf.DstVlan == 0 {
 							bf.DstVlan = uint16(decodeUNumber(v))
 						}
-					case netflow.IPFIX_FIELD_sourceMacAddress:
+					case netflow.IPFIX_FIELD_sourceMacAddress, netflow.IPFIX_FIELD_postSourceMacAddress:
 						bf.AppendUint(schema.ColumnSrcMAC, decodeUNumber(v))
-					case netflow.IPFIX_FIELD_destinationMacAddress:
-						bf.AppendUint(schema.ColumnDstMAC, decodeUNumber(v))
-					case netflow.IPFIX_FIELD_postSourceMacAddress:
-						bf.AppendUint(schema.ColumnSrcMAC, decodeUNumber(v))
-					case netflow.IPFIX_FIELD_postDestinationMacAddress:
+					case netflow.IPFIX_FIELD_destinationMacAddress, netflow.IPFIX_FIELD_postDestinationMacAddress:
 						bf.AppendUint(schema.ColumnDstMAC, decodeUNumber(v))
 					}
 				}
