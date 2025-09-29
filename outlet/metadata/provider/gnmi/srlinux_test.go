@@ -728,7 +728,7 @@ commit now
 				iface, answer.Interface.Name, answer.Interface.Description, answer.Interface.Speed)
 		}
 		r := reporter.NewMock(t)
-		p, err := configP.New(r)
+		p, err := configP.New(t.Context(), r)
 		if err != nil {
 			t.Fatalf("New() error:\n%+v", err)
 		}

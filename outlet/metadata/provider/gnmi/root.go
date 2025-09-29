@@ -18,6 +18,7 @@ type Provider struct {
 	r       *reporter.Reporter
 	config  *Configuration
 	metrics metrics
+	ctx     context.Context
 
 	state     map[netip.Addr]*exporterState
 	stateLock sync.Mutex
@@ -30,10 +31,11 @@ var (
 )
 
 // New creates a new gNMI provider from configuration
-func (configuration Configuration) New(r *reporter.Reporter) (provider.Provider, error) {
+func (configuration Configuration) New(ctx context.Context, r *reporter.Reporter) (provider.Provider, error) {
 	p := Provider{
 		r:       r,
 		config:  &configuration,
+		ctx:     ctx,
 		state:   map[netip.Addr]*exporterState{},
 		refresh: make(chan bool),
 	}
@@ -51,7 +53,7 @@ func (p *Provider) Query(ctx context.Context, q provider.Query) (provider.Answer
 		}
 		p.state[q.ExporterIP] = state
 		p.metrics.collectorCount.Inc()
-		go p.startCollector(ctx, q.ExporterIP, state)
+		go p.startCollector(q.ExporterIP, state)
 	}
 
 	// Trigger a refresh

@@ -278,7 +278,7 @@ func TestPoller(t *testing.T) {
 			config.Ports = helpers.MustNewSubnetMap(map[string]uint16{
 				"::/0": uint16(port),
 			})
-			p, err := config.New(r)
+			p, err := config.New(t.Context(), r)
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
 			}

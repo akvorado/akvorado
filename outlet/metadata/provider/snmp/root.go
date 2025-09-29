@@ -34,7 +34,7 @@ var (
 )
 
 // New creates a new SNMP provider from configuration
-func (configuration Configuration) New(r *reporter.Reporter) (provider.Provider, error) {
+func (configuration Configuration) New(_ context.Context, r *reporter.Reporter) (provider.Provider, error) {
 	for exporterIP, agentIP := range configuration.Agents {
 		if exporterIP.Is4() || agentIP.Is4() {
 			delete(configuration.Agents, exporterIP)

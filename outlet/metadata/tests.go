@@ -73,7 +73,7 @@ func (mp mockProvider) Query(_ context.Context, query provider.Query) (provider.
 type mockProviderConfiguration struct{}
 
 // New returns a new mock provider.
-func (mpc mockProviderConfiguration) New(_ *reporter.Reporter) (provider.Provider, error) {
+func (mpc mockProviderConfiguration) New(context.Context, *reporter.Reporter) (provider.Provider, error) {
 	return mockProvider{}, nil
 }
 
@@ -103,6 +103,6 @@ func (mp emptyProvider) Query(_ context.Context, _ provider.Query) (provider.Ans
 type emptyProviderConfiguration struct{}
 
 // New returns a new empty provider.
-func (mpc emptyProviderConfiguration) New(_ *reporter.Reporter) (provider.Provider, error) {
+func (mpc emptyProviderConfiguration) New(context.Context, *reporter.Reporter) (provider.Provider, error) {
 	return emptyProvider{}, nil
 }
