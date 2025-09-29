@@ -315,6 +315,32 @@ func BenchmarkDecodeNetFlow(b *testing.B) {
 	}
 }
 
+func BenchmarkDecodeBidirNetFlow(b *testing.B) {
+	schema.DisableDebug(b)
+	r := reporter.NewMock(b)
+	sch := schema.NewMock(b)
+	bf := sch.NewFlowMessage()
+	finalize := func() {}
+	nfdecoder := netflow.New(r, decoder.Dependencies{Schema: sch})
+	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+
+	template := helpers.ReadPcapL4(b,
+		filepath.Join("decoder", "netflow", "testdata", "ipfixprobe-templates.pcap"))
+	_, err := nfdecoder.Decode(
+		decoder.RawFlow{Payload: template, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+		options, bf, finalize)
+	if err != nil {
+		b.Fatalf("Decode() error on options template:\n%+v", err)
+	}
+	data := helpers.ReadPcapL4(b, filepath.Join("decoder", "netflow", "testdata", "ipfixprobe-data.pcap"))
+
+	for b.Loop() {
+		nfdecoder.Decode(
+			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+			options, bf, finalize)
+	}
+}
+
 func BenchmarkDecodeSflow(b *testing.B) {
 	schema.DisableDebug(b)
 	r := reporter.NewMock(b)
