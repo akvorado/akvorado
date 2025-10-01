@@ -29,7 +29,7 @@
     "@tailwindcss/typography": "^0.5.2",
     "@tailwindcss/vite": "^4.1.5",
     "@tsconfig/node20": "^20.1.6",
-    "@types/jsdom": "^21.1.0",
+    "@types/jsdom": "^27.0.0",
     "@types/lodash-es": "^4.17.6",
     "@types/node": "^24.3.0",
     "@vitejs/plugin-vue": "^6.0.0",
