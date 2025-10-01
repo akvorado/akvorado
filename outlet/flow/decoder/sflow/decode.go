@@ -14,6 +14,18 @@ import (
 	"github.com/netsampler/goflow2/v2/decoders/sflow"
 )
 
+const (
+	// interfaceLocal is used for InIf and OutIf when the traffic is
+	// locally originated or terminated. We need to translate it to 0.
+	interfaceLocal = 0x3fffffff
+	// interfaceFormatIfIndex is used when the interface is an index
+	interfaceFormatIfIndex = 0
+	// interfaceFormatDiscard is used for OutIf when the traffic is discarded
+	interfaceFormatDiscard = 1
+	// interfaceFomratMultiple is used when there are multiple output interfaces
+	interfaceFormatMultiple = 2
+)
+
 func (nd *Decoder) decode(packet sflow.Packet, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) error {
 	for _, flowSample := range packet.Samples {
 		var records []sflow.FlowRecord
@@ -22,20 +34,31 @@ func (nd *Decoder) decode(packet sflow.Packet, bf *schema.FlowMessage, finalize 
 		case sflow.FlowSample:
 			records = flowSample.Records
 			bf.SamplingRate = uint64(flowSample.SamplingRate)
-			bf.InIf = flowSample.Input
-			bf.OutIf = flowSample.Output
-			switch bf.OutIf & interfaceOutMask {
-			case interfaceOutDiscard:
-				bf.OutIf = 0
+			switch flowSample.Input >> 30 {
+			case interfaceFormatIfIndex:
+				bf.InIf = flowSample.Input
+			}
+			switch flowSample.Output >> 30 {
+			case interfaceFormatIfIndex:
+				bf.OutIf = flowSample.Output
+			case interfaceFormatDiscard:
 				forwardingStatus = 128
-			case interfaceOutMultiple:
-				bf.OutIf = 0
+			case interfaceFormatMultiple:
 			}
 		case sflow.ExpandedFlowSample:
 			records = flowSample.Records
 			bf.SamplingRate = uint64(flowSample.SamplingRate)
-			bf.InIf = flowSample.InputIfValue
-			bf.OutIf = flowSample.OutputIfValue
+			switch flowSample.InputIfFormat {
+			case interfaceFormatIfIndex:
+				bf.InIf = flowSample.InputIfValue
+			}
+			switch flowSample.OutputIfFormat {
+			case interfaceFormatIfIndex:
+				bf.OutIf = flowSample.OutputIfValue
+			case interfaceFormatDiscard:
+				forwardingStatus = 128
+			case interfaceFormatMultiple:
+			}
 		}
 
 		if bf.InIf == interfaceLocal {

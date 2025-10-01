@@ -17,18 +17,6 @@ import (
 	"akvorado/outlet/flow/decoder"
 )
 
-const (
-	// interfaceLocal is used for InIf and OutIf when the traffic is
-	// locally originated or terminated. We need to translate it to 0.
-	interfaceLocal = 0x3fffffff
-	// interfaceOutMask is the mask to interpret output interface type
-	interfaceOutMask = 0xc0000000
-	// interfaceOutDiscard is used for OutIf when the traffic is discarded
-	interfaceOutDiscard = 0x40000000
-	// interfaceOutMultiple is used when there are multiple output interfaces
-	interfaceOutMultiple = 0x80000000
-)
-
 // Decoder contains the state for the sFlow v5 decoder.
 type Decoder struct {
 	r         *reporter.Reporter

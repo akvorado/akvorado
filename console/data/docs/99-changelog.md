@@ -16,6 +16,7 @@ identified with a specific icon:
 - 🩹 *outlet*: fix gNMI metadata provider exiting too early
 - 🩹 *doc*: fix documentation for SNMPv3 configuration
 - 🌱 *inlet*: add support for RFC 5103 (bidirectional flows)
+- 🌱 *outlet*: handle discard and multiple interfaces for expanded sFlow samples
 
 ## 2.0.0 - 2025-09-22
 
