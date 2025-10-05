@@ -6,7 +6,9 @@ services:
       service: akvorado
     profiles: [ demo ]
     restart: unless-stopped
-    command: demo-exporter http://akvorado-orchestrator:8080#0
+    command: demo-exporter /etc/akvorado/demo-1.yaml
+    volumes:
+      - ../config:/etc/akvorado:ro
     depends_on:
       akvorado-inlet:
         condition: service_healthy
@@ -17,10 +19,16 @@ services:
       - metrics.path=/api/v0/metrics
   akvorado-exporter-2:
     <<: *exporter
-    command: demo-exporter http://akvorado-orchestrator:8080#1
+    command: demo-exporter /etc/akvorado/demo-2.yaml
+    environment:
+      AKVORADO_CFG_DEMOEXPORTER_FLOWS_SEED: 100
   akvorado-exporter-3:
     <<: *exporter
-    command: demo-exporter http://akvorado-orchestrator:8080#2
+    command: demo-exporter /etc/akvorado/demo-3.yaml
+    environment:
+      AKVORADO_CFG_DEMOEXPORTER_FLOWS_SEED: 200
   akvorado-exporter-4:
     <<: *exporter
-    command: demo-exporter http://akvorado-orchestrator:8080#3
+    command: demo-exporter /etc/akvorado/demo-4.yaml
+    environment:
+      AKVORADO_CFG_DEMOEXPORTER_FLOWS_SEED: 300
