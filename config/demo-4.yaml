@@ -1,0 +1,11 @@
+---
+snmp:
+  name: dc5-edge2.example.com
+  interfaces:
+    10: "IX: FranceIX"
+    11: "Transit: Cogent"
+    20: "core"
+    21: "core"
+  listen: :161
+bmp: !include "demo-bmp.yaml"
+flows: !include "demo-flows.yaml"

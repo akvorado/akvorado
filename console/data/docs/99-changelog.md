@@ -10,6 +10,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 💥 *config*: stop shipping demo exporter configurations from the orchestrator
+
 ## 2.0.1 - 2025-10-02
 
 - 🩹 *inlet*: disable kernel timestamping on Linux kernel older than 5.1

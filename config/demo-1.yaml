@@ -1,0 +1,11 @@
+---
+snmp:
+  name: th2-edge1.example.com
+  interfaces:
+    10: "Transit: Telia"
+    11: "IX: AMSIX"
+    20: "core"
+    21: "core"
+  listen: :161
+bmp: !include "demo-bmp.yaml"
+flows: !include "demo-flows.yaml"
