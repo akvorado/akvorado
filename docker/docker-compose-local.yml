@@ -33,6 +33,31 @@
 #     labels:
 #       - traefik.http.middlewares.auth.basicauth.users=akvorado:$$2y$$05$$Ud.JjfZWtKlSOoXKkv48leXze3u4cSNC5G4lG9nkfv5OFOkVcgRrm
 
+# To enable integration with an SSO and protect the console, use something like this:
+
+# services:
+#   akvorado-console:
+#     labels:
+#       # Override authentication middleware
+#       - traefik.http.routers.akvorado-console.middlewares=sso
+#       - traefik.http.middlewares.sso.forwardauth.address=http://sso.example.com/api/authz/forward-auth
+#       - traefik.http.middlewares.sso.forwardauth.trustForwardHeader=true
+#       - traefik.http.middlewares.sso.forwardauth.authResponseHeaders=Remote-User,Remote-Name,Remote-Email
+
+# It should also be possible to configure the middleware globally:
+
+# services:
+#   traefik:
+#     environment:
+#       TRAEFIK_ENTRYPOINTS_private_HTTP_MIDDLEWARES: compress@docker,sso@docker
+#     labels:
+#       - traefik.http.middlewares.sso.forwardauth.address=http://sso.example.com/api/authz/forward-auth
+#       - traefik.http.middlewares.sso.forwardauth.trustForwardHeader=true
+#       - traefik.http.middlewares.sso.forwardauth.authResponseHeaders=Remote-User,Remote-Name,Remote-Email
+#   akvorado-console:
+#     labels:
+#       - traefik.http.routers.akvorado-console.middlewares=
+
 # If you don't want to expose Kafka-UI and Traefik on the public endpoints, uncomment this block.
 
 # services:
