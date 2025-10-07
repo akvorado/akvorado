@@ -8,6 +8,7 @@ allowlist:
   - BlueOak-1.0.0
   - MPL-2.0
   - MIT
+  - MIT-0
   - ISC
   - WTFPL
   - 0BSD
