@@ -5,7 +5,7 @@ go 1.25
 toolchain go1.25.1
 
 require (
-	github.com/ClickHouse/ch-go v0.68.0
+	github.com/ClickHouse/ch-go v0.69.0
 	github.com/ClickHouse/clickhouse-go/v2 v2.40.3
 	github.com/alecthomas/chroma/v2 v2.20.0
 	github.com/benbjohnson/clock v1.3.5
@@ -160,7 +160,7 @@ require (
 	github.com/quic-go/quic-go v0.54.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rs/xid v1.6.0 // indirect
-	github.com/segmentio/asm v1.2.0 // indirect
+	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/shirou/gopsutil/v3 v3.23.12 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/shopspring/decimal v1.4.0 // indirect
