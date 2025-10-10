@@ -33,7 +33,7 @@ type Input struct {
 		packetSizeSum *reporter.SummaryVec
 		bufferSize    *reporter.GaugeVec
 		errors        *reporter.CounterVec
-		inDrops       *reporter.CounterVec
+		inDrops       *reporter.GaugeVec
 	}
 
 	address net.Addr       // listening address, for testing purpoese
@@ -89,8 +89,8 @@ func (configuration Configuration) New(r *reporter.Reporter, daemon daemon.Compo
 		},
 		[]string{"listener", "worker"},
 	)
-	input.metrics.inDrops = r.CounterVec(
-		reporter.CounterOpts{
+	input.metrics.inDrops = r.GaugeVec(
+		reporter.GaugeOpts{
 			Name: "in_dropped_packets_total",
 			Help: "Dropped packets due to listen queue full.",
 		},
@@ -190,7 +190,7 @@ func (in *Input) Start() error {
 				if err != nil {
 					errLogger.Err(err).Msg("unable to decode UDP control message")
 				} else {
-					in.metrics.inDrops.WithLabelValues(listen, worker).Add(
+					in.metrics.inDrops.WithLabelValues(listen, worker).Set(
 						float64(oobMsg.Drops))
 				}
 				if oobMsg.Received.IsZero() {
