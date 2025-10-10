@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: inlet
+  namespace: {{ .Values.environment }}-{{ .Values.namespace }}
+  labels:
+    app: inlet
+spec:
+  externalTrafficPolicy: Local
+  type: LoadBalancer
+  ports:
+    - name: netflow
+      protocol: UDP
+      port: 2055
+      targetPort: 2055
+    - name: sflow
+      protocol: UDP
+      port: 6343
+      targetPort: 6343
+  selector:
+    app: inlet
+  {{- if .Values.routers }}
+  loadBalancerSourceRanges:
+  {{- range .Values.routers }}
+  - {{ . | title }}
+  {{- end }}
+  {{- end }}
