@@ -108,3 +108,6 @@ The `docker-compose-upgrade.tar.gz` tarball contains `.env.dist` instead of
 `.env`, and `docker/docker-compose-local.yml.dist` instead of
 `docker/docker-compose-local.yml.dist`. You may want to check for differences
 with your setup.
+
+> [!NOTE]
+> The upgrade can be done from any version to any more recent version. Downgrading is not supported.
