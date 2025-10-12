@@ -5,8 +5,9 @@ ClickHouse have heavier needs. To get started, do not run the complete setup
 with less than 16 GB of RAM (32 GB or more is recommended) and with less than 50
 GB of disk (100 GB or more is recommended). Use at least 8 vCPUs.
 
-`demo.akvorado.net` currently runs in a VM with 4 vCPUs, 100 GB of disk, and 8
-GB of RAM, but it uses 4 GB of swap.
+> [!NOTE]
+> `demo.akvorado.net` currently runs in a VM with 4 vCPUs, 100 GB of disk, and 16
+> GB of RAM.
 
 ## Router configuration
 
