@@ -4,7 +4,6 @@
 package console
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"io/fs"
@@ -84,8 +83,8 @@ func (c *Component) docsHandlerFunc(gc *gin.Context) {
 				),
 			),
 		)
-		buf := &bytes.Buffer{}
-		if err = md.Convert(content, buf); err != nil {
+		var buf strings.Builder
+		if err = md.Convert(content, &buf); err != nil {
 			c.r.Err(err).Str("path", entry.Name()).Msg("unable to render markdown document")
 			continue
 		}
@@ -116,8 +115,8 @@ func (c *Component) docsHandlerFunc(gc *gin.Context) {
 			),
 		),
 	)
-	buf := &bytes.Buffer{}
-	if err = md.Convert(markdown, buf); err != nil {
+	var buf strings.Builder
+	if err = md.Convert(markdown, &buf); err != nil {
 		c.r.Err(err).Str("path", requestedDocument).Msg("unable to render markdown document")
 		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to render document."})
 		return
