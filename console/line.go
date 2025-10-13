@@ -427,7 +427,7 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 			// Max
 			output.Max[i] = points[nbPoints-1]
 			// 95th percentile with linear interpolation
-			index := 0.95*float64(nbPoints) - 1
+			index := 0.95 * float64(nbPoints-1)
 			j := int(index)
 			fraction := index - float64(j)
 			output.NinetyFivePercentile[i] = points[nbPoints-1]
