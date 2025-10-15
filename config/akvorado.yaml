@@ -42,8 +42,6 @@ clickhousedb:
 
 clickhouse:
   orchestrator-url: http://akvorado-orchestrator:8080
-  kafka:
-    consumers: 4
   prometheus-endpoint: /metrics
   asns:
     64501: ACME Corporation
