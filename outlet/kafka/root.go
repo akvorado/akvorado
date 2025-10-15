@@ -121,7 +121,9 @@ func (c *realComponent) Start() error {
 	c.r.Info().Msgf("topic %q has %d partitions", topicName, nbPartitions)
 	if nbPartitions < c.config.MaxWorkers {
 		c.r.Warn().Msgf("capping max workers from %d to %d", c.config.MaxWorkers, nbPartitions)
+		c.workerMu.Lock()
 		c.config.MaxWorkers = nbPartitions
+		c.workerMu.Unlock()
 	}
 
 	c.kadmClientMu.Lock()

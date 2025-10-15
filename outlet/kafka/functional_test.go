@@ -258,11 +258,13 @@ func TestWorkerScaling(t *testing.T) {
 
 	// 1 worker
 	time.Sleep(10 * time.Millisecond)
-	gotMetrics := r.GetMetrics("akvorado_outlet_kafka_", "worker")
+	gotMetrics := r.GetMetrics("akvorado_outlet_kafka_", "worker", "max", "min")
 	expected := map[string]string{
 		"worker_decrease_total": "0",
 		"worker_increase_total": "1",
 		"workers":               "1",
+		"min_workers":           "1",
+		"max_workers":           "16",
 	}
 	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)

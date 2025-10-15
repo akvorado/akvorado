@@ -18,6 +18,8 @@ type metrics struct {
 	bytesReceived    *reporter.CounterVec
 	errorsReceived   *reporter.CounterVec
 	workers          reporter.GaugeFunc
+	maxWorkers       reporter.GaugeFunc
+	minWorkers       reporter.GaugeFunc
 	workerIncrease   reporter.Counter
 	workerDecrease   reporter.Counter
 	consumerLag      reporter.GaugeFunc
@@ -61,6 +63,26 @@ func (c *realComponent) initMetrics() {
 			c.workerMu.Lock()
 			defer c.workerMu.Unlock()
 			return float64(len(c.workers))
+		},
+	)
+	c.metrics.maxWorkers = c.r.GaugeFunc(
+		reporter.GaugeOpts{
+			Name: "max_workers",
+			Help: "Maximum number of running workers",
+		},
+		func() float64 {
+			c.workerMu.Lock()
+			defer c.workerMu.Unlock()
+			return float64(c.config.MaxWorkers)
+		},
+	)
+	c.metrics.minWorkers = c.r.GaugeFunc(
+		reporter.GaugeOpts{
+			Name: "min_workers",
+			Help: "Minimum number of running workers",
+		},
+		func() float64 {
+			return float64(c.config.MinWorkers)
 		},
 	)
 	c.metrics.workerIncrease = c.r.Counter(
