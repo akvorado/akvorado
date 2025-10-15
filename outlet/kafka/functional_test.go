@@ -231,11 +231,16 @@ func TestWorkerScaling(t *testing.T) {
 	configuration.ConsumerGroup = fmt.Sprintf("outlet-%d", rand.Int())
 	configuration.WorkerIncreaseRateLimit = 20 * time.Millisecond
 	configuration.WorkerDecreaseRateLimit = 20 * time.Millisecond
+	configuration.MaxWorkers = 24
 	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
 	helpers.StartStop(t, c)
+
+	if maxWorkers := c.(*realComponent).config.MaxWorkers; maxWorkers != 16 {
+		t.Errorf("Start() max workers should have been capped to 16 instead of %d", maxWorkers)
+	}
 	msg := atomic.Uint32{}
 	c.StartWorkers(func(_ int, ch chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
 		return func(context.Context, []byte) error {

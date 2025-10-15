@@ -5,6 +5,7 @@
 package kafka
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -105,6 +106,24 @@ func (c *realComponent) Start() error {
 			Msg("unable to create Kafka admin client")
 		return fmt.Errorf("unable to create Kafka admin client: %w", err)
 	}
+
+	// Check the number of partitions
+	topics, err := kadmClient.ListTopics(context.Background())
+	if err != nil {
+		return fmt.Errorf("unable to get metadata for topics: %w", err)
+	}
+	topicName := fmt.Sprintf("%s-v%d", c.config.Topic, pb.Version)
+	topic, ok := topics[topicName]
+	if !ok {
+		return fmt.Errorf("unable find topic %q", topicName)
+	}
+	nbPartitions := len(topic.Partitions)
+	c.r.Info().Msgf("topic %q has %d partitions", topicName, nbPartitions)
+	if nbPartitions < c.config.MaxWorkers {
+		c.r.Warn().Msgf("capping max workers from %d to %d", c.config.MaxWorkers, nbPartitions)
+		c.config.MaxWorkers = nbPartitions
+	}
+
 	c.kadmClientMu.Lock()
 	defer c.kadmClientMu.Unlock()
 	c.kadmClient = kadmClient
