@@ -157,7 +157,9 @@ keys are accepted:
 - `fetch-max-wait-time` defines the maximum time to wait for the minimum
   number of bytes to become available.
 - `min-workers` defines the minimum number of Kafka workers to use.
-- `max-workers` defines the maximum number of Kafka workers to use.
+- `max-workers` defines the maximum number of Kafka workers to use (it should
+  not be more than the number of partitions for the topic, as defined in
+  `kafka`→`num-partitions`)
 - `worker-increase-rate-limit` defines the duration before increasing the
   number of workers.
 - `worker-decrease-rate-limit` defines the duration before decreasing the
