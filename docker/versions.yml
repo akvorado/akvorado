@@ -37,7 +37,7 @@ services:
   kafka-ui:
     image: ghcr.io/kafbat/kafka-ui:v1.3.0 # v\d+\.\d+\.\d+
   vector:
-    image: timberio/vector:0.50.X-alpine # \d+\.\d+-X-alpine
+    image: timberio/vector:0.50.X-alpine # \d+\.\d+\.X-alpine
 
   # for tests
   srlinux:
