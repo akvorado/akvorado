@@ -443,10 +443,13 @@ akvorado_inlet_flow_input_udp_buffer_size_bytes{listener=":2055",worker="2"} 212
 
 ### Outlet
 
-The outlet is expected to automatically scale the number of workers to ensure that the
-data is delivered efficiently to ClickHouse. Increasing the maximum number of
-Kafka workers (`max-workers`) past the default value of 8 may put more pressure
-on ClickHouse. However, you can increase `maximum-batch-size`.
+The outlet is expected to automatically scale the number of workers to ensure
+that the data is delivered efficiently to ClickHouse. Increasing the maximum
+number of Kafka workers (`max-workers`) past the default value of 8 may put more
+pressure on ClickHouse. However, you can increase `maximum-batch-size`.
+Moreover, there cannot be more workers than the number of partitions for the
+topic. This part is configurable on the orchestrator
+(`kafka`→`topic-configuration`→`num-partitions`).
 
 The BMP routing component may have some challenges with scaling, especially when peers
 disappear, as it requires cleaning up many entries in the routing tables. BMP
