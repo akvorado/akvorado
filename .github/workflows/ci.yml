@@ -55,9 +55,8 @@ jobs:
         if: matrix.tests != 'misc'
         run: docker compose -f docker/docker-compose-dev.yml up --wait --wait-timeout 60 --quiet-pull
       - name: Setup
+        if: matrix.tests != 'misc'
         uses: ./.github/actions/setup
-        with:
-          setup-node: ${{ matrix.tests != 'misc' }}
       - name: Install dependencies
         run: sudo apt-get install -qqy shared-mime-info curl zip
 
