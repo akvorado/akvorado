@@ -293,7 +293,7 @@ func orchestratorWatch(r *reporter.Reporter, daemonComponent daemon.Component, p
 					}
 
 					// Request termination to reexec
-					r.Debug().Msg("request a restart on configuration change")
+					r.Info().Str("path", event.Name).Msg("restart on configuration change")
 					modified.Store(true)
 					daemonComponent.Terminate()
 					return
