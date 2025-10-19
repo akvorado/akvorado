@@ -6,6 +6,8 @@ package authentication
 import (
 	"net/http"
 	"reflect"
+	"strings"
+	"text/template"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
@@ -24,6 +26,14 @@ type UserInformation struct {
 // current user. It does not really perform authentication but relies
 // on HTTP headers.
 func (c *Component) UserAuthentication() gin.HandlerFunc {
+	var logoutURLTmpl, avatarURLTmpl *template.Template
+	if c.config.LogoutURL != "" {
+		logoutURLTmpl, _ = template.New("logout").Parse(c.config.LogoutURL)
+	}
+	if c.config.AvatarURL != "" {
+		avatarURLTmpl, _ = template.New("avatar").Parse(c.config.AvatarURL)
+	}
+
 	return func(gc *gin.Context) {
 		var info UserInformation
 		if err := gc.ShouldBindWith(&info, customHeaderBinding{c}); err != nil {
@@ -34,6 +44,21 @@ func (c *Component) UserAuthentication() gin.HandlerFunc {
 			}
 			info = c.config.DefaultUser
 		}
+
+		// Apply configured templates (they can access header values and choose to keep or override)
+		if logoutURLTmpl != nil {
+			var buf strings.Builder
+			if err := logoutURLTmpl.Execute(&buf, info); err == nil {
+				info.LogoutURL = buf.String()
+			}
+		}
+		if avatarURLTmpl != nil {
+			var buf strings.Builder
+			if err := avatarURLTmpl.Execute(&buf, info); err == nil {
+				info.AvatarURL = buf.String()
+			}
+		}
+
 		gc.Set("user", info)
 		gc.Next()
 	}

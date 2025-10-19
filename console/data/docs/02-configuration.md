@@ -978,10 +978,13 @@ headers to the API endpoints:
 - `X-Logout-URL` is a link to the logout link,
 - `X-Avatar-URL` is a link to the avatar image.
 
-Only the first header is mandatory. The name of the headers can be
-changed by providing a different mapping under the `headers` key. It
-is also possible to modify the default user (when no header is
-present) by tweaking the `default-user` key:
+Only the first header is mandatory. The name of the headers can be changed by
+providing a different mapping under the `headers` key. It is also possible to
+modify the default user (when no header is present) by tweaking the
+`default-user` key. If logout URL or avatar URL is not provided in the headers,
+it is possible to provide them as `logout-url` and `avatar-url`. In this case,
+they can be templated with `.Login`, `.Name`, `.Email`, `.LogoutURL`, and
+`.AvatarURL`.
 
 ```yaml
 auth:
@@ -993,6 +996,8 @@ auth:
   default-user:
     login: default
     name: Default User
+  avatar-url: "https://avatars.githubusercontent.com/{{ .Login }}?s=80"
+  logout-url: "{{ if .LogoutURL }}{{ .LogoutURL }}{{ else }}/logout{{ end }}"
 ```
 
 To prevent access when not authenticated, the `login` field for the

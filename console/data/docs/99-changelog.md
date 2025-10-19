@@ -15,6 +15,8 @@ identified with a specific icon:
 - 🩹 *inlet*: fix `akvorado_inlet_flow_input_udp_in_dropped_packets_total` metric
 - 💥 *config*: stop shipping demo exporter configurations from the orchestrator
 - 🌱 *outlet*: cap the number of workers to the number of Kafka partitions
+- 🌱 *console*: add `auth`→`logout-url` and `auth`→`avatar-url` to configure
+  logout and avatar URLs when not provided as headers
 - 🌱 *docker*: update Vector to 0.50.0.
 
 ## 2.0.1 - 2025-10-02

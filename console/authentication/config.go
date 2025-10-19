@@ -11,6 +11,14 @@ type Configuration struct {
 	// headers are present. Leave `Login' empty to not allow access
 	// without authentication.
 	DefaultUser UserInformation
+	// LogoutURL is the URL to logout an authenticated user. If not empty, it is
+	// templated from other information available about the user, including the
+	// one from the headers.
+	LogoutURL string
+	// AvatarURL is the URL to the avatar of an authenticated user. If not
+	// empty, it is templated from other information available about the user,
+	// including the one from the headers.
+	AvatarURL string
 }
 
 // ConfigurationHeaders define headers used for authentication

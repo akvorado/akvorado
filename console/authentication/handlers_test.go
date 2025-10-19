@@ -134,3 +134,79 @@ func TestUserHandler(t *testing.T) {
 		})
 	})
 }
+
+func TestUserHandlerWithTemplates(t *testing.T) {
+	r := reporter.NewMock(t)
+	h := httpserver.NewMock(t, r)
+	config := DefaultConfiguration()
+	config.LogoutURL = "/sso/portals/main/logout"
+	config.AvatarURL = "https://avatars.githubusercontent.com/{{ .Login }}?s=80"
+	c, err := New(r, config)
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+
+	// Configure the endpoint
+	endpoint := h.GinRouter.Group("/api/v0/console/user", c.UserAuthentication())
+	endpoint.GET("/info", c.UserInfoHandlerFunc)
+
+	t.Run("templates applied when headers not provided", func(t *testing.T) {
+		helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
+			{
+				Description: "user info with logout and avatar templates",
+				URL:         "/api/v0/console/user/info",
+				Header: func() http.Header {
+					headers := make(http.Header)
+					headers.Add("Remote-User", "bruce")
+					headers.Add("Remote-Name", "Bruce Wayne")
+					headers.Add("Remote-Email", "bruce@wayne.com")
+					return headers
+				}(),
+				StatusCode: 200,
+				JSONOutput: gin.H{
+					"login":      "bruce",
+					"name":       "Bruce Wayne",
+					"email":      "bruce@wayne.com",
+					"logout-url": "/sso/portals/main/logout",
+					"avatar-url": "https://avatars.githubusercontent.com/bruce?s=80",
+				},
+			}, {
+				Description: "user info with different login for avatar template",
+				URL:         "/api/v0/console/user/info",
+				Header: func() http.Header {
+					headers := make(http.Header)
+					headers.Add("Remote-User", "alfred")
+					return headers
+				}(),
+				StatusCode: 200,
+				JSONOutput: gin.H{
+					"login":      "alfred",
+					"logout-url": "/sso/portals/main/logout",
+					"avatar-url": "https://avatars.githubusercontent.com/alfred?s=80",
+				},
+			},
+		})
+	})
+
+	t.Run("templates applied even with headers", func(t *testing.T) {
+		helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
+			{
+				Description: "user info with headers provided, templates still override",
+				URL:         "/api/v0/console/user/info",
+				Header: func() http.Header {
+					headers := make(http.Header)
+					headers.Add("Remote-User", "bruce")
+					headers.Add("X-Logout-URL", "/custom/logout")
+					headers.Add("X-Avatar-URL", "https://custom.avatar.url/bruce")
+					return headers
+				}(),
+				StatusCode: 200,
+				JSONOutput: gin.H{
+					"login":      "bruce",
+					"logout-url": "/sso/portals/main/logout",
+					"avatar-url": "https://avatars.githubusercontent.com/bruce?s=80",
+				},
+			},
+		})
+	})
+}

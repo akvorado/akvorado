@@ -77,6 +77,8 @@
 #       AKVORADO_CFG_CONSOLE_AUTH_HEADERS_LOGIN: X-Forwarded-User
 #       AKVORADO_CFG_CONSOLE_AUTH_HEADERS_NAME: X-Forwarded-Displayname
 #       AKVORADO_CFG_CONSOLE_AUTH_DEFAULTUSER_LOGIN: ""
+#       AKVORADO_CFG_CONSOLE_AUTH_LOGOUTURL: /sso/portals/main/logout
+#       AKVORADO_CFG_CONSOLE_AUTH_AVATARURL: "https://avatars.githubusercontent.com/{{ .Login }}?s=80"
 #     labels:
 #       # Override authentication middleware
 #       - traefik.http.routers.akvorado-console.middlewares=sso
