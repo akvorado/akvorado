@@ -1,0 +1,15 @@
+---
+# This part is not secure and should only be used for development!
+server:
+  hostname: 127.0.0.1:8081
+  basePath: /sso
+cookies:
+  domain: 127.0.0.1
+  insecure: true
+
+portals:
+  - name: "main"
+    providers:
+      - github:
+          clientID: XXXXXXXXXXXXXX
+          clientSecret: YYYYYYYYYYYYYYYYYYYYY

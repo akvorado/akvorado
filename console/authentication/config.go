@@ -8,7 +8,7 @@ type Configuration struct {
 	// Headers define authentication headers
 	Headers ConfigurationHeaders
 	// DefaultUser define the default user when no authentication
-	// headers are present. Leave `User' empty to not allow access
+	// headers are present. Leave `Login' empty to not allow access
 	// without authentication.
 	DefaultUser UserInformation
 }

@@ -44,7 +44,7 @@
 #       - traefik.http.middlewares.sso.forwardauth.trustForwardHeader=true
 #       - traefik.http.middlewares.sso.forwardauth.authResponseHeaders=Remote-User,Remote-Name,Remote-Email
 
-# It should also be possible to configure the middleware globally:
+# It is possible to configure the middleware globally:
 
 # services:
 #   traefik:
@@ -57,6 +57,33 @@
 #   akvorado-console:
 #     labels:
 #       - traefik.http.routers.akvorado-console.middlewares=
+
+# For OAuth2 services not supporting forward authentication, one can use traefik-forward-auth. Here is an example:
+
+# services:
+#   sso:
+#     image: ghcr.io/italypaleale/traefik-forward-auth:4
+#     restart: unless-stopped
+#     volumes:
+#       - ./traefik-forward-auth.yaml:/etc/traefik-forward-auth/config.yaml
+#     healthcheck:
+#       interval: 20s
+#     labels:
+#       - traefik.enable=true
+#       - traefik.http.services.sso.loadbalancer.server.port=4181
+#       - traefik.http.routers.sso.rule=PathPrefix(`/sso`)
+#   akvorado-console:
+#     environment:
+#       AKVORADO_CFG_CONSOLE_AUTH_HEADERS_LOGIN: X-Forwarded-User
+#       AKVORADO_CFG_CONSOLE_AUTH_HEADERS_NAME: X-Forwarded-Displayname
+#       AKVORADO_CFG_CONSOLE_AUTH_DEFAULTUSER_LOGIN: ""
+#     labels:
+#       # Override authentication middleware
+#       - traefik.http.routers.akvorado-console.middlewares=sso
+#       - traefik.http.middlewares.sso.forwardauth.address=http://sso:4181/sso/portals/main
+#       - traefik.http.middlewares.sso.forwardauth.trustForwardHeader=true
+#       - traefik.http.middlewares.sso.forwardauth.authResponseHeaders=X-Forwarded-User,X-Forwarded-Displayname,X-Authenticated-User
+
 
 # If you don't want to expose Kafka-UI and Traefik on the public endpoints, uncomment this block.
 

@@ -1008,12 +1008,21 @@ an authenticating reverse-proxy for Akvorado:
 - [Keycloak](https://www.keycloak.org/)
 - [Ory](https://www.ory.sh/), notably Kratos, Hydra and Oathkeeper
 - [Casdoor](https://casdoor.org/)
-- [Zitadel](https://zitadel.com/) combined with [OAuth2 Proxy](https://zitadel.com/docs/examples/identity-proxy/oauth2-proxy)
+- [Zitadel](https://zitadel.com/)
 
 There also exist simpler solutions only providing authentication:
 
 - [OAuth2 Proxy](https://oauth2-proxy.github.io/oauth2-proxy/), associated with [Dex](https://dexidp.io/)
 - [Ory](https://www.ory.sh), notably Hydra and Oathkeeper
+
+Traefik can also be configured to [forward authentication requests][] to another
+service, include [OAuth2 Proxy][] or [Traefik Forward Auth][]. Some examples are
+present in `docker/docker-compose-local.yml`.
+
+[forward authentication requests]: https://doc.traefik.io/traefik/reference/routing-configuration/http/middlewares/forwardauth/
+[oauth2 proxy]:
+https://oauth2-proxy.github.io/oauth2-proxy/configuration/integration#configuring-for-use-with-the-traefik-v2-forwardauth-middleware
+[traefik forward auth]: https://github.com/ItalyPaleAle/traefik-forward-auth
 
 ### Database
 
