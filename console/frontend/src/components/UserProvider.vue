@@ -49,6 +49,7 @@ export type UserInfo = {
   name?: string;
   email?: string;
   "logout-url"?: string;
+  "avatar-url"?: string;
 };
 export const UserKey: InjectionKey<{
   user: Readonly<Ref<UserInfo | null>>;

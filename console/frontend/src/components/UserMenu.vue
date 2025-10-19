@@ -53,5 +53,5 @@ import { Popover, PopoverButton, PopoverPanel } from "@headlessui/vue";
 import { UserKey } from "@/components/UserProvider.vue";
 
 const { user } = inject(UserKey)!;
-const avatarURL = "/api/v0/console/user/avatar";
+const avatarURL = user.value?.["avatar-url"] ?? "/api/v0/console/user/avatar";
 </script>

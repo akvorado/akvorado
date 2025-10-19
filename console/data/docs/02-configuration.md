@@ -975,7 +975,8 @@ headers to the API endpoints:
 - `Remote-User` is the user login,
 - `Remote-Name` is the user display name,
 - `Remote-Email` is the user email address,
-- `X-Logout-URL` is a link to the logout link.
+- `X-Logout-URL` is a link to the logout link,
+- `X-Avatar-URL` is a link to the avatar image.
 
 Only the first header is mandatory. The name of the headers can be
 changed by providing a different mapping under the `headers` key. It

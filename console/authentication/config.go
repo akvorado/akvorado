@@ -19,6 +19,7 @@ type ConfigurationHeaders struct {
 	Name      string
 	Email     string
 	LogoutURL string
+	AvatarURL string
 }
 
 // DefaultConfiguration represents the default configuration for the console component.
@@ -29,6 +30,7 @@ func DefaultConfiguration() Configuration {
 			Name:      "Remote-Name",
 			Email:     "Remote-Email",
 			LogoutURL: "X-Logout-URL",
+			AvatarURL: "X-Avatar-URL",
 		},
 		DefaultUser: UserInformation{
 			Login: "__default",

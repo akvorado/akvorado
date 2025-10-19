@@ -17,6 +17,7 @@ type UserInformation struct {
 	Name      string `json:"name,omitempty" header:"NAME"`
 	Email     string `json:"email,omitempty" header:"EMAIL" binding:"omitempty,email"`
 	LogoutURL string `json:"logout-url,omitempty" header:"LOGOUT" binding:"omitempty,uri"`
+	AvatarURL string `json:"avatar-url,omitempty" header:"AVATAR" binding:"omitempty,uri"`
 }
 
 // UserAuthentication is a middleware to fill information about the
@@ -72,6 +73,8 @@ func (b customHeaderBinding) Bind(req *http.Request, obj any) error {
 			header = b.c.config.Headers.Email
 		case "LOGOUT":
 			header = b.c.config.Headers.LogoutURL
+		case "AVATAR":
+			header = b.c.config.Headers.AvatarURL
 		}
 		if header == "" {
 			continue

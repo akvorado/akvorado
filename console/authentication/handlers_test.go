@@ -55,6 +55,7 @@ func TestUserHandler(t *testing.T) {
 					headers.Add("Remote-Name", "Alfred Pennyworth")
 					headers.Add("Remote-Email", "alfred@batman.com")
 					headers.Add("X-Logout-URL", "/logout")
+					headers.Add("X-Avatar-URL", "https://avatars.githubusercontent.com/akvorado")
 					return headers
 				}(),
 				StatusCode: 200,
@@ -63,6 +64,7 @@ func TestUserHandler(t *testing.T) {
 					"name":       "Alfred Pennyworth",
 					"email":      "alfred@batman.com",
 					"logout-url": "/logout",
+					"avatar-url": "https://avatars.githubusercontent.com/akvorado",
 				},
 			}, {
 				Description: "user info, invalid user logged in",
