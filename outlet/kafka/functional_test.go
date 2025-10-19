@@ -229,8 +229,8 @@ func TestWorkerScaling(t *testing.T) {
 	configuration.Brokers = cluster.ListenAddrs()
 	configuration.FetchMaxWaitTime = 10 * time.Millisecond
 	configuration.ConsumerGroup = fmt.Sprintf("outlet-%d", rand.Int())
-	configuration.WorkerIncreaseRateLimit = 20 * time.Millisecond
-	configuration.WorkerDecreaseRateLimit = 20 * time.Millisecond
+	configuration.WorkerIncreaseRateLimit = 10 * time.Millisecond
+	configuration.WorkerDecreaseRateLimit = 10 * time.Millisecond
 	configuration.MaxWorkers = 24
 	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
@@ -361,6 +361,36 @@ func TestWorkerScaling(t *testing.T) {
 	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
+
+	// Send more messages until getting to the max
+	var diff string
+	var matches int
+	for range 100 {
+		record := &kgo.Record{
+			Topic: expectedTopicName,
+			Value: []byte("hello"),
+		}
+		if results := producer.ProduceSync(context.Background(), record); results.FirstErr() != nil {
+			t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
+		}
+		time.Sleep(10 * time.Millisecond)
+		gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "worker")
+		expected = map[string]string{
+			"worker_decrease_total": "1",
+			"worker_increase_total": "17",
+			"workers":               "16",
+		}
+		diff = helpers.Diff(gotMetrics, expected)
+		if diff == "" {
+			matches++
+		} else {
+			matches = 0
+		}
+		if matches == 5 {
+			return
+		}
+	}
+	t.Fatalf("Metrics (-got, +want):\n%s", diff)
 }
 
 func TestKafkaLagMetric(t *testing.T) {

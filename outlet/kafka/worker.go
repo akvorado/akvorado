@@ -50,7 +50,7 @@ func (c *realComponent) startOneWorker() error {
 
 	// New consumer
 	i := len(c.workers)
-	if i > c.config.MaxWorkers {
+	if i >= c.config.MaxWorkers {
 		c.r.Info().Int("Workers", c.config.MaxWorkers).Msg("maximum number of worker reached")
 		return nil
 	}
