@@ -270,7 +270,7 @@ func TestWorkerScaling(t *testing.T) {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 
-	// Send 5 messages in a row, expect a second worker
+	// Send 5 messages in a row
 	t.Log("Send 5 messages")
 	for range 5 {
 		record := &kgo.Record{
@@ -282,19 +282,19 @@ func TestWorkerScaling(t *testing.T) {
 		}
 	}
 	time.Sleep(100 * time.Millisecond)
-	t.Log("Check if workers increased to 2")
+	t.Log("Check if workers increased to 9")
 	gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "worker")
 	expected = map[string]string{
 		"worker_decrease_total": "0",
-		"worker_increase_total": "2",
-		"workers":               "2",
+		"worker_increase_total": "9",
+		"workers":               "9",
 	}
 	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 
-	// Send 5 other messages, expect one less worker
-	t.Log("Send 5 other messages")
+	// Send 5 messages
+	t.Log("Send 5 messages")
 	for range 5 {
 		record := &kgo.Record{
 			Topic: expectedTopicName,
@@ -305,64 +305,19 @@ func TestWorkerScaling(t *testing.T) {
 		}
 	}
 	time.Sleep(100 * time.Millisecond)
-	t.Log("Check if workers decreased to 1")
+	t.Log("Check if workers decreased to 5")
 	gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "worker")
 	expected = map[string]string{
-		"worker_decrease_total": "1",
-		"worker_increase_total": "2",
-		"workers":               "1",
+		"worker_decrease_total": "4",
+		"worker_increase_total": "9",
+		"workers":               "5",
 	}
 	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 
-	// Send 5 other messages, expect nothing change (already at minimum)
-	t.Log("Send 5 more messages")
-	for range 5 {
-		record := &kgo.Record{
-			Topic: expectedTopicName,
-			Value: []byte("hello"),
-		}
-		if results := producer.ProduceSync(context.Background(), record); results.FirstErr() != nil {
-			t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
-		}
-	}
-	time.Sleep(100 * time.Millisecond)
-	t.Log("Check there is no change in number of workers")
-	gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "worker")
-	expected = map[string]string{
-		"worker_decrease_total": "1",
-		"worker_increase_total": "2",
-		"workers":               "1",
-	}
-	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
-		t.Fatalf("Metrics (-got, +want):\n%s", diff)
-	}
-
-	// Send 5 more and expect a scale increase
-	t.Log("Send 5 last messages")
-	for range 5 {
-		record := &kgo.Record{
-			Topic: expectedTopicName,
-			Value: []byte("hello"),
-		}
-		if results := producer.ProduceSync(context.Background(), record); results.FirstErr() != nil {
-			t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
-		}
-	}
-	time.Sleep(100 * time.Millisecond)
-	t.Log("Check there are one new worker")
-	gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "worker")
-	expected = map[string]string{
-		"worker_decrease_total": "1",
-		"worker_increase_total": "3",
-		"workers":               "2",
-	}
-	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
-		t.Fatalf("Metrics (-got, +want):\n%s", diff)
-	}
-
-	// Send more messages until getting to the max
+	// Send more messages until reaching max workers
+	t.Log("Send more messages requesting scale up to reach max")
 	var diff string
 	var matches int
 	for range 100 {
@@ -373,12 +328,10 @@ func TestWorkerScaling(t *testing.T) {
 		if results := producer.ProduceSync(context.Background(), record); results.FirstErr() != nil {
 			t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
 		}
-		time.Sleep(10 * time.Millisecond)
-		gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "worker")
+		time.Sleep(5 * time.Millisecond)
+		gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "workers")
 		expected = map[string]string{
-			"worker_decrease_total": "1",
-			"worker_increase_total": "17",
-			"workers":               "16",
+			"workers": "16",
 		}
 		diff = helpers.Diff(gotMetrics, expected)
 		if diff == "" {

@@ -50,10 +50,6 @@ func (c *realComponent) startOneWorker() error {
 
 	// New consumer
 	i := len(c.workers)
-	if i >= c.config.MaxWorkers {
-		c.r.Info().Int("Workers", c.config.MaxWorkers).Msg("maximum number of worker reached")
-		return nil
-	}
 	client, err := c.newClient(i)
 	if err != nil {
 		return err
@@ -118,11 +114,6 @@ func (c *realComponent) stopOneWorker() {
 	c.workerMu.Lock()
 	defer c.workerMu.Unlock()
 	i := len(c.workers) - 1
-	if i < c.config.MinWorkers {
-		c.r.Info().Int("Workers", c.config.MinWorkers).Msg("minimum number of workers reached")
-		return
-	}
-
 	worker := c.workers[i]
 	worker.stop()
 	c.workers = c.workers[:i]
