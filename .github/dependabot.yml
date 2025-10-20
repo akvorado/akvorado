@@ -67,6 +67,10 @@ updates:
       - dependencies
     open-pull-requests-limit: 10
     groups:
+      franz-go:
+        patterns:
+          - "github.com/twmb/franz-go"
+          - "github.com/twmb/franz-go/*"
       golang-org-x:
         patterns:
           - "golang.org/x/*"
