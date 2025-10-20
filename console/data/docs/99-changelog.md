@@ -13,6 +13,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🩹 *inlet*: fix `akvorado_inlet_flow_input_udp_in_dropped_packets_total` metric
+- 🩹 *console*: fix completion tooltip being wrapped with Firefox
 - 💥 *config*: stop shipping demo exporter configurations from the orchestrator
 - 🌱 *outlet*: be more aggressive when increasing the number of workers
 - 🌱 *outlet*: cap the number of workers to the number of Kafka partitions

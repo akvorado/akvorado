@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  '@codemirror/view@6.38.4':
+    hash: 9bfcd4f367848d1f656593faf8482aae53d106fe7a236d7d21b9b7f4cfef5553
+    path: patches/@codemirror__view@6.38.4.patch
+
 importers:
 
   .:
@@ -25,7 +30,7 @@ importers:
         version: 6.5.2
       '@codemirror/view':
         specifier: ^6.0.0
-        version: 6.38.4
+        version: 6.38.4(patch_hash=9bfcd4f367848d1f656593faf8482aae53d106fe7a236d7d21b9b7f4cfef5553)
       '@headlessui/vue':
         specifier: ^1.6.1
         version: 1.7.23(vue@3.5.22(typescript@5.9.2))
@@ -1770,20 +1775,20 @@ snapshots:
     dependencies:
       '@codemirror/language': 6.11.3
       '@codemirror/state': 6.5.2
-      '@codemirror/view': 6.38.4
+      '@codemirror/view': 6.38.4(patch_hash=9bfcd4f367848d1f656593faf8482aae53d106fe7a236d7d21b9b7f4cfef5553)
       '@lezer/common': 1.2.3
 
   '@codemirror/commands@6.8.1':
     dependencies:
       '@codemirror/language': 6.11.3
       '@codemirror/state': 6.5.2
-      '@codemirror/view': 6.38.4
+      '@codemirror/view': 6.38.4(patch_hash=9bfcd4f367848d1f656593faf8482aae53d106fe7a236d7d21b9b7f4cfef5553)
       '@lezer/common': 1.2.3
 
   '@codemirror/language@6.11.3':
     dependencies:
       '@codemirror/state': 6.5.2
-      '@codemirror/view': 6.38.4
+      '@codemirror/view': 6.38.4(patch_hash=9bfcd4f367848d1f656593faf8482aae53d106fe7a236d7d21b9b7f4cfef5553)
       '@lezer/common': 1.2.3
       '@lezer/highlight': 1.2.1
       '@lezer/lr': 1.4.2
@@ -1792,14 +1797,14 @@ snapshots:
   '@codemirror/lint@6.8.5':
     dependencies:
       '@codemirror/state': 6.5.2
-      '@codemirror/view': 6.38.4
+      '@codemirror/view': 6.38.4(patch_hash=9bfcd4f367848d1f656593faf8482aae53d106fe7a236d7d21b9b7f4cfef5553)
       crelt: 1.0.6
 
   '@codemirror/state@6.5.2':
     dependencies:
       '@marijn/find-cluster-break': 1.0.2
 
-  '@codemirror/view@6.38.4':
+  '@codemirror/view@6.38.4(patch_hash=9bfcd4f367848d1f656593faf8482aae53d106fe7a236d7d21b9b7f4cfef5553)':
     dependencies:
       '@codemirror/state': 6.5.2
       crelt: 1.0.6

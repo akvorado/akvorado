@@ -1,0 +1,38 @@
+diff --git a/dist/index.cjs b/dist/index.cjs
+index e9ca104998a1db31cc19c797d1e8a450a5807073..3603da43a97aec2a3dc4e947a000d1d55a07f30c 100644
+--- a/dist/index.cjs
++++ b/dist/index.cjs
+@@ -10033,13 +10033,7 @@ const tooltipPlugin = ViewPlugin.fromClass(class {
+         let scaleX = 1, scaleY = 1, makeAbsolute = false;
+         if (this.position == "fixed" && this.manager.tooltipViews.length) {
+             let { dom } = this.manager.tooltipViews[0];
+-            if (browser.gecko) {
+-                // Firefox sets the element's `offsetParent` to the
+-                // transformed element when a transform interferes with fixed
+-                // positioning.
+-                makeAbsolute = dom.offsetParent != this.container.ownerDocument.body;
+-            }
+-            else if (dom.style.top == Outside && dom.style.left == "0px") {
++            if (dom.style.top == Outside && dom.style.left == "0px") {
+                 // On other browsers, we have to awkwardly try and use other
+                 // information to detect a transform.
+                 let rect = dom.getBoundingClientRect();
+diff --git a/dist/index.js b/dist/index.js
+index 7915cd285c08b6bf3f221872ff98006bef30fc66..ed0fd377d18f75a2e1f9de20559656e7c08a6ba4 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -10028,13 +10028,7 @@ const tooltipPlugin = /*@__PURE__*/ViewPlugin.fromClass(class {
+         let scaleX = 1, scaleY = 1, makeAbsolute = false;
+         if (this.position == "fixed" && this.manager.tooltipViews.length) {
+             let { dom } = this.manager.tooltipViews[0];
+-            if (browser.gecko) {
+-                // Firefox sets the element's `offsetParent` to the
+-                // transformed element when a transform interferes with fixed
+-                // positioning.
+-                makeAbsolute = dom.offsetParent != this.container.ownerDocument.body;
+-            }
+-            else if (dom.style.top == Outside && dom.style.left == "0px") {
++            if (dom.style.top == Outside && dom.style.left == "0px") {
+                 // On other browsers, we have to awkwardly try and use other
+                 // information to detect a transform.
+                 let rect = dom.getBoundingClientRect();
