@@ -17,8 +17,10 @@ import (
 	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
 )
 
-var asPathCache [][]uint32
-var uniqueASPaths = 254123
+var (
+	asPathCache   [][]uint32
+	uniqueASPaths = 254123
+)
 
 // Data from https://bgp.potaroo.net/as2.0/bgp-prefix-vector.txt
 var prefixSizeDistribution = [33]int{
@@ -226,11 +228,11 @@ func BenchmarkRIBInsertion(b *testing.B) {
 				runtime.GC()
 				runtime.ReadMemStats(&startMem)
 
-				var rib *rib
+				var rib *ribFast
 				inserted := 0
 				tentative := 0
 				for b.Loop() {
-					rib = newRIB()
+					rib = newFastRIB()
 					nh := netip.MustParseAddr("::ffff:198.51.100.0")
 					prng1 := rand.New(rand.NewSource(10))
 					prng2 := make([]*rand.Rand, peers)
@@ -282,13 +284,13 @@ func BenchmarkRIBInsertion(b *testing.B) {
 	}
 }
 
-func BenchmarkRIBLookup(b *testing.B) {
+func BenchmarkRIBLookupFAST(b *testing.B) {
 	for _, routes := range []int{1_000, 10_000, 100_000} {
 		for _, peers := range []int{1, 2, 5} {
 			name := fmt.Sprintf("%d routes, %d peers", routes, peers)
 
 			b.Run(name, func(b *testing.B) {
-				rib := newRIB()
+				rib := newFastRIB()
 				nh := netip.MustParseAddr("::ffff:198.51.100.0")
 				prng1 := rand.New(rand.NewSource(10))
 				prng2 := make([]*rand.Rand, peers)
@@ -318,18 +320,65 @@ func BenchmarkRIBLookup(b *testing.B) {
 				}
 
 				prng1 = rand.New(rand.NewSource(10))
-				lookups := 0
 				randomPrefixes := []randomRoute{}
 				for r := range randomRealWorldRoutes4(prng1, prng2[0], routes/10) {
 					randomPrefixes = append(randomPrefixes, r)
 				}
 				for b.Loop() {
-					for _, r := range randomPrefixes {
-						_, _ = rib.tree.Lookup(netip.AddrFrom16(r.Prefix.Addr().As16()))
-						lookups++
+					ip4 := randomPrefixes[b.N%len(randomPrefixes)].Prefix.Addr()
+					_, _ = rib.tree.Lookup(ip4)
+				}
+				b.ReportMetric(float64(b.Elapsed())/float64(b.N), "ns/op")
+			})
+		}
+	}
+}
+
+func BenchmarkRIBLookupBART(b *testing.B) {
+	for _, routes := range []int{1_000, 10_000, 100_000} {
+		for _, peers := range []int{1, 2, 5} {
+			name := fmt.Sprintf("%d routes, %d peers", routes, peers)
+
+			b.Run(name, func(b *testing.B) {
+				rib := newBartRIB()
+				nh := netip.MustParseAddr("::ffff:198.51.100.0")
+				prng1 := rand.New(rand.NewSource(10))
+				prng2 := make([]*rand.Rand, peers)
+				for p := range peers {
+					prng2[p] = rand.New(rand.NewSource(int64(p)))
+				}
+				for p := range peers {
+					nh = nh.Next()
+					for r := range randomRealWorldRoutes4(prng1, prng2[p], routes) {
+						if prng2[p].Intn(10) == 0 {
+							continue
+						}
+						pfx := netip.PrefixFrom(netip.AddrFrom16(r.Prefix.Addr().As16()), r.Prefix.Bits()+96)
+						rib.AddPrefix(pfx, route{
+							peer:    uint32(p),
+							nlri:    rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
+							nextHop: rib.nextHops.Put(nextHop(nh)),
+							attributes: rib.rtas.Put(routeAttributes{
+								asn:              r.ASPath[len(r.ASPath)-1],
+								asPath:           r.ASPath,
+								communities:      r.Communities,
+								largeCommunities: r.LargeCommunities,
+							}),
+							prefixLen: uint8(pfx.Bits()),
+						})
 					}
 				}
-				b.ReportMetric(float64(b.Elapsed())/float64(lookups), "ns/op")
+
+				prng1 = rand.New(rand.NewSource(10))
+				randomPrefixes := []randomRoute{}
+				for r := range randomRealWorldRoutes4(prng1, prng2[0], routes/10) {
+					randomPrefixes = append(randomPrefixes, r)
+				}
+				for b.Loop() {
+					ip4 := randomPrefixes[b.N%len(randomPrefixes)].Prefix.Addr()
+					_, _ = rib.tree.Lookup(ip4)
+				}
+				b.ReportMetric(float64(b.Elapsed())/float64(b.N), "ns/op")
 			})
 		}
 	}
@@ -343,7 +392,7 @@ func BenchmarkRIBFlush(b *testing.B) {
 			b.Run(name, func(b *testing.B) {
 				for b.Loop() {
 					b.StopTimer()
-					rib := newRIB()
+					rib := newFastRIB()
 					nh := netip.MustParseAddr("::ffff:198.51.100.0")
 					prng1 := rand.New(rand.NewSource(10))
 					prng2 := make([]*rand.Rand, peers)

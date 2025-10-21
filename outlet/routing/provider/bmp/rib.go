@@ -24,8 +24,19 @@ type routeIndex uint32
 // routeKey is a typed key for route map entries
 type routeKey uint64
 
-// rib represents the RIB.
-type rib struct {
+// ribFast represents the bart.Fast RIB.
+type ribFast struct {
+	tree          *bart.Fast[prefixIndex] // stores prefix indices
+	routes        map[routeKey]route      // map[routeKey]route where routeKey = (prefixIdx << 32) | routeIdx
+	nlris         *intern.Pool[nlri]
+	nextHops      *intern.Pool[nextHop]
+	rtas          *intern.Pool[routeAttributes]
+	nextPrefixID  prefixIndex   // counter for next prefix index
+	freePrefixIDs []prefixIndex // free list for reused prefix indices
+}
+
+// ribBart represents the bart.Table RIB.
+type ribBart struct {
 	tree          *bart.Table[prefixIndex] // stores prefix indices
 	routes        map[routeKey]route       // map[routeKey]route where routeKey = (prefixIdx << 32) | routeIdx
 	nlris         *intern.Pool[nlri]
@@ -146,7 +157,19 @@ func (rta routeAttributes) Equal(orta routeAttributes) bool {
 }
 
 // newPrefixIndex allocates a new prefix index, reusing from free list if available
-func (r *rib) newPrefixIndex() prefixIndex {
+func (r *ribFast) newPrefixIndex() prefixIndex {
+	if len(r.freePrefixIDs) > 0 {
+		id := r.freePrefixIDs[len(r.freePrefixIDs)-1]
+		r.freePrefixIDs = r.freePrefixIDs[:len(r.freePrefixIDs)-1]
+		return id
+	}
+	id := r.nextPrefixID
+	r.nextPrefixID++
+	return id
+}
+
+// newPrefixIndex allocates a new prefix index, reusing from free list if available
+func (r *ribBart) newPrefixIndex() prefixIndex {
 	if len(r.freePrefixIDs) > 0 {
 		id := r.freePrefixIDs[len(r.freePrefixIDs)-1]
 		r.freePrefixIDs = r.freePrefixIDs[:len(r.freePrefixIDs)-1]
@@ -158,7 +181,17 @@ func (r *rib) newPrefixIndex() prefixIndex {
 }
 
 // freePrefixIndex returns a prefix ID to the free list
-func (r *rib) freePrefixIndex(id prefixIndex) {
+func (r *ribFast) freePrefixIndex(id prefixIndex) {
+	if helpers.Testing() {
+		if id == 0 {
+			panic("cannot free index 0")
+		}
+	}
+	r.freePrefixIDs = append(r.freePrefixIDs, id)
+}
+
+// freePrefixIndex returns a prefix ID to the free list
+func (r *ribBart) freePrefixIndex(id prefixIndex) {
 	if helpers.Testing() {
 		if id == 0 {
 			panic("cannot free index 0")
@@ -173,7 +206,24 @@ func makeRouteKey(prefixIdx prefixIndex, routeIdx routeIndex) routeKey {
 }
 
 // iterateRoutesForPrefix returns an iterator over all routes for a given prefix index
-func (r *rib) iterateRoutesForPrefixIndex(prefixIdx prefixIndex) iter.Seq[route] {
+func (r *ribFast) iterateRoutesForPrefixIndex(prefixIdx prefixIndex) iter.Seq[route] {
+	return func(yield func(route) bool) {
+		key := makeRouteKey(prefixIdx, 0)
+		for {
+			route, exists := r.routes[key]
+			if !exists {
+				break
+			}
+			if !yield(route) {
+				break
+			}
+			key++
+		}
+	}
+}
+
+// iterateRoutesForPrefix returns an iterator over all routes for a given prefix index
+func (r *ribBart) iterateRoutesForPrefixIndex(prefixIdx prefixIndex) iter.Seq[route] {
 	return func(yield func(route) bool) {
 		key := makeRouteKey(prefixIdx, 0)
 		for {
@@ -194,7 +244,43 @@ func (r *rib) iterateRoutesForPrefixIndex(prefixIdx prefixIndex) iter.Seq[route]
 // prefix becomes empty, removes it from the tree and frees the prefix ID. It
 // returns the number of routes removed and a boolean to say if the prefix
 // should be removed from the tree.
-func (r *rib) removeRoutes(prefixIdx prefixIndex, shouldRemove func(route) bool, once bool) (int, bool) {
+func (r *ribFast) removeRoutes(prefixIdx prefixIndex, shouldRemove func(route) bool, once bool) (int, bool) {
+	removed := 0
+	checkKey := makeRouteKey(prefixIdx, 0)
+	nextKey := checkKey
+	skip := false // skip remaining routes if once is true
+
+	for {
+		existingRoute, exists := r.routes[checkKey]
+		if !exists {
+			break
+		}
+
+		if !skip && shouldRemove(existingRoute) {
+			// Remove this route
+			r.nlris.Take(existingRoute.nlri)
+			r.nextHops.Take(existingRoute.nextHop)
+			r.rtas.Take(existingRoute.attributes)
+			delete(r.routes, checkKey)
+			removed++
+			if once {
+				skip = true
+			}
+		} else {
+			// Keep this route, move it to nextKey if needed
+			if checkKey != nextKey {
+				r.routes[nextKey] = existingRoute
+				delete(r.routes, checkKey)
+			}
+			nextKey++ // advance to next position for kept routes
+		}
+		checkKey++ // always advance check position
+	}
+
+	return removed, nextKey == makeRouteKey(prefixIdx, 0)
+}
+
+func (r *ribBart) removeRoutes(prefixIdx prefixIndex, shouldRemove func(route) bool, once bool) (int, bool) {
 	removed := 0
 	checkKey := makeRouteKey(prefixIdx, 0)
 	nextKey := checkKey
@@ -231,7 +317,17 @@ func (r *rib) removeRoutes(prefixIdx prefixIndex, shouldRemove func(route) bool,
 }
 
 // IterateRoutes will iterate on all the routes matching the provided IP address.
-func (r *rib) IterateRoutes(ip netip.Addr) iter.Seq[route] {
+func (r *ribFast) IterateRoutes(ip netip.Addr) iter.Seq[route] {
+	return func(yield func(route) bool) {
+		prefixIdx, found := r.tree.Lookup(ip.Unmap())
+		if found {
+			r.iterateRoutesForPrefixIndex(prefixIdx)(yield)
+		}
+	}
+}
+
+// IterateRoutes will iterate on all the routes matching the provided IP address.
+func (r *ribBart) IterateRoutes(ip netip.Addr) iter.Seq[route] {
 	return func(yield func(route) bool) {
 		prefixIdx, found := r.tree.Lookup(ip.Unmap())
 		if found {
@@ -241,7 +337,41 @@ func (r *rib) IterateRoutes(ip netip.Addr) iter.Seq[route] {
 }
 
 // AddPrefix add a new route to the RIB. It returns the number of routes really added.
-func (r *rib) AddPrefix(prefix netip.Prefix, newRoute route) int {
+func (r *ribFast) AddPrefix(prefix netip.Prefix, newRoute route) int {
+	var prefixIdx prefixIndex
+	prefix = helpers.UnmapPrefix(prefix)
+	r.tree.Modify(prefix, func(existing prefixIndex, found bool) (prefixIndex, bool) {
+		if found {
+			prefixIdx = existing
+		} else {
+			prefixIdx = r.newPrefixIndex()
+		}
+		return prefixIdx, false
+	})
+
+	// Check if route already exists (same peer and nlri)
+	key := makeRouteKey(prefixIdx, 0)
+	for {
+		existingRoute, exists := r.routes[key]
+		if !exists {
+			// Found empty slot, add new route
+			r.routes[key] = newRoute
+			return 1
+		}
+		if existingRoute.peer == newRoute.peer && existingRoute.nlri == newRoute.nlri {
+			// Found existing route, update it
+			r.nlris.Take(existingRoute.nlri)
+			r.nextHops.Take(existingRoute.nextHop)
+			r.rtas.Take(existingRoute.attributes)
+			r.routes[key] = newRoute
+			return 0 // Not really added, just updated
+		}
+		key++
+	}
+}
+
+// AddPrefix add a new route to the RIB. It returns the number of routes really added.
+func (r *ribBart) AddPrefix(prefix netip.Prefix, newRoute route) int {
 	var prefixIdx prefixIndex
 	prefix = helpers.UnmapPrefix(prefix)
 	r.tree.Modify(prefix, func(existing prefixIndex, found bool) (prefixIndex, bool) {
@@ -275,7 +405,30 @@ func (r *rib) AddPrefix(prefix netip.Prefix, newRoute route) int {
 }
 
 // RemovePrefix removes a route from the RIB. It returns the number of routes really removed.
-func (r *rib) RemovePrefix(prefix netip.Prefix, oldRoute route) int {
+func (r *ribFast) RemovePrefix(prefix netip.Prefix, oldRoute route) int {
+	removedCount := 0
+	prefix = helpers.UnmapPrefix(prefix)
+
+	r.tree.Modify(prefix, func(existing prefixIndex, found bool) (prefixIndex, bool) {
+		if found {
+			var empty bool
+			removedCount, empty = r.removeRoutes(existing, func(route route) bool {
+				return route.peer == oldRoute.peer && route.nlri == oldRoute.nlri
+			}, true)
+			if empty {
+				r.freePrefixIndex(existing)
+				return 0, true
+			}
+			return existing, false
+		}
+		return 0, true
+	})
+
+	return removedCount
+}
+
+// RemovePrefix removes a route from the RIB. It returns the number of routes really removed.
+func (r *ribBart) RemovePrefix(prefix netip.Prefix, oldRoute route) int {
 	removedCount := 0
 	prefix = helpers.UnmapPrefix(prefix)
 
@@ -299,7 +452,37 @@ func (r *rib) RemovePrefix(prefix netip.Prefix, oldRoute route) int {
 
 // FlushPeer removes a whole peer from the RIB, returning the number
 // of removed routes.
-func (r *rib) FlushPeer(peer uint32) int {
+func (r *ribFast) FlushPeer(peer uint32) int {
+	removedTotal := 0
+	anyEmpty := false
+
+	// Iterate through all prefixes and remove peer routes.
+	for _, prefixIdx := range r.tree.All() {
+		removed, empty := r.removeRoutes(prefixIdx, func(route route) bool {
+			return route.peer == peer
+		}, false)
+		removedTotal += removed
+		anyEmpty = anyEmpty || empty
+	}
+
+	if anyEmpty {
+		// We need to rebuild the tree. A typical tree is 1M routes, this should
+		// be pretty fast. Moreover, loosing a peer is not a condition happening
+		// often.
+		newTree := &bart.Fast[prefixIndex]{}
+		for prefix, prefixIdx := range r.tree.All() {
+			if prefixIdx != 0 {
+				newTree.Insert(prefix, prefixIdx)
+			}
+		}
+		r.tree = newTree
+	}
+	return removedTotal
+}
+
+// FlushPeer removes a whole peer from the RIB, returning the number
+// of removed routes.
+func (r *ribBart) FlushPeer(peer uint32) int {
 	removedTotal := 0
 	anyEmpty := false
 
@@ -327,9 +510,22 @@ func (r *rib) FlushPeer(peer uint32) int {
 	return removedTotal
 }
 
-// newRIB initializes a new RIB.
-func newRIB() *rib {
-	return &rib{
+// newFastRIB initializes a new RIB.
+func newFastRIB() *ribFast {
+	return &ribFast{
+		tree:          &bart.Fast[prefixIndex]{},
+		routes:        make(map[routeKey]route),
+		nlris:         intern.NewPool[nlri](),
+		nextHops:      intern.NewPool[nextHop](),
+		rtas:          intern.NewPool[routeAttributes](),
+		nextPrefixID:  1, // Start from 1, 0 means to be removed
+		freePrefixIDs: make([]prefixIndex, 0),
+	}
+}
+
+// newBartRIB initializes a new RIB.
+func newBartRIB() *ribBart {
+	return &ribBart{
 		tree:          &bart.Table[prefixIndex]{},
 		routes:        make(map[routeKey]route),
 		nlris:         intern.NewPool[nlri](),
