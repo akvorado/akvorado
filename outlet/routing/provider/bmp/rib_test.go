@@ -184,7 +184,7 @@ func TestRTAEqual(t *testing.T) {
 }
 
 func TestRemoveRoutes(t *testing.T) {
-	nr := func(r *rib, peer uint32) route {
+	nr := func(r *ribFast, peer uint32) route {
 		return route{
 			peer:    peer,
 			nlri:    r.nlris.Put(nlri{family: bgp.RF_IPv4_UC, path: 1}),
@@ -196,7 +196,7 @@ func TestRemoveRoutes(t *testing.T) {
 		}
 	}
 	t.Run("only route", func(t *testing.T) {
-		r := newRIB()
+		r := newFastRIB()
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), nr(r, 10))
 		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
 		count, empty := r.removeRoutes(idx, func(route) bool { return true }, true)
@@ -212,7 +212,7 @@ func TestRemoveRoutes(t *testing.T) {
 	})
 
 	t.Run("first route", func(t *testing.T) {
-		r := newRIB()
+		r := newFastRIB()
 		r1 := nr(r, 10)
 		r2 := nr(r, 11)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
@@ -233,7 +233,7 @@ func TestRemoveRoutes(t *testing.T) {
 	})
 
 	t.Run("second route", func(t *testing.T) {
-		r := newRIB()
+		r := newFastRIB()
 		r1 := nr(r, 10)
 		r2 := nr(r, 11)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
@@ -253,7 +253,7 @@ func TestRemoveRoutes(t *testing.T) {
 		}
 	})
 	t.Run("middle route", func(t *testing.T) {
-		r := newRIB()
+		r := newFastRIB()
 		r1 := nr(r, 10)
 		r2 := nr(r, 11)
 		r3 := nr(r, 12)
@@ -276,7 +276,7 @@ func TestRemoveRoutes(t *testing.T) {
 		}
 	})
 	t.Run("one route out of two", func(t *testing.T) {
-		r := newRIB()
+		r := newFastRIB()
 		r1 := nr(r, 10)
 		r2 := nr(r, 11)
 		r3 := nr(r, 12)
@@ -304,7 +304,7 @@ func TestRemoveRoutes(t *testing.T) {
 	})
 
 	t.Run("all routes", func(t *testing.T) {
-		r := newRIB()
+		r := newFastRIB()
 		r1 := nr(r, 10)
 		r2 := nr(r, 11)
 		r3 := nr(r, 12)
@@ -344,7 +344,7 @@ func TestRIBHarness(t *testing.T) {
 			run, totalExporters, peerPerExporter,
 			maxInitialRoutePerPeer, maxRemovedRoutePerPeer, maxReaddedRoutePerPeer)
 
-		r := newRIB()
+		r := newFastRIB()
 		type lookup struct {
 			peer    uint32
 			addr    netip.Addr

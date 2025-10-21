@@ -34,7 +34,7 @@ type Provider struct {
 	metrics metrics
 
 	// RIB management with peers
-	rib               *rib
+	rib               *ribFast
 	peers             map[peerKey]*peerInfo
 	lastPeerReference uint32
 	staleTimer        *clock.Timer
@@ -59,7 +59,7 @@ func (configuration Configuration) New(r *reporter.Reporter, dependencies Depend
 		d:      &dependencies,
 		config: configuration,
 
-		rib:   newRIB(),
+		rib:   newFastRIB(),
 		peers: make(map[peerKey]*peerInfo),
 	}
 	if len(p.config.RDs) > 0 {
