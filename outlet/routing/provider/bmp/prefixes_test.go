@@ -204,18 +204,6 @@ func TestRandomRealWorldRoutes4Distribution(t *testing.T) {
 	}
 }
 
-func BenchmarkRandomRealWorldRoutes4(b *testing.B) {
-	prng1 := rand.New(rand.NewSource(1))
-	prng2 := rand.New(rand.NewSource(2))
-	for b.Loop() {
-		for route := range randomRealWorldRoutes4(prng1, prng2, 1000) {
-			_ = route
-		}
-	}
-	b.ReportMetric(0, "ns/op")
-	b.ReportMetric(float64(b.Elapsed())/float64(b.N)/1000, "ns/route")
-}
-
 func BenchmarkRIBInsertion(b *testing.B) {
 	for _, routes := range []int{1_000, 10_000, 100_000} {
 		for _, peers := range []int{1, 2, 5} {
@@ -283,7 +271,13 @@ func BenchmarkRIBInsertion(b *testing.B) {
 }
 
 func BenchmarkRIBLookup(b *testing.B) {
-	for _, routes := range []int{1_000, 10_000, 100_000} {
+	for _, routes := range []int{1_000, 10_000, 100_000, 1_000_000} {
+		prng1 := rand.New(rand.NewSource(10))
+		prng2 := rand.New(rand.NewSource(0))
+		randomPrefixes := []randomRoute{}
+		for r := range randomRealWorldRoutes4(prng1, prng2, routes/10) {
+			randomPrefixes = append(randomPrefixes, r)
+		}
 		for _, peers := range []int{1, 2, 5} {
 			name := fmt.Sprintf("%d routes, %d peers", routes, peers)
 
@@ -317,19 +311,11 @@ func BenchmarkRIBLookup(b *testing.B) {
 					}
 				}
 
-				prng1 = rand.New(rand.NewSource(10))
-				lookups := 0
-				randomPrefixes := []randomRoute{}
-				for r := range randomRealWorldRoutes4(prng1, prng2[0], routes/10) {
-					randomPrefixes = append(randomPrefixes, r)
-				}
 				for b.Loop() {
-					for _, r := range randomPrefixes {
-						_, _ = rib.tree.Lookup(netip.AddrFrom16(r.Prefix.Addr().As16()))
-						lookups++
-					}
+					ip4 := randomPrefixes[b.N%len(randomPrefixes)].Prefix.Addr()
+					_, _ = rib.tree.Lookup(ip4)
 				}
-				b.ReportMetric(float64(b.Elapsed())/float64(lookups), "ns/op")
+				b.ReportMetric(float64(b.Elapsed())/float64(b.N), "ns/op")
 			})
 		}
 	}

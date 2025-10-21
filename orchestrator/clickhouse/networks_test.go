@@ -187,9 +187,10 @@ func BenchmarkNetworks(b *testing.B) {
 	<-c.networksCSVReady
 
 	for b.Loop() {
-		if err := c.networksCSVRefresh(); err != nil {
-			b.Fatalf("networksCSVRefresh() error:\n%+v", err)
-		}
+		err = c.networksCSVRefresh()
+	}
+	if err != nil {
+		b.Fatalf("networksCSVRefresh() error:\n%+v", err)
 	}
 	b.ReportMetric(0, "ns/op")
 	b.ReportMetric(float64(b.Elapsed())/float64(b.N)/1_000_000, "ms/op")
