@@ -4,8 +4,11 @@
 package udp
 
 import (
+	"fmt"
 	"net"
+	"regexp"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -110,5 +113,57 @@ func TestUDPReceiveBuffer(t *testing.T) {
 
 	if bufferSize2 < bufferSize1 {
 		t.Fatalf("Buffer size was unchanged (%f <= %f)", bufferSize1, bufferSize2)
+	}
+}
+
+func TestUDPWorkerBalancing(t *testing.T) {
+	r := reporter.NewMock(t)
+	configuration := DefaultConfiguration().(*Configuration)
+	configuration.Listen = "127.0.0.1:0"
+	configuration.Workers = 16
+
+	var wg sync.WaitGroup
+	wg.Add(100)
+	done := make(chan bool)
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	in, err := configuration.New(r, daemon.NewMock(t), func(string, *pb.RawFlow) {
+		wg.Done()
+	})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	helpers.StartStop(t, in)
+
+	// Connect and send many "flows"
+	conn, err := net.Dial("udp", in.(*Input).address.String())
+	if err != nil {
+		t.Fatalf("Dial() error:\n%+v", err)
+	}
+	for range 100 {
+		if _, err := conn.Write([]byte("hello world!")); err != nil {
+			t.Fatalf("Write() error:\n%+v", err)
+		}
+	}
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+	}
+
+	// Only one worker should have handled the 100 packets
+	var worker string
+	gotMetrics := r.GetMetrics("akvorado_inlet_flow_input_udp_", "packets_total")
+	for m := range gotMetrics {
+		r := regexp.MustCompile(`worker="(\d+)"`)
+		worker = r.FindString(m)
+		break
+	}
+	expectedMetrics := map[string]string{
+		fmt.Sprintf(`packets_total{exporter="127.0.0.1",listener="127.0.0.1:0",%s}`, worker): "100",
+	}
+	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+		t.Fatalf("Input metrics (-got, +want):\n%s", diff)
 	}
 }
