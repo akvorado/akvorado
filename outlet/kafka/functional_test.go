@@ -46,6 +46,7 @@ func TestFakeKafka(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewConfig() error:\n%+v", err)
 	}
+	producerOpts = append(producerOpts, kgo.ProducerLinger(0))
 	producer, err := kgo.NewClient(producerOpts...)
 	if err != nil {
 		t.Fatalf("NewClient() error:\n%+v", err)
@@ -217,6 +218,7 @@ func TestWorkerScaling(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewConfig() error:\n%+v", err)
 	}
+	producerOpts = append(producerOpts, kgo.ProducerLinger(0))
 	producer, err := kgo.NewClient(producerOpts...)
 	if err != nil {
 		t.Fatalf("NewClient() error:\n%+v", err)
@@ -379,6 +381,7 @@ func TestKafkaLagMetric(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewConfig() error:\n%+v", err)
 	}
+	producerOpts = append(producerOpts, kgo.ProducerLinger(0))
 	producer, err := kgo.NewClient(producerOpts...)
 	if err != nil {
 		t.Fatalf("NewClient() error:\n%+v", err)
