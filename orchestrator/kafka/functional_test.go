@@ -144,6 +144,7 @@ func TestTopicMorePartitions(t *testing.T) {
 
 	deadline := time.Now().Add(1 * time.Second)
 	for {
+		client.ForceMetadataRefresh()
 		topics, err := adminClient.ListTopics(t.Context())
 		if err != nil {
 			t.Fatalf("ListTopics() error:\n%+v", err)
@@ -177,11 +178,15 @@ func TestTopicMorePartitions(t *testing.T) {
 
 	deadline = time.Now().Add(1 * time.Second)
 	for {
+		client.ForceMetadataRefresh()
 		topics, err := adminClient.ListTopics(t.Context())
 		if err != nil {
 			t.Fatalf("ListTopics() error:\n%+v", err)
 		}
-		topic := topics[expectedTopicName]
+		topic, ok := topics[expectedTopicName]
+		if !ok {
+			t.Fatal("ListTopics() did not find the topic")
+		}
 		t.Logf("Topic configuration:\n%+v", topic)
 		if len(topic.Partitions) != 4 || topic.Partitions.NumReplicas() != 1 {
 			if time.Now().Before(deadline) {
