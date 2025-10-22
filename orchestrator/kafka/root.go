@@ -82,7 +82,6 @@ func (c *Component) Start() error {
 			return fmt.Errorf("unable to create topic %q: %w", c.kafkaTopic, err)
 		}
 		l.Info().Msg("topic created")
-		client.ForceMetadataRefresh()
 	} else {
 		nbPartitions := len(topic.Partitions)
 		if nbPartitions > int(c.config.TopicConfiguration.NumPartitions) {
@@ -96,7 +95,6 @@ func (c *Component) Start() error {
 					c.kafkaTopic, err)
 			}
 			l.Info().Msg("number of partitions increased")
-			client.ForceMetadataRefresh()
 		}
 		if int(c.config.TopicConfiguration.ReplicationFactor) != topic.Partitions.NumReplicas() {
 			// TODO: https://github.com/deviceinsight/kafkactl/blob/main/internal/topic/topic-operation.go
@@ -138,7 +136,6 @@ func (c *Component) Start() error {
 					c.kafkaTopic, err)
 			}
 			l.Info().Msg("topic updated")
-			client.ForceMetadataRefresh()
 		}
 	}
 	return nil
