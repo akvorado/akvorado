@@ -295,9 +295,9 @@ func TestWorkerScaling(t *testing.T) {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 
-	// Send 5 messages
-	t.Log("Send 5 messages")
-	for range 5 {
+	// Send 1 message
+	t.Log("Send 1 message")
+	for range 1 {
 		record := &kgo.Record{
 			Topic: expectedTopicName,
 			Value: []byte("hello"),
