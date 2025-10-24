@@ -311,11 +311,13 @@ func BenchmarkRIBLookup(b *testing.B) {
 					}
 				}
 
+				count := 0
 				for b.Loop() {
-					ip4 := randomPrefixes[b.N%len(randomPrefixes)].Prefix.Addr()
+					count++
+					ip4 := randomPrefixes[count%len(randomPrefixes)].Prefix.Addr()
 					_, _ = rib.tree.Lookup(ip4)
 				}
-				b.ReportMetric(float64(b.Elapsed())/float64(b.N), "ns/op")
+				b.ReportMetric(float64(b.Elapsed())/float64(count), "ns/op")
 			})
 		}
 	}
