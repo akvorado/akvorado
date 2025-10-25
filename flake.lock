@@ -35,6 +35,22 @@
         "type": "github"
       }
     },
+    "iana-assignments": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1761359241,
+        "narHash": "sha256-Q/bkxeQJFELXd+4Ma50PliUimIPiMBeGhC6nFUUDOzc=",
+        "owner": "larseggert",
+        "repo": "iana-assignments",
+        "rev": "597006e11311b3ebee998d86ab862955c5e7d6ce",
+        "type": "github"
+      },
+      "original": {
+        "owner": "larseggert",
+        "repo": "iana-assignments",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1760164275,
@@ -53,6 +69,7 @@
       "inputs": {
         "asn2org": "asn2org",
         "flake-utils": "flake-utils",
+        "iana-assignments": "iana-assignments",
         "nixpkgs": "nixpkgs"
       }
     },

@@ -15,6 +15,7 @@ jobs:
         source:
           - nixpkgs
           - asn2org
+          - iana-assignments
     steps:
       - uses: actions/checkout@v5
         with:

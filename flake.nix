@@ -6,8 +6,12 @@
       url = "github:vincentbernat/asn2org/gh-pages";
       flake = false;
     };
+    iana-assignments = {
+      url = "github:larseggert/iana-assignments";
+      flake = false;
+    };
   };
-  outputs = { self, nixpkgs, flake-utils, asn2org }:
+  outputs = { self, nixpkgs, flake-utils, asn2org, iana-assignments }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
@@ -42,17 +46,15 @@
             cp -r ../data/frontend $out/data
           '';
         };
-        ianaServiceNames = pkgs.fetchurl {
-          url = "https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv";
-          hash = l.readFile ./nix/ianaServiceNamesHash.txt;
-          # There are many bogus changes in this file. To avoid updating the
-          # hash too often, filter the lines with a service name and a port.
-          downloadToTemp = true;
-          postFetch = ''
-            < $downloadedFile > $out \
-            awk -F, '(NR == 1) {print} ($0 !~ "^ " && $1 != "" && $2 != "" && ($3 == "tcp" || $3 == "udp")) {print}'
-          '';
-        };
+        ianaServiceNames = pkgs.runCommand "service-names-port-numbers.csv" {} ''
+          > $out echo name,port,protocol
+          >> $out \
+          ${pkgs.xmlstarlet}/bin/xmlstarlet sel -t -m "_:registry/_:record[_:name and _:number]" \
+            -v _:name -o , \
+            -v _:number -o , \
+            -v _:protocol -o , -n \
+            ${iana-assignments}/service-names-port-numbers/service-names-port-numbers.xml
+        '';
         backend = pkgs.buildGoModule.override { inherit go; } {
           doCheck = false;
           name = "akvorado";
@@ -103,15 +105,9 @@
                           | ${pkgs.gnused}/bin/sed -nE "s/\s+got:\s+(sha256-.*)/\1/p")
               [[ -z "$sha256" ]] && echo $oldSha256 || echo $sha256 > nix/npmDepsHash.txt
             '';
-            update-ianaServiceNamesHash = ''
-              sha256=$(2>&1 nix build --no-link .#ianaServiceNames \
-                          | ${pkgs.gnused}/bin/sed -nE "s/\s+got:\s+(sha256-.*)/\1/p")
-              [[ -z "$sha256" ]] || echo $sha256 > nix/ianaServiceNamesHash.txt
-            '';
             update = ''
               ${update-vendorHash}
               ${update-npmDepsHash}
-              ${update-ianaServiceNamesHash}
             '';
             # Run nix build depending on TARGETPLATFORM value (for Docker).
             build = ''
@@ -130,7 +126,7 @@
           };
 
         packages = {
-          inherit backend frontend ianaServiceNames;
+          inherit backend frontend;
           default = backend;
         } // (l.optionalAttrs (system == "x86_64-linux")
           (l.attrsets.listToAttrs (l.lists.map
