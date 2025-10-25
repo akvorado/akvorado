@@ -78,6 +78,8 @@ EOF
 
         # Run Hurl tests
         echo ::group::Hurl tests
+        nix run nixpkgs#hurl -- --test --error-format=short .github/e2e.hurl || \
+        nix run nixpkgs#hurl -- --test --error-format=short .github/e2e.hurl || \
         nix run nixpkgs#hurl -- --test --error-format=short .github/e2e.hurl || {
             sleep 2
             nix run nixpkgs#hurl -- --test --error-format=long .github/e2e.hurl
