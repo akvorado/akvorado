@@ -6,7 +6,7 @@ package flows
 import (
 	"fmt"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"net/netip"
 	"testing"
 	"time"
@@ -41,7 +41,7 @@ func TestRandomIP(t *testing.T) {
 		"2001:db8:a:b::/64",
 		"2001:db8:a:c:d::1/128",
 	}
-	r := rand.New(rand.NewSource(0))
+	r := rand.New(rand.NewPCG(0, 0))
 	for _, p := range prefixes {
 		prefix := netip.MustParsePrefix(p)
 		for range 1000 {
@@ -89,7 +89,7 @@ func TestChooseRandom(t *testing.T) {
 		{6},
 		{1, 2, 3, 4, 10, 12},
 	}
-	r := rand.New(rand.NewSource(0))
+	r := rand.New(rand.NewPCG(0, 0))
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("%v", tc), func(t *testing.T) {
 			results := map[int]bool{}
@@ -146,15 +146,15 @@ func TestGenerateFlows(t *testing.T) {
 			},
 			Expected: []generatedFlow{
 				{
-					SrcAddr: netip.MustParseAddr("192.0.2.36"),
-					DstAddr: netip.MustParseAddr("203.0.113.91"),
+					SrcAddr: netip.MustParseAddr("192.0.2.155"),
+					DstAddr: netip.MustParseAddr("203.0.113.59"),
 					EType:   0x800,
 					IPFlow: IPFlow{
-						Octets:        1365,
+						Octets:        1011,
 						Packets:       1,
 						Proto:         6,
 						SrcPort:       443,
-						DstPort:       34905,
+						DstPort:       33550,
 						InputInt:      10,
 						OutputInt:     21,
 						SrcAS:         65201,
@@ -164,17 +164,35 @@ func TestGenerateFlows(t *testing.T) {
 						DstMask:       24,
 					},
 				}, {
-					SrcAddr: netip.MustParseAddr("192.0.2.30"),
-					DstAddr: netip.MustParseAddr("203.0.113.220"),
+					SrcAddr: netip.MustParseAddr("192.0.2.3"),
+					DstAddr: netip.MustParseAddr("203.0.113.52"),
 					EType:   0x800,
 					IPFlow: IPFlow{
-						Octets:        1500,
+						Octets:        1478,
 						Packets:       1,
 						Proto:         6,
 						SrcPort:       443,
-						DstPort:       33618,
+						DstPort:       33200,
 						InputInt:      10,
-						OutputInt:     21,
+						OutputInt:     20,
+						SrcAS:         65201,
+						DstAS:         65202,
+						ForwardStatus: 64,
+						SrcMask:       24,
+						DstMask:       24,
+					},
+				}, {
+					SrcAddr: netip.MustParseAddr("192.0.2.151"),
+					DstAddr: netip.MustParseAddr("203.0.113.245"),
+					EType:   2048,
+					IPFlow: IPFlow{
+						Packets:       1,
+						Octets:        1311,
+						Proto:         6,
+						InputInt:      10,
+						OutputInt:     20,
+						SrcPort:       443,
+						DstPort:       33389,
 						SrcAS:         65201,
 						DstAS:         65202,
 						ForwardStatus: 64,
@@ -202,13 +220,13 @@ func TestGenerateFlows(t *testing.T) {
 			Expected: []generatedFlow{
 				{
 					SrcAddr: netip.MustParseAddr("2001:db8::1"),
-					DstAddr: netip.MustParseAddr("2001:db8:2:0:245b:11f7:351e:dc1a"),
+					DstAddr: netip.MustParseAddr("2001:db8:2:0:9b3b:48ac:f003:34f4"),
 					EType:   0x86dd,
 					IPFlow: IPFlow{
-						Octets:        1170,
+						Octets:        866,
 						Packets:       1,
 						Proto:         6,
-						SrcPort:       34045,
+						SrcPort:       33820,
 						DstPort:       443,
 						InputInt:      20,
 						OutputInt:     11,
@@ -240,13 +258,13 @@ func TestGenerateFlows(t *testing.T) {
 			Expected: []generatedFlow{
 				{
 					SrcAddr: netip.MustParseAddr("2001:db8::1"),
-					DstAddr: netip.MustParseAddr("2001:db8:2:0:245b:11f7:351e:dc1a"),
+					DstAddr: netip.MustParseAddr("2001:db8:2:0:9b3b:48ac:f003:34f4"),
 					EType:   0x86dd,
 					IPFlow: IPFlow{
-						Octets:        1170,
+						Octets:        866,
 						Packets:       1,
 						Proto:         6,
-						SrcPort:       34045,
+						SrcPort:       33820,
 						DstPort:       443,
 						InputInt:      20,
 						OutputInt:     11,
@@ -258,13 +276,13 @@ func TestGenerateFlows(t *testing.T) {
 					},
 				}, {
 					DstAddr: netip.MustParseAddr("2001:db8::1"),
-					SrcAddr: netip.MustParseAddr("2001:db8:2:0:245b:11f7:351e:dc1a"),
+					SrcAddr: netip.MustParseAddr("2001:db8:2:0:9b3b:48ac:f003:34f4"),
 					EType:   0x86dd,
 					IPFlow: IPFlow{
-						Octets:        1170 / 10,
+						Octets:        866 / 10,
 						Packets:       1,
 						Proto:         6,
-						DstPort:       34045,
+						DstPort:       33820,
 						SrcPort:       443,
 						OutputInt:     20,
 						InputInt:      11,

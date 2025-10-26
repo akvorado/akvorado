@@ -8,7 +8,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"net/netip"
 	"sync"
 	"time"
@@ -244,7 +244,7 @@ func (p *Provider) chooseRouter(agent netip.Addr) (netip.Addr, *RISInstanceRunti
 
 	// Randomly select a ris providing the router ID we selected earlier.
 	// In the future, we might also want to exclude currently unavailable ris instances
-	chosenRis = p.routers[chosenRouterID][rand.Intn(len(p.routers[chosenRouterID]))]
+	chosenRis = p.routers[chosenRouterID][rand.IntN(len(p.routers[chosenRouterID]))]
 
 	if chosenRis == nil || chosenRouterID.IsUnspecified() {
 		return chosenRouterID, nil, errNoInstance

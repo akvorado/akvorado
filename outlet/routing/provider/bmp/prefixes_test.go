@@ -6,7 +6,7 @@ package bmp
 import (
 	"fmt"
 	"iter"
-	"math/rand"
+	"math/rand/v2"
 	"net/netip"
 	"runtime"
 	"slices"
@@ -30,7 +30,7 @@ var prefixSizeDistribution = [33]int{
 }
 
 func init() {
-	prng := rand.New(rand.NewSource(0))
+	prng := rand.New(rand.NewPCG(0, 0))
 	// Data from https://bgp.potaroo.net/as2.0/bgp-asbyhop-vector.txt
 	asDistanceDistribution := []int{
 		1, 2, 366, 9645, 29251, 28984, 7340, 1423, 383, 63, 14, 2, 4, 4, 4, 4, 1, 0,
@@ -46,7 +46,7 @@ func init() {
 	for i := range uniqueASPaths {
 		// Generate AS path length based on distribution
 		asPathLen := 1
-		r := prng.Intn(totalAS)
+		r := prng.IntN(totalAS)
 		cumulative := 0
 		for len, count := range asDistanceDistribution {
 			cumulative += count
@@ -62,7 +62,7 @@ func init() {
 		// Generate unique AS path
 		asPath := make([]uint32, asPathLen)
 		for j := 0; j < asPathLen; j++ {
-			asPath[j] = uint32(prng.Intn(64494) + 1)
+			asPath[j] = uint32(prng.IntN(64494) + 1)
 		}
 		asPathCache[i] = asPath
 	}
@@ -87,7 +87,7 @@ func randomRealWorldRoutes4(prngPrefixes, prngASPaths *rand.Rand, n int) iter.Se
 		for range n {
 			// Generate prefix length based on distribution
 			prefixLen := 0
-			r := prngPrefixes.Intn(totalRoutes)
+			r := prngPrefixes.IntN(totalRoutes)
 			cumulative := 0
 			for len, count := range prefixSizeDistribution {
 				cumulative += count
@@ -99,34 +99,34 @@ func randomRealWorldRoutes4(prngPrefixes, prngASPaths *rand.Rand, n int) iter.Se
 
 			// Generate random IPv4 prefix
 			ip := netip.AddrFrom4([4]byte{
-				byte(prngPrefixes.Intn(224)),
-				byte(prngPrefixes.Intn(256)),
-				byte(prngPrefixes.Intn(256)),
-				byte(prngPrefixes.Intn(256)),
+				byte(prngPrefixes.IntN(224)),
+				byte(prngPrefixes.IntN(256)),
+				byte(prngPrefixes.IntN(256)),
+				byte(prngPrefixes.IntN(256)),
 			})
 			prefix := netip.PrefixFrom(ip, prefixLen).Masked()
 
 			// Select a random AS path from the pre-generated cache
-			asPath := asPathCache[prngASPaths.Intn(len(asPathCache))]
+			asPath := asPathCache[prngASPaths.IntN(len(asPathCache))]
 
 			// Generate communities (0-5 communities per route)
-			numCommunities := max(0, prngASPaths.Intn(10)-4)
+			numCommunities := max(0, prngASPaths.IntN(10)-4)
 			communities := make([]uint32, numCommunities)
 			for j := range numCommunities {
-				asFromPath := asPath[prngASPaths.Intn(len(asPath))]
-				communities[j] = asFromPath<<16 | uint32(prngASPaths.Intn(3))
+				asFromPath := asPath[prngASPaths.IntN(len(asPath))]
+				communities[j] = asFromPath<<16 | uint32(prngASPaths.IntN(3))
 			}
 			slices.Sort(communities)
 			communities = slices.Compact(communities)
 
 			// Generate large communities (0-3 per route, but they are rare)
-			numLargeCommunities := max(0, prngASPaths.Intn(100)-97)
+			numLargeCommunities := max(0, prngASPaths.IntN(100)-97)
 			largeCommunities := make([]bgp.LargeCommunity, numLargeCommunities)
 			for j := range numLargeCommunities {
 				largeCommunities[j] = bgp.LargeCommunity{
-					ASN:        asPath[prngASPaths.Intn(len(asPath))],
-					LocalData1: uint32(prngASPaths.Intn(2)) + 1,
-					LocalData2: uint32(prngASPaths.Intn(2)) + 1,
+					ASN:        asPath[prngASPaths.IntN(len(asPath))],
+					LocalData1: uint32(prngASPaths.IntN(2)) + 1,
+					LocalData2: uint32(prngASPaths.IntN(2)) + 1,
 				}
 			}
 
@@ -145,23 +145,23 @@ func randomRealWorldRoutes4(prngPrefixes, prngASPaths *rand.Rand, n int) iter.Se
 }
 
 func TestRandomRealWorldRoutes4(t *testing.T) {
-	prng1 := rand.New(rand.NewSource(1))
-	prng2 := rand.New(rand.NewSource(2))
+	prng1 := rand.New(rand.NewPCG(1, 1))
+	prng2 := rand.New(rand.NewPCG(2, 2))
 	routes := []randomRoute{}
 	for route := range randomRealWorldRoutes4(prng1, prng2, 2) {
 		routes = append(routes, route)
 	}
 	expectedRoutes := []randomRoute{
 		{
-			Prefix:           netip.MustParsePrefix("79.199.187.0/24"),
-			ASPath:           []uint32{29418, 57855, 38297},
-			Communities:      []uint32{1927938050, 2509832194},
+			Prefix:           netip.MustParsePrefix("22.172.220.0/24"),
+			ASPath:           []uint32{5310, 16496, 48042, 23205},
+			Communities:      []uint32{347996161, 1081081858, 1520762881, 1520762882, 3148480513},
 			LargeCommunities: []bgp.LargeCommunity{},
 		},
 		{
-			Prefix:           netip.MustParsePrefix("185.172.72.0/24"),
-			ASPath:           []uint32{25258, 9490, 64459, 11892, 37685},
-			Communities:      []uint32{},
+			Prefix:           netip.MustParsePrefix("181.109.115.0/24"),
+			ASPath:           []uint32{9514, 53442, 28732, 62632, 53821},
+			Communities:      []uint32{623509505, 1882980354, 4104650753},
 			LargeCommunities: []bgp.LargeCommunity{},
 		},
 	}
@@ -171,8 +171,8 @@ func TestRandomRealWorldRoutes4(t *testing.T) {
 }
 
 func TestRandomRealWorldRoutes4Distribution(t *testing.T) {
-	prng1 := rand.New(rand.NewSource(42))
-	prng2 := rand.New(rand.NewSource(43))
+	prng1 := rand.New(rand.NewPCG(42, 42))
+	prng2 := rand.New(rand.NewPCG(43, 43))
 
 	totalRoutes := 0
 	for _, v := range prefixSizeDistribution {
@@ -220,10 +220,10 @@ func BenchmarkRIBInsertion(b *testing.B) {
 				for b.Loop() {
 					rib = newRIB()
 					nh := netip.MustParseAddr("::ffff:198.51.100.0")
-					prng1 := rand.New(rand.NewSource(10))
+					prng1 := rand.New(rand.NewPCG(10, 10))
 					prng2 := make([]*rand.Rand, peers)
 					for p := range peers {
-						prng2[p] = rand.New(rand.NewSource(int64(p)))
+						prng2[p] = rand.New(rand.NewPCG(uint64(p), uint64(p)))
 					}
 					for p := range peers {
 						nh = nh.Next()
@@ -236,7 +236,7 @@ func BenchmarkRIBInsertion(b *testing.B) {
 						b.StartTimer()
 
 						for _, r := range randomPrefixes {
-							if prng2[p].Intn(10) == 0 {
+							if prng2[p].IntN(10) == 0 {
 								continue
 							}
 							pfx := netip.PrefixFrom(netip.AddrFrom16(r.Prefix.Addr().As16()), r.Prefix.Bits()+96)
@@ -272,8 +272,8 @@ func BenchmarkRIBInsertion(b *testing.B) {
 
 func BenchmarkRIBLookup(b *testing.B) {
 	for _, routes := range []int{1_000, 10_000, 100_000, 1_000_000} {
-		prng1 := rand.New(rand.NewSource(10))
-		prng2 := rand.New(rand.NewSource(0))
+		prng1 := rand.New(rand.NewPCG(10, 10))
+		prng2 := rand.New(rand.NewPCG(0, 0))
 		randomPrefixes := []randomRoute{}
 		for r := range randomRealWorldRoutes4(prng1, prng2, routes/10) {
 			randomPrefixes = append(randomPrefixes, r)
@@ -284,15 +284,15 @@ func BenchmarkRIBLookup(b *testing.B) {
 			b.Run(name, func(b *testing.B) {
 				rib := newRIB()
 				nh := netip.MustParseAddr("::ffff:198.51.100.0")
-				prng1 := rand.New(rand.NewSource(10))
+				prng1 := rand.New(rand.NewPCG(10, 10))
 				prng2 := make([]*rand.Rand, peers)
 				for p := range peers {
-					prng2[p] = rand.New(rand.NewSource(int64(p)))
+					prng2[p] = rand.New(rand.NewPCG(uint64(p), uint64(p)))
 				}
 				for p := range peers {
 					nh = nh.Next()
 					for r := range randomRealWorldRoutes4(prng1, prng2[p], routes) {
-						if prng2[p].Intn(10) == 0 {
+						if prng2[p].IntN(10) == 0 {
 							continue
 						}
 						pfx := netip.PrefixFrom(netip.AddrFrom16(r.Prefix.Addr().As16()), r.Prefix.Bits()+96)
@@ -333,15 +333,15 @@ func BenchmarkRIBFlush(b *testing.B) {
 					b.StopTimer()
 					rib := newRIB()
 					nh := netip.MustParseAddr("::ffff:198.51.100.0")
-					prng1 := rand.New(rand.NewSource(10))
+					prng1 := rand.New(rand.NewPCG(10, 10))
 					prng2 := make([]*rand.Rand, peers)
 					for p := range peers {
-						prng2[p] = rand.New(rand.NewSource(int64(p)))
+						prng2[p] = rand.New(rand.NewPCG(uint64(p), uint64(p)))
 					}
 					for p := range peers {
 						nh = nh.Next()
 						for r := range randomRealWorldRoutes4(prng1, prng2[p], routes) {
-							if prng2[p].Intn(10) == 0 {
+							if prng2[p].IntN(10) == 0 {
 								continue
 							}
 							pfx := netip.PrefixFrom(netip.AddrFrom16(r.Prefix.Addr().As16()), r.Prefix.Bits()+96)

@@ -11,7 +11,7 @@ import (
 	"image/draw"
 	"image/png"
 	"io/fs"
-	"math/rand"
+	"math/rand/v2"
 	"net/http"
 
 	"akvorado/common/embed"
@@ -31,7 +31,7 @@ func (c *Component) UserAvatarHandlerFunc(gc *gin.Context) {
 	info := gc.MustGet("user").(UserInformation)
 	hash := fnv.New64()
 	hash.Write([]byte(info.Login))
-	randSource := rand.New(rand.NewSource(int64(hash.Sum64())))
+	randSource := rand.New(rand.NewPCG(hash.Sum64(), 0))
 	etag := fmt.Sprintf(`"%x"`, hash.Sum64())
 
 	// Do we have a If-None-Match header?
@@ -70,7 +70,7 @@ func (c *Component) UserAvatarHandlerFunc(gc *gin.Context) {
 			gc.JSON(http.StatusInternalServerError, gin.H{"message": "Cannot build avatar."})
 			return
 		}
-		parts[idx] = p[randSource.Intn(len(p))]
+		parts[idx] = p[randSource.IntN(len(p))]
 	}
 
 	// Compose the images

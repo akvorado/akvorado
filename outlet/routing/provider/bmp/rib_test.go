@@ -5,7 +5,7 @@ package bmp
 
 import (
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"net/netip"
 	"testing"
 	"unsafe"
@@ -331,7 +331,7 @@ func TestRemoveRoutes(t *testing.T) {
 
 func TestRIBHarness(t *testing.T) {
 	for run := range 5 {
-		random := rand.New(rand.NewSource(int64(run)))
+		random := rand.New(rand.NewPCG(uint64(run), 0))
 		run++
 
 		// Ramp up the test
@@ -378,17 +378,17 @@ func TestRIBHarness(t *testing.T) {
 			for j := range peerPerExporter {
 				peer := uint32((i << 16) + int(j))
 				peers = append(peers, peer)
-				toAdd := random.Intn(maxInitialRoutePerPeer)
+				toAdd := random.IntN(maxInitialRoutePerPeer)
 				added := 0
 				for range toAdd {
 					lookup := lookup{
 						peer: peer,
 						addr: netip.MustParseAddr(fmt.Sprintf("2001:db8:f:%x::",
-							random.Intn(300))),
+							random.IntN(300))),
 						nextHop: netip.MustParseAddr(
-							fmt.Sprintf("2001:db8:c::%x", random.Intn(500))),
-						rd:      RD(random.Intn(3)),
-						asn:     uint32(random.Intn(1000)),
+							fmt.Sprintf("2001:db8:c::%x", random.IntN(500))),
+						rd:      RD(random.IntN(3)),
+						asn:     uint32(random.IntN(1000)),
 						comment: "added during first pass",
 					}
 					added += r.AddPrefix(netip.PrefixFrom(lookup.addr, 64),
@@ -405,12 +405,12 @@ func TestRIBHarness(t *testing.T) {
 				}
 				t.Logf("Run %d: added = %d/%d", run, added, toAdd)
 
-				toRemove := random.Intn(maxRemovedRoutePerPeer)
+				toRemove := random.IntN(maxRemovedRoutePerPeer)
 				removed := 0
 				for range toRemove {
 					prefix := netip.MustParseAddr(fmt.Sprintf("2001:db8:f:%x::",
-						random.Intn(300)))
-					rd := RD(random.Intn(4))
+						random.IntN(300)))
+					rd := RD(random.IntN(4))
 					if nlriRef, ok := r.nlris.Ref(nlri{
 						rd: rd,
 					}); ok {
@@ -428,16 +428,16 @@ func TestRIBHarness(t *testing.T) {
 				}
 				t.Logf("Run %d: removed = %d/%d", run, removed, toRemove)
 
-				toAdd = random.Intn(maxReaddedRoutePerPeer)
+				toAdd = random.IntN(maxReaddedRoutePerPeer)
 				added = 0
 				for range toAdd {
 					lookup := lookup{
 						peer: peer,
 						addr: netip.MustParseAddr(fmt.Sprintf("2001:db8:f:%x::",
-							random.Intn(300))),
+							random.IntN(300))),
 						nextHop: netip.MustParseAddr(
 							fmt.Sprintf("2001:db8:c::%x", random.Uint32()%500)),
-						asn:     uint32(random.Intn(1010)),
+						asn:     uint32(random.IntN(1010)),
 						comment: "added during third pass",
 					}
 					added += r.AddPrefix(netip.PrefixFrom(lookup.addr, 64),

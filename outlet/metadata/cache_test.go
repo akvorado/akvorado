@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"io/fs"
 	"math"
-	"math/rand"
+	"math/rand/v2"
 	"net/netip"
 	"path/filepath"
 	"slices"
@@ -419,8 +419,8 @@ func TestConcurrentOperations(t *testing.T) {
 				nowLock.RLock()
 				now := now
 				nowLock.RUnlock()
-				ip := rand.Intn(10)
-				iface := rand.Intn(100)
+				ip := rand.IntN(10)
+				iface := rand.IntN(100)
 				sc.Put(now, provider.Query{
 					ExporterIP: netip.MustParseAddr(fmt.Sprintf("::ffff:127.0.0.%d", ip)),
 					IfIndex:    uint(iface),
@@ -443,8 +443,8 @@ func TestConcurrentOperations(t *testing.T) {
 				nowLock.RLock()
 				now := now
 				nowLock.RUnlock()
-				ip := rand.Intn(10)
-				iface := rand.Intn(100)
+				ip := rand.IntN(10)
+				iface := rand.IntN(100)
 				sc.Lookup(now, provider.Query{
 					ExporterIP: netip.MustParseAddr(fmt.Sprintf("::ffff:127.0.0.%d", ip)),
 					IfIndex:    uint(iface),

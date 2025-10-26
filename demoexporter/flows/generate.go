@@ -8,7 +8,7 @@ import (
 	"hash/fnv"
 	"math"
 	"math/bits"
-	"math/rand"
+	"math/rand/v2"
 	"net/netip"
 	"time"
 
@@ -39,11 +39,8 @@ func randomIP(prefix netip.Prefix, r *rand.Rand) netip.Addr {
 			result[i] = prefix.Addr().AsSlice()[i]
 			continue
 		}
-		shiftMask := prefix.Bits() - i*8
-		if shiftMask < 0 {
-			shiftMask = 0
-		}
-		randomByte := byte(int(r.Int31n(256)))
+		shiftMask := max(0, prefix.Bits()-i*8)
+		randomByte := byte(r.IntN(256))
 		randomByte = randomByte & ^bits.Reverse8(byte((1<<shiftMask)-1))
 		result[i] = randomByte | prefix.Addr().AsSlice()[i]
 	}
@@ -69,7 +66,7 @@ func chooseRandom[T any](r *rand.Rand, slice []T) T {
 	if len(slice) == 1 {
 		return slice[0]
 	}
-	return slice[r.Intn(len(slice))]
+	return slice[r.IntN(len(slice))]
 }
 
 // generateFlows generate a set of flows using the provided
@@ -83,7 +80,7 @@ func generateFlows(flowConfigs []FlowConfiguration, seed int64, now time.Time) [
 	// Initialize the random number generator to a known state
 	hash := fnv.New64()
 	fmt.Fprintf(hash, "%d %d", now.Unix(), seed)
-	r := rand.New(rand.NewSource(int64(hash.Sum64())))
+	r := rand.New(rand.NewPCG(hash.Sum64(), 0))
 
 	nowTime := now.Sub(now.Truncate(time.Hour * 24))
 	for _, flowConfig := range flowConfigs {
@@ -104,7 +101,7 @@ func generateFlows(flowConfigs []FlowConfiguration, seed int64, now time.Time) [
 				},
 			}
 			if flowConfig.Size == 0 {
-				flow.Octets = uint32(r.Int31n(1200) + 300)
+				flow.Octets = uint32(r.Int32N(1200) + 300)
 			} else {
 				flow.Octets = uint32(float64(flowConfig.Size) * (r.NormFloat64()*0.3 + 1))
 				if flow.Octets > 9000 {
@@ -122,12 +119,12 @@ func generateFlows(flowConfigs []FlowConfiguration, seed int64, now time.Time) [
 				if srcPort := chooseRandom(r, flowConfig.SrcPort); srcPort != 0 {
 					flow.SrcPort = srcPort
 				} else {
-					flow.SrcPort = uint16(r.Int31n(2000) + 33000)
+					flow.SrcPort = uint16(r.Int32N(2000) + 33000)
 				}
 				if dstPort := chooseRandom(r, flowConfig.DstPort); dstPort != 0 {
 					flow.DstPort = dstPort
 				} else {
-					flow.DstPort = uint16(r.Int31n(2000) + 33000)
+					flow.DstPort = uint16(r.Int32N(2000) + 33000)
 				}
 			}
 			if flow.SrcAddr.Is4() {

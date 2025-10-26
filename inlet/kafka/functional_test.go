@@ -6,7 +6,7 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"sync"
 	"testing"
 	"time"
@@ -49,10 +49,10 @@ func TestFakeKafka(t *testing.T) {
 	msg1 := make([]byte, 50)
 	msg2 := make([]byte, 50)
 	for i := range msg1 {
-		msg1[i] = letters[rand.Intn(len(letters))]
+		msg1[i] = letters[rand.IntN(len(letters))]
 	}
 	for i := range msg2 {
-		msg2[i] = letters[rand.Intn(len(letters))]
+		msg2[i] = letters[rand.IntN(len(letters))]
 	}
 	var wg sync.WaitGroup
 	wg.Add(2)
