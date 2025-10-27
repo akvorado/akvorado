@@ -27,8 +27,8 @@ type socketOption struct {
 	Mandatory bool
 }
 
-// listenConfig configures a listening socket with the udpSocketOptions.
-var listenConfig = func(r *reporter.Reporter, opts []socketOption) *net.ListenConfig {
+// listenConfig configures a listening socket with udpSocketOptions
+var listenConfig = func(r *reporter.Reporter, opts []socketOption, fds *[]uintptr) *net.ListenConfig {
 	return &net.ListenConfig{
 		Control: func(_, _ string, c syscall.RawConn) error {
 			var err error
@@ -43,6 +43,13 @@ var listenConfig = func(r *reporter.Reporter, opts []socketOption) *net.ListenCo
 					r.Warn().Err(err).Msgf("cannot set option %s", opt.Name)
 				}
 			}
+
+			if fds != nil {
+				c.Control(func(fd uintptr) {
+					*fds = append(*fds, fd)
+				})
+			}
+
 			return nil
 		},
 	}

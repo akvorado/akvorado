@@ -10,6 +10,7 @@ GO      = go
 PNPM    = $(or $(shell command -v pnpm 2>/dev/null),\
 			$(shell command -v corepack 2>/dev/null | sed 's/$$/ pnpm/'),\
 			$(error No pnpm command found))
+CLANG   = clang
 TIMEOUT = 45s
 LSFILES = git ls-files -cmo --exclude-standard --
 V = 0
@@ -22,6 +23,8 @@ GENERATED_GO = \
 	common/pb/rawflow.pb.go \
 	common/pb/rawflow_vtproto.pb.go \
 	common/schema/definition_gen.go \
+	inlet/flow/input/udp/reuseport_bpfeb.o \
+	inlet/flow/input/udp/reuseport_bpfel.o \
 	orchestrator/clickhouse/data/asns.csv \
 	orchestrator/clickhouse/data/protocols.csv \
 	orchestrator/clickhouse/data/tcp.csv \
@@ -81,6 +84,7 @@ BUF = ./bin/external-tool buf
 
 # Generated files
 
+.SUFFIXES:
 .DELETE_ON_ERROR:
 
 common/pb/rawflow.pb.go common/pb/rawflow_vtproto.pb.go &: buf.gen.yaml common/pb/rawflow.proto ; $(info $(M) compiling protocol buffers $@…)
@@ -96,6 +100,9 @@ conntrackfixer/mocks/mock_conntrackfixer.go: go.mod ; $(info $(M) generate mocks
 		akvorado/conntrackfixer ConntrackConn,DockerClient ; \
 		touch $@ ; \
 	fi
+
+inlet/flow/input/udp/reuseport_%.o: inlet/flow/input/udp/reuseport_kern.c inlet/flow/input/udp/vmlinux.h ; $(info $(M) generate eBPF program for input/udp ($*)…)
+	$Q $(CLANG) -O2 -g -Wall -target $* -c $< -o $@
 
 outlet/core/asnprovider_enumer.go: go.mod outlet/core/config.go ; $(info $(M) generate enums for ASNProvider…)
 	$Q $(ENUMER) -type=ASNProvider -text -transform=kebab -trimprefix=ASNProvider outlet/core/config.go

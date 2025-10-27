@@ -34,6 +34,7 @@ type Input struct {
 		bufferSize    *reporter.GaugeVec
 		errors        *reporter.CounterVec
 		inDrops       *reporter.GaugeVec
+		ebpf          reporter.Gauge
 	}
 
 	address net.Addr       // listening address, for testing purpoese
@@ -96,6 +97,13 @@ func (configuration Configuration) New(r *reporter.Reporter, daemon daemon.Compo
 		},
 		[]string{"listener", "worker"},
 	)
+	input.metrics.ebpf = r.Gauge(
+		reporter.GaugeOpts{
+			Name: "ebpf_loaded",
+			Help: "Is eBPF load balancer enabled?",
+		},
+	)
+	input.metrics.ebpf.Set(0)
 
 	daemon.Track(&input.t, "inlet/flow/input/udp")
 	return input, nil
@@ -107,6 +115,7 @@ func (in *Input) Start() error {
 
 	// Listen to UDP port
 	conns := []*net.UDPConn{}
+	fds := []uintptr{}
 	for i := range in.config.Workers {
 		var listenAddr net.Addr
 		if in.address != nil {
@@ -120,7 +129,7 @@ func (in *Input) Start() error {
 				return fmt.Errorf("unable to resolve %v: %w", in.config.Listen, err)
 			}
 		}
-		pconn, err := listenConfig(in.r, udpSocketOptions).
+		pconn, err := listenConfig(in.r, udpSocketOptions, &fds).
 			ListenPacket(in.t.Context(context.Background()), "udp", listenAddr.String())
 		if err != nil {
 			return fmt.Errorf("unable to listen to %v: %w", listenAddr, err)
@@ -159,6 +168,13 @@ func (in *Input) Start() error {
 		}
 
 		conns = append(conns, udpConn)
+	}
+
+	if err := setupReuseportEBPF(fds); err == nil {
+		in.metrics.ebpf.Set(1)
+	} else {
+		in.r.Warn().Err(err).Msg("cannot attach eBPF program for SO_REUSEPORT")
+		in.metrics.ebpf.Set(0)
 	}
 
 	for i := range in.config.Workers {
@@ -227,6 +243,7 @@ func (in *Input) Start() error {
 		for _, conn := range conns {
 			conn.Close()
 		}
+		cleanupReuseportEBPF()
 		return nil
 	})
 
