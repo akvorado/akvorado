@@ -44,17 +44,41 @@ func TestDecodeConfiguration(t *testing.T) {
 				Inputs: []InputConfiguration{{
 					Decoder: pb.RawFlow_DECODER_NETFLOW,
 					Config: &udp.Configuration{
-						Workers:   3,
-						QueueSize: 100000,
-						Listen:    "192.0.2.1:2055",
+						Workers: 3,
+						Listen:  "192.0.2.1:2055",
 					},
 					UseSrcAddrForExporterAddr: true,
 				}, {
 					Decoder: pb.RawFlow_DECODER_SFLOW,
 					Config: &udp.Configuration{
-						Workers:   3,
-						QueueSize: 100000,
-						Listen:    "192.0.2.1:6343",
+						Workers: 3,
+						Listen:  "192.0.2.1:6343",
+					},
+					UseSrcAddrForExporterAddr: false,
+				}},
+			},
+		}, {
+			Description: "ignore queue-size",
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
+				return gin.H{
+					"inputs": []gin.H{
+						{
+							"type":       "udp",
+							"decoder":    "sflow",
+							"listen":     "192.0.2.1:6343",
+							"workers":    3,
+							"queue-size": 1000,
+						},
+					},
+				}
+			},
+			Expected: Configuration{
+				Inputs: []InputConfiguration{{
+					Decoder: pb.RawFlow_DECODER_SFLOW,
+					Config: &udp.Configuration{
+						Workers: 3,
+						Listen:  "192.0.2.1:6343",
 					},
 					UseSrcAddrForExporterAddr: false,
 				}},
@@ -94,16 +118,14 @@ func TestDecodeConfiguration(t *testing.T) {
 				Inputs: []InputConfiguration{{
 					Decoder: pb.RawFlow_DECODER_NETFLOW,
 					Config: &udp.Configuration{
-						Workers:   3,
-						QueueSize: 100000,
-						Listen:    "192.0.2.1:2055",
+						Workers: 3,
+						Listen:  "192.0.2.1:2055",
 					},
 				}, {
 					Decoder: pb.RawFlow_DECODER_SFLOW,
 					Config: &udp.Configuration{
-						Workers:   3,
-						QueueSize: 100000,
-						Listen:    "192.0.2.1:6343",
+						Workers: 3,
+						Listen:  "192.0.2.1:6343",
 					},
 				}},
 			},
@@ -145,9 +167,8 @@ func TestDecodeConfiguration(t *testing.T) {
 						Decoder:         pb.RawFlow_DECODER_NETFLOW,
 						TimestampSource: pb.RawFlow_TS_INPUT,
 						Config: &udp.Configuration{
-							Workers:   2,
-							QueueSize: 100,
-							Listen:    "127.0.0.1:2055",
+							Workers: 2,
+							Listen:  "127.0.0.1:2055",
 						},
 					}},
 				}
@@ -165,9 +186,8 @@ func TestDecodeConfiguration(t *testing.T) {
 				Inputs: []InputConfiguration{{
 					Decoder: pb.RawFlow_DECODER_NETFLOW,
 					Config: &udp.Configuration{
-						Workers:   2,
-						QueueSize: 100,
-						Listen:    "192.0.2.1:2055",
+						Workers: 2,
+						Listen:  "192.0.2.1:2055",
 					},
 				}},
 			},
@@ -203,9 +223,8 @@ func TestDecodeConfiguration(t *testing.T) {
 					Inputs: []InputConfiguration{{
 						Decoder: pb.RawFlow_DECODER_NETFLOW,
 						Config: &udp.Configuration{
-							Workers:   2,
-							QueueSize: 100,
-							Listen:    "127.0.0.1:2055",
+							Workers: 2,
+							Listen:  "127.0.0.1:2055",
 						},
 					}},
 				}
@@ -225,9 +244,8 @@ func TestDecodeConfiguration(t *testing.T) {
 					Decoder:         pb.RawFlow_DECODER_NETFLOW,
 					TimestampSource: pb.RawFlow_TS_NETFLOW_PACKET,
 					Config: &udp.Configuration{
-						Workers:   2,
-						QueueSize: 100,
-						Listen:    "192.0.2.1:2055",
+						Workers: 2,
+						Listen:  "192.0.2.1:2055",
 					},
 				}},
 			},
@@ -239,9 +257,8 @@ func TestDecodeConfiguration(t *testing.T) {
 					Inputs: []InputConfiguration{{
 						Decoder: pb.RawFlow_DECODER_NETFLOW,
 						Config: &udp.Configuration{
-							Workers:   2,
-							QueueSize: 100,
-							Listen:    "127.0.0.1:2055",
+							Workers: 2,
+							Listen:  "127.0.0.1:2055",
 						},
 					}},
 				}
@@ -261,9 +278,8 @@ func TestDecodeConfiguration(t *testing.T) {
 					Decoder:         pb.RawFlow_DECODER_NETFLOW,
 					TimestampSource: pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED,
 					Config: &udp.Configuration{
-						Workers:   2,
-						QueueSize: 100,
-						Listen:    "192.0.2.1:2055",
+						Workers: 2,
+						Listen:  "192.0.2.1:2055",
 					},
 				}},
 			},
@@ -278,16 +294,14 @@ func TestMarshalYAML(t *testing.T) {
 				Decoder:         pb.RawFlow_DECODER_NETFLOW,
 				TimestampSource: pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED,
 				Config: &udp.Configuration{
-					Listen:    "192.0.2.11:2055",
-					QueueSize: 1000,
-					Workers:   3,
+					Listen:  "192.0.2.11:2055",
+					Workers: 3,
 				},
 			}, {
 				Decoder: pb.RawFlow_DECODER_SFLOW,
 				Config: &udp.Configuration{
-					Listen:    "192.0.2.11:6343",
-					QueueSize: 1000,
-					Workers:   3,
+					Listen:  "192.0.2.11:6343",
+					Workers: 3,
 				},
 				UseSrcAddrForExporterAddr: true,
 			},
@@ -300,7 +314,6 @@ func TestMarshalYAML(t *testing.T) {
 	expected := `inputs:
     - decoder: netflow
       listen: 192.0.2.11:2055
-      queuesize: 1000
       receivebuffer: 0
       timestampsource: netflow-first-switched
       type: udp
@@ -308,7 +321,6 @@ func TestMarshalYAML(t *testing.T) {
       workers: 3
     - decoder: sflow
       listen: 192.0.2.11:6343
-      queuesize: 1000
       receivebuffer: 0
       timestampsource: input
       type: udp
