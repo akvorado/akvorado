@@ -561,7 +561,7 @@ Here are a few resources from MikroTik help site to configure a Mikrotik device:
 monitoring tools, including an sFlow exporter.
 
 Put the following configuration in `/etc/pmacctd/config.conf`. Replace
-`akvorado-inlet-receiver` with the correct IP:
+`akvorado-inlet-receiver` and `sfprobe_agentip` with the correct IP.
 
 ```yaml
 daemonize: false
@@ -572,6 +572,7 @@ pcap_ifindex: map
 pcap_interfaces_map: /etc/pmacctd/interfaces.map
 pcap_interface_wait: true
 sfprobe_agentsubid: 1402
+sfprobe_agentip: 10.25.0.1
 sampling_rate: 1000
 snaplen: 128
 ```
