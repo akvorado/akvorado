@@ -31,9 +31,6 @@ func setupReuseportEBPF(fds []uintptr) error {
 	if err != nil {
 		return err
 	}
-	if reuseportEBPFProgram == nil {
-		return nil
-	}
 
 	// Populate the map
 	for i, fd := range fds {
