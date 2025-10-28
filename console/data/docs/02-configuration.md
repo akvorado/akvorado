@@ -70,7 +70,6 @@ For the UDP input, you can use the following keys:
 - `listen`: set the listening endpoint.
 - `workers`: set the number of workers to listen to the socket.
 - `receive-buffer`: set the size of the kernel's incoming buffer for each listening socket.
-- `queue-size`: define the number of messages to buffer inside each worker.
 
 If you set `use-src-addr-for-exporter-addr` to true, the source IP of the
 received flow packet is used as the exporter address. You can also choose how to

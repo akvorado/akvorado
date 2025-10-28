@@ -13,6 +13,7 @@ require (
 	github.com/bits-and-blooms/bitset v1.24.1
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/chenyahui/gin-cache v1.10.0
+	github.com/cilium/ebpf v0.19.0
 	github.com/docker/docker v28.4.0+incompatible
 	github.com/docker/go-connections v0.6.0
 	github.com/eapache/go-resiliency v1.7.0

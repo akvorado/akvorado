@@ -6,6 +6,7 @@ package udp
 import (
 	"fmt"
 	"net"
+	"os"
 	"regexp"
 	"strconv"
 	"sync"
@@ -40,7 +41,7 @@ func TestUDPInput(t *testing.T) {
 		}
 
 		// Check metrics
-		gotMetrics := r.GetMetrics("akvorado_inlet_flow_input_udp_", "-buffer_size")
+		gotMetrics := r.GetMetrics("akvorado_inlet_flow_input_udp_", "-buffer_size", "-ebpf_loaded")
 		expectedMetrics := map[string]string{
 			`bytes_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                "12",
 			`packets_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:              "1",
@@ -123,7 +124,7 @@ func TestUDPWorkerBalancing(t *testing.T) {
 	configuration.Workers = 16
 
 	var wg sync.WaitGroup
-	wg.Add(100)
+	wg.Add(112)
 	done := make(chan bool)
 	go func() {
 		wg.Wait()
@@ -142,7 +143,7 @@ func TestUDPWorkerBalancing(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Dial() error:\n%+v", err)
 	}
-	for range 100 {
+	for range 112 {
 		if _, err := conn.Write([]byte("hello world!")); err != nil {
 			t.Fatalf("Write() error:\n%+v", err)
 		}
@@ -152,18 +153,43 @@ func TestUDPWorkerBalancing(t *testing.T) {
 	case <-time.After(5 * time.Second):
 	}
 
-	// Only one worker should have handled the 100 packets
-	var worker string
+	ebpf := false
+	for _, val := range r.GetMetrics("akvorado_inlet_flow_input_udp_", "ebpf_loaded") {
+		if val == "1" {
+			ebpf = true
+		}
+	}
+
 	gotMetrics := r.GetMetrics("akvorado_inlet_flow_input_udp_", "packets_total")
-	for m := range gotMetrics {
-		r := regexp.MustCompile(`worker="(\d+)"`)
-		worker = r.FindString(m)
-		break
-	}
-	expectedMetrics := map[string]string{
-		fmt.Sprintf(`packets_total{exporter="127.0.0.1",listener="127.0.0.1:0",%s}`, worker): "100",
-	}
-	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
-		t.Fatalf("Input metrics (-got, +want):\n%s", diff)
+	if os.Getenv("CI_AKVORADO_EBPF") == "" && !ebpf {
+		// Only one worker should have handled the 112 packets
+		var worker string
+		for m := range gotMetrics {
+			r := regexp.MustCompile(`worker="(\d+)"`)
+			worker = r.FindString(m)
+			break
+		}
+		expectedMetrics := map[string]string{
+			fmt.Sprintf(`packets_total{exporter="127.0.0.1",listener="127.0.0.1:0",%s}`, worker): "112",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+			t.Fatalf("Input metrics without (-got, +want):\n%s", diff)
+		}
+	} else {
+		// Each worker should have handled exactly 7 packets. However, since the
+		// counter is per CPU, this may not be 100% true. Be more permissive.
+		expectedMetrics := map[string]string{}
+		for worker := range 16 {
+			key := fmt.Sprintf(`packets_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="%d"}`, worker)
+			got, _ := strconv.Atoi(gotMetrics[key])
+			if got > 20 || got < 2 {
+				expectedMetrics[key] = "7"
+			} else {
+				expectedMetrics[key] = gotMetrics[key]
+			}
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+			t.Fatalf("Input metrics with eBPF (-got, +want):\n%s", diff)
+		}
 	}
 }

@@ -3,18 +3,18 @@
 
 package udp
 
-import "akvorado/inlet/flow/input"
+import (
+	"akvorado/common/helpers"
+	"akvorado/inlet/flow/input"
+)
 
 // Configuration describes UDP input configuration.
 type Configuration struct {
 	// Listen tells which port to listen to.
 	Listen string `validate:"required,listen"`
-	// Workers define the number of workers to use for receiving flows.
-	Workers int `validate:"required,min=1"`
-	// QueueSize defines the size of the channel used to
-	// communicate incoming flows. 0 can be used to disable
-	// buffering.
-	QueueSize uint
+	// Workers define the number of workers to use for receiving flows. The max
+	// should match the array length in reuseport_kern.c.
+	Workers int `validate:"required,min=1,max=256"`
 	// ReceiveBuffer is the value of the requested buffer size for
 	// each listening socket. When 0, the value is left to the
 	// default value set by the kernel (net.core.wmem_default).
@@ -26,8 +26,11 @@ type Configuration struct {
 // DefaultConfiguration is the default configuration for this input
 func DefaultConfiguration() input.Configuration {
 	return &Configuration{
-		Listen:    ":0",
-		Workers:   1,
-		QueueSize: 100000,
+		Listen:  ":0",
+		Workers: 1,
 	}
+}
+
+func init() {
+	helpers.RegisterMapstructureDeprecatedFields[Configuration]("QueueSize")
 }

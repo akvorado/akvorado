@@ -22,7 +22,7 @@ func TestParseSocketControlMessage(t *testing.T) {
 		t.Skip("Skip Linux-only test")
 	}
 	r := reporter.NewMock(t)
-	server, err := listenConfig(r, udpSocketOptions).
+	server, err := listenConfig(r, udpSocketOptions, nil).
 		ListenPacket(context.Background(), "udp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("ListenPacket() error:\n%+v", err)
@@ -59,7 +59,9 @@ outer:
 
 	// Write one extra message
 	server.SetReadDeadline(time.Time{})
-	client.Write([]byte("bye bye"))
+	if _, err := client.Write([]byte("bye bye")); err != nil {
+		t.Fatalf("Write() error:\n%+v", err)
+	}
 
 	// Read it
 	payload := make([]byte, 1000)
@@ -96,7 +98,7 @@ func TestListenConfig(t *testing.T) {
 				Option:    unix.SO_REUSEADDR,
 				Mandatory: true,
 			},
-		}).ListenPacket(t.Context(), "udp", "127.0.0.1:0")
+		}, nil).ListenPacket(t.Context(), "udp", "127.0.0.1:0")
 		if err != nil {
 			t.Fatalf("ListenPacket() error:\n%+v", err)
 		}
@@ -110,7 +112,7 @@ func TestListenConfig(t *testing.T) {
 				Option:    9999,
 				Mandatory: true,
 			},
-		}).ListenPacket(t.Context(), "udp", "127.0.0.1:0")
+		}, nil).ListenPacket(t.Context(), "udp", "127.0.0.1:0")
 		if err == nil {
 			t.Fatal("ListenPacket() did not error error")
 		}
@@ -123,7 +125,7 @@ func TestListenConfig(t *testing.T) {
 				Level:  unix.SOL_SOCKET,
 				Option: 9999,
 			},
-		}).ListenPacket(t.Context(), "udp", "127.0.0.1:0")
+		}, nil).ListenPacket(t.Context(), "udp", "127.0.0.1:0")
 		if err != nil {
 			t.Fatalf("ListenPacket() error:\n%+v", err)
 		}
