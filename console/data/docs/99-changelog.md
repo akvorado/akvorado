@@ -15,13 +15,20 @@ identified with a specific icon:
 This release brings a performance improvement on Linux by using per-packet
 load-balancing for incoming flows using eBPF. Previously, exporters were tied to
 one worker, triggering packet loss despite many workers available. This requires
-Linux 5.8+ (support of `CAP_BPF`). For older kernels, have a look at
-`docker/docker-compose-local.yaml`.
+Linux 5.8+ (support of `CAP_BPF`). For older kernels, add this to your
+`docker/docker-compose-local.yaml`:
 
-- 🩹 *inlet*: fix `akvorado_inlet_flow_input_udp_in_dropped_packets_total` metric
-- 🩹 *console*: fix completion tooltip being wrapped with Firefox
+```yaml
+services:
+  akvorado-inlet:
+    cap_add: !override
+      - SYS_ADMIN # BPF capability is supported only from Linux 5.8
+```
+
 - 💥 *config*: stop shipping demo exporter configurations from the orchestrator
 - 💥 *inlet*: load-balance incoming UDP packets to all workers using eBPF on Linux
+- 🩹 *inlet*: fix `akvorado_inlet_flow_input_udp_in_dropped_packets_total` metric
+- 🩹 *console*: fix completion tooltip being wrapped with Firefox
 - 🌱 *outlet*: be more aggressive when increasing the number of workers
 - 🌱 *outlet*: cap the number of workers to the number of Kafka partitions
 - 🌱 *console*: add `auth`→`logout-url` and `auth`→`avatar-url` to configure
