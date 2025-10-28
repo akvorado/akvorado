@@ -102,7 +102,8 @@ conntrackfixer/mocks/mock_conntrackfixer.go: go.mod ; $(info $(M) generate mocks
 	fi
 
 inlet/flow/input/udp/reuseport_%.o: inlet/flow/input/udp/reuseport_kern.c inlet/flow/input/udp/vmlinux.h ; $(info $(M) generate eBPF program for input/udp ($*)…)
-	$Q $(CLANG) -O2 -g -Wall -target $* -c $< -o $@
+	$Q ! $(CLANG) -print-targets 2> /dev/null | grep -qF $* || \
+		 $(CLANG) -O2 -g -Wall -target $* -c $< -o $@
 
 outlet/core/asnprovider_enumer.go: go.mod outlet/core/config.go ; $(info $(M) generate enums for ASNProvider…)
 	$Q $(ENUMER) -type=ASNProvider -text -transform=kebab -trimprefix=ASNProvider outlet/core/config.go

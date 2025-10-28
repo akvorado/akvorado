@@ -9,7 +9,6 @@
 mock_*.go
 *_enumer.go
 *.pb.go
-*.o
 
 /console/data/frontend/
 
