@@ -86,7 +86,6 @@
 #       - traefik.http.middlewares.sso.forwardauth.trustForwardHeader=true
 #       - traefik.http.middlewares.sso.forwardauth.authResponseHeaders=X-Forwarded-User,X-Forwarded-Displayname,X-Authenticated-User
 
-
 # If you don't want to expose Kafka-UI and Traefik on the public endpoints, uncomment this block.
 
 # services:
@@ -110,3 +109,10 @@
 #       config:
 #         - subnet: 2001:db8::/64
 #           gateway: 2001:db8::1
+
+# If you are running an older kernel than Linux 5.8, you need to uncomment the following block:
+
+# services:
+#   akvorado-inlet:
+#     cap_add: !override
+#       - SYS_ADMIN # BPF capability is supported only from Linux 5.8
