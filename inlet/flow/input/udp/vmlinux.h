@@ -65,20 +65,16 @@ struct sk_reuseport_md {
     __bpf_md_ptr(struct bpf_sock *, migrating_sk);
 };
 
-/* bpf_get_prandom_u32
+/*
+ * bpf_map_lookup_elem
  *
- * 	Get a pseudo-random number.
- *
- * 	From a security point of view, this helper uses its own
- * 	pseudo-random internal state, and cannot be used to infer the
- * 	seed of other random functions in the kernel. However, it is
- * 	essential to note that the generator used by the helper is not
- * 	cryptographically secure.
+ * 	Perform a lookup in *map* for an entry associated to *key*.
  *
  * Returns
- * 	A random 32-bit unsigned value.
+ * 	Map value associated to *key*, or **NULL** if no entry was
+ * 	found.
  */
-static __u32 (*bpf_get_prandom_u32)(void) = (void *) 7;
+static void *(*bpf_map_lookup_elem)(void *map, const void *key) = (void *) 1;
 
 /*
  * bpf_sk_select_reuseport

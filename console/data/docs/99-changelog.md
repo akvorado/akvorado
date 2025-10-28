@@ -12,9 +12,14 @@ identified with a specific icon:
 
 ## Unreleased
 
+This release brings a performance improvement on Linux by using per-packet
+load-balancing for incoming flows using eBPF. Previously, exporters may be tied
+to one worker, triggering packet loss.
+
 - 🩹 *inlet*: fix `akvorado_inlet_flow_input_udp_in_dropped_packets_total` metric
 - 🩹 *console*: fix completion tooltip being wrapped with Firefox
 - 💥 *config*: stop shipping demo exporter configurations from the orchestrator
+- 🌱 *inlet*: load-balance incoming UDP packets to all workers using eBPF on Linux
 - 🌱 *outlet*: be more aggressive when increasing the number of workers
 - 🌱 *outlet*: cap the number of workers to the number of Kafka partitions
 - 🌱 *console*: add `auth`→`logout-url` and `auth`→`avatar-url` to configure
