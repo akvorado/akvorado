@@ -61,7 +61,7 @@
           src = ./.;
           vendorHash = l.readFile ./nix/vendorHash.txt;
           proxyVendor = true; # generated code may contain additional dependencies
-          nativeBuildInputs = [ pkgs.zip ];
+          nativeBuildInputs = [ pkgs.zip pkgs.clang ];
           buildPhase = ''
             cp -r ${frontend}/node_modules console/frontend/node_modules
             cp -r ${frontend}/data console/data/frontend
@@ -155,6 +155,7 @@
             pkgs.git
             pkgs.curl
             pkgs.zip
+            pkgs.clang
           ];
         };
       });
