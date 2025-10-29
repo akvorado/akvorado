@@ -26,7 +26,7 @@ func DefaultConfiguration() Configuration {
 	return Configuration{
 		Configuration:    kafka.DefaultConfiguration(),
 		CompressionCodec: CompressionCodec(kgo.Lz4Compression()),
-		QueueSize:        32,
+		QueueSize:        4096,
 	}
 }
 

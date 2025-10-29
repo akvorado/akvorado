@@ -1,6 +1,4 @@
 ---
-kafka:
-  queue-size: 4096
 flow:
   inputs:
     # NetFlow port
