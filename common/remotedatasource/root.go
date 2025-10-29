@@ -68,9 +68,10 @@ func New[T any](r *reporter.Reporter, provider ProviderFunc, dataType string, da
 		DataSourcesReady: make(chan bool),
 	}
 
-	for _, source := range c.dataSources {
+	for k, source := range c.dataSources {
 		if source.Transform.Query == nil {
 			source.Transform.Query, _ = gojq.Parse(".")
+			c.dataSources[k] = source
 		}
 	}
 
