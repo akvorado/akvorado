@@ -431,6 +431,7 @@ In the example above, there were 486525 drops. You can solve this in different w
    is often near the value of `kafka`→`queue-size`, increase this value. This
    setting has the most impact.
 1. Increase the number of workers for the UDP input.
+1. Enable the eBPF load balancer on Linux (check `docker/docker-compose-local.yml`).
 1. Increase the value of the `net.core.rmem_max` sysctl (on the host) and
    increase the `receive-buffer` setting for the input to the same value,
 1. Increase the number of Kafka brokers.

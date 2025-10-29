@@ -155,8 +155,6 @@ services:
       kafka:
         condition: service_healthy
     command: inlet http://akvorado-orchestrator:8080
-    cap_add:
-      - BPF
     volumes:
       - akvorado-run:/run/akvorado
     labels:

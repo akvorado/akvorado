@@ -110,9 +110,9 @@
 #         - subnet: 2001:db8::/64
 #           gateway: 2001:db8::1
 
-# If you are running an older kernel than Linux 5.8, you need to uncomment the following block:
+# You can enable the eBPF load balancer to evenly spread load between workers:
 
 # services:
 #   akvorado-inlet:
-#     cap_add: !override
-#       - SYS_ADMIN # BPF capability is supported only from Linux 5.8
+#     cap_add:
+#       - BPF # or SYS_ADMIN if you don't have Linux 5.8+
