@@ -4,6 +4,19 @@
 @source "**/*.{vue,js,ts,jsx,tsx}";
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+    --animate-wiggle: wiggle 1s cubic-bezier(0, 0, 0.2, 1) 5;
+
+    @keyframes wiggle {
+        25% {
+            transform: rotate(10deg);
+        }
+        75% {
+            transform: rotate(-10deg);
+        }
+    }
+}
+
 /* For CodeMirror */
 #app {
     .cm-editor {
