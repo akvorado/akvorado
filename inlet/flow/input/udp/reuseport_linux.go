@@ -7,7 +7,9 @@ package udp
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/cilium/ebpf"
@@ -69,6 +71,10 @@ func loadReuseportProgram(fds []uintptr) (*ebpf.Program, *ebpf.Map, error) {
 		SocketMap *ebpf.Map     `ebpf:"socket_map"`
 	}{}
 	if err := spec.LoadAndAssign(&assignment, nil); err != nil {
+		// Check if the error is "operation not permitted" to provide a clearer message
+		if strings.Contains(err.Error(), "operation not permitted") {
+			err = errors.New("operation not permitted (BPF capability missing or MEMLOCK too low)")
+		}
 		return nil, nil, fmt.Errorf("can't assign eBPF programs: %w", err)
 	}
 	return assignment.Program, assignment.SocketMap, nil
