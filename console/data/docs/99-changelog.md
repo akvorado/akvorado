@@ -12,11 +12,10 @@ identified with a specific icon:
 
 ## Unreleased
 
-This release brings a performance improvement on Linux by using per-packet
-load-balancing for incoming flows using eBPF. Previously, exporters were tied to
-one worker, triggering packet loss despite many workers available. This requires
-Linux 5.8+ (support of `CAP_BPF`). For older kernels, add this to your
-`docker/docker-compose-local.yaml`:
+This release brings per-packet load-balancing for incoming flows using eBPF on
+Linux. Previously, exporters were tied to one worker, triggering packet loss
+despite many workers available. This requires Linux 5.8+ (support of `CAP_BPF`).
+For older kernels, add this to your `docker/docker-compose-local.yaml`:
 
 ```yaml
 services:
@@ -25,10 +24,15 @@ services:
       - SYS_ADMIN # BPF capability is supported only from Linux 5.8
 ```
 
+However, if you were experiencing packet loss in the inlet after upgrading to
+2.0.x, increase the value of `inlet`→`kafka`→`queue-size`, which was set too
+low. The new shipped value is 4096 instead of 32.
+
 - 💥 *config*: stop shipping demo exporter configurations from the orchestrator
 - 💥 *inlet*: load-balance incoming UDP packets to all workers using eBPF on Linux
 - 🩹 *inlet*: fix `akvorado_inlet_flow_input_udp_in_dropped_packets_total` metric
 - 🩹 *console*: fix completion tooltip being wrapped with Firefox
+- 🌱 *config*: increase `inlet`→`kafka`→`queue-size` to a more sensible value
 - 🌱 *outlet*: be more aggressive when increasing the number of workers
 - 🌱 *outlet*: cap the number of workers to the number of Kafka partitions
 - 🌱 *console*: add `auth`→`logout-url` and `auth`→`avatar-url` to configure
