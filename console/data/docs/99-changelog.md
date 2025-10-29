@@ -12,6 +12,9 @@ identified with a specific icon:
 
 ## 2.0.2 - 2025-10-29
 
+The modification of the default value of `inlet`→`kafka`→`queue-size` should
+prevent packet drops on busier setups.
+
 - 💥 *config*: stop shipping demo exporter configurations from the orchestrator
 - ✨ *inlet*: load-balance incoming UDP packets to all workers using eBPF on
   Linux (check `docker/docker-compose-local.yaml` to enable)
