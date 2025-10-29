@@ -13,7 +13,7 @@ import (
 
 // TLSConfiguration defines TLS configuration.
 type TLSConfiguration struct {
-	// Enable says if TLS should be used to connect to brokers
+	// Enable says if TLS should be used to connect to remote servers.
 	Enable bool `validate:"required_with=CAFile CertFile KeyFile"`
 	// Verify says if we need to check remote certificates
 	Verify bool

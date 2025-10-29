@@ -10,6 +10,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🌱 *common*: remote data sources accept a specific TLS configuration
+
 ## 2.0.2 - 2025-10-29
 
 The modification of the default value of `inlet`→`kafka`→`queue-size` should

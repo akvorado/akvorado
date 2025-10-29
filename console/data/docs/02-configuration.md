@@ -452,6 +452,8 @@ but the definition is fetched through HTTP. It accepts a map from source names t
 sources. Each source accepts these attributes:
 
 - `url` is the URL to fetch.
+- `tls` defines the TLS configuration to connect to the source (it uses the same
+  configuration as for [Kafka](#kafka-2), be sure to set `enable` to `true`)
 - `method` is the method to use (`GET` or `POST`).
 - `headers` is a map of header names to values to add to the request.
 - `proxy` defines if a proxy should be used (defined with environment variables
@@ -760,7 +762,7 @@ flows. It accepts the following keys:
 - `tls` defines the TLS configuration to connect to the cluster
 - `sasl` defines the SASL configuration to connect to the cluster
 - `topic` defines the base topic name
-- `topic-configuration` describes how the topic should be configured
+- `topic-cofniguration` describes how the topic should be configured
 
 The following keys are accepted for the TLS configuration:
 
@@ -828,6 +830,7 @@ ClickHouse database. The following keys should be provided inside
 - `password` is the password to use for authentication
 - `database` defines the database to use to create tables
 - `cluster` defines the cluster for replicated and distributed tables, see the next section for more information
+- `tls` defines the TLS configuration to connect to the database (it uses the same configuration as for [Kafka](#kafka-2))
 
 ### ClickHouse
 
@@ -848,6 +851,9 @@ provided inside `clickhouse`:
   map from source names to sources. Each source accepts the following
   attributes:
   - `url` is the URL to fetch
+  - `tls` defines the TLS configuration to connect to the source (it uses the
+    same configuration as for [Kafka](#kafka-2), be sure to set `enable` to
+    `true`)
   - `method` is the method to use (`GET` or `POST`)
   - `headers` is a map from header names to values to add to the request
   - `proxy` says if we should use a proxy (defined through environment variables like `http_proxy`)

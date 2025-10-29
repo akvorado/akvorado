@@ -73,6 +73,9 @@ func New[T any](r *reporter.Reporter, provider ProviderFunc, dataType string, da
 			source.Transform.Query, _ = gojq.Parse(".")
 			c.dataSources[k] = source
 		}
+		if _, err := source.TLS.MakeTLSConfig(); err != nil {
+			return nil, err
+		}
 	}
 
 	c.initMetrics()
@@ -88,8 +91,10 @@ func (c *Component[T]) Fetch(ctx context.Context, name string, source Source) ([
 	l := c.r.With().Str("name", name).Str("url", source.URL).Logger()
 	l.Info().Msg("update data source")
 
+	tlsConfig, _ := source.TLS.MakeTLSConfig()
 	client := &http.Client{Transport: &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
+		Proxy:           http.ProxyFromEnvironment,
+		TLSClientConfig: tlsConfig,
 	}}
 	req, err := http.NewRequestWithContext(ctx, source.Method, source.URL, nil)
 	if err != nil {
