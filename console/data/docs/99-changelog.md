@@ -10,13 +10,13 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 2.0.2 - 2025-10-29
 
 - 💥 *config*: stop shipping demo exporter configurations from the orchestrator
 - ✨ *inlet*: load-balance incoming UDP packets to all workers using eBPF on
   Linux (check `docker/docker-compose-local.yaml` to enable)
 - 🩹 *inlet*: fix `akvorado_inlet_flow_input_udp_in_dropped_packets_total` metric
-- 🩹 *console*: fix completion tooltip being wrapped with Firefox
+- 🩹 *console*: fix completion tooltip being obscured with Firefox
 - 🌱 *inlet*: increase default `kafka`→`queue-size` value to 4096 to prevent packet drops
 - 🌱 *outlet*: be more aggressive when increasing the number of workers
 - 🌱 *outlet*: cap the number of workers to the number of Kafka partitions
