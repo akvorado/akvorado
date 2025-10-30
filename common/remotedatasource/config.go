@@ -68,10 +68,6 @@ func DefaultSourceConfiguration() Source {
 	return Source{
 		Method:  "GET",
 		Timeout: time.Minute,
-		TLS: helpers.TLSConfiguration{
-			Enable: false,
-			Verify: true,
-		},
 	}
 }
 

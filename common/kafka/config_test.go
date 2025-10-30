@@ -110,8 +110,8 @@ func TestTLSConfiguration(t *testing.T) {
 				Topic:   "flows",
 				Brokers: []string{"127.0.0.1:9092"},
 				TLS: helpers.TLSConfiguration{
-					Enable: true,
-					Verify: true,
+					Enable:     true,
+					SkipVerify: false,
 				},
 			},
 		}, {
@@ -132,8 +132,8 @@ func TestTLSConfiguration(t *testing.T) {
 				Topic:   "flows",
 				Brokers: []string{"127.0.0.1:9092"},
 				TLS: helpers.TLSConfiguration{
-					Enable: true,
-					Verify: false,
+					Enable:     true,
+					SkipVerify: true,
 				},
 				SASL: SASLConfiguration{
 					Username:  "hello",
@@ -157,8 +157,8 @@ func TestTLSConfiguration(t *testing.T) {
 				Topic:   "flows",
 				Brokers: []string{"127.0.0.1:9092"},
 				TLS: helpers.TLSConfiguration{
-					Enable: false,
-					Verify: true,
+					Enable:     false,
+					SkipVerify: false,
 				},
 				SASL: SASLConfiguration{
 					Username:  "hello",
@@ -187,7 +187,7 @@ func TestTLSConfiguration(t *testing.T) {
 				TLS: helpers.TLSConfiguration{
 					Enable: true,
 					// Value from DefaultConfig is true
-					Verify: true,
+					SkipVerify: false,
 				},
 				SASL: SASLConfiguration{
 					Username:  "hello",
@@ -218,7 +218,7 @@ func TestTLSConfiguration(t *testing.T) {
 				TLS: helpers.TLSConfiguration{
 					Enable: true,
 					// Value from DefaultConfig is true
-					Verify: true,
+					SkipVerify: false,
 				},
 				SASL: SASLConfiguration{
 					Username:      "hello",

@@ -12,7 +12,12 @@ identified with a specific icon:
 
 ## Unreleased
 
-- 🌱 *common*: remote data sources accept a specific TLS configuration
+- 💥 *config*: `skip-verify` is false by default in TLS configurations for
+  ClickHouse, Kafka and remote data sources (previously, `verify` was set to
+  false by default)
+- 🌱 *config*: rename `verify` to `skip-verify` in TLS configurations for
+  ClickHouse, Kafka and remote data sources (with inverted logic)
+- 🌱 *config*: remote data sources accept a specific TLS configuration
 
 ## 2.0.2 - 2025-10-29
 

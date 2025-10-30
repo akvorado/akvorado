@@ -4,7 +4,7 @@ paths:
     url: https://ip-ranges.amazonaws.com/ip-ranges.json
     tls:
       enable: false
-      verify: true
+      skipverify: false
       cafile: ""
       certfile: ""
       keyfile: ""

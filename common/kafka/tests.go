@@ -30,10 +30,6 @@ func SetupKafkaBroker(t *testing.T) (*kgo.Client, []string) {
 	r := reporter.NewMock(t)
 	opts, err := NewConfig(r, Configuration{
 		Brokers: []string{broker},
-		TLS: helpers.TLSConfiguration{
-			Enable: false,
-			Verify: true,
-		},
 	})
 	if err != nil {
 		t.Fatalf("NewConfig() error: %v", err)

@@ -41,10 +41,6 @@ func DefaultConfiguration() Configuration {
 		Username:     "default",
 		MaxOpenConns: 10,
 		DialTimeout:  5 * time.Second,
-		TLS: helpers.TLSConfiguration{
-			Enable: false,
-			Verify: true,
-		},
 	}
 }
 

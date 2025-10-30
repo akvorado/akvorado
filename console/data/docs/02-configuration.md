@@ -767,7 +767,7 @@ flows. It accepts the following keys:
 The following keys are accepted for the TLS configuration:
 
 - `enable` should be set to `true` to enable TLS.
-- `verify` can be set to `false` to skip checking server certificate (not recommended).
+- `skip-verify` can be set to `true` to skip checking server certificate (not recommended).
 - `ca-file` gives the location of the file containing the CA certificate in PEM
   format to check the server certificate. If not provided, the system
   certificates are used instead.

@@ -29,7 +29,7 @@ func TestSourceDecode(t *testing.T) {
 				Timeout:  time.Minute,
 				Interval: 10 * time.Minute,
 				TLS: helpers.TLSConfiguration{
-					Verify: true,
+					SkipVerify: false,
 				},
 			},
 		}, {
@@ -49,7 +49,7 @@ func TestSourceDecode(t *testing.T) {
 				Interval:  10 * time.Minute,
 				Transform: MustParseTransformQuery(".[]"),
 				TLS: helpers.TLSConfiguration{
-					Verify: true,
+					SkipVerify: false,
 				},
 			},
 		}, {
@@ -71,7 +71,7 @@ func TestSourceDecode(t *testing.T) {
 				Interval:  10 * time.Minute,
 				Transform: MustParseTransformQuery(".[]"),
 				TLS: helpers.TLSConfiguration{
-					Verify: true,
+					SkipVerify: false,
 				},
 			},
 		}, {
@@ -93,9 +93,9 @@ func TestSourceDecode(t *testing.T) {
 				Timeout:  time.Minute,
 				Interval: 10 * time.Minute,
 				TLS: helpers.TLSConfiguration{
-					Enable: true,
-					Verify: false, // TODO this should be fixed
-					CAFile: "something.crt",
+					Enable:     true,
+					SkipVerify: false,
+					CAFile:     "something.crt",
 				},
 			},
 		}, {
@@ -119,7 +119,7 @@ func TestSourceDecode(t *testing.T) {
 .prefixes[] | {prefix: .ip_prefix, tenant: "amazon", region: .region, role: .service|ascii_downcase}
 `),
 				TLS: helpers.TLSConfiguration{
-					Verify: true,
+					SkipVerify: false,
 				},
 			},
 		}, {

@@ -314,8 +314,8 @@ func TestSourceWithTLS(t *testing.T) {
 				Timeout:  1 * time.Second,
 				Interval: 1 * time.Minute,
 				TLS: helpers.TLSConfiguration{
-					Enable: true,
-					Verify: false,
+					Enable:     true,
+					SkipVerify: true,
 				},
 				Transform: MustParseTransformQuery(".results[]"),
 			},
