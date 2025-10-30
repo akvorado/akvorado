@@ -32,6 +32,14 @@ var (
 
 // New creates a new gNMI provider from configuration
 func (configuration Configuration) New(ctx context.Context, r *reporter.Reporter) (provider.Provider, error) {
+	// Validate TLS in authentication parameters
+	for _, param := range configuration.AuthenticationParameters.All() {
+		_, err := param.TLS.MakeTLSConfig()
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	p := Provider{
 		r:       r,
 		config:  &configuration,
@@ -39,6 +47,7 @@ func (configuration Configuration) New(ctx context.Context, r *reporter.Reporter
 		state:   map[netip.Addr]*exporterState{},
 		refresh: make(chan bool),
 	}
+
 	p.initMetrics()
 	return &p, nil
 }

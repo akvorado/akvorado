@@ -155,8 +155,6 @@ retryConnect:
 	targetAuthParameters := p.config.AuthenticationParameters.LookupOrDefault(exporterIP, AuthenticationParameter{})
 	targetOptions := []api.TargetOption{
 		api.Address(targetAddress),
-		api.Insecure(targetAuthParameters.Insecure),
-		api.SkipVerify(targetAuthParameters.SkipVerify),
 		api.Timeout(p.config.Timeout),
 	}
 	addIfNotEmpty := func(param string, option api.TargetOption) {
@@ -166,9 +164,6 @@ retryConnect:
 	}
 	addIfNotEmpty(targetAuthParameters.Username, api.Username(targetAuthParameters.Username))
 	addIfNotEmpty(targetAuthParameters.Password, api.Password(targetAuthParameters.Password))
-	addIfNotEmpty(targetAuthParameters.TLSCA, api.TLSCA(targetAuthParameters.TLSCA))
-	addIfNotEmpty(targetAuthParameters.TLSCert, api.TLSCert(targetAuthParameters.TLSCert))
-	addIfNotEmpty(targetAuthParameters.TLSKey, api.TLSKey(targetAuthParameters.TLSKey))
 
 	waitBeforeRetry := func() bool {
 		next := time.NewTimer(retryInitBackoff.NextBackOff())
@@ -180,6 +175,15 @@ retryConnect:
 		}
 		return true
 	}
+
+	// Configure TLS or use insecure mode
+	if targetAuthParameters.TLS.Enable {
+		tlsConfig, _ := targetAuthParameters.TLS.MakeTLSConfig()
+		targetOptions = append(targetOptions, api.TLSConfig(tlsConfig))
+	} else {
+		targetOptions = append(targetOptions, api.Insecure(true))
+	}
+
 	l.Debug().Msgf("connecting to %s", targetAddress)
 	tg, err := api.NewTarget(
 		targetOptions...,

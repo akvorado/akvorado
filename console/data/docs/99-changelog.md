@@ -18,6 +18,8 @@ identified with a specific icon:
 - 🌱 *config*: rename `verify` to `skip-verify` in TLS configurations for
   ClickHouse, Kafka and remote data sources (with inverted logic)
 - 🌱 *config*: remote data sources accept a specific TLS configuration
+- 🌱 *config*: gNMI metadata provider has been converted to the same TLS
+  configuration than ClickHouse, Kafka and remote data sources.
 
 ## 2.0.2 - 2025-10-29
 

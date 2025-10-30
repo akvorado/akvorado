@@ -713,7 +713,9 @@ commit now
 			"::/0": {
 				Username: srLinuxUsername,
 				Password: srLinuxPassword,
-				Insecure: true,
+				TLS: helpers.TLSConfiguration{
+					Enable: false,
+				},
 			},
 		})
 		configP.Targets = helpers.MustNewSubnetMap(map[string]netip.Addr{

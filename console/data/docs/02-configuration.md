@@ -353,11 +353,9 @@ The `gnmi` provider polls an exporter using gNMI. It accepts these keys:
   name should be set in the gNMI path prefix. In this case, it is set to the
   exporter IP address. This is useful if the selected target is a gNMI gateway.
 - `authentication-parameters` is a map from exporter subnets to authentication
-  parameters for gNMI targets. Authentication parameters accept these
-  keys: `username`, `password`, `insecure` (a boolean to use clear text),
-  `skip-verify` (a boolean to disable TLS verification), `tls-ca` (to check the
-  TLS certificate of the target), `tls-cert`, and `tls-key` (to authenticate to
-  a target).
+  parameters for gNMI targets. Authentication parameters accept these keys:
+  `username`, `password`, and `tls` (which takes the same keys as for
+  [Kafka](#kafka-2)).
 - `models` is the list of models to use to get information from a target. Each
   model is tried, and if a target supports all the paths, it is selected. The
   models are tried in the order they are declared. If you want to keep the
