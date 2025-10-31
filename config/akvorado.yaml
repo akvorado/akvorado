@@ -75,13 +75,6 @@ clickhouse:
     #     { prefix: (.ipv4Prefix // .ipv6Prefix), tenant: "google-cloud", region: .scope }
     # netbox:
     #   url: "https://netbox.domain.tld/api/ipam/prefixes/?limit=0"
-    #   tls:
-    #     enable: true
-    #     verify: true
-    #     cafile: ""
-    #     certfile: ""
-    #     keyfile: ""
-    #   interval: 6h
     #   headers:
     #     Authorization: "Token YOUR_NETBOX_API_TOKEN"
     #     Accept: "application/json"
