@@ -76,12 +76,25 @@ EOF
         # logcli -q series '{service_name=~".+"}' --analyze-labels
         # echo ::endgroup::
 
-        # Run Hurl tests
+        # Run Hurl tests. Some of them may be difficult to get right, notably
+        # the ClickHouse batches (if we are rebalancing). We need to let some
+        # time between two tries because the quantiles need to be updated.
         echo ::group::Hurl tests
-        nix run nixpkgs#hurl -- --test --error-format=short .github/e2e.hurl || \
-        nix run nixpkgs#hurl -- --test --error-format=short .github/e2e.hurl || \
-        nix run nixpkgs#hurl -- --test --error-format=short .github/e2e.hurl || {
-            sleep 2
+        ok=0
+        for i in $(seq 1 5); do
+            echo "::group::Hurl tests ($i)"
+            if ! nix run nixpkgs#hurl -- --test --error-format=short .github/e2e.hurl; then
+                echo ::endgroup::
+                sleep 10
+                continue
+            else
+                echo ::endgroup::
+                ok=1
+                break
+            fi
+        done
+        [ $ok -eq 1 ] || {
+            sleep 10
             nix run nixpkgs#hurl -- --test --error-format=long .github/e2e.hurl
         }
         echo ::endgroup::
