@@ -10,7 +10,7 @@ require (
 	github.com/alecthomas/chroma/v2 v2.20.0
 	github.com/benbjohnson/clock v1.3.5
 	github.com/bio-routing/bio-rd v0.1.10
-	github.com/bits-and-blooms/bitset v1.24.2
+	github.com/bits-and-blooms/bitset v1.24.3
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/chenyahui/gin-cache v1.10.0
 	github.com/cilium/ebpf v0.19.0
