@@ -17,8 +17,8 @@ import (
 
 	"github.com/benbjohnson/clock"
 	"github.com/google/go-cmp/cmp"
-	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
-	"github.com/osrg/gobgp/v3/pkg/packet/bmp"
+	"github.com/osrg/gobgp/v4/pkg/packet/bgp"
+	"github.com/osrg/gobgp/v4/pkg/packet/bmp"
 )
 
 // NewMock creates a new mock provider for BMP (it's a real one

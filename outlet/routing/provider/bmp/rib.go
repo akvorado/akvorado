@@ -12,7 +12,7 @@ import (
 	"akvorado/common/helpers/intern"
 
 	"github.com/gaissmai/bart"
-	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
+	"github.com/osrg/gobgp/v4/pkg/packet/bgp"
 )
 
 // prefixIndex is a typed index for prefixes in the RIB
@@ -49,7 +49,7 @@ type route struct {
 // nlri is the NLRI for the route (when combined with prefix). The
 // route family is included as we may normalize NLRI accross AFI/SAFI.
 type nlri struct {
-	family bgp.RouteFamily
+	family bgp.Family
 	path   uint32
 	rd     RD
 }
