@@ -160,29 +160,29 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 			case netflow.IPFIX_FIELD_sourceIPv4Address:
 				if !isAllZeroIP(v) {
 					etype = helpers.ETypeIPv4
-					bf.SrcAddr = decodeIPFromBytes(v)
+					bf.SrcAddr = decoder.DecodeIP(v)
 				}
 			case netflow.IPFIX_FIELD_destinationIPv4Address:
 				if !isAllZeroIP(v) {
 					etype = helpers.ETypeIPv4
-					bf.DstAddr = decodeIPFromBytes(v)
+					bf.DstAddr = decoder.DecodeIP(v)
 				}
 			case netflow.IPFIX_FIELD_sourceIPv6Address:
 				if !isAllZeroIP(v) {
 					etype = helpers.ETypeIPv6
-					bf.SrcAddr = decodeIPFromBytes(v)
+					bf.SrcAddr = decoder.DecodeIP(v)
 				}
 			case netflow.IPFIX_FIELD_destinationIPv6Address:
 				if !isAllZeroIP(v) {
 					etype = helpers.ETypeIPv6
-					bf.DstAddr = decodeIPFromBytes(v)
+					bf.DstAddr = decoder.DecodeIP(v)
 				}
 			case netflow.IPFIX_FIELD_sourceIPv4PrefixLength, netflow.IPFIX_FIELD_sourceIPv6PrefixLength:
 				bf.SrcNetMask = uint8(decodeUNumber(v))
 			case netflow.IPFIX_FIELD_destinationIPv4PrefixLength, netflow.IPFIX_FIELD_destinationIPv6PrefixLength:
 				bf.DstNetMask = uint8(decodeUNumber(v))
 			case netflow.IPFIX_FIELD_ipNextHopIPv4Address, netflow.IPFIX_FIELD_bgpNextHopIPv4Address, netflow.IPFIX_FIELD_ipNextHopIPv6Address, netflow.IPFIX_FIELD_bgpNextHopIPv6Address:
-				bf.NextHop = decodeIPFromBytes(v)
+				bf.NextHop = decoder.DecodeIP(v)
 
 			// L4
 			case netflow.IPFIX_FIELD_sourceTransportPort:
@@ -251,9 +251,9 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 					// NAT
 					switch field.Type {
 					case netflow.IPFIX_FIELD_postNATSourceIPv4Address:
-						bf.AppendIPv6(schema.ColumnSrcAddrNAT, decodeIPFromBytes(v))
+						bf.AppendIPv6(schema.ColumnSrcAddrNAT, decoder.DecodeIP(v))
 					case netflow.IPFIX_FIELD_postNATDestinationIPv4Address:
-						bf.AppendIPv6(schema.ColumnDstAddrNAT, decodeIPFromBytes(v))
+						bf.AppendIPv6(schema.ColumnDstAddrNAT, decoder.DecodeIP(v))
 					case netflow.IPFIX_FIELD_postNAPTSourceTransportPort:
 						bf.AppendUint(schema.ColumnSrcPortNAT, decodeUNumber(v))
 					case netflow.IPFIX_FIELD_postNAPTDestinationTransportPort:
@@ -382,13 +382,6 @@ func decodeUNumber(b []byte) uint64 {
 		return binary.BigEndian.Uint64(b)
 	}
 	return 0
-}
-
-func decodeIPFromBytes(b []byte) netip.Addr {
-	if ip, ok := netip.AddrFromSlice(b); ok {
-		return netip.AddrFrom16(ip.As16())
-	}
-	return netip.Addr{}
 }
 
 var (
