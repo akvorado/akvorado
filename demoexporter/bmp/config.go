@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
+	"github.com/osrg/gobgp/v4/pkg/packet/bgp"
 )
 
 // Configuration describes the configuration for the BMP component. Only one peer is emulated.

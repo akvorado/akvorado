@@ -9,11 +9,12 @@ import (
 	"errors"
 	"io"
 	"net"
+	"net/netip"
 	"syscall"
 	"time"
 
-	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
-	"github.com/osrg/gobgp/v3/pkg/packet/bmp"
+	"github.com/osrg/gobgp/v4/pkg/packet/bgp"
+	"github.com/osrg/gobgp/v4/pkg/packet/bmp"
 )
 
 // startBMPClient starts the BMP client
@@ -31,9 +32,9 @@ func (c *Component) startBMPClient(ctx context.Context) {
 	buf := bytes.NewBuffer([]byte{})
 	peerHeader := bmp.NewBMPPeerHeader(
 		bmp.BMP_PEER_TYPE_GLOBAL, 0, 0,
-		c.config.PeerIP.Unmap().String(),
+		c.config.PeerIP,
 		uint32(c.config.PeerASN),
-		"2.2.2.2",
+		netip.MustParseAddr("2.2.2.2"),
 		0)
 	pkt, err := bmp.NewBMPInitiation([]bmp.BMPInfoTLVInterface{
 		bmp.NewBMPInfoTLVString(bmp.BMP_INIT_TLV_TYPE_SYS_DESCR, "Fake exporter"),
@@ -43,23 +44,31 @@ func (c *Component) startBMPClient(ctx context.Context) {
 		panic(err)
 	}
 	buf.Write(pkt)
-	pkt, err = bmp.NewBMPPeerUpNotification(*peerHeader, c.config.LocalIP.Unmap().String(), 179, 47647,
-		bgp.NewBGPOpenMessage(c.config.LocalASN, 30, "1.1.1.1",
-			[]bgp.OptionParameterInterface{
-				bgp.NewOptionParameterCapability([]bgp.ParameterCapabilityInterface{
-					bgp.NewCapMultiProtocol(bgp.RF_IPv4_UC),
-					bgp.NewCapMultiProtocol(bgp.RF_IPv6_UC),
-				}),
-			},
-		),
-		bgp.NewBGPOpenMessage(c.config.PeerASN, 30, "2.2.2.2",
-			[]bgp.OptionParameterInterface{
-				bgp.NewOptionParameterCapability([]bgp.ParameterCapabilityInterface{
-					bgp.NewCapMultiProtocol(bgp.RF_IPv4_UC),
-					bgp.NewCapMultiProtocol(bgp.RF_IPv6_UC),
-				}),
-			},
-		),
+	om1, err := bgp.NewBGPOpenMessage(c.config.LocalASN, 30, netip.MustParseAddr("1.1.1.1"),
+		[]bgp.OptionParameterInterface{
+			bgp.NewOptionParameterCapability([]bgp.ParameterCapabilityInterface{
+				bgp.NewCapMultiProtocol(bgp.RF_IPv4_UC),
+				bgp.NewCapMultiProtocol(bgp.RF_IPv6_UC),
+			}),
+		},
+	)
+	if err != nil {
+		panic(err)
+	}
+	om2, err := bgp.NewBGPOpenMessage(c.config.PeerASN, 30, netip.MustParseAddr("2.2.2.2"),
+		[]bgp.OptionParameterInterface{
+			bgp.NewOptionParameterCapability([]bgp.ParameterCapabilityInterface{
+				bgp.NewCapMultiProtocol(bgp.RF_IPv4_UC),
+				bgp.NewCapMultiProtocol(bgp.RF_IPv6_UC),
+			}),
+		},
+	)
+	if err != nil {
+		panic(err)
+	}
+	pkt, err = bmp.NewBMPPeerUpNotification(*peerHeader, c.config.LocalIP, 179, 47647,
+		om1,
+		om2,
 	).Serialize()
 	if err != nil {
 		panic(err)
@@ -67,20 +76,33 @@ func (c *Component) startBMPClient(ctx context.Context) {
 	buf.Write(pkt)
 
 	// Send the routes
-	for _, af := range []bgp.RouteFamily{bgp.RF_IPv4_UC, bgp.RF_IPv6_UC} {
+	for _, af := range []bgp.Family{bgp.RF_IPv4_UC, bgp.RF_IPv6_UC} {
+		var nh netip.Addr
+		if af == bgp.RF_IPv4_UC {
+			nh = netip.MustParseAddr("192.0.2.1")
+		} else {
+			nh = netip.MustParseAddr("fe80::1")
+		}
 		for _, route := range c.config.Routes {
-			prefixes := []bgp.AddrPrefixInterface{}
+			prefixes := []bgp.PathNLRI{}
+
 			for _, prefix := range route.Prefixes {
-				if af == bgp.RF_IPv4_UC && prefix.Addr().Is4() {
-					prefixes = append(prefixes,
-						bgp.NewIPAddrPrefix(uint8(prefix.Bits()), prefix.Addr().String()))
-				} else if af == bgp.RF_IPv6_UC && prefix.Addr().Is6() {
-					prefixes = append(prefixes,
-						bgp.NewIPv6AddrPrefix(uint8(prefix.Bits()), prefix.Addr().String()))
+				if af == bgp.RF_IPv4_UC && prefix.Addr().Is4() || af == bgp.RF_IPv6_UC && prefix.Addr().Is6() {
+					n, err := bgp.NewIPAddrPrefix(prefix)
+					if err != nil {
+						panic(err)
+					}
+					prefixes = append(prefixes, bgp.PathNLRI{
+						NLRI: n,
+					})
 				}
 			}
 			if len(prefixes) == 0 {
 				continue
+			}
+			nlri, err := bgp.NewPathAttributeMpReachNLRI(af, prefixes, nh)
+			if err != nil {
+				panic(err)
 			}
 			attrs := []bgp.PathAttributeInterface{
 				// bgp.NewPathAttributeNextHop("192.0.2.20"),
@@ -88,7 +110,7 @@ func (c *Component) startBMPClient(ctx context.Context) {
 				bgp.NewPathAttributeAsPath([]bgp.AsPathParamInterface{
 					bgp.NewAs4PathParam(bgp.BGP_ASPATH_ATTR_TYPE_SEQ, route.ASPath),
 				}),
-				bgp.NewPathAttributeMpReachNLRI("fe80::1", prefixes),
+				nlri,
 			}
 			if route.Communities != nil {
 				comms := make([]uint32, len(route.Communities))
