@@ -25,6 +25,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"gopkg.in/tomb.v2"
 
+	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 	"akvorado/outlet/routing/provider"
 	"akvorado/outlet/routing/provider/bmp"
@@ -183,7 +184,7 @@ func (p *Provider) Refresh(ctx context.Context) {
 				p.r.Err(err).Msgf("error while parsing router address %s", router.Address)
 				continue
 			}
-			routerAddress = netip.AddrFrom16(routerAddress.As16())
+			routerAddress = helpers.NetIPTo6(routerAddress)
 			routers[routerAddress] = append(routers[routerAddress], p.instances[config.GRPCAddr])
 
 			p.metrics.knownRouters.WithLabelValues(config.GRPCAddr).Inc()
@@ -318,7 +319,7 @@ func (p *Provider) lpmResponseToLookupResult(lpm *pb.LPMResponse) (bmp.LookupRes
 		if !ok {
 			return res, errInvalidNextHop
 		}
-		res.NextHop = nhAddr
+		res.NextHop = helpers.NetIPTo6(nhAddr)
 	}
 
 	return res, nil

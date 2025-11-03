@@ -228,7 +228,7 @@ func PrefixTo16(prefix netip.Prefix) netip.Prefix {
 		return prefix
 	}
 	// Convert IPv4 to IPv4-mapped IPv6
-	return netip.PrefixFrom(netip.AddrFrom16(prefix.Addr().As16()), prefix.Bits()+96)
+	return netip.PrefixFrom(NetIPTo6(prefix.Addr()), prefix.Bits()+96)
 }
 
 // SubnetMapParseKey parses a prefix or an IP address into a netip.Prefix that
