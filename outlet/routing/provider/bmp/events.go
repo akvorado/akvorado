@@ -294,8 +294,8 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 	// Regular NLRI and withdrawn routes
 	if pkey.ptype == bmp.BMP_PEER_TYPE_L3VPN || p.isAcceptedRD(0) {
 		// We know we have IPv4 NLRI
-		for _, ipprefix := range update.NLRI {
-			v4UCPrefix, ok := ipprefix.NLRI.(*bgp.IPAddrPrefix)
+		for _, path := range update.NLRI {
+			v4UCPrefix, ok := path.NLRI.(*bgp.IPAddrPrefix)
 			if !ok {
 				continue
 			}
@@ -304,7 +304,7 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 				peer: pinfo.reference,
 				nlri: p.rib.nlris.Put(nlri{
 					family: bgp.RF_IPv4_UC,
-					path:   ipprefix.ID,
+					path:   path.ID,
 					rd:     pkey.distinguisher,
 				}),
 				nextHop:    p.rib.nextHops.Put(nextHop(nh)),
@@ -312,15 +312,15 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 				prefixLen:  uint8(pfx.Bits()),
 			})
 		}
-		for _, ipprefix := range update.WithdrawnRoutes {
-			v4UCPrefix, ok := ipprefix.NLRI.(*bgp.IPAddrPrefix)
+		for _, path := range update.WithdrawnRoutes {
+			v4UCPrefix, ok := path.NLRI.(*bgp.IPAddrPrefix)
 			if !ok {
 				continue
 			}
 			pfx := helpers.PrefixTo6(v4UCPrefix.Prefix)
 			if nlriRef, ok := p.rib.nlris.Ref(nlri{
 				family: bgp.RF_IPv4_UC,
-				path:   ipprefix.ID,
+				path:   path.ID,
 				rd:     pkey.distinguisher,
 			}); ok {
 				removed += p.rib.RemovePrefix(pfx, route{
@@ -333,21 +333,21 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 
 	// MP reach and unreach NLRI
 	for _, attr := range update.PathAttributes {
-		var ipprefixes []bgp.PathNLRI
+		var paths []bgp.PathNLRI
 		var family bgp.Family
 		switch attr := attr.(type) {
 		case *bgp.PathAttributeMpReachNLRI:
 			nh = helpers.AddrTo6(attr.Nexthop)
-			ipprefixes = attr.Value
+			paths = attr.Value
 			family = bgp.NewFamily(attr.AFI, attr.SAFI)
 		case *bgp.PathAttributeMpUnreachNLRI:
-			ipprefixes = attr.Value
+			paths = attr.Value
 			family = bgp.NewFamily(attr.AFI, attr.SAFI)
 		}
-		for _, ipprefix := range ipprefixes {
+		for _, path := range paths {
 			var pfx netip.Prefix
 			var rd RD
-			switch nlri := ipprefix.NLRI.(type) {
+			switch nlri := path.NLRI.(type) {
 			case *bgp.IPAddrPrefix:
 				pfx = helpers.PrefixTo6(nlri.Prefix)
 				rd = pkey.distinguisher
@@ -377,7 +377,7 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 					nlri: p.rib.nlris.Put(nlri{
 						family: family,
 						rd:     rd,
-						path:   ipprefix.ID,
+						path:   path.ID,
 					}),
 					nextHop:    p.rib.nextHops.Put(nextHop(nh)),
 					attributes: p.rib.rtas.Put(rta),
@@ -387,7 +387,7 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 				if nlriRef, ok := p.rib.nlris.Ref(nlri{
 					family: family,
 					rd:     rd,
-					path:   ipprefix.ID,
+					path:   path.ID,
 				}); ok {
 					removed += p.rib.RemovePrefix(pfx, route{
 						peer: pinfo.reference,
