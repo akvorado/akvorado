@@ -34,7 +34,7 @@ func (c *Component) networksCSVRefresh() error {
 
 	// Add content of all geoip databases
 	err := c.d.GeoIP.IterASNDatabases(func(prefix netip.Prefix, data geoip.ASNInfo) error {
-		subV6Prefix := helpers.PrefixTo16(prefix)
+		subV6Prefix := helpers.PrefixTo6(prefix)
 		attrs := NetworkAttributes{
 			ASN: data.ASNumber,
 		}
@@ -47,7 +47,7 @@ func (c *Component) networksCSVRefresh() error {
 		return fmt.Errorf("unable to iter over ASN databases: %w", err)
 	}
 	err = c.d.GeoIP.IterGeoDatabases(func(prefix netip.Prefix, data geoip.GeoInfo) error {
-		subV6Prefix := helpers.PrefixTo16(prefix)
+		subV6Prefix := helpers.PrefixTo6(prefix)
 		attrs := NetworkAttributes{
 			State:   data.State,
 			Country: data.Country,
@@ -67,7 +67,7 @@ func (c *Component) networksCSVRefresh() error {
 		defer c.networkSourcesLock.RUnlock()
 		for _, networkList := range c.networkSources {
 			for _, val := range networkList {
-				subV6Prefix := helpers.PrefixTo16(val.Prefix)
+				subV6Prefix := helpers.PrefixTo6(val.Prefix)
 				networks.Update(subV6Prefix, func(existing NetworkAttributes, _ bool) NetworkAttributes {
 					return mergeNetworkAttrs(existing, val.NetworkAttributes)
 				})

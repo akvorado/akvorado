@@ -30,6 +30,44 @@ func TestAddrTo6(t *testing.T) {
 	}
 }
 
+func TestPrefixTo6(t *testing.T) {
+	cases := []struct {
+		input  netip.Prefix
+		output netip.Prefix
+	}{
+		{netip.Prefix{}, netip.Prefix{}},
+		{netip.MustParsePrefix("192.168.1.0/24"), netip.MustParsePrefix("::ffff:192.168.1.0/120")},
+		{netip.MustParsePrefix("2a01:db8::/64"), netip.MustParsePrefix("2a01:db8::/64")},
+	}
+	for _, tc := range cases {
+		got := helpers.PrefixTo6(tc.input)
+		if diff := helpers.Diff(got, tc.output); diff != "" {
+			t.Errorf("PrefixTo6(%s) (-got, +want):\n%s", tc.input, diff)
+		}
+	}
+}
+
+func TestUnmapPrefix(t *testing.T) {
+	for _, tc := range []struct {
+		input  string
+		output string
+	}{
+		{"0.0.0.0/0", "0.0.0.0/0"},
+		{"::/0", "::/0"},
+		{"192.168.12.0/24", "192.168.12.0/24"},
+		{"2001:db8::/52", "2001:db8::/52"},
+		{"::ffff:192.168.12.0/120", "192.168.12.0/24"},
+		{"::ffff:0.0.0.0/0", "::ffff:0.0.0.0/0"},
+		{"::ffff:0.0.0.0/96", "0.0.0.0/0"},
+	} {
+		prefix := netip.MustParsePrefix(tc.input)
+		got := helpers.UnmapPrefix(prefix).String()
+		if diff := helpers.Diff(got, tc.output); diff != "" {
+			t.Errorf("UnmapPrefix(%q) (-got, +want):\n%s", tc.input, diff)
+		}
+	}
+}
+
 func TestNetIPAddrStructure(t *testing.T) {
 	var addr netip.Addr
 	addrType := reflect.TypeOf(addr)

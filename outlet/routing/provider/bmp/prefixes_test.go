@@ -239,7 +239,7 @@ func BenchmarkRIBInsertion(b *testing.B) {
 							if prng2[p].IntN(10) == 0 {
 								continue
 							}
-							pfx := netip.PrefixFrom(helpers.AddrTo6(r.Prefix.Addr()), r.Prefix.Bits()+96)
+							pfx := helpers.PrefixTo6(r.Prefix)
 							tentative++
 							inserted += rib.AddPrefix(pfx, route{
 								peer:    uint32(p),
@@ -295,7 +295,7 @@ func BenchmarkRIBLookup(b *testing.B) {
 						if prng2[p].IntN(10) == 0 {
 							continue
 						}
-						pfx := netip.PrefixFrom(helpers.AddrTo6(r.Prefix.Addr()), r.Prefix.Bits()+96)
+						pfx := helpers.PrefixTo6(r.Prefix)
 						rib.AddPrefix(pfx, route{
 							peer:    uint32(p),
 							nlri:    rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
@@ -344,7 +344,7 @@ func BenchmarkRIBFlush(b *testing.B) {
 							if prng2[p].IntN(10) == 0 {
 								continue
 							}
-							pfx := netip.PrefixFrom(helpers.AddrTo6(r.Prefix.Addr()), r.Prefix.Bits()+96)
+							pfx := helpers.PrefixTo6(r.Prefix)
 							rib.AddPrefix(pfx, route{
 								peer:    uint32(p),
 								nlri:    rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),

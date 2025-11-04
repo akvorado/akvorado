@@ -55,7 +55,7 @@ func (p *Provider) Lookup(_ context.Context, ip netip.Addr, nh netip.Addr, _ net
 	// "opted in" for bmp as source if the lookup result is evaluated
 	nh = netip.Addr(p.rib.nextHops.Get(selectedRoute.nextHop))
 
-	// Prefix len is v6 coded in the bmp rib. We need to substract 96 if it's a v4 prefix
+	// Prefix length is for IPv4-mapped IPv6 address.
 	plen := selectedRoute.prefixLen
 	if ip.Is4In6() {
 		plen = plen - 96
