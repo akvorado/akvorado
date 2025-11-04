@@ -13,7 +13,7 @@ import (
 	"akvorado/common/helpers"
 )
 
-func TestNetIPTo6(t *testing.T) {
+func TestAddrTo6(t *testing.T) {
 	cases := []struct {
 		input  netip.Addr
 		output netip.Addr
@@ -23,9 +23,9 @@ func TestNetIPTo6(t *testing.T) {
 		{netip.MustParseAddr("2a01:db8::1"), netip.MustParseAddr("2a01:db8::1")},
 	}
 	for _, tc := range cases {
-		got := helpers.NetIPTo6(tc.input)
+		got := helpers.AddrTo6(tc.input)
 		if diff := helpers.Diff(got, tc.output); diff != "" {
-			t.Errorf("NetIPTo6(%s) (-got, +want):\n%s", tc.input, diff)
+			t.Errorf("AddrTo6(%s) (-got, +want):\n%s", tc.input, diff)
 		}
 	}
 }
@@ -78,18 +78,18 @@ func TestNetIPAddrStructure(t *testing.T) {
 		field0.Type.Size(), field1.Type.Size())
 }
 
-func netIPTo6Safe(ip netip.Addr) netip.Addr {
+func addrTo6Safe(ip netip.Addr) netip.Addr {
 	if ip.Is4() {
 		return netip.AddrFrom16(ip.As16())
 	}
 	return ip
 }
 
-func netIPTo6SafeNocheck(ip netip.Addr) netip.Addr {
+func addrTo6SafeNocheck(ip netip.Addr) netip.Addr {
 	return netip.AddrFrom16(ip.As16())
 }
 
-func BenchmarkNetIPTo6(b *testing.B) {
+func BenchmarkAddrTo6(b *testing.B) {
 	ipv4 := netip.MustParseAddr("192.168.1.1")
 	ipv6 := netip.MustParseAddr("2a01:db8::1")
 	for _, ip := range []netip.Addr{ipv4, ipv6} {
@@ -99,17 +99,17 @@ func BenchmarkNetIPTo6(b *testing.B) {
 		}
 		b.Run(fmt.Sprintf("safe %s", version), func(b *testing.B) {
 			for b.Loop() {
-				_ = netIPTo6Safe(ip)
+				_ = addrTo6Safe(ip)
 			}
 		})
 		b.Run(fmt.Sprintf("safe nocheck %s", version), func(b *testing.B) {
 			for b.Loop() {
-				_ = netIPTo6SafeNocheck(ip)
+				_ = addrTo6SafeNocheck(ip)
 			}
 		})
 		b.Run(fmt.Sprintf("unsafe %s", version), func(b *testing.B) {
 			for b.Loop() {
-				_ = helpers.NetIPTo6(ip)
+				_ = helpers.AddrTo6(ip)
 			}
 		})
 	}

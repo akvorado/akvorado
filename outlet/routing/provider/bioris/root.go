@@ -184,7 +184,7 @@ func (p *Provider) Refresh(ctx context.Context) {
 				p.r.Err(err).Msgf("error while parsing router address %s", router.Address)
 				continue
 			}
-			routerAddress = helpers.NetIPTo6(routerAddress)
+			routerAddress = helpers.AddrTo6(routerAddress)
 			routers[routerAddress] = append(routers[routerAddress], p.instances[config.GRPCAddr])
 
 			p.metrics.knownRouters.WithLabelValues(config.GRPCAddr).Inc()
@@ -319,7 +319,7 @@ func (p *Provider) lpmResponseToLookupResult(lpm *pb.LPMResponse) (bmp.LookupRes
 		if !ok {
 			return res, errInvalidNextHop
 		}
-		res.NextHop = helpers.NetIPTo6(nhAddr)
+		res.NextHop = helpers.AddrTo6(nhAddr)
 	}
 
 	return res, nil

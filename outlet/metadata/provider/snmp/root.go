@@ -38,8 +38,8 @@ func (configuration Configuration) New(_ context.Context, r *reporter.Reporter) 
 	for exporterIP, agentIP := range configuration.Agents {
 		if exporterIP.Is4() || agentIP.Is4() {
 			delete(configuration.Agents, exporterIP)
-			exporterIP = helpers.NetIPTo6(exporterIP)
-			agentIP = helpers.NetIPTo6(agentIP)
+			exporterIP = helpers.AddrTo6(exporterIP)
+			agentIP = helpers.AddrTo6(agentIP)
 			configuration.Agents[exporterIP] = agentIP
 		}
 	}
