@@ -17,7 +17,7 @@ import (
 	bnet "github.com/bio-routing/bio-rd/net"
 	rpb "github.com/bio-routing/bio-rd/route/api"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus"
-	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
+	"github.com/osrg/gobgp/v4/pkg/packet/bgp"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/backoff"
 	"google.golang.org/grpc/connectivity"

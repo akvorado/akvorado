@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	gobmp "github.com/osrg/gobgp/v3/pkg/packet/bmp"
+	gobmp "github.com/osrg/gobgp/v4/pkg/packet/bmp"
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"

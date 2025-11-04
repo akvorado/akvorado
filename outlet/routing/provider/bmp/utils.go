@@ -3,7 +3,7 @@
 
 package bmp
 
-import "github.com/osrg/gobgp/v3/pkg/packet/bgp"
+import "github.com/osrg/gobgp/v4/pkg/packet/bgp"
 
 // asPathFlat transforms an AS path to a flat AS path: first value of
 // a set is used, confed seq is considered as a regular seq.

@@ -18,7 +18,7 @@ import (
 	"akvorado/common/reporter"
 	"akvorado/outlet/routing/provider"
 
-	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
+	"github.com/osrg/gobgp/v4/pkg/packet/bgp"
 )
 
 func TestBMP(t *testing.T) {
