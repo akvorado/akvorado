@@ -133,17 +133,3 @@ func InterceptMessages(t *testing.T, cluster *kfake.Cluster, callback func(*kgo.
 }
 
 var _ kfake.Logger = &Logger{}
-
-// Logf logs a message at the specified level for kfake.
-func (l *Logger) Logf(level kfake.LogLevel, msg string, keyvals ...any) {
-	switch level {
-	case kfake.LogLevelError:
-		l.r.Error().Fields(keyvals).Msg(msg)
-	case kfake.LogLevelWarn:
-		l.r.Warn().Fields(keyvals).Msg(msg)
-	case kfake.LogLevelInfo:
-		l.r.Info().Fields(keyvals).Msg(msg)
-	case kfake.LogLevelDebug:
-		l.r.Debug().Fields(keyvals).Msg(msg)
-	}
-}
