@@ -9,6 +9,7 @@ import (
 	"math/rand/v2"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -365,10 +366,18 @@ func TestKafkaLagMetric(t *testing.T) {
 
 	// Watch for autocommits to avoid relying on time
 	clusterCommitNotification := make(chan any)
+	firstFetch := make(chan any)
+	var firstFetchOnce sync.Once
 	cluster.Control(func(request kmsg.Request) (kmsg.Response, error, bool) {
 		switch k := kmsg.Key(request.Key()); k {
 		case kmsg.OffsetCommit:
+			t.Log("offset commit message")
 			clusterCommitNotification <- nil
+		case kmsg.Fetch:
+			firstFetchOnce.Do(func() {
+				close(firstFetch)
+				t.Log("fetch request")
+			})
 		}
 		cluster.KeepControl()
 		return nil, nil, false
@@ -405,10 +414,17 @@ func TestKafkaLagMetric(t *testing.T) {
 	defer close(workerBlockReceive)
 	c.StartWorkers(func(_ int, _ chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
 		return func(context.Context, []byte) error {
+			t.Log("worker received a message")
 			<-workerBlockReceive
 			return nil
 		}, func() {}
 	})
+	t.Log("wait first fetch")
+	select {
+	case <-firstFetch:
+	case <-time.After(time.Second):
+		t.Fatal("no initial fetch")
+	}
 
 	// No messages yet, no lag
 	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
@@ -431,7 +447,7 @@ func TestKafkaLagMetric(t *testing.T) {
 		}
 	}
 
-	// Send a single message, allow it to be processed
+	t.Log("send a single message")
 	record := &kgo.Record{
 		Topic: expectedTopicName,
 		Value: []byte("hello"),
@@ -439,9 +455,14 @@ func TestKafkaLagMetric(t *testing.T) {
 	if results := producer.ProduceSync(context.Background(), record); results.FirstErr() != nil {
 		t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
 	}
-	workerBlockReceive <- nil
+	t.Log("allow message processing")
+	select {
+	case workerBlockReceive <- nil:
+	case <-time.After(time.Second):
+		t.Fatal("no initial receive")
+	}
 
-	// Wait for autocommit
+	t.Log("wait for autocommit")
 	select {
 	case <-time.After(2 * time.Second):
 		t.Fatal("Timed out waiting for autocommit")
@@ -458,7 +479,9 @@ func TestKafkaLagMetric(t *testing.T) {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 
-	// Send a few more messages without allowing the worker to process them, expect the consumer lag to rise
+	// Send a few more messages without allowing the worker to process them,
+	// expect the consumer lag to rise
+	t.Log("send 5 messages")
 	for range 5 {
 		record := &kgo.Record{
 			Topic: expectedTopicName,
@@ -479,9 +502,15 @@ func TestKafkaLagMetric(t *testing.T) {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 
-	// Let the worker process all 5 messages (and wait for autocommit), expect the lag to drop back to zero
+	// Let the worker process all 5 messages (and wait for autocommit), expect
+	// the lag to drop back to zero
+	t.Log("accept processing of 5 messages")
 	for range 5 {
-		workerBlockReceive <- nil
+		select {
+		case workerBlockReceive <- nil:
+		case <-time.After(time.Second):
+			t.Fatal("no subsequent receive")
+		}
 	}
 	select {
 	case <-time.After(2 * time.Second):
