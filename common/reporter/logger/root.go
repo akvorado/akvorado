@@ -42,22 +42,20 @@ func (h contextHook) Run(e *zerolog.Event, _ zerolog.Level, _ string) {
 	callStack = callStack[3:] // Trial and error, there is a test to check it works.
 
 	// We want to get the first caller that is in our module and isn't preferably in logs.go.
-	var candidateCall stack.Call
-	var candidateModule string
+	var candidateInfo *stack.CallInfo
 	for _, call := range callStack {
-		module := call.FunctionName()
-		if !strings.HasPrefix(module, stack.ModuleName) {
+		info := call.Info()
+		if !strings.HasPrefix(info.FunctionName(), stack.ModuleName) {
 			continue
 		}
-		candidateCall = call
-		candidateModule = strings.SplitN(module, ".", 2)[0]
-		if strings.HasSuffix(call.FileName(), "/logs.go") {
+		candidateInfo = info
+		if strings.HasSuffix(info.FileName(), "/logs.go") {
 			continue
 		}
 		break
 	}
-	if candidateCall != stack.Call(0) {
-		e.Str("caller", candidateCall.SourceFile(true))
-		e.Str("module", candidateModule)
+	if candidateInfo != nil {
+		e.Str("caller", candidateInfo.SourceFile())
+		e.Str("module", strings.SplitN(candidateInfo.FunctionName(), ".", 2)[0])
 	}
 }
