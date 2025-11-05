@@ -53,6 +53,17 @@ func (pc Call) FunctionName() string {
 	return name
 }
 
+// FileName returns the file name of the call point.
+func (pc Call) FileName() string {
+	pcFix := uintptr(pc) - 1
+	fn := runtime.FuncForPC(pcFix)
+	if fn == nil {
+		return "(nofile)"
+	}
+	file, _ := fn.FileLine(pcFix)
+	return file
+}
+
 // SourceFile returns the source file and optionally line number of
 // the call point. The source file is relative to the import point
 // (and includes it).
