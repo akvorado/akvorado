@@ -81,11 +81,13 @@ EOF
         # time between two tries because the quantiles need to be updated.
         echo ::group::Hurl tests
         ok=0
-        for i in $(seq 1 5); do
+        t=2
+        while [ $t -lt 100 ]; do
             echo "::group::Hurl tests ($i)"
             if ! nix run nixpkgs#hurl -- --test --error-format=short .github/e2e.hurl; then
                 echo ::endgroup::
-                sleep 10
+                sleep $t
+                t=$((t*2))
                 continue
             else
                 echo ::endgroup::
