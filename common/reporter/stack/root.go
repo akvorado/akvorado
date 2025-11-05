@@ -22,7 +22,7 @@ type Trace []Call
 
 var pcStackPool = sync.Pool{
 	New: func() any {
-		pcs := make([]uintptr, 1000)
+		pcs := make([]uintptr, 32)
 		return &pcs
 	},
 }
