@@ -98,6 +98,7 @@ func (c *realComponent) startScaler() chan<- ScaleRequest {
 						targetWorkers := state.nextWorkerCount(request, c.config.MinWorkers, c.config.MaxWorkers)
 
 						if targetWorkers > currentWorkers {
+							c.r.Info().Msgf("increase number of workers from %d to %d", currentWorkers, targetWorkers)
 							for i := currentWorkers; i < targetWorkers; i++ {
 								if err := c.startOneWorker(); err != nil {
 									c.r.Err(err).Msg("cannot spawn a new worker")
@@ -115,6 +116,7 @@ func (c *realComponent) startScaler() chan<- ScaleRequest {
 						targetWorkers := state.nextWorkerCount(request, c.config.MinWorkers, c.config.MaxWorkers)
 
 						if targetWorkers < currentWorkers {
+							c.r.Info().Msgf("decrease number of workers from %d to %d", currentWorkers, targetWorkers)
 							for i := currentWorkers; i > targetWorkers; i-- {
 								c.stopOneWorker()
 							}
