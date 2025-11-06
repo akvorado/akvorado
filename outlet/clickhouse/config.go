@@ -13,6 +13,8 @@ type Configuration struct {
 	MaximumBatchSize uint `validate:"min=1"`
 	// MaximumWaitTime is the maximum number of seconds to wait before sending the current batch.
 	MaximumWaitTime time.Duration `validate:"min=100ms"`
+	// minimumBatchSize the mininum number of rows before declaring underloaded and using async insert
+	minimumBatchSize uint
 }
 
 const minimumBatchSizeDivider = 10

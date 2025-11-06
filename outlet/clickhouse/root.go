@@ -32,8 +32,9 @@ type Dependencies struct {
 	Schema     *schema.Component
 }
 
-// New creates a new core component.
+// New creates a new clickhouse component.
 func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (Component, error) {
+	configuration.minimumBatchSize = configuration.MaximumBatchSize / minimumBatchSizeDivider
 	c := realComponent{
 		r:      r,
 		d:      &dependencies,
