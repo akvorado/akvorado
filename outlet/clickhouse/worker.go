@@ -100,7 +100,7 @@ func (w *realWorker) FinalizeAndSend(ctx context.Context) WorkerStatus {
 		if uint(batchSize) >= w.c.config.MaximumBatchSize {
 			w.c.metrics.overloaded.Inc()
 			return WorkerStatusOverloaded
-		} else if uint(batchSize) <= w.c.config.MaximumBatchSize/minimumBatchSizeDivider {
+		} else if uint(batchSize) <= w.c.config.minimumBatchSize {
 			w.c.metrics.underloaded.Inc()
 			return WorkerStatusUnderloaded
 		}
@@ -117,7 +117,7 @@ func (w *realWorker) Flush(ctx context.Context) {
 	}
 	// Async mode if have not a big batch size
 	var settings []ch.Setting
-	if uint(w.bf.FlowCount()) <= w.c.config.MaximumBatchSize/minimumBatchSizeDivider {
+	if uint(w.bf.FlowCount()) <= w.c.config.minimumBatchSize {
 		settings = w.asyncSettings
 	}
 
