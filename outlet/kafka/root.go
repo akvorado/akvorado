@@ -135,7 +135,7 @@ func (c *realComponent) Start() error {
 
 // StartWorkers will start the initial workers. This should only be called once.
 func (c *realComponent) StartWorkers(workerBuilder WorkerBuilderFunc) error {
-	c.workerRequestChan = c.startScaler()
+	c.workerRequestChan = c.runScaler()
 	c.workerBuilder = workerBuilder
 	for range c.config.MinWorkers {
 		if err := c.startOneWorker(); err != nil {

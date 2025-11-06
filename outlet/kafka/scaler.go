@@ -76,8 +76,8 @@ func (s *scalerState) nextWorkerCount(request ScaleRequest, minWorkers, maxWorke
 	return next
 }
 
-// startScaler starts the automatic scaling loop
-func (c *realComponent) startScaler() chan<- ScaleRequest {
+// runScaler starts the automatic scaling loop
+func (c *realComponent) runScaler() chan<- ScaleRequest {
 	ch := make(chan ScaleRequest, c.config.MaxWorkers)
 	down := rate.Sometimes{Interval: c.config.WorkerDecreaseRateLimit}
 	up := rate.Sometimes{Interval: c.config.WorkerIncreaseRateLimit}
