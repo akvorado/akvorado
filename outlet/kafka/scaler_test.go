@@ -240,11 +240,12 @@ func TestScalerState(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			state := new(scalerState)
+			current := tt.minWorkers
 			results := []int{}
 
 			for _, req := range tt.requests {
-				next := state.nextWorkerCount(req, tt.minWorkers, tt.maxWorkers)
-				results = append(results, next)
+				current = state.nextWorkerCount(req, current, tt.minWorkers, tt.maxWorkers)
+				results = append(results, current)
 			}
 
 			if diff := helpers.Diff(results, tt.expected); diff != "" {

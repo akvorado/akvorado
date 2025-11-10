@@ -35,18 +35,16 @@ type scalerConfiguration struct {
 type scalerState struct {
 	searchMin int  // current search minimum bound
 	searchMax int  // current search maximum bound
-	current   int  // current number of workers
 	previous  int  // previous number of workers before last change
 	goingUp   bool // current direction: nil=uninitialized, true=up, false=down
 }
 
 // nextWorkerCount calculates the next worker count using dichotomy
-func (s *scalerState) nextWorkerCount(request ScaleRequest, minWorkers, maxWorkers int) int {
+func (s *scalerState) nextWorkerCount(request ScaleRequest, currentWorkers, minWorkers, maxWorkers int) int {
 	if s.searchMin == 0 {
 		*s = scalerState{
 			searchMin: minWorkers,
 			searchMax: maxWorkers,
-			current:   minWorkers,
 			previous:  minWorkers,
 			goingUp:   true,
 		}
@@ -59,36 +57,35 @@ func (s *scalerState) nextWorkerCount(request ScaleRequest, minWorkers, maxWorke
 
 		if requestUp {
 			// Changed to going up: search between [current, searchMax]
-			s.searchMin = s.current
+			s.searchMin = currentWorkers
 		} else {
 			// Changed to going down: search between [previous, current]
 			s.searchMin = s.previous
-			s.searchMax = s.current
+			s.searchMax = currentWorkers
 		}
 	}
 
 	// Calculate next value as midpoint of search space
 	var next int
 	if requestUp {
-		next = (s.current + s.searchMax + 1) / 2 // ceiling
+		next = (currentWorkers + s.searchMax + 1) / 2 // ceiling
 	} else {
-		next = (s.searchMin + s.current) / 2 // floor
+		next = (s.searchMin + currentWorkers) / 2 // floor
 	}
 
 	// If we can't move (hit the limit), expand search to full bounds
-	if next == s.current {
+	if next == currentWorkers {
 		if requestUp && s.searchMax < maxWorkers {
 			s.searchMax = maxWorkers
-			next = (s.current + s.searchMax + 1) / 2
+			next = (currentWorkers + s.searchMax + 1) / 2
 		} else if !requestUp && s.searchMin > minWorkers {
 			s.searchMin = minWorkers
-			next = (s.searchMin + s.current) / 2
+			next = (s.searchMin + currentWorkers) / 2
 		}
 	}
 
 	// Update state for next iteration
-	s.previous = s.current
-	s.current = next
+	s.previous = currentWorkers
 	return next
 }
 
@@ -107,18 +104,18 @@ func runScaler(ctx context.Context, config scalerConfiguration) chan<- ScaleRequ
 				switch request {
 				case ScaleIncrease:
 					up.Do(func() {
-						currentWorkers := config.getWorkerCount()
-						targetWorkers := state.nextWorkerCount(request, config.minWorkers, config.maxWorkers)
-						if targetWorkers > currentWorkers {
-							config.increaseWorkers(currentWorkers, targetWorkers)
+						current := config.getWorkerCount()
+						target := state.nextWorkerCount(request, current, config.minWorkers, config.maxWorkers)
+						if target > current {
+							config.increaseWorkers(current, target)
 						}
 					})
 				case ScaleDecrease:
 					down.Do(func() {
-						currentWorkers := config.getWorkerCount()
-						targetWorkers := state.nextWorkerCount(request, config.minWorkers, config.maxWorkers)
-						if targetWorkers < currentWorkers {
-							config.decreaseWorkers(currentWorkers, targetWorkers)
+						current := config.getWorkerCount()
+						target := state.nextWorkerCount(request, current, config.minWorkers, config.maxWorkers)
+						if target < current {
+							config.decreaseWorkers(current, target)
 						}
 					})
 				}
