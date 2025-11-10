@@ -112,12 +112,14 @@ func (w *realWorker) FinalizeAndSend(ctx context.Context) WorkerStatus {
 // should be called before shutting down to flush remaining data. Otherwise,
 // FinalizeAndSend() should be used instead.
 func (w *realWorker) Flush(ctx context.Context) {
+	var useAsync bool
 	if w.bf.FlowCount() == 0 {
 		return
 	}
 	// Async mode if have not a big batch size
 	var settings []ch.Setting
 	if uint(w.bf.FlowCount()) <= w.c.config.minimumBatchSize {
+		useAsync = true
 		settings = w.asyncSettings
 	}
 
@@ -145,7 +147,7 @@ func (w *realWorker) Flush(ctx context.Context) {
 			Input:    w.bf.ClickHouseProtoInput(),
 			Settings: settings,
 		}); err != nil {
-			w.logger.Err(err).Int("flows", w.bf.FlowCount()).Msg("cannot send batch to ClickHouse")
+			w.logger.Err(err).Int("flows", w.bf.FlowCount()).Bool("async", useAsync).Msg("cannot send batch to ClickHouse")
 			w.c.metrics.errors.WithLabelValues("send").Inc()
 			return err
 		}
