@@ -134,9 +134,13 @@ func (w *realWorker) Flush(ctx context.Context) {
 			return err
 		}
 
+		// Don't use the parent context, it may be too short.
+		chCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		defer cancel()
+
 		// Send to ClickHouse in flows_XXXXX_raw.
 		start := time.Now()
-		if err := w.conn.Do(ctx, ch.Query{
+		if err := w.conn.Do(chCtx, ch.Query{
 			Body:     w.bf.ClickHouseProtoInput().Into(fmt.Sprintf("flows_%s_raw", w.c.d.Schema.ClickHouseHash())),
 			Input:    w.bf.ClickHouseProtoInput(),
 			Settings: settings,
