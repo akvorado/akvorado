@@ -89,6 +89,8 @@ func TestScalerWithoutRateLimiter(t *testing.T) {
 					ch <- req
 					time.Sleep(5 * time.Second)
 				}
+				mu.Lock()
+				defer mu.Unlock()
 				if diff := helpers.Diff(got, tc.expected); diff != "" {
 					t.Fatalf("runScaler() (-got, +want):\n%s", diff)
 				}
@@ -136,30 +138,46 @@ func TestScalerRateLimiter(t *testing.T) {
 			ch <- ScaleIncrease
 			time.Sleep(10 * time.Millisecond)
 		}
-		if diff := helpers.Diff(got, []int{8}); diff != "" {
-			t.Fatalf("runScaler() (-got, +want):\n%s", diff)
-		}
+		func() {
+			mu.Lock()
+			defer mu.Unlock()
+			if diff := helpers.Diff(got, []int{8}); diff != "" {
+				t.Fatalf("runScaler() (-got, +want):\n%s", diff)
+			}
+		}()
 		// Collapsing decreases
 		for range 10 {
 			ch <- ScaleDecrease
 			time.Sleep(10 * time.Millisecond)
 		}
-		if diff := helpers.Diff(got, []int{8, 4}); diff != "" {
-			t.Fatalf("runScaler() (-got, +want):\n%s", diff)
-		}
+		func() {
+			mu.Lock()
+			defer mu.Unlock()
+			if diff := helpers.Diff(got, []int{8, 4}); diff != "" {
+				t.Fatalf("runScaler() (-got, +want):\n%s", diff)
+			}
+		}()
 		// Still no increase
 		ch <- ScaleIncrease
 		time.Sleep(10 * time.Millisecond)
-		if diff := helpers.Diff(got, []int{8, 4}); diff != "" {
-			t.Fatalf("runScaler() (-got, +want):\n%s", diff)
-		}
+		func() {
+			mu.Lock()
+			defer mu.Unlock()
+			if diff := helpers.Diff(got, []int{8, 4}); diff != "" {
+				t.Fatalf("runScaler() (-got, +want):\n%s", diff)
+			}
+		}()
 		// Rearm increase rate limiter
 		time.Sleep(900 * time.Millisecond)
 		ch <- ScaleIncrease
 		time.Sleep(10 * time.Millisecond)
-		if diff := helpers.Diff(got, []int{8, 4, 6}); diff != "" {
-			t.Fatalf("runScaler() (-got, +want):\n%s", diff)
-		}
+		func() {
+			mu.Lock()
+			defer mu.Unlock()
+			if diff := helpers.Diff(got, []int{8, 4, 6}); diff != "" {
+				t.Fatalf("runScaler() (-got, +want):\n%s", diff)
+			}
+		}()
 	})
 }
 
