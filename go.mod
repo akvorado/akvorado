@@ -2,7 +2,7 @@ module akvorado
 
 go 1.25
 
-toolchain go1.25.3
+toolchain go1.25.4
 
 require (
 	github.com/ClickHouse/ch-go v0.69.0
