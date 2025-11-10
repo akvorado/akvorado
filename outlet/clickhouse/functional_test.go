@@ -218,15 +218,18 @@ func TestMultipleServers(t *testing.T) {
 
 		// Trigger an empty send
 		bf := sch.NewFlowMessage()
+		bf.AppendUint(schema.ColumnDstAS, 65000)
+		bf.AppendUint(schema.ColumnBytes, 200)
+		bf.Finalize()
 		w := ch.NewWorker(1, bf)
 		w.Flush(ctx)
 
 		// Check metrics
 		gotMetrics := r.GetMetrics("akvorado_outlet_clickhouse_", "errors_total")
-		if gotMetrics[`errors_total{error="connect"}`] == "0" {
+		if m, ok := gotMetrics[`errors_total{error="connect"}`]; !ok || m == "0" {
 			continue
 		}
 		return
 	}
-	t.Fatalf("w.Flush(): cannot trigger connect error")
+	t.Fatal("w.Flush(): cannot trigger connect error")
 }
