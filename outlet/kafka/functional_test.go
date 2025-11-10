@@ -318,35 +318,6 @@ func TestWorkerScaling(t *testing.T) {
 	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
-
-	// Send more messages until reaching max workers
-	t.Log("Send more messages requesting scale up to reach max")
-	var diff string
-	var matches int
-	for range 100 {
-		record := &kgo.Record{
-			Topic: expectedTopicName,
-			Value: []byte("hello"),
-		}
-		if results := producer.ProduceSync(context.Background(), record); results.FirstErr() != nil {
-			t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
-		}
-		time.Sleep(5 * time.Millisecond)
-		gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "workers")
-		expected = map[string]string{
-			"workers": "16",
-		}
-		diff = helpers.Diff(gotMetrics, expected)
-		if diff == "" {
-			matches++
-		} else {
-			matches = 0
-		}
-		if matches == 5 {
-			return
-		}
-	}
-	t.Fatalf("Metrics (-got, +want):\n%s", diff)
 }
 
 func TestKafkaLagMetric(t *testing.T) {

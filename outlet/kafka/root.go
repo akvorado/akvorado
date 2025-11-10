@@ -135,7 +135,32 @@ func (c *realComponent) Start() error {
 
 // StartWorkers will start the initial workers. This should only be called once.
 func (c *realComponent) StartWorkers(workerBuilder WorkerBuilderFunc) error {
-	c.workerRequestChan = c.runScaler()
+	c.workerRequestChan = runScaler(c.t.Context(nil), scalerConfiguration{
+		minWorkers:        c.config.MinWorkers,
+		maxWorkers:        c.config.MaxWorkers,
+		increaseRateLimit: c.config.WorkerIncreaseRateLimit,
+		decreaseRateLimit: c.config.WorkerDecreaseRateLimit,
+		getWorkerCount: func() int {
+			c.workerMu.Lock()
+			defer c.workerMu.Unlock()
+			return len(c.workers)
+		},
+		increaseWorkers: func(from, to int) {
+			c.r.Info().Msgf("increase number of workers from %d to %d", from, to)
+			for i := from; i < to; i++ {
+				if err := c.startOneWorker(); err != nil {
+					c.r.Err(err).Msg("cannot spawn a new worker")
+					return
+				}
+			}
+		},
+		decreaseWorkers: func(from, to int) {
+			c.r.Info().Msgf("decrease number of workers from %d to %d", from, to)
+			for i := from; i > to; i-- {
+				c.stopOneWorker()
+			}
+		},
+	})
 	c.workerBuilder = workerBuilder
 	for range c.config.MinWorkers {
 		if err := c.startOneWorker(); err != nil {

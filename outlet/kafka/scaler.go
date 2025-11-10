@@ -3,7 +3,12 @@
 
 package kafka
 
-import "golang.org/x/time/rate"
+import (
+	"context"
+	"time"
+
+	"golang.org/x/time/rate"
+)
 
 // ScaleRequest is a request to scale the workers
 type ScaleRequest int
@@ -14,6 +19,17 @@ const (
 	// ScaleDecrease is a request to decrease the number of workers
 	ScaleDecrease
 )
+
+// scalerConfiguration is the configuration for the scaler subcomponent
+type scalerConfiguration struct {
+	minWorkers        int
+	maxWorkers        int
+	increaseRateLimit time.Duration
+	decreaseRateLimit time.Duration
+	increaseWorkers   func(from, to int)
+	decreaseWorkers   func(from, to int)
+	getWorkerCount    func() int
+}
 
 // scalerState tracks the state of the dichotomy search
 type scalerState struct {
@@ -77,54 +93,37 @@ func (s *scalerState) nextWorkerCount(request ScaleRequest, minWorkers, maxWorke
 }
 
 // runScaler starts the automatic scaling loop
-func (c *realComponent) runScaler() chan<- ScaleRequest {
-	ch := make(chan ScaleRequest, c.config.MaxWorkers)
-	down := rate.Sometimes{Interval: c.config.WorkerDecreaseRateLimit}
-	up := rate.Sometimes{Interval: c.config.WorkerIncreaseRateLimit}
-	c.t.Go(func() error {
+func runScaler(ctx context.Context, config scalerConfiguration) chan<- ScaleRequest {
+	ch := make(chan ScaleRequest, config.maxWorkers)
+	down := rate.Sometimes{Interval: config.decreaseRateLimit}
+	up := rate.Sometimes{Interval: config.increaseRateLimit}
+	go func() {
 		state := new(scalerState)
 		for {
 			select {
-			case <-c.t.Dying():
-				return nil
+			case <-ctx.Done():
+				return
 			case request := <-ch:
 				switch request {
 				case ScaleIncrease:
 					up.Do(func() {
-						c.workerMu.Lock()
-						currentWorkers := len(c.workers)
-						c.workerMu.Unlock()
-
-						targetWorkers := state.nextWorkerCount(request, c.config.MinWorkers, c.config.MaxWorkers)
-
+						currentWorkers := config.getWorkerCount()
+						targetWorkers := state.nextWorkerCount(request, config.minWorkers, config.maxWorkers)
 						if targetWorkers > currentWorkers {
-							c.r.Info().Msgf("increase number of workers from %d to %d", currentWorkers, targetWorkers)
-							for i := currentWorkers; i < targetWorkers; i++ {
-								if err := c.startOneWorker(); err != nil {
-									c.r.Err(err).Msg("cannot spawn a new worker")
-									return
-								}
-							}
+							config.increaseWorkers(currentWorkers, targetWorkers)
 						}
 					})
 				case ScaleDecrease:
 					down.Do(func() {
-						c.workerMu.Lock()
-						currentWorkers := len(c.workers)
-						c.workerMu.Unlock()
-
-						targetWorkers := state.nextWorkerCount(request, c.config.MinWorkers, c.config.MaxWorkers)
-
+						currentWorkers := config.getWorkerCount()
+						targetWorkers := state.nextWorkerCount(request, config.minWorkers, config.maxWorkers)
 						if targetWorkers < currentWorkers {
-							c.r.Info().Msgf("decrease number of workers from %d to %d", currentWorkers, targetWorkers)
-							for i := currentWorkers; i > targetWorkers; i-- {
-								c.stopOneWorker()
-							}
+							config.decreaseWorkers(currentWorkers, targetWorkers)
 						}
 					})
 				}
 			}
 		}
-	})
+	}()
 	return ch
 }
