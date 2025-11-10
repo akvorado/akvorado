@@ -613,6 +613,7 @@ are configurable:
 
 - `maximum-batch-size` defines how many flows to send to ClickHouse in a single batch at most
 - `minimum-wait-time` defines how long to wait before sending an incomplete batch
+- `grace-period` defines how long to wait when flushing data to ClickHouse on shutdown
 
 These numbers are per-worker (as defined in the Kafka component). A worker will
 send a batch of size at most `maximum-batch-size` at least every

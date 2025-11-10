@@ -9,6 +9,8 @@ import (
 
 // Configuration describes the configuration for the ClickHouse exporter.
 type Configuration struct {
+	// GracePeriod defines how long to wait for flushing a batch to ClickHouse on shutdown.
+	GracePeriod time.Duration `validate:"min=10s"`
 	// MaximumBatchSize is the maximum number of rows to send to ClickHouse in one batch.
 	MaximumBatchSize uint `validate:"min=1"`
 	// MaximumWaitTime is the maximum number of seconds to wait before sending the current batch.
@@ -22,6 +24,7 @@ const minimumBatchSizeDivider = 10
 // DefaultConfiguration represents the default configuration for the ClickHouse exporter.
 func DefaultConfiguration() Configuration {
 	return Configuration{
+		GracePeriod:      time.Minute,
 		MaximumBatchSize: 50_000,
 		MaximumWaitTime:  5 * time.Second,
 	}

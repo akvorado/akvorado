@@ -137,7 +137,7 @@ func (w *realWorker) Flush(ctx context.Context) {
 		}
 
 		// Don't use the parent context, it may be too short.
-		chCtx, cancel := context.WithTimeout(context.Background(), time.Minute)
+		chCtx, cancel := context.WithTimeout(context.Background(), w.c.config.GracePeriod)
 		defer cancel()
 
 		// Send to ClickHouse in flows_XXXXX_raw.
