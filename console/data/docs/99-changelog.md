@@ -16,6 +16,7 @@ identified with a specific icon:
   ClickHouse, Kafka and remote data sources (previously, `verify` was set to
   false by default)
 - 🩹 *outlet*: provide additional gracetime for a worker to send to ClickHouse
+- 🌱 *common*: enable block and mutex profiling
 - 🌱 *config*: rename `verify` to `skip-verify` in TLS configurations for
   ClickHouse, Kafka and remote data sources (with inverted logic)
 - 🌱 *config*: remote data sources accept a specific TLS configuration

@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/pprof"
+	"runtime"
 	"time"
 
 	"github.com/chenyahui/gin-cache/persist"
@@ -65,6 +66,8 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		c.mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
 		c.mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
 		c.mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+		runtime.SetBlockProfileRate(int(10 * time.Millisecond.Nanoseconds())) // 1/10ms
+		runtime.SetMutexProfileFraction(1000)                                 // 0.1%
 	}
 	return &c, nil
 }
