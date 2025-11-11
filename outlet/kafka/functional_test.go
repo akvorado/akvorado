@@ -248,7 +248,7 @@ func TestWorkerScaling(t *testing.T) {
 	c.StartWorkers(func(_ int, ch chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
 		return func(context.Context, []byte) error {
 			c := msg.Add(1)
-			if c <= 5 || c > 15 {
+			if c <= 5 {
 				t.Logf("received message %d, request a scale increase", c)
 				ch <- ScaleIncrease
 			} else {
@@ -308,12 +308,12 @@ func TestWorkerScaling(t *testing.T) {
 		}
 	}
 	time.Sleep(100 * time.Millisecond)
-	t.Log("Check if workers decreased to 5")
+	t.Log("Check if workers decreased to 8")
 	gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "worker")
 	expected = map[string]string{
-		"worker_decrease_total": "4",
+		"worker_decrease_total": "1",
 		"worker_increase_total": "9",
-		"workers":               "5",
+		"workers":               "8",
 	}
 	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
