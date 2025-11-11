@@ -17,10 +17,7 @@ import (
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/events"
-	"github.com/docker/docker/api/types/filters"
-	"github.com/docker/docker/client"
+	"github.com/moby/moby/client"
 	"github.com/ti-mo/conntrack"
 	"gopkg.in/tomb.v2"
 )
@@ -52,11 +49,13 @@ type Dependencies struct {
 
 // New creates a new component
 func New(r *reporter.Reporter, dependencies Dependencies) (*Component, error) {
-	cli, err := client.NewClientWithOpts(client.FromEnv)
+	cli, err := client.New(
+		client.FromEnv,
+		client.WithAPIVersionNegotiation(),
+	)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize Docker client: %w", err)
 	}
-	cli.NegotiateAPIVersion(context.Background())
 	chl, err := conntrack.Dial(nil)
 	if err != nil {
 		cli.Close()
@@ -116,19 +115,19 @@ func (c *Component) Start() error {
 	// Goroutine to watch for changes
 	ready := make(chan bool)
 	c.t.Go(func() error {
-		filter := filters.NewArgs()
+		filter := client.Filters{}
 		filter.Add("event", "start")
 		filter.Add("label", "akvorado.conntrack.fix=true")
-		msgs, errs := c.dockerClient.Events(c.t.Context(nil), events.ListOptions{Filters: filter})
+		events := c.dockerClient.Events(c.t.Context(nil), client.EventsListOptions{Filters: filter})
 		close(ready)
 		for {
 			t := time.NewTimer(5 * time.Minute)
 			select {
 			case <-c.t.Dying():
 				return nil
-			case err := <-errs:
+			case err := <-events.Err:
 				return fmt.Errorf("error while watching for Docker events: %w", err)
-			case msg := <-msgs:
+			case msg := <-events.Messages:
 				c.r.Info().
 					Str("id", msg.Actor.ID).
 					Str("from", msg.Actor.Attributes["image"]).
@@ -145,7 +144,7 @@ func (c *Component) Start() error {
 
 	// Goroutine to react to changes
 	c.t.Go(func() error {
-		filter := filters.NewArgs()
+		filter := client.Filters{}
 		filter.Add("label", "akvorado.conntrack.fix=true")
 		for {
 			select {
@@ -154,7 +153,7 @@ func (c *Component) Start() error {
 			case cb, ok := <-c.healthy:
 				if ok {
 					ctx, cancel := context.WithTimeout(c.t.Context(nil), time.Second)
-					if _, err := c.dockerClient.Ping(ctx); err == nil {
+					if _, err := c.dockerClient.ServerVersion(ctx, client.ServerVersionOptions{}); err == nil {
 						cb(reporter.HealthcheckOK, "docker client alive")
 					} else {
 						cb(reporter.HealthcheckWarning, "docker client unavailable")
@@ -163,7 +162,7 @@ func (c *Component) Start() error {
 				}
 			case <-c.changes:
 				containers, err := c.dockerClient.ContainerList(c.t.Context(nil),
-					container.ListOptions{
+					client.ContainerListOptions{
 						Filters: filter,
 					})
 				if err != nil {
@@ -171,15 +170,16 @@ func (c *Component) Start() error {
 					c.metrics.errors.WithLabelValues("cannot list containers").Inc()
 					continue
 				}
-				for _, container := range containers {
-					details, err := c.dockerClient.ContainerInspect(c.t.Context(nil), container.ID)
+				for _, container := range containers.Items {
+					details, err := c.dockerClient.ContainerInspect(c.t.Context(nil), container.ID,
+						client.ContainerInspectOptions{})
 					if err != nil {
 						c.r.Err(err).Msg("cannot get details on container")
 						c.metrics.errors.WithLabelValues("cannot get details on container").Inc()
 						continue
 					}
-					for rport, bindings := range details.NetworkSettings.Ports {
-						if !strings.HasSuffix(string(rport), "/udp") {
+					for rport, bindings := range details.Container.NetworkSettings.Ports {
+						if !strings.HasSuffix(rport.String(), "/udp") {
 							continue
 						}
 						ports := map[string]struct{}{}
