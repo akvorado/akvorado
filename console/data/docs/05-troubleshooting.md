@@ -517,9 +517,9 @@ When running on Docker, use `docker inspect` to get the IP address of the servic
 that you want to profile (inlet or outlet):
 
 ```console
-$ docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' akvorado_akvorado-inlet_1
+$ docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' akvorado-akvorado-inlet-1
 240.0.4.8
-$ docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' akvorado_akvorado-outlet_1
+$ docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' akvorado-akvorado-outlet-1
 240.0.4.9
 ```
 
