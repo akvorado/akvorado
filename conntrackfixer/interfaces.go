@@ -6,7 +6,9 @@
 package conntrackfixer
 
 import (
-	"github.com/docker/docker/client"
+	"context"
+
+	"github.com/moby/moby/client"
 	"github.com/ti-mo/conntrack"
 )
 
@@ -21,5 +23,6 @@ type ConntrackConn interface {
 type DockerClient interface {
 	client.ContainerAPIClient
 	client.SystemAPIClient
+	ServerVersion(ctx context.Context, options client.ServerVersionOptions) (client.ServerVersionResult, error)
 	Close() error
 }

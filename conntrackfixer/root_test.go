@@ -8,13 +8,14 @@ package conntrackfixer
 import (
 	"context"
 	"errors"
+	"net/netip"
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/events"
-	"github.com/docker/go-connections/nat"
+	"github.com/moby/moby/api/types/container"
+	"github.com/moby/moby/api/types/events"
+	"github.com/moby/moby/api/types/network"
+	"github.com/moby/moby/client"
 	_ "github.com/opencontainers/image-spec/specs-go/v1" // used by mock
 	"github.com/ti-mo/conntrack"
 	"go.uber.org/mock/gomock"
@@ -51,29 +52,36 @@ func TestRoot(t *testing.T) {
 		Close().
 		Return(nil)
 
-	dockerEvents := make(chan events.Message)
-	dockerErrors := make(chan error)
+	dockerEventMessages := make(chan events.Message)
+	dockerEvents := client.EventsResult{
+		Messages: dockerEventMessages,
+		Err:      nil,
+	}
 	dockerClientMock.EXPECT().
 		Events(gomock.Any(), gomock.Any()).
-		Return(dockerEvents, dockerErrors)
+		Return(dockerEvents)
 
 	// Initial trigger
 	networkSettings := &container.NetworkSettings{}
-	networkSettings.Ports = map[nat.Port][]nat.PortBinding{
-		"2055/udp": {
-			nat.PortBinding{
-				HostIP:   "127.0.0.1",
+	networkSettings.Ports = network.PortMap{
+		network.MustParsePort("2055/udp"): {
+			network.PortBinding{
+				HostIP:   netip.MustParseAddr("127.0.0.1"),
 				HostPort: "6776",
 			},
 		},
 	}
 	dockerClientMock.EXPECT().
 		ContainerList(gomock.Any(), gomock.Any()).
-		Return([]container.Summary{{ID: "initial"}}, nil)
+		Return(client.ContainerListResult{
+			Items: []container.Summary{{ID: "initial"}},
+		}, nil)
 	dockerClientMock.EXPECT().
-		ContainerInspect(gomock.Any(), "initial").
-		Return(container.InspectResponse{
-			NetworkSettings: networkSettings,
+		ContainerInspect(gomock.Any(), "initial", gomock.Any()).
+		Return(client.ContainerInspectResult{
+			Container: container.InspectResponse{
+				NetworkSettings: networkSettings,
+			},
 		}, nil)
 	conntrackConnMock.EXPECT().
 		Dump(nil).
@@ -111,7 +119,8 @@ func TestRoot(t *testing.T) {
 
 	// Healthcheck test
 	t.Run("healthcheck", func(t *testing.T) {
-		dockerClientMock.EXPECT().Ping(gomock.Any()).Return(types.Ping{}, nil)
+		dockerClientMock.EXPECT().ServerVersion(gomock.Any(), gomock.Any()).
+			Return(client.ServerVersionResult{}, nil)
 		got := r.RunHealthchecks(context.Background())
 		if diff := helpers.Diff(got.Details["conntrack-fixer"], reporter.HealthcheckResult{
 			Status: reporter.HealthcheckOK,
@@ -119,7 +128,8 @@ func TestRoot(t *testing.T) {
 		}); diff != "" {
 			t.Fatalf("runHealthcheck() (-got, +want):\n%s", diff)
 		}
-		dockerClientMock.EXPECT().Ping(gomock.Any()).Return(types.Ping{}, errors.New("unexpected"))
+		dockerClientMock.EXPECT().ServerVersion(gomock.Any(), gomock.Any()).
+			Return(client.ServerVersionResult{}, errors.New("unexpected"))
 		got = r.RunHealthchecks(context.Background())
 		if diff := helpers.Diff(got.Details["conntrack-fixer"], reporter.HealthcheckResult{
 			Status: reporter.HealthcheckWarning,
@@ -132,21 +142,25 @@ func TestRoot(t *testing.T) {
 	// New container
 	t.Run("new container", func(_ *testing.T) {
 		networkSettings := &container.NetworkSettings{}
-		networkSettings.Ports = map[nat.Port][]nat.PortBinding{
-			"2055/udp": {
-				nat.PortBinding{
-					HostIP:   "127.0.0.1",
+		networkSettings.Ports = network.PortMap{
+			network.MustParsePort("2055/udp"): {
+				network.PortBinding{
+					HostIP:   netip.MustParseAddr("127.0.0.1"),
 					HostPort: "6777",
 				},
 			},
 		}
 		dockerClientMock.EXPECT().
 			ContainerList(gomock.Any(), gomock.Any()).
-			Return([]container.Summary{{ID: "new one"}}, nil)
+			Return(client.ContainerListResult{
+				Items: []container.Summary{{ID: "new one"}},
+			}, nil)
 		dockerClientMock.EXPECT().
-			ContainerInspect(gomock.Any(), "new one").
-			Return(container.InspectResponse{
-				NetworkSettings: networkSettings,
+			ContainerInspect(gomock.Any(), "new one", gomock.Any()).
+			Return(client.ContainerInspectResult{
+				Container: container.InspectResponse{
+					NetworkSettings: networkSettings,
+				},
 			}, nil)
 		conntrackConnMock.EXPECT().
 			Dump(nil).
@@ -199,9 +213,15 @@ func TestRoot(t *testing.T) {
 				},
 			}).
 			Return(nil)
-		dockerEvents <- events.Message{
-			ID:   "new one",
-			From: "some image",
+		dockerEventMessages <- events.Message{
+			Type:   events.ContainerEventType,
+			Action: events.ActionCreate,
+			Actor: events.Actor{
+				ID: "something",
+				Attributes: map[string]string{
+					"image": "some/image:v17",
+				},
+			},
 		}
 		time.Sleep(20 * time.Millisecond)
 	})
