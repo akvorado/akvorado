@@ -19,6 +19,11 @@ It is better to **sample on ingress only**. This requires sampling on both
 external and internal interfaces. This prevents flows from being counted twice
 when they enter and exit through external ports.
 
+> [!TIP]
+> When using NetFlow or IPFIX, you should configure **low timeout values** for
+> both active and inactive flows: this should prevent spikes in the graphs.
+> Values of 5 to 10 seconds should be OK.
+
 ### Exporter Address
 
 The exporter address is set from the field inside the flow message by default
@@ -83,13 +88,13 @@ flow exporter AkvoradoExport
 flow monitor AkvoradoMonitor
     exporter AkvoradoExport
     cache timeout inactive 10
-    cache timeout active 60
+    cache timeout active 10
     record Akvorado
 ! 
 flow monitor AkvoradoMonitor-IPV6
     exporter AkvoradoExport
     cache timeout inactive 10
-    cache timeout active 60
+    cache timeout active 10
     record Akvorado-IPV6
 !
 ```
@@ -138,16 +143,16 @@ flow monitor-map monitor1
  record ipv4
  exporter akvorado
  cache entries 100000
- cache timeout active 15
- cache timeout inactive 2
+ cache timeout active 10
+ cache timeout inactive 10
  cache timeout rate-limit 2000
 !
 flow monitor-map monitor2
  record ipv6
  exporter akvorado
  cache entries 100000
- cache timeout active 15
- cache timeout inactive 2
+ cache timeout active 10
+ cache timeout inactive 10
  cache timeout rate-limit 2000
 !
 ```
@@ -453,8 +458,8 @@ sFlow is not well supported on devices running SR OS. It is best to use IPFIX.
 /configure cflowd admin-state enable
 /configure cflowd cache-size 250000
 /configure cflowd template-retransmit 60
-/configure cflowd active-flow-timeout 15
-/configure cflowd inactive-flow-timeout 15
+/configure cflowd active-flow-timeout 10
+/configure cflowd inactive-flow-timeout 10
 /configure cflowd sample-profile 1 sample-rate 2000
 /configure cflowd collector 192.0.2.1 port 2055 admin-state enable
 /configure cflowd collector 192.0.2.1 port 2055 description "akvorado.example.net"
@@ -621,7 +626,7 @@ Here is an example of how to invoke the `pcap` plugin:
 ```sh
 ipfixprobe \
   -i "pcap;ifc=eth0;snaplen=128" \
-  -s "cache;active=5;inactive=5" \
+  -s "cache;active=10;inactive=10" \
   -o "ipfix;host=akvorado-inlet-receiver;port=2055;udp;id=1;dir=1"
 ```
 
