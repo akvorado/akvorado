@@ -248,7 +248,7 @@ func TestWorkerScaling(t *testing.T) {
 	c.StartWorkers(func(_ int, ch chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
 		return func(context.Context, []byte) error {
 			c := msg.Add(1)
-			if c <= 5 {
+			if c <= 1 {
 				t.Logf("received message %d, request a scale increase", c)
 				ch <- ScaleIncrease
 			} else {
@@ -273,16 +273,13 @@ func TestWorkerScaling(t *testing.T) {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 
-	// Send 5 messages in a row
-	t.Log("Send 5 messages")
-	for range 5 {
-		record := &kgo.Record{
-			Topic: expectedTopicName,
-			Value: []byte("hello"),
-		}
-		if results := producer.ProduceSync(context.Background(), record); results.FirstErr() != nil {
-			t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
-		}
+	t.Log("Send 1 message (increase)")
+	record := &kgo.Record{
+		Topic: expectedTopicName,
+		Value: []byte("hello"),
+	}
+	if results := producer.ProduceSync(context.Background(), record); results.FirstErr() != nil {
+		t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
 	}
 	time.Sleep(100 * time.Millisecond)
 	t.Log("Check if workers increased to 9")
@@ -296,9 +293,8 @@ func TestWorkerScaling(t *testing.T) {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 
-	// Send 1 message
-	t.Log("Send 1 message")
-	for range 1 {
+	t.Log("Send 10 messages (decrease)")
+	for range 10 {
 		record := &kgo.Record{
 			Topic: expectedTopicName,
 			Value: []byte("hello"),

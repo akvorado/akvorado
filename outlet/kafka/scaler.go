@@ -6,8 +6,6 @@ package kafka
 import (
 	"context"
 	"time"
-
-	"golang.org/x/time/rate"
 )
 
 // ScaleRequest is a request to scale the workers
@@ -18,6 +16,8 @@ const (
 	ScaleIncrease ScaleRequest = iota + 1
 	// ScaleDecrease is a request to decrease the number of workers
 	ScaleDecrease
+	// ScaleSteady is a request to keep the number of workers as is
+	ScaleSteady
 )
 
 // scalerConfiguration is the configuration for the scaler subcomponent
@@ -68,32 +68,50 @@ func (s *scalerState) nextWorkerCount(request ScaleRequest, currentWorkers, minW
 // runScaler starts the automatic scaling loop
 func runScaler(ctx context.Context, config scalerConfiguration) chan<- ScaleRequest {
 	ch := make(chan ScaleRequest, config.maxWorkers)
-	down := rate.Sometimes{Interval: config.decreaseRateLimit}
-	up := rate.Sometimes{Interval: config.increaseRateLimit}
 	go func() {
 		state := new(scalerState)
+		var last time.Time
+		var decreaseCount int
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case request := <-ch:
-				switch request {
-				case ScaleIncrease:
-					up.Do(func() {
+				// During config.increaseRateLimit, we ignore everything.
+				// Between config.increaseRateLimit and
+				// config.decreaseRateLimit, we only use the increase request.
+				// Past this limit, we take whatever we get.
+				now := time.Now()
+				if last.Add(config.increaseRateLimit).After(now) {
+					continue
+				}
+				if request == ScaleIncrease {
+					current := config.getWorkerCount()
+					target := state.nextWorkerCount(ScaleIncrease, current, config.minWorkers, config.maxWorkers)
+					if target > current {
+						config.increaseWorkers(current, target)
+					}
+					last = now
+					decreaseCount = 0
+					continue
+				}
+				if request == ScaleSteady {
+					decreaseCount--
+				}
+				if last.Add(config.decreaseRateLimit).After(now) {
+					continue
+				}
+				if request == ScaleDecrease {
+					decreaseCount++
+					if decreaseCount >= 10 {
 						current := config.getWorkerCount()
-						target := state.nextWorkerCount(request, current, config.minWorkers, config.maxWorkers)
-						if target > current {
-							config.increaseWorkers(current, target)
-						}
-					})
-				case ScaleDecrease:
-					down.Do(func() {
-						current := config.getWorkerCount()
-						target := state.nextWorkerCount(request, current, config.minWorkers, config.maxWorkers)
+						target := state.nextWorkerCount(ScaleDecrease, current, config.minWorkers, config.maxWorkers)
 						if target < current {
 							config.decreaseWorkers(current, target)
 						}
-					})
+						last = now
+						decreaseCount = 0
+					}
 				}
 			}
 		}
