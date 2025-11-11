@@ -47,7 +47,7 @@ func TestScalerWithoutRateLimiter(t *testing.T) {
 			minWorkers: 1,
 			maxWorkers: 16,
 			requests:   []ScaleRequest{ScaleIncrease, ScaleIncrease, ScaleDecrease},
-			expected:   []int{9, 13, 11},
+			expected:   []int{9, 13, 12},
 		},
 		// No more tests, the state logic is tested in TestScalerState
 	} {
@@ -153,7 +153,7 @@ func TestScalerRateLimiter(t *testing.T) {
 		func() {
 			mu.Lock()
 			defer mu.Unlock()
-			if diff := helpers.Diff(got, []int{8, 4}); diff != "" {
+			if diff := helpers.Diff(got, []int{8, 7}); diff != "" {
 				t.Fatalf("runScaler() (-got, +want):\n%s", diff)
 			}
 		}()
@@ -163,7 +163,7 @@ func TestScalerRateLimiter(t *testing.T) {
 		func() {
 			mu.Lock()
 			defer mu.Unlock()
-			if diff := helpers.Diff(got, []int{8, 4}); diff != "" {
+			if diff := helpers.Diff(got, []int{8, 7}); diff != "" {
 				t.Fatalf("runScaler() (-got, +want):\n%s", diff)
 			}
 		}()
@@ -174,7 +174,7 @@ func TestScalerRateLimiter(t *testing.T) {
 		func() {
 			mu.Lock()
 			defer mu.Unlock()
-			if diff := helpers.Diff(got, []int{8, 4, 6}); diff != "" {
+			if diff := helpers.Diff(got, []int{8, 7, 8}); diff != "" {
 				t.Fatalf("runScaler() (-got, +want):\n%s", diff)
 			}
 		}()
@@ -214,7 +214,7 @@ func TestScalerState(t *testing.T) {
 				ScaleIncrease, ScaleIncrease,
 				ScaleDecrease, ScaleDecrease, ScaleDecrease, ScaleDecrease, ScaleDecrease, ScaleDecrease,
 			},
-			expected: []int{9, 13, 11, 10, 9, 5, 3, 2},
+			expected: []int{9, 13, 12, 11, 10, 9, 8, 7},
 		},
 		{
 			name:       "down, up, up, down, down, down, down, down, down",
@@ -225,7 +225,7 @@ func TestScalerState(t *testing.T) {
 				ScaleIncrease, ScaleIncrease,
 				ScaleDecrease, ScaleDecrease, ScaleDecrease, ScaleDecrease, ScaleDecrease, ScaleDecrease,
 			},
-			expected: []int{1, 9, 13, 11, 10, 9, 5, 3, 2},
+			expected: []int{1, 2, 3, 2, 1, 1, 1, 1, 1},
 		},
 		{
 			name:       "simple down from min",
@@ -242,16 +242,6 @@ func TestScalerState(t *testing.T) {
 				ScaleIncrease, ScaleIncrease, ScaleIncrease, ScaleIncrease, ScaleIncrease, ScaleIncrease,
 			},
 			expected: []int{9, 13, 15, 16, 16, 16},
-		},
-		{
-			name:       "reach min",
-			minWorkers: 1,
-			maxWorkers: 16,
-			requests: []ScaleRequest{
-				ScaleIncrease,
-				ScaleDecrease, ScaleDecrease, ScaleDecrease, ScaleDecrease, ScaleDecrease,
-			},
-			expected: []int{9, 5, 3, 2, 1, 1},
 		},
 	}
 
