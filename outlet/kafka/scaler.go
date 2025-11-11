@@ -77,14 +77,12 @@ func runScaler(ctx context.Context, config scalerConfiguration) chan<- ScaleRequ
 			case <-ctx.Done():
 				return
 			case request := <-ch:
-				// During config.increaseRateLimit, we ignore everything.
-				// Between config.increaseRateLimit and
-				// config.decreaseRateLimit, we only use the increase request.
-				// Past this limit, we take whatever we get.
 				now := time.Now()
+				// During increaseRateLimit, we ignore everything.
 				if last.Add(config.increaseRateLimit).After(now) {
 					continue
 				}
+				// Between increaseRateLimit and decreaseRateLimit, we accept increase requests.
 				if request == ScaleIncrease {
 					current := config.getWorkerCount()
 					target := state.nextWorkerCount(ScaleIncrease, current, config.minWorkers, config.maxWorkers)
@@ -95,12 +93,17 @@ func runScaler(ctx context.Context, config scalerConfiguration) chan<- ScaleRequ
 					decreaseCount = 0
 					continue
 				}
+				// We also count steady requests.
 				if request == ScaleSteady {
 					decreaseCount--
 				}
+				// But we ignore everything else.
 				if last.Add(config.decreaseRateLimit).After(now) {
 					continue
 				}
+				// Past decreaseRateLimit, we count decrease requests and
+				// request 10 of them if not cancelled by steady requests (they
+				// have a head start).
 				if request == ScaleDecrease {
 					decreaseCount++
 					if decreaseCount >= 10 {
