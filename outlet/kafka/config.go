@@ -27,7 +27,7 @@ type Configuration struct {
 	// WorkerIncreaseRateLimit is the duration that should elapse before increasing the number of workers
 	WorkerIncreaseRateLimit time.Duration `validate:"min=10s"`
 	// WorkerDecreaseRateLimit is the duration that should elapse before decreasing the number of workers
-	WorkerDecreaseRateLimit time.Duration `validate:"min=10s"`
+	WorkerDecreaseRateLimit time.Duration `validate:"min=20s,gtfield=WorkerIncreaseRateLimit"`
 }
 
 // DefaultConfiguration represents the default configuration for the Kafka exporter.

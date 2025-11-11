@@ -43,11 +43,43 @@ func TestScalerWithoutRateLimiter(t *testing.T) {
 			},
 			expected: []int{9, 13, 15, 16},
 		}, {
-			name:       "scale up twice, then down",
+			name:       "scale up twice, then down a lot",
 			minWorkers: 1,
 			maxWorkers: 16,
-			requests:   []ScaleRequest{ScaleIncrease, ScaleIncrease, ScaleDecrease},
-			expected:   []int{9, 13, 12},
+			requests: []ScaleRequest{
+				ScaleIncrease, ScaleIncrease,
+				// We need 10 decrease to decrease
+				ScaleDecrease, ScaleDecrease, ScaleDecrease, ScaleDecrease, ScaleDecrease,
+				ScaleDecrease, ScaleDecrease, ScaleDecrease, ScaleDecrease, ScaleDecrease,
+			},
+			expected: []int{9, 13, 12},
+		}, {
+			name:       "scale up twice, then down, steady, and repeat",
+			minWorkers: 1,
+			maxWorkers: 16,
+			requests: []ScaleRequest{
+				ScaleIncrease, ScaleIncrease,
+				ScaleDecrease, ScaleSteady, ScaleDecrease, ScaleSteady,
+				ScaleDecrease, ScaleSteady, ScaleDecrease, ScaleSteady,
+				ScaleDecrease, ScaleSteady, ScaleDecrease, ScaleSteady,
+				ScaleDecrease, ScaleSteady, ScaleDecrease, ScaleSteady,
+				ScaleDecrease, ScaleSteady, ScaleDecrease, ScaleSteady,
+				ScaleDecrease, ScaleSteady, ScaleDecrease, ScaleSteady,
+			},
+			expected: []int{9, 13},
+		}, {
+			name:       "scale up twice, then down, steady, down, steady, down, down, repeat",
+			minWorkers: 1,
+			maxWorkers: 16,
+			requests: []ScaleRequest{
+				ScaleIncrease, ScaleIncrease,
+				ScaleDecrease, ScaleSteady, ScaleDecrease, ScaleSteady, ScaleDecrease, ScaleDecrease,
+				ScaleDecrease, ScaleSteady, ScaleDecrease, ScaleSteady, ScaleDecrease, ScaleDecrease,
+				ScaleDecrease, ScaleSteady, ScaleDecrease, ScaleSteady, ScaleDecrease, ScaleDecrease,
+				ScaleDecrease, ScaleSteady, ScaleDecrease, ScaleSteady, ScaleDecrease, ScaleDecrease,
+				ScaleDecrease, ScaleSteady, ScaleDecrease, ScaleSteady, ScaleDecrease, ScaleDecrease,
+			},
+			expected: []int{9, 13, 12},
 		},
 		// No more tests, the state logic is tested in TestScalerState
 	} {
@@ -110,8 +142,8 @@ func TestScalerRateLimiter(t *testing.T) {
 		config := scalerConfiguration{
 			minWorkers:        1,
 			maxWorkers:        15,
-			increaseRateLimit: time.Second,
-			decreaseRateLimit: time.Second,
+			increaseRateLimit: time.Minute,
+			decreaseRateLimit: 5 * time.Minute,
 			getWorkerCount: func() int {
 				mu.Lock()
 				defer mu.Unlock()
@@ -133,51 +165,112 @@ func TestScalerRateLimiter(t *testing.T) {
 			},
 		}
 		ch := runScaler(ctx, config)
-		// Collapsing increases
-		for range 10 {
-			ch <- ScaleIncrease
-			time.Sleep(10 * time.Millisecond)
-		}
-		func() {
+		check := func(expected []int) {
+			t.Helper()
+			time.Sleep(time.Millisecond)
 			mu.Lock()
 			defer mu.Unlock()
-			if diff := helpers.Diff(got, []int{8}); diff != "" {
+			if diff := helpers.Diff(got, expected); diff != "" {
 				t.Fatalf("runScaler() (-got, +want):\n%s", diff)
 			}
-		}()
-		// Collapsing decreases
+		}
+		// Increase on first scale request
+		ch <- ScaleIncrease
+		check([]int{8})
+
+		// Collapsing further increases
+		for range 10 {
+			time.Sleep(5 * time.Second)
+			ch <- ScaleIncrease
+		}
+		// time == 50 seconds
+		check([]int{8})
+
+		// Then increase again
+		time.Sleep(10 * time.Second)
+		ch <- ScaleIncrease
+		// time = 1 minute
+		check([]int{8, 12})
+
+		// Do not decrease (too soon)
+		for range 10 {
+			time.Sleep(6 * time.Second)
+			ch <- ScaleDecrease
+		}
+		// time = 1 minute
+		check([]int{8, 12})
+
+		// Do not decrease even after 4 minutes
+		for range 40 {
+			time.Sleep(6 * time.Second)
+			ch <- ScaleDecrease
+		}
+		// time = 5 minutes
+		check([]int{8, 12})
+
+		// Decrease (5-second timeout done)
+		for range 10 {
+			time.Sleep(6 * time.Second)
+			ch <- ScaleDecrease
+		}
+		// time = 6 minutes
+		check([]int{8, 12, 11})
+
+		// Do not increase
+		for range 10 {
+			time.Sleep(5 * time.Second)
+			ch <- ScaleIncrease
+		}
+		// time = 50 seconds
+		check([]int{8, 12, 11})
+
+		// Increase after 10 more seconds
+		time.Sleep(10 * time.Second)
+		ch <- ScaleIncrease
+		// time = 1 minute
+		check([]int{8, 12, 11, 12})
+
+		// When mixing increase and decrease, increase
+		for range 60 {
+			time.Sleep(time.Second)
+			ch <- ScaleIncrease
+			ch <- ScaleDecrease
+		}
+		// time = 1 minute
+		check([]int{8, 12, 11, 12, 13})
+
+		// When we only have a few increase at the beginning, but mostly decrease after that, decrease
+		time.Sleep(55 * time.Second)
+		ch <- ScaleIncrease
+		ch <- ScaleIncrease
+		ch <- ScaleIncrease
+		ch <- ScaleIncrease
+		for range 295 {
+			time.Sleep(time.Second)
+			ch <- ScaleDecrease
+		}
+		check([]int{8, 12, 11, 12, 13, 12})
+
+		// If we have many decrease requests at once, we decrease
+		time.Sleep(300 * time.Second)
 		for range 10 {
 			ch <- ScaleDecrease
-			time.Sleep(10 * time.Millisecond)
 		}
-		func() {
-			mu.Lock()
-			defer mu.Unlock()
-			if diff := helpers.Diff(got, []int{8, 7}); diff != "" {
-				t.Fatalf("runScaler() (-got, +want):\n%s", diff)
-			}
-		}()
-		// Still no increase
-		ch <- ScaleIncrease
-		time.Sleep(10 * time.Millisecond)
-		func() {
-			mu.Lock()
-			defer mu.Unlock()
-			if diff := helpers.Diff(got, []int{8, 7}); diff != "" {
-				t.Fatalf("runScaler() (-got, +want):\n%s", diff)
-			}
-		}()
-		// Rearm increase rate limiter
-		time.Sleep(900 * time.Millisecond)
-		ch <- ScaleIncrease
-		time.Sleep(10 * time.Millisecond)
-		func() {
-			mu.Lock()
-			defer mu.Unlock()
-			if diff := helpers.Diff(got, []int{8, 7, 8}); diff != "" {
-				t.Fatalf("runScaler() (-got, +want):\n%s", diff)
-			}
-		}()
+		check([]int{8, 12, 11, 12, 13, 12, 11})
+
+		// But if they are mixed with steady requests, we shouldn't decrease
+		time.Sleep(300 * time.Second)
+		for range 10 {
+			ch <- ScaleDecrease
+			ch <- ScaleSteady
+		}
+		check([]int{8, 12, 11, 12, 13, 12, 11})
+
+		// But if we have less Steady than decrease, we should scale down
+		for range 10 {
+			ch <- ScaleDecrease
+		}
+		check([]int{8, 12, 11, 12, 13, 12, 11, 10})
 	})
 }
 
