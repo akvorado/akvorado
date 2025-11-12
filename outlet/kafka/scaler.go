@@ -72,9 +72,7 @@ func (s *scalerState) nextWorkerCount(request ScaleRequest, currentWorkers, minW
 func scaleWhileDraining(ctx context.Context, ch <-chan ScaleRequest, scaleFn func()) {
 	var wg sync.WaitGroup
 	done := make(chan struct{})
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		for {
 			select {
 			case <-ctx.Done():
@@ -85,12 +83,11 @@ func scaleWhileDraining(ctx context.Context, ch <-chan ScaleRequest, scaleFn fun
 				// Discard signal
 			}
 		}
-	}()
-	go func() {
-		defer wg.Done()
+	})
+	wg.Go(func() {
 		scaleFn()
 		close(done)
-	}()
+	})
 	wg.Wait()
 }
 

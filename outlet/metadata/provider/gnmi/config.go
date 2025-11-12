@@ -4,7 +4,7 @@
 package gnmi
 
 import (
-	"fmt"
+	"errors"
 	"net/netip"
 	"reflect"
 	"time"
@@ -197,7 +197,7 @@ func AuthenticationParameterUnmarshallerHook() mapstructure.DecodeHookFunc {
 
 		// If we have new TLS key and any old keys, that's an error
 		if tlsKey != nil && (insecureKey != nil || skipVerifyKey != nil || tlsCAKey != nil || tlsCertKey != nil || tlsKeyKey != nil) {
-			return nil, fmt.Errorf("cannot mix old TLS configuration (Insecure, SkipVerify, TLSCA, TLSCert, TLSKey) with new TLS configuration")
+			return nil, errors.New("cannot mix old TLS configuration (Insecure, SkipVerify, TLSCA, TLSCert, TLSKey) with new TLS configuration")
 		}
 
 		// If no old keys, we need to set default TLS.Enable

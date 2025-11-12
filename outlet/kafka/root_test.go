@@ -46,6 +46,7 @@ func TestMock(t *testing.T) {
 	}
 
 	c.Stop()
+	time.Sleep(10 * time.Millisecond)
 	if !shutdownCalled {
 		t.Error("Stop() should have triggered shutdown function")
 	}

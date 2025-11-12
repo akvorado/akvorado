@@ -55,7 +55,8 @@ func (m *Metrics) HTTPHandler() http.Handler {
 	})
 }
 
-func getPrefix(module string) (moduleName string) {
+func getPrefix(module string) string {
+	var moduleName string
 	if !strings.HasPrefix(module, stack.ModuleName) {
 		moduleName = stack.ModuleName
 	} else {
@@ -64,7 +65,7 @@ func getPrefix(module string) (moduleName string) {
 	moduleName = strings.ReplaceAll(moduleName, "/", "_")
 	moduleName = strings.ReplaceAll(moduleName, ".", "_")
 	moduleName = fmt.Sprintf("%s_", moduleName)
-	return
+	return moduleName
 }
 
 // Factory returns a factory to register new metrics with promauto. It

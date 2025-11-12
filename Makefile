@@ -239,8 +239,8 @@ test-coverage-js: ; $(info $(M) running JS coverage tests…) @ ## Run JS covera
 
 .PHONY: lint
 lint: .lint-go~ .lint-js~ ## Run linting
-.lint-go~: $(shell $(LSFILES) '*.go' 2> /dev/null) ; $(info $(M) running golint…)
-	$Q $(REVIVE) -formatter stylish -set_exit_status ./...
+.lint-go~: revive.toml $(shell $(LSFILES) '*.go' 2> /dev/null) ; $(info $(M) running golint…)
+	$Q $(REVIVE) -config $(PWD)/revive.toml -formatter stylish -set_exit_status ./...
 	$Q touch $@
 .lint-js~: $(shell $(LSFILES) '*.js' '*.ts' '*.vue' '*.html' 2> /dev/null)
 .lint-js~: $(GENERATED_JS) ; $(info $(M) running jslint…)

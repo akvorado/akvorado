@@ -188,41 +188,43 @@ func TestMultipleServers(t *testing.T) {
 	for range 10 {
 		r := reporter.NewMock(t)
 		sch := schema.NewMock(t)
-		ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
-		defer cancel()
-		ctx = clickhousego.Context(ctx, clickhousego.WithSettings(clickhousego.Settings{
-			"allow_suspicious_low_cardinality_types": 1,
-		}))
+		func() {
+			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+			defer cancel()
+			ctx = clickhousego.Context(ctx, clickhousego.WithSettings(clickhousego.Settings{
+				"allow_suspicious_low_cardinality_types": 1,
+			}))
 
-		// Create components
-		dbConf := clickhousedb.DefaultConfiguration()
-		dbConf.Servers = servers
-		dbConf.DialTimeout = 100 * time.Millisecond
-		chdb, err := clickhousedb.New(r, dbConf, clickhousedb.Dependencies{
-			Daemon: daemon.NewMock(t),
-		})
-		if err != nil {
-			t.Fatalf("clickhousedb.New() error:\n%+v", err)
-		}
-		helpers.StartStop(t, chdb)
-		conf := clickhouse.DefaultConfiguration()
-		conf.MaximumBatchSize = 10
-		ch, err := clickhouse.New(r, conf, clickhouse.Dependencies{
-			ClickHouse: chdb,
-			Schema:     sch,
-		})
-		if err != nil {
-			t.Fatalf("clickhouse.New() error:\n%+v", err)
-		}
-		helpers.StartStop(t, ch)
+			// Create components
+			dbConf := clickhousedb.DefaultConfiguration()
+			dbConf.Servers = servers
+			dbConf.DialTimeout = 100 * time.Millisecond
+			chdb, err := clickhousedb.New(r, dbConf, clickhousedb.Dependencies{
+				Daemon: daemon.NewMock(t),
+			})
+			if err != nil {
+				t.Fatalf("clickhousedb.New() error:\n%+v", err)
+			}
+			helpers.StartStop(t, chdb)
+			conf := clickhouse.DefaultConfiguration()
+			conf.MaximumBatchSize = 10
+			ch, err := clickhouse.New(r, conf, clickhouse.Dependencies{
+				ClickHouse: chdb,
+				Schema:     sch,
+			})
+			if err != nil {
+				t.Fatalf("clickhouse.New() error:\n%+v", err)
+			}
+			helpers.StartStop(t, ch)
 
-		// Trigger an empty send
-		bf := sch.NewFlowMessage()
-		bf.AppendUint(schema.ColumnDstAS, 65000)
-		bf.AppendUint(schema.ColumnBytes, 200)
-		bf.Finalize()
-		w := ch.NewWorker(1, bf)
-		w.Flush(ctx)
+			// Trigger an empty send
+			bf := sch.NewFlowMessage()
+			bf.AppendUint(schema.ColumnDstAS, 65000)
+			bf.AppendUint(schema.ColumnBytes, 200)
+			bf.Finalize()
+			w := ch.NewWorker(1, bf)
+			w.Flush(ctx)
+		}()
 
 		// Check metrics
 		gotMetrics := r.GetMetrics("akvorado_outlet_clickhouse_", "errors_total")

@@ -19,11 +19,14 @@ type exporterAndInterfaceInfo struct {
 }
 
 // enrichFlow adds more data to a flow.
-func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) (skip bool) {
-	var flowExporterName string
-	var flowInIfName, flowInIfDescription, flowOutIfName, flowOutIfDescription string
-	var flowInIfSpeed, flowOutIfSpeed, flowInIfIndex, flowOutIfIndex uint32
-	var flowInIfVlan, flowOutIfVlan uint16
+func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) bool {
+	var (
+		flowExporterName                                                       string
+		flowInIfName, flowInIfDescription, flowOutIfName, flowOutIfDescription string
+		flowInIfSpeed, flowOutIfSpeed, flowInIfIndex, flowOutIfIndex           uint32
+		flowInIfVlan, flowOutIfVlan                                            uint16
+	)
+	var skip bool
 
 	t := time.Now() // only call it once
 	expClassification := exporterClassification{}
@@ -102,7 +105,7 @@ func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) (skip boo
 	}
 
 	if skip {
-		return
+		return true
 	}
 
 	// Classification
@@ -148,7 +151,7 @@ func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) (skip boo
 	flow.AppendUint(schema.ColumnInIfSpeed, uint64(flowInIfSpeed))
 	flow.AppendUint(schema.ColumnOutIfSpeed, uint64(flowOutIfSpeed))
 
-	return
+	return skip
 }
 
 // getASNumber retrieves the AS number for a flow, depending on user preferences.

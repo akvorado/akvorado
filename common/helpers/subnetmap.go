@@ -147,7 +147,8 @@ var subnetLookAlikeRegex = regexp.MustCompile("^([a-fA-F:.0-9]*[:.][a-fA-F:.0-9]
 
 // LooksLikeSubnetMap returns true iff the provided value could be a SubnetMap
 // (but not 100% sure).
-func LooksLikeSubnetMap(v reflect.Value) (result bool) {
+func LooksLikeSubnetMap(v reflect.Value) bool {
+	var result bool
 	if v.Kind() == reflect.Map {
 		// When we have a map, we check if all keys look like a subnet.
 		result = true
@@ -163,7 +164,7 @@ func LooksLikeSubnetMap(v reflect.Value) (result bool) {
 			}
 		}
 	}
-	return
+	return result
 }
 
 // SubnetMapUnmarshallerHook decodes SubnetMap and notably check that valid
