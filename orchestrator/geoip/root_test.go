@@ -16,7 +16,7 @@ import (
 	"akvorado/common/reporter"
 )
 
-func copyFile(t *testing.T, src string, dst string) {
+func copyFile(t *testing.T, src, dst string) {
 	t.Helper()
 	source, err := os.Open(src)
 	if err != nil {

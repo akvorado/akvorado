@@ -21,7 +21,7 @@ var errNoRouteFound = errors.New("no route found")
 // we use the best route we have, while the exporter may not have this
 // best route available. The returned result should not be modified!
 // The last parameter, the agent, is ignored by this provider.
-func (p *Provider) Lookup(_ context.Context, ip netip.Addr, nh netip.Addr, _ netip.Addr) (LookupResult, error) {
+func (p *Provider) Lookup(_ context.Context, ip, nh, _ netip.Addr) (LookupResult, error) {
 	if !p.config.CollectASNs && !p.config.CollectASPaths && !p.config.CollectCommunities {
 		return LookupResult{}, nil
 	}

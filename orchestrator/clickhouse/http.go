@@ -17,7 +17,7 @@ import (
 	"akvorado/common/embed"
 )
 
-func (c *Component) addHandlerEmbedded(url string, path string) {
+func (c *Component) addHandlerEmbedded(url, path string) {
 	data, _ := fs.Sub(embed.Data(), "orchestrator/clickhouse")
 	c.d.HTTP.AddHandler(url,
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

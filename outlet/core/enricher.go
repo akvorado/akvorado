@@ -199,7 +199,7 @@ func (c *Component) getNetMask(flowMask, bmpMask uint8) (mask uint8) {
 	return mask
 }
 
-func (c *Component) getNextHop(flowNextHop netip.Addr, bmpNextHop netip.Addr) (nextHop netip.Addr) {
+func (c *Component) getNextHop(flowNextHop, bmpNextHop netip.Addr) (nextHop netip.Addr) {
 	nextHop = netip.IPv6Unspecified()
 	for _, provider := range c.config.NetProviders {
 		if !nextHop.IsUnspecified() {
@@ -227,7 +227,7 @@ func (c *Component) writeExporter(flow *schema.FlowMessage, classification expor
 	return true
 }
 
-func (c *Component) classifyExporter(t time.Time, ip string, name string, flow *schema.FlowMessage, classification exporterClassification) bool {
+func (c *Component) classifyExporter(t time.Time, ip, name string, flow *schema.FlowMessage, classification exporterClassification) bool {
 	// we already have the info provided by the metadata component
 	if (classification != exporterClassification{}) {
 		return c.writeExporter(flow, classification)
@@ -281,8 +281,7 @@ func (c *Component) writeInterface(flow *schema.FlowMessage, classification inte
 
 func (c *Component) classifyInterface(
 	t time.Time,
-	ip string,
-	exporterName string,
+	ip, exporterName string,
 	fl *schema.FlowMessage,
 	ifIndex uint32,
 	ifName,

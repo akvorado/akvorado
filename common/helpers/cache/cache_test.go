@@ -12,7 +12,7 @@ import (
 	"akvorado/common/helpers/cache"
 )
 
-func expectCacheGet(t *testing.T, c *cache.Cache[netip.Addr, string], key string, expectedResult string, expectedOk bool) {
+func expectCacheGet(t *testing.T, c *cache.Cache[netip.Addr, string], key, expectedResult string, expectedOk bool) {
 	t.Helper()
 	ip := netip.MustParseAddr(key)
 	ip = helpers.AddrTo6(ip)

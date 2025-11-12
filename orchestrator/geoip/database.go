@@ -25,7 +25,7 @@ type geoDatabase interface {
 
 // openDatabase opens the provided database and closes the current
 // one. Do nothing if the path is empty.
-func (c *Component) openDatabase(which string, path string, notifySubscribers bool) error {
+func (c *Component) openDatabase(which, path string, notifySubscribers bool) error {
 	if path == "" {
 		return nil
 	}

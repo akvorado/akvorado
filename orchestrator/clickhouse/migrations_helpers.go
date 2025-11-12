@@ -97,7 +97,7 @@ func (c *Component) tableAlreadyExists(ctx context.Context, table, column, targe
 
 // mergeTreeEngine returns a MergeTree engine definition, either plain or using
 // Replicated if we are on a cluster.
-func (c *Component) mergeTreeEngine(table string, variant string, args ...string) string {
+func (c *Component) mergeTreeEngine(table, variant string, args ...string) string {
 	if c.d.ClickHouse.ClusterName() != "" {
 		return fmt.Sprintf(`Replicated%sMergeTree(%s)`, variant, strings.Join(
 			append([]string{

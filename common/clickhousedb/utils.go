@@ -43,7 +43,7 @@ var (
 
 // TransformQueryOnCluster turns a ClickHouse query into its equivalent to be
 // run on a cluster by adding the ON CLUSTER directive.
-func TransformQueryOnCluster(query string, cluster string) string {
+func TransformQueryOnCluster(query, cluster string) string {
 	// From utils/antlr/ClickHouseParser.g4:
 	//
 	// ALTER TABLE tableIdentifier clusterClause? alterTableClause (COMMA alterTableClause)*

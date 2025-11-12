@@ -152,9 +152,6 @@ func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 	}
 
 	switch uriParams.WidgetName {
-	default:
-		gc.JSON(http.StatusNotFound, gin.H{"message": "Unknown top request."})
-		return
 	case HomepageTopWidgetSrcAS:
 		selector = fmt.Sprintf(`concat(toString(SrcAS), ': ', dictGetOrDefault('%s', 'name', SrcAS, '???'))`, schema.DictionaryASNs)
 		groupby = `SrcAS`
@@ -181,6 +178,9 @@ func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 		selector = fmt.Sprintf(`concat(dictGetOrDefault('%s', 'name', Proto, '???'), '/', toString(DstPort))`, schema.DictionaryProtocols)
 		groupby = `Proto, DstPort`
 		mainTableRequired = true
+	default:
+		gc.JSON(http.StatusNotFound, gin.H{"message": "Unknown top request."})
+		return
 	}
 	if strings.HasPrefix(gc.Param("name"), "src-") {
 		filter = "AND InIfBoundary = 'external'"

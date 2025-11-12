@@ -205,7 +205,7 @@ func (p *Provider) Refresh(ctx context.Context) {
 // Lookup does an lookup on one of the specified RIS Instances and returns the
 // well known bmp lookup result. NextHopIP is ignored, but maintained for
 // compatibility to the internal bmp
-func (p *Provider) Lookup(ctx context.Context, ip netip.Addr, _ netip.Addr, agent netip.Addr) (provider.LookupResult, error) {
+func (p *Provider) Lookup(ctx context.Context, ip, _, agent netip.Addr) (provider.LookupResult, error) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
@@ -326,7 +326,7 @@ func (p *Provider) lpmResponseToLookupResult(lpm *pb.LPMResponse) (bmp.LookupRes
 }
 
 // lookupLPM does an lookupLPM GRPC call to a BioRis instance
-func (p *Provider) lookupLPM(ctx context.Context, ip netip.Addr, agent netip.Addr) (*pb.LPMResponse, error) {
+func (p *Provider) lookupLPM(ctx context.Context, ip, agent netip.Addr) (*pb.LPMResponse, error) {
 	// Choose router id and ris
 	chosenRouterID, chosenRis, err := p.chooseRouter(agent)
 	if err != nil {

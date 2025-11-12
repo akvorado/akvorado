@@ -75,7 +75,7 @@ type stopper interface {
 }
 
 // Lookup uses the selected provider to get an answer.
-func (c *Component) Lookup(ctx context.Context, ip netip.Addr, nh netip.Addr, agent netip.Addr) provider.LookupResult {
+func (c *Component) Lookup(ctx context.Context, ip, nh, agent netip.Addr) provider.LookupResult {
 	c.metrics.routingLookups.Inc()
 	result, err := c.provider.Lookup(ctx, ip, nh, agent)
 	if err != nil {
