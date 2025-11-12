@@ -274,6 +274,103 @@ func TestScalerRateLimiter(t *testing.T) {
 	})
 }
 
+func TestScalerDoesNotBlock(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx, cancel := context.WithCancel(t.Context())
+		defer cancel()
+
+		var mu sync.Mutex
+		currentWorkers := 1
+		scalingInProgress := false
+
+		config := scalerConfiguration{
+			minWorkers:        1,
+			maxWorkers:        16,
+			increaseRateLimit: time.Second,
+			decreaseRateLimit: time.Second,
+			getWorkerCount: func() int {
+				mu.Lock()
+				defer mu.Unlock()
+				return currentWorkers
+			},
+			increaseWorkers: func(from, to int) {
+				t.Logf("increaseWorkers(from: %d, to: %d) - start", from, to)
+				mu.Lock()
+				scalingInProgress = true
+				mu.Unlock()
+
+				// Simulate a slow scaling operation
+				time.Sleep(30 * time.Second)
+
+				mu.Lock()
+				currentWorkers = to
+				scalingInProgress = false
+				mu.Unlock()
+				t.Logf("increaseWorkers(from: %d, to: %d) - done", from, to)
+			},
+			decreaseWorkers: func(from, to int) {
+				t.Logf("decreaseWorkers(from: %d, to: %d) - start", from, to)
+				mu.Lock()
+				scalingInProgress = true
+				mu.Unlock()
+
+				// Simulate a slow scaling operation
+				time.Sleep(30 * time.Second)
+
+				mu.Lock()
+				currentWorkers = to
+				scalingInProgress = false
+				mu.Unlock()
+				t.Logf("decreaseWorkers(from: %d, to: %d) - done", from, to)
+			},
+		}
+
+		ch := runScaler(ctx, config)
+
+		// Send the first scale request that will trigger a slow scaling operation
+		ch <- ScaleIncrease
+		time.Sleep(time.Second)
+
+		// Verify scaling is in progress
+		mu.Lock()
+		if !scalingInProgress {
+			t.Fatal("runScaler(): scaling should be in progress")
+		}
+		mu.Unlock()
+
+		// Now send many more signals while scaling is in progress.
+		// These should not block - they should be discarded.
+		sendDone := make(chan struct{})
+		go func() {
+			for range 100 {
+				ch <- ScaleIncrease
+			}
+			close(sendDone)
+		}()
+
+		// Wait for all sends to complete with a timeout
+		select {
+		case <-sendDone:
+			t.Log("runScaler(): all signals sent successfully without blocking")
+		case <-time.After(5 * time.Second):
+			t.Fatal("runScaler(): blocked")
+		}
+
+		// Wait for the scaling operation to complete
+		time.Sleep(30 * time.Second)
+
+		// Verify scaling completed
+		mu.Lock()
+		defer mu.Unlock()
+		if scalingInProgress {
+			t.Fatal("runScaler(): still scaling")
+		}
+		if currentWorkers != 9 {
+			t.Fatalf("runScaler(): expected 9 workers, got %d", currentWorkers)
+		}
+	})
+}
+
 func TestScalerState(t *testing.T) {
 	tests := []struct {
 		name       string

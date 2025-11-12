@@ -5,6 +5,7 @@ package kafka
 
 import (
 	"context"
+	"sync"
 	"time"
 )
 
@@ -65,6 +66,34 @@ func (s *scalerState) nextWorkerCount(request ScaleRequest, currentWorkers, minW
 	return currentWorkers
 }
 
+// scaleWhileDraining runs a scaling function while draining incoming signals
+// from the channel. It spawns two goroutines: one to discard signals and one to
+// run the scaling function.
+func scaleWhileDraining(ctx context.Context, ch <-chan ScaleRequest, scaleFn func()) {
+	var wg sync.WaitGroup
+	done := make(chan struct{})
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-done:
+				return
+			case <-ch:
+				// Discard signal
+			}
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		scaleFn()
+		close(done)
+	}()
+	wg.Wait()
+}
+
 // runScaler starts the automatic scaling loop
 func runScaler(ctx context.Context, config scalerConfiguration) chan<- ScaleRequest {
 	ch := make(chan ScaleRequest, config.maxWorkers)
@@ -87,9 +116,11 @@ func runScaler(ctx context.Context, config scalerConfiguration) chan<- ScaleRequ
 					current := config.getWorkerCount()
 					target := state.nextWorkerCount(ScaleIncrease, current, config.minWorkers, config.maxWorkers)
 					if target > current {
-						config.increaseWorkers(current, target)
+						scaleWhileDraining(ctx, ch, func() {
+							config.increaseWorkers(current, target)
+						})
 					}
-					last = now
+					last = time.Now()
 					decreaseCount = 0
 					continue
 				}
@@ -110,9 +141,11 @@ func runScaler(ctx context.Context, config scalerConfiguration) chan<- ScaleRequ
 						current := config.getWorkerCount()
 						target := state.nextWorkerCount(ScaleDecrease, current, config.minWorkers, config.maxWorkers)
 						if target < current {
-							config.decreaseWorkers(current, target)
+							scaleWhileDraining(ctx, ch, func() {
+								config.decreaseWorkers(current, target)
+							})
 						}
-						last = now
+						last = time.Now()
 						decreaseCount = 0
 					}
 				}
