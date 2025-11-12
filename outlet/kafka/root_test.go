@@ -5,6 +5,7 @@ package kafka
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -17,7 +18,7 @@ func TestMock(t *testing.T) {
 	got := []string{}
 	expected := []string{"hello1", "hello2", "hello3"}
 	gotAll := make(chan bool)
-	shutdownCalled := false
+	var shutdownCalled atomic.Bool
 	callback := func(_ context.Context, message []byte) error {
 		got = append(got, string(message))
 		if len(got) == len(expected) {
@@ -27,7 +28,7 @@ func TestMock(t *testing.T) {
 	}
 	c.StartWorkers(
 		func(int, chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
-			return callback, func() { shutdownCalled = true }
+			return callback, func() { shutdownCalled.Store(true) }
 		},
 	)
 
@@ -47,7 +48,7 @@ func TestMock(t *testing.T) {
 
 	c.Stop()
 	time.Sleep(10 * time.Millisecond)
-	if !shutdownCalled {
+	if !shutdownCalled.Load() {
 		t.Error("Stop() should have triggered shutdown function")
 	}
 }
