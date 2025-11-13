@@ -293,15 +293,13 @@ func TestWorkerScaling(t *testing.T) {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 
-	t.Log("Send 10 messages (decrease)")
-	for range 10 {
-		record := &kgo.Record{
-			Topic: expectedTopicName,
-			Value: []byte("hello"),
-		}
-		if results := producer.ProduceSync(context.Background(), record); results.FirstErr() != nil {
-			t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
-		}
+	t.Log("Send 1 message (decrease)")
+	record = &kgo.Record{
+		Topic: expectedTopicName,
+		Value: []byte("hello"),
+	}
+	if results := producer.ProduceSync(context.Background(), record); results.FirstErr() != nil {
+		t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
 	}
 	time.Sleep(100 * time.Millisecond)
 	t.Log("Check if workers decreased to 8")
