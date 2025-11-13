@@ -69,18 +69,16 @@ func (s *scalerState) nextWorkerCount(request ScaleRequest, currentWorkers, minW
 // scaleWhileDraining runs a scaling function while draining incoming signals
 // from the channel. It spawns two goroutines: one to discard signals and one to
 // run the scaling function.
-func scaleWhileDraining(ctx context.Context, ch <-chan ScaleRequest, scaleFn func()) {
+func scaleWhileDraining(ch <-chan ScaleRequest, scaleFn func()) {
 	var wg sync.WaitGroup
 	done := make(chan struct{})
 	wg.Go(func() {
 		for {
 			select {
-			case <-ctx.Done():
-				return
 			case <-done:
 				return
 			case <-ch:
-				// Discard signal
+				// Discard requests
 			}
 		}
 	})
@@ -120,7 +118,7 @@ func runScaler(ctx context.Context, config scalerConfiguration) chan<- ScaleRequ
 					current := config.getWorkerCount()
 					target := state.nextWorkerCount(ScaleIncrease, current, config.minWorkers, config.maxWorkers)
 					if target > current {
-						scaleWhileDraining(ctx, ch, func() {
+						scaleWhileDraining(ch, func() {
 							config.increaseWorkers(current, target)
 						})
 					}
@@ -166,7 +164,7 @@ func runScaler(ctx context.Context, config scalerConfiguration) chan<- ScaleRequ
 					current := config.getWorkerCount()
 					target := state.nextWorkerCount(ScaleDecrease, current, config.minWorkers, config.maxWorkers)
 					if target < current {
-						scaleWhileDraining(ctx, ch, func() {
+						scaleWhileDraining(ch, func() {
 							config.decreaseWorkers(current, target)
 						})
 					}
