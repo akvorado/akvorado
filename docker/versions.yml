@@ -10,7 +10,7 @@ services:
   clickhouse-keeper:
     image: clickhouse/clickhouse-keeper:25.8 # \d+\.[38]
   traefik:
-    image: traefik:v3.5 # v\d+\.\d+
+    image: traefik:v3.6 # v\d+\.\d+
   maxmind-geoipupdate:
     image: ghcr.io/maxmind/geoipupdate:v7
   ipinfo-geoipupdate:

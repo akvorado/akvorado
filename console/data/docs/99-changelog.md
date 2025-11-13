@@ -17,6 +17,7 @@ identified with a specific icon:
   false by default)
 - 🩹 *outlet*: provide additional gracetime for a worker to send to ClickHouse
 - 🩹 *outlet*: enhance scaling up and down workers to avoid hysteresis
+- 🩹 *docker*: update Traefik to 3.6.1 (for compatibility with Docker Engine 29)
 - 🌱 *common*: enable block and mutex profiling
 - 🌱 *config*: rename `verify` to `skip-verify` in TLS configurations for
   ClickHouse, Kafka and remote data sources (with inverted logic)
