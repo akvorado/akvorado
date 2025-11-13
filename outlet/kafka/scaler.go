@@ -91,13 +91,19 @@ func scaleWhileDraining(ctx context.Context, ch <-chan ScaleRequest, scaleFn fun
 	wg.Wait()
 }
 
-// runScaler starts the automatic scaling loop
+// requestRecord tracks a scale request with its timestamp.
+type requestRecord struct {
+	request ScaleRequest
+	time    time.Time
+}
+
+// runScaler starts the automatic scaling loop.
 func runScaler(ctx context.Context, config scalerConfiguration) chan<- ScaleRequest {
 	ch := make(chan ScaleRequest, config.maxWorkers)
 	go func() {
 		state := new(scalerState)
 		var last time.Time
-		var decreaseCount int
+		var requestHistory []requestRecord
 		for {
 			select {
 			case <-ctx.Done():
@@ -108,7 +114,8 @@ func runScaler(ctx context.Context, config scalerConfiguration) chan<- ScaleRequ
 				if last.Add(config.increaseRateLimit).After(now) {
 					continue
 				}
-				// Between increaseRateLimit and decreaseRateLimit, we accept increase requests.
+				// Between increaseRateLimit and decreaseRateLimit, we accept
+				// increase requests.
 				if request == ScaleIncrease {
 					current := config.getWorkerCount()
 					target := state.nextWorkerCount(ScaleIncrease, current, config.minWorkers, config.maxWorkers)
@@ -118,33 +125,53 @@ func runScaler(ctx context.Context, config scalerConfiguration) chan<- ScaleRequ
 						})
 					}
 					last = time.Now()
-					decreaseCount = 0
+					requestHistory = requestHistory[:0]
 					continue
 				}
-				// We also count steady requests.
-				if request == ScaleSteady {
-					decreaseCount--
-				}
-				// But we ignore everything else.
+				// Between increaseRateLimit and decreaseRateLimit, we also
+				// count steady requests to give them a head start.
 				if last.Add(config.decreaseRateLimit).After(now) {
+					if request == ScaleSteady {
+						requestHistory = append(requestHistory, requestRecord{request, now})
+					}
 					continue
 				}
-				// Past decreaseRateLimit, we count decrease requests and
-				// request 10 of them if not cancelled by steady requests (they
-				// have a head start).
-				if request == ScaleDecrease {
-					decreaseCount++
-					if decreaseCount >= 10 {
-						current := config.getWorkerCount()
-						target := state.nextWorkerCount(ScaleDecrease, current, config.minWorkers, config.maxWorkers)
-						if target < current {
-							scaleWhileDraining(ctx, ch, func() {
-								config.decreaseWorkers(current, target)
-							})
-						}
-						last = time.Now()
-						decreaseCount = 0
+				// Past decreaseRateLimit, we track all requests.
+				requestHistory = append(requestHistory, requestRecord{request, now})
+
+				// Remove old requests to prevent unbounded growth. We only
+				// consider requests from the last decreaseRateLimit duration to
+				// avoid accumulating requests over many hours.
+				windowStart := now.Add(-config.decreaseRateLimit)
+				i := 0
+				for i < len(requestHistory)-1 && requestHistory[i].time.Before(windowStart) {
+					i++
+				}
+				requestHistory = requestHistory[i:]
+
+				// Count decrease vs steady requests in the window.
+				var decreaseCount int
+				var steadyCount int
+				for _, r := range requestHistory {
+					switch r.request {
+					case ScaleDecrease:
+						decreaseCount++
+					case ScaleSteady:
+						steadyCount++
 					}
+				}
+
+				// Scale down if we have a majority of decrease requests.
+				if decreaseCount > steadyCount {
+					current := config.getWorkerCount()
+					target := state.nextWorkerCount(ScaleDecrease, current, config.minWorkers, config.maxWorkers)
+					if target < current {
+						scaleWhileDraining(ctx, ch, func() {
+							config.decreaseWorkers(current, target)
+						})
+					}
+					last = time.Now()
+					requestHistory = requestHistory[:0]
 				}
 			}
 		}
