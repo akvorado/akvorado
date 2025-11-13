@@ -66,6 +66,7 @@ func (c *realComponent) startOneWorker() error {
 			Logger()
 		defer func() {
 			logger.Info().Msg("stopping worker")
+			shutdown()
 
 			// Allow a small grace time to commit uncommited work.
 			ctx, cancelCommit := context.WithTimeout(context.Background(), 10*time.Second)
@@ -74,7 +75,6 @@ func (c *realComponent) startOneWorker() error {
 				logger.Err(err).Msg("cannot commit marked partition offsets")
 			}
 
-			shutdown()
 			client.CloseAllowingRebalance()
 		}()
 

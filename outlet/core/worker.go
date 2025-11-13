@@ -44,9 +44,11 @@ func (c *Component) newWorker(i int, scaleRequestChan chan<- kafka.ScaleRequest)
 
 // shutdown shutdowns the worker, flushing any remaining data.
 func (w *worker) shutdown() {
+	w.l.Info().Msg("flush final batch to ClickHouse")
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	w.cw.Flush(ctx)
+	w.l.Info().Msg("worker stopped")
 }
 
 // processIncomingFlow processes one incoming flow from Kafka.
