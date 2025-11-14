@@ -598,21 +598,22 @@ avoid running an SNMP daemon. Use the static metadata provider to match the
 exporter and provide interface names and descriptions to Akvorado:
 
 ```yaml
-inlet:
-  providers:
-    - type: static
-      exporters:
-        2001:db8:1::1:
-          name: exporter1
-          ifindexes:
-            3:
-              name: eth0
-              description: PNI Google
-              speed: 10000
-            4:
-              name: eth1
-              description: PNI Netflix
-              speed: 10000
+outlet:
+  metadata:
+    providers:
+      - type: static
+        exporters:
+          2001:db8:1::1:
+            name: exporter1
+            ifindexes:
+              3:
+                name: eth0
+                description: PNI Google
+                speed: 10000
+              4:
+                name: eth1
+                description: PNI Netflix
+                speed: 10000
 ```
 
 #### ipfixprobe
