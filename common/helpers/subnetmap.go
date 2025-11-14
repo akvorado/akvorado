@@ -176,7 +176,7 @@ func SubnetMapUnmarshallerHook[V any]() mapstructure.DecodeHookFunc {
 		if to.Type() != reflect.TypeFor[SubnetMap[V]]() {
 			return from.Interface(), nil
 		}
-		if from.Type() == reflect.PtrTo(reflect.TypeFor[SubnetMap[V]]()) {
+		if from.Type() == reflect.PointerTo(reflect.TypeFor[SubnetMap[V]]()) {
 			return from.Interface(), nil
 		}
 		output := gin.H{}
