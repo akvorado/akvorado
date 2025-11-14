@@ -156,7 +156,7 @@ commit now
 	// gNMI setup
 	srLinuxGNMI := helpers.CheckExternalService(t, "SR Linux gNMI",
 		[]string{"srlinux:57400", "127.0.0.1:57400"})
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	tg, err := api.NewTarget(
 		api.Address(srLinuxGNMI),

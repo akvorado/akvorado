@@ -66,9 +66,8 @@ func (config TLSConfiguration) MakeTLSConfig() (*tls.Config, error) {
 
 // RenameKeyUnmarshallerHook move a configuration setting from one place to another.
 func tlsUnmarshallerHook() mapstructure.DecodeHookFunc {
-	var zeroConfiguration TLSConfiguration
 	return func(from, to reflect.Value) (any, error) {
-		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(zeroConfiguration) {
+		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeFor[TLSConfiguration]() {
 			return from.Interface(), nil
 		}
 

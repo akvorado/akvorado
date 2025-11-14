@@ -8,6 +8,7 @@ import (
 	"math"
 	"math/rand/v2"
 	"net/netip"
+	"slices"
 	"testing"
 	"time"
 
@@ -102,14 +103,7 @@ func TestChooseRandom(t *testing.T) {
 					}
 					break
 				}
-				found := false
-				for _, v := range tc {
-					if v == result {
-						found = true
-						break
-					}
-				}
-				if !found {
+				if !slices.Contains(tc, result) {
 					t.Fatalf("chooseRandom() returned %d, not in slice",
 						result)
 				}

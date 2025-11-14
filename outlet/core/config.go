@@ -74,7 +74,7 @@ const (
 //   - map bmp to routing
 func ASNProviderUnmarshallerHook() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (any, error) {
-		if from.Kind() != reflect.String || to.Type() != reflect.TypeOf(ASNProvider(0)) {
+		if from.Kind() != reflect.String || to.Type() != reflect.TypeFor[ASNProvider]() {
 			return from.Interface(), nil
 		}
 		if strings.ToLower(from.String()) == "bmp" {
@@ -91,7 +91,7 @@ func ASNProviderUnmarshallerHook() mapstructure.DecodeHookFunc {
 //   - map bmp to routing
 func NetProviderUnmarshallerHook() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (any, error) {
-		if from.Kind() != reflect.String || to.Type() != reflect.TypeOf(NetProvider(0)) {
+		if from.Kind() != reflect.String || to.Type() != reflect.TypeFor[NetProvider]() {
 			return from.Interface(), nil
 		}
 		if strings.ToLower(from.String()) == "bmp" {
@@ -105,7 +105,7 @@ func NetProviderUnmarshallerHook() mapstructure.DecodeHookFunc {
 //   - replace ignore-asn-from-flow by asn-providers
 func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (any, error) {
-		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(Configuration{}) {
+		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeFor[Configuration]() {
 			return from.Interface(), nil
 		}
 

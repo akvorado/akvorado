@@ -168,7 +168,7 @@ func DefaultModels() []Model {
 //   - If no Insecure field is present, TLS.Enable defaults to true
 func AuthenticationParameterUnmarshallerHook() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (any, error) {
-		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(AuthenticationParameter{}) {
+		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeFor[AuthenticationParameter]() {
 			return from.Interface(), nil
 		}
 
@@ -283,7 +283,7 @@ func AuthenticationParameterUnmarshallerHook() mapstructure.DecodeHookFunc {
 //   - replace an occurrence of "default" in the list of models with the list of default models.
 func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (any, error) {
-		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(Configuration{}) {
+		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeFor[Configuration]() {
 			return from.Interface(), nil
 		}
 

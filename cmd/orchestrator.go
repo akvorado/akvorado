@@ -274,14 +274,7 @@ func orchestratorWatch(r *reporter.Reporter, daemonComponent daemon.Component, p
 				if event.Has(fsnotify.Create) || event.Has(fsnotify.Write) {
 					// Check if we have one of the monitored path matching
 					r.Debug().Str("name", event.Name).Msg("detected potential configuration change")
-					found := false
-					for _, path := range paths {
-						if filepath.Clean(event.Name) == path {
-							found = true
-							break
-						}
-					}
-					if !found {
+					if !slices.Contains(paths, filepath.Clean(event.Name)) {
 						continue
 					}
 
@@ -309,7 +302,7 @@ func orchestratorWatch(r *reporter.Reporter, daemonComponent daemon.Component, p
 // component to clickhouse component
 func orchestratorGeoIPMigrationHook() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (any, error) {
-		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(OrchestratorConfiguration{}) {
+		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeFor[OrchestratorConfiguration]() {
 			return from.Interface(), nil
 		}
 
@@ -382,7 +375,7 @@ func orchestratorGeoIPMigrationHook() mapstructure.DecodeHookFunc {
 // configuration from clickhouse component to clickhousedb component
 func orchestratorClickHouseMigrationHook() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (any, error) {
-		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(OrchestratorConfiguration{}) {
+		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeFor[OrchestratorConfiguration]() {
 			return from.Interface(), nil
 		}
 
@@ -449,7 +442,7 @@ func orchestratorClickHouseMigrationHook() mapstructure.DecodeHookFunc {
 // there is only one inlet configuration.
 func orchestratorInletToOutletMigrationHook() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (any, error) {
-		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(OrchestratorConfiguration{}) {
+		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeFor[OrchestratorConfiguration]() {
 			return from.Interface(), nil
 		}
 

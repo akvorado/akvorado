@@ -108,7 +108,7 @@ func NetworkAttributesUnmarshallerHook() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (any, error) {
 		from = helpers.ElemOrIdentity(from)
 		to = helpers.ElemOrIdentity(to)
-		if to.Type() != reflect.TypeOf(NetworkAttributes{}) {
+		if to.Type() != reflect.TypeFor[NetworkAttributes]() {
 			return from.Interface(), nil
 		}
 		if from.Kind() == reflect.String {

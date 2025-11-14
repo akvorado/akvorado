@@ -173,10 +173,10 @@ func LooksLikeSubnetMap(v reflect.Value) bool {
 // an intermediate map.
 func SubnetMapUnmarshallerHook[V any]() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (any, error) {
-		if to.Type() != reflect.TypeOf(SubnetMap[V]{}) {
+		if to.Type() != reflect.TypeFor[SubnetMap[V]]() {
 			return from.Interface(), nil
 		}
-		if from.Type() == reflect.TypeOf(&SubnetMap[V]{}) {
+		if from.Type() == reflect.PtrTo(reflect.TypeFor[SubnetMap[V]]()) {
 			return from.Interface(), nil
 		}
 		output := gin.H{}

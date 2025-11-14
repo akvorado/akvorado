@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net/netip"
+	"slices"
 	"strings"
 
 	"akvorado/common/schema"
@@ -116,19 +117,14 @@ func (c *current) acceptColumn() (schema.Column, error) {
 // should be used in predicate code blocks.
 func (c *current) columnIsOfType(name any, types ...string) (bool, error) {
 	nameSl := name.([]any)
-	var columnName string
+	var columnName strings.Builder
 	for _, s := range nameSl {
-		columnName += string(s.([]byte))
+		columnName.Write(s.([]byte))
 	}
 	sch := c.globalStore["meta"].(*Meta).Schema
 	for _, column := range sch.Columns() {
-		if strings.EqualFold(columnName, column.Name) {
-			for _, t := range types {
-				if column.ParserType == t {
-					return true, nil
-				}
-			}
-			return false, nil
+		if strings.EqualFold(columnName.String(), column.Name) {
+			return slices.Contains(types, column.ParserType), nil
 		}
 	}
 	return false, nil

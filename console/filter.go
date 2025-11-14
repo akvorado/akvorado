@@ -106,7 +106,7 @@ func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 		}
 	case "operator":
 		_, err := filter.Parse("",
-			[]byte(fmt.Sprintf("%s ", input.Column)),
+			fmt.Appendf(nil, "%s ", input.Column),
 			filter.Entrypoint("ConditionExpr"),
 			filter.GlobalStore("meta", &filter.Meta{Schema: c.d.Schema}))
 		if err != nil {

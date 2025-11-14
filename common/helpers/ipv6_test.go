@@ -70,7 +70,7 @@ func TestUnmapPrefix(t *testing.T) {
 
 func TestNetIPAddrStructure(t *testing.T) {
 	var addr netip.Addr
-	addrType := reflect.TypeOf(addr)
+	addrType := reflect.TypeFor[netip.Addr]()
 
 	// Test total size: 24 bytes (16 for uint128 + 8 for unique.Handle)
 	if unsafe.Sizeof(addr) != 24 {

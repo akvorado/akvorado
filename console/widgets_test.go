@@ -49,13 +49,13 @@ LIMIT 1`).
 	colInIfName := mocks.NewMockColumnType(ctrl)
 	colInIfBoundary := mocks.NewMockColumnType(ctrl)
 	colInIfSpeed := mocks.NewMockColumnType(ctrl)
-	colTimeReceived.EXPECT().ScanType().Return(reflect.TypeOf(time.Time{}))
-	colSamplingRate.EXPECT().ScanType().Return(reflect.TypeOf(uint64(0)))
-	colSrcAddr.EXPECT().ScanType().Return(reflect.TypeOf(net.IP{}))
-	colSrcCountry.EXPECT().ScanType().Return(reflect.TypeOf(""))
-	colInIfName.EXPECT().ScanType().Return(reflect.TypeOf(""))
-	colInIfBoundary.EXPECT().ScanType().Return(reflect.TypeOf(""))
-	colInIfSpeed.EXPECT().ScanType().Return(reflect.TypeOf(uint32(0)))
+	colTimeReceived.EXPECT().ScanType().Return(reflect.TypeFor[time.Time]())
+	colSamplingRate.EXPECT().ScanType().Return(reflect.TypeFor[uint64]())
+	colSrcAddr.EXPECT().ScanType().Return(reflect.TypeFor[net.IP]())
+	colSrcCountry.EXPECT().ScanType().Return(reflect.TypeFor[string]())
+	colInIfName.EXPECT().ScanType().Return(reflect.TypeFor[string]())
+	colInIfBoundary.EXPECT().ScanType().Return(reflect.TypeFor[string]())
+	colInIfSpeed.EXPECT().ScanType().Return(reflect.TypeFor[uint32]())
 	mockRows.EXPECT().ColumnTypes().Return([]driver.ColumnType{
 		colTimeReceived,
 		colSamplingRate,

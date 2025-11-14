@@ -223,7 +223,7 @@ func ParametrizedConfigurationUnmarshallerHook[OuterConfiguration any, InnerConf
 			return from.Interface(), nil
 		}
 		configField := to.FieldByName("Config")
-		fromConfig := reflect.MakeMap(reflect.TypeOf(gin.H{}))
+		fromConfig := reflect.MakeMap(reflect.TypeFor[gin.H]())
 
 		// Find "type" key in map to get input type. Keep existing fields as is.
 		// Move everything else in "config".

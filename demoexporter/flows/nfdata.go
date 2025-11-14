@@ -33,10 +33,7 @@ func getNetFlowData(ctx context.Context, flows []generatedFlow, sequenceNumber u
 			flows := ipFlows[etype]
 			settings := flowSettings[etype]
 			for i := 0; i < len(flows); i += settings.MaxFlowsPerPacket {
-				upper := i + settings.MaxFlowsPerPacket
-				if upper > len(flows) {
-					upper = len(flows)
-				}
+				upper := min(i+settings.MaxFlowsPerPacket, len(flows))
 				fls := flows[i:upper]
 				buf := new(bytes.Buffer)
 				if err := binary.Write(buf, binary.BigEndian, nfv9Header{

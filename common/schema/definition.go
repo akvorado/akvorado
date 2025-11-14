@@ -623,7 +623,7 @@ func (schema Schema) finalize() Schema {
 
 	// Update disabledGroups
 	schema.disabledGroups = *bitset.New(uint(ColumnGroupLast))
-	for group := ColumnGroup(0); group < ColumnGroupLast; group++ {
+	for group := range ColumnGroupLast {
 		schema.disabledGroups.Set(uint(group))
 		for _, column := range schema.columns {
 			if !column.Disabled && column.Group == group {

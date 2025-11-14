@@ -67,7 +67,7 @@ func DefaultConfiguration() provider.Configuration {
 //   - merge security parameters and communities into credentials
 func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (any, error) {
-		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(Configuration{}) {
+		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeFor[Configuration]() {
 			return from.Interface(), nil
 		}
 

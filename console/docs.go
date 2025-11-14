@@ -139,7 +139,7 @@ func (r *internalLinkTransformer) Transform(node *ast.Document, _ text.Reader, _
 		case *ast.Link:
 			matches := internalLinkRegexp.FindStringSubmatch(string(node.Destination))
 			if matches != nil {
-				node.Destination = []byte(fmt.Sprintf("%s%s", matches[3], matches[4]))
+				node.Destination = fmt.Appendf(nil, "%s%s", matches[3], matches[4])
 			}
 		}
 		return ast.WalkContinue, nil
@@ -160,7 +160,7 @@ func (r *imageLinkTransformer) Transform(node *ast.Document, _ text.Reader, _ pa
 		case *ast.Image:
 			path := string(node.Destination)
 			if !strings.Contains(path, "/") {
-				node.Destination = []byte(fmt.Sprintf("../assets/docs/%s", path))
+				node.Destination = fmt.Appendf(nil, "../assets/docs/%s", path)
 			}
 		}
 		return ast.WalkContinue, nil

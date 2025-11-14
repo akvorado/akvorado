@@ -189,7 +189,7 @@ func outletStart(r *reporter.Reporter, config OutletConfiguration, checkOnly boo
 // BMP configuration to routing.
 func OutletConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (any, error) {
-		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(OutletConfiguration{}) {
+		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeFor[OutletConfiguration]() {
 			return from.Interface(), nil
 		}
 
@@ -231,7 +231,7 @@ func OutletConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 					if helpers.MapStructureMatchName(k.String(), "Workers") {
 						continue
 					}
-					metadataConfig := reflect.TypeOf(metadata.Configuration{})
+					metadataConfig := reflect.TypeFor[metadata.Configuration]()
 					for j := range metadataConfig.NumField() {
 						if helpers.MapStructureMatchName(k.String(), metadataConfig.Field(j).Name) {
 							metadataValue[k.String()] = snmpMap.MapIndex(snmpKeys[i]).Interface()
@@ -280,7 +280,7 @@ func OutletConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 					if k.Kind() != reflect.String {
 						continue
 					}
-					routingConfig := reflect.TypeOf(routing.Configuration{})
+					routingConfig := reflect.TypeFor[routing.Configuration]()
 					for j := range routingConfig.NumField() {
 						if helpers.MapStructureMatchName(k.String(), routingConfig.Field(j).Name) {
 							routingValue[k.String()] = bmpMap.MapIndex(bmpKeys[i]).Interface()

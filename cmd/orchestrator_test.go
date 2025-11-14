@@ -69,7 +69,7 @@ func TestOrchestratorConfig(t *testing.T) {
 				var got any
 				got = gotYAML
 				i := 0
-				for _, component := range strings.Split(path, ".") {
+				for component := range strings.SplitSeq(path, ".") {
 					var ok bool
 					i++
 					switch gotConcrete := got.(type) {
