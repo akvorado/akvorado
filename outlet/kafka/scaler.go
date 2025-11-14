@@ -36,8 +36,8 @@ type scalerConfiguration struct {
 // steady. In starting state, when the scale request is up, we increase the
 // number of workers using a dichotomy between the current number and the
 // maximum workers. When the scale request is down, we decrease the number of
-// workers by one and switch to steady state. In steady state, the number of
-// workers is increased by one or decreased by one.
+// workers by one and switch to steady state (unless we never scaled up). In
+// steady state, the number of workers is increased by one or decreased by one.
 type scalerState struct {
 	steady bool // are we in the steady state?
 }
@@ -51,8 +51,11 @@ func (s *scalerState) nextWorkerCount(request ScaleRequest, currentWorkers, minW
 		case ScaleIncrease:
 			return min(maxWorkers, (currentWorkers+maxWorkers+1)/2)
 		case ScaleDecrease:
-			s.steady = true
-			return max(minWorkers, currentWorkers-1)
+			target := max(minWorkers, currentWorkers-1)
+			if target != currentWorkers {
+				s.steady = true
+			}
+			return target
 		}
 	case true:
 		// Steady state

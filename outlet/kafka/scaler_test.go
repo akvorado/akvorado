@@ -317,6 +317,7 @@ func TestScalerState(t *testing.T) {
 			expected: []int{9, 13, 12, 11, 10, 9, 8, 7},
 		},
 		{
+			// Ignore first down
 			name:       "down, up, up, down, down, down, down, down, down",
 			minWorkers: 1,
 			maxWorkers: 16,
@@ -325,7 +326,7 @@ func TestScalerState(t *testing.T) {
 				ScaleIncrease, ScaleIncrease,
 				ScaleDecrease, ScaleDecrease, ScaleDecrease, ScaleDecrease, ScaleDecrease, ScaleDecrease,
 			},
-			expected: []int{1, 2, 3, 2, 1, 1, 1, 1, 1},
+			expected: []int{1, 9, 13, 12, 11, 10, 9, 8, 7},
 		},
 		{
 			name:       "simple down from min",
