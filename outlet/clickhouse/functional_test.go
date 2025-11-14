@@ -120,6 +120,7 @@ func TestInsert(t *testing.T) {
 				`flow_per_batch{quantile="0.9"}`:  "1",
 				`flow_per_batch{quantile="0.99"}`: "1",
 				`worker_overloaded_total`:         "0",
+				`worker_steady_total`:             "0",
 				`worker_underloaded_total`:        "1", // only the first one is "underloaded"
 			}
 		} else if i < 15 {
@@ -130,6 +131,7 @@ func TestInsert(t *testing.T) {
 				`flow_per_batch{quantile="0.9"}`:  "10",
 				`flow_per_batch{quantile="0.99"}`: "10",
 				`worker_overloaded_total`:         "1", // full batch size
+				`worker_steady_total`:             "0",
 				`worker_underloaded_total`:        "1",
 			}
 		} else if i < 23 {
@@ -140,6 +142,7 @@ func TestInsert(t *testing.T) {
 				`flow_per_batch{quantile="0.9"}`:  "10",
 				`flow_per_batch{quantile="0.99"}`: "10",
 				`worker_overloaded_total`:         "1",
+				`worker_steady_total`:             "1",
 				`worker_underloaded_total`:        "1",
 			}
 		} else {
@@ -150,6 +153,7 @@ func TestInsert(t *testing.T) {
 				`flow_per_batch{quantile="0.9"}`:  "10",
 				`flow_per_batch{quantile="0.99"}`: "10",
 				`worker_overloaded_total`:         "1",
+				`worker_steady_total`:             "1", // direct flush, do not increase
 				`worker_underloaded_total`:        "1",
 			}
 		}
