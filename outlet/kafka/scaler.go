@@ -32,33 +32,35 @@ type scalerConfiguration struct {
 	getWorkerCount    func() int
 }
 
-// scalerState tracks scaler's state. The FSM has two states: starting and
-// steady. In starting state, when the scale request is up, we increase the
-// number of workers using a dichotomy between the current number and the
-// maximum workers. When the scale request is down, we decrease the number of
-// workers by one and switch to steady state (unless we never scaled up). In
-// steady state, the number of workers is increased by one or decreased by one.
-type scalerState struct {
-	steady bool // are we in the steady state?
-}
+// scalerState is the current FSM state of the scaler.
+type scalerState int
+
+const (
+	initialState scalerState = iota
+	initialIncreaseState
+	steadyState
+)
 
 // nextWorkerCount calculates the next worker count using dichotomy
 func (s *scalerState) nextWorkerCount(request ScaleRequest, currentWorkers, minWorkers, maxWorkers int) int {
-	switch s.steady {
-	case false:
-		// Initial state
+	switch *s {
+	case initialState:
+		switch request {
+		case ScaleIncrease:
+			*s = initialIncreaseState
+			return min(maxWorkers, (currentWorkers+maxWorkers+1)/2)
+		case ScaleDecrease:
+			return currentWorkers
+		}
+	case initialIncreaseState:
 		switch request {
 		case ScaleIncrease:
 			return min(maxWorkers, (currentWorkers+maxWorkers+1)/2)
 		case ScaleDecrease:
-			target := max(minWorkers, currentWorkers-1)
-			if target != currentWorkers {
-				s.steady = true
-			}
-			return target
+			*s = steadyState
+			return max(minWorkers, currentWorkers-1)
 		}
-	case true:
-		// Steady state
+	case steadyState:
 		switch request {
 		case ScaleIncrease:
 			return min(maxWorkers, currentWorkers+1)
