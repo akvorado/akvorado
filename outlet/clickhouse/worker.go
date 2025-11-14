@@ -28,12 +28,14 @@ type Worker interface {
 type WorkerStatus int
 
 const (
-	// WorkerStatusOK tells the worker is operating in the correct range of efficiency.
-	WorkerStatusOK WorkerStatus = iota
+	// WorkerStatusIdle tells the worker is currently idle.
+	WorkerStatusIdle WorkerStatus = iota
 	// WorkerStatusOverloaded tells the worker has too much work and more worker would help.
 	WorkerStatusOverloaded
 	// WorkerStatusUnderloaded tells the worker do not have enough work.
 	WorkerStatusUnderloaded
+	// WorkerStatusSteady tells the worker had the right amount of work.
+	WorkerStatusSteady
 )
 
 // realWorker is a working implementation of Worker.
@@ -104,8 +106,10 @@ func (w *realWorker) FinalizeAndSend(ctx context.Context) WorkerStatus {
 			w.c.metrics.underloaded.Inc()
 			return WorkerStatusUnderloaded
 		}
+		w.c.metrics.steady.Inc()
+		return WorkerStatusSteady
 	}
-	return WorkerStatusOK
+	return WorkerStatusIdle
 }
 
 // Flush sends remaining data to ClickHouse without an additional condition. It

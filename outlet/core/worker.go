@@ -97,7 +97,7 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 			w.scaleRequestChan <- kafka.ScaleIncrease
 		case clickhouse.WorkerStatusUnderloaded:
 			w.scaleRequestChan <- kafka.ScaleDecrease
-		default:
+		case clickhouse.WorkerStatusSteady:
 			w.scaleRequestChan <- kafka.ScaleSteady
 		}
 	}

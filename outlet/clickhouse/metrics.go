@@ -11,6 +11,7 @@ type metrics struct {
 	insertTime  reporter.Histogram
 	overloaded  reporter.Counter
 	underloaded reporter.Counter
+	steady      reporter.Counter
 	errors      *reporter.CounterVec
 }
 
@@ -55,6 +56,12 @@ func (c *realComponent) initMetrics() {
 		reporter.CounterOpts{
 			Name: "worker_underloaded_total",
 			Help: "Number of times a worker was underloaded",
+		},
+	)
+	c.metrics.steady = c.r.Counter(
+		reporter.CounterOpts{
+			Name: "worker_steady_total",
+			Help: "Number of times a worker was in steady state",
 		},
 	)
 	c.metrics.errors = c.r.CounterVec(
