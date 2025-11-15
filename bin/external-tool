@@ -4,6 +4,8 @@
 # a case we don't want to put the dependency in go.mod (which may be considered
 # by an anti-pattern for some tools).
 
+# See commit 414d626bf8f2 for an alternative.
+
 cmd="$1"
 shift
 

@@ -72,15 +72,15 @@ all-indep: $(GENERATED)
 
 # Tools
 
-ENUMER = go tool enumer
-GOIMPORTS = go tool goimports
-GOTESTSUM = go tool gotestsum
-MOCKGEN = go tool mockgen
-PIGEON = go tool pigeon
-REVIVE = go tool revive
+BUF         = env GO=$(GO) ./bin/external-tool buf
+ENUMER      = go tool enumer
+GOIMPORTS   = go tool goimports
+GOTESTSUM   = go tool gotestsum
+MOCKGEN     = go tool mockgen
+PIGEON      = go tool pigeon
+REVIVE      = go tool revive
 STATICCHECK = go tool staticcheck
-WWHRD = go tool wwhrd
-BUF = env GO=$(GO) ./bin/external-tool buf
+WWHRD       = go tool wwhrd
 
 # Generated files
 
@@ -197,8 +197,8 @@ test-go-checks: ; $(info $(M) running Go static checks…)
 	$Q $(STATICCHECK) -f stylish -checks inherit,-SA1012 $(PKGS)
 test-go-units: ; $(info $(M) running Go tests$(GOTEST_MORE)…)
 	$Q mkdir -p test/go
-	$Q env PATH=$(dir $(abspath $(shell command -v $(GO)))):$(PATH) $(GOTESTSUM) \
-        --junitfile test/go/tests.xml -- \
+	$Q env PATH=$(dir $(abspath $(shell command -v $(GO)))):$(PATH) \
+	  $(GOTESTSUM) --junitfile test/go/tests.xml -- \
 		-timeout $(TIMEOUT) \
 	    -fullpath \
 		$(GOTEST_ARGS) $(PKGS)
@@ -215,7 +215,8 @@ test-bench: ; $(info $(M) running benchmarks…) @ ## Run Go benchmarks
 		$(PKGS) # -benchmem -memprofile test/go/memprofile.out -cpuprofile test/go/cpuprofile.out
 test-coverage-go: ; $(info $(M) running Go coverage tests…) @ ## Run Go coverage tests
 	$Q mkdir -p test/go
-	$Q env PATH=$(dir $(abspath $(shell command -v $(GO)))):$(PATH) $(GOTESTSUM) -- \
+	$Q env PATH=$(dir $(abspath $(shell command -v $(GO)))):$(PATH) \
+	  $(GOTESTSUM) -- \
 	    -fullpath \
 		-coverpkg=$(shell echo $(PKGS) | tr ' ' ',') \
 		-covermode=atomic \
