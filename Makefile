@@ -80,7 +80,7 @@ PIGEON = go tool pigeon
 REVIVE = go tool revive
 STATICCHECK = go tool staticcheck
 WWHRD = go tool wwhrd
-BUF = ./bin/external-tool buf
+BUF = env GO=$(GO) ./bin/external-tool buf
 
 # Generated files
 

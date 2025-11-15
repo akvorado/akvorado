@@ -7,8 +7,11 @@
 cmd="$1"
 shift
 
+GO=${GO:-go}
+export GOTOOLCHAIN=$(${GO} mod edit -print | sed -En 's/^toolchain //p')
+
 case "$cmd" in
     buf)
-        exec go run github.com/bufbuild/buf/cmd/buf@v1.57.0 "$@"
+        exec ${GO} run github.com/bufbuild/buf/cmd/buf@v1.57.0 "$@"
         ;;
 esac
