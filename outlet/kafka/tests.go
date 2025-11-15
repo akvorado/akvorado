@@ -50,8 +50,13 @@ func (c *mockComponent) StartWorkers(workerBuilder WorkerBuilderFunc) error {
 	return nil
 }
 
+// StopWorkers stop all workers.
+func (c *mockComponent) StopWorkers() {
+	close(c.incoming)
+}
+
 // Stop stops the mock component.
 func (c *mockComponent) Stop() error {
-	close(c.incoming)
+	c.StopWorkers()
 	return nil
 }

@@ -40,7 +40,7 @@ type ShutdownFunc func()
 type WorkerBuilderFunc func(int, chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc)
 
 // NewConsumer creates a new consumer.
-func (c *realComponent) NewConsumer(worker int, callback ReceiveFunc) *Consumer {
+func (c *realComponent) newConsumer(worker int, callback ReceiveFunc) *Consumer {
 	return &Consumer{
 		r: c.r,
 		l: c.r.With().Int("worker", worker).Logger(),
