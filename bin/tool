@@ -1,0 +1,40 @@
+#!/bin/sh
+
+# Wrapper to execute an external tool. This is used a bit like "go tool", but in
+# a case we don't want to share dependencies.
+
+set -e
+
+cmd="$1"
+shift
+
+GO=${GO:-go}
+export GOTOOLCHAIN=$(${GO} mod edit -print | sed -En 's/^toolchain //p')
+
+# Format is:
+#  - `o` when it has its own go.mod, `s` when it shares the go.tool.mod.
+#  - command name
+#  - package name with version
+cat <<EOF | while read share tool package; do
+o buf         github.com/bufbuild/buf/cmd/buf@v1.60.0
+o revive      github.com/mgechev/revive@v1.13.0
+s gotestsum   gotest.tools/gotestsum@v1.13.0
+s staticcheck honnef.co/go/tools/cmd/staticcheck@v0.6.1
+s wwhrd       github.com/frapposelli/wwhrd@v0.4.0
+s enumer      github.com/dmarkham/enumer@v1.6.1
+s pigeon      github.com/mna/pigeon@v1.3.0
+EOF
+  [ $cmd = $tool ] || continue
+  case $share in
+      "s") gomod=bin/go.tool.mod ;;
+      "o") gomod=bin/go.$tool.mod ;;
+      *) continue
+  esac
+
+  # Setup go.mod
+  [ -f $gomod ] || echo "module tool" > $gomod
+  go get -modfile $gomod $package
+
+  # Execute tool with "go run"
+  exec go run -modfile $gomod ${package%@*} "$@"
+done

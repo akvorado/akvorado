@@ -72,15 +72,15 @@ all-indep: $(GENERATED)
 
 # Tools
 
-ENUMER = go tool enumer
-GOIMPORTS = go tool goimports
-GOTESTSUM = go tool gotestsum
-MOCKGEN = go tool mockgen
-PIGEON = go tool pigeon
-REVIVE = go tool revive
-STATICCHECK = go tool staticcheck
-WWHRD = go tool wwhrd
-BUF = env GO=$(GO) ./bin/external-tool buf
+GOIMPORTS   = go tool goimports
+MOCKGEN     = go tool mockgen
+BUF         = env GO=$(GO) ./bin/tool buf
+ENUMER      = env GO=$(GO) ./bin/tool enumer
+GOTESTSUM   = env GO=$(GO) ./bin/tool gotestsum
+PIGEON      = env GO=$(GO) ./bin/tool pigeon
+REVIVE      = env GO=$(GO) ./bin/tool revive
+STATICCHECK = env GO=$(GO) ./bin/tool staticcheck
+WWHRD       = env GO=$(GO) ./bin/tool wwhrd
 
 # Generated files
 

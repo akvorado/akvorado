@@ -44,9 +44,9 @@ runs:
         path: |
           ${{ env.gocache }}
           ${{ env.gomodcache }}
-        key: ${{ runner.os }}-${{ runner.arch }}-go${{ steps.go-setup.outputs.go-version }}-${{ hashFiles('go.sum', 'bin/external-tool') }}-${{ env.today }}
+        key: ${{ runner.os }}-${{ runner.arch }}-go${{ steps.go-setup.outputs.go-version }}-${{ hashFiles('go.sum', 'bin/tool') }}-${{ env.today }}
         restore-keys: |
-          ${{ runner.os }}-${{ runner.arch }}-go${{ steps.go-setup.outputs.go-version }}-${{ hashFiles('go.sum', 'bin/external-tool') }}-
+          ${{ runner.os }}-${{ runner.arch }}-go${{ steps.go-setup.outputs.go-version }}-${{ hashFiles('go.sum', 'bin/tool') }}-
           ${{ runner.os }}-${{ runner.arch }}-go${{ steps.go-setup.outputs.go-version }}-
     - uses: pnpm/action-setup@v4
       if: ${{ inputs.setup-node == 'true' }}
