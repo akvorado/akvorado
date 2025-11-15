@@ -46,15 +46,15 @@ func (l *Logger) Log(level kgo.LogLevel, msg string, keyvals ...any) {
 }
 
 // Logf logs a message at the specified level for kfake.
-func (l *Logger) Logf(level kfake.LogLevel, msg string, keyvals ...any) {
+func (l *Logger) Logf(level kfake.LogLevel, msg string, args ...any) {
 	switch level {
 	case kfake.LogLevelError:
-		l.r.Error().Fields(keyvals).Msg(msg)
+		l.r.Error().Msgf(msg, args...)
 	case kfake.LogLevelWarn:
-		l.r.Warn().Fields(keyvals).Msg(msg)
+		l.r.Warn().Msgf(msg, args...)
 	case kfake.LogLevelInfo:
-		l.r.Info().Fields(keyvals).Msg(msg)
+		l.r.Info().Msgf(msg, args...)
 	case kfake.LogLevelDebug:
-		l.r.Debug().Fields(keyvals).Msg(msg)
+		l.r.Debug().Msgf(msg, args...)
 	}
 }
