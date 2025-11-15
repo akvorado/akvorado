@@ -114,6 +114,7 @@ require (
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/licensecheck v0.3.1 // indirect
 	github.com/google/pprof v0.0.0-20250403155104-27863c87afa6 // indirect
+	github.com/google/renameio/v2 v2.0.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0 // indirect

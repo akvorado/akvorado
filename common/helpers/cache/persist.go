@@ -9,29 +9,18 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/google/renameio/v2"
 )
 
 // Save persists the cache to the specified file
 func (c *Cache[K, V]) Save(cacheFile string) error {
-	tmpFile, err := os.CreateTemp(
-		filepath.Dir(cacheFile),
-		fmt.Sprintf("%s-*", filepath.Base(cacheFile)))
-	if err != nil {
-		return fmt.Errorf("unable to create cache file %q: %w", cacheFile, err)
-	}
-	defer func() {
-		tmpFile.Close()           // ignore errors
-		os.Remove(tmpFile.Name()) // ignore errors
-	}()
-
-	// Write cache
-	encoder := gob.NewEncoder(tmpFile)
+	var buf bytes.Buffer
+	encoder := gob.NewEncoder(&buf)
 	if err := encoder.Encode(c); err != nil {
 		return fmt.Errorf("unable to encode cache: %w", err)
 	}
-
-	// Move cache to new location
-	if err := os.Rename(tmpFile.Name(), cacheFile); err != nil {
+	if err := renameio.WriteFile(cacheFile, buf.Bytes(), 0o666, renameio.WithTempDir(filepath.Dir(cacheFile))); err != nil {
 		return fmt.Errorf("unable to write cache file %q: %w", cacheFile, err)
 	}
 	return nil
