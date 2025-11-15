@@ -74,6 +74,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		kgo.FetchMaxWait(configuration.FetchMaxWaitTime),
 		kgo.ConsumerGroup(configuration.ConsumerGroup),
 		kgo.ConsumeStartOffset(kgo.NewOffset().AtEnd()),
+		kgo.ConsumeResetOffset(kgo.NewOffset().AtEnd()),
 		kgo.ConsumeTopics(fmt.Sprintf("%s-v%d", configuration.Topic, pb.Version)),
 		kgo.AutoCommitMarks(),
 		kgo.AutoCommitInterval(time.Second),
