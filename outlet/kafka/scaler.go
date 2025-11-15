@@ -164,8 +164,8 @@ func runScaler(ctx context.Context, config scalerConfiguration) chan<- ScaleRequ
 					}
 				}
 
-				// Scale down if we have a majority of decrease requests.
-				if decreaseCount > steadyCount {
+				// Scale down if we have many decrease requests
+				if decreaseCount > steadyCount/2 {
 					current := config.getWorkerCount()
 					target := state.nextWorkerCount(ScaleDecrease, current, config.minWorkers, config.maxWorkers)
 					if target < current {

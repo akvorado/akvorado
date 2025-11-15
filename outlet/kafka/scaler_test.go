@@ -154,18 +154,12 @@ func TestScalerRateLimiter(t *testing.T) {
 			time.Sleep(time.Second)
 			ch <- ScaleDecrease
 		}
-		// time=7m, no change (180 vs 120)
-		check([]int{8, 12, 11, 12, 13, 12, 11})
+		// time=7m, decrease (180 vs 120)
+		check([]int{8, 12, 11, 12, 13, 12, 11, 10})
 		for range 30 {
 			time.Sleep(time.Second)
 			ch <- ScaleDecrease
 		}
-		// time=7m30s, no change (150 vs 150)
-		check([]int{8, 12, 11, 12, 13, 12, 11})
-		time.Sleep(time.Second)
-		ch <- ScaleDecrease
-		// OK, now more decrease than increase!
-		check([]int{8, 12, 11, 12, 13, 12, 11, 10})
 
 		// We should not account for steady requests for too long!
 		time.Sleep(time.Minute)
