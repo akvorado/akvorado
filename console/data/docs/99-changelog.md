@@ -15,6 +15,7 @@ identified with a specific icon:
 - 💥 *config*: `skip-verify` is false by default in TLS configurations for
   ClickHouse, Kafka and remote data sources (previously, `verify` was set to
   false by default)
+- 🩹 *inlet*: keep flows from one exporter into a single partition
 - 🩹 *outlet*: provide additional gracetime for a worker to send to ClickHouse
 - 🩹 *outlet*: prevent discarding flows on shutdown
 - 🩹 *outlet*: enhance scaling up and down workers to avoid hysteresis
