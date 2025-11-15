@@ -87,8 +87,8 @@ BUF = env GO=$(GO) ./bin/external-tool buf
 .SUFFIXES:
 .DELETE_ON_ERROR:
 
-common/pb/rawflow.pb.go common/pb/rawflow_vtproto.pb.go &: buf.gen.yaml common/pb/rawflow.proto ; $(info $(M) compiling protocol buffers $@…)
-	$Q $(BUF) generate --path $(@:.pb.go=.proto)
+common/pb/rawflow.pb.go common/pb/rawflow_vtproto.pb.go &: .buf.gen.yaml common/pb/rawflow.proto ; $(info $(M) compiling protocol buffers $@…)
+	$Q $(BUF) generate --template $(PWD)/.buf.gen.yaml --path $(@:.pb.go=.proto)
 
 common/clickhousedb/mocks/mock_driver.go: go.mod ; $(info $(M) generate mocks for ClickHouse driver…)
 	$Q $(MOCKGEN) -package mocks -build_constraint "!release" -destination $@ \
