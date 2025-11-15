@@ -101,6 +101,7 @@ func (c *Component) Stop() error {
 		c.r.Info().Msg("core component stopped")
 	}()
 	c.r.Info().Msg("stopping core component")
+	c.d.Kafka.StopWorkers()
 	c.t.Kill(nil)
 	return c.t.Wait()
 }

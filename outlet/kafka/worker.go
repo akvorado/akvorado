@@ -55,9 +55,10 @@ func (c *realComponent) startOneWorker() error {
 		return err
 	}
 	callback, shutdown := c.workerBuilder(i, c.workerRequestChan)
-	consumer := c.NewConsumer(i, callback)
+	consumer := c.newConsumer(i, callback)
 
 	// Goroutine for worker
+	done := make(chan bool)
 	ctx, cancel := context.WithCancelCause(context.Background())
 	ctx = c.t.Context(ctx)
 	c.t.Go(func() error {
@@ -76,6 +77,7 @@ func (c *realComponent) startOneWorker() error {
 			client.CloseAllowingRebalance()
 
 			shutdown()
+			close(done)
 		}()
 
 		for {
@@ -103,6 +105,7 @@ func (c *realComponent) startOneWorker() error {
 	c.workers = append(c.workers, worker{
 		stop: func() {
 			cancel(ErrStopProcessing)
+			<-done
 		},
 	})
 	c.metrics.workerIncrease.Inc()
@@ -123,15 +126,6 @@ func (c *realComponent) stopOneWorker() {
 	c.kafkaMetrics = c.kafkaMetrics[:i]
 
 	c.metrics.workerDecrease.Inc()
-}
-
-// stopAllWorkers stops all workers
-func (c *realComponent) stopAllWorkers() {
-	c.workerMu.Lock()
-	defer c.workerMu.Unlock()
-	for _, worker := range c.workers {
-		worker.stop()
-	}
 }
 
 // onPartitionsRevoked is called when partitions are revoked. We need to commit.
