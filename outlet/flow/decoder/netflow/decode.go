@@ -65,7 +65,7 @@ func (nd *Decoder) decodeNFv5(packet *netflowlegacy.PacketNetFlowV5, ts, sysUpti
 	}
 }
 
-func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets []any, samplingRateSys *samplingRateSystem, ts, sysUptime uint64, options decoder.Option, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
+func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets []any, tao *templatesAndOptions, ts, sysUptime uint64, options decoder.Option, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
 	// Look for sampling rate in option data flowsets
 	for _, flowSet := range flowSets {
 		switch tFlowSet := flowSet.(type) {
@@ -96,18 +96,18 @@ func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets 
 					samplingRate = (packetInterval + packetSpace) / packetInterval
 				}
 				if samplingRate > 0 {
-					samplingRateSys.SetSamplingRate(version, obsDomainID, samplerID, samplingRate)
+					tao.SetSamplingRate(version, obsDomainID, samplerID, samplingRate)
 				}
 			}
 		case netflow.DataFlowSet:
 			for _, record := range tFlowSet.Records {
-				nd.decodeRecord(version, obsDomainID, samplingRateSys, record.Values, ts, sysUptime, options, bf, finalize)
+				nd.decodeRecord(version, obsDomainID, tao, record.Values, ts, sysUptime, options, bf, finalize)
 			}
 		}
 	}
 }
 
-func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRateSys *samplingRateSystem, fields []netflow.DataField, ts, sysUptime uint64, options decoder.Option, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
+func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templatesAndOptions, fields []netflow.DataField, ts, sysUptime uint64, options decoder.Option, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
 	var reversePresent *bitset.BitSet
 	for _, dir := range []direction{directionForward, directionReverse} {
 		var etype, dstPort, srcPort uint16
@@ -154,7 +154,7 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 			case netflow.IPFIX_FIELD_samplingInterval, netflow.IPFIX_FIELD_samplerRandomInterval:
 				bf.SamplingRate = decodeUNumber(v)
 			case netflow.IPFIX_FIELD_samplerId, netflow.IPFIX_FIELD_selectorId:
-				bf.SamplingRate = uint64(samplingRateSys.GetSamplingRate(version, obsDomainID, decodeUNumber(v)))
+				bf.SamplingRate = uint64(tao.GetSamplingRate(version, obsDomainID, decodeUNumber(v)))
 
 			// L3
 			case netflow.IPFIX_FIELD_sourceIPv4Address:
@@ -346,7 +346,7 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, samplingRate
 			bf.AppendArrayUInt32(schema.ColumnMPLSLabels, mplsLabels)
 		}
 		if bf.SamplingRate == 0 {
-			bf.SamplingRate = uint64(samplingRateSys.GetSamplingRate(version, obsDomainID, 0))
+			bf.SamplingRate = uint64(tao.GetSamplingRate(version, obsDomainID, 0))
 		}
 		if dir == directionForward && reversePresent == nil {
 			finalize()
