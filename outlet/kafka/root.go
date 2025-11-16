@@ -25,6 +25,7 @@ import (
 // Component is the interface a Kafka consumer should implement.
 type Component interface {
 	StartWorkers(WorkerBuilderFunc) error
+	StopWorkers()
 	Stop() error
 }
 
@@ -74,6 +75,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		kgo.FetchMaxWait(configuration.FetchMaxWaitTime),
 		kgo.ConsumerGroup(configuration.ConsumerGroup),
 		kgo.ConsumeStartOffset(kgo.NewOffset().AtEnd()),
+		kgo.ConsumeResetOffset(kgo.NewOffset().AtEnd()),
 		kgo.ConsumeTopics(fmt.Sprintf("%s-v%d", configuration.Topic, pb.Version)),
 		kgo.AutoCommitMarks(),
 		kgo.AutoCommitInterval(time.Second),
@@ -170,10 +172,19 @@ func (c *realComponent) StartWorkers(workerBuilder WorkerBuilderFunc) error {
 	return nil
 }
 
+// StopWorkers stops all workers
+func (c *realComponent) StopWorkers() {
+	c.workerMu.Lock()
+	defer c.workerMu.Unlock()
+	for _, worker := range c.workers {
+		worker.stop()
+	}
+}
+
 // Stop stops the Kafka component
 func (c *realComponent) Stop() error {
 	defer func() {
-		c.stopAllWorkers()
+		c.StopWorkers()
 		c.kadmClientMu.Lock()
 		defer c.kadmClientMu.Unlock()
 		if c.kadmClient != nil {

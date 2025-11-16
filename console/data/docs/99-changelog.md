@@ -16,6 +16,7 @@ identified with a specific icon:
   ClickHouse, Kafka and remote data sources (previously, `verify` was set to
   false by default)
 - 🩹 *outlet*: provide additional gracetime for a worker to send to ClickHouse
+- 🩹 *outlet*: prevent discarding flows on shutdown
 - 🩹 *outlet*: enhance scaling up and down workers to avoid hysteresis
 - 🩹 *docker*: update Traefik to 3.6.1 (for compatibility with Docker Engine 29)
 - 🌱 *common*: enable block and mutex profiling
