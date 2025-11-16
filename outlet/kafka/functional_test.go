@@ -400,15 +400,23 @@ func TestWorkerScaling(t *testing.T) {
 	if results := producer.ProduceSync(context.Background(), record); results.FirstErr() != nil {
 		t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
 	}
-	time.Sleep(100 * time.Millisecond)
+
+	var diff string
+
 	t.Log("Check if workers increased to 9")
-	gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "worker")
-	expected = map[string]string{
-		"worker_decrease_total": "0",
-		"worker_increase_total": "9",
-		"workers":               "9",
+	for range 100 {
+		time.Sleep(10 * time.Millisecond)
+		gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "worker")
+		expected = map[string]string{
+			"worker_decrease_total": "0",
+			"worker_increase_total": "9",
+			"workers":               "9",
+		}
+		if diff = helpers.Diff(gotMetrics, expected); diff == "" {
+			break
+		}
 	}
-	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
+	if diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 
@@ -420,15 +428,21 @@ func TestWorkerScaling(t *testing.T) {
 	if results := producer.ProduceSync(context.Background(), record); results.FirstErr() != nil {
 		t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
 	}
-	time.Sleep(100 * time.Millisecond)
+
 	t.Log("Check if workers decreased to 8")
-	gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "worker")
-	expected = map[string]string{
-		"worker_decrease_total": "1",
-		"worker_increase_total": "9",
-		"workers":               "8",
+	for range 100 {
+		time.Sleep(10 * time.Millisecond)
+		gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "worker")
+		expected = map[string]string{
+			"worker_decrease_total": "1",
+			"worker_increase_total": "9",
+			"workers":               "8",
+		}
+		if diff = helpers.Diff(gotMetrics, expected); diff == "" {
+			break
+		}
 	}
-	if diff := helpers.Diff(gotMetrics, expected); diff != "" {
+	if diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 }
