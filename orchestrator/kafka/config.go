@@ -10,6 +10,8 @@ import (
 // Configuration describes the configuration for the Kafka configurator.
 type Configuration struct {
 	kafka.Configuration `mapstructure:",squash" yaml:",inline"`
+	// ManageTopic tells if the Kafka topic should be managed (create/update). Default is true.
+	ManageTopic bool
 	// TopicConfiguration describes the topic configuration.
 	TopicConfiguration TopicConfiguration
 }
@@ -30,6 +32,7 @@ type TopicConfiguration struct {
 func DefaultConfiguration() Configuration {
 	return Configuration{
 		Configuration: kafka.DefaultConfiguration(),
+		ManageTopic:   true,
 		TopicConfiguration: TopicConfiguration{
 			NumPartitions:           1,
 			ReplicationFactor:       1,

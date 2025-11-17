@@ -36,19 +36,25 @@ type Dependencies struct {
 
 // New creates a new Kafka configurator.
 func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) (*Component, error) {
+	c := Component{
+		r:      r,
+		d:      dependencies,
+		config: config,
+	}
+
+	if !config.ManageTopic {
+		r.Info().Msg("Kafka topic management disabled, skipping Kafka initialization")
+		return &c, nil
+	}
+
+	// Initialize Kafka client options
 	kafkaOpts, err := kafka.NewConfig(r, config.Configuration)
 	if err != nil {
 		return nil, err
 	}
 
-	c := Component{
-		r:      r,
-		d:      dependencies,
-		config: config,
-
-		kafkaOpts:  kafkaOpts,
-		kafkaTopic: fmt.Sprintf("%s-v%d", config.Topic, pb.Version),
-	}
+	c.kafkaOpts = kafkaOpts
+	c.kafkaTopic = fmt.Sprintf("%s-v%d", config.Topic, pb.Version)
 	return &c, nil
 }
 
@@ -56,6 +62,11 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 func (c *Component) Start() error {
 	c.r.Info().Msg("starting Kafka component")
 	defer c.r.Info().Msg("Kafka component stopped")
+
+	if !c.config.ManageTopic {
+		c.r.Info().Msg("Kafka topic management disabled, skipping")
+		return nil
+	}
 
 	// Create kafka client and admin
 	client, err := kgo.NewClient(c.kafkaOpts...)
