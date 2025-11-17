@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"maps"
 	"net/netip"
 	"sync"
 	"testing"
@@ -31,10 +32,11 @@ import (
 
 func TestEnrich(t *testing.T) {
 	cases := []struct {
-		Name          string
-		Configuration gin.H
-		InputFlow     func() *schema.FlowMessage
-		OutputFlow    *schema.FlowMessage
+		Name            string
+		Configuration   gin.H
+		InputFlow       func() *schema.FlowMessage
+		OutputFlow      *schema.FlowMessage
+		ExpectedMetrics map[string]string
 	}{
 		{
 			Name:          "no rule",
@@ -583,6 +585,38 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				},
 			},
 		},
+		{
+			Name:          "flow with missing interfaces",
+			Configuration: gin.H{},
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
+					SamplingRate:    1000,
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+					InIf:            0,
+					OutIf:           0,
+				}
+			},
+			OutputFlow: nil,
+			ExpectedMetrics: map[string]string{
+				`flows_errors_total{error="input and output interfaces missing",exporter="192.0.2.142"}`: "1",
+			},
+		},
+		{
+			Name:          "flow with metadata cache miss",
+			Configuration: gin.H{},
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
+					SamplingRate:    1000,
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+					InIf:            999,
+					OutIf:           0,
+				}
+			},
+			OutputFlow: nil,
+			ExpectedMetrics: map[string]string{
+				`flows_errors_total{error="metadata cache miss",exporter="192.0.2.142"}`: "1",
+			},
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
@@ -684,6 +718,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 			if tc.OutputFlow != nil {
 				expectedMetrics[`forwarded_flows_total{exporter="192.0.2.142"}`] = "1"
 			}
+			maps.Copy(expectedMetrics, tc.ExpectedMetrics)
 			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 				t.Fatalf("Metrics (-got, +want):\n%s", diff)
 			}
