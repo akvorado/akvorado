@@ -608,7 +608,7 @@ exporter-classifiers:
 
 ### ClickHouse
 
-The ClickHouse component pushes data to ClickHouse. There are two settings that
+The ClickHouse component pushes data to ClickHouse. There are three settings that
 are configurable:
 
 - `maximum-batch-size` defines how many flows to send to ClickHouse in a single batch at most
@@ -620,6 +620,14 @@ send a batch of size at most `maximum-batch-size` at least every
 `maximum-wait-time`. ClickHouse is more efficient when the batch size is large.
 The default value is 100 000 and allows ClickHouse to handle incoming flows
 efficiently.
+
+### Flow
+
+The flow component decodes flows received from Kafka. There is only one setting:
+
+- `state-persist-file` defines the location of the file to save the state of the
+  flow decoders and read it back on startup. It is used to store IPFIX/NetFlow
+  templates and options.
 
 ## Orchestrator service
 

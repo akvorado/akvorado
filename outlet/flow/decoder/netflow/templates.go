@@ -13,20 +13,26 @@ import (
 // templateAndOptionCollection map exporters to the set of templates and options we
 // received from them.
 type templateAndOptionCollection struct {
-	nd         *Decoder
-	lock       sync.Mutex
-	collection map[string]*templatesAndOptions
+	nd   *Decoder
+	lock sync.Mutex
+
+	Collection map[string]*templatesAndOptions
 }
 
 // templatesAndOptions contains templates and options associated to an exporter.
 type templatesAndOptions struct {
 	nd               *Decoder
-	key              string
 	templateLock     sync.RWMutex
-	templates        map[templateKey]any
 	samplingRateLock sync.RWMutex
-	samplingRates    map[samplingRateKey]uint32
+
+	Key           string
+	Templates     templates
+	SamplingRates map[samplingRateKey]uint32
 }
+
+// templates is a mapping to one of netflow.TemplateRecord,
+// netflow.IPFIXOptionsTemplateRecord, netflow.NFv9OptionsTemplateRecord.
+type templates map[templateKey]any
 
 // templateKey is the key structure to access a template.
 type templateKey struct {
@@ -51,17 +57,17 @@ var (
 func (c *templateAndOptionCollection) Get(key string) *templatesAndOptions {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-	t, ok := c.collection[key]
+	t, ok := c.Collection[key]
 	if ok {
 		return t
 	}
 	t = &templatesAndOptions{
 		nd:            c.nd,
-		key:           key,
-		templates:     make(map[templateKey]any),
-		samplingRates: make(map[samplingRateKey]uint32),
+		Key:           key,
+		Templates:     make(map[templateKey]any),
+		SamplingRates: make(map[samplingRateKey]uint32),
 	}
-	c.collection[key] = t
+	c.Collection[key] = t
 	return t
 }
 
@@ -75,7 +81,7 @@ func (t *templatesAndOptions) RemoveTemplate(uint16, uint32, uint16) (any, error
 func (t *templatesAndOptions) GetTemplate(version uint16, obsDomainID uint32, templateID uint16) (any, error) {
 	t.templateLock.RLock()
 	defer t.templateLock.RUnlock()
-	template, ok := t.templates[templateKey{version: version, obsDomainID: obsDomainID, templateID: templateID}]
+	template, ok := t.Templates[templateKey{version: version, obsDomainID: obsDomainID, templateID: templateID}]
 	if !ok {
 		return nil, netflow.ErrorTemplateNotFound
 	}
@@ -98,7 +104,7 @@ func (t *templatesAndOptions) AddTemplate(version uint16, obsDomainID uint32, te
 	}
 
 	t.nd.metrics.templates.WithLabelValues(
-		t.key,
+		t.Key,
 		strconv.Itoa(int(version)),
 		strconv.Itoa(int(obsDomainID)),
 		strconv.Itoa(int(templateID)),
@@ -107,7 +113,7 @@ func (t *templatesAndOptions) AddTemplate(version uint16, obsDomainID uint32, te
 
 	t.templateLock.Lock()
 	defer t.templateLock.Unlock()
-	t.templates[templateKey{version: version, obsDomainID: obsDomainID, templateID: templateID}] = template
+	t.Templates[templateKey{version: version, obsDomainID: obsDomainID, templateID: templateID}] = template
 	return nil
 }
 
@@ -115,7 +121,7 @@ func (t *templatesAndOptions) AddTemplate(version uint16, obsDomainID uint32, te
 func (t *templatesAndOptions) GetSamplingRate(version uint16, obsDomainID uint32, samplerID uint64) uint32 {
 	t.samplingRateLock.RLock()
 	defer t.samplingRateLock.RUnlock()
-	rate := t.samplingRates[samplingRateKey{
+	rate := t.SamplingRates[samplingRateKey{
 		version:     version,
 		obsDomainID: obsDomainID,
 		samplerID:   samplerID,
@@ -127,7 +133,7 @@ func (t *templatesAndOptions) GetSamplingRate(version uint16, obsDomainID uint32
 func (t *templatesAndOptions) SetSamplingRate(version uint16, obsDomainID uint32, samplerID uint64, samplingRate uint32) {
 	t.samplingRateLock.Lock()
 	defer t.samplingRateLock.Unlock()
-	t.samplingRates[samplingRateKey{
+	t.SamplingRates[samplingRateKey{
 		version:     version,
 		obsDomainID: obsDomainID,
 		samplerID:   samplerID,

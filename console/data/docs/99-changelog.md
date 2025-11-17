@@ -22,6 +22,7 @@ identified with a specific icon:
 - 🩹 *outlet*: accept flows where interface names or descriptions are missing
 - 🩹 *docker*: update Traefik to 3.6.1 (for compatibility with Docker Engine 29)
 - 🌱 *common*: enable block and mutex profiling
+- 🌱 *outlet*: save IPFIX decoder state to a file to prevent discarding flows on start
 - 🌱 *config*: rename `verify` to `skip-verify` in TLS configurations for
   ClickHouse, Kafka and remote data sources (with inverted logic)
 - 🌱 *config*: remote data sources accept a specific TLS configuration

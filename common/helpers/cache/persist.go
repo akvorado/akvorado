@@ -42,7 +42,7 @@ func (c *Cache[K, V]) Load(cacheFile string) error {
 
 // currentVersionNumber should be increased each time we change the way we
 // encode the cache.
-var currentVersionNumber = 11
+const currentVersionNumber = 11
 
 // GobEncode encodes the cache
 func (c *Cache[K, V]) GobEncode() ([]byte, error) {
@@ -50,7 +50,8 @@ func (c *Cache[K, V]) GobEncode() ([]byte, error) {
 	encoder := gob.NewEncoder(&buf)
 
 	// Encode version
-	if err := encoder.Encode(&currentVersionNumber); err != nil {
+	version := currentVersionNumber
+	if err := encoder.Encode(&version); err != nil {
 		return nil, err
 	}
 	// Encode a representation of K and V. Gob decoding is pretty forgiving, we

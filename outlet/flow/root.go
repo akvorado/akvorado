@@ -9,7 +9,6 @@ import (
 
 	"akvorado/common/pb"
 	"akvorado/common/reporter"
-	"akvorado/common/schema"
 	"akvorado/outlet/flow/decoder"
 )
 
@@ -17,6 +16,7 @@ import (
 type Component struct {
 	r         *reporter.Reporter
 	d         *Dependencies
+	config    Configuration
 	errLogger reporter.Logger
 
 	metrics struct {
@@ -29,22 +29,21 @@ type Component struct {
 }
 
 // Dependencies are the dependencies of the flow component.
-type Dependencies struct {
-	Schema *schema.Component
-}
+type Dependencies = decoder.Dependencies
 
 // New creates a new flow component.
-func New(r *reporter.Reporter, dependencies Dependencies) (*Component, error) {
+func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) (*Component, error) {
 	c := Component{
 		r:         r,
 		d:         &dependencies,
+		config:    config,
 		errLogger: r.Sample(reporter.BurstSampler(30*time.Second, 3)),
 		decoders:  make(map[pb.RawFlow_Decoder]decoder.Decoder),
 	}
 
 	// Initialize available decoders
 	for decoderType, decoderFunc := range availableDecoders {
-		c.decoders[decoderType] = decoderFunc(r, decoder.Dependencies{Schema: c.d.Schema})
+		c.decoders[decoderType] = decoderFunc(r, dependencies)
 	}
 
 	// Metrics
@@ -64,4 +63,26 @@ func New(r *reporter.Reporter, dependencies Dependencies) (*Component, error) {
 	)
 
 	return &c, nil
+}
+
+// Start starts the flow component.
+func (c *Component) Start() error {
+	if c.config.StatePersistFile != "" {
+		if err := c.RestoreState(c.config.StatePersistFile); err != nil {
+			c.r.Warn().Err(err).Msg("cannot load decoders' state, ignoring")
+		} else {
+			c.r.Info().Msg("previous decoders' state loaded")
+		}
+	}
+	return nil
+}
+
+// Stop stops the flow component
+func (c *Component) Stop() error {
+	if c.config.StatePersistFile != "" {
+		if err := c.SaveState(c.config.StatePersistFile); err != nil {
+			c.r.Err(err).Msg("cannot save decorders' state")
+		}
+	}
+	return nil
 }

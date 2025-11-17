@@ -47,7 +47,7 @@ func New(r *reporter.Reporter, dependencies decoder.Dependencies) decoder.Decode
 	}
 	nd.collection = templateAndOptionCollection{
 		nd:         nd,
-		collection: make(map[string]*templatesAndOptions),
+		Collection: make(map[string]*templatesAndOptions),
 	}
 
 	nd.metrics.errors = nd.r.CounterVec(

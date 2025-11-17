@@ -190,6 +190,7 @@ services:
       - akvorado-run:/run/akvorado
     environment:
       AKVORADO_CFG_OUTLET_METADATA_CACHEPERSISTFILE: /run/akvorado/metadata.cache
+      AKVORADO_CFG_OUTLET_FLOW_STATEPERSISTFILE: /run/akvorado/flow.state
     labels:
       - traefik.enable=true
       # Disable access logging of /api/v0/outlet/metrics
