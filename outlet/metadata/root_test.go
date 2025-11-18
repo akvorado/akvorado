@@ -22,7 +22,7 @@ import (
 
 func expectMockLookup(t *testing.T, c *Component, exporter string, ifIndex uint, expected provider.Answer) {
 	t.Helper()
-	ip := netip.AddrFrom16(netip.MustParseAddr(exporter).As16())
+	ip := helpers.AddrTo6(netip.MustParseAddr(exporter))
 	got := c.Lookup(time.Now(), ip, ifIndex)
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Fatalf("Lookup() (-got, +want):\n%s", diff)

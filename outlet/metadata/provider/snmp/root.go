@@ -7,9 +7,9 @@ package snmp
 
 import (
 	"context"
-	"net/netip"
 	"time"
 
+	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 	"akvorado/outlet/metadata/provider"
 )
@@ -38,8 +38,8 @@ func (configuration Configuration) New(_ context.Context, r *reporter.Reporter) 
 	for exporterIP, agentIP := range configuration.Agents {
 		if exporterIP.Is4() || agentIP.Is4() {
 			delete(configuration.Agents, exporterIP)
-			exporterIP = netip.AddrFrom16(exporterIP.As16())
-			agentIP = netip.AddrFrom16(agentIP.As16())
+			exporterIP = helpers.AddrTo6(exporterIP)
+			agentIP = helpers.AddrTo6(agentIP)
 			configuration.Agents[exporterIP] = agentIP
 		}
 	}

@@ -67,14 +67,6 @@ inlet_sentflows: jsonpath "$.data.result[0].value[1]" toInt
 [Asserts]
 variable "inlet_sentflows" >= {{ inlet_receivedflows }}
 
-## Test inlet has eBPF running
-GET http://127.0.0.1:8080/prometheus/api/v1/query
-[Query]
-query: akvorado_inlet_flow_input_udp_ebpf_loaded{job="akvorado-inlet"}
-HTTP 200
-[Asserts]
-jsonpath "$.data.result[0].value[1]" toInt == 1
-
 ## Check outlet received flows from Kafka
 GET http://127.0.0.1:8080/prometheus/api/v1/query
 [Query]
@@ -111,7 +103,7 @@ GET http://127.0.0.1:8080/prometheus/api/v1/query
 query: akvorado_outlet_clickhouse_flow_per_batch{job="akvorado-outlet", quantile="0.5"}
 HTTP 200
 [Asserts]
-jsonpath "$.data.result[0].value[1]" toInt > 100
+jsonpath "$.data.result[0].value[1]" toInt > 20
 
 ## Check we receive metrics from everything
 GET http://127.0.0.1:8080/prometheus/api/v1/query

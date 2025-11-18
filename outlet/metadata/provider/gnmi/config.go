@@ -4,6 +4,7 @@
 package gnmi
 
 import (
+	"fmt"
 	"net/netip"
 	"reflect"
 	"time"
@@ -38,16 +39,8 @@ type AuthenticationParameter struct {
 	Username string
 	// Password is the password to use to authenticate.
 	Password string `validate:"required_with=Username"`
-	// Insecure tells if the gRPC connection is in clear-text.
-	Insecure bool
-	// SkipVerify tells if we should skip certificate verification for the gRPC connection.
-	SkipVerify bool
-	// TLSCA sets the path towards the TLS certificate authority file.
-	TLSCA string
-	// TLSCert sets the path towards the TLS certificate file.
-	TLSCert string
-	// TLSKey sets the path towards the TLS key file.
-	TLSKey string
+	// TLS defines the TLS configuration for the gRPC connection.
+	TLS helpers.TLSConfiguration
 }
 
 // Model defines a model to retrieve data.
@@ -166,6 +159,126 @@ func DefaultModels() []Model {
 	}
 }
 
+// AuthenticationParameterUnmarshallerHook migrates old TLS configuration to new format:
+//   - Insecure → TLS.Enable (inverted)
+//   - SkipVerify → TLS.SkipVerify
+//   - TLSCA → TLS.CAFile
+//   - TLSCert → TLS.CertFile
+//   - TLSKey → TLS.KeyFile
+//   - If no Insecure field is present, TLS.Enable defaults to true
+func AuthenticationParameterUnmarshallerHook() mapstructure.DecodeHookFunc {
+	return func(from, to reflect.Value) (any, error) {
+		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(AuthenticationParameter{}) {
+			return from.Interface(), nil
+		}
+
+		var insecureKey, skipVerifyKey, tlsCAKey, tlsCertKey, tlsKeyKey, tlsKey *reflect.Value
+		fromMap := from.MapKeys()
+		for i, k := range fromMap {
+			k = helpers.ElemOrIdentity(k)
+			if k.Kind() != reflect.String {
+				return from.Interface(), nil
+			}
+			switch {
+			case helpers.MapStructureMatchName(k.String(), "Insecure"):
+				insecureKey = &fromMap[i]
+			case helpers.MapStructureMatchName(k.String(), "SkipVerify"):
+				skipVerifyKey = &fromMap[i]
+			case helpers.MapStructureMatchName(k.String(), "TLSCA"):
+				tlsCAKey = &fromMap[i]
+			case helpers.MapStructureMatchName(k.String(), "TLSCert"):
+				tlsCertKey = &fromMap[i]
+			case helpers.MapStructureMatchName(k.String(), "TLSKey"):
+				tlsKeyKey = &fromMap[i]
+			case helpers.MapStructureMatchName(k.String(), "TLS"):
+				tlsKey = &fromMap[i]
+			}
+		}
+
+		// If we have new TLS key and any old keys, that's an error
+		if tlsKey != nil && (insecureKey != nil || skipVerifyKey != nil || tlsCAKey != nil || tlsCertKey != nil || tlsKeyKey != nil) {
+			return nil, fmt.Errorf("cannot mix old TLS configuration (Insecure, SkipVerify, TLSCA, TLSCert, TLSKey) with new TLS configuration")
+		}
+
+		// If no old keys, we need to set default TLS.Enable
+		if tlsKey != nil {
+			tlsValue := helpers.ElemOrIdentity(from.MapIndex(*tlsKey))
+			if tlsValue.Kind() == reflect.Map {
+				// Check if Enable is already set
+				var enableKey *reflect.Value
+				for _, k := range tlsValue.MapKeys() {
+					k = helpers.ElemOrIdentity(k)
+					if k.Kind() == reflect.String && helpers.MapStructureMatchName(k.String(), "Enable") {
+						enableKey = &k
+						break
+					}
+				}
+				if enableKey == nil {
+					// Set Enable to true by default
+					tlsValue.SetMapIndex(reflect.ValueOf("enable"), reflect.ValueOf(true))
+				}
+			}
+			return from.Interface(), nil
+		}
+
+		// Migrate old configuration to new format
+		tlsConfig := make(map[string]any)
+
+		// Handle Insecure → TLS.Enable (inverted)
+		if insecureKey != nil {
+			insecureValue := helpers.ElemOrIdentity(from.MapIndex(*insecureKey))
+			if insecureValue.Kind() == reflect.Bool {
+				tlsConfig["enable"] = !insecureValue.Bool()
+			}
+			from.SetMapIndex(*insecureKey, reflect.Value{})
+		} else {
+			// Default to TLS enabled if Insecure not specified
+			tlsConfig["enable"] = true
+		}
+
+		// Handle SkipVerify → TLS.SkipVerify
+		if skipVerifyKey != nil {
+			skipVerifyValue := helpers.ElemOrIdentity(from.MapIndex(*skipVerifyKey))
+			if skipVerifyValue.Kind() == reflect.Bool {
+				tlsConfig["skip-verify"] = skipVerifyValue.Bool()
+			}
+			from.SetMapIndex(*skipVerifyKey, reflect.Value{})
+		}
+
+		// Handle TLSCA → TLS.CAFile
+		if tlsCAKey != nil {
+			tlsCAValue := helpers.ElemOrIdentity(from.MapIndex(*tlsCAKey))
+			if tlsCAValue.Kind() == reflect.String {
+				tlsConfig["ca-file"] = tlsCAValue.String()
+			}
+			from.SetMapIndex(*tlsCAKey, reflect.Value{})
+		}
+
+		// Handle TLSCert → TLS.CertFile
+		if tlsCertKey != nil {
+			tlsCertValue := helpers.ElemOrIdentity(from.MapIndex(*tlsCertKey))
+			if tlsCertValue.Kind() == reflect.String {
+				tlsConfig["cert-file"] = tlsCertValue.String()
+			}
+			from.SetMapIndex(*tlsCertKey, reflect.Value{})
+		}
+
+		// Handle TLSKey → TLS.KeyFile
+		if tlsKeyKey != nil {
+			tlsKeyValue := helpers.ElemOrIdentity(from.MapIndex(*tlsKeyKey))
+			if tlsKeyValue.Kind() == reflect.String {
+				tlsConfig["key-file"] = tlsKeyValue.String()
+			}
+			from.SetMapIndex(*tlsKeyKey, reflect.Value{})
+		}
+
+		// Set the new TLS configuration
+		from.SetMapIndex(reflect.ValueOf("tls"), reflect.ValueOf(tlsConfig))
+
+		return from.Interface(), nil
+	}
+}
+
 // ConfigurationUnmarshallerHook normalize gnmi configuration:
 //   - replace an occurrence of "default" in the list of models with the list of default models.
 func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
@@ -215,6 +328,7 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 }
 
 func init() {
+	helpers.RegisterMapstructureUnmarshallerHook(AuthenticationParameterUnmarshallerHook())
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[bool]())
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[uint16]())
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[AuthenticationParameter]())

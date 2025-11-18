@@ -2,6 +2,12 @@
 paths:
   clickhouse.networksources.amazon:
     url: https://ip-ranges.amazonaws.com/ip-ranges.json
+    tls:
+      enable: false
+      skipverify: false
+      cafile: ""
+      certfile: ""
+      keyfile: ""
     method: GET
     headers: {}
     proxy: true

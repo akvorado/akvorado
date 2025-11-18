@@ -73,6 +73,21 @@ clickhouse:
     #   transform: |
     #     .prefixes[] |
     #     { prefix: (.ipv4Prefix // .ipv6Prefix), tenant: "google-cloud", region: .scope }
+    # netbox:
+    #   url: "https://netbox.domain.tld/api/ipam/prefixes/?limit=0"
+    #   interval: 6h
+    #   headers:
+    #     Authorization: "Token YOUR_NETBOX_API_TOKEN"
+    #     Accept: "application/json"
+    #   transform: |
+    #     .results[] |
+    #     { prefix: .prefix,
+    #       tenant: .tenant.name,
+    #       site: .scope.description,
+    #       city: .scope.name,
+    #       role: .role.name,
+    #       name: .description
+    #     }
 
 inlet: !include "inlet.yaml"
 outlet: !include "outlet.yaml"

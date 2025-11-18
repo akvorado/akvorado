@@ -12,7 +12,7 @@ paths:
     dialtimeout: 5s
     tls:
       enable: true
-      verify: true
+      skipverify: false
       cafile: ""
       certfile: ""
       keyfile: ""

@@ -33,7 +33,7 @@
     "@types/lodash-es": "^4.17.6",
     "@types/node": "^24.3.0",
     "@vitejs/plugin-vue": "^6.0.0",
-    "@vitest/coverage-v8": "^3.0.4",
+    "@vitest/coverage-v8": "^4.0.6",
     "@vue/tsconfig": "^0.8.1",
     "@vueuse/core": "^13.1.0",
     "@vueuse/router": "^13.1.0",

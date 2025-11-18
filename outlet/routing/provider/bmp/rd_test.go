@@ -4,12 +4,13 @@
 package bmp_test
 
 import (
+	"net/netip"
 	"testing"
 
 	"akvorado/common/helpers"
 	"akvorado/outlet/routing/provider/bmp"
 
-	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
+	"github.com/osrg/gobgp/v4/pkg/packet/bgp"
 )
 
 func TestParseRouteDistinguisher(t *testing.T) {
@@ -70,7 +71,13 @@ func TestRDFromRouteDistinguisherInterface(t *testing.T) {
 		{bgp.NewRouteDistinguisherFourOctetAS(100, 200), "2:100:200"},
 		{bgp.NewRouteDistinguisherFourOctetAS(66000, 200), "66000:200"},
 		{bgp.NewRouteDistinguisherTwoOctetAS(120, 200), "120:200"},
-		{bgp.NewRouteDistinguisherIPAddressAS("2.2.2.2", 30), "2.2.2.2:30"},
+		{func() bgp.RouteDistinguisherInterface {
+			rd, err := bgp.NewRouteDistinguisherIPAddressAS(netip.MustParseAddr("2.2.2.2"), 30)
+			if err != nil {
+				t.Fatalf("bgp.NewRouteDistinguisherIPAddressAS() error:\n%+v", err)
+			}
+			return rd
+		}(), "2.2.2.2:30"},
 	}
 	for _, tc := range cases {
 		got := bmp.RDFromRouteDistinguisherInterface(tc.input).String()

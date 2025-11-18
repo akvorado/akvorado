@@ -221,16 +221,6 @@ func SubnetMapUnmarshallerHook[V any]() mapstructure.DecodeHookFunc {
 	}
 }
 
-// PrefixTo16 converts an IPv4 prefix to an IPv4-mapped IPv6 prefix.
-// IPv6 prefixes are returned as-is.
-func PrefixTo16(prefix netip.Prefix) netip.Prefix {
-	if prefix.Addr().Is6() {
-		return prefix
-	}
-	// Convert IPv4 to IPv4-mapped IPv6
-	return netip.PrefixFrom(netip.AddrFrom16(prefix.Addr().As16()), prefix.Bits()+96)
-}
-
 // SubnetMapParseKey parses a prefix or an IP address into a netip.Prefix that
 // can be used in a map.
 func SubnetMapParseKey(k string) (netip.Prefix, error) {
@@ -240,7 +230,7 @@ func SubnetMapParseKey(k string) (netip.Prefix, error) {
 		if err != nil {
 			return netip.Prefix{}, err
 		}
-		return PrefixTo16(key), nil
+		return PrefixTo6(key), nil
 	}
 	// IP address
 	key, err := netip.ParseAddr(k)
@@ -248,7 +238,7 @@ func SubnetMapParseKey(k string) (netip.Prefix, error) {
 		return netip.Prefix{}, err
 	}
 	if key.Is4() {
-		return PrefixTo16(netip.PrefixFrom(key, 32)), nil
+		return PrefixTo6(netip.PrefixFrom(key, 32)), nil
 	}
 	return netip.PrefixFrom(key, 128), nil
 }

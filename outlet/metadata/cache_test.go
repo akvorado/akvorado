@@ -33,7 +33,7 @@ func setupTestCache(t *testing.T) (*reporter.Reporter, *metadataCache) {
 func expectCacheLookup(t *testing.T, sc *metadataCache, exporterIP string, ifIndex uint, expected provider.Answer) {
 	t.Helper()
 	ip := netip.MustParseAddr(exporterIP)
-	ip = netip.AddrFrom16(ip.As16())
+	ip = helpers.AddrTo6(ip)
 	got, ok := sc.Lookup(time.Time{}, provider.Query{
 		ExporterIP: ip,
 		IfIndex:    ifIndex,

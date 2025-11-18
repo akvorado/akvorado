@@ -31,6 +31,8 @@ type Source struct {
 	Transform TransformQuery
 	// Interval tells how much time to wait before updating the source.
 	Interval time.Duration `validate:"min=1m"`
+	// TLS defines the TLS configuration if the URL needs it.
+	TLS helpers.TLSConfiguration
 }
 
 // TransformQuery represents a jq query to transform data.

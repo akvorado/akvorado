@@ -353,11 +353,9 @@ The `gnmi` provider polls an exporter using gNMI. It accepts these keys:
   name should be set in the gNMI path prefix. In this case, it is set to the
   exporter IP address. This is useful if the selected target is a gNMI gateway.
 - `authentication-parameters` is a map from exporter subnets to authentication
-  parameters for gNMI targets. Authentication parameters accept these
-  keys: `username`, `password`, `insecure` (a boolean to use clear text),
-  `skip-verify` (a boolean to disable TLS verification), `tls-ca` (to check the
-  TLS certificate of the target), `tls-cert`, and `tls-key` (to authenticate to
-  a target).
+  parameters for gNMI targets. Authentication parameters accept these keys:
+  `username`, `password`, and `tls` (which takes the same keys as for
+  [Kafka](#kafka-2)).
 - `models` is the list of models to use to get information from a target. Each
   model is tried, and if a target supports all the paths, it is selected. The
   models are tried in the order they are declared. If you want to keep the
@@ -452,6 +450,8 @@ but the definition is fetched through HTTP. It accepts a map from source names t
 sources. Each source accepts these attributes:
 
 - `url` is the URL to fetch.
+- `tls` defines the TLS configuration to connect to the source (it uses the same
+  configuration as for [Kafka](#kafka-2), be sure to set `enable` to `true`)
 - `method` is the method to use (`GET` or `POST`).
 - `headers` is a map of header names to values to add to the request.
 - `proxy` defines if a proxy should be used (defined with environment variables
@@ -766,7 +766,7 @@ flows. It accepts the following keys:
 The following keys are accepted for the TLS configuration:
 
 - `enable` should be set to `true` to enable TLS.
-- `verify` can be set to `false` to skip checking server certificate (not recommended).
+- `skip-verify` can be set to `true` to skip checking server certificate (not recommended).
 - `ca-file` gives the location of the file containing the CA certificate in PEM
   format to check the server certificate. If not provided, the system
   certificates are used instead.
@@ -829,6 +829,7 @@ ClickHouse database. The following keys should be provided inside
 - `password` is the password to use for authentication
 - `database` defines the database to use to create tables
 - `cluster` defines the cluster for replicated and distributed tables, see the next section for more information
+- `tls` defines the TLS configuration to connect to the database (it uses the same configuration as for [Kafka](#kafka-2))
 
 ### ClickHouse
 
@@ -849,6 +850,9 @@ provided inside `clickhouse`:
   map from source names to sources. Each source accepts the following
   attributes:
   - `url` is the URL to fetch
+  - `tls` defines the TLS configuration to connect to the source (it uses the
+    same configuration as for [Kafka](#kafka-2), be sure to set `enable` to
+    `true`)
   - `method` is the method to use (`GET` or `POST`)
   - `headers` is a map from header names to values to add to the request
   - `proxy` says if we should use a proxy (defined through environment variables like `http_proxy`)

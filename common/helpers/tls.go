@@ -9,17 +9,20 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"reflect"
+
+	"github.com/go-viper/mapstructure/v2"
 )
 
 // TLSConfiguration defines TLS configuration.
 type TLSConfiguration struct {
-	// Enable says if TLS should be used to connect to brokers
+	// Enable says if TLS should be used to connect to remote servers.
 	Enable bool `validate:"required_with=CAFile CertFile KeyFile"`
-	// Verify says if we need to check remote certificates
-	Verify bool
+	// SkipVerify removes validity checks of remote certificates
+	SkipVerify bool
 	// CAFile tells the location of the CA certificate to check broker
 	// certificate. If empty, the system CA certificates are used instead.
-	CAFile string // no validation as the orchestrator may not have the file
+	CAFile string // no file as the orchestrator may not have the file
 	// CertFile tells the location of the user certificate if any.
 	CertFile string `validate:"required_with=KeyFile"`
 	// KeyFile tells the location of the user key if any.
@@ -33,7 +36,7 @@ func (config TLSConfiguration) MakeTLSConfig() (*tls.Config, error) {
 		return nil, nil
 	}
 	tlsConfig := &tls.Config{
-		InsecureSkipVerify: !config.Verify,
+		InsecureSkipVerify: config.SkipVerify,
 	}
 	// Read CA certificate if provided
 	if config.CAFile != "" {
@@ -59,4 +62,46 @@ func (config TLSConfiguration) MakeTLSConfig() (*tls.Config, error) {
 		tlsConfig.Certificates = []tls.Certificate{cert}
 	}
 	return tlsConfig, nil
+}
+
+// RenameKeyUnmarshallerHook move a configuration setting from one place to another.
+func tlsUnmarshallerHook() mapstructure.DecodeHookFunc {
+	var zeroConfiguration TLSConfiguration
+	return func(from, to reflect.Value) (any, error) {
+		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeOf(zeroConfiguration) {
+			return from.Interface(), nil
+		}
+
+		// verify → skip-verify
+		var verifyKey, skipVerifyKey *reflect.Value
+		fromMap := from.MapKeys()
+		for i, k := range fromMap {
+			k = ElemOrIdentity(k)
+			if k.Kind() != reflect.String {
+				return from.Interface(), nil
+			}
+			if MapStructureMatchName(k.String(), "Verify") {
+				verifyKey = &fromMap[i]
+			} else if MapStructureMatchName(k.String(), "SkipVerify") {
+				skipVerifyKey = &fromMap[i]
+			}
+		}
+		if verifyKey != nil && skipVerifyKey != nil {
+			return nil, fmt.Errorf("cannot have both %q and %q", verifyKey.String(), skipVerifyKey.String())
+		}
+		if verifyKey != nil {
+			value := ElemOrIdentity(from.MapIndex(*verifyKey))
+			if value.Kind() != reflect.Bool {
+				return from.Interface(), nil
+			}
+			from.SetMapIndex(reflect.ValueOf("skip-verify"), reflect.ValueOf(!value.Bool()))
+			from.SetMapIndex(*verifyKey, reflect.Value{})
+		}
+
+		return from.Interface(), nil
+	}
+}
+
+func init() {
+	RegisterMapstructureUnmarshallerHook(tlsUnmarshallerHook())
 }

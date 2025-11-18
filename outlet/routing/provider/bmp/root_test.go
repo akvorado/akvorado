@@ -18,7 +18,7 @@ import (
 	"akvorado/common/reporter"
 	"akvorado/outlet/routing/provider"
 
-	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
+	"github.com/osrg/gobgp/v4/pkg/packet/bgp"
 )
 
 func TestBMP(t *testing.T) {
@@ -60,17 +60,12 @@ func TestBMP(t *testing.T) {
 				if _, ok := result[peer.Unmap()]; !ok {
 					result[peer.Unmap()] = []string{}
 				}
-				addr := prefix.Addr()
-				plen := prefix.Bits()
-				if prefix.Addr().Is4In6() {
-					addr = addr.Unmap()
-					plen -= 96
-				}
+				prefix = helpers.UnmapPrefix(prefix)
 				peer = peer.Unmap()
 				result[peer] = append(result[peer],
-					fmt.Sprintf("[%s] %s/%d via %s %s/%d %d %v %v %v",
+					fmt.Sprintf("[%s] %s via %s %s/%d %d %v %v %v",
 						nlriRef.family,
-						addr, plen, netip.Addr(nh).Unmap(),
+						prefix, netip.Addr(nh).Unmap(),
 						nlriRef.rd,
 						nlriRef.path,
 						attrs.asn, attrs.asPath,

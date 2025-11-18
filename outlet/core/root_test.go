@@ -77,7 +77,7 @@ func TestCore(t *testing.T) {
 		msg := &schema.FlowMessage{
 			TimeReceived:    200,
 			SamplingRate:    1000,
-			ExporterAddress: netip.AddrFrom16(netip.MustParseAddr(exporter).As16()),
+			ExporterAddress: helpers.AddrTo6(netip.MustParseAddr(exporter)),
 			InIf:            in,
 			OutIf:           out,
 			SrcAddr:         netip.MustParseAddr("::ffff:67.43.156.77"),

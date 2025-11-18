@@ -14,6 +14,23 @@ import (
 	"golang.org/x/sys/unix"
 )
 
+// commonUDPSocketOptions are the options common to all OS.
+var commonUDPSocketOptions = []socketOption{
+	{
+		// Allow a listener to bind again to a socket that was just closed
+		Name:      "SO_REUSEADDR",
+		Level:     unix.SOL_SOCKET,
+		Option:    unix.SO_REUSEADDR,
+		Mandatory: true,
+	}, {
+		// Allow multiple listeners to bind to the same port
+		Name:      "SO_REUSEPORT",
+		Level:     unix.SOL_SOCKET,
+		Option:    unix.SO_REUSEPORT,
+		Mandatory: true,
+	},
+}
+
 type oobMessage struct {
 	Drops    uint32
 	Received time.Time

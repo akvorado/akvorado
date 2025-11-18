@@ -176,7 +176,7 @@ func ParseEthernet(sch *schema.Component, bf *schema.FlowMessage, data []byte) u
 // DecodeIP decodes an IP address
 func DecodeIP(b []byte) netip.Addr {
 	if ip, ok := netip.AddrFromSlice(b); ok {
-		return netip.AddrFrom16(ip.As16())
+		return helpers.AddrTo6(ip)
 	}
 	return netip.Addr{}
 }

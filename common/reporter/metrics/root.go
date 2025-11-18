@@ -74,7 +74,7 @@ func getPrefix(module string) (moduleName string) {
 func (m *Metrics) Factory(skipCallstack int) *Factory {
 	callStack := stack.Callers()
 	call := callStack[1+skipCallstack] // Trial and error, there is a test to check it works
-	module := call.FunctionName()
+	module := call.Info().FunctionName()
 
 	// Hotpath
 	if factory := func() *Factory {
@@ -105,7 +105,7 @@ func (m *Metrics) Factory(skipCallstack int) *Factory {
 func (m *Metrics) RegisterCollector(skipCallStack int, c prometheus.Collector) {
 	callStack := stack.Callers()
 	call := callStack[1+skipCallStack] // Should be the same as above !
-	prefix := getPrefix(call.FunctionName())
+	prefix := getPrefix(call.Info().FunctionName())
 	prometheus.WrapRegistererWithPrefix(prefix, m.registry).MustRegister(c)
 }
 
@@ -113,6 +113,6 @@ func (m *Metrics) RegisterCollector(skipCallStack int, c prometheus.Collector) {
 func (m *Metrics) UnregisterCollector(skipCallStack int, c prometheus.Collector) {
 	callStack := stack.Callers()
 	call := callStack[1+skipCallStack] // Should be the same as above !
-	prefix := getPrefix(call.FunctionName())
+	prefix := getPrefix(call.Info().FunctionName())
 	prometheus.WrapRegistererWithPrefix(prefix, m.registry).Unregister(c)
 }

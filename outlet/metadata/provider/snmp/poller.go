@@ -13,7 +13,6 @@ import (
 
 	"github.com/gosnmp/gosnmp"
 
-	"akvorado/common/reporter"
 	"akvorado/outlet/metadata/provider"
 )
 
@@ -209,20 +208,4 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 		}, nil
 	}
 	return provider.Answer{}, nil
-}
-
-type goSNMPLogger struct {
-	r *reporter.Reporter
-}
-
-func (l *goSNMPLogger) Print(v ...any) {
-	if e := l.r.Debug(); e.Enabled() {
-		e.Msg(fmt.Sprint(v...))
-	}
-}
-
-func (l *goSNMPLogger) Printf(format string, v ...any) {
-	if e := l.r.Debug(); e.Enabled() {
-		e.Msg(fmt.Sprintf(format, v...))
-	}
 }

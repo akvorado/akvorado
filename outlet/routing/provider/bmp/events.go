@@ -9,8 +9,10 @@ import (
 	"net/netip"
 	"time"
 
-	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
-	"github.com/osrg/gobgp/v3/pkg/packet/bmp"
+	"akvorado/common/helpers"
+
+	"github.com/osrg/gobgp/v4/pkg/packet/bgp"
+	"github.com/osrg/gobgp/v4/pkg/packet/bmp"
 )
 
 // peerKey is the key used to identify a peer
@@ -32,14 +34,13 @@ type peerInfo struct {
 
 // peerKeyFromBMPPeerHeader computes the peer key from the BMP peer header.
 func peerKeyFromBMPPeerHeader(exporter netip.AddrPort, header *bmp.BMPPeerHeader) peerKey {
-	peer, _ := netip.AddrFromSlice(header.PeerAddress.To16())
 	return peerKey{
 		exporter:      exporter,
-		ip:            peer,
+		ip:            header.PeerAddress,
 		ptype:         header.PeerType,
 		distinguisher: RD(header.PeerDistinguisher),
 		asn:           header.PeerAS,
-		bgpID:         binary.BigEndian.Uint32(header.PeerBGPID.To4()),
+		bgpID:         binary.BigEndian.Uint32(header.PeerBGPID.AsSlice()),
 	}
 }
 
@@ -178,7 +179,7 @@ func (p *Provider) handlePeerUpNotification(pkey peerKey, body *bmp.BMPPeerUpNot
 	}
 
 	// Check for ADD-PATH support.
-	receivedAddPath := map[bgp.RouteFamily]bgp.BGPAddPathMode{}
+	receivedAddPath := map[bgp.Family]bgp.BGPAddPathMode{}
 	received, _ := body.ReceivedOpenMsg.Body.(*bgp.BGPOpen)
 	for _, param := range received.OptParams {
 		switch param := param.(type) {
@@ -187,14 +188,14 @@ func (p *Provider) handlePeerUpNotification(pkey peerKey, body *bmp.BMPPeerUpNot
 				switch capability := capability.(type) {
 				case *bgp.CapAddPath:
 					for _, tuple := range capability.Tuples {
-						receivedAddPath[tuple.RouteFamily] = tuple.Mode
+						receivedAddPath[tuple.Family] = tuple.Mode
 					}
 				}
 			}
 		}
 	}
 	sent, _ := body.SentOpenMsg.Body.(*bgp.BGPOpen)
-	addPathOption := map[bgp.RouteFamily]bgp.BGPAddPathMode{}
+	addPathOption := map[bgp.Family]bgp.BGPAddPathMode{}
 	for _, param := range sent.OptParams {
 		switch param := param.(type) {
 		case *bgp.OptionParameterCapability:
@@ -202,11 +203,11 @@ func (p *Provider) handlePeerUpNotification(pkey peerKey, body *bmp.BMPPeerUpNot
 				switch capability := capability.(type) {
 				case *bgp.CapAddPath:
 					for _, sent := range capability.Tuples {
-						receivedMode := receivedAddPath[sent.RouteFamily]
+						receivedMode := receivedAddPath[sent.Family]
 						if receivedMode == bgp.BGP_ADD_PATH_BOTH || receivedMode == bgp.BGP_ADD_PATH_SEND {
 							if sent.Mode == bgp.BGP_ADD_PATH_BOTH || sent.Mode == bgp.BGP_ADD_PATH_RECEIVE {
 								// We have at least the receive mode. We only do decoding.
-								addPathOption[sent.RouteFamily] = bgp.BGP_ADD_PATH_RECEIVE
+								addPathOption[sent.Family] = bgp.BGP_ADD_PATH_RECEIVE
 							}
 						}
 					}
@@ -256,7 +257,7 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 	for _, attr := range update.PathAttributes {
 		switch attr := attr.(type) {
 		case *bgp.PathAttributeNextHop:
-			nh, _ = netip.AddrFromSlice(attr.Value.To16())
+			nh = helpers.AddrTo6(attr.Value)
 		case *bgp.PathAttributeAsPath:
 			if p.config.CollectASNs || p.config.CollectASPaths {
 				rta.asPath = asPathFlat(attr)
@@ -292,40 +293,37 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 
 	// Regular NLRI and withdrawn routes
 	if pkey.ptype == bmp.BMP_PEER_TYPE_L3VPN || p.isAcceptedRD(0) {
-		for _, ipprefix := range update.NLRI {
-			prefix := ipprefix.Prefix
-			plen := int(ipprefix.Length)
-			if prefix.To4() != nil {
-				prefix = prefix.To16()
-				plen += 96
+		// We know we have IPv4 NLRI
+		for _, path := range update.NLRI {
+			v4UCPrefix, ok := path.NLRI.(*bgp.IPAddrPrefix)
+			if !ok {
+				continue
 			}
-			pf, _ := netip.AddrFromSlice(prefix)
-			added += p.rib.AddPrefix(netip.PrefixFrom(pf, plen), route{
+			pfx := helpers.PrefixTo6(v4UCPrefix.Prefix)
+			added += p.rib.AddPrefix(pfx, route{
 				peer: pinfo.reference,
 				nlri: p.rib.nlris.Put(nlri{
 					family: bgp.RF_IPv4_UC,
-					path:   ipprefix.PathIdentifier(),
+					path:   path.ID,
 					rd:     pkey.distinguisher,
 				}),
 				nextHop:    p.rib.nextHops.Put(nextHop(nh)),
 				attributes: p.rib.rtas.Put(rta),
-				prefixLen:  uint8(plen),
+				prefixLen:  uint8(pfx.Bits()),
 			})
 		}
-		for _, ipprefix := range update.WithdrawnRoutes {
-			prefix := ipprefix.Prefix
-			plen := int(ipprefix.Length)
-			if prefix.To4() != nil {
-				prefix = prefix.To16()
-				plen += 96
+		for _, path := range update.WithdrawnRoutes {
+			v4UCPrefix, ok := path.NLRI.(*bgp.IPAddrPrefix)
+			if !ok {
+				continue
 			}
-			pf, _ := netip.AddrFromSlice(prefix)
+			pfx := helpers.PrefixTo6(v4UCPrefix.Prefix)
 			if nlriRef, ok := p.rib.nlris.Ref(nlri{
 				family: bgp.RF_IPv4_UC,
-				path:   ipprefix.PathIdentifier(),
+				path:   path.ID,
 				rd:     pkey.distinguisher,
 			}); ok {
-				removed += p.rib.RemovePrefix(netip.PrefixFrom(pf, plen), route{
+				removed += p.rib.RemovePrefix(pfx, route{
 					peer: pinfo.reference,
 					nlri: nlriRef,
 				})
@@ -335,58 +333,38 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 
 	// MP reach and unreach NLRI
 	for _, attr := range update.PathAttributes {
-		var pf netip.Addr
-		var plen int
-		var rd RD
-		var ipprefixes []bgp.AddrPrefixInterface
+		var paths []bgp.PathNLRI
+		var family bgp.Family
 		switch attr := attr.(type) {
 		case *bgp.PathAttributeMpReachNLRI:
-			nh, _ = netip.AddrFromSlice(attr.Nexthop.To16())
-			ipprefixes = attr.Value
+			nh = helpers.AddrTo6(attr.Nexthop)
+			paths = attr.Value
+			family = bgp.NewFamily(attr.AFI, attr.SAFI)
 		case *bgp.PathAttributeMpUnreachNLRI:
-			ipprefixes = attr.Value
+			paths = attr.Value
+			family = bgp.NewFamily(attr.AFI, attr.SAFI)
 		}
-		for _, ipprefix := range ipprefixes {
-			switch ipprefix := ipprefix.(type) {
+		for _, path := range paths {
+			var pfx netip.Prefix
+			var rd RD
+			switch nlri := path.NLRI.(type) {
 			case *bgp.IPAddrPrefix:
-				pf, _ = netip.AddrFromSlice(ipprefix.Prefix.To16())
-				plen = int(ipprefix.Length + 96)
-				rd = pkey.distinguisher
-			case *bgp.IPv6AddrPrefix:
-				pf, _ = netip.AddrFromSlice(ipprefix.Prefix.To16())
-				plen = int(ipprefix.Length)
+				pfx = helpers.PrefixTo6(nlri.Prefix)
 				rd = pkey.distinguisher
 			case *bgp.LabeledIPAddrPrefix:
-				pf, _ = netip.AddrFromSlice(ipprefix.Prefix.To16())
-				plen = int(ipprefix.IPPrefixLen() + 96)
-				rd = pkey.distinguisher
-			case *bgp.LabeledIPv6AddrPrefix:
-				pf, _ = netip.AddrFromSlice(ipprefix.Prefix.To16())
-				plen = int(ipprefix.IPPrefixLen())
+				pfx = helpers.PrefixTo6(nlri.Prefix)
 				rd = pkey.distinguisher
 			case *bgp.LabeledVPNIPAddrPrefix:
-				pf, _ = netip.AddrFromSlice(ipprefix.Prefix.To16())
-				plen = int(ipprefix.IPPrefixLen() + 96)
-				rd = RDFromRouteDistinguisherInterface(ipprefix.RD)
-			case *bgp.LabeledVPNIPv6AddrPrefix:
-				pf, _ = netip.AddrFromSlice(ipprefix.Prefix.To16())
-				plen = int(ipprefix.IPPrefixLen())
-				rd = RDFromRouteDistinguisherInterface(ipprefix.RD)
+				pfx = helpers.PrefixTo6(nlri.Prefix)
+				rd = RDFromRouteDistinguisherInterface(nlri.RD)
 			case *bgp.EVPNNLRI:
-				switch route := ipprefix.RouteTypeData.(type) {
+				switch route := nlri.RouteTypeData.(type) {
 				case *bgp.EVPNIPPrefixRoute:
-					prefix := route.IPPrefix
-					plen = int(route.IPPrefixLength)
-					if prefix.To4() != nil {
-						prefix = prefix.To16()
-						plen += 96
-					}
-					pf, _ = netip.AddrFromSlice(prefix.To16())
+					pfx = helpers.PrefixTo6(netip.PrefixFrom(route.IPPrefix, int(route.IPPrefixLength)))
 					rd = RDFromRouteDistinguisherInterface(route.RD)
 				}
 			default:
-				p.metrics.ignoredNlri.WithLabelValues(exporterStr,
-					bgp.AfiSafiToRouteFamily(ipprefix.AFI(), ipprefix.SAFI()).String()).Inc()
+				p.metrics.ignoredNlri.WithLabelValues(exporterStr, family.String()).Inc()
 				continue
 			}
 			if pkey.ptype != bmp.BMP_PEER_TYPE_L3VPN && !p.isAcceptedRD(rd) {
@@ -394,24 +372,24 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 			}
 			switch attr.(type) {
 			case *bgp.PathAttributeMpReachNLRI:
-				added += p.rib.AddPrefix(netip.PrefixFrom(pf, plen), route{
+				added += p.rib.AddPrefix(pfx, route{
 					peer: pinfo.reference,
 					nlri: p.rib.nlris.Put(nlri{
-						family: bgp.AfiSafiToRouteFamily(ipprefix.AFI(), ipprefix.SAFI()),
+						family: family,
 						rd:     rd,
-						path:   ipprefix.PathIdentifier(),
+						path:   path.ID,
 					}),
 					nextHop:    p.rib.nextHops.Put(nextHop(nh)),
 					attributes: p.rib.rtas.Put(rta),
-					prefixLen:  uint8(plen),
+					prefixLen:  uint8(pfx.Bits()),
 				})
 			case *bgp.PathAttributeMpUnreachNLRI:
 				if nlriRef, ok := p.rib.nlris.Ref(nlri{
-					family: bgp.AfiSafiToRouteFamily(ipprefix.AFI(), ipprefix.SAFI()),
+					family: family,
 					rd:     rd,
-					path:   ipprefix.PathIdentifier(),
+					path:   path.ID,
 				}); ok {
-					removed += p.rib.RemovePrefix(netip.PrefixFrom(pf, plen), route{
+					removed += p.rib.RemovePrefix(pfx, route{
 						peer: pinfo.reference,
 						nlri: nlriRef,
 					})

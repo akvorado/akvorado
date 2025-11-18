@@ -39,16 +39,23 @@ type contextHook struct{}
 // Run adds more context to an event, including "module" and "caller".
 func (h contextHook) Run(e *zerolog.Event, _ zerolog.Level, _ string) {
 	callStack := stack.Callers()
-	callStack = callStack[3:] // Trial and error, there is a test to check it works
-	caller := callStack[0].SourceFile(true)
-	e.Str("caller", caller)
+	callStack = callStack[3:] // Trial and error, there is a test to check it works.
+
+	// We want to get the first caller that is in our module and isn't preferably in logs.go.
+	var candidateInfo *stack.CallInfo
 	for _, call := range callStack {
-		module := call.FunctionName()
-		if !strings.HasPrefix(module, stack.ModuleName) {
+		info := call.Info()
+		if !strings.HasPrefix(info.FunctionName(), stack.ModuleName) {
 			continue
 		}
-		module = strings.SplitN(module, ".", 2)[0]
-		e.Str("module", module)
+		candidateInfo = info
+		if strings.HasSuffix(info.FileName(), "/logs.go") {
+			continue
+		}
 		break
+	}
+	if candidateInfo != nil {
+		e.Str("caller", candidateInfo.SourceFile())
+		e.Str("module", strings.SplitN(candidateInfo.FunctionName(), ".", 2)[0])
 	}
 }

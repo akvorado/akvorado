@@ -15,7 +15,7 @@ import (
 func expectCacheGet(t *testing.T, c *cache.Cache[netip.Addr, string], key string, expectedResult string, expectedOk bool) {
 	t.Helper()
 	ip := netip.MustParseAddr(key)
-	ip = netip.AddrFrom16(ip.As16())
+	ip = helpers.AddrTo6(ip)
 	result, ok := c.Get(time.Time{}, ip)
 	got := struct {
 		Result string

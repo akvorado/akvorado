@@ -425,12 +425,17 @@ UNCONN           0                0                                        *:205
          skmem:(r0,rb212992,t0,tb212992,f4096,w0,o0,bl0,d486525)
 ```
 
-In the example above, there were 486525 drops. You can solve this in three ways:
+In the example above, there were 486525 drops. You can solve this in different ways:
 
-- increase the number of workers for the UDP input,
-- increase the value of the `net.core.rmem_max` sysctl (on the host) and increase
-  the `receive-buffer` setting for the input to the same value,
-- add more inlet instances and shard the exporters among the configured ones.
+1. Check the `akvorado_inlet_kafka_buffered_produce_records_total` gauge. If it
+   is often near the value of `kafka`→`queue-size`, increase this value. This
+   setting has the most impact.
+1. Increase the number of workers for the UDP input.
+1. Enable the eBPF load balancer on Linux (check `docker/docker-compose-local.yml`).
+1. Increase the value of the `net.core.rmem_max` sysctl (on the host) and
+   increase the `receive-buffer` setting for the input to the same value,
+1. Increase the number of Kafka brokers.
+1. Add more inlet instances and shard the exporters among the configured ones.
 
 The value of the receive buffer is also available as a metric:
 

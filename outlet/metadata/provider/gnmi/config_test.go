@@ -18,6 +18,155 @@ func TestDefaultConfiguration(t *testing.T) {
 	}
 }
 
+func TestAuthenticationParameterMigration(t *testing.T) {
+	helpers.TestConfigurationDecode(t, helpers.ConfigurationDecodeCases{
+		{
+			Description: "minimal config",
+			Initial:     func() any { return AuthenticationParameter{} },
+			Configuration: func() any {
+				return gin.H{
+					"username": "admin",
+					"password": "secret",
+				}
+			},
+			Expected: AuthenticationParameter{
+				Username: "admin",
+				Password: "secret",
+				TLS: helpers.TLSConfiguration{
+					Enable: true,
+				},
+			},
+		}, {
+			Description: "old insecure=true migrates to TLS.Enable=false",
+			Initial:     func() any { return AuthenticationParameter{} },
+			Configuration: func() any {
+				return gin.H{
+					"username": "admin",
+					"password": "secret",
+					"insecure": true,
+				}
+			},
+			Expected: AuthenticationParameter{
+				Username: "admin",
+				Password: "secret",
+				TLS: helpers.TLSConfiguration{
+					Enable: false,
+				},
+			},
+		}, {
+			Description: "old insecure=false migrates to TLS.Enable=true",
+			Initial:     func() any { return AuthenticationParameter{} },
+			Configuration: func() any {
+				return gin.H{
+					"username": "admin",
+					"password": "secret",
+					"insecure": false,
+				}
+			},
+			Expected: AuthenticationParameter{
+				Username: "admin",
+				Password: "secret",
+				TLS: helpers.TLSConfiguration{
+					Enable: true,
+				},
+			},
+		}, {
+			Description: "old skip-verify migrates to TLS.SkipVerify",
+			Initial:     func() any { return AuthenticationParameter{} },
+			Configuration: func() any {
+				return gin.H{
+					"username":    "admin",
+					"password":    "secret",
+					"skip-verify": true,
+				}
+			},
+			Expected: AuthenticationParameter{
+				Username: "admin",
+				Password: "secret",
+				TLS: helpers.TLSConfiguration{
+					Enable:     true,
+					SkipVerify: true,
+				},
+			},
+		}, {
+			Description: "old TLS certificate fields migrate to TLS config",
+			Initial:     func() any { return AuthenticationParameter{} },
+			Configuration: func() any {
+				return gin.H{
+					"username": "admin",
+					"password": "secret",
+					"tls-ca":   "/path/to/ca.crt",
+					"tls-cert": "/path/to/cert.crt",
+					"tls-key":  "/path/to/key.pem",
+				}
+			},
+			Expected: AuthenticationParameter{
+				Username: "admin",
+				Password: "secret",
+				TLS: helpers.TLSConfiguration{
+					Enable:   true,
+					CAFile:   "/path/to/ca.crt",
+					CertFile: "/path/to/cert.crt",
+					KeyFile:  "/path/to/key.pem",
+				},
+			},
+		}, {
+			Description: "new TLS config with default enable=true",
+			Initial:     func() any { return AuthenticationParameter{} },
+			Configuration: func() any {
+				return gin.H{
+					"username": "admin",
+					"password": "secret",
+					"tls": gin.H{
+						"skip-verify": true,
+					},
+				}
+			},
+			Expected: AuthenticationParameter{
+				Username: "admin",
+				Password: "secret",
+				TLS: helpers.TLSConfiguration{
+					Enable:     true,
+					SkipVerify: true,
+				},
+			},
+		}, {
+			Description: "new TLS config with explicit enable=false",
+			Initial:     func() any { return AuthenticationParameter{} },
+			Configuration: func() any {
+				return gin.H{
+					"username": "admin",
+					"password": "secret",
+					"tls": gin.H{
+						"enable": false,
+					},
+				}
+			},
+			Expected: AuthenticationParameter{
+				Username: "admin",
+				Password: "secret",
+				TLS: helpers.TLSConfiguration{
+					Enable: false,
+				},
+			},
+		}, {
+			Description: "mixing old and new TLS config causes error",
+			Initial:     func() any { return AuthenticationParameter{} },
+			Configuration: func() any {
+				return gin.H{
+					"username": "admin",
+					"password": "secret",
+					"insecure": true,
+					"tls": gin.H{
+						"enable": false,
+					},
+				}
+			},
+			Error: true,
+		},
+	})
+}
+
 func TestDefaults(t *testing.T) {
 	helpers.TestConfigurationDecode(t, helpers.ConfigurationDecodeCases{
 		{

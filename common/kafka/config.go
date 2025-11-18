@@ -53,10 +53,6 @@ func DefaultConfiguration() Configuration {
 	return Configuration{
 		Topic:   "flows",
 		Brokers: []string{"127.0.0.1:9092"},
-		TLS: helpers.TLSConfiguration{
-			Enable: false,
-			Verify: true,
-		},
 	}
 }
 

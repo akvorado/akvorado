@@ -22,7 +22,7 @@ type Trace []Call
 
 var pcStackPool = sync.Pool{
 	New: func() any {
-		pcs := make([]uintptr, 1000)
+		pcs := make([]uintptr, 32)
 		return &pcs
 	},
 }
@@ -40,61 +40,97 @@ func Callers() Trace {
 	return cs
 }
 
-// FunctionName provides the function name associated with the call
-// point. It includes the module name as well.
-func (pc Call) FunctionName() string {
-	pcFix := uintptr(pc) - 1
-	fn := runtime.FuncForPC(pcFix)
-	if fn == nil {
-		return "(nofunc)"
-	}
-
-	name := fn.Name()
-	return name
+// CallInfo contains lazily-evaluated information from a Call.
+// It performs a single runtime.FuncForPC lookup and caches values as they're accessed.
+type CallInfo struct {
+	pc           uintptr
+	fn           *runtime.Func
+	functionName string
+	fileName     string
+	sourceFile   string
+	line         int
+	initialized  bool
 }
 
-// SourceFile returns the source file and optionally line number of
-// the call point. The source file is relative to the import point
-// (and includes it).
-func (pc Call) SourceFile(withLine bool) string {
-	pcFix := uintptr(pc) - 1
-	fn := runtime.FuncForPC(pcFix)
-	if fn == nil {
-		return "(nosource)"
+// Info creates a CallInfo that lazily extracts information from the call point.
+// This is more efficient than calling FunctionName(), FileName(), and SourceFile() separately,
+// and only computes values that are actually accessed.
+func (pc Call) Info() *CallInfo {
+	return &CallInfo{
+		pc: uintptr(pc) - 1,
+	}
+}
+
+func (ci *CallInfo) ensureInit() {
+	if ci.initialized {
+		return
+	}
+	ci.initialized = true
+	ci.fn = runtime.FuncForPC(ci.pc)
+	if ci.fn == nil {
+		ci.functionName = "(nofunc)"
+		ci.fileName = "(nofile)"
+		ci.sourceFile = "(nosource)"
+		return
+	}
+}
+
+// FunctionName returns the function name.
+func (ci *CallInfo) FunctionName() string {
+	ci.ensureInit()
+	if ci.functionName == "" {
+		ci.functionName = ci.fn.Name()
+	}
+	return ci.functionName
+}
+
+// FileName returns the file name.
+func (ci *CallInfo) FileName() string {
+	ci.ensureInit()
+	if ci.fileName == "" {
+		ci.fileName, ci.line = ci.fn.FileLine(ci.pc)
+	}
+	return ci.fileName
+}
+
+// SourceFile returns the source file with line number.
+func (ci *CallInfo) SourceFile() string {
+	ci.ensureInit()
+	if ci.sourceFile != "" {
+		return ci.sourceFile
 	}
 
 	const sep = "/"
-	file, line := fn.FileLine(pcFix)
-	functionName := fn.Name()
+	sourceFile := ci.FileName()
+	functionName := ci.FunctionName()
 	impCnt := strings.Count(functionName, sep)
-	pathCnt := strings.Count(file, sep)
+	pathCnt := strings.Count(sourceFile, sep)
 	for pathCnt > impCnt {
-		i := strings.Index(file, sep)
+		i := strings.Index(sourceFile, sep)
 		if i == -1 {
 			break
 		}
-		file = file[i+len(sep):]
+		sourceFile = sourceFile[i+len(sep):]
 		pathCnt--
 	}
 	i := strings.Index(functionName, ".")
 	if i == -1 {
-		return "(nosource)"
+		ci.sourceFile = "(nosource)"
+	} else {
+		moduleName := functionName[:i]
+		i = strings.Index(moduleName, "/")
+		if i != -1 {
+			moduleName = moduleName[:i]
+		}
+		ci.sourceFile = fmt.Sprintf("%s/%s:%d", moduleName, sourceFile, ci.line)
 	}
-	moduleName := functionName[:i]
-	i = strings.Index(moduleName, "/")
-	if i != -1 {
-		moduleName = moduleName[:i]
-	}
-	if withLine {
-		return fmt.Sprintf("%s/%s:%d", moduleName, file, line)
-	}
-	return fmt.Sprintf("%s/%s", moduleName, file)
+	return ci.sourceFile
 }
 
 var (
 	ownPackageCall    = Callers()[0]
-	ownPackageName    = strings.SplitN(ownPackageCall.FunctionName(), ".", 2)[0] // akvorado/common/reporter/stack
-	parentPackageName = ownPackageName[0:strings.LastIndex(ownPackageName, "/")] // akvorado/common/reporter
+	ownPackageName    = strings.SplitN(ownPackageCall.Info().FunctionName(), ".", 2)[0] // akvorado/common/reporter/stack
+	parentPackageName = ownPackageName[0:strings.LastIndex(ownPackageName, "/")]        // akvorado/common/reporter
 
 	// ModuleName is the name of the current module. This can be used to prefix stuff.
 	ModuleName = strings.TrimSuffix(parentPackageName[0:strings.LastIndex(parentPackageName, "/")], "/common") // akvorado

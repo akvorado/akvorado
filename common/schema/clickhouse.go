@@ -255,9 +255,6 @@ func (bf *FlowMessage) appendDebug(columnKey ColumnKey, value any) {
 // check executes some sanity checks when in debug mode. It should be called
 // only after finalization.
 func (bf *FlowMessage) check() {
-	if !debug {
-		return
-	}
 	if debug {
 		// Check that all columns have the right amount of rows
 		for idx, col := range bf.batch.columns {

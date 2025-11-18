@@ -4,73 +4,86 @@
 @source "**/*.{vue,js,ts,jsx,tsx}";
 @custom-variant dark (&:where(.dark, .dark *));
 
+@theme {
+    --animate-wiggle: wiggle 1s cubic-bezier(0, 0, 0.2, 1) 5;
+
+    @keyframes wiggle {
+        25% {
+            transform: rotate(10deg);
+        }
+        75% {
+            transform: rotate(-10deg);
+        }
+    }
+}
+
 /* For CodeMirror */
 #app {
-  .cm-editor {
-    @reference "tailwindcss/theme.css";
-    .cm-line {
-      @apply px-0;
-    }
-    &.cm-focused {
-      @apply outline-none;
-    }
-    .cm-tooltip {
-      @apply z-50;
-    }
-    .cm-tooltip-autocomplete {
-      @apply rounded border border-gray-300 bg-white p-1 shadow-md dark:border-gray-700 dark:bg-gray-900 dark:shadow-white/10;
-      li {
-        @apply flex flex-row flex-nowrap items-center justify-between gap-3 rounded-sm px-1;
-        .cm-completionLabel {
-          @apply grow;
+    .cm-editor {
+        @reference "tailwindcss/theme.css";
+        .cm-line {
+            @apply px-0;
         }
-        .cm-completionDetail {
-          @apply shrink text-sm text-gray-500 dark:text-gray-300;
+        &.cm-focused {
+            @apply outline-none;
         }
-        &[aria-selected] .cm-completionDetail {
-          @apply text-white;
+        .cm-tooltip {
+            @apply z-50;
         }
-      }
+        .cm-tooltip-autocomplete {
+            @apply rounded border border-gray-300 bg-white p-1 shadow-md dark:border-gray-700 dark:bg-gray-900 dark:shadow-white/10;
+            li {
+                @apply flex flex-row flex-nowrap items-center justify-between gap-3 rounded-sm px-1;
+                .cm-completionLabel {
+                    @apply grow;
+                }
+                .cm-completionDetail {
+                    @apply shrink text-sm text-gray-500 dark:text-gray-300;
+                }
+                &[aria-selected] .cm-completionDetail {
+                    @apply text-white;
+                }
+            }
+        }
     }
-  }
 }
 
 /* Admonitions */
 .prose .admonition {
-  @apply my-4 rounded-md border-l-4 p-4;
+    @apply my-4 rounded-md border-l-4 p-4;
 
-  .admonition-title {
-    @apply mt-0 flex items-center font-bold;
+    .admonition-title {
+        @apply mt-0 flex items-center font-bold;
 
-    svg {
-      @apply mr-2 h-4 w-4;
+        svg {
+            @apply mr-2 h-4 w-4;
+        }
     }
-  }
 
-  p:last-child {
-    @apply mb-0;
-  }
+    p:last-child {
+        @apply mb-0;
+    }
 }
 
 .prose .admonition-important {
-  @apply border-purple-500 bg-purple-50 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200;
+    @apply border-purple-500 bg-purple-50 text-purple-800 dark:bg-purple-900/20 dark:text-purple-200;
 }
 
 .prose .admonition-note {
-  @apply border-blue-500 bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200;
+    @apply border-blue-500 bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-200;
 }
 
 .prose .admonition-tip {
-  @apply border-green-500 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-200;
+    @apply border-green-500 bg-green-50 text-green-800 dark:bg-green-900/20 dark:text-green-200;
 }
 
 .prose .admonition-warning {
-  @apply border-yellow-500 bg-yellow-50 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200;
-  svg {
-    transform: translateY(2px);
-  }
+    @apply border-yellow-500 bg-yellow-50 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-200;
+    svg {
+        transform: translateY(2px);
+    }
 }
 
 .prose .admonition-caution {
-  @apply border-red-500 bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-200;
+    @apply border-red-500 bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-200;
 }

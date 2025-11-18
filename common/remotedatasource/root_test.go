@@ -5,7 +5,14 @@ package remotedatasource
 
 import (
 	"context"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/tls"
+	"crypto/x509"
+	"crypto/x509/pkix"
 	"fmt"
+	"math/big"
 	"net"
 	"net/http"
 	"strconv"
@@ -210,4 +217,129 @@ func TestSource(t *testing.T) {
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
+}
+
+// generateSelfSignedCert generates a self-signed certificate for testing
+func generateSelfSignedCert(t *testing.T) tls.Certificate {
+	t.Helper()
+
+	// Generate a private key
+	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatalf("ecdsa.GenerateKey() error:\n%+v", err)
+	}
+
+	// Create a certificate template
+	template := x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			Organization: []string{"Test Organization"},
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().Add(time.Hour),
+		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		BasicConstraintsValid: true,
+		IPAddresses:           []net.IP{net.ParseIP("127.0.0.1")},
+	}
+
+	// Create the certificate
+	certDER, err := x509.CreateCertificate(rand.Reader, &template, &template, &privateKey.PublicKey, privateKey)
+	if err != nil {
+		t.Fatalf("x509.CreateCertificate() error:\n%+v", err)
+	}
+
+	return tls.Certificate{
+		Certificate: [][]byte{certDER},
+		PrivateKey:  privateKey,
+	}
+}
+
+func TestSourceWithTLS(t *testing.T) {
+	cert := generateSelfSignedCert(t)
+
+	// Setup TLS server
+	mux := http.NewServeMux()
+	mux.Handle("/data.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Add("Content-Type", "application/json")
+		w.WriteHeader(200)
+		w.Write([]byte(`{"results": [{"name": "secure", "description": "tls test"}]}`))
+	}))
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen() error:\n%+v", err)
+	}
+
+	server := &http.Server{
+		Handler: mux,
+		TLSConfig: &tls.Config{
+			Certificates: []tls.Certificate{cert},
+		},
+	}
+	address := listener.Addr().String()
+	go server.ServeTLS(listener, "", "")
+	defer server.Shutdown(context.Background())
+
+	t.Run("WithoutTLSConfig", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		config := map[string]Source{
+			"secure": {
+				URL:       fmt.Sprintf("https://%s/data.json", address),
+				Method:    "GET",
+				Timeout:   1 * time.Second,
+				Interval:  1 * time.Minute,
+				Transform: MustParseTransformQuery(".results[]"),
+			},
+		}
+		handler := remoteDataHandler{
+			data: []remoteData{},
+		}
+		handler.fetcher, _ = New[remoteData](r, handler.UpdateData, "test", config)
+
+		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+		defer cancel()
+		_, err := handler.fetcher.Fetch(ctx, "secure", config["secure"])
+		if err == nil {
+			t.Fatal("Fetch() should have errored with certificate error")
+		}
+	})
+
+	t.Run("WithTLSSkipVerify", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		config := map[string]Source{
+			"secure": {
+				URL:      fmt.Sprintf("https://%s/data.json", address),
+				Method:   "GET",
+				Timeout:  1 * time.Second,
+				Interval: 1 * time.Minute,
+				TLS: helpers.TLSConfiguration{
+					Enable:     true,
+					SkipVerify: true,
+				},
+				Transform: MustParseTransformQuery(".results[]"),
+			},
+		}
+		handler := remoteDataHandler{
+			data: []remoteData{},
+		}
+		handler.fetcher, _ = New[remoteData](r, handler.UpdateData, "test", config)
+
+		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+		defer cancel()
+		results, err := handler.fetcher.Fetch(ctx, "secure", config["secure"])
+		if err != nil {
+			t.Fatalf("Fetch() error:\n%+v", err)
+		}
+
+		expected := []remoteData{
+			{
+				Name:        "secure",
+				Description: "tls test",
+			},
+		}
+		if diff := helpers.Diff(results, expected); diff != "" {
+			t.Fatalf("Fetch() (-got, +want):\n%s", diff)
+		}
+	})
 }

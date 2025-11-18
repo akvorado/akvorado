@@ -14,7 +14,7 @@ import (
 
 	"akvorado/common/helpers"
 
-	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
+	"github.com/osrg/gobgp/v4/pkg/packet/bgp"
 )
 
 var asPathCache [][]uint32
@@ -239,7 +239,7 @@ func BenchmarkRIBInsertion(b *testing.B) {
 							if prng2[p].IntN(10) == 0 {
 								continue
 							}
-							pfx := netip.PrefixFrom(netip.AddrFrom16(r.Prefix.Addr().As16()), r.Prefix.Bits()+96)
+							pfx := helpers.PrefixTo6(r.Prefix)
 							tentative++
 							inserted += rib.AddPrefix(pfx, route{
 								peer:    uint32(p),
@@ -295,7 +295,7 @@ func BenchmarkRIBLookup(b *testing.B) {
 						if prng2[p].IntN(10) == 0 {
 							continue
 						}
-						pfx := netip.PrefixFrom(netip.AddrFrom16(r.Prefix.Addr().As16()), r.Prefix.Bits()+96)
+						pfx := helpers.PrefixTo6(r.Prefix)
 						rib.AddPrefix(pfx, route{
 							peer:    uint32(p),
 							nlri:    rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
@@ -344,7 +344,7 @@ func BenchmarkRIBFlush(b *testing.B) {
 							if prng2[p].IntN(10) == 0 {
 								continue
 							}
-							pfx := netip.PrefixFrom(netip.AddrFrom16(r.Prefix.Addr().As16()), r.Prefix.Bits()+96)
+							pfx := helpers.PrefixTo6(r.Prefix)
 							rib.AddPrefix(pfx, route{
 								peer:    uint32(p),
 								nlri:    rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),

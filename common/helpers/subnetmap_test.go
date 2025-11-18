@@ -549,50 +549,6 @@ func TestSubnetMapString(t *testing.T) {
 	})
 }
 
-func TestPrefixTo16(t *testing.T) {
-	cases := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{
-			name:     "IPv4 prefix",
-			input:    "192.0.2.0/24",
-			expected: "::ffff:192.0.2.0/120",
-		},
-		{
-			name:     "IPv4 host",
-			input:    "192.0.2.1/32",
-			expected: "::ffff:192.0.2.1/128",
-		},
-		{
-			name:     "IPv6 prefix unchanged",
-			input:    "2001:db8::/64",
-			expected: "2001:db8::/64",
-		},
-		{
-			name:     "IPv6 host unchanged",
-			input:    "2001:db8::1/128",
-			expected: "2001:db8::1/128",
-		},
-		{
-			name:     "IPv4-mapped IPv6 unchanged",
-			input:    "::ffff:192.0.2.0/120",
-			expected: "::ffff:192.0.2.0/120",
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			prefix := netip.MustParsePrefix(tc.input)
-			result := helpers.PrefixTo16(prefix)
-			if result.String() != tc.expected {
-				t.Fatalf("PrefixTo16(%s) = %s, want %s", tc.input, result, tc.expected)
-			}
-		})
-	}
-}
-
 func TestSubnetMapSupernets(t *testing.T) {
 	t.Run("nil", func(t *testing.T) {
 		var sm *helpers.SubnetMap[string]

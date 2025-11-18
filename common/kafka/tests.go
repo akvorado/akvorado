@@ -30,10 +30,6 @@ func SetupKafkaBroker(t *testing.T) (*kgo.Client, []string) {
 	r := reporter.NewMock(t)
 	opts, err := NewConfig(r, Configuration{
 		Brokers: []string{broker},
-		TLS: helpers.TLSConfiguration{
-			Enable: false,
-			Verify: true,
-		},
 	})
 	if err != nil {
 		t.Fatalf("NewConfig() error: %v", err)
@@ -137,17 +133,3 @@ func InterceptMessages(t *testing.T, cluster *kfake.Cluster, callback func(*kgo.
 }
 
 var _ kfake.Logger = &Logger{}
-
-// Logf logs a message at the specified level for kfake.
-func (l *Logger) Logf(level kfake.LogLevel, msg string, keyvals ...any) {
-	switch level {
-	case kfake.LogLevelError:
-		l.r.Error().Fields(keyvals).Msg(msg)
-	case kfake.LogLevelWarn:
-		l.r.Warn().Fields(keyvals).Msg(msg)
-	case kfake.LogLevelInfo:
-		l.r.Info().Fields(keyvals).Msg(msg)
-	case kfake.LogLevelDebug:
-		l.r.Debug().Fields(keyvals).Msg(msg)
-	}
-}

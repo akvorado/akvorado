@@ -13,7 +13,7 @@ import (
 	"akvorado/common/reporter"
 
 	"github.com/benbjohnson/clock"
-	"github.com/osrg/gobgp/v3/pkg/packet/bgp"
+	"github.com/osrg/gobgp/v4/pkg/packet/bgp"
 )
 
 // LookupResult is the result of the Lookup() function.

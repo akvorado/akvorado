@@ -28,6 +28,9 @@ func TestSourceDecode(t *testing.T) {
 				Method:   "GET",
 				Timeout:  time.Minute,
 				Interval: 10 * time.Minute,
+				TLS: helpers.TLSConfiguration{
+					SkipVerify: false,
+				},
 			},
 		}, {
 			Description: "Simple transform",
@@ -45,6 +48,9 @@ func TestSourceDecode(t *testing.T) {
 				Timeout:   time.Minute,
 				Interval:  10 * time.Minute,
 				Transform: MustParseTransformQuery(".[]"),
+				TLS: helpers.TLSConfiguration{
+					SkipVerify: false,
+				},
 			},
 		}, {
 			Description: "Use POST",
@@ -64,6 +70,33 @@ func TestSourceDecode(t *testing.T) {
 				Timeout:   2 * time.Minute,
 				Interval:  10 * time.Minute,
 				Transform: MustParseTransformQuery(".[]"),
+				TLS: helpers.TLSConfiguration{
+					SkipVerify: false,
+				},
+			},
+		}, {
+			Description: "With TLS configuration",
+			Initial:     func() any { return Source{} },
+			Configuration: func() any {
+				return gin.H{
+					"url":      "https://example.net",
+					"interval": "10m",
+					"tls": gin.H{
+						"enable":  true,
+						"ca-file": "something.crt",
+					},
+				}
+			},
+			Expected: Source{
+				URL:      "https://example.net",
+				Method:   "GET",
+				Timeout:  time.Minute,
+				Interval: 10 * time.Minute,
+				TLS: helpers.TLSConfiguration{
+					Enable:     true,
+					SkipVerify: false,
+					CAFile:     "something.crt",
+				},
 			},
 		}, {
 			Description: "Complex transform",
@@ -85,6 +118,9 @@ func TestSourceDecode(t *testing.T) {
 				Transform: MustParseTransformQuery(`
 .prefixes[] | {prefix: .ip_prefix, tenant: "amazon", region: .region, role: .service|ascii_downcase}
 `),
+				TLS: helpers.TLSConfiguration{
+					SkipVerify: false,
+				},
 			},
 		}, {
 			Description: "Incorrect transform",

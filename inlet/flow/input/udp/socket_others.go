@@ -7,27 +7,11 @@ package udp
 
 import (
 	"errors"
-
-	"golang.org/x/sys/unix"
 )
 
 var (
 	oobLength        = 0
-	udpSocketOptions = []socketOption{
-		{
-			// Allow multiple listeners to bind to the same IP
-			Name:      "SO_REUSEADDR",
-			Level:     unix.SOL_SOCKET,
-			Option:    unix.SO_REUSEADDR,
-			Mandatory: true,
-		}, {
-			// Allow multiple listeners to bind to the same port
-			Name:      "SO_REUSEPORT",
-			Level:     unix.SOL_SOCKET,
-			Option:    unix.SO_REUSEPORT,
-			Mandatory: true,
-		},
-	}
+	udpSocketOptions = commonUDPSocketOptions
 )
 
 // parseSocketControlMessage always returns 0.

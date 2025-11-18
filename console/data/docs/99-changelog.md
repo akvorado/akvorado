@@ -12,23 +12,26 @@ identified with a specific icon:
 
 ## Unreleased
 
-This release brings a performance improvement on Linux by using per-packet
-load-balancing for incoming flows using eBPF. Previously, exporters were tied to
-one worker, triggering packet loss despite many workers available. This requires
-Linux 5.8+ (support of `CAP_BPF`). For older kernels, add this to your
-`docker/docker-compose-local.yaml`:
+- 💥 *config*: `skip-verify` is false by default in TLS configurations for
+  ClickHouse, Kafka and remote data sources (previously, `verify` was set to
+  false by default)
+- 🌱 *config*: rename `verify` to `skip-verify` in TLS configurations for
+  ClickHouse, Kafka and remote data sources (with inverted logic)
+- 🌱 *config*: remote data sources accept a specific TLS configuration
+- 🌱 *config*: gNMI metadata provider has been converted to the same TLS
+  configuration than ClickHouse, Kafka and remote data sources.
 
-```yaml
-services:
-  akvorado-inlet:
-    cap_add: !override
-      - SYS_ADMIN # BPF capability is supported only from Linux 5.8
-```
+## 2.0.2 - 2025-10-29
+
+The modification of the default value of `inlet`→`kafka`→`queue-size` should
+prevent packet drops on busier setups.
 
 - 💥 *config*: stop shipping demo exporter configurations from the orchestrator
-- 💥 *inlet*: load-balance incoming UDP packets to all workers using eBPF on Linux
+- ✨ *inlet*: load-balance incoming UDP packets to all workers using eBPF on
+  Linux (check `docker/docker-compose-local.yaml` to enable)
 - 🩹 *inlet*: fix `akvorado_inlet_flow_input_udp_in_dropped_packets_total` metric
-- 🩹 *console*: fix completion tooltip being wrapped with Firefox
+- 🩹 *console*: fix completion tooltip being obscured with Firefox
+- 🌱 *inlet*: increase default `kafka`→`queue-size` value to 4096 to prevent packet drops
 - 🌱 *outlet*: be more aggressive when increasing the number of workers
 - 🌱 *outlet*: cap the number of workers to the number of Kafka partitions
 - 🌱 *console*: add `auth`→`logout-url` and `auth`→`avatar-url` to configure
