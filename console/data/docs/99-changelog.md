@@ -15,11 +15,14 @@ identified with a specific icon:
 - 💥 *config*: `skip-verify` is false by default in TLS configurations for
   ClickHouse, Kafka and remote data sources (previously, `verify` was set to
   false by default)
+- 🩹 *inlet*: keep flows from one exporter into a single partition
 - 🩹 *outlet*: provide additional gracetime for a worker to send to ClickHouse
+- 🩹 *outlet*: prevent discarding flows on shutdown
 - 🩹 *outlet*: enhance scaling up and down workers to avoid hysteresis
 - 🩹 *outlet*: accept flows where interface names or descriptions are missing
 - 🩹 *docker*: update Traefik to 3.6.1 (for compatibility with Docker Engine 29)
 - 🌱 *common*: enable block and mutex profiling
+- 🌱 *outlet*: save IPFIX decoder state to a file to prevent discarding flows on start
 - 🌱 *config*: rename `verify` to `skip-verify` in TLS configurations for
   ClickHouse, Kafka and remote data sources (with inverted logic)
 - 🌱 *config*: remote data sources accept a specific TLS configuration

@@ -6,9 +6,7 @@ package kafka
 
 import (
 	"context"
-	"encoding/binary"
 	"fmt"
-	"math/rand/v2"
 	"strings"
 	"time"
 
@@ -109,11 +107,9 @@ func (c *Component) Stop() error {
 
 // Send a message to Kafka.
 func (c *Component) Send(exporter string, payload []byte, finalizer func()) {
-	key := make([]byte, 4)
-	binary.BigEndian.PutUint32(key, rand.Uint32())
 	record := &kgo.Record{
 		Topic: c.kafkaTopic,
-		Key:   key,
+		Key:   []byte(exporter),
 		Value: payload,
 	}
 	c.kafkaClient.Produce(context.Background(), record, func(r *kgo.Record, err error) {

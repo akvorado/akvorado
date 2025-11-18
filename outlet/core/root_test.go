@@ -40,7 +40,7 @@ func TestCore(t *testing.T) {
 	daemonComponent := daemon.NewMock(t)
 	metadataComponent := metadata.NewMock(t, r, metadata.DefaultConfiguration(),
 		metadata.Dependencies{Daemon: daemonComponent})
-	flowComponent, err := flow.New(r, flow.Dependencies{Schema: schema.NewMock(t)})
+	flowComponent, err := flow.New(r, flow.DefaultConfiguration(), flow.Dependencies{Schema: schema.NewMock(t)})
 	if err != nil {
 		t.Fatalf("flow.New() error:\n%+v", err)
 	}

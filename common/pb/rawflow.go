@@ -19,6 +19,7 @@ var Version = 5
 var decoderMap = bimap.New(map[RawFlow_Decoder]string{
 	RawFlow_DECODER_NETFLOW: "netflow",
 	RawFlow_DECODER_SFLOW:   "sflow",
+	RawFlow_DECODER_GOB:     "gob",
 })
 
 // MarshalText turns a decoder to text
@@ -27,7 +28,7 @@ func (d RawFlow_Decoder) MarshalText() ([]byte, error) {
 	if ok {
 		return []byte(got), nil
 	}
-	return nil, errors.New("unknown decoder")
+	return nil, fmt.Errorf("unknown decoder %d", d)
 }
 
 // UnmarshalText provides a decoder from text

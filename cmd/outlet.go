@@ -36,6 +36,7 @@ type OutletConfiguration struct {
 	Kafka        kafka.Configuration
 	ClickHouseDB clickhousedb.Configuration
 	ClickHouse   clickhouse.Configuration
+	Flow         flow.Configuration
 	Core         core.Configuration
 	Schema       schema.Configuration
 }
@@ -50,6 +51,7 @@ func (c *OutletConfiguration) Reset() {
 		Kafka:        kafka.DefaultConfiguration(),
 		ClickHouseDB: clickhousedb.DefaultConfiguration(),
 		ClickHouse:   clickhouse.DefaultConfiguration(),
+		Flow:         flow.DefaultConfiguration(),
 		Core:         core.DefaultConfiguration(),
 		Schema:       schema.DefaultConfiguration(),
 	}
@@ -111,7 +113,7 @@ func outletStart(r *reporter.Reporter, config OutletConfiguration, checkOnly boo
 	if err != nil {
 		return fmt.Errorf("unable to initialize schema component: %w", err)
 	}
-	flowComponent, err := flow.New(r, flow.Dependencies{
+	flowComponent, err := flow.New(r, config.Flow, flow.Dependencies{
 		Schema: schemaComponent,
 	})
 	if err != nil {

@@ -53,11 +53,6 @@ func (w *worker) shutdown() {
 
 // processIncomingFlow processes one incoming flow from Kafka.
 func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
-	// Do nothing if we are shutting down
-	if !w.c.t.Alive() {
-		return kafka.ErrStopProcessing
-	}
-
 	// Raw flow decoding: fatal
 	w.c.metrics.rawFlowsReceived.Inc()
 	w.rawFlow.ResetVT()

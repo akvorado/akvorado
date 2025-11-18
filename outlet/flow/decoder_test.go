@@ -24,10 +24,12 @@ import (
 func TestFlowDecode(t *testing.T) {
 	r := reporter.NewMock(t)
 	sch := schema.NewMock(t)
-	c, err := New(r, Dependencies{Schema: sch})
+	c, err := New(r, DefaultConfiguration(), Dependencies{Schema: sch})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
+	helpers.StartStop(t, c)
+
 	bf := sch.NewFlowMessage()
 	got := []*schema.FlowMessage{}
 	finalize := func() {
