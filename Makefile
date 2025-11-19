@@ -272,7 +272,7 @@ licensecheck: console/frontend/node_modules ; $(info $(M) check dependency licen
 
 .PHONY: clean
 clean: ; $(info $(M) cleaning…)	@ ## Cleanup everything
-	@rm -rf test $(GENERATED) *~ bin/akvorado
+	@rm -rf test $(GENERATED) $(GENERATED_TEST_GO) *~ bin/akvorado
 
 .PHONY: help
 help:
