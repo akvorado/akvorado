@@ -286,7 +286,7 @@ version:
 .PHONY: docker docker-dev
 DOCKER_BUILD_ARGS =
 docker: ; $(info $(M) build Docker image…) @ ## Build Docker image
-	$Q docker build -f docker/Dockerfile $(DOCKER_BUILD_ARGS) \
+	$Q docker build --pull -f docker/Dockerfile $(DOCKER_BUILD_ARGS) \
 		--build-arg VERSION=$(VERSION) -t ghcr.io/akvorado/akvorado:main .
 docker-dev: TARGETOS=linux
 docker-dev: all ; $(info $(M) build development Docker image…) @ ## Build development Docker image
