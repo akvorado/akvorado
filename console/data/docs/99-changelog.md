@@ -28,6 +28,7 @@ identified with a specific icon:
 - 🌱 *config*: remote data sources accept a specific TLS configuration
 - 🌱 *config*: gNMI metadata provider has been converted to the same TLS
   configuration than ClickHouse, Kafka and remote data sources.
+- 🌱 *docker*: update Kafka to 4.1.1
 
 ## 2.0.2 - 2025-10-29
 
@@ -44,7 +45,7 @@ prevent packet drops on busier setups.
 - 🌱 *outlet*: cap the number of workers to the number of Kafka partitions
 - 🌱 *console*: add `auth`→`logout-url` and `auth`→`avatar-url` to configure
   logout and avatar URLs when not provided as headers
-- 🌱 *docker*: update Vector to 0.50.0.
+- 🌱 *docker*: update Vector to 0.50.0
 
 ## 2.0.1 - 2025-10-02
 
