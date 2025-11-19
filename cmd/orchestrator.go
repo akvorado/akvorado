@@ -233,7 +233,9 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, d
 		httpComponent,
 		clickhouseDBComponent,
 		clickhouseComponent,
-		kafkaComponent,
+	}
+	if kafkaComponent != nil {
+		components = append(components, kafkaComponent)
 	}
 	return StartStopComponents(r, daemonComponent, components)
 }
