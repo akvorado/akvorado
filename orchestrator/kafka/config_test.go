@@ -28,15 +28,10 @@ func TestManageTopicDisabled(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
-	if c.kafkaOpts != nil {
-		t.Error("kafkaOpts should be nil when ManageTopic is false")
+	if c != nil {
+		t.Error("Component should be nil when ManageTopic is false")
 	}
-	if c.kafkaTopic != "" {
-		t.Error("kafkaTopic should be empty when ManageTopic is false")
-	}
-	if err := c.Start(); err != nil {
-		t.Fatalf("Start() error:\n%+v", err)
-	}
+	helpers.StartStop(t, c)
 }
 
 func TestShouldAlterConfiguration(t *testing.T) {

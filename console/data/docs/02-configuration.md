@@ -760,7 +760,7 @@ flows. It accepts the following keys:
 - `tls` defines the TLS configuration to connect to the cluster
 - `sasl` defines the SASL configuration to connect to the cluster
 - `topic` defines the base topic name
-- `manage-topic` controls whether the orchestrator should create/update the Kafka topic (default: `true`). Can be set to `false` when Kafka is not needed (e.g., UI-only setup) or managed externally. Note: dummy values for `brokers` and `topic` are still required due to validation.
+- `manage-topic` controls whether the orchestrator should create/update the Kafka topic (default: `true`). Can be set to `false` when Kafka is not needed (e.g., UI-only setup) or managed externally.
 - `topic-configuration` describes how the topic should be configured
 
 The following keys are accepted for the TLS configuration:
