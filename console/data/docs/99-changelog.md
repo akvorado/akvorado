@@ -29,6 +29,7 @@ identified with a specific icon:
 - 🌱 *config*: gNMI metadata provider has been converted to the same TLS
   configuration than ClickHouse, Kafka and remote data sources.
 - 🌱 *docker*: update Kafka to 4.1.1
+- 🌱 *docker*: update Kafbat to 1.4.2
 
 ## 2.0.2 - 2025-10-29
 
