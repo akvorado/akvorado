@@ -78,6 +78,7 @@ func NewConfig(r *reporter.Reporter, config Configuration) ([]kgo.Opt, error) {
 		kgo.SeedBrokers(config.Brokers...),
 		kgo.ClientID(fmt.Sprintf("akvorado-%s", helpers.AkvoradoVersion)),
 		kgo.WithLogger(NewLogger(r)),
+		kgo.DisableClientMetrics(),
 	}
 
 	// TLS configuration
