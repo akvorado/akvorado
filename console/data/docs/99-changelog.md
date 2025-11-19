@@ -10,7 +10,9 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 2.0.3 - 2025-11-19
+
+This release contains some important fixes to prevent flow corruption under heavy load.
 
 - 💥 *config*: `skip-verify` is false by default in TLS configurations for
   ClickHouse, Kafka and remote data sources (previously, `verify` was set to
