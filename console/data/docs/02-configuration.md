@@ -769,7 +769,8 @@ flows. It accepts the following keys:
 - `tls` defines the TLS configuration to connect to the cluster
 - `sasl` defines the SASL configuration to connect to the cluster
 - `topic` defines the base topic name
-- `topic-cofniguration` describes how the topic should be configured
+- `manage-topic` controls whether the orchestrator should create/update the Kafka topic (default: `true`). Can be set to `false` when Kafka is not needed (e.g., UI-only setup) or managed externally.
+- `topic-configuration` describes how the topic should be configured
 
 The following keys are accepted for the TLS configuration:
 
@@ -876,6 +877,7 @@ provided inside `clickhouse`:
   by ClickHouse (autodetection when not specified)
 - `orchestrator-basic-auth` enables basic authentication to access the
   orchestrator URL. It takes two attributes: `username` and `password`.
+- `skip-migrations` controls whether to skip ClickHouse schema management (default: `false`). Can be set to `true` when the schema is managed externally or by another orchestrator. The outlet requires the schema to match the expected structure; schema mismatches may cause write errors.
 
 The `resolutions` setting contains a list of resolutions. Each
 resolution has two keys: `interval` and `ttl`. The first one is the

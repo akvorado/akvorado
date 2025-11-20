@@ -36,6 +36,11 @@ type Dependencies struct {
 
 // New creates a new Kafka configurator.
 func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) (*Component, error) {
+	if !config.ManageTopic {
+		r.Info().Msg("Kafka topic management disabled, skipping Kafka initialization")
+		return nil, nil
+	}
+
 	kafkaOpts, err := kafka.NewConfig(r, config.Configuration)
 	if err != nil {
 		return nil, err
@@ -54,6 +59,9 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 
 // Start starts Kafka configuration.
 func (c *Component) Start() error {
+	if c == nil {
+		return nil
+	}
 	c.r.Info().Msg("starting Kafka component")
 	defer c.r.Info().Msg("Kafka component stopped")
 

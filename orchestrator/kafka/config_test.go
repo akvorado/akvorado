@@ -7,12 +7,31 @@ import (
 	"testing"
 
 	"akvorado/common/helpers"
+	"akvorado/common/reporter"
+	"akvorado/common/schema"
 )
 
 func TestDefaultConfiguration(t *testing.T) {
-	if err := helpers.Validate.Struct(DefaultConfiguration()); err != nil {
+	config := DefaultConfiguration()
+	if err := helpers.Validate.Struct(config); err != nil {
 		t.Fatalf("validate.Struct() error:\n%+v", err)
 	}
+	if !config.ManageTopic {
+		t.Error("ManageTopic should be true by default")
+	}
+}
+
+func TestManageTopicDisabled(t *testing.T) {
+	config := DefaultConfiguration()
+	config.ManageTopic = false
+	c, err := New(reporter.NewMock(t), config, Dependencies{Schema: schema.NewMock(t)})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	if c != nil {
+		t.Error("Component should be nil when ManageTopic is false")
+	}
+	helpers.StartStop(t, c)
 }
 
 func TestShouldAlterConfiguration(t *testing.T) {
