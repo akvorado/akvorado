@@ -13,6 +13,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🩹 *docker*: restart geoip container on boot
+- 🌱 *orchestrator*: add `kafka`→`manage-topic` flag to enable or disable topic management
 
 ## 2.0.3 - 2025-11-19
 
