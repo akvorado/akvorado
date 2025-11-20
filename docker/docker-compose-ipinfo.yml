@@ -4,6 +4,7 @@ services:
     extends:
       file: versions.yml
       service: ipinfo-geoipupdate
+    restart: unless-stopped
     environment:
       IPINFO_TOKEN: a2632ea59736c7
       IPINFO_DATABASES: country asn

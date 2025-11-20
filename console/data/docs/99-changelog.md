@@ -10,6 +10,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🩹 *docker*: restart geoip container on boot
+
 ## 2.0.3 - 2025-11-19
 
 This release contains some important fixes to prevent flow corruption under heavy load.

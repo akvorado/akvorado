@@ -5,6 +5,7 @@ services:
     extends:
       file: versions.yml
       service: maxmind-geoipupdate
+    restart: unless-stopped
     environment:
       GEOIPUPDATE_ACCOUNT_ID:
       GEOIPUPDATE_LICENSE_KEY:
