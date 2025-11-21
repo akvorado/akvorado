@@ -64,7 +64,7 @@ all: fmt lint all-indep ; $(info $(M) building executable…) @ ## Build program
          $(if $(filter arm64,$(TARGETARCH)),GOARM64=$(if $(findstring .,$(TARGETVARIANT)),$(TARGETVARIANT),$(TARGETVARIANT:%=%.0)),\
          $(if $(filter arm,$(TARGETARCH)),GOARM=$(TARGETVARIANT:v%=%)))) \
 	   $(GO) build \
-		-tags release \
+		-tags release,grpcnotrace \
 		-ldflags '-X $(MODULE)/common/helpers.AkvoradoVersion=$(VERSION)' \
 		$(BUILD_ARGS) \
 		-o bin/$(basename $(MODULE)) .
