@@ -113,7 +113,7 @@ func (input graphLineHandlerInput) toSQL1(axis int, options toSQL1Options) templ
 
 	// Select
 	fields := []string{
-		fmt.Sprintf(`{{ call .ToStartOfInterval "TimeReceived" }}%s AS time`, offsetShift),
+		fmt.Sprintf(`{{ .ToStartOfInterval }}%s AS time`, offsetShift),
 		`{{ .Units }}/{{ .Interval }} AS xps`,
 	}
 	selectFields := []string{}

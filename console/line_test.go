@@ -191,7 +191,7 @@ func TestGraphQuerySQL(t *testing.T) {
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .ToStartOfInterval }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
 FROM source
@@ -229,7 +229,7 @@ ORDER BY time WITH FILL
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .ToStartOfInterval }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
 FROM source
@@ -267,7 +267,7 @@ ORDER BY time WITH FILL
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .ToStartOfInterval }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
 FROM source
@@ -309,7 +309,7 @@ ORDER BY time WITH FILL
  rows AS (SELECT SrcAddr FROM source WHERE {{ .Timefilter }} AND (SrcAddr BETWEEN toIPv6('::ffff:1.0.0.0') AND toIPv6('::ffff:1.255.255.255')) GROUP BY SrcAddr ORDER BY {{ .Units }} DESC LIMIT 0)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .ToStartOfInterval }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  if((SrcAddr) IN rows, [replaceRegexpOne(IPv6NumToString(SrcAddr), '^::ffff:', '')], ['Other']) AS dimensions
 FROM source
@@ -347,7 +347,7 @@ ORDER BY time WITH FILL
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .ToStartOfInterval }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
 FROM source
@@ -385,7 +385,7 @@ ORDER BY time WITH FILL
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .ToStartOfInterval }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
 FROM source
@@ -424,7 +424,7 @@ ORDER BY time WITH FILL
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .ToStartOfInterval }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
 FROM source
@@ -444,7 +444,7 @@ ORDER BY time WITH FILL
 					},
 					Template: `SELECT 2 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .ToStartOfInterval }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
 FROM source
@@ -483,7 +483,7 @@ ORDER BY time WITH FILL
  source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .ToStartOfInterval }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
 FROM source
@@ -503,7 +503,7 @@ ORDER BY time WITH FILL
 					},
 					Template: `SELECT 2 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .ToStartOfInterval }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
 FROM source
@@ -546,7 +546,7 @@ ORDER BY time WITH FILL
  rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY {{ .Units }} DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .ToStartOfInterval }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
 FROM source
@@ -590,7 +590,7 @@ ORDER BY time WITH FILL
  rows AS (SELECT ExporterName, InIfProvider FROM ( SELECT ExporterName, InIfProvider, {{ .Units }} AS sum_at_time FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ) GROUP BY ExporterName, InIfProvider ORDER BY MAX(sum_at_time) DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .ToStartOfInterval }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
 FROM source
@@ -634,7 +634,7 @@ ORDER BY time WITH FILL
  rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY {{ .Units }} DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .ToStartOfInterval }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
 FROM source
@@ -654,7 +654,7 @@ ORDER BY time WITH FILL
 					},
 					Template: `SELECT 2 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .ToStartOfInterval }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  if((ExporterName, OutIfProvider) IN rows, [ExporterName, OutIfProvider], ['Other', 'Other']) AS dimensions
 FROM source
@@ -698,7 +698,7 @@ ORDER BY time WITH FILL
  rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY {{ .Units }} DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .ToStartOfInterval }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
 FROM source
@@ -722,7 +722,7 @@ ORDER BY time WITH FILL
 					},
 					Template: `SELECT 3 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} + INTERVAL 86400 second AS time,
+ {{ .ToStartOfInterval }} + INTERVAL 86400 second AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
 FROM source
@@ -766,7 +766,7 @@ ORDER BY time WITH FILL
  rows AS (SELECT SrcAddr, DstAddr FROM source WHERE {{ .Timefilter }} AND (InIfBoundary = 'external') GROUP BY SrcAddr, DstAddr ORDER BY {{ .Units }} DESC LIMIT 0)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
+ {{ .ToStartOfInterval }} AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  if((SrcAddr, DstAddr) IN rows, [replaceRegexpOne(IPv6NumToString(SrcAddr), '^::ffff:', ''), replaceRegexpOne(IPv6NumToString(DstAddr), '^::ffff:', '')], ['Other', 'Other']) AS dimensions
 FROM source
@@ -791,7 +791,7 @@ ORDER BY time WITH FILL
 					},
 					Template: `SELECT 3 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} + INTERVAL 86400 second AS time,
+ {{ .ToStartOfInterval }} + INTERVAL 86400 second AS time,
  {{ .Units }}/{{ .Interval }} AS xps,
  emptyArrayString() AS dimensions
 FROM source
