@@ -99,7 +99,7 @@ type context struct {
 	TimefilterEnd     string
 	Units             string
 	Interval          uint64
-	ToStartOfInterval func(string) string
+	ToStartOfInterval string
 }
 
 // templateQuery holds a template string and its associated input context.
@@ -190,14 +190,12 @@ func (c *Component) finalizeTemplateQuery(query templateQuery) string {
 		TimefilterEnd:   timefilterEnd,
 		Units:           units,
 		Interval:        uint64(computedInterval.Seconds()),
-		ToStartOfInterval: func(field string) string {
-			return fmt.Sprintf(
-				`toStartOfInterval(%s + INTERVAL %d second, INTERVAL %d second) - INTERVAL %d second`,
-				field,
-				diffOffset,
-				uint64(computedInterval.Seconds()),
-				diffOffset)
-		},
+		ToStartOfInterval: fmt.Sprintf(
+			`toStartOfInterval(%s + INTERVAL %d second, INTERVAL %d second) - INTERVAL %d second`,
+			"TimeReceived",
+			diffOffset,
+			uint64(computedInterval.Seconds()),
+			diffOffset),
 	}
 
 	t := template.Must(template.New("query").

@@ -236,7 +236,7 @@ func (c *Component) widgetGraphHandlerFunc(gc *gin.Context) {
 	now := c.d.Clock.Now()
 	template := fmt.Sprintf(`
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS Time,
+ {{ .ToStartOfInterval }} AS Time,
  SUM(Bytes*SamplingRate*8/{{ .Interval }})/1000/1000/1000 AS Gbps
 FROM {{ .Table }}
 WHERE {{ .Timefilter }}

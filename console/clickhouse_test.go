@@ -264,7 +264,7 @@ func TestFinalizeQuery(t *testing.T) {
 			Expected: `SELECT TimeReceived, SrcPort WHERE InIfDescription = '{{ hello }}'`,
 		}, {
 			Description: "use of ToStartOfInterval",
-			Query:       `{{ call .ToStartOfInterval "TimeReceived" }}`,
+			Query:       `{{ .ToStartOfInterval }}`,
 			Context: inputContext{
 				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
