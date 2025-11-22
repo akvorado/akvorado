@@ -48,14 +48,14 @@ func selectRowsByLimitType(input graphCommonHandlerInput, dimensions []string, w
 	var orderBy string
 	if input.LimitType == "max" {
 		source = fmt.Sprintf("( SELECT %s AS sum_at_time FROM source WHERE %s GROUP BY %s )",
-			strings.Join(append(dimensions, "{{ .Units }}"), ", "),
+			strings.Join(append(dimensions, "{{Units}}"), ", "),
 			where,
 			strings.Join(dimensions, ", "),
 		)
 		orderBy = "MAX(sum_at_time)"
 	} else {
 		source = fmt.Sprintf("source WHERE %s", where)
-		orderBy = "{{ .Units }}"
+		orderBy = "{{Units}}"
 	}
 	rowsType = fmt.Sprintf(
 		"rows AS (SELECT %s FROM %s GROUP BY %s ORDER BY %s DESC LIMIT %d)",

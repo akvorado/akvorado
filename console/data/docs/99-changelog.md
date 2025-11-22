@@ -61,6 +61,7 @@ ClickHouse.
 
 ## 2.1.0 - 2026-01-10
 
+- 💥 *console*: `auth`→`avatar-url` and `auth`→`logout-url` only allows simple substitutions instead of full Go templates
 - 💥 *docker*: remove conntrack-fixer service (this requires Docker Engine v23 or more recent)
 - ✨ *inlet*: add a configuration option to decapsulate received flows (IPIP, GRE, VXLAN, and SRv6 are supported)
 - ✨ *outlet*: add `FlowDirection` as a new IPFIX field (can be `undefined`, `ingress`, or `egress`)
