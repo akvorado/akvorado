@@ -47,15 +47,15 @@ func TestSankeyQuerySQL(t *testing.T) {
 						Units:  "l3bps",
 					},
 					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
- (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }}) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ORDER BY {{ .Units }} DESC LIMIT 5)
+ source AS (SELECT * FROM {{Table}} SETTINGS asterisk_include_alias_columns = 1),
+ (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{Timefilter}}) AS range,
+ rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{Timefilter}} GROUP BY SrcAS, ExporterName ORDER BY {{Units}} DESC LIMIT 5)
 SELECT
- {{ .Units }}/range AS xps,
+ {{Units}}/range AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
   if(ExporterName IN (SELECT ExporterName FROM rows), ExporterName, 'Other')] AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE {{Timefilter}}
 GROUP BY dimensions
 ORDER BY xps DESC`,
 				},
@@ -86,15 +86,15 @@ ORDER BY xps DESC`,
 						Units:  "l3bps",
 					},
 					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
- (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }}) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM ( SELECT SrcAS, ExporterName, {{ .Units }} AS sum_at_time FROM source WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ) GROUP BY SrcAS, ExporterName ORDER BY MAX(sum_at_time) DESC LIMIT 5)
+ source AS (SELECT * FROM {{Table}} SETTINGS asterisk_include_alias_columns = 1),
+ (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{Timefilter}}) AS range,
+ rows AS (SELECT SrcAS, ExporterName FROM ( SELECT SrcAS, ExporterName, {{Units}} AS sum_at_time FROM source WHERE {{Timefilter}} GROUP BY SrcAS, ExporterName ) GROUP BY SrcAS, ExporterName ORDER BY MAX(sum_at_time) DESC LIMIT 5)
 SELECT
- {{ .Units }}/range AS xps,
+ {{Units}}/range AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
   if(ExporterName IN (SELECT ExporterName FROM rows), ExporterName, 'Other')] AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE {{Timefilter}}
 GROUP BY dimensions
 ORDER BY xps DESC`,
 				},
@@ -124,15 +124,15 @@ ORDER BY xps DESC`,
 						Units:  "l2bps",
 					},
 					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
- (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }}) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ORDER BY {{ .Units }} DESC LIMIT 5)
+ source AS (SELECT * FROM {{Table}} SETTINGS asterisk_include_alias_columns = 1),
+ (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{Timefilter}}) AS range,
+ rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{Timefilter}} GROUP BY SrcAS, ExporterName ORDER BY {{Units}} DESC LIMIT 5)
 SELECT
- {{ .Units }}/range AS xps,
+ {{Units}}/range AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
   if(ExporterName IN (SELECT ExporterName FROM rows), ExporterName, 'Other')] AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE {{Timefilter}}
 GROUP BY dimensions
 ORDER BY xps DESC`,
 				},
@@ -162,15 +162,15 @@ ORDER BY xps DESC`,
 						Units:  "pps",
 					},
 					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
- (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }}) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{ .Timefilter }} GROUP BY SrcAS, ExporterName ORDER BY {{ .Units }} DESC LIMIT 5)
+ source AS (SELECT * FROM {{Table}} SETTINGS asterisk_include_alias_columns = 1),
+ (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{Timefilter}}) AS range,
+ rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{Timefilter}} GROUP BY SrcAS, ExporterName ORDER BY {{Units}} DESC LIMIT 5)
 SELECT
- {{ .Units }}/range AS xps,
+ {{Units}}/range AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
   if(ExporterName IN (SELECT ExporterName FROM rows), ExporterName, 'Other')] AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE {{Timefilter}}
 GROUP BY dimensions
 ORDER BY xps DESC`,
 				},
@@ -200,15 +200,15 @@ ORDER BY xps DESC`,
 						Units:  "l3bps",
 					},
 					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
- (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{ .Timefilter }} AND (DstCountry = 'FR')) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{ .Timefilter }} AND (DstCountry = 'FR') GROUP BY SrcAS, ExporterName ORDER BY {{ .Units }} DESC LIMIT 10)
+ source AS (SELECT * FROM {{Table}} SETTINGS asterisk_include_alias_columns = 1),
+ (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE {{Timefilter}} AND (DstCountry = 'FR')) AS range,
+ rows AS (SELECT SrcAS, ExporterName FROM source WHERE {{Timefilter}} AND (DstCountry = 'FR') GROUP BY SrcAS, ExporterName ORDER BY {{Units}} DESC LIMIT 10)
 SELECT
- {{ .Units }}/range AS xps,
+ {{Units}}/range AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
   if(ExporterName IN (SELECT ExporterName FROM rows), ExporterName, 'Other')] AS dimensions
 FROM source
-WHERE {{ .Timefilter }} AND (DstCountry = 'FR')
+WHERE {{Timefilter}} AND (DstCountry = 'FR')
 GROUP BY dimensions
 ORDER BY xps DESC`,
 				},

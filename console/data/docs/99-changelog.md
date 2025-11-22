@@ -12,6 +12,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 💥 *console*: `auth`→`avatar-url` and `auth`→`logout-url` only allows simple substitutions instead of full Go templates
 - 🩹 *docker*: restart geoip container on boot
 - 🌱 *orchestrator*: add `kafka`→`manage-topic` flag to enable or disable topic management
 
