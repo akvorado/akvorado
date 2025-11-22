@@ -173,44 +173,45 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config any)
 	return paths, nil
 }
 
+// resettable is an interface for configuration types that can reset themselves
+// to default values.
+type resettable interface {
+	Reset()
+}
+
 // DefaultHook will reset the destination value to its default using
 // the Reset() method if present.
 func DefaultHook() (mapstructure.DecodeHookFunc, func()) {
 	disabled := false
+	callReset := func(v reflect.Value) bool {
+		if r, ok := v.Interface().(resettable); ok {
+			r.Reset()
+			return true
+		}
+		return false
+	}
 	hook := func(from, to reflect.Value) (any, error) {
 		if disabled {
 			return from.Interface(), nil
 		}
-		if to.Kind() == reflect.Ptr {
-			// We already have a pointer
-			method, ok := to.Type().MethodByName("Reset")
-			if !ok {
-				// We may have a pointer to a pointer when totally empty.
-				if !to.IsNil() {
-					to = to.Elem()
-					method, ok = to.Type().MethodByName("Reset")
-				}
-				if !ok {
-					return from.Interface(), nil
-				}
-			}
-			if to.IsNil() {
-				newV := reflect.New(to.Type().Elem())
-				method.Func.Call([]reflect.Value{newV})
-				to.Set(newV)
-				return from.Interface(), nil
-			}
-			method.Func.Call([]reflect.Value{to})
-			return from.Interface(), nil
-		}
-		// Not a pointer, let's check if we take a pointer
-		method, ok := reflect.PointerTo(to.Type()).MethodByName("Reset")
-		if !ok {
-			return from.Interface(), nil
-		}
-		method.Func.Call([]reflect.Value{to.Addr()})
 
-		// Resume decoding
+		// For pointers, handle both nil and non-nil cases
+		if to.Kind() == reflect.Ptr {
+			if to.IsNil() {
+				// Try creating new instance and reset it
+				newV := reflect.New(to.Type().Elem())
+				if callReset(newV) {
+					to.Set(newV)
+				}
+			} else if !callReset(to) {
+				// Not resettable directly, try dereferencing (pointer to pointer case)
+				callReset(to.Elem())
+			}
+		} else {
+			// Not a pointer, try with its address
+			callReset(to.Addr())
+		}
+
 		return from.Interface(), nil
 	}
 	disable := func() {
