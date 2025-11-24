@@ -18,7 +18,7 @@ func NewMock(t testing.TB, r *reporter.Reporter) *Component {
 	t.Helper()
 	config := DefaultConfiguration()
 	config.Listen = "0.0.0.0:0"
-	c, err := New(r, config, Dependencies{Daemon: daemon.NewMock(t)})
+	c, err := New(r, "mock", config, Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}

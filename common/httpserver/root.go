@@ -32,9 +32,10 @@ type Component struct {
 	t      tomb.Tomb
 	config Configuration
 
-	mux     *http.ServeMux
-	metrics metrics
-	address net.Addr
+	mux         *http.ServeMux
+	metrics     metrics
+	address     net.Addr
+	serviceName string
 
 	// GinRouter is the router exposed for /api
 	GinRouter  *gin.Engine
@@ -47,14 +48,15 @@ type Dependencies struct {
 }
 
 // New creates a new HTTP component.
-func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
+func New(r *reporter.Reporter, serviceName string, configuration Configuration, dependencies Dependencies) (*Component, error) {
 	c := Component{
 		r:      r,
 		d:      &dependencies,
 		config: configuration,
 
-		mux:       http.NewServeMux(),
-		GinRouter: gin.New(),
+		mux:         http.NewServeMux(),
+		serviceName: serviceName,
+		GinRouter:   gin.New(),
 	}
 	c.initMetrics()
 	c.d.Daemon.Track(&c.t, "common/http")
@@ -104,11 +106,6 @@ func (c *Component) AddHandler(location string, handler http.Handler) {
 
 // Start starts the HTTP component.
 func (c *Component) Start() error {
-	if c.config.Listen == "" {
-		return nil
-	}
-
-	c.r.Info().Msg("starting HTTP component")
 	var err error
 	c.cacheStore, err = c.config.Cache.Config.New()
 	if err != nil {
@@ -116,43 +113,83 @@ func (c *Component) Start() error {
 	}
 	server := &http.Server{Handler: c.mux}
 
-	// Most of the time, if we have an error, it's here!
-	c.r.Info().Str("listen", c.config.Listen).Msg("starting HTTP server")
-	listener, err := net.Listen("tcp", c.config.Listen)
-	if err != nil {
-		return fmt.Errorf("unable to listen to %v: %w", c.config.Listen, err)
-	}
-	c.address = listener.Addr()
-	server.Addr = listener.Addr().String()
-
-	// Start serving requests
-	c.t.Go(func() error {
-		if err := server.Serve(listener); err != http.ErrServerClosed {
-			c.r.Err(err).Str("listen", c.config.Listen).Msg("unable to start HTTP server")
-			return fmt.Errorf("unable to start HTTP server: %w", err)
+	for _, lc := range []struct {
+		network string
+		address string
+		fatal   bool
+	}{
+		// The regular one.
+		{
+			network: "tcp",
+			address: c.config.Listen,
+			fatal:   true,
+		},
+		// Using abstract unix sockets for healthchecking
+		{
+			network: "unix",
+			address: "@akvorado",
+			fatal:   false,
+		},
+		{
+			network: "unix",
+			address: fmt.Sprintf("@akvorado/%s", c.serviceName),
+			fatal:   false,
+		},
+	} {
+		if lc.address == "" {
+			continue
 		}
-		return nil
-	})
+		if lc.network == "unix" && runtime.GOOS != "linux" {
+			continue
+		}
 
-	// Gracefully stop when asked to
+		// Most of the time, if we have an error, it's here!
+		c.r.Info().Str("listen", lc.address).Msg("starting HTTP server")
+		listener, err := net.Listen(lc.network, lc.address)
+		if err != nil {
+			if lc.fatal {
+				return fmt.Errorf("unable to listen to %v: %w", c.config.Listen, err)
+			}
+			c.r.Info().Err(err).Msg("cannot start HTTP server")
+			continue
+		}
+		if lc.network == "tcp" {
+			c.address = listener.Addr()
+		}
+		server.Addr = listener.Addr().String()
+
+		// Serve requests
+		c.t.Go(func() error {
+			if err := server.Serve(listener); err != http.ErrServerClosed {
+				c.r.Err(err).Str("listen", lc.address).Msg("unable to start HTTP server")
+				return fmt.Errorf("unable to start HTTP server: %w", err)
+			}
+			return nil
+		})
+		// Gracefully stop when asked to
+		c.t.Go(func() error {
+			<-c.t.Dying()
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			if err := server.Shutdown(ctx); err != nil {
+				c.r.Err(err).Msg("unable to shutdown HTTP server")
+				return fmt.Errorf("unable to shutdown HTTP server: %w", err)
+			}
+			return nil
+		})
+	}
+
+	// In case we have no server
 	c.t.Go(func() error {
 		<-c.t.Dying()
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err := server.Shutdown(ctx); err != nil {
-			c.r.Err(err).Msg("unable to shutdown HTTP server")
-			return fmt.Errorf("unable to shutdown HTTP server: %w", err)
-		}
 		return nil
 	})
+
 	return nil
 }
 
 // Stop stops the HTTP component
 func (c *Component) Stop() error {
-	if c.config.Listen == "" {
-		return nil
-	}
 	c.r.Info().Msg("stopping HTTP component")
 	defer c.r.Info().Msg("HTTP component stopped")
 	c.t.Kill(nil)

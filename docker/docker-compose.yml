@@ -213,7 +213,7 @@ services:
     restart: unless-stopped
     network_mode: host
     healthcheck:
-      disable: true
+      test: ["CMD", "/usr/local/bin/akvorado", "healthcheck", "--service", "conntrack-fixer"]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
 

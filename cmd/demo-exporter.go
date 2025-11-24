@@ -82,7 +82,7 @@ func demoExporterStart(r *reporter.Reporter, config DemoExporterConfiguration, c
 	if err != nil {
 		return fmt.Errorf("unable to initialize daemon component: %w", err)
 	}
-	httpComponent, err := httpserver.New(r, config.HTTP, httpserver.Dependencies{
+	httpComponent, err := httpserver.New(r, "demo-exporter", config.HTTP, httpserver.Dependencies{
 		Daemon: daemonComponent,
 	})
 	if err != nil {

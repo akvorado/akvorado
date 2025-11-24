@@ -163,7 +163,7 @@ func init() {
 }
 
 func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, daemonComponent daemon.Component, checkOnly bool) error {
-	httpComponent, err := httpserver.New(r, config.HTTP, httpserver.Dependencies{
+	httpComponent, err := httpserver.New(r, "orchestrator", config.HTTP, httpserver.Dependencies{
 		Daemon: daemonComponent,
 	})
 	if err != nil {

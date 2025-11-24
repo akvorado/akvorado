@@ -139,7 +139,7 @@ func TestRedis(t *testing.T) {
 		Server:   server,
 		DB:       10,
 	}
-	h, err := httpserver.New(r, config, httpserver.Dependencies{Daemon: daemon.NewMock(t)})
+	h, err := httpserver.New(r, "cache-test", config, httpserver.Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}

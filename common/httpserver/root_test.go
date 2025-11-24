@@ -4,10 +4,15 @@
 package httpserver_test
 
 import (
+	"context"
 	"fmt"
+	"io"
+	"net"
 	"net/http"
+	"runtime"
 	"testing"
 
+	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
@@ -90,4 +95,50 @@ func TestGinRouterPanic(t *testing.T) {
 			FirstLines:  []string{},
 		},
 	})
+}
+
+func TestUnixSocket(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("unsupported OS")
+	}
+	r := reporter.NewMock(t)
+	config := httpserver.DefaultConfiguration()
+	config.Listen = ""
+	h, err := httpserver.New(r, "mock-unix-test", config, httpserver.Dependencies{Daemon: daemon.NewMock(t)})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	helpers.StartStop(t, h)
+
+	h.AddHandler("/test",
+		http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			fmt.Fprintf(w, "Hello !")
+		}))
+
+	// We should listen to both @akvorado and @akvorado/mock-unix-test. However,
+	// we may have some parallel tests and @akvorado may not be the handler we
+	// configured. Let's just test the second one.
+	httpc := http.Client{
+		Transport: &http.Transport{
+			DialContext: func(context.Context, string, string) (net.Conn, error) {
+				return net.Dial("unix", "@akvorado/mock-unix-test")
+			},
+		},
+	}
+	response, err := httpc.Get("http://unix/test")
+	if err != nil {
+		t.Fatalf("Get() error:\n%+v", err)
+	}
+	defer response.Body.Close()
+	if response.StatusCode != 200 {
+		t.Errorf("Get() status = %d instead of %d", response.StatusCode, 200)
+	}
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		t.Fatalf("ReadAll() error:\n%+v", err)
+	}
+	expected := "Hello !"
+	if diff := helpers.Diff(string(body), expected); diff != "" {
+		t.Fatalf("Get() body (-got, +want):\n%s", diff)
+	}
 }
