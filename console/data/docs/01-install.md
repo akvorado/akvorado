@@ -101,7 +101,7 @@ When using `docker compose`, use the following commands to get an updated
 # curl -sL https://github.com/akvorado/akvorado/releases/latest/download/docker-compose-upgrade.tar.gz | tar zxvf -
 # docker compose pull
 # docker compose stop akvorado-orchestrator
-# docker compose up -d
+# docker compose up --wait
 ```
 
 The `docker-compose-upgrade.tar.gz` tarball contains `.env.dist` instead of
