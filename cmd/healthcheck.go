@@ -4,13 +4,27 @@
 package cmd
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/spf13/cobra"
 )
 
+type healthcheckOptions struct {
+	Host string
+	Port uint16
+}
+
+// HealthcheckOptions stores the command-line option values for the healthcheck
+// command.
+var HealthcheckOptions healthcheckOptions
+
 func init() {
 	RootCmd.AddCommand(healthcheckCmd)
+	healthcheckCmd.Flags().Uint16VarP(&HealthcheckOptions.Port, "port", "p", 8080,
+		"HTTP port for health check")
+	healthcheckCmd.Flags().StringVarP(&HealthcheckOptions.Host, "host", "h", "localhost",
+		"HTTP host for health check")
 }
 
 var healthcheckCmd = &cobra.Command{
@@ -18,7 +32,9 @@ var healthcheckCmd = &cobra.Command{
 	Short: "Check healthness",
 	Long:  `Check if Akvorado is alive using the builtin HTTP endpoint.`,
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		resp, err := http.Get("http://localhost:8080/api/v0/healthcheck")
+		resp, err := http.Get(fmt.Sprintf("http://%s:%d/api/v0/healthcheck",
+			HealthcheckOptions.Host,
+			HealthcheckOptions.Port))
 		if err != nil {
 			return err
 		}

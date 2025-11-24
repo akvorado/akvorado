@@ -102,6 +102,14 @@ EOF
             nix run nixpkgs#hurl -- --test --error-format=long .github/e2e.hurl
         }
         echo ::endgroup::
+
+        # Docker Compose
+        echo ::group::Docker healthcheck test
+        docker compose ps --format json \
+            | jq 'map(select(.State != "running" or .Health == "unhealthy")) | map({Service, State, Status, Health})'
+        docker compose ps --format json \
+            | jq -e 'map(select(.State != "running" or .Health == "unhealthy")) | length == 0'
+        echo ::endgroup::
         ;;
 
     coverage)
