@@ -29,10 +29,9 @@ install the `docker-compose-v2` package. On macOS, you can use the
 # mkdir akvorado
 # cd akvorado
 # curl -sL https://github.com/akvorado/akvorado/releases/latest/download/docker-compose-quickstart.tar.gz | tar zxvf -
-# docker compose up
+# docker compose up --wait
 ```
 
-Monitor the output of `docker compose ps` to see the status of the services.
 Once the `akvorado-console` service is "healthy", the *Akvorado* web interface
 should be running on port 8081. This can take a few minutes.
 
@@ -51,7 +50,7 @@ To connect your own network devices:
    
 1. Restart all containers:
    - `docker compose down`
-   - `docker compose up -d`
+   - `docker compose up --wait`
 
 > [!TIP]
 > Interface classification is essential for the web interface to work properly.
