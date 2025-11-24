@@ -77,7 +77,7 @@ func inletStart(r *reporter.Reporter, config InletConfiguration, checkOnly bool)
 	if err != nil {
 		return fmt.Errorf("unable to initialize daemon component: %w", err)
 	}
-	httpComponent, err := httpserver.New(r, config.HTTP, httpserver.Dependencies{
+	httpComponent, err := httpserver.New(r, "inlet", config.HTTP, httpserver.Dependencies{
 		Daemon: daemonComponent,
 	})
 	if err != nil {

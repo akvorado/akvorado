@@ -85,7 +85,7 @@ func consoleStart(r *reporter.Reporter, config ConsoleConfiguration, checkOnly b
 	if err != nil {
 		return fmt.Errorf("unable to initialize daemon component: %w", err)
 	}
-	httpComponent, err := httpserver.New(r, config.HTTP, httpserver.Dependencies{
+	httpComponent, err := httpserver.New(r, "console", config.HTTP, httpserver.Dependencies{
 		Daemon: daemonComponent,
 	})
 	if err != nil {

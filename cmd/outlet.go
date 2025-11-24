@@ -103,7 +103,7 @@ func outletStart(r *reporter.Reporter, config OutletConfiguration, checkOnly boo
 	if err != nil {
 		return fmt.Errorf("unable to initialize daemon component: %w", err)
 	}
-	httpComponent, err := httpserver.New(r, config.HTTP, httpserver.Dependencies{
+	httpComponent, err := httpserver.New(r, "outlet", config.HTTP, httpserver.Dependencies{
 		Daemon: daemonComponent,
 	})
 	if err != nil {

@@ -4,15 +4,19 @@
 package cmd
 
 import (
+	"cmp"
+	"context"
 	"fmt"
+	"net"
 	"net/http"
+	"runtime"
 
 	"github.com/spf13/cobra"
 )
 
 type healthcheckOptions struct {
-	Host string
-	Port uint16
+	HTTP        string
+	UnixService string
 }
 
 // HealthcheckOptions stores the command-line option values for the healthcheck
@@ -21,20 +25,39 @@ var HealthcheckOptions healthcheckOptions
 
 func init() {
 	RootCmd.AddCommand(healthcheckCmd)
-	healthcheckCmd.Flags().Uint16VarP(&HealthcheckOptions.Port, "port", "p", 8080,
-		"HTTP port for health check")
-	healthcheckCmd.Flags().StringVarP(&HealthcheckOptions.Host, "host", "", "localhost",
-		"HTTP host for health check")
+	if runtime.GOOS == "linux" {
+		// On Linux, use Unix sockets
+		healthcheckCmd.Flags().StringVarP(&HealthcheckOptions.HTTP, "http", "", "",
+			"HTTP host:port for health check")
+		healthcheckCmd.Flags().StringVarP(&HealthcheckOptions.UnixService, "service", "", "",
+			"Service to query over Unix socket")
+	} else {
+		// On other OS, use HTTP
+		healthcheckCmd.Flags().StringVarP(&HealthcheckOptions.HTTP, "http", "", "localhost:8080",
+			"HTTP host:port for health check")
+	}
 }
 
 var healthcheckCmd = &cobra.Command{
 	Use:   "healthcheck",
 	Short: "Check healthness",
-	Long:  `Check if Akvorado is alive using the builtin HTTP endpoint.`,
+	Long: `Check if Akvorado is alive using the builtin HTTP endpoint.
+The service can be checked over Unix socket (by default), or over HTTP`,
 	RunE: func(cmd *cobra.Command, _ []string) error {
-		resp, err := http.Get(fmt.Sprintf("http://%s:%d/api/v0/healthcheck",
-			HealthcheckOptions.Host,
-			HealthcheckOptions.Port))
+		httpc := http.Client{}
+		if HealthcheckOptions.HTTP == "" {
+			unixSocket := "@akvorado"
+			if HealthcheckOptions.UnixService != "" {
+				unixSocket = fmt.Sprintf("%s/%s", unixSocket, HealthcheckOptions.UnixService)
+			}
+			httpc.Transport = &http.Transport{
+				DialContext: func(context.Context, string, string) (net.Conn, error) {
+					return net.Dial("unix", unixSocket)
+				},
+			}
+		}
+		resp, err := httpc.Get(fmt.Sprintf("http://%s/api/v0/healthcheck",
+			cmp.Or(HealthcheckOptions.HTTP, "unix")))
 		if err != nil {
 			return err
 		}

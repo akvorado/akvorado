@@ -14,7 +14,7 @@ identified with a specific icon:
 
 - 🩹 *docker*: restart geoip container on boot
 - 🌱 *orchestrator*: add `kafka`→`manage-topic` flag to enable or disable topic management
-- 🌱 *cmd*: add `--host` and `--port` flags to `akvorado healthcheck`
+- 🌱 *cmd*: make `akvorado healthcheck` use an abstract Unix socket to check service liveness
 
 ## 2.0.3 - 2025-11-19
 
