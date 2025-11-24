@@ -105,10 +105,10 @@ EOF
 
         # Docker Compose
         echo ::group::Docker healthcheck test
-        docker compose ps --format json \
-            | jq 'map(select(.State != "running" or .Health == "unhealthy")) | map({Service, State, Status, Health})'
-        docker compose ps --format json \
-            | jq -e 'map(select(.State != "running" or .Health == "unhealthy")) | length == 0'
+        ! docker compose ps --format json \
+            | jq -se 'map(select(.State != "running" or .Health == "unhealthy"))
+                    | map({Service, State, Status, Health})
+                    | if length > 0 then . else false end'
         echo ::endgroup::
         ;;
 
