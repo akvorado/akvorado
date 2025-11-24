@@ -1,12 +1,12 @@
 module akvorado
 
-go 1.25
+go 1.25.3
 
 toolchain go1.25.4
 
 require (
 	github.com/ClickHouse/ch-go v0.69.0
-	github.com/ClickHouse/clickhouse-go/v2 v2.40.3
+	github.com/ClickHouse/clickhouse-go/v2 v2.41.0
 	github.com/alecthomas/chroma/v2 v2.20.0
 	github.com/benbjohnson/clock v1.3.5
 	github.com/bio-routing/bio-rd v0.1.10
@@ -25,6 +25,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.4.0
 	github.com/google/go-cmp v0.7.0
 	github.com/google/gopacket v1.1.19
+	github.com/google/renameio/v2 v2.0.0
 	github.com/gosnmp/gosnmp v1.42.1
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.1.0
 	github.com/hashicorp/go-version v1.7.0
@@ -120,7 +121,6 @@ require (
 	github.com/google/go-dap v0.12.0 // indirect
 	github.com/google/licensecheck v0.3.1 // indirect
 	github.com/google/pprof v0.0.0-20250403155104-27863c87afa6 // indirect
-	github.com/google/renameio/v2 v2.0.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0 // indirect
@@ -156,7 +156,7 @@ require (
 	github.com/openconfig/grpctunnel v0.1.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/pascaldekloe/name v1.0.1 // indirect
-	github.com/paulmach/orb v0.11.1 // indirect
+	github.com/paulmach/orb v0.12.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
@@ -197,12 +197,12 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	golang.org/x/arch v0.20.0 // indirect
-	golang.org/x/crypto v0.43.0 // indirect
+	golang.org/x/crypto v0.44.0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20231108232855-2478ac86f678 // indirect
 	golang.org/x/mod v0.29.0 // indirect
-	golang.org/x/net v0.46.0 // indirect
+	golang.org/x/net v0.47.0 // indirect
 	golang.org/x/telemetry v0.0.0-20251008203120-078029d740a8 // indirect
-	golang.org/x/term v0.36.0 // indirect
+	golang.org/x/term v0.37.0 // indirect
 	golang.org/x/tools v0.38.0 // indirect
 	golang.org/x/tools/go/expect v0.1.1-deprecated // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251007200510-49b9836ed3ff // indirect
