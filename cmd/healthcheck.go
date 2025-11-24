@@ -23,7 +23,7 @@ func init() {
 	RootCmd.AddCommand(healthcheckCmd)
 	healthcheckCmd.Flags().Uint16VarP(&HealthcheckOptions.Port, "port", "p", 8080,
 		"HTTP port for health check")
-	healthcheckCmd.Flags().StringVarP(&HealthcheckOptions.Host, "host", "h", "localhost",
+	healthcheckCmd.Flags().StringVarP(&HealthcheckOptions.Host, "host", "", "localhost",
 		"HTTP host for health check")
 }
 
