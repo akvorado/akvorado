@@ -28,13 +28,11 @@ EOF
         ;;
 
     tests)
-        # Fetch Hurl from nixpkgs
         echo ::group::Get Hurl
         nix run nixpkgs#hurl -- --version
         echo ::endgroup::
 
-        # Wait first flow
-        echo ::group::Wait first flow
+        echo ::group::Wait for first flow
         while true; do
             sleep 1
             ! curl -o /dev/null --write-out "%{url}: %{response_code}\n" -sf \
@@ -42,8 +40,7 @@ EOF
         done
         echo ::endgroup::
 
-        # Check Prometheus status
-        echo ::group::Wait Prometheus to be ready
+        echo ::group::Wait for Prometheus to be ready
         promtool() {
             docker compose exec prometheus promtool "$@"
         }
