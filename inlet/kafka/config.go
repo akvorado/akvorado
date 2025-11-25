@@ -19,6 +19,8 @@ type Configuration struct {
 	CompressionCodec CompressionCodec
 	// QueueSize defines the maximum number of messages to buffer.
 	QueueSize int `validate:"min=1"`
+	// LoadBalance defines the load-balancing algorithm to use for Kafka partitions.
+	LoadBalance LoadBalanceAlgorithm
 }
 
 // DefaultConfiguration represents the default configuration for the Kafka exporter.
@@ -27,8 +29,19 @@ func DefaultConfiguration() Configuration {
 		Configuration:    kafka.DefaultConfiguration(),
 		CompressionCodec: CompressionCodec(kgo.Lz4Compression()),
 		QueueSize:        4096,
+		LoadBalance:      LoadBalanceRandom,
 	}
 }
+
+// LoadBalanceAlgorithm represents the load-balance algorithm for Kafka partitions
+type LoadBalanceAlgorithm int
+
+const (
+	// LoadBalanceRandom randomly balances flows accross Kafka partitions.
+	LoadBalanceRandom LoadBalanceAlgorithm = iota
+	// LoadBalanceByExporter hashes exporter IP addresses for load balancing.
+	LoadBalanceByExporter
+)
 
 // CompressionCodec represents a compression codec.
 type CompressionCodec kgo.CompressionCodec

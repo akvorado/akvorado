@@ -13,6 +13,8 @@ identified with a specific icon:
 ## Unreleased
 
 - 🩹 *docker*: restart geoip container on boot
+- 🌱 *inlet*: make load-balancing algorithm for Kafka partitions configurable
+  (`random` or `by-exporter`) and revert back to `random` by default (like before 2.0.3)
 - 🌱 *orchestrator*: add `kafka`→`manage-topic` flag to enable or disable topic management
 - 🌱 *cmd*: make `akvorado healthcheck` use an abstract Unix socket to check service liveness
 

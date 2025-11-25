@@ -132,6 +132,13 @@ The following keys are accepted:
 - `compression-codec` defines the compression codec for messages: `none`,
   `gzip`, `snappy`, `lz4` (default), or `zstd`.
 - `queue-size` defines the maximum number of messages to buffer for Kafka.
+- `load-balance` defines the load balancing algorithm for flows accross Kafka
+  partitions. The default value is `random`: each flow is assigned a random
+  partition, ensuring an even distribution. The other possible value is
+  `by-exporter`: all flows from a given exporter is assigned to a single
+  partition. This setting can be important if you have several outlets and IPFIX
+  or NetFlow: each outlet needs to receive the templates before decoding flows
+  and this is less likely when using `random`.
 
 A version number is automatically added to the topic name. This is to prevent
 problems if the protobuf schema changes in a way that is not

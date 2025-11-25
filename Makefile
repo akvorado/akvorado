@@ -30,6 +30,7 @@ GENERATED_GO = \
 	orchestrator/clickhouse/data/tcp.csv \
 	orchestrator/clickhouse/data/udp.csv \
 	console/filter/parser.go \
+	inlet/kafka/loadbalancealgorithm_enumer.go \
 	outlet/core/asnprovider_enumer.go \
 	outlet/core/netprovider_enumer.go \
 	outlet/metadata/provider/snmp/authprotocol_enumer.go \
@@ -105,6 +106,8 @@ inlet/flow/input/udp/reuseport_%.o: inlet/flow/input/udp/reuseport_kern.c inlet/
 	$Q ! $(CLANG) -print-targets 2> /dev/null | grep -qF $* || \
 		 $(CLANG) -O2 -g -Wall -target $* -c $< -o $@
 
+inlet/kafka/loadbalancealgorithm_enumer.go: go.mod inlet/kafka/config.go ; $(info $(M) generate enums for LoadBalanceAlgorithm…)
+	$Q $(ENUMER) -type=LoadBalanceAlgorithm -text -transform=kebab -trimprefix=LoadBalance inlet/kafka/config.go
 outlet/core/asnprovider_enumer.go: go.mod outlet/core/config.go ; $(info $(M) generate enums for ASNProvider…)
 	$Q $(ENUMER) -type=ASNProvider -text -transform=kebab -trimprefix=ASNProvider outlet/core/config.go
 outlet/core/netprovider_enumer.go: go.mod outlet/core/config.go ; $(info $(M) generate enums for NetProvider…)

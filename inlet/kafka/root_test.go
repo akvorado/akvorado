@@ -126,3 +126,56 @@ func TestKafka(t *testing.T) {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 }
+
+func TestLoadBalancingAlgorithm(t *testing.T) {
+	for _, algo := range []LoadBalanceAlgorithm{LoadBalanceRandom, LoadBalanceByExporter} {
+		t.Run(algo.String(), func(t *testing.T) {
+			topic := fmt.Sprintf("balance-%s", algo)
+			r := reporter.NewMock(t)
+			config := DefaultConfiguration()
+			config.QueueSize = 1
+			config.Topic = topic
+			c, mock := NewMock(t, r, config)
+			defer mock.Close()
+
+			total := 500
+
+			// Intercept messages
+			var wg sync.WaitGroup
+			wg.Add(total)
+			var mu sync.Mutex
+			messages := make(map[int32]int)
+			kafka.InterceptMessages(t, mock, func(r *kgo.Record) {
+				mu.Lock()
+				defer mu.Unlock()
+				messages[r.Partition]++
+				wg.Done()
+			})
+
+			// Send messages
+			for i := range total {
+				c.Send("127.0.0.1", []byte(fmt.Sprintf("hello %d", i)), func() {})
+			}
+			wg.Wait()
+
+			expected := make(map[int32]int, len(messages))
+			if algo == LoadBalanceRandom {
+				for p, count := range messages {
+					if count > total/len(messages)*6/10 && count < total/len(messages)*14/10 {
+						expected[p] = count
+					} else {
+						expected[p] = total / len(messages)
+					}
+				}
+			} else if algo == LoadBalanceByExporter {
+				for p, count := range messages {
+					expected[p] = count
+				}
+			}
+
+			if diff := helpers.Diff(messages, expected); diff != "" {
+				t.Fatalf("Messages per partitions (-got, +want):\n%s", diff)
+			}
+		})
+	}
+}
