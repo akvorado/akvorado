@@ -46,7 +46,7 @@ jobs:
       CI_AKVORADO_EBPF: "true"
     steps:
       # Setup
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: ${{ matrix.binary && 0 || 1 }}
           persist-credentials: false
@@ -111,7 +111,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
       - uses: cachix/install-nix-action@v31
@@ -133,7 +133,7 @@ jobs:
       contents: read
     steps:
       # Setup
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
       - name: Setup
@@ -166,7 +166,7 @@ jobs:
       # Setup
       - uses: docker/setup-buildx-action@v3
       - uses: cachix/install-nix-action@v31
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
       - name: Setup
@@ -209,7 +209,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
       - uses: actions/download-artifact@v6
@@ -250,7 +250,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
       - name: Setup
@@ -292,7 +292,7 @@ jobs:
         include:
           - node-version: 20
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
       - name: Setup
@@ -312,7 +312,7 @@ jobs:
       - build-go
       - build-js
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
       - name: Setup
@@ -332,7 +332,7 @@ jobs:
       packages: write
       attestations: write
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0        # We need the version
           persist-credentials: false
@@ -433,7 +433,7 @@ jobs:
       actions: read
     steps:
       # Changelog
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
       - name: Generate changelog
