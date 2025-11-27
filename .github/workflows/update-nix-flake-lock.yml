@@ -17,7 +17,7 @@ jobs:
           - asn2org
           - iana-assignments
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           persist-credentials: false
       - uses: cachix/install-nix-action@v31
