@@ -290,7 +290,7 @@ jobs:
         exclude:
           - dependabot: go_modules
         include:
-          - node-version: 20
+          - node-version: 22
     steps:
       - uses: actions/checkout@v6
         with:

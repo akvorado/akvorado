@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM node:20-alpine AS build-js
+FROM --platform=$BUILDPLATFORM node:22-alpine AS build-js
 RUN apk add --no-cache make
 WORKDIR /build
 COPY console/frontend console/frontend

@@ -18,7 +18,7 @@
           inherit system;
         };
         l = builtins // pkgs.lib;
-        nodejs = pkgs.nodejs_20;
+        nodejs = pkgs.nodejs_22;
         pnpm = pkgs.pnpm_10;
         go = pkgs.go_latest;
         frontend = pkgs.stdenvNoCC.mkDerivation rec {
