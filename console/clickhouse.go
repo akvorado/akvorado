@@ -8,11 +8,13 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
-	"text/template"
 	"time"
 
 	"akvorado/console/query"
+
+	"github.com/valyala/fasttemplate"
 )
 
 // flowsTable describe a consolidated or unconsolidated flows table.
@@ -91,17 +93,6 @@ type inputContext struct {
 	Units                  string
 }
 
-// context is the context to finalize the template.
-type context struct {
-	Table             string
-	Timefilter        string
-	TimefilterStart   string
-	TimefilterEnd     string
-	Units             string
-	Interval          uint64
-	ToStartOfInterval func(string) string
-}
-
 // templateQuery holds a template string and its associated input context.
 type templateQuery struct {
 	Template string
@@ -111,15 +102,15 @@ type templateQuery struct {
 // templateEscape escapes `{{` and `}}` from a string. In fact, only
 // the opening tag needs to be escaped.
 func templateEscape(input string) string {
-	return strings.ReplaceAll(input, `{{`, `{{"{{"}}`)
+	return strings.ReplaceAll(input, `{{`, `{{Escape}}`)
 }
 
 // templateWhere transforms a filter to a WHERE clause
 func templateWhere(qf query.Filter) string {
 	if qf.Direct() == "" {
-		return `{{ .Timefilter }}`
+		return `{{Timefilter}}`
 	}
-	return fmt.Sprintf(`{{ .Timefilter }} AND (%s)`, templateEscape(qf.Direct()))
+	return fmt.Sprintf(`{{Timefilter}} AND (%s)`, templateEscape(qf.Direct()))
 }
 
 // finalizeTemplateQueries builds the finalized queries from a list of templateQuery.
@@ -183,28 +174,24 @@ func (c *Component) finalizeTemplateQuery(query templateQuery) string {
 
 	c.metrics.clickhouseQueries.WithLabelValues(table).Inc()
 
-	context := context{
-		Table:           table,
-		Timefilter:      timefilter,
-		TimefilterStart: timefilterStart,
-		TimefilterEnd:   timefilterEnd,
-		Units:           units,
-		Interval:        uint64(computedInterval.Seconds()),
-		ToStartOfInterval: func(field string) string {
-			return fmt.Sprintf(
-				`toStartOfInterval(%s + INTERVAL %d second, INTERVAL %d second) - INTERVAL %d second`,
-				field,
-				diffOffset,
-				uint64(computedInterval.Seconds()),
-				diffOffset)
-		},
+	context := map[string]any{
+		"Table":           table,
+		"Timefilter":      timefilter,
+		"TimefilterStart": timefilterStart,
+		"TimefilterEnd":   timefilterEnd,
+		"Units":           units,
+		"Interval":        strconv.FormatUint(uint64(computedInterval.Seconds()), 10),
+		"ToStartOfInterval": fmt.Sprintf(
+			`toStartOfInterval(%s + INTERVAL %d second, INTERVAL %d second) - INTERVAL %d second`,
+			"TimeReceived",
+			diffOffset,
+			uint64(computedInterval.Seconds()),
+			diffOffset),
+		"Escape": "{{",
 	}
 
-	t := template.Must(template.New("query").
-		Option("missingkey=error").
-		Parse(strings.TrimSpace(query.Template)))
 	buf := bytes.NewBufferString("")
-	if err := t.Execute(buf, context); err != nil {
+	if _, err := fasttemplate.Execute(strings.TrimSpace(query.Template), "{{", "}}", buf, context); err != nil {
 		c.r.Err(err).Str("query", query.Template).Msg("invalid query")
 		panic(err)
 	}

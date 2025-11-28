@@ -50,7 +50,7 @@ func (input graphSankeyHandlerInput) toSQL() ([]templateQuery, error) {
 		dimensions = append(dimensions, column.String())
 	}
 	fields := []string{
-		`{{ .Units }}/range AS xps`,
+		`{{Units}}/range AS xps`,
 		fmt.Sprintf("[%s] AS dimensions", strings.Join(arrayFields, ",\n  ")),
 	}
 

@@ -113,8 +113,8 @@ func (input graphLineHandlerInput) toSQL1(axis int, options toSQL1Options) templ
 
 	// Select
 	fields := []string{
-		fmt.Sprintf(`{{ call .ToStartOfInterval "TimeReceived" }}%s AS time`, offsetShift),
-		`{{ .Units }}/{{ .Interval }} AS xps`,
+		fmt.Sprintf(`{{ToStartOfInterval}}%s AS time`, offsetShift),
+		`{{Units}}/{{Interval}} AS xps`,
 	}
 	selectFields := []string{}
 	dimensions := []string{}
@@ -168,9 +168,9 @@ FROM source
 WHERE %s
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}%s
- TO {{ .TimefilterEnd }} + INTERVAL 1 second%s
- STEP {{ .Interval }}
+ FROM {{TimefilterStart}}%s
+ TO {{TimefilterEnd}} + INTERVAL 1 second%s
+ STEP {{Interval}}
  INTERPOLATE (dimensions AS %s))`,
 		withStr, axis, strings.Join(fields, ",\n "), where, offsetShift, offsetShift,
 		dimensionsInterpolate,

@@ -140,7 +140,7 @@ func TestUserHandlerWithTemplates(t *testing.T) {
 	h := httpserver.NewMock(t, r)
 	config := DefaultConfiguration()
 	config.LogoutURL = "/sso/portals/main/logout"
-	config.AvatarURL = "https://avatars.githubusercontent.com/{{ .Login }}?s=80"
+	config.AvatarURL = "https://avatars.githubusercontent.com/{{Login}}?s=80"
 	c, err := New(r, config)
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
