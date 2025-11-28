@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -166,31 +165,9 @@ func TestStartSeveralWorkers(t *testing.T) {
 		t.Fatalf("Stop() error:\n%+v", err)
 	}
 
-	gotMetrics := r.GetMetrics("akvorado_outlet_kafka_")
-	connectsTotal := 0
-	writeBytesTotal := 0
-	readBytesTotal := 0
-	for k := range gotMetrics {
-		if strings.HasPrefix(k, "write_bytes_total") {
-			writeBytesTotal++
-		}
-		if strings.HasPrefix(k, "read_bytes_total") {
-			readBytesTotal++
-		}
-		if strings.HasPrefix(k, "connects_total") {
-			connectsTotal++
-		}
-	}
-	got := map[string]int{
-		"write_bytes_total": writeBytesTotal,
-		"read_bytes_total":  readBytesTotal,
-		"connects_total":    connectsTotal,
-	}
-	expected := map[string]int{
-		// For some reason, we have each metric in double, with one seed_0.
-		"write_bytes_total": 10,
-		"read_bytes_total":  10,
-		"connects_total":    10,
+	got := r.GetMetrics("akvorado_outlet_kafka_", "workers")
+	expected := map[string]string{
+		"workers": "5",
 	}
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Errorf("Metrics (-got, +want):\n%s", diff)
