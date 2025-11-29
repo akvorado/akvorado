@@ -724,11 +724,14 @@ addr,role
 2001:db8::1,ExampleRole
 ```
 
-If `SrcAddr` has the value `2001:db8::1` (matches the key), the dimension
-`SrcAddrIPRole` will be set to `ExampleRole`.
+> [!NOTE]
+> For IPv4 addresses, you need to use `::ffff:a.b.c.d`. Internally, Akvorado
+> uses only IPv6 addresses.
 
-Independently, if `DstAddr` has the value `2001:db8::1`, the dimension
-`DstAddrIPRole` will be set to `ExampleRole`.
+If `SrcAddr` has the value `2001:db8::1` (matches the key), the dimension
+`SrcAddrIPRole` will be set to `ExampleRole`. Independently, if `DstAddr` has
+the value `2001:db8::1`, the dimension `DstAddrIPRole` will be set to
+`ExampleRole`.
 
 All other IPs will get "DefaultRole" in their `SrcAddrIPRole`/`DstAddrIPRole`
 dimension.
