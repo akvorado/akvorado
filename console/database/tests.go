@@ -12,7 +12,7 @@ import (
 	"akvorado/common/reporter"
 )
 
-// NewMock instantiantes a new authentication component
+// NewMock instantiantes a new database component
 func NewMock(t *testing.T, r *reporter.Reporter, config Configuration) *Component {
 	t.Helper()
 	c, err := New(r, config)
