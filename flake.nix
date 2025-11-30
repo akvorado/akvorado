@@ -126,7 +126,7 @@
           };
 
         packages = {
-          inherit backend frontend;
+          inherit backend frontend ianaServiceNames;
           default = backend;
         } // (l.optionalAttrs (system == "x86_64-linux")
           (l.attrsets.listToAttrs (l.lists.map

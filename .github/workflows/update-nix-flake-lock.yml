@@ -21,8 +21,26 @@ jobs:
         with:
           persist-credentials: false
       - uses: cachix/install-nix-action@v31
+      - name: Check current IANA assignments
+        if: matrix.source == 'iana-assignments'
+        run: |
+          nix build .\#ianaServiceNames
+          make orchestrator/clickhouse/data/tcp.csv orchestrator/clickhouse/data/udp.csv SERVICES_URL=result
+          mkdir before~
+          mv orchestrator/clickhouse/data/tcp.csv orchestrator/clickhouse/data/udp.csv before~
       - name: Update Nix lockfile
         run: nix flake update ${{ matrix.source }}
+      - name: Check new IANA assignments
+        if: matrix.source == 'iana-assignments'
+        run: |
+          nix build .\#ianaServiceNames
+          make orchestrator/clickhouse/data/tcp.csv orchestrator/clickhouse/data/udp.csv SERVICES_URL=result
+          mkdir after~
+          mv orchestrator/clickhouse/data/tcp.csv orchestrator/clickhouse/data/udp.csv after~
+          ! diff -u before~ after~ || {
+            echo No diff...
+            git reset --hard
+          }
       - name: Create pull request
         uses: peter-evans/create-pull-request@v7
         with:
