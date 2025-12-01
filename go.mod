@@ -28,7 +28,7 @@ require (
 	github.com/google/renameio/v2 v2.0.1
 	github.com/gosnmp/gosnmp v1.42.1
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.1.0
-	github.com/hashicorp/go-version v1.7.0
+	github.com/hashicorp/go-version v1.8.0
 	github.com/itchyny/gojq v0.12.17
 	github.com/mattn/go-isatty v0.0.20
 	github.com/moby/moby/api v1.52.0
