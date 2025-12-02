@@ -135,6 +135,7 @@ func TestLoadBalancingAlgorithm(t *testing.T) {
 			config := DefaultConfiguration()
 			config.QueueSize = 1
 			config.Topic = topic
+			config.LoadBalance = algo
 			c, mock := NewMock(t, r, config)
 			defer mock.Close()
 
@@ -154,12 +155,13 @@ func TestLoadBalancingAlgorithm(t *testing.T) {
 
 			// Send messages
 			for i := range total {
-				c.Send("127.0.0.1", []byte(fmt.Sprintf("hello %d", i)), func() {})
+				c.Send("127.0.0.1", fmt.Appendf(nil, "hello %d", i), func() {})
 			}
 			wg.Wait()
 
 			expected := make(map[int32]int, len(messages))
-			if algo == LoadBalanceRandom {
+			switch algo {
+			case LoadBalanceRandom:
 				for p, count := range messages {
 					if count > total/len(messages)*6/10 && count < total/len(messages)*14/10 {
 						expected[p] = count
@@ -167,9 +169,10 @@ func TestLoadBalancingAlgorithm(t *testing.T) {
 						expected[p] = total / len(messages)
 					}
 				}
-			} else if algo == LoadBalanceByExporter {
-				for p, count := range messages {
-					expected[p] = count
+			case LoadBalanceByExporter:
+				for p := range messages {
+					expected[p] = total
+					break
 				}
 			}
 
