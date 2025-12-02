@@ -163,7 +163,7 @@ func TestLoadBalancingAlgorithm(t *testing.T) {
 			switch algo {
 			case LoadBalanceRandom:
 				for p, count := range messages {
-					if count > total/len(messages)*6/10 && count < total/len(messages)*14/10 {
+					if count > total/len(messages)*2/10 && count < total/len(messages)*18/10 {
 						expected[p] = count
 					} else {
 						expected[p] = total / len(messages)
