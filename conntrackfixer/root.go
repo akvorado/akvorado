@@ -51,7 +51,6 @@ type Dependencies struct {
 func New(r *reporter.Reporter, dependencies Dependencies) (*Component, error) {
 	cli, err := client.New(
 		client.FromEnv,
-		client.WithAPIVersionNegotiation(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize Docker client: %w", err)
