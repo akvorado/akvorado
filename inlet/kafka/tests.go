@@ -16,6 +16,9 @@ import (
 	"akvorado/common/reporter"
 )
 
+// DefaultMockKafkaNumPartitions is the default number of partitions for the mock Kafka.
+const DefaultMockKafkaNumPartitions = 8
+
 // NewMock creates a new Kafka component with a mocked Kafka. It will
 // panic if it cannot be started.
 func NewMock(t *testing.T, r *reporter.Reporter, configuration Configuration) (*Component, *kfake.Cluster) {
@@ -24,6 +27,7 @@ func NewMock(t *testing.T, r *reporter.Reporter, configuration Configuration) (*
 	cluster, err := kfake.NewCluster(
 		kfake.NumBrokers(1),
 		kfake.AllowAutoTopicCreation(),
+		kfake.DefaultNumPartitions(DefaultMockKafkaNumPartitions),
 		kfake.WithLogger(kafka.NewLogger(r)),
 	)
 	if err != nil {

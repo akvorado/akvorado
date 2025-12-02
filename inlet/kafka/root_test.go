@@ -159,14 +159,15 @@ func TestLoadBalancingAlgorithm(t *testing.T) {
 			}
 			wg.Wait()
 
-			expected := make(map[int32]int, len(messages))
+			expected := make(map[int32]int, DefaultMockKafkaNumPartitions)
 			switch algo {
 			case LoadBalanceRandom:
-				for p, count := range messages {
-					if count > total/len(messages)*2/10 && count < total/len(messages)*18/10 {
-						expected[p] = count
+				for p := range DefaultMockKafkaNumPartitions {
+					p := int32(p)
+					if messages[p] > total/DefaultMockKafkaNumPartitions*2/10 {
+						expected[p] = messages[p]
 					} else {
-						expected[p] = total / len(messages)
+						expected[p] = total / DefaultMockKafkaNumPartitions
 					}
 				}
 			case LoadBalanceByExporter:
