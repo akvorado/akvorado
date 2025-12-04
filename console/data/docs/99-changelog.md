@@ -10,7 +10,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## 2.0.3 - 2025-12-04
+## 2.0.4 - 2025-12-04
 
 The previous release introduced a performance regression for users with many
 flows from a single exporter. This is fixed in this release.
