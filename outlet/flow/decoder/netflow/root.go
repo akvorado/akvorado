@@ -169,7 +169,7 @@ func (nd *Decoder) Decode(in decoder.RawFlow, options decoder.Option, bf *schema
 		}
 		nd.decodeNFv9IPFIX(version, obsDomainID, flowSets, tao, ts, sysUptime, options, bf, finalize2)
 	default:
-		nd.errLogger.Warn().Str("exporter", key).Msg("unknown NetFlow version")
+		nd.errLogger.Warn().Str("exporter", key).Msgf("unknown NetFlow version %d", version)
 		nd.metrics.packets.WithLabelValues(key, "unknown").
 			Inc()
 		return 0, errors.New("unkown NetFlow version")
