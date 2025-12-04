@@ -10,7 +10,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 2.0.3 - 2025-12-04
+
+The previous release introduced a performance regression for users with many
+flows from a single exporter. This is fixed in this release.
 
 - 🩹 *docker*: restart geoip container on boot
 - 🌱 *inlet*: make load-balancing algorithm for Kafka partitions configurable
