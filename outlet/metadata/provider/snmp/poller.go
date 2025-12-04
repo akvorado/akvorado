@@ -87,7 +87,7 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 		p.metrics.errors.WithLabelValues(exporterStr, "get").Inc()
 		p.errLogger.Err(err).
 			Str("exporter", exporterStr).
-			Msgf("unable to GET (%d OIDs)", len(requests))
+			Msgf("unable to GET OIDs for index %d", ifIndex)
 		return err
 	}
 
