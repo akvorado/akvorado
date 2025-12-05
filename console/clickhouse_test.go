@@ -82,7 +82,7 @@ func TestFinalizeQuery(t *testing.T) {
 	}{
 		{
 			Description: "simple query without additional tables",
-			Query:       "SELECT 1 FROM {{ .Table }} WHERE {{ .Timefilter }}",
+			Query:       "SELECT 1 FROM {{Table}} WHERE {{Timefilter}}",
 			Context: inputContext{
 				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
@@ -91,7 +91,7 @@ func TestFinalizeQuery(t *testing.T) {
 			Expected: "SELECT 1 FROM flows WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:10', 'UTC') AND toDateTime('2022-04-11 15:45:10', 'UTC')",
 		}, {
 			Description: "query with source port",
-			Query:       "SELECT TimeReceived, SrcPort FROM {{ .Table }} WHERE {{ .Timefilter }}",
+			Query:       "SELECT TimeReceived, SrcPort FROM {{Table}} WHERE {{Timefilter}}",
 			Context: inputContext{
 				Start:             time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:               time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
@@ -102,7 +102,7 @@ func TestFinalizeQuery(t *testing.T) {
 		}, {
 			Description: "only flows table available",
 			Tables:      []flowsTable{{"flows", 0, time.Date(2022, 3, 10, 15, 45, 10, 0, time.UTC)}},
-			Query:       "SELECT 1 FROM {{ .Table }} WHERE {{ .Timefilter }}",
+			Query:       "SELECT 1 FROM {{Table}} WHERE {{Timefilter}}",
 			Context: inputContext{
 				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
@@ -112,7 +112,7 @@ func TestFinalizeQuery(t *testing.T) {
 		}, {
 			Description: "timefilter.Start and timefilter.Stop",
 			Tables:      []flowsTable{{"flows", 0, time.Date(2022, 3, 10, 15, 45, 10, 0, time.UTC)}},
-			Query:       "SELECT {{ .TimefilterStart }}, {{ .TimefilterEnd }}",
+			Query:       "SELECT {{TimefilterStart}}, {{TimefilterEnd}}",
 			Context: inputContext{
 				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
@@ -122,7 +122,7 @@ func TestFinalizeQuery(t *testing.T) {
 		}, {
 			Description: "only flows table and out of range request",
 			Tables:      []flowsTable{{"flows", 0, time.Date(2022, 4, 10, 22, 45, 10, 0, time.UTC)}},
-			Query:       "SELECT 1 FROM {{ .Table }} WHERE {{ .Timefilter }}",
+			Query:       "SELECT 1 FROM {{Table}} WHERE {{Timefilter}}",
 			Context: inputContext{
 				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
@@ -135,7 +135,7 @@ func TestFinalizeQuery(t *testing.T) {
 				{"flows", 0, time.Date(2022, 3, 10, 22, 45, 10, 0, time.UTC)},
 				{"flows_1m0s", time.Minute, time.Date(2022, 4, 2, 22, 45, 10, 0, time.UTC)},
 			},
-			Query: "SELECT 1 FROM {{ .Table }} WHERE {{ .Timefilter }} // {{ .Interval }}",
+			Query: "SELECT 1 FROM {{Table}} WHERE {{Timefilter}} // {{Interval}}",
 			Context: inputContext{
 				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
@@ -148,7 +148,7 @@ func TestFinalizeQuery(t *testing.T) {
 				{"flows", 0, time.Date(2022, 4, 10, 22, 45, 10, 0, time.UTC)},
 				{"flows_1m0s", time.Minute, time.Date(2022, 4, 10, 17, 45, 10, 0, time.UTC)},
 			},
-			Query: "SELECT 1 FROM {{ .Table }} WHERE {{ .Timefilter }}",
+			Query: "SELECT 1 FROM {{Table}} WHERE {{Timefilter}}",
 			Context: inputContext{
 				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
@@ -161,7 +161,7 @@ func TestFinalizeQuery(t *testing.T) {
 				{"flows", 0, time.Date(2022, 4, 10, 16, 45, 10, 0, time.UTC)},
 				{"flows_1m0s", time.Minute, time.Date(2022, 4, 10, 17, 45, 10, 0, time.UTC)},
 			},
-			Query: "SELECT 1 FROM {{ .Table }} WHERE {{ .Timefilter }}",
+			Query: "SELECT 1 FROM {{Table}} WHERE {{Timefilter}}",
 			Context: inputContext{
 				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
@@ -174,7 +174,7 @@ func TestFinalizeQuery(t *testing.T) {
 				{"flows", 0, time.Date(2022, 4, 10, 10, 45, 10, 0, time.UTC)},
 				{"flows_1m0s", time.Minute, time.Date(2022, 3, 10, 10, 45, 10, 0, time.UTC)},
 			},
-			Query: "SELECT 1 FROM {{ .Table }} WHERE {{ .Timefilter }} // {{ .Interval }}",
+			Query: "SELECT 1 FROM {{Table}} WHERE {{Timefilter}} // {{Interval}}",
 			Context: inputContext{
 				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
@@ -187,7 +187,7 @@ func TestFinalizeQuery(t *testing.T) {
 				{"flows", 0, time.Date(2022, 4, 10, 10, 45, 10, 0, time.UTC)},
 				{"flows_1m0s", time.Minute, time.Date(2022, 3, 10, 10, 45, 10, 0, time.UTC)},
 			},
-			Query: "SELECT 1 FROM {{ .Table }} WHERE {{ .Timefilter }} // {{ .Interval }}",
+			Query: "SELECT 1 FROM {{Table}} WHERE {{Timefilter}} // {{Interval}}",
 			Context: inputContext{
 				Start: time.Date(2022, 3, 10, 15, 45, 10, 0, time.UTC),
 				End:   time.Date(2022, 3, 11, 15, 45, 10, 0, time.UTC),
@@ -204,7 +204,7 @@ func TestFinalizeQuery(t *testing.T) {
 				{"flows", 0, time.Date(2022, 3, 10, 16, 45, 10, 0, time.UTC)},
 				{"flows_1m0s", time.Minute, time.Date(2022, 3, 10, 17, 45, 10, 0, time.UTC)},
 			},
-			Query: "SELECT 1 FROM {{ .Table }} WHERE {{ .Timefilter }} // {{ .Interval }}",
+			Query: "SELECT 1 FROM {{Table}} WHERE {{Timefilter}} // {{Interval}}",
 			Context: inputContext{
 				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
@@ -218,7 +218,7 @@ func TestFinalizeQuery(t *testing.T) {
 				{"flows_5m0s", 5 * time.Minute, time.Date(2022, 4, 2, 22, 45, 10, 0, time.UTC)},
 				{"flows_1m0s", time.Minute, time.Date(2022, 4, 2, 22, 45, 10, 0, time.UTC)},
 			},
-			Query: "SELECT 1 FROM {{ .Table }} WHERE {{ .Timefilter }} // {{ .Interval }}",
+			Query: "SELECT 1 FROM {{Table}} WHERE {{Timefilter}} // {{Interval}}",
 			Context: inputContext{
 				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
@@ -232,7 +232,7 @@ func TestFinalizeQuery(t *testing.T) {
 				{"flows_5m0s", 5 * time.Minute, time.Date(2022, 4, 2, 22, 45, 10, 0, time.UTC)},
 				{"flows_1m0s", time.Minute, time.Date(2022, 4, 10, 22, 45, 10, 0, time.UTC)},
 			},
-			Query: "SELECT 1 FROM {{ .Table }} WHERE {{ .Timefilter }}",
+			Query: "SELECT 1 FROM {{Table}} WHERE {{Timefilter}}",
 			Context: inputContext{
 				Start:  time.Date(2022, 4, 10, 15, 46, 10, 0, time.UTC),
 				End:    time.Date(2022, 4, 11, 15, 46, 10, 0, time.UTC),
@@ -246,7 +246,7 @@ func TestFinalizeQuery(t *testing.T) {
 				{"flows_1m0s", time.Minute, time.Date(2022, 4, 10, 22, 40, 0, 0, time.UTC)},
 				{"flows_1h0m0s", time.Hour, time.Date(2022, 4, 10, 22, 0, 10, 0, time.UTC)},
 			},
-			Query: "SELECT 1 FROM {{ .Table }} WHERE {{ .Timefilter }}",
+			Query: "SELECT 1 FROM {{Table}} WHERE {{Timefilter}}",
 			Context: inputContext{
 				Start:  time.Date(2022, 4, 10, 15, 46, 10, 0, time.UTC),
 				End:    time.Date(2022, 4, 11, 15, 46, 10, 0, time.UTC),
@@ -255,7 +255,7 @@ func TestFinalizeQuery(t *testing.T) {
 			Expected: "SELECT 1 FROM flows_1m0s WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:46:00', 'UTC') AND toDateTime('2022-04-11 15:46:00', 'UTC')",
 		}, {
 			Description: "query with escaped template",
-			Query:       `SELECT TimeReceived, SrcPort WHERE InIfDescription = '{{"{{"}} hello }}'`,
+			Query:       `SELECT TimeReceived, SrcPort WHERE InIfDescription = '{{Escape}} hello }}'`,
 			Context: inputContext{
 				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
@@ -264,7 +264,7 @@ func TestFinalizeQuery(t *testing.T) {
 			Expected: `SELECT TimeReceived, SrcPort WHERE InIfDescription = '{{ hello }}'`,
 		}, {
 			Description: "use of ToStartOfInterval",
-			Query:       `{{ call .ToStartOfInterval "TimeReceived" }}`,
+			Query:       `{{ToStartOfInterval}}`,
 			Context: inputContext{
 				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
@@ -273,7 +273,7 @@ func TestFinalizeQuery(t *testing.T) {
 			Expected: `toStartOfInterval(TimeReceived + INTERVAL 50 second, INTERVAL 120 second) - INTERVAL 50 second`,
 		}, {
 			Description: "Small interval outside main table expiration",
-			Query:       "SELECT InIfProvider FROM {{ .Table }}",
+			Query:       "SELECT InIfProvider FROM {{Table}}",
 			Tables: []flowsTable{
 				{"flows", time.Duration(0), time.Date(2022, 11, 6, 12, 0, 0, 0, time.UTC)},
 				{"flows_1h0m0s", time.Hour, time.Date(2022, 4, 25, 18, 0, 0, 0, time.UTC)},

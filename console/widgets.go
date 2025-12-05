@@ -194,12 +194,12 @@ func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 	now := c.d.Clock.Now()
 	template := fmt.Sprintf(`
 WITH
- (SELECT SUM(Bytes*SamplingRate) FROM {{ .Table }} WHERE {{ .Timefilter }} %s) AS Total
+ (SELECT SUM(Bytes*SamplingRate) FROM {{Table}} WHERE {{Timefilter}} %s) AS Total
 SELECT
  if(empty(%s),'Unknown',%s) AS Name,
  SUM(Bytes*SamplingRate) / Total * 100 AS Percent
-FROM {{ .Table }}
-WHERE {{ .Timefilter }}
+FROM {{Table}}
+WHERE {{Timefilter}}
 %s
 GROUP BY %s
 ORDER BY Percent DESC
@@ -236,16 +236,16 @@ func (c *Component) widgetGraphHandlerFunc(gc *gin.Context) {
 	now := c.d.Clock.Now()
 	template := fmt.Sprintf(`
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS Time,
- SUM(Bytes*SamplingRate*8/{{ .Interval }})/1000/1000/1000 AS Gbps
-FROM {{ .Table }}
-WHERE {{ .Timefilter }}
+ {{ToStartOfInterval}} AS Time,
+ SUM(Bytes*SamplingRate*8/{{Interval}})/1000/1000/1000 AS Gbps
+FROM {{Table}}
+WHERE {{Timefilter}}
 %s
 GROUP BY Time
 ORDER BY Time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}`,
+ FROM {{TimefilterStart}}
+ TO {{TimefilterEnd}} + INTERVAL 1 second
+ STEP {{Interval}}`,
 		filter)
 
 	query := c.finalizeTemplateQuery(templateQuery{
