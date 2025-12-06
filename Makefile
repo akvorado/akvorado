@@ -88,14 +88,16 @@ WWHRD       = go tool wwhrd
 .SUFFIXES:
 .DELETE_ON_ERROR:
 
+$(filter %.go, $(GENERATED_GO) $(GENERATED_TEST_GO)): go.mod
+
 common/pb/rawflow.pb.go common/pb/rawflow_vtproto.pb.go &: .buf.gen.yaml common/pb/rawflow.proto ; $(info $(M) compiling protocol buffers $@…)
 	$Q $(BUF) generate --template $(PWD)/.buf.gen.yaml --path $(@:.pb.go=.proto)
 
-common/clickhousedb/mocks/mock_driver.go: go.mod ; $(info $(M) generate mocks for ClickHouse driver…)
+common/clickhousedb/mocks/mock_driver.go: ; $(info $(M) generate mocks for ClickHouse driver…)
 	$Q $(MOCKGEN) -package mocks -build_constraint "!release" -destination $@ \
 		github.com/ClickHouse/clickhouse-go/v2/lib/driver Conn,Row,Rows,ColumnType
 	$Q touch $@
-conntrackfixer/mocks/mock_conntrackfixer.go: go.mod ; $(info $(M) generate mocks for conntrack-fixer…)
+conntrackfixer/mocks/mock_conntrackfixer.go: ; $(info $(M) generate mocks for conntrack-fixer…)
 	$Q if [ `$(GO) env GOOS` = "linux" ]; then \
 	   $(MOCKGEN) -package mocks -build_constraint "!release" -destination $@ \
 		akvorado/conntrackfixer ConntrackConn,DockerClient ; \
@@ -106,21 +108,21 @@ inlet/flow/input/udp/reuseport_%.o: inlet/flow/input/udp/reuseport_kern.c inlet/
 	$Q ! $(CLANG) -print-targets 2> /dev/null | grep -qF $* || \
 		 $(CLANG) -O2 -g -Wall -target $* -c $< -o $@
 
-inlet/kafka/loadbalancealgorithm_enumer.go: go.mod inlet/kafka/config.go ; $(info $(M) generate enums for LoadBalanceAlgorithm…)
+inlet/kafka/loadbalancealgorithm_enumer.go: inlet/kafka/config.go ; $(info $(M) generate enums for LoadBalanceAlgorithm…)
 	$Q $(ENUMER) -type=LoadBalanceAlgorithm -text -transform=kebab -trimprefix=LoadBalance inlet/kafka/config.go
-outlet/core/asnprovider_enumer.go: go.mod outlet/core/config.go ; $(info $(M) generate enums for ASNProvider…)
+outlet/core/asnprovider_enumer.go: outlet/core/config.go ; $(info $(M) generate enums for ASNProvider…)
 	$Q $(ENUMER) -type=ASNProvider -text -transform=kebab -trimprefix=ASNProvider outlet/core/config.go
-outlet/core/netprovider_enumer.go: go.mod outlet/core/config.go ; $(info $(M) generate enums for NetProvider…)
+outlet/core/netprovider_enumer.go: outlet/core/config.go ; $(info $(M) generate enums for NetProvider…)
 	$Q $(ENUMER) -type=NetProvider -text -transform=kebab -trimprefix=NetProvider outlet/core/config.go
-outlet/metadata/provider/snmp/authprotocol_enumer.go: go.mod outlet/metadata/provider/snmp/config.go ; $(info $(M) generate enums for AuthProtocol…)
+outlet/metadata/provider/snmp/authprotocol_enumer.go: outlet/metadata/provider/snmp/config.go ; $(info $(M) generate enums for AuthProtocol…)
 	$Q $(ENUMER) -type=AuthProtocol -text -transform=kebab -trimprefix=AuthProtocol outlet/metadata/provider/snmp/config.go
-outlet/metadata/provider/snmp/privprotocol_enumer.go: go.mod outlet/metadata/provider/snmp/config.go ; $(info $(M) generate enums for PrivProtocol…)
+outlet/metadata/provider/snmp/privprotocol_enumer.go: outlet/metadata/provider/snmp/config.go ; $(info $(M) generate enums for PrivProtocol…)
 	$Q $(ENUMER) -type=PrivProtocol -text -transform=kebab -trimprefix=PrivProtocol outlet/metadata/provider/snmp/config.go
-outlet/metadata/provider/gnmi/ifspeedpathunit_enumer.go: go.mod outlet/metadata/provider/gnmi/config.go ; $(info $(M) generate enums for IfSpeedPathUnit…)
+outlet/metadata/provider/gnmi/ifspeedpathunit_enumer.go: outlet/metadata/provider/gnmi/config.go ; $(info $(M) generate enums for IfSpeedPathUnit…)
 	$Q $(ENUMER) -type=IfSpeedPathUnit -text -transform=kebab -trimprefix=Speed outlet/metadata/provider/gnmi/config.go
-console/homepagetopwidget_enumer.go: go.mod console/config.go ; $(info $(M) generate enums for HomepageTopWidget…)
+console/homepagetopwidget_enumer.go: console/config.go ; $(info $(M) generate enums for HomepageTopWidget…)
 	$Q $(ENUMER) -type=HomepageTopWidget -text -json -transform=kebab -trimprefix=HomepageTopWidget console/config.go
-common/kafka/saslmechanism_enumer.go: go.mod common/kafka/config.go ; $(info $(M) generate enums for SASLMechanism…)
+common/kafka/saslmechanism_enumer.go: common/kafka/config.go ; $(info $(M) generate enums for SASLMechanism…)
 	$Q $(ENUMER) -type=SASLMechanism -text -transform=kebab -trimprefix=SASL common/kafka/config.go
 
 common/schema/definition_gen.go: common/schema/definition.go common/schema/definition_gen.sh ; $(info $(M) generate column definitions…)
