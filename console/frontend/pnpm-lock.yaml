@@ -4,11 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-patchedDependencies:
-  '@codemirror/view@6.38.4':
-    hash: 532b56fc70b17b5158f2ea1fd90b89246b3263e5013052cb76167107d0a9127d
-    path: patches/@codemirror__view@6.38.4.patch
-
 importers:
 
   .:
@@ -29,8 +24,8 @@ importers:
         specifier: ^6.0.0
         version: 6.5.2
       '@codemirror/view':
-        specifier: ^6.0.0
-        version: 6.38.4(patch_hash=532b56fc70b17b5158f2ea1fd90b89246b3263e5013052cb76167107d0a9127d)
+        specifier: ^6.38.8
+        version: 6.38.8
       '@headlessui/vue':
         specifier: ^1.6.1
         version: 1.7.23(vue@3.5.25(typescript@5.9.3))
@@ -178,8 +173,8 @@ packages:
   '@codemirror/state@6.5.2':
     resolution: {integrity: sha512-FVqsPqtPWKVVL3dPSxy8wEF/ymIEuVzF1PK3VbUgrxXpJUSHQWWZz4JMToquRxnkw+36LTamCZG2iua2Ptq0fA==}
 
-  '@codemirror/view@6.38.4':
-    resolution: {integrity: sha512-hduz0suCcUSC/kM8Fq3A9iLwInJDl8fD1xLpTIk+5xkNm8z/FT7UsIa9sOXrkpChh+XXc18RzswE8QqELsVl+g==}
+  '@codemirror/view@6.38.8':
+    resolution: {integrity: sha512-XcE9fcnkHCbWkjeKyi0lllwXmBLtyYb5dt89dJyx23I9+LSh5vZDIuk7OLG4VM1lgrXZQcY6cxyZyk5WVPRv/A==}
 
   '@emnapi/core@1.5.0':
     resolution: {integrity: sha512-sbP8GzB1WDzacS8fgNPpHlp6C9VZe+SJP3F90W9rLemaQj2PzIuTEl1qDOYQf58YIpyjViI24y9aPWCjEzY2cg==}
@@ -1642,20 +1637,20 @@ snapshots:
     dependencies:
       '@codemirror/language': 6.11.3
       '@codemirror/state': 6.5.2
-      '@codemirror/view': 6.38.4(patch_hash=532b56fc70b17b5158f2ea1fd90b89246b3263e5013052cb76167107d0a9127d)
+      '@codemirror/view': 6.38.8
       '@lezer/common': 1.4.0
 
   '@codemirror/commands@6.10.0':
     dependencies:
       '@codemirror/language': 6.11.3
       '@codemirror/state': 6.5.2
-      '@codemirror/view': 6.38.4(patch_hash=532b56fc70b17b5158f2ea1fd90b89246b3263e5013052cb76167107d0a9127d)
+      '@codemirror/view': 6.38.8
       '@lezer/common': 1.4.0
 
   '@codemirror/language@6.11.3':
     dependencies:
       '@codemirror/state': 6.5.2
-      '@codemirror/view': 6.38.4(patch_hash=532b56fc70b17b5158f2ea1fd90b89246b3263e5013052cb76167107d0a9127d)
+      '@codemirror/view': 6.38.8
       '@lezer/common': 1.4.0
       '@lezer/highlight': 1.2.3
       '@lezer/lr': 1.4.4
@@ -1664,14 +1659,14 @@ snapshots:
   '@codemirror/lint@6.9.2':
     dependencies:
       '@codemirror/state': 6.5.2
-      '@codemirror/view': 6.38.4(patch_hash=532b56fc70b17b5158f2ea1fd90b89246b3263e5013052cb76167107d0a9127d)
+      '@codemirror/view': 6.38.8
       crelt: 1.0.6
 
   '@codemirror/state@6.5.2':
     dependencies:
       '@marijn/find-cluster-break': 1.0.2
 
-  '@codemirror/view@6.38.4(patch_hash=532b56fc70b17b5158f2ea1fd90b89246b3263e5013052cb76167107d0a9127d)':
+  '@codemirror/view@6.38.8':
     dependencies:
       '@codemirror/state': 6.5.2
       crelt: 1.0.6
