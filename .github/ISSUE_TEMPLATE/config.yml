@@ -1,3 +1,4 @@
+blank_issues_enabled: false
 contact_links:
   - name: "Discussions and Q&A"
     url: https://github.com/akvorado/akvorado/discussions
