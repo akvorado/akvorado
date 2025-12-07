@@ -6,6 +6,7 @@ package embed
 import (
 	_ "embed"
 	"io"
+	"io/fs"
 	"testing"
 
 	"akvorado/common/helpers"
@@ -29,6 +30,30 @@ func TestData(t *testing.T) {
 	}
 	if diff := helpers.Diff(string(got), expected); diff != "" {
 		t.Fatalf("ReadFull() (-got, +want):\n%s", diff)
+	}
+
+	// Small checks for interfaces
+	if _, ok := f.(io.Reader); !ok {
+		t.Fatal("f does not implement io.Reader")
+	}
+	if _, ok := f.(io.ReadCloser); !ok {
+		t.Fatal("f does not implement io.ReadCloser")
+	}
+	// Currently, this is not true, but this may become one day!
+	if _, ok := f.(fs.ReadDirFS); ok {
+		t.Error("f implements fs.ReadDirFS!")
+	}
+	if _, ok := f.(fs.ReadDirFile); ok {
+		t.Error("f implements fs.ReadDirFile!")
+	}
+	if _, ok := f.(fs.SubFS); ok {
+		t.Error("f implements fs.SubFS!")
+	}
+	if _, ok := f.(io.ReaderAt); ok {
+		t.Error("f implements io.ReaderAt!")
+	}
+	if _, ok := f.(io.Seeker); ok {
+		t.Error("f implements io.Seeker!")
 	}
 }
 
