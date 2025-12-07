@@ -15,6 +15,7 @@ identified with a specific icon:
 The previous release introduced a performance regression for users with many
 flows from a single exporter. This is fixed in this release.
 
+- 💥 *console*: `auth`→`avatar-url` and `auth`→`logout-url` only allows simple substitutions instead of full Go templates
 - 🩹 *docker*: restart geoip container on boot
 - 🌱 *inlet*: make load-balancing algorithm for Kafka partitions configurable
   (`random` or `by-exporter`) and revert back to `random` by default (like before 2.0.3)

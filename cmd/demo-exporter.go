@@ -39,6 +39,11 @@ func (c *DemoExporterConfiguration) Reset() {
 	}
 }
 
+// UnusedButExportedFunction is there to test dead code elimination.
+func (c *DemoExporterConfiguration) UnusedButExportedFunction() {
+	panic("never call me!")
+}
+
 type demoExporterOptions struct {
 	ConfigRelatedOptions
 	CheckMode bool

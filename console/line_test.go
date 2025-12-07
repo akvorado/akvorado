@@ -188,19 +188,19 @@ func TestGraphQuerySQL(t *testing.T) {
 						Units:  "l3bps",
 					},
 					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
+ source AS (SELECT * FROM {{Table}} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ {{ToStartOfInterval}} AS time,
+ {{Units}}/{{Interval}} AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE {{Timefilter}}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM {{TimefilterStart}}
+ TO {{TimefilterEnd}} + INTERVAL 1 second
+ STEP {{Interval}}
  INTERPOLATE (dimensions AS emptyArrayString()))`,
 				},
 			},
@@ -226,19 +226,19 @@ ORDER BY time WITH FILL
 						Units:  "l2bps",
 					},
 					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
+ source AS (SELECT * FROM {{Table}} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ {{ToStartOfInterval}} AS time,
+ {{Units}}/{{Interval}} AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE {{Timefilter}}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM {{TimefilterStart}}
+ TO {{TimefilterEnd}} + INTERVAL 1 second
+ STEP {{Interval}}
  INTERPOLATE (dimensions AS emptyArrayString()))`,
 				},
 			},
@@ -264,19 +264,19 @@ ORDER BY time WITH FILL
 						Units:  "pps",
 					},
 					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
+ source AS (SELECT * FROM {{Table}} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ {{ToStartOfInterval}} AS time,
+ {{Units}}/{{Interval}} AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE {{Timefilter}}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM {{TimefilterStart}}
+ TO {{TimefilterEnd}} + INTERVAL 1 second
+ STEP {{Interval}}
  INTERPOLATE (dimensions AS emptyArrayString()))`,
 				},
 			},
@@ -305,20 +305,20 @@ ORDER BY time WITH FILL
 						MainTableRequired: true,
 					},
 					Template: `WITH
- source AS (SELECT * REPLACE (tupleElement(IPv6CIDRToRange(SrcAddr, if(tupleElement(IPv6CIDRToRange(SrcAddr, 96), 1) = toIPv6('::ffff:0.0.0.0'), 120, 48)), 1) AS SrcAddr) FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
- rows AS (SELECT SrcAddr FROM source WHERE {{ .Timefilter }} AND (SrcAddr BETWEEN toIPv6('::ffff:1.0.0.0') AND toIPv6('::ffff:1.255.255.255')) GROUP BY SrcAddr ORDER BY {{ .Units }} DESC LIMIT 0)
+ source AS (SELECT * REPLACE (tupleElement(IPv6CIDRToRange(SrcAddr, if(tupleElement(IPv6CIDRToRange(SrcAddr, 96), 1) = toIPv6('::ffff:0.0.0.0'), 120, 48)), 1) AS SrcAddr) FROM {{Table}} SETTINGS asterisk_include_alias_columns = 1),
+ rows AS (SELECT SrcAddr FROM source WHERE {{Timefilter}} AND (SrcAddr BETWEEN toIPv6('::ffff:1.0.0.0') AND toIPv6('::ffff:1.255.255.255')) GROUP BY SrcAddr ORDER BY {{Units}} DESC LIMIT 0)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ {{ToStartOfInterval}} AS time,
+ {{Units}}/{{Interval}} AS xps,
  if((SrcAddr) IN rows, [replaceRegexpOne(IPv6NumToString(SrcAddr), '^::ffff:', '')], ['Other']) AS dimensions
 FROM source
-WHERE {{ .Timefilter }} AND (SrcAddr BETWEEN toIPv6('::ffff:1.0.0.0') AND toIPv6('::ffff:1.255.255.255'))
+WHERE {{Timefilter}} AND (SrcAddr BETWEEN toIPv6('::ffff:1.0.0.0') AND toIPv6('::ffff:1.255.255.255'))
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM {{TimefilterStart}}
+ TO {{TimefilterEnd}} + INTERVAL 1 second
+ STEP {{Interval}}
  INTERPOLATE (dimensions AS ['Other']))`,
 				},
 			},
@@ -344,19 +344,19 @@ ORDER BY time WITH FILL
 						Units:  "l3bps",
 					},
 					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
+ source AS (SELECT * FROM {{Table}} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ {{ToStartOfInterval}} AS time,
+ {{Units}}/{{Interval}} AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }} AND (DstCountry = 'FR' AND SrcCountry = 'US')
+WHERE {{Timefilter}} AND (DstCountry = 'FR' AND SrcCountry = 'US')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM {{TimefilterStart}}
+ TO {{TimefilterEnd}} + INTERVAL 1 second
+ STEP {{Interval}}
  INTERPOLATE (dimensions AS emptyArrayString()))`,
 				},
 			},
@@ -382,19 +382,19 @@ ORDER BY time WITH FILL
 						Units:  "l3bps",
 					},
 					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
+ source AS (SELECT * FROM {{Table}} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ {{ToStartOfInterval}} AS time,
+ {{Units}}/{{Interval}} AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }} AND (InIfDescription = '{{"{{"}} hello }}' AND SrcCountry = 'US')
+WHERE {{Timefilter}} AND (InIfDescription = '{{Escape}} hello }}' AND SrcCountry = 'US')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM {{TimefilterStart}}
+ TO {{TimefilterEnd}} + INTERVAL 1 second
+ STEP {{Interval}}
  INTERPOLATE (dimensions AS emptyArrayString()))`,
 				},
 			},
@@ -421,19 +421,19 @@ ORDER BY time WITH FILL
 						Units:  "l3bps",
 					},
 					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
+ source AS (SELECT * FROM {{Table}} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ {{ToStartOfInterval}} AS time,
+ {{Units}}/{{Interval}} AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }} AND (DstCountry = 'FR' AND SrcCountry = 'US')
+WHERE {{Timefilter}} AND (DstCountry = 'FR' AND SrcCountry = 'US')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM {{TimefilterStart}}
+ TO {{TimefilterEnd}} + INTERVAL 1 second
+ STEP {{Interval}}
  INTERPOLATE (dimensions AS emptyArrayString()))`,
 				}, {
 					Context: inputContext{
@@ -444,16 +444,16 @@ ORDER BY time WITH FILL
 					},
 					Template: `SELECT 2 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ {{ToStartOfInterval}} AS time,
+ {{Units}}/{{Interval}} AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }} AND (SrcCountry = 'FR' AND DstCountry = 'US')
+WHERE {{Timefilter}} AND (SrcCountry = 'FR' AND DstCountry = 'US')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM {{TimefilterStart}}
+ TO {{TimefilterEnd}} + INTERVAL 1 second
+ STEP {{Interval}}
  INTERPOLATE (dimensions AS emptyArrayString()))`,
 				},
 			},
@@ -480,19 +480,19 @@ ORDER BY time WITH FILL
 						Units:  "inl2%",
 					},
 					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
+ source AS (SELECT * FROM {{Table}} SETTINGS asterisk_include_alias_columns = 1)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ {{ToStartOfInterval}} AS time,
+ {{Units}}/{{Interval}} AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }} AND (DstCountry = 'FR' AND SrcCountry = 'US')
+WHERE {{Timefilter}} AND (DstCountry = 'FR' AND SrcCountry = 'US')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM {{TimefilterStart}}
+ TO {{TimefilterEnd}} + INTERVAL 1 second
+ STEP {{Interval}}
  INTERPOLATE (dimensions AS emptyArrayString()))`,
 				}, {
 					Context: inputContext{
@@ -503,16 +503,16 @@ ORDER BY time WITH FILL
 					},
 					Template: `SELECT 2 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ {{ToStartOfInterval}} AS time,
+ {{Units}}/{{Interval}} AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }} AND (SrcCountry = 'FR' AND DstCountry = 'US')
+WHERE {{Timefilter}} AND (SrcCountry = 'FR' AND DstCountry = 'US')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM {{TimefilterStart}}
+ TO {{TimefilterEnd}} + INTERVAL 1 second
+ STEP {{Interval}}
  INTERPOLATE (dimensions AS emptyArrayString()))`,
 				},
 			},
@@ -542,20 +542,20 @@ ORDER BY time WITH FILL
 						Units:  "l3bps",
 					},
 					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
- rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY {{ .Units }} DESC LIMIT 20)
+ source AS (SELECT * FROM {{Table}} SETTINGS asterisk_include_alias_columns = 1),
+ rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{Timefilter}} GROUP BY ExporterName, InIfProvider ORDER BY {{Units}} DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ {{ToStartOfInterval}} AS time,
+ {{Units}}/{{Interval}} AS xps,
  if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE {{Timefilter}}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM {{TimefilterStart}}
+ TO {{TimefilterEnd}} + INTERVAL 1 second
+ STEP {{Interval}}
  INTERPOLATE (dimensions AS ['Other', 'Other']))`,
 				},
 			},
@@ -586,20 +586,20 @@ ORDER BY time WITH FILL
 						Units:  "l3bps",
 					},
 					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
- rows AS (SELECT ExporterName, InIfProvider FROM ( SELECT ExporterName, InIfProvider, {{ .Units }} AS sum_at_time FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ) GROUP BY ExporterName, InIfProvider ORDER BY MAX(sum_at_time) DESC LIMIT 20)
+ source AS (SELECT * FROM {{Table}} SETTINGS asterisk_include_alias_columns = 1),
+ rows AS (SELECT ExporterName, InIfProvider FROM ( SELECT ExporterName, InIfProvider, {{Units}} AS sum_at_time FROM source WHERE {{Timefilter}} GROUP BY ExporterName, InIfProvider ) GROUP BY ExporterName, InIfProvider ORDER BY MAX(sum_at_time) DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ {{ToStartOfInterval}} AS time,
+ {{Units}}/{{Interval}} AS xps,
  if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE {{Timefilter}}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM {{TimefilterStart}}
+ TO {{TimefilterEnd}} + INTERVAL 1 second
+ STEP {{Interval}}
  INTERPOLATE (dimensions AS ['Other', 'Other']))`,
 				},
 			},
@@ -630,20 +630,20 @@ ORDER BY time WITH FILL
 						Units:  "l3bps",
 					},
 					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
- rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY {{ .Units }} DESC LIMIT 20)
+ source AS (SELECT * FROM {{Table}} SETTINGS asterisk_include_alias_columns = 1),
+ rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{Timefilter}} GROUP BY ExporterName, InIfProvider ORDER BY {{Units}} DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ {{ToStartOfInterval}} AS time,
+ {{Units}}/{{Interval}} AS xps,
  if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE {{Timefilter}}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM {{TimefilterStart}}
+ TO {{TimefilterEnd}} + INTERVAL 1 second
+ STEP {{Interval}}
  INTERPOLATE (dimensions AS ['Other', 'Other']))`,
 				}, {
 					Context: inputContext{
@@ -654,16 +654,16 @@ ORDER BY time WITH FILL
 					},
 					Template: `SELECT 2 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ {{ToStartOfInterval}} AS time,
+ {{Units}}/{{Interval}} AS xps,
  if((ExporterName, OutIfProvider) IN rows, [ExporterName, OutIfProvider], ['Other', 'Other']) AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE {{Timefilter}}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM {{TimefilterStart}}
+ TO {{TimefilterEnd}} + INTERVAL 1 second
+ STEP {{Interval}}
  INTERPOLATE (dimensions AS ['Other', 'Other']))`,
 				},
 			},
@@ -694,20 +694,20 @@ ORDER BY time WITH FILL
 						Units:  "l3bps",
 					},
 					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
- rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{ .Timefilter }} GROUP BY ExporterName, InIfProvider ORDER BY {{ .Units }} DESC LIMIT 20)
+ source AS (SELECT * FROM {{Table}} SETTINGS asterisk_include_alias_columns = 1),
+ rows AS (SELECT ExporterName, InIfProvider FROM source WHERE {{Timefilter}} GROUP BY ExporterName, InIfProvider ORDER BY {{Units}} DESC LIMIT 20)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ {{ToStartOfInterval}} AS time,
+ {{Units}}/{{Interval}} AS xps,
  if((ExporterName, InIfProvider) IN rows, [ExporterName, InIfProvider], ['Other', 'Other']) AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE {{Timefilter}}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM {{TimefilterStart}}
+ TO {{TimefilterEnd}} + INTERVAL 1 second
+ STEP {{Interval}}
  INTERPOLATE (dimensions AS ['Other', 'Other']))`,
 				}, {
 					Context: inputContext{
@@ -722,16 +722,16 @@ ORDER BY time WITH FILL
 					},
 					Template: `SELECT 3 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} + INTERVAL 86400 second AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ {{ToStartOfInterval}} + INTERVAL 86400 second AS time,
+ {{Units}}/{{Interval}} AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }}
+WHERE {{Timefilter}}
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }} + INTERVAL 86400 second
- TO {{ .TimefilterEnd }} + INTERVAL 1 second + INTERVAL 86400 second
- STEP {{ .Interval }}
+ FROM {{TimefilterStart}} + INTERVAL 86400 second
+ TO {{TimefilterEnd}} + INTERVAL 1 second + INTERVAL 86400 second
+ STEP {{Interval}}
  INTERPOLATE (dimensions AS emptyArrayString()))`,
 				},
 			},
@@ -762,20 +762,20 @@ ORDER BY time WITH FILL
 						Units:             "l3bps",
 					},
 					Template: `WITH
- source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1),
- rows AS (SELECT SrcAddr, DstAddr FROM source WHERE {{ .Timefilter }} AND (InIfBoundary = 'external') GROUP BY SrcAddr, DstAddr ORDER BY {{ .Units }} DESC LIMIT 0)
+ source AS (SELECT * FROM {{Table}} SETTINGS asterisk_include_alias_columns = 1),
+ rows AS (SELECT SrcAddr, DstAddr FROM source WHERE {{Timefilter}} AND (InIfBoundary = 'external') GROUP BY SrcAddr, DstAddr ORDER BY {{Units}} DESC LIMIT 0)
 SELECT 1 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ {{ToStartOfInterval}} AS time,
+ {{Units}}/{{Interval}} AS xps,
  if((SrcAddr, DstAddr) IN rows, [replaceRegexpOne(IPv6NumToString(SrcAddr), '^::ffff:', ''), replaceRegexpOne(IPv6NumToString(DstAddr), '^::ffff:', '')], ['Other', 'Other']) AS dimensions
 FROM source
-WHERE {{ .Timefilter }} AND (InIfBoundary = 'external')
+WHERE {{Timefilter}} AND (InIfBoundary = 'external')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}
+ FROM {{TimefilterStart}}
+ TO {{TimefilterEnd}} + INTERVAL 1 second
+ STEP {{Interval}}
  INTERPOLATE (dimensions AS ['Other', 'Other']))`,
 				}, {
 					Context: inputContext{
@@ -791,16 +791,16 @@ ORDER BY time WITH FILL
 					},
 					Template: `SELECT 3 AS axis, * FROM (
 SELECT
- {{ call .ToStartOfInterval "TimeReceived" }} + INTERVAL 86400 second AS time,
- {{ .Units }}/{{ .Interval }} AS xps,
+ {{ToStartOfInterval}} + INTERVAL 86400 second AS time,
+ {{Units}}/{{Interval}} AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE {{ .Timefilter }} AND (InIfBoundary = 'external')
+WHERE {{Timefilter}} AND (InIfBoundary = 'external')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }} + INTERVAL 86400 second
- TO {{ .TimefilterEnd }} + INTERVAL 1 second + INTERVAL 86400 second
- STEP {{ .Interval }}
+ FROM {{TimefilterStart}} + INTERVAL 86400 second
+ TO {{TimefilterEnd}} + INTERVAL 1 second + INTERVAL 86400 second
+ STEP {{Interval}}
  INTERPOLATE (dimensions AS emptyArrayString()))`,
 				},
 			},
