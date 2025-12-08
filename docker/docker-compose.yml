@@ -167,7 +167,6 @@ services:
       - traefik.http.routers.akvorado-inlet.entrypoints=private
       - traefik.http.routers.akvorado-inlet.rule=PathPrefix(`/api/v0/inlet`)
       - traefik.http.services.akvorado-inlet.loadbalancer.server.port=8080
-      - akvorado.conntrack.fix=true
       - metrics.port=8080
       - metrics.path=/api/v0/metrics
   akvorado-outlet:
@@ -203,19 +202,6 @@ services:
       - traefik.http.services.akvorado-outlet.loadbalancer.server.port=8080
       - metrics.port=8080
       - metrics.path=/api/v0/metrics
-  akvorado-conntrack-fixer:
-    extends:
-      file: versions.yml
-      service: akvorado
-    cap_add:
-      - NET_ADMIN
-    command: conntrack-fixer
-    restart: unless-stopped
-    network_mode: host
-    healthcheck:
-      test: ["CMD", "/usr/local/bin/akvorado", "healthcheck", "--service", "conntrack-fixer"]
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
 
   clickhouse:
     extends:

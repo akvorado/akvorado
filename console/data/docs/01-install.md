@@ -19,7 +19,7 @@ Check the `docker/docker-compose.yml` file for an example of how to deploy
 the [quick start procedure](00-intro.md#quick-start). This documentation assumes
 you are using the `docker compose` setup.
 
-The minimum supported version for Docker Engine is v25 (Docker API 1.44).
+The minimum supported version for Docker Engine is v23.
 
 If you want to compile the Docker image yourself, use `make docker`.
 

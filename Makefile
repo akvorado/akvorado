@@ -39,8 +39,7 @@ GENERATED_GO = \
 	console/homepagetopwidget_enumer.go \
 	common/kafka/saslmechanism_enumer.go
 GENERATED_TEST_GO = \
-	common/clickhousedb/mocks/mock_driver.go \
-	conntrackfixer/mocks/mock_conntrackfixer.go
+	common/clickhousedb/mocks/mock_driver.go
 GENERATED = \
 	$(GENERATED_GO) \
 	$(GENERATED_JS) \
@@ -97,12 +96,6 @@ common/clickhousedb/mocks/mock_driver.go: ; $(info $(M) generate mocks for Click
 	$Q $(MOCKGEN) -package mocks -build_constraint "!release" -destination $@ \
 		github.com/ClickHouse/clickhouse-go/v2/lib/driver Conn,Row,Rows,ColumnType
 	$Q touch $@
-conntrackfixer/mocks/mock_conntrackfixer.go: ; $(info $(M) generate mocks for conntrack-fixer…)
-	$Q if [ `$(GO) env GOOS` = "linux" ]; then \
-	   $(MOCKGEN) -package mocks -build_constraint "!release" -destination $@ \
-		akvorado/conntrackfixer ConntrackConn,DockerClient ; \
-		touch $@ ; \
-	fi
 
 inlet/flow/input/udp/reuseport_%.o: inlet/flow/input/udp/reuseport_kern.c inlet/flow/input/udp/vmlinux.h ; $(info $(M) generate eBPF program for input/udp ($*)…)
 	$Q ! $(CLANG) -print-targets 2> /dev/null | grep -qF $* || \

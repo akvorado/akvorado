@@ -10,12 +10,15 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 💥 *docker*: remove conntrack-fixer service (this requires Docker Engine v23 or more recent)
+
 ## 2.0.4 - 2025-12-04
 
 The previous release introduced a performance regression for users with many
 flows from a single exporter. This is fixed in this release.
 
-- 💥 *docker*: bump minimum Docker API version supported to 1.44 (Docker Engine v25)
 - 🩹 *docker*: restart geoip container on boot
 - 🌱 *inlet*: make load-balancing algorithm for Kafka partitions configurable
   (`random` or `by-exporter`) and revert back to `random` by default (like before 2.0.3)

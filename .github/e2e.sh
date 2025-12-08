@@ -16,7 +16,7 @@ EOF
         # For each service, collect coverage files
         [ -n "$AKVORADO_COVERAGE_DIRECTORY" ]
         mkdir -p ${AKVORADO_COVERAGE_DIRECTORY}
-        for service in orchestrator inlet outlet console exporter-1 conntrack-fixer; do
+        for service in orchestrator inlet outlet console exporter-1; do
             cat >> docker/docker-compose-local.yml <<EOF
   akvorado-${service}:
     volumes:
