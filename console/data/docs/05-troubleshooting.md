@@ -45,7 +45,6 @@ Check that all components are running and healthy:
 ```console
 $ docker compose ps --format "table {{.Service}}\t{{.Status}}"
 SERVICE                    STATUS
-akvorado-conntrack-fixer   Up 28 minutes
 akvorado-console           Up 27 minutes (healthy)
 akvorado-inlet             Up 27 minutes (healthy)
 akvorado-orchestrator      Up 27 minutes (healthy)
@@ -116,6 +115,19 @@ address of the exporter and the port with the correct port (2055 for NetFlow,
 3 packets captured
 3 packets received by filter
 0 packets dropped by kernel
+```
+
+If you receive flows but they do not reach Akvorado, check you are running
+Docker Engine v23 or more recent:
+
+```console
+$ docker version
+[...]
+Server:
+ Engine:
+  Version:          27.5.1+dfsg4
+  API version:      1.47 (minimum version 1.24)
+[...]
 ```
 
 Next, check if flows are sent to Kafka correctly:
