@@ -3,7 +3,7 @@
 *Akvorado* is written in Go. It provides its 4 components in a single binary or
 Docker image. It also requires [Kafka](https://kafka.apache.org/quickstart)
 (1.0+) and [ClickHouse](https://clickhouse.com/docs/en/getting-started/install/)
-(22.4+), which must be installed separately.
+(22.4+).
 
 ## Docker image
 
@@ -18,6 +18,8 @@ Check the `docker/docker-compose.yml` file for an example of how to deploy
 *Akvorado* using containers. If you want to use `docker compose`, see
 the [quick start procedure](00-intro.md#quick-start). This documentation assumes
 you are using the `docker compose` setup.
+
+The minimum supported version for Docker Engine is v25 (Docker API 1.44).
 
 If you want to compile the Docker image yourself, use `make docker`.
 

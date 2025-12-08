@@ -15,6 +15,7 @@ identified with a specific icon:
 The previous release introduced a performance regression for users with many
 flows from a single exporter. This is fixed in this release.
 
+- 💥 *docker*: bump minimum Docker API version supported to 1.44 (Docker Engine v25)
 - 🩹 *docker*: restart geoip container on boot
 - 🌱 *inlet*: make load-balancing algorithm for Kafka partitions configurable
   (`random` or `by-exporter`) and revert back to `random` by default (like before 2.0.3)
@@ -33,7 +34,7 @@ This release contains some important fixes to prevent flow corruption under heav
 - 🩹 *outlet*: prevent discarding flows on shutdown
 - 🩹 *outlet*: enhance scaling up and down workers to avoid hysteresis
 - 🩹 *outlet*: accept flows where interface names or descriptions are missing
-- 🩹 *docker*: update Traefik to 3.6.1 (for compatibility with Docker Engine 29)
+- 🩹 *docker*: update Traefik to 3.6.1 (for compatibility with Docker Engine v29)
 - 🌱 *common*: enable block and mutex profiling
 - 🌱 *outlet*: save IPFIX decoder state to a file to prevent discarding flows on start
 - 🌱 *config*: rename `verify` to `skip-verify` in TLS configurations for
