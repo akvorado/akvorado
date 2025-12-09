@@ -95,10 +95,13 @@ func (nd *Decoder) decode(packet sflow.Packet, bf *schema.FlowMessage, finalize 
 			switch recordData := record.Data.(type) {
 			case sflow.SampledHeader:
 				// Only process this header if:
-				//  - we don't have a sampled IPv4 header nor a sampled IPv4 header, or
-				//  - we need L2 data and we don't have sampled ethernet header or we don't have extended switch record
+				//  - we're missing both sampled IPv4 and IPv6 headers, or
+				//  - we need L2 data and are missing either sampled ethernet or extended switch, or
 				//  - we need L3/L4 data
-				if !hasSampledIPv4 && !hasSampledIPv6 || !nd.d.Schema.IsDisabled(schema.ColumnGroupL2) && (!hasSampledEthernet || !hasExtendedSwitch) || !nd.d.Schema.IsDisabled(schema.ColumnGroupL3L4) {
+				needsIPData := !(hasSampledIPv4 || hasSampledIPv6)
+				needsL2Data := !(nd.d.Schema.IsDisabled(schema.ColumnGroupL2) || (hasSampledEthernet && hasExtendedSwitch))
+				needsL3L4Data := !nd.d.Schema.IsDisabled(schema.ColumnGroupL3L4)
+				if needsIPData || needsL2Data || needsL3L4Data {
 					if l := nd.parseSampledHeader(bf, &recordData); l > 0 {
 						l3length = l
 					}
