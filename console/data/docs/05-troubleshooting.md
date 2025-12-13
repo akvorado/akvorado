@@ -241,8 +241,9 @@ $ curl -s http://127.0.0.1:8080/api/v0/outlet/metrics | grep 'akvorado_outlet_co
 Here is a list of errors that you may find:
 
 - `metadata missing` means that interface information is missing. The most
-  likely cause is that the exporter does not accept SNMP requests or the SNMP
-  community is configured incorrectly.
+  likely cause is that the exporter does not accept SNMP requests, the SNMP
+  community is configured incorrectly, or the hostname of the exporter is not
+  configured.
 - `sampling rate missing` means that the sampling rate information is not present. This
   is normal when Akvorado starts, but it should not keep increasing. With NetFlow,
   the sampling rate is sent in an options data packet. Make sure that your exporter
