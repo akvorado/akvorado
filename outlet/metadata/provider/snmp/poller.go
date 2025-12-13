@@ -72,9 +72,10 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 	if err := g.Connect(); err != nil {
 		p.metrics.errors.WithLabelValues(exporterStr, "connect").Inc()
 		p.errLogger.Err(err).Str("exporter", exporterStr).Msg("unable to connect")
+		return provider.Answer{}, err
 	}
 	requests := []string{
-		"1.3.6.1.2.1.1.5.0",
+		"1.3.6.1.2.1.1.5.0",                                // sysName
 		fmt.Sprintf("1.3.6.1.2.1.2.2.1.2.%d", ifIndex),     // ifDescr
 		fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.1.%d", ifIndex),  // ifName
 		fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.18.%d", ifIndex), // ifAlias
@@ -92,7 +93,7 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 	}
 
 	for idx, community := range communities {
-		// Fatal error if last community and no success
+		// Fatal error if last community and no success.
 		isLast := idx == len(communities)-1
 		canError := isLast && !success
 
@@ -101,33 +102,38 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 		if errors.Is(err, context.Canceled) {
 			return provider.Answer{}, err
 		}
-		if err != nil && canError {
-			return provider.Answer{}, logError(err)
-		}
 		if err != nil {
+			if canError {
+				return provider.Answer{}, logError(err)
+			}
 			continue
 		}
-		if currentResult.Error != gosnmp.NoError && currentResult.ErrorIndex == 0 && canError {
+		if currentResult.Error != gosnmp.NoError && currentResult.ErrorIndex == 0 {
 			// There is some error affecting the whole request
-			return provider.Answer{}, logError(fmt.Errorf("SNMP error %s(%d)", currentResult.Error, currentResult.Error))
+			if canError {
+				return provider.Answer{},
+					logError(fmt.Errorf("SNMP error %s(%d)", currentResult.Error, currentResult.Error))
+			}
+			continue
+		}
+		if len(currentResult.Variables) != len(requests) {
+			if canError {
+				return provider.Answer{}, logError(errors.New("SNMP mismatch on variable lengths"))
+			}
+			continue
 		}
 		success = true
 		if results == nil {
 			results = slices.Clone(currentResult.Variables)
 		} else {
-			if len(results) != len(currentResult.Variables) {
-				logError(errors.New("SNMP mismatch on variable lengths"))
-			}
 			for idx := range results {
 				switch results[idx].Type {
 				case gosnmp.NoSuchInstance, gosnmp.NoSuchObject, gosnmp.Null:
+					// Current result is incomplete, use this value
 					results[idx] = currentResult.Variables[idx]
 				}
 			}
 		}
-	}
-	if len(results) != len(requests) {
-		logError(errors.New("SNMP mismatch on variable lengths"))
 	}
 	p.metrics.times.WithLabelValues(exporterStr).Observe(time.Since(start).Seconds())
 
