@@ -601,7 +601,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 			},
 		},
 		{
-			Name:          "flow with metadata cache miss",
+			Name:          "flow with metadata missing",
 			Configuration: helpers.M{},
 			InputFlow: func() *schema.FlowMessage {
 				return &schema.FlowMessage{
@@ -613,7 +613,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 			},
 			OutputFlow: nil,
 			ExpectedMetrics: map[string]string{
-				`flows_errors_total{error="metadata cache miss",exporter="192.0.2.142"}`: "1",
+				`flows_errors_total{error="metadata missing",exporter="192.0.2.142"}`: "1",
 			},
 		},
 	}
