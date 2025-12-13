@@ -13,6 +13,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 💥 *docker*: remove conntrack-fixer service (this requires Docker Engine v23 or more recent)
+- 🌱 *outlet*: improve error message when exporter name is empty when using SNMP
 
 ## 2.0.4 - 2025-12-04
 

@@ -165,6 +165,10 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 	if !ok {
 		return provider.Answer{}, errors.New("unable to get sysName")
 	}
+	if sysNameVal == "" {
+		p.metrics.errors.WithLabelValues(exporterStr, "system name empty").Inc()
+		return provider.Answer{}, errors.New("sysName empty")
+	}
 
 	var (
 		name, description string
