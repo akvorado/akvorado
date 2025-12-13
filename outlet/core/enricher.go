@@ -81,7 +81,7 @@ func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) bool {
 		c.metrics.flowsErrors.WithLabelValues(exporterStr, "input and output interfaces missing").Inc()
 		skip = true
 	} else if flowExporterName == "" {
-		c.metrics.flowsErrors.WithLabelValues(exporterStr, "metadata cache miss").Inc()
+		c.metrics.flowsErrors.WithLabelValues(exporterStr, "metadata missing").Inc()
 		skip = true
 	}
 
