@@ -62,7 +62,7 @@ func TestGinRouter(t *testing.T) {
 	h := httpserver.NewMock(t, r)
 
 	h.GinRouter.GET("/api/v0/test", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
+		c.JSON(http.StatusOK, helpers.M{
 			"message": "ping",
 		})
 	})
@@ -74,7 +74,7 @@ func TestGinRouter(t *testing.T) {
 			FirstLines:  []string{`{"message":"ping"}`},
 		}, {
 			URL:        "/api/v0/test",
-			JSONOutput: gin.H{"message": "ping"},
+			JSONOutput: helpers.M{"message": "ping"},
 		},
 	})
 }

@@ -34,7 +34,7 @@ type filterValidateHandlerOutput struct {
 func (c *Component) filterValidateHandlerFunc(gc *gin.Context) {
 	var input filterValidateHandlerInput
 	if err := gc.ShouldBindJSON(&input); err != nil {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
+		gc.JSON(http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 
@@ -80,7 +80,7 @@ func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
 	input := filterCompleteHandlerInput{Limit: 20}
 	if err := gc.ShouldBindJSON(&input); err != nil {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
+		gc.JSON(http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 
@@ -468,10 +468,10 @@ func (c *Component) filterSavedListHandlerFunc(gc *gin.Context) {
 	filters, err := c.d.Database.ListSavedFilters(ctx, user)
 	if err != nil {
 		c.r.Err(err).Msg("unable to list filters")
-		gc.JSON(http.StatusInternalServerError, gin.H{"message": "unable to list filters"})
+		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "unable to list filters"})
 		return
 	}
-	gc.JSON(http.StatusOK, gin.H{"filters": filters})
+	gc.JSON(http.StatusOK, helpers.M{"filters": filters})
 }
 
 func (c *Component) filterSavedDeleteHandlerFunc(gc *gin.Context) {
@@ -479,7 +479,7 @@ func (c *Component) filterSavedDeleteHandlerFunc(gc *gin.Context) {
 	user := gc.MustGet("user").(authentication.UserInformation).Login
 	id, err := strconv.ParseUint(gc.Param("id"), 10, 64)
 	if err != nil {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": "bad ID format"})
+		gc.JSON(http.StatusBadRequest, helpers.M{"message": "bad ID format"})
 		return
 	}
 	if err := c.d.Database.DeleteSavedFilter(ctx, database.SavedFilter{
@@ -487,7 +487,7 @@ func (c *Component) filterSavedDeleteHandlerFunc(gc *gin.Context) {
 		User: user,
 	}); err != nil {
 		// Assume this is because it is not found
-		gc.JSON(http.StatusNotFound, gin.H{"message": "filter not found"})
+		gc.JSON(http.StatusNotFound, helpers.M{"message": "filter not found"})
 		return
 	}
 	gc.JSON(http.StatusNoContent, nil)
@@ -498,13 +498,13 @@ func (c *Component) filterSavedAddHandlerFunc(gc *gin.Context) {
 	user := gc.MustGet("user").(authentication.UserInformation).Login
 	var filter database.SavedFilter
 	if err := gc.ShouldBindJSON(&filter); err != nil {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
+		gc.JSON(http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 	filter.User = user
 	if err := c.d.Database.CreateSavedFilter(ctx, filter); err != nil {
 		c.r.Err(err).Msg("cannot create saved filter")
-		gc.JSON(http.StatusInternalServerError, gin.H{"message": "cannot create new filter"})
+		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "cannot create new filter"})
 		return
 	}
 	gc.JSON(http.StatusNoContent, nil)

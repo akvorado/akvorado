@@ -6,8 +6,6 @@ package console
 import (
 	"testing"
 
-	"github.com/gin-gonic/gin"
-
 	"akvorado/common/helpers"
 )
 
@@ -17,9 +15,9 @@ func TestConfigHandler(t *testing.T) {
 	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			URL: "/api/v0/console/configuration",
-			JSONOutput: gin.H{
+			JSONOutput: helpers.M{
 				"version": "dev",
-				"defaultVisualizeOptions": gin.H{
+				"defaultVisualizeOptions": helpers.M{
 					"graphType":      "stacked",
 					"start":          "6 hours ago",
 					"end":            "now",

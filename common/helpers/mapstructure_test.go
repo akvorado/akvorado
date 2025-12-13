@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/go-viper/mapstructure/v2"
 )
 
@@ -46,7 +45,7 @@ func TestStringToSliceHookFunc(t *testing.T) {
 		{
 			Initial: func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return M{
 					"a": "blip,blop",
 					"b": "1,2,3,4",
 				}
@@ -74,7 +73,7 @@ func TestProtectedDecodeHook(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewDecoder() error:\n%+v", err)
 	}
-	err = decoder.Decode(gin.H{"A": "hello", "B": "bye"})
+	err = decoder.Decode(M{"A": "hello", "B": "bye"})
 	if err == nil {
 		t.Fatal("Decode() did not error")
 	} else {
@@ -108,8 +107,8 @@ func TestDefaultValuesConfig(t *testing.T) {
 		{
 			Initial: func() any { return OuterConfiguration{} },
 			Configuration: func() any {
-				return gin.H{
-					"dd": []gin.H{
+				return M{
+					"dd": []M{
 						{
 							"aa": "hello1",
 							"bb": "hello2",
@@ -152,7 +151,7 @@ func TestRenameConfig(t *testing.T) {
 			Description: "no rename needed",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return M{
 					"unchanged-label": "hello",
 					"new-label":       "bye",
 				}
@@ -165,7 +164,7 @@ func TestRenameConfig(t *testing.T) {
 			Description: "rename needed",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return M{
 					"unchanged-label": "hello",
 					"old-label":       "bye",
 				}
@@ -178,7 +177,7 @@ func TestRenameConfig(t *testing.T) {
 			Description: "conflicts",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return M{
 					"unchanged-label": "hello",
 					"old-label":       "bye",
 					"new-label":       "whatt?",
@@ -225,7 +224,7 @@ func TestParametrizedConfig(t *testing.T) {
 				Description: "type1",
 				Initial:     func() any { return OuterConfiguration{} },
 				Configuration: func() any {
-					return gin.H{
+					return M{
 						"type": "type1",
 						"aa":   "a1",
 						"bb":   "b1",
@@ -245,7 +244,7 @@ func TestParametrizedConfig(t *testing.T) {
 				Description: "type2",
 				Initial:     func() any { return OuterConfiguration{} },
 				Configuration: func() any {
-					return gin.H{
+					return M{
 						"type": "type2",
 						"aa":   "a2",
 						"bb":   "b2",
@@ -265,7 +264,7 @@ func TestParametrizedConfig(t *testing.T) {
 				Description: "unknown type",
 				Initial:     func() any { return OuterConfiguration{} },
 				Configuration: func() any {
-					return gin.H{
+					return M{
 						"type": "type3",
 						"aa":   "a2",
 						"bb":   "b2",
@@ -286,7 +285,7 @@ func TestParametrizedConfig(t *testing.T) {
 				DD: "d1",
 			},
 		}
-		expected1 := gin.H{
+		expected1 := M{
 			"type": "type1",
 			"aa":   "a1",
 			"bb":   "b1",
@@ -309,7 +308,7 @@ func TestParametrizedConfig(t *testing.T) {
 				EE: "e2",
 			},
 		}
-		expected2 := gin.H{
+		expected2 := M{
 			"type": "type2",
 			"aa":   "a2",
 			"bb":   "b2",
@@ -347,7 +346,7 @@ func TestDeprecatedFields(t *testing.T) {
 		{
 			Initial: func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return M{
 					"a": "hello",
 					"b": "bye",
 					"c": "nooo",
@@ -361,7 +360,7 @@ func TestDeprecatedFields(t *testing.T) {
 		}, {
 			Initial: func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return M{
 					"a": "hello",
 					"b": "bye",
 					"e": "nooo",
@@ -386,7 +385,7 @@ func TestDeprecatedFieldsInSquashedStructure(t *testing.T) {
 		{
 			Initial: func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return M{
 					"a": "hello",
 					"b": "bye",
 					"c": "nooo",
@@ -404,7 +403,7 @@ func TestDeprecatedFieldsInSquashedStructure(t *testing.T) {
 		}, {
 			Initial: func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return M{
 					"a": "hello",
 					"b": "bye",
 					"f": "nooo",

@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
-
 	"akvorado/common/helpers"
 )
 
@@ -24,7 +22,7 @@ func TestAuthenticationParameterMigration(t *testing.T) {
 			Description: "minimal config",
 			Initial:     func() any { return AuthenticationParameter{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"username": "admin",
 					"password": "secret",
 				}
@@ -40,7 +38,7 @@ func TestAuthenticationParameterMigration(t *testing.T) {
 			Description: "old insecure=true migrates to TLS.Enable=false",
 			Initial:     func() any { return AuthenticationParameter{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"username": "admin",
 					"password": "secret",
 					"insecure": true,
@@ -57,7 +55,7 @@ func TestAuthenticationParameterMigration(t *testing.T) {
 			Description: "old insecure=false migrates to TLS.Enable=true",
 			Initial:     func() any { return AuthenticationParameter{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"username": "admin",
 					"password": "secret",
 					"insecure": false,
@@ -74,7 +72,7 @@ func TestAuthenticationParameterMigration(t *testing.T) {
 			Description: "old skip-verify migrates to TLS.SkipVerify",
 			Initial:     func() any { return AuthenticationParameter{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"username":    "admin",
 					"password":    "secret",
 					"skip-verify": true,
@@ -92,7 +90,7 @@ func TestAuthenticationParameterMigration(t *testing.T) {
 			Description: "old TLS certificate fields migrate to TLS config",
 			Initial:     func() any { return AuthenticationParameter{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"username": "admin",
 					"password": "secret",
 					"tls-ca":   "/path/to/ca.crt",
@@ -114,10 +112,10 @@ func TestAuthenticationParameterMigration(t *testing.T) {
 			Description: "new TLS config with default enable=true",
 			Initial:     func() any { return AuthenticationParameter{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"username": "admin",
 					"password": "secret",
-					"tls": gin.H{
+					"tls": helpers.M{
 						"skip-verify": true,
 					},
 				}
@@ -134,10 +132,10 @@ func TestAuthenticationParameterMigration(t *testing.T) {
 			Description: "new TLS config with explicit enable=false",
 			Initial:     func() any { return AuthenticationParameter{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"username": "admin",
 					"password": "secret",
-					"tls": gin.H{
+					"tls": helpers.M{
 						"enable": false,
 					},
 				}
@@ -153,11 +151,11 @@ func TestAuthenticationParameterMigration(t *testing.T) {
 			Description: "mixing old and new TLS config causes error",
 			Initial:     func() any { return AuthenticationParameter{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"username": "admin",
 					"password": "secret",
 					"insecure": true,
-					"tls": gin.H{
+					"tls": helpers.M{
 						"enable": false,
 					},
 				}
@@ -178,7 +176,7 @@ func TestDefaults(t *testing.T) {
 		}, {
 			Description:    "empty",
 			Initial:        func() any { return Configuration{} },
-			Configuration:  func() any { return gin.H{} },
+			Configuration:  func() any { return helpers.M{} },
 			Expected:       Configuration{},
 			SkipValidation: true,
 		}, {
@@ -187,14 +185,14 @@ func TestDefaults(t *testing.T) {
 				return Configuration{Timeout: time.Second, MinimalRefreshInterval: time.Minute}
 			},
 			Configuration: func() any {
-				return gin.H{
-					"models": []gin.H{
+				return helpers.M{
+					"models": []helpers.M{
 						{
 							"name":                 "custom",
 							"if-index-paths":       "/some/path",
 							"if-description-paths": "/some/other/path",
 							"if-name-paths":        "/something",
-							"if-speed-paths": []gin.H{
+							"if-speed-paths": []helpers.M{
 								{"path": "/path1", "unit": "mbps"},
 								{"path": "/path2", "unit": "ethernet"},
 							},
@@ -226,7 +224,7 @@ func TestDefaults(t *testing.T) {
 				return Configuration{Timeout: time.Second, MinimalRefreshInterval: time.Minute}
 			},
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"models": []string{"defaults"},
 				}
 			},
@@ -241,15 +239,15 @@ func TestDefaults(t *testing.T) {
 				return Configuration{Timeout: time.Second, MinimalRefreshInterval: time.Minute}
 			},
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"models": []any{
 						"defaults",
-						gin.H{
+						helpers.M{
 							"name":                 "custom",
 							"if-index-paths":       "/some/path",
 							"if-description-paths": "/some/other/path",
 							"if-name-paths":        "/something",
-							"if-speed-paths": []gin.H{
+							"if-speed-paths": []helpers.M{
 								{"path": "/path1", "unit": "mbps"},
 								{"path": "/path2", "unit": "ethernet"},
 							},
@@ -279,14 +277,14 @@ func TestDefaults(t *testing.T) {
 				return Configuration{Timeout: time.Second, MinimalRefreshInterval: time.Minute}
 			},
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"models": []any{
-						gin.H{
+						helpers.M{
 							"name":                 "custom",
 							"if-index-paths":       "/some/path",
 							"if-description-paths": "/some/other/path",
 							"if-name-paths":        "/something",
-							"if-speed-paths": []gin.H{
+							"if-speed-paths": []helpers.M{
 								{"path": "/path1", "unit": "mbps"},
 								{"path": "/path2", "unit": "ethernet"},
 							},
@@ -319,26 +317,26 @@ func TestDefaults(t *testing.T) {
 				return Configuration{Timeout: time.Second, MinimalRefreshInterval: time.Minute}
 			},
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"models": []any{
-						gin.H{
+						helpers.M{
 							"name":                 "custom1",
 							"if-index-paths":       "/some/path",
 							"if-description-paths": "/some/other/path",
 							"if-name-paths":        "/something",
-							"if-speed-paths": []gin.H{
+							"if-speed-paths": []helpers.M{
 								{"path": "/path1", "unit": "mbps"},
 								{"path": "/path2", "unit": "ethernet"},
 							},
 							"system-name-paths": "/another/path",
 						},
 						"defaults",
-						gin.H{
+						helpers.M{
 							"name":                 "custom2",
 							"if-index-paths":       "/some/path",
 							"if-description-paths": "/some/other/path",
 							"if-name-paths":        "/something",
-							"if-speed-paths": []gin.H{
+							"if-speed-paths": []helpers.M{
 								{"path": "/path1", "unit": "mbps"},
 								{"path": "/path2", "unit": "ethernet"},
 							},

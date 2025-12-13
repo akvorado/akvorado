@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/gaissmai/bart"
-	"github.com/gin-gonic/gin"
 	"github.com/go-viper/mapstructure/v2"
 )
 
@@ -179,7 +178,7 @@ func SubnetMapUnmarshallerHook[V any]() mapstructure.DecodeHookFunc {
 		if from.Type() == reflect.PointerTo(reflect.TypeFor[SubnetMap[V]]()) {
 			return from.Interface(), nil
 		}
-		output := gin.H{}
+		output := M{}
 		var zero V
 		if LooksLikeSubnetMap(from) {
 			// First case, we have a map

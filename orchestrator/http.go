@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"akvorado/common/helpers"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,7 +17,7 @@ func (c *Component) configurationHandlerFunc(gc *gin.Context) {
 	indexStr := gc.Param("index")
 	index, err := strconv.Atoi(indexStr)
 	if indexStr != "" && err != nil {
-		gc.JSON(http.StatusNotFound, gin.H{"message": "Invalid configuration index."})
+		gc.JSON(http.StatusNotFound, helpers.M{"message": "Invalid configuration index."})
 		return
 	}
 
@@ -36,7 +38,7 @@ func (c *Component) configurationHandlerFunc(gc *gin.Context) {
 	c.serviceLock.Unlock()
 
 	if !ok {
-		gc.JSON(http.StatusNotFound, gin.H{"message": "Configuration not found."})
+		gc.JSON(http.StatusNotFound, helpers.M{"message": "Configuration not found."})
 		return
 	}
 	gc.YAML(http.StatusOK, configuration)

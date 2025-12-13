@@ -16,7 +16,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/go-viper/mapstructure/v2"
 
@@ -37,7 +36,7 @@ type ConfigRelatedOptions struct {
 // variables into the provided configuration. It returns the paths to watch if
 // we want to detect configuration changes.
 func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config any) ([]string, error) {
-	var rawConfig gin.H
+	var rawConfig helpers.M
 	var paths []string
 	if cfgFile := c.Path; cfgFile != "" {
 		if strings.HasPrefix(cfgFile, "http://") || strings.HasPrefix(cfgFile, "https://") {
@@ -126,7 +125,7 @@ func (c ConfigRelatedOptions) Parse(out io.Writer, component string, config any)
 				newRawConfig[index] = rawConfig
 				rawConfig = newRawConfig
 			} else {
-				rawConfig = gin.H{
+				rawConfig = helpers.M{
 					kk[i]: rawConfig,
 				}
 			}

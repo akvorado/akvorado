@@ -90,27 +90,27 @@ func (c *Component) graphSankeyHandlerFunc(gc *gin.Context) {
 	ctx := c.t.Context(gc.Request.Context())
 	input := graphSankeyHandlerInput{graphCommonHandlerInput: graphCommonHandlerInput{schema: c.d.Schema}}
 	if err := gc.ShouldBindJSON(&input); err != nil {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
+		gc.JSON(http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 	if err := query.Columns(input.Dimensions).Validate(input.schema); err != nil {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
+		gc.JSON(http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 	if err := input.Filter.Validate(input.schema); err != nil {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
+		gc.JSON(http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 	if input.Limit > c.config.DimensionsLimit {
 		gc.JSON(http.StatusBadRequest,
-			gin.H{"message": fmt.Sprintf("Limit is set beyond maximum value (%d)",
+			helpers.M{"message": fmt.Sprintf("Limit is set beyond maximum value (%d)",
 				c.config.DimensionsLimit)})
 		return
 	}
 
 	queries, err := input.toSQL()
 	if err != nil {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
+		gc.JSON(http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 
@@ -123,7 +123,7 @@ func (c *Component) graphSankeyHandlerFunc(gc *gin.Context) {
 	}{}
 	if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
 		c.r.Err(err).Str("query", sqlQuery).Msg("unable to query database")
-		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to query database."})
+		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})
 		return
 	}
 

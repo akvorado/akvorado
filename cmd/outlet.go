@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/gin-gonic/gin"
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/spf13/cobra"
 
@@ -216,8 +215,8 @@ func OutletConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 				}
 
 				// Build the metadata configuration
-				providerValue := gin.H{}
-				metadataValue := gin.H{}
+				providerValue := helpers.M{}
+				metadataValue := helpers.M{}
 				// Dispatch values from snmp key into metadata
 				snmpMap := helpers.ElemOrIdentity(from.MapIndex(*snmpKey))
 				snmpKeys := snmpMap.MapKeys()
@@ -271,8 +270,8 @@ func OutletConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 				}
 
 				// Build the routing configuration
-				providerValue := gin.H{}
-				routingValue := gin.H{}
+				providerValue := helpers.M{}
+				routingValue := helpers.M{}
 				// Dispatch values from bmp key into routing
 				bmpMap := helpers.ElemOrIdentity(from.MapIndex(*bmpKey))
 				bmpKeys := bmpMap.MapKeys()

@@ -7,10 +7,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	gormlogger "gorm.io/gorm/logger"
 	"gorm.io/gorm/utils"
 
+	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 )
 
@@ -37,7 +37,7 @@ func (l *logger) Error(_ context.Context, s string, args ...any) {
 func (l *logger) Trace(_ context.Context, begin time.Time, fc func() (string, int64), err error) {
 	elapsed := time.Since(begin)
 	sql, _ := fc()
-	fields := gin.H{
+	fields := helpers.M{
 		"sql":      sql,
 		"duration": elapsed,
 		"source":   utils.FileWithLineNum(),

@@ -7,8 +7,6 @@ import (
 	"testing"
 
 	"akvorado/common/helpers"
-
-	"github.com/gin-gonic/gin"
 )
 
 func TestDefaultConfiguration(t *testing.T) {
@@ -28,14 +26,14 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 		}, {
 			Description:    "empty",
 			Initial:        func() any { return Configuration{} },
-			Configuration:  func() any { return gin.H{} },
+			Configuration:  func() any { return helpers.M{} },
 			Expected:       Configuration{},
 			SkipValidation: true,
 		}, {
 			Description: "ignore-asn-from-flow = false",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"ignore-asn-from-flow": false,
 				}
 			},
@@ -45,7 +43,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "ignore-asn-from-flow = true",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"ignore-asn-from-flow": true,
 				}
 			},
@@ -57,7 +55,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "ignore-asn-from-flow and asn-providers",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"ignore-asn-from-flow": true,
 					"asn-providers":        []string{"routing", "flow"},
 				}
@@ -68,7 +66,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "asn-providers only",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"asn-providers": []string{"flow-except-private", "routing", "flow"},
 				}
 			},
@@ -80,7 +78,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "net-providers with bmp",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"net-providers": []string{"flow", "bmp"},
 				}
 			},
@@ -92,7 +90,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "asn-providers with bmp",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"asn-providers": []string{"flow", "bmp", "bmp-except-private"},
 				}
 			},
@@ -104,7 +102,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "net-providers",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"net-providers": []string{"flow", "routing"},
 				}
 			},

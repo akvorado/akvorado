@@ -12,7 +12,6 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 
-	"github.com/gin-gonic/gin"
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"github.com/twmb/franz-go/pkg/sasl"
@@ -153,7 +152,7 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 		if saslKey != nil {
 			sasl = helpers.ElemOrIdentity(from.MapIndex(*saslKey))
 		} else {
-			sasl = reflect.ValueOf(gin.H{})
+			sasl = reflect.ValueOf(helpers.M{})
 			from.SetMapIndex(reflect.ValueOf("sasl"), sasl)
 		}
 		if tlsKey != nil {

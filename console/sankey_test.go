@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"go.uber.org/mock/gomock"
 
 	"akvorado/common/helpers"
@@ -273,7 +272,7 @@ func TestSankeyHandler(t *testing.T) {
 	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			URL: "/api/v0/console/graph/sankey",
-			JSONInput: gin.H{
+			JSONInput: helpers.M{
 				"start":      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				"end":        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				"dimensions": []string{"SrcAS", "InIfProvider", "ExporterName"},
@@ -281,7 +280,7 @@ func TestSankeyHandler(t *testing.T) {
 				"filter":     "DstCountry = 'FR'",
 				"units":      "l3bps",
 			},
-			JSONOutput: gin.H{
+			JSONOutput: helpers.M{
 				// Raw data
 				"rows": [][]string{
 					{"AS100", "Other", "router1"},
@@ -343,7 +342,7 @@ func TestSankeyHandler(t *testing.T) {
 					"InIfProvider: provider3",
 					"ExporterName: router2",
 				},
-				"links": []gin.H{
+				"links": []helpers.M{
 					{
 						"source": "InIfProvider: provider1", "target": "ExporterName: Other",
 						"xps": 9472 + 7234 + 6006 + 5988,

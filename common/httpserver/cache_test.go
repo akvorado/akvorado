@@ -27,7 +27,7 @@ func TestCacheByRequestPath(t *testing.T) {
 		h.CacheByRequestPath(time.Minute),
 		func(c *gin.Context) {
 			count++
-			c.JSON(http.StatusOK, gin.H{
+			c.JSON(http.StatusOK, helpers.M{
 				"message": "ping",
 				"count":   count,
 			})
@@ -38,15 +38,15 @@ func TestCacheByRequestPath(t *testing.T) {
 		{
 			Description: "not cached",
 			URL:         "/api/v0/test",
-			JSONOutput:  gin.H{"message": "ping", "count": 1},
+			JSONOutput:  helpers.M{"message": "ping", "count": 1},
 		}, {
 			Description: "cached",
 			URL:         "/api/v0/test",
-			JSONOutput:  gin.H{"message": "ping", "count": 1},
+			JSONOutput:  helpers.M{"message": "ping", "count": 1},
 		}, {
 			Description: "cached twice",
 			URL:         "/api/v0/test",
-			JSONOutput:  gin.H{"message": "ping", "count": 1},
+			JSONOutput:  helpers.M{"message": "ping", "count": 1},
 		},
 	})
 
@@ -74,7 +74,7 @@ func TestCacheByRequestBody(t *testing.T) {
 			if err != nil {
 				t.Fatalf("GetRawData() error:\n%+v", err)
 			}
-			c.JSON(http.StatusOK, gin.H{
+			c.JSON(http.StatusOK, helpers.M{
 				"message": "ping",
 				"count":   count,
 				"body":    string(data),
@@ -86,23 +86,23 @@ func TestCacheByRequestBody(t *testing.T) {
 		{
 			Description: "not cached",
 			URL:         "/api/v0/test",
-			JSONInput:   gin.H{"hop": 1},
-			JSONOutput:  gin.H{"message": "ping", "count": 1, "body": `{"hop":1}` + "\n"},
+			JSONInput:   helpers.M{"hop": 1},
+			JSONOutput:  helpers.M{"message": "ping", "count": 1, "body": `{"hop":1}` + "\n"},
 		}, {
 			Description: "cached",
 			URL:         "/api/v0/test",
-			JSONInput:   gin.H{"hop": 1},
-			JSONOutput:  gin.H{"message": "ping", "count": 1, "body": `{"hop":1}` + "\n"},
+			JSONInput:   helpers.M{"hop": 1},
+			JSONOutput:  helpers.M{"message": "ping", "count": 1, "body": `{"hop":1}` + "\n"},
 		}, {
 			Description: "different body",
 			URL:         "/api/v0/test",
-			JSONInput:   gin.H{"hop": 2},
-			JSONOutput:  gin.H{"message": "ping", "count": 2, "body": `{"hop":2}` + "\n"},
+			JSONInput:   helpers.M{"hop": 2},
+			JSONOutput:  helpers.M{"message": "ping", "count": 2, "body": `{"hop":2}` + "\n"},
 		}, {
 			Description: "different body cached",
 			URL:         "/api/v0/test",
-			JSONInput:   gin.H{"hop": 2},
-			JSONOutput:  gin.H{"message": "ping", "count": 2, "body": `{"hop":2}` + "\n"},
+			JSONInput:   helpers.M{"hop": 2},
+			JSONOutput:  helpers.M{"message": "ping", "count": 2, "body": `{"hop":2}` + "\n"},
 		},
 	})
 
@@ -150,7 +150,7 @@ func TestRedis(t *testing.T) {
 		h.CacheByRequestPath(time.Minute),
 		func(c *gin.Context) {
 			count++
-			c.JSON(http.StatusOK, gin.H{
+			c.JSON(http.StatusOK, helpers.M{
 				"message": "ping",
 				"count":   count,
 			})
@@ -161,11 +161,11 @@ func TestRedis(t *testing.T) {
 		{
 			Description: "not cached",
 			URL:         "/api/v0/test",
-			JSONOutput:  gin.H{"message": "ping", "count": 1},
+			JSONOutput:  helpers.M{"message": "ping", "count": 1},
 		}, {
 			Description: "cached",
 			URL:         "/api/v0/test",
-			JSONOutput:  gin.H{"message": "ping", "count": 1},
+			JSONOutput:  helpers.M{"message": "ping", "count": 1},
 		},
 	})
 

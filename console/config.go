@@ -117,7 +117,7 @@ func (c *Component) configHandlerFunc(gc *gin.Context) {
 			truncatable = append(truncatable, column.Name)
 		}
 	}
-	gc.JSON(http.StatusOK, gin.H{
+	gc.JSON(http.StatusOK, helpers.M{
 		"version":                 helpers.AkvoradoVersion,
 		"defaultVisualizeOptions": c.config.DefaultVisualizeOptions,
 		"dimensionsLimit":         c.config.DimensionsLimit,

@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2/lib/driver"
-	"github.com/gin-gonic/gin"
 	"go.uber.org/mock/gomock"
 
 	"akvorado/common/clickhousedb/mocks"
@@ -88,7 +87,7 @@ LIMIT 1`).
 	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			URL: "/api/v0/console/widget/flow-last",
-			JSONOutput: gin.H{
+			JSONOutput: helpers.M{
 				"InIfBoundary": "external",
 				"InIfName":     "Hu0/0/1/10",
 				"InIfSpeed":    100000,
@@ -115,7 +114,7 @@ func TestFlowRate(t *testing.T) {
 	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			URL: "/api/v0/console/widget/flow-rate",
-			JSONOutput: gin.H{
+			JSONOutput: helpers.M{
 				"period": "second",
 				"rate":   100.1,
 			},
@@ -142,7 +141,7 @@ func TestWidgetExporters(t *testing.T) {
 	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			URL: "/api/v0/console/widget/exporters",
-			JSONOutput: gin.H{
+			JSONOutput: helpers.M{
 				"exporters": []string{
 					"exporter1",
 					"exporter2",
@@ -196,8 +195,8 @@ func TestWidgetTop(t *testing.T) {
 	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			URL: "/api/v0/console/widget/top/src-port",
-			JSONOutput: gin.H{
-				"top": []gin.H{
+			JSONOutput: helpers.M{
+				"top": []helpers.M{
 					{"name": "TCP/443", "percent": 51},
 					{"name": "UDP/443", "percent": 20},
 					{"name": "TCP/80", "percent": 18},
@@ -205,8 +204,8 @@ func TestWidgetTop(t *testing.T) {
 			},
 		}, {
 			URL: "/api/v0/console/widget/top/protocol",
-			JSONOutput: gin.H{
-				"top": []gin.H{
+			JSONOutput: helpers.M{
+				"top": []helpers.M{
 					{"name": "TCP", "percent": 75},
 					{"name": "UDP", "percent": 24},
 					{"name": "ESP", "percent": 1},
@@ -214,8 +213,8 @@ func TestWidgetTop(t *testing.T) {
 			},
 		}, {
 			URL: "/api/v0/console/widget/top/exporter",
-			JSONOutput: gin.H{
-				"top": []gin.H{
+			JSONOutput: helpers.M{
+				"top": []helpers.M{
 					{"name": "exporter1", "percent": 20},
 					{"name": "exporter3", "percent": 10},
 					{"name": "exporter5", "percent": 3},
@@ -223,8 +222,8 @@ func TestWidgetTop(t *testing.T) {
 			},
 		}, {
 			URL: "/api/v0/console/widget/top/src-as",
-			JSONOutput: gin.H{
-				"top": []gin.H{
+			JSONOutput: helpers.M{
+				"top": []helpers.M{
 					{"name": "2906: Netflix", "percent": 12},
 					{"name": "36040: Youtube", "percent": 10},
 					{"name": "20940: Akamai", "percent": 9},
@@ -232,8 +231,8 @@ func TestWidgetTop(t *testing.T) {
 			},
 		}, {
 			URL: "/api/v0/console/widget/top/dst-port",
-			JSONOutput: gin.H{
-				"top": []gin.H{
+			JSONOutput: helpers.M{
+				"top": []helpers.M{
 					{"name": "TCP/443", "percent": 80},
 					{"name": "TCP/80", "percent": 18},
 				},
@@ -241,7 +240,7 @@ func TestWidgetTop(t *testing.T) {
 		}, {
 			URL:        "/api/v0/console/widget/top/notexist",
 			StatusCode: 400,
-			JSONOutput: gin.H{
+			JSONOutput: helpers.M{
 				"message": "Notexist does not belong to HomepageTopWidget values",
 			},
 		},
@@ -331,8 +330,8 @@ ORDER BY Time WITH FILL
 		helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 			{
 				URL: "/api/v0/console/widget/graph",
-				JSONOutput: gin.H{
-					"data": []gin.H{
+				JSONOutput: helpers.M{
+					"data": []helpers.M{
 						{"t": "2009-11-10T23:00:00Z", "gbps": 25.3},
 						{"t": "2009-11-10T23:01:00Z", "gbps": 27.8},
 						{"t": "2009-11-10T23:02:00Z", "gbps": 26.4},

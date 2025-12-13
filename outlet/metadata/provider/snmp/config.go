@@ -8,7 +8,6 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/gosnmp/gosnmp"
 
@@ -93,13 +92,13 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 		if credentialsKey != nil {
 			credentials = helpers.ElemOrIdentity(from.MapIndex(*credentialsKey))
 		} else {
-			credentials = reflect.ValueOf(gin.H{
-				"::/0": gin.H{"communities": "public"},
+			credentials = reflect.ValueOf(helpers.M{
+				"::/0": helpers.M{"communities": "public"},
 			})
 			from.SetMapIndex(reflect.ValueOf("credentials"), credentials)
 		}
 		if !helpers.LooksLikeSubnetMap(credentials) {
-			credentials = reflect.ValueOf(gin.H{
+			credentials = reflect.ValueOf(helpers.M{
 				"::/0": credentials.Interface(),
 			})
 			from.SetMapIndex(reflect.ValueOf("credentials"), credentials)
@@ -137,7 +136,7 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 		for _, key := range credentials.MapKeys() {
 			value := helpers.ElemOrIdentity(credentials.MapIndex(key))
 			if value.Kind() == reflect.String || value.Kind() == reflect.Slice {
-				credentials.SetMapIndex(key, reflect.ValueOf(gin.H{
+				credentials.SetMapIndex(key, reflect.ValueOf(helpers.M{
 					"communities": value.Interface(),
 				}))
 			}

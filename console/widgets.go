@@ -51,18 +51,18 @@ LIMIT 1`, strings.Join(selectClause, ",\n "))
 	rows, err := c.d.ClickHouseDB.Conn.Query(ctx, query)
 	if err != nil {
 		c.r.Err(err).Msg("unable to query database")
-		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to query database."})
+		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})
 		return
 	}
 
 	if !rows.Next() {
-		gc.JSON(http.StatusNotFound, gin.H{"message": "No flow currently in database."})
+		gc.JSON(http.StatusNotFound, helpers.M{"message": "No flow currently in database."})
 		return
 	}
 	defer rows.Close()
 
 	var (
-		response    = gin.H{}
+		response    = helpers.M{}
 		columnTypes = rows.ColumnTypes()
 		vars        = make([]any, len(columnTypes))
 	)
@@ -71,7 +71,7 @@ LIMIT 1`, strings.Join(selectClause, ",\n "))
 	}
 	if err := rows.Scan(vars...); err != nil {
 		c.r.Err(err).Msg("unable to parse flow")
-		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to parse flow."})
+		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Unable to parse flow."})
 		return
 	}
 	for index, column := range rows.Columns() {
@@ -89,10 +89,10 @@ func (c *Component) widgetFlowRateHandlerFunc(gc *gin.Context) {
 	row := c.d.ClickHouseDB.Conn.QueryRow(ctx, query)
 	if err := row.Scan(&result); err != nil {
 		c.r.Err(err).Msg("unable to parse result")
-		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to parse result."})
+		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Unable to parse result."})
 		return
 	}
-	gc.IndentedJSON(http.StatusOK, gin.H{
+	gc.IndentedJSON(http.StatusOK, helpers.M{
 		"rate":   result,
 		"period": "second",
 	})
@@ -110,7 +110,7 @@ func (c *Component) widgetExportersHandlerFunc(gc *gin.Context) {
 	err := c.d.ClickHouseDB.Conn.Select(ctx, &exporters, query)
 	if err != nil {
 		c.r.Err(err).Msg("unable to query database")
-		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to query database."})
+		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})
 		return
 	}
 	exporterList := make([]string, len(exporters))
@@ -118,7 +118,7 @@ func (c *Component) widgetExportersHandlerFunc(gc *gin.Context) {
 		exporterList[idx] = exporter.ExporterName
 	}
 
-	gc.IndentedJSON(http.StatusOK, gin.H{"exporters": exporterList})
+	gc.IndentedJSON(http.StatusOK, helpers.M{"exporters": exporterList})
 }
 
 // UnmarshalParam is similar to UnmarshalText but for Gin.
@@ -147,7 +147,7 @@ func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 	}
 	var uriParams URIParams
 	if err := gc.ShouldBindUri(&uriParams); err != nil {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
+		gc.JSON(http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 
@@ -179,7 +179,7 @@ func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 		groupby = `Proto, DstPort`
 		mainTableRequired = true
 	default:
-		gc.JSON(http.StatusNotFound, gin.H{"message": "Unknown top request."})
+		gc.JSON(http.StatusNotFound, helpers.M{"message": "Unknown top request."})
 		return
 	}
 	if strings.HasPrefix(gc.Param("name"), "src-") {
@@ -221,10 +221,10 @@ LIMIT 5`,
 	err := c.d.ClickHouseDB.Conn.Select(ctx, &results, strings.TrimSpace(query))
 	if err != nil {
 		c.r.Err(err).Msg("unable to query database")
-		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to query database."})
+		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})
 		return
 	}
-	gc.JSON(http.StatusOK, gin.H{"top": results})
+	gc.JSON(http.StatusOK, helpers.M{"top": results})
 }
 
 func (c *Component) widgetGraphHandlerFunc(gc *gin.Context) {
@@ -266,9 +266,9 @@ ORDER BY Time WITH FILL
 	err := c.d.ClickHouseDB.Conn.Select(ctx, &results, strings.TrimSpace(query))
 	if err != nil {
 		c.r.Err(err).Msg("unable to query database")
-		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to query database."})
+		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})
 		return
 	}
 
-	gc.JSON(http.StatusOK, gin.H{"data": results})
+	gc.JSON(http.StatusOK, helpers.M{"data": results})
 }

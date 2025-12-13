@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"akvorado/common/helpers"
-
-	"github.com/gin-gonic/gin"
 )
 
 func TestDefaultConfiguration(t *testing.T) {
@@ -29,7 +27,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 		}, {
 			Description:   "empty",
 			Initial:       func() any { return Configuration{} },
-			Configuration: func() any { return gin.H{} },
+			Configuration: func() any { return helpers.M{} },
 			Expected: Configuration{
 				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
 					"::/0": {Communities: []string{"public"}},
@@ -40,7 +38,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "single port",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"poller-timeout": "200ms",
 					"ports":          "1161",
 				}
@@ -58,9 +56,9 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "per-prefix port",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"poller-timeout": "200ms",
-					"ports": gin.H{
+					"ports": helpers.M{
 						"2001:db8:1::/48": 1161,
 						"2001:db8:2::/48": 1162,
 					},
@@ -80,7 +78,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "no communities, no default community",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"poller-retries": 10,
 					"poller-timeout": "200ms",
 				}
@@ -96,9 +94,9 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "communities, no default community",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"poller-timeout": "200ms",
-					"communities": gin.H{
+					"communities": helpers.M{
 						"203.0.113.0/25":   "public",
 						"203.0.113.128/25": "private",
 					},
@@ -116,10 +114,10 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "communities, default community",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"poller-timeout":    "200ms",
 					"default-community": "private",
-					"communities": gin.H{
+					"communities": helpers.M{
 						"203.0.113.0/25":   "public",
 						"203.0.113.128/25": "private",
 					},
@@ -137,7 +135,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "communities as a string",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"poller-timeout": "200ms",
 					"communities":    "private",
 				}
@@ -152,10 +150,10 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "communities, default-community empty",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"poller-timeout":    "200ms",
 					"default-community": "",
-					"communities": gin.H{
+					"communities": helpers.M{
 						"203.0.113.0/25":   "public",
 						"203.0.113.128/25": "private",
 					},
@@ -173,9 +171,9 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "SNMP security parameters",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"poller-timeout": "200ms",
-					"security-parameters": gin.H{
+					"security-parameters": helpers.M{
 						"user-name":                 "alfred",
 						"authentication-protocol":   "sha",
 						"authentication-passphrase": "hello",
@@ -200,9 +198,9 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "SNMP security parameters with AES256C",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"poller-timeout": "200ms",
-					"security-parameters": gin.H{
+					"security-parameters": helpers.M{
 						"user-name":                 "alfred",
 						"authentication-protocol":   "sha",
 						"authentication-passphrase": "hello",
@@ -227,9 +225,9 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "SNMP security parameters without privacy protocol",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"poller-timeout": "200ms",
-					"security-parameters": gin.H{
+					"security-parameters": helpers.M{
 						"user-name":                 "alfred",
 						"authentication-protocol":   "sha",
 						"authentication-passphrase": "hello",
@@ -250,9 +248,9 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "SNMP security parameters without authentication protocol",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"poller-timeout": "200ms",
-					"security-parameters": gin.H{
+					"security-parameters": helpers.M{
 						"user-name":          "alfred",
 						"privacy-protocol":   "aes192",
 						"privacy-passphrase": "hello",
@@ -264,9 +262,9 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "SNMP security parameters without authentication passphrase",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"poller-timeout": "200ms",
-					"security-parameters": gin.H{
+					"security-parameters": helpers.M{
 						"user-name":               "alfred",
 						"authentication-protocol": "sha",
 					},
@@ -277,10 +275,10 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "SNMP security parameters without username",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"poller-timeout": "200ms",
-					"credentials": gin.H{
-						"::/0": gin.H{
+					"credentials": helpers.M{
+						"::/0": helpers.M{
 							"authentication-protocol":   "sha",
 							"authentication-passphrase": "hello",
 						},
@@ -292,14 +290,14 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "merge communities and security-parameters",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"poller-timeout": "200ms",
-					"communities": gin.H{
+					"communities": helpers.M{
 						"203.0.113.0/25":   "public",
 						"203.0.113.128/25": "private",
 					},
-					"security-parameters": gin.H{
-						"::/0": gin.H{
+					"security-parameters": helpers.M{
+						"::/0": helpers.M{
 							"user-name":                 "alfred",
 							"authentication-protocol":   "sha",
 							"authentication-passphrase": "hello",
@@ -323,21 +321,21 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "merge communities, security-parameters and credentials",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"poller-timeout": "200ms",
-					"communities": gin.H{
+					"communities": helpers.M{
 						"203.0.113.0/25":   "public",
 						"203.0.113.128/25": "private",
 					},
-					"security-parameters": gin.H{
-						"::/0": gin.H{
+					"security-parameters": helpers.M{
+						"::/0": helpers.M{
 							"user-name":                 "alfred",
 							"authentication-protocol":   "sha",
 							"authentication-passphrase": "hello",
 						},
 					},
-					"credentials": gin.H{
-						"203.0.113.0/29": gin.H{
+					"credentials": helpers.M{
+						"203.0.113.0/29": helpers.M{
 							"communities": "something",
 						},
 					},
@@ -360,20 +358,20 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "merge communities, security-parameters and default credentials",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"poller-timeout": "200ms",
-					"communities": gin.H{
+					"communities": helpers.M{
 						"203.0.113.0/25":   "public",
 						"203.0.113.128/25": "private",
 					},
-					"security-parameters": gin.H{
-						"203.0.113.2": gin.H{
+					"security-parameters": helpers.M{
+						"203.0.113.2": helpers.M{
 							"user-name":                 "alfred",
 							"authentication-protocol":   "sha",
 							"authentication-passphrase": "hello",
 						},
 					},
-					"credentials": gin.H{
+					"credentials": helpers.M{
 						"communities": "something",
 					},
 				}
@@ -395,10 +393,10 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "conflicting SNMP version",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"poller-timeout": "200ms",
-					"credentials": gin.H{
-						"203.0.113.0/25": gin.H{
+					"credentials": helpers.M{
+						"203.0.113.0/25": helpers.M{
 							"communities":               "private",
 							"user-name":                 "alfred",
 							"authentication-protocol":   "sha",

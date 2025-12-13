@@ -133,11 +133,11 @@ func TestHealthcheckHTTPHandler(t *testing.T) {
 
 	reader := bufio.NewReader(w.Body)
 	decoder := json.NewDecoder(reader)
-	var got gin.H
+	var got helpers.M
 	if err := decoder.Decode(&got); err != nil {
 		t.Fatalf("GET /api/v0/healthcheck error:\n%+v", err)
 	}
-	expected := gin.H{
+	expected := helpers.M{
 		"status": "error",
 		"details": map[string]any{
 			"hc1": map[string]any{

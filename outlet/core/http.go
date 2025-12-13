@@ -24,7 +24,7 @@ func (c *Component) FlowsHTTPHandler(gc *gin.Context) {
 	var params flowsParameters
 	var count uint64
 	if err := gc.ShouldBindQuery(&params); err != nil {
-		gc.JSON(http.StatusBadRequest, gin.H{"message": helpers.Capitalize(err.Error())})
+		gc.JSON(http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 	dying := c.t.Dying()

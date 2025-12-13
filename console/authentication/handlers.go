@@ -15,6 +15,7 @@ import (
 	"net/http"
 
 	"akvorado/common/embed"
+	"akvorado/common/helpers"
 
 	"github.com/gin-gonic/gin"
 )
@@ -45,14 +46,14 @@ func (c *Component) UserAvatarHandlerFunc(gc *gin.Context) {
 	avatarParts, err := fs.Sub(embed.Data(), "console/authentication")
 	if err != nil {
 		c.r.Err(err).Msg("cannot open embedded archive")
-		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Cannot build avatar."})
+		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Cannot build avatar."})
 		return
 	}
 	parts := []string{}
 	partList, err := avatarParts.Open("data/avatars/partlist.txt")
 	if err != nil {
 		c.r.Err(err).Msg("cannot open partlist.txt")
-		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Cannot build avatar."})
+		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Cannot build avatar."})
 		return
 	}
 	defer partList.Close()
@@ -67,7 +68,7 @@ func (c *Component) UserAvatarHandlerFunc(gc *gin.Context) {
 		p, _ := fs.Glob(avatarParts, fmt.Sprintf("data/avatars/%s_*", part))
 		if len(p) == 0 {
 			c.r.Error().Msgf("missing part %s", part)
-			gc.JSON(http.StatusInternalServerError, gin.H{"message": "Cannot build avatar."})
+			gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Cannot build avatar."})
 			return
 		}
 		parts[idx] = p[randSource.IntN(len(p))]
@@ -79,14 +80,14 @@ func (c *Component) UserAvatarHandlerFunc(gc *gin.Context) {
 		filePart, err := avatarParts.Open(part)
 		if err != nil {
 			c.r.Err(err).Msgf("cannot open part %s", part)
-			gc.JSON(http.StatusInternalServerError, gin.H{"message": "Cannot build avatar."})
+			gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Cannot build avatar."})
 			return
 		}
 		imgPart, err := png.Decode(filePart)
 		filePart.Close()
 		if err != nil {
 			c.r.Err(err).Msgf("cannot decode part %s", part)
-			gc.JSON(http.StatusInternalServerError, gin.H{"message": "Cannot build avatar."})
+			gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Cannot build avatar."})
 			return
 		}
 		if img == nil {

@@ -15,8 +15,8 @@ import (
 	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
-	"github.com/gin-gonic/gin"
 
+	"akvorado/common/helpers"
 	"akvorado/common/schema"
 )
 
@@ -149,7 +149,7 @@ PRIMARY KEY {{ .PrimaryKey}}
 LIFETIME(MIN 0 MAX 3600)
 LAYOUT({{ .Layout }}())
 {{ .Settings }}
-`, gin.H{
+`, helpers.M{
 		"Database":   c.d.ClickHouse.DatabaseName(),
 		"Name":       name,
 		"Schema":     schema,
@@ -200,7 +200,7 @@ func (c *Component) createExportersTable(ctx context.Context) error {
 ENGINE = {{ .Engine }}
 ORDER BY (ExporterAddress, IfName)
 TTL TimeReceived + toIntervalDay(1)`,
-		gin.H{
+		helpers.M{
 			"Database": c.d.ClickHouse.DatabaseName(),
 			"Table":    name,
 			"Schema":   strings.Join(cols, ", "),
@@ -249,7 +249,7 @@ func (c *Component) createExportersConsumerView(ctx context.Context) error {
 	// Build SELECT query
 	selectQuery, err := stemplate(
 		`SELECT DISTINCT {{ .Columns }} FROM {{ .Database }}.{{ .Table }} ARRAY JOIN arrayEnumerate([1, 2]) AS num`,
-		gin.H{
+		helpers.M{
 			"Table":    c.distributedTable("flows"),
 			"Database": c.d.ClickHouse.DatabaseName(),
 			"Columns":  strings.Join(cols, ", "),
@@ -290,7 +290,7 @@ func (c *Component) createRawFlowsTable(ctx context.Context) error {
 	// Build CREATE query
 	createQuery, err := stemplate(
 		"CREATE TABLE {{ .Database }}.{{ .Table }} ({{ .Schema }}) ENGINE = `Null`",
-		gin.H{
+		helpers.M{
 			"Database": c.d.ClickHouse.DatabaseName(),
 			"Table":    tableName,
 			"Schema": c.d.Schema.ClickHouseCreateTable(
@@ -336,7 +336,7 @@ func (c *Component) createRawFlowsConsumerView(ctx context.Context) error {
 	viewName := fmt.Sprintf("%s_consumer", tableName)
 
 	// Build SELECT query
-	args := gin.H{
+	args := helpers.M{
 		"Columns": strings.Join(c.d.Schema.ClickHouseSelectColumns(
 			schema.ClickHouseSubstituteGenerates,
 			schema.ClickHouseSkipAliasedColumns), ", "),
@@ -457,7 +457,7 @@ PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, INTERVAL {{ .Parti
 ORDER BY (toStartOfFiveMinutes(TimeReceived), ExporterAddress, InIfName, OutIfName)
 TTL TimeReceived + toIntervalSecond({{ .TTL }})
 SETTINGS {{ .Settings }}
-`, gin.H{
+`, helpers.M{
 				"Table":             tableName,
 				"Schema":            c.d.Schema.ClickHouseCreateTable(),
 				"PartitionInterval": partitionInterval,
@@ -474,7 +474,7 @@ PRIMARY KEY ({{ .PrimaryKey }})
 ORDER BY ({{ .SortingKey }})
 TTL TimeReceived + toIntervalSecond({{ .TTL }})
 SETTINGS {{ .Settings }}
-`, gin.H{
+`, helpers.M{
 				"Table":             tableName,
 				"Schema":            c.d.Schema.ClickHouseCreateTable(schema.ClickHouseSkipMainOnlyColumns),
 				"PartitionInterval": partitionInterval,
@@ -654,7 +654,7 @@ func (c *Component) createFlowsConsumerView(ctx context.Context, resolution Reso
 SELECT
  toStartOfInterval(TimeReceived, toIntervalSecond({{ .Seconds }})) AS TimeReceived,
  {{ .Columns }}
-FROM {{ .Database }}.{{ .Table }}`, gin.H{
+FROM {{ .Database }}.{{ .Table }}`, helpers.M{
 		"Database": c.d.ClickHouse.DatabaseName(),
 		"Table":    c.localTable("flows"),
 		"Seconds":  uint64(resolution.Interval.Seconds()),
@@ -728,7 +728,7 @@ ORDER BY position ASC
 		`CREATE TABLE {{ .Database }}.{{ .Target }}
 ({{ .Schema }})
 ENGINE = Distributed('{{ .Cluster }}', '{{ .Database}}', '{{ .Source }}', rand())`,
-		gin.H{
+		helpers.M{
 			"Cluster":  c.d.ClickHouse.ClusterName(),
 			"Database": c.d.ClickHouse.DatabaseName(),
 			"Source":   c.localTable(source),

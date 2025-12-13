@@ -6,8 +6,6 @@ package helpers_test
 import (
 	"testing"
 
-	"github.com/gin-gonic/gin"
-
 	"akvorado/common/helpers"
 )
 
@@ -17,7 +15,7 @@ func TestTLSConfigurationMigration(t *testing.T) {
 			Description: "new skip-verify field",
 			Initial:     func() any { return helpers.TLSConfiguration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"enable":      true,
 					"skip-verify": true,
 				}
@@ -30,7 +28,7 @@ func TestTLSConfigurationMigration(t *testing.T) {
 			Description: "no verify/skip-verify",
 			Initial:     func() any { return helpers.TLSConfiguration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"enable": true,
 				}
 			},
@@ -42,7 +40,7 @@ func TestTLSConfigurationMigration(t *testing.T) {
 			Description: "old verify=true migrates to skip-verify=false",
 			Initial:     func() any { return helpers.TLSConfiguration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"enable": true,
 					"verify": true,
 				}
@@ -55,7 +53,7 @@ func TestTLSConfigurationMigration(t *testing.T) {
 			Description: "old verify=false migrates to skip-verify=true",
 			Initial:     func() any { return helpers.TLSConfiguration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"enable": true,
 					"verify": false,
 				}
@@ -68,7 +66,7 @@ func TestTLSConfigurationMigration(t *testing.T) {
 			Description: "both verify and skip-verify causes error",
 			Initial:     func() any { return helpers.TLSConfiguration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"enable":      true,
 					"verify":      true,
 					"skip-verify": false,

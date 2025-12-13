@@ -8,8 +8,6 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
-
-	"github.com/gin-gonic/gin"
 )
 
 func TestDefaultConfiguration(t *testing.T) {
@@ -100,8 +98,8 @@ func TestTLSConfiguration(t *testing.T) {
 			Description: "TLS without auth",
 			Initial:     func() any { return DefaultConfiguration() },
 			Configuration: func() any {
-				return gin.H{
-					"tls": gin.H{
+				return helpers.M{
+					"tls": helpers.M{
 						"enable": true,
 					},
 				}
@@ -118,8 +116,8 @@ func TestTLSConfiguration(t *testing.T) {
 			Description: "TLS SASL plain, skip cert verification (old style)",
 			Initial:     func() any { return DefaultConfiguration() },
 			Configuration: func() any {
-				return gin.H{
-					"tls": gin.H{
+				return helpers.M{
+					"tls": helpers.M{
 						"enable":         true,
 						"verify":         false,
 						"sasl-username":  "hello",
@@ -145,8 +143,8 @@ func TestTLSConfiguration(t *testing.T) {
 			Description: "TLS SASL plain, skip cert verification",
 			Initial:     func() any { return DefaultConfiguration() },
 			Configuration: func() any {
-				return gin.H{
-					"sasl": gin.H{
+				return helpers.M{
+					"sasl": helpers.M{
 						"username":  "hello",
 						"password":  "bye",
 						"mechanism": "plain",
@@ -170,11 +168,11 @@ func TestTLSConfiguration(t *testing.T) {
 			Description: "TLS SASL SCRAM 256",
 			Initial:     func() any { return DefaultConfiguration() },
 			Configuration: func() any {
-				return gin.H{
-					"tls": gin.H{
+				return helpers.M{
+					"tls": helpers.M{
 						"enable": true,
 					},
-					"sasl": gin.H{
+					"sasl": helpers.M{
 						"username":  "hello",
 						"password":  "bye",
 						"mechanism": "scram-sha256",
@@ -199,11 +197,11 @@ func TestTLSConfiguration(t *testing.T) {
 			Description: "TLS SASL OAuth",
 			Initial:     func() any { return DefaultConfiguration() },
 			Configuration: func() any {
-				return gin.H{
-					"tls": gin.H{
+				return helpers.M{
+					"tls": helpers.M{
 						"enable": true,
 					},
-					"sasl": gin.H{
+					"sasl": helpers.M{
 						"username":        "hello",
 						"password":        "bye",
 						"mechanism":       "oauth",
@@ -232,8 +230,8 @@ func TestTLSConfiguration(t *testing.T) {
 			Description: "OAuth requires a token URL",
 			Initial:     func() any { return DefaultConfiguration() },
 			Configuration: func() any {
-				return gin.H{
-					"sasl": gin.H{
+				return helpers.M{
+					"sasl": helpers.M{
 						"username":  "hello",
 						"password":  "bye",
 						"mechanism": "oauth",
@@ -245,8 +243,8 @@ func TestTLSConfiguration(t *testing.T) {
 			Description: "OAuth token URL only with OAuth",
 			Initial:     func() any { return DefaultConfiguration() },
 			Configuration: func() any {
-				return gin.H{
-					"sasl": gin.H{
+				return helpers.M{
+					"sasl": helpers.M{
 						"username":        "hello",
 						"password":        "bye",
 						"mechanism":       "plain",

@@ -69,7 +69,7 @@ var versionCmd = &cobra.Command{
 }
 
 func versionHandler(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(http.StatusOK, helpers.M{
 		"version":  helpers.AkvoradoVersion,
 		"compiler": runtime.Version(),
 	})

@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"go.uber.org/mock/gomock"
 
 	"akvorado/common/helpers"
@@ -935,7 +934,7 @@ func TestGraphLineHandler(t *testing.T) {
 			{
 				Description: "single direction",
 				URL:         "/api/v0/console/graph/line",
-				JSONInput: gin.H{
+				JSONInput: helpers.M{
 					"start":         time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 					"end":           time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 					"points":        100,
@@ -946,7 +945,7 @@ func TestGraphLineHandler(t *testing.T) {
 					"units":         "l3bps",
 					"bidirectional": false,
 				},
-				JSONOutput: gin.H{
+				JSONOutput: helpers.M{
 					// Sorted by sum of bps
 					"rows": [][]string{
 						{"router1", "provider2"}, // 10000
@@ -1019,7 +1018,7 @@ func TestGraphLineHandler(t *testing.T) {
 			}, {
 				Description: "bidirectional",
 				URL:         "/api/v0/console/graph/line",
-				JSONInput: gin.H{
+				JSONInput: helpers.M{
 					"start":         time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 					"end":           time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 					"points":        100,
@@ -1030,7 +1029,7 @@ func TestGraphLineHandler(t *testing.T) {
 					"units":         "l3bps",
 					"bidirectional": true,
 				},
-				JSONOutput: gin.H{
+				JSONOutput: helpers.M{
 					// Sorted by sum of bps
 					"rows": [][]string{
 						{"router1", "provider2"}, // 10000
@@ -1154,7 +1153,7 @@ func TestGraphLineHandler(t *testing.T) {
 			}, {
 				Description: "previous period",
 				URL:         "/api/v0/console/graph/line",
-				JSONInput: gin.H{
+				JSONInput: helpers.M{
 					"start":           time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 					"end":             time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 					"points":          100,
@@ -1166,7 +1165,7 @@ func TestGraphLineHandler(t *testing.T) {
 					"bidirectional":   false,
 					"previous-period": true,
 				},
-				JSONOutput: gin.H{
+				JSONOutput: helpers.M{
 					// Sorted by sum of bps
 					"rows": [][]string{
 						{"router1", "provider2"}, // 10000
@@ -1357,7 +1356,7 @@ func TestGraphLineHandler(t *testing.T) {
 			{
 				Description: "single direction",
 				URL:         "/api/v0/console/graph/line",
-				JSONInput: gin.H{
+				JSONInput: helpers.M{
 					"start":         time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 					"end":           time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 					"points":        100,
@@ -1368,7 +1367,7 @@ func TestGraphLineHandler(t *testing.T) {
 					"units":         "l3bps",
 					"bidirectional": false,
 				},
-				JSONOutput: gin.H{
+				JSONOutput: helpers.M{
 					// Sorted by max of bps
 					"rows": [][]string{
 						{"router1", "provider2"},
@@ -1441,7 +1440,7 @@ func TestGraphLineHandler(t *testing.T) {
 			}, {
 				Description: "bidirectional",
 				URL:         "/api/v0/console/graph/line",
-				JSONInput: gin.H{
+				JSONInput: helpers.M{
 					"start":         time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 					"end":           time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 					"points":        100,
@@ -1452,7 +1451,7 @@ func TestGraphLineHandler(t *testing.T) {
 					"units":         "l3bps",
 					"bidirectional": true,
 				},
-				JSONOutput: gin.H{
+				JSONOutput: helpers.M{
 					// Sorted by sum of bps
 					"rows": [][]string{
 						{"router1", "provider2"}, // 10000
@@ -1576,7 +1575,7 @@ func TestGraphLineHandler(t *testing.T) {
 			}, {
 				Description: "previous period",
 				URL:         "/api/v0/console/graph/line",
-				JSONInput: gin.H{
+				JSONInput: helpers.M{
 					"start":           time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 					"end":             time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 					"points":          100,
@@ -1588,7 +1587,7 @@ func TestGraphLineHandler(t *testing.T) {
 					"bidirectional":   false,
 					"previous-period": true,
 				},
-				JSONOutput: gin.H{
+				JSONOutput: helpers.M{
 					// Sorted by sum of bps
 					"rows": [][]string{
 						{"router1", "provider2"}, // 10000
@@ -1679,25 +1678,25 @@ func TestGetTableInterval(t *testing.T) {
 		{
 			Description: "simple query",
 			URL:         "/api/v0/console/graph/table-interval",
-			JSONInput: gin.H{
+			JSONInput: helpers.M{
 				"start":  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				"end":    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				"points": 300,
 			},
-			JSONOutput: gin.H{
+			JSONOutput: helpers.M{
 				"table":    "flows",
 				"interval": 1,
 			},
 		}, {
 			Description: "too many points",
 			URL:         "/api/v0/console/graph/table-interval",
-			JSONInput: gin.H{
+			JSONInput: helpers.M{
 				"start":  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
 				"end":    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
 				"points": 86400,
 			},
 			StatusCode: 400,
-			JSONOutput: gin.H{
+			JSONOutput: helpers.M{
 				"message": `Key: 'tableIntervalInput.Points' Error:Field validation for 'Points' failed on the 'max' tag`,
 			},
 		},

@@ -13,8 +13,6 @@ import (
 	"net"
 	"net/http"
 	"testing"
-
-	"github.com/gin-gonic/gin"
 )
 
 // HTTPEndpointCases describes case for TestHTTPEndpoints
@@ -24,12 +22,12 @@ type HTTPEndpointCases []struct {
 	Method      string
 	URL         string
 	Header      http.Header
-	JSONInput   gin.H
+	JSONInput   M
 
 	ContentType string
 	StatusCode  int
 	FirstLines  []string
-	JSONOutput  gin.H
+	JSONOutput  M
 }
 
 // TestHTTPEndpoints test a few HTTP endpoints
@@ -116,13 +114,13 @@ func TestHTTPEndpoints(t *testing.T, serverAddr net.Addr, cases HTTPEndpointCase
 				}
 			} else {
 				decoder := json.NewDecoder(resp.Body)
-				var got gin.H
+				var got M
 				if err := decoder.Decode(&got); err != nil {
 					t.Fatalf("%s%s %s:\n%+v", tc.Pos, tc.Method, tc.URL, err)
 				}
 
 				// Encode/decode expected to compare JSON stuff
-				var expected gin.H
+				var expected M
 				expectedBytes, err := json.Marshal(tc.JSONOutput)
 				if err != nil {
 					t.Fatalf("json.Marshal() error:\n%+v", err)

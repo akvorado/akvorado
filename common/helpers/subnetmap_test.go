@@ -9,7 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"github.com/go-viper/mapstructure/v2"
 
 	"akvorado/common/helpers/yaml"
@@ -187,12 +186,12 @@ func TestSubnetMapUnmarshalHookWithMapValue(t *testing.T) {
 	}
 	cases := []struct {
 		Pos      helpers.Pos
-		Input    gin.H
+		Input    helpers.M
 		Expected any
 	}{
 		{
 			Pos: helpers.Mark(),
-			Input: gin.H{
+			Input: helpers.M{
 				"blip": "some",
 				"blop": "thing",
 			},
@@ -204,12 +203,12 @@ func TestSubnetMapUnmarshalHookWithMapValue(t *testing.T) {
 			},
 		}, {
 			Pos: helpers.Mark(),
-			Input: gin.H{
-				"::/0": gin.H{
+			Input: helpers.M{
+				"::/0": helpers.M{
 					"blip": "some",
 					"blop": "thing",
 				},
-				"203.0.113.14": gin.H{
+				"203.0.113.14": helpers.M{
 					"blip": "other",
 					"blop": "stuff",
 				},

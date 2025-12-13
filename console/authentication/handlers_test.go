@@ -10,8 +10,6 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
-
-	"github.com/gin-gonic/gin"
 )
 
 func TestUserHandler(t *testing.T) {
@@ -33,7 +31,7 @@ func TestUserHandler(t *testing.T) {
 				Description: "user info, no user logged in",
 				URL:         "/api/v0/console/user/info",
 				StatusCode:  200,
-				JSONOutput:  gin.H{"login": "__default", "name": "Default User"},
+				JSONOutput:  helpers.M{"login": "__default", "name": "Default User"},
 			}, {
 				Description: "user info, minimal user logged in",
 				URL:         "/api/v0/console/user/info",
@@ -43,7 +41,7 @@ func TestUserHandler(t *testing.T) {
 					return headers
 				}(),
 				StatusCode: 200,
-				JSONOutput: gin.H{
+				JSONOutput: helpers.M{
 					"login": "alfred",
 				},
 			}, {
@@ -59,7 +57,7 @@ func TestUserHandler(t *testing.T) {
 					return headers
 				}(),
 				StatusCode: 200,
-				JSONOutput: gin.H{
+				JSONOutput: helpers.M{
 					"login":      "alfred",
 					"name":       "Alfred Pennyworth",
 					"email":      "alfred@batman.com",
@@ -76,7 +74,7 @@ func TestUserHandler(t *testing.T) {
 					return headers
 				}(),
 				StatusCode: 200,
-				JSONOutput: gin.H{"login": "__default", "name": "Default User"},
+				JSONOutput: helpers.M{"login": "__default", "name": "Default User"},
 			}, {
 				Description: "avatar, no user logged in",
 				URL:         "/api/v0/console/user/avatar",
@@ -113,7 +111,7 @@ func TestUserHandler(t *testing.T) {
 				Description: "user info, no user logged in",
 				URL:         "/api/v0/console/user/info",
 				StatusCode:  401,
-				JSONOutput:  gin.H{"message": "No user logged in."},
+				JSONOutput:  helpers.M{"message": "No user logged in."},
 			}, {
 				Description: "user info, invalid user logged in",
 				URL:         "/api/v0/console/user/info",
@@ -124,12 +122,12 @@ func TestUserHandler(t *testing.T) {
 					return headers
 				}(),
 				StatusCode: 401,
-				JSONOutput: gin.H{"message": "No user logged in."},
+				JSONOutput: helpers.M{"message": "No user logged in."},
 			}, {
 				Description: "avatar, no user logged in",
 				URL:         "/api/v0/console/user/avatar",
 				StatusCode:  401,
-				JSONOutput:  gin.H{"message": "No user logged in."},
+				JSONOutput:  helpers.M{"message": "No user logged in."},
 			},
 		})
 	})
@@ -163,7 +161,7 @@ func TestUserHandlerWithTemplates(t *testing.T) {
 					return headers
 				}(),
 				StatusCode: 200,
-				JSONOutput: gin.H{
+				JSONOutput: helpers.M{
 					"login":      "bruce",
 					"name":       "Bruce Wayne",
 					"email":      "bruce@wayne.com",
@@ -179,7 +177,7 @@ func TestUserHandlerWithTemplates(t *testing.T) {
 					return headers
 				}(),
 				StatusCode: 200,
-				JSONOutput: gin.H{
+				JSONOutput: helpers.M{
 					"login":      "alfred",
 					"logout-url": "/sso/portals/main/logout",
 					"avatar-url": "https://avatars.githubusercontent.com/alfred?s=80",
@@ -201,7 +199,7 @@ func TestUserHandlerWithTemplates(t *testing.T) {
 					return headers
 				}(),
 				StatusCode: 200,
-				JSONOutput: gin.H{
+				JSONOutput: helpers.M{
 					"login":      "bruce",
 					"logout-url": "/sso/portals/main/logout",
 					"avatar-url": "https://avatars.githubusercontent.com/bruce?s=80",

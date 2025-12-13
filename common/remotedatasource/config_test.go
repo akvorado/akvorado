@@ -7,8 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
-
 	"akvorado/common/helpers"
 )
 
@@ -18,7 +16,7 @@ func TestSourceDecode(t *testing.T) {
 			Description: "Empty",
 			Initial:     func() any { return Source{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"url":      "https://example.net",
 					"interval": "10m",
 				}
@@ -36,7 +34,7 @@ func TestSourceDecode(t *testing.T) {
 			Description: "Simple transform",
 			Initial:     func() any { return Source{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"url":       "https://example.net",
 					"interval":  "10m",
 					"transform": ".[]",
@@ -56,7 +54,7 @@ func TestSourceDecode(t *testing.T) {
 			Description: "Use POST",
 			Initial:     func() any { return Source{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"url":       "https://example.net",
 					"method":    "POST",
 					"timeout":   "2m",
@@ -78,10 +76,10 @@ func TestSourceDecode(t *testing.T) {
 			Description: "With TLS configuration",
 			Initial:     func() any { return Source{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"url":      "https://example.net",
 					"interval": "10m",
-					"tls": gin.H{
+					"tls": helpers.M{
 						"enable":  true,
 						"ca-file": "something.crt",
 					},
@@ -102,7 +100,7 @@ func TestSourceDecode(t *testing.T) {
 			Description: "Complex transform",
 			Initial:     func() any { return Source{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"url":      "https://example.net",
 					"interval": "10m",
 					"transform": `
@@ -126,7 +124,7 @@ func TestSourceDecode(t *testing.T) {
 			Description: "Incorrect transform",
 			Initial:     func() any { return Source{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"url":       "https://example.net",
 					"interval":  "10m",
 					"transform": "878778&&",

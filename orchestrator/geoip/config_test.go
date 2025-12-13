@@ -7,8 +7,6 @@ import (
 	"testing"
 
 	"akvorado/common/helpers"
-
-	"github.com/gin-gonic/gin"
 )
 
 func TestConfigurationUnmarshallerHook(t *testing.T) {
@@ -21,13 +19,13 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 		}, {
 			Description:   "empty",
 			Initial:       func() any { return Configuration{} },
-			Configuration: func() any { return gin.H{} },
+			Configuration: func() any { return helpers.M{} },
 			Expected:      Configuration{},
 		}, {
 			Description: "no country-database, no geoip-database",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"asn-database": []string{"something"},
 					"optional":     true,
 				}
@@ -40,7 +38,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "country-database, no geoip-database",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"asn-database":     []string{"something"},
 					"country-database": []string{"something else"},
 				}
@@ -53,7 +51,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "no country-database, geoip-database",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"asn-database": []string{"something"},
 					"geo-database": []string{"something else"},
 				}
@@ -66,7 +64,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 			Description: "both country-database, geoip-database",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
+				return helpers.M{
 					"asn-database":     []string{"something"},
 					"geo-database":     []string{"something else"},
 					"country-database": []string{"another value"},

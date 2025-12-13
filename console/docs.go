@@ -11,6 +11,8 @@ import (
 	"regexp"
 	"strings"
 
+	"akvorado/common/helpers"
+
 	"github.com/gin-gonic/gin"
 	"github.com/yuin/goldmark"
 	highlighting "github.com/yuin/goldmark-highlighting/v2"
@@ -49,7 +51,7 @@ func (c *Component) docsHandlerFunc(gc *gin.Context) {
 	entries, err := fs.ReadDir(docs, ".")
 	if err != nil {
 		c.r.Err(err).Msg("unable to list documentation files")
-		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to get documentation files."})
+		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Unable to get documentation files."})
 		return
 	}
 	for _, entry := range entries {
@@ -95,7 +97,7 @@ func (c *Component) docsHandlerFunc(gc *gin.Context) {
 	}
 
 	if markdown == nil {
-		gc.JSON(http.StatusNotFound, gin.H{"message": "Document not found."})
+		gc.JSON(http.StatusNotFound, helpers.M{"message": "Document not found."})
 		return
 	}
 	md := goldmark.New(
@@ -118,11 +120,11 @@ func (c *Component) docsHandlerFunc(gc *gin.Context) {
 	var buf strings.Builder
 	if err = md.Convert(markdown, &buf); err != nil {
 		c.r.Err(err).Str("path", requestedDocument).Msg("unable to render markdown document")
-		gc.JSON(http.StatusInternalServerError, gin.H{"message": "Unable to render document."})
+		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Unable to render document."})
 		return
 	}
 	gc.Header("Cache-Control", "max-age=300, public")
-	gc.PureJSON(http.StatusOK, gin.H{
+	gc.PureJSON(http.StatusOK, helpers.M{
 		"markdown": buf.String(),
 		"toc":      toc,
 	})

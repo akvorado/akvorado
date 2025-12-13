@@ -7,8 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/gin-gonic/gin"
-
 	"akvorado/common/helpers/yaml"
 	"akvorado/common/pb"
 
@@ -23,8 +21,8 @@ func TestDecodeConfiguration(t *testing.T) {
 			Description: "from empty configuration",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
-					"inputs": []gin.H{
+				return helpers.M{
+					"inputs": []helpers.M{
 						{
 							"type":                           "udp",
 							"decoder":                        "netflow",
@@ -61,8 +59,8 @@ func TestDecodeConfiguration(t *testing.T) {
 			Description: "ignore queue-size",
 			Initial:     func() any { return Configuration{} },
 			Configuration: func() any {
-				return gin.H{
-					"inputs": []gin.H{
+				return helpers.M{
+					"inputs": []helpers.M{
 						{
 							"type":       "udp",
 							"decoder":    "sflow",
@@ -98,8 +96,8 @@ func TestDecodeConfiguration(t *testing.T) {
 				}
 			},
 			Configuration: func() any {
-				return gin.H{
-					"inputs": []gin.H{
+				return helpers.M{
+					"inputs": []helpers.M{
 						{
 							"type":    "udp",
 							"decoder": "netflow",
@@ -141,8 +139,8 @@ func TestDecodeConfiguration(t *testing.T) {
 				}
 			},
 			Configuration: func() any {
-				return gin.H{
-					"inputs": []gin.H{
+				return helpers.M{
+					"inputs": []helpers.M{
 						{
 							"type":  "file",
 							"paths": []string{"file1", "file2"},
@@ -174,8 +172,8 @@ func TestDecodeConfiguration(t *testing.T) {
 				}
 			},
 			Configuration: func() any {
-				return gin.H{
-					"inputs": []gin.H{
+				return helpers.M{
+					"inputs": []helpers.M{
 						{
 							"listen": "192.0.2.1:2055",
 						},
@@ -198,8 +196,8 @@ func TestDecodeConfiguration(t *testing.T) {
 				return Configuration{}
 			},
 			Configuration: func() any {
-				return gin.H{
-					"inputs": []gin.H{
+				return helpers.M{
+					"inputs": []helpers.M{
 						{
 							"type":    "avians",
 							"decoder": "netflow",
@@ -230,8 +228,8 @@ func TestDecodeConfiguration(t *testing.T) {
 				}
 			},
 			Configuration: func() any {
-				return gin.H{
-					"inputs": []gin.H{
+				return helpers.M{
+					"inputs": []helpers.M{
 						{
 							"timestamp-source": "netflow-packet",
 							"listen":           "192.0.2.1:2055",
@@ -264,8 +262,8 @@ func TestDecodeConfiguration(t *testing.T) {
 				}
 			},
 			Configuration: func() any {
-				return gin.H{
-					"inputs": []gin.H{
+				return helpers.M{
+					"inputs": []helpers.M{
 						{
 							"timestamp-source": "netflow-first-switched",
 							"listen":           "192.0.2.1:2055",

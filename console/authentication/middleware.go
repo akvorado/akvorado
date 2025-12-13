@@ -9,6 +9,8 @@ import (
 	"strings"
 	"text/template"
 
+	"akvorado/common/helpers"
+
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 )
@@ -38,7 +40,7 @@ func (c *Component) UserAuthentication() gin.HandlerFunc {
 		var info UserInformation
 		if err := gc.ShouldBindWith(&info, customHeaderBinding{c}); err != nil {
 			if c.config.DefaultUser.Login == "" {
-				gc.JSON(http.StatusUnauthorized, gin.H{"message": "No user logged in."})
+				gc.JSON(http.StatusUnauthorized, helpers.M{"message": "No user logged in."})
 				gc.Abort()
 				return
 			}

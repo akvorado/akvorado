@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/go-viper/mapstructure/v2"
 	"google.golang.org/protobuf/proto"
 
@@ -33,14 +32,14 @@ import (
 func TestEnrich(t *testing.T) {
 	cases := []struct {
 		Name            string
-		Configuration   gin.H
+		Configuration   helpers.M
 		InputFlow       func() *schema.FlowMessage
 		OutputFlow      *schema.FlowMessage
 		ExpectedMetrics map[string]string
 	}{
 		{
 			Name:          "no rule",
-			Configuration: gin.H{},
+			Configuration: helpers.M{},
 			InputFlow: func() *schema.FlowMessage {
 				return &schema.FlowMessage{
 					SamplingRate:    1000,
@@ -67,7 +66,7 @@ func TestEnrich(t *testing.T) {
 		},
 		{
 			Name: "no rule, override sampling rate",
-			Configuration: gin.H{"overridesamplingrate": gin.H{
+			Configuration: helpers.M{"overridesamplingrate": helpers.M{
 				"192.0.2.0/24":   100,
 				"192.0.2.128/25": 500,
 				"192.0.2.141/32": 1000,
@@ -98,7 +97,7 @@ func TestEnrich(t *testing.T) {
 		},
 		{
 			Name:          "no rule, no sampling rate, default is one value",
-			Configuration: gin.H{"defaultsamplingrate": 500},
+			Configuration: helpers.M{"defaultsamplingrate": 500},
 			InputFlow: func() *schema.FlowMessage {
 				return &schema.FlowMessage{
 					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
@@ -124,7 +123,7 @@ func TestEnrich(t *testing.T) {
 		},
 		{
 			Name: "no rule, no sampling rate, default is map",
-			Configuration: gin.H{"defaultsamplingrate": gin.H{
+			Configuration: helpers.M{"defaultsamplingrate": helpers.M{
 				"192.0.2.0/24":   100,
 				"192.0.2.128/25": 500,
 				"192.0.2.141/32": 1000,
@@ -154,7 +153,7 @@ func TestEnrich(t *testing.T) {
 		},
 		{
 			Name: "exporter rule",
-			Configuration: gin.H{
+			Configuration: helpers.M{
 				"exporterclassifiers": []string{
 					`Exporter.Name startsWith "hello" && ClassifyRegion("europe")`,
 					`Exporter.Name startsWith "192_" && ClassifyRegion("asia")`,
@@ -190,7 +189,7 @@ func TestEnrich(t *testing.T) {
 		},
 		{
 			Name: "exporter rule with an error",
-			Configuration: gin.H{
+			Configuration: helpers.M{
 				"exporterclassifiers": []string{
 					`ClassifyTenant("alfred")`,
 					`Exporter.Name > "hello"`,
@@ -223,7 +222,7 @@ func TestEnrich(t *testing.T) {
 		},
 		{
 			Name: "exporter rule with reject",
-			Configuration: gin.H{
+			Configuration: helpers.M{
 				"exporterclassifiers": []string{
 					`Reject()`,
 				},
@@ -240,7 +239,7 @@ func TestEnrich(t *testing.T) {
 		},
 		{
 			Name: "interface rule with reject",
-			Configuration: gin.H{
+			Configuration: helpers.M{
 				"interfaceclassifiers": []string{
 					`Reject()`,
 				},
@@ -257,7 +256,7 @@ func TestEnrich(t *testing.T) {
 		},
 		{
 			Name: "interface rule with index",
-			Configuration: gin.H{
+			Configuration: helpers.M{
 				"interfaceclassifiers": []string{
 					`Interface.Index == 100 && ClassifyProvider("index1")`,
 					`Interface.Index == 200 && ClassifyProvider("index2")`,
@@ -291,7 +290,7 @@ func TestEnrich(t *testing.T) {
 		},
 		{
 			Name: "interface rule with rename",
-			Configuration: gin.H{
+			Configuration: helpers.M{
 				"interfaceclassifiers": []string{
 					`Interface.Name == "Gi0/0/100" && SetName("eth100")`,
 					`Interface.Name == "Gi0/0/200" && SetDescription("Super Speed")`,
@@ -323,7 +322,7 @@ func TestEnrich(t *testing.T) {
 		},
 		{
 			Name: "interface rule with VLAN",
-			Configuration: gin.H{
+			Configuration: helpers.M{
 				"interfaceclassifiers": []string{
 					`Interface.VLAN > 200 && SetName(Format("%s.%d", Interface.Name, Interface.VLAN))`,
 				},
@@ -358,7 +357,7 @@ func TestEnrich(t *testing.T) {
 		},
 		{
 			Name: "interface rule",
-			Configuration: gin.H{
+			Configuration: helpers.M{
 				"interfaceclassifiers": []string{
 					`
 Interface.Description startsWith "Transit:" &&
@@ -396,7 +395,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 		},
 		{
 			Name: "configure twice boundary",
-			Configuration: gin.H{
+			Configuration: helpers.M{
 				"interfaceclassifiers": []string{
 					`ClassifyInternal()`,
 					`ClassifyExternal()`,
@@ -430,7 +429,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 		},
 		{
 			Name: "configure twice provider",
-			Configuration: gin.H{
+			Configuration: helpers.M{
 				"interfaceclassifiers": []string{
 					`ClassifyProvider("telia")`,
 					`ClassifyProvider("cogent")`,
@@ -464,7 +463,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 		},
 		{
 			Name: "classify depending on description",
-			Configuration: gin.H{
+			Configuration: helpers.M{
 				"interfaceclassifiers": []string{
 					`ClassifyProvider("Othello")`,
 					`ClassifyConnectivityRegex(Interface.Description, " (1\\d+)$", "P$1") && ClassifyExternal()`,
@@ -503,7 +502,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 		},
 		{
 			Name: "use metatada instead of classifier",
-			Configuration: gin.H{
+			Configuration: helpers.M{
 				"interfaceclassifiers": []string{
 					`ClassifyProvider("Othello")`,
 					`ClassifyConnectivityRegex(Interface.Description, " (1\\d+)$", "P$1") && ClassifyExternal()`,
@@ -547,7 +546,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 		},
 		{
 			Name:          "use data from routing",
-			Configuration: gin.H{},
+			Configuration: helpers.M{},
 			InputFlow: func() *schema.FlowMessage {
 				return &schema.FlowMessage{
 					SamplingRate:    1000,
@@ -587,7 +586,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 		},
 		{
 			Name:          "flow with missing interfaces",
-			Configuration: gin.H{},
+			Configuration: helpers.M{},
 			InputFlow: func() *schema.FlowMessage {
 				return &schema.FlowMessage{
 					SamplingRate:    1000,
@@ -603,7 +602,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 		},
 		{
 			Name:          "flow with metadata cache miss",
-			Configuration: gin.H{},
+			Configuration: helpers.M{},
 			InputFlow: func() *schema.FlowMessage {
 				return &schema.FlowMessage{
 					SamplingRate:    1000,

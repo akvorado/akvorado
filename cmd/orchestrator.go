@@ -13,7 +13,6 @@ import (
 	"sync/atomic"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/gin-gonic/gin"
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/spf13/cobra"
 
@@ -398,7 +397,7 @@ func orchestratorClickHouseMigrationHook() mapstructure.DecodeHookFunc {
 			if clickhouseDBKey != nil {
 				clickhouseDB = helpers.ElemOrIdentity(from.MapIndex(*clickhouseDBKey))
 			} else {
-				clickhouseDB = reflect.ValueOf(gin.H{})
+				clickhouseDB = reflect.ValueOf(helpers.M{})
 			}
 
 			clickhouse := helpers.ElemOrIdentity(from.MapIndex(*clickhouseKey))
@@ -482,7 +481,7 @@ func orchestratorInletToOutletMigrationHook() mapstructure.DecodeHookFunc {
 					continue
 				}
 				modified := false
-				toOutlet := reflect.ValueOf(gin.H{})
+				toOutlet := reflect.ValueOf(helpers.M{})
 
 				// Migrate fields from inlet to outlet
 				fromInletKeys := fromInlet.MapKeys()

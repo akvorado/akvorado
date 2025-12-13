@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/gin-gonic/gin"
 	"go.uber.org/mock/gomock"
 
 	"akvorado/common/helpers"
@@ -166,18 +165,18 @@ UNION DISTINCT
 	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
 		{
 			URL:       "/api/v0/console/filter/validate",
-			JSONInput: gin.H{"filter": `InIfName = "Gi0/0/0/1"`},
-			JSONOutput: gin.H{
+			JSONInput: helpers.M{"filter": `InIfName = "Gi0/0/0/1"`},
+			JSONOutput: helpers.M{
 				"message": "ok",
 				"parsed":  `InIfName = 'Gi0/0/0/1'`,
 			},
 		},
 		{
 			URL:       "/api/v0/console/filter/validate",
-			JSONInput: gin.H{"filter": `InIfName = "`},
-			JSONOutput: gin.H{
+			JSONInput: helpers.M{"filter": `InIfName = "`},
+			JSONOutput: helpers.M{
 				"message": "at line 1, position 12: string literal not terminated",
-				"errors": []gin.H{{
+				"errors": []helpers.M{{
 					"line":    1,
 					"column":  12,
 					"offset":  11,
@@ -188,8 +187,8 @@ UNION DISTINCT
 		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
-			JSONInput:  gin.H{"what": "column", "prefix": "dSta"},
-			JSONOutput: gin.H{"completions": []gin.H{
+			JSONInput:  helpers.M{"what": "column", "prefix": "dSta"},
+			JSONOutput: helpers.M{"completions": []helpers.M{
 				{"label": "DstAS", "detail": "column name", "quoted": false},
 				{"label": "DstASPath", "detail": "column name", "quoted": false},
 				{"label": "DstAddr", "detail": "column name", "quoted": false},
@@ -198,8 +197,8 @@ UNION DISTINCT
 		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
-			JSONInput:  gin.H{"what": "operator", "column": "ExporterName"},
-			JSONOutput: gin.H{"completions": []gin.H{
+			JSONInput:  helpers.M{"what": "operator", "column": "ExporterName"},
+			JSONOutput: helpers.M{"completions": []helpers.M{
 				{"label": "!=", "detail": "comparison operator", "quoted": false},
 				{"label": "=", "detail": "comparison operator", "quoted": false},
 				{"label": "ILIKE", "detail": "comparison operator", "quoted": false},
@@ -213,8 +212,8 @@ UNION DISTINCT
 		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
-			JSONInput:  gin.H{"what": "value", "column": "outifboundary"},
-			JSONOutput: gin.H{"completions": []gin.H{
+			JSONInput:  helpers.M{"what": "value", "column": "outifboundary"},
+			JSONOutput: helpers.M{"completions": []helpers.M{
 				{"label": "internal", "detail": "network boundary", "quoted": false},
 				{"label": "external", "detail": "network boundary", "quoted": false},
 				{"label": "undefined", "detail": "network boundary", "quoted": false},
@@ -223,8 +222,8 @@ UNION DISTINCT
 		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
-			JSONInput:  gin.H{"what": "value", "column": "etype"},
-			JSONOutput: gin.H{"completions": []gin.H{
+			JSONInput:  helpers.M{"what": "value", "column": "etype"},
+			JSONOutput: helpers.M{"completions": []helpers.M{
 				{"label": "IPv4", "detail": "ethernet type", "quoted": false},
 				{"label": "IPv6", "detail": "ethernet type", "quoted": false},
 			}},
@@ -232,8 +231,8 @@ UNION DISTINCT
 		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
-			JSONInput:  gin.H{"what": "value", "column": "proto", "prefix": "I"},
-			JSONOutput: gin.H{"completions": []gin.H{
+			JSONInput:  helpers.M{"what": "value", "column": "proto", "prefix": "I"},
+			JSONOutput: helpers.M{"completions": []helpers.M{
 				{"label": "ICMP", "detail": "protocol", "quoted": true},
 				{"label": "IPv6-ICMP", "detail": "protocol", "quoted": true},
 				{"label": "IPIP", "detail": "protocol", "quoted": true},
@@ -245,8 +244,8 @@ UNION DISTINCT
 		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
-			JSONInput:  gin.H{"what": "value", "column": "exportername", "prefix": "th2-"},
-			JSONOutput: gin.H{"completions": []gin.H{
+			JSONInput:  helpers.M{"what": "value", "column": "exportername", "prefix": "th2-"},
+			JSONOutput: helpers.M{"completions": []helpers.M{
 				{"label": "th2-router1", "detail": "exporter name", "quoted": true},
 				{"label": "th2-router2", "detail": "exporter name", "quoted": true},
 				{"label": "th2-router3", "detail": "exporter name", "quoted": true},
@@ -255,8 +254,8 @@ UNION DISTINCT
 		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
-			JSONInput:  gin.H{"what": "value", "column": "dstAS", "prefix": "goog"},
-			JSONOutput: gin.H{"completions": []gin.H{
+			JSONInput:  helpers.M{"what": "value", "column": "dstAS", "prefix": "goog"},
+			JSONOutput: helpers.M{"completions": []helpers.M{
 				{"label": "AS15169", "detail": "Google", "quoted": false},
 				{"label": "AS16550", "detail": "Google Private Cloud", "quoted": false},
 				{"label": "AS16591", "detail": "Google Fiber", "quoted": false},
@@ -273,8 +272,8 @@ UNION DISTINCT
 		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
-			JSONInput:  gin.H{"what": "value", "column": "dstcommunities", "prefix": "6540"},
-			JSONOutput: gin.H{"completions": []gin.H{
+			JSONInput:  helpers.M{"what": "value", "column": "dstcommunities", "prefix": "6540"},
+			JSONOutput: helpers.M{"completions": []helpers.M{
 				{"label": "65401:10", "detail": "community", "quoted": false},
 				{"label": "65401:12", "detail": "community", "quoted": false},
 				{"label": "65401:13", "detail": "community", "quoted": false},
@@ -284,8 +283,8 @@ UNION DISTINCT
 		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
-			JSONInput:  gin.H{"what": "value", "column": "dstASpath", "prefix": "goog"},
-			JSONOutput: gin.H{"completions": []gin.H{
+			JSONInput:  helpers.M{"what": "value", "column": "dstASpath", "prefix": "goog"},
+			JSONOutput: helpers.M{"completions": []helpers.M{
 				{"label": "AS15169", "detail": "Google", "quoted": false},
 				{"label": "AS16550", "detail": "Google Private Cloud", "quoted": false},
 				{"label": "AS16591", "detail": "Google Fiber", "quoted": false},
@@ -302,8 +301,8 @@ UNION DISTINCT
 		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
-			JSONInput:  gin.H{"what": "value", "column": "srcport", "prefix": "http"},
-			JSONOutput: gin.H{"completions": []gin.H{
+			JSONInput:  helpers.M{"what": "value", "column": "srcport", "prefix": "http"},
+			JSONOutput: helpers.M{"completions": []helpers.M{
 				{"label": "443", "detail": "https", "quoted": false},
 				{"label": "80", "detail": "http", "quoted": false},
 				{"label": "8080", "detail": "http-alt", "quoted": false},
@@ -312,8 +311,8 @@ UNION DISTINCT
 		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
-			JSONInput:  gin.H{"what": "value", "column": "srcnetName", "prefix": "c"},
-			JSONOutput: gin.H{"completions": []gin.H{
+			JSONInput:  helpers.M{"what": "value", "column": "srcnetName", "prefix": "c"},
+			JSONOutput: helpers.M{"completions": []helpers.M{
 				{"label": "customer-1", "detail": "network name", "quoted": true},
 				{"label": "customer-2", "detail": "network name", "quoted": true},
 				{"label": "customer-3", "detail": "network name", "quoted": true},
@@ -322,8 +321,8 @@ UNION DISTINCT
 		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
-			JSONInput:  gin.H{"what": "value", "column": "dstnetRole", "prefix": "c"},
-			JSONOutput: gin.H{"completions": []gin.H{
+			JSONInput:  helpers.M{"what": "value", "column": "dstnetRole", "prefix": "c"},
+			JSONOutput: helpers.M{"completions": []helpers.M{
 				{"label": "customer", "detail": "network name", "quoted": true},
 			}},
 		},
@@ -331,13 +330,13 @@ UNION DISTINCT
 			Description: "list, no filters",
 			URL:         "/api/v0/console/filter/saved",
 			StatusCode:  200,
-			JSONOutput:  gin.H{"filters": []gin.H{}},
+			JSONOutput:  helpers.M{"filters": []helpers.M{}},
 		},
 		{
 			Description: "store one filter",
 			URL:         "/api/v0/console/filter/saved",
 			StatusCode:  204,
-			JSONInput: gin.H{
+			JSONInput: helpers.M{
 				"description": "test 1",
 				"content":     "InIfBoundary = external",
 			},
@@ -346,7 +345,7 @@ UNION DISTINCT
 		{
 			Description: "list stored filters",
 			URL:         "/api/v0/console/filter/saved",
-			JSONOutput: gin.H{"filters": []gin.H{
+			JSONOutput: helpers.M{"filters": []helpers.M{
 				{
 					"id":          1,
 					"shared":      false,
@@ -364,7 +363,7 @@ UNION DISTINCT
 				headers.Add("Remote-User", "alfred")
 				return headers
 			}(),
-			JSONOutput: gin.H{"filters": []gin.H{}},
+			JSONOutput: helpers.M{"filters": []helpers.M{}},
 		},
 		{
 			Description: "delete stored filter as another user",
@@ -376,7 +375,7 @@ UNION DISTINCT
 				return headers
 			}(),
 			StatusCode: 404,
-			JSONOutput: gin.H{"message": "filter not found"},
+			JSONOutput: helpers.M{"message": "filter not found"},
 		},
 		{
 			Description: "delete stored filter",
@@ -390,13 +389,13 @@ UNION DISTINCT
 			Method:      "DELETE",
 			URL:         "/api/v0/console/filter/saved/kjgdfhgh",
 			StatusCode:  400,
-			JSONOutput:  gin.H{"message": "bad ID format"},
+			JSONOutput:  helpers.M{"message": "bad ID format"},
 		},
 		{
 			Description: "list stored filter after delete",
 			URL:         "/api/v0/console/filter/saved",
 			StatusCode:  200,
-			JSONOutput:  gin.H{"filters": []gin.H{}},
+			JSONOutput:  helpers.M{"filters": []helpers.M{}},
 		},
 	})
 }
@@ -453,8 +452,8 @@ UNION DISTINCT
 		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
-			JSONInput:  gin.H{"what": "value", "column": "srcMAC", "prefix": "11:"},
-			JSONOutput: gin.H{"completions": []gin.H{
+			JSONInput:  helpers.M{"what": "value", "column": "srcMAC", "prefix": "11:"},
+			JSONOutput: helpers.M{"completions": []helpers.M{
 				{"label": "11:22:33:44:55:66", "detail": "MAC address", "quoted": false},
 				{"label": "11:33:33:44:55:66", "detail": "MAC address", "quoted": false},
 				{"label": "11:ff:33:44:55:66", "detail": "MAC address", "quoted": false},
@@ -463,8 +462,8 @@ UNION DISTINCT
 		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
-			JSONInput:  gin.H{"what": "value", "column": "icmpv6", "prefix": "echo"},
-			JSONOutput: gin.H{"completions": []gin.H{
+			JSONInput:  helpers.M{"what": "value", "column": "icmpv6", "prefix": "echo"},
+			JSONOutput: helpers.M{"completions": []helpers.M{
 				{"label": "echo-request", "detail": "ICMPv6", "quoted": true},
 				{"label": "echo-reply", "detail": "ICMPv6", "quoted": true},
 			}},
@@ -520,8 +519,8 @@ LIMIT 20`, "a").
 		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
-			JSONInput:  gin.H{"what": "column", "prefix": "dSta"},
-			JSONOutput: gin.H{"completions": []gin.H{
+			JSONInput:  helpers.M{"what": "column", "prefix": "dSta"},
+			JSONOutput: helpers.M{"completions": []helpers.M{
 				{"label": "DstAS", "detail": "column name", "quoted": false},
 				{"label": "DstASPath", "detail": "column name", "quoted": false},
 				{"label": "DstAddr", "detail": "column name", "quoted": false},
@@ -532,8 +531,8 @@ LIMIT 20`, "a").
 		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
-			JSONInput:  gin.H{"what": "operator", "column": "DstAddrRole"},
-			JSONOutput: gin.H{"completions": []gin.H{
+			JSONInput:  helpers.M{"what": "operator", "column": "DstAddrRole"},
+			JSONOutput: helpers.M{"completions": []helpers.M{
 				{"label": "!=", "detail": "comparison operator", "quoted": false},
 				{"label": "=", "detail": "comparison operator", "quoted": false},
 				{"label": "ILIKE", "detail": "comparison operator", "quoted": false},
@@ -547,8 +546,8 @@ LIMIT 20`, "a").
 		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
-			JSONInput:  gin.H{"what": "value", "column": "dstaddrrole"},
-			JSONOutput: gin.H{"completions": []gin.H{
+			JSONInput:  helpers.M{"what": "value", "column": "dstaddrrole"},
+			JSONOutput: helpers.M{"completions": []helpers.M{
 				{"label": "a-role", "quoted": true},
 				{"label": "b-role", "quoted": true},
 				{"label": "c-role", "quoted": true},
@@ -557,8 +556,8 @@ LIMIT 20`, "a").
 		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
-			JSONInput:  gin.H{"what": "value", "column": "dstaddrrole", "prefix": "a"},
-			JSONOutput: gin.H{"completions": []gin.H{
+			JSONInput:  helpers.M{"what": "value", "column": "dstaddrrole", "prefix": "a"},
+			JSONOutput: helpers.M{"completions": []helpers.M{
 				{"label": "a-role", "quoted": true},
 			}},
 		},

@@ -17,7 +17,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"google.golang.org/protobuf/proto"
 
 	"akvorado/common/daemon"
@@ -254,11 +253,11 @@ func TestCore(t *testing.T) {
 		reader := bufio.NewReader(resp.Body)
 		decoder := json.NewDecoder(reader)
 		for range 10 {
-			var got gin.H
+			var got helpers.M
 			if err := decoder.Decode(&got); err != nil {
 				t.Fatalf("GET /api/v0/outlet/flows error while reading body:\n%+v", err)
 			}
-			expected := gin.H{
+			expected := helpers.M{
 				"TimeReceived":    float64(200),
 				"SamplingRate":    float64(1000),
 				"ExporterAddress": "::ffff:192.0.2.142",

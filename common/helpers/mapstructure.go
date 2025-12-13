@@ -9,9 +9,11 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/go-viper/mapstructure/v2"
 )
+
+// M is a shortcut for map[string]any
+type M map[string]any
 
 var mapstructureUnmarshallerHookFuncs = []mapstructure.DecodeHookFunc{}
 
@@ -223,7 +225,7 @@ func ParametrizedConfigurationUnmarshallerHook[OuterConfiguration any, InnerConf
 			return from.Interface(), nil
 		}
 		configField := to.FieldByName("Config")
-		fromConfig := reflect.MakeMap(reflect.TypeFor[gin.H]())
+		fromConfig := reflect.MakeMap(reflect.TypeFor[M]())
 
 		// Find "type" key in map to get input type. Keep existing fields as is.
 		// Move everything else in "config".
@@ -309,7 +311,7 @@ func ParametrizedConfigurationUnmarshallerHook[OuterConfiguration any, InnerConf
 func ParametrizedConfigurationMarshalYAML[OuterConfiguration any, InnerConfiguration any](oc OuterConfiguration, innerConfigurationMap map[string](func() InnerConfiguration)) (any, error) {
 	var innerConfigStruct reflect.Value
 	outerConfigStruct := ElemOrIdentity(reflect.ValueOf(oc))
-	result := gin.H{}
+	result := M{}
 	for i, field := range reflect.VisibleFields(outerConfigStruct.Type()) {
 		if field.Name != "Config" {
 			result[strings.ToLower(field.Name)] = outerConfigStruct.Field(i).Interface()
