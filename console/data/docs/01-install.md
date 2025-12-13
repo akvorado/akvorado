@@ -108,7 +108,7 @@ When using `docker compose`, use the following commands to get an updated
 
 The `docker-compose-upgrade.tar.gz` tarball contains `.env.dist` instead of
 `.env`, and `docker/docker-compose-local.yml.dist` instead of
-`docker/docker-compose-local.yml.dist`. You may want to check for differences
+`docker/docker-compose-local.yml`. You may want to check for differences
 with your setup.
 
 > [!NOTE]
