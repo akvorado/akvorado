@@ -64,6 +64,30 @@ func TestPoller(t *testing.T) {
 				},
 			},
 		}, {
+			Description: "SNMPv2 with partial communities, first",
+			Config: Configuration{
+				PollerRetries: 2,
+				PollerTimeout: 100 * time.Millisecond,
+				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
+					"::/0": {Communities: []string{"private-partial", "private"}},
+				}),
+				Agents: map[netip.Addr]netip.Addr{
+					netip.MustParseAddr("192.0.2.1"): lo,
+				},
+			},
+		}, {
+			Description: "SNMPv2 with partial communities, last",
+			Config: Configuration{
+				PollerRetries: 2,
+				PollerTimeout: 100 * time.Millisecond,
+				Credentials: helpers.MustNewSubnetMap(map[string]Credentials{
+					"::/0": {Communities: []string{"private", "private-partial"}},
+				}),
+				Agents: map[netip.Addr]netip.Addr{
+					netip.MustParseAddr("192.0.2.1"): lo,
+				},
+			},
+		}, {
 			Description: "SNMPv2 with agent mapping",
 			Config: Configuration{
 				PollerRetries: 2,
@@ -137,6 +161,18 @@ func TestPoller(t *testing.T) {
 					},
 				},
 				SubAgents: []*GoSNMPServer.SubAgent{
+					{
+						CommunityIDs: []string{"private-partial"},
+						OIDs: []*GoSNMPServer.PDUValueControlItem{
+							{
+								OID:  "1.3.6.1.2.1.1.5.0",
+								Type: gosnmp.OctetString,
+								OnGet: func() (any, error) {
+									return "exporter62", nil
+								},
+							},
+						},
+					},
 					{
 						CommunityIDs: []string{"private"},
 						OIDs: []*GoSNMPServer.PDUValueControlItem{
