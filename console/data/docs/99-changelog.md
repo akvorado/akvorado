@@ -269,8 +269,8 @@ New installations should also get better compression and performance from the
 main table, due to a change in the primary key used for this table. Check this
 [Altinity article][] if you want to apply the change to your installation.
 
-Support for Docker Compose V1 (`docker-compose` command) has been removed in
-favor of Docker Compose V2 (`docker compose` command). On Ubuntu/Debian systems,
+Support for Docker Compose v1 (`docker-compose` command) has been removed in
+favor of Docker Compose v2 (`docker compose` command). On Ubuntu/Debian systems,
 this means you can no longer use the `docker-compose` package. On Ubuntu, you
 can install the `docker-compose-v2` package. For other options, check the
 [documentation for installing the Compose plugin][].
@@ -581,7 +581,7 @@ details.
 ## 1.5.1 - 2022-07-22
 
 - 🩹 *cmd*: do not merge user-provided lists with defaults when parsing configuration
-- 🩹 *docker*: make `docker-compose.yml` work with Docker Compose v2/v3
+- 🩹 *docker*: make `docker-compose.yml` work with Docker Compose v2
 - 🩹 *inlet*: update UDP packet counters when receiving packets, not after decoding
 - 🌱 *console*: add configuration for default options of the visualize
   tab and the top widgets to display on the home page.

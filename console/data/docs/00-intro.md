@@ -21,9 +21,9 @@ The recommended configuration is:
 
 The easiest way to get started is with
 [Docker](https://docs.docker.com/get-docker) and [Docker Compose
-V2](https://docs.docker.com/compose/install/). On Ubuntu, you can
-install the `docker-compose-v2` package. On macOS, you can use the
-`docker-compose` formula from Homebrew.
+v2](https://docs.docker.com/compose/install/). On Debian, install the
+`docker-compose` package. On Ubuntu, use the `docker-compose-v2` package. On
+macOS, install the `docker-compose` formula from Homebrew.
 
 ```console
 # mkdir akvorado
