@@ -1,8 +1,6 @@
 // SPDX-FileCopyrightText: 2025 Free Mobile
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-//go:build ignore
-
 #include "vmlinux.h"
 
 volatile const __u32 num_sockets;
