@@ -55,7 +55,7 @@ require (
 	golang.org/x/sys v0.39.0
 	golang.org/x/text v0.31.0
 	google.golang.org/grpc v1.77.0
-	google.golang.org/protobuf v1.36.10
+	google.golang.org/protobuf v1.36.11
 	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637
 	gorm.io/driver/mysql v1.6.0
 	gorm.io/driver/postgres v1.6.0
