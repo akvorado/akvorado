@@ -65,19 +65,25 @@ sent to Kafka without being parsed.
 Each input has a `type` and a `decoder`. For `decoder`, `netflow` and `sflow`
 are supported. For `type`, `udp` and `file` are supported.
 
+For all available inputs, the following options are available:
+
+- `use-src-addr-for-exporter-addr` to be set to true if the source IP of the
+  received flow packet should be used as the exporter address.
+- `timestamp-source` to choose the source of the timestamp for each flow: `udp`
+  to use the receive time of the UDP packet (the default), `netflow-packet` to
+  extract the timestamp from the NetFlow/IPFIX header, `netflow-first-switched`
+  to use the “first switched” field from NetFlow/IPFIX.
+- `decapsulation-protocol` to look inside a tunneling protocol. The supported
+  protocols are `none` (the default), `ipip` (both v4 and v6), `gre`, `vxlan`,
+  and `srv6`. This requires the presence of a sampled packet for sFlow or the
+  use of [IPFIX 315](https://datatracker.ietf.org/doc/html/rfc7133). If there is
+  a protocol mismatch, the packet will be dropped.
+
 For the UDP input, you can use the following keys:
 
 - `listen`: set the listening endpoint.
 - `workers`: set the number of workers to listen to the socket.
 - `receive-buffer`: set the size of the kernel's incoming buffer for each listening socket.
-
-If you set `use-src-addr-for-exporter-addr` to true, the source IP of the
-received flow packet is used as the exporter address. You can also choose how to
-extract the timestamp for each packet with `timestamp-source`:
-
-- `udp`: use the receive time of the UDP packet (the default).
-- `netflow-packet`: extract the timestamp from the NetFlow/IPFIX header.
-- `netflow-first-switched`: use the “first switched” field from NetFlow/IPFIX.
 
 For example:
 
