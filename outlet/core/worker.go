@@ -53,7 +53,7 @@ func (w *worker) shutdown() {
 
 // processIncomingFlow processes one incoming flow from Kafka.
 func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
-	// Raw flow decoding: fatal
+	// Raw flow decoding
 	w.c.metrics.rawFlowsReceived.Inc()
 	w.rawFlow.ResetVT()
 	if err := w.rawFlow.UnmarshalVT(data); err != nil {
@@ -67,7 +67,7 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 		exporter := w.bf.ExporterAddress.Unmap().String()
 		w.c.metrics.flowsReceived.WithLabelValues(exporter).Inc()
 
-		// Enrichment: not fatal
+		// Enrichment
 		ip := w.bf.ExporterAddress
 		if skip := w.enrichFlow(ip, exporter); skip {
 			w.bf.Undo()
@@ -97,10 +97,10 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 		}
 	}
 
-	// Flow decoding: not fatal
+	// Flow decoding
 	err := w.c.d.Flow.Decode(&w.rawFlow, w.bf, finalize)
 	if err != nil {
-		w.c.metrics.rawFlowsErrors.WithLabelValues("cannot decode payload")
+		w.c.metrics.rawFlowsErrors.WithLabelValues("cannot decode payload").Inc()
 		return nil
 	}
 
