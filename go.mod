@@ -15,7 +15,7 @@ require (
 	github.com/chenyahui/gin-cache v1.10.0
 	github.com/cilium/ebpf v0.20.0
 	github.com/eapache/go-resiliency v1.7.0
-	github.com/expr-lang/expr v1.17.6
+	github.com/expr-lang/expr v1.17.7
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/gaissmai/bart v0.26.0
 	github.com/gin-gonic/gin v1.11.0
