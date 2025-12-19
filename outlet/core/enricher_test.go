@@ -727,27 +727,29 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 
 func TestGetASNumber(t *testing.T) {
 	cases := []struct {
-		Pos       helpers.Pos
-		Addr      string
-		FlowAS    uint32
-		BMPAS     uint32
-		Providers []ASNProvider
-		Expected  uint32
+		Pos         helpers.Pos
+		Addr        string
+		FlowAS      uint32
+		BMPAS       uint32
+		FlowNetMask uint8
+		Providers   []ASNProvider
+		Expected    uint32
 	}{
 		// 1
-		{helpers.Mark(), "1.0.0.1", 12322, 0, []ASNProvider{ASNProviderFlow}, 12322},
-		{helpers.Mark(), "::ffff:1.0.0.1", 12322, 0, []ASNProvider{ASNProviderFlow}, 12322},
-		{helpers.Mark(), "1.0.0.1", 65536, 0, []ASNProvider{ASNProviderFlow}, 65536},
-		{helpers.Mark(), "1.0.0.1", 65536, 0, []ASNProvider{ASNProviderFlowExceptPrivate}, 0},
-		{helpers.Mark(), "1.0.0.1", 4_200_000_121, 0, []ASNProvider{ASNProviderFlowExceptPrivate}, 0},
-		{helpers.Mark(), "1.0.0.1", 65536, 0, []ASNProvider{ASNProviderFlowExceptPrivate, ASNProviderFlow}, 65536},
-		{helpers.Mark(), "1.0.0.1", 12322, 0, []ASNProvider{ASNProviderFlowExceptPrivate}, 12322},
+		{helpers.Mark(), "1.0.0.1", 12322, 0, 24, []ASNProvider{ASNProviderFlow}, 12322},
+		{helpers.Mark(), "::ffff:1.0.0.1", 12322, 0, 24, []ASNProvider{ASNProviderFlow}, 12322},
+		{helpers.Mark(), "1.0.0.1", 65536, 0, 24, []ASNProvider{ASNProviderFlow}, 65536},
+		{helpers.Mark(), "1.0.0.1", 65536, 0, 24, []ASNProvider{ASNProviderFlowExceptPrivate}, 0},
+		{helpers.Mark(), "1.0.0.1", 4_200_000_121, 0, 24, []ASNProvider{ASNProviderFlowExceptPrivate}, 0},
+		{helpers.Mark(), "1.0.0.1", 65536, 0, 24, []ASNProvider{ASNProviderFlowExceptPrivate, ASNProviderFlow}, 65536},
+		{helpers.Mark(), "1.0.0.1", 12322, 0, 24, []ASNProvider{ASNProviderFlowExceptPrivate}, 12322},
+		{helpers.Mark(), "1.0.0.1", 12322, 0, 0, []ASNProvider{ASNProviderFlowExceptDefaultRoute}, 0},
 		// 10
-		{helpers.Mark(), "192.0.2.2", 12322, 174, []ASNProvider{ASNProviderRouting}, 174},
-		{helpers.Mark(), "192.0.2.129", 12322, 1299, []ASNProvider{ASNProviderRouting}, 1299},
-		{helpers.Mark(), "192.0.2.254", 12322, 0, []ASNProvider{ASNProviderRouting}, 0},
-		{helpers.Mark(), "1.0.0.1", 12322, 65300, []ASNProvider{ASNProviderRouting}, 65300},
-		{helpers.Mark(), "1.0.0.1", 12322, 65300, []ASNProvider{ASNProviderGeoIP, ASNProviderRouting}, 0},
+		{helpers.Mark(), "192.0.2.2", 12322, 174, 24, []ASNProvider{ASNProviderRouting}, 174},
+		{helpers.Mark(), "192.0.2.129", 12322, 1299, 24, []ASNProvider{ASNProviderRouting}, 1299},
+		{helpers.Mark(), "192.0.2.254", 12322, 0, 24, []ASNProvider{ASNProviderRouting}, 0},
+		{helpers.Mark(), "1.0.0.1", 12322, 65300, 24, []ASNProvider{ASNProviderRouting}, 65300},
+		{helpers.Mark(), "1.0.0.1", 12322, 65300, 24, []ASNProvider{ASNProviderGeoIP, ASNProviderRouting}, 0},
 	}
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("case %s", tc.Pos), func(t *testing.T) {
@@ -767,7 +769,7 @@ func TestGetASNumber(t *testing.T) {
 			if err != nil {
 				t.Fatalf("%sNew() error:\n%+v", tc.Pos, err)
 			}
-			got := c.getASNumber(tc.FlowAS, tc.BMPAS)
+			got := c.getASNumber(tc.FlowAS, tc.BMPAS, tc.FlowNetMask)
 			if diff := helpers.Diff(got, tc.Expected); diff != "" {
 				t.Fatalf("%sgetASNumber() (-got, +want):\n%s", tc.Pos, diff)
 			}

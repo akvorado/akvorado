@@ -125,8 +125,8 @@ func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) bool {
 	flow.NextHop = c.getNextHop(flow.NextHop, destRouting.NextHop)
 
 	// set asns according to user config
-	flow.SrcAS = c.getASNumber(flow.SrcAS, sourceRouting.ASN)
-	flow.DstAS = c.getASNumber(flow.DstAS, destRouting.ASN)
+	flow.SrcAS = c.getASNumber(flow.SrcAS, sourceRouting.ASN, flow.SrcNetMask)
+	flow.DstAS = c.getASNumber(flow.DstAS, destRouting.ASN, flow.DstNetMask)
 	flow.AppendArrayUInt32(schema.ColumnDstCommunities, destRouting.Communities)
 	flow.AppendArrayUInt32(schema.ColumnDstASPath, destRouting.ASPath)
 	if len(destRouting.LargeCommunities) > 0 {
@@ -148,7 +148,7 @@ func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) bool {
 }
 
 // getASNumber retrieves the AS number for a flow, depending on user preferences.
-func (c *Component) getASNumber(flowAS, bmpAS uint32) (asn uint32) {
+func (c *Component) getASNumber(flowAS, bmpAS uint32, flowNetMask uint8) (asn uint32) {
 	for _, provider := range c.config.ASNProviders {
 		if asn != 0 {
 			break
@@ -162,6 +162,11 @@ func (c *Component) getASNumber(flowAS, bmpAS uint32) (asn uint32) {
 		case ASNProviderFlowExceptPrivate:
 			asn = flowAS
 			if isPrivateAS(asn) {
+				asn = 0
+			}
+		case ASNProviderFlowExceptDefaultRoute:
+			asn = flowAS
+			if flowNetMask == 0 {
 				asn = 0
 			}
 		case ASNProviderRouting:
