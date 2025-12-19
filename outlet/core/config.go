@@ -55,6 +55,8 @@ const (
 	ASNProviderFlow ASNProvider = iota
 	// ASNProviderFlowExceptPrivate uses the AS number embedded in flows, except if this is a private AS.
 	ASNProviderFlowExceptPrivate
+	// ASNProviderFlowExceptDefaultRoute uses the AS number embedded in flows, except if the netmask is zero.
+	ASNProviderFlowExceptDefaultRoute
 	// ASNProviderGeoIP pulls the AS number from a GeoIP database.
 	ASNProviderGeoIP
 	// ASNProviderRouting uses the AS number from BMP
