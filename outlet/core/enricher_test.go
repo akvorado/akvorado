@@ -744,8 +744,8 @@ func TestGetASNumber(t *testing.T) {
 		{helpers.Mark(), "1.0.0.1", 65536, 0, 24, []ASNProvider{ASNProviderFlowExceptPrivate, ASNProviderFlow}, 65536},
 		{helpers.Mark(), "1.0.0.1", 12322, 0, 24, []ASNProvider{ASNProviderFlowExceptPrivate}, 12322},
 		{helpers.Mark(), "1.0.0.1", 12322, 0, 0, []ASNProvider{ASNProviderFlowExceptDefaultRoute}, 0},
-		// 10
 		{helpers.Mark(), "192.0.2.2", 12322, 174, 24, []ASNProvider{ASNProviderRouting}, 174},
+		// 10
 		{helpers.Mark(), "192.0.2.129", 12322, 1299, 24, []ASNProvider{ASNProviderRouting}, 1299},
 		{helpers.Mark(), "192.0.2.254", 12322, 0, 24, []ASNProvider{ASNProviderRouting}, 0},
 		{helpers.Mark(), "1.0.0.1", 12322, 65300, 24, []ASNProvider{ASNProviderRouting}, 65300},
