@@ -493,7 +493,7 @@ fix this, you need to use `cflowd use-vrtr-if-index`. You can find more
 information in [Nokia's
 documentation](https://infocenter.nokia.com/public/7750SR140R4/topic/com.sr.router.config/html/cflowd_cli.html#tgardner5iexrn6muno).
 
-#### GNMI
+#### gNMI
 
 Instead of SNMP, you can use gNMI. The interface index challenge (see `SNMP`
 above) also applies. See this
@@ -557,6 +557,57 @@ Here are a few resources from MikroTik help site to configure a Mikrotik device:
 
 - [Traffic Flow](https://help.mikrotik.com/docs/spaces/ROS/pages/21102653/Traffic+Flow)
 - [SNMP](https://help.mikrotik.com/docs/spaces/ROS/pages/8978519/SNMP)
+
+### Huawei
+
+Huawei routers support NetStream, a protocol compatible with NetFlow v9.
+
+```text
+system
+ip netstream export version 9 origin-as
+ip netstream export index-switch 32
+ip netstream as-mode 32
+ip netstream mpls-aware label-and-ip
+ip netstream timeout active 10
+ip netstream timeout inactive 10
+ip netstream export template timeout-rate 30
+ip netstream export template option sampler
+ip netstream export template option timeout-rate 30
+ip netstream export template option refresh-rate 30
+ip netstream sampler fix-packets 2000 inbound
+ip netstream sampler fix-packets 2000 outbound
+ip netstream export source X.X.X.X
+ip netstream export host Y.Y.Y.Y 2055
+ipv6 netstream export version 9 origin-as
+ipv6 netstream export index-switch 32
+ipv6 netstream as-mode 32
+ipv6 netstream mpls-aware label-and-ip
+ipv6 netstream timeout active 10
+ipv6 netstream timeout inactive 10
+ipv6 netstream export template timeout-rate 30
+ipv6 netstream export template option sampler
+ipv6 netstream export template option timeout-rate 30
+ipv6 netstream export template option refresh-rate 30
+ipv6 netstream sampler fix-packets 2000 inbound
+ipv6 netstream sampler fix-packets 2000 outbound
+ipv6 netstream export source X.X.X.X
+ipv6 netstream export host Y.Y.Y.Y 2055
+```
+
+On each interface:
+
+```text
+interface Eth-Trunk8.545
+ip netstream inbound
+ipv6 netstream inbound
+```
+
+On each slot:
+
+```text
+slot 1:ip netstream sampler to slot self
+slot 1:ipv6 netstream sampler to slot self
+```
 
 ### GNU/Linux
 
