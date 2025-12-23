@@ -22,8 +22,8 @@ struct {
 } counter_map SEC(".maps");
 
 // SO_REUSEPORT program to distribute incoming packets across workers. This
-// program is called for each incoming packet and returns the socket index to
-// which the packet should be delivered.
+// program is called for each incoming packet and calls
+// `bpf_sk_select_reuseport()` helper to select the target socket.
 SEC("sk_reuseport")
 int reuseport_balance_prog(struct sk_reuseport_md *reuse_md)
 {
