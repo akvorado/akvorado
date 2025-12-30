@@ -33,7 +33,7 @@ const (
 	directionReverse
 )
 
-func (nd *Decoder) decodeNFv5(packet *netflowlegacy.PacketNetFlowV5, ts, sysUptime uint64, options decoder.Option, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
+func (nd *Decoder) decodeNFv5(packet *netflowlegacy.PacketNetFlowV5, ts, sysUptime uint64, options decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
 	for _, record := range packet.Records {
 		bf.SamplingRate = uint64(packet.SamplingInterval)
 		bf.InIf = uint32(record.Input)
@@ -65,7 +65,7 @@ func (nd *Decoder) decodeNFv5(packet *netflowlegacy.PacketNetFlowV5, ts, sysUpti
 	}
 }
 
-func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets []any, tao *templatesAndOptions, ts, sysUptime uint64, options decoder.Option, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
+func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets []any, tao *templatesAndOptions, ts, sysUptime uint64, options decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
 	// Look for sampling rate in option data flowsets
 	for _, flowSet := range flowSets {
 		switch tFlowSet := flowSet.(type) {
@@ -107,7 +107,7 @@ func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets 
 	}
 }
 
-func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templatesAndOptions, fields []netflow.DataField, ts, sysUptime uint64, options decoder.Option, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
+func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templatesAndOptions, fields []netflow.DataField, ts, sysUptime uint64, options decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
 	var reversePresent *bitset.BitSet
 	for _, dir := range []direction{directionForward, directionReverse} {
 		var etype, dstPort, srcPort uint16

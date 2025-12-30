@@ -18,7 +18,7 @@ func TestDecode(t *testing.T) {
 	r := reporter.NewMock(t)
 	sch := schema.NewMock(t).EnableAllColumns()
 	sdecoder := New(r, decoder.Dependencies{Schema: sch})
-	options := decoder.Option{}
+	options := decoder.Options{}
 	bf := sch.NewFlowMessage()
 	got := []*schema.FlowMessage{}
 	finalize := func() {

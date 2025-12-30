@@ -20,14 +20,14 @@ type Decoder interface {
 	// provided flow message. When a flow is enqueted, it will call the finalize
 	// function. It is important to not set an error once the flow is being
 	// built (as there is no rollback possible).
-	Decode(in RawFlow, options Option, bf *schema.FlowMessage, finalize FinalizeFlowFunc) (int, error)
+	Decode(in RawFlow, options Options, bf *schema.FlowMessage, finalize FinalizeFlowFunc) (int, error)
 
 	// Name returns the decoder name
 	Name() string
 }
 
-// Option specifies option to influence the behaviour of the decoder
-type Option struct {
+// Options specifies option to influence the behaviour of the decoder
+type Options struct {
 	// TimestampSource is a selector for how to set the TimeReceived.
 	TimestampSource pb.RawFlow_TimestampSource
 }

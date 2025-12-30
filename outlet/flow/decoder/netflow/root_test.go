@@ -41,7 +41,7 @@ func setup(t *testing.T, clearTS bool) (*reporter.Reporter, decoder.Decoder, *sc
 
 func TestDecode(t *testing.T) {
 	r, nfdecoder, bf, got, finalize := setup(t, true)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	// Send an option template
 	template := helpers.ReadPcapL4(t, filepath.Join("testdata", "options-template.pcap"))
@@ -244,7 +244,7 @@ func TestDecode(t *testing.T) {
 
 func TestTemplatesMixedWithData(t *testing.T) {
 	r, nfdecoder, bf, _, finalize := setup(t, true)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	// Send packet with both data and templates
 	template := helpers.ReadPcapL4(t, filepath.Join("testdata", "data+templates.pcap"))
@@ -269,7 +269,7 @@ func TestTemplatesMixedWithData(t *testing.T) {
 
 func TestDecodeSamplingRate(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "samplingrate-template.pcap"))
 	_, err := nfdecoder.Decode(
@@ -314,7 +314,7 @@ func TestDecodeSamplingRate(t *testing.T) {
 
 func TestDecodeMultipleSamplingRates(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "multiplesamplingrates-options-template.pcap"))
 	_, err := nfdecoder.Decode(
@@ -402,7 +402,7 @@ func TestDecodeMultipleSamplingRates(t *testing.T) {
 
 func TestDecodeICMP(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "icmp-template.pcap"))
 	_, err := nfdecoder.Decode(
@@ -480,7 +480,7 @@ func TestDecodeICMP(t *testing.T) {
 
 func TestDecodeDataLink(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "datalink-template.pcap"))
 	_, err := nfdecoder.Decode(
@@ -527,7 +527,7 @@ func TestDecodeDataLink(t *testing.T) {
 
 func TestDecodeWithoutTemplate(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "datalink-data.pcap"))
 	_, err := nfdecoder.Decode(
@@ -545,7 +545,7 @@ func TestDecodeWithoutTemplate(t *testing.T) {
 
 func TestDecodeMPLS(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "mpls.pcap"))
 	_, err := nfdecoder.Decode(
@@ -607,7 +607,7 @@ func TestDecodeNFv5(t *testing.T) {
 	} {
 		t.Run(tsSource.String(), func(t *testing.T) {
 			_, nfdecoder, bf, got, finalize := setup(t, false)
-			options := decoder.Option{TimestampSource: tsSource}
+			options := decoder.Options{TimestampSource: tsSource}
 
 			data := helpers.ReadPcapL4(t, filepath.Join("testdata", "nfv5.pcap"))
 			_, err := nfdecoder.Decode(
@@ -657,7 +657,7 @@ func TestDecodeNFv5(t *testing.T) {
 
 func TestDecodeTimestampFromNetFlowPacket(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, false)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_NETFLOW_PACKET}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_NETFLOW_PACKET}
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "template.pcap"))
 	_, err := nfdecoder.Decode(
@@ -692,7 +692,7 @@ func TestDecodeTimestampFromNetFlowPacket(t *testing.T) {
 
 func TestDecodeTimestampFromFirstSwitched(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, false)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED}
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "template.pcap"))
 	_, err := nfdecoder.Decode(
@@ -728,7 +728,7 @@ func TestDecodeTimestampFromFirstSwitched(t *testing.T) {
 
 func TestDecodeNAT(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	// The following PCAP is a NAT event, there is no sampling rate, no bytes,
 	// no packets. We can't do much with it.
@@ -765,7 +765,7 @@ func TestDecodeNAT(t *testing.T) {
 
 func TestDecodePhysicalInterfaces(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "physicalinterfaces.pcap"))
 	_, err := nfdecoder.Decode(
@@ -807,7 +807,7 @@ func TestDecodePhysicalInterfaces(t *testing.T) {
 
 func TestDecodeRFC5103(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "ipfixprobe-templates.pcap"))
 	_, err := nfdecoder.Decode(

@@ -38,7 +38,7 @@ func (c *Component) Decode(rawFlow *pb.RawFlow, bf *schema.FlowMessage, finalize
 	}
 
 	// Decode the flow
-	options := decoder.Option{
+	options := decoder.Options{
 		TimestampSource: rawFlow.TimestampSource,
 	}
 
@@ -55,7 +55,7 @@ func (c *Component) Decode(rawFlow *pb.RawFlow, bf *schema.FlowMessage, finalize
 }
 
 // decodeWithMetrics wraps decoder calls with metrics tracking.
-func (c *Component) decodeWithMetrics(dec decoder.Decoder, input decoder.RawFlow, options decoder.Option, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) error {
+func (c *Component) decodeWithMetrics(dec decoder.Decoder, input decoder.RawFlow, options decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) error {
 	defer func() {
 		if r := recover(); r != nil {
 			c.errLogger.Error().
