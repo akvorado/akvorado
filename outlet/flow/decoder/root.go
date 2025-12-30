@@ -17,9 +17,10 @@ import (
 // Decoder is the interface each decoder should implement.
 type Decoder interface {
 	// Decoder takes a raw flow and options. It should enqueue new flows in the
-	// provided flow message. When a flow is enqueted, it will call the finalize
-	// function. It is important to not set an error once the flow is being
-	// built (as there is no rollback possible).
+	// provided flow message. When a flow is enqueued, it will call the finalize
+	// function. On error, the caller is not expected to do any cleanup.
+	// Therefore, the decoder should either not raise errors once flows are
+	// being built or it should do the cleanup itself (by calling `Undo()`).
 	Decode(in RawFlow, options Options, bf *schema.FlowMessage, finalize FinalizeFlowFunc) (int, error)
 
 	// Name returns the decoder name
