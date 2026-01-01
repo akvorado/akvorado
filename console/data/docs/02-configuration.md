@@ -559,9 +559,7 @@ regex. The syntax is the one [from Go][]. If you want to use Perl
 character classes, such as `\d` or `\w`, you need to escape the
 backslash character: `\\d` and `\\w`. To test your regex, you can use
 a site like [regular expressions 101][]. Be sure to use the "Golang"
-flavor. You can use the substition function. In this case, append `.*`
-to your regex to get the [expected result][] (you can keep it in the
-final regex if you prefer).
+flavor.
 
 [regular expressions 101]: https://regex101.com/
 [expected result]: https://regex101.com/r/eg6drf/1
