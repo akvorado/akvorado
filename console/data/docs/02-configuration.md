@@ -583,6 +583,12 @@ description as the provider, and if successful, considers the interface as an
 external one”. The second rule says “if an interface was not classified as
 external or internal, consider it as an internal one.”
 
+When the description is `Transit: Cogent 1-3834938493`, the first rule will put
+`transit` into the connectivity field (check with
+[regex101.com](https://regex101.com/r/FPITQE/1)), then `cogent` in the provider
+field (check with [regex101.com](https://regex101.com/r/jnzhSv/1)), and classify
+the interface as external.
+
 Exporter classifiers gets the classifier IP address and its hostname. Like the
 interface classifiers, they should invoke one of the `Classify()` functions to
 make a decision:
