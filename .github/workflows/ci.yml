@@ -266,7 +266,7 @@ jobs:
         run: make && ./bin/akvorado version
       - name: Save IANA files to cache
         if: steps.setup.outputs.iana-cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: |
             orchestrator/clickhouse/data/udp.csv
