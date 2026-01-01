@@ -562,7 +562,6 @@ a site like [regular expressions 101][]. Be sure to use the "Golang"
 flavor.
 
 [regular expressions 101]: https://regex101.com/
-[expected result]: https://regex101.com/r/eg6drf/1
 
 Here is an example, assuming interface descriptions for external
 facing interfaces look like `Transit: Cogent 1-3834938493` or `PNI:
@@ -587,7 +586,9 @@ When the description is `Transit: Cogent 1-3834938493`, the first rule will put
 `transit` into the connectivity field (check with
 [regex101.com](https://regex101.com/r/FPITQE/1)), then `cogent` in the provider
 field (check with [regex101.com](https://regex101.com/r/jnzhSv/1)), and classify
-the interface as external.
+the interface as external. If the interface is the input one, you'll get
+`InIfConnectivity` set to `transit`, `InIfProvider` set to `cogent`, and
+`InIfBoundary` set to `external`.
 
 Exporter classifiers gets the classifier IP address and its hostname. Like the
 interface classifiers, they should invoke one of the `Classify()` functions to
@@ -603,8 +604,7 @@ make a decision:
 - `Reject()` to reject the flow
 - `Format()` to format a string: `Format("name: %s", Exporter.Name)`
 
-As a compatibility `Classify()` is an alias for `ClassifyGroup()`. Here is an
-example, assuming routers are named `th2-ncs55a1-1.example.fr` or
+Here is an example, assuming routers are named `th2-ncs55a1-1.example.fr` or
 `milan-ncs5k8-2.example.it`:
 
 ```yaml
@@ -613,6 +613,28 @@ exporter-classifiers:
   - Exporter.Name endsWith ".it" && ClassifyRegion("italy")
   - Exporter.Name matches "^(washington|newyork).*" && ClassifyRegion("usa")
   - Exporter.Name endsWith ".fr" && ClassifyRegion("france")
+```
+
+You can check the result of the classification with the following command:
+
+```console
+$ curl -s http://127.0.0.1:8080/api/v0/console/widget/flow-last | jq .
+{
+  "Bytes": 1500,
+  "Dst1stAS": 64501,
+[...]
+  "ExporterName": "dc3-edge1.example.com",
+  "ExporterRegion": "europe",
+  "ExporterRole": "edge",
+  "ExporterSite": "dc3",
+  "ExporterTenant": "acme",
+[...]
+  "InIfBoundary": "external",
+  "InIfConnectivity": "transit",
+  "InIfDescription": "Transit: Tata",
+  "InIfName": "Gi0/0/0/10",
+  "InIfProvider": "tata",
+[...]
 ```
 
 [expr]: https://expr-lang.org/docs/language-definition
