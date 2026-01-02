@@ -19,6 +19,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	"akvorado/common/constants"
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
@@ -85,7 +86,7 @@ func TestCore(t *testing.T) {
 				schema.ColumnBytes:   uint64(6765),
 				schema.ColumnPackets: uint64(4),
 				schema.ColumnEType:   uint32(0x800),
-				schema.ColumnProto:   uint32(6),
+				schema.ColumnProto:   uint32(constants.ProtoTCP),
 				schema.ColumnSrcPort: uint16(8534),
 				schema.ColumnDstPort: uint16(80),
 			},

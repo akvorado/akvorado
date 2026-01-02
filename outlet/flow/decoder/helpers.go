@@ -8,6 +8,7 @@ import (
 	"math/bits"
 	"net/netip"
 
+	"akvorado/common/constants"
 	"akvorado/common/helpers"
 	"akvorado/common/pb"
 	"akvorado/common/schema"
@@ -24,7 +25,7 @@ func ParseIPv4(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFlow_D
 	fragoffset := binary.BigEndian.Uint16(data[6:8]) & 0x1fff
 	proto = data[9]
 	if decap == pb.RawFlow_DECAP_NONE {
-		bf.AppendUint(schema.ColumnEType, helpers.ETypeIPv4)
+		bf.AppendUint(schema.ColumnEType, constants.ETypeIPv4)
 		bf.SrcAddr = DecodeIP(data[12:16])
 		bf.DstAddr = DecodeIP(data[16:20])
 		if !sch.IsDisabled(schema.ColumnGroupL3L4) {
@@ -66,7 +67,7 @@ func ParseIPv6(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFlow_D
 	l3Length = uint64(binary.BigEndian.Uint16(data[4:6])) + 40
 	proto = data[6]
 	if decap == pb.RawFlow_DECAP_NONE {
-		bf.AppendUint(schema.ColumnEType, helpers.ETypeIPv6)
+		bf.AppendUint(schema.ColumnEType, constants.ETypeIPv6)
 		bf.SrcAddr = DecodeIP(data[8:24])
 		bf.DstAddr = DecodeIP(data[24:40])
 		bf.AppendUint(schema.ColumnProto, uint64(proto))
@@ -94,14 +95,14 @@ func ParseL4(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFlow_Dec
 	case pb.RawFlow_DECAP_NONE:
 		break
 	case pb.RawFlow_DECAP_VXLAN:
-		if proto == 17 && len(data) > 16 && binary.BigEndian.Uint16(data[2:4]) == 4789 {
+		if proto == constants.ProtoUDP && len(data) > 16 && binary.BigEndian.Uint16(data[2:4]) == constants.PortVXLAN {
 			// It looks like a VXLAN packet!
 			data = data[16:]
 			return ParseEthernet(sch, bf, pb.RawFlow_DECAP_NONE, data)
 		}
 		return 0
 	case pb.RawFlow_DECAP_GRE:
-		if proto == 47 && len(data) > 4 {
+		if proto == constants.ProtoGRE && len(data) > 4 {
 			flagAndVersion := binary.BigEndian.Uint16(data[:2])
 			greProtocol := binary.BigEndian.Uint16(data[2:4])
 			// Only handle RFC 2890
@@ -112,9 +113,9 @@ func ParseL4(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFlow_Dec
 			if len(data) >= skip {
 				data = data[skip:]
 				switch greProtocol {
-				case helpers.ETypeIPv4:
+				case constants.ETypeIPv4:
 					return ParseIPv4(sch, bf, pb.RawFlow_DECAP_NONE, data)
-				case helpers.ETypeIPv6:
+				case constants.ETypeIPv6:
 					return ParseIPv6(sch, bf, pb.RawFlow_DECAP_NONE, data)
 				}
 			}
@@ -123,9 +124,9 @@ func ParseL4(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFlow_Dec
 		return 0
 	case pb.RawFlow_DECAP_IPIP:
 		switch proto {
-		case 4:
+		case constants.ProtoIPv4:
 			return ParseIPv4(sch, bf, pb.RawFlow_DECAP_NONE, data)
-		case 41:
+		case constants.ProtoIPv6:
 			return ParseIPv6(sch, bf, pb.RawFlow_DECAP_NONE, data)
 		}
 		return 0
@@ -136,12 +137,11 @@ func ParseL4(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFlow_Dec
 		// header is "no next header" (59))
 		for {
 			switch proto {
-			case 4:
+			case constants.ProtoIPv4:
 				return ParseIPv4(sch, bf, pb.RawFlow_DECAP_NONE, data)
-			case 41:
+			case constants.ProtoIPv6:
 				return ParseIPv6(sch, bf, pb.RawFlow_DECAP_NONE, data)
-			case 43:
-				// SRH header, skip it
+			case constants.ProtoSRH:
 				if len(data) < 8 || data[2] != 4 {
 					return 0
 				}
@@ -156,8 +156,7 @@ func ParseL4(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFlow_Dec
 			}
 		}
 	}
-	if proto == 6 || proto == 17 {
-		// UDP or TCP
+	if proto == constants.ProtoTCP || proto == constants.ProtoUDP {
 		if len(data) > 4 {
 			bf.AppendUint(schema.ColumnSrcPort,
 				uint64(binary.BigEndian.Uint16(data[0:2])))
@@ -167,22 +166,19 @@ func ParseL4(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFlow_Dec
 	}
 	if !sch.IsDisabled(schema.ColumnGroupL3L4) {
 		switch proto {
-		case 6:
-			// TCP
+		case constants.ProtoTCP:
 			if len(data) > 13 {
 				bf.AppendUint(schema.ColumnTCPFlags,
 					uint64(data[13]))
 			}
-		case 1:
-			// ICMPv4
+		case constants.ProtoICMPv4:
 			if len(data) > 2 {
 				bf.AppendUint(schema.ColumnICMPv4Type,
 					uint64(data[0]))
 				bf.AppendUint(schema.ColumnICMPv4Code,
 					uint64(data[1]))
 			}
-		case 58:
-			// ICMPv6
+		case constants.ProtoICMPv6:
 			if len(data) > 2 {
 				bf.AppendUint(schema.ColumnICMPv6Type,
 					uint64(data[0]))
@@ -205,25 +201,23 @@ func ParseEthernet(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFl
 		bf.AppendUint(schema.ColumnSrcMAC,
 			binary.BigEndian.Uint64([]byte{0, 0, data[6], data[7], data[8], data[9], data[10], data[11]}))
 	}
-	etherType := data[12:14]
+	etherType := binary.BigEndian.Uint16(data[12:14])
 	data = data[14:]
 	var vlan uint16
-	for etherType[0] == 0x81 && etherType[1] == 0x00 {
-		// 802.1q
+	for etherType == constants.ETypeVLAN {
 		if len(data) < 4 {
 			return 0
 		}
 		if !sch.IsDisabled(schema.ColumnGroupL2) && decap == pb.RawFlow_DECAP_NONE {
 			vlan = (uint16(data[0]&0xf) << 8) + uint16(data[1])
 		}
-		etherType = data[2:4]
+		etherType = binary.BigEndian.Uint16(data[2:4])
 		data = data[4:]
 	}
 	if vlan != 0 && bf.SrcVlan == 0 {
 		bf.SrcVlan = vlan
 	}
-	if etherType[0] == 0x88 && etherType[1] == 0x47 {
-		// MPLS
+	if etherType == constants.ETypeMPLS {
 		mplsLabels := make([]uint32, 0, 5)
 		for {
 			if len(data) < 5 {
@@ -236,9 +230,9 @@ func ParseEthernet(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFl
 			if bottom == 1 || label <= 15 {
 				switch data[0] & 0xf0 >> 4 {
 				case 4:
-					etherType = []byte{0x8, 0x0}
+					etherType = constants.ETypeIPv4
 				case 6:
-					etherType = []byte{0x86, 0xdd}
+					etherType = constants.ETypeIPv6
 				default:
 					return 0
 				}
@@ -249,9 +243,10 @@ func ParseEthernet(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFl
 			bf.AppendArrayUInt32(schema.ColumnMPLSLabels, mplsLabels)
 		}
 	}
-	if etherType[0] == 0x8 && etherType[1] == 0x0 {
+	switch etherType {
+	case constants.ETypeIPv4:
 		return ParseIPv4(sch, bf, decap, data)
-	} else if etherType[0] == 0x86 && etherType[1] == 0xdd {
+	case constants.ETypeIPv6:
 		return ParseIPv6(sch, bf, decap, data)
 	}
 	return 0

@@ -12,7 +12,7 @@ import (
 	"net/netip"
 	"time"
 
-	"akvorado/common/helpers"
+	"akvorado/common/constants"
 )
 
 // GeneratedFlow represents a generated flow.
@@ -128,18 +128,18 @@ func generateFlows(flowConfigs []FlowConfiguration, seed int64, now time.Time) [
 				}
 			}
 			if flow.SrcAddr.Is4() {
-				flow.EType = helpers.ETypeIPv4
+				flow.EType = constants.ETypeIPv4
 			} else {
-				flow.EType = helpers.ETypeIPv6
+				flow.EType = constants.ETypeIPv6
 			}
 			if proto == "tcp" {
-				flow.Proto = 6
+				flow.Proto = constants.ProtoTCP
 			} else if proto == "udp" {
-				flow.Proto = 17
-			} else if proto == "icmp" && flow.EType == helpers.ETypeIPv4 {
-				flow.Proto = 1
-			} else if proto == "icmp" && flow.EType == helpers.ETypeIPv6 {
-				flow.Proto = 58
+				flow.Proto = constants.ProtoUDP
+			} else if proto == "icmp" && flow.EType == constants.ETypeIPv4 {
+				flow.Proto = constants.ProtoICMPv4
+			} else if proto == "icmp" && flow.EType == constants.ETypeIPv6 {
+				flow.Proto = constants.ProtoICMPv6
 			}
 			flows = append(flows, flow)
 			if flowConfig.ReverseDirectionRatio > 0 {

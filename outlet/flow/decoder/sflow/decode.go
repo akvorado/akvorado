@@ -7,6 +7,7 @@ package sflow
 import (
 	"net"
 
+	"akvorado/common/constants"
 	"akvorado/common/helpers"
 	"akvorado/common/pb"
 	"akvorado/common/schema"
@@ -115,7 +116,7 @@ func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.
 				bf.AppendUint(schema.ColumnProto, uint64(recordData.Protocol))
 				bf.AppendUint(schema.ColumnSrcPort, uint64(recordData.SrcPort))
 				bf.AppendUint(schema.ColumnDstPort, uint64(recordData.DstPort))
-				bf.AppendUint(schema.ColumnEType, helpers.ETypeIPv4)
+				bf.AppendUint(schema.ColumnEType, constants.ETypeIPv4)
 				bf.AppendUint(schema.ColumnIPTos, uint64(recordData.Tos))
 			case sflow.SampledIPv6:
 				if needDecap {
@@ -127,7 +128,7 @@ func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.
 				bf.AppendUint(schema.ColumnProto, uint64(recordData.Protocol))
 				bf.AppendUint(schema.ColumnSrcPort, uint64(recordData.SrcPort))
 				bf.AppendUint(schema.ColumnDstPort, uint64(recordData.DstPort))
-				bf.AppendUint(schema.ColumnEType, helpers.ETypeIPv6)
+				bf.AppendUint(schema.ColumnEType, constants.ETypeIPv6)
 				bf.AppendUint(schema.ColumnIPTos, uint64(recordData.Priority))
 			case sflow.SampledEthernet:
 				if needDecap {

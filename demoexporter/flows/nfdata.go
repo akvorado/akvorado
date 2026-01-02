@@ -9,7 +9,7 @@ import (
 	"encoding/binary"
 	"time"
 
-	"akvorado/common/helpers"
+	"akvorado/common/constants"
 )
 
 // getNetFlowData will transform the generated flows into UDP payloads
@@ -21,15 +21,15 @@ func getNetFlowData(ctx context.Context, flows []generatedFlow, sequenceNumber u
 
 	// We have to seperate IPv6 and IPv4 flows
 	ipFlows := map[uint16][]*generatedFlow{
-		helpers.ETypeIPv4: make([]*generatedFlow, 0, len(flows)),
-		helpers.ETypeIPv6: make([]*generatedFlow, 0, len(flows)),
+		constants.ETypeIPv4: make([]*generatedFlow, 0, len(flows)),
+		constants.ETypeIPv6: make([]*generatedFlow, 0, len(flows)),
 	}
 	for idx := range flows {
 		etype := flows[idx].EType
 		ipFlows[etype] = append(ipFlows[etype], &flows[idx])
 	}
 	go func() {
-		for _, etype := range []uint16{helpers.ETypeIPv4, helpers.ETypeIPv6} {
+		for _, etype := range []uint16{constants.ETypeIPv4, constants.ETypeIPv6} {
 			flows := ipFlows[etype]
 			settings := flowSettings[etype]
 			for i := 0; i < len(flows); i += settings.MaxFlowsPerPacket {
@@ -57,7 +57,7 @@ func getNetFlowData(ctx context.Context, flows []generatedFlow, sequenceNumber u
 					flow.EndTime = uptime
 					flow.SamplerID = 1
 					var err error
-					if etype == helpers.ETypeIPv4 {
+					if etype == constants.ETypeIPv4 {
 						err = binary.Write(buf, binary.BigEndian, ipv4Flow{
 							IPFlow:  flow.IPFlow,
 							SrcAddr: flow.SrcAddr.As4(),

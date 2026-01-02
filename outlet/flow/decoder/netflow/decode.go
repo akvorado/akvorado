@@ -9,7 +9,7 @@ import (
 	"encoding/binary"
 	"net/netip"
 
-	"akvorado/common/helpers"
+	"akvorado/common/constants"
 	"akvorado/common/pb"
 	"akvorado/common/schema"
 	"akvorado/outlet/flow/decoder"
@@ -47,7 +47,7 @@ func (nd *Decoder) decodeNFv5(packet *netflowlegacy.PacketNetFlowV5, ts, sysUpti
 		bf.DstAS = uint32(record.DstAS)
 		bf.AppendUint(schema.ColumnBytes, uint64(record.DOctets))
 		bf.AppendUint(schema.ColumnPackets, uint64(record.DPkts))
-		bf.AppendUint(schema.ColumnEType, helpers.ETypeIPv4)
+		bf.AppendUint(schema.ColumnEType, constants.ETypeIPv4)
 		bf.AppendUint(schema.ColumnProto, uint64(record.Proto))
 		bf.AppendUint(schema.ColumnSrcPort, uint64(record.SrcPort))
 		bf.AppendUint(schema.ColumnDstPort, uint64(record.DstPort))
@@ -166,22 +166,22 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 			// L3
 			case netflow.IPFIX_FIELD_sourceIPv4Address:
 				if !isAllZeroIP(v) {
-					etype = helpers.ETypeIPv4
+					etype = constants.ETypeIPv4
 					bf.SrcAddr = decoder.DecodeIP(v)
 				}
 			case netflow.IPFIX_FIELD_destinationIPv4Address:
 				if !isAllZeroIP(v) {
-					etype = helpers.ETypeIPv4
+					etype = constants.ETypeIPv4
 					bf.DstAddr = decoder.DecodeIP(v)
 				}
 			case netflow.IPFIX_FIELD_sourceIPv6Address:
 				if !isAllZeroIP(v) {
-					etype = helpers.ETypeIPv6
+					etype = constants.ETypeIPv6
 					bf.SrcAddr = decoder.DecodeIP(v)
 				}
 			case netflow.IPFIX_FIELD_destinationIPv6Address:
 				if !isAllZeroIP(v) {
-					etype = helpers.ETypeIPv6
+					etype = constants.ETypeIPv6
 					bf.DstAddr = decoder.DecodeIP(v)
 				}
 			case netflow.IPFIX_FIELD_sourceIPv4PrefixLength, netflow.IPFIX_FIELD_sourceIPv6PrefixLength:
@@ -320,7 +320,7 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 				}
 			}
 		}
-		if !nd.d.Schema.IsDisabled(schema.ColumnGroupL3L4) && (proto == 1 || proto == 58) {
+		if !nd.d.Schema.IsDisabled(schema.ColumnGroupL3L4) && (proto == constants.ProtoICMPv4 || proto == constants.ProtoICMPv6) {
 			// ICMP
 			if !foundIcmpTypeCode {
 				// Some implementations may use source and destination ports, some

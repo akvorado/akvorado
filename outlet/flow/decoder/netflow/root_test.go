@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"akvorado/common/constants"
 	"akvorado/common/helpers"
 	"akvorado/common/pb"
 	"akvorado/common/reporter"
@@ -144,8 +145,8 @@ func TestDecode(t *testing.T) {
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnBytes:            uint64(1500),
 				schema.ColumnPackets:          uint64(1),
-				schema.ColumnEType:            uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:            uint32(6),
+				schema.ColumnEType:            uint32(constants.ETypeIPv4),
+				schema.ColumnProto:            uint32(constants.ProtoTCP),
 				schema.ColumnSrcPort:          uint16(443),
 				schema.ColumnDstPort:          uint16(19624),
 				schema.ColumnForwardingStatus: uint32(64),
@@ -164,8 +165,8 @@ func TestDecode(t *testing.T) {
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnBytes:            uint64(1500),
 				schema.ColumnPackets:          uint64(1),
-				schema.ColumnEType:            uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:            uint32(6),
+				schema.ColumnEType:            uint32(constants.ETypeIPv4),
+				schema.ColumnProto:            uint32(constants.ProtoTCP),
 				schema.ColumnSrcPort:          uint16(443),
 				schema.ColumnDstPort:          uint16(2444),
 				schema.ColumnForwardingStatus: uint32(64),
@@ -184,8 +185,8 @@ func TestDecode(t *testing.T) {
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnBytes:            uint64(1400),
 				schema.ColumnPackets:          uint64(1),
-				schema.ColumnEType:            uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:            uint32(6),
+				schema.ColumnEType:            uint32(constants.ETypeIPv4),
+				schema.ColumnProto:            uint32(constants.ProtoTCP),
 				schema.ColumnSrcPort:          uint16(443),
 				schema.ColumnDstPort:          uint16(53697),
 				schema.ColumnForwardingStatus: uint32(64),
@@ -204,8 +205,8 @@ func TestDecode(t *testing.T) {
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnBytes:            uint64(1448),
 				schema.ColumnPackets:          uint64(1),
-				schema.ColumnEType:            uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:            uint32(6),
+				schema.ColumnEType:            uint32(constants.ETypeIPv4),
+				schema.ColumnProto:            uint32(constants.ProtoTCP),
 				schema.ColumnSrcPort:          uint16(443),
 				schema.ColumnDstPort:          uint16(52300),
 				schema.ColumnForwardingStatus: uint32(64),
@@ -299,10 +300,10 @@ func TestDecodeSamplingRate(t *testing.T) {
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnPackets: uint64(1),
 				schema.ColumnBytes:   uint64(160),
-				schema.ColumnProto:   uint32(6),
+				schema.ColumnProto:   uint32(constants.ProtoTCP),
 				schema.ColumnSrcPort: uint16(13245),
 				schema.ColumnDstPort: uint16(10907),
-				schema.ColumnEType:   uint32(helpers.ETypeIPv4),
+				schema.ColumnEType:   uint32(constants.ETypeIPv4),
 			},
 		},
 	}
@@ -359,7 +360,7 @@ func TestDecodeMultipleSamplingRates(t *testing.T) {
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnPackets:          uint64(18),
 				schema.ColumnBytes:            uint64(1348),
-				schema.ColumnProto:            uint32(6),
+				schema.ColumnProto:            uint32(constants.ProtoTCP),
 				schema.ColumnSrcPort:          uint16(443),
 				schema.ColumnDstPort:          uint16(52616),
 				schema.ColumnForwardingStatus: uint32(64),
@@ -367,7 +368,7 @@ func TestDecodeMultipleSamplingRates(t *testing.T) {
 				schema.ColumnIPTos:            uint8(64),
 				schema.ColumnIPv6FlowLabel:    uint32(252813),
 				schema.ColumnTCPFlags:         uint16(16),
-				schema.ColumnEType:            uint32(helpers.ETypeIPv6),
+				schema.ColumnEType:            uint32(constants.ETypeIPv6),
 			},
 		},
 		{
@@ -383,14 +384,14 @@ func TestDecodeMultipleSamplingRates(t *testing.T) {
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnPackets:          uint64(4),
 				schema.ColumnBytes:            uint64(579),
-				schema.ColumnProto:            uint32(17),
+				schema.ColumnProto:            uint32(constants.ProtoUDP),
 				schema.ColumnSrcPort:          uint16(2121),
 				schema.ColumnDstPort:          uint16(2121),
 				schema.ColumnForwardingStatus: uint32(64),
 				schema.ColumnIPTTL:            uint8(57),
 				schema.ColumnIPTos:            uint8(40),
 				schema.ColumnIPv6FlowLabel:    uint32(570164),
-				schema.ColumnEType:            uint32(helpers.ETypeIPv6),
+				schema.ColumnEType:            uint32(constants.ETypeIPv6),
 			},
 		},
 	}
@@ -430,7 +431,7 @@ func TestDecodeICMP(t *testing.T) {
 				schema.ColumnEType:      uint32(34525),
 				schema.ColumnICMPv6Type: uint8(128), // Code: 0
 				schema.ColumnPackets:    uint64(1),
-				schema.ColumnProto:      uint32(58),
+				schema.ColumnProto:      uint32(constants.ProtoICMPv6),
 			},
 		},
 		{
@@ -443,7 +444,7 @@ func TestDecodeICMP(t *testing.T) {
 				schema.ColumnEType:      uint32(34525),
 				schema.ColumnICMPv6Type: uint8(129), // Code: 0
 				schema.ColumnPackets:    uint64(1),
-				schema.ColumnProto:      uint32(58),
+				schema.ColumnProto:      uint32(constants.ProtoICMPv6),
 			},
 		},
 		{
@@ -456,7 +457,7 @@ func TestDecodeICMP(t *testing.T) {
 				schema.ColumnEType:      uint32(2048),
 				schema.ColumnICMPv4Type: uint8(8), // Code: 0
 				schema.ColumnPackets:    uint64(1),
-				schema.ColumnProto:      uint32(1),
+				schema.ColumnProto:      uint32(constants.ProtoICMPv4),
 			},
 		},
 		{
@@ -467,7 +468,7 @@ func TestDecodeICMP(t *testing.T) {
 				schema.ColumnBytes:   uint64(84),
 				schema.ColumnEType:   uint32(2048),
 				schema.ColumnPackets: uint64(1),
-				schema.ColumnProto:   uint32(1),
+				schema.ColumnProto:   uint32(constants.ProtoICMPv4),
 				// Type/Code  = 0
 			},
 		},
@@ -509,9 +510,9 @@ func TestDecodeDataLink(t *testing.T) {
 				schema.ColumnBytes:        uint64(96),
 				schema.ColumnSrcPort:      uint16(55501),
 				schema.ColumnDstPort:      uint16(11777),
-				schema.ColumnEType:        uint32(helpers.ETypeIPv4),
+				schema.ColumnEType:        uint32(constants.ETypeIPv4),
 				schema.ColumnPackets:      uint64(1),
-				schema.ColumnProto:        uint32(17),
+				schema.ColumnProto:        uint32(constants.ProtoUDP),
 				schema.ColumnSrcMAC:       uint64(0xb402165592f4),
 				schema.ColumnDstMAC:       uint64(0x182ad36e503f),
 				schema.ColumnIPFragmentID: uint32(0x8f00),
@@ -566,10 +567,10 @@ func TestDecodeMPLS(t *testing.T) {
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnBytes:            uint64(89),
 				schema.ColumnPackets:          uint64(1),
-				schema.ColumnEType:            uint32(helpers.ETypeIPv6),
+				schema.ColumnEType:            uint32(constants.ETypeIPv6),
 				schema.ColumnForwardingStatus: uint32(66),
 				schema.ColumnIPTTL:            uint8(255),
-				schema.ColumnProto:            uint32(17),
+				schema.ColumnProto:            uint32(constants.ProtoUDP),
 				schema.ColumnSrcPort:          uint16(49153),
 				schema.ColumnDstPort:          uint16(862),
 				schema.ColumnMPLSLabels:       []uint32{20005, 524250},
@@ -584,10 +585,10 @@ func TestDecodeMPLS(t *testing.T) {
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnBytes:            uint64(890),
 				schema.ColumnPackets:          uint64(10),
-				schema.ColumnEType:            uint32(helpers.ETypeIPv6),
+				schema.ColumnEType:            uint32(constants.ETypeIPv6),
 				schema.ColumnForwardingStatus: uint32(66),
 				schema.ColumnIPTTL:            uint8(255),
-				schema.ColumnProto:            uint32(17),
+				schema.ColumnProto:            uint32(constants.ProtoUDP),
 				schema.ColumnSrcPort:          uint16(49153),
 				schema.ColumnDstPort:          uint16(862),
 				schema.ColumnMPLSLabels:       []uint32{20006, 524275},
@@ -639,8 +640,8 @@ func TestDecodeNFv5(t *testing.T) {
 					OtherColumns: map[schema.ColumnKey]any{
 						schema.ColumnBytes:    uint64(133),
 						schema.ColumnPackets:  uint64(1),
-						schema.ColumnEType:    uint32(helpers.ETypeIPv4),
-						schema.ColumnProto:    uint32(6),
+						schema.ColumnEType:    uint32(constants.ETypeIPv4),
+						schema.ColumnProto:    uint32(constants.ProtoTCP),
 						schema.ColumnSrcPort:  uint16(30104),
 						schema.ColumnDstPort:  uint16(11963),
 						schema.ColumnTCPFlags: uint16(0x18),
@@ -752,8 +753,8 @@ func TestDecodeNAT(t *testing.T) {
 				schema.ColumnDstAddrNAT: netip.MustParseAddr("::ffff:10.89.87.1"),
 				schema.ColumnSrcPortNAT: uint16(35303),
 				schema.ColumnDstPortNAT: uint16(53),
-				schema.ColumnEType:      uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:      uint32(17),
+				schema.ColumnEType:      uint32(constants.ETypeIPv4),
+				schema.ColumnProto:      uint32(constants.ProtoUDP),
 			},
 		},
 	}
@@ -794,8 +795,8 @@ func TestDecodePhysicalInterfaces(t *testing.T) {
 				schema.ColumnSrcPort:  uint16(55629),
 				schema.ColumnDstPort:  uint16(993),
 				schema.ColumnTCPFlags: uint16(0x10),
-				schema.ColumnEType:    uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:    uint32(6),
+				schema.ColumnEType:    uint32(constants.ETypeIPv4),
+				schema.ColumnProto:    uint32(constants.ProtoTCP),
 			},
 		},
 	}
@@ -840,8 +841,8 @@ func TestDecodeRFC5103(t *testing.T) {
 				schema.ColumnBytes:   uint64(62),
 				schema.ColumnSrcPort: uint16(56166),
 				schema.ColumnDstPort: uint16(53),
-				schema.ColumnEType:   uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:   uint32(17),
+				schema.ColumnEType:   uint32(constants.ETypeIPv4),
+				schema.ColumnProto:   uint32(constants.ProtoUDP),
 			},
 		}, {
 			// First biflow, reverse
@@ -858,8 +859,8 @@ func TestDecodeRFC5103(t *testing.T) {
 				schema.ColumnBytes:   uint64(128),
 				schema.ColumnDstPort: uint16(56166),
 				schema.ColumnSrcPort: uint16(53),
-				schema.ColumnEType:   uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:   uint32(17),
+				schema.ColumnEType:   uint32(constants.ETypeIPv4),
+				schema.ColumnProto:   uint32(constants.ProtoUDP),
 			},
 		}, {
 			// Second biflow, direct, no reverse
@@ -876,8 +877,8 @@ func TestDecodeRFC5103(t *testing.T) {
 				schema.ColumnBytes:   uint64(229),
 				schema.ColumnSrcPort: uint16(138),
 				schema.ColumnDstPort: uint16(138),
-				schema.ColumnEType:   uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:   uint32(17),
+				schema.ColumnEType:   uint32(constants.ETypeIPv4),
+				schema.ColumnProto:   uint32(constants.ProtoUDP),
 			},
 		}, {
 			// Third biflow, direct
@@ -894,8 +895,8 @@ func TestDecodeRFC5103(t *testing.T) {
 				schema.ColumnBytes:    uint64(21673),
 				schema.ColumnSrcPort:  uint16(1470),
 				schema.ColumnDstPort:  uint16(25),
-				schema.ColumnEType:    uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:    uint32(6),
+				schema.ColumnEType:    uint32(constants.ETypeIPv4),
+				schema.ColumnProto:    uint32(constants.ProtoTCP),
 				schema.ColumnTCPFlags: uint16(0x1b),
 			},
 		}, {
@@ -913,8 +914,8 @@ func TestDecodeRFC5103(t *testing.T) {
 				schema.ColumnBytes:    uint64(1546),
 				schema.ColumnSrcPort:  uint16(25),
 				schema.ColumnDstPort:  uint16(1470),
-				schema.ColumnEType:    uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:    uint32(6),
+				schema.ColumnEType:    uint32(constants.ETypeIPv4),
+				schema.ColumnProto:    uint32(constants.ProtoTCP),
 				schema.ColumnTCPFlags: uint16(0x1b),
 			},
 		}, {
@@ -930,8 +931,8 @@ func TestDecodeRFC5103(t *testing.T) {
 				schema.ColumnDstMAC:  uint64(0x00e01c3c17c2),
 				schema.ColumnPackets: uint64(4),
 				schema.ColumnBytes:   uint64(2304),
-				schema.ColumnEType:   uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:   uint32(1),
+				schema.ColumnEType:   uint32(constants.ETypeIPv4),
+				schema.ColumnProto:   uint32(constants.ProtoICMPv4),
 			},
 		},
 	}
@@ -1014,8 +1015,8 @@ func TestDecodeSRv6(t *testing.T) {
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnPackets:      uint64(1),
 				schema.ColumnBytes:        uint64(64),
-				schema.ColumnEType:        uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:        uint32(1),
+				schema.ColumnEType:        uint32(constants.ETypeIPv4),
+				schema.ColumnProto:        uint32(constants.ProtoICMPv4),
 				schema.ColumnIPTTL:        uint8(63),
 				schema.ColumnIPFragmentID: uint32(0xc96b),
 				// schema.ColumnICMPv4Type: uint8(0),

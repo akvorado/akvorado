@@ -15,6 +15,7 @@ import (
 	"github.com/ClickHouse/ch-go"
 	"github.com/ClickHouse/clickhouse-go/v2"
 
+	"akvorado/common/constants"
 	"akvorado/common/helpers"
 	"akvorado/common/schema"
 )
@@ -35,7 +36,7 @@ func TestInsertMemory(t *testing.T) {
 	bf.AppendUint(schema.ColumnInIfBoundary, uint64(schema.InterfaceBoundaryInternal))
 	bf.AppendUint(schema.ColumnOutIfBoundary, uint64(schema.InterfaceBoundaryExternal))
 	bf.AppendUint(schema.ColumnInIfSpeed, 10000)
-	bf.AppendUint(schema.ColumnEType, helpers.ETypeIPv4)
+	bf.AppendUint(schema.ColumnEType, constants.ETypeIPv4)
 	bf.Finalize()
 
 	bf.TimeReceived = 1001
@@ -48,7 +49,7 @@ func TestInsertMemory(t *testing.T) {
 	bf.AppendUint(schema.ColumnPackets, 3)
 	bf.AppendUint(schema.ColumnInIfBoundary, uint64(schema.InterfaceBoundaryExternal))
 	bf.AppendUint(schema.ColumnOutIfSpeed, 10000)
-	bf.AppendUint(schema.ColumnEType, helpers.ETypeIPv4)
+	bf.AppendUint(schema.ColumnEType, constants.ETypeIPv4)
 	bf.AppendArrayUInt32(schema.ColumnDstASPath, []uint32{65400, 65500, 65001})
 	bf.AppendArrayUInt128(schema.ColumnDstLargeCommunities, []schema.UInt128{
 		{
@@ -168,7 +169,7 @@ func TestInsertMemory(t *testing.T) {
 				"InIfBoundary":    "internal",
 				"OutIfBoundary":   "external",
 				"InIfSpeed":       float64(10000),
-				"EType":           float64(helpers.ETypeIPv4),
+				"EType":           float64(constants.ETypeIPv4),
 			}, {
 				"TimeReceived":    "1970-01-01 00:16:41",
 				"SamplingRate":    float64(20000),
@@ -181,7 +182,7 @@ func TestInsertMemory(t *testing.T) {
 				"InIfBoundary":    "external",
 				"OutIfBoundary":   "undefined",
 				"OutIfSpeed":      float64(10000),
-				"EType":           float64(helpers.ETypeIPv4),
+				"EType":           float64(constants.ETypeIPv4),
 				"DstASPath":       []any{float64(65400), float64(65500), float64(65001)},
 				"DstLargeCommunities": []any{
 					float64(1206435509165107881967816), // 65401:100:200

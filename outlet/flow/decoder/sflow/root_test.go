@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"akvorado/common/constants"
 	"akvorado/common/helpers"
 	"akvorado/common/pb"
 	"akvorado/common/reporter"
@@ -54,8 +55,8 @@ func TestDecode(t *testing.T) {
 				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnBytes:         uint64(1500),
 					schema.ColumnPackets:       uint64(1),
-					schema.ColumnEType:         uint32(helpers.ETypeIPv6),
-					schema.ColumnProto:         uint32(6),
+					schema.ColumnEType:         uint32(constants.ETypeIPv6),
+					schema.ColumnProto:         uint32(constants.ProtoTCP),
 					schema.ColumnSrcPort:       uint16(46026),
 					schema.ColumnDstPort:       uint16(22),
 					schema.ColumnSrcMAC:        uint64(40057391053392),
@@ -81,8 +82,8 @@ func TestDecode(t *testing.T) {
 				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnBytes:        uint64(421),
 					schema.ColumnPackets:      uint64(1),
-					schema.ColumnEType:        uint32(helpers.ETypeIPv4),
-					schema.ColumnProto:        uint32(6),
+					schema.ColumnEType:        uint32(constants.ETypeIPv4),
+					schema.ColumnProto:        uint32(constants.ProtoTCP),
 					schema.ColumnSrcPort:      uint16(443),
 					schema.ColumnDstPort:      uint16(56876),
 					schema.ColumnSrcMAC:       uint64(216372595274807),
@@ -103,8 +104,8 @@ func TestDecode(t *testing.T) {
 				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnBytes:         uint64(1500),
 					schema.ColumnPackets:       uint64(1),
-					schema.ColumnEType:         uint32(helpers.ETypeIPv6),
-					schema.ColumnProto:         uint32(6),
+					schema.ColumnEType:         uint32(constants.ETypeIPv6),
+					schema.ColumnProto:         uint32(constants.ProtoTCP),
 					schema.ColumnSrcPort:       uint16(46026),
 					schema.ColumnDstPort:       uint16(22),
 					schema.ColumnSrcMAC:        uint64(40057391053392),
@@ -130,8 +131,8 @@ func TestDecode(t *testing.T) {
 				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnBytes:          uint64(40),
 					schema.ColumnPackets:        uint64(1),
-					schema.ColumnEType:          uint32(helpers.ETypeIPv4),
-					schema.ColumnProto:          uint32(6),
+					schema.ColumnEType:          uint32(constants.ETypeIPv4),
+					schema.ColumnProto:          uint32(constants.ProtoTCP),
 					schema.ColumnSrcPort:        uint16(55658),
 					schema.ColumnDstPort:        uint16(5555),
 					schema.ColumnSrcMAC:         uint64(138617863011056),
@@ -154,8 +155,8 @@ func TestDecode(t *testing.T) {
 				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnBytes:         uint64(1500),
 					schema.ColumnPackets:       uint64(1),
-					schema.ColumnEType:         uint32(helpers.ETypeIPv6),
-					schema.ColumnProto:         uint32(6),
+					schema.ColumnEType:         uint32(constants.ETypeIPv6),
+					schema.ColumnProto:         uint32(constants.ProtoTCP),
 					schema.ColumnSrcPort:       uint16(46026),
 					schema.ColumnDstPort:       uint16(22),
 					schema.ColumnSrcMAC:        uint64(40057391053392),
@@ -208,8 +209,8 @@ func TestDecode(t *testing.T) {
 				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnBytes:         uint64(1500),
 					schema.ColumnPackets:       uint64(1),
-					schema.ColumnEType:         uint32(helpers.ETypeIPv6),
-					schema.ColumnProto:         uint32(6),
+					schema.ColumnEType:         uint32(constants.ETypeIPv6),
+					schema.ColumnProto:         uint32(constants.ProtoTCP),
 					schema.ColumnSrcPort:       uint16(46026),
 					schema.ColumnDstPort:       uint16(22),
 					schema.ColumnSrcMAC:        uint64(40057391053392),
@@ -249,8 +250,8 @@ func TestDecode(t *testing.T) {
 				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnBytes:            uint64(1500),
 					schema.ColumnPackets:          uint64(1),
-					schema.ColumnEType:            uint32(helpers.ETypeIPv6),
-					schema.ColumnProto:            uint32(6),
+					schema.ColumnEType:            uint32(constants.ETypeIPv6),
+					schema.ColumnProto:            uint32(constants.ProtoTCP),
 					schema.ColumnSrcPort:          uint16(46026),
 					schema.ColumnDstPort:          uint16(22),
 					schema.ColumnForwardingStatus: uint32(128),
@@ -291,8 +292,8 @@ func TestDecode(t *testing.T) {
 				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnBytes:         uint64(1500),
 					schema.ColumnPackets:       uint64(1),
-					schema.ColumnEType:         uint32(helpers.ETypeIPv6),
-					schema.ColumnProto:         uint32(6),
+					schema.ColumnEType:         uint32(constants.ETypeIPv6),
+					schema.ColumnProto:         uint32(constants.ProtoTCP),
 					schema.ColumnSrcPort:       uint16(46026),
 					schema.ColumnDstPort:       uint16(22),
 					schema.ColumnSrcMAC:        uint64(40057391053392),
@@ -336,8 +337,8 @@ func TestDecode(t *testing.T) {
 				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnBytes:          uint64(104),
 					schema.ColumnPackets:        uint64(1),
-					schema.ColumnEType:          uint32(helpers.ETypeIPv4),
-					schema.ColumnProto:          uint32(6),
+					schema.ColumnEType:          uint32(constants.ETypeIPv4),
+					schema.ColumnProto:          uint32(constants.ProtoTCP),
 					schema.ColumnSrcPort:        uint16(22),
 					schema.ColumnDstPort:        uint16(52237),
 					schema.ColumnDstASPath:      []uint32{8218, 29605, 203361},
@@ -378,8 +379,8 @@ func TestDecode(t *testing.T) {
 				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnBytes:        uint64(1344),
 					schema.ColumnPackets:      uint64(1),
-					schema.ColumnEType:        uint32(helpers.ETypeIPv4),
-					schema.ColumnProto:        uint32(17),
+					schema.ColumnEType:        uint32(constants.ETypeIPv4),
+					schema.ColumnProto:        uint32(constants.ProtoUDP),
 					schema.ColumnSrcPort:      uint16(46622),
 					schema.ColumnDstPort:      uint16(58631),
 					schema.ColumnSrcMAC:       uint64(1094287164743),
@@ -415,8 +416,8 @@ func TestDecode(t *testing.T) {
 				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnBytes:        uint64(32),
 					schema.ColumnPackets:      uint64(1),
-					schema.ColumnEType:        uint32(helpers.ETypeIPv4),
-					schema.ColumnProto:        uint32(1),
+					schema.ColumnEType:        uint32(constants.ETypeIPv4),
+					schema.ColumnProto:        uint32(constants.ProtoICMPv4),
 					schema.ColumnIPFragmentID: uint32(4329),
 					schema.ColumnIPTTL:        uint8(64),
 					schema.ColumnIPTos:        uint8(8),
@@ -431,8 +432,8 @@ func TestDecode(t *testing.T) {
 				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnBytes:        uint64(32),
 					schema.ColumnPackets:      uint64(1),
-					schema.ColumnEType:        uint32(helpers.ETypeIPv4),
-					schema.ColumnProto:        uint32(1),
+					schema.ColumnEType:        uint32(constants.ETypeIPv4),
+					schema.ColumnProto:        uint32(constants.ProtoICMPv4),
 					schema.ColumnIPFragmentID: uint32(62945),
 					schema.ColumnIPTTL:        uint8(64),
 					schema.ColumnIPTos:        uint8(8),
@@ -463,8 +464,8 @@ func TestDecode(t *testing.T) {
 				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnBytes:      uint64(84),
 					schema.ColumnPackets:    uint64(1),
-					schema.ColumnEType:      uint32(helpers.ETypeIPv4),
-					schema.ColumnProto:      uint32(1),
+					schema.ColumnEType:      uint32(constants.ETypeIPv4),
+					schema.ColumnProto:      uint32(constants.ProtoICMPv4),
 					schema.ColumnDstMAC:     uint64(0xd25b45ee5ecf),
 					schema.ColumnSrcMAC:     uint64(0xe2efc68f8cd4),
 					schema.ColumnICMPv4Type: uint8(8),
@@ -498,8 +499,8 @@ func TestDecode(t *testing.T) {
 				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnBytes:      uint64(72),
 					schema.ColumnPackets:    uint64(1),
-					schema.ColumnEType:      uint32(helpers.ETypeIPv6),
-					schema.ColumnProto:      uint32(58),
+					schema.ColumnEType:      uint32(constants.ETypeIPv6),
+					schema.ColumnProto:      uint32(constants.ProtoICMPv6),
 					schema.ColumnSrcMAC:     uint64(0xd25b45ee5ecf),
 					schema.ColumnDstMAC:     uint64(0xe2efc68f8cd4),
 					schema.ColumnIPTTL:      uint8(255),
@@ -535,8 +536,8 @@ func TestDecode(t *testing.T) {
 				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnBytes:        uint64(80),
 					schema.ColumnPackets:      uint64(1),
-					schema.ColumnEType:        uint32(helpers.ETypeIPv4),
-					schema.ColumnProto:        uint32(6),
+					schema.ColumnEType:        uint32(constants.ETypeIPv4),
+					schema.ColumnProto:        uint32(constants.ProtoTCP),
 					schema.ColumnSrcMAC:       uint64(0x4caea3520ff6),
 					schema.ColumnDstMAC:       uint64(0x000110621493),
 					schema.ColumnIPTTL:        uint8(62),
@@ -571,8 +572,8 @@ func TestDecode(t *testing.T) {
 				OtherColumns: map[schema.ColumnKey]any{
 					schema.ColumnBytes:         uint64(104),
 					schema.ColumnPackets:       uint64(1),
-					schema.ColumnEType:         uint32(helpers.ETypeIPv6),
-					schema.ColumnProto:         uint32(58),
+					schema.ColumnEType:         uint32(constants.ETypeIPv6),
+					schema.ColumnProto:         uint32(constants.ProtoICMPv6),
 					schema.ColumnSrcMAC:        uint64(0xca6e98f8498f),
 					schema.ColumnDstMAC:        uint64(0x010203040506),
 					schema.ColumnIPTTL:         uint8(64),
