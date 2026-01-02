@@ -42,7 +42,7 @@ func (d *Decoder) Name() string {
 }
 
 // Decode decodes a gob-encoded FlowMessage.
-func (d *Decoder) Decode(in decoder.RawFlow, _ decoder.Option, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) (int, error) {
+func (d *Decoder) Decode(in decoder.RawFlow, _ decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) (int, error) {
 	var decoded schema.FlowMessage
 
 	buf := bytes.NewReader(in.Payload)

@@ -39,8 +39,10 @@ type InputConfiguration struct {
 	// UseSrcAddrForExporterAddr replaces the exporter address by the transport
 	// source address.
 	UseSrcAddrForExporterAddr bool
-	// TimestampSource identify the source to use to timestamp the flows
+	// TimestampSource identifies the source to use to timestamp the flows
 	TimestampSource pb.RawFlow_TimestampSource
+	// DecapsulationProtocol is the protocol to decap. Packets not matching this protocol will be discarded.
+	DecapsulationProtocol pb.RawFlow_DecapsulationProtocol
 	// Config is the actual configuration of the input.
 	Config input.Configuration
 }

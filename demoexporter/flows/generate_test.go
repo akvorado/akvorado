@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"akvorado/common/constants"
 	"akvorado/common/helpers"
 )
 
@@ -146,7 +147,7 @@ func TestGenerateFlows(t *testing.T) {
 					IPFlow: IPFlow{
 						Octets:        1011,
 						Packets:       1,
-						Proto:         6,
+						Proto:         constants.ProtoTCP,
 						SrcPort:       443,
 						DstPort:       33550,
 						InputInt:      10,
@@ -164,7 +165,7 @@ func TestGenerateFlows(t *testing.T) {
 					IPFlow: IPFlow{
 						Octets:        1478,
 						Packets:       1,
-						Proto:         6,
+						Proto:         constants.ProtoTCP,
 						SrcPort:       443,
 						DstPort:       33200,
 						InputInt:      10,
@@ -182,7 +183,7 @@ func TestGenerateFlows(t *testing.T) {
 					IPFlow: IPFlow{
 						Packets:       1,
 						Octets:        1311,
-						Proto:         6,
+						Proto:         constants.ProtoTCP,
 						InputInt:      10,
 						OutputInt:     20,
 						SrcPort:       443,
@@ -219,7 +220,7 @@ func TestGenerateFlows(t *testing.T) {
 					IPFlow: IPFlow{
 						Octets:        866,
 						Packets:       1,
-						Proto:         6,
+						Proto:         constants.ProtoTCP,
 						SrcPort:       33820,
 						DstPort:       443,
 						InputInt:      20,
@@ -257,7 +258,7 @@ func TestGenerateFlows(t *testing.T) {
 					IPFlow: IPFlow{
 						Octets:        866,
 						Packets:       1,
-						Proto:         6,
+						Proto:         constants.ProtoTCP,
 						SrcPort:       33820,
 						DstPort:       443,
 						InputInt:      20,
@@ -275,7 +276,7 @@ func TestGenerateFlows(t *testing.T) {
 					IPFlow: IPFlow{
 						Octets:        866 / 10,
 						Packets:       1,
-						Proto:         6,
+						Proto:         constants.ProtoTCP,
 						DstPort:       33820,
 						SrcPort:       443,
 						OutputInt:     20,

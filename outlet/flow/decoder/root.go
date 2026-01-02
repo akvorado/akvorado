@@ -17,19 +17,22 @@ import (
 // Decoder is the interface each decoder should implement.
 type Decoder interface {
 	// Decoder takes a raw flow and options. It should enqueue new flows in the
-	// provided flow message. When a flow is enqueted, it will call the finalize
-	// function. It is important to not set an error once the flow is being
-	// built (as there is no rollback possible).
-	Decode(in RawFlow, options Option, bf *schema.FlowMessage, finalize FinalizeFlowFunc) (int, error)
+	// provided flow message. When a flow is enqueued, it will call the finalize
+	// function. On error, the caller is not expected to do any cleanup.
+	// Therefore, the decoder should either not raise errors once flows are
+	// being built or it should do the cleanup itself (by calling `Undo()`).
+	Decode(in RawFlow, options Options, bf *schema.FlowMessage, finalize FinalizeFlowFunc) (int, error)
 
 	// Name returns the decoder name
 	Name() string
 }
 
-// Option specifies option to influence the behaviour of the decoder
-type Option struct {
+// Options specifies option to influence the behaviour of the decoder
+type Options struct {
 	// TimestampSource is a selector for how to set the TimeReceived.
 	TimestampSource pb.RawFlow_TimestampSource
+	// DecapsulationProtocol is the protocol the decapsulate
+	DecapsulationProtocol pb.RawFlow_DecapsulationProtocol
 }
 
 // Dependencies are the dependencies for the decoder

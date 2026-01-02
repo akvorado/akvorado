@@ -9,7 +9,7 @@ import (
 	"encoding/binary"
 	"net/netip"
 
-	"akvorado/common/helpers"
+	"akvorado/common/constants"
 	"akvorado/common/pb"
 	"akvorado/common/schema"
 	"akvorado/outlet/flow/decoder"
@@ -33,7 +33,7 @@ const (
 	directionReverse
 )
 
-func (nd *Decoder) decodeNFv5(packet *netflowlegacy.PacketNetFlowV5, ts, sysUptime uint64, options decoder.Option, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
+func (nd *Decoder) decodeNFv5(packet *netflowlegacy.PacketNetFlowV5, ts, sysUptime uint64, options decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
 	for _, record := range packet.Records {
 		bf.SamplingRate = uint64(packet.SamplingInterval)
 		bf.InIf = uint32(record.Input)
@@ -47,7 +47,7 @@ func (nd *Decoder) decodeNFv5(packet *netflowlegacy.PacketNetFlowV5, ts, sysUpti
 		bf.DstAS = uint32(record.DstAS)
 		bf.AppendUint(schema.ColumnBytes, uint64(record.DOctets))
 		bf.AppendUint(schema.ColumnPackets, uint64(record.DPkts))
-		bf.AppendUint(schema.ColumnEType, helpers.ETypeIPv4)
+		bf.AppendUint(schema.ColumnEType, constants.ETypeIPv4)
 		bf.AppendUint(schema.ColumnProto, uint64(record.Proto))
 		bf.AppendUint(schema.ColumnSrcPort, uint64(record.SrcPort))
 		bf.AppendUint(schema.ColumnDstPort, uint64(record.DstPort))
@@ -65,7 +65,7 @@ func (nd *Decoder) decodeNFv5(packet *netflowlegacy.PacketNetFlowV5, ts, sysUpti
 	}
 }
 
-func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets []any, tao *templatesAndOptions, ts, sysUptime uint64, options decoder.Option, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
+func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets []any, tao *templatesAndOptions, ts, sysUptime uint64, options decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
 	// Look for sampling rate in option data flowsets
 	for _, flowSet := range flowSets {
 		switch tFlowSet := flowSet.(type) {
@@ -107,15 +107,22 @@ func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets 
 	}
 }
 
-func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templatesAndOptions, fields []netflow.DataField, ts, sysUptime uint64, options decoder.Option, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
+func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templatesAndOptions, fields []netflow.DataField, ts, sysUptime uint64, options decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
+	// reversePresent is a bitset for fields in the reversed direction. The
+	// bitset is nil initially and fields will be added to it when we see them
+	// during the first pass.
 	var reversePresent *bitset.BitSet
+	// needDecap is true when we need to decapsulate a packet. This requires a
+	// data link frame section.
+	needDecap := options.DecapsulationProtocol != pb.RawFlow_DECAP_NONE
+
 	for _, dir := range []direction{directionForward, directionReverse} {
 		var etype, dstPort, srcPort uint16
 		var proto, icmpType, icmpCode uint8
 		var foundIcmpTypeCode bool
+		var decapOK bool
 		mplsLabels := make([]uint32, 0, 5)
-		dataLinkFrameSectionIdx := -1
-		for idx, field := range fields {
+		for _, field := range fields {
 			v, ok := field.Value.([]byte)
 			if !ok {
 				continue
@@ -159,22 +166,22 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 			// L3
 			case netflow.IPFIX_FIELD_sourceIPv4Address:
 				if !isAllZeroIP(v) {
-					etype = helpers.ETypeIPv4
+					etype = constants.ETypeIPv4
 					bf.SrcAddr = decoder.DecodeIP(v)
 				}
 			case netflow.IPFIX_FIELD_destinationIPv4Address:
 				if !isAllZeroIP(v) {
-					etype = helpers.ETypeIPv4
+					etype = constants.ETypeIPv4
 					bf.DstAddr = decoder.DecodeIP(v)
 				}
 			case netflow.IPFIX_FIELD_sourceIPv6Address:
 				if !isAllZeroIP(v) {
-					etype = helpers.ETypeIPv6
+					etype = constants.ETypeIPv6
 					bf.SrcAddr = decoder.DecodeIP(v)
 				}
 			case netflow.IPFIX_FIELD_destinationIPv6Address:
 				if !isAllZeroIP(v) {
-					etype = helpers.ETypeIPv6
+					etype = constants.ETypeIPv6
 					bf.DstAddr = decoder.DecodeIP(v)
 				}
 			case netflow.IPFIX_FIELD_sourceIPv4PrefixLength, netflow.IPFIX_FIELD_sourceIPv6PrefixLength:
@@ -215,11 +222,13 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 					bf.OutIf = uint32(decodeUNumber(v))
 				}
 
-			// RFC7133: process it later to not override other fields
-			case netflow.IPFIX_FIELD_dataLinkFrameSize:
-				// We are going to ignore it as we don't know L3 size yet.
+			// RFC7133 (aka IPFIX 315)
 			case netflow.IPFIX_FIELD_dataLinkFrameSection:
-				dataLinkFrameSectionIdx = idx
+				if l3Length := decoder.ParseEthernet(nd.d.Schema, bf, options.DecapsulationProtocol, v); l3Length > 0 {
+					bf.AppendUint(schema.ColumnBytes, l3Length)
+					bf.AppendUint(schema.ColumnPackets, 1)
+					decapOK = true
+				}
 
 			// MPLS
 			case netflow.IPFIX_FIELD_mplsTopLabelStackSection, netflow.IPFIX_FIELD_mplsLabelStackSection2, netflow.IPFIX_FIELD_mplsLabelStackSection3, netflow.IPFIX_FIELD_mplsLabelStackSection4, netflow.IPFIX_FIELD_mplsLabelStackSection5, netflow.IPFIX_FIELD_mplsLabelStackSection6, netflow.IPFIX_FIELD_mplsLabelStackSection7, netflow.IPFIX_FIELD_mplsLabelStackSection8, netflow.IPFIX_FIELD_mplsLabelStackSection9, netflow.IPFIX_FIELD_mplsLabelStackSection10:
@@ -311,14 +320,7 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 				}
 			}
 		}
-		if dataLinkFrameSectionIdx >= 0 {
-			data := fields[dataLinkFrameSectionIdx].Value.([]byte)
-			if l3Length := decoder.ParseEthernet(nd.d.Schema, bf, data); l3Length > 0 {
-				bf.AppendUint(schema.ColumnBytes, l3Length)
-				bf.AppendUint(schema.ColumnPackets, 1)
-			}
-		}
-		if !nd.d.Schema.IsDisabled(schema.ColumnGroupL3L4) && (proto == 1 || proto == 58) {
+		if !nd.d.Schema.IsDisabled(schema.ColumnGroupL3L4) && (proto == constants.ProtoICMPv4 || proto == constants.ProtoICMPv6) {
 			// ICMP
 			if !foundIcmpTypeCode {
 				// Some implementations may use source and destination ports, some
@@ -348,15 +350,22 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 		if bf.SamplingRate == 0 {
 			bf.SamplingRate = uint64(tao.GetSamplingRate(version, obsDomainID, 0))
 		}
+		localFinalize := func() {
+			if needDecap && !decapOK {
+				bf.Undo()
+			} else {
+				finalize()
+			}
+		}
 		if dir == directionForward && reversePresent == nil {
-			finalize()
+			localFinalize()
 			break
 		} else if dir == directionForward {
-			finalize()
+			localFinalize()
 			bf.Reverse()
 		} else {
 			bf.Reverse()
-			finalize()
+			localFinalize()
 		}
 	}
 }

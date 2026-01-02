@@ -173,8 +173,8 @@ ConditionETypeExpr "condition on Ethernet type" ←
  column:("EType"i !IdentStart { return c.acceptColumn() }) _
  operator:("=" / "!=") _ value:("IPv4"i / "IPv6"i) {
   etypes := map[string]uint16{
-    "ipv4": helpers.ETypeIPv4,
-    "ipv6": helpers.ETypeIPv6,
+    "ipv4": constants.ETypeIPv4,
+    "ipv6": constants.ETypeIPv6,
    }
    etype := etypes[strings.ToLower(toString(value))]
    return []any{column, operator, etype}, nil

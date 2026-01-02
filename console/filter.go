@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"akvorado/common/constants"
 	"akvorado/common/helpers"
 	"akvorado/common/schema"
 	"akvorado/console/authentication"
@@ -343,9 +344,9 @@ LIMIT %d`, attributeName, attributeName, attributeName, input.Limit), input.Pref
 			input.Prefix = ""
 		case "icmpv4", "icmpv6":
 			columnName := c.fixQueryColumnName(input.Column)
-			proto := 1
+			proto := constants.ProtoICMPv4
 			if columnName == "ICMPv6" {
-				proto = 58
+				proto = constants.ProtoICMPv6
 			}
 			results := []struct {
 				Label string `ch:"label"`

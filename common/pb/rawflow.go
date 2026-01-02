@@ -77,3 +77,30 @@ func (ts *RawFlow_TimestampSource) UnmarshalText(input []byte) error {
 	}
 	return fmt.Errorf("unknown timestamp source %q", string(input))
 }
+
+var decapsulationMap = bimap.New(map[RawFlow_DecapsulationProtocol]string{
+	RawFlow_DECAP_NONE:  "none",
+	RawFlow_DECAP_IPIP:  "ipip",
+	RawFlow_DECAP_GRE:   "gre",
+	RawFlow_DECAP_VXLAN: "vxlan",
+	RawFlow_DECAP_SRV6:  "srv6",
+})
+
+// MarshalText turns a timestamp source to text
+func (dp RawFlow_DecapsulationProtocol) MarshalText() ([]byte, error) {
+	got, ok := decapsulationMap.LoadValue(dp)
+	if ok {
+		return []byte(got), nil
+	}
+	return nil, errors.New("unknown decapsulation protocol")
+}
+
+// UnmarshalText provides a timestamp source from text
+func (dp *RawFlow_DecapsulationProtocol) UnmarshalText(input []byte) error {
+	got, ok := decapsulationMap.LoadKey(string(input))
+	if ok {
+		*dp = got
+		return nil
+	}
+	return fmt.Errorf("unknown decapsulation protocol %q", string(input))
+}

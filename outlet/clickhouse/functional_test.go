@@ -12,6 +12,7 @@ import (
 	clickhousego "github.com/ClickHouse/clickhouse-go/v2"
 
 	"akvorado/common/clickhousedb"
+	"akvorado/common/constants"
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
@@ -93,13 +94,13 @@ func TestInsert(t *testing.T) {
 		bf.DstAS = uint32(65500 + i)
 		bf.AppendString(schema.ColumnExporterName, fmt.Sprintf("exporter-%d", i))
 		bf.AppendString(schema.ColumnExporterName, "emptyness")
-		bf.AppendUint(schema.ColumnEType, helpers.ETypeIPv6)
+		bf.AppendUint(schema.ColumnEType, constants.ETypeIPv6)
 		expected = append(expected, result{
 			TimeReceived: time.Unix(int64(bf.TimeReceived), 0).UTC(),
 			SrcAS:        bf.SrcAS,
 			DstAS:        bf.DstAS,
 			ExporterName: fmt.Sprintf("exporter-%d", i),
-			EType:        helpers.ETypeIPv6,
+			EType:        constants.ETypeIPv6,
 		})
 		if i == 15 {
 			time.Sleep(time.Second)

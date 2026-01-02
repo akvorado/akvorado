@@ -10,6 +10,8 @@ import (
 	"akvorado/common/helpers/yaml"
 	"akvorado/common/pb"
 
+	"github.com/gin-gonic/gin"
+
 	"akvorado/common/helpers"
 	"akvorado/inlet/flow/input/file"
 	"akvorado/inlet/flow/input/udp"
@@ -282,6 +284,40 @@ func TestDecodeConfiguration(t *testing.T) {
 				}},
 			},
 		},
+		{
+			Description: "netflow with decapsulation of VXLAN",
+			Initial: func() any {
+				return Configuration{
+					Inputs: []InputConfiguration{{
+						Decoder: pb.RawFlow_DECODER_NETFLOW,
+						Config: &udp.Configuration{
+							Workers: 2,
+							Listen:  "127.0.0.1:2055",
+						},
+					}},
+				}
+			},
+			Configuration: func() any {
+				return gin.H{
+					"inputs": []gin.H{
+						{
+							"decapsulation-protocol": "vxlan",
+						},
+					},
+				}
+			},
+			Expected: Configuration{
+				Inputs: []InputConfiguration{{
+					Decoder:               pb.RawFlow_DECODER_NETFLOW,
+					TimestampSource:       pb.RawFlow_TS_INPUT,
+					DecapsulationProtocol: pb.RawFlow_DECAP_VXLAN,
+					Config: &udp.Configuration{
+						Workers: 2,
+						Listen:  "127.0.0.1:2055",
+					},
+				}},
+			},
+		},
 	})
 }
 
@@ -296,7 +332,8 @@ func TestMarshalYAML(t *testing.T) {
 					Workers: 3,
 				},
 			}, {
-				Decoder: pb.RawFlow_DECODER_SFLOW,
+				Decoder:               pb.RawFlow_DECODER_SFLOW,
+				DecapsulationProtocol: pb.RawFlow_DECAP_SRV6,
 				Config: &udp.Configuration{
 					Listen:  "192.0.2.11:6343",
 					Workers: 3,
@@ -310,14 +347,16 @@ func TestMarshalYAML(t *testing.T) {
 		t.Fatalf("Marshal() error:\n%+v", err)
 	}
 	expected := `inputs:
-    - decoder: netflow
+    - decapsulationprotocol: none
+      decoder: netflow
       listen: 192.0.2.11:2055
       receivebuffer: 0
       timestampsource: netflow-first-switched
       type: udp
       usesrcaddrforexporteraddr: false
       workers: 3
-    - decoder: sflow
+    - decapsulationprotocol: srv6
+      decoder: sflow
       listen: 192.0.2.11:6343
       receivebuffer: 0
       timestampsource: input

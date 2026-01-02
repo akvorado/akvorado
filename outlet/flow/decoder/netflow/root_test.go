@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"akvorado/common/constants"
 	"akvorado/common/helpers"
 	"akvorado/common/pb"
 	"akvorado/common/reporter"
@@ -41,7 +42,7 @@ func setup(t *testing.T, clearTS bool) (*reporter.Reporter, decoder.Decoder, *sc
 
 func TestDecode(t *testing.T) {
 	r, nfdecoder, bf, got, finalize := setup(t, true)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	// Send an option template
 	template := helpers.ReadPcapL4(t, filepath.Join("testdata", "options-template.pcap"))
@@ -144,8 +145,8 @@ func TestDecode(t *testing.T) {
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnBytes:            uint64(1500),
 				schema.ColumnPackets:          uint64(1),
-				schema.ColumnEType:            uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:            uint32(6),
+				schema.ColumnEType:            uint32(constants.ETypeIPv4),
+				schema.ColumnProto:            uint32(constants.ProtoTCP),
 				schema.ColumnSrcPort:          uint16(443),
 				schema.ColumnDstPort:          uint16(19624),
 				schema.ColumnForwardingStatus: uint32(64),
@@ -164,8 +165,8 @@ func TestDecode(t *testing.T) {
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnBytes:            uint64(1500),
 				schema.ColumnPackets:          uint64(1),
-				schema.ColumnEType:            uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:            uint32(6),
+				schema.ColumnEType:            uint32(constants.ETypeIPv4),
+				schema.ColumnProto:            uint32(constants.ProtoTCP),
 				schema.ColumnSrcPort:          uint16(443),
 				schema.ColumnDstPort:          uint16(2444),
 				schema.ColumnForwardingStatus: uint32(64),
@@ -184,8 +185,8 @@ func TestDecode(t *testing.T) {
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnBytes:            uint64(1400),
 				schema.ColumnPackets:          uint64(1),
-				schema.ColumnEType:            uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:            uint32(6),
+				schema.ColumnEType:            uint32(constants.ETypeIPv4),
+				schema.ColumnProto:            uint32(constants.ProtoTCP),
 				schema.ColumnSrcPort:          uint16(443),
 				schema.ColumnDstPort:          uint16(53697),
 				schema.ColumnForwardingStatus: uint32(64),
@@ -204,8 +205,8 @@ func TestDecode(t *testing.T) {
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnBytes:            uint64(1448),
 				schema.ColumnPackets:          uint64(1),
-				schema.ColumnEType:            uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:            uint32(6),
+				schema.ColumnEType:            uint32(constants.ETypeIPv4),
+				schema.ColumnProto:            uint32(constants.ProtoTCP),
 				schema.ColumnSrcPort:          uint16(443),
 				schema.ColumnDstPort:          uint16(52300),
 				schema.ColumnForwardingStatus: uint32(64),
@@ -244,7 +245,7 @@ func TestDecode(t *testing.T) {
 
 func TestTemplatesMixedWithData(t *testing.T) {
 	r, nfdecoder, bf, _, finalize := setup(t, true)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	// Send packet with both data and templates
 	template := helpers.ReadPcapL4(t, filepath.Join("testdata", "data+templates.pcap"))
@@ -269,7 +270,7 @@ func TestTemplatesMixedWithData(t *testing.T) {
 
 func TestDecodeSamplingRate(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "samplingrate-template.pcap"))
 	_, err := nfdecoder.Decode(
@@ -299,10 +300,10 @@ func TestDecodeSamplingRate(t *testing.T) {
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnPackets: uint64(1),
 				schema.ColumnBytes:   uint64(160),
-				schema.ColumnProto:   uint32(6),
+				schema.ColumnProto:   uint32(constants.ProtoTCP),
 				schema.ColumnSrcPort: uint16(13245),
 				schema.ColumnDstPort: uint16(10907),
-				schema.ColumnEType:   uint32(helpers.ETypeIPv4),
+				schema.ColumnEType:   uint32(constants.ETypeIPv4),
 			},
 		},
 	}
@@ -314,7 +315,7 @@ func TestDecodeSamplingRate(t *testing.T) {
 
 func TestDecodeMultipleSamplingRates(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "multiplesamplingrates-options-template.pcap"))
 	_, err := nfdecoder.Decode(
@@ -359,7 +360,7 @@ func TestDecodeMultipleSamplingRates(t *testing.T) {
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnPackets:          uint64(18),
 				schema.ColumnBytes:            uint64(1348),
-				schema.ColumnProto:            uint32(6),
+				schema.ColumnProto:            uint32(constants.ProtoTCP),
 				schema.ColumnSrcPort:          uint16(443),
 				schema.ColumnDstPort:          uint16(52616),
 				schema.ColumnForwardingStatus: uint32(64),
@@ -367,7 +368,7 @@ func TestDecodeMultipleSamplingRates(t *testing.T) {
 				schema.ColumnIPTos:            uint8(64),
 				schema.ColumnIPv6FlowLabel:    uint32(252813),
 				schema.ColumnTCPFlags:         uint16(16),
-				schema.ColumnEType:            uint32(helpers.ETypeIPv6),
+				schema.ColumnEType:            uint32(constants.ETypeIPv6),
 			},
 		},
 		{
@@ -383,14 +384,14 @@ func TestDecodeMultipleSamplingRates(t *testing.T) {
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnPackets:          uint64(4),
 				schema.ColumnBytes:            uint64(579),
-				schema.ColumnProto:            uint32(17),
+				schema.ColumnProto:            uint32(constants.ProtoUDP),
 				schema.ColumnSrcPort:          uint16(2121),
 				schema.ColumnDstPort:          uint16(2121),
 				schema.ColumnForwardingStatus: uint32(64),
 				schema.ColumnIPTTL:            uint8(57),
 				schema.ColumnIPTos:            uint8(40),
 				schema.ColumnIPv6FlowLabel:    uint32(570164),
-				schema.ColumnEType:            uint32(helpers.ETypeIPv6),
+				schema.ColumnEType:            uint32(constants.ETypeIPv6),
 			},
 		},
 	}
@@ -402,7 +403,7 @@ func TestDecodeMultipleSamplingRates(t *testing.T) {
 
 func TestDecodeICMP(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "icmp-template.pcap"))
 	_, err := nfdecoder.Decode(
@@ -430,7 +431,7 @@ func TestDecodeICMP(t *testing.T) {
 				schema.ColumnEType:      uint32(34525),
 				schema.ColumnICMPv6Type: uint8(128), // Code: 0
 				schema.ColumnPackets:    uint64(1),
-				schema.ColumnProto:      uint32(58),
+				schema.ColumnProto:      uint32(constants.ProtoICMPv6),
 			},
 		},
 		{
@@ -443,7 +444,7 @@ func TestDecodeICMP(t *testing.T) {
 				schema.ColumnEType:      uint32(34525),
 				schema.ColumnICMPv6Type: uint8(129), // Code: 0
 				schema.ColumnPackets:    uint64(1),
-				schema.ColumnProto:      uint32(58),
+				schema.ColumnProto:      uint32(constants.ProtoICMPv6),
 			},
 		},
 		{
@@ -456,7 +457,7 @@ func TestDecodeICMP(t *testing.T) {
 				schema.ColumnEType:      uint32(2048),
 				schema.ColumnICMPv4Type: uint8(8), // Code: 0
 				schema.ColumnPackets:    uint64(1),
-				schema.ColumnProto:      uint32(1),
+				schema.ColumnProto:      uint32(constants.ProtoICMPv4),
 			},
 		},
 		{
@@ -467,7 +468,7 @@ func TestDecodeICMP(t *testing.T) {
 				schema.ColumnBytes:   uint64(84),
 				schema.ColumnEType:   uint32(2048),
 				schema.ColumnPackets: uint64(1),
-				schema.ColumnProto:   uint32(1),
+				schema.ColumnProto:   uint32(constants.ProtoICMPv4),
 				// Type/Code  = 0
 			},
 		},
@@ -480,7 +481,7 @@ func TestDecodeICMP(t *testing.T) {
 
 func TestDecodeDataLink(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "datalink-template.pcap"))
 	_, err := nfdecoder.Decode(
@@ -509,9 +510,9 @@ func TestDecodeDataLink(t *testing.T) {
 				schema.ColumnBytes:        uint64(96),
 				schema.ColumnSrcPort:      uint16(55501),
 				schema.ColumnDstPort:      uint16(11777),
-				schema.ColumnEType:        uint32(helpers.ETypeIPv4),
+				schema.ColumnEType:        uint32(constants.ETypeIPv4),
 				schema.ColumnPackets:      uint64(1),
-				schema.ColumnProto:        uint32(17),
+				schema.ColumnProto:        uint32(constants.ProtoUDP),
 				schema.ColumnSrcMAC:       uint64(0xb402165592f4),
 				schema.ColumnDstMAC:       uint64(0x182ad36e503f),
 				schema.ColumnIPFragmentID: uint32(0x8f00),
@@ -527,7 +528,7 @@ func TestDecodeDataLink(t *testing.T) {
 
 func TestDecodeWithoutTemplate(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "datalink-data.pcap"))
 	_, err := nfdecoder.Decode(
@@ -545,7 +546,7 @@ func TestDecodeWithoutTemplate(t *testing.T) {
 
 func TestDecodeMPLS(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "mpls.pcap"))
 	_, err := nfdecoder.Decode(
@@ -566,10 +567,10 @@ func TestDecodeMPLS(t *testing.T) {
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnBytes:            uint64(89),
 				schema.ColumnPackets:          uint64(1),
-				schema.ColumnEType:            uint32(helpers.ETypeIPv6),
+				schema.ColumnEType:            uint32(constants.ETypeIPv6),
 				schema.ColumnForwardingStatus: uint32(66),
 				schema.ColumnIPTTL:            uint8(255),
-				schema.ColumnProto:            uint32(17),
+				schema.ColumnProto:            uint32(constants.ProtoUDP),
 				schema.ColumnSrcPort:          uint16(49153),
 				schema.ColumnDstPort:          uint16(862),
 				schema.ColumnMPLSLabels:       []uint32{20005, 524250},
@@ -584,10 +585,10 @@ func TestDecodeMPLS(t *testing.T) {
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnBytes:            uint64(890),
 				schema.ColumnPackets:          uint64(10),
-				schema.ColumnEType:            uint32(helpers.ETypeIPv6),
+				schema.ColumnEType:            uint32(constants.ETypeIPv6),
 				schema.ColumnForwardingStatus: uint32(66),
 				schema.ColumnIPTTL:            uint8(255),
-				schema.ColumnProto:            uint32(17),
+				schema.ColumnProto:            uint32(constants.ProtoUDP),
 				schema.ColumnSrcPort:          uint16(49153),
 				schema.ColumnDstPort:          uint16(862),
 				schema.ColumnMPLSLabels:       []uint32{20006, 524275},
@@ -607,7 +608,7 @@ func TestDecodeNFv5(t *testing.T) {
 	} {
 		t.Run(tsSource.String(), func(t *testing.T) {
 			_, nfdecoder, bf, got, finalize := setup(t, false)
-			options := decoder.Option{TimestampSource: tsSource}
+			options := decoder.Options{TimestampSource: tsSource}
 
 			data := helpers.ReadPcapL4(t, filepath.Join("testdata", "nfv5.pcap"))
 			_, err := nfdecoder.Decode(
@@ -639,8 +640,8 @@ func TestDecodeNFv5(t *testing.T) {
 					OtherColumns: map[schema.ColumnKey]any{
 						schema.ColumnBytes:    uint64(133),
 						schema.ColumnPackets:  uint64(1),
-						schema.ColumnEType:    uint32(helpers.ETypeIPv4),
-						schema.ColumnProto:    uint32(6),
+						schema.ColumnEType:    uint32(constants.ETypeIPv4),
+						schema.ColumnProto:    uint32(constants.ProtoTCP),
 						schema.ColumnSrcPort:  uint16(30104),
 						schema.ColumnDstPort:  uint16(11963),
 						schema.ColumnTCPFlags: uint16(0x18),
@@ -657,7 +658,7 @@ func TestDecodeNFv5(t *testing.T) {
 
 func TestDecodeTimestampFromNetFlowPacket(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, false)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_NETFLOW_PACKET}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_NETFLOW_PACKET}
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "template.pcap"))
 	_, err := nfdecoder.Decode(
@@ -692,7 +693,7 @@ func TestDecodeTimestampFromNetFlowPacket(t *testing.T) {
 
 func TestDecodeTimestampFromFirstSwitched(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, false)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED}
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "template.pcap"))
 	_, err := nfdecoder.Decode(
@@ -728,7 +729,7 @@ func TestDecodeTimestampFromFirstSwitched(t *testing.T) {
 
 func TestDecodeNAT(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	// The following PCAP is a NAT event, there is no sampling rate, no bytes,
 	// no packets. We can't do much with it.
@@ -752,8 +753,8 @@ func TestDecodeNAT(t *testing.T) {
 				schema.ColumnDstAddrNAT: netip.MustParseAddr("::ffff:10.89.87.1"),
 				schema.ColumnSrcPortNAT: uint16(35303),
 				schema.ColumnDstPortNAT: uint16(53),
-				schema.ColumnEType:      uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:      uint32(17),
+				schema.ColumnEType:      uint32(constants.ETypeIPv4),
+				schema.ColumnProto:      uint32(constants.ProtoUDP),
 			},
 		},
 	}
@@ -765,7 +766,7 @@ func TestDecodeNAT(t *testing.T) {
 
 func TestDecodePhysicalInterfaces(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "physicalinterfaces.pcap"))
 	_, err := nfdecoder.Decode(
@@ -794,8 +795,8 @@ func TestDecodePhysicalInterfaces(t *testing.T) {
 				schema.ColumnSrcPort:  uint16(55629),
 				schema.ColumnDstPort:  uint16(993),
 				schema.ColumnTCPFlags: uint16(0x10),
-				schema.ColumnEType:    uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:    uint32(6),
+				schema.ColumnEType:    uint32(constants.ETypeIPv4),
+				schema.ColumnProto:    uint32(constants.ProtoTCP),
 			},
 		},
 	}
@@ -807,7 +808,7 @@ func TestDecodePhysicalInterfaces(t *testing.T) {
 
 func TestDecodeRFC5103(t *testing.T) {
 	_, nfdecoder, bf, got, finalize := setup(t, true)
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "ipfixprobe-templates.pcap"))
 	_, err := nfdecoder.Decode(
@@ -840,8 +841,8 @@ func TestDecodeRFC5103(t *testing.T) {
 				schema.ColumnBytes:   uint64(62),
 				schema.ColumnSrcPort: uint16(56166),
 				schema.ColumnDstPort: uint16(53),
-				schema.ColumnEType:   uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:   uint32(17),
+				schema.ColumnEType:   uint32(constants.ETypeIPv4),
+				schema.ColumnProto:   uint32(constants.ProtoUDP),
 			},
 		}, {
 			// First biflow, reverse
@@ -858,8 +859,8 @@ func TestDecodeRFC5103(t *testing.T) {
 				schema.ColumnBytes:   uint64(128),
 				schema.ColumnDstPort: uint16(56166),
 				schema.ColumnSrcPort: uint16(53),
-				schema.ColumnEType:   uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:   uint32(17),
+				schema.ColumnEType:   uint32(constants.ETypeIPv4),
+				schema.ColumnProto:   uint32(constants.ProtoUDP),
 			},
 		}, {
 			// Second biflow, direct, no reverse
@@ -876,8 +877,8 @@ func TestDecodeRFC5103(t *testing.T) {
 				schema.ColumnBytes:   uint64(229),
 				schema.ColumnSrcPort: uint16(138),
 				schema.ColumnDstPort: uint16(138),
-				schema.ColumnEType:   uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:   uint32(17),
+				schema.ColumnEType:   uint32(constants.ETypeIPv4),
+				schema.ColumnProto:   uint32(constants.ProtoUDP),
 			},
 		}, {
 			// Third biflow, direct
@@ -894,8 +895,8 @@ func TestDecodeRFC5103(t *testing.T) {
 				schema.ColumnBytes:    uint64(21673),
 				schema.ColumnSrcPort:  uint16(1470),
 				schema.ColumnDstPort:  uint16(25),
-				schema.ColumnEType:    uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:    uint32(6),
+				schema.ColumnEType:    uint32(constants.ETypeIPv4),
+				schema.ColumnProto:    uint32(constants.ProtoTCP),
 				schema.ColumnTCPFlags: uint16(0x1b),
 			},
 		}, {
@@ -913,8 +914,8 @@ func TestDecodeRFC5103(t *testing.T) {
 				schema.ColumnBytes:    uint64(1546),
 				schema.ColumnSrcPort:  uint16(25),
 				schema.ColumnDstPort:  uint16(1470),
-				schema.ColumnEType:    uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:    uint32(6),
+				schema.ColumnEType:    uint32(constants.ETypeIPv4),
+				schema.ColumnProto:    uint32(constants.ProtoTCP),
 				schema.ColumnTCPFlags: uint16(0x1b),
 			},
 		}, {
@@ -930,8 +931,8 @@ func TestDecodeRFC5103(t *testing.T) {
 				schema.ColumnDstMAC:  uint64(0x00e01c3c17c2),
 				schema.ColumnPackets: uint64(4),
 				schema.ColumnBytes:   uint64(2304),
-				schema.ColumnEType:   uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:   uint32(1),
+				schema.ColumnEType:   uint32(constants.ETypeIPv4),
+				schema.ColumnProto:   uint32(constants.ProtoICMPv4),
 			},
 		},
 	}
@@ -942,4 +943,87 @@ func TestDecodeRFC5103(t *testing.T) {
 		t.Fatalf("Decode() (-got, +want):\n%s", diff)
 	}
 
+}
+
+func TestDecodeNonEncap(t *testing.T) {
+	pcapSets := [][]string{
+		{"options-template.pcap", "options-data.pcap", "template.pcap", "data.pcap"},
+		{"data+templates.pcap"},
+		{"mpls.pcap"},
+		{"physicalinterfaces.pcap"},
+		{"icmp-template.pcap", "icmp-data.pcap"},
+		{"multiplesamplingrates-options-template.pcap", "multiplesamplingrates-options-data.pcap",
+			"multiplesamplingrates-template.pcap", "multiplesamplingrates-data.pcap"},
+		{"ipfixprobe-templates.pcap", "ipfixprobe-data.pcap"},
+		{"nat.pcap"},
+		{"nfv5.pcap"},
+	}
+	for i, pcapSet := range pcapSets {
+		t.Run(fmt.Sprintf("set %d", i), func(t *testing.T) {
+			_, nfdecoder, bf, got, finalize := setup(t, true)
+			options := decoder.Options{
+				TimestampSource:       pb.RawFlow_TS_INPUT,
+				DecapsulationProtocol: pb.RawFlow_DECAP_VXLAN,
+			}
+
+			for _, pcap := range pcapSet {
+				data := helpers.ReadPcapL4(t, filepath.Join("testdata", pcap))
+				_, err := nfdecoder.Decode(
+					decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+					options, bf, finalize)
+				if err != nil {
+					t.Fatalf("Decode() error:\n%+v", err)
+				}
+			}
+
+			expectedFlows := []*schema.FlowMessage{}
+			if diff := helpers.Diff(*got, expectedFlows); diff != "" {
+				t.Fatalf("Decode(%v) (-got, +want):\n%s", pcapSet, diff)
+			}
+		})
+	}
+}
+
+func TestDecodeSRv6(t *testing.T) {
+	_, nfdecoder, bf, got, finalize := setup(t, true)
+	options := decoder.Options{
+		TimestampSource:       pb.RawFlow_TS_INPUT,
+		DecapsulationProtocol: pb.RawFlow_DECAP_SRV6,
+	}
+	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "ipfix-srv6-template.pcap"))
+	_, err := nfdecoder.Decode(
+		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+		options, bf, finalize)
+	if err != nil {
+		t.Fatalf("Decode() error:\n%+v", err)
+	}
+	data = helpers.ReadPcapL4(t, filepath.Join("testdata", "ipfix-srv6-data.pcap"))
+	_, err = nfdecoder.Decode(
+		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+		options, bf, finalize)
+	if err != nil {
+		t.Fatalf("Decode() error:\n%+v", err)
+	}
+	expectedFlows := []*schema.FlowMessage{
+		{
+			SamplingRate:    0,
+			InIf:            0,
+			OutIf:           0,
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("::ffff:8.8.8.8"),
+			DstAddr:         netip.MustParseAddr("::ffff:213.36.140.100"),
+			OtherColumns: map[schema.ColumnKey]any{
+				schema.ColumnPackets:      uint64(1),
+				schema.ColumnBytes:        uint64(64),
+				schema.ColumnEType:        uint32(constants.ETypeIPv4),
+				schema.ColumnProto:        uint32(constants.ProtoICMPv4),
+				schema.ColumnIPTTL:        uint8(63),
+				schema.ColumnIPFragmentID: uint32(0xc96b),
+				// schema.ColumnICMPv4Type: uint8(0),
+			},
+		},
+	}
+	if diff := helpers.Diff(*got, expectedFlows); diff != "" {
+		t.Fatalf("Decode() (-got, +want):\n%s", diff)
+	}
 }

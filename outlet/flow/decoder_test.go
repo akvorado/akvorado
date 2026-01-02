@@ -285,7 +285,7 @@ func BenchmarkDecodeNetFlow(b *testing.B) {
 	bf := sch.NewFlowMessage()
 	finalize := func() {}
 	nfdecoder := netflow.New(r, decoder.Dependencies{Schema: sch})
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	template := helpers.ReadPcapL4(b, filepath.Join("decoder", "netflow", "testdata", "options-template.pcap"))
 	_, err := nfdecoder.Decode(
@@ -324,7 +324,7 @@ func BenchmarkDecodeBidirNetFlow(b *testing.B) {
 	bf := sch.NewFlowMessage()
 	finalize := func() {}
 	nfdecoder := netflow.New(r, decoder.Dependencies{Schema: sch})
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 
 	template := helpers.ReadPcapL4(b,
 		filepath.Join("decoder", "netflow", "testdata", "ipfixprobe-templates.pcap"))
@@ -350,7 +350,7 @@ func BenchmarkDecodeSflow(b *testing.B) {
 	bf := sch.NewFlowMessage()
 	finalize := func() {}
 	sdecoder := sflow.New(r, decoder.Dependencies{Schema: sch})
-	options := decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}
+	options := decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}
 	data := helpers.ReadPcapL4(b, filepath.Join("decoder", "sflow", "testdata", "data-1140.pcap"))
 
 	for b.Loop() {

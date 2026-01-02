@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"strings"
 
-	"akvorado/common/helpers"
+	"akvorado/common/constants"
 	"akvorado/common/schema"
 )
 
@@ -113,7 +113,7 @@ func (qc Column) ToSQLSelect(sch *schema.Component) string {
 		strValue = fmt.Sprintf(`toString(%s)`, qc.String())
 	case schema.ColumnEType:
 		strValue = fmt.Sprintf(`if(EType = %d, 'IPv4', if(EType = %d, 'IPv6', '???'))`,
-			helpers.ETypeIPv4, helpers.ETypeIPv6)
+			constants.ETypeIPv4, constants.ETypeIPv6)
 	case schema.ColumnProto:
 		strValue = fmt.Sprintf(`dictGetOrDefault('%s', 'name', Proto, '???')`, schema.DictionaryProtocols)
 	case schema.ColumnMPLSLabels:

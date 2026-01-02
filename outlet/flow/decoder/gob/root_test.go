@@ -66,7 +66,7 @@ func TestGobDecoder(t *testing.T) {
 		Source:       netip.MustParseAddr("::ffff:192.0.2.1"),
 	}
 
-	nb, err := d.Decode(rawFlow, decoder.Option{}, bf, finalize)
+	nb, err := d.Decode(rawFlow, decoder.Options{}, bf, finalize)
 	if err != nil {
 		t.Fatalf("Decode() error:\n%+v", err)
 	}
@@ -92,7 +92,7 @@ func TestGobDecoderInvalidPayload(t *testing.T) {
 		Source:       netip.MustParseAddr("::ffff:192.0.2.1"),
 	}
 
-	nb, err := d.Decode(rawFlow, decoder.Option{}, bf, func() {})
+	nb, err := d.Decode(rawFlow, decoder.Options{}, bf, func() {})
 	if err == nil {
 		t.Errorf("expected error for invalid payload")
 	}

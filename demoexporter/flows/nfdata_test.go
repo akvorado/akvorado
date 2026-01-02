@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"akvorado/common/constants"
 	"akvorado/common/helpers"
 	"akvorado/common/pb"
 	"akvorado/common/reporter"
@@ -42,7 +43,7 @@ func TestGetNetFlowData(t *testing.T) {
 	for payload := range ch {
 		if _, err := nfdecoder.Decode(decoder.RawFlow{
 			Payload: payload, Source: netip.MustParseAddr("::ffff:127.0.0.1"),
-		}, decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}, bf, finalize); err != nil {
+		}, decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}, bf, finalize); err != nil {
 			t.Fatalf("Decode() error:\n%+v", err)
 		}
 	}
@@ -57,7 +58,7 @@ func TestGetNetFlowData(t *testing.T) {
 				IPFlow: IPFlow{
 					Octets:        1500,
 					Packets:       1,
-					Proto:         6,
+					Proto:         constants.ProtoTCP,
 					SrcPort:       443,
 					DstPort:       34974,
 					InputInt:      10,
@@ -75,7 +76,7 @@ func TestGetNetFlowData(t *testing.T) {
 				IPFlow: IPFlow{
 					Octets:        1300,
 					Packets:       1,
-					Proto:         6,
+					Proto:         constants.ProtoTCP,
 					SrcPort:       33179,
 					DstPort:       443,
 					InputInt:      20,
@@ -93,7 +94,7 @@ func TestGetNetFlowData(t *testing.T) {
 				IPFlow: IPFlow{
 					Octets:        1339,
 					Packets:       1,
-					Proto:         6,
+					Proto:         constants.ProtoTCP,
 					SrcPort:       443,
 					DstPort:       33199,
 					InputInt:      10,
@@ -112,7 +113,7 @@ func TestGetNetFlowData(t *testing.T) {
 	for payload := range ch {
 		if _, err := nfdecoder.Decode(decoder.RawFlow{
 			Payload: payload, Source: netip.MustParseAddr("::ffff:127.0.0.1"),
-		}, decoder.Option{TimestampSource: pb.RawFlow_TS_INPUT}, bf, finalize); err != nil {
+		}, decoder.Options{TimestampSource: pb.RawFlow_TS_INPUT}, bf, finalize); err != nil {
 			t.Fatalf("Decode() error:\n%+v", err)
 		}
 	}
@@ -131,8 +132,8 @@ func TestGetNetFlowData(t *testing.T) {
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnBytes:            uint64(1500),
 				schema.ColumnPackets:          uint64(1),
-				schema.ColumnEType:            uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:            uint32(6),
+				schema.ColumnEType:            uint32(constants.ETypeIPv4),
+				schema.ColumnProto:            uint32(constants.ProtoTCP),
 				schema.ColumnSrcPort:          uint16(443),
 				schema.ColumnDstPort:          uint16(34974),
 				schema.ColumnForwardingStatus: uint32(64),
@@ -152,8 +153,8 @@ func TestGetNetFlowData(t *testing.T) {
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnBytes:            uint64(1339),
 				schema.ColumnPackets:          uint64(1),
-				schema.ColumnEType:            uint32(helpers.ETypeIPv4),
-				schema.ColumnProto:            uint32(6),
+				schema.ColumnEType:            uint32(constants.ETypeIPv4),
+				schema.ColumnProto:            uint32(constants.ProtoTCP),
 				schema.ColumnSrcPort:          uint16(443),
 				schema.ColumnDstPort:          uint16(33199),
 				schema.ColumnForwardingStatus: uint32(64),
@@ -173,8 +174,8 @@ func TestGetNetFlowData(t *testing.T) {
 			OtherColumns: map[schema.ColumnKey]any{
 				schema.ColumnBytes:            uint64(1300),
 				schema.ColumnPackets:          uint64(1),
-				schema.ColumnEType:            uint32(helpers.ETypeIPv6),
-				schema.ColumnProto:            uint32(6),
+				schema.ColumnEType:            uint32(constants.ETypeIPv6),
+				schema.ColumnProto:            uint32(constants.ProtoTCP),
 				schema.ColumnSrcPort:          uint16(33179),
 				schema.ColumnDstPort:          uint16(443),
 				schema.ColumnForwardingStatus: uint32(64),

@@ -9,7 +9,7 @@ import (
 	"encoding/binary"
 	"time"
 
-	"akvorado/common/helpers"
+	"akvorado/common/constants"
 
 	"github.com/netsampler/goflow2/v2/decoders/netflow"
 )
@@ -22,10 +22,10 @@ type flowFamilySettings struct {
 }
 
 var flowSettings = map[uint16]*flowFamilySettings{
-	helpers.ETypeIPv4: {
+	constants.ETypeIPv4: {
 		TemplateID: 260,
 	},
-	helpers.ETypeIPv6: {
+	constants.ETypeIPv6: {
 		TemplateID: 261,
 	},
 }
@@ -81,8 +81,8 @@ type ipv6Flow struct {
 }
 
 func init() {
-	ipv4Settings := flowSettings[helpers.ETypeIPv4]
-	ipv6Settings := flowSettings[helpers.ETypeIPv6]
+	ipv4Settings := flowSettings[constants.ETypeIPv4]
+	ipv6Settings := flowSettings[constants.ETypeIPv6]
 	ipv4Settings.FlowLength = binary.Size(ipv4Flow{})
 	ipv6Settings.FlowLength = binary.Size(ipv6Flow{})
 	ipv4Settings.Template = append([]templateField{
@@ -117,7 +117,7 @@ func getNetFlowTemplates(ctx context.Context, sequenceNumber uint32, sampling in
 			panic(err)
 		}
 		// IPv4/IPv6 templates
-		for _, etype := range []uint16{helpers.ETypeIPv4, helpers.ETypeIPv6} {
+		for _, etype := range []uint16{constants.ETypeIPv4, constants.ETypeIPv6} {
 			settings := flowSettings[etype]
 			if err := binary.Write(buf, binary.BigEndian, flowSetHeader{
 				Id:     0,
