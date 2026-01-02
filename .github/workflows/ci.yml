@@ -75,7 +75,7 @@ jobs:
         run: sudo -E capsh --keep=1 --user=$USER --caps=cap_bpf+eip --addamb=cap_bpf -- -c "make test-coverage"
       - name: Upload coverage results
         if: matrix.tests == 'coverage'
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: linux-coverage
           if-no-files-found: error
@@ -96,7 +96,7 @@ jobs:
           make TARGETARCH=arm64 && mv bin/akvorado bin/akvorado-arm64
       - name: Upload binary
         if: matrix.binary
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: binary
           path: bin/akvorado-*
@@ -145,7 +145,7 @@ jobs:
       - name: Tests
         run: make test-coverage-go
       - name: Upload coverage results
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: macos-coverage
           if-no-files-found: error
@@ -191,7 +191,7 @@ jobs:
           docker compose stop
           ./.github/e2e.sh coverage
       - name: Upload coverage results
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: e2e-coverage
           if-no-files-found: error
