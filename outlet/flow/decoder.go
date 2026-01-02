@@ -39,7 +39,8 @@ func (c *Component) Decode(rawFlow *pb.RawFlow, bf *schema.FlowMessage, finalize
 
 	// Decode the flow
 	options := decoder.Options{
-		TimestampSource: rawFlow.TimestampSource,
+		TimestampSource:       rawFlow.TimestampSource,
+		DecapsulationProtocol: rawFlow.DecapsulationProtocol,
 	}
 
 	if err := c.decodeWithMetrics(dec, decoderInput, options, bf, func() {

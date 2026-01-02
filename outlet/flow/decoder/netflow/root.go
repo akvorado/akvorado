@@ -116,6 +116,10 @@ func (nd *Decoder) Decode(in decoder.RawFlow, options decoder.Options, bf *schem
 
 	switch version {
 	case 5:
+		if options.DecapsulationProtocol != pb.RawFlow_DECAP_NONE {
+			nd.metrics.errors.WithLabelValues(key, "non-encapsulated packet").Inc()
+			return 0, nil
+		}
 		var packetNFv5 netflowlegacy.PacketNetFlowV5
 		if err := netflowlegacy.DecodeMessage(buf, &packetNFv5); err != nil {
 			nd.metrics.errors.WithLabelValues(key, "NetFlow v5 decoding error").Inc()

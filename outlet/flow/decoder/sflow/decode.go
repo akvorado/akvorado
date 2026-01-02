@@ -8,6 +8,7 @@ import (
 	"net"
 
 	"akvorado/common/helpers"
+	"akvorado/common/pb"
 	"akvorado/common/schema"
 	"akvorado/outlet/flow/decoder"
 
@@ -26,7 +27,7 @@ const (
 	interfaceFormatMultiple = 2
 )
 
-func (nd *Decoder) decode(packet sflow.Packet, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) error {
+func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) error {
 	for _, flowSample := range packet.Samples {
 		var records []sflow.FlowRecord
 		forwardingStatus := 0
@@ -68,15 +69,12 @@ func (nd *Decoder) decode(packet sflow.Packet, bf *schema.FlowMessage, finalize 
 			bf.OutIf = 0
 		}
 
-		bf.ExporterAddress = decoder.DecodeIP(packet.AgentIP)
-		bf.AppendUint(schema.ColumnPackets, 1)
-		bf.AppendUint(schema.ColumnForwardingStatus, uint64(forwardingStatus))
-
 		// Optimization: avoid parsing sampled header if we have everything already parsed
 		hasSampledIPv4 := false
 		hasSampledIPv6 := false
 		hasSampledEthernet := false
 		hasExtendedSwitch := false
+		needDecap := options.DecapsulationProtocol != pb.RawFlow_DECAP_NONE
 		for _, record := range records {
 			switch record.Data.(type) {
 			case sflow.SampledIPv4:
@@ -97,16 +95,20 @@ func (nd *Decoder) decode(packet sflow.Packet, bf *schema.FlowMessage, finalize 
 				// Only process this header if:
 				//  - we're missing both sampled IPv4 and IPv6 headers, or
 				//  - we need L2 data and are missing either sampled ethernet or extended switch, or
-				//  - we need L3/L4 data
+				//  - we need L3/L4 data, or
+				//  - we have an encapsulation
 				needsIPData := !(hasSampledIPv4 || hasSampledIPv6)
 				needsL2Data := !(nd.d.Schema.IsDisabled(schema.ColumnGroupL2) || (hasSampledEthernet && hasExtendedSwitch))
 				needsL3L4Data := !nd.d.Schema.IsDisabled(schema.ColumnGroupL3L4)
-				if needsIPData || needsL2Data || needsL3L4Data {
-					if l := nd.parseSampledHeader(bf, &recordData); l > 0 {
+				if needsIPData || needsL2Data || needsL3L4Data || needDecap {
+					if l := nd.parseSampledHeader(bf, options.DecapsulationProtocol, &recordData); l > 0 {
 						l3length = l
 					}
 				}
 			case sflow.SampledIPv4:
+				if needDecap {
+					continue
+				}
 				bf.SrcAddr = decoder.DecodeIP(recordData.SrcIP)
 				bf.DstAddr = decoder.DecodeIP(recordData.DstIP)
 				l3length = uint64(recordData.Length)
@@ -116,6 +118,9 @@ func (nd *Decoder) decode(packet sflow.Packet, bf *schema.FlowMessage, finalize 
 				bf.AppendUint(schema.ColumnEType, helpers.ETypeIPv4)
 				bf.AppendUint(schema.ColumnIPTos, uint64(recordData.Tos))
 			case sflow.SampledIPv6:
+				if needDecap {
+					continue
+				}
 				bf.SrcAddr = decoder.DecodeIP(recordData.SrcIP)
 				bf.DstAddr = decoder.DecodeIP(recordData.DstIP)
 				l3length = uint64(recordData.Length)
@@ -125,6 +130,9 @@ func (nd *Decoder) decode(packet sflow.Packet, bf *schema.FlowMessage, finalize 
 				bf.AppendUint(schema.ColumnEType, helpers.ETypeIPv6)
 				bf.AppendUint(schema.ColumnIPTos, uint64(recordData.Priority))
 			case sflow.SampledEthernet:
+				if needDecap {
+					continue
+				}
 				if l3length == 0 {
 					// That's the best we can guess. sFlow says: For a layer 2
 					// header_protocol, length is total number of octets of data
@@ -137,6 +145,9 @@ func (nd *Decoder) decode(packet sflow.Packet, bf *schema.FlowMessage, finalize 
 					bf.AppendUint(schema.ColumnDstMAC, helpers.MACToUint64(net.HardwareAddr(recordData.DstMac)))
 				}
 			case sflow.ExtendedSwitch:
+				if needDecap {
+					continue
+				}
 				if !nd.d.Schema.IsDisabled(schema.ColumnGroupL2) {
 					if recordData.SrcVlan < 4096 {
 						bf.SrcVlan = uint16(recordData.SrcVlan)
@@ -146,10 +157,16 @@ func (nd *Decoder) decode(packet sflow.Packet, bf *schema.FlowMessage, finalize 
 					}
 				}
 			case sflow.ExtendedRouter:
+				if needDecap {
+					continue
+				}
 				bf.SrcNetMask = uint8(recordData.SrcMaskLen)
 				bf.DstNetMask = uint8(recordData.DstMaskLen)
 				bf.NextHop = decoder.DecodeIP(recordData.NextHop)
 			case sflow.ExtendedGateway:
+				if needDecap {
+					continue
+				}
 				bf.NextHop = decoder.DecodeIP(recordData.NextHop)
 				bf.DstAS = recordData.AS
 				bf.SrcAS = recordData.AS
@@ -168,23 +185,30 @@ func (nd *Decoder) decode(packet sflow.Packet, bf *schema.FlowMessage, finalize 
 
 		if l3length > 0 {
 			bf.AppendUint(schema.ColumnBytes, l3length)
+		} else if needDecap {
+			// This is not 100% true, but this should be good enough.
+			nd.metrics.errors.WithLabelValues(exporter, "non-encapsulated packet").Inc()
+			continue
 		}
 
+		bf.ExporterAddress = decoder.DecodeIP(packet.AgentIP)
+		bf.AppendUint(schema.ColumnPackets, 1)
+		bf.AppendUint(schema.ColumnForwardingStatus, uint64(forwardingStatus))
 		finalize()
 	}
 
 	return nil
 }
 
-func (nd *Decoder) parseSampledHeader(bf *schema.FlowMessage, header *sflow.SampledHeader) uint64 {
+func (nd *Decoder) parseSampledHeader(bf *schema.FlowMessage, decap pb.RawFlow_DecapsulationProtocol, header *sflow.SampledHeader) uint64 {
 	data := header.HeaderData
 	switch header.Protocol {
 	case 1: // Ethernet
-		return decoder.ParseEthernet(nd.d.Schema, bf, data)
+		return decoder.ParseEthernet(nd.d.Schema, bf, decap, data)
 	case 11: // IPv4
-		return decoder.ParseIPv4(nd.d.Schema, bf, data)
+		return decoder.ParseIPv4(nd.d.Schema, bf, decap, data)
 	case 12: // IPv6
-		return decoder.ParseIPv6(nd.d.Schema, bf, data)
+		return decoder.ParseIPv6(nd.d.Schema, bf, decap, data)
 	}
 	return 0
 }

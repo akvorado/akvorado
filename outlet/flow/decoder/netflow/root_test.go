@@ -943,3 +943,86 @@ func TestDecodeRFC5103(t *testing.T) {
 	}
 
 }
+
+func TestDecodeNonEncap(t *testing.T) {
+	pcapSets := [][]string{
+		{"options-template.pcap", "options-data.pcap", "template.pcap", "data.pcap"},
+		{"data+templates.pcap"},
+		{"mpls.pcap"},
+		{"physicalinterfaces.pcap"},
+		{"icmp-template.pcap", "icmp-data.pcap"},
+		{"multiplesamplingrates-options-template.pcap", "multiplesamplingrates-options-data.pcap",
+			"multiplesamplingrates-template.pcap", "multiplesamplingrates-data.pcap"},
+		{"ipfixprobe-templates.pcap", "ipfixprobe-data.pcap"},
+		{"nat.pcap"},
+		{"nfv5.pcap"},
+	}
+	for i, pcapSet := range pcapSets {
+		t.Run(fmt.Sprintf("set %d", i), func(t *testing.T) {
+			_, nfdecoder, bf, got, finalize := setup(t, true)
+			options := decoder.Options{
+				TimestampSource:       pb.RawFlow_TS_INPUT,
+				DecapsulationProtocol: pb.RawFlow_DECAP_VXLAN,
+			}
+
+			for _, pcap := range pcapSet {
+				data := helpers.ReadPcapL4(t, filepath.Join("testdata", pcap))
+				_, err := nfdecoder.Decode(
+					decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+					options, bf, finalize)
+				if err != nil {
+					t.Fatalf("Decode() error:\n%+v", err)
+				}
+			}
+
+			expectedFlows := []*schema.FlowMessage{}
+			if diff := helpers.Diff(*got, expectedFlows); diff != "" {
+				t.Fatalf("Decode(%v) (-got, +want):\n%s", pcapSet, diff)
+			}
+		})
+	}
+}
+
+func TestDecodeSRv6(t *testing.T) {
+	_, nfdecoder, bf, got, finalize := setup(t, true)
+	options := decoder.Options{
+		TimestampSource:       pb.RawFlow_TS_INPUT,
+		DecapsulationProtocol: pb.RawFlow_DECAP_SRV6,
+	}
+	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "ipfix-srv6-template.pcap"))
+	_, err := nfdecoder.Decode(
+		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+		options, bf, finalize)
+	if err != nil {
+		t.Fatalf("Decode() error:\n%+v", err)
+	}
+	data = helpers.ReadPcapL4(t, filepath.Join("testdata", "ipfix-srv6-data.pcap"))
+	_, err = nfdecoder.Decode(
+		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+		options, bf, finalize)
+	if err != nil {
+		t.Fatalf("Decode() error:\n%+v", err)
+	}
+	expectedFlows := []*schema.FlowMessage{
+		{
+			SamplingRate:    0,
+			InIf:            0,
+			OutIf:           0,
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			SrcAddr:         netip.MustParseAddr("::ffff:8.8.8.8"),
+			DstAddr:         netip.MustParseAddr("::ffff:213.36.140.100"),
+			OtherColumns: map[schema.ColumnKey]any{
+				schema.ColumnPackets:      uint64(1),
+				schema.ColumnBytes:        uint64(64),
+				schema.ColumnEType:        uint32(helpers.ETypeIPv4),
+				schema.ColumnProto:        uint32(1),
+				schema.ColumnIPTTL:        uint8(63),
+				schema.ColumnIPFragmentID: uint32(0xc96b),
+				// schema.ColumnICMPv4Type: uint8(0),
+			},
+		},
+	}
+	if diff := helpers.Diff(*got, expectedFlows); diff != "" {
+		t.Fatalf("Decode() (-got, +want):\n%s", diff)
+	}
+}

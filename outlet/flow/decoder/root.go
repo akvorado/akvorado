@@ -31,6 +31,8 @@ type Decoder interface {
 type Options struct {
 	// TimestampSource is a selector for how to set the TimeReceived.
 	TimestampSource pb.RawFlow_TimestampSource
+	// DecapsulationProtocol is the protocol the decapsulate
+	DecapsulationProtocol pb.RawFlow_DecapsulationProtocol
 }
 
 // Dependencies are the dependencies for the decoder

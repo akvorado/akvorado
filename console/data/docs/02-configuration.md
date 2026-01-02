@@ -74,10 +74,12 @@ For all available inputs, the following options are available:
   extract the timestamp from the NetFlow/IPFIX header, `netflow-first-switched`
   to use the “first switched” field from NetFlow/IPFIX.
 - `decapsulation-protocol` to look inside a tunneling protocol. The supported
-  protocols are `none` (the default), `ipip` (both v4 and v6), `gre`, `vxlan`,
-  and `srv6`. This requires the presence of a sampled packet for sFlow or the
-  use of [IPFIX 315](https://datatracker.ietf.org/doc/html/rfc7133). If there is
-  a protocol mismatch, the packet will be dropped.
+  protocols are `none` (the default), `ipip` (both IPv4 and IPv6), `gre`
+  (version 0), `vxlan` (UDP port 4789), and `srv6` (DT4, DT6, DT46, DX4, DX6 are
+  supported, not DX2, nor DT2). This requires the presence of a sampled packet
+  for sFlow or the use of [IPFIX
+  315](https://datatracker.ietf.org/doc/html/rfc7133). If there is a protocol
+  mismatch, the packet will be dropped.
 
 For the UDP input, you can use the following keys:
 
