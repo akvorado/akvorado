@@ -31,7 +31,7 @@ require (
 	github.com/hashicorp/go-version v1.8.0
 	github.com/itchyny/gojq v0.12.18
 	github.com/mattn/go-isatty v0.0.20
-	github.com/netsampler/goflow2/v2 v2.2.3
+	github.com/netsampler/goflow2/v2 v2.2.6
 	github.com/openconfig/gnmi v0.14.0
 	github.com/openconfig/gnmic/pkg/api v0.1.9
 	github.com/oschwald/maxminddb-golang/v2 v2.1.1
