@@ -88,6 +88,11 @@ func (t *templatesAndOptions) GetTemplate(version uint16, obsDomainID uint32, te
 	return template, nil
 }
 
+// GetTemplates returns nothing as there is no need to enumerate templates.
+func (t *templatesAndOptions) GetTemplates() netflow.FlowBaseTemplateSet {
+	return nil
+}
+
 // AddTemplate stores a template.
 func (t *templatesAndOptions) AddTemplate(version uint16, obsDomainID uint32, templateID uint16, template any) error {
 	var typeStr string
