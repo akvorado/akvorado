@@ -189,8 +189,10 @@ a few examples:
   that start with `th2-`.
 - `ASPath = AS1299` selects flows where the AS path contains 1299.
 
-Field names are case-insensitive. You can also add comments with
-`--` for single-line comments or by enclosing them in `/*` and `*/`.
+Field names are case-insensitive. You can also add comments with `--` for
+single-line comments or by enclosing them in `/*` and `*/`. Strings can be
+enclosed either with single quotes (`'`) or with double quotes (`"`). You can
+use `\'` or `\"` to escape quotes, and `\\` to get a single backslash.
 
 The final SQL query sent to ClickHouse is logged in the console after a
 successful request. Note that using the following fields will prevent the use of

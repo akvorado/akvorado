@@ -14,6 +14,7 @@ identified with a specific icon:
 
 - 💥 *docker*: remove conntrack-fixer service (this requires Docker Engine v23 or more recent)
 - ✨ *inlet*: add a configuration option to decapsulate received flows (IPIP, GRE, VXLAN, and SRv6 are supported)
+- 🩹 *console*: add escaping for quotes and double quotes in filter language
 - 🌱 *outlet*: improve error message when exporter name is empty when using SNMP
 - 🌱 *outlet*: add `flow-except-default-route` as an ASN provider
 

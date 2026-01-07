@@ -189,6 +189,21 @@ func quote(v any) string {
 	return "'" + strings.NewReplacer(`\`, `\\`, `'`, `\'`).Replace(toString(v)) + "'"
 }
 
+func unquote(v any) string {
+	charSlice := toSlice(v)
+	var result strings.Builder
+	for _, ch := range charSlice {
+		s := toString(ch)
+		if len(s) == 2 && s[0] == '\\' {
+			// Escape sequence: \\ or \" or \', or anything else
+			result.WriteByte(s[1])
+		} else {
+			result.WriteString(s)
+		}
+	}
+	return result.String()
+}
+
 func toSlice(v any) []any {
 	if v == nil {
 		return nil

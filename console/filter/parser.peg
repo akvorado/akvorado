@@ -8,6 +8,7 @@
     "errors"
     "fmt"
     "net/netip"
+    "strings"
 
     "akvorado/common/helpers"
   )
@@ -245,14 +246,16 @@ LargeCommunity "large community" ← value1:Unsigned32 ":" value2:Unsigned32 ":"
   return fmt.Sprintf("bitShiftLeft(%d::UInt128, 64) + bitShiftLeft(%d::UInt128, 32) + %d::UInt128", value1, value2, value3), nil
 }
 
-StringLiteral "quoted string" ← ( '"' DoubleStringChar* '"' / "'" SingleStringChar* "'" ) {
-    return string(c.text[1:len(c.text)-1]), nil
-} / ( ( '"' DoubleStringChar* ( EOL / EOF ) ) / ( "'" SingleStringChar* ( EOL / EOF ) ) ) {
+StringLiteral "quoted string" ← ( '"' chars:DoubleStringChar* '"' {
+    return unquote(chars), nil
+} / "'" chars:SingleStringChar* "'" {
+    return unquote(chars), nil
+} ) / ( ( '"' DoubleStringChar* ( EOL / EOF ) ) / ( "'" SingleStringChar* ( EOL / EOF ) ) ) {
     return "", errors.New("string literal not terminated")
 }
 SourceChar ← .
-DoubleStringChar ← !( '"' / EOL ) SourceChar
-SingleStringChar ← !( "'" / EOL ) SourceChar
+DoubleStringChar ← ( '\\' ( '\\' / '"' ) / !( '"' / EOL ) SourceChar ) { return string(c.text), nil }
+SingleStringChar ← ( '\\' ( '\\' / "'" ) / !( "'" / EOL ) SourceChar ) { return string(c.text), nil }
 ListString "list of strings" ←
    head:StringLiteral _ ',' _ tail:ListString { return fmt.Sprintf("%s, %s", quote(head), tail), nil }
  / value:StringLiteral { return quote(value), nil }

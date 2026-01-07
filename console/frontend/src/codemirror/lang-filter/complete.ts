@@ -12,6 +12,12 @@ type apiCompleteResult = {
   completions: Array<{ label: string; detail?: string; quoted: boolean }>;
 };
 
+// unescapeString processes escape sequences in a string literal.
+// It converts escape sequences like \\ and \" to their actual characters.
+function unescapeString(s: string): string {
+  return s.replace(/\\(.)/g, (_match, char) => char);
+}
+
 export const complete = async (ctx: CompletionContext) => {
   const tree = syntaxTree(ctx.state);
 
@@ -37,7 +43,7 @@ export const complete = async (ctx: CompletionContext) => {
       ...completion.options,
       ...(data.completions ?? []).map(({ label, detail, quoted }) =>
         transform({
-          label: quoted ? `"${label}"` : label,
+          label: quoted ? JSON.stringify(label) : label,
           detail,
         }),
       ),
@@ -120,6 +126,7 @@ export const complete = async (ctx: CompletionContext) => {
         completion.to = undefined;
       } else if (nodeBefore.name === "String") {
         prefix = prefix.replace(/^["']/, "").replace(/["']$/, "");
+        prefix = unescapeString(prefix);
       }
       await remote(
         {

@@ -74,6 +74,26 @@ OutIfDescription='Some other description'
 ==>
 Filter(Column, Operator, Value(String))
 
+# String with escaped double quotes
+ExporterName="something with \"escaped quotes\""
+==>
+Filter(Column, Operator, Value(String))
+
+# String with escaped single quotes
+ExporterName='something with \'escaped quotes\''
+==>
+Filter(Column, Operator, Value(String))
+
+# String with escaped backslashes
+ExporterName="backslash \\ test"
+==>
+Filter(Column, Operator, Value(String))
+
+# String with mixed escapes
+ExporterName="mixed \\ and \" escapes"
+==>
+Filter(Column, Operator, Value(String))
+
 # Comments
 OutIfDescription='Some other description' -- one comment
 ==>

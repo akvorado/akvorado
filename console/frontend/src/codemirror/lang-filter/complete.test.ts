@@ -101,6 +101,11 @@ describe("filter completion", () => {
                           detail: "network name",
                           quoted: "true",
                         },
+                        {
+                          label: 'ultra "secure" network',
+                          detail: "network name",
+                          quoted: "true",
+                        },
                       ].filter(({ label }) =>
                         label.startsWith(body.prefix ?? ""),
                       ),
@@ -242,6 +247,46 @@ describe("filter completion", () => {
     });
   });
 
+  it("completes values with escaped quotes", async () => {
+    const { from, to, options } = await get('DstNetName = "ultr|');
+    expect(JSON.parse(fetchOptions.body as string)).toEqual({
+      what: "value",
+      column: "DstNetName",
+      prefix: "ultr",
+    });
+    expect({ from, to, options }).toEqual({
+      from: 13,
+      to: 18,
+      options: [
+        {
+          apply: '"ultra \\"secure\\" network" ',
+          detail: "network name",
+          label: '"ultra \\"secure\\" network"',
+        },
+      ],
+    });
+  });
+
+  it("unescapes strings for completion", async () => {
+    const { from, to, options } = await get('DstNetName = "ultra \\"sec|');
+    expect(JSON.parse(fetchOptions.body as string)).toEqual({
+      what: "value",
+      column: "DstNetName",
+      prefix: 'ultra "sec',
+    });
+    expect({ from, to, options }).toEqual({
+      from: 13,
+      to: 25,
+      options: [
+        {
+          apply: '"ultra \\"secure\\" network" ',
+          detail: "network name",
+          label: '"ultra \\"secure\\" network"',
+        },
+      ],
+    });
+  });
+
   it("completes quoted values even when not quoted", async () => {
     const { from, to, options } = await get("DstNetName = so|");
     expect(JSON.parse(fetchOptions.body as string)).toEqual({
@@ -254,6 +299,26 @@ describe("filter completion", () => {
       to: 15,
       options: [
         { apply: '"something" ', detail: "network name", label: '"something"' },
+      ],
+    });
+  });
+
+  it("completes quoted and escaped values even when not quoted", async () => {
+    const { from, to, options } = await get("DstNetName = ul|");
+    expect(JSON.parse(fetchOptions.body as string)).toEqual({
+      what: "value",
+      column: "DstNetName",
+      prefix: "ul",
+    });
+    expect({ from, to, options }).toEqual({
+      from: 13,
+      to: 15,
+      options: [
+        {
+          apply: '"ultra \\"secure\\" network" ',
+          detail: "network name",
+          label: '"ultra \\"secure\\" network"',
+        },
       ],
     });
   });
