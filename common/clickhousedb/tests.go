@@ -32,7 +32,7 @@ func SetupClickHouse(t *testing.T, r *reporter.Reporter, cluster bool) *Componen
 		}
 		config.Cluster = "akvorado"
 	}
-	config.DialTimeout = time.Second
+	config.DialTimeout = 5 * time.Second
 	c, err := New(r, config, Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
