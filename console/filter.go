@@ -144,6 +144,17 @@ func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 				Label:  "undefined",
 				Detail: "network boundary",
 			})
+		case "flowdirection":
+			completions = append(completions, filterCompletion{
+				Label:  "ingress",
+				Detail: "flow direction",
+			}, filterCompletion{
+				Label:  "egress",
+				Detail: "flow direction",
+			}, filterCompletion{
+				Label:  "undefined",
+				Detail: "flow direction",
+			})
 		case "etype":
 			completions = append(completions, filterCompletion{
 				Label:  "IPv4",
