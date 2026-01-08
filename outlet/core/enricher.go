@@ -103,11 +103,25 @@ func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) bool {
 
 	// Classification
 	if !c.classifyExporter(t, exporterStr, flowExporterName, flow, expClassification) ||
-		!c.classifyInterface(t, exporterStr, flowExporterName, flow,
-			flowOutIfIndex, flowOutIfName, flowOutIfDescription, flowOutIfSpeed, flowOutIfVlan, outIfClassification,
+		!c.classifyInterface(t, flow,
+			exporterInfo{IP: exporterStr, Name: flowExporterName},
+			interfaceInfo{
+				Index:       flowOutIfIndex,
+				Name:        flowOutIfName,
+				Description: flowOutIfDescription,
+				Speed:       flowOutIfSpeed,
+				VLAN:        flowOutIfVlan,
+			}, outIfClassification,
 			false) ||
-		!c.classifyInterface(t, exporterStr, flowExporterName, flow,
-			flowInIfIndex, flowInIfName, flowInIfDescription, flowInIfSpeed, flowInIfVlan, inIfClassification,
+		!c.classifyInterface(t, flow,
+			exporterInfo{IP: exporterStr, Name: flowExporterName},
+			interfaceInfo{
+				Index:       flowInIfIndex,
+				Name:        flowInIfName,
+				Description: flowInIfDescription,
+				Speed:       flowInIfSpeed,
+				VLAN:        flowInIfVlan,
+			}, inIfClassification,
 			true) {
 		// Flow is rejected
 		return true
@@ -279,38 +293,26 @@ func (c *Component) writeInterface(flow *schema.FlowMessage, classification inte
 
 func (c *Component) classifyInterface(
 	t time.Time,
-	ip, exporterName string,
 	fl *schema.FlowMessage,
-	ifIndex uint32,
-	ifName,
-	ifDescription string,
-	ifSpeed uint32,
-	ifVlan uint16,
+	ei exporterInfo,
+	ii interfaceInfo,
 	classification interfaceClassification,
 	directionIn bool,
 ) bool {
 	// we already have the info provided by the metadata component
 	if (classification != interfaceClassification{}) {
-		classification.Name = ifName
-		classification.Description = ifDescription
+		classification.Name = ii.Name
+		classification.Description = ii.Description
 		return c.writeInterface(fl, classification, directionIn)
 	}
 	if len(c.config.InterfaceClassifiers) == 0 {
-		classification.Name = ifName
-		classification.Description = ifDescription
+		classification.Name = ii.Name
+		classification.Description = ii.Description
 		c.writeInterface(fl, classification, directionIn)
 		return true
 	}
-	si := exporterInfo{IP: ip, Name: exporterName}
-	ii := interfaceInfo{
-		Index:       ifIndex,
-		Name:        ifName,
-		Description: ifDescription,
-		Speed:       ifSpeed,
-		VLAN:        ifVlan,
-	}
 	key := exporterAndInterfaceInfo{
-		Exporter:  si,
+		Exporter:  ei,
 		Interface: ii,
 	}
 	if classification, ok := c.classifierInterfaceCache.Get(t, key); ok {
@@ -318,13 +320,13 @@ func (c *Component) classifyInterface(
 	}
 
 	for idx, rule := range c.config.InterfaceClassifiers {
-		err := rule.exec(si, ii, &classification)
+		err := rule.exec(ei, ii, &classification)
 		if err != nil {
 			c.classifierErrLogger.Err(err).
 				Str("type", "interface").
 				Int("index", idx).
-				Str("exporter", exporterName).
-				Str("interface", ifName).
+				Str("exporter", ei.Name).
+				Str("interface", ii.Name).
 				Msg("error executing classifier")
 			c.metrics.classifierErrors.WithLabelValues("interface", strconv.Itoa(idx)).Inc()
 			break
@@ -338,10 +340,10 @@ func (c *Component) classifyInterface(
 		break
 	}
 	if classification.Name == "" {
-		classification.Name = ifName
+		classification.Name = ii.Name
 	}
 	if classification.Description == "" {
-		classification.Description = ifDescription
+		classification.Description = ii.Description
 	}
 	c.classifierInterfaceCache.Put(t, key, classification)
 	return c.writeInterface(fl, classification, directionIn)
