@@ -222,6 +222,16 @@ UNION DISTINCT
 		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
+			JSONInput:  helpers.M{"what": "value", "column": "flowdirection"},
+			JSONOutput: helpers.M{"completions": []helpers.M{
+				{"label": "ingress", "detail": "flow direction", "quoted": false},
+				{"label": "egress", "detail": "flow direction", "quoted": false},
+				{"label": "undefined", "detail": "flow direction", "quoted": false},
+			}},
+		},
+		{
+			URL:        "/api/v0/console/filter/complete",
+			StatusCode: 200,
 			JSONInput:  helpers.M{"what": "value", "column": "etype"},
 			JSONOutput: helpers.M{"completions": []helpers.M{
 				{"label": "IPv4", "detail": "ethernet type", "quoted": false},
