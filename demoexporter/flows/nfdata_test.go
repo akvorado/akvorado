@@ -104,6 +104,7 @@ func TestGetNetFlowData(t *testing.T) {
 					ForwardStatus: 64,
 					SrcMask:       24,
 					DstMask:       24,
+					FlowDirection: 1,
 				},
 			},
 		},
@@ -137,6 +138,7 @@ func TestGetNetFlowData(t *testing.T) {
 				schema.ColumnSrcPort:          uint16(443),
 				schema.ColumnDstPort:          uint16(34974),
 				schema.ColumnForwardingStatus: uint32(64),
+				schema.ColumnFlowDirection:    uint8(schema.DirectionIngress),
 			},
 		},
 		{
@@ -158,6 +160,7 @@ func TestGetNetFlowData(t *testing.T) {
 				schema.ColumnSrcPort:          uint16(443),
 				schema.ColumnDstPort:          uint16(33199),
 				schema.ColumnForwardingStatus: uint32(64),
+				schema.ColumnFlowDirection:    uint8(schema.DirectionEgress),
 			},
 		},
 		{
@@ -179,6 +182,7 @@ func TestGetNetFlowData(t *testing.T) {
 				schema.ColumnSrcPort:          uint16(33179),
 				schema.ColumnDstPort:          uint16(443),
 				schema.ColumnForwardingStatus: uint32(64),
+				schema.ColumnFlowDirection:    uint8(schema.DirectionIngress),
 			},
 		},
 	}

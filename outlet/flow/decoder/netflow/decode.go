@@ -240,6 +240,13 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 			// Remaining
 			case netflow.IPFIX_FIELD_forwardingStatus:
 				bf.AppendUint(schema.ColumnForwardingStatus, decodeUNumber(v))
+			case netflow.IPFIX_FIELD_flowDirection:
+				switch decodeUNumber(v) {
+				case 0:
+					bf.AppendUint(schema.ColumnFlowDirection, uint64(schema.DirectionIngress))
+				case 1:
+					bf.AppendUint(schema.ColumnFlowDirection, uint64(schema.DirectionEgress))
+				}
 			default:
 				if options.TimestampSource == pb.RawFlow_TS_NETFLOW_FIRST_SWITCHED {
 					switch field.Type {

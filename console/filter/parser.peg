@@ -48,6 +48,7 @@ ConditionExpr "conditional" ←
   / ConditionCommunitiesExpr
   / ConditionETypeExpr
   / ConditionProtoExpr
+  / ConditionDirectionExpr
 
 ColumnIP ←
  column:[A-Za-z0-9]+ !IdentStart
@@ -190,6 +191,13 @@ ConditionProtoStrExpr "condition on protocol as string" ←
  column:("Proto"i !IdentStart { return c.acceptColumn() }) _
  operator:("=" / "!=") _ value:StringLiteral {
   return []any{"dictGetOrDefault('protocols', 'name', ", column, ", '???')", operator, quote(value)}, nil
+}
+
+ConditionDirectionExpr "condition on direction" ←
+ column:("FlowDirection"i !IdentStart { return c.acceptColumn() }) _
+ operator:("=" / "!=") _
+ direction:("undefined"i / "ingress"i / "egress"i) {
+  return []any{column, operator, quote(strings.ToLower(toString(direction)))}, nil
 }
 
 IP "IP address" ← [0-9A-Fa-f:.]+ !IdentStart {

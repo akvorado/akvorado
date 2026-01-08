@@ -13,14 +13,14 @@ import (
 func TestFlowSettings(t *testing.T) {
 	expected := map[uint16]*flowFamilySettings{
 		constants.ETypeIPv4: {
-			MaxFlowsPerPacket: 28,
-			FlowLength:        50,
+			MaxFlowsPerPacket: 27,
+			FlowLength:        51,
 			TemplateID:        260,
 			Template:          flowSettings[constants.ETypeIPv4].Template,
 		},
 		constants.ETypeIPv6: {
 			MaxFlowsPerPacket: 18,
-			FlowLength:        74,
+			FlowLength:        75,
 			TemplateID:        261,
 			Template:          flowSettings[constants.ETypeIPv6].Template,
 		},

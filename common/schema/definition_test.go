@@ -66,4 +66,5 @@ func TestDisabledGroup(t *testing.T) {
 func TestMarshalUnmarshal(t *testing.T) {
 	interfaceBoundaryMap.TestMarshalUnmarshal(t)
 	columnNameMap.TestMarshalUnmarshal(t)
+	directionMap.TestMarshalUnmarshal(t)
 }

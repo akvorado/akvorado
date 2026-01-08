@@ -83,6 +83,7 @@ func TestConfigHandler(t *testing.T) {
 					"DstPort",
 					"PacketSizeBucket",
 					"ForwardingStatus",
+					"FlowDirection",
 				},
 				"truncatable": []string{"SrcAddr", "DstAddr"},
 				"branding":    false,

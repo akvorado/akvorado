@@ -64,6 +64,56 @@ func (ib *InterfaceBoundary) UnmarshalText(input []byte) error {
 	return errUnknownInterfaceBoundary
 }
 
+// Direction identifies the direction of the flow.
+type Direction uint
+
+const (
+	// DirectionUndefined means we don't know about the direction
+	DirectionUndefined Direction = iota
+	// DirectionIngress means the packet is ingress
+	DirectionIngress
+	// DirectionEgress means the packet is egress
+	DirectionEgress
+)
+
+var (
+	directionMap = bimap.New(map[Direction]string{
+		DirectionUndefined: "undefined",
+		DirectionIngress:   "ingress",
+		DirectionEgress:    "egress",
+	})
+	errUnknownDirection = errors.New("unknown direction")
+)
+
+// MarshalText turns a direction into text
+func (d Direction) MarshalText() ([]byte, error) {
+	got, ok := directionMap.LoadValue(d)
+	if ok {
+		return []byte(got), nil
+	}
+	return nil, errUnknownDirection
+}
+
+// String turns a direction to string
+func (d Direction) String() string {
+	got, _ := directionMap.LoadValue(d)
+	return got
+}
+
+// UnmarshalText provides a direction from text
+func (d *Direction) UnmarshalText(input []byte) error {
+	if len(input) == 0 {
+		*d = DirectionUndefined
+		return nil
+	}
+	got, ok := directionMap.LoadKey(string(input))
+	if ok {
+		*d = got
+		return nil
+	}
+	return errUnknownDirection
+}
+
 const (
 	// DictionaryASNs is the name of the asns clickhouse dictionary.
 	DictionaryASNs string = "asns"
@@ -90,6 +140,7 @@ const (
 	ColumnPacketSize
 	ColumnPacketSizeBucket
 	ColumnForwardingStatus
+	ColumnFlowDirection
 	ColumnExporterAddress
 	ColumnExporterName
 	ColumnExporterGroup
@@ -442,6 +493,10 @@ END`,
 				}(),
 			},
 			{Key: ColumnForwardingStatus, ParserType: "uint", ClickHouseType: "UInt32"}, // TODO: UInt8 but hard to change, primary key
+			{
+				Key:            ColumnFlowDirection,
+				ClickHouseType: fmt.Sprintf("Enum8('undefined' = %d, 'ingress' = %d, 'egress' = %d)", DirectionUndefined, DirectionIngress, DirectionEgress),
+			},
 			{
 				Key:                ColumnSrcAddrNAT,
 				Disabled:           true,

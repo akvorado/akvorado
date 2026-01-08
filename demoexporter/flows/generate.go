@@ -98,6 +98,7 @@ func generateFlows(flowConfigs []FlowConfiguration, seed int64, now time.Time) [
 					SrcAS:         chooseRandom(r, flowConfig.SrcAS),
 					DstAS:         chooseRandom(r, flowConfig.DstAS),
 					ForwardStatus: 64,
+					FlowDirection: 0,
 				},
 			}
 			if flowConfig.Size == 0 {

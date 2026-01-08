@@ -46,6 +46,7 @@ type IPFlow struct {
 	DstAS         uint32
 	Proto         uint8
 	ForwardStatus uint8
+	FlowDirection uint8
 	SamplerID     uint16
 	SrcMask       uint8
 	DstMask       uint8
@@ -64,6 +65,7 @@ var ipTemplate = []templateField{
 	{netflow.NFV9_FIELD_DST_AS, 4},
 	{netflow.NFV9_FIELD_PROTOCOL, 1},
 	{netflow.NFV9_FIELD_FORWARDING_STATUS, 1},
+	{netflow.IPFIX_FIELD_flowDirection, 1},
 	{netflow.NFV9_FIELD_FLOW_SAMPLER_ID, 2},
 	{netflow.NFV9_FIELD_SRC_MASK, 1},
 	{netflow.NFV9_FIELD_DST_MASK, 1},
