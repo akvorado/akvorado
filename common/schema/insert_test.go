@@ -47,6 +47,7 @@ func TestInsertMemory(t *testing.T) {
 	bf.AppendUint(schema.ColumnDstAS, 65000)
 	bf.AppendUint(schema.ColumnBytes, 200)
 	bf.AppendUint(schema.ColumnPackets, 3)
+	bf.AppendUint(schema.ColumnFlowDirection, uint64(schema.DirectionEgress))
 	bf.AppendUint(schema.ColumnInIfBoundary, uint64(schema.InterfaceBoundaryExternal))
 	bf.AppendUint(schema.ColumnOutIfSpeed, 10000)
 	bf.AppendUint(schema.ColumnEType, constants.ETypeIPv4)
@@ -166,6 +167,7 @@ func TestInsertMemory(t *testing.T) {
 				"DstAS":           float64(12322),
 				"Bytes":           float64(20),
 				"Packets":         float64(3),
+				"FlowDirection":   "undefined",
 				"InIfBoundary":    "internal",
 				"OutIfBoundary":   "external",
 				"InIfSpeed":       float64(10000),
@@ -179,6 +181,7 @@ func TestInsertMemory(t *testing.T) {
 				"DstAS":           float64(65000),
 				"Bytes":           float64(200),
 				"Packets":         float64(3),
+				"FlowDirection":   "egress",
 				"InIfBoundary":    "external",
 				"OutIfBoundary":   "undefined",
 				"OutIfSpeed":      float64(10000),
