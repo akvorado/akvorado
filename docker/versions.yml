@@ -27,7 +27,7 @@ services:
   alloy:
     image: grafana/alloy:v1.10.2 # v\d+\.\d+\.\d+
   loki:
-    image: grafana/loki:3.5.5 # \d+\.\d+\.\d+
+    image: grafana/loki:3.5 # \d+\.\d+
   prometheus:
     image: prom/prometheus:v3.5.0 # v\d+\.\d+\.\d+
   node-exporter:
