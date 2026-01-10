@@ -56,16 +56,16 @@ ColumnIP ←
     { return c.acceptColumn() }
 ConditionIPExpr "condition on IP" ←
    column:ColumnIP _
-   operator:("=" / "!=") _ ip:IP {
-     return []any{column, operator, "toIPv6(", quote(ip), ")"}, nil
-   }
- / column:ColumnIP _
-   operator:"<<" _ subnet:Subnet {
+   operator:("<<" / "=") _ subnet:Subnet {
      return []any{column, subnet}, nil
    }
  / column:ColumnIP _
-   operator:"!<<" _ subnet:Subnet {
+   operator:("!<<" / "!=") _ subnet:Subnet {
      return []any{column, "NOT", subnet}, nil
+   }
+ / column:ColumnIP _
+   operator:("=" / "!=") _ ip:IP {
+     return []any{column, operator, "toIPv6(", quote(ip), ")"}, nil
    }
  / column:ColumnIP _
    operator:InOperator _ '(' _ value:ListIP _ ')' {

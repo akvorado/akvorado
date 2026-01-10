@@ -168,11 +168,10 @@ guaranteed, so a URL may stop working after a few upgrades.
 
 ### Filter language
 
-The filter language is similar to SQL with a few variations. Fields
-listed as dimensions can usually be used. The accepted operators are `=`,
-`!=`, `<`, `<=`, `>`, `>=`, `IN`, `NOTIN`, `LIKE`, `UNLIKE`, `ILIKE`,
-`IUNLIKE`, `<<`, and `!<<`, when they are applicable. Here are
-a few examples:
+The filter language is similar to SQL with a few variations. Fields listed as
+dimensions can usually be used. The accepted operators are `=`, `!=`, `<`, `<=`,
+`>`, `>=`, `IN`, `NOTIN`, `LIKE`, `UNLIKE`, `ILIKE`, `IUNLIKE` when they are
+applicable. Here are a few examples:
 
 - `InIfBoundary = external` only selects flows where the incoming
   interface was classified as external. The value should not be
@@ -183,7 +182,7 @@ a few examples:
   limits the source AS number of the selected flows.
 - `SrcAddr = 203.0.113.4` only selects flows with the specified
   address. Note that filtering on IP addresses is usually slower.
-- `SrcAddr << 203.0.113.0/24` only selects flows that match the
+- `SrcAddr = 203.0.113.0/24` only selects flows that match the
   specified subnet.
 - `ExporterName LIKE th2-%` selects flows from routers
   that start with `th2-`.
