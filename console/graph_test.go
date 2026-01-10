@@ -53,7 +53,7 @@ func TestSourceSelect(t *testing.T) {
 				TruncateAddrV4: 24,
 				TruncateAddrV6: 40,
 			},
-			Expected: "SELECT * REPLACE (tupleElement(IPv6CIDRToRange(SrcAddr, if(tupleElement(IPv6CIDRToRange(SrcAddr, 96), 1) = toIPv6('::ffff:0.0.0.0'), 120, 40)), 1) AS SrcAddr) FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1",
+			Expected: "SELECT * REPLACE (tupleElement(IPv6CIDRToRange(SrcAddr, if(tupleElement(IPv6CIDRToRange(SrcAddr, 96), 1) = toIPv6('0.0.0.0'), 120, 40)), 1) AS SrcAddr) FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1",
 		},
 	}
 	for _, tc := range cases {

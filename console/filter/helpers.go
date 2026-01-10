@@ -155,14 +155,10 @@ func (c *current) parsePrefix(direction string) ([]any, error) {
 	}
 	// If the prefix is not materialized, we use the "between" operator
 	c.globalStore["meta"].(*Meta).MainTableRequired = true
-	prefix := "::ffff:"
-	if net.Addr().Is6() {
-		prefix = ""
-	}
 	return []any{
 		fmt.Sprintf("%sAddr", direction),
-		fmt.Sprintf("BETWEEN toIPv6('%s%s') AND toIPv6('%s%s') AND",
-			prefix, net.Masked().Addr().String(), prefix, lastIP(net).String()),
+		fmt.Sprintf("BETWEEN toIPv6('%s') AND toIPv6('%s') AND",
+			net.Masked().Addr().String(), lastIP(net).String()),
 		c.getColumn(fmt.Sprintf("%sNetMask", direction)), "=", net.Bits(),
 	}, nil
 }
