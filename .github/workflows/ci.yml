@@ -35,10 +35,17 @@ jobs:
     strategy:
       matrix:
         tests:
-          - regular
-          - coverage
+          - part 1
+          - part 2
           - misc
         include:
+          - tests: part 1
+            compose: true
+            racetests: true
+            jstests: true
+          - tests: part 2
+            compose: true
+            coverage: true
           - tests: misc
             binary: ${{ github.ref_type == 'tag' }}
     env:
@@ -51,30 +58,27 @@ jobs:
           fetch-depth: ${{ matrix.binary && 0 || 1 }}
           persist-credentials: false
       - uses: docker/setup-buildx-action@v3
-        if: matrix.tests != 'misc'
+        if: matrix.compose
       - name: Docker Compose up
-        if: matrix.tests != 'misc'
+        if: matrix.compose
         run: docker compose -f docker/docker-compose-dev.yml up --wait --wait-timeout 60 --quiet-pull
       - name: Setup
-        if: matrix.tests != 'misc'
         uses: ./.github/actions/setup
       - name: Install dependencies
         run: sudo apt-get install -qqy shared-mime-info curl zip
 
-      # Regular tests
+      # Code tests
       - name: Go race tests
-        if: matrix.tests == 'regular'
+        if: matrix.racetests
         run: sudo -E capsh --keep=1 --user=$USER --caps=cap_bpf+eip --addamb=cap_bpf -- -c "make test-race"
       - name: JS tests
-        if: matrix.tests == 'regular'
+        if: matrix.jstests
         run: make test-js
-
-      # Coverage tests
       - name: Coverage tests
-        if: matrix.tests == 'coverage'
+        if: matrix.coverage
         run: sudo -E capsh --keep=1 --user=$USER --caps=cap_bpf+eip --addamb=cap_bpf -- -c "make test-coverage"
       - name: Upload coverage results
-        if: matrix.tests == 'coverage'
+        if: matrix.coverage
         uses: actions/upload-artifact@v6
         with:
           name: linux-coverage
@@ -101,6 +105,13 @@ jobs:
           name: binary
           path: bin/akvorado-*
           if-no-files-found: error
+
+      # Get logs from Docker Compose on failure
+      - name: Docker Compose logs
+        if: failure() && matrix.compose
+        run: |
+          docker compose logs
+
 
   build-nix:
     name: ❄️ Build on Nix
