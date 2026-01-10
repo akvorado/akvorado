@@ -58,52 +58,52 @@ func TestValidFilter(t *testing.T) {
 		},
 		{
 			Input:  `ExporterAddress << 192.168.0.0/24`,
-			Output: `ExporterAddress BETWEEN toIPv6('::ffff:192.168.0.0') AND toIPv6('::ffff:192.168.0.255')`,
+			Output: `ExporterAddress BETWEEN toIPv6('192.168.0.0') AND toIPv6('192.168.0.255')`,
 		},
 		{
 			Input:   `DstAddr << 192.168.0.0/24`,
-			Output:  `DstAddr BETWEEN toIPv6('::ffff:192.168.0.0') AND toIPv6('::ffff:192.168.0.255')`,
+			Output:  `DstAddr BETWEEN toIPv6('192.168.0.0') AND toIPv6('192.168.0.255')`,
 			MetaOut: Meta{MainTableRequired: true},
 		},
 		{
 			Input:   `DstAddr = 192.168.0.0/24`,
-			Output:  `DstAddr BETWEEN toIPv6('::ffff:192.168.0.0') AND toIPv6('::ffff:192.168.0.255')`,
+			Output:  `DstAddr BETWEEN toIPv6('192.168.0.0') AND toIPv6('192.168.0.255')`,
 			MetaOut: Meta{MainTableRequired: true},
 		},
 		{
 			Input:   `DstAddr << 192.168.0.0/24`,
-			Output:  `SrcAddr BETWEEN toIPv6('::ffff:192.168.0.0') AND toIPv6('::ffff:192.168.0.255')`,
+			Output:  `SrcAddr BETWEEN toIPv6('192.168.0.0') AND toIPv6('192.168.0.255')`,
 			MetaIn:  Meta{ReverseDirection: true},
 			MetaOut: Meta{ReverseDirection: true, MainTableRequired: true},
 		},
 		{
 			Input:   `SrcAddr << 192.168.0.1/24`,
-			Output:  `SrcAddr BETWEEN toIPv6('::ffff:192.168.0.0') AND toIPv6('::ffff:192.168.0.255')`,
+			Output:  `SrcAddr BETWEEN toIPv6('192.168.0.0') AND toIPv6('192.168.0.255')`,
 			MetaOut: Meta{MainTableRequired: true},
 		},
 		{
 			Input:   `DstAddr !<< 192.168.0.0/24`,
-			Output:  `DstAddr NOT BETWEEN toIPv6('::ffff:192.168.0.0') AND toIPv6('::ffff:192.168.0.255')`,
+			Output:  `DstAddr NOT BETWEEN toIPv6('192.168.0.0') AND toIPv6('192.168.0.255')`,
 			MetaOut: Meta{MainTableRequired: true},
 		},
 		{
 			Input:   `DstAddr != 192.168.0.0/24`,
-			Output:  `DstAddr NOT BETWEEN toIPv6('::ffff:192.168.0.0') AND toIPv6('::ffff:192.168.0.255')`,
+			Output:  `DstAddr NOT BETWEEN toIPv6('192.168.0.0') AND toIPv6('192.168.0.255')`,
 			MetaOut: Meta{MainTableRequired: true},
 		},
 		{
 			Input:   `DstAddr !<< 192.168.0.128/27`,
-			Output:  `DstAddr NOT BETWEEN toIPv6('::ffff:192.168.0.128') AND toIPv6('::ffff:192.168.0.159')`,
+			Output:  `DstAddr NOT BETWEEN toIPv6('192.168.0.128') AND toIPv6('192.168.0.159')`,
 			MetaOut: Meta{MainTableRequired: true},
 		},
 		{
 			Input:   `DstNetPrefix = 192.168.0.128/27`,
-			Output:  `DstAddr BETWEEN toIPv6('::ffff:192.168.0.128') AND toIPv6('::ffff:192.168.0.159') AND DstNetMask = 27`,
+			Output:  `DstAddr BETWEEN toIPv6('192.168.0.128') AND toIPv6('192.168.0.159') AND DstNetMask = 27`,
 			MetaOut: Meta{MainTableRequired: true},
 		},
 		{
 			Input:   `SrcNetPrefix = 192.168.0.128/27`,
-			Output:  `SrcAddr BETWEEN toIPv6('::ffff:192.168.0.128') AND toIPv6('::ffff:192.168.0.159') AND SrcNetMask = 27`,
+			Output:  `SrcAddr BETWEEN toIPv6('192.168.0.128') AND toIPv6('192.168.0.159') AND SrcNetMask = 27`,
 			MetaOut: Meta{MainTableRequired: true},
 		},
 		{

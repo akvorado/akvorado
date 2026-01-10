@@ -216,10 +216,7 @@ Subnet "IP subnet" ← [0-9A-Fa-f:.]+ "/" [0-9]+ !IdentStart {
   if err != nil {
     return "", errors.New("expecting a subnet")
   }
-  if net.Addr().Is6() {
-    return fmt.Sprintf("BETWEEN toIPv6('%s') AND toIPv6('%s')", net.Masked().Addr().String(), lastIP(net).String()), nil
-  }
-  return fmt.Sprintf("BETWEEN toIPv6('::ffff:%s') AND toIPv6('::ffff:%s')", net.Masked().Addr().String(), lastIP(net).String()), nil
+  return fmt.Sprintf("BETWEEN toIPv6('%s') AND toIPv6('%s')", net.Masked().Addr().String(), lastIP(net).String()), nil
 }
 
 SourcePrefix "IP prefix" ← [0-9A-Fa-f:.]+ "/" [0-9]+ !IdentStart {
