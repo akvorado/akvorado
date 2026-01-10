@@ -10,7 +10,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 2.1.0 - 2026-01-10
 
 - 💥 *docker*: remove conntrack-fixer service (this requires Docker Engine v23 or more recent)
 - ✨ *inlet*: add a configuration option to decapsulate received flows (IPIP, GRE, VXLAN, and SRv6 are supported)
