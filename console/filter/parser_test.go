@@ -49,6 +49,10 @@ func TestValidFilter(t *testing.T) {
 			Output: `ExporterAddress BETWEEN toIPv6('2001:db8::') AND toIPv6('2001:db8::ffff:ffff:ffff:ffff')`,
 		},
 		{
+			Input:  `ExporterAddress = 2001:db8:0::/64`,
+			Output: `ExporterAddress BETWEEN toIPv6('2001:db8::') AND toIPv6('2001:db8::ffff:ffff:ffff:ffff')`,
+		},
+		{
 			Input:  `ExporterAddress << 2001:db8::c000/115`,
 			Output: `ExporterAddress BETWEEN toIPv6('2001:db8::c000') AND toIPv6('2001:db8::dfff')`,
 		},
@@ -58,6 +62,11 @@ func TestValidFilter(t *testing.T) {
 		},
 		{
 			Input:   `DstAddr << 192.168.0.0/24`,
+			Output:  `DstAddr BETWEEN toIPv6('::ffff:192.168.0.0') AND toIPv6('::ffff:192.168.0.255')`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input:   `DstAddr = 192.168.0.0/24`,
 			Output:  `DstAddr BETWEEN toIPv6('::ffff:192.168.0.0') AND toIPv6('::ffff:192.168.0.255')`,
 			MetaOut: Meta{MainTableRequired: true},
 		},
@@ -74,6 +83,11 @@ func TestValidFilter(t *testing.T) {
 		},
 		{
 			Input:   `DstAddr !<< 192.168.0.0/24`,
+			Output:  `DstAddr NOT BETWEEN toIPv6('::ffff:192.168.0.0') AND toIPv6('::ffff:192.168.0.255')`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input:   `DstAddr != 192.168.0.0/24`,
 			Output:  `DstAddr NOT BETWEEN toIPv6('::ffff:192.168.0.0') AND toIPv6('::ffff:192.168.0.255')`,
 			MetaOut: Meta{MainTableRequired: true},
 		},
