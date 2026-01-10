@@ -110,7 +110,7 @@ jobs:
       - name: Docker Compose logs
         if: failure() && matrix.compose
         run: |
-          docker compose logs
+          docker compose -f docker/docker-compose-dev.yml logs
 
 
   build-nix:
