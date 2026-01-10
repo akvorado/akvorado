@@ -26,7 +26,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/gopacket v1.1.19
 	github.com/google/renameio/v2 v2.0.1
-	github.com/gosnmp/gosnmp v1.43.0
+	github.com/gosnmp/gosnmp v1.43.1
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.1.0
 	github.com/hashicorp/go-version v1.8.0
 	github.com/itchyny/gojq v0.12.18
@@ -108,7 +108,6 @@ require (
 	github.com/go-sql-driver/mysql v1.8.1 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/goccy/go-yaml v1.18.0 // indirect
-	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/go-dap v0.12.0 // indirect
 	github.com/google/licensecheck v0.3.1 // indirect
