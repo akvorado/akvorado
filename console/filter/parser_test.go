@@ -128,6 +128,46 @@ func TestValidFilter(t *testing.T) {
 			Input: `SrcAddr IN (203.0.113.1, 2001:db8::1)`, Output: `SrcAddr IN (toIPv6('203.0.113.1'), toIPv6('2001:db8::1'))`,
 			MetaOut: Meta{MainTableRequired: true},
 		},
+		{
+			Input:   `SrcAddr IN (192.168.0.0/24)`,
+			Output:  `SrcAddr BETWEEN toIPv6('192.168.0.0') AND toIPv6('192.168.0.255')`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input:   `SrcAddr IN (203.0.113.1, 192.168.0.0/24)`,
+			Output:  `(SrcAddr IN (toIPv6('203.0.113.1')) OR SrcAddr BETWEEN toIPv6('192.168.0.0') AND toIPv6('192.168.0.255'))`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input:   `SrcAddr IN (203.0.113.1, 192.168.0.0/24, 2001:db8::5)`,
+			Output:  `(SrcAddr IN (toIPv6('203.0.113.1'), toIPv6('2001:db8::5')) OR SrcAddr BETWEEN toIPv6('192.168.0.0') AND toIPv6('192.168.0.255'))`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input:   `DstAddr IN (192.168.0.0/24, 203.0.113.1, 2001:db8::/32)`,
+			Output:  `(DstAddr IN (toIPv6('203.0.113.1')) OR DstAddr BETWEEN toIPv6('192.168.0.0') AND toIPv6('192.168.0.255') OR DstAddr BETWEEN toIPv6('2001:db8::') AND toIPv6('2001:db8:ffff:ffff:ffff:ffff:ffff:ffff'))`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input:   `DstAddr IN (2001:db8::/48, 2001:db8:1::/48)`,
+			Output:  `(DstAddr BETWEEN toIPv6('2001:db8::') AND toIPv6('2001:db8:0:ffff:ffff:ffff:ffff:ffff') OR DstAddr BETWEEN toIPv6('2001:db8:1::') AND toIPv6('2001:db8:1:ffff:ffff:ffff:ffff:ffff'))`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input:   `SrcAddr NOTIN (192.168.0.0/24)`,
+			Output:  `NOT (SrcAddr BETWEEN toIPv6('192.168.0.0') AND toIPv6('192.168.0.255'))`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input:   `DstAddr NOTIN (203.0.113.1, 192.168.0.0/24)`,
+			Output:  `NOT (DstAddr IN (toIPv6('203.0.113.1')) OR DstAddr BETWEEN toIPv6('192.168.0.0') AND toIPv6('192.168.0.255'))`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input:   `SrcAddr NOTIN (192.168.0.0/24, 10.0.0.0/8, 172.16.0.0/12)`,
+			Output:  `NOT (SrcAddr BETWEEN toIPv6('192.168.0.0') AND toIPv6('192.168.0.255') OR SrcAddr BETWEEN toIPv6('10.0.0.0') AND toIPv6('10.255.255.255') OR SrcAddr BETWEEN toIPv6('172.16.0.0') AND toIPv6('172.31.255.255'))`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
 		{Input: `SrcNetName="alpha"`, Output: `SrcNetName = 'alpha'`},
 		{Input: `DstNetName="alpha"`, Output: `DstNetName = 'alpha'`},
 		{Input: `DstNetRole="stuff"`, Output: `DstNetRole = 'stuff'`},

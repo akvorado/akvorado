@@ -163,6 +163,50 @@ func (c *current) parsePrefix(direction string) ([]any, error) {
 	}, nil
 }
 
+// buildIPOrSubnetCondition constructs a SQL condition for IP columns with IN/NOTIN operators
+// that can handle both individual IPs and subnets.
+func buildIPOrSubnetCondition(column any, operator string, items []any) []any {
+	var ips []string
+	var subnets []string
+
+	// Separate IPs and subnets
+	for _, item := range items {
+		item := item.(string)
+		if strings.HasPrefix(item, "BETWEEN") {
+			subnets = append(subnets, item)
+		} else {
+			ips = append(ips, fmt.Sprintf("toIPv6('%s')", item))
+		}
+	}
+
+	var parts []any
+	var hasOr bool
+
+	// Build IN clause for IPs
+	if len(ips) > 0 {
+		parts = append(parts, []any{column, "IN (", strings.Join(ips, ", "), ")"}...)
+	}
+
+	// Build BETWEEN clauses for subnets
+	for i, net := range subnets {
+		if i > 0 || len(ips) > 0 {
+			parts = append(parts, "OR")
+			hasOr = true
+		}
+		parts = append(parts, []any{column, net})
+	}
+
+	// Handle NOT operator
+	if operator == "NOT IN" {
+		parts = append([]any{"NOT ("}, parts...)
+		parts = append(parts, ")")
+	} else if hasOr {
+		parts = append([]any{"("}, parts...)
+		parts = append(parts, ")")
+	}
+	return parts
+}
+
 func lastIP(subnet netip.Prefix) netip.Addr {
 	a16 := subnet.Addr().As16()
 	var off uint8
