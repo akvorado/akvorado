@@ -100,7 +100,8 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 	// Flow decoding
 	err := w.c.d.Flow.Decode(&w.rawFlow, w.bf, finalize)
 	if err != nil {
-		w.c.metrics.flowsErrors.WithLabelValues("cannot decode payload").Inc()
+		// w.bf.ExporterAddress may not be known yet, so increase raw_flows_errors_total.
+		w.c.metrics.rawFlowsErrors.WithLabelValues("cannot decode payload").Inc()
 		return nil
 	}
 
