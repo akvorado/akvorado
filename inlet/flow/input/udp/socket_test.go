@@ -4,7 +4,6 @@
 package udp
 
 import (
-	"context"
 	"errors"
 	"net"
 	"os"
@@ -23,7 +22,7 @@ func TestParseSocketControlMessage(t *testing.T) {
 	}
 	r := reporter.NewMock(t)
 	server, err := listenConfig(r, udpSocketOptions, nil).
-		ListenPacket(context.Background(), "udp", "127.0.0.1:0")
+		ListenPacket(t.Context(), "udp", "127.0.0.1:0")
 	if err != nil {
 		t.Fatalf("ListenPacket() error:\n%+v", err)
 	}

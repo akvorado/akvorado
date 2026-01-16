@@ -4,7 +4,6 @@
 package clickhouse
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"net/http"
@@ -79,7 +78,7 @@ func TestNetworkSources(t *testing.T) {
 	}
 	address := listener.Addr()
 	go server.Serve(listener)
-	defer server.Shutdown(context.Background())
+	defer server.Shutdown(t.Context())
 
 	config := DefaultConfiguration()
 	config.SkipMigrations = true

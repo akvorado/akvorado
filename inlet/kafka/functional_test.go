@@ -103,7 +103,7 @@ func TestFakeKafka(t *testing.T) {
 		case <-timeout:
 			t.Fatalf("Timeout waiting for messages. Got %d of %d messages", len(got), len(expected))
 		default:
-			ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+			ctx, cancel := context.WithTimeout(t.Context(), 1*time.Second)
 			fetches := consumer.PollFetches(ctx)
 			cancel()
 			if errs := fetches.Errors(); len(errs) > 0 {

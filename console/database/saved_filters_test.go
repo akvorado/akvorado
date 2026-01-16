@@ -4,7 +4,6 @@
 package database
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"net"
@@ -16,7 +15,7 @@ import (
 
 func testSavedFilter(t *testing.T, c *Component) {
 	// Create
-	if err := c.CreateSavedFilter(context.Background(), SavedFilter{
+	if err := c.CreateSavedFilter(t.Context(), SavedFilter{
 		ID:          17,
 		User:        "marty",
 		Shared:      false,
@@ -25,7 +24,7 @@ func testSavedFilter(t *testing.T, c *Component) {
 	}); err != nil {
 		t.Fatalf("CreateSavedFilter() error:\n%+v", err)
 	}
-	if err := c.CreateSavedFilter(context.Background(), SavedFilter{
+	if err := c.CreateSavedFilter(t.Context(), SavedFilter{
 		User:        "judith",
 		Shared:      true,
 		Description: "judith's filter",
@@ -33,7 +32,7 @@ func testSavedFilter(t *testing.T, c *Component) {
 	}); err != nil {
 		t.Fatalf("CreateSavedFilter() error:\n%+v", err)
 	}
-	if err := c.CreateSavedFilter(context.Background(), SavedFilter{
+	if err := c.CreateSavedFilter(t.Context(), SavedFilter{
 		User:        "marty",
 		Shared:      true,
 		Description: "marty's second filter",
@@ -43,7 +42,7 @@ func testSavedFilter(t *testing.T, c *Component) {
 	}
 
 	// List
-	got, err := c.ListSavedFilters(context.Background(), "marty")
+	got, err := c.ListSavedFilters(t.Context(), "marty")
 	if err != nil {
 		t.Fatalf("ListSavedFilters() error:\n%+v", err)
 	}
@@ -72,10 +71,10 @@ func testSavedFilter(t *testing.T, c *Component) {
 	}
 
 	// Delete
-	if err := c.DeleteSavedFilter(context.Background(), SavedFilter{ID: 1}); err != nil {
+	if err := c.DeleteSavedFilter(t.Context(), SavedFilter{ID: 1}); err != nil {
 		t.Fatalf("DeleteSavedFilter() error:\n%+v", err)
 	}
-	got, _ = c.ListSavedFilters(context.Background(), "marty")
+	got, _ = c.ListSavedFilters(t.Context(), "marty")
 	if diff := helpers.Diff(got, []SavedFilter{
 		{
 			ID:          2,
@@ -93,7 +92,7 @@ func testSavedFilter(t *testing.T, c *Component) {
 	}); diff != "" {
 		t.Fatalf("ListSavedFilters() (-got, +want):\n%s", diff)
 	}
-	if err := c.DeleteSavedFilter(context.Background(), SavedFilter{ID: 1}); err == nil {
+	if err := c.DeleteSavedFilter(t.Context(), SavedFilter{ID: 1}); err == nil {
 		t.Fatal("DeleteSavedFilter() no error")
 	}
 }
@@ -211,7 +210,7 @@ func TestPopulateSavedFilters(t *testing.T) {
 	r := reporter.NewMock(t)
 	c := NewMock(t, r, config)
 
-	got, _ := c.ListSavedFilters(context.Background(), "marty")
+	got, _ := c.ListSavedFilters(t.Context(), "marty")
 	if diff := helpers.Diff(got, []SavedFilter{
 		{
 			ID:          1,
@@ -232,7 +231,7 @@ func TestPopulateSavedFilters(t *testing.T) {
 
 	c.config.SavedFilters = c.config.SavedFilters[:1]
 	c.populate()
-	got, _ = c.ListSavedFilters(context.Background(), "marty")
+	got, _ = c.ListSavedFilters(t.Context(), "marty")
 	if diff := helpers.Diff(got, []SavedFilter{
 		{
 			ID:          1,

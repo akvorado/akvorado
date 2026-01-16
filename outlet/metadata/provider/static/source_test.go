@@ -152,7 +152,7 @@ func TestRemoteExporterSources(t *testing.T) {
 	}
 	address := listener.Addr()
 	go server.Serve(listener)
-	defer server.Shutdown(context.Background())
+	defer server.Shutdown(t.Context())
 
 	r := reporter.NewMock(t)
 	config := Configuration{
@@ -189,7 +189,7 @@ func TestRemoteExporterSources(t *testing.T) {
 	p, _ := config.New(t.Context(), r)
 
 	// Query when json is not ready yet, we should get a timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Millisecond)
 	defer cancel()
 	answer1, err := p.Query(ctx, provider.Query{
 		ExporterIP: netip.MustParseAddr("2001:db8:1::10"),
@@ -214,7 +214,7 @@ func TestRemoteExporterSources(t *testing.T) {
 	}
 
 	// We now should be able to resolve our new exporter from remote source
-	got, _ := p.Query(context.Background(), provider.Query{
+	got, _ := p.Query(t.Context(), provider.Query{
 		ExporterIP: netip.MustParseAddr("2001:db8:2::10"),
 		IfIndex:    1,
 	})

@@ -51,7 +51,7 @@ func SetupKafkaBroker(t *testing.T) (*kgo.Client, []string) {
 		if client, err = kgo.NewClient(opts...); err != nil {
 			continue
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
 		if err := client.Ping(ctx); err != nil {
 			cancel()
 			continue

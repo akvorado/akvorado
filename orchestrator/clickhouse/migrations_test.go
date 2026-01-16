@@ -4,7 +4,6 @@
 package clickhouse
 
 import (
-	"context"
 	"encoding/csv"
 	"fmt"
 	"io"
@@ -45,7 +44,7 @@ ORDER BY indexOf(['Dictionary'], engine) DESC, indexOf(['Distributed', 'Material
 
 func dumpAllTables(t *testing.T, ch *clickhousedb.Component, schemaComponent *schema.Component) []tableWithSchema {
 	// TODO: find the right ordering, this one does not totally work
-	rows, err := ch.Query(context.Background(), dumpAllTablesQuery)
+	rows, err := ch.Query(t.Context(), dumpAllTablesQuery)
 	if err != nil {
 		t.Fatalf("Query() error:\n%+v", err)
 	}
@@ -65,14 +64,14 @@ func dumpAllTables(t *testing.T, ch *clickhousedb.Component, schemaComponent *sc
 func dropAllTables(t *testing.T, ch *clickhousedb.Component) {
 	t.Logf("(%s) Drop database default", time.Now())
 	for _, sql := range []string{"DROP DATABASE IF EXISTS default SYNC", "CREATE DATABASE IF NOT EXISTS default"} {
-		if err := ch.ExecOnCluster(context.Background(), sql); err != nil {
+		if err := ch.ExecOnCluster(t.Context(), sql); err != nil {
 			t.Fatalf("Exec(%q) error:\n%+v", sql, err)
 		}
 	}
 }
 
 func loadTables(t *testing.T, ch *clickhousedb.Component, sch *schema.Component, tables []tableWithSchema) {
-	ctx := clickhouse.Context(context.Background(), clickhouse.WithSettings(clickhouse.Settings{
+	ctx := clickhouse.Context(t.Context(), clickhouse.WithSettings(clickhouse.Settings{
 		"allow_suspicious_low_cardinality_types": 1,
 	}))
 
@@ -269,7 +268,7 @@ func testMigrationFromPreviousStates(t *testing.T, cluster bool) {
 			ch := startTestComponent(t, r, chComponent, nil)
 
 			// Check with the ClickHouse client we have our tables
-			rows, err := chComponent.Query(context.Background(), `
+			rows, err := chComponent.Query(t.Context(), `
 SELECT table
 FROM system.tables
 WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
@@ -459,7 +458,7 @@ func TestCustomDictMigration(t *testing.T) {
 		}
 
 		// Check if the rows were created in the main flows table
-		row := ch.d.ClickHouse.QueryRow(context.Background(), `
+		row := ch.d.ClickHouse.QueryRow(t.Context(), `
 SELECT toString(groupArray(tuple(name, type, default_expression)))
 FROM system.columns
 WHERE table = $1
@@ -476,7 +475,7 @@ AND name LIKE $3`, "flows", ch.d.ClickHouse.DatabaseName(), "%DimensionAttribute
 
 		// Check if the rows were created in the consumer flows table
 		rowConsumer := ch.d.ClickHouse.QueryRow(
-			context.Background(),
+			t.Context(),
 			fmt.Sprintf(`SHOW CREATE flows_%s_raw_consumer`, ch.d.Schema.ClickHouseHash()))
 		var existingConsumer string
 		if err := rowConsumer.Scan(&existingConsumer); err != nil {
@@ -496,7 +495,7 @@ AND name LIKE $3`, "flows", ch.d.ClickHouse.DatabaseName(), "%DimensionAttribute
 		}
 
 		// Check if the dictionary was created
-		dictCreate := ch.d.ClickHouse.QueryRow(context.Background(), `
+		dictCreate := ch.d.ClickHouse.QueryRow(t.Context(), `
 		SHOW CREATE custom_dict_test`)
 		var got string
 		if err := dictCreate.Scan(&got); err != nil {
@@ -533,7 +532,7 @@ SETTINGS(format_csv_allow_single_quotes = 0)`
 		}
 
 		// Check if the rows were created in the main flows table
-		row := ch.d.ClickHouse.QueryRow(context.Background(), `
+		row := ch.d.ClickHouse.QueryRow(t.Context(), `
 SELECT toString(groupArray(tuple(name, type, default_expression)))
 FROM system.columns
 WHERE table = $1
@@ -550,7 +549,7 @@ AND name LIKE $3`, "flows", ch.d.ClickHouse.DatabaseName(), "%DimensionAttribute
 
 		// Check if the rows were removed in the consumer flows table
 		rowConsumer := ch.d.ClickHouse.QueryRow(
-			context.Background(),
+			t.Context(),
 			fmt.Sprintf(`SHOW CREATE flows_%s_raw_consumer`, ch.d.Schema.ClickHouseHash()))
 		var existingConsumer string
 		if err := rowConsumer.Scan(&existingConsumer); err != nil {

@@ -125,7 +125,7 @@ func TestSource(t *testing.T) {
 	}
 	address := listener.Addr()
 	go server.Serve(listener)
-	defer server.Shutdown(context.Background())
+	defer server.Shutdown(t.Context())
 
 	r := reporter.NewMock(t)
 	config := map[string]Source{
@@ -279,7 +279,7 @@ func TestSourceWithTLS(t *testing.T) {
 	}
 	address := listener.Addr().String()
 	go server.ServeTLS(listener, "", "")
-	defer server.Shutdown(context.Background())
+	defer server.Shutdown(t.Context())
 
 	t.Run("WithoutTLSConfig", func(t *testing.T) {
 		r := reporter.NewMock(t)

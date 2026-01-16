@@ -4,7 +4,6 @@
 package kafka
 
 import (
-	"context"
 	"fmt"
 	"math/rand/v2"
 	"testing"
@@ -96,7 +95,7 @@ func TestTopicCreation(t *testing.T) {
 					}
 					t.Fatal("ListTopics() did not find the topic")
 				}
-				configs, err := adminClient.DescribeTopicConfigs(context.Background(), c.kafkaTopic)
+				configs, err := adminClient.DescribeTopicConfigs(t.Context(), c.kafkaTopic)
 				if err != nil {
 					t.Fatalf("DescribeTopicConfigs() error:\n%+v", err)
 				}

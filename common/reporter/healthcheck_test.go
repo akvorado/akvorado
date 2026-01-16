@@ -28,7 +28,7 @@ func testHealthchecks(ctx context.Context, t *testing.T, r *reporter.Reporter, e
 
 func TestEmptyHealthcheck(t *testing.T) {
 	r := reporter.NewMock(t)
-	testHealthchecks(context.Background(), t, r,
+	testHealthchecks(t.Context(), t, r,
 		reporter.MultipleHealthcheckResults{
 			Status:  reporter.HealthcheckOK,
 			Details: map[string]reporter.HealthcheckResult{},
@@ -40,7 +40,7 @@ func TestOneHealthcheck(t *testing.T) {
 	r.RegisterHealthcheck("hc1", func(context.Context) reporter.HealthcheckResult {
 		return reporter.HealthcheckResult{reporter.HealthcheckOK, "all well"}
 	})
-	testHealthchecks(context.Background(), t, r,
+	testHealthchecks(t.Context(), t, r,
 		reporter.MultipleHealthcheckResults{
 			Status: reporter.HealthcheckOK,
 			Details: map[string]reporter.HealthcheckResult{
@@ -57,7 +57,7 @@ func TestFailingHealthcheck(t *testing.T) {
 	r.RegisterHealthcheck("hc2", func(context.Context) reporter.HealthcheckResult {
 		return reporter.HealthcheckResult{reporter.HealthcheckError, "not so good"}
 	})
-	testHealthchecks(context.Background(), t, r,
+	testHealthchecks(t.Context(), t, r,
 		reporter.MultipleHealthcheckResults{
 			Status: reporter.HealthcheckError,
 			Details: map[string]reporter.HealthcheckResult{
@@ -76,7 +76,7 @@ func TestHealthcheckCancelContext(t *testing.T) {
 		<-ctx.Done()
 		return reporter.HealthcheckResult{reporter.HealthcheckError, "I am late, sorry"}
 	})
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	go func() {
 		time.Sleep(10 * time.Millisecond)
 		cancel()
@@ -102,8 +102,8 @@ func TestChannelHealthcheck(t *testing.T) {
 	}()
 
 	r := reporter.NewMock(t)
-	r.RegisterHealthcheck("hc1", reporter.ChannelHealthcheck(context.Background(), contact))
-	testHealthchecks(context.Background(), t, r,
+	r.RegisterHealthcheck("hc1", reporter.ChannelHealthcheck(t.Context(), contact))
+	testHealthchecks(t.Context(), t, r,
 		reporter.MultipleHealthcheckResults{
 			Status: reporter.HealthcheckOK,
 			Details: map[string]reporter.HealthcheckResult{

@@ -21,7 +21,7 @@ func TestOAuth2ServerPassword(t *testing.T) {
 	oauthServer := helpers.CheckExternalService(t, "mock-auth2-server",
 		[]string{"mock-oauth2-server:8080", "127.0.0.1:5556"})
 
-	ctx := context.Background()
+	ctx := t.Context()
 	conf := &oauth2.Config{
 		ClientID:     "kafka-client",
 		ClientSecret: "kafka-client-secret",
@@ -45,7 +45,7 @@ func TestOAuth2ServerClientCredentials(t *testing.T) {
 	oauthServer := helpers.CheckExternalService(t, "mock-oauth2-server",
 		[]string{"mock-oauth2-server:8080", "127.0.0.1:5556"})
 
-	ctx := context.Background()
+	ctx := t.Context()
 
 	// Use clientcredentials.Config instead of oauth2.Config
 	config := clientcredentials.Config{
@@ -106,7 +106,7 @@ func TestOAuth2Broker(t *testing.T) {
 	}
 	defer client.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
 	defer cancel()
 	if err := client.Ping(ctx); err != nil {
 		t.Fatalf("client.Ping() error:\n%+v", err)

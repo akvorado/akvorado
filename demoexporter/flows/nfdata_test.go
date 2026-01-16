@@ -4,7 +4,6 @@
 package flows
 
 import (
-	"context"
 	"net/netip"
 	"testing"
 	"time"
@@ -25,7 +24,7 @@ func TestGetNetFlowData(t *testing.T) {
 	nfdecoder := netflow.New(r, decoder.Dependencies{Schema: sch})
 
 	ch := getNetFlowTemplates(
-		context.Background(),
+		t.Context(),
 		50,
 		30000,
 		time.Date(2022, 3, 15, 14, 33, 0, 0, time.UTC),
@@ -49,7 +48,7 @@ func TestGetNetFlowData(t *testing.T) {
 	}
 
 	ch = getNetFlowData(
-		context.Background(),
+		t.Context(),
 		[]generatedFlow{
 			{
 				SrcAddr: netip.MustParseAddr("192.0.2.206"),

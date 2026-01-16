@@ -4,7 +4,6 @@
 package static
 
 import (
-	"context"
 	"net/netip"
 	"testing"
 
@@ -99,51 +98,51 @@ func TestStaticProvider(t *testing.T) {
 	r := reporter.NewMock(t)
 	p, _ := config.New(t.Context(), r)
 
-	answer, _ := p.Query(context.Background(), provider.Query{
+	answer, _ := p.Query(t.Context(), provider.Query{
 		ExporterIP: netip.MustParseAddr("2001:db8:1::10"),
 		IfIndex:    9,
 	})
 	got = append(got, answer)
-	answer, _ = p.Query(context.Background(), provider.Query{
+	answer, _ = p.Query(t.Context(), provider.Query{
 		ExporterIP: netip.MustParseAddr("2001:db8:1::10"),
 		IfIndex:    10,
 	})
 	got = append(got, answer)
-	answer, _ = p.Query(context.Background(), provider.Query{
+	answer, _ = p.Query(t.Context(), provider.Query{
 		ExporterIP: netip.MustParseAddr("2001:db8:1::10"),
 		IfIndex:    11,
 	})
 	got = append(got, answer)
 
-	answer, _ = p.Query(context.Background(), provider.Query{
+	answer, _ = p.Query(t.Context(), provider.Query{
 		ExporterIP: netip.MustParseAddr("2001:db8:2::10"),
 		IfIndex:    9,
 	})
 	got = append(got, answer)
-	answer, _ = p.Query(context.Background(), provider.Query{
+	answer, _ = p.Query(t.Context(), provider.Query{
 		ExporterIP: netip.MustParseAddr("2001:db8:2::10"),
 		IfIndex:    10,
 	})
 	got = append(got, answer)
-	answer, _ = p.Query(context.Background(), provider.Query{
+	answer, _ = p.Query(t.Context(), provider.Query{
 		ExporterIP: netip.MustParseAddr("2001:db8:2::10"),
 		IfIndex:    11,
 	})
 	got = append(got, answer)
 
-	answer, _ = p.Query(context.Background(), provider.Query{
+	answer, _ = p.Query(t.Context(), provider.Query{
 		ExporterIP: netip.MustParseAddr("2001:db8:3::10"),
 		IfIndex:    10,
 	})
 	got = append(got, answer)
 
 	var err error
-	answer, _ = p.Query(context.Background(), provider.Query{
+	answer, _ = p.Query(t.Context(), provider.Query{
 		ExporterIP: netip.MustParseAddr("2001:db8:4::10"),
 		IfIndex:    10,
 	})
 	got = append(got, answer)
-	answer, err = p.Query(context.Background(), provider.Query{
+	answer, err = p.Query(t.Context(), provider.Query{
 		ExporterIP: netip.MustParseAddr("2001:db8:4::10"),
 		IfIndex:    11,
 	})

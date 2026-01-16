@@ -4,7 +4,6 @@
 package bmp
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"net/netip"
@@ -1034,7 +1033,7 @@ func TestBMP(t *testing.T) {
 		send(t, conn, "bmp-eor.pcap")
 		time.Sleep(20 * time.Millisecond)
 
-		lookup, _ := p.Lookup(context.Background(),
+		lookup, _ := p.Lookup(t.Context(),
 			netip.MustParseAddr("2001:db8:1::10"),
 			netip.MustParseAddr("2001:db8::a"), netip.Addr{})
 		if lookup.ASN != 174 {
@@ -1049,13 +1048,13 @@ func TestBMP(t *testing.T) {
 			attributes: p.rib.rtas.Put(routeAttributes{asn: 176}),
 		})
 
-		lookup, _ = p.Lookup(context.Background(),
+		lookup, _ = p.Lookup(t.Context(),
 			netip.MustParseAddr("2001:db8:1::10"),
 			netip.MustParseAddr("2001:db8::a"), netip.Addr{})
 		if lookup.ASN != 176 {
 			t.Errorf("Lookup() == %d, expected 176", lookup.ASN)
 		}
-		lookup, _ = p.Lookup(context.Background(),
+		lookup, _ = p.Lookup(t.Context(),
 			netip.MustParseAddr("2001:db8:1::10"),
 			netip.MustParseAddr("2001:db8::b"), netip.Addr{})
 		if lookup.ASN != 174 {
@@ -1070,13 +1069,13 @@ func TestBMP(t *testing.T) {
 		helpers.StartStop(t, p)
 		p.PopulateRIB(t)
 
-		lookup, _ := p.Lookup(context.Background(),
+		lookup, _ := p.Lookup(t.Context(),
 			netip.MustParseAddr("::ffff:192.0.2.2"),
 			netip.MustParseAddr("::ffff:198.51.100.200"), netip.Addr{})
 		if lookup.ASN != 174 {
 			t.Errorf("Lookup() == %d, expected 174", lookup.ASN)
 		}
-		lookup, _ = p.Lookup(context.Background(),
+		lookup, _ = p.Lookup(t.Context(),
 			netip.MustParseAddr("::ffff:192.0.2.254"),
 			netip.MustParseAddr("::ffff:198.51.100.200"), netip.Addr{})
 		if lookup.ASN != 0 {
@@ -1094,7 +1093,7 @@ func TestBMP(t *testing.T) {
 		// Despite having the "wrong" nexthop, we select the more specific one.
 		// This is not optimal, but performance is better this way and on a
 		// proper network, all routers should know the more specific.
-		lookup, _ := p.Lookup(context.Background(),
+		lookup, _ := p.Lookup(t.Context(),
 			netip.MustParseAddr("::ffff:192.168.145.10"),
 			netip.MustParseAddr("::ffff:203.0.113.14"), netip.Addr{})
 		expected := provider.LookupResult{

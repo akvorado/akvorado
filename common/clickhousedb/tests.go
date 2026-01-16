@@ -6,7 +6,6 @@
 package clickhousedb
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -38,7 +37,7 @@ func SetupClickHouse(t *testing.T, r *reporter.Reporter, cluster bool) *Componen
 		t.Fatalf("New() error:\n%+v", err)
 	}
 	helpers.StartStop(t, c)
-	c.ExecOnCluster(context.Background(), "DROP TABLE IF EXISTS system.metric_log")
+	c.ExecOnCluster(t.Context(), "DROP TABLE IF EXISTS system.metric_log")
 	return c
 }
 

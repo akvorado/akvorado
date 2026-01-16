@@ -34,7 +34,7 @@ func waitSRLManagementServerReady(t *testing.T, d *network.Driver) {
 		readyForConfigCmd = "file cat /etc/opt/srlinux/devices/app_ephemeral.mgmt_server.ready_for_config"
 	)
 	retryTimer := time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	defer cancel()
 	for {
 		select {
@@ -760,17 +760,17 @@ commit now
 		t.Logf("indexes: %v", indexes)
 
 		// Wait a bit
-		answer, _ := p.Query(context.Background(), provider.Query{ExporterIP: lo, IfIndex: indexes["name=ethernet-1/1"]})
+		answer, _ := p.Query(t.Context(), provider.Query{ExporterIP: lo, IfIndex: indexes["name=ethernet-1/1"]})
 		got = append(got, formatUpdate(lo, "ethernet-1/1", answer))
-		answer, _ = p.Query(context.Background(), provider.Query{ExporterIP: lo, IfIndex: indexes["name=ethernet-1/2"]})
+		answer, _ = p.Query(t.Context(), provider.Query{ExporterIP: lo, IfIndex: indexes["name=ethernet-1/2"]})
 		got = append(got, formatUpdate(lo, "ethernet-1/2", answer))
-		answer, _ = p.Query(context.Background(), provider.Query{ExporterIP: lo, IfIndex: indexes["name=lag1"]})
+		answer, _ = p.Query(t.Context(), provider.Query{ExporterIP: lo, IfIndex: indexes["name=lag1"]})
 		got = append(got, formatUpdate(lo, "lag1", answer))
-		answer, _ = p.Query(context.Background(), provider.Query{ExporterIP: lo, IfIndex: indexes["name=ethernet-1/3"]})
+		answer, _ = p.Query(t.Context(), provider.Query{ExporterIP: lo, IfIndex: indexes["name=ethernet-1/3"]})
 		got = append(got, formatUpdate(lo, "ethernet-1/3", answer))
-		answer, _ = p.Query(context.Background(), provider.Query{ExporterIP: lo, IfIndex: 5})
+		answer, _ = p.Query(t.Context(), provider.Query{ExporterIP: lo, IfIndex: 5})
 		got = append(got, formatUpdate(lo, "idx5", answer))
-		answer, _ = p.Query(context.Background(), provider.Query{
+		answer, _ = p.Query(t.Context(), provider.Query{
 			ExporterIP: lo,
 			IfIndex:    indexes["name=ethernet-1/4,index=1"],
 		})
@@ -820,10 +820,10 @@ commit now
 		}
 		time.Sleep(time.Second) // We should exceed the second now and next request will trigger a refresh
 		t.Log("start queries")
-		answer, _ = p.Query(context.Background(),
+		answer, _ = p.Query(t.Context(),
 			provider.Query{ExporterIP: lo, IfIndex: indexes["name=ethernet-1/1"]})
 		got = append(got, formatUpdate(lo, "ethernet-1/1", answer))
-		answer, _ = p.Query(context.Background(),
+		answer, _ = p.Query(t.Context(),
 			provider.Query{ExporterIP: lo, IfIndex: indexes["name=ethernet-1/4,index=1"]})
 		got = append(got, formatUpdate(lo, "ethernet-1/4,index=1", answer))
 		if diff := helpers.Diff(got, []string{

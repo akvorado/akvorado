@@ -4,7 +4,6 @@
 package clickhousedb
 
 import (
-	"context"
 	"errors"
 	"testing"
 
@@ -40,7 +39,7 @@ func TestMock(t *testing.T) {
 			SetArg(1, expected).
 			Return(nil)
 
-		err := chComponent.Select(context.Background(), &got, "SELECT number as n, number + 1 as m FROM numbers(5)")
+		err := chComponent.Select(t.Context(), &got, "SELECT number as n, number + 1 as m FROM numbers(5)")
 		if err != nil {
 			t.Fatalf("SELECT error:\n%+v", err)
 		}
@@ -66,7 +65,7 @@ func TestMock(t *testing.T) {
 			return nil
 		})
 
-		rows, err := chComponent.Query(context.Background(),
+		rows, err := chComponent.Query(t.Context(),
 			`SELECT 10, 12`)
 		if err != nil {
 			t.Fatalf("SELECT error:\n%+v", err)
@@ -92,7 +91,7 @@ func TestMock(t *testing.T) {
 		firstCall := mock.EXPECT().
 			Query(gomock.Any(), "SELECT 1").
 			Return(mockRows, nil)
-		got := r.RunHealthchecks(context.Background())
+		got := r.RunHealthchecks(t.Context())
 		if diff := helpers.Diff(got.Details["clickhousedb"], reporter.HealthcheckResult{
 			Status: reporter.HealthcheckOK,
 			Reason: "database available",
@@ -104,7 +103,7 @@ func TestMock(t *testing.T) {
 			Query(gomock.Any(), "SELECT 1").
 			Return(nil, errors.New("not available")).
 			After(firstCall)
-		got = r.RunHealthchecks(context.Background())
+		got = r.RunHealthchecks(t.Context())
 		if diff := helpers.Diff(got.Details["clickhousedb"], reporter.HealthcheckResult{
 			Status: reporter.HealthcheckWarning,
 			Reason: "database unavailable",
@@ -124,7 +123,7 @@ func TestRealClickHouse(t *testing.T) {
 			N uint64 `ch:"n"`
 			M uint64 `ch:"m"`
 		}
-		err := chComponent.Select(context.Background(), &got, "SELECT number as n, number + 1 as m FROM numbers(5)")
+		err := chComponent.Select(t.Context(), &got, "SELECT number as n, number + 1 as m FROM numbers(5)")
 		if err != nil {
 			t.Fatalf("SELECT error:\n%+v", err)
 		}
@@ -146,7 +145,7 @@ func TestRealClickHouse(t *testing.T) {
 
 	// Check healthcheck
 	t.Run("healthcheck", func(t *testing.T) {
-		got := r.RunHealthchecks(context.Background())
+		got := r.RunHealthchecks(t.Context())
 		if diff := helpers.Diff(got.Details["clickhousedb"], reporter.HealthcheckResult{
 			Status: reporter.HealthcheckOK,
 			Reason: "database available",

@@ -4,7 +4,6 @@
 package snmp
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"net/netip"
@@ -320,23 +319,23 @@ func TestPoller(t *testing.T) {
 			}
 
 			// Collect results from all queries
-			answer, _ := p.Query(context.Background(), provider.Query{ExporterIP: tc.ExporterIP, IfIndex: 641})
+			answer, _ := p.Query(t.Context(), provider.Query{ExporterIP: tc.ExporterIP, IfIndex: 641})
 			got = append(got, fmt.Sprintf("%v %s %s %d %s %s %d",
 				answer.Found, tc.ExporterIP.Unmap().String(), answer.Exporter.Name,
 				641, answer.Interface.Name, answer.Interface.Description, answer.Interface.Speed))
-			answer, _ = p.Query(context.Background(), provider.Query{ExporterIP: tc.ExporterIP, IfIndex: 642})
+			answer, _ = p.Query(t.Context(), provider.Query{ExporterIP: tc.ExporterIP, IfIndex: 642})
 			got = append(got, fmt.Sprintf("%v %s %s %d %s %s %d",
 				answer.Found, tc.ExporterIP.Unmap().String(), answer.Exporter.Name,
 				642, answer.Interface.Name, answer.Interface.Description, answer.Interface.Speed))
-			answer, _ = p.Query(context.Background(), provider.Query{ExporterIP: tc.ExporterIP, IfIndex: 643})
+			answer, _ = p.Query(t.Context(), provider.Query{ExporterIP: tc.ExporterIP, IfIndex: 643})
 			got = append(got, fmt.Sprintf("%v %s %s %d %s %s %d",
 				answer.Found, tc.ExporterIP.Unmap().String(), answer.Exporter.Name,
 				643, answer.Interface.Name, answer.Interface.Description, answer.Interface.Speed))
-			answer, _ = p.Query(context.Background(), provider.Query{ExporterIP: tc.ExporterIP, IfIndex: 644})
+			answer, _ = p.Query(t.Context(), provider.Query{ExporterIP: tc.ExporterIP, IfIndex: 644})
 			got = append(got, fmt.Sprintf("%v %s %s %d %s %s %d",
 				answer.Found, tc.ExporterIP.Unmap().String(), answer.Exporter.Name,
 				644, answer.Interface.Name, answer.Interface.Description, answer.Interface.Speed))
-			answer, _ = p.Query(context.Background(), provider.Query{ExporterIP: tc.ExporterIP, IfIndex: 645})
+			answer, _ = p.Query(t.Context(), provider.Query{ExporterIP: tc.ExporterIP, IfIndex: 645})
 			got = append(got, fmt.Sprintf("%v %s %s %d %s %s %d",
 				answer.Found, tc.ExporterIP.Unmap().String(), answer.Exporter.Name,
 				645, answer.Interface.Name, answer.Interface.Description, answer.Interface.Speed))

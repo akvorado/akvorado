@@ -4,7 +4,6 @@
 package snmp
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -31,7 +30,7 @@ func TestSNMPServer(t *testing.T) {
 		Port:                    uint16(c.snmpPort),
 		Community:               "public",
 		Version:                 gosnmp.Version2c,
-		Context:                 context.Background(),
+		Context:                 t.Context(),
 		Retries:                 3,
 		Timeout:                 time.Second,
 		UseUnconnectedUDPSocket: true,

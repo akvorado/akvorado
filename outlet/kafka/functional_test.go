@@ -91,7 +91,7 @@ func TestFakeKafka(t *testing.T) {
 			Topic: expectedTopicName,
 			Value: []byte(value),
 		}
-		results := producer.ProduceSync(context.Background(), record)
+		results := producer.ProduceSync(t.Context(), record)
 		if err := results.FirstErr(); err != nil {
 			t.Fatalf("ProduceSync() error:\n%+v", err)
 		}
@@ -374,7 +374,7 @@ func TestWorkerScaling(t *testing.T) {
 		Topic: expectedTopicName,
 		Value: []byte("hello"),
 	}
-	if results := producer.ProduceSync(context.Background(), record); results.FirstErr() != nil {
+	if results := producer.ProduceSync(t.Context(), record); results.FirstErr() != nil {
 		t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
 	}
 
@@ -403,7 +403,7 @@ func TestWorkerScaling(t *testing.T) {
 		Topic: expectedTopicName,
 		Value: []byte("hello"),
 	}
-	if results := producer.ProduceSync(context.Background(), record); results.FirstErr() != nil {
+	if results := producer.ProduceSync(t.Context(), record); results.FirstErr() != nil {
 		t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
 	}
 
@@ -528,7 +528,7 @@ func TestKafkaLagMetric(t *testing.T) {
 		Topic: expectedTopicName,
 		Value: []byte("hello"),
 	}
-	if results := producer.ProduceSync(context.Background(), record); results.FirstErr() != nil {
+	if results := producer.ProduceSync(t.Context(), record); results.FirstErr() != nil {
 		t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
 	}
 	t.Log("allow message processing")
@@ -563,7 +563,7 @@ func TestKafkaLagMetric(t *testing.T) {
 			Topic: expectedTopicName,
 			Value: []byte("hello"),
 		}
-		if results := producer.ProduceSync(context.Background(), record); results.FirstErr() != nil {
+		if results := producer.ProduceSync(t.Context(), record); results.FirstErr() != nil {
 			t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
 		}
 	}

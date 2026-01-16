@@ -18,7 +18,7 @@ import (
 
 func TestInsertMemory(t *testing.T) {
 	server := helpers.CheckExternalService(t, "ClickHouse", []string{"clickhouse:9000", "127.0.0.1:9000"})
-	ctx := context.Background()
+	ctx := t.Context()
 
 	conn, err := ch.Dial(ctx, ch.Options{
 		Address:     server,

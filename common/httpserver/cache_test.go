@@ -4,7 +4,6 @@
 package httpserver_test
 
 import (
-	"context"
 	"net/http"
 	"testing"
 	"time"
@@ -125,7 +124,7 @@ func TestRedis(t *testing.T) {
 		DB:   10,
 	})
 	defer client.Close()
-	if err := client.FlushAll(context.Background()).Err(); err != nil {
+	if err := client.FlushAll(t.Context()).Err(); err != nil {
 		t.Fatalf("FlushAll() error:\n%+v", err)
 	}
 
@@ -169,7 +168,7 @@ func TestRedis(t *testing.T) {
 		},
 	})
 
-	if err := client.Get(context.Background(), "cache-/api/v0/test").Err(); err != nil {
+	if err := client.Get(t.Context(), "cache-/api/v0/test").Err(); err != nil {
 		t.Fatalf("GET(\"cache-/api/v0/test\") error:\n%+v", err)
 	}
 }

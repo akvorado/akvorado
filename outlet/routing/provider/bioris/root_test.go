@@ -4,7 +4,6 @@
 package bioris
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"net/netip"
@@ -403,7 +402,7 @@ func TestBioRIS(t *testing.T) {
 			t.Fatal("pb.NewRoutingInformationServiceClient() returned nil")
 		}
 		ipAddr, _ := bnet.IPFromString("2001:db8:1::")
-		r, err := client.Get(context.Background(), &pb.GetRequest{
+		r, err := client.Get(t.Context(), &pb.GetRequest{
 			Router: "127.0.0.1",
 			VrfId:  0,
 			Pfx:    bnet.NewPfx(ipAddr, 64).ToProto(),
@@ -435,7 +434,7 @@ func TestBioRIS(t *testing.T) {
 	helpers.StartStop(t, p)
 
 	{
-		got, err := p.Lookup(context.Background(),
+		got, err := p.Lookup(t.Context(),
 			netip.MustParseAddr("2001:db8:1::10"),
 			netip.Addr{},
 			netip.MustParseAddr("2001:db8::7"))

@@ -53,7 +53,7 @@ func CheckExternalService(t *testing.T, name string, candidates []string) string
 	server := ""
 	for _, candidate := range candidates {
 		resolv := net.Resolver{PreferGo: true}
-		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
 		hostname, _, err := net.SplitHostPort(candidate)
 		if err != nil {
 			t.Fatalf("%s is an invalid candidate", candidate)
@@ -76,7 +76,7 @@ func CheckExternalService(t *testing.T, name string, candidates []string) string
 	}
 
 	var d net.Dialer
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 	for {
 		_, err := d.DialContext(ctx, "tcp", server)
 		if err == nil {
