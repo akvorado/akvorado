@@ -7,7 +7,7 @@ Docker image. It also requires [Kafka](https://kafka.apache.org/quickstart)
 
 ## Docker image
 
-You can use the *Akvorado* [Docker](https://docs.docker.com/get-docker) image.
+You can use the *Akvorado* [Docker](https://docs.docker.com/engine/install/) image.
 
 ```console
 # docker pull ghcr.io/akvorado/akvorado:latest
