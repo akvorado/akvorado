@@ -110,7 +110,11 @@ jobs:
       - name: Docker Compose logs
         if: failure() && matrix.compose
         run: |
-          docker compose -f docker/docker-compose-dev.yml logs
+          docker compose -f docker/docker-compose-dev.yml logs -t
+      - name: System logs
+        if: failure() && matrix.compose
+        run: |
+          journalctl -b0 --system --no-pager
 
 
   build-nix:
@@ -196,7 +200,7 @@ jobs:
       - name: Docker Compose logs
         if: failure()
         run: |
-          docker compose logs
+          docker compose logs -t
       - name: Retrieve coverage files
         run: |
           docker compose stop
