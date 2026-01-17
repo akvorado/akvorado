@@ -128,7 +128,7 @@ services:
       - SYS_NICE
     volumes:
       - ./clickhouse/standalone.xml:/etc/clickhouse-server/config.d/standalone.xml
-      - ./clickhouse/observability.xml:/etc/clickhouse-server/config.d/observability.xml
+      - ./clickhouse/dev.xml:/etc/clickhouse-server/config.d/dev.xml
       - ./clickhouse/test-db.sql:/docker-entrypoint-initdb.d/test-db.sql
     ports:
       - 127.0.0.1:8123:8123/tcp
@@ -139,32 +139,32 @@ services:
       - clickhouse-keeper-1
     volumes:
       - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
-      - ./clickhouse/observability.xml:/etc/clickhouse-server/config.d/observability.xml
       - ./clickhouse/cluster-1.xml:/etc/clickhouse-server/config.d/cluster-1.xml
+      - ./clickhouse/dev.xml:/etc/clickhouse-server/config.d/dev.xml
     ports:
       - 127.0.0.1:9001:9000/tcp
   clickhouse-2:
     <<: *clickhouse-cluster
     volumes:
       - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
-      - ./clickhouse/observability.xml:/etc/clickhouse-server/config.d/observability.xml
       - ./clickhouse/cluster-2.xml:/etc/clickhouse-server/config.d/cluster-2.xml
+      - ./clickhouse/dev.xml:/etc/clickhouse-server/config.d/dev.xml
     ports:
       - 127.0.0.1:9002:9000/tcp
   clickhouse-3:
     <<: *clickhouse-cluster
     volumes:
       - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
-      - ./clickhouse/observability.xml:/etc/clickhouse-server/config.d/observability.xml
       - ./clickhouse/cluster-3.xml:/etc/clickhouse-server/config.d/cluster-3.xml
+      - ./clickhouse/dev.xml:/etc/clickhouse-server/config.d/dev.xml
     ports:
       - 127.0.0.1:9003:9000/tcp
   clickhouse-4:
     <<: *clickhouse-cluster
     volumes:
       - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
-      - ./clickhouse/observability.xml:/etc/clickhouse-server/config.d/observability.xml
       - ./clickhouse/cluster-4.xml:/etc/clickhouse-server/config.d/cluster-4.xml
+      - ./clickhouse/dev.xml:/etc/clickhouse-server/config.d/dev.xml
     ports:
       - 127.0.0.1:9004:9000/tcp
   clickhouse-keeper-1:
@@ -172,7 +172,7 @@ services:
       file: versions.yml
       service: clickhouse-keeper
     volumes:
-      - ./clickhouse/observability.xml:/etc/clickhouse-keeper/keeper_config.d/observability.xml
+      - ./clickhouse/dev.xml:/etc/clickhouse-keeper/keeper_config.d/dev.xml
       - ./clickhouse/keeper.xml:/etc/clickhouse-keeper/keeper_config.d/akvorado.xml
 
   srlinux:
