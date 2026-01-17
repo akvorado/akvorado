@@ -10,7 +10,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 2.1.1 - 2026-01-17
 
 - 🩹 *outlet*: fix crash on malformed flow packets
 
