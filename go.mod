@@ -22,7 +22,7 @@ require (
 	github.com/glebarez/sqlite v1.11.0
 	github.com/go-playground/validator/v10 v10.27.0
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/go-viper/mapstructure/v2 v2.4.0
+	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/google/go-cmp v0.7.0
 	github.com/google/gopacket v1.1.19
 	github.com/google/renameio/v2 v2.0.1
