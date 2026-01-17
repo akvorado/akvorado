@@ -35,6 +35,9 @@ macOS, install the `docker-compose` formula from Homebrew.
 Once the `akvorado-console` service is "healthy", the *Akvorado* web interface
 should be running on port 8081. This can take a few minutes.
 
+> [!WARNING]
+> You need at least Docker Engine v23. Check with `docker version -f {{ .Server.Version }}`.
+
 ### Next steps
 
 To connect your own network devices:

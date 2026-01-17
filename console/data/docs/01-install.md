@@ -20,6 +20,7 @@ the [quick start procedure](00-intro.md#quick-start). This documentation assumes
 you are using the `docker compose` setup.
 
 The minimum supported version for Docker Engine is v23.
+Check with `docker version -f {{ .Server.Version }}`.
 
 If you want to compile the Docker image yourself, use `make docker`.
 

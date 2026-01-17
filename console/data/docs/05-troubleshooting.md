@@ -121,13 +121,8 @@ If you receive flows but they do not reach Akvorado, check you are running
 Docker Engine v23 or more recent:
 
 ```console
-$ docker version
-[...]
-Server:
- Engine:
-  Version:          27.5.1+dfsg4
-  API version:      1.47 (minimum version 1.24)
-[...]
+$ docker version -f '{{ .Server.Version }}'
+27.5.1+dfsg4
 ```
 
 Next, check if flows are sent to Kafka correctly:
@@ -268,6 +263,12 @@ If you do not get an answer, there may be several causes:
 
 - the community is incorrect, and you need to fix it
 - the exporter is not configured to answer SNMP requests
+- your version of Docker is too old, check you are running Docker Engine v23 or more recent:
+
+```console
+$ docker version -f '{{ .Server.Version }}'
+27.5.1+dfsg4
+```
 
 Finally, check if flows are sent to ClickHouse successfully. Use this command:
 
