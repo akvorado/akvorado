@@ -111,11 +111,6 @@ jobs:
         if: failure() && matrix.compose
         run: |
           docker compose -f docker/docker-compose-dev.yml logs -t
-      - name: System logs
-        if: failure() && matrix.compose
-        run: |
-          journalctl -b0 --system --no-pager
-
 
   build-nix:
     name: ❄️ Build on Nix
