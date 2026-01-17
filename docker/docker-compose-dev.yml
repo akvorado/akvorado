@@ -167,7 +167,7 @@ services:
       file: versions.yml
       service: clickhouse-keeper
     volumes:
-      - ./clickhouse/observability:/etc/clickhouse-keeper/keeper_config.d/observability.xml
+      - ./clickhouse/observability.xml:/etc/clickhouse-keeper/keeper_config.d/observability.xml
       - ./clickhouse/keeper.xml:/etc/clickhouse-keeper/keeper_config.d/akvorado.xml
 
   srlinux:
