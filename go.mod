@@ -25,7 +25,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.5.0
 	github.com/google/go-cmp v0.7.0
 	github.com/google/gopacket v1.1.19
-	github.com/google/renameio/v2 v2.0.1
+	github.com/google/renameio/v2 v2.0.2
 	github.com/gosnmp/gosnmp v1.43.2
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.1.0
 	github.com/hashicorp/go-version v1.8.0
