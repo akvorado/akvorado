@@ -98,6 +98,7 @@ func TestKafka(t *testing.T) {
 		}
 		fetches := consumer.PollFetches(ctx)
 		if errs := fetches.Errors(); len(errs) > 0 {
+			t.Logf("PollFetches() messages:\n%+v", messages)
 			t.Fatalf("PollFetches() error:\n%+v", errs)
 		}
 
