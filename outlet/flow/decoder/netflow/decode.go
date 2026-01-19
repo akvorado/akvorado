@@ -121,6 +121,8 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 		var proto, icmpType, icmpCode uint8
 		var foundIcmpTypeCode bool
 		var decapOK bool
+		var outIfIsZero, nextHopIsSet, nextHopIsZero bool
+		nextHopIsZero = true
 		mplsLabels := make([]uint32, 0, 5)
 		for _, field := range fields {
 			v, ok := field.Value.([]byte)
@@ -189,6 +191,8 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 			case netflow.IPFIX_FIELD_destinationIPv4PrefixLength, netflow.IPFIX_FIELD_destinationIPv6PrefixLength:
 				bf.DstNetMask = uint8(decodeUNumber(v))
 			case netflow.IPFIX_FIELD_ipNextHopIPv4Address, netflow.IPFIX_FIELD_bgpNextHopIPv4Address, netflow.IPFIX_FIELD_ipNextHopIPv6Address, netflow.IPFIX_FIELD_bgpNextHopIPv6Address:
+				nextHopIsSet = true
+				nextHopIsZero = nextHopIsZero && isAllZeroIP(v)
 				bf.NextHop = decoder.DecodeIP(v)
 
 			// L4
@@ -213,6 +217,7 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 				bf.InIf = uint32(decodeUNumber(v))
 			case netflow.IPFIX_FIELD_egressInterface:
 				bf.OutIf = uint32(decodeUNumber(v))
+				outIfIsZero = (bf.OutIf == 0)
 			case netflow.IPFIX_FIELD_ingressPhysicalInterface:
 				if bf.InIf == 0 {
 					bf.InIf = uint32(decodeUNumber(v))
@@ -356,6 +361,12 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 		}
 		if bf.SamplingRate == 0 {
 			bf.SamplingRate = uint64(tao.GetSamplingRate(version, obsDomainID, 0))
+		}
+		if outIfIsZero && nextHopIsSet && nextHopIsZero {
+			// See https://pavel.network/quirks-of-juniper-netflow-and-ipfix-implementations/
+			// - Output interface is set to 0
+			// - Next-hop is set to 0
+			bf.AppendUint(schema.ColumnForwardingStatus, 128)
 		}
 		localFinalize := func() {
 			if needDecap && !decapOK {

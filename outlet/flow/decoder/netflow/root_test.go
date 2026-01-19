@@ -309,6 +309,9 @@ func TestDecodeSamplingRate(t *testing.T) {
 				schema.ColumnDstPort:       uint16(10907),
 				schema.ColumnEType:         uint32(constants.ETypeIPv4),
 				schema.ColumnFlowDirection: uint8(schema.DirectionIngress),
+				// Is that correct? This would match if device is Juniper, but
+				// this packet is from a Huawei router.
+				schema.ColumnForwardingStatus: uint32(128),
 			},
 		},
 	}

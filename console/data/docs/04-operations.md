@@ -286,6 +286,7 @@ chassis {
     sampling-instance sample-ins;
     inline-services {
       flex-flow-sizing;
+      report-zero-oif-gw-on-discard;
     }
   }
 }

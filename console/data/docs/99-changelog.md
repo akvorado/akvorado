@@ -13,6 +13,7 @@ identified with a specific icon:
 ## 2.1.1 - 2026-01-17
 
 - 🩹 *outlet*: fix crash on malformed flow packets
+- 🌱 *outlet*: handle discard on Juniper devices with `report-zero-oif-gw-on-discard` set
 
 ## 2.1.0 - 2026-01-10
 
