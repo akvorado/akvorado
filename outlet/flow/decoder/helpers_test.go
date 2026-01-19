@@ -217,3 +217,21 @@ func TestDecodeSRv6(t *testing.T) {
 		t.Fatalf("ParseEthernet() (-got, +want):\n%s", diff)
 	}
 }
+
+func TestDecodeIP(t *testing.T) {
+	for _, tc := range []struct {
+		input  []byte
+		output netip.Addr
+	}{
+		{[]byte{}, netip.Addr{}},
+		{[]byte{192, 168, 10, 10}, netip.MustParseAddr("::ffff:192.168.10.10")},
+		{[]byte{0, 0, 0, 0}, netip.MustParseAddr("::ffff:0.0.0.0")},
+		{[]byte{0x20, 0x01, 0xd, 0xb8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}, netip.MustParseAddr("2001:db8::1")},
+		{[]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, netip.MustParseAddr("::")},
+	} {
+		got := DecodeIP(tc.input)
+		if diff := helpers.Diff(got, tc.output); diff != "" {
+			t.Errorf("DecodeIP(%v) (-got, +want):%s", tc.input, diff)
+		}
+	}
+}
