@@ -30,6 +30,12 @@ type Configuration struct {
 	ASNProviders []ASNProvider `validate:"dive"`
 	// NetProviders defines the source used to get Prefix/Network Information
 	NetProviders []NetProvider `validate:"dive"`
+	// Anonymize SrcAddr and DstAddr
+	AnonymizeIPs bool `mapstructure:"anonymize_ips"`
+	// base64 or raw. If empty, fallback to CRYPTOPAN_KEY env var.
+	CryptoPanKey string `mapstructure:"cryptopan_key"`
+	// default: 100000
+	CryptoPanCache int `mapstructure:"cryptopan_cache_size"`
 }
 
 // DefaultConfiguration represents the default configuration for the core component.

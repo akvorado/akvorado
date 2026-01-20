@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/netip"
 	"sync/atomic"
 	"time"
 
@@ -72,6 +73,21 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 		if skip := w.enrichFlow(ip, exporter); skip {
 			w.bf.Undo()
 			return
+		}
+
+		// anonymize IPs stored in the flow message before ClickHouse insert
+		if w.c.anonymizer != nil && w.c.anonymizer.enabled {
+			// get textual representation of current addresses
+			src := w.bf.SrcAddr.String()
+			dst := w.bf.DstAddr.String()
+			anonSrc, anonDst := w.c.anonymizer.AnonymizeFlowFields(src, dst)
+			// parse anonymized addresses back to netip.Addr and assign
+			if sa, err := netip.ParseAddr(anonSrc); err == nil {
+				w.bf.SrcAddr = sa
+			}
+			if da, err := netip.ParseAddr(anonDst); err == nil {
+				w.bf.DstAddr = da
+			}
 		}
 
 		// If we have HTTP clients, send to them too
