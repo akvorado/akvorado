@@ -31,11 +31,11 @@ type Configuration struct {
 	// NetProviders defines the source used to get Prefix/Network Information
 	NetProviders []NetProvider `validate:"dive"`
 	// Anonymize SrcAddr and DstAddr
-	AnonymizeIPs bool `mapstructure:"anonymize_ips"`
+	AnonymizeIPs bool `mapstructure:"anonymize-ips"`
 	// base64 or raw. If empty, fallback to CRYPTOPAN_KEY env var.
-	CryptoPanKey string `mapstructure:"cryptopan_key"`
+	CryptoPanKey string `mapstructure:"cryptopan-key"`
 	// default: 100000
-	CryptoPanCache int `mapstructure:"cryptopan_cache_size"`
+	CryptoPanCache int `mapstructure:"cryptopan-cache-size"`
 }
 
 // DefaultConfiguration represents the default configuration for the core component.
@@ -46,6 +46,9 @@ func DefaultConfiguration() Configuration {
 		ClassifierCacheDuration: 5 * time.Minute,
 		ASNProviders:            []ASNProvider{ASNProviderFlow, ASNProviderRouting, ASNProviderGeoIP},
 		NetProviders:            []NetProvider{NetProviderFlow, NetProviderRouting},
+		AnonymizeIPs:            true,
+		CryptoPanKey:            "",
+		CryptoPanCache:          10000,
 	}
 }
 
