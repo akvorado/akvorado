@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/netip"
 	"sync/atomic"
 	"time"
@@ -76,18 +77,10 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 		}
 
 		// anonymize IPs stored in the flow message before ClickHouse insert
+		// TODO make option to specify scope (Boundary/AS/?) of SrcAddr/DstAddr to be anonymized 
 		if w.c.anonymizer != nil && w.c.anonymizer.enabled {
-			// get textual representation of current addresses
-			src := w.bf.SrcAddr.String()
-			dst := w.bf.DstAddr.String()
-			anonSrc, anonDst := w.c.anonymizer.AnonymizeFlowFields(src, dst)
-			// parse anonymized addresses back to netip.Addr and assign
-			if sa, err := netip.ParseAddr(anonSrc); err == nil {
-				w.bf.SrcAddr = sa
-			}
-			if da, err := netip.ParseAddr(anonDst); err == nil {
-				w.bf.DstAddr = da
-			}
+			w.bf.SrcAddr = w.anonymizeAddr(w.bf.SrcAddr)
+			w.bf.DstAddr = w.anonymizeAddr(w.bf.DstAddr)
 		}
 
 		// If we have HTTP clients, send to them too
@@ -122,4 +115,31 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 	}
 
 	return nil
+}
+
+// anonymizeAddr converts netip.Addr -> net.IP, applies either aggregation or cryptopan
+// depending on the configured mode, and returns a new netip.Addr. On error it returns
+// the original address unchanged.
+func (w *worker) anonymizeAddr(a netip.Addr) netip.Addr {
+	if !a.IsValid() {
+		return a
+	}
+	ip := net.ParseIP(a.String())
+	if ip == nil {
+		return a
+	}
+
+	var out net.IP
+	if w.c.anonymizer.aggregate {
+		out = w.c.anonymizer.AggregateIP(ip)
+	} else {
+		out = w.c.anonymizer.AnonymizeIP(ip)
+	}
+	if out == nil {
+		return a
+	}
+	if na, err := netip.ParseAddr(out.String()); err == nil {
+		return na
+	}
+	return a
 }

@@ -71,24 +71,12 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		classifierErrLogger:      r.Sample(reporter.BurstSampler(10*time.Second, 3)),
 	}
 
-	// initialize anonymizer
-	// configuration.CryptoPanCache expected to be integer (size of LRU). Use sensible default if zero.
-	cacheSize := 100000
-	if configuration.CryptoPanCache > 0 {
-		cacheSize = configuration.CryptoPanCache
-	}
-	an, err := NewAnonymizer(configuration.CryptoPanKey, cacheSize)
+	// initialize anonymizer from nested anonymize config
+	a, err := NewAnonymizer(configuration.Anonymize)
 	if err != nil {
-		return nil, fmt.Errorf("cannot initialize anonymizer: %w", err)
+		return nil, fmt.Errorf("cannot create anonymizer: %w", err)
 	}
-	// Enable or keep disabled based on configuration.AnonymizeIPs or returned anonymizer.enabled
-	if !configuration.AnonymizeIPs {
-		// if user disabled anonymization in config, make sure anonymizer is disabled
-		// NewAnonymizer returns an instance with enabled=false if no key is present,
-		// but respect explicit config.AnonymizeIPs = false to disable.
-		an.enabled = false
-	}
-	c.anonymizer = an
+	c.anonymizer = a
 
 	c.d.Daemon.Track(&c.t, "outlet/core")
 	c.initMetrics()

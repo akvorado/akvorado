@@ -15,7 +15,19 @@ func TestAnonymizerDeterminismAndPrefixPreservation(t *testing.T) {
 	}
 	keyStr := base64.StdEncoding.EncodeToString(key)
 
-	a, err := NewAnonymizer(keyStr, 1024)
+	cfg := AnonymizeConfig{
+		Enabled: true,
+		Mode:    AnonymizeModeCryptoPan,
+		CryptoPan: AnonymizeCryptoPanConfig{
+			Key:   keyStr,
+			Cache: 1024,
+		},
+		Aggregate: AnonymizeAggregateConfig{
+			V4Prefix: 24,
+			V6Prefix: 64,
+		},
+	}
+	a, err := NewAnonymizer(cfg)
 	if err != nil {
 		t.Fatalf("NewAnonymizer: %v", err)
 	}

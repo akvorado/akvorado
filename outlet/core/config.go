@@ -14,6 +14,35 @@ import (
 	"github.com/go-viper/mapstructure/v2"
 )
 
+// AnonymizeMode selects how IP anonymization is performed.
+type AnonymizeMode string
+
+// contants of AnonymizeMode
+const (
+	AnonymizeModeCryptoPan AnonymizeMode = "cryptopan"
+	AnonymizeModeAggregate AnonymizeMode = "aggregate"
+)
+
+// AnonymizeCryptoPanConfig holds cryptopan-specific settings.
+type AnonymizeCryptoPanConfig struct {
+	Key   string `mapstructure:"key"`
+	Cache int    `mapstructure:"cache"`
+}
+
+// AnonymizeAggregateConfig holds aggregation-specific settings.
+type AnonymizeAggregateConfig struct {
+	V4Prefix int `mapstructure:"v4prefix"`
+	V6Prefix int `mapstructure:"v6prefix"`
+}
+
+// AnonymizeConfig is the new nested configuration for anonymization.
+type AnonymizeConfig struct {
+	Enabled   bool                    `mapstructure:"enabled"`
+	Mode      AnonymizeMode           `mapstructure:"mode"`
+	CryptoPan AnonymizeCryptoPanConfig `mapstructure:"cryptopan"`
+	Aggregate AnonymizeAggregateConfig `mapstructure:"aggregate"`
+}
+
 // Configuration describes the configuration for the core component.
 type Configuration struct {
 	// ExporterClassifiers defines rules for exporter classification
@@ -30,12 +59,9 @@ type Configuration struct {
 	ASNProviders []ASNProvider `validate:"dive"`
 	// NetProviders defines the source used to get Prefix/Network Information
 	NetProviders []NetProvider `validate:"dive"`
-	// Anonymize SrcAddr and DstAddr
-	AnonymizeIPs bool 
-	// base64 or raw. If empty, fallback to CRYPTOPAN_KEY env var.
-	CryptoPanKey string 
-	// default: 100000
-	CryptoPanCache int 
+	// Anonymize holds anonymization settings (new nested model)
+	Anonymize AnonymizeConfig 
+	// Note: cryptopan-key and cryptopan-cache (old flat keys) are migrated in the unmarshaller hook.
 }
 
 // DefaultConfiguration represents the default configuration for the core component.
@@ -46,9 +72,18 @@ func DefaultConfiguration() Configuration {
 		ClassifierCacheDuration: 5 * time.Minute,
 		ASNProviders:            []ASNProvider{ASNProviderFlow, ASNProviderRouting, ASNProviderGeoIP},
 		NetProviders:            []NetProvider{NetProviderFlow, NetProviderRouting},
-		AnonymizeIPs:            false,
-		CryptoPanKey:            "",
-		CryptoPanCache:          10000,
+		Anonymize: AnonymizeConfig{
+			Enabled: false,
+			Mode:    AnonymizeModeCryptoPan,
+			CryptoPan: AnonymizeCryptoPanConfig{
+				Key:   "",
+				Cache: 10000,
+			},
+			Aggregate: AnonymizeAggregateConfig{
+				V4Prefix: 24,
+				V6Prefix: 64,
+			},
+		},
 	}
 }
 
