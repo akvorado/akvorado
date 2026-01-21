@@ -16,11 +16,3 @@ mock_*.go
 /.go-cache
 /.npm-cache
 /result
-.git
-.gitignore
-node_modules
-tmp
-*.log
-dist
-build
-.env
