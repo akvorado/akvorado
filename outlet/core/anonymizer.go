@@ -14,12 +14,12 @@ import (
 
 // Anonymizer wraps CryptoPAN and an LRU cache.
 type Anonymizer struct {
-	cp             *CryptoPAN
-	cache          *lru.Cache
-	mu             sync.RWMutex
+	cp    *CryptoPAN
+	cache *lru.Cache
+	mu    sync.RWMutex
 
-	enabled        bool
-	aggregate      bool
+	enabled   bool
+	aggregate bool
 
 	aggregateV4Len int
 	aggregateV6Len int

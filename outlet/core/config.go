@@ -37,8 +37,8 @@ type AnonymizeAggregateConfig struct {
 
 // AnonymizeConfig is the new nested configuration for anonymization.
 type AnonymizeConfig struct {
-	Enabled   bool                    `mapstructure:"enabled"`
-	Mode      AnonymizeMode           `mapstructure:"mode"`
+	Enabled   bool                     `mapstructure:"enabled"`
+	Mode      AnonymizeMode            `mapstructure:"mode"`
 	CryptoPan AnonymizeCryptoPanConfig `mapstructure:"cryptopan"`
 	Aggregate AnonymizeAggregateConfig `mapstructure:"aggregate"`
 }
@@ -60,7 +60,7 @@ type Configuration struct {
 	// NetProviders defines the source used to get Prefix/Network Information
 	NetProviders []NetProvider `validate:"dive"`
 	// Anonymize holds anonymization settings (new nested model)
-	Anonymize AnonymizeConfig 
+	Anonymize AnonymizeConfig
 	// Note: cryptopan-key and cryptopan-cache (old flat keys) are migrated in the unmarshaller hook.
 }
 
