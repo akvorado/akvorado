@@ -1042,3 +1042,49 @@ func TestDecodeSRv6(t *testing.T) {
 		t.Fatalf("Decode() (-got, +want):\n%s", diff)
 	}
 }
+
+func TestJuniperCPIDDrop(t *testing.T) {
+	_, nfdecoder, bf, got, finalize := setup(t, true)
+	options := decoder.Options{
+		TimestampSource: pb.RawFlow_TS_INPUT,
+	}
+	data := helpers.ReadPcapL4(t, filepath.Join("testdata", "juniper-cpid-template.pcap"))
+	_, err := nfdecoder.Decode(
+		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+		options, bf, finalize)
+	if err != nil {
+		t.Fatalf("Decode() error:\n%+v", err)
+	}
+	data = helpers.ReadPcapL4(t, filepath.Join("testdata", "juniper-cpid-data.pcap"))
+	_, err = nfdecoder.Decode(
+		decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+		options, bf, finalize)
+	if err != nil {
+		t.Fatalf("Decode() error:\n%+v", err)
+	}
+	expectedFlows := []*schema.FlowMessage{
+		{
+			SamplingRate:    0,
+			InIf:            737,
+			OutIf:           0,
+			SrcAddr:         netip.MustParseAddr("fc30:2200:1b::f"),
+			DstAddr:         netip.MustParseAddr("fc30:2200:23:e009::"),
+			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
+			OtherColumns: map[schema.ColumnKey]any{
+				schema.ColumnPackets:          uint64(1),
+				schema.ColumnBytes:            uint64(104),
+				schema.ColumnFlowDirection:    uint8(schema.DirectionIngress),
+				schema.ColumnForwardingStatus: uint32(128), // drop
+				schema.ColumnEType:            uint32(constants.ETypeIPv6),
+				schema.ColumnProto:            uint32(constants.ProtoIPv4),
+				schema.ColumnIPTTL:            uint8(254),
+				schema.ColumnIPv6FlowLabel:    uint32(152740),
+				schema.ColumnSrcMAC:           uint64(0x0c00c386af07),
+				schema.ColumnDstMAC:           uint64(0x2c6bf5e81fc5),
+			},
+		},
+	}
+	if diff := helpers.Diff(*got, expectedFlows); diff != "" {
+		t.Fatalf("Decode() (-got, +want):\n%s", diff)
+	}
+}
