@@ -346,9 +346,97 @@ routing-options {
 }
 ```
 
-Another option is IPFIX (replace `version9` with `version-ipfix`). However,
-Juniper only includes *total* counters for bytes and packets, instead of *delta*
-counters. *Akvorado* does not support these counters.
+> [!CAUTION]
+> Do not use `version-ipfix` instead of `version9`: Juniper only includes
+> *total* counters for bytes and packets, instead of *delta* counters.
+> *Akvorado*, like most monitoring solutions, does not support these counters.
+
+#### IPFIX 315
+
+Another option is using IPFIX 315. Juniper calls that inline monitoring. In this
+case, Akvorado will decode the sampled packets. This is more lightweight.
+
+```junos
+services {
+  inline-monitoring {
+    template im-template {
+      template-refresh-rate 30;
+      option-template-refresh-rate 30;
+      primary-data-record-fields {
+        cpid-forwarding-exception-code;
+        egress-interface-snmp-id; 
+        ingress-interface-snmp-id;
+        direction;
+        datalink-frame-size;
+      }
+    }
+    instance im-instance {
+      template-name im-template {
+        maximum-clip-length 126;
+      }
+      collector akvorado {
+        source-address 203.0.113.2;
+        destination-address 192.0.2.1;
+        destination-port 2055;
+        sampling-rate 1024;
+      }
+    }
+  }
+}
+firewall {
+  family inet {
+    filter monitoring {
+      term 1 {
+        then {
+          inline-monitoring-instance im-instance;
+          accept;
+        }
+      }
+    }
+  }
+  family inet6 {
+    filter monitoring {
+      term 1 {
+        then {
+          inline-monitoring-instance im-instance;
+          accept;
+        }
+      }
+    }
+  }
+}
+groups {
+  sampling {
+    interfaces {
+      <*> {
+        unit <*> {
+          family inet {
+            filter {
+              input monitoring;
+            }
+          }
+          family inet6 {
+            filter {
+              input monitoring;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+Then, for each interface you want to enable IPFIX on, use this:
+
+```junos
+interfaces {
+  xe-0/0/0.0 {
+    description "Transit: Cogent AS179 [3-10109101]";
+    apply-groups [ sampling ];
+  }
+}
+```
 
 #### sFlow
 
