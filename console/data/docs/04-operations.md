@@ -249,7 +249,7 @@ forwarding-options {
               port 2055;
               autonomous-system-type origin;
               source-address 203.0.113.2;
-              version9 {
+              version-ipfix {
                 template {
                   ipv4;
                 }
@@ -266,7 +266,7 @@ forwarding-options {
               port 2055;
               autonomous-system-type origin;
               source-address 203.0.113.2;
-              version9 {
+              version-ipfix {
                 template {
                   ipv6;
                 }
@@ -291,7 +291,7 @@ chassis {
 }
 services {
   flow-monitoring {
-    version9 {
+    version-ipfix {
       template ipv4 {
         nexthop-learning enable;
         flow-active-timeout 10;
@@ -345,11 +345,6 @@ routing-options {
   }
 }
 ```
-
-> [!CAUTION]
-> Do not use `version-ipfix` instead of `version9`: Juniper only includes
-> *total* counters for bytes and packets, instead of *delta* counters.
-> *Akvorado*, like most monitoring solutions, does not support these counters.
 
 #### IPFIX 315
 
