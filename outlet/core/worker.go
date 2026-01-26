@@ -77,16 +77,16 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 		}
 
 		// Get boundary classifications after enrichment
-		inIfBoundary, outIfBoundary := w.getBoundaryClassifications(ip)
+		outIfBoundary, intIfBoundary := w.getBoundaryClassifications(ip)
 
 		// Anonymize IPs stored in the flow message before ClickHouse insert
 		// Anonymize DstAddr if incoming interface is external
 		// Anonymize SrcAddr if incoming interface is internal
 		if w.c.anonymizer != nil && w.c.anonymizer.enabled {
-			if inIfBoundary == schema.InterfaceBoundaryExternal || outIfBoundary == schema.InterfaceBoundaryInternal {
+			if inIfBoundary == schema.InterfaceBoundaryExternal {
 				w.bf.DstAddr = w.anonymizeAddr(w.bf.DstAddr)
 			}
-			if inIfBoundary == schema.InterfaceBoundaryInternal || outIfBoundary == schema.InterfaceBoundaryExternal {
+			if inIfBoundary == schema.InterfaceBoundaryInternal {
 				w.bf.SrcAddr = w.anonymizeAddr(w.bf.SrcAddr)
 			}
 		}
