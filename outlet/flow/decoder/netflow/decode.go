@@ -33,6 +33,8 @@ const (
 	directionReverse
 )
 
+const juniperPEN = 2636
+
 func (nd *Decoder) decodeNFv5(packet *netflowlegacy.PacketNetFlowV5, ts, sysUptime uint64, options decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
 	for _, record := range packet.Records {
 		bf.SamplingRate = uint64(packet.SamplingInterval)
@@ -128,21 +130,42 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 				continue
 			}
 
-			// RFC 5103 handling.
 			if field.PenProvided {
-				if field.Pen != reversePEN {
-					continue
-				}
-				if dir == directionForward {
-					// Reverse PEN and current direction is forward. Record we saw it and skip it.
-					if reversePresent == nil {
-						reversePresent = bitset.New(uint(field.Type))
+				if field.Pen == reversePEN {
+					// RFC 5103 handling.
+					if dir == directionForward {
+						// Reverse PEN and current direction is forward. Record we saw it and skip it.
+						if reversePresent == nil {
+							reversePresent = bitset.New(uint(field.Type))
+						}
+						reversePresent.Set(uint(field.Type))
+						continue
 					}
-					reversePresent.Set(uint(field.Type))
+				} else if field.Pen == juniperPEN {
+					// Juniper PEN
+					switch field.Type {
+					case netflow.IPFIX_FIELD_commonPropertiesId:
+						// See https://www.juniper.net/documentation/us/en/software/junos/flow-monitoring/topics/topic-map/resiliency-exception-reporting.html
+						if len(v) == 2 && v[0]&0xfc>>2 == 0x02 {
+							// We are only interested by forwardingExceptionCode. If
+							// not zero, this means the packet has been dropped. The
+							// reason is platform-dependent and we don't know the
+							// platform.
+							switch decodeUNumber(v) & 0x03ff {
+							case 0:
+								bf.AppendUint(schema.ColumnForwardingStatus, 64)
+							default:
+								bf.AppendUint(schema.ColumnForwardingStatus, 128)
+							}
+						}
+					}
+					continue
+				} else {
+					// Other PENs are unhandled
 					continue
 				}
 			} else if dir == directionReverse && reversePresent.Test(uint(field.Type)) {
-				// No reverse PEN but we saw this one and so we should use the reversed value.
+				// No PEN but we saw this one and so we should use the reversed value.
 				continue
 			}
 
