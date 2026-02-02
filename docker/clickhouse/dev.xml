@@ -46,6 +46,9 @@
   <tables_loader_foreground_pool_size>0</tables_loader_foreground_pool_size>
   <tables_loader_background_pool_size>0</tables_loader_background_pool_size>
 
+  <!-- For testing, ensure tables are dropped quickly -->
+  <database_atomic_delay_before_drop_table_sec>0</database_atomic_delay_before_drop_table_sec>
+
   <!-- Also log to console -->
   <logger>
     <level>information</level>
