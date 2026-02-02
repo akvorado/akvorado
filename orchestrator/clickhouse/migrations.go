@@ -11,6 +11,8 @@ import (
 	"strings"
 
 	"akvorado/common/schema"
+
+	"github.com/ClickHouse/clickhouse-go/v2"
 )
 
 // migrateDatabase execute database migration
@@ -51,6 +53,9 @@ func (c *Component) migrateDatabase() error {
 			return errors.New("cannot get the number of shards for the cluster")
 		}
 		c.shards = int(shardNum)
+		ctx = clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
+			"alter_sync": 2,
+		}))
 	}
 
 	// Create dictionaries
