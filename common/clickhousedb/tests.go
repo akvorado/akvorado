@@ -27,7 +27,7 @@ func SetupClickHouse(t *testing.T, r *reporter.Reporter, cluster bool) *Componen
 		}
 	} else {
 		config.Servers = []string{
-			helpers.CheckExternalService(t, "ClickHouse cluster", []string{"clickhouse-2:9000", "127.0.0.1:9002"}),
+			helpers.CheckExternalService(t, "ClickHouse cluster", []string{"clickhouse-3:9000", "127.0.0.1:9003"}),
 		}
 		config.Cluster = "akvorado"
 	}

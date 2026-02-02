@@ -128,7 +128,6 @@ services:
     cap_add:
       - SYS_NICE
     volumes:
-      - ./clickhouse/standalone.xml:/etc/clickhouse-server/config.d/standalone.xml
       - ./clickhouse/dev.xml:/etc/clickhouse-server/config.d/dev.xml
       - ./clickhouse/test-db.sql:/docker-entrypoint-initdb.d/test-db.sql
     ports:
@@ -139,35 +138,19 @@ services:
     depends_on:
       - clickhouse-keeper-1
     volumes:
-      - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
+      - ./clickhouse/cluster-dev.xml:/etc/clickhouse-server/config.d/cluster-dev.xml
       - ./clickhouse/cluster-1.xml:/etc/clickhouse-server/config.d/cluster-1.xml
       - ./clickhouse/dev.xml:/etc/clickhouse-server/config.d/dev.xml
     ports:
       - 127.0.0.1:9001:9000/tcp
-  clickhouse-2:
-    <<: *clickhouse-cluster
-    volumes:
-      - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
-      - ./clickhouse/cluster-2.xml:/etc/clickhouse-server/config.d/cluster-2.xml
-      - ./clickhouse/dev.xml:/etc/clickhouse-server/config.d/dev.xml
-    ports:
-      - 127.0.0.1:9002:9000/tcp
   clickhouse-3:
     <<: *clickhouse-cluster
     volumes:
-      - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
+      - ./clickhouse/cluster-dev.xml:/etc/clickhouse-server/config.d/cluster-dev.xml
       - ./clickhouse/cluster-3.xml:/etc/clickhouse-server/config.d/cluster-3.xml
       - ./clickhouse/dev.xml:/etc/clickhouse-server/config.d/dev.xml
     ports:
       - 127.0.0.1:9003:9000/tcp
-  clickhouse-4:
-    <<: *clickhouse-cluster
-    volumes:
-      - ./clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml
-      - ./clickhouse/cluster-4.xml:/etc/clickhouse-server/config.d/cluster-4.xml
-      - ./clickhouse/dev.xml:/etc/clickhouse-server/config.d/dev.xml
-    ports:
-      - 127.0.0.1:9004:9000/tcp
   clickhouse-keeper-1:
     extends:
       file: versions.yml
