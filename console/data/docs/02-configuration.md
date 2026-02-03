@@ -929,9 +929,10 @@ provided inside `clickhouse`:
   schema mismatches may cause write errors.
 
 The `resolutions` setting contains a list of resolutions. Each
-resolution has two keys: `interval` and `ttl`. The first one is the
+resolution has three keys: `interval`, `ttl` and `storage-policy`. The first one is the
 consolidation interval. The second is how long to keep the data in the
-database. If `ttl` is 0, then the data is kept forever. If `interval`
+database. The third is the storage policy that is used by clickhouse for the table.
+If `ttl` is 0, then the data is kept forever. If `interval`
 is 0, it applies to the raw data (the one in the `flows` table). For
 each resolution, a materialized view `flows_DDDD` is created with the
 specified interval. It should be noted that consolidated tables do not

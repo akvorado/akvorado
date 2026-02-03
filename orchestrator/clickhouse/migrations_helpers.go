@@ -442,6 +442,9 @@ func (c *Component) createOrUpdateFlowsTable(ctx context.Context, resolution Res
 	partitionInterval := uint64((resolution.TTL / time.Duration(c.config.MaxPartitions)).Seconds())
 	ttl := uint64(resolution.TTL.Seconds())
 	settings := `index_granularity = 8192, ttl_only_drop_parts = 1`
+	if resolution.StoragePolicy != "" {
+		settings += fmt.Sprintf(", storage_policy='%s'", resolution.StoragePolicy)
+	}
 
 	// Create table if it does not exist
 	if ok, err := c.tableAlreadyExists(ctx, tableName, "name", tableName); err != nil {
@@ -610,7 +613,7 @@ outer:
 	}
 
 	// Check if we need to update the settings
-	settingsClauseLike := fmt.Sprintf("CAST(engine_full LIKE '%% SETTINGS %s', 'String')", settings)
+	settingsClauseLike := fmt.Sprintf("CAST(engine_full LIKE '%% SETTINGS %s', 'String')", strings.ReplaceAll(settings, "'", "\\'"))
 	if ok, err := c.tableAlreadyExists(ctx, tableName, settingsClauseLike, "1"); err != nil {
 		return err
 	} else if !ok {
