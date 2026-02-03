@@ -183,8 +183,11 @@ func (w *worker) getBoundaryClassifications(exporterIP netip.Addr) (schema.Inter
 					err := rule.exec(
 						exporterInfo{IP: exporterIP.String()},
 						interfaceInfo{
-							Index: flow.InIf,
-							Name:  answer.Interface.Name,
+							Index:       flow.InIf,
+							Name:        answer.Interface.Name,
+							Description: answer.Interface.Description,
+							Speed:       uint32(answer.Interface.Speed),
+							VLAN:        flow.SrcVlan,
 						},
 						&inIfClassification,
 					)
@@ -211,8 +214,11 @@ func (w *worker) getBoundaryClassifications(exporterIP netip.Addr) (schema.Inter
 					err := rule.exec(
 						exporterInfo{IP: exporterIP.String()},
 						interfaceInfo{
-							Index: flow.OutIf,
-							Name:  answer.Interface.Name,
+							Index:       flow.OutIf,
+							Name:        answer.Interface.Name,
+							Description: answer.Interface.Description,
+							Speed:       uint32(answer.Interface.Speed),
+							VLAN:        flow.DstVlan,
 						},
 						&outIfClassification,
 					)
@@ -224,7 +230,6 @@ func (w *worker) getBoundaryClassifications(exporterIP netip.Addr) (schema.Inter
 			outIfBoundary = outIfClassification.Boundary
 		}
 	}
-
 	return inIfBoundary, outIfBoundary
 }
 
