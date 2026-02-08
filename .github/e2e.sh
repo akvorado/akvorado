@@ -56,7 +56,7 @@ EOF
             [ $pcount -ne $((dcount + 2)) ] || break
             sleep 1
         done
-        promtool_query 'akvorado_info{job=~"akvorado-.+"}'
+        promtool_query 'akvorado_cmd_info{job=~"akvorado-.+"}'
         promtool query labels http://localhost:9090/prometheus job
         echo ::endgroup::
 

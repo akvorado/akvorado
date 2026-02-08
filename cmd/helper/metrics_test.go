@@ -217,13 +217,13 @@ func init() {
 	got := extractMetrics(pkgs)
 	expected := []metricInfo{
 		{
-			Name:   "akvorado_info",
+			Name:   "akvorado_cmd_info",
 			Type:   "gauge",
 			Help:   "Akvorado build information",
 			Labels: []string{"version", "compiler"},
 		},
 		{
-			Name: "akvorado_uptime_seconds",
+			Name: "akvorado_cmd_uptime_seconds",
 			Type: "gauge",
 			Help: "number of seconds the application is running",
 		},
