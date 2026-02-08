@@ -68,9 +68,9 @@ The *inlet*, *outlet*, *orchestrator*, and *console* expose metrics. Get them wi
 
 ```console
 $ curl -s http://127.0.0.1:8080/api/v0/inlet/metrics
-​# HELP akvorado_cmd_info Akvorado build information
-​# TYPE akvorado_cmd_info gauge
-akvorado_cmd_info{compiler="go1.24.4",version="v1.11.5-134-gaf3869cd701c"} 1
+​# HELP akvorado_cmd_akvorado_info Akvorado build information
+​# TYPE akvorado_cmd_akvorado_info gauge
+akvorado_cmd_akvorado_info{compiler="go1.24.4",version="v1.11.5-134-gaf3869cd701c"} 1
 [...]
 ```
 
