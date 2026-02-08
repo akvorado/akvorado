@@ -1,22 +1,20 @@
 // SPDX-FileCopyrightText: 2022 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-// Package cmd handles the command-line interface for akvorado
-package cmd
+// Package main handles the command-line interface for akvorado
+package main
 
 import (
+	"fmt"
 	"os"
 	"runtime"
 	"sync/atomic"
 	"time"
 
+	"akvorado/cmd"
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 
-	"github.com/mattn/go-isatty"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/diode"
-	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -30,19 +28,8 @@ var (
 var RootCmd = &cobra.Command{
 	Use:   "akvorado",
 	Short: "Flow collector, enricher and visualizer",
-	PersistentPreRun: func(_ *cobra.Command, _ []string) {
-		if isatty.IsTerminal(os.Stdout.Fd()) {
-			log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-		} else {
-			w := diode.NewWriter(os.Stdout, 1000, 0, func(missed int) {
-				missedLogs.Add(uint64(missed))
-			})
-			log.Logger = zerolog.New(w).With().Timestamp().Logger()
-		}
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
-		if debug || helpers.Testing() {
-			zerolog.SetGlobalLevel(zerolog.DebugLevel)
-		}
+	PersistentPreRun: func(*cobra.Command, []string) {
+		cmd.SetupLogging(debug)
 	},
 	SilenceErrors: true,
 	SilenceUsage:  true,
@@ -73,4 +60,11 @@ func init() {
 	startTime = time.Now()
 	RootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false,
 		"Enable debug logs")
+}
+
+func main() {
+	if err := RootCmd.Execute(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %+v\n", err)
+		os.Exit(1)
+	}
 }

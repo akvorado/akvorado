@@ -67,7 +67,7 @@ all: fmt lint all-indep ; $(info $(M) building executable…) @ ## Build program
 		-tags release,grpcnotrace \
 		-ldflags '-X $(MODULE)/common/helpers.AkvoradoVersion=$(VERSION)' \
 		$(BUILD_ARGS) \
-		-o bin/$(basename $(MODULE)) .
+		-o bin/$(basename $(MODULE)) ./cmd/akvorado
 all-indep: $(GENERATED)
 
 # Tools
