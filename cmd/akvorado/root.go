@@ -45,12 +45,12 @@ func moreMetrics(r *reporter.Reporter) {
 	})
 	r.GaugeVec(reporter.GaugeOpts{
 		Name: "info",
-		Help: "Akvorado build information",
+		Help: "Akvorado build information.",
 	}, []string{"version", "compiler"}).
 		WithLabelValues(helpers.AkvoradoVersion, runtime.Version()).Set(1)
 	r.GaugeFunc(reporter.GaugeOpts{
 		Name: "uptime_seconds",
-		Help: "number of seconds the application is running",
+		Help: "Number of seconds the application is running.",
 	}, func() float64 {
 		return time.Since(startTime).Seconds()
 	})

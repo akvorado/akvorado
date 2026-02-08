@@ -42,28 +42,28 @@ func New(r *reporter.Reporter, dependencies decoder.Dependencies) decoder.Decode
 	nd.metrics.errors = nd.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "errors_total",
-			Help: "sFlows processed errors.",
+			Help: "Number of sFlow flows processed with errors.",
 		},
 		[]string{"exporter", "error"},
 	)
 	nd.metrics.stats = nd.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "flows_total",
-			Help: "sFlows processed.",
+			Help: "Number of sFlow flows processed.",
 		},
 		[]string{"exporter", "agent", "version"},
 	)
 	nd.metrics.sampleRecordsStatsSum = nd.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "sample_records_sum",
-			Help: "sFlows samples sum of records.",
+			Help: "Number of sFlow flows sample records.",
 		},
 		[]string{"exporter", "agent", "version", "type"},
 	)
 	nd.metrics.sampleStatsSum = nd.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "sample_sum",
-			Help: "sFlows samples sum.",
+			Help: "Number of sFlow flows samples.",
 		},
 		[]string{"exporter", "agent", "version", "type"},
 	)

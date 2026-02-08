@@ -60,7 +60,7 @@ func (configuration Configuration) New(_ context.Context, r *reporter.Reporter) 
 	p.metrics.notReady = r.Counter(
 		reporter.CounterOpts{
 			Name: "not_ready_total",
-			Help: "Number of queries failing because the remote data sources are not ready",
+			Help: "Number of queries failing because the remote data sources are not ready.",
 		})
 
 	return p, nil

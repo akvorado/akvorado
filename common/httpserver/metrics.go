@@ -44,13 +44,13 @@ func (c *Component) initMetrics() {
 	c.metrics.cacheHit = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "cache_hit_total",
-			Help: "Number of requests served from cache",
+			Help: "Number of requests served from cache.",
 		}, []string{"path", "method"},
 	)
 	c.metrics.cacheMiss = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "cache_miss_total",
-			Help: "Number of requests not served from cache",
+			Help: "Number of requests not served from cache.",
 		}, []string{"path", "method"},
 	)
 }
