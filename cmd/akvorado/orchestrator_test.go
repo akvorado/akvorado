@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package cmd
+package main
 
 import (
 	"bytes"
@@ -115,7 +115,7 @@ func TestOrchestrator(t *testing.T) {
 
 func TestOrchestratorWatch(t *testing.T) {
 	tmp := t.TempDir()
-	if err := os.CopyFS(tmp, os.DirFS("../config")); err != nil {
+	if err := os.CopyFS(tmp, os.DirFS("../../config")); err != nil {
 		t.Fatalf("CopyFS() error:\n%+v", err)
 	}
 	OrchestratorOptions.Path = filepath.Join(tmp, "akvorado.yaml")
