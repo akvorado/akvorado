@@ -11,26 +11,26 @@ jsonpath "$.SamplingRate" == 100000
 GET http://127.0.0.1:8080/api/v0/console/metrics
 HTTP 200
 [Asserts]
-body contains "# HELP akvorado_cmd_akvorado_info Akvorado build information"
+body contains "# HELP akvorado_info Akvorado build information"
 GET http://127.0.0.1:8080/api/v0/inlet/metrics
 HTTP 200
 [Asserts]
-body contains "# HELP akvorado_cmd_akvorado_info Akvorado build information"
+body contains "# HELP akvorado_info Akvorado build information"
 GET http://127.0.0.1:8080/api/v0/outlet/metrics
 HTTP 200
 [Asserts]
-body contains "# HELP akvorado_cmd_akvorado_info Akvorado build information"
+body contains "# HELP akvorado_info Akvorado build information"
 GET http://127.0.0.1:8080/api/v0/orchestrator/metrics
 HTTP 200
 [Asserts]
-body contains "# HELP akvorado_cmd_akvorado_info Akvorado build information"
+body contains "# HELP akvorado_info Akvorado build information"
 
 # Test some Prometheus queries
 
 ## Test we have the 4 services running.
 GET http://127.0.0.1:8080/prometheus/api/v1/query
 [Query]
-query: akvorado_cmd_akvorado_info{job=~"akvorado-.+"}
+query: akvorado_info{job=~"akvorado-.+"}
 HTTP 200
 [Asserts]
 jsonpath "$.data.result" count >= 4
