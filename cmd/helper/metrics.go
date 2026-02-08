@@ -150,11 +150,11 @@ func extractMetrics(pkgs []*packages.Package) []metricInfo {
 // computePrefix replicates the prefix logic from common/reporter/metrics/root.go.
 // At runtime, getPrefix receives a function name from the call stack. For "package main"
 // binaries, Go uses "main.funcName" which doesn't start with the module name, so the
-// prefix falls back to just the module name (e.g. "akvorado_").
+// prefix falls back to moduleName + "/cmd" (e.g. "akvorado_cmd_").
 func computePrefix(pkgPath, pkgName, modulePath string) string {
 	var name string
 	if pkgName == "main" {
-		name = modulePath
+		name = modulePath + "/cmd"
 	} else {
 		name = pkgPath
 	}

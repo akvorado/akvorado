@@ -58,7 +58,7 @@ func (m *Metrics) HTTPHandler() http.Handler {
 func getPrefix(module string) string {
 	var moduleName string
 	if !strings.HasPrefix(module, stack.ModuleName) {
-		moduleName = stack.ModuleName
+		moduleName = stack.ModuleName + "/cmd"
 	} else {
 		moduleName = strings.SplitN(module, ".", 2)[0]
 	}
