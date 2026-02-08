@@ -70,7 +70,7 @@ func (c *Component) initMetrics() {
 	c.metrics.classifierExporterCacheSize = c.r.CounterFunc(
 		reporter.CounterOpts{
 			Name: "classifier_exporter_cache_items_total",
-			Help: "Number of items in the exporter classifier cache",
+			Help: "Number of items in the exporter classifier cache.",
 		},
 		func() float64 {
 			return float64(c.classifierExporterCache.Size())
@@ -79,7 +79,7 @@ func (c *Component) initMetrics() {
 	c.metrics.classifierInterfaceCacheSize = c.r.CounterFunc(
 		reporter.CounterOpts{
 			Name: "classifier_interface_cache_items_total",
-			Help: "Number of items in the interface classifier cache",
+			Help: "Number of items in the interface classifier cache.",
 		},
 		func() float64 {
 			return float64(c.classifierInterfaceCache.Size())
@@ -88,7 +88,7 @@ func (c *Component) initMetrics() {
 	c.metrics.classifierErrors = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "classifier_errors_total",
-			Help: "Number of errors when evaluating a classifer",
+			Help: "Number of errors when evaluating a classifer.",
 		},
 		[]string{"type", "index"})
 }

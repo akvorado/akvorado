@@ -78,7 +78,7 @@ func versionHandler(c *gin.Context) {
 func versionMetrics(r *reporter.Reporter) {
 	r.GaugeVec(reporter.GaugeOpts{
 		Name: "info",
-		Help: "Akvorado build information",
+		Help: "Akvorado build information.",
 	}, []string{"version", "compiler"}).
 		WithLabelValues(helpers.AkvoradoVersion, runtime.Version()).Set(1)
 }

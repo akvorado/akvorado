@@ -8,6 +8,7 @@ import (
 	"go/parser"
 	"go/token"
 	"testing"
+	"unicode"
 
 	"akvorado/common/helpers"
 
@@ -191,11 +192,11 @@ var r reporter
 func init() {
 	r.GaugeVec(GaugeOpts{
 		Name: "info",
-		Help: "Akvorado build information",
+		Help: "Akvorado build information.",
 	}, []string{"version", "compiler"})
 	r.GaugeFunc(GaugeOpts{
 		Name: "uptime_seconds",
-		Help: "number of seconds the application is running",
+		Help: "Number of seconds the application is running.",
 	}, func() float64 { return 0 })
 }
 `
@@ -219,13 +220,13 @@ func init() {
 		{
 			Name:   "akvorado_cmd_info",
 			Type:   "gauge",
-			Help:   "Akvorado build information",
+			Help:   "Akvorado build information.",
 			Labels: []string{"version", "compiler"},
 		},
 		{
 			Name: "akvorado_cmd_uptime_seconds",
 			Type: "gauge",
-			Help: "number of seconds the application is running",
+			Help: "Number of seconds the application is running.",
 		},
 	}
 	if diff := helpers.Diff(got, expected); diff != "" {
@@ -257,5 +258,30 @@ func init() {
 	var expected []metricInfo
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Fatalf("extractMetrics() (-got, +want):\n%s", diff)
+	}
+}
+
+func TestMetricsHelpStrings(t *testing.T) {
+	t.Chdir("../..")
+	cfg := &packages.Config{
+		Mode: packages.NeedName | packages.NeedFiles | packages.NeedSyntax | packages.NeedModule,
+	}
+	pkgs, err := packages.Load(cfg, "./...")
+	if err != nil {
+		t.Fatalf("packages.Load() error:\n%+v", err)
+	}
+
+	metrics := extractMetrics(pkgs)
+	for _, m := range metrics {
+		if m.Help == "" {
+			t.Errorf("%s: help string is empty", m.Name)
+			continue
+		}
+		if !unicode.IsUpper(rune(m.Help[0])) {
+			t.Errorf("%s: help string should start with a capital letter: %q", m.Name, m.Help)
+		}
+		if !unicode.IsPunct(rune(m.Help[len(m.Help)-1])) {
+			t.Errorf("%s: help string should end with punctuation: %q", m.Name, m.Help)
+		}
 	}
 }

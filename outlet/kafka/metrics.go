@@ -57,7 +57,7 @@ func (c *realComponent) initMetrics() {
 	c.metrics.workers = c.r.GaugeFunc(
 		reporter.GaugeOpts{
 			Name: "workers",
-			Help: "Number of running workers",
+			Help: "Number of running workers.",
 		},
 		func() float64 {
 			c.workerMu.Lock()
@@ -68,7 +68,7 @@ func (c *realComponent) initMetrics() {
 	c.metrics.maxWorkers = c.r.GaugeFunc(
 		reporter.GaugeOpts{
 			Name: "max_workers",
-			Help: "Maximum number of running workers",
+			Help: "Maximum number of running workers.",
 		},
 		func() float64 {
 			c.workerMu.Lock()
@@ -79,7 +79,7 @@ func (c *realComponent) initMetrics() {
 	c.metrics.minWorkers = c.r.GaugeFunc(
 		reporter.GaugeOpts{
 			Name: "min_workers",
-			Help: "Minimum number of running workers",
+			Help: "Minimum number of running workers.",
 		},
 		func() float64 {
 			return float64(c.config.MinWorkers)
