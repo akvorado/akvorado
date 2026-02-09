@@ -167,6 +167,10 @@ func (in *Input) Start() error {
 			}
 		}
 
+		// Initialize metrics
+		in.metrics.errors.GetMetricWithLabelValues(in.config.Listen, strconv.Itoa(i))
+		in.metrics.inDrops.GetMetricWithLabelValues(in.config.Listen, strconv.Itoa(i))
+
 		conns = append(conns, udpConn)
 	}
 

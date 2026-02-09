@@ -44,6 +44,7 @@ func TestUDPInput(t *testing.T) {
 		gotMetrics := r.GetMetrics("akvorado_inlet_flow_input_udp_", "-buffer_size", "-ebpf_loaded")
 		expectedMetrics := map[string]string{
 			`bytes_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:                "12",
+			`errors_total{listener="127.0.0.1:0",worker="0"}`:                                    "0",
 			`packets_total{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:              "1",
 			`in_dropped_packets_total{listener="127.0.0.1:0",worker="0"}`:                        "0",
 			`size_bytes_count{exporter="127.0.0.1",listener="127.0.0.1:0",worker="0"}`:           "1",
