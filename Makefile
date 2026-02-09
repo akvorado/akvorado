@@ -133,7 +133,8 @@ console/data/frontend: $(shell $(LSFILES) console/frontend 2> /dev/null)
 console/data/frontend: ; $(info $(M) building console frontend…)
 	$Q cd console/frontend && $(PNPM) run --silent build
 
-console/data/docs/98-metrics.md: $(shell $(LSFILES) '*.go' 2> /dev/null)
+console/data/docs/98-metrics.md: $(shell git grep -c -l -P 'reporter\.(Counter|Gauge|Summary|Histogram)Opt' '*.go' 2> /dev/null)
+console/data/docs/98-metrics.md: $(shell $(LSFILES) cmd/helper)
 console/data/docs/98-metrics.md: cmd/helper/data/metrics.tmpl.md ; $(info $(M) generate metric documentation…)
 	$Q go run ./cmd/helper metrics --format=markdown > $@
 
