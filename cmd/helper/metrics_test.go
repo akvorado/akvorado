@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	cmd "akvorado/cmd/helper"
+	"akvorado/common/helpers"
 
 	"go.yaml.in/yaml/v3"
 )
@@ -99,8 +100,24 @@ func TestMetricsMarkdownCLI(t *testing.T) {
 	if err := root.Execute(); err != nil {
 		t.Fatalf("`metrics --format markdown` error:\n%+v", err)
 	}
-	if !strings.HasPrefix(buf.String(), "# Metrics") {
-		t.Fatal("expected markdown output to start with '# Metrics'")
+
+	var filtered []string
+	for line := range strings.SplitSeq(buf.String(), "\n") {
+		if strings.HasPrefix(line, "#") || strings.HasPrefix(line, "|") {
+			filtered = append(filtered, line)
+		}
+	}
+	got := filtered[:6]
+	expected := []string{
+		"# Metrics",
+		"## akvorado_cmd",
+		"| Name | Type | Help |",
+		"|------|------|------|",
+		"| `dropped\u00ad_log\u00ad_messages` | gauge | Number of log messages dropped. |",
+		"| `info` | gauge | Akvorado build information. |",
+	}
+	if diff := helpers.Diff(got, expected); diff != "" {
+		t.Fatalf("`metrics --format markdown` (-got, +want):\n%s", diff)
 	}
 }
 
