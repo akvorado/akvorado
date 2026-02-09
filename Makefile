@@ -133,6 +133,10 @@ console/data/frontend: $(shell $(LSFILES) console/frontend 2> /dev/null)
 console/data/frontend: ; $(info $(M) building console frontend…)
 	$Q cd console/frontend && $(PNPM) run --silent build
 
+console/data/docs/98-metrics.md: $(shell $(LSFILES) '*.go' 2> /dev/null)
+console/data/docs/98-metrics.md: cmd/helper/data/metrics.tmpl.md ; $(info $(M) generate metric documentation…)
+	$Q go run ./cmd/helper metrics --format=markdown > $@
+
 ASNS_URL = https://vincentbernat.github.io/asn2org/asns.csv
 PROTOCOLS_URL = http://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv
 SERVICES_URL = https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv
@@ -173,6 +177,7 @@ default-%.pgo:
 	   curl -so $@ "http://$$ip:8080/debug/pprof/profile?seconds=30"
 
 common/embed/data/embed.zip: console/data/frontend console/authentication/data/avatars console/data/docs
+common/embed/data/embed.zip: console/data/docs/98-metrics.md
 common/embed/data/embed.zip: orchestrator/clickhouse/data/protocols.csv orchestrator/clickhouse/data/icmp.csv orchestrator/clickhouse/data/asns.csv orchestrator/clickhouse/data/tcp.csv orchestrator/clickhouse/data/udp.csv
 common/embed/data/embed.zip: ; $(info $(M) generate embed.zip…)
 	$Q mkdir -p common/embed/data

@@ -6,6 +6,7 @@ package main_test
 import (
 	"bytes"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	cmd "akvorado/cmd/helper"
@@ -33,7 +34,7 @@ func TestMetricsYAML(t *testing.T) {
 		} `yaml:"metrics"`
 	}
 	if err := yaml.Unmarshal(buf.Bytes(), &out); err != nil {
-		t.Fatalf("YAML parse error:\n%+v", err)
+		t.Fatalf("Unmarshal() error:\n%+v", err)
 	}
 	if len(out.Metrics) == 0 {
 		t.Fatal("expected at least one metric")
@@ -70,7 +71,7 @@ func TestMetricsJSON(t *testing.T) {
 		} `json:"metrics"`
 	}
 	if err := json.Unmarshal(buf.Bytes(), &out); err != nil {
-		t.Fatalf("JSON parse error:\n%+v", err)
+		t.Fatalf("Unmarshal() error:\n%+v", err)
 	}
 	if len(out.Metrics) == 0 {
 		t.Fatal("expected at least one metric")
@@ -86,6 +87,20 @@ func TestMetricsJSON(t *testing.T) {
 	}
 	if !found {
 		t.Error("expected to find akvorado_outlet_kafka_received_messages_total")
+	}
+}
+
+func TestMetricsMarkdownCLI(t *testing.T) {
+	t.Chdir("../..")
+	root := cmd.RootCmd
+	buf := new(bytes.Buffer)
+	root.SetOut(buf)
+	root.SetArgs([]string{"metrics", "--format", "markdown"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("`metrics --format markdown` error:\n%+v", err)
+	}
+	if !strings.HasPrefix(buf.String(), "# Metrics") {
+		t.Fatal("expected markdown output to start with '# Metrics'")
 	}
 }
 

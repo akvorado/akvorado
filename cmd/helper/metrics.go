@@ -4,6 +4,7 @@
 package main
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"go/ast"
@@ -11,6 +12,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"text/template"
 
 	"github.com/spf13/cobra"
 	"go.yaml.in/yaml/v3"
@@ -54,19 +56,25 @@ var metricsCmd = &cobra.Command{
 				return fmt.Errorf("unable to encode JSON: %w", err)
 			}
 			return nil
+		case "markdown":
+			sections := groupMetricsByPrefix(metrics)
+			if err := metricMarkdownTmpl.Execute(w, sections); err != nil {
+				return fmt.Errorf("unable to render markdown: %w", err)
+			}
+			return nil
 		default:
-			return fmt.Errorf("unknown format %q (expected yaml or json)", metricsFormat)
+			return fmt.Errorf("unknown format %q (expected yaml, json or markdown)", metricsFormat)
 		}
 	},
 }
 
 func init() {
-	metricsCmd.Flags().StringVarP(&metricsFormat, "format", "f", "yaml", "Output format (yaml or json)")
+	metricsCmd.Flags().StringVarP(&metricsFormat, "format", "f", "yaml", "Output format (yaml, json or markdown)")
 	RootCmd.AddCommand(metricsCmd)
 }
 
-// methodTypes maps method names to Prometheus metric types.
-var methodTypes = map[string]string{
+// metricMethodTypes maps method names to Prometheus metric types.
+var metricMethodTypes = map[string]string{
 	"Counter":      "counter",
 	"CounterVec":   "counter",
 	"CounterFunc":  "counter",
@@ -87,6 +95,23 @@ type metricInfo struct {
 	Labels []string `yaml:"labels,omitempty" json:"labels,omitempty"`
 }
 
+// metricSection groups metrics under a common top-level prefix.
+type metricSection struct {
+	Prefix  string
+	Metrics []metricInfo
+}
+
+//go:embed data/metrics.tmpl.md
+var metricMarkdownTmplStr string
+var metricMarkdownTmpl = template.Must(template.New("metrics").Funcs(template.FuncMap{
+	"formatMetricName": func(name, prefix string) string {
+		result := strings.TrimPrefix(name, fmt.Sprintf("%s_", prefix))
+		result = strings.ReplaceAll(result, "_", "\u00ad_")
+		result = fmt.Sprintf("`%s`", result)
+		return result
+	},
+}).Parse(metricMarkdownTmplStr))
+
 // extractMetrics walks the AST of all packages and returns sorted, deduplicated metrics.
 func extractMetrics(pkgs []*packages.Package) []metricInfo {
 	var metrics []metricInfo
@@ -96,7 +121,7 @@ func extractMetrics(pkgs []*packages.Package) []metricInfo {
 		if pkg.Module != nil {
 			modulePath = pkg.Module.Path
 		}
-		prefix := computePrefix(pkg.PkgPath, pkg.Name, modulePath)
+		prefix := computeMetricPrefix(pkg.PkgPath, pkg.Name, modulePath)
 		for _, file := range pkg.Syntax {
 			ast.Inspect(file, func(n ast.Node) bool {
 				call, ok := n.(*ast.CallExpr)
@@ -108,7 +133,7 @@ func extractMetrics(pkgs []*packages.Package) []metricInfo {
 					return true
 				}
 				methodName := sel.Sel.Name
-				metricType, ok := methodTypes[methodName]
+				metricType, ok := metricMethodTypes[methodName]
 				if !ok {
 					return true
 				}
@@ -116,7 +141,7 @@ func extractMetrics(pkgs []*packages.Package) []metricInfo {
 					return true
 				}
 
-				name, help := extractOpts(call.Args[0])
+				name, help := extractMetricOpts(call.Args[0])
 				if name == "" {
 					return true
 				}
@@ -129,7 +154,7 @@ func extractMetrics(pkgs []*packages.Package) []metricInfo {
 
 				// Extract labels for Vec variants
 				if strings.HasSuffix(methodName, "Vec") && len(call.Args) >= 2 {
-					m.Labels = extractLabels(call.Args[1])
+					m.Labels = extractMetricLabels(call.Args[1])
 				}
 
 				metrics = append(metrics, m)
@@ -147,11 +172,11 @@ func extractMetrics(pkgs []*packages.Package) []metricInfo {
 	return metrics
 }
 
-// computePrefix replicates the prefix logic from common/reporter/metrics/root.go.
+// computeMetricPrefix replicates the prefix logic from common/reporter/metrics/root.go.
 // At runtime, getPrefix receives a function name from the call stack. For "package main"
 // binaries, Go uses "main.funcName" which doesn't start with the module name, so the
 // prefix falls back to moduleName + "/cmd" (e.g. "akvorado_cmd_").
-func computePrefix(pkgPath, pkgName, modulePath string) string {
+func computeMetricPrefix(pkgPath, pkgName, modulePath string) string {
 	var name string
 	if pkgName == "main" {
 		name = modulePath + "/cmd"
@@ -163,8 +188,8 @@ func computePrefix(pkgPath, pkgName, modulePath string) string {
 	return name + "_"
 }
 
-// extractOpts extracts Name and Help from a composite literal (the opts argument).
-func extractOpts(expr ast.Expr) (name, help string) {
+// extractMetricOpts extracts Name and Help from a composite literal (the opts argument).
+func extractMetricOpts(expr ast.Expr) (name, help string) {
 	if unary, ok := expr.(*ast.UnaryExpr); ok && unary.Op == token.AND {
 		expr = unary.X
 	}
@@ -183,31 +208,31 @@ func extractOpts(expr ast.Expr) (name, help string) {
 		}
 		switch key.Name {
 		case "Name":
-			name = stringLiteralValue(kv.Value)
+			name = astStringLiteralValue(kv.Value)
 		case "Help":
-			help = stringLiteralValue(kv.Value)
+			help = astStringLiteralValue(kv.Value)
 		}
 	}
 	return name, help
 }
 
-// extractLabels extracts label names from a []string{...} composite literal.
-func extractLabels(expr ast.Expr) []string {
+// extractMetricLabels extracts label names from a []string{...} composite literal.
+func extractMetricLabels(expr ast.Expr) []string {
 	lit, ok := expr.(*ast.CompositeLit)
 	if !ok {
 		return nil
 	}
 	var labels []string
 	for _, elt := range lit.Elts {
-		if v := stringLiteralValue(elt); v != "" {
+		if v := astStringLiteralValue(elt); v != "" {
 			labels = append(labels, v)
 		}
 	}
 	return labels
 }
 
-// stringLiteralValue returns the unquoted value of a string literal, or "".
-func stringLiteralValue(expr ast.Expr) string {
+// astStringLiteralValue returns the unquoted value of a string literal, or "".
+func astStringLiteralValue(expr ast.Expr) string {
 	lit, ok := expr.(*ast.BasicLit)
 	if !ok || lit.Kind != token.STRING {
 		return ""
@@ -217,4 +242,31 @@ func stringLiteralValue(expr ast.Expr) string {
 		return ""
 	}
 	return s
+}
+
+// groupMetricsByPrefix groups sorted metrics by their top-level prefix
+// (the first two underscore-separated components, e.g. "akvorado_outlet").
+func groupMetricsByPrefix(metrics []metricInfo) []metricSection {
+	var sections []metricSection
+	for _, m := range metrics {
+		prefix := metricTopLevelPrefix(m.Name)
+		if len(sections) == 0 || sections[len(sections)-1].Prefix != prefix {
+			sections = append(sections, metricSection{Prefix: prefix})
+		}
+		sections[len(sections)-1].Metrics = append(sections[len(sections)-1].Metrics, m)
+	}
+	return sections
+}
+
+// metricTopLevelPrefix returns the first two underscore-separated components of name.
+func metricTopLevelPrefix(name string) string {
+	idx := strings.IndexByte(name, '_')
+	if idx < 0 {
+		return name
+	}
+	idx2 := strings.IndexByte(name[idx+1:], '_')
+	if idx2 < 0 {
+		return name
+	}
+	return name[:idx+1+idx2]
 }

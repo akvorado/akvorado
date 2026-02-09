@@ -87,3 +87,8 @@
 .prose .admonition-caution {
     @apply border-red-500 bg-red-50 text-red-800 dark:bg-red-900/20 dark:text-red-200;
 }
+
+.prose code {
+    hyphens: manual;
+    hyphenate-character: "";
+}
