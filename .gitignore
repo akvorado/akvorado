@@ -11,6 +11,7 @@ mock_*.go
 *.pb.go
 
 /console/data/frontend/
+/console/data/docs/98-metrics.md
 
 *~
 /.go-cache

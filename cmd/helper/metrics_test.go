@@ -7,6 +7,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"strings"
 	"testing"
 	"unicode"
 
@@ -258,6 +259,76 @@ func init() {
 	var expected []metricInfo
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Fatalf("extractMetrics() (-got, +want):\n%s", diff)
+	}
+}
+
+func TestMetricsMarkdown(t *testing.T) {
+	metrics := []metricInfo{
+		{Name: "akvorado_cmd_info", Type: "gauge", Help: "Akvorado build information."},
+		{Name: "akvorado_cmd_uptime_seconds", Type: "gauge", Help: "Number of seconds the application is running."},
+		{Name: "akvorado_inlet_flow_active_connections", Type: "gauge", Help: "Number of active connections."},
+		{Name: "akvorado_outlet_core_latency_seconds", Type: "summary", Help: "Latency distribution."},
+		{Name: "akvorado_outlet_kafka_errors_total", Type: "counter", Help: "Total errors."},
+	}
+
+	sections := groupMetricsByPrefix(metrics)
+	expected := []metricSection{
+		{
+			Prefix: "akvorado_cmd",
+			Metrics: []metricInfo{
+				{Name: "akvorado_cmd_info", Type: "gauge", Help: "Akvorado build information."},
+				{Name: "akvorado_cmd_uptime_seconds", Type: "gauge", Help: "Number of seconds the application is running."},
+			},
+		},
+		{
+			Prefix: "akvorado_inlet",
+			Metrics: []metricInfo{
+				{Name: "akvorado_inlet_flow_active_connections", Type: "gauge", Help: "Number of active connections."},
+			},
+		},
+		{
+			Prefix: "akvorado_outlet",
+			Metrics: []metricInfo{
+				{Name: "akvorado_outlet_core_latency_seconds", Type: "summary", Help: "Latency distribution."},
+				{Name: "akvorado_outlet_kafka_errors_total", Type: "counter", Help: "Total errors."},
+			},
+		},
+	}
+	if diff := helpers.Diff(sections, expected); diff != "" {
+		t.Fatalf("groupMetricsByPrefix() (-got, +want):\n%s", diff)
+	}
+
+	var buf strings.Builder
+	if err := metricMarkdownTmpl.Execute(&buf, sections); err != nil {
+		t.Fatalf("markdownTmpl.Execute() error:\n%+v", err)
+	}
+	// Only keep the sections and the table from the markdown.
+	var filtered []string
+	for _, line := range strings.Split(buf.String(), "\n") {
+		if strings.HasPrefix(line, "#") || strings.HasPrefix(line, "|") {
+			filtered = append(filtered, line)
+		}
+	}
+	got := strings.Join(filtered, "\n")
+	expectedMarkdown := strings.Join([]string{
+		"# Metrics",
+		"## akvorado_cmd",
+		"| Name | Type | Help |",
+		"|------|------|------|",
+		"| `info` | gauge | Akvorado build information. |",
+		"| `uptime\u00ad_seconds` | gauge | Number of seconds the application is running. |",
+		"## akvorado_inlet",
+		"| Name | Type | Help |",
+		"|------|------|------|",
+		"| `flow\u00ad_active\u00ad_connections` | gauge | Number of active connections. |",
+		"## akvorado_outlet",
+		"| Name | Type | Help |",
+		"|------|------|------|",
+		"| `core\u00ad_latency\u00ad_seconds` | summary | Latency distribution. |",
+		"| `kafka\u00ad_errors\u00ad_total` | counter | Total errors. |",
+	}, "\n")
+	if diff := helpers.Diff(got, expectedMarkdown); diff != "" {
+		t.Fatalf("markdown output (-got, +want):\n%s", diff)
 	}
 }
 

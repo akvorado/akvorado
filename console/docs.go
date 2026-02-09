@@ -102,6 +102,7 @@ func (c *Component) docsHandlerFunc(gc *gin.Context) {
 	}
 	md := goldmark.New(
 		goldmark.WithExtensions(
+			extension.Table,
 			extension.Footnote,
 			extension.Typographer,
 			highlighting.NewHighlighting(
