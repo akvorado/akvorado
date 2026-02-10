@@ -216,7 +216,8 @@ test-short: test-go  ## Run only short Go tests
 test-bench: ; $(info $(M) running benchmarks…) @ ## Run Go benchmarks
 	$Q $(GO) test \
 		-fullpath -run=__absolutelynothing__ -bench=. \
-		$(PKGS) # -benchmem -memprofile test/go/memprofile.out -cpuprofile test/go/cpuprofile.out
+	    $(GOTEST_ARGS) $(PKGS)
+# -benchmem -memprofile test/go/memprofile.out -cpuprofile test/go/cpuprofile.out
 test-coverage-go: ; $(info $(M) running Go coverage tests…) @ ## Run Go coverage tests
 	$Q mkdir -p test/go
 	$Q env PATH=$(dir $(abspath $(shell command -v $(GO)))):$(PATH) \
@@ -224,7 +225,8 @@ test-coverage-go: ; $(info $(M) running Go coverage tests…) @ ## Run Go covera
 	    -fullpath \
 		-coverpkg=$(shell echo $(PKGS) | tr ' ' ',') \
 		-covermode=atomic \
-		-coverprofile=test/go/profile.out.tmp $(PKGS)
+		-coverprofile=test/go/profile.out.tmp \
+	    $(GOTEST_ARGS) $(PKGS)
 	$Q GENERATED=$$(awk -F: '(NR > 1) {print $$1}' test/go/profile.out.tmp \
 			| sort | uniq | sed "s+^$(MODULE)/++" \
 			| xargs grep -l "^//.*DO NOT EDIT\.$$" \
