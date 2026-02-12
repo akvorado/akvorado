@@ -30,10 +30,10 @@ func TestBimapLoadValue(t *testing.T) {
 	for _, tc := range cases {
 		got, ok := input.LoadValue(tc.key)
 		if ok != tc.ok {
-			t.Errorf("LoadValue(%q) ok: %v but expected %v", tc.key, ok, tc.ok)
+			t.Errorf("LoadValue(%d) ok: %v but expected %v", tc.key, ok, tc.ok)
 		}
 		if got != tc.value {
-			t.Errorf("LoadValue(%q) got: %q but expected %q", tc.key, got, tc.value)
+			t.Errorf("LoadValue(%d) got: %q but expected %q", tc.key, got, tc.value)
 		}
 	}
 }
@@ -60,7 +60,7 @@ func TestBimapLoadKey(t *testing.T) {
 			t.Errorf("LoadKey(%q) ok: %v but expected %v", tc.value, ok, tc.ok)
 		}
 		if got != tc.key {
-			t.Errorf("LoadKey(%q) got: %q but expected %q", tc.value, got, tc.value)
+			t.Errorf("LoadKey(%q) got: %d but expected %d", tc.value, got, tc.key)
 		}
 	}
 }
@@ -115,6 +115,6 @@ func TestBimapInsert(t *testing.T) {
 		t.Errorf("LoadKey(\"test\") ok: %v but expected %v", ok, true)
 	}
 	if k != 4 {
-		t.Errorf("LoadKey(\"test\") got: %q but expected %q", k, 4)
+		t.Errorf("LoadKey(\"test\") got: %d but expected %d", k, 4)
 	}
 }
