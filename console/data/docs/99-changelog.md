@@ -13,6 +13,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🌱 *docs*: export all metrics in [documentation](98-metrics.md)
+- 🌱 *build*: build with Go 1.26
 
 ## 2.1.1 - 2026-01-17
 
