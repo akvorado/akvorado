@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: akvorado-inlet-pvc
+  namespace: {{ .Values.environment }}-{{ .Values.namespace }}
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      {{- if and (.Values.volumes)  (.Values.volumes.akvorado_inlet) (.Values.volumes.akvorado_inlet.storageSize) }}
+      storage: {{ .Values.volumes.akvorado_inlet.storageSize }}
+      {{- else }}
+      storage: 5Gi
+      {{- end }}
+  storageClassName: "standard"
+  volumeMode: Filesystem

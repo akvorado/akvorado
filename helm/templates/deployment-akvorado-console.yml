@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: console
+  namespace: {{ .Values.environment }}-{{ .Values.namespace }}
+  labels:
+    app: console
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: console
+  template:
+    metadata:
+      labels:
+        app: console
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/api/v0/metrics"
+    spec:
+      containers:
+        - name: console
+          image: {{ .Values.akvorado.image }}:{{ .Values.akvorado.tag }}
+          imagePullPolicy: Always
+          {{- if .Values.service }}
+          {{- if .Values.service.akvorado_console.ports }}
+          ports:
+          {{- range .Values.service.akvorado_console.ports }}
+          - name: {{ .name }}
+            containerPort: {{ .port }}
+            protocol: {{ .protocol }}
+          {{- end}}
+          {{- end}}
+          {{- else }}
+          ports:
+          - name: http
+            containerPort: 8080
+            protocol: TCP
+          {{- end}}
+          {{- if and (.Values.deployment) (.Values.deployment.akvorado_console) (.Values.deployment.akvorado_console.liveness) }}
+          livenessProbe:
+              httpGet:
+                path: {{ .Values.deployment.akvorado_console.liveness.path }}
+                port: {{ .Values.deployment.akvorado_console.liveness.port }}
+              initialDelaySeconds: {{ .Values.deployment.akvorado_console.liveness.initialDelay }}
+              periodSeconds: {{ .Values.deployment.akvorado_console.liveness.period }}
+              failureThreshold: {{ .Values.deployment.akvorado_console.liveness.failures }}
+          {{- end }}
+          {{- if $.Values.extraEnvs }}
+          {{- if $.Values.extraEnvs.akvorado_console }}
+          env:
+          {{- range $key, $value := $.Values.extraEnvs.akvorado_console }}
+          - name: {{ $key }}
+            value: {{ $value | quote }}
+          {{- end}}
+          {{- end}}
+          {{- end}}
+          {{- if and (.Values.deployment) (.Values.deployment.akvorado_console) (.Values.deployment.akvorado_console.args) }}
+          args:
+          {{- range .Values.deployment.akvorado_console.args }}
+            - {{ . }}
+          {{- end }}
+          {{- else}}
+          args:
+            - console
+            - http://orchestrator.stage-akvorado.svc.cluster.local:8080
+          {{- end }}
+          {{- if and (.Values.deployment) (.Values.deployment.akvorado_console) (.Values.deployment.akvorado_console.volumeMounts) }}
+          volumeMounts:
+            {{- range .Values.deployment.akvorado_console.volumeMounts }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+              {{- if .readOnly }}
+              readOnly: {{ .readOnly }}
+              {{- end}}
+            {{- end }}
+          {{- else}}
+          volumeMounts:
+            - name: akvorado-console-run-data
+              mountPath: /run/akvorado
+          {{- end}}
+          resources:
+            {{- if and (.Values.deployment) (.Values.deployment.akvorado_console) (.Values.deployment.akvorado_console.resources)}}
+            {{- if .Values.deployment.akvorado_console.resources.requests }}
+            requests:
+              memory: {{ .Values.deployment.akvorado_console.resources.requests.memory | quote }}
+              cpu: {{ .Values.deployment.akvorado_console.resources.requests.cpu | quote }}
+            {{- else}}
+            requests:
+              memory: "128Mi"
+              cpu: "0.1"
+            {{- end }}
+            {{- if .Values.deployment.akvorado_console.resources.limits }}
+            limits:
+              memory: {{ .Values.deployment.akvorado_console.resources.limits.memory | quote }}
+              cpu: {{ .Values.deployment.akvorado_console.resources.limits.cpu | quote }}
+            {{- else}}
+            limits:
+              memory: "256Mi"
+              cpu: "0.5"
+            {{- end }}
+            {{- else}}
+            requests:
+              memory: "128Mi"
+              cpu: "0.1"
+            limits:
+              memory: "256Mi"
+              cpu: "0.2"
+          {{- end}}
+      {{- if and (.Values.deployment) (.Values.deployment.akvorado_console) (.Values.deployment.akvorado_console.volumeMounts) }}
+      volumes:
+        {{- range .Values.deployment.akvorado_console.volumeMounts }}
+         - name: {{ .name }}
+           persistentVolumeClaim:
+            claimName: {{ .pvcName }}
+        {{- end }}
+      {{- else }}
+      volumes:
+         - name: akvorado-console-run-data
+           persistentVolumeClaim:
+            claimName: akvorado-console-pvc
+      {{- end }}

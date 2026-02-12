@@ -1,0 +1,24 @@
+environment: stage
+name: akvorado
+host: stage-flow.mydomain.com
+namespace: akvorado
+
+secrets:
+  ipinfo:
+    IPINFO_TOKEN: a2632ea59736c7
+  akvorado_orchestrator:
+    AKVORADO_CFG_CLICKHOUSE_PASSWORD: clickhouse-password
+
+akvorado:
+  image: ghcr.io/akvorado/akvorado
+  tag: 1.9.0
+
+console:
+  acl: 1.2.3.4/32, 2.3.4.5/32, 10.0.0.0/8
+
+routers:
+  - 10.1.1.1/32    # myswitch-hostname
+
+volumes:
+  ipinfo_geoip_data_shared:
+    volumeHandle: projects/project-name/zones/gke-zone/disks/pvc-full-id

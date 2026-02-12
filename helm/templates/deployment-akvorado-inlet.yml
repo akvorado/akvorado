@@ -1,0 +1,148 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inlet
+  namespace: {{ .Values.environment }}-{{ .Values.namespace }}
+  labels:
+    app: inlet
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inlet
+  template:
+    metadata:
+      labels:
+        app: inlet
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/api/v0/metrics"
+        akvorado.conntrack.fix: "true"
+    spec:
+      containers:
+        - name: inlet
+          image: {{ .Values.akvorado.image }}:{{ .Values.akvorado.tag }}
+          imagePullPolicy: Always
+          {{- if .Values.service }}
+          {{- if $.Values.service.akvorado_inlet.ports }}
+          ports:
+          {{- range .Values.service.akvorado_inlet.ports }}
+          - name: {{ .name }}
+            containerPort: {{ .port }}
+            protocol: {{ .protocol }}
+          {{- end }}
+          {{- end }}
+          {{- else }}
+          ports:
+          - name: http
+            containerPort: 8080
+            protocol: TCP
+          - name: bmp
+            containerPort: 10179
+            protocol: TCP
+          - name: netflow
+            containerPort: 2055
+            protocol: UDP
+          - name: sflow
+            containerPort: 6343
+            protocol: UDP
+          {{- end }}
+          {{- if and (.Values.deployment) (.Values.deployment.akvorado_inlet) (.Values.deployment.akvorado_inlet.liveness) }}
+          livenessProbe:
+              httpGet:
+                path: {{ .Values.deployment.akvorado_inlet.liveness.path }}
+                port: {{ .Values.deployment.akvorado_inlet.liveness.port }}
+              initialDelaySeconds: {{ .Values.deployment.akvorado_inlet.liveness.initialDelay }}
+              periodSeconds: {{ .Values.deployment.akvorado_inlet.liveness.period }}
+              failureThreshold: {{ .Values.deployment.akvorado_inlet.liveness.failures }}
+          {{- end }}
+          {{- if $.Values.extraEnvs }}
+          {{- if $.Values.extraEnvs.akvorado_inlet }}
+          env:
+          {{- range $key, $value := $.Values.extraEnvs.akvorado_inlet }}
+          - name: {{ $key }}
+            value: {{ $value | quote }}
+          {{- end}}
+          {{- end}}
+          {{- end}}
+          {{- if and (.Values.deployment) (.Values.deployment.akvorado_inlet) (.Values.deployment.akvorado_inlet.args) }}
+          args:
+          {{- range .Values.deployment.akvorado_inlet.args }}
+            - {{ . }}
+          {{- end }}
+          {{- else }}
+          args:
+            - inlet
+            - http://orchestrator.stage-akvorado.svc.cluster.local:8080
+          {{- end }}
+          {{- if and (.Values.deployment) (.Values.deployment.akvorado_inlet) (.Values.deployment.akvorado_inlet.volumeMounts) }}
+          volumeMounts:
+            {{- range .Values.deployment.akvorado_inlet.volumeMounts }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+              {{- if .readOnly }}
+              readOnly: {{ .readOnly }}
+              {{- end }}
+            {{- end }}
+          {{- else }}
+          volumeMounts:
+            - name: akvorado-inlet-pv
+              mountPath: /run/akvorado
+            - name: ipinfo-geoip-data
+              mountPath: /usr/share/GeoIP
+              readOnly: true
+          {{- end }}
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+          resources:
+            {{- if and (.Values.deployment) (.Values.deployment.akvorado_inlet) (.Values.deployment.akvorado_inlet.resources)}}
+            {{- if .Values.deployment.akvorado_inlet.resources.requests }}
+            requests:
+              memory: {{ .Values.deployment.akvorado_inlet.resources.requests.memory | quote }}
+              cpu: {{ .Values.deployment.akvorado_inlet.resources.requests.cpu | quote }}
+            {{- else}}
+            requests:
+              memory: "128Mi"
+              cpu: "0.1"
+            {{- end }}
+            {{- if .Values.deployment.akvorado_inlet.resources.limits }}
+            limits:
+              memory: {{ .Values.deployment.akvorado_inlet.resources.limits.memory | quote }}
+              cpu: {{ .Values.deployment.akvorado_inlet.resources.limits.cpu | quote }}
+            {{- else}}
+            limits:
+              memory: "256Mi"
+              cpu: "0.5"
+            {{- end }}
+            {{- else}}
+            requests:
+              memory: "1Gi"
+              cpu: "0.5"
+            limits:
+              memory: "2Gi"
+              cpu: "2"
+          {{- end}}
+      {{- if and (.Values.deployment) (.Values.deployment.akvorado_inlet) (.Values.deployment.akvorado_inlet.volumeMounts) }}
+      volumes:
+        {{- range .Values.deployment.akvorado_inlet.volumeMounts }}
+         - name: {{ .name }}
+           persistentVolumeClaim:
+            claimName: {{ .pvcName }}
+            {{- if .readOnly }}
+            readOnly: {{ .readOnly }}
+            {{- end }}
+        {{- end }}
+      {{- else}}
+      volumes:
+         - name: akvorado-inlet-pv
+           persistentVolumeClaim:
+            claimName: akvorado-inlet-pvc
+         - name: ipinfo-geoip-data
+           persistentVolumeClaim:
+            claimName: ipinfo-geoip-shared-pvc
+            readOnly: true
+      {{- end }}
+      
