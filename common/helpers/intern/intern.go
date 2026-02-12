@@ -3,6 +3,28 @@
 
 // Package intern manages a pool of interned values. An interned value is
 // replaced by a small int.
+//
+// Go 1.23 introduced the [unique] package in the standard library with a
+// similar purpose, but with different trade-offs:
+//
+//   - This package uses explicit reference counting (Put/Take) instead of
+//     relying on the garbage collector and weak pointers for cleanup. This makes
+//     memory reclamation deterministic rather than dependent on GC cycles.
+//   - This package works with values that are not comparable. The [Value]
+//     interface requires only Hash and Equal methods, while [unique.Make]
+//     requires the comparable constraint.
+//   - References are uint32 indices instead of pointers, resulting in a smaller
+//     per-reference footprint (4 bytes vs 8 bytes on 64-bit platforms).
+//   - This package uses explicit [Pool] instances rather than a single global
+//     table, allowing separate namespaces and lifetimes. I believe this should
+//     help efficiency as there are different maps of used values (but no
+//     benchmark done).
+//   - This package is not safe for concurrent use.
+//   - This package has better performance (various benchmarks done on the bmp
+//     package).
+//
+// [unique]: https://pkg.go.dev/unique
+// [unique.Make]: https://pkg.go.dev/unique#Make
 package intern
 
 // Value is the interface that should be implemented by types
