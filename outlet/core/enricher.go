@@ -161,6 +161,78 @@ func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) bool {
 	return skip
 }
 
+// getBoundaryClassifications retrieves the interface boundary classifications for a flow.
+// This should be called after enrichFlow has completed and runs the classifiers again.
+func (w *worker) getBoundaryClassifications(exporterIP netip.Addr) (schema.InterfaceBoundary, schema.InterfaceBoundary) {
+	var inIfBoundary, outIfBoundary schema.InterfaceBoundary
+	t := time.Now()
+	flow := w.bf
+	c := w.c
+
+	if flow.InIf != 0 {
+		answer := c.d.Metadata.Lookup(t, exporterIP, uint(flow.InIf))
+		if answer.Found {
+			inIfClassification := interfaceClassification{
+				Provider:     answer.Interface.Provider,
+				Connectivity: answer.Interface.Connectivity,
+				Boundary:     answer.Interface.Boundary,
+			}
+			// Run through classifiers to get final boundary
+			if len(c.config.InterfaceClassifiers) > 0 {
+				for _, rule := range c.config.InterfaceClassifiers {
+					err := rule.exec(
+						exporterInfo{IP: exporterIP.String()},
+						interfaceInfo{
+							Index:       flow.InIf,
+							Name:        answer.Interface.Name,
+							Description: answer.Interface.Description,
+							Speed:       uint32(answer.Interface.Speed),
+							VLAN:        flow.SrcVlan,
+						},
+						&inIfClassification,
+					)
+					if err == nil && inIfClassification.Boundary != schema.InterfaceBoundaryUndefined {
+						break
+					}
+				}
+			}
+			inIfBoundary = inIfClassification.Boundary
+		}
+	}
+
+	if flow.OutIf != 0 {
+		answer := c.d.Metadata.Lookup(t, exporterIP, uint(flow.OutIf))
+		if answer.Found {
+			outIfClassification := interfaceClassification{
+				Provider:     answer.Interface.Provider,
+				Connectivity: answer.Interface.Connectivity,
+				Boundary:     answer.Interface.Boundary,
+			}
+			// Run through classifiers to get final boundary
+			if len(c.config.InterfaceClassifiers) > 0 {
+				for _, rule := range c.config.InterfaceClassifiers {
+					err := rule.exec(
+						exporterInfo{IP: exporterIP.String()},
+						interfaceInfo{
+							Index:       flow.OutIf,
+							Name:        answer.Interface.Name,
+							Description: answer.Interface.Description,
+							Speed:       uint32(answer.Interface.Speed),
+							VLAN:        flow.DstVlan,
+						},
+						&outIfClassification,
+					)
+					if err == nil && outIfClassification.Boundary != schema.InterfaceBoundaryUndefined {
+						break
+					}
+				}
+			}
+			outIfBoundary = outIfClassification.Boundary
+		}
+	}
+	return inIfBoundary, outIfBoundary
+}
+
 // getASNumber retrieves the AS number for a flow, depending on user preferences.
 func (c *Component) getASNumber(flowAS, bmpAS uint32, flowNetMask uint8) (asn uint32) {
 	for _, provider := range c.config.ASNProviders {

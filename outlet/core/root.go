@@ -5,6 +5,7 @@
 package core
 
 import (
+	"fmt"
 	"time"
 
 	"gopkg.in/tomb.v2"
@@ -37,6 +38,9 @@ type Component struct {
 	classifierExporterCache  *cache.Cache[exporterInfo, exporterClassification]
 	classifierInterfaceCache *cache.Cache[exporterAndInterfaceInfo, interfaceClassification]
 	classifierErrLogger      reporter.Logger
+
+	// anonymizer used to anonymize SrcAddr/DstAddr before writing to ClickHouse
+	anonymizer *Anonymizer
 }
 
 // Dependencies define the dependencies of the HTTP component.
@@ -66,6 +70,14 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		classifierInterfaceCache: cache.New[exporterAndInterfaceInfo, interfaceClassification](),
 		classifierErrLogger:      r.Sample(reporter.BurstSampler(10*time.Second, 3)),
 	}
+
+	// initialize anonymizer from nested anonymize config
+	a, err := NewAnonymizer(configuration.Anonymize)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create anonymizer: %w", err)
+	}
+	c.anonymizer = a
+
 	c.d.Daemon.Track(&c.t, "outlet/core")
 	c.initMetrics()
 	return &c, nil
