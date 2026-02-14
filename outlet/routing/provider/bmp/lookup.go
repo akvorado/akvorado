@@ -39,7 +39,7 @@ func (p *Provider) Lookup(_ context.Context, ip, nh, _ netip.Addr) (LookupResult
 			selectedRoute = route
 			routeFound = true
 		}
-		if p.rib.nextHops.Get(route.nextHop) == nextHop(nh) {
+		if route.nextHop.Value() == nh {
 			// Exact match found, use it and don't search further
 			selectedRoute = route
 			break
@@ -50,10 +50,10 @@ func (p *Provider) Lookup(_ context.Context, ip, nh, _ netip.Addr) (LookupResult
 		return LookupResult{}, errNoRouteFound
 	}
 
-	attributes := p.rib.rtas.Get(selectedRoute.attributes)
+	attributes := selectedRoute.attributes.Value()
 	// The next hop is updated from the rib in every case, because the user
 	// "opted in" for bmp as source if the lookup result is evaluated
-	nh = netip.Addr(p.rib.nextHops.Get(selectedRoute.nextHop))
+	nh = netip.Addr(selectedRoute.nextHop.Value())
 
 	// Prefix length is for IPv4-mapped IPv6 address.
 	plen := selectedRoute.prefixLen
@@ -62,9 +62,9 @@ func (p *Provider) Lookup(_ context.Context, ip, nh, _ netip.Addr) (LookupResult
 	}
 	return LookupResult{
 		ASN:              attributes.asn,
-		ASPath:           attributes.asPath,
-		Communities:      attributes.communities,
-		LargeCommunities: attributes.largeCommunities,
+		ASPath:           attributes.getASPath(),
+		Communities:      attributes.getCommunities(),
+		LargeCommunities: attributes.getLargeCommunities(),
 		NetMask:          plen,
 		NextHop:          nh,
 	}, nil

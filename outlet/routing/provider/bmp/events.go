@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/netip"
 	"time"
+	"unique"
 
 	"akvorado/common/helpers"
 
@@ -278,17 +279,17 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 	// If no AS path, consider the peer AS as the origin AS,
 	// otherwise the last AS.
 	if p.config.CollectASNs {
-		if path := rta.asPath; len(path) == 0 {
+		if len(rta.asPath) == 0 {
 			rta.asn = pkey.asn
 		} else {
-			rta.asn = path[len(path)-1]
+			rta.asn = rta.asPath[len(rta.asPath)-1]
 		}
 	}
 	if !p.config.CollectASPaths {
 		rta.asPath = nil
 	}
-	nhRef := p.rib.nextHops.Put(nextHop(nh))
-	rtaRef := p.rib.rtas.Put(rta)
+	rtaHandle := unique.Make(rta.ToComparable())
+	nhHandle := unique.Make(nh)
 
 	added := 0
 	removed := 0
@@ -304,13 +305,13 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 			pfx := helpers.PrefixTo6(v4UCPrefix.Prefix)
 			added += p.rib.AddPrefix(pfx, route{
 				peer: pinfo.reference,
-				nlri: p.rib.nlris.Put(nlri{
+				nlri: unique.Make(nlri{
 					family: bgp.RF_IPv4_UC,
 					path:   path.ID,
 					rd:     pkey.distinguisher,
 				}),
-				nextHop:    nhRef,
-				attributes: rtaRef,
+				nextHop:    nhHandle,
+				attributes: rtaHandle,
 				prefixLen:  uint8(pfx.Bits()),
 			})
 		}
@@ -320,16 +321,14 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 				continue
 			}
 			pfx := helpers.PrefixTo6(v4UCPrefix.Prefix)
-			if nlriRef, ok := p.rib.nlris.Ref(nlri{
-				family: bgp.RF_IPv4_UC,
-				path:   path.ID,
-				rd:     pkey.distinguisher,
-			}); ok {
-				removed += p.rib.RemovePrefix(pfx, route{
-					peer: pinfo.reference,
-					nlri: nlriRef,
-				})
-			}
+			removed += p.rib.RemovePrefix(pfx, route{
+				peer: pinfo.reference,
+				nlri: unique.Make(nlri{
+					family: bgp.RF_IPv4_UC,
+					path:   path.ID,
+					rd:     pkey.distinguisher,
+				}),
+			})
 		}
 	}
 
@@ -340,7 +339,7 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 		switch attr := attr.(type) {
 		case *bgp.PathAttributeMpReachNLRI:
 			nh = helpers.AddrTo6(attr.Nexthop)
-			nhRef = p.rib.nextHops.Put(nextHop(nh))
+			nhHandle = unique.Make(nh)
 			paths = attr.Value
 			family = bgp.NewFamily(attr.AFI, attr.SAFI)
 		case *bgp.PathAttributeMpUnreachNLRI:
@@ -377,26 +376,24 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 			case *bgp.PathAttributeMpReachNLRI:
 				added += p.rib.AddPrefix(pfx, route{
 					peer: pinfo.reference,
-					nlri: p.rib.nlris.Put(nlri{
+					nlri: unique.Make(nlri{
 						family: family,
 						rd:     rd,
 						path:   path.ID,
 					}),
-					nextHop:    nhRef,
-					attributes: rtaRef,
+					nextHop:    nhHandle,
+					attributes: rtaHandle,
 					prefixLen:  uint8(pfx.Bits()),
 				})
 			case *bgp.PathAttributeMpUnreachNLRI:
-				if nlriRef, ok := p.rib.nlris.Ref(nlri{
-					family: family,
-					rd:     rd,
-					path:   path.ID,
-				}); ok {
-					removed += p.rib.RemovePrefix(pfx, route{
-						peer: pinfo.reference,
-						nlri: nlriRef,
-					})
-				}
+				removed += p.rib.RemovePrefix(pfx, route{
+					peer: pinfo.reference,
+					nlri: unique.Make(nlri{
+						family: family,
+						rd:     rd,
+						path:   path.ID,
+					}),
+				})
 			}
 		}
 	}

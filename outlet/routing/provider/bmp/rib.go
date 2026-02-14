@@ -6,10 +6,10 @@ package bmp
 import (
 	"iter"
 	"net/netip"
+	"unique"
 	"unsafe"
 
 	"akvorado/common/helpers"
-	"akvorado/common/helpers/intern"
 
 	"github.com/gaissmai/bart"
 	"github.com/osrg/gobgp/v4/pkg/packet/bgp"
@@ -28,11 +28,8 @@ type routeKey uint64
 type rib struct {
 	tree          *bart.Table[prefixIndex] // stores prefix indices
 	routes        map[routeKey]route       // map[routeKey]route where routeKey = (prefixIdx << 32) | routeIdx
-	nlris         *intern.Pool[nlri]
-	nextHops      *intern.Pool[nextHop]
-	rtas          *intern.Pool[routeAttributes]
-	nextPrefixID  prefixIndex   // counter for next prefix index
-	freePrefixIDs []prefixIndex // free list for reused prefix indices
+	nextPrefixID  prefixIndex              // counter for next prefix index
+	freePrefixIDs []prefixIndex            // free list for reused prefix indices
 }
 
 // route contains the peer (external opaque value), the NLRI, the next
@@ -40,9 +37,9 @@ type rib struct {
 // and nlri.
 type route struct {
 	peer       uint32
-	nlri       intern.Reference[nlri]
-	nextHop    intern.Reference[nextHop]
-	attributes intern.Reference[routeAttributes]
+	nlri       unique.Handle[nlri]
+	nextHop    unique.Handle[netip.Addr]
+	attributes unique.Handle[routeAttributesComparable]
 	prefixLen  uint8
 }
 
@@ -54,95 +51,78 @@ type nlri struct {
 	rd     RD
 }
 
-// Hash returns a hash for an NLRI
-func (n nlri) Hash() uint64 {
-	state := makeHash()
-	state.Add((*byte)(unsafe.Pointer(&n.family)), int(unsafe.Sizeof(n.family)))
-	state.Add((*byte)(unsafe.Pointer(&n.path)), int(unsafe.Sizeof(n.path)))
-	state.Add((*byte)(unsafe.Pointer(&n.rd)), int(unsafe.Sizeof(n.rd)))
-	return state.Sum()
-}
-
-// Equal tells if two NLRI are equal.
-func (n nlri) Equal(n2 nlri) bool {
-	return n == n2
-}
-
-// nextHop is just an IP address.
-type nextHop netip.Addr
-
-// Hash returns a hash for the next hop.
-func (nh nextHop) Hash() uint64 {
-	ip := netip.Addr(nh).As16()
-	state := makeHash()
-	state.Add((*byte)(unsafe.Pointer(&ip[0])), 16)
-	return state.Sum()
-}
-
-// Equal tells if two next hops are equal.
-func (nh nextHop) Equal(nh2 nextHop) bool {
-	return nh == nh2
-}
-
-// routeAttributes is a set of route attributes.
+// routeAttributes is a set of route attributes with natural Go types.
 type routeAttributes struct {
-	asn         uint32
-	asPath      []uint32
-	communities []uint32
-	// extendedCommunities []uint64
+	asn              uint32
+	asPath           []uint32
+	communities      []uint32
 	largeCommunities []bgp.LargeCommunity
 }
 
-// Hash returns a hash for route attributes. This may seem like black
-// magic, but this is important for performance.
-func (rta routeAttributes) Hash() uint64 {
-	state := makeHash()
-	state.Add((*byte)(unsafe.Pointer(&rta.asn)), int(unsafe.Sizeof(rta.asn)))
-	if len(rta.asPath) > 0 {
-		state.Add((*byte)(unsafe.Pointer(&rta.asPath[0])), len(rta.asPath)*int(unsafe.Sizeof(rta.asPath[0])))
-	}
-	if len(rta.communities) > 0 {
-		state.Add((*byte)(unsafe.Pointer(&rta.communities[0])), len(rta.communities)*int(unsafe.Sizeof(rta.communities[0])))
-	}
-	if len(rta.largeCommunities) > 0 {
-		// There is a test to check that this computation is
-		// correct (the struct is 12-byte aligned, not
-		// 16-byte).
-		state.Add((*byte)(unsafe.Pointer(&rta.largeCommunities[0])), len(rta.largeCommunities)*int(unsafe.Sizeof(rta.largeCommunities[0])))
-	}
-	return state.Sum()
+// routeAttributesComparable is the comparable (internable) encoding
+// of routeAttributes. Slice fields are binary-encoded as strings
+// using unsafe to make the struct comparable for use with
+// unique.Handle. Each string is created zero-copy from the source
+// slice; unique.Make clones string data only when inserting a new entry.
+type routeAttributesComparable struct {
+	asn              uint32
+	asPath           string // binary-encoded []uint32
+	communities      string // binary-encoded []uint32
+	largeCommunities string // binary-encoded []bgp.LargeCommunity
 }
 
-// Equal tells if two route attributes are equal.
-func (rta routeAttributes) Equal(orta routeAttributes) bool {
-	if rta.asn != orta.asn {
-		return false
+// ToComparable converts routeAttributes to its comparable form for
+// use with unique.Make.
+func (rta routeAttributes) ToComparable() routeAttributesComparable {
+	return routeAttributesComparable{
+		asn:              rta.asn,
+		asPath:           uint32sToString(rta.asPath),
+		communities:      uint32sToString(rta.communities),
+		largeCommunities: largeCommunitiesToString(rta.largeCommunities),
 	}
-	if len(rta.asPath) != len(orta.asPath) {
-		return false
+}
+
+func uint32sToString(s []uint32) string {
+	if len(s) == 0 {
+		return ""
 	}
-	if len(rta.communities) != len(orta.communities) {
-		return false
+	return unsafe.String((*byte)(unsafe.Pointer(&s[0])), len(s)*4)
+}
+
+func stringToUint32s(s string) []uint32 {
+	if len(s) == 0 {
+		return nil
 	}
-	if len(rta.largeCommunities) != len(orta.largeCommunities) {
-		return false
+	return unsafe.Slice((*uint32)(unsafe.Pointer(unsafe.StringData(s))), len(s)/4)
+}
+
+func largeCommunitiesToString(s []bgp.LargeCommunity) string {
+	if len(s) == 0 {
+		return ""
 	}
-	for idx := range rta.asPath {
-		if rta.asPath[idx] != orta.asPath[idx] {
-			return false
-		}
+	return unsafe.String((*byte)(unsafe.Pointer(&s[0])), len(s)*12)
+}
+
+func stringToLargeCommunities(s string) []bgp.LargeCommunity {
+	if len(s) == 0 {
+		return nil
 	}
-	for idx := range rta.communities {
-		if rta.communities[idx] != orta.communities[idx] {
-			return false
-		}
-	}
-	for idx := range rta.largeCommunities {
-		if rta.largeCommunities[idx] != orta.largeCommunities[idx] {
-			return false
-		}
-	}
-	return true
+	return unsafe.Slice((*bgp.LargeCommunity)(unsafe.Pointer(unsafe.StringData(s))), len(s)/12)
+}
+
+// getASPath returns the AS path as a slice of uint32.
+func (rta routeAttributesComparable) getASPath() []uint32 {
+	return stringToUint32s(rta.asPath)
+}
+
+// getCommunities returns the communities as a slice of uint32.
+func (rta routeAttributesComparable) getCommunities() []uint32 {
+	return stringToUint32s(rta.communities)
+}
+
+// getLargeCommunities returns the large communities as a slice of bgp.LargeCommunity.
+func (rta routeAttributesComparable) getLargeCommunities() []bgp.LargeCommunity {
+	return stringToLargeCommunities(rta.largeCommunities)
 }
 
 // newPrefixIndex allocates a new prefix index, reusing from free list if available
@@ -207,10 +187,6 @@ func (r *rib) removeRoutes(prefixIdx prefixIndex, shouldRemove func(route) bool,
 		}
 
 		if !skip && shouldRemove(existingRoute) {
-			// Remove this route
-			r.nlris.Take(existingRoute.nlri)
-			r.nextHops.Take(existingRoute.nextHop)
-			r.rtas.Take(existingRoute.attributes)
 			delete(r.routes, checkKey)
 			removed++
 			if once {
@@ -264,9 +240,6 @@ func (r *rib) AddPrefix(prefix netip.Prefix, newRoute route) int {
 		}
 		if existingRoute.peer == newRoute.peer && existingRoute.nlri == newRoute.nlri {
 			// Found existing route, update it
-			r.nlris.Take(existingRoute.nlri)
-			r.nextHops.Take(existingRoute.nextHop)
-			r.rtas.Take(existingRoute.attributes)
 			r.routes[key] = newRoute
 			return 0 // Not really added, just updated
 		}
@@ -332,9 +305,6 @@ func newRIB() *rib {
 	return &rib{
 		tree:          &bart.Table[prefixIndex]{},
 		routes:        make(map[routeKey]route),
-		nlris:         intern.NewPool[nlri](),
-		nextHops:      intern.NewPool[nextHop](),
-		rtas:          intern.NewPool[routeAttributes](),
 		nextPrefixID:  1, // Start from 1, 0 means to be removed
 		freePrefixIDs: make([]prefixIndex, 0),
 	}

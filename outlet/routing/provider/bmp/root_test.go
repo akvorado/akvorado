@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"testing"
 	"time"
+	"unique"
 
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
@@ -46,9 +47,9 @@ func TestBMP(t *testing.T) {
 		result := map[netip.Addr][]string{}
 		for prefix, prefixIdx := range c.rib.tree.All() {
 			for route := range c.rib.iterateRoutesForPrefixIndex(prefixIdx) {
-				nlriRef := c.rib.nlris.Get(route.nlri)
-				nh := c.rib.nextHops.Get(route.nextHop)
-				attrs := c.rib.rtas.Get(route.attributes)
+				nlriVal := route.nlri.Value()
+				nh := route.nextHop.Value()
+				attrs := route.attributes.Value()
 				var peer netip.Addr
 				for pkey, pinfo := range c.peers {
 					if pinfo.reference == route.peer {
@@ -63,12 +64,12 @@ func TestBMP(t *testing.T) {
 				peer = peer.Unmap()
 				result[peer] = append(result[peer],
 					fmt.Sprintf("[%s] %s via %s %s/%d %d %v %v %v",
-						nlriRef.family,
-						prefix, netip.Addr(nh).Unmap(),
-						nlriRef.rd,
-						nlriRef.path,
-						attrs.asn, attrs.asPath,
-						attrs.communities, attrs.largeCommunities))
+						nlriVal.family,
+						prefix, nh.Unmap(),
+						nlriVal.rd,
+						nlriVal.path,
+						attrs.asn, attrs.getASPath(),
+						attrs.getCommunities(), attrs.getLargeCommunities()))
 				slices.Sort(result[peer])
 			}
 		}
@@ -1161,9 +1162,9 @@ func TestBMP(t *testing.T) {
 		// Add another prefix
 		p.rib.AddPrefix(netip.MustParsePrefix("2001:db8:1::/64"), route{
 			peer:       1,
-			nlri:       p.rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
-			nextHop:    p.rib.nextHops.Put(nextHop(netip.MustParseAddr("2001:db8::a"))),
-			attributes: p.rib.rtas.Put(routeAttributes{asn: 176}),
+			nlri:       unique.Make(nlri{family: bgp.RF_IPv4_UC}),
+			nextHop:    unique.Make(netip.MustParseAddr("2001:db8::a")),
+			attributes: unique.Make(routeAttributes{asn: 176}.ToComparable()),
 		})
 
 		lookup, _ = p.Lookup(t.Context(),

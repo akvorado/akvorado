@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"slices"
 	"testing"
+	"unique"
 
 	"akvorado/common/helpers"
 
@@ -235,8 +236,9 @@ func BenchmarkRIBInsertion(b *testing.B) {
 						}
 						b.StartTimer()
 
-						nlriRef := rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC})
-						nhRef := rib.nextHops.Put(nextHop(nh))
+						nlriHandle := unique.Make(nlri{family: bgp.RF_IPv4_UC})
+						nhHandle := unique.Make(nh)
+
 						for _, r := range randomPrefixes {
 							if prng2[p].IntN(10) == 0 {
 								continue
@@ -245,14 +247,14 @@ func BenchmarkRIBInsertion(b *testing.B) {
 							tentative++
 							inserted += rib.AddPrefix(pfx, route{
 								peer:    uint32(p),
-								nlri:    nlriRef,
-								nextHop: nhRef,
-								attributes: rib.rtas.Put(routeAttributes{
+								nlri:    nlriHandle,
+								nextHop: nhHandle,
+								attributes: unique.Make(routeAttributes{
 									asn:              r.ASPath[len(r.ASPath)-1],
 									asPath:           r.ASPath,
 									communities:      r.Communities,
 									largeCommunities: r.LargeCommunities,
-								}),
+								}.ToComparable()),
 								prefixLen: uint8(pfx.Bits()),
 							})
 						}
@@ -293,8 +295,8 @@ func BenchmarkRIBLookup(b *testing.B) {
 				}
 				for p := range peers {
 					nh = nh.Next()
-					nlriRef := rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC})
-					nhRef := rib.nextHops.Put(nextHop(nh))
+					nlriHandle := unique.Make(nlri{family: bgp.RF_IPv4_UC})
+					nhHandle := unique.Make(nh)
 					for r := range randomRealWorldRoutes4(prng1, prng2[p], routes) {
 						if prng2[p].IntN(10) == 0 {
 							continue
@@ -302,14 +304,14 @@ func BenchmarkRIBLookup(b *testing.B) {
 						pfx := helpers.PrefixTo6(r.Prefix)
 						rib.AddPrefix(pfx, route{
 							peer:    uint32(p),
-							nlri:    nlriRef,
-							nextHop: nhRef,
-							attributes: rib.rtas.Put(routeAttributes{
+							nlri:    nlriHandle,
+							nextHop: nhHandle,
+							attributes: unique.Make(routeAttributes{
 								asn:              r.ASPath[len(r.ASPath)-1],
 								asPath:           r.ASPath,
 								communities:      r.Communities,
 								largeCommunities: r.LargeCommunities,
-							}),
+							}.ToComparable()),
 							prefixLen: uint8(pfx.Bits()),
 						})
 					}
@@ -344,8 +346,8 @@ func BenchmarkRIBFlush(b *testing.B) {
 					}
 					for p := range peers {
 						nh = nh.Next()
-						nlriRef := rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC})
-						nhRef := rib.nextHops.Put(nextHop(nh))
+						nlriHandle := unique.Make(nlri{family: bgp.RF_IPv4_UC})
+						nhHandle := unique.Make(nh)
 						for r := range randomRealWorldRoutes4(prng1, prng2[p], routes) {
 							if prng2[p].IntN(10) == 0 {
 								continue
@@ -353,14 +355,14 @@ func BenchmarkRIBFlush(b *testing.B) {
 							pfx := helpers.PrefixTo6(r.Prefix)
 							rib.AddPrefix(pfx, route{
 								peer:    uint32(p),
-								nlri:    nlriRef,
-								nextHop: nhRef,
-								attributes: rib.rtas.Put(routeAttributes{
+								nlri:    nlriHandle,
+								nextHop: nhHandle,
+								attributes: unique.Make(routeAttributes{
 									asn:              r.ASPath[len(r.ASPath)-1],
 									asPath:           r.ASPath,
 									communities:      r.Communities,
 									largeCommunities: r.LargeCommunities,
-								}),
+								}.ToComparable()),
 								prefixLen: uint8(pfx.Bits()),
 							})
 						}

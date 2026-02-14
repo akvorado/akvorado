@@ -8,6 +8,7 @@ import (
 	"math/rand/v2"
 	"net/netip"
 	"testing"
+	"unique"
 	"unsafe"
 
 	"akvorado/common/helpers"
@@ -32,172 +33,97 @@ func TestLargeCommunitiesAlign(t *testing.T) {
 	if unsafe.Sizeof(largeCommunities[0]) != 12 {
 		t.Errorf("Large community size: got %d, expected 12", unsafe.Sizeof(largeCommunities[0]))
 	}
-	const _ = unsafe.Sizeof(largeCommunities[0])
+	// Compile-time assertion: LargeCommunity must be exactly 12 bytes
+	const _ = unsafe.Sizeof(bgp.LargeCommunity{}) - 12
 }
 
-func TestRTAEqual(t *testing.T) {
+func TestRouteAttributesEncoding(t *testing.T) {
 	cases := []struct {
-		pos   helpers.Pos
-		rta1  routeAttributes
-		rta2  routeAttributes
-		equal bool
+		name string
+		rta  routeAttributes
 	}{
-		{helpers.Mark(), routeAttributes{asn: 2038}, routeAttributes{asn: 2038}, true},
-		{helpers.Mark(), routeAttributes{asn: 2038}, routeAttributes{asn: 2039}, false},
-		{
-			helpers.Mark(),
-			routeAttributes{asn: 2038, asPath: []uint32{}},
-			routeAttributes{asn: 2038},
-			true,
-		},
-		{
-			helpers.Mark(),
-			routeAttributes{asn: 2038, asPath: []uint32{}},
-			routeAttributes{asn: 2039},
-			false,
-		},
-		{
-			helpers.Mark(),
-			routeAttributes{asn: 2038, communities: []uint32{}},
-			routeAttributes{asn: 2038},
-			true,
-		},
-		{
-			helpers.Mark(),
-			routeAttributes{asn: 2038, communities: []uint32{}},
-			routeAttributes{asn: 2039},
-			false,
-		},
-		{
-			helpers.Mark(),
-			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{}},
-			routeAttributes{asn: 2038},
-			true,
-		},
-		{
-			helpers.Mark(),
-			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{}},
-			routeAttributes{asn: 2039},
-			false,
-		},
-		{
-			helpers.Mark(),
-			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3}},
-			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3}},
-			true,
-		},
-		{
-			helpers.Mark(),
-			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3}},
-			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 4}},
-			false,
-		},
-		{
-			helpers.Mark(),
-			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3}},
-			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 0}},
-			false,
-		},
-		{
-			helpers.Mark(),
-			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3}},
-			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 4}},
-			false,
-		},
-		{
-			helpers.Mark(),
-			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 4}},
-			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 4}},
-			true,
-		},
-		{
-			helpers.Mark(),
-			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34}},
-			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34}},
-			true,
-		},
-		{
-			helpers.Mark(),
-			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34}},
-			routeAttributes{asn: 2038, asPath: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 35}},
-			false,
-		},
-		{
-			helpers.Mark(),
-			routeAttributes{asn: 2038, communities: []uint32{100, 200, 300, 400}},
-			routeAttributes{asn: 2038, communities: []uint32{100, 200, 300, 400}},
-			true,
-		},
-		{
-			helpers.Mark(),
-			routeAttributes{asn: 2038, communities: []uint32{100, 200, 300, 400}},
-			routeAttributes{asn: 2038, communities: []uint32{100, 200, 300, 402}},
-			false,
-		},
-		{
-			helpers.Mark(),
-			routeAttributes{asn: 2038, communities: []uint32{100, 200, 300}},
-			routeAttributes{asn: 2038, communities: []uint32{100, 200, 300, 400}},
-			false,
-		},
-		{
-			helpers.Mark(),
-			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}, {ASN: 3, LocalData1: 4, LocalData2: 5}, {ASN: 5, LocalData1: 6, LocalData2: 7}}},
-			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}, {ASN: 3, LocalData1: 4, LocalData2: 5}, {ASN: 5, LocalData1: 6, LocalData2: 7}}},
-			true,
-		},
-		{
-			helpers.Mark(),
-			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}, {ASN: 3, LocalData1: 4, LocalData2: 5}, {ASN: 5, LocalData1: 6, LocalData2: 7}}},
-			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}, {ASN: 3, LocalData1: 4, LocalData2: 5}, {ASN: 5, LocalData1: 6, LocalData2: 8}}},
-			false,
-		},
-		{
-			helpers.Mark(),
-			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}, {ASN: 3, LocalData1: 4, LocalData2: 5}, {ASN: 5, LocalData1: 6, LocalData2: 7}}},
-			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 4}, {ASN: 3, LocalData1: 4, LocalData2: 5}, {ASN: 5, LocalData1: 6, LocalData2: 7}}},
-			false,
-		},
-		{
-			helpers.Mark(),
-			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}, {ASN: 3, LocalData1: 4, LocalData2: 5}}},
-			routeAttributes{asn: 2038, largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}, {ASN: 3, LocalData1: 4, LocalData2: 5}, {ASN: 5, LocalData1: 6, LocalData2: 7}}},
-			false,
-		},
+		{"all empty", routeAttributes{asn: 100}},
+		{"only asPath", routeAttributes{asn: 200, asPath: []uint32{1, 2, 3}}},
+		{"only communities", routeAttributes{asn: 300, communities: []uint32{100, 200}}},
+		{"only largeCommunities", routeAttributes{
+			asn:              400,
+			largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}},
+		}},
+		{"all fields", routeAttributes{
+			asn:         500,
+			asPath:      []uint32{1, 2, 3, 100, 200, 65535, 4294967295},
+			communities: []uint32{42},
+			largeCommunities: []bgp.LargeCommunity{
+				{ASN: 64200, LocalData1: 100, LocalData2: 200},
+				{ASN: 65017, LocalData1: 300, LocalData2: 400},
+				{ASN: 4294967295, LocalData1: 4294967295, LocalData2: 4294967295},
+			},
+		}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			comparable := tc.rta.ToComparable()
+			if comparable.asn != tc.rta.asn {
+				t.Errorf("asn: got %d, want %d", comparable.asn, tc.rta.asn)
+			}
+			if diff := helpers.Diff(comparable.getASPath(), tc.rta.asPath); diff != "" {
+				t.Errorf("asPath roundtrip (-got, +want):\n%s", diff)
+			}
+			if diff := helpers.Diff(comparable.getCommunities(), tc.rta.communities); diff != "" {
+				t.Errorf("communities roundtrip (-got, +want):\n%s", diff)
+			}
+			if diff := helpers.Diff(comparable.getLargeCommunities(), tc.rta.largeCommunities); diff != "" {
+				t.Errorf("largeCommunities roundtrip (-got, +want):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestRouteAttributesComparable(t *testing.T) {
+	rta1 := routeAttributes{
+		asn: 2038, asPath: []uint32{1, 2, 3}, communities: []uint32{100, 200},
+		largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}},
+	}.ToComparable()
+	rta2 := routeAttributes{
+		asn: 2038, asPath: []uint32{1, 2, 3}, communities: []uint32{100, 200},
+		largeCommunities: []bgp.LargeCommunity{{ASN: 1, LocalData1: 2, LocalData2: 3}},
+	}.ToComparable()
+	rta3 := routeAttributes{
+		asn: 2038, asPath: []uint32{1, 2, 4}, communities: []uint32{100, 200},
+	}.ToComparable()
+
+	if rta1 != rta2 {
+		t.Error("identical routeAttributesComparable should be ==")
+	}
+	if rta1 == rta3 {
+		t.Error("different routeAttributesComparable should be !=")
 	}
 
-	for _, tc := range cases {
-		equal := tc.rta1.Equal(tc.rta2)
-		if equal && !tc.equal {
-			t.Errorf("%s%+v == %+v", tc.pos, tc.rta1, tc.rta2)
-		} else if !equal && tc.equal {
-			t.Errorf("%s%+v != %+v", tc.pos, tc.rta1, tc.rta2)
-		} else {
-			equal := tc.rta1.Hash() == tc.rta2.Hash()
-			if equal && !tc.equal {
-				t.Errorf("%s%+v.hash == %+v.hash", tc.pos, tc.rta1, tc.rta2)
-			} else if !equal && tc.equal {
-				t.Errorf("%s%+v.hash != %+v.hash", tc.pos, tc.rta1, tc.rta2)
-			}
-		}
+	// Also verify unique.Make deduplicates
+	h1 := unique.Make(rta1)
+	h2 := unique.Make(rta2)
+	h3 := unique.Make(rta3)
+	if h1 != h2 {
+		t.Error("unique.Make should return same handle for equal values")
+	}
+	if h1 == h3 {
+		t.Error("unique.Make should return different handle for different values")
 	}
 }
 
 func TestRemoveRoutes(t *testing.T) {
-	nr := func(r *rib, peer uint32) route {
+	nr := func(peer uint32) route {
 		return route{
-			peer:    peer,
-			nlri:    r.nlris.Put(nlri{family: bgp.RF_IPv4_UC, path: 1}),
-			nextHop: r.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
-			attributes: r.rtas.Put(routeAttributes{
-				asn: 65300,
-			}),
-			prefixLen: 96 + 24,
+			peer:       peer,
+			nlri:       unique.Make(nlri{family: bgp.RF_IPv4_UC, path: 1}),
+			nextHop:    unique.Make(netip.MustParseAddr("::ffff:198.51.100.8")),
+			attributes: unique.Make(routeAttributes{asn: 65300}.ToComparable()),
+			prefixLen:  96 + 24,
 		}
 	}
 	t.Run("only route", func(t *testing.T) {
 		r := newRIB()
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), nr(r, 10))
+		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), nr(10))
 		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
 		count, empty := r.removeRoutes(idx, func(route) bool { return true }, true)
 		if !empty {
@@ -213,8 +139,8 @@ func TestRemoveRoutes(t *testing.T) {
 
 	t.Run("first route", func(t *testing.T) {
 		r := newRIB()
-		r1 := nr(r, 10)
-		r2 := nr(r, 11)
+		r1 := nr(10)
+		r2 := nr(11)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
 		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
@@ -234,8 +160,8 @@ func TestRemoveRoutes(t *testing.T) {
 
 	t.Run("second route", func(t *testing.T) {
 		r := newRIB()
-		r1 := nr(r, 10)
-		r2 := nr(r, 11)
+		r1 := nr(10)
+		r2 := nr(11)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
 		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
@@ -254,9 +180,9 @@ func TestRemoveRoutes(t *testing.T) {
 	})
 	t.Run("middle route", func(t *testing.T) {
 		r := newRIB()
-		r1 := nr(r, 10)
-		r2 := nr(r, 11)
-		r3 := nr(r, 12)
+		r1 := nr(10)
+		r2 := nr(11)
+		r3 := nr(12)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r3)
@@ -277,11 +203,11 @@ func TestRemoveRoutes(t *testing.T) {
 	})
 	t.Run("one route out of two", func(t *testing.T) {
 		r := newRIB()
-		r1 := nr(r, 10)
-		r2 := nr(r, 11)
-		r3 := nr(r, 12)
-		r4 := nr(r, 13)
-		r5 := nr(r, 14)
+		r1 := nr(10)
+		r2 := nr(11)
+		r3 := nr(12)
+		r4 := nr(13)
+		r5 := nr(14)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r3)
@@ -305,11 +231,11 @@ func TestRemoveRoutes(t *testing.T) {
 
 	t.Run("all routes", func(t *testing.T) {
 		r := newRIB()
-		r1 := nr(r, 10)
-		r2 := nr(r, 11)
-		r3 := nr(r, 12)
-		r4 := nr(r, 13)
-		r5 := nr(r, 14)
+		r1 := nr(10)
+		r2 := nr(11)
+		r3 := nr(12)
+		r4 := nr(13)
+		r5 := nr(14)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r3)
@@ -393,12 +319,10 @@ func TestRIBHarness(t *testing.T) {
 					}
 					added += r.AddPrefix(netip.PrefixFrom(lookup.addr, 64),
 						route{
-							peer:    peer,
-							nlri:    r.nlris.Put(nlri{rd: lookup.rd}),
-							nextHop: r.nextHops.Put(nextHop(lookup.nextHop)),
-							attributes: r.rtas.Put(routeAttributes{
-								asn: lookup.asn,
-							}),
+							peer:       peer,
+							nlri:       unique.Make(nlri{rd: lookup.rd}),
+							nextHop:    unique.Make(lookup.nextHop),
+							attributes: unique.Make(routeAttributes{asn: lookup.asn}.ToComparable()),
 						})
 					removeLookup(lookup, fmt.Sprintf("erased by NH: %s, ASN: %d", lookup.nextHop, lookup.asn))
 					lookups = append(lookups, lookup)
@@ -411,20 +335,18 @@ func TestRIBHarness(t *testing.T) {
 					prefix := netip.MustParseAddr(fmt.Sprintf("2001:db8:f:%x::",
 						random.IntN(300)))
 					rd := RD(random.IntN(4))
-					if nlriRef, ok := r.nlris.Ref(nlri{
-						rd: rd,
-					}); ok {
-						removed += r.RemovePrefix(netip.PrefixFrom(prefix, 64),
-							route{
-								peer: peer,
-								nlri: nlriRef,
-							})
-						removeLookup(lookup{
+					removed += r.RemovePrefix(netip.PrefixFrom(prefix, 64),
+						route{
 							peer: peer,
-							addr: prefix,
-							rd:   rd,
-						}, "removed during second pass")
-					}
+							nlri: unique.Make(nlri{
+								rd: rd,
+							}),
+						})
+					removeLookup(lookup{
+						peer: peer,
+						addr: prefix,
+						rd:   rd,
+					}, "removed during second pass")
 				}
 				t.Logf("Run %d: removed = %d/%d", run, removed, toRemove)
 
@@ -442,12 +364,10 @@ func TestRIBHarness(t *testing.T) {
 					}
 					added += r.AddPrefix(netip.PrefixFrom(lookup.addr, 64),
 						route{
-							peer:    peer,
-							nlri:    r.nlris.Put(nlri{}),
-							nextHop: r.nextHops.Put(nextHop(lookup.nextHop)),
-							attributes: r.rtas.Put(routeAttributes{
-								asn: lookup.asn,
-							}),
+							peer:       peer,
+							nlri:       unique.Make(nlri{}),
+							nextHop:    unique.Make(lookup.nextHop),
+							attributes: unique.Make(routeAttributes{asn: lookup.asn}.ToComparable()),
 						})
 					removeLookup(lookup, fmt.Sprintf("erased by NH: %s, ASN: %d", lookup.nextHop, lookup.asn))
 					lookups = append(lookups, lookup)
@@ -476,10 +396,10 @@ func TestRIBHarness(t *testing.T) {
 
 			for route := range r.iterateRoutesForPrefixIndex(prefixIdx) {
 				routeFound = true // At least one route exists
-				if r.nextHops.Get(route.nextHop) != nextHop(lookup.nextHop) || r.nlris.Get(route.nlri).rd != lookup.rd {
+				if route.nextHop.Value() != lookup.nextHop || route.nlri.Value().rd != lookup.rd {
 					continue
 				}
-				if r.rtas.Get(route.attributes).asn != lookup.asn {
+				if route.attributes.Value().asn != lookup.asn {
 					continue
 				}
 				found = true
@@ -500,8 +420,8 @@ func TestRIBHarness(t *testing.T) {
 				for route := range r.iterateRoutesForPrefixIndex(prefixIdx) {
 					t.Logf("  peer %d, NH: %s, RD: %s, ASN: %d",
 						route.peer,
-						netip.Addr(r.nextHops.Get(route.nextHop)),
-						r.nlris.Get(route.nlri).rd, r.rtas.Get(route.attributes).asn)
+						route.nextHop.Value(),
+						route.nlri.Value().rd, route.attributes.Value().asn)
 				}
 				t.Logf("> route history for prefix %s:", lookup.addr)
 				for _, olookup := range lookups {
@@ -534,39 +454,8 @@ func TestRIBHarness(t *testing.T) {
 			r.FlushPeer(peer)
 		}
 
-		// Check for leak of interned values
-		if r.nlris.Len() > 0 {
-			t.Errorf("%d NLRIs have leaked", r.nlris.Len())
-		}
-		if r.nextHops.Len() > 0 {
-			t.Errorf("%d next hops have leaked", r.nextHops.Len())
-		}
-		if r.rtas.Len() > 0 {
-			t.Errorf("%d route attributes have leaked", r.rtas.Len())
-		}
-
 		if t.Failed() {
 			break
 		}
-	}
-}
-
-func BenchmarkRTAHash(b *testing.B) {
-	rta := routeAttributes{
-		asn:    2038,
-		asPath: []uint32{1, 2, 3, 4, 5, 6, 7},
-	}
-	for b.Loop() {
-		rta.Hash()
-	}
-}
-
-func BenchmarkRTAEqual(b *testing.B) {
-	rta := routeAttributes{
-		asn:    2038,
-		asPath: []uint32{1, 2, 3, 4, 5, 6, 7},
-	}
-	for b.Loop() {
-		rta.Equal(rta)
 	}
 }
