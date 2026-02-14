@@ -70,10 +70,10 @@ func TestMock(t *testing.T) {
 		if err != nil {
 			t.Fatalf("SELECT error:\n%+v", err)
 		}
+		defer rows.Close()
 		if !rows.Next() {
 			t.Fatal("Next() should return true")
 		}
-		defer rows.Close()
 		var n, m uint64
 		if err := rows.Scan(&n, &m); err != nil {
 			t.Fatalf("Scan() error:\n%+v", err)

@@ -48,6 +48,7 @@ func dumpAllTables(t *testing.T, ch *clickhousedb.Component, schemaComponent *sc
 	if err != nil {
 		t.Fatalf("Query() error:\n%+v", err)
 	}
+	defer rows.Close()
 	schemas := []tableWithSchema{}
 	for rows.Next() {
 		var schema, table string
@@ -275,6 +276,7 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 			if err != nil {
 				t.Fatalf("Query() error:\n%+v", err)
 			}
+			defer rows.Close()
 			hash := ch.d.Schema.ClickHouseHash()
 			got := []string{}
 			for rows.Next() {
