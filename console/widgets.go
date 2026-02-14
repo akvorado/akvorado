@@ -54,12 +54,12 @@ LIMIT 1`, strings.Join(selectClause, ",\n "))
 		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})
 		return
 	}
+	defer rows.Close()
 
 	if !rows.Next() {
 		gc.JSON(http.StatusNotFound, helpers.M{"message": "No flow currently in database."})
 		return
 	}
-	defer rows.Close()
 
 	var (
 		response    = helpers.M{}
