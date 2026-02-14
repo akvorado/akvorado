@@ -19,13 +19,13 @@
 //     table, allowing separate namespaces and lifetimes. I believe this should
 //     help efficiency as there are different maps of used values (but no
 //     benchmark done).
-//   - This package is not safe for concurrent use.
-//   - This package has better performance (various benchmarks done on the bmp
-//     package).
+//   - This package is safe for concurrent use when reading.
 //
 // [unique]: https://pkg.go.dev/unique
 // [unique.Make]: https://pkg.go.dev/unique#Make
 package intern
+
+import "sync"
 
 // Value is the interface that should be implemented by types
 // used in an intern pool. Also, it should be immutable.
@@ -41,10 +41,15 @@ type Reference[T any] uint32
 // Pool keeps values in a pool by storing only one distinct copy
 // of each. Values will be referred as an uint32 (implemented as an
 // index).
+//
+// Get is safe for concurrent use without locks (backed by sync.Map).
+// All other methods (Put, Take, Ref, Len) must be called under
+// external synchronization (e.g., Provider.mu).
 type Pool[T Value[T]] struct {
 	values           []internValue[T]
 	availableIndexes []Reference[T]
 	valueIndexes     map[uint64]Reference[T]
+	getValues        sync.Map // Reference[T] → T, for lock-free reads
 }
 
 // internValue is the value stored in an intern pool. It adds resource
@@ -66,13 +71,21 @@ func NewPool[T Value[T]]() *Pool[T] {
 	}
 }
 
-// Get retrieves a (copy of the) value from the intern pool using its reference.
+// Get retrieves a (copy of the) value from the intern pool using its
+// reference. This is safe for concurrent use without external
+// synchronization.
 func (p *Pool[T]) Get(ref Reference[T]) T {
-	return p.values[ref].value
+	val, _ := p.getValues.Load(ref)
+	return val.(T)
 }
 
 // Take removes a value from the intern pool. If this is the last
 // used reference, it will be deleted from the pool.
+//
+// Note: Take intentionally does NOT delete from getValues. This
+// ensures concurrent readers that still hold a stale Reference can
+// safely call Get and receive the original value. When the slot is
+// later reused by Put, getValues is updated to the new value.
 func (p *Pool[T]) Take(ref Reference[T]) {
 	value := &p.values[ref]
 	value.refCount--
@@ -156,6 +169,7 @@ func (p *Pool[T]) Put(value T) Reference[T] {
 		v.previous = prevIndex
 		p.values[prevIndex].next = index
 		p.values[index] = v
+		p.getValues.Store(index, value)
 		return index
 	}
 
@@ -163,6 +177,7 @@ func (p *Pool[T]) Put(value T) Reference[T] {
 	index := newIndex()
 	p.values[index] = v
 	p.valueIndexes[hash] = index
+	p.getValues.Store(index, value)
 	return index
 }
 
