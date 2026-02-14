@@ -123,6 +123,7 @@ func TestInsertMemory(t *testing.T) {
 		if err != nil {
 			t.Fatalf("clickhouse.Query() error:\n%+v", err)
 		}
+		defer rows.Close()
 
 		var got []map[string]any
 		for rows.Next() {
@@ -155,8 +156,6 @@ func TestInsertMemory(t *testing.T) {
 			}
 			got = append(got, row)
 		}
-		rows.Close()
-
 		expected := []map[string]any{
 			{
 				"TimeReceived":    "1970-01-01 00:16:40",
