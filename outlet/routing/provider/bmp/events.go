@@ -46,10 +46,11 @@ func peerKeyFromBMPPeerHeader(exporter netip.AddrPort, header *bmp.BMPPeerHeader
 }
 
 // scheduleStalePeersRemoval schedule the next time a peer should be
-// removed. This should be called with the lock held.
+// removed. This should be called with the writer lock held.
 func (p *Provider) scheduleStalePeersRemoval() {
 	var next time.Time
-	for _, pinfo := range p.peers {
+	currentPeers := p.peers.Load()
+	for _, pinfo := range currentPeers.peers {
 		if pinfo.staleUntil.IsZero() {
 			continue
 		}
@@ -72,18 +73,20 @@ func (p *Provider) removeStalePeers() {
 	p.r.Debug().Msg("remove stale peers")
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	for pkey, pinfo := range p.peers {
+	newPeers := p.peers.Load().clone()
+	for pkey, pinfo := range newPeers.peers {
 		if pinfo.staleUntil.IsZero() || pinfo.staleUntil.After(start) {
 			continue
 		}
-		p.removePeer(pkey, "stale")
+		p.removePeer(newPeers, pkey, "stale")
 	}
+	p.peers.Store(newPeers)
 	p.scheduleStalePeersRemoval()
 }
 
-func (p *Provider) addPeer(pkey peerKey) *peerInfo {
-	p.lastPeerReference++
-	if p.lastPeerReference == 0 {
+func (p *Provider) addPeer(pm *peerMap, pkey peerKey) *peerInfo {
+	pm.lastPeerReference++
+	if pm.lastPeerReference == 0 {
 		// This is a very unlikely event, but we don't
 		// have anything better. Let's crash (and
 		// hopefully be restarted).
@@ -91,26 +94,23 @@ func (p *Provider) addPeer(pkey peerKey) *peerInfo {
 		go p.Stop()
 	}
 	pinfo := &peerInfo{
-		reference: p.lastPeerReference,
+		reference: pm.lastPeerReference,
 	}
-	p.peers[pkey] = pinfo
+	pm.peers[pkey] = pinfo
 	return pinfo
 }
 
-// removePeer remove a peer (with lock held)
-func (p *Provider) removePeer(pkey peerKey, reason string) {
+// removePeer remove a peer from the provided peerMap clone (with writer lock held).
+func (p *Provider) removePeer(pm *peerMap, pkey peerKey, reason string) {
 	exporterStr := pkey.exporter.Addr().Unmap().String()
 	peerStr := pkey.ip.Unmap().String()
 	p.r.Info().Msgf("remove peer %s for exporter %s (reason: %s)", peerStr, exporterStr, reason)
-	start := p.d.Clock.Now()
-	defer p.metrics.locked.WithLabelValues("peer-removal").Observe(
-		float64(p.d.Clock.Now().Sub(start).Nanoseconds()) / 1000 / 1000 / 1000)
-	pinfo, ok := p.peers[pkey]
+	pinfo, ok := pm.peers[pkey]
 	if !ok {
 		return
 	}
 	removed := p.rib.FlushPeer(pinfo.reference)
-	delete(p.peers, pkey)
+	delete(pm.peers, pkey)
 	p.metrics.routes.WithLabelValues(exporterStr).Sub(float64(removed))
 	p.metrics.peers.WithLabelValues(exporterStr).Dec()
 	p.metrics.peerRemovalDone.WithLabelValues(exporterStr).Inc()
@@ -120,12 +120,16 @@ func (p *Provider) removePeer(pkey peerKey, reason string) {
 func (p *Provider) markExporterAsStale(exporter netip.AddrPort, until time.Time) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	for pkey, pinfo := range p.peers {
+	newPeers := p.peers.Load().clone()
+	for pkey, pinfo := range newPeers.peers {
 		if pkey.exporter != exporter {
 			continue
 		}
-		pinfo.staleUntil = until
+		newPinfo := clonePeerInfo(pinfo)
+		newPinfo.staleUntil = until
+		newPeers.peers[pkey] = newPinfo
 	}
+	p.peers.Store(newPeers)
 	p.scheduleStalePeersRemoval()
 }
 
@@ -134,14 +138,17 @@ func (p *Provider) markExporterAsStale(exporter netip.AddrPort, until time.Time)
 func (p *Provider) handlePeerDownNotification(pkey peerKey) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	_, ok := p.peers[pkey]
+	currentPeers := p.peers.Load()
+	_, ok := currentPeers.peers[pkey]
 	if !ok {
 		p.r.Info().Msgf("received peer down from exporter %s for peer %s, but no peer up",
 			pkey.exporter.Addr().Unmap().String(),
 			pkey.ip.Unmap().String())
 		return
 	}
-	p.removePeer(pkey, "down")
+	newPeers := currentPeers.clone()
+	p.removePeer(newPeers, pkey, "down")
+	p.peers.Store(newPeers)
 }
 
 // handleConnectionDown handles a disconnect or a session termination
@@ -167,16 +174,20 @@ func (p *Provider) handlePeerUpNotification(pkey peerKey, body *bmp.BMPPeerUpNot
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	newPeers := p.peers.Load().clone()
 	exporterStr := pkey.exporter.Addr().Unmap().String()
 	peerStr := pkey.ip.Unmap().String()
-	pinfo, ok := p.peers[pkey]
+	pinfo, ok := newPeers.peers[pkey]
 	if ok {
 		p.r.Info().Msgf("received extra peer up from exporter %s for peer %s",
 			exporterStr, peerStr)
+		// Clone peerInfo since we'll modify marshallingOptions
+		pinfo = clonePeerInfo(pinfo)
+		newPeers.peers[pkey] = pinfo
 	} else {
 		// Peer does not exist at all
 		p.metrics.peers.WithLabelValues(exporterStr).Inc()
-		pinfo = p.addPeer(pkey)
+		pinfo = p.addPeer(newPeers, pkey)
 	}
 
 	// Check for ADD-PATH support.
@@ -217,6 +228,7 @@ func (p *Provider) handlePeerUpNotification(pkey peerKey, body *bmp.BMPPeerUpNot
 		}
 	}
 	pinfo.marshallingOptions = []*bgp.MarshallingOption{{AddPath: addPathOption}}
+	p.peers.Store(newPeers)
 
 	p.r.Debug().
 		Str("addpath", fmt.Sprintf("%s", addPathOption)).
@@ -244,13 +256,16 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 
 	exporterStr := pkey.exporter.Addr().Unmap().String()
 	peerStr := pkey.ip.Unmap().String()
-	pinfo, ok := p.peers[pkey]
+	currentPeers := p.peers.Load()
+	pinfo, ok := currentPeers.peers[pkey]
 	if !ok {
 		// We may have missed the peer down notification?
 		p.r.Info().Msgf("received route monitoring from exporter %s for peer %s, but no peer up",
 			exporterStr, peerStr)
+		newPeers := currentPeers.clone()
 		p.metrics.peers.WithLabelValues(exporterStr).Inc()
-		pinfo = p.addPeer(pkey)
+		pinfo = p.addPeer(newPeers, pkey)
+		p.peers.Store(newPeers)
 	}
 
 	var nh netip.Addr

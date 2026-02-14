@@ -16,7 +16,6 @@ type metrics struct {
 	errors              *reporter.CounterVec
 	ignored             *reporter.CounterVec
 	panics              *reporter.CounterVec
-	locked              *reporter.SummaryVec
 	peerRemovalDone     *reporter.CounterVec
 	messageQueueFull    *reporter.CounterVec
 	messageQueueNotFull *reporter.CounterVec
@@ -93,14 +92,6 @@ func (p *Provider) initMetrics() {
 			Help: "Number of fatal errors while processing BMP messages.",
 		},
 		[]string{"exporter"},
-	)
-	p.metrics.locked = p.r.SummaryVec(
-		reporter.SummaryOpts{
-			Name:       "locked_duration_seconds",
-			Help:       "Duration during which the RIB is locked.",
-			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
-		},
-		[]string{"reason"},
 	)
 	p.metrics.peerRemovalDone = p.r.CounterVec(
 		reporter.CounterOpts{

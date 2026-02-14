@@ -124,7 +124,7 @@ func TestRemoveRoutes(t *testing.T) {
 	t.Run("only route", func(t *testing.T) {
 		r := newRIB()
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), nr(10))
-		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
+		idx, _ := r.tree.Load().Lookup(netip.MustParseAddr("192.168.144.10"))
 		count, empty := r.removeRoutes(idx, func(route) bool { return true }, true)
 		if !empty {
 			t.Error("removeRoutes() should have removed all routes from node")
@@ -143,7 +143,7 @@ func TestRemoveRoutes(t *testing.T) {
 		r2 := nr(11)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
-		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
+		idx, _ := r.tree.Load().Lookup(netip.MustParseAddr("192.168.144.10"))
 		count, empty := r.removeRoutes(idx, func(r route) bool { return r.peer == 10 }, true)
 		if empty {
 			t.Error("removeRoutes() should not have removed all routes from node")
@@ -164,7 +164,7 @@ func TestRemoveRoutes(t *testing.T) {
 		r2 := nr(11)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
-		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
+		idx, _ := r.tree.Load().Lookup(netip.MustParseAddr("192.168.144.10"))
 		count, empty := r.removeRoutes(idx, func(r route) bool { return r.peer == 11 }, true)
 		if empty {
 			t.Error("removeRoutes() should not have removed all routes from node")
@@ -186,7 +186,7 @@ func TestRemoveRoutes(t *testing.T) {
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r3)
-		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
+		idx, _ := r.tree.Load().Lookup(netip.MustParseAddr("192.168.144.10"))
 		count, empty := r.removeRoutes(idx, func(r route) bool { return r.peer == 11 }, true)
 		if empty {
 			t.Error("removeRoutes() should not have removed all routes from node")
@@ -213,7 +213,7 @@ func TestRemoveRoutes(t *testing.T) {
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r3)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r4)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r5)
-		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
+		idx, _ := r.tree.Load().Lookup(netip.MustParseAddr("192.168.144.10"))
 		count, empty := r.removeRoutes(idx, func(r route) bool { return r.peer%2 == 0 }, false)
 		if empty {
 			t.Error("removeRoutes() should not have removed all routes from node")
@@ -241,7 +241,7 @@ func TestRemoveRoutes(t *testing.T) {
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r3)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r4)
 		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r5)
-		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
+		idx, _ := r.tree.Load().Lookup(netip.MustParseAddr("192.168.144.10"))
 		count, empty := r.removeRoutes(idx, func(route) bool { return true }, false)
 		if !empty {
 			t.Error("removeRoutes() should have removed all routes from node")
@@ -383,7 +383,7 @@ func TestRIBHarness(t *testing.T) {
 				continue
 			}
 			// Find prefix in tree
-			prefixIdx, ok := r.tree.Lookup(lookup.addr)
+			prefixIdx, ok := r.tree.Load().Lookup(lookup.addr)
 			if !ok {
 				t.Errorf("cannot find %s for %d",
 					lookup.addr, lookup.peer)

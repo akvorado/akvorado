@@ -206,11 +206,11 @@ func (p *Provider) processMessages(conn *net.TCPConn, exporter netip.AddrPort, e
 			}
 			body = body[bmp.BMP_PEER_HEADER_SIZE:]
 			pkey = peerKeyFromBMPPeerHeader(exporter, &msg.PeerHeader)
-			p.mu.RLock()
-			if pinfo, ok := p.peers[pkey]; ok {
-				marshallingOptions = pinfo.marshallingOptions
+			if currentPeers := p.peers.Load(); currentPeers != nil {
+				if pinfo, ok := currentPeers.peers[pkey]; ok {
+					marshallingOptions = pinfo.marshallingOptions
+				}
 			}
-			p.mu.RUnlock()
 		}
 
 		if err := msg.Body.ParseBody(&msg, body, marshallingOptions...); err != nil {

@@ -28,8 +28,6 @@ func (p *Provider) Lookup(_ context.Context, ip, nh, _ netip.Addr) (LookupResult
 	if !p.active.Load() {
 		return LookupResult{}, nil
 	}
-	p.mu.RLock()
-	defer p.mu.RUnlock()
 
 	// Find the best route, preferring exact next hop match
 	var selectedRoute route

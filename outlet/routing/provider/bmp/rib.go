@@ -6,6 +6,8 @@ package bmp
 import (
 	"iter"
 	"net/netip"
+	"sync"
+	"sync/atomic"
 	"unique"
 	"unsafe"
 
@@ -26,21 +28,23 @@ type routeKey uint64
 
 // rib represents the RIB.
 type rib struct {
-	tree          *bart.Table[prefixIndex] // stores prefix indices
-	routes        map[routeKey]route       // map[routeKey]route where routeKey = (prefixIdx << 32) | routeIdx
-	nextPrefixID  prefixIndex              // counter for next prefix index
-	freePrefixIDs []prefixIndex            // free list for reused prefix indices
+	tree          atomic.Pointer[bart.Table[prefixIndex]]
+	routes        map[routeKey]route // map[routeKey]route where routeKey = (prefixIdx << 32) | routeIdx
+	routesMu      sync.RWMutex       // protects routes map only
+	nextPrefixID  prefixIndex        // counter for next prefix index (writer-only, protected by Provider.mu)
+	freePrefixIDs []prefixIndex      // free list for reused prefix indices (writer-only, protected by Provider.mu)
 }
 
 // route contains the peer (external opaque value), the NLRI, the next
 // hop and route attributes. The primary key is prefix (implied), peer
-// and nlri.
+// and nlri. Fields are ordered to minimize padding: the two small
+// fields (peer, prefixLen) share the first 8-byte slot.
 type route struct {
 	peer       uint32
+	prefixLen  uint8
 	nlri       unique.Handle[nlri]
 	nextHop    unique.Handle[netip.Addr]
 	attributes unique.Handle[routeAttributesComparable]
-	prefixLen  uint8
 }
 
 // nlri is the NLRI for the route (when combined with prefix). The
@@ -207,105 +211,140 @@ func (r *rib) removeRoutes(prefixIdx prefixIndex, shouldRemove func(route) bool,
 }
 
 // IterateRoutes will iterate on all the routes matching the provided IP address.
+// The tree lookup is lock-free (atomic load). The routes map is briefly read-locked.
 func (r *rib) IterateRoutes(ip netip.Addr) iter.Seq[route] {
 	return func(yield func(route) bool) {
-		prefixIdx, found := r.tree.Lookup(ip.Unmap())
+		prefixIdx, found := r.tree.Load().Lookup(ip.Unmap())
 		if found {
+			r.routesMu.RLock()
+			defer r.routesMu.RUnlock()
 			r.iterateRoutesForPrefixIndex(prefixIdx)(yield)
 		}
 	}
 }
 
 // AddPrefix add a new route to the RIB. It returns the number of routes really added.
+// Two-phase: Phase 1 modifies routes map under routesMu, Phase 2 updates tree via Persist (no lock).
+// Must be called under Provider.mu for writer serialization.
 func (r *rib) AddPrefix(prefix netip.Prefix, newRoute route) int {
-	var prefixIdx prefixIndex
 	prefix = helpers.UnmapPrefix(prefix)
-	r.tree.Modify(prefix, func(existing prefixIndex, found bool) (prefixIndex, bool) {
-		if found {
-			prefixIdx = existing
-		} else {
-			prefixIdx = r.newPrefixIndex()
-		}
-		return prefixIdx, false
-	})
+
+	// Phase 1: modify routes map
+	r.routesMu.Lock()
+	tree := r.tree.Load()
+	prefixIdx, found := tree.Get(prefix)
+	newPrefix := !found
+	if newPrefix {
+		prefixIdx = r.newPrefixIndex()
+	}
 
 	// Check if route already exists (same peer and nlri)
 	key := makeRouteKey(prefixIdx, 0)
+	result := 0
 	for {
 		existingRoute, exists := r.routes[key]
 		if !exists {
 			// Found empty slot, add new route
 			r.routes[key] = newRoute
-			return 1
+			result = 1
+			break
 		}
 		if existingRoute.peer == newRoute.peer && existingRoute.nlri == newRoute.nlri {
 			// Found existing route, update it
 			r.routes[key] = newRoute
-			return 0 // Not really added, just updated
+			break
 		}
 		key++
 	}
+	r.routesMu.Unlock()
+
+	// Phase 2: update tree if needed (no lock held)
+	if newPrefix {
+		newTree := tree.InsertPersist(prefix, prefixIdx)
+		r.tree.Store(newTree)
+	}
+
+	return result
 }
 
-// RemovePrefix removes a route from the RIB. It returns the number of routes really removed.
+// RemovePrefix removes a route from the RIB. It returns the number of routes
+// really removed. First, we modify routes map under routesMu, then we update
+// the tree via *Persist methods (no lock). Must be called under Provider.mu for
+// writer serialization.
 func (r *rib) RemovePrefix(prefix netip.Prefix, oldRoute route) int {
-	removedCount := 0
 	prefix = helpers.UnmapPrefix(prefix)
 
-	r.tree.Modify(prefix, func(existing prefixIndex, found bool) (prefixIndex, bool) {
-		if found {
-			var empty bool
-			removedCount, empty = r.removeRoutes(existing, func(route route) bool {
-				return route.peer == oldRoute.peer && route.nlri == oldRoute.nlri
-			}, true)
-			if empty {
-				r.freePrefixIndex(existing)
-				return 0, true
-			}
-			return existing, false
-		}
-		return 0, true
-	})
+	// Phase 1: modify routes map
+	r.routesMu.Lock()
+	tree := r.tree.Load()
+	prefixIdx, found := tree.Get(prefix)
+	if !found {
+		r.routesMu.Unlock()
+		return 0
+	}
+	removedCount, empty := r.removeRoutes(prefixIdx, func(route route) bool {
+		return route.peer == oldRoute.peer && route.nlri == oldRoute.nlri
+	}, true)
+	r.routesMu.Unlock()
+
+	// Phase 2: update tree if prefix became empty (no lock held)
+	if empty {
+		newTree := tree.DeletePersist(prefix)
+		r.tree.Store(newTree)
+		r.freePrefixIndex(prefixIdx)
+	}
 
 	return removedCount
 }
 
 // FlushPeer removes a whole peer from the RIB, returning the number
 // of removed routes.
+// Two-phase: Phase 1 modifies routes map under routesMu, Phase 2 rebuilds tree (no lock).
+// Must be called under Provider.mu for writer serialization.
 func (r *rib) FlushPeer(peer uint32) int {
+	// Phase 1: modify routes map, record empty prefixes
+	r.routesMu.Lock()
+	tree := r.tree.Load()
 	removedTotal := 0
 	anyEmpty := false
+	emptyPrefixIDs := make(map[prefixIndex]struct{})
 
-	// Iterate through all prefixes and remove peer routes.
-	for _, prefixIdx := range r.tree.All() {
+	for _, prefixIdx := range tree.All() {
 		removed, empty := r.removeRoutes(prefixIdx, func(route route) bool {
 			return route.peer == peer
 		}, false)
 		removedTotal += removed
-		anyEmpty = anyEmpty || empty
+		if empty {
+			anyEmpty = true
+			emptyPrefixIDs[prefixIdx] = struct{}{}
+			r.freePrefixIndex(prefixIdx)
+		}
 	}
+	r.routesMu.Unlock()
 
+	// Phase 2: rebuild tree if any prefixes became empty (no lock held)
 	if anyEmpty {
 		// We need to rebuild the tree. A typical tree is 1M routes, this should
 		// be pretty fast. Moreover, loosing a peer is not a condition happening
 		// often.
 		newTree := &bart.Table[prefixIndex]{}
-		for prefix, prefixIdx := range r.tree.All() {
-			if prefixIdx != 0 {
+		for prefix, prefixIdx := range tree.All() {
+			if _, empty := emptyPrefixIDs[prefixIdx]; !empty {
 				newTree.Insert(prefix, prefixIdx)
 			}
 		}
-		r.tree = newTree
+		r.tree.Store(newTree)
 	}
 	return removedTotal
 }
 
 // newRIB initializes a new RIB.
 func newRIB() *rib {
-	return &rib{
-		tree:          &bart.Table[prefixIndex]{},
+	r := &rib{
 		routes:        make(map[routeKey]route),
 		nextPrefixID:  1, // Start from 1, 0 means to be removed
 		freePrefixIDs: make([]prefixIndex, 0),
 	}
+	r.tree.Store(&bart.Table[prefixIndex]{})
+	return r
 }
