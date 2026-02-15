@@ -21,31 +21,6 @@ import (
 	"akvorado/outlet/routing/provider"
 )
 
-// peerMap holds the peer map and the last peer reference counter.
-// It is used as a COW value behind an atomic.Pointer for lock-free reads.
-type peerMap struct {
-	peers             map[peerKey]*peerInfo
-	lastPeerReference uint32
-}
-
-// clone returns a shallow copy of the peerMap with a new map.
-func (pm *peerMap) clone() *peerMap {
-	newPeers := make(map[peerKey]*peerInfo, len(pm.peers))
-	for k, v := range pm.peers {
-		newPeers[k] = v
-	}
-	return &peerMap{
-		peers:             newPeers,
-		lastPeerReference: pm.lastPeerReference,
-	}
-}
-
-// clonePeerInfo returns a shallow copy of a peerInfo.
-func clonePeerInfo(pi *peerInfo) *peerInfo {
-	clone := *pi
-	return &clone
-}
-
 // Provider represents the BMP provider.
 type Provider struct {
 	r           *reporter.Reporter
@@ -59,10 +34,11 @@ type Provider struct {
 	metrics metrics
 
 	// RIB management with peers
-	mu         sync.Mutex              // writer-only serialization
-	rib        *rib                    // tree is atomic inside; routes protected by routesMu
-	peers      atomic.Pointer[peerMap] // COW, lock-free reads
-	staleTimer *clock.Timer
+	rib               *rib          // tree is atomic inside; routes in sync.Map
+	peers             sync.Map      // peerKey → *peerInfo (lock-free reads)
+	lastPeerReference atomic.Uint32 // monotonic counter for peer references
+	staleTimer        *clock.Timer
+	mu                sync.Mutex // writer-only serialization (required for route linear probing and compaction)
 }
 
 // Dependencies define the dependencies of the BMP component.
@@ -85,9 +61,6 @@ func (configuration Configuration) New(r *reporter.Reporter, dependencies Depend
 
 		rib: newRIB(),
 	}
-	p.peers.Store(&peerMap{
-		peers: make(map[peerKey]*peerInfo),
-	})
 	if len(p.config.RDs) > 0 {
 		p.acceptedRDs = make(map[RD]struct{})
 		for _, rd := range p.config.RDs {

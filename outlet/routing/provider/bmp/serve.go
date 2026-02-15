@@ -206,10 +206,8 @@ func (p *Provider) processMessages(conn *net.TCPConn, exporter netip.AddrPort, e
 			}
 			body = body[bmp.BMP_PEER_HEADER_SIZE:]
 			pkey = peerKeyFromBMPPeerHeader(exporter, &msg.PeerHeader)
-			if currentPeers := p.peers.Load(); currentPeers != nil {
-				if pinfo, ok := currentPeers.peers[pkey]; ok {
-					marshallingOptions = pinfo.marshallingOptions
-				}
+			if val, ok := p.peers.Load(pkey); ok {
+				marshallingOptions = val.(*peerInfo).marshallingOptions
 			}
 		}
 

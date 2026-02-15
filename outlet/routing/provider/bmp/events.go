@@ -49,15 +49,16 @@ func peerKeyFromBMPPeerHeader(exporter netip.AddrPort, header *bmp.BMPPeerHeader
 // removed. This should be called with the writer lock held.
 func (p *Provider) scheduleStalePeersRemoval() {
 	var next time.Time
-	currentPeers := p.peers.Load()
-	for _, pinfo := range currentPeers.peers {
+	p.peers.Range(func(_, value any) bool {
+		pinfo := value.(*peerInfo)
 		if pinfo.staleUntil.IsZero() {
-			continue
+			return true
 		}
 		if next.IsZero() || pinfo.staleUntil.Before(next) {
 			next = pinfo.staleUntil
 		}
-	}
+		return true
+	})
 	if next.IsZero() {
 		p.r.Debug().Msg("no stale peer")
 		p.staleTimer.Stop()
@@ -73,20 +74,21 @@ func (p *Provider) removeStalePeers() {
 	p.r.Debug().Msg("remove stale peers")
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	newPeers := p.peers.Load().clone()
-	for pkey, pinfo := range newPeers.peers {
+	p.peers.Range(func(key, value any) bool {
+		pkey := key.(peerKey)
+		pinfo := value.(*peerInfo)
 		if pinfo.staleUntil.IsZero() || pinfo.staleUntil.After(start) {
-			continue
+			return true
 		}
-		p.removePeer(newPeers, pkey, "stale")
-	}
-	p.peers.Store(newPeers)
+		p.removePeer(pkey, pinfo, "stale")
+		return true
+	})
 	p.scheduleStalePeersRemoval()
 }
 
-func (p *Provider) addPeer(pm *peerMap, pkey peerKey) *peerInfo {
-	pm.lastPeerReference++
-	if pm.lastPeerReference == 0 {
+func (p *Provider) addPeer(pkey peerKey) *peerInfo {
+	ref := p.lastPeerReference.Add(1)
+	if ref == 0 {
 		// This is a very unlikely event, but we don't
 		// have anything better. Let's crash (and
 		// hopefully be restarted).
@@ -94,23 +96,19 @@ func (p *Provider) addPeer(pm *peerMap, pkey peerKey) *peerInfo {
 		go p.Stop()
 	}
 	pinfo := &peerInfo{
-		reference: pm.lastPeerReference,
+		reference: ref,
 	}
-	pm.peers[pkey] = pinfo
+	p.peers.Store(pkey, pinfo)
 	return pinfo
 }
 
-// removePeer remove a peer from the provided peerMap clone (with writer lock held).
-func (p *Provider) removePeer(pm *peerMap, pkey peerKey, reason string) {
+// removePeer remove a peer (with writer lock held).
+func (p *Provider) removePeer(pkey peerKey, pinfo *peerInfo, reason string) {
 	exporterStr := pkey.exporter.Addr().Unmap().String()
 	peerStr := pkey.ip.Unmap().String()
 	p.r.Info().Msgf("remove peer %s for exporter %s (reason: %s)", peerStr, exporterStr, reason)
-	pinfo, ok := pm.peers[pkey]
-	if !ok {
-		return
-	}
 	removed := p.rib.FlushPeer(pinfo.reference)
-	delete(pm.peers, pkey)
+	p.peers.Delete(pkey)
 	p.metrics.routes.WithLabelValues(exporterStr).Sub(float64(removed))
 	p.metrics.peers.WithLabelValues(exporterStr).Dec()
 	p.metrics.peerRemovalDone.WithLabelValues(exporterStr).Inc()
@@ -120,16 +118,20 @@ func (p *Provider) removePeer(pm *peerMap, pkey peerKey, reason string) {
 func (p *Provider) markExporterAsStale(exporter netip.AddrPort, until time.Time) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	newPeers := p.peers.Load().clone()
-	for pkey, pinfo := range newPeers.peers {
+	p.peers.Range(func(key, value any) bool {
+		pkey := key.(peerKey)
 		if pkey.exporter != exporter {
-			continue
+			return true
 		}
-		newPinfo := clonePeerInfo(pinfo)
-		newPinfo.staleUntil = until
-		newPeers.peers[pkey] = newPinfo
-	}
-	p.peers.Store(newPeers)
+		pinfo := value.(*peerInfo)
+		newPinfo := &peerInfo{
+			reference:          pinfo.reference,
+			staleUntil:         until,
+			marshallingOptions: pinfo.marshallingOptions,
+		}
+		p.peers.Store(pkey, newPinfo)
+		return true
+	})
 	p.scheduleStalePeersRemoval()
 }
 
@@ -138,17 +140,14 @@ func (p *Provider) markExporterAsStale(exporter netip.AddrPort, until time.Time)
 func (p *Provider) handlePeerDownNotification(pkey peerKey) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	currentPeers := p.peers.Load()
-	_, ok := currentPeers.peers[pkey]
+	val, ok := p.peers.Load(pkey)
 	if !ok {
 		p.r.Info().Msgf("received peer down from exporter %s for peer %s, but no peer up",
 			pkey.exporter.Addr().Unmap().String(),
 			pkey.ip.Unmap().String())
 		return
 	}
-	newPeers := currentPeers.clone()
-	p.removePeer(newPeers, pkey, "down")
-	p.peers.Store(newPeers)
+	p.removePeer(pkey, val.(*peerInfo), "down")
 }
 
 // handleConnectionDown handles a disconnect or a session termination
@@ -174,20 +173,22 @@ func (p *Provider) handlePeerUpNotification(pkey peerKey, body *bmp.BMPPeerUpNot
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	newPeers := p.peers.Load().clone()
 	exporterStr := pkey.exporter.Addr().Unmap().String()
 	peerStr := pkey.ip.Unmap().String()
-	pinfo, ok := newPeers.peers[pkey]
-	if ok {
+	var pinfo *peerInfo
+	if val, ok := p.peers.Load(pkey); ok {
 		p.r.Info().Msgf("received extra peer up from exporter %s for peer %s",
 			exporterStr, peerStr)
-		// Clone peerInfo since we'll modify marshallingOptions
-		pinfo = clonePeerInfo(pinfo)
-		newPeers.peers[pkey] = pinfo
+		// Create new peerInfo preserving the reference (old one stays valid for concurrent readers)
+		oldPinfo := val.(*peerInfo)
+		pinfo = &peerInfo{
+			reference:  oldPinfo.reference,
+			staleUntil: oldPinfo.staleUntil,
+		}
 	} else {
 		// Peer does not exist at all
 		p.metrics.peers.WithLabelValues(exporterStr).Inc()
-		pinfo = p.addPeer(newPeers, pkey)
+		pinfo = p.addPeer(pkey)
 	}
 
 	// Check for ADD-PATH support.
@@ -228,7 +229,7 @@ func (p *Provider) handlePeerUpNotification(pkey peerKey, body *bmp.BMPPeerUpNot
 		}
 	}
 	pinfo.marshallingOptions = []*bgp.MarshallingOption{{AddPath: addPathOption}}
-	p.peers.Store(newPeers)
+	p.peers.Store(pkey, pinfo)
 
 	p.r.Debug().
 		Str("addpath", fmt.Sprintf("%s", addPathOption)).
@@ -256,16 +257,15 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 
 	exporterStr := pkey.exporter.Addr().Unmap().String()
 	peerStr := pkey.ip.Unmap().String()
-	currentPeers := p.peers.Load()
-	pinfo, ok := currentPeers.peers[pkey]
-	if !ok {
+	var pinfo *peerInfo
+	if val, ok := p.peers.Load(pkey); ok {
+		pinfo = val.(*peerInfo)
+	} else {
 		// We may have missed the peer down notification?
 		p.r.Info().Msgf("received route monitoring from exporter %s for peer %s, but no peer up",
 			exporterStr, peerStr)
-		newPeers := currentPeers.clone()
 		p.metrics.peers.WithLabelValues(exporterStr).Inc()
-		pinfo = p.addPeer(newPeers, pkey)
-		p.peers.Store(newPeers)
+		pinfo = p.addPeer(pkey)
 	}
 
 	var nh netip.Addr

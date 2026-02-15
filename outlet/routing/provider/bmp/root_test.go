@@ -43,9 +43,6 @@ func TestBMP(t *testing.T) {
 	dumpRIB := func(t *testing.T, c *Provider) map[netip.Addr][]string {
 		t.Helper()
 		tree := c.rib.tree.Load()
-		currentPeers := c.peers.Load()
-		c.rib.routesMu.RLock()
-		defer c.rib.routesMu.RUnlock()
 		result := map[netip.Addr][]string{}
 		for prefix, prefixIdx := range tree.All() {
 			for route := range c.rib.iterateRoutesForPrefixIndex(prefixIdx) {
@@ -53,12 +50,15 @@ func TestBMP(t *testing.T) {
 				nh := route.nextHop.Value()
 				attrs := route.attributes.Value()
 				var peer netip.Addr
-				for pkey, pinfo := range currentPeers.peers {
+				c.peers.Range(func(key, value any) bool {
+					pkey := key.(peerKey)
+					pinfo := value.(*peerInfo)
 					if pinfo.reference == route.peer {
 						peer = pkey.ip
-						break
+						return false
 					}
-				}
+					return true
+				})
 				if _, ok := result[peer.Unmap()]; !ok {
 					result[peer.Unmap()] = []string{}
 				}

@@ -44,14 +44,12 @@ func NewMock(t *testing.T, r *reporter.Reporter, conf provider.Configuration) (*
 func (p *Provider) PopulateRIB(t *testing.T) {
 	t.Helper()
 	p.active.Store(true)
-	newPeers := p.peers.Load().clone()
-	pinfo := p.addPeer(newPeers, peerKey{
+	pinfo := p.addPeer(peerKey{
 		exporter: netip.MustParseAddrPort("[::ffff:127.0.0.1]:47389"),
 		ip:       netip.MustParseAddr("::ffff:203.0.113.4"),
 		ptype:    bmp.BMP_PEER_TYPE_GLOBAL,
 		asn:      64500,
 	})
-	p.peers.Store(newPeers)
 	p.rib.AddPrefix(netip.MustParsePrefix("::ffff:192.0.2.0/123"), route{
 		peer:    pinfo.reference,
 		nlri:    unique.Make(nlri{family: bgp.RF_IPv4_UC, path: 1}),
