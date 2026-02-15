@@ -49,7 +49,7 @@ func peerKeyFromBMPPeerHeader(exporter netip.AddrPort, header *bmp.BMPPeerHeader
 // removed. This should be called with the writer lock held.
 func (p *Provider) scheduleStalePeersRemoval() {
 	var next time.Time
-	p.peers.Range(func(_ peerKey, pinfo *peerInfo) bool {
+	p.peers.Range(func(_ peerKey, pinfo peerInfo) bool {
 		if pinfo.staleUntil.IsZero() {
 			return true
 		}
@@ -73,7 +73,7 @@ func (p *Provider) removeStalePeers() {
 	p.r.Debug().Msg("remove stale peers")
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.peers.Range(func(pkey peerKey, pinfo *peerInfo) bool {
+	p.peers.Range(func(pkey peerKey, pinfo peerInfo) bool {
 		if pinfo.staleUntil.IsZero() || pinfo.staleUntil.After(start) {
 			return true
 		}
@@ -83,7 +83,7 @@ func (p *Provider) removeStalePeers() {
 	p.scheduleStalePeersRemoval()
 }
 
-func (p *Provider) addPeer(pkey peerKey) *peerInfo {
+func (p *Provider) addPeer(pkey peerKey) peerInfo {
 	ref := p.lastPeerReference.Add(1)
 	if ref == 0 {
 		// This is a very unlikely event, but we don't
@@ -92,7 +92,7 @@ func (p *Provider) addPeer(pkey peerKey) *peerInfo {
 		p.r.Fatal().Msg("too many peer up events")
 		go p.Stop()
 	}
-	pinfo := &peerInfo{
+	pinfo := peerInfo{
 		reference: ref,
 	}
 	p.peers.Store(pkey, pinfo)
@@ -100,7 +100,7 @@ func (p *Provider) addPeer(pkey peerKey) *peerInfo {
 }
 
 // removePeer remove a peer (with writer lock held).
-func (p *Provider) removePeer(pkey peerKey, pinfo *peerInfo, reason string) {
+func (p *Provider) removePeer(pkey peerKey, pinfo peerInfo, reason string) {
 	exporterStr := pkey.exporter.Addr().Unmap().String()
 	peerStr := pkey.ip.Unmap().String()
 	p.r.Info().Msgf("remove peer %s for exporter %s (reason: %s)", peerStr, exporterStr, reason)
@@ -115,11 +115,11 @@ func (p *Provider) removePeer(pkey peerKey, pinfo *peerInfo, reason string) {
 func (p *Provider) markExporterAsStale(exporter netip.AddrPort, until time.Time) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.peers.Range(func(pkey peerKey, pinfo *peerInfo) bool {
+	p.peers.Range(func(pkey peerKey, pinfo peerInfo) bool {
 		if pkey.exporter != exporter {
 			return true
 		}
-		newPinfo := &peerInfo{
+		newPinfo := peerInfo{
 			reference:          pinfo.reference,
 			staleUntil:         until,
 			marshallingOptions: pinfo.marshallingOptions,
@@ -170,12 +170,12 @@ func (p *Provider) handlePeerUpNotification(pkey peerKey, body *bmp.BMPPeerUpNot
 
 	exporterStr := pkey.exporter.Addr().Unmap().String()
 	peerStr := pkey.ip.Unmap().String()
-	var pinfo *peerInfo
+	var pinfo peerInfo
 	if oldPinfo, ok := p.peers.Load(pkey); ok {
 		p.r.Info().Msgf("received extra peer up from exporter %s for peer %s",
 			exporterStr, peerStr)
 		// Create new peerInfo preserving the reference (old one stays valid for concurrent readers)
-		pinfo = &peerInfo{
+		pinfo = peerInfo{
 			reference:  oldPinfo.reference,
 			staleUntil: oldPinfo.staleUntil,
 		}

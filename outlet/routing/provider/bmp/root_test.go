@@ -50,7 +50,7 @@ func TestBMP(t *testing.T) {
 				nh := route.nextHop.Value()
 				attrs := route.attributes.Value()
 				var peer netip.Addr
-				c.peers.Range(func(pkey peerKey, pinfo *peerInfo) bool {
+				c.peers.Range(func(pkey peerKey, pinfo peerInfo) bool {
 					if pinfo.reference == route.peer {
 						peer = pkey.ip
 						return false
