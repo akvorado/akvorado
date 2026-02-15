@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/puzpuzpuz/xsync/v4"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/reporter"
@@ -34,9 +35,9 @@ type Provider struct {
 	metrics metrics
 
 	// RIB management with peers
-	rib               *rib          // tree is atomic inside; routes in sync.Map
-	peers             sync.Map      // peerKey → *peerInfo (lock-free reads)
-	lastPeerReference atomic.Uint32 // monotonic counter for peer references
+	rib               *rib                           // tree is atomic inside; routes in xsync.Map
+	peers             *xsync.Map[peerKey, *peerInfo] // peerKey → *peerInfo (lock-free reads)
+	lastPeerReference atomic.Uint32                  // monotonic counter for peer references
 	staleTimer        *clock.Timer
 	mu                sync.Mutex // writer-only serialization (required for route linear probing and compaction)
 }
@@ -59,7 +60,8 @@ func (configuration Configuration) New(r *reporter.Reporter, dependencies Depend
 		d:      &dependencies,
 		config: configuration,
 
-		rib: newRIB(),
+		rib:   newRIB(),
+		peers: xsync.NewMap[peerKey, *peerInfo](),
 	}
 	if len(p.config.RDs) > 0 {
 		p.acceptedRDs = make(map[RD]struct{})

@@ -49,8 +49,7 @@ func peerKeyFromBMPPeerHeader(exporter netip.AddrPort, header *bmp.BMPPeerHeader
 // removed. This should be called with the writer lock held.
 func (p *Provider) scheduleStalePeersRemoval() {
 	var next time.Time
-	p.peers.Range(func(_, value any) bool {
-		pinfo := value.(*peerInfo)
+	p.peers.Range(func(_ peerKey, pinfo *peerInfo) bool {
 		if pinfo.staleUntil.IsZero() {
 			return true
 		}
@@ -74,9 +73,7 @@ func (p *Provider) removeStalePeers() {
 	p.r.Debug().Msg("remove stale peers")
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.peers.Range(func(key, value any) bool {
-		pkey := key.(peerKey)
-		pinfo := value.(*peerInfo)
+	p.peers.Range(func(pkey peerKey, pinfo *peerInfo) bool {
 		if pinfo.staleUntil.IsZero() || pinfo.staleUntil.After(start) {
 			return true
 		}
@@ -118,12 +115,10 @@ func (p *Provider) removePeer(pkey peerKey, pinfo *peerInfo, reason string) {
 func (p *Provider) markExporterAsStale(exporter netip.AddrPort, until time.Time) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.peers.Range(func(key, value any) bool {
-		pkey := key.(peerKey)
+	p.peers.Range(func(pkey peerKey, pinfo *peerInfo) bool {
 		if pkey.exporter != exporter {
 			return true
 		}
-		pinfo := value.(*peerInfo)
 		newPinfo := &peerInfo{
 			reference:          pinfo.reference,
 			staleUntil:         until,
@@ -140,14 +135,14 @@ func (p *Provider) markExporterAsStale(exporter netip.AddrPort, until time.Time)
 func (p *Provider) handlePeerDownNotification(pkey peerKey) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	val, ok := p.peers.Load(pkey)
+	pinfo, ok := p.peers.Load(pkey)
 	if !ok {
 		p.r.Info().Msgf("received peer down from exporter %s for peer %s, but no peer up",
 			pkey.exporter.Addr().Unmap().String(),
 			pkey.ip.Unmap().String())
 		return
 	}
-	p.removePeer(pkey, val.(*peerInfo), "down")
+	p.removePeer(pkey, pinfo, "down")
 }
 
 // handleConnectionDown handles a disconnect or a session termination
@@ -176,11 +171,10 @@ func (p *Provider) handlePeerUpNotification(pkey peerKey, body *bmp.BMPPeerUpNot
 	exporterStr := pkey.exporter.Addr().Unmap().String()
 	peerStr := pkey.ip.Unmap().String()
 	var pinfo *peerInfo
-	if val, ok := p.peers.Load(pkey); ok {
+	if oldPinfo, ok := p.peers.Load(pkey); ok {
 		p.r.Info().Msgf("received extra peer up from exporter %s for peer %s",
 			exporterStr, peerStr)
 		// Create new peerInfo preserving the reference (old one stays valid for concurrent readers)
-		oldPinfo := val.(*peerInfo)
 		pinfo = &peerInfo{
 			reference:  oldPinfo.reference,
 			staleUntil: oldPinfo.staleUntil,
@@ -257,10 +251,8 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 
 	exporterStr := pkey.exporter.Addr().Unmap().String()
 	peerStr := pkey.ip.Unmap().String()
-	var pinfo *peerInfo
-	if val, ok := p.peers.Load(pkey); ok {
-		pinfo = val.(*peerInfo)
-	} else {
+	pinfo, ok := p.peers.Load(pkey)
+	if !ok {
 		// We may have missed the peer down notification?
 		p.r.Info().Msgf("received route monitoring from exporter %s for peer %s, but no peer up",
 			exporterStr, peerStr)

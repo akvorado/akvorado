@@ -6,7 +6,6 @@ package bmp
 import (
 	"iter"
 	"net/netip"
-	"sync"
 	"sync/atomic"
 	"unique"
 	"unsafe"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/gaissmai/bart"
 	"github.com/osrg/gobgp/v4/pkg/packet/bgp"
+	"github.com/puzpuzpuz/xsync/v4"
 )
 
 // prefixIndex is a typed index for prefixes in the RIB
@@ -29,9 +29,9 @@ type routeKey uint64
 // rib represents the RIB.
 type rib struct {
 	tree          atomic.Pointer[bart.Table[prefixIndex]]
-	routes        sync.Map      // routeKey → route (lock-free reads, writes under Provider.mu)
-	nextPrefixID  prefixIndex   // counter for next prefix index (writer-only, protected by Provider.mu)
-	freePrefixIDs []prefixIndex // free list for reused prefix indices (writer-only, protected by Provider.mu)
+	routes        *xsync.Map[routeKey, route] // routeKey → route (lock-free reads, writes under Provider.mu)
+	nextPrefixID  prefixIndex                 // counter for next prefix index (writer-only, protected by Provider.mu)
+	freePrefixIDs []prefixIndex               // free list for reused prefix indices (writer-only, protected by Provider.mu)
 }
 
 // route contains the peer (external opaque value), the NLRI, the next
@@ -164,7 +164,7 @@ func (r *rib) iterateRoutesForPrefixIndex(prefixIdx prefixIndex) iter.Seq[route]
 			if !exists {
 				break
 			}
-			if !yield(val.(route)) {
+			if !yield(val) {
 				break
 			}
 			key++
@@ -189,11 +189,10 @@ func (r *rib) removeRoutes(prefixIdx prefixIndex, shouldRemove func(route) bool,
 	// duplicates at the tail, but never a gap that stops iteration
 	// early).
 	for {
-		val, exists := r.routes.Load(checkKey)
+		existingRoute, exists := r.routes.Load(checkKey)
 		if !exists {
 			break
 		}
-		existingRoute := val.(route)
 
 		if !skip && shouldRemove(existingRoute) {
 			removed++
@@ -221,7 +220,7 @@ func (r *rib) removeRoutes(prefixIdx prefixIndex, shouldRemove func(route) bool,
 }
 
 // IterateRoutes will iterate on all the routes matching the provided IP address.
-// Fully lock-free: tree lookup via atomic load, route iteration via sync.Map.Load.
+// Fully lock-free: tree lookup via atomic load, route iteration via xsync.Map.Load.
 func (r *rib) IterateRoutes(ip netip.Addr) iter.Seq[route] {
 	return func(yield func(route) bool) {
 		prefixIdx, found := r.tree.Load().Lookup(ip.Unmap())
@@ -232,7 +231,7 @@ func (r *rib) IterateRoutes(ip netip.Addr) iter.Seq[route] {
 }
 
 // AddPrefix add a new route to the RIB. It returns the number of routes really added.
-// Two-phase: Phase 1 modifies routes via sync.Map, Phase 2 updates tree via Persist.
+// Two-phase: Phase 1 modifies routes via xsync.Map, Phase 2 updates tree via Persist.
 // Must be called under Provider.mu for writer serialization (finding a free slot
 // via linear probing is not safe under concurrent writers).
 func (r *rib) AddPrefix(prefix netip.Prefix, newRoute route) int {
@@ -250,14 +249,13 @@ func (r *rib) AddPrefix(prefix netip.Prefix, newRoute route) int {
 	key := makeRouteKey(prefixIdx, 0)
 	result := 0
 	for {
-		val, exists := r.routes.Load(key)
+		existingRoute, exists := r.routes.Load(key)
 		if !exists {
 			// Found empty slot, add new route
 			r.routes.Store(key, newRoute)
 			result = 1
 			break
 		}
-		existingRoute := val.(route)
 		if existingRoute.peer == newRoute.peer && existingRoute.nlri == newRoute.nlri {
 			// Found existing route, update it
 			r.routes.Store(key, newRoute)
@@ -276,7 +274,7 @@ func (r *rib) AddPrefix(prefix netip.Prefix, newRoute route) int {
 }
 
 // RemovePrefix removes a route from the RIB. It returns the number of routes really removed.
-// Two-phase: Phase 1 modifies routes via sync.Map, Phase 2 updates tree via Persist.
+// Two-phase: Phase 1 modifies routes via xsync.Map, Phase 2 updates tree via Persist.
 // Must be called under Provider.mu for writer serialization.
 func (r *rib) RemovePrefix(prefix netip.Prefix, oldRoute route) int {
 	prefix = helpers.UnmapPrefix(prefix)
@@ -303,7 +301,7 @@ func (r *rib) RemovePrefix(prefix netip.Prefix, oldRoute route) int {
 
 // FlushPeer removes a whole peer from the RIB, returning the number
 // of removed routes.
-// Two-phase: Phase 1 modifies routes via sync.Map, Phase 2 rebuilds tree.
+// Two-phase: Phase 1 modifies routes via xsync.Map, Phase 2 rebuilds tree.
 // Must be called under Provider.mu for writer serialization.
 func (r *rib) FlushPeer(peer uint32) int {
 	// Phase 1: modify routes map, record empty prefixes
@@ -345,6 +343,7 @@ func newRIB() *rib {
 	r := &rib{
 		nextPrefixID:  1, // Start from 1, 0 means to be removed
 		freePrefixIDs: make([]prefixIndex, 0),
+		routes:        xsync.NewMap[routeKey, route](),
 	}
 	r.tree.Store(&bart.Table[prefixIndex]{})
 	return r
