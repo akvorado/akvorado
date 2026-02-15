@@ -25,7 +25,7 @@
 // [unique.Make]: https://pkg.go.dev/unique#Make
 package intern
 
-import "sync"
+import csmap "github.com/mhmtszr/concurrent-swiss-map"
 
 // Value is the interface that should be implemented by types
 // used in an intern pool. Also, it should be immutable.
@@ -42,14 +42,14 @@ type Reference[T any] uint32
 // of each. Values will be referred as an uint32 (implemented as an
 // index).
 //
-// Get is safe for concurrent use without locks (backed by sync.Map).
-// All other methods (Put, Take, Ref, Len) must be called under
-// external synchronization (e.g., Provider.mu).
+// Get is safe for concurrent use without locks (backed by a concurrent swiss
+// map). All other methods (Put, Take, Ref, Len) must be called under external
+// synchronization (e.g., Provider.mu).
 type Pool[T Value[T]] struct {
 	values           []internValue[T]
 	availableIndexes []Reference[T]
 	valueIndexes     map[uint64]Reference[T]
-	getValues        sync.Map // Reference[T] → T, for lock-free reads
+	getValues        *csmap.CsMap[Reference[T], T] // Reference[T] → T, for lock-free reads
 }
 
 // internValue is the value stored in an intern pool. It adds resource
@@ -68,6 +68,7 @@ func NewPool[T Value[T]]() *Pool[T] {
 		values:           make([]internValue[T], 1), // first slot is reserved
 		availableIndexes: make([]Reference[T], 0),
 		valueIndexes:     make(map[uint64]Reference[T]),
+		getValues:        csmap.New[Reference[T], T](),
 	}
 }
 
@@ -76,7 +77,7 @@ func NewPool[T Value[T]]() *Pool[T] {
 // synchronization.
 func (p *Pool[T]) Get(ref Reference[T]) T {
 	val, _ := p.getValues.Load(ref)
-	return val.(T)
+	return val
 }
 
 // Take removes a value from the intern pool. If this is the last
