@@ -12,6 +12,7 @@ import (
 
 	"akvorado/common/helpers"
 
+	"github.com/llxisdsh/pb"
 	"github.com/osrg/gobgp/v4/pkg/packet/bgp"
 	"github.com/osrg/gobgp/v4/pkg/packet/bmp"
 )
@@ -73,12 +74,12 @@ func (p *Provider) removeStalePeers() {
 	p.r.Debug().Msg("remove stale peers")
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.peers.Range(func(pkey peerKey, pinfo peerInfo) bool {
-		if pinfo.staleUntil.IsZero() || pinfo.staleUntil.After(start) {
-			return true
+	p.peers.RangeProcessEntry(func(loaded *pb.EntryOf[peerKey, peerInfo]) *pb.EntryOf[peerKey, peerInfo] {
+		if loaded.Value.staleUntil.IsZero() || loaded.Value.staleUntil.After(start) {
+			return loaded
 		}
-		p.removePeer(pkey, pinfo, "stale")
-		return true
+		p.removePeer(loaded.Key, loaded.Value, "stale")
+		return nil
 	})
 	p.scheduleStalePeersRemoval()
 }
@@ -99,13 +100,13 @@ func (p *Provider) addPeer(pkey peerKey) peerInfo {
 	return pinfo
 }
 
-// removePeer remove a peer (with writer lock held).
+// removePeer removes a peer (with writer lock held).
+// The caller is responsible for deleting the peer from p.peers.
 func (p *Provider) removePeer(pkey peerKey, pinfo peerInfo, reason string) {
 	exporterStr := pkey.exporter.Addr().Unmap().String()
 	peerStr := pkey.ip.Unmap().String()
 	p.r.Info().Msgf("remove peer %s for exporter %s (reason: %s)", peerStr, exporterStr, reason)
 	removed := p.rib.FlushPeer(pinfo.reference)
-	p.peers.Delete(pkey)
 	p.metrics.routes.WithLabelValues(exporterStr).Sub(float64(removed))
 	p.metrics.peers.WithLabelValues(exporterStr).Dec()
 	p.metrics.peerRemovalDone.WithLabelValues(exporterStr).Inc()
@@ -115,17 +116,17 @@ func (p *Provider) removePeer(pkey peerKey, pinfo peerInfo, reason string) {
 func (p *Provider) markExporterAsStale(exporter netip.AddrPort, until time.Time) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.peers.Range(func(pkey peerKey, pinfo peerInfo) bool {
-		if pkey.exporter != exporter {
-			return true
+	p.peers.RangeProcessEntry(func(loaded *pb.EntryOf[peerKey, peerInfo]) *pb.EntryOf[peerKey, peerInfo] {
+		if loaded.Key.exporter != exporter {
+			return loaded
 		}
-		newPinfo := peerInfo{
-			reference:          pinfo.reference,
-			staleUntil:         until,
-			marshallingOptions: pinfo.marshallingOptions,
+		return &pb.EntryOf[peerKey, peerInfo]{
+			Value: peerInfo{
+				reference:          loaded.Value.reference,
+				staleUntil:         until,
+				marshallingOptions: loaded.Value.marshallingOptions,
+			},
 		}
-		p.peers.Store(pkey, newPinfo)
-		return true
 	})
 	p.scheduleStalePeersRemoval()
 }
@@ -135,7 +136,7 @@ func (p *Provider) markExporterAsStale(exporter netip.AddrPort, until time.Time)
 func (p *Provider) handlePeerDownNotification(pkey peerKey) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	pinfo, ok := p.peers.Load(pkey)
+	pinfo, ok := p.peers.LoadAndDelete(pkey)
 	if !ok {
 		p.r.Info().Msgf("received peer down from exporter %s for peer %s, but no peer up",
 			pkey.exporter.Addr().Unmap().String(),

@@ -30,6 +30,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.1.0
 	github.com/hashicorp/go-version v1.8.0
 	github.com/itchyny/gojq v0.12.18
+	github.com/llxisdsh/pb v1.5.22
 	github.com/mattn/go-isatty v0.0.20
 	github.com/netsampler/goflow2/v2 v2.2.6
 	github.com/openconfig/gnmi v0.14.0
@@ -155,7 +156,6 @@ require (
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.66.1 // indirect
 	github.com/prometheus/procfs v0.16.1 // indirect
-	github.com/puzpuzpuz/xsync/v4 v4.4.0 // indirect
 	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/quic-go/quic-go v0.54.1 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect

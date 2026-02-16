@@ -13,8 +13,8 @@ import (
 	"akvorado/common/helpers"
 
 	"github.com/gaissmai/bart"
+	"github.com/llxisdsh/pb"
 	"github.com/osrg/gobgp/v4/pkg/packet/bgp"
-	"github.com/puzpuzpuz/xsync/v4"
 )
 
 // prefixIndex is a typed index for prefixes in the RIB
@@ -29,9 +29,9 @@ type routeKey uint64
 // rib represents the RIB.
 type rib struct {
 	tree          atomic.Pointer[bart.Table[prefixIndex]]
-	routes        *xsync.Map[routeKey, route] // routeKey → route (lock-free reads, writes under Provider.mu)
-	nextPrefixID  prefixIndex                 // counter for next prefix index (writer-only, protected by Provider.mu)
-	freePrefixIDs []prefixIndex               // free list for reused prefix indices (writer-only, protected by Provider.mu)
+	routes        *pb.MapOf[routeKey, route] // routeKey → route (lock-free reads, writes under Provider.mu)
+	nextPrefixID  prefixIndex                // counter for next prefix index (writer-only, protected by Provider.mu)
+	freePrefixIDs []prefixIndex              // free list for reused prefix indices (writer-only, protected by Provider.mu)
 }
 
 // route contains the peer (external opaque value), the NLRI, the next
@@ -220,7 +220,7 @@ func (r *rib) removeRoutes(prefixIdx prefixIndex, shouldRemove func(route) bool,
 }
 
 // IterateRoutes will iterate on all the routes matching the provided IP address.
-// Lock-free: tree lookup via atomic load, route iteration via xsync.Map.Load.
+// Lock-free: tree lookup via atomic load, route iteration via pb.MapOf.Load.
 func (r *rib) IterateRoutes(ip netip.Addr) iter.Seq[route] {
 	return func(yield func(route) bool) {
 		prefixIdx, found := r.tree.Load().Lookup(ip.Unmap())
@@ -246,15 +246,23 @@ func (r *rib) AddPrefix(prefix netip.Prefix, newRoute route) int {
 		// Check if route already exists (same peer and nlri)
 		key := makeRouteKey(prefixIdx, 0)
 		for {
-			existingRoute, loaded := r.routes.LoadOrStore(key, newRoute)
-			if !loaded {
-				// Slot was empty and new route was stored
-				result = 1
-				break
-			}
-			if existingRoute.peer == newRoute.peer && existingRoute.nlri == newRoute.nlri {
-				// Found existing route, update it
-				r.routes.Store(key, newRoute)
+			var done bool
+			r.routes.Compute(key, func(existing route, loaded bool) (route, pb.ComputeOp) {
+				if !loaded {
+					// Empty slot, put the new route.
+					result = 1
+					done = true
+					return newRoute, pb.UpdateOp
+				}
+				if existing.peer == newRoute.peer && existing.nlri == newRoute.nlri {
+					// Existing route, update it
+					done = true
+					return newRoute, pb.UpdateOp
+				}
+				// Not the right route, continue
+				return existing, pb.CancelOp
+			})
+			if done {
 				break
 			}
 			key++
@@ -293,9 +301,8 @@ func (r *rib) RemovePrefix(prefix netip.Prefix, oldRoute route) int {
 	return removedCount
 }
 
-// FlushPeer removes a whole peer from the RIB, returning the number
-// of removed routes.
-// Two-phase: Phase 1 modifies routes via xsync.Map, Phase 2 rebuilds tree.
+// FlushPeer removes a whole peer from the RIB, returning the number of removed
+// routes. This is done in two phases: removing all routes, rebuilding the tree.
 // Must be called under Provider.mu for writer serialization.
 func (r *rib) FlushPeer(peer uint32) int {
 	// Phase 1: modify routes map, record empty prefixes
@@ -337,7 +344,7 @@ func newRIB() *rib {
 	r := &rib{
 		nextPrefixID:  1, // Start from 1, 0 means to be removed
 		freePrefixIDs: make([]prefixIndex, 0),
-		routes:        xsync.NewMap[routeKey, route](),
+		routes:        pb.NewMapOf[routeKey, route](),
 	}
 	r.tree.Store(&bart.Table[prefixIndex]{})
 	return r
