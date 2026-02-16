@@ -13,8 +13,8 @@ import (
 	"akvorado/common/helpers"
 
 	"github.com/gaissmai/bart"
-	"github.com/llxisdsh/pb"
 	"github.com/osrg/gobgp/v4/pkg/packet/bgp"
+	"github.com/puzpuzpuz/xsync/v4"
 )
 
 // prefixIndex is a typed index for prefixes in the RIB
@@ -29,9 +29,9 @@ type routeKey uint64
 // rib represents the RIB.
 type rib struct {
 	tree          atomic.Pointer[bart.Table[prefixIndex]]
-	routes        *pb.MapOf[routeKey, route] // routeKey → route (lock-free reads, writes under Provider.mu)
-	nextPrefixID  prefixIndex                // counter for next prefix index (writer-only, protected by Provider.mu)
-	freePrefixIDs []prefixIndex              // free list for reused prefix indices (writer-only, protected by Provider.mu)
+	routes        *xsync.Map[routeKey, route] // routeKey → route (lock-free reads, writes under Provider.mu)
+	nextPrefixID  prefixIndex                 // counter for next prefix index (writer-only, protected by Provider.mu)
+	freePrefixIDs []prefixIndex               // free list for reused prefix indices (writer-only, protected by Provider.mu)
 }
 
 // route contains the peer (external opaque value), the NLRI, the next
@@ -220,7 +220,7 @@ func (r *rib) removeRoutes(prefixIdx prefixIndex, shouldRemove func(route) bool,
 }
 
 // IterateRoutes will iterate on all the routes matching the provided IP address.
-// Lock-free: tree lookup via atomic load, route iteration via pb.MapOf.Load.
+// Lock-free: tree lookup via atomic load, route iteration via xsync.Map.Load.
 func (r *rib) IterateRoutes(ip netip.Addr) iter.Seq[route] {
 	return func(yield func(route) bool) {
 		prefixIdx, found := r.tree.Load().Lookup(ip.Unmap())
@@ -247,20 +247,20 @@ func (r *rib) AddPrefix(prefix netip.Prefix, newRoute route) int {
 		key := makeRouteKey(prefixIdx, 0)
 		for {
 			var done bool
-			r.routes.Compute(key, func(existing route, loaded bool) (route, pb.ComputeOp) {
+			r.routes.Compute(key, func(existing route, loaded bool) (route, xsync.ComputeOp) {
 				if !loaded {
 					// Empty slot, put the new route.
 					result = 1
 					done = true
-					return newRoute, pb.UpdateOp
+					return newRoute, xsync.UpdateOp
 				}
 				if existing.peer == newRoute.peer && existing.nlri == newRoute.nlri {
 					// Existing route, update it
 					done = true
-					return newRoute, pb.UpdateOp
+					return newRoute, xsync.UpdateOp
 				}
 				// Not the right route, continue
-				return existing, pb.CancelOp
+				return existing, xsync.CancelOp
 			})
 			if done {
 				break
@@ -344,7 +344,7 @@ func newRIB() *rib {
 	r := &rib{
 		nextPrefixID:  1, // Start from 1, 0 means to be removed
 		freePrefixIDs: make([]prefixIndex, 0),
-		routes:        pb.NewMapOf[routeKey, route](),
+		routes:        xsync.NewMap[routeKey, route](),
 	}
 	r.tree.Store(&bart.Table[prefixIndex]{})
 	return r

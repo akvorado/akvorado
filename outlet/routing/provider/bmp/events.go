@@ -12,7 +12,6 @@ import (
 
 	"akvorado/common/helpers"
 
-	"github.com/llxisdsh/pb"
 	"github.com/osrg/gobgp/v4/pkg/packet/bgp"
 	"github.com/osrg/gobgp/v4/pkg/packet/bmp"
 )
@@ -50,7 +49,7 @@ func peerKeyFromBMPPeerHeader(exporter netip.AddrPort, header *bmp.BMPPeerHeader
 // removed. This should be called with the writer lock held.
 func (p *Provider) scheduleStalePeersRemoval() {
 	var next time.Time
-	p.peers.Range(func(_ peerKey, pinfo peerInfo) bool {
+	p.peers.RangeRelaxed(func(_ peerKey, pinfo peerInfo) bool {
 		if pinfo.staleUntil.IsZero() {
 			return true
 		}
@@ -74,12 +73,13 @@ func (p *Provider) removeStalePeers() {
 	p.r.Debug().Msg("remove stale peers")
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.peers.RangeProcessEntry(func(loaded *pb.EntryOf[peerKey, peerInfo]) *pb.EntryOf[peerKey, peerInfo] {
-		if loaded.Value.staleUntil.IsZero() || loaded.Value.staleUntil.After(start) {
-			return loaded
+	p.peers.RangeRelaxed(func(pkey peerKey, pinfo peerInfo) bool {
+		if pinfo.staleUntil.IsZero() || pinfo.staleUntil.After(start) {
+			return true
 		}
-		p.removePeer(loaded.Key, loaded.Value, "stale")
-		return nil
+		p.removePeer(pkey, pinfo, "stale")
+		p.peers.Delete(pkey)
+		return true
 	})
 	p.scheduleStalePeersRemoval()
 }
@@ -116,17 +116,13 @@ func (p *Provider) removePeer(pkey peerKey, pinfo peerInfo, reason string) {
 func (p *Provider) markExporterAsStale(exporter netip.AddrPort, until time.Time) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.peers.RangeProcessEntry(func(loaded *pb.EntryOf[peerKey, peerInfo]) *pb.EntryOf[peerKey, peerInfo] {
-		if loaded.Key.exporter != exporter {
-			return loaded
+	p.peers.RangeRelaxed(func(pkey peerKey, pinfo peerInfo) bool {
+		if pkey.exporter != exporter {
+			return true
 		}
-		return &pb.EntryOf[peerKey, peerInfo]{
-			Value: peerInfo{
-				reference:          loaded.Value.reference,
-				staleUntil:         until,
-				marshallingOptions: loaded.Value.marshallingOptions,
-			},
-		}
+		pinfo.staleUntil = until
+		p.peers.Store(pkey, pinfo)
+		return true
 	})
 	p.scheduleStalePeersRemoval()
 }
