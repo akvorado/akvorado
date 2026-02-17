@@ -12,9 +12,9 @@ import (
 	lru "github.com/hashicorp/golang-lru"
 )
 
-// Anonymizer wraps CryptoPAN and an LRU cache.
+// Anonymizer wraps IPcrypt and an LRU cache.
 type Anonymizer struct {
-	cp    *CryptoPAN
+	cp    *IPcrypt
 	cache *lru.Cache
 	mu    sync.RWMutex
 
@@ -26,14 +26,14 @@ type Anonymizer struct {
 }
 
 // NewAnonymizer builds an Anonymizer from the new nested configuration.
-// - Mode == "cryptopan": uses CryptoPAN with provided key/cache.
-// - Mode == "aggregate": no CryptoPAN, only aggregation using provided prefixes.
+// - Mode == "ipcrypt": uses IPcrypt with provided key/cache.
+// - Mode == "aggregate": no IPcrypt, only aggregation using provided prefixes.
 // If cfg.Enabled is false the returned Anonymizer will be disabled.
 func NewAnonymizer(cfg AnonymizeConfig) (*Anonymizer, error) {
 	// prepare cache size (use crypto cache if present, else default)
-	cacheSize := cfg.CryptoPan.Cache
+	cacheSize := cfg.IPcrypt.Cache
 	if cacheSize <= 0 {
-		cacheSize = DefaultConfiguration().Anonymize.CryptoPan.Cache
+		cacheSize = DefaultConfiguration().Anonymize.IPcrypt.Cache
 	}
 	c, err := lru.New(cacheSize)
 	if err != nil {
@@ -55,15 +55,15 @@ func NewAnonymizer(cfg AnonymizeConfig) (*Anonymizer, error) {
 
 	switch cfg.Mode {
 	case AnonymizeModeAggregate:
-		// aggregate-only: no CryptoPAN needed
+		// aggregate-only: no IPcrypt needed
 		a.aggregate = true
 		a.cp = nil
 	default:
-		// cryptopan mode (default)
-		keyStr := cfg.CryptoPan.Key
+		// ipcrypt mode (default)
+		keyStr := cfg.IPcrypt.Key
 		if keyStr == "" {
 			// fallback to environment var
-			keyStr = os.Getenv("CRYPTOPAN_KEY")
+			keyStr = os.Getenv("IPCRYPT_KEY")
 		}
 		if keyStr == "" {
 			// no key -> disable anonymizer (but aggregation might still be desired; keep enabled=false)
@@ -74,7 +74,7 @@ func NewAnonymizer(cfg AnonymizeConfig) (*Anonymizer, error) {
 		if err != nil {
 			key = []byte(keyStr)
 		}
-		cp, err := NewCryptoPAN(key)
+		cp, err := NewIPcrypt(key)
 		if err != nil {
 			return nil, err
 		}
@@ -111,7 +111,7 @@ func (a *Anonymizer) AnonymizeIP(ip net.IP) net.IP {
 		a.mu.RUnlock()
 	}
 
-	// If CryptoPAN is not configured, return original ip
+	// If IPcrypt is not configured, return original ip
 	if a.cp == nil {
 		return ip
 	}
@@ -201,7 +201,7 @@ func (a *Anonymizer) AnonymizeFlowFields(addr string) string {
 		return addr
 	}
 	var ai net.IP
-	// If we are in aggregate mode, aggregate. Otherwise anonymize via CryptoPAN.
+	// If we are in aggregate mode, aggregate. Otherwise anonymize via IPcrypt.
 	if a.aggregate {
 		ai = a.AggregateIP(ip)
 	} else {

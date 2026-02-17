@@ -19,12 +19,12 @@ type AnonymizeMode string
 
 // contants of AnonymizeMode
 const (
-	AnonymizeModeCryptoPan AnonymizeMode = "cryptopan"
+	AnonymizeModeIPcrypt   AnonymizeMode = "ipcrypt"
 	AnonymizeModeAggregate AnonymizeMode = "aggregate"
 )
 
-// AnonymizeCryptoPanConfig holds cryptopan-specific settings.
-type AnonymizeCryptoPanConfig struct {
+// AnonymizeIPcryptConfig holds ipcrypt-specific settings.
+type AnonymizeIPcryptConfig struct {
 	Key   string `mapstructure:"key"`
 	Cache int    `mapstructure:"cache"`
 }
@@ -39,7 +39,7 @@ type AnonymizeAggregateConfig struct {
 type AnonymizeConfig struct {
 	Enabled   bool                     `mapstructure:"enabled"`
 	Mode      AnonymizeMode            `mapstructure:"mode"`
-	CryptoPan AnonymizeCryptoPanConfig `mapstructure:"cryptopan"`
+	IPcrypt   AnonymizeIPcryptConfig   `mapstructure:"ipcrypt"`
 	Aggregate AnonymizeAggregateConfig `mapstructure:"aggregate"`
 }
 
@@ -74,8 +74,8 @@ func DefaultConfiguration() Configuration {
 		NetProviders:            []NetProvider{NetProviderFlow, NetProviderRouting},
 		Anonymize: AnonymizeConfig{
 			Enabled: false,
-			Mode:    AnonymizeModeCryptoPan,
-			CryptoPan: AnonymizeCryptoPanConfig{
+			Mode:    AnonymizeModeIPcrypt,
+			IPcrypt: AnonymizeIPcryptConfig{
 				Key:   "",
 				Cache: 10000,
 			},

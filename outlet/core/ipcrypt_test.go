@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2022 Free Mobile
+// SPDX-FileCopyrightText: 2026 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
 package core
@@ -9,9 +9,9 @@ import (
 	"testing"
 )
 
-// Basic determinism & prefix-preservation test for Crypto-PAn via Anonymizer.
+// Basic determinism & prefix-preservation test for IPCrypt via Anonymizer.
 func TestAnonymizerDeterminismAndPrefixPreservation(t *testing.T) {
-	// deterministic key for test
+	// deterministic key for test (32 bytes -> supports ipcrypt-ndx/pfx)
 	key := make([]byte, 32)
 	for i := range key {
 		key[i] = byte(i + 1)
@@ -20,8 +20,8 @@ func TestAnonymizerDeterminismAndPrefixPreservation(t *testing.T) {
 
 	cfg := AnonymizeConfig{
 		Enabled: true,
-		Mode:    AnonymizeModeCryptoPan,
-		CryptoPan: AnonymizeCryptoPanConfig{
+		Mode:    AnonymizeModeIPcrypt,
+		IPcrypt: AnonymizeIPcryptConfig{
 			Key:   keyStr,
 			Cache: 1024,
 		},
