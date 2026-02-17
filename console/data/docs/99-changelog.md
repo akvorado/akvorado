@@ -13,6 +13,7 @@ identified with a specific icon:
 ## Unreleased
 
 - ✨ *inlet*: add per-exporter flow rate limiting with `rate-limit` option
+- 🌱 *outlet*: bufferize BMP messages to avoid being flagged “stuck”
 - 🌱 *docs*: export all metrics in [documentation](98-metrics.md)
 - 🌱 *build*: build with Go 1.26
 

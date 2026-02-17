@@ -4,6 +4,7 @@ paths:
     provider:
       type: bmp
       listen: 127.0.0.1:1179
+      messagebuffer: 10000
       collectasns: true
       collectaspaths: false
       collectcommunities: true

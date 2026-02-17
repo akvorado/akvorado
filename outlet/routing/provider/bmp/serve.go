@@ -4,6 +4,7 @@
 package bmp
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -14,17 +15,32 @@ import (
 	"github.com/osrg/gobgp/v4/pkg/packet/bmp"
 )
 
-// serveConnection handle the connection from an exporter.
+// bmpMessage is a parsed BMP message header with its raw body bytes,
+// passed from the IO goroutine to the processing goroutine.
+type bmpMessage struct {
+	msg  bmp.BMPMessage
+	body []byte
+}
+
+// serveConnection handles the connection from an exporter. It reads BMP
+// messages from the TCP connection and sends them to a processing goroutine
+// via a bounded channel.
 func (p *Provider) serveConnection(conn *net.TCPConn, exporter netip.AddrPort, exporterStr string) error {
 	p.metrics.openedConnections.WithLabelValues(exporterStr).Inc()
 	logger := p.r.With().Str("exporter", exporterStr).Logger()
 	conn.SetLinger(0)
 
-	// Stop the connection when exiting this method or when dying
+	// Channel for passing messages to the processing goroutine
+	ch := make(chan bmpMessage, p.config.MessageBuffer)
+	// processingDone channel is closed when all messages have been processed.
+	processingDone := make(chan struct{})
+	// stop channel is closed when the connection to the station is closed.
 	stop := make(chan struct{})
+
 	p.t.Go(func() error {
 		select {
 		case <-stop:
+			<-processingDone
 			logger.Info().Msgf("connection down for %s", exporterStr)
 			p.handleConnectionDown(exporter)
 		case <-p.t.Dying():
@@ -35,6 +51,14 @@ func (p *Provider) serveConnection(conn *net.TCPConn, exporter netip.AddrPort, e
 		return nil
 	})
 	defer close(stop)
+
+	// Start processing goroutine
+	p.t.Go(func() error {
+		defer close(processingDone)
+		p.processMessages(conn, exporter, exporterStr, ch)
+		return nil
+	})
+	defer close(ch)
 
 	// Setup TCP keepalive
 	if err := conn.SetKeepAlive(true); err != nil {
@@ -61,7 +85,7 @@ func (p *Provider) serveConnection(conn *net.TCPConn, exporter netip.AddrPort, e
 	for {
 		_, err := io.ReadFull(conn, header)
 		if err != nil {
-			if p.t.Alive() && err != io.EOF {
+			if p.t.Alive() && err != io.EOF && !errors.Is(err, net.ErrClosed) {
 				logger.Err(err).Msg("cannot read BMP header")
 				p.metrics.errors.WithLabelValues(exporterStr, "cannot read BMP header").Inc()
 			}
@@ -111,7 +135,7 @@ func (p *Provider) serveConnection(conn *net.TCPConn, exporter netip.AddrPort, e
 		body := make([]byte, msg.Header.Length-bmp.BMP_HEADER_SIZE)
 		_, err = io.ReadFull(conn, body)
 		if err != nil {
-			if p.t.Alive() {
+			if p.t.Alive() && !errors.Is(err, net.ErrClosed) {
 				logger.Err(err).Msg("cannot read BMP body")
 				p.metrics.errors.WithLabelValues(exporterStr, "cannot read BMP body").Inc()
 			}
@@ -123,13 +147,41 @@ func (p *Provider) serveConnection(conn *net.TCPConn, exporter netip.AddrPort, e
 			continue
 		}
 
+		select {
+		case ch <- bmpMessage{msg: msg, body: body}:
+			p.metrics.messageQueueLength.WithLabelValues(exporterStr).Set(float64(len(ch)))
+		case <-processingDone:
+			// Processsing of messages has exited unexpectedly.
+			return nil
+		case <-p.t.Dying():
+			return nil
+		}
+	}
+}
+
+// processMessages reads BMP messages from the channel and processes them.
+func (p *Provider) processMessages(conn *net.TCPConn, exporter netip.AddrPort, exporterStr string, ch <-chan bmpMessage) {
+	logger := p.r.With().Str("exporter", exporterStr).Logger()
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Panic().Str("panic", fmt.Sprintf("%+v", r)).Msg("fatal error while processing BMP messages")
+			p.metrics.panics.WithLabelValues(exporterStr).Inc()
+		}
+		// We need to close the connection to unstuck the I/O goroutine.
+		conn.Close()
+	}()
+
+	for m := range ch {
+		msg := m.msg
+		body := m.body
+
 		var marshallingOptions []*bgp.MarshallingOption
 		var pkey peerKey
 		if msg.Header.Type != bmp.BMP_MSG_INITIATION && msg.Header.Type != bmp.BMP_MSG_TERMINATION {
 			if err := msg.PeerHeader.DecodeFromBytes(body); err != nil {
 				logger.Err(err).Msg("cannot parse BMP peer header")
 				p.metrics.errors.WithLabelValues(exporterStr, "cannot parse BMP peer header").Inc()
-				return nil
+				return
 			}
 			body = body[bmp.BMP_PEER_HEADER_SIZE:]
 			pkey = peerKeyFromBMPPeerHeader(exporter, &msg.PeerHeader)
@@ -151,22 +203,18 @@ func (p *Provider) serveConnection(conn *net.TCPConn, exporter netip.AddrPort, e
 					p.metrics.ignored.WithLabelValues(exporterStr, "afi-safi").Inc()
 					continue
 				case bgp.ERROR_HANDLING_TREAT_AS_WITHDRAW:
-					// This is a pickle. This can be an essential attribute (eg.
-					// AS path) that's malformed or something quite minor for
-					// our own usage (eg. a non-optional attribute), let's skip for now.
 					p.metrics.ignored.WithLabelValues(exporterStr, "treat-as-withdraw").Inc()
 					continue
 				case bgp.ERROR_HANDLING_ATTRIBUTE_DISCARD:
 					// Optional attribute, let's handle it
 				case bgp.ERROR_HANDLING_NONE:
-					// Odd?
 					p.metrics.ignored.WithLabelValues(exporterStr, "none").Inc()
 					continue
 				}
 			} else {
 				logger.Err(err).Msg("cannot parse BMP body")
 				p.metrics.errors.WithLabelValues(exporterStr, "cannot parse BMP body").Inc()
-				return nil
+				return
 			}
 		}
 
@@ -191,11 +239,11 @@ func (p *Provider) serveConnection(conn *net.TCPConn, exporter netip.AddrPort, e
 				switch tlv := info.(type) {
 				case *bmp.BMPInfoTLVString:
 					logger.Info().Str("reason", tlv.Value).Msg("termination message received")
-					return nil
+					return
 				}
 			}
 			logger.Info().Msg("termination message received")
-			return nil
+			return
 		case *bmp.BMPPeerUpNotification:
 			p.handlePeerUpNotification(pkey, body)
 		case *bmp.BMPPeerDownNotification:
@@ -203,5 +251,6 @@ func (p *Provider) serveConnection(conn *net.TCPConn, exporter netip.AddrPort, e
 		case *bmp.BMPRouteMonitoring:
 			p.handleRouteMonitoring(pkey, body)
 		}
+		p.metrics.messageQueueLength.WithLabelValues(exporterStr).Set(float64(len(ch)))
 	}
 }

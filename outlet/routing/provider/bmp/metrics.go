@@ -6,18 +6,19 @@ package bmp
 import "akvorado/common/reporter"
 
 type metrics struct {
-	openedConnections *reporter.CounterVec
-	closedConnections *reporter.CounterVec
-	peers             *reporter.GaugeVec
-	routes            *reporter.GaugeVec
-	bufferSize        *reporter.GaugeVec
-	ignoredNlri       *reporter.CounterVec
-	messages          *reporter.CounterVec
-	errors            *reporter.CounterVec
-	ignored           *reporter.CounterVec
-	panics            *reporter.CounterVec
-	locked            *reporter.SummaryVec
-	peerRemovalDone   *reporter.CounterVec
+	openedConnections  *reporter.CounterVec
+	closedConnections  *reporter.CounterVec
+	peers              *reporter.GaugeVec
+	routes             *reporter.GaugeVec
+	bufferSize         *reporter.GaugeVec
+	ignoredNlri        *reporter.CounterVec
+	messages           *reporter.CounterVec
+	errors             *reporter.CounterVec
+	ignored            *reporter.CounterVec
+	panics             *reporter.CounterVec
+	locked             *reporter.SummaryVec
+	peerRemovalDone    *reporter.CounterVec
+	messageQueueLength *reporter.GaugeVec
 }
 
 // initMetrics initialize the metrics for the BMP component.
@@ -104,6 +105,13 @@ func (p *Provider) initMetrics() {
 		reporter.CounterOpts{
 			Name: "removed_peers_total",
 			Help: "Number of peers removed from the RIB.",
+		},
+		[]string{"exporter"},
+	)
+	p.metrics.messageQueueLength = p.r.GaugeVec(
+		reporter.GaugeOpts{
+			Name: "message_queue_length",
+			Help: "Number of BMP messages waiting in the processing queue.",
 		},
 		[]string{"exporter"},
 	)

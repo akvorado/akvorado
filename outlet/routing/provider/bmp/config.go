@@ -30,6 +30,9 @@ type Configuration struct {
 	// value set by the kernel (net.ipv4.tcp_rmem[1]). The value cannot exceed
 	// the kernel max value (net.core.rmem_max, net.ipv4.tcp_rmem[2]).
 	ReceiveBuffer uint
+	// MessageBuffer is the maximum number of BMP messages buffered between the
+	// TCP reader and the message processor.
+	MessageBuffer uint `validate:"min=1"`
 }
 
 // DefaultConfiguration represents the default configuration for the BMP server
@@ -40,6 +43,7 @@ func DefaultConfiguration() provider.Configuration {
 		CollectASPaths:     true,
 		CollectCommunities: true,
 		Keep:               5 * time.Minute,
+		MessageBuffer:      10000,
 	}
 }
 

@@ -469,53 +469,20 @@ Moreover, there cannot be more workers than the number of partitions for the
 topic. This part is configurable on the orchestrator
 (`kafka`→`topic-configuration`→`num-partitions`).
 
-The BMP routing component may have some challenges with scaling, especially when peers
-disappear, as it requires cleaning up many entries in the routing tables. BMP
-is a one-way protocol, and the sender may declare the receiver station “stuck” if
-it does not accept more data. To avoid this, you may need to tune the
-TCP receive buffer. First, check the current situation:
+BMP is a one-way protocol, and the sender may declare the receiver station
+“stuck” if it does not accept more data. To handle this, BMP messages are
+internally buffered in a queue between the TCP reader and the message processor.
+The `message-buffer` configuration key controls the size of this queue (default:
+10000 messages). This decouples IO from processing and prevents session drops
+during slow operations such as peer removal.
+
+You can monitor backpressure using the `message_queue_length` metric:
 
 ```console
-$ nsenter -t $(pgrep -fo "akvorado outlet") -n ss -tnepm sport = :10179
-State         Recv-Q          Send-Q                         Local Address:Port                           Peer Address:Port          Process
-ESTAB         0               0                        [::ffff:240.0.2.10]:10179                   [::ffff:240.0.2.15]:46656          users:(("akvorado",pid=1117049,fd=13)) timer:(keepalive,55sec,0) ino:40752297 sk:11 <->
-         skmem:(r0,rb131072,t0,tb87040,f0,w0,o0,bl0,d2976)
-ESTAB         0               0                        [::ffff:240.0.2.10]:10179                   [::ffff:240.0.2.14]:44318          users:(("akvorado",pid=1117049,fd=12)) timer:(keepalive,55sec,0) ino:40751196 sk:12 <->
-         skmem:(r0,rb131072,t0,tb87040,f0,w0,o0,bl0,d2976)
-ESTAB         0               0                        [::ffff:240.0.2.10]:10179                   [::ffff:240.0.2.13]:47586          users:(("akvorado",pid=1117049,fd=11)) timer:(keepalive,55sec,0) ino:40751097 sk:13 <->
-         skmem:(r0,rb131072,t0,tb87040,f0,w0,o0,bl0,d2976)
-ESTAB         0               0                        [::ffff:240.0.2.10]:10179                   [::ffff:240.0.2.12]:51352          users:(("akvorado",pid=1117049,fd=14)) timer:(keepalive,55sec,0) ino:40752299 sk:14 <->
-         skmem:(r0,rb131072,t0,tb87040,f0,w0,o0,bl0,d2976)
-```
-
-Here, the receive buffer for each process is 131,072 bytes. Linux exposes
-`net.ipv4.tcp_rmem` to tune this value:
-
-```console
-$ sysctl net.ipv4.tcp_rmem
-net.ipv4.tcp_rmem = 4096        131072  6291456
-```
-
-The middle value is the default one, and the last value is the maximum one. When
-`net.ipv4.tcp_moderate_rcvbuf` is set to 1 (the default), Linux automatically tunes the
-size of the buffer for the application to maximize the throughput depending
-on the latency. This mechanism will not help here. To increase the receive buffer
-size, you need to:
-
-- set the `receive-buffer` value in the BMP provider configuration (for example, to 33554432 for 32 MiB)
-- increase the last value of `net.ipv4.tcp_rmem` to the same value
-- increase the value of `net.core.rmem_max` to the same value
-- optionally, increase the last value of `net.ipv4.tcp_mem` by the value of `tcp_rmem[2]`
-  multiplied by the maximum number of BMP peers you expect, divided by 4096 bytes
-  per page (check with `getconf PAGESIZE`)
-
-The value of the receive buffer is also available as a metric:
-
-```console
-# HELP akvorado_outlet_routing_provider_bmp_buffer_size_bytes Size of the in-kernel buffer for this connection.
-# TYPE akvorado_outlet_routing_provider_bmp_buffer_size_bytes gauge
-akvorado_outlet_routing_provider_bmp_buffer_size_bytes{exporter="247.16.14.12"} 425984
-akvorado_outlet_routing_provider_bmp_buffer_size_bytes{exporter="247.16.14.13"} 425984
+# HELP akvorado_outlet_routing_provider_bmp_message_queue_length Number of BMP messages waiting in the processing queue.
+# TYPE akvorado_outlet_routing_provider_bmp_message_queue_length gauge
+akvorado_outlet_routing_provider_bmp_message_queue_length{exporter="247.16.14.12"} 42
+akvorado_outlet_routing_provider_bmp_message_queue_length{exporter="247.16.14.13"} 0
 ```
 
 ### Profiling
