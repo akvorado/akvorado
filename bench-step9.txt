@@ -1,0 +1,189 @@
+[34;1m▶[0m formatting Go code…
+[34;1m▶[0m running golint…
+[34;1m▶[0m running benchmarks…
+goos: linux
+goarch: amd64
+pkg: akvorado/outlet/routing/provider/bmp
+cpu: Intel(R) Xeon(R) W-2295 CPU @ 3.00GHz
+BenchmarkRIBInsertion/1000_routes,_1_peers-36         	     130	       100.0 %ins	       483.0 bytes/route	     10324 ns/route	 6556128 B/op	   58405 allocs/op
+BenchmarkRIBInsertion/1000_routes,_1_peers-36         	     130	       100.0 %ins	       472.0 bytes/route	     10033 ns/route	 6555930 B/op	   58399 allocs/op
+BenchmarkRIBInsertion/1000_routes,_1_peers-36         	     133	       100.0 %ins	       453.2 bytes/route	     10407 ns/route	 6556790 B/op	   58431 allocs/op
+BenchmarkRIBInsertion/1000_routes,_1_peers-36         	     127	       100.0 %ins	       453.1 bytes/route	     10597 ns/route	 6559299 B/op	   58512 allocs/op
+BenchmarkRIBInsertion/1000_routes,_1_peers-36         	     127	       100.0 %ins	       453.7 bytes/route	     10526 ns/route	 6558494 B/op	   58485 allocs/op
+BenchmarkRIBInsertion/1000_routes,_1_peers-36         	     129	       100.0 %ins	       453.2 bytes/route	     10460 ns/route	 6557427 B/op	   58449 allocs/op
+BenchmarkRIBInsertion/1000_routes,_2_peers-36         	      78	       100.0 %ins	       435.2 bytes/route	      8483 ns/route	11604494 B/op	   78798 allocs/op
+BenchmarkRIBInsertion/1000_routes,_2_peers-36         	      74	       100.0 %ins	       431.3 bytes/route	      8800 ns/route	11599892 B/op	   78652 allocs/op
+BenchmarkRIBInsertion/1000_routes,_2_peers-36         	      78	       100.0 %ins	       435.4 bytes/route	      8547 ns/route	11583761 B/op	   78146 allocs/op
+BenchmarkRIBInsertion/1000_routes,_2_peers-36         	      74	       100.0 %ins	       432.4 bytes/route	      8891 ns/route	11591601 B/op	   78394 allocs/op
+BenchmarkRIBInsertion/1000_routes,_2_peers-36         	      74	       100.0 %ins	       432.5 bytes/route	      8694 ns/route	11585257 B/op	   78194 allocs/op
+BenchmarkRIBInsertion/1000_routes,_2_peers-36         	      67	       100.0 %ins	       432.0 bytes/route	      8610 ns/route	11590452 B/op	   78357 allocs/op
+BenchmarkRIBInsertion/1000_routes,_5_peers-36         	      27	       100.0 %ins	       441.6 bytes/route	      9709 ns/route	28416717 B/op	  156620 allocs/op
+BenchmarkRIBInsertion/1000_routes,_5_peers-36         	      24	       100.0 %ins	       441.7 bytes/route	      9705 ns/route	28355241 B/op	  154932 allocs/op
+BenchmarkRIBInsertion/1000_routes,_5_peers-36         	      24	       100.0 %ins	       444.2 bytes/route	      9824 ns/route	28412383 B/op	  156563 allocs/op
+BenchmarkRIBInsertion/1000_routes,_5_peers-36         	      25	       100.0 %ins	       441.6 bytes/route	     10682 ns/route	28406599 B/op	  156387 allocs/op
+BenchmarkRIBInsertion/1000_routes,_5_peers-36         	      25	       100.0 %ins	       441.4 bytes/route	     10110 ns/route	28370332 B/op	  155377 allocs/op
+BenchmarkRIBInsertion/1000_routes,_5_peers-36         	      24	       100.0 %ins	       440.8 bytes/route	     10380 ns/route	28349066 B/op	  154730 allocs/op
+BenchmarkRIBInsertion/10000_routes,_1_peers-36        	      12	        99.98 %ins	       441.4 bytes/route	     10634 ns/route	62832758 B/op	  349391 allocs/op
+BenchmarkRIBInsertion/10000_routes,_1_peers-36        	      10	        99.98 %ins	       441.2 bytes/route	     11744 ns/route	62961025 B/op	  352600 allocs/op
+BenchmarkRIBInsertion/10000_routes,_1_peers-36        	      10	        99.98 %ins	       441.3 bytes/route	     12074 ns/route	62871889 B/op	  350927 allocs/op
+BenchmarkRIBInsertion/10000_routes,_1_peers-36        	       9	        99.98 %ins	       441.3 bytes/route	     12686 ns/route	62963753 B/op	  353171 allocs/op
+BenchmarkRIBInsertion/10000_routes,_1_peers-36        	       9	        99.98 %ins	       441.0 bytes/route	     12732 ns/route	62867707 B/op	  350451 allocs/op
+BenchmarkRIBInsertion/10000_routes,_1_peers-36        	       9	        99.98 %ins	       440.6 bytes/route	     13533 ns/route	62949721 B/op	  352441 allocs/op
+BenchmarkRIBInsertion/10000_routes,_2_peers-36        	       5	        99.98 %ins	       432.9 bytes/route	     11820 ns/route	149386089 B/op	  922354 allocs/op
+BenchmarkRIBInsertion/10000_routes,_2_peers-36        	       5	        99.98 %ins	       432.3 bytes/route	     13026 ns/route	149209750 B/op	  918337 allocs/op
+BenchmarkRIBInsertion/10000_routes,_2_peers-36        	       5	        99.98 %ins	       432.2 bytes/route	     13229 ns/route	149317307 B/op	  920608 allocs/op
+BenchmarkRIBInsertion/10000_routes,_2_peers-36        	       5	        99.98 %ins	       432.3 bytes/route	     13848 ns/route	149346788 B/op	  921433 allocs/op
+BenchmarkRIBInsertion/10000_routes,_2_peers-36        	       4	        99.98 %ins	       432.6 bytes/route	     14637 ns/route	149430854 B/op	  923554 allocs/op
+BenchmarkRIBInsertion/10000_routes,_2_peers-36        	       4	        99.98 %ins	       432.1 bytes/route	     14249 ns/route	149432088 B/op	  923925 allocs/op
+BenchmarkRIBInsertion/10000_routes,_5_peers-36        	       2	        99.98 %ins	       418.7 bytes/route	     14996 ns/route	493508872 B/op	 3555635 allocs/op
+BenchmarkRIBInsertion/10000_routes,_5_peers-36        	       2	        99.98 %ins	       418.6 bytes/route	     15735 ns/route	493355416 B/op	 3554442 allocs/op
+BenchmarkRIBInsertion/10000_routes,_5_peers-36        	       2	        99.98 %ins	       418.6 bytes/route	     15823 ns/route	493331864 B/op	 3553426 allocs/op
+BenchmarkRIBInsertion/10000_routes,_5_peers-36        	       2	        99.98 %ins	       418.6 bytes/route	     16408 ns/route	493133864 B/op	 3548126 allocs/op
+BenchmarkRIBInsertion/10000_routes,_5_peers-36        	       2	        99.98 %ins	       418.5 bytes/route	     16125 ns/route	492613036 B/op	 3536021 allocs/op
+BenchmarkRIBInsertion/10000_routes,_5_peers-36        	       2	        99.98 %ins	       418.6 bytes/route	     16042 ns/route	493381292 B/op	 3554006 allocs/op
+BenchmarkRIBInsertion/100000_routes,_1_peers-36       	       1	        99.81 %ins	       411.3 bytes/route	     15707 ns/route	1134784944 B/op	 8533492 allocs/op
+BenchmarkRIBInsertion/100000_routes,_1_peers-36       	       1	        99.81 %ins	       411.4 bytes/route	     13711 ns/route	1134790976 B/op	 8533587 allocs/op
+BenchmarkRIBInsertion/100000_routes,_1_peers-36       	       1	        99.81 %ins	       411.3 bytes/route	     15785 ns/route	1134777168 B/op	 8533366 allocs/op
+BenchmarkRIBInsertion/100000_routes,_1_peers-36       	       1	        99.81 %ins	       411.4 bytes/route	     16527 ns/route	1134784416 B/op	 8533484 allocs/op
+BenchmarkRIBInsertion/100000_routes,_1_peers-36       	       1	        99.81 %ins	       411.4 bytes/route	     15173 ns/route	1134789584 B/op	 8533560 allocs/op
+BenchmarkRIBInsertion/100000_routes,_1_peers-36       	       1	        99.81 %ins	       411.4 bytes/route	     17923 ns/route	1134784144 B/op	 8533473 allocs/op
+BenchmarkRIBInsertion/100000_routes,_2_peers-36       	       1	        99.81 %ins	       389.4 bytes/route	     13708 ns/route	2271763368 B/op	15520306 allocs/op
+BenchmarkRIBInsertion/100000_routes,_2_peers-36       	       1	        99.81 %ins	       389.5 bytes/route	     14549 ns/route	2271764440 B/op	15520317 allocs/op
+BenchmarkRIBInsertion/100000_routes,_2_peers-36       	       1	        99.81 %ins	       389.5 bytes/route	     14598 ns/route	2271759400 B/op	15520237 allocs/op
+BenchmarkRIBInsertion/100000_routes,_2_peers-36       	       1	        99.81 %ins	       389.5 bytes/route	     14583 ns/route	2271759792 B/op	15520252 allocs/op
+BenchmarkRIBInsertion/100000_routes,_2_peers-36       	       1	        99.81 %ins	       389.5 bytes/route	     14815 ns/route	2271763928 B/op	15520309 allocs/op
+BenchmarkRIBInsertion/100000_routes,_2_peers-36       	       1	        99.81 %ins	       389.5 bytes/route	     15921 ns/route	2271771656 B/op	15520435 allocs/op
+BenchmarkRIBInsertion/100000_routes,_5_peers-36       	       1	        99.81 %ins	       338.4 bytes/route	     11820 ns/route	4995285056 B/op	23824018 allocs/op
+BenchmarkRIBInsertion/100000_routes,_5_peers-36       	       1	        99.81 %ins	       338.4 bytes/route	     11459 ns/route	4995276776 B/op	23823882 allocs/op
+BenchmarkRIBInsertion/100000_routes,_5_peers-36       	       1	        99.81 %ins	       338.5 bytes/route	     11785 ns/route	4995300544 B/op	23824263 allocs/op
+BenchmarkRIBInsertion/100000_routes,_5_peers-36       	       1	        99.81 %ins	       338.5 bytes/route	     11954 ns/route	4995263784 B/op	23823682 allocs/op
+BenchmarkRIBInsertion/100000_routes,_5_peers-36       	       1	        99.81 %ins	       338.5 bytes/route	     11551 ns/route	4995277384 B/op	23823897 allocs/op
+BenchmarkRIBInsertion/100000_routes,_5_peers-36       	       1	        99.81 %ins	       338.5 bytes/route	     12303 ns/route	4995300232 B/op	23824252 allocs/op
+BenchmarkRIBLookup/1000_routes,_1_peers-36            	39783649	        29.78 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000_routes,_1_peers-36            	38438738	        30.28 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000_routes,_1_peers-36            	40764687	        29.30 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000_routes,_1_peers-36            	39948817	        29.88 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000_routes,_1_peers-36            	36753619	        31.13 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000_routes,_1_peers-36            	34575494	        29.67 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000_routes,_2_peers-36            	36596126	        32.97 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000_routes,_2_peers-36            	37594587	        31.62 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000_routes,_2_peers-36            	37091560	        31.93 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000_routes,_2_peers-36            	34866610	        32.52 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000_routes,_2_peers-36            	32576984	        32.97 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000_routes,_2_peers-36            	38985655	        31.11 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000_routes,_5_peers-36            	33855379	        34.11 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000_routes,_5_peers-36            	35929735	        33.08 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000_routes,_5_peers-36            	33832023	        32.53 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000_routes,_5_peers-36            	34411718	        34.65 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000_routes,_5_peers-36            	34884793	        33.74 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000_routes,_5_peers-36            	33449844	        32.73 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/10000_routes,_1_peers-36           	33237270	        37.29 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/10000_routes,_1_peers-36           	32492914	        35.19 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/10000_routes,_1_peers-36           	32969046	        35.90 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/10000_routes,_1_peers-36           	32916370	        35.99 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/10000_routes,_1_peers-36           	34263997	        34.95 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/10000_routes,_1_peers-36           	33536272	        35.65 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/10000_routes,_2_peers-36           	29650563	        38.60 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/10000_routes,_2_peers-36           	30784388	        40.10 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/10000_routes,_2_peers-36           	28662254	        41.04 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/10000_routes,_2_peers-36           	30611136	        38.70 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/10000_routes,_2_peers-36           	30779680	        38.49 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/10000_routes,_2_peers-36           	26698251	        38.40 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/10000_routes,_5_peers-36           	27941138	        43.25 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/10000_routes,_5_peers-36           	26365693	        45.13 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/10000_routes,_5_peers-36           	26272590	        46.65 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/10000_routes,_5_peers-36           	27244676	        44.07 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/10000_routes,_5_peers-36           	25723671	        47.64 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/10000_routes,_5_peers-36           	24258463	        48.93 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/100000_routes,_1_peers-36          	10931770	       106.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/100000_routes,_1_peers-36          	10550649	        95.74 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/100000_routes,_1_peers-36          	 9796167	       111.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/100000_routes,_1_peers-36          	11983362	        99.88 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/100000_routes,_1_peers-36          	12030472	        97.14 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/100000_routes,_1_peers-36          	10833249	       112.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/100000_routes,_2_peers-36          	11775624	       105.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/100000_routes,_2_peers-36          	10206147	       115.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/100000_routes,_2_peers-36          	 9969106	       113.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/100000_routes,_2_peers-36          	 9806515	       114.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/100000_routes,_2_peers-36          	 8658547	       116.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/100000_routes,_2_peers-36          	10561364	       111.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/100000_routes,_5_peers-36          	10881297	       110.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/100000_routes,_5_peers-36          	 9670500	       126.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/100000_routes,_5_peers-36          	10006980	       119.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/100000_routes,_5_peers-36          	 9754232	       123.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/100000_routes,_5_peers-36          	 9780950	       122.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/100000_routes,_5_peers-36          	 9792584	       120.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000000_routes,_1_peers-36         	 7741236	       161.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000000_routes,_1_peers-36         	 6935584	       167.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000000_routes,_1_peers-36         	 6012753	       173.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000000_routes,_1_peers-36         	 6036558	       185.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000000_routes,_1_peers-36         	 6610370	       170.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000000_routes,_1_peers-36         	 6576787	       187.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000000_routes,_2_peers-36         	 6841594	       167.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000000_routes,_2_peers-36         	 5194069	       200.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000000_routes,_2_peers-36         	 5746176	       200.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000000_routes,_2_peers-36         	 5945751	       199.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000000_routes,_2_peers-36         	 5222722	       201.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000000_routes,_2_peers-36         	 5338191	       208.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000000_routes,_5_peers-36         	 5476153	       193.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000000_routes,_5_peers-36         	 5291491	       219.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000000_routes,_5_peers-36         	 4845519	       225.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000000_routes,_5_peers-36         	 5036931	       230.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000000_routes,_5_peers-36         	 4979722	       237.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBLookup/1000000_routes,_5_peers-36         	 4461651	       240.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkRIBFlush/1000_routes,_1_peers-36             	    1634	         0.7294 ms/op	   69592 B/op	      41 allocs/op
+BenchmarkRIBFlush/1000_routes,_1_peers-36             	    1623	         0.7221 ms/op	   69592 B/op	      41 allocs/op
+BenchmarkRIBFlush/1000_routes,_1_peers-36             	    1521	         0.7235 ms/op	   69592 B/op	      41 allocs/op
+BenchmarkRIBFlush/1000_routes,_1_peers-36             	    1581	         0.7389 ms/op	   69592 B/op	      41 allocs/op
+BenchmarkRIBFlush/1000_routes,_1_peers-36             	    1557	         0.7295 ms/op	   69592 B/op	      41 allocs/op
+BenchmarkRIBFlush/1000_routes,_1_peers-36             	    1694	         0.7162 ms/op	   69592 B/op	      41 allocs/op
+BenchmarkRIBFlush/1000_routes,_2_peers-36             	     906	         1.330 ms/op	  169672 B/op	    2047 allocs/op
+BenchmarkRIBFlush/1000_routes,_2_peers-36             	     886	         1.348 ms/op	  169672 B/op	    2047 allocs/op
+BenchmarkRIBFlush/1000_routes,_2_peers-36             	     880	         1.379 ms/op	  169672 B/op	    2047 allocs/op
+BenchmarkRIBFlush/1000_routes,_2_peers-36             	     936	         1.365 ms/op	  169672 B/op	    2047 allocs/op
+BenchmarkRIBFlush/1000_routes,_2_peers-36             	     876	         1.350 ms/op	  169672 B/op	    2047 allocs/op
+BenchmarkRIBFlush/1000_routes,_2_peers-36             	     920	         1.330 ms/op	  169672 B/op	    2047 allocs/op
+BenchmarkRIBFlush/1000_routes,_5_peers-36             	     474	         2.535 ms/op	  431896 B/op	    5651 allocs/op
+BenchmarkRIBFlush/1000_routes,_5_peers-36             	     494	         2.481 ms/op	  431896 B/op	    5651 allocs/op
+BenchmarkRIBFlush/1000_routes,_5_peers-36             	     495	         2.430 ms/op	  431896 B/op	    5651 allocs/op
+BenchmarkRIBFlush/1000_routes,_5_peers-36             	     462	         2.515 ms/op	  431896 B/op	    5651 allocs/op
+BenchmarkRIBFlush/1000_routes,_5_peers-36             	     469	         2.522 ms/op	  431896 B/op	    5651 allocs/op
+BenchmarkRIBFlush/1000_routes,_5_peers-36             	     481	         2.472 ms/op	  431896 B/op	    5651 allocs/op
+BenchmarkRIBFlush/10000_routes,_1_peers-36            	     172	         7.108 ms/op	  714299 B/op	     118 allocs/op
+BenchmarkRIBFlush/10000_routes,_1_peers-36            	     181	         6.855 ms/op	  714296 B/op	     118 allocs/op
+BenchmarkRIBFlush/10000_routes,_1_peers-36            	     169	         7.124 ms/op	  714296 B/op	     118 allocs/op
+BenchmarkRIBFlush/10000_routes,_1_peers-36            	     165	         7.164 ms/op	  714296 B/op	     118 allocs/op
+BenchmarkRIBFlush/10000_routes,_1_peers-36            	     169	         7.112 ms/op	  714296 B/op	     118 allocs/op
+BenchmarkRIBFlush/10000_routes,_1_peers-36            	     175	         6.961 ms/op	  714296 B/op	     118 allocs/op
+BenchmarkRIBFlush/10000_routes,_2_peers-36            	     105	        11.02 ms/op	 1397561 B/op	   12978 allocs/op
+BenchmarkRIBFlush/10000_routes,_2_peers-36            	     111	        10.52 ms/op	 1397561 B/op	   12978 allocs/op
+BenchmarkRIBFlush/10000_routes,_2_peers-36            	     100	        10.72 ms/op	 1397561 B/op	   12978 allocs/op
+BenchmarkRIBFlush/10000_routes,_2_peers-36            	     100	        11.03 ms/op	 1397561 B/op	   12978 allocs/op
+BenchmarkRIBFlush/10000_routes,_2_peers-36            	     112	        10.29 ms/op	 1397561 B/op	   12978 allocs/op
+BenchmarkRIBFlush/10000_routes,_2_peers-36            	     114	        10.69 ms/op	 1397563 B/op	   12978 allocs/op
+BenchmarkRIBFlush/10000_routes,_5_peers-36            	      60	        27.13 ms/op	 3922336 B/op	   62193 allocs/op
+BenchmarkRIBFlush/10000_routes,_5_peers-36            	      64	        28.03 ms/op	 3922332 B/op	   62193 allocs/op
+BenchmarkRIBFlush/10000_routes,_5_peers-36            	      48	        24.49 ms/op	 3922331 B/op	   62193 allocs/op
+BenchmarkRIBFlush/10000_routes,_5_peers-36            	      45	        25.45 ms/op	 3922335 B/op	   62193 allocs/op
+BenchmarkRIBFlush/10000_routes,_5_peers-36            	      69	        27.37 ms/op	 3922332 B/op	   62193 allocs/op
+BenchmarkRIBFlush/10000_routes,_5_peers-36            	      44	        26.39 ms/op	 3922331 B/op	   62193 allocs/op
+BenchmarkRIBFlush/100000_routes,_1_peers-36           	      25	        54.85 ms/op	 6509176 B/op	     587 allocs/op
+BenchmarkRIBFlush/100000_routes,_1_peers-36           	      20	        61.83 ms/op	 6509176 B/op	     587 allocs/op
+BenchmarkRIBFlush/100000_routes,_1_peers-36           	      18	        59.58 ms/op	 6509176 B/op	     587 allocs/op
+BenchmarkRIBFlush/100000_routes,_1_peers-36           	      24	        56.99 ms/op	 6509180 B/op	     587 allocs/op
+BenchmarkRIBFlush/100000_routes,_1_peers-36           	      20	        55.62 ms/op	 6509176 B/op	     587 allocs/op
+BenchmarkRIBFlush/100000_routes,_1_peers-36           	      25	        58.18 ms/op	 6509176 B/op	     587 allocs/op
+BenchmarkRIBFlush/100000_routes,_2_peers-36           	      10	       110.3 ms/op	13178112 B/op	  182128 allocs/op
+BenchmarkRIBFlush/100000_routes,_2_peers-36           	      10	       108.9 ms/op	13178113 B/op	  182128 allocs/op
+BenchmarkRIBFlush/100000_routes,_2_peers-36           	      10	       105.2 ms/op	13178105 B/op	  182128 allocs/op
+BenchmarkRIBFlush/100000_routes,_2_peers-36           	      12	       101.8 ms/op	13178104 B/op	  182128 allocs/op
+BenchmarkRIBFlush/100000_routes,_2_peers-36           	      12	       104.0 ms/op	13178106 B/op	  182128 allocs/op
+BenchmarkRIBFlush/100000_routes,_2_peers-36           	      12	       109.1 ms/op	13178113 B/op	  182128 allocs/op
+BenchmarkRIBFlush/100000_routes,_5_peers-36           	       5	       226.5 ms/op	25524324 B/op	  591840 allocs/op
+BenchmarkRIBFlush/100000_routes,_5_peers-36           	       5	       220.6 ms/op	25524337 B/op	  591840 allocs/op
+BenchmarkRIBFlush/100000_routes,_5_peers-36           	       5	       245.1 ms/op	25524331 B/op	  591840 allocs/op
+BenchmarkRIBFlush/100000_routes,_5_peers-36           	       5	       211.1 ms/op	25524312 B/op	  591840 allocs/op
+BenchmarkRIBFlush/100000_routes,_5_peers-36           	       5	       221.9 ms/op	25524318 B/op	  591840 allocs/op
+BenchmarkRIBFlush/100000_routes,_5_peers-36           	       5	       220.9 ms/op	25524315 B/op	  591840 allocs/op
+PASS
+ok  	akvorado/outlet/routing/provider/bmp	2262.269s
