@@ -27,6 +27,7 @@ type bmpMessage struct {
 // via a bounded channel.
 func (p *Provider) serveConnection(conn *net.TCPConn, exporter netip.AddrPort, exporterStr string) error {
 	p.metrics.openedConnections.WithLabelValues(exporterStr).Inc()
+	metricsClosedConnections, _ := p.metrics.closedConnections.GetMetricWithLabelValues(exporterStr)
 	logger := p.r.With().Str("exporter", exporterStr).Logger()
 	conn.SetLinger(0)
 
@@ -47,7 +48,7 @@ func (p *Provider) serveConnection(conn *net.TCPConn, exporter netip.AddrPort, e
 			// No need to clean up
 		}
 		conn.Close()
-		p.metrics.closedConnections.WithLabelValues(exporterStr).Inc()
+		metricsClosedConnections.Inc()
 		return nil
 	})
 	defer close(stop)
@@ -82,6 +83,17 @@ func (p *Provider) serveConnection(conn *net.TCPConn, exporter netip.AddrPort, e
 	p.handleConnectionUp(exporter)
 	init := false
 	header := make([]byte, bmp.BMP_HEADER_SIZE)
+	metricRouteMonitoring, _ := p.metrics.messages.GetMetricWithLabelValues(exporterStr, "route-monitoring")
+	metricStatisticsReport, _ := p.metrics.messages.GetMetricWithLabelValues(exporterStr, "statistics-report")
+	metricsPeerDownNotification, _ := p.metrics.messages.GetMetricWithLabelValues(exporterStr, "peer-down-notification")
+	metricsPeerUpNotification, _ := p.metrics.messages.GetMetricWithLabelValues(exporterStr, "peer-up-notification")
+	metricsInitiation, _ := p.metrics.messages.GetMetricWithLabelValues(exporterStr, "initiation")
+	metricsTermination, _ := p.metrics.messages.GetMetricWithLabelValues(exporterStr, "termination")
+	metricsRouteMirroring, _ := p.metrics.messages.GetMetricWithLabelValues(exporterStr, "route-mirroring")
+	metricsUnknown, _ := p.metrics.messages.GetMetricWithLabelValues(exporterStr, "unknown")
+	metricsFull, _ := p.metrics.messageQueueFull.GetMetricWithLabelValues(exporterStr)
+	metricsNotFull, _ := p.metrics.messageQueueNotFull.GetMetricWithLabelValues(exporterStr)
+
 	for {
 		_, err := io.ReadFull(conn, header)
 		if err != nil {
@@ -100,29 +112,29 @@ func (p *Provider) serveConnection(conn *net.TCPConn, exporter netip.AddrPort, e
 		switch msg.Header.Type {
 		case bmp.BMP_MSG_ROUTE_MONITORING:
 			msg.Body = &bmp.BMPRouteMonitoring{}
-			p.metrics.messages.WithLabelValues(exporterStr, "route-monitoring").Inc()
+			metricRouteMonitoring.Inc()
 		case bmp.BMP_MSG_STATISTICS_REPORT:
 			// Ignore
-			p.metrics.messages.WithLabelValues(exporterStr, "statistics-report").Inc()
+			metricStatisticsReport.Inc()
 		case bmp.BMP_MSG_PEER_DOWN_NOTIFICATION:
 			msg.Body = &bmp.BMPPeerDownNotification{}
-			p.metrics.messages.WithLabelValues(exporterStr, "peer-down-notification").Inc()
+			metricsPeerDownNotification.Inc()
 		case bmp.BMP_MSG_PEER_UP_NOTIFICATION:
 			msg.Body = &bmp.BMPPeerUpNotification{}
-			p.metrics.messages.WithLabelValues(exporterStr, "peer-up-notification").Inc()
+			metricsPeerUpNotification.Inc()
 		case bmp.BMP_MSG_INITIATION:
 			msg.Body = &bmp.BMPInitiation{}
-			p.metrics.messages.WithLabelValues(exporterStr, "initiation").Inc()
+			metricsInitiation.Inc()
 			init = true
 		case bmp.BMP_MSG_TERMINATION:
 			msg.Body = &bmp.BMPTermination{}
-			p.metrics.messages.WithLabelValues(exporterStr, "termination").Inc()
+			metricsTermination.Inc()
 		case bmp.BMP_MSG_ROUTE_MIRRORING:
 			// Ignore
-			p.metrics.messages.WithLabelValues(exporterStr, "route-mirroring").Inc()
+			metricsRouteMirroring.Inc()
 		default:
 			logger.Info().Msgf("unknown BMP message type %d", msg.Header.Type)
-			p.metrics.messages.WithLabelValues(exporterStr, "unknown").Inc()
+			metricsUnknown.Inc()
 		}
 
 		// First message should be BMP_MSG_INITIATION
@@ -149,12 +161,21 @@ func (p *Provider) serveConnection(conn *net.TCPConn, exporter netip.AddrPort, e
 
 		select {
 		case ch <- bmpMessage{msg: msg, body: body}:
-			p.metrics.messageQueueLength.WithLabelValues(exporterStr).Set(float64(len(ch)))
+			metricsFull.Inc()
 		case <-processingDone:
 			// Processsing of messages has exited unexpectedly.
 			return nil
 		case <-p.t.Dying():
 			return nil
+		default:
+			metricsNotFull.Inc()
+			select {
+			case ch <- bmpMessage{msg: msg, body: body}:
+			case <-processingDone:
+				return nil
+			case <-p.t.Dying():
+				return nil
+			}
 		}
 	}
 }
@@ -251,6 +272,5 @@ func (p *Provider) processMessages(conn *net.TCPConn, exporter netip.AddrPort, e
 		case *bmp.BMPRouteMonitoring:
 			p.handleRouteMonitoring(pkey, body)
 		}
-		p.metrics.messageQueueLength.WithLabelValues(exporterStr).Set(float64(len(ch)))
 	}
 }

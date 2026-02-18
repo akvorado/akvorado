@@ -476,13 +476,18 @@ The `message-buffer` configuration key controls the size of this queue (default:
 10000 messages). This decouples IO from processing and prevents session drops
 during slow operations such as peer removal.
 
-You can monitor backpressure using the `message_queue_length` metric:
+You can monitor backpressure using the `message_queue_full_total` and
+`message_queue_notfull_total` metrics:
 
 ```console
-# HELP akvorado_outlet_routing_provider_bmp_message_queue_length Number of BMP messages waiting in the processing queue.
-# TYPE akvorado_outlet_routing_provider_bmp_message_queue_length gauge
-akvorado_outlet_routing_provider_bmp_message_queue_length{exporter="247.16.14.12"} 42
-akvorado_outlet_routing_provider_bmp_message_queue_length{exporter="247.16.14.13"} 0
+# HELP akvorado_outlet_routing_provider_bmp_message_queue_full_total Number of BMP messages hitting the message queue limit.
+# TYPE akvorado_outlet_routing_provider_bmp_message_queue_full_total counter
+akvorado_outlet_routing_provider_bmp_message_queue_full_total{exporter="247.16.14.12"} 2
+akvorado_outlet_routing_provider_bmp_message_queue_full_total{exporter="247.16.14.13"} 0
+# HELP akvorado_outlet_routing_provider_bmp_message_queue_notfull_total Number of BMP messages not hitting the message queue limit.
+# TYPE akvorado_outlet_routing_provider_bmp_message_queue_notfull_total counter
+akvorado_outlet_routing_provider_bmp_message_queue_notfull_total{exporter="247.16.14.12"} 17998
+akvorado_outlet_routing_provider_bmp_message_queue_notfull_total{exporter="247.16.14.13"} 0
 ```
 
 ### Profiling

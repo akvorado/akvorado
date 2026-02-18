@@ -6,19 +6,20 @@ package bmp
 import "akvorado/common/reporter"
 
 type metrics struct {
-	openedConnections  *reporter.CounterVec
-	closedConnections  *reporter.CounterVec
-	peers              *reporter.GaugeVec
-	routes             *reporter.GaugeVec
-	bufferSize         *reporter.GaugeVec
-	ignoredNlri        *reporter.CounterVec
-	messages           *reporter.CounterVec
-	errors             *reporter.CounterVec
-	ignored            *reporter.CounterVec
-	panics             *reporter.CounterVec
-	locked             *reporter.SummaryVec
-	peerRemovalDone    *reporter.CounterVec
-	messageQueueLength *reporter.GaugeVec
+	openedConnections   *reporter.CounterVec
+	closedConnections   *reporter.CounterVec
+	peers               *reporter.GaugeVec
+	routes              *reporter.GaugeVec
+	bufferSize          *reporter.GaugeVec
+	ignoredNlri         *reporter.CounterVec
+	messages            *reporter.CounterVec
+	errors              *reporter.CounterVec
+	ignored             *reporter.CounterVec
+	panics              *reporter.CounterVec
+	locked              *reporter.SummaryVec
+	peerRemovalDone     *reporter.CounterVec
+	messageQueueFull    *reporter.CounterVec
+	messageQueueNotFull *reporter.CounterVec
 }
 
 // initMetrics initialize the metrics for the BMP component.
@@ -108,10 +109,17 @@ func (p *Provider) initMetrics() {
 		},
 		[]string{"exporter"},
 	)
-	p.metrics.messageQueueLength = p.r.GaugeVec(
-		reporter.GaugeOpts{
-			Name: "message_queue_length",
-			Help: "Number of BMP messages waiting in the processing queue.",
+	p.metrics.messageQueueFull = p.r.CounterVec(
+		reporter.CounterOpts{
+			Name: "message_queue_full_total",
+			Help: "Number of BMP messages hitting the message queue limit.",
+		},
+		[]string{"exporter"},
+	)
+	p.metrics.messageQueueNotFull = p.r.CounterVec(
+		reporter.CounterOpts{
+			Name: "message_queue_notfull_total",
+			Help: "Number of BMP messages not hitting the message queue limit.",
 		},
 		[]string{"exporter"},
 	)
