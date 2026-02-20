@@ -245,6 +245,27 @@ func TestCore(t *testing.T) {
 		if diff := helpers.Diff(clickhouseMessagesLen, 10); diff != "" {
 			t.Fatalf("ClickHouse messages count (-got, +want):\n%s", diff)
 		}
+
+		// Wait for the next 200ms tick so the drop rate (50%) is visible,
+		// then inject one more flow. Its sampling rate should be adjusted
+		// from 1000 to 1000/(1-0.5) = 2000.
+		time.Sleep(200 * time.Millisecond)
+		clickhouseMessagesMutex.Lock()
+		clickhouseMessages = clickhouseMessages[:0]
+		clickhouseMessagesMutex.Unlock()
+		injectFlow(flowMessage("192.0.2.144", 434, 677), 100)
+		time.Sleep(50 * time.Millisecond)
+
+		clickhouseMessagesMutex.Lock()
+		clickhouseMessagesCopy := make([]*schema.FlowMessage, len(clickhouseMessages))
+		copy(clickhouseMessagesCopy, clickhouseMessages)
+		clickhouseMessagesMutex.Unlock()
+		if diff := helpers.Diff(len(clickhouseMessagesCopy), 1); diff != "" {
+			t.Fatalf("ClickHouse messages count (-got, +want):\n%s", diff)
+		}
+		if diff := helpers.Diff(clickhouseMessagesCopy[0].SamplingRate, uint64(2000)); diff != "" {
+			t.Fatalf("SamplingRate (-got, +want):\n%s", diff)
+		}
 	})
 
 	// Test HTTP flow clients (JSON)

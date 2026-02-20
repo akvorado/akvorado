@@ -70,15 +70,14 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 
 		// Rate limiting
 		ip := w.bf.ExporterAddress
+		var dropRate float64
 		if rateLimit > 0 {
-			allowed, dropRate := w.c.rateLimiter.allowOneMessage(ip, rateLimit)
+			var allowed bool
+			allowed, dropRate = w.c.rateLimiter.allowOneMessage(ip, rateLimit)
 			if !allowed {
 				w.c.metrics.flowsRateLimited.WithLabelValues(exporter).Inc()
 				w.bf.Undo()
 				return
-			}
-			if dropRate > 0 {
-				w.bf.SamplingRate = uint64(float64(w.bf.SamplingRate) / (1 - dropRate))
 			}
 		}
 
@@ -86,6 +85,11 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 		if skip := w.enrichFlow(ip, exporter); skip {
 			w.bf.Undo()
 			return
+		}
+
+		// Update sampling rate to account for rate limiting
+		if dropRate > 0 {
+			w.bf.SamplingRate = uint64(float64(w.bf.SamplingRate) / (1 - dropRate))
 		}
 
 		// If we have HTTP clients, send to them too
