@@ -109,7 +109,7 @@ func TestCore(t *testing.T) {
 	}
 
 	// Helper function to inject flows using the new mechanism
-	injectFlow := func(flow *schema.FlowMessage) {
+	injectFlow := func(flow *schema.FlowMessage, rateLimit uint64) {
 		t.Helper()
 		var buf bytes.Buffer
 		encoder := gob.NewEncoder(&buf)
@@ -124,6 +124,7 @@ func TestCore(t *testing.T) {
 			UseSourceAddress: false,
 			Decoder:          pb.RawFlow_DECODER_GOB,
 			TimestampSource:  pb.RawFlow_TS_INPUT,
+			RateLimit:        rateLimit,
 		}
 
 		data, err := proto.Marshal(rawFlow)
@@ -141,8 +142,8 @@ func TestCore(t *testing.T) {
 		clickhouseMessagesMutex.Unlock()
 
 		// Inject several messages
-		injectFlow(flowMessage("192.0.2.142", 434, 677))
-		injectFlow(flowMessage("192.0.2.143", 437, 679))
+		injectFlow(flowMessage("192.0.2.142", 434, 677), 0)
+		injectFlow(flowMessage("192.0.2.143", 437, 679), 0)
 		time.Sleep(20 * time.Millisecond)
 
 		gotMetrics := r.GetMetrics("akvorado_outlet_core_", "-flows_processing_")
@@ -173,7 +174,7 @@ func TestCore(t *testing.T) {
 		clickhouseMessages = clickhouseMessages[:0]
 		clickhouseMessagesMutex.Unlock()
 		input := flowMessage("192.0.2.142", 434, 677)
-		injectFlow(input)
+		injectFlow(input, 0)
 		time.Sleep(20 * time.Millisecond)
 
 		// Check the flow was stored in clickhouseMessages
@@ -189,7 +190,7 @@ func TestCore(t *testing.T) {
 		// Try to inject a message with missing sampling rate
 		input = flowMessage("192.0.2.142", 434, 677)
 		input.SamplingRate = 0
-		injectFlow(input)
+		injectFlow(input, 0)
 		time.Sleep(20 * time.Millisecond)
 
 		gotMetrics = r.GetMetrics("akvorado_outlet_core_", "classifier_", "-flows_processing_", "flows_", "forwarded_", "received_")
@@ -206,6 +207,43 @@ func TestCore(t *testing.T) {
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Fatalf("Metrics (-got, +want):\n%s", diff)
+		}
+	})
+
+	// Test rate limiting
+	t.Run("rate limiting", func(t *testing.T) {
+		clickhouseMessagesMutex.Lock()
+		clickhouseMessages = clickhouseMessages[:0]
+		clickhouseMessagesMutex.Unlock()
+
+		// Inject 20 flows with a rate limit of 100 (burst = 10).
+		// The first 10 should be allowed, the remaining 10 should be rate limited.
+		for range 20 {
+			injectFlow(flowMessage("192.0.2.144", 434, 677), 100)
+		}
+		time.Sleep(50 * time.Millisecond)
+
+		gotMetrics := r.GetMetrics("akvorado_outlet_core_",
+			"received_flows_total", "forwarded_flows_total",
+			"flows_rate_limited_total", "-flows_processing_")
+		expectedMetrics := map[string]string{
+			`received_flows_total{exporter="192.0.2.142"}`:     "3",
+			`received_flows_total{exporter="192.0.2.143"}`:     "1",
+			`received_flows_total{exporter="192.0.2.144"}`:     "20",
+			`forwarded_flows_total{exporter="192.0.2.142"}`:    "2",
+			`forwarded_flows_total{exporter="192.0.2.143"}`:    "1",
+			`forwarded_flows_total{exporter="192.0.2.144"}`:    "10",
+			`flows_rate_limited_total{exporter="192.0.2.144"}`: "10",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+			t.Fatalf("Metrics (-got, +want):\n%s", diff)
+		}
+
+		clickhouseMessagesMutex.Lock()
+		clickhouseMessagesLen := len(clickhouseMessages)
+		clickhouseMessagesMutex.Unlock()
+		if diff := helpers.Diff(clickhouseMessagesLen, 10); diff != "" {
+			t.Fatalf("ClickHouse messages count (-got, +want):\n%s", diff)
 		}
 	})
 
@@ -236,7 +274,7 @@ func TestCore(t *testing.T) {
 		clickhouseMessages = clickhouseMessages[:0]
 		clickhouseMessagesMutex.Unlock()
 		for range 12 {
-			injectFlow(flowMessage("192.0.2.142", 434, 677))
+			injectFlow(flowMessage("192.0.2.142", 434, 677), 0)
 		}
 
 		// Wait for flows to be processed
@@ -321,7 +359,7 @@ func TestCore(t *testing.T) {
 		clickhouseMessages = clickhouseMessages[:0]
 		clickhouseMessagesMutex.Unlock()
 		for range 12 {
-			injectFlow(flowMessage("192.0.2.142", 434, 677))
+			injectFlow(flowMessage("192.0.2.142", 434, 677), 0)
 		}
 
 		// Wait for flows to be processed

@@ -82,6 +82,7 @@ func (c *Component) Send(config InputConfiguration) input.SendFunc {
 		flow.Decoder = config.Decoder
 		flow.UseSourceAddress = config.UseSrcAddrForExporterAddr
 		flow.DecapsulationProtocol = config.DecapsulationProtocol
+		flow.RateLimit = config.RateLimit
 
 		// Get a payload from the pool and extend it if needed. We use a pool of
 		// pointers to slice as we may have to extend the capacity of the slice.

@@ -80,6 +80,11 @@ For all available inputs, the following options are available:
   for sFlow or the use of [IPFIX
   315](https://datatracker.ietf.org/doc/html/rfc7133). If there is a protocol
   mismatch, the packet will be dropped.
+- `rate-limit` to set the maximum number of flows per second per exporter. When
+  the rate is exceeded, excess flows are dropped before being written to
+  ClickHouse. The sampling rate of the remaining flows is adjusted to compensate
+  for the dropped flows. Flows are still sent through Kafka. Set to `0` to
+  disable (the default).
 
 For the UDP input, you can use the following keys:
 
@@ -498,7 +503,7 @@ metadata:
 The core component processes flows from Kafka, queries the `metadata` component to
 enrich the flows with additional information, and classifies
 exporters and interfaces into groups with a set of classification
-rules. It also handles flow rate limiting.
+rules. It also enforces per-exporter rate limiting as configured in the inlet.
 
 The following configuration keys are accepted:
 

@@ -12,6 +12,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- ✨ *inlet*: add per-exporter flow rate limiting with `rate-limit` option
 - 🌱 *docs*: export all metrics in [documentation](98-metrics.md)
 - 🌱 *build*: build with Go 1.26
 

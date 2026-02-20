@@ -37,6 +37,8 @@ type Component struct {
 	classifierExporterCache  *cache.Cache[exporterInfo, exporterClassification]
 	classifierInterfaceCache *cache.Cache[exporterAndInterfaceInfo, interfaceClassification]
 	classifierErrLogger      reporter.Logger
+
+	rateLimiter rateLimiter
 }
 
 // Dependencies define the dependencies of the HTTP component.
@@ -65,6 +67,8 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		classifierExporterCache:  cache.New[exporterInfo, exporterClassification](),
 		classifierInterfaceCache: cache.New[exporterAndInterfaceInfo, interfaceClassification](),
 		classifierErrLogger:      r.Sample(reporter.BurstSampler(10*time.Second, 3)),
+
+		rateLimiter: newRateLimiter(),
 	}
 	c.d.Daemon.Track(&c.t, "outlet/core")
 	c.initMetrics()

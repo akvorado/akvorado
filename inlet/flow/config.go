@@ -43,6 +43,8 @@ type InputConfiguration struct {
 	TimestampSource pb.RawFlow_TimestampSource
 	// DecapsulationProtocol is the protocol to decap. Packets not matching this protocol will be discarded.
 	DecapsulationProtocol pb.RawFlow_DecapsulationProtocol
+	// RateLimit is the maximum number of flows per second per exporter. 0 means no limit.
+	RateLimit uint64
 	// Config is the actual configuration of the input.
 	Config input.Configuration
 }
@@ -58,7 +60,6 @@ var inputs = map[string](func() input.Configuration){
 }
 
 func init() {
-	helpers.RegisterMapstructureDeprecatedFields[Configuration]("RateLimit")
 	helpers.RegisterMapstructureUnmarshallerHook(
 		helpers.ParametrizedConfigurationUnmarshallerHook(InputConfiguration{}, inputs))
 }
