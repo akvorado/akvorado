@@ -8,11 +8,8 @@
   "docker-compose": {
     "fileMatch": ["docker/versions\\.yml$"]
   },
+  "schedule": ["* * 1-7 * 6"],
   "packageRules": [
-    {
-      "description": "Schedule on the first Saturday of each month",
-      "schedule": ["* * 1-7 * 6"]
-    },
     {
       "matchManagers": ["npm"],
       "addLabels": ["service::console"]
