@@ -76,7 +76,8 @@
     },
     {
       "matchManagers": ["docker-compose"],
-      "addLabels": ["service::docker"]
+      "addLabels": ["service::docker"],
+      "dependencyDashboardApproval": true
     },
     {
       "matchManagers": ["docker-compose"],
