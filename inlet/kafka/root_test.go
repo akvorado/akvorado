@@ -45,6 +45,7 @@ func TestKafka(t *testing.T) {
 		for _, rt := range req.Topics {
 			st := kmsg.NewProduceResponseTopic()
 			st.Topic = rt.Topic
+			st.TopicID = rt.TopicID
 			for _, rp := range rt.Partitions {
 				sp := kmsg.NewProduceResponseTopicPartition()
 				sp.Partition = rp.Partition
