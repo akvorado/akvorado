@@ -4,6 +4,7 @@
   "labels": ["dependencies"],
   "prConcurrentLimit": 15,
   "minimumReleaseAge": "5 days",
+  "commitMessageExtra": "from {{{currentValue}}} to {{#if isPinDigest}}{{{newDigestShort}}}{{else}}{{#if isMajor}}{{prettyNewMajor}}{{else}}{{#if isSingleVersion}}{{prettyNewVersion}}{{else}}{{#if newValue}}{{{newValue}}}{{else}}{{{newDigestShort}}}{{/if}}{{/if}}{{/if}}{{/if}}",
   "docker-compose": {
     "fileMatch": ["docker/versions\\.yml$"]
   },
