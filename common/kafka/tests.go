@@ -104,6 +104,10 @@ func InterceptMessages(t *testing.T, cluster *kfake.Cluster, callback func(*kgo.
 		cluster.KeepControl()
 		if req, ok := kreq.(*kmsg.ProduceRequest); ok {
 			for _, topicData := range req.Topics {
+				topic := topicData.Topic
+				if info := cluster.TopicIDInfo(topicData.TopicID); info != nil {
+					topic = info.Topic
+				}
 				for _, partitionData := range topicData.Partitions {
 					if partitionData.Records != nil {
 						var batch kmsg.RecordBatch
@@ -112,7 +116,7 @@ func InterceptMessages(t *testing.T, cluster *kfake.Cluster, callback func(*kgo.
 						}
 						if err := forEachBatchRecord(batch, func(rec kmsg.Record) error {
 							kgoRecord := &kgo.Record{
-								Topic:     topicData.Topic,
+								Topic:     topic,
 								Partition: partitionData.Partition,
 								Key:       rec.Key,
 								Value:     rec.Value,
