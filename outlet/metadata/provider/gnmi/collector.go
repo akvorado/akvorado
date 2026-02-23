@@ -15,7 +15,7 @@ import (
 
 	"akvorado/outlet/metadata/provider"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/openconfig/gnmic/pkg/api"
 	"github.com/openconfig/gnmic/pkg/api/target"
 )
@@ -140,7 +140,6 @@ func (p *Provider) startCollector(exporterIP netip.Addr, state *exporterState) {
 	l := p.r.With().Str("exporter", exporterStr).Logger()
 	p.metrics.ready.WithLabelValues(exporterStr).Set(0)
 	retryInitBackoff := backoff.NewExponentialBackOff()
-	retryInitBackoff.MaxElapsedTime = 0
 	retryInitBackoff.MaxInterval = 5 * time.Minute
 	retryInitBackoff.InitialInterval = time.Second
 	l.Info().Msg("starting gNMI collector")
@@ -242,7 +241,6 @@ retryDetect:
 		panic(fmt.Errorf("NewSubscribeRequest() error: %w", err))
 	}
 	retryFetchBackoff := backoff.NewExponentialBackOff()
-	retryFetchBackoff.MaxElapsedTime = 0
 	retryFetchBackoff.MaxInterval = time.Minute
 	retryFetchBackoff.InitialInterval = time.Second
 	for {

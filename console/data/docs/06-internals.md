@@ -263,7 +263,7 @@ that are spawned by the other components and waits for signals to terminate. If
   used instead of the `time` module when we want to be able to mock
   the clock. This is used, for example, to test the cache of the SNMP
   poller.
-- [github.com/cenkalti/backoff/v4](https://github.com/cenkalti/backoff)
+- [github.com/cenkalti/backoff/v5](https://github.com/cenkalti/backoff)
   provides an exponential backoff algorithm for retries.
 - [github.com/eapache/go-resiliency](https://github.com/eapache/go-resiliency)
   implements several resiliency patterns, including the breaker

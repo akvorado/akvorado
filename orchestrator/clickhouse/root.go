@@ -14,7 +14,7 @@ import (
 
 	"akvorado/common/remotedatasource"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/clickhousedb"
@@ -109,7 +109,6 @@ func (c *Component) Start() error {
 		c.metrics.migrationsRunning.Set(1)
 		c.t.Go(func() error {
 			customBackoff := backoff.NewExponentialBackOff()
-			customBackoff.MaxElapsedTime = 0
 			customBackoff.InitialInterval = time.Second
 			for {
 				if !c.config.SkipMigrations {
