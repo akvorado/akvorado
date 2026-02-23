@@ -151,7 +151,7 @@ jobs:
 
   build-macos:
     name: 🍏 Build and test on macOS
-    runs-on: macos-14
+    runs-on: macos-15
     needs:
       - build-go
       - build-js
