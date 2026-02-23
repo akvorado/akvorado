@@ -52,7 +52,7 @@ runs:
       if: ${{ inputs.setup-node == 'true' }}
       with:
         package_json_file: console/frontend/package.json
-    - uses: actions/setup-node@v4
+    - uses: actions/setup-node@v6
       if: ${{ inputs.setup-node == 'true' }}
       with:
         node-version: ${{ inputs.node-version }}
