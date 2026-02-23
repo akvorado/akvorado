@@ -1,7 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended", ":semanticCommitTypeAll(build)"],
-  "schedule": ["before 5am on the first day of the month"],
   "labels": ["dependencies"],
   "prConcurrentLimit": 10,
   "minimumReleaseAge": "5 days",
@@ -9,6 +8,10 @@
     "fileMatch": ["docker/versions\\.yml$"]
   },
   "packageRules": [
+    {
+      "description": "Schedule on the first Saturday of each month",
+      "schedule": ["* * 1-7 * 6"]
+    },
     {
       "matchManagers": ["npm"],
       "addLabels": ["service::console"]
