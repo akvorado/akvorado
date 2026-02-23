@@ -38,7 +38,7 @@ runs:
         echo "gocache=$(go env GOCACHE)" >> $GITHUB_ENV
         echo "gomodcache=$(go env GOMODCACHE)" >> $GITHUB_ENV
         echo "today=$(date +%Y%m%d)" >> $GITHUB_ENV
-    - uses: actions/cache@v4
+    - uses: actions/cache@v5
       if: ${{ inputs.setup-go == 'true' }}
       with:
         path: |
@@ -61,7 +61,7 @@ runs:
           console/frontend/pnpm-lock.yaml
           bin/external-tool
     - name: Restore IANA files from cache
-      uses: actions/cache/restore@v4
+      uses: actions/cache/restore@v5
       id: iana-cache
       with:
         path: |
