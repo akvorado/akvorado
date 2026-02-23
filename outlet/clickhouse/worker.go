@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/ClickHouse/ch-go"
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
@@ -130,14 +130,13 @@ func (w *realWorker) Flush(ctx context.Context) {
 	// We try to send as long as possible. The only exit condition is an
 	// expiration of the context.
 	b := backoff.NewExponentialBackOff()
-	b.MaxElapsedTime = 0
 	b.MaxInterval = 30 * time.Second
 	b.InitialInterval = 20 * time.Millisecond
-	backoff.Retry(func() error {
+	backoff.Retry(ctx, func() (any, error) {
 		// Connect or reconnect if connection is broken.
 		if err := w.connect(ctx); err != nil {
 			w.logger.Err(err).Msg("cannot connect to ClickHouse")
-			return err
+			return nil, err
 		}
 
 		// Ensure the context lives for at least GracePeriod.
@@ -176,7 +175,7 @@ func (w *realWorker) Flush(ctx context.Context) {
 		}); err != nil {
 			w.logger.Err(err).Int("flows", w.bf.FlowCount()).Bool("async", useAsync).Msg("cannot send batch to ClickHouse")
 			w.c.metrics.errors.WithLabelValues("send").Inc()
-			return err
+			return nil, err
 		}
 		pushDuration := time.Since(start)
 		w.c.metrics.insertTime.Observe(pushDuration.Seconds())
@@ -184,8 +183,8 @@ func (w *realWorker) Flush(ctx context.Context) {
 
 		// Clear batch
 		w.bf.Clear()
-		return nil
-	}, backoff.WithContext(b, ctx))
+		return nil, nil
+	}, backoff.WithBackOff(b))
 }
 
 // connect establishes or reestablish the connection to ClickHouse.

@@ -11,7 +11,6 @@ require (
 	github.com/benbjohnson/clock v1.3.5
 	github.com/bio-routing/bio-rd v0.1.10
 	github.com/bits-and-blooms/bitset v1.24.4
-	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/cenkalti/backoff/v5 v5.0.3
 	github.com/chenyahui/gin-cache v1.10.0
 	github.com/cilium/ebpf v0.20.0

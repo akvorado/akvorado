@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/go-playground/validator/v10"
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/itchyny/gojq"
@@ -187,7 +187,6 @@ func (c *Component[T]) Start() error {
 			c.metrics.remoteDataSourceCount.WithLabelValues(c.dataType, name).Set(0)
 			newRetryTicker := func() *backoff.Ticker {
 				customBackoff := backoff.NewExponentialBackOff()
-				customBackoff.MaxElapsedTime = 0
 				customBackoff.MaxInterval = source.Interval
 				customBackoff.InitialInterval = source.Interval / 10
 				return backoff.NewTicker(customBackoff)
