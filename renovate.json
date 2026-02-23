@@ -58,6 +58,16 @@
       "enabled": false
     },
     {
+      "matchPackageNames": ["node"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["npm"],
+      "matchPackagePatterns": ["^@tsconfig/node"],
+      "matchUpdateTypes": ["replacement"],
+      "enabled": false
+    },
+    {
       "matchManagers": ["gomod"],
       "groupName": "franz-go",
       "matchPackagePatterns": ["^github\\.com/twmb/franz-go"]
