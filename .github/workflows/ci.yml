@@ -86,13 +86,13 @@ jobs:
       # Code tests
       - name: Go race tests
         if: matrix.racetests
-        run: sudo -E capsh --keep=1 --user=$USER --caps=cap_bpf+eip --addamb=cap_bpf -- -c "make test-race"
+        run: sudo -E capsh --keep=1 --user=$USER --caps=cap_bpf+eip --addamb=cap_bpf -- -c "env PATH=$PATH make test-race"
       - name: JS tests
         if: matrix.jstests
         run: make test-js
       - name: Coverage tests
         if: matrix.coverage
-        run: sudo -E capsh --keep=1 --user=$USER --caps=cap_bpf+eip --addamb=cap_bpf -- -c "make test-coverage"
+        run: sudo -E capsh --keep=1 --user=$USER --caps=cap_bpf+eip --addamb=cap_bpf -- -c "env PATH=$PATH make test-coverage"
       - name: Upload coverage results
         if: matrix.coverage
         uses: actions/upload-artifact@v6
