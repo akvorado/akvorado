@@ -5,6 +5,53 @@ paths:
   inlet.0.flow.inputs.0.decoder: netflow
   inlet.0.flow.inputs.1.decoder: sflow
   outlet.0.metadata.providers.0.type: snmp
+  outlet.0.geoip:
+    asndatabase:
+      - /usr/share/GeoIP/asn.mmdb
+    geodatabase:
+      - /usr/share/GeoIP/country.mmdb
+    optional: true
+  outlet.0.networks.networks:
+    192.0.2.0/24:
+      asn: 0
+      city: ""
+      country: ""
+      name: ipv4-customers
+      region: ""
+      role: customers
+      site: ""
+      state: ""
+      tenant: ""
+    203.0.113.0/24:
+      asn: 0
+      city: ""
+      country: ""
+      name: ipv4-servers
+      region: ""
+      role: servers
+      site: ""
+      state: ""
+      tenant: ""
+    2a01:db8:cafe:1::/64:
+      asn: 0
+      city: ""
+      country: ""
+      name: ipv6-customers
+      region: ""
+      role: customers
+      site: ""
+      state: ""
+      tenant: ""
+    2a01:db8:cafe:2::/64:
+      asn: 0
+      city: ""
+      country: ""
+      name: ipv6-servers
+      region: ""
+      role: servers
+      site: ""
+      state: ""
+      tenant: ""
   inlet.0.kafka.brokers:
     - kafka:9092
   outlet.0.kafkainput.brokers:

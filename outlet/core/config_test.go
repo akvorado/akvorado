@@ -48,7 +48,7 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 				}
 			},
 			Expected: Configuration{
-				ASNProviders: []ASNProvider{ASNProviderRouting, ASNProviderGeoIP},
+				ASNProviders: []ASNProvider{ASNProviderRouting, ASNProviderNetworks, ASNProviderGeoIP},
 			},
 			SkipValidation: true,
 		}, {

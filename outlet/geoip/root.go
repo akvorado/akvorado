@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2022 Free Mobile
+// SPDX-FileCopyrightText: 2026 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
 // Package geoip provides ASN and country for GeoIP addresses.
@@ -8,7 +8,9 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
@@ -25,20 +27,21 @@ type Component struct {
 	t      tomb.Tomb
 	config Configuration
 
-	db struct {
-		geo  map[string]geoDatabase
-		asn  map[string]geoDatabase
-		lock sync.RWMutex
-	}
+	// databases is replaced on each refresh. Lookups only load it.
+	databases atomic.Pointer[databases]
+	// openLock serializes the refreshes.
+	openLock sync.Mutex
 
 	metrics struct {
 		databaseRefresh *reporter.CounterVec
 	}
+}
 
-	onOpenChan        chan struct{}   // input notification channel
-	onOpenSubscribers []chan struct{} // output notification channels
-	notifyDone        sync.WaitGroup  // do not close notification channel during fanout
-	notifyLock        sync.RWMutex
+// databases are the opened databases, in configuration order. An entry is nil
+// when the database could not be opened. Once published, it is never modified.
+type databases struct {
+	geo []geoDatabase
+	asn []geoDatabase
 }
 
 // Dependencies define the dependencies of the GeoIP component.
@@ -49,22 +52,17 @@ type Dependencies struct {
 // New creates a new GeoIP component.
 func New(r *reporter.Reporter, configuration Configuration, dependencies Dependencies) (*Component, error) {
 	c := Component{
-		r:                 r,
-		d:                 &dependencies,
-		config:            configuration,
-		onOpenChan:        make(chan struct{}),
-		onOpenSubscribers: []chan struct{}{},
+		r:      r,
+		d:      &dependencies,
+		config: configuration,
 	}
-	c.db.geo = make(map[string]geoDatabase)
-	c.db.asn = make(map[string]geoDatabase)
-
-	for i, path := range c.config.GeoDatabase {
-		c.config.GeoDatabase[i] = filepath.Clean(path)
-	}
-	for i, path := range c.config.ASNDatabase {
-		c.config.ASNDatabase[i] = filepath.Clean(path)
-	}
-	c.d.Daemon.Track(&c.t, "orchestrator/geoip")
+	c.config.GeoDatabase = cleanPaths(c.config.GeoDatabase)
+	c.config.ASNDatabase = cleanPaths(c.config.ASNDatabase)
+	c.databases.Store(&databases{
+		geo: make([]geoDatabase, len(c.config.GeoDatabase)),
+		asn: make([]geoDatabase, len(c.config.ASNDatabase)),
+	})
+	c.d.Daemon.Track(&c.t, "outlet/geoip")
 	c.metrics.databaseRefresh = c.r.CounterVec(
 		reporter.CounterOpts{
 			Name: "db_refresh_total",
@@ -75,44 +73,40 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	return &c, nil
 }
 
-// notifySubscribers notify all subscribers.
-func (c *Component) notifySubscribers() {
-	c.notifyLock.RLock()
-	defer c.notifyLock.RUnlock()
-	for _, subChan := range c.onOpenSubscribers {
-		select {
-		case <-c.t.Dying():
-			return
-		case subChan <- struct{}{}:
-		default:
-		}
+// cleanPaths normalizes the provided paths and removes the duplicates. When a
+// path is repeated, only the last occurrence is kept, as later databases take
+// precedence over the earlier ones.
+func cleanPaths(paths []string) []string {
+	result := make([]string, 0, len(paths))
+	for _, path := range paths {
+		path = filepath.Clean(path)
+		result = slices.DeleteFunc(result, func(p string) bool { return p == path })
+		result = append(result, path)
 	}
+	return result
 }
 
 // Start starts the GeoIP component.
 func (c *Component) Start() error {
-	if len(c.config.GeoDatabase) == 0 && len(c.config.ASNDatabase) == 0 {
-		c.r.Warn().Msg("skipping GeoIP component: no database specified")
-	}
-	c.r.Info().Msg("starting GeoIP component")
-
+	// Ensure we have at least one goroutine, otherwise Stop() waits forever.
 	c.t.Go(func() error {
-		for range c.onOpenChan {
-			c.notifySubscribers()
-		}
-		for _, c := range c.onOpenSubscribers {
-			close(c)
-		}
+		<-c.t.Dying()
 		return nil
 	})
 
+	if len(c.config.GeoDatabase) == 0 && len(c.config.ASNDatabase) == 0 {
+		c.r.Warn().Msg("skipping GeoIP component: no database specified")
+		return nil
+	}
+	c.r.Info().Msg("starting GeoIP component")
+
 	for _, path := range c.config.GeoDatabase {
-		if err := c.openDatabase("geo", path, false); err != nil && !c.config.Optional {
+		if err := c.openDatabase("geo", path); err != nil && !c.config.Optional {
 			return err
 		}
 	}
 	for _, path := range c.config.ASNDatabase {
-		if err := c.openDatabase("asn", path, false); err != nil && !c.config.Optional {
+		if err := c.openDatabase("asn", path); err != nil && !c.config.Optional {
 			return err
 		}
 	}
@@ -162,13 +156,13 @@ func (c *Component) Start() error {
 				c.r.Debug().Msgf("event %s on file %s", event, event.Name)
 				for _, path := range c.config.GeoDatabase {
 					if filepath.Clean(event.Name) == path {
-						c.openDatabase("geo", path, true)
+						c.openDatabase("geo", path)
 						break
 					}
 				}
 				for _, path := range c.config.ASNDatabase {
 					if filepath.Clean(event.Name) == path {
-						c.openDatabase("asn", path, true)
+						c.openDatabase("asn", path)
 						break
 					}
 				}
@@ -182,44 +176,18 @@ func (c *Component) Start() error {
 // Stop stops the GeoIP component.
 func (c *Component) Stop() error {
 	c.r.Info().Msg("stopping GeoIP component")
-	c.db.lock.RLock()
-	c.r.Debug().Msg("closing database files")
-
-	for _, db := range c.db.geo {
-		if db != nil {
-			db.Close()
-		}
-	}
-	for _, db := range c.db.asn {
-		if db != nil {
-			db.Close()
-		}
-	}
-	c.db.lock.RUnlock()
 	c.r.Debug().Msg("stopping child threads")
 	c.t.Kill(nil)
-	c.r.Debug().Msg("waiting for notification to be sent")
-	c.notifyDone.Wait()
-	close(c.onOpenChan)
-	defer c.r.Info().Msg("GeoIP component stopped")
-	return c.t.Wait()
-}
+	err := c.t.Wait()
 
-// Notify returns a notification channel to be used to receive notification on
-// updates.
-func (c *Component) Notify() chan struct{} {
-	notifyChan := make(chan struct{}, 1)
-	c.notifyLock.Lock()
-	c.onOpenSubscribers = append(c.onOpenSubscribers, notifyChan)
-	c.notifyLock.Unlock()
-	// Initial notification send on subscription
-	c.notifyDone.Add(1)
-	defer c.notifyDone.Done()
-	select {
-	case <-c.t.Dying():
-		return nil
-	case notifyChan <- struct{}{}:
-	default:
+	// Only close the databases once nothing can look them up anymore.
+	c.r.Debug().Msg("closing database files")
+	current := c.databases.Load()
+	for _, db := range slices.Concat(current.geo, current.asn) {
+		if db != nil {
+			db.Close()
+		}
 	}
-	return notifyChan
+	defer c.r.Info().Msg("GeoIP component stopped")
+	return err
 }

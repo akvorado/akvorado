@@ -38,7 +38,7 @@ func DefaultConfiguration() Configuration {
 		ExporterClassifiers:     []ExporterClassifierRule{},
 		InterfaceClassifiers:    []InterfaceClassifierRule{},
 		ClassifierCacheDuration: 5 * time.Minute,
-		ASNProviders:            []ASNProvider{ASNProviderFlow, ASNProviderRouting, ASNProviderGeoIP},
+		ASNProviders:            []ASNProvider{ASNProviderFlow, ASNProviderRouting, ASNProviderNetworks, ASNProviderGeoIP},
 		NetProviders:            []NetProvider{NetProviderFlow, NetProviderRouting},
 	}
 }
@@ -63,6 +63,8 @@ const (
 	ASNProviderRouting
 	// ASNProviderRoutingExceptPrivate uses the AS number from BMP, except if this is a private AS.
 	ASNProviderRoutingExceptPrivate
+	// ASNProviderNetworks pulls the AS number from the networks configuration.
+	ASNProviderNetworks
 )
 
 const (

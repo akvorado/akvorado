@@ -4,7 +4,6 @@
 package clickhouse
 
 import (
-	"compress/gzip"
 	"encoding/csv"
 	"fmt"
 	"io"
@@ -12,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"strconv"
-	"time"
 
 	"akvorado/common/embed"
 )
@@ -43,67 +41,6 @@ func (c *Component) registerHTTPHandlers() error {
 			w.Write(file)
 		}))
 	}
-
-	// networks.csv
-	c.d.HTTP.AddHandler("/api/v0/orchestrator/clickhouse/networks.csv",
-		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := r.Context()
-			// Wait for networks.csv
-			t := time.NewTimer(c.config.NetworkSourcesTimeout)
-			defer t.Stop()
-			select {
-			case <-ctx.Done():
-				http.Error(w, "Request canceled", http.StatusInternalServerError)
-				return
-			case <-c.networksCSVReady:
-			case <-t.C:
-				w.WriteHeader(http.StatusServiceUnavailable)
-			}
-
-			// We reopen the file to have an independant position
-			csvFile := func() *os.File {
-				c.networksCSVLock.Lock()
-				defer c.networksCSVLock.Unlock()
-				if c.networksCSVFile == nil {
-					// This can happen during shutdown
-					return nil
-				}
-				csvFile, _ := os.Open(c.networksCSVFile.Name())
-				return csvFile
-			}()
-			if csvFile == nil {
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			defer csvFile.Close()
-			gzipReader, err := gzip.NewReader(csvFile)
-			if err != nil {
-				w.WriteHeader(http.StatusInternalServerError)
-			}
-			defer gzipReader.Close()
-
-			w.Header().Set("Content-Type", "text/csv; charset=utf-8")
-			w.WriteHeader(http.StatusOK)
-			// Implement io.Copy, but cancellable
-			buf := make([]byte, 32*1024) // 32 KB
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				default:
-				}
-				nr, er := gzipReader.Read(buf)
-				if nr > 0 {
-					nw, ew := w.Write(buf[0:nr])
-					if nw < 0 || nr != nw || ew != nil {
-						return
-					}
-				}
-				if er != nil {
-					return
-				}
-			}
-		}))
 
 	// asns.csv (when there are some custom-defined ASNs)
 	if len(c.config.ASNs) != 0 {

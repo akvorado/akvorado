@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/netip"
+	"strings"
 	"testing"
 	"time"
 
@@ -138,11 +139,12 @@ func TestInsertMemory(t *testing.T) {
 				t.Fatalf("json.Unmarshal() error:\n%+v", err)
 			}
 
-			// Remove fields with default values
+			// Remove fields with default values. An unset FixedString column
+			// is padded with zeros and an unset IPv6 column is "::".
 			for k, v := range row {
 				switch val := v.(type) {
 				case string:
-					if val == "" || val == "::" {
+					if strings.Trim(val, "\x00") == "" || val == "::" {
 						delete(row, k)
 					}
 				case float64:

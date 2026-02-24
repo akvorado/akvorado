@@ -24,7 +24,6 @@ import (
 	"akvorado/common/schema"
 	"akvorado/orchestrator"
 	"akvorado/orchestrator/clickhouse"
-	"akvorado/orchestrator/geoip"
 	"akvorado/orchestrator/kafka"
 )
 
@@ -37,7 +36,6 @@ type OrchestratorConfiguration struct {
 	ClickHouseDB     clickhousedb.Configuration
 	Kafka            kafka.InputConfiguration
 	KafkaOutput      *kafka.OutputConfiguration
-	GeoIP            geoip.Configuration
 	Orchestrator     orchestrator.Configuration `mapstructure:",squash" yaml:",inline"`
 	Schema           schema.Configuration
 	// Other service configurations
@@ -62,7 +60,6 @@ func (c *OrchestratorConfiguration) Reset() {
 		ClickHouse:       clickhouse.DefaultConfiguration(),
 		ClickHouseDB:     clickhousedb.DefaultConfiguration(),
 		Kafka:            kafka.DefaultInputConfiguration(),
-		GeoIP:            geoip.DefaultConfiguration(),
 		Orchestrator:     orchestrator.DefaultConfiguration(),
 		Schema:           schema.DefaultConfiguration(),
 		// Other service configurations
@@ -174,6 +171,13 @@ func init() {
 		"Check configuration, but does not start")
 }
 
+func init() {
+	helpers.RegisterMapstructureUnmarshallerHook(orchestratorClickHouseMigrationHook())
+	helpers.RegisterMapstructureUnmarshallerHook(orchestratorInletToOutletMigrationHook())
+	helpers.RegisterMapstructureUnmarshallerHook(orchestratorGeoIPMigrationHook())
+	helpers.RegisterMapstructureUnmarshallerHook(orchestratorNetworksMigrationHook())
+}
+
 func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, daemonComponent daemon.Component, checkOnly bool) error {
 	httpComponent, err := httpserver.New(r, "orchestrator", config.HTTP, httpserver.Dependencies{
 		Daemon: daemonComponent,
@@ -195,18 +199,11 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, d
 	if err != nil {
 		return fmt.Errorf("unable to initialize ClickHouse component: %w", err)
 	}
-	geoipComponent, err := geoip.New(r, config.GeoIP, geoip.Dependencies{
-		Daemon: daemonComponent,
-	})
-	if err != nil {
-		return fmt.Errorf("unable to initialize GeoIP component: %w", err)
-	}
 	clickhouseComponent, err := clickhouse.New(r, config.ClickHouse, clickhouse.Dependencies{
 		Daemon:     daemonComponent,
 		HTTP:       httpComponent,
 		ClickHouse: clickhouseDBComponent,
 		Schema:     schemaComponent,
-		GeoIP:      geoipComponent,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to initialize clickhouse component: %w", err)
@@ -241,7 +238,6 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, d
 
 	// Start all the components.
 	components := []any{
-		geoipComponent,
 		httpComponent,
 		clickhouseDBComponent,
 		clickhouseComponent,
@@ -317,21 +313,62 @@ func orchestratorWatch(r *reporter.Reporter, daemonComponent daemon.Component, p
 	}()
 }
 
-// orchestratorGeoIPMigrationHook migrates GeoIP configuration from inlet
-// component to clickhouse component
+// orchestratorMigrateToOutlet stores the provided value under the given name in
+// each outlet configuration. An outlet configuration is created when there is
+// none. It returns an error when an outlet configuration already uses this
+// name.
+func orchestratorMigrateToOutlet(from reflect.Value, name string, value reflect.Value) error {
+	var outletKey *reflect.Value
+	fromKeys := from.MapKeys()
+	for i, k := range fromKeys {
+		k = helpers.ElemOrIdentity(k)
+		if k.Kind() == reflect.String && helpers.MapStructureMatchName(k.String(), "Outlet") {
+			outletKey = &fromKeys[i]
+			break
+		}
+	}
+	if outletKey == nil {
+		from.SetMapIndex(reflect.ValueOf("outlet"),
+			reflect.ValueOf([]any{helpers.M{name: value.Interface()}}))
+		return nil
+	}
+
+	outletConfigs := helpers.ElemOrIdentity(from.MapIndex(*outletKey))
+	if outletConfigs.Kind() != reflect.Slice {
+		outletConfigs = reflect.ValueOf([]any{outletConfigs.Interface()})
+	}
+	for i := range outletConfigs.Len() {
+		toOutlet := helpers.ElemOrIdentity(outletConfigs.Index(i))
+		if toOutlet.Kind() != reflect.Map {
+			return fmt.Errorf("cannot migrate %q to an unexpected %q configuration", name, "outlet")
+		}
+		for _, k := range toOutlet.MapKeys() {
+			k = helpers.ElemOrIdentity(k)
+			if k.Kind() == reflect.String && helpers.MapStructureMatchName(k.String(), name) {
+				return fmt.Errorf("cannot have %q both in %q and in the orchestrator configuration",
+					name, "outlet")
+			}
+		}
+		toOutlet.SetMapIndex(reflect.ValueOf(name), value)
+	}
+	return nil
+}
+
+// orchestratorGeoIPMigrationHook migrates the GeoIP configuration to the outlet
+// service. It used to live in the inlet service, then at the top level of the
+// orchestrator configuration.
 func orchestratorGeoIPMigrationHook() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (any, error) {
 		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeFor[OrchestratorConfiguration]() {
 			return from.Interface(), nil
 		}
 
-		var inletKey, geoIPKey, inletGeoIPValue *reflect.Value
-
+		var inletKey, geoIPKey *reflect.Value
 		fromKeys := from.MapKeys()
 		for i, k := range fromKeys {
 			k = helpers.ElemOrIdentity(k)
 			if k.Kind() != reflect.String {
-				return from.Interface(), nil
+				continue
 			}
 			if helpers.MapStructureMatchName(k.String(), "Inlet") {
 				inletKey = &fromKeys[i]
@@ -339,51 +376,45 @@ func orchestratorGeoIPMigrationHook() mapstructure.DecodeHookFunc {
 				geoIPKey = &fromKeys[i]
 			}
 		}
-		if inletKey == nil {
-			return from.Interface(), nil
-		}
 
-		// Take the first geoip configuration and delete the others
-		inletConfigs := helpers.ElemOrIdentity(from.MapIndex(*inletKey))
-		if inletConfigs.Kind() != reflect.Slice {
-			inletConfigs = reflect.ValueOf([]any{inletConfigs.Interface()})
-		}
-		for i := range inletConfigs.Len() {
-			fromInlet := helpers.ElemOrIdentity(inletConfigs.Index(i))
-			if fromInlet.Kind() != reflect.Map {
-				return from.Interface(), nil
+		// Take the first geoip configuration from the inlets and delete the others
+		var geoIPValue *reflect.Value
+		if inletKey != nil {
+			inletConfigs := helpers.ElemOrIdentity(from.MapIndex(*inletKey))
+			if inletConfigs.Kind() != reflect.Slice {
+				inletConfigs = reflect.ValueOf([]any{inletConfigs.Interface()})
 			}
-			fromInletKeys := fromInlet.MapKeys()
-			for _, k := range fromInletKeys {
-				k = helpers.ElemOrIdentity(k)
-				if k.Kind() != reflect.String {
-					return from.Interface(), nil
+			for i := range inletConfigs.Len() {
+				fromInlet := helpers.ElemOrIdentity(inletConfigs.Index(i))
+				if fromInlet.Kind() != reflect.Map {
+					continue
 				}
-				if helpers.MapStructureMatchName(k.String(), "GeoIP") {
-					if inletGeoIPValue == nil {
-						v := fromInlet.MapIndex(k)
-						inletGeoIPValue = &v
+				for _, k := range fromInlet.MapKeys() {
+					k = helpers.ElemOrIdentity(k)
+					if k.Kind() != reflect.String || !helpers.MapStructureMatchName(k.String(), "GeoIP") {
+						continue
 					}
-				}
-			}
-		}
-		if inletGeoIPValue == nil {
-			return from.Interface(), nil
-		}
-		if geoIPKey != nil {
-			return nil, errors.New("cannot have both \"GeoIP\" in inlet and clickhouse configuration")
-		}
-
-		from.SetMapIndex(reflect.ValueOf("geoip"), *inletGeoIPValue)
-		for i := range inletConfigs.Len() {
-			fromInlet := helpers.ElemOrIdentity(inletConfigs.Index(i))
-			fromInletKeys := fromInlet.MapKeys()
-			for _, k := range fromInletKeys {
-				k = helpers.ElemOrIdentity(k)
-				if helpers.MapStructureMatchName(k.String(), "GeoIP") {
+					if geoIPKey != nil {
+						return nil, errors.New(`cannot have both "geoip" in inlet and orchestrator configuration`)
+					}
+					if geoIPValue == nil {
+						v := helpers.ElemOrIdentity(fromInlet.MapIndex(k))
+						geoIPValue = &v
+					}
 					fromInlet.SetMapIndex(k, reflect.Value{})
 				}
 			}
+		}
+		if geoIPValue == nil && geoIPKey != nil {
+			v := helpers.ElemOrIdentity(from.MapIndex(*geoIPKey))
+			geoIPValue = &v
+			from.SetMapIndex(*geoIPKey, reflect.Value{})
+		}
+		if geoIPValue == nil {
+			return from.Interface(), nil
+		}
+		if err := orchestratorMigrateToOutlet(from, "geoip", *geoIPValue); err != nil {
+			return nil, err
 		}
 
 		return from.Interface(), nil
@@ -531,7 +562,7 @@ func orchestratorInletToOutletMigrationHook() mapstructure.DecodeHookFunc {
 
 				if modified {
 					// We know there is no existing outlet configuration.
-					outletConfigs := reflect.ValueOf([]any{toOutlet})
+					outletConfigs := reflect.ValueOf([]any{toOutlet.Interface()})
 					from.SetMapIndex(reflect.ValueOf("outlet"), outletConfigs)
 				}
 			}
@@ -541,8 +572,60 @@ func orchestratorInletToOutletMigrationHook() mapstructure.DecodeHookFunc {
 	}
 }
 
-func init() {
-	helpers.RegisterMapstructureUnmarshallerHook(orchestratorGeoIPMigrationHook())
-	helpers.RegisterMapstructureUnmarshallerHook(orchestratorClickHouseMigrationHook())
-	helpers.RegisterMapstructureUnmarshallerHook(orchestratorInletToOutletMigrationHook())
+// orchestratorNetworksMigrationHook migrates the network attributes from the
+// clickhouse component to the networks component of the outlet service.
+func orchestratorNetworksMigrationHook() mapstructure.DecodeHookFunc {
+	return func(from, to reflect.Value) (any, error) {
+		if from.Kind() != reflect.Map || from.IsNil() || to.Type() != reflect.TypeFor[OrchestratorConfiguration]() {
+			return from.Interface(), nil
+		}
+
+		var clickhouseKey *reflect.Value
+		fromKeys := from.MapKeys()
+		for i, k := range fromKeys {
+			k = helpers.ElemOrIdentity(k)
+			if k.Kind() != reflect.String {
+				continue
+			}
+			if helpers.MapStructureMatchName(k.String(), "ClickHouse") {
+				clickhouseKey = &fromKeys[i]
+			}
+		}
+		if clickhouseKey == nil {
+			return from.Interface(), nil
+		}
+		clickhouse := helpers.ElemOrIdentity(from.MapIndex(*clickhouseKey))
+		if clickhouse.Kind() != reflect.Map {
+			return from.Interface(), nil
+		}
+
+		// Fields to migrate from clickhouse to networks
+		fieldsToMigrate := []string{"Networks", "NetworkSources", "NetworkSourcesTimeout"}
+		networksConfig := reflect.ValueOf(helpers.M{})
+		found := false
+		for _, k := range clickhouse.MapKeys() {
+			k = helpers.ElemOrIdentity(k)
+			if k.Kind() != reflect.String {
+				continue
+			}
+			for _, field := range fieldsToMigrate {
+				if !helpers.MapStructureMatchName(k.String(), field) {
+					continue
+				}
+				networksConfig.SetMapIndex(reflect.ValueOf(field),
+					helpers.ElemOrIdentity(clickhouse.MapIndex(k)))
+				clickhouse.SetMapIndex(k, reflect.Value{})
+				found = true
+				break
+			}
+		}
+		if !found {
+			return from.Interface(), nil
+		}
+		if err := orchestratorMigrateToOutlet(from, "networks", networksConfig); err != nil {
+			return nil, err
+		}
+
+		return from.Interface(), nil
+	}
 }

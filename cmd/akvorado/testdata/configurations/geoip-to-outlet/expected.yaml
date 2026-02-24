@@ -1,0 +1,23 @@
+---
+paths:
+  outlet.0.geoip:
+    asndatabase:
+      - /usr/share/GeoIP/asn.mmdb
+    geodatabase:
+      - /usr/share/GeoIP/country.mmdb
+    optional: false
+  outlet.0.networks.networks:
+    192.0.2.0/24:
+      asn: 0
+      city: ""
+      country: ""
+      name: customers
+      region: ""
+      role: ""
+      site: ""
+      state: ""
+      tenant: ""
+  outlet.0.networks.networksourcestimeout: 30s
+  outlet.0.core.asnproviders:
+    - flow
+    - networks

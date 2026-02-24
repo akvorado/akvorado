@@ -24,8 +24,10 @@ import (
 	"akvorado/common/schema"
 	"akvorado/outlet/clickhouse"
 	"akvorado/outlet/flow"
+	"akvorado/outlet/geoip"
 	"akvorado/outlet/kafkainput"
 	"akvorado/outlet/metadata"
+	"akvorado/outlet/networks"
 	"akvorado/outlet/routing"
 )
 
@@ -33,6 +35,8 @@ func TestEnrich(t *testing.T) {
 	cases := []struct {
 		Name            string
 		Configuration   helpers.M
+		GeoIP           bool
+		Networks        *networks.Configuration
 		InputFlow       func() *schema.FlowMessage
 		OutputFlow      *schema.FlowMessage
 		ExpectedMetrics map[string]string
@@ -586,6 +590,87 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 			},
 		},
 		{
+			Name:          "use data from GeoIP",
+			Configuration: helpers.M{},
+			GeoIP:         true,
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
+					SamplingRate:    1000,
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+					InIf:            100,
+					OutIf:           200,
+					SrcAddr:         netip.MustParseAddr("::ffff:67.43.156.77"),
+					DstAddr:         netip.MustParseAddr("::ffff:203.0.113.5"),
+				}
+			},
+			OutputFlow: &schema.FlowMessage{
+				SamplingRate:    1000,
+				InIf:            100,
+				OutIf:           200,
+				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+				SrcAddr:         netip.MustParseAddr("::ffff:67.43.156.77"),
+				DstAddr:         netip.MustParseAddr("::ffff:203.0.113.5"),
+				SrcAS:           35908,
+				OtherColumns: map[schema.ColumnKey]any{
+					schema.ColumnExporterName:     "192_0_2_142",
+					schema.ColumnInIfName:         "Gi0/0/100",
+					schema.ColumnOutIfName:        "Gi0/0/200",
+					schema.ColumnInIfDescription:  "Interface 100",
+					schema.ColumnOutIfDescription: "Interface 200",
+					schema.ColumnInIfSpeed:        uint32(1000),
+					schema.ColumnOutIfSpeed:       uint32(1000),
+					schema.ColumnSrcCountry:       "BT",
+				},
+			},
+		},
+		{
+			Name:          "network attributes take precedence over GeoIP",
+			Configuration: helpers.M{},
+			GeoIP:         true,
+			Networks: &networks.Configuration{
+				Networks: helpers.MustNewSubnetMap(map[string]networks.NetworkAttributes{
+					// 67.43.156.77 is also in the GeoIP databases (BT, AS35908)
+					"::ffff:67.43.156.0/120": {Name: "customer1", Role: "customer", Country: "FR", City: "Paris", ASN: 65500},
+					"::ffff:203.0.113.0/120": {Name: "servers", Site: "ams5", ASN: 65401},
+				}),
+			},
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
+					SamplingRate:    1000,
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+					InIf:            100,
+					OutIf:           200,
+					SrcAddr:         netip.MustParseAddr("::ffff:67.43.156.77"),
+					DstAddr:         netip.MustParseAddr("::ffff:203.0.113.5"),
+				}
+			},
+			OutputFlow: &schema.FlowMessage{
+				SamplingRate:    1000,
+				InIf:            100,
+				OutIf:           200,
+				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+				SrcAddr:         netip.MustParseAddr("::ffff:67.43.156.77"),
+				DstAddr:         netip.MustParseAddr("::ffff:203.0.113.5"),
+				SrcAS:           65500,
+				DstAS:           65401,
+				OtherColumns: map[schema.ColumnKey]any{
+					schema.ColumnExporterName:     "192_0_2_142",
+					schema.ColumnInIfName:         "Gi0/0/100",
+					schema.ColumnOutIfName:        "Gi0/0/200",
+					schema.ColumnInIfDescription:  "Interface 100",
+					schema.ColumnOutIfDescription: "Interface 200",
+					schema.ColumnInIfSpeed:        uint32(1000),
+					schema.ColumnOutIfSpeed:       uint32(1000),
+					schema.ColumnSrcNetName:       "customer1",
+					schema.ColumnSrcNetRole:       "customer",
+					schema.ColumnSrcCountry:       "FR",
+					schema.ColumnSrcGeoCity:       "Paris",
+					schema.ColumnDstNetName:       "servers",
+					schema.ColumnDstNetSite:       "ams5",
+				},
+			},
+		},
+		{
 			Name:          "flow with missing interfaces",
 			Configuration: helpers.M{},
 			InputFlow: func() *schema.FlowMessage {
@@ -653,7 +738,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 			}
 
 			// Instantiate and start core
-			c, err := New(r, configuration, Dependencies{
+			dependencies := Dependencies{
 				Daemon:     daemonComponent,
 				Flow:       flowComponent,
 				Metadata:   metadataComponent,
@@ -662,7 +747,20 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				HTTP:       httpComponent,
 				Routing:    routingComponent,
 				Schema:     schema.NewMock(t).EnableAllColumns(),
-			})
+			}
+			if tc.GeoIP {
+				dependencies.GeoIP = geoip.NewMock(t, r, true)
+			}
+			if tc.Networks != nil {
+				networksComponent, err := networks.New(r, *tc.Networks,
+					networks.Dependencies{Daemon: daemonComponent})
+				if err != nil {
+					t.Fatalf("networks.New() error:\n%+v", err)
+				}
+				helpers.StartStop(t, networksComponent)
+				dependencies.Networks = networksComponent
+			}
+			c, err := New(r, configuration, dependencies)
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
 			}
@@ -732,25 +830,34 @@ func TestGetASNumber(t *testing.T) {
 		Addr        string
 		FlowAS      uint32
 		BMPAS       uint32
+		NetAS       uint32
 		FlowNetMask uint8
 		Providers   []ASNProvider
+		WithGeoIP   bool
 		Expected    uint32
 	}{
 		// 1
-		{helpers.Mark(), "1.0.0.1", 12322, 0, 24, []ASNProvider{ASNProviderFlow}, 12322},
-		{helpers.Mark(), "::ffff:1.0.0.1", 12322, 0, 24, []ASNProvider{ASNProviderFlow}, 12322},
-		{helpers.Mark(), "1.0.0.1", 65536, 0, 24, []ASNProvider{ASNProviderFlow}, 65536},
-		{helpers.Mark(), "1.0.0.1", 65536, 0, 24, []ASNProvider{ASNProviderFlowExceptPrivate}, 0},
-		{helpers.Mark(), "1.0.0.1", 4_200_000_121, 0, 24, []ASNProvider{ASNProviderFlowExceptPrivate}, 0},
-		{helpers.Mark(), "1.0.0.1", 65536, 0, 24, []ASNProvider{ASNProviderFlowExceptPrivate, ASNProviderFlow}, 65536},
-		{helpers.Mark(), "1.0.0.1", 12322, 0, 24, []ASNProvider{ASNProviderFlowExceptPrivate}, 12322},
-		{helpers.Mark(), "1.0.0.1", 12322, 0, 0, []ASNProvider{ASNProviderFlowExceptDefaultRoute}, 0},
-		{helpers.Mark(), "192.0.2.2", 12322, 174, 24, []ASNProvider{ASNProviderRouting}, 174},
+		{helpers.Mark(), "1.0.0.1", 12322, 0, 0, 24, []ASNProvider{ASNProviderFlow}, false, 12322},
+		{helpers.Mark(), "::ffff:1.0.0.1", 12322, 0, 0, 24, []ASNProvider{ASNProviderFlow}, false, 12322},
+		{helpers.Mark(), "1.0.0.1", 65536, 0, 0, 24, []ASNProvider{ASNProviderFlow}, false, 65536},
+		{helpers.Mark(), "1.0.0.1", 65536, 0, 0, 24, []ASNProvider{ASNProviderFlowExceptPrivate}, false, 0},
+		{helpers.Mark(), "1.0.0.1", 4_200_000_121, 0, 0, 24, []ASNProvider{ASNProviderFlowExceptPrivate}, false, 0},
+		{helpers.Mark(), "1.0.0.1", 65536, 0, 0, 24, []ASNProvider{ASNProviderFlowExceptPrivate, ASNProviderFlow}, false, 65536},
+		{helpers.Mark(), "1.0.0.1", 12322, 0, 0, 24, []ASNProvider{ASNProviderFlowExceptPrivate}, false, 12322},
+		{helpers.Mark(), "1.0.0.1", 12322, 0, 0, 0, []ASNProvider{ASNProviderFlowExceptDefaultRoute}, false, 0},
+		{helpers.Mark(), "192.0.2.2", 12322, 174, 0, 24, []ASNProvider{ASNProviderRouting}, false, 174},
 		// 10
-		{helpers.Mark(), "192.0.2.129", 12322, 1299, 24, []ASNProvider{ASNProviderRouting}, 1299},
-		{helpers.Mark(), "192.0.2.254", 12322, 0, 24, []ASNProvider{ASNProviderRouting}, 0},
-		{helpers.Mark(), "1.0.0.1", 12322, 65300, 24, []ASNProvider{ASNProviderRouting}, 65300},
-		{helpers.Mark(), "1.0.0.1", 12322, 65300, 24, []ASNProvider{ASNProviderGeoIP, ASNProviderRouting}, 0},
+		{helpers.Mark(), "192.0.2.129", 12322, 1299, 0, 24, []ASNProvider{ASNProviderRouting}, false, 1299},
+		{helpers.Mark(), "192.0.2.254", 12322, 0, 0, 24, []ASNProvider{ASNProviderRouting}, false, 0},
+		{helpers.Mark(), "1.0.0.1", 12322, 65300, 0, 24, []ASNProvider{ASNProviderRouting}, false, 65300},
+		{helpers.Mark(), "1.0.0.1", 12322, 65300, 0, 24, []ASNProvider{ASNProviderGeoIP, ASNProviderRouting}, false, 65300},
+		// 14: with GeoIP mock
+		{helpers.Mark(), "1.0.0.1", 0, 0, 0, 24, []ASNProvider{ASNProviderGeoIP}, true, 15169},
+		{helpers.Mark(), "1.0.0.1", 12322, 0, 0, 24, []ASNProvider{ASNProviderGeoIP, ASNProviderFlow}, true, 15169},
+		// 16: with network attributes
+		{helpers.Mark(), "1.0.0.1", 0, 0, 65401, 24, []ASNProvider{ASNProviderNetworks}, false, 65401},
+		{helpers.Mark(), "1.0.0.1", 12322, 0, 65401, 24, []ASNProvider{ASNProviderFlow, ASNProviderNetworks}, false, 12322},
+		{helpers.Mark(), "1.0.0.1", 0, 0, 65401, 24, []ASNProvider{ASNProviderGeoIP, ASNProviderNetworks}, true, 15169},
 	}
 	for _, tc := range cases {
 		t.Run(fmt.Sprintf("case %s", tc.Pos), func(t *testing.T) {
@@ -762,15 +869,19 @@ func TestGetASNumber(t *testing.T) {
 			routingComponent := routing.NewMock(t, r)
 			routingComponent.PopulateRIB(t)
 
-			c, err := New(r, configuration, Dependencies{
+			deps := Dependencies{
 				Daemon:  daemon.NewMock(t),
 				Routing: routingComponent,
 				Schema:  schema.NewMock(t),
-			})
+			}
+			if tc.WithGeoIP {
+				deps.GeoIP = geoip.NewMock(t, r, true)
+			}
+			c, err := New(r, configuration, deps)
 			if err != nil {
 				t.Fatalf("%sNew() error:\n%+v", tc.Pos, err)
 			}
-			got := c.getASNumber(tc.FlowAS, tc.BMPAS, tc.FlowNetMask)
+			got := c.getASNumber(tc.FlowAS, tc.BMPAS, tc.NetAS, tc.FlowNetMask, netip.MustParseAddr(tc.Addr))
 			if diff := helpers.Diff(got, tc.Expected); diff != "" {
 				t.Fatalf("%sgetASNumber() (-got, +want):\n%s", tc.Pos, diff)
 			}

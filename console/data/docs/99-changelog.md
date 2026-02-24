@@ -12,6 +12,18 @@ identified with a specific icon:
 
 ## Unreleased
 
+*Akvorado* does not use the `networks` ClickHouse dictionary anymore. It is not
+removed on upgrade: it still holds a copy of the GeoIP databases in ClickHouse
+memory. Drop it on each cluster member once the new version runs:
+
+```console
+# docker compose exec clickhouse clickhouse-client --query "DROP DICTIONARY IF EXISTS networks"
+```
+
+- 💥 *outlet*: the attributes from `outlet`→`networks` now win over GeoIP
+  whatever their prefix length. Previously, both were merged into a single
+  ClickHouse dictionary and the most specific prefix was winning: a country set
+  on a subnet was overridden by the GeoIP country of a smaller one
 - 💥 *outlet*: rename the Kafka input metrics from `akvorado_outlet_kafka_*` to
   `akvorado_outlet_kafkainput_*`, following the rename of the component; update
   any dashboard or alert relying on them
@@ -19,6 +31,14 @@ identified with a specific icon:
   parallel with the ClickHouse insert, configured under `kafka-output` and
   disabled by default; the orchestrator manages the output topic when a top-level
   `kafka-output` block is set
+- 🌱 *outlet*: GeoIP and network attributes are now resolved by the outlet
+  instead of ClickHouse. The `geoip` configuration moves from the top level of
+  the orchestrator configuration to `outlet`→`geoip` and
+  `clickhouse`→`networks`, `clickhouse`→`network-sources` and
+  `clickhouse`→`network-sources-timeout` move to `outlet`→`networks`. This is
+  handled automatically.
+- 🌱 *outlet*: add `networks` as a source for `core`→`asn-providers`, enabled by
+  default before `geo-ip` to match the precedence of the other network attributes
 - 🌱 *outlet*: rename the `kafka` configuration key to `kafka-input` (the old name
   keeps working)
 - 🌱 *docker*: update Kafka to 4.3.1 (not mandatory)

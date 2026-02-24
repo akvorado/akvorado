@@ -4,6 +4,8 @@
 package geoip
 
 import (
+	"net/netip"
+
 	"github.com/oschwald/maxminddb-golang/v2"
 	"github.com/oschwald/maxminddb-golang/v2/mmdbdata"
 )
@@ -163,38 +165,16 @@ type maxmindDB struct {
 	db *maxminddb.Reader
 }
 
-func (mmdb *maxmindDB) IterASNDatabase(f AsnIterFunc) error {
-	for result := range mmdb.db.Networks() {
-		var asnInfo maxmindASNInfo
-
-		err := result.Decode(&asnInfo)
-		if err != nil || asnInfo.ASNumber == 0 {
-			continue
-		}
-
-		prefix := result.Prefix()
-		if err := f(prefix, ASNInfo(asnInfo)); err != nil {
-			return err
-		}
-	}
-	return nil
+func (mmdb *maxmindDB) LookupGeo(ip netip.Addr) GeoInfo {
+	var info maxmindGeoInfo
+	_ = mmdb.db.Lookup(ip).Decode(&info)
+	return GeoInfo(info)
 }
 
-func (mmdb *maxmindDB) IterGeoDatabase(f GeoIterFunc) error {
-	for result := range mmdb.db.Networks() {
-		var geoInfo maxmindGeoInfo
-
-		err := result.Decode(&geoInfo)
-		if err != nil || geoInfo.Country == "" {
-			continue
-		}
-
-		prefix := result.Prefix()
-		if err := f(prefix, GeoInfo(geoInfo)); err != nil {
-			return err
-		}
-	}
-	return nil
+func (mmdb *maxmindDB) LookupASN(ip netip.Addr) ASNInfo {
+	var info maxmindASNInfo
+	_ = mmdb.db.Lookup(ip).Decode(&info)
+	return ASNInfo(info)
 }
 
 func (mmdb *maxmindDB) Close() {
