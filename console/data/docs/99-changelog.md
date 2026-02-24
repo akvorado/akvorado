@@ -10,7 +10,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 2.1.2 - 2026-02-24
 
 - ✨ *inlet*: add per-exporter flow rate limiting with `rate-limit` option
 - 🌱 *outlet*: bufferize BMP messages to avoid being flagged “stuck”
