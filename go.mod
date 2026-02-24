@@ -40,7 +40,7 @@ require (
 	github.com/prometheus/client_golang v1.23.2
 	github.com/puzpuzpuz/xsync/v4 v4.4.0
 	github.com/rs/zerolog v1.34.0
-	github.com/scrapli/scrapligo v1.3.3
+	github.com/scrapli/scrapligo v1.4.0
 	github.com/slayercat/GoSNMPServer v0.5.2
 	github.com/spf13/cobra v1.10.2
 	github.com/twmb/franz-go v1.20.7
