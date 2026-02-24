@@ -232,24 +232,14 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 		return
 	}
 
-	p.mu.Lock()
-	defer p.mu.Unlock()
+	// prepare data before locking
+	exporterStr := pkey.exporter.Addr().Unmap().String()
+	peerStr := pkey.ip.Unmap().String()
 
 	// Ignore this peer if this is a L3VPN and it does not have
 	// the right RD.
 	if pkey.ptype == bmp.BMP_PEER_TYPE_L3VPN && !p.isAcceptedRD(pkey.distinguisher) {
 		return
-	}
-
-	exporterStr := pkey.exporter.Addr().Unmap().String()
-	peerStr := pkey.ip.Unmap().String()
-	pinfo, ok := p.peers[pkey]
-	if !ok {
-		// We may have missed the peer down notification?
-		p.r.Info().Msgf("received route monitoring from exporter %s for peer %s, but no peer up",
-			exporterStr, peerStr)
-		p.metrics.peers.WithLabelValues(exporterStr).Inc()
-		pinfo = p.addPeer(pkey)
 	}
 
 	var nh netip.Addr
@@ -287,11 +277,26 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 	if !p.config.CollectASPaths {
 		rta.asPath = nil
 	}
-	nhRef := p.rib.nextHops.Put(nextHop(nh))
-	rtaRef := p.rib.rtas.Put(rta)
 
-	added := 0
-	removed := 0
+	type addPrefixParams struct {
+		nlri   nlri
+		pfx    netip.Prefix
+		pfxLen uint8
+	}
+	type addPrefixNHParams struct {
+		nextHop nextHop
+		nlri    nlri
+		pfx     netip.Prefix
+		pfxLen  uint8
+	}
+	type removePrefixParams struct {
+		nlri nlri
+		pfx  netip.Prefix
+	}
+
+	var addPrefixes []addPrefixParams
+	var addPrefixesNH []addPrefixNHParams
+	var removePrefixes []removePrefixParams
 
 	// Regular NLRI and withdrawn routes
 	if pkey.ptype == bmp.BMP_PEER_TYPE_L3VPN || p.isAcceptedRD(0) {
@@ -302,17 +307,11 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 				continue
 			}
 			pfx := helpers.PrefixTo6(v4UCPrefix.Prefix)
-			added += p.rib.AddPrefix(pfx, route{
-				peer: pinfo.reference,
-				nlri: p.rib.nlris.Put(nlri{
-					family: bgp.RF_IPv4_UC,
-					path:   path.ID,
-					rd:     pkey.distinguisher,
-				}),
-				nextHop:    nhRef,
-				attributes: rtaRef,
-				prefixLen:  uint8(pfx.Bits()),
-			})
+			addPrefixes = append(addPrefixes, addPrefixParams{nlri{
+				family: bgp.RF_IPv4_UC,
+				path:   path.ID,
+				rd:     pkey.distinguisher,
+			}, pfx, uint8(pfx.Bits())})
 		}
 		for _, path := range update.WithdrawnRoutes {
 			v4UCPrefix, ok := path.NLRI.(*bgp.IPAddrPrefix)
@@ -320,16 +319,11 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 				continue
 			}
 			pfx := helpers.PrefixTo6(v4UCPrefix.Prefix)
-			if nlriRef, ok := p.rib.nlris.Ref(nlri{
+			removePrefixes = append(removePrefixes, removePrefixParams{nlri{
 				family: bgp.RF_IPv4_UC,
 				path:   path.ID,
 				rd:     pkey.distinguisher,
-			}); ok {
-				removed += p.rib.RemovePrefix(pfx, route{
-					peer: pinfo.reference,
-					nlri: nlriRef,
-				})
-			}
+			}, pfx})
 		}
 	}
 
@@ -340,7 +334,6 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 		switch attr := attr.(type) {
 		case *bgp.PathAttributeMpReachNLRI:
 			nh = helpers.AddrTo6(attr.Nexthop)
-			nhRef = p.rib.nextHops.Put(nextHop(nh))
 			paths = attr.Value
 			family = bgp.NewFamily(attr.AFI, attr.SAFI)
 		case *bgp.PathAttributeMpUnreachNLRI:
@@ -375,29 +368,68 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 			}
 			switch attr.(type) {
 			case *bgp.PathAttributeMpReachNLRI:
-				added += p.rib.AddPrefix(pfx, route{
-					peer: pinfo.reference,
-					nlri: p.rib.nlris.Put(nlri{
+				addPrefixesNH = append(addPrefixesNH, addPrefixNHParams{
+					nextHop(nh),
+					nlri{
 						family: family,
 						rd:     rd,
 						path:   path.ID,
-					}),
-					nextHop:    nhRef,
-					attributes: rtaRef,
-					prefixLen:  uint8(pfx.Bits()),
+					},
+					pfx,
+					uint8(pfx.Bits()),
 				})
 			case *bgp.PathAttributeMpUnreachNLRI:
-				if nlriRef, ok := p.rib.nlris.Ref(nlri{
+				removePrefixes = append(removePrefixes, removePrefixParams{nlri{
 					family: family,
 					rd:     rd,
 					path:   path.ID,
-				}); ok {
-					removed += p.rib.RemovePrefix(pfx, route{
-						peer: pinfo.reference,
-						nlri: nlriRef,
-					})
-				}
+				}, pfx})
 			}
+		}
+	}
+
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	pinfo, ok := p.peers[pkey]
+	if !ok {
+		// We may have missed the peer down notification?
+		p.r.Info().Msgf("received route monitoring from exporter %s for peer %s, but no peer up",
+			exporterStr, peerStr)
+		p.metrics.peers.WithLabelValues(exporterStr).Inc()
+		pinfo = p.addPeer(pkey)
+	}
+
+	nhRef := p.rib.nextHops.Put(nextHop(nh))
+	rtaRef := p.rib.rtas.Put(rta)
+
+	added := 0
+	removed := 0
+
+	for _, prefix := range addPrefixes {
+		added += p.rib.AddPrefix(prefix.pfx, route{
+			peer:       pinfo.reference,
+			nlri:       p.rib.nlris.Put(prefix.nlri),
+			nextHop:    nhRef,
+			attributes: rtaRef,
+			prefixLen:  prefix.pfxLen,
+		})
+	}
+	for _, prefix := range addPrefixesNH {
+		added += p.rib.AddPrefix(prefix.pfx, route{
+			peer:       pinfo.reference,
+			nlri:       p.rib.nlris.Put(prefix.nlri),
+			nextHop:    p.rib.nextHops.Put(prefix.nextHop),
+			attributes: rtaRef,
+			prefixLen:  uint8(prefix.pfxLen),
+		})
+	}
+	for _, prefix := range removePrefixes {
+		if nlriRef, ok := p.rib.nlris.Ref(prefix.nlri); ok {
+			removed += p.rib.RemovePrefix(prefix.pfx, route{
+				peer: pinfo.reference,
+				nlri: nlriRef,
+			})
 		}
 	}
 
