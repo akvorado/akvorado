@@ -10,7 +10,7 @@
     "build-only": "vite build",
     "type-check": "vue-tsc --noEmit -p tsconfig.vitest.json --composite false",
     "lint": "oxlint --type-aware --vue-plugin",
-    "format": "oxfmt '{src/**/,}*.{ts,js,vue,html}'",
+    "format": "oxfmt",
     "test": "vitest run"
   },
   "devDependencies": {
