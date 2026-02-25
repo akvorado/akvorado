@@ -1,98 +1,187 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", ":semanticCommitTypeAll(build)"],
-  "labels": ["dependencies"],
+  "extends": [
+    "config:recommended",
+    ":semanticCommitTypeAll(build)"
+  ],
+  "labels": [
+    "dependencies"
+  ],
   "prConcurrentLimit": 15,
   "minimumReleaseAge": "5 days",
   "commitMessageExtra": "from {{{currentValue}}} to {{#if isPinDigest}}{{{newDigestShort}}}{{else}}{{#if isMajor}}{{prettyNewMajor}}{{else}}{{#if isSingleVersion}}{{prettyNewVersion}}{{else}}{{#if newValue}}{{{newValue}}}{{else}}{{{newDigestShort}}}{{/if}}{{/if}}{{/if}}{{/if}}",
   "docker-compose": {
-    "fileMatch": ["docker/versions\\.yml$"]
+    "managerFilePatterns": [
+      "/docker/versions\\.yml$/"
+    ]
   },
-  "schedule": ["* * 1-7 * 6"],
+  "schedule": [
+    "* * 1-7 * 6"
+  ],
   "packageRules": [
     {
-      "matchManagers": ["npm"],
-      "addLabels": ["service::console"]
+      "matchManagers": [
+        "npm"
+      ],
+      "addLabels": [
+        "service::console"
+      ]
     },
     {
-      "matchManagers": ["npm"],
+      "matchManagers": [
+        "npm"
+      ],
       "groupName": "vueuse",
-      "matchPackagePatterns": ["^@vueuse/"]
+      "matchPackageNames": [
+        "/^@vueuse//"
+      ]
     },
     {
-      "matchManagers": ["npm"],
+      "matchManagers": [
+        "npm"
+      ],
       "groupName": "vue",
-      "matchPackageNames": ["vue", "vue-router", "vue-tsc"],
-      "matchPackagePatterns": ["^@vue/"],
-      "excludePackageNames": ["@vue/tsconfig"]
+      "matchPackageNames": [
+        "vue",
+        "vue-router",
+        "vue-tsc",
+        "/^@vue//",
+        "!@vue/tsconfig"
+      ]
     },
     {
-      "matchManagers": ["npm"],
+      "matchManagers": [
+        "npm"
+      ],
       "groupName": "codemirror",
-      "matchPackagePatterns": ["^@codemirror/", "^@lezer/"]
+      "matchPackageNames": [
+        "/^@codemirror//",
+        "/^@lezer//"
+      ]
     },
     {
-      "matchManagers": ["npm"],
+      "matchManagers": [
+        "npm"
+      ],
       "groupName": "dev-dependencies",
-      "matchPackagePatterns": ["^@vitejs/", "^@vitest/", "^@volar/", "^oxlint", "^prettier"],
-      "matchPackageNames": ["autoprefixer", "vite", "vitest"]
+      "matchPackageNames": [
+        "autoprefixer",
+        "vite",
+        "vitest",
+        "/^@vitejs//",
+        "/^@vitest//",
+        "/^@volar//",
+        "/^oxlint/",
+        "/^prettier/"
+      ]
     },
     {
-      "matchManagers": ["npm"],
+      "matchManagers": [
+        "npm"
+      ],
       "groupName": "tailwindcss",
-      "matchPackageNames": ["tailwindcss"],
-      "matchPackagePatterns": ["^@tailwindcss/"]
+      "matchPackageNames": [
+        "tailwindcss",
+        "/^@tailwindcss//"
+      ]
     },
     {
-      "matchManagers": ["npm"],
+      "matchManagers": [
+        "npm"
+      ],
       "groupName": "typescript",
-      "matchPackageNames": ["typescript", "typescript-language-server"],
-      "matchPackagePatterns": ["^@tsconfig/", "^@types/", "^@vue/tsconfig"]
+      "matchPackageNames": [
+        "typescript",
+        "typescript-language-server",
+        "/^@tsconfig//",
+        "/^@types//",
+        "/^@vue/tsconfig/"
+      ]
     },
     {
-      "matchManagers": ["npm"],
-      "matchPackageNames": ["@types/node"],
-      "matchUpdateTypes": ["major"],
+      "matchManagers": [
+        "npm"
+      ],
+      "matchPackageNames": [
+        "@types/node"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
       "enabled": false
     },
     {
-      "matchPackageNames": ["node"],
+      "matchPackageNames": [
+        "node"
+      ],
       "enabled": false
     },
     {
-      "matchManagers": ["npm"],
-      "matchPackagePatterns": ["^@tsconfig/node"],
-      "matchUpdateTypes": ["replacement"],
-      "enabled": false
+      "matchManagers": [
+        "npm"
+      ],
+      "matchUpdateTypes": [
+        "replacement"
+      ],
+      "enabled": false,
+      "matchPackageNames": [
+        "/^@tsconfig/node/"
+      ]
     },
     {
-      "matchManagers": ["gomod"],
+      "matchManagers": [
+        "gomod"
+      ],
       "groupName": "franz-go",
-      "matchPackagePatterns": ["^github\\.com/twmb/franz-go"]
+      "matchPackageNames": [
+        "/^github\\.com/twmb/franz-go/"
+      ]
     },
     {
-      "matchManagers": ["gomod"],
+      "matchManagers": [
+        "gomod"
+      ],
       "groupName": "golang-org-x",
-      "matchPackagePatterns": ["^golang\\.org/x/"]
+      "matchPackageNames": [
+        "/^golang\\.org/x//"
+      ]
     },
     {
-      "matchManagers": ["docker-compose"],
-      "addLabels": ["service::docker"],
+      "matchManagers": [
+        "docker-compose"
+      ],
+      "addLabels": [
+        "service::docker"
+      ],
       "dependencyDashboardApproval": true
     },
     {
-      "matchManagers": ["docker-compose"],
-      "matchPackageNames": ["clickhouse/clickhouse-server", "clickhouse/clickhouse-keeper"],
+      "matchManagers": [
+        "docker-compose"
+      ],
+      "matchPackageNames": [
+        "clickhouse/clickhouse-server",
+        "clickhouse/clickhouse-keeper"
+      ],
       "allowedVersions": "/^\\d+\\.[38]$/"
     },
     {
-      "matchManagers": ["docker-compose"],
-      "matchPackageNames": ["timberio/vector"],
+      "matchManagers": [
+        "docker-compose"
+      ],
+      "matchPackageNames": [
+        "timberio/vector"
+      ],
       "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.X-alpine$"
     },
     {
-      "matchManagers": ["docker-compose"],
-      "matchPackageNames": ["ghcr.io/akvorado/akvorado", "ghcr.io/akvorado/ipinfo-geoipupdate"],
+      "matchManagers": [
+        "docker-compose"
+      ],
+      "matchPackageNames": [
+        "ghcr.io/akvorado/akvorado",
+        "ghcr.io/akvorado/ipinfo-geoipupdate"
+      ],
       "enabled": false
     }
   ]
