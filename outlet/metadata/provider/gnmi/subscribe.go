@@ -4,12 +4,15 @@
 package gnmi
 
 import (
+	"context"
 	"encoding/json"
+	"io"
 	"path"
 	"strconv"
 	"strings"
 
 	"github.com/openconfig/gnmi/proto/gnmi"
+	"github.com/openconfig/gnmic/pkg/api/target"
 )
 
 // event describes an event received in a subscription. No deletion is handled
@@ -87,6 +90,32 @@ func subscribeResponsesToEvents(responses []*gnmi.SubscribeResponse) []event {
 		events = append(events, subscribeResponseToEvents(response)...)
 	}
 	return events
+}
+
+// subscribeOnce performs a SubscribeOnce RPC, collecting all update responses
+// until the server closes the stream. Unlike target.SubscribeOnce, it does not
+// stop on SyncResponse, ensuring all updates are received. See
+// https://github.com/akvorado/akvorado/issues/2249.
+func subscribeOnce(ctx context.Context, tg *target.Target, req *gnmi.SubscribeRequest) ([]*gnmi.SubscribeResponse, error) {
+	rspChan, errChan := tg.SubscribeOnceChan(ctx, req)
+	var responses []*gnmi.SubscribeResponse
+	for {
+		select {
+		case r := <-rspChan:
+			switch r.Response.(type) {
+			case *gnmi.SubscribeResponse_Update:
+				responses = append(responses, r)
+			case *gnmi.SubscribeResponse_SyncResponse:
+				// We choose to ignore it as some implementations may send it
+				// while not all paths have been updated.
+			}
+		case err := <-errChan:
+			if err == io.EOF {
+				return responses, nil
+			}
+			return nil, err
+		}
+	}
 }
 
 // jsonAppendToEvents appends the events derived from the provided event plus

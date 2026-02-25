@@ -246,9 +246,9 @@ commit now
 			if err != nil {
 				t.Fatalf("NewSubscribeRequest() error:\n%+v", err)
 			}
-			subscribeResp, err := tg.SubscribeOnce(ctx, subscribeReq)
+			subscribeResp, err := subscribeOnce(ctx, tg, subscribeReq)
 			if err != nil {
-				t.Fatalf("SubscribeOnce() error:\n%+v", err)
+				t.Fatalf("subscribeOnce() error:\n%+v", err)
 			}
 			got := subscribeResponsesToEvents(subscribeResp)
 			sort.Slice(got, func(i, j int) bool {
@@ -745,9 +745,9 @@ commit now
 		if err != nil {
 			t.Fatalf("NewSubscribeRequest() error:\n%+v", err)
 		}
-		subscribeResp, err := tg.SubscribeOnce(ctx, subscribeReq)
+		subscribeResp, err := subscribeOnce(ctx, tg, subscribeReq)
 		if err != nil {
-			t.Fatalf("SubscribeOnce() error:\n%+v", err)
+			t.Fatalf("subscribeOnce() error:\n%+v", err)
 		}
 		indexes := map[string]uint{}
 		for _, event := range subscribeResponsesToEvents(subscribeResp) {

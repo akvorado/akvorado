@@ -246,7 +246,7 @@ retryDetect:
 	for {
 		l.Debug().Msg("polling")
 		start := time.Now()
-		subscribeResp, err := tg.SubscribeOnce(p.ctx, subscribeReq)
+		subscribeResp, err := subscribeOnce(p.ctx, tg, subscribeReq)
 		p.metrics.times.WithLabelValues(exporterStr).Observe(time.Since(start).Seconds())
 		if err == nil {
 			events := subscribeResponsesToEvents(subscribeResp)
@@ -326,7 +326,7 @@ func (p *Provider) detectModelAndEncoding(ctx context.Context, tg *target.Target
 			if err != nil {
 				panic(fmt.Errorf("NewSubscribeRequest() error: %w", err))
 			}
-			_, err = tg.SubscribeOnce(ctx, subscribeReq)
+			_, err = subscribeOnce(ctx, tg, subscribeReq)
 			if err != nil && ctx.Err() != nil {
 				return Model{}, "", err
 			} else if err != nil {
