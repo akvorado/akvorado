@@ -4,7 +4,7 @@ services:
   kafka:
     image: apache/kafka:4.1.1 # \d+\.\d+\.\d+
   redis:
-    image: valkey/valkey:7.2 # \d+\.\d+
+    image: valkey/valkey:9.0 # \d+\.\d+
   clickhouse:
     image: clickhouse/clickhouse-server:25.8 # \d+\.[38]
   clickhouse-keeper:
