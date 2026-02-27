@@ -41,7 +41,7 @@ services:
 
   # for tests
   srlinux:
-    image: ghcr.io/nokia/srlinux:23.10.8
+    image: ghcr.io/nokia/srlinux:25.10.2
   postgres:
     image: postgres:17 # \d+
   mysql:
