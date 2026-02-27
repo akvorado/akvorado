@@ -264,8 +264,13 @@ func TestCore(t *testing.T) {
 		if diff := helpers.Diff(len(clickhouseMessagesCopy), 1); diff != "" {
 			t.Fatalf("ClickHouse messages count after sleep (-got, +want):\n%s", diff)
 		}
-		if diff := helpers.Diff(clickhouseMessagesCopy[0].SamplingRate, uint64(5000)); diff != "" {
-			t.Fatalf("SamplingRate (-got, +want):\n%s", diff)
+		// The drop rate is 8/10 = 0.8 when the batch fits in a single
+		// 200ms tick, giving SamplingRate = 1000/(1-0.8) = 5000. If it
+		// spans two ticks, the drop rate can be higher (up to 8/8 = 1.0
+		// in the worst case), yielding a larger adjusted value.
+		gotSamplingRate := clickhouseMessagesCopy[0].SamplingRate
+		if gotSamplingRate < 5000 || gotSamplingRate > 10000 {
+			t.Fatalf("SamplingRate = %d, expected between 5000 and 10000", gotSamplingRate)
 		}
 	})
 
