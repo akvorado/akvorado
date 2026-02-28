@@ -255,7 +255,7 @@ func (c *Component) createExportersConsumerView(ctx context.Context) error {
 
 	// Build SELECT query
 	selectQuery, err := stemplate(
-		`SELECT DISTINCT {{ .Columns }} FROM {{ qi .Database }}.{{ qi .Table }} ARRAY JOIN arrayEnumerate([1, 2]) AS num`,
+		`SELECT {{ .Columns }} FROM {{ qi .Database }}.{{ qi .Table }} ARRAY JOIN arrayEnumerate([1, 2]) AS num`,
 		helpers.M{
 			"Table":    c.distributedTable("flows"),
 			"Database": c.d.ClickHouse.DatabaseName(),
