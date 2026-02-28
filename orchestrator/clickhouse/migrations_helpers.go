@@ -633,9 +633,13 @@ outer:
 	if ok, err := c.tableAlreadyExists(ctx, tableName, ttlClauseLike, "1"); err != nil {
 		return err
 	} else if !ok {
-		c.r.Warn().
-			Msgf("updating TTL of %s with interval %s, this can take a long time", tableName, resolution.Interval)
-		if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf("ALTER TABLE %s MODIFY %s", tableName, ttlClause)); err != nil {
+		c.r.Info().Msgf("updating TTL of %s with interval %s", tableName, resolution.Interval)
+		err := c.d.ClickHouse.ExecOnCluster(
+			clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
+				"materialize_ttl_after_modify": 0,
+			})),
+			fmt.Sprintf("ALTER TABLE %s MODIFY %s", tableName, ttlClause))
+		if err != nil {
 			return fmt.Errorf("cannot modify TTL for table %s: %w", tableName, err)
 		}
 		modified = true

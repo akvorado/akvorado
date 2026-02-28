@@ -856,6 +856,10 @@ ORDER BY
     sum(column_data_compressed_bytes) DESC
 ```
 
+You can reduce the space used by the `flows` table by setting a lower TTL in
+`clickhouse`→`resolutions`. This does not take effect immediately. You need to
+run `ALTER TABLE flows MATERIALIZE TTL`.
+
 You can also include the system tables:
 
 ```sql

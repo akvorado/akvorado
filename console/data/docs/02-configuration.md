@@ -938,17 +938,16 @@ provided inside `clickhouse`:
   orchestrator. The outlet requires the schema to match the expected structure:
   schema mismatches may cause write errors.
 
-The `resolutions` setting contains a list of resolutions. Each
-resolution has two keys: `interval` and `ttl`. The first one is the
-consolidation interval. The second is how long to keep the data in the
-database. If `ttl` is 0, then the data is kept forever. If `interval`
-is 0, it applies to the raw data (the one in the `flows` table). For
-each resolution, a materialized view `flows_DDDD` is created with the
-specified interval. It should be noted that consolidated tables do not
-contain information about source/destination IP addresses and ports.
-That's why you may want to keep the interval-0 table data a bit
-longer. *Akvorado* will still use the consolidated tables if the query
-do not require the raw table, for performance reason.
+The `resolutions` setting contains a list of resolutions. Each resolution has
+two keys: `interval` and `ttl`. The first one is the consolidation interval. The
+second is how long to keep the data in the database. If `ttl` is 0, then the
+data is kept forever. If `interval` is 0, it applies to the raw data (the one in
+the `flows` table). For each resolution, a materialized view `flows_DDDD` is
+created with the specified interval. It should be noted that consolidated tables
+do not contain information about source/destination IP addresses and ports by
+default. That's why you may want to keep the interval-0 table data a bit longer.
+*Akvorado* will still use the consolidated tables if the query do not require
+the raw table, for performance reason.
 
 Here is the default configuration:
 
@@ -966,10 +965,10 @@ resolutions:
 
 If you want to tweak the values, start from the default configuration. Most of
 the disk space is taken by the main table (`interval: 0`) and you can reduce its
-TTL if it's too big for your usage. Check the [operational
-documentation](04-operations.md#space-usage) for information on how to check
-disk usage. If you remove an existing interval, it is not removed from the
-ClickHouse database and will continue to be populated.
+TTL if it's too big for your usage. The data is not expired immediately. Check
+the [operational documentation](04-operations.md#space-usage) for information on
+how to check disk usage. If you remove an existing interval, it is not removed
+from the ClickHouse database and will continue to be populated.
 
 It is mandatory to specify a configuration for `interval: 0`.
 
