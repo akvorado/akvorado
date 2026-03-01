@@ -12,6 +12,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 🩹 *outlet*: fix OpenConfig model handling in gNMI provider
 - 🌱 *outlet*: map sFlow drop codes to IPFIX ForwardingStatus
 - 🌱 *orchestrator*: do not materialize TTLs in ClickHouse when updating them
 - 🌱 *orchestrator*: reduce overhead of the exporters view to improve ClickHouse ingest performance
