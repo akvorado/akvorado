@@ -32,8 +32,8 @@ require (
 	github.com/itchyny/gojq v0.12.18
 	github.com/mattn/go-isatty v0.0.20
 	github.com/netsampler/goflow2/v2 v2.2.6
-	github.com/openconfig/gnmi v0.14.0
-	github.com/openconfig/gnmic/pkg/api v0.1.9
+	github.com/openconfig/gnmi v0.14.1
+	github.com/openconfig/gnmic/pkg/api v0.1.11
 	github.com/oschwald/maxminddb-golang/v2 v2.1.1
 	github.com/osrg/gobgp/v4 v4.2.0
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10
