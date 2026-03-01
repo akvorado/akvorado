@@ -254,7 +254,7 @@ func TestDecode(t *testing.T) {
 					schema.ColumnProto:            uint32(constants.ProtoTCP),
 					schema.ColumnSrcPort:          uint16(46026),
 					schema.ColumnDstPort:          uint16(22),
-					schema.ColumnForwardingStatus: uint32(128),
+					schema.ColumnForwardingStatus: uint32(131),
 					schema.ColumnSrcMAC:           uint64(40057391053392),
 					schema.ColumnDstMAC:           uint64(40057381862408),
 					schema.ColumnTCPFlags:         uint16(16),
