@@ -72,7 +72,8 @@
         "/^@vitest//",
         "/^@volar//",
         "/^oxlint/",
-        "/^prettier/"
+        "/^prettier/",
+        "pnpm"
       ]
     },
     {
