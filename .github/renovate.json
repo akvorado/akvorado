@@ -184,6 +184,16 @@
         "ghcr.io/akvorado/ipinfo-geoipupdate"
       ],
       "enabled": false
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "actions-artifacts",
+      "matchPackageNames": [
+        "actions/download-artifact",
+        "actions/upload-artifact"
+      ]
     }
   ]
 }
