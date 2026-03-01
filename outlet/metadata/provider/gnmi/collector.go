@@ -317,7 +317,9 @@ retryDetect:
 }
 
 // detectModelAndEncoding subscribe to the various paths of the configured models to
-// determine the one the target is compatible with.
+// determine the one the target is compatible with. As some implementations do not
+// return an error for non-existent paths, we also check that the response contains
+// a system name and at least one interface.
 func (p *Provider) detectModelAndEncoding(ctx context.Context, tg *target.Target) (Model, string, error) {
 	for _, model := range p.config.Models {
 		for _, encoding := range []string{"json_ietf", "json"} {
@@ -326,14 +328,20 @@ func (p *Provider) detectModelAndEncoding(ctx context.Context, tg *target.Target
 			if err != nil {
 				panic(fmt.Errorf("NewSubscribeRequest() error: %w", err))
 			}
-			_, err = tg.SubscribeOnce(ctx, subscribeReq)
+			subscribeResp, err := tg.SubscribeOnce(ctx, subscribeReq)
 			if err != nil && ctx.Err() != nil {
 				return Model{}, "", err
 			} else if err != nil {
 				// Next encoding or model
 				continue
 			}
-			return model, encoding, nil
+			// Check that the response contains meaningful data
+			events := subscribeResponsesToEvents(subscribeResp)
+			state := &exporterState{}
+			state.update(events, model)
+			if state.Name != "" && len(state.Interfaces) > 0 {
+				return model, encoding, nil
+			}
 		}
 	}
 	return Model{}, "", errors.New("no compatible model found")
