@@ -50,6 +50,9 @@ func subscribeResponseToEvents(response *gnmi.SubscribeResponse) []event {
 		for _, u := range n.GetUpdate() {
 			ev := gnmiPathToEvent(u.GetPath(), prefixEvent)
 			val := u.GetVal()
+			if val == nil {
+				continue
+			}
 			var jsondata []byte
 			switch val.Value.(type) {
 			case *gnmi.TypedValue_AsciiVal:
