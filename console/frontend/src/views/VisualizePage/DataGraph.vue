@@ -28,6 +28,7 @@ const component = computed(() => {
     case "stacked100":
     case "lines":
     case "grid":
+    case "heatmap":
       return DataGraphLine;
     case "sankey":
       return DataGraphSankey;
