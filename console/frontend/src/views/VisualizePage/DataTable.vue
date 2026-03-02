@@ -104,7 +104,8 @@ const highlight = (index: number | null) => {
   if (
     index === null ||
     props.data == null ||
-    props.data.graphType == "sankey"
+    props.data.graphType == "sankey" ||
+    props.data.graphType == "heatmap"
   ) {
     emit("highlighted", null);
     return;
@@ -154,7 +155,8 @@ const table = computed(
       data.graphType === "stacked" ||
       data.graphType === "stacked100" ||
       data.graphType === "lines" ||
-      data.graphType === "grid"
+      data.graphType === "grid" ||
+      data.graphType === "heatmap"
     ) {
       const uniqRows = uniqWith(data.rows, isEqual),
         uniqRowIndex = (row: string[]) =>
@@ -194,7 +196,10 @@ const table = computed(
                     classNames: "text-right tabular-nums",
                   })),
                 ],
-                color: color(uniqRowIndex(row), false, theme),
+                color:
+                  data.graphType === "heatmap"
+                    ? undefined
+                    : color(uniqRowIndex(row), false, theme),
               };
             })
             .filter((_, idx) => data.axis[idx] == displayedAxis.value) || [],
