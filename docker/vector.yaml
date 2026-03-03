@@ -233,6 +233,7 @@ transforms:
       - from_clickhouse
       - routes._unmatched
     source: |
+      ._metadata = object(._metadata) ?? {}
       if exists(._labels.level) {
         level = downcase!(._labels.level)
         if starts_with(level, "i") || starts_with(level, "n") {

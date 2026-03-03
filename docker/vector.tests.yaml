@@ -21,7 +21,7 @@ tests:
               assert_eq!(._labels,
                 {"service_name": "something-unknown",
                  "instance": "akvorado-something-unknown-1"})
-              assert_eq!(._metadata, null)
+              assert_eq!(._metadata, {})
 
   - name: "akvorado logs"
     inputs:
@@ -75,7 +75,7 @@ tests:
                 {"service_name": "kafka",
                  "instance": "akvorado-kafka-1",
                  "level": "info"})
-              assert_eq!(._metadata, null)
+              assert_eq!(._metadata, {})
   - name: "kafka logs multiline"
     inputs:
       - insert_at: base
@@ -115,7 +115,7 @@ tests:
                 {"service_name": "kafka",
                  "instance": "akvorado-kafka-1",
                  "level": "info"})
-              assert_eq!(._metadata, null)
+              assert_eq!(._metadata, {})
 
   - name: "redis logs"
     inputs:
@@ -412,7 +412,7 @@ tests:
               assert_eq!(._labels,
                 {"service_name": "clickhouse",
                  "instance": "akvorado-clickhouse-1"})
-              assert_eq!(._metadata, null)
+              assert_eq!(._metadata, {})
   - name: "clickhouse logs"
     inputs:
       - insert_at: base
