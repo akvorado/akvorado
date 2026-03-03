@@ -13,35 +13,39 @@ prometheus.remote_write "default" {
   }
 }
 
-// Docker relabeling. We match entries with metrics.port as the port (it needs to
-// be exposed) and use metrics.path if defined. The job name is the service name
-// minus the numbered suffix.
+// Docker relabeling. We match entries with metrics.enable=true and default to
+// the exposed port. Use metrics.port to override the port (required for
+// host-network containers or when there are multiple exposed ports) and
+// metrics.path to override the path. The job name is the service name minus the
+// numbered suffix.
 discovery.relabel "prometheus" {
   targets = discovery.docker.docker.targets
 
-  // Normalize the case where network is host.
+  // Keep only targets with metrics.enable=true
+  rule {
+    source_labels = ["__meta_docker_container_label_metrics_enable"]
+    regex         = `true`
+    action        = "keep"
+  }
+  // Normalize the case where network is host (metrics.port required).
   rule {
     source_labels = ["__meta_docker_container_label_metrics_port", "__meta_docker_network_name"]
     regex         = `(.+);host`
     target_label  = "__address__"
     replacement   = "host.docker.internal:$1"
   }
-  rule {
-    source_labels = ["__meta_docker_container_label_metrics_port", "__meta_docker_network_name"]
-    regex         = `(.+);host`
-    target_label  = "__meta_docker_port_private"
-    replacement   = "$1"
-  }
-  // Then keep if we metrics.port matches private port
+  // When metrics.port is set, override __meta_docker_port_private and __address__.
+  // With deduplication, we get exactly one instance.
   rule {
     source_labels = ["__meta_docker_container_label_metrics_port"]
-    regex         = `.+`
-    action        = "keep"
+    regex         = `(.+)`
+    target_label  = "__meta_docker_port_private"
   }
   rule {
-    source_labels = ["__meta_docker_container_label_metrics_port"]
-    target_label  = "__meta_docker_port_private"
-    action        = "keepequal"
+    source_labels = ["__address__", "__meta_docker_container_label_metrics_port"]
+    regex         = `(.+):\d+;(.+)`
+    target_label  = "__address__"
+    replacement   = "$1:$2"
   }
 
   // Set job and instance name
