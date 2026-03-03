@@ -6,9 +6,11 @@
 package bmp
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/netip"
+	"runtime/pprof"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -86,6 +88,8 @@ func (p *Provider) Start() error {
 
 	// Listener
 	p.t.Go(func() error {
+		labels := pprof.Labels("goroutine", "bmp-listener")
+		pprof.SetGoroutineLabels(pprof.WithLabels(context.Background(), labels))
 		for {
 			conn, err := listener.Accept()
 			if err != nil {
@@ -126,6 +130,8 @@ func (p *Provider) Start() error {
 			}
 			p.active.Store(true)
 			p.t.Go(func() error {
+				labels := pprof.Labels("goroutine", fmt.Sprintf("bmp-connection-%s", exporterStr))
+				pprof.SetGoroutineLabels(pprof.WithLabels(context.Background(), labels))
 				return p.serveConnection(tcpConn, exporter, exporterStr)
 			})
 		}
