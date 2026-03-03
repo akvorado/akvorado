@@ -232,9 +232,6 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 		return
 	}
 
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	// Ignore this peer if this is a L3VPN and it does not have
 	// the right RD.
 	if pkey.ptype == bmp.BMP_PEER_TYPE_L3VPN && !p.isAcceptedRD(pkey.distinguisher) {
@@ -243,14 +240,6 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 
 	exporterStr := pkey.exporter.Addr().Unmap().String()
 	peerStr := pkey.ip.Unmap().String()
-	pinfo, ok := p.peers[pkey]
-	if !ok {
-		// We may have missed the peer down notification?
-		p.r.Info().Msgf("received route monitoring from exporter %s for peer %s, but no peer up",
-			exporterStr, peerStr)
-		p.metrics.peers.WithLabelValues(exporterStr).Inc()
-		pinfo = p.addPeer(pkey)
-	}
 
 	var nh netip.Addr
 	var rta routeAttributes
@@ -287,6 +276,20 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 	if !p.config.CollectASPaths {
 		rta.asPath = nil
 	}
+
+	// Acquire the lock for shared mutable state: peers and RIB.
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	pinfo, ok := p.peers[pkey]
+	if !ok {
+		// We may have missed the peer down notification?
+		p.r.Info().Msgf("received route monitoring from exporter %s for peer %s, but no peer up",
+			exporterStr, peerStr)
+		p.metrics.peers.WithLabelValues(exporterStr).Inc()
+		pinfo = p.addPeer(pkey)
+	}
+
 	nhRef := p.rib.nextHops.Put(nextHop(nh))
 	rtaRef := p.rib.rtas.Put(rta)
 
