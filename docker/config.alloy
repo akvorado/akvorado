@@ -27,20 +27,16 @@ discovery.relabel "prometheus" {
     regex         = `true`
     action        = "keep"
   }
-  // Normalize the case where network is host (metrics.port required).
+
+  // When host networking, override __address__ to host.docker.internal.
   rule {
     source_labels = ["__meta_docker_container_label_metrics_port", "__meta_docker_network_name"]
     regex         = `(.+);host`
     target_label  = "__address__"
     replacement   = "host.docker.internal:$1"
   }
-  // When metrics.port is set, override __meta_docker_port_private and __address__.
-  // With deduplication, we get exactly one instance.
-  rule {
-    source_labels = ["__meta_docker_container_label_metrics_port"]
-    regex         = `(.+)`
-    target_label  = "__meta_docker_port_private"
-  }
+
+  // When metrics.port is set, override __address__.
   rule {
     source_labels = ["__address__", "__meta_docker_container_label_metrics_port"]
     regex         = `(.+):\d+;(.+)`
