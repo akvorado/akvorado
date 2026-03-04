@@ -34,7 +34,7 @@
             inherit src pnpm;
             pname = name;
             buildInputs = [ nodejs ];
-            fetcherVersion = 2;
+            fetcherVersion = 3;
             hash = l.readFile ./nix/npmDepsHash.txt;
           };
 
