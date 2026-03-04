@@ -939,15 +939,16 @@ provided inside `clickhouse`:
   schema mismatches may cause write errors.
 
 The `resolutions` setting contains a list of resolutions. Each resolution has
-two keys: `interval` and `ttl`. The first one is the consolidation interval. The
-second is how long to keep the data in the database. If `ttl` is 0, then the
-data is kept forever. If `interval` is 0, it applies to the raw data (the one in
-the `flows` table). For each resolution, a materialized view `flows_DDDD` is
-created with the specified interval. It should be noted that consolidated tables
-do not contain information about source/destination IP addresses and ports by
-default. That's why you may want to keep the interval-0 table data a bit longer.
-*Akvorado* will still use the consolidated tables if the query do not require
-the raw table, for performance reason.
+three keys: `interval` and `ttl` and `storage-policy`. The first one is the
+consolidation interval. The second is how long to keep the data in the
+database. If `ttl` is 0, then the data is kept forever. If `interval` is 0, it
+ applies to the raw data (the one in the `flows` table). For each resolution, a
+ materialized view `flows_DDDD` is created with the specified interval. It
+should be noted that consolidated tables do not contain information about
+source/destination IP addresses and ports by default. That's why you may want
+to keep the interval-0 table data a bit longer.  *Akvorado* will still use the
+consolidated tables if the query do not require the raw table, for performance
+reason.
 
 Here is the default configuration:
 
