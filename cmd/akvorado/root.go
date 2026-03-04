@@ -63,6 +63,7 @@ func init() {
 }
 
 func main() {
+	os.Setenv("GODEBUG", "tracebacklabels=1")
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %+v\n", err)
 		os.Exit(1)
