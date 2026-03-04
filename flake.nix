@@ -26,11 +26,12 @@
           src = ./console/frontend;
           nativeBuildInputs = [
             nodejs
-            pnpm.configHook
+            pnpm
+            pkgs.pnpmConfigHook
           ];
 
-          pnpmDeps = pnpm.fetchDeps {
-            inherit src;
+          pnpmDeps = pkgs.fetchPnpmDeps {
+            inherit src pnpm;
             pname = name;
             buildInputs = [ nodejs ];
             fetcherVersion = 2;
