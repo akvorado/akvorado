@@ -278,8 +278,13 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 	}
 
 	// Acquire the lock for shared mutable state: peers and RIB.
+	lockStart := p.d.Clock.Now()
 	p.mu.Lock()
-	defer p.mu.Unlock()
+	defer func() {
+		p.mu.Unlock()
+		p.metrics.locked.WithLabelValues("route-monitoring").Observe(
+			float64(p.d.Clock.Now().Sub(lockStart).Nanoseconds()) / 1000 / 1000 / 1000)
+	}()
 
 	pinfo, ok := p.peers[pkey]
 	if !ok {
