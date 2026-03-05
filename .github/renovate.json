@@ -204,6 +204,15 @@
         "actions/download-artifact",
         "actions/upload-artifact"
       ]
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "actions-docker",
+      "matchPackageNames": [
+        "/^docker//"
+      ]
     }
   ]
 }
