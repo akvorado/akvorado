@@ -134,19 +134,21 @@
       "matchManagers": [
         "gomod"
       ],
+      "groupName": "franz-go",
       "matchPackageNames": [
-        "github.com/twmb/franz-go/pkg/kmsg"
-      ],
-      "allowedVersions": "!/^2\\./"
+        "/^github\\.com/twmb/franz-go/",
+        "!github.com/twmb/franz-go/pkg/kmsg"
+      ]
     },
     {
       "matchManagers": [
         "gomod"
       ],
-      "groupName": "franz-go",
       "matchPackageNames": [
-        "/^github\\.com/twmb/franz-go/"
-      ]
+        "github.com/twmb/franz-go/pkg/kmsg"
+      ],
+      "groupName": "franz-go",
+      "allowedVersions": "!/^2\\./"
     },
     {
       "matchManagers": [
