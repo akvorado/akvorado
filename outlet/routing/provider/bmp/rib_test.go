@@ -197,7 +197,7 @@ func TestRemoveRoutes(t *testing.T) {
 	}
 	t.Run("only route", func(t *testing.T) {
 		r := newRIB()
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), nr(r, 10))
+		r.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/120"), nr(r, 10))
 		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
 		count, empty := r.removeRoutes(idx, func(route) bool { return true }, true)
 		if !empty {
@@ -215,8 +215,8 @@ func TestRemoveRoutes(t *testing.T) {
 		r := newRIB()
 		r1 := nr(r, 10)
 		r2 := nr(r, 11)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
+		r.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
+		r.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
 		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
 		count, empty := r.removeRoutes(idx, func(r route) bool { return r.peer == 10 }, true)
 		if empty {
@@ -236,8 +236,8 @@ func TestRemoveRoutes(t *testing.T) {
 		r := newRIB()
 		r1 := nr(r, 10)
 		r2 := nr(r, 11)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
+		r.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
+		r.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
 		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
 		count, empty := r.removeRoutes(idx, func(r route) bool { return r.peer == 11 }, true)
 		if empty {
@@ -257,9 +257,9 @@ func TestRemoveRoutes(t *testing.T) {
 		r1 := nr(r, 10)
 		r2 := nr(r, 11)
 		r3 := nr(r, 12)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r3)
+		r.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
+		r.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
+		r.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r3)
 		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
 		count, empty := r.removeRoutes(idx, func(r route) bool { return r.peer == 11 }, true)
 		if empty {
@@ -282,11 +282,11 @@ func TestRemoveRoutes(t *testing.T) {
 		r3 := nr(r, 12)
 		r4 := nr(r, 13)
 		r5 := nr(r, 14)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r3)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r4)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r5)
+		r.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
+		r.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
+		r.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r3)
+		r.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r4)
+		r.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r5)
 		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
 		count, empty := r.removeRoutes(idx, func(r route) bool { return r.peer%2 == 0 }, false)
 		if empty {
@@ -310,11 +310,11 @@ func TestRemoveRoutes(t *testing.T) {
 		r3 := nr(r, 12)
 		r4 := nr(r, 13)
 		r5 := nr(r, 14)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r3)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r4)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r5)
+		r.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
+		r.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
+		r.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r3)
+		r.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r4)
+		r.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r5)
 		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
 		count, empty := r.removeRoutes(idx, func(route) bool { return true }, false)
 		if !empty {
@@ -391,7 +391,7 @@ func TestRIBHarness(t *testing.T) {
 						asn:     uint32(random.IntN(1000)),
 						comment: "added during first pass",
 					}
-					added += r.AddPrefix(netip.PrefixFrom(lookup.addr, 64),
+					routesAdded, _ := r.AddRoute(netip.PrefixFrom(lookup.addr, 64),
 						route{
 							peer:    peer,
 							nlri:    r.nlris.Put(nlri{rd: lookup.rd}),
@@ -400,6 +400,7 @@ func TestRIBHarness(t *testing.T) {
 								asn: lookup.asn,
 							}),
 						})
+					added += routesAdded
 					removeLookup(lookup, fmt.Sprintf("erased by NH: %s, ASN: %d", lookup.nextHop, lookup.asn))
 					lookups = append(lookups, lookup)
 				}
@@ -414,11 +415,12 @@ func TestRIBHarness(t *testing.T) {
 					if nlriRef, ok := r.nlris.Ref(nlri{
 						rd: rd,
 					}); ok {
-						removed += r.RemovePrefix(netip.PrefixFrom(prefix, 64),
+						routesRemoved, _ := r.RemoveRoute(netip.PrefixFrom(prefix, 64),
 							route{
 								peer: peer,
 								nlri: nlriRef,
 							})
+						removed += routesRemoved
 						removeLookup(lookup{
 							peer: peer,
 							addr: prefix,
@@ -440,7 +442,7 @@ func TestRIBHarness(t *testing.T) {
 						asn:     uint32(random.IntN(1010)),
 						comment: "added during third pass",
 					}
-					added += r.AddPrefix(netip.PrefixFrom(lookup.addr, 64),
+					routesAdded, _ := r.AddRoute(netip.PrefixFrom(lookup.addr, 64),
 						route{
 							peer:    peer,
 							nlri:    r.nlris.Put(nlri{}),
@@ -449,6 +451,7 @@ func TestRIBHarness(t *testing.T) {
 								asn: lookup.asn,
 							}),
 						})
+					added += routesAdded
 					removeLookup(lookup, fmt.Sprintf("erased by NH: %s, ASN: %d", lookup.nextHop, lookup.asn))
 					lookups = append(lookups, lookup)
 				}

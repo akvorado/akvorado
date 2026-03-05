@@ -240,14 +240,17 @@ func (r *rib) IterateRoutes(ip netip.Addr) iter.Seq[route] {
 	}
 }
 
-// AddPrefix add a new route to the RIB. It returns the number of routes really added.
-func (r *rib) AddPrefix(prefix netip.Prefix, newRoute route) int {
+// AddRoute add a new route to the RIB. It returns the number of routes
+// really added and whether the prefix is new in the tree.
+func (r *rib) AddRoute(prefix netip.Prefix, newRoute route) (int, bool) {
 	var prefixIdx prefixIndex
+	var isNew bool
 	prefix = helpers.UnmapPrefix(prefix)
 	r.tree.Modify(prefix, func(existing prefixIndex, found bool) (prefixIndex, bool) {
 		if found {
 			prefixIdx = existing
 		} else {
+			isNew = true
 			prefixIdx = r.newPrefixIndex()
 		}
 		return prefixIdx, false
@@ -260,7 +263,7 @@ func (r *rib) AddPrefix(prefix netip.Prefix, newRoute route) int {
 		if !exists {
 			// Found empty slot, add new route
 			r.routes[key] = newRoute
-			return 1
+			return 1, isNew
 		}
 		if existingRoute.peer == newRoute.peer && existingRoute.nlri == newRoute.nlri {
 			// Found existing route, update it
@@ -268,15 +271,17 @@ func (r *rib) AddPrefix(prefix netip.Prefix, newRoute route) int {
 			r.nextHops.Take(existingRoute.nextHop)
 			r.rtas.Take(existingRoute.attributes)
 			r.routes[key] = newRoute
-			return 0 // Not really added, just updated
+			return 0, false // Not really added, just updated
 		}
 		key++
 	}
 }
 
-// RemovePrefix removes a route from the RIB. It returns the number of routes really removed.
-func (r *rib) RemovePrefix(prefix netip.Prefix, oldRoute route) int {
+// RemoveRoute removes a route from the RIB. It returns the number of routes
+// really removed and whether the prefix was removed from the tree.
+func (r *rib) RemoveRoute(prefix netip.Prefix, oldRoute route) (int, bool) {
 	removedCount := 0
+	prefixRemoved := false
 	prefix = helpers.UnmapPrefix(prefix)
 
 	r.tree.Modify(prefix, func(existing prefixIndex, found bool) (prefixIndex, bool) {
@@ -287,6 +292,7 @@ func (r *rib) RemovePrefix(prefix netip.Prefix, oldRoute route) int {
 			}, true)
 			if empty {
 				r.freePrefixIndex(existing)
+				prefixRemoved = true
 				return 0, true
 			}
 			return existing, false
@@ -294,13 +300,14 @@ func (r *rib) RemovePrefix(prefix netip.Prefix, oldRoute route) int {
 		return 0, true
 	})
 
-	return removedCount
+	return removedCount, prefixRemoved
 }
 
 // FlushPeer removes a whole peer from the RIB, returning the number
-// of removed routes.
-func (r *rib) FlushPeer(peer uint32) int {
-	removedTotal := 0
+// of removed routes and the number of removed prefixes.
+func (r *rib) FlushPeer(peer uint32) (int, int) {
+	routesRemoved := 0
+	prefixesRemoved := 0
 	anyEmpty := false
 
 	// Iterate through all prefixes and remove peer routes.
@@ -308,7 +315,10 @@ func (r *rib) FlushPeer(peer uint32) int {
 		removed, empty := r.removeRoutes(prefixIdx, func(route route) bool {
 			return route.peer == peer
 		}, false)
-		removedTotal += removed
+		routesRemoved += removed
+		if empty {
+			prefixesRemoved++
+		}
 		anyEmpty = anyEmpty || empty
 	}
 
@@ -324,7 +334,7 @@ func (r *rib) FlushPeer(peer uint32) int {
 		}
 		r.tree = newTree
 	}
-	return removedTotal
+	return routesRemoved, prefixesRemoved
 }
 
 // newRIB initializes a new RIB.

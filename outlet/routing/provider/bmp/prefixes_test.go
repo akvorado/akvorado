@@ -243,7 +243,7 @@ func BenchmarkRIBInsertion(b *testing.B) {
 							}
 							pfx := helpers.PrefixTo6(r.Prefix)
 							tentative++
-							inserted += rib.AddPrefix(pfx, route{
+							routesAdded, _ := rib.AddRoute(pfx, route{
 								peer:    uint32(p),
 								nlri:    nlriRef,
 								nextHop: nhRef,
@@ -255,6 +255,7 @@ func BenchmarkRIBInsertion(b *testing.B) {
 								}),
 								prefixLen: uint8(pfx.Bits()),
 							})
+							inserted += routesAdded
 						}
 					}
 				}
@@ -300,7 +301,7 @@ func BenchmarkRIBLookup(b *testing.B) {
 							continue
 						}
 						pfx := helpers.PrefixTo6(r.Prefix)
-						rib.AddPrefix(pfx, route{
+						rib.AddRoute(pfx, route{
 							peer:    uint32(p),
 							nlri:    nlriRef,
 							nextHop: nhRef,
@@ -351,7 +352,7 @@ func BenchmarkRIBFlush(b *testing.B) {
 								continue
 							}
 							pfx := helpers.PrefixTo6(r.Prefix)
-							rib.AddPrefix(pfx, route{
+							rib.AddRoute(pfx, route{
 								peer:    uint32(p),
 								nlri:    nlriRef,
 								nextHop: nhRef,

@@ -20,6 +20,9 @@ type metrics struct {
 	peerRemovalDone     *reporter.CounterVec
 	messageQueueFull    *reporter.CounterVec
 	messageQueueNotFull *reporter.CounterVec
+	prefixesAdded       *reporter.CounterVec
+	prefixesRemoved     *reporter.CounterVec
+	prefixesUpdated     *reporter.CounterVec
 }
 
 // initMetrics initialize the metrics for the BMP component.
@@ -120,6 +123,27 @@ func (p *Provider) initMetrics() {
 		reporter.CounterOpts{
 			Name: "message_queue_notfull_total",
 			Help: "Number of BMP messages not hitting the message queue limit.",
+		},
+		[]string{"exporter"},
+	)
+	p.metrics.prefixesAdded = p.r.CounterVec(
+		reporter.CounterOpts{
+			Name: "prefixes_added_total",
+			Help: "Number of prefixes added to the RIB.",
+		},
+		[]string{"exporter"},
+	)
+	p.metrics.prefixesRemoved = p.r.CounterVec(
+		reporter.CounterOpts{
+			Name: "prefixes_removed_total",
+			Help: "Number of prefixes removed from the RIB.",
+		},
+		[]string{"exporter"},
+	)
+	p.metrics.prefixesUpdated = p.r.CounterVec(
+		reporter.CounterOpts{
+			Name: "prefixes_updated_total",
+			Help: "Number of prefixes updated in the RIB.",
 		},
 		[]string{"exporter"},
 	)

@@ -101,6 +101,9 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers{exporter="127.0.0.1"}`:                                                 "0",
 			`routes{exporter="127.0.0.1"}`:                                                "0",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "0",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "0",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -122,6 +125,9 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers{exporter="127.0.0.1"}`:                                                 "0",
 			`routes{exporter="127.0.0.1"}`:                                                "0",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "0",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "0",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -153,6 +159,9 @@ func TestBMP(t *testing.T) {
 				`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
 				`peers{exporter="127.0.0.1"}`:                                                 "0",
 				`routes{exporter="127.0.0.1"}`:                                                "0",
+				`prefixes_added_total{exporter="127.0.0.1"}`:                                  "0",
+				`prefixes_removed_total{exporter="127.0.0.1"}`:                                "0",
+				`prefixes_updated_total{exporter="127.0.0.1"}`:                                "0",
 			}
 			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 				if tries > 0 {
@@ -188,6 +197,9 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers{exporter="127.0.0.1"}`:                                                 "4",
 			`routes{exporter="127.0.0.1"}`:                                                "0",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "0",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "0",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -221,6 +233,9 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers{exporter="127.0.0.1"}`:                                                 "4",
 			`routes{exporter="127.0.0.1"}`:                                                "18",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "11",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "7",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -285,6 +300,9 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers{exporter="127.0.0.1"}`:                                                 "3",
 			`routes{exporter="127.0.0.1"}`:                                                "17",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "10",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "7",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -317,6 +335,9 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers{exporter="127.0.0.1"}`:                                                 "4",
 			`routes{exporter="127.0.0.1"}`:                                                "17",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "10",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "7",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -350,6 +371,9 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers{exporter="127.0.0.1"}`:                                                 "3",
 			`routes{exporter="127.0.0.1"}`:                                                "14",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "10",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "1",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "7",
 			`removed_peers_total{exporter="127.0.0.1"}`:                                   "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
@@ -410,6 +434,9 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers{exporter="127.0.0.1"}`:                                                 "4",
 			`routes{exporter="127.0.0.1"}`:                                                "1",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "1",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "0",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -454,6 +481,9 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers{exporter="127.0.0.1"}`:                                                 "4",
 			`routes{exporter="127.0.0.1"}`:                                                "10",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "8",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "2",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -512,6 +542,9 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers{exporter="127.0.0.1"}`:                                                 "4",
 			`routes{exporter="127.0.0.1"}`:                                                "0",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "8",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "8",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "2",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -548,6 +581,9 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers{exporter="127.0.0.1"}`:                                                 "1",
 			`routes{exporter="127.0.0.1"}`:                                                "2",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "2",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "0",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -699,6 +735,9 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers{exporter="127.0.0.1"}`:                                                 "4",
 			`routes{exporter="127.0.0.1"}`:                                                "0",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "0",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "0",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -737,6 +776,9 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers{exporter="127.0.0.1"}`:                                                 "4",
 			`routes{exporter="127.0.0.1"}`:                                                "1",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "10",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "9",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "7",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -782,6 +824,9 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers{exporter="127.0.0.1"}`:                                                 "4",
 			`routes{exporter="127.0.0.1"}`:                                                "1",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "10",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "9",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "7",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -817,6 +862,9 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers{exporter="127.0.0.1"}`:                                                 "4",
 			`routes{exporter="127.0.0.1"}`:                                                "17",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "10",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "7",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -881,6 +929,9 @@ func TestBMP(t *testing.T) {
 			`closed_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers{exporter="127.0.0.1"}`:                                                 "1",
 			`routes{exporter="127.0.0.1"}`:                                                "2",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "2",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "0",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -913,6 +964,9 @@ func TestBMP(t *testing.T) {
 			`closed_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers{exporter="127.0.0.1"}`:                                                 "0",
 			`routes{exporter="127.0.0.1"}`:                                                "0",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "2",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "2",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "0",
 			`removed_peers_total{exporter="127.0.0.1"}`:                                   "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
@@ -952,7 +1006,10 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers{exporter="127.0.0.1"}`:                                                 "1",
 			`routes{exporter="127.0.0.1"}`:                                                "2",
-			ignoredMetric:                                                                 "1",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "2",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "0",
+			ignoredMetric: "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -995,6 +1052,9 @@ func TestBMP(t *testing.T) {
 			`opened_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers{exporter="127.0.0.1"}`:                                                 "2",
 			`routes{exporter="127.0.0.1"}`:                                                "2",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "2",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "0",
 			`ignored_nlri_total{exporter="127.0.0.1",type="l2vpn-vpls"}`:                  "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
@@ -1033,6 +1093,9 @@ func TestBMP(t *testing.T) {
 			`closed_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers{exporter="127.0.0.1"}`:                                                 "2",
 			`routes{exporter="127.0.0.1"}`:                                                "4",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "2",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "2",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			t.Errorf("Metrics (-got, +want):\n%s", diff)
@@ -1067,6 +1130,9 @@ func TestBMP(t *testing.T) {
 			`closed_connections_total{exporter="127.0.0.1"}`:                              "1",
 			`peers{exporter="127.0.0.1"}`:                                                 "1",
 			`routes{exporter="127.0.0.1"}`:                                                "2",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "2",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "2",
 			`removed_peers_total{exporter="127.0.0.1"}`:                                   "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
@@ -1100,6 +1166,9 @@ func TestBMP(t *testing.T) {
 			`closed_connections_total{exporter="127.0.0.1"}`:                              "2",
 			`peers{exporter="127.0.0.1"}`:                                                 "1",
 			`routes{exporter="127.0.0.1"}`:                                                "2",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "2",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "2",
 			`removed_peers_total{exporter="127.0.0.1"}`:                                   "1",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
@@ -1126,6 +1195,9 @@ func TestBMP(t *testing.T) {
 			`closed_connections_total{exporter="127.0.0.1"}`:                              "2",
 			`peers{exporter="127.0.0.1"}`:                                                 "0",
 			`routes{exporter="127.0.0.1"}`:                                                "0",
+			`prefixes_added_total{exporter="127.0.0.1"}`:                                  "2",
+			`prefixes_removed_total{exporter="127.0.0.1"}`:                                "2",
+			`prefixes_updated_total{exporter="127.0.0.1"}`:                                "2",
 			`removed_peers_total{exporter="127.0.0.1"}`:                                   "2",
 		}
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
@@ -1159,7 +1231,7 @@ func TestBMP(t *testing.T) {
 		}
 
 		// Add another prefix
-		p.rib.AddPrefix(netip.MustParsePrefix("2001:db8:1::/64"), route{
+		p.rib.AddRoute(netip.MustParsePrefix("2001:db8:1::/64"), route{
 			peer:       1,
 			nlri:       p.rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
 			nextHop:    p.rib.nextHops.Put(nextHop(netip.MustParseAddr("2001:db8::a"))),
