@@ -136,8 +136,7 @@
       ],
       "groupName": "franz-go",
       "matchPackageNames": [
-        "/^github\\.com/twmb/franz-go/",
-        "!github.com/twmb/franz-go/pkg/kmsg"
+        "/^github\\.com/twmb/franz-go/"
       ]
     },
     {
@@ -147,7 +146,6 @@
       "matchPackageNames": [
         "github.com/twmb/franz-go/pkg/kmsg"
       ],
-      "groupName": "franz-go",
       "allowedVersions": "!/^2\\./"
     },
     {
