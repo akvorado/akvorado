@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: akvorado-configmap
+  namespace: {{ .Values.environment }}-{{ .Values.namespace }}
+data:
+  akvorado.yaml: |-
+{{ .Files.Get "config/akvorado.yml" | indent 3 }}
+
+  inlet.yaml: |-
+{{ .Files.Get "config/inlet.yml" | indent 3 }}
+
+  console.yaml: |-
+{{ .Files.Get "config/console.yml" | indent 3 }}
