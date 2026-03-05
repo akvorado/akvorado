@@ -28,35 +28,15 @@ func (p *Provider) Lookup(_ context.Context, ip, nh, _ netip.Addr) (LookupResult
 	if !p.active.Load() {
 		return LookupResult{}, nil
 	}
-	p.mu.RLock()
-	defer p.mu.RUnlock()
 
-	// Find the best route, preferring exact next hop match
-	var selectedRoute route
-	routeFound := false
-	for route := range p.rib.IterateRoutes(ip) {
-		if !routeFound {
-			selectedRoute = route
-			routeFound = true
-		}
-		if p.rib.nextHops.Get(route.nextHop) == nextHop(nh) {
-			// Exact match found, use it and don't search further
-			selectedRoute = route
-			break
-		}
-	}
-
-	if !routeFound {
+	attributes, nhResult, plen, found := p.rib.LookupRoute(ip, nh)
+	if !found {
 		return LookupResult{}, errNoRouteFound
 	}
 
-	attributes := p.rib.rtas.Get(selectedRoute.attributes)
-	// The next hop is updated from the rib in every case, because the user
-	// "opted in" for bmp as source if the lookup result is evaluated
-	nh = netip.Addr(p.rib.nextHops.Get(selectedRoute.nextHop))
+	nh = netip.Addr(nhResult)
 
 	// Prefix length is for IPv4-mapped IPv6 address.
-	plen := selectedRoute.prefixLen
 	if ip.Is4In6() {
 		plen = plen - 96
 	}

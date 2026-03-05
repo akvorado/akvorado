@@ -44,11 +44,15 @@ func TestBMP(t *testing.T) {
 		c.mu.RLock()
 		defer c.mu.RUnlock()
 		result := map[netip.Addr][]string{}
+		c.rib.mu.RLock()
+		defer c.rib.mu.RUnlock()
 		for prefix, prefixIdx := range c.rib.tree.All() {
-			for route := range c.rib.iterateRoutesForPrefixIndex(prefixIdx) {
-				nlriRef := c.rib.nlris.Get(route.nlri)
-				nh := c.rib.nextHops.Get(route.nextHop)
-				attrs := c.rib.rtas.Get(route.attributes)
+			rs := c.rib.shards[prefixIdx.shardIdx()]
+			rs.mu.RLock()
+			for route := range rs.iterateRoutesForPrefixIndex(prefixIdx) {
+				nlriRef := rs.nlris.Get(route.nlri)
+				nh := rs.nextHops.Get(route.nextHop)
+				attrs := rs.rtas.Get(route.attributes)
 				var peer netip.Addr
 				for pkey, pinfo := range c.peers {
 					if pinfo.reference == route.peer {
@@ -71,6 +75,7 @@ func TestBMP(t *testing.T) {
 						attrs.communities, attrs.largeCommunities))
 				slices.Sort(result[peer])
 			}
+			rs.mu.RUnlock()
 		}
 		return result
 	}
@@ -1231,11 +1236,12 @@ func TestBMP(t *testing.T) {
 		}
 
 		// Add another prefix
-		p.rib.AddRoute(netip.MustParsePrefix("2001:db8:1::/64"), route{
+		p.rib.AddRoute(netip.MustParsePrefix("2001:db8:1::/64"), rawRoute{
 			peer:       1,
-			nlri:       p.rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
-			nextHop:    p.rib.nextHops.Put(nextHop(netip.MustParseAddr("2001:db8::a"))),
-			attributes: p.rib.rtas.Put(routeAttributes{asn: 176}),
+			nlri:       nlri{family: bgp.RF_IPv4_UC},
+			nextHop:    nextHop(netip.MustParseAddr("2001:db8::a")),
+			attributes: routeAttributes{asn: 176},
+			prefixLen:  64,
 		})
 
 		lookup, _ = p.Lookup(t.Context(),

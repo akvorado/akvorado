@@ -61,7 +61,7 @@ func (configuration Configuration) New(r *reporter.Reporter, dependencies Depend
 		d:      &dependencies,
 		config: configuration,
 
-		rib:   newRIB(),
+		rib:   newRIB(int(configuration.RIBShards)),
 		peers: make(map[peerKey]*peerInfo),
 	}
 	if len(p.config.RDs) > 0 {

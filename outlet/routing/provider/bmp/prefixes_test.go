@@ -218,7 +218,7 @@ func BenchmarkRIBInsertion(b *testing.B) {
 				inserted := 0
 				tentative := 0
 				for b.Loop() {
-					rib = newRIB()
+					rib = newRIB(16)
 					nh := netip.MustParseAddr("::ffff:198.51.100.0")
 					prng1 := rand.New(rand.NewPCG(10, 10))
 					prng2 := make([]*rand.Rand, peers)
@@ -235,24 +235,22 @@ func BenchmarkRIBInsertion(b *testing.B) {
 						}
 						b.StartTimer()
 
-						nlriRef := rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC})
-						nhRef := rib.nextHops.Put(nextHop(nh))
 						for _, r := range randomPrefixes {
 							if prng2[p].IntN(10) == 0 {
 								continue
 							}
 							pfx := helpers.PrefixTo6(r.Prefix)
 							tentative++
-							routesAdded, _ := rib.AddRoute(pfx, route{
+							routesAdded, _ := rib.AddRoute(pfx, rawRoute{
 								peer:    uint32(p),
-								nlri:    nlriRef,
-								nextHop: nhRef,
-								attributes: rib.rtas.Put(routeAttributes{
+								nlri:    nlri{family: bgp.RF_IPv4_UC},
+								nextHop: nextHop(nh),
+								attributes: routeAttributes{
 									asn:              r.ASPath[len(r.ASPath)-1],
 									asPath:           r.ASPath,
 									communities:      r.Communities,
 									largeCommunities: r.LargeCommunities,
-								}),
+								},
 								prefixLen: uint8(pfx.Bits()),
 							})
 							inserted += routesAdded
@@ -285,7 +283,7 @@ func BenchmarkRIBLookup(b *testing.B) {
 			name := fmt.Sprintf("%d routes, %d peers", routes, peers)
 
 			b.Run(name, func(b *testing.B) {
-				rib := newRIB()
+				rib := newRIB(16)
 				nh := netip.MustParseAddr("::ffff:198.51.100.0")
 				prng1 := rand.New(rand.NewPCG(10, 10))
 				prng2 := make([]*rand.Rand, peers)
@@ -294,23 +292,21 @@ func BenchmarkRIBLookup(b *testing.B) {
 				}
 				for p := range peers {
 					nh = nh.Next()
-					nlriRef := rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC})
-					nhRef := rib.nextHops.Put(nextHop(nh))
 					for r := range randomRealWorldRoutes4(prng1, prng2[p], routes) {
 						if prng2[p].IntN(10) == 0 {
 							continue
 						}
 						pfx := helpers.PrefixTo6(r.Prefix)
-						rib.AddRoute(pfx, route{
+						rib.AddRoute(pfx, rawRoute{
 							peer:    uint32(p),
-							nlri:    nlriRef,
-							nextHop: nhRef,
-							attributes: rib.rtas.Put(routeAttributes{
+							nlri:    nlri{family: bgp.RF_IPv4_UC},
+							nextHop: nextHop(nh),
+							attributes: routeAttributes{
 								asn:              r.ASPath[len(r.ASPath)-1],
 								asPath:           r.ASPath,
 								communities:      r.Communities,
 								largeCommunities: r.LargeCommunities,
-							}),
+							},
 							prefixLen: uint8(pfx.Bits()),
 						})
 					}
@@ -324,6 +320,7 @@ func BenchmarkRIBLookup(b *testing.B) {
 					count++
 					ip4 := randomPrefixes[count%len(randomPrefixes)].Prefix.Addr()
 					p.Lookup(b.Context(), ip4, netip.Addr{}, netip.Addr{})
+					rib.LookupRoute(ip4, netip.Addr{})
 				}
 				b.ReportMetric(float64(b.Elapsed())/float64(count), "ns/op")
 			})
@@ -339,7 +336,7 @@ func BenchmarkRIBFlush(b *testing.B) {
 			b.Run(name, func(b *testing.B) {
 				for b.Loop() {
 					b.StopTimer()
-					rib := newRIB()
+					rib := newRIB(16)
 					nh := netip.MustParseAddr("::ffff:198.51.100.0")
 					prng1 := rand.New(rand.NewPCG(10, 10))
 					prng2 := make([]*rand.Rand, peers)
@@ -348,23 +345,21 @@ func BenchmarkRIBFlush(b *testing.B) {
 					}
 					for p := range peers {
 						nh = nh.Next()
-						nlriRef := rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC})
-						nhRef := rib.nextHops.Put(nextHop(nh))
 						for r := range randomRealWorldRoutes4(prng1, prng2[p], routes) {
 							if prng2[p].IntN(10) == 0 {
 								continue
 							}
 							pfx := helpers.PrefixTo6(r.Prefix)
-							rib.AddRoute(pfx, route{
+							rib.AddRoute(pfx, rawRoute{
 								peer:    uint32(p),
-								nlri:    nlriRef,
-								nextHop: nhRef,
-								attributes: rib.rtas.Put(routeAttributes{
+								nlri:    nlri{family: bgp.RF_IPv4_UC},
+								nextHop: nextHop(nh),
+								attributes: routeAttributes{
 									asn:              r.ASPath[len(r.ASPath)-1],
 									asPath:           r.ASPath,
 									communities:      r.Communities,
 									largeCommunities: r.LargeCommunities,
-								}),
+								},
 								prefixLen: uint8(pfx.Bits()),
 							})
 						}

@@ -222,6 +222,10 @@ For the BMP provider, the following keys are accepted:
   full, the reader blocks, relying on TCP backpressure. This decouples IO from
   processing and prevents the sender from declaring the session stuck during
   slow operations.
+- `rib-shards` is the number of shards for the RIB (default: 16, max: 256). The
+  RIB is split across independent shards to reduce lock contention when
+  processing routes from multiple BMP connections concurrently. Increasing the
+  number of shards increase the memory usage.
 
 If you do not need AS paths and communities, you can disable them to save memory
 and disk space in ClickHouse.

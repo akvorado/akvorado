@@ -48,87 +48,85 @@ func (p *Provider) PopulateRIB(t *testing.T) {
 		ptype:    bmp.BMP_PEER_TYPE_GLOBAL,
 		asn:      64500,
 	})
-	p.rib.AddRoute(netip.MustParsePrefix("::ffff:192.0.2.0/123"), route{
+	p.rib.AddRoute(netip.MustParsePrefix("::ffff:192.0.2.0/123"), rawRoute{
 		peer:    pinfo.reference,
-		nlri:    p.rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC, path: 1}),
-		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.4"))),
-		attributes: p.rib.rtas.Put(routeAttributes{
+		nlri:    nlri{family: bgp.RF_IPv4_UC, path: 1},
+		nextHop: nextHop(netip.MustParseAddr("::ffff:198.51.100.4")),
+		attributes: routeAttributes{
 			asn:              174,
 			asPath:           []uint32{64200, 1299, 174},
 			communities:      []uint32{100, 200, 400},
 			largeCommunities: []bgp.LargeCommunity{{ASN: 64200, LocalData1: 2, LocalData2: 3}},
-		}),
+		},
 		prefixLen: 96 + 27,
 	})
-	p.rib.AddRoute(netip.MustParsePrefix("::ffff:192.0.2.0/123"), route{
+	p.rib.AddRoute(netip.MustParsePrefix("::ffff:192.0.2.0/123"), rawRoute{
 		peer:    pinfo.reference,
-		nlri:    p.rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC, path: 2}),
-		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
-		attributes: p.rib.rtas.Put(routeAttributes{
+		nlri:    nlri{family: bgp.RF_IPv4_UC, path: 2},
+		nextHop: nextHop(netip.MustParseAddr("::ffff:198.51.100.8")),
+		attributes: routeAttributes{
 			asn:         174,
 			asPath:      []uint32{64200, 174, 174, 174},
 			communities: []uint32{100},
-		}),
+		},
 		prefixLen: 96 + 27,
 	})
-	p.rib.AddRoute(netip.MustParsePrefix("::ffff:192.0.2.128/123"), route{
+	p.rib.AddRoute(netip.MustParsePrefix("::ffff:192.0.2.128/123"), rawRoute{
 		peer:    pinfo.reference,
-		nlri:    p.rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
-		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
-		attributes: p.rib.rtas.Put(routeAttributes{
+		nlri:    nlri{family: bgp.RF_IPv4_UC},
+		nextHop: nextHop(netip.MustParseAddr("::ffff:198.51.100.8")),
+		attributes: routeAttributes{
 			asn:         1299,
 			asPath:      []uint32{64200, 1299},
 			communities: []uint32{500},
-		}),
+		},
 		prefixLen: 96 + 27,
 	})
-	p.rib.AddRoute(netip.MustParsePrefix("::ffff:1.0.0.0/120"), route{
-		peer:    pinfo.reference,
-		nlri:    p.rib.nlris.Put(nlri{family: bgp.RF_IPv4_UC}),
-		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
-		attributes: p.rib.rtas.Put(routeAttributes{
-			asn: 65300,
-		}),
-		prefixLen: 96 + 24,
+	p.rib.AddRoute(netip.MustParsePrefix("::ffff:1.0.0.0/120"), rawRoute{
+		peer:       pinfo.reference,
+		nlri:       nlri{family: bgp.RF_IPv4_UC},
+		nextHop:    nextHop(netip.MustParseAddr("::ffff:198.51.100.8")),
+		attributes: routeAttributes{asn: 65300},
+		prefixLen:  96 + 24,
 	})
-	p.rib.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/117"), route{
+	p.rib.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/117"), rawRoute{
 		peer:    pinfo.reference,
-		nlri:    p.rib.nlris.Put(nlri{rd: 10, family: bgp.RF_IPv4_UC, path: 0}),
-		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:203.0.113.14"))),
-		attributes: p.rib.rtas.Put(routeAttributes{
+		nlri:    nlri{rd: 10, family: bgp.RF_IPv4_UC, path: 0},
+		nextHop: nextHop(netip.MustParseAddr("::ffff:203.0.113.14")),
+		attributes: routeAttributes{
 			asn:    1234,
 			asPath: []uint32{54321, 1234},
-		}),
+		},
 		prefixLen: 96 + 21,
 	})
-	p.rib.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/118"), route{
+	p.rib.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/118"), rawRoute{
 		peer:    pinfo.reference,
-		nlri:    p.rib.nlris.Put(nlri{rd: 10, family: bgp.RF_IPv4_UC, path: 0}),
-		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:203.0.113.15"))),
-		attributes: p.rib.rtas.Put(routeAttributes{
+		nlri:    nlri{rd: 10, family: bgp.RF_IPv4_UC, path: 0},
+		nextHop: nextHop(netip.MustParseAddr("::ffff:203.0.113.15")),
+		attributes: routeAttributes{
 			asn:    1234,
 			asPath: []uint32{1234},
-		}),
+		},
 		prefixLen: 96 + 22,
 	})
-	p.rib.AddRoute(netip.MustParsePrefix("::ffff:192.168.148.0/118"), route{
+	p.rib.AddRoute(netip.MustParsePrefix("::ffff:192.168.148.0/118"), rawRoute{
 		peer:    pinfo.reference,
-		nlri:    p.rib.nlris.Put(nlri{rd: 10, family: bgp.RF_IPv4_UC, path: 0}),
-		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:203.0.113.15"))),
-		attributes: p.rib.rtas.Put(routeAttributes{
+		nlri:    nlri{rd: 10, family: bgp.RF_IPv4_UC, path: 0},
+		nextHop: nextHop(netip.MustParseAddr("::ffff:203.0.113.15")),
+		attributes: routeAttributes{
 			asn:    1234,
 			asPath: []uint32{1234},
-		}),
+		},
 		prefixLen: 96 + 22,
 	})
-	p.rib.AddRoute(netip.MustParsePrefix("::ffff:192.168.148.1/128"), route{
+	p.rib.AddRoute(netip.MustParsePrefix("::ffff:192.168.148.1/128"), rawRoute{
 		peer:    pinfo.reference,
-		nlri:    p.rib.nlris.Put(nlri{rd: 10, family: bgp.RF_IPv4_UC, path: 0}),
-		nextHop: p.rib.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:203.0.113.14"))),
-		attributes: p.rib.rtas.Put(routeAttributes{
+		nlri:    nlri{rd: 10, family: bgp.RF_IPv4_UC, path: 0},
+		nextHop: nextHop(netip.MustParseAddr("::ffff:203.0.113.14")),
+		attributes: routeAttributes{
 			asn:    1234,
 			asPath: []uint32{1234},
-		}),
+		},
 		prefixLen: 96 + 32,
 	})
 }

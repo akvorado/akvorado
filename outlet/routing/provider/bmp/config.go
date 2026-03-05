@@ -33,6 +33,10 @@ type Configuration struct {
 	// MessageBuffer is the maximum number of BMP messages buffered between the
 	// TCP reader and the message processor.
 	MessageBuffer uint `validate:"min=1"`
+	// RIBShards is the number of shards for the RIB. Each shard has its own
+	// lock, enabling concurrent route operations on different shards. The
+	// maximum value matches shardBits constant in rib.go.
+	RIBShards uint `validate:"min=1,max=256"`
 }
 
 // DefaultConfiguration represents the default configuration for the BMP server
@@ -44,6 +48,7 @@ func DefaultConfiguration() provider.Configuration {
 		CollectCommunities: true,
 		Keep:               5 * time.Minute,
 		MessageBuffer:      10000,
+		RIBShards:          16,
 	}
 }
 
