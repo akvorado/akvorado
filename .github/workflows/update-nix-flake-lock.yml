@@ -48,5 +48,5 @@ jobs:
           branch: nix/flake-lock-update-${{ matrix.source }}
           labels: dependencies
           commit-message: "build: flake.lock automated update for ${{ matrix.source }}"
-          title: "build: ${{ matrix.source }} update"
+          title: "build: Nix Flake ${{ matrix.source }} update"
           body: ""
