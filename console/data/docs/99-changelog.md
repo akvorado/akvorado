@@ -14,6 +14,8 @@ identified with a specific icon:
 
 - 🩹 *outlet*: fix OpenConfig model handling in gNMI provider
 - 🩹 *outlet*: fix detection of gNMI model for equipments not triggering an error on nonexistent paths
+- 🩹 *outlet*: fix BMP RIB corruption due to sharing of route attribute references
+- 🌱 *outlet*: shard BMP RIB to reduce lock contention
 - 🌱 *outlet*: map sFlow drop codes to IPFIX ForwardingStatus
 - 🌱 *orchestrator*: do not materialize TTLs in ClickHouse when updating them
 - 🌱 *orchestrator*: reduce overhead of the exporters view to improve ClickHouse ingest performance

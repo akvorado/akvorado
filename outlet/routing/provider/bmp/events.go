@@ -281,15 +281,7 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 		rta.asPath = nil
 	}
 
-	// Acquire the lock for shared mutable state: peers and RIB.
-	lockStart := p.d.Clock.Now()
 	p.mu.Lock()
-	defer func() {
-		p.mu.Unlock()
-		p.metrics.locked.WithLabelValues("route-monitoring").Observe(
-			float64(p.d.Clock.Now().Sub(lockStart).Nanoseconds()) / 1000 / 1000 / 1000)
-	}()
-
 	pinfo, ok := p.peers[pkey]
 	if !ok {
 		// We may have missed the peer down notification?
@@ -298,9 +290,8 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 		p.metrics.peers.WithLabelValues(exporterStr).Inc()
 		pinfo = p.addPeer(pkey)
 	}
-
-	nhRef := p.rib.nextHops.Put(nextHop(nh))
-	rtaRef := p.rib.rtas.Put(rta)
+	peerRef := pinfo.reference
+	p.mu.Unlock()
 
 	routesAdded := 0
 	routesRemoved := 0
@@ -317,15 +308,15 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 				continue
 			}
 			pfx := helpers.PrefixTo6(v4UCPrefix.Prefix)
-			added, isNew := p.rib.AddRoute(pfx, route{
-				peer: pinfo.reference,
-				nlri: p.rib.nlris.Put(nlri{
+			added, isNew := p.rib.AddRoute(pfx, rawRoute{
+				peer: peerRef,
+				nlri: nlri{
 					family: bgp.RF_IPv4_UC,
 					path:   path.ID,
 					rd:     pkey.distinguisher,
-				}),
-				nextHop:    nhRef,
-				attributes: rtaRef,
+				},
+				nextHop:    nextHop(nh),
+				attributes: rta,
 				prefixLen:  uint8(pfx.Bits()),
 			})
 			routesAdded += added
@@ -341,19 +332,17 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 				continue
 			}
 			pfx := helpers.PrefixTo6(v4UCPrefix.Prefix)
-			if nlriRef, ok := p.rib.nlris.Ref(nlri{
-				family: bgp.RF_IPv4_UC,
-				path:   path.ID,
-				rd:     pkey.distinguisher,
-			}); ok {
-				removed, prefixRemoved := p.rib.RemoveRoute(pfx, route{
-					peer: pinfo.reference,
-					nlri: nlriRef,
-				})
-				routesRemoved += removed
-				if prefixRemoved {
-					prefixesRemoved++
-				}
+			removed, prefixRemoved := p.rib.RemoveRoute(pfx, rawRoute{
+				peer: peerRef,
+				nlri: nlri{
+					family: bgp.RF_IPv4_UC,
+					path:   path.ID,
+					rd:     pkey.distinguisher,
+				},
+			})
+			routesRemoved += removed
+			if prefixRemoved {
+				prefixesRemoved++
 			}
 		}
 	}
@@ -365,7 +354,6 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 		switch attr := attr.(type) {
 		case *bgp.PathAttributeMpReachNLRI:
 			nh = helpers.AddrTo6(attr.Nexthop)
-			nhRef = p.rib.nextHops.Put(nextHop(nh))
 			paths = attr.Value
 			family = bgp.NewFamily(attr.AFI, attr.SAFI)
 		case *bgp.PathAttributeMpUnreachNLRI:
@@ -400,15 +388,15 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 			}
 			switch attr.(type) {
 			case *bgp.PathAttributeMpReachNLRI:
-				added, isNew := p.rib.AddRoute(pfx, route{
-					peer: pinfo.reference,
-					nlri: p.rib.nlris.Put(nlri{
+				added, isNew := p.rib.AddRoute(pfx, rawRoute{
+					peer: peerRef,
+					nlri: nlri{
 						family: family,
 						rd:     rd,
 						path:   path.ID,
-					}),
-					nextHop:    nhRef,
-					attributes: rtaRef,
+					},
+					nextHop:    nextHop(nh),
+					attributes: rta,
 					prefixLen:  uint8(pfx.Bits()),
 				})
 				routesAdded += added
@@ -418,19 +406,17 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 					prefixesUpdated++
 				}
 			case *bgp.PathAttributeMpUnreachNLRI:
-				if nlriRef, ok := p.rib.nlris.Ref(nlri{
-					family: family,
-					rd:     rd,
-					path:   path.ID,
-				}); ok {
-					removed, prefixRemoved := p.rib.RemoveRoute(pfx, route{
-						peer: pinfo.reference,
-						nlri: nlriRef,
-					})
-					routesRemoved += removed
-					if prefixRemoved {
-						prefixesRemoved++
-					}
+				removed, prefixRemoved := p.rib.RemoveRoute(pfx, rawRoute{
+					peer: peerRef,
+					nlri: nlri{
+						family: family,
+						rd:     rd,
+						path:   path.ID,
+					},
+				})
+				routesRemoved += removed
+				if prefixRemoved {
+					prefixesRemoved++
 				}
 			}
 		}
