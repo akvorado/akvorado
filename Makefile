@@ -217,7 +217,8 @@ test-bench: ; $(info $(M) running benchmarks…) @ ## Run Go benchmarks
 	$Q $(GO) test \
 		-fullpath -run=__absolutelynothing__ -bench=. \
 	    $(GOTEST_ARGS) $(PKGS)
-# -benchmem -memprofile test/go/memprofile.out -cpuprofile test/go/cpuprofile.out
+# GOTEST_ARGS="-benchmem -memprofile test/go/memprofile.out -cpuprofile test/go/cpuprofile.out"
+# GOTEST_ARGS="-cpuprofile test/go/cpuprofile.out -bench RIBLookup"
 test-coverage-go: ; $(info $(M) running Go coverage tests…) @ ## Run Go coverage tests
 	$Q mkdir -p test/go
 	$Q env PATH=$(dir $(abspath $(shell command -v $(GO)))):$(PATH) \
