@@ -284,8 +284,8 @@ github.com/mdlayher/socket v0.5.1 h1:VZaqt6RkGkt2OE9l3GcC6nZkqD3xKeQLyfleW/uBcos
 github.com/mdlayher/socket v0.5.1/go.mod h1:TjPLHI1UgwEv5J1B5q0zTZq12A/6H7nKmtTanQE37IQ=
 github.com/mgechev/dots v1.0.0 h1:o+4OJ3OjWzgQHGJXKfJ8rbH4dqDugu5BiEy84nxg0k4=
 github.com/mgechev/dots v1.0.0/go.mod h1:rykuMydC9t3wfkM+ccYH3U3ss03vZGg6h3hmOznXLH0=
-github.com/mgechev/revive v1.14.0 h1:CC2Ulb3kV7JFYt+izwORoS3VT/+Plb8BvslI/l1yZsc=
-github.com/mgechev/revive v1.14.0/go.mod h1:MvnujelCZBZCaoDv5B3foPo6WWgULSSFxvfxp7GsPfo=
+github.com/mgechev/revive v1.15.0 h1:vJ0HzSBzfNyPbHKolgiFjHxLek9KUijhqh42yGoqZ8Q=
+github.com/mgechev/revive v1.15.0/go.mod h1:LlAKO3QQe9OJ0pVZzI2GPa8CbXGZ/9lNpCGvK4T/a8A=
 github.com/mna/pigeon v1.3.0 h1:/3fzVrl1C2RK3x04tyL+ribn+3S3VSEFFbCFLmRPAoc=
 github.com/mna/pigeon v1.3.0/go.mod h1:SKQNHonx2q9U2QSSoPtMigExj+vQ1mOpL7UVFQF/IA0=
 github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
