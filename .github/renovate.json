@@ -15,6 +15,9 @@
       "/docker/versions\\.yml$/"
     ]
   },
+  "gomod": {
+    "postUpdateOptions": ["gomodTidy"]
+  },
   "schedule": [
     "* * 1-7 * 6"
   ],
