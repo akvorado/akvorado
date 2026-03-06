@@ -317,10 +317,13 @@ func BenchmarkRIBLookup(b *testing.B) {
 				}
 
 				count := 0
+				p := &Provider{rib: rib}
+				p.config.CollectASNs = true
+				p.active.Store(true)
 				for b.Loop() {
 					count++
 					ip4 := randomPrefixes[count%len(randomPrefixes)].Prefix.Addr()
-					_, _ = rib.tree.Lookup(ip4)
+					p.Lookup(b.Context(), ip4, netip.Addr{}, netip.Addr{})
 				}
 				b.ReportMetric(float64(b.Elapsed())/float64(count), "ns/op")
 			})
