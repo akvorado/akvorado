@@ -40,7 +40,7 @@
     "echarts": "^6.0.0",
     "lodash-es": "^4.17.21",
     "lz-string": "^1.4.4",
-    "oxfmt": "^0.35.0",
+    "oxfmt": "^0.36.0",
     "oxlint": "^1.15.0",
     "oxlint-tsgolint": "^0.15.0",
     "sugar-date": "^2.0.6",
