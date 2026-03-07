@@ -30,8 +30,8 @@ importers:
         specifier: ^1.6.1
         version: 1.7.23(vue@3.5.29(typescript@5.9.3))
       '@heroicons/vue':
-        specifier: ^1.0.6
-        version: 1.0.6(vue@3.5.29(typescript@5.9.3))
+        specifier: ^2.0.0
+        version: 2.2.0(vue@3.5.29(typescript@5.9.3))
       '@lezer/common':
         specifier: ^1.2.3
         version: 1.5.1
@@ -509,8 +509,8 @@ packages:
     peerDependencies:
       vue: ^3.2.0
 
-  '@heroicons/vue@1.0.6':
-    resolution: {integrity: sha512-ng2YcCQrdoQWEFpw+ipFl2rZo8mZ56v0T5+MyfQQvNqfKChwgP6DMloZLW+rl17GEcHkE3H82UTAMKBKZr4+WA==}
+  '@heroicons/vue@2.2.0':
+    resolution: {integrity: sha512-G3dbSxoeEKqbi/DFalhRxJU4mTXJn7GwZ7ae8NuEQzd1bqdd0jAbdaBZlHPcvPD2xI1iGzNVB4k20Un2AguYPw==}
     peerDependencies:
       vue: '>= 3'
 
@@ -2155,7 +2155,7 @@ snapshots:
       '@tanstack/vue-virtual': 3.10.9(vue@3.5.29(typescript@5.9.3))
       vue: 3.5.29(typescript@5.9.3)
 
-  '@heroicons/vue@1.0.6(vue@3.5.29(typescript@5.9.3))':
+  '@heroicons/vue@2.2.0(vue@3.5.29(typescript@5.9.3))':
     dependencies:
       vue: 3.5.29(typescript@5.9.3)
 
