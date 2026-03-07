@@ -19,7 +19,7 @@
     "postUpdateOptions": ["gomodTidy"]
   },
   "schedule": [
-    "* * 1-7 * 6"
+    "1-7 * 1-7 * 6"
   ],
   "packageRules": [
     {
