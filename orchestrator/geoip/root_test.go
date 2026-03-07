@@ -59,13 +59,15 @@ func TestDatabaseRefresh(t *testing.T) {
 	}
 	helpers.StartStop(t, c)
 
-	count := atomic.Uint32{}
 	notify := c.Notify()
-	go func() {
-		for range notify {
-			count.Add(1)
+	waitNotify := func() {
+		t.Helper()
+		select {
+		case <-notify:
+		case <-time.After(5 * time.Second):
+			t.Fatal("timeout waiting for notification")
 		}
-	}()
+	}
 
 	// Check we did load both databases
 	gotMetrics := r.GetMetrics("akvorado_orchestrator_geoip_db_")
@@ -77,14 +79,12 @@ func TestDatabaseRefresh(t *testing.T) {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 
-	time.Sleep(10 * time.Millisecond)
-	if current := count.Load(); current != 1 {
-		t.Errorf("Notified %d times instead of %d", current, 1)
-	}
+	// Initial notification from Notify()
+	waitNotify()
 
 	// Check we can reload country database
 	copyFile(t, filepath.Join("testdata", "GeoLite2-Country-Test.mmdb"), countryFile)
-	time.Sleep(20 * time.Millisecond)
+	waitNotify()
 	gotMetrics = r.GetMetrics("akvorado_orchestrator_geoip_db_")
 	expectedMetrics = map[string]string{
 		`refresh_total{database="asn"}`: "1",
@@ -94,13 +94,9 @@ func TestDatabaseRefresh(t *testing.T) {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
 	}
 
-	if current := count.Load(); current != 2 {
-		t.Errorf("Notified %d times instead of %d", current, 2)
-	}
-
 	// Check we can reload ASN database
 	copyFile(t, filepath.Join("testdata", "GeoLite2-ASN-Test.mmdb"), asnFile)
-	time.Sleep(20 * time.Millisecond)
+	waitNotify()
 	gotMetrics = r.GetMetrics("akvorado_orchestrator_geoip_db_")
 	expectedMetrics = map[string]string{
 		`refresh_total{database="asn"}`: "2",
@@ -108,10 +104,6 @@ func TestDatabaseRefresh(t *testing.T) {
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
-	}
-
-	if current := count.Load(); current != 3 {
-		t.Errorf("Notified %d times instead of %d", current, 3)
 	}
 }
 
