@@ -16,7 +16,7 @@ importers:
         version: 6.10.2
       '@codemirror/language':
         specifier: ^6.11.3
-        version: 6.12.1
+        version: 6.12.2
       '@codemirror/lint':
         specifier: ^6.0.0
         version: 6.9.4
@@ -25,7 +25,7 @@ importers:
         version: 6.5.4
       '@codemirror/view':
         specifier: ^6.38.8
-        version: 6.39.14
+        version: 6.39.15
       '@headlessui/vue':
         specifier: ^1.6.1
         version: 1.7.23(vue@3.5.28(typescript@5.9.3))
@@ -170,8 +170,8 @@ packages:
   '@codemirror/commands@6.10.2':
     resolution: {integrity: sha512-vvX1fsih9HledO1c9zdotZYUZnE4xV0m6i3m25s5DIfXofuprk6cRcLUZvSk3CASUbwjQX21tOGbkY2BH8TpnQ==}
 
-  '@codemirror/language@6.12.1':
-    resolution: {integrity: sha512-Fa6xkSiuGKc8XC8Cn96T+TQHYj4ZZ7RdFmXA3i9xe/3hLHfwPZdM+dqfX0Cp0zQklBKhVD8Yzc8LS45rkqcwpQ==}
+  '@codemirror/language@6.12.2':
+    resolution: {integrity: sha512-jEPmz2nGGDxhRTg3lTpzmIyGKxz3Gp3SJES4b0nAuE5SWQoKdT5GoQ69cwMmFd+wvFUhYirtDTr0/DRHpQAyWg==}
 
   '@codemirror/lint@6.9.4':
     resolution: {integrity: sha512-ABc9vJ8DEmvOWuH26P3i8FpMWPQkduD9Rvba5iwb6O3hxASgclm3T3krGo8NASXkHCidz6b++LWlzWIUfEPSWw==}
@@ -179,8 +179,8 @@ packages:
   '@codemirror/state@6.5.4':
     resolution: {integrity: sha512-8y7xqG/hpB53l25CIoit9/ngxdfoG+fx+V3SHBrinnhOtLvKHRyAJJuHzkWrR4YXXLX8eXBsejgAAxHUOdW1yw==}
 
-  '@codemirror/view@6.39.14':
-    resolution: {integrity: sha512-WJcvgHm/6Q7dvGT0YFv/6PSkoc36QlR0VCESS6x9tGsnF1lWLmmYxOgX3HH6v8fo6AvSLgpcs+H0Olre6MKXlg==}
+  '@codemirror/view@6.39.15':
+    resolution: {integrity: sha512-aCWjgweIIXLBHh7bY6cACvXuyrZ0xGafjQ2VInjp4RM4gMfscK5uESiNdrH0pE+e1lZr2B4ONGsjchl2KsKZzg==}
 
   '@emnapi/core@1.5.0':
     resolution: {integrity: sha512-sbP8GzB1WDzacS8fgNPpHlp6C9VZe+SJP3F90W9rLemaQj2PzIuTEl1qDOYQf58YIpyjViI24y9aPWCjEzY2cg==}
@@ -1936,22 +1936,22 @@ snapshots:
 
   '@codemirror/autocomplete@6.20.0':
     dependencies:
-      '@codemirror/language': 6.12.1
+      '@codemirror/language': 6.12.2
       '@codemirror/state': 6.5.4
-      '@codemirror/view': 6.39.14
+      '@codemirror/view': 6.39.15
       '@lezer/common': 1.5.1
 
   '@codemirror/commands@6.10.2':
     dependencies:
-      '@codemirror/language': 6.12.1
+      '@codemirror/language': 6.12.2
       '@codemirror/state': 6.5.4
-      '@codemirror/view': 6.39.14
+      '@codemirror/view': 6.39.15
       '@lezer/common': 1.5.1
 
-  '@codemirror/language@6.12.1':
+  '@codemirror/language@6.12.2':
     dependencies:
       '@codemirror/state': 6.5.4
-      '@codemirror/view': 6.39.14
+      '@codemirror/view': 6.39.15
       '@lezer/common': 1.5.1
       '@lezer/highlight': 1.2.3
       '@lezer/lr': 1.4.8
@@ -1960,14 +1960,14 @@ snapshots:
   '@codemirror/lint@6.9.4':
     dependencies:
       '@codemirror/state': 6.5.4
-      '@codemirror/view': 6.39.14
+      '@codemirror/view': 6.39.15
       crelt: 1.0.6
 
   '@codemirror/state@6.5.4':
     dependencies:
       '@marijn/find-cluster-break': 1.0.2
 
-  '@codemirror/view@6.39.14':
+  '@codemirror/view@6.39.15':
     dependencies:
       '@codemirror/state': 6.5.4
       crelt: 1.0.6
