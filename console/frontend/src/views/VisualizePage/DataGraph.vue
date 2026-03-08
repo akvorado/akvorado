@@ -13,6 +13,7 @@
 <script lang="ts" setup>
 import { computed, inject } from "vue";
 import DataGraphLine from "./DataGraphLine.vue";
+import DataGraphHeatmap from "./DataGraphHeatmap.vue";
 import DataGraphSankey from "./DataGraphSankey.vue";
 import type { GraphLineHandlerResult, GraphSankeyHandlerResult } from ".";
 import { ThemeKey } from "@/components/ThemeProvider.vue";
@@ -28,8 +29,9 @@ const component = computed(() => {
     case "stacked100":
     case "lines":
     case "grid":
-    case "heatmap":
       return DataGraphLine;
+    case "heatmap":
+      return DataGraphHeatmap;
     case "sankey":
       return DataGraphSankey;
   }

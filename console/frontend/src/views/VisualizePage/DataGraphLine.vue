@@ -11,58 +11,20 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, inject, computed, onMounted, nextTick } from "vue";
-import { useMediaQuery } from "@vueuse/core";
+import { inject, computed, toRef } from "vue";
 import { formatXps, dataColor, dataColorGrey } from "@/utils";
 import { ThemeKey } from "@/components/ThemeProvider.vue";
 import type { GraphLineHandlerResult } from ".";
 import { uniqWith, isEqual, findIndex } from "lodash-es";
-import { use, graphic, type ComposeOption } from "echarts/core";
-import { CanvasRenderer } from "echarts/renderers";
-import {
-  LineChart,
-  HeatmapChart,
-  type LineSeriesOption,
-  type HeatmapSeriesOption,
-} from "echarts/charts";
-import {
-  TooltipComponent,
-  type TooltipComponentOption,
-  GridComponent,
-  type GridComponentOption,
-  BrushComponent,
-  type BrushComponentOption,
-  ToolboxComponent,
-  type ToolboxComponentOption,
-  DatasetComponent,
-  type DatasetComponentOption,
-  TitleComponent,
-  type TitleComponentOption,
-} from "echarts/components";
-import type { default as BrushModel } from "echarts/types/src/component/brush/BrushModel.d.ts";
 import type { TooltipCallbackDataParams } from "echarts/types/src/component/tooltip/TooltipView.d.ts";
+import type { LineSeriesOption } from "echarts/charts";
 import VChart from "vue-echarts";
-use([
-  CanvasRenderer,
-  LineChart,
-  HeatmapChart,
-  TooltipComponent,
-  GridComponent,
-  ToolboxComponent,
-  BrushComponent,
-  DatasetComponent,
-  TitleComponent,
-]);
-type ECOption = ComposeOption<
-  | LineSeriesOption
-  | HeatmapSeriesOption
-  | TooltipComponentOption
-  | GridComponentOption
-  | BrushComponentOption
-  | ToolboxComponentOption
-  | DatasetComponentOption
-  | TitleComponentOption
->;
+import {
+  useTimeSeriesGraph,
+  graphic,
+  rowName,
+  type ECOption,
+} from "./useTimeSeriesGraph";
 
 const props = defineProps<{
   data: GraphLineHandlerResult;
@@ -74,175 +36,83 @@ const emit = defineEmits<{
 
 const { isDark } = inject(ThemeKey)!;
 
-const PALETTE_MAGMA = ["#fcfdbf", "#fc8961", "#b73779", "#51127c", "#000004"];
-
-// Graph component
-const chartComponent = ref<typeof VChart | null>(null);
-const commonGraph: ECOption = {
-  backgroundColor: "transparent",
-  animationDuration: 500,
-  toolbox: {
-    show: false,
-  },
-  brush: {
-    xAxisIndex: "all",
-  },
-};
 const graph = computed((): ECOption => {
   const theme = isDark.value ? "dark" : "light";
   const data = props.data;
   if (!data) return {};
-  const rowName = (row: string[]) => row.join(" — ") || "Total";
-  const source: [string, number, number][] | [string, ...number[]][] =
-    data.graphType === "heatmap"
-      ? data.points
-          .map((row, rowIdx) => {
-            const ret: [number, number[]] = [rowIdx, row];
-            return ret;
-          })
-          .filter(([origRowIdx, row]) =>
-            data.rows[origRowIdx].some((name) => name !== "Other"),
-          )
-          .toSorted(([origRowIdx1, row1], [origRowIdx2, row2]) => {
-            return rowName(data.rows[origRowIdx1]).localeCompare(
-              rowName(data.rows[origRowIdx2]),
-              "en",
-              { numeric: true },
-            );
-          })
-          .flatMap(([origRowIdx, row], rowIdx) =>
-            data.t.flatMap((t, timeIdx) => {
-              let value = row[timeIdx] * (data.axis[origRowIdx] % 2 ? 1 : -1);
-              const dataPoint: [string, number, number] = [t, rowIdx, value];
-              return value === 0 ? [] : [dataPoint];
-            }),
-          )
-      : data.t
-          .map((t, timeIdx) => {
-            let result: [string, ...number[]] = [
-              t,
-              ...data.points.map(
-                // Unfortunately, eCharts does not seem to make it easy
-                // to inverse an axis and put the result below. Therefore,
-                // we use negative values for the second axis.
-                (row, rowIdx) =>
-                  row[timeIdx] * (data.axis[rowIdx] % 2 ? 1 : -1),
-              ),
-            ];
-            if (data.graphType === "stacked100") {
-              // Normalize values between 0 and 1 (or -1 and 0)
-              const [, ...values] = result;
-              const positiveSum = values.reduce(
-                (prev, cur) => (cur > 0 ? prev + cur : prev),
-                0,
-              );
-              const negativeSum = values.reduce(
-                (prev, cur) => (cur < 0 ? prev + cur : prev),
-                0,
-              );
-              result = [
-                t,
-                ...values.map((v) =>
-                  v > 0 && positiveSum > 0
-                    ? v / positiveSum
-                    : v < 0 && negativeSum < 0
-                      ? -v / negativeSum
-                      : v,
-                ),
-              ];
-            }
-            return result;
-          })
-          .slice(0, -1); // trim last point
+  const source: [string, ...number[]][] = data.t
+    .map((t, timeIdx) => {
+      let result: [string, ...number[]] = [
+        t,
+        ...data.points.map(
+          // Unfortunately, eCharts does not seem to make it easy
+          // to inverse an axis and put the result below. Therefore,
+          // we use negative values for the second axis.
+          (row, rowIdx) => row[timeIdx] * (data.axis[rowIdx] % 2 ? 1 : -1),
+        ),
+      ];
+      if (data.graphType === "stacked100") {
+        // Normalize values between 0 and 1 (or -1 and 0)
+        const [, ...values] = result;
+        const positiveSum = values.reduce(
+          (prev, cur) => (cur > 0 ? prev + cur : prev),
+          0,
+        );
+        const negativeSum = values.reduce(
+          (prev, cur) => (cur < 0 ? prev + cur : prev),
+          0,
+        );
+        result = [
+          t,
+          ...values.map((v) =>
+            v > 0 && positiveSum > 0
+              ? v / positiveSum
+              : v < 0 && negativeSum < 0
+                ? -v / negativeSum
+                : v,
+          ),
+        ];
+      }
+      return result;
+    })
+    .slice(0, -1); // trim last point
   const dataset = {
       sourceHeader: false,
       dimensions: ["time", ...data.rows.map(rowName)],
       source,
     },
-    xAxis: ECOption["xAxis"] =
-      data.graphType === "heatmap"
-        ? [
-            {
-              type: "category",
-              data: data.t.map((row, idx) => row),
-              show: false,
-              axisPointer: { show: false },
-            },
-            {
-              type: "time",
-              min: data.start,
-              max: data.end,
-              position: "bottom",
-            },
-          ]
-        : [
-            {
-              type: "time",
-              min: data.start,
-              max: data.end,
-            },
-          ],
-    yAxis: ECOption["yAxis"] =
-      data.graphType === "heatmap"
-        ? {
-            type: "category",
-            data: data.rows
-              .toSorted((names1, names2) =>
-                rowName(names1).localeCompare(rowName(names2), "en", {
-                  numeric: true,
-                }),
-              )
-              .filter((names) => !names.some((name) => name === "Other"))
-              .map(rowName),
-          }
-        : {
-            type: "value",
-            min: data.bidirectional
-              ? data.graphType === "stacked100"
-                ? -1
-                : undefined
-              : 0,
-            max: data.graphType === "stacked100" ? 1 : undefined,
-            axisLabel: {
-              formatter:
-                data.graphType === "stacked100"
-                  ? (v: number) => (v * 100).toFixed(0)
-                  : ["inl2%", "outl2%"].includes(data.units)
-                    ? (v: number) => v.toFixed(0)
-                    : formatXps,
-            },
-            axisPointer: {
-              label: {
-                formatter:
-                  data.graphType === "stacked100"
-                    ? ({ value }) =>
-                        ((value.valueOf() as number) * 100).toFixed(1)
-                    : ["inl2%", "outl2%"].includes(data.units)
-                      ? ({ value }) => (value.valueOf() as number).toFixed(0)
-                      : ({ value }) => formatXps(value.valueOf() as number),
-              },
-            },
-          },
-    visualMap: ECOption["visualMap"] =
-      data.graphType === "heatmap"
-        ? {
-            min: 0,
-            max: Math.max.apply(
-              Math,
-              data["max"].filter((_, rowIdx) =>
-                data.rows[rowIdx].some((name) => name !== "Other"),
-              ),
-            ),
-            calculable: true,
-            orient: "horizontal",
-            right: "5%",
-            bottom: 0,
-            inRange: {
-              color: isDark.value ? PALETTE_MAGMA.reverse() : PALETTE_MAGMA,
-            },
-            formatter: formatXps,
-          }
-        : undefined,
+    xAxis: ECOption["xAxis"] = {
+      type: "time",
+      min: data.start,
+      max: data.end,
+    },
+    yAxis: ECOption["yAxis"] = {
+      type: "value",
+      min: data.bidirectional
+        ? data.graphType === "stacked100"
+          ? -1
+          : undefined
+        : 0,
+      max: data.graphType === "stacked100" ? 1 : undefined,
+      axisLabel: {
+        formatter:
+          data.graphType === "stacked100"
+            ? (v: number) => (v * 100).toFixed(0)
+            : ["inl2%", "outl2%"].includes(data.units)
+              ? (v: number) => v.toFixed(0)
+              : formatXps,
+      },
+      axisPointer: {
+        label: {
+          formatter:
+            data.graphType === "stacked100"
+              ? ({ value }) => ((value.valueOf() as number) * 100).toFixed(1)
+              : ["inl2%", "outl2%"].includes(data.units)
+                ? ({ value }) => (value.valueOf() as number).toFixed(0)
+                : ({ value }) => formatXps(value.valueOf() as number),
+        },
+      },
+    },
     tooltip: ECOption["tooltip"] = {
       confine: true,
       trigger: "axis",
@@ -254,12 +124,7 @@ const graph = computed((): ECOption => {
       textStyle: isDark.value ? { color: "#ddd" } : { color: "#222" },
       formatter: (params) => {
         // We will use a custom formatter, notably to handle bidirectional tooltips.
-        if (
-          !Array.isArray(params) ||
-          params.length === 0 ||
-          data.graphType === "heatmap"
-        )
-          return "";
+        if (!Array.isArray(params) || params.length === 0) return "";
 
         const table: {
           key: string;
@@ -318,8 +183,7 @@ const graph = computed((): ECOption => {
   if (
     data.graphType === "stacked" ||
     data.graphType === "stacked100" ||
-    data.graphType === "lines" ||
-    data.graphType === "heatmap"
+    data.graphType === "lines"
   ) {
     const uniqRows = uniqWith(data.rows, isEqual),
       uniqRowIndex = (row: string[]) =>
@@ -327,105 +191,95 @@ const graph = computed((): ECOption => {
 
     return {
       grid: {
-        left: data.graphType === "heatmap" ? 150 : 60,
+        left: 60,
         top: 20,
         right: "1%",
-        bottom: data.graphType === "heatmap" ? 80 : 20,
+        bottom: 20,
       },
       xAxis,
       yAxis,
-      visualMap,
       dataset,
       tooltip,
-      series:
-        data.graphType === "heatmap"
-          ? [
-              {
-                type: "heatmap",
-                data: source,
+      series: data.rows
+        .map((row, idx) => {
+          const isOther = row.some((name) => name === "Other"),
+            color = isOther ? dataColorGrey : dataColor;
+          if (data.graphType === "lines" && isOther) {
+            return undefined;
+          }
+          let serie: LineSeriesOption = {
+            type: "line",
+            symbol: "none",
+            itemStyle: {
+              color: color(uniqRowIndex(row), false, theme),
+            },
+            lineStyle: {
+              color: color(uniqRowIndex(row), false, theme),
+              width: 2,
+            },
+            emphasis: {
+              focus: "series",
+            },
+            encode: {
+              x: 0,
+              y: idx + 1,
+              seriesName: idx + 1,
+              seriesId: idx + 1,
+            },
+          };
+          if ([3, 4].includes(data.axis[idx])) {
+            serie = {
+              ...serie,
+              itemStyle: {
+                color: dataColorGrey(1, false, theme),
               },
-            ]
-          : data.rows
-              .map((row, idx) => {
-                const isOther = row.some((name) => name === "Other"),
-                  color = isOther ? dataColorGrey : dataColor;
-                if (data.graphType === "lines" && isOther) {
-                  return undefined;
-                }
-                let serie: LineSeriesOption = {
-                  type: "line",
-                  symbol: "none",
-                  itemStyle: {
+              lineStyle: {
+                color: dataColorGrey(1, false, theme),
+                shadowColor: "#000",
+                shadowOffsetX: 1,
+                shadowOffsetY: 1,
+                shadowBlur: 2,
+                width: 2,
+                type: "dashed",
+              },
+            };
+          }
+          if (
+            (data.graphType === "stacked" || data.graphType === "stacked100") &&
+            [1, 2].includes(data.axis[idx])
+          ) {
+            serie = {
+              ...serie,
+              stack: data.axis[idx].toString(),
+              lineStyle:
+                idx == data.rows.length - 1 ||
+                data.axis[idx] != data.axis[idx + 1]
+                  ? {
+                      color: isDark.value ? "#ddd" : "#111",
+                      width: 1.5,
+                    }
+                  : {
+                      color: color(uniqRowIndex(row), false, theme),
+                      width: 1,
+                    },
+              areaStyle: {
+                opacity: 0.95,
+                color: new graphic.LinearGradient(0, 0, 0, 1, [
+                  {
+                    offset: 0,
                     color: color(uniqRowIndex(row), false, theme),
                   },
-                  lineStyle: {
-                    color: color(uniqRowIndex(row), false, theme),
-                    width: 2,
+                  {
+                    offset: 1,
+                    color: color(uniqRowIndex(row), true, theme),
                   },
-                  emphasis: {
-                    focus: "series",
-                  },
-                  encode: {
-                    x: 0,
-                    y: idx + 1,
-                    seriesName: idx + 1,
-                    seriesId: idx + 1,
-                  },
-                };
-                if ([3, 4].includes(data.axis[idx])) {
-                  serie = {
-                    ...serie,
-                    itemStyle: {
-                      color: dataColorGrey(1, false, theme),
-                    },
-                    lineStyle: {
-                      color: dataColorGrey(1, false, theme),
-                      shadowColor: "#000",
-                      shadowOffsetX: 1,
-                      shadowOffsetY: 1,
-                      shadowBlur: 2,
-                      width: 2,
-                      type: "dashed",
-                    },
-                  };
-                }
-                if (
-                  (data.graphType === "stacked" ||
-                    data.graphType === "stacked100") &&
-                  [1, 2].includes(data.axis[idx])
-                ) {
-                  serie = {
-                    ...serie,
-                    stack: data.axis[idx].toString(),
-                    lineStyle:
-                      idx == data.rows.length - 1 ||
-                      data.axis[idx] != data.axis[idx + 1]
-                        ? {
-                            color: isDark.value ? "#ddd" : "#111",
-                            width: 1.5,
-                          }
-                        : {
-                            color: color(uniqRowIndex(row), false, theme),
-                            width: 1,
-                          },
-                    areaStyle: {
-                      opacity: 0.95,
-                      color: new graphic.LinearGradient(0, 0, 0, 1, [
-                        {
-                          offset: 0,
-                          color: color(uniqRowIndex(row), false, theme),
-                        },
-                        {
-                          offset: 1,
-                          color: color(uniqRowIndex(row), true, theme),
-                        },
-                      ]),
-                    },
-                  };
-                }
-                return serie;
-              })
-              .filter((s): s is LineSeriesOption => !!s),
+                ]),
+              },
+            };
+          }
+          return serie;
+        })
+        .filter((s): s is LineSeriesOption => !!s),
     };
   }
   if (data.graphType === "grid") {
@@ -533,50 +387,11 @@ const graph = computed((): ECOption => {
   }
   return {};
 });
-const option = computed((): ECOption => ({ ...commonGraph, ...graph.value }));
 
-// Enable and handle brush
-const isTouchScreen = useMediaQuery("(pointer: coarse");
-const enableBrush = () => {
-  nextTick().then(() => {
-    chartComponent.value?.dispatchAction({
-      type: "takeGlobalCursor",
-      key: "brush",
-      brushOption: {
-        brushType: isTouchScreen.value ? false : "lineX",
-      },
-    });
-  });
-};
-onMounted(enableBrush);
-const updateTimeRange = (evt: BrushModel) => {
-  const coordRangeIdx = props.data.graphType === "heatmap" ? 1 : 0;
-  if (
-    !chartComponent.value ||
-    evt.areas.length === 0 ||
-    !evt.areas[0].coordRanges ||
-    !evt.areas[0].coordRanges[coordRangeIdx]
-  ) {
-    return;
-  }
-  const coordRange = evt.areas[0].coordRanges[coordRangeIdx];
-  const [start, end] = coordRange.map((t) => new Date(t as number));
-  chartComponent.value.dispatchAction({
-    type: "brush",
-    areas: [],
-  });
-  emit("update:timeRange", [start, end]);
-};
-watch([graph, isTouchScreen] as const, enableBrush);
-
-// Highlight selected indexes
-watch(
-  () => [props.highlight, props.data] as const,
-  ([index]) => {
-    chartComponent.value?.dispatchAction({
-      type: "highlight",
-      seriesIndex: index,
-    });
-  },
+const { chartComponent, option, updateTimeRange } = useTimeSeriesGraph(
+  graph,
+  emit,
+  toRef(props, "highlight"),
+  toRef(props, "data"),
 );
 </script>
