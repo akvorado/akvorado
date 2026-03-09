@@ -118,7 +118,7 @@ appearance.
   interface speeds are retrieved infrequently, the percentage may be temporarily
   incorrect when an interface's speed changes.
 
-- Four graph types are available: “stacked”, “lines”, and “grid” to
+- Five graph types are available: “stacked”, “lines”, “grid”, and “heatmap” to
   display time series, and “sankey” to show flow distributions between various
   dimensions.
 
