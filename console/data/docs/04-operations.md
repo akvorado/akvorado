@@ -249,7 +249,7 @@ forwarding-options {
               port 2055;
               autonomous-system-type origin;
               source-address 203.0.113.2;
-              version-ipfix {
+              version9 {
                 template {
                   ipv4;
                 }
@@ -266,7 +266,7 @@ forwarding-options {
               port 2055;
               autonomous-system-type origin;
               source-address 203.0.113.2;
-              version-ipfix {
+              version9 {
                 template {
                   ipv6;
                 }
@@ -291,7 +291,7 @@ chassis {
 }
 services {
   flow-monitoring {
-    version-ipfix {
+    version9 {
       template ipv4 {
         nexthop-learning enable;
         flow-active-timeout 10;
