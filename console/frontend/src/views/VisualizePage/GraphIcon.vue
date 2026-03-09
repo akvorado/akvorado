@@ -62,6 +62,95 @@
       d="M10 3H4a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1zM9 9H5V5h4v4zm5 2h6a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1zm1-6h4v4h-4V5zM3 20a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1H4a1 1 0 0 0-1 1v6zm2-5h4v4H5v-4zm8 5a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-6a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6zm2-5h4v4h-4v-4z"
     />
   </svg>
+  <svg
+    v-if="name === graphTypes.heatmap"
+    v-bind="$attrs"
+    preserveAspectRatio="xMidYMid meet"
+    viewBox="0 0 24 24"
+    style="vertical-align: -0.125em"
+  >
+    <rect
+      fill="currentColor"
+      opacity="0.2"
+      x="3"
+      y="3"
+      width="5"
+      height="5"
+      rx="0.5"
+    />
+    <rect
+      fill="currentColor"
+      opacity="0.5"
+      x="9.5"
+      y="3"
+      width="5"
+      height="5"
+      rx="0.5"
+    />
+    <rect
+      fill="currentColor"
+      opacity="0.8"
+      x="16"
+      y="3"
+      width="5"
+      height="5"
+      rx="0.5"
+    />
+    <rect
+      fill="currentColor"
+      opacity="0.6"
+      x="3"
+      y="9.5"
+      width="5"
+      height="5"
+      rx="0.5"
+    />
+    <rect
+      fill="currentColor"
+      opacity="1.0"
+      x="9.5"
+      y="9.5"
+      width="5"
+      height="5"
+      rx="0.5"
+    />
+    <rect
+      fill="currentColor"
+      opacity="0.4"
+      x="16"
+      y="9.5"
+      width="5"
+      height="5"
+      rx="0.5"
+    />
+    <rect
+      fill="currentColor"
+      opacity="0.9"
+      x="3"
+      y="16"
+      width="5"
+      height="5"
+      rx="0.5"
+    />
+    <rect
+      fill="currentColor"
+      opacity="0.3"
+      x="9.5"
+      y="16"
+      width="5"
+      height="5"
+      rx="0.5"
+    />
+    <rect
+      fill="currentColor"
+      opacity="0.7"
+      x="16"
+      y="16"
+      width="5"
+      height="5"
+      rx="0.5"
+    />
+  </svg>
 </template>
 
 <script lang="ts">
