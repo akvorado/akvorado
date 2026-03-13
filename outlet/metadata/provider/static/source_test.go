@@ -235,3 +235,96 @@ func TestRemoteExporterSources(t *testing.T) {
 		t.Fatalf("static provider (-got, +want):\n%s", diff)
 	}
 }
+
+func TestRemoteExporterSourcesSkipMissingInterfaces(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.Handle("/exporters.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Add("Content-Type", "application/json")
+		w.WriteHeader(200)
+		w.Write([]byte(`
+{
+  "exporters": [
+    {
+      "exportersubnet": "2001:db8:1::/48",
+      "name": "remote-exporter",
+      "skipmissinginterfaces": true,
+      "interfaces": [
+        {
+          "ifindex": 1,
+          "name": "remote-iface1",
+          "description": "remote desc1",
+          "speed": 1000
+        }
+      ]
+    }
+  ]
+}
+`))
+	}))
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen() error:\n%+v", err)
+	}
+	server := &http.Server{
+		Addr:    listener.Addr().String(),
+		Handler: mux,
+	}
+	address := listener.Addr()
+	go server.Serve(listener)
+	defer server.Shutdown(t.Context())
+
+	r := reporter.NewMock(t)
+	config := Configuration{
+		Exporters: helpers.MustNewSubnetMap(map[string]ExporterConfiguration{}),
+		ExporterSources: map[string]remotedatasource.Source{
+			"local": {
+				URL:      fmt.Sprintf("http://%s/exporters.json", address),
+				Method:   "GET",
+				Timeout:  20 * time.Millisecond,
+				Interval: 100 * time.Millisecond,
+				Transform: remotedatasource.MustParseTransformQuery(`
+.exporters[]
+`),
+			},
+		},
+	}
+	p, _ := config.New(t.Context(), r)
+
+	ctx, cancel := context.WithTimeout(t.Context(), 100*time.Millisecond)
+	defer cancel()
+	got, err := p.Query(ctx, provider.Query{
+		ExporterIP: netip.MustParseAddr("2001:db8:1::10"),
+		IfIndex:    1,
+	})
+	if err != nil {
+		t.Fatalf("Query() error:\n%+v", err)
+	}
+
+	expected := provider.Answer{
+		Found: true,
+		Exporter: provider.Exporter{
+			Name: "remote-exporter",
+		},
+		Interface: provider.Interface{
+			Name:        "remote-iface1",
+			Description: "remote desc1",
+			Speed:       1000,
+		},
+	}
+
+	if diff := helpers.Diff(got, expected); diff != "" {
+		t.Fatalf("static provider (-got, +want):\n%s", diff)
+	}
+
+	got, err = p.Query(t.Context(), provider.Query{
+		ExporterIP: netip.MustParseAddr("2001:db8:1::10"),
+		IfIndex:    10,
+	})
+	if !errors.Is(err, provider.ErrSkipProvider) {
+		t.Fatalf("Query() error:\n%+v", err)
+	}
+	if diff := helpers.Diff(got, provider.Answer{}); diff != "" {
+		t.Fatalf("static provider (-got, +want):\n%s", diff)
+	}
+}
