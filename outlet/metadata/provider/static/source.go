@@ -19,6 +19,8 @@ type exporterInfo struct {
 	Default provider.Interface `validate:"omitempty"`
 	// IfIndexes is a map from interface indexes to interfaces
 	Interfaces []exporterInterface `validate:"omitempty"`
+	// Use next provider for interfaces without static config
+	SkipMissingInterfaces bool `validate:"omitempty"`
 }
 
 type exporterInterface struct {
@@ -33,9 +35,10 @@ func (i exporterInfo) toExporterConfiguration() ExporterConfiguration {
 	}
 
 	return ExporterConfiguration{
-		Exporter:  i.Exporter,
-		Default:   i.Default,
-		IfIndexes: ifindexMap,
+		Exporter:              i.Exporter,
+		Default:               i.Default,
+		IfIndexes:             ifindexMap,
+		SkipMissingInterfaces: i.SkipMissingInterfaces,
 	}
 }
 
