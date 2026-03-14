@@ -37,7 +37,8 @@ GENERATED_GO = \
 	outlet/metadata/provider/snmp/privprotocol_enumer.go \
 	outlet/metadata/provider/gnmi/ifspeedpathunit_enumer.go \
 	console/homepagetopwidget_enumer.go \
-	common/kafka/saslmechanism_enumer.go
+	common/kafka/saslmechanism_enumer.go \
+	common/remotedatasource/parsertype_enumer.go
 GENERATED_TEST_GO = \
 	common/clickhousedb/mocks/mock_driver.go
 GENERATED = \
@@ -117,6 +118,8 @@ console/homepagetopwidget_enumer.go: console/config.go ; $(info $(M) generate en
 	$Q $(ENUMER) -type=HomepageTopWidget -text -json -transform=kebab -trimprefix=HomepageTopWidget console/config.go
 common/kafka/saslmechanism_enumer.go: common/kafka/config.go ; $(info $(M) generate enums for SASLMechanism…)
 	$Q $(ENUMER) -type=SASLMechanism -text -transform=kebab -trimprefix=SASL common/kafka/config.go
+common/remotedatasource/parsertype_enumer.go: common/remotedatasource/config.go ; $(info $(M) generate enums for ParserType…)
+	$Q $(ENUMER) -type=ParserType -text -transform=kebab -trimprefix=Parser common/remotedatasource/config.go
 
 common/schema/definition_gen.go: common/schema/definition.go common/schema/definition_gen.sh ; $(info $(M) generate column definitions…)
 	$Q ./common/schema/definition_gen.sh > $@
