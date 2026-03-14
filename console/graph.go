@@ -24,7 +24,7 @@ type graphCommonHandlerInput struct {
 	Filter         query.Filter   `json:"filter"`                              // where ...
 	TruncateAddrV4 int            `json:"truncate-v4" binding:"min=0,max=32"`  // 0 or 32 = no truncation
 	TruncateAddrV6 int            `json:"truncate-v6" binding:"min=0,max=128"` // 0 or 128 = no truncation
-	Units          string         `json:"units" binding:"required,oneof=pps l3bps l2bps inl2% outl2%"`
+	Units          string         `json:"units" binding:"required,oneof=fps pps l3bps l2bps inl2% outl2%"`
 }
 
 // sourceSelect builds a SELECT query to use as a source for data. Notably, it
