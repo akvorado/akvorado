@@ -203,7 +203,7 @@ func TestSource(t *testing.T) {
 	errorsJSON, _ := strconv.Atoi(
 		gotMetrics[`errors_total{error="cannot decode JSON",source="local",type="test"}`])
 	errorsMap, _ := strconv.Atoi(
-		gotMetrics[`errors_total{error="cannot map JSON",source="local",type="test"}`])
+		gotMetrics[`errors_total{error="cannot map result",source="local",type="test"}`])
 	errorsValidate, _ := strconv.Atoi(
 		gotMetrics[`errors_total{error="cannot validate checks",source="local",type="test"}`])
 	expectedMetrics = map[string]string{
@@ -211,7 +211,7 @@ func TestSource(t *testing.T) {
 		`updates_total{source="local",type="test"}`:                                    strconv.Itoa(max(updates2, updates)),
 		`errors_total{error="unexpected HTTP status code",source="local",type="test"}`: strconv.Itoa(max(errorsHTTP2, errorsHTTP+1)),
 		`errors_total{error="cannot decode JSON",source="local",type="test"}`:          strconv.Itoa(max(errorsJSON, 1)),
-		`errors_total{error="cannot map JSON",source="local",type="test"}`:             strconv.Itoa(max(errorsMap, 1)),
+		`errors_total{error="cannot map result",source="local",type="test"}`:           strconv.Itoa(max(errorsMap, 1)),
 		`errors_total{error="cannot validate checks",source="local",type="test"}`:      strconv.Itoa(max(errorsValidate, 1)),
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
@@ -252,6 +252,148 @@ func generateSelfSignedCert(t *testing.T) tls.Certificate {
 	return tls.Certificate{
 		Certificate: [][]byte{certDER},
 		PrivateKey:  privateKey,
+	}
+}
+
+func TestSourceCSV(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.Handle("/data.csv", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Add("Content-Type", "text/csv")
+		w.WriteHeader(200)
+		w.Write([]byte("foo,bar\nbaz,qux\n"))
+	}))
+	mux.Handle("/data-semicolon.csv", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Add("Content-Type", "text/csv")
+		w.WriteHeader(200)
+		w.Write([]byte("foo;bar\nbaz;qux\n"))
+	}))
+	mux.Handle("/data-colon.csv", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Add("Content-Type", "text/csv")
+		w.WriteHeader(200)
+		w.Write([]byte("foo:bar\nbaz:qux\n"))
+	}))
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen() error:\n%+v", err)
+	}
+	server := &http.Server{
+		Addr:    listener.Addr().String(),
+		Handler: mux,
+	}
+	address := listener.Addr()
+	go server.Serve(listener)
+	defer server.Shutdown(t.Context())
+
+	type csvData struct {
+		F1 string
+		F2 string
+	}
+
+	cases := []struct {
+		description string
+		path        string
+		parser      ParserType
+	}{
+		{"comma", "/data.csv", ParserCSVComma},
+		{"semicolon", "/data-semicolon.csv", ParserCSVSemicolon},
+		{"colon", "/data-colon.csv", ParserCSVColon},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.description, func(t *testing.T) {
+			r := reporter.NewMock(t)
+			config := map[string]Source{
+				"local": {
+					URL:       fmt.Sprintf("http://%s%s", address, tc.path),
+					Method:    "GET",
+					Parser:    tc.parser,
+					Timeout:   time.Second,
+					Interval:  time.Minute,
+					Transform: MustParseTransformQuery(".[]"),
+				},
+			}
+			handler := struct {
+				data    []csvData
+				fetcher *Component[csvData]
+			}{}
+			handler.fetcher, _ = New[csvData](r, func(ctx context.Context, name string, source Source) (int, error) {
+				results, err := handler.fetcher.Fetch(ctx, name, source)
+				if err != nil {
+					return 0, err
+				}
+				handler.data = results
+				return len(results), nil
+			}, "test", config)
+
+			ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+			defer cancel()
+			results, err := handler.fetcher.Fetch(ctx, "local", config["local"])
+			if err != nil {
+				t.Fatalf("Fetch() error:\n%+v", err)
+			}
+			expected := []csvData{
+				{F1: "foo", F2: "bar"},
+				{F1: "baz", F2: "qux"},
+			}
+			if diff := helpers.Diff(results, expected); diff != "" {
+				t.Fatalf("Fetch() (-got, +want):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestSourcePlain(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.Handle("/data.txt", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Add("Content-Type", "text/plain")
+		w.WriteHeader(200)
+		w.Write([]byte("hello\nworld\n"))
+	}))
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen() error:\n%+v", err)
+	}
+	server := &http.Server{
+		Addr:    listener.Addr().String(),
+		Handler: mux,
+	}
+	address := listener.Addr()
+	go server.Serve(listener)
+	defer server.Shutdown(t.Context())
+
+	type plainData struct {
+		Name string `validate:"required"`
+	}
+
+	r := reporter.NewMock(t)
+	config := map[string]Source{
+		"local": {
+			URL:       fmt.Sprintf("http://%s/data.txt", address),
+			Method:    "GET",
+			Parser:    ParserPlain,
+			Timeout:   time.Second,
+			Interval:  time.Minute,
+			Transform: MustParseTransformQuery(`[.[] | {name: .}] | .[]`),
+		},
+	}
+	fetcher, _ := New[plainData](r, func(_ context.Context, _ string, _ Source) (int, error) {
+		return 0, nil
+	}, "test", config)
+
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+	defer cancel()
+	results, err := fetcher.Fetch(ctx, "local", config["local"])
+	if err != nil {
+		t.Fatalf("Fetch() error:\n%+v", err)
+	}
+	expected := []plainData{
+		{Name: "hello"},
+		{Name: "world"},
+	}
+	if diff := helpers.Diff(results, expected); diff != "" {
+		t.Fatalf("Fetch() (-got, +want):\n%s", diff)
 	}
 }
 

@@ -121,6 +121,46 @@ func TestSourceDecode(t *testing.T) {
 				},
 			},
 		}, {
+			Description: "With CSV parser",
+			Initial:     func() any { return Source{} },
+			Configuration: func() any {
+				return helpers.M{
+					"url":      "https://example.net",
+					"interval": "10m",
+					"parser":   "csv-comma",
+				}
+			},
+			Expected: Source{
+				URL:      "https://example.net",
+				Method:   "GET",
+				Parser:   ParserCSVComma,
+				Timeout:  time.Minute,
+				Interval: 10 * time.Minute,
+				TLS: helpers.TLSConfiguration{
+					SkipVerify: false,
+				},
+			},
+		}, {
+			Description: "With plain parser",
+			Initial:     func() any { return Source{} },
+			Configuration: func() any {
+				return helpers.M{
+					"url":      "https://example.net",
+					"interval": "10m",
+					"parser":   "plain",
+				}
+			},
+			Expected: Source{
+				URL:      "https://example.net",
+				Method:   "GET",
+				Parser:   ParserPlain,
+				Timeout:  time.Minute,
+				Interval: 10 * time.Minute,
+				TLS: helpers.TLSConfiguration{
+					SkipVerify: false,
+				},
+			},
+		}, {
 			Description: "Incorrect transform",
 			Initial:     func() any { return Source{} },
 			Configuration: func() any {

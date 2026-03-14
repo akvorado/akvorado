@@ -487,8 +487,13 @@ sources. Each source accepts these attributes:
   like `http_proxy`).
 - `timeout` defines the timeout for fetching and parsing.
 - `interval` is the interval at which the source should be refreshed.
+- `parser` defines the format of the response body. Accepted values are `json`
+  (default), `csv-comma`, `csv-semicolon`, `csv-colon`, and `plain`. CSV parsers
+  produce an array of objects keyed by `f1`, `f2`, `f3`, etc. If the CSV file
+  has a header row, it can be skipped with a `transform` expression like
+  `.[1:][]`. The `plain` parser produces an array of strings, one per line.
 - `transform` is a [jq](https://stedolan.github.io/jq/manual/) expression that
-  transforms the received JSON into a set of attributes represented as objects.
+  transforms the parsed data into a set of attributes represented as objects.
   Each object should have these keys: `exporter-subnet`, `default` (with the
   same structure as a static configuration), and `interfaces`. The latter is a
   list of interfaces, where each interface has an `ifindex`, a `name`, a
@@ -927,8 +932,13 @@ provided inside `clickhouse`:
   - `proxy` says if we should use a proxy (defined through environment variables like `http_proxy`)
   - `timeout` defines the timeout for fetching and parsing
   - `interval` is the interval at which the source should be refreshed
+  - `parser` defines the format of the response body. Accepted values are `json`
+    (default), `csv-comma`, `csv-semicolon`, `csv-colon`, and `plain`. CSV parsers
+    produce an array of objects keyed by `f1`, `f2`, `f3`, etc. If the CSV file
+    has a header row, it can be skipped with a `transform` expression like
+    `.[1:][]`. The `plain` parser produces an array of strings, one per line.
   - `transform` is a [jq](https://stedolan.github.io/jq/manual/) expression to
-    transform the received JSON into a set of network attributes represented as
+    transform the parsed data into a set of network attributes represented as
     objects. Each object must have a `prefix` attribute and, optionally, `name`,
     `role`, `site`, `region`, `tenant`, `city`, `state`, `country`, and `asn`.
     See the example provided in the shipped `akvorado.yaml` configuration file.

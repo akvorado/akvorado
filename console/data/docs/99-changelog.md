@@ -14,6 +14,7 @@ identified with a specific icon:
 
 - ✨ *console*: add flows/s as a new unit for visualization
 - ✨ *console*: add a heatmap visualisation
+- ✨ *common*: remote data sources now support CSV and plain text formats via the `parser` option
 - 🩹 *outlet*: fix OpenConfig model handling in gNMI provider
 - 🩹 *outlet*: fix detection of gNMI model for equipments not triggering an error on nonexistent paths
 - 🩹 *outlet*: fix BMP RIB corruption due to sharing of route attribute references

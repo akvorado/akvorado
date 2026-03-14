@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 // Package remotedatasource offers a component to refresh internal data
-// periodically from a set of remote HTTP sources in JSON format.
+// periodically from a set of remote HTTP sources.
 package remotedatasource
 
 import (
@@ -13,10 +13,25 @@ import (
 	"akvorado/common/helpers"
 )
 
+// ParserType defines the format used to parse the response body.
+type ParserType int
+
+const (
+	// ParserJSON parses the response as JSON.
+	ParserJSON ParserType = iota
+	// ParserCSVComma parses the response as comma-separated CSV.
+	ParserCSVComma
+	// ParserCSVSemicolon parses the response as semicolon-separated CSV.
+	ParserCSVSemicolon
+	// ParserCSVColon parses the response as colon-separated CSV.
+	ParserCSVColon
+	// ParserPlain parses the response as plain text, one value per line.
+	ParserPlain
+)
+
 // Source defines a remote data source.
 type Source struct {
 	// URL is the URL to fetch to get remote network definition.
-	// It should provide a JSON file.
 	URL string `validate:"url"`
 	// Method defines which method to use (GET or POST)
 	Method string `validate:"oneof=GET POST"`
@@ -26,8 +41,10 @@ type Source struct {
 	Proxy bool
 	// Timeout tells the maximum time the remote request should take
 	Timeout time.Duration `validate:"min=1s"`
-	// Transform is a jq string to transform the received JSON
-	// data into a list of network attributes.
+	// Parser defines the format of the response body.
+	Parser ParserType
+	// Transform is a jq string to transform the received
+	// data into a list of attributes.
 	Transform TransformQuery
 	// Interval tells how much time to wait before updating the source.
 	Interval time.Duration `validate:"min=1m"`
