@@ -161,6 +161,8 @@ func (c *Component) finalizeTemplateQuery(query templateQuery) string {
 	timefilter := fmt.Sprintf(`TimeReceived BETWEEN %s AND %s`, timefilterStart, timefilterEnd)
 	var units string
 	switch input.Units {
+	case "fps":
+		units = `COUNT(*)`
 	case "pps":
 		units = `SUM(Packets*SamplingRate)`
 	case "l3bps":

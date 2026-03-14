@@ -111,12 +111,16 @@ The collapsible panel on the left has several options to change the graph's
 appearance.
 
 - The unit for the Y-axis: layer-3 bits per second, layer-2 bits per second
-  (should match interface counters), packets per second, or percentage of input
-  or output interface usage. For percentage usage, you should group by exporter
-  name and interface name or description for the data to be meaningful.
-  Otherwise, you will get an average over the matched interfaces. Also, because
-  interface speeds are retrieved infrequently, the percentage may be temporarily
-  incorrect when an interface's speed changes.
+  (should match interface counters), packets per second, flows per second, or
+  percentage of input or output interface usage. For percentage usage, you
+  should group by exporter name and interface name or description for the data
+  to be meaningful. Otherwise, you will get an average over the matched
+  interfaces. Also, because interface speeds are retrieved infrequently, the
+  percentage may be temporarily incorrect when an interface's speed changes.
+  Flows per second is the number of flows after sampling. It only makes sense
+  for NetFlow and IPFIX (otherwise, it is better to use packets per second).
+  Flows per second is also highly dependent of the selected timeframe: zooming
+  out changes the displayed values.
 
 - Five graph types are available: “stacked”, “lines”, “grid”, and “heatmap” to
   display time series, and “sankey” to show flow distributions between various

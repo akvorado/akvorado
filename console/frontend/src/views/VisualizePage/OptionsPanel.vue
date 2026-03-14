@@ -49,6 +49,7 @@
               { label: '→%', name: 'inl2%' },
               { label: '%→', name: 'outl2%' },
               { label: 'ᵖ⁄ₛ', name: 'pps' },
+              { label: 'ᶠ⁄ₛ', name: 'fps' },
             ]"
             label="Unit"
             class="order-1"
