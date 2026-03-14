@@ -67,6 +67,7 @@
         "npm"
       ],
       "groupName": "dev-dependencies",
+      "automerge": true,
       "matchPackageNames": [
         "autoprefixer",
         "vite",
@@ -95,6 +96,7 @@
         "npm"
       ],
       "groupName": "typescript",
+      "automerge": true,
       "matchPackageNames": [
         "typescript",
         "typescript-language-server",
@@ -147,6 +149,7 @@
         "gomod"
       ],
       "groupName": "golang-org-x",
+      "automerge": true,
       "matchPackageNames": [
         "/^golang\\.org/x//"
       ]
