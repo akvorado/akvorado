@@ -139,6 +139,19 @@
       "matchManagers": [
         "gomod"
       ],
+      "matchPackageNames": [
+        "go"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "automerge": true,
+      "schedule": ["* * * * *"]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
       "groupName": "franz-go",
       "matchPackageNames": [
         "/^github\\.com/twmb/franz-go/"
