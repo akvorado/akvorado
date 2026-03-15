@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/netip"
 	"reflect"
+	"regexp"
 	"strconv"
 
 	"github.com/go-playground/validator/v10"
@@ -91,10 +92,18 @@ func noIntersectField(fl validator.FieldLevel) bool {
 	return true
 }
 
+// isEmptyOrAlphaNumericUnderscore validates a field's value is an empty string
+// or a valid alphanumeric value with underscores.
+func isEmptyOrAlphaNumericUnderscore(fl validator.FieldLevel) bool {
+	regex := regexp.MustCompile("^[a-zA-Z0-9_]*$")
+	return regex.MatchString(fl.Field().String())
+}
+
 func init() {
 	Validate = validator.New()
 	Validate.RegisterValidation("listen", isListen)
 	Validate.RegisterValidation("ninterfield", noIntersectField)
+	Validate.RegisterValidation("emptyalphanumunderscore", isEmptyOrAlphaNumericUnderscore)
 	Validate.RegisterCustomTypeFunc(netipValidation, netip.Addr{}, netip.Prefix{})
 	RegisterSubnetMapValidation[string]()
 }
