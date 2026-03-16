@@ -10,7 +10,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 2.2.0 - 2026-03-16
 
 - ✨ *console*: add flows/s as a new unit for visualization
 - ✨ *console*: add a heatmap visualisation
