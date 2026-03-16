@@ -118,6 +118,9 @@ func StringToSliceHookFunc(sep string) mapstructure.DecodeHookFunc {
 // ProtectedDecodeHookFunc wraps a DecodeHookFunc to recover and returns an error on panic.
 func ProtectedDecodeHookFunc(hook mapstructure.DecodeHookFunc) mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (v any, err error) {
+		if to.Kind() == reflect.Interface && to.IsNil() {
+			return from.Interface(), nil
+		}
 		defer func() {
 			if r := recover(); r != nil {
 				v = nil

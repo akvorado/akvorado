@@ -22,6 +22,7 @@ identified with a specific icon:
 - 🌱 *outlet*: map sFlow drop codes to IPFIX ForwardingStatus
 - 🌱 *orchestrator*: do not materialize TTLs in ClickHouse when updating them
 - 🌱 *orchestrator*: reduce overhead of the exporters view to improve ClickHouse ingest performance
+- 🌱 *orchestrator*: add ClickHouse table settings (e.g. `storage_policy`) via `table-settings`
 
 ## 2.1.2 - 2026-02-24
 

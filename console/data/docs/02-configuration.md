@@ -953,15 +953,20 @@ provided inside `clickhouse`:
   schema mismatches may cause write errors.
 
 The `resolutions` setting contains a list of resolutions. Each resolution has
-two keys: `interval` and `ttl`. The first one is the consolidation interval. The
-second is how long to keep the data in the database. If `ttl` is 0, then the
-data is kept forever. If `interval` is 0, it applies to the raw data (the one in
-the `flows` table). For each resolution, a materialized view `flows_DDDD` is
-created with the specified interval. It should be noted that consolidated tables
-do not contain information about source/destination IP addresses and ports by
-default. That's why you may want to keep the interval-0 table data a bit longer.
-*Akvorado* will still use the consolidated tables if the query do not require
-the raw table, for performance reason.
+three keys: `interval`, `ttl`, and `table-settings`. The first one is the
+consolidation interval. The second is how long to keep the data in the database.
+If `ttl` is 0, then the data is kept forever. If `interval` is 0, it applies to
+the raw data (the one in the `flows` table). For each resolution, a materialized
+view `flows_DDDD` is created with the specified interval. It should be noted that
+consolidated tables do not contain information about source/destination IP
+addresses and ports by default. That's why you may want to keep the interval-0
+table data a bit longer. *Akvorado* will still use the consolidated tables if the
+query do not require the raw table, for performance reason.
+
+The `table-settings` key is optional and allows overriding or extending the
+default ClickHouse table settings (`index_granularity = 8192` and
+`ttl_only_drop_parts = 1`). This is useful for configuring a custom
+`storage_policy`, for example.
 
 Here is the default configuration:
 
@@ -975,6 +980,26 @@ resolutions:
     ttl: 2160h # 3 months
   - interval: 1h
     ttl: 8760h # 1 year
+```
+
+To use a custom storage policy for some resolutions:
+
+```yaml
+resolutions:
+  - interval: 0
+    ttl: 360h
+    table-settings:
+      storage_policy: fast_ssd
+  - interval: 1m
+    ttl: 168h
+  - interval: 5m
+    ttl: 2160h
+    table-settings:
+      storage_policy: cold_hdd
+  - interval: 1h
+    ttl: 8760h
+    table-settings:
+      storage_policy: cold_hdd
 ```
 
 If you want to tweak the values, start from the default configuration. Most of

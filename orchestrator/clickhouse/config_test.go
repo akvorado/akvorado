@@ -5,6 +5,7 @@ package clickhouse
 
 import (
 	"testing"
+	"time"
 
 	"akvorado/common/helpers"
 )
@@ -87,6 +88,64 @@ func TestNetworkNamesUnmarshalHook(t *testing.T) {
 			Initial:       func() any { return &helpers.SubnetMap[NetworkAttributes]{} },
 			Configuration: func() any { return helpers.M{"192.0.2.1/255.0.255.0": "customer"} },
 			Error:         true,
+		},
+	})
+}
+
+func TestTableSettingsDecode(t *testing.T) {
+	helpers.TestConfigurationDecode(t, helpers.ConfigurationDecodeCases{
+		{
+			Pos:         helpers.Mark(),
+			Description: "string and int settings",
+			Initial:     func() any { return &ResolutionConfiguration{} },
+			Configuration: func() any {
+				return helpers.M{
+					"interval": "5m",
+					"ttl":      "360h",
+					"table-settings": helpers.M{
+						"storage_policy":         "ssd",
+						"merge_with_ttl_timeout": 3600,
+					},
+				}
+			},
+			Expected: &ResolutionConfiguration{
+				Interval: 5 * time.Minute,
+				TTL:      360 * time.Hour,
+				TableSettings: TableSettings{
+					"storage_policy":         "ssd",
+					"merge_with_ttl_timeout": 3600,
+				},
+			},
+		},
+		{
+			Pos:         helpers.Mark(),
+			Description: "invalid key with special characters",
+			Initial:     func() any { return &ResolutionConfiguration{} },
+			Configuration: func() any {
+				return helpers.M{
+					"interval": "5m",
+					"ttl":      "360h",
+					"table-settings": helpers.M{
+						"storage policy": "ssd",
+					},
+				}
+			},
+			Error: true,
+		},
+		{
+			Pos:         helpers.Mark(),
+			Description: "invalid key with SQL injection",
+			Initial:     func() any { return &ResolutionConfiguration{} },
+			Configuration: func() any {
+				return helpers.M{
+					"interval": "5m",
+					"ttl":      "360h",
+					"table-settings": helpers.M{
+						"'; DROP TABLE flows --": "ssd",
+					},
+				}
+			},
+			Error: true,
 		},
 	})
 }
