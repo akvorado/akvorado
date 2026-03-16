@@ -494,7 +494,7 @@ sources. Each source accepts these attributes:
   `.[1:][]`. The `plain` parser produces an array of strings, one per line.
 - `transform` is a [jq](https://stedolan.github.io/jq/manual/) expression that
   transforms the parsed data into a set of attributes represented as objects.
-  Each object should have these keys: `exporter-subnet`, `skip-missing-interfaces`,
+  Each object should have these keys: `exportersubnet`, `skipmissinginterfaces`,
   `default` (with the same structure as a static configuration), and `interfaces`.
   The latter is a list of interfaces, where each interface has an `ifindex`, a
   `name`, a `description`, and a `speed`.
