@@ -7,10 +7,13 @@ import (
 	"net"
 	"net/netip"
 	"reflect"
+	"regexp"
 	"strconv"
 
 	"github.com/go-playground/validator/v10"
 )
+
+var alphaNumericUnderscoreRegex = regexp.MustCompile(`^[a-zA-Z0-9_]+$`)
 
 // Validate is a validator instance to be used everywhere.
 var Validate *validator.Validate
@@ -91,10 +94,16 @@ func noIntersectField(fl validator.FieldLevel) bool {
 	return true
 }
 
+// isAlphaNumericUnderscore validates the field contains only alphanumeric characters and underscores.
+func isAlphaNumericUnderscore(fl validator.FieldLevel) bool {
+	return alphaNumericUnderscoreRegex.MatchString(fl.Field().String())
+}
+
 func init() {
 	Validate = validator.New()
 	Validate.RegisterValidation("listen", isListen)
 	Validate.RegisterValidation("ninterfield", noIntersectField)
+	Validate.RegisterValidation("alphanumunderscore", isAlphaNumericUnderscore)
 	Validate.RegisterCustomTypeFunc(netipValidation, netip.Addr{}, netip.Prefix{})
 	RegisterSubnetMapValidation[string]()
 }

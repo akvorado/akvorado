@@ -23,6 +23,50 @@ import (
 
 var errSkipStep = errors.New("migration: skip this step")
 
+// defaultTableSettingsKeys lists the default table setting keys in their fixed output order.
+var defaultTableSettingsKeys = []string{"index_granularity", "ttl_only_drop_parts"}
+
+// defaultTableSettings are the default ClickHouse table settings applied to flow tables.
+var defaultTableSettings = TableSettings{
+	"index_granularity":   8192,
+	"ttl_only_drop_parts": 1,
+}
+
+// renderTableSettings merges extra settings with the default table settings and
+// returns a stable settings string suitable for ClickHouse SETTINGS clauses.
+// Default settings appear first (index_granularity, ttl_only_drop_parts),
+// followed by extra settings sorted alphabetically. Integer values are rendered
+// unquoted; string values are single-quoted.
+func renderTableSettings(extra TableSettings) string {
+	merged := TableSettings{}
+	for k, v := range defaultTableSettings {
+		merged[k] = v
+	}
+	for k, v := range extra {
+		merged[k] = v
+	}
+
+	extraKeys := make([]string, 0, len(merged))
+	for k := range merged {
+		if !slices.Contains(defaultTableSettingsKeys, k) {
+			extraKeys = append(extraKeys, k)
+		}
+	}
+	slices.Sort(extraKeys)
+	keys := append(slices.Clone(defaultTableSettingsKeys), extraKeys...)
+
+	parts := make([]string, 0, len(keys))
+	for _, k := range keys {
+		switch v := merged[k].(type) {
+		case int:
+			parts = append(parts, fmt.Sprintf("%s = %d", k, v))
+		case string:
+			parts = append(parts, fmt.Sprintf("%s = %s", k, quoteString(v)))
+		}
+	}
+	return strings.Join(parts, ", ")
+}
+
 // wrapMigrations can be used to wrap migration functions. It will keep the
 // metrics up-to-date as long as the migration function returns `errSkipStep`
 // when a step is skipped.
@@ -87,7 +131,7 @@ func (c *Component) tableAlreadyExists(ctx context.Context, table, column, targe
 	existing = strings.ReplaceAll(existing,
 		fmt.Sprintf(`dictGet('%s.`, c.d.ClickHouse.DatabaseName()),
 		"dictGet('")
-	existing = regexp.MustCompile(` SETTINGS index_granularity = \d+$`).ReplaceAllString(existing, "")
+	existing = regexp.MustCompile(` SETTINGS .*$`).ReplaceAllString(existing, "")
 	existing = strings.ReplaceAll(existing,
 		"ENGINE = Null",
 		"ENGINE = `Null`") // from ClickHouse 25.8
@@ -447,7 +491,7 @@ func (c *Component) createOrUpdateFlowsTable(ctx context.Context, resolution Res
 	tableName = c.localTable(tableName)
 	partitionInterval := uint64((resolution.TTL / time.Duration(c.config.MaxPartitions)).Seconds())
 	ttl := uint64(resolution.TTL.Seconds())
-	settings := `index_granularity = 8192, ttl_only_drop_parts = 1`
+	settings := renderTableSettings(resolution.TableSettings)
 
 	// Create table if it does not exist
 	if ok, err := c.tableAlreadyExists(ctx, tableName, "name", tableName); err != nil {
@@ -616,7 +660,8 @@ outer:
 	}
 
 	// Check if we need to update the settings
-	settingsClauseLike := fmt.Sprintf("CAST(engine_full LIKE '%% SETTINGS %s', 'String')", settings)
+	settingsClauseLike := fmt.Sprintf("CAST(engine_full LIKE '%% SETTINGS %s', 'String')",
+		strings.NewReplacer(`\`, `\\`, `'`, `\'`).Replace(settings))
 	if ok, err := c.tableAlreadyExists(ctx, tableName, settingsClauseLike, "1"); err != nil {
 		return err
 	} else if !ok {

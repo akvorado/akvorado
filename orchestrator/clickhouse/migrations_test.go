@@ -170,11 +170,20 @@ func isOldTable(schema *schema.Component, table string) bool {
 // startTestComponent starts a test component and wait for migrations to be done
 func startTestComponent(t *testing.T, r *reporter.Reporter, chComponent *clickhousedb.Component, sch *schema.Component) *Component {
 	t.Helper()
+	return startTestComponentWithConfig(t, r, chComponent, sch, nil)
+}
+
+// startTestComponentWithConfig starts a test component with a custom configuration modifier and wait for migrations to be done
+func startTestComponentWithConfig(t *testing.T, r *reporter.Reporter, chComponent *clickhousedb.Component, sch *schema.Component, configModifier func(*Configuration)) *Component {
+	t.Helper()
 	if sch == nil {
 		sch = schema.NewMock(t)
 	}
 	configuration := DefaultConfiguration()
 	configuration.OrchestratorURL = "http://127.0.0.1:0"
+	if configModifier != nil {
+		configModifier(&configuration)
+	}
 	ch, err := New(r, configuration, Dependencies{
 		Daemon:     daemon.NewMock(t),
 		HTTP:       httpserver.NewMock(t, r),
@@ -418,6 +427,68 @@ func TestMigrationFromPreviousStates(t *testing.T) {
 	})
 }
 
+func TestTableSettings(t *testing.T) {
+	r := reporter.NewMock(t)
+	chComponent := clickhousedb.SetupClickHouse(t, r, false)
+	dropAllTables(t, chComponent)
+
+	// Start with default settings
+	startTestComponent(t, r, chComponent, nil)
+
+	// Check that the default settings are applied
+	checkSettings := func(t *testing.T, table, expectedSettings string) {
+		t.Helper()
+		row := chComponent.QueryRow(t.Context(),
+			"SELECT engine_full FROM system.tables WHERE name = $1 AND database = $2",
+			table, chComponent.DatabaseName())
+		var engineFull string
+		if err := row.Scan(&engineFull); err != nil {
+			t.Fatalf("Scan() error:\n%+v", err)
+		}
+		expected := fmt.Sprintf("SETTINGS %s", expectedSettings)
+		if !strings.Contains(engineFull, expected) {
+			t.Fatalf("engine_full for %s does not contain expected settings %q:\n%s", table, expectedSettings, engineFull)
+		}
+	}
+
+	t.Run("default settings", func(t *testing.T) {
+		checkSettings(t, "flows",
+			"index_granularity = 8192, ttl_only_drop_parts = 1")
+	})
+
+	t.Run("custom settings", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		startTestComponentWithConfig(t, r, chComponent, nil, func(cfg *Configuration) {
+			cfg.Resolutions[0].TableSettings = TableSettings{
+				"merge_with_ttl_timeout": 3600,
+			}
+		})
+
+		checkSettings(t, "flows",
+			"index_granularity = 8192, ttl_only_drop_parts = 1, merge_with_ttl_timeout = 3600")
+
+		// Metrics should show at least one migration applied
+		gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
+		if gotMetrics["applied_steps_total"] == "0" {
+			t.Fatal("No migration applied when changing table settings")
+		}
+	})
+
+	t.Run("idempotent", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		startTestComponentWithConfig(t, r, chComponent, nil, func(cfg *Configuration) {
+			cfg.Resolutions[0].TableSettings = TableSettings{
+				"merge_with_ttl_timeout": 3600,
+			}
+		})
+
+		gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
+		if diff := helpers.Diff(gotMetrics, map[string]string{"applied_steps_total": "0"}); diff != "" {
+			t.Fatalf("Metrics (-got, +want):\n%s", diff)
+		}
+	})
+}
+
 func TestCustomDictMigration(t *testing.T) {
 	r := reporter.NewMock(t)
 	chComponent := clickhousedb.SetupClickHouse(t, r, false)
@@ -570,6 +641,63 @@ AND name LIKE $3`, "flows", ch.d.ClickHouse.DatabaseName(), "%DimensionAttribute
 			}
 		}
 	})
+}
+
+func TestRenderTableSettings(t *testing.T) {
+	cases := []struct {
+		description string
+		extra       TableSettings
+		expected    string
+	}{
+		{
+			description: "defaults only",
+			extra:       nil,
+			expected:    "index_granularity = 8192, ttl_only_drop_parts = 1",
+		},
+		{
+			description: "empty map",
+			extra:       TableSettings{},
+			expected:    "index_granularity = 8192, ttl_only_drop_parts = 1",
+		},
+		{
+			description: "add string setting",
+			extra:       TableSettings{"storage_policy": "ssd"},
+			expected:    "index_granularity = 8192, ttl_only_drop_parts = 1, storage_policy = 'ssd'",
+		},
+		{
+			description: "add int setting",
+			extra:       TableSettings{"merge_with_ttl_timeout": 3600},
+			expected:    "index_granularity = 8192, ttl_only_drop_parts = 1, merge_with_ttl_timeout = 3600",
+		},
+		{
+			description: "override defaults",
+			extra:       TableSettings{"index_granularity": 4096},
+			expected:    "index_granularity = 4096, ttl_only_drop_parts = 1",
+		},
+		{
+			description: "multiple extra settings sorted",
+			extra:       TableSettings{"storage_policy": "cold_hdd", "merge_with_ttl_timeout": 3600},
+			expected:    "index_granularity = 8192, ttl_only_drop_parts = 1, merge_with_ttl_timeout = 3600, storage_policy = 'cold_hdd'",
+		},
+		{
+			description: "extra key alphabetically before defaults",
+			extra:       TableSettings{"allow_remote_fs_zero_copy_replication": 1},
+			expected:    "index_granularity = 8192, ttl_only_drop_parts = 1, allow_remote_fs_zero_copy_replication = 1",
+		},
+		{
+			description: "extra key alphabetically between defaults",
+			extra:       TableSettings{"min_bytes_for_wide_part": 0},
+			expected:    "index_granularity = 8192, ttl_only_drop_parts = 1, min_bytes_for_wide_part = 0",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.description, func(t *testing.T) {
+			got := renderTableSettings(tc.extra)
+			if diff := helpers.Diff(got, tc.expected); diff != "" {
+				t.Fatalf("renderTableSettings() (-got, +want):\n%s", diff)
+			}
+		})
+	}
 }
 
 func TestQuoteString(t *testing.T) {
