@@ -15,7 +15,7 @@ identified with a specific icon:
 - ✨ *console*: add flows/s as a new unit for visualization
 - ✨ *console*: add a heatmap visualisation
 - ✨ *common*: remote data sources now support CSV and plain text formats via the `parser` option
-- ✨ *outlet*: remote data sources can return exporters with `skip-missing-interfaces` set to true to fallback to the next provider
+- ✨ *outlet*: remote data sources can return exporters with `skipmissinginterfaces` set to true to fallback to the next provider
 - 🩹 *outlet*: fix OpenConfig model handling in gNMI provider
 - 🩹 *outlet*: fix detection of gNMI model for equipments not triggering an error on nonexistent paths
 - 🩹 *outlet*: fix BMP RIB corruption due to sharing of route attribute references
@@ -209,7 +209,7 @@ Prometheus volume:
 - 💥 *inlet*: in SNMP metadata provider, prefer ifAlias over ifDescr for interface description
 - 🌱 *inlet*: add back `geoip` as an option for `inlet`→`core`→`asn-providers`
 - 🌱 *inlet*: allow the static provider to fall back to the next provider if some
-  interfaces are missing, when setting the `skipmissinginterfaces` option to
+  interfaces are missing, when setting the `skip-missing-interfaces` option to
   true.
 - 🌱 *build*: minimum Go version to build is now 1.24
 - 🌱 *build*: use PGO for better performance of the inlet
