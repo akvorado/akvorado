@@ -47,7 +47,7 @@ describe("linter", () => {
     } as Response);
 
     const diagnostics = await linterSource(view);
-    expect(fetch).toHaveBeenCalledWith("/api/v0/console/filter/validate", {
+    expect(fetch).toHaveBeenCalledWith("api/v0/console/filter/validate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

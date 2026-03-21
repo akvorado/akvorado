@@ -131,7 +131,7 @@ const props = defineProps<{ id: string }>();
 const title = inject(TitleKey)!;
 
 // Grab document
-const url = computed(() => `/api/v0/console/docs/${props.id}`);
+const url = computed(() => `api/v0/console/docs/${props.id}`);
 const { data, error } = useFetch(url, { refetch: true }).get().json<
   | { message: string } // on error
   | {

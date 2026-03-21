@@ -23,7 +23,7 @@ const props = defineProps({
   },
 });
 
-const url = computed(() => "/api/v0/console/widget/exporters?" + props.refresh);
+const url = computed(() => "api/v0/console/widget/exporters?" + props.refresh);
 const { data } = useFetch(url, { refetch: true })
   .get()
   .json<{ exporters: string[] } | { message: string }>();

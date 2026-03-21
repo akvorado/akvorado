@@ -116,7 +116,7 @@ type SavedFilter = {
 
 const selectedSavedFilter = ref<SavedFilter | null>(null);
 const { data: rawSavedFilters, execute: refreshSavedFilters } = useFetch(
-  `/api/v0/console/filter/saved`,
+  `api/v0/console/filter/saved`,
 ).json<{
   filters: Array<SavedFilter>;
 }>();
@@ -129,7 +129,7 @@ watch(selectedSavedFilter, (filter) => {
 
 const deleteFilter = async (id: SavedFilter["id"]) => {
   try {
-    await fetch(`/api/v0/console/filter/saved/${id}`, { method: "DELETE" });
+    await fetch(`api/v0/console/filter/saved/${id}`, { method: "DELETE" });
   } finally {
     refreshSavedFilters();
   }
@@ -139,7 +139,7 @@ const addFilter = async ({
   shared,
 }: Pick<SavedFilter, "description" | "shared">) => {
   try {
-    await fetch(`/api/v0/console/filter/saved`, {
+    await fetch(`api/v0/console/filter/saved`, {
       method: "POST",
       body: JSON.stringify({ description, shared, content: expression.value }),
     });

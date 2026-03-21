@@ -201,7 +201,7 @@ const { data, execute, isFetching, aborted, abort, canAbort, error } = useFetch(
       const url = endpoint[state.value.graphType];
       return {
         ...ctx,
-        url: `/api/v0/console/graph/${url}`,
+        url: `api/v0/console/graph/${url}`,
       };
     },
     onFetchError(ctx) {
