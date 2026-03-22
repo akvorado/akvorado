@@ -36,7 +36,7 @@ type Configuration struct {
 	// RIBShards is the number of shards for the RIB. Each shard has its own
 	// lock, enabling concurrent route operations on different shards. The
 	// maximum value matches shardBits constant in rib.go.
-	RIBShards uint `validate:"min=1,max=256"`
+	RIBShards uint `validate:"oneof=1 2 4 8 16 32 64 128 256"`
 }
 
 // DefaultConfiguration represents the default configuration for the BMP server
