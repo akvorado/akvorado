@@ -4,6 +4,7 @@
 package console
 
 import (
+	"fmt"
 	"html"
 	"io/fs"
 	"net/http"
@@ -22,14 +23,14 @@ func (c *Component) defaultHandlerFunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	prefix := c.urlPrefix()
 	// Inject <base href="..."> immediately after the opening <head> tag so
 	// that the browser resolves all relative URLs (assets and API calls)
 	// against the correct prefix.
+	prefix := c.urlPrefix()
 	injected := strings.Replace(
 		string(content),
 		"<head>",
-		"<head>\n    <base href=\""+html.EscapeString(prefix)+"\" />",
+		fmt.Sprintf("<head>\n    <base href=%q />", html.EscapeString(prefix)),
 		1,
 	)
 
