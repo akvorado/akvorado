@@ -1044,7 +1044,7 @@ The main components of the console service are `console`, `authentication` and
 The console itself accepts the following keys:
 
  - `url-prefix` sets the URL path prefix under which the console is hosted
-   (e.g. `/akvorado/`).  The value must start and end with a slash; the default
+   (e.g. `/akvorado/`).  The value must start and end with a slash. The default
    is `/`.  When set, a stripping reverse proxy is required: the proxy must
    remove the prefix before forwarding requests to Akvorado.  Akvorado uses the
    prefix only to inject a `<base href="…">` tag into `index.html` so that the

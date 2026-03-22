@@ -85,11 +85,7 @@ func (c *Component) Start() error {
 	prefix := c.urlPrefix()
 	c.r.Info().Str("url-prefix", prefix).Msg("starting console component")
 
-	// Static assets — the server always registers handlers at the root paths.
-	// When a URL prefix is configured (e.g. "/akvorado/") a stripping reverse
-	// proxy is required to forward requests to Akvorado after stripping the
-	// prefix.  The prefix is injected into index.html as a <base href> tag so
-	// the browser resolves relative asset and API paths correctly.
+	// Static assets
 	c.d.HTTP.AddHandler("/", http.HandlerFunc(c.defaultHandlerFunc))
 	c.d.HTTP.AddHandler("/assets/", http.StripPrefix("/assets/", http.HandlerFunc(c.staticAssetsHandlerFunc)))
 	c.d.HTTP.AddHandler("/assets/docs/", http.StripPrefix("/assets/docs/", http.HandlerFunc(c.docAssetsHandlerFunc)))

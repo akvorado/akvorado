@@ -4,7 +4,7 @@
 package console
 
 import (
-	"fmt"
+	"html"
 	"io/fs"
 	"net/http"
 	"strings"
@@ -29,15 +29,15 @@ func (c *Component) defaultHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	injected := strings.Replace(
 		string(content),
 		"<head>",
-		fmt.Sprintf("<head>\n    <base href=%q />", prefix),
+		"<head>\n    <base href=\""+html.EscapeString(prefix)+"\" />",
 		1,
 	)
 
-	// Pass a zero modtime so ServeContent omits Last-Modified and does not
-	// honour If-Modified-Since. The injected <base href> depends on runtime
-	// configuration, not the binary, so the file's embedded ModTime is not a
-	// reliable freshness signal.
-	http.ServeContent(w, r, "index.html", time.Time{}, strings.NewReader(injected))
+	var modtime time.Time
+	if info, err := fs.Stat(assets, "index.html"); err == nil {
+		modtime = info.ModTime()
+	}
+	http.ServeContent(w, r, "index.html", modtime, strings.NewReader(injected))
 }
 
 func (c *Component) staticAssetsHandlerFunc(w http.ResponseWriter, req *http.Request) {

@@ -65,8 +65,8 @@ func TestServeAssetsWithURLPrefix(t *testing.T) {
 			URL:         "/",
 			ContentType: "text/html; charset=utf-8",
 			// The <base href> must reflect the configured prefix so that
-			// relative asset URLs (./assets/…) and API calls (api/v0/…)
-			// resolve to /akvorado/assets/… and /akvorado/api/v0/… in the
+			// relative asset URLs (./assets/...) and API calls (api/v0/...)
+			// resolve to /akvorado/assets/... and /akvorado/api/v0/... in the
 			// browser when a stripping reverse proxy is in use.
 			FirstLines: []string{
 				"<!doctype html>",

@@ -15,10 +15,9 @@ declare module "vue-router" {
 }
 
 // Read the base path from the <base> HTML tag injected by the server.
-// Falls back to "/" for backward compatibility when no prefix is configured.
+// Falls back to "/" when no prefix is configured.
 const base =
-  document.querySelector("base")?.getAttribute("href") ??
-  import.meta.env.BASE_URL;
+  document.querySelector("base")?.getAttribute("href") ?? "/";
 
 const router = createRouter({
   history: createWebHistory(base),
