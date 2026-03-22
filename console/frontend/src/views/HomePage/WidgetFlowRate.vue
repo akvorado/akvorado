@@ -25,7 +25,7 @@ const props = withDefaults(
   },
 );
 
-const url = computed(() => `/api/v0/console/widget/flow-rate?${props.refresh}`);
+const url = computed(() => `api/v0/console/widget/flow-rate?${props.refresh}`);
 const { data } = useFetch(url, { refetch: true }).get().json<
   | {
       rate: number;

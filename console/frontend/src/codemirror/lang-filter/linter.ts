@@ -6,7 +6,7 @@ import type { EditorView } from "@codemirror/view";
 
 export const linterSource = async (view: EditorView) => {
   const code = view.state.doc.toString();
-  const response = await fetch("/api/v0/console/filter/validate", {
+  const response = await fetch("api/v0/console/filter/validate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ filter: code }),

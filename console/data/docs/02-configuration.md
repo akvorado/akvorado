@@ -1043,6 +1043,18 @@ The main components of the console service are `console`, `authentication` and
 
 The console itself accepts the following keys:
 
+ - `url-prefix` sets the URL path prefix under which the console is hosted
+   (e.g. `/akvorado/`).  The value must start and end with a slash. The default
+   is `/`.  When set, a stripping reverse proxy is required: the proxy must
+   remove the prefix before forwarding requests to Akvorado.  Akvorado uses the
+   prefix only to inject a `<base href="…">` tag into `index.html` so that the
+   browser correctly resolves relative asset and API paths.  Example nginx
+   snippet:
+   ```nginx
+   location /akvorado/ {
+       proxy_pass http://127.0.0.1:8081/;   # trailing slash strips the prefix
+   }
+   ```
  - `default-visualize-options` to define default options for the "visualize"
    tab. It takes the following keys: `graph-type` (one of `stacked`,
    `stacked100`, `lines`, `grid`, or `sankey`), `start`, `end`, `filter`,

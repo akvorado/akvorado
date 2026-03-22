@@ -82,7 +82,8 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 
 // Start starts the console component.
 func (c *Component) Start() error {
-	c.r.Info().Msg("starting console component")
+	prefix := c.urlPrefix()
+	c.r.Info().Str("url-prefix", prefix).Msg("starting console component")
 
 	// Static assets
 	c.d.HTTP.AddHandler("/", http.HandlerFunc(c.defaultHandlerFunc))
