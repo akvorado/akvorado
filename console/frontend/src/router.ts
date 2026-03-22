@@ -16,8 +16,7 @@ declare module "vue-router" {
 
 // Read the base path from the <base> HTML tag injected by the server.
 // Falls back to "/" when no prefix is configured.
-const base =
-  document.querySelector("base")?.getAttribute("href") ?? "/";
+const base = document.querySelector("base")?.getAttribute("href") ?? "/";
 
 const router = createRouter({
   history: createWebHistory(base),
