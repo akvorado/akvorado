@@ -140,8 +140,8 @@ func (c *current) getColumn(name string) schema.Column {
 }
 
 // parsePrefix parses a source or destination prefix to SQL.
-func (c *current) parsePrefix(direction string) ([]any, error) {
-	net, err := netip.ParsePrefix(string(c.text))
+func (c *current) parsePrefix(direction, prefix string) ([]any, error) {
+	net, err := netip.ParsePrefix(prefix)
 	if err != nil {
 		return []any{}, errors.New("expecting a prefix")
 	}

@@ -10,6 +10,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🩹 *console*: don't complete column names not accepted in filters
+
 ## 2.2.0 - 2026-03-16
 
 - ✨ *console*: add flows/s as a new unit for visualization

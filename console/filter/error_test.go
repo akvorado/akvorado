@@ -43,7 +43,7 @@ OR`), GlobalStore("meta", &Meta{Schema: schema.NewMock(t)}))
 func TestExpected(t *testing.T) {
 	_, err := Parse("", []byte{}, Entrypoint("ConditionBoundaryExpr"),
 		GlobalStore("meta", &Meta{Schema: schema.NewMock(t)}))
-	expected := []string{`"InIfBoundary"i`, `"OutIfBoundary"i`}
+	expected := []string{"[A-Za-z0-9]"}
 	if diff := helpers.Diff(Expected(err), expected); diff != "" {
 		t.Errorf("AllErrors() (-got, +want):\n%s", diff)
 	}

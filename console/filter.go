@@ -91,7 +91,7 @@ func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
 		// We use the schema directly.
 		columns := []string{}
 		for _, column := range c.d.Schema.Columns() {
-			if column.Disabled {
+			if column.Disabled || column.ParserType == "" {
 				continue
 			}
 			if strings.HasPrefix(strings.ToLower(column.Name), strings.ToLower(input.Prefix)) {
