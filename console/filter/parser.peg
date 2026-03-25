@@ -37,7 +37,7 @@ NotExpr "NOT expression" ← KW_NOT _ expr:Expr {
 }
 
 ConditionExpr "conditional" ←
-    ConditionIPExpr
+    (ConditionIPExpr
   / ConditionPrefixExpr
   / ConditionMACExpr
   / ConditionStringExpr
@@ -50,9 +50,16 @@ ConditionExpr "conditional" ←
   / ConditionETypeExpr
   / ConditionProtoExpr
   / ConditionDirectionExpr
+  / !ColumnName %{errColumnName})
+  //{errColumnName} ErrColumnName
 
+ErrColumnName ← #{
+  return errors.New("expecting a column name")
+}
+
+ColumnName "column name" ← [A-Za-z0-9]+ !IdentStart { return string(c.text), nil }
 ColumnIP ←
- column:[A-Za-z0-9]+ !IdentStart
+ column:ColumnName
    &{ return c.columnIsOfType(column, "ip") }
     { return c.acceptColumn() }
 ConditionIPExpr "condition on IP" ←
@@ -75,7 +82,7 @@ ConditionIPExpr "condition on IP" ←
 
 
 ConditionPrefixExpr "condition on prefix" ←
-   column:(value:[A-Za-z0-9]+ !IdentStart
+   column:(value:ColumnName
            &{ return c.columnIsOfType(value, "prefix") }
             { return c.acceptColumn() }) _
    operator:("=" / "!=") _
@@ -97,7 +104,7 @@ ConditionPrefixExpr "condition on prefix" ←
    }
 
 ConditionMACExpr "condition on MAC" ←
-   column:(value:[A-Za-z0-9]+ !IdentStart
+   column:(value:ColumnName
            &{ return c.columnIsOfType(value, "mac") }
             { return c.acceptColumn() }) _
    operator:("=" / "!=") _ mac:MAC {
@@ -105,7 +112,7 @@ ConditionMACExpr "condition on MAC" ←
    }
 
 ConditionStringExpr "condition on string" ←
- column:(value:[A-Za-z0-9]+ !IdentStart
+ column:(value:ColumnName
            &{ return c.columnIsOfType(value, "string") }
             { return c.acceptColumn() }) _
  rcond:RConditionStringExpr {
@@ -120,7 +127,7 @@ RConditionStringExpr "condition on string" ←
    }
 
 ConditionBoundaryExpr "condition on boundary" ←
- column:(value:[A-Za-z0-9]+ !IdentStart
+ column:(value:ColumnName
            &{ return c.columnIsOfType(value, "boundary") }
             { return c.acceptColumn() }) _
  operator:("=" / "!=") _
@@ -129,7 +136,7 @@ ConditionBoundaryExpr "condition on boundary" ←
 }
 
 ConditionUintExpr "condition on integer" ←
- column:(value:[A-Za-z0-9]+ !IdentStart
+ column:(value:ColumnName
            &{ return c.columnIsOfType(value, "uint") }
             { return c.acceptColumn() }) _
  operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _
@@ -138,13 +145,13 @@ ConditionUintExpr "condition on integer" ←
 }
 
 ConditionArrayUintExpr "condition on array of integers" ←
-   column:(value:[A-Za-z0-9]+ !IdentStart
+   column:(value:ColumnName
            &{ return c.columnIsOfType(value, "array(uint)") }
             { return c.acceptColumn() }) _
    "=" _ value:Unsigned64 {
      return []any{"has(", column, ",", value, ")"}, nil
    }
- / column:(value:[A-Za-z0-9]+ !IdentStart
+ / column:(value:ColumnName
            &{ return c.columnIsOfType(value, "array(uint)") }
             { return c.acceptColumn() }) _
    "!=" _ value:Unsigned64 {
@@ -152,7 +159,7 @@ ConditionArrayUintExpr "condition on array of integers" ←
    }
 
 ConditionASExpr "condition on AS number" ←
- column:(value:[A-Za-z0-9]+ !IdentStart
+ column:(value:ColumnName
            &{ return c.columnIsOfType(value, "asn") }
             { return c.acceptColumn() }) _
  rcond:RConditionASExpr {
@@ -165,27 +172,27 @@ RConditionASExpr "condition on AS number" ←
 }
 
 ConditionASPathExpr "condition on AS path" ←
-   column:(value:[A-Za-z0-9]+ !IdentStart
+   column:(value:ColumnName
            &{ return c.columnIsOfType(value, "aspath") }
             { return c.acceptColumn() }) _ "=" _ value:ASN { return []any{"has(", column, ",", value, ")"}, nil }
- / column:(value:[A-Za-z0-9]+ !IdentStart
+ / column:(value:ColumnName
            &{ return c.columnIsOfType(value, "aspath") }
             { return c.acceptColumn() }) _ "!=" _ value:ASN { return []any{"NOT has(", column, ",", value, ")"}, nil }
 
 ConditionCommunitiesExpr "condition on communities" ←
-   column:(value:[A-Za-z0-9]+ !IdentStart
+   column:(value:ColumnName
            &{ return c.columnIsOfType(value, "community") }
             { return c.acceptColumn() }) _ "=" _ value:Community { return []any{"has(", column, ",", value, ")"}, nil }
- / column:(value:[A-Za-z0-9]+ !IdentStart
+ / column:(value:ColumnName
            &{ return c.columnIsOfType(value, "community") }
             { return c.acceptColumn() }) _ "!=" _ value:Community { return []any{"NOT has(", column, ",", value, ")"}, nil }
- / column:(value:[A-Za-z0-9]+ !IdentStart
+ / column:(value:ColumnName
            &{ return c.columnIsOfType(value, "community") }
             { return c.acceptColumn() }) _ "=" _ value:LargeCommunity {
      largeName := strings.Replace(column.(schema.Column).Name, "Communities", "LargeCommunities", 1)
      return []any{"has(", c.getColumn(largeName), ",", value, ")"}, nil
    }
- / column:(value:[A-Za-z0-9]+ !IdentStart
+ / column:(value:ColumnName
            &{ return c.columnIsOfType(value, "community") }
             { return c.acceptColumn() }) _ "!=" _ value:LargeCommunity {
      largeName := strings.Replace(column.(schema.Column).Name, "Communities", "LargeCommunities", 1)
@@ -193,7 +200,7 @@ ConditionCommunitiesExpr "condition on communities" ←
    }
 
 ConditionETypeExpr "condition on Ethernet type" ←
- column:(value:[A-Za-z0-9]+ !IdentStart
+ column:(value:ColumnName
            &{ return c.columnIsOfType(value, "etype") }
             { return c.acceptColumn() }) _
  operator:("=" / "!=") _ value:("IPv4"i / "IPv6"i) {
@@ -206,14 +213,14 @@ ConditionETypeExpr "condition on Ethernet type" ←
 }
 ConditionProtoExpr "condition on protocol" ← ConditionProtoIntExpr / ConditionProtoStrExpr
 ConditionProtoIntExpr "condition on protocol as integer" ←
- column:(value:[A-Za-z0-9]+ !IdentStart
+ column:(value:ColumnName
            &{ return c.columnIsOfType(value, "proto") }
             { return c.acceptColumn() }) _
  operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned8 {
   return []any{column, operator, value}, nil
 }
 ConditionProtoStrExpr "condition on protocol as string" ←
- column:(value:[A-Za-z0-9]+ !IdentStart
+ column:(value:ColumnName
            &{ return c.columnIsOfType(value, "proto") }
             { return c.acceptColumn() }) _
  operator:("=" / "!=") _ value:StringLiteral {
@@ -221,7 +228,7 @@ ConditionProtoStrExpr "condition on protocol as string" ←
 }
 
 ConditionDirectionExpr "condition on direction" ←
- column:(value:[A-Za-z0-9]+ !IdentStart
+ column:(value:ColumnName
            &{ return c.columnIsOfType(value, "direction") }
             { return c.acceptColumn() }) _
  operator:("=" / "!=") _

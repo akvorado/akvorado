@@ -85,12 +85,15 @@ func (c *current) compileExpr(expr []any, meta *Meta) string {
 	var b strings.Builder
 	sl := c.flattenExpr(expr, meta)
 	for i := range sl {
-		// Do we add a space between sl[i-1] and sl[i]?
-		if i == 0 {
-			b.WriteString(sl[0])
+		if sl[i] == "" {
 			continue
 		}
-		last := sl[i-1][len(sl[i-1])-1:]
+		// Do we add a space between sl[i-1] and sl[i]?
+		if b.Len() == 0 {
+			b.WriteString(sl[i])
+			continue
+		}
+		last := b.String()[b.Len()-1:]
 		first := sl[i][:1]
 		if first != "," && first != ")" && first != " " && last != "(" && last != " " {
 			b.WriteString(" ")
@@ -116,14 +119,10 @@ func (c *current) acceptColumn() (schema.Column, error) {
 // columnIsOfType returns true if the column is of one of the provided type. It
 // should be used in predicate code blocks.
 func (c *current) columnIsOfType(name any, types ...string) (bool, error) {
-	nameSl := name.([]any)
-	var columnName strings.Builder
-	for _, s := range nameSl {
-		columnName.Write(s.([]byte))
-	}
+	columnName := name.(string)
 	sch := c.globalStore["meta"].(*Meta).Schema
 	for _, column := range sch.Columns() {
-		if strings.EqualFold(columnName.String(), column.Name) {
+		if strings.EqualFold(columnName, column.Name) {
 			return slices.Contains(types, column.ParserType), nil
 		}
 	}

@@ -26,7 +26,6 @@ func TestAllErrors(t *testing.T) {
 InIfDescription = "Gi0/0/0/0"
 AND Proto = 1000
 OR`), GlobalStore("meta", &Meta{Schema: schema.NewMock(t)}))
-	// Currently, the parser stops at the first error.
 	expected := Errors{
 		oneError{
 			Message: "expecting an unsigned 8-bit integer",
@@ -34,17 +33,30 @@ OR`), GlobalStore("meta", &Meta{Schema: schema.NewMock(t)}))
 			Column:  13,
 			Offset:  43,
 		},
+		oneError{
+			Message: "expecting a column name",
+			Line:    4,
+			Column:  3,
+			Offset:  50,
+		},
 	}
 	if diff := helpers.Diff(AllErrors(err), expected); diff != "" {
 		t.Errorf("AllErrors() (-got, +want):\n%s", diff)
 	}
 }
 
-func TestExpected(t *testing.T) {
-	_, err := Parse("", []byte{}, Entrypoint("ConditionBoundaryExpr"),
+func TestExpectedColumnName(t *testing.T) {
+	_, err := Parse("", []byte{}, Entrypoint("ConditionExpr"),
 		GlobalStore("meta", &Meta{Schema: schema.NewMock(t)}))
-	expected := []string{"[A-Za-z0-9]"}
-	if diff := helpers.Diff(Expected(err), expected); diff != "" {
+	expected := Errors{
+		oneError{
+			Message: "expecting a column name",
+			Line:    1,
+			Column:  1,
+			Offset:  0,
+		},
+	}
+	if diff := helpers.Diff(AllErrors(err), expected); diff != "" {
 		t.Errorf("AllErrors() (-got, +want):\n%s", diff)
 	}
 }

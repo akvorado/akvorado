@@ -92,6 +92,48 @@ describe("linter", () => {
     ]);
   });
 
+  it("returns diagnostics for multiple validation errors", async () => {
+    const view = createEditorView("Proto = 1000 AND");
+
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          message: "at line 1, position 9: expecting an unsigned 8-bit integer",
+          errors: [
+            {
+              message: "expecting an unsigned 8-bit integer",
+              line: 1,
+              column: 9,
+              offset: 8,
+            },
+            {
+              message: "expecting a column name",
+              line: 1,
+              column: 17,
+              offset: 16,
+            },
+          ],
+        }),
+    } as Response);
+
+    const diagnostics = await linterSource(view);
+    expect(diagnostics).toEqual([
+      {
+        from: 8,
+        to: 12,
+        severity: "error",
+        message: "expecting an unsigned 8-bit integer",
+      },
+      {
+        from: 13,
+        to: 16,
+        severity: "error",
+        message: "expecting a column name",
+      },
+    ]);
+  });
+
   it("handles response with no errors field", async () => {
     const view = createEditorView("valid filter");
 
