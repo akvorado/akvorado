@@ -30,6 +30,7 @@ type Provider struct {
 	t           tomb.Tomb
 	config      Configuration
 	acceptedRDs map[RD]struct{}
+	acceptedRTs map[RT]struct{}
 	active      atomic.Bool
 
 	address net.Addr
@@ -68,6 +69,12 @@ func (configuration Configuration) New(r *reporter.Reporter, dependencies Depend
 		p.acceptedRDs = make(map[RD]struct{})
 		for _, rd := range p.config.RDs {
 			p.acceptedRDs[rd] = struct{}{}
+		}
+	}
+	if len(p.config.RTs) > 0 {
+		p.acceptedRTs = make(map[RT]struct{})
+		for _, rt := range p.config.RTs {
+			p.acceptedRTs[rt] = struct{}{}
 		}
 	}
 	p.staleTimer = p.d.Clock.AfterFunc(time.Hour, p.removeStalePeers)

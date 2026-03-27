@@ -10,6 +10,7 @@ paths:
       collectcommunities: true
       keep: 1h0m0s
       rds: []
+      rts: []
       receivebuffer: 0
       ribshards: 16
   outlet.0.core.asnproviders:

@@ -145,6 +145,15 @@ func MustParseRD(input string) RD {
 	return output
 }
 
+// MustParseRT parse a route target and panic on error.
+func MustParseRT(input string) RT {
+	var output RT
+	if err := output.UnmarshalText([]byte(input)); err != nil {
+		panic(err)
+	}
+	return output
+}
+
 func init() {
 	helpers.RegisterCmpOption(cmp.AllowUnexported(route{}))
 }

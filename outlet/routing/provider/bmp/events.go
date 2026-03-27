@@ -247,6 +247,8 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 
 	var nh netip.Addr
 	var rta routeAttributes
+	hasAcceptedRT := false
+	hasAnyRT := false
 	for _, attr := range update.PathAttributes {
 		switch attr := attr.(type) {
 		case *bgp.PathAttributeNextHop:
@@ -266,6 +268,27 @@ func (p *Provider) handleRouteMonitoring(pkey peerKey, body *bmp.BMPRouteMonitor
 					rta.largeCommunities[idx] = *c
 				}
 			}
+		case *bgp.PathAttributeExtendedCommunities:
+			if len(p.acceptedRTs) > 0 {
+				for _, ec := range attr.Value {
+					if rt, ok := RTFromExtendedCommunity(ec); ok {
+						hasAnyRT = true
+						if _, ok := p.acceptedRTs[rt]; ok {
+							hasAcceptedRT = true
+							break
+						}
+					}
+				}
+			}
+		}
+	}
+	if len(p.acceptedRTs) > 0 && !hasAcceptedRT {
+		if hasAnyRT {
+			return
+		}
+		// No RT in the update: accept if 0 is in the accepted list.
+		if _, ok := p.acceptedRTs[0]; !ok {
+			return
 		}
 	}
 	// If no AS path, consider the peer AS as the origin AS,
