@@ -209,6 +209,12 @@ For the BMP provider, the following keys are accepted:
   (default port is 10179).
 - `rds` is a list of route distinguishers to accept. Use 0 to accept routes
   without a route distinguisher.
+- `rts` is a list of route targets to accept. Only BGP updates carrying a
+  matching route target extended community are accepted. Use 0 to accept
+  routes without a route target. When both `rds` and `rts` are specified, a
+  route is accepted when it matches any configured RD **and** the BGP update
+  carries any configured RT. An empty list disables filtering for that
+  dimension.
 - `collect-asns` defines if origin AS numbers should be collected.
 - `collect-aspaths` defines if AS paths should be collected.
 - `collect-communities` defines if communities should be collected. It supports
@@ -240,6 +246,12 @@ routing:
   provider:
     type: bmp
     listen: 0.0.0.0:10179
+    rds:
+      - "65017:100"
+      - "0"
+    rts:
+      - "65017:100"
+      - "0"
     collect-asns: true
     collect-aspaths: true
     collect-communities: false

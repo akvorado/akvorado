@@ -518,6 +518,190 @@ func TestBMP(t *testing.T) {
 		}
 	})
 
+	t.Run("only accept RT 65017:101", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		config := DefaultConfiguration()
+		configP := config.(Configuration)
+		configP.RTs = []RT{MustParseRT("65017:101")}
+		p, _ := NewMock(t, r, configP)
+		helpers.StartStop(t, p)
+		conn := dial(t, p)
+
+		send(t, conn, "bmp-init.pcap")
+		send(t, conn, "bmp-peers-up.pcap")
+		send(t, conn, "bmp-eor.pcap")
+		send(t, conn, "bmp-reach.pcap")
+		time.Sleep(20 * time.Millisecond)
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "routes", "prefixes_")
+		expectedMetrics := map[string]string{
+			`routes{exporter="127.0.0.1"}`:                 "3",
+			`prefixes_added_total{exporter="127.0.0.1"}`:   "3",
+			`prefixes_removed_total{exporter="127.0.0.1"}`: "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`: "0",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+			t.Errorf("Metrics (-got, +want):\n%s", diff)
+		}
+
+		expectedRIB := map[netip.Addr][]string{
+			netip.MustParseAddr("2001:db8::7"): {
+				"[l3vpn-ipv4-unicast] 198.51.100.0/25 via 192.0.2.7 65017:101/0 64476 [65017 65017 174 1299 64476] [4260954122 4260954132] []",
+				"[l3vpn-ipv4-unicast] 198.51.100.128/25 via 192.0.2.7 65017:101/0 396919 [65017 65017 174 29447 396919] [4260954124] []",
+				"[l3vpn-ipv6-unicast] 2001:db8:4::/64 via 2001:db8::7 65017:101/0 29447 [65017 65017 1299 1299 1299 29447] [4260954412] []",
+			},
+		}
+		gotRIB := dumpRIB(t, p)
+		if diff := helpers.Diff(gotRIB, expectedRIB); diff != "" {
+			t.Errorf("RIB (-got, +want):\n%s", diff)
+		}
+	})
+
+	t.Run("only accept RT 65017:103", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		config := DefaultConfiguration()
+		configP := config.(Configuration)
+		configP.RTs = []RT{MustParseRT("65017:103")}
+		p, _ := NewMock(t, r, configP)
+		helpers.StartStop(t, p)
+		conn := dial(t, p)
+
+		send(t, conn, "bmp-init.pcap")
+		send(t, conn, "bmp-peers-up.pcap")
+		send(t, conn, "bmp-eor.pcap")
+		send(t, conn, "bmp-reach.pcap")
+		time.Sleep(20 * time.Millisecond)
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "routes", "prefixes_")
+		expectedMetrics := map[string]string{
+			`routes{exporter="127.0.0.1"}`:                 "2",
+			`prefixes_added_total{exporter="127.0.0.1"}`:   "1",
+			`prefixes_removed_total{exporter="127.0.0.1"}`: "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`: "1",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+			t.Errorf("Metrics (-got, +want):\n%s", diff)
+		}
+
+		expectedRIB := map[netip.Addr][]string{
+			netip.MustParseAddr("2001:db8::7"): {
+				"[l2vpn-evpn] 198.51.100.0/26 via 2001:db8::7 65017:104/0 64476 [65017 65017 3356 64476] [4260955215] []",
+				"[l3vpn-ipv4-unicast] 198.51.100.0/26 via 192.0.2.7 65017:103/0 64476 [65017 65017 3356 64476] [4260955215] []",
+			},
+		}
+		gotRIB := dumpRIB(t, p)
+		if diff := helpers.Diff(gotRIB, expectedRIB); diff != "" {
+			t.Errorf("RIB (-got, +want):\n%s", diff)
+		}
+	})
+
+	t.Run("reject all with non-matching RT", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		config := DefaultConfiguration()
+		configP := config.(Configuration)
+		configP.RTs = []RT{MustParseRT("1:1")}
+		p, _ := NewMock(t, r, configP)
+		helpers.StartStop(t, p)
+		conn := dial(t, p)
+
+		send(t, conn, "bmp-init.pcap")
+		send(t, conn, "bmp-peers-up.pcap")
+		send(t, conn, "bmp-eor.pcap")
+		send(t, conn, "bmp-reach.pcap")
+		time.Sleep(20 * time.Millisecond)
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "routes")
+		expectedMetrics := map[string]string{
+			`routes{exporter="127.0.0.1"}`: "0",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+			t.Errorf("Metrics (-got, +want):\n%s", diff)
+		}
+	})
+
+	t.Run("accept RD 65017:104 and RT 65017:103", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		config := DefaultConfiguration()
+		configP := config.(Configuration)
+		configP.RDs = []RD{MustParseRD("65017:104")}
+		configP.RTs = []RT{MustParseRT("65017:103")}
+		p, _ := NewMock(t, r, configP)
+		helpers.StartStop(t, p)
+		conn := dial(t, p)
+
+		send(t, conn, "bmp-init.pcap")
+		send(t, conn, "bmp-peers-up.pcap")
+		send(t, conn, "bmp-eor.pcap")
+		send(t, conn, "bmp-reach.pcap")
+		time.Sleep(20 * time.Millisecond)
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "routes", "prefixes_")
+		expectedMetrics := map[string]string{
+			`routes{exporter="127.0.0.1"}`:                 "1",
+			`prefixes_added_total{exporter="127.0.0.1"}`:   "1",
+			`prefixes_removed_total{exporter="127.0.0.1"}`: "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`: "0",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+			t.Errorf("Metrics (-got, +want):\n%s", diff)
+		}
+
+		expectedRIB := map[netip.Addr][]string{
+			netip.MustParseAddr("2001:db8::7"): {
+				"[l2vpn-evpn] 198.51.100.0/26 via 2001:db8::7 65017:104/0 64476 [65017 65017 3356 64476] [4260955215] []",
+			},
+		}
+		gotRIB := dumpRIB(t, p)
+		if diff := helpers.Diff(gotRIB, expectedRIB); diff != "" {
+			t.Errorf("RIB (-got, +want):\n%s", diff)
+		}
+	})
+
+	t.Run("only accept RT 0", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		config := DefaultConfiguration()
+		configP := config.(Configuration)
+		configP.RTs = []RT{MustParseRT("0")}
+		p, _ := NewMock(t, r, configP)
+		helpers.StartStop(t, p)
+		conn := dial(t, p)
+
+		send(t, conn, "bmp-init.pcap")
+		send(t, conn, "bmp-peers-up.pcap")
+		send(t, conn, "bmp-eor.pcap")
+		send(t, conn, "bmp-reach.pcap")
+		time.Sleep(20 * time.Millisecond)
+		gotMetrics := r.GetMetrics("akvorado_outlet_routing_provider_bmp_", "routes", "prefixes_")
+		expectedMetrics := map[string]string{
+			`routes{exporter="127.0.0.1"}`:                 "10",
+			`prefixes_added_total{exporter="127.0.0.1"}`:   "8",
+			`prefixes_removed_total{exporter="127.0.0.1"}`: "0",
+			`prefixes_updated_total{exporter="127.0.0.1"}`: "2",
+		}
+		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
+			t.Errorf("Metrics (-got, +want):\n%s", diff)
+		}
+
+		expectedRIB := map[netip.Addr][]string{
+			netip.MustParseAddr("2001:db8::3"): {
+				"[ipv6-unicast] 2001:db8:1::/64 via 2001:db8::3 0:0/0 174 [65013 65013 174 174 174] [4260691978 4260691988] []",
+				"[ipv6-unicast] 2001:db8:2::/64 via 2001:db8::3 0:0/0 12322 [65013 65013 1299 1299 1299 12322] [4260691998] []",
+				"[ipv6-unicast] 2001:db8::2/127 via 2001:db8::3 0:0/0 65013 [65013] [] []",
+			},
+			netip.MustParseAddr("2001:db8::7"): {
+				"[ipv4-unicast] 192.0.2.6/31 via 192.0.2.7 0:0/0 65017 [65017] [] []",
+				"[ipv6-unicast] 2001:db8:1::/64 via 2001:db8::7 0:0/0 174 [65017 65013 174 174 174] [4260954122 4260954132] [{65017 300 4}]",
+				"[ipv6-unicast] 2001:db8:2::/64 via 2001:db8::7 0:0/0 12322 [65017 65017 1299 1299 1299 12322] [4260954142] [{65017 400 2}]",
+				"[ipv6-unicast] 2001:db8::6/127 via 2001:db8::7 0:0/0 65017 [65017] [] []",
+			},
+			netip.MustParseAddr("192.0.2.1"): {
+				"[ipv4-unicast] 192.0.2.0/31 via 192.0.2.1 0:0/0 65011 [65011] [] []",
+				"[ipv4-unicast] 198.51.100.0/25 via 192.0.2.1 0:0/0 64476 [65011 65011 174 1299 64476] [4260560906 4260560916] []",
+				"[ipv4-unicast] 198.51.100.128/25 via 192.0.2.1 0:0/0 396919 [65011 65011 174 29447 396919] [4260560908] []",
+			},
+		}
+		gotRIB := dumpRIB(t, p)
+		if diff := helpers.Diff(gotRIB, expectedRIB); diff != "" {
+			t.Errorf("RIB (-got, +want):\n%s", diff)
+		}
+	})
+
 	t.Run("init, peers up, eor, reach, unreach", func(t *testing.T) {
 		r := reporter.NewMock(t)
 		config := DefaultConfiguration()

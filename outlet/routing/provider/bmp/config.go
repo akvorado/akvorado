@@ -14,9 +14,12 @@ import (
 type Configuration struct {
 	// Listen tells on which port the BMP server should listen to.
 	Listen string `validate:"listen"`
-	// RDs list the RDs to keep. If none are specified, all
-	// received routes are processed. 0 match an absence of RD.
+	// RDs list the RDs to keep. If none are specified, all received routes are
+	// processed. 0 matches an absence of RD.
 	RDs []RD
+	// RTs list the RTs to keep. If none are specified, all received routes are
+	// processed. 0 matches an absence of RT.
+	RTs []RT
 	// CollectASNs is true when we want to collect origin AS numbers
 	CollectASNs bool
 	// CollectASPaths is true when we want to collect AS paths
