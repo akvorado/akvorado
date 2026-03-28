@@ -181,6 +181,7 @@
       "matchManagers": [
         "docker-compose"
       ],
+      "groupName": "clickhouse",
       "matchPackageNames": [
         "clickhouse/clickhouse-server",
         "clickhouse/clickhouse-keeper"
