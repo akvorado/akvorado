@@ -166,7 +166,7 @@ orchestrator/clickhouse/data/udp.csv orchestrator/clickhouse/data/tcp.csv: orche
 changelog.md: docs/99-changelog.md # To be used by GitHub actions only.
 	$Q >  $@ < docs/99-changelog.md \
 		sed -n '/^## '$${GITHUB_REF##*/v}' -/,/^## /{//!p}'
-	$Q >> $@ echo "**Docker image**: \`docker pull ghcr.io/$${GITHUB_REPOSITORY}:$${GITHUB_REF##*/v}\`"
+	$Q >> $@ echo "**Docker image**: \`docker pull quay.io/$${GITHUB_REPOSITORY}:$${GITHUB_REF##*/v}\`"
 	$Q >> $@ echo "**Full changelog**: https://github.com/$${GITHUB_REPOSITORY}/compare/v$$(< docs/99-changelog.md sed -n '/^## '$${GITHUB_REF##*/v}' -/,/^## /{s/^## \([0-9.a-z-]*\) -.*/\1/p}' | tail -1)...v$${GITHUB_REF##*/v}"
 
 # Update default.pgo with the locally running "docker compose" instance.
@@ -297,11 +297,11 @@ version:
 DOCKER_BUILD_ARGS =
 docker: ; $(info $(M) build Docker image…) @ ## Build Docker image
 	$Q git ls-files | tar -T- -cf- | docker build --pull -f docker/Dockerfile $(DOCKER_BUILD_ARGS) \
-		--build-arg VERSION=$(VERSION) -t ghcr.io/akvorado/akvorado:main -
+		--build-arg VERSION=$(VERSION) -t quay.io/akvorado/akvorado:main -
 docker-dev: TARGETOS=linux
 docker-dev: all ; $(info $(M) build development Docker image…) @ ## Build development Docker image
 	$Q docker build -f docker/Dockerfile.dev $(DOCKER_BUILD_ARGS) \
-		--build-arg VERSION=$(VERSION) -t ghcr.io/akvorado/akvorado:main .
+		--build-arg VERSION=$(VERSION) -t quay.io/akvorado/akvorado:main .
 
 .PHONY: all-coverage docker-dev-coverage
 all-coverage: BUILD_ARGS=-cover -covermode=atomic

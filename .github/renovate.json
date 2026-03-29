@@ -203,7 +203,9 @@
       ],
       "matchPackageNames": [
         "ghcr.io/akvorado/akvorado",
-        "ghcr.io/akvorado/ipinfo-geoipupdate"
+        "ghcr.io/akvorado/ipinfo-geoipupdate",
+        "quay.io/akvorado/akvorado",
+        "quay.io/akvorado/ipinfo-geoipupdate"
       ],
       "enabled": false
     },

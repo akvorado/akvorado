@@ -10,8 +10,8 @@ Docker image. It also requires [Kafka](https://kafka.apache.org/quickstart)
 You can use the *Akvorado* [Docker](https://docs.docker.com/engine/install/) image.
 
 ```console
-# docker pull ghcr.io/akvorado/akvorado:latest
-# docker run --rm ghcr.io/akvorado/akvorado:latest help
+# docker pull quay.io/akvorado/akvorado:latest
+# docker run --rm quay.io/akvorado/akvorado:latest help
 ```
 
 Check the `docker/docker-compose.yml` file for an example of how to deploy
