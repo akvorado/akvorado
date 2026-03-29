@@ -14,6 +14,7 @@ identified with a specific icon:
 
 - ✨ *outlet*: add route target (`rts`) filtering to the BMP provider
 - 🩹 *console*: don't complete column names not accepted in filters
+- 🌱 *docker*: also push Docker image to Quay.io (for IPv6-only setups)
 
 ## 2.2.0 - 2026-03-16
 
