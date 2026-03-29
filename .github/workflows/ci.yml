@@ -442,6 +442,7 @@ jobs:
         with:
           images: |
             ghcr.io/${{ github.repository }}
+            quay.io/${{ github.repository }}
           tags: |
             type=schedule,pattern=main
             type=ref,event=branch
@@ -453,6 +454,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/login-action@v4
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
       - name: Tag image
         run: |
           echo "${{ steps.meta.outputs.tags }}" | xargs -n1 | while read tag; do
