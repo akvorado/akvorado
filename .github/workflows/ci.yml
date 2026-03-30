@@ -73,7 +73,7 @@ jobs:
         with:
           fetch-depth: ${{ matrix.binary && 0 || 1 }}
           persist-credentials: false
-      - uses: docker/setup-buildx-action@v4
+      - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
         if: matrix.compose
       - name: Docker Compose up
         if: matrix.compose
@@ -190,7 +190,7 @@ jobs:
       AKVORADO_COVERAGE_DIRECTORY: /tmp/akvorado-coverage
     steps:
       # Setup
-      - uses: docker/setup-buildx-action@v4
+      - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
       - uses: cachix/install-nix-action@v31
       - uses: actions/checkout@v6
         with:
@@ -377,9 +377,9 @@ jobs:
         id: version
         run: |
           echo version=$(make version) >> "$GITHUB_OUTPUT"
-      - uses: docker/setup-qemu-action@v4
-      - uses: docker/setup-buildx-action@v4
-      - uses: docker/metadata-action@v6
+      - uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4
+      - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
+      - uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6
         id: meta
         env:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
@@ -394,14 +394,14 @@ jobs:
           annotations: |
             org.opencontainers.image.title=Akvorado
             org.opencontainers.image.licenses=AGPL-3.0-only
-      - uses: docker/login-action@v4
+      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build image
         id: build
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7
         with:
           context: .
           file: docker/Dockerfile
@@ -436,8 +436,8 @@ jobs:
       packages: write
       attestations: write
     steps:
-      - uses: docker/setup-buildx-action@v4
-      - uses: docker/metadata-action@v6
+      - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
+      - uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6
         id: meta
         with:
           images: |
@@ -449,12 +449,12 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-      - uses: docker/login-action@v4
+      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/login-action@v4
+      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4
         with:
           registry: quay.io
           username: ${{ secrets.QUAY_USERNAME }}
