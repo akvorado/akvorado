@@ -24,7 +24,7 @@ outputs:
 runs:
   using: composite
   steps:
-    - uses: actions/setup-go@v6
+    - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6
       if: ${{ inputs.setup-go == 'true' }}
       id: go-setup
       with:
@@ -38,7 +38,7 @@ runs:
         echo "gocache=$(go env GOCACHE)" >> $GITHUB_ENV
         echo "gomodcache=$(go env GOMODCACHE)" >> $GITHUB_ENV
         echo "today=$(date +%Y%m%d)" >> $GITHUB_ENV
-    - uses: actions/cache@v5
+    - uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
       if: ${{ inputs.setup-go == 'true' }}
       with:
         path: |
@@ -48,11 +48,11 @@ runs:
         restore-keys: |
           ${{ runner.os }}-${{ runner.arch }}-go${{ steps.go-setup.outputs.go-version }}-${{ hashFiles('go.sum', 'bin/external-tool') }}-
           ${{ runner.os }}-${{ runner.arch }}-go${{ steps.go-setup.outputs.go-version }}-
-    - uses: pnpm/action-setup@v4
+    - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
       if: ${{ inputs.setup-node == 'true' }}
       with:
         package_json_file: console/frontend/package.json
-    - uses: actions/setup-node@v6
+    - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
       if: ${{ inputs.setup-node == 'true' }}
       with:
         node-version: ${{ inputs.node-version }}
@@ -61,7 +61,7 @@ runs:
           console/frontend/pnpm-lock.yaml
           bin/external-tool
     - name: Restore IANA files from cache
-      uses: actions/cache/restore@v5
+      uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
       id: iana-cache
       with:
         path: |

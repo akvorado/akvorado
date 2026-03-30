@@ -69,7 +69,7 @@ jobs:
       CI_AKVORADO_EBPF: "true"
     steps:
       # Setup
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: ${{ matrix.binary && 0 || 1 }}
           persist-credentials: false
@@ -137,10 +137,10 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
-      - uses: cachix/install-nix-action@v31
+      - uses: cachix/install-nix-action@96951a368ba55167b55f1c916f7d416bac6505fe # v31
       - name: Update dependency hashes
         run: nix run .#update
       - name: Abort on release if not up-to-date
@@ -159,7 +159,7 @@ jobs:
       contents: read
     steps:
       # Setup
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
       - name: Setup
@@ -191,8 +191,8 @@ jobs:
     steps:
       # Setup
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
-      - uses: cachix/install-nix-action@v31
-      - uses: actions/checkout@v6
+      - uses: cachix/install-nix-action@96951a368ba55167b55f1c916f7d416bac6505fe # v31
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
       - name: Setup
@@ -246,7 +246,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
@@ -262,7 +262,7 @@ jobs:
           name: e2e-coverage
           path: test/e2e
       - name: Upload unittests coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@75cd11691c0faa626561e295848008c8a7dddffe # v5
         with:
           token: &codecov-token bab8d6d9-e90c-4e37-b156-38a9a4c2108e  # not ideal, but limited risk
           files: ./test/linux/go/profile.out,./test/macos/profile.out,./test/linux/js/cobertura-coverage.xml
@@ -270,7 +270,7 @@ jobs:
           disable_search: true
           fail_ci_if_error: true
       - name: Upload e2e coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@75cd11691c0faa626561e295848008c8a7dddffe # v5
         with:
           token: *codecov-token
           files: ./test/e2e/e2e-coverage.out
@@ -287,7 +287,7 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
       - name: Setup
@@ -303,7 +303,7 @@ jobs:
         run: make && ./bin/akvorado version
       - name: Save IANA files to cache
         if: steps.setup.outputs.iana-cache-hit != 'true'
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
         with:
           path: |
             orchestrator/clickhouse/data/udp.csv
@@ -329,7 +329,7 @@ jobs:
         include:
           - node-version: 22
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
       - name: Setup
@@ -349,7 +349,7 @@ jobs:
       - build-go
       - build-js
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
       - name: Setup
@@ -369,7 +369,7 @@ jobs:
       packages: write
       attestations: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0        # We need the version
           persist-credentials: false
@@ -476,7 +476,7 @@ jobs:
       actions: read
     steps:
       # Changelog
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
       - name: Generate changelog
@@ -504,7 +504,7 @@ jobs:
 
       # Publish release
       - name: Publish release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2
         with:
           body_path: changelog.md
           draft: true
