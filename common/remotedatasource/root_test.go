@@ -397,6 +397,330 @@ func TestSourcePlain(t *testing.T) {
 	}
 }
 
+func TestPaginationLinkNext(t *testing.T) {
+	mux := http.NewServeMux()
+	var address net.Addr
+	mux.Handle("/page1.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Add("Content-Type", "application/json")
+		w.WriteHeader(200)
+		w.Write([]byte(fmt.Sprintf(`{
+  "results": [{"name": "item1", "description": "page1"}],
+  "next": "http://%s/page2.json"
+}`, address)))
+	}))
+	mux.Handle("/page2.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Add("Content-Type", "application/json")
+		w.WriteHeader(200)
+		w.Write([]byte(`{
+  "results": [{"name": "item2", "description": "page2"}],
+  "next": null
+}`))
+	}))
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen() error:\n%+v", err)
+	}
+	address = listener.Addr()
+	server := &http.Server{Handler: mux}
+	go server.Serve(listener)
+	defer server.Shutdown(t.Context())
+
+	r := reporter.NewMock(t)
+	config := map[string]Source{
+		"local": {
+			URL:        fmt.Sprintf("http://%s/page1.json", address),
+			Method:     "GET",
+			Timeout:    time.Second,
+			Interval:   time.Minute,
+			Pagination: PaginationLinkNext,
+			Transform:  MustParseTransformQuery(".results[]"),
+		},
+	}
+	fetcher, _ := New[remoteData](r, func(_ context.Context, _ string, _ Source) (int, error) {
+		return 0, nil
+	}, "test", config)
+
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+	defer cancel()
+	results, err := fetcher.Fetch(ctx, "local", config["local"])
+	if err != nil {
+		t.Fatalf("Fetch() error:\n%+v", err)
+	}
+	expected := []remoteData{
+		{Name: "item1", Description: "page1"},
+		{Name: "item2", Description: "page2"},
+	}
+	if diff := helpers.Diff(results, expected); diff != "" {
+		t.Fatalf("Fetch() (-got, +want):\n%s", diff)
+	}
+}
+
+func TestPaginationRelNext(t *testing.T) {
+	mux := http.NewServeMux()
+	var address net.Addr
+	mux.Handle("/page1.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Add("Content-Type", "application/json")
+		w.Header().Add("Link", fmt.Sprintf(`<http://%s/page2.json>; rel="next"`, address))
+		w.WriteHeader(200)
+		w.Write([]byte(`[{"name": "item1", "description": "page1"}]`))
+	}))
+	mux.Handle("/page2.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Add("Content-Type", "application/json")
+		w.WriteHeader(200)
+		w.Write([]byte(`[{"name": "item2", "description": "page2"}]`))
+	}))
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen() error:\n%+v", err)
+	}
+	address = listener.Addr()
+	server := &http.Server{Handler: mux}
+	go server.Serve(listener)
+	defer server.Shutdown(t.Context())
+
+	r := reporter.NewMock(t)
+	config := map[string]Source{
+		"local": {
+			URL:        fmt.Sprintf("http://%s/page1.json", address),
+			Method:     "GET",
+			Timeout:    time.Second,
+			Interval:   time.Minute,
+			Pagination: PaginationRelNext,
+			Transform:  MustParseTransformQuery(".[]"),
+		},
+	}
+	fetcher, _ := New[remoteData](r, func(_ context.Context, _ string, _ Source) (int, error) {
+		return 0, nil
+	}, "test", config)
+
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+	defer cancel()
+	results, err := fetcher.Fetch(ctx, "local", config["local"])
+	if err != nil {
+		t.Fatalf("Fetch() error:\n%+v", err)
+	}
+	expected := []remoteData{
+		{Name: "item1", Description: "page1"},
+		{Name: "item2", Description: "page2"},
+	}
+	if diff := helpers.Diff(results, expected); diff != "" {
+		t.Fatalf("Fetch() (-got, +want):\n%s", diff)
+	}
+}
+
+func TestPaginationRelNextRelativeURL(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.Handle("/api/page1.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Add("Content-Type", "application/json")
+		w.Header().Add("Link", `</api/page2.json>; rel="next"`)
+		w.WriteHeader(200)
+		w.Write([]byte(`[{"name": "item1", "description": "page1"}]`))
+	}))
+	mux.Handle("/api/page2.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Add("Content-Type", "application/json")
+		w.WriteHeader(200)
+		w.Write([]byte(`[{"name": "item2", "description": "page2"}]`))
+	}))
+
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatalf("Listen() error:\n%+v", err)
+	}
+	server := &http.Server{Handler: mux}
+	go server.Serve(listener)
+	defer server.Shutdown(t.Context())
+
+	r := reporter.NewMock(t)
+	config := map[string]Source{
+		"local": {
+			URL:        fmt.Sprintf("http://%s/api/page1.json", listener.Addr()),
+			Method:     "GET",
+			Timeout:    time.Second,
+			Interval:   time.Minute,
+			Pagination: PaginationRelNext,
+			Transform:  MustParseTransformQuery(".[]"),
+		},
+	}
+	fetcher, _ := New[remoteData](r, func(_ context.Context, _ string, _ Source) (int, error) {
+		return 0, nil
+	}, "test", config)
+
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+	defer cancel()
+	results, err := fetcher.Fetch(ctx, "local", config["local"])
+	if err != nil {
+		t.Fatalf("Fetch() error:\n%+v", err)
+	}
+	expected := []remoteData{
+		{Name: "item1", Description: "page1"},
+		{Name: "item2", Description: "page2"},
+	}
+	if diff := helpers.Diff(results, expected); diff != "" {
+		t.Fatalf("Fetch() (-got, +want):\n%s", diff)
+	}
+}
+
+func TestPaginationAuto(t *testing.T) {
+	t.Run("detects rel-next", func(t *testing.T) {
+		mux := http.NewServeMux()
+		var address net.Addr
+		mux.Handle("/page1.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Add("Content-Type", "application/json")
+			w.Header().Add("Link", fmt.Sprintf(`<http://%s/page2.json>; rel="next"`, address))
+			w.WriteHeader(200)
+			w.Write([]byte(`[{"name": "item1", "description": "page1"}]`))
+		}))
+		mux.Handle("/page2.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Add("Content-Type", "application/json")
+			w.WriteHeader(200)
+			w.Write([]byte(`[{"name": "item2", "description": "page2"}]`))
+		}))
+
+		listener, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatalf("Listen() error:\n%+v", err)
+		}
+		address = listener.Addr()
+		server := &http.Server{Handler: mux}
+		go server.Serve(listener)
+		defer server.Shutdown(t.Context())
+
+		r := reporter.NewMock(t)
+		config := map[string]Source{
+			"local": {
+				URL:        fmt.Sprintf("http://%s/page1.json", address),
+				Method:     "GET",
+				Timeout:    time.Second,
+				Interval:   time.Minute,
+				Pagination: PaginationAuto,
+				Transform:  MustParseTransformQuery(".[]"),
+			},
+		}
+		fetcher, _ := New[remoteData](r, func(_ context.Context, _ string, _ Source) (int, error) {
+			return 0, nil
+		}, "test", config)
+
+		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+		defer cancel()
+		results, err := fetcher.Fetch(ctx, "local", config["local"])
+		if err != nil {
+			t.Fatalf("Fetch() error:\n%+v", err)
+		}
+		expected := []remoteData{
+			{Name: "item1", Description: "page1"},
+			{Name: "item2", Description: "page2"},
+		}
+		if diff := helpers.Diff(results, expected); diff != "" {
+			t.Fatalf("Fetch() (-got, +want):\n%s", diff)
+		}
+	})
+
+	t.Run("detects link-next", func(t *testing.T) {
+		mux := http.NewServeMux()
+		var address net.Addr
+		mux.Handle("/page1.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Add("Content-Type", "application/json")
+			w.WriteHeader(200)
+			w.Write([]byte(fmt.Sprintf(`{
+  "results": [{"name": "item1", "description": "page1"}],
+  "next": "http://%s/page2.json"
+}`, address)))
+		}))
+		mux.Handle("/page2.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Add("Content-Type", "application/json")
+			w.WriteHeader(200)
+			w.Write([]byte(`{
+  "results": [{"name": "item2", "description": "page2"}]
+}`))
+		}))
+
+		listener, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatalf("Listen() error:\n%+v", err)
+		}
+		address = listener.Addr()
+		server := &http.Server{Handler: mux}
+		go server.Serve(listener)
+		defer server.Shutdown(t.Context())
+
+		r := reporter.NewMock(t)
+		config := map[string]Source{
+			"local": {
+				URL:        fmt.Sprintf("http://%s/page1.json", address),
+				Method:     "GET",
+				Timeout:    time.Second,
+				Interval:   time.Minute,
+				Pagination: PaginationAuto,
+				Transform:  MustParseTransformQuery(".results[]"),
+			},
+		}
+		fetcher, _ := New[remoteData](r, func(_ context.Context, _ string, _ Source) (int, error) {
+			return 0, nil
+		}, "test", config)
+
+		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+		defer cancel()
+		results, err := fetcher.Fetch(ctx, "local", config["local"])
+		if err != nil {
+			t.Fatalf("Fetch() error:\n%+v", err)
+		}
+		expected := []remoteData{
+			{Name: "item1", Description: "page1"},
+			{Name: "item2", Description: "page2"},
+		}
+		if diff := helpers.Diff(results, expected); diff != "" {
+			t.Fatalf("Fetch() (-got, +want):\n%s", diff)
+		}
+	})
+
+	t.Run("no pagination when not needed", func(t *testing.T) {
+		mux := http.NewServeMux()
+		mux.Handle("/data.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Add("Content-Type", "application/json")
+			w.WriteHeader(200)
+			w.Write([]byte(`[{"name": "item1", "description": "single"}]`))
+		}))
+
+		listener, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatalf("Listen() error:\n%+v", err)
+		}
+		server := &http.Server{Handler: mux}
+		go server.Serve(listener)
+		defer server.Shutdown(t.Context())
+
+		r := reporter.NewMock(t)
+		config := map[string]Source{
+			"local": {
+				URL:        fmt.Sprintf("http://%s/data.json", listener.Addr()),
+				Method:     "GET",
+				Timeout:    time.Second,
+				Interval:   time.Minute,
+				Pagination: PaginationAuto,
+				Transform:  MustParseTransformQuery(".[]"),
+			},
+		}
+		fetcher, _ := New[remoteData](r, func(_ context.Context, _ string, _ Source) (int, error) {
+			return 0, nil
+		}, "test", config)
+
+		ctx, cancel := context.WithTimeout(t.Context(), time.Second)
+		defer cancel()
+		results, err := fetcher.Fetch(ctx, "local", config["local"])
+		if err != nil {
+			t.Fatalf("Fetch() error:\n%+v", err)
+		}
+		expected := []remoteData{
+			{Name: "item1", Description: "single"},
+		}
+		if diff := helpers.Diff(results, expected); diff != "" {
+			t.Fatalf("Fetch() (-got, +want):\n%s", diff)
+		}
+	})
+}
+
 func TestSourceWithTLS(t *testing.T) {
 	cert := generateSelfSignedCert(t)
 

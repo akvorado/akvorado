@@ -11,6 +11,7 @@ paths:
     method: GET
     headers: {}
     proxy: true
+    pagination: auto
     parser: json
     interval: 6h0m0s
     timeout: 1m0s
