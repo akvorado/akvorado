@@ -37,7 +37,8 @@ services:
   cadvisor:
     image: ghcr.io/google/cadvisor:v0.53.0 # v\d+\.\d+\.\d+
   kafka-ui:
-    image: ghcr.io/kafbat/kafka-ui:v1.4.2 # v\d+\.\d+\.\d+
+    image: ecr-public.aws.com/kafbat/kafka-ui:v1.4.2 # v\d+\.\d+\.\d+
+    # image: ghcr.io/kafbat/kafka-ui:v1.4.2
   vector:
     image: timberio/vector:0.53.X-alpine # \d+\.\d+\.X-alpine
 
