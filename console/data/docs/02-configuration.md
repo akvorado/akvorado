@@ -504,6 +504,14 @@ sources. Each source accepts these attributes:
   produce an array of objects keyed by `f1`, `f2`, `f3`, etc. If the CSV file
   has a header row, it can be skipped with a `transform` expression like
   `.[1:][]`. The `plain` parser produces an array of strings, one per line.
+- `pagination` defines the pagination strategy for fetching multiple pages.
+  Accepted values are `auto` (default), `none`, `link-next`, and `rel-next`.
+  `link-next` expects the response to be a JSON object with a `next` field
+  containing the URL of the next page (or `null` when there are no more pages).
+  `rel-next` looks for a `Link` HTTP header with `rel="next"` ([RFC
+  8288](https://www.rfc-editor.org/rfc/rfc8288)). `auto` tries both methods
+  (starting with `rel-next`) and sticks with the first one that works. `none`
+  disables pagination.
 - `transform` is a [jq](https://stedolan.github.io/jq/manual/) expression that
   transforms the parsed data into a set of attributes represented as objects.
   Each object should have these keys: `exportersubnet`, `skipmissinginterfaces`,
@@ -936,24 +944,13 @@ provided inside `clickhouse`:
   map from source names to sources. Each source accepts the following
   attributes:
   - `url` is the URL to fetch
-  - `tls` defines the TLS configuration to connect to the source (it uses the
-    same configuration as for [Kafka](#kafka-2), be sure to set `enable` to
-    `true`)
-  - `method` is the method to use (`GET` or `POST`)
-  - `headers` is a map from header names to values to add to the request
-  - `proxy` says if we should use a proxy (defined through environment variables like `http_proxy`)
-  - `timeout` defines the timeout for fetching and parsing
-  - `interval` is the interval at which the source should be refreshed
-  - `parser` defines the format of the response body. Accepted values are `json`
-    (default), `csv-comma`, `csv-semicolon`, `csv-colon`, and `plain`. CSV parsers
-    produce an array of objects keyed by `f1`, `f2`, `f3`, etc. If the CSV file
-    has a header row, it can be skipped with a `transform` expression like
-    `.[1:][]`. The `plain` parser produces an array of strings, one per line.
   - `transform` is a [jq](https://stedolan.github.io/jq/manual/) expression to
     transform the parsed data into a set of network attributes represented as
     objects. Each object must have a `prefix` attribute and, optionally, `name`,
     `role`, `site`, `region`, `tenant`, `city`, `state`, `country`, and `asn`.
     See the example provided in the shipped `akvorado.yaml` configuration file.
+  - any remaining attribute accepted for an `exporter-sources` in the
+    [static-provider](#static-provider).
 - `asns` maps AS number to names (overriding the builtin ones)
 - `orchestrator-url` defines the URL of the orchestrator to be used
   by ClickHouse (autodetection when not specified)

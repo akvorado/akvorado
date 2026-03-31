@@ -29,6 +29,20 @@ const (
 	ParserPlain
 )
 
+// PaginationType defines the pagination strategy for fetching multiple pages.
+type PaginationType int
+
+const (
+	// PaginationAuto tries each pagination method until one works, then sticks with it.
+	PaginationAuto PaginationType = iota
+	// PaginationNone disables pagination.
+	PaginationNone
+	// PaginationLinkNext finds the next page URL in the JSON body's "next" field.
+	PaginationLinkNext
+	// PaginationRelNext finds the next page URL in the Link header with rel="next" (RFC 8288).
+	PaginationRelNext
+)
+
 // Source defines a remote data source.
 type Source struct {
 	// URL is the URL to fetch to get remote network definition.
@@ -48,6 +62,8 @@ type Source struct {
 	Transform TransformQuery
 	// Interval tells how much time to wait before updating the source.
 	Interval time.Duration `validate:"min=1m"`
+	// Pagination defines the pagination strategy for fetching multiple pages.
+	Pagination PaginationType
 	// TLS defines the TLS configuration if the URL needs it.
 	TLS helpers.TLSConfiguration
 }

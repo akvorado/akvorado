@@ -15,6 +15,7 @@ identified with a specific icon:
 - ✨ *outlet*: add route target (`rts`) filtering to the BMP provider
 - 🩹 *console*: don't complete column names not accepted in filters
 - 🌱 *docker*: switch Docker image repository to Quay.io (IPv6 available)
+- 🌱 *common*: remote data sources now support pagination via the `pagination` option
 
 ## 2.2.0 - 2026-03-16
 

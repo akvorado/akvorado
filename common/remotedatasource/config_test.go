@@ -161,6 +161,46 @@ func TestSourceDecode(t *testing.T) {
 				},
 			},
 		}, {
+			Description: "With pagination rel-next",
+			Initial:     func() any { return Source{} },
+			Configuration: func() any {
+				return helpers.M{
+					"url":        "https://example.net",
+					"interval":   "10m",
+					"pagination": "rel-next",
+				}
+			},
+			Expected: Source{
+				URL:        "https://example.net",
+				Method:     "GET",
+				Timeout:    time.Minute,
+				Interval:   10 * time.Minute,
+				Pagination: PaginationRelNext,
+				TLS: helpers.TLSConfiguration{
+					SkipVerify: false,
+				},
+			},
+		}, {
+			Description: "With pagination link-next",
+			Initial:     func() any { return Source{} },
+			Configuration: func() any {
+				return helpers.M{
+					"url":        "https://example.net",
+					"interval":   "10m",
+					"pagination": "link-next",
+				}
+			},
+			Expected: Source{
+				URL:        "https://example.net",
+				Method:     "GET",
+				Timeout:    time.Minute,
+				Interval:   10 * time.Minute,
+				Pagination: PaginationLinkNext,
+				TLS: helpers.TLSConfiguration{
+					SkipVerify: false,
+				},
+			},
+		}, {
 			Description: "Incorrect transform",
 			Initial:     func() any { return Source{} },
 			Configuration: func() any {
