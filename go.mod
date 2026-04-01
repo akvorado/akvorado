@@ -17,7 +17,7 @@ require (
 	github.com/eapache/go-resiliency v1.7.0
 	github.com/expr-lang/expr v1.17.8
 	github.com/fsnotify/fsnotify v1.9.0
-	github.com/gaissmai/bart v0.26.0
+	github.com/gaissmai/bart v0.26.1
 	github.com/gin-gonic/gin v1.12.0
 	github.com/glebarez/sqlite v1.11.0
 	github.com/go-playground/validator/v10 v10.30.1
@@ -35,7 +35,7 @@ require (
 	github.com/openconfig/gnmi v0.14.1
 	github.com/openconfig/gnmic/pkg/api v0.1.11
 	github.com/oschwald/maxminddb-golang/v2 v2.1.1
-	github.com/osrg/gobgp/v4 v4.3.0
+	github.com/osrg/gobgp/v4 v4.4.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/puzpuzpuz/xsync/v4 v4.4.0
 	github.com/rs/zerolog v1.34.0
