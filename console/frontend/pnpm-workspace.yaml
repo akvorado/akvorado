@@ -1,1 +1,4 @@
 minimumReleaseAge: 4320
+minimumReleaseAgeExclude:
+  # Renovate security update: lodash-es@4.18.1
+  - lodash-es@4.18.1
