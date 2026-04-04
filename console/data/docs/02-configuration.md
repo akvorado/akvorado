@@ -50,11 +50,23 @@ match a configuration, the first configuration is used.
 Each service has several functional components. Each component has a section in
 the configuration file with the same name.
 
+The default Docker Compose setup splits the configuration into several files
+using `!include` directives. The main file `config/akvorado.yaml` contains
+orchestrator settings (such as `schema`, `kafka`, `clickhouse`, and `geoip`) and
+includes the service-specific files:
+
+- `config/inlet.yaml` for the inlet service
+- `config/outlet.yaml` for the outlet service
+- `config/console.yaml` for the console service
+
+You can also put everything in a single file if you prefer. In that case, nest
+each service's configuration under its key (`inlet`, `outlet`, `console`).
+
 ## Inlet service
 
-Configure this service under the `inlet` key. The inlet service receives
-NetFlow/IPFIX/sFlow packets and sends them to Kafka. Its main components are
-`flow` and `kafka`.
+The inlet service receives NetFlow/IPFIX/sFlow packets and sends them to Kafka.
+It is configured under the `inlet` key (or in `config/inlet.yaml` with the
+default Docker Compose setup). Its main components are `flow` and `kafka`.
 
 ### Flow
 
@@ -159,9 +171,10 @@ backward-compatible.
 
 ## Outlet service
 
-Configure this service under the `outlet` key. The outlet service takes flows
-from Kafka, parses them, adds metadata and routing information, and sends them
-to ClickHouse. Its main components are `kafka`, `metadata`, `routing`, and `core`.
+The outlet service takes flows from Kafka, parses them, adds metadata and
+routing information, and sends them to ClickHouse. It is configured under the
+`outlet` key (or in `config/outlet.yaml` with the default Docker Compose setup).
+Its main components are `kafka`, `metadata`, `routing`, and `core`.
 
 ### Kafka
 
@@ -712,10 +725,11 @@ The flow component decodes flows received from Kafka. There is only one setting:
 
 ## Orchestrator service
 
-The three main components of the orchestrator service are `schema`,
-`clickhouse`, and `kafka`. The `automatic-restart` directive tells the
-orchestrator to watch for configuration changes and restart if there are any. It
-is enable by default.
+The orchestrator settings are at the top level of the main configuration file
+(`config/akvorado.yaml` with the default Docker Compose setup). Its three main
+components are `schema`, `clickhouse`, and `kafka`. The `automatic-restart`
+directive tells the orchestrator to watch for configuration changes and restart
+if there are any. It is enabled by default.
 
 ### Schema
 
@@ -741,8 +755,10 @@ dimensions (e.g. `SrcNetPrefix` and `DstNetPrefix`) is computed at query time
 (the default) or materialized at ingest time. This reduces the query time, but
 increases the storage needs.
 
-You can get the list of columns you can enable or disable with `akvorado
-version -d`. Disabling a column won't delete existing data.
+You can get the list of columns you can enable or disable with `akvorado version
+-d`. When using Docker Compose, run `docker compose run --rm --no-deps
+akvorado-orchestrator version -d`. Disabling a column won't delete existing
+data.
 
 It is also possible to make some columns available on the main table only
 or on all tables with `main-table-only` and `not-main-table-only`. For example:
@@ -1047,8 +1063,9 @@ refreshed. For a given database, the latest paths override the earlier ones.
 
 ## Console service
 
-The main components of the console service are `console`, `authentication` and
-`database`.
+The console service is configured under the `console` key (or in
+`config/console.yaml` with the default Docker Compose setup). Its main
+components are `console`, `authentication` and `database`.
 
 The console itself accepts the following keys:
 
