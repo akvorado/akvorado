@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"maps"
 	"regexp"
 	"slices"
 	"strings"
@@ -39,12 +40,8 @@ var defaultTableSettings = TableSettings{
 // unquoted; string values are single-quoted.
 func renderTableSettings(extra TableSettings) string {
 	merged := TableSettings{}
-	for k, v := range defaultTableSettings {
-		merged[k] = v
-	}
-	for k, v := range extra {
-		merged[k] = v
-	}
+	maps.Copy(merged, defaultTableSettings)
+	maps.Copy(merged, extra)
 
 	extraKeys := make([]string, 0, len(merged))
 	for k := range merged {
