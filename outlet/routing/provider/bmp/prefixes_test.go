@@ -10,7 +10,9 @@ import (
 	"net/netip"
 	"runtime"
 	"slices"
+	"sync"
 	"testing"
+	"time"
 
 	"akvorado/common/helpers"
 
@@ -324,6 +326,153 @@ func BenchmarkRIBLookup(b *testing.B) {
 				}
 				b.ReportMetric(float64(b.Elapsed())/float64(count), "ns/op")
 			})
+		}
+	}
+}
+
+func BenchmarkRIBConcurrent(b *testing.B) {
+	for _, shards := range []int{1, 16} {
+		for _, routes := range []int{10_000, 100_000} {
+			for _, writers := range []int{1, 2, 4} {
+				for _, readers := range []int{4, 16, 256} {
+					name := fmt.Sprintf("%d shards, %d routes, %d writers, %d readers", shards, routes, writers, readers)
+					b.Run(name, func(b *testing.B) {
+						// Pre-generate routes per writer
+						routesPerWriter := routes / writers
+						writerRoutes := make([][]randomRoute, writers)
+						for w := range writers {
+							prng1 := rand.New(rand.NewPCG(uint64(w*2+100), uint64(w*2+100)))
+							prng2 := rand.New(rand.NewPCG(uint64(w*2+101), uint64(w*2+101)))
+							writerRoutes[w] = make([]randomRoute, 0, routesPerWriter)
+							for r := range randomRealWorldRoutes4(prng1, prng2, routesPerWriter) {
+								writerRoutes[w] = append(writerRoutes[w], r)
+							}
+						}
+
+						// Pre-generate lookup targets for readers
+						prngLookup1 := rand.New(rand.NewPCG(999, 999))
+						prngLookup2 := rand.New(rand.NewPCG(1000, 1000))
+						lookupTargets := make([]randomRoute, 0, 10_000)
+						for r := range randomRealWorldRoutes4(prngLookup1, prngLookup2, 10_000) {
+							lookupTargets = append(lookupTargets, r)
+						}
+
+						// Accumulated per-goroutine timing across all b.Loop() iterations
+						writerTimes := make([]time.Duration, writers)
+						writerCounts := make([]int64, writers)
+						readerTimes := make([]time.Duration, readers)
+						readerCounts := make([]int64, readers)
+
+						for b.Loop() {
+							rib := newRIB(shards)
+							var writerWg sync.WaitGroup
+							readerDone := make(chan struct{})
+
+							// Start writers: insert, then update/remove
+							for w := range writers {
+								writerWg.Go(func() {
+									nh := netip.MustParseAddr(fmt.Sprintf("::ffff:198.51.100.%d", w+1))
+									var count int64
+									start := time.Now()
+
+									// Pass 1: insert
+									for _, r := range writerRoutes[w] {
+										pfx := helpers.PrefixTo6(r.Prefix)
+										added, _ := rib.AddRoute(pfx, rawRoute{
+											peer:    uint32(w),
+											nlri:    nlri{family: bgp.RF_IPv4_UC},
+											nextHop: nextHop(nh),
+											attributes: routeAttributes{
+												asn:              r.ASPath[len(r.ASPath)-1],
+												asPath:           r.ASPath,
+												communities:      r.Communities,
+												largeCommunities: r.LargeCommunities,
+											},
+											prefixLen: uint8(pfx.Bits()),
+										})
+										count += int64(added)
+									}
+
+									// Pass 2: updates and removes
+									for i, r := range writerRoutes[w] {
+										pfx := helpers.PrefixTo6(r.Prefix)
+										if i%5 == 0 {
+											rib.RemoveRoute(pfx, rawRoute{
+												peer: uint32(w),
+												nlri: nlri{family: bgp.RF_IPv4_UC},
+											})
+											count++
+										} else {
+											added, _ := rib.AddRoute(pfx, rawRoute{
+												peer:    uint32(w),
+												nlri:    nlri{family: bgp.RF_IPv4_UC},
+												nextHop: nextHop(nh),
+												attributes: routeAttributes{
+													asn:              r.ASPath[len(r.ASPath)-1],
+													asPath:           r.ASPath,
+													communities:      r.Communities,
+													largeCommunities: r.LargeCommunities,
+												},
+												prefixLen: uint8(pfx.Bits()),
+											})
+											count += int64(added)
+										}
+									}
+
+									elapsed := time.Since(start)
+									writerTimes[w] += elapsed
+									writerCounts[w] += count
+								})
+							}
+
+							// Start readers concurrently with writers
+							var readerWg sync.WaitGroup
+							for rd := range readers {
+								readerWg.Go(func() {
+									var count int64
+									offset := rd * len(lookupTargets) / readers
+									start := time.Now()
+									for {
+										select {
+										case <-readerDone:
+											elapsed := time.Since(start)
+											readerTimes[rd] += elapsed
+											readerCounts[rd] += count
+											return
+										default:
+										}
+										idx := offset % len(lookupTargets)
+										ip := lookupTargets[idx].Prefix.Addr()
+										rib.LookupRoute(ip, netip.Addr{})
+										count++
+										offset++
+									}
+								})
+							}
+
+							writerWg.Wait()
+							close(readerDone)
+							readerWg.Wait()
+						}
+
+						// Aggregate: average ns/op across goroutines and iterations
+						var totalWriteNs, totalWriteOps int64
+						for w := range writers {
+							totalWriteNs += writerTimes[w].Nanoseconds()
+							totalWriteOps += writerCounts[w]
+						}
+						var totalReadNs, totalReadOps int64
+						for rd := range readers {
+							totalReadNs += readerTimes[rd].Nanoseconds()
+							totalReadOps += readerCounts[rd]
+						}
+
+						b.ReportMetric(0, "ns/op")
+						b.ReportMetric(float64(totalWriteNs)/float64(totalWriteOps), "ns/write")
+						b.ReportMetric(float64(totalReadNs)/float64(totalReadOps), "ns/read")
+					})
+				}
+			}
 		}
 	}
 }
