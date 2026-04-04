@@ -28,10 +28,10 @@ importers:
         version: 6.40.0
       '@headlessui/vue':
         specifier: ^1.6.1
-        version: 1.7.23(vue@3.5.31(typescript@5.9.3))
+        version: 1.7.23(vue@3.5.31(typescript@6.0.2))
       '@heroicons/vue':
         specifier: ^1.0.6
-        version: 1.0.6(vue@3.5.31(typescript@5.9.3))
+        version: 1.0.6(vue@3.5.31(typescript@6.0.2))
       '@lezer/common':
         specifier: ^1.2.3
         version: 1.5.1
@@ -64,19 +64,19 @@ importers:
         version: 22.19.15
       '@vitejs/plugin-vue':
         specifier: ^6.0.0
-        version: 6.0.5(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@22.19.15)(esbuild@0.27.2)(jiti@2.6.1)(yaml@2.8.3))(vue@3.5.31(typescript@5.9.3))
+        version: 6.0.5(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@22.19.15)(esbuild@0.27.2)(jiti@2.6.1)(yaml@2.8.3))(vue@3.5.31(typescript@6.0.2))
       '@vitest/coverage-v8':
         specifier: ^4.0.6
         version: 4.1.2(vitest@4.1.2(@types/node@22.19.15)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@22.19.15)(esbuild@0.27.2)(jiti@2.6.1)(yaml@2.8.3)))
       '@vue/tsconfig':
         specifier: ^0.9.0
-        version: 0.9.0(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))
+        version: 0.9.0(typescript@6.0.2)(vue@3.5.31(typescript@6.0.2))
       '@vueuse/core':
         specifier: ^14.0.0
-        version: 14.2.1(vue@3.5.31(typescript@5.9.3))
+        version: 14.2.1(vue@3.5.31(typescript@6.0.2))
       '@vueuse/router':
         specifier: ^14.0.0
-        version: 14.2.1(vue-router@5.0.4(@vue/compiler-sfc@3.5.31)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))
+        version: 14.2.1(vue-router@5.0.4(@vue/compiler-sfc@3.5.31)(vue@3.5.31(typescript@6.0.2)))(vue@3.5.31(typescript@6.0.2))
       echarts:
         specifier: ^6.0.0
         version: 6.0.0
@@ -102,8 +102,8 @@ importers:
         specifier: ^4.1.5
         version: 4.2.2
       typescript:
-        specifier: ^5.6.3
-        version: 5.9.3
+        specifier: ^6.0.0
+        version: 6.0.2
       uuid:
         specifier: ^13.0.0
         version: 13.0.0
@@ -115,22 +115,22 @@ importers:
         version: 4.1.2(@types/node@22.19.15)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@22.19.15)(esbuild@0.27.2)(jiti@2.6.1)(yaml@2.8.3))
       vue:
         specifier: ^3.3.4
-        version: 3.5.31(typescript@5.9.3)
+        version: 3.5.31(typescript@6.0.2)
       vue-echarts:
         specifier: ^8.0.1
-        version: 8.0.1(echarts@6.0.0)(vue@3.5.31(typescript@5.9.3))
+        version: 8.0.1(echarts@6.0.0)(vue@3.5.31(typescript@6.0.2))
       vue-resizer:
         specifier: ^1.1.9
         version: 1.2.0
       vue-router:
         specifier: ^5.0.0
-        version: 5.0.4(@vue/compiler-sfc@3.5.31)(vue@3.5.31(typescript@5.9.3))
+        version: 5.0.4(@vue/compiler-sfc@3.5.31)(vue@3.5.31(typescript@6.0.2))
       vue-tsc:
         specifier: ^3.0.1
-        version: 3.2.6(typescript@5.9.3)
+        version: 3.2.6(typescript@6.0.2)
       vuedraggable:
         specifier: ^4.1.0
-        version: 4.1.0(vue@3.5.31(typescript@5.9.3))
+        version: 4.1.0(vue@3.5.31(typescript@6.0.2))
 
 packages:
 
@@ -1444,8 +1444,8 @@ packages:
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
 
-  typescript@5.9.3:
-    resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
+  typescript@6.0.2:
+    resolution: {integrity: sha512-bGdAIrZ0wiGDo5l8c++HWtbaNCWTS4UTv7RaTH/ThVIgjkveJt83m74bBHMJkuCbslY8ixgLBVZJIOiQlQTjfQ==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -1775,14 +1775,14 @@ snapshots:
   '@esbuild/win32-x64@0.27.2':
     optional: true
 
-  '@headlessui/vue@1.7.23(vue@3.5.31(typescript@5.9.3))':
+  '@headlessui/vue@1.7.23(vue@3.5.31(typescript@6.0.2))':
     dependencies:
-      '@tanstack/vue-virtual': 3.10.9(vue@3.5.31(typescript@5.9.3))
-      vue: 3.5.31(typescript@5.9.3)
+      '@tanstack/vue-virtual': 3.10.9(vue@3.5.31(typescript@6.0.2))
+      vue: 3.5.31(typescript@6.0.2)
 
-  '@heroicons/vue@1.0.6(vue@3.5.31(typescript@5.9.3))':
+  '@heroicons/vue@1.0.6(vue@3.5.31(typescript@6.0.2))':
     dependencies:
-      vue: 3.5.31(typescript@5.9.3)
+      vue: 3.5.31(typescript@6.0.2)
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
@@ -2092,10 +2092,10 @@ snapshots:
 
   '@tanstack/virtual-core@3.10.9': {}
 
-  '@tanstack/vue-virtual@3.10.9(vue@3.5.31(typescript@5.9.3))':
+  '@tanstack/vue-virtual@3.10.9(vue@3.5.31(typescript@6.0.2))':
     dependencies:
       '@tanstack/virtual-core': 3.10.9
-      vue: 3.5.31(typescript@5.9.3)
+      vue: 3.5.31(typescript@6.0.2)
 
   '@tsconfig/node22@22.0.5': {}
 
@@ -2134,11 +2134,11 @@ snapshots:
 
   '@types/web-bluetooth@0.0.21': {}
 
-  '@vitejs/plugin-vue@6.0.5(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@22.19.15)(esbuild@0.27.2)(jiti@2.6.1)(yaml@2.8.3))(vue@3.5.31(typescript@5.9.3))':
+  '@vitejs/plugin-vue@6.0.5(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@22.19.15)(esbuild@0.27.2)(jiti@2.6.1)(yaml@2.8.3))(vue@3.5.31(typescript@6.0.2))':
     dependencies:
       '@rolldown/pluginutils': 1.0.0-rc.2
       vite: 8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@22.19.15)(esbuild@0.27.2)(jiti@2.6.1)(yaml@2.8.3)
-      vue: 3.5.31(typescript@5.9.3)
+      vue: 3.5.31(typescript@6.0.2)
 
   '@vitest/coverage-v8@4.1.2(vitest@4.1.2(@types/node@22.19.15)(vite@8.0.3(@emnapi/core@1.9.1)(@emnapi/runtime@1.9.1)(@types/node@22.19.15)(esbuild@0.27.2)(jiti@2.6.1)(yaml@2.8.3)))':
     dependencies:
@@ -2207,7 +2207,7 @@ snapshots:
       path-browserify: 1.0.1
       vscode-uri: 3.1.0
 
-  '@vue-macros/common@3.1.2(vue@3.5.31(typescript@5.9.3))':
+  '@vue-macros/common@3.1.2(vue@3.5.31(typescript@6.0.2))':
     dependencies:
       '@vue/compiler-sfc': 3.5.31
       ast-kit: 2.2.0
@@ -2215,7 +2215,7 @@ snapshots:
       magic-string-ast: 1.0.3
       unplugin-utils: 0.3.1
     optionalDependencies:
-      vue: 3.5.31(typescript@5.9.3)
+      vue: 3.5.31(typescript@6.0.2)
 
   '@vue/compiler-core@3.5.31':
     dependencies:
@@ -2286,37 +2286,37 @@ snapshots:
       '@vue/shared': 3.5.31
       csstype: 3.2.3
 
-  '@vue/server-renderer@3.5.31(vue@3.5.31(typescript@5.9.3))':
+  '@vue/server-renderer@3.5.31(vue@3.5.31(typescript@6.0.2))':
     dependencies:
       '@vue/compiler-ssr': 3.5.31
       '@vue/shared': 3.5.31
-      vue: 3.5.31(typescript@5.9.3)
+      vue: 3.5.31(typescript@6.0.2)
 
   '@vue/shared@3.5.31': {}
 
-  '@vue/tsconfig@0.9.0(typescript@5.9.3)(vue@3.5.31(typescript@5.9.3))':
+  '@vue/tsconfig@0.9.0(typescript@6.0.2)(vue@3.5.31(typescript@6.0.2))':
     optionalDependencies:
-      typescript: 5.9.3
-      vue: 3.5.31(typescript@5.9.3)
+      typescript: 6.0.2
+      vue: 3.5.31(typescript@6.0.2)
 
-  '@vueuse/core@14.2.1(vue@3.5.31(typescript@5.9.3))':
+  '@vueuse/core@14.2.1(vue@3.5.31(typescript@6.0.2))':
     dependencies:
       '@types/web-bluetooth': 0.0.21
       '@vueuse/metadata': 14.2.1
-      '@vueuse/shared': 14.2.1(vue@3.5.31(typescript@5.9.3))
-      vue: 3.5.31(typescript@5.9.3)
+      '@vueuse/shared': 14.2.1(vue@3.5.31(typescript@6.0.2))
+      vue: 3.5.31(typescript@6.0.2)
 
   '@vueuse/metadata@14.2.1': {}
 
-  '@vueuse/router@14.2.1(vue-router@5.0.4(@vue/compiler-sfc@3.5.31)(vue@3.5.31(typescript@5.9.3)))(vue@3.5.31(typescript@5.9.3))':
+  '@vueuse/router@14.2.1(vue-router@5.0.4(@vue/compiler-sfc@3.5.31)(vue@3.5.31(typescript@6.0.2)))(vue@3.5.31(typescript@6.0.2))':
     dependencies:
-      '@vueuse/shared': 14.2.1(vue@3.5.31(typescript@5.9.3))
-      vue: 3.5.31(typescript@5.9.3)
-      vue-router: 5.0.4(@vue/compiler-sfc@3.5.31)(vue@3.5.31(typescript@5.9.3))
+      '@vueuse/shared': 14.2.1(vue@3.5.31(typescript@6.0.2))
+      vue: 3.5.31(typescript@6.0.2)
+      vue-router: 5.0.4(@vue/compiler-sfc@3.5.31)(vue@3.5.31(typescript@6.0.2))
 
-  '@vueuse/shared@14.2.1(vue@3.5.31(typescript@5.9.3))':
+  '@vueuse/shared@14.2.1(vue@3.5.31(typescript@6.0.2))':
     dependencies:
-      vue: 3.5.31(typescript@5.9.3)
+      vue: 3.5.31(typescript@6.0.2)
 
   acorn@8.16.0: {}
 
@@ -2713,7 +2713,7 @@ snapshots:
   tslib@2.8.1:
     optional: true
 
-  typescript@5.9.3: {}
+  typescript@6.0.2: {}
 
   ufo@1.6.3: {}
 
@@ -2782,17 +2782,17 @@ snapshots:
 
   vscode-uri@3.1.0: {}
 
-  vue-echarts@8.0.1(echarts@6.0.0)(vue@3.5.31(typescript@5.9.3)):
+  vue-echarts@8.0.1(echarts@6.0.0)(vue@3.5.31(typescript@6.0.2)):
     dependencies:
       echarts: 6.0.0
-      vue: 3.5.31(typescript@5.9.3)
+      vue: 3.5.31(typescript@6.0.2)
 
   vue-resizer@1.2.0: {}
 
-  vue-router@5.0.4(@vue/compiler-sfc@3.5.31)(vue@3.5.31(typescript@5.9.3)):
+  vue-router@5.0.4(@vue/compiler-sfc@3.5.31)(vue@3.5.31(typescript@6.0.2)):
     dependencies:
       '@babel/generator': 7.29.1
-      '@vue-macros/common': 3.1.2(vue@3.5.31(typescript@5.9.3))
+      '@vue-macros/common': 3.1.2(vue@3.5.31(typescript@6.0.2))
       '@vue/devtools-api': 8.1.1
       ast-walker-scope: 0.8.3
       chokidar: 5.0.0
@@ -2807,31 +2807,31 @@ snapshots:
       tinyglobby: 0.2.15
       unplugin: 3.0.0
       unplugin-utils: 0.3.1
-      vue: 3.5.31(typescript@5.9.3)
+      vue: 3.5.31(typescript@6.0.2)
       yaml: 2.8.3
     optionalDependencies:
       '@vue/compiler-sfc': 3.5.31
 
-  vue-tsc@3.2.6(typescript@5.9.3):
+  vue-tsc@3.2.6(typescript@6.0.2):
     dependencies:
       '@volar/typescript': 2.4.28
       '@vue/language-core': 3.2.6
-      typescript: 5.9.3
+      typescript: 6.0.2
 
-  vue@3.5.31(typescript@5.9.3):
+  vue@3.5.31(typescript@6.0.2):
     dependencies:
       '@vue/compiler-dom': 3.5.31
       '@vue/compiler-sfc': 3.5.31
       '@vue/runtime-dom': 3.5.31
-      '@vue/server-renderer': 3.5.31(vue@3.5.31(typescript@5.9.3))
+      '@vue/server-renderer': 3.5.31(vue@3.5.31(typescript@6.0.2))
       '@vue/shared': 3.5.31
     optionalDependencies:
-      typescript: 5.9.3
+      typescript: 6.0.2
 
-  vuedraggable@4.1.0(vue@3.5.31(typescript@5.9.3)):
+  vuedraggable@4.1.0(vue@3.5.31(typescript@6.0.2)):
     dependencies:
       sortablejs: 1.14.0
-      vue: 3.5.31(typescript@5.9.3)
+      vue: 3.5.31(typescript@6.0.2)
 
   w3c-keyname@2.2.8: {}
 
