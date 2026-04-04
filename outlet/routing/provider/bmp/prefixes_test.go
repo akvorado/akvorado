@@ -334,7 +334,7 @@ func BenchmarkRIBConcurrent(b *testing.B) {
 	for _, shards := range []int{1, 16} {
 		for _, routes := range []int{10_000, 100_000} {
 			for _, writers := range []int{1, 2, 4} {
-				for _, readers := range []int{4, 16, 256} {
+				for _, readers := range []int{1, 4, 16, 32} {
 					name := fmt.Sprintf("%d shards, %d routes, %d writers, %d readers", shards, routes, writers, readers)
 					b.Run(name, func(b *testing.B) {
 						// Pre-generate routes per writer
