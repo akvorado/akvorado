@@ -403,10 +403,10 @@ func TestPaginationLinkNext(t *testing.T) {
 	mux.Handle("/page1.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
 		w.WriteHeader(200)
-		w.Write([]byte(fmt.Sprintf(`{
+		w.Write(fmt.Appendf(nil, `{
   "results": [{"name": "item1", "description": "page1"}],
   "next": "http://%s/page2.json"
-}`, address)))
+}`, address))
 	}))
 	mux.Handle("/page2.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Add("Content-Type", "application/json")
@@ -623,10 +623,10 @@ func TestPaginationAuto(t *testing.T) {
 		mux.Handle("/page1.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Add("Content-Type", "application/json")
 			w.WriteHeader(200)
-			w.Write([]byte(fmt.Sprintf(`{
+			w.Write(fmt.Appendf(nil, `{
   "results": [{"name": "item1", "description": "page1"}],
   "next": "http://%s/page2.json"
-}`, address)))
+}`, address))
 		}))
 		mux.Handle("/page2.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.Header().Add("Content-Type", "application/json")
