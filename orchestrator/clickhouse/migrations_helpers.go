@@ -687,6 +687,64 @@ outer:
 		modified = true
 	}
 
+	// Bloom filter skipping indices only apply to the main flows table,
+	// since SrcAddr/DstAddr are ClickHouseMainOnly columns.
+	if resolution.Interval == 0 {
+		if c.config.BloomFPP == 0 {
+			c.config.BloomFPP = 0.001
+		}
+
+		for _, idx := range []struct {
+			name    string
+			column  string
+			enabled bool
+		}{
+			{"idx_src_addr", "SrcAddr", c.config.EnableBloomSrc},
+			{"idx_dst_addr", "DstAddr", c.config.EnableBloomDst},
+		} {
+			wantedType := fmt.Sprintf("bloom_filter(%g)", c.config.BloomFPP)
+			var existingType string
+			row := c.d.ClickHouse.QueryRow(ctx,
+				`SELECT ifNull(any(type_full), '') FROM system.data_skipping_indices WHERE database = $1 AND table = $2 AND name = $3`,
+				c.d.ClickHouse.DatabaseName(), tableName, idx.name)
+			if err := row.Scan(&existingType); err != nil {
+				return fmt.Errorf("cannot check bloom index %s: %w", idx.name, err)
+			}
+
+			needsDrop := !idx.enabled && existingType != "" ||
+				idx.enabled && existingType != "" && existingType != wantedType
+			needsCreate := idx.enabled && (existingType == "" || existingType != wantedType)
+
+			if needsDrop {
+				c.r.Info().Msgf("removing bloom filter index %s from %s", idx.name, tableName)
+				if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(
+					"ALTER TABLE %s DROP INDEX %s",
+					tableName, idx.name,
+				)); err != nil {
+					return fmt.Errorf("cannot drop bloom index %s: %w", idx.name, err)
+				}
+				modified = true
+			}
+
+			if needsCreate {
+				c.r.Info().Msgf("adding bloom filter index %s to %s", idx.name, tableName)
+				if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(
+					"ALTER TABLE %s ADD INDEX %s %s TYPE %s GRANULARITY 4",
+					tableName, idx.name, idx.column, wantedType,
+				)); err != nil {
+					return fmt.Errorf("cannot add bloom index %s: %w", idx.name, err)
+				}
+				if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(
+					"ALTER TABLE %s MATERIALIZE INDEX %s",
+					tableName, idx.name,
+				)); err != nil {
+					return fmt.Errorf("cannot materialize bloom index %s: %w", idx.name, err)
+				}
+				modified = true
+			}
+		}
+	}
+
 	if modified {
 		return nil
 	}
