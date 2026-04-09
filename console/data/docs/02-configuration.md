@@ -976,6 +976,20 @@ provided inside `clickhouse`:
   be set to `true` when the schema is managed externally or by another
   orchestrator. The outlet requires the schema to match the expected structure:
   schema mismatches may cause write errors.
+- `enable-bloom-dst` controls whether the DstAddr field has a bloom filter
+  skipping index applied. This allows for faster queries of specific DstAddrs,
+  especially if they are spread sparsely throughout the dataset. This only
+  affects the main flows table.
+- `enable-bloom-src` controls whether the SrcAddr field has a bloom filter
+  skipping index applied. This allows for faster queries of specific SrcAddrs,
+  especially if they are spread sparsely throughout the dataset. This only
+  affects the main flows table.
+- `bloom-fpp` dictates the amount of allowed false positives the bloom filter
+  can have. False positives in this instance define how much additional data
+  may be read before doing the finer filtering. As this value is increased, the
+  disk utilistion of bloom filtering decreases but causes more granules to be
+  unnecessarily read at query time. Allowed values are 0 < x < 1 with the
+  recommended value at 0.001.
 
 The `resolutions` setting contains a list of resolutions. Each resolution has
 three keys: `interval`, `ttl`, and `table-settings`. The first one is the
