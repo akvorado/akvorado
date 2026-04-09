@@ -489,6 +489,98 @@ func TestTableSettings(t *testing.T) {
 	})
 }
 
+func TestBloomFilterMigration(t *testing.T) {
+	r := reporter.NewMock(t)
+	chComponent := clickhousedb.SetupClickHouse(t, r, false)
+	dropAllTables(t, chComponent)
+
+	// Start with bloom disabled (default)
+	startTestComponent(t, r, chComponent, nil)
+
+	checkBloomIndex := func(t *testing.T, indexName, wantType string) {
+		t.Helper()
+		row := chComponent.QueryRow(t.Context(),
+			`SELECT ifNull(any(type_full), '') FROM system.data_skipping_indices WHERE database = $1 AND table = $2 AND name = $3`,
+			chComponent.DatabaseName(), "flows", indexName)
+		var gotType string
+		if err := row.Scan(&gotType); err != nil {
+			t.Fatalf("Scan() error:\n%+v", err)
+		}
+		if gotType != wantType {
+			t.Fatalf("bloom index %s: got type %q, want %q", indexName, gotType, wantType)
+		}
+	}
+
+	t.Run("no bloom by default", func(t *testing.T) {
+		checkBloomIndex(t, "idx_src_addr", "")
+		checkBloomIndex(t, "idx_dst_addr", "")
+	})
+
+	t.Run("enable src bloom", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		startTestComponentWithConfig(t, r, chComponent, nil, func(cfg *Configuration) {
+			cfg.EnableBloomSrc = true
+		})
+		checkBloomIndex(t, "idx_src_addr", "bloom_filter(0.001)")
+		checkBloomIndex(t, "idx_dst_addr", "")
+
+		gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
+		if gotMetrics["applied_steps_total"] == "0" {
+			t.Fatal("no migration applied when enabling bloom filter")
+		}
+	})
+
+	t.Run("enable dst bloom", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		startTestComponentWithConfig(t, r, chComponent, nil, func(cfg *Configuration) {
+			cfg.EnableBloomSrc = true
+			cfg.EnableBloomDst = true
+		})
+		checkBloomIndex(t, "idx_src_addr", "bloom_filter(0.001)")
+		checkBloomIndex(t, "idx_dst_addr", "bloom_filter(0.001)")
+	})
+
+	t.Run("idempotent", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		startTestComponentWithConfig(t, r, chComponent, nil, func(cfg *Configuration) {
+			cfg.EnableBloomSrc = true
+			cfg.EnableBloomDst = true
+		})
+		gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
+		if diff := helpers.Diff(gotMetrics, map[string]string{"applied_steps_total": "0"}); diff != "" {
+			t.Fatalf("Metrics (-got, +want):\n%s", diff)
+		}
+	})
+
+	t.Run("change fpp", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		startTestComponentWithConfig(t, r, chComponent, nil, func(cfg *Configuration) {
+			cfg.EnableBloomSrc = true
+			cfg.EnableBloomDst = true
+			cfg.BloomFPP = 0.01
+		})
+		checkBloomIndex(t, "idx_src_addr", "bloom_filter(0.01)")
+		checkBloomIndex(t, "idx_dst_addr", "bloom_filter(0.01)")
+
+		gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
+		if gotMetrics["applied_steps_total"] == "0" {
+			t.Fatal("no migration applied when changing bloom FPP")
+		}
+	})
+
+	t.Run("disable bloom", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		startTestComponent(t, r, chComponent, nil)
+		checkBloomIndex(t, "idx_src_addr", "")
+		checkBloomIndex(t, "idx_dst_addr", "")
+
+		gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
+		if gotMetrics["applied_steps_total"] == "0" {
+			t.Fatal("no migration applied when disabling bloom filter")
+		}
+	})
+}
+
 func TestCustomDictMigration(t *testing.T) {
 	r := reporter.NewMock(t)
 	chComponent := clickhousedb.SetupClickHouse(t, r, false)

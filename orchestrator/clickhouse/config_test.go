@@ -157,6 +157,30 @@ func TestDefaultConfiguration(t *testing.T) {
 	}
 }
 
+func TestBloomFPPValidation(t *testing.T) {
+	for _, tc := range []struct {
+		fpp   float64
+		valid bool
+	}{
+		{0.001, true},
+		{0.5, true},
+		{0.999, true},
+		{0, true}, // is seen as default, gets set to 0.001 in migrations
+		{1, false},
+		{1.5, false},
+		{-0.1, false},
+	} {
+		config := DefaultConfiguration()
+		config.BloomFPP = tc.fpp
+		err := helpers.Validate.Struct(config)
+		if tc.valid && err != nil {
+			t.Errorf("BloomFPP=%v: expected valid, got error: %v", tc.fpp, err)
+		} else if !tc.valid && err == nil {
+			t.Errorf("BloomFPP=%v: expected invalid, got no error", tc.fpp)
+		}
+	}
+}
+
 func init() {
 	helpers.RegisterSubnetMapCmp[NetworkAttributes]()
 }
