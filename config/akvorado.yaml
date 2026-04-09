@@ -61,6 +61,12 @@ clickhouse:
       name: ipv6-servers
       role: servers
   network-sources: []
+
+  # Quicker query times for specific DstAddrs but can use more disk space.
+  enable-bloom-dst: true
+  enable-bloom-src: false
+  bloom-fpp: 0.001
+  
     # amazon:
     #   url: https://ip-ranges.amazonaws.com/ip-ranges.json
     #   interval: 6h
