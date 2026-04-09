@@ -148,6 +148,7 @@
         "patch"
       ],
       "automerge": true,
+      "minimumReleaseAge": "0 days",
       "schedule": ["* * * * *"]
     },
     {
