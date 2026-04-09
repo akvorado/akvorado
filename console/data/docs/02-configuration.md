@@ -989,7 +989,7 @@ provided inside `clickhouse`:
   may be read before doing the finer filtering. As this value is increased, the
   disk utilistion of bloom filtering decreases but causes more granules to be
   unnecessarily read at query time. Allowed values are 0 < x < 1 with the
-  recommended value at 0.001.
+  recommended value at 0.001 (0.1%).
 
 The `resolutions` setting contains a list of resolutions. Each resolution has
 three keys: `interval`, `ttl`, and `table-settings`. The first one is the
