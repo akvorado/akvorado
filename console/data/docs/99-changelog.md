@@ -12,8 +12,13 @@ identified with a specific icon:
 
 ## Unreleased
 
+This release adds configurable skip indexes to ClickHouse tables. This should
+help make some queries faster, but it will also increase a bit the size used by
+ClickHouse, as well as the ingestion performance.
+
 - ✨ *outlet*: add route target (`rts`) filtering to the BMP provider
 - 🩹 *console*: don't complete column names not accepted in filters
+- 🌱 *orchestrator*: add configurable skip indexes to ClickHouse table to speed up queries
 - 🌱 *docker*: switch Docker image repository to Quay.io (IPv6 available)
 - 🌱 *common*: remote data sources now support pagination via the `pagination` option
 
