@@ -718,7 +718,8 @@ func (c *Component) applySkipIndexes(ctx context.Context, tableName string) (boo
 	skipIndexes := c.d.Schema.GetSkipIndexes()
 	// Collect index names that are currently wanted so we can drop stale ones.
 	wantedIndexNames := map[string]struct{}{}
-	for colKey, idxType := range skipIndexes {
+	for _, colKey := range slices.Sorted(maps.Keys(skipIndexes)) {
+		idxType := skipIndexes[colKey]
 		col, ok := c.d.Schema.LookupColumnByKey(colKey)
 		if !ok || col.Disabled {
 			continue
