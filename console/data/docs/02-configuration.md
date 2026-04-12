@@ -780,6 +780,55 @@ For ICMP, you get `ICMPv4Type`, `ICMPv4Code`, `ICMPv6Type`, `ICMPv6Code`,
 `ICMPv4`, and `ICMPv6`. The two latest one are displayed as a string in the
 console (like `echo-reply` or `frag-needed`).
 
+#### Data-skipping indexes
+
+ClickHouse [data-skipping indexes][] can be added to columns in the main flows
+table. *Akvorado* ships with sensible defaults already enabled:
+
+| Column | Index |
+|---|---|
+| `SrcAddr`, `DstAddr` | `bloom(0.001)` |
+| `SrcAS`, `DstAS` | `bloom(0.001)` |
+| `SrcPort`, `DstPort` | `bloom(0.001)` |
+| `SrcCountry`, `DstCountry` | `bloom(0.001)` |
+| `ExporterName` | `minmax` |
+| `InIfProvider`, `OutIfProvider` | `set(0)` |
+| `InIfConnectivity`, `OutIfConnectivity` | `set(0)` |
+| `InIfBoundary`, `OutIfBoundary` | `set(0)` |
+
+Three index types are supported:
+
+- `bloom(P)` | bloom filter with false-positive probability P (0 < P < 1).
+  Good for high-cardinality columns such as IP addresses or AS numbers.
+- `minmax` | stores the min/max of each granule. Efficient for columns that are
+  partially ordered in the table, such as `ExporterName`.
+- `set(N)` | stores up to N distinct values per granule (0 means unlimited).
+  Efficient for low-cardinality columns such as `InIfBoundary` or
+  `InIfConnectivity`.
+
+Use `indexes` to add or override an index, and `no-indexes` to remove a default:
+
+```yaml
+schema:
+  # Override the FPP for SrcAddr and add an index for a custom column.
+  indexes:
+    SrcAddr: bloom(0.01)
+    SrcNetName: bloom(0.001)
+  # Remove the default index for DstAddr.
+  no-indexes:
+    - DstAddr
+```
+
+Indexes are idempotent: changing the type or removing an entry will cause
+*Akvorado* to drop and recreate (or drop) the index on the next startup.
+
+> [!NOTE]
+> Adding a skip index to a large table triggers a background materialization
+> step in ClickHouse. Query performance improves gradually as parts are
+> rewritten. Materialization uses disk I/O but does not block ingestion.
+
+[data-skipping indexes]: https://clickhouse.com/docs/optimize/skipping-indexes
+
 #### Custom dictionaries
 
 You can add custom dimensions to be looked up via a dictionary. This is useful
@@ -976,20 +1025,6 @@ provided inside `clickhouse`:
   be set to `true` when the schema is managed externally or by another
   orchestrator. The outlet requires the schema to match the expected structure:
   schema mismatches may cause write errors.
-- `enable-bloom-dst` controls whether the DstAddr field has a bloom filter
-  skipping index applied. This allows for faster queries of specific DstAddrs,
-  especially if they are spread sparsely throughout the dataset. This only
-  affects the main flows table.
-- `enable-bloom-src` controls whether the SrcAddr field has a bloom filter
-  skipping index applied. This allows for faster queries of specific SrcAddrs,
-  especially if they are spread sparsely throughout the dataset. This only
-  affects the main flows table.
-- `bloom-fpp` dictates the amount of allowed false positives the bloom filter
-  can have. False positives in this instance define how much additional data
-  may be read before doing the finer filtering. As this value is increased, the
-  disk utilistion of bloom filtering decreases but causes more granules to be
-  unnecessarily read at query time. Allowed values are 0 < x < 1 with the
-  recommended value at 0.001 (0.1%).
 
 The `resolutions` setting contains a list of resolutions. Each resolution has
 three keys: `interval`, `ttl`, and `table-settings`. The first one is the
