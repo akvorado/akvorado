@@ -823,9 +823,11 @@ Indexes are idempotent: changing the type or removing an entry will cause
 *Akvorado* to drop and recreate (or drop) the index on the next startup.
 
 > [!NOTE]
-> Adding a skip index to a large table triggers a background materialization
-> step in ClickHouse. Query performance improves gradually as parts are
-> rewritten. Materialization uses disk I/O but does not block ingestion.
+> Skip indexes only load begin to work on data inserted after its creation.
+> To view any skipping indexes, you can use: 
+> `SELECT database,table,name FROM system.data_skipping_indices`
+> To materialize indexes, you can use:
+> `ALTER TABLE [tblName] MATERIALIZE INDEX [idxName]`
 
 [data-skipping indexes]: https://clickhouse.com/docs/optimize/skipping-indexes
 
