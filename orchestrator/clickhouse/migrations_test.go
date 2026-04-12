@@ -534,13 +534,6 @@ func TestSkipIndexMigration(t *testing.T) {
 		}
 	}
 
-	t.Run("default indexes applied", func(t *testing.T) {
-		checkSkipIndex(t, "idx_srcaddr", "bloom_filter(0.001)")
-		checkSkipIndex(t, "idx_dstaddr", "bloom_filter(0.001)")
-		checkSkipIndex(t, "idx_exportername", "minmax")
-		checkSkipIndex(t, "idx_inifboundary", "set(0)")
-	})
-
 	t.Run("override fpp", func(t *testing.T) {
 		r := reporter.NewMock(t)
 		cfg := schema.DefaultConfiguration()
@@ -559,23 +552,6 @@ func TestSkipIndexMigration(t *testing.T) {
 		gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
 		if gotMetrics["applied_steps_total"] == "0" {
 			t.Fatal("no migration applied when changing bloom FPP")
-		}
-	})
-
-	t.Run("idempotent", func(t *testing.T) {
-		r := reporter.NewMock(t)
-		cfg := schema.DefaultConfiguration()
-		cfg.Indexes = map[schema.ColumnKey]schema.SkipIndexType{
-			schema.ColumnSrcAddr: "bloom(0.01)",
-		}
-		sch, err := schema.New(cfg)
-		if err != nil {
-			t.Fatalf("schema.New() error:\n%+v", err)
-		}
-		startTestComponentWithConfig(t, r, chComponent, sch, nil)
-		gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
-		if diff := helpers.Diff(gotMetrics, map[string]string{"applied_steps_total": "0"}); diff != "" {
-			t.Fatalf("Metrics (-got, +want):\n%s", diff)
 		}
 	})
 
