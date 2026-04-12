@@ -69,7 +69,7 @@ type Configuration struct {
 	// with (and override) the defaults; use NoIndexes to remove a default.
 	Indexes map[ColumnKey]SkipIndexType
 	// NoIndexes lists columns whose default skip index should be removed.
-	NoIndexes []ColumnKey `validate:"ninterfield=Indexes"`
+	NoIndexes []ColumnKey
 	// CustomDictionaries allows enrichment of flows with custom metadata
 	CustomDictionaries map[string]CustomDict `validate:"dive"`
 }
