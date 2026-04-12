@@ -41,10 +41,14 @@ func (s SkipIndexType) ClickHouseType() (string, error) {
 	}
 }
 
-// Validate checks that the SkipIndexType is well-formed.
-func (s SkipIndexType) Validate() error {
-	_, err := s.ClickHouseType()
-	return err
+// UnmarshalText validates and sets a SkipIndexType from its text representation.
+func (s *SkipIndexType) UnmarshalText(input []byte) error {
+	v := SkipIndexType(input)
+	if _, err := v.ClickHouseType(); err != nil {
+		return err
+	}
+	*s = v
+	return nil
 }
 
 // Configuration describes the configuration for the schema component.

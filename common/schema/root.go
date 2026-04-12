@@ -97,11 +97,8 @@ func New(config Configuration) (*Component, error) {
 		}
 	}
 
-	// Validate skip index types
-	for col, idxType := range config.Indexes {
-		if err := idxType.Validate(); err != nil {
-			return nil, fmt.Errorf("schema indexes: column %q: %w", col, err)
-		}
+	// Validate skip index columns
+	for col := range config.Indexes {
 		if int(col) >= len(schema.columnIndex) {
 			return nil, fmt.Errorf("schema indexes: unknown column key %d", col)
 		}

@@ -218,7 +218,7 @@ func TestCustomDictNoKeyErr(t *testing.T) {
 
 func TestSkipIndexTypeValidation(t *testing.T) {
 	for _, tc := range []struct {
-		idxType schema.SkipIndexType
+		idxType string
 		wantCH  string
 		wantErr bool
 	}{
@@ -235,16 +235,22 @@ func TestSkipIndexTypeValidation(t *testing.T) {
 		{"set(abc)", "", true},
 		{"unknown", "", true},
 	} {
-		chType, err := tc.idxType.ClickHouseType()
+		var s schema.SkipIndexType
+		err := s.UnmarshalText([]byte(tc.idxType))
 		if tc.wantErr {
 			if err == nil {
-				t.Errorf("SkipIndexType(%q): expected error, got chType=%q", tc.idxType, chType)
+				t.Errorf("SkipIndexType(%q): expected error, got none", tc.idxType)
 			}
 		} else {
 			if err != nil {
 				t.Errorf("SkipIndexType(%q): unexpected error: %v", tc.idxType, err)
-			} else if chType != tc.wantCH {
-				t.Errorf("SkipIndexType(%q): got CH type %q, want %q", tc.idxType, chType, tc.wantCH)
+			} else {
+				chType, err := s.ClickHouseType()
+				if err != nil {
+					t.Errorf("SkipIndexType(%q): ClickHouseType error after valid UnmarshalText: %v", tc.idxType, err)
+				} else if chType != tc.wantCH {
+					t.Errorf("SkipIndexType(%q): got CH type %q, want %q", tc.idxType, chType, tc.wantCH)
+				}
 			}
 		}
 	}
