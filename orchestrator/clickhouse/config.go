@@ -45,15 +45,6 @@ type Configuration struct {
 	// OrchestratorBasicAuth holds optional basic auth credentials to reach
 	// orchestrator from ClickHouse
 	OrchestratorBasicAuth *ConfigurationBasicAuth
-	// EnableBloomSrc controls whether a bloom filter skipping index is
-	// added to SrcAddr.
-	EnableBloomSrc bool
-	// EnableBloomDst controls whether a bloom filter skipping index is
-	// added to DstAddr.
-	EnableBloomDst bool
-	// BloomFPP is the false positive probability for bloom filter skipping
-	// indices (0-1).
-	BloomFPP float64 `validate:"isdefault|gt=0,lt=1"`
 }
 
 // ConfigurationBasicAuth holds Username and Password subfields
@@ -93,7 +84,6 @@ func DefaultConfiguration() Configuration {
 		},
 		MaxPartitions:         50,
 		NetworkSourcesTimeout: 10 * time.Second,
-		BloomFPP:              0.001, // 0.1% false positive probability for bloom filters
 	}
 }
 
