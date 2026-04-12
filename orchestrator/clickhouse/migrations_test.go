@@ -380,14 +380,9 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 			writer := csv.NewWriter(f)
 			defer writer.Flush()
 			allTables := dumpAllTables(t, chComponent, schema.NewMock(t))
-			var sb strings.Builder
 			for _, item := range allTables {
 				writer.Write([]string{item.Table, item.Schema})
-				w := csv.NewWriter(&sb)
-				w.Write([]string{item.Table, item.Schema})
-				w.Flush()
 			}
-			t.Logf("Current dump (copy to new state file):\n%s", sb.String())
 			t.Fatalf("Last step was not idempotent. Check %s for the current dump", f.Name())
 		}
 	})
