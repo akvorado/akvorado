@@ -95,26 +95,26 @@ type CustomDictAttribute struct {
 	Default string `validate:"omitempty,alphanum"`
 }
 
-// DefaultConfiguration returns the default configuration for the schema component.
 // DefaultIndexes are the skip indexes applied when none are explicitly configured.
 var DefaultIndexes = map[ColumnKey]SkipIndexType{
-	ColumnSrcAddr:        "bloom(0.001)",
-	ColumnDstAddr:        "bloom(0.001)",
-	ColumnSrcAS:          "bloom(0.001)",
-	ColumnDstAS:          "bloom(0.001)",
-	ColumnSrcPort:        "bloom(0.001)",
-	ColumnDstPort:        "bloom(0.001)",
-	ColumnSrcCountry:     "bloom(0.001)",
-	ColumnDstCountry:     "bloom(0.001)",
-	ColumnExporterName:   "minmax",
-	ColumnInIfProvider:   "set(0)",
-	ColumnOutIfProvider:  "set(0)",
+	ColumnSrcAddr:           "bloom(0.001)",
+	ColumnDstAddr:           "bloom(0.001)",
+	ColumnSrcAS:             "bloom(0.001)",
+	ColumnDstAS:             "bloom(0.001)",
+	ColumnSrcPort:           "bloom(0.001)",
+	ColumnDstPort:           "bloom(0.001)",
+	ColumnSrcCountry:        "bloom(0.001)",
+	ColumnDstCountry:        "bloom(0.001)",
+	ColumnExporterName:      "minmax",
+	ColumnInIfProvider:      "set(0)",
+	ColumnOutIfProvider:     "set(0)",
 	ColumnInIfConnectivity:  "set(0)",
 	ColumnOutIfConnectivity: "set(0)",
-	ColumnInIfBoundary:   "set(0)",
-	ColumnOutIfBoundary:  "set(0)",
+	ColumnInIfBoundary:      "set(0)",
+	ColumnOutIfBoundary:     "set(0)",
 }
 
+// DefaultConfiguration returns the default configuration for the schema component.
 func DefaultConfiguration() Configuration {
 	return Configuration{}
 }
