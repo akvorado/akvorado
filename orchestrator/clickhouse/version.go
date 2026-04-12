@@ -36,7 +36,8 @@ func validateVersion(v string) error {
 	}
 
 	{
-		// Check minimum supported version
+		// Check minimum supported version. 22.4 added INTERPOLATE extension to
+		// the ORDER BY ... WITH FILL.
 		minVersion := version.Must(version.NewVersion("22.4"))
 		if !current.GreaterThanOrEqual(minVersion) {
 			return fmt.Errorf("required minimal version of ClickHouse is 22.4 (got %s)", current)
