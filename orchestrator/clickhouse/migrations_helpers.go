@@ -708,11 +708,32 @@ outer:
 // schema indexes. It returns true if any change was made.
 func (c *Component) applySkipIndexes(ctx context.Context, tableName string, isMainTable bool) (bool, error) {
 	skipIndexes := c.d.Schema.GetSkipIndexes()
-	// Collect index names that are currently wanted so we can drop stale ones.
-	wantedIndexNames := map[string]struct{}{}
 	var toDrop []string
 	var toAdd []string
 
+	// Collect all existing skip indexes once for both of the below.
+	rows, err := c.d.ClickHouse.Query(ctx,
+		`SELECT name, type_full FROM system.data_skipping_indices WHERE database = $1 AND table = $2 AND startsWith(name, 'idx_')`,
+		c.d.ClickHouse.DatabaseName(), tableName)
+	if err != nil {
+		return false, fmt.Errorf("cannot list skip indices for %s: %w", tableName, err)
+	}
+	existingIndexes := map[string]string{}
+	for rows.Next() {
+		var name, typeFull string
+		if err := rows.Scan(&name, &typeFull); err != nil {
+			rows.Close()
+			return false, fmt.Errorf("cannot scan skip index: %w", err)
+		}
+		existingIndexes[name] = typeFull
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return false, fmt.Errorf("cannot iterate skip indices for %s: %w", tableName, err)
+	}
+
+	// Determine which indexes are wanted and what changes are needed.
+	wantedIndexNames := map[string]struct{}{}
 	for _, colKey := range slices.Sorted(maps.Keys(skipIndexes)) {
 		idxType := skipIndexes[colKey]
 		col, ok := c.d.Schema.LookupColumnByKey(colKey)
@@ -730,14 +751,7 @@ func (c *Component) applySkipIndexes(ctx context.Context, tableName string, isMa
 		idxName := fmt.Sprintf("idx_%s", strings.ToLower(col.Name))
 		wantedIndexNames[idxName] = struct{}{}
 
-		var existingType string
-		row := c.d.ClickHouse.QueryRow(ctx,
-			`SELECT ifNull(any(type_full), '') FROM system.data_skipping_indices WHERE database = $1 AND table = $2 AND name = $3`,
-			c.d.ClickHouse.DatabaseName(), tableName, idxName)
-		if err := row.Scan(&existingType); err != nil {
-			return false, fmt.Errorf("cannot check skip index %s: %w", idxName, err)
-		}
-
+		existingType := existingIndexes[idxName]
 		if existingType != "" && existingType != chType {
 			toDrop = append(toDrop, fmt.Sprintf("DROP INDEX %s", idxName))
 		}
@@ -746,25 +760,11 @@ func (c *Component) applySkipIndexes(ctx context.Context, tableName string, isMa
 		}
 	}
 
-	// Collect stale skip indices that are no longer wanted.
-	rows, err := c.d.ClickHouse.Query(ctx,
-		`SELECT name FROM system.data_skipping_indices WHERE database = $1 AND table = $2 AND startsWith(name, 'idx_')`,
-		c.d.ClickHouse.DatabaseName(), tableName)
-	if err != nil {
-		return false, fmt.Errorf("cannot list skip indices for %s: %w", tableName, err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var name string
-		if err := rows.Scan(&name); err != nil {
-			return false, fmt.Errorf("cannot scan skip index name: %w", err)
-		}
+	// Drop stale skip indexes that are no longer wanted.
+	for name := range existingIndexes {
 		if _, wanted := wantedIndexNames[name]; !wanted {
 			toDrop = append(toDrop, fmt.Sprintf("DROP INDEX %s", name))
 		}
-	}
-	if err := rows.Err(); err != nil {
-		return false, fmt.Errorf("cannot iterate skip indices for %s: %w", tableName, err)
 	}
 
 	if len(toDrop) == 0 && len(toAdd) == 0 {
