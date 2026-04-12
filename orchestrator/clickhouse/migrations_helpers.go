@@ -712,24 +712,25 @@ func (c *Component) applySkipIndexes(ctx context.Context, tableName string, isMa
 	var toAdd []string
 
 	// Collect existing skip indexes.
-	rows, err := c.d.ClickHouse.Query(ctx,
-		`SELECT name, type_full FROM system.data_skipping_indices WHERE database = $1 AND table = $2 AND startsWith(name, 'idx_')`,
-		c.d.ClickHouse.DatabaseName(), tableName)
-	if err != nil {
-		return false, fmt.Errorf("cannot list skip indices for %s: %w", tableName, err)
-	}
 	existingIndexes := map[string]string{}
-	for rows.Next() {
-		var name, typeFull string
-		if err := rows.Scan(&name, &typeFull); err != nil {
-			rows.Close()
-			return false, fmt.Errorf("cannot scan skip index: %w", err)
+	if err := func() error {
+		rows, err := c.d.ClickHouse.Query(ctx,
+			`SELECT name, type_full FROM system.data_skipping_indices WHERE database = $1 AND table = $2 AND startsWith(name, 'idx_')`,
+			c.d.ClickHouse.DatabaseName(), tableName)
+		if err != nil {
+			return fmt.Errorf("cannot list skip indices for %s: %w", tableName, err)
 		}
-		existingIndexes[name] = typeFull
-	}
-	rows.Close()
-	if err := rows.Err(); err != nil {
-		return false, fmt.Errorf("cannot iterate skip indices for %s: %w", tableName, err)
+		defer rows.Close()
+		for rows.Next() {
+			var name, typeFull string
+			if err := rows.Scan(&name, &typeFull); err != nil {
+				return fmt.Errorf("cannot scan skip index: %w", err)
+			}
+			existingIndexes[name] = typeFull
+		}
+		return rows.Err()
+	}(); err != nil {
+		return false, err
 	}
 
 	// Determine which indexes are wanted and what changes are needed.
