@@ -157,7 +157,6 @@ func TestDefaultConfiguration(t *testing.T) {
 	}
 }
 
-
 func init() {
 	helpers.RegisterSubnetMapCmp[NetworkAttributes]()
 }
