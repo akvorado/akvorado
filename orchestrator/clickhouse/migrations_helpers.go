@@ -765,12 +765,6 @@ func (c *Component) applySkipIndexes(ctx context.Context, tableName string) (boo
 			)); err != nil {
 				return false, fmt.Errorf("cannot add skip index %s: %w", idxName, err)
 			}
-			if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(
-				"ALTER TABLE %s MATERIALIZE INDEX %s",
-				tableName, idxName,
-			)); err != nil {
-				return false, fmt.Errorf("cannot materialize skip index %s: %w", idxName, err)
-			}
 			changed = true
 		}
 	}
