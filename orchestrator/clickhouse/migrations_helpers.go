@@ -538,6 +538,12 @@ SETTINGS {{ .Settings }}
 		if err := c.d.ClickHouse.ExecOnCluster(ctx, createQuery); err != nil {
 			return fmt.Errorf("cannot create %s: %w", tableName, err)
 		}
+		// Apply skip indexes to the newly created main table.
+		if resolution.Interval == 0 {
+			if _, err := c.applySkipIndexes(ctx, tableName); err != nil {
+				return err
+			}
+		}
 		return nil
 	}
 
@@ -690,90 +696,11 @@ outer:
 	// Data-skipping indices are applied to the main flows table only, since
 	// some indexed columns (e.g. SrcAddr/DstAddr) are ClickHouseMainOnly.
 	if resolution.Interval == 0 {
-		skipIndexes := c.d.Schema.GetSkipIndexes()
-		// Collect index names that are currently wanted so we can drop stale ones.
-		wantedIndexNames := map[string]struct{}{}
-		for colKey, idxType := range skipIndexes {
-			col, ok := c.d.Schema.LookupColumnByKey(colKey)
-			if !ok || col.Disabled {
-				continue
-			}
-			chType, err := idxType.ClickHouseType()
-			if err != nil {
-				return fmt.Errorf("schema index for %s: %w", col.Name, err)
-			}
-			idxName := "idx_" + strings.ToLower(col.Name)
-			wantedIndexNames[idxName] = struct{}{}
-
-			var existingType string
-			row := c.d.ClickHouse.QueryRow(ctx,
-				`SELECT ifNull(any(type_full), '') FROM system.data_skipping_indices WHERE database = $1 AND table = $2 AND name = $3`,
-				c.d.ClickHouse.DatabaseName(), tableName, idxName)
-			if err := row.Scan(&existingType); err != nil {
-				return fmt.Errorf("cannot check skip index %s: %w", idxName, err)
-			}
-
-			needsDrop := existingType != "" && existingType != chType
-			needsCreate := existingType == "" || existingType != chType
-
-			if needsDrop {
-				c.r.Info().Msgf("removing skip index %s from %s", idxName, tableName)
-				if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(
-					"ALTER TABLE %s DROP INDEX %s",
-					tableName, idxName,
-				)); err != nil {
-					return fmt.Errorf("cannot drop skip index %s: %w", idxName, err)
-				}
-				modified = true
-			}
-
-			if needsCreate {
-				c.r.Info().Msgf("adding skip index %s to %s", idxName, tableName)
-				if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(
-					"ALTER TABLE %s ADD INDEX %s %s TYPE %s GRANULARITY 4",
-					tableName, idxName, col.Name, chType,
-				)); err != nil {
-					return fmt.Errorf("cannot add skip index %s: %w", idxName, err)
-				}
-				if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(
-					"ALTER TABLE %s MATERIALIZE INDEX %s",
-					tableName, idxName,
-				)); err != nil {
-					return fmt.Errorf("cannot materialize skip index %s: %w", idxName, err)
-				}
-				modified = true
-			}
-		}
-
-		// Drop any skip indices that are no longer wanted.
-		rows, err := c.d.ClickHouse.Query(ctx,
-			`SELECT name FROM system.data_skipping_indices WHERE database = $1 AND table = $2 AND startsWith(name, 'idx_')`,
-			c.d.ClickHouse.DatabaseName(), tableName)
+		changed, err := c.applySkipIndexes(ctx, tableName)
 		if err != nil {
-			return fmt.Errorf("cannot list skip indices for %s: %w", tableName, err)
+			return err
 		}
-		defer rows.Close()
-		var stale []string
-		for rows.Next() {
-			var name string
-			if err := rows.Scan(&name); err != nil {
-				return fmt.Errorf("cannot scan skip index name: %w", err)
-			}
-			if _, wanted := wantedIndexNames[name]; !wanted {
-				stale = append(stale, name)
-			}
-		}
-		if err := rows.Err(); err != nil {
-			return fmt.Errorf("cannot iterate skip indices for %s: %w", tableName, err)
-		}
-		for _, idxName := range stale {
-			c.r.Info().Msgf("removing stale skip index %s from %s", idxName, tableName)
-			if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(
-				"ALTER TABLE %s DROP INDEX %s",
-				tableName, idxName,
-			)); err != nil {
-				return fmt.Errorf("cannot drop stale skip index %s: %w", idxName, err)
-			}
+		if changed {
 			modified = true
 		}
 	}
@@ -782,6 +709,99 @@ outer:
 		return nil
 	}
 	return errSkipStep
+}
+
+// applySkipIndexes reconciles the skip indexes on tableName with the configured
+// schema indexes. It returns true if any change was made.
+func (c *Component) applySkipIndexes(ctx context.Context, tableName string) (bool, error) {
+	changed := false
+	skipIndexes := c.d.Schema.GetSkipIndexes()
+	// Collect index names that are currently wanted so we can drop stale ones.
+	wantedIndexNames := map[string]struct{}{}
+	for colKey, idxType := range skipIndexes {
+		col, ok := c.d.Schema.LookupColumnByKey(colKey)
+		if !ok || col.Disabled {
+			continue
+		}
+		chType, err := idxType.ClickHouseType()
+		if err != nil {
+			return false, fmt.Errorf("schema index for %s: %w", col.Name, err)
+		}
+		idxName := "idx_" + strings.ToLower(col.Name)
+		wantedIndexNames[idxName] = struct{}{}
+
+		var existingType string
+		row := c.d.ClickHouse.QueryRow(ctx,
+			`SELECT ifNull(any(type_full), '') FROM system.data_skipping_indices WHERE database = $1 AND table = $2 AND name = $3`,
+			c.d.ClickHouse.DatabaseName(), tableName, idxName)
+		if err := row.Scan(&existingType); err != nil {
+			return false, fmt.Errorf("cannot check skip index %s: %w", idxName, err)
+		}
+
+		needsDrop := existingType != "" && existingType != chType
+		needsCreate := existingType == "" || existingType != chType
+
+		if needsDrop {
+			c.r.Info().Msgf("removing skip index %s from %s", idxName, tableName)
+			if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(
+				"ALTER TABLE %s DROP INDEX %s",
+				tableName, idxName,
+			)); err != nil {
+				return false, fmt.Errorf("cannot drop skip index %s: %w", idxName, err)
+			}
+			changed = true
+		}
+
+		if needsCreate {
+			c.r.Info().Msgf("adding skip index %s to %s", idxName, tableName)
+			if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(
+				"ALTER TABLE %s ADD INDEX %s %s TYPE %s GRANULARITY 4",
+				tableName, idxName, col.Name, chType,
+			)); err != nil {
+				return false, fmt.Errorf("cannot add skip index %s: %w", idxName, err)
+			}
+			if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(
+				"ALTER TABLE %s MATERIALIZE INDEX %s",
+				tableName, idxName,
+			)); err != nil {
+				return false, fmt.Errorf("cannot materialize skip index %s: %w", idxName, err)
+			}
+			changed = true
+		}
+	}
+
+	// Drop any skip indices that are no longer wanted.
+	rows, err := c.d.ClickHouse.Query(ctx,
+		`SELECT name FROM system.data_skipping_indices WHERE database = $1 AND table = $2 AND startsWith(name, 'idx_')`,
+		c.d.ClickHouse.DatabaseName(), tableName)
+	if err != nil {
+		return false, fmt.Errorf("cannot list skip indices for %s: %w", tableName, err)
+	}
+	defer rows.Close()
+	var stale []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return false, fmt.Errorf("cannot scan skip index name: %w", err)
+		}
+		if _, wanted := wantedIndexNames[name]; !wanted {
+			stale = append(stale, name)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return false, fmt.Errorf("cannot iterate skip indices for %s: %w", tableName, err)
+	}
+	for _, idxName := range stale {
+		c.r.Info().Msgf("removing stale skip index %s from %s", idxName, tableName)
+		if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(
+			"ALTER TABLE %s DROP INDEX %s",
+			tableName, idxName,
+		)); err != nil {
+			return false, fmt.Errorf("cannot drop stale skip index %s: %w", idxName, err)
+		}
+		changed = true
+	}
+	return changed, nil
 }
 
 func (c *Component) createFlowsConsumerView(ctx context.Context, resolution ResolutionConfiguration) error {
