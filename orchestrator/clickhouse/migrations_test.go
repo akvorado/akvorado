@@ -495,9 +495,13 @@ func newSchemaWithOnlyIndexes(t *testing.T, indexes map[schema.ColumnKey]schema.
 	t.Helper()
 	cfg := schema.DefaultConfiguration()
 	// Remove all defaults so we control the exact set.
+	// Only add default keys to NoIndexes if the user hasn't explicitly specified them;
+	// otherwise schema.New() would delete the user's override when processing NoIndexes.
 	noIdx := make([]schema.ColumnKey, 0, len(schema.DefaultIndexes))
 	for k := range schema.DefaultIndexes {
-		noIdx = append(noIdx, k)
+		if _, ok := indexes[k]; !ok {
+			noIdx = append(noIdx, k)
+		}
 	}
 	cfg.NoIndexes = noIdx
 	cfg.Indexes = indexes
