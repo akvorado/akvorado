@@ -215,3 +215,47 @@ func TestCustomDictNoKeyErr(t *testing.T) {
 		t.Fatalf("New() did not error correctly\n %s", diff)
 	}
 }
+
+func TestSkipIndexTypeValidation(t *testing.T) {
+	for _, tc := range []struct {
+		idxType schema.SkipIndexType
+		wantCH  string
+		wantErr bool
+	}{
+		{"minmax", "minmax", false},
+		{"set(0)", "set(0)", false},
+		{"set(10)", "set(10)", false},
+		{"bloom(0.001)", "bloom_filter(0.001)", false},
+		{"bloom(0.5)", "bloom_filter(0.5)", false},
+		{"bloom(0.999)", "bloom_filter(0.999)", false},
+		{"bloom(0)", "", true},
+		{"bloom(1)", "", true},
+		{"bloom(1.5)", "", true},
+		{"set(-1)", "", true},
+		{"set(abc)", "", true},
+		{"unknown", "", true},
+	} {
+		chType, err := tc.idxType.ClickHouseType()
+		if tc.wantErr {
+			if err == nil {
+				t.Errorf("SkipIndexType(%q): expected error, got chType=%q", tc.idxType, chType)
+			}
+		} else {
+			if err != nil {
+				t.Errorf("SkipIndexType(%q): unexpected error: %v", tc.idxType, err)
+			} else if chType != tc.wantCH {
+				t.Errorf("SkipIndexType(%q): got CH type %q, want %q", tc.idxType, chType, tc.wantCH)
+			}
+		}
+	}
+}
+
+func TestSkipIndexInvalidColumn(t *testing.T) {
+	config := schema.DefaultConfiguration()
+	config.Indexes = map[schema.ColumnKey]schema.SkipIndexType{
+		schema.ColumnKey(99999): "bloom(0.001)",
+	}
+	if _, err := schema.New(config); err == nil {
+		t.Fatal("New() did not error for unknown column")
+	}
+}

@@ -25,6 +25,19 @@ type Component struct {
 // New creates a new schema component.
 func New(config Configuration) (*Component, error) {
 	schema := flows()
+
+	// Build effective indexes: start from defaults, apply user overrides, then remove NoIndexes.
+	effective := make(map[ColumnKey]SkipIndexType, len(DefaultIndexes))
+	for k, v := range DefaultIndexes {
+		effective[k] = v
+	}
+	for k, v := range config.Indexes {
+		effective[k] = v
+	}
+	for _, k := range config.NoIndexes {
+		delete(effective, k)
+	}
+	config.Indexes = effective
 	for _, k := range config.Materialize {
 		if column, ok := schema.LookupColumnByKey(k); ok {
 			if column.ClickHouseAlias != "" {
@@ -81,6 +94,16 @@ func New(config Configuration) (*Component, error) {
 				return nil, fmt.Errorf("column %q cannot be present on main table only (primary key)", k)
 			}
 			column.ClickHouseMainOnly = true
+		}
+	}
+
+	// Validate skip index types
+	for col, idxType := range config.Indexes {
+		if err := idxType.Validate(); err != nil {
+			return nil, fmt.Errorf("schema indexes: column %q: %w", col, err)
+		}
+		if _, ok := schema.LookupColumnByKey(col); !ok {
+			return nil, fmt.Errorf("schema indexes: unknown column %q", col)
 		}
 	}
 

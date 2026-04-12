@@ -5,9 +5,47 @@ package schema
 
 import (
 	"errors"
+	"fmt"
+	"strconv"
+	"strings"
 
 	"akvorado/common/helpers"
 )
+
+// SkipIndexType describes a ClickHouse data-skipping index.
+// Accepted forms: "minmax", "set(N)" where N >= 0, or "bloom(P)" where 0 < P < 1.
+type SkipIndexType string
+
+// ClickHouseType returns the TYPE clause string used in ALTER TABLE ... ADD INDEX.
+func (s SkipIndexType) ClickHouseType() (string, error) {
+	str := string(s)
+	switch {
+	case str == "minmax":
+		return "minmax", nil
+	case strings.HasPrefix(str, "set(") && strings.HasSuffix(str, ")"):
+		inner := str[4 : len(str)-1]
+		n, err := strconv.Atoi(inner)
+		if err != nil || n < 0 {
+			return "", fmt.Errorf("invalid set index %q: argument must be a non-negative integer", s)
+		}
+		return str, nil
+	case strings.HasPrefix(str, "bloom(") && strings.HasSuffix(str, ")"):
+		inner := str[6 : len(str)-1]
+		p, err := strconv.ParseFloat(inner, 64)
+		if err != nil || p <= 0 || p >= 1 {
+			return "", fmt.Errorf("invalid bloom index %q: FPP must be in (0, 1)", s)
+		}
+		return fmt.Sprintf("bloom_filter(%g)", p), nil
+	default:
+		return "", fmt.Errorf("unknown skip index type %q: use minmax, set(N), or bloom(P)", s)
+	}
+}
+
+// Validate checks that the SkipIndexType is well-formed.
+func (s SkipIndexType) Validate() error {
+	_, err := s.ClickHouseType()
+	return err
+}
 
 // Configuration describes the configuration for the schema component.
 type Configuration struct {
@@ -21,6 +59,13 @@ type Configuration struct {
 	NotMainTableOnly []ColumnKey `validate:"ninterfield=MainTableOnly"`
 	// Materialize lists columns that shall be materialized at ingest instead of computed at query time
 	Materialize []ColumnKey
+	// Indexes maps column names to the desired ClickHouse data-skipping index.
+	// Accepted values: "minmax", "set(N)" (N >= 0), or "bloom(P)" (0 < P < 1).
+	// Indexes are applied only to the main flows table. Entries here are merged
+	// with (and override) the defaults; use NoIndexes to remove a default.
+	Indexes map[ColumnKey]SkipIndexType
+	// NoIndexes lists columns whose default skip index should be removed.
+	NoIndexes []ColumnKey
 	// CustomDictionaries allows enrichment of flows with custom metadata
 	CustomDictionaries map[string]CustomDict `validate:"dive"`
 }
@@ -51,6 +96,25 @@ type CustomDictAttribute struct {
 }
 
 // DefaultConfiguration returns the default configuration for the schema component.
+// DefaultIndexes are the skip indexes applied when none are explicitly configured.
+var DefaultIndexes = map[ColumnKey]SkipIndexType{
+	ColumnSrcAddr:        "bloom(0.001)",
+	ColumnDstAddr:        "bloom(0.001)",
+	ColumnSrcAS:          "bloom(0.001)",
+	ColumnDstAS:          "bloom(0.001)",
+	ColumnSrcPort:        "bloom(0.001)",
+	ColumnDstPort:        "bloom(0.001)",
+	ColumnSrcCountry:     "bloom(0.001)",
+	ColumnDstCountry:     "bloom(0.001)",
+	ColumnExporterName:   "minmax",
+	ColumnInIfProvider:   "set(0)",
+	ColumnOutIfProvider:  "set(0)",
+	ColumnInIfConnectivity:  "set(0)",
+	ColumnOutIfConnectivity: "set(0)",
+	ColumnInIfBoundary:   "set(0)",
+	ColumnOutIfBoundary:  "set(0)",
+}
+
 func DefaultConfiguration() Configuration {
 	return Configuration{}
 }
@@ -82,6 +146,11 @@ func (ck *ColumnKey) UnmarshalText(input []byte) error {
 // GetCustomDictConfig returns the custom dicts encoded in this schema
 func (c *Component) GetCustomDictConfig() map[string]CustomDict {
 	return c.c.CustomDictionaries
+}
+
+// GetSkipIndexes returns the configured data-skipping indexes.
+func (c *Component) GetSkipIndexes() map[ColumnKey]SkipIndexType {
+	return c.c.Indexes
 }
 
 // DefaultCustomDictConfiguration is the default config for a CustomDict
