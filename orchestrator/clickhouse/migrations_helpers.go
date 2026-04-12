@@ -538,11 +538,8 @@ SETTINGS {{ .Settings }}
 		if err := c.d.ClickHouse.ExecOnCluster(ctx, createQuery); err != nil {
 			return fmt.Errorf("cannot create %s: %w", tableName, err)
 		}
-		// Apply skip indexes to the newly created main table.
-		if resolution.Interval == 0 {
-			if _, err := c.applySkipIndexes(ctx, tableName); err != nil {
-				return err
-			}
+		if _, err := c.applySkipIndexes(ctx, tableName); err != nil {
+			return err
 		}
 		return nil
 	}
@@ -693,16 +690,12 @@ outer:
 		modified = true
 	}
 
-	// Data-skipping indices are applied to the main flows table only, since
-	// some indexed columns (e.g. SrcAddr/DstAddr) are ClickHouseMainOnly.
-	if resolution.Interval == 0 {
-		changed, err := c.applySkipIndexes(ctx, tableName)
-		if err != nil {
-			return err
-		}
-		if changed {
-			modified = true
-		}
+	changed, err := c.applySkipIndexes(ctx, tableName)
+	if err != nil {
+		return err
+	}
+	if changed {
+		modified = true
 	}
 
 	if modified {
@@ -722,6 +715,17 @@ func (c *Component) applySkipIndexes(ctx context.Context, tableName string) (boo
 		idxType := skipIndexes[colKey]
 		col, ok := c.d.Schema.LookupColumnByKey(colKey)
 		if !ok || col.Disabled {
+			continue
+		}
+		// Skip if the column is not present in this table (e.g. ClickHouseMainOnly
+		// columns are absent from aggregated tables).
+		var colExists uint8
+		if err := c.d.ClickHouse.QueryRow(ctx,
+			`SELECT count() FROM system.columns WHERE database = $1 AND table = $2 AND name = $3`,
+			c.d.ClickHouse.DatabaseName(), tableName, col.Name).Scan(&colExists); err != nil {
+			return false, fmt.Errorf("cannot check column %s in %s: %w", col.Name, tableName, err)
+		}
+		if colExists == 0 {
 			continue
 		}
 		chType, err := idxType.ClickHouseType()
