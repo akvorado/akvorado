@@ -98,16 +98,6 @@ clickhouse:
     #     .[] | select(startswith("#") | not) |
     #     { prefix: . + "/32", tenant: "nerd", role: "nerd-scan" }
 
-
-schema:
-  # Sensible data-skipping indexes are enabled by default (see docs/02-configuration.md).
-  # Use `indexes` to add/override and `no-indexes` to remove a default. Example:
-  # indexes:
-  #   SrcAddr: bloom(0.01)   # tighten FPP
-  #   SrcNetName: bloom(0.001)
-  # no-indexes:
-  #   - DstAddr
-
 inlet: !include "inlet.yaml"
 outlet: !include "outlet.yaml"
 console: !include "console.yaml"
