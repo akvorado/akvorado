@@ -538,7 +538,7 @@ SETTINGS {{ .Settings }}
 		if err := c.d.ClickHouse.ExecOnCluster(ctx, createQuery); err != nil {
 			return fmt.Errorf("cannot create %s: %w", tableName, err)
 		}
-		if _, err := c.applySkipIndexes(ctx, tableName); err != nil {
+		if _, err := c.applySkipIndexes(ctx, tableName, resolution.Interval == 0); err != nil {
 			return err
 		}
 		return nil
@@ -690,7 +690,7 @@ outer:
 		modified = true
 	}
 
-	changed, err := c.applySkipIndexes(ctx, tableName)
+	changed, err := c.applySkipIndexes(ctx, tableName, resolution.Interval == 0)
 	if err != nil {
 		return err
 	}
@@ -706,7 +706,7 @@ outer:
 
 // applySkipIndexes reconciles the skip indexes on tableName with the configured
 // schema indexes. It returns true if any change was made.
-func (c *Component) applySkipIndexes(ctx context.Context, tableName string) (bool, error) {
+func (c *Component) applySkipIndexes(ctx context.Context, tableName string, isMainTable bool) (bool, error) {
 	skipIndexes := c.d.Schema.GetSkipIndexes()
 	// Collect index names that are currently wanted so we can drop stale ones.
 	wantedIndexNames := map[string]struct{}{}
@@ -719,15 +719,8 @@ func (c *Component) applySkipIndexes(ctx context.Context, tableName string) (boo
 		if !ok || col.Disabled {
 			continue
 		}
-		// Skip if the column is not present in this table (e.g. ClickHouseMainOnly
-		// columns are absent from aggregated tables).
-		var colExists uint64
-		if err := c.d.ClickHouse.QueryRow(ctx,
-			`SELECT count() FROM system.columns WHERE database = $1 AND table = $2 AND name = $3`,
-			c.d.ClickHouse.DatabaseName(), tableName, col.Name).Scan(&colExists); err != nil {
-			return false, fmt.Errorf("cannot check column %s in %s: %w", col.Name, tableName, err)
-		}
-		if colExists == 0 {
+		// ClickHouseMainOnly columns are absent from aggregated tables.
+		if col.ClickHouseMainOnly && !isMainTable {
 			continue
 		}
 		chType, err := idxType.ClickHouseType()
