@@ -11,7 +11,7 @@ PNPM    = $(or $(shell command -v pnpm 2>/dev/null),\
 			$(shell command -v corepack 2>/dev/null | sed 's/$$/ pnpm/'),\
 			$(error No pnpm command found))
 CLANG   = clang
-TIMEOUT = 45s
+TIMEOUT = 60s
 LSFILES = git ls-files -cmo --exclude-standard --
 V = 0
 Q = $(if $(filter 1,$V),,@)
