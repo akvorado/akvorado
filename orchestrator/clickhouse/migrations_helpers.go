@@ -719,7 +719,7 @@ func (c *Component) applySkipIndexes(ctx context.Context, tableName string) (boo
 		}
 		// Skip if the column is not present in this table (e.g. ClickHouseMainOnly
 		// columns are absent from aggregated tables).
-		var colExists uint8
+		var colExists uint64
 		if err := c.d.ClickHouse.QueryRow(ctx,
 			`SELECT count() FROM system.columns WHERE database = $1 AND table = $2 AND name = $3`,
 			c.d.ClickHouse.DatabaseName(), tableName, col.Name).Scan(&colExists); err != nil {
