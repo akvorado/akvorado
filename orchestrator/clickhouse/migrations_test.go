@@ -344,6 +344,12 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 								table[idx].Schema,
 								"ORDER BY (TimeReceived, ",
 								"ORDER BY (toStartOfFiveMinutes(TimeReceived), ", 1)
+							if !strings.Contains(table[idx].Schema, "PRIMARY KEY ") {
+								table[idx].Schema = strings.Replace(
+									table[idx].Schema,
+									"ORDER BY ",
+									"PRIMARY KEY toStartOfFiveMinutes(TimeReceived) ORDER BY ", 1)
+							}
 						}
 					}
 				}

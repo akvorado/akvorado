@@ -501,6 +501,7 @@ func (c *Component) createOrUpdateFlowsTable(ctx context.Context, resolution Res
 CREATE TABLE {{ .Table }} ({{ .Schema }})
 ENGINE = {{ .Engine }}
 PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, INTERVAL {{ .PartitionInterval }} second))
+PRIMARY KEY toStartOfFiveMinutes(TimeReceived)
 ORDER BY (toStartOfFiveMinutes(TimeReceived), ExporterAddress, InIfName, OutIfName)
 TTL TimeReceived + toIntervalSecond({{ .TTL }})
 SETTINGS {{ .Settings }}
