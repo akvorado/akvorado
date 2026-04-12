@@ -102,6 +102,9 @@ func New(config Configuration) (*Component, error) {
 		if err := idxType.Validate(); err != nil {
 			return nil, fmt.Errorf("schema indexes: column %q: %w", col, err)
 		}
+		if int(col) >= len(schema.columnIndex) {
+			return nil, fmt.Errorf("schema indexes: unknown column key %d", col)
+		}
 		if _, ok := schema.LookupColumnByKey(col); !ok {
 			return nil, fmt.Errorf("schema indexes: unknown column %q", col)
 		}
