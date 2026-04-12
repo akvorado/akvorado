@@ -728,7 +728,7 @@ func (c *Component) applySkipIndexes(ctx context.Context, tableName string) (boo
 		if err != nil {
 			return false, fmt.Errorf("schema index for %s: %w", col.Name, err)
 		}
-		idxName := "idx_" + strings.ToLower(col.Name)
+		idxName := fmt.Sprintf("idx_%s", strings.ToLower(col.Name))
 		wantedIndexNames[idxName] = struct{}{}
 
 		var existingType string
