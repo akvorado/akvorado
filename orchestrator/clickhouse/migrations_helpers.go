@@ -711,7 +711,7 @@ func (c *Component) applySkipIndexes(ctx context.Context, tableName string, isMa
 	var toDrop []string
 	var toAdd []string
 
-	// Collect all existing skip indexes once for both of the below.
+	// Collect existing skip indexes.
 	rows, err := c.d.ClickHouse.Query(ctx,
 		`SELECT name, type_full FROM system.data_skipping_indices WHERE database = $1 AND table = $2 AND startsWith(name, 'idx_')`,
 		c.d.ClickHouse.DatabaseName(), tableName)
