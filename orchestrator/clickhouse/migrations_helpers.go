@@ -538,6 +538,9 @@ SETTINGS {{ .Settings }}
 		if err := c.d.ClickHouse.ExecOnCluster(ctx, createQuery); err != nil {
 			return fmt.Errorf("cannot create %s: %w", tableName, err)
 		}
+		if _, err := c.applySkipIndexes(ctx, tableName, resolution.Interval == 0); err != nil {
+			return err
+		}
 		return nil
 	}
 
@@ -687,10 +690,106 @@ outer:
 		modified = true
 	}
 
+	changed, err := c.applySkipIndexes(ctx, tableName, resolution.Interval == 0)
+	if err != nil {
+		return err
+	}
+	if changed {
+		modified = true
+	}
+
 	if modified {
 		return nil
 	}
 	return errSkipStep
+}
+
+// applySkipIndexes reconciles the skip indexes on tableName with the configured
+// schema indexes. It returns true if any change was made.
+func (c *Component) applySkipIndexes(ctx context.Context, tableName string, isMainTable bool) (bool, error) {
+	skipIndexes := c.d.Schema.GetSkipIndexes()
+	var toDrop []string
+	var toAdd []string
+
+	// Collect existing skip indexes.
+	existingIndexes := map[string]string{}
+	if err := func() error {
+		rows, err := c.d.ClickHouse.Query(ctx,
+			`SELECT name, type_full FROM system.data_skipping_indices WHERE database = $1 AND table = $2 AND startsWith(name, 'idx_')`,
+			c.d.ClickHouse.DatabaseName(), tableName)
+		if err != nil {
+			return fmt.Errorf("cannot list skip indices for %s: %w", tableName, err)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var name, typeFull string
+			if err := rows.Scan(&name, &typeFull); err != nil {
+				return fmt.Errorf("cannot scan skip index: %w", err)
+			}
+			existingIndexes[name] = typeFull
+		}
+		return rows.Err()
+	}(); err != nil {
+		return false, err
+	}
+
+	// Determine which indexes are wanted and what changes are needed.
+	wantedIndexNames := map[string]struct{}{}
+	for _, colKey := range slices.Sorted(maps.Keys(skipIndexes)) {
+		idxType := skipIndexes[colKey]
+		col, ok := c.d.Schema.LookupColumnByKey(colKey)
+		if !ok || col.Disabled {
+			continue
+		}
+		// ClickHouseMainOnly columns are absent from aggregated tables.
+		if col.ClickHouseMainOnly && !isMainTable {
+			continue
+		}
+		chType, err := idxType.ClickHouseType()
+		if err != nil {
+			return false, fmt.Errorf("schema index for %s: %w", col.Name, err)
+		}
+		idxName := fmt.Sprintf("idx_%s", strings.ToLower(col.Name))
+		wantedIndexNames[idxName] = struct{}{}
+
+		existingType := existingIndexes[idxName]
+		if existingType != "" && existingType != chType {
+			toDrop = append(toDrop, fmt.Sprintf("DROP INDEX %s", idxName))
+		}
+		if existingType == "" || existingType != chType {
+			toAdd = append(toAdd, fmt.Sprintf("ADD INDEX %s %s TYPE %s GRANULARITY 4", idxName, col.Name, chType))
+		}
+	}
+
+	// Drop stale skip indexes that are no longer wanted.
+	for name := range existingIndexes {
+		if _, wanted := wantedIndexNames[name]; !wanted {
+			toDrop = append(toDrop, fmt.Sprintf("DROP INDEX %s", name))
+		}
+	}
+
+	if len(toDrop) == 0 && len(toAdd) == 0 {
+		return false, nil
+	}
+
+	// Batch drops before adds (drop must precede re-add when type changes).
+	if len(toDrop) > 0 {
+		c.r.Info().Msgf("removing %d skip index(es) from %s", len(toDrop), tableName)
+		if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(
+			"ALTER TABLE %s %s", tableName, strings.Join(toDrop, ", "),
+		)); err != nil {
+			return false, fmt.Errorf("cannot drop skip indexes on %s: %w", tableName, err)
+		}
+	}
+	if len(toAdd) > 0 {
+		c.r.Info().Msgf("adding %d skip index(es) to %s", len(toAdd), tableName)
+		if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(
+			"ALTER TABLE %s %s", tableName, strings.Join(toAdd, ", "),
+		)); err != nil {
+			return false, fmt.Errorf("cannot add skip indexes on %s: %w", tableName, err)
+		}
+	}
+	return true, nil
 }
 
 func (c *Component) createFlowsConsumerView(ctx context.Context, resolution ResolutionConfiguration) error {

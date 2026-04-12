@@ -780,6 +780,57 @@ For ICMP, you get `ICMPv4Type`, `ICMPv4Code`, `ICMPv6Type`, `ICMPv6Code`,
 `ICMPv4`, and `ICMPv6`. The two latest one are displayed as a string in the
 console (like `echo-reply` or `frag-needed`).
 
+#### Data-skipping indexes
+
+ClickHouse [data-skipping indexes][] can be added to columns in the main flows
+table. *Akvorado* ships with sensible defaults already enabled:
+
+| Column | Index |
+|---|---|
+| `SrcAddr`, `DstAddr` | `bloom(0.001)` |
+| `SrcAS`, `DstAS` | `bloom(0.001)` |
+| `SrcPort`, `DstPort` | `bloom(0.001)` |
+| `SrcCountry`, `DstCountry` | `bloom(0.001)` |
+| `ExporterName` | `minmax` |
+| `InIfProvider`, `OutIfProvider` | `set(0)` |
+| `InIfConnectivity`, `OutIfConnectivity` | `set(0)` |
+| `InIfBoundary`, `OutIfBoundary` | `set(0)` |
+
+Three index types are supported:
+
+- `bloom(P)` | bloom filter with false-positive probability P (0 < P < 1).
+  Good for high-cardinality columns such as IP addresses or AS numbers.
+- `minmax` | stores the min/max of each granule. Efficient for columns that are
+  partially ordered in the table, such as `ExporterName`.
+- `set(N)` | stores up to N distinct values per granule (0 means unlimited).
+  Efficient for low-cardinality columns such as `InIfBoundary` or
+  `InIfConnectivity`.
+
+Use `indexes` to add or override an index, and `no-indexes` to remove a default:
+
+```yaml
+schema:
+  # Override the FPP for SrcAddr and add an index for a custom column.
+  indexes:
+    SrcAddr: bloom(0.01)
+    SrcNetName: bloom(0.001)
+  # Remove the default index for DstAddr.
+  no-indexes:
+    - DstAddr
+```
+
+Indexes are idempotent: changing the type or removing an entry will cause
+*Akvorado* to drop and recreate (or drop) the index on the next startup.
+
+> [!NOTE]
+> Skip indexes only load begin to work on data inserted after its creation.
+> To view any skipping indexes, you can use: 
+> `SELECT database,table,name FROM system.data_skipping_indices`
+> To materialize indexes, you can use:
+> `ALTER TABLE [tblName] MATERIALIZE INDEX [idxName]`
+
+[data-skipping indexes]: https://clickhouse.com/docs/optimize/skipping-indexes
+
 #### Custom dictionaries
 
 You can add custom dimensions to be looked up via a dictionary. This is useful

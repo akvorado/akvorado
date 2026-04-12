@@ -489,6 +489,119 @@ func TestTableSettings(t *testing.T) {
 	})
 }
 
+// newSchemaWithOnlyIndexes creates a schema with exactly the given indexes,
+// clearing all defaults first via NoIndexes.
+func newSchemaWithOnlyIndexes(t *testing.T, indexes map[schema.ColumnKey]schema.SkipIndexType) *schema.Component {
+	t.Helper()
+	cfg := schema.DefaultConfiguration()
+	// Remove all defaults so we control the exact set.
+	// Only add default keys to NoIndexes if the user hasn't explicitly specified them;
+	// otherwise schema.New() would delete the user's override when processing NoIndexes.
+	noIdx := make([]schema.ColumnKey, 0, len(schema.DefaultIndexes))
+	for k := range schema.DefaultIndexes {
+		if _, ok := indexes[k]; !ok {
+			noIdx = append(noIdx, k)
+		}
+	}
+	cfg.NoIndexes = noIdx
+	cfg.Indexes = indexes
+	sch, err := schema.New(cfg)
+	if err != nil {
+		t.Fatalf("schema.New() error:\n%+v", err)
+	}
+	return sch
+}
+
+func TestSkipIndexMigration(t *testing.T) {
+	r := reporter.NewMock(t)
+	chComponent := clickhousedb.SetupClickHouse(t, r, false)
+	dropAllTables(t, chComponent)
+
+	// Start with default schema (includes default indexes).
+	startTestComponent(t, r, chComponent, nil)
+
+	checkSkipIndex := func(t *testing.T, indexName, wantType string) {
+		t.Helper()
+		row := chComponent.QueryRow(t.Context(),
+			`SELECT ifNull(any(type_full), '') FROM system.data_skipping_indices WHERE database = $1 AND table = $2 AND name = $3`,
+			chComponent.DatabaseName(), "flows", indexName)
+		var gotType string
+		if err := row.Scan(&gotType); err != nil {
+			t.Fatalf("Scan() error:\n%+v", err)
+		}
+		if gotType != wantType {
+			t.Fatalf("skip index %s: got type %q, want %q", indexName, gotType, wantType)
+		}
+	}
+
+	t.Run("override fpp", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		cfg := schema.DefaultConfiguration()
+		cfg.Indexes = map[schema.ColumnKey]schema.SkipIndexType{
+			schema.ColumnSrcAddr: "bloom(0.01)",
+		}
+		sch, err := schema.New(cfg)
+		if err != nil {
+			t.Fatalf("schema.New() error:\n%+v", err)
+		}
+		startTestComponentWithConfig(t, r, chComponent, sch, nil)
+		checkSkipIndex(t, "idx_srcaddr", "bloom_filter(0.01)")
+		// Other defaults still present.
+		checkSkipIndex(t, "idx_dstaddr", "bloom_filter(0.001)")
+
+		gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
+		if gotMetrics["applied_steps_total"] == "0" {
+			t.Fatal("no migration applied when changing bloom FPP")
+		}
+	})
+
+	t.Run("no-indexes removes default", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		cfg := schema.DefaultConfiguration()
+		cfg.NoIndexes = []schema.ColumnKey{schema.ColumnSrcAddr}
+		sch, err := schema.New(cfg)
+		if err != nil {
+			t.Fatalf("schema.New() error:\n%+v", err)
+		}
+		startTestComponentWithConfig(t, r, chComponent, sch, nil)
+		checkSkipIndex(t, "idx_srcaddr", "")
+		// Other defaults still present.
+		checkSkipIndex(t, "idx_dstaddr", "bloom_filter(0.001)")
+
+		gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
+		if gotMetrics["applied_steps_total"] == "0" {
+			t.Fatal("no migration applied when removing default index")
+		}
+	})
+
+	t.Run("switch to minmax", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		sch := newSchemaWithOnlyIndexes(t, map[schema.ColumnKey]schema.SkipIndexType{
+			schema.ColumnSrcAddr: "minmax",
+		})
+		startTestComponentWithConfig(t, r, chComponent, sch, nil)
+		checkSkipIndex(t, "idx_srcaddr", "minmax")
+		checkSkipIndex(t, "idx_dstaddr", "")
+
+		gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
+		if gotMetrics["applied_steps_total"] == "0" {
+			t.Fatal("no migration applied when switching index type")
+		}
+	})
+
+	t.Run("disable all indexes", func(t *testing.T) {
+		r := reporter.NewMock(t)
+		startTestComponentWithConfig(t, r, chComponent, newSchemaWithOnlyIndexes(t, nil), nil)
+		checkSkipIndex(t, "idx_srcaddr", "")
+		checkSkipIndex(t, "idx_dstaddr", "")
+
+		gotMetrics := r.GetMetrics("akvorado_orchestrator_clickhouse_migrations_", "applied_steps_total")
+		if gotMetrics["applied_steps_total"] == "0" {
+			t.Fatal("no migration applied when disabling all indexes")
+		}
+	})
+}
+
 func TestCustomDictMigration(t *testing.T) {
 	r := reporter.NewMock(t)
 	chComponent := clickhousedb.SetupClickHouse(t, r, false)
