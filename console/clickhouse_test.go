@@ -272,6 +272,26 @@ func TestFinalizeQuery(t *testing.T) {
 			},
 			Expected: `toStartOfInterval(TimeReceived + INTERVAL 50 second, INTERVAL 120 second) - INTERVAL 50 second`,
 		}, {
+			Description: "fps units",
+			Query:       `SELECT {{ .Units }} FROM {{ .Table }}`,
+			Context: inputContext{
+				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+				Points: 86400,
+				Units:  "fps",
+			},
+			Expected: "SELECT COUNT(*) FROM flows",
+		}, {
+			Description: "pps units",
+			Query:       `SELECT {{ .Units }} FROM {{ .Table }}`,
+			Context: inputContext{
+				Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+				Points: 86400,
+				Units:  "pps",
+			},
+			Expected: "SELECT SUM(Packets*SamplingRate) FROM flows",
+		}, {
 			Description: "Small interval outside main table expiration",
 			Query:       "SELECT InIfProvider FROM {{ .Table }}",
 			Tables: []flowsTable{

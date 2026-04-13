@@ -5,7 +5,9 @@ package gnmi
 
 import (
 	"encoding/json"
+	"fmt"
 	"path"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -37,11 +39,20 @@ func subscribeResponseToEvents(response *gnmi.SubscribeResponse) []event {
 	//               elem:{name:"subinterface"
 	//                     key:{key:"index"  value:"1"}}}
 	//         val:{json_ietf_val:"{\"name\": \"ethernet-1/4.1\"}"}}
+	//
+	// Example of update for JSON encoding with arrays:
+	// update:{path:{elem:{name:"interfaces"}}
+	//         val:{json_val:"{\"interface\":[
+	//                {\"name\":\"eth1\",\"state\":{\"ifindex\":100}},
+	//                {\"name\":\"eth2\",\"state\":{\"ifindex\":101}}]}"}}
 	if n != nil {
 		prefixEvent := gnmiPathToEvent(n.GetPrefix(), event{})
 		for _, u := range n.GetUpdate() {
 			ev := gnmiPathToEvent(u.GetPath(), prefixEvent)
 			val := u.GetVal()
+			if val == nil {
+				continue
+			}
 			var jsondata []byte
 			switch val.Value.(type) {
 			case *gnmi.TypedValue_AsciiVal:
@@ -64,8 +75,7 @@ func subscribeResponseToEvents(response *gnmi.SubscribeResponse) []event {
 				events = append(events, ev)
 				continue
 			}
-			// For JSON, we need to walk the structure to create events. We
-			// assume that we only get simple cases: no keys, no slice.
+			// For JSON, we need to walk the structure to create events.
 			var value any
 			if err := json.Unmarshal(jsondata, &value); err != nil {
 				continue
@@ -93,9 +103,36 @@ func subscribeResponsesToEvents(responses []*gnmi.SubscribeResponse) []event {
 // the JSON-decoded value.
 func jsonAppendToEvents(events []event, ev event, value any) []event {
 	switch value := value.(type) {
-	default:
+	// Slices: each element is expected to be a map. Simple (non-container)
+	// values at the top level of each element are collected as keys (this
+	// matches the OpenConfig convention where list keys are leaf nodes at
+	// the top level of the list entry).
+	case []any:
+		for _, item := range value {
+			itemMap, ok := item.(map[string]any)
+			if !ok {
+				continue
+			}
+			currentEvent := ev
+			keys := make([]string, 0)
+			for k, v := range itemMap {
+				switch v := v.(type) {
+				case string:
+					keys = append(keys, fmt.Sprintf("%s=%s", k, v))
+				case float64:
+					keys = append(keys, fmt.Sprintf("%s=%d", k, int64(v)))
+				}
+			}
+			sort.Strings(keys)
+			keyStr := strings.Join(keys, ",")
+			if currentEvent.Keys != "" && keyStr != "" {
+				currentEvent.Keys = fmt.Sprintf("%s,%s", currentEvent.Keys, keyStr)
+			} else if keyStr != "" {
+				currentEvent.Keys = keyStr
+			}
+			events = jsonAppendToEvents(events, currentEvent, itemMap)
+		}
 		return events
-	// Slices: not handled
 	// Maps
 	case map[string]any:
 		for k, v := range value {
@@ -105,12 +142,12 @@ func jsonAppendToEvents(events []event, ev event, value any) []event {
 		}
 		return events
 	// Base types
-	case int64:
-		ev.Value = strconv.FormatInt(value, 10)
 	case float64:
 		ev.Value = strconv.FormatInt(int64(value), 10)
 	case string:
 		ev.Value = value
+	default:
+		return events
 	}
 	return append(events, ev)
 }
@@ -131,19 +168,22 @@ func gnmiPathToEvent(p *gnmi.Path, prefix event) event {
 		pathString.WriteString("/")
 
 		// Remove namespace if present and format path
-		colon := strings.Index(name, ":")
-		if colon == -1 {
+		_, after, ok := strings.Cut(name, ":")
+		if !ok {
 			pathString.WriteString(name)
 		} else {
-			pathString.WriteString(name[colon+1:])
+			pathString.WriteString(after)
 		}
 
 		// Format keys
-		for k, v := range pe.GetKey() {
+		if len(pe.GetKey()) > 0 {
+			keys := make([]string, 0, len(pe.GetKey()))
+			for k, v := range pe.GetKey() {
+				keys = append(keys, fmt.Sprintf("%s=%s", k, v))
+			}
+			sort.Strings(keys)
 			keysString.WriteString(",")
-			keysString.WriteString(k)
-			keysString.WriteString("=")
-			keysString.WriteString(v)
+			keysString.WriteString(strings.Join(keys, ","))
 		}
 	}
 	return event{

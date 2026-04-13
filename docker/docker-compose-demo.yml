@@ -15,7 +15,7 @@ services:
       akvorado-outlet:
         condition: service_healthy
     labels:
-      - metrics.port=8080
+      - metrics.enable=true
       - metrics.path=/api/v0/metrics
   akvorado-exporter-2:
     <<: *exporter

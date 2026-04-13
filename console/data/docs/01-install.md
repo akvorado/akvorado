@@ -10,8 +10,8 @@ Docker image. It also requires [Kafka](https://kafka.apache.org/quickstart)
 You can use the *Akvorado* [Docker](https://docs.docker.com/engine/install/) image.
 
 ```console
-# docker pull ghcr.io/akvorado/akvorado:latest
-# docker run --rm ghcr.io/akvorado/akvorado:latest help
+# docker pull quay.io/akvorado/akvorado:latest
+# docker run --rm quay.io/akvorado/akvorado:latest help
 ```
 
 Check the `docker/docker-compose.yml` file for an example of how to deploy
@@ -33,7 +33,7 @@ Currently, only a pre-built binary for Linux x86-64 is provided.
 ## Compilation from source
 
 You need to install [Go](https://go.dev/doc/install) (1.21+), and
-[NodeJS](https://nodejs.org/en/download/) (20+) with PNPM (also accessible
+[NodeJS](https://nodejs.org/en/download/) (22+) with PNPM (also accessible
 through [Corepack](https://github.com/nodejs/corepack)). For example, on Debian:
 
 ```console
@@ -41,7 +41,7 @@ through [Corepack](https://github.com/nodejs/corepack)). For example, on Debian:
 # go version
 go version go1.24.1 linux/amd64
 # node --version
-v20.19.2
+v22.22.0
 # corepack pnpm --version
 10.16.1
 ```

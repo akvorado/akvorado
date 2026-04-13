@@ -10,6 +10,22 @@ import (
 	"strings"
 )
 
+// bareIdentifierRegexp tells which identifiers do not need to be quoted. See
+// https://clickhouse.com/docs/sql-reference/syntax#identifiers for the official
+// regex.
+var bareIdentifierRegexp = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+
+// QuoteIdentifier quotes a ClickHouse identifier (table name, column name,
+// database name, cluster name, etc.) using backtick escaping. Identifiers that
+// are already valid bare identifiers are returned unchanged. This is not 100%
+// complete as keywords also needs to be quoted!
+func QuoteIdentifier(name string) string {
+	if bareIdentifierRegexp.MatchString(name) {
+		return name
+	}
+	return "`" + strings.ReplaceAll(name, "`", "``") + "`"
+}
+
 // ExecOnCluster executes a query on a cluster. It's a wrapper around Exec()
 // invoking TransformQueryOnCluster.
 func (c *Component) ExecOnCluster(ctx context.Context, query string, args ...any) error {
@@ -76,5 +92,5 @@ func TransformQueryOnCluster(query, cluster string) string {
 		return query
 	}
 
-	return fmt.Sprintf("%s ON CLUSTER %s%s", prefix, cluster, query[len(prefix):])
+	return fmt.Sprintf("%s ON CLUSTER %s%s", prefix, QuoteIdentifier(cluster), query[len(prefix):])
 }

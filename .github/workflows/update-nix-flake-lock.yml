@@ -17,10 +17,10 @@ jobs:
           - asn2org
           - iana-assignments
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
-      - uses: cachix/install-nix-action@v31
+      - uses: cachix/install-nix-action@96951a368ba55167b55f1c916f7d416bac6505fe # v31
       - name: Check current IANA assignments
         if: matrix.source == 'iana-assignments'
         run: |
@@ -42,11 +42,11 @@ jobs:
             git reset --hard
           }
       - name: Create pull request
-        uses: peter-evans/create-pull-request@v8
+        uses: peter-evans/create-pull-request@c0f553fe549906ede9cf27b5156039d195d2ece0 # v8
         with:
           add-paths: flake.lock
           branch: nix/flake-lock-update-${{ matrix.source }}
           labels: dependencies
           commit-message: "build: flake.lock automated update for ${{ matrix.source }}"
-          title: "build: ${{ matrix.source }} update"
+          title: "build: Nix Flake ${{ matrix.source }} update"
           body: ""

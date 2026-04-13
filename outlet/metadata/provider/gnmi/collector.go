@@ -15,7 +15,7 @@ import (
 
 	"akvorado/outlet/metadata/provider"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/openconfig/gnmic/pkg/api"
 	"github.com/openconfig/gnmic/pkg/api/target"
 )
@@ -140,7 +140,6 @@ func (p *Provider) startCollector(exporterIP netip.Addr, state *exporterState) {
 	l := p.r.With().Str("exporter", exporterStr).Logger()
 	p.metrics.ready.WithLabelValues(exporterStr).Set(0)
 	retryInitBackoff := backoff.NewExponentialBackOff()
-	retryInitBackoff.MaxElapsedTime = 0
 	retryInitBackoff.MaxInterval = 5 * time.Minute
 	retryInitBackoff.InitialInterval = time.Second
 	l.Info().Msg("starting gNMI collector")
@@ -242,7 +241,6 @@ retryDetect:
 		panic(fmt.Errorf("NewSubscribeRequest() error: %w", err))
 	}
 	retryFetchBackoff := backoff.NewExponentialBackOff()
-	retryFetchBackoff.MaxElapsedTime = 0
 	retryFetchBackoff.MaxInterval = time.Minute
 	retryFetchBackoff.InitialInterval = time.Second
 	for {
@@ -319,7 +317,9 @@ retryDetect:
 }
 
 // detectModelAndEncoding subscribe to the various paths of the configured models to
-// determine the one the target is compatible with.
+// determine the one the target is compatible with. As some implementations do not
+// return an error for non-existent paths, we also check that the response contains
+// a system name and at least one interface.
 func (p *Provider) detectModelAndEncoding(ctx context.Context, tg *target.Target) (Model, string, error) {
 	for _, model := range p.config.Models {
 		for _, encoding := range []string{"json_ietf", "json"} {
@@ -328,14 +328,20 @@ func (p *Provider) detectModelAndEncoding(ctx context.Context, tg *target.Target
 			if err != nil {
 				panic(fmt.Errorf("NewSubscribeRequest() error: %w", err))
 			}
-			_, err = tg.SubscribeOnce(ctx, subscribeReq)
+			subscribeResp, err := tg.SubscribeOnce(ctx, subscribeReq)
 			if err != nil && ctx.Err() != nil {
 				return Model{}, "", err
 			} else if err != nil {
 				// Next encoding or model
 				continue
 			}
-			return model, encoding, nil
+			// Check that the response contains meaningful data
+			events := subscribeResponsesToEvents(subscribeResp)
+			state := &exporterState{}
+			state.update(events, model)
+			if state.Name != "" && len(state.Interfaces) > 0 {
+				return model, encoding, nil
+			}
 		}
 	}
 	return Model{}, "", errors.New("no compatible model found")

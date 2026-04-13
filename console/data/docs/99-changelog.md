@@ -12,6 +12,36 @@ identified with a specific icon:
 
 ## Unreleased
 
+This release adds configurable skip indexes to ClickHouse tables. This should
+help make some queries faster, but it will also increase a bit the size used by
+ClickHouse, as well as the ingestion performance.
+
+- ✨ *outlet*: add route target (`rts`) filtering to the BMP provider
+- 🩹 *console*: don't complete column names not accepted in filters
+- 🌱 *orchestrator*: add configurable skip indexes to ClickHouse table to speed up queries
+- 🌱 *orchestrator*: do not index `ExporterAddress`, `InIfName`, and `OutIfName`
+- 🌱 *docker*: switch Docker image repository to Quay.io (IPv6 available)
+- 🌱 *common*: remote data sources now support pagination via the `pagination` option
+
+## 2.2.0 - 2026-03-16
+
+- ✨ *console*: add flows/s as a new unit for visualization
+- ✨ *console*: add a heatmap visualisation
+- ✨ *common*: remote data sources now support CSV and plain text formats via the `parser` option
+- ✨ *outlet*: remote data sources can return exporters with `skipmissinginterfaces` set to true to fallback to the next provider
+- 🩹 *outlet*: fix OpenConfig model handling in gNMI provider
+- 🩹 *outlet*: fix detection of gNMI model for equipments not triggering an error on nonexistent paths
+- 🩹 *outlet*: fix BMP RIB corruption due to sharing of route attribute references
+- 🌱 *outlet*: shard BMP RIB to reduce lock contention
+- 🌱 *outlet*: map sFlow drop codes to IPFIX ForwardingStatus
+- 🌱 *orchestrator*: do not materialize TTLs in ClickHouse when updating them
+- 🌱 *orchestrator*: reduce overhead of the exporters view to improve ClickHouse ingest performance
+- 🌱 *orchestrator*: add ClickHouse table settings (e.g. `storage_policy`) via `table-settings`
+
+## 2.1.2 - 2026-02-24
+
+- ✨ *inlet*: add per-exporter flow rate limiting with `rate-limit` option
+- 🌱 *outlet*: bufferize BMP messages to avoid being flagged “stuck”
 - 🌱 *docs*: export all metrics in [documentation](98-metrics.md)
 - 🌱 *build*: build with Go 1.26
 

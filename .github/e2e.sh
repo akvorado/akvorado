@@ -50,7 +50,7 @@ EOF
         promtool check healthy --url=http://localhost:9090/prometheus
         while true; do
             promtool_query up
-            dcount=$(docker container ps --filter "label=metrics.port" --format "{{.Names}}" | wc -l)
+            dcount=$(docker container ps --filter "label=metrics.enable" --format "{{.Names}}" | wc -l)
             pcount=$(promtool_query up | wc -l)
             # We have two non-Docker sources: Kafka and Redis
             [ $pcount -ne $((dcount + 2)) ] || break

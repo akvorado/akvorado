@@ -5,6 +5,7 @@
 package sflow
 
 import (
+	"cmp"
 	"net"
 
 	"akvorado/common/constants"
@@ -28,6 +29,34 @@ const (
 	interfaceFormatMultiple = 2
 )
 
+// sflowDiscardReasonToForwardingStatus maps sFlow discard reason codes to IPFIX
+// forwarding status values. See https://sflow.org/sflow_drops.txt for sFlow
+// drop codes, https://datatracker.ietf.org/doc/html/rfc7270#section-4.12 for
+// IPFIX ForwardingStatus, and https://github.com/akvorado/akvorado/issues/2280
+// for a proposed mapping to IPFIX ForwardingStatus.
+var sflowDiscardReasonToForwardingStatus = map[uint32]int{
+	0:   131, // icmp_net_unreachable → Unroutable
+	1:   131, // icmp_host_unreachable → Unroutable
+	2:   131, // icmp_protocol_unreachable → Unroutable
+	3:   131, // icmp_port_unreachable → Unroutable
+	4:   133, // icmp_frag_needed → Fragmentation and DF set
+	5:   131, // icmp_src_route_failed → Unroutable
+	6:   131, // icmp_dst_net_unknown → Unroutable
+	7:   131, // icmp_dst_host_unknown → Unroutable
+	8:   132, // icmp_src_host_isolated → Adjacency
+	9:   129, // icmp_dst_net_prohibited → ACL deny
+	10:  129, // icmp_dst_host_prohibited → ACL deny
+	257: 137, // ttl_exceeded → Bad TTL
+	258: 130, // acl → ACL drop
+	259: 143, // no_buffer_space → Hardware?
+	260: 139, // red → WRED
+	261: 138, // traffic_shaping → Policer
+	262: 135, // pkt_too_big → Bad total length
+	263: 131, // src_mac_is_multicast → Unroutable
+	269: 130, // blackhole_route → ACL drop
+	302: 140, // uc_reverse_path_forwarding → RPF
+}
+
 func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) error {
 	for _, flowSample := range packet.Samples {
 		var records []sflow.FlowRecord
@@ -44,7 +73,8 @@ func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.
 			case interfaceFormatIfIndex:
 				bf.OutIf = flowSample.Output
 			case interfaceFormatDiscard:
-				forwardingStatus = 128
+				reason := flowSample.Output & 0x3fffffff
+				forwardingStatus = cmp.Or(sflowDiscardReasonToForwardingStatus[reason], 128)
 			case interfaceFormatMultiple:
 			}
 		case sflow.ExpandedFlowSample:
@@ -58,7 +88,7 @@ func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.
 			case interfaceFormatIfIndex:
 				bf.OutIf = flowSample.OutputIfValue
 			case interfaceFormatDiscard:
-				forwardingStatus = 128
+				forwardingStatus = cmp.Or(sflowDiscardReasonToForwardingStatus[flowSample.OutputIfValue], 128)
 			case interfaceFormatMultiple:
 			}
 		}

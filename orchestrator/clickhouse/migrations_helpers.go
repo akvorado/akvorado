@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"maps"
 	"regexp"
 	"slices"
 	"strings"
@@ -16,11 +17,52 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 
+	"akvorado/common/clickhousedb"
 	"akvorado/common/helpers"
 	"akvorado/common/schema"
 )
 
 var errSkipStep = errors.New("migration: skip this step")
+
+// defaultTableSettingsKeys lists the default table setting keys in their fixed output order.
+var defaultTableSettingsKeys = []string{"index_granularity", "ttl_only_drop_parts"}
+
+// defaultTableSettings are the default ClickHouse table settings applied to flow tables.
+var defaultTableSettings = TableSettings{
+	"index_granularity":   8192,
+	"ttl_only_drop_parts": 1,
+}
+
+// renderTableSettings merges extra settings with the default table settings and
+// returns a stable settings string suitable for ClickHouse SETTINGS clauses.
+// Default settings appear first (index_granularity, ttl_only_drop_parts),
+// followed by extra settings sorted alphabetically. Integer values are rendered
+// unquoted; string values are single-quoted.
+func renderTableSettings(extra TableSettings) string {
+	merged := TableSettings{}
+	maps.Copy(merged, defaultTableSettings)
+	maps.Copy(merged, extra)
+
+	extraKeys := make([]string, 0, len(merged))
+	for k := range merged {
+		if !slices.Contains(defaultTableSettingsKeys, k) {
+			extraKeys = append(extraKeys, k)
+		}
+	}
+	slices.Sort(extraKeys)
+	keys := append(slices.Clone(defaultTableSettingsKeys), extraKeys...)
+
+	parts := make([]string, 0, len(keys))
+	for _, k := range keys {
+		switch v := merged[k].(type) {
+		case int:
+			parts = append(parts, fmt.Sprintf("%s = %d", k, v))
+		case string:
+			parts = append(parts, fmt.Sprintf("%s = %s", k, quoteString(v)))
+		}
+	}
+	return strings.Join(parts, ", ")
+}
 
 // wrapMigrations can be used to wrap migration functions. It will keep the
 // metrics up-to-date as long as the migration function returns `errSkipStep`
@@ -40,7 +82,13 @@ func (c *Component) wrapMigrations(ctx context.Context, fns ...func(context.Cont
 
 // stemplate is a simple wrapper around text/template.
 func stemplate(t string, data any) (string, error) {
-	tpl, err := template.New("tpl").Option("missingkey=error").Parse(t)
+	tpl, err := template.New("tpl").
+		Option("missingkey=error").
+		Funcs(template.FuncMap{
+			"qi": clickhousedb.QuoteIdentifier, // identifier: `name`
+			"qs": quoteString,                  // string: 'value'
+		}).
+		Parse(t)
 	if err != nil {
 		return "", err
 	}
@@ -80,7 +128,7 @@ func (c *Component) tableAlreadyExists(ctx context.Context, table, column, targe
 	existing = strings.ReplaceAll(existing,
 		fmt.Sprintf(`dictGet('%s.`, c.d.ClickHouse.DatabaseName()),
 		"dictGet('")
-	existing = regexp.MustCompile(` SETTINGS index_granularity = \d+$`).ReplaceAllString(existing, "")
+	existing = regexp.MustCompile(` SETTINGS .*$`).ReplaceAllString(existing, "")
 	existing = strings.ReplaceAll(existing,
 		"ENGINE = Null",
 		"ENGINE = `Null`") // from ClickHouse 25.8
@@ -143,7 +191,7 @@ func (c *Component) createDictionary(ctx context.Context, name, layout, schema, 
 	source := fmt.Sprintf(`SOURCE(HTTP(%s))`, strings.Join(sourceParams, " "))
 	settings := `SETTINGS(format_csv_allow_single_quotes = 0)`
 	createQuery, err := stemplate(`
-CREATE DICTIONARY {{ .Database }}.{{ .Name }} ({{ .Schema }})
+CREATE DICTIONARY {{ qi .Database }}.{{ qi .Name }} ({{ .Schema }})
 PRIMARY KEY {{ .PrimaryKey}}
 {{ .Source }}
 LIFETIME(MIN 0 MAX 3600)
@@ -195,7 +243,7 @@ func (c *Component) createExportersTable(ctx context.Context) error {
 	// Build CREATE TABLE
 	name := "exporters"
 	createQuery, err := stemplate(
-		`CREATE TABLE {{ .Database }}.{{ .Table }}
+		`CREATE TABLE {{ qi .Database }}.{{ qi .Table }}
 ({{ .Schema }})
 ENGINE = {{ .Engine }}
 ORDER BY (ExporterAddress, IfName)
@@ -248,7 +296,7 @@ func (c *Component) createExportersConsumerView(ctx context.Context) error {
 
 	// Build SELECT query
 	selectQuery, err := stemplate(
-		`SELECT DISTINCT {{ .Columns }} FROM {{ .Database }}.{{ .Table }} ARRAY JOIN arrayEnumerate([1, 2]) AS num`,
+		`SELECT {{ .Columns }} FROM {{ qi .Database }}.{{ qi .Table }} ARRAY JOIN arrayEnumerate([1, 2]) AS num`,
 		helpers.M{
 			"Table":    c.distributedTable("flows"),
 			"Database": c.d.ClickHouse.DatabaseName(),
@@ -289,7 +337,7 @@ func (c *Component) createRawFlowsTable(ctx context.Context) error {
 
 	// Build CREATE query
 	createQuery, err := stemplate(
-		"CREATE TABLE {{ .Database }}.{{ .Table }} ({{ .Schema }}) ENGINE = `Null`",
+		"CREATE TABLE {{ qi .Database }}.{{ qi .Table }} ({{ .Schema }}) ENGINE = `Null`",
 		helpers.M{
 			"Database": c.d.ClickHouse.DatabaseName(),
 			"Table":    tableName,
@@ -336,16 +384,15 @@ func (c *Component) createRawFlowsConsumerView(ctx context.Context) error {
 	viewName := fmt.Sprintf("%s_consumer", tableName)
 
 	// Build SELECT query
-	args := helpers.M{
-		"Columns": strings.Join(c.d.Schema.ClickHouseSelectColumns(
-			schema.ClickHouseSubstituteGenerates,
-			schema.ClickHouseSkipAliasedColumns), ", "),
-		"Database": c.d.ClickHouse.DatabaseName(),
-		"Table":    tableName,
-	}
 	selectQuery, err := stemplate(
-		`SELECT {{ .Columns }} FROM {{ .Database }}.{{ .Table }}`,
-		args)
+		`SELECT {{ .Columns }} FROM {{ qi .Database }}.{{ qi .Table }}`,
+		helpers.M{
+			"Columns": strings.Join(c.d.Schema.ClickHouseSelectColumns(
+				schema.ClickHouseSubstituteGenerates,
+				schema.ClickHouseSkipAliasedColumns), ", "),
+			"Database": c.d.ClickHouse.DatabaseName(),
+			"Table":    tableName,
+		})
 	if err != nil {
 		return fmt.Errorf("cannot build select statement for raw flows consumer view: %w", err)
 	}
@@ -441,7 +488,7 @@ func (c *Component) createOrUpdateFlowsTable(ctx context.Context, resolution Res
 	tableName = c.localTable(tableName)
 	partitionInterval := uint64((resolution.TTL / time.Duration(c.config.MaxPartitions)).Seconds())
 	ttl := uint64(resolution.TTL.Seconds())
-	settings := `index_granularity = 8192, ttl_only_drop_parts = 1`
+	settings := renderTableSettings(resolution.TableSettings)
 
 	// Create table if it does not exist
 	if ok, err := c.tableAlreadyExists(ctx, tableName, "name", tableName); err != nil {
@@ -454,6 +501,7 @@ func (c *Component) createOrUpdateFlowsTable(ctx context.Context, resolution Res
 CREATE TABLE {{ .Table }} ({{ .Schema }})
 ENGINE = {{ .Engine }}
 PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, INTERVAL {{ .PartitionInterval }} second))
+PRIMARY KEY toStartOfFiveMinutes(TimeReceived)
 ORDER BY (toStartOfFiveMinutes(TimeReceived), ExporterAddress, InIfName, OutIfName)
 TTL TimeReceived + toIntervalSecond({{ .TTL }})
 SETTINGS {{ .Settings }}
@@ -490,6 +538,9 @@ SETTINGS {{ .Settings }}
 		}
 		if err := c.d.ClickHouse.ExecOnCluster(ctx, createQuery); err != nil {
 			return fmt.Errorf("cannot create %s: %w", tableName, err)
+		}
+		if _, err := c.applySkipIndexes(ctx, tableName, resolution.Interval == 0); err != nil {
+			return err
 		}
 		return nil
 	}
@@ -610,7 +661,8 @@ outer:
 	}
 
 	// Check if we need to update the settings
-	settingsClauseLike := fmt.Sprintf("CAST(engine_full LIKE '%% SETTINGS %s', 'String')", settings)
+	settingsClauseLike := fmt.Sprintf("CAST(engine_full LIKE '%% SETTINGS %s', 'String')",
+		strings.NewReplacer(`\`, `\\`, `'`, `\'`).Replace(settings))
 	if ok, err := c.tableAlreadyExists(ctx, tableName, settingsClauseLike, "1"); err != nil {
 		return err
 	} else if !ok {
@@ -627,11 +679,23 @@ outer:
 	if ok, err := c.tableAlreadyExists(ctx, tableName, ttlClauseLike, "1"); err != nil {
 		return err
 	} else if !ok {
-		c.r.Warn().
-			Msgf("updating TTL of %s with interval %s, this can take a long time", tableName, resolution.Interval)
-		if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf("ALTER TABLE %s MODIFY %s", tableName, ttlClause)); err != nil {
+		c.r.Info().Msgf("updating TTL of %s with interval %s", tableName, resolution.Interval)
+		err := c.d.ClickHouse.ExecOnCluster(
+			clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
+				"materialize_ttl_after_modify": 0,
+			})),
+			fmt.Sprintf("ALTER TABLE %s MODIFY %s", tableName, ttlClause))
+		if err != nil {
 			return fmt.Errorf("cannot modify TTL for table %s: %w", tableName, err)
 		}
+		modified = true
+	}
+
+	changed, err := c.applySkipIndexes(ctx, tableName, resolution.Interval == 0)
+	if err != nil {
+		return err
+	}
+	if changed {
 		modified = true
 	}
 
@@ -639,6 +703,94 @@ outer:
 		return nil
 	}
 	return errSkipStep
+}
+
+// applySkipIndexes reconciles the skip indexes on tableName with the configured
+// schema indexes. It returns true if any change was made.
+func (c *Component) applySkipIndexes(ctx context.Context, tableName string, isMainTable bool) (bool, error) {
+	skipIndexes := c.d.Schema.GetSkipIndexes()
+	var toDrop []string
+	var toAdd []string
+
+	// Collect existing skip indexes.
+	existingIndexes := map[string]string{}
+	if err := func() error {
+		rows, err := c.d.ClickHouse.Query(ctx,
+			`SELECT name, type_full FROM system.data_skipping_indices WHERE database = $1 AND table = $2 AND startsWith(name, 'idx_')`,
+			c.d.ClickHouse.DatabaseName(), tableName)
+		if err != nil {
+			return fmt.Errorf("cannot list skip indices for %s: %w", tableName, err)
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var name, typeFull string
+			if err := rows.Scan(&name, &typeFull); err != nil {
+				return fmt.Errorf("cannot scan skip index: %w", err)
+			}
+			existingIndexes[name] = typeFull
+		}
+		return rows.Err()
+	}(); err != nil {
+		return false, err
+	}
+
+	// Determine which indexes are wanted and what changes are needed.
+	wantedIndexNames := map[string]struct{}{}
+	for _, colKey := range slices.Sorted(maps.Keys(skipIndexes)) {
+		idxType := skipIndexes[colKey]
+		col, ok := c.d.Schema.LookupColumnByKey(colKey)
+		if !ok || col.Disabled {
+			continue
+		}
+		// ClickHouseMainOnly columns are absent from aggregated tables.
+		if col.ClickHouseMainOnly && !isMainTable {
+			continue
+		}
+		chType, err := idxType.ClickHouseType()
+		if err != nil {
+			return false, fmt.Errorf("schema index for %s: %w", col.Name, err)
+		}
+		idxName := fmt.Sprintf("idx_%s", strings.ToLower(col.Name))
+		wantedIndexNames[idxName] = struct{}{}
+
+		existingType := existingIndexes[idxName]
+		if existingType != "" && existingType != chType {
+			toDrop = append(toDrop, fmt.Sprintf("DROP INDEX %s", idxName))
+		}
+		if existingType == "" || existingType != chType {
+			toAdd = append(toAdd, fmt.Sprintf("ADD INDEX %s %s TYPE %s GRANULARITY 4", idxName, col.Name, chType))
+		}
+	}
+
+	// Drop stale skip indexes that are no longer wanted.
+	for name := range existingIndexes {
+		if _, wanted := wantedIndexNames[name]; !wanted {
+			toDrop = append(toDrop, fmt.Sprintf("DROP INDEX %s", name))
+		}
+	}
+
+	if len(toDrop) == 0 && len(toAdd) == 0 {
+		return false, nil
+	}
+
+	// Batch drops before adds (drop must precede re-add when type changes).
+	if len(toDrop) > 0 {
+		c.r.Info().Msgf("removing %d skip index(es) from %s", len(toDrop), tableName)
+		if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(
+			"ALTER TABLE %s %s", tableName, strings.Join(toDrop, ", "),
+		)); err != nil {
+			return false, fmt.Errorf("cannot drop skip indexes on %s: %w", tableName, err)
+		}
+	}
+	if len(toAdd) > 0 {
+		c.r.Info().Msgf("adding %d skip index(es) to %s", len(toAdd), tableName)
+		if err := c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf(
+			"ALTER TABLE %s %s", tableName, strings.Join(toAdd, ", "),
+		)); err != nil {
+			return false, fmt.Errorf("cannot add skip indexes on %s: %w", tableName, err)
+		}
+	}
+	return true, nil
 }
 
 func (c *Component) createFlowsConsumerView(ctx context.Context, resolution ResolutionConfiguration) error {
@@ -655,7 +807,7 @@ SELECT
  toStartOfInterval(TimeReceived, toIntervalSecond({{ .Seconds }})) AS TimeReceived,
  {{ .Columns }}
 FROM {{ .Database }}.{{ .Table }}`, helpers.M{
-		"Database": c.d.ClickHouse.DatabaseName(),
+		"Database": clickhousedb.QuoteIdentifier(c.d.ClickHouse.DatabaseName()),
 		"Table":    c.localTable("flows"),
 		"Seconds":  uint64(resolution.Interval.Seconds()),
 		"Columns": strings.Join(c.d.Schema.ClickHouseSelectColumns(
@@ -725,12 +877,12 @@ ORDER BY position ASC
 
 	// Build the CREATE TABLE
 	createQuery, err := stemplate(
-		`CREATE TABLE {{ .Database }}.{{ .Target }}
+		`CREATE TABLE {{ qi .Database }}.{{ qi .Target }}
 ({{ .Schema }})
-ENGINE = Distributed('{{ .Cluster }}', '{{ .Database}}', '{{ .Source }}', rand())`,
+ENGINE = Distributed({{ qs .Cluster }}, {{ qs .Database }}, {{ qs .Source }}, rand())`,
 		helpers.M{
-			"Cluster":  c.d.ClickHouse.ClusterName(),
 			"Database": c.d.ClickHouse.DatabaseName(),
+			"Cluster":  c.d.ClickHouse.ClusterName(),
 			"Source":   c.localTable(source),
 			"Target":   c.distributedTable(source),
 			"Schema":   strings.Join(cols, ", "),

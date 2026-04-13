@@ -10,6 +10,7 @@ import (
 	"net"
 	"strings"
 
+	"akvorado/common/clickhousedb"
 	"akvorado/common/schema"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
@@ -190,7 +191,9 @@ func (c *Component) guessHTTPBaseURL(ip string) (string, error) {
 // ReloadDictionary will reload the specified dictionnary.
 func (c *Component) ReloadDictionary(ctx context.Context, dictName string) error {
 	if c.d.ClickHouse != nil {
-		return c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf("SYSTEM RELOAD DICTIONARY %s.%s", c.d.ClickHouse.DatabaseName(), dictName))
+		return c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf("SYSTEM RELOAD DICTIONARY %s.%s",
+			clickhousedb.QuoteIdentifier(c.d.ClickHouse.DatabaseName()),
+			clickhousedb.QuoteIdentifier(dictName)))
 	}
 	return nil
 }

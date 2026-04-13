@@ -11,6 +11,7 @@ message RawFlow {
     Decoder decoder = 5;                              // use this specific decoder
     TimestampSource timestamp_source = 6;             // source of the timestamp
     DecapsulationProtocol decapsulation_protocol = 7; // protocol to decap
+    uint64 rate_limit = 8;                            // per-exporter rate limit (flows/s), 0 means no limit
 
     enum Decoder {
         DECODER_UNSPECIFIED = 0;

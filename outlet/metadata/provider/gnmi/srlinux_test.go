@@ -136,8 +136,10 @@ func TestSRLinux(t *testing.T) {
 	resp, err = driver.SendConfig(`
 load factory
 
-/ system gnmi-server
-set admin-state enable network-instance mgmt admin-state enable
+set / system grpc-server mgmt services [ gnmi ]
+set / system grpc-server mgmt network-instance mgmt admin-state enable
+set / system grpc-server mgmt admin-state enable
+delete / system grpc-server mgmt default-tls-profile
 
 commit now
 `)
@@ -179,28 +181,19 @@ commit now
 		t.Helper()
 		resp, err := driver.SendConfig(`
 set / system name host-name "srlinux"
-
-/ interface ethernet-1/1
-set admin-state enable
-set description "1st interface"
-
-/ interface ethernet-1/2
-set admin-state enable
-set description "2nd interface"
-set ethernet aggregate-id lag1
-/ interface ethernet-1/3
-set admin-state enable
-set description "3rd interface"
-set ethernet aggregate-id lag1
-/ interface lag1
-set admin-state enable
-set description "lag interface"
-set lag lag-type static
-
-/ interface ethernet-1/4 subinterface 1
-set admin-state enable
-set description "4th interface"
-
+set / interface ethernet-1/1 admin-state enable
+set / interface ethernet-1/1 description "1st interface"
+set / interface ethernet-1/2 admin-state enable
+set / interface ethernet-1/2 description "2nd interface"
+set / interface ethernet-1/2 ethernet aggregate-id lag1
+set / interface ethernet-1/3 admin-state enable
+set / interface ethernet-1/3 description "3rd interface"
+set / interface ethernet-1/3 ethernet aggregate-id lag1
+set / interface lag1 admin-state enable
+set / interface lag1 description "lag interface"
+set / interface lag1 lag lag-type static
+set / interface ethernet-1/4 subinterface 1 admin-state enable
+set / interface ethernet-1/4 subinterface 1 description "4th interface"
 commit now
 `)
 		if err != nil {
@@ -383,13 +376,8 @@ commit now
 			// Change the configuration and check for a change.
 			resp, err = driver.SendConfig(`
 set / system name host-name "srlinux-new"
-
-/ interface ethernet-1/1
-set description "1st interface new"
-
-/ interface ethernet-1/4
-delete subinterface 1
-
+set / interface ethernet-1/1 description "1st interface new"
+delete / interface ethernet-1/4 subinterface 1
 commit now
 `)
 			if err != nil {
@@ -447,10 +435,9 @@ commit now
 			// Test what happens when we disconnect
 			if encoding == "json" {
 				resp, err = driver.SendConfig(`
-/ system gnmi-server admin-state enable network-instance mgmt
-set admin-state disable
+set / system grpc-server mgmt admin-state disable
 commit stay
-set admin-state enable
+set / system grpc-server mgmt admin-state enable
 commit now
 `)
 				if err != nil {
@@ -804,12 +791,8 @@ commit now
 		t.Log("modify and check again")
 		got = []string{}
 		resp, err = driver.SendConfig(`
-/ interface ethernet-1/1
-set description "1st interface new"
-
-/ interface ethernet-1/4
-delete subinterface 1
-
+set / interface ethernet-1/1 description "1st interface new"
+delete / interface ethernet-1/4 subinterface 1
 commit now
 `)
 		if err != nil {

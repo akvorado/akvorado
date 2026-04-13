@@ -98,7 +98,7 @@ services:
       - traefik.http.routers.akvorado-orchestrator.entrypoints=private
       - traefik.http.routers.akvorado-orchestrator.rule=PathPrefix(`/api/v0/orchestrator`)
       - traefik.http.services.akvorado-orchestrator.loadbalancer.server.port=8080
-      - metrics.port=8080
+      - metrics.enable=true
       - metrics.path=/api/v0/metrics
   akvorado-console:
     extends:
@@ -138,7 +138,7 @@ services:
       - traefik.http.middlewares.console-auth.headers.customrequestheaders.Remote-User=alfred
       - traefik.http.middlewares.console-auth.headers.customrequestheaders.Remote-Name=Alfred Pennyworth
       - traefik.http.middlewares.console-auth.headers.customrequestheaders.Remote-Email=alfred@example.com
-      - metrics.port=8080
+      - metrics.enable=true
       - metrics.path=/api/v0/metrics
   akvorado-inlet:
     extends:
@@ -167,6 +167,7 @@ services:
       - traefik.http.routers.akvorado-inlet.entrypoints=private
       - traefik.http.routers.akvorado-inlet.rule=PathPrefix(`/api/v0/inlet`)
       - traefik.http.services.akvorado-inlet.loadbalancer.server.port=8080
+      - metrics.enable=true
       - metrics.port=8080
       - metrics.path=/api/v0/metrics
   akvorado-outlet:
@@ -200,6 +201,7 @@ services:
       - traefik.http.routers.akvorado-outlet.entrypoints=private
       - traefik.http.routers.akvorado-outlet.rule=PathPrefix(`/api/v0/outlet`)
       - traefik.http.services.akvorado-outlet.loadbalancer.server.port=8080
+      - metrics.enable=true
       - metrics.port=8080
       - metrics.path=/api/v0/metrics
 
@@ -227,6 +229,7 @@ services:
       - traefik.http.routers.clickhouse.rule=PathPrefix(`/clickhouse`)
       - traefik.http.routers.clickhouse.middlewares=clickhouse-strip
       - traefik.http.middlewares.clickhouse-strip.stripprefix.prefixes=/clickhouse
+      - metrics.enable=true
       - metrics.port=8123
 
   traefik:
@@ -266,6 +269,7 @@ services:
         text/markdown,\
         text/plain,\
         text/xml"
+      - metrics.enable=true
       - metrics.port=8080
       - metrics.path=/traefik/metrics
     expose:

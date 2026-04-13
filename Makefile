@@ -11,7 +11,7 @@ PNPM    = $(or $(shell command -v pnpm 2>/dev/null),\
 			$(shell command -v corepack 2>/dev/null | sed 's/$$/ pnpm/'),\
 			$(error No pnpm command found))
 CLANG   = clang
-TIMEOUT = 45s
+TIMEOUT = 60s
 LSFILES = git ls-files -cmo --exclude-standard --
 V = 0
 Q = $(if $(filter 1,$V),,@)
@@ -37,7 +37,9 @@ GENERATED_GO = \
 	outlet/metadata/provider/snmp/privprotocol_enumer.go \
 	outlet/metadata/provider/gnmi/ifspeedpathunit_enumer.go \
 	console/homepagetopwidget_enumer.go \
-	common/kafka/saslmechanism_enumer.go
+	common/kafka/saslmechanism_enumer.go \
+	common/remotedatasource/parsertype_enumer.go \
+	common/remotedatasource/paginationtype_enumer.go
 GENERATED_TEST_GO = \
 	common/clickhousedb/mocks/mock_driver.go
 GENERATED = \
@@ -117,6 +119,10 @@ console/homepagetopwidget_enumer.go: console/config.go ; $(info $(M) generate en
 	$Q $(ENUMER) -type=HomepageTopWidget -text -json -transform=kebab -trimprefix=HomepageTopWidget console/config.go
 common/kafka/saslmechanism_enumer.go: common/kafka/config.go ; $(info $(M) generate enums for SASLMechanism…)
 	$Q $(ENUMER) -type=SASLMechanism -text -transform=kebab -trimprefix=SASL common/kafka/config.go
+common/remotedatasource/parsertype_enumer.go: common/remotedatasource/config.go ; $(info $(M) generate enums for ParserType…)
+	$Q $(ENUMER) -type=ParserType -text -transform=kebab -trimprefix=Parser common/remotedatasource/config.go
+common/remotedatasource/paginationtype_enumer.go: common/remotedatasource/config.go ; $(info $(M) generate enums for PaginationType…)
+	$Q $(ENUMER) -type=PaginationType -text -transform=kebab -trimprefix=Pagination common/remotedatasource/config.go
 
 common/schema/definition_gen.go: common/schema/definition.go common/schema/definition_gen.sh ; $(info $(M) generate column definitions…)
 	$Q ./common/schema/definition_gen.sh > $@
@@ -163,7 +169,7 @@ orchestrator/clickhouse/data/udp.csv orchestrator/clickhouse/data/tcp.csv: orche
 changelog.md: docs/99-changelog.md # To be used by GitHub actions only.
 	$Q >  $@ < docs/99-changelog.md \
 		sed -n '/^## '$${GITHUB_REF##*/v}' -/,/^## /{//!p}'
-	$Q >> $@ echo "**Docker image**: \`docker pull ghcr.io/$${GITHUB_REPOSITORY}:$${GITHUB_REF##*/v}\`"
+	$Q >> $@ echo "**Docker image**: \`docker pull quay.io/$${GITHUB_REPOSITORY}:$${GITHUB_REF##*/v}\`"
 	$Q >> $@ echo "**Full changelog**: https://github.com/$${GITHUB_REPOSITORY}/compare/v$$(< docs/99-changelog.md sed -n '/^## '$${GITHUB_REF##*/v}' -/,/^## /{s/^## \([0-9.a-z-]*\) -.*/\1/p}' | tail -1)...v$${GITHUB_REF##*/v}"
 
 # Update default.pgo with the locally running "docker compose" instance.
@@ -185,8 +191,8 @@ common/embed/data/embed.zip: ; $(info $(M) generate embed.zip…)
 	$Q TMPDIR=$$(mktemp -d) \
 	&& trap 'rm -rf "$$TMPDIR"' EXIT \
 	&& tar -cf - $^ | tar -C "$$TMPDIR" -xf - \
-	&& find "$$TMPDIR"/console/data/docs -name "*.svg" -type f -print0 | xargs -0 sed -i.bak 's/ content="[^"]*"//g' \
-	&& ( cd "$$TMPDIR" && zip --quiet --recurse-paths --exclude "*.svg.bak" - .) > $@
+	&& find "$$TMPDIR"/console/data/docs -name "*.svg" -type f -print0 | xargs -0 sed -i -e 's/ content="[^"]*"//g' \
+	&& ( cd "$$TMPDIR" && zip --quiet --recurse-paths - .) > $@
 
 # Tests
 
@@ -217,7 +223,8 @@ test-bench: ; $(info $(M) running benchmarks…) @ ## Run Go benchmarks
 	$Q $(GO) test \
 		-fullpath -run=__absolutelynothing__ -bench=. \
 	    $(GOTEST_ARGS) $(PKGS)
-# -benchmem -memprofile test/go/memprofile.out -cpuprofile test/go/cpuprofile.out
+# GOTEST_ARGS="-benchmem -memprofile test/go/memprofile.out -cpuprofile test/go/cpuprofile.out"
+# GOTEST_ARGS="-cpuprofile test/go/cpuprofile.out -bench RIBLookup"
 test-coverage-go: ; $(info $(M) running Go coverage tests…) @ ## Run Go coverage tests
 	$Q mkdir -p test/go
 	$Q env PATH=$(dir $(abspath $(shell command -v $(GO)))):$(PATH) \
@@ -293,11 +300,11 @@ version:
 DOCKER_BUILD_ARGS =
 docker: ; $(info $(M) build Docker image…) @ ## Build Docker image
 	$Q git ls-files | tar -T- -cf- | docker build --pull -f docker/Dockerfile $(DOCKER_BUILD_ARGS) \
-		--build-arg VERSION=$(VERSION) -t ghcr.io/akvorado/akvorado:main -
+		--build-arg VERSION=$(VERSION) -t quay.io/akvorado/akvorado:main -
 docker-dev: TARGETOS=linux
 docker-dev: all ; $(info $(M) build development Docker image…) @ ## Build development Docker image
 	$Q docker build -f docker/Dockerfile.dev $(DOCKER_BUILD_ARGS) \
-		--build-arg VERSION=$(VERSION) -t ghcr.io/akvorado/akvorado:main .
+		--build-arg VERSION=$(VERSION) -t quay.io/akvorado/akvorado:main .
 
 .PHONY: all-coverage docker-dev-coverage
 all-coverage: BUILD_ARGS=-cover -covermode=atomic
@@ -316,5 +323,5 @@ docker-upgrade-versions: ; $(info $(M) check for Docker image updates…) @ ## C
 				| sort -Vr | head -1); \
 			[ "$$version" = "$$latest" ] || { \
 				>&2 echo "$$image $$version→$$latest"; \
-				sed -i "s,$$image:$$version,$$image:$$latest," docker/versions.yml; }; \
+				sed -i -e "s,$$image:$$version,$$image:$$latest," docker/versions.yml; }; \
 		done

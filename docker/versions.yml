@@ -4,7 +4,7 @@ services:
   kafka:
     image: apache/kafka:4.1.1 # \d+\.\d+\.\d+
   redis:
-    image: valkey/valkey:7.2 # \d+\.\d+
+    image: valkey/valkey:9.0 # \d+\.\d+
   clickhouse:
     image: clickhouse/clickhouse-server:25.8 # \d+\.[38]
   clickhouse-keeper:
@@ -14,12 +14,14 @@ services:
   maxmind-geoipupdate:
     image: ghcr.io/maxmind/geoipupdate:v7
   ipinfo-geoipupdate:
-    image: ghcr.io/akvorado/ipinfo-geoipupdate:latest
+    image: quay.io/akvorado/ipinfo-geoipupdate:latest
+    # image: ghcr.io/akvorado/ipinfo-geoipupdate:latest
     build:
       context: .
       dockerfile: Dockerfile.ipinfo-geoipupdate
   akvorado:
-    image: ghcr.io/akvorado/akvorado:main
+    image: quay.io/akvorado/akvorado:main
+    # image: ghcr.io/akvorado/akvorado:main
 
   # observability
   grafana:
@@ -35,13 +37,15 @@ services:
   cadvisor:
     image: ghcr.io/google/cadvisor:v0.53.0 # v\d+\.\d+\.\d+
   kafka-ui:
-    image: ghcr.io/kafbat/kafka-ui:v1.4.2 # v\d+\.\d+\.\d+
+    image: kafbat/kafka-ui:v1.4.2 # v\d+\.\d+\.\d+
+    # image: ghcr.io/kafbat/kafka-ui:v1.4.2
+    # image: ecr-public.aws.com/kafbat/kafka-ui:v1.4.2
   vector:
-    image: timberio/vector:0.52.X-alpine # \d+\.\d+\.X-alpine
+    image: timberio/vector:0.53.X-alpine # \d+\.\d+\.X-alpine
 
   # for tests
   srlinux:
-    image: ghcr.io/nokia/srlinux:23.10.6
+    image: ghcr.io/nokia/srlinux:26.3.1
   postgres:
     image: postgres:17 # \d+
   mysql:

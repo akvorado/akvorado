@@ -20,6 +20,8 @@ paths:
           - DstAddr
     disabled: []
     enabled: []
+    indexes: {}
+    noindexes: []
     materialize: []
     maintableonly: []
     notmaintableonly: []
@@ -43,6 +45,8 @@ paths:
           - DstAddr
     disabled: []
     enabled: []
+    indexes: {}
+    noindexes: []
     materialize: []
     maintableonly: []
     notmaintableonly: []

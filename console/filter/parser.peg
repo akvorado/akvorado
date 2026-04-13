@@ -11,6 +11,7 @@
     "strings"
 
     "akvorado/common/helpers"
+    "akvorado/common/schema"
   )
 }
 
@@ -36,7 +37,7 @@ NotExpr "NOT expression" ← KW_NOT _ expr:Expr {
 }
 
 ConditionExpr "conditional" ←
-    ConditionIPExpr
+    (ConditionIPExpr
   / ConditionPrefixExpr
   / ConditionMACExpr
   / ConditionStringExpr
@@ -49,9 +50,16 @@ ConditionExpr "conditional" ←
   / ConditionETypeExpr
   / ConditionProtoExpr
   / ConditionDirectionExpr
+  / !ColumnName %{errColumnName})
+  //{errColumnName} ErrColumnName
 
+ErrColumnName ← #{
+  return errors.New("expecting a column name")
+}
+
+ColumnName "column name" ← [A-Za-z0-9]+ !IdentStart { return string(c.text), nil }
 ColumnIP ←
- column:[A-Za-z0-9]+ !IdentStart
+ column:ColumnName
    &{ return c.columnIsOfType(column, "ip") }
     { return c.acceptColumn() }
 ConditionIPExpr "condition on IP" ←
@@ -74,18 +82,20 @@ ConditionIPExpr "condition on IP" ←
 
 
 ConditionPrefixExpr "condition on prefix" ←
-   column:("SrcNetPrefix"i !IdentStart { return c.acceptColumn() }) _
+   column:(value:ColumnName
+           &{ return c.columnIsOfType(value, "prefix") }
+            { return c.acceptColumn() }) _
    operator:("=" / "!=") _
-   prefix:SourcePrefix {
-     switch toString(operator) {
-       case "=": return []any{prefix}, nil
-       case "!=": return []any{"NOT (", prefix, ")"}, nil
+   prefix:Prefix {
+     col := column.(schema.Column)
+     direction := "Dst"
+     if strings.HasPrefix(col.Name, "Src") {
+       direction = "Src"
      }
-     return "", nil
-   }
- / column:("DstNetPrefix"i !IdentStart { return c.acceptColumn() }) _
-   operator:("=" / "!=") _
-   prefix:DestinationPrefix {
+     prefix, err := c.parsePrefix(direction, toString(prefix))
+     if err != nil {
+       return nil, err
+     }
      switch toString(operator) {
        case "=": return []any{prefix}, nil
        case "!=": return []any{"NOT (", prefix, ")"}, nil
@@ -94,14 +104,15 @@ ConditionPrefixExpr "condition on prefix" ←
    }
 
 ConditionMACExpr "condition on MAC" ←
-   column:("SrcMAC"i !IdentStart { return c.acceptColumn() }
-         / "DstMAC"i !IdentStart { return c.acceptColumn() }) _
+   column:(value:ColumnName
+           &{ return c.columnIsOfType(value, "mac") }
+            { return c.acceptColumn() }) _
    operator:("=" / "!=") _ mac:MAC {
        return []any{column, operator, "MACStringToNum(", quote(mac), ")"}, nil
    }
 
 ConditionStringExpr "condition on string" ←
- column:(value:[A-Za-z0-9]+ !IdentStart
+ column:(value:ColumnName
            &{ return c.columnIsOfType(value, "string") }
             { return c.acceptColumn() }) _
  rcond:RConditionStringExpr {
@@ -116,15 +127,16 @@ RConditionStringExpr "condition on string" ←
    }
 
 ConditionBoundaryExpr "condition on boundary" ←
- column:("InIfBoundary"i !IdentStart { return c.acceptColumn() }
-      / "OutIfBoundary"i !IdentStart { return c.acceptColumn() }) _
+ column:(value:ColumnName
+           &{ return c.columnIsOfType(value, "boundary") }
+            { return c.acceptColumn() }) _
  operator:("=" / "!=") _
  boundary:("external"i / "internal"i / "undefined"i) {
   return []any{column, operator, quote(strings.ToLower(toString(boundary)))}, nil
 }
 
 ConditionUintExpr "condition on integer" ←
- column:(value:[A-Za-z0-9]+ !IdentStart
+ column:(value:ColumnName
            &{ return c.columnIsOfType(value, "uint") }
             { return c.acceptColumn() }) _
  operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _
@@ -133,13 +145,13 @@ ConditionUintExpr "condition on integer" ←
 }
 
 ConditionArrayUintExpr "condition on array of integers" ←
-   column:(value:[A-Za-z0-9]+ !IdentStart
+   column:(value:ColumnName
            &{ return c.columnIsOfType(value, "array(uint)") }
             { return c.acceptColumn() }) _
    "=" _ value:Unsigned64 {
      return []any{"has(", column, ",", value, ")"}, nil
    }
- / column:(value:[A-Za-z0-9]+ !IdentStart
+ / column:(value:ColumnName
            &{ return c.columnIsOfType(value, "array(uint)") }
             { return c.acceptColumn() }) _
    "!=" _ value:Unsigned64 {
@@ -147,11 +159,9 @@ ConditionArrayUintExpr "condition on array of integers" ←
    }
 
 ConditionASExpr "condition on AS number" ←
- column:("SrcAS"i !IdentStart { return c.acceptColumn() }
-       / "DstAS"i !IdentStart { return c.acceptColumn() }
-       / "Dst1stAS"i !IdentStart { return c.acceptColumn() }
-       / "Dst2ndAS"i !IdentStart { return c.acceptColumn() }
-       / "Dst3rdAS"i !IdentStart { return c.acceptColumn() }) _
+ column:(value:ColumnName
+           &{ return c.columnIsOfType(value, "asn") }
+            { return c.acceptColumn() }) _
  rcond:RConditionASExpr {
   return []any{column, rcond}, nil
 }
@@ -162,17 +172,37 @@ RConditionASExpr "condition on AS number" ←
 }
 
 ConditionASPathExpr "condition on AS path" ←
-   column:("DstASPath"i !IdentStart { return c.acceptColumn() }) _ "=" _ value:ASN { return []any{"has(", column, ",", value, ")"}, nil }
- / column:("DstASPath"i !IdentStart { return c.acceptColumn() }) _ "!=" _ value:ASN { return []any{"NOT has(", column, ",", value, ")"}, nil }
+   column:(value:ColumnName
+           &{ return c.columnIsOfType(value, "aspath") }
+            { return c.acceptColumn() }) _ "=" _ value:ASN { return []any{"has(", column, ",", value, ")"}, nil }
+ / column:(value:ColumnName
+           &{ return c.columnIsOfType(value, "aspath") }
+            { return c.acceptColumn() }) _ "!=" _ value:ASN { return []any{"NOT has(", column, ",", value, ")"}, nil }
 
 ConditionCommunitiesExpr "condition on communities" ←
-   column:("DstCommunities"i !IdentStart { return c.acceptColumn() }) _ "=" _ value:Community { return []any{"has(", column, ",", value, ")"}, nil }
- / column:("DstCommunities"i !IdentStart { return c.acceptColumn() }) _ "!=" _ value:Community { return []any{"NOT has(", column, ",", value, ")"}, nil }
- / column:("DstCommunities"i !IdentStart { return c.acceptColumn() }) _ "=" _ value:LargeCommunity { return []any{"has(", c.getColumn("DstLargeCommunities"), ",", value, ")"}, nil }
- / column:("DstCommunities"i !IdentStart { return c.acceptColumn() }) _ "!=" _ value:LargeCommunity { return []any{"NOT has(", c.getColumn("DstLargeCommunities"), ",", value, ")"}, nil }
+   column:(value:ColumnName
+           &{ return c.columnIsOfType(value, "community") }
+            { return c.acceptColumn() }) _ "=" _ value:Community { return []any{"has(", column, ",", value, ")"}, nil }
+ / column:(value:ColumnName
+           &{ return c.columnIsOfType(value, "community") }
+            { return c.acceptColumn() }) _ "!=" _ value:Community { return []any{"NOT has(", column, ",", value, ")"}, nil }
+ / column:(value:ColumnName
+           &{ return c.columnIsOfType(value, "community") }
+            { return c.acceptColumn() }) _ "=" _ value:LargeCommunity {
+     largeName := strings.Replace(column.(schema.Column).Name, "Communities", "LargeCommunities", 1)
+     return []any{"has(", c.getColumn(largeName), ",", value, ")"}, nil
+   }
+ / column:(value:ColumnName
+           &{ return c.columnIsOfType(value, "community") }
+            { return c.acceptColumn() }) _ "!=" _ value:LargeCommunity {
+     largeName := strings.Replace(column.(schema.Column).Name, "Communities", "LargeCommunities", 1)
+     return []any{"NOT has(", c.getColumn(largeName), ",", value, ")"}, nil
+   }
 
 ConditionETypeExpr "condition on Ethernet type" ←
- column:("EType"i !IdentStart { return c.acceptColumn() }) _
+ column:(value:ColumnName
+           &{ return c.columnIsOfType(value, "etype") }
+            { return c.acceptColumn() }) _
  operator:("=" / "!=") _ value:("IPv4"i / "IPv6"i) {
   etypes := map[string]uint16{
     "ipv4": constants.ETypeIPv4,
@@ -183,18 +213,24 @@ ConditionETypeExpr "condition on Ethernet type" ←
 }
 ConditionProtoExpr "condition on protocol" ← ConditionProtoIntExpr / ConditionProtoStrExpr
 ConditionProtoIntExpr "condition on protocol as integer" ←
- column:("Proto"i !IdentStart { return c.acceptColumn() }) _
+ column:(value:ColumnName
+           &{ return c.columnIsOfType(value, "proto") }
+            { return c.acceptColumn() }) _
  operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned8 {
   return []any{column, operator, value}, nil
 }
 ConditionProtoStrExpr "condition on protocol as string" ←
- column:("Proto"i !IdentStart { return c.acceptColumn() }) _
+ column:(value:ColumnName
+           &{ return c.columnIsOfType(value, "proto") }
+            { return c.acceptColumn() }) _
  operator:("=" / "!=") _ value:StringLiteral {
   return []any{"dictGetOrDefault('protocols', 'name', ", column, ", '???')", operator, quote(value)}, nil
 }
 
 ConditionDirectionExpr "condition on direction" ←
- column:("FlowDirection"i !IdentStart { return c.acceptColumn() }) _
+ column:(value:ColumnName
+           &{ return c.columnIsOfType(value, "direction") }
+            { return c.acceptColumn() }) _
  operator:("=" / "!=") _
  direction:("undefined"i / "ingress"i / "egress"i) {
   return []any{column, operator, quote(strings.ToLower(toString(direction)))}, nil
@@ -221,11 +257,12 @@ ListIPOrSubnet "list of IP addresses or subnets" ←
    }
  / value:(Subnet / IP) { return []any{value}, nil }
 
-SourcePrefix "IP prefix" ← [0-9A-Fa-f:.]+ "/" [0-9]+ !IdentStart {
-  return c.parsePrefix("Src")
-}
-DestinationPrefix "IP prefix" ← [0-9A-Fa-f:.]+ "/" [0-9]+ !IdentStart {
-  return c.parsePrefix("Dst")
+Prefix "IP prefix" ← [0-9A-Fa-f:.]+ "/" [0-9]+ !IdentStart {
+  _, err := netip.ParsePrefix(string(c.text))
+  if err != nil {
+    return nil, errors.New("expecting a prefix")
+  }
+  return string(c.text), nil
 }
 
 MAC "MAC address" ← [0-9A-Fa-f:.]+ !IdentStart {

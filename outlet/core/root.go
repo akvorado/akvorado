@@ -41,6 +41,7 @@ type Component struct {
 
 	// anonymizer used to anonymize SrcAddr/DstAddr before writing to ClickHouse
 	anonymizer *Anonymizer
+	rateLimiter rateLimiter
 }
 
 // Dependencies define the dependencies of the HTTP component.
@@ -69,6 +70,8 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		classifierExporterCache:  cache.New[exporterInfo, exporterClassification](),
 		classifierInterfaceCache: cache.New[exporterAndInterfaceInfo, interfaceClassification](),
 		classifierErrLogger:      r.Sample(reporter.BurstSampler(10*time.Second, 3)),
+
+		rateLimiter: newRateLimiter(),
 	}
 
 	// initialize anonymizer from nested anonymize config

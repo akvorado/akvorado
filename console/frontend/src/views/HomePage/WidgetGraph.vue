@@ -46,7 +46,7 @@ use([CanvasRenderer, LineChart, TooltipComponent, GridComponent]);
 
 const formatGbps = (value: number) => formatXps(value * 1_000_000_000);
 
-const url = computed(() => `/api/v0/console/widget/graph?${props.refresh}`);
+const url = computed(() => `api/v0/console/widget/graph?${props.refresh}`);
 const { data } = useFetch(url, { refetch: true })
   .get()
   .json<{ data: Array<{ t: string; gbps: number }> } | { message: string }>();

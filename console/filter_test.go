@@ -195,6 +195,13 @@ UNION DISTINCT
 			}},
 		},
 		{
+			Description: "complete non-filterable column",
+			URL:         "/api/v0/console/filter/complete",
+			StatusCode:  200,
+			JSONInput:   helpers.M{"what": "column", "prefix": "Sam"},
+			JSONOutput:  helpers.M{"completions": []helpers.M{}},
+		},
+		{
 			URL:        "/api/v0/console/filter/complete",
 			StatusCode: 200,
 			JSONInput:  helpers.M{"what": "operator", "column": "ExporterName"},

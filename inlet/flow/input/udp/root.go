@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"runtime/pprof"
 	"strconv"
 	"syscall"
 	"time"
@@ -185,6 +186,8 @@ func (in *Input) Start() error {
 		workerID := i
 		worker := strconv.Itoa(i)
 		in.t.Go(func() error {
+			labels := pprof.Labels("goroutine", fmt.Sprintf("udp-worker-%d", i))
+			pprof.SetGoroutineLabels(pprof.WithLabels(context.Background(), labels))
 			payload := make([]byte, 9000)
 			oob := make([]byte, oobLength)
 			flow := pb.RawFlow{}

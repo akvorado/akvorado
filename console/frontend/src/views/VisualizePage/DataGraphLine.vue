@@ -11,51 +11,20 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, inject, computed, onMounted, nextTick } from "vue";
-import { useMediaQuery } from "@vueuse/core";
+import { inject, computed, toRef } from "vue";
 import { formatXps, dataColor, dataColorGrey } from "@/utils";
 import { ThemeKey } from "@/components/ThemeProvider.vue";
 import type { GraphLineHandlerResult } from ".";
 import { uniqWith, isEqual, findIndex } from "lodash-es";
-import { use, graphic, type ComposeOption } from "echarts/core";
-import { CanvasRenderer } from "echarts/renderers";
-import { LineChart, type LineSeriesOption } from "echarts/charts";
-import {
-  TooltipComponent,
-  type TooltipComponentOption,
-  GridComponent,
-  type GridComponentOption,
-  BrushComponent,
-  type BrushComponentOption,
-  ToolboxComponent,
-  type ToolboxComponentOption,
-  DatasetComponent,
-  type DatasetComponentOption,
-  TitleComponent,
-  type TitleComponentOption,
-} from "echarts/components";
-import type { default as BrushModel } from "echarts/types/src/component/brush/BrushModel.d.ts";
 import type { TooltipCallbackDataParams } from "echarts/types/src/component/tooltip/TooltipView.d.ts";
+import type { LineSeriesOption } from "echarts/charts";
 import VChart from "vue-echarts";
-use([
-  CanvasRenderer,
-  LineChart,
-  TooltipComponent,
-  GridComponent,
-  ToolboxComponent,
-  BrushComponent,
-  DatasetComponent,
-  TitleComponent,
-]);
-type ECOption = ComposeOption<
-  | LineSeriesOption
-  | TooltipComponentOption
-  | GridComponentOption
-  | BrushComponentOption
-  | ToolboxComponentOption
-  | DatasetComponentOption
-  | TitleComponentOption
->;
+import {
+  useTimeSeriesGraph,
+  graphic,
+  rowName,
+  type ECOption,
+} from "./useTimeSeriesGraph";
 
 const props = defineProps<{
   data: GraphLineHandlerResult;
@@ -67,23 +36,10 @@ const emit = defineEmits<{
 
 const { isDark } = inject(ThemeKey)!;
 
-// Graph component
-const chartComponent = ref<typeof VChart | null>(null);
-const commonGraph: ECOption = {
-  backgroundColor: "transparent",
-  animationDuration: 500,
-  toolbox: {
-    show: false,
-  },
-  brush: {
-    xAxisIndex: "all",
-  },
-};
 const graph = computed((): ECOption => {
   const theme = isDark.value ? "dark" : "light";
   const data = props.data;
   if (!data) return {};
-  const rowName = (row: string[]) => row.join(" — ") || "Total";
   const source: [string, ...number[]][] = data.t
     .map((t, timeIdx) => {
       let result: [string, ...number[]] = [
@@ -309,8 +265,14 @@ const graph = computed((): ECOption => {
               areaStyle: {
                 opacity: 0.95,
                 color: new graphic.LinearGradient(0, 0, 0, 1, [
-                  { offset: 0, color: color(uniqRowIndex(row), false, theme) },
-                  { offset: 1, color: color(uniqRowIndex(row), true, theme) },
+                  {
+                    offset: 0,
+                    color: color(uniqRowIndex(row), false, theme),
+                  },
+                  {
+                    offset: 1,
+                    color: color(uniqRowIndex(row), true, theme),
+                  },
                 ]),
               },
             };
@@ -425,49 +387,11 @@ const graph = computed((): ECOption => {
   }
   return {};
 });
-const option = computed((): ECOption => ({ ...commonGraph, ...graph.value }));
 
-// Enable and handle brush
-const isTouchScreen = useMediaQuery("(pointer: coarse");
-const enableBrush = () => {
-  nextTick().then(() => {
-    chartComponent.value?.dispatchAction({
-      type: "takeGlobalCursor",
-      key: "brush",
-      brushOption: {
-        brushType: isTouchScreen.value ? false : "lineX",
-      },
-    });
-  });
-};
-onMounted(enableBrush);
-const updateTimeRange = (evt: BrushModel) => {
-  if (
-    !chartComponent.value ||
-    evt.areas.length === 0 ||
-    !evt.areas[0].coordRange
-  ) {
-    return;
-  }
-  const [start, end] = evt.areas[0].coordRange.map(
-    (t) => new Date(t as number),
-  );
-  chartComponent.value.dispatchAction({
-    type: "brush",
-    areas: [],
-  });
-  emit("update:timeRange", [start, end]);
-};
-watch([graph, isTouchScreen] as const, enableBrush);
-
-// Highlight selected indexes
-watch(
-  () => [props.highlight, props.data] as const,
-  ([index]) => {
-    chartComponent.value?.dispatchAction({
-      type: "highlight",
-      seriesIndex: index,
-    });
-  },
+const { chartComponent, option, updateTimeRange } = useTimeSeriesGraph(
+  graph,
+  emit,
+  toRef(props, "highlight"),
+  toRef(props, "data"),
 );
 </script>

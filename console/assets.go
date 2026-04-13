@@ -4,12 +4,41 @@
 package console
 
 import (
+	"fmt"
+	"html"
+	"io/fs"
 	"net/http"
+	"strings"
+	"time"
 )
 
-func (c *Component) defaultHandlerFunc(w http.ResponseWriter, req *http.Request) {
+// defaultHandlerFunc serves index.html for all SPA routes, injecting a
+// <base href="..."> tag so that relative asset paths and API calls resolve
+// correctly regardless of the URL prefix the app is hosted under.
+func (c *Component) defaultHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	assets := c.embedOrLiveFS("data/frontend")
-	http.ServeFileFS(w, req, assets, "index.html")
+	content, err := fs.ReadFile(assets, "index.html")
+	if err != nil {
+		http.Error(w, "index.html not found", http.StatusNotFound)
+		return
+	}
+
+	// Inject <base href="..."> immediately after the opening <head> tag so
+	// that the browser resolves all relative URLs (assets and API calls)
+	// against the correct prefix.
+	prefix := c.urlPrefix()
+	injected := strings.Replace(
+		string(content),
+		"<head>",
+		fmt.Sprintf("<head>\n    <base href=%q />", html.EscapeString(prefix)),
+		1,
+	)
+
+	var modtime time.Time
+	if info, err := fs.Stat(assets, "index.html"); err == nil {
+		modtime = info.ModTime()
+	}
+	http.ServeContent(w, r, "index.html", modtime, strings.NewReader(injected))
 }
 
 func (c *Component) staticAssetsHandlerFunc(w http.ResponseWriter, req *http.Request) {

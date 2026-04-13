@@ -45,6 +45,7 @@ func TestKafka(t *testing.T) {
 		for _, rt := range req.Topics {
 			st := kmsg.NewProduceResponseTopic()
 			st.Topic = rt.Topic
+			st.TopicID = rt.TopicID
 			for _, rp := range rt.Partitions {
 				sp := kmsg.NewProduceResponseTopicPartition()
 				sp.Partition = rp.Partition
@@ -81,6 +82,7 @@ func TestKafka(t *testing.T) {
 		kgo.SeedBrokers(mock.ListenAddrs()...),
 		kgo.ConsumeTopics(topic),
 		kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()),
+		kgo.FetchMaxWait(10*time.Millisecond),
 		kgo.WithLogger(kafka.NewLogger(r)),
 	)
 	if err != nil {

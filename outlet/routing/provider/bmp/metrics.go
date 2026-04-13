@@ -6,18 +6,23 @@ package bmp
 import "akvorado/common/reporter"
 
 type metrics struct {
-	openedConnections *reporter.CounterVec
-	closedConnections *reporter.CounterVec
-	peers             *reporter.GaugeVec
-	routes            *reporter.GaugeVec
-	bufferSize        *reporter.GaugeVec
-	ignoredNlri       *reporter.CounterVec
-	messages          *reporter.CounterVec
-	errors            *reporter.CounterVec
-	ignored           *reporter.CounterVec
-	panics            *reporter.CounterVec
-	locked            *reporter.SummaryVec
-	peerRemovalDone   *reporter.CounterVec
+	openedConnections   *reporter.CounterVec
+	closedConnections   *reporter.CounterVec
+	peers               *reporter.GaugeVec
+	routes              *reporter.GaugeVec
+	bufferSize          *reporter.GaugeVec
+	ignoredNlri         *reporter.CounterVec
+	messages            *reporter.CounterVec
+	errors              *reporter.CounterVec
+	ignored             *reporter.CounterVec
+	panics              *reporter.CounterVec
+	locked              *reporter.SummaryVec
+	peerRemovalDone     *reporter.CounterVec
+	messageQueueFull    *reporter.CounterVec
+	messageQueueNotFull *reporter.CounterVec
+	prefixesAdded       *reporter.CounterVec
+	prefixesRemoved     *reporter.CounterVec
+	prefixesUpdated     *reporter.CounterVec
 }
 
 // initMetrics initialize the metrics for the BMP component.
@@ -104,6 +109,41 @@ func (p *Provider) initMetrics() {
 		reporter.CounterOpts{
 			Name: "removed_peers_total",
 			Help: "Number of peers removed from the RIB.",
+		},
+		[]string{"exporter"},
+	)
+	p.metrics.messageQueueFull = p.r.CounterVec(
+		reporter.CounterOpts{
+			Name: "message_queue_full_total",
+			Help: "Number of BMP messages hitting the message queue limit.",
+		},
+		[]string{"exporter"},
+	)
+	p.metrics.messageQueueNotFull = p.r.CounterVec(
+		reporter.CounterOpts{
+			Name: "message_queue_notfull_total",
+			Help: "Number of BMP messages not hitting the message queue limit.",
+		},
+		[]string{"exporter"},
+	)
+	p.metrics.prefixesAdded = p.r.CounterVec(
+		reporter.CounterOpts{
+			Name: "prefixes_added_total",
+			Help: "Number of prefixes added to the RIB.",
+		},
+		[]string{"exporter"},
+	)
+	p.metrics.prefixesRemoved = p.r.CounterVec(
+		reporter.CounterOpts{
+			Name: "prefixes_removed_total",
+			Help: "Number of prefixes removed from the RIB.",
+		},
+		[]string{"exporter"},
+	)
+	p.metrics.prefixesUpdated = p.r.CounterVec(
+		reporter.CounterOpts{
+			Name: "prefixes_updated_total",
+			Help: "Number of prefixes updated in the RIB.",
 		},
 		[]string{"exporter"},
 	)

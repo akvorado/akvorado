@@ -1,0 +1,234 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":configMigration",
+    ":semanticCommitTypeAll(build)",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "labels": [
+    "dependencies"
+  ],
+  "prConcurrentLimit": 15,
+  "minimumReleaseAge": "5 days",
+  "commitMessageExtra": "from {{{currentValue}}} to {{#if isPinDigest}}{{{newDigestShort}}}{{else}}{{#if isMajor}}{{prettyNewMajor}}{{else}}{{#if isSingleVersion}}{{prettyNewVersion}}{{else}}{{#if newValue}}{{{newValue}}}{{else}}{{{newDigestShort}}}{{/if}}{{/if}}{{/if}}{{/if}}",
+  "docker-compose": {
+    "managerFilePatterns": [
+      "/docker/versions\\.yml$/"
+    ]
+  },
+  "gomod": {
+    "postUpdateOptions": ["gomodTidy"]
+  },
+  "schedule": [
+    "* 1-7 1-7 * 6"
+  ],
+  "packageRules": [
+    {
+      "matchManagers": [
+        "npm"
+      ],
+      "addLabels": [
+        "service::console"
+      ]
+    },
+    {
+      "matchManagers": [
+        "npm"
+      ],
+      "groupName": "vueuse",
+      "matchPackageNames": [
+        "/^@vueuse//"
+      ]
+    },
+    {
+      "matchManagers": [
+        "npm"
+      ],
+      "groupName": "vue",
+      "matchPackageNames": [
+        "vue",
+        "vue-router",
+        "vue-tsc",
+        "/^@vue//",
+        "!@vue/tsconfig"
+      ]
+    },
+    {
+      "matchManagers": [
+        "npm"
+      ],
+      "groupName": "codemirror",
+      "matchPackageNames": [
+        "/^@codemirror//",
+        "/^@lezer//"
+      ]
+    },
+    {
+      "matchManagers": [
+        "npm"
+      ],
+      "groupName": "dev-dependencies",
+      "automerge": true,
+      "matchPackageNames": [
+        "autoprefixer",
+        "vite",
+        "vitest",
+        "/^@vitejs//",
+        "/^@vitest//",
+        "/^@volar//",
+        "/^oxlint/",
+        "/^oxfmt/",
+        "/^prettier/",
+        "pnpm"
+      ]
+    },
+    {
+      "matchManagers": [
+        "npm"
+      ],
+      "groupName": "tailwindcss",
+      "matchPackageNames": [
+        "tailwindcss",
+        "/^@tailwindcss//"
+      ]
+    },
+    {
+      "matchManagers": [
+        "npm"
+      ],
+      "groupName": "typescript",
+      "automerge": true,
+      "matchPackageNames": [
+        "typescript",
+        "typescript-language-server",
+        "/^@tsconfig//",
+        "/^@types//",
+        "/^@vue/tsconfig/"
+      ]
+    },
+    {
+      "matchManagers": [
+        "npm"
+      ],
+      "matchPackageNames": [
+        "@types/node"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "enabled": false
+    },
+    {
+      "matchPackageNames": [
+        "node"
+      ],
+      "enabled": false
+    },
+    {
+      "matchManagers": [
+        "npm"
+      ],
+      "matchUpdateTypes": [
+        "replacement"
+      ],
+      "enabled": false,
+      "matchPackageNames": [
+        "/^@tsconfig/node/"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchPackageNames": [
+        "go"
+      ],
+      "matchUpdateTypes": [
+        "patch"
+      ],
+      "automerge": true,
+      "minimumReleaseAge": "0 days",
+      "schedule": ["* * * * *"]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "franz-go",
+      "matchPackageNames": [
+        "/^github\\.com/twmb/franz-go/"
+      ]
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "golang-org-x",
+      "automerge": true,
+      "matchPackageNames": [
+        "/^golang\\.org/x//"
+      ]
+    },
+    {
+      "matchManagers": [
+        "docker-compose"
+      ],
+      "addLabels": [
+        "service::docker"
+      ],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "matchManagers": [
+        "docker-compose"
+      ],
+      "groupName": "clickhouse",
+      "matchPackageNames": [
+        "clickhouse/clickhouse-server",
+        "clickhouse/clickhouse-keeper"
+      ],
+      "allowedVersions": "/^\\d+\\.[38]$/"
+    },
+    {
+      "matchManagers": [
+        "docker-compose"
+      ],
+      "matchPackageNames": [
+        "timberio/vector"
+      ],
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.X-alpine$"
+    },
+    {
+      "matchManagers": [
+        "docker-compose"
+      ],
+      "matchPackageNames": [
+        "ghcr.io/akvorado/akvorado",
+        "ghcr.io/akvorado/ipinfo-geoipupdate",
+        "quay.io/akvorado/akvorado",
+        "quay.io/akvorado/ipinfo-geoipupdate"
+      ],
+      "enabled": false
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "actions-artifacts",
+      "matchPackageNames": [
+        "actions/download-artifact",
+        "actions/upload-artifact"
+      ]
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "actions-docker",
+      "matchPackageNames": [
+        "/^docker//"
+      ]
+    }
+  ]
+}

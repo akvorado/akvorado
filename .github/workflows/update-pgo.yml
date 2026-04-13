@@ -1,0 +1,30 @@
+---
+name: Update PGO profile
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "26 8 1 * *"
+
+jobs:
+  pgo:
+    name: Update PGO profile
+    runs-on: ubuntu-latest
+    if: github.repository_owner == 'akvorado'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - name: Download profile
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          rm -f default.pgo
+          run_id=$(gh run list --workflow ci.yml --branch main --status success \
+                               --limit 1 --json databaseId --jq '.[0].databaseId')
+          gh run download "$run_id" --name pgo --dir .
+      - name: Push update
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add default.pgo
+          ! git commit -m "build: update PGO profile" || git push

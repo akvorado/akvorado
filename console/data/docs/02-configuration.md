@@ -50,11 +50,23 @@ match a configuration, the first configuration is used.
 Each service has several functional components. Each component has a section in
 the configuration file with the same name.
 
+The default Docker Compose setup splits the configuration into several files
+using `!include` directives. The main file `config/akvorado.yaml` contains
+orchestrator settings (such as `schema`, `kafka`, `clickhouse`, and `geoip`) and
+includes the service-specific files:
+
+- `config/inlet.yaml` for the inlet service
+- `config/outlet.yaml` for the outlet service
+- `config/console.yaml` for the console service
+
+You can also put everything in a single file if you prefer. In that case, nest
+each service's configuration under its key (`inlet`, `outlet`, `console`).
+
 ## Inlet service
 
-Configure this service under the `inlet` key. The inlet service receives
-NetFlow/IPFIX/sFlow packets and sends them to Kafka. Its main components are
-`flow` and `kafka`.
+The inlet service receives NetFlow/IPFIX/sFlow packets and sends them to Kafka.
+It is configured under the `inlet` key (or in `config/inlet.yaml` with the
+default Docker Compose setup). Its main components are `flow` and `kafka`.
 
 ### Flow
 
@@ -80,6 +92,11 @@ For all available inputs, the following options are available:
   for sFlow or the use of [IPFIX
   315](https://datatracker.ietf.org/doc/html/rfc7133). If there is a protocol
   mismatch, the packet will be dropped.
+- `rate-limit` to set the maximum number of flows per second per exporter. When
+  the rate is exceeded, excess flows are dropped before being written to
+  ClickHouse. The sampling rate of the remaining flows is adjusted to compensate
+  for the dropped flows. Flows are still sent through Kafka. Set to `0` to
+  disable (the default).
 
 For the UDP input, you can use the following keys:
 
@@ -154,9 +171,10 @@ backward-compatible.
 
 ## Outlet service
 
-Configure this service under the `outlet` key. The outlet service takes flows
-from Kafka, parses them, adds metadata and routing information, and sends them
-to ClickHouse. Its main components are `kafka`, `metadata`, `routing`, and `core`.
+The outlet service takes flows from Kafka, parses them, adds metadata and
+routing information, and sends them to ClickHouse. It is configured under the
+`outlet` key (or in `config/outlet.yaml` with the default Docker Compose setup).
+Its main components are `kafka`, `metadata`, `routing`, and `core`.
 
 ### Kafka
 
@@ -204,6 +222,12 @@ For the BMP provider, the following keys are accepted:
   (default port is 10179).
 - `rds` is a list of route distinguishers to accept. Use 0 to accept routes
   without a route distinguisher.
+- `rts` is a list of route targets to accept. Only BGP updates carrying a
+  matching route target extended community are accepted. Use 0 to accept
+  routes without a route target. When both `rds` and `rts` are specified, a
+  route is accepted when it matches any configured RD **and** the BGP update
+  carries any configured RT. An empty list disables filtering for that
+  dimension.
 - `collect-asns` defines if origin AS numbers should be collected.
 - `collect-aspaths` defines if AS paths should be collected.
 - `collect-communities` defines if communities should be collected. It supports
@@ -212,6 +236,15 @@ For the BMP provider, the following keys are accepted:
   connection.
 - `receive-buffer` is the size of the kernel receive buffer in bytes for each
   established BMP connection.
+- `message-buffer` is the maximum number of BMP messages buffered between the
+  TCP reader and the message processor (default: 10000). When the buffer is
+  full, the reader blocks, relying on TCP backpressure. This decouples IO from
+  processing and prevents the sender from declaring the session stuck during
+  slow operations.
+- `rib-shards` is the number of shards for the RIB (default: 16, max: 256). The
+  RIB is split across independent shards to reduce lock contention when
+  processing routes from multiple BMP connections concurrently. Increasing the
+  number of shards increase the memory usage.
 
 If you do not need AS paths and communities, you can disable them to save memory
 and disk space in ClickHouse.
@@ -226,6 +259,12 @@ routing:
   provider:
     type: bmp
     listen: 0.0.0.0:10179
+    rds:
+      - "65017:100"
+      - "0"
+    rts:
+      - "65017:100"
+      - "0"
     collect-asns: true
     collect-aspaths: true
     collect-communities: false
@@ -473,12 +512,25 @@ sources. Each source accepts these attributes:
   like `http_proxy`).
 - `timeout` defines the timeout for fetching and parsing.
 - `interval` is the interval at which the source should be refreshed.
+- `parser` defines the format of the response body. Accepted values are `json`
+  (default), `csv-comma`, `csv-semicolon`, `csv-colon`, and `plain`. CSV parsers
+  produce an array of objects keyed by `f1`, `f2`, `f3`, etc. If the CSV file
+  has a header row, it can be skipped with a `transform` expression like
+  `.[1:][]`. The `plain` parser produces an array of strings, one per line.
+- `pagination` defines the pagination strategy for fetching multiple pages.
+  Accepted values are `auto` (default), `none`, `link-next`, and `rel-next`.
+  `link-next` expects the response to be a JSON object with a `next` field
+  containing the URL of the next page (or `null` when there are no more pages).
+  `rel-next` looks for a `Link` HTTP header with `rel="next"` ([RFC
+  8288](https://www.rfc-editor.org/rfc/rfc8288)). `auto` tries both methods
+  (starting with `rel-next`) and sticks with the first one that works. `none`
+  disables pagination.
 - `transform` is a [jq](https://stedolan.github.io/jq/manual/) expression that
-  transforms the received JSON into a set of attributes represented as objects.
-  Each object should have these keys: `exporter-subnet`, `default` (with the
-  same structure as a static configuration), and `interfaces`. The latter is a
-  list of interfaces, where each interface has an `ifindex`, a `name`, a
-  `description`, and a `speed`.
+  transforms the parsed data into a set of attributes represented as objects.
+  Each object should have these keys: `exportersubnet`, `skipmissinginterfaces`,
+  `default` (with the same structure as a static configuration), and `interfaces`.
+  The latter is a list of interfaces, where each interface has an `ifindex`, a
+  `name`, a `description`, and a `speed`.
 
 For example:
 
@@ -498,7 +550,7 @@ metadata:
 The core component processes flows from Kafka, queries the `metadata` component to
 enrich the flows with additional information, and classifies
 exporters and interfaces into groups with a set of classification
-rules. It also handles flow rate limiting.
+rules. It also enforces per-exporter rate limiting as configured in the inlet.
 
 The following configuration keys are accepted:
 
@@ -673,10 +725,11 @@ The flow component decodes flows received from Kafka. There is only one setting:
 
 ## Orchestrator service
 
-The three main components of the orchestrator service are `schema`,
-`clickhouse`, and `kafka`. The `automatic-restart` directive tells the
-orchestrator to watch for configuration changes and restart if there are any. It
-is enable by default.
+The orchestrator settings are at the top level of the main configuration file
+(`config/akvorado.yaml` with the default Docker Compose setup). Its three main
+components are `schema`, `clickhouse`, and `kafka`. The `automatic-restart`
+directive tells the orchestrator to watch for configuration changes and restart
+if there are any. It is enabled by default.
 
 ### Schema
 
@@ -702,8 +755,10 @@ dimensions (e.g. `SrcNetPrefix` and `DstNetPrefix`) is computed at query time
 (the default) or materialized at ingest time. This reduces the query time, but
 increases the storage needs.
 
-You can get the list of columns you can enable or disable with `akvorado
-version -d`. Disabling a column won't delete existing data.
+You can get the list of columns you can enable or disable with `akvorado version
+-d`. When using Docker Compose, run `docker compose run --rm --no-deps
+akvorado-orchestrator version -d`. Disabling a column won't delete existing
+data.
 
 It is also possible to make some columns available on the main table only
 or on all tables with `main-table-only` and `not-main-table-only`. For example:
@@ -724,6 +779,57 @@ schema:
 For ICMP, you get `ICMPv4Type`, `ICMPv4Code`, `ICMPv6Type`, `ICMPv6Code`,
 `ICMPv4`, and `ICMPv6`. The two latest one are displayed as a string in the
 console (like `echo-reply` or `frag-needed`).
+
+#### Data-skipping indexes
+
+ClickHouse [data-skipping indexes][] can be added to columns in the main flows
+table. *Akvorado* ships with sensible defaults already enabled:
+
+| Column | Index |
+|---|---|
+| `SrcAddr`, `DstAddr` | `bloom(0.001)` |
+| `SrcAS`, `DstAS` | `bloom(0.001)` |
+| `SrcPort`, `DstPort` | `bloom(0.001)` |
+| `SrcCountry`, `DstCountry` | `bloom(0.001)` |
+| `ExporterName` | `minmax` |
+| `InIfProvider`, `OutIfProvider` | `set(0)` |
+| `InIfConnectivity`, `OutIfConnectivity` | `set(0)` |
+| `InIfBoundary`, `OutIfBoundary` | `set(0)` |
+
+Three index types are supported:
+
+- `bloom(P)` | bloom filter with false-positive probability P (0 < P < 1).
+  Good for high-cardinality columns such as IP addresses or AS numbers.
+- `minmax` | stores the min/max of each granule. Efficient for columns that are
+  partially ordered in the table, such as `ExporterName`.
+- `set(N)` | stores up to N distinct values per granule (0 means unlimited).
+  Efficient for low-cardinality columns such as `InIfBoundary` or
+  `InIfConnectivity`.
+
+Use `indexes` to add or override an index, and `no-indexes` to remove a default:
+
+```yaml
+schema:
+  # Override the FPP for SrcAddr and add an index for a custom column.
+  indexes:
+    SrcAddr: bloom(0.01)
+    SrcNetName: bloom(0.001)
+  # Remove the default index for DstAddr.
+  no-indexes:
+    - DstAddr
+```
+
+Indexes are idempotent: changing the type or removing an entry will cause
+*Akvorado* to drop and recreate (or drop) the index on the next startup.
+
+> [!NOTE]
+> Skip indexes only load begin to work on data inserted after its creation.
+> To view any skipping indexes, you can use: 
+> `SELECT database,table,name FROM system.data_skipping_indices`
+> To materialize indexes, you can use:
+> `ALTER TABLE [tblName] MATERIALIZE INDEX [idxName]`
+
+[data-skipping indexes]: https://clickhouse.com/docs/optimize/skipping-indexes
 
 #### Custom dictionaries
 
@@ -905,19 +1011,13 @@ provided inside `clickhouse`:
   map from source names to sources. Each source accepts the following
   attributes:
   - `url` is the URL to fetch
-  - `tls` defines the TLS configuration to connect to the source (it uses the
-    same configuration as for [Kafka](#kafka-2), be sure to set `enable` to
-    `true`)
-  - `method` is the method to use (`GET` or `POST`)
-  - `headers` is a map from header names to values to add to the request
-  - `proxy` says if we should use a proxy (defined through environment variables like `http_proxy`)
-  - `timeout` defines the timeout for fetching and parsing
-  - `interval` is the interval at which the source should be refreshed
   - `transform` is a [jq](https://stedolan.github.io/jq/manual/) expression to
-    transform the received JSON into a set of network attributes represented as
+    transform the parsed data into a set of network attributes represented as
     objects. Each object must have a `prefix` attribute and, optionally, `name`,
     `role`, `site`, `region`, `tenant`, `city`, `state`, `country`, and `asn`.
     See the example provided in the shipped `akvorado.yaml` configuration file.
+  - any remaining attribute accepted for an `exporter-sources` in the
+    [static-provider](#static-provider).
 - `asns` maps AS number to names (overriding the builtin ones)
 - `orchestrator-url` defines the URL of the orchestrator to be used
   by ClickHouse (autodetection when not specified)
@@ -928,17 +1028,21 @@ provided inside `clickhouse`:
   orchestrator. The outlet requires the schema to match the expected structure:
   schema mismatches may cause write errors.
 
-The `resolutions` setting contains a list of resolutions. Each
-resolution has two keys: `interval` and `ttl`. The first one is the
-consolidation interval. The second is how long to keep the data in the
-database. If `ttl` is 0, then the data is kept forever. If `interval`
-is 0, it applies to the raw data (the one in the `flows` table). For
-each resolution, a materialized view `flows_DDDD` is created with the
-specified interval. It should be noted that consolidated tables do not
-contain information about source/destination IP addresses and ports.
-That's why you may want to keep the interval-0 table data a bit
-longer. *Akvorado* will still use the consolidated tables if the query
-do not require the raw table, for performance reason.
+The `resolutions` setting contains a list of resolutions. Each resolution has
+three keys: `interval`, `ttl`, and `table-settings`. The first one is the
+consolidation interval. The second is how long to keep the data in the database.
+If `ttl` is 0, then the data is kept forever. If `interval` is 0, it applies to
+the raw data (the one in the `flows` table). For each resolution, a materialized
+view `flows_DDDD` is created with the specified interval. It should be noted that
+consolidated tables do not contain information about source/destination IP
+addresses and ports by default. That's why you may want to keep the interval-0
+table data a bit longer. *Akvorado* will still use the consolidated tables if the
+query do not require the raw table, for performance reason.
+
+The `table-settings` key is optional and allows overriding or extending the
+default ClickHouse table settings (`index_granularity = 8192` and
+`ttl_only_drop_parts = 1`). This is useful for configuring a custom
+`storage_policy`, for example.
 
 Here is the default configuration:
 
@@ -954,12 +1058,32 @@ resolutions:
     ttl: 8760h # 1 year
 ```
 
+To use a custom storage policy for some resolutions:
+
+```yaml
+resolutions:
+  - interval: 0
+    ttl: 360h
+    table-settings:
+      storage_policy: fast_ssd
+  - interval: 1m
+    ttl: 168h
+  - interval: 5m
+    ttl: 2160h
+    table-settings:
+      storage_policy: cold_hdd
+  - interval: 1h
+    ttl: 8760h
+    table-settings:
+      storage_policy: cold_hdd
+```
+
 If you want to tweak the values, start from the default configuration. Most of
 the disk space is taken by the main table (`interval: 0`) and you can reduce its
-TTL if it's too big for your usage. Check the [operational
-documentation](04-operations.md#space-usage) for information on how to check
-disk usage. If you remove an existing interval, it is not removed from the
-ClickHouse database and will continue to be populated.
+TTL if it's too big for your usage. The data is not expired immediately. Check
+the [operational documentation](04-operations.md#space-usage) for information on
+how to check disk usage. If you remove an existing interval, it is not removed
+from the ClickHouse database and will continue to be populated.
 
 It is mandatory to specify a configuration for `interval: 0`.
 
@@ -990,11 +1114,24 @@ refreshed. For a given database, the latest paths override the earlier ones.
 
 ## Console service
 
-The main components of the console service are `console`, `authentication` and
-`database`.
+The console service is configured under the `console` key (or in
+`config/console.yaml` with the default Docker Compose setup). Its main
+components are `console`, `authentication` and `database`.
 
 The console itself accepts the following keys:
 
+ - `url-prefix` sets the URL path prefix under which the console is hosted
+   (e.g. `/akvorado/`).  The value must start and end with a slash. The default
+   is `/`.  When set, a stripping reverse proxy is required: the proxy must
+   remove the prefix before forwarding requests to Akvorado.  Akvorado uses the
+   prefix only to inject a `<base href="…">` tag into `index.html` so that the
+   browser correctly resolves relative asset and API paths.  Example nginx
+   snippet:
+   ```nginx
+   location /akvorado/ {
+       proxy_pass http://127.0.0.1:8081/;   # trailing slash strips the prefix
+   }
+   ```
  - `default-visualize-options` to define default options for the "visualize"
    tab. It takes the following keys: `graph-type` (one of `stacked`,
    `stacked100`, `lines`, `grid`, or `sankey`), `start`, `end`, `filter`,

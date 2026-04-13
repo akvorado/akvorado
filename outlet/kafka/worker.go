@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime/pprof"
 	"strconv"
 	"strings"
 	"time"
@@ -65,6 +66,8 @@ func (c *realComponent) startOneWorker() error {
 		logger := c.r.With().
 			Int("worker", i).
 			Logger()
+		labels := pprof.Labels("goroutine", fmt.Sprintf("kafka-worker-%d", i))
+		pprof.SetGoroutineLabels(pprof.WithLabels(context.Background(), labels))
 		defer func() {
 			logger.Info().Msg("stopping worker")
 

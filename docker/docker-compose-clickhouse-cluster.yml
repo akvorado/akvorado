@@ -33,7 +33,7 @@ services:
       interval: 20s
       test: ["CMD", "wget", "-T", "1", "--spider", "--no-proxy", "http://127.0.0.1:9100/metrics"]
     labels:
-      - metrics.port=9100
+      - metrics.enable=true
   clickhouse-keeper-2:
     <<: *clickhouse-keeper
     volumes:

@@ -10,7 +10,7 @@ import { provide, shallowReadonly } from "vue";
 import { useFetch } from "@vueuse/core";
 import type { graphTypes } from "../views/VisualizePage/graphtypes";
 
-const { data } = useFetch("/api/v0/console/configuration")
+const { data } = useFetch("api/v0/console/configuration")
   .get()
   .json<ServerConfig>();
 

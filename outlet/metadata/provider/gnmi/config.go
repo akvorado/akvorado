@@ -305,7 +305,7 @@ func ConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 					val := helpers.ElemOrIdentity(modelsValue.Index(i))
 					if val.Kind() == reflect.String && val.String() == "defaults" {
 						// We need to replace this item with the default values.
-						newValue := reflect.MakeSlice(reflect.SliceOf(reflect.TypeOf(new(any)).Elem()), 0, 0)
+						newValue := reflect.MakeSlice(reflect.SliceOf(reflect.TypeFor[any]()), 0, 0)
 						for j := range modelsValue.Len() {
 							if i != j {
 								newValue = reflect.Append(newValue, modelsValue.Index(j))

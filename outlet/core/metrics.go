@@ -15,6 +15,7 @@ type metrics struct {
 	flowsReceived    *reporter.CounterVec
 	flowsForwarded   *reporter.CounterVec
 	flowsErrors      *reporter.CounterVec
+	flowsRateLimited *reporter.CounterVec
 	flowsHTTPClients reporter.GaugeFunc
 
 	classifierExporterCacheSize  reporter.CounterFunc
@@ -56,6 +57,13 @@ func (c *Component) initMetrics() {
 			Help: "Number of flows with errors.",
 		},
 		[]string{"exporter", "error"},
+	)
+	c.metrics.flowsRateLimited = c.r.CounterVec(
+		reporter.CounterOpts{
+			Name: "flows_rate_limited_total",
+			Help: "Number of flows dropped by rate limiter.",
+		},
+		[]string{"exporter"},
 	)
 	c.metrics.flowsHTTPClients = c.r.GaugeFunc(
 		reporter.GaugeOpts{

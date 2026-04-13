@@ -233,8 +233,8 @@ func OutletConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 						continue
 					}
 					metadataConfig := reflect.TypeFor[metadata.Configuration]()
-					for j := range metadataConfig.NumField() {
-						if helpers.MapStructureMatchName(k.String(), metadataConfig.Field(j).Name) {
+					for field := range metadataConfig.Fields() {
+						if helpers.MapStructureMatchName(k.String(), field.Name) {
 							metadataValue[k.String()] = snmpMap.MapIndex(snmpKeys[i]).Interface()
 							continue outerSNMP
 						}
@@ -282,8 +282,8 @@ func OutletConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 						continue
 					}
 					routingConfig := reflect.TypeFor[routing.Configuration]()
-					for j := range routingConfig.NumField() {
-						if helpers.MapStructureMatchName(k.String(), routingConfig.Field(j).Name) {
+					for field := range routingConfig.Fields() {
+						if helpers.MapStructureMatchName(k.String(), field.Name) {
 							routingValue[k.String()] = bmpMap.MapIndex(bmpKeys[i]).Interface()
 							continue outerBMP
 						}

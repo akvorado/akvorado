@@ -32,7 +32,7 @@ export const complete = async (ctx: CompletionContext) => {
     payload: { what: string; column?: string; prefix?: string },
     transform = (x: { label: string; detail?: string }) => x,
   ) => {
-    const response = await fetch("/api/v0/console/filter/complete", {
+    const response = await fetch("api/v0/console/filter/complete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

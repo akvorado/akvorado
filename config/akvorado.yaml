@@ -61,6 +61,8 @@ clickhouse:
       name: ipv6-servers
       role: servers
   network-sources: []
+
+  # network-sources:
     # amazon:
     #   url: https://ip-ranges.amazonaws.com/ip-ranges.json
     #   interval: 6h
@@ -88,6 +90,13 @@ clickhouse:
     #       role: .role.name,
     #       name: .description
     #     }
+    # nerd-scan:
+    #   url: https://nerd.cesnet.cz/nerd/data/bl_scan.txt
+    #   parser: plain
+    #   interval: 24h
+    #   transform: |
+    #     .[] | select(startswith("#") | not) |
+    #     { prefix: . + "/32", tenant: "nerd", role: "nerd-scan" }
 
 inlet: !include "inlet.yaml"
 outlet: !include "outlet.yaml"

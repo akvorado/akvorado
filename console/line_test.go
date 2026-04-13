@@ -280,6 +280,44 @@ ORDER BY time WITH FILL
 				},
 			},
 		}, {
+			Description: "no dimensions, no filters, fps",
+			Pos:         helpers.Mark(),
+			Input: graphLineHandlerInput{
+				graphCommonHandlerInput: graphCommonHandlerInput{
+					Start:      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+					End:        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+					Dimensions: []query.Column{},
+					Filter:     query.Filter{},
+					Units:      "fps",
+				},
+				Points: 100,
+			},
+			Expected: []templateQuery{
+				{
+					Context: inputContext{
+						Start:  time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+						End:    time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+						Points: 100,
+						Units:  "fps",
+					},
+					Template: `WITH
+ source AS (SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1)
+SELECT 1 AS axis, * FROM (
+SELECT
+ {{ .ToStartOfInterval }} AS time,
+ {{ .Units }}/{{ .Interval }} AS xps,
+ emptyArrayString() AS dimensions
+FROM source
+WHERE {{ .Timefilter }}
+GROUP BY time, dimensions
+ORDER BY time WITH FILL
+ FROM {{ .TimefilterStart }}
+ TO {{ .TimefilterEnd }} + INTERVAL 1 second
+ STEP {{ .Interval }}
+ INTERPOLATE (dimensions AS emptyArrayString()))`,
+				},
+			},
+		}, {
 			Description: "truncated source address",
 			Pos:         helpers.Mark(),
 			Input: graphLineHandlerInput{

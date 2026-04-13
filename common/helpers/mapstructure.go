@@ -65,8 +65,7 @@ func SameTypeOrSuperset(input, ref reflect.Type) bool {
 	if input.Kind() != reflect.Struct {
 		return false
 	}
-	for i := 0; i < input.NumField(); i++ {
-		field := input.Field(i)
+	for field := range input.Fields() {
 		if tag := field.Tag.Get("mapstructure"); tag == ",squash" && field.Type == ref {
 			return true
 		}
@@ -119,6 +118,9 @@ func StringToSliceHookFunc(sep string) mapstructure.DecodeHookFunc {
 // ProtectedDecodeHookFunc wraps a DecodeHookFunc to recover and returns an error on panic.
 func ProtectedDecodeHookFunc(hook mapstructure.DecodeHookFunc) mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (v any, err error) {
+		if to.Kind() == reflect.Interface && to.IsNil() {
+			return from.Interface(), nil
+		}
 		defer func() {
 			if r := recover(); r != nil {
 				v = nil
@@ -255,8 +257,8 @@ func ParametrizedConfigurationUnmarshallerHook[OuterConfiguration any, InnerConf
 				return nil, errors.New("configuration should not have a `config' key")
 			default:
 				t := to.Type()
-				for i := range t.NumField() {
-					if MapStructureMatchName(keyStr, t.Field(i).Name) {
+				for field := range t.Fields() {
+					if MapStructureMatchName(keyStr, field.Name) {
 						// Don't touch
 						continue outer
 					}

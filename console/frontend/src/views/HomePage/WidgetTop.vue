@@ -44,7 +44,7 @@ type ECOption = ComposeOption<
 >;
 
 const url = computed(
-  () => `/api/v0/console/widget/top/${props.what}?${props.refresh}`,
+  () => `api/v0/console/widget/top/${props.what}?${props.refresh}`,
 );
 const { data } = useFetch(url, { refetch: true })
   .get()

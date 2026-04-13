@@ -31,7 +31,7 @@ const props = withDefaults(
   { refresh: 0 },
 );
 
-const url = computed(() => `/api/v0/console/widget/flow-last?${props.refresh}`);
+const url = computed(() => `api/v0/console/widget/flow-last?${props.refresh}`);
 const { data } = useFetch(url, { refetch: true })
   .get()
   .json<Record<string, string | number>>();

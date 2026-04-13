@@ -10,7 +10,7 @@ import { provide, shallowReadonly, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useFetch } from "@vueuse/core";
 
-const { data, execute } = useFetch("/api/v0/console/user/info", {
+const { data, execute } = useFetch("api/v0/console/user/info", {
   immediate: false,
   onFetchError(ctx) {
     if (ctx.response?.status === 401) {

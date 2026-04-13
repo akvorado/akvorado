@@ -249,7 +249,7 @@ forwarding-options {
               port 2055;
               autonomous-system-type origin;
               source-address 203.0.113.2;
-              version-ipfix {
+              version9 {
                 template {
                   ipv4;
                 }
@@ -266,7 +266,7 @@ forwarding-options {
               port 2055;
               autonomous-system-type origin;
               source-address 203.0.113.2;
-              version-ipfix {
+              version9 {
                 template {
                   ipv6;
                 }
@@ -291,7 +291,7 @@ chassis {
 }
 services {
   flow-monitoring {
-    version-ipfix {
+    version9 {
       template ipv4 {
         nexthop-learning enable;
         flow-active-timeout 10;
@@ -856,6 +856,10 @@ ORDER BY
     sum(column_data_compressed_bytes) DESC
 ```
 
+You can reduce the space used by the `flows` table by setting a lower TTL in
+`clickhouse`→`resolutions`. This does not take effect immediately. You need to
+run `ALTER TABLE flows MATERIALIZE TTL`.
+
 You can also include the system tables:
 
 ```sql
@@ -937,9 +941,8 @@ FROM system.tables
 WHERE (name = 'flows') AND (database = currentDatabase())
 ```
 
-If the primary key starts with `TimeReceived` instead of
-`toStartOfFiveMinutes(TimeReceived)`, you are using the old schema. You may get
-better performance by switching to the new one.
+If the primary key is not `toStartOfFiveMinutes(TimeReceived)`, you are using
+the old schema. You may get better performance by switching to the new one.
 
 The idea is to create a new table and transfer the data from the old table,
 partition by partition. Execute this request and make sure you have enough
@@ -974,10 +977,12 @@ FORMAT TSVRaw
 ```
 
 You need to change the `ORDER BY` directive to replace `TimeReceived` with
-`toStartOfFiveMinutes(TimeReceived)`. You should get something like this:
+`toStartOfFiveMinutes(TimeReceived)` and add
+`toStartOfFiveMinutes(TimeReceived)` as the primary key. You should get
+something like this:
 
 ```
-MergeTree PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, toIntervalSecond(25920))) ORDER BY (toStartOfFiveMinutes(TimeReceived), ExporterAddress, InIfName, OutIfName) TTL TimeReceived + toIntervalSecond(1296000) SETTINGS index_granularity = 8192, ttl_only_drop_parts = 1
+MergeTree PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, toIntervalSecond(25920))) PRIMARY KEY (toStartOfFiveMinutes(TimeReceived)) ORDER BY (toStartOfFiveMinutes(TimeReceived), ExporterAddress, InIfName, OutIfName) TTL TimeReceived + toIntervalSecond(1296000) SETTINGS index_granularity = 8192, ttl_only_drop_parts = 1
 ```
 
 Also, check the current number of flows stored in ClickHouse:

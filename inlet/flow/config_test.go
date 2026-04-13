@@ -350,6 +350,7 @@ func TestMarshalYAML(t *testing.T) {
     - decapsulationprotocol: none
       decoder: netflow
       listen: 192.0.2.11:2055
+      ratelimit: 0
       receivebuffer: 0
       timestampsource: netflow-first-switched
       type: udp
@@ -358,6 +359,7 @@ func TestMarshalYAML(t *testing.T) {
     - decapsulationprotocol: srv6
       decoder: sflow
       listen: 192.0.2.11:6343
+      ratelimit: 0
       receivebuffer: 0
       timestampsource: input
       type: udp

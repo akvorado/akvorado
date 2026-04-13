@@ -4,6 +4,7 @@
 package clickhouse
 
 import (
+	"fmt"
 	"reflect"
 	"time"
 
@@ -53,6 +54,10 @@ type ConfigurationBasicAuth struct {
 	Password string `validate:"min=1"`
 }
 
+// TableSettings is a map of ClickHouse table settings.
+// Values should be integers or strings.
+type TableSettings map[string]any
+
 // ResolutionConfiguration describes a consolidation interval.
 type ResolutionConfiguration struct {
 	// Interval is the consolidation interval for this
@@ -62,16 +67,20 @@ type ResolutionConfiguration struct {
 	// TTL is how long to keep data for this resolution. A
 	// value of 0 means to never expire.
 	TTL time.Duration `validate:"isdefault|min=1h"`
+	// TableSettings is a map of additional ClickHouse table settings
+	// to apply. These are merged with the default settings
+	// (index_granularity=8192, ttl_only_drop_parts=1).
+	TableSettings TableSettings `validate:"dive,keys,alphanumunderscore,endkeys"`
 }
 
 // DefaultConfiguration represents the default configuration for the ClickHouse configurator.
 func DefaultConfiguration() Configuration {
 	return Configuration{
 		Resolutions: []ResolutionConfiguration{
-			{0, 15 * 24 * time.Hour},                   // 15 days
-			{time.Minute, 7 * 24 * time.Hour},          // 7 days
-			{5 * time.Minute, 3 * 30 * 24 * time.Hour}, // 90 days
-			{time.Hour, 12 * 30 * 24 * time.Hour},      // 1 year
+			{Interval: 0, TTL: 15 * 24 * time.Hour},                   // 15 days
+			{Interval: time.Minute, TTL: 7 * 24 * time.Hour},          // 7 days
+			{Interval: 5 * time.Minute, TTL: 3 * 30 * 24 * time.Hour}, // 90 days
+			{Interval: time.Hour, TTL: 12 * 30 * 24 * time.Hour},      // 1 year
 		},
 		MaxPartitions:         50,
 		NetworkSourcesTimeout: 10 * time.Second,
@@ -118,9 +127,42 @@ func NetworkAttributesUnmarshallerHook() mapstructure.DecodeHookFunc {
 	}
 }
 
+// TableSettingsUnmarshallerHook decodes TableSettings values into int or string.
+func TableSettingsUnmarshallerHook() mapstructure.DecodeHookFunc {
+	return func(from, to reflect.Value) (any, error) {
+		from = helpers.ElemOrIdentity(from)
+		to = helpers.ElemOrIdentity(to)
+		if to.Type() != reflect.TypeFor[TableSettings]() {
+			return from.Interface(), nil
+		}
+		if from.Kind() != reflect.Map {
+			return from.Interface(), nil
+		}
+		result := TableSettings{}
+		for _, key := range from.MapKeys() {
+			k := helpers.ElemOrIdentity(key)
+			if k.Kind() != reflect.String {
+				return nil, fmt.Errorf("table setting key must be a string, got %s", k.Kind())
+			}
+			v := helpers.ElemOrIdentity(from.MapIndex(key))
+			// It's important to output the same types than in `renderTableSettings`.
+			switch v.Kind() {
+			case reflect.String:
+				result[k.String()] = v.String()
+			case reflect.Int:
+				result[k.String()] = int(v.Int())
+			default:
+				return nil, fmt.Errorf("table setting %q must be a string or integer, got %s", k.String(), v.Kind())
+			}
+		}
+		return result, nil
+	}
+}
+
 func init() {
 	helpers.RegisterMapstructureUnmarshallerHook(helpers.SubnetMapUnmarshallerHook[NetworkAttributes]())
 	helpers.RegisterMapstructureUnmarshallerHook(NetworkAttributesUnmarshallerHook())
+	helpers.RegisterMapstructureUnmarshallerHook(TableSettingsUnmarshallerHook())
 	helpers.RegisterMapstructureDeprecatedFields[Configuration](
 		"SystemLogTTL",
 		"PrometheusEndpoint",

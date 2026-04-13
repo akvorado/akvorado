@@ -8,20 +8,36 @@ on:
       - v*
   pull_request:
 jobs:
-  dependabot:
-    name: 🤖 Check dependabot status
+  renovatebot:
+    name: 🤖 Detect renovatebot action
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      pull-requests: read
     if: |
       !startsWith(github.event.head_commit.message, 'build: update Nix dependency hashes') ||
        github.ref_type == 'tag'
     steps:
-      - name: Fetch dependabot metadata
-        if: ${{ github.actor == 'dependabot[bot]' && github.event_name == 'pull_request' }}
-        id: metadata
-        uses: dependabot/fetch-metadata@v2.5.0
+      - name: Detect package ecosystem from changed files
+        if: github.actor == 'renovate[bot]' && github.event_name == 'pull_request'
+        id: detect
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          files=$(gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files --jq '.[].filename')
+          has_npm=false
+          has_gomod=false
+          if echo "$files" | grep -q '^console/frontend/pnpm-lock.yaml$'; then
+            has_npm=true
+          fi
+          if echo "$files" | grep -qE '^go\.sum$'; then
+            has_gomod=true
+          fi
+          case $has_npm,$has_gomod in
+            true,false) echo "package-ecosystem=npm" >> "$GITHUB_OUTPUT" ;;
+            false,true) echo "package-ecosystem=gomod" >> "$GITHUB_OUTPUT" ;;
+          esac
     outputs:
-      package-ecosystem: ${{ steps.metadata.outputs.package-ecosystem }}
+      package-ecosystem: ${{ steps.detect.outputs.package-ecosystem }}
 
   build-linux:
     name: 🐧 Test on Linux
@@ -53,11 +69,11 @@ jobs:
       CI_AKVORADO_EBPF: "true"
     steps:
       # Setup
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: ${{ matrix.binary && 0 || 1 }}
           persist-credentials: false
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
         if: matrix.compose
       - name: Docker Compose up
         if: matrix.compose
@@ -70,16 +86,16 @@ jobs:
       # Code tests
       - name: Go race tests
         if: matrix.racetests
-        run: sudo -E capsh --keep=1 --user=$USER --caps=cap_bpf+eip --addamb=cap_bpf -- -c "make test-race"
+        run: sudo -E capsh --keep=1 --user=$USER --caps=cap_bpf+eip --addamb=cap_bpf -- -c "env PATH=$PATH make test-race"
       - name: JS tests
         if: matrix.jstests
         run: make test-js
       - name: Coverage tests
         if: matrix.coverage
-        run: sudo -E capsh --keep=1 --user=$USER --caps=cap_bpf+eip --addamb=cap_bpf -- -c "make test-coverage"
+        run: sudo -E capsh --keep=1 --user=$USER --caps=cap_bpf+eip --addamb=cap_bpf -- -c "env PATH=$PATH make test-coverage"
       - name: Upload coverage results
         if: matrix.coverage
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: linux-coverage
           if-no-files-found: error
@@ -100,7 +116,7 @@ jobs:
           make TARGETARCH=arm64 && mv bin/akvorado bin/akvorado-arm64
       - name: Upload binary
         if: matrix.binary
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: binary
           path: bin/akvorado-*
@@ -121,10 +137,10 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
-      - uses: cachix/install-nix-action@v31
+      - uses: cachix/install-nix-action@96951a368ba55167b55f1c916f7d416bac6505fe # v31
       - name: Update dependency hashes
         run: nix run .#update
       - name: Abort on release if not up-to-date
@@ -135,7 +151,7 @@ jobs:
 
   build-macos:
     name: 🍏 Build and test on macOS
-    runs-on: macos-14
+    runs-on: macos-latest
     needs:
       - build-go
       - build-js
@@ -143,7 +159,7 @@ jobs:
       contents: read
     steps:
       # Setup
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
       - name: Setup
@@ -155,7 +171,7 @@ jobs:
       - name: Tests
         run: make test-coverage-go
       - name: Upload coverage results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: macos-coverage
           if-no-files-found: error
@@ -174,9 +190,9 @@ jobs:
       AKVORADO_COVERAGE_DIRECTORY: /tmp/akvorado-coverage
     steps:
       # Setup
-      - uses: docker/setup-buildx-action@v3
-      - uses: cachix/install-nix-action@v31
-      - uses: actions/checkout@v6
+      - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
+      - uses: cachix/install-nix-action@96951a368ba55167b55f1c916f7d416bac6505fe # v31
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
       - name: Setup
@@ -196,12 +212,23 @@ jobs:
         if: failure()
         run: |
           docker compose logs -t
+      - name: Collect profile
+        run: |
+          make -j default.pgo
+          go tool pprof -top default.pgo
+      - name: Upload profile
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: pgo
+          if-no-files-found: error
+          path: |
+            default.pgo
       - name: Retrieve coverage files
         run: |
           docker compose stop
           ./.github/e2e.sh coverage
       - name: Upload coverage results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
         with:
           name: e2e-coverage
           if-no-files-found: error
@@ -219,23 +246,23 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: linux-coverage
           path: test/linux
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: macos-coverage
           path: test/macos
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: e2e-coverage
           path: test/e2e
       - name: Upload unittests coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6
         with:
           token: &codecov-token bab8d6d9-e90c-4e37-b156-38a9a4c2108e  # not ideal, but limited risk
           files: ./test/linux/go/profile.out,./test/macos/profile.out,./test/linux/js/cobertura-coverage.xml
@@ -243,7 +270,7 @@ jobs:
           disable_search: true
           fail_ci_if_error: true
       - name: Upload e2e coverage
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6
         with:
           token: *codecov-token
           files: ./test/e2e/e2e-coverage.out
@@ -255,12 +282,12 @@ jobs:
     name: 🔬 Test only Go
     runs-on: ubuntu-latest
     needs:
-      - dependabot
-    if: needs.dependabot.outputs.package-ecosystem != 'npm_and_yarn'
+      - renovatebot
+    if: needs.renovatebot.outputs.package-ecosystem != 'npm'
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
       - name: Setup
@@ -276,7 +303,7 @@ jobs:
         run: make && ./bin/akvorado version
       - name: Save IANA files to cache
         if: steps.setup.outputs.iana-cache-hit != 'true'
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
         with:
           path: |
             orchestrator/clickhouse/data/udp.csv
@@ -289,20 +316,20 @@ jobs:
     name: 🔬 Test only JS
     runs-on: ubuntu-latest
     needs:
-      - dependabot
+      - renovatebot
     permissions:
       contents: read
     strategy:
       matrix:
-        node-version: [20, 22, 24]
-        dependabot:
-          - ${{ needs.dependabot.outputs.package-ecosystem }}
+        node-version: [22, 24]
+        renovatebot:
+          - ${{ needs.renovatebot.outputs.package-ecosystem }}
         exclude:
-          - dependabot: go_modules
+          - renovatebot: gomod
         include:
           - node-version: 22
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
       - name: Setup
@@ -322,7 +349,7 @@ jobs:
       - build-go
       - build-js
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
       - name: Setup
@@ -342,7 +369,7 @@ jobs:
       packages: write
       attestations: write
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           fetch-depth: 0        # We need the version
           persist-credentials: false
@@ -350,9 +377,9 @@ jobs:
         id: version
         run: |
           echo version=$(make version) >> "$GITHUB_OUTPUT"
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/metadata-action@v5
+      - uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # v4
+      - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
+      - uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6
         id: meta
         env:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
@@ -367,14 +394,14 @@ jobs:
           annotations: |
             org.opencontainers.image.title=Akvorado
             org.opencontainers.image.licenses=AGPL-3.0-only
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build image
         id: build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7
         with:
           context: .
           file: docker/Dockerfile
@@ -409,23 +436,29 @@ jobs:
       packages: write
       attestations: write
     steps:
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/metadata-action@v5
+      - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
+      - uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6
         id: meta
         with:
           images: |
             ghcr.io/${{ github.repository }}
+            quay.io/${{ github.repository }}
           tags: |
             type=schedule,pattern=main
             type=ref,event=branch
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
       - name: Tag image
         run: |
           echo "${{ steps.meta.outputs.tags }}" | xargs -n1 | while read tag; do
@@ -443,7 +476,7 @@ jobs:
       actions: read
     steps:
       # Changelog
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
       - name: Generate changelog
@@ -451,7 +484,7 @@ jobs:
 
       # Get binary from build step
       - name: Download binary
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: binary
 
@@ -471,7 +504,7 @@ jobs:
 
       # Publish release
       - name: Publish release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2
         with:
           body_path: changelog.md
           draft: true

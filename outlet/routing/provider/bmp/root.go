@@ -6,9 +6,11 @@
 package bmp
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/netip"
+	"runtime/pprof"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -28,6 +30,7 @@ type Provider struct {
 	t           tomb.Tomb
 	config      Configuration
 	acceptedRDs map[RD]struct{}
+	acceptedRTs map[RT]struct{}
 	active      atomic.Bool
 
 	address net.Addr
@@ -59,13 +62,19 @@ func (configuration Configuration) New(r *reporter.Reporter, dependencies Depend
 		d:      &dependencies,
 		config: configuration,
 
-		rib:   newRIB(),
+		rib:   newRIB(int(configuration.RIBShards)),
 		peers: make(map[peerKey]*peerInfo),
 	}
 	if len(p.config.RDs) > 0 {
 		p.acceptedRDs = make(map[RD]struct{})
 		for _, rd := range p.config.RDs {
 			p.acceptedRDs[rd] = struct{}{}
+		}
+	}
+	if len(p.config.RTs) > 0 {
+		p.acceptedRTs = make(map[RT]struct{})
+		for _, rt := range p.config.RTs {
+			p.acceptedRTs[rt] = struct{}{}
 		}
 	}
 	p.staleTimer = p.d.Clock.AfterFunc(time.Hour, p.removeStalePeers)
@@ -86,6 +95,8 @@ func (p *Provider) Start() error {
 
 	// Listener
 	p.t.Go(func() error {
+		labels := pprof.Labels("goroutine", "bmp-listener")
+		pprof.SetGoroutineLabels(pprof.WithLabels(context.Background(), labels))
 		for {
 			conn, err := listener.Accept()
 			if err != nil {
@@ -126,6 +137,8 @@ func (p *Provider) Start() error {
 			}
 			p.active.Store(true)
 			p.t.Go(func() error {
+				labels := pprof.Labels("goroutine", fmt.Sprintf("bmp-connection-%s", exporterStr))
+				pprof.SetGoroutineLabels(pprof.WithLabels(context.Background(), labels))
 				return p.serveConnection(tcpConn, exporter, exporterStr)
 			})
 		}

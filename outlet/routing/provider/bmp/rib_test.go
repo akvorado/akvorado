@@ -184,48 +184,47 @@ func TestRTAEqual(t *testing.T) {
 }
 
 func TestRemoveRoutes(t *testing.T) {
-	nr := func(r *rib, peer uint32) route {
-		return route{
-			peer:    peer,
-			nlri:    r.nlris.Put(nlri{family: bgp.RF_IPv4_UC, path: 1}),
-			nextHop: r.nextHops.Put(nextHop(netip.MustParseAddr("::ffff:198.51.100.8"))),
-			attributes: r.rtas.Put(routeAttributes{
-				asn: 65300,
-			}),
-			prefixLen: 96 + 24,
-		}
+	addRoute := func(r *rib, peer uint32) {
+		r.AddRoute(netip.MustParsePrefix("::ffff:192.168.144.0/120"), rawRoute{
+			peer:       peer,
+			nlri:       nlri{family: bgp.RF_IPv4_UC, path: 1},
+			nextHop:    nextHop(netip.MustParseAddr("::ffff:198.51.100.8")),
+			attributes: routeAttributes{asn: 65300},
+			prefixLen:  96 + 24,
+		})
 	}
 	t.Run("only route", func(t *testing.T) {
-		r := newRIB()
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), nr(r, 10))
+		r := newRIB(1)
+		rs := r.shards[0]
+		addRoute(r, 10)
 		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
-		count, empty := r.removeRoutes(idx, func(route) bool { return true }, true)
+		count, empty := rs.removeRoutes(idx, func(route) bool { return true }, true)
 		if !empty {
 			t.Error("removeRoutes() should have removed all routes from node")
 		}
 		if count != 1 {
 			t.Error("removeRoutes() should have removed 1 route")
 		}
-		if diff := helpers.Diff(r.routes, map[routeKey]route{}); diff != "" {
+		if diff := helpers.Diff(rs.routes, map[routeKey]route{}); diff != "" {
 			t.Errorf("removeRoutes() (-got, +want):\n%s", diff)
 		}
 	})
 
 	t.Run("first route", func(t *testing.T) {
-		r := newRIB()
-		r1 := nr(r, 10)
-		r2 := nr(r, 11)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
+		r := newRIB(1)
+		rs := r.shards[0]
+		addRoute(r, 10)
+		addRoute(r, 11)
 		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
-		count, empty := r.removeRoutes(idx, func(r route) bool { return r.peer == 10 }, true)
+		r2 := rs.routes[makeRouteKey(idx, 1)]
+		count, empty := rs.removeRoutes(idx, func(r route) bool { return r.peer == 10 }, true)
 		if empty {
 			t.Error("removeRoutes() should not have removed all routes from node")
 		}
 		if count != 1 {
 			t.Error("removeRoutes() should have removed 1 route")
 		}
-		if diff := helpers.Diff(r.routes, map[routeKey]route{
+		if diff := helpers.Diff(rs.routes, map[routeKey]route{
 			makeRouteKey(idx, 0): r2,
 		}); diff != "" {
 			t.Errorf("removeRoutes() (-got, +want):\n%s", diff)
@@ -233,42 +232,42 @@ func TestRemoveRoutes(t *testing.T) {
 	})
 
 	t.Run("second route", func(t *testing.T) {
-		r := newRIB()
-		r1 := nr(r, 10)
-		r2 := nr(r, 11)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
+		r := newRIB(1)
+		rs := r.shards[0]
+		addRoute(r, 10)
+		addRoute(r, 11)
 		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
-		count, empty := r.removeRoutes(idx, func(r route) bool { return r.peer == 11 }, true)
+		r1 := rs.routes[makeRouteKey(idx, 0)]
+		count, empty := rs.removeRoutes(idx, func(r route) bool { return r.peer == 11 }, true)
 		if empty {
 			t.Error("removeRoutes() should not have removed all routes from node")
 		}
 		if count != 1 {
 			t.Error("removeRoutes() should have removed 1 route")
 		}
-		if diff := helpers.Diff(r.routes, map[routeKey]route{
+		if diff := helpers.Diff(rs.routes, map[routeKey]route{
 			makeRouteKey(idx, 0): r1,
 		}); diff != "" {
 			t.Errorf("removeRoutes() (-got, +want):\n%s", diff)
 		}
 	})
 	t.Run("middle route", func(t *testing.T) {
-		r := newRIB()
-		r1 := nr(r, 10)
-		r2 := nr(r, 11)
-		r3 := nr(r, 12)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r3)
+		r := newRIB(1)
+		rs := r.shards[0]
+		addRoute(r, 10)
+		addRoute(r, 11)
+		addRoute(r, 12)
 		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
-		count, empty := r.removeRoutes(idx, func(r route) bool { return r.peer == 11 }, true)
+		r1 := rs.routes[makeRouteKey(idx, 0)]
+		r3 := rs.routes[makeRouteKey(idx, 2)]
+		count, empty := rs.removeRoutes(idx, func(r route) bool { return r.peer == 11 }, true)
 		if empty {
 			t.Error("removeRoutes() should not have removed all routes from node")
 		}
 		if count != 1 {
 			t.Error("removeRoutes() should have removed 1 route")
 		}
-		if diff := helpers.Diff(r.routes, map[routeKey]route{
+		if diff := helpers.Diff(rs.routes, map[routeKey]route{
 			makeRouteKey(idx, 0): r1,
 			makeRouteKey(idx, 1): r3,
 		}); diff != "" {
@@ -276,26 +275,24 @@ func TestRemoveRoutes(t *testing.T) {
 		}
 	})
 	t.Run("one route out of two", func(t *testing.T) {
-		r := newRIB()
-		r1 := nr(r, 10)
-		r2 := nr(r, 11)
-		r3 := nr(r, 12)
-		r4 := nr(r, 13)
-		r5 := nr(r, 14)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r3)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r4)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r5)
+		r := newRIB(1)
+		rs := r.shards[0]
+		addRoute(r, 10)
+		addRoute(r, 11)
+		addRoute(r, 12)
+		addRoute(r, 13)
+		addRoute(r, 14)
 		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
-		count, empty := r.removeRoutes(idx, func(r route) bool { return r.peer%2 == 0 }, false)
+		r2 := rs.routes[makeRouteKey(idx, 1)]
+		r4 := rs.routes[makeRouteKey(idx, 3)]
+		count, empty := rs.removeRoutes(idx, func(r route) bool { return r.peer%2 == 0 }, false)
 		if empty {
 			t.Error("removeRoutes() should not have removed all routes from node")
 		}
 		if count != 3 {
 			t.Error("removeRoutes() should have removed 3 route")
 		}
-		if diff := helpers.Diff(r.routes, map[routeKey]route{
+		if diff := helpers.Diff(rs.routes, map[routeKey]route{
 			makeRouteKey(idx, 0): r2,
 			makeRouteKey(idx, 1): r4,
 		}); diff != "" {
@@ -304,26 +301,22 @@ func TestRemoveRoutes(t *testing.T) {
 	})
 
 	t.Run("all routes", func(t *testing.T) {
-		r := newRIB()
-		r1 := nr(r, 10)
-		r2 := nr(r, 11)
-		r3 := nr(r, 12)
-		r4 := nr(r, 13)
-		r5 := nr(r, 14)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r1)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r2)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r3)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r4)
-		r.AddPrefix(netip.MustParsePrefix("::ffff:192.168.144.0/120"), r5)
+		r := newRIB(1)
+		rs := r.shards[0]
+		addRoute(r, 10)
+		addRoute(r, 11)
+		addRoute(r, 12)
+		addRoute(r, 13)
+		addRoute(r, 14)
 		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
-		count, empty := r.removeRoutes(idx, func(route) bool { return true }, false)
+		count, empty := rs.removeRoutes(idx, func(route) bool { return true }, false)
 		if !empty {
 			t.Error("removeRoutes() should have removed all routes from node")
 		}
 		if count != 5 {
 			t.Error("removeRoutes() should have removed 5 route")
 		}
-		if diff := helpers.Diff(r.routes, map[routeKey]route{}); diff != "" {
+		if diff := helpers.Diff(rs.routes, map[routeKey]route{}); diff != "" {
 			t.Errorf("removeRoutes() (-got, +want):\n%s", diff)
 		}
 	})
@@ -344,7 +337,7 @@ func TestRIBHarness(t *testing.T) {
 			run, totalExporters, peerPerExporter,
 			maxInitialRoutePerPeer, maxRemovedRoutePerPeer, maxReaddedRoutePerPeer)
 
-		r := newRIB()
+		r := newRIB(16)
 		type lookup struct {
 			peer    uint32
 			addr    netip.Addr
@@ -391,15 +384,14 @@ func TestRIBHarness(t *testing.T) {
 						asn:     uint32(random.IntN(1000)),
 						comment: "added during first pass",
 					}
-					added += r.AddPrefix(netip.PrefixFrom(lookup.addr, 64),
-						route{
-							peer:    peer,
-							nlri:    r.nlris.Put(nlri{rd: lookup.rd}),
-							nextHop: r.nextHops.Put(nextHop(lookup.nextHop)),
-							attributes: r.rtas.Put(routeAttributes{
-								asn: lookup.asn,
-							}),
-						})
+					routesAdded, _ := r.AddRoute(netip.PrefixFrom(lookup.addr, 64), rawRoute{
+						peer:       peer,
+						nlri:       nlri{rd: lookup.rd},
+						nextHop:    nextHop(lookup.nextHop),
+						attributes: routeAttributes{asn: lookup.asn},
+						prefixLen:  64,
+					})
+					added += routesAdded
 					removeLookup(lookup, fmt.Sprintf("erased by NH: %s, ASN: %d", lookup.nextHop, lookup.asn))
 					lookups = append(lookups, lookup)
 				}
@@ -411,20 +403,16 @@ func TestRIBHarness(t *testing.T) {
 					prefix := netip.MustParseAddr(fmt.Sprintf("2001:db8:f:%x::",
 						random.IntN(300)))
 					rd := RD(random.IntN(4))
-					if nlriRef, ok := r.nlris.Ref(nlri{
-						rd: rd,
-					}); ok {
-						removed += r.RemovePrefix(netip.PrefixFrom(prefix, 64),
-							route{
-								peer: peer,
-								nlri: nlriRef,
-							})
-						removeLookup(lookup{
-							peer: peer,
-							addr: prefix,
-							rd:   rd,
-						}, "removed during second pass")
-					}
+					routesRemoved, _ := r.RemoveRoute(netip.PrefixFrom(prefix, 64), rawRoute{
+						peer: peer,
+						nlri: nlri{rd: rd},
+					})
+					removed += routesRemoved
+					removeLookup(lookup{
+						peer: peer,
+						addr: prefix,
+						rd:   rd,
+					}, "removed during second pass")
 				}
 				t.Logf("Run %d: removed = %d/%d", run, removed, toRemove)
 
@@ -440,15 +428,14 @@ func TestRIBHarness(t *testing.T) {
 						asn:     uint32(random.IntN(1010)),
 						comment: "added during third pass",
 					}
-					added += r.AddPrefix(netip.PrefixFrom(lookup.addr, 64),
-						route{
-							peer:    peer,
-							nlri:    r.nlris.Put(nlri{}),
-							nextHop: r.nextHops.Put(nextHop(lookup.nextHop)),
-							attributes: r.rtas.Put(routeAttributes{
-								asn: lookup.asn,
-							}),
-						})
+					routesAdded, _ := r.AddRoute(netip.PrefixFrom(lookup.addr, 64), rawRoute{
+						peer:       peer,
+						nlri:       nlri{},
+						nextHop:    nextHop(lookup.nextHop),
+						attributes: routeAttributes{asn: lookup.asn},
+						prefixLen:  64,
+					})
+					added += routesAdded
 					removeLookup(lookup, fmt.Sprintf("erased by NH: %s, ASN: %d", lookup.nextHop, lookup.asn))
 					lookups = append(lookups, lookup)
 				}
@@ -474,12 +461,13 @@ func TestRIBHarness(t *testing.T) {
 			found := false
 			routeFound := false
 
-			for route := range r.iterateRoutesForPrefixIndex(prefixIdx) {
+			rs := r.shards[prefixIdx.shardIdx()]
+			for route := range rs.iterateRoutesForPrefixIndex(prefixIdx) {
 				routeFound = true // At least one route exists
-				if r.nextHops.Get(route.nextHop) != nextHop(lookup.nextHop) || r.nlris.Get(route.nlri).rd != lookup.rd {
+				if rs.nextHops.Get(route.nextHop) != nextHop(lookup.nextHop) || rs.nlris.Get(route.nlri).rd != lookup.rd {
 					continue
 				}
-				if r.rtas.Get(route.attributes).asn != lookup.asn {
+				if rs.rtas.Get(route.attributes).asn != lookup.asn {
 					continue
 				}
 				found = true
@@ -497,11 +485,11 @@ func TestRIBHarness(t *testing.T) {
 					lookup.addr, lookup.peer,
 					lookup.nextHop, lookup.rd, lookup.asn, lookup.comment)
 				t.Logf("> available routes in tree for %s:", lookup.addr)
-				for route := range r.iterateRoutesForPrefixIndex(prefixIdx) {
+				for route := range rs.iterateRoutesForPrefixIndex(prefixIdx) {
 					t.Logf("  peer %d, NH: %s, RD: %s, ASN: %d",
 						route.peer,
-						netip.Addr(r.nextHops.Get(route.nextHop)),
-						r.nlris.Get(route.nlri).rd, r.rtas.Get(route.attributes).asn)
+						netip.Addr(rs.nextHops.Get(route.nextHop)),
+						rs.nlris.Get(route.nlri).rd, rs.rtas.Get(route.attributes).asn)
 				}
 				t.Logf("> route history for prefix %s:", lookup.addr)
 				for _, olookup := range lookups {
@@ -534,15 +522,23 @@ func TestRIBHarness(t *testing.T) {
 			r.FlushPeer(peer)
 		}
 
-		// Check for leak of interned values
-		if r.nlris.Len() > 0 {
-			t.Errorf("%d NLRIs have leaked", r.nlris.Len())
+		// Check for leak of interned values across all shards
+		totalNlris := 0
+		totalNextHops := 0
+		totalRtas := 0
+		for _, rs := range r.shards {
+			totalNlris += rs.nlris.Len()
+			totalNextHops += rs.nextHops.Len()
+			totalRtas += rs.rtas.Len()
 		}
-		if r.nextHops.Len() > 0 {
-			t.Errorf("%d next hops have leaked", r.nextHops.Len())
+		if totalNlris > 0 {
+			t.Errorf("%d NLRIs have leaked", totalNlris)
 		}
-		if r.rtas.Len() > 0 {
-			t.Errorf("%d route attributes have leaked", r.rtas.Len())
+		if totalNextHops > 0 {
+			t.Errorf("%d next hops have leaked", totalNextHops)
+		}
+		if totalRtas > 0 {
+			t.Errorf("%d route attributes have leaked", totalRtas)
 		}
 
 		if t.Failed() {

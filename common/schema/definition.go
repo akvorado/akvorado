@@ -283,6 +283,7 @@ func flows() Schema {
 			},
 			{
 				Key:                        ColumnSrcNetPrefix,
+				ParserType:                 "prefix",
 				ClickHouseMainOnly:         true,
 				ClickHouseType:             "String",
 				ClickHouseMaterializedType: "LowCardinality(String)",
@@ -294,12 +295,14 @@ END`,
 			},
 			{
 				Key:                     ColumnSrcAS,
+				ParserType:              "asn",
 				ClickHouseType:          "UInt32",
 				ClickHouseGenerateFrom:  "if(SrcAS = 0, c_SrcNetworks[asn], SrcAS)",
 				ClickHouseSelfGenerated: true,
 			},
 			{
 				Key:                     ColumnDstAS,
+				ParserType:              "asn",
 				ClickHouseType:          "UInt32",
 				ClickHouseGenerateFrom:  "if(DstAS = 0, c_DstNetworks[asn], DstAS)",
 				ClickHouseSelfGenerated: true,
@@ -403,29 +406,34 @@ END`,
 			},
 			{
 				Key:                ColumnDstASPath,
+				ParserType:         "aspath",
 				ClickHouseMainOnly: true,
 				ClickHouseType:     "Array(UInt32)",
 			},
 			{
 				Key:                    ColumnDst1stAS,
 				Depends:                []ColumnKey{ColumnDstASPath},
+				ParserType:             "asn",
 				ClickHouseType:         "UInt32",
 				ClickHouseGenerateFrom: "c_DstASPath[1]",
 			},
 			{
 				Key:                    ColumnDst2ndAS,
 				Depends:                []ColumnKey{ColumnDstASPath},
+				ParserType:             "asn",
 				ClickHouseType:         "UInt32",
 				ClickHouseGenerateFrom: "c_DstASPath[2]",
 			},
 			{
 				Key:                    ColumnDst3rdAS,
 				Depends:                []ColumnKey{ColumnDstASPath},
+				ParserType:             "asn",
 				ClickHouseType:         "UInt32",
 				ClickHouseGenerateFrom: "c_DstASPath[3]",
 			},
 			{
 				Key:                ColumnDstCommunities,
+				ParserType:         "community",
 				ClickHouseMainOnly: true,
 				ClickHouseType:     "Array(UInt32)",
 			},
@@ -442,11 +450,12 @@ END`,
 			{Key: ColumnInIfProvider, ParserType: "string", ClickHouseType: "LowCardinality(String)", ClickHouseNotSortingKey: true},
 			{
 				Key:                     ColumnInIfBoundary,
+				ParserType:              "boundary",
 				ClickHouseType:          fmt.Sprintf("Enum8('undefined' = %d, 'external' = %d, 'internal' = %d)", InterfaceBoundaryUndefined, InterfaceBoundaryExternal, InterfaceBoundaryInternal),
 				ClickHouseNotSortingKey: true,
 			},
-			{Key: ColumnEType, ClickHouseType: "UInt32"}, // TODO: UInt16 but hard to change, primary key
-			{Key: ColumnProto, ClickHouseType: "UInt32"}, // TODO: UInt8 but hard to change, primary key
+			{Key: ColumnEType, ParserType: "etype", ClickHouseType: "UInt32"}, // TODO: UInt16 but hard to change, primary key
+			{Key: ColumnProto, ParserType: "proto", ClickHouseType: "UInt32"}, // TODO: UInt8 but hard to change, primary key
 			{Key: ColumnSrcPort, ParserType: "uint", ClickHouseType: "UInt16", ClickHouseMainOnly: true},
 			{
 				Key:                     ColumnBytes,
@@ -495,6 +504,7 @@ END`,
 			{Key: ColumnForwardingStatus, ParserType: "uint", ClickHouseType: "UInt32"}, // TODO: UInt8 but hard to change, primary key
 			{
 				Key:            ColumnFlowDirection,
+				ParserType:     "direction",
 				ClickHouseType: fmt.Sprintf("Enum8('undefined' = %d, 'ingress' = %d, 'egress' = %d)", DirectionUndefined, DirectionIngress, DirectionEgress),
 			},
 			{
@@ -514,7 +524,7 @@ END`,
 				ClickHouseType:     "UInt16",
 				ClickHouseMainOnly: true,
 			},
-			{Key: ColumnSrcMAC, Disabled: true, Group: ColumnGroupL2, ClickHouseType: "UInt64"},
+			{Key: ColumnSrcMAC, Disabled: true, Group: ColumnGroupL2, ParserType: "mac", ClickHouseType: "UInt64"},
 			{Key: ColumnIPTTL, Disabled: true, Group: ColumnGroupL3L4, ParserType: "uint", ClickHouseType: "UInt8"},
 			{Key: ColumnIPTos, Disabled: true, Group: ColumnGroupL3L4, ParserType: "uint", ClickHouseType: "UInt8"},
 			{Key: ColumnIPFragmentID, Disabled: true, Group: ColumnGroupL3L4, ParserType: "uint", ClickHouseType: "UInt32"},

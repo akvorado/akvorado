@@ -195,7 +195,7 @@ func DefaultHook() (mapstructure.DecodeHookFunc, func()) {
 		}
 
 		// For pointers, handle both nil and non-nil cases
-		if to.Kind() == reflect.Ptr {
+		if to.Kind() == reflect.Pointer {
 			if to.IsNil() {
 				// Try creating new instance and reset it
 				newV := reflect.New(to.Type().Elem())

@@ -8,6 +8,8 @@ paths:
     enabled:
       - SrcMAC
       - DstMAC
+    indexes: {}
+    noindexes: []
     materialize: []
     maintableonly:
       - SrcMAC
@@ -21,6 +23,8 @@ paths:
     enabled:
       - SrcMAC
       - DstMAC
+    indexes: {}
+    noindexes: []
     materialize: []
     maintableonly:
       - SrcMAC

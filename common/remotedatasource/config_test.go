@@ -121,6 +121,86 @@ func TestSourceDecode(t *testing.T) {
 				},
 			},
 		}, {
+			Description: "With CSV parser",
+			Initial:     func() any { return Source{} },
+			Configuration: func() any {
+				return helpers.M{
+					"url":      "https://example.net",
+					"interval": "10m",
+					"parser":   "csv-comma",
+				}
+			},
+			Expected: Source{
+				URL:      "https://example.net",
+				Method:   "GET",
+				Parser:   ParserCSVComma,
+				Timeout:  time.Minute,
+				Interval: 10 * time.Minute,
+				TLS: helpers.TLSConfiguration{
+					SkipVerify: false,
+				},
+			},
+		}, {
+			Description: "With plain parser",
+			Initial:     func() any { return Source{} },
+			Configuration: func() any {
+				return helpers.M{
+					"url":      "https://example.net",
+					"interval": "10m",
+					"parser":   "plain",
+				}
+			},
+			Expected: Source{
+				URL:      "https://example.net",
+				Method:   "GET",
+				Parser:   ParserPlain,
+				Timeout:  time.Minute,
+				Interval: 10 * time.Minute,
+				TLS: helpers.TLSConfiguration{
+					SkipVerify: false,
+				},
+			},
+		}, {
+			Description: "With pagination rel-next",
+			Initial:     func() any { return Source{} },
+			Configuration: func() any {
+				return helpers.M{
+					"url":        "https://example.net",
+					"interval":   "10m",
+					"pagination": "rel-next",
+				}
+			},
+			Expected: Source{
+				URL:        "https://example.net",
+				Method:     "GET",
+				Timeout:    time.Minute,
+				Interval:   10 * time.Minute,
+				Pagination: PaginationRelNext,
+				TLS: helpers.TLSConfiguration{
+					SkipVerify: false,
+				},
+			},
+		}, {
+			Description: "With pagination link-next",
+			Initial:     func() any { return Source{} },
+			Configuration: func() any {
+				return helpers.M{
+					"url":        "https://example.net",
+					"interval":   "10m",
+					"pagination": "link-next",
+				}
+			},
+			Expected: Source{
+				URL:        "https://example.net",
+				Method:     "GET",
+				Timeout:    time.Minute,
+				Interval:   10 * time.Minute,
+				Pagination: PaginationLinkNext,
+				TLS: helpers.TLSConfiguration{
+					SkipVerify: false,
+				},
+			},
+		}, {
 			Description: "Incorrect transform",
 			Initial:     func() any { return Source{} },
 			Configuration: func() any {

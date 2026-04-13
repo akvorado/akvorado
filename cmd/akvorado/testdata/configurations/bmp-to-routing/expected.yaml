@@ -4,12 +4,15 @@ paths:
     provider:
       type: bmp
       listen: 127.0.0.1:1179
+      messagebuffer: 10000
       collectasns: true
       collectaspaths: false
       collectcommunities: true
       keep: 1h0m0s
       rds: []
+      rts: []
       receivebuffer: 0
+      ribshards: 16
   outlet.0.core.asnproviders:
     - flow
     - routing

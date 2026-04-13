@@ -64,13 +64,26 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 	}
 
 	// Process each decoded flow
+	rateLimit := w.rawFlow.RateLimit
 	finalize := func() {
 		// Accounting
 		exporter := w.bf.ExporterAddress.Unmap().String()
 		w.c.metrics.flowsReceived.WithLabelValues(exporter).Inc()
 
-		// Enrichment
+		// Rate limiting
 		ip := w.bf.ExporterAddress
+		var dropRate float64
+		if rateLimit > 0 {
+			var allowed bool
+			allowed, dropRate = w.c.rateLimiter.allowOneMessage(ip, rateLimit)
+			if !allowed {
+				w.c.metrics.flowsRateLimited.WithLabelValues(exporter).Inc()
+				w.bf.Undo()
+				return
+			}
+		}
+
+		// Enrichment
 		if skip := w.enrichFlow(ip, exporter); skip {
 			w.bf.Undo()
 			return
@@ -90,6 +103,9 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 			if outIfBoundary == schema.InterfaceBoundaryInternal || outIfBoundary == schema.InterfaceBoundaryUndefined {
 				w.bf.DstAddr = w.anonymizeAddr(w.bf.DstAddr)
 			}
+		// Update sampling rate to account for rate limiting
+		if dropRate > 0 {
+			w.bf.SamplingRate = uint64(float64(w.bf.SamplingRate) / (1 - dropRate))
 		}
 
 		// If we have HTTP clients, send to them too

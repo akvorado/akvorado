@@ -5,6 +5,7 @@ package console
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"akvorado/common/helpers"
@@ -17,6 +18,12 @@ import (
 type Configuration struct {
 	// ServeLiveFS serve files from the filesystem instead of the embedded versions.
 	ServeLiveFS bool `yaml:"-"`
+	// URLPrefix is the URL path prefix where the console is hosted (e.g. "/akvorado/").
+	// It must start and end with a slash. Defaults to "/".
+	// When set, the server registers handlers under the prefix and injects a
+	// <base href="..."> tag into index.html so that relative asset and API paths
+	// resolve correctly.
+	URLPrefix string `mapstructure:"url-prefix" yaml:"url-prefix"`
 	// DefaultVisualizeOptions define some defaults for the "visualize" tab.
 	DefaultVisualizeOptions VisualizeOptionsConfiguration
 	// HomepageTopWidgets defines the list of widgets to display on the home page.
@@ -82,6 +89,7 @@ type VisualizeOptionsConfiguration struct {
 // DefaultConfiguration represents the default configuration for the console component.
 func DefaultConfiguration() Configuration {
 	return Configuration{
+		URLPrefix: "/",
 		DefaultVisualizeOptions: VisualizeOptionsConfiguration{
 			GraphType:  "stacked",
 			Start:      "6 hours ago",
@@ -103,6 +111,21 @@ func DefaultConfiguration() Configuration {
 		HomepageGraphFilter:    "InIfBoundary = 'external'",
 		HomepageGraphTimeRange: 24 * time.Hour,
 	}
+}
+
+// urlPrefix returns the canonical URL prefix, always starting and ending with "/".
+func (c *Component) urlPrefix() string {
+	prefix := c.config.URLPrefix
+	if prefix == "" || prefix == "/" {
+		return "/"
+	}
+	if !strings.HasPrefix(prefix, "/") {
+		prefix = "/" + prefix
+	}
+	if !strings.HasSuffix(prefix, "/") {
+		prefix = prefix + "/"
+	}
+	return prefix
 }
 
 func (c *Component) configHandlerFunc(gc *gin.Context) {

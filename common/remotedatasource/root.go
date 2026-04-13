@@ -6,13 +6,18 @@ package remotedatasource
 import (
 	"bufio"
 	"context"
+	"encoding/csv"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
+	"net/url"
+	"strings"
 	"sync"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v5"
 	"github.com/go-playground/validator/v10"
 	"github.com/go-viper/mapstructure/v2"
 	"github.com/itchyny/gojq"
@@ -46,10 +51,12 @@ var (
 	ErrFetchDataSource = errors.New("cannot fetch data source")
 	// ErrStatusCode is triggered if status code is not 200
 	ErrStatusCode = errors.New("unexpected HTTP status code")
-	// ErrJSONDecode is triggered for any decoding issue
+	// ErrJSONDecode is triggered for any JSON decoding issue
 	ErrJSONDecode = errors.New("cannot decode JSON")
-	// ErrMapResult is triggered when we cannot map the JSON result to the expected structure
-	ErrMapResult = errors.New("cannot map JSON")
+	// ErrCSVDecode is triggered for any CSV decoding issue
+	ErrCSVDecode = errors.New("cannot decode CSV")
+	// ErrMapResult is triggered when we cannot map the result to the expected structure
+	ErrMapResult = errors.New("cannot map result")
 	// ErrValidate is triggered when there is a check failure
 	ErrValidate = errors.New("cannot validate checks")
 	// ErrJQExecute is triggered when we cannot execute the jq filter
@@ -96,74 +103,155 @@ func (c *Component[T]) Fetch(ctx context.Context, name string, source Source) ([
 		Proxy:           http.ProxyFromEnvironment,
 		TLSClientConfig: tlsConfig,
 	}}
-	req, err := http.NewRequestWithContext(ctx, source.Method, source.URL, nil)
-	if err != nil {
-		l.Err(err).Msg("unable to build new request")
-		return nil, ErrBuildRequest
-	}
-	for headerName, headerValue := range source.Headers {
-		req.Header.Set(headerName, headerValue)
-	}
-	req.Header.Set("accept", "application/json")
-	resp, err := client.Do(req)
-	if err != nil {
-		l.Err(err).Msg("unable to fetch data source")
-		return nil, ErrFetchDataSource
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		l.Error().Int("status", resp.StatusCode).Msg("unexpected status code")
-		return nil, ErrStatusCode
-	}
-	reader := bufio.NewReader(resp.Body)
-	decoder := json.NewDecoder(reader)
-	var got any
-	if err := decoder.Decode(&got); err != nil {
-		l.Err(err).Msg("cannot decode JSON output")
-		return nil, ErrJSONDecode
-	}
 
-	iter := source.Transform.Query.RunWithContext(ctx, got)
-	for idx := 0; ; idx++ {
-		v, ok := iter.Next()
-		if !ok {
-			break
-		}
-		if err, ok := v.(error); ok {
-			l.Err(err).Msg("cannot execute jq filter")
-			return nil, ErrJQExecute
-		}
-		var result T
-		config := &mapstructure.DecoderConfig{
-			Metadata:   nil,
-			Result:     &result,
-			DecodeHook: helpers.ProtectedDecodeHookFunc(mapstructure.TextUnmarshallerHookFunc()),
-		}
-		decoder, err := mapstructure.NewDecoder(config)
+	currentURL := source.URL
+	pagination := source.Pagination
+	for currentURL != "" {
+		req, err := http.NewRequestWithContext(ctx, source.Method, currentURL, nil)
 		if err != nil {
-			panic(err)
+			l.Err(err).Msg("unable to build new request")
+			return nil, ErrBuildRequest
 		}
-		if err := decoder.Decode(v); err != nil {
-			l.Err(err).Msg("cannot map returned value")
-			return nil, ErrMapResult
+		for headerName, headerValue := range source.Headers {
+			req.Header.Set(headerName, headerValue)
 		}
-		if err := helpers.Validate.StructCtx(ctx, result); err != nil {
-			switch err := err.(type) {
-			case validator.ValidationErrors:
-				l.Err(err).Int("index", idx).Msgf("validation errors on %#v", result)
-				return nil, ErrValidate
-			default:
-				l.Err(err).Int("index", idx).Msgf("unable to validate on %#v", result)
-				return nil, ErrValidate
+		switch source.Parser {
+		case ParserJSON:
+			req.Header.Set("accept", "application/json")
+		case ParserCSVComma, ParserCSVSemicolon, ParserCSVColon:
+			req.Header.Set("accept", "text/csv")
+		case ParserPlain:
+			req.Header.Set("accept", "text/plain")
+		}
+		resp, err := client.Do(req)
+		if err != nil {
+			l.Err(err).Msg("unable to fetch data source")
+			return nil, ErrFetchDataSource
+		}
+		if resp.StatusCode != 200 {
+			resp.Body.Close()
+			l.Error().Int("status", resp.StatusCode).Msg("unexpected status code")
+			return nil, ErrStatusCode
+		}
+
+		got, err := parseResponse(source.Parser, resp.Body)
+		resp.Body.Close()
+		if err != nil {
+			l.Err(err).Msg("cannot decode response")
+			return nil, err
+		}
+
+		// Determine the next page URL
+		var nextURL string
+		nextURL, pagination = nextPageURL(currentURL, resp, got, pagination)
+
+		iter := source.Transform.Query.RunWithContext(ctx, got)
+		for idx := 0; ; idx++ {
+			v, ok := iter.Next()
+			if !ok {
+				break
 			}
+			if err, ok := v.(error); ok {
+				l.Err(err).Msg("cannot execute jq filter")
+				return nil, ErrJQExecute
+			}
+			var result T
+			decoderConfig := &mapstructure.DecoderConfig{
+				Metadata:   nil,
+				Result:     &result,
+				DecodeHook: helpers.ProtectedDecodeHookFunc(mapstructure.TextUnmarshallerHookFunc()),
+			}
+			decoder, err := mapstructure.NewDecoder(decoderConfig)
+			if err != nil {
+				panic(err)
+			}
+			if err := decoder.Decode(v); err != nil {
+				l.Err(err).Msg("cannot map returned value")
+				return nil, ErrMapResult
+			}
+			if err := helpers.Validate.StructCtx(ctx, result); err != nil {
+				switch err := err.(type) {
+				case validator.ValidationErrors:
+					l.Err(err).Int("index", idx).Msgf("validation errors on %#v", result)
+					return nil, ErrValidate
+				default:
+					l.Err(err).Int("index", idx).Msgf("unable to validate on %#v", result)
+					return nil, ErrValidate
+				}
+			}
+			results = append(results, result)
 		}
-		results = append(results, result)
+
+		currentURL = nextURL
 	}
 	if len(results) == 0 {
 		l.Error().Msg("empty result")
 		return nil, ErrEmpty
 	}
 	return results, nil
+}
+
+// nextPageURL determines the URL for the next page based on the pagination type.
+// For auto mode, it tries each method and returns the resolved type for subsequent pages.
+func nextPageURL(currentURL string, resp *http.Response, body any, pagination PaginationType) (string, PaginationType) {
+	resolve := func(raw string) string {
+		if raw == "" {
+			return ""
+		}
+		base, err := url.Parse(currentURL)
+		if err != nil {
+			return raw
+		}
+		ref, err := url.Parse(raw)
+		if err != nil {
+			return raw
+		}
+		return base.ResolveReference(ref).String()
+	}
+	switch pagination {
+	case PaginationNone:
+		return "", PaginationNone
+	case PaginationRelNext:
+		return resolve(relNextURL(resp)), PaginationRelNext
+	case PaginationLinkNext:
+		return resolve(linkNextURL(body)), PaginationLinkNext
+	case PaginationAuto:
+		if u := relNextURL(resp); u != "" {
+			return resolve(u), PaginationRelNext
+		}
+		if u := linkNextURL(body); u != "" {
+			return resolve(u), PaginationLinkNext
+		}
+		return "", PaginationAuto
+	}
+	return "", PaginationNone
+}
+
+// relNextURL extracts the next page URL from the Link header (RFC 8288).
+func relNextURL(resp *http.Response) string {
+	for _, header := range resp.Header.Values("Link") {
+		if u := parseLinkHeader(header, "next"); u != "" {
+			return u
+		}
+	}
+	return ""
+}
+
+// linkNextURL extracts the next page URL from a JSON body's "next" field.
+func linkNextURL(body any) string {
+	obj, ok := body.(map[string]any)
+	if !ok {
+		return ""
+	}
+	next, ok := obj["next"]
+	if !ok {
+		return ""
+	}
+	u, ok := next.(string)
+	if !ok || u == "" {
+		return ""
+	}
+	return u
 }
 
 // Start the remote data source fetcher component.
@@ -187,7 +275,6 @@ func (c *Component[T]) Start() error {
 			c.metrics.remoteDataSourceCount.WithLabelValues(c.dataType, name).Set(0)
 			newRetryTicker := func() *backoff.Ticker {
 				customBackoff := backoff.NewExponentialBackOff()
-				customBackoff.MaxElapsedTime = 0
 				customBackoff.MaxInterval = source.Interval
 				customBackoff.InitialInterval = source.Interval / 10
 				return backoff.NewTicker(customBackoff)
@@ -256,4 +343,52 @@ func (c *Component[T]) Start() error {
 func (c *Component[T]) Stop() error {
 	c.t.Kill(nil)
 	return c.t.Wait()
+}
+
+// parseResponse parses the HTTP response body according to the parser type.
+// It returns a generic value suitable for jq processing.
+func parseResponse(parser ParserType, body io.Reader) (any, error) {
+	reader := bufio.NewReader(body)
+	switch parser {
+	case ParserJSON:
+		var got any
+		if err := json.NewDecoder(reader).Decode(&got); err != nil {
+			return nil, ErrJSONDecode
+		}
+		return got, nil
+	case ParserCSVComma, ParserCSVSemicolon, ParserCSVColon:
+		csvReader := csv.NewReader(reader)
+		switch parser {
+		case ParserCSVSemicolon:
+			csvReader.Comma = ';'
+		case ParserCSVColon:
+			csvReader.Comma = ':'
+		}
+		records, err := csvReader.ReadAll()
+		if err != nil {
+			return nil, ErrCSVDecode
+		}
+		result := make([]any, len(records))
+		for i, record := range records {
+			obj := map[string]any{}
+			for j, field := range record {
+				obj[fmt.Sprintf("f%d", j+1)] = field
+			}
+			result[i] = obj
+		}
+		return result, nil
+	case ParserPlain:
+		var lines []any
+		scanner := bufio.NewScanner(reader)
+		for scanner.Scan() {
+			line := strings.TrimRight(scanner.Text(), "\r")
+			lines = append(lines, line)
+		}
+		if err := scanner.Err(); err != nil {
+			return nil, err
+		}
+		return lines, nil
+	default:
+		return nil, errors.New("unknown parser type")
+	}
 }

@@ -27,6 +27,7 @@
           "inl2%": "→L2%",
           "outl2%": "L2%→",
           pps: "ᵖ⁄ₛ",
+          fps: "ᶠ⁄ₛ",
         }[request.units]
       }}</span>
     </span>

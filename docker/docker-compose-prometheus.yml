@@ -31,7 +31,7 @@ services:
       - traefik.enable=true
       - traefik.http.routers.prometheus.rule=PathPrefix(`/prometheus`)
       - traefik.http.routers.prometheus.entrypoints=private
-      - metrics.port=9090
+      - metrics.enable=true
       - metrics.path=/prometheus/metrics
 
   # Fetch metrics
@@ -64,7 +64,7 @@ services:
       - traefik.enable=true
       - traefik.http.routers.alloy.rule=PathPrefix(`/alloy`)
       - traefik.http.routers.alloy.entrypoints=private
-      - metrics.port=12345
+      - metrics.enable=true
 
   # Node exporter for host metrics
   node-exporter:
@@ -82,6 +82,7 @@ services:
     expose:
       - 9100/tcp
     labels:
+      - metrics.enable=true
       - metrics.port=9100
 
   # cAdvisor for container metrics
@@ -109,4 +110,4 @@ services:
     expose:
       - 8080/tcp
     labels:
-      - metrics.port=8080
+      - metrics.enable=true
