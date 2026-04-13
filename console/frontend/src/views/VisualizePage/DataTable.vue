@@ -151,6 +151,10 @@ const table = computed(
       : data.units.slice(-3);
     const formatValue = (v: number): string =>
       unit === "%" ? `${v.toFixed(0)}%` : `${formatXps(v)}${unit}`;
+    const isBps = data.units.endsWith("bps");
+    const totalUnit = isBps ? "B" : data.units.endsWith("pps") ? "p" : "f";
+    const formatTotal = (v: number): string =>
+      `${formatXps(isBps ? v / 8 : v)}${totalUnit}`;
     if (
       data.graphType === "stacked" ||
       data.graphType === "stacked100" ||
@@ -173,6 +177,7 @@ const table = computed(
           { name: "Last", classNames: "text-right" },
           { name: "Average", classNames: "text-right" },
           { name: "~95th", classNames: "text-right" },
+          ...(data.total ? [{ name: "Total", classNames: "text-right" }] : []),
         ],
         rows:
           data.rows
@@ -195,6 +200,14 @@ const table = computed(
                     value: formatValue(d),
                     classNames: "text-right tabular-nums",
                   })),
+                  ...(data.total
+                    ? [
+                        {
+                          value: formatTotal(data.total[idx]),
+                          classNames: "text-right tabular-nums",
+                        },
+                      ]
+                    : []),
                 ],
                 color:
                   data.graphType === "heatmap"

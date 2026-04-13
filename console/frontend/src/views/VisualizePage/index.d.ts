@@ -34,6 +34,7 @@ export type GraphLineHandlerOutput = {
   axis: number[];
   "axis-names": Record<number, string>;
   average: number[];
+  total?: number[];
   min: number[];
   max: number[];
   last: number[];

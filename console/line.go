@@ -36,11 +36,12 @@ type graphLineHandlerOutput struct {
 	Points               [][]int        `json:"points"` // t → row → xps
 	Axis                 []int          `json:"axis"`   // row → axis
 	AxisNames            map[int]string `json:"axis-names"`
-	Average              []int          `json:"average"` // row → average xps
-	Min                  []int          `json:"min"`     // row → min xps
-	Max                  []int          `json:"max"`     // row → max xps
-	Last                 []int          `json:"last"`    // row → last xps
-	NinetyFivePercentile []int          `json:"95th"`    // row → 95th xps
+	Average              []int          `json:"average"`         // row → average xps
+	Total                []int          `json:"total,omitempty"` // row → total (bytes/packets/frames)
+	Min                  []int          `json:"min"`             // row → min xps
+	Max                  []int          `json:"max"`             // row → max xps
+	Last                 []int          `json:"last"`            // row → last xps
+	NinetyFivePercentile []int          `json:"95th"`            // row → 95th xps
 }
 
 // reverseDirection reverts the direction of a provided input. It does not
@@ -372,11 +373,22 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 	for _, axis := range axes {
 		totalRows += len(rows[axis])
 	}
+
+	// Compute total (not applicable for percentage units)
+	computeTotal := !strings.HasSuffix(string(input.Units), "%")
+	var intervalSeconds uint64
+	if computeTotal && len(output.Time) >= 2 {
+		intervalSeconds = uint64(output.Time[1].Sub(output.Time[0]).Seconds())
+	}
+
 	output.Rows = make([][]string, totalRows)
 	output.Axis = make([]int, totalRows)
 	output.AxisNames = make(map[int]string)
 	output.Points = make([][]int, totalRows)
 	output.Average = make([]int, totalRows)
+	if computeTotal {
+		output.Total = make([]int, totalRows)
+	}
 	output.Min = make([]int, totalRows)
 	output.Max = make([]int, totalRows)
 	output.Last = make([]int, totalRows)
@@ -390,6 +402,9 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 			output.Axis[i] = axis
 			output.Points[i] = points[axis][k]
 			output.Average[i] = int(sums[axis][k] / uint64(len(output.Time)))
+			if computeTotal {
+				output.Total[i] = int(sums[axis][k] * intervalSeconds)
+			}
 
 			// Last
 			// We use the second last value (-2) because

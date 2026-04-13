@@ -164,6 +164,12 @@ appearance.
   `Ctrl-Space`. `Ctrl-Enter` executes the request. You can save filters by
   providing a description. A filter can be shared with other users.
 
+Below the graph, a data table displays per-series statistics including minimum,
+maximum, last, average, 95th percentile, and total values. For rate-based units
+(bits per second, packets per second, flows per second), the total column shows
+the accumulated value over the selected time range (in bytes for bit-based
+units, in packets or flows for the others).
+
 The URL contains the encoded parameters and can be shared with
 others. However, the stability of the options is not currently
 guaranteed, so a URL may stop working after a few upgrades.
