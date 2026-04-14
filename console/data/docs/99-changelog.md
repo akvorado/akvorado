@@ -13,8 +13,8 @@ identified with a specific icon:
 ## 2.3.0 - 2026-04-14
 
 This release adds configurable skip indexes to ClickHouse tables. This should
-help make some queries faster, but it will also increase a bit the size used by
-ClickHouse, as well as the ingestion performance.
+help make queries faster, but it will also increase a bit the size used by
+ClickHouse.
 
 - ✨ *console*: add total column to the data table
 - ✨ *outlet*: add route target (`rts`) filtering to the BMP provider
