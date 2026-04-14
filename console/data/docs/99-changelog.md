@@ -10,7 +10,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## 2.2.1 - 2026-04-14
+## 2.3.0 - 2026-04-14
 
 This release adds configurable skip indexes to ClickHouse tables. This should
 help make some queries faster, but it will also increase a bit the size used by
