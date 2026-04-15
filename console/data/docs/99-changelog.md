@@ -10,6 +10,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🌱 *docker*: update Kafka to 4.2.0
+
 ## 2.3.0 - 2026-04-14
 
 This release adds configurable skip indexes to ClickHouse tables. This should
