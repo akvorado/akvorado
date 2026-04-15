@@ -63,8 +63,12 @@ func dumpAllTables(t *testing.T, ch *clickhousedb.Component, schemaComponent *sc
 }
 
 func dropAllTables(t *testing.T, ch *clickhousedb.Component) {
-	t.Logf("(%s) Drop database default", time.Now())
-	for _, sql := range []string{"DROP DATABASE IF EXISTS default SYNC", "CREATE DATABASE IF NOT EXISTS default"} {
+	db := clickhousedb.QuoteIdentifier(ch.DatabaseName())
+	t.Logf("(%s) Drop database %s", time.Now(), db)
+	for _, sql := range []string{
+		fmt.Sprintf("DROP DATABASE IF EXISTS %s SYNC", db),
+		fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", db),
+	} {
 		if err := ch.ExecOnCluster(t.Context(), sql); err != nil {
 			t.Fatalf("Exec(%q) error:\n%+v", sql, err)
 		}
@@ -76,10 +80,18 @@ func loadTables(t *testing.T, ch *clickhousedb.Component, sch *schema.Component,
 		"allow_suspicious_low_cardinality_types": 1,
 	}))
 
+	// Replace hardcoded "default" database references with the actual database name.
+	dbName := ch.DatabaseName()
+	for i := range tables {
+		tables[i].Schema = strings.ReplaceAll(tables[i].Schema, "default.", dbName+".")
+		tables[i].Schema = strings.ReplaceAll(tables[i].Schema, "'default'", "'"+dbName+"'")
+	}
+
 	// Sort in a way we respect the dependencies.
-	fromPattern := regexp.MustCompile(`.*FROM (default\.\w+)`)
-	toPattern := regexp.MustCompile(`.*TO (default\.\w+)`)
-	createPattern := regexp.MustCompile(`CREATE (?:TABLE|MATERIALIZED VIEW) (default\.\w+)`)
+	dbPrefix := regexp.QuoteMeta(dbName)
+	fromPattern := regexp.MustCompile(fmt.Sprintf(`.*FROM (%s\.\w+)`, dbPrefix))
+	toPattern := regexp.MustCompile(fmt.Sprintf(`.*TO (%s\.\w+)`, dbPrefix))
+	createPattern := regexp.MustCompile(fmt.Sprintf(`CREATE (?:TABLE|MATERIALIZED VIEW) (%s\.\w+)`, dbPrefix))
 	slices.SortFunc(tables, func(t1, t2 tableWithSchema) int {
 		t1From := fromPattern.FindStringSubmatch(t1.Schema)
 		t1To := toPattern.FindStringSubmatch(t1.Schema)
@@ -674,11 +686,12 @@ AND name LIKE $3`, "flows", ch.d.ClickHouse.DatabaseName(), "%DimensionAttribute
 			t.Fatalf("Scan() error:\n%+v", err)
 		}
 		// Check if the definitions are part of the consumer
+		dbName := ch.d.ClickHouse.DatabaseName()
 		expectedStatements := []string{
-			"dictGet('default.custom_dict_test', 'csv_col_name', DstAddr) AS DstAddrDimensionAttribute",
-			"dictGet('default.custom_dict_test', 'csv_col_name', SrcAddr) AS SrcAddrDimensionAttribute",
-			"dictGet('default.custom_dict_test', 'csv_col_default', SrcAddr) AS SrcAddrDefaultDimensionAttribute",
-			"dictGet('default.custom_dict_test', 'csv_col_default', DstAddr) AS DstAddrDefaultDimensionAttribute",
+			fmt.Sprintf("dictGet('%s.custom_dict_test', 'csv_col_name', DstAddr) AS DstAddrDimensionAttribute", dbName),
+			fmt.Sprintf("dictGet('%s.custom_dict_test', 'csv_col_name', SrcAddr) AS SrcAddrDimensionAttribute", dbName),
+			fmt.Sprintf("dictGet('%s.custom_dict_test', 'csv_col_default', SrcAddr) AS SrcAddrDefaultDimensionAttribute", dbName),
+			fmt.Sprintf("dictGet('%s.custom_dict_test', 'csv_col_default', DstAddr) AS DstAddrDefaultDimensionAttribute", dbName),
 		}
 		for _, s := range expectedStatements {
 			if !strings.Contains(existingConsumer, s) {
@@ -693,17 +706,17 @@ AND name LIKE $3`, "flows", ch.d.ClickHouse.DatabaseName(), "%DimensionAttribute
 		if err := dictCreate.Scan(&got); err != nil {
 			t.Fatalf("Scan() error:\n%+v", err)
 		}
-		expected := `CREATE DICTIONARY default.custom_dict_test
+		expected := fmt.Sprintf(`CREATE DICTIONARY %s.custom_dict_test
 (
-    ` + "`SrcAddr`" + ` String,
-    ` + "`csv_col_name`" + ` String DEFAULT 'None',
-    ` + "`csv_col_default`" + ` String DEFAULT 'Hello World'
+    `+"`SrcAddr`"+` String,
+    `+"`csv_col_name`"+` String DEFAULT 'None',
+    `+"`csv_col_default`"+` String DEFAULT 'Hello World'
 )
 PRIMARY KEY SrcAddr
 SOURCE(HTTP(URL 'http://127.0.0.1:0/api/v0/orchestrator/clickhouse/custom_dict_test.csv' FORMAT 'CSVWithNames'))
 LIFETIME(MIN 0 MAX 3600)
 LAYOUT(COMPLEX_KEY_HASHED())
-SETTINGS(format_csv_allow_single_quotes = 0)`
+SETTINGS(format_csv_allow_single_quotes = 0)`, dbName)
 		if diff := helpers.Diff(got, expected); diff != "" {
 			t.Fatalf("Unexpected state:\n%s", diff)
 		}
@@ -748,11 +761,12 @@ AND name LIKE $3`, "flows", ch.d.ClickHouse.DatabaseName(), "%DimensionAttribute
 			t.Fatalf("Scan() error:\n%+v", err)
 		}
 		// Check if the definitions are missing in the consumer
+		dbName := ch.d.ClickHouse.DatabaseName()
 		expectedStatements := []string{
-			"dictGet('default.custom_dict_test', 'csv_col_name', DstAddr) AS DstAddrDimensionAttribute",
-			"dictGet('default.custom_dict_test', 'csv_col_name', SrcAddr) AS SrcAddrDimensionAttribute",
-			"dictGet('default.custom_dict_test', 'csv_col_default', SrcAddr) AS SrcAddrDefaultDimensionAttribute",
-			"dictGet('default.custom_dict_test', 'csv_col_default', DstAddr) AS DstAddrDefaultDimensionAttribute",
+			fmt.Sprintf("dictGet('%s.custom_dict_test', 'csv_col_name', DstAddr) AS DstAddrDimensionAttribute", dbName),
+			fmt.Sprintf("dictGet('%s.custom_dict_test', 'csv_col_name', SrcAddr) AS SrcAddrDimensionAttribute", dbName),
+			fmt.Sprintf("dictGet('%s.custom_dict_test', 'csv_col_default', SrcAddr) AS SrcAddrDefaultDimensionAttribute", dbName),
+			fmt.Sprintf("dictGet('%s.custom_dict_test', 'csv_col_default', DstAddr) AS DstAddrDefaultDimensionAttribute", dbName),
 		}
 		for _, s := range expectedStatements {
 			if strings.Contains(existingConsumer, s) {

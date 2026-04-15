@@ -6,9 +6,12 @@
 package clickhousedb
 
 import (
+	"fmt"
+	"math/rand/v2"
 	"testing"
 	"time"
 
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.uber.org/mock/gomock"
 
 	"akvorado/common/clickhousedb/mocks"
@@ -17,7 +20,8 @@ import (
 	"akvorado/common/reporter"
 )
 
-// SetupClickHouse configures a client to use for testing.
+// SetupClickHouse configures a client to use for testing. A random database is
+// created for each test and dropped when the test ends.
 func SetupClickHouse(t *testing.T, r *reporter.Reporter, cluster bool) *Component {
 	t.Helper()
 	config := DefaultConfiguration()
@@ -33,12 +37,42 @@ func SetupClickHouse(t *testing.T, r *reporter.Reporter, cluster bool) *Componen
 	}
 	config.DialTimeout = 5 * time.Second
 	config.MaxOpenConns = 20
+	config.Database = fmt.Sprintf("test_%x", rand.Uint64())
+
+	// Create the test database
+	conn, err := clickhouse.Open(&clickhouse.Options{
+		Addr:        config.Servers,
+		DialTimeout: config.DialTimeout,
+	})
+	if err != nil {
+		t.Fatalf("clickhouse.Open() error:\n%+v", err)
+	}
+	db := QuoteIdentifier(config.Database)
+	for _, query := range []string{
+		fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", db),
+		"DROP TABLE IF EXISTS system.metric_log",
+	} {
+		if config.Cluster != "" {
+			query = TransformQueryOnCluster(query, config.Cluster)
+		}
+		if err := conn.Exec(t.Context(), query); err != nil {
+			t.Fatalf("Exec(%q) error:\n%+v", query, err)
+		}
+	}
+	t.Cleanup(func() {
+		defer conn.Close()
+		query := fmt.Sprintf("DROP DATABASE IF EXISTS %s", db)
+		if config.Cluster != "" {
+			query = TransformQueryOnCluster(query, config.Cluster)
+		}
+		conn.Exec(t.Context(), query)
+	})
+
 	c, err := New(r, config, Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
 	helpers.StartStop(t, c)
-	c.ExecOnCluster(t.Context(), "DROP TABLE IF EXISTS system.metric_log")
 	return c
 }
 
