@@ -2,7 +2,7 @@
 services:
   # main services
   kafka:
-    image: apache/kafka:4.1.1 # \d+\.\d+\.\d+
+    image: apache/kafka:4.2.0 # \d+\.\d+\.\d+
   redis:
     image: valkey/valkey:9.0 # \d+\.\d+
   clickhouse:
