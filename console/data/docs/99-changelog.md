@@ -12,7 +12,8 @@ identified with a specific icon:
 
 ## Unreleased
 
-- 🌱 *docker*: update Kafka to 4.2.0
+- 🌱 *docker*: update Kafka to 4.2.0 (not mandatory)
+- 🌱 *docker*: update ClickHouse to 26.3 (not mandatory)
 
 ## 2.3.0 - 2026-04-14
 
