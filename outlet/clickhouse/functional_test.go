@@ -21,7 +21,7 @@ import (
 )
 
 func TestInsert(t *testing.T) {
-	server := helpers.CheckExternalService(t, "ClickHouse", []string{"clickhouse:9000", "127.0.0.1:9000"})
+	server, database := clickhousedb.SetupClickHouseDatabase(t)
 	r := reporter.NewMock(t)
 	sch := schema.NewMock(t)
 	bf := sch.NewFlowMessage()
@@ -34,7 +34,7 @@ func TestInsert(t *testing.T) {
 	// Create components
 	dbConf := clickhousedb.DefaultConfiguration()
 	dbConf.Servers = []string{server}
-	dbConf.Database = "test"
+	dbConf.Database = database
 	dbConf.DialTimeout = 100 * time.Millisecond
 	chdb, err := clickhousedb.New(r, dbConf, clickhousedb.Dependencies{
 		Daemon: daemon.NewMock(t),

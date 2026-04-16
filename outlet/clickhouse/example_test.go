@@ -13,16 +13,16 @@ import (
 	"github.com/ClickHouse/ch-go"
 	"github.com/ClickHouse/ch-go/proto"
 
-	"akvorado/common/helpers"
+	"akvorado/common/clickhousedb"
 )
 
 func TestInsertMemory(t *testing.T) {
-	server := helpers.CheckExternalService(t, "ClickHouse", []string{"clickhouse:9000", "127.0.0.1:9000"})
+	server, database := clickhousedb.SetupClickHouseDatabase(t)
 	ctx := t.Context()
 
 	conn, err := ch.Dial(ctx, ch.Options{
 		Address:     server,
-		Database:    "test",
+		Database:    database,
 		DialTimeout: 100 * time.Millisecond,
 	})
 	if err != nil {

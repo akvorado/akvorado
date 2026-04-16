@@ -15,6 +15,7 @@ import (
 	"github.com/ClickHouse/ch-go"
 	"github.com/ClickHouse/clickhouse-go/v2"
 
+	"akvorado/common/clickhousedb"
 	"akvorado/common/constants"
 	"akvorado/common/helpers"
 	"akvorado/common/schema"
@@ -64,12 +65,12 @@ func TestInsertMemory(t *testing.T) {
 	})
 	bf.Finalize()
 
-	server := helpers.CheckExternalService(t, "ClickHouse", []string{"clickhouse:9000", "127.0.0.1:9000"})
+	server, database := clickhousedb.SetupClickHouseDatabase(t)
 	ctx := t.Context()
 
 	conn, err := ch.Dial(ctx, ch.Options{
 		Address:     server,
-		Database:    "test",
+		Database:    database,
 		DialTimeout: 100 * time.Millisecond,
 		Settings: []ch.Setting{
 			{Key: "allow_suspicious_low_cardinality_types", Value: "1"},
@@ -111,7 +112,7 @@ func TestInsertMemory(t *testing.T) {
 		conn, err := clickhouse.Open(&clickhouse.Options{
 			Addr: []string{server},
 			Auth: clickhouse.Auth{
-				Database: "test",
+				Database: database,
 			},
 			DialTimeout: 100 * time.Millisecond,
 		})
