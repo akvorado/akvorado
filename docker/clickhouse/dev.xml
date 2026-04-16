@@ -19,7 +19,7 @@
   <!-- control the concurrency -->
   <max_thread_pool_size>2000</max_thread_pool_size>
   <max_connections>64</max_connections>
-  <max_concurrent_queries>8</max_concurrent_queries>
+  <max_concurrent_queries>32</max_concurrent_queries>
   <max_server_memory_usage_to_ram_ratio>0.75</max_server_memory_usage_to_ram_ratio> <!-- 75% of the RAM, leave more for the system -->
   <max_server_memory_usage>0</max_server_memory_usage> <!-- We leave the overcommiter to manage available ram for queries-->
 

@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"path"
@@ -16,6 +17,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -29,6 +31,34 @@ import (
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 )
+
+// dictionaryServerURL returns the URL of a shared HTTP server that returns
+// empty CSV responses. ClickHouse needs a reachable URL for dictionary sources
+// to avoid DDL crashes during cluster operations. The server is created once
+// and reused across all tests. It listens on an external address so that
+// ClickHouse running in a container can reach it.
+var dictionaryServerURL = sync.OnceValue(func() string {
+	// Use the UDP trick to find an external address reachable from containers.
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		panic(fmt.Sprintf("cannot get external IP: %s", err))
+	}
+	ip := conn.LocalAddr().(*net.UDPAddr).IP.String()
+	conn.Close()
+
+	listener, err := net.Listen("tcp", net.JoinHostPort(ip, "0"))
+	if err != nil {
+		panic(fmt.Sprintf("cannot listen: %s", err))
+	}
+	server := &httptest.Server{
+		Listener: listener,
+		Config: &http.Server{Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "text/csv")
+		})},
+	}
+	server.Start()
+	return server.URL
+})
 
 type tableWithSchema struct {
 	Table  string
@@ -80,11 +110,12 @@ func loadTables(t *testing.T, ch *clickhousedb.Component, sch *schema.Component,
 		"allow_suspicious_low_cardinality_types": 1,
 	}))
 
-	// Replace hardcoded "default" database references with the actual database name.
+	// Replace hardcoded values with actual ones for this test run.
 	dbName := ch.DatabaseName()
 	for i := range tables {
 		tables[i].Schema = strings.ReplaceAll(tables[i].Schema, "default.", dbName+".")
 		tables[i].Schema = strings.ReplaceAll(tables[i].Schema, "'default'", "'"+dbName+"'")
+		tables[i].Schema = strings.ReplaceAll(tables[i].Schema, "http://127.0.0.1:0", dictionaryServerURL())
 	}
 
 	// Sort in a way we respect the dependencies.
@@ -185,14 +216,15 @@ func startTestComponent(t *testing.T, r *reporter.Reporter, chComponent *clickho
 	return startTestComponentWithConfig(t, r, chComponent, sch, nil)
 }
 
-// startTestComponentWithConfig starts a test component with a custom configuration modifier and wait for migrations to be done
+// startTestComponentWithConfig starts a test component with a custom
+// configuration modifier and wait for migrations to be done
 func startTestComponentWithConfig(t *testing.T, r *reporter.Reporter, chComponent *clickhousedb.Component, sch *schema.Component, configModifier func(*Configuration)) *Component {
 	t.Helper()
 	if sch == nil {
 		sch = schema.NewMock(t)
 	}
 	configuration := DefaultConfiguration()
-	configuration.OrchestratorURL = "http://127.0.0.1:0"
+	configuration.OrchestratorURL = dictionaryServerURL()
 	if configModifier != nil {
 		configModifier(&configuration)
 	}
@@ -348,9 +380,12 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 
 			currentRun := dumpAllTables(t, chComponent, ch.d.Schema)
 			if lastRun != nil {
-				// Update ORDER BY for flows table
+				// Normalize table schemas to make them comparable.
 				for _, table := range [][]tableWithSchema{lastRun, currentRun} {
 					for idx := range table {
+						table[idx].Schema = strings.ReplaceAll(
+							table[idx].Schema,
+							ch.config.OrchestratorURL, "http://127.0.0.1:0")
 						if table[idx].Table == ch.localTable("flows") {
 							table[idx].Schema = strings.Replace(
 								table[idx].Schema,
@@ -713,10 +748,10 @@ AND name LIKE $3`, "flows", ch.d.ClickHouse.DatabaseName(), "%DimensionAttribute
     `+"`csv_col_default`"+` String DEFAULT 'Hello World'
 )
 PRIMARY KEY SrcAddr
-SOURCE(HTTP(URL 'http://127.0.0.1:0/api/v0/orchestrator/clickhouse/custom_dict_test.csv' FORMAT 'CSVWithNames'))
+SOURCE(HTTP(URL '%s/api/v0/orchestrator/clickhouse/custom_dict_test.csv' FORMAT 'CSVWithNames'))
 LIFETIME(MIN 0 MAX 3600)
 LAYOUT(COMPLEX_KEY_HASHED())
-SETTINGS(format_csv_allow_single_quotes = 0)`, dbName)
+SETTINGS(format_csv_allow_single_quotes = 0)`, dbName, ch.config.OrchestratorURL)
 		if diff := helpers.Diff(got, expected); diff != "" {
 			t.Fatalf("Unexpected state:\n%s", diff)
 		}
