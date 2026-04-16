@@ -58,7 +58,11 @@ func setupClickHouseDatabase(t *testing.T, servers []string, cluster string) str
 		if cluster != "" {
 			query = TransformQueryOnCluster(query, cluster)
 		}
-		conn.Exec(context.Background(), query)
+		// This is important to NOT use t.Context() as it is already cancelled
+		// at this point.
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		conn.Exec(ctx, query)
 	})
 	return database
 }
