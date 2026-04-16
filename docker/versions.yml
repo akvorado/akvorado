@@ -6,9 +6,9 @@ services:
   redis:
     image: valkey/valkey:9.0 # \d+\.\d+
   clickhouse:
-    image: clickhouse/clickhouse-server:25.8 # \d+\.[38]
+    image: clickhouse/clickhouse-server:26.3 # \d+\.[38]
   clickhouse-keeper:
-    image: clickhouse/clickhouse-keeper:25.8 # \d+\.[38]
+    image: clickhouse/clickhouse-keeper:26.3 # \d+\.[38]
   traefik:
     image: traefik:v3.6 # v\d+\.\d+
   maxmind-geoipupdate:
