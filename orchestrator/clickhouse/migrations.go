@@ -154,10 +154,8 @@ func (c *Component) migrateDatabase() error {
 	c.metrics.migrationsRunning.Set(0)
 	c.r.Info().Msg("database migration done")
 
-	// Reload dictionaries
-	if err := c.d.ClickHouse.ExecOnCluster(ctx, "SYSTEM RELOAD DICTIONARIES"); err != nil {
-		c.r.Err(err).Msg("unable to reload dictionaries after migration")
-	}
+	// Reload dictionaries with a source in the current database
+	c.reloadDictionaries(ctx)
 
 	return nil
 }
@@ -186,6 +184,27 @@ func (c *Component) guessHTTPBaseURL(ip string) (string, error) {
 		net.JoinHostPort(localAddr.IP.String(), httpPort))
 	c.r.Debug().Msgf("detected base URL is %s", base)
 	return base, nil
+}
+
+// reloadDictionaries reloads all dictionaries with a source in the current database.
+func (c *Component) reloadDictionaries(ctx context.Context) {
+	rows, err := c.d.ClickHouse.Query(ctx,
+		`SELECT name FROM system.dictionaries WHERE database = currentDatabase() AND source != ''`)
+	if err != nil {
+		c.r.Err(err).Msg("unable to list dictionaries for reload")
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			c.r.Err(err).Msg("unable to scan dictionary name")
+			continue
+		}
+		if err := c.ReloadDictionary(ctx, name); err != nil {
+			c.r.Err(err).Str("dictionary", name).Msg("unable to reload dictionary")
+		}
+	}
 }
 
 // ReloadDictionary will reload the specified dictionnary.
