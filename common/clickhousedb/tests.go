@@ -6,6 +6,7 @@
 package clickhousedb
 
 import (
+	"context"
 	"fmt"
 	"math/rand/v2"
 	"testing"
@@ -65,7 +66,7 @@ func SetupClickHouse(t *testing.T, r *reporter.Reporter, cluster bool) *Componen
 		if config.Cluster != "" {
 			query = TransformQueryOnCluster(query, config.Cluster)
 		}
-		conn.Exec(t.Context(), query)
+		conn.Exec(context.Background(), query)
 	})
 
 	c, err := New(r, config, Dependencies{Daemon: daemon.NewMock(t)})
