@@ -25,6 +25,7 @@ identified with a specific icon:
 - 🌱 *outlet*: add support for random n-out-of-N sampling in IPFIX flows
 - 🌱 *console*: add a timezone selector in the user menu
 - 🌱 *docker*: update Valkey to 9.1 (not mandatory)
+- 🌱 *build*: also distribute `akvorado-inlet`, a minimal version of Akvorado containing only the inlet
 
 ## 2026.10.0 - 2026-10-03
 

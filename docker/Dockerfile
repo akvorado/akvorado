@@ -23,7 +23,7 @@ ARG TARGETOS
 ARG TARGETARCH
 ARG TARGETVARIANT
 ARG VERSION
-RUN make
+RUN make bin/akvorado
 
 FROM gcr.io/distroless/static:latest
 LABEL org.opencontainers.image.title="Akvorado"
