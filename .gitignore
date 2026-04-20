@@ -1,4 +1,5 @@
 /bin/akvorado
+/bin/akvorado-inlet
 /test/
 /orchestrator/clickhouse/data/asns.csv
 /orchestrator/clickhouse/data/tcp.csv

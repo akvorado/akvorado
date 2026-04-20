@@ -48,8 +48,12 @@ GENERATED = \
 	console/data/frontend \
 	common/embed/data/embed.zip
 
-.PHONY: all all-indep
 BUILD_ARGS =
+BUILD_TAGS = release,grpcnotrace,validator_novalidatefn
+
+.PHONY: all all-indep bin/$(basename $(MODULE)) bin/$(basename $(MODULE))-inlet
+all: bin/$(basename $(MODULE)) bin/$(basename $(MODULE))-inlet ## Build program binaries
+
 # For architecture variants, see:
 # - https://go.dev/wiki/MinimumRequirements#amd64
 # - https://en.wikipedia.org/wiki/X86-64#Microarchitecture_levels
@@ -60,16 +64,17 @@ BUILD_ARGS =
 # - https://en.wikipedia.org/wiki/Comparison_of_ARM_processors
 # - https://docs.docker.com/build/building/variables/#pre-defined-build-arguments
 # - https://github.com/containerd/platforms/pull/8
-all: fmt lint all-indep ; $(info $(M) building executable…) @ ## Build program binary
+bin/$(basename $(MODULE))-inlet: BUILD_TAGS := $(BUILD_TAGS),akvorado_inlet
+bin/$(basename $(MODULE)) bin/$(basename $(MODULE))-inlet: fmt lint all-indep ; $(info $(M) building $@ executable…)
 	$Q env GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) \
          $(if $(filter amd64,$(TARGETARCH)),GOAMD64=$(TARGETVARIANT),\
          $(if $(filter arm64,$(TARGETARCH)),GOARM64=$(if $(findstring .,$(TARGETVARIANT)),$(TARGETVARIANT),$(TARGETVARIANT:%=%.0)),\
          $(if $(filter arm,$(TARGETARCH)),GOARM=$(TARGETVARIANT:v%=%)))) \
 	   $(GO) build \
-		-tags release,grpcnotrace,validator_novalidatefn \
+		-tags $(BUILD_TAGS) \
 		-ldflags '-X $(MODULE)/common/helpers.AkvoradoVersion=$(VERSION)' \
 		$(BUILD_ARGS) \
-		-o bin/$(basename $(MODULE)) ./cmd/akvorado
+		-o $@ ./cmd/akvorado
 all-indep: $(GENERATED)
 
 # Tools
@@ -285,7 +290,7 @@ licensecheck: console/frontend/node_modules ; $(info $(M) check dependency licen
 
 .PHONY: clean
 clean: ; $(info $(M) cleaning…)	@ ## Cleanup everything
-	@rm -rf test $(GENERATED) $(GENERATED_TEST_GO) *~ bin/akvorado
+	@rm -rf test $(GENERATED) $(GENERATED_TEST_GO) *~ bin/akvorado bin/akvorado-inlet
 
 .PHONY: help
 help:
