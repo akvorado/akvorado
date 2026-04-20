@@ -7,7 +7,9 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -62,8 +64,29 @@ func init() {
 		"Enable debug logs")
 }
 
+// dispatchArgs rewrites "akvorado-<service> ..." into "akvorado <service> ...",
+// letting leaner builds like akvorado-inlet reuse the existing subcommand tree.
+func dispatchArgs(args []string) []string {
+	if len(args) == 0 {
+		return args
+	}
+	prefix, service, ok := strings.Cut(filepath.Base(args[0]), "-")
+	if !ok || prefix != "akvorado" {
+		return args
+	}
+	if len(args) > 1 {
+		for _, c := range RootCmd.Commands() {
+			if c.Name() == args[1] {
+				return args
+			}
+		}
+	}
+	return append([]string{args[0], service}, args[1:]...)
+}
+
 func main() {
 	os.Setenv("GODEBUG", "tracebacklabels=1")
+	os.Args = dispatchArgs(os.Args)
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %+v\n", err)
 		os.Exit(1)
