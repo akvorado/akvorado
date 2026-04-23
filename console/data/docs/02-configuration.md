@@ -465,7 +465,9 @@ The `static` provider accepts an `exporters` key that maps exporter subnets to
 an exporter configuration. An exporter configuration is a map:
 
 - `name` is the name of the exporter.
-- `default` is the default interface when no match is found.
+- `default` is the default interface when no match is found. If unset, unknown
+  interfaces are reported as missing metadata unless `skip-missing-interfaces`
+  is enabled.
 - `ifindexes` is a map from interface indexes to an interface.
 - `skip-missing-interfaces` defines whether the exporter should process only
   the interfaces defined in the configuration and leave the rest to the next

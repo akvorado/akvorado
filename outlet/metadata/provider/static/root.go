@@ -91,6 +91,9 @@ func (p *Provider) Query(ctx context.Context, query provider.Query) (provider.An
 		if exporter.SkipMissingInterfaces {
 			return provider.Answer{}, provider.ErrSkipProvider
 		}
+		if exporter.Default == (provider.Interface{}) {
+			return provider.Answer{}, nil
+		}
 		iface = exporter.Default
 	}
 	return provider.Answer{

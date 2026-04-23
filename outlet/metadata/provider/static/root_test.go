@@ -149,12 +149,7 @@ func TestStaticProvider(t *testing.T) {
 	got = append(got, answer)
 
 	expected := []provider.Answer{
-		{
-			Found: true,
-			Exporter: provider.Exporter{
-				Name: "nodefault",
-			},
-		},
+		{}, // No match, no default: negative answer
 		{
 			Found: true,
 			Exporter: provider.Exporter{
