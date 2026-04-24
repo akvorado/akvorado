@@ -650,27 +650,21 @@ func (schema Schema) finalize() Schema {
 			}
 			return false
 		}
-		if strings.HasPrefix(column.Name, "Src") {
-			column.Name = fmt.Sprintf("Dst%s", column.Name[3:])
-			if !alreadyExists(column.Name) {
-				column.Key, ok = columnNameMap.LoadKey(column.Name)
-				if !ok {
-					panic(fmt.Sprintf("missing name mapping for %q", column.Name))
+		swapPrefix := func(source, target string) {
+			if strings.HasPrefix(column.Name, source) {
+				column.Name = fmt.Sprintf("%s%s", target, column.Name[len(source):])
+				if !alreadyExists(column.Name) {
+					column.Key, ok = columnNameMap.LoadKey(column.Name)
+					if !ok {
+						panic(fmt.Sprintf("missing name mapping for %q", column.Name))
+					}
+					column.ClickHouseAlias = strings.ReplaceAll(column.ClickHouseAlias, source, target)
+					ncolumns = append(ncolumns, column)
 				}
-				column.ClickHouseAlias = strings.ReplaceAll(column.ClickHouseAlias, "Src", "Dst")
-				ncolumns = append(ncolumns, column)
-			}
-		} else if strings.HasPrefix(column.Name, "InIf") {
-			column.Name = fmt.Sprintf("OutIf%s", column.Name[4:])
-			if !alreadyExists(column.Name) {
-				column.Key, ok = columnNameMap.LoadKey(column.Name)
-				if !ok {
-					panic(fmt.Sprintf("missing name mapping for %q", column.Name))
-				}
-				column.ClickHouseAlias = strings.ReplaceAll(column.ClickHouseAlias, "InIf", "OutIf")
-				ncolumns = append(ncolumns, column)
 			}
 		}
+		swapPrefix("Src", "Dst")
+		swapPrefix("InIf", "OutIf")
 	}
 	schema.columns = ncolumns
 
