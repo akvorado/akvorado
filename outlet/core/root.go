@@ -5,6 +5,7 @@
 package core
 
 import (
+	"fmt"
 	"time"
 
 	"gopkg.in/tomb.v2"
@@ -38,6 +39,8 @@ type Component struct {
 	classifierInterfaceCache *cache.Cache[exporterAndInterfaceInfo, interfaceClassification]
 	classifierErrLogger      reporter.Logger
 
+	// anonymizer used to anonymize SrcAddr/DstAddr before writing to ClickHouse
+	anonymizer *Anonymizer
 	rateLimiter rateLimiter
 }
 
@@ -70,6 +73,14 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 
 		rateLimiter: newRateLimiter(),
 	}
+
+	// initialize anonymizer from nested anonymize config
+	a, err := NewAnonymizer(configuration.Anonymize)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create anonymizer: %w", err)
+	}
+	c.anonymizer = a
+
 	c.d.Daemon.Track(&c.t, "outlet/core")
 	c.initMetrics()
 	return &c, nil
