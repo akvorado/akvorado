@@ -4,9 +4,12 @@
 package schema
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"akvorado/common/helpers"
+	"akvorado/common/helpers/yaml"
 
 	"github.com/bits-and-blooms/bitset"
 	"github.com/google/go-cmp/cmp"
@@ -67,4 +70,22 @@ func TestMarshalUnmarshal(t *testing.T) {
 	interfaceBoundaryMap.TestMarshalUnmarshal(t)
 	columnNameMap.TestMarshalUnmarshal(t)
 	directionMap.TestMarshalUnmarshal(t)
+}
+
+func TestSchemaDump(t *testing.T) {
+	c := NewMock(t).EnableAllColumns()
+	got := c.Columns()
+
+	expectedSchemaPath := filepath.Join("testdata", "schema.yaml")
+	raw, err := os.ReadFile(expectedSchemaPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%q) error:\n%+v", expectedSchemaPath, err)
+	}
+	var expected []Column
+	if err := yaml.Unmarshal(raw, &expected); err != nil {
+		t.Fatalf("yaml.Unmarshal(%q) error:\n%+v", expectedSchemaPath, err)
+	}
+	if diff := helpers.Diff(got, expected); diff != "" {
+		t.Fatalf("Schema dump (-got, +want):\n%s", diff)
+	}
 }

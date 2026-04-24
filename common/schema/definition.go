@@ -301,23 +301,10 @@ END`,
 				ClickHouseSelfGenerated: true,
 			},
 			{
-				Key:                     ColumnDstAS,
-				ParserType:              "asn",
-				ClickHouseType:          "UInt32",
-				ClickHouseGenerateFrom:  "if(DstAS = 0, c_DstNetworks[asn], DstAS)",
-				ClickHouseSelfGenerated: true,
-			},
-			{
 				Key:                    ColumnSrcNetName,
 				ParserType:             "string",
 				ClickHouseType:         "LowCardinality(String)",
 				ClickHouseGenerateFrom: "c_SrcNetworks[name]",
-			},
-			{
-				Key:                    ColumnDstNetName,
-				ParserType:             "string",
-				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "c_DstNetworks[name]",
 			},
 			{
 				Key:                    ColumnSrcNetRole,
@@ -326,22 +313,10 @@ END`,
 				ClickHouseGenerateFrom: "c_SrcNetworks[role]",
 			},
 			{
-				Key:                    ColumnDstNetRole,
-				ParserType:             "string",
-				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "c_DstNetworks[role]",
-			},
-			{
 				Key:                    ColumnSrcNetSite,
 				ParserType:             "string",
 				ClickHouseType:         "LowCardinality(String)",
 				ClickHouseGenerateFrom: "c_SrcNetworks[site]",
-			},
-			{
-				Key:                    ColumnDstNetSite,
-				ParserType:             "string",
-				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "c_DstNetworks[site]",
 			},
 			{
 				Key:                    ColumnSrcNetRegion,
@@ -350,22 +325,10 @@ END`,
 				ClickHouseGenerateFrom: "c_SrcNetworks[region]",
 			},
 			{
-				Key:                    ColumnDstNetRegion,
-				ParserType:             "string",
-				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "c_DstNetworks[region]",
-			},
-			{
 				Key:                    ColumnSrcNetTenant,
 				ParserType:             "string",
 				ClickHouseType:         "LowCardinality(String)",
 				ClickHouseGenerateFrom: "c_SrcNetworks[tenant]",
-			},
-			{
-				Key:                    ColumnDstNetTenant,
-				ParserType:             "string",
-				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "c_DstNetworks[tenant]",
 			},
 			{Key: ColumnSrcVlan, ParserType: "uint", ClickHouseType: "UInt16", Disabled: true, Group: ColumnGroupL2},
 			{
@@ -375,34 +338,16 @@ END`,
 				ClickHouseGenerateFrom: "c_SrcNetworks[country]",
 			},
 			{
-				Key:                    ColumnDstCountry,
-				ParserType:             "string",
-				ClickHouseType:         "FixedString(2)",
-				ClickHouseGenerateFrom: "c_DstNetworks[country]",
-			},
-			{
 				Key:                    ColumnSrcGeoCity,
 				ParserType:             "string",
 				ClickHouseType:         "LowCardinality(String)",
 				ClickHouseGenerateFrom: "c_SrcNetworks[city]",
 			},
 			{
-				Key:                    ColumnDstGeoCity,
-				ParserType:             "string",
-				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "c_DstNetworks[city]",
-			},
-			{
 				Key:                    ColumnSrcGeoState,
 				ParserType:             "string",
 				ClickHouseType:         "LowCardinality(String)",
 				ClickHouseGenerateFrom: "c_SrcNetworks[state]",
-			},
-			{
-				Key:                    ColumnDstGeoState,
-				ParserType:             "string",
-				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "c_DstNetworks[state]",
 			},
 			{
 				Key:                ColumnDstASPath,
@@ -659,6 +604,7 @@ func (schema Schema) finalize() Schema {
 						panic(fmt.Sprintf("missing name mapping for %q", column.Name))
 					}
 					column.ClickHouseAlias = strings.ReplaceAll(column.ClickHouseAlias, source, target)
+					column.ClickHouseGenerateFrom = strings.ReplaceAll(column.ClickHouseGenerateFrom, source, target)
 					ncolumns = append(ncolumns, column)
 				}
 			}
