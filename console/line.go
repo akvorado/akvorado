@@ -12,16 +12,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
-
 	"akvorado/common/helpers"
+	"akvorado/common/httpserver"
 	"akvorado/console/query"
 )
 
 // graphLineHandlerInput describes the input for the /graph/line endpoint.
 type graphLineHandlerInput struct {
 	graphCommonHandlerInput
-	Points         uint `json:"points" binding:"required,min=5,max=2000"` // minimum number of points
+	Points         uint `json:"points" validate:"required,min=5,max=2000"` // minimum number of points
 	Bidirectional  bool `json:"bidirectional"`
 	PreviousPeriod bool `json:"previous-period"`
 }
@@ -226,23 +225,23 @@ func (input graphLineHandlerInput) toSQL() []templateQuery {
 	return queries
 }
 
-func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
-	ctx := c.t.Context(gc.Request.Context())
+func (c *Component) graphLineHandlerFunc(w http.ResponseWriter, req *http.Request) {
+	ctx := c.t.Context(req.Context())
 	input := graphLineHandlerInput{graphCommonHandlerInput: graphCommonHandlerInput{schema: c.d.Schema}}
-	if err := gc.ShouldBindJSON(&input); err != nil {
-		gc.JSON(http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
+	if err := httpserver.BindJSON(req, &input); err != nil {
+		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 	if err := query.Columns(input.Dimensions).Validate(input.schema); err != nil {
-		gc.JSON(http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
+		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 	if err := input.Filter.Validate(input.schema); err != nil {
-		gc.JSON(http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
+		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 	if input.Limit > c.config.DimensionsLimit {
-		gc.JSON(http.StatusBadRequest,
+		httpserver.WriteJSON(w, http.StatusBadRequest,
 			helpers.M{"message": fmt.Sprintf("Limit is set beyond maximum value (%d)",
 				c.config.DimensionsLimit)})
 		return
@@ -250,7 +249,7 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 
 	queries := input.toSQL()
 	sqlQuery := c.finalizeTemplateQueries(queries)
-	gc.Header("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
+	w.Header().Set("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
 
 	results := []struct {
 		Axis       uint8     `ch:"axis"`
@@ -260,7 +259,7 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 	}{}
 	if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
 		c.r.Err(err).Str("query", sqlQuery).Msg("unable to query database")
-		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})
+		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})
 		return
 	}
 
@@ -465,13 +464,13 @@ func (c *Component) graphLineHandlerFunc(gc *gin.Context) {
 			output.AxisNames[axis] = fmt.Sprintf("Previous %s", name)
 		}
 	}
-	gc.JSON(http.StatusOK, output)
+	httpserver.WriteJSON(w, http.StatusOK, output)
 }
 
 type tableIntervalInput struct {
-	Start  time.Time `json:"start" binding:"required"`
-	End    time.Time `json:"end" binding:"required,gtfield=Start"`
-	Points uint      `json:"points" binding:"required,min=5,max=2000"` // minimum number of points
+	Start  time.Time `json:"start" validate:"required"`
+	End    time.Time `json:"end" validate:"required,gtfield=Start"`
+	Points uint      `json:"points" validate:"required,min=5,max=2000"` // minimum number of points
 }
 
 type tableIntervalOutput struct {
@@ -479,10 +478,10 @@ type tableIntervalOutput struct {
 	Interval uint64 `json:"interval"`
 }
 
-func (c *Component) getTableAndIntervalHandlerFunc(gc *gin.Context) {
+func (c *Component) getTableAndIntervalHandlerFunc(w http.ResponseWriter, req *http.Request) {
 	var input tableIntervalInput
-	if err := gc.ShouldBindJSON(&input); err != nil {
-		gc.JSON(http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
+	if err := httpserver.BindJSON(req, &input); err != nil {
+		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 	table, interval, _ := c.computeTableAndInterval(inputContext{
@@ -491,5 +490,5 @@ func (c *Component) getTableAndIntervalHandlerFunc(gc *gin.Context) {
 		End:    input.End,
 	})
 
-	gc.JSON(http.StatusOK, tableIntervalOutput{Table: table, Interval: uint64(interval.Seconds())})
+	httpserver.WriteJSON(w, http.StatusOK, tableIntervalOutput{Table: table, Interval: uint64(interval.Seconds())})
 }

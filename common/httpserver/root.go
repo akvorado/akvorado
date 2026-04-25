@@ -13,8 +13,6 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/chenyahui/gin-cache/persist"
-	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
@@ -22,6 +20,7 @@ import (
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/daemon"
+	"akvorado/common/httpserver/cachestore"
 	"akvorado/common/reporter"
 )
 
@@ -37,9 +36,9 @@ type Component struct {
 	address     net.Addr
 	serviceName string
 
-	// GinRouter is the router exposed for /api
-	GinRouter  *gin.Engine
-	cacheStore persist.CacheStore
+	// APIRouter is the router exposed for /api
+	APIRouter  *Router
+	cacheStore cachestore.Store
 }
 
 // Dependencies define the dependencies of the HTTP component.
@@ -56,12 +55,12 @@ func New(r *reporter.Reporter, serviceName string, configuration Configuration, 
 
 		mux:         http.NewServeMux(),
 		serviceName: serviceName,
-		GinRouter:   gin.New(),
+		APIRouter:   NewRouter(),
 	}
 	c.initMetrics()
 	c.d.Daemon.Track(&c.t, "common/http")
-	c.GinRouter.Use(gin.Recovery())
-	c.AddHandler("/api/", c.GinRouter)
+	c.APIRouter.Use(recoveryMiddleware(c.r))
+	c.AddHandler("/api/", c.APIRouter)
 	if configuration.Profiler {
 		c.mux.HandleFunc("/debug/pprof/", pprof.Index)
 		c.mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
@@ -102,6 +101,24 @@ func (c *Component) AddHandler(location string, handler http.Handler) {
 	handler = promhttp.InstrumentHandlerInFlight(c.metrics.inflights, handler)
 
 	c.mux.Handle(location, handler)
+}
+
+// recoveryMiddleware returns a middleware that recovers from panics raised
+// inside handlers, logs them and returns a 500.
+func recoveryMiddleware(r *reporter.Reporter) Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			defer func() {
+				if rec := recover(); rec != nil {
+					if r != nil {
+						r.Error().Interface("panic", rec).Msg("HTTP handler panic")
+					}
+					w.WriteHeader(http.StatusInternalServerError)
+				}
+			}()
+			next.ServeHTTP(w, req)
+		})
+	}
 }
 
 // Start starts the HTTP component.
@@ -193,7 +210,13 @@ func (c *Component) Stop() error {
 	c.r.Info().Msg("stopping HTTP component")
 	defer c.r.Info().Msg("HTTP component stopped")
 	c.t.Kill(nil)
-	return c.t.Wait()
+	err := c.t.Wait()
+	if c.cacheStore != nil {
+		if cerr := c.cacheStore.Close(); cerr != nil {
+			c.r.Err(cerr).Msg("cannot close cache store")
+		}
+	}
+	return err
 }
 
 // LocalAddr returns the address the HTTP server is listening to.
@@ -205,5 +228,4 @@ func init() {
 	// Disable proxy for client
 	http.DefaultTransport.(*http.Transport).Proxy = nil
 	http.DefaultClient.Timeout = 30 * time.Second
-	gin.SetMode(gin.ReleaseMode)
 }

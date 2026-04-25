@@ -16,8 +16,8 @@ import (
 func addCommonHTTPHandlers(r *reporter.Reporter, service string, httpComponent *httpserver.Component) {
 	httpComponent.AddHandler(fmt.Sprintf("/api/v0/%s/metrics", service), r.MetricsHTTPHandler())
 	httpComponent.AddHandler("/api/v0/metrics", r.MetricsHTTPHandler())
-	httpComponent.GinRouter.GET(fmt.Sprintf("/api/v0/%s/healthcheck", service), r.HealthcheckHTTPHandler)
-	httpComponent.GinRouter.GET("/api/v0/healthcheck", r.HealthcheckHTTPHandler)
-	httpComponent.GinRouter.GET(fmt.Sprintf("/api/v0/%s/version", service), versionHandler)
-	httpComponent.GinRouter.GET("/api/v0/version", versionHandler)
+	httpComponent.APIRouter.GET(fmt.Sprintf("/api/v0/%s/healthcheck", service), r.HealthcheckHTTPHandler)
+	httpComponent.APIRouter.GET("/api/v0/healthcheck", r.HealthcheckHTTPHandler)
+	httpComponent.APIRouter.GET(fmt.Sprintf("/api/v0/%s/version", service), versionHandler)
+	httpComponent.APIRouter.GET("/api/v0/version", versionHandler)
 }

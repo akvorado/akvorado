@@ -4,6 +4,7 @@
 package httpserver_test
 
 import (
+	"io"
 	"net/http"
 	"testing"
 	"time"
@@ -13,8 +14,7 @@ import (
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 
-	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 )
 
 func TestCacheByRequestPath(t *testing.T) {
@@ -22,15 +22,15 @@ func TestCacheByRequestPath(t *testing.T) {
 	h := httpserver.NewMock(t, r)
 
 	count := 0
-	h.GinRouter.GET("/api/v0/test",
-		h.CacheByRequestPath(time.Minute),
-		func(c *gin.Context) {
+	h.APIRouter.GET("/api/v0/test",
+		func(w http.ResponseWriter, _ *http.Request) {
 			count++
-			c.JSON(http.StatusOK, helpers.M{
+			httpserver.WriteJSON(w, http.StatusOK, helpers.M{
 				"message": "ping",
 				"count":   count,
 			})
-		})
+		},
+		h.CacheByRequestPath(time.Minute))
 
 	// Check the HTTP server is running and answering metrics
 	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
@@ -65,20 +65,20 @@ func TestCacheByRequestBody(t *testing.T) {
 	h := httpserver.NewMock(t, r)
 
 	count := 0
-	h.GinRouter.POST("/api/v0/test",
-		h.CacheByRequestBody(time.Minute),
-		func(c *gin.Context) {
+	h.APIRouter.POST("/api/v0/test",
+		func(w http.ResponseWriter, req *http.Request) {
 			count++
-			data, err := c.GetRawData()
+			data, err := io.ReadAll(req.Body)
 			if err != nil {
-				t.Fatalf("GetRawData() error:\n%+v", err)
+				t.Fatalf("ReadAll() error:\n%+v", err)
 			}
-			c.JSON(http.StatusOK, helpers.M{
+			httpserver.WriteJSON(w, http.StatusOK, helpers.M{
 				"message": "ping",
 				"count":   count,
 				"body":    string(data),
 			})
-		})
+		},
+		h.CacheByRequestBody(time.Minute))
 
 	// Check the HTTP server is running and answering metrics
 	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
@@ -145,15 +145,15 @@ func TestRedis(t *testing.T) {
 	helpers.StartStop(t, h)
 
 	count := 0
-	h.GinRouter.GET("/api/v0/test",
-		h.CacheByRequestPath(time.Minute),
-		func(c *gin.Context) {
+	h.APIRouter.GET("/api/v0/test",
+		func(w http.ResponseWriter, _ *http.Request) {
 			count++
-			c.JSON(http.StatusOK, helpers.M{
+			httpserver.WriteJSON(w, http.StatusOK, helpers.M{
 				"message": "ping",
 				"count":   count,
 			})
-		})
+		},
+		h.CacheByRequestPath(time.Minute))
 
 	// Check the HTTP server is running and answering metrics
 	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
@@ -168,7 +168,7 @@ func TestRedis(t *testing.T) {
 		},
 	})
 
-	if err := client.Get(t.Context(), "cache-/api/v0/test").Err(); err != nil {
-		t.Fatalf("GET(\"cache-/api/v0/test\") error:\n%+v", err)
+	if err := client.Get(t.Context(), "cache-path-/api/v0/test").Err(); err != nil {
+		t.Fatalf("GET(\"cache-path-/api/v0/test\") error:\n%+v", err)
 	}
 }

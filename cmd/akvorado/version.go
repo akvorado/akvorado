@@ -10,10 +10,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
 
 	"akvorado/common/helpers"
+	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
 )
@@ -68,8 +68,8 @@ var versionCmd = &cobra.Command{
 	},
 }
 
-func versionHandler(c *gin.Context) {
-	c.JSON(http.StatusOK, helpers.M{
+func versionHandler(w http.ResponseWriter, _ *http.Request) {
+	httpserver.WriteJSON(w, http.StatusOK, helpers.M{
 		"version":  helpers.AkvoradoVersion,
 		"compiler": runtime.Version(),
 	})

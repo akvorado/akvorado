@@ -10,10 +10,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gin-gonic/gin"
-
 	"akvorado/common/constants"
 	"akvorado/common/helpers"
+	"akvorado/common/httpserver"
 	"akvorado/common/schema"
 	"akvorado/console/authentication"
 	"akvorado/console/database"
@@ -32,28 +31,28 @@ type filterValidateHandlerOutput struct {
 	Errors  filter.Errors `json:"errors,omitempty"`
 }
 
-func (c *Component) filterValidateHandlerFunc(gc *gin.Context) {
+func (c *Component) filterValidateHandlerFunc(w http.ResponseWriter, req *http.Request) {
 	var input filterValidateHandlerInput
-	if err := gc.ShouldBindJSON(&input); err != nil {
-		gc.JSON(http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
+	if err := httpserver.BindJSON(req, &input); err != nil {
+		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 
 	if strings.TrimSpace(input.Filter) == "" {
-		gc.JSON(http.StatusOK, filterValidateHandlerOutput{
+		httpserver.WriteJSON(w, http.StatusOK, filterValidateHandlerOutput{
 			Message: "ok",
 		})
 		return
 	}
 	got, err := filter.Parse("", []byte(input.Filter), filter.GlobalStore("meta", &filter.Meta{Schema: c.d.Schema}))
 	if err == nil {
-		gc.JSON(http.StatusOK, filterValidateHandlerOutput{
+		httpserver.WriteJSON(w, http.StatusOK, filterValidateHandlerOutput{
 			Message: "ok",
 			Parsed:  got.(string),
 		})
 		return
 	}
-	gc.JSON(http.StatusOK, filterValidateHandlerOutput{
+	httpserver.WriteJSON(w, http.StatusOK, filterValidateHandlerOutput{
 		Message: filter.HumanError(err),
 		Errors:  filter.AllErrors(err),
 	})
@@ -61,8 +60,8 @@ func (c *Component) filterValidateHandlerFunc(gc *gin.Context) {
 
 // filterCompleteHandlerInput describes the input of the /filter/complete endpoint.
 type filterCompleteHandlerInput struct {
-	What   string `json:"what" binding:"required,oneof=column operator value"`
-	Column string `json:"column" binding:"required_unless=What column"`
+	What   string `json:"what" validate:"required,oneof=column operator value"`
+	Column string `json:"column" validate:"required_unless=What column"`
 	Prefix string `json:"prefix"`
 	Limit  int    `json:"limit"`
 }
@@ -77,11 +76,11 @@ type filterCompletion struct {
 	Quoted bool   `json:"quoted"` // should the return value be quoted?
 }
 
-func (c *Component) filterCompleteHandlerFunc(gc *gin.Context) {
-	ctx := c.t.Context(gc.Request.Context())
+func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.Request) {
+	ctx := c.t.Context(req.Context())
 	input := filterCompleteHandlerInput{Limit: 20}
-	if err := gc.ShouldBindJSON(&input); err != nil {
-		gc.JSON(http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
+	if err := httpserver.BindJSON(req, &input); err != nil {
+		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 
@@ -471,27 +470,27 @@ LIMIT %d`, col.Name, col.Name, input.Limit), input.Prefix); err != nil {
 			filteredCompletions = append(filteredCompletions, completion)
 		}
 	}
-	gc.JSON(http.StatusOK, filterCompleteHandlerOutput{filteredCompletions})
+	httpserver.WriteJSON(w, http.StatusOK, filterCompleteHandlerOutput{filteredCompletions})
 }
 
-func (c *Component) filterSavedListHandlerFunc(gc *gin.Context) {
-	ctx := c.t.Context(gc.Request.Context())
-	user := gc.MustGet("user").(authentication.UserInformation).Login
+func (c *Component) filterSavedListHandlerFunc(w http.ResponseWriter, req *http.Request) {
+	ctx := c.t.Context(req.Context())
+	user := authentication.UserFromContext(req.Context()).Login
 	filters, err := c.d.Database.ListSavedFilters(ctx, user)
 	if err != nil {
 		c.r.Err(err).Msg("unable to list filters")
-		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "unable to list filters"})
+		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "unable to list filters"})
 		return
 	}
-	gc.JSON(http.StatusOK, helpers.M{"filters": filters})
+	httpserver.WriteJSON(w, http.StatusOK, helpers.M{"filters": filters})
 }
 
-func (c *Component) filterSavedDeleteHandlerFunc(gc *gin.Context) {
-	ctx := c.t.Context(gc.Request.Context())
-	user := gc.MustGet("user").(authentication.UserInformation).Login
-	id, err := strconv.ParseUint(gc.Param("id"), 10, 64)
+func (c *Component) filterSavedDeleteHandlerFunc(w http.ResponseWriter, req *http.Request) {
+	ctx := c.t.Context(req.Context())
+	user := authentication.UserFromContext(req.Context()).Login
+	id, err := strconv.ParseUint(req.PathValue("id"), 10, 64)
 	if err != nil {
-		gc.JSON(http.StatusBadRequest, helpers.M{"message": "bad ID format"})
+		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": "bad ID format"})
 		return
 	}
 	if err := c.d.Database.DeleteSavedFilter(ctx, database.SavedFilter{
@@ -499,25 +498,25 @@ func (c *Component) filterSavedDeleteHandlerFunc(gc *gin.Context) {
 		User: user,
 	}); err != nil {
 		// Assume this is because it is not found
-		gc.JSON(http.StatusNotFound, helpers.M{"message": "filter not found"})
+		httpserver.WriteJSON(w, http.StatusNotFound, helpers.M{"message": "filter not found"})
 		return
 	}
-	gc.JSON(http.StatusNoContent, nil)
+	httpserver.WriteJSON(w, http.StatusNoContent, nil)
 }
 
-func (c *Component) filterSavedAddHandlerFunc(gc *gin.Context) {
-	ctx := c.t.Context(gc.Request.Context())
-	user := gc.MustGet("user").(authentication.UserInformation).Login
+func (c *Component) filterSavedAddHandlerFunc(w http.ResponseWriter, req *http.Request) {
+	ctx := c.t.Context(req.Context())
+	user := authentication.UserFromContext(req.Context()).Login
 	var filter database.SavedFilter
-	if err := gc.ShouldBindJSON(&filter); err != nil {
-		gc.JSON(http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
+	if err := httpserver.BindJSON(req, &filter); err != nil {
+		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 	filter.User = user
 	if err := c.d.Database.CreateSavedFilter(ctx, filter); err != nil {
 		c.r.Err(err).Msg("cannot create saved filter")
-		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "cannot create new filter"})
+		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "cannot create new filter"})
 		return
 	}
-	gc.JSON(http.StatusNoContent, nil)
+	httpserver.WriteJSON(w, http.StatusNoContent, nil)
 }

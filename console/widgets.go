@@ -10,14 +10,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gin-gonic/gin"
-
 	"akvorado/common/helpers"
+	"akvorado/common/httpserver"
 	"akvorado/common/schema"
 )
 
-func (c *Component) widgetFlowLastHandlerFunc(gc *gin.Context) {
-	ctx := c.t.Context(gc.Request.Context())
+func (c *Component) widgetFlowLastHandlerFunc(w http.ResponseWriter, req *http.Request) {
+	ctx := c.t.Context(req.Context())
 	replace := []struct {
 		key         schema.ColumnKey
 		replaceWith string
@@ -46,18 +45,18 @@ func (c *Component) widgetFlowLastHandlerFunc(gc *gin.Context) {
 FROM flows
 WHERE TimeReceived=(SELECT MAX(TimeReceived) FROM flows)
 LIMIT 1`, strings.Join(selectClause, ",\n "))
-	gc.Header("X-SQL-Query", query)
+	w.Header().Set("X-SQL-Query", query)
 	// Do not increase counter for this one.
 	rows, err := c.d.ClickHouseDB.Conn.Query(ctx, query)
 	if err != nil {
 		c.r.Err(err).Msg("unable to query database")
-		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})
+		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})
 		return
 	}
 	defer rows.Close()
 
 	if !rows.Next() {
-		gc.JSON(http.StatusNotFound, helpers.M{"message": "No flow currently in database."})
+		httpserver.WriteJSON(w, http.StatusNotFound, helpers.M{"message": "No flow currently in database."})
 		return
 	}
 
@@ -71,37 +70,37 @@ LIMIT 1`, strings.Join(selectClause, ",\n "))
 	}
 	if err := rows.Scan(vars...); err != nil {
 		c.r.Err(err).Msg("unable to parse flow")
-		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Unable to parse flow."})
+		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to parse flow."})
 		return
 	}
 	for index, column := range rows.Columns() {
 		response[column] = vars[index]
 	}
-	gc.IndentedJSON(http.StatusOK, response)
+	httpserver.WriteIndentedJSON(w, http.StatusOK, response)
 }
 
-func (c *Component) widgetFlowRateHandlerFunc(gc *gin.Context) {
-	ctx := c.t.Context(gc.Request.Context())
+func (c *Component) widgetFlowRateHandlerFunc(w http.ResponseWriter, req *http.Request) {
+	ctx := c.t.Context(req.Context())
 	query := `SELECT COUNT(*)/300 AS rate FROM flows WHERE TimeReceived > date_sub(minute, 5, now())`
-	gc.Header("X-SQL-Query", query)
+	w.Header().Set("X-SQL-Query", query)
 	// Do not increase counter for this one.
 	var result float64
 	row := c.d.ClickHouseDB.Conn.QueryRow(ctx, query)
 	if err := row.Scan(&result); err != nil {
 		c.r.Err(err).Msg("unable to parse result")
-		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Unable to parse result."})
+		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to parse result."})
 		return
 	}
-	gc.IndentedJSON(http.StatusOK, helpers.M{
+	httpserver.WriteIndentedJSON(w, http.StatusOK, helpers.M{
 		"rate":   result,
 		"period": "second",
 	})
 }
 
-func (c *Component) widgetExportersHandlerFunc(gc *gin.Context) {
-	ctx := c.t.Context(gc.Request.Context())
+func (c *Component) widgetExportersHandlerFunc(w http.ResponseWriter, req *http.Request) {
+	ctx := c.t.Context(req.Context())
 	query := `SELECT ExporterName FROM exporters GROUP BY ExporterName ORDER BY ExporterName`
-	gc.Header("X-SQL-Query", query)
+	w.Header().Set("X-SQL-Query", query)
 	// Do not increase counter for this one.
 
 	exporters := []struct {
@@ -110,7 +109,7 @@ func (c *Component) widgetExportersHandlerFunc(gc *gin.Context) {
 	err := c.d.ClickHouseDB.Conn.Select(ctx, &exporters, query)
 	if err != nil {
 		c.r.Err(err).Msg("unable to query database")
-		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})
+		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})
 		return
 	}
 	exporterList := make([]string, len(exporters))
@@ -118,14 +117,7 @@ func (c *Component) widgetExportersHandlerFunc(gc *gin.Context) {
 		exporterList[idx] = exporter.ExporterName
 	}
 
-	gc.IndentedJSON(http.StatusOK, helpers.M{"exporters": exporterList})
-}
-
-// UnmarshalParam is similar to UnmarshalText but for Gin.
-func (i *HomepageTopWidget) UnmarshalParam(param string) error {
-	var err error
-	*i, err = HomepageTopWidgetString(param)
-	return err
+	httpserver.WriteIndentedJSON(w, http.StatusOK, helpers.M{"exporters": exporterList})
 }
 
 type topResult struct {
@@ -133,8 +125,8 @@ type topResult struct {
 	Percent float64 `json:"percent"`
 }
 
-func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
-	ctx := c.t.Context(gc.Request.Context())
+func (c *Component) widgetTopHandlerFunc(w http.ResponseWriter, req *http.Request) {
+	ctx := c.t.Context(req.Context())
 	var (
 		selector          string
 		groupby           string
@@ -142,16 +134,14 @@ func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 		mainTableRequired bool
 	)
 
-	type URIParams struct {
-		WidgetName HomepageTopWidget `uri:"name" binding:"required"`
-	}
-	var uriParams URIParams
-	if err := gc.ShouldBindUri(&uriParams); err != nil {
-		gc.JSON(http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
+	rawName := req.PathValue("name")
+	widgetName, err := HomepageTopWidgetString(rawName)
+	if err != nil {
+		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 
-	switch uriParams.WidgetName {
+	switch widgetName {
 	case HomepageTopWidgetSrcAS:
 		selector = fmt.Sprintf(`concat(toString(SrcAS), ': ', dictGetOrDefault('%s', 'name', SrcAS, '???'))`, schema.DictionaryASNs)
 		groupby = `SrcAS`
@@ -179,12 +169,12 @@ func (c *Component) widgetTopHandlerFunc(gc *gin.Context) {
 		groupby = `Proto, DstPort`
 		mainTableRequired = true
 	default:
-		gc.JSON(http.StatusNotFound, helpers.M{"message": "Unknown top request."})
+		httpserver.WriteJSON(w, http.StatusNotFound, helpers.M{"message": "Unknown top request."})
 		return
 	}
-	if strings.HasPrefix(gc.Param("name"), "src-") {
+	if strings.HasPrefix(rawName, "src-") {
 		filter = "AND InIfBoundary = 'external'"
-	} else if strings.HasPrefix(gc.Param("name"), "dst-") {
+	} else if strings.HasPrefix(rawName, "dst-") {
 		filter = "AND OutIfBoundary = 'external'"
 	}
 	if groupby == "" {
@@ -215,24 +205,23 @@ LIMIT 5`,
 			Points:            5,
 		},
 	})
-	gc.Header("X-SQL-Query", query)
+	w.Header().Set("X-SQL-Query", query)
 
 	results := []topResult{}
-	err := c.d.ClickHouseDB.Conn.Select(ctx, &results, strings.TrimSpace(query))
-	if err != nil {
+	if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, strings.TrimSpace(query)); err != nil {
 		c.r.Err(err).Msg("unable to query database")
-		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})
+		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})
 		return
 	}
-	gc.JSON(http.StatusOK, helpers.M{"top": results})
+	httpserver.WriteJSON(w, http.StatusOK, helpers.M{"top": results})
 }
 
-func (c *Component) widgetGraphHandlerFunc(gc *gin.Context) {
+func (c *Component) widgetGraphHandlerFunc(w http.ResponseWriter, req *http.Request) {
 	filter := c.config.HomepageGraphFilter
 	if filter != "" {
 		filter = fmt.Sprintf("AND %s", filter)
 	}
-	ctx := c.t.Context(gc.Request.Context())
+	ctx := c.t.Context(req.Context())
 	now := c.d.Clock.Now()
 	template := fmt.Sprintf(`
 SELECT
@@ -257,7 +246,7 @@ ORDER BY Time WITH FILL
 			Points:            200,
 		},
 	})
-	gc.Header("X-SQL-Query", query)
+	w.Header().Set("X-SQL-Query", query)
 
 	results := []struct {
 		Time time.Time `json:"t"`
@@ -266,9 +255,9 @@ ORDER BY Time WITH FILL
 	err := c.d.ClickHouseDB.Conn.Select(ctx, &results, strings.TrimSpace(query))
 	if err != nil {
 		c.r.Err(err).Msg("unable to query database")
-		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})
+		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})
 		return
 	}
 
-	gc.JSON(http.StatusOK, helpers.M{"data": results})
+	httpserver.WriteJSON(w, http.StatusOK, helpers.M{"data": results})
 }

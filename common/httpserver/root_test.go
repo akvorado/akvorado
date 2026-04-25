@@ -16,8 +16,6 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
-
-	"github.com/gin-gonic/gin"
 )
 
 func TestHandler(t *testing.T) {
@@ -57,12 +55,12 @@ func TestHandler(t *testing.T) {
 	}
 }
 
-func TestGinRouter(t *testing.T) {
+func TestAPIRouter(t *testing.T) {
 	r := reporter.NewMock(t)
 	h := httpserver.NewMock(t, r)
 
-	h.GinRouter.GET("/api/v0/test", func(c *gin.Context) {
-		c.JSON(http.StatusOK, helpers.M{
+	h.APIRouter.GET("/api/v0/test", func(w http.ResponseWriter, _ *http.Request) {
+		httpserver.WriteJSON(w, http.StatusOK, helpers.M{
 			"message": "ping",
 		})
 	})
@@ -79,11 +77,11 @@ func TestGinRouter(t *testing.T) {
 	})
 }
 
-func TestGinRouterPanic(t *testing.T) {
+func TestAPIRouterPanic(t *testing.T) {
 	r := reporter.NewMock(t)
 	h := httpserver.NewMock(t, r)
 
-	h.GinRouter.GET("/api/v0/test", func(*gin.Context) {
+	h.APIRouter.GET("/api/v0/test", func(http.ResponseWriter, *http.Request) {
 		panic("heeeelp")
 	})
 

@@ -12,8 +12,8 @@ import (
 	"strings"
 
 	"akvorado/common/helpers"
+	"akvorado/common/httpserver"
 
-	"github.com/gin-gonic/gin"
 	"github.com/yuin/goldmark"
 	highlighting "github.com/yuin/goldmark-highlighting/v2"
 	"github.com/yuin/goldmark/ast"
@@ -40,9 +40,9 @@ type DocumentTOC struct {
 	Headers []Header `json:"headers"`
 }
 
-func (c *Component) docsHandlerFunc(gc *gin.Context) {
+func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
 	docs := c.embedOrLiveFS("data/docs")
-	requestedDocument := gc.Param("name")
+	requestedDocument := req.PathValue("name")
 
 	var markdown []byte
 	toc := []DocumentTOC{}
@@ -51,7 +51,7 @@ func (c *Component) docsHandlerFunc(gc *gin.Context) {
 	entries, err := fs.ReadDir(docs, ".")
 	if err != nil {
 		c.r.Err(err).Msg("unable to list documentation files")
-		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Unable to get documentation files."})
+		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to get documentation files."})
 		return
 	}
 	for _, entry := range entries {
@@ -97,7 +97,7 @@ func (c *Component) docsHandlerFunc(gc *gin.Context) {
 	}
 
 	if markdown == nil {
-		gc.JSON(http.StatusNotFound, helpers.M{"message": "Document not found."})
+		httpserver.WriteJSON(w, http.StatusNotFound, helpers.M{"message": "Document not found."})
 		return
 	}
 	md := goldmark.New(
@@ -121,11 +121,11 @@ func (c *Component) docsHandlerFunc(gc *gin.Context) {
 	var buf strings.Builder
 	if err = md.Convert(markdown, &buf); err != nil {
 		c.r.Err(err).Str("path", requestedDocument).Msg("unable to render markdown document")
-		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Unable to render document."})
+		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to render document."})
 		return
 	}
-	gc.Header("Cache-Control", "max-age=300, public")
-	gc.PureJSON(http.StatusOK, helpers.M{
+	w.Header().Set("Cache-Control", "max-age=300, public")
+	httpserver.WritePureJSON(w, http.StatusOK, helpers.M{
 		"markdown": buf.String(),
 		"toc":      toc,
 	})

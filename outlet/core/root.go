@@ -94,7 +94,7 @@ func (c *Component) Start() error {
 		}
 	})
 
-	c.d.HTTP.GinRouter.GET("/api/v0/outlet/flows", c.FlowsHTTPHandler)
+	c.d.HTTP.APIRouter.GET("/api/v0/outlet/flows", c.FlowsHTTPHandler)
 	return nil
 }
 

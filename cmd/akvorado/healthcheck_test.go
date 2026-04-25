@@ -26,7 +26,7 @@ func TestHealthcheck(t *testing.T) {
 		t.Fatalf("New() error:\n%+v", err)
 	}
 	helpers.StartStop(t, h)
-	h.GinRouter.GET("/api/v0/healthcheck", r.HealthcheckHTTPHandler)
+	h.APIRouter.GET("/api/v0/healthcheck", r.HealthcheckHTTPHandler)
 
 	for _, tc := range []struct {
 		description string
