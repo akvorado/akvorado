@@ -15,6 +15,7 @@ identified with a specific icon:
 - 🩹 *outlet*: when static metadata is missing, don't return an empty interface
 - 🌱 *docker*: update Kafka to 4.2.0 (not mandatory)
 - 🌱 *docker*: update ClickHouse to 26.3 (not mandatory)
+- 🌱 *console*: use native `net/http` package instead of Gin
 
 ## 2.3.0 - 2026-04-14
 
