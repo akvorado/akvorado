@@ -6,12 +6,17 @@
 package database
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 
-	"github.com/glebarez/sqlite"
-	"gorm.io/driver/mysql"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	_ "github.com/go-sql-driver/mysql" // MySQL driver
+	_ "github.com/jackc/pgx/v5/stdlib" // PostgreSQL driver
+	"github.com/uptrace/bun"
+	"github.com/uptrace/bun/dialect/mysqldialect"
+	"github.com/uptrace/bun/dialect/pgdialect"
+	"github.com/uptrace/bun/dialect/sqlitedialect"
+	_ "modernc.org/sqlite" // SQLite driver (no cgo)
 
 	"akvorado/common/reporter"
 )
@@ -21,7 +26,7 @@ type Component struct {
 	r      *reporter.Reporter
 	config Configuration
 
-	db *gorm.DB
+	db *bun.DB
 }
 
 // New creates a new database component.
@@ -38,33 +43,41 @@ func (c *Component) Start() error {
 	c.r.Info().Msg("starting database component")
 	switch c.config.Driver {
 	case "sqlite":
-		db, err := gorm.Open(sqlite.Open(c.config.DSN), &gorm.Config{
-			Logger: &logger{c.r},
-		})
+		sqldb, err := sql.Open("sqlite", c.config.DSN)
 		if err != nil {
 			return fmt.Errorf("unable to open sqlite database: %w", err)
 		}
-		c.db = db
+		c.db = bun.NewDB(sqldb, sqlitedialect.New())
 	case "postgresql":
-		db, err := gorm.Open(postgres.Open(c.config.DSN), &gorm.Config{
-			Logger: &logger{c.r},
-		})
+		sqldb, err := sql.Open("pgx", c.config.DSN)
 		if err != nil {
 			return fmt.Errorf("unable to open PostgreSQL database: %w", err)
 		}
-		c.db = db
+		c.db = bun.NewDB(sqldb, pgdialect.New())
 	case "mysql":
-		db, err := gorm.Open(mysql.Open(c.config.DSN), &gorm.Config{
-			Logger: &logger{c.r},
-		})
+		sqldb, err := sql.Open("mysql", c.config.DSN)
 		if err != nil {
 			return fmt.Errorf("unable to open MySQL database: %w", err)
 		}
-		c.db = db
+		c.db = bun.NewDB(sqldb, mysqldialect.New())
 	default:
 		return fmt.Errorf("%q is not a supporter driver", c.config.Driver)
 	}
-	if err := c.db.AutoMigrate(&SavedFilter{}); err != nil {
+	c.db.AddQueryHook(newQueryHook(c.r))
+
+	ctx := context.Background()
+	if _, err := c.db.NewCreateTable().
+		Model((*SavedFilter)(nil)).
+		IfNotExists().
+		Exec(ctx); err != nil {
+		return fmt.Errorf("cannot migrate database: %w", err)
+	}
+	if _, err := c.db.NewCreateIndex().
+		Model((*SavedFilter)(nil)).
+		Index("idx_saved_filters_user").
+		Column("user").
+		IfNotExists().
+		Exec(ctx); err != nil {
 		return fmt.Errorf("cannot migrate database: %w", err)
 	}
 	return c.populate()
@@ -74,11 +87,7 @@ func (c *Component) Start() error {
 func (c *Component) Stop() error {
 	defer c.r.Info().Msg("database component stopped")
 	if c.db != nil {
-		sqlDB, err := c.db.DB()
-		if err != nil {
-			return err
-		}
-		return sqlDB.Close()
+		return c.db.Close()
 	}
 	return nil
 }

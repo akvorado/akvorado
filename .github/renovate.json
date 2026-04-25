@@ -173,6 +173,16 @@
       "matchManagers": [
         "gomod"
       ],
+      "description": "modernc.org/libc must match the version pinned by modernc.org/sqlite",
+      "matchPackageNames": [
+        "modernc.org/libc"
+      ],
+      "enabled": false
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
       "groupName": "golang-org-x",
       "automerge": true,
       "matchPackageNames": [

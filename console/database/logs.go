@@ -5,47 +5,39 @@ package database
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"time"
 
-	gormlogger "gorm.io/gorm/logger"
-	"gorm.io/gorm/utils"
+	"github.com/uptrace/bun"
 
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
 )
 
-type logger struct {
+// queryHook is a bun.QueryHook bridging bun query events to the reporter logger.
+type queryHook struct {
 	r *reporter.Reporter
 }
 
-func (l *logger) LogMode(gormlogger.LogLevel) gormlogger.Interface {
-	return l
+func newQueryHook(r *reporter.Reporter) *queryHook {
+	return &queryHook{r: r}
 }
 
-func (l *logger) Info(_ context.Context, s string, args ...any) {
-	l.r.Info().Msgf(s, args...)
+// BeforeQuery is called before a query is executed.
+func (h *queryHook) BeforeQuery(ctx context.Context, _ *bun.QueryEvent) context.Context {
+	return ctx
 }
 
-func (l *logger) Warn(_ context.Context, s string, args ...any) {
-	l.r.Warn().Msgf(s, args...)
-}
-
-func (l *logger) Error(_ context.Context, s string, args ...any) {
-	l.r.Error().Msgf(s, args...)
-}
-
-func (l *logger) Trace(_ context.Context, begin time.Time, fc func() (string, int64), err error) {
-	elapsed := time.Since(begin)
-	sql, _ := fc()
+// AfterQuery is called after a query is executed.
+func (h *queryHook) AfterQuery(_ context.Context, event *bun.QueryEvent) {
 	fields := helpers.M{
-		"sql":      sql,
-		"duration": elapsed,
-		"source":   utils.FileWithLineNum(),
+		"sql":      event.Query,
+		"duration": time.Since(event.StartTime),
 	}
-	if err != nil {
-		l.r.Err(err).Fields(fields).Msg("SQL query error")
+	if event.Err != nil && !errors.Is(event.Err, sql.ErrNoRows) {
+		h.r.Err(event.Err).Fields(fields).Msg("SQL query error")
 		return
 	}
-
-	l.r.Debug().Fields(fields).Msg("SQL query")
+	h.r.Debug().Fields(fields).Msg("SQL query")
 }
