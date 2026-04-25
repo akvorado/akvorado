@@ -8,6 +8,7 @@ package schema
 
 import (
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
@@ -28,12 +29,8 @@ func New(config Configuration) (*Component, error) {
 
 	// Build effective indexes: start from defaults, apply user overrides, then remove NoIndexes.
 	effective := make(map[ColumnKey]SkipIndexType, len(DefaultIndexes))
-	for k, v := range DefaultIndexes {
-		effective[k] = v
-	}
-	for k, v := range config.Indexes {
-		effective[k] = v
-	}
+	maps.Copy(effective, DefaultIndexes)
+	maps.Copy(effective, config.Indexes)
 	for _, k := range config.NoIndexes {
 		delete(effective, k)
 	}
