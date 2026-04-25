@@ -345,6 +345,7 @@ github.com/twmb/franz-go/pkg/kfake v0.0.0-20260315151839-72fe24297b24 h1:24lo3di
 github.com/twmb/franz-go/pkg/kfake v0.0.0-20260315151839-72fe24297b24/go.mod h1:u6MCLKYQtF7DP1d3pFjohpY0G+dUEUSdmC2JZt9F84U=
 github.com/twmb/franz-go/pkg/kmsg v1.12.0 h1:CbatD7ers1KzDNgJqPbKOq0Bz/WLBdsTH75wgzeVaPc=
 github.com/twmb/franz-go/pkg/kmsg v1.12.0/go.mod h1:+DPt4NC8RmI6hqb8G09+3giKObE6uD2Eya6CfqBpeJY=
+github.com/twmb/franz-go/pkg/kmsg/v2 v2.0.1/go.mod h1:6OeA4WSQXVfDmkVW65VZJn0Xg7HT5ApIn+XB1fSpuWQ=
 github.com/twmb/franz-go/plugin/kprom v1.3.0 h1:hpPL0LxgDZ0WuT8U+PT9uYo0icY2/Pcodgdk4Ylgblo=
 github.com/twmb/franz-go/plugin/kprom v1.3.0/go.mod h1:7wlpDMa4Ls5GBIYb3xUUxK38g1N7qy2cLYO84zAtp/w=
 github.com/urfave/cli/v2 v2.1.1/go.mod h1:SE9GqnLQmjVa0iPEY0f1w3ygNIYcIJ0OKPMoW2caLfQ=
