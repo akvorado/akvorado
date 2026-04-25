@@ -27,7 +27,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus v1.1.0
 	github.com/hashicorp/go-version v1.8.0
 	github.com/itchyny/gojq v0.12.18
-	github.com/jackc/pgx/v5 v5.6.0
+	github.com/jackc/pgx/v5 v5.9.2
 	github.com/mattn/go-isatty v0.0.20
 	github.com/netsampler/goflow2/v2 v2.2.6
 	github.com/openconfig/gnmi v0.14.1
