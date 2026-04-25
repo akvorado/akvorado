@@ -7,6 +7,8 @@ import (
 	"database/sql"
 	"fmt"
 	"net"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"akvorado/common/helpers"
@@ -101,6 +103,110 @@ func TestSavedFilterSqlite(t *testing.T) {
 	r := reporter.NewMock(t)
 
 	testSavedFilter(t, NewMock(t, r, DefaultConfiguration()))
+}
+
+// TestSavedFilterSqliteFromGorm verifies that the bun-based component can
+// operate on a database whose schema was previously created by the legacy
+// gorm-based implementation.
+func TestSavedFilterSqliteFromGorm(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "saved_filters.db")
+	dsn := fmt.Sprintf("file:%s?cache=shared", dbPath)
+
+	// Apply legacy gorm schema and data
+	schema, err := os.ReadFile("testdata/sqlite-gorm-schema.sql")
+	if err != nil {
+		t.Fatalf("os.ReadFile() error:\n%+v", err)
+	}
+	rawDB, err := sql.Open("sqlite", dsn)
+	if err != nil {
+		t.Fatalf("sql.Open() error:\n%+v", err)
+	}
+	if _, err := rawDB.Exec(string(schema)); err != nil {
+		rawDB.Close()
+		t.Fatalf("rawDB.Exec() error:\n%+v", err)
+	}
+	if err := rawDB.Close(); err != nil {
+		t.Fatalf("rawDB.Close() error:\n%+v", err)
+	}
+
+	r := reporter.NewMock(t)
+	c := NewMock(t, r, Configuration{
+		Driver: "sqlite",
+		DSN:    dsn,
+		SavedFilters: []BuiltinSavedFilter{
+			{
+				Description: "From Netflix",
+				Content:     "InIfBoundary = external AND SrcAS = AS2906",
+			},
+			{
+				Description: "From GAFAM",
+				Content:     "InIfBoundary = external AND SrcAS IN (AS15169, AS16509, AS32934, AS6185, AS8075)",
+			},
+		},
+	})
+
+	// The legacy data should be visible through the bun model.
+	got, err := c.ListSavedFilters(t.Context(), "alfred")
+	if err != nil {
+		t.Fatalf("ListSavedFilters() error:\n%+v", err)
+	}
+	if diff := helpers.Diff(got, []SavedFilter{
+		{
+			ID: 1, User: "__system", Shared: true,
+			Description: "From Netflix",
+			Content:     "InIfBoundary = external AND SrcAS = AS2906",
+		}, {
+			ID: 2, User: "__system", Shared: true,
+			Description: "From GAFAM",
+			Content:     "InIfBoundary = external AND SrcAS IN (AS15169, AS16509, AS32934, AS6185, AS8075)",
+		}, {
+			ID: 144, User: "alfred", Shared: true,
+			Description: "From Free",
+			Content:     "InIfBoundary = external AND SrcAS = AS12322",
+		},
+	}); diff != "" {
+		t.Fatalf("ListSavedFilters() (-got, +want):\n%s", diff)
+	}
+
+	// New inserts should keep the gorm-style auto-incremented IDs.
+	if err := c.CreateSavedFilter(t.Context(), SavedFilter{
+		User:        "marty",
+		Shared:      false,
+		Description: "marty's filter",
+		Content:     "SrcAS = 12322",
+	}); err != nil {
+		t.Fatalf("CreateSavedFilter() error:\n%+v", err)
+	}
+	got, err = c.ListSavedFilters(t.Context(), "marty")
+	if err != nil {
+		t.Fatalf("ListSavedFilters() error:\n%+v", err)
+	}
+	if diff := helpers.Diff(got, []SavedFilter{
+		{
+			ID: 1, User: "__system", Shared: true,
+			Description: "From Netflix",
+			Content:     "InIfBoundary = external AND SrcAS = AS2906",
+		}, {
+			ID: 2, User: "__system", Shared: true,
+			Description: "From GAFAM",
+			Content:     "InIfBoundary = external AND SrcAS IN (AS15169, AS16509, AS32934, AS6185, AS8075)",
+		}, {
+			ID: 144, User: "alfred", Shared: true,
+			Description: "From Free",
+			Content:     "InIfBoundary = external AND SrcAS = AS12322",
+		}, {
+			ID: 145, User: "marty", Shared: false,
+			Description: "marty's filter",
+			Content:     "SrcAS = 12322",
+		},
+	}); diff != "" {
+		t.Fatalf("ListSavedFilters() (-got, +want):\n%s", diff)
+	}
+
+	// Delete should still work.
+	if err := c.DeleteSavedFilter(t.Context(), SavedFilter{ID: 144}); err != nil {
+		t.Fatalf("DeleteSavedFilter() error:\n%+v", err)
+	}
 }
 
 func TestSavedFilterPostgres(t *testing.T) {
