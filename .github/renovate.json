@@ -164,6 +164,15 @@
       "matchManagers": [
         "gomod"
       ],
+      "matchPackageNames": [
+        "github.com/twmb/franz-go/pkg/kmsg"
+      ],
+      "allowedVersions": "<2 || >=3"
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
       "groupName": "golang-org-x",
       "automerge": true,
       "matchPackageNames": [
