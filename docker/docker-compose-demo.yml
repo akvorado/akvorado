@@ -1,5 +1,8 @@
 ---
 services:
+  akvorado-console:
+    environment:
+      AKVORADO_CFG_CONSOLE_DATABASE_DSN: file::memory:?cache=shared
   akvorado-exporter-1: &exporter
     extends:
       file: versions.yml
