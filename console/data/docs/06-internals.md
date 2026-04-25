@@ -195,12 +195,13 @@ on top of it.
 
 ### REST API
 
-The REST API is mostly built with the [Gin
-framework](https://gin-gonic.com/), which removes some boilerplate
-compared to using pure Go. Also, it uses the [validator
-package](https://github.com/go-playground/validator), which implements
-value validations based on tags. The validation options are quite
-rich.
+The REST API is built directly on top of `net/http`. The `common/httpserver`
+package provides a small `Router` wrapper around `http.ServeMux` (using Go 1.22+
+method-aware patterns) with support for route groups and middleware chains, as
+well as helpers for JSON/YAML encoding, request body and query binding, and
+response caching. Body binding uses the [validator
+package](https://github.com/go-playground/validator), which implements value
+validations based on tags. The validation options are quite rich.
 
 ### Single page application
 

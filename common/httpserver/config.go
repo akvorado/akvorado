@@ -6,13 +6,12 @@ package httpserver
 import (
 	"context"
 	"fmt"
-	"runtime"
 	"time"
 
 	"akvorado/common/helpers"
+	"akvorado/common/httpserver/cachestore"
 
-	"github.com/chenyahui/gin-cache/persist"
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 )
 
 // Configuration describes the configuration for the HTTP server.
@@ -34,7 +33,7 @@ type CacheConfiguration struct {
 
 // CacheBackendConfiguration represents the configuration of a cache backend.
 type CacheBackendConfiguration interface {
-	New() (persist.CacheStore, error)
+	New() (cachestore.Store, error)
 }
 
 // MemoryCacheConfiguration is the configuration for an in-memory cache. There
@@ -42,8 +41,8 @@ type CacheBackendConfiguration interface {
 type MemoryCacheConfiguration struct{}
 
 // New creates a new memory cache store from a memory cache configuration.
-func (MemoryCacheConfiguration) New() (persist.CacheStore, error) {
-	return persist.NewMemoryStore(5 * time.Minute), nil
+func (MemoryCacheConfiguration) New() (cachestore.Store, error) {
+	return cachestore.NewMemory(5 * time.Minute), nil
 }
 
 // DefaultMemoryCacheConfiguration returns the default configuration for an
@@ -67,7 +66,7 @@ type RedisCacheConfiguration struct {
 }
 
 // New creates a new Redis cache store from a Redis cache configuration.
-func (c RedisCacheConfiguration) New() (persist.CacheStore, error) {
+func (c RedisCacheConfiguration) New() (cachestore.Store, error) {
 	client := redis.NewClient(&redis.Options{
 		Network:  c.Protocol,
 		Addr:     c.Server,
@@ -75,12 +74,11 @@ func (c RedisCacheConfiguration) New() (persist.CacheStore, error) {
 		Password: c.Password,
 		DB:       c.DB,
 	})
-	store := persist.NewRedisStore(client)
-	runtime.SetFinalizer(store, func(*persist.RedisStore) { client.Close() })
 	if _, err := client.Ping(context.Background()).Result(); err != nil {
+		client.Close()
 		return nil, fmt.Errorf("cannot ping Redis server: %w", err)
 	}
-	return store, nil
+	return cachestore.NewRedis(client), nil
 }
 
 // DefaultRedisCacheConfiguration returns the default configuration for a

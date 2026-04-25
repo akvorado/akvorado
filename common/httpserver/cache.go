@@ -5,62 +5,96 @@ package httpserver
 
 import (
 	"bytes"
-	"crypto"
+	"crypto/sha256"
+	"errors"
+	"fmt"
 	"io"
+	"maps"
+	"net/http"
+	"net/http/httptest"
 	"time"
 
-	cache "github.com/chenyahui/gin-cache"
-	"github.com/gin-gonic/gin"
-
-	"akvorado/common/reporter"
+	"akvorado/common/httpserver/cachestore"
 )
 
-// CacheByRequestPath is a middleware to cache the request using path as key
-func (c *Component) CacheByRequestPath(expire time.Duration) gin.HandlerFunc {
-	opts := c.commonCacheOptions()
-	opts = append(opts, cache.WithCacheStrategyByRequest(func(gc *gin.Context) (bool, cache.Strategy) {
-		return true, cache.Strategy{
-			CacheKey: gc.Request.URL.Path,
-		}
-	}))
-	return cache.Cache(c.cacheStore, expire, opts...)
+// cachedResponse stores all the data needed to replay a cached
+// response.
+type cachedResponse struct {
+	Status  int
+	Headers http.Header
+	Body    []byte
 }
 
-// CacheByRequestBody is a middleware to cache the request using body as key
-func (c *Component) CacheByRequestBody(expire time.Duration) gin.HandlerFunc {
-	opts := c.commonCacheOptions()
-	opts = append(opts, cache.WithCacheStrategyByRequest(func(gc *gin.Context) (bool, cache.Strategy) {
-		requestBody, err := gc.GetRawData()
-		gc.Request.Body = io.NopCloser(bytes.NewBuffer(requestBody))
+// CacheByRequestPath is a middleware that caches the response keyed
+// on the request path.
+func (c *Component) CacheByRequestPath(expire time.Duration) Middleware {
+	return c.cacheMiddleware(expire, func(req *http.Request) (string, bool) {
+		return fmt.Sprintf("cache-path-%s", req.URL.Path), true
+	})
+}
+
+// CacheByRequestBody is a middleware that caches the response keyed
+// on the request method, path and body.
+func (c *Component) CacheByRequestBody(expire time.Duration) Middleware {
+	return c.cacheMiddleware(expire, func(req *http.Request) (string, bool) {
+		body, err := io.ReadAll(req.Body)
+		// Restore body for downstream handlers (best-effort, even on error).
+		req.Body = io.NopCloser(bytes.NewBuffer(body))
 		if err != nil {
-			return false, cache.Strategy{}
+			c.r.Error().Err(err).Msg("cannot read body for cache key")
+			return "", false
 		}
-		h := crypto.SHA256.New()
-		bodyHash := string(h.Sum(requestBody))
-		return true, cache.Strategy{
-			CacheKey: bodyHash,
-		}
-	}))
-	return cache.Cache(c.cacheStore, expire, opts...)
+		h := sha256.New()
+		fmt.Fprintf(h, "%s\x00%s\x00", req.Method, req.URL.Path)
+		h.Write(body)
+		return fmt.Sprintf("cache-request-%s", string(h.Sum(nil))), true
+	})
 }
 
-func (c *Component) commonCacheOptions() []cache.Option {
-	return []cache.Option{
-		cache.WithLogger(cacheLogger{c.r}),
-		cache.WithOnHitCache(func(gc *gin.Context) {
-			c.metrics.cacheHit.WithLabelValues(gc.Request.URL.Path, gc.Request.Method).Inc()
-		}),
-		cache.WithOnMissCache(func(gc *gin.Context) {
-			c.metrics.cacheMiss.WithLabelValues(gc.Request.URL.Path, gc.Request.Method).Inc()
-		}),
-		cache.WithPrefixKey("cache-"),
+func (c *Component) cacheMiddleware(expire time.Duration, keyFn func(*http.Request) (string, bool)) Middleware {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			key, ok := keyFn(req)
+			if !ok {
+				next.ServeHTTP(w, req)
+				return
+			}
+
+			var cached cachedResponse
+			if err := c.cacheStore.Get(key, &cached); err == nil {
+				c.metrics.cacheHit.WithLabelValues(req.URL.Path, req.Method).Inc()
+				dst := w.Header()
+				maps.Copy(dst, cached.Headers)
+				w.WriteHeader(cached.Status)
+				w.Write(cached.Body)
+				return
+			} else if !errors.Is(err, cachestore.ErrMiss) {
+				c.r.Error().Err(err).Msg("cache backend error")
+			}
+
+			c.metrics.cacheMiss.WithLabelValues(req.URL.Path, req.Method).Inc()
+
+			// Let the next middleware handle the request and record its result.
+			rec := httptest.NewRecorder()
+			next.ServeHTTP(rec, req)
+
+			result := rec.Result()
+			body := rec.Body.Bytes()
+			dst := w.Header()
+			maps.Copy(dst, result.Header)
+			w.WriteHeader(rec.Code)
+			w.Write(body)
+
+			// Only cache successful responses.
+			if rec.Code >= 200 && rec.Code < 300 {
+				if err := c.cacheStore.Set(key, cachedResponse{
+					Status:  rec.Code,
+					Headers: result.Header,
+					Body:    body,
+				}, expire); err != nil {
+					c.r.Error().Err(err).Msg("cannot store cached response")
+				}
+			}
+		})
 	}
-}
-
-type cacheLogger struct {
-	r *reporter.Reporter
-}
-
-func (cl cacheLogger) Errorf(msg string, args ...any) {
-	cl.r.Error().Msgf(msg, args...)
 }

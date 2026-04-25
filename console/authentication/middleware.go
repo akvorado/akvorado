@@ -4,30 +4,37 @@
 package authentication
 
 import (
+	"context"
 	"net/http"
-	"reflect"
 	"strings"
 	"text/template"
 
 	"akvorado/common/helpers"
-
-	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
+	"akvorado/common/httpserver"
 )
 
 // UserInformation contains information about the current user.
 type UserInformation struct {
-	Login     string `json:"login" header:"LOGIN" binding:"required"`
-	Name      string `json:"name,omitempty" header:"NAME"`
-	Email     string `json:"email,omitempty" header:"EMAIL" binding:"omitempty,email"`
-	LogoutURL string `json:"logout-url,omitempty" header:"LOGOUT" binding:"omitempty,uri"`
-	AvatarURL string `json:"avatar-url,omitempty" header:"AVATAR" binding:"omitempty,uri"`
+	Login     string `json:"login" validate:"required"`
+	Name      string `json:"name,omitempty"`
+	Email     string `json:"email,omitempty" validate:"omitempty,email"`
+	LogoutURL string `json:"logout-url,omitempty" validate:"omitempty,uri"`
+	AvatarURL string `json:"avatar-url,omitempty" validate:"omitempty,uri"`
 }
 
-// UserAuthentication is a middleware to fill information about the
-// current user. It does not really perform authentication but relies
-// on HTTP headers.
-func (c *Component) UserAuthentication() gin.HandlerFunc {
+// userContextKey is the key under which the current user is stored in the
+// request context.
+type userContextKey struct{}
+
+// UserFromContext retrieves the UserInformation stored by UserAuthentication.
+// It panics if no user is present.
+func UserFromContext(ctx context.Context) UserInformation {
+	return ctx.Value(userContextKey{}).(UserInformation)
+}
+
+// UserAuthentication is a middleware to fill information about the current
+// user. It does not really perform authentication but relies on HTTP headers.
+func (c *Component) UserAuthentication() httpserver.Middleware {
 	var logoutURLTmpl, avatarURLTmpl *template.Template
 	if c.config.LogoutURL != "" {
 		logoutURLTmpl, _ = template.New("logout").Parse(c.config.LogoutURL)
@@ -36,78 +43,52 @@ func (c *Component) UserAuthentication() gin.HandlerFunc {
 		avatarURLTmpl, _ = template.New("avatar").Parse(c.config.AvatarURL)
 	}
 
-	return func(gc *gin.Context) {
-		var info UserInformation
-		if err := gc.ShouldBindWith(&info, customHeaderBinding{c}); err != nil {
-			if c.config.DefaultUser.Login == "" {
-				gc.JSON(http.StatusUnauthorized, helpers.M{"message": "No user logged in."})
-				gc.Abort()
-				return
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			info := c.userFromHeaders(req)
+			if err := helpers.Validate.Struct(info); err != nil {
+				if c.config.DefaultUser.Login == "" {
+					httpserver.WriteJSON(w, http.StatusUnauthorized,
+						helpers.M{"message": "No user logged in."})
+					return
+				}
+				info = c.config.DefaultUser
 			}
-			info = c.config.DefaultUser
-		}
 
-		// Apply configured templates (they can access header values and choose to keep or override)
-		if logoutURLTmpl != nil {
-			var buf strings.Builder
-			if err := logoutURLTmpl.Execute(&buf, info); err == nil {
-				info.LogoutURL = buf.String()
+			// Apply configured templates (they can access header values and choose to keep or override)
+			if logoutURLTmpl != nil {
+				var buf strings.Builder
+				if err := logoutURLTmpl.Execute(&buf, info); err == nil {
+					info.LogoutURL = buf.String()
+				}
 			}
-		}
-		if avatarURLTmpl != nil {
-			var buf strings.Builder
-			if err := avatarURLTmpl.Execute(&buf, info); err == nil {
-				info.AvatarURL = buf.String()
+			if avatarURLTmpl != nil {
+				var buf strings.Builder
+				if err := avatarURLTmpl.Execute(&buf, info); err == nil {
+					info.AvatarURL = buf.String()
+				}
 			}
-		}
 
-		gc.Set("user", info)
-		gc.Next()
+			ctx := context.WithValue(req.Context(), userContextKey{}, info)
+			next.ServeHTTP(w, req.WithContext(ctx))
+		})
 	}
 }
 
-type customHeaderBinding struct {
-	c *Component
-}
-
-func (customHeaderBinding) Name() string {
-	return "header"
-}
-
-// Bind will bind struct fields to HTTP headers using the configured mapping.
-func (b customHeaderBinding) Bind(req *http.Request, obj any) error {
-	value := reflect.ValueOf(obj).Elem()
-	tValue := reflect.TypeOf(obj).Elem()
-	if value.Kind() != reflect.Struct {
-		panic("should be a struct")
+// userFromHeaders builds a UserInformation from the request headers configured
+// on the component. Empty header names are skipped.
+func (c *Component) userFromHeaders(req *http.Request) UserInformation {
+	get := func(name string) string {
+		if name == "" {
+			return ""
+		}
+		return req.Header.Get(name)
 	}
-	for i := range tValue.NumField() {
-		sf := tValue.Field(i)
-		if sf.PkgPath != "" && !sf.Anonymous { // unexported
-			continue
-		}
-		tag := sf.Tag.Get("header")
-		if tag == "" || tag == "-" {
-			continue
-		}
-		var header string
-		switch tag {
-		case "LOGIN":
-			header = b.c.config.Headers.Login
-		case "NAME":
-			header = b.c.config.Headers.Name
-		case "EMAIL":
-			header = b.c.config.Headers.Email
-		case "LOGOUT":
-			header = b.c.config.Headers.LogoutURL
-		case "AVATAR":
-			header = b.c.config.Headers.AvatarURL
-		}
-		if header == "" {
-			continue
-		}
-		value.Field(i).SetString(req.Header.Get(header))
+	return UserInformation{
+		Login:     get(c.config.Headers.Login),
+		Name:      get(c.config.Headers.Name),
+		Email:     get(c.config.Headers.Email),
+		LogoutURL: get(c.config.Headers.LogoutURL),
+		AvatarURL: get(c.config.Headers.AvatarURL),
 	}
-
-	return binding.Validator.ValidateStruct(obj)
 }

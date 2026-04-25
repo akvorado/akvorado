@@ -5,32 +5,38 @@ package core
 
 import (
 	"net/http"
+	"strconv"
 	"sync/atomic"
 	"time"
 
 	"akvorado/common/helpers"
-
-	"github.com/gin-gonic/gin"
+	"akvorado/common/httpserver"
 )
-
-type flowsParameters struct {
-	Limit uint64 `form:"limit"`
-}
 
 // FlowsHTTPHandler streams a JSON copy of all flows just after
 // sending them to ClickHouse. Under load, some flows may not be sent. This
 // is intended for debug only.
-func (c *Component) FlowsHTTPHandler(gc *gin.Context) {
-	var params flowsParameters
-	var count uint64
-	if err := gc.ShouldBindQuery(&params); err != nil {
-		gc.JSON(http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
-		return
+func (c *Component) FlowsHTTPHandler(w http.ResponseWriter, req *http.Request) {
+	var limit uint64
+	if raw := req.URL.Query().Get("limit"); raw != "" {
+		parsed, err := strconv.ParseUint(raw, 10, 64)
+		if err != nil {
+			httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{
+				"message": "Invalid limit",
+			})
+			return
+		}
+		limit = parsed
 	}
+
+	var count uint64
 	dying := c.t.Dying()
 
 	atomic.AddUint32(&c.httpFlowClients, 1)
 	defer atomic.AddUint32(&c.httpFlowClients, ^uint32(0))
+
+	flusher, _ := w.(http.Flusher)
+	w.Header().Set("Content-Type", "application/json")
 
 	// Flush from time to time
 	var tickerChan <-chan time.Time
@@ -42,20 +48,20 @@ func (c *Component) FlowsHTTPHandler(gc *gin.Context) {
 		select {
 		case <-dying:
 			return
-		case <-gc.Request.Context().Done():
+		case <-req.Context().Done():
 			return
 		case msg := <-c.httpFlowChannel:
-			gc.Header("Content-Type", "application/json")
-			gc.Status(http.StatusOK)
-			gc.Writer.Write(msg)
-			gc.Writer.Write([]byte("\n"))
+			w.Write(msg)
+			w.Write([]byte("\n"))
 
 			count++
-			if params.Limit > 0 && count == params.Limit {
+			if limit > 0 && count == limit {
 				return
 			}
 		case <-tickerChan:
-			gc.Writer.Flush()
+			if flusher != nil {
+				flusher.Flush()
+			}
 		}
 	}
 }

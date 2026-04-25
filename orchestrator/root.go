@@ -52,8 +52,8 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		serviceConfigurations: map[ServiceType][]any{},
 	}
 
-	c.d.HTTP.GinRouter.GET("/api/v0/orchestrator/configuration/:service", c.configurationHandlerFunc)
-	c.d.HTTP.GinRouter.GET("/api/v0/orchestrator/configuration/:service/:index", c.configurationHandlerFunc)
+	c.d.HTTP.APIRouter.GET("/api/v0/orchestrator/configuration/{service}", c.configurationHandlerFunc)
+	c.d.HTTP.APIRouter.GET("/api/v0/orchestrator/configuration/{service}/{index}", c.configurationHandlerFunc)
 
 	return &c, nil
 }

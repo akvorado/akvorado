@@ -7,12 +7,9 @@ import (
 	"strings"
 	"testing"
 
+	"akvorado/common/helpers"
 	"akvorado/common/helpers/yaml"
 	"akvorado/common/pb"
-
-	"github.com/gin-gonic/gin"
-
-	"akvorado/common/helpers"
 	"akvorado/inlet/flow/input/file"
 	"akvorado/inlet/flow/input/udp"
 )
@@ -298,8 +295,8 @@ func TestDecodeConfiguration(t *testing.T) {
 				}
 			},
 			Configuration: func() any {
-				return gin.H{
-					"inputs": []gin.H{
+				return helpers.M{
+					"inputs": []helpers.M{
 						{
 							"decapsulation-protocol": "vxlan",
 						},

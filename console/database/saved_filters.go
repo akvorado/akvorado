@@ -16,8 +16,8 @@ type SavedFilter struct {
 	ID          uint64 `json:"id"`
 	User        string `gorm:"index" json:"user"`
 	Shared      bool   `json:"shared"`
-	Description string `json:"description" binding:"required"`
-	Content     string `json:"content" binding:"required"`
+	Description string `json:"description" validate:"required"`
+	Content     string `json:"content" validate:"required"`
 }
 
 // To populate a few filters:

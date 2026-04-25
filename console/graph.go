@@ -16,15 +16,15 @@ import (
 // graphSankeyHandlerInput.
 type graphCommonHandlerInput struct {
 	schema         *schema.Component
-	Start          time.Time      `json:"start" binding:"required"`
-	End            time.Time      `json:"end" binding:"required,gtfield=Start"`
-	Dimensions     []query.Column `json:"dimensions"`            // group by ...
-	Limit          int            `json:"limit" binding:"min=1"` // limit product of dimensions
-	LimitType      string         `json:"limitType" validate:"oneof=avg max last"`
-	Filter         query.Filter   `json:"filter"`                              // where ...
-	TruncateAddrV4 int            `json:"truncate-v4" binding:"min=0,max=32"`  // 0 or 32 = no truncation
-	TruncateAddrV6 int            `json:"truncate-v6" binding:"min=0,max=128"` // 0 or 128 = no truncation
-	Units          string         `json:"units" binding:"required,oneof=fps pps l3bps l2bps inl2% outl2%"`
+	Start          time.Time      `json:"start" validate:"required"`
+	End            time.Time      `json:"end" validate:"required,gtfield=Start"`
+	Dimensions     []query.Column `json:"dimensions"`             // group by ...
+	Limit          int            `json:"limit" validate:"min=1"` // limit product of dimensions
+	LimitType      string         `json:"limitType" validate:"omitempty,oneof=avg max last"`
+	Filter         query.Filter   `json:"filter"`                               // where ...
+	TruncateAddrV4 int            `json:"truncate-v4" validate:"min=0,max=32"`  // 0 or 32 = no truncation
+	TruncateAddrV6 int            `json:"truncate-v6" validate:"min=0,max=128"` // 0 or 128 = no truncation
+	Units          string         `json:"units" validate:"required,oneof=fps pps l3bps l2bps inl2% outl2%"`
 }
 
 // sourceSelect builds a SELECT query to use as a source for data. Notably, it

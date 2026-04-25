@@ -21,7 +21,7 @@ func TestUserHandler(t *testing.T) {
 	}
 
 	// Configure the two endpoints
-	endpoint := h.GinRouter.Group("/api/v0/console/user", c.UserAuthentication())
+	endpoint := h.APIRouter.Group("/api/v0/console/user", c.UserAuthentication())
 	endpoint.GET("/info", c.UserInfoHandlerFunc)
 	endpoint.GET("/avatar", c.UserAvatarHandlerFunc)
 
@@ -145,7 +145,7 @@ func TestUserHandlerWithTemplates(t *testing.T) {
 	}
 
 	// Configure the endpoint
-	endpoint := h.GinRouter.Group("/api/v0/console/user", c.UserAuthentication())
+	endpoint := h.APIRouter.Group("/api/v0/console/user", c.UserAuthentication())
 	endpoint.GET("/info", c.UserInfoHandlerFunc)
 
 	t.Run("templates applied when headers not provided", func(t *testing.T) {

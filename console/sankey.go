@@ -9,9 +9,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gin-gonic/gin"
-
 	"akvorado/common/helpers"
+	"akvorado/common/httpserver"
 	"akvorado/console/query"
 )
 
@@ -86,23 +85,23 @@ ORDER BY xps DESC`,
 	}}, nil
 }
 
-func (c *Component) graphSankeyHandlerFunc(gc *gin.Context) {
-	ctx := c.t.Context(gc.Request.Context())
+func (c *Component) graphSankeyHandlerFunc(w http.ResponseWriter, req *http.Request) {
+	ctx := c.t.Context(req.Context())
 	input := graphSankeyHandlerInput{graphCommonHandlerInput: graphCommonHandlerInput{schema: c.d.Schema}}
-	if err := gc.ShouldBindJSON(&input); err != nil {
-		gc.JSON(http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
+	if err := httpserver.BindJSON(req, &input); err != nil {
+		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 	if err := query.Columns(input.Dimensions).Validate(input.schema); err != nil {
-		gc.JSON(http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
+		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 	if err := input.Filter.Validate(input.schema); err != nil {
-		gc.JSON(http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
+		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 	if input.Limit > c.config.DimensionsLimit {
-		gc.JSON(http.StatusBadRequest,
+		httpserver.WriteJSON(w, http.StatusBadRequest,
 			helpers.M{"message": fmt.Sprintf("Limit is set beyond maximum value (%d)",
 				c.config.DimensionsLimit)})
 		return
@@ -110,20 +109,20 @@ func (c *Component) graphSankeyHandlerFunc(gc *gin.Context) {
 
 	queries, err := input.toSQL()
 	if err != nil {
-		gc.JSON(http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
+		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
 		return
 	}
 
 	// Prepare and execute query
 	sqlQuery := c.finalizeTemplateQueries(queries)
-	gc.Header("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
+	w.Header().Set("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
 	results := []struct {
 		Xps        float64  `ch:"xps"`
 		Dimensions []string `ch:"dimensions"`
 	}{}
 	if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
 		c.r.Err(err).Str("query", sqlQuery).Msg("unable to query database")
-		gc.JSON(http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})
+		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})
 		return
 	}
 
@@ -172,5 +171,5 @@ func (c *Component) graphSankeyHandlerFunc(gc *gin.Context) {
 		return output.Links[i].Xps > output.Links[j].Xps
 	})
 
-	gc.JSON(http.StatusOK, output)
+	httpserver.WriteJSON(w, http.StatusOK, output)
 }

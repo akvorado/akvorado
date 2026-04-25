@@ -9,9 +9,8 @@ import (
 	"time"
 
 	"akvorado/common/helpers"
+	"akvorado/common/httpserver"
 	"akvorado/console/query"
-
-	"github.com/gin-gonic/gin"
 )
 
 // Configuration describes the configuration for the console component.
@@ -128,7 +127,7 @@ func (c *Component) urlPrefix() string {
 	return prefix
 }
 
-func (c *Component) configHandlerFunc(gc *gin.Context) {
+func (c *Component) configHandlerFunc(w http.ResponseWriter, _ *http.Request) {
 	dimensions := []string{}
 	truncatable := []string{}
 	for _, column := range c.d.Schema.Columns() {
@@ -140,7 +139,7 @@ func (c *Component) configHandlerFunc(gc *gin.Context) {
 			truncatable = append(truncatable, column.Name)
 		}
 	}
-	gc.JSON(http.StatusOK, helpers.M{
+	httpserver.WriteJSON(w, http.StatusOK, helpers.M{
 		"version":                 helpers.AkvoradoVersion,
 		"defaultVisualizeOptions": c.config.DefaultVisualizeOptions,
 		"dimensionsLimit":         c.config.DimensionsLimit,
