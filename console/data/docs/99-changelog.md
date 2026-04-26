@@ -13,6 +13,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🩹 *outlet*: when static metadata is missing, don't return an empty interface
+- 🌱 *build*: also distribute `akvorado-inlet`, a minimal version of Akvorado containing only the inlet
 - 🌱 *docker*: update Kafka to 4.2.0 (not mandatory)
 - 🌱 *docker*: update ClickHouse to 26.3 (not mandatory)
 - 🌱 *build*: reduce the number of dependencies by switching from Gin to
