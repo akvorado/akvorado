@@ -83,7 +83,6 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 		fmt.Sprintf("1.3.6.1.2.1.31.1.1.1.15.%d", ifIndex), // ifSpeed
 	}
 	var results []gosnmp.SnmpPDU
-	success := false
 
 	logError := func(err error) error {
 		p.metrics.errors.WithLabelValues(exporterStr, "get").Inc()
@@ -93,37 +92,40 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 		return err
 	}
 
-	for idx, community := range communities {
-		// Fatal error if last community and no success.
-		isLast := idx == len(communities)-1
-		canError := isLast && !success
-
-		g.Community = community
+	// performGET sends a single GET request and merges its result into results
+	// on success. When canError is true, a non-fatal failure is reported as a
+	// hard error (use it on the last attempt when no prior attempt has
+	// succeeded).
+	//
+	//   ok    err     meaning
+	//   ----  ------  -------------------------------------------------
+	//   true  nil     GET succeeded, results updated
+	//   false nil     attempt failed but canError is unset
+	//   false non-nil fatal error
+	performGET := func(canError bool) (bool, error) {
 		currentResult, err := g.Get(requests)
 		if errors.Is(err, context.Canceled) {
-			return provider.Answer{}, err
+			return false, err
 		}
 		if err != nil {
 			if canError {
-				return provider.Answer{}, logError(err)
+				return false, logError(err)
 			}
-			continue
+			return false, nil
 		}
 		if currentResult.Error != gosnmp.NoError && currentResult.ErrorIndex == 0 {
 			// There is some error affecting the whole request
 			if canError {
-				return provider.Answer{},
-					logError(fmt.Errorf("SNMP error %s(%d)", currentResult.Error, currentResult.Error))
+				return false, logError(fmt.Errorf("SNMP error %s(%d)", currentResult.Error, currentResult.Error))
 			}
-			continue
+			return false, nil
 		}
 		if len(currentResult.Variables) != len(requests) {
 			if canError {
-				return provider.Answer{}, logError(errors.New("SNMP mismatch on variable lengths"))
+				return false, logError(errors.New("SNMP mismatch on variable lengths"))
 			}
-			continue
+			return false, nil
 		}
-		success = true
 		if results == nil {
 			results = slices.Clone(currentResult.Variables)
 		} else {
@@ -133,6 +135,31 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 					// Current result is incomplete, use this value
 					results[idx] = currentResult.Variables[idx]
 				}
+			}
+		}
+		return true, nil
+	}
+
+	if g.Version == gosnmp.Version3 {
+		// For SNMPv3, performs a single attempt.
+		if _, err := performGET(true); err != nil {
+			return provider.Answer{}, err
+		}
+	} else {
+		// For SNMPv2, try each community and merge their results: a
+		// community with partial access can be filled in by another
+		// one.
+		success := false
+		for idx, community := range communities {
+			g.Community = community
+			// Fatal error if last community and no success.
+			canError := idx == len(communities)-1 && !success
+			ok, err := performGET(canError)
+			if err != nil {
+				return provider.Answer{}, err
+			}
+			if ok {
+				success = true
 			}
 		}
 	}
