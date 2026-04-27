@@ -74,6 +74,7 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 		p.errLogger.Err(err).Str("exporter", exporterStr).Msg("unable to connect")
 		return provider.Answer{}, err
 	}
+	defer g.Conn.Close()
 	requests := []string{
 		"1.3.6.1.2.1.1.5.0",                                // sysName
 		fmt.Sprintf("1.3.6.1.2.1.2.2.1.2.%d", ifIndex),     // ifDescr
