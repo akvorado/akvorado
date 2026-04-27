@@ -352,13 +352,18 @@ func TestPoller(t *testing.T) {
 				t.Fatalf("Poll() (-got, +want):\n%s", diff)
 			}
 
-			gotMetrics := r.GetMetrics("akvorado_outlet_metadata_provider_snmp_poller_", "error_", "success_")
+			gotMetrics := r.GetMetrics("akvorado_outlet_metadata_provider_snmp_poller_", "error_", "success_", "v3_cache_")
 			expectedMetrics := map[string]string{
 				fmt.Sprintf(`error_requests_total{error="ifalias missing",exporter="%s"}`, exporterStr): "2", // 643+644
 				fmt.Sprintf(`error_requests_total{error="ifdescr missing",exporter="%s"}`, exporterStr): "1", // 644
 				fmt.Sprintf(`error_requests_total{error="ifname missing",exporter="%s"}`, exporterStr):  "1", // 644
 				fmt.Sprintf(`error_requests_total{error="ifspeed missing",exporter="%s"}`, exporterStr): "1", // 644
 				fmt.Sprintf(`success_requests_total{exporter="%s"}`, exporterStr):                       "4", // 641+642+643+645
+			}
+			// For SNMPv3, expect one cache miss (first poll) and four hits.
+			if cred, ok := tc.Config.Credentials.Lookup(tc.ExporterIP); ok && cred.UserName != "" {
+				expectedMetrics[fmt.Sprintf(`v3_cache_hits_total{exporter="%s"}`, exporterStr)] = "4"
+				expectedMetrics[fmt.Sprintf(`v3_cache_misses_total{exporter="%s"}`, exporterStr)] = "1"
 			}
 			if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 				t.Fatalf("Metrics (-got, +want):\n%s", diff)

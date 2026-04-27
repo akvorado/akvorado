@@ -16,11 +16,10 @@ import (
 	"akvorado/outlet/metadata/provider"
 )
 
-// Poll polls the SNMP provider for the requested interface index.
-func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port uint16, ifIndex uint) (provider.Answer, error) {
+// newSNMPSession builds a gosnmp session for the given target with the
+// configured credentials applied.
+func (p *Provider) newSNMPSession(ctx context.Context, exporter, agent netip.Addr, port uint16) (*gosnmp.GoSNMP, *gosnmp.UsmSecurityParameters, []string) {
 	exporterStr := exporter.Unmap().String()
-
-	// Instantiate an SNMP state
 	g := &gosnmp.GoSNMP{
 		Context:                 ctx,
 		Target:                  agent.Unmap().String(),
@@ -35,39 +34,84 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 		Version: gosnmp.Version2c,
 	}
 	communities := []string{"public"}
-	if credentials, ok := p.config.Credentials.Lookup(exporter); ok {
-		if credentials.UserName != "" {
-			g.Version = gosnmp.Version3
-			g.SecurityModel = gosnmp.UserSecurityModel
-			usmSecurityParameters := gosnmp.UsmSecurityParameters{
-				UserName:                 credentials.UserName,
-				AuthenticationProtocol:   gosnmp.SnmpV3AuthProtocol(credentials.AuthenticationProtocol),
-				AuthenticationPassphrase: credentials.AuthenticationPassphrase,
-				PrivacyProtocol:          gosnmp.SnmpV3PrivProtocol(credentials.PrivacyProtocol),
-				PrivacyPassphrase:        credentials.PrivacyPassphrase,
-			}
-			g.SecurityParameters = &usmSecurityParameters
-			if usmSecurityParameters.AuthenticationProtocol == gosnmp.NoAuth {
-				if usmSecurityParameters.PrivacyProtocol == gosnmp.NoPriv {
-					g.MsgFlags = gosnmp.NoAuthNoPriv
-				} else {
-					// Not possible
-					g.MsgFlags = gosnmp.NoAuthNoPriv
-				}
-			} else {
-				if usmSecurityParameters.PrivacyProtocol == gosnmp.NoPriv {
-					g.MsgFlags = gosnmp.AuthNoPriv
-				} else {
-					g.MsgFlags = gosnmp.AuthPriv
-				}
-			}
-			g.ContextName = credentials.ContextName
-		} else {
-			g.Version = gosnmp.Version2c
-			communities = credentials.Communities
-		}
+	credentials, ok := p.config.Credentials.Lookup(exporter)
+	if !ok {
+		// Nothing found, use the default communities.
+		return g, nil, communities
 	}
+	if credentials.UserName == "" {
+		// SNMPv2c with communities.
+		g.Version = gosnmp.Version2c
+		communities = credentials.Communities
+		return g, nil, communities
+	}
+	// SNMPv3
+	g.Version = gosnmp.Version3
+	g.SecurityModel = gosnmp.UserSecurityModel
+	usm := &gosnmp.UsmSecurityParameters{
+		UserName:                 credentials.UserName,
+		AuthenticationProtocol:   gosnmp.SnmpV3AuthProtocol(credentials.AuthenticationProtocol),
+		AuthenticationPassphrase: credentials.AuthenticationPassphrase,
+		PrivacyProtocol:          gosnmp.SnmpV3PrivProtocol(credentials.PrivacyProtocol),
+		PrivacyPassphrase:        credentials.PrivacyPassphrase,
+	}
+	if p.applyV3Cache(usm, exporter) {
+		p.metrics.v3CacheHits.WithLabelValues(exporterStr).Inc()
+	} else {
+		p.metrics.v3CacheMisses.WithLabelValues(exporterStr).Inc()
+	}
+	g.SecurityParameters = usm
+	switch {
+	case usm.AuthenticationProtocol == gosnmp.NoAuth:
+		g.MsgFlags = gosnmp.NoAuthNoPriv
+	case usm.PrivacyProtocol == gosnmp.NoPriv:
+		g.MsgFlags = gosnmp.AuthNoPriv
+	default:
+		g.MsgFlags = gosnmp.AuthPriv
+	}
+	g.ContextName = credentials.ContextName
+	return g, usm, communities
+}
 
+// applyV3Cache populates usm with cached engine state if available. It
+// returns true on cache hit.
+func (p *Provider) applyV3Cache(usm *gosnmp.UsmSecurityParameters, exporter netip.Addr) bool {
+	p.v3CacheMu.RLock()
+	state, ok := p.v3Cache[exporter]
+	p.v3CacheMu.RUnlock()
+	if !ok {
+		return false
+	}
+	usm.AuthoritativeEngineID = state.AuthoritativeEngineID
+	usm.AuthoritativeEngineBoots = state.AuthoritativeEngineBoots
+	usm.AuthoritativeEngineTime = state.AuthoritativeEngineTime
+	usm.SecretKey = state.SecretKey
+	usm.PrivacyKey = state.PrivacyKey
+	return true
+}
+
+// storeV3Cache snapshots the current engine state from usm into the
+// cache for the given exporter.
+func (p *Provider) storeV3Cache(usm *gosnmp.UsmSecurityParameters, exporter netip.Addr) {
+	if usm.AuthoritativeEngineID == "" {
+		return
+	}
+	state := cachedV3State{
+		AuthoritativeEngineID:    usm.AuthoritativeEngineID,
+		AuthoritativeEngineBoots: usm.AuthoritativeEngineBoots,
+		AuthoritativeEngineTime:  usm.AuthoritativeEngineTime,
+		SecretKey:                usm.SecretKey,
+		PrivacyKey:               usm.PrivacyKey,
+	}
+	p.v3CacheMu.Lock()
+	p.v3Cache[exporter] = state
+	p.v3CacheMu.Unlock()
+}
+
+// Poll polls the SNMP provider for the requested interface index.
+func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port uint16, ifIndex uint) (provider.Answer, error) {
+	exporterStr := exporter.Unmap().String()
+	g, usm, communities := p.newSNMPSession(ctx, exporter, agent, port)
 	start := time.Now()
 	if err := g.Connect(); err != nil {
 		p.metrics.errors.WithLabelValues(exporterStr, "connect").Inc()
@@ -142,8 +186,12 @@ func (p *Provider) Poll(ctx context.Context, exporter, agent netip.Addr, port ui
 
 	if g.Version == gosnmp.Version3 {
 		// For SNMPv3, performs a single attempt.
-		if _, err := performGET(true); err != nil {
+		ok, err := performGET(true)
+		if err != nil {
 			return provider.Answer{}, err
+		}
+		if ok {
+			p.storeV3Cache(usm, exporter)
 		}
 	} else {
 		// For SNMPv2, try each community and merge their results: a

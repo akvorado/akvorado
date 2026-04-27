@@ -7,6 +7,8 @@ package snmp
 
 import (
 	"context"
+	"net/netip"
+	"sync"
 	"time"
 
 	"akvorado/common/helpers"
@@ -14,17 +16,34 @@ import (
 	"akvorado/outlet/metadata/provider"
 )
 
+// cachedV3State holds the discovered SNMPv3 authoritative engine
+// information and the localized keys derived from it. Caching this
+// avoids the per-request engine ID probe (RFC 3414, section 4) on
+// subsequent polls of the same exporter.
+type cachedV3State struct {
+	AuthoritativeEngineID    string
+	AuthoritativeEngineBoots uint32
+	AuthoritativeEngineTime  uint32
+	SecretKey                []byte
+	PrivacyKey               []byte
+}
+
 // Provider represents the SNMP provider.
 type Provider struct {
 	r         *reporter.Reporter
 	config    *Configuration
 	errLogger reporter.Logger
 
+	v3CacheMu sync.RWMutex
+	v3Cache   map[netip.Addr]cachedV3State
+
 	metrics struct {
-		successes *reporter.CounterVec
-		errors    *reporter.CounterVec
-		retries   *reporter.CounterVec
-		times     *reporter.SummaryVec
+		successes     *reporter.CounterVec
+		errors        *reporter.CounterVec
+		retries       *reporter.CounterVec
+		times         *reporter.SummaryVec
+		v3CacheHits   *reporter.CounterVec
+		v3CacheMisses *reporter.CounterVec
 	}
 }
 
@@ -48,6 +67,7 @@ func (configuration Configuration) New(_ context.Context, r *reporter.Reporter) 
 		r:         r,
 		config:    &configuration,
 		errLogger: r.Sample(reporter.BurstSampler(10*time.Second, 3)),
+		v3Cache:   map[netip.Addr]cachedV3State{},
 	}
 
 	p.metrics.successes = r.CounterVec(
@@ -71,6 +91,16 @@ func (configuration Configuration) New(_ context.Context, r *reporter.Reporter) 
 			Help:       "Time to successfully poll for values.",
 			Objectives: map[float64]float64{0.5: 0.05, 0.9: 0.01, 0.99: 0.001},
 			MaxAge:     time.Hour,
+		}, []string{"exporter"})
+	p.metrics.v3CacheHits = r.CounterVec(
+		reporter.CounterOpts{
+			Name: "poller_v3_cache_hits_total",
+			Help: "Number of SNMPv3 engine cache hits.",
+		}, []string{"exporter"})
+	p.metrics.v3CacheMisses = r.CounterVec(
+		reporter.CounterOpts{
+			Name: "poller_v3_cache_misses_total",
+			Help: "Number of SNMPv3 engine cache misses.",
 		}, []string{"exporter"})
 
 	return &p, nil
