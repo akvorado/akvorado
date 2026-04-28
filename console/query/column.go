@@ -120,8 +120,20 @@ func (qc Column) ToSQLSelect(sch *schema.Component) string {
 		strValue = `arrayStringConcat(MPLSLabels, ' ')`
 	case schema.ColumnDstASPath:
 		strValue = `arrayStringConcat(DstASPath, ' ')`
+	case schema.ColumnSrcCommunities:
+		strValue = `arrayStringConcat(arrayConcat(
+			arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), SrcCommunities),
+			arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':',
+								toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':',
+								toString(bitAnd(c, 0xffffffff))), SrcLargeCommunities)
+			), ' ')`
 	case schema.ColumnDstCommunities:
-		strValue = `arrayStringConcat(arrayConcat(arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities), arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)), ' ')`
+		strValue = `arrayStringConcat(arrayConcat(
+			arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities),
+			arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':',
+								toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':',
+								toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)
+			), ' ')`
 	case schema.ColumnSrcMAC, schema.ColumnDstMAC:
 		strValue = fmt.Sprintf("MACNumToString(%s)", qc)
 	case schema.ColumnTCPFlags:

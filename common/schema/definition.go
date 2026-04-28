@@ -180,6 +180,8 @@ const (
 	ColumnDst1stAS
 	ColumnDst2ndAS
 	ColumnDst3rdAS
+	ColumnSrcCommunities
+	ColumnSrcLargeCommunities
 	ColumnDstCommunities
 	ColumnDstLargeCommunities
 	ColumnInIfName
@@ -375,6 +377,18 @@ END`,
 				ParserType:             "asn",
 				ClickHouseType:         "UInt32",
 				ClickHouseGenerateFrom: "c_DstASPath[3]",
+			},
+			{
+				Key:                ColumnSrcCommunities,
+				ParserType:         "community",
+				ClickHouseMainOnly: true,
+				ClickHouseType:     "Array(UInt32)",
+			},
+			{
+				Key:                 ColumnSrcLargeCommunities,
+				ClickHouseMainOnly:  true,
+				ClickHouseType:      "Array(UInt128)",
+				ConsoleNotDimension: true,
 			},
 			{
 				Key:                ColumnDstCommunities,

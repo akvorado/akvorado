@@ -21,11 +21,10 @@ func (c *Component) widgetFlowLastHandlerFunc(w http.ResponseWriter, req *http.R
 		key         schema.ColumnKey
 		replaceWith string
 	}{
-		{schema.ColumnDstCommunities, `arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':',
-                      toString(bitAnd(c, 0xffff))), DstCommunities)`},
-		{schema.ColumnDstLargeCommunities, `arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':',
-                      toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':',
-                      toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)`},
+		{schema.ColumnSrcCommunities, `arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), SrcCommunities)`},
+		{schema.ColumnSrcLargeCommunities, `arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))), SrcLargeCommunities)`},
+		{schema.ColumnDstCommunities, `arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities)`},
+		{schema.ColumnDstLargeCommunities, `arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)`},
 		{schema.ColumnSrcMAC, `MACNumToString(SrcMAC)`},
 		{schema.ColumnDstMAC, `MACNumToString(DstMAC)`},
 	}

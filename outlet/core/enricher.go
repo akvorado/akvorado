@@ -141,8 +141,19 @@ func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) bool {
 	// set asns according to user config
 	flow.SrcAS = c.getASNumber(flow.SrcAS, sourceRouting.ASN, flow.SrcNetMask)
 	flow.DstAS = c.getASNumber(flow.DstAS, destRouting.ASN, flow.DstNetMask)
+	flow.AppendArrayUInt32(schema.ColumnSrcCommunities, sourceRouting.Communities)
 	flow.AppendArrayUInt32(schema.ColumnDstCommunities, destRouting.Communities)
 	flow.AppendArrayUInt32(schema.ColumnDstASPath, destRouting.ASPath)
+	if len(sourceRouting.LargeCommunities) > 0 {
+		communitiesSrc := make([]schema.UInt128, len(sourceRouting.LargeCommunities))
+		for i, comm := range sourceRouting.LargeCommunities {
+			communitiesSrc[i] = schema.UInt128{
+				High: uint64(comm.ASN),
+				Low:  (uint64(comm.LocalData1) << 32) + uint64(comm.LocalData2),
+			}
+		}
+		flow.AppendArrayUInt128(schema.ColumnSrcLargeCommunities, communitiesSrc)
+	}
 	if len(destRouting.LargeCommunities) > 0 {
 		communities := make([]schema.UInt128, len(destRouting.LargeCommunities))
 		for i, comm := range destRouting.LargeCommunities {

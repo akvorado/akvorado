@@ -205,6 +205,51 @@ LIMIT %d`, columnName, columnName, input.Limit)
 				})
 			}
 			input.Prefix = "" // We have handled this internally
+		case "srccommunities":
+			results := []struct {
+				Label  string `ch:"label"`
+				Detail string `ch:"detail"`
+			}{}
+			sqlQuery := fmt.Sprintf(`
+SELECT label, detail FROM (
+ SELECT
+  'community' AS detail,
+  concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))) AS label
+ FROM (
+  SELECT arrayJoin(SrcCommunities) AS c
+  FROM flows
+  WHERE TimeReceived > date_sub(minute, 1, now())
+  GROUP BY c
+  ORDER BY COUNT(*) DESC
+ )
+
+ UNION ALL
+
+ SELECT
+  'large community' AS detail,
+  concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))) AS label
+ FROM (
+  SELECT arrayJoin(SrcLargeCommunities) AS c
+  FROM flows
+  WHERE TimeReceived > date_sub(minute, 1, now())
+  GROUP BY c
+  ORDER BY COUNT(*) DESC
+ )
+)
+WHERE startsWith(label, $1)
+LIMIT %d`, input.Limit)
+			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
+				c.r.Err(err).Msg("unable to query database")
+				break
+			}
+			for _, result := range results {
+				completions = append(completions, filterCompletion{
+					Label:  result.Label,
+					Detail: result.Detail,
+					Quoted: false,
+				})
+			}
+			input.Prefix = ""
 		case "dstcommunities":
 			results := []struct {
 				Label  string `ch:"label"`
