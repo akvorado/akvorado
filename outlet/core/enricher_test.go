@@ -577,6 +577,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 					schema.ColumnInIfSpeed:        uint32(1000),
 					schema.ColumnOutIfSpeed:       uint32(1000),
 					schema.ColumnDstASPath:        []uint32{64200, 1299, 174},
+					schema.ColumnSrcCommunities:   []uint32{500},
 					schema.ColumnDstCommunities:   []uint32{100, 200, 400},
 					schema.ColumnDstLargeCommunities: []schema.UInt128{
 						{High: 64200, Low: (uint64(2) << 32) + uint64(3)},

@@ -634,10 +634,11 @@ func TestReverse(t *testing.T) {
 	bf.Reverse()
 
 	expected := map[ColumnKey]any{
-		ColumnTimeReceived: uint32(1000),
-		ColumnSamplingRate: uint64(20000),
-		ColumnInIfName:     "output",
-		ColumnOutIfName:    "input",
+		ColumnTimeReceived:   uint32(1000),
+		ColumnSamplingRate:   uint64(20000),
+		ColumnInIfName:       "output",
+		ColumnOutIfName:      "input",
+		ColumnSrcCommunities: []uint32{10, 11, 12},
 	}
 	got := bf.OtherColumns
 	if diff := helpers.Diff(got, expected); diff != "" {
