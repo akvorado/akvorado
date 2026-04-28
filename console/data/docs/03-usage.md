@@ -210,7 +210,7 @@ aggregated data and will therefore be slower:
 - `SrcAddr` and `DstAddr`,
 - `SrcPort` and `DstPort`,
 - `DstASPath`,
-- `DstCommunities`.
+- `SrcCommunities` and `DstCommunities`.
 
 ## Demo exporter service
 

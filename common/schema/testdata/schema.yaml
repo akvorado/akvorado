@@ -219,11 +219,21 @@
   parsertype: asn
   clickhousetype: UInt32
   clickhousegeneratefrom: c_DstASPath[3]
+- key: SrcCommunities
+  name: SrcCommunities
+  parsertype: community
+  clickhousetype: Array(UInt32)
+  clickhousemainonly: true
 - key: DstCommunities
   name: DstCommunities
   parsertype: community
   clickhousetype: Array(UInt32)
   clickhousemainonly: true
+- key: SrcLargeCommunities
+  name: SrcLargeCommunities
+  clickhousetype: Array(UInt128)
+  clickhousemainonly: true
+  consolenotdimension: true
 - key: DstLargeCommunities
   name: DstLargeCommunities
   clickhousetype: Array(UInt128)
