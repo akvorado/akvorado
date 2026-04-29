@@ -13,6 +13,7 @@ identified with a specific icon:
 ## Unreleased
 
 - 🩹 *outlet*: when static metadata is missing, don't return an empty interface
+- 🩹 *orchestrator*: improve detection of changed configuration file
 - 🌱 *outlet*: cache the SNMPv3 engine ID to not trigger discovery probe on subsequent polls
 - 🌱 *docker*: update Kafka to 4.2.0 (not mandatory)
 - 🌱 *docker*: update ClickHouse to 26.3 (not mandatory)

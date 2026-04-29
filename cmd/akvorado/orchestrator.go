@@ -270,7 +270,14 @@ func orchestratorWatch(r *reporter.Reporter, daemonComponent daemon.Component, p
 					r.Error().Msg("configuration file watcher died")
 					return
 				}
-				if event.Has(fsnotify.Create) || event.Has(fsnotify.Write) {
+				// fsnotify is an abstraction. With inotify, we would be
+				// interested in IN_CLOSE_WRITE (last write), CREATE,
+				// IN_MOVED_TO and IN_ATTRIB (in case we need to wait for chmod
+				// for the file to be readable). With fsnotify, we are
+				// interested in Create (which also includes IN_MOVED_TO), Write
+				// (IN_MODIFY, as IN_CLOSE_WRITE is not exported), and Chmod.
+				interested := event.Has(fsnotify.Create) || event.Has(fsnotify.Write) || event.Has(fsnotify.Chmod)
+				if interested {
 					// Check if we have one of the monitored path matching
 					r.Debug().Str("name", event.Name).Msg("detected potential configuration change")
 					if !slices.Contains(paths, filepath.Clean(event.Name)) {
