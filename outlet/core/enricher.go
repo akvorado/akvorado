@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"akvorado/common/schema"
+
+	"github.com/osrg/gobgp/v4/pkg/packet/bgp"
 )
 
 // exporterAndInterfaceInfo aggregates both exporter info and interface info
@@ -145,24 +147,10 @@ func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) bool {
 	flow.AppendArrayUInt32(schema.ColumnDstCommunities, destRouting.Communities)
 	flow.AppendArrayUInt32(schema.ColumnDstASPath, destRouting.ASPath)
 	if len(sourceRouting.LargeCommunities) > 0 {
-		communitiesSrc := make([]schema.UInt128, len(sourceRouting.LargeCommunities))
-		for i, comm := range sourceRouting.LargeCommunities {
-			communitiesSrc[i] = schema.UInt128{
-				High: uint64(comm.ASN),
-				Low:  (uint64(comm.LocalData1) << 32) + uint64(comm.LocalData2),
-			}
-		}
-		flow.AppendArrayUInt128(schema.ColumnSrcLargeCommunities, communitiesSrc)
+		flow.AppendArrayUInt128(schema.ColumnSrcLargeCommunities, largeCommunityToUInt128(sourceRouting.LargeCommunities))
 	}
 	if len(destRouting.LargeCommunities) > 0 {
-		communities := make([]schema.UInt128, len(destRouting.LargeCommunities))
-		for i, comm := range destRouting.LargeCommunities {
-			communities[i] = schema.UInt128{
-				High: uint64(comm.ASN),
-				Low:  (uint64(comm.LocalData1) << 32) + uint64(comm.LocalData2),
-			}
-		}
-		flow.AppendArrayUInt128(schema.ColumnDstLargeCommunities, communities)
+		flow.AppendArrayUInt128(schema.ColumnDstLargeCommunities, largeCommunityToUInt128(destRouting.LargeCommunities))
 	}
 
 	flow.AppendString(schema.ColumnExporterName, flowExporterName)
@@ -170,6 +158,17 @@ func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) bool {
 	flow.AppendUint(schema.ColumnOutIfSpeed, uint64(flowOutIfSpeed))
 
 	return skip
+}
+
+func largeCommunityToUInt128(largeCommunities []bgp.LargeCommunity) []schema.UInt128 {
+	communities := make([]schema.UInt128, len(largeCommunities))
+	for i, comm := range largeCommunities {
+		communities[i] = schema.UInt128{
+			High: uint64(comm.ASN),
+			Low:  (uint64(comm.LocalData1) << 32) + uint64(comm.LocalData2),
+		}
+	}
+	return communities
 }
 
 // getASNumber retrieves the AS number for a flow, depending on user preferences.

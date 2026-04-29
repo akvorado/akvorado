@@ -24,7 +24,7 @@ $(sed -En '/.*ColumnKey = iota/,/^[[:space:]]ColumnLast/p' common/schema/definit
     | sed \$d \
     | sed -En 's/^[[:space:]]+(Column[^ ]+).*/\1/p' \
     | sed -E \
-             -e 's/(ColumnSrc(Communities|LargeCommunities)|ColumnDst(ASPath|Communities|LargeCommunities|[123]..AS))/\1: 0,/;t' \
+             -e 's/(ColumnDst(ASPath|[123]..AS))/\1: 0,/;t' \
              -e 's/(ColumnIn)([A-Z0-9].*)/ColumnOut\2: \1\2,/;t' \
              -e 's/(ColumnOut)([A-Z0-9].*)/ColumnIn\2: \1\2,/;t' \
              -e 's/(ColumnSrc)([A-Z0-9].*)/ColumnDst\2: \1\2,/;t' \

@@ -21,10 +21,10 @@ func (c *Component) widgetFlowLastHandlerFunc(w http.ResponseWriter, req *http.R
 		key         schema.ColumnKey
 		replaceWith string
 	}{
-		{schema.ColumnSrcCommunities, `arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), SrcCommunities)`},
-		{schema.ColumnSrcLargeCommunities, `arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))), SrcLargeCommunities)`},
-		{schema.ColumnDstCommunities, `arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities)`},
-		{schema.ColumnDstLargeCommunities, `arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))), DstLargeCommunities)`},
+		{schema.ColumnSrcCommunities, communitiesFormat("SrcCommunities")},
+		{schema.ColumnSrcLargeCommunities, largeCommunitiesFormat("SrcLargeCommunities")},
+		{schema.ColumnDstCommunities, communitiesFormat("DstCommunities")},
+		{schema.ColumnDstLargeCommunities, largeCommunitiesFormat("DstLargeCommunities")},
 		{schema.ColumnSrcMAC, `MACNumToString(SrcMAC)`},
 		{schema.ColumnDstMAC, `MACNumToString(DstMAC)`},
 	}
@@ -76,6 +76,14 @@ LIMIT 1`, strings.Join(selectClause, ",\n "))
 		response[column] = vars[index]
 	}
 	httpserver.WriteIndentedJSON(w, http.StatusOK, response)
+}
+
+func communitiesFormat(prefix string) string {
+	return fmt.Sprintf(`arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), %s)`, prefix)
+}
+
+func largeCommunitiesFormat(prefix string) string {
+	return fmt.Sprintf(`arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))), %s)`, prefix)
 }
 
 func (c *Component) widgetFlowRateHandlerFunc(w http.ResponseWriter, req *http.Request) {
