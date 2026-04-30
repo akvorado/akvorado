@@ -1276,6 +1276,10 @@ For testing purpose, it is possible to generate flows using the demo
 exporter service. It features a NetFlow generator, a simple SNMP
 agent and a BMP exporter.
 
+> [!INFO]
+> The demo exporter is not enabled by default. You need to run `docker compose
+> --profile demo up -d`.
+
 ```yaml
 snmp:
   name: exporter1.example.com

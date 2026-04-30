@@ -217,6 +217,10 @@ aggregated data and will therefore be slower:
 The demo exporter service simulates a NetFlow exporter, a simple SNMP agent, and
 a BMP exporter.
 
+> [!INFO]
+> The demo exporter is not enabled by default. You need to run `docker compose
+> --profile demo up -d`.
+
 ## Other commands
 
 - `akvorado version` displays the version.
