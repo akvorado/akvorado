@@ -64,6 +64,7 @@ func TestConfigHandler(t *testing.T) {
 					"Dst1stAS",
 					"Dst2ndAS",
 					"Dst3rdAS",
+					"SrcCommunities",
 					"DstCommunities",
 					"InIfName",
 					"OutIfName",

@@ -99,7 +99,7 @@ SELECT label, detail FROM (
   'community' AS detail,
   concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))) AS label
  FROM (
-  SELECT arrayJoin(DstCommunities) AS c
+  SELECT arrayJoin(arrayJoin(DstCommunities)) AS c
   FROM flows
   WHERE TimeReceived > date_sub(minute, 1, now())
   GROUP BY c
@@ -112,7 +112,7 @@ SELECT label, detail FROM (
   'large community' AS detail,
   concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))) AS label
  FROM (
-  SELECT arrayJoin(DstLargeCommunities) AS c
+  SELECT arrayJoin(arrayJoin(DstLargeCommunities)) AS c
   FROM flows
   WHERE TimeReceived > date_sub(minute, 1, now())
   GROUP BY c

@@ -205,18 +205,19 @@ LIMIT %d`, columnName, columnName, input.Limit)
 				})
 			}
 			input.Prefix = "" // We have handled this internally
-		case "dstcommunities":
+		case "srccommunities", "dstcommunities":
 			results := []struct {
 				Label  string `ch:"label"`
 				Detail string `ch:"detail"`
 			}{}
+			columnNamePrefix := c.fixQueryColumnName(input.Column)[:3]
 			sqlQuery := fmt.Sprintf(`
 SELECT label, detail FROM (
  SELECT
   'community' AS detail,
   concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))) AS label
  FROM (
-  SELECT arrayJoin(DstCommunities) AS c
+  SELECT arrayJoin(arrayJoin(%sCommunities)) AS c
   FROM flows
   WHERE TimeReceived > date_sub(minute, 1, now())
   GROUP BY c
@@ -229,7 +230,7 @@ SELECT label, detail FROM (
   'large community' AS detail,
   concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))) AS label
  FROM (
-  SELECT arrayJoin(DstLargeCommunities) AS c
+  SELECT arrayJoin(arrayJoin(%sLargeCommunities)) AS c
   FROM flows
   WHERE TimeReceived > date_sub(minute, 1, now())
   GROUP BY c
@@ -237,7 +238,7 @@ SELECT label, detail FROM (
  )
 )
 WHERE startsWith(label, $1)
-LIMIT %d`, input.Limit)
+LIMIT %d`, columnNamePrefix, columnNamePrefix, input.Limit)
 			if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery, input.Prefix); err != nil {
 				c.r.Err(err).Msg("unable to query database")
 				break
