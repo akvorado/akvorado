@@ -661,7 +661,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				ClickHouse: clickhouseComponent,
 				HTTP:       httpComponent,
 				Routing:    routingComponent,
-				Schema:     schema.NewMock(t),
+				Schema:     schema.NewMock(t).EnableAllColumns(),
 			})
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)

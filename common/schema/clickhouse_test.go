@@ -620,7 +620,7 @@ func TestBuildProtoInput(t *testing.T) {
 }
 
 func TestReverse(t *testing.T) {
-	c := NewMock(t)
+	c := NewMock(t).EnableAllColumns()
 	bf := c.NewFlowMessage()
 	bf.Reverse()
 

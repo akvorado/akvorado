@@ -23,9 +23,7 @@ func TestWidgetLastFlow(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	mockRows := mocks.NewMockRows(ctrl)
 	mockConn.EXPECT().Query(gomock.Any(), `
-SELECT * EXCEPT (SrcCommunities, SrcLargeCommunities, DstCommunities, DstLargeCommunities),
- arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), SrcCommunities) AS SrcCommunities,
- arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))), SrcLargeCommunities) AS SrcLargeCommunities,
+SELECT * EXCEPT (DstCommunities, DstLargeCommunities),
  arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), DstCommunities) AS DstCommunities,
  arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':', toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':', toString(bitAnd(c, 0xffffffff))), DstLargeCommunities) AS DstLargeCommunities
 FROM flows
