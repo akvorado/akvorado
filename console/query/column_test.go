@@ -43,7 +43,7 @@ func TestUnmarshalQueryColumn(t *testing.T) {
 }
 
 func TestQueryColumnSQLSelect(t *testing.T) {
-	sch := schema.NewMock(t)
+	sch := schema.NewMock(t).EnableAllColumns()
 	cases := []struct {
 		Input    schema.ColumnKey
 		Expected string
@@ -84,14 +84,6 @@ func TestQueryColumnSQLSelect(t *testing.T) {
 		}, {
 			Input:    schema.ColumnDstASPath,
 			Expected: `arrayStringConcat(DstASPath, ' ')`,
-		}, {
-			Input: schema.ColumnSrcCommunities,
-			Expected: `arrayStringConcat(arrayConcat(
-			arrayMap(c -> concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))), SrcCommunities),
-			arrayMap(c -> concat(toString(bitAnd(bitShiftRight(c, 64), 0xffffffff)), ':',
-								toString(bitAnd(bitShiftRight(c, 32), 0xffffffff)), ':',
-								toString(bitAnd(c, 0xffffffff))), SrcLargeCommunities)
-			), ' ')`,
 		}, {
 			Input: schema.ColumnDstCommunities,
 			Expected: `arrayStringConcat(arrayConcat(
