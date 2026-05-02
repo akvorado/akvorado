@@ -40,6 +40,7 @@ func SetupKafkaBroker(t *testing.T) (*kgo.Client, []string) {
 		kgo.RequestTimeoutOverhead(1*time.Second),
 		kgo.ProduceRequestTimeout(1*time.Second),
 		kgo.ConnIdleTimeout(1*time.Second),
+		kgo.MetadataMinAge(100*time.Millisecond),
 	)
 
 	ready := false
