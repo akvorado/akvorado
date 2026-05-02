@@ -95,7 +95,7 @@ jobs:
         run: sudo -E capsh --keep=1 --user=$USER --caps=cap_bpf+eip --addamb=cap_bpf -- -c "env PATH=$PATH make test-coverage"
       - name: Upload coverage results
         if: matrix.coverage
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: linux-coverage
           if-no-files-found: error
@@ -121,7 +121,7 @@ jobs:
           make TARGETARCH=arm64 && mv bin/akvorado bin/akvorado-arm64
       - name: Upload binary
         if: matrix.binary
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: binary
           path: bin/akvorado-*
@@ -145,7 +145,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
-      - uses: cachix/install-nix-action@96951a368ba55167b55f1c916f7d416bac6505fe # v31
+      - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31
       - name: Update dependency hashes
         run: nix run .#update
       - name: Abort on release if not up-to-date
@@ -176,7 +176,7 @@ jobs:
       - name: Tests
         run: make test-coverage-go
       - name: Upload coverage results
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: macos-coverage
           if-no-files-found: error
@@ -196,7 +196,7 @@ jobs:
     steps:
       # Setup
       - uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4
-      - uses: cachix/install-nix-action@96951a368ba55167b55f1c916f7d416bac6505fe # v31
+      - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           persist-credentials: false
@@ -222,7 +222,7 @@ jobs:
           make -j default.pgo
           go tool pprof -top default.pgo
       - name: Upload profile
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: pgo
           if-no-files-found: error
@@ -233,7 +233,7 @@ jobs:
           docker compose stop
           ./.github/e2e.sh coverage
       - name: Upload coverage results
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: e2e-coverage
           if-no-files-found: error
@@ -308,7 +308,7 @@ jobs:
         run: make && ./bin/akvorado version
       - name: Save IANA files to cache
         if: steps.setup.outputs.iana-cache-hit != 'true'
-        uses: actions/cache/save@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
         with:
           path: |
             orchestrator/clickhouse/data/udp.csv
