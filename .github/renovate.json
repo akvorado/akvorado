@@ -248,6 +248,15 @@
       "matchPackageNames": [
         "/^docker//"
       ]
+    },
+    {
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "github-actions-digests",
+      "matchUpdateTypes": [
+        "digest"
+      ]
     }
   ]
 }
