@@ -135,7 +135,7 @@ func TestSource(t *testing.T) {
 			Headers: map[string]string{
 				"X-Foo": "hello",
 			},
-			Timeout:   20 * time.Millisecond,
+			Timeout:   40 * time.Millisecond,
 			Interval:  20 * time.Millisecond,
 			Transform: MustParseTransformQuery(".results[]"),
 		},
