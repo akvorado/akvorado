@@ -64,6 +64,15 @@ tests:
           label."com.docker.compose.service": kafka
           message: |-
             [2025-08-29 15:15:48,641] INFO [BrokerServer id=1] Waiting for all of the authorizer futures to be completed (kafka.server.BrokerServer)
+      - insert_at: base
+        type: log
+        log_fields:
+          # Sentinel value to flush multiline
+          container_id: b8ee56469
+          container_name: akvorado-kafka-1
+          label."com.docker.compose.service": kafka
+          message: |-
+            [2025-08-29 15:15:49,000] INFO Sentinel (kafka.server.Sentinel)
     outputs:
       - extract_from: combine
         conditions:
@@ -102,6 +111,15 @@ tests:
           label."com.docker.compose.service": kafka
           message: |-
             add.partitions.to.txn.retry.backoff.ms = 20
+      - insert_at: base
+        type: log
+        log_fields:
+          # Sentinel value to flush multiline
+          container_id: b8ee56469
+          container_name: akvorado-kafka-1
+          label."com.docker.compose.service": kafka
+          message: |-
+            [2025-08-29 15:15:49,000] INFO Sentinel (kafka.server.Sentinel)
     outputs:
       - extract_from: combine
         conditions:
