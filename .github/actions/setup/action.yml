@@ -38,7 +38,7 @@ runs:
         echo "gocache=$(go env GOCACHE)" >> $GITHUB_ENV
         echo "gomodcache=$(go env GOMODCACHE)" >> $GITHUB_ENV
         echo "today=$(date +%Y%m%d)" >> $GITHUB_ENV
-    - uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
+    - uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
       if: ${{ inputs.setup-go == 'true' }}
       with:
         path: |
@@ -52,7 +52,7 @@ runs:
       if: ${{ inputs.setup-node == 'true' }}
       with:
         package_json_file: console/frontend/package.json
-    - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6
+    - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
       if: ${{ inputs.setup-node == 'true' }}
       with:
         node-version: ${{ inputs.node-version }}
@@ -61,7 +61,7 @@ runs:
           console/frontend/pnpm-lock.yaml
           bin/external-tool
     - name: Restore IANA files from cache
-      uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
+      uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
       id: iana-cache
       with:
         path: |

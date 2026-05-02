@@ -29,7 +29,7 @@ jobs:
           else
             echo "should_run=false" >> $GITHUB_OUTPUT
           fi
-      - uses: cachix/install-nix-action@96951a368ba55167b55f1c916f7d416bac6505fe # v31
+      - uses: cachix/install-nix-action@ab739621df7a23f52766f9ccc97f38da6b7af14f # v31
         if: github.event_name != 'schedule' || steps.check-changes.outputs.should_run == 'true'
       - name: Update dependency hashes
         if: github.event_name != 'schedule' || steps.check-changes.outputs.should_run == 'true'
