@@ -32,7 +32,7 @@ require (
 	github.com/netsampler/goflow2/v2 v2.2.6
 	github.com/openconfig/gnmi v0.14.1
 	github.com/openconfig/gnmic/pkg/api v0.1.11
-	github.com/oschwald/maxminddb-golang/v2 v2.1.1
+	github.com/oschwald/maxminddb-golang/v2 v2.2.0
 	github.com/osrg/gobgp/v4 v4.4.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/puzpuzpuz/xsync/v4 v4.4.0
