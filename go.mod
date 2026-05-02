@@ -35,7 +35,7 @@ require (
 	github.com/oschwald/maxminddb-golang/v2 v2.2.0
 	github.com/osrg/gobgp/v4 v4.4.0
 	github.com/prometheus/client_golang v1.23.2
-	github.com/puzpuzpuz/xsync/v4 v4.4.0
+	github.com/puzpuzpuz/xsync/v4 v4.5.0
 	github.com/redis/go-redis/v9 v9.18.0
 	github.com/rs/zerolog v1.35.1
 	github.com/scrapli/scrapligo v1.4.0
