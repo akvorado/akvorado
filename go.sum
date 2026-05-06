@@ -246,8 +246,8 @@ github.com/openconfig/grpctunnel v0.1.0 h1:EN99qtlExZczgQgp5ANnHRC/Rs62cAG+Tz2BQ
 github.com/openconfig/grpctunnel v0.1.0/go.mod h1:G04Pdu0pml98tdvXrvLaU+EBo3PxYfI9MYqpvdaEHLo=
 github.com/oschwald/maxminddb-golang/v2 v2.2.0 h1:/2khmIiNvFxgfwGxitper3XBJBs5qTCPQ/H1iR9MgBw=
 github.com/oschwald/maxminddb-golang/v2 v2.2.0/go.mod h1:n/ctYVTFYQypkn5uO1CZnTmj8jdQKIVh/LX7gSaIl0w=
-github.com/osrg/gobgp/v4 v4.4.0 h1:GA0oTZv4WfjXrhHI3Gm/fm9jAy4fVU7vdMvt0GOEqBE=
-github.com/osrg/gobgp/v4 v4.4.0/go.mod h1:pgu8waqTvZUYl4eQuPrKNOaVwhHv7Zt9YymuzCaX7f8=
+github.com/osrg/gobgp/v4 v4.5.0 h1:1jS4cMxUYSo36UfDyigLOLYEg6Oh+9I2mrnjjgAGCFk=
+github.com/osrg/gobgp/v4 v4.5.0/go.mod h1:pgu8waqTvZUYl4eQuPrKNOaVwhHv7Zt9YymuzCaX7f8=
 github.com/pascaldekloe/name v1.0.1 h1:9lnXOHeqeHHnWLbKfH6X98+4+ETVqFqxN09UXSjcMb0=
 github.com/pascaldekloe/name v1.0.1/go.mod h1:Z//MfYJnH4jVpQ9wkclwu2I2MkHmXTlT9wR5UZScttM=
 github.com/paulmach/orb v0.12.0 h1:z+zOwjmG3MyEEqzv92UN49Lg1JFYx0L9GpGKNVDKk1s=
