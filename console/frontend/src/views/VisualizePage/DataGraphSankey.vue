@@ -36,17 +36,29 @@ const option = computed((): ECOption => {
   const theme = isDark.value ? "dark" : "light";
   const data = props.data || {};
   if (!data.xps) return {};
-  let greyNodes = 0;
-  let colorNodes = 0;
-  const makeNode = ({ name }: GraphSankeyHandlerResult["nodes"][0]) => ({
-    id: name,
-    name: name.split(": ").slice(1).join(": "),
-    itemStyle: {
-      color: name.endsWith(" Other")
-        ? dataColorGrey(greyNodes++, false, theme)
-        : dataColor(colorNodes++, false, theme),
-    },
-  });
+  // Allocate colors by node value (the part after ": ") so the same value
+  // gets the same color across the forward and reverse halves.
+  const colorByValue = new Map<string, number>();
+  const greyByValue = new Map<string, number>();
+  const makeNode = ({ name }: GraphSankeyHandlerResult["nodes"][0]) => {
+    const label = name.split(": ").slice(1).join(": ");
+    const isGrey = name.endsWith(" Other");
+    const cache = isGrey ? greyByValue : colorByValue;
+    let idx = cache.get(label);
+    if (idx === undefined) {
+      idx = cache.size;
+      cache.set(label, idx);
+    }
+    return {
+      id: name,
+      name: label,
+      itemStyle: {
+        color: isGrey
+          ? dataColorGrey(idx, false, theme)
+          : dataColor(idx, false, theme),
+      },
+    };
+  };
   const makeLink = ({
     source,
     target,
