@@ -7,7 +7,8 @@ import (
 	"context"
 	"net/http"
 	"strings"
-	"text/template"
+
+	"github.com/valyala/fasttemplate"
 
 	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
@@ -35,15 +36,16 @@ func UserFromContext(ctx context.Context) UserInformation {
 // UserAuthentication is a middleware to fill information about the current
 // user. It does not really perform authentication but relies on HTTP headers.
 func (c *Component) UserAuthentication() httpserver.Middleware {
-	var logoutURLTmpl, avatarURLTmpl *template.Template
+	var logoutURLTmpl, avatarURLTmpl *fasttemplate.Template
 	if c.config.LogoutURL != "" {
-		logoutURLTmpl, _ = template.New("logout").Parse(c.config.LogoutURL)
+		logoutURLTmpl, _ = fasttemplate.NewTemplate(c.config.LogoutURL, "{{", "}}")
 	}
 	if c.config.AvatarURL != "" {
-		avatarURLTmpl, _ = template.New("avatar").Parse(c.config.AvatarURL)
+		avatarURLTmpl, _ = fasttemplate.NewTemplate(c.config.AvatarURL, "{{", "}}")
 	}
 
 	return func(next http.Handler) http.Handler {
+
 		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			info := c.userFromHeaders(req)
 			if err := helpers.Validate.Struct(info); err != nil {
@@ -54,17 +56,24 @@ func (c *Component) UserAuthentication() httpserver.Middleware {
 				}
 				info = c.config.DefaultUser
 			}
+			data := map[string]any{
+				"Login":     info.Login,
+				"Name":      info.Name,
+				"Email":     info.Email,
+				"LogoutURL": info.LogoutURL,
+				"AvatarURL": info.AvatarURL,
+			}
 
 			// Apply configured templates (they can access header values and choose to keep or override)
 			if logoutURLTmpl != nil {
 				var buf strings.Builder
-				if err := logoutURLTmpl.Execute(&buf, info); err == nil {
+				if _, err := logoutURLTmpl.Execute(&buf, data); err == nil {
 					info.LogoutURL = buf.String()
 				}
 			}
 			if avatarURLTmpl != nil {
 				var buf strings.Builder
-				if err := avatarURLTmpl.Execute(&buf, info); err == nil {
+				if _, err := avatarURLTmpl.Execute(&buf, data); err == nil {
 					info.AvatarURL = buf.String()
 				}
 			}
