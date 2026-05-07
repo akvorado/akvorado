@@ -156,7 +156,6 @@ const jsonPayload = computed(
       const input: GraphSankeyHandlerInput = {
         ...omit(state.value, [
           "graphType",
-          "bidirectional",
           "previousPeriod",
           "humanStart",
           "humanEnd",
@@ -229,7 +228,13 @@ const { data, execute, isFetching, aborted, abort, canAbort, error } = useFetch(
         fetchedData.value = {
           graphType: "sankey",
           ...(data as GraphSankeyHandlerOutput),
-          ...pick(state.value, ["start", "end", "dimensions", "units"]),
+          ...pick(state.value, [
+            "start",
+            "end",
+            "dimensions",
+            "units",
+            "bidirectional",
+          ]),
         };
       } else {
         fetchedData.value = {

@@ -27,6 +27,18 @@ type graphCommonHandlerInput struct {
 	Units          string         `json:"units" validate:"required,oneof=fps pps l3bps l2bps inl2% outl2%"`
 }
 
+// reverseUnits returns the unit name for the opposite traffic direction. Most
+// units are direction-agnostic; only the percentage-of-interface units swap.
+func reverseUnits(units string) string {
+	switch units {
+	case "inl2%":
+		return "outl2%"
+	case "outl2%":
+		return "inl2%"
+	}
+	return units
+}
+
 // sourceSelect builds a SELECT query to use as a source for data. Notably, it
 // will do IP truncation.
 func (input graphCommonHandlerInput) sourceSelect() string {

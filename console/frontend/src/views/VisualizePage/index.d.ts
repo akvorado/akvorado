@@ -11,20 +11,23 @@ export type GraphSankeyHandlerInput = {
   limit: number;
   filter: string;
   units: Units;
+  bidirectional: boolean;
 };
 export type GraphLineHandlerInput = GraphSankeyHandlerInput & {
   points: number;
-  bidirectional: boolean;
   "previous-period": boolean;
 };
 export type GraphSankeyHandlerOutput = {
   rows: string[][];
   xps: number[];
-  nodes: string[];
+  axis: number[];
+  "axis-names": Record<number, string>;
+  nodes: { name: string; axis: number }[];
   links: {
     source: string;
     target: string;
     xps: number;
+    axis: number;
   }[];
 };
 export type GraphLineHandlerOutput = {
@@ -42,7 +45,10 @@ export type GraphLineHandlerOutput = {
 };
 export type GraphSankeyHandlerResult = GraphSankeyHandlerOutput & {
   graphType: Extract<GraphType, "sankey">;
-} & Pick<GraphSankeyHandlerInput, "start" | "end" | "dimensions" | "units">;
+} & Pick<
+    GraphSankeyHandlerInput,
+    "start" | "end" | "dimensions" | "units" | "bidirectional"
+  >;
 export type GraphLineHandlerResult = GraphLineHandlerOutput & {
   graphType: Exclude<GraphType, "sankey">;
 } & Pick<

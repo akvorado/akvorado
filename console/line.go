@@ -152,12 +152,7 @@ func (input graphLineHandlerInput) toSQL1(axis int, options toSQL1Options) templ
 	// Units
 	units := input.Units
 	if options.reverseDirection {
-		switch units {
-		case "inl2%":
-			units = "outl2%"
-		case "outl2%":
-			units = "inl2%"
-		}
+		units = reverseUnits(units)
 	}
 
 	template := fmt.Sprintf(`%s

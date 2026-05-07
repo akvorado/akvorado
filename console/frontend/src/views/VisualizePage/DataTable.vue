@@ -122,7 +122,7 @@ const highlight = (index: number | null) => {
   emit("highlighted", originalIndex);
 };
 const axes = computed(() => {
-  if (!props.data || props.data.graphType === "sankey") return null;
+  if (!props.data) return null;
   return toPairs(props.data["axis-names"])
     .map(([k, v]) => ({ id: Number(k), name: v }))
     .filter(({ id }) => [1, 2].includes(id))
@@ -227,17 +227,19 @@ const table = computed(
           // Average
           { name: "Average", classNames: "text-right" },
         ],
-        rows: data.rows?.map((row, idx) => ({
-          values: [
-            // Dimensions
-            ...row.map((r) => ({ value: r })),
-            // Average
-            {
-              value: formatValue(data.xps[idx]),
-              classNames: "text-right tabular-nums",
-            },
-          ],
-        })),
+        rows: data.rows
+          ?.map((row, idx) => ({
+            values: [
+              // Dimensions
+              ...row.map((r) => ({ value: r })),
+              // Average
+              {
+                value: formatValue(data.xps[idx]),
+                classNames: "text-right tabular-nums",
+              },
+            ],
+          }))
+          .filter((_, idx) => data.axis[idx] === displayedAxis.value),
       };
     }
     return null;

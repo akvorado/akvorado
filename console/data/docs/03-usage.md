@@ -126,9 +126,11 @@ appearance.
   display time series, and “sankey” to show flow distributions between various
   dimensions.
 
-- For “stacked”, “lines”, and “grid” graphs, the *bidirectional*
-  option adds flows in the opposite direction to the graph. They
-  are displayed as negative values on the graph.
+- For “stacked”, “lines”, and “grid” graphs, the *bidirectional* option adds
+  flows in the opposite direction to the graph. They are displayed as negative
+  values on the graph. For “sankey” graphs, the *bidirectional* option splits
+  the diagram into two side-by-side parts: the left side shows the forward
+  direction, the right side shows the reverse direction.
 
 - For “stacked” graphs, the *previous period* option adds a line for
   the traffic levels from the previous period. Depending on
