@@ -113,10 +113,27 @@ const option = computed((): ECOption => {
   };
 
   if (data.bidirectional) {
-    const fwdNodes = data.nodes.filter((n) => n.axis === 1).map(makeNode);
+    // The two halves meet at the middle. Move the labels of the rightmost
+    // forward column (last forward dimension) to the left of those nodes so
+    // they don't overlap the leftmost reverse column.
+    const lastFwdDim = data.dimensions[data.dimensions.length - 1];
+    const fwdNodes = data.nodes
+      .filter((n) => n.axis === 1)
+      .map((n) => {
+        const node = makeNode(n);
+        if (n.name.startsWith(`${lastFwdDim}: `)) {
+          return { ...node, label: { position: "left" as const } };
+        }
+        return node;
+      });
     const revNodes = data.nodes.filter((n) => n.axis === 2).map(makeNode);
     const fwdLinks = data.links.filter((l) => l.axis === 1).map(makeLink);
-    const revLinks = data.links.filter((l) => l.axis === 2).map(makeLink);
+    // Flip source/target on the reverse half so the column order is
+    // mirrored: the dimension closest to the forward side appears first.
+    const revLinks = data.links
+      .filter((l) => l.axis === 2)
+      .map(makeLink)
+      .map((l) => ({ ...l, source: l.target, target: l.source }));
     return {
       backgroundColor: "transparent",
       tooltip,
@@ -124,13 +141,13 @@ const option = computed((): ECOption => {
         {
           ...seriesBase,
           left: "5%",
-          right: "55%",
+          right: "50%",
           data: fwdNodes,
           links: fwdLinks,
         },
         {
           ...seriesBase,
-          left: "55%",
+          left: "50%",
           right: "5%",
           data: revNodes,
           links: revLinks,
