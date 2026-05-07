@@ -51,10 +51,16 @@ can spawn them through `docker compose -f docker/docker-compose-dev.yml`:
 
 For manual tests, you can use `make docker-dev` to build a Docker container,
 then use `docker compose --profile demo up` to run Docker Compose. Each time you
-modify the code, repeat these two steps:
+modify the code, repeat this step:
 
 ```console
-$ make docker-dev && CONSOLE_HEALTHCHECK_DISABLED=true docker compose --profile demo up -d
+$ make docker-dev && docker compose --profile demo up --wait
+
+```
+Alternatively, if you are only working on the console:
+
+```console
+$ make docker-dev && CONSOLE_HEALTHCHECK_DISABLED=true docker compose --profile demo up akvorado-console --wait --no-deps
 ```
 
 Once done, run `docker compose --profile demo down` to stop all the containers.
