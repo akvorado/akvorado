@@ -79,7 +79,8 @@
                 graphType.type === 'stacked' ||
                 graphType.type === 'stacked100' ||
                 graphType.type === 'lines' ||
-                graphType.type === 'grid'
+                graphType.type === 'grid' ||
+                graphType.type === 'sankey'
               "
               v-model="bidirectional"
               label="Bidirectional"
@@ -213,6 +214,9 @@ const options = computed((): InternalModelType => {
       bidirectional: bidirectional.value,
     }),
     ...(graphType.value.type === "grid" && {
+      bidirectional: bidirectional.value,
+    }),
+    ...(graphType.value.type === "sankey" && {
       bidirectional: bidirectional.value,
     }),
   };

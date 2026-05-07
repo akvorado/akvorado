@@ -12,7 +12,10 @@ identified with a specific icon:
 
 ## Unreleased
 
-- ✨ *outlet*: add `SrcCommunities` and `SrcLargeCommunities` (disabled by default, as they can be inaccurate)
+- ✨ *console*: add a "bidirectional" option for sankey graphs, splitting the
+  diagram into forward and reverse halves side by side
+- ✨ *outlet*: add `SrcCommunities` and `SrcLargeCommunities` (disabled by
+  default, as they can be inaccurate)
 - 🩹 *outlet*: when static metadata is missing, don't return an empty interface
 - 🩹 *orchestrator*: improve detection of changed configuration file
 - 🌱 *outlet*: cache the SNMPv3 engine ID to not trigger discovery probe on subsequent polls

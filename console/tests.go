@@ -49,4 +49,5 @@ func NewMock(t *testing.T, config Configuration) (*Component, *httpserver.Compon
 func init() {
 	helpers.RegisterCmpOption(cmpopts.IgnoreUnexported(graphCommonHandlerInput{}))
 	helpers.RegisterCmpOption(cmp.AllowUnexported(graphLineHandlerInput{}))
+	helpers.RegisterCmpOption(cmp.AllowUnexported(graphSankeyHandlerInput{}))
 }
