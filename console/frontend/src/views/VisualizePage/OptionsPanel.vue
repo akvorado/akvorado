@@ -75,13 +75,7 @@
             class="order-4 flex grow flex-row justify-between gap-x-3 sm:max-lg:order-2 sm:max-lg:grow-0 sm:max-lg:flex-col"
           >
             <InputCheckbox
-              v-if="
-                graphType.type === 'stacked' ||
-                graphType.type === 'stacked100' ||
-                graphType.type === 'lines' ||
-                graphType.type === 'grid' ||
-                graphType.type === 'sankey'
-              "
+              v-if="bidirectionalGraphTypes.includes(graphType.type)"
               v-model="bidirectional"
               label="Bidirectional"
             />
@@ -162,6 +156,14 @@ const graphTypeList = Object.entries(graphTypes).map(([k, v], idx) => ({
   name: v,
 }));
 
+const bidirectionalGraphTypes: (keyof typeof graphTypes)[] = [
+  "stacked",
+  "stacked100",
+  "lines",
+  "grid",
+  "sankey",
+];
+
 const open = ref(false);
 const graphType = ref(graphTypeList[0]);
 const timeRange = ref<InputTimeRangeModelType>(null);
@@ -200,25 +202,10 @@ const options = computed((): InternalModelType => {
     "truncate-v6": dimensions.value?.truncate6,
     filter: filter.value?.expression,
     units: units.value,
-    bidirectional: false,
-    previousPeriod: false,
-    // Depending on the graph type...
-    ...(graphType.value.type === "stacked" && {
-      bidirectional: bidirectional.value,
-      previousPeriod: previousPeriod.value,
-    }),
-    ...(graphType.value.type === "stacked100" && {
-      bidirectional: bidirectional.value,
-    }),
-    ...(graphType.value.type === "lines" && {
-      bidirectional: bidirectional.value,
-    }),
-    ...(graphType.value.type === "grid" && {
-      bidirectional: bidirectional.value,
-    }),
-    ...(graphType.value.type === "sankey" && {
-      bidirectional: bidirectional.value,
-    }),
+    bidirectional:
+      bidirectionalGraphTypes.includes(graphType.value.type) &&
+      bidirectional.value,
+    previousPeriod: graphType.value.type === "stacked" && previousPeriod.value,
   };
 });
 const applyLabel = computed(() =>

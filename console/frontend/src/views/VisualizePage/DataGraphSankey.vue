@@ -16,14 +16,11 @@ import { SankeyChart, type SankeySeriesOption } from "echarts/charts";
 import {
   TooltipComponent,
   type TooltipComponentOption,
-  type GridComponentOption,
 } from "echarts/components";
 import type { TooltipCallbackDataParams } from "echarts/types/src/component/tooltip/TooltipView.d.ts";
 import VChart from "vue-echarts";
 use([CanvasRenderer, SankeyChart, TooltipComponent]);
-type ECOption = ComposeOption<
-  SankeySeriesOption | TooltipComponentOption | GridComponentOption
->;
+type ECOption = ComposeOption<SankeySeriesOption | TooltipComponentOption>;
 
 const props = defineProps<{
   data: GraphSankeyHandlerResult;
