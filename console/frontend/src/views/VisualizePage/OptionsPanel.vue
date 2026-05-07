@@ -80,7 +80,7 @@
               label="Bidirectional"
             />
             <InputCheckbox
-              v-if="graphType.type === 'stacked'"
+              v-if="previousPeriodGraphTypes.includes(graphType.type)"
               v-model="previousPeriod"
               label="Previous period"
             />
@@ -164,6 +164,8 @@ const bidirectionalGraphTypes: (keyof typeof graphTypes)[] = [
   "sankey",
 ];
 
+const previousPeriodGraphTypes: (keyof typeof graphTypes)[] = ["stacked"];
+
 const open = ref(false);
 const graphType = ref(graphTypeList[0]);
 const timeRange = ref<InputTimeRangeModelType>(null);
@@ -205,7 +207,9 @@ const options = computed((): InternalModelType => {
     bidirectional:
       bidirectionalGraphTypes.includes(graphType.value.type) &&
       bidirectional.value,
-    previousPeriod: graphType.value.type === "stacked" && previousPeriod.value,
+    previousPeriod:
+      previousPeriodGraphTypes.includes(graphType.value.type) &&
+      previousPeriod.value,
   };
 });
 const applyLabel = computed(() =>
