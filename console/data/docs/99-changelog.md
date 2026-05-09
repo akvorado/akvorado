@@ -12,6 +12,8 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 💥 *build*: require x86-64-v3 baseline for binary shipped with each release
+  (supported by most CPU after 2014, no change for the Docker image)
 - ✨ *console*: add a "bidirectional" option for sankey graphs, splitting the
   diagram into forward and reverse halves side by side
 - ✨ *outlet*: add `SrcCommunities` and `SrcLargeCommunities` (disabled by
