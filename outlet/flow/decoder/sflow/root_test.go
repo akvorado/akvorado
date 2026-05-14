@@ -396,6 +396,50 @@ func TestDecode(t *testing.T) {
 		}
 	})
 
+	t.Run("flow sample with sampled ethernet", func(t *testing.T) {
+		// Same test as above, but we don't require L3/L4 stuff to ensure we use
+		// the content of the sampled ethernet header.
+		t.Skipf("buggy MAC address returned by goflow2: https://github.com/netsampler/goflow2/issues/510")
+		schemaConfiguration := schema.DefaultConfiguration()
+		schemaConfiguration.Enabled = append(schemaConfiguration.Enabled, schema.ColumnDstMAC)
+		schemaConfiguration.Enabled = append(schemaConfiguration.Enabled, schema.ColumnSrcMAC)
+		sch, _ := schema.New(schemaConfiguration)
+		sdecoder := New(r, decoder.Dependencies{Schema: sch})
+		got = got[:0]
+		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-sflow-ipv4-data.pcap"))
+		_, err := sdecoder.Decode(
+			decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
+			decoder.Options{}, bf, finalize)
+		if err != nil {
+			t.Fatalf("Decode() error:\n%+v", err)
+		}
+		expectedFlows := []*schema.FlowMessage{
+			{
+				SamplingRate:    256,
+				InIf:            0,
+				OutIf:           182,
+				DstVlan:         3001,
+				SrcAddr:         netip.MustParseAddr("::ffff:50.50.50.50"),
+				DstAddr:         netip.MustParseAddr("::ffff:51.51.51.51"),
+				ExporterAddress: netip.MustParseAddr("::ffff:49.49.49.49"),
+				OtherColumns: map[schema.ColumnKey]any{
+					schema.ColumnBytes:   uint64(1344),
+					schema.ColumnPackets: uint64(1),
+					schema.ColumnEType:   uint32(constants.ETypeIPv4),
+					schema.ColumnProto:   uint32(constants.ProtoUDP),
+					schema.ColumnSrcPort: uint16(46622),
+					schema.ColumnDstPort: uint16(58631),
+					schema.ColumnSrcMAC:  uint64(1094287164743),
+					schema.ColumnDstMAC:  uint64(1101091482116),
+				},
+			},
+		}
+
+		if diff := helpers.Diff(got, expectedFlows); diff != "" {
+			t.Fatalf("Decode() (-got, +want):\n%s", diff)
+		}
+	})
+
 	t.Run("flow sample with IPv4 raw packet", func(t *testing.T) {
 		got = got[:0]
 		data := helpers.ReadPcapL4(t, filepath.Join("testdata", "data-sflow-raw-ipv4.pcap"))
