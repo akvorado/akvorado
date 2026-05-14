@@ -71,13 +71,32 @@ func (c *Component) Start() error {
 
 	sequenceNumber := uint32(1)
 	start := time.Now()
-	ticker := time.NewTicker(time.Second)
 	errLogger := c.r.Sample(reporter.BurstSampler(time.Minute, 10))
 
 	c.t.Go(func() error {
-		defer ticker.Stop()
 		ctx := c.t.Context(context.Background())
-		templateCount := 0
+		elapsedSeconds := 0
+		ticker := time.NewTicker(time.Second)
+		defer ticker.Stop()
+		// redial re-resolves the target and swaps the connection when the
+		// resolved address changed.
+		redial := func() {
+			newConn, err := net.Dial("udp", c.config.Target)
+			if err != nil {
+				c.metrics.errors.WithLabelValues("redial").Inc()
+				c.r.Err(err).Msgf("cannot redial %q", c.config.Target)
+				return
+			}
+			if newConn.RemoteAddr().String() == conn.RemoteAddr().String() {
+				// No need to redial as the target did not change.
+				newConn.Close()
+				return
+			}
+			c.r.Info().Msgf("target %q resolved to new address %s",
+				c.config.Target, newConn.RemoteAddr())
+			conn.Close()
+			conn = newConn
+		}
 		transmit := func(kind string, payloads <-chan []byte) {
 			for payload := range payloads {
 				sequenceNumber++
@@ -94,13 +113,14 @@ func (c *Component) Start() error {
 			case <-c.t.Dying():
 				return nil
 			case now := <-ticker.C:
-				if templateCount%30 == 0 {
+				if elapsedSeconds%30 == 0 {
+					redial()
 					transmit("template",
 						getNetFlowTemplates(ctx, sequenceNumber,
 							c.config.SamplingRate,
 							start, now))
 				}
-				templateCount++
+				elapsedSeconds++
 				flows := generateFlows(c.config.Flows, c.config.Seed, now)
 				transmit("data",
 					getNetFlowData(ctx, flows, sequenceNumber,

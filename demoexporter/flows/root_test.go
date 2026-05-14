@@ -102,3 +102,86 @@ func TestReceiveFlows(t *testing.T) {
 		}
 	})
 }
+
+func TestRedial(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		listen := func() *net.UDPConn {
+			receiver, err := net.ListenUDP("udp", &net.UDPAddr{
+				IP:   net.ParseIP("127.0.0.1"),
+				Port: 0,
+			})
+			if err != nil {
+				t.Fatalf("ListenUDP() error:\n%+v", err)
+			}
+			return receiver
+		}
+		readHeaders := func(receiver *net.UDPConn) []nfv9Header {
+			receiver.SetReadDeadline(time.Now().Add(200 * time.Millisecond))
+			got := []nfv9Header{}
+			for {
+				payload := make([]byte, 9000)
+				_, err := receiver.Read(payload)
+				if err != nil {
+					if errors.Is(err, os.ErrDeadlineExceeded) {
+						break
+					}
+					t.Fatalf("Read() error:\n%+v", err)
+				}
+				header := nfv9Header{}
+				if err := binary.Read(bytes.NewBuffer(payload), binary.BigEndian, &header); err != nil {
+					t.Errorf("binary.Read() error:\n%+v", err)
+				} else {
+					got = append(got, header)
+				}
+			}
+			return got
+		}
+
+		receiver1 := listen()
+		defer receiver1.Close()
+		receiver2 := listen()
+		defer receiver2.Close()
+
+		// Flow generator
+		r := reporter.NewMock(t)
+		config := DefaultConfiguration()
+		config.Target = receiver1.LocalAddr().String()
+		config.Flows = []FlowConfiguration{
+			{
+				PerSecond:  1,
+				InIfIndex:  []int{10},
+				OutIfIndex: []int{20},
+				PeakHour:   21 * time.Hour,
+				Multiplier: 1,
+				SrcNet:     netip.MustParsePrefix("192.0.2.0/24"),
+				DstNet:     netip.MustParsePrefix("203.0.113.0/24"),
+				SrcAS:      []uint32{65201},
+				DstAS:      []uint32{65202},
+				SrcPort:    []uint16{443},
+				Protocol:   []string{"tcp"},
+				Size:       1400,
+			},
+		}
+		c, err := New(r, config, Dependencies{
+			Daemon: daemon.NewMock(t),
+		})
+		if err != nil {
+			t.Fatalf("New() error:\n%+v", err)
+		}
+		helpers.StartStop(t, c)
+
+		// The initial target receives flows.
+		time.Sleep(1 * time.Second)
+		if got := readHeaders(receiver1); len(got) != 2 {
+			t.Fatalf("readHeaders(receiver1) got %d packets, expected 2", len(got))
+		}
+
+		// Move the target. redial() re-reads c.config.Target on its next
+		// run (every 30 ticks)
+		c.config.Target = receiver2.LocalAddr().String()
+		time.Sleep(30 * time.Second)
+		if got := readHeaders(receiver2); len(got) == 0 {
+			t.Fatal("readHeaders(receiver2) got no packets, expected flows after redial")
+		}
+	})
+}
