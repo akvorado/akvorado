@@ -34,7 +34,7 @@ var (
 func CheckExternalService(t *testing.T, name string, candidates []string) string {
 	t.Helper()
 	if testing.Short() {
-		t.Skipf("Skip test with real %s in short mode", name)
+		t.Skipf("skip test with real %s in short mode", name)
 	}
 
 	mandatory := os.Getenv("CI_AKVORADO_FUNCTIONAL_TESTS") != ""
