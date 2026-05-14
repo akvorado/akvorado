@@ -74,6 +74,7 @@ func (c *Component) Start() error {
 	errLogger := c.r.Sample(reporter.BurstSampler(time.Minute, 10))
 
 	c.t.Go(func() error {
+		defer conn.Close()
 		ctx := c.t.Context(context.Background())
 		elapsedSeconds := 0
 		ticker := time.NewTicker(time.Second)
