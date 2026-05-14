@@ -18,7 +18,7 @@ import (
 
 func TestParseSocketControlMessage(t *testing.T) {
 	if runtime.GOOS != "linux" {
-		t.Skip("Skip Linux-only test")
+		t.Skip("skip Linux-only test")
 	}
 	r := reporter.NewMock(t)
 	server, err := listenConfig(r, udpSocketOptions, nil).
