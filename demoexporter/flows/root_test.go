@@ -176,9 +176,10 @@ func TestRedial(t *testing.T) {
 			t.Fatalf("readHeaders(receiver1) got %d packets, expected 2", len(got))
 		}
 
-		// Move the target. redial() re-reads c.config.Target on its next
-		// run (every 30 ticks)
-		c.config.Target = receiver2.LocalAddr().String()
+		// Move the target. redial() reloads c.target on its next run
+		// (every 30 ticks).
+		newTarget := receiver2.LocalAddr().String()
+		c.target.Store(&newTarget)
 		time.Sleep(30 * time.Second)
 		if got := readHeaders(receiver2); len(got) == 0 {
 			t.Fatal("readHeaders(receiver2) got no packets, expected flows after redial")

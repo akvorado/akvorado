@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"sync/atomic"
 	"time"
 
 	"gopkg.in/tomb.v2"
@@ -22,6 +23,7 @@ type Component struct {
 	d      *Dependencies
 	t      tomb.Tomb
 	config Configuration
+	target atomic.Pointer[string] // make testing easier
 
 	metrics struct {
 		sent   *reporter.CounterVec
@@ -41,6 +43,7 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 		d:      &dependencies,
 		config: config,
 	}
+	c.target.Store(&config.Target)
 
 	c.metrics.sent = c.r.CounterVec(
 		reporter.CounterOpts{
@@ -64,9 +67,10 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 // Start starts the flows component.
 func (c *Component) Start() error {
 	c.r.Info().Msg("starting flows component")
-	conn, err := net.Dial("udp", c.config.Target)
+	target := *c.target.Load()
+	conn, err := net.Dial("udp", target)
 	if err != nil {
-		return fmt.Errorf("cannot create socket to %q: %w", c.config.Target, err)
+		return fmt.Errorf("cannot create socket to %q: %w", target, err)
 	}
 
 	sequenceNumber := uint32(1)
@@ -82,10 +86,11 @@ func (c *Component) Start() error {
 		// redial re-resolves the target and swaps the connection when the
 		// resolved address changed.
 		redial := func() {
-			newConn, err := net.Dial("udp", c.config.Target)
+			target := *c.target.Load()
+			newConn, err := net.Dial("udp", target)
 			if err != nil {
 				c.metrics.errors.WithLabelValues("redial").Inc()
-				c.r.Err(err).Msgf("cannot redial %q", c.config.Target)
+				c.r.Err(err).Msgf("cannot redial %q", target)
 				return
 			}
 			if newConn.RemoteAddr().String() == conn.RemoteAddr().String() {
@@ -94,7 +99,7 @@ func (c *Component) Start() error {
 				return
 			}
 			c.r.Info().Msgf("target %q resolved to new address %s",
-				c.config.Target, newConn.RemoteAddr())
+				target, newConn.RemoteAddr())
 			conn.Close()
 			conn = newConn
 		}
