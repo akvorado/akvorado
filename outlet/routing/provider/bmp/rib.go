@@ -19,9 +19,19 @@ import (
 // shardBits is the number of high bits used to encode the shard number.
 const shardBits = 8
 
-// prefixIndex is a typed index for prefixes in the RIB.
-// The high shardBits encode the shard index, the remaining bits are the local ID.
+// localPrefixMask masks off the shard bits, leaving only the local prefix ID.
+const localPrefixMask = (1 << (32 - shardBits)) - 1
+
+// prefixIndex is a typed index for prefixes in the RIB. The high shardBits
+// encode the shard index, the remaining bits are the local ID.
 type prefixIndex uint32
+
+// shardIndex is a typed shard index.
+type shardIndex uint8
+
+// localPrefixIndex is a local index for prefixes in a RIB shard. It's high
+// shardBits should be 0.
+type localPrefixIndex uint32
 
 // routeIndex is a typed index for routes within a prefix
 type routeIndex uint32
@@ -30,25 +40,30 @@ type routeIndex uint32
 type routeKey uint64
 
 // makePrefixIndex creates a global prefixIndex from shard index and local ID.
-func makePrefixIndex(shardIdx int, localID prefixIndex) prefixIndex {
-	return prefixIndex(uint32(shardIdx)<<(32-shardBits)) | localID
+func makePrefixIndex(shardIdx shardIndex, localIdx localPrefixIndex) prefixIndex {
+	return prefixIndex(uint32(shardIdx)<<(32-shardBits)) | (prefixIndex(localIdx) & localPrefixMask)
 }
 
-// shardIdx extracts the shard index from a global prefixIndex.
-func (idx prefixIndex) shardIdx() int {
-	return int(idx >> (32 - shardBits))
+// shardIdx extracts the shard index from a global prefix index.
+func (idx prefixIndex) shardIdx() shardIndex {
+	return shardIndex(idx >> (32 - shardBits))
+}
+
+// localIdx extracts the local prefix index from a global prefix index.
+func (idx prefixIndex) localIdx() localPrefixIndex {
+	return localPrefixIndex(idx & localPrefixMask)
 }
 
 // ribShard holds the per-shard state for a RIB shard.
 type ribShard struct {
-	mu            sync.RWMutex
-	idx           int
-	routes        map[routeKey]route
-	nlris         *intern.Pool[nlri]
-	nextHops      *intern.Pool[nextHop]
-	rtas          *intern.Pool[routeAttributes]
-	nextPrefixID  prefixIndex   // counter for next prefix index
-	freePrefixIDs []prefixIndex // free list for reused prefix indices
+	mu                 sync.RWMutex
+	idx                shardIndex
+	routes             map[routeKey]route
+	nlris              *intern.Pool[nlri]
+	nextHops           *intern.Pool[nextHop]
+	rtas               *intern.Pool[routeAttributes]
+	nextLocalPrefixID  localPrefixIndex   // counter for next local prefix index
+	freeLocalPrefixIDs []localPrefixIndex // free list for reused prefix indices
 }
 
 // rib represents the RIB.
@@ -190,25 +205,25 @@ func (r *rib) shardForPrefix(prefix netip.Prefix) int {
 
 // newPrefixIndex allocates a new prefix index for this shard.
 func (rs *ribShard) newPrefixIndex() prefixIndex {
-	if len(rs.freePrefixIDs) > 0 {
-		localID := rs.freePrefixIDs[len(rs.freePrefixIDs)-1]
-		rs.freePrefixIDs = rs.freePrefixIDs[:len(rs.freePrefixIDs)-1]
+	if len(rs.freeLocalPrefixIDs) > 0 {
+		localID := rs.freeLocalPrefixIDs[len(rs.freeLocalPrefixIDs)-1]
+		rs.freeLocalPrefixIDs = rs.freeLocalPrefixIDs[:len(rs.freeLocalPrefixIDs)-1]
 		return makePrefixIndex(rs.idx, localID)
 	}
-	localID := rs.nextPrefixID
-	rs.nextPrefixID++
+	localID := rs.nextLocalPrefixID
+	rs.nextLocalPrefixID++
 	return makePrefixIndex(rs.idx, localID)
 }
 
 // freePrefixIndex returns a prefix ID to the shard's free list.
-func (rs *ribShard) freePrefixIndex(globalID prefixIndex) {
-	localID := globalID & ((1 << (32 - shardBits)) - 1)
+func (rs *ribShard) freePrefixIndex(idx prefixIndex) {
+	localIdx := idx.localIdx()
 	if helpers.Testing() {
-		if localID == 0 {
+		if localIdx == 0 {
 			panic("cannot free index 0")
 		}
 	}
-	rs.freePrefixIDs = append(rs.freePrefixIDs, localID)
+	rs.freeLocalPrefixIDs = append(rs.freeLocalPrefixIDs, localIdx)
 }
 
 // makeRouteKey creates a route key from prefix and route indices
@@ -459,13 +474,13 @@ func newRIB(nShards int) *rib {
 	shards := make([]*ribShard, nShards)
 	for i := range nShards {
 		shards[i] = &ribShard{
-			idx:           i,
-			routes:        make(map[routeKey]route),
-			nlris:         intern.NewPool[nlri](),
-			nextHops:      intern.NewPool[nextHop](),
-			rtas:          intern.NewPool[routeAttributes](),
-			nextPrefixID:  1, // Start from 1, 0 means to be removed
-			freePrefixIDs: make([]prefixIndex, 0),
+			idx:                shardIndex(i),
+			routes:             make(map[routeKey]route),
+			nlris:              intern.NewPool[nlri](),
+			nextHops:           intern.NewPool[nextHop](),
+			rtas:               intern.NewPool[routeAttributes](),
+			nextLocalPrefixID:  1, // Start from 1, 0 means to be removed
+			freeLocalPrefixIDs: make([]localPrefixIndex, 0),
 		}
 	}
 	return &rib{
