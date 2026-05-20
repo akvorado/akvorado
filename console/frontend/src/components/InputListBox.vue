@@ -23,6 +23,7 @@
               placeholder="Search..."
               @change="query = $event.target.value"
               @focus="query = ''"
+              @keydown.backspace="handleBackspace"
             >
             </component>
           </div>
@@ -131,7 +132,7 @@ const props = withDefaults(
     multiple: false,
   },
 );
-defineEmits<{
+const emit = defineEmits<{
   "update:modelValue": [value: typeof props.modelValue];
 }>();
 
@@ -168,4 +169,17 @@ const otherAttrs = computed(() => {
   const { class: _, ...others } = attrs;
   return others;
 });
+
+// When backspacing on an empty input, remove the last selected item when accepting multiple items.
+const handleBackspace = (event: KeyboardEvent) => {
+  if (
+    !props.multiple ||
+    !Array.isArray(props.modelValue) ||
+    props.modelValue.length === 0 ||
+    (event.target as HTMLInputElement).value !== ""
+  ) {
+    return;
+  }
+  emit("update:modelValue", props.modelValue.slice(0, -1));
+};
 </script>
