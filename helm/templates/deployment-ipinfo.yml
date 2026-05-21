@@ -1,0 +1,131 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ipinfo
+  namespace: {{ .Values.environment }}-{{ .Values.namespace }}
+  labels:
+    app: ipinfo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ipinfo
+  template:
+    metadata:
+      labels:
+        app: ipinfo
+      annotations:
+        prometheus.io/scrape: "false"
+    spec:
+      containers:
+        - name: ipinfo
+          {{- if and (.Values.deployment) (.Values.deployment.ipinfo) (.Values.deployment.ipinfo.image) (.Values.deployment.ipinfo.tag) }}
+          image: {{ .Values.deployment.ipinfo.image }}:{{ .Values.deployment.ipinfo.tag }}
+          {{- else }}
+          image: ipinfo/ipinfo-db:latest
+          {{- end }}
+          imagePullPolicy: Always
+          {{- if .Values.service }}
+          {{- if .Values.service.ipinfo }}
+          ports:
+          {{- range .Values.service.ipinfo.ports }}
+          - name: {{ .name }}
+            containerPort: {{ .port }}
+            protocol: {{ .protocol }}
+          {{- end}}
+          {{- end}}
+          {{- end}}
+          {{- if and (.Values.deployment) (.Values.deployment.ipinfo) (.Values.deployment.ipinfo.liveness) }}
+          livenessProbe:
+              httpGet:
+                path: {{ .Values.deployment.ipinfo.liveness.path }}
+                port: {{ .Values.deployment.ipinfo.liveness.port }}
+              initialDelaySeconds: {{ .Values.deployment.ipinfo.liveness.initialDelay }}
+              periodSeconds: {{ .Values.deployment.ipinfo.liveness.period }}
+              failureThreshold: {{ .Values.deployment.ipinfo.liveness.failures }}
+          {{- end }}
+          {{- if and (.Values.deployment) (.Values.deployment.ipinfo) (.Values.deployment.ipinfo.args) }}
+          args:
+          {{- range .Values.deployment.ipinfo.args }}
+            - {{ . }}
+          {{- end }}
+          {{- end }}
+          {{- if $.Values.extraEnvs }}
+          {{- if $.Values.extraEnvs.ipinfo }}
+          env:
+          {{- range $key, $value := $.Values.extraEnvs.ipinfo }}
+          - name: {{ $key }}
+            value: {{ $value | quote }}
+          {{- end}}
+          {{- end}}
+          {{- else }}
+          env:
+          - name: IPINFO_DATABASES
+            value: "country asn"
+          - name: UPDATE_FREQUENCY
+            value: "48h"
+          {{- end}}
+          {{- if $.Values.secrets.ipinfo }}
+          {{- range $key, $value := $.Values.secrets.ipinfo }}
+          - name: {{ $key }}
+            valueFrom:
+              secretKeyRef:
+                name: {{ $.Values.environment }}-{{ $.Values.namespace }}
+                key: {{ $key }}
+          {{- end}}
+          {{- end}}
+          {{- if and (.Values.deployment) (.Values.deployment.ipinfo) (.Values.deployment.ipinfo.volumeMounts) }}
+          volumeMounts:
+            {{- range .Values.deployment.ipinfo.volumeMounts }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+              {{- if .readOnly }}
+              readOnly: {{ .readOnly }}
+              {{- end }}
+            {{- end }}
+          {{- else }}
+          volumeMounts:
+            - name: ipinfo-geoip-data
+              mountPath: /data
+          {{- end}}
+          resources:
+            {{- if and (.Values.deployment) (.Values.deployment.ipinfo) (.Values.deployment.ipinfo.resources)}}
+            {{- if .Values.deployment.ipinfo.resources.requests }}
+            requests:
+              memory: {{ .Values.deployment.ipinfo.resources.requests.memory | quote }}
+              cpu: {{ .Values.deployment.ipinfo.resources.requests.cpu | quote }}
+            {{- else}}
+            requests:
+              memory: "128Mi"
+              cpu: "0.1"
+            {{- end }}
+            {{- if .Values.deployment.ipinfo.resources.limits }}
+            limits:
+              memory: {{ .Values.deployment.ipinfo.resources.limits.memory | quote }}
+              cpu: {{ .Values.deployment.ipinfo.resources.limits.cpu | quote }}
+            {{- else}}
+            limits:
+              memory: "256Mi"
+              cpu: "0.5"
+            {{- end }}
+            {{- else}}
+            requests:
+              memory: "128Mi"
+              cpu: "0.1"
+            limits:
+              memory: "256Mi"
+              cpu: "0.5"
+          {{- end}}
+      {{- if and (.Values.deployment) (.Values.deployment.ipinfo) (.Values.deployment.ipinfo.volumeMounts) }}
+      volumes:
+        {{- range .Values.deployment.ipinfo.volumeMounts }}
+         - name: {{ .name }}
+           persistentVolumeClaim:
+            claimName: {{ .pvcName }}
+        {{- end }}
+      {{- else}}
+      volumes:
+        - name: ipinfo-geoip-data
+          persistentVolumeClaim:
+            claimName: ipinfo-geoip-pvc
+      {{- end }}
