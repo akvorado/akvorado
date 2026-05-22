@@ -197,7 +197,7 @@ func TestRemoveRoutes(t *testing.T) {
 		r := newRIB(1)
 		rs := r.shards[0]
 		addRoute(r, 10)
-		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
+		idx, _ := r.tree.Load().Lookup(netip.MustParseAddr("192.168.144.10"))
 		count, empty := rs.removeRoutes(idx, func(route) bool { return true }, true)
 		if !empty {
 			t.Error("removeRoutes() should have removed all routes from node")
@@ -215,7 +215,7 @@ func TestRemoveRoutes(t *testing.T) {
 		rs := r.shards[0]
 		addRoute(r, 10)
 		addRoute(r, 11)
-		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
+		idx, _ := r.tree.Load().Lookup(netip.MustParseAddr("192.168.144.10"))
 		r2 := rs.routes[makeRouteKey(idx, 1)]
 		count, empty := rs.removeRoutes(idx, func(r route) bool { return r.peer == 10 }, true)
 		if empty {
@@ -236,7 +236,7 @@ func TestRemoveRoutes(t *testing.T) {
 		rs := r.shards[0]
 		addRoute(r, 10)
 		addRoute(r, 11)
-		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
+		idx, _ := r.tree.Load().Lookup(netip.MustParseAddr("192.168.144.10"))
 		r1 := rs.routes[makeRouteKey(idx, 0)]
 		count, empty := rs.removeRoutes(idx, func(r route) bool { return r.peer == 11 }, true)
 		if empty {
@@ -257,7 +257,7 @@ func TestRemoveRoutes(t *testing.T) {
 		addRoute(r, 10)
 		addRoute(r, 11)
 		addRoute(r, 12)
-		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
+		idx, _ := r.tree.Load().Lookup(netip.MustParseAddr("192.168.144.10"))
 		r1 := rs.routes[makeRouteKey(idx, 0)]
 		r3 := rs.routes[makeRouteKey(idx, 2)]
 		count, empty := rs.removeRoutes(idx, func(r route) bool { return r.peer == 11 }, true)
@@ -282,7 +282,7 @@ func TestRemoveRoutes(t *testing.T) {
 		addRoute(r, 12)
 		addRoute(r, 13)
 		addRoute(r, 14)
-		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
+		idx, _ := r.tree.Load().Lookup(netip.MustParseAddr("192.168.144.10"))
 		r2 := rs.routes[makeRouteKey(idx, 1)]
 		r4 := rs.routes[makeRouteKey(idx, 3)]
 		count, empty := rs.removeRoutes(idx, func(r route) bool { return r.peer%2 == 0 }, false)
@@ -308,7 +308,7 @@ func TestRemoveRoutes(t *testing.T) {
 		addRoute(r, 12)
 		addRoute(r, 13)
 		addRoute(r, 14)
-		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
+		idx, _ := r.tree.Load().Lookup(netip.MustParseAddr("192.168.144.10"))
 		count, empty := rs.removeRoutes(idx, func(route) bool { return true }, false)
 		if !empty {
 			t.Error("removeRoutes() should have removed all routes from node")
@@ -450,7 +450,7 @@ func TestRIBHarness(t *testing.T) {
 				continue
 			}
 			// Find prefix in tree
-			prefixIdx, ok := r.tree.Lookup(lookup.addr)
+			prefixIdx, ok := r.tree.Load().Lookup(lookup.addr)
 			if !ok {
 				t.Errorf("cannot find %s for %d",
 					lookup.addr, lookup.peer)
