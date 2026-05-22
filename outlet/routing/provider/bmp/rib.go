@@ -14,6 +14,7 @@ import (
 
 	"github.com/gaissmai/bart"
 	"github.com/osrg/gobgp/v4/pkg/packet/bgp"
+	"golang.org/x/sys/cpu"
 )
 
 // shardBits is the number of high bits used to encode the shard number.
@@ -69,6 +70,7 @@ type ribShard struct {
 // rib represents the RIB.
 type rib struct {
 	mu     sync.RWMutex             // protects tree
+	_      cpu.CacheLinePad         // avoid false sharing between mutex and tree
 	tree   *bart.Table[prefixIndex] // stores global prefix indices
 	shards []*ribShard
 }
