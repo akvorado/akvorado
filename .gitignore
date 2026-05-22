@@ -14,6 +14,7 @@ mock_*.go
 /console/data/docs/98-metrics.md
 
 *~
+/outlet/routing/provider/bmp/testdata/*.svg
 /.go-cache
 /.npm-cache
 /result
