@@ -44,7 +44,8 @@ func TestBMP(t *testing.T) {
 		c.mu.RLock()
 		defer c.mu.RUnlock()
 		result := map[netip.Addr][]string{}
-		for prefix, prefixIdx := range c.rib.tree.Load().All() {
+		for prefix, ref := range c.rib.tree.Load().All() {
+			prefixIdx := ref.idx
 			rs := c.rib.shards[prefixIdx.shardIdx()]
 			rs.mu.RLock()
 			for route := range rs.iterateRoutesForPrefixIndex(prefixIdx) {
