@@ -333,20 +333,76 @@ func BenchmarkRIBLookup(b *testing.B) {
 func BenchmarkRIBConcurrent(b *testing.B) {
 	for _, shards := range []int{1, 16} {
 		for _, routes := range []int{10_000, 100_000, 500_000} {
-			for _, writers := range []int{1, 2, 4, 8} {
+			for _, writers := range []int{0, 1, 2, 4, 8} {
 				for _, readers := range []int{1, 4, 16, 32} {
 					name := fmt.Sprintf("%d shards, %d routes, %d writers, %d readers", shards, routes, writers, readers)
 					b.Run(name, func(b *testing.B) {
-						// Pre-generate routes per writer
-						routesPerWriter := routes / writers
-						writerRoutes := make([][]randomRoute, writers)
-						for w := range writers {
+						// Pre-generate routes per writer. With 0 writers, still generate
+						// one writer's worth of routes to pre-populate the RIB.
+						numWriters := max(writers, 1)
+						routesPerWriter := routes / numWriters
+						writerRoutes := make([][]randomRoute, numWriters)
+						for w := range numWriters {
 							prng1 := rand.New(rand.NewPCG(uint64(w*2+100), uint64(w*2+100)))
 							prng2 := rand.New(rand.NewPCG(uint64(w*2+101), uint64(w*2+101)))
 							writerRoutes[w] = make([]randomRoute, 0, routesPerWriter)
 							for r := range randomRealWorldRoutes4(prng1, prng2, routesPerWriter) {
 								writerRoutes[w] = append(writerRoutes[w], r)
 							}
+						}
+
+						// runWriter inserts, then updates and removes, one
+						// writer's worth of routes into rib, returning the
+						// number of routes changed.
+						runWriter := func(rib *rib, w int) int64 {
+							// nh is the IPv4-mapped IPv6 next hop ::ffff:198.51.100.<w+1>.
+							nh := netip.AddrFrom16([16]byte{10: 0xff, 11: 0xff, 12: 198, 13: 51, 14: 100, 15: byte(w + 1)})
+							var count int64
+
+							// Pass 1: insert
+							for _, r := range writerRoutes[w] {
+								pfx := helpers.PrefixTo6(r.Prefix)
+								added, _ := rib.AddRoute(pfx, rawRoute{
+									peer:    uint32(w),
+									nlri:    nlri{family: bgp.RF_IPv4_UC},
+									nextHop: nextHop(nh),
+									attributes: routeAttributes{
+										asn:              r.ASPath[len(r.ASPath)-1],
+										asPath:           r.ASPath,
+										communities:      r.Communities,
+										largeCommunities: r.LargeCommunities,
+									},
+									prefixLen: uint8(pfx.Bits()),
+								})
+								count += int64(added)
+							}
+
+							// Pass 2: updates and removes
+							for i, r := range writerRoutes[w] {
+								pfx := helpers.PrefixTo6(r.Prefix)
+								if i%5 == 0 {
+									rib.RemoveRoute(pfx, rawRoute{
+										peer: uint32(w),
+										nlri: nlri{family: bgp.RF_IPv4_UC},
+									})
+									count++
+								} else {
+									added, _ := rib.AddRoute(pfx, rawRoute{
+										peer:    uint32(w),
+										nlri:    nlri{family: bgp.RF_IPv4_UC},
+										nextHop: nextHop(nh),
+										attributes: routeAttributes{
+											asn:              r.ASPath[len(r.ASPath)-1],
+											asPath:           r.ASPath,
+											communities:      r.Communities,
+											largeCommunities: r.LargeCommunities,
+										},
+										prefixLen: uint8(pfx.Bits()),
+									})
+									count += int64(added)
+								}
+							}
+							return count
 						}
 
 						// Pre-generate lookup targets for readers
@@ -357,6 +413,14 @@ func BenchmarkRIBConcurrent(b *testing.B) {
 							lookupTargets = append(lookupTargets, r)
 						}
 
+						// With 0 writers, pre-populate a single read-only RIB
+						// by running one writer's worth of work.
+						var prepopulatedRIB *rib
+						if writers == 0 {
+							prepopulatedRIB = newRIB(shards)
+							runWriter(prepopulatedRIB, 0)
+						}
+
 						// Accumulated per-goroutine timing across all b.Loop() iterations
 						writerTimes := make([]time.Duration, writers)
 						writerCounts := make([]int64, writers)
@@ -364,63 +428,19 @@ func BenchmarkRIBConcurrent(b *testing.B) {
 						readerCounts := make([]int64, readers)
 
 						for b.Loop() {
-							rib := newRIB(shards)
+							rib := prepopulatedRIB
+							if writers > 0 {
+								rib = newRIB(shards)
+							}
 							var writerWg sync.WaitGroup
 							readerDone := make(chan struct{})
 
 							// Start writers: insert, then update/remove
 							for w := range writers {
 								writerWg.Go(func() {
-									nh := netip.MustParseAddr(fmt.Sprintf("::ffff:198.51.100.%d", w+1))
-									var count int64
 									start := time.Now()
-
-									// Pass 1: insert
-									for _, r := range writerRoutes[w] {
-										pfx := helpers.PrefixTo6(r.Prefix)
-										added, _ := rib.AddRoute(pfx, rawRoute{
-											peer:    uint32(w),
-											nlri:    nlri{family: bgp.RF_IPv4_UC},
-											nextHop: nextHop(nh),
-											attributes: routeAttributes{
-												asn:              r.ASPath[len(r.ASPath)-1],
-												asPath:           r.ASPath,
-												communities:      r.Communities,
-												largeCommunities: r.LargeCommunities,
-											},
-											prefixLen: uint8(pfx.Bits()),
-										})
-										count += int64(added)
-									}
-
-									// Pass 2: updates and removes
-									for i, r := range writerRoutes[w] {
-										pfx := helpers.PrefixTo6(r.Prefix)
-										if i%5 == 0 {
-											rib.RemoveRoute(pfx, rawRoute{
-												peer: uint32(w),
-												nlri: nlri{family: bgp.RF_IPv4_UC},
-											})
-											count++
-										} else {
-											added, _ := rib.AddRoute(pfx, rawRoute{
-												peer:    uint32(w),
-												nlri:    nlri{family: bgp.RF_IPv4_UC},
-												nextHop: nextHop(nh),
-												attributes: routeAttributes{
-													asn:              r.ASPath[len(r.ASPath)-1],
-													asPath:           r.ASPath,
-													communities:      r.Communities,
-													largeCommunities: r.LargeCommunities,
-												},
-												prefixLen: uint8(pfx.Bits()),
-											})
-											count += int64(added)
-										}
-									}
-
-									elapsed := time.Since(start)
-									writerTimes[w] += elapsed
+									count := runWriter(rib, w)
+									writerTimes[w] += time.Since(start)
 									writerCounts[w] += count
 								})
 							}
@@ -432,14 +452,20 @@ func BenchmarkRIBConcurrent(b *testing.B) {
 									var count int64
 									offset := rd * len(lookupTargets) / readers
 									start := time.Now()
+								reading:
 									for {
-										select {
-										case <-readerDone:
-											elapsed := time.Since(start)
-											readerTimes[rd] += elapsed
-											readerCounts[rd] += count
-											return
-										default:
+										if writers == 0 {
+											// No writers: perform a fixed number of lookups
+											// against the pre-populated RIB.
+											if count >= int64(len(lookupTargets)) {
+												break
+											}
+										} else {
+											select {
+											case <-readerDone:
+												break reading
+											default:
+											}
 										}
 										idx := offset % len(lookupTargets)
 										ip := lookupTargets[idx].Prefix.Addr()
@@ -447,6 +473,8 @@ func BenchmarkRIBConcurrent(b *testing.B) {
 										count++
 										offset++
 									}
+									readerTimes[rd] += time.Since(start)
+									readerCounts[rd] += count
 								})
 							}
 
@@ -468,7 +496,9 @@ func BenchmarkRIBConcurrent(b *testing.B) {
 						}
 
 						b.ReportMetric(0, "ns/op")
-						b.ReportMetric(float64(totalWriteNs)/float64(totalWriteOps), "ns/write")
+						if writers > 0 {
+							b.ReportMetric(float64(totalWriteNs)/float64(totalWriteOps), "ns/write")
+						}
 						b.ReportMetric(float64(totalReadNs)/float64(totalReadOps), "ns/read")
 					})
 				}
