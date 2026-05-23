@@ -15,7 +15,8 @@ TIMEOUT = 60s
 LSFILES = git ls-files -cmo --exclude-standard --
 V = 0
 Q = $(if $(filter 1,$V),,@)
-M = $(shell if [ "$$(tput colors 2> /dev/null || echo 0)" -ge 8 ]; then printf "\033[34;1m▶\033[0m"; else printf "▶"; fi)
+M = $(shell if [ -t 2 ] && [ "$$(tput colors 2> /dev/null || echo 0)" -ge 8 ]; then printf "\033[34;1m▶\033[0m"; else printf "▶"; fi)
+log = @printf '%s %s\n' '$(M)' '$(1)' >&2
 
 GENERATED_JS = \
 	console/frontend/node_modules
@@ -60,7 +61,8 @@ BUILD_ARGS =
 # - https://en.wikipedia.org/wiki/Comparison_of_ARM_processors
 # - https://docs.docker.com/build/building/variables/#pre-defined-build-arguments
 # - https://github.com/containerd/platforms/pull/8
-all: fmt lint all-indep ; $(info $(M) building executable…) @ ## Build program binary
+all: fmt lint all-indep ; @ ## Build program binary
+	$(call log,building executable…)
 	$Q env GOOS=$(TARGETOS) GOARCH=$(TARGETARCH) \
          $(if $(filter amd64,$(TARGETARCH)),GOAMD64=$(TARGETVARIANT),\
          $(if $(filter arm64,$(TARGETARCH)),GOARM64=$(if $(findstring .,$(TARGETVARIANT)),$(TARGETVARIANT),$(TARGETVARIANT:%=%.0)),\
@@ -91,57 +93,75 @@ WWHRD       = go tool wwhrd
 
 $(filter %.go, $(GENERATED_GO) $(GENERATED_TEST_GO)): go.mod
 
-common/pb/rawflow.pb.go common/pb/rawflow_vtproto.pb.go &: .buf.gen.yaml common/pb/rawflow.proto ; $(info $(M) compiling protocol buffers $@…)
+common/pb/rawflow.pb.go common/pb/rawflow_vtproto.pb.go &: .buf.gen.yaml common/pb/rawflow.proto
+	$(call log,compiling protocol buffers $@…)
 	$Q $(BUF) generate --template $(PWD)/.buf.gen.yaml --path $(@:.pb.go=.proto)
 
-common/clickhousedb/mocks/mock_driver.go: ; $(info $(M) generate mocks for ClickHouse driver…)
+common/clickhousedb/mocks/mock_driver.go:
+	$(call log,"generate mocks for ClickHouse driver…")
 	$Q $(MOCKGEN) -package mocks -build_constraint "!release" -destination $@ \
 		github.com/ClickHouse/clickhouse-go/v2/lib/driver Conn,Row,Rows,ColumnType
 	$Q touch $@
 
-inlet/flow/input/udp/reuseport_%.o: inlet/flow/input/udp/reuseport_kern.c inlet/flow/input/udp/vmlinux.h ; $(info $(M) generate eBPF program for input/udp ($*)…)
+inlet/flow/input/udp/reuseport_%.o: inlet/flow/input/udp/reuseport_kern.c inlet/flow/input/udp/vmlinux.h
+	$(call log,generate eBPF program for input/udp ($*)…)
 	$Q ! $(CLANG) -print-targets 2> /dev/null | grep -qF $* || \
 		 $(CLANG) -O2 -g -Wall -target $* -c $< -o $@
 
-inlet/kafka/loadbalancealgorithm_enumer.go: inlet/kafka/config.go ; $(info $(M) generate enums for LoadBalanceAlgorithm…)
+inlet/kafka/loadbalancealgorithm_enumer.go: inlet/kafka/config.go
+	$(call log,generate enums for LoadBalanceAlgorithm…)
 	$Q $(ENUMER) -type=LoadBalanceAlgorithm -text -transform=kebab -trimprefix=LoadBalance inlet/kafka/config.go
-outlet/core/asnprovider_enumer.go: outlet/core/config.go ; $(info $(M) generate enums for ASNProvider…)
+outlet/core/asnprovider_enumer.go: outlet/core/config.go
+	$(call log,generate enums for ASNProvider…)
 	$Q $(ENUMER) -type=ASNProvider -text -transform=kebab -trimprefix=ASNProvider outlet/core/config.go
-outlet/core/netprovider_enumer.go: outlet/core/config.go ; $(info $(M) generate enums for NetProvider…)
+outlet/core/netprovider_enumer.go: outlet/core/config.go
+	$(call log,generate enums for NetProvider…)
 	$Q $(ENUMER) -type=NetProvider -text -transform=kebab -trimprefix=NetProvider outlet/core/config.go
-outlet/metadata/provider/snmp/authprotocol_enumer.go: outlet/metadata/provider/snmp/config.go ; $(info $(M) generate enums for AuthProtocol…)
+outlet/metadata/provider/snmp/authprotocol_enumer.go: outlet/metadata/provider/snmp/config.go
+	$(call log,generate enums for AuthProtocol…)
 	$Q $(ENUMER) -type=AuthProtocol -text -transform=kebab -trimprefix=AuthProtocol outlet/metadata/provider/snmp/config.go
-outlet/metadata/provider/snmp/privprotocol_enumer.go: outlet/metadata/provider/snmp/config.go ; $(info $(M) generate enums for PrivProtocol…)
+outlet/metadata/provider/snmp/privprotocol_enumer.go: outlet/metadata/provider/snmp/config.go
+	$(call log,generate enums for PrivProtocol…)
 	$Q $(ENUMER) -type=PrivProtocol -text -transform=kebab -trimprefix=PrivProtocol outlet/metadata/provider/snmp/config.go
-outlet/metadata/provider/gnmi/ifspeedpathunit_enumer.go: outlet/metadata/provider/gnmi/config.go ; $(info $(M) generate enums for IfSpeedPathUnit…)
+outlet/metadata/provider/gnmi/ifspeedpathunit_enumer.go: outlet/metadata/provider/gnmi/config.go
+	$(call log,generate enums for IfSpeedPathUnit…)
 	$Q $(ENUMER) -type=IfSpeedPathUnit -text -transform=kebab -trimprefix=Speed outlet/metadata/provider/gnmi/config.go
-console/homepagetopwidget_enumer.go: console/config.go ; $(info $(M) generate enums for HomepageTopWidget…)
+console/homepagetopwidget_enumer.go: console/config.go
+	$(call log,generate enums for HomepageTopWidget…)
 	$Q $(ENUMER) -type=HomepageTopWidget -text -json -transform=kebab -trimprefix=HomepageTopWidget console/config.go
-common/kafka/saslmechanism_enumer.go: common/kafka/config.go ; $(info $(M) generate enums for SASLMechanism…)
+common/kafka/saslmechanism_enumer.go: common/kafka/config.go
+	$(call log,generate enums for SASLMechanism…)
 	$Q $(ENUMER) -type=SASLMechanism -text -transform=kebab -trimprefix=SASL common/kafka/config.go
-common/remotedatasource/parsertype_enumer.go: common/remotedatasource/config.go ; $(info $(M) generate enums for ParserType…)
+common/remotedatasource/parsertype_enumer.go: common/remotedatasource/config.go
+	$(call log,generate enums for ParserType…)
 	$Q $(ENUMER) -type=ParserType -text -transform=kebab -trimprefix=Parser common/remotedatasource/config.go
-common/remotedatasource/paginationtype_enumer.go: common/remotedatasource/config.go ; $(info $(M) generate enums for PaginationType…)
+common/remotedatasource/paginationtype_enumer.go: common/remotedatasource/config.go
+	$(call log,generate enums for PaginationType…)
 	$Q $(ENUMER) -type=PaginationType -text -transform=kebab -trimprefix=Pagination common/remotedatasource/config.go
 
-common/schema/definition_gen.go: common/schema/definition.go common/schema/definition_gen.sh ; $(info $(M) generate column definitions…)
+common/schema/definition_gen.go: common/schema/definition.go common/schema/definition_gen.sh
+	$(call log,generate column definitions…)
 	$Q ./common/schema/definition_gen.sh > $@
 	$Q $(GOIMPORTS) -w $@
 
-console/filter/parser.go: console/filter/parser.peg ; $(info $(M) generate PEG parser for filters…)
+console/filter/parser.go: console/filter/parser.peg
+	$(call log,generate PEG parser for filters…)
 	$Q $(PIGEON) -optimize-basic-latin $< > $@
 
 console/frontend/node_modules: console/frontend/package.json console/frontend/pnpm-lock.yaml
-console/frontend/node_modules: ; $(info $(M) fetching node modules…)
+console/frontend/node_modules:
+	$(call log,fetching node modules…)
 	$Q (cd console/frontend ; $(PNPM) install --loglevel=error --frozen-lockfile) && touch $@
 console/data/frontend: $(GENERATED_JS)
 console/data/frontend: $(shell $(LSFILES) console/frontend 2> /dev/null)
-console/data/frontend: ; $(info $(M) building console frontend…)
+console/data/frontend:
+	$(call log,building console frontend…)
 	$Q cd console/frontend && $(PNPM) run --silent build
 
 console/data/docs/98-metrics.md: $(shell git grep -c -l -P 'reporter\.(Counter|Gauge|Summary|Histogram)Opt' '*.go' 2> /dev/null)
 console/data/docs/98-metrics.md: $(shell $(LSFILES) cmd/helper)
-console/data/docs/98-metrics.md: cmd/helper/data/metrics.tmpl.md ; $(info $(M) generate metric documentation…)
+console/data/docs/98-metrics.md: cmd/helper/data/metrics.tmpl.md
+	$(call log,generate metric documentation…)
 	$Q go run ./cmd/helper metrics --format=markdown > $@
 
 ASNS_URL = https://vincentbernat.github.io/asn2org/asns.csv
@@ -151,15 +171,18 @@ define caturl
 $(if $(filter http://% https://%, $(1)),curl --retry 3 --no-progress-meter --location --fail $(1),cat $(1))
 endef
 
-orchestrator/clickhouse/data/asns.csv: ; $(info $(M) generate ASN map…)
+orchestrator/clickhouse/data/asns.csv:
+	$(call log,generate ASN map…)
 	$Q $(call caturl,$(ASNS_URL)) | sed 's|,[^,]*$$||' > $@
 	$Q test -s $@
-orchestrator/clickhouse/data/protocols.csv: ; $(info $(M) generate protocol map…)
+orchestrator/clickhouse/data/protocols.csv:
+	$(call log,generate protocol map…)
 	$Q $(call caturl,$(PROTOCOLS_URL)) \
 		| sed -nE -e "1 s/.*/proto,name,description/p" -e "2,$$ s/^([0-9]+,[^ ,]+,[^\",]+),.*/\1/p" \
 		> $@
 	$Q test -s $@
-orchestrator/clickhouse/data/udp.csv orchestrator/clickhouse/data/tcp.csv: orchestrator/clickhouse/data/%.csv: ; $(info $(M) generate $* port numbers…)
+orchestrator/clickhouse/data/udp.csv orchestrator/clickhouse/data/tcp.csv: orchestrator/clickhouse/data/%.csv:
+	$(call log,generate $* port numbers…)
 	$Q $(call caturl,$(SERVICES_URL)) \
 		| sed -nE -e "1 s/.*/port,name/p" -e "2,$$ s/^([^,]+),([0-9]+),$*,.*/\2,\1/p" \
 		| awk -F',' '!seen[$$1]++' \
@@ -186,7 +209,8 @@ default-%.pgo:
 common/embed/data/embed.zip: console/data/frontend console/authentication/data/avatars console/data/docs
 common/embed/data/embed.zip: console/data/docs/98-metrics.md
 common/embed/data/embed.zip: orchestrator/clickhouse/data/protocols.csv orchestrator/clickhouse/data/icmp.csv orchestrator/clickhouse/data/asns.csv orchestrator/clickhouse/data/tcp.csv orchestrator/clickhouse/data/udp.csv
-common/embed/data/embed.zip: ; $(info $(M) generate embed.zip…)
+common/embed/data/embed.zip:
+	$(call log,generate embed.zip…)
 	$Q mkdir -p common/embed/data
 	$Q TMPDIR=$$(mktemp -d) \
 	&& trap 'rm -rf "$$TMPDIR"' EXIT \
@@ -203,9 +227,11 @@ test-coverage: test-coverage-go test-coverage-js ## Run coverage tests
 
 test-go-units test-go-checks test-bench test-race test-coverage-go: .fmt-go~ .lint-go~ $(GENERATED) $(GENERATED_TEST_GO)
 test-go: test-go-units test-go-checks ## Run Go tests
-test-go-checks: ; $(info $(M) running Go static checks…)
+test-go-checks:
+	$(call log,running Go static checks…)
 	$Q $(STATICCHECK) -f stylish -checks inherit,-SA1012 $(PKGS)
-test-go-units: ; $(info $(M) running Go tests$(GOTEST_MORE)…)
+test-go-units:
+	$(call log,running Go tests$(GOTEST_MORE)…)
 	$Q mkdir -p test/go
 	$Q env PATH=$(dir $(abspath $(shell command -v $(GO)))):$(PATH) \
 	  $(GOTESTSUM) --junitfile test/go/tests.xml -- \
@@ -219,13 +245,15 @@ test-race: test-go-units  ## Run Go tests with race detector
 test-short: GOTEST_ARGS=-short
 test-short: GOTEST_MORE=, only short tests
 test-short: test-go  ## Run only short Go tests
-test-bench: ; $(info $(M) running benchmarks…) @ ## Run Go benchmarks
+test-bench: ; @ ## Run Go benchmarks
+	$(call log,running benchmarks…)
 	$Q $(GO) test \
 		-fullpath -run=__absolutelynothing__ -bench=. \
 	    $(GOTEST_ARGS) $(PKGS)
 # GOTEST_ARGS="-benchmem -memprofile test/go/memprofile.out -cpuprofile test/go/cpuprofile.out"
 # GOTEST_ARGS="-cpuprofile test/go/cpuprofile.out -bench RIBLookup"
-test-coverage-go: ; $(info $(M) running Go coverage tests…) @ ## Run Go coverage tests
+test-coverage-go: ; @ ## Run Go coverage tests
+	$(call log,running Go coverage tests…)
 	$Q mkdir -p test/go
 	$Q env PATH=$(dir $(abspath $(shell command -v $(GO)))):$(PATH) \
 	  $(GOTESTSUM) -- \
@@ -246,35 +274,42 @@ test-coverage-go: ; $(info $(M) running Go coverage tests…) @ ## Run Go covera
 		go tool cover -func test/go/profile.out | awk '($$1 == "total:") { print $$NF}'
 
 test-js: .fmt-js~ .lint-js~ $(GENERATED_JS)
-test-js: ; $(info $(M) running JS tests…) @ ## Run JS tests
+test-js: ; @ ## Run JS tests
+	$(call log,running JS tests…)
 	$Q cd console/frontend && $(PNPM) run --silent type-check && $(PNPM) run --silent test
-test-coverage-js: ; $(info $(M) running JS coverage tests…) @ ## Run JS coverage tests
+test-coverage-js: ; @ ## Run JS coverage tests
+	$(call log,running JS coverage tests…)
 	$Q cd console/frontend && $(PNPM) run --silent type-check && $(PNPM) run --silent test -- --coverage
 
 .PHONY: lint
 lint: .lint-go~ .lint-js~ ## Run linting
-.lint-go~: .revive.toml $(shell $(LSFILES) '*.go' 2> /dev/null) ; $(info $(M) running golint…)
+.lint-go~: .revive.toml $(shell $(LSFILES) '*.go' 2> /dev/null)
+	$(call log,running golint…)
 	$Q $(REVIVE) -config $(PWD)/.revive.toml -formatter stylish -set_exit_status ./...
 	$Q touch $@
 .lint-js~: $(shell $(LSFILES) '*.js' '*.ts' '*.vue' '*.html' 2> /dev/null)
-.lint-js~: $(GENERATED_JS) ; $(info $(M) running jslint…)
+.lint-js~: $(GENERATED_JS)
+	$(call log,running jslint…)
 	$Q cd console/frontend && $(PNPM) run --silent lint
 	$Q touch $@
 
 .PHONY: fmt
 fmt: .fmt-go~ .fmt-js~ ## Format all source files
-.fmt-go~: $(shell $(LSFILES) '*.go' 2> /dev/null) ; $(info $(M) formatting Go code…)
+.fmt-go~: $(shell $(LSFILES) '*.go' 2> /dev/null)
+	$(call log,formatting Go code…)
 	$Q $(GOIMPORTS) -local $(MODULE) -w $? < /dev/null
 	$Q touch $@
 .fmt-js~: $(shell $(LSFILES) '*.js' '*.ts' '*.vue' '*.html' 2> /dev/null)
-.fmt-js~: $(GENERATED_JS) ; $(info $(M) formatting JS code…)
+.fmt-js~: $(GENERATED_JS)
+	$(call log,formatting JS code…)
 	$Q cd console/frontend && $(PNPM) run --silent format
 	$Q touch $@
 
 # Misc
 
 .PHONY: licensecheck
-licensecheck: console/frontend/node_modules ; $(info $(M) check dependency licenses…) @ ## Check licenses
+licensecheck: console/frontend/node_modules ; @ ## Check licenses
+	$(call log,check dependency licenses…)
 	$Q ! git grep -L SPDX-License-Identifier: "*.go" "*.ts" "*.js" || \
 		(>&2 echo "*** Missing license identifiers!"; false)
 	$Q err=0 ; $(GO) mod vendor && $(WWHRD) --quiet check || err=$$? ; rm -rf vendor/ ; exit $$err
@@ -284,7 +319,8 @@ licensecheck: console/frontend/node_modules ; $(info $(M) check dependency licen
 			'to_entries[] | select(.key | test("^('"$$allowed"')$$") | not) | "Unallowed license: " + .key + " (" + (.value | map(.name) | join(", ")) + ")"'
 
 .PHONY: clean
-clean: ; $(info $(M) cleaning…)	@ ## Cleanup everything
+clean: ; @ ## Cleanup everything
+	$(call log,cleaning…)
 	@rm -rf test $(GENERATED) $(GENERATED_TEST_GO) *~ bin/akvorado
 
 .PHONY: help
@@ -298,11 +334,13 @@ version:
 
 .PHONY: docker docker-dev
 DOCKER_BUILD_ARGS =
-docker: ; $(info $(M) build Docker image…) @ ## Build Docker image
+docker: ; @ ## Build Docker image
+	$(call log,build Docker image…)
 	$Q git ls-files | tar -T- -cf- | docker build --pull -f docker/Dockerfile $(DOCKER_BUILD_ARGS) \
 		--build-arg VERSION=$(VERSION) -t quay.io/akvorado/akvorado:main -
 docker-dev: TARGETOS=linux
-docker-dev: all ; $(info $(M) build development Docker image…) @ ## Build development Docker image
+docker-dev: all ; @ ## Build development Docker image
+	$(call log,build development Docker image…)
 	$Q docker build -f docker/Dockerfile.dev $(DOCKER_BUILD_ARGS) \
 		--build-arg VERSION=$(VERSION) -t quay.io/akvorado/akvorado:main .
 
@@ -314,7 +352,8 @@ docker-dev-coverage: docker-dev
 
 # This requires "skopeo". I fetch it from nix.
 .PHONY: docker-upgrade-versions
-docker-upgrade-versions: ; $(info $(M) check for Docker image updates…) @ ## Check for Docker image updates
+docker-upgrade-versions: ; @ ## Check for Docker image updates
+	$(call log,check for Docker image updates…)
 	$Q sed -En 's/^\s*image:\s+(.+):(.+)\s+#\s+(.+)$$/\1 \2 \3/p' docker/versions.yml \
 		| while read -r image version regex; do \
 			latest=$$(nix run nixpkgs\#skopeo -- list-tags docker://"$$image" \
