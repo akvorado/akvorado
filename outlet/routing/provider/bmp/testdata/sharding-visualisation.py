@@ -5,9 +5,9 @@
 This script reads the output of `go test -bench RIBConcurrent` on stdin and
 writes three SVG graphs next to itself:
 
-  - read_latency.svg   read latency vs. writers, one panel per reader count
-  - write_latency.svg  write latency vs. writers, one panel per reader count
-  - heatmap_ratio.svg  speedup heatmap of 1 shard vs. N shards
+  - read_latency.svg   read latency vs writers, one panel per reader count
+  - write_latency.svg  write latency vs writers, one panel per reader count
+  - heatmap_ratio.svg  speedup heatmap of 1 shard vs N shards
 
 Run the benchmark with -count > 1 so medians are meaningful, e.g.:
 
@@ -70,8 +70,8 @@ def parse_platform(text):
     """Extract the goos/goarch/cpu banner the Go benchmark prints on stdout."""
     fields = dict(re.findall(r"^(goos|goarch|cpu):\s*(.+?)\s*$", text, re.MULTILINE))
     return (
-        f"{fields.get('goos', '?')}/{fields.get('goarch', '?')}"
-        f" · {fields.get('cpu', '?')}"
+        f"{fields.get('goos', '?')}/{fields.get('goarch', '?')}\n"
+        f"{fields.get('cpu', '?')}"
     )
 
 
@@ -85,7 +85,8 @@ def axes_of(values):
 
 def save(fig, platform, path):
     """Tag the figure with the platform and write it as a transparent SVG."""
-    fig.tight_layout()
+    if fig.get_layout_engine() is None:
+        fig.tight_layout()
     fig.text(
         0.995,
         0.995,
@@ -152,7 +153,7 @@ def latency_figure(stats, platform, metric, routes, path):
 
 
 def heatmap_figure(stats, platform, routes, path):
-    """Draw the speedup heatmap (fewest shards vs. most shards) and save it."""
+    """Draw the speedup heatmap (fewest shards vs most shards) and save it."""
     shards_list, writers_list, readers_list = axes_of(stats)
     lo, hi = shards_list[0], shards_list[-1]
 
@@ -162,21 +163,27 @@ def heatmap_figure(stats, platform, routes, path):
             return np.nan
         return a.median / b.median
 
-    fig, axes = plt.subplots(1, 2, figsize=(13, 4))
+    read_writers = writers_list
+    write_writers = [w for w in writers_list if w > 0]
+    fig, axes = plt.subplots(
+        1,
+        2,
+        figsize=(10, 4),
+        constrained_layout=True,
+        gridspec_kw={"width_ratios": [len(read_writers), len(write_writers)]},
+    )
     fig.suptitle(
-        f"Speedup ratio: {lo} shard / {hi} shards — {routes:,} routes".replace(
-            ",", " "
-        ),
+        f"{lo} shard vs {hi} shards — {routes:,} routes".replace(",", " "),
         fontsize=13,
         fontweight="bold",
     )
 
     panels = [
-        (axes[0], "read", "Read latency ratio", writers_list),
-        (axes[1], "write", "Write latency ratio", [w for w in writers_list if w > 0]),
+        (axes[0], "read", "Read latency ratio", read_writers),
+        (axes[1], "write", "Write latency ratio", write_writers),
     ]
-    for ax, metric, title, wlist in panels:
-        matrix = np.array(
+    matrices = [
+        np.array(
             [
                 [
                     ratio(stats[(lo, nw, nr)][metric], stats[(hi, nw, nr)][metric])
@@ -185,18 +192,24 @@ def heatmap_figure(stats, platform, routes, path):
                 for nr in readers_list
             ]
         )
+        for _, metric, _, wlist in panels
+    ]
 
-        valid = matrix[~np.isnan(matrix)]
-        norm = mcolors.TwoSlopeNorm(
-            vmin=min(valid.min(), 0.9), vcenter=1.0, vmax=max(valid.max(), 1.1)
-        )
+    # Log-scaled range symmetric around 1.0, shared by both panels.
+    all_valid = np.concatenate([m[~np.isnan(m)] for m in matrices])
+    extreme = max(all_valid.max(), 1.0 / all_valid.min(), 1.1)
+    norm = mcolors.LogNorm(vmin=1.0 / extreme, vmax=extreme)
+
+    im = None
+    for (ax, _, title, wlist), matrix in zip(panels, matrices):
         im = ax.imshow(matrix, cmap=plt.cm.RdYlGn, norm=norm, aspect="auto")
 
         ax.set_xticks(range(len(wlist)), [str(w) for w in wlist])
         ax.set_yticks(range(len(readers_list)), [str(r) for r in readers_list])
         ax.invert_yaxis()
         ax.set_xlabel("Writers")
-        ax.set_ylabel("Readers")
+        if ax is axes[0]:
+            ax.set_ylabel("Readers")
         ax.set_title(title, fontsize=11)
 
         for i in range(len(readers_list)):
@@ -214,7 +227,11 @@ def heatmap_figure(stats, platform, routes, path):
                         color="black",
                     )
 
-        fig.colorbar(im, ax=ax)
+    # Set ticks for the legend.
+    cb = fig.colorbar(im, ax=list(axes))
+    n = int(np.ceil(np.log2(extreme)))
+    ticks = [2.0**i for i in range(-n, n + 1) if 1.0 / extreme <= 2.0**i <= extreme]
+    cb.set_ticks(ticks, labels=[f"{t:g}×" for t in ticks])
 
     save(fig, platform, path)
 
