@@ -337,70 +337,104 @@ func BenchmarkRIBConcurrent(b *testing.B) {
 				for _, readers := range []int{1, 4, 16, 32} {
 					name := fmt.Sprintf("%d shards, %d routes, %d writers, %d readers", shards, routes, writers, readers)
 					b.Run(name, func(b *testing.B) {
-						// Pre-generate routes per writer. With 0 writers, still generate
-						// one writer's worth of routes to pre-populate the RIB.
+						// Pre-generate a pool of routes per writer. With 0
+						// writers, still generate one writer's worth to
+						// pre-populate the RIB. The pool is 25% larger than the
+						// initial live set so writers always have unused
+						// entries available for announcements.
 						numWriters := max(writers, 1)
 						routesPerWriter := routes / numWriters
+						poolSize := routesPerWriter * 5 / 4
 						writerRoutes := make([][]randomRoute, numWriters)
+						// Scratch slice per writer that partitions pool indices
+						// into live (left) and dead (right) halves.
+						writerScratch := make([][]int, numWriters)
 						for w := range numWriters {
 							prng1 := rand.New(rand.NewPCG(uint64(w*2+100), uint64(w*2+100)))
 							prng2 := rand.New(rand.NewPCG(uint64(w*2+101), uint64(w*2+101)))
-							writerRoutes[w] = make([]randomRoute, 0, routesPerWriter)
-							for r := range randomRealWorldRoutes4(prng1, prng2, routesPerWriter) {
+							writerRoutes[w] = make([]randomRoute, 0, poolSize)
+							for r := range randomRealWorldRoutes4(prng1, prng2, poolSize) {
 								writerRoutes[w] = append(writerRoutes[w], r)
+							}
+							writerScratch[w] = make([]int, poolSize)
+						}
+
+						addOne := func(rib *rib, w int, r randomRoute) {
+							// nh is the IPv4-mapped IPv6 next hop ::ffff:198.51.100.<w+1>.
+							nh := netip.AddrFrom16([16]byte{10: 0xff, 11: 0xff, 12: 198, 13: 51, 14: 100, 15: byte(w + 1)})
+							pfx := helpers.PrefixTo6(r.Prefix)
+							rib.AddRoute(pfx, rawRoute{
+								peer:    uint32(w),
+								nlri:    nlri{family: bgp.RF_IPv4_UC},
+								nextHop: nextHop(nh),
+								attributes: routeAttributes{
+									asn:              r.ASPath[len(r.ASPath)-1],
+									asPath:           r.ASPath,
+									communities:      r.Communities,
+									largeCommunities: r.LargeCommunities,
+								},
+								prefixLen: uint8(pfx.Bits()),
+							})
+						}
+						removeOne := func(rib *rib, w int, r randomRoute) {
+							pfx := helpers.PrefixTo6(r.Prefix)
+							rib.RemoveRoute(pfx, rawRoute{
+								peer: uint32(w),
+								nlri: nlri{family: bgp.RF_IPv4_UC},
+							})
+						}
+
+						// prePopulate seeds the rib with the writer's initial
+						// live set.
+						prePopulate := func(rib *rib, w int) {
+							for i := range routesPerWriter {
+								addOne(rib, w, writerRoutes[w][i])
 							}
 						}
 
-						// runWriter inserts, then updates and removes, one
-						// writer's worth of routes into rib, returning the
-						// number of routes changed.
+						// runWriter performs routesPerWriter operations on rib
+						// using the following churn mix: 20% withdrawals, 20%
+						// new announcements, 60% attribute updates of live
+						// prefixes.
+						//
+						// The pre-allocated writerScratch[w] slice is used as a
+						// partition: indices [0:nLive) are live and [nLive:)
+						// are dead.
 						runWriter := func(rib *rib, w int) int64 {
-							// nh is the IPv4-mapped IPv6 next hop ::ffff:198.51.100.<w+1>.
-							nh := netip.AddrFrom16([16]byte{10: 0xff, 11: 0xff, 12: 198, 13: 51, 14: 100, 15: byte(w + 1)})
-							var count int64
-
-							// Pass 1: insert
-							for _, r := range writerRoutes[w] {
-								pfx := helpers.PrefixTo6(r.Prefix)
-								added, _ := rib.AddRoute(pfx, rawRoute{
-									peer:    uint32(w),
-									nlri:    nlri{family: bgp.RF_IPv4_UC},
-									nextHop: nextHop(nh),
-									attributes: routeAttributes{
-										asn:              r.ASPath[len(r.ASPath)-1],
-										asPath:           r.ASPath,
-										communities:      r.Communities,
-										largeCommunities: r.LargeCommunities,
-									},
-									prefixLen: uint8(pfx.Bits()),
-								})
-								count += int64(added)
+							prng := rand.New(rand.NewPCG(uint64(w+1000), uint64(w+1000)))
+							pool := writerRoutes[w]
+							live := writerScratch[w]
+							for i := range live {
+								live[i] = i
 							}
-
-							// Pass 2: updates and removes
-							for i, r := range writerRoutes[w] {
-								pfx := helpers.PrefixTo6(r.Prefix)
-								if i%5 == 0 {
-									rib.RemoveRoute(pfx, rawRoute{
-										peer: uint32(w),
-										nlri: nlri{family: bgp.RF_IPv4_UC},
-									})
-									count++
-								} else {
-									added, _ := rib.AddRoute(pfx, rawRoute{
-										peer:    uint32(w),
-										nlri:    nlri{family: bgp.RF_IPv4_UC},
-										nextHop: nextHop(nh),
-										attributes: routeAttributes{
-											asn:              r.ASPath[len(r.ASPath)-1],
-											asPath:           r.ASPath,
-											communities:      r.Communities,
-											largeCommunities: r.LargeCommunities,
-										},
-										prefixLen: uint8(pfx.Bits()),
-									})
-									count += int64(added)
+							nLive := routesPerWriter
+							var count int64
+							for range routesPerWriter {
+								roll := prng.IntN(10)
+								switch {
+								case roll < 2 && nLive > 0:
+									// Withdraw a random live prefix.
+									idx := prng.IntN(nLive)
+									j := live[idx]
+									removeOne(rib, w, pool[j])
+									live[idx] = live[nLive-1]
+									live[nLive-1] = j
+									nLive--
+								case roll < 4 && nLive < len(live):
+									// Announce a previously-dead prefix.
+									addOne(rib, w, pool[live[nLive]])
+									nLive++
+								case nLive > 0:
+									// Update the attributes of a random live prefix.
+									addOne(rib, w, pool[live[prng.IntN(nLive)]])
+								case nLive < len(live):
+									// Live set exhausted: forced announce.
+									addOne(rib, w, pool[live[nLive]])
+									nLive++
+								default:
+									continue
 								}
+								count++
 							}
 							return count
 						}
@@ -413,12 +447,11 @@ func BenchmarkRIBConcurrent(b *testing.B) {
 							lookupTargets = append(lookupTargets, r)
 						}
 
-						// With 0 writers, pre-populate a single read-only RIB
-						// by running one writer's worth of work.
+						// With 0 writers, pre-populate a single read-only RIB.
 						var prepopulatedRIB *rib
 						if writers == 0 {
 							prepopulatedRIB = newRIB(shards)
-							runWriter(prepopulatedRIB, 0)
+							prePopulate(prepopulatedRIB, 0)
 						}
 
 						// Accumulated per-goroutine timing across all b.Loop() iterations
@@ -431,11 +464,18 @@ func BenchmarkRIBConcurrent(b *testing.B) {
 							rib := prepopulatedRIB
 							if writers > 0 {
 								rib = newRIB(shards)
+								var prepWg sync.WaitGroup
+								for w := range writers {
+									prepWg.Go(func() {
+										prePopulate(rib, w)
+									})
+								}
+								prepWg.Wait()
 							}
 							var writerWg sync.WaitGroup
 							readerDone := make(chan struct{})
 
-							// Start writers: insert, then update/remove
+							// Start writers
 							for w := range writers {
 								writerWg.Go(func() {
 									start := time.Now()
