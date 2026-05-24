@@ -30,13 +30,13 @@ type worker struct {
 
 // newWorker instantiates a new worker and returns a callback function to
 // process an incoming flow and a function to call on shutdown.
-func (c *Component) newWorker(i int, scaleRequestChan chan<- kafka.ScaleRequest) (kafka.ReceiveFunc, kafka.ShutdownFunc) {
+func (c *Component) newWorker(i int, scaleRequestChan chan<- kafka.ScaleRequest, allowRebalance func()) (kafka.ReceiveFunc, kafka.ShutdownFunc) {
 	bf := c.d.Schema.NewFlowMessage()
 	w := worker{
 		c:                c,
 		l:                c.r.With().Int("worker", i).Logger(),
 		bf:               bf,
-		cw:               c.d.ClickHouse.NewWorker(i, bf),
+		cw:               c.d.ClickHouse.NewWorker(i, bf, allowRebalance),
 		scaleRequestChan: scaleRequestChan,
 	}
 	return w.processIncomingFlow, w.shutdown

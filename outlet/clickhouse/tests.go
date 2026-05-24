@@ -25,7 +25,7 @@ func NewMock(_ *testing.T, callback func(*schema.FlowMessage)) Component {
 }
 
 // NewWorker creates a new mock worker.
-func (c *mockComponent) NewWorker(_ int, bf *schema.FlowMessage) Worker {
+func (c *mockComponent) NewWorker(_ int, bf *schema.FlowMessage, _ func()) Worker {
 	return &mockWorker{
 		c:  c,
 		bf: bf,

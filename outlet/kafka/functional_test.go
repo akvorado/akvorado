@@ -79,7 +79,7 @@ func TestFakeKafka(t *testing.T) {
 		t.Fatalf("Start() error:\n%+v", err)
 	}
 	shutdownCalled := false
-	c.StartWorkers(func(int, chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
+	c.StartWorkers(func(int, chan<- ScaleRequest, func()) (ReceiveFunc, ShutdownFunc) {
 		return callback, func() { shutdownCalled = true }
 	})
 
@@ -157,7 +157,7 @@ func TestStartSeveralWorkers(t *testing.T) {
 	if err := c.(*realComponent).Start(); err != nil {
 		t.Fatalf("Start() error:\n%+v", err)
 	}
-	c.StartWorkers(func(int, chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
+	c.StartWorkers(func(int, chan<- ScaleRequest, func()) (ReceiveFunc, ShutdownFunc) {
 		return func(context.Context, []byte) error { return nil }, func() {}
 	})
 	time.Sleep(20 * time.Millisecond)
@@ -204,7 +204,7 @@ func TestWorkerStop(t *testing.T) {
 
 	var last int
 	done := make(chan bool)
-	c.StartWorkers(func(int, chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
+	c.StartWorkers(func(int, chan<- ScaleRequest, func()) (ReceiveFunc, ShutdownFunc) {
 		return func(_ context.Context, got []byte) error {
 				last, _ = strconv.Atoi(string(got))
 				return nil
@@ -341,7 +341,7 @@ func TestWorkerScaling(t *testing.T) {
 		t.Errorf("Start() max workers should have been capped to 4 instead of %d", maxWorkers)
 	}
 	msg := atomic.Uint32{}
-	c.StartWorkers(func(_ int, ch chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
+	c.StartWorkers(func(_ int, ch chan<- ScaleRequest, _ func()) (ReceiveFunc, ShutdownFunc) {
 		return func(context.Context, []byte) error {
 			c := msg.Add(1)
 			if c <= 1 {
@@ -488,7 +488,7 @@ func TestKafkaLagMetric(t *testing.T) {
 	// Start a worker with a callback that blocks on a channel after receiving a message
 	workerBlockReceive := make(chan any)
 	defer close(workerBlockReceive)
-	c.StartWorkers(func(_ int, _ chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
+	c.StartWorkers(func(_ int, _ chan<- ScaleRequest, _ func()) (ReceiveFunc, ShutdownFunc) {
 		return func(context.Context, []byte) error {
 			t.Log("worker received a message")
 			<-workerBlockReceive

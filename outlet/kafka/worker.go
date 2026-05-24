@@ -55,7 +55,7 @@ func (c *realComponent) startOneWorker() error {
 	if err != nil {
 		return err
 	}
-	callback, shutdown := c.workerBuilder(i, c.workerRequestChan)
+	callback, shutdown := c.workerBuilder(i, c.workerRequestChan, client.AllowRebalance)
 	consumer := c.newConsumer(i, callback)
 
 	// Goroutine for worker

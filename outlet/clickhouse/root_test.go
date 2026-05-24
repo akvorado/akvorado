@@ -27,7 +27,7 @@ func TestMock(t *testing.T) {
 	helpers.StartStop(t, ch)
 
 	expected := []*schema.FlowMessage{}
-	w := ch.NewWorker(1, bf)
+	w := ch.NewWorker(1, bf, nil)
 	for i := range 20 {
 		i = i + 1 // 1 to 20
 		bf.TimeReceived = uint32(100 + i)

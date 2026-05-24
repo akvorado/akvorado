@@ -35,9 +35,10 @@ type ShutdownFunc func()
 
 // WorkerBuilderFunc returns a function to be called with each received messages
 // and a function to be called when shutting down. It is provided the worker
-// number (for logging purpose) as well as a chan for the worker to request more
-// or less workers.
-type WorkerBuilderFunc func(int, chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc)
+// number (for logging purpose), a chan for the worker to request more or less
+// workers, and a hook to be called between slow retries so the worker can
+// allow a pending Kafka rebalance to proceed.
+type WorkerBuilderFunc func(int, chan<- ScaleRequest, func()) (ReceiveFunc, ShutdownFunc)
 
 // NewConsumer creates a new consumer.
 func (c *realComponent) newConsumer(worker int, callback ReceiveFunc) *Consumer {

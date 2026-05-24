@@ -82,7 +82,7 @@ func TestInsert(t *testing.T) {
 	expected := []result{}
 
 	// Create one worker and send some values
-	w := ch.NewWorker(1, bf)
+	w := ch.NewWorker(1, bf, nil)
 	for i := range 23 {
 		i = i + 1
 		// 1: first batch (max time)
@@ -227,7 +227,7 @@ func TestMultipleServers(t *testing.T) {
 			bf.AppendUint(schema.ColumnDstAS, 65000)
 			bf.AppendUint(schema.ColumnBytes, 200)
 			bf.Finalize()
-			w := ch.NewWorker(1, bf)
+			w := ch.NewWorker(1, bf, nil)
 			w.Flush(ctx)
 		}()
 

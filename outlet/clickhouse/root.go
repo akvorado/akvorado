@@ -14,7 +14,7 @@ import (
 
 // Component is the interface for the ClickHouse exporter component.
 type Component interface {
-	NewWorker(int, *schema.FlowMessage) Worker
+	NewWorker(i int, bf *schema.FlowMessage, onRetry func()) Worker
 }
 
 // realComponent implements the ClickHouse exporter

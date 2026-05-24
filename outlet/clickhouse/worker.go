@@ -40,10 +40,11 @@ const (
 
 // realWorker is a working implementation of Worker.
 type realWorker struct {
-	c      *realComponent
-	bf     *schema.FlowMessage
-	last   time.Time
-	logger reporter.Logger
+	c       *realComponent
+	bf      *schema.FlowMessage
+	last    time.Time
+	logger  reporter.Logger
+	onRetry func()
 
 	conn          *ch.Client
 	servers       []string
@@ -52,12 +53,13 @@ type realWorker struct {
 }
 
 // NewWorker creates a new worker to push data to ClickHouse.
-func (c *realComponent) NewWorker(i int, bf *schema.FlowMessage) Worker {
+func (c *realComponent) NewWorker(i int, bf *schema.FlowMessage, onRetry func()) Worker {
 	opts, servers := c.d.ClickHouse.ChGoOptions()
 	w := realWorker{
-		c:      c,
-		bf:     bf,
-		logger: c.r.With().Int("worker", i).Logger(),
+		c:       c,
+		bf:      bf,
+		logger:  c.r.With().Int("worker", i).Logger(),
+		onRetry: onRetry,
 
 		servers: servers,
 		options: opts,
@@ -132,6 +134,10 @@ func (w *realWorker) Flush(ctx context.Context) {
 	b := backoff.NewExponentialBackOff()
 	b.MaxInterval = 30 * time.Second
 	b.InitialInterval = 20 * time.Millisecond
+	opts := []backoff.RetryOption{backoff.WithBackOff(b), backoff.WithMaxElapsedTime(0)}
+	if w.onRetry != nil {
+		opts = append(opts, backoff.WithNotify(func(error, time.Duration) { w.onRetry() }))
+	}
 	backoff.Retry(ctx, func() (any, error) {
 		// Connect or reconnect if connection is broken.
 		if err := w.connect(ctx); err != nil {
@@ -184,7 +190,7 @@ func (w *realWorker) Flush(ctx context.Context) {
 		// Clear batch
 		w.bf.Clear()
 		return nil, nil
-	}, backoff.WithBackOff(b), backoff.WithMaxElapsedTime(0))
+	}, opts...)
 }
 
 // connect establishes or reestablish the connection to ClickHouse.

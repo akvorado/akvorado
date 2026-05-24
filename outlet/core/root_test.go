@@ -218,7 +218,7 @@ func TestCore(t *testing.T) {
 
 			// Create a specific worker (for compatibility with synctest).
 			scaleRequestChan := make(chan kafka.ScaleRequest, 100)
-			receiveFunc, _ := c.newWorker(0, scaleRequestChan)
+			receiveFunc, _ := c.newWorker(0, scaleRequestChan, nil)
 
 			// Inject 10 flows with rateLimit=20 (burst=int(20/10)=2).
 			// Under synctest all flows see the same fake time, so
