@@ -184,7 +184,7 @@ func (w *realWorker) Flush(ctx context.Context) {
 		// Clear batch
 		w.bf.Clear()
 		return nil, nil
-	}, backoff.WithBackOff(b))
+	}, backoff.WithBackOff(b), backoff.WithMaxElapsedTime(0))
 }
 
 // connect establishes or reestablish the connection to ClickHouse.
