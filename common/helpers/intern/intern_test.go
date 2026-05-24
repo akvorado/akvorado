@@ -89,10 +89,10 @@ func TestTake(t *testing.T) {
 
 	expectedValues := []internValue[likeInt]{
 		{},
-		{value: 10, refCount: 2},
-		{value: 12, refCount: 1, next: 3},
-		{value: 22, refCount: 1, previous: 2, next: 4},
-		{value: 32, refCount: 1, previous: 3},
+		{value: 10, refCount: 2, hash: 0},
+		{value: 12, refCount: 1, hash: 2, next: 3},
+		{value: 22, refCount: 1, hash: 2, next: 4},
+		{value: 32, refCount: 1, hash: 2},
 	}
 	if diff := helpers.Diff(p.values, expectedValues, diffOpt); diff != "" {
 		t.Fatalf("p.values (-got, +want):\n%s", diff)
@@ -102,10 +102,10 @@ func TestTake(t *testing.T) {
 
 	expectedValues = []internValue[likeInt]{
 		{},
-		{value: 10, refCount: 2},
-		{value: 12, refCount: 1, next: 4},
-		{value: 22, refCount: 0, previous: 2, next: 4}, // free
-		{value: 32, refCount: 1, previous: 2},
+		{value: 10, refCount: 2, hash: 0},
+		{value: 12, refCount: 1, hash: 2, next: 4},
+		{value: 22, refCount: 0, hash: 2, next: 4}, // free
+		{value: 32, refCount: 1, hash: 2},
 	}
 	if diff := helpers.Diff(p.values, expectedValues, diffOpt); diff != "" {
 		t.Fatalf("p.values (-got, +want):\n%s", diff)
@@ -118,10 +118,10 @@ func TestTake(t *testing.T) {
 
 	expectedValues = []internValue[likeInt]{
 		{},
-		{value: 10, refCount: 2},
-		{value: 12, refCount: 1, next: 4},
-		{value: 42, refCount: 1, previous: 4},
-		{value: 32, refCount: 1, previous: 2, next: 3},
+		{value: 10, refCount: 2, hash: 0},
+		{value: 12, refCount: 1, hash: 2, next: 4},
+		{value: 42, refCount: 1, hash: 2},
+		{value: 32, refCount: 1, hash: 2, next: 3},
 	}
 	if diff := helpers.Diff(p.values, expectedValues, diffOpt); diff != "" {
 		t.Fatalf("p.values (-got, +want):\n%s", diff)
@@ -131,10 +131,10 @@ func TestTake(t *testing.T) {
 
 	expectedValues = []internValue[likeInt]{
 		{},
-		{value: 10, refCount: 2},
-		{value: 12, refCount: 0, next: 4}, // free
-		{value: 42, refCount: 1, previous: 4},
-		{value: 32, refCount: 1, next: 3},
+		{value: 10, refCount: 2, hash: 0},
+		{value: 12, refCount: 0, hash: 2, next: 4}, // free
+		{value: 42, refCount: 1, hash: 2},
+		{value: 32, refCount: 1, hash: 2, next: 3},
 	}
 	if diff := helpers.Diff(p.values, expectedValues, diffOpt); diff != "" {
 		t.Fatalf("p.values (-got, +want):\n%s", diff)
@@ -144,10 +144,10 @@ func TestTake(t *testing.T) {
 
 	expectedValues = []internValue[likeInt]{
 		{},
-		{value: 10, refCount: 2},
-		{value: 12, refCount: 0, next: 4}, // free
-		{value: 42, refCount: 1},
-		{value: 32, refCount: 0, next: 3}, // free
+		{value: 10, refCount: 2, hash: 0},
+		{value: 12, refCount: 0, hash: 2, next: 4}, // free
+		{value: 42, refCount: 1, hash: 2},
+		{value: 32, refCount: 0, hash: 2, next: 3}, // free
 	}
 	if diff := helpers.Diff(p.values, expectedValues, diffOpt); diff != "" {
 		t.Fatalf("p.values (-got, +want):\n%s", diff)
@@ -157,10 +157,10 @@ func TestTake(t *testing.T) {
 
 	expectedValues = []internValue[likeInt]{
 		{},
-		{value: 10, refCount: 2},
-		{value: 12, refCount: 0, next: 4}, // free
-		{value: 42, refCount: 0},          // free
-		{value: 32, refCount: 0, next: 3}, // free
+		{value: 10, refCount: 2, hash: 0},
+		{value: 12, refCount: 0, hash: 2, next: 4}, // free
+		{value: 42, refCount: 0, hash: 2},          // free
+		{value: 32, refCount: 0, hash: 2, next: 3}, // free
 	}
 	if diff := helpers.Diff(p.values, expectedValues, diffOpt); diff != "" {
 		t.Fatalf("p.values (-got, +want):\n%s", diff)
