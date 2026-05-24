@@ -91,6 +91,9 @@ func (c *Consumer) ProcessFetches(ctx context.Context, client *kgo.Client, fetch
 						})
 					}()
 					for _, record := range partition.Records {
+						if err := ctx.Err(); err != nil {
+							return err
+						}
 						epoch = record.LeaderEpoch
 						offset = record.Offset + 1
 						messagesReceived.Inc()
