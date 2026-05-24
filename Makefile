@@ -98,7 +98,7 @@ common/pb/rawflow.pb.go common/pb/rawflow_vtproto.pb.go &: .buf.gen.yaml common/
 	$Q $(BUF) generate --template $(PWD)/.buf.gen.yaml --path $(@:.pb.go=.proto)
 
 common/clickhousedb/mocks/mock_driver.go:
-	$(call log,"generate mocks for ClickHouse driver…")
+	$(call log,generate mocks for ClickHouse driver…)
 	$Q $(MOCKGEN) -package mocks -build_constraint "!release" -destination $@ \
 		github.com/ClickHouse/clickhouse-go/v2/lib/driver Conn,Row,Rows,ColumnType
 	$Q touch $@
