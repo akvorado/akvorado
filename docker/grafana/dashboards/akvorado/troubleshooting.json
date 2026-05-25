@@ -304,7 +304,7 @@
         "kind": "Panel",
         "spec": {
           "id": 11,
-          "title": "Clickhouse errors total",
+          "title": "ClickHouse errors total",
           "description": "",
           "links": [],
           "data": {
