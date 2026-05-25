@@ -23,6 +23,7 @@ identified with a specific icon:
 - 🌱 *outlet*: cache the SNMPv3 engine ID to not trigger discovery probe on subsequent polls
 - 🌱 *docker*: update Kafka to 4.2.0 (not mandatory)
 - 🌱 *docker*: update ClickHouse to 26.3 (not mandatory)
+- 🌱 *docker*: update Traefik to 3.7 (not mandatory)
 - 🌱 *build*: reduce the number of dependencies by switching from Gin to
   `net/http` for HTTP API and from GORM to Bun for database handling.
 
