@@ -33,7 +33,7 @@ services:
   prometheus:
     image: prom/prometheus:v3.5.0 # v\d+\.\d+\.\d+
   node-exporter:
-    image: prom/node-exporter:v1.9.1 # v\d+\.\d+\.\d+
+    image: prom/node-exporter:v1.11.1 # v\d+\.\d+\.\d+
   cadvisor:
     image: ghcr.io/google/cadvisor:v0.53.0 # v\d+\.\d+\.\d+
   kafka-ui:
