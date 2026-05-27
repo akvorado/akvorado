@@ -10,7 +10,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 2.4.0 - 2026-05-27
 
 - 💥 *build*: require x86-64-v3 baseline for binary shipped with each release
   (supported by most CPU after 2014, no change for the Docker image)
