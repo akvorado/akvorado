@@ -31,7 +31,7 @@ services:
   loki:
     image: grafana/loki:3.5 # \d+\.\d+
   prometheus:
-    image: prom/prometheus:v3.5.0 # v\d+\.\d+\.\d+
+    image: prom/prometheus:v3.11.3 # v\d+\.\d+\.\d+
   node-exporter:
     image: prom/node-exporter:v1.9.1 # v\d+\.\d+\.\d+
   cadvisor:
