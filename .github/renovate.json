@@ -11,6 +11,7 @@
   ],
   "prConcurrentLimit": 15,
   "minimumReleaseAge": "5 days",
+  "dependencyDashboardApproval": true,
   "commitMessageExtra": "from {{{currentValue}}} to {{#if isPinDigest}}{{{newDigestShort}}}{{else}}{{#if isMajor}}{{prettyNewMajor}}{{else}}{{#if isSingleVersion}}{{prettyNewVersion}}{{else}}{{#if newValue}}{{{newValue}}}{{else}}{{{newDigestShort}}}{{/if}}{{/if}}{{/if}}{{/if}}",
   "docker-compose": {
     "managerFilePatterns": [
@@ -70,6 +71,7 @@
       ],
       "groupName": "dev-dependencies",
       "automerge": true,
+      "dependencyDashboardApproval": false,
       "matchPackageNames": [
         "autoprefixer",
         "vite",
@@ -148,6 +150,7 @@
         "patch"
       ],
       "automerge": true,
+      "dependencyDashboardApproval": false,
       "minimumReleaseAge": "0 days",
       "schedule": ["* * * * *"]
     },
@@ -195,8 +198,7 @@
       ],
       "addLabels": [
         "service::docker"
-      ],
-      "dependencyDashboardApproval": true
+      ]
     },
     {
       "matchManagers": [
@@ -245,6 +247,7 @@
         "github-actions"
       ],
       "groupName": "actions-docker",
+      "dependencyDashboardApproval": false,
       "matchPackageNames": [
         "/^docker//"
       ]
