@@ -197,7 +197,8 @@ func TestRemoveRoutes(t *testing.T) {
 		r := newRIB(1)
 		rs := r.shards[0]
 		addRoute(r, 10)
-		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
+		ref, _ := r.tree.Load().Lookup(netip.MustParseAddr("192.168.144.10"))
+		idx := ref.idx
 		count, empty := rs.removeRoutes(idx, func(route) bool { return true }, true)
 		if !empty {
 			t.Error("removeRoutes() should have removed all routes from node")
@@ -215,7 +216,8 @@ func TestRemoveRoutes(t *testing.T) {
 		rs := r.shards[0]
 		addRoute(r, 10)
 		addRoute(r, 11)
-		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
+		ref, _ := r.tree.Load().Lookup(netip.MustParseAddr("192.168.144.10"))
+		idx := ref.idx
 		r2 := rs.routes[makeRouteKey(idx, 1)]
 		count, empty := rs.removeRoutes(idx, func(r route) bool { return r.peer == 10 }, true)
 		if empty {
@@ -236,7 +238,8 @@ func TestRemoveRoutes(t *testing.T) {
 		rs := r.shards[0]
 		addRoute(r, 10)
 		addRoute(r, 11)
-		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
+		ref, _ := r.tree.Load().Lookup(netip.MustParseAddr("192.168.144.10"))
+		idx := ref.idx
 		r1 := rs.routes[makeRouteKey(idx, 0)]
 		count, empty := rs.removeRoutes(idx, func(r route) bool { return r.peer == 11 }, true)
 		if empty {
@@ -257,7 +260,8 @@ func TestRemoveRoutes(t *testing.T) {
 		addRoute(r, 10)
 		addRoute(r, 11)
 		addRoute(r, 12)
-		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
+		ref, _ := r.tree.Load().Lookup(netip.MustParseAddr("192.168.144.10"))
+		idx := ref.idx
 		r1 := rs.routes[makeRouteKey(idx, 0)]
 		r3 := rs.routes[makeRouteKey(idx, 2)]
 		count, empty := rs.removeRoutes(idx, func(r route) bool { return r.peer == 11 }, true)
@@ -282,7 +286,8 @@ func TestRemoveRoutes(t *testing.T) {
 		addRoute(r, 12)
 		addRoute(r, 13)
 		addRoute(r, 14)
-		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
+		ref, _ := r.tree.Load().Lookup(netip.MustParseAddr("192.168.144.10"))
+		idx := ref.idx
 		r2 := rs.routes[makeRouteKey(idx, 1)]
 		r4 := rs.routes[makeRouteKey(idx, 3)]
 		count, empty := rs.removeRoutes(idx, func(r route) bool { return r.peer%2 == 0 }, false)
@@ -308,7 +313,8 @@ func TestRemoveRoutes(t *testing.T) {
 		addRoute(r, 12)
 		addRoute(r, 13)
 		addRoute(r, 14)
-		idx, _ := r.tree.Lookup(netip.MustParseAddr("192.168.144.10"))
+		ref, _ := r.tree.Load().Lookup(netip.MustParseAddr("192.168.144.10"))
+		idx := ref.idx
 		count, empty := rs.removeRoutes(idx, func(route) bool { return true }, false)
 		if !empty {
 			t.Error("removeRoutes() should have removed all routes from node")
@@ -320,6 +326,59 @@ func TestRemoveRoutes(t *testing.T) {
 			t.Errorf("removeRoutes() (-got, +want):\n%s", diff)
 		}
 	})
+}
+
+func TestRIBStalePrefixIndex(t *testing.T) {
+	r := newRIB(1)
+	rs := r.shards[0]
+
+	routeFor := func(peer uint32) rawRoute {
+		return rawRoute{
+			peer:       peer,
+			nlri:       nlri{family: bgp.RF_IPv4_UC, path: 1},
+			nextHop:    nextHop(netip.MustParseAddr("::ffff:198.51.100.8")),
+			attributes: routeAttributes{asn: 65300},
+			prefixLen:  96 + 24,
+		}
+	}
+	pPrefix := netip.MustParsePrefix("::ffff:192.168.144.0/120")
+	qPrefix := netip.MustParsePrefix("::ffff:10.1.2.0/120")
+
+	// Add prefix P and snapshot its reference, as a reader's lookup would.
+	r.AddRoute(pPrefix, routeFor(10))
+	staleRef, ok := r.tree.Load().Lookup(netip.MustParseAddr("192.168.144.10"))
+	if !ok {
+		t.Fatal("Lookup() did not find the just-added prefix")
+	}
+
+	// Withdraw P, then add a different prefix Q.
+	r.RemoveRoute(pPrefix, routeFor(10))
+	r.AddRoute(qPrefix, routeFor(20))
+	newRef, ok := r.tree.Load().Lookup(netip.MustParseAddr("10.1.2.10"))
+	if !ok {
+		t.Fatal("Lookup() did not find the recycled prefix")
+	}
+	if diff := helpers.Diff(newRef.idx, staleRef.idx); diff != "" {
+		t.Fatalf("index was not recycled (-got, +want):\n%s", diff)
+	}
+
+	// The recycled index now holds Q's route.
+	recycled, ok := rs.routes[makeRouteKey(staleRef.idx, 0)]
+	if !ok {
+		t.Fatal("recycled index has no route")
+	}
+	if diff := helpers.Diff(recycled.peer, uint32(20)); diff != "" {
+		t.Fatalf("recycled route peer (-got, +want):\n%s", diff)
+	}
+
+	// The generation guard must reject the stale reference and accept the fresh one.
+	if rs.generations[staleRef.idx.localIdx()] == staleRef.gen {
+		t.Errorf("stale prefixRef not rejected by generation guard %d",
+			staleRef.gen)
+	}
+	if diff := helpers.Diff(rs.generations[newRef.idx.localIdx()], newRef.gen); diff != "" {
+		t.Errorf("fresh prefixRef rejected by generation guard (-got, +want):\n%s", diff)
+	}
 }
 
 func TestRIBHarness(t *testing.T) {
@@ -450,12 +509,13 @@ func TestRIBHarness(t *testing.T) {
 				continue
 			}
 			// Find prefix in tree
-			prefixIdx, ok := r.tree.Lookup(lookup.addr)
+			ref, ok := r.tree.Load().Lookup(lookup.addr)
 			if !ok {
 				t.Errorf("cannot find %s for %d",
 					lookup.addr, lookup.peer)
 				continue
 			}
+			prefixIdx := ref.idx
 
 			// Check if routes exist for this prefix
 			found := false

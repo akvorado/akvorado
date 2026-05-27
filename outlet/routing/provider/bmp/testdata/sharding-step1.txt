@@ -1,0 +1,246 @@
+goos: linux
+goarch: amd64
+pkg: akvorado/outlet/routing/provider/bmp
+cpu: AMD Ryzen 5 5600X 6-Core Processor             
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_1_readers-12         	    1562	        74.63 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_1_readers-12         	    1552	        79.78 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_1_readers-12         	    1560	        75.48 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_1_readers-12         	    1568	        74.80 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_1_readers-12         	    1576	        75.90 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_1_readers-12         	    1528	        75.83 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_4_readers-12         	     644	       180.7 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_4_readers-12         	     648	       181.0 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_4_readers-12         	     640	       181.1 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_4_readers-12         	     646	       181.2 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_4_readers-12         	     648	       181.2 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_4_readers-12         	     642	       181.5 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_16_readers-12        	     189	       369.6 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_16_readers-12        	     189	       373.3 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_16_readers-12        	     189	       372.1 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_16_readers-12        	     190	       370.2 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_16_readers-12        	     190	       371.8 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_16_readers-12        	     190	       369.8 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_32_readers-12        	      94	       395.0 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_32_readers-12        	      92	       398.1 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_32_readers-12        	      92	       392.8 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_32_readers-12        	      94	       396.1 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_32_readers-12        	      93	       393.3 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_0_writers,_32_readers-12        	      94	       383.7 ns/read
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_1_readers-12         	       1	       698.8 ns/read	      1624 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_1_readers-12         	       1	       767.9 ns/read	      1784 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_1_readers-12         	       1	       870.0 ns/read	      2022 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_1_readers-12         	       1	       778.9 ns/read	      1825 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_1_readers-12         	       1	       694.0 ns/read	      1613 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_1_readers-12         	       1	       737.5 ns/read	      1704 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_4_readers-12         	       1	      1049 ns/read	      2600 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_4_readers-12         	       1	      1051 ns/read	      2535 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_4_readers-12         	       1	      1088 ns/read	      2627 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_4_readers-12         	       1	      1091 ns/read	      2608 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_4_readers-12         	       1	      1098 ns/read	      2600 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_4_readers-12         	       1	      1017 ns/read	      2474 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_16_readers-12        	       1	      2278 ns/read	      6566 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_16_readers-12        	       1	      2213 ns/read	      6550 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_16_readers-12        	       1	      2444 ns/read	      6964 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_16_readers-12        	       1	      2401 ns/read	      6903 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_16_readers-12        	       1	      2438 ns/read	      6924 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_16_readers-12        	       1	      2242 ns/read	      6592 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_32_readers-12        	       1	      3340 ns/read	     11474 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_32_readers-12        	       1	      3304 ns/read	     11241 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_32_readers-12        	       1	      3233 ns/read	     11433 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_32_readers-12        	       1	      3466 ns/read	     11181 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_32_readers-12        	       1	      3293 ns/read	     11345 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_1_writers,_32_readers-12        	       1	      3391 ns/read	     11415 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_1_readers-12         	       1	       774.1 ns/read	      3715 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_1_readers-12         	       1	       810.3 ns/read	      3871 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_1_readers-12         	       1	       773.8 ns/read	      3692 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_1_readers-12         	       1	       776.9 ns/read	      3705 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_1_readers-12         	       1	       855.0 ns/read	      4064 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_1_readers-12         	       1	       821.7 ns/read	      3936 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_4_readers-12         	       1	      1139 ns/read	      5435 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_4_readers-12         	       1	      1139 ns/read	      5488 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_4_readers-12         	       1	      1144 ns/read	      5540 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_4_readers-12         	       1	      1141 ns/read	      5517 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_4_readers-12         	       1	      1149 ns/read	      5504 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_4_readers-12         	       1	      1118 ns/read	      5388 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_16_readers-12        	       1	      2666 ns/read	     15325 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_16_readers-12        	       1	      2640 ns/read	     15250 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_16_readers-12        	       1	      2609 ns/read	     15244 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_16_readers-12        	       1	      2583 ns/read	     15142 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_16_readers-12        	       1	      2631 ns/read	     15387 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_16_readers-12        	       1	      2541 ns/read	     15444 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_32_readers-12        	       1	      3997 ns/read	     25809 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_32_readers-12        	       1	      3699 ns/read	     26733 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_32_readers-12        	       1	      3676 ns/read	     26435 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_32_readers-12        	       1	      3967 ns/read	     26063 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_32_readers-12        	       1	      3975 ns/read	     25908 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_2_writers,_32_readers-12        	       1	      4076 ns/read	     25820 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_1_readers-12         	       1	       770.6 ns/read	      7534 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_1_readers-12         	       1	       829.9 ns/read	      8159 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_1_readers-12         	       1	       808.7 ns/read	      7945 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_1_readers-12         	       1	       771.8 ns/read	      7565 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_1_readers-12         	       1	       764.3 ns/read	      7514 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_1_readers-12         	       1	       831.0 ns/read	      8151 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_4_readers-12         	       1	      1109 ns/read	     11085 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_4_readers-12         	       1	      1100 ns/read	     11492 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_4_readers-12         	       1	      1102 ns/read	     10977 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_4_readers-12         	       1	      1095 ns/read	     10940 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_4_readers-12         	       1	      1105 ns/read	     10955 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_4_readers-12         	       1	      1147 ns/read	     11438 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_16_readers-12        	       1	      2421 ns/read	     28659 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_16_readers-12        	       1	      2452 ns/read	     28874 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_16_readers-12        	       1	      2490 ns/read	     29881 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_16_readers-12        	       1	      2489 ns/read	     29411 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_16_readers-12        	       1	      2576 ns/read	     29841 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_16_readers-12        	       1	      2515 ns/read	     29867 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_32_readers-12        	       1	      3516 ns/read	     47466 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_32_readers-12        	       1	      3268 ns/read	     48322 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_32_readers-12        	       1	      3650 ns/read	     47066 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_32_readers-12        	       1	      3663 ns/read	     47252 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_32_readers-12        	       1	      3558 ns/read	     47655 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_4_writers,_32_readers-12        	       1	      3768 ns/read	     51948 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_1_readers-12         	       1	       764.6 ns/read	     14644 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_1_readers-12         	       1	       800.3 ns/read	     15242 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_1_readers-12         	       1	       816.6 ns/read	     15562 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_1_readers-12         	       1	       795.5 ns/read	     14976 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_1_readers-12         	       1	       792.1 ns/read	     15087 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_1_readers-12         	       1	       798.4 ns/read	     15215 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_4_readers-12         	       1	      1123 ns/read	     21037 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_4_readers-12         	       1	      1123 ns/read	     20570 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_4_readers-12         	       1	      1123 ns/read	     21757 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_4_readers-12         	       1	      1113 ns/read	     20925 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_4_readers-12         	       1	      1096 ns/read	     20415 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_4_readers-12         	       1	      1119 ns/read	     21489 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_16_readers-12        	       1	      2560 ns/read	     58872 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_16_readers-12        	       1	      2518 ns/read	     60557 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_16_readers-12        	       1	      2575 ns/read	     58746 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_16_readers-12        	       1	      2490 ns/read	     59792 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_16_readers-12        	       1	      2418 ns/read	     56348 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_16_readers-12        	       1	      2386 ns/read	     56861 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_32_readers-12        	       1	      3566 ns/read	     92199 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_32_readers-12        	       1	      3653 ns/read	     91108 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_32_readers-12        	       1	      3477 ns/read	     92344 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_32_readers-12        	       1	      3514 ns/read	     93645 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_32_readers-12        	       1	      3551 ns/read	     92082 ns/write
+BenchmarkRIBConcurrent/1_shards,_500000_routes,_8_writers,_32_readers-12        	       1	      3670 ns/read	     91442 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_1_readers-12        	    1468	        80.19 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_1_readers-12        	    1506	        78.23 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_1_readers-12        	    1482	        78.79 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_1_readers-12        	    1480	        78.85 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_1_readers-12        	    1502	        78.03 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_1_readers-12        	    1462	        80.08 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_4_readers-12        	     858	       134.3 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_4_readers-12        	     888	       128.6 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_4_readers-12        	     834	       135.0 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_4_readers-12        	     830	       129.0 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_4_readers-12        	     819	       134.4 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_4_readers-12        	     870	       133.7 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_16_readers-12       	     214	       323.4 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_16_readers-12       	     213	       322.7 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_16_readers-12       	     213	       329.1 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_16_readers-12       	     214	       329.1 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_16_readers-12       	     214	       329.1 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_16_readers-12       	     214	       324.4 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_32_readers-12       	     100	       349.0 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_32_readers-12       	     100	       335.1 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_32_readers-12       	     100	       342.3 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_32_readers-12       	     100	       350.2 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_32_readers-12       	     100	       356.9 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_0_writers,_32_readers-12       	     100	       350.9 ns/read
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_1_readers-12        	       1	       663.9 ns/read	      1270 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_1_readers-12        	       1	       660.1 ns/read	      1272 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_1_readers-12        	       1	       643.0 ns/read	      1253 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_1_readers-12        	       2	       661.9 ns/read	      1272 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_1_readers-12        	       1	       664.0 ns/read	      1255 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_1_readers-12        	       1	       659.5 ns/read	      1272 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_4_readers-12        	       1	      1338 ns/read	      2064 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_4_readers-12        	       1	      1413 ns/read	      2064 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_4_readers-12        	       1	      1444 ns/read	      2204 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_4_readers-12        	       1	      1465 ns/read	      2210 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_4_readers-12        	       1	      1422 ns/read	      2301 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_4_readers-12        	       1	      1425 ns/read	      2104 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_16_readers-12       	       1	      2542 ns/read	      5664 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_16_readers-12       	       1	      2576 ns/read	      5770 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_16_readers-12       	       1	      2651 ns/read	      5719 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_16_readers-12       	       1	      2580 ns/read	      5747 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_16_readers-12       	       1	      2628 ns/read	      5745 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_16_readers-12       	       1	      2555 ns/read	      5764 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_32_readers-12       	       1	      3682 ns/read	      9416 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_32_readers-12       	       1	      3728 ns/read	      9331 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_32_readers-12       	       1	      3762 ns/read	      9292 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_32_readers-12       	       1	      3652 ns/read	      9398 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_32_readers-12       	       1	      3615 ns/read	      9450 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_1_writers,_32_readers-12       	       1	      3700 ns/read	      9450 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_1_readers-12        	       1	       816.8 ns/read	      2712 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_1_readers-12        	       1	       951.1 ns/read	      3064 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_1_readers-12        	       1	       855.1 ns/read	      2839 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_1_readers-12        	       1	       837.9 ns/read	      2775 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_1_readers-12        	       1	       885.2 ns/read	      2926 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_1_readers-12        	       1	       900.5 ns/read	      2916 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_4_readers-12        	       1	      1147 ns/read	      4565 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_4_readers-12        	       1	      1149 ns/read	      4630 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_4_readers-12        	       1	      1147 ns/read	      4531 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_4_readers-12        	       1	      1159 ns/read	      4602 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_4_readers-12        	       1	      1191 ns/read	      4647 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_4_readers-12        	       1	      1168 ns/read	      4611 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_16_readers-12       	       1	      2656 ns/read	     11281 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_16_readers-12       	       1	      2614 ns/read	     11172 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_16_readers-12       	       1	      2607 ns/read	     11022 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_16_readers-12       	       1	      2624 ns/read	     11147 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_16_readers-12       	       1	      2606 ns/read	     11032 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_16_readers-12       	       1	      2653 ns/read	     11165 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_32_readers-12       	       1	      4021 ns/read	     17296 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_32_readers-12       	       1	      4056 ns/read	     17439 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_32_readers-12       	       1	      3983 ns/read	     17369 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_32_readers-12       	       1	      4060 ns/read	     17528 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_32_readers-12       	       1	      3984 ns/read	     17570 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_2_writers,_32_readers-12       	       1	      4075 ns/read	     17417 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_1_readers-12        	       1	      1120 ns/read	      5127 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_1_readers-12        	       1	      1137 ns/read	      5151 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_1_readers-12        	       1	      1145 ns/read	      5212 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_1_readers-12        	       1	      1121 ns/read	      5144 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_1_readers-12        	       1	      1154 ns/read	      5177 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_1_readers-12        	       1	      1180 ns/read	      5287 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_4_readers-12        	       1	      1441 ns/read	      7805 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_4_readers-12        	       1	      1431 ns/read	      7721 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_4_readers-12        	       1	      1441 ns/read	      7706 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_4_readers-12        	       1	      1413 ns/read	      7720 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_4_readers-12        	       1	      1455 ns/read	      7742 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_4_readers-12        	       1	      1421 ns/read	      7737 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_16_readers-12       	       1	      2931 ns/read	     16976 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_16_readers-12       	       1	      2927 ns/read	     16962 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_16_readers-12       	       1	      3028 ns/read	     17721 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_16_readers-12       	       1	      2985 ns/read	     17463 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_16_readers-12       	       1	      3063 ns/read	     17828 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_16_readers-12       	       1	      3018 ns/read	     17654 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_32_readers-12       	       1	      4639 ns/read	     29115 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_32_readers-12       	       1	      4620 ns/read	     29556 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_32_readers-12       	       1	      4669 ns/read	     29046 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_32_readers-12       	       1	      4692 ns/read	     29395 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_32_readers-12       	       1	      4570 ns/read	     28925 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_4_writers,_32_readers-12       	       1	      4642 ns/read	     29237 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_1_readers-12        	       2	      2593 ns/read	      9840 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_1_readers-12        	       1	      3164 ns/read	     11031 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_1_readers-12        	       1	      2919 ns/read	     10493 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_1_readers-12        	       1	      2590 ns/read	      9827 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_1_readers-12        	       1	      2694 ns/read	      9934 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_1_readers-12        	       2	      2710 ns/read	     10024 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_4_readers-12        	       1	      2326 ns/read	     13391 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_4_readers-12        	       1	      2307 ns/read	     13014 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_4_readers-12        	       1	      2451 ns/read	     13475 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_4_readers-12        	       1	      2437 ns/read	     13205 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_4_readers-12        	       1	      2417 ns/read	     13090 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_4_readers-12        	       1	      2434 ns/read	     13047 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_16_readers-12       	       1	      3949 ns/read	     25871 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_16_readers-12       	       1	      3848 ns/read	     25182 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_16_readers-12       	       1	      3834 ns/read	     25042 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_16_readers-12       	       1	      3817 ns/read	     24949 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_16_readers-12       	       1	      3827 ns/read	     25218 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_16_readers-12       	       1	      3754 ns/read	     24777 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_32_readers-12       	       1	      5728 ns/read	     42960 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_32_readers-12       	       1	      5755 ns/read	     43074 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_32_readers-12       	       1	      5910 ns/read	     44238 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_32_readers-12       	       1	      5631 ns/read	     42822 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_32_readers-12       	       1	      5717 ns/read	     43163 ns/write
+BenchmarkRIBConcurrent/16_shards,_500000_routes,_8_writers,_32_readers-12       	       1	      5732 ns/read	     43039 ns/write
+PASS
+ok  	akvorado/outlet/routing/provider/bmp	656.142s

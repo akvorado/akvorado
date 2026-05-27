@@ -51,8 +51,8 @@ type Pool[T Value[T]] struct {
 // keeping to the raw value.
 type internValue[T Value[T]] struct {
 	next     Reference[T] // next value with the same hash
-	previous Reference[T] // previous value with the same hash
 	refCount uint32
+	hash     uint64 // cached hash, avoids recomputing in Take
 
 	value T
 }
@@ -78,21 +78,23 @@ func (p *Pool[T]) Take(ref Reference[T]) {
 	value.refCount--
 	if value.refCount == 0 {
 		p.availableIndexes = append(p.availableIndexes, ref)
-		if value.previous > 0 {
-			// Not the first one, link previous to next
-			p.values[value.previous].next = value.next
-			p.values[value.next].previous = value.previous
+		head := p.valueIndexes[value.hash]
+		if head == ref {
+			// We are the head of the chain
+			if value.next > 0 {
+				p.valueIndexes[value.hash] = value.next
+			} else {
+				delete(p.valueIndexes, value.hash)
+			}
 			return
 		}
-		hash := value.value.Hash()
-		if value.next > 0 {
-			// We are the first one of a chain, move the pointer to the next one
-			p.valueIndexes[hash] = value.next
-			p.values[value.next].previous = 0
-			return
+		// Walk the chain to find our predecessor. Only reached on hash
+		// collisions, which are rare with a full uint64 hash.
+		prev := head
+		for p.values[prev].next != ref {
+			prev = p.values[prev].next
 		}
-		// Last case, we are the last one, let's find our hash and delete us from here
-		delete(p.valueIndexes, hash)
+		p.values[prev].next = value.next
 	}
 }
 
@@ -112,11 +114,11 @@ func (p *Pool[T]) Ref(value T) (Reference[T], bool) {
 
 // Put adds a value to the intern pool, returning its reference.
 func (p *Pool[T]) Put(value T) Reference[T] {
+	hash := value.Hash()
 	v := internValue[T]{
 		value:    value,
 		refCount: 1,
-		previous: 0,
-		next:     0,
+		hash:     hash,
 	}
 
 	// Allocate a new index
@@ -139,7 +141,6 @@ func (p *Pool[T]) Put(value T) Reference[T] {
 	}
 
 	// Check if we have already something
-	hash := value.Hash()
 	if index := p.valueIndexes[hash]; index > 0 {
 		prevIndex := index
 		for index > 0 {
@@ -153,7 +154,6 @@ func (p *Pool[T]) Put(value T) Reference[T] {
 
 		// We have a collision, add to the chain
 		index = newIndex()
-		v.previous = prevIndex
 		p.values[prevIndex].next = index
 		p.values[index] = v
 		return index

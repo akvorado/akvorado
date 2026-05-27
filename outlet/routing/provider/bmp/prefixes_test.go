@@ -261,11 +261,11 @@ func BenchmarkRIBInsertion(b *testing.B) {
 				runtime.ReadMemStats(&endMem)
 				b.ReportMetric(0, "ns/op")
 				b.ReportMetric(float64(b.Elapsed())/float64(inserted), "ns/route")
-				b.ReportMetric(float64(endMem.HeapAlloc-startMem.HeapAlloc)/float64(rib.tree.Size()), "bytes/route")
+				b.ReportMetric(float64(endMem.HeapAlloc-startMem.HeapAlloc)/float64(rib.tree.Load().Size()), "bytes/route")
 				b.ReportMetric(float64(inserted)/float64(tentative)*100, "%ins")
 
 				// Avoid elimination of the RIB
-				rib.tree.Lookup(netip.MustParseAddr("::ffff:192.168.1.1"))
+				rib.tree.Load().Lookup(netip.MustParseAddr("::ffff:192.168.1.1"))
 			})
 		}
 	}

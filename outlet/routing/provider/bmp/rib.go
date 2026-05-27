@@ -7,6 +7,7 @@ import (
 	"iter"
 	"net/netip"
 	"sync"
+	"sync/atomic"
 	"unsafe"
 
 	"akvorado/common/helpers"
@@ -39,6 +40,9 @@ type routeIndex uint32
 // routeKey is a typed key for route map entries
 type routeKey uint64
 
+// generation tags a prefix index so a stale reference can be detected
+type generation uint32
+
 // makePrefixIndex creates a global prefixIndex from shard index and local ID.
 func makePrefixIndex(shardIdx shardIndex, localIdx localPrefixIndex) prefixIndex {
 	return prefixIndex(uint32(shardIdx)<<(32-shardBits)) | (prefixIndex(localIdx) & localPrefixMask)
@@ -54,6 +58,13 @@ func (idx prefixIndex) localIdx() localPrefixIndex {
 	return localPrefixIndex(idx & localPrefixMask)
 }
 
+// prefixRef combines a prefix index and a generation. This is useful to check
+// if the prefix index was not recycled for something else.
+type prefixRef struct {
+	idx prefixIndex
+	gen generation
+}
+
 // ribShard holds the per-shard state for a RIB shard.
 type ribShard struct {
 	mu                 sync.RWMutex
@@ -64,12 +75,14 @@ type ribShard struct {
 	rtas               *intern.Pool[routeAttributes]
 	nextLocalPrefixID  localPrefixIndex   // counter for next local prefix index
 	freeLocalPrefixIDs []localPrefixIndex // free list for reused prefix indices
+	generations        []generation       // generation per local prefix index, bumped on free
 }
 
-// rib represents the RIB.
+// rib represents the RIB. The prefix tree uses an atomic pointer for lock-free
+// read. Writers should take take the mutex.
 type rib struct {
-	mu     sync.RWMutex             // protects tree
-	tree   *bart.Table[prefixIndex] // stores global prefix indices
+	treeMu sync.Mutex                            // serializes tree writers
+	tree   atomic.Pointer[bart.Table[prefixRef]] // global prefix indices, RCU-published
 	shards []*ribShard
 }
 
@@ -203,19 +216,26 @@ func (r *rib) shardForPrefix(prefix netip.Prefix) int {
 	return int(h % uint32(len(r.shards)))
 }
 
-// newPrefixIndex allocates a new prefix index for this shard.
-func (rs *ribShard) newPrefixIndex() prefixIndex {
-	if len(rs.freeLocalPrefixIDs) > 0 {
-		localID := rs.freeLocalPrefixIDs[len(rs.freeLocalPrefixIDs)-1]
-		rs.freeLocalPrefixIDs = rs.freeLocalPrefixIDs[:len(rs.freeLocalPrefixIDs)-1]
-		return makePrefixIndex(rs.idx, localID)
+// newPrefixIndex allocates a prefix index for this shard, paired with its
+// current generation.
+func (rs *ribShard) newPrefixIndex() prefixRef {
+	var localID localPrefixIndex
+	if n := len(rs.freeLocalPrefixIDs); n > 0 {
+		localID = rs.freeLocalPrefixIDs[n-1]
+		rs.freeLocalPrefixIDs = rs.freeLocalPrefixIDs[:n-1]
+	} else {
+		localID = rs.nextLocalPrefixID
+		rs.nextLocalPrefixID++
+		rs.generations = append(rs.generations, 0)
 	}
-	localID := rs.nextLocalPrefixID
-	rs.nextLocalPrefixID++
-	return makePrefixIndex(rs.idx, localID)
+	return prefixRef{
+		idx: makePrefixIndex(rs.idx, localID),
+		gen: rs.generations[localID],
+	}
 }
 
-// freePrefixIndex returns a prefix ID to the shard's free list.
+// freePrefixIndex returns a prefix ID to the shard's free list and bumps its
+// generation.
 func (rs *ribShard) freePrefixIndex(idx prefixIndex) {
 	localIdx := idx.localIdx()
 	if helpers.Testing() {
@@ -223,6 +243,7 @@ func (rs *ribShard) freePrefixIndex(idx prefixIndex) {
 			panic("cannot free index 0")
 		}
 	}
+	rs.generations[localIdx]++
 	rs.freeLocalPrefixIDs = append(rs.freeLocalPrefixIDs, localIdx)
 }
 
@@ -310,22 +331,21 @@ func (r *rib) AddRoute(prefix netip.Prefix, rr rawRoute) (int, bool) {
 		prefixLen:  rr.prefixLen,
 	}
 
-	var prefixIdx prefixIndex
-	var isNew bool
-	r.mu.Lock()
-	r.tree.Modify(prefix, func(existing prefixIndex, found bool) (prefixIndex, bool) {
-		if found {
-			prefixIdx = existing
-		} else {
-			isNew = true
-			prefixIdx = rs.newPrefixIndex()
-		}
-		return prefixIdx, false
-	})
-	r.mu.Unlock()
+	// Resolve the prefix to its reference, creating it in the tree if needed.
+	// Only a brand-new prefix mutates the tree; updating a route on an
+	// existing prefix leaves the tree untouched.
+	r.treeMu.Lock()
+	tree := r.tree.Load()
+	ref, exists := tree.Get(prefix)
+	isNew := !exists
+	if isNew {
+		ref = rs.newPrefixIndex()
+		r.tree.Store(tree.InsertPersist(prefix, ref))
+	}
+	r.treeMu.Unlock()
 
 	// Check if route already exists (same peer and nlri)
-	key := makeRouteKey(prefixIdx, 0)
+	key := makeRouteKey(ref.idx, 0)
 	for {
 		existingRoute, exists := rs.routes[key]
 		if !exists {
@@ -363,23 +383,20 @@ func (r *rib) RemoveRoute(prefix netip.Prefix, rr rawRoute) (int, bool) {
 	removedCount := 0
 	prefixRemoved := false
 
-	r.mu.Lock()
-	r.tree.Modify(prefix, func(existing prefixIndex, found bool) (prefixIndex, bool) {
-		if found {
-			var empty bool
-			removedCount, empty = rs.removeRoutes(existing, func(route route) bool {
-				return route.peer == rr.peer && route.nlri == nlriRef
-			}, true)
-			if empty {
-				rs.freePrefixIndex(existing)
-				prefixRemoved = true
-				return 0, true
-			}
-			return existing, false
+	r.treeMu.Lock()
+	tree := r.tree.Load()
+	if ref, exists := tree.Get(prefix); exists {
+		var empty bool
+		removedCount, empty = rs.removeRoutes(ref.idx, func(route route) bool {
+			return route.peer == rr.peer && route.nlri == nlriRef
+		}, true)
+		if empty {
+			rs.freePrefixIndex(ref.idx)
+			r.tree.Store(tree.DeletePersist(prefix))
+			prefixRemoved = true
 		}
-		return 0, true
-	})
-	r.mu.Unlock()
+	}
+	r.treeMu.Unlock()
 
 	return removedCount, prefixRemoved
 }
@@ -391,38 +408,39 @@ func (r *rib) FlushPeer(peer uint32) (int, int) {
 	prefixesRemoved := 0
 	anyEmpty := false
 
-	// Lock all shards in order, then tree
+	// Lock all shards in order, then the tree writer lock.
 	for _, rs := range r.shards {
 		rs.mu.Lock()
 	}
-	r.mu.Lock()
+	r.treeMu.Lock()
+	tree := r.tree.Load()
 
 	// Iterate through all prefixes and remove peer routes.
-	for _, prefixIdx := range r.tree.All() {
-		rs := r.shards[prefixIdx.shardIdx()]
-		removed, empty := rs.removeRoutes(prefixIdx, func(route route) bool {
+	for _, ref := range tree.All() {
+		rs := r.shards[ref.idx.shardIdx()]
+		removed, empty := rs.removeRoutes(ref.idx, func(route route) bool {
 			return route.peer == peer
 		}, false)
 		routesRemoved += removed
 		if empty {
-			rs.freePrefixIndex(prefixIdx)
+			rs.freePrefixIndex(ref.idx)
 			prefixesRemoved++
 		}
 		anyEmpty = anyEmpty || empty
 	}
 
 	if anyEmpty {
-		// Rebuild the tree excluding empty prefixes.
-		newTree := &bart.Table[prefixIndex]{}
-		for prefix, prefixIdx := range r.tree.All() {
-			if _, hasRoutes := r.shards[prefixIdx.shardIdx()].routes[makeRouteKey(prefixIdx, 0)]; hasRoutes {
-				newTree.Insert(prefix, prefixIdx)
+		// Rebuild the tree excluding empty prefixes and publish it.
+		newTree := &bart.Table[prefixRef]{}
+		for prefix, ref := range tree.All() {
+			if _, hasRoutes := r.shards[ref.idx.shardIdx()].routes[makeRouteKey(ref.idx, 0)]; hasRoutes {
+				newTree.Insert(prefix, ref)
 			}
 		}
-		r.tree = newTree
+		r.tree.Store(newTree)
 	}
 
-	r.mu.Unlock()
+	r.treeMu.Unlock()
 	for i := len(r.shards) - 1; i >= 0; i-- {
 		r.shards[i].mu.Unlock()
 	}
@@ -434,22 +452,26 @@ func (r *rib) FlushPeer(peer uint32) (int, int) {
 // preferring routes with the given next hop. It returns route attributes,
 // next hop, prefix length, and whether a route was found.
 func (r *rib) LookupRoute(ip, preferredNH netip.Addr) (routeAttributes, nextHop, uint8, bool) {
-	r.mu.RLock()
-	prefixIdx, found := r.tree.Lookup(ip.Unmap())
-	r.mu.RUnlock()
+	ref, found := r.tree.Load().Lookup(ip.Unmap())
 
 	if !found {
 		return routeAttributes{}, nextHop{}, 0, false
 	}
 
-	rs := r.shards[prefixIdx.shardIdx()]
+	rs := r.shards[ref.idx.shardIdx()]
 
 	rs.mu.RLock()
 	defer rs.mu.RUnlock()
 
+	// The tree snapshot may predate this index being freed and recycled for a
+	// different prefix; a generation mismatch means exactly that.
+	if rs.generations[ref.idx.localIdx()] != ref.gen {
+		return routeAttributes{}, nextHop{}, 0, false
+	}
+
 	var selectedRoute route
 	routeFound := false
-	for route := range rs.iterateRoutesForPrefixIndex(prefixIdx) {
+	for route := range rs.iterateRoutesForPrefixIndex(ref.idx) {
 		if !routeFound {
 			selectedRoute = route
 			routeFound = true
@@ -481,10 +503,10 @@ func newRIB(nShards int) *rib {
 			rtas:               intern.NewPool[routeAttributes](),
 			nextLocalPrefixID:  1, // Start from 1, 0 means to be removed
 			freeLocalPrefixIDs: make([]localPrefixIndex, 0),
+			generations:        make([]generation, 1), // index 0 unused, kept in step with nextLocalPrefixID
 		}
 	}
-	return &rib{
-		tree:   &bart.Table[prefixIndex]{},
-		shards: shards,
-	}
+	r := &rib{shards: shards}
+	r.tree.Store(&bart.Table[prefixRef]{})
+	return r
 }

@@ -1,0 +1,126 @@
+goos: linux
+goarch: amd64
+pkg: akvorado/outlet/routing/provider/bmp
+cpu: AMD Ryzen 5 5600X 6-Core Processor             
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_1_readers-12         	    1680	        69.97 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_1_readers-12         	    1666	        70.67 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_1_readers-12         	    1636	        71.04 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_1_readers-12         	    1532	        70.66 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_1_readers-12         	    1668	        70.60 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_1_readers-12         	    1657	        71.01 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_4_readers-12         	     570	       207.1 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_4_readers-12         	     564	       205.9 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_4_readers-12         	     553	       207.0 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_4_readers-12         	     567	       206.8 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_4_readers-12         	     571	       207.2 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_4_readers-12         	     570	       207.0 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_16_readers-12        	     153	       468.4 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_16_readers-12        	     153	       468.9 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_16_readers-12        	     153	       466.5 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_16_readers-12        	     153	       465.0 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_16_readers-12        	     153	       465.6 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_16_readers-12        	     153	       468.9 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_32_readers-12        	      75	       505.1 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_32_readers-12        	      75	       507.8 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_32_readers-12        	      75	       506.2 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_32_readers-12        	      74	       506.6 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_32_readers-12        	      74	       507.0 ns/read
+BenchmarkRIBConcurrent/500000_routes,_0_writers,_32_readers-12        	      74	       502.0 ns/read
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_1_readers-12         	       1	      1396 ns/read	      1398 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_1_readers-12         	       1	      1421 ns/read	      1427 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_1_readers-12         	       1	      1278 ns/read	      1406 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_1_readers-12         	       1	      1385 ns/read	      1389 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_1_readers-12         	       1	      1373 ns/read	      1375 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_1_readers-12         	       1	      1299 ns/read	      1385 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_4_readers-12         	       1	      1745 ns/read	      1914 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_4_readers-12         	       1	      1756 ns/read	      1880 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_4_readers-12         	       1	      1674 ns/read	      1878 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_4_readers-12         	       1	      1789 ns/read	      1896 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_4_readers-12         	       1	      1748 ns/read	      1854 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_4_readers-12         	       1	      1728 ns/read	      1892 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_16_readers-12        	       1	      3751 ns/read	      4832 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_16_readers-12        	       1	      3718 ns/read	      4923 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_16_readers-12        	       1	      3805 ns/read	      4942 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_16_readers-12        	       1	      3708 ns/read	      4926 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_16_readers-12        	       1	      3680 ns/read	      4969 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_16_readers-12        	       1	      3783 ns/read	      4832 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_32_readers-12        	       1	      5969 ns/read	      9028 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_32_readers-12        	       1	      5619 ns/read	      8975 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_32_readers-12        	       1	      5676 ns/read	      8910 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_32_readers-12        	       1	      5979 ns/read	      8876 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_32_readers-12        	       1	      5832 ns/read	      8983 ns/write
+BenchmarkRIBConcurrent/500000_routes,_1_writers,_32_readers-12        	       1	      5847 ns/read	      9038 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_1_readers-12         	       1	      1702 ns/read	      3471 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_1_readers-12         	       1	      1741 ns/read	      3563 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_1_readers-12         	       1	      1750 ns/read	      3562 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_1_readers-12         	       1	      1774 ns/read	      3622 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_1_readers-12         	       1	      1745 ns/read	      3566 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_1_readers-12         	       1	      1733 ns/read	      3534 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_4_readers-12         	       1	      2038 ns/read	      4297 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_4_readers-12         	       1	      2018 ns/read	      4327 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_4_readers-12         	       1	      2000 ns/read	      4353 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_4_readers-12         	       1	      2022 ns/read	      4227 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_4_readers-12         	       1	      2055 ns/read	      4255 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_4_readers-12         	       1	      2101 ns/read	      4627 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_16_readers-12        	       1	      4031 ns/read	     11200 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_16_readers-12        	       1	      3898 ns/read	     11161 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_16_readers-12        	       1	      4129 ns/read	     11217 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_16_readers-12        	       1	      4019 ns/read	     11119 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_16_readers-12        	       1	      3955 ns/read	     11151 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_16_readers-12        	       1	      3975 ns/read	     11236 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_32_readers-12        	       1	      6103 ns/read	     19275 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_32_readers-12        	       1	      5740 ns/read	     20056 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_32_readers-12        	       1	      6023 ns/read	     19441 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_32_readers-12        	       1	      5801 ns/read	     19801 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_32_readers-12        	       1	      5405 ns/read	     20099 ns/write
+BenchmarkRIBConcurrent/500000_routes,_2_writers,_32_readers-12        	       1	      6136 ns/read	     19334 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_1_readers-12         	       1	      1752 ns/read	      7169 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_1_readers-12         	       1	      1738 ns/read	      7057 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_1_readers-12         	       1	      1779 ns/read	      7184 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_1_readers-12         	       1	      1744 ns/read	      7157 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_1_readers-12         	       1	      1825 ns/read	      7348 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_1_readers-12         	       1	      1807 ns/read	      7353 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_4_readers-12         	       1	      2093 ns/read	      8478 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_4_readers-12         	       1	      2094 ns/read	      8598 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_4_readers-12         	       1	      2072 ns/read	      8448 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_4_readers-12         	       1	      2304 ns/read	      9325 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_4_readers-12         	       1	      2014 ns/read	      8446 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_4_readers-12         	       1	      2040 ns/read	      8462 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_16_readers-12        	       1	      3984 ns/read	     22034 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_16_readers-12        	       1	      3975 ns/read	     21168 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_16_readers-12        	       1	      3913 ns/read	     21320 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_16_readers-12        	       1	      3884 ns/read	     20851 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_16_readers-12        	       1	      3948 ns/read	     21590 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_16_readers-12        	       1	      4090 ns/read	     21509 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_32_readers-12        	       1	      5845 ns/read	     37804 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_32_readers-12        	       1	      5963 ns/read	     37425 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_32_readers-12        	       1	      5812 ns/read	     37360 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_32_readers-12        	       1	      6049 ns/read	     37339 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_32_readers-12        	       1	      5427 ns/read	     40357 ns/write
+BenchmarkRIBConcurrent/500000_routes,_4_writers,_32_readers-12        	       1	      5373 ns/read	     38522 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_1_readers-12         	       1	      1897 ns/read	     15135 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_1_readers-12         	       1	      1925 ns/read	     15275 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_1_readers-12         	       1	      1877 ns/read	     15095 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_1_readers-12         	       1	      1913 ns/read	     15246 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_1_readers-12         	       1	      2005 ns/read	     16075 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_1_readers-12         	       1	      1780 ns/read	     14487 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_4_readers-12         	       1	      2002 ns/read	     15776 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_4_readers-12         	       1	      2040 ns/read	     15779 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_4_readers-12         	       1	      2052 ns/read	     16294 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_4_readers-12         	       1	      2031 ns/read	     14977 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_4_readers-12         	       1	      1995 ns/read	     16600 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_4_readers-12         	       1	      2497 ns/read	     20648 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_16_readers-12        	       1	      3659 ns/read	     44455 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_16_readers-12        	       1	      4006 ns/read	     42374 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_16_readers-12        	       1	      3935 ns/read	     43165 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_16_readers-12        	       1	      4070 ns/read	     43676 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_16_readers-12        	       1	      3913 ns/read	     43799 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_16_readers-12        	       1	      3900 ns/read	     45840 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_32_readers-12        	       1	      5682 ns/read	     74291 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_32_readers-12        	       1	      5399 ns/read	     76571 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_32_readers-12        	       1	      5784 ns/read	     75514 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_32_readers-12        	       1	      5873 ns/read	     74785 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_32_readers-12        	       1	      5910 ns/read	     72764 ns/write
+BenchmarkRIBConcurrent/500000_routes,_8_writers,_32_readers-12        	       1	      5688 ns/read	     75947 ns/write
+PASS
+ok  	akvorado/outlet/routing/provider/bmp	314.840s
