@@ -27,7 +27,7 @@ services:
   grafana:
     image: grafana/grafana-oss:10.2.6 # \d+\.\d+\.\d+
   alloy:
-    image: grafana/alloy:v1.10.2 # v\d+\.\d+\.\d+
+    image: grafana/alloy:v1.16.1 # v\d+\.\d+\.\d+
   loki:
     image: grafana/loki:3.5 # \d+\.\d+
   prometheus:
