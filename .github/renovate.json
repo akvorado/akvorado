@@ -247,7 +247,6 @@
         "github-actions"
       ],
       "groupName": "actions-docker",
-      "dependencyDashboardApproval": false,
       "matchPackageNames": [
         "/^docker//"
       ]
@@ -259,7 +258,9 @@
       "groupName": "github-actions-digests",
       "matchUpdateTypes": [
         "digest"
-      ]
+      ],
+      "automerge": true,
+      "dependencyDashboardApproval": false
     }
   ]
 }
