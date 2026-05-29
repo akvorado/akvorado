@@ -10,6 +10,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🩹 *console*: avoid clipped labels in Sankey graphs
+
 ## 2.4.0 - 2026-05-27
 
 - 💥 *build*: require x86-64-v3 baseline for binary shipped with each release
@@ -26,7 +30,7 @@ identified with a specific icon:
 - 🌱 *docker*: update ClickHouse to 26.3 (not mandatory)
 - 🌱 *docker*: update Traefik to 3.7 (not mandatory)
 - 🌱 *build*: reduce the number of dependencies by switching from Gin to
-  `net/http` for HTTP API and from GORM to Bun for database handling.
+  `net/http` for HTTP API and from GORM to Bun for database handling
 
 ## 2.3.0 - 2026-04-14
 

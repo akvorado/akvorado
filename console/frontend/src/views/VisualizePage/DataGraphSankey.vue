@@ -109,21 +109,19 @@ const option = computed((): ECOption => {
     valueFormatter: (value) => formatXps((value?.valueOf() as number) ?? 0),
   };
 
+  // Put the labels of the last column of nodes on their left. The nodes on the
+  // last column are not the source of a link.
+  const positionLabels = <T extends { id: string }>(
+    nodes: T[],
+    links: { source: string }[],
+  ) => {
+    const sources = new Set(links.map((l) => l.source));
+    return nodes.map((n) =>
+      sources.has(n.id) ? n : { ...n, label: { position: "left" as const } },
+    );
+  };
+
   if (data.bidirectional) {
-    // The two halves meet at the middle. Move the labels of the rightmost
-    // forward column (last forward dimension) to the left of those nodes so
-    // they don't overlap the leftmost reverse column.
-    const lastFwdDim = data.dimensions[data.dimensions.length - 1];
-    const fwdNodes = data.nodes
-      .filter((n) => n.axis === 1)
-      .map((n) => {
-        const node = makeNode(n);
-        if (n.name.startsWith(`${lastFwdDim}: `)) {
-          return { ...node, label: { position: "left" as const } };
-        }
-        return node;
-      });
-    const revNodes = data.nodes.filter((n) => n.axis === 2).map(makeNode);
     const fwdLinks = data.links.filter((l) => l.axis === 1).map(makeLink);
     // Flip source/target on the reverse half so the column order is
     // mirrored: the dimension closest to the forward side appears first.
@@ -131,13 +129,21 @@ const option = computed((): ECOption => {
       .filter((l) => l.axis === 2)
       .map(makeLink)
       .map((l) => ({ ...l, source: l.target, target: l.source }));
+    const fwdNodes = positionLabels(
+      data.nodes.filter((n) => n.axis === 1).map(makeNode),
+      fwdLinks,
+    );
+    const revNodes = positionLabels(
+      data.nodes.filter((n) => n.axis === 2).map(makeNode),
+      revLinks,
+    );
     return {
       backgroundColor: "transparent",
       tooltip,
       series: [
         {
           ...seriesBase,
-          left: "5%",
+          left: "1%",
           right: "50%",
           data: fwdNodes,
           links: fwdLinks,
@@ -145,7 +151,7 @@ const option = computed((): ECOption => {
         {
           ...seriesBase,
           left: "50%",
-          right: "5%",
+          right: "1%",
           data: revNodes,
           links: revLinks,
         },
@@ -153,14 +159,18 @@ const option = computed((): ECOption => {
     };
   }
 
+  const links = data.links.map(makeLink);
+  const nodes = positionLabels(data.nodes.map(makeNode), links);
   return {
     backgroundColor: "transparent",
     tooltip,
     series: [
       {
         ...seriesBase,
-        data: data.nodes.map(makeNode),
-        links: data.links.map(makeLink),
+        left: "1%",
+        right: "1%",
+        data: nodes,
+        links,
       },
     ],
   };
