@@ -233,8 +233,8 @@ github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 h1:C3w9PqII01/Oq
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822/go.mod h1:+n7T8mK8HuQTcFwEeznm/DIxMOiR9yIdICNftLE1DvQ=
 github.com/ncruces/go-strftime v1.0.0 h1:HMFp8mLCTPp341M/ZnA4qaf7ZlsbTc+miZjCLOFAw7w=
 github.com/ncruces/go-strftime v1.0.0/go.mod h1:Fwc5htZGVVkseilnfgOVb9mKy6w1naJmn9CehxcKcls=
-github.com/netsampler/goflow2/v2 v2.2.6 h1:pm+UEykIYV+lGJzrunYLNehoQtHlipJTp3lFhBpUkj0=
-github.com/netsampler/goflow2/v2 v2.2.6/go.mod h1:sKVfADpYP0NvkEeMRMh8/vz6T1yq4z1JZqO+N0+RGqk=
+github.com/netsampler/goflow2/v3 v3.0.0-20260528232550-6dee964c38ee h1:wSdij2+NZ8TYPZiZXvClejxcQL0yM9t870+5vLdTivM=
+github.com/netsampler/goflow2/v3 v3.0.0-20260528232550-6dee964c38ee/go.mod h1:KoSuHyCTzll87AzWMA/oLJfx1BWfKIvOknvx7PXu6lU=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/openconfig/gnmi v0.14.1 h1:qKMuFvhIRR2/xxCOsStPQ25aKpbMDdWr3kI+nP9bhMs=
 github.com/openconfig/gnmi v0.14.1/go.mod h1:whr6zVq9PCU8mV1D0K9v7Ajd3+swoN6Yam9n8OH3eT0=

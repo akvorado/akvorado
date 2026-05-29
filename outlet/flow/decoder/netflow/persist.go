@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/netsampler/goflow2/v2/decoders/netflow"
+	"github.com/netsampler/goflow2/v3/decoders/netflow"
 )
 
 // MarshalText implements encoding.TextMarshaler for templateKey.

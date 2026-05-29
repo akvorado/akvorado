@@ -13,7 +13,7 @@ import (
 	"akvorado/outlet/flow/decoder"
 
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/netsampler/goflow2/v2/decoders/netflow"
+	"github.com/netsampler/goflow2/v3/decoders/netflow"
 )
 
 func TestMarshalUnmarshalTemplates(t *testing.T) {
@@ -24,7 +24,7 @@ func TestMarshalUnmarshalTemplates(t *testing.T) {
 	exporter := collection.Get("::ffff:192.168.1.1")
 	exporter.SetSamplingRate(10, 300, 10, 2048)
 	exporter.SetSamplingRate(9, 301, 11, 4096)
-	exporter.AddTemplate(10, 300, 300, netflow.TemplateRecord{
+	exporter.AddTemplate(netflow.FlowContext{}, 10, 300, 300, netflow.TemplateRecord{
 		TemplateId: 300,
 		FieldCount: 2,
 		Fields: []netflow.Field{
@@ -37,7 +37,7 @@ func TestMarshalUnmarshalTemplates(t *testing.T) {
 			},
 		},
 	})
-	exporter.AddTemplate(10, 300, 301, netflow.IPFIXOptionsTemplateRecord{
+	exporter.AddTemplate(netflow.FlowContext{}, 10, 300, 301, netflow.IPFIXOptionsTemplateRecord{
 		TemplateId:      301,
 		FieldCount:      2,
 		ScopeFieldCount: 0,
@@ -51,7 +51,7 @@ func TestMarshalUnmarshalTemplates(t *testing.T) {
 			},
 		},
 	})
-	exporter.AddTemplate(9, 301, 300, netflow.NFv9OptionsTemplateRecord{
+	exporter.AddTemplate(netflow.FlowContext{}, 9, 301, 300, netflow.NFv9OptionsTemplateRecord{
 		TemplateId:   300,
 		OptionLength: 2,
 		Options: []netflow.Field{

@@ -15,8 +15,8 @@ import (
 	"akvorado/outlet/flow/decoder"
 
 	"github.com/bits-and-blooms/bitset"
-	"github.com/netsampler/goflow2/v2/decoders/netflow"
-	"github.com/netsampler/goflow2/v2/decoders/netflowlegacy"
+	"github.com/netsampler/goflow2/v3/decoders/netflow"
+	"github.com/netsampler/goflow2/v3/decoders/netflowlegacy"
 )
 
 // When decoding, we use IPFIX information element identifiers. However, it

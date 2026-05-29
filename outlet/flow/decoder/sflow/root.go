@@ -10,7 +10,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/netsampler/goflow2/v2/decoders/sflow"
+	"github.com/netsampler/goflow2/v3/decoders/sflow"
 
 	"akvorado/common/reporter"
 	"akvorado/common/schema"

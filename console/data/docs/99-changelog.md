@@ -12,6 +12,7 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 🩹 *outlet*: fix decoding of destination MAC address for sFlow
 - 🩹 *console*: avoid clipped labels in Sankey graphs
 
 ## 2.4.0 - 2026-05-27

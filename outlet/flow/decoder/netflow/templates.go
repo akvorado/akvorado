@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/netsampler/goflow2/v2/decoders/netflow"
+	"github.com/netsampler/goflow2/v3/decoders/netflow"
 )
 
 // templateAndOptionCollection map exporters to the set of templates and options we
@@ -49,7 +49,7 @@ type samplingRateKey struct {
 }
 
 var (
-	_ netflow.NetFlowTemplateSystem = &templatesAndOptions{}
+	_ netflow.TemplateStore = &templatesAndOptions{}
 )
 
 // Get returns templates and options for the provided key. If it did not exist,
@@ -71,14 +71,8 @@ func (c *templateAndOptionCollection) Get(key string) *templatesAndOptions {
 	return t
 }
 
-// RemoveTemplate removes an existing template. This is a noop as it is not
-// really needed.
-func (t *templatesAndOptions) RemoveTemplate(uint16, uint32, uint16) (any, error) {
-	return nil, nil
-}
-
 // GetTemplate returns the requested template.
-func (t *templatesAndOptions) GetTemplate(version uint16, obsDomainID uint32, templateID uint16) (any, error) {
+func (t *templatesAndOptions) GetTemplate(_ netflow.FlowContext, version uint16, obsDomainID uint32, templateID uint16) (any, error) {
 	t.templateLock.RLock()
 	defer t.templateLock.RUnlock()
 	template, ok := t.Templates[templateKey{version: version, obsDomainID: obsDomainID, templateID: templateID}]
@@ -88,23 +82,15 @@ func (t *templatesAndOptions) GetTemplate(version uint16, obsDomainID uint32, te
 	return template, nil
 }
 
-// GetTemplates returns nothing as there is no need to enumerate templates.
-func (t *templatesAndOptions) GetTemplates() netflow.FlowBaseTemplateSet {
-	return nil
-}
-
 // AddTemplate stores a template.
-func (t *templatesAndOptions) AddTemplate(version uint16, obsDomainID uint32, templateID uint16, template any) error {
+func (t *templatesAndOptions) AddTemplate(_ netflow.FlowContext, version uint16, obsDomainID uint32, templateID uint16, template any) (netflow.TemplateStatus, error) {
 	var typeStr string
-	switch templateIDConv := template.(type) {
+	switch template.(type) {
 	case netflow.IPFIXOptionsTemplateRecord:
-		templateID = templateIDConv.TemplateId
 		typeStr = "options_template"
 	case netflow.NFv9OptionsTemplateRecord:
-		templateID = templateIDConv.TemplateId
 		typeStr = "options_template"
 	case netflow.TemplateRecord:
-		templateID = templateIDConv.TemplateId
 		typeStr = "template"
 	}
 
@@ -119,7 +105,7 @@ func (t *templatesAndOptions) AddTemplate(version uint16, obsDomainID uint32, te
 	t.templateLock.Lock()
 	defer t.templateLock.Unlock()
 	t.Templates[templateKey{version: version, obsDomainID: obsDomainID, templateID: templateID}] = template
-	return nil
+	return netflow.TemplateAdded, nil
 }
 
 // GetSamplingRate returns the requested sampling rate.

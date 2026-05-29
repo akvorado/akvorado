@@ -399,7 +399,6 @@ func TestDecode(t *testing.T) {
 	t.Run("flow sample with sampled ethernet", func(t *testing.T) {
 		// Same test as above, but we don't require L3/L4 stuff to ensure we use
 		// the content of the sampled ethernet header.
-		t.Skipf("buggy MAC address returned by goflow2: https://github.com/netsampler/goflow2/issues/510")
 		schemaConfiguration := schema.DefaultConfiguration()
 		schemaConfiguration.Enabled = append(schemaConfiguration.Enabled, schema.ColumnDstMAC)
 		schemaConfiguration.Enabled = append(schemaConfiguration.Enabled, schema.ColumnSrcMAC)
