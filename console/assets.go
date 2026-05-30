@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-// defaultHandlerFunc serves index.html for all SPA routes, injecting a
+// defaultHandlerFunc serves index.html for all SPA routes, rewriting the
 // <base href="..."> tag so that relative asset paths and API calls resolve
 // correctly regardless of the URL prefix the app is hosted under.
 func (c *Component) defaultHandlerFunc(w http.ResponseWriter, r *http.Request) {
@@ -23,14 +23,12 @@ func (c *Component) defaultHandlerFunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Inject <base href="..."> immediately after the opening <head> tag so
-	// that the browser resolves all relative URLs (assets and API calls)
-	// against the correct prefix.
+	// Update <base> tag.
 	prefix := c.urlPrefix()
-	injected := strings.Replace(
+	rewritten := strings.Replace(
 		string(content),
-		"<head>",
-		fmt.Sprintf("<head>\n    <base href=%q />", html.EscapeString(prefix)),
+		`<base href="/" />`,
+		fmt.Sprintf(`<base href=%q />`, html.EscapeString(prefix)),
 		1,
 	)
 
@@ -38,7 +36,7 @@ func (c *Component) defaultHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	if info, err := fs.Stat(assets, "index.html"); err == nil {
 		modtime = info.ModTime()
 	}
-	http.ServeContent(w, r, "index.html", modtime, strings.NewReader(injected))
+	http.ServeContent(w, r, "index.html", modtime, strings.NewReader(rewritten))
 }
 
 func (c *Component) staticAssetsHandlerFunc(w http.ResponseWriter, req *http.Request) {
