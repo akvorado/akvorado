@@ -81,8 +81,8 @@ type ribShard struct {
 // rib represents the RIB. The prefix tree uses an atomic pointer for lock-free
 // read. Writers should take take the mutex.
 type rib struct {
-	treeMu sync.Mutex                            // serializes tree writers
-	tree   atomic.Pointer[bart.Table[prefixRef]] // global prefix indices, RCU-published
+	treeMu sync.Mutex                           // serializes tree writers
+	tree   atomic.Pointer[bart.Fast[prefixRef]] // global prefix indices, RCU-published
 	shards []*ribShard
 }
 
@@ -431,7 +431,7 @@ func (r *rib) FlushPeer(peer uint32) (int, int) {
 
 	if anyEmpty {
 		// Rebuild the tree excluding empty prefixes and publish it.
-		newTree := &bart.Table[prefixRef]{}
+		newTree := &bart.Fast[prefixRef]{}
 		for prefix, ref := range tree.All() {
 			if _, hasRoutes := r.shards[ref.idx.shardIdx()].routes[makeRouteKey(ref.idx, 0)]; hasRoutes {
 				newTree.Insert(prefix, ref)
@@ -507,6 +507,6 @@ func newRIB(nShards int) *rib {
 		}
 	}
 	r := &rib{shards: shards}
-	r.tree.Store(&bart.Table[prefixRef]{})
+	r.tree.Store(&bart.Fast[prefixRef]{})
 	return r
 }
