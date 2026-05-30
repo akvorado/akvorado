@@ -7,6 +7,13 @@
 #     volumes:
 #       - /usr/share/GeoIP:/usr/share/GeoIP:ro
 
+# If you prefer GeoLite2-City instead of GeoLite-Country (also check .env and akvorado.yaml for Maxmind support) 
+
+# services:
+#   geoip:
+#     environment:
+#       GEOIPUPDATE_EDITION_IDS: GeoLite2-ASN GeoLite2-City
+
 # If you want to expose the service directly on port 80, uncomment this block.
 
 # services:
