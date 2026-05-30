@@ -11,6 +11,10 @@ import { fileURLToPath, URL } from "node:url";
 export default defineConfig({
   base: "",
   plugins: [vue(), tailwindcss(), lezer()],
+  optimizeDeps: {
+    // Fix dev server lazy init.
+    exclude: ["@headlessui/vue"],
+  },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
