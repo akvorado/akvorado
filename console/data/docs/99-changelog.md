@@ -14,6 +14,7 @@ identified with a specific icon:
 
 - 🩹 *outlet*: fix decoding of destination MAC address for sFlow
 - 🩹 *console*: avoid clipped labels in Sankey graphs
+- 🩹 *console*: fix empty widgets when toggling dark mode
 
 ## 2.4.0 - 2026-05-27
 

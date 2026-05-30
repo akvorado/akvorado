@@ -5,6 +5,7 @@
   <div>
     <div class="h-[300px]">
       <v-chart
+        :key="isDark ? 'dark' : 'light'"
         :option="option"
         :theme="isDark ? 'dark' : undefined"
         autoresize
