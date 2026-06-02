@@ -18,6 +18,7 @@ import (
 	"akvorado/common/schema"
 	"akvorado/outlet/clickhouse"
 	"akvorado/outlet/core"
+	"akvorado/outlet/dns"
 	"akvorado/outlet/flow"
 	"akvorado/outlet/kafka"
 	"akvorado/outlet/metadata"
@@ -35,6 +36,7 @@ type OutletConfiguration struct {
 	Kafka        kafka.Configuration
 	ClickHouseDB clickhousedb.Configuration
 	ClickHouse   clickhouse.Configuration
+	DNS          dns.Configuration
 	Flow         flow.Configuration
 	Core         core.Configuration
 	Schema       schema.Configuration
@@ -50,6 +52,7 @@ func (c *OutletConfiguration) Reset() {
 		Kafka:        kafka.DefaultConfiguration(),
 		ClickHouseDB: clickhousedb.DefaultConfiguration(),
 		ClickHouse:   clickhouse.DefaultConfiguration(),
+		DNS:          dns.DefaultConfiguration(),
 		Flow:         flow.DefaultConfiguration(),
 		Core:         core.DefaultConfiguration(),
 		Schema:       schema.DefaultConfiguration(),
@@ -130,6 +133,12 @@ func outletStart(r *reporter.Reporter, config OutletConfiguration, checkOnly boo
 	if err != nil {
 		return fmt.Errorf("unable to initialize routing component: %w", err)
 	}
+	dnsComponent, err := dns.New(r, config.DNS, dns.Dependencies{
+		Daemon: daemonComponent,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to initialize DNS component: %w", err)
+	}
 	kafkaComponent, err := kafka.New(r, config.Kafka, kafka.Dependencies{
 		Daemon: daemonComponent,
 	})
@@ -154,6 +163,7 @@ func outletStart(r *reporter.Reporter, config OutletConfiguration, checkOnly boo
 		Flow:       flowComponent,
 		Metadata:   metadataComponent,
 		Routing:    routingComponent,
+		DNS:        dnsComponent,
 		Kafka:      kafkaComponent,
 		ClickHouse: clickhouseComponent,
 		HTTP:       httpComponent,
@@ -180,6 +190,7 @@ func outletStart(r *reporter.Reporter, config OutletConfiguration, checkOnly boo
 		flowComponent,
 		metadataComponent,
 		routingComponent,
+		dnsComponent,
 		kafkaComponent,
 		coreComponent,
 	}

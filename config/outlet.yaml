@@ -11,6 +11,23 @@ routing:
     # Before increasing this value, look for it in the troubleshooting section
     # of the documentation.
     receive-buffer: 212992
+dns:
+  enabled: false
+  resolvers:
+    - 127.0.0.1:53
+  timeout: 200ms
+  attempts: 1
+  max-concurrent-queries: 64
+  wait-for-initial-result: false
+  initial-timeout: 20ms
+  cache:
+    max-entries: 100000
+    min-ttl: 1m
+    max-ttl: 24h
+    negative-ttl: 5m
+  include-subnets: []
+  exclude-subnets: []
+  trim-suffixes: []
 core:
   exporter-classifiers:
     # This is an example. This should be customized depending on how
