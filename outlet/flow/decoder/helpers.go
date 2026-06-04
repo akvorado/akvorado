@@ -195,26 +195,40 @@ func ParseEthernet(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFl
 	if len(data) < 14 {
 		return 0
 	}
-	if !sch.IsDisabled(schema.ColumnGroupL2) && decap == pb.RawFlow_DECAP_NONE {
-		bf.AppendUint(schema.ColumnDstMAC,
-			binary.BigEndian.Uint64([]byte{0, 0, data[0], data[1], data[2], data[3], data[4], data[5]}))
-		bf.AppendUint(schema.ColumnSrcMAC,
-			binary.BigEndian.Uint64([]byte{0, 0, data[6], data[7], data[8], data[9], data[10], data[11]}))
-	}
+	ethernetHeader := data
 	etherType := binary.BigEndian.Uint16(data[12:14])
 	data = data[14:]
 	var vlan uint16
-	for etherType == constants.ETypeVLAN {
+	for etherType == constants.ETypeVLAN || etherType == constants.ETypeDot1AD {
 		if len(data) < 4 {
 			return 0
 		}
-		if !sch.IsDisabled(schema.ColumnGroupL2) && decap == pb.RawFlow_DECAP_NONE {
+		if !sch.IsDisabled(schema.ColumnGroupL2) {
 			vlan = (uint16(data[0]&0xf) << 8) + uint16(data[1])
 		}
 		etherType = binary.BigEndian.Uint16(data[2:4])
 		data = data[4:]
 	}
-	if vlan != 0 && bf.SrcVlan == 0 {
+	if etherType == constants.ETypePBB {
+		if decap != pb.RawFlow_DECAP_PBB || len(data) < 4 {
+			return 0
+		}
+		if column, ok := sch.LookupColumnByKey(schema.ColumnPBBISID); ok && !column.Disabled {
+			bf.AppendUint(schema.ColumnPBBISID,
+				uint64(binary.BigEndian.Uint32([]byte{0, data[1], data[2], data[3]})))
+		}
+		return ParseEthernet(sch, bf, pb.RawFlow_DECAP_NONE, data[4:])
+	}
+	if decap == pb.RawFlow_DECAP_PBB {
+		decap = pb.RawFlow_DECAP_NONE
+	}
+	if !sch.IsDisabled(schema.ColumnGroupL2) && decap == pb.RawFlow_DECAP_NONE {
+		bf.AppendUint(schema.ColumnDstMAC,
+			binary.BigEndian.Uint64([]byte{0, 0, ethernetHeader[0], ethernetHeader[1], ethernetHeader[2], ethernetHeader[3], ethernetHeader[4], ethernetHeader[5]}))
+		bf.AppendUint(schema.ColumnSrcMAC,
+			binary.BigEndian.Uint64([]byte{0, 0, ethernetHeader[6], ethernetHeader[7], ethernetHeader[8], ethernetHeader[9], ethernetHeader[10], ethernetHeader[11]}))
+	}
+	if vlan != 0 && bf.SrcVlan == 0 && decap == pb.RawFlow_DECAP_NONE {
 		bf.SrcVlan = vlan
 	}
 	if etherType == constants.ETypeMPLS {

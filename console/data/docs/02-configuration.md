@@ -87,9 +87,10 @@ For all available inputs, the following options are available:
   to use the “first switched” field from NetFlow/IPFIX.
 - `decapsulation-protocol` to look inside a tunneling protocol. The supported
   protocols are `none` (the default), `ipip` (both IPv4 and IPv6), `gre`
-  (version 0), `vxlan` (UDP port 4789), and `srv6` (DT4, DT6, DT46, DX4, DX6 are
-  supported, not DX2, nor DT2). This requires the presence of a sampled packet
-  for sFlow or the use of [IPFIX
+  (version 0), `vxlan` (UDP port 4789), `srv6` (DT4, DT6, DT46, DX4, DX6 are
+  supported, not DX2, nor DT2), and `pbb` for IEEE 802.1ah Provider Backbone
+  Bridges / MAC-in-MAC, also used by SPB-M. This requires the presence of a
+  sampled packet for sFlow or the use of [IPFIX
   315](https://datatracker.ietf.org/doc/html/rfc7133). If there is a protocol
   mismatch, the packet will be dropped.
 - `rate-limit` to set the maximum number of flows per second per exporter. When
