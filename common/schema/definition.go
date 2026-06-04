@@ -220,6 +220,7 @@ const (
 	ColumnMPLS2ndLabel
 	ColumnMPLS3rdLabel
 	ColumnMPLS4thLabel
+	ColumnPBBISID
 
 	// ColumnLast points to after the last static column, custom dictionaries
 	// (dynamic columns) come after ColumnLast
@@ -333,6 +334,7 @@ END`,
 				ClickHouseGenerateFrom: "c_SrcNetworks[tenant]",
 			},
 			{Key: ColumnSrcVlan, ParserType: "uint", ClickHouseType: "UInt16", Disabled: true, Group: ColumnGroupL2},
+			{Key: ColumnPBBISID, ParserType: "uint", ClickHouseType: "UInt32", Disabled: true, Group: ColumnGroupL2},
 			{
 				Key:                    ColumnSrcCountry,
 				ParserType:             "string",

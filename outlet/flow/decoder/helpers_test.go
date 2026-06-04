@@ -218,6 +218,102 @@ func TestDecodeSRv6(t *testing.T) {
 	}
 }
 
+func TestDecodePBB(t *testing.T) {
+	sch := schema.NewMock(t).EnableAllColumns()
+	packet := []byte{
+		// Outer Ethernet
+		0x00, 0x11, 0x22, 0x33, 0x44, 0x55,
+		0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb,
+		0x88, 0xa8,
+		// B-TAG
+		0x00, 0x64,
+		0x88, 0xe7,
+		// I-TAG: flags, then 24-bit I-SID
+		0x00, 0x12, 0x34, 0x56,
+		// Inner Ethernet
+		0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff,
+		0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc,
+		0x81, 0x00,
+		// Inner VLAN
+		0x00, 0xc8,
+		0x08, 0x00,
+		// IPv4
+		0x45, 0x00, 0x00, 0x1c,
+		0xab, 0xcd, 0x00, 0x00,
+		0x40, 0x11, 0x00, 0x00,
+		0xc0, 0x00, 0x02, 0x01,
+		0xc6, 0x33, 0x64, 0x02,
+		// UDP
+		0x30, 0x39, 0x00, 0xa1,
+		0x00, 0x08, 0x00, 0x00,
+	}
+	bf := sch.NewFlowMessage()
+	l := ParseEthernet(sch, bf, pb.RawFlow_DECAP_PBB, packet)
+	if l != 28 {
+		t.Errorf("ParseEthernet() returned %d, expected 28", l)
+	}
+	expected := &schema.FlowMessage{
+		SrcVlan: 200,
+		SrcAddr: netip.MustParseAddr("::ffff:192.0.2.1"),
+		DstAddr: netip.MustParseAddr("::ffff:198.51.100.2"),
+		OtherColumns: map[schema.ColumnKey]any{
+			schema.ColumnEType:        uint32(constants.ETypeIPv4),
+			schema.ColumnProto:        uint32(constants.ProtoUDP),
+			schema.ColumnSrcPort:      uint16(12345),
+			schema.ColumnDstPort:      uint16(161),
+			schema.ColumnIPTTL:        uint8(64),
+			schema.ColumnIPFragmentID: uint32(0xabcd),
+			schema.ColumnPBBISID:      uint32(0x123456),
+			schema.ColumnSrcMAC:       uint64(0x123456789abc),
+			schema.ColumnDstMAC:       uint64(0xaabbccddeeff),
+		},
+	}
+	if diff := helpers.Diff(bf, expected); diff != "" {
+		t.Fatalf("ParseEthernet() (-got, +want):\n%s", diff)
+	}
+}
+
+func TestDecodePBBFallbackToNativeEthernet(t *testing.T) {
+	sch := schema.NewMock(t).EnableAllColumns()
+	packet := []byte{
+		// Ethernet
+		0x00, 0x11, 0x22, 0x33, 0x44, 0x55,
+		0x66, 0x77, 0x88, 0x99, 0xaa, 0xbb,
+		0x08, 0x00,
+		// IPv4
+		0x45, 0x00, 0x00, 0x1c,
+		0xab, 0xcd, 0x00, 0x00,
+		0x40, 0x11, 0x00, 0x00,
+		0xc0, 0x00, 0x02, 0x01,
+		0xc6, 0x33, 0x64, 0x02,
+		// UDP
+		0x30, 0x39, 0x00, 0xa1,
+		0x00, 0x08, 0x00, 0x00,
+	}
+	bf := sch.NewFlowMessage()
+	l := ParseEthernet(sch, bf, pb.RawFlow_DECAP_PBB, packet)
+	if l != 28 {
+		t.Errorf("ParseEthernet() returned %d, expected 28", l)
+	}
+	expected := &schema.FlowMessage{
+		SrcAddr: netip.MustParseAddr("::ffff:192.0.2.1"),
+		DstAddr: netip.MustParseAddr("::ffff:198.51.100.2"),
+		OtherColumns: map[schema.ColumnKey]any{
+			schema.ColumnEType:        uint32(constants.ETypeIPv4),
+			schema.ColumnProto:        uint32(constants.ProtoUDP),
+			schema.ColumnSrcPort:      uint16(12345),
+			schema.ColumnDstPort:      uint16(161),
+			schema.ColumnIPTTL:        uint8(64),
+			schema.ColumnIPFragmentID: uint32(0xabcd),
+			schema.ColumnSrcMAC:       uint64(0x66778899aabb),
+			schema.ColumnDstMAC:       uint64(0x001122334455),
+		},
+	}
+	if diff := helpers.Diff(bf, expected); diff != "" {
+		t.Fatalf("ParseEthernet() (-got, +want):\n%s", diff)
+	}
+}
+
 func TestDecodeIP(t *testing.T) {
 	for _, tc := range []struct {
 		input  []byte

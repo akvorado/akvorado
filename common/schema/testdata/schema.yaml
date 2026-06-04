@@ -163,6 +163,11 @@
   group: 1
   parsertype: uint
   clickhousetype: UInt16
+- key: PBBISID
+  name: PBBISID
+  group: 1
+  parsertype: uint
+  clickhousetype: UInt32
 - key: SrcCountry
   name: SrcCountry
   parsertype: string

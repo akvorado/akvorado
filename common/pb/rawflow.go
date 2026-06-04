@@ -84,6 +84,7 @@ var decapsulationMap = bimap.New(map[RawFlow_DecapsulationProtocol]string{
 	RawFlow_DECAP_GRE:   "gre",
 	RawFlow_DECAP_VXLAN: "vxlan",
 	RawFlow_DECAP_SRV6:  "srv6",
+	RawFlow_DECAP_PBB:   "pbb",
 })
 
 // MarshalText turns a timestamp source to text
@@ -97,6 +98,11 @@ func (dp RawFlow_DecapsulationProtocol) MarshalText() ([]byte, error) {
 
 // UnmarshalText provides a timestamp source from text
 func (dp *RawFlow_DecapsulationProtocol) UnmarshalText(input []byte) error {
+	switch string(input) {
+	case "spbm", "mac-in-mac":
+		*dp = RawFlow_DECAP_PBB
+		return nil
+	}
 	got, ok := decapsulationMap.LoadKey(string(input))
 	if ok {
 		*dp = got

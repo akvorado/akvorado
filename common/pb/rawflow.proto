@@ -30,5 +30,6 @@ message RawFlow {
         DECAP_GRE = 2;
         DECAP_VXLAN = 3;
         DECAP_SRV6 = 4;
+        DECAP_PBB = 5;
     }
 }
