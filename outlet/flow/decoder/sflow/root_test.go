@@ -332,6 +332,7 @@ func TestDecode(t *testing.T) {
 				SrcAS:           203476,
 				DstAS:           203361,
 				SrcVlan:         809,
+				DstVlan:         809,
 				SrcNetMask:      32,
 				DstNetMask:      22,
 				OtherColumns: map[schema.ColumnKey]any{
@@ -573,6 +574,7 @@ func TestDecode(t *testing.T) {
 				InIf:            369098852,
 				OutIf:           369098851,
 				SrcVlan:         1493,
+				DstVlan:         1493,
 				SrcAddr:         netip.MustParseAddr("::ffff:49.49.49.2"),
 				DstAddr:         netip.MustParseAddr("::ffff:49.49.49.109"),
 				ExporterAddress: netip.MustParseAddr("::ffff:172.17.128.58"),

@@ -54,6 +54,7 @@ func TestDecodeVLANAndIPv6(t *testing.T) {
 	}
 	expected := &schema.FlowMessage{
 		SrcVlan: 100,
+		DstVlan: 100,
 		SrcAddr: netip.MustParseAddr("2402:f000:1:8e01::5555"),
 		DstAddr: netip.MustParseAddr("2607:fcd0:100:2300::b108:2a6b"),
 		OtherColumns: map[schema.ColumnKey]any{

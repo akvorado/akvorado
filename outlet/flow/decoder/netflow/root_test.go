@@ -515,6 +515,7 @@ func TestDecodeDataLink(t *testing.T) {
 			SrcAddr:         netip.MustParseAddr("::ffff:51.51.51.51"),
 			DstAddr:         netip.MustParseAddr("::ffff:52.52.52.52"),
 			SrcVlan:         231,
+			DstVlan:         231,
 			InIf:            582,
 			OutIf:           0,
 			OtherColumns: map[schema.ColumnKey]any{
