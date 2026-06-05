@@ -214,8 +214,13 @@ func ParseEthernet(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFl
 		etherType = binary.BigEndian.Uint16(data[2:4])
 		data = data[4:]
 	}
-	if vlan != 0 && bf.SrcVlan == 0 {
-		bf.SrcVlan = vlan
+	if vlan != 0 {
+		if bf.SrcVlan == 0 {
+			bf.SrcVlan = vlan
+		}
+		if bf.DstVlan == 0 {
+			bf.DstVlan = vlan
+		}
 	}
 	if etherType == constants.ETypeMPLS {
 		mplsLabels := make([]uint32, 0, 5)
