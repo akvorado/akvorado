@@ -3,6 +3,7 @@
   "extends": [
     "config:recommended",
     ":configMigration",
+    ":semanticCommits",
     ":semanticCommitTypeAll(build)",
     "helpers:pinGitHubActionDigests"
   ],
