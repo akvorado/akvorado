@@ -48,7 +48,7 @@ runs:
         restore-keys: |
           ${{ runner.os }}-${{ runner.arch }}-go${{ steps.go-setup.outputs.go-version }}-${{ hashFiles('go.sum', 'bin/external-tool') }}-
           ${{ runner.os }}-${{ runner.arch }}-go${{ steps.go-setup.outputs.go-version }}-
-    - uses: pnpm/action-setup@26f6d4f2c533a43e6b5da0b4a5dd983f98f7b49a # v6
+    - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6
       if: ${{ inputs.setup-node == 'true' }}
       with:
         package_json_file: console/frontend/package.json
