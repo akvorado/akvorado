@@ -90,6 +90,16 @@
       "matchManagers": [
         "npm"
       ],
+      "description": "pnpm 11+ is incompatible with older versions of corepack",
+      "matchPackageNames": [
+        "pnpm"
+      ],
+      "allowedVersions": "<11"
+    },
+    {
+      "matchManagers": [
+        "npm"
+      ],
       "groupName": "tailwindcss",
       "matchPackageNames": [
         "tailwindcss",
