@@ -81,6 +81,7 @@ func TestConfigHandler(t *testing.T) {
 					"Proto",
 					"SrcPort",
 					"DstPort",
+					"PacketSize",
 					"PacketSizeBucket",
 					"ForwardingStatus",
 					"FlowDirection",

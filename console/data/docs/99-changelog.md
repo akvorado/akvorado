@@ -16,6 +16,7 @@ identified with a specific icon:
 - 🩹 *console*: avoid clipped labels in Sankey graphs
 - 🩹 *console*: fix empty widgets when toggling dark mode
 - 🌱 *outlet*: improve BMP RIB performance by switching to `bart.Fast`
+- 🌱 *console*: allow `PacketSize` to be used as a dimension
 
 ## 2.4.0 - 2026-05-27
 

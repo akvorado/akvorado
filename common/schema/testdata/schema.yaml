@@ -338,7 +338,6 @@
   clickhousetype: UInt64
   clickhousealias: intDiv(Bytes, Packets)
   clickhousenotsortingkey: true
-  consolenotdimension: true
 - key: PacketSizeBucket
   name: PacketSizeBucket
   depends:
