@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"akvorado/common/helpers"
@@ -66,27 +67,29 @@ func TestFailingHealthcheck(t *testing.T) {
 }
 
 func TestHealthcheckCancelContext(t *testing.T) {
-	r := reporter.NewMock(t)
-	r.RegisterHealthcheck("hc1", func(context.Context) reporter.HealthcheckResult {
-		return reporter.HealthcheckResult{reporter.HealthcheckOK, "all well"}
-	})
-	r.RegisterHealthcheck("hc2", func(ctx context.Context) reporter.HealthcheckResult {
-		<-ctx.Done()
-		return reporter.HealthcheckResult{reporter.HealthcheckError, "I am late, sorry"}
-	})
-	ctx, cancel := context.WithCancel(t.Context())
-	go func() {
-		time.Sleep(10 * time.Millisecond)
-		cancel()
-	}()
-	testHealthchecks(ctx, t, r,
-		reporter.MultipleHealthcheckResults{
-			Status: reporter.HealthcheckError,
-			Details: map[string]reporter.HealthcheckResult{
-				"hc1": {reporter.HealthcheckOK, "all well"},
-				"hc2": {reporter.HealthcheckError, "timeout during check"},
-			},
+	synctest.Test(t, func(t *testing.T) {
+		r := reporter.NewMock(t)
+		r.RegisterHealthcheck("hc1", func(context.Context) reporter.HealthcheckResult {
+			return reporter.HealthcheckResult{reporter.HealthcheckOK, "all well"}
 		})
+		r.RegisterHealthcheck("hc2", func(ctx context.Context) reporter.HealthcheckResult {
+			<-ctx.Done()
+			return reporter.HealthcheckResult{reporter.HealthcheckError, "I am late, sorry"}
+		})
+		ctx, cancel := context.WithCancel(t.Context())
+		go func() {
+			time.Sleep(10 * time.Millisecond)
+			cancel()
+		}()
+		testHealthchecks(ctx, t, r,
+			reporter.MultipleHealthcheckResults{
+				Status: reporter.HealthcheckError,
+				Details: map[string]reporter.HealthcheckResult{
+					"hc1": {reporter.HealthcheckOK, "all well"},
+					"hc2": {reporter.HealthcheckError, "timeout during check"},
+				},
+			})
+	})
 }
 
 func TestChannelHealthcheck(t *testing.T) {
