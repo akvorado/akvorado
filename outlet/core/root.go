@@ -5,6 +5,7 @@
 package core
 
 import (
+	"net/netip"
 	"time"
 
 	"gopkg.in/tomb.v2"
@@ -47,10 +48,16 @@ type Dependencies struct {
 	Flow       *flow.Component
 	Metadata   *metadata.Component
 	Routing    *routing.Component
+	DNS        DNSLookup
 	Kafka      kafka.Component
 	ClickHouse clickhouse.Component
 	HTTP       *httpserver.Component
 	Schema     *schema.Component
+}
+
+// DNSLookup is the DNS enrichment API used by the core hot path.
+type DNSLookup interface {
+	Lookup(netip.Addr) string
 }
 
 // New creates a new core component.
