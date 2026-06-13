@@ -374,6 +374,18 @@ output provider */ = 'telia'`,
 		{Input: `DstMAC = 00:11:22:33:44:55`, Output: `DstMAC = MACStringToNum('00:11:22:33:44:55')`},
 		{Input: `SrcMAC != 00:0c:fF:33:44:55`, Output: `SrcMAC != MACStringToNum('00:0c:ff:33:44:55')`},
 		{Input: `SrcMAC = 0000.5e00.5301`, Output: `SrcMAC = MACStringToNum('00:00:5e:00:53:01')`},
+		{
+			Input:  `SrcMAC IN (00:11:22:33:44:55, 00:0c:fF:33:44:55)`,
+			Output: `SrcMAC IN (MACStringToNum('00:11:22:33:44:55'), MACStringToNum('00:0c:ff:33:44:55'))`,
+		},
+		{
+			Input:  `DstMAC NOTIN (00:11:22:33:44:55, 0000.5e00.5301)`,
+			Output: `DstMAC NOT IN (MACStringToNum('00:11:22:33:44:55'), MACStringToNum('00:00:5e:00:53:01'))`,
+		},
+		{
+			Input:  `SrcMAC IN ( 00:11:22:33:44:55 )`,
+			Output: `SrcMAC IN (MACStringToNum('00:11:22:33:44:55'))`,
+		},
 		{Input: `ipttl > 50`, Output: `IPTTL > 50`},
 		{Input: `iptos = 0`, Output: `IPTos = 0`},
 		{Input: `ipfragmentid != 0`, Output: `IPFragmentID != 0`},

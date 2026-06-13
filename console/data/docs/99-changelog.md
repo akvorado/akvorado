@@ -17,6 +17,7 @@ identified with a specific icon:
 - 🩹 *console*: fix empty widgets when toggling dark mode
 - 🌱 *outlet*: improve BMP RIB performance by switching to `bart.Fast`
 - 🌱 *console*: allow `PacketSize` to be used as a dimension
+- 🌱 *console*: allow matching MAC addresses with `IN`/`NOTIN` in filters
 
 ## 2.4.0 - 2026-05-27
 

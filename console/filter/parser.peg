@@ -37,7 +37,7 @@ NotExpr "NOT expression" ← KW_NOT _ expr:Expr {
 }
 
 ConditionExpr "conditional" ←
-    (ConditionIPExpr
+   (ConditionIPExpr
   / ConditionPrefixExpr
   / ConditionMACExpr
   / ConditionStringExpr
@@ -104,12 +104,19 @@ ConditionPrefixExpr "condition on prefix" ←
    }
 
 ConditionMACExpr "condition on MAC" ←
-   column:(value:ColumnName
+ column:(value:ColumnName
            &{ return c.columnIsOfType(value, "mac") }
             { return c.acceptColumn() }) _
+ rcond:RConditionMACExpr {
+  return []any{column, rcond}, nil
+}
+RConditionMACExpr "condition on MAC" ←
    operator:("=" / "!=") _ mac:MAC {
-       return []any{column, operator, "MACStringToNum(", quote(mac), ")"}, nil
+       return []any{operator, "MACStringToNum(", quote(mac), ")"}, nil
    }
+ / operator:InOperator _ '(' _ value:ListMAC _ ')' {
+  return []any{operator, "(", value, ")"}, nil
+}
 
 ConditionStringExpr "condition on string" ←
  column:(value:ColumnName
@@ -275,6 +282,9 @@ MAC "MAC address" ← [0-9A-Fa-f:.]+ !IdentStart {
   }
   return hw.String(), nil
 }
+ListMAC "list of MAC addresses" ←
+   head:MAC _ ',' _ tail:ListMAC { return fmt.Sprintf("MACStringToNum(%s), %s", quote(head), tail), nil }
+ / value:MAC { return fmt.Sprintf("MACStringToNum(%s)", quote(value)), nil }
 
 ASN "AS number" ← "AS"i? value:Unsigned32 !IdentStart {
   return value, nil
