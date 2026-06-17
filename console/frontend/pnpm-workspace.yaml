@@ -2,7 +2,7 @@ minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
   # Renovate security update: lodash-es@4.18.1
   - lodash-es@4.18.1
-  # Renovate security update: vite@8.0.5
-  - vite@8.0.5
+  # Renovate security update: vite@8.0.5 || 8.0.16
+  - vite@8.0.5 || 8.0.16
   # Renovate security update: uuid@14.0.0
   - uuid@14.0.0
