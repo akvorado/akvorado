@@ -263,7 +263,11 @@ func TestValidFilter(t *testing.T) {
 		{Input: `EType = ipv4`, Output: `EType = 2048`},
 		{Input: `EType != ipv6`, Output: `EType != 34525`},
 		{Input: `Proto = 1`, Output: `Proto = 1`},
+		{Input: `Proto IN (1, 6, 17)`, Output: `Proto IN (1, 6, 17)`},
+		{Input: `Proto NOTIN (1, 6)`, Output: `Proto NOT IN (1, 6)`},
 		{Input: `Proto = 'gre'`, Output: `dictGetOrDefault('protocols', 'name', Proto, '???') = 'gre'`},
+		{Input: `Proto IN ('tcp', 'udp')`, Output: `dictGetOrDefault('protocols', 'name', Proto, '???') IN ('tcp', 'udp')`},
+		{Input: `Proto NOTIN ('tcp')`, Output: `dictGetOrDefault('protocols', 'name', Proto, '???') NOT IN ('tcp')`},
 		{
 			Input: `SrcPort = 80`, Output: `SrcPort = 80`,
 			MetaOut: Meta{MainTableRequired: true},
@@ -278,7 +282,16 @@ func TestValidFilter(t *testing.T) {
 			MetaOut: Meta{MainTableRequired: true},
 		},
 		{Input: `ForwardingStatus >= 128`, Output: `ForwardingStatus >= 128`},
+		{
+			Input: `SrcPort IN (80, 443)`, Output: `SrcPort IN (80, 443)`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input: `SrcPort NOTIN (80, 443)`, Output: `SrcPort NOT IN (80, 443)`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
 		{Input: `PacketSize > 1500`, Output: `PacketSize > 1500`},
+		{Input: `PacketSize IN (64, 1500)`, Output: `PacketSize IN (64, 1500)`},
 		{
 			Input: `DstPort > 1024 AND SrcPort < 1024`, Output: `DstPort > 1024 AND SrcPort < 1024`,
 			MetaOut: Meta{MainTableRequired: true},

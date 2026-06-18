@@ -146,10 +146,16 @@ ConditionUintExpr "condition on integer" ←
  column:(value:ColumnName
            &{ return c.columnIsOfType(value, "uint") }
             { return c.acceptColumn() }) _
- operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _
- value:Unsigned64 {
-  return []any{column, operator, value}, nil
+ rcond:RConditionUintExpr {
+  return []any{column, rcond}, nil
 }
+RConditionUintExpr "condition on integer" ←
+   operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned64 {
+     return []any{operator, value}, nil
+   }
+ / operator:InOperator _ '(' _ value:ListUnsigned64 _ ')' {
+     return []any{operator, "(", value, ")"}, nil
+   }
 
 ConditionArrayUintExpr "condition on array of integers" ←
    column:(value:ColumnName
@@ -223,16 +229,30 @@ ConditionProtoIntExpr "condition on protocol as integer" ←
  column:(value:ColumnName
            &{ return c.columnIsOfType(value, "proto") }
             { return c.acceptColumn() }) _
- operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned8 {
-  return []any{column, operator, value}, nil
+ rcond:RConditionProtoIntExpr {
+  return []any{column, rcond}, nil
 }
+RConditionProtoIntExpr "condition on protocol as integer" ←
+   operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned8 {
+     return []any{operator, value}, nil
+   }
+ / operator:InOperator _ '(' _ value:ListUnsigned8 _ ')' {
+     return []any{operator, "(", value, ")"}, nil
+   }
 ConditionProtoStrExpr "condition on protocol as string" ←
  column:(value:ColumnName
            &{ return c.columnIsOfType(value, "proto") }
             { return c.acceptColumn() }) _
- operator:("=" / "!=") _ value:StringLiteral {
-  return []any{"dictGetOrDefault('protocols', 'name', ", column, ", '???')", operator, quote(value)}, nil
+ rcond:RConditionProtoStrExpr {
+  return []any{"dictGetOrDefault('protocols', 'name', ", column, ", '???')", rcond}, nil
 }
+RConditionProtoStrExpr "condition on protocol as string" ←
+   operator:("=" / "!=") _ value:StringLiteral {
+     return []any{operator, quote(value)}, nil
+   }
+ / operator:InOperator _ '(' _ value:ListString _ ')' {
+     return []any{operator, "(", value, ")"}, nil
+   }
 
 ConditionDirectionExpr "condition on direction" ←
  column:(value:ColumnName
@@ -321,6 +341,9 @@ Unsigned8 "unsigned 8-bit integer" ← [0-9]+ !IdentStart {
   }
   return uint8(v), nil
 }
+ListUnsigned8 "list of unsigned 8-bit integers" ←
+   head:Unsigned8 _ ',' _ tail:ListUnsigned8 { return fmt.Sprintf("%s, %s", toString(head), tail), nil }
+ / value:Unsigned8 { return toString(value), nil }
 
 Unsigned16 "unsigned 16-bit integer" ← [0-9]+ !IdentStart {
   v, err := strconv.ParseUint(string(c.text), 10, 16)
@@ -345,6 +368,9 @@ Unsigned64 "unsigned 64-bit integer" ← [0-9]+ !IdentStart {
   }
   return uint64(v), nil
 }
+ListUnsigned64 "list of unsigned integers" ←
+   head:Unsigned64 _ ',' _ tail:ListUnsigned64 { return fmt.Sprintf("%s, %s", toString(head), tail), nil }
+ / value:Unsigned64 { return toString(value), nil }
 
 LikeOperator "LIKE operators" ←
    KW_LIKE

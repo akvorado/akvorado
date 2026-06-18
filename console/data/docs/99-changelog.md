@@ -18,6 +18,7 @@ identified with a specific icon:
 - 🌱 *outlet*: improve BMP RIB performance by switching to `bart.Fast`
 - 🌱 *console*: allow `PacketSize` to be used as a dimension
 - 🌱 *console*: allow matching MAC addresses with `IN`/`NOTIN` in filters
+- 🌱 *console*: allow `IN`/`NOTIN` in filters for integer and protocol columns
 
 ## 2.4.0 - 2026-05-27
 
