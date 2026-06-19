@@ -961,27 +961,67 @@ func TestDecodeRFC5103(t *testing.T) {
 }
 
 func TestDecodeNonEncap(t *testing.T) {
-	pcapSets := [][]string{
-		{"options-template.pcap", "options-data.pcap", "template.pcap", "data.pcap"},
-		{"data+templates.pcap"},
-		{"mpls.pcap"},
-		{"physicalinterfaces.pcap"},
-		{"icmp-template.pcap", "icmp-data.pcap"},
-		{"multiplesamplingrates-options-template.pcap", "multiplesamplingrates-options-data.pcap",
-			"multiplesamplingrates-template.pcap", "multiplesamplingrates-data.pcap"},
-		{"ipfixprobe-templates.pcap", "ipfixprobe-data.pcap"},
-		{"nat.pcap"},
-		{"nfv5.pcap"},
+	cases := []struct {
+		pcaps                []string
+		expectedErrorMetrics map[string]string
+	}{
+		{
+			pcaps: []string{"options-template.pcap", "options-data.pcap", "template.pcap", "data.pcap"},
+			expectedErrorMetrics: map[string]string{
+				`errors_total{error="non-encapsulated packet",exporter="::ffff:127.0.0.1"}`: "4",
+			},
+		}, {
+			// Data precedes the template in this combined PDU, so it is
+			// dropped before reaching the record decoder: no counter.
+			pcaps:                []string{"data+templates.pcap"},
+			expectedErrorMetrics: map[string]string{},
+		}, {
+			pcaps: []string{"mpls.pcap"},
+			expectedErrorMetrics: map[string]string{
+				`errors_total{error="non-encapsulated packet",exporter="::ffff:127.0.0.1"}`: "2",
+			},
+		}, {
+			pcaps: []string{"physicalinterfaces.pcap"},
+			expectedErrorMetrics: map[string]string{
+				`errors_total{error="non-encapsulated packet",exporter="::ffff:127.0.0.1"}`: "8",
+			},
+		}, {
+			pcaps: []string{"icmp-template.pcap", "icmp-data.pcap"},
+			expectedErrorMetrics: map[string]string{
+				`errors_total{error="non-encapsulated packet",exporter="::ffff:127.0.0.1"}`: "4",
+			},
+		}, {
+			pcaps: []string{"multiplesamplingrates-options-template.pcap", "multiplesamplingrates-options-data.pcap",
+				"multiplesamplingrates-template.pcap", "multiplesamplingrates-data.pcap"},
+			expectedErrorMetrics: map[string]string{
+				`errors_total{error="non-encapsulated packet",exporter="::ffff:127.0.0.1"}`: "12",
+			},
+		}, {
+			pcaps: []string{"ipfixprobe-templates.pcap", "ipfixprobe-data.pcap"},
+			expectedErrorMetrics: map[string]string{
+				`errors_total{error="non-encapsulated packet",exporter="::ffff:127.0.0.1"}`: "6",
+			},
+		}, {
+			pcaps: []string{"nat.pcap"},
+			expectedErrorMetrics: map[string]string{
+				`errors_total{error="non-encapsulated packet",exporter="::ffff:127.0.0.1"}`: "9",
+			},
+		}, {
+			pcaps: []string{"nfv5.pcap"},
+			expectedErrorMetrics: map[string]string{
+				`errors_total{error="non-encapsulated packet",exporter="::ffff:127.0.0.1"}`: "1",
+			},
+		},
 	}
-	for i, pcapSet := range pcapSets {
+	for i, tc := range cases {
 		t.Run(fmt.Sprintf("set %d", i), func(t *testing.T) {
-			_, nfdecoder, bf, got, finalize := setup(t, true)
+			r, nfdecoder, bf, got, finalize := setup(t, true)
 			options := decoder.Options{
 				TimestampSource:       pb.RawFlow_TS_INPUT,
 				DecapsulationProtocol: pb.RawFlow_DECAP_VXLAN,
 			}
 
-			for _, pcap := range pcapSet {
+			for _, pcap := range tc.pcaps {
 				data := helpers.ReadPcapL4(t, filepath.Join("testdata", pcap))
 				_, err := nfdecoder.Decode(
 					decoder.RawFlow{Payload: data, Source: netip.MustParseAddr("::ffff:127.0.0.1")},
@@ -993,14 +1033,21 @@ func TestDecodeNonEncap(t *testing.T) {
 
 			expectedFlows := []*schema.FlowMessage{}
 			if diff := helpers.Diff(*got, expectedFlows); diff != "" {
-				t.Fatalf("Decode(%v) (-got, +want):\n%s", pcapSet, diff)
+				t.Fatalf("Decode(%v) (-got, +want):\n%s", tc.pcaps, diff)
+			}
+
+			// Every packet was non-encapsulated, so the error counter must
+			// have been incremented for our exporter.
+			gotMetrics := r.GetMetrics("akvorado_outlet_flow_decoder_netflow_", "errors_total")
+			if diff := helpers.Diff(gotMetrics, tc.expectedErrorMetrics); diff != "" {
+				t.Fatalf("Decode(%v) metrics (-got, +want):\n%s", tc.pcaps, diff)
 			}
 		})
 	}
 }
 
 func TestDecodeSRv6(t *testing.T) {
-	_, nfdecoder, bf, got, finalize := setup(t, true)
+	r, nfdecoder, bf, got, finalize := setup(t, true)
 	options := decoder.Options{
 		TimestampSource:       pb.RawFlow_TS_INPUT,
 		DecapsulationProtocol: pb.RawFlow_DECAP_SRV6,
@@ -1041,6 +1088,13 @@ func TestDecodeSRv6(t *testing.T) {
 	}
 	if diff := helpers.Diff(*got, expectedFlows); diff != "" {
 		t.Fatalf("Decode() (-got, +want):\n%s", diff)
+	}
+
+	// Decapsulation succeeded, so the non-encapsulated error counter must
+	// stay at zero.
+	gotMetrics := r.GetMetrics("akvorado_outlet_flow_decoder_netflow_", "errors_total")
+	if diff := helpers.Diff(gotMetrics, map[string]string{}); diff != "" {
+		t.Fatalf("Decode() metrics (-got, +want):\n%s", diff)
 	}
 }
 

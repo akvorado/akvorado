@@ -153,7 +153,7 @@ func (nd *Decoder) Decode(in decoder.RawFlow, options decoder.Options, bf *schem
 			ts = uint64(packetNFv9.UnixSeconds)
 			sysUptime = uint64(packetNFv9.SystemUptime)
 		}
-		nd.decodeNFv9IPFIX(version, obsDomainID, flowSets, tao, ts, sysUptime, options, bf, finalize2)
+		nd.decodeNFv9IPFIX(version, obsDomainID, flowSets, tao, ts, sysUptime, options, key, bf, finalize2)
 	case 10:
 		var packetIPFIX netflow.IPFIXPacket
 		if err := netflow.DecodeMessageIPFIX(buf, tao, netflow.FlowContext{}, &packetIPFIX); err != nil {
@@ -171,7 +171,7 @@ func (nd *Decoder) Decode(in decoder.RawFlow, options decoder.Options, bf *schem
 		if options.TimestampSource == pb.RawFlow_TS_NETFLOW_PACKET {
 			ts = uint64(packetIPFIX.ExportTime)
 		}
-		nd.decodeNFv9IPFIX(version, obsDomainID, flowSets, tao, ts, sysUptime, options, bf, finalize2)
+		nd.decodeNFv9IPFIX(version, obsDomainID, flowSets, tao, ts, sysUptime, options, key, bf, finalize2)
 	default:
 		nd.errLogger.Warn().Str("exporter", key).Msgf("unknown NetFlow version %d", version)
 		nd.metrics.packets.WithLabelValues(key, "unknown").

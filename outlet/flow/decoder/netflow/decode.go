@@ -67,7 +67,7 @@ func (nd *Decoder) decodeNFv5(packet *netflowlegacy.PacketNetFlowV5, ts, sysUpti
 	}
 }
 
-func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets []any, tao *templatesAndOptions, ts, sysUptime uint64, options decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
+func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets []any, tao *templatesAndOptions, ts, sysUptime uint64, options decoder.Options, exporter string, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
 	// Look for sampling rate in option data flowsets
 	for _, flowSet := range flowSets {
 		switch tFlowSet := flowSet.(type) {
@@ -103,13 +103,13 @@ func (nd *Decoder) decodeNFv9IPFIX(version uint16, obsDomainID uint32, flowSets 
 			}
 		case netflow.DataFlowSet:
 			for _, record := range tFlowSet.Records {
-				nd.decodeRecord(version, obsDomainID, tao, record.Values, ts, sysUptime, options, bf, finalize)
+				nd.decodeRecord(version, obsDomainID, tao, record.Values, ts, sysUptime, options, exporter, bf, finalize)
 			}
 		}
 	}
 }
 
-func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templatesAndOptions, fields []netflow.DataField, ts, sysUptime uint64, options decoder.Options, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
+func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templatesAndOptions, fields []netflow.DataField, ts, sysUptime uint64, options decoder.Options, exporter string, bf *schema.FlowMessage, finalize decoder.FinalizeFlowFunc) {
 	// reversePresent is a bitset for fields in the reversed direction. The
 	// bitset is nil initially and fields will be added to it when we see them
 	// during the first pass.
@@ -382,6 +382,7 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 		}
 		localFinalize := func() {
 			if needDecap && !decapOK {
+				nd.metrics.errors.WithLabelValues(exporter, "non-encapsulated packet").Inc()
 				bf.Undo()
 			} else {
 				finalize()
