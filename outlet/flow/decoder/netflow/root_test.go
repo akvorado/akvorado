@@ -152,6 +152,8 @@ func TestDecode(t *testing.T) {
 				schema.ColumnForwardingStatus: uint32(64),
 				schema.ColumnFlowDirection:    uint8(schema.DirectionIngress),
 				schema.ColumnTCPFlags:         uint16(16),
+				schema.ColumnIngressVRFID:     uint32(1610612738),
+				schema.ColumnEgressVRFID:      uint32(1610612738),
 			},
 		}, {
 			SamplingRate:    30000,
@@ -173,6 +175,8 @@ func TestDecode(t *testing.T) {
 				schema.ColumnForwardingStatus: uint32(64),
 				schema.ColumnFlowDirection:    uint8(schema.DirectionIngress),
 				schema.ColumnTCPFlags:         uint16(16),
+				schema.ColumnIngressVRFID:     uint32(1610612738),
+				schema.ColumnEgressVRFID:      uint32(1610612738),
 			},
 		}, {
 			SamplingRate:    30000,
@@ -194,6 +198,8 @@ func TestDecode(t *testing.T) {
 				schema.ColumnForwardingStatus: uint32(64),
 				schema.ColumnFlowDirection:    uint8(schema.DirectionIngress),
 				schema.ColumnTCPFlags:         uint16(16),
+				schema.ColumnIngressVRFID:     uint32(1610612738),
+				schema.ColumnEgressVRFID:      uint32(1610612736),
 			},
 		}, {
 			SamplingRate:    30000,
@@ -215,6 +221,8 @@ func TestDecode(t *testing.T) {
 				schema.ColumnForwardingStatus: uint32(64),
 				schema.ColumnFlowDirection:    uint8(schema.DirectionIngress),
 				schema.ColumnTCPFlags:         uint16(16),
+				schema.ColumnIngressVRFID:     uint32(1610612738),
+				schema.ColumnEgressVRFID:      uint32(1610612738),
 			},
 		},
 	}
@@ -375,6 +383,8 @@ func TestDecodeMultipleSamplingRates(t *testing.T) {
 				schema.ColumnTCPFlags:         uint16(16),
 				schema.ColumnEType:            uint32(constants.ETypeIPv6),
 				schema.ColumnFlowDirection:    uint8(schema.DirectionIngress),
+				schema.ColumnIngressVRFID:     uint32(1610612736),
+				schema.ColumnEgressVRFID:      uint32(1610612736),
 			},
 		},
 		{
@@ -399,6 +409,8 @@ func TestDecodeMultipleSamplingRates(t *testing.T) {
 				schema.ColumnIPv6FlowLabel:    uint32(570164),
 				schema.ColumnEType:            uint32(constants.ETypeIPv6),
 				schema.ColumnFlowDirection:    uint8(schema.DirectionIngress),
+				schema.ColumnIngressVRFID:     uint32(1610612736),
+				schema.ColumnEgressVRFID:      uint32(1610612736),
 			},
 		},
 	}
@@ -588,6 +600,7 @@ func TestDecodeMPLS(t *testing.T) {
 				schema.ColumnDstPort:          uint16(862),
 				schema.ColumnMPLSLabels:       []uint32{20005, 524250},
 				schema.ColumnFlowDirection:    uint8(schema.DirectionEgress),
+				schema.ColumnEgressVRFID:      uint32(1),
 			},
 		}, {
 			ExporterAddress: netip.MustParseAddr("::ffff:127.0.0.1"),
@@ -607,6 +620,7 @@ func TestDecodeMPLS(t *testing.T) {
 				schema.ColumnDstPort:          uint16(862),
 				schema.ColumnMPLSLabels:       []uint32{20006, 524275},
 				schema.ColumnFlowDirection:    uint8(schema.DirectionEgress),
+				schema.ColumnEgressVRFID:      uint32(1),
 			},
 		},
 	}
@@ -803,15 +817,16 @@ func TestDecodePhysicalInterfaces(t *testing.T) {
 			DstAddr:         netip.MustParseAddr("::ffff:212.82.101.24"),
 			NextHop:         netip.MustParseAddr("::"),
 			OtherColumns: map[schema.ColumnKey]any{
-				schema.ColumnSrcMAC:   uint64(0xc014fef6c365),
-				schema.ColumnDstMAC:   uint64(0xe8b6c24ae34c),
-				schema.ColumnPackets:  uint64(3),
-				schema.ColumnBytes:    uint64(4506),
-				schema.ColumnSrcPort:  uint16(55629),
-				schema.ColumnDstPort:  uint16(993),
-				schema.ColumnTCPFlags: uint16(0x10),
-				schema.ColumnEType:    uint32(constants.ETypeIPv4),
-				schema.ColumnProto:    uint32(constants.ProtoTCP),
+				schema.ColumnSrcMAC:       uint64(0xc014fef6c365),
+				schema.ColumnDstMAC:       uint64(0xe8b6c24ae34c),
+				schema.ColumnPackets:      uint64(3),
+				schema.ColumnBytes:        uint64(4506),
+				schema.ColumnSrcPort:      uint16(55629),
+				schema.ColumnDstPort:      uint16(993),
+				schema.ColumnTCPFlags:     uint16(0x10),
+				schema.ColumnEType:        uint32(constants.ETypeIPv4),
+				schema.ColumnProto:        uint32(constants.ProtoTCP),
+				schema.ColumnIngressVRFID: uint32(311),
 			},
 		},
 	}

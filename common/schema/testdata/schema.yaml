@@ -503,3 +503,11 @@
   clickhousetype: UInt32
   clickhousealias: MPLSLabels[4]
   clickhousemainonly: true
+- key: IngressVRFID
+  name: IngressVRFID
+  parsertype: uint
+  clickhousetype: UInt32
+- key: EgressVRFID
+  name: EgressVRFID
+  parsertype: uint
+  clickhousetype: UInt32

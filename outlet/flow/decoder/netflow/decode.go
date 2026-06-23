@@ -260,6 +260,12 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 					mplsLabels = append(mplsLabels, uint32(uv))
 				}
 
+			// VRF
+			case netflow.IPFIX_FIELD_ingressVRFID:
+				bf.AppendUint(schema.ColumnIngressVRFID, decodeUNumber(v))
+			case netflow.IPFIX_FIELD_egressVRFID:
+				bf.AppendUint(schema.ColumnEgressVRFID, decodeUNumber(v))
+
 			// Remaining
 			case netflow.IPFIX_FIELD_forwardingStatus:
 				bf.AppendUint(schema.ColumnForwardingStatus, decodeUNumber(v))
