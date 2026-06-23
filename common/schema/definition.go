@@ -220,6 +220,8 @@ const (
 	ColumnMPLS2ndLabel
 	ColumnMPLS3rdLabel
 	ColumnMPLS4thLabel
+	ColumnIngressVRFID
+	ColumnEgressVRFID
 
 	// ColumnLast points to after the last static column, custom dictionaries
 	// (dynamic columns) come after ColumnLast
@@ -569,6 +571,8 @@ END`,
 				ClickHouseAlias:    "MPLSLabels[4]",
 				ParserType:         "uint",
 			},
+			{Key: ColumnIngressVRFID, Disabled: true, ParserType: "uint", ClickHouseType: "UInt32"},
+			{Key: ColumnEgressVRFID, Disabled: true, ParserType: "uint", ClickHouseType: "UInt32"},
 		},
 	}.finalize()
 }

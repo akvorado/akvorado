@@ -16,6 +16,7 @@ identified with a specific icon:
 - 🩹 *console*: avoid clipped labels in Sankey graphs
 - 🩹 *console*: fix empty widgets when toggling dark mode
 - 🌱 *outlet*: improve BMP RIB performance by switching to `bart.Fast`
+- ✨ *outlet*: add `IngressVRFID` and `EgressVRFID` as disabled by default columns
 - 🌱 *console*: allow `PacketSize` to be used as a dimension
 - 🌱 *console*: allow matching MAC addresses with `IN`/`NOTIN` in filters
 - 🌱 *console*: allow `IN`/`NOTIN` in filters for integer and protocol columns
