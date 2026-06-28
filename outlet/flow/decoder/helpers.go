@@ -234,11 +234,26 @@ func ParseEthernet(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFl
 			mplsLabels = append(mplsLabels, label)
 			if bottom == 1 || label <= 15 {
 				switch data[0] & 0xf0 >> 4 {
+				case 0:
+					if len(data) >= 4 {
+						if len(mplsLabels) > 0 && decap == pb.RawFlow_DECAP_NONE {
+							bf.AppendArrayUInt32(schema.ColumnMPLSLabels, mplsLabels)
+						}
+						data = data[4:]
+						return ParseEthernet(sch, bf, decap, data)
+					}
+					return 0
 				case 4:
 					etherType = constants.ETypeIPv4
 				case 6:
 					etherType = constants.ETypeIPv6
 				default:
+					if len(data) >= 14 {
+						if len(mplsLabels) > 0 && decap == pb.RawFlow_DECAP_NONE {
+							bf.AppendArrayUInt32(schema.ColumnMPLSLabels, mplsLabels)
+						}
+						return ParseEthernet(sch, bf, decap, data)
+					}
 					return 0
 				}
 				break
