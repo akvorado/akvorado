@@ -217,17 +217,35 @@ then enriched, and before they are sent to ClickHouse,
 
 If `akvorado_outlet_core_received_raw_flows_total` increases but
 `akvorado_outlet_core_received_flows_total` does not, there is an error
-**decoding the flows**. If `akvorado_outlet_core_received_flows_total` increases
-but `akvorado_outlet_core_forwarded_flows_total` does not, there is an error
-**enriching the flows**.
+**decoding the flows**.
 
-For the first case, use this command to find clues:
+Check this command to find clues:
 
 ```console
 $ curl -s http://127.0.0.1:8080/api/v0/outlet/metrics | grep 'akvorado_outlet_flow.*errors'
 ```
 
-For the second case, use this one:
+If there are no such errors, the exporter may be sending only templates and
+options data, but no actual flow records. In this case,
+`akvorado_outlet_flow_decoder_flows_total` stays at 0. Check which record types
+the outlet receives:
+
+```console
+$ curl -s http://127.0.0.1:8080/api/v0/outlet/metrics | grep 'akvorado_outlet_flow_decoder_netflow_records'
+​# HELP akvorado_outlet_flow_decoder_netflow_records_total Number of NetFlow records received.
+​# TYPE akvorado_outlet_flow_decoder_netflow_records_total counter
+akvorado_outlet_flow_decoder_netflow_records_total{exporter="241.107.1.12",type="OptionsDataFlowSet",version="10"} 168
+akvorado_outlet_flow_decoder_netflow_records_total{exporter="241.107.1.12",type="OptionsTemplateFlowSet",version="10"} 195
+```
+
+If you only see `OptionsDataFlowSet` and `OptionsTemplateFlowSet` but never
+`DataFlowSet` or `TemplateFlowSet`, then the exporter does not export any data
+records. Only data records produce flows. This is an exporter-side problem: make
+sure the flow monitor is attached to interfaces that carry traffic.
+
+If `akvorado_outlet_core_received_flows_total` increases but
+`akvorado_outlet_core_forwarded_flows_total` does not, there is an error
+**enriching the flows**. Check with this command:
 
 ```console
 $ curl -s http://127.0.0.1:8080/api/v0/outlet/metrics | grep 'akvorado_outlet_core.*errors'
