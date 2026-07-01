@@ -190,6 +190,33 @@ func ParseL4(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFlow_Dec
 	return 0
 }
 
+// isEthernet validates if the data starts with a valid Ethernet frame (optionally tagged with VLANs)
+// encapsulating IPv4, IPv6, or MPLS.
+func isEthernet(data []byte) bool {
+	if len(data) < 14 {
+		return false
+	}
+	etherType := binary.BigEndian.Uint16(data[12:14])
+	remaining := data[14:]
+	for etherType == constants.ETypeVLAN {
+		if len(remaining) < 4 {
+			return false
+		}
+		etherType = binary.BigEndian.Uint16(remaining[2:4])
+		remaining = remaining[4:]
+	}
+	switch etherType {
+	case constants.ETypeIPv4:
+		return len(remaining) >= 20 && remaining[0] >= 0x45 && remaining[0] <= 0x4f
+	case constants.ETypeIPv6:
+		return len(remaining) >= 40 && remaining[0]&0xf0>>4 == 6
+	case constants.ETypeMPLS:
+		return len(remaining) >= 4
+	}
+	return false
+}
+
+
 // ParseEthernet parses an Ethernet packet and returns L3 length.
 func ParseEthernet(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFlow_DecapsulationProtocol, data []byte) uint64 {
 	if len(data) < 14 {
@@ -234,11 +261,38 @@ func ParseEthernet(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFl
 			mplsLabels = append(mplsLabels, label)
 			if bottom == 1 || label <= 15 {
 				switch data[0] & 0xf0 >> 4 {
+				case 0:
+					if len(data) >= 4 && isEthernet(data[4:]) {
+						if len(mplsLabels) > 0 && decap == pb.RawFlow_DECAP_NONE {
+							bf.AppendArrayUInt32(schema.ColumnMPLSLabels, mplsLabels)
+						}
+						data = data[4:]
+						return ParseEthernet(sch, bf, decap, data)
+					}
+					return 0
 				case 4:
+					if isEthernet(data) {
+						if len(mplsLabels) > 0 && decap == pb.RawFlow_DECAP_NONE {
+							bf.AppendArrayUInt32(schema.ColumnMPLSLabels, mplsLabels)
+						}
+						return ParseEthernet(sch, bf, decap, data)
+					}
 					etherType = constants.ETypeIPv4
 				case 6:
+					if isEthernet(data) {
+						if len(mplsLabels) > 0 && decap == pb.RawFlow_DECAP_NONE {
+							bf.AppendArrayUInt32(schema.ColumnMPLSLabels, mplsLabels)
+						}
+						return ParseEthernet(sch, bf, decap, data)
+					}
 					etherType = constants.ETypeIPv6
 				default:
+					if len(data) >= 14 && isEthernet(data) {
+						if len(mplsLabels) > 0 && decap == pb.RawFlow_DECAP_NONE {
+							bf.AppendArrayUInt32(schema.ColumnMPLSLabels, mplsLabels)
+						}
+						return ParseEthernet(sch, bf, decap, data)
+					}
 					return 0
 				}
 				break
