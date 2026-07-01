@@ -54,7 +54,14 @@ func New(r *reporter.Reporter) (Component, error) {
 
 // Start will make the daemon component active.
 func (c *realComponent) Start() error {
-	// Listen for tombs
+	c.watchTombs()
+	c.watchSignals()
+	return nil
+}
+
+// watchTombs starts one goroutine per tracked tomb to terminate the
+// daemon when the tomb dies.
+func (c *realComponent) watchTombs() {
 	for _, t := range c.tombs {
 		go func(t tombWithOrigin) {
 			<-t.tomb.Dying()
@@ -70,11 +77,15 @@ func (c *realComponent) Start() error {
 			c.Terminate()
 		}(t)
 	}
-	// On signal, terminate
+}
+
+// watchSignals terminates the daemon on SIGINT/SIGTERM.
+func (c *realComponent) watchSignals() {
 	go func() {
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals,
 			syscall.SIGINT, syscall.SIGTERM)
+		defer signal.Stop(signals)
 		select {
 		case s := <-signals:
 			c.r.Debug().Stringer("signal", s).Msg("signal received")
@@ -82,13 +93,11 @@ func (c *realComponent) Start() error {
 			case syscall.SIGINT, syscall.SIGTERM:
 				c.r.Info().Msg("quitting")
 				c.Terminate()
-				signal.Stop(signals)
 			}
 		case <-c.Terminated():
 			// Do nothing.
 		}
 	}()
-	return nil
 }
 
 // Stop will stop the component.
