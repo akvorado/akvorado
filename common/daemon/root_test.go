@@ -80,7 +80,10 @@ func TestTombTracking(t *testing.T) {
 		}
 
 		c.Track(&tomb, "tomb")
-		helpers.StartStop(t, c)
+		// Only watch tombs: os/signal (used by watchSignals) crosses the
+		// synctest bubble boundary and cannot run inside it.
+		c.(*realComponent).watchTombs()
+		t.Cleanup(func() { c.Stop() })
 
 		ch := make(chan bool)
 		tomb.Go(func() error {
