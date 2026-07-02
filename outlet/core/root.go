@@ -17,6 +17,7 @@ import (
 	"akvorado/outlet/clickhouse"
 	"akvorado/outlet/flow"
 	"akvorado/outlet/kafka"
+	"akvorado/outlet/kafkaout"
 	"akvorado/outlet/metadata"
 	"akvorado/outlet/routing"
 )
@@ -49,6 +50,7 @@ type Dependencies struct {
 	Routing    *routing.Component
 	Kafka      kafka.Component
 	ClickHouse clickhouse.Component
+	KafkaOut   *kafkaout.Component
 	HTTP       *httpserver.Component
 	Schema     *schema.Component
 }
