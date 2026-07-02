@@ -12,6 +12,8 @@ import (
 	"akvorado/common/helpers/bimap"
 
 	"github.com/bits-and-blooms/bitset"
+	"google.golang.org/protobuf/encoding/protowire"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 // InterfaceBoundary identifies wether the interface is facing inside or outside the network.
@@ -583,6 +585,13 @@ func (column *Column) shouldProvideValue() bool {
 		column.ClickHouseAlias == ""
 }
 
+// shouldBeProto tells if the column carries a value that can be exported in the
+// optional Protobuf encoding (i.e. it is a real wire column, not an
+// alias/generated one).
+func (column *Column) shouldBeProto() bool {
+	return column.shouldProvideValue()
+}
+
 func (schema Schema) finalize() Schema {
 	ncolumns := []Column{}
 	for _, column := range schema.columns {
@@ -634,6 +643,50 @@ func (schema Schema) finalize() Schema {
 		swapPrefix("InIf", "OutIf")
 	}
 	schema.columns = ncolumns
+
+	// Assign Protobuf field numbers and wire types (used only by the optional
+	// outlet Kafka output; ignored on the ClickHouse-only path). Indices are
+	// sequential over the exported columns; the type is derived from the
+	// ClickHouse type, mirroring the pre-2.0 encoder.
+	protobufIndex := 1
+	for i := range schema.columns {
+		column := &schema.columns[i]
+		if !column.shouldBeProto() {
+			column.ProtobufIndex = -1
+			continue
+		}
+		if column.ProtobufIndex == 0 {
+			column.ProtobufIndex = protowire.Number(protobufIndex)
+			protobufIndex++
+		}
+		if column.ProtobufType == 0 {
+			switch column.ClickHouseType {
+			case "String", "LowCardinality(String)", "FixedString(2)":
+				column.ProtobufType = protoreflect.StringKind
+			case "UInt64":
+				column.ProtobufType = protoreflect.Uint64Kind
+			case "UInt32", "UInt16", "UInt8", "DateTime":
+				column.ProtobufType = protoreflect.Uint32Kind
+			case "IPv6", "LowCardinality(IPv6)":
+				column.ProtobufType = protoreflect.BytesKind
+			case "Array(UInt32)":
+				column.ProtobufType = protoreflect.Uint32Kind
+				column.ProtobufRepeated = true
+			case "Array(UInt128)":
+				column.ProtobufType = protoreflect.BytesKind
+				column.ProtobufRepeated = true
+			default:
+				// Enum8(...) and any other integer-backed type: encode the
+				// numeric value as a varint.
+				if strings.HasPrefix(column.ClickHouseType, "Enum8") {
+					column.ProtobufType = protoreflect.Uint32Kind
+				} else {
+					// Unknown/unsupported type: do not export.
+					column.ProtobufIndex = -1
+				}
+			}
+		}
+	}
 
 	// Build column index
 	maxKey := ColumnTimeReceived

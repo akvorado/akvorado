@@ -150,6 +150,9 @@ func (bf *FlowMessage) AppendDateTime(columnKey ColumnKey, value uint32) {
 	}
 	bf.batch.columnSet.Set(uint(columnKey))
 	col.(*proto.ColDateTime).AppendRaw(proto.DateTime(value))
+	if bf.batch.protobufEnabled {
+		bf.protobufAppendUint(columnKey, uint64(value))
+	}
 	bf.appendDebug(columnKey, value)
 }
 
@@ -180,6 +183,9 @@ func (bf *FlowMessage) AppendUint(columnKey ColumnKey, value uint64) {
 		panic(fmt.Sprintf("unhandled uint type %q", col.Type()))
 	}
 	bf.batch.columnSet.Set(uint(columnKey))
+	if bf.batch.protobufEnabled {
+		bf.protobufAppendUint(columnKey, value)
+	}
 }
 
 // AppendString adds a String value to the provided column
@@ -196,6 +202,9 @@ func (bf *FlowMessage) AppendString(columnKey ColumnKey, value string) {
 		panic(fmt.Sprintf("unhandled string type %q", col.Type()))
 	}
 	bf.batch.columnSet.Set(uint(columnKey))
+	if bf.batch.protobufEnabled {
+		bf.protobufAppendString(columnKey, value)
+	}
 	bf.appendDebug(columnKey, value)
 }
 
@@ -215,6 +224,9 @@ func (bf *FlowMessage) AppendIPv6(columnKey ColumnKey, value netip.Addr) {
 		panic(fmt.Sprintf("unhandled string type %q", col.Type()))
 	}
 	bf.batch.columnSet.Set(uint(columnKey))
+	if bf.batch.protobufEnabled {
+		bf.protobufAppendIP(columnKey, value)
+	}
 	bf.appendDebug(columnKey, value)
 }
 
@@ -227,6 +239,9 @@ func (bf *FlowMessage) AppendArrayUInt32(columnKey ColumnKey, value []uint32) {
 	}
 	bf.batch.columnSet.Set(uint(columnKey))
 	col.(*proto.ColArr[uint32]).Append(value)
+	if bf.batch.protobufEnabled {
+		bf.protobufAppendArrayUint32(columnKey, value)
+	}
 	bf.appendDebug(columnKey, value)
 }
 
@@ -239,6 +254,9 @@ func (bf *FlowMessage) AppendArrayUInt128(columnKey ColumnKey, value []UInt128) 
 	}
 	bf.batch.columnSet.Set(uint(columnKey))
 	col.(*proto.ColArr[proto.UInt128]).Append(value)
+	if bf.batch.protobufEnabled {
+		bf.protobufAppendArrayUint128(columnKey, value)
+	}
 	bf.appendDebug(columnKey, value)
 }
 
@@ -386,6 +404,7 @@ func (bf *FlowMessage) Finalize() {
 		bf.AppendUint(ColumnSrcVlan, uint64(bf.SrcVlan))
 		bf.AppendUint(ColumnDstVlan, uint64(bf.DstVlan))
 	}
+	bf.protobufFinalize()
 	bf.batch.rowCount++
 	bf.appendDefaultValues()
 	bf.reset()
