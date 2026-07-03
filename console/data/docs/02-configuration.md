@@ -985,8 +985,19 @@ flows. It accepts the following keys:
 - `sasl` defines the SASL configuration to connect to the cluster
 - `topic` defines the base topic name
 - `manage-topic` controls whether the orchestrator should create or update the
-  Kafka topic. Can be set to `false` when Kafka is managed externally.
-- `topic-configuration` describes how the topic should be configured
+  input Kafka topic. Can be set to `false` when Kafka is managed externally.
+- `topic-configuration` describes how the input topic should be configured
+
+A separate top-level **`kafka-out`** block, when set, makes the orchestrator
+manage the topic of the outlet's optional `kafka-out` output. It is a peer of the
+`kafka` block with its **own connection** (`brokers`, `tls`, `sasl`), so the
+output topic can live on a different cluster than the input topic. It is managed
+whenever it is configured — presence is the opt-in, independent of the input's
+`manage-topic` (so the output topic can be managed even when the input topic is
+not, e.g. the input lives on a shared cluster). It takes a `topic` base name (the
+schema hash is appended, matching `kafka-out`) plus the connection and
+topic-configuration keys (`num-partitions`, `replication-factor`,
+`config-entries`, `config-entries-strict-sync`).
 
 The following keys are accepted for the TLS configuration:
 
@@ -1031,6 +1042,17 @@ kafka:
       retention.ms: 86400000
       cleanup.policy: delete
     config-entries-strict-sync: true
+
+# Optional: manage the outlet kafka-out output topic (its own connection).
+kafka-out:
+  topic: flows-enriched
+  brokers:
+    - kafka:9092
+  num-partitions: 4
+  replication-factor: 1
+  config-entries:
+    retention.ms: 3600000
+  config-entries-strict-sync: true
 ```
 
 Another useful setting is `retention.bytes` to limit the size of a

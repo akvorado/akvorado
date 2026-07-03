@@ -10,10 +10,23 @@ import (
 // Configuration describes the configuration for the Kafka configurator.
 type Configuration struct {
 	kafka.Configuration `mapstructure:",squash" yaml:",inline"`
-	// ManageTopic tells if the Kafka topic should be managed (create/update). Default is true.
+	// ManageTopic tells if the input Kafka topic should be managed (create/update). Default is true.
 	ManageTopic bool
-	// TopicConfiguration describes the topic configuration.
+	// TopicConfiguration describes the input topic configuration.
 	TopicConfiguration TopicConfiguration
+}
+
+// OutputConfiguration describes an output Kafka topic for the orchestrator to
+// manage — currently the outlet's kafka-out topic. It is a peer of the input
+// Kafka configuration, with its own connection (brokers/TLS/SASL), so the
+// output topic can live on a different cluster than the input topic. It is
+// managed whenever it is configured (presence is the opt-in; no separate
+// toggle), independently of ManageTopic. The schema hash is appended to its
+// topic name, matching what kafka-out produces.
+type OutputConfiguration struct {
+	kafka.Configuration `mapstructure:",squash" yaml:",inline"`
+	// TopicConfiguration is the partitions/replication/retention for the topic.
+	TopicConfiguration `mapstructure:",squash" yaml:",inline"`
 }
 
 // TopicConfiguration describes the configuration for a topic
