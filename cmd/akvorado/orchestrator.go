@@ -36,6 +36,7 @@ type OrchestratorConfiguration struct {
 	ClickHouse       clickhouse.Configuration
 	ClickHouseDB     clickhousedb.Configuration
 	Kafka            kafka.Configuration
+	KafkaOut         *kafka.OutputConfiguration
 	GeoIP            geoip.Configuration
 	Orchestrator     orchestrator.Configuration `mapstructure:",squash" yaml:",inline"`
 	Schema           schema.Configuration
@@ -172,7 +173,7 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, d
 	if err != nil {
 		return fmt.Errorf("unable to initialize schema component: %w", err)
 	}
-	kafkaComponent, err := kafka.New(r, config.Kafka, kafka.Dependencies{Schema: schemaComponent})
+	kafkaComponent, err := kafka.New(r, config.Kafka, config.KafkaOut, kafka.Dependencies{Schema: schemaComponent})
 	if err != nil {
 		return fmt.Errorf("unable to initialize kafka component: %w", err)
 	}

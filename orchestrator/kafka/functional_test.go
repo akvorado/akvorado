@@ -75,7 +75,7 @@ func TestTopicCreation(t *testing.T) {
 			}
 			configuration.Brokers = brokers
 			// No version configuration needed for franz-go
-			c, err := New(reporter.NewMock(t), configuration, Dependencies{Schema: schema.NewMock(t)})
+			c, err := New(reporter.NewMock(t), configuration, nil, Dependencies{Schema: schema.NewMock(t)})
 			if err != nil {
 				t.Fatalf("New() error:\n%+v", err)
 			}
@@ -135,7 +135,7 @@ func TestTopicMorePartitions(t *testing.T) {
 
 	configuration.Brokers = brokers
 	// No version configuration needed for franz-go
-	c, err := New(reporter.NewMock(t), configuration, Dependencies{Schema: schema.NewMock(t)})
+	c, err := New(reporter.NewMock(t), configuration, nil, Dependencies{Schema: schema.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
@@ -168,7 +168,7 @@ func TestTopicMorePartitions(t *testing.T) {
 
 	// Increase number of partitions
 	configuration.TopicConfiguration.NumPartitions = 4
-	c, err = New(reporter.NewMock(t), configuration, Dependencies{Schema: schema.NewMock(t)})
+	c, err = New(reporter.NewMock(t), configuration, nil, Dependencies{Schema: schema.NewMock(t)})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
@@ -192,6 +192,66 @@ func TestTopicMorePartitions(t *testing.T) {
 			}
 			t.Fatalf("Topic does not have 4/1 for partitions/replication but %d/%d",
 				len(topic.Partitions), topic.Partitions.NumReplicas())
+		}
+		break
+	}
+}
+
+func TestKafkaOutManagement(t *testing.T) {
+	client, brokers := kafka.SetupKafkaBroker(t)
+	adminClient := kadm.NewClient(client)
+	sch := schema.NewMock(t)
+
+	inputBase := fmt.Sprintf("test-input-%d", rand.Int())
+	outputBase := fmt.Sprintf("test-output-%d", rand.Int())
+	retentionMs := "76548"
+
+	configuration := DefaultConfiguration()
+	configuration.Topic = inputBase
+	configuration.Brokers = brokers
+	// Input topic management off, kafka-out topic management on: the case where
+	// the input topic lives on a shared cluster the orchestrator must not touch.
+	configuration.ManageTopic = false
+	output := &OutputConfiguration{
+		Configuration: kafka.Configuration{
+			Topic:   outputBase,
+			Brokers: brokers,
+		},
+		TopicConfiguration: TopicConfiguration{
+			NumPartitions:           1,
+			ReplicationFactor:       1,
+			ConfigEntries:           map[string]*string{"retention.ms": &retentionMs},
+			ConfigEntriesStrictSync: true,
+		},
+	}
+
+	c, err := New(reporter.NewMock(t), configuration, output, Dependencies{Schema: sch})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	if c == nil {
+		t.Fatal("New() returned nil despite kafka-out set")
+	}
+	helpers.StartStop(t, c)
+
+	expectedOutput := fmt.Sprintf("%s-%s", outputBase, sch.ProtobufMessageHash())
+	unexpectedInput := fmt.Sprintf("%s-v%d", inputBase, pb.Version)
+
+	deadline := time.Now().Add(1 * time.Second)
+	for {
+		topics, err := adminClient.ListTopics(t.Context())
+		if err != nil {
+			t.Fatalf("ListTopics() error:\n%+v", err)
+		}
+		if _, ok := topics[expectedOutput]; !ok {
+			if time.Now().Before(deadline) {
+				time.Sleep(100 * time.Millisecond)
+				continue
+			}
+			t.Fatalf("output topic %q was not created", expectedOutput)
+		}
+		if _, ok := topics[unexpectedInput]; ok {
+			t.Fatalf("input topic %q was created despite ManageTopic=false", unexpectedInput)
 		}
 		break
 	}
