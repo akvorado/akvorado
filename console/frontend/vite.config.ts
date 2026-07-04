@@ -24,6 +24,13 @@ export default defineConfig({
     outDir: "../data/frontend",
     emptyOutDir: true,
     chunkSizeWarningLimit: 2000,
+    rolldownOptions: {
+      // TODO: Remove when updating vueuse beyond v14.3.0
+      onLog(level, log, defaultHandler) {
+        if (log.code === "INVALID_ANNOTATION") return;
+        else defaultHandler(level, log);
+      },
+    },
   },
   test: {
     reporters: ["default", "junit"],
