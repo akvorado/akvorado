@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "packageManager": "pnpm@10.34.1",
+  "packageManager": "pnpm@10.34.4",
   "scripts": {
     "dev": "vite",
     "build": "$npm_execpath run type-check && $npm_execpath run build-only",
@@ -40,7 +40,7 @@
     "echarts": "^6.0.0",
     "lodash-es": "^4.17.21",
     "lz-string": "^1.4.4",
-    "oxfmt": "^0.52.0",
+    "oxfmt": "^0.56.0",
     "oxlint": "^1.15.0",
     "oxlint-tsgolint": "^0.23.0",
     "sugar-date": "^2.0.6",
