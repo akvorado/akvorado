@@ -36,7 +36,7 @@ require (
 	github.com/osrg/gobgp/v4 v4.6.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/puzpuzpuz/xsync/v4 v4.5.0
-	github.com/redis/go-redis/v9 v9.19.0
+	github.com/redis/go-redis/v9 v9.21.0
 	github.com/rs/zerolog v1.35.1
 	github.com/scrapli/scrapligo v1.4.0
 	github.com/slayercat/GoSNMPServer v0.5.2
