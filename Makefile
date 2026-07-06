@@ -151,7 +151,7 @@ console/filter/parser.go: console/filter/parser.peg
 console/frontend/node_modules: console/frontend/package.json console/frontend/pnpm-lock.yaml
 console/frontend/node_modules:
 	$(call log,fetching node modules…)
-	$Q (cd console/frontend ; $(PNPM) install --loglevel=error --frozen-lockfile) && touch $@
+	$Q (cd console/frontend ; NODE_OPTIONS=--trace-deprecation $(PNPM) install --loglevel=error --frozen-lockfile) && touch $@
 console/data/frontend: $(GENERATED_JS)
 console/data/frontend: $(shell $(LSFILES) console/frontend 2> /dev/null)
 console/data/frontend:
