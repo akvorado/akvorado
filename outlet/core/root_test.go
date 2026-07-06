@@ -28,6 +28,7 @@ import (
 	"akvorado/common/pb"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
+	"akvorado/outlet/cgnat"
 	"akvorado/outlet/clickhouse"
 	"akvorado/outlet/flow"
 	"akvorado/outlet/kafka"
@@ -64,6 +65,7 @@ func TestCore(t *testing.T) {
 		Daemon:     daemonComponent,
 		Flow:       flowComponent,
 		Metadata:   metadataComponent,
+		CGNAT:      cgnat.NewMock(t, r),
 		Kafka:      kafkaComponent,
 		ClickHouse: clickhouseComponent,
 		HTTP:       httpComponent,
@@ -326,6 +328,8 @@ func TestCore(t *testing.T) {
 				"ExporterAddress": "::ffff:192.0.2.142",
 				"SrcAddr":         "::ffff:67.43.156.77",
 				"DstAddr":         "::ffff:2.125.160.216",
+				"SrcPort":         float64(0),
+				"DstPort":         float64(0),
 				"SrcAS":           float64(0), // no geoip enrich anymore
 				"InIf":            float64(434),
 				"OutIf":           float64(677),

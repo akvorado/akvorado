@@ -64,6 +64,14 @@ unhealthy, or not working correctly, check its logs:
 $ docker compose logs akvorado-inlet
 ```
 
+If you changed source code or rebuilt the Docker image, recreate the affected
+containers before looking any further:
+
+```console
+$ make docker
+$ docker compose up -d --force-recreate akvorado-orchestrator akvorado-outlet akvorado-console akvorado-inlet
+```
+
 The *inlet*, *outlet*, *orchestrator*, and *console* expose metrics. Get them with this command:
 
 ```console

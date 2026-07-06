@@ -130,8 +130,48 @@ func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) bool {
 	}
 
 	ctx := c.t.Context(context.Background())
-	sourceRouting := c.d.Routing.Lookup(ctx, flow.SrcAddr, netip.Addr{}, flow.ExporterAddress)
-	destRouting := c.d.Routing.Lookup(ctx, flow.DstAddr, flow.NextHop, flow.ExporterAddress)
+	var (
+		cgnatMatchPrivateIP netip.Addr
+		cgnatMatchPublicIP  netip.Addr
+		cgnatPortStart      uint16
+		cgnatPortEnd        uint16
+		sourceLookupIP      = flow.SrcAddr
+		destLookupIP        = flow.DstAddr
+	)
+	matchedOn := ""
+	if c.d.CGNAT != nil {
+		flowTime := t
+		if flow.TimeReceived > 0 {
+			flowTime = time.Unix(int64(flow.TimeReceived), 0)
+		}
+
+		match, ok := c.d.CGNAT.Lookup(flowTime, flow.SrcAddr.Unmap(), uint16(flow.SrcPort))
+		if ok {
+			matchedOn = "src"
+			cgnatMatchPrivateIP = match.PrivateIP
+			cgnatMatchPublicIP = match.PublicIP
+			cgnatPortStart = match.PortStart
+			cgnatPortEnd = match.PortEnd
+		} else {
+			match, ok = c.d.CGNAT.Lookup(flowTime, flow.DstAddr.Unmap(), uint16(flow.DstPort))
+			if ok {
+				matchedOn = "dst"
+				cgnatMatchPrivateIP = match.PrivateIP
+				cgnatMatchPublicIP = match.PublicIP
+				cgnatPortStart = match.PortStart
+				cgnatPortEnd = match.PortEnd
+			}
+		}
+
+		if c.config.RouteDestinationOnCGNATPrivateAddr && matchedOn == "dst" {
+			destLookupIP = cgnatMatchPrivateIP
+		}
+		if c.config.RouteSourceOnCGNATPrivateAddr && matchedOn == "src" {
+			sourceLookupIP = cgnatMatchPrivateIP
+		}
+	}
+	sourceRouting := c.d.Routing.Lookup(ctx, sourceLookupIP, netip.Addr{}, flow.ExporterAddress)
+	destRouting := c.d.Routing.Lookup(ctx, destLookupIP, flow.NextHop, flow.ExporterAddress)
 
 	// set prefix len according to user config
 	flow.SrcNetMask = c.getNetMask(flow.SrcNetMask, sourceRouting.NetMask)
@@ -151,6 +191,15 @@ func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) bool {
 	}
 	if len(destRouting.LargeCommunities) > 0 {
 		flow.AppendArrayUInt128(schema.ColumnDstLargeCommunities, largeCommunityToUInt128(destRouting.LargeCommunities))
+	}
+	if c.d.CGNAT != nil {
+		if matchedOn != "" {
+			flow.AppendIPv6(schema.ColumnCGNATPrivateAddr, cgnatMatchPrivateIP)
+			flow.AppendIPv6(schema.ColumnCGNATPublicAddr, cgnatMatchPublicIP)
+			flow.AppendUint(schema.ColumnCGNATPortStart, uint64(cgnatPortStart))
+			flow.AppendUint(schema.ColumnCGNATPortEnd, uint64(cgnatPortEnd))
+			flow.AppendString(schema.ColumnCGNATMatchedOn, matchedOn)
+		}
 	}
 
 	flow.AppendString(schema.ColumnExporterName, flowExporterName)

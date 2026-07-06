@@ -60,6 +60,16 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 		w.c.metrics.rawFlowsErrors.WithLabelValues("cannot decode protobuf")
 		return fmt.Errorf("cannot decode raw flow: %w", err)
 	}
+	if w.rawFlow.Decoder == pb.RawFlow_DECODER_CGNAT {
+		if w.c.d.CGNAT == nil {
+			w.c.metrics.rawFlowsErrors.WithLabelValues("cgnat component unavailable").Inc()
+			return nil
+		}
+		if err := w.c.d.CGNAT.UpdateFromPayload(w.rawFlow.Payload); err != nil {
+			w.c.metrics.rawFlowsErrors.WithLabelValues("cannot decode cgnat payload").Inc()
+		}
+		return nil
+	}
 
 	// Process each decoded flow
 	rateLimit := w.rawFlow.RateLimit

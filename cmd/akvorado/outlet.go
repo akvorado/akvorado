@@ -16,6 +16,7 @@ import (
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
+	"akvorado/outlet/cgnat"
 	"akvorado/outlet/clickhouse"
 	"akvorado/outlet/core"
 	"akvorado/outlet/flow"
@@ -32,6 +33,7 @@ type OutletConfiguration struct {
 	HTTP         httpserver.Configuration
 	Metadata     metadata.Configuration
 	Routing      routing.Configuration
+	CGNAT        cgnat.Configuration
 	Kafka        kafka.Configuration
 	ClickHouseDB clickhousedb.Configuration
 	ClickHouse   clickhouse.Configuration
@@ -47,6 +49,7 @@ func (c *OutletConfiguration) Reset() {
 		Reporting:    reporter.DefaultConfiguration(),
 		Metadata:     metadata.DefaultConfiguration(),
 		Routing:      routing.DefaultConfiguration(),
+		CGNAT:        cgnat.DefaultConfiguration(),
 		Kafka:        kafka.DefaultConfiguration(),
 		ClickHouseDB: clickhousedb.DefaultConfiguration(),
 		ClickHouse:   clickhouse.DefaultConfiguration(),
@@ -130,6 +133,12 @@ func outletStart(r *reporter.Reporter, config OutletConfiguration, checkOnly boo
 	if err != nil {
 		return fmt.Errorf("unable to initialize routing component: %w", err)
 	}
+	cgnatComponent, err := cgnat.New(r, config.CGNAT, cgnat.Dependencies{
+		Daemon: daemonComponent,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to initialize cgnat component: %w", err)
+	}
 	kafkaComponent, err := kafka.New(r, config.Kafka, kafka.Dependencies{
 		Daemon: daemonComponent,
 	})
@@ -154,6 +163,7 @@ func outletStart(r *reporter.Reporter, config OutletConfiguration, checkOnly boo
 		Flow:       flowComponent,
 		Metadata:   metadataComponent,
 		Routing:    routingComponent,
+		CGNAT:      cgnatComponent,
 		Kafka:      kafkaComponent,
 		ClickHouse: clickhouseComponent,
 		HTTP:       httpComponent,
@@ -180,6 +190,7 @@ func outletStart(r *reporter.Reporter, config OutletConfiguration, checkOnly boo
 		flowComponent,
 		metadataComponent,
 		routingComponent,
+		cgnatComponent,
 		kafkaComponent,
 		coreComponent,
 	}

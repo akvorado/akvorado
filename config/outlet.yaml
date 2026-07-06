@@ -1,17 +1,38 @@
 ---
 metadata:
   providers:
-    - type: snmp
-      credentials:
-        ::/0:
-          communities: public
+    - type: static
+      exporters:
+        192.168.1.1:
+          name: vegtlust2
+          ifindexes:
+            1:
+              name: ens18
+              description: LAN
+              speed: 1000
+            2:
+              name: ens20
+              description: Uplink
+              speed: 1000
 routing:
   provider:
     type: bmp
     # Before increasing this value, look for it in the troubleshooting section
     # of the documentation.
     receive-buffer: 212992
+cgnat:
+  # Keep closed sessions in cache for this duration.
+  retention: 24h
+  # How often stale sessions are removed from cache.
+  cleanup-interval: 1m
 core:
+  default-sampling-rate: 1
+  # When true, a source-side CGNAT match uses the CGNAT private address for
+  # routing lookups and source metadata.
+  route-source-on-cgnat-private-addr: true
+  # When true, a destination-side CGNAT match uses the CGNAT private address
+  # for routing lookups and destination metadata.
+  route-destination-on-cgnat-private-addr: true
   exporter-classifiers:
     # This is an example. This should be customized depending on how
     # your exporters are named.
@@ -25,7 +46,6 @@ core:
     # external interfaces are named "Transit: Cogent" Or "IX:
     # FranceIX".
     - |
-      ClassifyConnectivityRegex(Interface.Description, "^(?i)(transit|pni|ppni|ix):? ", "$1") &&
-      ClassifyProviderRegex(Interface.Description, "^\\S+?\\s(\\S+)", "$1") &&
+      ClassifyConnectivityRegex(Interface.Name, "^ens18$", "$1") &&
       ClassifyExternal()
     - ClassifyInternal()

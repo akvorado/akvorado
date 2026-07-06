@@ -104,6 +104,14 @@ clickhouse:
     #     .[] | select(startswith("#") | not) |
     #     { prefix: . + "/32", tenant: "nerd", role: "nerd-scan" }
 
+schema:
+  enabled:
+    - CGNATPrivateAddr
+    - CGNATPublicAddr
+    - CGNATPortStart
+    - CGNATPortEnd
+    - CGNATMatchedOn
+
 inlet: !include "inlet.yaml"
 outlet: !include "outlet.yaml"
 console: !include "console.yaml"

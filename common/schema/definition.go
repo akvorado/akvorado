@@ -200,6 +200,11 @@ const (
 	ColumnDstAddrNAT
 	ColumnSrcPortNAT
 	ColumnDstPortNAT
+	ColumnCGNATPrivateAddr
+	ColumnCGNATPublicAddr
+	ColumnCGNATPortStart
+	ColumnCGNATPortEnd
+	ColumnCGNATMatchedOn
 	ColumnSrcMAC
 	ColumnDstMAC
 	ColumnIPTTL
@@ -231,6 +236,7 @@ const (
 const (
 	ColumnGroupL2 ColumnGroup = iota + 1
 	ColumnGroupNAT
+	ColumnGroupCGNAT
 	ColumnGroupL3L4
 
 	ColumnGroupLast
@@ -486,6 +492,48 @@ END`,
 				Group:              ColumnGroupNAT,
 				ParserType:         "uint",
 				ClickHouseType:     "UInt16",
+				ClickHouseMainOnly: true,
+			},
+			{
+				Key:                ColumnCGNATPrivateAddr,
+				Disabled:           true,
+				Group:              ColumnGroupCGNAT,
+				ParserType:         "ip",
+				ClickHouseType:     "IPv6",
+				ClickHouseMainOnly: true,
+				ConsoleTruncateIP:  true,
+			},
+			{
+				Key:                ColumnCGNATPublicAddr,
+				Disabled:           true,
+				Group:              ColumnGroupCGNAT,
+				ParserType:         "ip",
+				ClickHouseType:     "IPv6",
+				ClickHouseMainOnly: true,
+				ConsoleTruncateIP:  true,
+			},
+			{
+				Key:                ColumnCGNATPortStart,
+				Disabled:           true,
+				Group:              ColumnGroupCGNAT,
+				ParserType:         "uint",
+				ClickHouseType:     "UInt16",
+				ClickHouseMainOnly: true,
+			},
+			{
+				Key:                ColumnCGNATPortEnd,
+				Disabled:           true,
+				Group:              ColumnGroupCGNAT,
+				ParserType:         "uint",
+				ClickHouseType:     "UInt16",
+				ClickHouseMainOnly: true,
+			},
+			{
+				Key:                ColumnCGNATMatchedOn,
+				Disabled:           true,
+				Group:              ColumnGroupCGNAT,
+				ParserType:         "string",
+				ClickHouseType:     "LowCardinality(String)",
 				ClickHouseMainOnly: true,
 			},
 			{Key: ColumnSrcMAC, Disabled: true, Group: ColumnGroupL2, ParserType: "mac", ClickHouseType: "UInt64"},

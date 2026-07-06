@@ -14,6 +14,7 @@ import (
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
+	"akvorado/outlet/cgnat"
 	"akvorado/outlet/clickhouse"
 	"akvorado/outlet/flow"
 	"akvorado/outlet/kafka"
@@ -47,6 +48,7 @@ type Dependencies struct {
 	Flow       *flow.Component
 	Metadata   *metadata.Component
 	Routing    *routing.Component
+	CGNAT      *cgnat.Component
 	Kafka      kafka.Component
 	ClickHouse clickhouse.Component
 	HTTP       *httpserver.Component

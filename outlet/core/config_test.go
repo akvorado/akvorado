@@ -110,6 +110,30 @@ func TestConfigurationUnmarshallerHook(t *testing.T) {
 				NetProviders: []NetProvider{NetProviderFlow, NetProviderRouting},
 			},
 			SkipValidation: true,
+		}, {
+			Description: "route destination on cgnat private addr",
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
+				return helpers.M{
+					"route-destination-on-cgnat-private-addr": true,
+				}
+			},
+			Expected: Configuration{
+				RouteDestinationOnCGNATPrivateAddr: true,
+			},
+			SkipValidation: true,
+		}, {
+			Description: "route source on cgnat private addr",
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
+				return helpers.M{
+					"route-source-on-cgnat-private-addr": true,
+				}
+			},
+			Expected: Configuration{
+				RouteSourceOnCGNATPrivateAddr: true,
+			},
+			SkipValidation: true,
 		},
 	})
 }

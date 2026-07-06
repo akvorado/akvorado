@@ -21,3 +21,8 @@ flow:
       listen: :6343
       workers: 4
       receive-buffer: 212992
+    # Syslog CGNAT mapping input (PortBatchV2Allocated/PortBatchV2Freed)
+    - type: syslog-cgnat
+      decoder: cgnat
+      listen: :1514
+      receive-buffer: 212992

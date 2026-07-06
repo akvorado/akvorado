@@ -51,6 +51,8 @@ func (nd *Decoder) decodeNFv5(packet *netflowlegacy.PacketNetFlowV5, ts, sysUpti
 		bf.AppendUint(schema.ColumnPackets, uint64(record.DPkts))
 		bf.AppendUint(schema.ColumnEType, constants.ETypeIPv4)
 		bf.AppendUint(schema.ColumnProto, uint64(record.Proto))
+		bf.SrcPort = uint16(record.SrcPort)
+		bf.DstPort = uint16(record.DstPort)
 		bf.AppendUint(schema.ColumnSrcPort, uint64(record.SrcPort))
 		bf.AppendUint(schema.ColumnDstPort, uint64(record.DstPort))
 		if !nd.d.Schema.IsDisabled(schema.ColumnGroupL3L4) {
@@ -217,9 +219,11 @@ func (nd *Decoder) decodeRecord(version uint16, obsDomainID uint32, tao *templat
 			// L4
 			case netflow.IPFIX_FIELD_sourceTransportPort:
 				srcPort = uint16(decodeUNumber(v))
+				bf.SrcPort = srcPort
 				bf.AppendUint(schema.ColumnSrcPort, uint64(srcPort))
 			case netflow.IPFIX_FIELD_destinationTransportPort:
 				dstPort = uint16(decodeUNumber(v))
+				bf.DstPort = dstPort
 				bf.AppendUint(schema.ColumnDstPort, uint64(dstPort))
 			case netflow.IPFIX_FIELD_protocolIdentifier:
 				proto = uint8(decodeUNumber(v))

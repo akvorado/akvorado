@@ -74,8 +74,9 @@ The `flow` component handles incoming flows. Use the `inputs` key to define a
 list of inputs for incoming flows. The flows are put into protobuf messages and
 sent to Kafka without being parsed.
 
-Each input has a `type` and a `decoder`. For `decoder`, `netflow` and `sflow`
-are supported. For `type`, `udp` and `file` are supported.
+Each input has a `type` and a `decoder`. For `decoder`, `netflow`, `sflow`, and
+`cgnat` are supported. For `type`, `udp`, `file`, and `syslog-cgnat` are
+supported.
 
 For all available inputs, the following options are available:
 
@@ -104,6 +105,33 @@ For the UDP input, you can use the following keys:
 - `workers`: set the number of workers to listen to the socket.
 - `receive-buffer`: set the size of the kernel's incoming buffer for each listening socket.
 
+For the `syslog-cgnat` input, you can use the following keys:
+
+- `listen`: set the listening endpoint (UDP syslog listener).
+- `receive-buffer`: set the size of the kernel's incoming buffer for the
+  listening socket.
+
+`syslog-cgnat` expects one CGNAT mapping event per syslog message with one of
+the following actions:
+
+- `PortBatchV2Allocated`
+- `PortBatchV2Freed`
+
+The expected tuple format is:
+
+```text
+[Private_IP Public_IP Start_port End_port]
+```
+
+For example:
+
+```text
+Jul  6 14:05:37 asd-kbw-cgnat01-syslog NAT:20260706140537 3e2d6209a001a200 PortBatchV2Allocated: [100.110.224.167 62.45.98.9 40961 41472]
+Jul  6 14:05:38 asd-kbw-cgnat01-syslog NAT:20260706140538 3e2d67879e01a000 PortBatchV2Freed: [100.81.114.25 62.45.103.135 40449 40960]
+```
+
+The `NAT:YYYYMMDDhhmmss` timestamp is used as the session event timestamp.
+
 For example:
 
 ```yaml
@@ -118,6 +146,10 @@ flow:
       decoder: sflow
       listen: :6343
       workers: 3
+    - type: syslog-cgnat
+      decoder: cgnat
+      listen: :1514
+      receive-buffer: 212992
 ```
 
 Use the `file` input for testing only. It has a `paths` key to define the files
@@ -309,6 +341,31 @@ as a fallback. After the router ID is determined, BioRIS queries one of the
 RIS instances that has the RIB.
 
 BioRIS can set the prefix, AS, AS Path, and communities for the flow.
+
+### CGNAT
+
+The `cgnat` component in the outlet maintains an in-memory cache of mapping
+events received from the `syslog-cgnat` input.
+
+The following keys are accepted:
+
+- `retention` defines how long finished sessions are kept in cache.
+- `cleanup-interval` defines how often stale sessions are pruned.
+
+For example:
+
+```yaml
+cgnat:
+  retention: 24h
+  cleanup-interval: 1m
+```
+
+When configured, enrichment is bidirectional:
+
+- source-side match first (`SrcAddr` + `SrcPort`)
+- destination-side fallback (`DstAddr` + `DstPort`)
+
+Port range matching is inclusive (`start <= port <= end`).
 
 ### Metadata
 
@@ -581,6 +638,12 @@ The following configuration keys are accepted:
   provided by the flow message (if any), while `routing` looks it up using the BMP
   component. If multiple sources are provided, the value of the first source
   providing a non-default route is taken. The default value is `flow` and `routing`.
+- `route-source-on-cgnat-private-addr` makes source routing use the CGNAT
+  private address when the source endpoint matches a CGNAT mapping.
+- `route-destination-on-cgnat-private-addr` makes destination routing use the
+  CGNAT private address when the destination endpoint matches a CGNAT mapping.
+  This keeps the observed `DstAddr` unchanged while allowing `DstNet*` and
+  `DstAS` to follow the translated internal host.
 
 #### Classification
 

@@ -24,6 +24,20 @@ Check with `docker version -f {{ .Server.Version }}`.
 
 If you want to compile the Docker image yourself, use `make docker`.
 
+## Local build plan
+
+If you are developing from a checkout and want to test your changes in the
+Docker Compose stack, rebuild the image first and then recreate the affected
+containers.
+
+```console
+# make docker
+# docker compose up -d --force-recreate akvorado-orchestrator akvorado-outlet akvorado-console akvorado-inlet
+```
+
+If you only changed configuration files under `config/`, you usually only need
+the `docker compose up -d --force-recreate ...` step.
+
 ## Pre-built binary
 
 The second option is to download a pre-built binary from the [release page

@@ -142,6 +142,8 @@ func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.
 				}
 				bf.SrcAddr = decoder.DecodeIP(recordData.SrcIP)
 				bf.DstAddr = decoder.DecodeIP(recordData.DstIP)
+				bf.SrcPort = uint16(recordData.SrcPort)
+				bf.DstPort = uint16(recordData.DstPort)
 				l3length = uint64(recordData.Length)
 				bf.AppendUint(schema.ColumnProto, uint64(recordData.Protocol))
 				bf.AppendUint(schema.ColumnSrcPort, uint64(recordData.SrcPort))
@@ -154,6 +156,8 @@ func (nd *Decoder) decode(exporter string, packet sflow.Packet, options decoder.
 				}
 				bf.SrcAddr = decoder.DecodeIP(recordData.SrcIP)
 				bf.DstAddr = decoder.DecodeIP(recordData.DstIP)
+				bf.SrcPort = uint16(recordData.SrcPort)
+				bf.DstPort = uint16(recordData.DstPort)
 				l3length = uint64(recordData.Length)
 				bf.AppendUint(schema.ColumnProto, uint64(recordData.Protocol))
 				bf.AppendUint(schema.ColumnSrcPort, uint64(recordData.SrcPort))

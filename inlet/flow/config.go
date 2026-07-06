@@ -8,6 +8,7 @@ import (
 	"akvorado/common/pb"
 	"akvorado/inlet/flow/input"
 	"akvorado/inlet/flow/input/file"
+	"akvorado/inlet/flow/input/syslogcgnat"
 	"akvorado/inlet/flow/input/udp"
 )
 
@@ -55,8 +56,9 @@ func (ic InputConfiguration) MarshalYAML() (any, error) {
 }
 
 var inputs = map[string](func() input.Configuration){
-	"udp":  udp.DefaultConfiguration,
-	"file": file.DefaultConfiguration,
+	"udp":          udp.DefaultConfiguration,
+	"file":         file.DefaultConfiguration,
+	"syslog-cgnat": syslogcgnat.DefaultConfiguration,
 }
 
 func init() {

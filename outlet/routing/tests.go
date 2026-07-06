@@ -6,10 +6,14 @@
 package routing
 
 import (
+	"context"
+	"net/netip"
 	"testing"
+	"time"
 
 	"akvorado/common/daemon"
 	"akvorado/common/reporter"
+	"akvorado/outlet/routing/provider"
 	"akvorado/outlet/routing/provider/bmp"
 )
 
@@ -28,6 +32,27 @@ func NewMock(t *testing.T, r *reporter.Reporter) *Component {
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
+	return c
+}
+
+type mockProvider struct {
+	lookup func(context.Context, netip.Addr, netip.Addr, netip.Addr) (provider.LookupResult, error)
+}
+
+func (m mockProvider) Lookup(ctx context.Context, ip, nh, agent netip.Addr) (provider.LookupResult, error) {
+	return m.lookup(ctx, ip, nh, agent)
+}
+
+// NewCustomMock creates a new routing component with a custom lookup function.
+func NewCustomMock(t *testing.T, r *reporter.Reporter, lookup func(context.Context, netip.Addr, netip.Addr, netip.Addr) (provider.LookupResult, error)) *Component {
+	t.Helper()
+	c := &Component{
+		r:         r,
+		provider:  mockProvider{lookup: lookup},
+		errLogger: r.Sample(reporter.BurstSampler(time.Minute, 3)),
+		config:    DefaultConfiguration(),
+	}
+	c.initMetrics()
 	return c
 }
 

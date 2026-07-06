@@ -18,6 +18,7 @@ message RawFlow {
         DECODER_NETFLOW = 1;
         DECODER_SFLOW = 2;
         DECODER_GOB = 3;
+        DECODER_CGNAT = 4;
     }
     enum TimestampSource {
         TS_INPUT = 0;

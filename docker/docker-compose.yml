@@ -148,6 +148,7 @@ services:
       - 2055:2055/udp
       - 4739:4739/udp
       - 6343:6343/udp
+      - 1514:1514/udp
     restart: unless-stopped
     depends_on:
       akvorado-orchestrator:
@@ -279,7 +280,7 @@ services:
       # services (ClickHouse, configuration, ...). Therefore, it is only exposed
       # on the loopback. Port 8081 is the one you can expose to users. Check
       # docker-compose-local.yml if you want to expose directly on port 80.
-      - 127.0.0.1:8080:8080/tcp
+      - 8080:8080/tcp
       - 8081:8081/tcp
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro

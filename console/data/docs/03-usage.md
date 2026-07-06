@@ -47,6 +47,45 @@ proxy. For example, the `inlet` service also exposes its metrics under
 packets and sends them to Kafka. The inlet service does not expose any
 service-specific HTTP endpoints.
 
+### Sending CGNAT syslog mappings
+
+If you enable the `syslog-cgnat` input, you can send CGNAT mapping updates over
+UDP syslog to the configured `listen` address (for example, `:1514`).
+
+Each message must include:
+
+- an action: `PortBatchV2Allocated` or `PortBatchV2Freed`
+- a NAT timestamp token: `NAT:YYYYMMDDhhmmss`
+- one tuple: `[Private_IP Public_IP Start_port End_port]`
+
+Example messages:
+
+```text
+Jul  6 14:05:37 cgnat01 NAT:20260706140537 3e2d6209a001a200 PortBatchV2Allocated: [100.110.224.167 62.45.98.9 40961 41472]
+Jul  6 14:08:37 cgnat01 NAT:20260706140837 3e2d6209a001a200 PortBatchV2Freed: [100.110.224.167 62.45.98.9 40961 41472]
+```
+
+Quick local test with `logger`:
+
+```console
+$ logger --udp --server 127.0.0.1 --port 1514 'NAT:20260706140537 3e2d6209a001a200 PortBatchV2Allocated: [100.110.224.167 62.45.98.9 40961 41472]'
+```
+
+You can verify ingestion on inlet metrics:
+
+- `akvorado_inlet_flow_input_syslogcgnat_syslog_messages_total`
+- `akvorado_inlet_flow_input_syslogcgnat_events_total`
+- `akvorado_inlet_flow_input_syslogcgnat_errors_total`
+
+You can verify enrichment on outlet flow stream (`/api/v0/outlet/flows`) by
+checking CGNAT fields in flow records:
+
+- `CGNATPrivateAddr`
+- `CGNATPublicAddr`
+- `CGNATPortStart`
+- `CGNATPortEnd`
+- `CGNATMatchedOn` (`src` or `dst`)
+
 ## Outlet service
 
 `akvorado outlet` starts the outlet service. It takes flows from Kafka,

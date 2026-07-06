@@ -158,10 +158,12 @@ func ParseL4(sch *schema.Component, bf *schema.FlowMessage, decap pb.RawFlow_Dec
 	}
 	if proto == constants.ProtoTCP || proto == constants.ProtoUDP {
 		if len(data) > 4 {
+			bf.SrcPort = binary.BigEndian.Uint16(data[0:2])
+			bf.DstPort = binary.BigEndian.Uint16(data[2:4])
 			bf.AppendUint(schema.ColumnSrcPort,
-				uint64(binary.BigEndian.Uint16(data[0:2])))
+				uint64(bf.SrcPort))
 			bf.AppendUint(schema.ColumnDstPort,
-				uint64(binary.BigEndian.Uint16(data[2:4])))
+				uint64(bf.DstPort))
 		}
 	}
 	if !sch.IsDisabled(schema.ColumnGroupL3L4) {

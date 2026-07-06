@@ -11,6 +11,7 @@ import (
 	"akvorado/common/helpers/yaml"
 	"akvorado/common/pb"
 	"akvorado/inlet/flow/input/file"
+	"akvorado/inlet/flow/input/syslogcgnat"
 	"akvorado/inlet/flow/input/udp"
 )
 
@@ -152,6 +153,29 @@ func TestDecodeConfiguration(t *testing.T) {
 					Decoder: pb.RawFlow_DECODER_NETFLOW,
 					Config: &file.Configuration{
 						Paths: []string{"file1", "file2"},
+					},
+				}},
+			},
+		},
+		{
+			Description: "syslog cgnat input",
+			Initial:     func() any { return Configuration{} },
+			Configuration: func() any {
+				return helpers.M{
+					"inputs": []helpers.M{{
+						"type":           "syslog-cgnat",
+						"decoder":        "cgnat",
+						"listen":         "127.0.0.1:1514",
+						"receive-buffer": 65536,
+					}},
+				}
+			},
+			Expected: Configuration{
+				Inputs: []InputConfiguration{{
+					Decoder: pb.RawFlow_DECODER_CGNAT,
+					Config: &syslogcgnat.Configuration{
+						Listen:        "127.0.0.1:1514",
+						ReceiveBuffer: 65536,
 					},
 				}},
 			},

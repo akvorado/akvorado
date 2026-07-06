@@ -27,6 +27,8 @@ type FlowMessage struct {
 	// For routing component
 	SrcAddr netip.Addr
 	DstAddr netip.Addr
+	SrcPort uint16
+	DstPort uint16
 	NextHop netip.Addr
 
 	// Core component may override them
@@ -116,6 +118,7 @@ func (bf *FlowMessage) Reverse() {
 	bf.InIf, bf.OutIf = bf.OutIf, bf.InIf
 	bf.SrcVlan, bf.DstVlan = bf.DstVlan, bf.SrcVlan
 	bf.SrcAddr, bf.DstAddr = bf.DstAddr, bf.SrcAddr
+	bf.SrcPort, bf.DstPort = bf.DstPort, bf.SrcPort
 	bf.SrcAS, bf.DstAS = bf.DstAS, bf.SrcAS
 	bf.SrcNetMask, bf.DstNetMask = bf.DstNetMask, bf.SrcNetMask
 }

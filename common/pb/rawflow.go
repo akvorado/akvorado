@@ -20,6 +20,7 @@ var decoderMap = bimap.New(map[RawFlow_Decoder]string{
 	RawFlow_DECODER_NETFLOW: "netflow",
 	RawFlow_DECODER_SFLOW:   "sflow",
 	RawFlow_DECODER_GOB:     "gob",
+	RawFlow_DECODER_CGNAT:   "cgnat",
 })
 
 // MarshalText turns a decoder to text

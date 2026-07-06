@@ -30,6 +30,12 @@ type Configuration struct {
 	ASNProviders []ASNProvider `validate:"dive"`
 	// NetProviders defines the source used to get Prefix/Network Information
 	NetProviders []NetProvider `validate:"dive"`
+	// RouteSourceOnCGNATPrivateAddr makes source routing use the CGNAT private
+	// address when a source-side CGNAT match is available.
+	RouteSourceOnCGNATPrivateAddr bool
+	// RouteDestinationOnCGNATPrivateAddr makes destination routing use the CGNAT
+	// private address when a destination-side CGNAT match is available.
+	RouteDestinationOnCGNATPrivateAddr bool
 }
 
 // DefaultConfiguration represents the default configuration for the core component.
