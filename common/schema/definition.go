@@ -154,6 +154,8 @@ const (
 	ColumnDstNetMask
 	ColumnSrcNetPrefix
 	ColumnDstNetPrefix
+	ColumnSrcNetPrefix24
+	ColumnDstNetPrefix24
 	ColumnSrcAS
 	ColumnDstAS
 	ColumnSrcVlan
@@ -294,6 +296,17 @@ func flows() Schema {
 				ClickHouseAlias: `CASE
  WHEN EType = 0x800 THEN concat(replaceRegexpOne(IPv6CIDRToRange(SrcAddr, (96 + SrcNetMask)::UInt8).1::String, '^::ffff:', ''), '/', SrcNetMask::String)
  WHEN EType = 0x86dd THEN concat(IPv6CIDRToRange(SrcAddr, SrcNetMask).1::String, '/', SrcNetMask::String)
+ ELSE ''
+END`,
+			},
+			{
+				Key:                        ColumnSrcNetPrefix24,
+				ParserType:                 "prefix",
+				ClickHouseMainOnly:         true,
+				ClickHouseType:             "String",
+				ClickHouseMaterializedType: "LowCardinality(String)",
+				ClickHouseAlias: `CASE
+ WHEN EType = 0x800 THEN concat(replaceRegexpOne(IPv6CIDRToRange(SrcAddr, (96 + 24)::UInt8).1::String, '^::ffff:', ''), '/24')
  ELSE ''
 END`,
 			},
