@@ -123,3 +123,42 @@
 #   akvorado-inlet:
 #     cap_add:
 #       - BPF # or SYS_ADMIN if you don't have Linux 5.8+
+
+# If you want to deploy a multi-node deployment, you can keep using this Docker
+# Compose setup by disabling the elements you don't want. For example, on nodes
+# where you only want the inlet service, assuming 192.168.1.16 is the IP address
+# of the orchestrator and you have two inlet configurations:
+#
+# services:
+#   traefik:
+#     profiles: [ enabled ]
+#   akvorado-inlet:
+#     profiles: [ enabled ]
+#     command: inlet http://192.168.1.16:8080#1
+#
+# services:
+#   traefik:
+#     profiles: [ enabled ]
+#   akvorado-inlet:
+#     profiles: [ enabled ]
+#     command: inlet http://192.168.1.16:8080#2
+#
+# And invoke "docker compose --profile enabled up --wait".
+#
+# Alternatively, you can also use this configuration if all inlet share the same
+# configuration:
+#
+# services:
+#   traefik:
+#     profiles: [ enabled ]
+#   akvorado-inlet:
+#     profiles: [ enabled ]
+#     extra_hosts:
+#       - "akvorado-orchestrator:192.168.1.16"
+#       - "kafka:192.168.1.18"
+#
+# You can also disable some services by putting them in an unused profile:
+#
+# services:
+#   akvorado-inlet:
+#     profiles: [ disabled ]
