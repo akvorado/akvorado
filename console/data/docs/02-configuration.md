@@ -547,6 +547,56 @@ metadata:
         transform: .exporters[]
 ```
 
+### DNS
+
+The DNS component optionally enriches flows with reverse DNS names in the
+`SrcDNSName` and `DstDNSName` dimensions. It is disabled by default and runs in
+the outlet only. DNS lookups are asynchronous by default: when a flow hits the
+cache, the name is added immediately; when it misses, the flow continues without
+a DNS name and the IP address is queued for resolution. This means the first
+flow after a cache miss may not have a DNS name, while later flows can use the
+cached result.
+
+If `wait-for-initial-result` is enabled, the outlet may wait up to
+`initial-timeout` on a cache miss for the first DNS result. This can enrich the
+first flow after a cache miss when the resolver answers quickly, but it also
+adds latency to the outlet hot path. It is disabled by default to protect flow
+processing latency. This does not change `timeout`: `timeout` is still the DNS
+query timeout for each resolver attempt, while `initial-timeout` is only the
+maximum wait for `Lookup()` before falling back to the normal asynchronous
+behavior.
+
+Resolvers must be configured explicitly. Akvorado does not use implicit public
+DNS resolvers. Prefer internal resolvers close to the outlet and use
+`include-subnets` to limit which addresses are resolved.
+
+```yaml
+dns:
+  enabled: false
+  resolvers:
+    - 127.0.0.1:53
+  timeout: 200ms
+  attempts: 1
+  max-concurrent-queries: 64
+  wait-for-initial-result: false
+  initial-timeout: 20ms
+  cache:
+    max-entries: 100000
+    min-ttl: 1m
+    max-ttl: 24h
+    negative-ttl: 5m
+  include-subnets: []
+  exclude-subnets: []
+  trim-suffixes:
+    - .lan.
+```
+
+`include-subnets` empty means all addresses are eligible, except those matching
+`exclude-subnets`. Exclusions always take precedence. `trim-suffixes` removes
+configured suffixes from returned names after the trailing dot is removed. DNS
+enrichment only affects newly processed flows and does not update historical
+ClickHouse rows.
+
 ### Core
 
 The core component processes flows from Kafka, queries the `metadata` component to
