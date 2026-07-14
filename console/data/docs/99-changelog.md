@@ -10,7 +10,7 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
-## Unreleased
+## 2.4.1 - 2026-07-14
 
 - 🩹 *outlet*: fix decoding of destination MAC address for sFlow
 - 🩹 *console*: avoid clipped labels in Sankey graphs
