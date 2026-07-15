@@ -33,6 +33,30 @@ func TestTopicSchemaSuffix(t *testing.T) {
 	}
 }
 
+// TestDisabled checks the component is inert when disabled: Start/Stop are
+// no-ops and Send drops on the nil client, so an existing deployment that never
+// enables the output is unaffected.
+func TestDisabled(t *testing.T) {
+	r := reporter.NewMock(t)
+	sch := schema.NewMock(t)
+	deps := Dependencies{Schema: sch}
+
+	c, err := New(r, Configuration{Configuration: kafka.Configuration{Topic: "flows-enriched"}}, deps)
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+	if c.Enabled() {
+		t.Error("Enabled() == true, expected false")
+	}
+	if err := c.Start(); err != nil {
+		t.Fatalf("Start() error:\n%+v", err)
+	}
+	c.Send("k", []byte("dropped")) // nil client -> no-op
+	if err := c.Stop(); err != nil {
+		t.Fatalf("Stop() error:\n%+v", err)
+	}
+}
+
 // TestSendDropsWhenFull checks the load-shedding contract: when the queue is
 // full, Send drops (and counts) instead of blocking the caller. No drain
 // goroutine is started, so the cap-1 queue stays full after the first Send.
