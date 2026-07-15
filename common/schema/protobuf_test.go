@@ -4,6 +4,7 @@
 package schema
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"net/netip"
@@ -119,6 +120,78 @@ func TestProtobufEncode(t *testing.T) {
 	wantBytes(ColumnExporterAddress, exporter[:])
 	src := netip.MustParseAddr("192.0.2.1").As16()
 	wantBytes(ColumnSrcAddr, src[:])
+}
+
+// TestProtobufEncodeArrays covers the repeated-field encoders: Array(UInt32)
+// columns (AS path, communities) emit one varint per element and Array(UInt128)
+// columns (large communities) emit one 16-byte value per element (high then low,
+// big-endian).
+func TestProtobufEncodeArrays(t *testing.T) {
+	c := NewMock(t)
+	bf := c.NewFlowMessage()
+	bf.EnableProtobuf()
+
+	asPath := []uint32{65001, 65002, 65003}
+	communities := []uint32{0x00010002, 0x00030004}
+	largeComm := []UInt128{
+		{High: 65001, Low: 0x0000000100000002},
+		{High: 65002, Low: 0x0000000300000004},
+	}
+	bf.AppendArrayUInt32(ColumnDstASPath, asPath)
+	bf.AppendArrayUInt32(ColumnDstCommunities, communities)
+	bf.AppendArrayUInt128(ColumnDstLargeCommunities, largeComm)
+	bf.Finalize()
+
+	fields := consumeProtobufFields(t, bf.ProtobufMessage())
+	idxOf := func(key ColumnKey) protowire.Number {
+		column, ok := c.LookupColumnByKey(key)
+		if !ok || column.ProtobufIndex <= 0 {
+			t.Fatalf("column %s has no Protobuf index", key)
+		}
+		return column.ProtobufIndex
+	}
+	wantVarints := func(key ColumnKey, want []uint32) {
+		got := fields[idxOf(key)]
+		if len(got) != len(want) {
+			t.Fatalf("%s: got %d values, want %d", key, len(got), len(want))
+		}
+		for i, w := range want {
+			if got[i].(uint64) != uint64(w) {
+				t.Errorf("%s[%d]: got %v, want %d", key, i, got[i], w)
+			}
+		}
+	}
+	wantVarints(ColumnDstASPath, asPath)
+	wantVarints(ColumnDstCommunities, communities)
+
+	got := fields[idxOf(ColumnDstLargeCommunities)]
+	if len(got) != len(largeComm) {
+		t.Fatalf("DstLargeCommunities: got %d values, want %d", len(got), len(largeComm))
+	}
+	for i, w := range largeComm {
+		var want [16]byte
+		binary.BigEndian.PutUint64(want[0:8], w.High)
+		binary.BigEndian.PutUint64(want[8:16], w.Low)
+		if b := got[i].([]byte); string(b) != string(want[:]) {
+			t.Errorf("DstLargeCommunities[%d]: got %x, want %x", i, b, want)
+		}
+	}
+}
+
+// TestProtobufMessageHash checks the hash is stable for a schema and is the same
+// value embedded in the generated message name, so consumers can key on it.
+func TestProtobufMessageHash(t *testing.T) {
+	c := NewMock(t)
+	hash := c.ProtobufMessageHash()
+	if hash == "" {
+		t.Fatal("ProtobufMessageHash() returned empty string")
+	}
+	if again := c.ProtobufMessageHash(); again != hash {
+		t.Errorf("ProtobufMessageHash() not stable: %q then %q", hash, again)
+	}
+	if want := "FlowMessagev" + hash; !strings.Contains(c.ProtobufDefinition(), want) {
+		t.Errorf("definition missing message name %q", want)
+	}
 }
 
 // TestProtobufDefinitionMatchesEncoding guards the invariant that the published
