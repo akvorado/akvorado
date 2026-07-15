@@ -6,8 +6,8 @@ services:
       service: ipinfo-geoipupdate
     restart: unless-stopped
     environment:
-      IPINFO_TOKEN: a2632ea59736c7
-      IPINFO_DATABASES: country asn
+      IPINFO_TOKEN: ${IPINFO_TOKEN:-a2632ea59736c7}
+      IPINFO_DATABASES: ${IPINFO_DATABASES:-country asn}
       UPDATE_FREQUENCY: 48h
     volumes:
       - akvorado-geoip:/data
