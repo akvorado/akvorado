@@ -32,6 +32,12 @@ type worker struct {
 // process an incoming flow and a function to call on shutdown.
 func (c *Component) newWorker(i int, scaleRequestChan chan<- kafka.ScaleRequest) (kafka.ReceiveFunc, kafka.ShutdownFunc) {
 	bf := c.d.Schema.NewFlowMessage()
+	// Encode enriched flows to Protobuf in parallel with the ClickHouse batch
+	// only when the Kafka output is enabled, so the ClickHouse-only path is
+	// unaffected.
+	if c.d.KafkaOut != nil && c.d.KafkaOut.Enabled() {
+		bf.EnableProtobuf()
+	}
 	w := worker{
 		c:                c,
 		l:                c.r.With().Int("worker", i).Logger(),
@@ -105,6 +111,16 @@ func (w *worker) processIncomingFlow(ctx context.Context, data []byte) error {
 		// Finalize and forward to ClickHouse
 		w.c.metrics.flowsForwarded.WithLabelValues(exporter).Inc()
 		status := w.cw.FinalizeAndSend(ctx)
+		// Export the enriched flow to Kafka, in parallel with ClickHouse, if
+		// enabled. FinalizeAndSend has finalized the flow, so the Protobuf
+		// message reflects the full enriched flow (including the fixed fields
+		// appended during Finalize). Best-effort: a slow/broken Kafka output
+		// must not stall the ClickHouse path.
+		if w.c.d.KafkaOut != nil && w.c.d.KafkaOut.Enabled() {
+			if payload := w.bf.ProtobufMessage(); len(payload) > 0 {
+				w.c.d.KafkaOut.Send(exporter, payload)
+			}
+		}
 		switch status {
 		case clickhouse.WorkerStatusOverloaded:
 			w.scaleRequestChan <- kafka.ScaleIncrease

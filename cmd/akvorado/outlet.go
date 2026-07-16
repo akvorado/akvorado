@@ -20,6 +20,7 @@ import (
 	"akvorado/outlet/core"
 	"akvorado/outlet/flow"
 	"akvorado/outlet/kafka"
+	"akvorado/outlet/kafkaout"
 	"akvorado/outlet/metadata"
 	"akvorado/outlet/metadata/provider/snmp"
 	"akvorado/outlet/routing"
@@ -35,6 +36,7 @@ type OutletConfiguration struct {
 	Kafka        kafka.Configuration
 	ClickHouseDB clickhousedb.Configuration
 	ClickHouse   clickhouse.Configuration
+	KafkaOut     kafkaout.Configuration
 	Flow         flow.Configuration
 	Core         core.Configuration
 	Schema       schema.Configuration
@@ -50,6 +52,7 @@ func (c *OutletConfiguration) Reset() {
 		Kafka:        kafka.DefaultConfiguration(),
 		ClickHouseDB: clickhousedb.DefaultConfiguration(),
 		ClickHouse:   clickhouse.DefaultConfiguration(),
+		KafkaOut:     kafkaout.DefaultConfiguration(),
 		Flow:         flow.DefaultConfiguration(),
 		Core:         core.DefaultConfiguration(),
 		Schema:       schema.DefaultConfiguration(),
@@ -149,6 +152,13 @@ func outletStart(r *reporter.Reporter, config OutletConfiguration, checkOnly boo
 	if err != nil {
 		return fmt.Errorf("unable to initialize outlet ClickHouse component: %w", err)
 	}
+	kafkaOutComponent, err := kafkaout.New(r, config.KafkaOut, kafkaout.Dependencies{
+		Daemon: daemonComponent,
+		Schema: schemaComponent,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to initialize Kafka output component: %w", err)
+	}
 	coreComponent, err := core.New(r, config.Core, core.Dependencies{
 		Daemon:     daemonComponent,
 		Flow:       flowComponent,
@@ -156,6 +166,7 @@ func outletStart(r *reporter.Reporter, config OutletConfiguration, checkOnly boo
 		Routing:    routingComponent,
 		Kafka:      kafkaComponent,
 		ClickHouse: clickhouseComponent,
+		KafkaOut:   kafkaOutComponent,
 		HTTP:       httpComponent,
 		Schema:     schemaComponent,
 	})
@@ -181,6 +192,7 @@ func outletStart(r *reporter.Reporter, config OutletConfiguration, checkOnly boo
 		metadataComponent,
 		routingComponent,
 		kafkaComponent,
+		kafkaOutComponent,
 		coreComponent,
 	}
 	return StartStopComponents(r, daemonComponent, components)

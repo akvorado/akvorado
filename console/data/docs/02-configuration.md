@@ -202,6 +202,68 @@ component. The number of workers is adjusted to stay below
 `maximum-batch-size`. Do not set `max-workers` too high, as it can
 increase the load on ClickHouse. The default value of 8 is usually fine.
 
+### Kafka output
+
+The outlet can also produce the decoded and enriched flows to a Kafka topic, in
+parallel with the ClickHouse insert, so downstream systems can consume enriched
+flows in near real time without re-decoding the inlet topic or exporting from
+ClickHouse. It is **disabled by default** and configured under the `kafka-out`
+key:
+
+- `enabled` turns the output on (default: `false`).
+- `topic` is the destination topic base name. The schema hash is appended to it
+  (`topic-<hash>`) — the same hash embedded in the generated message name
+  (`FlowMessagev<hash>`) — so an incompatible schema change lands on a new topic
+  instead of mixing wire layouts for consumers, mirroring the inlet topic's
+  version suffix. Unlike the inlet topic, the outlet does not yet manage this
+  topic, so create it — with retention — beforehand.
+- `brokers` and `tls` are as in the [orchestrator Kafka config](#kafka-2).
+- `queue-size` is the producer buffer: the maximum records held in flight
+  (`MaxBufferedRecords`) and the internal send-queue depth (default: 4096).
+
+Delivery is **best-effort and at-most-once**: this output never blocks the
+ClickHouse path. When the producer cannot keep up, records are **dropped**
+(counted by `akvorado_outlet_kafkaout_dropped_messages_total`) rather than
+applying backpressure to flow processing. Three things follow from that:
+
+- **Sizing `queue-size`.** It behaves like a TCP window: sustained producer
+  throughput is roughly `queue-size ÷ broker-ack-latency`. If it is smaller than
+  `peak-throughput × ack-latency`, the producer cannot keep enough requests in
+  flight, throughput is capped, and flows drop under load. A larger value trades
+  a little latency for more burst tolerance.
+- **Scaling.** Beyond that point, per-outlet producer throughput is bounded by
+  the broker in-flight limit and the topic's partition count — not by
+  `queue-size`. To sustain higher volume, add partitions and run more outlet
+  replicas (each replica is an independent producer), rather than only growing
+  `queue-size`.
+- **Not autoscaled.** The outlet's worker autoscaler reacts to ClickHouse load
+  only; it does not react to this output. Watch `dropped_messages_total` and
+  provision capacity accordingly.
+
+Besides `dropped_messages_total`, the output exposes (prefixed
+`akvorado_outlet_kafkaout_`): `sent_messages_total`, `sent_bytes_total`,
+`errors_total`, `send_queue_records` (a gauge of the current queue depth — note
+it is a snapshot, so brief bursts may not show; `dropped_messages_total` is the
+reliable saturation signal), and the underlying franz-go client metrics,
+including `request_durationE2E_seconds` (produce request round-trip latency) and
+`request_throttled_seconds` (broker throttling).
+
+```yaml
+kafka-out:
+  enabled: true
+  topic: flows-enriched
+  brokers:
+    - kafka:9092
+  queue-size: 16384
+```
+
+> [!NOTE]
+> In production, alert on `rate(akvorado_outlet_kafkaout_dropped_messages_total[5m]) > 0`.
+> Sustained drops mean the producer is below the offered load: add partitions or
+> outlet replicas, or raise `queue-size`. `request_durationE2E_seconds` and
+> `request_throttled_seconds` help tell whether the cause is broker latency or
+> throttling.
+
 ### Routing
 
 The routing component can get the source and destination AS numbers, AS paths,
@@ -923,8 +985,19 @@ flows. It accepts the following keys:
 - `sasl` defines the SASL configuration to connect to the cluster
 - `topic` defines the base topic name
 - `manage-topic` controls whether the orchestrator should create or update the
-  Kafka topic. Can be set to `false` when Kafka is managed externally.
-- `topic-configuration` describes how the topic should be configured
+  input Kafka topic. Can be set to `false` when Kafka is managed externally.
+- `topic-configuration` describes how the input topic should be configured
+
+A separate top-level **`kafka-out`** block, when set, makes the orchestrator
+manage the topic of the outlet's optional `kafka-out` output. It is a peer of the
+`kafka` block with its **own connection** (`brokers`, `tls`, `sasl`), so the
+output topic can live on a different cluster than the input topic. It is managed
+whenever it is configured — presence is the opt-in, independent of the input's
+`manage-topic` (so the output topic can be managed even when the input topic is
+not, e.g. the input lives on a shared cluster). It takes a `topic` base name (the
+schema hash is appended, matching `kafka-out`) plus the connection and
+topic-configuration keys (`num-partitions`, `replication-factor`,
+`config-entries`, `config-entries-strict-sync`).
 
 The following keys are accepted for the TLS configuration:
 
@@ -969,6 +1042,17 @@ kafka:
       retention.ms: 86400000
       cleanup.policy: delete
     config-entries-strict-sync: true
+
+# Optional: manage the outlet kafka-out output topic (its own connection).
+kafka-out:
+  topic: flows-enriched
+  brokers:
+    - kafka:9092
+  num-partitions: 4
+  replication-factor: 1
+  config-entries:
+    retention.ms: 3600000
+  config-entries-strict-sync: true
 ```
 
 Another useful setting is `retention.bytes` to limit the size of a

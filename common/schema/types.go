@@ -6,6 +6,8 @@ package schema
 import (
 	"github.com/ClickHouse/ch-go/proto"
 	"github.com/bits-and-blooms/bitset"
+	"google.golang.org/protobuf/encoding/protowire"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 // Schema is the data schema.
@@ -58,6 +60,16 @@ type Column struct {
 	// truncatable when used as a dimension.
 	ConsoleNotDimension bool `yaml:",omitempty"`
 	ConsoleTruncateIP   bool `yaml:",omitempty"`
+
+	// For the optional Protobuf encoding of enriched flows (outlet Kafka
+	// output). These are auto-assigned in finalize() from the ClickHouse type
+	// and are only consulted when the Protobuf encoder is active, so the
+	// ClickHouse-only path is unaffected. `ProtobufIndex' is the wire field
+	// number (-1 means the column is not exported), `ProtobufType' the wire
+	// kind, and `ProtobufRepeated' marks array columns.
+	ProtobufIndex    protowire.Number  `yaml:"-"`
+	ProtobufType     protoreflect.Kind `yaml:"-"`
+	ProtobufRepeated bool              `yaml:"-"`
 }
 
 // ColumnKey is the name of a column

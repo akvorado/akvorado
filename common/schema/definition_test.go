@@ -13,6 +13,7 @@ import (
 
 	"github.com/bits-and-blooms/bitset"
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 )
 
 func TestFlowsClickHouse(t *testing.T) {
@@ -85,7 +86,9 @@ func TestSchemaDump(t *testing.T) {
 	if err := yaml.Unmarshal(raw, &expected); err != nil {
 		t.Fatalf("yaml.Unmarshal(%q) error:\n%+v", expectedSchemaPath, err)
 	}
-	if diff := helpers.Diff(got, expected); diff != "" {
+	// Protobuf fields are internal, derived in finalize() and not serialized.
+	if diff := helpers.Diff(got, expected,
+		cmpopts.IgnoreFields(Column{}, "ProtobufIndex", "ProtobufType", "ProtobufRepeated")); diff != "" {
 		t.Fatalf("Schema dump (-got, +want):\n%s", diff)
 	}
 }
