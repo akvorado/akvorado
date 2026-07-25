@@ -65,7 +65,7 @@ func TestManageInputTopicFake(t *testing.T) {
 	retentionMs2 := "999999"
 
 	start := func(numPartitions int32, entries map[string]*string) {
-		configuration := DefaultConfiguration()
+		configuration := DefaultInputConfiguration()
 		configuration.Topic = topicName
 		configuration.Brokers = brokers
 		configuration.ManageTopic = true
@@ -120,7 +120,7 @@ func TestManageInputTopicFake(t *testing.T) {
 	start(8, map[string]*string{"retention.ms": &retentionMs2})
 }
 
-// TestManageOutputTopicFake drives the kafka-out output-topic reconciler against
+// TestManageOutputTopicFake drives the kafka-output output-topic reconciler against
 // a fake broker: the output topic is created (schema-suffixed) while the input
 // topic is left untouched because ManageTopic is off.
 func TestManageOutputTopicFake(t *testing.T) {
@@ -130,7 +130,7 @@ func TestManageOutputTopicFake(t *testing.T) {
 	outputBase := fmt.Sprintf("test-output-%d", rand.Int())
 	retentionMs := "76548"
 
-	configuration := DefaultConfiguration()
+	configuration := DefaultInputConfiguration()
 	configuration.Topic = inputBase
 	configuration.Brokers = brokers
 	configuration.ManageTopic = false
@@ -147,7 +147,7 @@ func TestManageOutputTopicFake(t *testing.T) {
 		t.Fatalf("New() error:\n%+v", err)
 	}
 	if c == nil {
-		t.Fatal("New() returned nil despite kafka-out set")
+		t.Fatal("New() returned nil despite kafka-output set")
 	}
 	helpers.StartStop(t, c)
 

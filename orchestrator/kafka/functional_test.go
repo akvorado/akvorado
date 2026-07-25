@@ -65,7 +65,7 @@ func TestTopicCreation(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.Name, func(t *testing.T) {
-			configuration := DefaultConfiguration()
+			configuration := DefaultInputConfiguration()
 			configuration.Topic = topicName
 			configuration.TopicConfiguration = TopicConfiguration{
 				NumPartitions:           1,
@@ -95,7 +95,7 @@ func TestTopicCreation(t *testing.T) {
 					}
 					t.Fatal("ListTopics() did not find the topic")
 				}
-				configs, err := adminClient.DescribeTopicConfigs(t.Context(), c.kafkaTopic)
+				configs, err := adminClient.DescribeTopicConfigs(t.Context(), c.inputTopic)
 				if err != nil {
 					t.Fatalf("DescribeTopicConfigs() error:\n%+v", err)
 				}
@@ -125,7 +125,7 @@ func TestTopicMorePartitions(t *testing.T) {
 	topicName := fmt.Sprintf("test-topic-%d", rand.Int())
 	expectedTopicName := fmt.Sprintf("%s-v%d", topicName, pb.Version)
 
-	configuration := DefaultConfiguration()
+	configuration := DefaultInputConfiguration()
 	configuration.Topic = topicName
 	configuration.TopicConfiguration = TopicConfiguration{
 		NumPartitions:     1,
@@ -197,7 +197,7 @@ func TestTopicMorePartitions(t *testing.T) {
 	}
 }
 
-func TestKafkaOutManagement(t *testing.T) {
+func TestKafkaOutputManagement(t *testing.T) {
 	client, brokers := kafka.SetupKafkaBroker(t)
 	adminClient := kadm.NewClient(client)
 	sch := schema.NewMock(t)
@@ -206,10 +206,10 @@ func TestKafkaOutManagement(t *testing.T) {
 	outputBase := fmt.Sprintf("test-output-%d", rand.Int())
 	retentionMs := "76548"
 
-	configuration := DefaultConfiguration()
+	configuration := DefaultInputConfiguration()
 	configuration.Topic = inputBase
 	configuration.Brokers = brokers
-	// Input topic management off, kafka-out topic management on: the case where
+	// Input topic management off, kafka-output topic management on: the case where
 	// the input topic lives on a shared cluster the orchestrator must not touch.
 	configuration.ManageTopic = false
 	output := &OutputConfiguration{
@@ -230,7 +230,7 @@ func TestKafkaOutManagement(t *testing.T) {
 		t.Fatalf("New() error:\n%+v", err)
 	}
 	if c == nil {
-		t.Fatal("New() returned nil despite kafka-out set")
+		t.Fatal("New() returned nil despite kafka-output set")
 	}
 	helpers.StartStop(t, c)
 

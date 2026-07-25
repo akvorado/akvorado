@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package kafkaout
+package kafkaoutput
 
 import (
 	"context"
@@ -72,7 +72,7 @@ func TestFakeKafka(t *testing.T) {
 	metricsCtx, metricsCancel := context.WithTimeout(t.Context(), 15*time.Second)
 	defer metricsCancel()
 	for {
-		gotMetrics := r.GetMetrics("akvorado_outlet_kafkaout_", "sent_")
+		gotMetrics := r.GetMetrics("akvorado_outlet_kafkaoutput_", "sent_")
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			select {
 			case <-metricsCtx.Done():
@@ -181,7 +181,7 @@ func TestProduceError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	defer cancel()
 	for {
-		gotMetrics := r.GetMetrics("akvorado_outlet_kafkaout_", "errors_")
+		gotMetrics := r.GetMetrics("akvorado_outlet_kafkaoutput_", "errors_")
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			select {
 			case <-ctx.Done():

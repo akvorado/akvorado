@@ -207,7 +207,7 @@ increase the load on ClickHouse. The default value of 8 is usually fine.
 The outlet can also produce the decoded and enriched flows to a Kafka topic, in
 parallel with the ClickHouse insert, so downstream systems can consume enriched
 flows in near real time without re-decoding the inlet topic or exporting from
-ClickHouse. It is **disabled by default** and configured under the `kafka-out`
+ClickHouse. It is **disabled by default** and configured under the `kafka-output`
 key:
 
 - `enabled` turns the output on (default: `false`).
@@ -223,7 +223,7 @@ key:
 
 Delivery is **best-effort and at-most-once**: this output never blocks the
 ClickHouse path. When the producer cannot keep up, records are **dropped**
-(counted by `akvorado_outlet_kafkaout_dropped_messages_total`) rather than
+(counted by `akvorado_outlet_kafkaoutput_dropped_messages_total`) rather than
 applying backpressure to flow processing. Three things follow from that:
 
 - **Sizing `queue-size`.** It behaves like a TCP window: sustained producer
@@ -241,7 +241,7 @@ applying backpressure to flow processing. Three things follow from that:
   provision capacity accordingly.
 
 Besides `dropped_messages_total`, the output exposes (prefixed
-`akvorado_outlet_kafkaout_`): `sent_messages_total`, `sent_bytes_total`,
+`akvorado_outlet_kafkaoutput_`): `sent_messages_total`, `sent_bytes_total`,
 `errors_total`, `send_queue_records` (a gauge of the current queue depth — note
 it is a snapshot, so brief bursts may not show; `dropped_messages_total` is the
 reliable saturation signal), and the underlying franz-go client metrics,
@@ -249,7 +249,7 @@ including `request_durationE2E_seconds` (produce request round-trip latency) and
 `request_throttled_seconds` (broker throttling).
 
 ```yaml
-kafka-out:
+kafka-output:
   enabled: true
   topic: flows-enriched
   brokers:
@@ -258,7 +258,7 @@ kafka-out:
 ```
 
 > [!NOTE]
-> In production, alert on `rate(akvorado_outlet_kafkaout_dropped_messages_total[5m]) > 0`.
+> In production, alert on `rate(akvorado_outlet_kafkaoutput_dropped_messages_total[5m]) > 0`.
 > Sustained drops mean the producer is below the offered load: add partitions or
 > outlet replicas, or raise `queue-size`. `request_durationE2E_seconds` and
 > `request_throttled_seconds` help tell whether the cause is broker latency or
@@ -988,14 +988,14 @@ flows. It accepts the following keys:
   input Kafka topic. Can be set to `false` when Kafka is managed externally.
 - `topic-configuration` describes how the input topic should be configured
 
-A separate top-level **`kafka-out`** block, when set, makes the orchestrator
-manage the topic of the outlet's optional `kafka-out` output. It is a peer of the
+A separate top-level **`kafka-output`** block, when set, makes the orchestrator
+manage the topic of the outlet's optional `kafka-output` output. It is a peer of the
 `kafka` block with its **own connection** (`brokers`, `tls`, `sasl`), so the
 output topic can live on a different cluster than the input topic. It is managed
 whenever it is configured — presence is the opt-in, independent of the input's
 `manage-topic` (so the output topic can be managed even when the input topic is
 not, e.g. the input lives on a shared cluster). It takes a `topic` base name (the
-schema hash is appended, matching `kafka-out`) plus the connection and
+schema hash is appended, matching `kafka-output`) plus the connection and
 topic-configuration keys (`num-partitions`, `replication-factor`,
 `config-entries`, `config-entries-strict-sync`).
 
@@ -1043,8 +1043,8 @@ kafka:
       cleanup.policy: delete
     config-entries-strict-sync: true
 
-# Optional: manage the outlet kafka-out output topic (its own connection).
-kafka-out:
+# Optional: manage the outlet kafka-output output topic (its own connection).
+kafka-output:
   topic: flows-enriched
   brokers:
     - kafka:9092

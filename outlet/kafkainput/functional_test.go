@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2022 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package kafka
+package kafkainput
 
 import (
 	"context"
@@ -109,7 +109,7 @@ func TestFakeKafka(t *testing.T) {
 		t.Errorf("Didn't received the expected messages (-got, +want):\n%s", diff)
 	}
 
-	gotMetrics := r.GetMetrics("akvorado_outlet_kafka_", "received_")
+	gotMetrics := r.GetMetrics("akvorado_outlet_kafkainput_", "received_")
 	fetches, _ := strconv.Atoi(gotMetrics[`received_fetches_total{worker="0"}`])
 	expectedMetrics := map[string]string{
 		`received_bytes_total{worker="0"}`:    "21",
@@ -165,7 +165,7 @@ func TestStartSeveralWorkers(t *testing.T) {
 		t.Fatalf("Stop() error:\n%+v", err)
 	}
 
-	got := r.GetMetrics("akvorado_outlet_kafka_", "workers")
+	got := r.GetMetrics("akvorado_outlet_kafkainput_", "workers")
 	expected := map[string]string{
 		"workers": "5",
 	}
@@ -248,7 +248,7 @@ func TestWorkerStop(t *testing.T) {
 	default:
 		t.Fatal("StopWorkers(): worker still running!")
 	}
-	gotMetrics := r.GetMetrics("akvorado_outlet_kafka_", "received_messages_total")
+	gotMetrics := r.GetMetrics("akvorado_outlet_kafkainput_", "received_messages_total")
 	expected := map[string]string{
 		`received_messages_total{worker="0"}`: strconv.Itoa(last),
 	}
@@ -357,7 +357,7 @@ func TestWorkerScaling(t *testing.T) {
 
 	// 1 worker
 	time.Sleep(10 * time.Millisecond)
-	gotMetrics := r.GetMetrics("akvorado_outlet_kafka_", "worker", "max", "min")
+	gotMetrics := r.GetMetrics("akvorado_outlet_kafkainput_", "worker", "max", "min")
 	expected := map[string]string{
 		"worker_decrease_total": "0",
 		"worker_increase_total": "1",
@@ -383,7 +383,7 @@ func TestWorkerScaling(t *testing.T) {
 	t.Log("Check if workers increased to 3")
 	for range 100 {
 		time.Sleep(10 * time.Millisecond)
-		gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "worker")
+		gotMetrics = r.GetMetrics("akvorado_outlet_kafkainput_", "worker")
 		expected = map[string]string{
 			"worker_decrease_total": "0",
 			"worker_increase_total": "3",
@@ -410,7 +410,7 @@ func TestWorkerScaling(t *testing.T) {
 	t.Log("Check if workers decreased to 2")
 	for range 200 {
 		time.Sleep(10 * time.Millisecond)
-		gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "worker")
+		gotMetrics = r.GetMetrics("akvorado_outlet_kafkainput_", "worker")
 		expected = map[string]string{
 			"worker_decrease_total": "1",
 			"worker_increase_total": "3",
@@ -506,7 +506,7 @@ func TestKafkaLagMetric(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), time.Second)
 	defer cancel()
 	for {
-		gotMetrics := r.GetMetrics("akvorado_outlet_kafka_", "consumergroup", "workers")
+		gotMetrics := r.GetMetrics("akvorado_outlet_kafkainput_", "consumergroup", "workers")
 		expected := map[string]string{
 			"consumergroup_lag_messages": "0",
 			"workers":                    "1",
@@ -546,7 +546,7 @@ func TestKafkaLagMetric(t *testing.T) {
 	}
 
 	// The message was processed, there's no lag
-	gotMetrics := r.GetMetrics("akvorado_outlet_kafka_", "consumergroup", "received_messages_total")
+	gotMetrics := r.GetMetrics("akvorado_outlet_kafkainput_", "consumergroup", "received_messages_total")
 	expected := map[string]string{
 		"consumergroup_lag_messages":          "0",
 		`received_messages_total{worker="0"}`: "1",
@@ -569,7 +569,7 @@ func TestKafkaLagMetric(t *testing.T) {
 	}
 
 	time.Sleep(20 * time.Millisecond)
-	gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "consumergroup", "received_messages_total")
+	gotMetrics = r.GetMetrics("akvorado_outlet_kafkainput_", "consumergroup", "received_messages_total")
 	expected = map[string]string{
 		"consumergroup_lag_messages":          "5",
 		`received_messages_total{worker="0"}`: "2", // The consumer only blocks after incrementing the message counter
@@ -593,7 +593,7 @@ func TestKafkaLagMetric(t *testing.T) {
 		t.Fatal("Timed out waiting for autocommit")
 	case <-clusterCommitNotification:
 	}
-	gotMetrics = r.GetMetrics("akvorado_outlet_kafka_", "consumergroup", "received_messages_total")
+	gotMetrics = r.GetMetrics("akvorado_outlet_kafkainput_", "consumergroup", "received_messages_total")
 	expected = map[string]string{
 		"consumergroup_lag_messages":          "0",
 		`received_messages_total{worker="0"}`: "6",

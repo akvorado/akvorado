@@ -24,15 +24,15 @@ import (
 	"akvorado/common/schema"
 	"akvorado/outlet/clickhouse"
 	"akvorado/outlet/flow"
-	outletkafka "akvorado/outlet/kafka"
-	"akvorado/outlet/kafkaout"
+	"akvorado/outlet/kafkainput"
+	"akvorado/outlet/kafkaoutput"
 	"akvorado/outlet/metadata"
 	"akvorado/outlet/routing"
 )
 
 // finalizingClickHouse is a minimal ClickHouse mock whose worker actually
 // finalizes the flow (like the real worker), so the Protobuf message is
-// populated and the worker's kafka-out path runs. The shared clickhouse.NewMock
+// populated and the worker's kafka-output path runs. The shared clickhouse.NewMock
 // clears instead of finalizing, which would leave ProtobufMessage() empty.
 type finalizingClickHouse struct{}
 
@@ -49,17 +49,17 @@ func (w *finalizingWorker) FinalizeAndSend(context.Context) clickhouse.WorkerSta
 
 func (w *finalizingWorker) Flush(context.Context) { w.bf.Clear() }
 
-// TestCoreKafkaOut wires an enabled Kafka output into the worker and checks the
-// enriched flow is both stored to ClickHouse and produced to the kafka-out
+// TestCoreKafkaOutput wires an enabled Kafka output into the worker and checks the
+// enriched flow is both stored to ClickHouse and produced to the kafka-output
 // topic. This covers the worker's dual-encode/Send path, which is inert (and
 // thus untested) whenever the output is disabled.
-func TestCoreKafkaOut(t *testing.T) {
+func TestCoreKafkaOutput(t *testing.T) {
 	r := reporter.NewMock(t)
 	sch := schema.NewMock(t)
 
-	kafkaOutConfig := kafkaout.DefaultConfiguration()
-	kafkaOutConfig.Enabled = true
-	outputTopic := kafkaOutConfig.Topic + "-" + sch.ProtobufMessageHash()
+	kafkaOutputConfig := kafkaoutput.DefaultConfiguration()
+	kafkaOutputConfig.Enabled = true
+	outputTopic := kafkaOutputConfig.Topic + "-" + sch.ProtobufMessageHash()
 
 	cluster, err := kfake.NewCluster(
 		kfake.NumBrokers(1),
@@ -72,13 +72,13 @@ func TestCoreKafkaOut(t *testing.T) {
 	defer cluster.Close()
 
 	// Kafka output, enabled and pointed at the fake broker.
-	kafkaOutConfig.Brokers = cluster.ListenAddrs()
-	kafkaOutComponent, err := kafkaout.New(r, kafkaOutConfig, kafkaout.Dependencies{
+	kafkaOutputConfig.Brokers = cluster.ListenAddrs()
+	kafkaOutputComponent, err := kafkaoutput.New(r, kafkaOutputConfig, kafkaoutput.Dependencies{
 		Daemon: daemon.NewMock(t),
 		Schema: sch,
 	})
 	if err != nil {
-		t.Fatalf("kafkaout.New() error:\n%+v", err)
+		t.Fatalf("kafkaoutput.New() error:\n%+v", err)
 	}
 
 	// Remaining core dependencies.
@@ -92,24 +92,24 @@ func TestCoreKafkaOut(t *testing.T) {
 	httpComponent := httpserver.NewMock(t, r)
 	routingComponent := routing.NewMock(t, r)
 	routingComponent.PopulateRIB(t)
-	kafkaComponent, incoming := outletkafka.NewMock(t, outletkafka.DefaultConfiguration())
+	kafkaInputComponent, incoming := kafkainput.NewMock(t, kafkainput.DefaultConfiguration())
 	clickhouseComponent := finalizingClickHouse{}
 
 	c, err := New(r, DefaultConfiguration(), Dependencies{
-		Daemon:     daemonComponent,
-		Flow:       flowComponent,
-		Metadata:   metadataComponent,
-		Kafka:      kafkaComponent,
-		ClickHouse: clickhouseComponent,
-		KafkaOut:   kafkaOutComponent,
-		HTTP:       httpComponent,
-		Routing:    routingComponent,
-		Schema:     sch,
+		Daemon:      daemonComponent,
+		Flow:        flowComponent,
+		Metadata:    metadataComponent,
+		KafkaInput:  kafkaInputComponent,
+		ClickHouse:  clickhouseComponent,
+		KafkaOutput: kafkaOutputComponent,
+		HTTP:        httpComponent,
+		Routing:     routingComponent,
+		Schema:      sch,
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
-	helpers.StartStop(t, kafkaOutComponent)
+	helpers.StartStop(t, kafkaOutputComponent)
 	helpers.StartStop(t, c)
 
 	// Inject one enriched flow.
@@ -152,11 +152,11 @@ func TestCoreKafkaOut(t *testing.T) {
 	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
 	defer cancel()
 	for {
-		gotMetrics := r.GetMetrics("akvorado_outlet_kafkaout_", "sent_messages_total")
+		gotMetrics := r.GetMetrics("akvorado_outlet_kafkaoutput_", "sent_messages_total")
 		if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 			select {
 			case <-ctx.Done():
-				t.Fatalf("kafka-out sent metric (-got, +want):\n%s", diff)
+				t.Fatalf("kafka-output sent metric (-got, +want):\n%s", diff)
 			default:
 			}
 			time.Sleep(10 * time.Millisecond)

@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: 2022 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-// Package kafka handles flow imports from Kafka.
-package kafka
+// Package kafkainput handles flow imports from Kafka.
+package kafkainput
 
 import (
 	"context"
@@ -87,7 +87,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		return nil, fmt.Errorf("invalid Kafka configuration: %w", err)
 	}
 	c.kafkaOpts = kafkaOpts
-	c.d.Daemon.Track(&c.t, "outlet/kafka")
+	c.d.Daemon.Track(&c.t, "outlet/kafkainput")
 	return &c, nil
 }
 

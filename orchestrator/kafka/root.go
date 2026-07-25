@@ -21,13 +21,13 @@ import (
 
 // Component represents the Kafka configurator.
 type Component struct {
-	r      *reporter.Reporter
-	d      Dependencies
-	config Configuration
+	r            *reporter.Reporter
+	d            Dependencies
+	inputConfig  InputConfiguration
+	outputConfig *OutputConfiguration
 
-	kafkaOpts   []kgo.Opt
-	kafkaTopic  string
-	output      *OutputConfiguration
+	inputOpts   []kgo.Opt
+	inputTopic  string
 	outputOpts  []kgo.Opt
 	outputTopic string
 }
@@ -38,29 +38,29 @@ type Dependencies struct {
 }
 
 // New creates a new Kafka configurator.
-func New(r *reporter.Reporter, config Configuration, output *OutputConfiguration, dependencies Dependencies) (*Component, error) {
-	if !config.ManageTopic && output == nil {
+func New(r *reporter.Reporter, input InputConfiguration, output *OutputConfiguration, dependencies Dependencies) (*Component, error) {
+	if !input.ManageTopic && output == nil {
 		r.Info().Msg("Kafka topic management disabled, skipping Kafka initialization")
 		return nil, nil
 	}
 
 	c := Component{
-		r:      r,
-		d:      dependencies,
-		config: config,
-		output: output,
+		r:            r,
+		d:            dependencies,
+		inputConfig:  input,
+		outputConfig: output,
 	}
-	if config.ManageTopic {
-		kafkaOpts, err := kafka.NewConfig(r, config.Configuration)
+	if input.ManageTopic {
+		inputOpts, err := kafka.NewConfig(r, input.Configuration)
 		if err != nil {
 			return nil, err
 		}
-		c.kafkaOpts = kafkaOpts
-		c.kafkaTopic = fmt.Sprintf("%s-v%d", config.Topic, pb.Version)
+		c.inputOpts = inputOpts
+		c.inputTopic = fmt.Sprintf("%s-v%d", input.Topic, pb.Version)
 	}
 	if output != nil {
 		// The output topic uses its own connection (possibly a different cluster
-		// than the input) and mirrors the outlet's kafka-out naming: base name
+		// than the input) and mirrors the outlet's kafka-output naming: base name
 		// plus the schema hash, so an incompatible schema change lands on a new
 		// topic.
 		outputOpts, err := kafka.NewConfig(r, output.Configuration)
@@ -81,13 +81,13 @@ func (c *Component) Start() error {
 	c.r.Info().Msg("starting Kafka component")
 	defer c.r.Info().Msg("Kafka component stopped")
 
-	if c.config.ManageTopic {
-		if err := c.manage(c.kafkaOpts, c.config.Brokers, c.kafkaTopic, c.config.TopicConfiguration); err != nil {
+	if c.inputConfig.ManageTopic {
+		if err := c.manage(c.inputOpts, c.inputConfig.Brokers, c.inputTopic, c.inputConfig.TopicConfiguration); err != nil {
 			return err
 		}
 	}
-	if c.output != nil {
-		if err := c.manage(c.outputOpts, c.output.Brokers, c.outputTopic, c.output.TopicConfiguration); err != nil {
+	if c.outputConfig != nil {
+		if err := c.manage(c.outputOpts, c.outputConfig.Brokers, c.outputTopic, c.outputConfig.TopicConfiguration); err != nil {
 			return err
 		}
 	}

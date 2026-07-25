@@ -16,8 +16,8 @@ import (
 	"akvorado/common/schema"
 	"akvorado/outlet/clickhouse"
 	"akvorado/outlet/flow"
-	"akvorado/outlet/kafka"
-	"akvorado/outlet/kafkaout"
+	"akvorado/outlet/kafkainput"
+	"akvorado/outlet/kafkaoutput"
 	"akvorado/outlet/metadata"
 	"akvorado/outlet/routing"
 )
@@ -44,15 +44,15 @@ type Component struct {
 
 // Dependencies define the dependencies of the HTTP component.
 type Dependencies struct {
-	Daemon     daemon.Component
-	Flow       *flow.Component
-	Metadata   *metadata.Component
-	Routing    *routing.Component
-	Kafka      kafka.Component
-	ClickHouse clickhouse.Component
-	KafkaOut   *kafkaout.Component
-	HTTP       *httpserver.Component
-	Schema     *schema.Component
+	Daemon      daemon.Component
+	Flow        *flow.Component
+	Metadata    *metadata.Component
+	Routing     *routing.Component
+	KafkaInput  kafkainput.Component
+	KafkaOutput *kafkaoutput.Component
+	ClickHouse  clickhouse.Component
+	HTTP        *httpserver.Component
+	Schema      *schema.Component
 }
 
 // New creates a new core component.
@@ -80,7 +80,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 // Start starts the core component.
 func (c *Component) Start() error {
 	c.r.Info().Msg("starting core component")
-	c.d.Kafka.StartWorkers(c.newWorker)
+	c.d.KafkaInput.StartWorkers(c.newWorker)
 
 	// Classifier cache expiration
 	c.t.Go(func() error {
@@ -107,7 +107,7 @@ func (c *Component) Stop() error {
 		c.r.Info().Msg("core component stopped")
 	}()
 	c.r.Info().Msg("stopping core component")
-	c.d.Kafka.StopWorkers()
+	c.d.KafkaInput.StopWorkers()
 	c.t.Kill(nil)
 	return c.t.Wait()
 }

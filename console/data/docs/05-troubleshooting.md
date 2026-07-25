@@ -175,15 +175,15 @@ If you get a flow, you can skip this section. Otherwise, we need to check some
 metrics. First, the outlet should receive flows from Kafka:
 
 ```console
-$ curl -s http://127.0.0.1:8080/api/v0/outlet/metrics | grep 'akvorado_outlet_kafka_received_messages'
-​# HELP akvorado_outlet_kafka_received_messages_total Number of messages received for a given worker.
-​# TYPE akvorado_outlet_kafka_received_messages_total counter
-akvorado_outlet_kafka_received_messages_total{worker="0"} 5561
-akvorado_outlet_kafka_received_messages_total{worker="1"} 5456
-akvorado_outlet_kafka_received_messages_total{worker="2"} 5583
-akvorado_outlet_kafka_received_messages_total{worker="3"} 11068
-akvorado_outlet_kafka_received_messages_total{worker="4"} 11151
-akvorado_outlet_kafka_received_messages_total{worker="5"} 5588
+$ curl -s http://127.0.0.1:8080/api/v0/outlet/metrics | grep 'akvorado_outlet_kafkainput_received_messages'
+​# HELP akvorado_outlet_kafkainput_received_messages_total Number of messages received for a given worker.
+​# TYPE akvorado_outlet_kafkainput_received_messages_total counter
+akvorado_outlet_kafkainput_received_messages_total{worker="0"} 5561
+akvorado_outlet_kafkainput_received_messages_total{worker="1"} 5456
+akvorado_outlet_kafkainput_received_messages_total{worker="2"} 5583
+akvorado_outlet_kafkainput_received_messages_total{worker="3"} 11068
+akvorado_outlet_kafkainput_received_messages_total{worker="4"} 11151
+akvorado_outlet_kafkainput_received_messages_total{worker="5"} 5588
 ```
 
 If these numbers are not increasing, there is a problem with receiving from Kafka. If

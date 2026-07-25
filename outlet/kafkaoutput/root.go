@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-// Package kafkaout exports enriched flows to a Kafka topic, in parallel with
+// Package kafkaoutput exports enriched flows to a Kafka topic, in parallel with
 // the ClickHouse output. It is disabled by default.
 //
 // Delivery is best-effort and at-most-once: records are produced asynchronously
@@ -15,7 +15,7 @@
 // orchestrator manages the inlet topic, so creation and retention are configured
 // at deploy time. Consumers should track the schema's Protobuf definition
 // (Schema.ProtobufDefinition) for the layout.
-package kafkaout
+package kafkaoutput
 
 import (
 	"context"
@@ -85,7 +85,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		return nil, fmt.Errorf("invalid Kafka configuration: %w", err)
 	}
 	c.kafkaOpts = kafkaOpts
-	c.d.Daemon.Track(&c.t, "outlet/kafkaout")
+	c.d.Daemon.Track(&c.t, "outlet/kafkaoutput")
 	return &c, nil
 }
 

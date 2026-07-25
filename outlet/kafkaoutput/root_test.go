@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-package kafkaout
+package kafkaoutput
 
 import (
 	"testing"
@@ -83,7 +83,7 @@ func TestSendDropsWhenFull(t *testing.T) {
 		t.Fatal("Send blocked while the queue was full")
 	}
 
-	got := r.GetMetrics("akvorado_outlet_kafkaout_", "dropped_messages_total")
+	got := r.GetMetrics("akvorado_outlet_kafkaoutput_", "dropped_messages_total")
 	expected := map[string]string{"dropped_messages_total": "2"}
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Fatalf("dropped metric (-got, +want):\n%s", diff)

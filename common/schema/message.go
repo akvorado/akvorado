@@ -39,17 +39,18 @@ type FlowMessage struct {
 	OtherColumns map[ColumnKey]any
 
 	reversed bool
-	batch    clickhouseBatch
+	batch    messageBatch
 	schema   *Schema
 }
 
-// clickhouseBatch stores columns for efficient streaming. It is embedded
+// messageBatch stores columns for efficient streaming. It is embedded
 // inside a FlowMessage.
-type clickhouseBatch struct {
+type messageBatch struct {
 	columns   []proto.Column // Indexed by ColumnKey
 	columnSet bitset.BitSet  // Track which columns have been set
 	rowCount  int            // Number of rows accumulated
-	input     proto.Input    // Input including all columns to stream to ClickHouse
+
+	input proto.Input // Input including all columns to stream to ClickHouse
 
 	// Optional Protobuf encoding of the enriched flow, populated in parallel
 	// with the columnar batch when the outlet Kafka output is enabled. When

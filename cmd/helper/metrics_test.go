@@ -44,13 +44,13 @@ func TestMetricsYAML(t *testing.T) {
 	// Check a known metric
 	found := false
 	for _, m := range out.Metrics {
-		if m.Name == "akvorado_outlet_kafka_received_messages_total" {
+		if m.Name == "akvorado_outlet_kafkainput_received_messages_total" {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Error("expected to find akvorado_outlet_kafka_received_messages_total")
+		t.Error("expected to find akvorado_outlet_kafkainput_received_messages_total")
 	}
 }
 
@@ -81,13 +81,13 @@ func TestMetricsJSON(t *testing.T) {
 	// Check a known metric
 	found := false
 	for _, m := range out.Metrics {
-		if m.Name == "akvorado_outlet_kafka_received_messages_total" {
+		if m.Name == "akvorado_outlet_kafkainput_received_messages_total" {
 			found = true
 			break
 		}
 	}
 	if !found {
-		t.Error("expected to find akvorado_outlet_kafka_received_messages_total")
+		t.Error("expected to find akvorado_outlet_kafkainput_received_messages_total")
 	}
 }
 

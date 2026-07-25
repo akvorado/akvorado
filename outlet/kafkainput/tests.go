@@ -3,7 +3,7 @@
 
 //go:build !release
 
-package kafka
+package kafkainput
 
 import (
 	"context"
