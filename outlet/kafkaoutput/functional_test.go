@@ -17,6 +17,7 @@ import (
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
+	"akvorado/common/httpserver"
 	"akvorado/common/kafka"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
@@ -46,7 +47,11 @@ func TestFakeKafka(t *testing.T) {
 	configuration.Enabled = true
 	configuration.Topic = topicName
 	configuration.Brokers = cluster.ListenAddrs()
-	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t), Schema: sch})
+	c, err := New(r, configuration, Dependencies{
+		Daemon: daemon.NewMock(t),
+		HTTP:   httpserver.NewMock(t, r),
+		Schema: sch,
+	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
@@ -167,7 +172,11 @@ func TestProduceError(t *testing.T) {
 	configuration.Enabled = true
 	configuration.Topic = topicName
 	configuration.Brokers = cluster.ListenAddrs()
-	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t), Schema: sch})
+	c, err := New(r, configuration, Dependencies{
+		Daemon: daemon.NewMock(t),
+		HTTP:   httpserver.NewMock(t, r),
+		Schema: sch,
+	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}

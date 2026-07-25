@@ -31,6 +31,7 @@ import (
 	"gopkg.in/tomb.v2"
 
 	"akvorado/common/daemon"
+	"akvorado/common/httpserver"
 	"akvorado/common/kafka"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
@@ -53,6 +54,7 @@ type Component struct {
 // Dependencies define the dependencies of the Kafka output.
 type Dependencies struct {
 	Daemon daemon.Component
+	HTTP   *httpserver.Component
 	Schema *schema.Component
 }
 
@@ -88,6 +90,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	}
 	c.kafkaOpts = kafkaOpts
 	c.d.Daemon.Track(&c.t, "outlet/kafkaoutput")
+	c.d.HTTP.APIRouter.GET("/api/v0/outlet/kafka-output/schema.proto", c.SchemaHTTPHandler)
 	return &c, nil
 }
 

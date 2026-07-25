@@ -154,6 +154,7 @@ func outletStart(r *reporter.Reporter, config OutletConfiguration, checkOnly boo
 	}
 	kafkaOutputComponent, err := kafkaoutput.New(r, config.KafkaOutput, kafkaoutput.Dependencies{
 		Daemon: daemonComponent,
+		HTTP:   httpComponent,
 		Schema: schemaComponent,
 	})
 	if err != nil {

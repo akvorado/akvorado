@@ -71,10 +71,14 @@ func TestCoreKafkaOutput(t *testing.T) {
 	}
 	t.Cleanup(cluster.Close)
 
+	daemonComponent := daemon.NewMock(t)
+	httpComponent := httpserver.NewMock(t, r)
+
 	// Kafka output, enabled and pointed at the fake broker.
 	kafkaOutputConfig.Brokers = cluster.ListenAddrs()
 	kafkaOutputComponent, err := kafkaoutput.New(r, kafkaOutputConfig, kafkaoutput.Dependencies{
-		Daemon: daemon.NewMock(t),
+		Daemon: daemonComponent,
+		HTTP:   httpComponent,
 		Schema: sch,
 	})
 	if err != nil {
@@ -82,14 +86,12 @@ func TestCoreKafkaOutput(t *testing.T) {
 	}
 
 	// Remaining core dependencies.
-	daemonComponent := daemon.NewMock(t)
 	metadataComponent := metadata.NewMock(t, r, metadata.DefaultConfiguration(),
 		metadata.Dependencies{Daemon: daemonComponent})
 	flowComponent, err := flow.New(r, flow.DefaultConfiguration(), flow.Dependencies{Schema: sch})
 	if err != nil {
 		t.Fatalf("flow.New() error:\n%+v", err)
 	}
-	httpComponent := httpserver.NewMock(t, r)
 	routingComponent := routing.NewMock(t, r)
 	routingComponent.PopulateRIB(t)
 	kafkaInputComponent, incoming := kafkainput.NewMock(t, kafkainput.DefaultConfiguration())

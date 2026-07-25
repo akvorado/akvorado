@@ -55,6 +55,31 @@ ClickHouse. The HTTP component in the service exposes these endpoints:
 
 - `/api/v0/outlet/flows`: streams the received flows. Use this for debugging
   only, as it has a performance impact.
+- `/api/v0/outlet/kafka-output/schema.proto`: the `.proto` definition of the
+  messages produced on the [Kafka output](02-configuration.md#kafka-output)
+  topic. Only present when this output is enabled.
+
+Consumers of the Kafka output need this definition to decode the flows. The
+message name carries the same hash as the topic name, so you can check the two
+agree:
+
+```console
+$ curl -s http://127.0.0.1:8080/api/v0/outlet/kafka-output/schema.proto
+syntax = "proto3";
+
+message FlowMessagev6VOQ4CRHFAVLBGRTLIP4T2N7CU {
+ uint32 TimeReceived = 1;
+ uint64 SamplingRate = 2;
+ bytes ExporterAddress = 3;
+ string ExporterName = 4;
+[...]
+}
+```
+
+A few wire conventions are not visible in the field types alone: IP addresses are
+16-byte values in IPv6 form (IPv4 addresses are mapped into IPv6), `Enum8`
+columns carry their numeric value, and `Array(UInt128)` elements are 16 bytes,
+high 64 bits then low 64 bits, big-endian.
 
 ## Orchestrator service
 

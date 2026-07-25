@@ -5,11 +5,13 @@ package kafkaoutput
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
+	"akvorado/common/httpserver"
 	"akvorado/common/kafka"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
@@ -57,6 +59,37 @@ func TestDisabled(t *testing.T) {
 	}
 }
 
+// TestSchemaHTTPHandler checks consumers can fetch the .proto definition of what
+// lands on the topic, and that it carries the same hash as the topic name.
+func TestSchemaHTTPHandler(t *testing.T) {
+	r := reporter.NewMock(t)
+	sch := schema.NewMock(t)
+	h := httpserver.NewMock(t, r)
+
+	configuration := DefaultConfiguration()
+	configuration.Enabled = true
+	if _, err := New(r, configuration, Dependencies{
+		Daemon: daemon.NewMock(t),
+		HTTP:   h,
+		Schema: sch,
+	}); err != nil {
+		t.Fatalf("New() error:\n%+v", err)
+	}
+
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
+		{
+			URL:         "/api/v0/outlet/kafka-output/schema.proto",
+			ContentType: "text/plain",
+			FirstLines: []string{
+				"",
+				`syntax = "proto3";`,
+				"",
+				fmt.Sprintf("message FlowMessagev%s {", sch.ProtobufMessageHash()),
+			},
+		},
+	})
+}
+
 // TestSendDropsWhenFull checks the load-shedding contract: when the producer
 // buffer is full, Send drops (and counts) instead of blocking the caller. The
 // broker address is a black hole, so the first record stays buffered and the
@@ -69,7 +102,11 @@ func TestSendDropsWhenFull(t *testing.T) {
 	configuration.QueueSize = 1
 	// The buffered record can never be flushed, so don't wait for it on stop.
 	configuration.ShutdownTimeout = 0
-	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t), Schema: schema.NewMock(t)})
+	c, err := New(r, configuration, Dependencies{
+		Daemon: daemon.NewMock(t),
+		HTTP:   httpserver.NewMock(t, r),
+		Schema: schema.NewMock(t),
+	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
 	}
