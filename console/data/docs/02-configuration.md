@@ -222,8 +222,15 @@ key:
   gives the topic the broker defaults for partitions and retention — so create it
   yourself beforehand.
 - `brokers` and `tls` are as in the [orchestrator Kafka config](#kafka-1).
+- `compression-codec` defines the compression codec for messages: `none`,
+  `gzip`, `snappy`, `lz4` (default), or `zstd`.
 - `queue-size` is the producer buffer: the maximum records held in flight
   (`MaxBufferedRecords`) and the internal send-queue depth (default: 4096).
+- `load-balance` defines the load balancing algorithm for flows accross Kafka
+  partitions, with the same values as for the [inlet](#kafka). The default value
+  is `random`, which spreads the load evenly. Use `by-exporter` if consumers need
+  all the flows of a given exporter in one partition, keeping in mind that a
+  single busy exporter then saturates a single partition.
 
 Delivery is **best-effort and at-most-once**: this output never blocks the
 ClickHouse path. When the producer cannot keep up, records are **dropped**

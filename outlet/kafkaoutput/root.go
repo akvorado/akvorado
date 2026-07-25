@@ -80,7 +80,7 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	kafkaOpts = append(kafkaOpts,
 		kgo.AllowAutoTopicCreation(),
 		kgo.MaxBufferedRecords(configuration.QueueSize),
-		kgo.ProducerBatchCompression(kgo.Lz4Compression()),
+		kgo.ProducerBatchCompression(kgo.CompressionCodec(configuration.CompressionCodec)),
 		kgo.RecordPartitioner(kgo.UniformBytesPartitioner(64<<20, true, true, nil)),
 	)
 	if err := kgo.ValidateOpts(kafkaOpts...); err != nil {
@@ -156,11 +156,15 @@ func (c *Component) Stop() error {
 // Non-blocking and best-effort: if the send queue is full (a slow or broken
 // broker), the record is dropped and counted, so the flow worker — and the
 // ClickHouse path — are never blocked.
-func (c *Component) Send(key string, payload []byte) {
+func (c *Component) Send(exporter string, payload []byte) {
 	if c.kafkaClient == nil {
 		return
 	}
-	record := &kgo.Record{Topic: c.kafkaTopic, Key: []byte(key), Value: payload}
+	record := &kgo.Record{
+		Topic: c.kafkaTopic,
+		Key:   c.config.LoadBalance.RecordKey(exporter),
+		Value: payload,
+	}
 	select {
 	case c.sendCh <- record:
 	default:

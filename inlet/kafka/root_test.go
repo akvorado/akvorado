@@ -131,7 +131,7 @@ func TestKafka(t *testing.T) {
 }
 
 func TestLoadBalancingAlgorithm(t *testing.T) {
-	for _, algo := range []LoadBalanceAlgorithm{LoadBalanceRandom, LoadBalanceByExporter} {
+	for _, algo := range []kafka.LoadBalanceAlgorithm{kafka.LoadBalanceRandom, kafka.LoadBalanceByExporter} {
 		t.Run(algo.String(), func(t *testing.T) {
 			topic := fmt.Sprintf("balance-%s", algo)
 			r := reporter.NewMock(t)
@@ -164,7 +164,7 @@ func TestLoadBalancingAlgorithm(t *testing.T) {
 
 			expected := make(map[int32]int, DefaultMockKafkaNumPartitions)
 			switch algo {
-			case LoadBalanceRandom:
+			case kafka.LoadBalanceRandom:
 				for p := range DefaultMockKafkaNumPartitions {
 					p := int32(p)
 					if messages[p] > total/DefaultMockKafkaNumPartitions*2/10 {
@@ -173,7 +173,7 @@ func TestLoadBalancingAlgorithm(t *testing.T) {
 						expected[p] = total / DefaultMockKafkaNumPartitions
 					}
 				}
-			case LoadBalanceByExporter:
+			case kafka.LoadBalanceByExporter:
 				for p := range messages {
 					expected[p] = total
 					break
