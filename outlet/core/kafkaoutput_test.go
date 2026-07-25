@@ -69,7 +69,7 @@ func TestCoreKafkaOutput(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewCluster() error: %v", err)
 	}
-	defer cluster.Close()
+	t.Cleanup(cluster.Close)
 
 	// Kafka output, enabled and pointed at the fake broker.
 	kafkaOutputConfig.Brokers = cluster.ListenAddrs()

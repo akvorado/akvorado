@@ -40,7 +40,7 @@ func TestFakeKafka(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewCluster() error: %v", err)
 	}
-	defer cluster.Close()
+	t.Cleanup(cluster.Close)
 
 	configuration := DefaultConfiguration()
 	configuration.Enabled = true
