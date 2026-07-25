@@ -108,9 +108,14 @@ components and centralizes configuration of the various other components.`,
 				}
 				if !slices.Contains(metadata.Keys, fmt.Sprintf("Outlet[%d].KafkaOutput.Brokers[0]", idx)) {
 					if config.KafkaOutput != nil {
+						// This is the topic the orchestrator manages, take it as is.
 						config.Outlet[idx].KafkaOutput.Configuration = config.KafkaOutput.Configuration
 					} else {
+						// Fall back on the input cluster, but not on the input
+						// topic, which is a different topic.
+						topic := config.Outlet[idx].KafkaOutput.Topic
 						config.Outlet[idx].KafkaOutput.Configuration = config.Kafka.Configuration
+						config.Outlet[idx].KafkaOutput.Configuration.Topic = topic
 					}
 				}
 				config.Outlet[idx].Schema = config.Schema

@@ -1,0 +1,9 @@
+---
+paths:
+  outlet.0.kafkainput.topic: flows
+  outlet.0.kafkainput.brokers:
+    - kafka1:9092
+  outlet.0.kafkaoutput.enabled: true
+  outlet.0.kafkaoutput.topic: flows-enriched
+  outlet.0.kafkaoutput.brokers:
+    - kafka1:9092
