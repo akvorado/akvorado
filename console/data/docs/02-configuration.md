@@ -215,8 +215,12 @@ key:
   (`topic-<hash>`) — the same hash embedded in the generated message name
   (`FlowMessagev<hash>`) — so an incompatible schema change lands on a new topic
   instead of mixing wire layouts for consumers, mirroring the inlet topic's
-  version suffix. Unlike the inlet topic, the outlet does not yet manage this
-  topic, so create it — with retention — beforehand.
+  version suffix. The topic is created and kept in sync by the orchestrator when
+  a top-level `kafka-output` block is set (see the [orchestrator Kafka
+  configuration](#kafka-1)). Without it, the outlet asks the broker to create the
+  topic on first produce, which only works if the broker allows auto-creation and
+  gives the topic the broker defaults for partitions and retention — so create it
+  yourself beforehand.
 - `brokers` and `tls` are as in the [orchestrator Kafka config](#kafka-1).
 - `queue-size` is the producer buffer: the maximum records held in flight
   (`MaxBufferedRecords`) and the internal send-queue depth (default: 4096).

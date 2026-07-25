@@ -11,10 +11,12 @@
 //
 // The topic is the configured name suffixed with the schema hash, so an
 // incompatible schema change lands on a new topic instead of mixing wire layouts
-// for consumers. The outlet does not yet manage the topic the way the
-// orchestrator manages the inlet topic, so creation and retention are configured
-// at deploy time. Consumers should track the schema's Protobuf definition
-// (Schema.ProtobufDefinition) for the layout.
+// for consumers. The orchestrator creates and keeps this topic in sync when its
+// own kafka-output block is configured. Otherwise, the outlet asks the broker to
+// create it on first produce, which needs auto-creation enabled on the broker
+// and uses the broker defaults for partitions and retention. Consumers should
+// track the schema's Protobuf definition (Schema.ProtobufDefinition) for the
+// layout.
 package kafkaoutput
 
 import (
