@@ -5,13 +5,11 @@ package schema
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"net/netip"
 	"strings"
 	"testing"
 
-	"github.com/ClickHouse/ch-go/proto"
 	"google.golang.org/protobuf/encoding/protowire"
 )
 
@@ -233,86 +231,12 @@ func TestProtobufDisabledIsZeroCost(t *testing.T) {
 	}
 }
 
-// marshalFlowJSONReadback replicates solution 1 (the draft branch): it rebuilds
-// a flat JSON object by reading the last appended value of each ClickHouse
-// column. Kept here, test-only, purely to benchmark it head-to-head against the
-// append-time Protobuf encoder.
-func (bf *FlowMessage) marshalFlowJSONReadback() ([]byte, error) {
-	m := make(map[string]any, 24)
-	if bf.TimeReceived != 0 {
-		m["TimeReceived"] = bf.TimeReceived
-	}
-	if bf.SamplingRate != 0 {
-		m["SamplingRate"] = bf.SamplingRate
-	}
-	if bf.ExporterAddress.IsValid() {
-		m["ExporterAddress"] = bf.ExporterAddress.Unmap().String()
-	}
-	if bf.SrcAddr.IsValid() {
-		m["SrcAddr"] = bf.SrcAddr.Unmap().String()
-	}
-	if bf.DstAddr.IsValid() {
-		m["DstAddr"] = bf.DstAddr.Unmap().String()
-	}
-	if bf.SrcAS != 0 {
-		m["SrcAS"] = bf.SrcAS
-	}
-	if bf.DstAS != 0 {
-		m["DstAS"] = bf.DstAS
-	}
-	for _, column := range bf.schema.Columns() {
-		if column.Disabled || !bf.batch.columnSet.Test(uint(column.Key)) {
-			continue
-		}
-		col := bf.batch.columns[column.Key]
-		if col == nil {
-			continue
-		}
-		if v, ok := lastColumnValueForBench(col); ok {
-			m[column.Name] = v
-		}
-	}
-	return json.Marshal(m)
-}
-
-func lastColumnValueForBench(c proto.Column) (any, bool) {
-	switch col := c.(type) {
-	case *proto.ColUInt64:
-		if n := len(*col); n > 0 {
-			return (*col)[n-1], true
-		}
-	case *proto.ColUInt32:
-		if n := len(*col); n > 0 {
-			return (*col)[n-1], true
-		}
-	case *proto.ColUInt16:
-		if n := len(*col); n > 0 {
-			return (*col)[n-1], true
-		}
-	case *proto.ColUInt8:
-		if n := len(*col); n > 0 {
-			return (*col)[n-1], true
-		}
-	case *proto.ColEnum8:
-		if n := len(*col); n > 0 {
-			return uint8((*col)[n-1]), true
-		}
-	case *proto.ColLowCardinality[string]:
-		if n := len(col.Values); n > 0 {
-			return col.Values[n-1], true
-		}
-	}
-	return nil, false
-}
-
-var benchSink int
-
 func BenchmarkEncodeBaseline(b *testing.B) {
 	c := NewMock(b)
 	bf := c.NewFlowMessage()
 	b.ReportAllocs()
 	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		populateBenchFlow(bf)
 		bf.Finalize()
 	}
@@ -320,44 +244,15 @@ func BenchmarkEncodeBaseline(b *testing.B) {
 }
 
 func BenchmarkEncodeProtobuf(b *testing.B) {
+	var benchSink int
 	c := NewMock(b)
 	bf := c.NewFlowMessage()
 	bf.EnableProtobuf()
 	b.ReportAllocs()
 	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		populateBenchFlow(bf)
 		bf.Finalize()
 		benchSink += len(bf.ProtobufMessage())
 	}
-}
-
-func BenchmarkEncodeJSONReadback(b *testing.B) {
-	c := NewMock(b)
-	bf := c.NewFlowMessage()
-	b.ReportAllocs()
-	b.ResetTimer()
-	for range b.N {
-		populateBenchFlow(bf)
-		payload, err := bf.marshalFlowJSONReadback()
-		if err != nil {
-			b.Fatal(err)
-		}
-		benchSink += len(payload)
-		bf.Finalize()
-	}
-}
-
-func TestProtobufVsJSONSize(t *testing.T) {
-	c := NewMock(t)
-	bf := c.NewFlowMessage()
-	bf.EnableProtobuf()
-	populateBenchFlow(bf)
-	bf.Finalize()
-	pbSize := len(bf.ProtobufMessage())
-
-	bf2 := c.NewFlowMessage()
-	populateBenchFlow(bf2)
-	jsonBytes, _ := bf2.marshalFlowJSONReadback()
-	t.Logf("wire payload: protobuf=%d bytes, json=%d bytes (%.1fx)", pbSize, len(jsonBytes), float64(len(jsonBytes))/float64(pbSize))
 }
