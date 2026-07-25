@@ -78,6 +78,7 @@ all-indep: $(GENERATED)
 
 BUF         = env GO=$(GO) ./bin/external-tool buf
 ENUMER      = go tool enumer
+GCASSERT    = go tool gcassert
 GOIMPORTS   = go tool goimports
 GOTESTSUM   = go tool gotestsum
 MOCKGEN     = go tool mockgen
@@ -230,6 +231,8 @@ test-go: test-go-units test-go-checks ## Run Go tests
 test-go-checks:
 	$(call log,running Go static checks…)
 	$Q $(STATICCHECK) -f stylish -checks inherit,-SA1012 $(PKGS)
+	$(call log,checking gcassert directives…)
+	$Q $(GCASSERT) ./...
 test-go-units:
 	$(call log,running Go tests$(GOTEST_MORE)…)
 	$Q mkdir -p test/go

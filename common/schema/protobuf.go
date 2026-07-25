@@ -27,7 +27,16 @@ import (
 // "already set" tracking is needed.
 
 // protobufAppendUint appends an integer column as a varint.
+//
+//gcassert:inline
 func (bf *FlowMessage) protobufAppendUint(columnKey ColumnKey, value uint64) {
+	if !bf.batch.protobufEnabled {
+		return
+	}
+	bf.protobufAppendUintNoInline(columnKey, value)
+}
+
+func (bf *FlowMessage) protobufAppendUintNoInline(columnKey ColumnKey, value uint64) {
 	column := bf.protobufColumn(columnKey)
 	if column == nil {
 		return
@@ -37,7 +46,16 @@ func (bf *FlowMessage) protobufAppendUint(columnKey ColumnKey, value uint64) {
 }
 
 // protobufAppendString appends a string column as a length-delimited field.
+//
+//gcassert:inline
 func (bf *FlowMessage) protobufAppendString(columnKey ColumnKey, value string) {
+	if !bf.batch.protobufEnabled {
+		return
+	}
+	bf.protobufAppendStringNoInline(columnKey, value)
+}
+
+func (bf *FlowMessage) protobufAppendStringNoInline(columnKey ColumnKey, value string) {
 	column := bf.protobufColumn(columnKey)
 	if column == nil {
 		return
@@ -48,7 +66,16 @@ func (bf *FlowMessage) protobufAppendString(columnKey ColumnKey, value string) {
 
 // protobufAppendIP appends an IP column as 16 length-delimited bytes (IPv6
 // representation, matching the ClickHouse IPv6 columns).
+//
+//gcassert:inline
 func (bf *FlowMessage) protobufAppendIP(columnKey ColumnKey, value netip.Addr) {
+	if !bf.batch.protobufEnabled {
+		return
+	}
+	bf.protobufAppendIPNoInline(columnKey, value)
+}
+
+func (bf *FlowMessage) protobufAppendIPNoInline(columnKey ColumnKey, value netip.Addr) {
 	column := bf.protobufColumn(columnKey)
 	if column == nil {
 		return
@@ -60,7 +87,16 @@ func (bf *FlowMessage) protobufAppendIP(columnKey ColumnKey, value netip.Addr) {
 
 // protobufAppendArrayUint32 appends an Array(UInt32) column as a repeated
 // (non-packed) varint field.
+//
+//gcassert:inline
 func (bf *FlowMessage) protobufAppendArrayUint32(columnKey ColumnKey, values []uint32) {
+	if !bf.batch.protobufEnabled {
+		return
+	}
+	bf.protobufAppendArrayUint32NoInline(columnKey, values)
+}
+
+func (bf *FlowMessage) protobufAppendArrayUint32NoInline(columnKey ColumnKey, values []uint32) {
 	column := bf.protobufColumn(columnKey)
 	if column == nil {
 		return
@@ -74,7 +110,16 @@ func (bf *FlowMessage) protobufAppendArrayUint32(columnKey ColumnKey, values []u
 // protobufAppendArrayUint128 appends an Array(UInt128) column as a repeated
 // length-delimited field, each element being 16 bytes (high then low,
 // big-endian).
+//
+//gcassert:inline
 func (bf *FlowMessage) protobufAppendArrayUint128(columnKey ColumnKey, values []UInt128) {
+	if !bf.batch.protobufEnabled {
+		return
+	}
+	bf.protobufAppendArrayUint128NoInline(columnKey, values)
+}
+
+func (bf *FlowMessage) protobufAppendArrayUint128NoInline(columnKey ColumnKey, values []UInt128) {
 	column := bf.protobufColumn(columnKey)
 	if column == nil {
 		return
@@ -109,6 +154,8 @@ func (bf *FlowMessage) protobufColumn(columnKey ColumnKey) *Column {
 // captured message is handed to the Kafka producer, which serializes it
 // asynchronously and does not copy it. We therefore allocate a fresh slice per
 // flow so the next flow's encoding cannot overwrite bytes still in flight.
+//
+//gcassert:inline
 func (bf *FlowMessage) protobufFinalize() {
 	if !bf.batch.protobufEnabled {
 		return
