@@ -23,9 +23,9 @@ import (
 )
 
 // TestFakeKafka exercises the enabled path end to end against an in-process
-// fake broker: New builds the client, Start spins up the drain goroutine, Send
-// enqueues, and the records are produced to (and consumed back from) the
-// schema-suffixed topic. Stop is run by helpers.StartStop on cleanup.
+// fake broker: New builds the client options, Start creates the client, Send
+// hands records to the producer, and they are produced to (and consumed back
+// from) the schema-suffixed topic. Stop is run by helpers.StartStop on cleanup.
 func TestFakeKafka(t *testing.T) {
 	r := reporter.NewMock(t)
 	sch := schema.NewMock(t)
@@ -63,8 +63,8 @@ func TestFakeKafka(t *testing.T) {
 	c.Send("127.0.0.1", msg1)
 	c.Send("127.0.0.1", msg2)
 
-	// The drain goroutine produces asynchronously; the send metric is bumped in
-	// the produce callback once the broker acks.
+	// Records are produced asynchronously. The send metric is bumped in the
+	// produce callback once the broker acks.
 	expectedMetrics := map[string]string{
 		`sent_bytes_total`:    fmt.Sprintf("%d", len(msg1)+len(msg2)),
 		`sent_messages_total`: "2",
@@ -126,7 +126,7 @@ func TestFakeKafka(t *testing.T) {
 
 // TestProduceError checks the produce error path: a broker-side error is
 // counted (by kerr message) and never retried, so the record is dropped rather
-// than blocking the drain goroutine.
+// than blocking the caller.
 func TestProduceError(t *testing.T) {
 	r := reporter.NewMock(t)
 	sch := schema.NewMock(t)

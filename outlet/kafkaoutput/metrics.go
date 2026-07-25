@@ -30,7 +30,7 @@ func (c *Component) initMetrics() {
 	c.metrics.dropped = c.r.Counter(
 		reporter.CounterOpts{
 			Name: "dropped_messages_total",
-			Help: "Number of enriched flow messages dropped because the send queue was full.",
+			Help: "Number of enriched flow messages dropped because the producer buffer was full.",
 		},
 	)
 	c.metrics.errors = c.r.CounterVec(
@@ -39,12 +39,5 @@ func (c *Component) initMetrics() {
 			Help: "Number of errors when sending to Kafka.",
 		},
 		[]string{"error"},
-	)
-	c.r.GaugeFunc(
-		reporter.GaugeOpts{
-			Name: "send_queue_records",
-			Help: "Records currently buffered in the send queue; Send drops when this reaches queue-size.",
-		},
-		func() float64 { return float64(len(c.sendCh)) },
 	)
 }

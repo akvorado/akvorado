@@ -4,11 +4,11 @@
 package kafkaoutput
 
 import (
+	"context"
 	"testing"
 	"time"
 
-	"github.com/twmb/franz-go/pkg/kgo"
-
+	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/kafka"
 	"akvorado/common/reporter"
@@ -57,35 +57,53 @@ func TestDisabled(t *testing.T) {
 	}
 }
 
-// TestSendDropsWhenFull checks the load-shedding contract: when the queue is
-// full, Send drops (and counts) instead of blocking the caller. No drain
-// goroutine is started, so the cap-1 queue stays full after the first Send.
+// TestSendDropsWhenFull checks the load-shedding contract: when the producer
+// buffer is full, Send drops (and counts) instead of blocking the caller. The
+// broker address is a black hole, so the first record stays buffered and the
+// next two find no room.
 func TestSendDropsWhenFull(t *testing.T) {
 	r := reporter.NewMock(t)
-	c := &Component{
-		r:           r,
-		kafkaTopic:  "flows-enriched",
-		kafkaClient: &kgo.Client{}, // non-nil; Send only checks != nil, never calls into it
-		sendCh:      make(chan *kgo.Record, 1),
+	configuration := DefaultConfiguration()
+	configuration.Enabled = true
+	configuration.Brokers = []string{"127.0.0.1:1"}
+	configuration.QueueSize = 1
+	// The buffered record can never be flushed, so don't wait for it on stop.
+	configuration.ShutdownTimeout = 0
+	c, err := New(r, configuration, Dependencies{Daemon: daemon.NewMock(t), Schema: schema.NewMock(t)})
+	if err != nil {
+		t.Fatalf("New() error:\n%+v", err)
 	}
-	c.initMetrics()
+	helpers.StartStop(t, c)
 
-	c.Send("k", []byte("a")) // fills the cap-1 queue
 	done := make(chan struct{})
 	go func() {
-		c.Send("k", []byte("b")) // queue full -> drop
-		c.Send("k", []byte("c")) // queue full -> drop
+		c.Send("127.0.0.1", []byte("a")) // fills the one-record buffer
+		c.Send("127.0.0.1", []byte("b")) // buffer full -> drop
+		c.Send("127.0.0.1", []byte("c")) // buffer full -> drop
 		close(done)
 	}()
 	select {
 	case <-done:
 	case <-time.After(time.Second):
-		t.Fatal("Send blocked while the queue was full")
+		t.Fatal("Send blocked while the producer buffer was full")
 	}
 
-	got := r.GetMetrics("akvorado_outlet_kafkaoutput_", "dropped_messages_total")
+	// The produce promises run on their own goroutine, so the counter lags a bit
+	// behind the calls to Send.
 	expected := map[string]string{"dropped_messages_total": "2"}
-	if diff := helpers.Diff(got, expected); diff != "" {
-		t.Fatalf("dropped metric (-got, +want):\n%s", diff)
+	ctx, cancel := context.WithTimeout(t.Context(), 15*time.Second)
+	defer cancel()
+	for {
+		got := r.GetMetrics("akvorado_outlet_kafkaoutput_", "dropped_messages_total")
+		if diff := helpers.Diff(got, expected); diff != "" {
+			select {
+			case <-ctx.Done():
+				t.Fatalf("dropped metric (-got, +want):\n%s", diff)
+			default:
+			}
+			time.Sleep(10 * time.Millisecond)
+		} else {
+			break
+		}
 	}
 }

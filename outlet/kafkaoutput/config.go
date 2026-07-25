@@ -4,6 +4,8 @@
 package kafkaoutput
 
 import (
+	"time"
+
 	"github.com/twmb/franz-go/pkg/kgo"
 
 	"akvorado/common/kafka"
@@ -18,13 +20,17 @@ type Configuration struct {
 	kafka.Configuration `mapstructure:",squash" yaml:"-,inline"`
 	// CompressionCodec defines the compression to use.
 	CompressionCodec kafka.CompressionCodec
-	// QueueSize is the producer buffer: the max records held in flight
-	// (kgo MaxBufferedRecords) and the send-queue depth. When full, records are
-	// dropped, not blocked (best-effort; see dropped_messages_total and the
-	// kafka-output docs for sizing).
+	// QueueSize is the max records the producer holds in flight (kgo
+	// MaxBufferedRecords). When full, records are dropped, not blocked
+	// (best-effort, see dropped_messages_total and the kafka-output docs for
+	// sizing).
 	QueueSize int `validate:"min=1"`
 	// LoadBalance defines the load-balancing algorithm to use for Kafka partitions.
 	LoadBalance kafka.LoadBalanceAlgorithm
+	// ShutdownTimeout is how long we wait for the records still buffered to
+	// reach the broker when shutting down. Past that, they are dropped like any
+	// other record this output cannot deliver.
+	ShutdownTimeout time.Duration `validate:"min=0"`
 }
 
 // DefaultConfiguration represents the default configuration for the Kafka output.
@@ -37,5 +43,6 @@ func DefaultConfiguration() Configuration {
 		CompressionCodec: kafka.CompressionCodec(kgo.Lz4Compression()),
 		QueueSize:        4096,
 		LoadBalance:      kafka.LoadBalanceRandom,
+		ShutdownTimeout:  time.Second,
 	}
 }

@@ -5,9 +5,9 @@
 // the ClickHouse output. It is disabled by default.
 //
 // Delivery is best-effort and at-most-once: records are produced asynchronously
-// from a bounded queue and, if the queue is full (a slow or broken broker) or a
-// produce errors, they are dropped and counted (never retried). The flow worker
-// only enqueues, so a slow Kafka output never blocks the ClickHouse path.
+// and, if the producer buffer is full (a slow or broken broker) or a produce
+// errors, they are dropped and counted (never retried). Send never blocks, so a
+// slow Kafka output never blocks the ClickHouse path.
 //
 // The topic is the configured name suffixed with the schema hash, so an
 // incompatible schema change lands on a new topic instead of mixing wire layouts
@@ -21,6 +21,7 @@ package kafkaoutput
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -45,7 +46,6 @@ type Component struct {
 	kafkaOpts   []kgo.Opt
 	kafkaTopic  string
 	kafkaClient *kgo.Client
-	sendCh      chan *kgo.Record
 	errLogger   reporter.Logger
 	metrics     metrics
 }
@@ -107,36 +107,21 @@ func (c *Component) Start() error {
 		return fmt.Errorf("unable to create Kafka client: %w", err)
 	}
 	c.r.RegisterMetricCollector(kafkaMetrics)
-	c.sendCh = make(chan *kgo.Record, c.config.QueueSize)
 	c.kafkaClient = kafkaClient
 
-	// A single drain goroutine owns Produce, so kgo's block-when-full is
-	// isolated from the flow workers (which only enqueue; see Send). The
-	// tomb-tied context unblocks an in-flight Produce on shutdown.
+	// When dying, give the buffered records a chance to reach the broker, then
+	// close the client.
 	c.t.Go(func() error {
-		ctx := c.t.Context(context.Background())
-		for {
-			select {
-			case <-c.t.Dying():
-				kafkaClient.Close()
-				return nil
-			case record := <-c.sendCh:
-				payloadLen := len(record.Value)
-				kafkaClient.Produce(ctx, record, func(_ *kgo.Record, err error) {
-					if err != nil {
-						if ke, ok := err.(*kerr.Error); ok {
-							c.metrics.errors.WithLabelValues(ke.Message).Inc()
-						} else {
-							c.metrics.errors.WithLabelValues("unknown").Inc()
-						}
-						c.errLogger.Err(err).Str("topic", c.kafkaTopic).Msg("Kafka producer error")
-						return
-					}
-					c.metrics.messagesSent.Inc()
-					c.metrics.bytesSent.Add(float64(payloadLen))
-				})
+		<-c.t.Dying()
+		if c.config.ShutdownTimeout > 0 {
+			ctx, cancel := context.WithTimeout(context.Background(), c.config.ShutdownTimeout)
+			defer cancel()
+			if err := kafkaClient.Flush(ctx); err != nil {
+				c.r.Warn().Err(err).Msg("cannot flush the remaining records")
 			}
 		}
+		kafkaClient.Close()
+		return nil
 	})
 	return nil
 }
@@ -152,10 +137,10 @@ func (c *Component) Stop() error {
 	return c.t.Wait()
 }
 
-// Send enqueues one enriched flow record for asynchronous production to Kafka.
-// Non-blocking and best-effort: if the send queue is full (a slow or broken
-// broker), the record is dropped and counted, so the flow worker — and the
-// ClickHouse path — are never blocked.
+// Send hands one enriched flow record to the Kafka producer. Non-blocking and
+// best-effort: if the producer buffer is full (a slow or broken broker), the
+// record is dropped and counted, so the flow worker — and the ClickHouse path —
+// are never blocked.
 func (c *Component) Send(exporter string, payload []byte) {
 	if c.kafkaClient == nil {
 		return
@@ -165,9 +150,22 @@ func (c *Component) Send(exporter string, payload []byte) {
 		Key:   c.config.LoadBalance.RecordKey(exporter),
 		Value: payload,
 	}
-	select {
-	case c.sendCh <- record:
-	default:
-		c.metrics.dropped.Inc()
-	}
+	c.kafkaClient.TryProduce(context.Background(), record, func(_ *kgo.Record, err error) {
+		if err == nil {
+			c.metrics.messagesSent.Inc()
+			c.metrics.bytesSent.Add(float64(len(payload)))
+			return
+		}
+		if errors.Is(err, kgo.ErrMaxBuffered) {
+			c.metrics.dropped.Inc()
+			return
+		}
+		var ke *kerr.Error
+		if errors.As(err, &ke) {
+			c.metrics.errors.WithLabelValues(ke.Message).Inc()
+		} else {
+			c.metrics.errors.WithLabelValues("unknown").Inc()
+		}
+		c.errLogger.Err(err).Str("topic", c.kafkaTopic).Msg("Kafka producer error")
+	})
 }
