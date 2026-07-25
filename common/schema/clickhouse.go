@@ -132,7 +132,7 @@ func (schema Schema) ClickHousePrimaryKeys() []string {
 	return cols
 }
 
-// ClickHouseHash returns an hash of the inpt table in ClickHouse
+// ClickHouseHash returns an hash of the input table in ClickHouse
 func (schema Schema) ClickHouseHash() string {
 	hash := fnv.New128()
 	create := schema.ClickHouseCreateTable(ClickHouseSkipGeneratedColumns, ClickHouseSkipAliasedColumns)

@@ -585,13 +585,6 @@ func (column *Column) shouldProvideValue() bool {
 		column.ClickHouseAlias == ""
 }
 
-// shouldBeProto tells if the column carries a value that can be exported in the
-// optional Protobuf encoding (i.e. it is a real wire column, not an
-// alias/generated one).
-func (column *Column) shouldBeProto() bool {
-	return column.shouldProvideValue()
-}
-
 func (schema Schema) finalize() Schema {
 	ncolumns := []Column{}
 	for _, column := range schema.columns {
@@ -651,7 +644,7 @@ func (schema Schema) finalize() Schema {
 	protobufIndex := 1
 	for i := range schema.columns {
 		column := &schema.columns[i]
-		if !column.shouldBeProto() {
+		if !column.shouldProvideValue() {
 			column.ProtobufIndex = -1
 			continue
 		}
