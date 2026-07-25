@@ -1,0 +1,13 @@
+---
+paths:
+  kafka.topic: flows
+  kafka.brokers:
+    - kafka1:9092
+  inlet.0.kafka.brokers:
+    - kafka1:9092
+  inlet.0.kafka.queuesize: 1024
+  outlet.0.kafkainput.brokers:
+    - kafka1:9092
+  outlet.0.kafkainput.topic: flows
+  outlet.0.kafkainput.consumergroup: akvorado-outlet
+  outlet.0.kafkainput.minworkers: 2

@@ -33,7 +33,7 @@ type OutletConfiguration struct {
 	HTTP         httpserver.Configuration
 	Metadata     metadata.Configuration
 	Routing      routing.Configuration
-	Kafka        kafkainput.Configuration
+	KafkaInput   kafkainput.Configuration
 	KafkaOutput  kafkaoutput.Configuration
 	ClickHouseDB clickhousedb.Configuration
 	ClickHouse   clickhouse.Configuration
@@ -49,7 +49,7 @@ func (c *OutletConfiguration) Reset() {
 		Reporting:    reporter.DefaultConfiguration(),
 		Metadata:     metadata.DefaultConfiguration(),
 		Routing:      routing.DefaultConfiguration(),
-		Kafka:        kafkainput.DefaultConfiguration(),
+		KafkaInput:   kafkainput.DefaultConfiguration(),
 		ClickHouseDB: clickhousedb.DefaultConfiguration(),
 		ClickHouse:   clickhouse.DefaultConfiguration(),
 		KafkaOutput:  kafkaoutput.DefaultConfiguration(),
@@ -133,7 +133,7 @@ func outletStart(r *reporter.Reporter, config OutletConfiguration, checkOnly boo
 	if err != nil {
 		return fmt.Errorf("unable to initialize routing component: %w", err)
 	}
-	kafkaInputComponent, err := kafkainput.New(r, config.Kafka, kafkainput.Dependencies{
+	kafkaInputComponent, err := kafkainput.New(r, config.KafkaInput, kafkainput.Dependencies{
 		Daemon: daemonComponent,
 	})
 	if err != nil {
@@ -316,4 +316,6 @@ func OutletConfigurationUnmarshallerHook() mapstructure.DecodeHookFunc {
 
 func init() {
 	helpers.RegisterMapstructureUnmarshallerHook(OutletConfigurationUnmarshallerHook())
+	helpers.RegisterMapstructureUnmarshallerHook(
+		helpers.RenameKeyUnmarshallerHook(OutletConfiguration{}, "Kafka", "KafkaInput"))
 }

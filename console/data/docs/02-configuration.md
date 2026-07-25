@@ -152,7 +152,7 @@ buffers format][].
 The following keys are accepted:
 
 - `topic`, `brokers`, and `tls` are described in the configuration for the
-  [orchestrator service](#kafka-2). Their values are copied from the
+  [orchestrator service](#kafka-1). Their values are copied from the
   orchestrator configuration, unless you set `brokers` explicitly.
 - `compression-codec` defines the compression codec for messages: `none`,
   `gzip`, `snappy`, `lz4` (default), or `zstd`.
@@ -174,15 +174,15 @@ backward-compatible.
 The outlet service takes flows from Kafka, parses them, adds metadata and
 routing information, and sends them to ClickHouse. It is configured under the
 `outlet` key (or in `config/outlet.yaml` with the default Docker Compose setup).
-Its main components are `kafka`, `metadata`, `routing`, and `core`.
+Its main components are `kafka-input`, `metadata`, `routing`, and `core`.
 
-### Kafka
+### Kafka input
 
-The outlet's Kafka component takes flows from the Kafka topic. The following
-keys are accepted:
+The outlet's Kafka input component takes flows from the Kafka topic. It is
+configured under the `kafka-input` key. The following keys are accepted:
 
 - `topic`, `brokers`, and `tls` are described in the configuration for the
-  [orchestrator service](#kafka-2). Their values are copied from the
+  [orchestrator service](#kafka-1). Their values are copied from the
   orchestrator configuration, unless you set `brokers` explicitly.
 - `consumer-group` defines the consumer group ID for Kafka consumption.
 - `fetch-min-bytes` defines the minimum number of bytes to fetch from Kafka.
@@ -217,7 +217,7 @@ key:
   instead of mixing wire layouts for consumers, mirroring the inlet topic's
   version suffix. Unlike the inlet topic, the outlet does not yet manage this
   topic, so create it — with retention — beforehand.
-- `brokers` and `tls` are as in the [orchestrator Kafka config](#kafka-2).
+- `brokers` and `tls` are as in the [orchestrator Kafka config](#kafka-1).
 - `queue-size` is the producer buffer: the maximum records held in flight
   (`MaxBufferedRecords`) and the internal send-queue depth (default: 4096).
 
@@ -471,7 +471,7 @@ The `gnmi` provider polls an exporter using gNMI. It accepts these keys:
 - `authentication-parameters` is a map from exporter subnets to authentication
   parameters for gNMI targets. Authentication parameters accept these keys:
   `username`, `password`, and `tls` (which takes the same keys as for
-  [Kafka](#kafka-2)).
+  [Kafka](#kafka-1)).
 - `models` is the list of models to use to get information from a target. Each
   model is tried, and if a target supports all the paths, it is selected. The
   models are tried in the order they are declared. If you want to keep the
@@ -569,7 +569,7 @@ sources. Each source accepts these attributes:
 
 - `url` is the URL to fetch.
 - `tls` defines the TLS configuration to connect to the source (it uses the same
-  configuration as for [Kafka](#kafka-2), be sure to set `enable` to `true`)
+  configuration as for [Kafka](#kafka-1), be sure to set `enable` to `true`)
 - `method` is the method to use (`GET` or `POST`).
 - `headers` is a map of header names to values to add to the request.
 - `proxy` defines if a proxy should be used (defined with environment variables
@@ -1076,7 +1076,7 @@ ClickHouse database. The following keys should be provided inside
 - `password` is the password to use for authentication
 - `database` defines the database to use to create tables
 - `cluster` defines the cluster for replicated and distributed tables, see the next section for more information
-- `tls` defines the TLS configuration to connect to the database (it uses the same configuration as for [Kafka](#kafka-2))
+- `tls` defines the TLS configuration to connect to the database (it uses the same configuration as for [Kafka](#kafka-1))
 
 ### ClickHouse
 

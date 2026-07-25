@@ -103,8 +103,15 @@ components and centralizes configuration of the various other components.`,
 				if !slices.Contains(metadata.Keys, fmt.Sprintf("Outlet[%d].ClickHouse.Servers[0]", idx)) {
 					config.Outlet[idx].ClickHouseDB = config.ClickHouseDB
 				}
-				if !slices.Contains(metadata.Keys, fmt.Sprintf("Outlet[%d].Kafka.Brokers[0]", idx)) {
-					config.Outlet[idx].Kafka.Configuration = config.Kafka.Configuration
+				if !slices.Contains(metadata.Keys, fmt.Sprintf("Outlet[%d].KafkaInput.Brokers[0]", idx)) {
+					config.Outlet[idx].KafkaInput.Configuration = config.Kafka.Configuration
+				}
+				if !slices.Contains(metadata.Keys, fmt.Sprintf("Outlet[%d].KafkaOutput.Brokers[0]", idx)) {
+					if config.KafkaOutput != nil {
+						config.Outlet[idx].KafkaOutput.Configuration = config.KafkaOutput.Configuration
+					} else {
+						config.Outlet[idx].KafkaOutput.Configuration = config.Kafka.Configuration
+					}
 				}
 				config.Outlet[idx].Schema = config.Schema
 			}
