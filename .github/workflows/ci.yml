@@ -106,7 +106,9 @@ jobs:
       # Misc tests
       - name: Vector tests
         if: matrix.tests == 'misc'
-        run: docker compose -f docker/docker-compose-dev.yml run --quiet --rm vector test
+        run: |
+          docker compose -f docker/docker-compose-dev.yml run --quiet --rm vector validate --skip-healthchecks
+          docker compose -f docker/docker-compose-dev.yml run --quiet --rm vector test
 
       # Binary build
       - name: Build
