@@ -10,6 +10,10 @@ identified with a specific icon:
 - 🩹: bug fix
 - 🌱: miscellaneous change
 
+## Unreleased
+
+- 🌱 *docker*: update Kafka to 4.3.1 (not mandatory)
+
 ## 2.4.1 - 2026-07-14
 
 - 🩹 *outlet*: fix decoding of destination MAC address for sFlow
