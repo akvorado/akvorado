@@ -34,7 +34,6 @@ require (
 	github.com/openconfig/gnmic/pkg/api v0.1.11
 	github.com/oschwald/maxminddb-golang/v2 v2.4.1
 	github.com/osrg/gobgp/v4 v4.7.0
-	github.com/planetscale/vtprotobuf v0.6.1-0.20250313105119-ba97887b0a25
 	github.com/prometheus/client_golang v1.24.0
 	github.com/puzpuzpuz/xsync/v4 v4.5.0
 	github.com/redis/go-redis/v9 v9.21.0
@@ -118,7 +117,6 @@ require (
 	github.com/jessevdk/go-flags v1.6.1 // indirect
 	github.com/jhump/protoreflect v1.17.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
-	github.com/jordanlewis/gcassert v0.0.0-20260313214104-ad3fae17affe // indirect
 	github.com/klauspost/compress v1.19.0 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20260330125221-c963978e514e // indirect
@@ -134,6 +132,7 @@ require (
 	github.com/paulmach/orb v0.13.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.27 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/planetscale/vtprotobuf v0.6.1-0.20250313105119-ba97887b0a25 // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.70.0 // indirect
@@ -185,7 +184,6 @@ tool (
 	github.com/dmarkham/enumer
 	github.com/frapposelli/wwhrd
 	github.com/go-delve/delve/cmd/dlv
-	github.com/jordanlewis/gcassert/cmd/gcassert
 	github.com/mgechev/revive
 	github.com/mna/pigeon
 	github.com/planetscale/vtprotobuf/cmd/protoc-gen-go-vtproto

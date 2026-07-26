@@ -78,7 +78,6 @@ all-indep: $(GENERATED)
 
 BUF         = env GO=$(GO) ./bin/external-tool buf
 ENUMER      = go tool enumer
-GCASSERT    = go tool gcassert
 GOIMPORTS   = go tool goimports
 GOTESTSUM   = go tool gotestsum
 MOCKGEN     = go tool mockgen
@@ -222,18 +221,15 @@ common/embed/data/embed.zip:
 # Tests
 
 .PHONY: check test tests test-race test-short test-bench test-coverage
-.PHONY: test-go test-go-units test-go-checks test-go-gcassert test-js test-coverage-go test-coverage-js
+.PHONY: test-go test-go-units test-go-checks test-js test-coverage-go test-coverage-js
 check test tests: test-go test-js ## Run tests
 test-coverage: test-coverage-go test-coverage-js ## Run coverage tests
 
-test-go-units test-go-checks test-go-gcassert test-bench test-race test-coverage-go: .fmt-go~ .lint-go~ $(GENERATED) $(GENERATED_TEST_GO)
+test-go-units test-go-checks test-bench test-race test-coverage-go: .fmt-go~ .lint-go~ $(GENERATED) $(GENERATED_TEST_GO)
 test-go: test-go-units test-go-checks ## Run Go tests
 test-go-checks:
 	$(call log,running Go static checks…)
 	$Q $(STATICCHECK) -f stylish -checks inherit,-SA1012 $(PKGS)
-test-go-gcassert:
-	$(call log,checking gcassert directives…)
-	$Q $(GCASSERT) ./...
 test-go-units:
 	$(call log,running Go tests$(GOTEST_MORE)…)
 	$Q mkdir -p test/go

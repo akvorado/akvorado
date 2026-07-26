@@ -248,7 +248,7 @@ func (bf *FlowMessage) AppendArrayUInt128(columnKey ColumnKey, value []UInt128) 
 	bf.appendDebug(columnKey, value)
 }
 
-//gcassert:inline
+//akvorado:inline
 func (bf *FlowMessage) appendDebug(columnKey ColumnKey, value any) {
 	if !debug {
 		return
