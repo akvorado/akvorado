@@ -264,6 +264,8 @@ sinks:
     endpoint: http://loki:3100/loki
     encoding:
       codec: "text"
+    # Labels and metadata are expanded from whole objects.
+    dangerously_allow_unconfined_template_resolution: true
     labels:
       "*": "{{ ._labels }}"
     structured_metadata:
