@@ -150,6 +150,8 @@ const (
 	ColumnExporterTenant
 	ColumnSrcAddr
 	ColumnDstAddr
+	ColumnSrcDNSName
+	ColumnDstDNSName
 	ColumnSrcNetMask
 	ColumnDstNetMask
 	ColumnSrcNetPrefix
@@ -279,6 +281,7 @@ func flows() Schema {
 				ClickHouseCodec:    "ZSTD(1)",
 				ConsoleTruncateIP:  true,
 			},
+			{Key: ColumnSrcDNSName, ParserType: "string", ClickHouseType: "LowCardinality(String)", ClickHouseNotSortingKey: true},
 			{
 				Key:                 ColumnSrcNetMask,
 				ClickHouseMainOnly:  true,

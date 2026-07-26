@@ -57,6 +57,16 @@
   clickhousecodec: ZSTD(1)
   clickhousemainonly: true
   consoletruncateip: true
+- key: SrcDNSName
+  name: SrcDNSName
+  parsertype: string
+  clickhousetype: LowCardinality(String)
+  clickhousenotsortingkey: true
+- key: DstDNSName
+  name: DstDNSName
+  parsertype: string
+  clickhousetype: LowCardinality(String)
+  clickhousenotsortingkey: true
 - key: SrcNetMask
   name: SrcNetMask
   clickhousetype: UInt8

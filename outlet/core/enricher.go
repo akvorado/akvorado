@@ -143,6 +143,10 @@ func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) bool {
 	// set asns according to user config
 	flow.SrcAS = c.getASNumber(flow.SrcAS, sourceRouting.ASN, flow.SrcNetMask)
 	flow.DstAS = c.getASNumber(flow.DstAS, destRouting.ASN, flow.DstNetMask)
+	if c.d.DNS != nil {
+		flow.AppendString(schema.ColumnSrcDNSName, c.d.DNS.Lookup(flow.SrcAddr))
+		flow.AppendString(schema.ColumnDstDNSName, c.d.DNS.Lookup(flow.DstAddr))
+	}
 	flow.AppendArrayUInt32(schema.ColumnSrcCommunities, sourceRouting.Communities)
 	flow.AppendArrayUInt32(schema.ColumnDstCommunities, destRouting.Communities)
 	flow.AppendArrayUInt32(schema.ColumnDstASPath, destRouting.ASPath)

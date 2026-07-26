@@ -29,10 +29,17 @@ import (
 	"akvorado/outlet/routing"
 )
 
+type fakeDNSLookup map[netip.Addr]string
+
+func (f fakeDNSLookup) Lookup(ip netip.Addr) string {
+	return f[ip]
+}
+
 func TestEnrich(t *testing.T) {
 	cases := []struct {
 		Name            string
 		Configuration   helpers.M
+		DNS             DNSLookup
 		InputFlow       func() *schema.FlowMessage
 		OutputFlow      *schema.FlowMessage
 		ExpectedMetrics map[string]string
@@ -586,6 +593,53 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 			},
 		},
 		{
+			Name:          "use data from DNS",
+			Configuration: helpers.M{},
+			DNS: fakeDNSLookup{
+				netip.MustParseAddr("::ffff:192.0.2.142"): "source.example",
+				netip.MustParseAddr("::ffff:192.0.2.10"):  "destination.example",
+			},
+			InputFlow: func() *schema.FlowMessage {
+				return &schema.FlowMessage{
+					SamplingRate:    1000,
+					ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+					InIf:            100,
+					OutIf:           200,
+					SrcAddr:         netip.MustParseAddr("::ffff:192.0.2.142"),
+					DstAddr:         netip.MustParseAddr("::ffff:192.0.2.10"),
+				}
+			},
+			OutputFlow: &schema.FlowMessage{
+				SamplingRate:    1000,
+				InIf:            100,
+				OutIf:           200,
+				ExporterAddress: netip.MustParseAddr("::ffff:192.0.2.142"),
+				SrcAddr:         netip.MustParseAddr("::ffff:192.0.2.142"),
+				DstAddr:         netip.MustParseAddr("::ffff:192.0.2.10"),
+				SrcAS:           1299,
+				DstAS:           174,
+				SrcNetMask:      27,
+				DstNetMask:      27,
+				OtherColumns: map[schema.ColumnKey]any{
+					schema.ColumnExporterName:     "192_0_2_142",
+					schema.ColumnInIfName:         "Gi0/0/100",
+					schema.ColumnOutIfName:        "Gi0/0/200",
+					schema.ColumnInIfDescription:  "Interface 100",
+					schema.ColumnOutIfDescription: "Interface 200",
+					schema.ColumnInIfSpeed:        uint32(1000),
+					schema.ColumnOutIfSpeed:       uint32(1000),
+					schema.ColumnSrcDNSName:       "source.example",
+					schema.ColumnDstDNSName:       "destination.example",
+					schema.ColumnDstASPath:        []uint32{64200, 1299, 174},
+					schema.ColumnSrcCommunities:   []uint32{500},
+					schema.ColumnDstCommunities:   []uint32{100, 200, 400},
+					schema.ColumnDstLargeCommunities: []schema.UInt128{
+						{High: 64200, Low: (uint64(2) << 32) + uint64(3)},
+					},
+				},
+			},
+		},
+		{
 			Name:          "flow with missing interfaces",
 			Configuration: helpers.M{},
 			InputFlow: func() *schema.FlowMessage {
@@ -661,6 +715,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				ClickHouse: clickhouseComponent,
 				HTTP:       httpComponent,
 				Routing:    routingComponent,
+				DNS:        tc.DNS,
 				Schema:     schema.NewMock(t).EnableAllColumns(),
 			})
 			if err != nil {
