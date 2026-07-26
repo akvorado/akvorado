@@ -62,6 +62,7 @@ jobs:
           - tests: part 2
             compose: true
             coverage: true
+            gcassert: true
           - tests: misc
             binary: ${{ github.ref_type == 'tag' }}
     env:
@@ -102,6 +103,9 @@ jobs:
           path: |
             test/go/profile.out
             test/js/cobertura-coverage.xml
+      - name: Go assert tests
+        if: matrix.gcassert
+        run: make test-go-gcassert
 
       # Misc tests
       - name: Vector tests
