@@ -196,7 +196,7 @@
                       },
                       "spec": {
                         "editorMode": "code",
-                        "expr": "rate(akvorado_outlet_kafka_consumergroup_lag_messages)",
+                        "expr": "rate(akvorado_outlet_kafkainput_consumergroup_lag_messages)",
                         "legendFormat": "lag messages",
                         "range": true
                       }
@@ -831,7 +831,7 @@
                       },
                       "spec": {
                         "editorMode": "code",
-                        "expr": "rate(akvorado_outlet_kafka_received_messages_total)",
+                        "expr": "rate(akvorado_outlet_kafkainput_received_messages_total)",
                         "legendFormat": "Worker: {{worker}}",
                         "range": true
                       }
@@ -958,7 +958,7 @@
                       },
                       "spec": {
                         "editorMode": "code",
-                        "expr": "rate(akvorado_outlet_kafka_received_bytes_total)",
+                        "expr": "rate(akvorado_outlet_kafkainput_received_bytes_total)",
                         "legendFormat": "Worker {{worker}}",
                         "range": true
                       }

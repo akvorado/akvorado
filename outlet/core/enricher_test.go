@@ -24,7 +24,7 @@ import (
 	"akvorado/common/schema"
 	"akvorado/outlet/clickhouse"
 	"akvorado/outlet/flow"
-	"akvorado/outlet/kafka"
+	"akvorado/outlet/kafkainput"
 	"akvorado/outlet/metadata"
 	"akvorado/outlet/routing"
 )
@@ -633,7 +633,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 			httpComponent := httpserver.NewMock(t, r)
 			routingComponent := routing.NewMock(t, r)
 			routingComponent.PopulateRIB(t)
-			kafkaComponent, incoming := kafka.NewMock(t, kafka.DefaultConfiguration())
+			kafkaInputComponent, incoming := kafkainput.NewMock(t, kafkainput.DefaultConfiguration())
 			var clickhouseMessages []*schema.FlowMessage
 			var clickhouseMessagesMutex sync.Mutex
 			clickhouseComponent := clickhouse.NewMock(t, func(msg *schema.FlowMessage) {
@@ -657,7 +657,7 @@ ClassifyProviderRegex(Interface.Description, "^Transit: ([^ ]+)", "$1")`,
 				Daemon:     daemonComponent,
 				Flow:       flowComponent,
 				Metadata:   metadataComponent,
-				Kafka:      kafkaComponent,
+				KafkaInput: kafkaInputComponent,
 				ClickHouse: clickhouseComponent,
 				HTTP:       httpComponent,
 				Routing:    routingComponent,

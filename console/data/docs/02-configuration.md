@@ -152,7 +152,7 @@ buffers format][].
 The following keys are accepted:
 
 - `topic`, `brokers`, and `tls` are described in the configuration for the
-  [orchestrator service](#kafka-2). Their values are copied from the
+  [orchestrator service](#kafka-1). Their values are copied from the
   orchestrator configuration, unless you set `brokers` explicitly.
 - `compression-codec` defines the compression codec for messages: `none`,
   `gzip`, `snappy`, `lz4` (default), or `zstd`.
@@ -174,15 +174,15 @@ backward-compatible.
 The outlet service takes flows from Kafka, parses them, adds metadata and
 routing information, and sends them to ClickHouse. It is configured under the
 `outlet` key (or in `config/outlet.yaml` with the default Docker Compose setup).
-Its main components are `kafka`, `metadata`, `routing`, and `core`.
+Its main components are `kafka-input`, `metadata`, `routing`, and `core`.
 
-### Kafka
+### Kafka input
 
-The outlet's Kafka component takes flows from the Kafka topic. The following
-keys are accepted:
+The outlet's Kafka input component takes flows from the Kafka topic. It is
+configured under the `kafka-input` key. The following keys are accepted:
 
 - `topic`, `brokers`, and `tls` are described in the configuration for the
-  [orchestrator service](#kafka-2). Their values are copied from the
+  [orchestrator service](#kafka-1). Their values are copied from the
   orchestrator configuration, unless you set `brokers` explicitly.
 - `consumer-group` defines the consumer group ID for Kafka consumption.
 - `fetch-min-bytes` defines the minimum number of bytes to fetch from Kafka.
@@ -201,6 +201,83 @@ The number of running workers depends on the load of the ClickHouse
 component. The number of workers is adjusted to stay below
 `maximum-batch-size`. Do not set `max-workers` too high, as it can
 increase the load on ClickHouse. The default value of 8 is usually fine.
+
+### Kafka output
+
+The outlet can also produce the decoded and enriched flows to a Kafka topic, in
+parallel with the ClickHouse insert, so downstream systems can consume enriched
+flows in near real time without re-decoding the inlet topic or exporting from
+ClickHouse. It is **disabled by default** and configured under the `kafka-output`
+key:
+
+- `enabled` turns the output on (default: `false`).
+- `topic` is the destination topic base name. The schema hash is appended to it
+  (`topic-<hash>`) — the same hash embedded in the generated message name
+  (`FlowMessagev<hash>`) — so an incompatible schema change lands on a new topic
+  instead of mixing wire layouts for consumers, mirroring the inlet topic's
+  version suffix. The topic is created and kept in sync by the orchestrator when
+  a top-level `kafka-output` block is set (see the [orchestrator Kafka
+  configuration](#kafka-1)). Without it, the outlet asks the broker to create the
+  topic on first produce, which only works if the broker allows auto-creation and
+  gives the topic the broker defaults for partitions and retention — so create it
+  yourself beforehand.
+- `brokers` and `tls` are as in the [orchestrator Kafka config](#kafka-1).
+- `compression-codec` defines the compression codec for messages: `none`,
+  `gzip`, `snappy`, `lz4` (default), or `zstd`.
+- `queue-size` is the producer buffer: the maximum records held in flight
+  (`MaxBufferedRecords`, default: 4096).
+- `load-balance` defines the load balancing algorithm for flows accross Kafka
+  partitions, with the same values as for the [inlet](#kafka). The default value
+  is `random`, which spreads the load evenly. Use `by-exporter` if consumers need
+  all the flows of a given exporter in one partition, keeping in mind that a
+  single busy exporter then saturates a single partition.
+- `shutdown-timeout` is how long the outlet waits, when stopping, for the records
+  still buffered to reach the broker (default: `1s`). Use `0` to drop them right
+  away.
+
+Delivery is **best-effort and at-most-once**: this output never blocks the
+ClickHouse path. When the producer cannot keep up, records are **dropped**
+(counted by `akvorado_outlet_kafkaoutput_dropped_messages_total`) rather than
+applying backpressure to flow processing. Three things follow from that:
+
+- **Sizing `queue-size`.** It behaves like a TCP window: sustained producer
+  throughput is roughly `queue-size ÷ broker-ack-latency`. If it is smaller than
+  `peak-throughput × ack-latency`, the producer cannot keep enough requests in
+  flight, throughput is capped, and flows drop under load. A larger value trades
+  a little latency for more burst tolerance.
+- **Scaling.** Beyond that point, per-outlet producer throughput is bounded by
+  the broker in-flight limit and the topic's partition count — not by
+  `queue-size`. To sustain higher volume, add partitions and run more outlet
+  replicas (each replica is an independent producer), rather than only growing
+  `queue-size`.
+- **Not autoscaled.** The outlet's worker autoscaler reacts to ClickHouse load
+  only; it does not react to this output. Watch `dropped_messages_total` and
+  provision capacity accordingly.
+
+Besides `dropped_messages_total`, the output exposes (prefixed
+`akvorado_outlet_kafkaoutput_`): `sent_messages_total`, `sent_bytes_total`,
+`errors_total`, and the underlying franz-go client metrics, including
+`buffered_produce_records_total` (a gauge of the records waiting in the producer
+buffer — note it is a snapshot, so brief bursts may not show, and
+`dropped_messages_total` is the reliable saturation signal),
+`request_durationE2E_seconds` (produce request round-trip latency) and
+`request_throttled_seconds` (broker throttling).
+
+```yaml
+kafka-output:
+  enabled: true
+  topic: flows-enriched
+  brokers:
+    - kafka:9092
+  queue-size: 16384
+```
+
+> [!NOTE]
+> In production, alert on `rate(akvorado_outlet_kafkaoutput_dropped_messages_total[5m]) > 0`.
+> Sustained drops mean the producer is below the offered load: add partitions or
+> outlet replicas, or raise `queue-size`. `request_durationE2E_seconds` and
+> `request_throttled_seconds` help tell whether the cause is broker latency or
+> throttling.
 
 ### Routing
 
@@ -409,7 +486,7 @@ The `gnmi` provider polls an exporter using gNMI. It accepts these keys:
 - `authentication-parameters` is a map from exporter subnets to authentication
   parameters for gNMI targets. Authentication parameters accept these keys:
   `username`, `password`, and `tls` (which takes the same keys as for
-  [Kafka](#kafka-2)).
+  [Kafka](#kafka-1)).
 - `models` is the list of models to use to get information from a target. Each
   model is tried, and if a target supports all the paths, it is selected. The
   models are tried in the order they are declared. If you want to keep the
@@ -507,7 +584,7 @@ sources. Each source accepts these attributes:
 
 - `url` is the URL to fetch.
 - `tls` defines the TLS configuration to connect to the source (it uses the same
-  configuration as for [Kafka](#kafka-2), be sure to set `enable` to `true`)
+  configuration as for [Kafka](#kafka-1), be sure to set `enable` to `true`)
 - `method` is the method to use (`GET` or `POST`).
 - `headers` is a map of header names to values to add to the request.
 - `proxy` defines if a proxy should be used (defined with environment variables
@@ -923,8 +1000,19 @@ flows. It accepts the following keys:
 - `sasl` defines the SASL configuration to connect to the cluster
 - `topic` defines the base topic name
 - `manage-topic` controls whether the orchestrator should create or update the
-  Kafka topic. Can be set to `false` when Kafka is managed externally.
-- `topic-configuration` describes how the topic should be configured
+  input Kafka topic. Can be set to `false` when Kafka is managed externally.
+- `topic-configuration` describes how the input topic should be configured
+
+A separate top-level **`kafka-output`** block, when set, makes the orchestrator
+manage the topic of the outlet's optional `kafka-output` output. It is a peer of the
+`kafka` block with its **own connection** (`brokers`, `tls`, `sasl`), so the
+output topic can live on a different cluster than the input topic. It is managed
+whenever it is configured — presence is the opt-in, independent of the input's
+`manage-topic` (so the output topic can be managed even when the input topic is
+not, e.g. the input lives on a shared cluster). It takes a `topic` base name (the
+schema hash is appended, matching `kafka-output`) plus the connection and
+topic-configuration keys (`num-partitions`, `replication-factor`,
+`config-entries`, `config-entries-strict-sync`).
 
 The following keys are accepted for the TLS configuration:
 
@@ -969,6 +1057,17 @@ kafka:
       retention.ms: 86400000
       cleanup.policy: delete
     config-entries-strict-sync: true
+
+# Optional: manage the outlet kafka-output output topic (its own connection).
+kafka-output:
+  topic: flows-enriched
+  brokers:
+    - kafka:9092
+  num-partitions: 4
+  replication-factor: 1
+  config-entries:
+    retention.ms: 3600000
+  config-entries-strict-sync: true
 ```
 
 Another useful setting is `retention.bytes` to limit the size of a
@@ -992,7 +1091,7 @@ ClickHouse database. The following keys should be provided inside
 - `password` is the password to use for authentication
 - `database` defines the database to use to create tables
 - `cluster` defines the cluster for replicated and distributed tables, see the next section for more information
-- `tls` defines the TLS configuration to connect to the database (it uses the same configuration as for [Kafka](#kafka-2))
+- `tls` defines the TLS configuration to connect to the database (it uses the same configuration as for [Kafka](#kafka-1))
 
 ### ClickHouse
 

@@ -30,7 +30,7 @@ import (
 	"akvorado/common/schema"
 	"akvorado/outlet/clickhouse"
 	"akvorado/outlet/flow"
-	"akvorado/outlet/kafka"
+	"akvorado/outlet/kafkainput"
 	"akvorado/outlet/metadata"
 	"akvorado/outlet/routing"
 )
@@ -49,7 +49,7 @@ func TestCore(t *testing.T) {
 	httpComponent := httpserver.NewMock(t, r)
 	routingComponent := routing.NewMock(t, r)
 	routingComponent.PopulateRIB(t)
-	kafkaComponent, incoming := kafka.NewMock(t, kafka.DefaultConfiguration())
+	kafkaInputComponent, incoming := kafkainput.NewMock(t, kafkainput.DefaultConfiguration())
 	var clickhouseMessages []*schema.FlowMessage
 	var clickhouseMessagesMutex sync.Mutex
 	clickhouseComponent := clickhouse.NewMock(t, func(msg *schema.FlowMessage) {
@@ -64,7 +64,7 @@ func TestCore(t *testing.T) {
 		Daemon:     daemonComponent,
 		Flow:       flowComponent,
 		Metadata:   metadataComponent,
-		Kafka:      kafkaComponent,
+		KafkaInput: kafkaInputComponent,
 		ClickHouse: clickhouseComponent,
 		HTTP:       httpComponent,
 		Routing:    routingComponent,
@@ -217,7 +217,7 @@ func TestCore(t *testing.T) {
 			clickhouseMessagesMutex.Unlock()
 
 			// Create a specific worker (for compatibility with synctest).
-			scaleRequestChan := make(chan kafka.ScaleRequest, 100)
+			scaleRequestChan := make(chan kafkainput.ScaleRequest, 100)
 			receiveFunc, _ := c.newWorker(0, scaleRequestChan)
 
 			// Inject 10 flows with rateLimit=20 (burst=int(20/10)=2).

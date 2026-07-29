@@ -35,7 +35,8 @@ type OrchestratorConfiguration struct {
 	HTTP             httpserver.Configuration
 	ClickHouse       clickhouse.Configuration
 	ClickHouseDB     clickhousedb.Configuration
-	Kafka            kafka.Configuration
+	Kafka            kafka.InputConfiguration
+	KafkaOutput      *kafka.OutputConfiguration
 	GeoIP            geoip.Configuration
 	Orchestrator     orchestrator.Configuration `mapstructure:",squash" yaml:",inline"`
 	Schema           schema.Configuration
@@ -60,7 +61,7 @@ func (c *OrchestratorConfiguration) Reset() {
 		HTTP:             httpserver.DefaultConfiguration(),
 		ClickHouse:       clickhouse.DefaultConfiguration(),
 		ClickHouseDB:     clickhousedb.DefaultConfiguration(),
-		Kafka:            kafka.DefaultConfiguration(),
+		Kafka:            kafka.DefaultInputConfiguration(),
 		GeoIP:            geoip.DefaultConfiguration(),
 		Orchestrator:     orchestrator.DefaultConfiguration(),
 		Schema:           schema.DefaultConfiguration(),
@@ -102,8 +103,20 @@ components and centralizes configuration of the various other components.`,
 				if !slices.Contains(metadata.Keys, fmt.Sprintf("Outlet[%d].ClickHouse.Servers[0]", idx)) {
 					config.Outlet[idx].ClickHouseDB = config.ClickHouseDB
 				}
-				if !slices.Contains(metadata.Keys, fmt.Sprintf("Outlet[%d].Kafka.Brokers[0]", idx)) {
-					config.Outlet[idx].Kafka.Configuration = config.Kafka.Configuration
+				if !slices.Contains(metadata.Keys, fmt.Sprintf("Outlet[%d].KafkaInput.Brokers[0]", idx)) {
+					config.Outlet[idx].KafkaInput.Configuration = config.Kafka.Configuration
+				}
+				if !slices.Contains(metadata.Keys, fmt.Sprintf("Outlet[%d].KafkaOutput.Brokers[0]", idx)) {
+					if config.KafkaOutput != nil {
+						// This is the topic the orchestrator manages, take it as is.
+						config.Outlet[idx].KafkaOutput.Configuration = config.KafkaOutput.Configuration
+					} else {
+						// Fall back on the input cluster, but not on the input
+						// topic, which is a different topic.
+						topic := config.Outlet[idx].KafkaOutput.Topic
+						config.Outlet[idx].KafkaOutput.Configuration = config.Kafka.Configuration
+						config.Outlet[idx].KafkaOutput.Configuration.Topic = topic
+					}
 				}
 				config.Outlet[idx].Schema = config.Schema
 			}
@@ -172,7 +185,7 @@ func orchestratorStart(r *reporter.Reporter, config OrchestratorConfiguration, d
 	if err != nil {
 		return fmt.Errorf("unable to initialize schema component: %w", err)
 	}
-	kafkaComponent, err := kafka.New(r, config.Kafka, kafka.Dependencies{Schema: schemaComponent})
+	kafkaComponent, err := kafka.New(r, config.Kafka, config.KafkaOutput, kafka.Dependencies{Schema: schemaComponent})
 	if err != nil {
 		return fmt.Errorf("unable to initialize kafka component: %w", err)
 	}

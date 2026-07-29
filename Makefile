@@ -31,7 +31,7 @@ GENERATED_GO = \
 	orchestrator/clickhouse/data/tcp.csv \
 	orchestrator/clickhouse/data/udp.csv \
 	console/filter/parser.go \
-	inlet/kafka/loadbalancealgorithm_enumer.go \
+	common/kafka/loadbalancealgorithm_enumer.go \
 	outlet/core/asnprovider_enumer.go \
 	outlet/core/netprovider_enumer.go \
 	outlet/metadata/provider/snmp/authprotocol_enumer.go \
@@ -108,9 +108,9 @@ inlet/flow/input/udp/reuseport_%.o: inlet/flow/input/udp/reuseport_kern.c inlet/
 	$Q ! $(CLANG) -print-targets 2> /dev/null | grep -qF $* || \
 		 $(CLANG) -O2 -g -Wall -target $* -c $< -o $@
 
-inlet/kafka/loadbalancealgorithm_enumer.go: inlet/kafka/config.go
+common/kafka/loadbalancealgorithm_enumer.go: common/kafka/config.go
 	$(call log,generate enums for LoadBalanceAlgorithm…)
-	$Q $(ENUMER) -type=LoadBalanceAlgorithm -text -transform=kebab -trimprefix=LoadBalance inlet/kafka/config.go
+	$Q $(ENUMER) -type=LoadBalanceAlgorithm -text -transform=kebab -trimprefix=LoadBalance common/kafka/config.go
 outlet/core/asnprovider_enumer.go: outlet/core/config.go
 	$(call log,generate enums for ASNProvider…)
 	$Q $(ENUMER) -type=ASNProvider -text -transform=kebab -trimprefix=ASNProvider outlet/core/config.go
@@ -221,7 +221,7 @@ common/embed/data/embed.zip:
 # Tests
 
 .PHONY: check test tests test-race test-short test-bench test-coverage
-.PHONY: test-go test-go-units test-go-staticcheck test-js test-coverage-go test-coverage-js
+.PHONY: test-go test-go-units test-go-checks test-js test-coverage-go test-coverage-js
 check test tests: test-go test-js ## Run tests
 test-coverage: test-coverage-go test-coverage-js ## Run coverage tests
 

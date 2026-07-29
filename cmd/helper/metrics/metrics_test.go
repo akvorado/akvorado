@@ -71,8 +71,8 @@ func init() {
 
 	pkgs := []*packages.Package{
 		{
-			PkgPath: "akvorado/outlet/kafka",
-			Name:    "kafka",
+			PkgPath: "akvorado/outlet/kafkainput",
+			Name:    "kafkainput",
 			Syntax:  []*ast.File{f},
 		},
 	}
@@ -80,24 +80,24 @@ func init() {
 	got := Extract(pkgs)
 	expected := []Info{
 		{
-			Name:   "akvorado_outlet_kafka_duration_seconds",
+			Name:   "akvorado_outlet_kafkainput_duration_seconds",
 			Type:   "histogram",
 			Help:   "Request duration.",
 			Labels: []string{"handler"},
 		},
 		{
-			Name:   "akvorado_outlet_kafka_errors_total",
+			Name:   "akvorado_outlet_kafkainput_errors_total",
 			Type:   "counter",
 			Help:   "Total errors.",
 			Labels: []string{"code", "method"},
 		},
 		{
-			Name: "akvorado_outlet_kafka_requests_total",
+			Name: "akvorado_outlet_kafkainput_requests_total",
 			Type: "counter",
 			Help: "Total number of requests.",
 		},
 		{
-			Name: "akvorado_outlet_kafka_temperature",
+			Name: "akvorado_outlet_kafkainput_temperature",
 			Type: "gauge",
 			Help: "Current temperature.",
 		},

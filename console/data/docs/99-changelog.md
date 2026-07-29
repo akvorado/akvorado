@@ -12,6 +12,15 @@ identified with a specific icon:
 
 ## Unreleased
 
+- 💥 *outlet*: rename the Kafka input metrics from `akvorado_outlet_kafka_*` to
+  `akvorado_outlet_kafkainput_*`, following the rename of the component; update
+  any dashboard or alert relying on them
+- ✨ *outlet*: optionally export decoded and enriched flows to a Kafka topic in
+  parallel with the ClickHouse insert, configured under `kafka-output` and
+  disabled by default; the orchestrator manages the output topic when a top-level
+  `kafka-output` block is set
+- 🌱 *outlet*: rename the `kafka` configuration key to `kafka-input` (the old name
+  keeps working)
 - 🌱 *docker*: update Kafka to 4.3.1 (not mandatory)
 
 ## 2.4.1 - 2026-07-14

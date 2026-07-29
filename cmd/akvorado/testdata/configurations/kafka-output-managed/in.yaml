@@ -1,0 +1,19 @@
+---
+# When the orchestrator manages the output topic, the outlet uses the same topic
+# and the same cluster, which can differ from the input ones.
+
+kafka:
+  topic: flows
+  brokers:
+    - kafka1:9092
+
+kafka-output:
+  topic: enriched
+  brokers:
+    - kafka2:9092
+  num-partitions: 4
+  replication-factor: 1
+
+outlet:
+  kafka-output:
+    enabled: true
