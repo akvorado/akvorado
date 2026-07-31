@@ -79,8 +79,28 @@ type CustomDict struct {
 	Keys       []CustomDictKey       `validate:"required,dive"`
 	Attributes []CustomDictAttribute `validate:"required,dive"`
 	Source     string                `validate:"required"`
-	Layout     string                `validate:"required,oneof=hashed iptrie complex_key_hashed"`
+	Layout     CustomDictLayout      `validate:"required"`
 	Dimensions []string              `validate:"required"`
+}
+
+// CustomDictLayout is the layout of a custom dictionary. It uses the same names
+// as ClickHouse.
+type CustomDictLayout string
+
+// UnmarshalText validates and sets a layout from its text representation.
+// "iptrie" is accepted as an alias for "ip_trie": this was the only accepted
+// spelling before, but ClickHouse never understood it.
+func (l *CustomDictLayout) UnmarshalText(input []byte) error {
+	layout := CustomDictLayout(input)
+	if layout == "iptrie" {
+		layout = "ip_trie"
+	}
+	switch layout {
+	case "hashed", "complex_key_hashed", "ip_trie":
+		*l = layout
+		return nil
+	}
+	return fmt.Errorf("unknown dictionary layout %q: use hashed, complex_key_hashed, or ip_trie", input)
 }
 
 // CustomDictKey represents a single key (matching) column of a custom dictionary

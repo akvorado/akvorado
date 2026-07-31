@@ -114,6 +114,10 @@ func New(config Configuration) (*Component, error) {
 			if len(v.Keys) == 0 {
 				return nil, fmt.Errorf("custom dictionary %s has no keys, this is not supported", dname)
 			}
+			// ClickHouse matches an IP address against a single String key holding a prefix
+			if v.Layout == "ip_trie" && (len(v.Keys) > 1 || v.Keys[0].Type != "String") {
+				return nil, fmt.Errorf("custom dictionary %s uses the ip_trie layout, which needs a single key of type String", dname)
+			}
 			if len(v.Keys) > 1 {
 				// If more than one key is present, every key needs either a MatchDimension or a MatchDimensionSuffix
 				for _, kv := range v.Keys {

@@ -33,6 +33,7 @@ memory. Drop it on each cluster member once the new version runs:
   `kafka-output` block is set
 - ✨ *console*: allow filters to compare two columns, like `SrcPort < DstPort`,
   `DstAS != SrcAS` or `InIfConnectivity != OutIfConnectivity`
+- 🩹 *orchestrator*: fix custom dictionaries with an IP prefix layout
 - 🌱 *outlet*: GeoIP and network attributes are now resolved by the outlet
   instead of ClickHouse. The `geoip` configuration moves from the top level of
   the orchestrator configuration to `outlet`→`geoip` and

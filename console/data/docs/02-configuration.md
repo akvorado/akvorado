@@ -1025,6 +1025,11 @@ dimension.
 
 The `label` and `default` keys are optional.
 
+The `layout` key selects how ClickHouse stores the dictionary: `hashed` (the
+default) for a single key, `complex_key_hashed` for one or more keys, or
+`ip_trie` for a single `String` key containing a prefix, like `2001:db8::/32`,
+matched against an IP address dimension.
+
 It is possible to add the same dictionary to multiple dimensions, usually for
 the "Input" and "Output"-direction.
 

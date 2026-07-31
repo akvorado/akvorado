@@ -106,7 +106,7 @@ func (c *Component) migrateDatabase() error {
 			return c.createDictionary(
 				ctx,
 				fmt.Sprintf("custom_dict_%s", k),
-				v.Layout,
+				string(v.Layout),
 				strings.Join(schemaStr[:], ", "),
 				strings.Join(keys[:], ", "))
 		})
