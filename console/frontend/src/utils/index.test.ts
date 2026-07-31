@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import { describe, expect, it } from "vitest";
-import { formatXps, compareFields } from "./index";
+import { formatXps, compareFields, reverseDimension } from "./index";
 
 describe("formatXps", () => {
   it("formats small values without suffix", () => {
@@ -87,5 +87,40 @@ describe("compareFields", () => {
   it("handles equal fields", () => {
     expect(compareFields("TimeReceived", "TimeReceived")).toBe(0);
     expect(compareFields("SrcAddr", "SrcAddr")).toBe(0);
+  });
+});
+
+describe("reverseDimension", () => {
+  const known = [
+    "SrcAS",
+    "DstAS",
+    "SrcAddr",
+    "DstAddr",
+    "InIfName",
+    "OutIfName",
+    "SrcNetName",
+    "ExporterName",
+    "Proto",
+  ];
+
+  it("swaps Src and Dst", () => {
+    expect(reverseDimension("SrcAS", known)).toBe("DstAS");
+    expect(reverseDimension("DstAS", known)).toBe("SrcAS");
+    expect(reverseDimension("SrcAddr", known)).toBe("DstAddr");
+  });
+
+  it("swaps In and Out", () => {
+    expect(reverseDimension("InIfName", known)).toBe("OutIfName");
+    expect(reverseDimension("OutIfName", known)).toBe("InIfName");
+  });
+
+  it("keeps dimensions without a direction", () => {
+    expect(reverseDimension("ExporterName", known)).toBe("ExporterName");
+    expect(reverseDimension("Proto", known)).toBe("Proto");
+  });
+
+  it("keeps dimensions whose opposite is unknown", () => {
+    expect(reverseDimension("SrcNetName", known)).toBe("SrcNetName");
+    expect(reverseDimension("SrcAS", [])).toBe("SrcAS");
   });
 });
