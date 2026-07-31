@@ -5,7 +5,6 @@ package geoip
 
 import (
 	"errors"
-	"net/netip"
 	"strconv"
 
 	"github.com/oschwald/maxminddb-golang/v2"
@@ -81,16 +80,24 @@ type ipinfoDB struct {
 	db *maxminddb.Reader
 }
 
-func (mmdb *ipinfoDB) LookupGeo(ip netip.Addr) GeoInfo {
-	var info ipinfoGeoInfo
-	_ = mmdb.db.Lookup(ip).Decode(&info)
-	return GeoInfo(info)
+func (mmdb *ipinfoDB) IterGeoDatabase(f GeoIterFunc) {
+	for result := range mmdb.db.Networks() {
+		var info ipinfoGeoInfo
+		if err := result.Decode(&info); err != nil || info == (ipinfoGeoInfo{}) {
+			continue
+		}
+		f(result.Prefix(), GeoInfo(info))
+	}
 }
 
-func (mmdb *ipinfoDB) LookupASN(ip netip.Addr) ASNInfo {
-	var info ipinfoASNInfo
-	_ = mmdb.db.Lookup(ip).Decode(&info)
-	return ASNInfo(info)
+func (mmdb *ipinfoDB) IterASNDatabase(f ASNIterFunc) {
+	for result := range mmdb.db.Networks() {
+		var info ipinfoASNInfo
+		if err := result.Decode(&info); err != nil || info.ASNumber == 0 {
+			continue
+		}
+		f(result.Prefix(), ASNInfo(info))
+	}
 }
 
 func (mmdb *ipinfoDB) Close() {

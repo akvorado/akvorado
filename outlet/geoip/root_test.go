@@ -5,7 +5,6 @@ package geoip
 
 import (
 	"io"
-	"net/netip"
 	"os"
 	"path/filepath"
 	"testing"
@@ -104,13 +103,13 @@ func TestStartWithoutDatabase(t *testing.T) {
 	}
 	helpers.StartStop(t, c)
 
-	// Lookups return nothing instead of failing
-	ip := netip.MustParseAddr("::ffff:1.0.0.1")
-	if diff := helpers.Diff(c.LookupASN(ip), ASNInfo{}); diff != "" {
-		t.Errorf("LookupASN() (-got, +want):\n%s", diff)
+	// Walks return nothing instead of failing
+	ips := []string{"1.0.0.1"}
+	if diff := helpers.Diff(iterASN(t, c, ips), []ASNInfo{{}}); diff != "" {
+		t.Errorf("IterASNDatabases() (-got, +want):\n%s", diff)
 	}
-	if diff := helpers.Diff(c.LookupGeo(ip), GeoInfo{}); diff != "" {
-		t.Errorf("LookupGeo() (-got, +want):\n%s", diff)
+	if diff := helpers.Diff(iterGeo(t, c, ips), []GeoInfo{{}}); diff != "" {
+		t.Errorf("IterGeoDatabases() (-got, +want):\n%s", diff)
 	}
 }
 

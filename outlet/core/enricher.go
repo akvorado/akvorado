@@ -141,7 +141,8 @@ func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) bool {
 	// set next hop according to user config
 	flow.NextHop = c.getNextHop(flow.NextHop, destRouting.NextHop)
 
-	// Network attributes are also a source for AS numbers, look them up first.
+	// Network attributes also cover the GeoIP databases and are a source for AS
+	// numbers, look them up first.
 	var srcNet, dstNet networks.NetworkAttributes
 	if c.d.Networks != nil {
 		srcNet = c.d.Networks.Lookup(flow.SrcAddr)
@@ -149,8 +150,8 @@ func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) bool {
 	}
 
 	// set asns according to user config
-	flow.SrcAS = c.getASNumber(flow.SrcAS, sourceRouting.ASN, srcNet.ASN, flow.SrcNetMask, flow.SrcAddr)
-	flow.DstAS = c.getASNumber(flow.DstAS, destRouting.ASN, dstNet.ASN, flow.DstNetMask, flow.DstAddr)
+	flow.SrcAS = c.getASNumber(flow.SrcAS, sourceRouting.ASN, srcNet.ASN, flow.SrcNetMask)
+	flow.DstAS = c.getASNumber(flow.DstAS, destRouting.ASN, dstNet.ASN, flow.DstNetMask)
 	flow.AppendArrayUInt32(schema.ColumnSrcCommunities, sourceRouting.Communities)
 	flow.AppendArrayUInt32(schema.ColumnDstCommunities, destRouting.Communities)
 	flow.AppendArrayUInt32(schema.ColumnDstASPath, destRouting.ASPath)
@@ -161,8 +162,6 @@ func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) bool {
 		flow.AppendArrayUInt128(schema.ColumnDstLargeCommunities, largeCommunityToUInt128(destRouting.LargeCommunities))
 	}
 
-	// Network attributes come before GeoIP: the first value appended to a
-	// column wins, so a configured country/state/city overrides GeoIP.
 	if c.d.Networks != nil {
 		flow.AppendString(schema.ColumnSrcNetName, srcNet.Name)
 		flow.AppendString(schema.ColumnDstNetName, dstNet.Name)
@@ -180,18 +179,6 @@ func (w *worker) enrichFlow(exporterIP netip.Addr, exporterStr string) bool {
 		flow.AppendString(schema.ColumnDstGeoState, dstNet.State)
 		flow.AppendString(schema.ColumnSrcGeoCity, srcNet.City)
 		flow.AppendString(schema.ColumnDstGeoCity, dstNet.City)
-	}
-
-	// GeoIP lookups
-	if c.d.GeoIP != nil {
-		srcGeo := c.d.GeoIP.LookupGeo(flow.SrcAddr)
-		dstGeo := c.d.GeoIP.LookupGeo(flow.DstAddr)
-		flow.AppendString(schema.ColumnSrcCountry, srcGeo.Country)
-		flow.AppendString(schema.ColumnDstCountry, dstGeo.Country)
-		flow.AppendString(schema.ColumnSrcGeoCity, srcGeo.City)
-		flow.AppendString(schema.ColumnDstGeoCity, dstGeo.City)
-		flow.AppendString(schema.ColumnSrcGeoState, srcGeo.State)
-		flow.AppendString(schema.ColumnDstGeoState, dstGeo.State)
 	}
 
 	flow.AppendString(schema.ColumnExporterName, flowExporterName)
@@ -213,16 +200,12 @@ func largeCommunityToUInt128(largeCommunities []bgp.LargeCommunity) []schema.UIn
 }
 
 // getASNumber retrieves the AS number for a flow, depending on user preferences.
-func (c *Component) getASNumber(flowAS, bmpAS, netAS uint32, flowNetMask uint8, ip netip.Addr) (asn uint32) {
+func (c *Component) getASNumber(flowAS, bmpAS, netAS uint32, flowNetMask uint8) (asn uint32) {
 	for _, provider := range c.config.ASNProviders {
 		if asn != 0 {
 			break
 		}
 		switch provider {
-		case ASNProviderGeoIP:
-			if c.d.GeoIP != nil {
-				asn = c.d.GeoIP.LookupASN(ip).ASNumber
-			}
 		case ASNProviderFlow:
 			asn = flowAS
 		case ASNProviderFlowExceptPrivate:

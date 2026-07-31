@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Free Mobile
 // SPDX-License-Identifier: AGPL-3.0-only
 
-// Package geoip provides ASN and country for GeoIP addresses.
+// Package geoip keeps the GeoIP databases open and up-to-date. Their content is
+// exposed by walking them, the networks component merges it with the other
+// sources of network attributes.
 package geoip
 
 import (
@@ -27,10 +29,17 @@ type Component struct {
 	t      tomb.Tomb
 	config Configuration
 
-	// databases is replaced on each refresh. Lookups only load it.
+	// databases is replaced on each refresh. Walks only load it.
 	databases atomic.Pointer[databases]
 	// openLock serializes the refreshes.
 	openLock sync.Mutex
+	// iterLock serializes the walks over the databases and keeps a database from
+	// being closed while it is walked. Walking is expensive, there is no point
+	// in doing several of them at the same time.
+	iterLock sync.Mutex
+	// subscribers are notified each time a database is updated.
+	subscribers     []chan struct{}
+	subscribersLock sync.Mutex
 
 	metrics struct {
 		databaseRefresh *reporter.CounterVec
@@ -73,9 +82,32 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 	return &c, nil
 }
 
+// Notify returns a channel receiving a notification each time a database is
+// updated. Notifications are dropped when the channel is full: a receiver only
+// needs to know something has changed.
+func (c *Component) Notify() <-chan struct{} {
+	ch := make(chan struct{}, 1)
+	c.subscribersLock.Lock()
+	defer c.subscribersLock.Unlock()
+	c.subscribers = append(c.subscribers, ch)
+	return ch
+}
+
+// notify tells the subscribers a database was updated.
+func (c *Component) notify() {
+	c.subscribersLock.Lock()
+	defer c.subscribersLock.Unlock()
+	for _, ch := range c.subscribers {
+		select {
+		case ch <- struct{}{}:
+		default:
+		}
+	}
+}
+
 // cleanPaths normalizes the provided paths and removes the duplicates. When a
 // path is repeated, only the last occurrence is kept, as later databases take
-// precedence over the earlier ones.
+// precedence over the earlier ones for a given prefix.
 func cleanPaths(paths []string) []string {
 	result := make([]string, 0, len(paths))
 	for _, path := range paths {
@@ -180,9 +212,14 @@ func (c *Component) Stop() error {
 	c.t.Kill(nil)
 	err := c.t.Wait()
 
-	// Only close the databases once nothing can look them up anymore.
+	// Only close the databases once nothing walks them anymore. The consumers
+	// are stopped before this component, this is only a safety net. Unpublish
+	// them first, so that a late walk finds nothing instead of reading from a
+	// file we just unmapped.
+	c.iterLock.Lock()
+	defer c.iterLock.Unlock()
 	c.r.Debug().Msg("closing database files")
-	current := c.databases.Load()
+	current := c.databases.Swap(&databases{})
 	for _, db := range slices.Concat(current.geo, current.asn) {
 		if db != nil {
 			db.Close()

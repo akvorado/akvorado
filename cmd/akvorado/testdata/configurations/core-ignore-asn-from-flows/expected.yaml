@@ -3,4 +3,3 @@ paths:
   outlet.0.core.asnproviders:
     - routing
     - networks
-    - geo-ip

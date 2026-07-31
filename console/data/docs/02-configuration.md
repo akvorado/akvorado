@@ -652,10 +652,11 @@ The following configuration keys are accepted:
 - `asn-providers` defines the source list for AS numbers. The available sources
   are `flow`, `flow-except-private` (use information from flow except if the ASN
   is private), `flow-except-default-route` (use information from flow except if
-  the NetMask is the default route), `routing`, `routing-except-private`,
-  `geo-ip`, and `networks` (use the `asn` attribute from the
-  [networks](#networks) component). The default value is `flow`, `routing`,
-  `networks`, `geo-ip`. The first source returning a non-zero AS number wins.
+  the NetMask is the default route), `routing`, `routing-except-private`, and
+  `networks` (use the `asn` attribute from the [networks](#networks) component,
+  which also covers the GeoIP ASN databases). The default value is `flow`,
+  `routing`, `networks`. The first source returning a non-zero AS number wins.
+  `geo-ip` is accepted as a synonym for `networks`.
 - `net-providers` defines the sources for prefix lengths and nexthop. `flow` uses the value
   provided by the flow message (if any), while `routing` looks it up using the BMP
   component. If multiple sources are provided, the value of the first source
@@ -795,11 +796,17 @@ following keys:
 [MaxMind DB file format]: https://maxmind.github.io/MaxMind-DB/
 
 If the files are updated while *Akvorado* is running, they are automatically
-refreshed. For a given database, the latest paths override the earlier ones.
+refreshed.
 
-The ASN database is used when `geo-ip` is listed in
-[`core`→`asn-providers`](#core). The geo database populates `SrcCountry`,
-`DstCountry`, `SrcGeoState`, `DstGeoState`, `SrcGeoCity`, and `DstGeoCity`.
+The content of the databases is merged with the [networks](#networks) to populate
+`SrcCountry`, `DstCountry`, `SrcGeoState`, `DstGeoState`, `SrcGeoCity`, and
+`DstGeoCity`, as well as `SrcAS` and `DstAS` when `networks` is listed in
+[`core`→`asn-providers`](#core).
+
+The merge is done prefix by prefix: when two databases cover an address with
+prefixes of different lengths, the most specific one wins, whatever their order.
+The order only decides for an identical prefix, where the latest paths override
+the earlier ones.
 
 ### Networks
 
@@ -808,7 +815,7 @@ accepted:
 
 - `networks` maps subnets to attributes. Attributes are `name`, `role`, `site`,
   `region`, and `tenant`. They are exposed as `SrcNetName`, `DstNetName`,
-  `SrcNetRole`, `DstNetRole`, etc. It is also possible to override the GeoIP
+  `SrcNetRole`, `DstNetRole`, etc. It is also possible to set the GeoIP
   attributes `city`, `state`, `country`, and `asn`.
 - `network-sources` fetch a remote source mapping subnets to attributes. This is
   similar to `networks` but the definition is fetched through HTTP. It accepts a
@@ -826,11 +833,18 @@ accepted:
   sources to be fetched. Flows are enriched with the static `networks` only
   until they are available.
 
-When a subnet is contained in a larger one, the attributes of the larger subnet
-are inherited unless the smaller one sets them. The attributes defined in
-`networks` take precedence over the ones coming from `network-sources`, which in
-turn take precedence over GeoIP. The `asn` attribute is only used when
-`networks` is listed in [`core`→`asn-providers`](#core).
+The static networks, the remote sources and the [GeoIP](#geoip) databases are
+merged into a single set of prefixes. For a given attribute, the value attached
+to the most specific prefix wins. When a subnet is contained in a larger one, the
+attributes of the larger subnet are inherited unless the smaller one sets them.
+For an identical prefix, the attributes defined in `networks` take precedence
+over the ones coming from `network-sources`, which in turn take precedence over
+GeoIP. The `asn` attribute is only used when `networks` is listed in
+[`core`→`asn-providers`](#core).
+
+The prefixes are kept in memory by the outlet service and are rebuilt from
+scratch each time a GeoIP database or a remote source is updated. With a large
+GeoIP database, like a city-level one, this uses a significant amount of memory.
 
 ### ClickHouse
 

@@ -20,10 +20,10 @@ memory. Drop it on each cluster member once the new version runs:
 # docker compose exec clickhouse clickhouse-client --query "DROP DICTIONARY IF EXISTS networks"
 ```
 
-- 💥 *outlet*: the attributes from `outlet`→`networks` now win over GeoIP
-  whatever their prefix length. Previously, both were merged into a single
-  ClickHouse dictionary and the most specific prefix was winning: a country set
-  on a subnet was overridden by the GeoIP country of a smaller one
+- 💥 *outlet*: the `geo-ip` source of `core`→`asn-providers` is merged into
+  `networks`, as the GeoIP ASN databases are now part of the networks. `geo-ip`
+  keeps working as a synonym of `networks`, but the AS numbers coming from the
+  GeoIP databases cannot be excluded from the `networks` source anymore
 - 💥 *outlet*: rename the Kafka input metrics from `akvorado_outlet_kafka_*` to
   `akvorado_outlet_kafkainput_*`, following the rename of the component; update
   any dashboard or alert relying on them
@@ -36,9 +36,9 @@ memory. Drop it on each cluster member once the new version runs:
   the orchestrator configuration to `outlet`→`geoip` and
   `clickhouse`→`networks`, `clickhouse`→`network-sources` and
   `clickhouse`→`network-sources-timeout` move to `outlet`→`networks`. This is
-  handled automatically.
-- 🌱 *outlet*: add `networks` as a source for `core`→`asn-providers`, enabled by
-  default before `geo-ip` to match the precedence of the other network attributes
+  handled automatically. The GeoIP databases and the networks are still merged
+  into a single set of prefixes, the most specific one winning, like the
+  ClickHouse dictionary was doing.
 - 🌱 *outlet*: rename the `kafka` configuration key to `kafka-input` (the old name
   keeps working)
 - 🌱 *docker*: update Kafka to 4.3.1 (not mandatory)

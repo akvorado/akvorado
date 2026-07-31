@@ -145,17 +145,18 @@ func outletStart(r *reporter.Reporter, config OutletConfiguration, checkOnly boo
 	if err != nil {
 		return fmt.Errorf("unable to initialize Kafka input component: %w", err)
 	}
-	networksComponent, err := networks.New(r, config.Networks, networks.Dependencies{
-		Daemon: daemonComponent,
-	})
-	if err != nil {
-		return fmt.Errorf("unable to initialize networks component: %w", err)
-	}
 	geoipComponent, err := geoip.New(r, config.GeoIP, geoip.Dependencies{
 		Daemon: daemonComponent,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to initialize GeoIP component: %w", err)
+	}
+	networksComponent, err := networks.New(r, config.Networks, networks.Dependencies{
+		Daemon: daemonComponent,
+		GeoIP:  geoipComponent,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to initialize networks component: %w", err)
 	}
 	clickhouseDBComponent, err := clickhousedb.New(r, config.ClickHouseDB, clickhousedb.Dependencies{
 		Daemon: daemonComponent,
@@ -186,7 +187,6 @@ func outletStart(r *reporter.Reporter, config OutletConfiguration, checkOnly boo
 		KafkaInput:  kafkaInputComponent,
 		KafkaOutput: kafkaOutputComponent,
 		Networks:    networksComponent,
-		GeoIP:       geoipComponent,
 		ClickHouse:  clickhouseComponent,
 		HTTP:        httpComponent,
 		Schema:      schemaComponent,
@@ -214,8 +214,8 @@ func outletStart(r *reporter.Reporter, config OutletConfiguration, checkOnly boo
 		routingComponent,
 		kafkaInputComponent,
 		kafkaOutputComponent,
-		networksComponent,
 		geoipComponent,
+		networksComponent,
 		coreComponent,
 	}
 	return StartStopComponents(r, daemonComponent, components)

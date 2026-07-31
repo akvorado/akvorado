@@ -16,7 +16,6 @@ import (
 	"akvorado/common/schema"
 	"akvorado/outlet/clickhouse"
 	"akvorado/outlet/flow"
-	"akvorado/outlet/geoip"
 	"akvorado/outlet/kafkainput"
 	"akvorado/outlet/kafkaoutput"
 	"akvorado/outlet/metadata"
@@ -51,7 +50,6 @@ type Dependencies struct {
 	Metadata    *metadata.Component
 	Routing     *routing.Component
 	Networks    *networks.Component
-	GeoIP       *geoip.Component
 	KafkaInput  kafkainput.Component
 	KafkaOutput *kafkaoutput.Component
 	ClickHouse  clickhouse.Component

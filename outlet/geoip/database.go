@@ -5,25 +5,16 @@ package geoip
 
 import (
 	"fmt"
-	"net/netip"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/oschwald/maxminddb-golang/v2"
 )
 
-// databaseCloseDelay is how long to wait before closing a database which was
-// replaced by a newer version. This is a bit fragile, but when we were doing
-// lookups in inlet, we closed the old database immediately and never had an
-// issue. 10 seconds is plenty of time. The alternative requires
-// synchronization.
-const databaseCloseDelay = 10 * time.Second
-
 type geoDatabase interface {
 	Close()
-	LookupGeo(netip.Addr) GeoInfo
-	LookupASN(netip.Addr) ASNInfo
+	IterGeoDatabase(GeoIterFunc)
+	IterASNDatabase(ASNIterFunc)
 }
 
 // openDatabase opens the provided database and closes the current
@@ -72,28 +63,24 @@ func (c *Component) openDatabase(which, path string) error {
 	}
 	c.databases.Store(&next)
 	c.metrics.databaseRefresh.WithLabelValues(which).Inc()
+	c.notify()
 	if oldOne != nil {
-		c.closeDatabaseLater(oldOne, which, path)
+		// A database is memory-mapped: closing it while it is walked crashes the
+		// process. New walks use the database we just stored, wait for the
+		// current one to be over. A walk takes a long time and the caller is the
+		// goroutine watching for file events: waiting here would make it miss
+		// some of them, therefore this is done in the background.
+		c.t.Go(func() error {
+			c.iterLock.Lock()
+			defer c.iterLock.Unlock()
+			c.r.Debug().
+				Str("database", path).
+				Msgf("closing previous %s database", which)
+			oldOne.Close()
+			return nil
+		})
 	}
 	return nil
-}
-
-// closeDatabaseLater closes a database once no lookup can be using it anymore.
-// Lookups do not take a lock and a database is memory-mapped: closing it while
-// it is still in use crashes the process.
-func (c *Component) closeDatabaseLater(db geoDatabase, which, path string) {
-	c.t.Go(func() error {
-		select {
-		case <-c.t.Dying():
-			// Lookups are stopped before this component.
-		case <-time.After(databaseCloseDelay):
-		}
-		c.r.Debug().
-			Str("database", path).
-			Msgf("closing previous %s database", which)
-		db.Close()
-		return nil
-	})
 }
 
 // getGeoDatabase guesses the database format and instantiate the right one.

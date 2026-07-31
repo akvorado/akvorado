@@ -16,6 +16,13 @@ import (
 	"akvorado/common/reporter"
 )
 
+// TestDataPath returns the path of one of the test databases. It can be used
+// from other components.
+func TestDataPath(database string) string {
+	_, src, _, _ := runtime.Caller(0)
+	return filepath.Join(path.Dir(src), "testdata", database)
+}
+
 // NewMock creates a GeoIP component usable for testing. It is already
 // started. It panics if there is an issue. Data of both databases are
 // available here:
@@ -24,16 +31,15 @@ import (
 func NewMock(t testing.TB, r *reporter.Reporter, withData bool) *Component {
 	t.Helper()
 	config := DefaultConfiguration()
-	_, src, _, _ := runtime.Caller(0)
 	if withData {
 		config.GeoDatabase = []string{
-			filepath.Join(path.Dir(src), "testdata", "GeoLite2-City-Test.mmdb"),
-			filepath.Join(path.Dir(src), "testdata", "ip_country_asn_sample.mmdb"),
-			filepath.Join(path.Dir(src), "testdata", "ip_geolocation_sample.mmdb"),
+			TestDataPath("GeoLite2-City-Test.mmdb"),
+			TestDataPath("ip_country_asn_sample.mmdb"),
+			TestDataPath("ip_geolocation_sample.mmdb"),
 		}
 		config.ASNDatabase = []string{
-			filepath.Join(path.Dir(src), "testdata", "GeoLite2-ASN-Test.mmdb"),
-			filepath.Join(path.Dir(src), "testdata", "ip_country_asn_sample.mmdb"),
+			TestDataPath("GeoLite2-ASN-Test.mmdb"),
+			TestDataPath("ip_country_asn_sample.mmdb"),
 		}
 	}
 	c, err := New(r, config, Dependencies{Daemon: daemon.NewMock(t)})
