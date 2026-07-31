@@ -92,13 +92,14 @@ configuration.
   attributes to exporters. Interface rules add a *boundary* (external or
   internal), a *network provider* and a *connectivity type* (PNI, IX, transit)
   to each interface. Optionally, it may also receive BGP routes through the BMP
-  protocol to get the *AS number*, the *AS path*, and the communities. The
-  enriched flows are then exported to ClickHouse.
+  protocol to get the *AS number*, the *AS path*, and the communities. It also
+  looks up *GeoIP* databases and a user-provided list of networks to get the
+  *country*, the *city* and per-network attributes. The enriched flows are then
+  exported to ClickHouse.
 
 - The **orchestrator service** configures the other components. It creates the
   *Kafka topic* and configures *ClickHouse* to receive the flows from the outlet
-  service. It provides configuration settings for the other services. It
-  provides additional data to ClickHouse, such as *GeoIP* data.
+  service. It provides configuration settings for the other services.
 
 - The **console service** provides a web interface to view and analyze the flows
   in the ClickHouse database.

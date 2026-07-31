@@ -1,4 +1,73 @@
 ---
+geoip:
+  optional: true
+  # When running on Docker, these paths are inside the container. By default,
+  # IPinfo databases are used. (https://ipinfo.io/)
+  asn-database:
+    - /usr/share/GeoIP/asn.mmdb
+  geo-database:
+    - /usr/share/GeoIP/country.mmdb
+  # If you want to use MaxmindDB, check `.env`, `docker-compose-maxmind.yml` and
+  # update these paths:
+  #asn-database:
+  # - /usr/share/GeoIP/GeoLite2-ASN.mmdb
+  #geo-database:
+  # - /usr/share/GeoIP/GeoLite2-Country.mmdb
+
+networks:
+  networks:
+    # You should customize this section with your networks. This
+    # populates the Src/DstNetName/Role/Site/Region/Tenant fields.
+    192.0.2.0/24:
+      name: ipv4-customers
+      role: customers
+    203.0.113.0/24:
+      name: ipv4-servers
+      role: servers
+    2a01:db8:cafe:1::/64:
+      name: ipv6-customers
+      role: customers
+    2a01:db8:cafe:2::/64:
+      name: ipv6-servers
+      role: servers
+  network-sources: []
+
+  # network-sources:
+    # amazon:
+    #   url: https://ip-ranges.amazonaws.com/ip-ranges.json
+    #   interval: 6h
+    #   transform: |
+    #     (.prefixes + .ipv6_prefixes)[] |
+    #     { prefix: (.ip_prefix // .ipv6_prefix), tenant: "amazon", region: .region, role: .service|ascii_downcase }
+    # gcp:
+    #   url: https://www.gstatic.com/ipranges/cloud.json
+    #   interval: 6h
+    #   transform: |
+    #     .prefixes[] |
+    #     { prefix: (.ipv4Prefix // .ipv6Prefix), tenant: "google-cloud", region: .scope }
+    # netbox:
+    #   url: "https://netbox.domain.tld/api/ipam/prefixes/?limit=0"
+    #   interval: 6h
+    #   headers:
+    #     Authorization: "Token YOUR_NETBOX_API_TOKEN"
+    #     Accept: "application/json"
+    #   transform: |
+    #     .results[] |
+    #     { prefix: .prefix,
+    #       tenant: .tenant.name,
+    #       site: .scope.description,
+    #       city: .scope.name,
+    #       role: .role.name,
+    #       name: .description
+    #     }
+    # nerd-scan:
+    #   url: https://nerd.cesnet.cz/nerd/data/bl_scan.txt
+    #   parser: plain
+    #   interval: 24h
+    #   transform: |
+    #     .[] | select(startswith("#") | not) |
+    #     { prefix: . + "/32", tenant: "nerd", role: "nerd-scan" }
+
 metadata:
   providers:
     - type: snmp

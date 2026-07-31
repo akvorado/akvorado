@@ -163,38 +163,24 @@ type maxmindDB struct {
 	db *maxminddb.Reader
 }
 
-func (mmdb *maxmindDB) IterASNDatabase(f AsnIterFunc) error {
+func (mmdb *maxmindDB) IterGeoDatabase(f GeoIterFunc) {
 	for result := range mmdb.db.Networks() {
-		var asnInfo maxmindASNInfo
-
-		err := result.Decode(&asnInfo)
-		if err != nil || asnInfo.ASNumber == 0 {
+		var info maxmindGeoInfo
+		if err := result.Decode(&info); err != nil || info == (maxmindGeoInfo{}) {
 			continue
 		}
-
-		prefix := result.Prefix()
-		if err := f(prefix, ASNInfo(asnInfo)); err != nil {
-			return err
-		}
+		f(result.Prefix(), GeoInfo(info))
 	}
-	return nil
 }
 
-func (mmdb *maxmindDB) IterGeoDatabase(f GeoIterFunc) error {
+func (mmdb *maxmindDB) IterASNDatabase(f ASNIterFunc) {
 	for result := range mmdb.db.Networks() {
-		var geoInfo maxmindGeoInfo
-
-		err := result.Decode(&geoInfo)
-		if err != nil || geoInfo.Country == "" {
+		var info maxmindASNInfo
+		if err := result.Decode(&info); err != nil || info.ASNumber == 0 {
 			continue
 		}
-
-		prefix := result.Prefix()
-		if err := f(prefix, GeoInfo(geoInfo)); err != nil {
-			return err
-		}
+		f(result.Prefix(), ASNInfo(info))
 	}
-	return nil
 }
 
 func (mmdb *maxmindDB) Close() {

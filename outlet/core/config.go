@@ -38,7 +38,7 @@ func DefaultConfiguration() Configuration {
 		ExporterClassifiers:     []ExporterClassifierRule{},
 		InterfaceClassifiers:    []InterfaceClassifierRule{},
 		ClassifierCacheDuration: 5 * time.Minute,
-		ASNProviders:            []ASNProvider{ASNProviderFlow, ASNProviderRouting, ASNProviderGeoIP},
+		ASNProviders:            []ASNProvider{ASNProviderFlow, ASNProviderRouting, ASNProviderNetworks},
 		NetProviders:            []NetProvider{NetProviderFlow, NetProviderRouting},
 	}
 }
@@ -57,12 +57,13 @@ const (
 	ASNProviderFlowExceptPrivate
 	// ASNProviderFlowExceptDefaultRoute uses the AS number embedded in flows, except if the netmask is zero.
 	ASNProviderFlowExceptDefaultRoute
-	// ASNProviderGeoIP pulls the AS number from a GeoIP database.
-	ASNProviderGeoIP
 	// ASNProviderRouting uses the AS number from BMP
 	ASNProviderRouting
 	// ASNProviderRoutingExceptPrivate uses the AS number from BMP, except if this is a private AS.
 	ASNProviderRoutingExceptPrivate
+	// ASNProviderNetworks pulls the AS number from the networks component, which
+	// also covers the GeoIP ASN databases.
+	ASNProviderNetworks
 )
 
 const (
@@ -74,16 +75,19 @@ const (
 
 // ASNProviderUnmarshallerHook normalize a net provider configuration:
 //   - map bmp to routing
+//   - map geo-ip to networks, as the GeoIP databases are merged into the networks
 func ASNProviderUnmarshallerHook() mapstructure.DecodeHookFunc {
 	return func(from, to reflect.Value) (any, error) {
 		if from.Kind() != reflect.String || to.Type() != reflect.TypeFor[ASNProvider]() {
 			return from.Interface(), nil
 		}
-		if strings.ToLower(from.String()) == "bmp" {
+		switch strings.ToLower(from.String()) {
+		case "bmp":
 			return "routing", nil
-		}
-		if strings.ToLower(from.String()) == "bmp-except-private" {
+		case "bmp-except-private":
 			return "routing-except-private", nil
+		case "geo-ip":
+			return "networks", nil
 		}
 		return from.Interface(), nil
 	}

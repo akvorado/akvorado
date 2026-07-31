@@ -87,7 +87,6 @@ services:
     command: orchestrator /etc/akvorado/akvorado.yaml
     volumes:
       - ../config:/etc/akvorado:ro
-      - akvorado-geoip:/usr/share/GeoIP:ro
     labels:
       - traefik.enable=true
       # Disable access logging of /api/v0/orchestrator/metrics
@@ -188,6 +187,7 @@ services:
     command: outlet http://akvorado-orchestrator:8080
     volumes:
       - akvorado-run:/run/akvorado
+      - akvorado-geoip:/usr/share/GeoIP:ro
     environment:
       AKVORADO_CFG_OUTLET_METADATA_CACHEPERSISTFILE: /run/akvorado/metadata.cache
       AKVORADO_CFG_OUTLET_FLOW_STATEPERSISTFILE: /run/akvorado/flow.state

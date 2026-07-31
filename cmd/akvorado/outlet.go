@@ -19,10 +19,12 @@ import (
 	"akvorado/outlet/clickhouse"
 	"akvorado/outlet/core"
 	"akvorado/outlet/flow"
+	"akvorado/outlet/geoip"
 	"akvorado/outlet/kafkainput"
 	"akvorado/outlet/kafkaoutput"
 	"akvorado/outlet/metadata"
 	"akvorado/outlet/metadata/provider/snmp"
+	"akvorado/outlet/networks"
 	"akvorado/outlet/routing"
 	"akvorado/outlet/routing/provider/bmp"
 )
@@ -35,6 +37,8 @@ type OutletConfiguration struct {
 	Routing      routing.Configuration
 	KafkaInput   kafkainput.Configuration
 	KafkaOutput  kafkaoutput.Configuration
+	Networks     networks.Configuration
+	GeoIP        geoip.Configuration
 	ClickHouseDB clickhousedb.Configuration
 	ClickHouse   clickhouse.Configuration
 	Flow         flow.Configuration
@@ -50,6 +54,8 @@ func (c *OutletConfiguration) Reset() {
 		Metadata:     metadata.DefaultConfiguration(),
 		Routing:      routing.DefaultConfiguration(),
 		KafkaInput:   kafkainput.DefaultConfiguration(),
+		Networks:     networks.DefaultConfiguration(),
+		GeoIP:        geoip.DefaultConfiguration(),
 		ClickHouseDB: clickhousedb.DefaultConfiguration(),
 		ClickHouse:   clickhouse.DefaultConfiguration(),
 		KafkaOutput:  kafkaoutput.DefaultConfiguration(),
@@ -139,6 +145,19 @@ func outletStart(r *reporter.Reporter, config OutletConfiguration, checkOnly boo
 	if err != nil {
 		return fmt.Errorf("unable to initialize Kafka input component: %w", err)
 	}
+	geoipComponent, err := geoip.New(r, config.GeoIP, geoip.Dependencies{
+		Daemon: daemonComponent,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to initialize GeoIP component: %w", err)
+	}
+	networksComponent, err := networks.New(r, config.Networks, networks.Dependencies{
+		Daemon: daemonComponent,
+		GeoIP:  geoipComponent,
+	})
+	if err != nil {
+		return fmt.Errorf("unable to initialize networks component: %w", err)
+	}
 	clickhouseDBComponent, err := clickhousedb.New(r, config.ClickHouseDB, clickhousedb.Dependencies{
 		Daemon: daemonComponent,
 	})
@@ -166,8 +185,9 @@ func outletStart(r *reporter.Reporter, config OutletConfiguration, checkOnly boo
 		Metadata:    metadataComponent,
 		Routing:     routingComponent,
 		KafkaInput:  kafkaInputComponent,
-		ClickHouse:  clickhouseComponent,
 		KafkaOutput: kafkaOutputComponent,
+		Networks:    networksComponent,
+		ClickHouse:  clickhouseComponent,
 		HTTP:        httpComponent,
 		Schema:      schemaComponent,
 	})
@@ -194,6 +214,8 @@ func outletStart(r *reporter.Reporter, config OutletConfiguration, checkOnly boo
 		routingComponent,
 		kafkaInputComponent,
 		kafkaOutputComponent,
+		geoipComponent,
+		networksComponent,
 		coreComponent,
 	}
 	return StartStopComponents(r, daemonComponent, components)

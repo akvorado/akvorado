@@ -80,38 +80,24 @@ type ipinfoDB struct {
 	db *maxminddb.Reader
 }
 
-func (mmdb *ipinfoDB) IterASNDatabase(f AsnIterFunc) error {
+func (mmdb *ipinfoDB) IterGeoDatabase(f GeoIterFunc) {
 	for result := range mmdb.db.Networks() {
-		var asnInfo ipinfoASNInfo
-
-		err := result.Decode(&asnInfo)
-		if err != nil || asnInfo.ASNumber == 0 {
+		var info ipinfoGeoInfo
+		if err := result.Decode(&info); err != nil || info == (ipinfoGeoInfo{}) {
 			continue
 		}
-
-		prefix := result.Prefix()
-		if err := f(prefix, ASNInfo(asnInfo)); err != nil {
-			return err
-		}
+		f(result.Prefix(), GeoInfo(info))
 	}
-	return nil
 }
 
-func (mmdb *ipinfoDB) IterGeoDatabase(f GeoIterFunc) error {
+func (mmdb *ipinfoDB) IterASNDatabase(f ASNIterFunc) {
 	for result := range mmdb.db.Networks() {
-		var geoInfo ipinfoGeoInfo
-
-		err := result.Decode(&geoInfo)
-		if err != nil || geoInfo.Country == "" {
+		var info ipinfoASNInfo
+		if err := result.Decode(&info); err != nil || info.ASNumber == 0 {
 			continue
 		}
-
-		prefix := result.Prefix()
-		if err := f(prefix, GeoInfo(geoInfo)); err != nil {
-			return err
-		}
+		f(result.Prefix(), ASNInfo(info))
 	}
-	return nil
 }
 
 func (mmdb *ipinfoDB) Close() {

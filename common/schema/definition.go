@@ -123,8 +123,6 @@ const (
 	DictionaryProtocols string = "protocols"
 	// DictionaryICMP is the name of the icmp clickhouse dictionary.
 	DictionaryICMP string = "icmp"
-	// DictionaryNetworks is the name of the networks clickhouse dictionary.
-	DictionaryNetworks string = "networks"
 	// DictionaryTCP is the name of the TCP clickhouse dictionary
 	DictionaryTCP string = "tcp"
 	// DictionaryUDP is the name of the UDP clickhouse dictionary
@@ -299,62 +297,23 @@ func flows() Schema {
  ELSE ''
 END`,
 			},
-			{
-				Key:                     ColumnSrcAS,
-				ParserType:              "asn",
-				ClickHouseType:          "UInt32",
-				ClickHouseGenerateFrom:  "if(SrcAS = 0, c_SrcNetworks[asn], SrcAS)",
-				ClickHouseSelfGenerated: true,
-			},
-			{
-				Key:                    ColumnSrcNetName,
-				ParserType:             "string",
-				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "c_SrcNetworks[name]",
-			},
-			{
-				Key:                    ColumnSrcNetRole,
-				ParserType:             "string",
-				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "c_SrcNetworks[role]",
-			},
-			{
-				Key:                    ColumnSrcNetSite,
-				ParserType:             "string",
-				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "c_SrcNetworks[site]",
-			},
-			{
-				Key:                    ColumnSrcNetRegion,
-				ParserType:             "string",
-				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "c_SrcNetworks[region]",
-			},
-			{
-				Key:                    ColumnSrcNetTenant,
-				ParserType:             "string",
-				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "c_SrcNetworks[tenant]",
-			},
+			{Key: ColumnSrcAS, ParserType: "asn", ClickHouseType: "UInt32"},
+			{Key: ColumnSrcNetName, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
+			{Key: ColumnSrcNetRole, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
+			{Key: ColumnSrcNetSite, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
+			{Key: ColumnSrcNetRegion, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
+			{Key: ColumnSrcNetTenant, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
 			{Key: ColumnSrcVlan, ParserType: "uint", ClickHouseType: "UInt16", Disabled: true, Group: ColumnGroupL2},
+			{Key: ColumnSrcCountry, ParserType: "string", ClickHouseType: "FixedString(2)"},
 			{
-				Key:                    ColumnSrcCountry,
-				ParserType:             "string",
-				ClickHouseType:         "FixedString(2)",
-				ClickHouseGenerateFrom: "c_SrcNetworks[country]",
+				Key:        ColumnSrcGeoCity,
+				ParserType: "string",
+				/* Cardinality is expected to be low. Maxmind may have ~100k
+				   cities, but it is unlikely we get traffic from all of
+				   them. And that would still be OK. */
+				ClickHouseType: "LowCardinality(String)",
 			},
-			{
-				Key:                    ColumnSrcGeoCity,
-				ParserType:             "string",
-				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "c_SrcNetworks[city]",
-			},
-			{
-				Key:                    ColumnSrcGeoState,
-				ParserType:             "string",
-				ClickHouseType:         "LowCardinality(String)",
-				ClickHouseGenerateFrom: "c_SrcNetworks[state]",
-			},
+			{Key: ColumnSrcGeoState, ParserType: "string", ClickHouseType: "LowCardinality(String)"},
 			{
 				Key:                ColumnDstASPath,
 				ParserType:         "aspath",
@@ -581,8 +540,7 @@ END`,
 
 // shouldProvideValue tells if we should send a value for this column to ClickHouse.
 func (column *Column) shouldProvideValue() bool {
-	return (column.ClickHouseGenerateFrom == "" || column.ClickHouseSelfGenerated) &&
-		column.ClickHouseAlias == ""
+	return column.ClickHouseGenerateFrom == "" && column.ClickHouseAlias == ""
 }
 
 func (schema Schema) finalize() Schema {

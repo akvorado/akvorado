@@ -72,10 +72,6 @@ func (c *Component) migrateDatabase() error {
 			return c.createDictionary(ctx, schema.DictionaryICMP, "complex_key_hashed",
 				"`proto` UInt8, `type` UInt8, `code` UInt8, `name` String", "proto, type, code")
 		}, func(ctx context.Context) error {
-			return c.createDictionary(ctx, schema.DictionaryNetworks, "ip_trie",
-				"`network` String, `name` String, `role` String, `site` String, `region` String, `city` String, `state` String, `country` String, `tenant` String, `asn` UInt32",
-				"network")
-		}, func(ctx context.Context) error {
 			return c.createDictionary(ctx, schema.DictionaryTCP, "hashed",
 				"`port` UInt16 INJECTIVE, `name` String", "port")
 		}, func(ctx context.Context) error {

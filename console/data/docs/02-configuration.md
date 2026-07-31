@@ -52,7 +52,7 @@ the configuration file with the same name.
 
 The default Docker Compose setup splits the configuration into several files
 using `!include` directives. The main file `config/akvorado.yaml` contains
-orchestrator settings (such as `schema`, `kafka`, `clickhouse`, and `geoip`) and
+orchestrator settings (such as `schema`, `kafka`, and `clickhouse`) and
 includes the service-specific files:
 
 - `config/inlet.yaml` for the inlet service
@@ -171,10 +171,11 @@ backward-compatible.
 
 ## Outlet service
 
-The outlet service takes flows from Kafka, parses them, adds metadata and
-routing information, and sends them to ClickHouse. It is configured under the
-`outlet` key (or in `config/outlet.yaml` with the default Docker Compose setup).
-Its main components are `kafka-input`, `metadata`, `routing`, and `core`.
+The outlet service takes flows from Kafka, parses them, adds metadata,
+routing, geolocation and network information, and sends them to ClickHouse. It
+is configured under the `outlet` key (or in `config/outlet.yaml` with the default
+Docker Compose setup). Its main components are `kafka-input`, `metadata`,
+`routing`, `geoip`, `networks`, and `core`.
 
 ### Kafka input
 
@@ -652,8 +653,10 @@ The following configuration keys are accepted:
   are `flow`, `flow-except-private` (use information from flow except if the ASN
   is private), `flow-except-default-route` (use information from flow except if
   the NetMask is the default route), `routing`, `routing-except-private`, and
-  `geo-ip`. The default value is `flow`, `routing`, `geo-ip`. `geo-ip` should
-  only be used at the end as there is no fallback possible.
+  `networks` (use the `asn` attribute from the [networks](#networks) component,
+  which also covers the GeoIP ASN databases). The default value is `flow`,
+  `routing`, `networks`. The first source returning a non-zero AS number wins.
+  `geo-ip` is accepted as a synonym for `networks`.
 - `net-providers` defines the sources for prefix lengths and nexthop. `flow` uses the value
   provided by the flow message (if any), while `routing` looks it up using the BMP
   component. If multiple sources are provided, the value of the first source
@@ -778,6 +781,70 @@ $ curl -s http://127.0.0.1:8080/api/v0/console/widget/flow-last | jq .
 
 [expr]: https://expr-lang.org/docs/language-definition
 [from Go]: https://github.com/google/re2/wiki/Syntax
+
+### GeoIP
+
+The `geoip` directive allows one to configure two databases using the [MaxMind
+DB file format][], one for AS numbers, one for countries/cities. It accepts the
+following keys:
+
+- `asn-database` tells the paths to the ASN database
+- `geo-database` tells the paths to the geo database (country or city)
+- `optional` makes the presence of the databases optional on start
+  (when not present on start, the component is just disabled)
+
+[MaxMind DB file format]: https://maxmind.github.io/MaxMind-DB/
+
+If the files are updated while *Akvorado* is running, they are automatically
+refreshed.
+
+The content of the databases is merged with the [networks](#networks) to populate
+`SrcCountry`, `DstCountry`, `SrcGeoState`, `DstGeoState`, `SrcGeoCity`, and
+`DstGeoCity`, as well as `SrcAS` and `DstAS` when `networks` is listed in
+[`core`→`asn-providers`](#core).
+
+The merge is done prefix by prefix: when two databases cover an address with
+prefixes of different lengths, the most specific one wins, whatever their order.
+The order only decides for an identical prefix, where the latest paths override
+the earlier ones.
+
+### Networks
+
+The `networks` directive maps subnets to attributes. The following keys are
+accepted:
+
+- `networks` maps subnets to attributes. Attributes are `name`, `role`, `site`,
+  `region`, and `tenant`. They are exposed as `SrcNetName`, `DstNetName`,
+  `SrcNetRole`, `DstNetRole`, etc. It is also possible to set the GeoIP
+  attributes `city`, `state`, `country`, and `asn`.
+- `network-sources` fetch a remote source mapping subnets to attributes. This is
+  similar to `networks` but the definition is fetched through HTTP. It accepts a
+  map from source names to sources. Each source accepts the following
+  attributes:
+  - `url` is the URL to fetch
+  - `transform` is a [jq](https://stedolan.github.io/jq/manual/) expression to
+    transform the parsed data into a set of network attributes represented as
+    objects. Each object must have a `prefix` attribute and, optionally, `name`,
+    `role`, `site`, `region`, `tenant`, `city`, `state`, `country`, and `asn`.
+    See the example provided in the shipped `outlet.yaml` configuration file.
+  - any remaining attribute accepted for an `exporter-sources` in the
+    [static-provider](#static-provider).
+- `network-sources-timeout` tells how long to wait on start for the remote
+  sources to be fetched. Flows are enriched with the static `networks` only
+  until they are available.
+
+The static networks, the remote sources and the [GeoIP](#geoip) databases are
+merged into a single set of prefixes. For a given attribute, the value attached
+to the most specific prefix wins. When a subnet is contained in a larger one, the
+attributes of the larger subnet are inherited unless the smaller one sets them.
+For an identical prefix, the attributes defined in `networks` take precedence
+over the ones coming from `network-sources`, which in turn take precedence over
+GeoIP. The `asn` attribute is only used when `networks` is listed in
+[`core`→`asn-providers`](#core).
+
+The prefixes are kept in memory by the outlet service and are rebuilt from
+scratch each time a GeoIP database or a remote source is updated. With a large
+GeoIP database, like a city-level one, this uses a significant amount of memory.
 
 ### ClickHouse
 
@@ -1103,22 +1170,6 @@ provided inside `clickhouse`:
 - `resolutions` defines the various resolutions to keep data
 - `max-partitions` defines the number of partitions to use when
   creating consolidated tables
-- `networks` maps subnets to attributes. Attributes are `name`, `role`, `site`,
-  `region`, and `tenant`. They are exposed as `SrcNetName`, `DstNetName`,
-  `SrcNetRole`, `DstNetRole`, etc. It is also possible to override GeoIP
-  attributes `city`, `state`, `country`, and `ASN`.
-- `network-sources` fetch a remote source mapping subnets to attributes. This is
-  similar to `networks` but the definition is fetched through HTTP. It accepts a
-  map from source names to sources. Each source accepts the following
-  attributes:
-  - `url` is the URL to fetch
-  - `transform` is a [jq](https://stedolan.github.io/jq/manual/) expression to
-    transform the parsed data into a set of network attributes represented as
-    objects. Each object must have a `prefix` attribute and, optionally, `name`,
-    `role`, `site`, `region`, `tenant`, `city`, `state`, `country`, and `asn`.
-    See the example provided in the shipped `akvorado.yaml` configuration file.
-  - any remaining attribute accepted for an `exporter-sources` in the
-    [static-provider](#static-provider).
 - `asns` maps AS number to names (overriding the builtin ones)
 - `orchestrator-url` defines the URL of the orchestrator to be used
   by ClickHouse (autodetection when not specified)
@@ -1196,22 +1247,6 @@ means you need to start from scratch and copy data. There is currently no
 instruction for that, but it's mostly a matter of copying `flows` table to
 `flows_local`, and `flows_DDDD` (where `DDDD` is an interval) tables to
 `flows_DDDD_local`.
-
-### GeoIP
-
-The `geoip` directive allows one to configure two databases using the [MaxMind
-DB file format][], one for AS numbers, one for countries/cities. It accepts the
-following keys:
-
-- `asn-database` tells the paths to the ASN database
-- `geo-database` tells the paths to the geo database (country or city)
-- `optional` makes the presence of the databases optional on start
-  (when not present on start, the component is just disabled)
-
-[MaxMind DB file format]: https://maxmind.github.io/MaxMind-DB/
-
-If the files are updated while *Akvorado* is running, they are automatically
-refreshed. For a given database, the latest paths override the earlier ones.
 
 ## Console service
 

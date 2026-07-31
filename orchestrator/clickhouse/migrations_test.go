@@ -27,7 +27,6 @@ import (
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
-	"akvorado/orchestrator/geoip"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 )
@@ -196,6 +195,11 @@ func isOldTable(schema *schema.Component, table string) bool {
 	if strings.Contains(table, schema.ClickHouseHash()) {
 		return false
 	}
+	// The networks dictionary was used by previous versions. Migrations do not
+	// drop it, this is left to the user.
+	if table == "networks" {
+		return true
+	}
 	oldSuffixes := []string{
 		"_raw",
 		"_raw_consumer",
@@ -233,7 +237,6 @@ func startTestComponentWithConfig(t *testing.T, r *reporter.Reporter, chComponen
 		HTTP:       httpserver.NewMock(t, r),
 		Schema:     sch,
 		ClickHouse: chComponent,
-		GeoIP:      geoip.NewMock(t, r, true),
 	})
 	if err != nil {
 		t.Fatalf("New() error:\n%+v", err)
@@ -270,7 +273,6 @@ func TestGetHTTPBaseURL(t *testing.T) {
 		Daemon:     daemon.NewMock(t),
 		HTTP:       h,
 		Schema:     schema.NewMock(t),
-		GeoIP:      geoip.NewMock(t, r, true),
 		ClickHouse: nil, // We don't really need it
 	})
 	if err != nil {
@@ -360,7 +362,6 @@ WHERE database=currentDatabase() AND table NOT LIKE '.%'`)
 				fmt.Sprintf("flows_%s_raw_consumer", hash),
 				"flows_local",
 				schema.DictionaryICMP,
-				schema.DictionaryNetworks,
 				schema.DictionaryProtocols,
 				schema.DictionaryTCP,
 				schema.DictionaryUDP,

@@ -50,9 +50,8 @@ type Column struct {
 	// ExporterAddress.
 	ClickHouseNotSortingKey bool `yaml:",omitempty"`
 	// ClickHouseGenerateFrom computes the content of the column using another column
-	ClickHouseGenerateFrom  string `yaml:",omitempty"`
-	ClickHouseMainOnly      bool   `yaml:",omitempty"` // Only include this column in the main table
-	ClickHouseSelfGenerated bool   `yaml:",omitempty"` // Generated (partly) from its own value
+	ClickHouseGenerateFrom string `yaml:",omitempty"`
+	ClickHouseMainOnly     bool   `yaml:",omitempty"` // Only include this column in the main table
 	// ClickHouseMaterialized indicates that the column was materialized (and is not by default)
 	ClickHouseMaterialized bool `yaml:",omitempty"`
 

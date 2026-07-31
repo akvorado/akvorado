@@ -619,6 +619,26 @@ func TestBuildProtoInput(t *testing.T) {
 	}
 }
 
+func TestFixedString(t *testing.T) {
+	c := NewMock(t).EnableAllColumns()
+	bf := c.NewFlowMessage()
+
+	// A two-letter country, a shorter one, a longer one and no country at all
+	for _, country := range []string{"FR", "F", "France", ""} {
+		bf.AppendString(ColumnSrcCountry, country)
+		bf.Finalize()
+	}
+
+	col := bf.batch.columns[ColumnSrcCountry].(*proto.ColFixedStr)
+	expected := []byte("FRF\x00Fr\x00\x00")
+	if diff := helpers.Diff(col.Buf, expected); diff != "" {
+		t.Errorf("SrcCountry column (-got, +want):\n%s", diff)
+	}
+	if diff := helpers.Diff(col.Rows(), 4); diff != "" {
+		t.Errorf("SrcCountry rows (-got, +want):\n%s", diff)
+	}
+}
+
 func TestReverse(t *testing.T) {
 	c := NewMock(t).EnableAllColumns()
 	bf := c.NewFlowMessage()

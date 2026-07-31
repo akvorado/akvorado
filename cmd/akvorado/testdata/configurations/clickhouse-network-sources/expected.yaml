@@ -1,6 +1,6 @@
 ---
 paths:
-  clickhouse.networksources.amazon:
+  outlet.0.networks.networksources.amazon:
     url: https://ip-ranges.amazonaws.com/ip-ranges.json
     tls:
       enable: false
