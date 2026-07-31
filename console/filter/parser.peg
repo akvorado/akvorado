@@ -118,16 +118,21 @@ RConditionMACExpr "condition on MAC" ←
   return []any{operator, "(", value, ")"}, nil
 }
 
+ColumnString ←
+ column:ColumnName
+   &{ return c.columnIsOfType(column, "string") }
+    { return c.acceptColumn() }
 ConditionStringExpr "condition on string" ←
- column:(value:ColumnName
-           &{ return c.columnIsOfType(value, "string") }
-            { return c.acceptColumn() }) _
+ column:ColumnString _
  rcond:RConditionStringExpr {
   return []any{column, rcond}, nil
 }
 RConditionStringExpr "condition on string" ←
    operator:("=" / "!=" / LikeOperator ) _ str:StringLiteral {
      return []any{operator, quote(str)}, nil
+   }
+ / operator:("=" / "!=") _ value:ColumnString {
+     return []any{operator, value}, nil
    }
  / operator:InOperator _ '(' _ value:ListString _ ')' {
   return []any{operator, "(", value, ")"}, nil
@@ -142,15 +147,17 @@ ConditionBoundaryExpr "condition on boundary" ←
   return []any{column, operator, quote(strings.ToLower(toString(boundary)))}, nil
 }
 
+ColumnUint ←
+ column:ColumnName
+   &{ return c.columnIsOfType(column, "uint") }
+    { return c.acceptColumn() }
 ConditionUintExpr "condition on integer" ←
- column:(value:ColumnName
-           &{ return c.columnIsOfType(value, "uint") }
-            { return c.acceptColumn() }) _
+ column:ColumnUint _
  rcond:RConditionUintExpr {
   return []any{column, rcond}, nil
 }
 RConditionUintExpr "condition on integer" ←
-   operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned64 {
+   operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:(Unsigned64 / ColumnUint) {
      return []any{operator, value}, nil
    }
  / operator:InOperator _ '(' _ value:ListUnsigned64 _ ')' {
@@ -171,15 +178,17 @@ ConditionArrayUintExpr "condition on array of integers" ←
      return []any{"NOT has(", column, ",", value, ")"}, nil
    }
 
+ColumnASN ←
+ column:ColumnName
+   &{ return c.columnIsOfType(column, "asn") }
+    { return c.acceptColumn() }
 ConditionASExpr "condition on AS number" ←
- column:(value:ColumnName
-           &{ return c.columnIsOfType(value, "asn") }
-            { return c.acceptColumn() }) _
+ column:ColumnASN _
  rcond:RConditionASExpr {
   return []any{column, rcond}, nil
 }
 RConditionASExpr "condition on AS number" ←
-   operator:("=" / "!=") _ value:ASN { return []any{operator, value}, nil }
+   operator:("=" / "!=") _ value:(ASN / ColumnASN) { return []any{operator, value}, nil }
  / operator:InOperator _ '(' _ value:ListASN _ ')' {
   return []any{operator, "(", value, ")"}, nil
 }

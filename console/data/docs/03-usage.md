@@ -224,6 +224,10 @@ applicable. Here are a few examples:
 - `ExporterName LIKE th2-%` selects flows from routers
   that start with `th2-`.
 - `ASPath = AS1299` selects flows where the AS path contains 1299.
+- `SrcPort < DstPort`, `DstAS != SrcAS` and `InIfProvider != OutIfProvider`
+  compare two fields instead of comparing a field with a constant. This works
+  for integer, AS number and string fields, as long as both fields are of the
+  same kind. String fields only accept `=` and `!=`.
 
 Field names are case-insensitive. You can also add comments with `--` for
 single-line comments or by enclosing them in `/*` and `*/`. Strings can be

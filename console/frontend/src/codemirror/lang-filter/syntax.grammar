@@ -36,7 +36,10 @@ ListOfValues {
   blockCommentAfterStar { "/" | "*" blockCommentAfterStar | ![/*] blockCommentRest }
 
   Column { std.asciiLetter (std.asciiLetter|std.digit)* }
-  Operator { $[a-zA-Z!=><]+ }
+  // Operators are either only made of letters (IN, LIKE…) or only of symbols
+  // (=, !=, <<…). Keeping them apart avoids swallowing the column name in
+  // "SrcPort<DstPort".
+  Operator { $[a-zA-Z]+ | $[!=><]+ }
 
   String {
     '"' (![\\\n"] | "\\" _)* '"'? |

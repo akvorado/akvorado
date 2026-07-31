@@ -184,6 +184,12 @@ func TestValidFilter(t *testing.T) {
 		{Input: `SrcAS NOTIN(12322, 29447)`, Output: `SrcAS NOT IN (12322, 29447)`},
 		{Input: `SrcAS NOTIN (AS12322, 29447)`, Output: `SrcAS NOT IN (12322, 29447)`},
 		{Input: `DstAS=12322`, Output: `DstAS = 12322`},
+		{Input: `DstAS != SrcAS`, Output: `DstAS != SrcAS`},
+		{Input: `dstas!=srcas`, Output: `DstAS != SrcAS`},
+		{
+			Input: `DstAS != SrcAS`, Output: `SrcAS != DstAS`,
+			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true},
+		},
 		{Input: `SrcCountry='FR'`, Output: `SrcCountry = 'FR'`},
 		{
 			Input: `SrcCountry='FR'`, Output: `DstCountry = 'FR'`,
@@ -194,6 +200,13 @@ func TestValidFilter(t *testing.T) {
 			Input: `DstCountry='FR'`, Output: `SrcCountry = 'FR'`,
 			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true},
 		},
+		{Input: `InIfProvider != OutIfProvider`, Output: `InIfProvider != OutIfProvider`},
+		{Input: `inifprovider!=outifprovider`, Output: `InIfProvider != OutIfProvider`},
+		{
+			Input: `InIfProvider != OutIfProvider`, Output: `OutIfProvider != InIfProvider`,
+			MetaIn: Meta{ReverseDirection: true}, MetaOut: Meta{ReverseDirection: true},
+		},
+		{Input: `SrcCountry = DstCountry`, Output: `SrcCountry = DstCountry`},
 		{Input: `InIfName='Gi0/0/0/1'`, Output: `InIfName = 'Gi0/0/0/1'`},
 		{
 			Input: `InIfName='Gi0/0/0/1'`, Output: `OutIfName = 'Gi0/0/0/1'`,
@@ -292,6 +305,30 @@ func TestValidFilter(t *testing.T) {
 		},
 		{Input: `PacketSize > 1500`, Output: `PacketSize > 1500`},
 		{Input: `PacketSize IN (64, 1500)`, Output: `PacketSize IN (64, 1500)`},
+		{
+			Input: `SrcPort < DstPort`, Output: `SrcPort < DstPort`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input: `srcport<dstport`, Output: `SrcPort < DstPort`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input: `SrcPort < DstPort`, Output: `DstPort < SrcPort`,
+			MetaIn:  Meta{ReverseDirection: true},
+			MetaOut: Meta{ReverseDirection: true, MainTableRequired: true},
+		},
+		{Input: `InIfSpeed >= OutIfSpeed`, Output: `InIfSpeed >= OutIfSpeed`},
+		{
+			Input: `InIfSpeed >= OutIfSpeed`, Output: `OutIfSpeed >= InIfSpeed`,
+			MetaIn:  Meta{ReverseDirection: true},
+			MetaOut: Meta{ReverseDirection: true},
+		},
+		{Input: `PacketSize != InIfSpeed`, Output: `PacketSize != InIfSpeed`},
+		{
+			Input: `DstPort > SrcPort AND ForwardingStatus = 0`, Output: `DstPort > SrcPort AND ForwardingStatus = 0`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
 		{
 			Input: `DstPort > 1024 AND SrcPort < 1024`, Output: `DstPort > 1024 AND SrcPort < 1024`,
 			MetaOut: Meta{MainTableRequired: true},
@@ -529,6 +566,17 @@ func TestInvalidFilter(t *testing.T) {
 		{Input: `SrcMAC = 00:11:22:33:44:55:66`, EnableAll: true},
 		{Input: `SrcAddrDimensionAttribute = 8`},
 		{Input: `InvalidDimensionAttribute = "Test"`},
+		{Input: `SrcPort < ExporterName`},
+		{Input: `SrcPort < SrcAS`},
+		{Input: `SrcPort < DstPortt`},
+		{Input: `SrcPort IN (DstPort)`},
+		{Input: `SrcAS = ExporterName`},
+		{Input: `SrcAS = DstASPath`},
+		{Input: `SrcAS IN (DstAS)`},
+		{Input: `InIfProvider LIKE OutIfProvider`},
+		{Input: `InIfProvider IN (OutIfProvider)`},
+		{Input: `InIfProvider = SrcAS`},
+		{Input: `InIfProvider = OutIfProviderr`},
 	}
 	config := schema.DefaultConfiguration()
 	config.CustomDictionaries = make(map[string]schema.CustomDict)
