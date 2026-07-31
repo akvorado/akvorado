@@ -10,6 +10,7 @@ import (
 	"net/netip"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"testing"
 	"time"
@@ -514,6 +515,31 @@ func TestLookupNetworkSources(t *testing.T) {
 	}
 	if diff := helpers.Diff(gotMetrics, expectedMetrics); diff != "" {
 		t.Fatalf("Metrics (-got, +want):\n%s", diff)
+	}
+}
+
+// TestMergeNetworkAttrsCompleteness checks mergeNetworkAttrs handles every
+// field of NetworkAttributes: merging attributes with all the fields set
+// overrides everything. It fails when a field is added to NetworkAttributes
+// but not to mergeNetworkAttrs.
+func TestMergeNetworkAttrsCompleteness(t *testing.T) {
+	populated := NetworkAttributes{}
+	v := reflect.ValueOf(&populated).Elem()
+	for i := range v.NumField() {
+		field := v.Field(i)
+		switch field.Kind() {
+		case reflect.String:
+			field.SetString(fmt.Sprintf("value%d", i))
+		case reflect.Uint32:
+			field.SetUint(uint64(i) + 1)
+		default:
+			t.Fatalf("field %s has kind %s, not covered by this test",
+				v.Type().Field(i).Name, field.Kind())
+		}
+	}
+	got := mergeNetworkAttrs(NetworkAttributes{}, populated)
+	if diff := helpers.Diff(got, populated); diff != "" {
+		t.Fatalf("mergeNetworkAttrs() (-got, +want):\n%s", diff)
 	}
 }
 
