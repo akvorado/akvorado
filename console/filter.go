@@ -6,6 +6,7 @@ package console
 import (
 	"fmt"
 	"net/http"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -60,10 +61,11 @@ func (c *Component) filterValidateHandlerFunc(w http.ResponseWriter, req *http.R
 
 // filterCompleteHandlerInput describes the input of the /filter/complete endpoint.
 type filterCompleteHandlerInput struct {
-	What   string `json:"what" validate:"required,oneof=column operator value"`
-	Column string `json:"column" validate:"required_unless=What column"`
-	Prefix string `json:"prefix"`
-	Limit  int    `json:"limit"`
+	What     string `json:"what" validate:"required,oneof=column operator value"`
+	Column   string `json:"column" validate:"required_unless=What column"`
+	Operator string `json:"operator"`
+	Prefix   string `json:"prefix"`
+	Limit    int    `json:"limit"`
 }
 
 // filterCompleteHandlerOutput describes the output of the /filter/complete endpoint.
@@ -131,6 +133,7 @@ func (c *Component) filterCompleteHandlerFunc(w http.ResponseWriter, req *http.R
 	case "value":
 		var column, detail string
 		inputColumn := strings.ToLower(input.Column)
+		otherColumns := c.filterComparableColumns(input.Column, input.Operator, input.Prefix)
 		switch inputColumn {
 		case "inifboundary", "outifboundary":
 			completions = append(completions, filterCompletion{
@@ -463,6 +466,8 @@ LIMIT %d`, col.Name, col.Name, input.Limit), input.Prefix); err != nil {
 				}
 			}
 		}
+
+		completions = append(completions, otherColumns...)
 	}
 
 	filteredCompletions := []filterCompletion{}
@@ -472,6 +477,49 @@ LIMIT %d`, col.Name, col.Name, input.Limit), input.Prefix); err != nil {
 		}
 	}
 	httpserver.WriteJSON(w, http.StatusOK, filterCompleteHandlerOutput{filteredCompletions})
+}
+
+// filterComparableColumns returns the columns which can be used on the right
+// side of the provided column and operator.
+func (c *Component) filterComparableColumns(name, operator, prefix string) []filterCompletion {
+	var parserType string
+	for _, column := range c.d.Schema.Columns() {
+		if strings.EqualFold(name, column.Name) {
+			parserType = column.ParserType
+			break
+		}
+	}
+	var operators []string
+	switch parserType {
+	case "uint":
+		operators = []string{"=", "!=", "<", "<=", ">", ">="}
+	case "asn", "string":
+		operators = []string{"=", "!="}
+	default:
+		return nil
+	}
+	if !slices.Contains(operators, operator) {
+		return nil
+	}
+
+	names := []string{}
+	for _, column := range c.d.Schema.Columns() {
+		if column.Disabled || column.ParserType != parserType || strings.EqualFold(name, column.Name) {
+			continue
+		}
+		if strings.HasPrefix(strings.ToLower(column.Name), strings.ToLower(prefix)) {
+			names = append(names, column.Name)
+		}
+	}
+	sort.Strings(names)
+	completions := make([]filterCompletion, 0, len(names))
+	for _, name := range names {
+		completions = append(completions, filterCompletion{
+			Label:  name,
+			Detail: "column name",
+		})
+	}
+	return completions
 }
 
 func (c *Component) filterSavedListHandlerFunc(w http.ResponseWriter, req *http.Request) {

@@ -34,6 +34,7 @@ describe("filter completion", () => {
         const body: {
           what: "column" | "operator" | "value";
           column?: string;
+          operator?: string;
           prefix?: string;
         } = JSON.parse(options.body as string);
         return {
@@ -131,6 +132,19 @@ describe("filter completion", () => {
                         },
                       ],
                     };
+                  case "SrcCountry":
+                    // Only another column of the same type can be used here.
+                    return {
+                      completions: [
+                        {
+                          label: "DstCountry",
+                          detail: "column name",
+                          quoted: false,
+                        },
+                      ].filter(({ label }) =>
+                        label.startsWith(body.prefix ?? ""),
+                      ),
+                    };
                   default:
                     throw new Error(`unhandled column name: ${body.column}`);
                 }
@@ -201,6 +215,7 @@ describe("filter completion", () => {
     expect(JSON.parse(fetchOptions.body as string)).toEqual({
       what: "value",
       column: "SrcAS",
+      operator: "=",
       prefix: "fac",
     });
     expect({ from, to, options }).toEqual({
@@ -219,6 +234,7 @@ describe("filter completion", () => {
     expect(JSON.parse(fetchOptions.body as string)).toEqual({
       what: "value",
       column: "SrcAS",
+      operator: "=",
     });
     expect({ from, to, options }).toEqual({
       from: 8,
@@ -236,6 +252,7 @@ describe("filter completion", () => {
     expect(JSON.parse(fetchOptions.body as string)).toEqual({
       what: "value",
       column: "DstNetName",
+      operator: "=",
       prefix: "so",
     });
     expect({ from, to, options }).toEqual({
@@ -252,6 +269,7 @@ describe("filter completion", () => {
     expect(JSON.parse(fetchOptions.body as string)).toEqual({
       what: "value",
       column: "DstNetName",
+      operator: "=",
       prefix: "ultr",
     });
     expect({ from, to, options }).toEqual({
@@ -272,6 +290,7 @@ describe("filter completion", () => {
     expect(JSON.parse(fetchOptions.body as string)).toEqual({
       what: "value",
       column: "DstNetName",
+      operator: "=",
       prefix: 'ultra "sec',
     });
     expect({ from, to, options }).toEqual({
@@ -292,6 +311,7 @@ describe("filter completion", () => {
     expect(JSON.parse(fetchOptions.body as string)).toEqual({
       what: "value",
       column: "DstNetName",
+      operator: "=",
       prefix: "so",
     });
     expect({ from, to, options }).toEqual({
@@ -308,6 +328,7 @@ describe("filter completion", () => {
     expect(JSON.parse(fetchOptions.body as string)).toEqual({
       what: "value",
       column: "DstNetName",
+      operator: "=",
       prefix: "ul",
     });
     expect({ from, to, options }).toEqual({
@@ -319,6 +340,23 @@ describe("filter completion", () => {
           detail: "network name",
           label: '"ultra \\"secure\\" network"',
         },
+      ],
+    });
+  });
+
+  it("completes a column on the right side", async () => {
+    const { from, to, options } = await get("SrcCountry = Dst|");
+    expect(JSON.parse(fetchOptions.body as string)).toEqual({
+      what: "value",
+      column: "SrcCountry",
+      operator: "=",
+      prefix: "Dst",
+    });
+    expect({ from, to, options }).toEqual({
+      from: 13,
+      to: 16,
+      options: [
+        { apply: "DstCountry ", detail: "column name", label: "DstCountry" },
       ],
     });
   });
@@ -367,6 +405,7 @@ describe("filter completion", () => {
     expect(JSON.parse(fetchOptions.body as string)).toEqual({
       what: "value",
       column: "SrcAS",
+      operator: "IN",
     });
     expect({ from, to, options }).toEqual({
       from: 10,
@@ -383,6 +422,7 @@ describe("filter completion", () => {
     expect(JSON.parse(fetchOptions.body as string)).toEqual({
       what: "value",
       column: "SrcAS",
+      operator: "IN",
     });
     expect({ from, to, options }).toEqual({
       from: 14,

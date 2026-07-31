@@ -95,6 +95,26 @@ UNION DISTINCT
 	mockConn.EXPECT().
 		Select(gomock.Any(), gomock.Any(), `
 SELECT label, detail FROM (
+ SELECT concat('AS', toString(DstAS)) AS label, dictGet('asns', 'name', DstAS) AS detail, 1 AS rank
+ FROM flows
+ WHERE TimeReceived > date_sub(minute, 1, now())
+ AND detail != ''
+ AND positionCaseInsensitive(detail, $1) >= 1
+ GROUP BY DstAS
+ ORDER BY COUNT(*) DESC
+ LIMIT 20
+UNION DISTINCT
+ SELECT concat('AS', toString(asn)) AS label, name AS detail, 2 AS rank
+ FROM asns
+ WHERE positionCaseInsensitive(name, $1) >= 1
+ ORDER BY positionCaseInsensitive(name, $1) ASC, asn ASC
+ LIMIT 20
+) GROUP BY label, detail ORDER BY MIN(rank) ASC, MIN(rowNumberInBlock()) ASC LIMIT 20`,
+			"srca").
+		Return(nil)
+	mockConn.EXPECT().
+		Select(gomock.Any(), gomock.Any(), `
+SELECT label, detail FROM (
  SELECT
   'community' AS detail,
   concat(toString(bitShiftRight(c, 16)), ':', toString(bitAnd(c, 0xffff))) AS label
@@ -342,6 +362,73 @@ UNION DISTINCT
 			JSONOutput: helpers.M{"completions": []helpers.M{
 				{"label": "customer", "detail": "network name", "quoted": true},
 			}},
+		},
+		{
+			Description: "complete integer column with another column",
+			URL:         "/api/v0/console/filter/complete",
+			StatusCode:  200,
+			JSONInput: helpers.M{
+				"what": "value", "column": "inifspeed", "operator": ">=", "prefix": "outif",
+			},
+			JSONOutput: helpers.M{"completions": []helpers.M{
+				{"label": "OutIfSpeed", "detail": "column name", "quoted": false},
+			}},
+		},
+		{
+			Description: "complete string column with another column",
+			URL:         "/api/v0/console/filter/complete",
+			StatusCode:  200,
+			JSONInput: helpers.M{
+				"what": "value", "column": "srccountry", "operator": "=", "prefix": "dstc",
+			},
+			JSONOutput: helpers.M{"completions": []helpers.M{
+				{"label": "DstCountry", "detail": "column name", "quoted": false},
+			}},
+		},
+		{
+			Description: "complete AS number column with another column",
+			URL:         "/api/v0/console/filter/complete",
+			StatusCode:  200,
+			JSONInput: helpers.M{
+				"what": "value", "column": "dstAS", "operator": "!=", "prefix": "srca",
+			},
+			JSONOutput: helpers.M{"completions": []helpers.M{
+				{"label": "SrcAS", "detail": "column name", "quoted": false},
+			}},
+		},
+		{
+			Description: "complete with a column of another type",
+			URL:         "/api/v0/console/filter/complete",
+			StatusCode:  200,
+			JSONInput: helpers.M{
+				"what": "value", "column": "srccountry", "operator": "=", "prefix": "srcp",
+			},
+			JSONOutput: helpers.M{"completions": []helpers.M{}},
+		},
+		{
+			Description: "complete with a column and an unsupported operator",
+			URL:         "/api/v0/console/filter/complete",
+			StatusCode:  200,
+			JSONInput: helpers.M{
+				"what": "value", "column": "srccountry", "operator": "LIKE", "prefix": "dstc",
+			},
+			JSONOutput: helpers.M{"completions": []helpers.M{}},
+		},
+		{
+			Description: "complete with a column and an inequality on a string",
+			URL:         "/api/v0/console/filter/complete",
+			StatusCode:  200,
+			JSONInput: helpers.M{
+				"what": "value", "column": "srccountry", "operator": "<", "prefix": "dstc",
+			},
+			JSONOutput: helpers.M{"completions": []helpers.M{}},
+		},
+		{
+			Description: "complete with a column and no operator",
+			URL:         "/api/v0/console/filter/complete",
+			StatusCode:  200,
+			JSONInput:   helpers.M{"what": "value", "column": "srccountry", "prefix": "dstc"},
+			JSONOutput:  helpers.M{"completions": []helpers.M{}},
 		},
 		{
 			Description: "list, no filters",
