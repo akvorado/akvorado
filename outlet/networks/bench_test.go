@@ -15,8 +15,8 @@ import (
 	"akvorado/common/reporter"
 )
 
-// benchmarkAddr builds a random IPv4 address.
-func benchmarkAddr(prng *rand.Rand) netip.Addr {
+// randomAddr builds a random IPv4 address.
+func randomAddr(prng *rand.Rand) netip.Addr {
 	var addr [4]byte
 	for i := range addr {
 		addr[i] = uint8(prng.UintN(256))
@@ -24,9 +24,9 @@ func benchmarkAddr(prng *rand.Rand) netip.Addr {
 	return netip.AddrFrom4(addr)
 }
 
-// benchmarkNetworks builds a list of prefixes sharing a limited number of
+// randomNetworks builds a list of prefixes sharing a limited number of
 // distinct attribute sets, like a GeoIP database does.
-func benchmarkNetworks(prng *rand.Rand, prefixes, distinct int) []externalNetworkAttributes {
+func randomNetworks(prng *rand.Rand, prefixes, distinct int) []externalNetworkAttributes {
 	attributes := make([]NetworkAttributes, distinct)
 	for i := range attributes {
 		attributes[i] = NetworkAttributes{
@@ -39,22 +39,22 @@ func benchmarkNetworks(prng *rand.Rand, prefixes, distinct int) []externalNetwor
 	result := make([]externalNetworkAttributes, prefixes)
 	for i := range result {
 		result[i] = externalNetworkAttributes{
-			Prefix:            netip.PrefixFrom(benchmarkAddr(prng), 8+prng.IntN(17)).Masked(),
+			Prefix:            netip.PrefixFrom(randomAddr(prng), 8+prng.IntN(17)).Masked(),
 			NetworkAttributes: attributes[prng.IntN(distinct)],
 		}
 	}
 	return result
 }
 
-// benchmarkComponent builds a component fed by a single remote source.
-func benchmarkComponent(b *testing.B, prefixes, distinct int) *Component {
-	b.Helper()
-	c, err := New(reporter.NewMock(b), DefaultConfiguration(),
-		Dependencies{Daemon: daemon.NewMock(b)})
+// newTestComponent builds a component fed by a single remote source.
+func newTestComponent(t testing.TB, prefixes, distinct int) *Component {
+	t.Helper()
+	c, err := New(reporter.NewMock(t), DefaultConfiguration(),
+		Dependencies{Daemon: daemon.NewMock(t)})
 	if err != nil {
-		b.Fatalf("New() error:\n%+v", err)
+		t.Fatalf("New() error:\n%+v", err)
 	}
-	c.networkSources["benchmark"] = benchmarkNetworks(
+	c.networkSources["generated"] = randomNetworks(
 		rand.New(rand.NewPCG(10, 10)), prefixes, distinct)
 	return c
 }
@@ -63,7 +63,7 @@ func BenchmarkRebuild(b *testing.B) {
 	for _, prefixes := range []int{100_000, 1_000_000} {
 		for _, distinct := range []int{1_000, 100_000} {
 			b.Run(fmt.Sprintf("%d prefixes, %d distinct", prefixes, distinct), func(b *testing.B) {
-				c := benchmarkComponent(b, prefixes, distinct)
+				c := newTestComponent(b, prefixes, distinct)
 
 				// The source is already built, only the tree and the pool are
 				// accounted by the difference.
@@ -77,9 +77,11 @@ func BenchmarkRebuild(b *testing.B) {
 				runtime.ReadMemStats(&endMem)
 
 				networks := c.networks.Load()
-				b.ReportMetric(
-					float64(endMem.HeapAlloc-startMem.HeapAlloc)/float64(networks.prefixes.Size()),
-					"bytes/prefix")
+				prefixes := float64(networks.prefixes.Size())
+				b.ReportMetric(float64(endMem.HeapAlloc-startMem.HeapAlloc)/prefixes, "bytes/prefix")
+				// What the memory_bytes metric reports, to tell how far the
+				// estimation based on the heap profile is.
+				b.ReportMetric(float64(measureMemory())/prefixes, "profiled-bytes/prefix")
 				b.ReportMetric(float64(networks.pool.Len()), "interned")
 			})
 		}
@@ -87,18 +89,26 @@ func BenchmarkRebuild(b *testing.B) {
 }
 
 func BenchmarkLookup(b *testing.B) {
-	c := benchmarkComponent(b, 1_000_000, 100_000)
+	c := newTestComponent(b, 1_000_000, 100_000)
 	c.rebuild()
 
 	prng := rand.New(rand.NewPCG(20, 20))
 	addresses := make([]netip.Addr, 1024)
 	for i := range addresses {
-		addresses[i] = helpers.AddrTo6(benchmarkAddr(prng))
+		addresses[i] = helpers.AddrTo6(randomAddr(prng))
 	}
 
 	i := 0
 	for b.Loop() {
 		c.Lookup(addresses[i%len(addresses)])
 		i++
+	}
+}
+
+func BenchmarkMeasureMemory(b *testing.B) {
+	c := newTestComponent(b, 1_000_000, 100_000)
+	c.rebuild()
+	for b.Loop() {
+		measureMemory()
 	}
 }

@@ -38,4 +38,11 @@ func (c *Component) initMetrics() {
 			Help: "Number of prefixes, including the ones from the GeoIP databases.",
 		},
 	)
+	c.r.GaugeFunc(
+		reporter.GaugeOpts{
+			Name: "memory_bytes",
+			Help: "Estimated memory taken by the prefixes and their attributes.",
+		},
+		func() float64 { return float64(measureMemory()) },
+	)
 }
