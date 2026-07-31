@@ -20,6 +20,7 @@ import (
 
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
+	"akvorado/common/helpers/intern"
 	"akvorado/common/remotedatasource"
 	"akvorado/common/reporter"
 	"akvorado/outlet/geoip"
@@ -46,9 +47,16 @@ type Component struct {
 	geoipUpdate <-chan struct{}
 
 	// networks is replaced on each rebuild. Lookups only load it.
-	networks atomic.Pointer[bart.Fast[NetworkAttributes]]
+	networks atomic.Pointer[networkTree]
 
 	metrics metrics
+}
+
+// networkTree is the tree for network attributes (which are interned). No
+// concurrent access allowed.
+type networkTree struct {
+	prefixes *bart.Fast[intern.Reference[NetworkAttributes]]
+	pool     *intern.Pool[NetworkAttributes]
 }
 
 // ancestor is a prefix containing the one currently flattened, with the
@@ -77,7 +85,10 @@ func New(r *reporter.Reporter, configuration Configuration, dependencies Depende
 		config:         configuration,
 		networkSources: make(map[string][]externalNetworkAttributes),
 	}
-	c.networks.Store(&bart.Fast[NetworkAttributes]{})
+	c.networks.Store(&networkTree{
+		prefixes: &bart.Fast[intern.Reference[NetworkAttributes]]{},
+		pool:     intern.NewPool[NetworkAttributes](),
+	})
 	var err error
 	c.networkSourcesFetcher, err = remotedatasource.New[externalNetworkAttributes](
 		r, c.UpdateSource, "network_source", configuration.NetworkSources)
@@ -187,8 +198,12 @@ func (c *Component) updateSource(name string, results []externalNetworkAttribute
 // Lookup looks up the network attributes for the given IP address. The
 // attributes of the most specific prefix win.
 func (c *Component) Lookup(ip netip.Addr) NetworkAttributes {
-	attributes, _ := c.networks.Load().Lookup(ip)
-	return attributes
+	networks := c.networks.Load()
+	reference, ok := networks.prefixes.Lookup(ip)
+	if !ok {
+		return NetworkAttributes{}
+	}
+	return networks.pool.Get(reference)
 }
 
 // rebuild rebuilds the whole tree from the GeoIP databases, the remote sources
@@ -256,7 +271,13 @@ func (c *Component) rebuild() {
 	// always comes after the ones containing it and ancestors keeps the chain
 	// of prefixes containing the current one. Its last element already
 	// inherited from the rest of the chain, merging with it is enough.
-	flattened := &bart.Fast[NetworkAttributes]{}
+	//
+	// Most prefixes end up with the same attributes, as they inherit everything from
+	// the same parent, so intern them and store a reference instead. This also
+	// keeps the tree free of pointers, so the garbage collector does not walk
+	// it on each cycle.
+	flattened := &bart.Fast[intern.Reference[NetworkAttributes]]{}
+	pool := intern.NewPool[NetworkAttributes]()
 	ancestors := make([]ancestor, 0, 128)
 	for prefix, attributes := range merged.AllSorted() {
 		for len(ancestors) > 0 && !ancestors[len(ancestors)-1].prefix.Contains(prefix.Addr()) {
@@ -266,10 +287,10 @@ func (c *Component) rebuild() {
 			attributes = mergeNetworkAttrs(ancestors[len(ancestors)-1].attributes, attributes)
 		}
 		ancestors = append(ancestors, ancestor{prefix, attributes})
-		flattened.Insert(prefix, attributes)
+		flattened.Insert(prefix, pool.Put(attributes))
 	}
 
-	c.networks.Store(flattened)
+	c.networks.Store(&networkTree{prefixes: flattened, pool: pool})
 	elapsed := time.Since(start).Seconds()
 	c.metrics.rebuilds.Inc()
 	c.metrics.rebuildTime.Add(elapsed)

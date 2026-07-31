@@ -4,6 +4,7 @@
 package networks
 
 import (
+	"hash/maphash"
 	"reflect"
 	"time"
 
@@ -51,6 +52,26 @@ type NetworkAttributes struct {
 	Tenant string
 	// ASN is the AS number associated to the network.
 	ASN uint32
+}
+
+// attributesHashSeed is the seed used to hash the network attributes.
+var attributesHashSeed = maphash.MakeSeed()
+
+// Hash returns a hash of the network attributes, to intern them.
+func (na NetworkAttributes) Hash() uint64 {
+	hash := uint64(na.ASN)
+	for _, value := range [...]string{
+		na.Name, na.Role, na.Site, na.Region,
+		na.City, na.State, na.Country, na.Tenant,
+	} {
+		hash = hash*31 + maphash.String(attributesHashSeed, value)
+	}
+	return hash
+}
+
+// Equal tells if two sets of network attributes are the same.
+func (na NetworkAttributes) Equal(other NetworkAttributes) bool {
+	return na == other
 }
 
 // NetworkAttributesUnmarshallerHook decodes network attributes. It
