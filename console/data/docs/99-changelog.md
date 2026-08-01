@@ -20,30 +20,13 @@ memory. Drop it on each cluster member once the new version runs:
 # docker compose exec clickhouse clickhouse-client --query "DROP DICTIONARY IF EXISTS networks"
 ```
 
-- 💥 *outlet*: the `geo-ip` source of `core`→`asn-providers` is merged into
-  `networks`, as the GeoIP ASN databases are now part of the networks. `geo-ip`
-  keeps working as a synonym of `networks`, but the AS numbers coming from the
-  GeoIP databases cannot be excluded from the `networks` source anymore
 - 💥 *outlet*: rename the Kafka input metrics from `akvorado_outlet_kafka_*` to
-  `akvorado_outlet_kafkainput_*`, following the rename of the component; update
-  any dashboard or alert relying on them
-- ✨ *outlet*: optionally export decoded and enriched flows to a Kafka topic in
-  parallel with the ClickHouse insert, configured under `kafka-output` and
-  disabled by default; the orchestrator manages the output topic when a top-level
-  `kafka-output` block is set
+  `akvorado_outlet_kafkainput_*`
+- ✨ *outlet*: optionally export decoded and enriched flows to a Kafka topic
 - ✨ *console*: allow filters to compare two columns, like `SrcPort < DstPort`,
   `DstAS != SrcAS` or `InIfConnectivity != OutIfConnectivity`
 - 🩹 *orchestrator*: fix custom dictionaries with an IP prefix layout
-- 🌱 *outlet*: GeoIP and network attributes are now resolved by the outlet
-  instead of ClickHouse. The `geoip` configuration moves from the top level of
-  the orchestrator configuration to `outlet`→`geoip` and
-  `clickhouse`→`networks`, `clickhouse`→`network-sources` and
-  `clickhouse`→`network-sources-timeout` move to `outlet`→`networks`. This is
-  handled automatically. The GeoIP databases and the networks are still merged
-  into a single set of prefixes, the most specific one winning, like the
-  ClickHouse dictionary was doing.
-- 🌱 *outlet*: rename the `kafka` configuration key to `kafka-input` (the old name
-  keeps working)
+- 🌱 *outlet*: move GeoIP and network attributes from ClickHouse to the outlet
 - 🌱 *docker*: update Kafka to 4.3.1 (not mandatory)
 
 ## 2.4.1 - 2026-07-14
