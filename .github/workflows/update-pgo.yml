@@ -23,9 +23,12 @@ jobs:
           run_id=$(gh run list --workflow ci.yml --branch main --status success \
                                --limit 1 --json databaseId --jq '.[0].databaseId')
           gh run download "$run_id" --name pgo --dir .
+      - name: Set up git identity
+        uses: ./.github/actions/identity
+        with:
+          client-id: ${{ secrets.AKVORADO_APP_ID }}
+          private-key: ${{ secrets.AKVORADO_APP_KEY }}
       - name: Push update
         run: |
-          git config --local user.name "akvorado-ci[bot]"
-          git config --local user.email "311677375+akvorado-ci[bot]@users.noreply.github.com"
           git add default.pgo
           ! git commit -m "build: update PGO profile" || git push

@@ -34,10 +34,14 @@ jobs:
       - name: Update dependency hashes
         if: github.event_name != 'schedule' || steps.check-changes.outputs.should_run == 'true'
         run: nix run .#update
+      - name: Set up git identity
+        if: github.event_name != 'schedule' || steps.check-changes.outputs.should_run == 'true'
+        uses: ./.github/actions/identity
+        with:
+          client-id: ${{ secrets.AKVORADO_APP_ID }}
+          private-key: ${{ secrets.AKVORADO_APP_KEY }}
       - name: Push update
         if: github.event_name != 'schedule' || steps.check-changes.outputs.should_run == 'true'
         run: |
-          git config --local user.name "akvorado-ci[bot]"
-          git config --local user.email "311677375+akvorado-ci[bot]@users.noreply.github.com"
           git add flake.lock nix
           ! git commit -m "build: update Nix dependency hashes" || git push

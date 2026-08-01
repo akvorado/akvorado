@@ -41,18 +41,18 @@ jobs:
             echo No diff...
             git reset --hard
           }
-      - name: Get a token
-        uses: actions/create-github-app-token@v3
-        id: app-token
+      - name: Set up git identity
+        uses: ./.github/actions/identity
+        id: identity
         with:
           client-id: ${{ secrets.AKVORADO_APP_ID }}
           private-key: ${{ secrets.AKVORADO_APP_KEY }}
       - name: Create pull request
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
         with:
-          token: ${{ steps.app-token.outputs.token }}
-          committer: akvorado-ci[bot] <311677375+akvorado-ci[bot]@users.noreply.github.com>
-          author: akvorado-ci[bot] <311677375+akvorado-ci[bot]@users.noreply.github.com>
+          token: ${{ steps.identity.outputs.token }}
+          committer: ${{ steps.identity.outputs.name }} <${{ steps.identity.outputs.email }}>
+          author: ${{ steps.identity.outputs.name }} <${{ steps.identity.outputs.email }}>
           add-paths: flake.lock
           branch: nix/flake-lock-update-${{ matrix.source }}
           labels: dependencies
