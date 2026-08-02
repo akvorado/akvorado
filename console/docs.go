@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"akvorado/common/helpers"
@@ -25,7 +26,42 @@ import (
 
 var (
 	internalLinkRegexp = regexp.MustCompile("^(([0-9]+)-([a-z]+).md)(#.*|$)")
+
+	// docSections gives the Diátaxis section a document belongs to, depending on
+	// the number prefixing its file name. The first matching upper bound wins.
+	// Documents outside any section (the introduction and the changelog) get an
+	// empty string.
+	docSections = []struct {
+		upTo    int
+		section string
+	}{
+		{0, ""},
+		{9, "Tutorials"},
+		{49, "How-to guides"},
+		{79, "Reference"},
+		{98, "Explanation"},
+	}
+
+	// renamedDocuments maps the name of a document that does not exist anymore
+	// to its replacement, to keep old links working.
+	renamedDocuments = map[string]string{
+		"operations": "exporters",
+	}
 )
+
+// documentSection returns the section a document belongs to.
+func documentSection(number string) string {
+	n, err := strconv.Atoi(number)
+	if err != nil {
+		return ""
+	}
+	for _, s := range docSections {
+		if n <= s.upTo {
+			return s.section
+		}
+	}
+	return ""
+}
 
 // Header describes a document header.
 type Header struct {
@@ -37,12 +73,16 @@ type Header struct {
 // DocumentTOC describes the TOC of a document
 type DocumentTOC struct {
 	Name    string   `json:"name"`
+	Section string   `json:"section"`
 	Headers []Header `json:"headers"`
 }
 
 func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
 	docs := c.embedOrLiveFS("data/docs")
 	requestedDocument := req.PathValue("name")
+	if replacement, ok := renamedDocuments[requestedDocument]; ok {
+		requestedDocument = replacement
+	}
 
 	var markdown []byte
 	toc := []DocumentTOC{}
@@ -92,6 +132,7 @@ func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
 		}
 		toc = append(toc, DocumentTOC{
 			Name:    matches[3],
+			Section: documentSection(matches[2]),
 			Headers: tocLogger.headers,
 		})
 	}

@@ -16,7 +16,7 @@ Each component has the following pieces of code:
 - A `Component` structure that contains its state.
 - A `Configuration` structure that contains the configuration of the
   component. It maps to a section of the [Akvorado configuration
-  file](02-configuration.md).
+  file](50-configuration.md).
 - A `DefaultConfiguration` function with the default values for the
   configuration.
 - A `New()` function that instantiates the component. This method takes
@@ -246,7 +246,7 @@ the lifecycle of the HTTP server and to provide a method to add
 handlers. The web component provides the web interface of *Akvorado*.
 Currently, this is only the documentation. Other components may expose
 various endpoints. They are documented in the [usage
-section](03-usage.md).
+section](51-usage.md).
 
 The daemon component handles the lifecycle of the whole application.
 It watches for the various goroutines (through tombs, see below)

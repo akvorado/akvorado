@@ -701,7 +701,8 @@ regex. The syntax is the one [from Go][]. If you want to use Perl
 character classes, such as `\d` or `\w`, you need to escape the
 backslash character: `\\d` and `\\w`. To test your regex, you can use
 a site like [regular expressions 101][]. Be sure to use the "Golang"
-flavor.
+flavor. Its "List" function, with `$1` as the template, gives the value each
+input produces, which is what the third argument of the rule computes.
 
 [regular expressions 101]: https://regex101.com/
 
@@ -713,7 +714,7 @@ Netflix (WL6-1190)`.
 interface-classifiers:
   - |
     ClassifyConnectivityRegex(Interface.Description, "^(?i)(transit|pni|ppni|ix):? ", "$1") &&
-    ClassifyProviderRegex(Interface.Description, "^[^ ]+? ([^ ]+)", "$1") &&
+    ClassifyProviderRegex(Interface.Description, "^\\S+?\\s(\\S+)", "$1") &&
     ClassifyExternal()
   - ClassifyInternal()
 ```
@@ -726,8 +727,9 @@ external or internal, consider it as an internal one.”
 
 When the description is `Transit: Cogent 1-3834938493`, the first rule will put
 `transit` into the connectivity field (check with
-[regex101.com](https://regex101.com/r/FPITQE/1)), then `cogent` in the provider
-field (check with [regex101.com](https://regex101.com/r/jnzhSv/1)), and classify
+[regex101.com](https://regex101.com/r/KeBpV7/2/list-substitution)), then
+`cogent` in the provider field (check with
+[regex101.com](https://regex101.com/r/sx7aAB/2/list-substitution)), and classify
 the interface as external. If the interface is the input one, you'll get
 `InIfConnectivity` set to `transit`, `InIfProvider` set to `cogent`, and
 `InIfBoundary` set to `external`.
@@ -1238,7 +1240,7 @@ resolutions:
 If you want to tweak the values, start from the default configuration. Most of
 the disk space is taken by the main table (`interval: 0`) and you can reduce its
 TTL if it's too big for your usage. The data is not expired immediately. Check
-the [operational documentation](04-operations.md#space-usage) for information on
+the [operational documentation](13-operating.md#space-usage) for information on
 how to check disk usage. If you remove an existing interval, it is not removed
 from the ClickHouse database and will continue to be populated.
 
@@ -1477,7 +1479,7 @@ supports the following keys:
 - `listen` defines the address and port to listen to.
 - `profiler` enables [Go profiler HTTP
   interface](https://pkg.go.dev/net/http/pprof). Check the [troubleshooting
-  section](05-troubleshooting.html#profiling) for details. It is enabled by
+  section](14-scaling.md#profiling) for details. It is enabled by
   default.
 - `cache` defines the cache backend to use for some HTTP requests. It accepts a
   `type` key which can be either `memory` (the default value) or `redis`. When

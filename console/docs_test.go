@@ -4,6 +4,7 @@
 package console
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -24,7 +25,10 @@ func TestServeDocs(t *testing.T) {
 			Expect string
 		}{
 			{"usage", `<a href=\"configuration\">configuration section</a>`},
-			{"intro", `../assets/docs/design.svg`},
+			{"design", `../assets/docs/design.svg`},
+			// Documents which do not exist anymore are served by their
+			// replacement.
+			{"operations", `<h1 id=\"configure-your-exporters\">`},
 		}
 		for _, tc := range cases {
 			t.Run(fmt.Sprintf("%s-%s", name, tc.Path), func(t *testing.T) {
@@ -50,6 +54,50 @@ func TestServeDocs(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+func TestDocsSections(t *testing.T) {
+	conf := DefaultConfiguration()
+	_, h, _, _ := NewMock(t, conf)
+
+	resp, err := http.Get(fmt.Sprintf("http://%s/api/v0/console/docs/intro", h.LocalAddr()))
+	if err != nil {
+		t.Fatalf("GET /api/v0/console/docs/intro:\n%+v", err)
+	}
+	defer resp.Body.Close()
+	var payload struct {
+		TOC []struct {
+			Name    string `json:"name"`
+			Section string `json:"section"`
+		} `json:"toc"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		t.Fatalf("GET /api/v0/console/docs/intro Decode() error:\n%+v", err)
+	}
+
+	// Only check one document per section: adding a new document should not
+	// break this test.
+	interesting := map[string]bool{
+		"intro": true, "explore": true, "install": true,
+		"configuration": true, "internals": true, "changelog": true,
+	}
+	got := map[string]string{}
+	for _, document := range payload.TOC {
+		if interesting[document.Name] {
+			got[document.Name] = document.Section
+		}
+	}
+	expected := map[string]string{
+		"intro":         "",
+		"explore":       "Tutorials",
+		"install":       "How-to guides",
+		"configuration": "Reference",
+		"internals":     "Explanation",
+		"changelog":     "",
+	}
+	if diff := helpers.Diff(got, expected); diff != "" {
+		t.Fatalf("GET /api/v0/console/docs/intro sections (-got, +want):\n%s", diff)
 	}
 }
 

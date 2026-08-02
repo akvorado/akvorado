@@ -1,9 +1,27 @@
-# Installation
+# Install Akvorado
 
 *Akvorado* is written in Go. It provides its 4 components in a single binary or
 Docker image. It also requires [Kafka](https://kafka.apache.org/quickstart)
 (1.0+) and [ClickHouse](https://clickhouse.com/docs/en/getting-started/install/)
 (22.4+).
+
+If you only want to try *Akvorado*, follow the [tutorial](02-collect.md)
+instead. It uses the `docker compose` setup and covers the first configuration
+steps.
+
+## Requirements
+
+*Akvorado* itself does not need much memory and disk space, but Kafka and
+ClickHouse do. The recommended configuration for the complete setup is:
+
+- 4 vCPUs (AMD64 or ARM64)
+- 8 GB of RAM, 32 GB or more is better
+- 100 GB of disk, 50 GB is the minimum
+
+> [!NOTE]
+> `demo.akvorado.net` currently runs on a bare-metal host with a quad-core Intel
+> Xeon E3-1231 v3, 1TB of disk, and 32 GB of RAM. But it was previously running
+> on a virtual machine matching the minimal specs.
 
 ## Docker image
 
@@ -15,9 +33,9 @@ You can use the *Akvorado* [Docker](https://docs.docker.com/engine/install/) ima
 ```
 
 Check the `docker/docker-compose.yml` file for an example of how to deploy
-*Akvorado* using containers. If you want to use `docker compose`, see
-the [quick start procedure](00-intro.md#quick-start). This documentation assumes
-you are using the `docker compose` setup.
+*Akvorado* using containers. If you want to use `docker compose`, see the
+[tutorial](02-collect.md). This documentation assumes you are using the `docker
+compose` setup.
 
 The minimum supported version for Docker Engine is v23.
 Check with `docker version -f {{ .Server.Version }}`.

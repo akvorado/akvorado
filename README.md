@@ -33,9 +33,10 @@ A [Grafana plugin](https://github.com/ovh/grafana-akvorado) is available.
 
 The first step is to read the [documentation](https://demo.akvorado.net/docs):
 
-- the [introduction](https://demo.akvorado.net/docs/intro)
-- the [configuration guide](https://demo.akvorado.net/docs/configuration)
-- the [troubleshooting guide](https://demo.akvorado.net/docs/troubleshooting)
+- the [introduction](https://demo.akvorado.net/docs/intro),
+- the [tutorial](https://demo.akvorado.net/docs/collect),
+- the [configuration reference](https://demo.akvorado.net/docs/configuration), and
+- the [troubleshooting guide](https://demo.akvorado.net/docs/troubleshooting).
 
 If you still need help, you can use the
 [discussions](https://github.com/akvorado/akvorado/discussions/categories/q-a).
