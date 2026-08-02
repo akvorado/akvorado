@@ -31,7 +31,15 @@ A [Grafana plugin](https://github.com/ovh/grafana-akvorado) is available.
 
 ## Getting help
 
-The first step is to read the [documentation](https://demo.akvorado.net/docs):
+The first step is to read the [documentation](https://demo.akvorado.net/docs).
+It ships with *Akvorado*: the running console serves the version you use, under
+the “Documentation” tab.
+
+[![Documentation](console/data/docs/documentation.png)](https://demo.akvorado.net/docs)
+
+It is organized with the [Diátaxis](https://diataxis.fr) framework, in four
+parts: tutorials, how-to guides, reference and explanation. Good entry points
+are:
 
 - the [introduction](https://demo.akvorado.net/docs/intro),
 - the [tutorial](https://demo.akvorado.net/docs/collect),

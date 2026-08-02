@@ -164,6 +164,13 @@ console/data/docs/53-metrics.md: cmd/helper/data/metrics.tmpl.md
 	$(call log,generate metric documentation…)
 	$Q go run ./cmd/helper metrics --format=markdown > $@
 
+# The screenshots are only regenerated on demand. This requires Firefox and
+# takes them on a running console.
+.PHONY: docs-screenshots
+docs-screenshots: console/frontend/node_modules ; @ ## Regenerate documentation screenshots
+	$(call log,generate documentation screenshots…)
+	$Q python3 console/data/screenshots.py
+
 ASNS_URL = https://vincentbernat.github.io/asn2org/asns.csv
 PROTOCOLS_URL = http://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv
 SERVICES_URL = https://www.iana.org/assignments/service-names-port-numbers/service-names-port-numbers.csv
