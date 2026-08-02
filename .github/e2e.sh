@@ -101,6 +101,21 @@ EOF
         echo ::endgroup::
         ;;
 
+    screenshots)
+        # Take the documentation screenshots on the running stack. They are only
+        # kept as an artifact: this is a way to check how they look with the
+        # current code, without having to wait for the next release of the demo
+        # site.
+        echo ::group::Generate screenshots
+        make console/frontend/node_modules
+        mkdir -p test/screenshots
+        nix shell nixpkgs#firefox --command \
+            python3 console/data/screenshots.py \
+                --url http://127.0.0.1:8081 \
+                --output test/screenshots
+        echo ::endgroup::
+        ;;
+
     coverage)
         # Merge coverage files
         [ -n "$AKVORADO_COVERAGE_DIRECTORY" ]

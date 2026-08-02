@@ -1,30 +1,24 @@
-# Operations
+# Configure your exporters
 
-While Akvorado itself does not require much memory and disk space, Kafka and
-ClickHouse have heavier needs. To get started, do not run the complete setup
-with less than 16 GB of RAM (32 GB or more is recommended) and with less than 50
-GB of disk (100 GB or more is recommended). Use at least 8 vCPUs.
-
-> [!NOTE]
-> `demo.akvorado.net` currently runs in a VM with 4 vCPUs, 100 GB of disk, and 16
-> GB of RAM.
-
-## Router configuration
-
-Each router should be configured to send flows to the Akvorado inlet service and
-accept SNMP requests. For routers not listed below, see the [configuration
+An exporter is a device that sends flows to *Akvorado*. This page collects the
+configuration snippets for the platforms we know about. Each exporter should be
+configured to send flows to the inlet service and to accept SNMP requests. For a
+device that is not listed here, look at the [configuration
 snippets](https://github.com/kentik/config-snippets/) from Kentik.
 
-It is better to **sample on ingress only**. This requires sampling on both
-external and internal interfaces. This prevents flows from being counted twice
-when they enter and exit through external ports.
+Two settings are important on every platform:
 
-> [!TIP]
-> When using NetFlow or IPFIX, you should configure **low timeout values** for
-> both active and inactive flows: this should prevent spikes in the graphs.
-> Values of 5 to 10 seconds should be OK.
+- It is better to sample on ingress only. This requires sampling on both
+  external and internal interfaces. This prevents flows from being counted twice
+  when they enter and exit through external ports.
+- With NetFlow or IPFIX, use low timeout values for both active and inactive
+  flows. Values of 5 to 10 seconds should be OK. Higher values create spikes in
+  the graphs.
 
-### Exporter Address
+After configuring a device, check that its flows are received with the
+[troubleshooting guide](12-troubleshooting.md#inlet-service).
+
+## Exporter address
 
 The exporter address is set from the field inside the flow message by default
 and is used, for example, for SNMP requests. However, if the set flow address
@@ -35,7 +29,7 @@ configuration.
 Please note that with this configuration, your deployment must not change the
 source IP. This might happen with Docker or Kubernetes networking.
 
-### Cisco IOS-XE
+## Cisco IOS-XE
 
 You can enable NetFlow with the following configuration:
 
@@ -113,7 +107,7 @@ interface GigabitEthernet0/0/3
 According to [issue #89](https://github.com/akvorado/akvorado/issues/89), the
 sampling rate is not reported correctly on this platform. The solution is to set
 a default sampling rate in `akvorado.yaml`. See the
-[documentation](02-configuration.html#core) for more details.
+[documentation](50-configuration.md#core) for more details.
 
 ```yaml
 inlet:
@@ -121,7 +115,7 @@ inlet:
     default-sampling-rate: 100
 ```
 
-### NCS 5500 and ASR 9000
+## Cisco NCS 5500 and ASR 9000
 
 On each router, you can enable NetFlow with the following configuration. It is
 important to use a power of two for the sampling rate (at least on NCS).
@@ -178,7 +172,7 @@ interface Bundle-Ether4000
 !
 ```
 
-Also, see the [troubleshooting section](05-troubleshooting.md) on how to scale
+Also, see the [scaling guide](14-scaling.md#ncs5500-routers) on how to scale
 NetFlow on the NCS 5500.
 
 Then, you need to enable SNMP:
@@ -208,9 +202,9 @@ router bgp 65400
    bmp-activate server 1
 ```
 
-### Juniper
+## Juniper
 
-#### NetFlow
+### NetFlow
 
 For MX and SRX devices, you can use NetFlow v9 to export flows.
 
@@ -346,7 +340,7 @@ routing-options {
 }
 ```
 
-#### IPFIX 315
+### IPFIX 315
 
 Another option is using IPFIX 315. Juniper calls that inline monitoring. In this
 case, Akvorado will decode the sampled packets. This is more lightweight.
@@ -433,7 +427,7 @@ interfaces {
 }
 ```
 
-#### sFlow
+### sFlow
 
 For QFX devices, you can use sFlow.
 
@@ -452,7 +446,7 @@ protocols {
 }
 ```
 
-#### SNMP
+### SNMP
 
 Then, configure SNMP:
 
@@ -467,7 +461,7 @@ snmp {
 }
 ```
 
-#### BMP
+### BMP
 
 If needed, you can configure BMP on one router to send all AdjRIB-in
 to Akvorado.
@@ -488,9 +482,9 @@ routing-options {
 
 See [Juniper's documentation](https://www.juniper.net/documentation/us/en/software/junos/bgp/topics/ref/statement/bmp-edit-routing-options.html) for more details.
 
-### Arista
+## Arista
 
-#### sFlow
+### sFlow
 
 For Arista devices, you can use sFlow.
 
@@ -504,7 +498,7 @@ sflow interface egress enable default
 sflow run
 ```
 
-#### SNMP
+### SNMP
 
 Then, configure SNMP:
 
@@ -513,7 +507,7 @@ snmp-server community <community> ro
 snmp-server vrf VRF-MANAGEMENT
 ```
 
-#### BMP
+### BMP
 
 If needed, you can also configure BMP.
 
@@ -528,12 +522,12 @@ router bgp 65001
       export-policy bgp rib bestpaths
 ```
 
-### Nokia SR OS
+## Nokia SR OS
 
 The syntax below is for the model-driven command line interface (MD-CLI). The
 full context is provided to make it easier to adapt to the classic CLI.
 
-#### Flows
+### Flows
 
 sFlow is not well supported on devices running SR OS. It is best to use IPFIX.
 
@@ -568,7 +562,7 @@ Or, add it to apply-groups that are probably already in place:
 /configure service ies "internet" interface "if1/1/c1/1:0" apply-groups ["peering"]
 ```
 
-#### SNMP
+### SNMP
 
 Nokia routers running SR OS use a different interface index in their flow
 records than the SNMP interface index that is usually used by other devices. To
@@ -576,7 +570,7 @@ fix this, you need to use `cflowd use-vrtr-if-index`. You can find more
 information in [Nokia's
 documentation](https://infocenter.nokia.com/public/7750SR140R4/topic/com.sr.router.config/html/cflowd_cli.html#tgardner5iexrn6muno).
 
-#### gNMI
+### gNMI
 
 Instead of SNMP, you can use gNMI. The interface index challenge (see `SNMP`
 above) also applies. See this
@@ -602,7 +596,7 @@ to enable TLS for a more secure setup.
 /configure system security aaa local-profiles profile "grpc_ro" grpc rpc-authorization md-cli-session deny
 ```
 
-#### BMP
+### BMP
 
 ```
 /configure bmp admin-state enable
@@ -622,7 +616,7 @@ to enable TLS for a more secure setup.
 /configure router "Base" bgp monitor station "akvorado" { }
 ```
 
-### MikroTik
+## MikroTik
 
 For MikroTik, if you use RouterOS v6, the sampling rate is incorrectly reported
 and you need to override the sampling rate in the outlet configuration:
@@ -641,7 +635,7 @@ Here are a few resources from MikroTik help site to configure a Mikrotik device:
 - [Traffic Flow](https://help.mikrotik.com/docs/spaces/ROS/pages/21102653/Traffic+Flow)
 - [SNMP](https://help.mikrotik.com/docs/spaces/ROS/pages/8978519/SNMP)
 
-### Huawei
+## Huawei
 
 Huawei routers support NetStream, a protocol compatible with NetFlow v9.
 
@@ -692,9 +686,9 @@ slot 1:ip netstream sampler to slot self
 slot 1:ipv6 netstream sampler to slot self
 ```
 
-### GNU/Linux
+## GNU/Linux
 
-#### pmacct
+### pmacct
 
 [pmacct](http://www.pmacct.net/) is a set of multi-purpose passive network
 monitoring tools, including an sFlow exporter.
@@ -750,7 +744,7 @@ outlet:
                 speed: 10000
 ```
 
-#### ipfixprobe
+### ipfixprobe
 
 [ipfixprobe](https://ipfixprobe.cesnet.cz/) is a modular IPFIX flow exporter. It
 supports a `pcap` plugin for low bandwidth use (less than 1 Gbps) and a
@@ -776,368 +770,3 @@ supported by Akvorado.
 > The `split` option for the cache plugin results to incorrect input interfaces
 > for outgoing flows.
 
-## Kafka
-
-When you use `docker compose`, a Kafka UI runs at
-`http://127.0.0.1:8080/kafka-ui/`. It provides various operational
-metrics that you can check, such as the space used by each topic.
-
-## ClickHouse
-
-While ClickHouse works well out-of-the-box, we still recommend that you read
-[its documentation](https://clickhouse.com/docs/).
-Altinity also provides a [knowledge base](https://kb.altinity.com/)
-with other tips.
-
-> [!TIP]
-> To connect to the ClickHouse database in the Docker Compose setup, use `docker
-> compose exec clickhouse clickhouse-client`.
-
-### Memory usage
-
-The `networks` dictionary can use a lot of memory. You can check with these queries:
-
-```sql
-SELECT name, status, type, formatReadableSize(bytes_allocated)
-FROM system.dictionaries
-```
-
-Moreover, ClickHouse is tuned for 32 GB of RAM or more. The ClickHouse documentation
-has some tips to [run with 16 GB or
-less](https://clickhouse.com/docs/operations/tips#using-less-than-16gb-of-ram).
-
-### Space usage
-
-To get the space used by ClickHouse, use this query:
-
-```sql
-SELECT formatReadableSize(sum(bytes_on_disk)) AS size
-FROM system.parts
-```
-
-You can get an idea of how much space is used by each table with this
-query:
-
-```sql
-SELECT table, formatReadableSize(sum(bytes_on_disk)) AS size, MIN(partition_id) AS oldest
-FROM system.parts
-WHERE table LIKE 'flow%'
-GROUP by table
-ORDER by sum(bytes_on_disk) DESC
-```
-
-This query shows how much space is used by each column for the `flows`
-table and how much they are compressed. This can be helpful if you find that this
-table uses too much space.
-
-```sql
-SELECT
-    database,
-    table,
-    column,
-    type,
-    sum(rows) AS rows,
-    sum(column_data_compressed_bytes) AS compressed_bytes,
-    formatReadableSize(compressed_bytes) AS compressed,
-    formatReadableSize(sum(column_data_uncompressed_bytes)) AS uncompressed,
-    sum(column_data_uncompressed_bytes) / compressed_bytes AS ratio,
-    any(compression_codec) AS codec
-FROM system.parts_columns AS pc
-LEFT JOIN system.columns AS c ON (pc.database = c.database) AND (c.table = pc.table) AND (c.name = pc.column)
-WHERE table = 'flows' AND active
-GROUP BY
-    database,
-    table,
-    column,
-    type
-ORDER BY
-    database ASC,
-    table ASC,
-    sum(column_data_compressed_bytes) DESC
-```
-
-You can reduce the space used by the `flows` table by setting a lower TTL in
-`clickhouse`→`resolutions`. This does not take effect immediately. You need to
-run `ALTER TABLE flows MATERIALIZE TTL`.
-
-You can also include the system tables:
-
-```sql
-SELECT database, table, formatReadableSize(sum(bytes_on_disk)) AS size, MIN(partition_id) AS oldest
-FROM system.parts
-GROUP by database, table
-ORDER by sum(bytes_on_disk) DESC
-```
-
-ClickHouse is configured to log various events in MergeTree tables. By
-default, these tables are unbounded. Unless you configure it otherwise, the
-orchestrator sets a TTL of 30 days. You can also customize these tables in the
-configuration files or disable them completely. See the [ClickHouse
-documentation](https://clickhouse.com/docs/en/operations/system-tables/) for
-more details.
-
-All the system tables with the suffix `_0` or `_1` are tables from an older version of
-ClickHouse. You can drop them by using this SQL query and copying and pasting the
-result:
-
-```sql
-SELECT concat('DROP TABLE IF EXISTS system.', name, ';')
-FROM system.tables
-WHERE (database = 'system') AND match(name, '_[0-9]+$')
-FORMAT TSVRaw
-```
-
-### CPU usage
-
-If ClickHouse has high CPU usage, you can find slow queries with:
-
-```sql
-SELECT formatReadableTimeDelta(query_duration_ms/1000) AS duration, query
-FROM system.query_log
-WHERE query_kind = 'Select'
-ORDER BY query_duration_ms DESC
-LIMIT 10
-FORMAT Vertical
-```
-
-Also, check for slow inserts:
-
-```sql
-SELECT formatReadableTimeDelta(query_duration_ms/1000) AS duration, query
-FROM system.query_log
-WHERE query_kind = 'Insert'
-ORDER BY query_duration_ms DESC
-LIMIT 10
-FORMAT Vertical
-```
-
-[Altinity's knowledge
-base](https://kb.altinity.com/altinity-kb-useful-queries/query_log/)
-contains other useful queries.
-
-### Old tables
-
-Tables that are not used anymore may still exist. Check with `SHOW TABLES`. You can
-drop these tables:
-
-- `flows_raw_errors`
-- `flows_raw_errors_consumer`
-- any `flows_XXXXXXX_raw_errors`
-- any `flows_XXXXXXX_raw` and `flows_XXXXXXX_raw_consumer` when `XXXXXXX` does not end with `vN` where `N` is a number
-- any `flows_XXXXXvN_raw` and `flows_XXXXXvN_raw_consumer` when another table exists with a higher `N` value
-
-These tables do not contain data. If you make a mistake, you can restart the orchestrator to recreate them.
-
-### Update the database schema
-
-In version 1.10.0, the primary key of the `flows` table was changed to improve
-performance. This update is not automatically applied to existing installations
-because it requires copying data. You can check if your schema needs to be
-updated with this SQL command:
-
-```sql
-SELECT primary_key
-FROM system.tables
-WHERE (name = 'flows') AND (database = currentDatabase())
-```
-
-If the primary key is not `toStartOfFiveMinutes(TimeReceived)`, you are using
-the old schema. You may get better performance by switching to the new one.
-
-The idea is to create a new table and transfer the data from the old table,
-partition by partition. Execute this request and make sure you have enough
-space to store the largest partition:
-
-```sql
-SELECT
-    partition,
-    formatReadableSize(sum(bytes_on_disk)) AS size,
-    count() AS count
-FROM system.parts
-WHERE (database = currentDatabase()) AND (`table` = 'flows') AND active
-GROUP BY partition
-ORDER BY partition ASC
-```
-
-> [!IMPORTANT]
-> There is a risk of data loss if something goes wrong. Back up your data if it
-> is important to you. This guide only covers the non-clustered scenario.
-
-#### Preparation
-
-You need to stop the **outlet** service to make sure that nothing is writing to
-ClickHouse while the migration is in progress. Get the current parameters for
-the `flows` table:
-
-```sql
-SELECT engine_full
-FROM system.tables
-WHERE (database = currentDatabase()) AND (`table` = 'flows')
-FORMAT TSVRaw
-```
-
-You need to change the `ORDER BY` directive to replace `TimeReceived` with
-`toStartOfFiveMinutes(TimeReceived)` and add
-`toStartOfFiveMinutes(TimeReceived)` as the primary key. You should get
-something like this:
-
-```
-MergeTree PARTITION BY toYYYYMMDDhhmmss(toStartOfInterval(TimeReceived, toIntervalSecond(25920))) PRIMARY KEY (toStartOfFiveMinutes(TimeReceived)) ORDER BY (toStartOfFiveMinutes(TimeReceived), ExporterAddress, InIfName, OutIfName) TTL TimeReceived + toIntervalSecond(1296000) SETTINGS index_granularity = 8192, ttl_only_drop_parts = 1
-```
-
-Also, check the current number of flows stored in ClickHouse:
-
-```sql
-SELECT count(*)
-FROM flows
-```
-
-#### Rename the old table
-
-Rename the current `flows` table to `flows_old`:
-
-```sql
-RENAME TABLE flows TO flows_old
-```
-
-#### Create the new table
-
-Allow suspicious low cardinality types:
-
-```sql
-SET allow_suspicious_low_cardinality_types = true
-```
-
-Create the new `flows` table with the updated `ORDER BY` directive. After
-`ENGINE = `, copy and paste the engine definition that you prepared earlier:
-
-```sql
-CREATE TABLE flows AS flows_old
-ENGINE =
-```
-
-#### Create an intermediate table
-
-Create an intermediate table to copy data to. This is needed to avoid duplicating
-data in the aggregated tables. Use the same engine definition as before:
-
-```sql
-CREATE TABLE flows_temp AS flows_old
-ENGINE =
-```
-
-#### Generate the migration statements
-
-Use this SQL query to create the migration:
-
-```sql
-SELECT
- concat('insert into flows_temp select * from flows_old where _partition_id = \'', partition_id, '\';\n',
-        'alter table flows_old drop partition \'', partition_id, '\';\n', 
-        'alter table flows attach partition id \'', partition, '\' from flows_temp;') AS cmd
-FROM system.parts
-WHERE (database = currentDatabase()) AND (`table` = 'flows_old')
-GROUP BY
-    database,
-    `table`,
-    partition_id,
-    partition
-ORDER BY partition_id ASC
-FORMAT TSVRaw
-```
-
-#### Execute the migration statements
-
-You can execute them one by one. You can check that you still have all the flows
-after each `attach partition` directive:
-
-```sql
-SELECT (
-        SELECT count(*)
-        FROM flows
-    ) + (
-        SELECT count(*)
-        FROM flows_old
-    )
-```
-
-#### Drop the old table
-
-The last step is to remove the empty `flows_old` table and the intermediate
-table:
-
-```sql
-DROP TABLE flows_old;
-DROP TABLE flows_temp;
-```
-
-Then, you can restart the **outlet** service.
-
-## Docker
-
-The default Docker Compose setup is meant to help you get started quickly. However,
-you can also use it for a production setup.
-
-You are allowed to modify `.env` and `docker/docker-compose-local.yml`, as well
-as anything in `config/`. Everything else will be erased during upgrades.
-
-The `.env` file tailors the complete Docker Compose setup. Some parts are
-enabled using [Docker Compose
-profiles](https://docs.docker.com/compose/how-tos/profiles/). You can
-temporarily enable them with `--profile` flag to `docker compose`. In this case,
-any profile set with `COMPOSE_PROFILES` are overridden. Some other parts require
-you to uncomment additional Docker Compose configuration files directly in
-`.env`.
-
-This `docker/docker-compose-local.yml` file can override parts of the
-configuration. The [merge
-rules](https://docs.docker.com/reference/compose-file/merge/) are a bit complex.
-The general rule is that scalars are replaced, while lists and mappings are
-merged. However, there are exceptions.
-
-> [!TIP]
-> Always check if the final configuration matches your expectations with `docker compose config`.
-
-You can disable some services by using profiles:
-
-```yaml
-services:
-  akvorado-inlet:
-    profiles: [ disabled ]
-```
-
-It is possible to remove a value with the `!reset` tag:
-
-```yaml
-services:
-  akvorado-console:
-    environment:
-      AKVORADO_CFG_CONSOLE_DATABASE_DSN: !reset null
-```
-
-With Docker Compose v2.24.4 or later, you can override a value:
-
-```yaml
-services:
-  traefik:
-    ports: !override
-      - 127.0.0.1:8080:8080/tcp
-      - 80:8081/tcp
-```
-
-The `docker/docker-compose-local.yml` file contains more examples that you can
-adapt to your needs. You can also enable TLS by uncommenting the appropriate
-section in `.env`.
-
-### Networking
-
-The default setup has both IPv4 and IPv6 enabled, using the NAT setup.
-For IPv6 to work correctly, you need either Docker Engine v27 or to set
-`ip6tables` to `true` in `/etc/docker/daemon.json`.
-
-If you prefer to keep the default Docker configuration, you can add this snippet
-to `docker/docker-compose-local.yml`:
-
-```yaml
-networks: !reset {}
-```

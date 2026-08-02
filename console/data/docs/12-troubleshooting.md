@@ -1,4 +1,4 @@
-# Troubleshooting
+# Troubleshoot Akvorado
 
 > [!WARNING]
 > Please read this page carefully before you open an issue or start a discussion.
@@ -6,7 +6,7 @@
 > [!TIP]
 > This guide assumes that you use the *Docker Compose* setup. If you use a different setup, adapt the commands as needed.
 
-As explained in the [introduction](00-intro#big-picture), Akvorado has several
+As explained in [how Akvorado works](80-design.md), Akvorado has several
 components. To troubleshoot an issue, inspect each component.
 
 ![Functional view](troubleshoot.svg)
@@ -32,7 +32,7 @@ Build Cache     4         0         5.291MB   5.291MB
 
 You can recover space with `docker system prune` or get more details with
 `docker system df -v`. See the documentation about
-[operations](04-operations.md#clickhouse) on how to check space usage for
+[operations](13-operating.md#clickhouse) on how to check space usage for
 ClickHouse.
 
 > [!CAUTION]
@@ -64,6 +64,14 @@ unhealthy, or not working correctly, check its logs:
 $ docker compose logs akvorado-inlet
 ```
 
+When the orchestrator refuses to start, the configuration file is the first
+suspect. This command parses it, prints the result with the default values, and
+stops:
+
+```console
+$ docker compose run --rm --no-deps akvorado-orchestrator orchestrator --check --dump /etc/akvorado/akvorado.yaml
+```
+
 The *inlet*, *outlet*, *orchestrator*, and *console* expose metrics. Get them with this command:
 
 ```console
@@ -75,8 +83,11 @@ akvorado_cmd_info{compiler="go1.24.4",version="v1.11.5-134-gaf3869cd701c"} 1
 ```
 
 > [!CAUTION]
-> Run the `curl` command on the same host that runs Akvorado, and change `inlet`
-> to the name of the component that you are interested in.
+> Run the `curl` commands on the same host that runs Akvorado, and change
+> `inlet` to the name of the component that you are interested in. Port 8080
+> exposes the metrics and the configuration without authentication, so it is
+> only published on the loopback interface. Only port 8081, the console, is
+> reachable from outside.
 
 To see only error metrics, filter them:
 
@@ -85,7 +96,10 @@ $ curl -s http://127.0.0.1:8080/api/v0/inlet/metrics | grep 'akvorado_.*_error'
 ```
 
 > [!TIP]
-> To follow this guide on a working system, replace `http://127.0.0.1:8080` with `https://demo.akvorado.net`.
+> To see what these metrics look like on a working system, replace
+> `http://127.0.0.1:8080` with `https://demo.akvorado.net`. Only the `metrics`
+> endpoints are public there. The other ones, like `/api/v0/outlet/flows`, stay
+> on the private port and answer 404.
 
 ### Inlet service
 
@@ -146,11 +160,13 @@ Kafka. The Docker Compose setup comes with [UI for Apache
 Kafka](https://github.com/provectus/kafka-ui). You can access it at
 `http://127.0.0.1:8080/kafka-ui`.
 
-> [!TIP]
-> For security reasons, this UI is not exposed on anything other than the host
-> that is running Akvorado. If you need to access it remotely, the easiest way
-> is to use [SSH port
-> forwarding](https://www.digitalocean.com/community/tutorials/ssh-port-forwarding): 
+> [!CAUTION]
+> By default, this UI is also served on port 8081, next to the console, and it
+> asks for no authentication. It is read-only, but it still shows your topics
+> and your brokers to anybody able to reach that port. To keep it on the private
+> port, uncomment the block about Kafka-UI in `docker/docker-compose-local.yml`.
+> You can then reach it with [SSH port
+> forwarding](https://www.digitalocean.com/community/tutorials/ssh-port-forwarding):
 > `ssh -L 8080:127.0.0.1:8080 akvorado`. Then, you can use
 > `http://127.0.0.1:8080/kafka-ui` directly from your workstation.
 
@@ -381,171 +397,10 @@ working correctly.
 
 Interface classification marks interfaces as either “internal” or “external”. If
 you have not configured interface classification, see the [configuration
-guide](02-configuration.md#classification). This step is required.
+guide](50-configuration.md#classification). This step is required.
 
-## Scaling
+## Next steps
 
-Various bottlenecks can cause dropped packets. This is problematic because the
-reported sampling rate becomes incorrect, and you cannot reliably calculate the
-number of bytes and packets. Both the exporters and the inlet need to be tuned
-for this kind of problem.
-
-The outlet can also be a bottleneck. In this case, the flows may appear on the
-console with a delay.
-
-### Exporters
-
-The first problem may be that the exporter is dropping flows. Usually, counters
-can detect this situation, and you can solve it by reducing the exporter rate.
-
-#### NCS5500 routers
-
-[NetFlow, Sampling-Interval and the Mythical Internet Packet Size][1] contains
-a lot of information about the limits of this platform. The first bottleneck is a 133
-Mbps shaper between an NPU and the LC CPU for the sampled packets (144 bytes
-each). For example, on a NC55-36X100G line card, there are 6 NPUs, and each one
-manages 6 ports. If we consider an average packet size of 1000, the maximum
-sampling rate when all ports are full is 1:700 (the formula is `Total-BW / (
-Avg-Pkt-Size x 133Mbps ) x ( 144 x 8 )`).
-
-[1]: https://xrdocs.io/ncs5500/tutorials/2018-02-19-netflow-sampling-interval-and-the-mythical-internet-packet-size/
-
-It is possible to check if there are drops with `sh controllers npu
-stats voq base 24 instance 0 location 0/0/CPU0` and looking at the
-`COS2` line.
-
-The second bottleneck is the size of the flow cache. If it is too small, it may
-overflow. For example:
-
-```console
-# show flow monitor monitor1 cache internal location 0/1/CPU0 | i Cache
-Cache summary for Flow Monitor :
-Cache size:                         100000
-Cache Hits:                            202938943
-Cache Misses:                         1789836407
-Cache Overflows:                         2166590
-Cache above hi water:                       1704
-```
-
-When this happens, either the `cache timeout rate-limit` should be increased,
-or the `cache entries` directive should be increased. The latter value can be
-increased to 1 million per monitor-map.
-
-#### Other routers
-
-Other routers are likely to have the same limitations. Note that
-sFlow and IPFIX 315 do not have a flow cache and are therefore less likely to
-have scaling problems.
-
-### Inlet
-
-When the inlet has scaling issues, the kernel\'s receive buffers may drop packets.
-Each listening queue has a fixed number of receive buffers (212992 bytes by
-default) to keep packets before they are handled by the application. When this
-buffer is full, packets are dropped.
-
-*Akvorado* reports the number of drops for each listening socket with the
-`akvorado_inlet_flow_input_udp_in_dropped_packets_total` counter. This should be
-compared to `akvorado_inlet_flow_input_udp_packets_total`. Another way to get
-the same information is to use `ss -lunepm` and look at the drop counter:
-
-```console
-$ nsenter -t $(pgrep -fo "akvorado inlet") -n ss -lunepm
-State            Recv-Q           Send-Q                       Local Address:Port                        Peer Address:Port           Process
-UNCONN           0                0                                        *:2055                                   *:*               users:(("akvorado",pid=2710961,fd=16)) ino:67643151 sk:89c v6only:0 <->
-         skmem:(r0,rb212992,t0,tb212992,f4096,w0,o0,bl0,d486525)
-```
-
-In the example above, there were 486525 drops. You can solve this in different ways:
-
-1. Check the `akvorado_inlet_kafka_buffered_produce_records_total` gauge. If it
-   is often near the value of `kafka`→`queue-size`, increase this value. This
-   setting has the most impact.
-1. Increase the number of workers for the UDP input.
-1. Enable the eBPF load balancer on Linux (check `docker/docker-compose-local.yml`).
-1. Increase the value of the `net.core.rmem_max` sysctl (on the host) and
-   increase the `receive-buffer` setting for the input to the same value,
-1. Increase the number of Kafka brokers.
-1. Add more inlet instances and shard the exporters among the configured ones.
-
-The value of the receive buffer is also available as a metric:
-
-```console
-$ curl -s http://127.0.0.1:8080/api/v0/inlet/metrics | grep -P 'akvorado_inlet_flow_input_udp_buffer'
-​# HELP akvorado_inlet_flow_input_udp_buffer_size_bytes Size of the in-kernel buffer for this worker.
-​# TYPE akvorado_inlet_flow_input_udp_buffer_size_bytes gauge
-akvorado_inlet_flow_input_udp_buffer_size_bytes{listener=":2055",worker="2"} 212992
-```
-
-### Outlet
-
-The outlet is expected to automatically scale the number of workers to ensure
-that the data is delivered efficiently to ClickHouse. Increasing the maximum
-number of Kafka workers (`max-workers`) past the default value of 8 may put more
-pressure on ClickHouse. However, you can increase `maximum-batch-size`.
-Moreover, there cannot be more workers than the number of partitions for the
-topic. This part is configurable on the orchestrator
-(`kafka`→`topic-configuration`→`num-partitions`).
-
-BMP is a one-way protocol, and the sender may declare the receiver station
-“stuck” if it does not accept more data. To handle this, BMP messages are
-internally buffered in a queue between the TCP reader and the message processor.
-The `message-buffer` configuration key controls the size of this queue (default:
-10000 messages). This decouples IO from processing and prevents session drops
-during slow operations such as peer removal.
-
-You can monitor backpressure using the `message_queue_full_total` and
-`message_queue_notfull_total` metrics:
-
-```console
-# HELP akvorado_outlet_routing_provider_bmp_message_queue_full_total Number of BMP messages hitting the message queue limit.
-# TYPE akvorado_outlet_routing_provider_bmp_message_queue_full_total counter
-akvorado_outlet_routing_provider_bmp_message_queue_full_total{exporter="247.16.14.12"} 2
-akvorado_outlet_routing_provider_bmp_message_queue_full_total{exporter="247.16.14.13"} 0
-# HELP akvorado_outlet_routing_provider_bmp_message_queue_notfull_total Number of BMP messages not hitting the message queue limit.
-# TYPE akvorado_outlet_routing_provider_bmp_message_queue_notfull_total counter
-akvorado_outlet_routing_provider_bmp_message_queue_notfull_total{exporter="247.16.14.12"} 17998
-akvorado_outlet_routing_provider_bmp_message_queue_notfull_total{exporter="247.16.14.13"} 0
-```
-
-### Profiling
-
-On a large-scale installation, you may want to check if *Akvorado* is using too
-much CPU or memory. You can do this with `pprof`, the [Go
-profiler](https://go.dev/blog/pprof). You need a working [Go
-installation](https://go.dev/doc/install) on your workstation.
-
-When running on Docker, use `docker inspect` to get the IP address of the service
-that you want to profile (inlet or outlet):
-
-```console
-$ docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' akvorado-akvorado-inlet-1
-240.0.4.8
-$ docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' akvorado-akvorado-outlet-1
-240.0.4.9
-```
-
-Then, use one of these two commands:
-
-```console
-$ go tool pprof http://240.0.4.8:8080/debug/pprof/profile
-$ go tool pprof http://240.0.4.8:8080/debug/pprof/heap
-```
-
-If your Docker host is remote, you also need to use SSH forwarding to expose the
-HTTP port to your workstation:
-
-```console
-$ ssh -L 6060:240.0.4.8:8080 dockerhost.example.com
-```
-
-Then, use one of these two commands:
-
-```console
-$ go tool pprof http://127.0.0.1:6060/debug/pprof/profile
-$ go tool pprof http://127.0.0.1:6060/debug/pprof/heap
-```
-
-The first one provides a CPU profile. The second one provides a memory profile. On the
-command line, you can type `web` to visualize the result in the browser or `svg`
-to get an SVG file that you can attach to a bug report if needed.
+If every component works but the flows arrive late or the counters do not match
+the interface counters, the problem is a capacity one. See the [scaling
+guide](14-scaling.md).

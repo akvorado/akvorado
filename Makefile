@@ -158,11 +158,18 @@ console/data/frontend:
 	$(call log,building console frontend…)
 	$Q cd console/frontend && $(PNPM) run --silent build
 
-console/data/docs/98-metrics.md: $(shell git grep -c -l -P 'reporter\.(Counter|Gauge|Summary|Histogram)Opt' '*.go' 2> /dev/null)
-console/data/docs/98-metrics.md: $(shell $(LSFILES) cmd/helper)
-console/data/docs/98-metrics.md: cmd/helper/data/metrics.tmpl.md
+console/data/docs/53-metrics.md: $(shell git grep -c -l -P 'reporter\.(Counter|Gauge|Summary|Histogram)Opt' '*.go' 2> /dev/null)
+console/data/docs/53-metrics.md: $(shell $(LSFILES) cmd/helper)
+console/data/docs/53-metrics.md: cmd/helper/data/metrics.tmpl.md
 	$(call log,generate metric documentation…)
 	$Q go run ./cmd/helper metrics --format=markdown > $@
+
+# The screenshots are only regenerated on demand. This requires Firefox and
+# takes them on a running console.
+.PHONY: docs-screenshots
+docs-screenshots: console/frontend/node_modules ; @ ## Regenerate documentation screenshots
+	$(call log,generate documentation screenshots…)
+	$Q python3 console/data/screenshots.py
 
 ASNS_URL = https://vincentbernat.github.io/asn2org/asns.csv
 PROTOCOLS_URL = http://www.iana.org/assignments/protocol-numbers/protocol-numbers-1.csv
@@ -207,7 +214,7 @@ default-%.pgo:
 	   curl -so $@ "http://$$ip:8080/debug/pprof/profile?seconds=30"
 
 common/embed/data/embed.zip: console/data/frontend console/authentication/data/avatars console/data/docs
-common/embed/data/embed.zip: console/data/docs/98-metrics.md
+common/embed/data/embed.zip: console/data/docs/53-metrics.md
 common/embed/data/embed.zip: orchestrator/clickhouse/data/protocols.csv orchestrator/clickhouse/data/icmp.csv orchestrator/clickhouse/data/asns.csv orchestrator/clickhouse/data/tcp.csv orchestrator/clickhouse/data/udp.csv
 common/embed/data/embed.zip:
 	$(call log,generate embed.zip…)

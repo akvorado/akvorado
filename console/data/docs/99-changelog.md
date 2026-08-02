@@ -26,6 +26,8 @@ memory. Drop it on each cluster member once the new version runs:
 - ✨ *console*: allow filters to compare two columns, like `SrcPort < DstPort`,
   `DstAS != SrcAS` or `InIfConnectivity != OutIfConnectivity`
 - 🩹 *orchestrator*: fix custom dictionaries with an IP prefix layout
+- 🌱 *docs*: reorganize the documentation with the Diátaxis framework
+- 🌱 *docs*: serve the documentation as Markdown when explicitely asked
 - 🌱 *outlet*: move GeoIP and network attributes from ClickHouse to the outlet
 - 🌱 *docker*: update Kafka to 4.3.1 (not mandatory)
 
@@ -91,7 +93,7 @@ ClickHouse.
 
 - ✨ *inlet*: add per-exporter flow rate limiting with `rate-limit` option
 - 🌱 *outlet*: bufferize BMP messages to avoid being flagged “stuck”
-- 🌱 *docs*: export all metrics in [documentation](98-metrics.md)
+- 🌱 *docs*: export all metrics in [documentation](53-metrics.md)
 - 🌱 *build*: build with Go 1.26
 
 ## 2.1.1 - 2026-01-17

@@ -11,7 +11,7 @@ mock_*.go
 *.pb.go
 
 /console/data/frontend/
-/console/data/docs/98-metrics.md
+/console/data/docs/53-metrics.md
 
 *~
 /outlet/routing/provider/bmp/testdata/*.svg
