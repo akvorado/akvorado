@@ -183,7 +183,7 @@ func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
 			parser.WithAutoHeadingID(),
 			parser.WithASTTransformers(
 				util.Prioritized(&internalLinkTransformer{}, 500),
-				util.Prioritized(&imageLinkTransformer{docs}, 500),
+				util.Prioritized(&imageLinkTransformer{}, 500),
 			),
 		),
 	)
@@ -300,9 +300,7 @@ func (r *internalLinkTransformer) Transform(node *ast.Document, _ text.Reader, _
 	ast.Walk(node, replaceLinks)
 }
 
-type imageLinkTransformer struct {
-	root fs.FS
-}
+type imageLinkTransformer struct{}
 
 func (r *imageLinkTransformer) Transform(node *ast.Document, _ text.Reader, _ parser.Context) {
 	replaceLinks := func(n ast.Node, entering bool) (ast.WalkStatus, error) {
