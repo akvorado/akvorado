@@ -96,6 +96,10 @@ guaranteed, so a URL may stop working after a few upgrades.
 
 ## Filter language
 
+> [!TIP]
+> [A blog post](https://vincent.bernat.ch/en/blog/2023-sql-like-language-filter)
+> explains how this language and its editor are built.
+
 The filter language is similar to SQL with a few variations. Fields listed as
 dimensions can usually be used. The accepted operators are `=`, `!=`, `<`, `<=`,
 `>`, `>=`, `IN`, `NOTIN`, `LIKE`, `UNLIKE`, `ILIKE`, `IUNLIKE` when they are

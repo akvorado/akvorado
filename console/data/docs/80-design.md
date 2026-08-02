@@ -15,8 +15,9 @@ page explains how the pieces fit together. For the code-level view, read the
   without parsing them.
 
 - The **outlet service** takes flows from Kafka, parses them, and enriches them
-  with metadata. It uses SNMP to poll each exporter to get the *system name*,
-  *interface names*, *descriptions* and *speeds*. It applies rules to add
+  with metadata. It polls each exporter with SNMP or gNMI to get the *system
+  name*, *interface names*, *descriptions* and *speeds*, or reads them from a
+  static mapping. It applies rules to add
   attributes to exporters. Interface rules add a *boundary* (external or
   internal), a *network provider* and a *connectivity type* (PNI, IX, transit)
   to each interface. Optionally, it may also receive BGP routes through the BMP

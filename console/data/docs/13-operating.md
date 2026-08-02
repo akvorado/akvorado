@@ -320,11 +320,16 @@ as anything in `config/`. Everything else will be erased during upgrades.
 
 The `.env` file tailors the complete Docker Compose setup. Some parts are
 enabled using [Docker Compose
-profiles](https://docs.docker.com/compose/how-tos/profiles/). You can
-temporarily enable them with `--profile` flag to `docker compose`. In this case,
-any profile set with `COMPOSE_PROFILES` are overridden. Some other parts require
-you to uncomment additional Docker Compose configuration files directly in
-`.env`.
+profiles](https://docs.docker.com/compose/how-tos/profiles/), notably Prometheus
+to collect the [metrics](53-metrics.md), Loki for the logs, and Grafana to
+display both. There is nothing to declare when you add a container: Grafana
+Alloy discovers the targets from the `metrics.enable` and `metrics.path` labels
+set on them. [A blog
+post](https://vincent.bernat.ch/en/blog/2026-prometheus-metrics-discovery-docker-labels)
+explains this setup. You can temporarily enable them with `--profile` flag to
+`docker compose`. In this case, any profile set with `COMPOSE_PROFILES` are
+overridden. Some other parts require you to uncomment additional Docker Compose
+configuration files directly in `.env`.
 
 This `docker/docker-compose-local.yml` file can override parts of the
 configuration. The [merge
