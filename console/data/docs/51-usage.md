@@ -116,6 +116,13 @@ when some *akvorado* instances are still running an older version.
 explore the flows stored in ClickHouse. The pages and the filter language are
 described in the [console reference](52-console.md).
 
+It also serves this documentation on `/api/v0/console/docs/{name}`, where
+`{name}` is the word part of the file name, like `configuration`. The answer is
+JSON with `Accept: application/json`, and the Markdown source in every other
+case. The pages of the web interface, like `/docs/configuration`, also return
+the source, unless the request asks for `text/html`. A browser does, so it still
+gets the web interface.
+
 ## Demo exporter service
 
 The demo exporter service simulates a NetFlow exporter, a simple SNMP agent, and

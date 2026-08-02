@@ -14,8 +14,13 @@ import (
 
 // defaultHandlerFunc serves index.html for all SPA routes, rewriting the
 // <base href="..."> tag so that relative asset paths and API calls resolve
-// correctly regardless of the URL prefix the app is hosted under.
+// correctly regardless of the URL prefix the app is hosted under. A
+// documentation page is also served as Markdown when explicitly requested.
 func (c *Component) defaultHandlerFunc(w http.ResponseWriter, r *http.Request) {
+	if c.serveMarkdownDocument(w, r) {
+		return
+	}
+
 	assets := c.embedOrLiveFS("data/frontend")
 	content, err := fs.ReadFile(assets, "index.html")
 	if err != nil {

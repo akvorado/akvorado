@@ -137,8 +137,7 @@ const props = defineProps<{ id: string }>();
 const title = inject(TitleKey)!;
 
 // Grab document
-const url = computed(() => `api/v0/console/docs/${props.id}`);
-const { data, error } = useFetch(url, { refetch: true }).get().json<
+type DocumentationAnswer =
   | { message: string } // on error
   | {
       markdown: string;
@@ -147,8 +146,15 @@ const { data, error } = useFetch(url, { refetch: true }).get().json<
         section: string;
         headers: Array<{ level: number; id: string; title: string }>;
       }>;
-    }
->();
+    };
+const url = computed(() => `api/v0/console/docs/${props.id}`);
+const { data, error } = useFetch(
+  url,
+  { headers: { Accept: "application/json" } },
+  { refetch: true },
+)
+  .get()
+  .json<DocumentationAnswer>();
 const errorMessage = computed(
   () =>
     (error.value &&

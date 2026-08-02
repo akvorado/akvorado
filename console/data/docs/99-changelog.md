@@ -27,6 +27,7 @@ memory. Drop it on each cluster member once the new version runs:
   `DstAS != SrcAS` or `InIfConnectivity != OutIfConnectivity`
 - 🩹 *orchestrator*: fix custom dictionaries with an IP prefix layout
 - 🌱 *docs*: reorganize the documentation with the Diátaxis framework
+- 🌱 *docs*: serve the documentation as Markdown when explicitely asked
 - 🌱 *outlet*: move GeoIP and network attributes from ClickHouse to the outlet
 - 🌱 *docker*: update Kafka to 4.3.1 (not mandatory)
 

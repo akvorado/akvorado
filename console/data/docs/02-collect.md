@@ -131,7 +131,7 @@ provider comes first and the type of connection is in brackets.
 
 ```
 Read this page about the classification language of Akvorado:
-https://raw.githubusercontent.com/akvorado/akvorado/main/console/data/docs/50-configuration.md
+https://demo.akvorado.net/api/v0/console/docs/configuration
 
 Here are the descriptions of the interfaces of my router:
 

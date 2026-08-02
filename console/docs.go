@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
+	"mime"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -24,8 +25,19 @@ import (
 	"github.com/yuin/goldmark/util"
 )
 
+// Media types the documentation can be served as.
+const (
+	docsTypeMarkdown = "text/markdown"
+	docsTypeJSON     = "application/json"
+	docsTypeHTML     = "text/html"
+)
+
 var (
 	internalLinkRegexp = regexp.MustCompile("^(([0-9]+)-([a-z]+).md)(#.*|$)")
+
+	// markdownLinkRegexp matches a link to another document, in the Markdown
+	// source this time.
+	markdownLinkRegexp = regexp.MustCompile(`\]\(([0-9]+)-([a-z]+)\.md(#[^)]*)?\)`)
 
 	// docSections gives the Diátaxis section a document belongs to, depending on
 	// the number prefixing its file name. The first matching upper bound wins.
@@ -83,6 +95,20 @@ func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
 	if replacement, ok := renamedDocuments[requestedDocument]; ok {
 		requestedDocument = replacement
 	}
+	w.Header().Set("Vary", "Accept")
+
+	// Unless JSON is preferred, answer with the source: this is the most useful
+	// answer for a crawler or an LLM.
+	if !prefersOverMarkdown(req.Header.Get("Accept"), docsTypeJSON) {
+		markdown := c.findDocument(requestedDocument)
+		if markdown == nil {
+			httpserver.WriteJSON(w, http.StatusNotFound, helpers.M{"message": "Document not found."})
+			return
+		}
+		w.Header().Set("Cache-Control", "max-age=300, public")
+		writeMarkdownDocument(w, markdown)
+		return
+	}
 
 	var markdown []byte
 	toc := []DocumentTOC{}
@@ -109,13 +135,14 @@ func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
 			continue
 		}
 
-		// Markdown rendering to build ToC
 		content, _ := io.ReadAll(f)
 		f.Close()
 		if matches[3] == requestedDocument {
 			// That's the one we need to do final rendering on.
 			markdown = content
 		}
+
+		// Markdown rendering to build ToC
 		tocLogger := &tocLogger{}
 		md := goldmark.New(
 			goldmark.WithParserOptions(
@@ -141,6 +168,7 @@ func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
 		httpserver.WriteJSON(w, http.StatusNotFound, helpers.M{"message": "Document not found."})
 		return
 	}
+	w.Header().Set("Cache-Control", "max-age=300, public")
 	md := goldmark.New(
 		goldmark.WithExtensions(
 			extension.Table,
@@ -165,11 +193,92 @@ func (c *Component) docsHandlerFunc(w http.ResponseWriter, req *http.Request) {
 		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to render document."})
 		return
 	}
-	w.Header().Set("Cache-Control", "max-age=300, public")
 	httpserver.WritePureJSON(w, http.StatusOK, helpers.M{
 		"markdown": buf.String(),
 		"toc":      toc,
 	})
+}
+
+// findDocument returns the source of a document, or nil when there is no such
+// document.
+func (c *Component) findDocument(name string) []byte {
+	if replacement, ok := renamedDocuments[name]; ok {
+		name = replacement
+	}
+	docs := c.embedOrLiveFS("data/docs")
+	entries, err := fs.ReadDir(docs, ".")
+	if err != nil {
+		c.r.Err(err).Msg("unable to list documentation files")
+		return nil
+	}
+	for _, entry := range entries {
+		matches := internalLinkRegexp.FindStringSubmatch(entry.Name())
+		if matches == nil || matches[3] != name {
+			continue
+		}
+		content, err := fs.ReadFile(docs, entry.Name())
+		if err != nil {
+			c.r.Err(err).Str("path", entry.Name()).Msg("unable to open documentation file")
+			return nil
+		}
+		return content
+	}
+	return nil
+}
+
+// writeMarkdownDocument answers with the source of a document. Only the links
+// to the other documents are rewritten, to the matching URLs.
+func writeMarkdownDocument(w http.ResponseWriter, markdown []byte) {
+	w.Header().Set("Content-Type", fmt.Sprintf("%s; charset=utf-8", docsTypeMarkdown))
+	w.Write(markdownLinkRegexp.ReplaceAll(markdown, []byte("](${2}${3})")))
+}
+
+// serveMarkdownDocument answers with the source of a document when the request
+// is for a documentation page of the web interface and the client does not
+// prefer HTML. A browser asks for HTML, so it gets the application.
+func (c *Component) serveMarkdownDocument(w http.ResponseWriter, r *http.Request) bool {
+	name, ok := strings.CutPrefix(r.URL.Path, "/docs/")
+	if !ok || name == "" || strings.Contains(name, "/") {
+		return false
+	}
+	// From now on, the answer depends on the Accept header, even when we let
+	// the application handle the request.
+	w.Header().Set("Vary", "Accept")
+	if prefersOverMarkdown(r.Header.Get("Accept"), docsTypeHTML) {
+		return false
+	}
+	markdown := c.findDocument(name)
+	if markdown == nil {
+		// Let the application display its own error message.
+		return false
+	}
+	w.Header().Set("Cache-Control", "max-age=300, public")
+	writeMarkdownDocument(w, markdown)
+	return true
+}
+
+// mediaTypeQuality returns the quality the Accept header gives to a media type.
+// It is 0 when the media type is not named. Wildcards are ignored: a client
+// accepting anything is served the default answer.
+func mediaTypeQuality(accept, mediaType string) float64 {
+	for entry := range strings.SplitSeq(accept, ",") {
+		mediaRange, params, err := mime.ParseMediaType(entry)
+		if err != nil || mediaRange != mediaType {
+			continue
+		}
+		if quality, err := strconv.ParseFloat(params["q"], 64); err == nil {
+			return quality
+		}
+		return 1
+	}
+	return 0
+}
+
+// prefersOverMarkdown tells if the client asks for the provided media type
+// rather than for Markdown, which is the default answer.
+func prefersOverMarkdown(accept, mediaType string) bool {
+	quality := mediaTypeQuality(accept, mediaType)
+	return quality > 0 && quality >= mediaTypeQuality(accept, docsTypeMarkdown)
 }
 
 type internalLinkTransformer struct{}
