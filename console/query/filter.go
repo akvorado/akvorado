@@ -57,19 +57,19 @@ func (qf *Filter) Validate(sch *schema.Component) error {
 		return nil
 	}
 	input := []byte(qf.filter)
-	meta := &filter.Meta{Schema: sch}
-	direct, err := filter.Parse("", input, filter.GlobalStore("meta", meta))
+	directMeta := &filter.Meta{Schema: sch}
+	direct, err := filter.Parse("", input, filter.GlobalStore("meta", directMeta))
 	if err != nil {
 		return fmt.Errorf("cannot parse filter: %s", filter.HumanError(err))
 	}
-	meta = &filter.Meta{Schema: sch, ReverseDirection: true}
-	reverse, err := filter.Parse("", input, filter.GlobalStore("meta", meta))
+	reverseMeta := &filter.Meta{Schema: sch, ReverseDirection: true}
+	reverse, err := filter.Parse("", input, filter.GlobalStore("meta", reverseMeta))
 	if err != nil {
 		return fmt.Errorf("cannot parse reverse filter: %s", filter.HumanError(err))
 	}
 	qf.filter = direct.(string)
 	qf.reverseFilter = reverse.(string)
-	qf.mainTableRequired = meta.MainTableRequired
+	qf.mainTableRequired = directMeta.MainTableRequired || reverseMeta.MainTableRequired
 	qf.validated = true
 	return nil
 }

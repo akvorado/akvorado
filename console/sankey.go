@@ -53,8 +53,9 @@ func (input graphSankeyHandlerInput) reverseDirection() graphSankeyHandlerInput 
 }
 
 type sankeyToSQL1Options struct {
-	skipWithClause   bool
-	reverseDirection bool
+	skipWithClause    bool
+	reverseDirection  bool
+	mainTableRequired bool
 	// rowsColumns names, for each dimension in input.Dimensions, the column
 	// from the forward `rows` CTE that corresponds positionally to it. For the
 	// forward query it is left nil and falls back to input.Dimensions. For the
@@ -114,7 +115,7 @@ ORDER BY xps DESC)`,
 	context := inputContext{
 		Start:             input.Start,
 		End:               input.End,
-		MainTableRequired: requireMainTable(input.schema, input.Dimensions, input.Filter),
+		MainTableRequired: options.mainTableRequired,
 		Points:            20,
 		Units:             units,
 	}
@@ -127,12 +128,16 @@ ORDER BY xps DESC)`,
 
 // toSQL converts a sankey query to an SQL request
 func (input graphSankeyHandlerInput) toSQL() ([]templateQuery, error) {
-	queries := []templateQuery{input.toSQL1(1, sankeyToSQL1Options{})}
+	mainTableRequired := requireMainTable(input.schema, input.Dimensions, input.Filter)
+	queries := []templateQuery{input.toSQL1(1, sankeyToSQL1Options{
+		mainTableRequired: mainTableRequired,
+	})}
 	if input.Bidirectional {
 		queries = append(queries, input.reverseDirection().toSQL1(2, sankeyToSQL1Options{
-			skipWithClause:   true,
-			reverseDirection: true,
-			rowsColumns:      input.Dimensions,
+			skipWithClause:    true,
+			reverseDirection:  true,
+			mainTableRequired: mainTableRequired,
+			rowsColumns:       input.Dimensions,
 		}))
 	}
 	return queries, nil
