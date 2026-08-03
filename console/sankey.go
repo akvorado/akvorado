@@ -53,9 +53,8 @@ func (input graphSankeyHandlerInput) reverseDirection() graphSankeyHandlerInput 
 }
 
 type sankeyToSQL1Options struct {
-	skipWithClause    bool
-	reverseDirection  bool
-	mainTableRequired bool
+	skipWithClause   bool
+	reverseDirection bool
 	// rowsColumns names, for each dimension in input.Dimensions, the column
 	// from the forward `rows` CTE that corresponds positionally to it. For the
 	// forward query it is left nil and falls back to input.Dimensions. For the
@@ -64,12 +63,20 @@ type sankeyToSQL1Options struct {
 	rowsColumns []query.Column
 }
 
-func (input graphSankeyHandlerInput) toSQL1(axis int, options sankeyToSQL1Options) templateQuery {
-	where := templateWhere(input.Filter)
+func (input graphSankeyHandlerInput) toSQL1(axis int, res resolution, options sankeyToSQL1Options) string {
+	r := res.forRange(input.Start, input.End)
+	where := r.where(input.Filter)
 	rowsColumns := options.rowsColumns
 	if rowsColumns == nil {
 		rowsColumns = input.Dimensions
 	}
+
+	// Units
+	units := input.Units
+	if options.reverseDirection {
+		units = reverseUnits(units)
+	}
+	unitsSQL := unitsExpr(units)
 
 	// Select
 	arrayFields := []string{}
@@ -82,7 +89,7 @@ func (input graphSankeyHandlerInput) toSQL1(axis int, options sankeyToSQL1Option
 		dimensions = append(dimensions, column.String())
 	}
 	fields := []string{
-		`{{ .Units }}/range AS xps`,
+		fmt.Sprintf(`%s/range AS xps`, unitsSQL),
 		fmt.Sprintf("[%s] AS dimensions", strings.Join(arrayFields, ",\n  ")),
 	}
 
@@ -90,57 +97,46 @@ func (input graphSankeyHandlerInput) toSQL1(axis int, options sankeyToSQL1Option
 	withStr := ""
 	if !options.skipWithClause {
 		with := []string{
-			fmt.Sprintf("source AS (%s)", input.sourceSelect()),
+			fmt.Sprintf("source AS (%s)", input.sourceSelect(r.Table)),
 			fmt.Sprintf(`(SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE %s) AS range`, where),
 		}
-		with = append(with, selectSankeyRowsByLimitType(input, dimensions, where))
+		with = append(with, selectSankeyRowsByLimitType(input, dimensions, where, unitsSQL))
 		withStr = fmt.Sprintf("WITH\n %s\n", strings.Join(with, ",\n "))
 	}
 
-	// Units
-	units := input.Units
-	if options.reverseDirection {
-		units = reverseUnits(units)
-	}
-
-	template := fmt.Sprintf(`%sSELECT %d AS axis, * FROM (
+	return strings.TrimSpace(fmt.Sprintf(`%sSELECT %d AS axis, * FROM (
 SELECT
  %s
 FROM source
 WHERE %s
 GROUP BY dimensions
 ORDER BY xps DESC)`,
-		withStr, axis, strings.Join(fields, ",\n "), where)
+		withStr, axis, strings.Join(fields, ",\n "), where))
+}
 
-	context := inputContext{
+// resolveContext returns what is needed to select the table for this query.
+// There is no time axis here, so the number of points only steers the table
+// selection towards a reasonably consolidated one.
+func (input graphSankeyHandlerInput) resolveContext() inputContext {
+	return inputContext{
 		Start:             input.Start,
 		End:               input.End,
-		MainTableRequired: options.mainTableRequired,
+		MainTableRequired: requireMainTable(input.schema, input.Dimensions, input.Filter),
 		Points:            20,
-		Units:             units,
-	}
-
-	return templateQuery{
-		Template: strings.TrimSpace(template),
-		Context:  context,
 	}
 }
 
-// toSQL converts a sankey query to an SQL request
-func (input graphSankeyHandlerInput) toSQL() ([]templateQuery, error) {
-	mainTableRequired := requireMainTable(input.schema, input.Dimensions, input.Filter)
-	queries := []templateQuery{input.toSQL1(1, sankeyToSQL1Options{
-		mainTableRequired: mainTableRequired,
-	})}
+// toSQL converts a sankey query to a list of SQL requests, one per axis.
+func (input graphSankeyHandlerInput) toSQL(res resolution) []string {
+	queries := []string{input.toSQL1(1, res, sankeyToSQL1Options{})}
 	if input.Bidirectional {
-		queries = append(queries, input.reverseDirection().toSQL1(2, sankeyToSQL1Options{
-			skipWithClause:    true,
-			reverseDirection:  true,
-			mainTableRequired: mainTableRequired,
-			rowsColumns:       input.Dimensions,
+		queries = append(queries, input.reverseDirection().toSQL1(2, res, sankeyToSQL1Options{
+			skipWithClause:   true,
+			reverseDirection: true,
+			rowsColumns:      input.Dimensions,
 		}))
 	}
-	return queries, nil
+	return queries
 }
 
 func (c *Component) graphSankeyHandlerFunc(w http.ResponseWriter, req *http.Request) {
@@ -165,20 +161,16 @@ func (c *Component) graphSankeyHandlerFunc(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	queries, err := input.toSQL()
-	if err != nil {
-		httpserver.WriteJSON(w, http.StatusBadRequest, helpers.M{"message": helpers.Capitalize(err.Error())})
-		return
-	}
-
 	// Prepare and execute query
-	sqlQuery := c.finalizeTemplateQueries(queries)
+	r := c.resolve(input.resolveContext())
+	sqlQuery := strings.Join(input.toSQL(r), "\nUNION ALL\n")
 	w.Header().Set("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
 	results := []struct {
 		Axis       uint8    `ch:"axis"`
 		Xps        float64  `ch:"xps"`
 		Dimensions []string `ch:"dimensions"`
 	}{}
+	c.metrics.clickhouseQueries.WithLabelValues(r.Table).Inc()
 	if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
 		c.r.Err(err).Str("query", sqlQuery).Msg("unable to query database")
 		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})

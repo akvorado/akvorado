@@ -189,32 +189,30 @@ func (c *Component) widgetTopHandlerFunc(w http.ResponseWriter, req *http.Reques
 	}
 
 	now := c.d.Clock.Now()
-	template := fmt.Sprintf(`
+	start, end := now.Add(-5*time.Minute), now
+	r := c.resolve(inputContext{
+		Start:             start,
+		End:               end,
+		MainTableRequired: mainTableRequired,
+		Points:            5,
+	}).forRange(start, end)
+	query := fmt.Sprintf(`
 WITH
- (SELECT SUM(Bytes*SamplingRate) FROM {{ .Table }} WHERE {{ .Timefilter }} %s) AS Total
+ (SELECT SUM(Bytes*SamplingRate) FROM %s WHERE %s %s) AS Total
 SELECT
  if(empty(%s),'Unknown',%s) AS Name,
  SUM(Bytes*SamplingRate) / Total * 100 AS Percent
-FROM {{ .Table }}
-WHERE {{ .Timefilter }}
+FROM %s
+WHERE %s
 %s
 GROUP BY %s
 ORDER BY Percent DESC
 LIMIT 5`,
-		filter, selector, selector, filter, groupby)
-
-	query := c.finalizeTemplateQuery(templateQuery{
-		Template: template,
-		Context: inputContext{
-			Start:             now.Add(-5 * time.Minute),
-			End:               now,
-			MainTableRequired: mainTableRequired,
-			Points:            5,
-		},
-	})
+		r.Table, r.Timefilter, filter, selector, selector, r.Table, r.Timefilter, filter, groupby)
 	w.Header().Set("X-SQL-Query", query)
 
 	results := []topResult{}
+	c.metrics.clickhouseQueries.WithLabelValues(r.Table).Inc()
 	if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, strings.TrimSpace(query)); err != nil {
 		c.r.Err(err).Msg("unable to query database")
 		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})
@@ -230,35 +228,34 @@ func (c *Component) widgetGraphHandlerFunc(w http.ResponseWriter, req *http.Requ
 	}
 	ctx := c.t.Context(req.Context())
 	now := c.d.Clock.Now()
-	template := fmt.Sprintf(`
+	start, end := now.Add(-c.config.HomepageGraphTimeRange), now
+	r := c.resolve(inputContext{
+		Start:             start,
+		End:               end,
+		MainTableRequired: false,
+		Points:            200,
+	}).forRange(start, end)
+	query := fmt.Sprintf(`
 SELECT
- {{ .ToStartOfInterval }} AS Time,
- SUM(Bytes*SamplingRate*8/{{ .Interval }})/1000/1000/1000 AS Gbps
-FROM {{ .Table }}
-WHERE {{ .Timefilter }}
+ %s AS Time,
+ SUM(Bytes*SamplingRate*8/%d)/1000/1000/1000 AS Gbps
+FROM %s
+WHERE %s
 %s
 GROUP BY Time
 ORDER BY Time WITH FILL
- FROM {{ .TimefilterStart }}
- TO {{ .TimefilterEnd }} + INTERVAL 1 second
- STEP {{ .Interval }}`,
-		filter)
-
-	query := c.finalizeTemplateQuery(templateQuery{
-		Template: template,
-		Context: inputContext{
-			Start:             now.Add(-c.config.HomepageGraphTimeRange),
-			End:               now,
-			MainTableRequired: false,
-			Points:            200,
-		},
-	})
+ FROM %s
+ TO %s + INTERVAL 1 second
+ STEP %d`,
+		r.ToStartOfInterval, r.Interval, r.Table, r.Timefilter, filter,
+		r.TimefilterStart, r.TimefilterEnd, r.Interval)
 	w.Header().Set("X-SQL-Query", query)
 
 	results := []struct {
 		Time time.Time `json:"t"`
 		Gbps float64   `json:"gbps"`
 	}{}
+	c.metrics.clickhouseQueries.WithLabelValues(r.Table).Inc()
 	err := c.d.ClickHouseDB.Conn.Select(ctx, &results, strings.TrimSpace(query))
 	if err != nil {
 		c.r.Err(err).Msg("unable to query database")

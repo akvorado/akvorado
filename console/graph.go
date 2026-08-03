@@ -41,7 +41,7 @@ func reverseUnits(units string) string {
 
 // sourceSelect builds a SELECT query to use as a source for data. Notably, it
 // will do IP truncation.
-func (input graphCommonHandlerInput) sourceSelect() string {
+func (input graphCommonHandlerInput) sourceSelect(table string) string {
 	if input.TruncateAddrV4 == 0 {
 		input.TruncateAddrV4 = 32
 	}
@@ -68,7 +68,8 @@ func (input graphCommonHandlerInput) sourceSelect() string {
 		}
 	}
 	if len(truncated) == 0 {
-		return "SELECT * FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1"
+		return fmt.Sprintf("SELECT * FROM %s SETTINGS asterisk_include_alias_columns = 1", table)
 	}
-	return fmt.Sprintf("SELECT * REPLACE (%s) FROM {{ .Table }} SETTINGS asterisk_include_alias_columns = 1", strings.Join(truncated, ", "))
+	return fmt.Sprintf("SELECT * REPLACE (%s) FROM %s SETTINGS asterisk_include_alias_columns = 1",
+		strings.Join(truncated, ", "), table)
 }

@@ -302,6 +302,26 @@ ORDER BY Time WITH FILL
  TO toDateTime('2009-11-11 23:00:00', 'UTC') + INTERVAL 1 second
  STEP 432`,
 		},
+		{
+			// Braces in the operator-provided filter are passed through as-is.
+			config: func() Configuration {
+				c := DefaultConfiguration()
+				c.HomepageGraphFilter = "InIfDescription != '{{ hello }}'"
+				return c
+			}(),
+			query: `
+SELECT
+ toStartOfInterval(TimeReceived + INTERVAL 144 second, INTERVAL 432 second) - INTERVAL 144 second AS Time,
+ SUM(Bytes*SamplingRate*8/432)/1000/1000/1000 AS Gbps
+FROM flows
+WHERE TimeReceived BETWEEN toDateTime('2009-11-10 23:00:00', 'UTC') AND toDateTime('2009-11-11 23:00:00', 'UTC')
+AND InIfDescription != '{{ hello }}'
+GROUP BY Time
+ORDER BY Time WITH FILL
+ FROM toDateTime('2009-11-10 23:00:00', 'UTC')
+ TO toDateTime('2009-11-11 23:00:00', 'UTC') + INTERVAL 1 second
+ STEP 432`,
+		},
 	}
 	for _, tcase := range testcases {
 		_, h, mockConn, mockClock := NewMock(t, tcase.config)

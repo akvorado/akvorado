@@ -95,26 +95,33 @@ func (input graphLineHandlerInput) previousPeriod() graphLineHandlerInput {
 }
 
 type toSQL1Options struct {
-	skipWithClause    bool
-	reverseDirection  bool
-	offsetedStart     time.Time
-	mainTableRequired bool
+	skipWithClause   bool
+	reverseDirection bool
+	offsetedStart    time.Time
 }
 
-func (input graphLineHandlerInput) toSQL1(axis int, options toSQL1Options) templateQuery {
-	var startForInterval *time.Time
+func (input graphLineHandlerInput) toSQL1(axis int, res resolution, options toSQL1Options) string {
 	var offsetShift string
 	if !options.offsetedStart.IsZero() {
-		startForInterval = &options.offsetedStart
 		offsetShift = fmt.Sprintf(" + INTERVAL %d second",
 			int64(options.offsetedStart.Sub(input.Start).Seconds()))
 	}
-	where := templateWhere(input.Filter)
+	// The previous period covers an earlier range, so each axis gets its own
+	// time filter out of the shared resolution.
+	r := res.forRange(input.Start, input.End)
+	where := r.where(input.Filter)
+
+	// Units
+	units := input.Units
+	if options.reverseDirection {
+		units = reverseUnits(units)
+	}
+	unitsSQL := unitsExpr(units)
 
 	// Select
 	fields := []string{
-		fmt.Sprintf(`{{ .ToStartOfInterval }}%s AS time`, offsetShift),
-		`{{ .Units }}/{{ .Interval }} AS xps`,
+		fmt.Sprintf(`%s%s AS time`, r.ToStartOfInterval, offsetShift),
+		fmt.Sprintf(`%s/%d AS xps`, unitsSQL, r.Interval),
 	}
 	selectFields := []string{}
 	dimensions := []string{}
@@ -140,22 +147,16 @@ func (input graphLineHandlerInput) toSQL1(axis int, options toSQL1Options) templ
 	// With
 	withStr := ""
 	if !options.skipWithClause {
-		with := []string{fmt.Sprintf("source AS (%s)", input.sourceSelect())}
+		with := []string{fmt.Sprintf("source AS (%s)", input.sourceSelect(r.Table))}
 		if len(dimensions) > 0 {
-			with = append(with, selectLineRowsByLimitType(input, dimensions, where))
+			with = append(with, selectLineRowsByLimitType(input, dimensions, where, unitsSQL))
 		}
 		if len(with) > 0 {
 			withStr = fmt.Sprintf("\nWITH\n %s", strings.Join(with, ",\n "))
 		}
 	}
 
-	// Units
-	units := input.Units
-	if options.reverseDirection {
-		units = reverseUnits(units)
-	}
-
-	template := fmt.Sprintf(`%s
+	return strings.TrimSpace(fmt.Sprintf(`%s
 SELECT %d AS axis, * FROM (
 SELECT
  %s
@@ -163,58 +164,48 @@ FROM source
 WHERE %s
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
- FROM {{ .TimefilterStart }}%s
- TO {{ .TimefilterEnd }} + INTERVAL 1 second%s
- STEP {{ .Interval }}
+ FROM %s%s
+ TO %s + INTERVAL 1 second%s
+ STEP %d
  INTERPOLATE (dimensions AS %s))`,
-		withStr, axis, strings.Join(fields, ",\n "), where, offsetShift, offsetShift,
+		withStr, axis, strings.Join(fields, ",\n "), where,
+		r.TimefilterStart, offsetShift,
+		r.TimefilterEnd, offsetShift,
+		r.Interval,
 		dimensionsInterpolate,
-	)
+	))
+}
 
-	context := inputContext{
-		Start:                  input.Start,
-		End:                    input.End,
-		StartForTableSelection: startForInterval,
-		MainTableRequired:      options.mainTableRequired,
-		Points:                 input.Points,
-		Units:                  units,
-	}
-
-	return templateQuery{
-		Template: strings.TrimSpace(template),
-		Context:  context,
+// resolveContext returns what is needed to select the table for this query.
+func (input graphLineHandlerInput) resolveContext() inputContext {
+	return inputContext{
+		Start:             input.Start,
+		End:               input.End,
+		MainTableRequired: requireMainTable(input.schema, input.Dimensions, input.Filter),
+		Points:            input.Points,
 	}
 }
 
-// toSQL converts a graph input to an SQL request
-func (input graphLineHandlerInput) toSQL() []templateQuery {
-	// Calculate mainTableRequired once and use it for all axes to ensure
-	// consistency. This is useful as previous period will remove the
-	// dimensions.
-	mainTableRequired := requireMainTable(input.schema, input.Dimensions, input.Filter)
-	queries := []templateQuery{input.toSQL1(1, toSQL1Options{
-		mainTableRequired: mainTableRequired,
-	})}
+// toSQL converts a graph input to a list of SQL requests, one per axis.
+func (input graphLineHandlerInput) toSQL(res resolution) []string {
+	queries := []string{input.toSQL1(1, res, toSQL1Options{})}
 	if input.Bidirectional {
-		queries = append(queries, input.reverseDirection().toSQL1(2, toSQL1Options{
-			skipWithClause:    true,
-			reverseDirection:  true,
-			mainTableRequired: mainTableRequired,
+		queries = append(queries, input.reverseDirection().toSQL1(2, res, toSQL1Options{
+			skipWithClause:   true,
+			reverseDirection: true,
 		}))
 	}
 	if input.PreviousPeriod {
-		queries = append(queries, input.previousPeriod().toSQL1(3, toSQL1Options{
-			skipWithClause:    true,
-			offsetedStart:     input.Start,
-			mainTableRequired: mainTableRequired,
+		queries = append(queries, input.previousPeriod().toSQL1(3, res, toSQL1Options{
+			skipWithClause: true,
+			offsetedStart:  input.Start,
 		}))
 	}
 	if input.Bidirectional && input.PreviousPeriod {
-		queries = append(queries, input.reverseDirection().previousPeriod().toSQL1(4, toSQL1Options{
-			skipWithClause:    true,
-			reverseDirection:  true,
-			offsetedStart:     input.Start,
-			mainTableRequired: mainTableRequired,
+		queries = append(queries, input.reverseDirection().previousPeriod().toSQL1(4, res, toSQL1Options{
+			skipWithClause:   true,
+			reverseDirection: true,
+			offsetedStart:    input.Start,
 		}))
 	}
 	return queries
@@ -242,8 +233,8 @@ func (c *Component) graphLineHandlerFunc(w http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	queries := input.toSQL()
-	sqlQuery := c.finalizeTemplateQueries(queries)
+	r := c.resolve(input.resolveContext())
+	sqlQuery := strings.Join(input.toSQL(r), "\nUNION ALL\n")
 	w.Header().Set("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
 
 	results := []struct {
@@ -252,6 +243,7 @@ func (c *Component) graphLineHandlerFunc(w http.ResponseWriter, req *http.Reques
 		Xps        float64   `ch:"xps"`
 		Dimensions []string  `ch:"dimensions"`
 	}{}
+	c.metrics.clickhouseQueries.WithLabelValues(r.Table).Inc()
 	if err := c.d.ClickHouseDB.Conn.Select(ctx, &results, sqlQuery); err != nil {
 		c.r.Err(err).Str("query", sqlQuery).Msg("unable to query database")
 		httpserver.WriteJSON(w, http.StatusInternalServerError, helpers.M{"message": "Unable to query database."})

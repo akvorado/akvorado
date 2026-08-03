@@ -5,6 +5,7 @@ package console
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"akvorado/common/schema"
@@ -34,28 +35,28 @@ func (c *Component) fixQueryColumnName(name string) string {
 	return ""
 }
 
-func selectSankeyRowsByLimitType(input graphSankeyHandlerInput, dimensions []string, where string) string {
-	return selectRowsByLimitType(input.graphCommonHandlerInput, dimensions, where)
+func selectSankeyRowsByLimitType(input graphSankeyHandlerInput, dimensions []string, where, units string) string {
+	return selectRowsByLimitType(input.graphCommonHandlerInput, dimensions, where, units)
 }
 
-func selectLineRowsByLimitType(input graphLineHandlerInput, dimensions []string, where string) string {
-	return selectRowsByLimitType(input.graphCommonHandlerInput, dimensions, where)
+func selectLineRowsByLimitType(input graphLineHandlerInput, dimensions []string, where, units string) string {
+	return selectRowsByLimitType(input.graphCommonHandlerInput, dimensions, where, units)
 }
 
-func selectRowsByLimitType(input graphCommonHandlerInput, dimensions []string, where string) string {
+func selectRowsByLimitType(input graphCommonHandlerInput, dimensions []string, where, units string) string {
 	var rowsType string
 	var source string
 	var orderBy string
 	if input.LimitType == "max" {
 		source = fmt.Sprintf("( SELECT %s AS sum_at_time FROM source WHERE %s GROUP BY %s )",
-			strings.Join(append(dimensions, "{{ .Units }}"), ", "),
+			strings.Join(slices.Concat(dimensions, []string{units}), ", "),
 			where,
 			strings.Join(dimensions, ", "),
 		)
 		orderBy = "MAX(sum_at_time)"
 	} else {
 		source = fmt.Sprintf("source WHERE %s", where)
-		orderBy = "{{ .Units }}"
+		orderBy = units
 	}
 	rowsType = fmt.Sprintf(
 		"rows AS (SELECT %s FROM %s GROUP BY %s ORDER BY %s DESC LIMIT %d)",
