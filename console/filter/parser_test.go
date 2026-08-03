@@ -484,6 +484,7 @@ output provider */ = 'telia'`,
 		if diff := helpers.Diff(got.(string), tc.Output); diff != "" {
 			t.Errorf("Parse(%q) (-got, +want):\n%s", tc.Input, diff)
 		}
+		checkWhereParses(t, got.(string))
 		if diff := helpers.Diff(tc.MetaIn, tc.MetaOut); diff != "" {
 			t.Errorf("Parse(%q) meta (-got, +want):\n%s", tc.Input, diff)
 		}
@@ -529,6 +530,7 @@ func TestValidMaterializedFilter(t *testing.T) {
 		if diff := helpers.Diff(got.(string), tc.Output); diff != "" {
 			t.Errorf("Parse(%q) (-got, +want):\n%s", tc.Input, diff)
 		}
+		checkWhereParses(t, got.(string))
 		if diff := helpers.Diff(tc.MetaIn, tc.MetaOut); diff != "" {
 			t.Errorf("Parse(%q) meta (-got, +want):\n%s", tc.Input, diff)
 		}

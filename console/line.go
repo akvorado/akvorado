@@ -234,7 +234,7 @@ func (c *Component) graphLineHandlerFunc(w http.ResponseWriter, req *http.Reques
 	}
 
 	r := c.resolve(input.resolveContext())
-	sqlQuery := strings.Join(input.toSQL(r), "\nUNION ALL\n")
+	sqlQuery := unionAll(input.toSQL(r))
 	w.Header().Set("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
 
 	results := []struct {

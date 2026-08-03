@@ -281,6 +281,27 @@ ORDER BY xps DESC)`,
 	}
 }
 
+func TestSankeyHandlerNoDimension(t *testing.T) {
+	_, h, _, _ := NewMock(t, DefaultConfiguration())
+	helpers.TestHTTPEndpoints(t, h.LocalAddr(), helpers.HTTPEndpointCases{
+		{
+			Description: "no dimension",
+			URL:         "/api/v0/console/graph/sankey",
+			JSONInput: helpers.M{
+				"start":      time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
+				"end":        time.Date(2022, 4, 11, 15, 45, 10, 0, time.UTC),
+				"dimensions": []string{},
+				"limit":      10,
+				"units":      "l3bps",
+			},
+			StatusCode: 400,
+			JSONOutput: helpers.M{
+				"message": "At least one dimension is required.",
+			},
+		},
+	})
+}
+
 func TestSankeyHandler(t *testing.T) {
 	_, h, mockConn, _ := NewMock(t, DefaultConfiguration())
 

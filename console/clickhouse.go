@@ -110,6 +110,13 @@ type resolved struct {
 	ToStartOfInterval string
 }
 
+// unionAll combines the per-axis queries into the single statement sent to
+// ClickHouse. Only the first axis carries the WITH clause, the others reference
+// its CTEs.
+func unionAll(queries []string) string {
+	return strings.Join(queries, "\nUNION ALL\n")
+}
+
 // where turns a filter into a WHERE clause, restricted to the resolved time
 // range.
 func (r resolved) where(qf query.Filter) string {

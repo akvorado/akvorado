@@ -160,10 +160,17 @@ func (c *Component) graphSankeyHandlerFunc(w http.ResponseWriter, req *http.Requ
 				c.config.DimensionsLimit)})
 		return
 	}
+	if len(input.Dimensions) == 0 {
+		// A sankey diagram links dimension values together, there is nothing to
+		// draw without a dimension.
+		httpserver.WriteJSON(w, http.StatusBadRequest,
+			helpers.M{"message": "At least one dimension is required."})
+		return
+	}
 
 	// Prepare and execute query
 	r := c.resolve(input.resolveContext())
-	sqlQuery := strings.Join(input.toSQL(r), "\nUNION ALL\n")
+	sqlQuery := unionAll(input.toSQL(r))
 	w.Header().Set("X-SQL-Query", strings.ReplaceAll(sqlQuery, "\n", "  "))
 	results := []struct {
 		Axis       uint8    `ch:"axis"`
