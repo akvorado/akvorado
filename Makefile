@@ -7,9 +7,7 @@ VERSION ?= $(shell git describe --tags --always --dirty --match=v* 2> /dev/null 
 PKGS     = $(or $(PKG),$(shell $(GO) list ./...))
 
 GO      = go
-PNPM    = $(or $(shell command -v pnpm 2>/dev/null),\
-			$(shell command -v corepack 2>/dev/null | sed 's/$$/ pnpm/'),\
-			$(error No pnpm command found))
+PNPM    = $(CURDIR)/bin/external-tool pnpm
 CLANG   = clang
 TIMEOUT = 60s
 LSFILES = git ls-files -cmo --exclude-standard --
@@ -76,7 +74,7 @@ all-indep: $(GENERATED)
 
 # Tools
 
-BUF         = env GO=$(GO) ./bin/external-tool buf
+BUF         = env GO=$(GO) $(CURDIR)/bin/external-tool buf
 ENUMER      = go tool enumer
 GOIMPORTS   = go tool goimports
 GOTESTSUM   = go tool gotestsum
