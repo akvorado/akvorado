@@ -1,9 +1,10 @@
 FROM --platform=$BUILDPLATFORM node:24-alpine AS build-js
 RUN apk add --no-cache make
 WORKDIR /build
-COPY console/frontend console/frontend
-COPY Makefile .
-RUN make console/data/frontend
+RUN --mount=source=console/frontend,target=console/frontend,rw \
+    --mount=source=bin/external-tool,target=bin/external-tool \
+    --mount=source=Makefile,target=Makefile \
+    make console/data/frontend
 
 FROM --platform=$BUILDPLATFORM golang:alpine AS build-go
 RUN apk add --no-cache make curl zip
