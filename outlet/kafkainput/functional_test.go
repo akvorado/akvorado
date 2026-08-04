@@ -485,16 +485,35 @@ func TestKafkaLagMetric(t *testing.T) {
 	}
 	helpers.StartStop(t, c)
 
-	// Start a worker with a callback that blocks on a channel after receiving a message
+	// Start a worker with a callback that signals reception of a message, then
+	// blocks on a channel
+	workerReceived := make(chan any, 10)
 	workerBlockReceive := make(chan any)
 	defer close(workerBlockReceive)
 	c.StartWorkers(func(_ int, _ chan<- ScaleRequest) (ReceiveFunc, ShutdownFunc) {
 		return func(context.Context, []byte) error {
 			t.Log("worker received a message")
+			workerReceived <- nil
 			<-workerBlockReceive
 			return nil
 		}, func() {}
 	})
+	waitReceive := func() {
+		t.Helper()
+		select {
+		case <-workerReceived:
+		case <-time.After(5 * time.Second):
+			t.Fatal("worker did not receive a message")
+		}
+	}
+	releaseReceive := func() {
+		t.Helper()
+		select {
+		case workerBlockReceive <- nil:
+		case <-time.After(5 * time.Second):
+			t.Fatal("worker did not process the message")
+		}
+	}
 	t.Log("wait first fetch")
 	select {
 	case <-firstFetch:
@@ -532,11 +551,8 @@ func TestKafkaLagMetric(t *testing.T) {
 		t.Fatalf("ProduceSync() error:\n%+v", results.FirstErr())
 	}
 	t.Log("allow message processing")
-	select {
-	case workerBlockReceive <- nil:
-	case <-time.After(time.Second):
-		t.Fatal("no initial receive")
-	}
+	waitReceive()
+	releaseReceive()
 
 	t.Log("wait for autocommit")
 	select {
@@ -568,7 +584,8 @@ func TestKafkaLagMetric(t *testing.T) {
 		}
 	}
 
-	time.Sleep(20 * time.Millisecond)
+	// The worker picks the second message and blocks on it
+	waitReceive()
 	gotMetrics = r.GetMetrics("akvorado_outlet_kafkainput_", "consumergroup", "received_messages_total")
 	expected = map[string]string{
 		"consumergroup_lag_messages":          "5",
@@ -581,12 +598,10 @@ func TestKafkaLagMetric(t *testing.T) {
 	// Let the worker process all 5 messages (and wait for autocommit), expect
 	// the lag to drop back to zero
 	t.Log("accept processing of 5 messages")
-	for range 5 {
-		select {
-		case workerBlockReceive <- nil:
-		case <-time.After(time.Second):
-			t.Fatal("no subsequent receive")
-		}
+	releaseReceive() // the second message was already received above
+	for range 4 {
+		waitReceive()
+		releaseReceive()
 	}
 	select {
 	case <-time.After(2 * time.Second):
