@@ -111,6 +111,19 @@ func TestValidFilter(t *testing.T) {
 			Output:  `SrcAddr BETWEEN toIPv6('2001:db8::') AND toIPv6('2001:db8:0:ffff:ffff:ffff:ffff:ffff') AND SrcNetMask = 48`,
 			MetaOut: Meta{MainTableRequired: true},
 		},
+		{
+			// The address and the mask must both follow the reverted column.
+			Input:   `SrcNetPrefix = 192.168.0.128/27`,
+			Output:  `DstAddr BETWEEN toIPv6('192.168.0.128') AND toIPv6('192.168.0.159') AND DstNetMask = 27`,
+			MetaIn:  Meta{ReverseDirection: true},
+			MetaOut: Meta{ReverseDirection: true, MainTableRequired: true},
+		},
+		{
+			Input:   `DstNetPrefix != 192.168.0.128/27`,
+			Output:  `NOT (SrcAddr BETWEEN toIPv6('192.168.0.128') AND toIPv6('192.168.0.159') AND SrcNetMask = 27)`,
+			MetaIn:  Meta{ReverseDirection: true},
+			MetaOut: Meta{ReverseDirection: true, MainTableRequired: true},
+		},
 		{Input: `ExporterGroup= "group"`, Output: `ExporterGroup = 'group'`},
 		{
 			Input: `SrcAddr=203.0.113.1`, Output: `SrcAddr = toIPv6('203.0.113.1')`,
@@ -512,6 +525,12 @@ func TestValidMaterializedFilter(t *testing.T) {
 			Input:   `SrcNetPrefix = 2001:db8::/48`,
 			Output:  `SrcNetPrefix = '2001:db8::/48'`,
 			MetaOut: Meta{MainTableRequired: false},
+		},
+		{
+			Input:   `SrcNetPrefix = 192.168.0.128/27`,
+			Output:  `DstNetPrefix = '192.168.0.128/27'`,
+			MetaIn:  Meta{ReverseDirection: true},
+			MetaOut: Meta{ReverseDirection: true},
 		},
 	}
 	for _, tc := range cases {

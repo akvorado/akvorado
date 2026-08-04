@@ -25,6 +25,7 @@ memory. Drop it on each cluster member once the new version runs:
 - ✨ *outlet*: optionally export decoded and enriched flows to a Kafka topic
 - ✨ *console*: allow filters to compare two columns, like `SrcPort < DstPort`,
   `DstAS != SrcAS` or `InIfConnectivity != OutIfConnectivity`
+- 🩹 *console*: fix the reverse direction of a filter on `SrcNetPrefix` or `DstNetPrefix`
 - 🩹 *orchestrator*: fix custom dictionaries with an IP prefix layout
 - 🌱 *docs*: reorganize the documentation with the Diátaxis framework
 - 🌱 *docs*: serve the documentation as Markdown when explicitely asked

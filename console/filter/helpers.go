@@ -24,35 +24,37 @@ type Meta struct {
 	MainTableRequired bool
 }
 
+// reverseColumn returns the column for the opposite direction when the filter
+// is parsed for the reverse direction. Otherwise, the column is returned as is.
+func (c *current) reverseColumn(col schema.Column) schema.Column {
+	meta := c.globalStore["meta"].(*Meta)
+	if !meta.ReverseDirection {
+		return col
+	}
+	var candidate string
+	name := col.Name
+	switch {
+	case strings.HasPrefix(name, "Src"):
+		candidate = "Dst" + name[3:]
+	case strings.HasPrefix(name, "Dst"):
+		candidate = "Src" + name[3:]
+	case strings.HasPrefix(name, "In"):
+		candidate = "Out" + name[2:]
+	case strings.HasPrefix(name, "Out"):
+		candidate = "In" + name[3:]
+	}
+	if column, ok := meta.Schema.LookupColumnByName(candidate); ok {
+		return *column
+	}
+	return col
+}
+
 // flattenExpr takes an expression and flattens it to a slice of strings. It
 // also handles metadata for columns.
 func (c *current) flattenExpr(expr []any, meta *Meta) []string {
-	// Helpers for columns: reverse direction and extract metadata.
-	reverseColumn := func(col schema.Column) schema.Column {
-		name := col.Name
-		if meta.ReverseDirection {
-			var candidate string
-			sch := c.globalStore["meta"].(*Meta).Schema
-			if strings.HasPrefix(name, "Src") {
-				candidate = "Dst" + name[3:]
-			}
-			if strings.HasPrefix(name, "Dst") {
-				candidate = "Src" + name[3:]
-			}
-			if strings.HasPrefix(name, "In") {
-				candidate = "Out" + name[2:]
-			}
-			if strings.HasPrefix(name, "Out") {
-				candidate = "In" + name[3:]
-			}
-			if column, ok := sch.LookupColumnByName(candidate); ok {
-				return *column
-			}
-		}
-		return col
-	}
+	// Reverse direction and extract metadata.
 	metaColumn := func(col schema.Column) schema.Column {
-		col = reverseColumn(col)
+		col = c.reverseColumn(col)
 		if col.ClickHouseMainOnly {
 			meta.MainTableRequired = true
 		}
@@ -138,19 +140,24 @@ func (c *current) getColumn(name string) schema.Column {
 	return schema.Column{}
 }
 
-// parsePrefix parses a source or destination prefix to SQL.
-func (c *current) parsePrefix(direction, prefix string) ([]any, error) {
+// parsePrefix parses a prefix to SQL by combining Src/DstAddr and
+// Src/DstNetmask. This function already uses the right direction.
+func (c *current) parsePrefix(col schema.Column, prefix string) ([]any, error) {
 	net, err := netip.ParsePrefix(prefix)
 	if err != nil {
 		return []any{}, errors.New("expecting a prefix")
 	}
+	col = c.reverseColumn(col)
 	// If the prefix was materialized, we can directly access it
-	col := c.getColumn(fmt.Sprintf("%sNetPrefix", direction))
 	if col.ClickHouseMaterialized {
 		return []any{
-			fmt.Sprintf("%sNetPrefix", direction), "=",
+			col.Name, "=",
 			fmt.Sprintf("'%s'", net.String()),
 		}, nil
+	}
+	direction := "Dst"
+	if strings.HasPrefix(col.Name, "Src") {
+		direction = "Src"
 	}
 	// If the prefix is not materialized, we use the "between" operator
 	c.globalStore["meta"].(*Meta).MainTableRequired = true
@@ -158,7 +165,7 @@ func (c *current) parsePrefix(direction, prefix string) ([]any, error) {
 		fmt.Sprintf("%sAddr", direction),
 		fmt.Sprintf("BETWEEN toIPv6('%s') AND toIPv6('%s') AND",
 			net.Masked().Addr().String(), lastIP(net).String()),
-		c.getColumn(fmt.Sprintf("%sNetMask", direction)), "=", net.Bits(),
+		fmt.Sprintf("%sNetMask", direction), "=", net.Bits(),
 	}, nil
 }
 

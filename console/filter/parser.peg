@@ -87,12 +87,7 @@ ConditionPrefixExpr "condition on prefix" ←
             { return c.acceptColumn() }) _
    operator:("=" / "!=") _
    prefix:Prefix {
-     col := column.(schema.Column)
-     direction := "Dst"
-     if strings.HasPrefix(col.Name, "Src") {
-       direction = "Src"
-     }
-     prefix, err := c.parsePrefix(direction, toString(prefix))
+     prefix, err := c.parsePrefix(column.(schema.Column), toString(prefix))
      if err != nil {
        return nil, err
      }
