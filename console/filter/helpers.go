@@ -140,6 +140,16 @@ func (c *current) getColumn(name string) schema.Column {
 	return schema.Column{}
 }
 
+// requireMainTable records that the main table is needed when one of the
+// provided columns only lives there.
+func (c *current) requireMainTable(cols ...schema.Column) {
+	for _, col := range cols {
+		if col.ClickHouseMainOnly {
+			c.globalStore["meta"].(*Meta).MainTableRequired = true
+		}
+	}
+}
+
 // parsePrefix parses a prefix to SQL by combining Src/DstAddr and
 // Src/DstNetmask. This function already uses the right direction.
 func (c *current) parsePrefix(col schema.Column, prefix string) ([]any, error) {
@@ -150,6 +160,7 @@ func (c *current) parsePrefix(col schema.Column, prefix string) ([]any, error) {
 	col = c.reverseColumn(col)
 	// If the prefix was materialized, we can directly access it
 	if col.ClickHouseMaterialized {
+		c.requireMainTable(col)
 		return []any{
 			col.Name, "=",
 			fmt.Sprintf("'%s'", net.String()),
@@ -159,13 +170,16 @@ func (c *current) parsePrefix(col schema.Column, prefix string) ([]any, error) {
 	if strings.HasPrefix(col.Name, "Src") {
 		direction = "Src"
 	}
-	// If the prefix is not materialized, we use the "between" operator
-	c.globalStore["meta"].(*Meta).MainTableRequired = true
+	// If the prefix is not materialized, we use the "between" operator on the
+	// address and the mask.
+	addr := fmt.Sprintf("%sAddr", direction)
+	mask := fmt.Sprintf("%sNetMask", direction)
+	c.requireMainTable(c.getColumn(addr), c.getColumn(mask))
 	return []any{
-		fmt.Sprintf("%sAddr", direction),
+		addr,
 		fmt.Sprintf("BETWEEN toIPv6('%s') AND toIPv6('%s') AND",
 			net.Masked().Addr().String(), lastIP(net).String()),
-		fmt.Sprintf("%sNetMask", direction), "=", net.Bits(),
+		mask, "=", net.Bits(),
 	}, nil
 }
 

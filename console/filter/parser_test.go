@@ -534,11 +534,15 @@ func TestValidMaterializedFilter(t *testing.T) {
 		},
 	}
 	for _, tc := range cases {
+		// A materialized prefix column is only worth querying directly once it
+		// is also present outside the main table.
 		s := schema.NewMock(t).EnableAllColumns()
 		cd, _ := s.Schema.LookupColumnByKey(schema.ColumnDstNetPrefix)
 		cd.ClickHouseMaterialized = true
+		cd.ClickHouseMainOnly = false
 		cs, _ := s.Schema.LookupColumnByKey(schema.ColumnSrcNetPrefix)
 		cs.ClickHouseMaterialized = true
+		cs.ClickHouseMainOnly = false
 
 		tc.MetaIn.Schema = s
 		got, err := Parse("", []byte(tc.Input), GlobalStore("meta", &tc.MetaIn))
@@ -553,6 +557,63 @@ func TestValidMaterializedFilter(t *testing.T) {
 		if diff := helpers.Diff(tc.MetaIn, tc.MetaOut); diff != "" {
 			t.Errorf("Parse(%q) meta (-got, +want):\n%s", tc.Input, diff)
 		}
+	}
+}
+
+// TestPrefixFilterMainTableRequired checks a filter on a prefix only asks for
+// the main table when one of the columns it uses lives there.
+func TestPrefixFilterMainTableRequired(t *testing.T) {
+	cases := []struct {
+		Description  string
+		Materialized bool
+		MainOnly     bool
+		Expected     bool
+	}{
+		{
+			// The default schema: the address and the mask are on the main
+			// table only.
+			Description: "address and mask on the main table",
+			MainOnly:    true,
+			Expected:    true,
+		}, {
+			Description: "address and mask on every table",
+			MainOnly:    false,
+			Expected:    false,
+		}, {
+			Description:  "materialized prefix on the main table",
+			Materialized: true,
+			MainOnly:     true,
+			Expected:     true,
+		}, {
+			Description:  "materialized prefix on every table",
+			Materialized: true,
+			MainOnly:     false,
+			Expected:     false,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.Description, func(t *testing.T) {
+			s := schema.NewMock(t).EnableAllColumns()
+			for _, key := range []schema.ColumnKey{
+				schema.ColumnSrcAddr, schema.ColumnSrcNetMask, schema.ColumnSrcNetPrefix,
+			} {
+				column, _ := s.Schema.LookupColumnByKey(key)
+				column.ClickHouseMainOnly = tc.MainOnly
+			}
+			if tc.Materialized {
+				column, _ := s.Schema.LookupColumnByKey(schema.ColumnSrcNetPrefix)
+				column.ClickHouseMaterialized = true
+			}
+
+			meta := Meta{Schema: s}
+			if _, err := Parse("", []byte(`SrcNetPrefix = 192.168.0.128/27`),
+				GlobalStore("meta", &meta)); err != nil {
+				t.Fatalf("Parse() error:\n%+v", err)
+			}
+			if diff := helpers.Diff(meta.MainTableRequired, tc.Expected); diff != "" {
+				t.Errorf("Parse() MainTableRequired (-got, +want):\n%s", diff)
+			}
+		})
 	}
 }
 
