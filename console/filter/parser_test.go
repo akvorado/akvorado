@@ -8,6 +8,7 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/schema"
+	sb "akvorado/common/sqlbuilder"
 )
 
 func TestValidFilter(t *testing.T) {
@@ -112,11 +113,34 @@ func TestValidFilter(t *testing.T) {
 			MetaOut: Meta{MainTableRequired: true},
 		},
 		{
+			// The address and the mask must both follow the reversed column.
+			Input:   `SrcNetPrefix = 192.168.0.128/27`,
+			Output:  `DstAddr BETWEEN toIPv6('192.168.0.128') AND toIPv6('192.168.0.159') AND DstNetMask = 27`,
+			MetaIn:  Meta{ReverseDirection: true},
+			MetaOut: Meta{ReverseDirection: true, MainTableRequired: true},
+		},
+		{
+			Input:   `SrcNetPrefix != 192.168.0.128/27`,
+			Output:  `NOT (DstAddr BETWEEN toIPv6('192.168.0.128') AND toIPv6('192.168.0.159') AND DstNetMask = 27)`,
+			MetaIn:  Meta{ReverseDirection: true},
+			MetaOut: Meta{ReverseDirection: true, MainTableRequired: true},
+		},
+		{
 			// The address and the mask must both follow the reverted column.
 			Input:   `SrcNetPrefix = 192.168.0.128/27`,
 			Output:  `DstAddr BETWEEN toIPv6('192.168.0.128') AND toIPv6('192.168.0.159') AND DstNetMask = 27`,
 			MetaIn:  Meta{ReverseDirection: true},
 			MetaOut: Meta{ReverseDirection: true, MainTableRequired: true},
+		},
+		{
+			Input:   `NOT SrcNetPrefix = 192.168.0.128/27`,
+			Output:  `NOT (SrcAddr BETWEEN toIPv6('192.168.0.128') AND toIPv6('192.168.0.159') AND SrcNetMask = 27)`,
+			MetaOut: Meta{MainTableRequired: true},
+		},
+		{
+			Input:   `NOT SrcNetPrefix = 192.168.0.128/27 AND SrcAS = 12322`,
+			Output:  `NOT (SrcAddr BETWEEN toIPv6('192.168.0.128') AND toIPv6('192.168.0.159') AND SrcNetMask = 27) AND SrcAS = 12322`,
+			MetaOut: Meta{MainTableRequired: true},
 		},
 		{
 			Input:   `DstNetPrefix != 192.168.0.128/27`,
@@ -351,11 +375,11 @@ func TestValidFilter(t *testing.T) {
 			MetaOut: Meta{MainTableRequired: true},
 		},
 		{
-			Input: `NOT DstPort > 1024 AND SrcPort < 1024`, Output: `NOT DstPort > 1024 AND SrcPort < 1024`,
+			Input: `NOT DstPort > 1024 AND SrcPort < 1024`, Output: `NOT (DstPort > 1024) AND SrcPort < 1024`,
 			MetaOut: Meta{MainTableRequired: true},
 		},
 		{
-			Input: `not DstPort > 1024 and SrcPort < 1024`, Output: `NOT DstPort > 1024 AND SrcPort < 1024`,
+			Input: `not DstPort > 1024 and SrcPort < 1024`, Output: `NOT (DstPort > 1024) AND SrcPort < 1024`,
 			MetaOut: Meta{MainTableRequired: true},
 		},
 		{
@@ -494,10 +518,11 @@ output provider */ = 'telia'`,
 			t.Errorf("Parse(%q) error:\n%+v", tc.Input, err)
 			continue
 		}
-		if diff := helpers.Diff(got.(string), tc.Output); diff != "" {
+		sql := got.(sb.Expr).String()
+		if diff := helpers.Diff(sql, tc.Output); diff != "" {
 			t.Errorf("Parse(%q) (-got, +want):\n%s", tc.Input, diff)
 		}
-		checkWhereParses(t, got.(string))
+		checkWhereParses(t, sql)
 		if diff := helpers.Diff(tc.MetaIn, tc.MetaOut); diff != "" {
 			t.Errorf("Parse(%q) meta (-got, +want):\n%s", tc.Input, diff)
 		}
@@ -550,10 +575,11 @@ func TestValidMaterializedFilter(t *testing.T) {
 			t.Errorf("Parse(%q) error:\n%+v", tc.Input, err)
 			continue
 		}
-		if diff := helpers.Diff(got.(string), tc.Output); diff != "" {
+		sql := got.(sb.Expr).String()
+		if diff := helpers.Diff(sql, tc.Output); diff != "" {
 			t.Errorf("Parse(%q) (-got, +want):\n%s", tc.Input, diff)
 		}
-		checkWhereParses(t, got.(string))
+		checkWhereParses(t, sql)
 		if diff := helpers.Diff(tc.MetaIn, tc.MetaOut); diff != "" {
 			t.Errorf("Parse(%q) meta (-got, +want):\n%s", tc.Input, diff)
 		}

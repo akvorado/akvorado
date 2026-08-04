@@ -14,6 +14,7 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
+	sb "akvorado/common/sqlbuilder"
 	"akvorado/console/query"
 )
 
@@ -100,16 +101,21 @@ type toSQL1Options struct {
 	offsetedStart    time.Time
 }
 
-func (input graphLineHandlerInput) toSQL1(axis int, res resolution, options toSQL1Options) string {
-	var offsetShift string
-	if !options.offsetedStart.IsZero() {
-		offsetShift = fmt.Sprintf(" + INTERVAL %d second",
-			int64(options.offsetedStart.Sub(input.Start).Seconds()))
-	}
+func (input graphLineHandlerInput) toSQL1(axis int, res resolution, options toSQL1Options) *sb.Query {
 	// The previous period covers an earlier range, so each axis gets its own
 	// time filter out of the shared resolution.
 	r := res.forRange(input.Start, input.End)
 	where := r.where(input.Filter)
+
+	// The previous period is drawn on the time axis of the main one, so its
+	// timestamps are shifted forward.
+	shift := func(expr sb.Expr) sb.Expr {
+		if options.offsetedStart.IsZero() {
+			return expr
+		}
+		return sb.Op(expr, "+",
+			seconds(uint64(options.offsetedStart.Sub(input.Start).Seconds())))
+	}
 
 	// Units
 	units := input.Units
@@ -119,61 +125,55 @@ func (input graphLineHandlerInput) toSQL1(axis int, res resolution, options toSQ
 	unitsSQL := unitsExpr(units)
 
 	// Select
-	fields := []string{
-		fmt.Sprintf(`%s%s AS time`, r.ToStartOfInterval, offsetShift),
-		fmt.Sprintf(`%s/%d AS xps`, unitsSQL, r.Interval),
-	}
-	selectFields := []string{}
-	dimensions := []string{}
-	dimensionsInterpolate := ""
-	others := []string{}
+	selectFields := []sb.Expr{}
+	dimensions := []sb.Expr{}
+	others := []sb.Expr{}
 	for _, column := range input.Dimensions {
-		field := column.ToSQLSelect(input.schema)
-		selectFields = append(selectFields, field)
-		dimensions = append(dimensions, column.String())
-		others = append(others, "'Other'")
+		selectFields = append(selectFields, column.ToSQLSelect(input.schema))
+		dimensions = append(dimensions, sb.Column(column.String()))
+		others = append(others, sb.String("Other"))
 	}
+	// Rows outside the selected ones are folded into a single "Other" row. The
+	// same value fills the gaps left by WITH FILL.
+	othersArray := func() sb.Expr {
+		if len(dimensions) == 0 {
+			return sb.Function("emptyArrayString")
+		}
+		return sb.Array(others...)
+	}
+	dimensionsField := othersArray()
 	if len(dimensions) > 0 {
-		fields = append(fields, fmt.Sprintf(`if((%s) IN rows, [%s], [%s]) AS dimensions`,
-			strings.Join(dimensions, ", "),
-			strings.Join(selectFields, ", "),
-			strings.Join(others, ", ")))
-		dimensionsInterpolate = fmt.Sprintf("[%s]", strings.Join(others, ", "))
-	} else {
-		fields = append(fields, "emptyArrayString() AS dimensions")
-		dimensionsInterpolate = "emptyArrayString()"
+		dimensionsField = sb.Function("if",
+			sb.Op(sb.Tuple(dimensions...), "IN", sb.Column("rows")),
+			sb.Array(selectFields...),
+			othersArray())
 	}
 
-	// With
-	withStr := ""
+	inner := sb.Select(
+		sb.Alias(shift(r.toStartOfInterval()), "time"),
+		sb.Alias(sb.Op(unitsSQL, "/", sb.Uint(r.Interval)), "xps"),
+		sb.Alias(dimensionsField, "dimensions"),
+	).
+		From("source").
+		Where(where).
+		GroupBy(sb.Column("time"), sb.Column("dimensions")).
+		OrderBy(sb.Order(sb.Column("time")).Fill(
+			shift(r.timefilterStart()),
+			shift(sb.Op(r.timefilterEnd(), "+", seconds(1))),
+			sb.Uint(r.Interval))).
+		Interpolate("dimensions", othersArray())
+
+	query := sb.Select(
+		sb.Alias(sb.Int(int64(axis)), "axis"),
+		sb.Star()).
+		FromSelect(inner)
 	if !options.skipWithClause {
-		with := []string{fmt.Sprintf("source AS (%s)", input.sourceSelect(r.Table))}
+		query.With("source", input.sourceSelect(r.Table))
 		if len(dimensions) > 0 {
-			with = append(with, selectLineRowsByLimitType(input, dimensions, where, unitsSQL))
-		}
-		if len(with) > 0 {
-			withStr = fmt.Sprintf("\nWITH\n %s", strings.Join(with, ",\n "))
+			query.With("rows", selectLineRowsByLimitType(input, dimensions, where, unitsSQL))
 		}
 	}
-
-	return strings.TrimSpace(fmt.Sprintf(`%s
-SELECT %d AS axis, * FROM (
-SELECT
- %s
-FROM source
-WHERE %s
-GROUP BY time, dimensions
-ORDER BY time WITH FILL
- FROM %s%s
- TO %s + INTERVAL 1 second%s
- STEP %d
- INTERPOLATE (dimensions AS %s))`,
-		withStr, axis, strings.Join(fields, ",\n "), where,
-		r.TimefilterStart, offsetShift,
-		r.TimefilterEnd, offsetShift,
-		r.Interval,
-		dimensionsInterpolate,
-	))
+	return query
 }
 
 // resolveContext returns what is needed to select the table for this query.
@@ -187,8 +187,8 @@ func (input graphLineHandlerInput) resolveContext() inputContext {
 }
 
 // toSQL converts a graph input to a list of SQL requests, one per axis.
-func (input graphLineHandlerInput) toSQL(res resolution) []string {
-	queries := []string{input.toSQL1(1, res, toSQL1Options{})}
+func (input graphLineHandlerInput) toSQL(res resolution) []*sb.Query {
+	queries := []*sb.Query{input.toSQL1(1, res, toSQL1Options{})}
 	if input.Bidirectional {
 		queries = append(queries, input.reverseDirection().toSQL1(2, res, toSQL1Options{
 			skipWithClause:   true,

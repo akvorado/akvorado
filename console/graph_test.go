@@ -8,6 +8,7 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/schema"
+	sb "akvorado/common/sqlbuilder"
 	"akvorado/console/query"
 )
 
@@ -61,8 +62,8 @@ func TestSourceSelect(t *testing.T) {
 		if err := query.Columns(tc.Input.Dimensions).Validate(tc.Input.schema); err != nil {
 			t.Fatalf("Validate() error:\n%+v", err)
 		}
-		got := tc.Input.sourceSelect("flows_1m0s")
-		if diff := helpers.Diff(got, tc.Expected); diff != "" {
+		got := sb.Normalize(t, tc.Input.sourceSelect("flows_1m0s").String())
+		if diff := helpers.Diff(got, sb.Normalize(t, tc.Expected)); diff != "" {
 			t.Errorf("sourceSelect(%q) (-got, +want): \n%s", tc.Description, diff)
 		}
 	}

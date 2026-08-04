@@ -12,6 +12,7 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
+	sb "akvorado/common/sqlbuilder"
 	"akvorado/console/query"
 )
 
@@ -63,7 +64,7 @@ type sankeyToSQL1Options struct {
 	rowsColumns []query.Column
 }
 
-func (input graphSankeyHandlerInput) toSQL1(axis int, res resolution, options sankeyToSQL1Options) string {
+func (input graphSankeyHandlerInput) toSQL1(axis int, res resolution, options sankeyToSQL1Options) *sb.Query {
 	r := res.forRange(input.Start, input.End)
 	where := r.where(input.Filter)
 	rowsColumns := options.rowsColumns
@@ -79,39 +80,45 @@ func (input graphSankeyHandlerInput) toSQL1(axis int, res resolution, options sa
 	unitsSQL := unitsExpr(units)
 
 	// Select
-	arrayFields := []string{}
-	dimensions := []string{}
+	arrayFields := []sb.Expr{}
+	dimensions := []sb.Expr{}
 	for i, column := range input.Dimensions {
-		arrayFields = append(arrayFields, fmt.Sprintf(`if(%s IN (SELECT %s FROM rows), %s, 'Other')`,
-			column.String(),
-			rowsColumns[i].String(),
-			column.ToSQLSelect(input.schema)))
-		dimensions = append(dimensions, column.String())
-	}
-	fields := []string{
-		fmt.Sprintf(`%s/range AS xps`, unitsSQL),
-		fmt.Sprintf("[%s] AS dimensions", strings.Join(arrayFields, ",\n  ")),
+		arrayFields = append(arrayFields, sb.Function("if",
+			sb.Op(sb.Column(column.String()), "IN",
+				sb.Select(sb.Column(rowsColumns[i].String())).
+					From("rows").Subquery()),
+			column.ToSQLSelect(input.schema),
+			sb.String("Other")))
+		dimensions = append(dimensions, sb.Column(column.String()))
 	}
 
-	// With
-	withStr := ""
+	inner := sb.Select(
+		sb.Alias(sb.Op(unitsSQL, "/", sb.Column("range")), "xps"),
+		sb.Alias(sb.Array(arrayFields...), "dimensions"),
+	).
+		From("source").
+		Where(where).
+		GroupBy(sb.Column("dimensions")).
+		OrderBy(sb.Order(sb.Column("xps")).Desc())
+
+	query := sb.Select(
+		sb.Alias(sb.Int(int64(axis)), "axis"),
+		sb.Star()).
+		FromSelect(inner)
 	if !options.skipWithClause {
-		with := []string{
-			fmt.Sprintf("source AS (%s)", input.sourceSelect(r.Table)),
-			fmt.Sprintf(`(SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE %s) AS range`, where),
-		}
-		with = append(with, selectSankeyRowsByLimitType(input, dimensions, where, unitsSQL))
-		withStr = fmt.Sprintf("WITH\n %s\n", strings.Join(with, ",\n "))
+		query.With("source", input.sourceSelect(r.Table))
+		// There is no time axis here, so the traffic is averaged over the whole
+		// period covered by the data.
+		query.WithScalar(
+			sb.Select(sb.Op(
+				sb.Function("MAX", sb.Column("TimeReceived")), "-",
+				sb.Function("MIN", sb.Column("TimeReceived")))).
+				From("source").
+				Where(where),
+			"range")
+		query.With("rows", selectSankeyRowsByLimitType(input, dimensions, where, unitsSQL))
 	}
-
-	return strings.TrimSpace(fmt.Sprintf(`%sSELECT %d AS axis, * FROM (
-SELECT
- %s
-FROM source
-WHERE %s
-GROUP BY dimensions
-ORDER BY xps DESC)`,
-		withStr, axis, strings.Join(fields, ",\n "), where))
+	return query
 }
 
 // resolveContext returns what is needed to select the table for this query.
@@ -127,8 +134,8 @@ func (input graphSankeyHandlerInput) resolveContext() inputContext {
 }
 
 // toSQL converts a sankey query to a list of SQL requests, one per axis.
-func (input graphSankeyHandlerInput) toSQL(res resolution) []string {
-	queries := []string{input.toSQL1(1, res, sankeyToSQL1Options{})}
+func (input graphSankeyHandlerInput) toSQL(res resolution) []*sb.Query {
+	queries := []*sb.Query{input.toSQL1(1, res, sankeyToSQL1Options{})}
 	if input.Bidirectional {
 		queries = append(queries, input.reverseDirection().toSQL1(2, res, sankeyToSQL1Options{
 			skipWithClause:   true,

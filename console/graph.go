@@ -4,11 +4,10 @@
 package console
 
 import (
-	"fmt"
-	"strings"
 	"time"
 
 	"akvorado/common/schema"
+	sb "akvorado/common/sqlbuilder"
 	"akvorado/console/query"
 )
 
@@ -39,37 +38,52 @@ func reverseUnits(units string) string {
 	return units
 }
 
+// truncateIP cuts an address down to the network of the requested prefix
+// length.
+func truncateIP(bits sb.Expr) func(sb.Expr) sb.Expr {
+	return func(addr sb.Expr) sb.Expr {
+		return sb.Function("tupleElement",
+			sb.Function("IPv6CIDRToRange", addr, bits),
+			sb.Uint(1))
+	}
+}
+
 // sourceSelect builds a SELECT query to use as a source for data. Notably, it
 // will do IP truncation.
-func (input graphCommonHandlerInput) sourceSelect(table string) string {
+func (input graphCommonHandlerInput) sourceSelect(table string) *sb.Query {
 	if input.TruncateAddrV4 == 0 {
 		input.TruncateAddrV4 = 32
 	}
 	if input.TruncateAddrV6 == 0 {
 		input.TruncateAddrV6 = 128
 	}
-	truncated := []string{}
+	truncated := []sb.Expr{}
 	for _, qc := range input.Dimensions {
 		if column, _ := input.schema.LookupColumnByKey(qc.Key()); column.ConsoleTruncateIP {
 			if input.TruncateAddrV4 == 32 && input.TruncateAddrV6 == 128 {
 				continue
 			}
-			if input.TruncateAddrV6 == input.TruncateAddrV4+96 {
-				truncated = append(truncated,
-					fmt.Sprintf("tupleElement(IPv6CIDRToRange(%s, %d), 1) AS %s",
-						qc.String(), input.TruncateAddrV6, qc.String()))
-			} else {
-				truncated = append(truncated,
-					fmt.Sprintf("tupleElement(IPv6CIDRToRange(%s, if(tupleElement(IPv6CIDRToRange(%s, 96), 1) = toIPv6('0.0.0.0'), %d, %d)), 1) AS %s",
-						qc.String(), qc.String(),
-						input.TruncateAddrV4+96, input.TruncateAddrV6,
-						qc.String()))
+			addr := sb.Column(qc.String())
+			bits := sb.Uint(uint64(input.TruncateAddrV6))
+			if input.TruncateAddrV6 != input.TruncateAddrV4+96 {
+				// Addresses are all stored as IPv6 ones, so the prefix length
+				// to use depends on the family of each address.
+				bits = sb.Function("if",
+					sb.Op(addr.Apply(truncateIP(sb.Uint(96))), "=",
+						sb.Function("toIPv6", sb.String("0.0.0.0"))),
+					sb.Uint(uint64(input.TruncateAddrV4+96)),
+					sb.Uint(uint64(input.TruncateAddrV6)))
 			}
+			truncated = append(truncated,
+				sb.Alias(addr.Apply(truncateIP(bits)), qc.String()))
 		}
 	}
+	source := sb.Select()
 	if len(truncated) == 0 {
-		return fmt.Sprintf("SELECT * FROM %s SETTINGS asterisk_include_alias_columns = 1", table)
+		source.Item(sb.Star())
+	} else {
+		source.Item(sb.Star(), sb.Replace(truncated...))
 	}
-	return fmt.Sprintf("SELECT * REPLACE (%s) FROM %s SETTINGS asterisk_include_alias_columns = 1",
-		strings.Join(truncated, ", "), table)
+	return source.From(table).
+		Setting("asterisk_include_alias_columns", sb.Uint(1))
 }

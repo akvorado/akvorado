@@ -5,6 +5,7 @@
 package console
 
 import (
+	"fmt"
 	"io/fs"
 	"net/http"
 	"os"
@@ -23,6 +24,7 @@ import (
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
+	sb "akvorado/common/sqlbuilder"
 	"akvorado/console/authentication"
 	"akvorado/console/database"
 	"akvorado/console/query"
@@ -35,8 +37,9 @@ type Component struct {
 	t      tomb.Tomb
 	config Configuration
 
-	flowsTables     []flowsTable
-	flowsTablesLock sync.RWMutex
+	homepageGraphFilter sb.Expr
+	flowsTables         []flowsTable
+	flowsTablesLock     sync.RWMutex
 
 	metrics struct {
 		clickhouseQueries *reporter.CounterVec
@@ -62,11 +65,20 @@ func New(r *reporter.Reporter, config Configuration, dependencies Dependencies) 
 	if err := query.Columns(config.DefaultVisualizeOptions.Dimensions).Validate(dependencies.Schema); err != nil {
 		return nil, err
 	}
+	var homepageGraphFilter sb.Expr
+	if config.HomepageGraphFilter != "" {
+		var err error
+		homepageGraphFilter, err = sb.ParseExpr(config.HomepageGraphFilter)
+		if err != nil {
+			return nil, fmt.Errorf("cannot parse homepage graph filter: %w", err)
+		}
+	}
 	c := Component{
-		r:           r,
-		d:           &dependencies,
-		config:      config,
-		flowsTables: []flowsTable{{"flows", 0, time.Time{}}},
+		r:                   r,
+		d:                   &dependencies,
+		config:              config,
+		homepageGraphFilter: homepageGraphFilter,
+		flowsTables:         []flowsTable{{"flows", 0, time.Time{}}},
 	}
 
 	c.d.Daemon.Track(&c.t, "console")

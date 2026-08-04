@@ -14,6 +14,7 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/schema"
+	sb "akvorado/common/sqlbuilder"
 	"akvorado/console/query"
 )
 
@@ -32,7 +33,6 @@ func TestGraphLineInputReverseDirection(t *testing.T) {
 		},
 		Points: 100,
 	}
-	original1 := fmt.Sprintf("%+v", input)
 	expected := graphLineHandlerInput{
 		graphCommonHandlerInput: graphCommonHandlerInput{
 			Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
@@ -50,13 +50,16 @@ func TestGraphLineInputReverseDirection(t *testing.T) {
 	expected.Filter.Validate(input.schema)
 	query.Columns(input.Dimensions).Validate(input.schema)
 	query.Columns(expected.Dimensions).Validate(input.schema)
+	snapshot := func() string {
+		return fmt.Sprintf("%+v %s %s", input, input.Filter.Direct(), input.Filter.Reverse())
+	}
+	original := snapshot()
 	got := input.reverseDirection()
-	original2 := fmt.Sprintf("%+v", input)
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Fatalf("reverseDirection() (-got, +want):\n%s", diff)
 	}
-	if original1 != original2 {
-		t.Fatalf("reverseDirection() modified original to:\n-%s\n+%s", original1, original2)
+	if now := snapshot(); original != now {
+		t.Fatalf("reverseDirection() modified original to:\n-%s\n+%s", original, now)
 	}
 }
 
@@ -231,7 +234,7 @@ func TestGraphQueryAxesRanges(t *testing.T) {
 	if err := input.Filter.Validate(input.schema); err != nil {
 		t.Fatalf("Validate() error:\n%+v", err)
 	}
-	got := input.toSQL(testResolution)
+	got := toSQLStrings(t, input.toSQL(testResolution))
 	if len(got) != 2 {
 		t.Fatalf("toSQL() got %d axes, expected 2", len(got))
 	}
@@ -402,14 +405,14 @@ ORDER BY time WITH FILL
 			Expected: []string{
 				`WITH
  source AS (SELECT * REPLACE (tupleElement(IPv6CIDRToRange(SrcAddr, if(tupleElement(IPv6CIDRToRange(SrcAddr, 96), 1) = toIPv6('0.0.0.0'), 120, 48)), 1) AS SrcAddr) FROM flows SETTINGS asterisk_include_alias_columns = 1),
- rows AS (SELECT SrcAddr FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND (SrcAddr BETWEEN toIPv6('1.0.0.0') AND toIPv6('1.255.255.255')) GROUP BY SrcAddr ORDER BY SUM(Bytes*SamplingRate*8) DESC LIMIT 0)
+ rows AS (SELECT SrcAddr FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND SrcAddr BETWEEN toIPv6('1.0.0.0') AND toIPv6('1.255.255.255') GROUP BY SrcAddr ORDER BY SUM(Bytes*SamplingRate*8) DESC LIMIT 0)
 SELECT 1 AS axis, * FROM (
 SELECT
  toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,
  SUM(Bytes*SamplingRate*8)/60 AS xps,
  if((SrcAddr) IN rows, [replaceRegexpOne(IPv6NumToString(SrcAddr), '^::ffff:', '')], ['Other']) AS dimensions
 FROM source
-WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND (SrcAddr BETWEEN toIPv6('1.0.0.0') AND toIPv6('1.255.255.255'))
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND SrcAddr BETWEEN toIPv6('1.0.0.0') AND toIPv6('1.255.255.255')
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM toDateTime('2022-04-10 15:45:00', 'UTC')
@@ -439,7 +442,7 @@ SELECT
  SUM(Bytes*SamplingRate*8)/60 AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND (DstCountry = 'FR' AND SrcCountry = 'US')
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND DstCountry = 'FR' AND SrcCountry = 'US'
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM toDateTime('2022-04-10 15:45:00', 'UTC')
@@ -469,7 +472,7 @@ SELECT
  SUM(Bytes*SamplingRate*8)/60 AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND (InIfDescription = '{{ hello }}' AND SrcCountry = 'US')
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND InIfDescription = '{{ hello }}' AND SrcCountry = 'US'
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM toDateTime('2022-04-10 15:45:00', 'UTC')
@@ -500,7 +503,7 @@ SELECT
  SUM(Bytes*SamplingRate*8)/60 AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND (DstCountry = 'FR' AND SrcCountry = 'US')
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND DstCountry = 'FR' AND SrcCountry = 'US'
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM toDateTime('2022-04-10 15:45:00', 'UTC')
@@ -513,7 +516,7 @@ SELECT
  SUM(Bytes*SamplingRate*8)/60 AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND (SrcCountry = 'FR' AND DstCountry = 'US')
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND SrcCountry = 'FR' AND DstCountry = 'US'
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM toDateTime('2022-04-10 15:45:00', 'UTC')
@@ -544,7 +547,7 @@ SELECT
  ifNotFinite(SUM((Bytes+38*Packets)*SamplingRate*8*100/(InIfSpeed*1000000))/COUNT(DISTINCT ExporterAddress, InIfName),0)/60 AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND (DstCountry = 'FR' AND SrcCountry = 'US')
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND DstCountry = 'FR' AND SrcCountry = 'US'
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM toDateTime('2022-04-10 15:45:00', 'UTC')
@@ -557,7 +560,7 @@ SELECT
  ifNotFinite(SUM((Bytes+38*Packets)*SamplingRate*8*100/(OutIfSpeed*1000000))/COUNT(DISTINCT ExporterAddress, OutIfName),0)/60 AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND (SrcCountry = 'FR' AND DstCountry = 'US')
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND SrcCountry = 'FR' AND DstCountry = 'US'
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM toDateTime('2022-04-10 15:45:00', 'UTC')
@@ -754,14 +757,14 @@ ORDER BY time WITH FILL
 			Expected: []string{
 				`WITH
  source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1),
- rows AS (SELECT SrcAddr, DstAddr FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND (InIfBoundary = 'external') GROUP BY SrcAddr, DstAddr ORDER BY SUM(Bytes*SamplingRate*8) DESC LIMIT 0)
+ rows AS (SELECT SrcAddr, DstAddr FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND InIfBoundary = 'external' GROUP BY SrcAddr, DstAddr ORDER BY SUM(Bytes*SamplingRate*8) DESC LIMIT 0)
 SELECT 1 AS axis, * FROM (
 SELECT
  toStartOfInterval(TimeReceived + INTERVAL 60 second, INTERVAL 60 second) - INTERVAL 60 second AS time,
  SUM(Bytes*SamplingRate*8)/60 AS xps,
  if((SrcAddr, DstAddr) IN rows, [replaceRegexpOne(IPv6NumToString(SrcAddr), '^::ffff:', ''), replaceRegexpOne(IPv6NumToString(DstAddr), '^::ffff:', '')], ['Other', 'Other']) AS dimensions
 FROM source
-WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND (InIfBoundary = 'external')
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND InIfBoundary = 'external'
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM toDateTime('2022-04-10 15:45:00', 'UTC')
@@ -774,7 +777,7 @@ SELECT
  SUM(Bytes*SamplingRate*8)/60 AS xps,
  emptyArrayString() AS dimensions
 FROM source
-WHERE TimeReceived BETWEEN toDateTime('2022-04-09 15:45:00', 'UTC') AND toDateTime('2022-04-10 15:45:00', 'UTC') AND (InIfBoundary = 'external')
+WHERE TimeReceived BETWEEN toDateTime('2022-04-09 15:45:00', 'UTC') AND toDateTime('2022-04-10 15:45:00', 'UTC') AND InIfBoundary = 'external'
 GROUP BY time, dimensions
 ORDER BY time WITH FILL
  FROM toDateTime('2022-04-09 15:45:00', 'UTC') + INTERVAL 86400 second
@@ -793,8 +796,8 @@ ORDER BY time WITH FILL
 			t.Fatalf("%sValidate() error:\n%+v", tc.Pos, err)
 		}
 		t.Run(tc.Description, func(t *testing.T) {
-			got := tc.Input.toSQL(testResolution)
-			if diff := helpers.Diff(got, tc.Expected); diff != "" {
+			got := toSQLStrings(t, tc.Input.toSQL(testResolution))
+			if diff := helpers.Diff(got, sb.NormalizeAll(t, tc.Expected)); diff != "" {
 				t.Errorf("%stoSQL (-got, +want):\n%s", tc.Pos, diff)
 			}
 		})

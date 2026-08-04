@@ -9,25 +9,9 @@ import (
 	"time"
 
 	"akvorado/common/schema"
+	sb "akvorado/common/sqlbuilder"
 	"akvorado/console/query"
-
-	"github.com/AfterShip/clickhouse-sql-parser/parser"
 )
-
-// checkParses parses a complete SQL statement.
-func checkParses(t *testing.T, sql string) {
-	t.Helper()
-	if _, err := parser.NewParser(sql).ParseStmts(); err != nil {
-		t.Errorf("cannot parse generated SQL:\n%s\n\nerror:\n%+v", sql, err)
-	}
-}
-
-// checkExprParses parses a single expression. The parser only exposes statement
-// parsing, so the expression is wrapped in a SELECT.
-func checkExprParses(t *testing.T, expr string) {
-	t.Helper()
-	checkParses(t, fmt.Sprintf("SELECT %s", expr))
-}
 
 var (
 	testStart = time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC)
@@ -45,7 +29,7 @@ func TestColumnSQLSelectParses(t *testing.T) {
 		}
 		tested++
 		t.Run(column.Name, func(t *testing.T) {
-			checkExprParses(t, qc.ToSQLSelect(sch))
+			sb.CheckStatement(t, fmt.Sprintf("SELECT %s", qc.ToSQLSelect(sch)))
 		})
 	}
 	if tested < 20 {
@@ -154,7 +138,7 @@ func TestGeneratedQueriesParse(t *testing.T) {
 						Bidirectional:           bidirectional,
 						PreviousPeriod:          previousPeriod,
 					}
-					checkParses(t, unionAll(line.toSQL(testResolution)))
+					sb.CheckStatement(t, unionAll(line.toSQL(testResolution)))
 
 					if len(variant.Dimensions) == 0 {
 						// The sankey handler rejects those
@@ -164,9 +148,21 @@ func TestGeneratedQueriesParse(t *testing.T) {
 						graphCommonHandlerInput: common,
 						Bidirectional:           bidirectional,
 					}
-					checkParses(t, unionAll(sankey.toSQL(testResolution)))
+					sb.CheckStatement(t, unionAll(sankey.toSQL(testResolution)))
 				})
 			}
 		}
 	}
+}
+
+// toSQLStrings renders the per-axis queries, so the tests can pin the SQL each
+// axis produces. The result is normalized, like the expected SQL it is compared
+// with.
+func toSQLStrings(t *testing.T, queries []*sb.Query) []string {
+	t.Helper()
+	sql := make([]string, len(queries))
+	for i, query := range queries {
+		sql[i] = sb.Normalize(t, query.String())
+	}
+	return sql
 }

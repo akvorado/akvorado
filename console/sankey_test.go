@@ -12,6 +12,7 @@ import (
 
 	"akvorado/common/helpers"
 	"akvorado/common/schema"
+	sb "akvorado/common/sqlbuilder"
 	"akvorado/console/query"
 )
 
@@ -30,7 +31,6 @@ func TestGraphSankeyInputReverseDirection(t *testing.T) {
 		},
 		Bidirectional: true,
 	}
-	original1 := fmt.Sprintf("%+v", input)
 	expected := graphSankeyHandlerInput{
 		graphCommonHandlerInput: graphCommonHandlerInput{
 			Start: time.Date(2022, 4, 10, 15, 45, 10, 0, time.UTC),
@@ -48,13 +48,16 @@ func TestGraphSankeyInputReverseDirection(t *testing.T) {
 	expected.Filter.Validate(input.schema)
 	query.Columns(input.Dimensions).Validate(input.schema)
 	query.Columns(expected.Dimensions).Validate(input.schema)
+	snapshot := func() string {
+		return fmt.Sprintf("%+v %s %s", input, input.Filter.Direct(), input.Filter.Reverse())
+	}
+	original := snapshot()
 	got := input.reverseDirection()
-	original2 := fmt.Sprintf("%+v", input)
 	if diff := helpers.Diff(got, expected); diff != "" {
 		t.Fatalf("reverseDirection() (-got, +want):\n%s", diff)
 	}
-	if original1 != original2 {
-		t.Fatalf("reverseDirection() modified original to:\n-%s\n+%s", original1, original2)
+	if now := snapshot(); original != now {
+		t.Fatalf("reverseDirection() modified original to:\n-%s\n+%s", original, now)
 	}
 }
 
@@ -209,15 +212,15 @@ ORDER BY xps DESC)`,
 			Expected: []string{
 				`WITH
  source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1),
- (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND (DstCountry = 'FR')) AS range,
- rows AS (SELECT SrcAS, ExporterName FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND (DstCountry = 'FR') GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes*SamplingRate*8) DESC LIMIT 10)
+ (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND DstCountry = 'FR') AS range,
+ rows AS (SELECT SrcAS, ExporterName FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND DstCountry = 'FR' GROUP BY SrcAS, ExporterName ORDER BY SUM(Bytes*SamplingRate*8) DESC LIMIT 10)
 SELECT 1 AS axis, * FROM (
 SELECT
  SUM(Bytes*SamplingRate*8)/range AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
   if(ExporterName IN (SELECT ExporterName FROM rows), ExporterName, 'Other')] AS dimensions
 FROM source
-WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND (DstCountry = 'FR')
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND DstCountry = 'FR'
 GROUP BY dimensions
 ORDER BY xps DESC)`,
 			},
@@ -241,15 +244,15 @@ ORDER BY xps DESC)`,
 			Expected: []string{
 				`WITH
  source AS (SELECT * FROM flows SETTINGS asterisk_include_alias_columns = 1),
- (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND (DstCountry = 'FR')) AS range,
- rows AS (SELECT SrcAS, InIfProvider FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND (DstCountry = 'FR') GROUP BY SrcAS, InIfProvider ORDER BY SUM(Bytes*SamplingRate*8) DESC LIMIT 5)
+ (SELECT MAX(TimeReceived) - MIN(TimeReceived) FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND DstCountry = 'FR') AS range,
+ rows AS (SELECT SrcAS, InIfProvider FROM source WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND DstCountry = 'FR' GROUP BY SrcAS, InIfProvider ORDER BY SUM(Bytes*SamplingRate*8) DESC LIMIT 5)
 SELECT 1 AS axis, * FROM (
 SELECT
  SUM(Bytes*SamplingRate*8)/range AS xps,
  [if(SrcAS IN (SELECT SrcAS FROM rows), concat(toString(SrcAS), ': ', dictGetOrDefault('asns', 'name', SrcAS, '???')), 'Other'),
   if(InIfProvider IN (SELECT InIfProvider FROM rows), InIfProvider, 'Other')] AS dimensions
 FROM source
-WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND (DstCountry = 'FR')
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND DstCountry = 'FR'
 GROUP BY dimensions
 ORDER BY xps DESC)`,
 				`SELECT 2 AS axis, * FROM (
@@ -258,7 +261,7 @@ SELECT
  [if(DstAS IN (SELECT SrcAS FROM rows), concat(toString(DstAS), ': ', dictGetOrDefault('asns', 'name', DstAS, '???')), 'Other'),
   if(OutIfProvider IN (SELECT InIfProvider FROM rows), OutIfProvider, 'Other')] AS dimensions
 FROM source
-WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND (SrcCountry = 'FR')
+WHERE TimeReceived BETWEEN toDateTime('2022-04-10 15:45:00', 'UTC') AND toDateTime('2022-04-11 15:45:00', 'UTC') AND SrcCountry = 'FR'
 GROUP BY dimensions
 ORDER BY xps DESC)`,
 			},
@@ -273,8 +276,8 @@ ORDER BY xps DESC)`,
 			t.Fatalf("%sValidate() error:\n%+v", tc.Pos, err)
 		}
 		t.Run(tc.Description, func(t *testing.T) {
-			got := tc.Input.toSQL(testResolution)
-			if diff := helpers.Diff(got, tc.Expected); diff != "" {
+			got := toSQLStrings(t, tc.Input.toSQL(testResolution))
+			if diff := helpers.Diff(got, sb.NormalizeAll(t, tc.Expected)); diff != "" {
 				t.Errorf("%stoSQL (-got, +want):\n%s", tc.Pos, diff)
 			}
 		})

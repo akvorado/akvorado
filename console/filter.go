@@ -15,6 +15,7 @@ import (
 	"akvorado/common/helpers"
 	"akvorado/common/httpserver"
 	"akvorado/common/schema"
+	sb "akvorado/common/sqlbuilder"
 	"akvorado/console/authentication"
 	"akvorado/console/database"
 	"akvorado/console/filter"
@@ -49,7 +50,7 @@ func (c *Component) filterValidateHandlerFunc(w http.ResponseWriter, req *http.R
 	if err == nil {
 		httpserver.WriteJSON(w, http.StatusOK, filterValidateHandlerOutput{
 			Message: "ok",
-			Parsed:  got.(string),
+			Parsed:  got.(sb.Expr).String(),
 		})
 		return
 	}

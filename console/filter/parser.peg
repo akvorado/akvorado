@@ -6,34 +6,34 @@
 
   import (
     "errors"
-    "fmt"
     "net/netip"
     "strings"
 
-    "akvorado/common/helpers"
     "akvorado/common/schema"
+    sb "akvorado/common/sqlbuilder"
   )
 }
 
 Input ← _ expr:Expr _ EOF {
-  meta := c.globalStore["meta"].(*Meta)
-  return c.compileExpr(toSlice(expr), meta), nil
-}
-
-Expr "expression" ← head:(SubExpr / NotExpr / ConditionExpr) rest:( _ ( KW_AND / KW_OR ) _ Expr )* {
-  expr := []any{head}
-  for _, e := range toSlice(rest) {
-    rest := toSlice(e)
-    expr = append(expr, strings.ToUpper(toString(rest[1])))
-    expr = append(expr, rest[3])
-  }
   return expr, nil
 }
-SubExpr "sub-expression" ← '(' _ expr:Expr _ ')' {
-  return []any{"(", expr, ")"}, nil
+
+// AND binds more tightly than OR, like in SQL. The two levels below build the
+// expression tree with that precedence.
+Expr "expression" ← OrExpr
+OrExpr ← head:AndExpr rest:( _ KW_OR _ AndExpr )* {
+  return combine(sb.Or, head, rest), nil
 }
-NotExpr "NOT expression" ← KW_NOT _ expr:Expr {
-  return []any{"NOT", expr}, nil
+AndExpr ← head:UnitExpr rest:( _ KW_AND _ UnitExpr )* {
+  return combine(sb.And, head, rest), nil
+}
+UnitExpr ← SubExpr / NotExpr / ConditionExpr
+
+SubExpr "sub-expression" ← '(' _ expr:Expr _ ')' {
+  return sb.Parens(asExpr(expr)), nil
+}
+NotExpr "NOT expression" ← KW_NOT _ expr:UnitExpr {
+  return sb.Not(asExpr(expr)), nil
 }
 
 ConditionExpr "conditional" ←
@@ -64,20 +64,21 @@ ColumnIP ←
     { return c.acceptColumn() }
 ConditionIPExpr "condition on IP" ←
    column:ColumnIP _
-   operator:("<<" / "=") _ subnet:Subnet {
-     return []any{column, subnet}, nil
+   ("<<" / "=") _ subnet:Subnet {
+     return betweenPrefix(c.column(column.(schema.Column)), subnet.(netip.Prefix), false), nil
    }
  / column:ColumnIP _
-   operator:("!<<" / "!=") _ subnet:Subnet {
-     return []any{column, "NOT", subnet}, nil
+   ("!<<" / "!=") _ subnet:Subnet {
+     return betweenPrefix(c.column(column.(schema.Column)), subnet.(netip.Prefix), true), nil
    }
  / column:ColumnIP _
    operator:("=" / "!=") _ ip:IP {
-     return []any{column, operator, "toIPv6(", quote(ip), ")"}, nil
+     return sb.Op(c.column(column.(schema.Column)), toString(operator),
+       sb.Function("toIPv6", sb.String(ip.(netip.Addr).String()))), nil
    }
  / column:ColumnIP _
    operator:InOperator _ '(' _ value:ListIPOrSubnet _ ')' {
-     return buildIPOrSubnetCondition(column, toString(operator), toSlice(value)), nil
+     return c.ipOrSubnetCondition(column.(schema.Column), toString(operator), toSlice(value))
    }
 
 
@@ -87,15 +88,11 @@ ConditionPrefixExpr "condition on prefix" ←
             { return c.acceptColumn() }) _
    operator:("=" / "!=") _
    prefix:Prefix {
-     prefix, err := c.parsePrefix(column.(schema.Column), toString(prefix))
-     if err != nil {
-       return nil, err
+     expr := c.prefixCondition(column.(schema.Column), prefix.(netip.Prefix))
+     if toString(operator) == "!=" {
+       return sb.Not(expr), nil
      }
-     switch toString(operator) {
-       case "=": return []any{prefix}, nil
-       case "!=": return []any{"NOT (", prefix, ")"}, nil
-     }
-     return "", nil
+     return expr, nil
    }
 
 ConditionMACExpr "condition on MAC" ←
@@ -103,14 +100,14 @@ ConditionMACExpr "condition on MAC" ←
            &{ return c.columnIsOfType(value, "mac") }
             { return c.acceptColumn() }) _
  rcond:RConditionMACExpr {
-  return []any{column, rcond}, nil
+  return rcond.(condition).apply(c.column(column.(schema.Column))), nil
 }
 RConditionMACExpr "condition on MAC" ←
    operator:("=" / "!=") _ mac:MAC {
-       return []any{operator, "MACStringToNum(", quote(mac), ")"}, nil
+       return condition{toString(operator), macToNum(mac)}, nil
    }
  / operator:InOperator _ '(' _ value:ListMAC _ ')' {
-  return []any{operator, "(", value, ")"}, nil
+  return condition{toString(operator), sb.Tuple(macList(toSlice(value))...)}, nil
 }
 
 ColumnString ←
@@ -120,17 +117,17 @@ ColumnString ←
 ConditionStringExpr "condition on string" ←
  column:ColumnString _
  rcond:RConditionStringExpr {
-  return []any{column, rcond}, nil
+  return rcond.(condition).apply(c.column(column.(schema.Column))), nil
 }
 RConditionStringExpr "condition on string" ←
    operator:("=" / "!=" / LikeOperator ) _ str:StringLiteral {
-     return []any{operator, quote(str)}, nil
+     return condition{toString(operator), sb.String(toString(str))}, nil
    }
  / operator:("=" / "!=") _ value:ColumnString {
-     return []any{operator, value}, nil
+     return condition{toString(operator), c.column(value.(schema.Column))}, nil
    }
  / operator:InOperator _ '(' _ value:ListString _ ')' {
-  return []any{operator, "(", value, ")"}, nil
+  return condition{toString(operator), sb.Tuple(stringList(toSlice(value))...)}, nil
    }
 
 ConditionBoundaryExpr "condition on boundary" ←
@@ -139,7 +136,8 @@ ConditionBoundaryExpr "condition on boundary" ←
             { return c.acceptColumn() }) _
  operator:("=" / "!=") _
  boundary:("external"i / "internal"i / "undefined"i) {
-  return []any{column, operator, quote(strings.ToLower(toString(boundary)))}, nil
+  return sb.Op(c.column(column.(schema.Column)), toString(operator),
+    sb.String(strings.ToLower(toString(boundary)))), nil
 }
 
 ColumnUint ←
@@ -149,14 +147,14 @@ ColumnUint ←
 ConditionUintExpr "condition on integer" ←
  column:ColumnUint _
  rcond:RConditionUintExpr {
-  return []any{column, rcond}, nil
+  return rcond.(condition).apply(c.column(column.(schema.Column))), nil
 }
 RConditionUintExpr "condition on integer" ←
    operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:(Unsigned64 / ColumnUint) {
-     return []any{operator, value}, nil
+     return condition{toString(operator), c.value(value)}, nil
    }
  / operator:InOperator _ '(' _ value:ListUnsigned64 _ ')' {
-     return []any{operator, "(", value, ")"}, nil
+     return condition{toString(operator), sb.Tuple(c.values(toSlice(value))...)}, nil
    }
 
 ConditionArrayUintExpr "condition on array of integers" ←
@@ -164,13 +162,14 @@ ConditionArrayUintExpr "condition on array of integers" ←
            &{ return c.columnIsOfType(value, "array(uint)") }
             { return c.acceptColumn() }) _
    "=" _ value:Unsigned64 {
-     return []any{"has(", column, ",", value, ")"}, nil
+     return sb.Function("has", c.column(column.(schema.Column)), c.value(value)), nil
    }
  / column:(value:ColumnName
            &{ return c.columnIsOfType(value, "array(uint)") }
             { return c.acceptColumn() }) _
    "!=" _ value:Unsigned64 {
-     return []any{"NOT has(", column, ",", value, ")"}, nil
+     return sb.Not(sb.Function("has",
+       c.column(column.(schema.Column)), c.value(value))), nil
    }
 
 ColumnASN ←
@@ -180,40 +179,52 @@ ColumnASN ←
 ConditionASExpr "condition on AS number" ←
  column:ColumnASN _
  rcond:RConditionASExpr {
-  return []any{column, rcond}, nil
+  return rcond.(condition).apply(c.column(column.(schema.Column))), nil
 }
 RConditionASExpr "condition on AS number" ←
-   operator:("=" / "!=") _ value:(ASN / ColumnASN) { return []any{operator, value}, nil }
+   operator:("=" / "!=") _ value:(ASN / ColumnASN) {
+     return condition{toString(operator), c.value(value)}, nil
+   }
  / operator:InOperator _ '(' _ value:ListASN _ ')' {
-  return []any{operator, "(", value, ")"}, nil
+  return condition{toString(operator), sb.Tuple(c.values(toSlice(value))...)}, nil
 }
 
 ConditionASPathExpr "condition on AS path" ←
    column:(value:ColumnName
            &{ return c.columnIsOfType(value, "aspath") }
-            { return c.acceptColumn() }) _ "=" _ value:ASN { return []any{"has(", column, ",", value, ")"}, nil }
+            { return c.acceptColumn() }) _ "=" _ value:ASN {
+     return sb.Function("has", c.column(column.(schema.Column)), c.value(value)), nil
+   }
  / column:(value:ColumnName
            &{ return c.columnIsOfType(value, "aspath") }
-            { return c.acceptColumn() }) _ "!=" _ value:ASN { return []any{"NOT has(", column, ",", value, ")"}, nil }
+            { return c.acceptColumn() }) _ "!=" _ value:ASN {
+     return sb.Not(sb.Function("has",
+       c.column(column.(schema.Column)), c.value(value))), nil
+   }
 
 ConditionCommunitiesExpr "condition on communities" ←
    column:(value:ColumnName
            &{ return c.columnIsOfType(value, "community") }
-            { return c.acceptColumn() }) _ "=" _ value:Community { return []any{"has(", column, ",", value, ")"}, nil }
+            { return c.acceptColumn() }) _ "=" _ value:Community {
+     return sb.Function("has", c.column(column.(schema.Column)), c.value(value)), nil
+   }
  / column:(value:ColumnName
            &{ return c.columnIsOfType(value, "community") }
-            { return c.acceptColumn() }) _ "!=" _ value:Community { return []any{"NOT has(", column, ",", value, ")"}, nil }
+            { return c.acceptColumn() }) _ "!=" _ value:Community {
+     return sb.Not(sb.Function("has",
+       c.column(column.(schema.Column)), c.value(value))), nil
+   }
  / column:(value:ColumnName
            &{ return c.columnIsOfType(value, "community") }
             { return c.acceptColumn() }) _ "=" _ value:LargeCommunity {
-     largeName := strings.Replace(column.(schema.Column).Name, "Communities", "LargeCommunities", 1)
-     return []any{"has(", c.getColumn(largeName), ",", value, ")"}, nil
+     return sb.Function("has",
+       c.column(c.largeCommunitiesColumn(column.(schema.Column))), c.value(value)), nil
    }
  / column:(value:ColumnName
            &{ return c.columnIsOfType(value, "community") }
             { return c.acceptColumn() }) _ "!=" _ value:LargeCommunity {
-     largeName := strings.Replace(column.(schema.Column).Name, "Communities", "LargeCommunities", 1)
-     return []any{"NOT has(", c.getColumn(largeName), ",", value, ")"}, nil
+     return sb.Not(sb.Function("has",
+       c.column(c.largeCommunitiesColumn(column.(schema.Column))), c.value(value))), nil
    }
 
 ConditionETypeExpr "condition on Ethernet type" ←
@@ -226,7 +237,8 @@ ConditionETypeExpr "condition on Ethernet type" ←
     "ipv6": constants.ETypeIPv6,
    }
    etype := etypes[strings.ToLower(toString(value))]
-   return []any{column, operator, etype}, nil
+   return sb.Op(c.column(column.(schema.Column)), toString(operator),
+     sb.Uint(uint64(etype))), nil
 }
 ConditionProtoExpr "condition on protocol" ← ConditionProtoIntExpr / ConditionProtoStrExpr
 ConditionProtoIntExpr "condition on protocol as integer" ←
@@ -234,28 +246,29 @@ ConditionProtoIntExpr "condition on protocol as integer" ←
            &{ return c.columnIsOfType(value, "proto") }
             { return c.acceptColumn() }) _
  rcond:RConditionProtoIntExpr {
-  return []any{column, rcond}, nil
+  return rcond.(condition).apply(c.column(column.(schema.Column))), nil
 }
 RConditionProtoIntExpr "condition on protocol as integer" ←
    operator:("=" / ">=" / "<=" / "<" / ">" / "!=") _ value:Unsigned8 {
-     return []any{operator, value}, nil
+     return condition{toString(operator), c.value(value)}, nil
    }
  / operator:InOperator _ '(' _ value:ListUnsigned8 _ ')' {
-     return []any{operator, "(", value, ")"}, nil
+     return condition{toString(operator), sb.Tuple(c.values(toSlice(value))...)}, nil
    }
 ConditionProtoStrExpr "condition on protocol as string" ←
  column:(value:ColumnName
            &{ return c.columnIsOfType(value, "proto") }
             { return c.acceptColumn() }) _
  rcond:RConditionProtoStrExpr {
-  return []any{"dictGetOrDefault('protocols', 'name', ", column, ", '???')", rcond}, nil
+  return rcond.(condition).apply(c.column(column.(schema.Column)).
+    Apply(protocolName)), nil
 }
 RConditionProtoStrExpr "condition on protocol as string" ←
    operator:("=" / "!=") _ value:StringLiteral {
-     return []any{operator, quote(value)}, nil
+     return condition{toString(operator), sb.String(toString(value))}, nil
    }
  / operator:InOperator _ '(' _ value:ListString _ ')' {
-     return []any{operator, "(", value, ")"}, nil
+     return condition{toString(operator), sb.Tuple(stringList(toSlice(value))...)}, nil
    }
 
 ConditionDirectionExpr "condition on direction" ←
@@ -264,22 +277,23 @@ ConditionDirectionExpr "condition on direction" ←
             { return c.acceptColumn() }) _
  operator:("=" / "!=") _
  direction:("undefined"i / "ingress"i / "egress"i) {
-  return []any{column, operator, quote(strings.ToLower(toString(direction)))}, nil
+  return sb.Op(c.column(column.(schema.Column)), toString(operator),
+    sb.String(strings.ToLower(toString(direction)))), nil
 }
 
 IP "IP address" ← [0-9A-Fa-f:.]+ !IdentStart {
   ip, err := netip.ParseAddr(string(c.text))
   if err != nil {
-    return "", errors.New("expecting an IP address")
+    return netip.Addr{}, errors.New("expecting an IP address")
   }
-  return ip.String(), nil
+  return ip, nil
 }
 Subnet "IP subnet" ← [0-9A-Fa-f:.]+ "/" [0-9]+ !IdentStart {
   net, err := netip.ParsePrefix(string(c.text))
   if err != nil {
-    return "", errors.New("expecting a subnet")
+    return netip.Prefix{}, errors.New("expecting a subnet")
   }
-  return fmt.Sprintf("BETWEEN toIPv6('%s') AND toIPv6('%s')", net.Masked().Addr().String(), lastIP(net).String()), nil
+  return net, nil
 }
 
 ListIPOrSubnet "list of IP addresses or subnets" ←
@@ -289,11 +303,11 @@ ListIPOrSubnet "list of IP addresses or subnets" ←
  / value:(Subnet / IP) { return []any{value}, nil }
 
 Prefix "IP prefix" ← [0-9A-Fa-f:.]+ "/" [0-9]+ !IdentStart {
-  _, err := netip.ParsePrefix(string(c.text))
+  net, err := netip.ParsePrefix(string(c.text))
   if err != nil {
-    return nil, errors.New("expecting a prefix")
+    return netip.Prefix{}, errors.New("expecting a prefix")
   }
-  return string(c.text), nil
+  return net, nil
 }
 
 MAC "MAC address" ← [0-9A-Fa-f:.]+ !IdentStart {
@@ -307,21 +321,21 @@ MAC "MAC address" ← [0-9A-Fa-f:.]+ !IdentStart {
   return hw.String(), nil
 }
 ListMAC "list of MAC addresses" ←
-   head:MAC _ ',' _ tail:ListMAC { return fmt.Sprintf("MACStringToNum(%s), %s", quote(head), tail), nil }
- / value:MAC { return fmt.Sprintf("MACStringToNum(%s)", quote(value)), nil }
+   head:MAC _ ',' _ tail:ListMAC { return append([]any{head}, toSlice(tail)...), nil }
+ / value:MAC { return []any{value}, nil }
 
 ASN "AS number" ← "AS"i? value:Unsigned32 !IdentStart {
   return value, nil
 }
 ListASN "list of AS numbers" ←
-   head:ASN _ ',' _ tail:ListASN { return fmt.Sprintf("%s, %s", toString(head), tail), nil }
- / value:ASN { return toString(value), nil }
+   head:ASN _ ',' _ tail:ListASN { return append([]any{head}, toSlice(tail)...), nil }
+ / value:ASN { return []any{value}, nil }
 
 Community "community" ← value1:Unsigned16 ":" value2:Unsigned16 !IdentStart !":" {
   return (uint32(value1.(uint16)) << 16) + uint32(value2.(uint16)), nil
 }
 LargeCommunity "large community" ← value1:Unsigned32 ":" value2:Unsigned32 ":" value3:Unsigned32 !IdentStart !":" {
-  return fmt.Sprintf("bitShiftLeft(%d::UInt128, 64) + bitShiftLeft(%d::UInt128, 32) + %d::UInt128", value1, value2, value3), nil
+  return largeCommunity(value1.(uint32), value2.(uint32), value3.(uint32)), nil
 }
 
 StringLiteral "quoted string" ← ( '"' chars:DoubleStringChar* '"' {
@@ -335,24 +349,24 @@ SourceChar ← .
 DoubleStringChar ← ( '\\' ( '\\' / '"' ) / !( '"' / EOL ) SourceChar ) { return string(c.text), nil }
 SingleStringChar ← ( '\\' ( '\\' / "'" ) / !( "'" / EOL ) SourceChar ) { return string(c.text), nil }
 ListString "list of strings" ←
-   head:StringLiteral _ ',' _ tail:ListString { return fmt.Sprintf("%s, %s", quote(head), tail), nil }
- / value:StringLiteral { return quote(value), nil }
+   head:StringLiteral _ ',' _ tail:ListString { return append([]any{head}, toSlice(tail)...), nil }
+ / value:StringLiteral { return []any{value}, nil }
 
 Unsigned8 "unsigned 8-bit integer" ← [0-9]+ !IdentStart {
   v, err := strconv.ParseUint(string(c.text), 10, 8)
   if err != nil {
-    return "", errors.New("expecting an unsigned 8-bit integer")
+    return uint8(0), errors.New("expecting an unsigned 8-bit integer")
   }
   return uint8(v), nil
 }
 ListUnsigned8 "list of unsigned 8-bit integers" ←
-   head:Unsigned8 _ ',' _ tail:ListUnsigned8 { return fmt.Sprintf("%s, %s", toString(head), tail), nil }
- / value:Unsigned8 { return toString(value), nil }
+   head:Unsigned8 _ ',' _ tail:ListUnsigned8 { return append([]any{head}, toSlice(tail)...), nil }
+ / value:Unsigned8 { return []any{value}, nil }
 
 Unsigned16 "unsigned 16-bit integer" ← [0-9]+ !IdentStart {
   v, err := strconv.ParseUint(string(c.text), 10, 16)
   if err != nil {
-    return "", errors.New("expecting an unsigned 16-bit integer")
+    return uint16(0), errors.New("expecting an unsigned 16-bit integer")
   }
   return uint16(v), nil
 }
@@ -360,7 +374,7 @@ Unsigned16 "unsigned 16-bit integer" ← [0-9]+ !IdentStart {
 Unsigned32 "unsigned 32-bit integer" ← [0-9]+ !IdentStart {
   v, err := strconv.ParseUint(string(c.text), 10, 32)
   if err != nil {
-    return "", errors.New("expecting an unsigned 32-bit integer")
+    return uint32(0), errors.New("expecting an unsigned 32-bit integer")
   }
   return uint32(v), nil
 }
@@ -368,13 +382,13 @@ Unsigned32 "unsigned 32-bit integer" ← [0-9]+ !IdentStart {
 Unsigned64 "unsigned 64-bit integer" ← [0-9]+ !IdentStart {
   v, err := strconv.ParseUint(string(c.text), 10, 64)
   if err != nil {
-    return "", errors.New("expecting an unsigned integer")
+    return uint64(0), errors.New("expecting an unsigned integer")
   }
   return uint64(v), nil
 }
 ListUnsigned64 "list of unsigned integers" ←
-   head:Unsigned64 _ ',' _ tail:ListUnsigned64 { return fmt.Sprintf("%s, %s", toString(head), tail), nil }
- / value:Unsigned64 { return toString(value), nil }
+   head:Unsigned64 _ ',' _ tail:ListUnsigned64 { return append([]any{head}, toSlice(tail)...), nil }
+ / value:Unsigned64 { return []any{value}, nil }
 
 LikeOperator "LIKE operators" ←
    KW_LIKE

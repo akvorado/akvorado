@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	sb "akvorado/common/sqlbuilder"
 	"akvorado/console/query"
 )
 
@@ -102,48 +103,94 @@ type resolution struct {
 // resolved is a resolution applied to one time range. Axes get one each: the
 // previous period covers an earlier range than the main one.
 type resolved struct {
-	Table             string
-	Interval          uint64
-	Timefilter        string
-	TimefilterStart   string
-	TimefilterEnd     string
-	ToStartOfInterval string
+	Table string
+	// Interval is the number of seconds between two points.
+	Interval uint64
+	// Start and End are the time range, aligned on the interval.
+	Start time.Time
+	End   time.Time
+	// Offset shifts the buckets of toStartOfInterval, which would otherwise not
+	// start on Start.
+	Offset uint64
 }
 
 // unionAll combines the per-axis queries into the single statement sent to
 // ClickHouse. Only the first axis carries the WITH clause, the others reference
 // its CTEs.
-func unionAll(queries []string) string {
-	return strings.Join(queries, "\nUNION ALL\n")
+func unionAll(queries []*sb.Query) string {
+	first := queries[0]
+	for _, other := range queries[1:] {
+		first.UnionAll(other)
+	}
+	return first.String()
+}
+
+// seconds returns an interval of the provided number of seconds.
+func seconds(count uint64) sb.Expr {
+	return sb.Interval(sb.Uint(count), "second")
+}
+
+// dateTime turns a timestamp into a UTC date-time.
+func dateTime(when time.Time) sb.Expr {
+	return sb.Function("toDateTime",
+		sb.String(when.UTC().Format("2006-01-02 15:04:05")),
+		sb.String("UTC"))
+}
+
+// timefilterStart is the beginning of the resolved time range.
+func (r resolved) timefilterStart() sb.Expr {
+	return dateTime(r.Start)
+}
+
+// timefilterEnd is the end of the resolved time range.
+func (r resolved) timefilterEnd() sb.Expr {
+	return dateTime(r.End)
+}
+
+// timefilter restricts a query to the resolved time range.
+func (r resolved) timefilter() sb.Expr {
+	return sb.Between(sb.Column("TimeReceived"),
+		r.timefilterStart(), r.timefilterEnd())
+}
+
+// toStartOfInterval puts TimeReceived into a bucket. The buckets are shifted so
+// that the first one starts at the beginning of the time range.
+func (r resolved) toStartOfInterval() sb.Expr {
+	return sb.Op(
+		sb.Function("toStartOfInterval",
+			sb.Op(sb.Column("TimeReceived"), "+", seconds(r.Offset)),
+			seconds(r.Interval)),
+		"-", seconds(r.Offset))
 }
 
 // where turns a filter into a WHERE clause, restricted to the resolved time
 // range.
-func (r resolved) where(qf query.Filter) string {
-	if qf.Direct() == "" {
-		return r.Timefilter
-	}
-	return fmt.Sprintf(`%s AND (%s)`, r.Timefilter, qf.Direct())
+func (r resolved) where(qf query.Filter) sb.Expr {
+	return sb.And(r.timefilter(), qf.Direct())
 }
 
 // unitsExpr returns the aggregate expression matching the requested units.
-func unitsExpr(units string) string {
-	return map[string]string{
-		"fps":   `COUNT(*)`,
-		"pps":   `SUM(Packets*SamplingRate)`,
-		"l3bps": `SUM(Bytes*SamplingRate*8)`,
-		// For each packet, we add the Ethernet header (14 bytes), the FCS (4
-		// bytes), the preamble and start frame delimiter (8 bytes) and the IPG
-		// (~ 12 bytes). We don't include the VLAN header (4 bytes) as it is
-		// often not used with external entities. Both sFlow and IPFIX may have
-		// a better view of that, but we don't collect it yet.
-		"l2bps": `SUM((Bytes+38*Packets)*SamplingRate*8)`,
-		// That's like l2bps, but this time we use the interface speed to get a
-		// percent value
-		"inl2%": `ifNotFinite(SUM((Bytes+38*Packets)*SamplingRate*8*100/(InIfSpeed*1000000))/COUNT(DISTINCT ExporterAddress, InIfName),0)`,
-		// Same but using output interface as reference
-		"outl2%": `ifNotFinite(SUM((Bytes+38*Packets)*SamplingRate*8*100/(OutIfSpeed*1000000))/COUNT(DISTINCT ExporterAddress, OutIfName),0)`,
-	}[units]
+// These are fixed formulas, easier to read and to check as SQL than as a tree
+// of calls. They are parsed once, at startup.
+func unitsExpr(units string) sb.Expr {
+	return unitsExprs[units]
+}
+
+var unitsExprs = map[string]sb.Expr{
+	"fps":   sb.MustParseExpr(`COUNT(*)`),
+	"pps":   sb.MustParseExpr(`SUM(Packets*SamplingRate)`),
+	"l3bps": sb.MustParseExpr(`SUM(Bytes*SamplingRate*8)`),
+	// For each packet, we add the Ethernet header (14 bytes), the FCS (4
+	// bytes), the preamble and start frame delimiter (8 bytes) and the IPG
+	// (~ 12 bytes). We don't include the VLAN header (4 bytes) as it is
+	// often not used with external entities. Both sFlow and IPFIX may have
+	// a better view of that, but we don't collect it yet.
+	"l2bps": sb.MustParseExpr(`SUM((Bytes+38*Packets)*SamplingRate*8)`),
+	// That's like l2bps, but this time we use the interface speed to get a
+	// percent value
+	"inl2%": sb.MustParseExpr(`ifNotFinite(SUM((Bytes+38*Packets)*SamplingRate*8*100/(InIfSpeed*1000000))/COUNT(DISTINCT ExporterAddress, InIfName),0)`),
+	// Same but using output interface as reference
+	"outl2%": sb.MustParseExpr(`ifNotFinite(SUM((Bytes+38*Packets)*SamplingRate*8*100/(OutIfSpeed*1000000))/COUNT(DISTINCT ExporterAddress, OutIfName),0)`),
 }
 
 // resolve picks the best table for the requested time range and the interval
@@ -179,23 +226,13 @@ func (r resolution) forRange(start, end time.Time) resolved {
 		time.Unix(start.UTC().Unix()/
 			int64(interval.Seconds())*
 			int64(interval.Seconds()), 0))
-	diffOffset := r.Interval - uint64(intervalOffset.Seconds())
-
-	timefilterStart := fmt.Sprintf(`toDateTime('%s', 'UTC')`, start.UTC().Format("2006-01-02 15:04:05"))
-	timefilterEnd := fmt.Sprintf(`toDateTime('%s', 'UTC')`, end.UTC().Format("2006-01-02 15:04:05"))
 
 	return resolved{
-		Table:           r.Table,
-		Interval:        r.Interval,
-		Timefilter:      fmt.Sprintf(`TimeReceived BETWEEN %s AND %s`, timefilterStart, timefilterEnd),
-		TimefilterStart: timefilterStart,
-		TimefilterEnd:   timefilterEnd,
-		ToStartOfInterval: fmt.Sprintf(
-			`toStartOfInterval(%s + INTERVAL %d second, INTERVAL %d second) - INTERVAL %d second`,
-			"TimeReceived",
-			diffOffset,
-			r.Interval,
-			diffOffset),
+		Table:    r.Table,
+		Interval: r.Interval,
+		Start:    start,
+		End:      end,
+		Offset:   r.Interval - uint64(intervalOffset.Seconds()),
 	}
 }
 

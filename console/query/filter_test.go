@@ -39,7 +39,7 @@ func TestUnmarshalFilter(t *testing.T) {
 			if err != nil {
 				return
 			}
-			if diff := helpers.Diff(qf.Direct(), tc.Expected); diff != "" {
+			if diff := helpers.Diff(qf.Direct().String(), tc.Expected); diff != "" {
 				t.Fatalf("UnmarshalText(%q) (-got, +want):\n%s", tc.Input, diff)
 			}
 		})
@@ -83,10 +83,10 @@ func TestFilterSwap(t *testing.T) {
 		t.Fatalf("Validate() error:\n%+v", err)
 	}
 	filter.Swap()
-	if diff := helpers.Diff(filter.Direct(), "DstAS = 12322"); diff != "" {
+	if diff := helpers.Diff(filter.Direct().String(), "DstAS = 12322"); diff != "" {
 		t.Fatalf("Swap() (-got, +want):\n%s", diff)
 	}
-	if diff := helpers.Diff(filter.Reverse(), "SrcAS = 12322"); diff != "" {
+	if diff := helpers.Diff(filter.Reverse().String(), "SrcAS = 12322"); diff != "" {
 		t.Fatalf("Swap() (-got, +want):\n%s", diff)
 	}
 }

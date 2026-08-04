@@ -7,17 +7,16 @@ import (
 	"fmt"
 	"testing"
 
-	chparser "github.com/AfterShip/clickhouse-sql-parser/parser"
+	sb "akvorado/common/sqlbuilder"
 )
 
-// checkWhereParses checks an expression is a valid boolean expression.
+// checkWhereParses checks an expression is a valid boolean expression. The
+// grammar builds a syntax tree, so this checks the tree turns back into SQL a
+// database would accept.
 func checkWhereParses(t *testing.T, where string) {
 	t.Helper()
 	if where == "" {
 		return
 	}
-	sql := fmt.Sprintf("SELECT 1 FROM flows WHERE %s", where)
-	if _, err := chparser.NewParser(sql).ParseStmts(); err != nil {
-		t.Errorf("ParseStmts(%q) error:\n%+v", where, err)
-	}
+	sb.CheckStatement(t, fmt.Sprintf("SELECT 1 FROM flows WHERE %s", where))
 }

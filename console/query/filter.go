@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"akvorado/common/schema"
+	sb "akvorado/common/sqlbuilder"
 	"akvorado/console/filter"
 )
 
@@ -15,7 +16,8 @@ import (
 type Filter struct {
 	validated         bool
 	filter            string
-	reverseFilter     string
+	direct            sb.Expr
+	reverse           sb.Expr
 	mainTableRequired bool
 }
 
@@ -34,9 +36,17 @@ func (qf Filter) String() string {
 	return qf.filter
 }
 
-// Equal tells if two filters are equal.
+// Equal tells if two filters are equal. Once validated, two filters written
+// differently but compiling to the same conditions are equal.
 func (qf Filter) Equal(oqf Filter) bool {
-	return qf.filter == oqf.filter
+	if qf.validated != oqf.validated {
+		return false
+	}
+	if !qf.validated {
+		return qf.filter == oqf.filter
+	}
+	return qf.direct.String() == oqf.direct.String() &&
+		qf.reverse.String() == oqf.reverse.String()
 }
 
 // MarshalText turns a filter into a string.
@@ -67,8 +77,8 @@ func (qf *Filter) Validate(sch *schema.Component) error {
 	if err != nil {
 		return fmt.Errorf("cannot parse reverse filter: %s", filter.HumanError(err))
 	}
-	qf.filter = direct.(string)
-	qf.reverseFilter = reverse.(string)
+	qf.direct = direct.(sb.Expr)
+	qf.reverse = reverse.(sb.Expr)
 	qf.mainTableRequired = directMeta.MainTableRequired || reverseMeta.MainTableRequired
 	qf.validated = true
 	return nil
@@ -81,18 +91,18 @@ func (qf Filter) MainTableRequired() bool {
 }
 
 // Reverse provides the reverse filter.
-func (qf Filter) Reverse() string {
+func (qf Filter) Reverse() sb.Expr {
 	qf.check()
-	return qf.reverseFilter
+	return qf.reverse
 }
 
 // Direct provides the filter.
-func (qf Filter) Direct() string {
+func (qf Filter) Direct() sb.Expr {
 	qf.check()
-	return qf.filter
+	return qf.direct
 }
 
 // Swap swap direct and reverse filter.
 func (qf *Filter) Swap() {
-	qf.filter, qf.reverseFilter = qf.reverseFilter, qf.filter
+	qf.direct, qf.reverse = qf.reverse, qf.direct
 }

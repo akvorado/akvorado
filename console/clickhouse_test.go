@@ -4,7 +4,6 @@
 package console
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -86,17 +85,19 @@ var testResolution = resolution{
 // The exact SQL wording is pinned by the query tests, so this test can stay
 // about the arithmetic.
 func resolvedFor(r resolution, start, end string, offset uint64) resolved {
-	timefilterStart := fmt.Sprintf(`toDateTime('%s', 'UTC')`, start)
-	timefilterEnd := fmt.Sprintf(`toDateTime('%s', 'UTC')`, end)
+	parse := func(value string) time.Time {
+		when, err := time.ParseInLocation("2006-01-02 15:04:05", value, time.UTC)
+		if err != nil {
+			panic(err)
+		}
+		return when
+	}
 	return resolved{
-		Table:           r.Table,
-		Interval:        r.Interval,
-		Timefilter:      fmt.Sprintf("TimeReceived BETWEEN %s AND %s", timefilterStart, timefilterEnd),
-		TimefilterStart: timefilterStart,
-		TimefilterEnd:   timefilterEnd,
-		ToStartOfInterval: fmt.Sprintf(
-			"toStartOfInterval(TimeReceived + INTERVAL %d second, INTERVAL %d second) - INTERVAL %d second",
-			offset, r.Interval, offset),
+		Table:    r.Table,
+		Interval: r.Interval,
+		Start:    parse(start),
+		End:      parse(end),
+		Offset:   offset,
 	}
 }
 
