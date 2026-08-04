@@ -19,7 +19,7 @@
         };
         l = builtins // pkgs.lib;
         nodejs = pkgs.nodejs_24;
-        pnpm = pkgs.pnpm_10;
+        pnpm = pkgs.pnpm_11;
         go = pkgs.go_latest;
         frontend = pkgs.stdenvNoCC.mkDerivation rec {
           name = "akvorado-frontend";
@@ -34,7 +34,7 @@
             inherit src pnpm;
             pname = name;
             buildInputs = [ nodejs ];
-            fetcherVersion = 3;
+            fetcherVersion = 4;
             hash = l.readFile ./nix/npmDepsHash.txt;
           };
 
