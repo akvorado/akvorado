@@ -26,11 +26,12 @@ const [root, npx, ...args] = process.argv.slice(1)
 const spec = require(path.resolve(root, "console/frontend/package.json")).packageManager
 const hash = require("crypto").createHash("sha512").update(spec).digest("hex").slice(0, 16)
 const cache = process.env.npm_config_cache || path.join(require("os").homedir(), ".npm")
-const pnpm = path.join(cache, "_npx", hash, "node_modules/.bin/pnpm")
+const bin = path.join(cache, "_npx", hash, "node_modules/.bin")
+const pnpm = path.join(bin, "pnpm")
 const cmd = fs.existsSync(pnpm)
       ? [pnpm, ...args]
       : [npx, "--yes", "--prefer-offline", spec, ...args]
-process.execve(cmd[0], cmd)
+process.execve(cmd[0], cmd, { ...process.env, PATH: `${bin}:${process.env.PATH}` })
 ' -- "$(dirname -- "$0")/.." "$(command -v npx)" "$@"
         ;;
 esac
