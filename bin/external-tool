@@ -30,7 +30,7 @@ const bin = path.join(cache, "_npx", hash, "node_modules/.bin")
 const pnpm = path.join(bin, "pnpm")
 const cmd = fs.existsSync(pnpm)
       ? [pnpm, ...args]
-      : [npx, "--yes", "--prefer-offline", spec, ...args]
+      : [npx, "--yes", spec, ...args]
 process.execve(cmd[0], cmd, { ...process.env, PATH: `${bin}:${process.env.PATH}` })
 ' -- "$(dirname -- "$0")/.." "$(command -v npx)" "$@"
         ;;
