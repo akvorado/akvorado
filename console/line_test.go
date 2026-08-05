@@ -109,13 +109,15 @@ func TestGraphPreviousPeriod(t *testing.T) {
 			"Feb 10, 2020 at 15:04", "Mar 25, 2020 at 17:34",
 			"Jan 13, 2020 at 15:04", "Feb 26, 2020 at 17:34",
 		}, {
+			// 2020 is a leap year: the end moves by the same 365 days as the
+			// start, otherwise the previous period would be one day shorter.
 			helpers.Mark(),
 			"Feb 10, 2020 at 15:04", "Jul 25, 2020 at 17:34",
-			"Feb 10, 2019 at 15:04", "Jul 25, 2019 at 17:34",
+			"Feb 10, 2019 at 15:04", "Jul 26, 2019 at 17:34",
 		}, {
 			helpers.Mark(),
 			"Feb 10, 2019 at 15:04", "Jul 25, 2020 at 17:34",
-			"Feb 10, 2018 at 15:04", "Jul 25, 2019 at 17:34",
+			"Feb 10, 2018 at 15:04", "Jul 26, 2019 at 17:34",
 		},
 	}
 	for _, tc := range cases {
@@ -148,7 +150,7 @@ func TestGraphPreviousPeriod(t *testing.T) {
 				},
 			}
 			query.Columns(input.Dimensions).Validate(input.schema)
-			got := input.previousPeriod()
+			got, period := input.previousPeriod()
 			expected := graphLineHandlerInput{
 				graphCommonHandlerInput: graphCommonHandlerInput{
 					Start:      expectedStart,
@@ -158,6 +160,14 @@ func TestGraphPreviousPeriod(t *testing.T) {
 			}
 			if diff := helpers.Diff(got, expected); diff != "" {
 				t.Fatalf("%spreviousPeriod() (-got, +want):\n%s", tc.Pos, diff)
+			}
+			// Both ends move by the returned period, so the previous period
+			// covers exactly as much time as the main one.
+			if diff := helpers.Diff(start.Sub(got.Start), period); diff != "" {
+				t.Errorf("%spreviousPeriod() start shift (-got, +want):\n%s", tc.Pos, diff)
+			}
+			if diff := helpers.Diff(end.Sub(got.End), period); diff != "" {
+				t.Errorf("%spreviousPeriod() end shift (-got, +want):\n%s", tc.Pos, diff)
 			}
 		})
 	}
@@ -258,6 +268,84 @@ func TestGraphQueryAxesRanges(t *testing.T) {
 	if !strings.Contains(got[1], "BETWEEN toDateTime('2022-04-09 15:45:00', 'UTC') AND toDateTime('2022-04-10 15:45:00', 'UTC')") {
 		t.Errorf("toSQL() previous period does not cover the day before:\n%s", got[1])
 	}
+}
+
+// TestGraphQueryAxesLeapYear checks the previous period covers as much time as
+// the main one when a leap day sits between them. Both share a time axis and
+// step on the same grid, so a longer range would give the previous period one
+// point more than the main one.
+func TestGraphQueryAxesLeapYear(t *testing.T) {
+	cases := []struct {
+		Description string
+		Pos         helpers.Pos
+		Start       time.Time
+		End         time.Time
+	}{
+		{
+			// A year back from here is 365 days, but the requested period
+			// covers February 29th and the previous one does not.
+			Description: "leap day in the main period",
+			Pos:         helpers.Mark(),
+			Start:       time.Date(2020, 1, 1, 15, 45, 10, 0, time.UTC),
+			End:         time.Date(2020, 3, 5, 15, 45, 10, 0, time.UTC),
+		}, {
+			// The other way around: a year back is 366 days and only the
+			// previous period covers February 29th.
+			Description: "leap day in the previous period",
+			Pos:         helpers.Mark(),
+			Start:       time.Date(2021, 1, 1, 15, 45, 10, 0, time.UTC),
+			End:         time.Date(2021, 3, 5, 15, 45, 10, 0, time.UTC),
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.Description, func(t *testing.T) {
+			input := graphLineHandlerInput{
+				graphCommonHandlerInput: graphCommonHandlerInput{
+					schema:     schema.NewMock(t),
+					Start:      tc.Start,
+					End:        tc.End,
+					Dimensions: []query.Column{},
+					Units:      "l3bps",
+				},
+				Points:         100,
+				PreviousPeriod: true,
+			}
+			if err := input.Filter.Validate(input.schema); err != nil {
+				t.Fatalf("Validate() error:\n%+v", err)
+			}
+			got := toSQLStrings(t, input.toSQL(testResolution))
+			if len(got) != 2 {
+				t.Fatalf("toSQL() got %d axes, expected 2", len(got))
+			}
+			main := timefilterSpan(t, got[0])
+			previous := timefilterSpan(t, got[1])
+			if diff := helpers.Diff(previous, main); diff != "" {
+				t.Errorf("%stoSQL() previous period span (-got, +want):\n%s\nmain axis:\n%s\nprevious period:\n%s",
+					tc.Pos, diff, got[0], got[1])
+			}
+		})
+	}
+}
+
+var timefilterRegexp = regexp.MustCompile(
+	`TimeReceived BETWEEN toDateTime\('([^']+)', 'UTC'\) AND toDateTime\('([^']+)', 'UTC'\)`)
+
+// timefilterSpan returns how much time the WHERE clause of a query covers. With
+// a shared interval, this is what decides how many points an axis has.
+func timefilterSpan(t *testing.T, sql string) time.Duration {
+	t.Helper()
+	matches := timefilterRegexp.FindStringSubmatch(sql)
+	if matches == nil {
+		t.Fatalf("no time filter found in:\n%s", sql)
+	}
+	parse := func(value string) time.Time {
+		when, err := time.ParseInLocation("2006-01-02 15:04:05", value, time.UTC)
+		if err != nil {
+			t.Fatalf("time.ParseInLocation(%q) error:\n%+v", value, err)
+		}
+		return when
+	}
+	return parse(matches[2]).Sub(parse(matches[1]))
 }
 
 func TestGraphQuerySQL(t *testing.T) {

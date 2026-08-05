@@ -219,21 +219,33 @@ func (r resolution) forRange(start, end time.Time) resolved {
 	end = end.Truncate(r.TableInterval)
 	// Adapt end to ensure we get a full interval
 	end = start.Add(end.Sub(start).Truncate(interval))
-	// Now, toStartOfInterval will provide an incorrect value. We compute a
-	// correction offset. Go's truncate seems to be different from what we
-	// expect.
-	intervalOffset := start.UTC().Sub(
-		time.Unix(start.UTC().Unix()/
-			int64(interval.Seconds())*
-			int64(interval.Seconds()), 0))
 
 	return resolved{
 		Table:    r.Table,
 		Interval: r.Interval,
 		Start:    start,
 		End:      end,
-		Offset:   r.Interval - uint64(intervalOffset.Seconds()),
+		Offset:   intervalOffset(start, r.Interval),
 	}
+}
+
+// shiftBack moves a resolved range back in time. Both ends move by the same
+// amount, so the range keeps its length and therefore its number of points.
+// This is how the previous period is drawn on the time axis of the main one.
+func (r resolved) shiftBack(offset time.Duration) resolved {
+	r.Start = r.Start.Add(-offset)
+	r.End = r.End.Add(-offset)
+	r.Offset = intervalOffset(r.Start, r.Interval)
+	return r
+}
+
+// intervalOffset returns by how much the buckets of toStartOfInterval have to
+// be shifted, as they would otherwise not start on the beginning of the range.
+// Not using Go's truncate, but I don't remember why...
+func intervalOffset(start time.Time, interval uint64) uint64 {
+	seconds := int64(interval)
+	aligned := time.Unix(start.UTC().Unix()/seconds*seconds, 0)
+	return interval - uint64(start.UTC().Sub(aligned).Seconds())
 }
 
 func (c *Component) computeTableAndInterval(input inputContext) (string, time.Duration, time.Duration) {

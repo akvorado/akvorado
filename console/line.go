@@ -72,49 +72,48 @@ func nearestPeriod(period time.Duration) (time.Duration, string) {
 	}
 }
 
-// previousPeriod shifts the provided input to the previous period.
-// The chosen period depend on the current period. For less than
-// 2-hour period, the previous period is the hour. For less than 2-day
-// period, this is the day. For less than 2-weeks, this is the week,
-// for less than 2-months, this is the month, otherwise, this is the
-// year. Also, dimensions are stripped.
-func (input graphLineHandlerInput) previousPeriod() graphLineHandlerInput {
+// previousPeriod shifts the provided input to the previous period and returns
+// by how much it moved. The chosen period depend on the current period. For
+// less than 2-hour period, the previous period is the hour. For less than 2-day
+// period, this is the day. For less than 2-weeks, this is the week, for less
+// than 2-months, this is the month, otherwise, this is the year. Also,
+// dimensions are stripped.
+func (input graphLineHandlerInput) previousPeriod() (graphLineHandlerInput, time.Duration) {
 	input.Dimensions = []query.Column{}
 	diff := input.End.Sub(input.Start)
 	period, _ := nearestPeriod(diff)
 	if period == 0 {
-		// We use a full year this time (think for example we
-		// want to see how was New Year Eve compared to last
-		// year)
-		input.Start = input.Start.AddDate(-1, 0, 0)
-		input.End = input.End.AddDate(-1, 0, 0)
-		return input
+		// We use a full year this time (think for example we want to see how
+		// was New Year Eve compared to last year). A year has no fixed length,
+		// so it is measured from the start of the period. Both ends have to
+		// move by the same amount, otherwise a leap day would give the previous
+		// period one point more or less than the main one.
+		period = input.Start.Sub(input.Start.AddDate(-1, 0, 0))
 	}
 	input.Start = input.Start.Add(-period)
 	input.End = input.End.Add(-period)
-	return input
+	return input, period
 }
 
 type toSQL1Options struct {
 	skipWithClause   bool
 	reverseDirection bool
-	offsetedStart    time.Time
+	// shiftedBy is how far back the range of this axis was moved. Its
+	// timestamps move forward by the same amount, so the axis is drawn on the
+	// time axis of the main period.
+	shiftedBy time.Duration
 }
 
-func (input graphLineHandlerInput) toSQL1(axis int, res resolution, options toSQL1Options) *sb.Query {
-	// The previous period covers an earlier range, so each axis gets its own
-	// time filter out of the shared resolution.
-	r := res.forRange(input.Start, input.End)
+func (input graphLineHandlerInput) toSQL1(axis int, r resolved, options toSQL1Options) *sb.Query {
 	where := r.where(input.Filter)
 
 	// The previous period is drawn on the time axis of the main one, so its
 	// timestamps are shifted forward.
 	shift := func(expr sb.Expr) sb.Expr {
-		if options.offsetedStart.IsZero() {
+		if options.shiftedBy == 0 {
 			return expr
 		}
-		return sb.Op(expr, "+",
-			seconds(uint64(options.offsetedStart.Sub(input.Start).Seconds())))
+		return sb.Op(expr, "+", seconds(uint64(options.shiftedBy.Seconds())))
 	}
 
 	// Units
@@ -188,24 +187,29 @@ func (input graphLineHandlerInput) resolveContext() inputContext {
 
 // toSQL converts a graph input to a list of SQL requests, one per axis.
 func (input graphLineHandlerInput) toSQL(res resolution) []*sb.Query {
-	queries := []*sb.Query{input.toSQL1(1, res, toSQL1Options{})}
+	// The resolution is applied once: the previous period reuses the resulting
+	// range, moved back in time, so both cover the same number of points.
+	main := res.forRange(input.Start, input.End)
+	queries := []*sb.Query{input.toSQL1(1, main, toSQL1Options{})}
 	if input.Bidirectional {
-		queries = append(queries, input.reverseDirection().toSQL1(2, res, toSQL1Options{
+		queries = append(queries, input.reverseDirection().toSQL1(2, main, toSQL1Options{
 			skipWithClause:   true,
 			reverseDirection: true,
 		}))
 	}
 	if input.PreviousPeriod {
-		queries = append(queries, input.previousPeriod().toSQL1(3, res, toSQL1Options{
+		previous, period := input.previousPeriod()
+		queries = append(queries, previous.toSQL1(3, main.shiftBack(period), toSQL1Options{
 			skipWithClause: true,
-			offsetedStart:  input.Start,
+			shiftedBy:      period,
 		}))
 	}
 	if input.Bidirectional && input.PreviousPeriod {
-		queries = append(queries, input.reverseDirection().previousPeriod().toSQL1(4, res, toSQL1Options{
+		previous, period := input.reverseDirection().previousPeriod()
+		queries = append(queries, previous.toSQL1(4, main.shiftBack(period), toSQL1Options{
 			skipWithClause:   true,
 			reverseDirection: true,
-			offsetedStart:    input.Start,
+			shiftedBy:        period,
 		}))
 	}
 	return queries
