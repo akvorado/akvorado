@@ -43,11 +43,9 @@ func (q *Query) Item(expr Expr, modifiers ...Modifier) *Query {
 }
 
 // From reads from the named table.
-func (q *Query) From(table string) *Query {
+func (q *Query) From(table TableName) *Query {
 	q.query.From = &parser.FromClause{
-		Expr: &parser.TableExpr{
-			Expr: &parser.TableIdentifier{Table: &parser.Ident{Name: table}},
-		},
+		Expr: &parser.TableExpr{Expr: table.node()},
 	}
 	return q
 }
@@ -58,6 +56,15 @@ func (q *Query) FromSelect(sub *Query) *Query {
 		Expr: &parser.TableExpr{
 			Expr: &parser.SubQuery{HasParen: true, Select: sub.query},
 		},
+	}
+	return q
+}
+
+// ArrayJoin unrolls an array into rows. From must be called first.
+func (q *Query) ArrayJoin(expr Expr) *Query {
+	q.query.From.Expr = &parser.JoinExpr{
+		Left:  q.query.From.Expr,
+		Right: &parser.JoinExpr{Modifiers: []string{"ARRAY", "JOIN"}, Left: expr.node},
 	}
 	return q
 }
@@ -143,6 +150,15 @@ func (q *Query) WithScalar(sub *Query, name string) *Query {
 	})
 }
 
+// WithAlias names an expression in the WITH clause, as in
+// "WITH arrayCompact(DstASPath) AS c_DstASPath".
+func (q *Query) WithAlias(expr Expr, name string) *Query {
+	return q.addCTE(&parser.CTEStmt{
+		Expr:  expr.node,
+		Alias: &parser.Ident{Name: name},
+	})
+}
+
 func (q *Query) addCTE(cte *parser.CTEStmt) *Query {
 	if q.query.With == nil {
 		q.query.With = &parser.WithClause{}
@@ -170,6 +186,13 @@ func (q *Query) Subquery() Expr {
 // String renders the query as indented, multi-line SQL.
 func (q *Query) String() string {
 	return wrap(q.query).pretty()
+}
+
+// Matches tells if the provided SQL means the same as the query. Only the
+// meaning is compared: layout and identifier quoting do not matter. SQL that
+// cannot be parsed never matches.
+func (q *Query) Matches(sql string) bool {
+	return statement{node: q.query}.Matches(sql)
 }
 
 // OrderItem is one item of an ORDER BY clause.

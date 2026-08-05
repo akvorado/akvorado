@@ -5,7 +5,7 @@ go 1.26
 toolchain go1.26.5
 
 require (
-	github.com/AfterShip/clickhouse-sql-parser v0.5.4
+	github.com/AfterShip/clickhouse-sql-parser v0.5.5-0.20260805022546-71e3f4d68c75
 	github.com/ClickHouse/ch-go v0.73.0
 	github.com/ClickHouse/clickhouse-go/v2 v2.47.0
 	github.com/alecthomas/chroma/v2 v2.23.1
@@ -194,3 +194,5 @@ tool (
 	gotest.tools/gotestsum
 	honnef.co/go/tools/cmd/staticcheck
 )
+
+replace github.com/AfterShip/clickhouse-sql-parser => github.com/vincentbernat/clickhouse-sql-parser v0.0.0-20260805113902-1dc638d03624

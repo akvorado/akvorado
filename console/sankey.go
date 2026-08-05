@@ -86,7 +86,7 @@ func (input graphSankeyHandlerInput) toSQL1(axis int, res resolution, options sa
 		arrayFields = append(arrayFields, sb.Function("if",
 			sb.Op(sb.Column(column.String()), "IN",
 				sb.Select(sb.Column(rowsColumns[i].String())).
-					From("rows").Subquery()),
+					From(sb.Table("rows")).Subquery()),
 			column.ToSQLSelect(input.schema),
 			sb.String("Other")))
 		dimensions = append(dimensions, sb.Column(column.String()))
@@ -96,7 +96,7 @@ func (input graphSankeyHandlerInput) toSQL1(axis int, res resolution, options sa
 		sb.Alias(sb.Op(unitsSQL, "/", sb.Column("range")), "xps"),
 		sb.Alias(sb.Array(arrayFields...), "dimensions"),
 	).
-		From("source").
+		From(sb.Table("source")).
 		Where(where).
 		GroupBy(sb.Column("dimensions")).
 		OrderBy(sb.Order(sb.Column("xps")).Desc())
@@ -113,7 +113,7 @@ func (input graphSankeyHandlerInput) toSQL1(axis int, res resolution, options sa
 			sb.Select(sb.Op(
 				sb.Function("MAX", sb.Column("TimeReceived")), "-",
 				sb.Function("MIN", sb.Column("TimeReceived")))).
-				From("source").
+				From(sb.Table("source")).
 				Where(where),
 			"range")
 		query.With("rows", selectSankeyRowsByLimitType(input, dimensions, where, unitsSQL))

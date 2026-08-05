@@ -19,6 +19,7 @@ import (
 	"akvorado/common/daemon"
 	"akvorado/common/helpers"
 	"akvorado/common/reporter"
+	sb "akvorado/common/sqlbuilder"
 )
 
 // SetupClickHouseDatabase creates a temporary ClickHouse database and returns
@@ -40,7 +41,7 @@ func setupClickHouseDatabase(t *testing.T, servers []string, cluster string) str
 	if err != nil {
 		t.Fatalf("clickhouse.Open() error:\n%+v", err)
 	}
-	db := QuoteIdentifier(database)
+	db := sb.QuoteIdentifier(database)
 	for _, query := range []string{
 		fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", db),
 		"DROP TABLE IF EXISTS system.metric_log",

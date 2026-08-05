@@ -11,12 +11,48 @@ import (
 	"github.com/AfterShip/clickhouse-sql-parser/parser"
 )
 
+// parse turns SQL into statements. The underlying parser panics on a few
+// inputs instead of reporting an error. As some of the SQL parsed here comes
+// from ClickHouse itself, a panic is turned into an error.
+func parse(sql string) (statements []parser.Expr, err error) {
+	defer func() {
+		if problem := recover(); problem != nil {
+			statements, err = nil, fmt.Errorf("cannot parse SQL: %v", problem)
+		}
+	}()
+	return parser.NewParser(sql).ParseStmts()
+}
+
+// canonical rewrites SQL into a single form, so two statements written
+// differently can be compared. It also tells if the SQL could be parsed.
+func canonical(sql string) (string, bool) {
+	statements, err := parse(sql)
+	if err != nil {
+		return "", false
+	}
+	formatter := parser.NewFormatter()
+	for _, statement := range statements {
+		// Parsing keeps the quotes an identifier was written with, so the same
+		// statement with and without them does not compare equal. ClickHouse
+		// does not quote in the same places as we do, so every identifier is
+		// rewritten the way ClickHouse writes it.
+		parser.Walk(statement, func(node parser.Expr) bool {
+			if identifier, ok := node.(*parser.Ident); ok {
+				identifier.QuoteType = quoteType(identifier.Name)
+			}
+			return true
+		})
+		formatter.WriteExpr(statement)
+	}
+	return formatter.String(), true
+}
+
 // ParseExpr parses a SQL expression. The parser only accepts complete
 // statements, so the expression is parsed as the select list of a SELECT. This
 // is used in widgets, so we need to keep this function accessible outside of
 // tests.
 func ParseExpr(sql string) (Expr, error) {
-	statements, err := parser.NewParser(fmt.Sprintf("SELECT %s", sql)).ParseStmts()
+	statements, err := parse(fmt.Sprintf("SELECT %s", sql))
 	if err != nil {
 		return Expr{}, err
 	}
@@ -56,6 +92,19 @@ func onlySelectItems(query *parser.SelectQuery) bool {
 		}
 	}
 	return true
+}
+
+// ParseExprs parses several SQL expressions.
+func ParseExprs(sqls []string) ([]Expr, error) {
+	exprs := make([]Expr, len(sqls))
+	for i, sql := range sqls {
+		expr, err := ParseExpr(sql)
+		if err != nil {
+			return nil, err
+		}
+		exprs[i] = expr
+	}
+	return exprs, nil
 }
 
 // MustParseExpr parses a SQL expression written in the code. It panics when the

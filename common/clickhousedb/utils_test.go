@@ -9,29 +9,6 @@ import (
 	"akvorado/common/helpers"
 )
 
-func TestQuoteIdentifier(t *testing.T) {
-	cases := []struct {
-		Pos      helpers.Pos
-		Input    string
-		Expected string
-	}{
-		{helpers.Mark(), "akvorado", "akvorado"},
-		{helpers.Mark(), "simple_name", "simple_name"},
-		{helpers.Mark(), "_leading", "_leading"},
-		{helpers.Mark(), "my`cluster", "`my``cluster`"},
-		{helpers.Mark(), "with spaces", "`with spaces`"},
-		{helpers.Mark(), "with-dash", "`with-dash`"},
-		{helpers.Mark(), "123start", "`123start`"},
-		{helpers.Mark(), "", "``"},
-	}
-	for _, tc := range cases {
-		got := QuoteIdentifier(tc.Input)
-		if diff := helpers.Diff(got, tc.Expected); diff != "" {
-			t.Errorf("%sQuoteIdentifier(%q) (-got, +want):\n%s", tc.Pos, tc.Input, diff)
-		}
-	}
-}
-
 func TestTransformQueryOnCluster(t *testing.T) {
 	cases := []struct {
 		Pos      helpers.Pos

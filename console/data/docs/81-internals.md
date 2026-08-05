@@ -148,6 +148,14 @@ When inserting into ClickHouse, we rely on the low-level
 [ch-go](https://github.com/ClickHouse/ch-go/) library. Decoded flows are batched
 directly into the wire format that is used by ClickHouse.
 
+The console and the orchestrator build SQL queries with a Fluent-like builder
+API in `common/sqlbuilder`, which outputs a syntax tree based on
+[clickhouse-sql-parser](https://github.com/Aftership/clickhouse-sql-parser). The
+filter language is also translated to a syntax tree and combined with the syntax
+tree built by the console from the elements selected by the user. The
+orchestrator also leverages the parser to compare two SQL queries and check if
+an update is needed.
+
 Functional tests are run when a ClickHouse server is available under
 the name `clickhouse` or on `localhost`.
 
@@ -284,11 +292,11 @@ reference](52-console.md#filter-language). The grammar is in
 expression grammar. Such grammars are easier to write than context-free ones and
 they give better error messages.
 
-There is no intermediate syntax tree. Each rule carries a Go action returning
-the matching part of the ClickHouse `WHERE` clause, and the values are checked
-while parsing. For example, `ExporterAddress = 203.0.113.15` becomes
-`ExporterAddress = IPv6StringToNum('203.0.113.15')`, and a malformed address is
-rejected at this point.
+Each rule carries a Go action returning a piece of the syntax tree for the
+ClickHouse `WHERE` clause, and the values are checked while parsing. For
+example, `ExporterAddress = 203.0.113.15` becomes `ExporterAddress =
+IPv6StringToNum('203.0.113.15')`, and a malformed address is rejected at this
+point.
 
 The editor is [CodeMirror](https://codemirror.net/6/), with a second and simpler
 grammar for [Lezer](https://lezer.codemirror.net/) in

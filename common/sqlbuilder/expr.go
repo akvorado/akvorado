@@ -211,6 +211,16 @@ func Array(items ...Expr) Expr {
 	})
 }
 
+// Index reads one element of an array, as in "[a, b][num]".
+func Index(array, index Expr) Expr {
+	return wrap(&parser.ObjectParams{
+		Object: array.node,
+		Params: &parser.ArrayParamList{
+			Items: &parser.ColumnExprList{Items: nodes([]Expr{index})},
+		},
+	})
+}
+
 // Between returns a BETWEEN condition.
 func Between(expr, low, high Expr) Expr {
 	return wrap(&parser.BetweenClause{Expr: expr.node, Between: low.node, And: high.node})

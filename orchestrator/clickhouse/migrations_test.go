@@ -27,6 +27,7 @@ import (
 	"akvorado/common/httpserver"
 	"akvorado/common/reporter"
 	"akvorado/common/schema"
+	sb "akvorado/common/sqlbuilder"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 )
@@ -92,7 +93,7 @@ func dumpAllTables(t *testing.T, ch *clickhousedb.Component, schemaComponent *sc
 }
 
 func dropAllTables(t *testing.T, ch *clickhousedb.Component) {
-	db := clickhousedb.QuoteIdentifier(ch.DatabaseName())
+	db := sb.QuoteIdentifier(ch.DatabaseName())
 	t.Logf("(%s) Drop database %s", time.Now(), db)
 	for _, sql := range []string{
 		fmt.Sprintf("DROP DATABASE IF EXISTS %s SYNC", db),
@@ -866,23 +867,5 @@ func TestRenderTableSettings(t *testing.T) {
 				t.Fatalf("renderTableSettings() (-got, +want):\n%s", diff)
 			}
 		})
-	}
-}
-
-func TestQuoteString(t *testing.T) {
-	cases := []struct {
-		s        string
-		expected string
-	}{
-		{"nothing", "'nothing'"},
-		{`"hello world"`, `'\"hello world\"'`},
-		{`he's happy`, `'he\'s happy'`},
-		{`mix "everything' \"`, `'mix \"everything\' \\\"'`},
-	}
-	for _, tc := range cases {
-		got := quoteString(tc.s)
-		if diff := helpers.Diff(got, tc.expected); diff != "" {
-			t.Errorf("quoteString(%q) (-got, +want):\n%s", tc.s, diff)
-		}
 	}
 }

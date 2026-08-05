@@ -50,10 +50,10 @@ func (c *Component) widgetFlowLastHandlerFunc(w http.ResponseWriter, req *http.R
 		last.Item(expr)
 	}
 	sqlQuery := last.
-		From("flows").
+		From(sb.Table("flows")).
 		Where(sb.Op(sb.Column("TimeReceived"), "=",
 			sb.Select(sb.Function("MAX", sb.Column("TimeReceived"))).
-				From("flows").Subquery())).
+				From(sb.Table("flows")).Subquery())).
 		Limit(1).
 		String()
 	w.Header().Set("X-SQL-Query", sqlQuery)
@@ -227,8 +227,8 @@ func (c *Component) widgetTopHandlerFunc(w http.ResponseWriter, req *http.Reques
 		sb.Alias(sb.Op(
 			sb.Op(bytes, "/", sb.Column("Total")), "*", sb.Uint(100)),
 			"Percent")).
-		WithScalar(sb.Select(bytes).From(r.Table).Where(where), "Total").
-		From(r.Table).
+		WithScalar(sb.Select(bytes).From(sb.Table(r.Table)).Where(where), "Total").
+		From(sb.Table(r.Table)).
 		Where(where).
 		GroupBy(groupby...).
 		OrderBy(sb.Order(sb.Column("Percent")).Desc()).
@@ -265,7 +265,7 @@ func (c *Component) widgetGraphHandlerFunc(w http.ResponseWriter, req *http.Requ
 	sqlQuery := sb.Select(
 		sb.Alias(r.toStartOfInterval(), "Time"),
 		sb.Alias(gbps, "Gbps")).
-		From(r.Table).
+		From(sb.Table(r.Table)).
 		Where(sb.And(r.timefilter(), c.homepageGraphFilter)).
 		GroupBy(sb.Column("Time")).
 		OrderBy(sb.Order(sb.Column("Time")).Fill(

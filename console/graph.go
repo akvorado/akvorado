@@ -84,6 +84,6 @@ func (input graphCommonHandlerInput) sourceSelect(table string) *sb.Query {
 	} else {
 		source.Item(sb.Star(), sb.Replace(truncated...))
 	}
-	return source.From(table).
+	return source.From(sb.Table(table)).
 		Setting("asterisk_include_alias_columns", sb.Uint(1))
 }

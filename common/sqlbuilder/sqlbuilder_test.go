@@ -135,7 +135,7 @@ func TestExpr(t *testing.T) {
 		}, {
 			Description: "in a subquery",
 			Expr: sb.Op(sb.Column("SrcAS"), "IN",
-				sb.Select(sb.Column("asn")).From("asns").Subquery()),
+				sb.Select(sb.Column("asn")).From(sb.Table("asns")).Subquery()),
 			Expected: "SrcAS IN (SELECT asn FROM asns)",
 		},
 	}
@@ -150,10 +150,10 @@ func TestExpr(t *testing.T) {
 
 func TestSelect(t *testing.T) {
 	source := sb.Select(sb.Star()).
-		From("flows").
+		From(sb.Table("flows")).
 		Setting("asterisk_include_alias_columns", sb.Uint(1))
 	rows := sb.Select(sb.Column("ExporterName")).
-		From("source").
+		From(sb.Table("source")).
 		GroupBy(sb.Column("ExporterName")).
 		OrderBy(sb.Order(sb.MustParseExpr("SUM(Bytes)")).Desc()).
 		Limit(10)
@@ -161,7 +161,7 @@ func TestSelect(t *testing.T) {
 		sb.Alias(sb.Column("TimeReceived"), "time"),
 		sb.Alias(sb.MustParseExpr("SUM(Bytes)/60"), "xps"),
 	).
-		From("source").
+		From(sb.Table("source")).
 		Where(sb.Between(sb.Column("TimeReceived"),
 			sb.Function("toDateTime", sb.String("2022-04-10 15:45:00")),
 			sb.Function("toDateTime", sb.String("2022-04-11 15:45:00")))).
@@ -217,7 +217,7 @@ FROM
 // work with, so a caller does not have to test for that itself.
 func TestSelectEmptyClauses(t *testing.T) {
 	got := sb.Select(sb.Star()).
-		From("flows").
+		From(sb.Table("flows")).
 		Where(sb.Op(sb.Column("SrcAS"), "=", sb.Uint(12322))).
 		GroupBy(sb.Columns("SrcAS", "DstAS")...).
 		OrderBy(sb.Order(sb.Column("SrcAS"))).
@@ -243,7 +243,7 @@ func TestSelectStarReplace(t *testing.T) {
 				sb.Function("IPv6CIDRToRange",
 					sb.Column("SrcAddr"), sb.Uint(48)),
 				sb.Uint(1)), "SrcAddr"))).
-		From("flows").
+		From(sb.Table("flows")).
 		String()
 	expected := `SELECT
   * REPLACE(tupleElement(IPv6CIDRToRange(SrcAddr, 48), 1) AS SrcAddr)
@@ -257,7 +257,7 @@ FROM
 func TestSelectStarExcept(t *testing.T) {
 	got := sb.Select().
 		Item(sb.Star(), sb.Except("SrcCommunities", "DstCommunities")).
-		From("flows").
+		From(sb.Table("flows")).
 		String()
 	expected := `SELECT
   * EXCEPT(SrcCommunities, DstCommunities)
@@ -269,9 +269,9 @@ FROM
 }
 
 func TestSelectUnionAll(t *testing.T) {
-	first := sb.Select(sb.Alias(sb.Uint(1), "axis")).From("flows")
-	second := sb.Select(sb.Alias(sb.Uint(2), "axis")).From("flows")
-	third := sb.Select(sb.Alias(sb.Uint(3), "axis")).From("flows")
+	first := sb.Select(sb.Alias(sb.Uint(1), "axis")).From(sb.Table("flows"))
+	second := sb.Select(sb.Alias(sb.Uint(2), "axis")).From(sb.Table("flows"))
+	third := sb.Select(sb.Alias(sb.Uint(3), "axis")).From(sb.Table("flows"))
 	got := first.UnionAll(second).UnionAll(third).String()
 	expected := `SELECT
   1 AS axis
@@ -293,10 +293,10 @@ FROM
 }
 
 func TestSelectScalarCTE(t *testing.T) {
-	period := sb.Select(sb.MustParseExpr("MAX(TimeReceived) - MIN(TimeReceived)")).From("source")
+	period := sb.Select(sb.MustParseExpr("MAX(TimeReceived) - MIN(TimeReceived)")).From(sb.Table("source"))
 	got := sb.Select(sb.Alias(sb.MustParseExpr("SUM(Bytes)/range"), "xps")).
 		WithScalar(period, "range").
-		From("source").
+		From(sb.Table("source")).
 		String()
 	expected := `WITH
   (SELECT
@@ -336,7 +336,7 @@ func TestApply(t *testing.T) {
 			return q.Limit(limit)
 		}
 	}
-	gotQuery := sb.Select(sb.Star()).From("flows").Apply(limited(5)).String()
+	gotQuery := sb.Select(sb.Star()).From(sb.Table("flows")).Apply(limited(5)).String()
 	expectedQuery := `SELECT
   *
 FROM

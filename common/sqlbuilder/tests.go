@@ -17,7 +17,7 @@ import (
 // a database would accept.
 func CheckStatement(t testing.TB, sql string) {
 	t.Helper()
-	if _, err := parser.NewParser(sql).ParseStmts(); err != nil {
+	if _, err := parse(sql); err != nil {
 		t.Errorf("cannot parse SQL:\n%s\n\nerror:\n%+v", sql, err)
 	}
 }
@@ -26,7 +26,7 @@ func CheckStatement(t testing.TB, sql string) {
 // only differ by their layout give the same result.
 func Normalize(t testing.TB, sql string) string {
 	t.Helper()
-	if _, err := parser.NewParser(sql).ParseStmts(); err != nil {
+	if _, err := parse(sql); err != nil {
 		t.Fatalf("cannot parse SQL:\n%s\n\nerror:\n%+v", sql, err)
 	}
 	return normalize(sql)
@@ -45,7 +45,7 @@ func NormalizeAll(t testing.TB, sqls []string) []string {
 // normalize is Normalize with nothing to report an error to. A statement that
 // does not parse is returned as is.
 func normalize(sql string) string {
-	statements, err := parser.NewParser(sql).ParseStmts()
+	statements, err := parse(sql)
 	if err != nil {
 		return sql
 	}

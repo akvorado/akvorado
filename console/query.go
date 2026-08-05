@@ -53,12 +53,12 @@ func selectRowsByLimitType(input graphCommonHandlerInput, dimensions []sb.Expr, 
 		rows.FromSelect(
 			sb.Select(slices.Concat(dimensions,
 				[]sb.Expr{sb.Alias(units, "sum_at_time")})...).
-				From("source").
+				From(sb.Table("source")).
 				Where(where).
 				GroupBy(dimensions...)).
 			OrderBy(sb.Order(
 				sb.Function("MAX", sb.Column("sum_at_time"))).Desc())
 		return rows
 	}
-	return rows.From("source").Where(where).OrderBy(sb.Order(units).Desc())
+	return rows.From(sb.Table("source")).Where(where).OrderBy(sb.Order(units).Desc())
 }

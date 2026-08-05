@@ -154,7 +154,7 @@ func (input graphLineHandlerInput) toSQL1(axis int, res resolution, options toSQ
 		sb.Alias(sb.Op(unitsSQL, "/", sb.Uint(r.Interval)), "xps"),
 		sb.Alias(dimensionsField, "dimensions"),
 	).
-		From("source").
+		From(sb.Table("source")).
 		Where(where).
 		GroupBy(sb.Column("time"), sb.Column("dimensions")).
 		OrderBy(sb.Order(sb.Column("time")).Fill(
