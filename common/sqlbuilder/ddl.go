@@ -107,23 +107,24 @@ func withCluster(node parser.Expr, cluster string) {
 	field.Set(reflect.ValueOf(&parser.ClusterClause{Expr: ident(cluster)}))
 }
 
-// columnType is a ClickHouse type written as is. Types come from the schema as
-// text, they are not built here.
-type columnType string
+// rawType is a ClickHouse type written as is. Types come from the schema as
+// text, they are not built here. They are not identifiers either: something
+// like "Array(UInt64)" would not survive quoting.
+type rawType string
 
-func (t columnType) Pos() parser.Pos {
+func (t rawType) Pos() parser.Pos {
 	return 0
 }
-func (t columnType) End() parser.Pos {
+func (t rawType) End() parser.Pos {
 	return 0
 }
-func (t columnType) Type() string {
+func (t rawType) Type() string {
 	return string(t)
 }
-func (t columnType) Accept(_ parser.ASTVisitor) error {
+func (t rawType) Accept(_ parser.ASTVisitor) error {
 	return nil
 }
-func (t columnType) FormatSQL(formatter *parser.Formatter) {
+func (t rawType) FormatSQL(formatter *parser.Formatter) {
 	formatter.WriteString(string(t))
 }
 
@@ -138,10 +139,8 @@ type ColumnDef struct {
 // definitions coming from the schema.
 func NewColumnDef(name, typeName string) ColumnDef {
 	return ColumnDef{node: &parser.ColumnDef{
-		Name: &parser.NestedIdentifier{
-			Ident: &parser.Ident{Name: name, QuoteType: parser.BackTicks},
-		},
-		Type: columnType(typeName),
+		Name: &parser.NestedIdentifier{Ident: backquotedIdent(name)},
+		Type: rawType(typeName),
 	}}
 }
 
@@ -388,7 +387,7 @@ type DictionaryAttribute struct {
 func Attribute(name, typeName string) DictionaryAttribute {
 	return DictionaryAttribute{node: &parser.DictionaryAttribute{
 		Name: ident(name),
-		Type: columnType(typeName),
+		Type: rawType(typeName),
 	}}
 }
 

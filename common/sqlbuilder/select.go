@@ -112,7 +112,7 @@ func (q *Query) Interpolate(column string, expr Expr) *Query {
 		q.query.OrderBy.Interpolate = &parser.InterpolateClause{}
 	}
 	q.query.OrderBy.Interpolate.Items = append(q.query.OrderBy.Interpolate.Items,
-		&parser.InterpolateItem{Column: &parser.Ident{Name: column}, Expr: expr.node})
+		&parser.InterpolateItem{Column: ident(column), Expr: expr.node})
 	return q
 }
 
@@ -128,7 +128,7 @@ func (q *Query) Setting(name string, value Expr) *Query {
 		q.query.Settings = &parser.SettingsClause{}
 	}
 	q.query.Settings.Items = append(q.query.Settings.Items, &parser.SettingExpr{
-		Name: &parser.Ident{Name: name},
+		Name: ident(name),
 		Expr: value.node,
 	})
 	return q
@@ -137,7 +137,7 @@ func (q *Query) Setting(name string, value Expr) *Query {
 // With adds a named CTE, as in "WITH name AS (SELECT …)".
 func (q *Query) With(name string, sub *Query) *Query {
 	return q.addCTE(&parser.CTEStmt{
-		Expr:  &parser.Ident{Name: name},
+		Expr:  ident(name),
 		Alias: sub.query,
 	})
 }
@@ -146,7 +146,7 @@ func (q *Query) With(name string, sub *Query) *Query {
 func (q *Query) WithScalar(sub *Query, name string) *Query {
 	return q.addCTE(&parser.CTEStmt{
 		Expr:  &parser.SubQuery{HasParen: true, Select: sub.query},
-		Alias: &parser.Ident{Name: name},
+		Alias: ident(name),
 	})
 }
 
@@ -155,7 +155,7 @@ func (q *Query) WithScalar(sub *Query, name string) *Query {
 func (q *Query) WithAlias(expr Expr, name string) *Query {
 	return q.addCTE(&parser.CTEStmt{
 		Expr:  expr.node,
-		Alias: &parser.Ident{Name: name},
+		Alias: ident(name),
 	})
 }
 

@@ -4,6 +4,7 @@
 package sqlbuilder_test
 
 import (
+	"strings"
 	"testing"
 
 	"akvorado/common/helpers"
@@ -85,6 +86,20 @@ func TestCreateTableOrReplace(t *testing.T) {
 	expected := "CREATE OR REPLACE TABLE flows (`TimeReceived` DateTime) ENGINE = Null"
 	if diff := helpers.Diff(got, sb.Normalize(t, expected)); diff != "" {
 		t.Errorf("CreateTable() (-got, +want):\n%s", diff)
+	}
+}
+
+// TestCreateTableColumnEscaping checks the backticks of a column name are
+// doubled before the name is put between backticks. The parser stops on the
+// first backtick and cannot read such a name back, so the statement is only
+// checked as text.
+func TestCreateTableColumnEscaping(t *testing.T) {
+	got := sb.CreateTable(sb.Table("flows")).
+		Columns(sb.NewColumnDef("Src`Addr", "IPv6")).
+		Engine(sb.NewEngine("Null")).
+		String()
+	if !strings.Contains(got, "`Src``Addr` IPv6") {
+		t.Errorf("CreateTable() did not escape the column name:\n%s", got)
 	}
 }
 
@@ -434,7 +449,9 @@ func TestCreateDistributedTable(t *testing.T) {
 	sb.CheckStatement(t, got)
 }
 
-func TestQuoteIdentifier(t *testing.T) {
+// TestNameQuoting checks a name gets backticks only when it needs them. A table
+// name and a column name are written the same way.
+func TestNameQuoting(t *testing.T) {
 	cases := []struct {
 		Pos      helpers.Pos
 		Input    string
@@ -450,13 +467,11 @@ func TestQuoteIdentifier(t *testing.T) {
 		{helpers.Mark(), "", "``"},
 	}
 	for _, tc := range cases {
-		got := sb.QuoteIdentifier(tc.Input)
-		if diff := helpers.Diff(got, tc.Expected); diff != "" {
-			t.Errorf("%sQuoteIdentifier(%q) (-got, +want):\n%s", tc.Pos, tc.Input, diff)
-		}
-		// A table name is written the same way.
 		if diff := helpers.Diff(sb.Table(tc.Input).String(), tc.Expected); diff != "" {
 			t.Errorf("%sTable(%q).String() (-got, +want):\n%s", tc.Pos, tc.Input, diff)
+		}
+		if diff := helpers.Diff(sb.Column(tc.Input).String(), tc.Expected); diff != "" {
+			t.Errorf("%sColumn(%q).String() (-got, +want):\n%s", tc.Pos, tc.Input, diff)
 		}
 	}
 }

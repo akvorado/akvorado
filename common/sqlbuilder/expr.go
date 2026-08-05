@@ -73,7 +73,7 @@ func (e Expr) pretty() string {
 
 // Column returns a reference to a column.
 func Column(name string) Expr {
-	return wrap(&parser.Ident{Name: name})
+	return wrap(ident(name))
 }
 
 // Columns returns references to several columns.
@@ -112,7 +112,7 @@ func Number(literal string) Expr {
 // Function returns a call to the named function.
 func Function(name string, args ...Expr) Expr {
 	return wrap(&parser.FunctionExpr{
-		Name:   &parser.Ident{Name: name},
+		Name:   ident(name),
 		Params: &parser.ParamExprList{Items: &parser.ColumnExprList{Items: nodes(args)}},
 	})
 }
@@ -141,7 +141,7 @@ func Op(left Expr, operator string, right Expr) Expr {
 // Cast returns the expression cast to the provided ClickHouse type, using the
 // postfix "::" form.
 func Cast(expr Expr, typeName string) Expr {
-	return Op(expr, "::", Column(typeName))
+	return Op(expr, "::", wrap(rawType(typeName)))
 }
 
 // And combines expressions with AND. Empty expressions are ignored. An operand
@@ -237,18 +237,18 @@ func NotBetween(expr, low, high Expr) Expr {
 func Interval(value Expr, unit string) Expr {
 	// IntervalPos must not be zero, otherwise the INTERVAL keyword is dropped.
 	return wrap(&parser.IntervalExpr{
-		IntervalPos: 1, Expr: value.node, Unit: &parser.Ident{Name: unit},
+		IntervalPos: 1, Expr: value.node, Unit: ident(unit),
 	})
 }
 
 // Alias names an expression with AS.
 func Alias(expr Expr, name string) Expr {
-	return wrap(&parser.AliasExpr{Expr: expr.node, Alias: &parser.Ident{Name: name}})
+	return wrap(&parser.AliasExpr{Expr: expr.node, Alias: ident(name)})
 }
 
 // Star returns the "*" of "SELECT *".
 func Star() Expr {
-	return Column("*")
+	return wrap(&parser.Ident{Name: "*"})
 }
 
 // Modifier changes what a select item covers, like the "EXCEPT (a, b)" of
@@ -259,7 +259,7 @@ type Modifier struct {
 
 func modifier(name string, items []Expr) Modifier {
 	return Modifier{node: &parser.FunctionExpr{
-		Name:   &parser.Ident{Name: name},
+		Name:   ident(name),
 		Params: &parser.ParamExprList{Items: &parser.ColumnExprList{Items: nodes(items)}},
 	}}
 }

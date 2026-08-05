@@ -148,6 +148,52 @@ func TestExpr(t *testing.T) {
 	}
 }
 
+// TestIdentifierQuoting checks a name needing backticks gets them. Column names
+// come from the schema and from the custom dictionaries, so they are not all
+// bare identifiers. It also checks what is not a name keeps its own form.
+func TestIdentifierQuoting(t *testing.T) {
+	cases := []struct {
+		Description string
+		Expr        sb.Expr
+		Expected    string
+	}{
+		{
+			Description: "column with a space",
+			Expr:        sb.Column("Src Addr"),
+			Expected:    "`Src Addr`",
+		}, {
+			Description: "column with a backtick",
+			Expr:        sb.Column("Src`Addr"),
+			Expected:    "`Src``Addr`",
+		}, {
+			Description: "column starting with a digit",
+			Expr:        sb.Column("1stAS"),
+			Expected:    "`1stAS`",
+		}, {
+			Description: "alias with a space",
+			Expr:        sb.Alias(sb.Column("SrcAS"), "my alias"),
+			Expected:    "SrcAS AS `my alias`",
+		}, {
+			// A type is not an identifier, it keeps its parentheses.
+			Description: "cast to a parameterized type",
+			Expr:        sb.Cast(sb.Column("SrcAS"), "Array(UInt64)"),
+			Expected:    "SrcAS::Array(UInt64)",
+		}, {
+			// The star is not a column named "*".
+			Description: "star",
+			Expr:        sb.Star(),
+			Expected:    "*",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.Description, func(t *testing.T) {
+			if diff := helpers.Diff(tc.Expr.String(), tc.Expected); diff != "" {
+				t.Errorf("String() (-got, +want):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestSelect(t *testing.T) {
 	source := sb.Select(sb.Star()).
 		From(sb.Table("flows")).

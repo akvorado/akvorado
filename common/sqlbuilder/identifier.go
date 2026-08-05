@@ -4,7 +4,6 @@
 package sqlbuilder
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -15,16 +14,6 @@ import (
 // See https://clickhouse.com/docs/sql-reference/syntax#identifiers. This is not
 // complete, as keywords also have to be quoted, but for our purpose, it's enough.
 var bareIdentifier = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
-
-// QuoteIdentifier quotes an identifier (table name, column name, database name,
-// cluster name, etc.) the way ClickHouse writes it: with backticks only when it
-// needs them. It is meant for the SQL not built with this package.
-func QuoteIdentifier(name string) string {
-	if bareIdentifier.MatchString(name) {
-		return name
-	}
-	return fmt.Sprintf("`%s`", escapeIdentifier(name))
-}
 
 // escapeIdentifier doubles the backticks of a name, so it can be put between
 // backticks.
@@ -47,5 +36,11 @@ func ident(name string) *parser.Ident {
 	if bareIdentifier.MatchString(name) {
 		return &parser.Ident{Name: name, QuoteType: parser.Unquoted}
 	}
+	return backquotedIdent(name)
+}
+
+// backquotedIdent builds an identifier always written between backticks, the
+// way ClickHouse writes the columns of a table back.
+func backquotedIdent(name string) *parser.Ident {
 	return &parser.Ident{Name: escapeIdentifier(name), QuoteType: parser.BackTicks}
 }
