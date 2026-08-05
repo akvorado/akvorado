@@ -9,6 +9,9 @@ import (
 	"errors"
 	"fmt"
 
+	// Used in generated code, but imported here to pin go.mod output.
+	_ "github.com/planetscale/vtprotobuf/protohelpers"
+
 	"akvorado/common/helpers/bimap"
 )
 
