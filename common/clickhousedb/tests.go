@@ -41,31 +41,31 @@ func setupClickHouseDatabase(t *testing.T, servers []string, cluster string) str
 	if err != nil {
 		t.Fatalf("clickhouse.Open() error:\n%+v", err)
 	}
-	db := sb.QuoteIdentifier(database)
-	for _, query := range []string{
-		fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", db),
-		"DROP TABLE IF EXISTS system.metric_log",
+	for _, statement := range []sb.Statement{
+		sb.CreateDatabase(database),
+		sb.DropTable(sb.Table("metric_log").In("system")),
 	} {
-		if cluster != "" {
-			query = TransformQueryOnCluster(query, cluster)
-		}
+		query := onClusterSQL(statement, cluster)
 		if err := conn.Exec(t.Context(), query); err != nil {
 			t.Fatalf("Exec(%q) error:\n%+v", query, err)
 		}
 	}
 	t.Cleanup(func() {
 		defer conn.Close()
-		query := fmt.Sprintf("DROP DATABASE IF EXISTS %s", db)
-		if cluster != "" {
-			query = TransformQueryOnCluster(query, cluster)
-		}
 		// This is important to NOT use t.Context() as it is already cancelled
 		// at this point.
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
-		conn.Exec(ctx, query)
+		conn.Exec(ctx, onClusterSQL(sb.DropDatabase(database), cluster))
 	})
 	return database
+}
+
+// Servers returns the addresses of the ClickHouse servers the component talks
+// to. A query only goes to one of them, so this is for a test needing to reach
+// each server of a cluster on its own.
+func (c *Component) Servers() []string {
+	return c.config.Servers
 }
 
 // SetupClickHouse configures a client to use for testing. A random database is
@@ -78,9 +78,17 @@ func SetupClickHouse(t *testing.T, r *reporter.Reporter, cluster bool) *Componen
 			helpers.CheckExternalService(t, "ClickHouse", []string{"clickhouse:9000", "127.0.0.1:9000"}),
 		}
 	} else {
-		config.Servers = []string{
-			helpers.CheckExternalService(t, "ClickHouse cluster", []string{"clickhouse-3:9000", "127.0.0.1:9003"}),
+		// Each server of the test cluster, either from another container or
+		// from the host. See docker-compose-dev.yml.
+		servers := []string{}
+		for _, candidates := range [][]string{
+			{"clickhouse-1:9000", "127.0.0.1:9001"},
+			{"clickhouse-3:9000", "127.0.0.1:9003"},
+		} {
+			servers = append(servers,
+				helpers.CheckExternalService(t, "ClickHouse cluster", candidates))
 		}
+		config.Servers = servers
 		config.Cluster = "akvorado"
 	}
 	config.DialTimeout = 5 * time.Second

@@ -224,7 +224,7 @@ func (c *Component) createDictionary(ctx context.Context, name, layout string, a
 		return errSkipStep
 	}
 	c.r.Info().Msgf("create dictionary %s", name)
-	if err := c.d.ClickHouse.ExecOnCluster(ctx, createQuery.OrReplace().String()); err != nil {
+	if err := c.d.ClickHouse.ExecOnCluster(ctx, createQuery.OrReplace()); err != nil {
 		return fmt.Errorf("cannot create dictionary %s: %w", name, err)
 	}
 	return nil
@@ -266,7 +266,7 @@ func (c *Component) createExportersTable(ctx context.Context) error {
 	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
 		"allow_suspicious_low_cardinality_types": 1,
 	}))
-	if err := c.d.ClickHouse.ExecOnCluster(ctx, createQuery.OrReplace().String()); err != nil {
+	if err := c.d.ClickHouse.ExecOnCluster(ctx, createQuery.OrReplace()); err != nil {
 		return fmt.Errorf("cannot create exporters table: %w", err)
 	}
 
@@ -310,11 +310,11 @@ func (c *Component) createExportersConsumerView(ctx context.Context) error {
 
 	// Drop existing table and recreate
 	c.r.Info().Msg("create exporters view")
-	if err := c.d.ClickHouse.ExecOnCluster(ctx, sb.DropTable(sb.Table(name)).String()); err != nil {
+	if err := c.d.ClickHouse.ExecOnCluster(ctx, sb.DropTable(sb.Table(name))); err != nil {
 		return fmt.Errorf("cannot drop existing exporters view: %w", err)
 	}
 	if err := c.d.ClickHouse.ExecOnCluster(ctx, sb.CreateMaterializedView(
-		sb.Table(name), sb.Table("exporters"), selectQuery).String()); err != nil {
+		sb.Table(name), sb.Table("exporters"), selectQuery)); err != nil {
 		return fmt.Errorf("cannot create exporters view: %w", err)
 	}
 
@@ -351,14 +351,14 @@ func (c *Component) createRawFlowsTable(ctx context.Context) error {
 		fmt.Sprintf("%s_consumer", tableName),
 		tableName,
 	} {
-		if err := c.d.ClickHouse.ExecOnCluster(ctx, sb.DropTable(sb.Table(table)).String()); err != nil {
+		if err := c.d.ClickHouse.ExecOnCluster(ctx, sb.DropTable(sb.Table(table))); err != nil {
 			return fmt.Errorf("cannot drop %s: %w", table, err)
 		}
 	}
 	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
 		"allow_suspicious_low_cardinality_types": 1,
 	}))
-	if err := c.d.ClickHouse.ExecOnCluster(ctx, createQuery.String()); err != nil {
+	if err := c.d.ClickHouse.ExecOnCluster(ctx, createQuery); err != nil {
 		return fmt.Errorf("cannot create raw flows table: %w", err)
 	}
 
@@ -393,12 +393,12 @@ func (c *Component) createRawFlowsConsumerView(ctx context.Context) error {
 
 	// Drop and create
 	c.r.Info().Msg("create raw flows consumer view")
-	if err := c.d.ClickHouse.ExecOnCluster(ctx, sb.DropTable(sb.Table(viewName)).String()); err != nil {
+	if err := c.d.ClickHouse.ExecOnCluster(ctx, sb.DropTable(sb.Table(viewName))); err != nil {
 		return fmt.Errorf("cannot drop table %s: %w", viewName, err)
 	}
 	if err := c.d.ClickHouse.ExecOnCluster(ctx, sb.CreateMaterializedView(
 		sb.Table(viewName), sb.Table(c.distributedTable("flows")),
-		selectQuery).String()); err != nil {
+		selectQuery)); err != nil {
 		return fmt.Errorf("cannot create raw flows consumer view: %w", err)
 	}
 
@@ -457,7 +457,7 @@ func (c *Component) createOrUpdateFlowsTable(ctx context.Context, resolution Res
 		for _, setting := range settings {
 			createQuery.Setting(setting.name, setting.expr())
 		}
-		if err := c.d.ClickHouse.ExecOnCluster(ctx, createQuery.String()); err != nil {
+		if err := c.d.ClickHouse.ExecOnCluster(ctx, createQuery); err != nil {
 			return fmt.Errorf("cannot create %s: %w", tableName, err)
 		}
 		if _, err := c.applySkipIndexes(ctx, tableName, resolution.Interval == 0); err != nil {
@@ -520,7 +520,7 @@ outer:
 					// either the column was an alias and should be none, or the other way around. Either way, we need to recreate.
 					c.r.Debug().Msg(fmt.Sprintf("column %s alias content has changed, recreating. New ALIAS: %s", existingColumn.Name, wantedColumn.ClickHouseAlias))
 					err := c.d.ClickHouse.ExecOnCluster(ctx,
-						sb.AlterTable(sb.Table(tableName)).DropColumn(existingColumn.Name).String())
+						sb.AlterTable(sb.Table(tableName)).DropColumn(existingColumn.Name))
 					if err != nil {
 						return fmt.Errorf("cannot drop %s from %s to cleanup aliasing: %w",
 							existingColumn.Name, tableName, err)
@@ -536,7 +536,7 @@ outer:
 				if resolution.Interval > 0 && !wantedColumn.ClickHouseNotSortingKey && existingColumn.IsSortingKey == 0 {
 					// That's something we can fix, but we need to drop it before recreating it
 					err := c.d.ClickHouse.ExecOnCluster(ctx,
-						sb.AlterTable(sb.Table(tableName)).DropColumn(existingColumn.Name).String())
+						sb.AlterTable(sb.Table(tableName)).DropColumn(existingColumn.Name))
 					if err != nil {
 						return fmt.Errorf("cannot drop %s from %s to fix ordering: %w",
 							existingColumn.Name, tableName, err)
@@ -569,11 +569,11 @@ outer:
 		if resolution.Interval > 0 {
 			// Drop the view
 			viewName := fmt.Sprintf("%s_consumer", tableName)
-			if err := c.d.ClickHouse.ExecOnCluster(ctx, sb.DropTable(sb.Table(viewName)).String()); err != nil {
+			if err := c.d.ClickHouse.ExecOnCluster(ctx, sb.DropTable(sb.Table(viewName))); err != nil {
 				return fmt.Errorf("cannot drop %s: %w", viewName, err)
 			}
 		}
-		if err := c.d.ClickHouse.ExecOnCluster(ctx, alterQuery.String()); err != nil {
+		if err := c.d.ClickHouse.ExecOnCluster(ctx, alterQuery); err != nil {
 			return fmt.Errorf("cannot update table %s: %w", tableName, err)
 		}
 		modified = true
@@ -590,7 +590,7 @@ outer:
 		for _, setting := range settings {
 			alterSettings.ModifySetting(setting.name, setting.expr())
 		}
-		if err := c.d.ClickHouse.ExecOnCluster(ctx, alterSettings.String()); err != nil {
+		if err := c.d.ClickHouse.ExecOnCluster(ctx, alterSettings); err != nil {
 			return fmt.Errorf("cannot modify settings for table %s: %w", tableName, err)
 		}
 		modified = true
@@ -606,7 +606,7 @@ outer:
 			clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
 				"materialize_ttl_after_modify": 0,
 			})),
-			sb.AlterTable(sb.Table(tableName)).ModifyTTL(ttlExpr).String())
+			sb.AlterTable(sb.Table(tableName)).ModifyTTL(ttlExpr))
 		if err != nil {
 			return fmt.Errorf("cannot modify TTL for table %s: %w", tableName, err)
 		}
@@ -714,13 +714,13 @@ func (c *Component) applySkipIndexes(ctx context.Context, tableName string, isMa
 	// Batch drops before adds (drop must precede re-add when type changes).
 	if toDrop.Len() > 0 {
 		c.r.Info().Msgf("removing %d skip index(es) from %s", toDrop.Len(), tableName)
-		if err := c.d.ClickHouse.ExecOnCluster(ctx, toDrop.String()); err != nil {
+		if err := c.d.ClickHouse.ExecOnCluster(ctx, toDrop); err != nil {
 			return false, fmt.Errorf("cannot drop skip indexes on %s: %w", tableName, err)
 		}
 	}
 	if toAdd.Len() > 0 {
 		c.r.Info().Msgf("adding %d skip index(es) to %s", toAdd.Len(), tableName)
-		if err := c.d.ClickHouse.ExecOnCluster(ctx, toAdd.String()); err != nil {
+		if err := c.d.ClickHouse.ExecOnCluster(ctx, toAdd); err != nil {
 			return false, fmt.Errorf("cannot add skip indexes on %s: %w", tableName, err)
 		}
 	}
@@ -760,12 +760,12 @@ func (c *Component) createFlowsConsumerView(ctx context.Context, resolution Reso
 
 	// Drop and create
 	c.r.Info().Msgf("create %s", viewName)
-	if err := c.d.ClickHouse.ExecOnCluster(ctx, sb.DropTable(sb.Table(viewName)).String()); err != nil {
+	if err := c.d.ClickHouse.ExecOnCluster(ctx, sb.DropTable(sb.Table(viewName))); err != nil {
 		return fmt.Errorf("cannot drop table %s: %w", viewName, err)
 	}
 	if err := c.d.ClickHouse.ExecOnCluster(ctx, sb.CreateMaterializedView(
 		sb.Table(viewName), sb.Table(c.localTable(tableName)),
-		selectQuery).String()); err != nil {
+		selectQuery)); err != nil {
 		return fmt.Errorf("cannot create %s: %w", viewName, err)
 	}
 	return nil
@@ -833,7 +833,7 @@ ORDER BY position ASC
 	ctx = clickhouse.Context(ctx, clickhouse.WithSettings(clickhouse.Settings{
 		"allow_suspicious_low_cardinality_types": 1,
 	}))
-	if err := c.d.ClickHouse.ExecOnCluster(ctx, createQuery.OrReplace().String()); err != nil {
+	if err := c.d.ClickHouse.ExecOnCluster(ctx, createQuery.OrReplace()); err != nil {
 		return fmt.Errorf("cannot create %s: %w", c.distributedTable(source), err)
 	}
 	return nil

@@ -223,9 +223,8 @@ func (c *Component) reloadDictionaries(ctx context.Context) {
 // ReloadDictionary will reload the specified dictionnary.
 func (c *Component) ReloadDictionary(ctx context.Context, dictName string) error {
 	if c.d.ClickHouse != nil {
-		return c.d.ClickHouse.ExecOnCluster(ctx, fmt.Sprintf("SYSTEM RELOAD DICTIONARY %s.%s",
-			sb.QuoteIdentifier(c.d.ClickHouse.DatabaseName()),
-			sb.QuoteIdentifier(dictName)))
+		return c.d.ClickHouse.ExecOnCluster(ctx,
+			sb.SystemReloadDictionary(sb.Table(dictName).In(c.d.ClickHouse.DatabaseName())))
 	}
 	return nil
 }

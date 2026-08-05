@@ -216,6 +216,105 @@ func TestDropTable(t *testing.T) {
 	sb.CheckStatement(t, got)
 }
 
+func TestCreateDatabase(t *testing.T) {
+	got := sb.CreateDatabase("akvorado").String()
+	if diff := helpers.Diff(got, "CREATE DATABASE IF NOT EXISTS akvorado"); diff != "" {
+		t.Errorf("CreateDatabase() (-got, +want):\n%s", diff)
+	}
+	sb.CheckStatement(t, got)
+}
+
+func TestDropDatabase(t *testing.T) {
+	got := sb.DropDatabase("my db").String()
+	if diff := helpers.Diff(got, "DROP DATABASE IF EXISTS `my db` SYNC"); diff != "" {
+		t.Errorf("DropDatabase() (-got, +want):\n%s", diff)
+	}
+	sb.CheckStatement(t, got)
+}
+
+func TestSystemReloadDictionary(t *testing.T) {
+	got := sb.SystemReloadDictionary(sb.Table("asns").In("akvorado")).String()
+	if diff := helpers.Diff(got, "SYSTEM RELOAD DICTIONARY akvorado.asns"); diff != "" {
+		t.Errorf("SystemReloadDictionary() (-got, +want):\n%s", diff)
+	}
+	sb.CheckStatement(t, got)
+}
+
+func TestOnCluster(t *testing.T) {
+	cases := []struct {
+		Pos       helpers.Pos
+		Statement sb.Statement
+		Cluster   string
+		Expected  string
+	}{
+		{
+			helpers.Mark(),
+			sb.CreateTable(sb.Table("flows").In("akvorado")).
+				Columns(sb.NewColumnDef("TimeReceived", "DateTime")).
+				Engine(sb.NewEngine("Null")),
+			"akvorado",
+			"CREATE TABLE akvorado.flows ON CLUSTER akvorado (`TimeReceived` DateTime) ENGINE = Null",
+		}, {
+			helpers.Mark(),
+			sb.CreateMaterializedView(sb.Table("exporters_consumer"), sb.Table("exporters"),
+				sb.Select(sb.Column("TimeReceived")).From(sb.Table("flows"))),
+			"akvorado",
+			"CREATE MATERIALIZED VIEW exporters_consumer ON CLUSTER akvorado TO exporters " +
+				"AS SELECT TimeReceived FROM flows",
+		}, {
+			helpers.Mark(),
+			sb.CreateDictionary(sb.Table("asns")).
+				Attributes(sb.Attribute("asn", "UInt32")).
+				PrimaryKey(sb.Column("asn")).
+				Source("HTTP", sb.Param("URL", sb.String("http://127.0.0.1:8080/asns.csv"))).
+				Lifetime(0, 3600).
+				Layout("HASHED"),
+			"akvorado",
+			"CREATE DICTIONARY asns ON CLUSTER akvorado (asn UInt32) PRIMARY KEY asn " +
+				"SOURCE(HTTP(URL 'http://127.0.0.1:8080/asns.csv')) " +
+				"LIFETIME(MIN 0 MAX 3600) LAYOUT(HASHED())",
+		}, {
+			helpers.Mark(),
+			sb.AlterTable(sb.Table("flows")).DropColumn("SrcVlan"),
+			"akvorado",
+			"ALTER TABLE flows ON CLUSTER akvorado DROP COLUMN SrcVlan",
+		}, {
+			helpers.Mark(),
+			sb.DropTable(sb.Table("flows")),
+			"akvorado",
+			"DROP TABLE IF EXISTS flows ON CLUSTER akvorado SYNC",
+		}, {
+			helpers.Mark(),
+			sb.CreateDatabase("akvorado"),
+			"akvorado",
+			"CREATE DATABASE IF NOT EXISTS akvorado ON CLUSTER akvorado",
+		}, {
+			helpers.Mark(),
+			sb.DropDatabase("akvorado"),
+			"akvorado",
+			"DROP DATABASE IF EXISTS akvorado ON CLUSTER akvorado SYNC",
+		}, {
+			// For the SYSTEM statements, the clause comes before the name.
+			helpers.Mark(),
+			sb.SystemReloadDictionary(sb.Table("asns").In("akvorado")),
+			"akvorado",
+			"SYSTEM RELOAD DICTIONARY ON CLUSTER akvorado akvorado.asns",
+		}, {
+			// The cluster name is quoted like any other identifier.
+			helpers.Mark(),
+			sb.DropTable(sb.Table("flows")),
+			"my-cluster",
+			"DROP TABLE IF EXISTS flows ON CLUSTER `my-cluster` SYNC",
+		},
+	}
+	for _, tc := range cases {
+		got := tc.Statement.OnCluster(tc.Cluster)
+		if diff := helpers.Diff(got.String(), sb.Normalize(t, tc.Expected)); diff != "" {
+			t.Errorf("%sOnCluster() (-got, +want):\n%s", tc.Pos, diff)
+		}
+	}
+}
+
 func TestParseColumnDefsErrors(t *testing.T) {
 	cases := []string{
 		"SELECT 1",

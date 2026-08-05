@@ -195,4 +195,4 @@ tool (
 	honnef.co/go/tools/cmd/staticcheck
 )
 
-replace github.com/AfterShip/clickhouse-sql-parser => github.com/vincentbernat/clickhouse-sql-parser v0.0.0-20260805113902-1dc638d03624
+replace github.com/AfterShip/clickhouse-sql-parser => github.com/vincentbernat/clickhouse-sql-parser v0.0.0-20260805134228-45df8692241d

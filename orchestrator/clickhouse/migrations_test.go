@@ -30,6 +30,7 @@ import (
 	sb "akvorado/common/sqlbuilder"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
+	"golang.org/x/sync/errgroup"
 )
 
 // dictionaryServerURL returns the URL of a shared HTTP server that returns
@@ -93,14 +94,14 @@ func dumpAllTables(t *testing.T, ch *clickhousedb.Component, schemaComponent *sc
 }
 
 func dropAllTables(t *testing.T, ch *clickhousedb.Component) {
-	db := sb.QuoteIdentifier(ch.DatabaseName())
-	t.Logf("(%s) Drop database %s", time.Now(), db)
-	for _, sql := range []string{
-		fmt.Sprintf("DROP DATABASE IF EXISTS %s SYNC", db),
-		fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", db),
+	database := ch.DatabaseName()
+	t.Logf("(%s) Drop database %s", time.Now(), database)
+	for _, statement := range []sb.Statement{
+		sb.DropDatabase(database),
+		sb.CreateDatabase(database),
 	} {
-		if err := ch.ExecOnCluster(t.Context(), sql); err != nil {
-			t.Fatalf("Exec(%q) error:\n%+v", sql, err)
+		if err := ch.ExecOnCluster(t.Context(), statement); err != nil {
+			t.Fatalf("Exec(%q) error:\n%+v", statement, err)
 		}
 	}
 }
@@ -149,15 +150,42 @@ func loadTables(t *testing.T, ch *clickhousedb.Component, sch *schema.Component,
 		return 0
 	})
 
+	// The schemas are the SQL ClickHouse wrote back: they take no ON CLUSTER
+	// clause, so each server gets them as is.
+	conns := connectToEachServer(t, ch)
 	for _, tws := range tables {
 		if isOldTable(sch, tws.Table) {
 			continue
 		}
 		t.Logf("Load table %s", tws.Table)
-		if err := ch.ExecOnCluster(ctx, tws.Schema); err != nil {
+		var loading errgroup.Group
+		for _, conn := range conns {
+			loading.Go(func() error { return conn.Exec(ctx, tws.Schema) })
+		}
+		if err := loading.Wait(); err != nil {
 			t.Fatalf("Exec(%q) error:\n%+v", tws.Schema, err)
 		}
 	}
+}
+
+// connectToEachServer opens a connection to each server the component talks to.
+// The connection of the component only picks one server for each query.
+func connectToEachServer(t *testing.T, ch *clickhousedb.Component) []clickhouse.Conn {
+	t.Helper()
+	servers := ch.Servers()
+	conns := make([]clickhouse.Conn, 0, len(servers))
+	for _, server := range servers {
+		conn, err := clickhouse.Open(&clickhouse.Options{
+			Addr:        []string{server},
+			DialTimeout: 5 * time.Second,
+		})
+		if err != nil {
+			t.Fatalf("clickhouse.Open(%q) error:\n%+v", server, err)
+		}
+		t.Cleanup(func() { conn.Close() })
+		conns = append(conns, conn)
+	}
+	return conns
 }
 
 // loadAllTables load tables from a CSV file. Use `format CSV` with

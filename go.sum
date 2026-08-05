@@ -353,8 +353,8 @@ github.com/uptrace/bun/dialect/pgdialect v1.2.18/go.mod h1:Tqdf4QP1okrGYpXfodXvC
 github.com/uptrace/bun/dialect/sqlitedialect v1.2.18 h1:Z33SY/U++XK9uGWqS4h8OZVxfCXguIG+sU9cYq2PGFQ=
 github.com/uptrace/bun/dialect/sqlitedialect v1.2.18/go.mod h1:1MVOS/Ncy4FZbkJcgUFH6OqYoQinYNjkEwsmNQEXz2A=
 github.com/urfave/cli/v2 v2.1.1/go.mod h1:SE9GqnLQmjVa0iPEY0f1w3ygNIYcIJ0OKPMoW2caLfQ=
-github.com/vincentbernat/clickhouse-sql-parser v0.0.0-20260805113902-1dc638d03624 h1:ht/o+7wr0KpEowAmAD3HCP8wuME1TWP1/nmb9eEJD6g=
-github.com/vincentbernat/clickhouse-sql-parser v0.0.0-20260805113902-1dc638d03624/go.mod h1:Qi3qvPTfZb/aFwI5V4WFOahgjsLJa4MzVijIAfwOhDw=
+github.com/vincentbernat/clickhouse-sql-parser v0.0.0-20260805134228-45df8692241d h1:ZDapctEXRW9yJR2yasVpHdJiUo6zKVpMZTiO4M4Zgjk=
+github.com/vincentbernat/clickhouse-sql-parser v0.0.0-20260805134228-45df8692241d/go.mod h1:Qi3qvPTfZb/aFwI5V4WFOahgjsLJa4MzVijIAfwOhDw=
 github.com/vmihailenco/msgpack/v5 v5.4.1 h1:cQriyiUvjTwOHg8QZaPihLWeRAAVoCpE00IUPn0Bjt8=
 github.com/vmihailenco/msgpack/v5 v5.4.1/go.mod h1:GaZTsDaehaPpQVyxrf5mtQlH+pc21PIudVV/E3rRQok=
 github.com/vmihailenco/tagparser/v2 v2.0.0 h1:y09buUbR+b5aycVFQs/g70pqKVZNBmxwAhO7/IwNM9g=

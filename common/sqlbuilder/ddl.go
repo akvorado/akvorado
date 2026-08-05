@@ -6,6 +6,7 @@ package sqlbuilder
 import (
 	"errors"
 	"fmt"
+	"reflect"
 
 	"github.com/AfterShip/clickhouse-sql-parser/parser"
 )
@@ -40,6 +41,15 @@ func (t TableName) node() *parser.TableIdentifier {
 	return identifier
 }
 
+// Statement is a complete SQL statement, whatever it was built from.
+type Statement interface {
+	// String renders the statement as SQL.
+	String() string
+	// OnCluster adds an ON CLUSTER clause to the statement. The statement it
+	// is called on is modified, not copied.
+	OnCluster(cluster string) Statement
+}
+
 // statement is embedded in the statement builders below. It carries how a
 // statement is rendered and compared.
 type statement struct {
@@ -63,6 +73,38 @@ func (s statement) Matches(sql string) bool {
 	}
 	theirs, ok := canonical(sql)
 	return ok && mine == theirs
+}
+
+// OnCluster adds an ON CLUSTER clause to the statement, so ClickHouse runs it on
+// every server of the cluster. The statement is modified, not copied. A
+// statement not accepting the clause, like SELECT, is left as is.
+func (s statement) OnCluster(cluster string) Statement {
+	withCluster(s.node, cluster)
+	return s
+}
+
+// withCluster sets the ON CLUSTER clause of a node. The node is modified. A
+// node without such a field, like SELECT, is left as is.
+func withCluster(node parser.Expr, cluster string) {
+	const clusterField = "OnCluster"
+
+	// The SYSTEM statements carry the clause on the node below.
+	if system, ok := node.(*parser.SystemStmt); ok {
+		withCluster(system.Expr, cluster)
+		return
+	}
+
+	// Look for the cluster field for any other node.
+	value := reflect.ValueOf(node)
+	if value.Kind() != reflect.Pointer || value.Elem().Kind() != reflect.Struct {
+		return
+	}
+	field := value.Elem().FieldByName(clusterField)
+	if !field.IsValid() || field.Type() != reflect.TypeFor[*parser.ClusterClause]() {
+		return
+	}
+
+	field.Set(reflect.ValueOf(&parser.ClusterClause{Expr: ident(cluster)}))
 }
 
 // columnType is a ClickHouse type written as is. Types come from the schema as
@@ -496,5 +538,32 @@ func DropTable(name TableName) DropTableStatement {
 		Name:       name.node(),
 		IfExists:   true,
 		Modifier:   "SYNC",
+	}}}
+}
+
+// CreateDatabase builds a "CREATE DATABASE IF NOT EXISTS" statement.
+func CreateDatabase(name string) Statement {
+	return statement{node: &parser.CreateDatabase{
+		Name:        ident(name),
+		IfNotExists: true,
+	}}
+}
+
+// DropDatabase builds a "DROP DATABASE IF EXISTS … SYNC" statement. SYNC makes
+// ClickHouse wait for the database to be really gone, so it can be created
+// again right after.
+func DropDatabase(name string) Statement {
+	return statement{node: &parser.DropDatabase{
+		Name:     ident(name),
+		IfExists: true,
+		Modifier: "SYNC",
+	}}
+}
+
+// SystemReloadDictionary builds a "SYSTEM RELOAD DICTIONARY" statement.
+func SystemReloadDictionary(name TableName) Statement {
+	return statement{node: &parser.SystemStmt{Expr: &parser.SystemReloadExpr{
+		Type:       "DICTIONARY",
+		Dictionary: name.node(),
 	}}}
 }

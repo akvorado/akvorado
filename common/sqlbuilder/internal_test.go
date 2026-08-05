@@ -105,6 +105,16 @@ func TestCanonicalCompare(t *testing.T) {
 	}
 }
 
+// TestOnClusterUnsupported checks a statement taking no ON CLUSTER clause is
+// left as is. No builder produces one, so the node is wrapped by hand.
+func TestOnClusterUnsupported(t *testing.T) {
+	query := Select(Column("SrcAS")).From(Table("flows"))
+	got := statement{node: query.query}.OnCluster("akvorado")
+	if diff := helpers.Diff(got.String(), query.String()); diff != "" {
+		t.Errorf("OnCluster() (-got, +want):\n%s", diff)
+	}
+}
+
 func TestCanonicalErrors(t *testing.T) {
 	cases := []struct {
 		Description string
