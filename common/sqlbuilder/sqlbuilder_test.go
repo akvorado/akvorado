@@ -148,6 +148,80 @@ func TestExpr(t *testing.T) {
 	}
 }
 
+// TestOpPrecedence checks an operand binding less tightly than the operator
+// above it gets parentheses, and that an operand which does not need them keeps
+// none. Without this, the SQL would not say what the tree says.
+func TestOpPrecedence(t *testing.T) {
+	a, b, c := sb.Column("a"), sb.Column("b"), sb.Column("c")
+	cases := []struct {
+		Description string
+		Expr        sb.Expr
+		Expected    string
+	}{
+		{
+			Description: "addition below a multiplication",
+			Expr:        sb.Op(sb.Op(a, "+", b), "*", c),
+			Expected:    "(a + b) * c",
+		}, {
+			Description: "addition below a cast",
+			Expr:        sb.Cast(sb.Op(a, "+", b), "UInt128"),
+			Expected:    "(a + b)::UInt128",
+		}, {
+			// Subtraction is not associative, so the tree has to be kept.
+			Description: "subtraction on the right of a subtraction",
+			Expr:        sb.Op(a, "-", sb.Op(b, "-", c)),
+			Expected:    "a - (b - c)",
+		}, {
+			Description: "or below an and",
+			Expr:        sb.Op(sb.Or(a, b), "AND", c),
+			Expected:    "(a OR b) AND c",
+		}, {
+			// The operators associate to the left, so this reads as written.
+			Description: "subtraction then addition",
+			Expr:        sb.Op(sb.Op(a, "-", b), "+", c),
+			Expected:    "a - b + c",
+		}, {
+			Description: "multiplication then division",
+			Expr:        sb.Op(sb.Op(a, "*", b), "/", c),
+			Expected:    "a * b / c",
+		}, {
+			// AND is associative, so no parentheses are needed. A filter is
+			// combined with the time range this way.
+			Description: "and on the right of an and",
+			Expr:        sb.Op(a, "AND", sb.Op(b, "AND", c)),
+			Expected:    "a AND b AND c",
+		}, {
+			Description: "or on the right of an or",
+			Expr:        sb.Op(a, "OR", sb.Op(b, "OR", c)),
+			Expected:    "a OR b OR c",
+		}, {
+			Description: "comparison below an and",
+			Expr:        sb.Op(sb.Op(a, "=", b), "AND", c),
+			Expected:    "a = b AND c",
+		}, {
+			Description: "addition below a comparison",
+			Expr:        sb.Op(a, "=", sb.Op(b, "+", c)),
+			Expected:    "a = b + c",
+		}, {
+			// NOT binds tighter than AND.
+			Description: "negation below an and",
+			Expr:        sb.Op(sb.Not(sb.Op(a, "=", b)), "AND", c),
+			Expected:    "NOT (a = b) AND c",
+		}, {
+			Description: "negation below a comparison",
+			Expr:        sb.Op(sb.Not(a), "=", b),
+			Expected:    "(NOT a) = b",
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.Description, func(t *testing.T) {
+			if diff := helpers.Diff(tc.Expr.String(), tc.Expected); diff != "" {
+				t.Errorf("String() (-got, +want):\n%s", diff)
+			}
+		})
+	}
+}
+
 // TestIdentifierQuoting checks a name needing backticks gets them. Column names
 // come from the schema and from the custom dictionaries, so they are not all
 // bare identifiers. It also checks what is not a name keeps its own form.

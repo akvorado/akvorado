@@ -122,13 +122,104 @@ func Lambda(parameter string, body Expr) Expr {
 	return Op(Column(parameter), "->", body)
 }
 
+// How tightly the operators bind, from the loosest to the tightest. See
+// https://clickhouse.com/docs/sql-reference/operators.
+const (
+	// precUnknown is for an operator this package does not know about. It binds
+	// the loosest, so it gets parentheses rather than silently changing the
+	// meaning of a query.
+	precUnknown = iota
+	precLambda
+	precOr
+	precAnd
+	precNot
+	precComparison
+	precConcat
+	precAddition
+	precMultiplication
+	precCast
+	// precAtom is for what is not an operator at all: a literal, a column, a
+	// function call, a parenthesized expression… It never needs parentheses.
+	precAtom
+)
+
+var precedences = map[string]int{
+	"->":     precLambda,
+	"OR":     precOr,
+	"AND":    precAnd,
+	"=":      precComparison,
+	"==":     precComparison,
+	"!=":     precComparison,
+	"<>":     precComparison,
+	"<":      precComparison,
+	"<=":     precComparison,
+	">":      precComparison,
+	">=":     precComparison,
+	"IN":     precComparison,
+	"LIKE":   precComparison,
+	"ILIKE":  precComparison,
+	"REGEXP": precComparison,
+	"IS":     precComparison,
+	"||":     precConcat,
+	"+":      precAddition,
+	"-":      precAddition,
+	"*":      precMultiplication,
+	"/":      precMultiplication,
+	"%":      precMultiplication,
+	"::":     precCast,
+}
+
+// associative lists the operators where "a OP (b OP c)" and "(a OP b) OP c"
+// mean the same, so a right operand using the same operator needs no
+// parentheses. The arithmetic ones are left out on purpose: regrouping them
+// changes the result with floating point numbers.
+var associative = map[string]bool{
+	"AND": true,
+	"OR":  true,
+}
+
+// operatorName normalizes an operator for the two tables above. The parser
+// keeps the case an operator was written with, and it keeps the "NOT " prefix
+// inside the operator while Op() takes it apart. The prefix does not change how
+// tightly an operator binds.
+func operatorName(operation parser.TokenKind) string {
+	return strings.TrimPrefix(strings.ToUpper(string(operation)), "NOT ")
+}
+
+// precedence tells how tightly a node binds, so an operand can be parenthesized
+// when the operator above it binds tighter.
+func precedence(node parser.Expr) int {
+	switch node := node.(type) {
+	case *parser.BinaryOperation:
+		return precedences[operatorName(node.Operation)]
+	case *parser.UnaryExpr:
+		return precNot
+	case *parser.BetweenClause:
+		return precComparison
+	}
+	return precAtom
+}
+
 // Op combines two expressions with a binary operator, for example "=", "<",
-// "LIKE" or "IN". A "NOT " prefix on the operator is understood.
+// "LIKE" or "IN". A "NOT " prefix on the operator is understood. An operand
+// binding less tightly than the operator gets parentheses, so the SQL says what
+// the tree says.
 func Op(left Expr, operator string, right Expr) Expr {
 	hasNot := false
 	if rest, found := strings.CutPrefix(operator, "NOT "); found {
 		hasNot = true
 		operator = rest
+	}
+	name := operatorName(parser.TokenKind(operator))
+	prec := precedences[name]
+	// The left operand already reads the way the operators associate: "a - b -
+	// c" is "(a - b) - c", so it needs nothing when both bind the same.
+	if precedence(left.node) < prec {
+		left = Parens(left)
+	}
+	if operand := precedence(right.node); operand < prec ||
+		(operand == prec && !associative[name]) {
+		right = Parens(right)
 	}
 	return wrap(&parser.BinaryOperation{
 		LeftExpr:  left.node,
@@ -144,8 +235,7 @@ func Cast(expr Expr, typeName string) Expr {
 	return Op(expr, "::", wrap(rawType(typeName)))
 }
 
-// And combines expressions with AND. Empty expressions are ignored. An operand
-// which is an OR gets parentheses, as OR binds less tightly.
+// And combines expressions with AND. Empty expressions are ignored.
 func And(exprs ...Expr) Expr {
 	return combine("AND", exprs)
 }
@@ -155,14 +245,13 @@ func Or(exprs ...Expr) Expr {
 	return combine("OR", exprs)
 }
 
+// combine chains expressions with the same operator. Op() takes care of the
+// parentheses an operand may need.
 func combine(operator string, exprs []Expr) Expr {
 	var result Expr
 	for _, expr := range exprs {
 		if expr.IsZero() {
 			continue
-		}
-		if operator == "AND" {
-			expr = parenthesizeOr(expr)
 		}
 		if result.IsZero() {
 			result = expr
@@ -173,16 +262,7 @@ func combine(operator string, exprs []Expr) Expr {
 	return result
 }
 
-// parenthesizeOr wraps an OR expression in parentheses. Anything else is left
-// alone.
-func parenthesizeOr(expr Expr) Expr {
-	if binary, ok := expr.node.(*parser.BinaryOperation); ok && binary.Operation == parser.TokenKind("OR") {
-		return Parens(expr)
-	}
-	return expr
-}
-
-// Not negates an expression. A compound expression gets parentheses.
+// Not negates an expression.
 func Not(expr Expr) Expr {
 	switch expr.node.(type) {
 	case *parser.BinaryOperation, *parser.BetweenClause, *parser.UnaryExpr:
